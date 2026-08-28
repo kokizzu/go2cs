@@ -87,7 +87,7 @@ public class MapRangeMutationTests
         map<@string, nint> m = default;
 
         Assert.IsTrue(m.IsNil);
-        Assert.AreEqual(0, m.Count());
+        Assert.AreEqual(0, rangeCount(m));
     }
 
     [TestMethod]
@@ -132,6 +132,138 @@ public class MapRangeMutationTests
 
         Assert.IsTrue(sawNilKey, "range visits the nil key like any other key");
         Assert.AreEqual(2, visited, "both pre-existing entries produced, neither insert re-entered");
+    }
+
+    // A NaN key is equal to NOTHING, itself included (GoEqualityComparer gives the float
+    // representations Go's `==` rather than the BCL's NaN-finds-itself rule), so no lookup can
+    // ever match one. That makes it the single shape where re-reading a value on arrival is the
+    // wrong instrument: the lookup always misses, and an unguarded miss silently drops every NaN
+    // entry from every range. encoding/json's TestMarshalTextFloatMap reads it out as a panic --
+    // mapEncoder sizes its slice from len() and fills it from MapRange, so a short range leaves
+    // zero reflect.Values behind. These pin the disambiguation.
+
+    private static double nan()
+    {
+        // Built from runtime zeros so the C# compiler cannot fold it to a literal.
+        double zero = 0.0D;
+        return zero / zero;
+    }
+
+    [TestMethod]
+    public void NaNKeysAreStoredSeparatelyAndAreUnretrievable()
+    {
+        map<float64, nint> m = new();
+
+        m[nan()] = 1;
+        m[nan()] = 1;
+
+        Assert.AreEqual(2, (int)len(m), "NaN is equal to nothing, so each store adds an entry");
+
+        var (_, found) = m[nan(), ꟷ];
+        Assert.IsFalse(found, "no lookup can ever match a NaN key");
+    }
+
+    [TestMethod]
+    public void RangeProducesEveryNaNKeyedEntry()
+    {
+        map<float64, nint> m = new();
+
+        m[nan()] = 1;
+        m[nan()] = 1;
+
+        int visited = 0;
+        nint sum = 0;
+
+        foreach ((float64 key, nint value) in m)
+        {
+            visited++;
+            sum += value;
+            Assert.IsTrue(double.IsNaN(key));
+        }
+
+        Assert.AreEqual(2, visited, "a range must produce entries its own lookup cannot find");
+        Assert.AreEqual(2, (int)sum);
+    }
+
+    [TestMethod]
+    public void DeleteCannotRemoveANaNKeyedEntry()
+    {
+        map<float64, nint> m = new();
+
+        m[nan()] = 1;
+        m[nan()] = 1;
+
+        delete(m, nan());
+
+        Assert.AreEqual(2, (int)len(m), "delete matches nothing, so both entries survive");
+        Assert.AreEqual(2, rangeCount(m), "and the range still produces both");
+    }
+
+    // Counts by actually RANGING. Enumerable.Count() would not do: it short-circuits to
+    // ICollection<T>.Count and never touches the enumerator, so it reports the stored count
+    // however badly the range is broken -- measured, by watching it pass against the very
+    // regression these tests exist to catch.
+    private static int rangeCount<TKey, TValue>(map<TKey, TValue> m) where TKey : notnull
+    {
+        int n = 0;
+
+        foreach ((TKey _, TValue _) in m)
+            n++;
+
+        return n;
+    }
+
+    [TestMethod]
+    public void NaNKeysSurviveARangeThatAlsoMutates()
+    {
+        map<float64, nint> m = new() { [1.5] = 10 };
+
+        m[nan()] = 1;
+        m[nan()] = 1;
+
+        // The visit COUNT is left unasserted on purpose: 2.5 is retrievable, so Go's "created
+        // during iteration may be produced or may be skipped" genuinely applies to it.
+        foreach ((float64 key, nint value) in m)
+        {
+            if (key == 1.5)
+                m[2.5] = value * 2;
+        }
+
+        Assert.AreEqual(4, (int)len(m));
+        Assert.AreEqual(20, (int)m[2.5]);
+
+        int nans = 0;
+
+        foreach ((float64 key, nint _) in m)
+        {
+            if (double.IsNaN(key))
+                nans++;
+        }
+
+        Assert.AreEqual(2, nans, "both NaN entries still produced after the mutating range");
+    }
+
+    [TestMethod]
+    public void ClearRemovesNaNKeyedEntriesFromAnInFlightRange()
+    {
+        map<float64, nint> m = new();
+
+        m[nan()] = 1;
+        m[nan()] = 1;
+        m[1.5] = 10;
+
+        int visited = 0;
+
+        foreach ((float64 _, nint _) in m)
+        {
+            visited++;
+            // clear is the ONE operation that can take an unretrievable entry out, so anything
+            // not yet reached must stop being produced -- the guarantee Go gives for removal.
+            clear(m);
+        }
+
+        Assert.AreEqual(1, visited, "clear stops the range dead, NaN entries included");
+        Assert.AreEqual(0, (int)len(m));
     }
 
     [TestMethod]

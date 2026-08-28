@@ -7072,7 +7072,7 @@ bites — and only when the inserted key is genuinely new.
 
 golib's `map<K,V>` used to hand out that enumerator directly, so every legal Go range-with-insert
 became a runtime fault. It now implements Go's contract itself: the range takes a **snapshot of the
-keys** and re-reads each value at the moment it is visited
+entries** and re-reads each value at the moment it is visited
 ([`map.cs`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/golib/map.cs),
 `enumerateStore`). That lands every clause of the spec —
 
@@ -7087,6 +7087,24 @@ keys** and re-reads each value at the moment it is visited
 
 The nil-key entry (see [The NIL map key](#the-nil-map-key)) is produced first; Go's range order is
 unspecified and deliberately randomized, so the position is free.
+
+**One key shape makes the visit-time lookup the wrong instrument, and it is a real Go shape rather
+than a curiosity.** A [NaN key is equal to nothing, itself included](#a-nan-map-key-is-never-equal-to-anything-itself-included),
+so `m[NaN] = v` twice stores *two* entries and neither can ever be read back **or deleted**. For such
+a key the lookup always misses, so a re-read on arrival silently drops every NaN entry from every
+range — a worse defect than the one this machinery exists to fix, because nothing raises. So a miss
+is disambiguated with **the store's own comparer**: if the key is not even equal to itself, no lookup
+can match it and no `delete` can remove it, so the snapshotted entry is produced. Using the
+dictionary's comparer settles "unretrievable" by exactly the relation whose failure is being
+interpreted, rather than by a hardcoded list of float types — a custom comparer gets the same
+treatment for free. The one operation that *does* remove such an entry is `clear`, which empties the
+store outright, so a now-empty store suppresses it.
+
+`encoding/json` reads this out immediately, and loudly: `mapEncoder` sizes
+`sv = make([]reflectWithString, v.Len())` and fills it **by index** from `MapRange`, so a range that
+yields fewer entries than `len()` leaves zero `reflect.Value`s in the tail and panics inside
+`stringEncoder`'s `v.Type()`. That is `TestMarshalTextFloatMap`, and it is the reason the shape is
+guarded at both layers.
 
 ```go
 // Legal Go: the body inserts a new key into the map it is ranging.
@@ -7107,9 +7125,10 @@ foreach (var (k, v) in m) {
 The emission is an ordinary `foreach` — the fidelity lives in the runtime type, not in the emitted
 shape, so nothing about the converted code advertises the difference.
 
-The cost is one `TKey[]` per non-empty range where there was none. That is a deliberate trade: this
-is the construct's *semantics*, and go2cs converts behavior first. If a range ever measures hot
-enough to care, the snapshot is the one thing to pool; the shape above does not change.
+The cost is one `KeyValuePair[]` per non-empty range where there was none, and the self-equality test
+only ever runs on the miss path. That is a deliberate trade: this is the construct's *semantics*, and
+go2cs converts behavior first. If a range ever measures hot enough to care, the snapshot is the one
+thing to pool; the shape above does not change.
 
 This is not an exotic corner. `net/http`'s HTTP/2 server hits it in `promoteUndeclaredTrailers`,
 which ranges the handler's header map and writes each promoted `"Trailer:Foo"` entry back under
@@ -7118,8 +7137,10 @@ containment policy absorbed it as a test failure, the h2 stream was therefore ne
 its trailers and `END_STREAM`, and the client blocked in `http2pipe.Read` forever. That was the
 deterministic hang of `TestServerUndeclaredTrailers/h2`, and it stalled the whole `net/http` row —
 the hang, not any divergence, is what left the rest of the suite unreached. Guarded from the Go side
-by `tests/Behavioral/MapMutateDuringRange`, which covers insert, overwrite, delete, insert-with-delete
-and a control that mutates a *different* map.
+by `tests/Behavioral/MapMutateDuringRange`, which covers insert, overwrite, delete, insert-with-delete,
+a control that mutates a *different* map, and the NaN-key shapes; and at the golib level by
+`tests/GolibTests/MapRangeMutationTests.cs`, which pins what the Go side cannot reach — the nil-key
+entry's participation, and that a map *without* a nil key never yields a phantom entry.
 
 ### `m[string(b)]` — the map-READ key does not copy (`tmpstring`)
 

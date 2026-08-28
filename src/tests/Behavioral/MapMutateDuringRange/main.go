@@ -82,4 +82,50 @@ func main() {
 		dst[k+"-copy"] = v
 	}
 	fmt.Println("control final:", dump(dst, []string{"s-copy"}))
+
+	// A NaN key is equal to NOTHING, itself included, so storing NaN twice makes TWO entries and
+	// neither can ever be read back or deleted. A range must still produce both -- the one key
+	// shape where a visit-time lookup is the wrong instrument, since it always misses.
+	// (encoding/json's mapEncoder sizes its slice from len() and fills it from MapRange, so a
+	// range that skips these panics on a zero reflect.Value: TestMarshalTextFloatMap.)
+	//
+	// NaN is built by dividing runtime zeros; a constant 0.0/0.0 is a compile-time error in Go,
+	// and this keeps the test on fmt alone with no math import.
+	zero := 0.0
+	nan := map[float64]int{}
+	nan[zero/zero] = 1
+	nan[zero/zero] = 1
+
+	// Values are equal and only the count is printed, so the unspecified range order cannot make
+	// this golden ambiguous.
+	seen, sum := 0, 0
+	for _, v := range nan {
+		seen++
+		sum += v
+	}
+	fmt.Println("nan len:", len(nan), "visited:", seen, "sum:", sum)
+
+	_, nanFound := nan[zero/zero]
+	fmt.Println("nan lookup found:", nanFound)
+
+	delete(nan, zero/zero)
+	fmt.Println("nan len after delete:", len(nan))
+
+	// NaN keys AND a mutating body in one range: the inserted key is retrievable, the NaN keys
+	// are not, and both kinds have to come out right.
+	//
+	// The VISIT COUNT is deliberately not printed here. Unlike the insert case above -- whose
+	// inserted keys are filtered out of the body by a length test, so producing them changes
+	// nothing -- 2.5 satisfies no such guard, and Go really does produce it on some runs and not
+	// others (measured: 3 and 4 both occur across 40 runs of this very program). Only len and the
+	// inserted value are facts Go pins down.
+	mixed := map[float64]int{1.5: 10}
+	mixed[zero/zero] = 1
+	mixed[zero/zero] = 1
+	for k, v := range mixed {
+		if k == 1.5 {
+			mixed[2.5] = v * 2
+		}
+	}
+	fmt.Println("mixed len:", len(mixed), "at2.5:", mixed[2.5])
 }

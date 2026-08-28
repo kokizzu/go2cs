@@ -29,6 +29,13 @@ private static readonly object updateFinalˢ = (@string)"update final:"u8;
 private static readonly object deleteFinalˢ = (@string)"delete final:"u8;
 private static readonly object mixFinalˢ = (@string)"mix final:"u8;
 private static readonly object controlFinalˢ = (@string)"control final:"u8;
+private static readonly object nanLenˢ = (@string)"nan len:"u8;
+private static readonly object visitedˢ = (@string)"visited:"u8;
+private static readonly object sumˢ = (@string)"sum:"u8;
+private static readonly object nanLookupFoundˢ = (@string)"nan lookup found:"u8;
+private static readonly object nanLenAfterDeleteˢ = (@string)"nan len after delete:"u8;
+private static readonly object mixedLenˢ = (@string)"mixed len:"u8;
+private static readonly object at25ˢ = (@string)"at2.5:"u8;
 
 internal static void Main() {
     var insert = new map<@string, nint>{["a"u8] = 1, ["b"u8] = 2, ["c"u8] = 3};
@@ -65,6 +72,30 @@ internal static void Main() {
         dst[k + "-copy"u8] = v;
     }
     fmt.Println(controlFinalˢ, dump(dst, new @string[]{"s-copy"u8}.slice()));
+    var zero = 0.0D;
+    var nan = new map<float64, nint>{};
+    nan[zero / zero] = 1;
+    nan[zero / zero] = 1;
+    nint seen = 0;
+    nint sum = 0;
+    foreach (var (_, v) in nan) {
+        seen++;
+        sum += v;
+    }
+    fmt.Println(nanLenˢ, len(nan), visitedˢ, seen, sumˢ, sum);
+    var (_, nanFound) = nan[zero / zero, ꟷ];
+    fmt.Println(nanLookupFoundˢ, nanFound);
+    delete(nan, zero / zero);
+    fmt.Println(nanLenAfterDeleteˢ, len(nan));
+    var mixed = new map<float64, nint>{[1.5D] = 10};
+    mixed[zero / zero] = 1;
+    mixed[zero / zero] = 1;
+    foreach (var (k, v) in mixed) {
+        if (k == 1.5D) {
+            mixed[2.5D] = v * 2;
+        }
+    }
+    fmt.Println(mixedLenˢ, len(mixed), at25ˢ, mixed[2.5D]);
 }
 
 } // end main_package

@@ -934,10 +934,13 @@ A **`range` body may mutate the map it is ranging over**, because Go's spec says
 removed before it is reached is not produced, and an entry created during the range "may be produced
 … or may be skipped". `Dictionary<K,V>`'s enumerator allows neither — a structural insert bumps its
 version and the next `MoveNext` throws `InvalidOperationException` — so `map<K,V>` implements the
-contract itself, walking a snapshot of the keys and re-reading each value on arrival. The emitted
+contract itself, walking a snapshot of the entries and re-reading each value on arrival. The emitted
 code is an ordinary `foreach`; the fidelity lives in the runtime type. Overwrites and deletes never
 threw (both are version-free since .NET Core 3.0), which is exactly why the insert case survived so
-long: it is what hung `net/http`'s HTTP/2 server in `promoteUndeclaredTrailers`. See the
+long: it is what hung `net/http`'s HTTP/2 server in `promoteUndeclaredTrailers`. A **NaN key** is the
+one shape the arrival lookup cannot settle — it is equal to nothing, itself included, so the lookup
+always misses and the entry would vanish from the range — so a miss is disambiguated with the store's
+own comparer; `encoding/json`'s `TestMarshalTextFloatMap` is what reads that out. See the
 [range-over-map](ConversionStrategies-Reference.md#a-range-body-may-mutate-the-map-it-is-ranging-over--the-enumerator-walks-a-key-snapshot)
 section of the reference.
 

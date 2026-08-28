@@ -435,7 +435,8 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     // deterministic hang of TestServerUndeclaredTrailers/h2, and it is guarded from the Go side
     // by tests/Behavioral/MapMutateDuringRange.
     //
-    // So range walks a SNAPSHOT OF THE KEYS and re-reads each value at the moment it is visited:
+    // So range walks a SNAPSHOT OF THE ENTRIES and re-reads each value at the moment it is
+    // visited:
     //
     //   * an entry removed before it is reached fails the lookup and is not produced — exactly
     //     the clause Go guarantees;
@@ -446,9 +447,29 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
     //   * every pre-existing entry is still produced exactly once, so a body that inserts cannot
     //     be re-entered for a key it has already handled.
     //
-    // The cost is one TKey[] per non-empty range where there was none. That is deliberate: this
-    // is the construct's SEMANTICS, and go2cs converts behavior first. If a range ever measures
-    // hot enough to care, the snapshot is the one thing to pool here — the shape above does not
+    // …with ONE key shape where the visit-time lookup is the wrong instrument, and it is a real
+    // Go shape rather than a curiosity: a NaN key is equal to NOTHING, itself included, so
+    // `m[NaN] = v` twice stores TWO entries and neither can ever be read back OR deleted (see
+    // GoEqualityComparer, which gives the float representations Go's `==` rather than the BCL's
+    // NaN-finds-itself rule). For such a key the lookup ALWAYS misses, so re-reading on arrival
+    // silently dropped every NaN entry from every range — which is a worse defect than the one
+    // this method exists to fix, because it is silent. encoding/json read it out immediately:
+    // mapEncoder sizes `sv = make([]reflectWithString, v.Len())` and fills it by index from
+    // MapRange, so a range that yields fewer entries than len() leaves ZERO reflect.Values in
+    // the tail and panics in stringEncoder's v.Type() (TestMarshalTextFloatMap).
+    //
+    // A miss is therefore disambiguated with the store's OWN comparer: if the key is not even
+    // equal to itself, no lookup can ever match it and no delete can ever remove it, so the
+    // SNAPSHOTTED entry is produced. Using the dictionary's comparer means "unretrievable" is
+    // settled by exactly the relation whose failure is being interpreted, rather than by a
+    // hardcoded list of float types — a custom comparer gets the same treatment for free. The
+    // one way such an entry does disappear is `clear`, which empties the store outright, so a
+    // now-empty store suppresses it.
+    //
+    // The cost is one KeyValuePair[] per non-empty range where there was none, and the
+    // self-equality test only ever runs on the miss path. That is deliberate: this is the
+    // construct's SEMANTICS, and go2cs converts behavior first. If a range ever measures hot
+    // enough to care, the snapshot is the one thing to pool here — the shape above does not
     // change.
     //
     // The nil-key entry goes first. Go's range order over a map is unspecified (and deliberately
@@ -461,21 +482,30 @@ public readonly struct map<TKey, TValue> : IMap<TKey, TValue>, ISupportMake<map<
         // snapshot and therefore produced, while every later insert was skipped. Both readings are
         // legal Go ("may be produced… or may be skipped"), but only one of them is a rule.
         int count = store.Count;
-        TKey[] keys = count == 0 ? [] : new TKey[count];
+        KeyValuePair<TKey, TValue>[] entries = count == 0 ? [] : new KeyValuePair<TKey, TValue>[count];
 
         if (count > 0)
-            store.Keys.CopyTo(keys, 0);
+            ((ICollection<KeyValuePair<TKey, TValue>>)store).CopyTo(entries, 0);
 
         // Go's range visits the nil key like any other key.
         if (!typeof(TKey).IsValueType && store.HasNilKey)
             yield return new KeyValuePair<TKey, TValue>(default!, store.NilKeyValue);
 
-        foreach (TKey key in keys)
+        foreach (KeyValuePair<TKey, TValue> entry in entries)
         {
             // Re-read rather than carrying the value from the snapshot: the body may have
             // overwritten it, and Go reads the bucket on arrival.
-            if (store.TryGetValue(key, out TValue? value))
-                yield return new KeyValuePair<TKey, TValue>(key, value);
+            if (store.TryGetValue(entry.Key, out TValue? value))
+            {
+                yield return new KeyValuePair<TKey, TValue>(entry.Key, value);
+                continue;
+            }
+
+            // The lookup missed: the entry was either deleted before it was reached — Go says
+            // not to produce it — or its key is one NO lookup can match. Only the second kind is
+            // still in the map, and only `clear` can have taken it out.
+            if (store.Count > 0 && !store.Comparer.Equals(entry.Key, entry.Key))
+                yield return entry;
         }
     }
 
