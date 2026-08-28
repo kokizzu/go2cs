@@ -136,6 +136,17 @@ public static class TestHost
                 CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
                 Environment.CurrentDirectory = workingDirectory;
 
+                // PWD follows the chdir, because on Unix it is the SHELL's job to keep them equal
+                // and nothing else will do it here. `go test` starts its binary in the package
+                // directory with PWD already naming it, so Go's tests may assume PWD == cwd — and
+                // os/exec's TestImplicitPWD asserts exactly that, comparing the PWD entries
+                // Cmd.Environ() derives against the working directory it expects. Leaving the
+                // inherited value in place points it at whatever directory the pipeline was
+                // invoked from, which is neither this run's cwd nor anything a Go test could
+                // predict. Published to the converted environment as well as the CLR's, for the
+                // reason PublishSandboxMarker gives: Cmd.Environ() reads syscall.envs.
+                PublishEnvironmentVariable("PWD", workingDirectory);
+
                 // The helper skips this with the rest: a parent test that hands its child an
                 // explicit TZ through cmd.Env must see that value in the child, exactly as Go's
                 // helper — which has no TZ logic at all — would show it.
@@ -351,9 +362,18 @@ public static class TestHost
     /// the same argument the flag bridge makes for its own late binding.
     /// </para>
     /// </remarks>
-    private static void PublishSandboxMarker(string runRoot)
+    private static void PublishSandboxMarker(string runRoot) =>
+        PublishEnvironmentVariable(SandboxMarkerVariable, runRoot);
+
+    /// <summary>
+    /// Sets an environment variable in BOTH environments this process has — the CLR's, which the
+    /// host itself reads, and the converted <c>syscall</c> package's, which is what a child
+    /// inherits.
+    /// </summary>
+    /// <inheritdoc cref="PublishSandboxMarker" path="/remarks"/>
+    private static void PublishEnvironmentVariable(string name, string value)
     {
-        Environment.SetEnvironmentVariable(SandboxMarkerVariable, runRoot);
+        Environment.SetEnvironmentVariable(name, value);
 
         try
         {
@@ -366,13 +386,13 @@ public static class TestHost
                 types: [typeof(@string), typeof(@string)],
                 modifiers: null);
 
-            setenv?.Invoke(null, [(@string)SandboxMarkerVariable, (@string)runRoot]);
+            setenv?.Invoke(null, [(@string)name, (@string)value]);
         }
         catch (Exception ex)
         {
-            // A failure here costs the helper gate and nothing else: the run continues, and a
-            // helper that cannot see the marker behaves exactly as it did before the gate existed.
-            Console.Error.WriteLine($"testing: could not publish the sandbox marker to the converted environment: {ex.Message}");
+            // A failure here costs this one variable and nothing else: the run continues, and
+            // whatever reads it behaves exactly as it did before this was published.
+            Console.Error.WriteLine($"testing: could not publish {name} to the converted environment: {ex.Message}");
         }
     }
 
