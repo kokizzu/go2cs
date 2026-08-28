@@ -251,6 +251,14 @@ type Visitor struct {
 	// costing every package a second AST traversal to learn a package-wide fact.
 	heapIdentInPackage   *bool
 	currentFuncSignature *types.Signature
+	// funcSignatureIsLiteralSeed records that currentFuncSignature is a func LITERAL's own signature,
+	// seeded by convFuncLit because there was no enclosing declaration to take it from — the state a
+	// package-level `var` initializer's literal converts in. The seed exists for nil-safety (the
+	// receiver/parameter detection dereferences the field unguarded), but it is NOT an enclosing
+	// signature: a literal's pointer parameter is the raw box `ж<T>` with no deref alias, where a
+	// DECLARATION's is a value alias over one. Every predicate that reads the signature to decide
+	// "is this ident a parameter of the function being emitted" must decline while this is set.
+	funcSignatureIsLiteralSeed bool
 	// currentReturnSignature is the signature whose RESULTS a `return` currently emits against — the
 	// enclosing function's, or a nested function literal's own (set with save/restore in convFuncLit).
 	// Distinct from currentFuncSignature (which stays the enclosing func for receiver/param detection).

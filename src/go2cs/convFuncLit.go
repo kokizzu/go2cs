@@ -292,6 +292,7 @@ func (v *Visitor) objectOnlyCalled(obj types.Object, root ast.Node) bool {
 func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) string {
 	if v.currentFuncSignature == nil {
 		v.currentFuncSignature = v.info.Types[funcLit].Type.(*types.Signature)
+		v.funcSignatureIsLiteralSeed = true
 	}
 
 	litSig, _ := v.info.TypeOf(funcLit).(*types.Signature)

@@ -27,6 +27,7 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoTypeAlias("Header", "ΔHeader")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -36,9 +37,6 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<Impl, Base>(Pointer = true)]
-[assembly: GoImplement<Impl, Constrained<Impl>>(ConstraintProxy = true)]
-[assembly: GoImplement<Impl, Middle>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -52,7 +50,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "ACNygKKAooCkgoKmgOaihIaCloQAAhKiggACFqKC1oKChISSAAEUhJKW")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABQ2gKSAAAgEgoaChoaClIKEhoSChoI=")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -68,9 +66,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial interface Base {}
-    public partial interface Constrained<T> {}
-    public partial interface Middle {}
-    public partial struct Impl {}
+    internal partial struct response {}
+    public partial struct Counts {}
+    public partial struct ΔHeader {}
     // </TypeAccessibility>
 }

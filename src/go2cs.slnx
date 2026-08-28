@@ -571,6 +571,7 @@
     <Project Path="tests/Behavioral/MethodlessFuncType/MethodlessFuncType.csproj" />
     <Project Path="tests/Behavioral/MethodlessFuncTypeAssert/MethodlessFuncTypeAssert.csproj" />
     <Project Path="tests/Behavioral/MinMaxBuiltin/MinMaxBuiltin.csproj" />
+    <Project Path="tests/Behavioral/MixedEmbedKindPromotion/MixedEmbedKindPromotion.csproj" />
     <Project Path="tests/Behavioral/MultiFileInitOrder/MultiFileInitOrder.csproj" />
     <Project Path="tests/Behavioral/MultiPointerEmbedPromotion/MultiPointerEmbedPromotion.csproj" />
     <Project Path="tests/Behavioral/MultiValueReturnOrder/MultiValueReturnOrder.csproj" />
@@ -599,6 +600,7 @@
     <Project Path="tests/Behavioral/NamedImportInitOrder/reader/NamedImportInitOrder.reader.csproj" />
     <Project Path="tests/Behavioral/NamedImportInitOrder/store/NamedImportInitOrder.store.csproj" />
     <Project Path="tests/Behavioral/NamedImportInitOrder/writer/NamedImportInitOrder.writer.csproj" />
+    <Project Path="tests/Behavioral/NamedMapRvalueIndexWrite/NamedMapRvalueIndexWrite.csproj" />
     <Project Path="tests/Behavioral/NamedMapValuesCollision/NamedMapValuesCollision.csproj" />
     <Project Path="tests/Behavioral/NamedMapCrossPkgKey/NamedMapCrossPkgKey.csproj" />
     <Project Path="tests/Behavioral/NamedMapMakeNonNil/NamedMapMakeNonNil.csproj" />
@@ -669,17 +671,20 @@
     <Project Path="tests/Behavioral/PackageNameShadowing/PackageNameShadowing.csproj" />
     <Project Path="tests/Behavioral/PackageShadowParam/PackageShadowParam.csproj" />
     <Project Path="tests/Behavioral/PackageShadowPointerParam/PackageShadowPointerParam.csproj" />
+    <Project Path="tests/Behavioral/PackageVarFuncLitPointerParam/PackageVarFuncLitPointerParam.csproj" />
     <Project Path="tests/Behavioral/PackageVarFuncLitTypeLift/PackageVarFuncLitTypeLift.csproj" />
     <Project Path="tests/Behavioral/PackageVarInitOrder/PackageVarInitOrder.csproj" />
     <Project Path="tests/Behavioral/PanicDeferCalleeFrame/PanicDeferCalleeFrame.csproj" />
     <Project Path="tests/Behavioral/PanicRecover/PanicRecover.csproj" />
     <Project Path="tests/Behavioral/PanicValueRendering/PanicValueRendering.csproj" />
     <Project Path="tests/Behavioral/ParallelAssignmentHazard/ParallelAssignmentHazard.csproj" />
+    <Project Path="tests/Behavioral/ParenIifeNilFuncConv/ParenIifeNilFuncConv.csproj" />
     <Project Path="tests/Behavioral/ParenthesizedConcatContext/ParenthesizedConcatContext.csproj" />
     <Project Path="tests/Behavioral/PartialRedeclaration/PartialRedeclaration.csproj" />
     <Project Path="tests/Behavioral/PkgLevelFuncLitLocals/PkgLevelFuncLitLocals.csproj" />
     <Project Path="tests/Behavioral/PipeCloseUnblocksRead/PipeCloseUnblocksRead.csproj" />
     <Project Path="tests/Behavioral/PointerArraySlice/PointerArraySlice.csproj" />
+    <Project Path="tests/Behavioral/PointerEmbedValueChainPromotion/PointerEmbedValueChainPromotion.csproj" />
     <Project Path="tests/Behavioral/PointerParamWalk/PointerParamWalk.csproj" />
     <Project Path="tests/Behavioral/PointerArrayRange/PointerArrayRange.csproj" />
     <Project Path="tests/Behavioral/PointerCastSliceRange/PointerCastSliceRange.csproj" />

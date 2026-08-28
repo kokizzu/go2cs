@@ -683,7 +683,7 @@ func (v *Visitor) convertToInterfaceTypeSlot(interfaceType types.Type, targetTyp
 	}
 
 	if pointerTarget && recordable && exprResult != "" {
-		return fmt.Sprintf("new %s(%s)", adapterTypeRef(targetTypeName, interfaceTypeName), exprResult)
+		return fmt.Sprintf("new %s(%s)", adapterTypeRef(v.whiteboxVariantAdapterStructName(targetTypeName), interfaceTypeName), exprResult)
 	}
 
 	// A POINTER-sourced cast to an interface implemented by a FOREIGN type routes through the
@@ -866,6 +866,48 @@ func (v *Visitor) whiteboxBridgeDeclaredType(name string) bool {
 	}
 
 	return v.options.testInlineTypeAccess && packageLiftedTypeNames.Contains(name)
+}
+
+// whiteboxVariantAdapterStructName qualifies a BARE struct spelling with the white-box variant class
+// that declares it — but ONLY for a name BOTH `-tests` variants declare.
+//
+// A deferred pointer-adapter marker carries the CAST's own spelling, and a cast written in the
+// declaring scope spells its struct unqualified, which is why the resolver falls back to matching
+// records by simple name. That fallback rests on "the pair resolves identically wherever it appears",
+// and a white-box suite that declares one name TWICE is exactly where it does not: net/http declares
+// `delegateReader` in requestwrite_test.go (package http) and again in transport_test.go (package
+// http_test). Both records exist, each qualified by its own anchor, and both satisfied the fallback's
+// anchor tie-break — so whichever came first in the accumulated union won and was substituted into
+// EVERY file, handing the internal variant's cast the EXTERNAL variant's adapter class (CS1503,
+// `ж<http_internal_test_package.delegateReader>` into `http_test_package.delegateReaderжReader`).
+//
+// The variant is known HERE and nowhere downstream, so state it: qualifying with this variant's own
+// anchor makes the resolver's EXACT-key pass find the one record the cast belongs to, and no guess is
+// left to make. Restricted to the ambiguous set — the same both-variants-declare-it set the record
+// split keys on — so every unambiguous name keeps its bare spelling and resolves byte for byte as
+// before. This is the POINTER form of the answer testOwnedAdapterRef already gives the VALUE form,
+// whose comment names this path as reaching "the same answer through the deferred marker's
+// emittedAdapterPairAnchors": true of one anchor, and not of two.
+func (v *Visitor) whiteboxVariantAdapterStructName(structTypeName string) string {
+	if !v.options.testWhiteboxReference || strings.Contains(structTypeName, ".") {
+		return structTypeName
+	}
+
+	if !testAmbiguousLocalTypeNames.Contains(stripSanitizationMarkers(strings.TrimPrefix(structTypeName, ShadowVarMarker))) {
+		return structTypeName
+	}
+
+	anchor := v.options.testMetadataAnchorName
+
+	if !v.options.testExternalVariant && v.options.testInternalBridgeName != "" {
+		anchor = v.options.testInternalBridgeName
+	}
+
+	if anchor == "" {
+		return structTypeName
+	}
+
+	return anchor + "." + structTypeName
 }
 
 // valueAdapterTypeRef renders the reference to the generated VALUE-form foreign adapter

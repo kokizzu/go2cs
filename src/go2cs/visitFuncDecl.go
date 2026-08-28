@@ -313,6 +313,9 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	signature := currentFuncType.Signature()
 	v.currentFuncSignature = signature
 	v.currentReturnSignature = signature
+	// A real DECLARATION's signature: whatever a package-level literal seeded earlier in this file is
+	// superseded, so the parameter-detection predicates apply again.
+	v.funcSignatureIsLiteralSeed = false
 
 	// A pointer-core type parameter (`[P *T]`) of a plain function is ERASED — dropped from the
 	// emitted generic parameter list, rendered as `ж<T>`, and classified as a pointer everywhere.

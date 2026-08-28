@@ -36,9 +36,11 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<Impl, Base>(Pointer = true)]
-[assembly: GoImplement<Impl, Constrained<Impl>>(ConstraintProxy = true)]
-[assembly: GoImplement<Impl, Middle>(Pointer = true)]
+[assembly: GoImplement<hello, greeter>]
+[assembly: GoImplement<holder, greeter>(Promoted = true)]
+[assembly: GoImplement<mixed, greetBumper>(Pointer = true)]
+[assembly: GoImplement<mixed, greeter>(Promoted = true)]
+[assembly: GoImplement<outer, greetExtra>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -52,7 +54,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "ACNygKKAooCkgoKmgOaihIaCloQAAhKiggACFqKC1oKChISSAAEUhJKW")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABA8gIAACgyAABYygP6CgoSChoSEgoiC")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -68,9 +70,13 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial interface Base {}
-    public partial interface Constrained<T> {}
-    public partial interface Middle {}
-    public partial struct Impl {}
+    internal partial interface greetBumper {}
+    internal partial interface greetExtra {}
+    internal partial interface greeter {}
+    internal partial struct counter {}
+    internal partial struct hello {}
+    internal partial struct holder {}
+    internal partial struct mixed {}
+    internal partial struct outer {}
     // </TypeAccessibility>
 }

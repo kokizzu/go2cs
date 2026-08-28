@@ -24,6 +24,8 @@ partial class main_package {
     Middle
 {
     T Clone();
+    bool Each(@string label, Action<T> f);
+    T Pick(Func<T> gen);
 }
 
 [GoType] partial struct Impl {
@@ -43,11 +45,29 @@ partial class main_package {
     return Ꮡ(new Impl(p.n, p.s + 1));
 }
 
+[GoRecv] public static bool Each(this ref Impl p, @string label, Action<ж<Impl>> f) {
+    f(Ꮡ(new Impl(p.n + "/"u8 + label, p.s)));
+    return true;
+}
+
+[GoRecv] public static ж<Impl> Pick(this ref Impl p, Func<ж<Impl>> gen) {
+    return gen();
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string leafˢ = "leaf"u8;
+private static readonly object eachˢ = (@string)"each"u8;
+
 internal static void use<T>(T v)
     where T : Constrained<T>
 {
     var c = v.Clone();
     fmt.Println(c.Name(), c.Size(), v.Name(), v.Size());
+    var ok = v.Each(leafˢ, (T child) => {
+        fmt.Println(eachˢ, child.Name(), child.Size());
+    });
+    var picked = v.Pick(T () => v.Clone());
+    fmt.Println(ok, picked.Name(), picked.Size());
 }
 
 internal static @string second<T>(T v)

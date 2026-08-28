@@ -904,6 +904,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckMinMaxBuiltin() => CheckTarget("MinMaxBuiltin");
 
     [TestMethod]
+    public void CheckMixedEmbedKindPromotion() => CheckTarget("MixedEmbedKindPromotion");
+
+    [TestMethod]
     public void CheckMultiFileInitOrder() => CheckTarget("MultiFileInitOrder");
 
     [TestMethod]
@@ -977,6 +980,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckNamedMapMakeNonNil() => CheckTarget("NamedMapMakeNonNil");
+
+    [TestMethod]
+    public void CheckNamedMapRvalueIndexWrite() => CheckTarget("NamedMapRvalueIndexWrite");
 
     [TestMethod]
     public void CheckNamedMapValuesCollision() => CheckTarget("NamedMapValuesCollision");
@@ -1174,6 +1180,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckPackageShadowPointerParam() => CheckTarget("PackageShadowPointerParam");
 
     [TestMethod]
+    public void CheckPackageVarFuncLitPointerParam() => CheckTarget("PackageVarFuncLitPointerParam");
+
+    [TestMethod]
     public void CheckPackageVarFuncLitTypeLift() => CheckTarget("PackageVarFuncLitTypeLift");
 
     [TestMethod]
@@ -1190,6 +1199,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckParallelAssignmentHazard() => CheckTarget("ParallelAssignmentHazard");
+
+    [TestMethod]
+    public void CheckParenIifeNilFuncConv() => CheckTarget("ParenIifeNilFuncConv");
 
     [TestMethod]
     public void CheckParenthesizedConcatContext() => CheckTarget("ParenthesizedConcatContext");
@@ -1226,6 +1238,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckPointerEmbeddingPromotion() => CheckTarget("PointerEmbeddingPromotion");
+
+    [TestMethod]
+    public void CheckPointerEmbedValueChainPromotion() => CheckTarget("PointerEmbedValueChainPromotion");
 
     [TestMethod]
     public void CheckPointerFieldArrayElementAddress() => CheckTarget("PointerFieldArrayElementAddress");
