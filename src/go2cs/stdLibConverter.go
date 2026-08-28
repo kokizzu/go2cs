@@ -217,6 +217,36 @@ func isNonConvertedStdLibPackage(importPath string) bool {
 	return strings.HasPrefix(importPath, "cmd/")
 }
 
+// stdLibLoadConfig builds the go/packages configuration the standard-library driver loads through:
+// GOPATH mode (GO111MODULE=off) rooted at dir, carrying the run's build tags and its target platform.
+//
+// It is ONE function rather than the two identical literals it replaces so that the standing canary
+// in stdNamespaceGuard_test.go loads through the configuration the driver ACTUALLY uses instead of a
+// transcription of it. A canary that copies the thing it guards stops guarding it at the first edit
+// to either copy, and what this one watches for — a returned PkgPath carrying a `std/` prefix instead
+// of the bare import path — is precisely a property of the loader's environment, so the environment
+// is the part that must not drift between the two.
+func stdLibLoadConfig(options Options, mode packages.LoadMode, dir string) *packages.Config {
+	loadConfig := &packages.Config{
+		Mode:       mode,
+		Dir:        dir,
+		BuildFlags: options.loaderBuildFlags(),
+		Env:        append(os.Environ(), "GO111MODULE=off"), // Disable module mode
+	}
+
+	// Set the target platform in the environment if specified
+	if options.targetPlatform != "" {
+		targetParts := strings.Split(options.targetPlatform, "/")
+
+		if len(targetParts) == 2 {
+			loadConfig.Env = append(loadConfig.Env, fmt.Sprintf("GOOS=%s", targetParts[0]))
+			loadConfig.Env = append(loadConfig.Env, fmt.Sprintf("GOARCH=%s", targetParts[1]))
+		}
+	}
+
+	return loadConfig
+}
+
 // scanStdLib scans all standard library packages
 func (c *StdLibConverter) scanStdLib() error {
 	// Scan the src directory in GOROOT
@@ -228,22 +258,7 @@ func (c *StdLibConverter) scanStdLib() error {
 	}
 
 	// First, get the list of standard library packages
-	loadConfig := &packages.Config{
-		Mode:       packages.NeedName | packages.NeedImports | packages.NeedDeps | packages.NeedFiles,
-		Dir:        srcPath,
-		BuildFlags: c.options.loaderBuildFlags(),
-		Env:        append(os.Environ(), "GO111MODULE=off"), // Disable module mode
-	}
-
-	// Set the target platform in the environment if specified
-	if c.options.targetPlatform != "" {
-		targetParts := strings.Split(c.options.targetPlatform, "/")
-
-		if len(targetParts) == 2 {
-			loadConfig.Env = append(loadConfig.Env, fmt.Sprintf("GOOS=%s", targetParts[0]))
-			loadConfig.Env = append(loadConfig.Env, fmt.Sprintf("GOARCH=%s", targetParts[1]))
-		}
-	}
+	loadConfig := stdLibLoadConfig(c.options, packages.NeedName|packages.NeedImports|packages.NeedDeps|packages.NeedFiles, srcPath)
 
 	fmt.Println("Loading standard library packages (this may take a while)...")
 
@@ -318,21 +333,7 @@ func (c *StdLibConverter) buildDependencyGraph() error {
 		}
 
 		// Load the package with dependencies
-		loadConfig := &packages.Config{
-			Mode:       packages.NeedImports,
-			Dir:        pkg.Dir,
-			BuildFlags: c.options.loaderBuildFlags(),
-			Env:        append(os.Environ(), "GO111MODULE=off"), // Disable module mode
-		}
-
-		// Set the target platform in the environment if specified
-		if c.options.targetPlatform != "" {
-			targetParts := strings.Split(c.options.targetPlatform, "/")
-			if len(targetParts) == 2 {
-				loadConfig.Env = append(loadConfig.Env, fmt.Sprintf("GOOS=%s", targetParts[0]))
-				loadConfig.Env = append(loadConfig.Env, fmt.Sprintf("GOARCH=%s", targetParts[1]))
-			}
-		}
+		loadConfig := stdLibLoadConfig(c.options, packages.NeedImports, pkg.Dir)
 
 		pkgs, err := packages.Load(loadConfig, pkgPath)
 		if err != nil {
