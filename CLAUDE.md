@@ -195,6 +195,16 @@ ONE stdlib in a build; there is now only one on disk.
     reports in sorted order; **scattered** empties are genuine divergence; **ALL** empty is the
     documented file-lock case. Check the ordering before believing the diagnosis — and pass an
     explicit `-test-timeout 10m` on any hand-invoked row so the default is never the variable.
+    ⚠ **Refinement measured 2026-08-29 (`net`), and it is the one exception to "scattered =
+    divergence": SCATTERED empties that EXACTLY EQUAL the package's `t.Parallel()` test set are ONE
+    serial-phase death, not divergence.** The host reports in TWO phases — the serial tests first,
+    then the parallel batch — so a single deadlock in the serial phase leaves a contiguous tail there
+    AND parks the entire parallel batch unreported, and the union of the two reads as scattered
+    because the parallel names interleave alphabetically with the serial ones. `net`'s 43-name
+    "deadline family" was exactly this: one deadlock seen from two phases, and the arithmetic closed
+    to the verdict once the TransmitFile seam landed. **Compare the empty set against the parallel
+    set before reading scattered as genuine divergence** — a set equality is one grep, and it is the
+    difference between one root and 43 phantom findings.
   - `-go2cspath <dir>` — runtime/stdlib root and default output root for converted code (default `~/go2cs`;
     env `GO2CSPATH`). `go2cs -recurse <input> <output>` keeps generated code under the explicit output root
     while `$(go2csPath)` references continue to resolve against this runtime root. **It is also the root the
@@ -601,7 +611,16 @@ ONE stdlib in a build; there is now only one on disk.
   day-one figures are themselves STALE as the corpus grows — re-measured 2026-08-21 on the same
   i7-5820K: full behavioral suite **~6,552s at 603 packages** (and the runner batch-build default needed **9,000s** at 604 projects -- the stock 2,400s false-redded a healthy run, 2026-08-22), full `go2cs.slnx` Debug
   `--no-incremental` **~3,546s at 722 projects** — so budget those two from the 2026-08-21/22
-  numbers and re-measure again at the next corpus jump. Keep the i9
+  numbers and re-measure again at the next corpus jump. ⚠ **The `go2cs.slnx` row re-measured
+  2026-08-29 on the same i7-5820K, and the spread is LOAD, not corpus growth: 845s wall SOLO at
+  802 assemblies** (`--no-incremental -m -p:UseSharedCompilation=false`, golib rebuilt, 385 corpus
+  warnings emitted — positive evidence of a genuine full compile rather than a skipped-work green,
+  which is the only reason the number is worth quoting). The tree GREW over that interval (722
+  projects → 802 assemblies) while the wall FELL 3,546s → 845s, and no corpus change runs that
+  direction — so read the **3,546s as the under-sibling-load end** (it was never recorded as solo)
+  and **845s as the current solo baseline**. Budget the row from the loaded end as this table
+  always does — ~3,600s, not 845s — and treat a SOLO run materially past ~900s as contention to
+  go find rather than work to wait out. Keep the i9
   columns as the historical reference the ratios hang off; budget commands from the i7-5820K figures
   (or 3–4x a row's i9 ceiling when unmeasured), and treat HARD-CODED harness watchdogs as suspects on
   this class of machine — at the old sizes, `PerformanceRunner`'s 600s AOT-publish cap and
@@ -1152,6 +1171,30 @@ Each rule below was paid for.
   markers (`$shadowed`) is left undefined at its use site if you take one side of a marked hunk. Neither
   is visible from the conflict markers. **Resolving the marked hunks is not resolving the merge: read
   the merged file whole, and run the thing.**
+- **⚠ Its MIRROR is the SILENT SUBTRACTION, and it is worse: one lane REMOVES a definition because
+  another branch supplies the replacement, and the merge drops the supplier.** Both diffs are pure
+  additions/removals, git merges them without a conflict or a warning, and the result compiles
+  nowhere. Paid for 2026-08-29 (`syscall.Uname`): the converter registration that DISPLACES the
+  generated wrapper merged, the hand-own `*_impl.cs` BODY it displaces to did not, and the whole
+  **linux corpus went RED at master with a clean `git status`** — `kernel_version_linux.cs`
+  CS0117 `'syscall_package' does not contain a definition for 'Uname'`, discovered days later by a
+  lane building that flavor, not by any merge. Note this is one step PAST the regenerate-never-merge
+  seam rule the guilty file's own header documents: the generated side was correct, the destination
+  was missing. **Mechanical preflight, cheap and now owed:** if
+  `git diff --name-only <base>..<branch>` shows a `manualConversionFuncs` registration or a
+  generated-body deletion, **assert the matching `*_impl.cs` body is present in the MERGE RESULT** —
+  the same shape as the `package_info.cs` ⟹ `stdlib-metadata.txt` preflight above.
+- **⚠ A seam check that verifies a displacement HAPPENED but not that its destination EXISTS passes
+  the exact failure it was written for, in mirror form.** The ten-names/zero-bodies property offered
+  as the struct-passing merge instrument — every registered name has zero generated bodies and
+  exactly one placeholder — was run twice over all ten names and reported as the check that would
+  catch a lost registration. It is ONE-SIDED: a placeholder pointing at a hand-own body that does not
+  exist passes it cleanly, which is exactly what master held, and the branch carrying the check
+  carried the same gap (2026-08-29). **Every seam check carries both sides of the ledger** —
+  registration ⇒ displaced wrapper ⇒ body, and the reverse (a dead hand-own nothing displaces) where
+  the shape allows it cheaply. Put it in the tier every lane already pays for (the converter's own
+  `go test ./...`, beside `projitemsIntegrity_test`) so the class turns into a red converter suite at
+  the merge rather than a red corpus later.
 - **A branch behind master shows master's newer files as DELETIONS.** This is the stale-base illusion,
   not data loss, and it has been mis-read as a lane destroying work more than once. Diff from the
   **merge base** (`git merge-base A B`), never from a moving tip.
