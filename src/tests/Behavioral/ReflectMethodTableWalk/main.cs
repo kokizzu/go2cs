@@ -131,7 +131,7 @@ internal static void Main() {
     var pt = pv.Type();
     fmt.Println(ptrNumMethodˢ, pt.NumMethod(), valueNumMethodˢ, pv.NumMethod());
     fmt.Println(ptrMethodsˢ, strings.Join(names(pt), ","u8));
-    var sorted = append(slice<@string>(default!), names(pt).ꓸꓸꓸ);
+    var sorted = appendꓸꓸꓸ(slice<@string>(default!), names(pt));
     sort.Strings(sorted);
     fmt.Println(ptrOrderIsSortedˢ, reflect.DeepEqual(sorted, names(pt)));
     var vv = reflect.ValueOf(c.Value);

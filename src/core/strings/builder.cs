@@ -109,7 +109,7 @@ public static (nint, error) Write(this ж<Builder> Ꮡb, slice<byte> p) {
     ref var b = ref Ꮡb.DerefOrNull();
 
     Ꮡb.copyCheck();
-    b.buf = append(b.buf, p.ꓸꓸꓸ);
+    b.buf = appendꓸꓸꓸ(b.buf, p);
     return (len(p), default!);
 }
 

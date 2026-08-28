@@ -412,7 +412,7 @@ internal static slice<byte> vbar = new byte[]{(rune)'|'}.slice();
 
 // Append text to current cell.
 [GoRecv] internal static void append(this ref Writer b, slice<byte> text) {
-    b.buf = builtin.append(b.buf, text.ꓸꓸꓸ);
+    b.buf = builtin.appendꓸꓸꓸ(b.buf, text);
     b.cell.size += len(text);
 }
 

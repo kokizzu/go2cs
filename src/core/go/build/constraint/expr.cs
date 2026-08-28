@@ -588,7 +588,7 @@ public static (slice<@string>, error) PlusBuildLines(Expr x) {
     if (maxOr == 1) {
         slice<Expr> lits = default!;
         foreach (var (_, or) in split) {
-            lits = append(lits, or[0].ꓸꓸꓸ);
+            lits = appendꓸꓸꓸ(lits, or[0]);
         }
         split = new slice<slice<Expr>>[]{new slice<Expr>[]{lits}.slice()}.slice();
     }

@@ -39,11 +39,11 @@ public static void SortImports(ж<token.FileSet> Ꮡfset, ж<File> Ꮡf) {
         foreach (var (j, s) in (~dΔ1).Specs) {
             if (j > i && lineAt(Ꮡfset, s.Pos()) > 1 + lineAt(Ꮡfset, (~dΔ1).Specs[j - 1].End())) {
                 // j begins a new run. End this one.
-                specs = append(specs, sortSpecs(Ꮡfset, ref (Ꮡf).DerefOrNull(), (~dΔ1).Specs[(int)(i)..(int)(j)]).ꓸꓸꓸ);
+                specs = appendꓸꓸꓸ(specs, sortSpecs(Ꮡfset, ref (Ꮡf).DerefOrNull(), (~dΔ1).Specs[(int)(i)..(int)(j)]));
                 i = j;
             }
         }
-        specs = append(specs, sortSpecs(Ꮡfset, ref (Ꮡf).DerefOrNull(), (~dΔ1).Specs[(int)(i)..]).ꓸꓸꓸ);
+        specs = appendꓸꓸꓸ(specs, sortSpecs(Ꮡfset, ref (Ꮡf).DerefOrNull(), (~dΔ1).Specs[(int)(i)..]));
         dΔ1.Value.Specs = specs;
         // Deduping can leave a blank line before the rparen; clean that up.
         if (len((~dΔ1).Specs) > 0) {

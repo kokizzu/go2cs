@@ -547,7 +547,7 @@ Return:
         freeOnePassMachine(m);
         return default!;
     }
-    dstCap = append(dstCap, (~m).matchcap.ꓸꓸꓸ);
+    dstCap = appendꓸꓸꓸ(dstCap, (~m).matchcap);
     freeOnePassMachine(m);
     return dstCap;
 }
@@ -584,7 +584,7 @@ internal static slice<nint> doExecute(this ж<Regexp> Ꮡre, io.RuneReader r, sl
         re.put(m);
         return default!;
     }
-    dstCap = append(dstCap, (~m).matchcap.ꓸꓸꓸ);
+    dstCap = appendꓸꓸꓸ(dstCap, (~m).matchcap);
     re.put(m);
     return dstCap;
 }

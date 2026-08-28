@@ -76,7 +76,7 @@ internal static readonly @string rleLiteralMissingˢ = "RLE literal missing"u8;
         if (off + regeneratedSize > builtin.len(data)) {
             return (0, default!, r.makeError(off, rawLiteralSizeTooLargeˢ));
         }
-        outbuf = append(outbuf, data[(int)(off)..(int)(off + regeneratedSize)].ꓸꓸꓸ);
+        outbuf = appendꓸꓸꓸ(outbuf, data[(int)(off)..(int)(off + regeneratedSize)]);
         off += regeneratedSize;
     } else {
         // RFC 3.1.1.3.1.3.
@@ -287,7 +287,7 @@ internal static (slice<byte>, error) readLiteralsFourStreams(this ж<Reader> Ꮡ
     nint out3 = out2 + regeneratedStreamSize;
     nint out4 = out3 + regeneratedStreamSize;
     nint regeneratedStreamSize4 = regeneratedSize - regeneratedStreamSize * 3;
-    outbuf = append(outbuf, new slice<byte>(regeneratedSize).ꓸꓸꓸ);
+    outbuf = appendꓸꓸꓸ(outbuf, new slice<byte>(regeneratedSize));
     var huffTable = r.huffmanTable;
     var huffBits = (uint32)r.huffmanTableBits;
     var huffMask = (((uint32)1).Lsh((uint64)(huffBits))) - 1;

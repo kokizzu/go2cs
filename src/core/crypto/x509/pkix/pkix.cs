@@ -311,7 +311,7 @@ public static @string String(this Name n) {
             rdns = append(rdns, (RelativeDistinguishedNameSET)(new AttributeTypeAndValue[]{atv}.slice()));
         }
     }
-    rdns = append(rdns, n.ToRDNSequence().ꓸꓸꓸ);
+    rdns = appendꓸꓸꓸ(rdns, n.ToRDNSequence());
     return rdns.String();
 }
 

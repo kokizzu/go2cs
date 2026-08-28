@@ -149,7 +149,7 @@ internal static bool appendFlush(ж<reorderBuffer> Ꮡrb) {
     for (nint i = 0; i < rb.nrune; i++) {
         var start = rb.rune[i].pos;
         var end = (uint8)(start + rb.rune[i].size);
-        rb.@out = append(rb.@out, rb.@byte[(int)(start)..(int)(end)].ꓸꓸꓸ);
+        rb.@out = appendꓸꓸꓸ(rb.@out, rb.@byte[(int)(start)..(int)(end)]);
     }
     return true;
 }
@@ -159,7 +159,7 @@ internal static bool appendFlush(ж<reorderBuffer> Ꮡrb) {
     for (nint i = 0; i < rb.nrune; i++) {
         var start = rb.rune[i].pos;
         var end = (uint8)(start + rb.rune[i].size);
-        @out = append(@out, rb.@byte[(int)(start)..(int)(end)].ꓸꓸꓸ);
+        @out = appendꓸꓸꓸ(@out, rb.@byte[(int)(start)..(int)(end)]);
     }
     rb.reset();
     return @out;

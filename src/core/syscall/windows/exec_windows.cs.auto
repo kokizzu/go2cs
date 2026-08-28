@@ -390,7 +390,7 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
         si.Value.StdInput = fd[0];
         si.Value.StdOutput = fd[1];
         si.Value.StdErr = fd[2];
-        fd = append(fd, (~sys).AdditionalInheritedHandles.ꓸꓸꓸ);
+        fd = appendꓸꓸꓸ(fd, (~sys).AdditionalInheritedHandles);
         // The presence of a NULL handle in the list is enough to cause PROC_THREAD_ATTRIBUTE_HANDLE_LIST
         // to treat the entire list as empty, so remove NULL handles.
         nint j = 0;

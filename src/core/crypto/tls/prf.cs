@@ -110,8 +110,8 @@ internal static Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>> prfFo
 // secret. See RFC 5246, Section 8.1.
 internal static slice<byte> masterFromPreMasterSecret(uint16 version, ref cipherSuite suite, slice<byte> preMasterSecret, slice<byte> clientRandom, slice<byte> serverRandom) {
     var seed = new slice<byte>(0, len(clientRandom) + len(serverRandom));
-    seed = append(seed, clientRandom.ꓸꓸꓸ);
-    seed = append(seed, serverRandom.ꓸꓸꓸ);
+    seed = appendꓸꓸꓸ(seed, clientRandom);
+    seed = appendꓸꓸꓸ(seed, serverRandom);
     var masterSecret = new slice<byte>(masterSecretLength);
     prfForVersion(version, ref suite)(masterSecret, preMasterSecret, masterSecretLabel, seed);
     return masterSecret;
@@ -137,8 +137,8 @@ internal static (slice<byte> clientMAC, slice<byte> serverMAC, slice<byte> clien
     slice<byte> serverIV = default!;
 
     var seed = new slice<byte>(0, len(serverRandom) + len(clientRandom));
-    seed = append(seed, serverRandom.ꓸꓸꓸ);
-    seed = append(seed, clientRandom.ꓸꓸꓸ);
+    seed = appendꓸꓸꓸ(seed, serverRandom);
+    seed = appendꓸꓸꓸ(seed, clientRandom);
     nint n = 2 * macLen + 2 * keyLen + 2 * ivLen;
     var keyMaterial = new slice<byte>(n);
     prfForVersion(version, ref suite)(keyMaterial, masterSecret, keyExpansionLabel, seed);
@@ -190,7 +190,7 @@ internal static ΔfinishedHash newFinishedHash(uint16 version, ref cipherSuite c
         h.serverMD5.Write(msg);
     }
     if (h.buffer != default!) {
-        h.buffer = append(h.buffer, msg.ꓸꓸꓸ);
+        h.buffer = appendꓸꓸꓸ(h.buffer, msg);
     }
     return (len(msg), default!);
 }
@@ -283,14 +283,14 @@ internal static Func<@string, slice<byte>, nint, (slice<byte>, error)> ekmFromMa
             seedLen += 2 + len(context);
         }
         var seed = new slice<byte>(0, seedLen);
-        seed = append(seed, clientRandomʗ1.ꓸꓸꓸ);
-        seed = append(seed, serverRandomʗ1.ꓸꓸꓸ);
+        seed = appendꓸꓸꓸ(seed, clientRandomʗ1);
+        seed = appendꓸꓸꓸ(seed, serverRandomʗ1);
         if (context != default!) {
             if (len(context) >= (1 << (int)(16))) {
                 return (default!, fmt.Errorf("crypto/tls: ExportKeyingMaterial context too long"u8));
             }
             seed = append(seed, (byte)((len(context) >> (int)(8))), (byte)len(context));
-            seed = append(seed, context.ꓸꓸꓸ);
+            seed = appendꓸꓸꓸ(seed, context);
         }
         var keyMaterial = new slice<byte>(length);
         prfForVersion(version, ref (Ꮡsuite).DerefOrNull())(keyMaterial, masterSecretʗ1, slice<byte>(label), seed);

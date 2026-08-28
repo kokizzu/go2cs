@@ -54,7 +54,7 @@ partial class main_package {
     ref var acc = ref heap(new array<byte>(4), out var Ꮡacc);
     h.acc.inner.Store(Ꮡacc);
     h.finalized = true;
-    return append(b, acc[..].ꓸꓸꓸ);
+    return appendꓸꓸꓸ(b, acc[..]);
 }
 
 [GoRecv] public static bool Verify(this ref DeepHash d, slice<byte> expected) {

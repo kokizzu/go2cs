@@ -59,7 +59,7 @@ public static (slice<byte>, error) ReadData(io.Reader r, uint64 n) {
             }
             return (default!, err);
         }
-        buf = append(buf, buf1[..(int)(next)].ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, buf1[..(int)(next)]);
         n -= next;
     }
     return (buf, default!);
@@ -97,7 +97,7 @@ public static (slice<byte>, error) ReadDataAt(io.ReaderAt r, uint64 n, int64 off
         if (err != default!) {
             return (default!, err);
         }
-        buf = append(buf, buf1[..(int)(next)].ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, buf1[..(int)(next)]);
         n -= next;
         off += (int64)next;
     }

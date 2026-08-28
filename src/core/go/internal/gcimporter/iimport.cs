@@ -230,7 +230,7 @@ internal static (ж<types.Package> pkg, error err) iImportData(ж<token.FileSet>
             typ.Complete();
         }
         // record all referenced packages as imports
-        var list = append((slice<ж<types.Package>>)(default!), pkgList[1..].ꓸꓸꓸ);
+        var list = appendꓸꓸꓸ((slice<ж<types.Package>>)(default!), pkgList[1..]);
         slices.SortFunc(list, (ж<types.Package> a, ж<types.Package> b) => strings.Compare(a.Path(), b.Path()));
         localpkg.SetImports(list);
         // package was imported completely and without errors

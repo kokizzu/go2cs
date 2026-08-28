@@ -456,7 +456,7 @@ public static ж<Cmd> Command(@string name, params ꓸꓸꓸstring argʗp) {
 
     var cmd = Ꮡ(new Cmd(
         Path: name,
-        Args: append(new @string[]{name}.slice(), arg.ꓸꓸꓸ)
+        Args: appendꓸꓸꓸ(new @string[]{name}.slice(), arg)
     ));
     {
         @string v = execwait.Value(); if (v != ""u8) {
@@ -801,7 +801,7 @@ public static error Start(this ж<Cmd> Ꮡc) {
             return err;
         }
         childFiles = append(childFiles, stderr);
-        childFiles = append(childFiles, c.ExtraFiles.ꓸꓸꓸ);
+        childFiles = appendꓸꓸꓸ(childFiles, c.ExtraFiles);
         (var env, err) = c.environ();
         if (err != default!) {
             return err;
@@ -1288,7 +1288,7 @@ internal static (nint n, error err) Write(this ж<prefixSuffixSaver> Ꮡw, slice
     {
         nint remain = w.N - len(dst); if (remain > 0) {
             nint add = min(len(p), remain);
-            dst = append(dst, p[..(int)(add)].ꓸꓸꓸ);
+            dst = appendꓸꓸꓸ(dst, p[..(int)(add)]);
             p = p[(int)(add)..];
         }
     }
@@ -1304,7 +1304,7 @@ internal static readonly @string bytesˢ = " bytes ...\n"u8;
         return w.prefix;
     }
     if (w.skipped == 0) {
-        return append(w.prefix, w.suffix.ꓸꓸꓸ);
+        return appendꓸꓸꓸ(w.prefix, w.suffix);
     }
     bytes.Buffer buf = default!;
     buf.Grow(len(w.prefix) + len(w.suffix) + 50);

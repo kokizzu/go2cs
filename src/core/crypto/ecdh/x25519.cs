@@ -60,7 +60,7 @@ internal static (ж<PrivateKey>, error) NewPrivateKey(this ж<x25519Curve> Ꮡc,
     }
     return (Ꮡ(new PrivateKey(
         curve: new x25519CurveжΔCurve(Ꮡc),
-        privateKey: append(new byte[]{}.slice(), key.ꓸꓸꓸ)
+        privateKey: appendꓸꓸꓸ(new byte[]{}.slice(), key)
     )), default!);
 }
 
@@ -85,7 +85,7 @@ internal static (ж<ΔPublicKey>, error) NewPublicKey(this ж<x25519Curve> Ꮡc,
     }
     return (Ꮡ(new ΔPublicKey(
         curve: new x25519CurveжΔCurve(Ꮡc),
-        publicKey: append(new byte[]{}.slice(), key.ꓸꓸꓸ)
+        publicKey: appendꓸꓸꓸ(new byte[]{}.slice(), key)
     )), default!);
 }
 

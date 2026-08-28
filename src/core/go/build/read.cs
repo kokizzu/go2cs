@@ -568,7 +568,7 @@ internal static error readGoInfo(io.Reader f, ref fileInfo info) {
             // and we can pretend they are not there to help go list succeed with what it knows.
             var (embs, err) = parseGoEmbed(((@string)line), pos);
             if (err == default!) {
-                info.embeds = append(info.embeds, embs.ꓸꓸꓸ);
+                info.embeds = appendꓸꓸꓸ(info.embeds, embs);
             }
         }
     }

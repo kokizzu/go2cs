@@ -271,7 +271,7 @@ internal static slice<byte> fmtE(slice<byte> buf, byte fmt, nint prec, @decimal 
         nint i = 1;
         nint m = min(len(d.mant), prec + 1);
         if (i < m) {
-            buf = append(buf, d.mant[(int)(i)..(int)(m)].ꓸꓸꓸ);
+            buf = appendꓸꓸꓸ(buf, d.mant[(int)(i)..(int)(m)]);
             i = m;
         }
         for (; i <= prec; i++) {
@@ -303,7 +303,7 @@ internal static slice<byte> fmtF(slice<byte> buf, nint prec, @decimal d) {
     // integer, padded with zeros as needed
     if (d.exp > 0){
         nint m = min(len(d.mant), d.exp);
-        buf = append(buf, d.mant[..(int)(m)].ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, d.mant[..(int)(m)]);
         for (; m < d.exp; m++) {
             buf = append(buf, (byte)((rune)'0'));
         }
@@ -350,7 +350,7 @@ internal static slice<byte> fmtF(slice<byte> buf, nint prec, @decimal d) {
         }}
     }
 
-    buf = append(buf, m.utoa(10).ꓸꓸꓸ);
+    buf = appendꓸꓸꓸ(buf, m.utoa(10));
     buf = append(buf, (byte)((rune)'p'));
     var e = (int64)x.exp - (int64)x.prec;
     if (e >= 0) {
@@ -414,7 +414,7 @@ internal static slice<byte> fmtX(this ж<Float> Ꮡx, slice<byte> buf, nint prec
     buf = append(buf, ((@string)"0x1"u8).ꓸꓸꓸ);
     if (len(hm) > 1) {
         buf = append(buf, (byte)((rune)'.'));
-        buf = append(buf, hm[1..].ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, hm[1..]);
     }
     buf = append(buf, (byte)((rune)'p'));
     if (exp64 >= 0){
@@ -453,7 +453,7 @@ internal static slice<byte> fmtX(this ж<Float> Ꮡx, slice<byte> buf, nint prec
     }
     m = m[(int)(i)..];
     buf = append(buf, ((@string)"0x."u8).ꓸꓸꓸ);
-    buf = append(buf, bytes_package.TrimRight(m.utoa(16), "0"u8).ꓸꓸꓸ);
+    buf = appendꓸꓸꓸ(buf, bytes_package.TrimRight(m.utoa(16), "0"u8));
     buf = append(buf, (byte)((rune)'p'));
     if (x.exp >= 0) {
         buf = append(buf, (byte)((rune)'+'));

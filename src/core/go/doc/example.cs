@@ -155,7 +155,7 @@ public static slice<ж<Example>> Examples(params ꓸꓸꓸжastꓸFile testFiles
             flist[0].Value.Code = new ast.FileжNode(@file);
             flist[0].Value.Play = playExampleFile(ref (@file).DerefOrNull());
         }
-        list = append(list, flist.ꓸꓸꓸ);
+        list = appendꓸꓸꓸ(list, flist);
     }
     // sort by name
     slices.SortFunc(list, (ж<Example> a, ж<Example> b) => cmp.Compare((~a).Name, (~b).Name));
@@ -362,7 +362,7 @@ internal static ж<ast.File> playExample(ref ast.File @file, ref ast.FuncDecl f)
         Rparen: 1
     ));
     // treats this as a factored import.
-    importDecl.Value.Specs = append(namedImports, blankImports.ꓸꓸꓸ);
+    importDecl.Value.Specs = appendꓸꓸꓸ(namedImports, blankImports);
     // Synthesize main function.
     var funcDecl = Ꮡ(new ast.FuncDecl(
         Name: ast.NewIdent(mainˢ),
@@ -371,7 +371,7 @@ internal static ж<ast.File> playExample(ref ast.File @file, ref ast.FuncDecl f)
     ));
     var decls = new slice<ast.Decl>(0, 2 + len(depDecls));
     decls = append(decls, (ast.Decl)(new ast.GenDeclжDecl(importDecl)));
-    decls = append(decls, depDecls.ꓸꓸꓸ);
+    decls = appendꓸꓸꓸ(decls, depDecls);
     decls = append(decls, (ast.Decl)(new ast.FuncDeclжDecl(funcDecl)));
     slices.SortFunc(decls, (ast.Decl a, ast.Decl b) => cmp.Compare(a.Pos(), b.Pos()));
     slices.SortFunc(comments, (ж<ast.CommentGroup> a, ж<ast.CommentGroup> b) => cmp.Compare(a.Pos(), b.Pos()));
@@ -468,7 +468,7 @@ internal static (slice<ast.Decl>, map<@string, bool>) findDeclsAndUnresolved(ast
                 case ж<ast.TypeSpec> s: {
                     inspectFieldList((~s).TypeParams);
                     ast.Inspect((~s).Type, inspectFunc);
-                    depDecls = append(depDecls, typMethods[(~(~s).Name).Name].ꓸꓸꓸ);
+                    depDecls = appendꓸꓸꓸ(depDecls, typMethods[(~(~s).Name).Name]);
                     break;
                 }
                 case ж<ast.ValueSpec> s: {

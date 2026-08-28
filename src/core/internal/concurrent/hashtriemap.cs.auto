@@ -49,10 +49,7 @@ partial class concurrent_package {
 // is designed around frequent loads, but offers decent performance for stores
 // and deletes as well, especially if the map is larger. It's primary use-case is
 // the unique package, but can be used elsewhere as well.
-[GoType] partial struct HashTrieMap<K, V>
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+[GoType] partial struct HashTrieMap<K, V> {
     internal ж<Δindirect<K, V>> root;
     internal Func<@unsafe.Pointer, uintptr, uintptr> keyHash;
     internal Func<@unsafe.Pointer, @unsafe.Pointer, bool> keyEqual;
@@ -61,10 +58,7 @@ partial class concurrent_package {
 }
 
 // NewHashTrieMap creates a new HashTrieMap for the provided key and value.
-public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>() {
     map<K, V> m = default!;
     var mapType = abi.TypeOf(m).MapType();
     var ht = Ꮡ(new HashTrieMap<K, V>(
@@ -84,10 +78,7 @@ public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
 // Load returns the value stored in the map for a key, or nil if no
 // value is present.
 // The ok result indicates whether value was found in the map.
-[GoRecv] public static (V value, bool ok) Load<K, V>(this ref HashTrieMap<K, V> ht, K keyʗp)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+[GoRecv] public static (V value, bool ok) Load<K, V>(this ref HashTrieMap<K, V> ht, K keyʗp) {
     ref var key = ref heap(keyʗp, out var Ꮡkey);
 
     var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey)), ht.seed);
@@ -110,14 +101,11 @@ public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
 // LoadOrStore returns the existing value for the key if present.
 // Otherwise, it stores and returns the given value.
 // The loaded result is true if the value was loaded, false if stored.
-public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K keyʗp, V value)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new() {
+public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K keyʗp, V value) {
     V result = default!;
     bool loaded = default!;
     GoFrame ᒐ = default;
-    try
-    {
+    try {
         ref var ht = ref Ꮡht.DerefOrNull();
 
         ref var key = ref heap(keyʗp, out var Ꮡkey);
@@ -204,10 +192,7 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
 
 // expand takes oldEntry and newEntry whose hashes conflict from bit 64 down to hashShift and
 // produces a subtree of indirect nodes to hold the two new entries.
-[GoRecv] internal static ж<node<K, V>> expand<K, V>(this ref HashTrieMap<K, V> ht, ж<Δentry<K, V>> ᏑoldEntry, ж<Δentry<K, V>> ᏑnewEntry, uintptr newHash, nuint hashShift, ж<Δindirect<K, V>> Ꮡparent)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+[GoRecv] internal static ж<node<K, V>> expand<K, V>(this ref HashTrieMap<K, V> ht, ж<Δentry<K, V>> ᏑoldEntry, ж<Δentry<K, V>> ᏑnewEntry, uintptr newHash, nuint hashShift, ж<Δindirect<K, V>> Ꮡparent) {
     ref var parent = ref Ꮡparent.DerefOrNull();
 
     // Check for a hash collision.
@@ -244,10 +229,7 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
 //
 // If there is no current value for key in the map, CompareAndDelete returns false
 // (even if the old value is the nil interface value).
-[GoRecv] public static bool /*deleted*/ CompareAndDelete<K, V>(this ref HashTrieMap<K, V> ht, K keyʗp, V old)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+[GoRecv] public static bool /*deleted*/ CompareAndDelete<K, V>(this ref HashTrieMap<K, V> ht, K keyʗp, V old) {
     bool deleted = default!;
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
@@ -342,19 +324,13 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
 // but is guaranteed to visit each unique key-value pair only once. It is
 // safe to operate on the tree during iteration. No particular enumeration
 // order is guaranteed.
-public static Action<Func<K, V, bool>> All<K, V>(this ж<HashTrieMap<K, V>> Ꮡht)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+public static Action<Func<K, V, bool>> All<K, V>(this ж<HashTrieMap<K, V>> Ꮡht) {
     return (Func<K, V, bool> yield) => {
         Ꮡht.Value.iter(Ꮡht.Value.root, yield);
     };
 }
 
-[GoRecv] internal static bool iter<K, V>(this ref HashTrieMap<K, V> ht, ж<Δindirect<K, V>> Ꮡi, Func<K, V, bool> yield)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+[GoRecv] internal static bool iter<K, V>(this ref HashTrieMap<K, V> ht, ж<Δindirect<K, V>> Ꮡi, Func<K, V, bool> yield) {
     ref var i = ref Ꮡi.DerefOrNull();
 
     foreach (var (j, _) in i.children) {
@@ -384,10 +360,7 @@ internal static UntypedInt nChildren => /* 1 << nChildrenLog2 */ 16;
 internal static UntypedInt nChildrenMask => /* nChildren - 1 */ 15;
 
 // indirect is an internal node in the hash-trie.
-[GoType] [GoValueClone("children")] partial struct Δindirect<K, V>
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+[GoType] [GoValueClone("children")] partial struct Δindirect<K, V> {
     internal partial ref node<K, V> node { get; }
     internal atomic.Bool dead;
     internal sync.Mutex mu; // Protects mutation to children and any children that are entry nodes.
@@ -395,17 +368,11 @@ internal static UntypedInt nChildrenMask => /* nChildren - 1 */ 15;
     internal array<atomic.Pointer<node<K, V>>> children = new(nChildren);
 }
 
-internal static ж<Δindirect<K, V>> newIndirectNode<K, V>(ж<Δindirect<K, V>> Ꮡparent)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+internal static ж<Δindirect<K, V>> newIndirectNode<K, V>(ж<Δindirect<K, V>> Ꮡparent) {
     return Ꮡ(new Δindirect<K, V>(node: new node<K, V>(isEntry: false), parent: Ꮡparent));
 }
 
-[GoRecv] internal static bool empty<K, V>(this ref Δindirect<K, V> i)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+[GoRecv] internal static bool empty<K, V>(this ref Δindirect<K, V> i) {
     nint nc = 0;
     foreach (var (j, _) in i.children) {
         if (Ꮡ(i.children, j).Load() != nil) {
@@ -416,20 +383,14 @@ internal static ж<Δindirect<K, V>> newIndirectNode<K, V>(ж<Δindirect<K, V>> 
 }
 
 // entry is a leaf node in the hash-trie.
-[GoType] partial struct Δentry<K, V>
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+[GoType] partial struct Δentry<K, V> {
     internal partial ref node<K, V> node { get; }
     internal atomic.Pointer<Δentry<K, V>> overflow; // Overflow for hash collisions.
     internal K key;
     internal V value;
 }
 
-internal static ж<Δentry<K, V>> newEntryNode<K, V>(K key, V value)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+internal static ж<Δentry<K, V>> newEntryNode<K, V>(K key, V value) {
     return Ꮡ(new Δentry<K, V>(
         node: new node<K, V>(isEntry: true),
         key: key,
@@ -437,10 +398,7 @@ internal static ж<Δentry<K, V>> newEntryNode<K, V>(K key, V value)
     ));
 }
 
-internal static (V, bool) lookup<K, V>(this ж<Δentry<K, V>> Ꮡe, K keyʗp, Func<@unsafe.Pointer, @unsafe.Pointer, bool> equal)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+internal static (V, bool) lookup<K, V>(this ж<Δentry<K, V>> Ꮡe, K keyʗp, Func<@unsafe.Pointer, @unsafe.Pointer, bool> equal) {
     ref var e = ref Ꮡe.DerefOrNull();
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
@@ -457,10 +415,7 @@ internal static (V, bool) lookup<K, V>(this ж<Δentry<K, V>> Ꮡe, K keyʗp, Fu
 // equal. Returns the new entry chain and whether or not anything was deleted.
 //
 // compareAndDelete must be called under the mutex of the indirect node which e is a child of.
-internal static (ж<Δentry<K, V>>, bool) compareAndDelete<K, V>(this ж<Δentry<K, V>> Ꮡhead, K keyʗp, V valueʗp, Func<@unsafe.Pointer, @unsafe.Pointer, bool> keyEqual, Func<@unsafe.Pointer, @unsafe.Pointer, bool> valEqual)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+internal static (ж<Δentry<K, V>>, bool) compareAndDelete<K, V>(this ж<Δentry<K, V>> Ꮡhead, K keyʗp, V valueʗp, Func<@unsafe.Pointer, @unsafe.Pointer, bool> keyEqual, Func<@unsafe.Pointer, @unsafe.Pointer, bool> valEqual) {
     ref var head = ref Ꮡhead.DerefOrNull();
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
@@ -484,17 +439,11 @@ internal static (ж<Δentry<K, V>>, bool) compareAndDelete<K, V>(this ж<Δentry
 
 // node is the header for a node. It's polymorphic and
 // is actually either an entry or an indirect.
-[GoType] partial struct node<K, V>
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+[GoType] partial struct node<K, V> {
     internal bool isEntry;
 }
 
-internal static ж<Δentry<K, V>> entry<K, V>(this ж<node<K, V>> Ꮡn)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+internal static ж<Δentry<K, V>> entry<K, V>(this ж<node<K, V>> Ꮡn) {
     ref var n = ref Ꮡn.DerefOrNull();
 
     if (!n.isEntry) {
@@ -503,10 +452,7 @@ internal static ж<Δentry<K, V>> entry<K, V>(this ж<node<K, V>> Ꮡn)
     return Ꮡn.Reinterpret<node<K, V>, Δentry<K, V>>();
 }
 
-internal static ж<Δindirect<K, V>> indirect<K, V>(this ж<node<K, V>> Ꮡn)
-    where K : /* comparable */ new()
-    where V : /* comparable */ new()
-{
+internal static ж<Δindirect<K, V>> indirect<K, V>(this ж<node<K, V>> Ꮡn) {
     ref var n = ref Ꮡn.DerefOrNull();
 
     if (n.isEntry) {

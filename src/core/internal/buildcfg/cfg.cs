@@ -412,7 +412,7 @@ public static @string Getgoextlinkenabled() {
 
 internal static slice<@string> toolTags() {
     var tags = experimentTags();
-    tags = append(tags, gogoarchTags().ꓸꓸꓸ);
+    tags = appendꓸꓸꓸ(tags, gogoarchTags());
     return tags;
 }
 

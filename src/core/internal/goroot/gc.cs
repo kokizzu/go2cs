@@ -149,7 +149,7 @@ private static readonly @string dumpmachineˢ = "-dumpmachine"u8;
             }
         }
     }
-    gd.dirs = append(gd.dirs, lastDirs.ꓸꓸꓸ);
+    gd.dirs = appendꓸꓸꓸ(gd.dirs, lastDirs);
 }
 
 // isStandard reports whether path is a standard library for gccgo.

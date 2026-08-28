@@ -64,8 +64,8 @@ public static error Write(this ж<FileSet> Ꮡs, Func<any, error> encode) {
             Name: (~f).name,
             Base: (~f).@base,
             Size: (~f).size,
-            Lines: append(slice<nint>(default!), (~f).lines.ꓸꓸꓸ),
-            Infos: append(slice<lineInfo>(default!), (~f).infos.ꓸꓸꓸ)
+            Lines: appendꓸꓸꓸ(slice<nint>(default!), (~f).lines),
+            Infos: appendꓸꓸꓸ(slice<lineInfo>(default!), (~f).infos)
         );
         f.of(token_package.ΔFile.Ꮡmutex).Unlock();
     }

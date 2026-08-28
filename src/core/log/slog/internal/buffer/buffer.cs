@@ -46,7 +46,7 @@ public static void Free(this ж<Buffer> Ꮡb) {
 }
 
 [GoRecv] public static (nint, error) Write(this ref Buffer b, slice<byte> p) {
-    b = append(b, p.ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, p);
     return (len(p), default!);
 }
 

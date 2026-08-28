@@ -68,10 +68,10 @@ internal static UntypedInt rate256 => 136;
 internal static slice<byte> bytepad(slice<byte> input, nint w) {
     // leftEncode always returns max 9 bytes
     var buf = new slice<byte>(0, 9 + len(input) + w);
-    buf = append(buf, leftEncode((uint64)w).ꓸꓸꓸ);
-    buf = append(buf, input.ꓸꓸꓸ);
+    buf = appendꓸꓸꓸ(buf, leftEncode((uint64)w));
+    buf = appendꓸꓸꓸ(buf, input);
     nint padlen = w - (len(buf) % w);
-    return append(buf, new slice<byte>(padlen).ꓸꓸꓸ);
+    return appendꓸꓸꓸ(buf, new slice<byte>(padlen));
 }
 
 internal static slice<byte> leftEncode(uint64 value) {
@@ -92,10 +92,10 @@ internal static ShakeHash newCShake(slice<byte> N, slice<byte> S, nint rate, nin
     c = new cshakeState(state: Ꮡ(new state(rate: rate, outputLen: outputLen, dsbyte: dsbyte)));
     // leftEncode returns max 9 bytes
     c.initBlock = new slice<byte>(0, 9 * 2 + len(N) + len(S));
-    c.initBlock = append(c.initBlock, leftEncode((uint64)(len(N) * 8)).ꓸꓸꓸ);
-    c.initBlock = append(c.initBlock, N.ꓸꓸꓸ);
-    c.initBlock = append(c.initBlock, leftEncode((uint64)(len(S) * 8)).ꓸꓸꓸ);
-    c.initBlock = append(c.initBlock, S.ꓸꓸꓸ);
+    c.initBlock = appendꓸꓸꓸ(c.initBlock, leftEncode((uint64)(len(N) * 8)));
+    c.initBlock = appendꓸꓸꓸ(c.initBlock, N);
+    c.initBlock = appendꓸꓸꓸ(c.initBlock, leftEncode((uint64)(len(S) * 8)));
+    c.initBlock = appendꓸꓸꓸ(c.initBlock, S);
     Ꮡc.Write(bytepad(c.initBlock, c.rate));
     return new cshakeStateжShakeHash(Ꮡc);
 }

@@ -45,7 +45,7 @@ internal static (nint, error) Read(this ж<reader> Ꮡr, slice<byte> p) {
 }
 
 [GoRecv] internal static (nint, error) Write(this ref writer w, slice<byte> p) {
-    w.@out = append(w.@out, p.ꓸꓸꓸ);
+    w.@out = appendꓸꓸꓸ(w.@out, p);
     return (len(p), default!);
 }
 

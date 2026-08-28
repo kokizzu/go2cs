@@ -99,7 +99,7 @@ internal static Δtermlist norm(this Δtermlist xl) {
 
 // union returns the union xl ∪ yl.
 internal static Δtermlist union(this Δtermlist xl, Δtermlist yl) {
-    return append(xl, yl.ꓸꓸꓸ).norm();
+    return appendꓸꓸꓸ(xl, yl).norm();
 }
 
 // intersect returns the intersection xl ∩ yl.

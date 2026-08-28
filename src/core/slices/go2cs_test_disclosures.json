@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestConcat",
+      "class": "alloc-count-semantics",
+      "signature": " allocated ",
+      "reason": "exact-count allocBytes/AllocsPerRun asserts (want 1 allocation per Concat): the managed measurement mixes golib's object counter with byte-derived readings the CLR regime cannot denominate in Go mallocs (measured: want 1, reading 2 for the value cases and 280 for the empty case at the B2 kind-split emission with the slice-shaped spread landed), so no allocation behavior can satisfy the count assert"
+    },
+    {
+      "name": "TestGrow",
+      "class": "alloc-count-semantics",
+      "signature": "Grow should ",
+      "reason": "want-zero-then-exactly-one allocation asserts around Grow: the managed regime reads 112 where Go wants 0 (sufficient capacity) and 2 where Go wants 1 (insufficient) — the byte-derived shim and golib's object counter cannot denominate the CLR's behavior in Go malloc units, the established alloc-count-semantics shape"
+    },
+    {
+      "name": "TestInsert",
+      "class": "alloc-profile",
+      "signature": "too many allocations inserting ",
+      "reason": "an allocation BUDGET assert (want < 25 inserting 50 elements): Go's Insert rotates through two in-place appends whose temporaries escape analysis keeps on the stack, while the managed model heap-boxes each rotation temporary — 242 golib objects at the B2 kind-split emission with the slice-shaped spread landed, a structural stack-vs-heap profile no slimming brings under the budget"
+    }
+  ]
+}

@@ -536,7 +536,7 @@ public static slice<byte> Join(slice<slice<byte>> s, slice<byte> sep) {
     }
     if (len(s) == 1) {
         // Just return a copy.
-        return append(slice<byte>(default!), s[0].ꓸꓸꓸ);
+        return appendꓸꓸꓸ(slice<byte>(default!), s[0]);
     }
     nint n = default!;
     if (len(sep) > 0) {
@@ -673,7 +673,7 @@ public static slice<byte> ToUpper(slice<byte> s) {
         // optimize for ASCII-only byte slices.
         if (!hasLower) {
             // Just return a copy.
-            return append(slice<byte>(""u8), s.ꓸꓸꓸ);
+            return appendꓸꓸꓸ(slice<byte>(""u8), s);
         }
         var b = bytealg.MakeNoZero(len(s)).slice(-1, len(s), len(s));
         for (nint i = 0; i < len(s); i++) {
@@ -703,7 +703,7 @@ public static slice<byte> ToLower(slice<byte> s) {
     if (isASCII) {
         // optimize for ASCII-only byte slices.
         if (!hasUpper) {
-            return append(slice<byte>(""u8), s.ꓸꓸꓸ);
+            return appendꓸꓸꓸ(slice<byte>(""u8), s);
         }
         var b = bytealg.MakeNoZero(len(s)).slice(-1, len(s), len(s));
         for (nint i = 0; i < len(s); i++) {
@@ -759,12 +759,12 @@ public static slice<byte> ToValidUTF8(slice<byte> s, slice<byte> replacement) {
             i++;
             if (!invalid) {
                 invalid = true;
-                b = append(b, replacement.ꓸꓸꓸ);
+                b = appendꓸꓸꓸ(b, replacement);
             }
             continue;
         }
         invalid = false;
-        b = append(b, s[(int)(i)..(int)(i + wid)].ꓸꓸꓸ);
+        b = appendꓸꓸꓸ(b, s[(int)(i)..(int)(i + wid)]);
         i += wid;
     }
     return b;
@@ -1161,7 +1161,7 @@ public static slice<byte> Replace(slice<byte> s, slice<byte> old, slice<byte> @n
     }
     if (m == 0) {
         // Just return a copy.
-        return append(slice<byte>(default!), s.ꓸꓸꓸ);
+        return appendꓸꓸꓸ(slice<byte>(default!), s);
     }
     if (n < 0 || m < n) {
         n = m;
@@ -1391,7 +1391,7 @@ public static slice<byte> Clone(slice<byte> b) {
     if (b == default!) {
         return default!;
     }
-    return append(new byte[]{}.slice(), b.ꓸꓸꓸ);
+    return appendꓸꓸꓸ(new byte[]{}.slice(), b);
 }
 
 // CutPrefix returns s without the provided leading prefix byte slice

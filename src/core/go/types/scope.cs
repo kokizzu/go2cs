@@ -202,7 +202,7 @@ internal static void squash(this ж<ΔScope> Ꮡs, Action<Object, Object> err) {
     nint k = len((~p).children) - 1;
     p.Value.children[j] = (~p).children[k];
     p.Value.children = (~p).children[..(int)(k)];
-    p.Value.children = append((~p).children, s.children.ꓸꓸꓸ);
+    p.Value.children = appendꓸꓸꓸ((~p).children, s.children);
     s.children = default!;
     s.elems = default!;
 }

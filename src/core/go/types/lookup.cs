@@ -627,7 +627,7 @@ internal static ΔType derefStructPtr(ΔType typ) {
 // The result does not share its underlying array with list.
 internal static slice<nint> concat(slice<nint> list, nint i) {
     slice<nint> t = default!;
-    t = append(t, list.ꓸꓸꓸ);
+    t = appendꓸꓸꓸ(t, list);
     return append(t, i);
 }
 

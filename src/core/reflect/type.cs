@@ -1079,7 +1079,7 @@ internal static (StructField result, bool ok) FieldByNameFunc(this ж<structType
                     }
                     result = tΔ1.Field(i);
                     result.Index = default!;
-                    result.Index = builtin.append(result.Index, scan.index.ꓸꓸꓸ);
+                    result.Index = builtin.appendꓸꓸꓸ(result.Index, scan.index);
                     result.Index = builtin.append(result.Index, i);
                     ok = true;
                     continue;
@@ -1103,7 +1103,7 @@ internal static (StructField result, bool ok) FieldByNameFunc(this ж<structType
                     nextCount[styp] = 2; // exact multiple doesn't matter
                 }
                 slice<nint> index = default!;
-                index = builtin.append(index, scan.index.ꓸꓸꓸ);
+                index = builtin.appendꓸꓸꓸ(index, scan.index);
                 index = builtin.append(index, i);
                 next = builtin.append(next, new fieldScan(styp, index));
             }
@@ -1933,7 +1933,7 @@ internal static slice<byte> appendGCProg(slice<byte> dst, ж<abi.Type> Ꮡtyp) {
         // Element has GC program; emit one element.
         var n = (uintptr)(~typ.GCData.Reinterpret<byte, uint32>());
         var prog = typ.GcSlice(4, 4 + n - 1);
-        return builtin.append(dst, prog.ꓸꓸꓸ);
+        return builtin.appendꓸꓸꓸ(dst, prog);
     }
     // Element is small with pointer mask; use as literal bits.
     var ptrs = typ.PtrBytes / (uintptr)goarch.PtrSize;
@@ -1941,11 +1941,11 @@ internal static slice<byte> appendGCProg(slice<byte> dst, ж<abi.Type> Ꮡtyp) {
     // Emit 120-bit chunks of full bytes (max is 127 but we avoid using partial bytes).
     for (; ptrs > 120; ptrs -= 120) {
         dst = builtin.append(dst, (byte)(120));
-        dst = builtin.append(dst, mask[..15].ꓸꓸꓸ);
+        dst = builtin.appendꓸꓸꓸ(dst, mask[..15]);
         mask = mask[15..];
     }
     dst = builtin.append(dst, (byte)ptrs);
-    dst = builtin.append(dst, mask.ꓸꓸꓸ);
+    dst = builtin.appendꓸꓸꓸ(dst, mask);
     return dst;
 }
 

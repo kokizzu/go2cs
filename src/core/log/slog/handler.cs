@@ -468,7 +468,7 @@ internal static handleState newHandleState(this ж<commonHandler> Ꮡh, ж<buffe
     );
     if (h.opts.ReplaceAttr != default!) {
         s.groups = ᏑgroupPool.Get()._<ж<slice<@string>>>();
-        s.groups.ValueSlot = builtin.append(s.groups.ValueSlot, h.groups[..(int)(h.nOpenGroups)].ꓸꓸꓸ);
+        s.groups.ValueSlot = builtin.appendꓸꓸꓸ(s.groups.ValueSlot, h.groups[..(int)(h.nOpenGroups)]);
     }
     return s;
 }
@@ -700,7 +700,7 @@ internal static slice<byte> appendRFC3339Millis(slice<byte> b, time.Time t) {
     nint n = len(b);
     t = t.Truncate(time_package.Millisecond).Add(time_package.Millisecond / 10);
     b = t.AppendFormat(b, time_package.RFC3339Nano);
-    b = builtin.append(b[..(int)(n + prefixLen)], b[(int)(n + prefixLen + 1)..].ꓸꓸꓸ); // drop the 4th digit
+    b = builtin.appendꓸꓸꓸ(b[..(int)(n + prefixLen)], b[(int)(n + prefixLen + 1)..]); // drop the 4th digit
     return b;
 }
 

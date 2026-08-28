@@ -236,7 +236,7 @@ internal static readonly @string procNetIgmp6ˢ = "/proc/net/igmp6"u8;
 internal static (slice<ΔAddr>, error) interfaceMulticastAddrTable(ж<Interface> Ꮡifi) {
     var ifmat4 = parseProcNetIGMP(procNetIgmpˢ, Ꮡifi);
     var ifmat6 = parseProcNetIGMP6(procNetIgmp6ˢ, Ꮡifi);
-    return (append(ifmat4, ifmat6.ꓸꓸꓸ), default!);
+    return (appendꓸꓸꓸ(ifmat4, ifmat6), default!);
 }
 
 internal static slice<ΔAddr> parseProcNetIGMP(@string path, ж<Interface> Ꮡifi) {

@@ -538,7 +538,7 @@ public static void WriteImportcfg(testing.TB t, @string dstPath, map<@string, @s
     if (len(pkgs) > 0) {
         // Use 'go list' to resolve any missing packages and rewrite the import map.
         var cmd = Command(t, GoToolPath(t), listˢ, exportˢ, depsˢ, "-f", ifNeImportPathCommandˢ);
-        cmd.Value.Args = append((~cmd).Args, pkgs.ꓸꓸꓸ);
+        cmd.Value.Args = appendꓸꓸꓸ((~cmd).Args, pkgs);
         cmd.Value.Stderr = new strings_BuilderжWriter(@new<strings.Builder>());
         var (@out, err) = cmd.Output();
         if (err != default!) {

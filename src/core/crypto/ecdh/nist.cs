@@ -121,7 +121,7 @@ internal static (ж<PrivateKey>, error) NewPrivateKey<Point>(this ж<nistCurve<P
     }
     var k = Ꮡ(new PrivateKey(
         curve: new nistCurveжΔCurve<Point>(Ꮡc),
-        privateKey: append(new byte[]{}.slice(), key.ꓸꓸꓸ)
+        privateKey: appendꓸꓸꓸ(new byte[]{}.slice(), key)
     ));
     return (k, default!);
 }
@@ -130,7 +130,7 @@ internal static (ж<PrivateKey>, error) newBoringPrivateKey(ΔCurve c, ж<boring
     var k = Ꮡ(new PrivateKey(
         curve: c,
         boring: Ꮡbk,
-        privateKey: append(slice<byte>(default!), privateKey.ꓸꓸꓸ)
+        privateKey: appendꓸꓸꓸ(slice<byte>(default!), privateKey)
     ));
     return (k, default!);
 }
@@ -213,7 +213,7 @@ internal static (ж<ΔPublicKey>, error) NewPublicKey<Point>(this ж<nistCurve<P
     }
     var k = Ꮡ(new ΔPublicKey(
         curve: new nistCurveжΔCurve<Point>(Ꮡc),
-        publicKey: append(new byte[]{}.slice(), key.ꓸꓸꓸ)
+        publicKey: appendꓸꓸꓸ(new byte[]{}.slice(), key)
     ));
     if (boring.Enabled){
         var (bk, err) = boring.NewPublicKeyECDH(c.name, (~k).publicKey);

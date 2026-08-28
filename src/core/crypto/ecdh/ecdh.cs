@@ -110,7 +110,7 @@ partial class ecdh_package {
     // Copy the public key to a fixed size buffer that can get allocated on the
     // caller's stack after inlining.
     array<byte> buf = new(133);
-    return append(buf[..0], k.publicKey.ꓸꓸꓸ);
+    return appendꓸꓸꓸ(buf[..0], k.publicKey);
 }
 
 // Equal returns whether x represents the same public key as k.
@@ -174,7 +174,7 @@ public static (slice<byte>, error) ECDH(this ж<PrivateKey> Ꮡk, ж<ΔPublicKey
     // Copy the private key to a fixed size buffer that can get allocated on the
     // caller's stack after inlining.
     array<byte> buf = new(66);
-    return append(buf[..0], k.privateKey.ꓸꓸꓸ);
+    return appendꓸꓸꓸ(buf[..0], k.privateKey);
 }
 
 // Equal returns whether x represents the same private key as k.

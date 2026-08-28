@@ -118,7 +118,7 @@ internal static slice<@string> argslice;
 
 //go:linkname syscall_runtime_envs syscall.runtime_envs
 public static slice<@string> syscall_runtime_envs() {
-    return append(new @string[]{}.slice(), envs.ꓸꓸꓸ);
+    return appendꓸꓸꓸ(new @string[]{}.slice(), envs);
 }
 
 //go:linkname syscall_Getpagesize syscall.Getpagesize
@@ -128,7 +128,7 @@ internal static nint syscall_Getpagesize() {
 
 //go:linkname os_runtime_args os.runtime_args
 public static slice<@string> os_runtime_args() {
-    return append(new @string[]{}.slice(), argslice.ꓸꓸꓸ);
+    return appendꓸꓸꓸ(new @string[]{}.slice(), argslice);
 }
 
 //go:linkname syscall_Exit syscall.Exit

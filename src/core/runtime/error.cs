@@ -183,7 +183,7 @@ internal static slice<byte> appendIntStr(slice<byte> b, int64 v, bool signed) {
         v = -v;
     }
     array<byte> buf = new(20);
-    b = append(b, itoa(buf[..], (uint64)v).ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, itoa(buf[..], (uint64)v));
     return b;
 }
 

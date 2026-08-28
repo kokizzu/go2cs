@@ -122,7 +122,7 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
     // recordVarDecl records them for the given position.
     void recordVarDecl(tokenꓸPos pos) {
         varDeclPos = pos;
-        ᏑbadJumps.ValueSlot = append(ᏑbadJumps.ValueSlot[..0], ᏑfwdJumps.ValueSlot.ꓸꓸꓸ); // copy fwdJumps to badJumps
+        ᏑbadJumps.ValueSlot = appendꓸꓸꓸ(ᏑbadJumps.ValueSlot[..0], ᏑfwdJumps.ValueSlot); // copy fwdJumps to badJumps
     }
     bool jumpsOverVarDecl(ж<ast.BranchStmt> jmp) {
         if (varDeclPos.IsValid()) {
@@ -138,7 +138,7 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
     void blockBranches(ж<ast.LabeledStmt> lstmtΔ1, slice<ast.Stmt> listΔ1) {
         // Unresolved forward jumps inside the nested block
         // become forward jumps in the current block.
-        ᏑfwdJumps.ValueSlot = append(ᏑfwdJumps.ValueSlot, Ꮡcheck.blockBranches(Ꮡall, bʗ1, lstmtΔ1, listΔ1).ꓸꓸꓸ);
+        ᏑfwdJumps.ValueSlot = appendꓸꓸꓸ(ᏑfwdJumps.ValueSlot, Ꮡcheck.blockBranches(Ꮡall, bʗ1, lstmtΔ1, listΔ1));
     }
     ref var stmtBranches = ref heap<Action<ast.Stmt>>(out var ᏑstmtBranches);
     var bʗ2 = b;

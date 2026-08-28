@@ -216,7 +216,7 @@ internal static (slice<byte>, error) encodeInnerClientHello(ж<clientHelloMsg> �
         paddingLen = maxNameLength + 9;
     }
     paddingLen = 31 - ((len(h) + paddingLen - 1) % 32);
-    return (append(h, new slice<byte>(paddingLen).ꓸꓸꓸ), default!);
+    return (appendꓸꓸꓸ(h, new slice<byte>(paddingLen)), default!);
 }
 
 internal static (slice<byte>, error) generateOuterECHExt(uint8 id, uint16 kdfID, uint16 aeadID, slice<byte> encodedKey, slice<byte> payload) {

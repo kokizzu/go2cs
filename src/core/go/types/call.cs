@@ -640,10 +640,10 @@ internal static ж<ΔSignature> /*rsig*/ arguments(this ж<Checker> Ꮡcheck, ж
                     asig = tmp._<ж<ΔSignature>>();
                     asig.Value.tparams = Ꮡ(new TypeParamList(atparams)); // renameTParams doesn't touch associated type parameters
                     arg.Value.typ = new ΔSignatureжΔType(asig); // new type identity for the function argument
-                    tparams = append(tparams, atparams.ꓸꓸꓸ);
+                    tparams = appendꓸꓸꓸ(tparams, atparams);
                     // add partial list of type arguments, if any
                     if (i < len(atargs)) {
-                        targs = append(targs, atargs[i].ꓸꓸꓸ);
+                        targs = appendꓸꓸꓸ(targs, atargs[i]);
                     }
                     // make sure targs and tparams have the same length
                     while (len(targs) < len(tparams)) {
@@ -947,7 +947,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                 name = "_"u8;
             }
         }
-        @params = append(new ж<Var>[]{NewVar((~(~sig).recv).pos, (~(~sig).recv).pkg, name, x.typ)}.slice(), @params.ꓸꓸꓸ);
+        @params = appendꓸꓸꓸ(new ж<Var>[]{NewVar((~(~sig).recv).pos, (~(~sig).recv).pkg, name, x.typ)}.slice(), @params);
         x.mode = value;
         x.typ = new ΔSignatureжΔType(Ꮡ(new ΔSignature(
             tparams: (~sig).tparams,

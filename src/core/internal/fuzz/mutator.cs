@@ -146,7 +146,7 @@ internal static void mutate(this ж<mutator> Ꮡm, slice<any> vals, nint maxByte
             throw panic(fmt.Sprintf("cannot mutate bytes of length %d"u8, len(v)));
         }
         if (builtin.cap(m.scratch) < maxPerVal){
-            m.scratch = append(new slice<byte>(0, maxPerVal), v.ꓸꓸꓸ);
+            m.scratch = appendꓸꓸꓸ(new slice<byte>(0, maxPerVal), v);
         } else {
             m.scratch = m.scratch[..(int)(len(v))];
             copy(m.scratch, v);

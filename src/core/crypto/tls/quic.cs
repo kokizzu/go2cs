@@ -400,7 +400,7 @@ internal static error quicReadHandshakeBytes(this ж<Conn> Ꮡc, nint n) {
         ));
         last = Ꮡ((~c.quic).events, len((~c.quic).events) - 1);
     }
-    last.Value.Data = append((~last).Data, data.ꓸꓸꓸ);
+    last.Value.Data = appendꓸꓸꓸ((~last).Data, data);
 }
 
 internal static error quicResumeSession(this ж<Conn> Ꮡc, ж<SessionState> Ꮡsession) {

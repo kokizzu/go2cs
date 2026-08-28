@@ -161,7 +161,7 @@ internal static void itoa(ref slice<byte> buf, nint i, nint wid) {
     }
     // i < 10
     b[bp] = (byte)((rune)'0' + i);
-    buf = append(buf, b[(int)(bp)..].ꓸꓸꓸ);
+    buf = appendꓸꓸꓸ(buf, b[(int)(bp)..]);
 }
 
 // formatHeader writes log header to buf in following order:
@@ -310,7 +310,7 @@ internal static error output(this ж<Logger> Ꮡl, uintptr pc, nint calldepth, F
 [GoInit] internal static void init() {
     Δinternal.DefaultOutput = (uintptr pc, slice<byte> data) => {
         var dataʗ1 = data;
-        return std.output(pc, 0, (slice<byte> buf) => append(buf, dataʗ1.ꓸꓸꓸ));
+        return std.output(pc, 0, (slice<byte> buf) => appendꓸꓸꓸ(buf, dataʗ1));
     };
 }
 

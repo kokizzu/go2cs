@@ -507,7 +507,7 @@ public static ж<File> MergePackageFiles(ж<Package> Ꮡpkg, MergeMode mode) {
         // Iterate over filenames for deterministic order.
         foreach (var (_, filename) in filenames) {
             var f = pkg.Files[filename];
-            imports = append(imports, (~f).Imports.ꓸꓸꓸ);
+            imports = appendꓸꓸꓸ(imports, (~f).Imports);
         }
     }
     // Collect comments from all package files.

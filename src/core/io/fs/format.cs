@@ -41,7 +41,7 @@ public static @string FormatFileInfo(FileInfo info) {
         usize = q;
     }
     buf[i] = (byte)((rune)'0' + usize);
-    b = append(b, buf[(int)(i)..].ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, buf[(int)(i)..]);
     b = append(b, (byte)((rune)' '));
     b = append(b, info.ModTime().Format(time.DateTime).ꓸꓸꓸ);
     b = append(b, (byte)((rune)' '));

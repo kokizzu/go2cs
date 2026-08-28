@@ -729,7 +729,7 @@ keep:;
         if (bandU == default!){
             bandU = bandU1;
         } else {
-            bandU = append(bandU, bandU1.ꓸꓸꓸ);
+            bandU = appendꓸꓸꓸ(bandU, bandU1);
         }
     }
     // Process bands from lowest utilization bound to highest.

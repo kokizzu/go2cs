@@ -438,7 +438,7 @@ internal static slice<byte> fmtE(slice<byte> dst, bool neg, decimalSlice d, nint
         nint i = 1;
         nint m = min(d.nd, prec + 1);
         if (i < m) {
-            dst = append(dst, d.d[(int)(i)..(int)(m)].ꓸꓸꓸ);
+            dst = appendꓸꓸꓸ(dst, d.d[(int)(i)..(int)(m)]);
             i = m;
         }
         for (; i <= prec; i++) {
@@ -486,7 +486,7 @@ internal static slice<byte> fmtF(slice<byte> dst, bool neg, decimalSlice d, nint
     // integer, padded with zeros as needed.
     if (d.dp > 0){
         nint m = min(d.nd, d.dp);
-        dst = append(dst, d.d[..(int)(m)].ꓸꓸꓸ);
+        dst = appendꓸꓸꓸ(dst, d.d[..(int)(m)]);
         for (; m < d.dp; m++) {
             dst = append(dst, (byte)((rune)'0'));
         }

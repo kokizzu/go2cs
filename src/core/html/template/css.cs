@@ -82,7 +82,7 @@ internal static slice<byte> decodeCSS(slice<byte> s) {
         if (iΔ1 == -1) {
             iΔ1 = len(s);
         }
-        (b, s) = (append(b, s[..(int)(iΔ1)].ꓸꓸꓸ), s[(int)(iΔ1)..]);
+        (b, s) = (appendꓸꓸꓸ(b, s[..(int)(iΔ1)]), s[(int)(iΔ1)..]);
         if (len(s) < 2) {
             break;
         }
@@ -107,7 +107,7 @@ internal static slice<byte> decodeCSS(slice<byte> s) {
         } else {
             // `\\` decodes to `\` and `\"` to `"`.
             var (_, n) = utf8.DecodeRune(s[1..]);
-            (b, s) = (append(b, s[1..(int)(1 + n)].ꓸꓸꓸ), s[(int)(1 + n)..]);
+            (b, s) = (appendꓸꓸꓸ(b, s[1..(int)(1 + n)]), s[(int)(1 + n)..]);
         }
     }
     return b;

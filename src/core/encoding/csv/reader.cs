@@ -290,10 +290,10 @@ public static ж<Reader> NewReader(io.Reader r) {
 [GoRecv] internal static (slice<byte>, error) readLine(this ref Reader r) {
     var (line, err) = r.r.ReadSlice((rune)'\n');
     if (AreEqual(err, bufio.ErrBufferFull)) {
-        r.rawBuffer = append(r.rawBuffer[..0], line.ꓸꓸꓸ);
+        r.rawBuffer = appendꓸꓸꓸ(r.rawBuffer[..0], line);
         while (AreEqual(err, bufio.ErrBufferFull)) {
             (line, err) = r.r.ReadSlice((rune)'\n');
-            r.rawBuffer = append(r.rawBuffer, line.ꓸꓸꓸ);
+            r.rawBuffer = appendꓸꓸꓸ(r.rawBuffer, line);
         }
         line = r.rawBuffer;
     }
@@ -394,7 +394,7 @@ parseField:
                     }
                 }
             }
-            r.recordBuffer = append(r.recordBuffer, field.ꓸꓸꓸ);
+            r.recordBuffer = appendꓸꓸꓸ(r.recordBuffer, field);
             r.fieldIndexes = append(r.fieldIndexes, len(r.recordBuffer));
             r.fieldPositions = append(r.fieldPositions, pos);
             if (i >= 0) {
@@ -412,7 +412,7 @@ parseField:
                 nint i = bytes.IndexByte(line, (rune)'"');
                 if (i >= 0){
                     // Hit next quote.
-                    r.recordBuffer = append(r.recordBuffer, line[..(int)(i)].ꓸꓸꓸ);
+                    r.recordBuffer = appendꓸꓸꓸ(r.recordBuffer, line[..(int)(i)]);
                     line = line[(int)(i + quoteLen)..];
                     pos.col += i + quoteLen;
                     {
@@ -457,7 +457,7 @@ StartLine: recLine, Line: r.numLine, Column: pos.col - quoteLen, Err: ErrQuote))
                 } else 
                 if (len(line) > 0){
                     // Hit end of line (copy all data so far).
-                    r.recordBuffer = append(r.recordBuffer, line.ꓸꓸꓸ);
+                    r.recordBuffer = appendꓸꓸꓸ(r.recordBuffer, line);
                     if (errRead != default!) {
                         goto break_parseField;
                     }

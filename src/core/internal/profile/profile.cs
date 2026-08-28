@@ -433,15 +433,15 @@ public static error Write(this ж<Profile> Ꮡp, io.Writer w) {
         p.Period = pb.Period;
     }
     p.DurationNanos += pb.DurationNanos;
-    p.Mapping = append(p.Mapping, pb.Mapping.ꓸꓸꓸ);
+    p.Mapping = appendꓸꓸꓸ(p.Mapping, pb.Mapping);
     foreach (var (i, m) in p.Mapping) {
         m.Value.ID = (uint64)(i + 1);
     }
-    p.Location = append(p.Location, pb.Location.ꓸꓸꓸ);
+    p.Location = appendꓸꓸꓸ(p.Location, pb.Location);
     foreach (var (i, l) in p.Location) {
         l.Value.ID = (uint64)(i + 1);
     }
-    p.Function = append(p.Function, pb.Function.ꓸꓸꓸ);
+    p.Function = appendꓸꓸꓸ(p.Function, pb.Function);
     foreach (var (i, f) in p.Function) {
         f.Value.ID = (uint64)(i + 1);
     }
@@ -452,7 +452,7 @@ public static error Write(this ж<Profile> Ꮡp, io.Writer w) {
             }
         }
     }
-    p.Sample = append(p.Sample, pb.Sample.ꓸꓸꓸ);
+    p.Sample = appendꓸꓸꓸ(p.Sample, pb.Sample);
     return p.CheckValid();
 }
 

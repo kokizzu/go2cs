@@ -183,7 +183,7 @@ internal static readonly @string cryptoSha512InvalidHashˢ = "crypto/sha512: inv
     b = byteorder.BeAppendUint64(b, d.h[5]);
     b = byteorder.BeAppendUint64(b, d.h[6]);
     b = byteorder.BeAppendUint64(b, d.h[7]);
-    b = append(b, d.x[..(int)(d.nx)].ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, d.x[..(int)(d.nx)]);
     b = b[..(int)(len(b) + len(d.x) - d.nx)]; // already zero
     b = byteorder.BeAppendUint64(b, d.len);
     return (b, default!);
@@ -331,16 +331,16 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
     var hash = d0.checkSum();
     var exprᴛ1 = (~d0).function;
     if (exprᴛ1 == crypto.SHA384) {
-        return append(@in, hash[..(int)(Size384)].ꓸꓸꓸ);
+        return appendꓸꓸꓸ(@in, hash[..(int)(Size384)]);
     }
     if (exprᴛ1 == crypto.SHA512_224) {
-        return append(@in, hash[..(int)(Size224)].ꓸꓸꓸ);
+        return appendꓸꓸꓸ(@in, hash[..(int)(Size224)]);
     }
     if (exprᴛ1 == crypto.SHA512_256) {
-        return append(@in, hash[..(int)(Size256)].ꓸꓸꓸ);
+        return appendꓸꓸꓸ(@in, hash[..(int)(Size256)]);
     }
     { /* default: */
-        return append(@in, hash[..].ꓸꓸꓸ);
+        return appendꓸꓸꓸ(@in, hash[..]);
     }
 
 }

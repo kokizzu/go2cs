@@ -278,8 +278,8 @@ internal static readonly @string tlsClientSentAnˢ = "tls: client sent an unexpe
             c.sendAlert(alertIllegalParameter);
             return errors.New(tlsInvalidKyberClientKeyˢ);
         }
-        hs.sharedKey = append(hs.sharedKey, kyberShared.ꓸꓸꓸ);
-        hs.hello.Value.serverShare.data = append((~hs.hello).serverShare.data, ciphertext.ꓸꓸꓸ);
+        hs.sharedKey = appendꓸꓸꓸ(hs.sharedKey, kyberShared);
+        hs.hello.Value.serverShare.data = appendꓸꓸꓸ((~hs.hello).serverShare.data, ciphertext);
     }
     (var selectedProto, err) = negotiateALPN((~(~c).config).NextProtos, (~hs.clientHello).alpnProtocols, (~c).quic != nil);
     if (err != default!) {

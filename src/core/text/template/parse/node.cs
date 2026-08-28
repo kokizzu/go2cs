@@ -151,7 +151,7 @@ internal static ж<TextNode> newText(this ж<Tree> Ꮡt, Pos pos, @string text) 
 }
 
 [GoRecv] public static Node Copy(this ref TextNode t) {
-    return new TextNodeжNode(Ꮡ(new TextNode(tr: t.tr, NodeType: NodeText, Pos: t.Pos, Text: builtin.append(new byte[]{}.slice(), t.Text.ꓸꓸꓸ))));
+    return new TextNodeжNode(Ꮡ(new TextNode(tr: t.tr, NodeType: NodeText, Pos: t.Pos, Text: builtin.appendꓸꓸꓸ(new byte[]{}.slice(), t.Text))));
 }
 
 // CommentNode holds a comment.
@@ -432,7 +432,7 @@ internal static ж<VariableNode> newVariable(this ж<Tree> Ꮡt, Pos pos, @strin
 }
 
 [GoRecv] public static Node Copy(this ref VariableNode v) {
-    return new VariableNodeжNode(Ꮡ(new VariableNode(tr: v.tr, NodeType: NodeVariable, Pos: v.Pos, Ident: builtin.append(new @string[]{}.slice(), v.Ident.ꓸꓸꓸ))));
+    return new VariableNodeжNode(Ꮡ(new VariableNode(tr: v.tr, NodeType: NodeVariable, Pos: v.Pos, Ident: builtin.appendꓸꓸꓸ(new @string[]{}.slice(), v.Ident))));
 }
 
 // DotNode holds the special identifier '.'.
@@ -538,7 +538,7 @@ internal static ж<FieldNode> newField(this ж<Tree> Ꮡt, Pos pos, @string iden
 }
 
 [GoRecv] public static Node Copy(this ref FieldNode f) {
-    return new FieldNodeжNode(Ꮡ(new FieldNode(tr: f.tr, NodeType: NodeField, Pos: f.Pos, Ident: builtin.append(new @string[]{}.slice(), f.Ident.ꓸꓸꓸ))));
+    return new FieldNodeжNode(Ꮡ(new FieldNode(tr: f.tr, NodeType: NodeField, Pos: f.Pos, Ident: builtin.appendꓸꓸꓸ(new @string[]{}.slice(), f.Ident))));
 }
 
 // ChainNode holds a term followed by a chain of field accesses (identifier starting with '.').
@@ -595,7 +595,7 @@ internal static ж<ChainNode> newChain(this ж<Tree> Ꮡt, Pos pos, Node node) {
 }
 
 [GoRecv] public static Node Copy(this ref ChainNode c) {
-    return new ChainNodeжNode(Ꮡ(new ChainNode(tr: c.tr, NodeType: NodeChain, Pos: c.Pos, Node: c.Node, Field: builtin.append(new @string[]{}.slice(), c.Field.ꓸꓸꓸ))));
+    return new ChainNodeжNode(Ꮡ(new ChainNode(tr: c.tr, NodeType: NodeChain, Pos: c.Pos, Node: c.Node, Field: builtin.appendꓸꓸꓸ(new @string[]{}.slice(), c.Field))));
 }
 
 // BoolNode holds a boolean constant.

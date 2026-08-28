@@ -1005,7 +1005,7 @@ internal static reflectꓸType reflectValueType = reflect.TypeFor<reflectꓸValu
     // Insert the name of the callee function as the first argument.
     if (isBuiltin && name == "call"u8) {
         @string calleeName = args[0].String();
-        argv = append(new reflectꓸValue[]{reflect.ValueOf(calleeName)}.slice(), argv.ꓸꓸꓸ);
+        argv = appendꓸꓸꓸ(new reflectꓸValue[]{reflect.ValueOf(calleeName)}.slice(), argv);
         fun = reflect.ValueOf(call);
     }
     var (v, err) = safeCall(fun, argv);

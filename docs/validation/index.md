@@ -173,6 +173,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `runtime/internal/math` | [`runtime.internal.math.md`](current/runtime.internal.math.md) | [`src/core/runtime/internal/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/math) |
 | `runtime/internal/sys` | [`runtime.internal.sys.md`](current/runtime.internal.sys.md) | [`src/core/runtime/internal/sys`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/internal/sys) |
 | `runtime/metrics` | [`runtime.metrics.md`](current/runtime.metrics.md) | [`src/core/runtime/metrics`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/runtime/metrics) |
+| `slices` | [`slices.md`](current/slices.md) | [`src/core/slices`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/slices) |
 | `sort` | [`sort.md`](current/sort.md) | [`src/core/sort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sort) |
 | `strconv` | [`strconv.md`](current/strconv.md) | [`src/core/strconv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strconv) |
 | `strings` | [`strings.md`](current/strings.md) | [`src/core/strings`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/strings) |

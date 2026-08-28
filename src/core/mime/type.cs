@@ -162,7 +162,7 @@ public static (slice<@string>, error) ExtensionsByType(@string typ) {
     if (!ok) {
         return (default!, default!);
     }
-    var ret = append(slice<@string>(default!), s._<slice<@string>>().ꓸꓸꓸ);
+    var ret = appendꓸꓸꓸ(slice<@string>(default!), s._<slice<@string>>());
     slices.Sort<slice<@string>, @string>(ret);
     return (ret, default!);
 }

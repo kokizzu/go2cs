@@ -86,7 +86,7 @@ internal static void init(this ж<@decimal> Ꮡx, nat m, nint shift) {
     while (n > 0 && s[n - 1] == (rune)'0') {
         n--;
     }
-    x.mant = append(x.mant[..0], s[..(int)(n)].ꓸꓸꓸ);
+    x.mant = appendꓸꓸꓸ(x.mant[..0], s[..(int)(n)]);
     // Do any (remaining) shift right in decimal representation.
     if (shift < 0) {
         while (shift < -maxShift) {
@@ -159,19 +159,19 @@ internal static void shr(ref @decimal x, nuint s) {
         buf = new slice<byte>(0, 2 + (-x.exp) + len(x.mant));
         buf = append(buf, ((@string)"0."u8).ꓸꓸꓸ);
         buf = appendZeros(buf, -x.exp);
-        buf = append(buf, x.mant.ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, x.mant);
         break;
     }
     case {} when x.exp < len(x.mant): {
         buf = new slice<byte>(0, 1 + len(x.mant));
-        buf = append(buf, x.mant[..(int)(x.exp)].ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, x.mant[..(int)(x.exp)]);
         buf = append(buf, (byte)((rune)'.'));
-        buf = append(buf, x.mant[(int)(x.exp)..].ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, x.mant[(int)(x.exp)..]);
         break;
     }
     default: {
         buf = new slice<byte>(0, x.exp);
-        buf = append(buf, x.mant.ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, x.mant);
         buf = appendZeros(buf, x.exp - len(x.mant));
         break;
     }}

@@ -77,7 +77,7 @@ internal const nint marshaledSize = /* len(magic) + 4*4 + BlockSize + 8 */ 92;
     b = byteorder.BeAppendUint32(b, d.s[1]);
     b = byteorder.BeAppendUint32(b, d.s[2]);
     b = byteorder.BeAppendUint32(b, d.s[3]);
-    b = append(b, d.x[..(int)(d.nx)].ꓸꓸꓸ);
+    b = appendꓸꓸꓸ(b, d.x[..(int)(d.nx)]);
     b = b[..(int)(len(b) + len(d.x) - d.nx)]; // already zero
     b = byteorder.BeAppendUint64(b, d.len);
     return (b, default!);
@@ -173,7 +173,7 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
     ref var d0 = ref heap<digest>(out var Ꮡd0);
     d0 = d.ΔClone();
     var hash = Ꮡd0.checkSum();
-    return append(@in, hash[..].ꓸꓸꓸ);
+    return appendꓸꓸꓸ(@in, hash[..]);
 }
 
 internal static array<byte> checkSum(this ж<digest> Ꮡd) {

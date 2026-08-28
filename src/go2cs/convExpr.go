@@ -63,8 +63,19 @@ type CallExprContext struct {
 	// from the lambda's own typed parameters and is deliberately not marked (no churn).
 	genericResultInferredFuncArgs map[int]bool
 	hasSpreadOperator             bool
-	keyValueSource                KeyValueSource
-	keyValueIdent                 *ast.Ident
+	// spreadArgAsSlice routes an append spread operand AS THE SLICE IT IS (no `.ꓸꓸꓸ` span
+	// projection) — the slice-shaped-spread arc: golib's ISlice<T>-taking append overloads carry
+	// the window with nint lengths end to end, retiring the Span int32 ceiling at the call
+	// boundary. Set only by the append builtin's spread classification; strings keep the span
+	// route (their spread is a byte projection, not a slice).
+	spreadArgAsSlice bool
+	// appendTypeArgs carries explicit type arguments for the append builtin's emission
+	// (`append<S, E>(…)`) — required when the slice-shaped spread's DESTINATION is a constrained
+	// type parameter: the S-generic ISlice overload's T is not inferable from the operand, because
+	// constraint surfaces do not participate in C# type inference.
+	appendTypeArgs string
+	keyValueSource KeyValueSource
+	keyValueIdent  *ast.Ident
 	// keyValueArrayBacked marks a keyed composite that is backed by a C# array/SparseArray (an
 	// indexed slice/array literal, `[]T{i: v}`), not a real map. Its indexer takes a Go `int`
 	// (nint), so a key whose Go type is a defined integer type must be cast to int (a `num:nint`

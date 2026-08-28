@@ -128,7 +128,7 @@ internal static readonly @string zipWriterClosedTwiceˢ = "zip: writer closed tw
             eb.uint64((~h).UncompressedSize64);
             eb.uint64((~h).CompressedSize64);
             eb.uint64((~h).offset);
-            h.Value.Extra = append((~h).Extra, bufΔ2[..].ꓸꓸꓸ);
+            h.Value.Extra = appendꓸꓸꓸ((~h).Extra, bufΔ2[..]);
         } else {
             bΔ1.uint32((~h).CompressedSize);
             bΔ1.uint32((~h).UncompressedSize);
@@ -358,7 +358,7 @@ internal static readonly @string archiveZipInvalidˢ = "archive/zip: invalid dup
         eb.uint16(5); // Size: SizeOf(uint8) + SizeOf(uint32)
         eb.uint8(1); // Flags: ModTime
         eb.uint32(mt); // ModTime
-        fh.Extra = append(fh.Extra, mbuf[..].ꓸꓸꓸ);
+        fh.Extra = appendꓸꓸꓸ(fh.Extra, mbuf[..]);
     }
     io.Writer ow = default!;
     ж<fileWriter> fw = default!;

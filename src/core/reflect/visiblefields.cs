@@ -91,7 +91,7 @@ public static slice<StructField> VisibleFields(ΔType t) {
         if (add) {
             // Copy the index so that it's not overwritten
             // by the other appends.
-            f.Index = builtin.append(slice<nint>(default!), w.index.ꓸꓸꓸ);
+            f.Index = builtin.appendꓸꓸꓸ(slice<nint>(default!), w.index);
             w.byName[f.Name] = len(w.fields);
             w.fields = builtin.append(w.fields, f);
         }

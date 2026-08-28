@@ -31,7 +31,7 @@ internal static error compressedBlock(this ж<Reader> Ꮡr, nint blockSize) {
         // We know that blockSize <= 128K,
         // so this won't allocate an enormous amount.
         nint need = blockSize - builtin.len(r.compressedBuf);
-        r.compressedBuf = append(r.compressedBuf, new slice<byte>(need).ꓸꓸꓸ);
+        r.compressedBuf = appendꓸꓸꓸ(r.compressedBuf, new slice<byte>(need));
     }
     {
         var (_, errΔ1) = io.ReadFull(r.r, r.compressedBuf); if (errΔ1 != default!) {
@@ -56,7 +56,7 @@ internal static error compressedBlock(this ж<Reader> Ꮡr, nint blockSize) {
         if (off < builtin.len(data)) {
             return r.makeError(off, extraneousDataAfterNoˢ);
         }
-        r.buffer = append(r.buffer, litbuf.ꓸꓸꓸ);
+        r.buffer = appendꓸꓸꓸ(r.buffer, litbuf);
         return default!;
     }
     return Ꮡr.execSeqs(data, off, litbuf, seqCount);
@@ -362,7 +362,7 @@ internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice
             return rbr.makeError(literalByteOverflowˢ);
         }
         if (literal > 0) {
-            r.buffer = append(r.buffer, litbuf[..(int)(literal)].ꓸꓸꓸ);
+            r.buffer = appendꓸꓸꓸ(r.buffer, litbuf[..(int)(literal)]);
             litbuf = litbuf[(int)(literal)..];
         }
         if (match > 0) {
@@ -373,7 +373,7 @@ internal static error execSeqs(this ж<Reader> Ꮡr, block data, nint off, slice
             }
         }
     }
-    r.buffer = append(r.buffer, litbuf.ꓸꓸꓸ);
+    r.buffer = appendꓸꓸꓸ(r.buffer, litbuf);
     if (rbr.cnt != 0) {
         return r.makeError(off, extraneousDataAfterˢ);
     }
@@ -420,7 +420,7 @@ internal static readonly @string offsetPastWindowˢ = "offset past window"u8;
         if (copy > match) {
             copy = match;
         }
-        r.buffer = append(r.buffer, r.buffer[(int)(bufferOffset)..(int)(bufferOffset + copy)].ꓸꓸꓸ);
+        r.buffer = appendꓸꓸꓸ(r.buffer, r.buffer[(int)(bufferOffset)..(int)(bufferOffset + copy)]);
         match -= copy;
     }
     return default!;

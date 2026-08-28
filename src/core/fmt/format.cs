@@ -572,13 +572,13 @@ internal static readonly @string falseˢ = "false"u8;
                 hasDecimalPoint = true;
             }
             else if (exprᴛ1 is (rune)'p' or (rune)'P') { matchᴛ1 = true;
-                tail = append(tail, num[(int)(i)..].ꓸꓸꓸ);
+                tail = appendꓸꓸꓸ(tail, num[(int)(i)..]);
                 num = num[..(int)(i)];
             }
             else if (exprᴛ1 is (rune)'e' or (rune)'E') { matchᴛ1 = true;
                 do {
                     if (verb != (rune)'x' && verb != (rune)'X') {
-                        tail = append(tail, num[(int)(i)..].ꓸꓸꓸ);
+                        tail = appendꓸꓸꓸ(tail, num[(int)(i)..]);
                         num = num[..(int)(i)];
                         break;
                     }
@@ -607,7 +607,7 @@ internal static readonly @string falseˢ = "false"u8;
             num = append(num, (byte)((rune)'0'));
             digits--;
         }
-        num = append(num, tail.ꓸꓸꓸ);
+        num = appendꓸꓸꓸ(num, tail);
     }
     // We want a sign if asked for and if the sign is not positive.
     if (f.plus || num[0] != (rune)'+') {

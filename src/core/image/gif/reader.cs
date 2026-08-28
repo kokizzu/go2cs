@@ -457,7 +457,7 @@ internal static error readImageDescriptor(this ж<decoder> Ꮡd, bool keepAllFra
         if (d.hasTransparentIndex) {
             if (!useLocalColorTable) {
                 // Clone the global color table.
-                m.Value.Palette = append(((Δcolor.Palette)default!), d.globalColorTable.ꓸꓸꓸ);
+                m.Value.Palette = appendꓸꓸꓸ(((Δcolor.Palette)default!), d.globalColorTable);
             }
             {
                 nint ti = (nint)d.transparentIndex; if (ti < len((~m).Palette)){

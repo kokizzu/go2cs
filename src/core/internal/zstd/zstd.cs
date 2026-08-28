@@ -512,7 +512,7 @@ internal static error readBlock(this ж<Reader> Ꮡr) {
 [GoRecv] internal static void setBufferSize(this ref Reader r, nint size) {
     if (cap(r.buffer) < size) {
         nint need = size - cap(r.buffer);
-        r.buffer = append(r.buffer[..(int)(cap(r.buffer))], new slice<byte>(need).ꓸꓸꓸ);
+        r.buffer = appendꓸꓸꓸ(r.buffer[..(int)(cap(r.buffer))], new slice<byte>(need));
     }
     r.buffer = r.buffer[..(int)(size)];
 }

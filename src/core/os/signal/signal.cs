@@ -233,7 +233,7 @@ public static void Stop(channel/*<-*/<osꓸSignal> c) {
     Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
     foreach (var (i, s) in handlers.stopping) {
         if (s.c == c) {
-            handlers.stopping = append(handlers.stopping[..(int)(i)], handlers.stopping[(int)(i + 1)..].ꓸꓸꓸ);
+            handlers.stopping = appendꓸꓸꓸ(handlers.stopping[..(int)(i)], handlers.stopping[(int)(i + 1)..]);
             break;
         }
     }

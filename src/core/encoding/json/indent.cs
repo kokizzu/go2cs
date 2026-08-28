@@ -25,18 +25,18 @@ internal static slice<byte> appendHTMLEscape(slice<byte> dst, slice<byte> src) {
     nint start = 0;
     foreach (var (i, c) in src) {
         if (c == (rune)'<' || c == (rune)'>' || c == (rune)'&') {
-            dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
+            dst = appendꓸꓸꓸ(dst, src[(int)(start)..(int)(i)]);
             dst = append(dst, (byte)((rune)'\\'), (byte)((rune)'u'), (byte)((rune)'0'), (byte)((rune)'0'), hex[(c >> (int)(4))], hex[(byte)(c & 0xF)]);
             start = i + 1;
         }
         // Convert U+2028 and U+2029 (E2 80 A8 and E2 80 A9).
         if (c == 0xE2 && i + 2 < len(src) && src[i + 1] == 0x80 && (byte)(src[i + 2] & ~1) == 0xA8) {
-            dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
+            dst = appendꓸꓸꓸ(dst, src[(int)(start)..(int)(i)]);
             dst = append(dst, (byte)((rune)'\\'), (byte)((rune)'u'), (byte)((rune)'2'), (byte)((rune)'0'), (byte)((rune)'2'), hex[(byte)(src[i + 2] & 0xF)]);
             start = i + len("\u2029");
         }
     }
-    return append(dst, src[(int)(start)..].ꓸꓸꓸ);
+    return appendꓸꓸꓸ(dst, src[(int)(start)..]);
 }
 
 // Compact appends to dst the JSON-encoded src with
@@ -61,7 +61,7 @@ internal static (slice<byte>, error) appendCompact(slice<byte> dst, slice<byte> 
         foreach (var (i, c) in src) {
             if (escape && (c == (rune)'<' || c == (rune)'>' || c == (rune)'&')) {
                 if (start < i) {
-                    dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
+                    dst = appendꓸꓸꓸ(dst, src[(int)(start)..(int)(i)]);
                 }
                 dst = append(dst, (byte)((rune)'\\'), (byte)((rune)'u'), (byte)((rune)'0'), (byte)((rune)'0'), hex[(c >> (int)(4))], hex[(byte)(c & 0xF)]);
                 start = i + 1;
@@ -69,7 +69,7 @@ internal static (slice<byte>, error) appendCompact(slice<byte> dst, slice<byte> 
             // Convert U+2028 and U+2029 (E2 80 A8 and E2 80 A9).
             if (escape && c == 0xE2 && i + 2 < len(src) && src[i + 1] == 0x80 && (byte)(src[i + 2] & ~1) == 0xA8) {
                 if (start < i) {
-                    dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
+                    dst = appendꓸꓸꓸ(dst, src[(int)(start)..(int)(i)]);
                 }
                 dst = append(dst, (byte)((rune)'\\'), (byte)((rune)'u'), (byte)((rune)'2'), (byte)((rune)'0'), (byte)((rune)'2'), hex[(byte)(src[i + 2] & 0xF)]);
                 start = i + 3;
@@ -80,7 +80,7 @@ internal static (slice<byte>, error) appendCompact(slice<byte> dst, slice<byte> 
                     break;
                 }
                 if (start < i) {
-                    dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
+                    dst = appendꓸꓸꓸ(dst, src[(int)(start)..(int)(i)]);
                 }
                 start = i + 1;
             }
@@ -89,7 +89,7 @@ internal static (slice<byte>, error) appendCompact(slice<byte> dst, slice<byte> 
             return (dst[..(int)(origLen)], (~scan).err);
         }
         if (start < len(src)) {
-            dst = append(dst, src[(int)(start)..].ꓸꓸꓸ);
+            dst = appendꓸꓸꓸ(dst, src[(int)(start)..]);
         }
         return (dst, default!);
     }

@@ -1303,7 +1303,7 @@ internal static (slice<uint16>, error) fdpath(ΔHandle fd, slice<uint16> buf) {
         if (!AreEqual(err, _ERROR_NOT_ENOUGH_MEMORY)) {
             return (default!, err);
         }
-        buf = append(buf, new slice<uint16>((nint)(n - (uint32)len(buf))).ꓸꓸꓸ);
+        buf = appendꓸꓸꓸ(buf, new slice<uint16>((nint)(n - (uint32)len(buf))));
     }
     return (buf, default!);
 }

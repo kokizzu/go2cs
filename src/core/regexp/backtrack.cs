@@ -369,7 +369,7 @@ internal static slice<nint> backtrack(this ж<Regexp> Ꮡre, slice<byte> ib, @st
         return default!;
     }
 Match:
-    dstCap = append(dstCap, (~b).matchcap.ꓸꓸꓸ);
+    dstCap = appendꓸꓸꓸ(dstCap, (~b).matchcap);
     freeBitState(b);
     return dstCap;
 }

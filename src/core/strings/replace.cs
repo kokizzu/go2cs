@@ -41,7 +41,7 @@ public static ж<Replacer> NewReplacer(params ꓸꓸꓸstring oldnewʗp) {
     if (len(oldnew) % 2 == 1) {
         throw panic("strings.NewReplacer: odd argument count");
     }
-    return Ꮡ(new Replacer(oldnew: append(slice<@string>(default!), oldnew.ꓸꓸꓸ)));
+    return Ꮡ(new Replacer(oldnew: appendꓸꓸꓸ(slice<@string>(default!), oldnew)));
 }
 
 [GoRecv] internal static void buildOnce(this ref Replacer r) {
@@ -314,7 +314,7 @@ internal static ж<genericReplacer> makeGenericReplacer(slice<@string> oldnew) {
 
 // Write writes to the buffer to satisfy [io.Writer].
 [GoRecv] internal static (nint, error) Write(this ref appendSliceWriter w, slice<byte> p) {
-    w = append(w, p.ꓸꓸꓸ);
+    w = appendꓸꓸꓸ(w, p);
     return (len(p), default!);
 }
 

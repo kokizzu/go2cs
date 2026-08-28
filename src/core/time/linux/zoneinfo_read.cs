@@ -606,7 +606,7 @@ internal static (slice<byte>, error) readFile(@string name) {
         while (ᐧ) {
             (n, err) = read(f, buf[..]);
             if (n > 0) {
-                ret = append(ret, buf[..(int)(n)].ꓸꓸꓸ);
+                ret = appendꓸꓸꓸ(ret, buf[..(int)(n)]);
             }
             if (n == 0 || err != default!) {
                 break;

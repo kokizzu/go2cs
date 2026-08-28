@@ -87,7 +87,7 @@ public static SelectionKind MethodExpr => 2;  // x.f is a method expression
         if (sig.@params != nil) {
             @params = sig.@params.Value.vars;
         }
-        sig.@params = NewTuple(append(new ж<Var>[]{Ꮡarg0}.slice(), @params.ꓸꓸꓸ).ꓸꓸꓸ);
+        sig.@params = NewTuple(appendꓸꓸꓸ(new ж<Var>[]{Ꮡarg0}.slice(), @params).ꓸꓸꓸ);
         return new ΔSignatureжΔType(Ꮡsig);
     }
 

@@ -68,7 +68,7 @@ public static slice<ж<UserTaskSummary>> Descendents(this ж<UserTaskSummary> �
 
     var descendents = new ж<UserTaskSummary>[]{Ꮡs}.slice();
     foreach (var (_, child) in s.Children) {
-        descendents = append(descendents, child.Descendents().ꓸꓸꓸ);
+        descendents = appendꓸꓸꓸ(descendents, child.Descendents());
     }
     return descendents;
 }
