@@ -61,6 +61,10 @@ using go;
 
 namespace go;
 
+using System;
+using System.Diagnostics;
+using System.Text;
+using go.golib;
 using atomic = @internal.runtime.atomic_package;
 using @internal;
 using @internal.runtime;
@@ -128,7 +132,6 @@ partial class runtime_package
         {
             case 1:
             case 2:
-            case 3:
             case 15:
                 return true;
             default:
@@ -136,6 +139,74 @@ partial class runtime_package
         }
     }
 
+    // Go's _SigThrow disposition. sigtab_linux_generic.go marks SIGQUIT
+    // `{_SigNotify + _SigThrow, "SIGQUIT: quit"}` -- NOT _SigKill -- and signal_unix.go's
+    // sighandler acts on exactly that difference: the `if flags&_SigKill != 0 { dieFromSignal(sig) }`
+    // arm is skipped, the comment "_SigThrow means that we should exit now" applies, the traceback
+    // is printed, and under the DEFAULT GOTRACEBACK the runtime reaches `exit(2)` (panic.go).
+    // Dying BY the signal happens only under GOTRACEBACK=crash. So a Go program sent SIGQUIT is an
+    // ordinary EXITED process with status 2 that left a goroutine dump on stderr -- which is
+    // precisely what os/exec's TestWaitInterrupt/SIGQUIT asserts (ps.Exited(), ExitCode() == 2,
+    // and stderr containing a blank line followed by "goroutine ").
+    //
+    // Scoped to SIGQUIT ALONE. Go's _SigThrow set also carries the synchronous faults
+    // (SIGILL/SIGABRT/SIGFPE/SIGSEGV/SIGBUS); those stay OUT because the CLR owns them, they are
+    // the residual this file's header already declares, and a PosixSignalRegistration cannot take
+    // them from it. SIGQUIT is the member a program actually receives asynchronously.
+    private static bool sigThrowsByDefault(uint32 sig)
+    {
+        return (int)sig == 3;
+    }
+
+    // The report Go writes before exiting on an unwanted _SigThrow, in the TRUTHFUL HALF the
+    // managed runtime can actually produce (coordinator ruling, 2026-08-28: the truthful half,
+    // never a fabricated whole).
+    //
+    // WHAT IS HONEST HERE, precisely. Go dumps EVERY goroutine's stack. The CLR has no supported
+    // cross-thread stack walk -- the same limit runtime.Stack's `all` parameter already documents
+    // and declines in managed_impl.cs -- so the only frames capturable are those on the thread
+    // doing the capturing, and here that is .NET's signal-dispatch thread, NOT a goroutine.
+    // This is therefore the one place the corpus must NOT reuse its usual "goroutine 1 [running]:"
+    // header: runtime.Stack writes that because ITS caller genuinely is the goroutine, whereas
+    // writing it here would name frames as a goroutine's that demonstrably are not. The header
+    // says what the block actually is; the live goroutine COUNT is reported because the registry
+    // genuinely knows it; and the goroutines whose stacks cannot be walked are declared MISSING
+    // rather than reconstructed.
+    //
+    // The dump is best effort; the exit status is not. A report that cannot be written must still
+    // leave an EXITED process with status 2, because that is the half of Go's contract this can
+    // always honor.
+    private static void throwFromSignal(uint32 sig)
+    {
+        try
+        {
+            StringBuilder report = new();
+
+            // Go's own text for this signal, then the BLANK line its traceback follows.
+            report.Append("SIGQUIT: quit\n\n");
+            report.Append("goroutine (signal handler) [running]:\n");
+            appendGoFrames(report, new StackTrace(fNeedFileInfo: true));
+
+            int live = Goroutine.Count;
+
+            if (live > 0)
+            {
+                report.Append("[go2cs] ").Append(live)
+                      .Append(live == 1 ? " goroutine was live; " : " goroutines were live; ")
+                      .Append("the managed runtime cannot capture another thread's stack\n")
+                      .Append("        in-process, so their frames are absent rather than reconstructed.\n");
+            }
+
+            Console.Error.Write(report.ToString());
+            Console.Error.Flush();
+        }
+        catch
+        {
+            // Nothing further can be said; the exit below is the part that must happen.
+        }
+
+        Environment.Exit(2);
+    }
     // installPosixSignal (called under s_sigPosixLock) creates the PERSISTENT registration for sig
     // if it does not exist yet. The handler makes Go's sighandler decision per delivery — see the
     // file header. Go's signal.Notify OVERRIDES an inherited SIG_IGN (setsig installs
@@ -172,6 +243,15 @@ partial class runtime_package
             else if (signal_ignored(s))
             {
                 ctx.Cancel = true;      // user- or inherited-ignored: swallow
+            }
+            else if (sigThrowsByDefault(s) && ((s_inheritedIgnoredMask >> (int)s) & 1) == 0)
+            {
+                // Unwanted _SigThrow: Go does NOT die by this signal -- it reports and
+                // exits 2. Cancel=true because THIS process owns the death; letting the
+                // kernel default also fire would replace the very exit status the report
+                // is about.
+                ctx.Cancel = true;
+                throwFromSignal(s);
             }
             else if (sigDiesByDefault(s) && ((s_inheritedIgnoredMask >> (int)s) & 1) == 0)
             {
