@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -118,7 +119,7 @@ public static class TestHost
             : CreateRunDirectory(registry.Package);
 
         if (!helperReExec)
-            Environment.SetEnvironmentVariable(SandboxMarkerVariable, runRoot);
+            PublishSandboxMarker(runRoot);
 
         options.ResolveOutputPaths(previousDirectory);
 
@@ -319,6 +320,61 @@ public static class TestHost
     // inheritance is the delivery mechanism: it survives cmd.Environ()-derived child environments
     // by construction, which is how the os/exec helpers build theirs.
     private const string SandboxMarkerVariable = "GO2CS_TEST_SANDBOX";
+
+    // The converted syscall package: type `go.syscall_package` in assembly `syscall`. Resolved by
+    // name, for the reason TestFlagBridge gives at length — the generated test projects set
+    // DisableTransitiveProjectReferences, so a `testing` -> `syscall` reference would not deploy
+    // syscall.dll beside a host whose own package does not import it.
+    private const string SyscallPackageTypeName = "go.syscall_package, syscall";
+
+    /// <summary>
+    /// Publishes the sandbox marker so a re-exec'd HELPER of this run can recognize itself.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It has to be published TWICE, and the second half is the one that matters. Setting it with
+    /// <see cref="Environment.SetEnvironmentVariable"/> alone reaches this process — which is what
+    /// the helper gate reads on the way IN — but it does not reach a child, because a child's
+    /// environment is built by <c>Cmd.Environ()</c> from the converted <c>os.Environ()</c>, and
+    /// that reads <c>syscall.envs</c>: a slice initialized ONCE from a static field initializer
+    /// (<c>envs = runtime_envs()</c>) when the syscall package's static constructor runs, which is
+    /// long before this method is reached. A variable set in the CLR's environment afterwards is
+    /// therefore invisible to every converted child — measured, not assumed: with only the CLR
+    /// half published, os/exec's nine PWD subtests kept failing with the child reporting its own
+    /// fresh sandbox GUID.
+    /// </para>
+    /// <para>
+    /// The converted <c>syscall.Setenv</c> is what updates that slice (Go's own implementation
+    /// appends the pair to <c>envs</c> and indexes it in <c>env</c>), so calling it is what makes
+    /// the marker inheritable. Absent syscall.dll there is nothing to publish into and nothing that
+    /// could spawn a child to inherit it, so doing nothing is correct rather than merely safe —
+    /// the same argument the flag bridge makes for its own late binding.
+    /// </para>
+    /// </remarks>
+    private static void PublishSandboxMarker(string runRoot)
+    {
+        Environment.SetEnvironmentVariable(SandboxMarkerVariable, runRoot);
+
+        try
+        {
+            Type? syscallPackage = Type.GetType(SyscallPackageTypeName, throwOnError: false);
+
+            MethodInfo? setenv = syscallPackage?.GetMethod(
+                "Setenv",
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: [typeof(@string), typeof(@string)],
+                modifiers: null);
+
+            setenv?.Invoke(null, [(@string)SandboxMarkerVariable, (@string)runRoot]);
+        }
+        catch (Exception ex)
+        {
+            // A failure here costs the helper gate and nothing else: the run continues, and a
+            // helper that cannot see the marker behaves exactly as it did before the gate existed.
+            Console.Error.WriteLine($"testing: could not publish the sandbox marker to the converted environment: {ex.Message}");
+        }
+    }
 
     /// <summary>
     /// Creates this run's isolated directory pair — the run root and the package working directory
