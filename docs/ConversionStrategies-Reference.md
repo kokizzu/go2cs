@@ -16229,6 +16229,67 @@ Guarded by the `StatLayoutTruth` behavioral output test (a temp tree: `Stat`/`Ls
 
 **Measured (2026-08-22, the Linux roster re-run against the poll-seam lane's 122/161 baseline; Windows control on the i9 39/39 green):** every one of the 13 rows the two classes had been attributed to moved exactly as predicted — **7 flip to PASS at their banked counts** (`archive/zip`, `debug/dwarf`, `html/template`, `io/ioutil`, `io/fs`, `internal/diff`, `archive/tar`), **`path/filepath` validates at its Linux count** (54 of 54 matching; the banked 61 is Windows-shaped), and the other **5 are improved to a residual of a different class** — `time` 156/157 (the ZONEINFO caching test), `go/doc/comment` 10,058/10,059, `text/template` 51/52, `go/internal/srcimporter` 4/7 and `os/exec` now running 16/72 (the package-level death is gone), each remaining test on the exec wall. The board entry of 2026-08-22 ("the three bodies") carries the roster arithmetic.
 
+### `Uname` — the struct-passing class taken to its limit, and the deferral rule it exposed
+
+**The member.** `Utsname` is the class's purest case: not a record with one array field at the end,
+but a struct that is *nothing but* inline arrays. The kernel's `struct utsname` on linux/amd64 is
+six 65-byte character arrays back to back — 390 bytes, every one of them storage. The converted
+`Utsname` is six golib `array<int8>` MANAGED REFERENCES and no characters at all, so
+`(uintptr)Ꮡbuf` hands `uname(2)` a managed image with nowhere to put what it writes.
+
+**The symptom, and why it read as innocent.** `os/exec`'s `TestFindExecutableVsNoexec` gates itself
+on `unix.KernelVersion()`, whose entire body is `syscall.Uname` plus a parse of the `Release` field.
+The parse read `(0, 0)`, so the test took **Go's own** skip — `requires Linux kernel v5.8 with
+faccessat2(2) syscall` — on a kernel that is 6.18 and has the syscall: Go passed the test, the
+converted side skipped it. Two things about that are worth carrying:
+
+- **It is a defect, not a `platform-skip` disclosure.** That class admits a Go=pass/C#=skip pair
+  only when the skipped-on property is one the deployment genuinely holds. Here the property is
+  false — the kernel has `faccessat2`; the conversion merely could not read its own `uname`.
+  Disclosing it would have laundered a fixable seam into a permanent one, which is precisely what
+  the class's anti-laundering clause exists to prevent.
+- **A smashed header reads as LENGTH ZERO, which is why the failure was quiet.** The `foreach` over
+  `Release` iterated nothing and returned `(0, 0)` instead of faulting — so the run continued, and
+  the clean skip looked like evidence that the kernel's write had never landed. It is the opposite:
+  a zero-length read is what a smashed `array<T>` header looks like.
+
+**The remedy** is the class's established one, third time on Linux after `Fstat`/`fstatat` and
+`wait4`: a `[StructLayout(LayoutKind.Sequential)]` `NativeUtsnameLinux` with six `fixed int8[65]`
+buffers, size-asserted at the boundary against the kernel's 390, handed to `RawSyscall` (the
+wrapper it displaces is `//sysnb`, so there is no enter/exitsyscall bracket), then a field-for-field
+copy back that reuses an already-correct backing store and copies the NUL and everything after it
+verbatim — Go's caller receives the kernel's bytes, and the callers that want a string do their own
+scan for the terminator. Registered `goosLinux` in `manualConversionFuncs`, because `Uname` is a
+Linux-only declaration.
+
+**⚠ The corpus half of a hand-own is not optional, and a `-tests` run will not reveal it.**
+`manualConversionFuncs` displaces a wrapper at CONVERSION time; the committed corpus file still
+carries the previously generated body until something regenerates it. The two coexisted here and
+the Linux `syscall` package failed to compile with **CS0111** — while every `-tests` run stayed
+green, because that pipeline converts *only the package under test* and never regenerates
+`syscall`. `Fstat`, `fstatat` and `wait4` are absent from `zsyscall_linux_amd64.cs` for exactly this
+reason (their regen removed them), so the generated `Uname` was deleted in the same commit rather
+than deferred to the next `-stdlib` run. **The gate that catches this is a real build of the
+package on its own target** (`dotnet build syscall.csproj -p:GoTargetOS=linux --no-incremental`);
+no test-pipeline verdict can.
+
+**What it did NOT fix, stated because the measurement was run.** The same suite's parallel-load
+heap corruption is untouched: 4 compare rounds at the fixed tree, 4 crashes, with the `faccessat2`
+skip gone in every one. The corruption is independently proven — a `verifyheap` over a crash dump
+reports a contiguous run of errors (a zeroed method table, three members that are text where
+pointers belong, a bogus syncblock index) — but its writer is a separate, still-open question.
+`Uname` is banked on what it demonstrably fixes.
+
+**The deferral rule this exposed.** The `Fstat` entry above ends "`Statfs_t`/`Sysinfo_t`/`Utsname`
+are the same class and are taken when a suite reaches them, per the class doctrine" — and `Utsname`
+sat on that list, reached, quietly answering `(0, 0)`, because "no roster row reached it" is a
+statement about our COVERAGE rather than about execution. For members whose converted struct carries
+`array<>` fields the failure is not only a wrong answer: the kernel writes over GC-TRACKED
+REFERENCE SLOTS, which the collector then follows. That is a memory-safety failure whose crash can
+surface arbitrarily far away, so for that sub-class "when reached" is the wrong bar and the
+remaining members (`Sysinfo_t`, `Statfs_t`, `Timex`, `Flock_t`, `FdSet` — the last two being kernel
+write-backs any converted program can reach) are worth closing proactively.
+
 ### The sockaddr family on Linux — L10's mirror, arm for arm, as the socket poller's prerequisite; and `Mmap`'s slice is a snapshot
 
 **The sockaddr mirror.** The Linux flavor has the same two defects the Windows lane's L10 entry (above, *The SOCKET-ADDRESS family*) retired: `syscall_linux.go` writes the port through `(*[2]byte)(unsafe.Pointer(&sa.raw.Port))` — which converts to a length-zero `array<byte>` and panics `index out of range [0] with length 0` in `SockaddrInet4.sockaddr` — and `Bind`/`Connect` hand the kernel `unsafe.Pointer(&sa.raw)` while `accept4`/`getsockname`/`getpeername` hand it `&rsa` to fill, neither of which has a native layout (`RawSockaddrInet4.Addr/Zero`, `RawSockaddrAny.Data/Pad` are golib `array` references). Measured on the 2026-08-22 Linux roster re-run as R5: `encoding/json`'s `TestHTTPDecoding` and `crypto/tls`'s `TestMain` both died in the encoder before any socket call. `syscall/linux/sockaddr_linux_impl.cs` mirrors L10 exactly: the two INET encoders write the port arithmetically; `writeNativeSockaddr` builds the native `sockaddr_in`/`_in6`/`_un`/`_ll`/`_nl` image in a stack buffer (calling Go's own `sockaddr()` first, so there is ONE definition of what a Sockaddr means and the hand-own translates layout alone); `Bind`/`Connect` hand that address to the package's own generated address-taking `bind`/`connect`; `Getsockname`/`Getpeername`/`Accept4` go through the trampoline with a stack buffer — their generated wrappers take a typed `ж<RawSockaddrAny>` — and decode with `readNativeSockaddr`, Go's `anyToSockaddr` arm for arm over a native image; and `anyToSockaddr` itself becomes a flatten-then-decode of the managed struct (Family at 0, Data 2..15, Pad 16..111 = `SizeofSockaddrAny`), so any remaining auto caller decodes correctly once its own fill is. The registry carries the family under a new **`goosWindowsLinux`** scope for the names both flavors hand-own (the encoders, `Bind`/`Connect`/`Getsockname`/`Getpeername` — one entry, each flavor's per-GOOS file its own authority, the `lock_sema`/`lock_futex` precedent; darwin keeps its libc bodies) and `goosLinux` for `Accept4`/`anyToSockaddr`, guarded by `TestSockaddrFamilyIsScopedToEachHandOwningFlavor`. Not covered, named: `Recvfrom`/`Sendto`/`Recvmsg`/`Sendmsg` (UDP and ancillary), exactly L10's line.
