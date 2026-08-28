@@ -1,16 +1,25 @@
 # PLAN — cgo interop for go2cs: from `import "C"` to a working P/Invoke bridge
 
-> **STATUS: PROPOSED — AWAITING COORDINATOR RATIFICATION (2026-08-28). Nothing in this document is
-> ratified; no implementation ships with it.** A **strategy plan** ([`Glossary.md`](Glossary.md),
-> *Plan*): it fixes a ruled frame — which targets, in which order — and holds its OQ rulings until
-> its ladder completes. It supplies **no procedure**; procedure stays in the runbooks. §10's ⟨OQ-1⟩
-> through ⟨OQ-5⟩ carry recommendations awaiting ruling; ⟨OQ-6⟩ is ruled.
+> **STATUS: RATIFIED WITH BINDING CORRECTIONS (Fable adversarial review, 2026-08-29,
+> `phase4/REVIEW-cgo-interop.md`, branch `claude/cgo-review`) — corrections folded 2026-08-29.**
+> The frame is ruled; the ladder staffs per §1's sequencing statement, not on ratification. A
+> **strategy plan** ([`Glossary.md`](Glossary.md), *Plan*): it fixes a ruled frame — which targets,
+> in which order — and holds its OQ rulings until its ladder completes. It supplies **no
+> procedure**; procedure stays in the runbooks. §10's ⟨OQ-1⟩ through ⟨OQ-5⟩ carry recommendations
+> awaiting ruling; ⟨OQ-6⟩ is ruled.
 >
-> Written against `be58eb4aa` (2026-08-25), Go 1.23.12, .NET 10. **Revised twice on 2026-08-28 under
-> adversarial review**; §9 records every claim the review falsified, including four of the first
-> draft's that were simply wrong and one of the second draft's. A reviewer finding against
-> `phase4/DESIGN-cooperative-scheduler.md` (§5.3) is **flagged for the coordinator, not corrected
-> here** — it is another document's to amend.
+> Written against `be58eb4aa` (2026-08-25), Go 1.23.12, .NET 10; **line cites re-resolved against
+> master `6fcf4be7b` at fold time** (content verified identical in each case — the numbers moved, the
+> code did not). **Revised twice on 2026-08-28 under adversarial review, then corrected once on
+> 2026-08-29 under the ratifying review**; §9 records every claim those reviews falsified — four of
+> the first draft's that were simply wrong, one of the second draft's, and one the ratifying review
+> found wrong at this document's own base and still wrong at master. That
+> review also re-grounded the plan against the twelve merge windows since its fork — the keystone
+> tether (§4), the struct-passing ruling (Phase 2), the single-file host (Phase 6) — and supplied
+> the two absences it names: security posture (§5.4) and campaign sequencing (§1). The §5.3 finding
+> against [`phase4/DESIGN-cooperative-scheduler.md`](phase4/DESIGN-cooperative-scheduler.md) was
+> **actioned at master** (`6fcf4be7b`, 2026-08-28); that document's status block now carries the
+> dated amendment and names this plan's blocking-call section as the trap it retires.
 >
 > Scopes the `cgo` slice of [`Roadmap.md`](Roadmap.md) Phase 5 ("replace the `PartialStubGenerator`'s
 > throwing implementations for Go declarations backed by assembler, cgo, runtime/compiler intrinsics,
@@ -54,6 +63,14 @@ long tail is named, not estimated, per the no-frozen-figures discipline
 | 3 | Inline C bodies in the preamble | common in small libraries | native side-build, then P/Invoke — never C→C# transpilation | 4 |
 | 4 | Reverse callbacks (`//export`) | less common, load-bearing where used | `[UnmanagedCallersOnly]` | 5 |
 
+**Sequencing — this ladder staffs after the validation campaign's platform-parity goal, and gates
+nothing before it.** §2 Finding 5 supplies the argument: the corpus is wholly `CGO_ENABLED=0`
+output, so no roster row and no toolchain hop depends on cgo. Ratification fixes the frame; it does
+not claim a slot. The one deliberate exception is **severable**: Phase 1 step 1's file-list zip fix
+(§2 Finding 4) is a latent correctness bug independent of cgo and may staff on its own merits
+without staffing the ladder. Read Phase 1's "worth doing on its own merits" as applying to that
+step alone.
+
 ## 2. Measured: what happens today
 
 **Instrument.** A minimal cgo fixture plus a `packages.Load` probe using `packages.LoadAllSyntax` —
@@ -72,8 +89,8 @@ package with `GoFiles=[]`, `CompiledGoFiles=[]`, a zero-name type scope, and a s
 
 **Finding 3 — the fatal gate is effectively dead code, and go2cs reports SUCCESS on a cgo package.**
 The first draft claimed `import "C"` is "a hard stop" at
-[`visitImportSpec.go:211`](../src/go2cs/visitImportSpec.go). Measured, that gate **never fires**: with
-cgo disabled, build constraints exclude the file before any visitor runs; with cgo *enabled*, the ASTs
+[`visitImportSpec.go:212-214`](../src/go2cs/visitImportSpec.go). Measured, that gate **never fires**:
+with cgo disabled, build constraints exclude the file before any visitor runs; with cgo *enabled*, the ASTs
 reaching the visitor are cgo-**rewritten** and no longer contain `import "C"` at all. Actual behavior,
 identical with and without `-cgo=true` — **the flag is inert**:
 
@@ -109,7 +126,7 @@ Under cgo they diverge — `CompiledGoFiles` holds cgo's generated output in a b
 pairing either overruns or, worse, **silently misaligns**, binding an AST to another file's path. That
 path decides the emitted `.cs` name, the hand-own marker probe (`conversionDriver.go:244-246`), and the
 `CheckBuildConstraints` target. The nils caveat makes the zip fragile even without cgo. The `-tests`
-path already does it correctly ([`testConversion.go:1170-1175`](../src/go2cs/testConversion.go)):
+path already does it correctly ([`testConversion.go:1183-1187`](../src/go2cs/testConversion.go)):
 zipped against `CompiledGoFiles`, bounds-guarded. *This is Phase 1's first change, and a latent
 correctness bug independent of cgo.*
 
@@ -117,8 +134,8 @@ correctness bug independent of cgo.*
 corpus is wholly `CGO_ENABLED=0` output, so cgo support cannot move an existing golden or CNR verdict.
 
 **Finding 6 — three existing "C" accommodations, all avoidance, none a binding.** The fatal gate
-(`visitImportSpec.go:211`), the `classSkip` bucket (`moduleConverter.go:226`), and a type-alias preload
-skip (`importOperations.go:1027`). Nothing parses a preamble; nothing generates anything.
+(`visitImportSpec.go:212-214`), the `classSkip` bucket (`moduleConverter.go:226`), and a type-alias
+preload skip (`importOperations.go:1027`). Nothing parses a preamble; nothing generates anything.
 
 ## 3. Where this sits in the existing roadmap
 
@@ -138,7 +155,10 @@ Windows `syscall` interop already proved the hand-written approach works and whe
 `zsyscall_windows_impl.cs` and `interface_windows_impl.cs` found and fixed exactly this bug class —
 non-blittable types needing blittable mirrors, `ж<T> → uintptr` answering 0 for a nil boxed pointer on
 `**T` out-parameters, raw kernel buffers needing manual transcription — one hand-owned wrapper at a
-time, over an enumerable Win32 surface. cgo raises the same classes against a surface nobody can
+time, over an enumerable Win32 surface. The **Linux** family since joined it and carries the harder
+lesson: `syscall/linux/structclass_linux_impl.cs` (2026-08-28) closes the struct-passing class
+*proactively* because a native write over managed-reference storage is heap corruption, not a wrong
+answer (Phase 2 absorbs its discipline). cgo raises the same classes against a surface nobody can
 enumerate in advance.
 
 ## 4. Foundations already in place
@@ -146,17 +166,38 @@ enumerate in advance.
 - **Pointer provenance** ([`phase4/DESIGN-pointer-provenance.md`](phase4/DESIGN-pointer-provenance.md),
   RATIFIED 2026-08-23) teaches `ж<T>` which kind of address it holds — pinned-managed, pointer-shaped,
   or native. That is the classification a generated wrapper needs to decide whether a value handed to C
-  must be pinned or is already stable.
+  must be pinned or is already stable. Since `3174009a8` it is realized as the **kind split** — `ж<T>`
+  abstract over `StandardBox`/`FieldRefBox`/`ElemRefBox`/`NativeBox` — so the classification is a type,
+  not a flag.
 - **Native-backed `slice<T>`** ([`phase4/DESIGN-native-backed-slice.md`](phase4/DESIGN-native-backed-slice.md),
   RATIFIED 2026-08-22, landed) covers the **C→Go** direction: wrapping a C-returned buffer as a slice
   that reads and writes through to the real memory.
+- **Native-box source retention** — `NativeBox<T>`'s `m_retainedSource` slot (`ж.NativeBox.cs:31/47/79`)
+  and the corpus-wide `unsafe.Pointer.FromBox` mint (`core/unsafe/unsafe.cs:368-380`, merge `a7c964d80`): a number
+  that carries the box it was minted from. This is the **callee-retains** mechanism — the machinery
+  Phase 3's `C.CString`-class helpers and any C-keeps-the-pointer scenario need, and it landed after
+  this document's fork.
 
 **The Go→C direction is a different mechanism, and the second draft of this document got this wrong.**
-A native-backed slice cannot be pinned — `slice.cs:396` *throws* (*"pinning is meaningless for native
+A native-backed slice cannot be pinned — `slice.cs:431` *throws* (*"pinning is meaningless for native
 memory — take an element address instead"*), and `OverNativeMemory` refuses any `T` carrying managed
 references. Handing a **managed** Go slice to C uses the pre-existing `PinnedBuffer`
-(`slice.cs:398`, and its siblings in `string.cs`/`ж.cs`). So Phase 3 is *partly* reuse: the C→Go half
+(`slice.cs:430`, and its siblings in `string.cs`/`ж.cs`). So Phase 3 is *partly* reuse: the C→Go half
 is ratified work, the Go→C half is existing golib machinery, and only the glue is new.
+
+**The keystone tether re-grounds what "the wrapper owns the pin scope" has to mean.** The ж→uintptr
+lifetime gap was measured post-fork (os/exec's GC-mark SIGSEGV, rooted 2026-08-26) and closed at
+`src/core/internal/runtime/syscall/linux/syscall_linux_impl.cs:105-119`: a `(uintptr)Ꮡbuf` argument's
+pin lives **on the box**, the token registry holds the box **weakly**, so the JIT may retire the
+caller's box local the moment the address is extracted — *before the call runs*. The remedy re-roots
+each argument's box for the call's duration (registry `Resolve`, strong locals, `GC.KeepAlive` past the
+return). Linux syscalls have one funnel to fix; **cgo has none — every generated extern is its own
+crossing.** So the wrapper-owns-the-pin-scope answer is structurally correct only under a stated
+contract, which Phase 3 carries: *the generated wrapper receives the pinnable object or a box-carrying
+`Pointer` (`unsafe.Pointer.FromBox`), never a bare pre-extracted address; where Go hands it
+`unsafe.Pointer(&b[0])`, the emission is FromBox-shaped so the wrapper can pin or re-root.* A wrapper
+handed a number has already lost the ability to keep the storage alive. (`PinnedBuffer.Clone` re-pins
+since `1d01200a9` — Phase 3 inherits that fix for free.)
 
 ## 5. Constraints the design must carry
 
@@ -207,11 +248,12 @@ s_stackReserve)`, one dedicated thread per goroutine; the source says so directl
 `internal/singleflight` ladder that
 [`phase4/DESIGN-cooperative-scheduler.md`](phase4/DESIGN-cooperative-scheduler.md) measured is cited by
 `Goroutine.cs:26-38` as the historical motivation **for the fix that removed it**.
-([`phase4/DESIGN-cooperative-scheduler.md`](phase4/DESIGN-cooperative-scheduler.md) still describes
-the launch path in the present tense as `QueueUserWorkItem` (§2) and still carries a
-`PROPOSED / nothing ratified` status header, though `0b8287f07` chartered it and `4f06d78ae` landed
-SCHED-S1, both on 2026-08-13 — flagged for the coordinator, not corrected here. CLAUDE.md itself is
-clean on this point; it carries no `QueueUserWorkItem` claim.)
+(The flag this section raised against that document — present-tense
+`QueueUserWorkItem` in §1/§2 under a `PROPOSED` header, after `0b8287f07` chartered it and
+`4f06d78ae` landed SCHED-S1 — was **actioned at master** in `6fcf4be7b` (2026-08-28): the status
+block now reads RATIFIED AND LANDED and its dated amendment marks §1/§2 as the pre-landing measured
+bill, naming *this* section as the trap the stale present tense produced. Read that document through
+its amendment. CLAUDE.md was clean on this point throughout; it carries no `QueueUserWorkItem` claim.)
 
 So a blocking cgo call from a goroutine occupies **that goroutine's own dedicated thread** and starves
 nothing. Capacity is thread-bound (~10⁴ threads), not pool-heuristic-bound. cgo inherits no
@@ -233,6 +275,32 @@ starvation pathology, and the design owes no mitigation for one. The resulting p
 For reference, real Go does not mint a thread per call either: `cgocall` enters the syscall state, the
 goroutine keeps its M, and `sysmon` **detaches the P** so other goroutines proceed — P-detach with M
 reuse. The .NET analogue of the useful half is the GC transition a P/Invoke already performs.
+
+### 5.4 Security posture — cgo compiles and loads attacker-authored input
+
+Every other constraint here is a correctness constraint. This one is a trust constraint, and the
+document owes it plainly: **a loaded native library is full-trust in-process code; the trust decision
+is made when the module is chosen, and no generated wrapper confines it.** Three surfaces, each with
+a precedent this design adopts rather than invents.
+
+1. **Build-time flag injection.** `#cgo CFLAGS`/`LDFLAGS` in a third-party module are *input to the C
+   toolchain on the converting machine*. Real Go isolates an entire file to the problem —
+   `$GOROOT/src/cmd/go/internal/work/security.go`: *"We must avoid flags like -fplugin=, which can
+   allow arbitrary code execution during the build."* Phase 2's `-lfoo`-only scoping accidentally
+   approximates that allowlist; §7's "arbitrary `LDFLAGS`" line, taken **without** the allowlist
+   doctrine, is a build-time RCE on the converting machine, and `-recurse` conversion of an untrusted
+   module is exactly the exposed path. Any pass-through beyond `-lfoo` is gated on an allowlist
+   modelled on Go's, not on a permissive default.
+2. **Load-time library resolution.** "Per-OS naming is .NET's own native-library resolution" (Phase 2)
+   delegates the search-order question, and the Windows DLL-planting surface is what it delegates.
+   Generated bindings **pin** resolution — `[DefaultDllImportSearchPaths]` or an explicit
+   `NativeLibrary` resolver — stated in Phase 2, not discovered in Phase 6.
+3. **The boundary itself.** Nothing above confines the library once loaded; it constrains only how it
+   is *chosen* and *found*. There is no sandbox in this design and none is promised.
+
+**Recommendation:** carry 1 and 2 as Phase 2 acceptance criteria rather than Phase 7 items — both are
+cheap while the emitter is being written and expensive to retrofit onto generated output. The trust
+statement is documentation, and belongs wherever cgo support is announced to users.
 
 ## 6. The phased plan — base operations
 
@@ -277,7 +345,24 @@ classified declaration, and each converted AST maps to the correct source filena
 | fixed-size C array member | **`[InlineArray(N)]`** (.NET 8+) — *not* a C# `fixed` buffer, which accepts only primitive element types and so cannot express `struct sockaddr addrs[4]` |
 | function pointer | `delegate*<…>` |
 | `char *`, `void *`, sized buffers | a blittable `void*`/`nint` extern **plus** a generated wrapper that owns the pin scope (below) |
-| `#cgo LDFLAGS: -lfoo` | resolves the shared-library name; per-OS naming is .NET's own native-library resolution. **Scoped to the `-lfoo` case** — `LDFLAGS` is arbitrary linker flags, and static linking is a Phase 4 problem |
+| `#cgo LDFLAGS: -lfoo` | resolves the shared-library name; per-OS naming is .NET's own native-library resolution, **with the search order pinned** (`[DefaultDllImportSearchPaths]` or an explicit `NativeLibrary` resolver — §5.4). **Scoped to the `-lfoo` case** — `LDFLAGS` is arbitrary linker flags, and static linking is a Phase 4 problem |
+
+**A generated mirror carries a discipline, not just a layout.** The struct-passing class was closed
+proactively on the Linux `syscall` surface (`syscall/linux/structclass_linux_impl.cs`, 2026-08-28)
+after the measured Uname root: a converted struct holds its `array<>` fields as **managed
+references** in a GC-tracked slot, so a native write over them is heap corruption that surfaces
+arbitrarily far away inside the collector — verifyheap on the crashed host reported a zeroed
+MethodTable and text where pointers belong. The ruling that closed it binds this generator, because
+what was a hand-owned handful of members there is *every emitted struct* here:
+
+- The mirror is blittable and mirrors the **native** layout; the generator **never** emits a call in
+  which native code writes over storage holding managed references.
+- A **size assertion at the boundary**, so a wrong mirror fails the *call* loudly instead of
+  producing a quiet wrong answer or a delayed corruption.
+- **Explicit two-way copy-back** for out and in-out structs — seeded from the caller before the call,
+  copied back after it — not a one-way marshal that silently drops kernel- or callee-written fields.
+- The per-member-**when-reached** deferral that the hand-written surface could afford is **ruled out**
+  for this class: "no case reached it" is a statement about coverage, not about execution.
 
 **Two layers, not one.** `LibraryImportGenerator` marshals only types it knows; `ж<T>` and `slice<T>`
 are not among them and each would need a full `CustomMarshaller`. So the generated surface is a
@@ -291,8 +376,9 @@ by go2cs-gen would be invisible to the SDK's `LibraryImportGenerator` and never 
 implementation. Converter-written files are ordinary compilation inputs. (`DllImport` remains the
 fallback for any signature the generator rejects.)
 
-**Exit gate:** an extern-function-only cgo package's Go-callable surface compiles and resolves.
-Signature generation only — no live native library required.
+**Exit gate:** an extern-function-only cgo package's Go-callable surface compiles and resolves, with
+resolution **pinned** per §5.4 rather than left to the platform's default search order. Signature
+generation only — no live native library required.
 
 ### Phase 3 — Pointer, string, and slice marshaling
 
@@ -313,8 +399,15 @@ Real cgo's pointer rules are a programmer discipline, optionally checked at runt
 the discipline can be **structural**: the generated wrapper owns the pin scope, opening it immediately
 before the call and closing it immediately after, so a caller cannot violate the rule by omission.
 
+**That only works under §4's contract, restated here because it constrains the emission, not just the
+wrapper:** *the generated wrapper receives the pinnable object or a box-carrying `Pointer`
+(`unsafe.Pointer.FromBox`), never a bare pre-extracted address; where Go hands it
+`unsafe.Pointer(&b[0])` — case 3 above — the emission is FromBox-shaped so the wrapper can pin or
+re-root.* A wrapper handed a number has nothing left to pin, and the keystone tether measured that
+window closing on a live GC mark.
+
 **Exit gate:** byte-identical round-trip in both directions through a real C function, including the
-no-copy `&b[0]` idiom.
+no-copy `&b[0]` idiom, with the no-copy case proven under GC pressure rather than on a quiet heap.
 
 ### Phase 4 — Inline C bodies (native side-build)
 
@@ -350,9 +443,14 @@ with cgo-safe signatures — close to what `UnmanagedCallersOnly` independently 
 need real work:
 
 - **Per-goroutine state.** A thread entering through a callback has none of golib's `[ThreadStatic]`
-  state — `t_onGoroutine`, the defer/panic locals, `t_procId`, the high-resolution sleep timer. The entry
-  point must establish it as `Goroutine.Run` does. This *is* the registration work; the CLR's automatic
-  thread attach on reverse P/Invoke covers the runtime's bookkeeping, not golib's.
+  state — the root is `t_current` (`Goroutine.cs:83-84`), read through the `OnGoroutine` property
+  (`:138`), plus the defer/panic locals and the high-resolution sleep timer; `t_procId` is **not**
+  golib's, it lives in `src/core/sync/runtime_impl.cs:273`. The entry point must establish that state
+  as `Goroutine.Run` does. This *is* the registration work; the CLR's automatic thread attach on
+  reverse P/Invoke covers the runtime's bookkeeping, not golib's. It is not invented here, though:
+  **`Goroutine.Enter()` (`Goroutine.cs:176`) is an existing host-attach scope**, already used by the
+  test host to run foreign threads as goroutines — the thunk composes with it and adds the panic
+  boundary below.
 - **Panics at the boundary.** An exception escaping an `[UnmanagedCallersOnly]` thunk is a fatal rude
   abort. golib models Go panics as `PanicException` with a Go-faithful traceback; a panicking `//export`
   function would instead abort with none. The thunk must catch and map to cgo's own crash behavior.
@@ -377,7 +475,16 @@ question is whether that two-step path holds for a **cgo** dependency, where ste
 the C toolchain and preamble for a package in a converted output tree. Unproven. The roster is also
 stdlib-scoped today and has no shape for a non-stdlib row. ⟨OQ-2⟩ carries the fork.
 
-**Exit gate:** at least one real cgo package validated end-to-end against `go test`.
+**And the host the pipeline runs is now a moving part.** The converted test host publishes
+**self-contained, single-file** (`test-csproj-template.xml:81-85`: `SelfContained`,
+`PublishSingleFile`, RID-pinned; trimming stays off). A cgo package's native artifact (§5.2, Phase 4)
+must therefore *travel with* that host and be resolvable from it — a single-file bundle's extraction
+and probing paths are not the ordinary output directory, and a native dependency that resolves during
+a plain `dotnet build` can fail only when published. This is the placement half of ⟨OQ-4⟩ meeting the
+pipeline: the artifact is a build output, and Phase 6 must say where the published host finds it.
+
+**Exit gate:** at least one real cgo package validated end-to-end against `go test`, **from the
+published single-file host**, not only from a build-output run.
 
 ## 7. Phase 7 (speculative) — toward 100%
 
@@ -388,7 +495,15 @@ Named, not estimated.
   subset.
 - **`#cgo pkg-config` resolution** against arbitrary system package managers on every target. (Phase 2
   is scoped to `-lfoo` precisely so this stays here.)
-- **Arbitrary `LDFLAGS`** — `-L`, `-rpath`, `-framework`, `.a` archives, `-static`.
+- **Arbitrary `LDFLAGS`** — `-L`, `-rpath`, `-framework`, `.a` archives, `-static`. **Gated on §5.4's
+  allowlist**: this bullet is a widening of what reaches the C toolchain, and widening it without the
+  allowlist doctrine is the build-time RCE that section names.
+- **Signal-handler coexistence.** A loaded C library that installs its own handlers — SIGSEGV for its
+  own purposes, SIGCHLD, `sigaltstack` — fights both the CLR's own use of those signals and this
+  corpus's live bridge, `src/core/runtime/linux/signal_posix_impl.cs` (`PosixSignalRegistration`, the
+  os/signal arc, merge `9b4699ff1`). Real cgo documents this contract at length; unlike the rest of
+  this section it is nameable today and it touches a banked row, so it is a *known* interaction
+  awaiting scope rather than a speculative one.
 - **A `cgocheck`-equivalent runtime verifier** — a debug-mode check that a generated wrapper's
   pin/lifetime discipline actually held. New machinery; nothing in golib is a starting point.
 - **C++ interop** — a stretch even in real Go, which officially supports C only.
@@ -405,8 +520,9 @@ Named, not estimated.
 ## 9. Adversarial pass — what review falsified
 
 Recorded rather than silently corrected, per this repo's practice of keeping the wrongs on the record
-(`DESIGN-pointer-provenance.md`'s "three recorded wrongs"). Two review rounds; the second round
-falsified a claim the first round's revision had *introduced*.
+(`DESIGN-pointer-provenance.md`'s "three recorded wrongs"). Three review rounds: the second round
+falsified a claim the first round's revision had *introduced*, and the third — the ratifying review —
+found one that had been wrong since the first draft and survived both revisions.
 
 | Claim | Verdict |
 |---|---|
@@ -417,7 +533,7 @@ falsified a claim the first round's revision had *introduced*.
 | "`C.CString`/`C.GoBytes` exist because a raw `string`/`[]T` header was never meant to be handed to C" | **Wrong rationale, and it conflated directions.** cgo permits passing `&b[0]`; the rule constrains *retention past the call*. `CString` exists for NUL-termination and immutability; `GoBytes` runs the other way. |
 | ".NET's interop story is stronger *because* its GC compacts" | **Backwards.** Compaction is why pinning exists; Go's non-moving heap is the cheaper side. |
 | "Fixed-size C array member → C# `fixed` buffer" | **Wrong for non-primitives.** `[InlineArray]` is the general answer on net10.0. |
-| "The native-backed slice is the mechanism for **both directions** of buffer exchange" | **WRONG, and the first revision made it broader.** `slice.cs:396` *throws* for pinning a native-backed slice; Go→C uses the pre-existing `PinnedBuffer`. §4 now splits by direction. |
+| "The native-backed slice is the mechanism for **both directions** of buffer exchange" | **WRONG, and the first revision made it broader.** `slice.cs:431` *throws* for pinning a native-backed slice; Go→C uses the pre-existing `PinnedBuffer`. §4 now splits by direction. |
 | Phase 6 validates via `-tests`; ⟨OQ-2⟩ suggests a third-party library | **Internally inconsistent** — `main.go:344` forbids the combination. Re-scoped around the two-step flow. |
 | Phase 4 compiles C at convert time, "deterministic" | **Asserts the opposite of what it delivers.** §5.2 states the constraint; the `.s` precedent is invalid because Go's assembler is hermetic and an external gcc is not. |
 | Phase 4 → Phase 5 ordering implies composition | **Forbidden by cgo.** `//export` restricts the preamble to declarations only (`cmd/cgo/doc.go:324-329`). |
@@ -425,15 +541,25 @@ falsified a claim the first round's revision had *introduced*.
 | Phase 5: "no scheduler-registration dance to replicate" | **Self-contradicted** two paragraphs later. The `[ThreadStatic]` establishment *is* the work; plus a panic-boundary and stack-reserve divergence the draft never mentioned. |
 | "`SuppressGCTransition` … a way to stall the GC" | **Understated.** It blocks GC suspension *process-wide* (deadlock) and must also exclude callback-taking symbols. |
 | "Nothing handles `C` today" | **Imprecise.** Three accommodations exist, all avoidance (§2 Finding 6). |
+| Phase 5: golib's per-goroutine `[ThreadStatic]` state is `t_onGoroutine` and `t_procId` | **WRONG at this document's base and at master** — the ratifying review's one naming defect, wrong since the first draft. No `t_onGoroutine` exists: the root is `t_current` (`Goroutine.cs:83-84`), read via `OnGoroutine` (`:138`); `t_procId` is not golib's (`sync/runtime_impl.cs:273`). And `Goroutine.Enter()` is an **existing** attach API, so Phase 5 composes with it rather than inventing registration. |
 
 Review also **added** findings the drafts lacked entirely: the `pkg.Syntax`/`GoFiles` zip defect (§2
 Finding 4 — a latent bug independent of cgo), the source ↔ generated file mapping problem (Phase 1),
-and the two-layer `LibraryImport` reality (Phase 2).
+and the two-layer `LibraryImport` reality (Phase 2). The ratifying round added two whole absences —
+§5.4's security posture and §1's sequencing — plus the post-fork foundations §4, Phase 2 and Phase 6
+now name; those are re-groundings against a moved tree rather than falsifications, which is why they
+appear as text above and not as rows here.
 
-One reviewer claim was **not** adopted: that `packages.Package` exposes `CgoFiles` showing
-`GoFiles=[]` for a cgo package. That field does not exist on `packages.Package` in the pinned x/tools
-v0.36.0 (it belongs to `go list`/`go/build`); the divergence in §2 Finding 4 rests on the API's own
-doc comments instead, which is the stronger citation and does not depend on a cgo-capable host.
+**Two reviewer claims were not adopted, both re-derived against source before declining them.** First,
+that `packages.Package` exposes `CgoFiles` showing `GoFiles=[]` for a cgo package: that field does not
+exist on `packages.Package` in the pinned x/tools v0.36.0 (it belongs to `go list`/`go/build`); the
+divergence in §2 Finding 4 rests on the API's own doc comments instead, which is the stronger citation
+and does not depend on a cgo-capable host. Second, the ratifying review's line-cite refresh listed the
+hand-own marker probe as drifting `conversionDriver.go:244-246 → 245-249`; it has not moved.
+`conversionDriver.go` is byte-identical between this document's base and master — which is precisely
+why §2 Finding 4 is still live there — so the probe cite stands as written, and the other three
+refreshes (`slice.cs`, `visitImportSpec.go`, `testConversion.go`) were verified individually rather
+than applied as a set.
 
 ## 10. Open questions
 
