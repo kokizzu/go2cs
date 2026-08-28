@@ -292,7 +292,7 @@ func (v *Visitor) forClausePerIterVars(forStmt *ast.ForStmt) []*forPerIterVar {
 		// Probe the box decl BEFORE the object joins forPerIterVars (which suppresses it).
 		boxDecl := v.convertToHeapTypeDecl(ident, false)
 
-		if boxDecl == "" && !v.funcLitReferences(forStmt.Body, obj) {
+		if boxDecl == "" && !v.funcLitReferences(forStmt.Body, obj) && !v.deferOrGoCalleeReferences(forStmt.Body, obj) {
 			continue
 		}
 
@@ -348,6 +348,66 @@ func (v *Visitor) funcLitReferences(node ast.Node, obj types.Object) bool {
 		})
 
 		return false
+	})
+
+	return found
+}
+
+// deferOrGoCalleeReferences reports whether a `defer` or `go` statement under node names obj in
+// its CALLEE expression. Such a statement is a capture site even though the Go source contains no
+// func literal: visitDeferStmt/visitGoStmt SYNTHESIZE one (`() => recv.M()`) for every callee the
+// method-group form cannot express -- a result-returning method (`defer c[i].Close()`, net.Conn),
+// a named func type (context.CancelFunc), a variadic callee. That synthesis happens long after
+// this analysis runs, so without this arm the clause variable stays SHARED and the synthesized
+// lambda reads its post-loop value. net's TestConcurrentSetDeadline is the witness: its
+// `defer c[i].Close()` over a `[10]Conn` indexed c[10] when the defers fired and panicked with
+// index out of range -- a hard failure, not a wrong answer.
+//
+// Only the CALLEE is consulted. A deferred call's ARGUMENTS are already evaluated at the defer
+// statement, exactly as Go requires (`defer((t1, t2) => f(t1, t2), a, i, ref frame)`), so a clause
+// variable appearing only in an argument needs no per-iteration copy -- and minting one would move
+// emission at every such site for no behavioral gain.
+func (v *Visitor) deferOrGoCalleeReferences(node ast.Node, obj types.Object) bool {
+	if node == nil || obj == nil {
+		return false
+	}
+
+	found := false
+
+	ast.Inspect(node, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		var call *ast.CallExpr
+
+		switch stmt := n.(type) {
+		case *ast.DeferStmt:
+			call = stmt.Call
+		case *ast.GoStmt:
+			call = stmt.Call
+		default:
+			return true
+		}
+
+		if call == nil {
+			return true
+		}
+
+		ast.Inspect(call.Fun, func(inner ast.Node) bool {
+			if found {
+				return false
+			}
+
+			if ident, ok := inner.(*ast.Ident); ok && v.info.Uses[ident] == obj {
+				found = true
+				return false
+			}
+
+			return true
+		})
+
+		return true
 	})
 
 	return found
