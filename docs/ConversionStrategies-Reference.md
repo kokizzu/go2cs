@@ -7781,6 +7781,47 @@ four constraint lines. (Guarded by `GenericArrayConstraint` — two array-wrappe
 `~[4]fieldElement` core through a generic function that indexes, index-ranges, value-ranges, and
 constructs the type parameter, values vs Go.)
 
+### A type set of COMPOSITE terms lifts nothing — the union survives only as a comment
+
+The array-core entry above fixed one SHAPE of a wider defect, and the rest of it surfaced on
+`runtime/pprof`'s `testProfileRecordNullPadding[T runtime.StackRecord | runtime.MemProfileRecord |
+runtime.BlockProfileRecord]` — a union whose terms are all plain structs, which was the whole of that
+package's build wall (five call sites, `error CS0315` on each).
+
+The root is what `IEqualityOperators<T, T, bool>` MEANS on each side. Go's `==` works on any comparable
+type, so the operator-set resolver listed `Struct`, `Array`, `Pointer` and `Channel` in
+`comparableOperatorTypes` and lifted that interface for them. But a C# `where` clause is a claim about
+the type ARGUMENT implementing a BCL interface, not about an operator being available, and nothing on
+the Go side of the corpus implements it: a `[GoType]` struct, `array<T>`, `ж<T>` and `channel<T>` all
+compare through `Equals`/`AreEqual`. The lifted clause was therefore unsatisfiable by construction, and
+the diagnostic named the concrete struct rather than the constraint that could not admit it.
+
+Two changes, both in `constraintOperations.go`. The composite kinds leave `comparableOperatorTypes`, so
+the rule is stated once where the operator sets are defined instead of per constraint shape (the
+array-core branch's hand-written `suppressLiftedConstraints` was the same rule applied to one shape; a
+union of *named array types* took no such branch). That alone exposed the fall-through underneath: with
+no operator lift and no interface to name, `getGenericDefinition`'s generic tail emitted the Go union
+text VERBATIM as a C# constraint list — `where T : runtime.StackRecord | runtime.MemProfileRecord | …`,
+`error CS1003` ×4, a syntax error rather than a type error. So `constraintTypeSetIsInexpressible` closes
+it, asked LAST after every shape with a real emission has been tried: a non-empty type set whose
+operator set is empty emits the union as a breadcrumb comment plus the one constraint C# can still
+express —
+
+```csharp
+internal static T testProfileRecordNullPadding<T>(ж<testing.T> Ꮡt, @string name, Func<slice<T>, (nint, bool)> fn)
+    where T : /* runtime.StackRecord | runtime.MemProfileRecord | runtime.BlockProfileRecord */ new()
+```
+
+— the same answer, for the same reason, the built-in [`comparable`](#the-comparable-constraint) arm
+reaches: Go's own checker validated every instantiation before conversion, so the C# clause has nothing
+left to enforce. `new()` is kept (unlike that arm) because a composite type set admits no pointer type
+argument. The corpus footprint is one line: censused at the fix, this was the ONLY converter-emitted
+`IEqualityOperators` clause in the whole corpus that is not on a numeric or ordered union — which is the
+shape's own signature, since a composite type set is a subset of no other operator set and so lifts the
+comparable operators ALONE, with no arithmetic siblings. (Guarded by `Constraints` — a struct-only
+`recordA | recordB | recordC` union through a generic function instantiated at each term; without the
+fix it reproduces CS0315 at all three sites.)
+
 ### A single-term pointer constraint `[P *T]` erases the parameter to `ж<T>`
 
 A type parameter constrained to a single, non-tilde pointer term — go/types' flat-copy helper

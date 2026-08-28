@@ -13,10 +13,9 @@ partial class constraints_package {
     @string Upper();
 }
 
-[GoType("operators = Comparable")]
-partial interface ConstraintTest2<ΔT> {
+[GoType] partial interface ConstraintTest2<ΔT> {
     //  Type constraints: string | chan string | *int | [2]int | Frog
-    // Derived operators: ==, !=
+    // Derived operators: none
     @string Lower();
 }
 
@@ -51,12 +50,11 @@ partial interface PromotedTest1<ΔT> {
     // Derived operators: none
 }
 
-[GoType("operators = Comparable")]
-partial interface PromotedTest3<ΔT> :
+[GoType] partial interface PromotedTest3<ΔT> :
     ConstraintTest2<ΔT>
 {
     //  Type constraints: ConstraintTest2
-    // Derived operators: ==, !=
+    // Derived operators: none
 }
 
 [GoType("operators = Sum, Arithmetic, Comparable, Ordered")]
@@ -75,6 +73,40 @@ partial interface Complex<ΔT> {
 partial interface Ordered<ΔT> {
     //  Type constraints: Integer | Float | ~string
     // Derived operators: +, ==, !=, <, <=, >, >=
+}
+
+[GoType] partial struct recordA {
+    internal nint n;
+}
+
+[GoType] partial struct recordB {
+    internal nint n;
+}
+
+[GoType] partial struct recordC {
+    internal nint n;
+}
+
+[GoType] partial interface RecordUnion<ΔT> {
+    //  Type constraints: recordA | recordB | recordC
+    // Derived operators: none
+}
+
+internal static T firstOf<T>(slice<T> p)
+    where T : /* RecordUnion */ new()
+{
+    T zero = default!;
+    if (len(p) == 0) {
+        return zero;
+    }
+    return p[0];
+}
+
+public static nint UseRecordUnion() {
+    var a = firstOf(new recordA[]{new(1)}.slice());
+    var b = firstOf(new recordB[]{new(2)}.slice());
+    var c = firstOf(new recordC[]{new(4)}.slice());
+    return a.n + b.n + c.n;
 }
 
 } // end constraints_package
