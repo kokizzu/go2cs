@@ -1209,11 +1209,7 @@ public static error /*err*/ SetsockoptInet4Addr(ΔHandle fd, nint level, nint op
     return Setsockopt(fd, (int32)level, (int32)opt, Ꮡvalue.at<byte>(0), 4);
 }
 
-public static error /*err*/ SetsockoptIPMreq(ΔHandle fd, nint level, nint opt, ж<IPMreq> Ꮡmreq) {
-    ref var mreq = ref Ꮡmreq.DerefOrNull();
-
-    return Setsockopt(fd, (int32)level, (int32)opt, Ꮡmreq.Reinterpret<IPMreq, byte>(), (int32)/* unsafe.Sizeof(*mreq) */ (uintptr)8);
-}
+// go2cs generated this placeholder — func SetsockoptIPMreq is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ SetsockoptIPv6Mreq(ΔHandle fd, nint level, nint opt, ж<IPv6Mreq> Ꮡmreq) {
     return EWINDOWS;

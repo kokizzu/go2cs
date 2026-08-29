@@ -363,6 +363,45 @@ partial class syscall_package
         return connect(fd, new @unsafe.Pointer((uintptr)(void*)buffer), n);
     }
 
+    // `ip_mreq` is two INLINE in_addr -- 8 bytes, `imr_multiaddr` then `imr_interface`.
+    //
+    // The same struct-passing seam as the sockaddrs above, reached from the WRITE side. Converted,
+    // `IPMreq` holds `Multiaddr [4]byte` / `Interface [4]byte` as golib `array<byte>` MANAGED
+    // REFERENCES, and the generated wrapper handed those to the kernel through
+    // `Ꮡmreq.Reinterpret<IPMreq, byte>()`. That reinterpret cannot alias: golib's
+    // ReinterpretAliasesStorage refuses a reference-bearing pointee precisely so it never fabricates
+    // one, so it falls to the address route and setsockopt receives eight bytes that are two OBJECT
+    // REFERENCES rather than two addresses. Windows answers WSAEINVAL, which surfaces on every
+    // IP_ADD_MEMBERSHIP as `setsockopt: The requested address is not valid in its context` --
+    // net's TestIPv4MulticastListener.
+    //
+    // No mirror STRUCT is needed, unlike GetTimeZoneInformation's: the option's whole native image
+    // is eight bytes of two four-byte fields, so the stack buffer IS the layout. A LOCAL buffer for
+    // the duration of one call, never a field, for the reason stated in this file's header.
+    //
+    // SetsockoptIPv6Mreq is deliberately NOT taken: Go returns EWINDOWS there, so there is no
+    // behaviour to preserve and a "fix" would invent one.
+    public static unsafe error /*err*/ SetsockoptIPMreq(ΔHandle fd, nint level, nint opt, ж<IPMreq> Ꮡmreq) {
+        byte* buffer = stackalloc byte[nativeIPMreqLen];
+
+        // A nil *IPMreq reaches the kernel as a zeroed option in Go's own wrapper too (it derefs
+        // into the same eight bytes), so the zeroed stack buffer is the faithful image, not a
+        // special case.
+        if (Ꮡmreq is not null && !Ꮡmreq.IsNilPointer) {
+            ref var mreq = ref Ꮡmreq.Value;
+
+            for (nint i = 0; i < 4; i++) {
+                buffer[i] = mreq.Multiaddr[i];
+                buffer[4 + i] = mreq.Interface[i];
+            }
+        }
+
+        return Setsockopt(fd, (int32)level, (int32)opt, (ж<byte>)(uintptr)(void*)buffer, nativeIPMreqLen);
+    }
+
+    // sizeof(struct ip_mreq): two in_addr, no padding.
+    private const int nativeIPMreqLen = 8;
+
     // ConnectEx is the DIAL half of the submit seam and was hand-owned here (for the sockaddr layout
     // alone) before that seam existed. Two things changed when it landed.
     //
