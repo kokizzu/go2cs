@@ -112,19 +112,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **190 / 215 testable packages validated — 88.4%**
+> ### Phase 4 progress: **191 / 215 testable packages validated — 88.8%**
 >
-> **26,045 matching test verdicts · 148 disclosed** *(updated 2026-08-29 — maintained as part of the
+> **26,046 matching test verdicts · 149 disclosed** *(updated 2026-08-29 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 190 / 208 — 91.3%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 191 / 208 — 91.8%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 178 of 189 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 1 row platform-exclusive (`linux: n/a`).
+> **Linux: 178 of 190 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 1 row platform-exclusive (`linux: n/a`).
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -301,6 +301,7 @@ exactly as the line above it is summed from the columns.
 | [`log`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log) | 8 | 1 | The standard logger — the whole flag matrix (`Ldate`/`Ltime`/`Lmicroseconds`/`Llongfile`/`Lshortfile`/`LUTC`/`Lmsgprefix`) rendered against regexps, prefix placement, `SetOutput`/`SetFlags`/`SetPrefix` on both the package logger and a fresh one, concurrent `Output` under `-race`, and the empty-`Print` newline rule. `TestAll` pins **`log_test.go`'s own line numbers** (`63`\|`65`) behind the `Llongfile`/`Lshortfile` prefixes — the assertion the position map exists to answer, and the one that moved this row: the file half alone made it `log/log_test.go:69`, a position in neither tree. alloc-profile disclosure. · linux: 8 + 1 · [proof](validation/current/log.md) |
 | [`log/slog`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog) | 194 | 19 | Structured logging end to end — the `Record`/`Attr`/`Value` model including the packed-payload `Value` across every `Kind`, `LogValuer` resolution with its cycle guard, `Logger`/`Handler` composition through `WithAttrs`/`WithGroup`, the built-in JSON and text handlers compared output-for-output over a ~50-case table (escapes, empty groups, `ReplaceAttr` rewriting, `json.RawMessage`, `TextMarshaler` errors), level parsing/marshalling and `LevelVar`, the `log` package bridge, and `testing/slogtest`'s own conformance suite run against both handlers. Its caller-info tests are what rooted the `-tests` pipeline's internal-test-variant naming defect: an in-package test file is compiled INTO its package, so `TestCallDepth` asserts `log/slog.TestCallDepth` where the derivation had been leaking the converter's own `_internal_test` class token — a systemic frame-naming bug, fixed rather than disclosed, worth four rows. alloc-profile disclosures on the `...any`/`Value` boxing the two-word Go interface avoids; `TestRecordSource` is the founding **host-identity** row — its depth-1 case passes on that same fix, while its depth-2 case asks the hand-owned test host to answer `testing.tRunner` in `testing.go`. · linux: 194 + 19 · [proof](validation/current/log.slog.md) |
 | [`log/slog/internal/benchmarks`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/benchmarks) | 3 |  | The two hand-written `slog.Handler` implementations `log/slog`'s benchmarks measure against, checked for correctness rather than speed — a minimal text handler's rendered output byte-for-byte, and an async handler's ring-buffered `Record` compared attribute by attribute through `slices.EqualFunc` over `slog.Attr.Equal`. · linux: 3 · [proof](validation/current/log.slog.internal.benchmarks.md) |
+| [`log/slog/internal/buffer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/buffer) | 1 | 1 | The pool-allocated byte buffer slog's built-in handlers render into — the pooled New/Free round-trip with its oversize-discard rule and the Write/WriteString/WriteByte append path. alloc-profile disclosure on the zero-alloc pool assert: the deferred Free closure heap-allocates where Go's escape analysis plus pool reuse stays allocation-free. · [proof](validation/current/log.slog.internal.buffer.md) |
 | [`maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) | 14 | | Generic map helpers and iterators. · linux: 14 · [proof](validation/current/maps.md) |
 | [`math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) | 76 | | The core numeric package — IEEE edge cases, rounding, `Inf`/`NaN`. · linux: 76 · [proof](validation/current/math.md) |
 | [`math/bits`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/bits) | 26 | | Bit-manipulation intrinsics. · linux: 26 · [proof](validation/current/math.bits.md) |
