@@ -256,10 +256,40 @@ public static partial class GoReflect
         // underlying slot unwraps. Two DIFFERENT named types never match either arm (Go-correct).
         ConstructorInfo? dstWrapperCtor = wrapperConstructorOf(dstType);
 
-        if (dstWrapperCtor is not null && dstWrapperCtor.GetParameters()[0].ParameterType == dynamicSrc.GetType())
+        if (dstWrapperCtor is not null)
         {
-            marshalled = dstWrapperCtor.Invoke([dynamicSrc]);
-            return true;
+            // SUBSUMPTION, not exact equality — the same relation (and the same N5 M-guard) as the
+            // two arms either side of this one, and for the same reason: a live value of an
+            // underlying type is routinely a SUBCLASS instance rather than the declared type itself.
+            //
+            // For a POINTER underlying that is not an edge case, it is the ONLY case. The parameter
+            // type is `ж<T>`, which is ABSTRACT, so no value can ever equal it exactly — every live
+            // pointer is a StandardBox<T> or another box subclass. The exact test was therefore
+            // UNSATISFIABLE for every `type P *T`, and the whole named/unnamed rule was dead for the
+            // pointer kind: a plain `*int` was rejected by a `type TestPtrAlias *int` slot, which is
+            // exactly the assignment Go permits (identical underlying types, the source side
+            // unnamed). testing/quick's TestCheckEqual died on it — `reflect.Set: value of type *int
+            // is not assignable to type quick.TestPtrAlias` — inside quick.Value's
+            // `v.Set(reflect.New(concrete.Elem()))`.
+            //
+            // Go's method-set interference clause cannot bite for this kind: a named POINTER type
+            // can carry no methods AT ALL, because a receiver base type may not be a pointer type
+            // (spec, "Method declarations"). So there is no method set on either side to lose, and
+            // admitting the assignment cannot make an interface satisfaction appear or vanish.
+            //
+            // The M-guard rides along because `unsafe.Pointer` derives from `StandardBox<uintptr>`:
+            // without it, subsumption would wrap it into a `type P *uintptr` slot it is not
+            // assignable to. Two DIFFERENT named types still match neither arm — a generated wrapper
+            // has no base class, so no wrapper is ever a subclass of another wrapper or of `ж<T>`
+            // (guarded by NamedPointerAssignabilityTests).
+            Type underlyingParam = dstWrapperCtor.GetParameters()[0].ParameterType;
+
+            if (underlyingParam.IsAssignableFrom(dynamicSrc.GetType()) &&
+                (dynamicSrc.GetType() == underlyingParam || dynamicSrc is not IUnsafePointer))
+            {
+                marshalled = dstWrapperCtor.Invoke([dynamicSrc]);
+                return true;
+            }
         }
 
         // Same subsumption + N5 M-guard as the direct arm above, on the unwrapped value.
