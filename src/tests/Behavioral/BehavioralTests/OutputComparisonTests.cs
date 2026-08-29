@@ -1637,6 +1637,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSwitchBreakBeforeFallthrough() => CheckTarget("SwitchBreakBeforeFallthrough");
 
     [TestMethod]
+    public void CheckSwitchBreakContinueWrapper() => CheckTarget("SwitchBreakContinueWrapper");
+
+    [TestMethod]
     public void CheckSwitchBreakInCase() => CheckTarget("SwitchBreakInCase");
 
     [TestMethod]

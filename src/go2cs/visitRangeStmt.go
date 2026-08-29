@@ -752,12 +752,22 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 		context.outerSuffix = fmt.Sprintf("%s%s:;", v.newline, getBreakLabelName(target.label))
 	}
 
+	// The wrapped-continue label slot — a `do { … } while (false)` switch-break wrapper in the
+	// body retargets a bare C# `continue`, so such a continue emits `goto` to a label at the end
+	// of the foreach body instead; resolved to the label or dropped after the body emits
+	// (see prepareLoopContinueTarget, mirrors visitForStmt).
+	continueTarget, continueLabelMarker := v.prepareLoopContinueTarget()
+	context.innerSuffix += continueLabelMarker
+
 	// Range variables are per-iteration natively (foreach), so no copy-backs — but the entry
 	// keeps an unlabeled `continue` in the body bound to the innermost loop's copy-backs (an
 	// enclosing transformed for loop's must not leak through; see forClausePerIterVars).
 	v.loopCopyBackStack = append(v.loopCopyBackStack, nil)
+	v.continueTargetStack = append(v.continueTargetStack, continueTarget)
 	v.visitBlockStmt(rangeStmt.Body, context)
+	v.continueTargetStack = v.continueTargetStack[:len(v.continueTargetStack)-1]
 	v.loopCopyBackStack = v.loopCopyBackStack[:len(v.loopCopyBackStack)-1]
+	v.finalizeLoopContinueTarget(continueTarget, continueLabelMarker)
 }
 
 func isYieldFunc(t types.Type) int {

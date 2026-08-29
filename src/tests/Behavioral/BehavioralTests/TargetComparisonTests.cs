@@ -1708,6 +1708,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSwitchBreakBeforeFallthrough() => CheckTarget("SwitchBreakBeforeFallthrough");
 
     [TestMethod]
+    public void CheckSwitchBreakContinueWrapper() => CheckTarget("SwitchBreakContinueWrapper");
+
+    [TestMethod]
     public void CheckSwitchBreakInCase() => CheckTarget("SwitchBreakInCase");
 
     [TestMethod]

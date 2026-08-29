@@ -848,6 +848,7 @@
     <Project Path="tests/Behavioral/StructWithPointer/StructWithPointer.csproj" />
     <Project Path="tests/Behavioral/SubpackageFuncTypeParam/SubpackageFuncTypeParam.csproj" />
     <Project Path="tests/Behavioral/SwitchBreakBeforeFallthrough/SwitchBreakBeforeFallthrough.csproj" />
+    <Project Path="tests/Behavioral/SwitchBreakContinueWrapper/SwitchBreakContinueWrapper.csproj" />
     <Project Path="tests/Behavioral/SwitchBreakInCase/SwitchBreakInCase.csproj" />
     <Project Path="tests/Behavioral/SynthesizedDelegateChildPkg/SynthesizedDelegateChildPkg.csproj" />
     <Project Path="tests/Behavioral/SynthesizedDelegateChildPkg/inner/SynthesizedDelegateChildPkg.inner.csproj" />

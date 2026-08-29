@@ -691,10 +691,23 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 				v.outputBuilder.WriteString(v.newline)
 				v.writeOutput("do {")
 				v.indentLevel++
+
+				// The wrapper is a C# ITERATION statement, so a Go `continue` in this body meaning
+				// "continue the enclosing loop" must not be emitted bare — C# would bind it to the
+				// wrapper, which exits on its false condition and falls through past the switch,
+				// silently discarding the continue (`break` was retargeted by the wrapper; `continue`
+				// is its symmetric twin). Record the wrapper so visitBranchStmt emits `goto` to the
+				// enclosing loop's end-of-body label instead (see wrappedContinueLoopLabel); a nested
+				// real loop inside the case pushes its own entry, keeping ITS continues bare.
+				v.continueTargetStack = append(v.continueTargetStack, &continueTargetEntry{isWrapper: true})
 			}
 
 			for _, stmt := range caseClause.Body {
 				v.visitListStmt(stmt)
+			}
+
+			if switchBreakWrap {
+				v.continueTargetStack = v.continueTargetStack[:len(v.continueTargetStack)-1]
 			}
 
 			// A case whose body can fall OUT of the switch — it wraps a switch-`break`, or it is neither a
