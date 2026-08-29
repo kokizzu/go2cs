@@ -278,6 +278,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckCrossPkgUser() => CheckTarget("CrossPkgUser");
 
     [TestMethod]
+    public void CheckCtorFieldInitializerOmitted() => CheckTarget("CtorFieldInitializerOmitted");
+
+    [TestMethod]
     public void CheckDeadPointerParamAlias() => CheckTarget("DeadPointerParamAlias");
 
     [TestMethod]

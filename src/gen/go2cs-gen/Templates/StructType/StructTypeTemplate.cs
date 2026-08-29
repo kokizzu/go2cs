@@ -27,6 +27,11 @@ internal class StructTypeTemplate : TemplateBase
     // (see GetEqualityFallbackMembers). May be empty — a generic struct with no type-parameter-
     // dependent members compares every member with == despite failing the whole-struct gate.
     public HashSet<string>? EqualityFallbackMembers;
+    // Members whose field initializer is a directional channel stamp (channel<T>.RecvOnly /
+    // .SendOnly — see GetChanDirInitializerMembers). GenerateConstructor skips the field-wise
+    // assignment for these when the argument is nil, so the field initializer that already ran
+    // stands, exactly as the fixed-array member case preserves its own `= new(N)` initializer.
+    public HashSet<string> ChanDirInitializerMembers = [];
     public string[] ValueCloneFields = [];
 
     private string? m_nonGenericStructName;
@@ -1519,13 +1524,24 @@ internal class StructTypeTemplate : TemplateBase
             // param makes an omitted arg a real `null`, so `?? new T(nil)` reconstructs ONLY when
             // omitted (a caller-supplied value is used as-is — no extra allocation, unchanged reference
             // semantics), exactly mirroring the POINTER-embed `memberValue` handling above.
+            // A directional channel field (`<-chan T`/`chan<- T` → channel<T> Cancel = channel<T>.
+            // RecvOnly) carries the SAME shape as the fixed-array case one level down: its `=
+            // channel<T>.RecvOnly` field initializer already ran before this body, and a nil
+            // argument — omitted or explicitly passed, Go has no other spelling for a directional
+            // channel's zero value — must leave that stamped nil in place rather than overwrite it
+            // with the unstamped `default!` a bare parameter produces. A non-nil argument (a real
+            // channel the caller constructed) assigns as before; only the nil case defers to the
+            // initializer. See GetChanDirInitializerMembers for why this is scoped to direction
+            // stamps alone and never a general field-initializer fallback.
             result.AppendLine(isPromotedStruct ?
                 $"{CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)} = {memberValue};" :
                 IsFixedArrayMember(typeName, isReferenceType) ?
                     $"if ({memberName}.Source is not null) this.{memberName} = {memberName};" :
-                    IsNeedyValueStructMember(typeName, isReferenceType, isPromotedStruct) ?
-                        $"this.{memberName} = {memberName} ?? new {typeName}(nil);" :
-                        $"this.{memberName} = {memberName};");
+                    ChanDirInitializerMembers.Contains(memberName) ?
+                        $"if ({memberName} != nil) this.{memberName} = {memberName};" :
+                        IsNeedyValueStructMember(typeName, isReferenceType, isPromotedStruct) ?
+                            $"this.{memberName} = {memberName} ?? new {typeName}(nil);" :
+                            $"this.{memberName} = {memberName};");
         }
 
         // A MIXED-VISIBILITY struct's PUBLIC subset constructor names only the exported members, so
