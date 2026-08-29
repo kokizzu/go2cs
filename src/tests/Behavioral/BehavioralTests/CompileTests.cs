@@ -1192,6 +1192,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckNilSliceConversion() => CheckTarget("NilSliceConversion");
 
     [TestMethod]
+    public void CheckNilVarNamedFuncConv() => CheckTarget("NilVarNamedFuncConv");
+
+    [TestMethod]
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]

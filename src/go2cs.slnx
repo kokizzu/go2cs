@@ -676,6 +676,7 @@
     <Project Path="tests/Behavioral/NilPointerUintptr/NilPointerUintptr.csproj" />
     <Project Path="tests/Behavioral/NilReceiverNormalization/NilReceiverNormalization.csproj" />
     <Project Path="tests/Behavioral/NilSliceConversion/NilSliceConversion.csproj" />
+    <Project Path="tests/Behavioral/NilVarNamedFuncConv/NilVarNamedFuncConv.csproj" />
     <Project Path="tests/Behavioral/OptionalInterfaceStructuralAssertion/OptionalInterfaceStructuralAssertion.csproj" />
     <Project Path="tests/Behavioral/PackageAliasRootedTypeArgs/PackageAliasRootedTypeArgs.csproj" />
     <Project Path="tests/Behavioral/PackageNameShadowing/PackageNameShadowing.csproj" />

@@ -1195,6 +1195,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckNilSliceConversion() => CheckTarget("NilSliceConversion");
 
     [TestMethod]
+    public void CheckNilVarNamedFuncConv() => CheckTarget("NilVarNamedFuncConv");
+
+    [TestMethod]
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");
 
     [TestMethod]

@@ -2278,6 +2278,19 @@ public static partial class builtin
             return true;
         }
 
+        // The wrapped value is a NULL delegate (a named func type crossing an interface boundary
+        // as a nil value) — Go's assert still succeeds, with a nil result (`f, ok :=
+        // handler.(HandlerFunc)` is ok=true, f=nil for a typed-nil-in-interface). The pattern
+        // above can never see this: a C# type pattern excludes null by design, so `Value: T
+        // wrapped` fails for exactly the case it most needs to match. Recover the wrapped field's
+        // DECLARED type from the adapter's own class metadata, the only channel a null value still
+        // answers through (GoReflect.GoDynamicTypeOf's identical fallback).
+        if (isAdapter && target is IValueAdapter { Value: null } && GoReflect.ValueAdapterWrappedType(target.GetType()) == typeOfT)
+        {
+            value = default!;
+            return true;
+        }
+
         if (AssertFacts<T>.IsInterface)
         {
             // The Go DYNAMIC VALUE, never the wrapper. A pointer-sourced interface value is a
