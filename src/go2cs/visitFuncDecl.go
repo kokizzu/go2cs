@@ -298,6 +298,11 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	v.currentFuncName = csFunctionName
 	v.currentFuncPrefix = &strings.Builder{}
 
+	// Record the Go name of every function literal this declaration encloses (the funcLits half
+	// of the file's GoPositionMap record) — from the AST, before any conversion of the body, so
+	// the counter is a source-order fact (see positionMapOperations.go).
+	v.collectFuncLitNames(funcDecl)
+
 	// Tier C: the hoisted string-literal fields this function OWNS (its body holds their first
 	// package-wide use) lead the prefix, so they land immediately above the doc comment — ahead of
 	// any anonymous type this function's body lifts into the same builder.

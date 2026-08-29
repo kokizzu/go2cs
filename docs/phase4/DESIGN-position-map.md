@@ -377,6 +377,34 @@ diagnostic output and must never be the thing that takes a program down.
 - **`goImportPath` stays** — the function half still derives the import path at run time, and that is
   correct: a function name IS a property of the package, and Go's own traceback spells it from the
   package, not from the file.
+
+  > **Amendment, 2026-08-29 (lane `claude/func-literal-ordinals`, coordinator-ruled).** One piece
+  > of the function half moves from derivation to the record: the FUNCTION-LITERAL counter. Go
+  > names a literal `Outer.funcN` — a per-enclosing-function counter over that function's direct
+  > literals, source order, from 1 — and a nested literal appends its own per-parent counter
+  > (`Outer.funcN.M`; measured against go1.23.12 with inlining disabled, since gc renames a
+  > closure whose enclosing function is inlined and go2cs performs no inlining). The runtime had
+  > derived the ordinal from Roslyn's `<Outer>b__X_Y`, whose closure-group numbering matches Go's
+  > counter only by coincidence — two sibling literals answered `func0`/`func1` for Go's
+  > `func1`/`func2`, and nesting was unrepresentable. The remedy is this design's own: the record
+  > gains an optional fourth argument, `funcLits` — `<startLine>-<endLine>:<suffix>` per literal,
+  > semicolon-joined, in GO line space — collected from the AST at declaration-visit time
+  > (`collectFuncLitNames`), and `goFrameName` maps a literal frame's C# line through the SAME
+  > record's line table to its Go line, then answers the innermost recorded span containing it.
+  > Both halves of the answer are conversion-time facts out of one record; a three-argument record
+  > is unchanged, and a frame with no record (older artifact, hand-written lambda, no PDB, or a
+  > package-level initializer literal — cmd/compile numbers those with a package-global `glob..`
+  > counter that is a compile-schedule fact, so they are deliberately unrecorded) keeps the
+  > derived fallback exactly as before. The import path itself stays derived — this amendment
+  > moves only the counter. Guarded three ways: `positionMap_test.go` pins the collection against
+  > Go's naming, `GolibTests/CallerFrameTestVariantNamingTests` pins the recorded, nested and
+  > fallback shapes red-first, and the `FuncLiteralCallerNames` behavioral guard compares fourteen
+  > frame names against `go run` (measured red before the fix: every literal off-by-origin, the
+  > exact defect net/http's TestWriteHeaderNoCodeCheck and TestTimeoutHandlerSuperfluousLogs read).
+  > Known edge, stated rather than guarded: line granularity cannot split two literals sharing one
+  > Go line, and a lambda inside a converted METHOD still lacks Go's receiver qualifier in its
+  > prefix (`main.m.func1` where Go spells `main.T.m.func1`) — the receiver half is a separate,
+  > out-of-scope gap.
 - **Whole-file hand-owns report their `.cs` position.** `crypto/subtle/xor_generic.cs` will not name
   `crypto/subtle/xor_generic.go`. Under a file-half-only design it would have; under indivisibility
   it must not, because there is no line of that C# that corresponds to a line of that Go.

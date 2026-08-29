@@ -425,7 +425,7 @@ partial class runtime_package
             if (method is null)
                 continue;
 
-            trace.Append(goFrameName(method)).Append("()\n");
+            trace.Append(goFrameName(method, frame)).Append("()\n");
 
             (string file, int line) = goFramePosition(method, frame);
 
@@ -441,9 +441,12 @@ partial class runtime_package
     //                                         test file is compiled INTO the package under test —
     //                                         see the suffix rule below);
     // a closure's compiler-generated `<Outer>b__N` on a nested display class -> `<pkg>.Outer.funcN`,
-    // Go's own spelling for a function literal. A frame that is not converted Go code (golib, the
+    // Go's own spelling for a function literal — the counter suffix (`1`, `2.1`) read from the
+    // file's recorded GoPositionMap funcLits map when the conversion recorded one (see
+    // goFuncLiteralSuffix), and derived from the compiler-generated name only as the fallback.
+    // A frame that is not converted Go code (golib, the
     // BCL, the test host) keeps its .NET name — inventing a Go name for it would be a lie.
-    private static string goFrameName(System.Reflection.MethodBase method)
+    private static string goFrameName(System.Reflection.MethodBase method, StackFrame? frame)
     {
         Type? declaring = method.DeclaringType;
 
@@ -504,8 +507,20 @@ partial class runtime_package
 
         string name = method.Name;
 
-        // A lambda is emitted as `<Outer>b__N` on a `<>c__DisplayClassX_Y` nested in the package
-        // class; Go renders the same function literal as `Outer.funcN`.
+        // A function literal is emitted as a compiler-generated method — `<Outer>b__X_Y` for a
+        // lambda on a `<>c__DisplayClassX_Y` nested in the package class, `<Outer>g__name|X_Y`
+        // for a local function; Go renders the same literal as `Outer.funcN` (a nested one as
+        // `Outer.funcN.M`). The counter is Go's per-enclosing-function, source-order counter
+        // starting at 1, which the conversion RECORDS in the file's GoPositionMap funcLits map:
+        // the frame's C# line maps through the record's line table to its Go line, and the
+        // innermost recorded literal span containing that line names the frame. Roslyn's own
+        // X_Y numbering is a closure-GROUP index plus a per-group index that matches Go's
+        // counter only by coincidence (measured: two sibling literals answered func0/func1 for
+        // Go's func1/func2, and a nested literal cannot be represented at all), so the derived
+        // ordinal below is kept ONLY as the fallback for frames no conversion recorded — an
+        // older artifact, a hand-written lambda, a frame with no PDB, or a literal outside a
+        // function declaration (package-level initializers keep Go's package-global `glob..`
+        // counter, which is a compile-schedule fact no per-file record can carry).
         if (name.Length > 0 && name[0] == '<')
         {
             int close = name.IndexOf('>');
@@ -513,9 +528,18 @@ partial class runtime_package
             if (close > 1)
             {
                 string outer = name[1..close];
-                int lastUnderscore = name.LastIndexOf('_');
-                string ordinal = lastUnderscore >= 0 && lastUnderscore + 1 < name.Length ? name[(lastUnderscore + 1)..] : "1";
-                name = $"{outer}.func{ordinal}";
+                string? recorded = frame is null ? null : goFuncLiteralSuffix(method, frame);
+
+                if (recorded is not null)
+                {
+                    name = $"{outer}.func{recorded}";
+                }
+                else
+                {
+                    int lastUnderscore = name.LastIndexOf('_');
+                    string ordinal = lastUnderscore >= 0 && lastUnderscore + 1 < name.Length ? name[(lastUnderscore + 1)..] : "1";
+                    name = $"{outer}.func{ordinal}";
+                }
             }
         }
 
@@ -525,6 +549,37 @@ partial class runtime_package
             name = $"{receiver}.{name}";
 
         return $"{importPath}.{name}";
+    }
+
+    // Spells a function-literal frame's recorded Go counter suffix (`1`, `2.1`), or null when the
+    // conversion recorded none — no PDB path, no record for the file, no Go line for the frame's
+    // C# line, or no recorded literal span containing that Go line. The caller falls back to the
+    // Roslyn-derived ordinal in every null case, so an unrecorded frame answers exactly what it
+    // always did. Both facts consumed here — the Go line and the literal spans — come from the ONE
+    // GoPositionMap record, the same indivisibility the position half rests on.
+    //
+    // Known edge, stated rather than guarded: line granularity cannot split two literals sharing
+    // one Go line, nor a frame in an OUTER literal sitting on the very line a nested literal
+    // starts — the innermost span wins the tie, which favors the far more common frame (a body
+    // line of the nested literal) over the rarer one (the outer literal mid-call on that line).
+    private static string? goFuncLiteralSuffix(System.Reflection.MethodBase method, StackFrame frame)
+    {
+        string csPath = goSourcePath(frame.GetFileName());
+
+        if (csPath.Length == 0)
+            return null;
+
+        GoPositionMapRecord? record = goPositionMapRecord(method, csPath);
+
+        if (record is null)
+            return null;
+
+        int goLine = record.GoLineFor(frame.GetFileLineNumber());
+
+        if (goLine <= 0)
+            return null;
+
+        return record.FuncLiteralFor(goLine);
     }
 
     // Spells the receiver qualifier of a converted Go method frame, or null when the frame is not a
@@ -692,7 +747,7 @@ partial class runtime_package
             foreach (object attribute in assembly.GetCustomAttributes(typeof(GoPositionMapAttribute), false))
             {
                 if (attribute is GoPositionMapAttribute map && map.CsFile.Length > 0)
-                    records[map.CsFile] = new GoPositionMapRecord(map.GoFile, map.Table);
+                    records[map.CsFile] = new GoPositionMapRecord(map.GoFile, map.Table, map.FuncLits);
             }
         }
         catch (Exception)
@@ -704,10 +759,13 @@ partial class runtime_package
     }
 
     // One converted file's recorded position map.
-    private sealed class GoPositionMapRecord(string goFile, string table)
+    private sealed class GoPositionMapRecord(string goFile, string table, string funcLits = "")
     {
         private int[]? m_csLines;
         private int[]? m_goLines;
+        private int[]? m_litStarts;
+        private int[]? m_litEnds;
+        private string[]? m_litSuffixes;
         private string? m_resolvedGoFile;
 
         // ResolveGoFile spells the recorded identity as an absolute path where the record is a bare
@@ -840,6 +898,97 @@ partial class runtime_package
             }
 
             return value;
+        }
+
+        // FuncLiteralFor answers the recorded counter suffix (`1`, `2.1`) of the function literal
+        // whose Go source span contains goLine — the INNERMOST such span, so a frame in a nested
+        // literal answers the nested literal's name — or null when no recorded span contains it.
+        // Innermost is the largest start line among the containing spans (spans nest lexically),
+        // with the smaller end winning a shared start; a full tie keeps the first recorded entry.
+        public string? FuncLiteralFor(int goLine)
+        {
+            decodeFuncLits();
+
+            int[] starts = m_litStarts!;
+            int[] ends = m_litEnds!;
+            int best = -1;
+
+            for (int i = 0; i < starts.Length; i++)
+            {
+                if (goLine < starts[i] || goLine > ends[i])
+                    continue;
+
+                if (best < 0 || starts[i] > starts[best] || (starts[i] == starts[best] && ends[i] < ends[best]))
+                    best = i;
+            }
+
+            return best < 0 ? null : m_litSuffixes![best];
+        }
+
+        // decodeFuncLits parses the funcLits map — `<startLine>-<endLine>:<suffix>` entries,
+        // semicolon-joined, suffix a dotted counter (`1`, `1.2`). Anything malformed drops the
+        // WHOLE map rather than part of it, exactly as an undecodable line table does: those
+        // frames then answer the derived fallback, never a plausible-but-wrong recorded name.
+        private void decodeFuncLits()
+        {
+            if (m_litStarts is not null)
+                return;
+
+            List<int> starts = new();
+            List<int> ends = new();
+            List<string> suffixes = new();
+
+            if (funcLits.Length > 0)
+            {
+                foreach (string entry in funcLits.Split(';'))
+                {
+                    int dash = entry.IndexOf('-');
+                    int colon = entry.IndexOf(':');
+
+                    if (dash <= 0 || colon <= dash + 1 || colon == entry.Length - 1 ||
+                        !int.TryParse(entry.AsSpan(0, dash), out int start) ||
+                        !int.TryParse(entry.AsSpan(dash + 1, colon - dash - 1), out int end) ||
+                        start <= 0 || end < start || !validFuncLitSuffix(entry.AsSpan(colon + 1)))
+                    {
+                        starts.Clear();
+                        ends.Clear();
+                        suffixes.Clear();
+                        break;
+                    }
+
+                    starts.Add(start);
+                    ends.Add(end);
+                    suffixes.Add(entry[(colon + 1)..]);
+                }
+            }
+
+            m_litSuffixes = suffixes.ToArray();
+            m_litEnds = ends.ToArray();
+            m_litStarts = starts.ToArray();
+        }
+
+        // A recorded suffix is dot-separated counter segments, each a bare positive decimal.
+        private static bool validFuncLitSuffix(ReadOnlySpan<char> suffix)
+        {
+            int digits = 0;
+
+            foreach (char c in suffix)
+            {
+                if (c >= '0' && c <= '9')
+                {
+                    digits++;
+                }
+                else if (c == '.' && digits > 0)
+                {
+                    digits = 0;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            return digits > 0;
         }
 
         // isRootedGoPath recognizes the absolute recorded form on either platform shape: a leading
@@ -1144,7 +1293,7 @@ partial class runtime_package
 
             CallerFrameRecord record = new()
             {
-                Function = goFrameName(method),
+                Function = goFrameName(method, frame),
                 File = file,
                 Line = line
             };

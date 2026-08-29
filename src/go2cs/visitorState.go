@@ -308,7 +308,14 @@ type Visitor struct {
 	// body prologue re-declares the Go name at its natural type. Same incoming-name-plus-prologue
 	// shape the heap-box parameters use.
 	funcLitProxyParamTypes map[string]string
-	varNames               map[*types.Var]string
+	// funcLitEntries collects this FILE's function-literal name records — the Go source-line span
+	// and the dotted counter suffix Go's compiler names each literal with (`1` for Outer.func1,
+	// `1.2` for the second literal nested directly inside it) — appended per function declaration
+	// by collectFuncLitNames and emitted as the file's GoPositionMap record's funcLits argument
+	// (see finalizePositionMap). Pure AST facts, recorded at declaration-visit time so no emission
+	// reordering, collapse, or double conversion of an expression can perturb the counter.
+	funcLitEntries []funcLitEntry
+	varNames       map[*types.Var]string
 	hasDefer               bool
 	hasRecover             bool
 	// pendingTypeAccess carries an explicit C# access modifier ("public ") for the type
