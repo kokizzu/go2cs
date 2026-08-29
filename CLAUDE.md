@@ -205,6 +205,16 @@ ONE stdlib in a build; there is now only one on disk.
     to the verdict once the TransmitFile seam landed. **Compare the empty set against the parallel
     set before reading scattered as genuine divergence** — a set equality is one grep, and it is the
     difference between one root and 43 phantom findings.
+    ⚠ **Before ANY shape analysis, read the results-file TAIL — a deadline kill states itself
+    outright** (added 2026-08-29 after the third instance in one week): the C# host's
+    `go2cs_test_comparison/results.json` ends with an explicit
+    `{"test":"","action":"timeout","output":"package timeout after <hh:mm:ss>"}` event when the
+    package deadline killed it, so the mass-empty diagnosis is a one-line read, not an inference.
+    The three lanes that paid it — `bytes` at the 2m default, `sync/atomic` at a lane's own 30m,
+    `net/http` at 25m (213 empties published as "divergences across 87 parents" before the tail
+    was read) — each had the explicit event sitting in the file the whole time. The shape
+    heuristics above remain for the cases the tail cannot settle (a crash leaves no timeout
+    event), but the tail is checked FIRST and quoted in any census that reports empty verdicts.
   - `-go2cspath <dir>` — runtime/stdlib root and default output root for converted code (default `~/go2cs`;
     env `GO2CSPATH`). `go2cs -recurse <input> <output>` keeps generated code under the explicit output root
     while `$(go2csPath)` references continue to resolve against this runtime root. **It is also the root the
@@ -1193,6 +1203,15 @@ Each rule below was paid for.
   markers (`$shadowed`) is left undefined at its use site if you take one side of a marked hunk. Neither
   is visible from the conflict markers. **Resolving the marked hunks is not resolving the merge: read
   the merged file whole, and run the thing.**
+- **⚠ An INSERT adjacent to a line the other side edited folds into ONE hunk, and BOTH single-side
+  resolutions silently lose a line** (measured 2026-08-29: master inserted the `go/build` roster row
+  directly above `go/build/constraint`, which the branch had annotated — `--ours` dropped the new
+  row entirely, `--theirs` dropped the annotation; nothing in the markers says a line vanishes, so
+  it reads like an ordinary either/or). Resolve by keeping BOTH sides' content, then **assert the
+  structural invariant** (row/line count before == after + known inserts) instead of eyeballing it —
+  and validate any re-derived aggregate by **positive control against a known-good blob first**: the
+  same derivation must reproduce the other side's banked value exactly before its new value is
+  believed. A derivation that cannot reproduce a known-good value is not a derivation.
 - **⚠ Its MIRROR is the SILENT SUBTRACTION, and it is worse: one lane REMOVES a definition because
   another branch supplies the replacement, and the merge drops the supplier.** Both diffs are pure
   additions/removals, git merges them without a conflict or a warning, and the result compiles
