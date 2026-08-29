@@ -200,11 +200,29 @@ internal static (nint pid, error err) forkExec(@string argv0, slice<@string> arg
     }
 
     // The honest wall (design §3): every SysProcAttr field posix_spawn cannot express fails by
-    // NAME before anything is spawned — never a silent drop of a requested semantic.
+    // NAME before anything is spawned — never a silent drop of a requested semantic. §3.3 also
+    // fixes the error's KIND: "returns ENOTSUP naming the field ... in Go's own error currency
+    // (reach Go's own gate, fail Go's own way)". Both halves are load-bearing, and the kind is
+    // the half that is easy to lose — a named-but-kindless error reads correct to a human and is
+    // invisible to Go's own predicates.
+    //
+    // Joining ENOTSUP is what supplies the currency: errors.Is walks the joined chain and Errno.Is
+    // maps ENOTSUP/ENOSYS/EOPNOTSUPP onto errors.ErrUnsupported, which is one of the three things
+    // testenv.SyscallIsNotSupported accepts (the others being an Errno of EPERM/EROFS/EINVAL and
+    // fs.ErrPermission). Eight tests in Go's own syscall suite ride on that predicate: on an
+    // unprivileged host Go attempts the operation, the kernel answers EPERM, the guard fires and
+    // Go SKIPS. Without the kind those eight FAIL here instead — the same regression the sibling
+    // hand-own already fixed for runtime_doAllThreadsSyscall, where a throwing stub "turned that
+    // skip into an infrastructure-error" until ENOTSUP restored it (syscall_linux_impl.cs).
+    //
+    // errors.Join rather than a wrapping type because syscall cannot import fmt (Go's own rule —
+    // only its _test.go files do), so fmt.Errorf("%w") is unavailable here, and a new error type
+    // would owe GoType/witness machinery for a two-line refusal. Join needs nothing this file does
+    // not already import, and keeps the field name first in the rendered message.
     {
         @string unsupported = unsupportedSysProcAttrField(ref (sys).DerefOrNull());
         if (unsupported != ""u8) {
-            return (0, errorspkg.New(unsupported));
+            return (0, errorspkg.Join(errorspkg.New(unsupported), ENOTSUP));
         }
     }
 

@@ -121,13 +121,15 @@ $fixtureRows = @(
     "| [``prose/pkg``](https://x/prose) | 9 |  | Behavior on linux: 5 subtests skip. $dot [proof](p.md) |"
     "| [``segment/pkg``](https://x/segment) | 9 |  | Counted here $dot linux: 5 subtests skip $dot [proof](p.md) |"
     "| [``tail/pkg``](https://x/tail) | 4 |  | Ends on the annotation $dot linux: 6 |"
+    "| [``winonly/pkg``](https://x/winonly) | 21 |  | Registry things. $dot linux: n/a $dot [proof](p.md) |"
+    "| [``naprose/pkg``](https://x/naprose) | 3 |  | Not applicable prose here $dot linux: n/a maybe someday $dot [proof](p.md) |"
 )
 
 $fixture = Read-FixtureRoster $fixtureRows
 $byName = @{}
 foreach ($row in $fixture) { $byName[$row.Package] = $row }
 
-Assert-Equal 'fixture: every row parses' 9 $fixture.Count
+Assert-Equal 'fixture: every row parses' 11 $fixture.Count
 
 Assert-Equal 'columns: matched count' 12 $byName['plain/pkg'].Expected
 Assert-Equal 'columns: blank disclosed reads 0' 0 $byName['plain/pkg'].Disclosed
@@ -151,6 +153,14 @@ Assert-Equal 'annotation: it is the last segment, terminating pipe included' 6 $
 Assert-Equal 'prose: unseparated "linux: 5" is not an annotation' 0 $byName['prose/pkg'].OS.Count
 Assert-Equal 'prose: a segment continuing past the number is not an annotation' 0 $byName['segment/pkg'].OS.Count
 
+# The permanently-inapplicable form (ruled 2026-08-29): `linux: n/a` parses as Applicable=$false
+# with null counts, and its prose-immunity mirrors the numeric form's.
+Assert-Equal 'n/a: the annotation parses' $true $byName['winonly/pkg'].OS.ContainsKey('linux')
+Assert-Equal 'n/a: it is inapplicable, not a count' $false $byName['winonly/pkg'].OS['linux'].Applicable
+Assert-Equal 'n/a: expected is null, never a number' $true ($null -eq $byName['winonly/pkg'].OS['linux'].Expected)
+Assert-Equal 'n/a: a numeric annotation is applicable' $true $byName['ann/pkg'].OS['linux'].Applicable
+Assert-Equal 'n/a prose: a segment continuing past n/a is not an annotation' 0 $byName['naprose/pkg'].OS.Count
+
 # The columns ARE the Windows expectation, so a windows-keyed annotation is a contradiction, and an
 # unknown key is a typo the sweep must not silently drop.
 Assert-Throws 'annotation: a windows key is refused by name' {
@@ -161,6 +171,12 @@ Assert-Throws 'annotation: an unknown key is refused by name' {
 } 'unknown per-OS annotation key'
 Assert-Throws 'annotation: a repeated key is refused' {
     Read-FixtureRoster @("| [``r/pkg``](https://x/r) | 3 |  | Twice. $dot linux: 4 $dot linux: 5 $dot [proof](p.md) |")
+} 'more than one'
+Assert-Throws 'n/a: windows: n/a is refused by name (no back door)' {
+    Read-FixtureRoster @("| [``wna/pkg``](https://x/wna) | 3 |  | Contradiction. $dot windows: n/a $dot [proof](p.md) |")
+} "carries a 'windows:' per-OS annotation"
+Assert-Throws 'n/a: a numeric and an n/a annotation for one key is refused' {
+    Read-FixtureRoster @("| [``rna/pkg``](https://x/rna) | 3 |  | Two answers. $dot linux: 4 $dot linux: n/a $dot [proof](p.md) |")
 } 'more than one'
 
 # Expectation resolution: the annotation answers on its own OS, the columns everywhere else --
@@ -213,6 +229,17 @@ Assert-Equal 'linux: an unannotated row off the windows count is comparison-vali
     (Get-SweepRowClassification -Expectation $linPlain -Got 14 -GotDisclosed 0 -TargetGoos 'linux')
 Assert-Equal 'linux: a lost verdict on an unannotated row is also unbanked, never a silent pass' 'unbanked-count' `
     (Get-SweepRowClassification -Expectation $linPlain -Got 1 -GotDisclosed 0 -TargetGoos 'linux')
+
+# The n/a row end to end: inapplicable on its annotated OS at ANY count, columns as ever on Windows.
+$linNa = Get-RosterRowExpectation -Row $byName['winonly/pkg'] -Goos 'linux'
+Assert-Equal 'n/a expectation: inapplicable and named' $false $linNa.Applicable
+Assert-Equal 'n/a expectation: source is the annotation' 'linux' $linNa.Source
+Assert-Equal 'n/a classification: not-applicable at any count' 'not-applicable' `
+    (Get-SweepRowClassification -Expectation $linNa -Got 0 -GotDisclosed 0 -TargetGoos 'linux')
+Assert-Equal 'n/a classification: not-applicable even at a plausible count' 'not-applicable' `
+    (Get-SweepRowClassification -Expectation $linNa -Got 21 -GotDisclosed 0 -TargetGoos 'linux')
+Assert-Equal 'n/a on Windows: the columns answer exactly as before' 'pass' `
+    (Get-SweepRowClassification -Expectation (Get-RosterRowExpectation -Row $byName['winonly/pkg'] -Goos 'windows') -Got 21 -GotDisclosed 0 -TargetGoos 'windows')
 
 Assert-Equal 'windows: a proven capability-absent shortfall passes' 'capability-absent' `
     (Get-SweepRowClassification -Expectation $winPlain -Got 6 -GotDisclosed 0 -TargetGoos 'windows' -CapabilityAbsentAccepted)
@@ -469,7 +496,13 @@ if ($implementable -gt 0) {
 
 # The Linux progress line is summed from the annotations exactly as the header above it is summed
 # from the columns -- derived on both sides, so neither can drift from the table it describes.
-$linuxRows = @($rows | Where-Object { $_.OS.ContainsKey('linux') })
+# Three populations since the 2026-08-29 n/a ruling: validated-at-count (numeric annotation),
+# permanently inapplicable (`linux: n/a` -- the package cannot exist there), and pending (no
+# annotation). The header's honest denominator is the APPLICABLE rows -- the whole table minus the
+# n/a set -- because a denominator silently containing rows no Linux can ever measure makes 100%
+# unreachable and the line quietly dishonest against the parity goal.
+$linuxRows = @($rows | Where-Object { $_.OS.ContainsKey('linux') -and $_.OS['linux'].Applicable })
+$linuxNaRows = @($rows | Where-Object { $_.OS.ContainsKey('linux') -and -not $_.OS['linux'].Applicable })
 $linuxTotal = 0
 $linuxDisclosed = 0
 foreach ($row in $linuxRows) {
@@ -478,16 +511,21 @@ foreach ($row in $linuxRows) {
 }
 
 Assert-Equal 'linux header: annotated row count' $linuxRows.Count `
-    (Get-HeaderNumber $lines 'Linux:' 'Linux:\s*\*{0,2}(\d+)\s+of\s+(\d+)\s+rows')
-Assert-Equal 'linux header: denominator is the whole table' $rows.Count `
-    (Get-HeaderNumber $lines 'Linux:' 'Linux:\s*\*{0,2}(\d+)\s+of\s+(\d+)\s+rows' 2)
+    (Get-HeaderNumber $lines 'Linux:' 'Linux:\s*\*{0,2}(\d+)\s+of\s+(\d+)\s+applicable rows')
+Assert-Equal 'linux header: denominator is the applicable table (whole minus n/a)' ($rows.Count - $linuxNaRows.Count) `
+    (Get-HeaderNumber $lines 'Linux:' 'Linux:\s*\*{0,2}(\d+)\s+of\s+(\d+)\s+applicable rows' 2)
 Assert-Equal 'linux header: matching verdicts equal the annotation sum' $linuxTotal `
     (Get-HeaderNumber $lines 'Linux:' '([\d,]+)\s+matching verdicts')
 Assert-Equal 'linux header: disclosed equals the annotation sum' $linuxDisclosed `
     (Get-HeaderNumber $lines 'Linux:' '([\d,]+)\s+disclosed')
+if ($linuxNaRows.Count -gt 0) {
+    Assert-Equal 'linux header: the n/a count is stated, derived from the annotations' $linuxNaRows.Count `
+        (Get-HeaderNumber $lines 'Linux:' '(\d+)\s+row(?:s)?\s+platform-exclusive')
+}
 
-# Every annotation must be a real expectation, not a placeholder: a zero-count row would read as
-# "validated at nothing" in the header's numerator.
+# Every applicable annotation must be a real expectation, not a placeholder: a zero-count row would
+# read as "validated at nothing" in the header's numerator. (The n/a form is the ONLY legal
+# non-count annotation, and it is excluded above by construction.)
 foreach ($row in $linuxRows) {
     Assert-Equal "annotation is a real count: $($row.Package)" $true ($row.OS['linux'].Expected -gt 0)
 }

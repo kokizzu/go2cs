@@ -386,7 +386,14 @@ type Visitor struct {
 	// holds the per-iteration copy-back statements (`iᴛ1 = i;`) an unlabeled `continue` must
 	// emit before transferring to the post clause (nil for range loops and for loops whose
 	// per-iteration variables are never written in the body).
-	loopCopyBackStack       [][]string
+	loopCopyBackStack [][]string
+	// continueTargetStack parallels the enclosing C# ITERATION-statement nesting during body
+	// emission: a loop entry per Go for/range loop, a wrapper entry per `do { … } while (false)`
+	// switch-break wrap (visitSwitchStmtCore). When the top is a wrapper, an unlabeled `continue`
+	// cannot be emitted bare — C# would bind it to the wrapper — so it emits `goto` to the nearest
+	// enclosing LOOP entry's end-of-body label, marking the label used so the loop declares it
+	// (see wrappedContinueLoopLabel / prepareLoopContinueTarget).
+	continueTargetStack     []*continueTargetEntry
 	lastStatementWasReturn  bool
 	lastReturnIndentLevel   int
 	identEscapesHeap        map[types.Object]bool

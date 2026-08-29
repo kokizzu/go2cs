@@ -916,6 +916,49 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 		}
 
+		// A conversion to a pointer-to-NAMED-ARRAY whose source is a FRESH allocation —
+		// reflect's `(*MyBytesArray0)(new([0]byte))` (all_test.go:4501). It emitted the bare
+		// `(ж<MyBytesArray0>)Ꮡ(new array<byte>(0))` cast, which is CS0030: ж<> is not variant, so
+		// ж<array<byte>> and ж<MyBytesArray0> are unrelated instantiations.
+		//
+		// CONSTRUCT the wrapper and take ITS address, which is exactly what the sibling
+		// composite-literal spelling `&MyBytesArray{1,2,3,4}` already emits one line below in the
+		// same reflect table. Restricted to a fresh allocation ON PURPOSE, because for a fresh one
+		// nothing else can reference the storage, so constructing over it is indistinguishable
+		// from aliasing it.
+		//
+		// The `(*Named)(&existing)` spelling deliberately KEEPS its CS0030 rather than taking this
+		// emission. That was measured, not assumed: a named-ARRAY wrapper's generated field is
+		// `array<T>?` — a Nullable, so it is BOTH larger than the `array<T>` it wraps and a
+		// different shape — and golib's alias gate refuses it on the size test alone. (The named
+		// SLICE wrapper's field is a bare `slice<T>`, identical in size and layout, which is why
+		// the reinterpret arm above is correct there and banked.) Widening that arm to arrays
+		// therefore compiles but hands back a raw-address box whose deref fabricates a managed
+		// reference: measured as an AccessViolationException inside `array<byte>.get_Item` on the
+		// FIRST indexed read. So for `&existing` there is no correct emission available yet, and a
+		// loud CS0030 is the honest answer — constructing there would silently write through a
+		// copy for whole-value assignment, which is the log/slog `WithAttrs` bug this file's
+		// history already paid for.
+		if targetPtr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Pointer); ok {
+			if targetNamed, ok := types.Unalias(targetPtr.Elem()).(*types.Named); ok {
+				if targetArr, ok := targetNamed.Underlying().(*types.Array); ok {
+					if argCall, isCall := arg.(*ast.CallExpr); isCall && len(argCall.Args) == 1 {
+						if newIdent, isIdent := argCall.Fun.(*ast.Ident); isIdent && newIdent.Name == "new" && v.identIsUniverseBuiltin(newIdent) {
+							// Go only permits the conversion when the pointee underlyings are
+							// identical, but assert it rather than inherit it: this arm mints a
+							// wrapper over a zero value, so a mismatch would construct silently.
+							if argPtr, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Pointer); ok && types.Identical(argPtr.Elem().Underlying(), targetArr) {
+								elemName := convertToCSTypeName(v.getAliasQualifiedTypeName(targetArr.Elem(), false))
+								namedCS := convertToCSTypeName(v.getAliasQualifiedTypeName(targetNamed, false))
+
+								return fmt.Sprintf("Ꮡ(new %s(new array<%s>(%s)))", namedCS, elemName, csNintLiteral(targetArr.Len()))
+							}
+						}
+					}
+				}
+			}
+		}
+
 		// A conversion between two NAMED SLICE types sharing an identical underlying — tar's
 		// `sparseElem(s[i*24:])` where s is sparseArray (both `[]byte`): the named-slice
 		// slicing wrapper-return makes the arg the NAMED wrapper, and a direct
@@ -1484,17 +1527,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// yields it for the variadic slot — and every trailing argument is checked because the
 			// nil need not be the first (`f(a, nil, b)`). A SPREAD call (`f(args...)`) passes the
 			// slice whole, so there is no expansion to disambiguate and it is excluded.
-			if funcSignature.Variadic() && i == params.Len()-1 && !callExprContext.hasSpreadOperator {
-				for j := i; j < len(callExpr.Args); j++ {
-					if !argIsUntypedNil(callExpr.Args[j], v.info) {
-						continue
-					}
+			// … and it must be a real INVOCATION. `(func(...int))(nil)` is a CONVERSION whose
+			// callee is a TYPE, but isTypeConversion has no *ast.FuncType arm, so a func-type
+			// conversion is never classified as one and arrives here on the regular call path
+			// with the target signature standing in for a callee. Everything the comment above
+			// argues then inverts: a conversion has no params expansion to disambiguate, its
+			// single operand is the conversion SOURCE, and `default!` already binds
+			// unambiguously to the one delegate target. Casting it to `paramType` cast the nil
+			// to the func's FIRST PARAMETER — `(Actionꓸꓸꓸ<nint>)((nint)(default!))`, CS0030.
+			// The predicate is variadic AND exactly one declared parameter, which is why
+			// `(func(Point, ...Point) int)(nil)` and every non-variadic spelling were unharmed.
+			if calleeTV, isCallee := v.info.Types[callExpr.Fun]; !isCallee || !calleeTV.IsType() {
+				if funcSignature.Variadic() && i == params.Len()-1 && !callExprContext.hasSpreadOperator {
+					for j := i; j < len(callExpr.Args); j++ {
+						if !argIsUntypedNil(callExpr.Args[j], v.info) {
+							continue
+						}
 
-					if callExprContext.castArgToType == nil {
-						callExprContext.castArgToType = make(map[int]string)
-					}
+						if callExprContext.castArgToType == nil {
+							callExprContext.castArgToType = make(map[int]string)
+						}
 
-					callExprContext.castArgToType[j] = convertToCSTypeName(v.getAliasQualifiedTypeName(paramType, false))
+						callExprContext.castArgToType[j] = convertToCSTypeName(v.getAliasQualifiedTypeName(paramType, false))
+					}
 				}
 			}
 
@@ -2699,7 +2754,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		calleeIdentContext := DefaultIdentContext()
 		calleeIdentContext.suppressGenericTypeArgs = true
 
-		funcName = v.convExpr(callExpr.Fun, []ExprContext{lambdaContext, calleeIdentContext})
+		// A parenthesized TYPE-NAME callee renders UNPARENTHESIZED, so that
+		// `(unsafe.Pointer)(x)` and `unsafe.Pointer(x)` — the same Go expression, twice spelled
+		// — reach the same emission. Rendering the ParenExpr gave `funcName` a parenthesized
+		// form that the `new @unsafe.Pointer(…)` peephole below cannot match (it compares
+		// `funcName` against the bare name), leaving the raw-cast route and CS0030.
+		//
+		// Narrowed to an Ident/SelectorExpr payload ON PURPOSE — exactly the two shapes
+		// isConstructorCall accepts, so the two halves of this fix stay in step. A parenthesized
+		// STAR type `(*int)(p)` must keep its parens: convParenExpr owns the Pointer → ж<T>
+		// uintptr hop for that shape, and unwrapping it loses the hop (measured — it turned two
+		// working round-trip reads into CS1503 "cannot convert from Pointer to in ж<nint>").
+		callee := callExpr.Fun
+
+		if paren, isParen := callee.(*ast.ParenExpr); isParen {
+			if tv, isTyped := v.info.Types[callee]; isTyped && tv.IsType() {
+				switch ast.Unparen(paren.X).(type) {
+				case *ast.Ident, *ast.SelectorExpr:
+					callee = ast.Unparen(paren.X)
+				}
+			}
+		}
+
+		funcName = v.convExpr(callee, []ExprContext{lambdaContext, calleeIdentContext})
 	}
 
 	// A VARIADIC func-literal callee renders as `(params ꓸꓸꓸ@string dirsʗp) => …`, which C# can
@@ -4466,10 +4543,18 @@ func (v *Visitor) needsParentheses(expr ast.Expr) bool {
 }
 
 func (v *Visitor) isConstructorCall(callExpr *ast.CallExpr) bool {
-	// Get the object associated with the function being called
+	// Get the object associated with the function being called.
+	//
+	// ast.Unparen: Go's PARENTHESIZED conversion spelling `(T)(x)` puts an *ast.ParenExpr in
+	// Fun, which fell to the default arm below and reported "not a constructor" for what is
+	// plainly a type callee. `(unsafe.Pointer)(new(int))` then took a different route from the
+	// identical `unsafe.Pointer(new(int))` and emitted an uncompilable cast. The two spellings
+	// are one Go program and must convert alike — the same rule this file already applies to the
+	// two IIFE spellings. Unwrapping cannot widen the answer beyond that: `(*T)(x)` and
+	// `(func())(nil)` unwrap to *ast.StarExpr / *ast.FuncType, which still hit the default arm.
 	var obj types.Object
 
-	switch funExpr := callExpr.Fun.(type) {
+	switch funExpr := ast.Unparen(callExpr.Fun).(type) {
 	case *ast.Ident:
 		obj = v.info.ObjectOf(funExpr)
 	case *ast.SelectorExpr:

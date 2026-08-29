@@ -49,6 +49,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckAnonStructArrayElement() => CheckTarget("AnonStructArrayElement");
 
     [TestMethod]
+    public void CheckAnonStructAssertLiftDedupe() => CheckTarget("AnonStructAssertLiftDedupe");
+
+    [TestMethod]
     public void CheckAnonStructComposedTypes() => CheckTarget("AnonStructComposedTypes");
 
     [TestMethod]
@@ -541,6 +544,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckFuncLitUntypedConstReturn() => CheckTarget("FuncLitUntypedConstReturn");
 
     [TestMethod]
+    public void CheckFuncTypeNilConversion() => CheckTarget("FuncTypeNilConversion");
+
+    [TestMethod]
     public void CheckFuncTypeParam() => CheckTarget("FuncTypeParam");
 
     [TestMethod]
@@ -796,6 +802,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckLambdaFunctions() => CheckTarget("LambdaFunctions");
 
     [TestMethod]
+    public void CheckLambdaNilOnlyReturnInference() => CheckTarget("LambdaNilOnlyReturnInference");
+
+    [TestMethod]
     public void CheckLambdaReturnsPointerParam() => CheckTarget("LambdaReturnsPointerParam");
 
     [TestMethod]
@@ -938,6 +947,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckNamedArrayKeyedLiteral() => CheckTarget("NamedArrayKeyedLiteral");
+
+    [TestMethod]
+    public void CheckNamedArrayPointerConversion() => CheckTarget("NamedArrayPointerConversion");
 
     [TestMethod]
     public void CheckNamedArrayWrapper() => CheckTarget("NamedArrayWrapper");
@@ -1217,6 +1229,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckParenthesizedConcatContext() => CheckTarget("ParenthesizedConcatContext");
+
+    [TestMethod]
+    public void CheckParenTypeConversionCall() => CheckTarget("ParenTypeConversionCall");
 
     [TestMethod]
     public void CheckPartialRedeclaration() => CheckTarget("PartialRedeclaration");
@@ -1513,6 +1528,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSelectRandomFairness() => CheckTarget("SelectRandomFairness");
 
     [TestMethod]
+    public void CheckSelectRecvCommShadowRename() => CheckTarget("SelectRecvCommShadowRename");
+
+    [TestMethod]
     public void CheckSelectSendDefault() => CheckTarget("SelectSendDefault");
 
     [TestMethod]
@@ -1685,6 +1703,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckSwitchBreakBeforeFallthrough() => CheckTarget("SwitchBreakBeforeFallthrough");
+
+    [TestMethod]
+    public void CheckSwitchBreakContinueWrapper() => CheckTarget("SwitchBreakContinueWrapper");
 
     [TestMethod]
     public void CheckSwitchBreakInCase() => CheckTarget("SwitchBreakInCase");

@@ -37,6 +37,59 @@ func numericBasicLit(expr ast.Expr) (*ast.BasicLit, bool) {
 	return lit, true
 }
 
+// funcLitReturnArmTypes scans a function literal's OWN single-value return arms (a nested
+// literal's returns belong to it), reporting the distinct arm types, whether any such arm exists
+// at all, and whether EVERY one of them is the untyped nil.
+//
+// Extracted so both consumers can share it: the interface-result arm in convFuncLit, whose
+// distinct-arm-types case it was written for, and the nilable-result arm beside it. Keeping one
+// scan is what makes those two answer the same question the same way.
+func (v *Visitor) funcLitReturnArmTypes(funcLit *ast.FuncLit) (armTypes []types.Type, hasSingleReturn bool, allArmsUntypedNil bool) {
+	allArmsUntypedNil = true
+
+	ast.Inspect(funcLit.Body, func(n ast.Node) bool {
+		if _, isLit := n.(*ast.FuncLit); isLit && n != funcLit.Body {
+			return false // a nested literal's returns belong to it
+		}
+
+		if ret, ok := n.(*ast.ReturnStmt); ok && len(ret.Results) == 1 {
+			hasSingleReturn = true
+
+			if basic, isBasic := v.getType(ret.Results[0], false).(*types.Basic); !isBasic || basic.Kind() != types.UntypedNil {
+				allArmsUntypedNil = false
+			}
+
+			if retType := v.getType(ret.Results[0], false); retType != nil {
+				known := false
+
+				for _, t := range armTypes {
+					if types.Identical(t, retType) {
+						known = true
+						break
+					}
+				}
+
+				if !known {
+					armTypes = append(armTypes, retType)
+				}
+			}
+		}
+
+		return true
+	})
+
+	return armTypes, hasSingleReturn, allArmsUntypedNil
+}
+
+// funcLitAllReturnArmsAreUntypedNil reports whether the literal returns a single value and EVERY
+// one of its own return arms is the untyped nil — the shape whose arms all render `default!`, so
+// none contributes a natural type and C# cannot infer the delegate (CS8917).
+func (v *Visitor) funcLitAllReturnArmsAreUntypedNil(funcLit *ast.FuncLit) bool {
+	_, hasSingleReturn, allArmsUntypedNil := v.funcLitReturnArmTypes(funcLit)
+
+	return hasSingleReturn && allArmsUntypedNil
+}
+
 // funcLitReturnsUntypedNamedConst reports whether any of the literal's OWN top-level return arms
 // returns a bare reference to a named untyped numeric constant — OR a constant operator expression
 // containing one that no literal fold rescues. Both shapes emit with a golib `Untyped*` wrapper
@@ -965,44 +1018,29 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 				// natural type to begin with. Assignment position only - an argument/return
 				// literal is target-typed by its delegate, where an explicit return type could
 				// only add an identity-match constraint against the target's own result type.
-				var armTypes []types.Type
-				hasSingleReturn := false
-				allArmsUntypedNil := true
-
-				ast.Inspect(funcLit.Body, func(n ast.Node) bool {
-					if _, isLit := n.(*ast.FuncLit); isLit && n != funcLit.Body {
-						return false // a nested literal's returns belong to it
-					}
-
-					if ret, ok := n.(*ast.ReturnStmt); ok && len(ret.Results) == 1 {
-						hasSingleReturn = true
-
-						if basic, isBasic := v.getType(ret.Results[0], false).(*types.Basic); !isBasic || basic.Kind() != types.UntypedNil {
-							allArmsUntypedNil = false
-						}
-
-						if retType := v.getType(ret.Results[0], false); retType != nil {
-							known := false
-
-							for _, t := range armTypes {
-								if types.Identical(t, retType) {
-									known = true
-									break
-								}
-							}
-
-							if !known {
-								armTypes = append(armTypes, retType)
-							}
-						}
-					}
-
-					return true
-				})
+				armTypes, hasSingleReturn, allArmsUntypedNil := v.funcLitReturnArmTypes(funcLit)
 
 				if len(armTypes) > 1 || (context.isAssignment && hasSingleReturn && allArmsUntypedNil) {
 					returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
 				}
+			} else if context.isAssignment && v.funcLitAllReturnArmsAreUntypedNil(funcLit) {
+				// The all-arms-untyped-nil rule from the interface arm above, for every OTHER
+				// nilable result kind. It was written for `client := func(*TCPConn) error { …;
+				// return nil }` and lived inside that arm, so a slice / map / pointer / channel /
+				// func result never reached it — reflect's `g := func(in []Value) []Value { …;
+				// return nil }` (TestCallGC) emitted `var g = (slice<Value> @in) => default!;`,
+				// CS8917.
+				//
+				// The reasoning is identical and kind-independent: every arm renders `default!`,
+				// which carries no natural type, so NO arm contributes one and the delegate is
+				// uninferable. Stating the declared result type target-types each `default!` in
+				// place. No extra kind test is needed — a literal whose every arm is the untyped
+				// nil necessarily has a nilable result by Go's own rules.
+				//
+				// Assignment position only, for the reason the sibling arms give: an
+				// argument/return literal is target-typed by its delegate, where an explicit
+				// return type could only add an identity-match constraint against that target.
+				returnTypePrefix = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false)) + " "
 			} else if context.isAssignment {
 				// A STRING-returning literal in natural-inference position (`pick := func(v any)
 				// string {…}` → `var pick = …`) can mix return arms of DIFFERENT C# types even

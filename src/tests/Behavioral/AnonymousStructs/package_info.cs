@@ -50,7 +50,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("AnonymousStructs.go", "AnonymousStructs.cs", "AB4siAAHFoKClIqCgoSCAB4GhIKMhoqGhIqGhoyKiIKEgoKKhAAEEoSCloaC")]
+[assembly: go.GoPositionMap("AnonymousStructs.go", "AnonymousStructs.cs", "AB4siAAHFoKClIqCgoSCABQGhIKMhoqGhIqGhoyKiIKEgoKKhAAEEoSCloaC")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -69,8 +69,6 @@ public static partial class main_package
     internal partial struct cycleMemo_memo {}
     internal partial struct main_anonPerson {}
     internal partial struct main_type {}
-    internal partial struct main_typeᴛ1 {}
-    internal partial struct main_typeᴛ2 {}
     internal partial struct processAnonymousStruct_data {}
     internal partial struct settingsᴛ1 {}
     public partial struct Person {}

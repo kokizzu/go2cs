@@ -263,6 +263,7 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	v.tempVarCount = nil
 	v.useUnsafeFunc = false
 	v.loopCopyBackStack = nil
+	v.continueTargetStack = nil
 
 	// Does anything in this declaration — or the package it lives in — name an identifier `heap`?
 	// If so, every heap-box emission below spells golib's intrinsic `builtin.heap` (see
