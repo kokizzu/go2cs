@@ -295,7 +295,9 @@ function Test-HostConditionalDelta {
         [int] $Disclosed,          # banked disclosed count (roster column 3)
         [string[]] $Conditional,   # the named host-conditional verdicts (roster annotation)
         [int] $Got,                # the live run's validated count
-        $Comparison,               # the run's go2cs_test_comparison.json, ConvertFrom-Json form
+        $Comparison,               # the run's go2cs_test_comparison.json via ConvertFrom-ComparisonRecord:
+                                   # go/csharp are ORDINAL dictionaries (never PSObjects -- a PSObject
+                                   # cannot hold the legal case-only verdict-name pairs; see _roster.ps1)
         [string[]] $BankedNames    # verdict names from the committed proof page's Verdicts table
     )
 
