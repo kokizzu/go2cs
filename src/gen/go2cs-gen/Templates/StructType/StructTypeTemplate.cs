@@ -431,6 +431,18 @@ internal class StructTypeTemplate : TemplateBase
                     if (typeSymbol is null)
                         yield break;
 
+                    // Membership is Go's own promotion rule projected through existing metadata
+                    // (see PromotesFromMetadata): public members always — a genuine cross-package
+                    // embed sees exactly what Go exports — and unexported ones exactly when the
+                    // embedding struct belongs to the SAME Go package, which the `-tests`
+                    // reference model splits across an assembly seam (net's resolvConfTest over
+                    // *resolverConfig: the internal initOnce/dnsConfig/lastChecked promoted
+                    // NOTHING under the old public-only filter, and every converter-emitted
+                    // promoted selection was a missing member). The friend grant
+                    // (InternalsVisibleTo) is what makes those members legal C# here, and
+                    // IsSymbolAccessibleWithin is what consults it.
+                    string? embedGoPackage = GetGoPackageName(typeSymbol.ContainingType);
+
                     // `fieldSymbol`, not `field`: this local function is nested inside the
                     // `PromotedStructDeclarations` GET accessor, and C# 14 makes `field` a KEYWORD there
                     // (the synthesized-backing-field feature). Under LangVersion 14 the declaration is
@@ -441,7 +453,7 @@ internal class StructTypeTemplate : TemplateBase
                     // accessor scope introduces.
                     foreach (IFieldSymbol fieldSymbol in typeSymbol.GetMembers().OfType<IFieldSymbol>())
                     {
-                        if (fieldSymbol.DeclaredAccessibility != Accessibility.Public || fieldSymbol.IsStatic || fieldSymbol.IsImplicitlyDeclared)
+                        if (fieldSymbol.IsStatic || fieldSymbol.IsImplicitlyDeclared || !PromotesFromMetadata(fieldSymbol, embedGoPackage))
                             continue;
 
                         if (GetSimpleName(fieldSymbol.Name) == "_")
@@ -459,7 +471,7 @@ internal class StructTypeTemplate : TemplateBase
                     // the standard single-hop `X => ref Embed.X` emission handles both shapes.
                     foreach (IPropertySymbol property in typeSymbol.GetMembers().OfType<IPropertySymbol>())
                     {
-                        if (property.DeclaredAccessibility != Accessibility.Public || property.IsStatic || !property.ReturnsByRef)
+                        if (property.IsStatic || !property.ReturnsByRef || !PromotesFromMetadata(property, embedGoPackage))
                             continue;
 
                         if (property.IsIndexer || GetSimpleName(property.Name) == "_")
@@ -549,7 +561,23 @@ internal class StructTypeTemplate : TemplateBase
                 (StructDeclarationSyntax? decl, Compilation? comp) = Context.GetStructDeclaration(typeName);
 
                 if (decl is null)
+                {
+                    // METADATA embed: count its same-Go-package promoted methods too, so the
+                    // cross-embed ambiguity rule reads the same method set the collection pass
+                    // below will forward (see GetMetadataPromotedMethods).
+                    (List<MethodInfo> metadataValueMethods, List<MethodInfo> metadataBoxMethods) = GetMetadataPromotedMethods(typeName);
+
+                    foreach (MethodInfo m in metadataValueMethods)
+                        embedMethodNames.Add(m.Name);
+
+                    if (pointerEmbedTypeNames.Contains(embedKey(typeName)) || (typeName == promotedStructType && directEmbedIsValue))
+                    {
+                        foreach (MethodInfo m in metadataBoxMethods)
+                            embedMethodNames.Add(m.Name);
+                    }
+
                     return;
+                }
 
                 foreach (MethodInfo m in decl.GetExtensionMethods(comp!) ?? [])
                     embedMethodNames.Add(m.Name);
@@ -607,7 +635,35 @@ internal class StructTypeTemplate : TemplateBase
                 (StructDeclarationSyntax? decl, Compilation? comp) = Context.GetStructDeclaration(typeName);
 
                 if (decl is null)
+                {
+                    // METADATA embed — the `-tests` reference model's same-Go-package shape (net's
+                    // resolvConfTest over *resolverConfig, whose init/tryAcquireSema/releaseSema
+                    // live in the referenced production assembly). Harvest its promoted methods
+                    // from metadata so the standard value/pointer forwarders below are emitted
+                    // exactly as a same-assembly embed's would be; a genuine CROSS-package embed
+                    // yields nothing here (see GetMetadataPromotedMethods) and keeps the
+                    // converter's explicit-hop call emission.
+                    (List<MethodInfo> metadataValueMethods, List<MethodInfo> metadataBoxMethods) = GetMetadataPromotedMethods(typeName);
+
+                    foreach (MethodInfo m in metadataValueMethods)
+                    {
+                        if (promotedMethodNames.Add(m.Name))
+                            promotedStructMethods.Add(m);
+                    }
+
+                    bool metadataValueEmbedBoxRecv = typeName == promotedStructType && directEmbedIsValue;
+
+                    if (pointerEmbedTypeNames.Contains(embedKey(typeName)) || metadataValueEmbedBoxRecv)
+                    {
+                        foreach (MethodInfo m in metadataBoxMethods)
+                        {
+                            if (promotedMethodNames.Add(m.Name))
+                                promotedStructMethods.Add(m with { IsBoxRecv = true, IsValueEmbedBoxRecv = metadataValueEmbedBoxRecv });
+                        }
+                    }
+
                     return;
+                }
 
                 foreach (MethodInfo m in decl.GetExtensionMethods(comp!) ?? [])
                 {
@@ -835,6 +891,149 @@ internal class StructTypeTemplate : TemplateBase
     private static string EmbedHop(string promotedStructType, string memberName) =>
         StripGenericTypeArguments(GetSimpleName(promotedStructType, dropCollisionPrefix: true))
             .EndsWith(".Value", StringComparison.Ordinal) ? $"{memberName}.Value" : memberName;
+
+    private string? m_enclosingGoPackage;
+    private bool m_enclosingGoPackageResolved;
+
+    // The Go package identity of the ENCLOSING struct's containing package class, read from its
+    // [GoPackage] attribute — the identity that survives the `-tests` reference model's assembly
+    // split (net_package and net_internal_test_package both carry [GoPackage("net")]; the
+    // external-test class carries [GoPackage("net_test")], a DIFFERENT Go package, exactly as Go
+    // defines it). Null when the struct or its container cannot be resolved, which every consumer
+    // reads as "not the same package" — the conservative, pre-existing behavior.
+    private string? EnclosingGoPackageName
+    {
+        get
+        {
+            if (m_enclosingGoPackageResolved)
+                return m_enclosingGoPackage;
+
+            m_enclosingGoPackageResolved = true;
+            m_enclosingGoPackage = GetGoPackageName(Context.Compilation.FindTypeSymbol(FullyQualifiedStructType)?.ContainingType);
+
+            return m_enclosingGoPackage;
+        }
+    }
+
+    // Reads the [GoPackage("…")] identity off a package class symbol (source or metadata), or null
+    // when the class carries none (hand-written classes outside the conversion model).
+    private static string? GetGoPackageName(INamedTypeSymbol? packageClass)
+    {
+        return packageClass?.GetAttributes().FirstOrDefault(attribute => attribute.AttributeClass is
+        {
+            Name: "GoPackageAttribute",
+            ContainingNamespace: { Name: "go", ContainingNamespace.IsGlobalNamespace: true }
+        })?.ConstructorArguments.FirstOrDefault().Value as string;
+    }
+
+    // Go's promotion rule for a member read from METADATA, projected through what the compiler
+    // already knows: the member must be accessible to THIS compilation — IsSymbolAccessibleWithin
+    // folds in the friend grant (InternalsVisibleTo) the `-tests` reference model mints — and it
+    // must be either exported (public: what Go promotes across packages) or a member of the SAME
+    // Go package as the embedding struct (what Go promotes within one, which the reference model
+    // splits across two assemblies). Accessibility alone would over-promote: the friend grant
+    // reaches the whole test assembly, external-test (`<pkg>_test`) classes included, where Go
+    // itself promotes only exported members.
+    private bool PromotesFromMetadata(ISymbol member, string? memberGoPackage)
+    {
+        if (!Context.Compilation.IsSymbolAccessibleWithin(member, Context.Compilation.Assembly))
+            return false;
+
+        return member.DeclaredAccessibility == Accessibility.Public ||
+               (memberGoPackage is not null && memberGoPackage == EnclosingGoPackageName);
+    }
+
+    // METADATA sibling of the syntax method harvests (GetExtensionMethods /
+    // GetBoxReceiverExtensionMethods), for an embedded struct whose SOURCE this compilation cannot
+    // see. A converted Go method is a static extension on the TYPE's containing package class, so
+    // that class's metadata carries the full signatures; receivers split exactly as the syntax
+    // side's do — `this T` / `this ref T` value forms versus the direct-ж box primary `this ж<T>`.
+    //
+    // SAME-GO-PACKAGE ONLY, by [GoPackage] identity: a genuine cross-package embed returns empty
+    // and keeps the converter's explicit-hop call emission (convSelectorExpr's metadata-embed arm,
+    // "a metadata embed promotes FIELDS only") — minting cross-package forwarders here would be a
+    // corpus-wide generated-code change this deliberately is not. What it serves is the `-tests`
+    // reference model's white-box shape: net's resolvConfTest embeds *resolverConfig, whose
+    // init (box primary) and tryAcquireSema/releaseSema ([GoRecv] ref) live in the referenced
+    // production assembly and are reachable through the friend grant, so Go's same-package
+    // promotion must survive the assembly seam. Transitive promotion through the metadata type's
+    // own embeds is not chased, matching the field scan's documented single-hop stance.
+    private (List<MethodInfo> valueMethods, List<MethodInfo> boxMethods) GetMetadataPromotedMethods(string embedTypeName)
+    {
+        List<MethodInfo> valueMethods = [];
+        List<MethodInfo> boxMethods = [];
+
+        INamedTypeSymbol? embedType = Context.FindUnderlyingStructSymbol(embedTypeName);
+
+        if (embedType?.ContainingType is not INamedTypeSymbol packageClass)
+            return (valueMethods, boxMethods);
+
+        string? embedGoPackage = GetGoPackageName(packageClass);
+
+        if (embedGoPackage is null || embedGoPackage != EnclosingGoPackageName)
+            return (valueMethods, boxMethods);
+
+        // Names that must stay resolvable as BARE calls inside the embedding struct's own class.
+        // Go lets a package-level FUNCTION and a METHOD share a name (they live in different
+        // scopes — `LookupHost` and `(*Resolver).LookupHost`), but the emission folds both into
+        // one static package class, imported into the test class via `using static` — and a
+        // same-named forwarder minted INTO that class SHADOWS the import for every bare call
+        // (C# member lookup finds class methods first: net's lookupCustomResolver embeds
+        // *Resolver, and its minted Lookup* forwarders cost 54 CS1501s on plain `LookupHost(host)`
+        // calls). The bare function call has no other spelling the converter emits, while a
+        // promoted-method call always has the explicit hop through the embed — so the function
+        // wins and the colliding forwarder is skipped. (Residual, unmeasured: a Go call of such a
+        // colliding method THROUGH the embedding struct would need the converter's explicit hop.)
+        HashSet<string> packageFunctionNames = new(StringComparer.Ordinal);
+
+        foreach (IMethodSymbol packageFunction in packageClass.GetMembers().OfType<IMethodSymbol>())
+        {
+            if (packageFunction.IsStatic && !packageFunction.IsExtensionMethod &&
+                packageFunction.MethodKind == MethodKind.Ordinary &&
+                Context.Compilation.IsSymbolAccessibleWithin(packageFunction, Context.Compilation.Assembly))
+            {
+                packageFunctionNames.Add(packageFunction.Name);
+            }
+        }
+
+        foreach (IMethodSymbol method in packageClass.GetMembers().OfType<IMethodSymbol>())
+        {
+            if (packageFunctionNames.Contains(method.Name))
+                continue;
+
+            // IsExtensionMethod keeps package-level FUNCTIONS out: a Go `func f(c resolverConfig)`
+            // is an ordinary static whose first parameter merely has the embed's type — only the
+            // `this`-marked receiver forms are Go METHODS.
+            if (!method.IsStatic || !method.IsExtensionMethod || method.Parameters.Length == 0)
+                continue;
+
+            if (!Context.Compilation.IsSymbolAccessibleWithin(method, Context.Compilation.Assembly))
+                continue;
+
+            IParameterSymbol receiver = method.Parameters[0];
+
+            bool isBoxReceiver = receiver.Type is INamedTypeSymbol { Name: PointerPrefix, TypeArguments.Length: 1 } boxType &&
+                                 SymbolEqualityComparer.Default.Equals(boxType.TypeArguments[0].OriginalDefinition, embedType.OriginalDefinition);
+
+            if (!isBoxReceiver && !SymbolEqualityComparer.Default.Equals(receiver.Type.OriginalDefinition, embedType.OriginalDefinition))
+                continue;
+
+            // IsRefRecv comes from the RECEIVER's ref kind here — the shared symbol-based
+            // GetMethodInfo sets it from ReturnsByRef, which serves its interface-member callers
+            // but is the wrong question for an extension receiver.
+            MethodInfo info = method.GetMethodInfo() with { IsRefRecv = receiver.RefKind == RefKind.Ref };
+
+            // ToParameterInfos drops a `params` variadic modifier; restore it for the same
+            // reason the syntax harvest preserves it (a Go variadic promoted without `params`
+            // rejects element-form calls — CS1929's shape).
+            if (method.Parameters[^1].IsParams && info.Parameters.Length > 0)
+                info.Parameters[^1] = ($"params {info.Parameters[^1].type}", info.Parameters[^1].name);
+
+            (isBoxReceiver ? boxMethods : valueMethods).Add(info);
+        }
+
+        return (valueMethods, boxMethods);
+    }
 
     // The POINTED-TO type of a pointer embed, or null when the re-rooted form cannot be emitted for
     // it. It is what a promoted field-reference accessor must re-root at: the embed's declared type
