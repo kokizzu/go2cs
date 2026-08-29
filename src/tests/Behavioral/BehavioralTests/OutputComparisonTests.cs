@@ -1481,6 +1481,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSelectSingleFire() => CheckTarget("SelectSingleFire");
 
     [TestMethod]
+    public void CheckSetFinalizerBridge() => CheckTarget("SetFinalizerBridge");
+
+    [TestMethod]
     public void CheckShadowedCompoundAssign() => CheckTarget("ShadowedCompoundAssign");
 
     [TestMethod]

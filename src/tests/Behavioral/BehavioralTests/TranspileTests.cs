@@ -1543,6 +1543,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSelectStatement() => CheckTarget("SelectStatement");
 
     [TestMethod]
+    public void CheckSetFinalizerBridge() => CheckTarget("SetFinalizerBridge");
+
+    [TestMethod]
     public void CheckShadowedCompoundAssign() => CheckTarget("ShadowedCompoundAssign");
 
     [TestMethod]
