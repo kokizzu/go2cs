@@ -11655,6 +11655,48 @@ The **exception is the enclosing method's own `[GoRecv] ref` receiver**: a non-d
 
 **A POINTER embed's BOX-receiver primary promotes through the box hop, not the deref'd value.** The promoted-receiver harvest (`GetExtensionMethods` → `IsExtensionMethodForStruct`) matched only VALUE-receiver forms (`T`/`ref T`/…), so a **direct-ж** primary (`this ж<T>`, emitted when a method takes the address of a receiver field) on an embedded type had no promoted forwarder — sha3's `cshakeState` embeds `*state`, whose `Write` is `this ж<state>`, so `Ꮡc.Write(…)` was CS1929. Such a method IS promotable through a **pointer** embed: the converter renders the hop `target.<embed>` as a `ж<T>`, so the forwarder `target.<embed>.Write(…)` binds the box receiver directly (no box construction). The `TypeGenerator` now collects those box primaries separately (`GetBoxReceiverExtensionMethods`, keyed off `GetEmbeddedPointerHopNames` so it fires ONLY for pointer embeds — a value embed's `target.<embed>` is a value that cannot bind a ж-receiver, which would need the box-hop form the sibling `GoImplement` adapter uses above) and marks each `MethodInfo.IsBoxRecv`, so the emission drops the `.Value` a value-receiver forwarder appends (`target.<embed>.M(…)` for a box primary vs `target.<embed>.Value.M(…)` for a value method). The pointer-receiver forwarder delegates to the value form unchanged, and the shared box means write-through reaches the real embedded storage. (Guarded by the `PointerEmbedBoxReceiver` behavioral test — `Outer` embedding `*Inner` whose `Add` takes `&n.total` (a box primary), the promoted `o.Add(…)` mutating through the shared box, output-compared vs Go. Full behavioral suite green; a whole-corpus confirmation on the real sha3 is deferred to the next census, as with the sibling foreign-embed fix.)
 
+**Same-Go-package promotion survives the `-tests` reference model's assembly seam.** The metadata
+fallbacks above implement Go's CROSS-package rule — public members only — which was also their
+accessibility filter. But the `-tests` reference model splits ONE Go package across two assemblies
+(the test project references the production project instead of recompiling its sources), so a
+white-box test struct embedding a production type by pointer — net's `resolvConfTest` over
+`*resolverConfig` (`dnsclient_unix_test.go`) — is a *same-package* embed whose type is nonetheless
+METADATA in the test compilation: Go promotes its unexported fields (`initOnce`, `dnsConfig`,
+`lastChecked`) and methods (`init`, `tryAcquireSema`, `releaseSema`), the field scan's public-only
+filter dropped every one, and the method harvest had no metadata path at all — promotion did not
+happen and all eight of net's cgo-off Linux test-build errors were promoted selections on that one
+type (CS0117/CS1061/CS1929). The membership rule is now Go's own, projected through what the
+compiler already knows: a metadata member promotes when it is **accessible to this compilation**
+(`IsSymbolAccessibleWithin`, which folds in the `InternalsVisibleTo` friend grant the test model
+mints) **and** either **public** (what Go promotes across packages) or a member of the **same Go
+package** as the embedding struct — decided by comparing the `[GoPackage]` identities of the two
+containing package classes, the identity that survives the assembly split (`net_package` and
+`net_internal_test_package` both carry `[GoPackage("net")]`; the external-test class carries
+`[GoPackage("net_test")]`, a genuinely different Go package that keeps public-only promotion exactly
+as Go does, friend grant notwithstanding). Methods take a new metadata harvest
+(`GetMetadataPromotedMethods`): a converted Go method is a static extension on the type's containing
+package class, so that class's metadata carries full signatures; receivers split as the syntax side's
+do (`this T`/`this ref T` value forms vs the direct-ж box primary), `IsExtensionMethod` keeps
+package-level *functions* out, and the harvest is **same-Go-package only** — a genuine cross-package
+embed still yields no forwarders and keeps the converter's explicit-hop call emission above, so
+nothing changes corpus-wide. One name class is deliberately NOT minted: a promoted method whose name
+a package-level **function** also carries (Go scopes them apart — `LookupHost` and
+`(*Resolver).LookupHost` — but the emission folds both into one static package class). A forwarder
+by that name lives in the *test* class, and C# member lookup finds class methods before `using
+static` imports, so it would shadow every bare function call — net's `lookupCustomResolver` embeds
+`*Resolver`, and unsuppressed `Lookup*` forwarders cost 54 CS1501s on plain `LookupHost(host)`
+calls. The bare function call has no other spelling the converter emits, while a promoted-method
+call always has the explicit hop, so the function wins (residual, unmeasured: a Go promoted call of
+such a colliding method through the embedding struct would need the converter's explicit hop). No record schema moved: there IS no promotion witness in any
+`package_info` file — an embed's promotion has always been resolved at generation time (syntax
+same-assembly, metadata otherwise), and the fix completes the metadata half for the one seam where
+"same package" and "same assembly" part company. (Guarded by `GenTests/PromotedMetadataEmbedTests` —
+the real `TypeGenerator` over the two-assembly friend shape, promoted internal fields and methods
+asserted, the collision suppression asserted, plus the cross-package control pinning
+public-fields-only and no method forwarders; verified end-to-end by net's linux-target
+`net.tests.csproj` building clean — the 8 promotion errors and the 46-site shadowing class both
+closed.)
+
 ### An embedded struct is an INLINE field, so a value copy copies it
 
 Go gives an embedded field no special storage: it is a field like any other, and a struct value copy
