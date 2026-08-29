@@ -1,0 +1,329 @@
+{
+    "schemaVersion":  1,
+    "disclosures":  [
+                        {
+                            "name":  "TestAddrStringAllocs/ipv4",
+                            "class":  "alloc-profile",
+                            "signature":  ", want 1",
+                            "reason":  "exact-count AllocsPerRun assert (t.Errorf 'allocs=%d, want 1'): Addr.String() must complete in exactly one allocation (the result string); the converted formatting path allocates 2 golib-site object(s) per run - the append-based hex/decimal formatting's intermediate slice storage the CLR heap-allocates where Go's escape analysis keeps it on the stack. True object count over golib's allocation sites (a lower bound on the real total): a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when the count reaches 1. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestAddrStringAllocs/ipv6",
+                            "class":  "alloc-profile",
+                            "signature":  ", want 1",
+                            "reason":  "exact-count AllocsPerRun assert (t.Errorf 'allocs=%d, want 1'): Addr.String() must complete in exactly one allocation (the result string); the converted formatting path allocates 106 golib-site object(s) per run - the append-based hex/decimal formatting's intermediate slice storage the CLR heap-allocates where Go's escape analysis keeps it on the stack. True object count over golib's allocation sites (a lower bound on the real total): a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when the count reaches 1. Measured 106 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestAddrStringAllocs/ipv6+zone",
+                            "class":  "alloc-profile",
+                            "signature":  ", want 1",
+                            "reason":  "exact-count AllocsPerRun assert (t.Errorf 'allocs=%d, want 1'): Addr.String() must complete in exactly one allocation (the result string); the converted formatting path allocates 106 golib-site object(s) per run - the append-based hex/decimal formatting's intermediate slice storage the CLR heap-allocates where Go's escape analysis keeps it on the stack. True object count over golib's allocation sites (a lower bound on the real total): a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when the count reaches 1. Measured 106 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestAddrStringAllocs/ipv4-in-ipv6",
+                            "class":  "alloc-profile",
+                            "signature":  ", want 1",
+                            "reason":  "exact-count AllocsPerRun assert (t.Errorf 'allocs=%d, want 1'): Addr.String() must complete in exactly one allocation (the result string); the converted formatting path allocates 3 golib-site object(s) per run - the append-based hex/decimal formatting's intermediate slice storage the CLR heap-allocates where Go's escape analysis keeps it on the stack. True object count over golib's allocation sites (a lower bound on the real total): a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when the count reaches 1. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestAddrStringAllocs/ipv4-in-ipv6+zone",
+                            "class":  "alloc-profile",
+                            "signature":  ", want 1",
+                            "reason":  "exact-count AllocsPerRun assert (t.Errorf 'allocs=%d, want 1'): Addr.String() must complete in exactly one allocation (the result string); the converted formatting path allocates 3 golib-site object(s) per run - the append-based hex/decimal formatting's intermediate slice storage the CLR heap-allocates where Go's escape analysis keeps it on the stack. True object count over golib's allocation sites (a lower bound on the real total): a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when the count reaches 1. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/IPv4",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 1 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 1 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/AddrFrom4",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 1 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 1 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/AddrFrom16",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/ParseAddr/4",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/ParseAddr/6",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/MustParseAddr",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/IPv6LinkLocalAllNodes",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/IPv6LinkLocalAllRouters",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/IPv6Loopback",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.IsZero",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.BitLen",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Zone/4",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Zone/6",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Zone/6zone",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 4 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 4 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Compare",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 6 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 6 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Less",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 6 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 6 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Is4",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Is6",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Is4In6",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Unmap",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.WithZone",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.IsGlobalUnicast",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 6 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 6 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.IsInterfaceLocalMulticast",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 6 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 6 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.IsLinkLocalMulticast",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 6 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 6 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.IsLinkLocalUnicast",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 6 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 6 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.IsLoopback",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.IsMulticast",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.IsPrivate",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 6 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 6 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.IsUnspecified",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Prefix/4",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Prefix/6",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 2 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.As16",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 5 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 5 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.As4",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 5 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 5 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Next",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Addr.Prev",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 3 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 3 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/AddrPortFrom",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 1 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 1 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/ParseAddrPort",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 5 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 5 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/MustParseAddrPort",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 5 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 5 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/PrefixFrom",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 1 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 1 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/ParsePrefix/4",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 5 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 5 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/ParsePrefix/6",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 4 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 4 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/MustParsePrefix",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 5 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 5 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Prefix.Contains",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 8 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 8 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Prefix.Overlaps",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 10 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 10 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Prefix.IsZero",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 5 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 5 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Prefix.IsSingleIP",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 5 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 5 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestNoAllocs/Prefix.Masked",
+                            "class":  "alloc-profile",
+                            "signature":  "allocs = ",
+                            "reason":  "want-0 AllocsPerRun assert (t.Fatalf 'allocs = %d; want 0'): the measured closure runs netip constructors/methods that Go keeps allocation-free via stack allocation and inlining (the package's own TestInlining pins those inlining decisions), while the converted path allocates 5 golib-site object(s) per run - parse working buffers, slice headers, and pointer-box shells the managed conversion needs on the heap. go2cs's AllocsPerRun counter is a true object count over golib's allocation sites (a lower bound on the real total), so this is a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when its site's count reaches zero. Measured 5 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestParsePrefixAllocs/192.168.1.0/24",
+                            "class":  "alloc-profile",
+                            "signature":  ", want 0",
+                            "reason":  "differential want-0 AllocsPerRun assert (t.Errorf 'allocs=%d, want 0'): asserts ParsePrefix allocates exactly as many objects as ParseAddr of the same address; the converted ParsePrefix adds 2 golib-site object(s) per run over ParseAddr's own count (the prefix parse's extra slicing and value box). True object count over golib's allocation sites (a lower bound on the real total): a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when the differential reaches zero. Measured +2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        },
+                        {
+                            "name":  "TestParsePrefixAllocs/aaaa:bbbb:cccc::/24",
+                            "class":  "alloc-profile",
+                            "signature":  ", want 0",
+                            "reason":  "differential want-0 AllocsPerRun assert (t.Errorf 'allocs=%d, want 0'): asserts ParsePrefix allocates exactly as many objects as ParseAddr of the same address; the converted ParsePrefix adds 2 golib-site object(s) per run over ParseAddr's own count (the prefix parse's extra slicing and value box). True object count over golib's allocation sites (a lower bound on the real total): a genuine allocation-profile divergence, not a counting-regime artifact. Reduction of exactly these sites is the banked zh-box reduction arc's netip harvest; this entry retires when the differential reaches zero. Measured +2 object(s)/run, 2026-08-29, go1.23.12/windows-amd64."
+                        }
+                    ]
+}
