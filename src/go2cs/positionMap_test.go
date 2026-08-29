@@ -146,7 +146,7 @@ func TestExtractPositionSentinels(t *testing.T) {
 		"    }",
 	}, newline)
 
-	stripped, entries := extractPositionSentinels(text, newline)
+	stripped, entries := extractPositionSentinels(text)
 
 	if strings.Contains(stripped, PositionSentinel) {
 		t.Fatalf("sentinel survived stripping: %q", stripped)
@@ -279,7 +279,7 @@ func TestExtractPositionSentinelsBindsTheFollowingLine(t *testing.T) {
 		"}",
 	}, newline)
 
-	stripped, entries := extractPositionSentinels(text, newline)
+	stripped, entries := extractPositionSentinels(text)
 
 	if strings.Contains(stripped, PositionSentinel) {
 		t.Fatalf("sentinel survived stripping: %q", stripped)
@@ -309,10 +309,36 @@ func TestExtractPositionSentinelsPrefersTheOuterStatement(t *testing.T) {
 		"    }",
 	}, newline)
 
-	_, entries := extractPositionSentinels(text, newline)
+	_, entries := extractPositionSentinels(text)
 
 	if len(entries) != 1 || entries[0] != (positionEntry{csLine: 2, goLine: 128}) {
 		t.Fatalf("got %+v, want the `for` statement's own line bound once", entries)
+	}
+}
+
+func TestExtractPositionSentinelsCountsBareLFInsideALiteral(t *testing.T) {
+	// The converter emits CRLF everywhere EXCEPT inside a multi-line string literal, where it
+	// preserves the Go source's bare LF verbatim (autocrlf gotcha, CLAUDE.md) -- so one emitted
+	// "line" between two \r\n boundaries can itself span several PHYSICAL lines. A \r\n-only split
+	// counted that whole span as a single line, undercounting every statement after it by exactly
+	// the literal's own line count -- measured against net/http's converted TestTimeoutHandler-
+	// SuperfluousLogs, off by ~44 real lines. Splitting on bare "\n" alone (never the caller's own
+	// newline convention) is what makes the count match what a text editor -- or the .NET PDB --
+	// reports.
+	newline := "\r\n"
+	literal := "internal static readonly @string banner = \"\"\"\nline one\nline two\nline three\n\"\"\"u8;"
+	text := strings.Join([]string{
+		literal,
+		PositionSentinel + "9" + PositionSentinel + "    x = 1;",
+		"    y = 2;",
+	}, newline)
+
+	_, entries := extractPositionSentinels(text)
+
+	want := []positionEntry{{csLine: 6, goLine: 9}}
+
+	if len(entries) != len(want) || entries[0] != want[0] {
+		t.Fatalf("got %+v, want %+v -- the 5-physical-line literal must count as 5 lines, not 1", entries, want)
 	}
 }
 

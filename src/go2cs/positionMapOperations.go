@@ -128,7 +128,7 @@ func (v *Visitor) finalizePositionMap(outputFileName string) {
 		return
 	}
 
-	stripped, entries := extractPositionSentinels(text, v.newline)
+	stripped, entries := extractPositionSentinels(text)
 
 	v.outputBuilder.Reset()
 	v.outputBuilder.WriteString(stripped)
@@ -268,8 +268,17 @@ func positionMapCsName(outputFileName string) string {
 // strictly ascending in the C# line — which is what gives the runtime's predecessor search its
 // meaning. On a `for` header that means the `for` statement itself wins over its own init clause,
 // which is the frame Go reports.
-func extractPositionSentinels(text string, newline string) (string, []positionEntry) {
-	lines := strings.Split(text, newline)
+// Line boundaries are counted by splitting on bare LF, never on the caller's own newline
+// convention: the converter emits CRLF everywhere EXCEPT inside a multi-line string literal,
+// where it preserves the Go source's bare LF verbatim (autocrlf gotcha, CLAUDE.md) — so a
+// \r\n-only split undercounts every physical line inside such a literal, and every statement
+// after it binds to a Go line far too late. Splitting on "\n" alone counts every line a text
+// editor or the .NET PDB would, whether or not it carries a trailing "\r"; that "\r", where
+// present, simply rides along as ordinary trailing content in the split piece — the "ownLine"
+// check below already treats it as whitespace (strings.TrimSpace trims '\r'), and rejoining on
+// "\n" reproduces it verbatim, so no separate strip/re-add step is needed for round-trip fidelity.
+func extractPositionSentinels(text string) (string, []positionEntry) {
+	lines := strings.Split(text, "\n")
 	entries := make([]positionEntry, 0, len(lines))
 	bound := 0
 
@@ -330,7 +339,7 @@ func extractPositionSentinels(text string, newline string) (string, []positionEn
 		}
 	}
 
-	return strings.Join(lines, newline), entries
+	return strings.Join(lines, "\n"), entries
 }
 
 // positionMark is one sentinel read off a line: the Go line it carries, and whether the construct it
