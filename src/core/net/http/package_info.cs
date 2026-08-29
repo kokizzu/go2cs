@@ -278,21 +278,21 @@ public static partial class http_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface CloseIdleConnections_closeIdler {}
+    [GoLocalName("closeIdler")] internal partial interface CloseIdleConnections_closeIdler {}
     internal partial interface EnableFullDuplex_type {}
     internal partial interface Flush_type {}
-    internal partial interface Read_requestTooLarger {}
+    [GoLocalName("requestTooLarger")] internal partial interface Read_requestTooLarger {}
     internal partial interface SetReadDeadline_type {}
     internal partial interface SetWriteDeadline_type {}
     internal partial interface anyDirs {}
     internal partial interface closeWriter {}
     internal partial interface erringRoundTripper {}
     internal partial interface h2Transport {}
-    internal partial interface http2ConfigureServer_baseContexter {}
+    [GoLocalName("baseContexter")] internal partial interface http2ConfigureServer_baseContexter {}
     internal partial interface http2Frame {}
     internal partial interface http2clientConnPoolIdleCloser {}
     internal partial interface http2connectionStater {}
-    internal partial interface http2h1ServerKeepAlivesDisabled_I {}
+    [GoLocalName("I")] internal partial interface http2h1ServerKeepAlivesDisabled_I {}
     internal partial interface http2headersEnder {}
     internal partial interface http2headersOrContinuation {}
     internal partial interface http2isNoCachedConnError_type {}
@@ -304,7 +304,7 @@ public static partial class http_package
     internal partial interface http2writeContext {}
     internal partial interface http2writeFramer {}
     internal partial interface rwUnwrapper {}
-    internal partial interface setRequestCancel_canceler {}
+    [GoLocalName("canceler")] internal partial interface setRequestCancel_canceler {}
     internal partial interface sniffSig {}
     internal partial struct Write_r1 {}
     internal partial struct body {}

@@ -1134,6 +1134,10 @@ public class ImplementGenerator : ISourceGenerator
                 // here, where the SYMBOLS are, and hand the answer down.
                 StructIsPublic = AdapterSidePublic(structType, implStructName),
                 InterfaceIsPublic = AdapterSidePublic(interfaceType, interfaceName),
+                // Same reason, same remedy: the promoted twins address the embed FIELD, and deriving
+                // its name from the interface's addresses nothing when a function-local lift renamed
+                // the type out from under it.
+                EmbedFieldName = ResolveEmbedFieldName(structType, interfaceType),
                 Promoted = promoted || promotedPairs.Contains($"{structType.ToDisplayString()}|{interfaceType.ToDisplayString()}"),
                 Overrides = overrides,
                 Methods = partialMethods,
@@ -1417,6 +1421,7 @@ public class ImplementGenerator : ISourceGenerator
     /// interface declares — including everything that interface itself embeds.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Detection is SEMANTIC by name (the field's name equals its interface type's simple name),
     /// because the converter names an embed field after the Go embed and a Δ-renamed interface TYPE
     /// keeps a markerless FIELD (slogtest's <c>wrapper</c> embeds <c>slog.ΔHandler</c> as
@@ -1424,18 +1429,78 @@ public class ImplementGenerator : ISourceGenerator
     /// type's simple name matches too — which is why every caller resolves a hard marker FIRST and
     /// consults this only for what remains. Enumeration order follows <c>GetMembers</c>, i.e.
     /// declaration order, so the emission it feeds is deterministic.
+    /// </para>
+    /// <para>
+    /// A FUNCTION-LOCAL interface lift defeats the bare name test: the converter renames the TYPE to
+    /// <c>&lt;Func&gt;_&lt;name&gt;</c> while the field keeps <c>&lt;name&gt;</c>, so reflect's
+    /// <c>func TestCallPanic() { type T1 interface{…}; type T2 struct { T1 } }</c> emits field
+    /// <c>T1</c> of type <c>TestCallPanic_T1</c>. The third arm reads the lift's
+    /// <c>[GoLocalName]</c> stamp — the ORIGINAL Go name the converter records for exactly this kind
+    /// of question — so the embed is seen again. Without it the member bound nowhere and promotion
+    /// fell back to naming the TYPE as the accessor (<c>recvᴛ.TestCallPanic_T1.Y()</c>), a member
+    /// that does not exist: CS1061/CS0120.
+    /// </para>
+    /// <para>
+    /// Reading the stamp rather than matching by TYPE is deliberate, and keeps the discrimination the
+    /// bare-name test exists for: <c>type PtrType struct { CommonType; Type Type }</c> has an
+    /// ordinary <c>Type</c> field that a type match would call an embed. Only a function-local lift
+    /// carries the stamp, so an ordinary field cannot acquire one.
+    /// </para>
     /// </remarks>
     private static List<(string FieldName, HashSet<string> Members)> GetEmbeddedInterfaceFieldMembers(ITypeSymbol structType) =>
         structType.GetMembers()
             .OfType<IFieldSymbol>()
             .Where(field => !field.IsStatic && field.Type.TypeKind == TypeKind.Interface &&
                             field.Type is INamedTypeSymbol &&
-                            (field.Name == field.Type.Name || ShadowVarMarker + field.Name == field.Type.Name))
+                            (field.Name == field.Type.Name || ShadowVarMarker + field.Name == field.Type.Name ||
+                             GetGoLocalName(field.Type) == field.Name))
             .Select(field => (field.Name, new HashSet<string>(((INamedTypeSymbol)field.Type).AllInterfaces
                 .Concat([(INamedTypeSymbol)field.Type])
                 .SelectMany(iface => iface.GetMembers().OfType<IMethodSymbol>())
                 .Select(method => method.Name), StringComparer.Ordinal)))
             .ToList();
+
+    /// <summary>
+    /// Resolves the name of the struct FIELD embedding <paramref name="interfaceType"/> when it
+    /// differs from the interface's own simple name, or <c>null</c> when the usual derivation holds.
+    /// </summary>
+    /// <remarks>
+    /// Only a FUNCTION-LOCAL lift diverges — the converter renames the TYPE to
+    /// <c>&lt;Func&gt;_&lt;name&gt;</c> and stamps the original Go name on it, while the embed field
+    /// keeps that original name. The stamp is required to match a field that actually exists AND
+    /// whose type is this interface, so an ordinary field can never be mistaken for an embed:
+    /// <c>type PtrType struct { CommonType; Type Type }</c> has no stamped lift and resolves to
+    /// <c>null</c>, leaving today's behaviour exactly as it was.
+    /// </remarks>
+    private static string? ResolveEmbedFieldName(ITypeSymbol structType, ITypeSymbol interfaceType)
+    {
+        string? localName = GetGoLocalName(interfaceType);
+
+        if (string.IsNullOrEmpty(localName))
+            return null;
+
+        bool declared = structType.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Any(field => !field.IsStatic && field.Name == localName &&
+                          SymbolEqualityComparer.Default.Equals(field.Type, interfaceType));
+
+        return declared ? localName : null;
+    }
+
+    /// <summary>
+    /// Reads a lifted type's ORIGINAL Go name from its <c>[GoLocalName]</c> stamp, or <c>null</c>
+    /// when it carries none.
+    /// </summary>
+    /// <remarks>
+    /// The converter stamps a function-local NAMED lift — struct (visitStructType) and interface
+    /// (visitInterfaceType) alike — because the hoisted <c>&lt;Func&gt;_&lt;name&gt;</c> identifier
+    /// no longer carries the Go name anything downstream needs to ask about. An ANONYMOUS lift has
+    /// no Go name and is deliberately unstamped.
+    /// </remarks>
+    private static string? GetGoLocalName(ITypeSymbol type) =>
+        type.GetAttributes()
+            .FirstOrDefault(attribute => attribute.AttributeClass?.Name is "GoLocalNameAttribute" or "GoLocalName")
+            ?.ConstructorArguments.FirstOrDefault().Value as string;
 
     private static string SafeParameterName(string name, int index) => string.IsNullOrEmpty(name) ? $"arg{index}" : EscapeCsKeyword(name);
 

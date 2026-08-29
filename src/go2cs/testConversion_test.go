@@ -4295,6 +4295,23 @@ func TestGeneratedTypeScopeMirrorsGeneratorRule(t *testing.T) {
 		{ShadowVarMarker + "slice" + TempVarMarker, "internal"},
 		{ShadowVarMarker + "type" + TempVarMarker, "internal"},
 		{ShadowVarMarker + "type" + TempVarMarker + "x", "internal"},
+		// A NESTED lift (typeᴛ<N>_<field>) is synthesized too, but it still carries ONE Go
+		// identifier — the FIELD whose anonymous type it is — so the export rule applies to that.
+		// It makes the type track its single use site: `struct { A struct{…} }` emits
+		// `public …_A A`, and an internal type there is CS0052/CS0050/CS0051 — reflect's
+		// visiblefields_test, the only such site in the corpus. The 23 nested lifts that serve
+		// UNEXPORTED fields stay internal, which is why this had never surfaced.
+		{"type" + TempVarMarker + "38_A", "public"},
+		{"type" + TempVarMarker + "29_x", "internal"},
+		{ShadowVarMarker + "type" + TempVarMarker + "38_A", "public"},
+		{"type_A", "public"},
+		{"type_x", "internal"},
+		// ...and the nested shape must not swallow malformed names or real user identifiers.
+		{"type" + TempVarMarker + "_A", "internal"},
+		{"type" + TempVarMarker + "38_", "internal"},
+		{"type_", "internal"},
+		{"typeParam_A", "internal"},
+		{"TypeParam_A", "public"},
 		{PointerPrefix + "Elem", "internal"},
 		{"", "internal"},
 	}

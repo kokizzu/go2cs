@@ -181,8 +181,19 @@ func generatedTypeScope(identifier string) string {
 	// This is the same principle go2cs-gen already applies to function-local type lifts: a name is
 	// the wrong oracle for anything go2cs SYNTHESIZED. Stripping the marker exposes the Go
 	// identifier where there IS one; where there is none, there is no export rule to apply.
-	if isAnonymousTypePlaceholder(identifier) {
-		return "public"
+	//
+	// A NESTED lift (typeᴛ<N>_<field>) still carries one: the Go field whose anonymous type it is.
+	// Reading it makes the type's accessibility track its single use site by construction, so it can
+	// never under-rank the field it exists to serve — `struct { A struct{…} }` emits `public …_A A`,
+	// and an internal type there is CS0052/CS0050/CS0051 (reflect's visiblefields_test, the only
+	// site in the corpus: 23 nested lifts serve unexported fields and are correctly internal, 1
+	// serves an exported field).
+	if residue, isLift := anonymousLiftResidue(identifier); isLift {
+		if residue == "" {
+			return "public"
+		}
+
+		identifier = residue
 	}
 
 	first, size := utf8.DecodeRuneInString(identifier)
@@ -203,28 +214,73 @@ func generatedTypeScope(identifier string) string {
 	return "internal"
 }
 
-// isAnonymousTypePlaceholder reports whether name — already stripped of its ShadowVarMarker — is the
-// converter's SYNTHESIZED anonymous-type name rather than a Go identifier: the literal placeholder
-// "type", optionally carrying the temp-var arity suffix the emitter appends when one scope lifts
-// more than one (typeᴛ1, typeᴛ2, …).
+// anonymousLiftResidue reports whether name — already stripped of its ShadowVarMarker — is one of the
+// converter's SYNTHESIZED anonymous-type names, and returns the Go identifier the name still carries
+// (empty when it carries none, which is the caller's signal that no export rule applies).
 //
-// It deliberately does NOT match a user type whose name merely begins with "type" (typeDecl,
-// typeParam) — those are real Go identifiers whose case does encode export status — nor a sanitized
-// user type carrying the same suffix marker (Δsliceᴛ, from a Go `slice`).
-func isAnonymousTypePlaceholder(name string) bool {
+// Every anonymous struct/interface/composite-literal type is named from the placeholder "type"
+// (convInterfaceType.go, convStructType.go, convCompositeLit.go, visitStructType.go). The shapes:
+//
+//	type          → "",      true   the lift itself; no Go identifier
+//	typeᴛ<N>      → "",      true   same, arity-suffixed when one scope lifts more than one
+//	typeᴛ<N>_<f>  → "<f>",   true   the lift of FIELD <f>'s anonymous type — <f> IS a Go identifier
+//	type_<f>      → "<f>",   true   same, under the un-suffixed placeholder
+//
+// "type" is a Go KEYWORD, so no user type can collide with the prefix. The match still deliberately
+// excludes a user type that merely BEGINS with it (typeDecl, typeParam — real identifiers whose case
+// does encode export status) and a sanitized user type carrying the same arity marker (Δsliceᴛ, from
+// a Go `slice`).
+func anonymousLiftResidue(name string) (string, bool) {
 	const placeholder = "type"
 
-	if name == placeholder {
-		return true
+	rest, found := strings.CutPrefix(name, placeholder)
+
+	if !found {
+		return "", false
 	}
 
-	suffix, found := strings.CutPrefix(name, placeholder+TempVarMarker)
+	if rest == "" {
+		return "", true
+	}
 
-	if !found || suffix == "" {
+	if field, ok := strings.CutPrefix(rest, "_"); ok {
+		if field == "" {
+			return "", false
+		}
+
+		return field, true
+	}
+
+	rest, found = strings.CutPrefix(rest, TempVarMarker)
+
+	if !found || rest == "" {
+		return "", false
+	}
+
+	if separator := strings.Index(rest, "_"); separator >= 0 {
+		digits, field := rest[:separator], rest[separator+1:]
+
+		if field == "" || !isAllDigits(digits) {
+			return "", false
+		}
+
+		return field, true
+	}
+
+	if !isAllDigits(rest) {
+		return "", false
+	}
+
+	return "", true
+}
+
+// isAllDigits reports whether s is a non-empty run of decimal digits.
+func isAllDigits(s string) bool {
+	if s == "" {
 		return false
 	}
 
-	for _, r := range suffix {
+	for _, r := range s {
 		if !unicode.IsDigit(r) {
 			return false
 		}

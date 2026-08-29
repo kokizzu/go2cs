@@ -69,8 +69,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface localInterfaceEmbed_I {}
-    internal partial interface localInterfaceEmbed_i {}
+    [GoLocalName("I")] internal partial interface localInterfaceEmbed_I {}
+    [GoLocalName("i")] internal partial interface localInterfaceEmbed_i {}
     internal partial struct embedImpl {}
     internal partial struct embeddedLocalTypes_MyInt {}
     [GoLocalName("embed")] internal partial struct embeddedLocalTypes_embed {}

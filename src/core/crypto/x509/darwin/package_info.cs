@@ -104,8 +104,8 @@ public static partial class x509_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface CreateCertificate_privateKey {}
-    internal partial interface alreadyInChain_pubKeyEqual {}
+    [GoLocalName("privateKey")] internal partial interface CreateCertificate_privateKey {}
+    [GoLocalName("pubKeyEqual")] internal partial interface alreadyInChain_pubKeyEqual {}
     internal partial struct AppendCertsFromPEM_lazyCert {}
     internal partial struct CreateCertificateRequest_attr {}
     internal partial struct authKeyId {}
