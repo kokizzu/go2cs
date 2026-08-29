@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestAlloc",
+      "class": "alloc-profile",
+      "signature": " allocs, want 0",
+      "reason": "exact-zero AllocsPerRun assert over the pooled New/WriteString/deferred-Free round-trip: Go's sync.Pool reuse plus escape analysis keeps the warm path allocation-free, while the converted path must heap-allocate what Go stack-allocates - the display class and delegate the C# compiler emits for the defer closure and the per-run test closure itself - measured 344 bytes per run by the byte-derived shim with NONE of it charged at golib sites (every object on the path is compiler-emitted or BCL-internal, so no malloc count exists and zero can never come back). Same shape as strings' TestIndexRune and log's TestDiscard"
+    }
+  ]
+}
