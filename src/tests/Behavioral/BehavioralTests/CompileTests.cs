@@ -535,6 +535,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckFuncLitCaptureInCondition() => CheckTarget("FuncLitCaptureInCondition");
 
     [TestMethod]
+    public void CheckFuncLiteralCallerNames() => CheckTarget("FuncLiteralCallerNames");
+
+    [TestMethod]
     public void CheckFuncLitNumericTupleReturn() => CheckTarget("FuncLitNumericTupleReturn");
 
     [TestMethod]

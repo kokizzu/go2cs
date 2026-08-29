@@ -9,6 +9,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"go/ast"
 	"go/token"
 	"path/filepath"
 	"runtime"
@@ -152,10 +153,19 @@ func (v *Visitor) finalizePositionMap(outputFileName string) {
 		return
 	}
 
+	// The FUNCTION-LITERAL half rides the same record, as an optional fourth argument emitted
+	// only when the file declares literals — a three-argument record stays exactly what it was,
+	// and an older artifact without the argument simply answers the runtime's fallback derivation.
+	funcLits := ""
+
+	if encoded := encodeFuncLitNames(v.funcLitEntries); encoded != "" {
+		funcLits = ", " + csharpStringLiteral(encoded)
+	}
+
 	record := "[assembly: " + globalQualifyRooted("go.GoPositionMap") + "(" +
 		csharpStringLiteral(v.goSourceIdentity(outputFileName)) + ", " +
 		csharpStringLiteral(positionMapCsName(outputFileName)) + ", " +
-		csharpStringLiteral(encodePositionTable(entries)) + ")]"
+		csharpStringLiteral(encodePositionTable(entries)) + funcLits + ")]"
 
 	packageLock.Lock()
 	positionMapRecords[target] = append(positionMapRecords[target], record)
@@ -385,6 +395,116 @@ func encodePositionTable(entries []positionEntry) string {
 	}
 
 	return base64.StdEncoding.EncodeToString(buffer)
+}
+
+// ----------------------------------------------------------------------------------------------
+// The FUNCTION-LITERAL name map: the ordinal half of caller attribution, recorded the same way
+// the file half is (coordinator ruling, 2026-08-29 — DESIGN-position-map.md §8's dated amendment).
+//
+// Go names an anonymous function literal `Outer.funcN` — a per-enclosing-function counter over
+// that function's DIRECT literals, in source order, starting at 1 — and a literal nested inside
+// another appends its own per-parent counter (`Outer.funcN.M`), each nesting level one more dotted
+// segment (cmd/compile's ClosureName: every function, named or literal, owns a Closgen counter).
+// Measured against go1.23.12 rather than reasoned about (with inlining disabled, since gc renames
+// a closure whose enclosing function is inlined and go2cs performs no inlining):
+//
+//     two siblings                    -> main.siblings.func1, main.siblings.func2
+//     nested, then a later sibling    -> main.nested.func1, main.nested.func1.1, main.nested.func2
+//     three levels                    -> main.deep.func1, main.deep.func1.1, main.deep.func1.1.1
+//     siblings inside one literal     -> main.nestedSiblings.func1.1, main.nestedSiblings.func1.2
+//
+// Roslyn's compiler-generated lambda name (`<Outer>b__X_Y`) carries a closure-GROUP index plus a
+// per-group index that matches Go's counter only by coincidence, which is why the runtime reads
+// the RECORD (managed_impl.cs goFrameName) and falls back to the old Roslyn-derived ordinal only
+// when no record exists. The record is keyed in GO line space — the literal's source-line span —
+// because the frame's Go line already comes from this same record's line table, so both halves of
+// the answer are conversion-time facts and nothing is derived from Roslyn's numbering.
+//
+// Package-level literals (a `var x = func() { … }` initializer) are deliberately NOT recorded:
+// cmd/compile numbers those with a package-global `glob..funcN` counter whose order is a compile-
+// schedule fact rather than a per-file source fact, so a frame in one keeps the fallback answer,
+// exactly as any unrecorded frame does.
+// ----------------------------------------------------------------------------------------------
+
+// funcLitEntry is one function literal's recorded name: the Go source lines it spans, and the
+// dotted counter suffix Go names it with (`1` -> Outer.func1, `1.2` -> Outer.func1.2).
+type funcLitEntry struct {
+	startLine int
+	endLine   int
+	suffix    string
+}
+
+// collectFuncLitNames records the name suffix and source-line span of every function literal
+// declared inside funcDecl, in this file's entry list. Called once per function declaration at
+// visit time (visitFuncDecl); the walk is over the AST alone, so the counter cannot be perturbed
+// by how — or how many times — an expression is later converted.
+func (v *Visitor) collectFuncLitNames(funcDecl *ast.FuncDecl) {
+	if funcDecl == nil || funcDecl.Body == nil || v.fset == nil {
+		return
+	}
+
+	v.appendFuncLitNames(funcDecl.Body, "")
+}
+
+// appendFuncLitNames numbers root's DIRECT function literals in source order — a nested literal
+// belongs to its parent's walk, not this one — and recurses into each with its dotted suffix as
+// the new prefix, which is exactly cmd/compile's per-function Closgen counter.
+func (v *Visitor) appendFuncLitNames(root ast.Node, prefix string) {
+	counter := 0
+
+	ast.Inspect(root, func(node ast.Node) bool {
+		lit, ok := node.(*ast.FuncLit)
+
+		if !ok || node == root {
+			return true
+		}
+
+		counter++
+		suffix := strconv.Itoa(counter)
+
+		if prefix != "" {
+			suffix = prefix + "." + suffix
+		}
+
+		v.funcLitEntries = append(v.funcLitEntries, funcLitEntry{
+			startLine: v.fset.Position(lit.Pos()).Line,
+			endLine:   v.fset.Position(lit.End()).Line,
+			suffix:    suffix,
+		})
+
+		v.appendFuncLitNames(lit, suffix)
+
+		return false // the recursion above owns this literal's children
+	})
+}
+
+// encodeFuncLitNames renders the literal-name table: `<startLine>-<endLine>:<suffix>` per literal,
+// semicolon-joined, ordered by ascending start line then descending end line so an enclosing span
+// always precedes the spans it contains. Plain text rather than the line table's packed deltas:
+// there are a handful of entries per file where the line table has hundreds, and a reviewable span
+// that visibly matches the Go source is worth more than the few bytes packing would save.
+func encodeFuncLitNames(entries []funcLitEntry) string {
+	if len(entries) == 0 {
+		return ""
+	}
+
+	ordered := append([]funcLitEntry(nil), entries...)
+
+	sort.SliceStable(ordered, func(i, j int) bool {
+		if ordered[i].startLine != ordered[j].startLine {
+			return ordered[i].startLine < ordered[j].startLine
+		}
+
+		return ordered[i].endLine > ordered[j].endLine
+	})
+
+	parts := make([]string, 0, len(ordered))
+
+	for _, entry := range ordered {
+		parts = append(parts, strconv.Itoa(entry.startLine)+"-"+strconv.Itoa(entry.endLine)+":"+entry.suffix)
+	}
+
+	return strings.Join(parts, ";")
 }
 
 // goSourceIdentity spells this file's Go source the way Go itself would have baked it for the same

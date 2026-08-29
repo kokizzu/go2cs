@@ -9,6 +9,9 @@ package main
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -331,6 +334,7 @@ func TestStdLibMetadataExtractIgnoresPositionMaps(t *testing.T) {
 		"",
 		"// <GoSourcePositionMaps>",
 		"[assembly: go.GoPositionMap(\"log/log.go\", \"log.cs\", \"hYS4hLg=\")]",
+		"[assembly: go.GoPositionMap(\"log/log_fmt.go\", \"log_fmt.cs\", \"hYS4hLg=\", \"10-18:1;10-12:1.1\")]",
 		"// </GoSourcePositionMaps>",
 		"",
 		"namespace go;",
@@ -358,5 +362,116 @@ func TestStdLibMetadataExtractIgnoresPositionMaps(t *testing.T) {
 	// 4 lines: the alias section's two tags and its record, plus the GoImplement record.
 	if len(records) != 4 {
 		t.Errorf("got %d records %v, want exactly the 4 lines the two real families contribute", len(records), records)
+	}
+}
+
+// TestCollectFuncLitNamesMatchesGoClosureNaming pins the funcLits half of the record against the
+// naming cmd/compile actually produces, measured on go1.23.12 with inlining disabled (gc renames a
+// closure whose enclosing function is inlined; go2cs performs no inlining, so the un-inlined
+// naming is the semantics recorded): a per-enclosing-function counter over DIRECT literals in
+// source order from 1, each nesting level appending its own per-parent counter — so a nested
+// literal never consumes a top-level number (`nested`'s later sibling is func2, not func3), and
+// the counter restarts for every declaration, methods included.
+func TestCollectFuncLitNamesMatchesGoClosureNaming(t *testing.T) {
+	source := `package main
+
+func siblings() {
+	f1 := func() { println("1") }
+	f2 := func() { println("2") }
+	f1()
+	f2()
+}
+
+func nested() {
+	outer := func() {
+		inner := func() { println("inner") }
+		inner()
+	}
+	outer()
+	after := func() { println("after") }
+	after()
+}
+
+func deep() {
+	l1 := func() {
+		l2 := func() {
+			l3 := func() { println("3") }
+			l3()
+		}
+		l2()
+	}
+	l1()
+}
+
+type T struct{}
+
+func (T) m() {
+	h := func() { println("m") }
+	h()
+}
+
+func (*T) pm() {
+	h := func() { println("pm") }
+	h()
+}
+`
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "main.go", source, 0)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	visitor := &Visitor{fset: fset}
+
+	for _, decl := range file.Decls {
+		if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+			visitor.collectFuncLitNames(funcDecl)
+		}
+	}
+
+	// One entry per literal, in declaration order, spans in the synthetic source's line space.
+	expected := []funcLitEntry{
+		{startLine: 4, endLine: 4, suffix: "1"},       // siblings: f1
+		{startLine: 5, endLine: 5, suffix: "2"},       // siblings: f2
+		{startLine: 11, endLine: 14, suffix: "1"},     // nested: outer
+		{startLine: 12, endLine: 12, suffix: "1.1"},   // nested: inner — per-parent counter
+		{startLine: 16, endLine: 16, suffix: "2"},     // nested: after — the nest consumed no number
+		{startLine: 21, endLine: 27, suffix: "1"},     // deep: l1 — the counter restarted
+		{startLine: 22, endLine: 25, suffix: "1.1"},   // deep: l2
+		{startLine: 23, endLine: 23, suffix: "1.1.1"}, // deep: l3
+		{startLine: 34, endLine: 34, suffix: "1"},     // (T).m — per-declaration, methods too
+		{startLine: 39, endLine: 39, suffix: "1"},     // (*T).pm
+	}
+
+	if len(visitor.funcLitEntries) != len(expected) {
+		t.Fatalf("got %d entries %v, want %d", len(visitor.funcLitEntries), visitor.funcLitEntries, len(expected))
+	}
+
+	for index, want := range expected {
+		if visitor.funcLitEntries[index] != want {
+			t.Errorf("entry %d: got %+v, want %+v", index, visitor.funcLitEntries[index], want)
+		}
+	}
+}
+
+// TestEncodeFuncLitNamesOrdersEnclosingFirst pins the emitted text form — `<start>-<end>:<suffix>`,
+// semicolon-joined — and its ordering rule: ascending start line, an enclosing span ahead of the
+// spans it contains when they share a start. No literals encodes to the empty string, which is
+// what keeps a literal-free file's record at its unchanged three-argument shape.
+func TestEncodeFuncLitNamesOrdersEnclosingFirst(t *testing.T) {
+	if encoded := encodeFuncLitNames(nil); encoded != "" {
+		t.Errorf("no literals must encode empty, got %q", encoded)
+	}
+
+	entries := []funcLitEntry{
+		{startLine: 20, endLine: 20, suffix: "2"},
+		{startLine: 10, endLine: 18, suffix: "1"},
+		{startLine: 10, endLine: 12, suffix: "1.1"},
+	}
+
+	if encoded, want := encodeFuncLitNames(entries), "10-18:1;10-12:1.1;20-20:2"; encoded != want {
+		t.Errorf("got %q, want %q", encoded, want)
 	}
 }

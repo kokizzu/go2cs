@@ -55,9 +55,22 @@ namespace go;
 /// belongs to the earlier one — which is the same model Go's own <c>pclntab</c> uses, so a line
 /// inside a multi-line emission answers the Go statement it was emitted for.
 /// </para>
+/// <para>
+/// <paramref name="funcLits"/> is the FUNCTION-LITERAL name map, emitted only when the file
+/// declares anonymous function literals: one <c>&lt;startLine&gt;-&lt;endLine&gt;:&lt;suffix&gt;</c>
+/// entry per literal, semicolon-joined, in GO line space. Go names a literal
+/// <c>Outer.funcN</c> — a per-enclosing-function, source-order counter starting at 1 — and a
+/// nested literal appends its own per-parent counter (<c>Outer.funcN.M</c>); the suffix records
+/// the dotted counter (<c>1</c>, <c>1.2</c>) without the <c>func</c> prefix. The runtime maps a
+/// literal frame's C# line through <paramref name="table"/> to its Go line and answers the
+/// innermost recorded span containing it, so the frame's name comes from a conversion-time fact
+/// rather than from the compiler-generated lambda name, whose closure-group numbering matches
+/// Go's counter only by coincidence. A record without this argument leaves those frames on the
+/// derived fallback.
+/// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
-public sealed class GoPositionMapAttribute(string goFile, string csFile, string table) : Attribute
+public sealed class GoPositionMapAttribute(string goFile, string csFile, string table, string funcLits = "") : Attribute
 {
     /// <summary>
     /// Gets the identity of the Go source file this C# file was converted from.
@@ -73,4 +86,10 @@ public sealed class GoPositionMapAttribute(string goFile, string csFile, string 
     /// Gets the encoded C#-line to Go-line table.
     /// </summary>
     public string Table => table;
+
+    /// <summary>
+    /// Gets the encoded function-literal name map, or an empty string when the file declares no
+    /// recorded literals.
+    /// </summary>
+    public string FuncLits => funcLits;
 }

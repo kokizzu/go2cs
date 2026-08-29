@@ -1,6 +1,16 @@
+using System;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
+
+// The recorded-literal shapes below report their frames under this hand-authored record, exactly
+// as a converted file's package_info.cs would carry it: `#line` remaps their lambda bodies into
+// the fictional `litguard_probe_recorded.cs`, the table maps C# lines 100/110 to Go lines 100/110
+// (identity entries, hand-encoded and pinned by the converter's own round-trip tests), and the
+// funcLits map records two literal spans — an outer one and a nested one INSIDE it sharing lines
+// 110-120, so the nested test also proves innermost-wins containment. The suffixes deliberately
+// start at 2, not 1: a fallback derivation that happened to answer 1 could not fake them.
+[assembly: go.GoPositionMap("litguard/probe/probe.go", "litguard_probe_recorded.cs", "AGPIAQAJFA==", "100-120:2;110-120:2.1")]
 
 // The FUNCTION half of a converted frame's identity — `goFrameName` in runtime's managed_impl.cs —
 // derives a Go import path from the emitted namespace + package-class name. That derivation is the
@@ -28,12 +38,22 @@ using go;
 // runtime, not in the emission. What it needs is a frame whose declaring type carries the emitted
 // shape, which an MSTest tier can simply DECLARE — the same precedent Sha3ReinterpretVectorTests and
 // TestExecutionOutputCapTests set for surfaces no other harness can reach. The classes at the foot
-// of this file are hand-written stand-ins for the three shapes the converter emits, named exactly as
+// of this file are hand-written stand-ins for the shapes the converter emits, named exactly as
 // it names them.
 //
-// Failing-first, measured before the fix landed: shape (2) answered
+// This file also pins the FUNCTION-LITERAL half of the same site (shapes 4-6): a literal frame's
+// counter suffix is READ from the file's recorded GoPositionMap funcLits map — Go's
+// per-enclosing-function source-order counter, dotted per nesting level — and derived from
+// Roslyn's `b__X_Y` only when no record exists. The recorded shapes carry their record and their
+// `#line`-pinned positions in this file, so the MSTest tier reaches the recorded path without a
+// conversion; the end-to-end emission is the FuncLiteralCallerNames behavioral guard.
+//
+// Failing-first, measured before each fix landed: shape (2) answered
 // `slcguard/probe_internal_test.internalTestShapedFrame`, while shapes (1) and (3) already answered
-// correctly — so the guard reported exactly the one rule that was missing and nothing else.
+// correctly — so the guard reported exactly the one rule that was missing and nothing else. Shapes
+// (4) and (5) were measured red against the pre-record runtime (funcLits consult neutered): both
+// answered `…func0` — the Roslyn-derived ordinal, with the nesting unrepresentable — while (1),
+// (2), (3) and the fallback shape (6) stayed green, so the record path is the only thing they detect.
 namespace GolibTests
 {
     [TestClass]
@@ -95,6 +115,46 @@ namespace GolibTests
                 "an external test package must KEEP its _test suffix — it is a separate Go package " +
                 "(measured: callerprobe_test.TestExternalCallerName)");
         }
+
+        // (4) A RECORDED function literal answers Go's counter — read from the GoPositionMap
+        //     funcLits map, never derived from Roslyn's `b__X_Y`, whose closure-group numbering
+        //     answered func0 here for Go's func1 (measured against go1.23.12; the net/http rows
+        //     TestWriteHeaderNoCodeCheck and TestTimeoutHandlerSuperfluousLogs read the value).
+        [TestMethod]
+        public void RecordedLiteralFrameNamesGoCounter()
+        {
+            Assert.AreEqual(
+                "litguard/probe.recordedOuterLiteralFrame.func2",
+                go.litguard.probe_package.recordedOuterLiteralFrame(),
+                "a literal frame with a recorded span must answer the RECORDED counter suffix");
+        }
+
+        // (5) A NESTED literal's dotted counter (`func2.1`) — a name the Roslyn derivation cannot
+        //     even represent — and, because its recorded span sits INSIDE the outer literal's, the
+        //     proof that containment picks the innermost span.
+        [TestMethod]
+        public void RecordedNestedLiteralFrameNamesDottedCounter()
+        {
+            Assert.AreEqual(
+                "litguard/probe.recordedNestedLiteralFrame.func2.1",
+                go.litguard.probe_package.recordedNestedLiteralFrame(),
+                "a nested literal frame must answer the recorded DOTTED counter, innermost span first");
+        }
+
+        // (6) The ruled fallback: a literal frame NO conversion recorded — an older artifact, a
+        //     hand-written lambda — keeps the Roslyn-derived ordinal it always had. Only the shape
+        //     is pinned; the exact ordinal is Roslyn's own closure-group numbering, which is the
+        //     very thing the record exists to stop leaning on.
+        [TestMethod]
+        public void UnrecordedLiteralFrameKeepsTheDerivedOrdinal()
+        {
+            string function = go.slcguard.probe_package.fallbackLiteralFrame();
+
+            StringAssert.StartsWith(
+                function,
+                "slcguard/probe.fallbackLiteralFrame.func",
+                "an unrecorded literal frame must keep the pre-record derived shape, got: " + function);
+        }
     }
 }
 
@@ -109,6 +169,16 @@ namespace go.slcguard
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string productionShapedFrame() =>
             GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
+
+        // The unrecorded-literal shape: this file has no GoPositionMap record, so the lambda's
+        // frame reports the real source file, finds nothing, and takes the derived fallback.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string fallbackLiteralFrame()
+        {
+            Func<string> literal = () => GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
+
+            return literal();
+        }
     }
 
     public static class probe_internal_test_package
@@ -123,5 +193,35 @@ namespace go.slcguard
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string externalTestShapedFrame() =>
             GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
+    }
+}
+
+// The recorded-literal shapes. `#line` remaps each method — its lambda's sequence points included —
+// into the fictional file the assembly record at the top of this file describes, so the lambda
+// frames' PDB positions land inside the recorded spans: the first method's lines start at 100 (the
+// outer literal's span alone), the second's at 110 (inside BOTH spans, where innermost must win).
+// Everything else about the shapes matches the classes above: namespace `go.<dir>`, a
+// `<pkg>_package` class, which is all isConvertedGoFrame asks.
+namespace go.litguard
+{
+    public static class probe_package
+    {
+#line 100 "litguard_probe_recorded.cs"
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string recordedOuterLiteralFrame()
+        {
+            Func<string> literal = () => GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
+
+            return literal();
+        }
+#line 110 "litguard_probe_recorded.cs"
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string recordedNestedLiteralFrame()
+        {
+            Func<string> literal = () => GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
+
+            return literal();
+        }
+#line default
     }
 }

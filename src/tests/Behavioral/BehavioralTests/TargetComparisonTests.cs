@@ -538,6 +538,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckFuncLitCaptureInCondition() => CheckTarget("FuncLitCaptureInCondition");
 
     [TestMethod]
+    public void CheckFuncLiteralCallerNames() => CheckTarget("FuncLiteralCallerNames");
+
+    [TestMethod]
     public void CheckFuncLitNumericTupleReturn() => CheckTarget("FuncLitNumericTupleReturn");
 
     [TestMethod]
