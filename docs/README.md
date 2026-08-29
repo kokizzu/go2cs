@@ -9,22 +9,23 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — Over 80% of the standard-library test suites pass in C#, on .NET 10 and Go 1.23.12
+## 📰 NEWS — Over 90% of the standard-library test suites pass in C#, on .NET 10 and Go 1.23.12
 
-**171 of the 215 testable standard-library packages pass their own Go test suites in C#** — 18,965
-matching verdicts against `go test -json`, compared verdict for verdict, with 87 divergences
+**189 of the 215 testable standard-library packages pass their own Go test suites in C#** — 26,043
+matching verdicts against `go test -json`, compared verdict for verdict, with 148 divergences
 disclosed by exact failure signature and nothing else waived. Seven of those 215 cannot be validated
 at all — no eligible tests on this platform, a broken upstream oracle, or a suite whose whole
 subject is the raw memory layout a managed runtime deliberately does not have — so the honest
-denominator is **208, putting the roster at 85.1%**. Each of the seven is listed with its class,
+denominator is **208, putting the roster at 90.9%**. Each of the seven is listed with its class,
 mechanism and evidence in the [exclusion ledger](ValidatedTestPackages.md#excluded-packages), and
 any one of them rejoins the count the day its evidence changes. A package appears on the
 [roster](ValidatedTestPackages.md) only when *every* eligible test agrees, and every row links a
 [proof page](validation/index.md) listing Go's verdict beside go2cs's, test by test.
 
-Roster re-derived from scratch when **both** runtime pins moved to **.NET 10** and **Go 1.23.12** — 
-numerator, denominator and disclosure set. Full detail in the
-[news archive entry](NEWS.md#august-25-2026--both-runtime-pins-move-net-10-go-12312--and-the-whole-roster-re-proves-itself).
+The push past 90% landed **`net` itself — 472 verdicts, the roster's largest networking row** —
+alongside `reflect` compiling and executing for the first time, and `net/netip`, `net/http/cookiejar`,
+`debug/pe` and more joining the roster in a single day. Published to NuGet as **1.23.12.2**, with
+this release's proof pages frozen at [validation/1.23.12.2](validation/1.23.12.2/index.md).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 
