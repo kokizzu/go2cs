@@ -289,6 +289,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckCrossPkgLib() => CheckTarget("CrossPkgLib");
 
     [TestMethod]
+    public void CheckCrossPkgLiteralNestedField() => CheckTarget("CrossPkgLiteralNestedField");
+
+    [TestMethod]
     public void CheckCrossPkgSameNameAlias() => CheckTarget("CrossPkgSameNameAlias");
 
     [TestMethod]

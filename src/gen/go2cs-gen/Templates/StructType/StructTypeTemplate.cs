@@ -1096,9 +1096,12 @@ internal class StructTypeTemplate : TemplateBase
     //       own `= new(N)` field initializer (which every explicitly declared constructor runs), so
     //       it needs no assignment; a cross-package/golib field type is left `default` (conservative
     //       — see StructTypeNeedsConstruction).
-    private void AppendZeroValueInitializers(StringBuilder result)
+    private void AppendZeroValueInitializers(StringBuilder result) =>
+        AppendZeroValueInitializers(result, StructMembers);
+
+    private void AppendZeroValueInitializers(StringBuilder result, IEnumerable<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)> structMembers)
     {
-        foreach ((string typeName, string memberName, bool isReferenceType, bool isPromotedStruct) in StructMembers)
+        foreach ((string typeName, string memberName, bool isReferenceType, bool isPromotedStruct) in structMembers)
         {
             if (GetSimpleName(memberName) == "_")
                 continue;
@@ -1317,6 +1320,27 @@ internal class StructTypeTemplate : TemplateBase
                     IsNeedyValueStructMember(typeName, isReferenceType, isPromotedStruct) ?
                         $"this.{memberName} = {memberName} ?? new {typeName}(nil);" :
                         $"this.{memberName} = {memberName};");
+        }
+
+        // A MIXED-VISIBILITY struct's PUBLIC subset constructor names only the exported members, so
+        // every unexported member is absent from the parameter list AND the body — left at
+        // `default(T)`, which is the very state the NilType/parameterless constructors call
+        // AppendZeroValueInitializers to avoid. The needy ones (a promoted-embed box, or a field
+        // whose own type carries a box/fixed array at some depth) are therefore broken in exactly
+        // the instances a cross-package composite literal produces, and only there — which is what
+        // made it survive: the same struct built by `@new<T>()`, by the all-fields internal ctor, or
+        // from inside its own package is fine, so the defect reads as data-dependent rather than
+        // structural. syscall.SockaddrUnix is the measured case: `&SockaddrUnix{Name: path}` left
+        // `raw` default, so `raw.Path`'s `[108]int8` backing was zero-length and syscall's own
+        // `if n > len(sa.raw.Path)` guard returned EINVAL before bind ever reached the kernel —
+        // every AF_UNIX listen/dial on Windows failed with "invalid argument". The omitted members
+        // get the same zero-value construction the parameterless ctor gives them; the all-fields
+        // internal ctor omits nothing, so this adds nothing there.
+        if (structMembers.Count != StructMembers.Count)
+        {
+            HashSet<string> named = new(structMembers.Select(item => item.memberName), StringComparer.Ordinal);
+
+            AppendZeroValueInitializers(result, StructMembers.Where(item => !named.Contains(item.memberName)));
         }
 
         result.Append($"{TypeElemIndent}}}");

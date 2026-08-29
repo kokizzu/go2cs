@@ -4867,6 +4867,34 @@ fields. All of the NilType, parameterless, and now field-wise constructors are c
 omitted field; against the unfixed generator it NREs with `Object reference not set to an instance of an
 object`, exactly as `encoding/base32` did.)
 
+**A MIXED-VISIBILITY struct needed one arm more: the PUBLIC field-subset constructor, which does not
+name the needy member at all.** The paragraph above fixes the member's *parameter* — but a struct with
+any unexported field gets **two** field-wise constructors (`Constructors`): a `public` one over
+`PublicStructMembers` and an `internal` one over all of them, the public subset carrying
+`OverloadResolutionPriority(-1)` so a same-assembly named-args call binds the full overload. An
+unexported needy member is therefore absent from the public subset ctor's parameter list *and* its
+body, so the `?? new T(nil)` reconstruction never applied to it and the field was left at
+`default(T)` — the exact state `AppendZeroValueInitializers` exists to prevent. The deprioritization
+is also what hid it: every same-package literal binds the internal all-fields ctor and is correct, so
+only a literal in **another package** reaches the broken constructor. `syscall.SockaddrUnix` is the
+shipped case — `&SockaddrUnix{Name: path}` from `net` left `raw` default, so `raw.Path`'s `[108]int8`
+backing was zero-length and `sockaddr()`'s own `if n > len(sa.raw.Path)` guard returned `EINVAL`
+*before `bind` ever reached the kernel*, failing every AF_UNIX listen/dial on Windows with "invalid
+argument" (`net`'s `TestModeSocket` and `TestUnixConnLocalWindows`). Because the error is Go's own
+**invented** `EINVAL` (`APPLICATION_ERROR`-based, message "invalid argument") rather than the kernel's
+`WSAEINVAL` (10022, "An invalid argument was supplied."), the failure reads like a rejected sockaddr
+and invites a hunt through the marshaling — which is sound and was not at fault. `GenerateConstructor`
+now reuses `AppendZeroValueInitializers` over the members the ctor does **not** name, giving them the
+same zero-value construction the parameterless ctor gives them; the all-fields internal ctor omits
+nothing, so nothing changes there, and a struct with no unexported members emits no subset ctor at
+all. (Guarded by the `CrossPkgLiteralNestedField` output-compared test — an `addrlib` sibling library
+supplies `Addr{Name string; raw rawAddr}` in `SockaddrUnix`'s exact shape plus an `Embedder` whose
+unexported member is a promoted **embed**, both built from the parent package by composite literal;
+it reads the nested fixed array's length, runs a guard-then-fill `Encode()` mirroring `sockaddr()`,
+reads bytes back out, and checks that an over-long name is still rejected — so it separates "the array
+is right" from "the guard always fails". Against the unfixed generator the capacity reads `0` and
+`Encode` answers `0 false`.)
+
 A bare **`var x T`** zero-value declaration (no initializer) calls none of those, so the *converter*
 closes the remaining gap on its side: when `T` needs construction it emits `T x = new();` — the generated
 parameterless constructor, which runs the same field initializers + `AppendZeroValueInitializers` — instead
