@@ -9,6 +9,12 @@ using static go.debug.gosym_package;
 
 partial class gosym_internal_test_package {
 
+// Go runs an imported package's `init` before this package's own; .NET would never load
+// an assembly nothing has touched yet, so that initialization is forced here.
+[GoInit] internal static void initᴛᴛimportꓸfmt() {
+    builtin.initPackage(typeof(fmt_package));
+}
+
 internal static void assertString(ж<testing.T> Ꮡt, @string dsc, @string @out, @string tgt) {
     if (@out != tgt) {
         Ꮡt.Fatalf("Expected: %q Actual: %q for %s"u8, tgt, @out, dsc);
