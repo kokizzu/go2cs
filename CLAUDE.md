@@ -1111,7 +1111,11 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
     the production tree.
   - **⚠ After an operational SWEEP, `git status` is dirty and it is (almost always) NOTHING — classify,
     don't chase, and never bank it.** Two *different* phenomena get conflated here; a sweep produces only
-    the first.
+    the first. ⚠ **The dirt is NOT confined to `src/core`: the sweep REWRITES each swept package's
+    proof page under `docs/validation/current/`** (that rewrite is by design — it is why the
+    host-conditional check reads the COMMITTED page from HEAD), so a restore scoped to the corpus
+    leaves the pages behind — 56 of them measured on one lane's shift (2026-08-29). Restore both
+    roots, or the next diff reads as proof-page drift.
     1. **CRLF phantoms — most of a healthy sweep's dirt.** The converter preserves the Go source's
        **LF** inside multi-line string literals while emitting CRLF everywhere else, and `core.autocrlf`
        smudges those in-string LFs to CRLF on checkout. A `-tests` run re-emits them as LF, so every
