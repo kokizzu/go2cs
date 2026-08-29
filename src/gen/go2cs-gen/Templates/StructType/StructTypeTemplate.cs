@@ -347,8 +347,20 @@ internal class StructTypeTemplate : TemplateBase
                 // DECLARED members alone misses it (nobj is a generated accessor on stackWorkBufHdr,
                 // not a declared field). The emitted accessor stays single-hop (`stackWorkBuf.nobj =>
                 // ref stackWorkBufHdr.nobj`), resolving through stackWorkBufHdr's own 1-level promotion.
+                // EVERY occurrence is collected, duplicates included: Go's promotion rule is
+                // DEPTH-AWARE and the caller applies it (promotes(): unique at the shallowest depth).
+                // A name-dedupe here would decide the question first, and decide it WRONG — "first
+                // (closest) declaration wins" is only half of Go's rule. It holds across DIFFERENT
+                // depths; at the SAME depth Go promotes from neither. Deduping silently turned an
+                // ambiguity into a win: reflect's `S0` embeds `D1` AND `D2`, both declaring `d`, so
+                // the second `d` was dropped here, the caller counted ONE occurrence, and `S1`
+                // promoted `d` through `S0` — emitting `instance.S0.d`, which does not exist (CS1061
+                // ×2), while `S0`'s own shell correctly emitted no `d` at all.
+                //
+                // Feeding the counter every occurrence does not re-open the case it was written for
+                // (macho's `FatArch`, Cpu at depth 1 and depth 2): minDepth 1 with count 1 still
+                // emits the depth-1 accessor and skips the depth-2 one.
                 List<(string typeName, string memberName, int depth)> collected = [];
-                HashSet<string> emittedNames = [];
 
                 collect(structTypeName, [], 1);
 
@@ -375,19 +387,14 @@ internal class StructTypeTemplate : TemplateBase
                         // embeds need it); the emitted single-hop accessor resolves through the embedded
                         // type's own generated promotion when it exists.
                         foreach ((string fieldTypeName, string fieldName) in getMetadataStructFields(typeName))
-                        {
-                            if (emittedNames.Add(fieldName))
-                                collected.Add((fieldTypeName, fieldName, depth));
-                        }
+                            collected.Add((fieldTypeName, fieldName, depth));
 
                         return;
                     }
 
                     foreach ((string memberType, string memberName, _, bool isEmbedded) in structDecl.GetStructMembers(compilation!, true))
                     {
-                        // First (closest) declaration of a name wins, matching Go's promotion rules.
-                        if (emittedNames.Add(memberName))
-                            collected.Add((memberType, memberName, depth));
+                        collected.Add((memberType, memberName, depth));
 
                         // An embedded struct field contributes its own members transitively. The
                         // converter emits every embed - value or POINTER - as a `partial ref`
