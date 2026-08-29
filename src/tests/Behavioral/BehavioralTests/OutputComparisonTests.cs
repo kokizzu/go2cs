@@ -1394,6 +1394,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectliteTypeName() => CheckTarget("ReflectliteTypeName");
 
     [TestMethod]
+    public void CheckReflectMakeFunc() => CheckTarget("ReflectMakeFunc");
+
+    [TestMethod]
     public void CheckReflectMapRangeNilKey() => CheckTarget("ReflectMapRangeNilKey");
 
     [TestMethod]

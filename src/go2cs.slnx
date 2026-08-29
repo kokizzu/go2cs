@@ -760,6 +760,7 @@
     <Project Path="tests/Behavioral/ReflectConvertAssignable/ReflectConvertAssignable.csproj" />
     <Project Path="tests/Behavioral/ReflectFieldAddrWrite/ReflectFieldAddrWrite.csproj" />
     <Project Path="tests/Behavioral/ReflectFuncArrayParamDims/ReflectFuncArrayParamDims.csproj" />
+    <Project Path="tests/Behavioral/ReflectMakeFunc/ReflectMakeFunc.csproj" />
     <Project Path="tests/Behavioral/ReflectMapRangeNilKey/ReflectMapRangeNilKey.csproj" />
     <Project Path="tests/Behavioral/ReflectMethodTableWalk/ReflectMethodTableWalk.csproj" />
     <Project Path="tests/Behavioral/ReflectStringWindow/ReflectStringWindow.csproj" />

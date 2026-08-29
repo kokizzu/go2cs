@@ -11447,6 +11447,46 @@ Go program can construct. The arity row matters because only 0, 1 and 2 fixed pa
 consumer in the corpus today: 3 through 8 would otherwise be discovered by whichever package
 reached them first.)
 
+### `reflect.MakeFunc` is `Value.Call`'s exact inverse — a compiled delegate over the descriptor's carried System.Type (2026-08-29)
+
+Go's `MakeFunc` is runtime machinery end to end: it reinterprets the descriptor into a `funcType`
+sub-record, asks `funcLayout` for a stack map, and pairs an assembly stub (`makeFuncStub`) with a
+closure context the scheduler calls back through. None of that exists behind a managed-backed
+descriptor — `abi.synthType` mints every one as a plain `heap<Type>` box with the CLR
+`System.Type` as cargo, so the `Reinterpret<abi.Type, funcType>()` recovers a **zero box** and
+`funcLayout` panics `reflect: funcLayout of non-func type <nil>`. First operational hit:
+`net/http/httptrace`'s `compose`, which walks `ClientTrace`'s func-typed fields and MakeFuncs a
+composed hook for every pair both traces set.
+
+The hand-owned form (`reflect/makefunc_impl.cs`, displaced via the `manualConversionFuncs`
+registry) runs the marshalling that `Value.Call` runs, in the opposite direction. Where `Call`
+marshals a `slice<Value>` into a delegate's `DynamicInvoke`, `MakeFunc` builds a delegate of
+**exactly** the descriptor's carried delegate type whose invocation boxes its CLR arguments,
+types each one by the func's STATIC parameter type (`makeTypedValue` — an interface-typed
+parameter reports Kind Interface, a nil pointer is a VALID typed-nil Value, and a `[N]byte`
+parameter carries the descriptor's `funcParamDims` cargo, the one route a fixed array parameter's
+length reaches reflect at all), runs `fn`, and marshals the result Values back out under the SAME
+assignability renderer Call's arguments use (`marshalIntoSlot` — one rule for both directions).
+A Go multi-return packs into the delegate's own declared `ValueTuple`. The delegate itself comes
+from golib's `GoReflect.MakeGoFuncDelegate` — expression-compiled once per delegate type into a
+factory (outer lambda takes the `Func<object?[], object?>` invoker, inner IS the typed delegate),
+the same memoization rule the method-value binder follows — so the result is callable DIRECTLY as
+a typed Go func (`t.DNSStart(info)`), through `Value.Call`, and through composition with itself.
+
+The returned Value rides `typ`'s **own** descriptor box rather than a fresh `synthType`, so the
+dims cargo survives and `Type()` interns back to the caller's wrapper: `MakeFunc(t, fn).Type() == t`
+by identity. A VARIADIC func type is a loud `NotImplementedException`, not a wrong delegate: its
+tail is `params Span<T>`, a byref-like type no expression tree can carry — the route that exists is
+the reverse of `InvokeVariadic`'s typed family trampolines above, unbuilt for want of a
+demonstrated consumer, exactly as `Value.CallSlice` records. `makeMethodValue`'s identical
+`funcLayout` read deliberately stays auto: it is reachable only through `flagMethod`, which the
+bridge never sets (`Value.Method` binds the receiver into an ordinary delegate instead). With
+MakeFunc live, `reflect/iter.cs`'s rangefunc `Seq`/`Seq2` funcs gain their real implementation
+path too. (Guarded by behavioral `ReflectMakeFunc`: the docs swap example invoked directly, the
+httptrace compose shape, multi-return, canonical `Type()` identity, `Call` over a made func, an
+interface-typed parameter, a typed-nil pointer argument, and a `[4]byte` parameter whose `Len()`
+proves the dims cargo threads through. Banked consumer: `net/http/httptrace` 2|0.)
+
 ### Major-version import directories
 A `/vN` import path segment (math/rand/v2) hosts a package named for the PARENT segment, so the
 emitted class follows the package NAME: consumers reference `go.math.rand.rand_package`, and the

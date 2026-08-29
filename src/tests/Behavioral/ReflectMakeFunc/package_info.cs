@@ -10,22 +10,15 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using netꓸAddr = go.net_package.ΔAddr;
-global using netꓸError = go.net_package.ΔError;
 global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
 global using reflectꓸKind = go.reflect_package.ΔKind;
 global using reflectꓸMethod = go.reflect_package.ΔMethod;
 global using reflectꓸType = go.reflect_package.ΔType;
 global using reflectꓸValue = go.reflect_package.ΔValue;
-global using textprotoꓸError = go.net.textproto_package.ΔError;
-global using timeꓸLocation = go.time_package.ΔLocation;
-global using timeꓸMonth = go.time_package.ΔMonth;
-global using timeꓸWeekday = go.time_package.ΔWeekday;
-global using tlsꓸConnectionState = go.crypto.tls_package.ΔConnectionState;
 // </ImportedTypeAliases>
 
 using go;
-using static go.net.http.httptrace_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -61,13 +54,14 @@ using static go.net.http.httptrace_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/httptrace/trace.go", "trace.cs", "AD0wooIAAhDygpSChIKCuIKCpoKCgoKU7pQAWtgBooKUgoKCgoKCgpSSgpSCgrqmooKUABQuooKU", "48-50:1;53-63:2;202-205:1")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABMUgoaCggAWFoSCgoKEgoKCiIKQkpCSgoKCkpKigpSCgoKGkoKCgoKUgoKGiIKIgoKCgpSGgoKGkoqCgoKCgpSU", "11-13:1;42-42:1;43-43:2;49-52:3;62-65:4;82-85:5;91-93:6;102-108:7")]
 // </GoSourcePositionMaps>
 
-namespace go.net.http;
+namespace go;
 
-[GoPackage("httptrace")]
-public static partial class httptrace_package
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -76,11 +70,6 @@ public static partial class httptrace_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct clientEventContextKey {}
-    public partial struct ClientTrace {}
-    public partial struct DNSDoneInfo {}
-    public partial struct DNSStartInfo {}
-    public partial struct GotConnInfo {}
-    public partial struct WroteRequestInfo {}
+    internal partial struct traceHooks {}
     // </TypeAccessibility>
 }

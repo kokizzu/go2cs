@@ -22,48 +22,9 @@ partial class reflect_package {
     internal Func<slice<ΔValue>, slice<ΔValue>> fn;
 }
 
-// MakeFunc returns a new function of the given [Type]
-// that wraps the function fn. When called, that new function
-// does the following:
-//
-//   - converts its arguments to a slice of Values.
-//   - runs results := fn(args).
-//   - returns the results as a slice of Values, one per formal result.
-//
-// The implementation fn can assume that the argument [Value] slice
-// has the number and type of arguments given by typ.
-// If typ describes a variadic function, the final Value is itself
-// a slice representing the variadic arguments, as in the
-// body of a variadic function. The result Value slice returned by fn
-// must have the number and type of results given by typ.
-//
-// The [Value.Call] method allows the caller to invoke a typed function
-// in terms of Values; in contrast, MakeFunc allows the caller to implement
-// a typed function in terms of Values.
-//
-// The Examples section of the documentation includes an illustration
-// of how to use MakeFunc to build a swap function for different types.
-public static ΔValue MakeFunc(ΔType typ, Func<slice<ΔValue>, slice<ΔValue>> fn) {
-    if (typ.Kind() != Func) {
-        throw panic("reflect: call of MakeFunc with non-Func type");
-    }
-    var t = typ.common();
-    var ftyp = t.Reinterpret<abi.Type, funcType>();
-    var code = abi.FuncPCABI0(makeFuncStub);
-    // makeFuncImpl contains a stack map for use by the runtime
-    var (_, _, abid) = funcLayout(ftyp, nil);
-    var impl = Ꮡ(new makeFuncImpl(
-        makeFuncCtxt: new makeFuncCtxt(
-            fn: code,
-            stack: abid.stackPtrs,
-            argLen: abid.stackCallArgsSize,
-            regPtrs: abid.inRegPtrs.Clone()
-        ),
-        ftyp: ftyp,
-        fn: fn
-    ));
-    return new ΔValue(t, new @unsafe.Pointer(impl), ((flag)(uintptr)(nuint)Func));
-}
+// go2cs generated this placeholder — func MakeFunc is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// makeFuncImpl contains a stack map for use by the runtime
 
 // makeFuncStub is an assembly function that is the code half of
 // the function returned from MakeFunc. It expects a *callReflectFunc

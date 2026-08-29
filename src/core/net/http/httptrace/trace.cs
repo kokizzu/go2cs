@@ -8,13 +8,13 @@ namespace go.net.http;
 
 using context = context_package;
 using tls = crypto.tls_package;
-using nettrace = @internal.nettrace_package;
+using nettrace = go.@internal.nettrace_package;
 using net = net_package;
 using textproto = go.net.textproto_package;
 using reflect = reflect_package;
 using time = time_package;
-using @internal;
 using crypto;
+using go.@internal;
 using go.net;
 
 partial class httptrace_package {

@@ -225,6 +225,73 @@ public static partial class GoReflect
         return s_boundFactories.GetOrAdd(entry.Method, static m => CompileBoundFactory(m))(bindTarget);
     }
 
+    private static readonly ConcurrentDictionary<Type, Func<Func<object?[], object?>, Delegate>> s_goFuncDelegateFactories = [];
+
+    /// <summary>
+    /// Builds a delegate of EXACTLY <paramref name="delegateType"/> whose invocation boxes its
+    /// arguments into an <c>object?[]</c>, hands them to <paramref name="invoker"/>, and returns the
+    /// invoker's result cast to the delegate's declared return type — the delegate-side half of
+    /// <c>reflect.MakeFunc</c>, and the exact inverse of <c>Value.Call</c>'s DynamicInvoke direction.
+    /// </summary>
+    /// <param name="delegateType">The delegate type the result must have (a converted Go func type).</param>
+    /// <param name="invoker">Receives the boxed arguments; its result becomes the call's result
+    /// (ignored for a void delegate, a <c>ValueTuple</c> for a Go multi-return).</param>
+    /// <returns>A delegate of <paramref name="delegateType"/> backed by <paramref name="invoker"/>.</returns>
+    /// <remarks>
+    /// Expression-compiled for the same reason the method-value binder is (see this file's header):
+    /// the wrapper must exist for ANY delegate type, and only a compiled lambda can take on an
+    /// arbitrary delegate's exact signature. The LAMBDA is compiled once per delegate type into a
+    /// factory (outer lambda takes the invoker, inner IS the typed delegate), so per-MakeFunc cost is
+    /// a closure allocation rather than a compile — the s_boundFactories memoization rule. The cache
+    /// is keyed by the delegate type and is correctly absent from ClearTypeCaches' list: a delegate
+    /// type's Invoke signature is fixed when its type loads. A VARIADIC func type is refused loud:
+    /// its tail is <c>params Span&lt;T&gt;</c>, a byref-like type expression trees reject outright —
+    /// the route that exists is the reverse of <see cref="InvokeVariadic"/>'s typed family
+    /// trampolines (one generic factory per golib <c>Actionꓸꓸꓸ</c>/<c>Funcꓸꓸꓸ</c> arity, rebound onto
+    /// the natural type through <c>Invoke</c>), left unbuilt for want of a demonstrated consumer.
+    /// </remarks>
+    public static Delegate MakeGoFuncDelegate(Type delegateType, Func<object?[], object?> invoker)
+    {
+        return s_goFuncDelegateFactories.GetOrAdd(delegateType, static t => CompileGoFuncFactory(t))(invoker);
+    }
+
+    // Compiles the ONE-per-delegate-type wrapper factory: an outer lambda taking the invoker, whose
+    // body IS the typed delegate boxing its arguments through to that invoker.
+    private static Func<Func<object?[], object?>, Delegate> CompileGoFuncFactory(Type delegateType)
+    {
+        MethodInfo? invoke = typeof(Delegate).IsAssignableFrom(delegateType) ? delegateType.GetMethod("Invoke") : null;
+
+        if (invoke is null)
+            throw new ArgumentException($"'{GoTypeName(delegateType)}' is not a delegate type", nameof(delegateType));
+
+        ParameterInfo[] parameters = invoke.GetParameters();
+
+        // `Array` alone is the GoReflect.Array Kind constant in this scope, so System.Array is qualified.
+        if (System.Array.Exists(parameters, static p => p.ParameterType.IsByRef || p.ParameterType.IsByRefLike))
+        {
+            throw new NotImplementedException(
+                $"reflect: MakeFunc of the variadic func type '{GoTypeName(delegateType)}' is not implemented — its " +
+                "tail lowers to a byref-like 'params Span<T>' no expression tree can carry (no demonstrated consumer; " +
+                "the route is the reverse of GoReflect.InvokeVariadic's typed family trampolines)");
+        }
+
+        ParameterExpression invokerParameter = Expression.Parameter(typeof(Func<object?[], object?>), "invoker");
+        ParameterExpression[] arguments = [.. parameters.Select(static (p, i) => Expression.Parameter(p.ParameterType, p.Name ?? $"arg{i}"))];
+
+        Expression argumentArray = arguments.Length == 0
+            ? Expression.Constant(System.Array.Empty<object?>(), typeof(object[]))
+            : Expression.NewArrayInit(typeof(object), arguments.Select(static a => Expression.Convert(a, typeof(object))));
+
+        Expression body = Expression.Invoke(invokerParameter, argumentArray);
+
+        if (invoke.ReturnType != typeof(void))
+            body = Expression.Convert(body, invoke.ReturnType);
+
+        LambdaExpression made = Expression.Lambda(delegateType, body, arguments);
+
+        return Expression.Lambda<Func<Func<object?[], object?>, Delegate>>(Expression.Convert(made, typeof(Delegate)), invokerParameter).Compile();
+    }
+
     // The ordered method table of the Go type `t` stands for — the ONE source every answer above
     // reads (see this file's header). An adapter shell answers as the Go dynamic type it stands for
     // (R10); the EMPTY interface (`any` is object) has no methods.

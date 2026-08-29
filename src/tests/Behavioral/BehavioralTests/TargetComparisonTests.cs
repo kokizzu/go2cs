@@ -1456,6 +1456,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckReflectliteTypeName() => CheckTarget("ReflectliteTypeName");
 
     [TestMethod]
+    public void CheckReflectMakeFunc() => CheckTarget("ReflectMakeFunc");
+
+    [TestMethod]
     public void CheckReflectMapRangeNilKey() => CheckTarget("ReflectMapRangeNilKey");
 
     [TestMethod]
