@@ -88,6 +88,13 @@
          os.Exit(89) override is exactly that. Proving the host stays out of the way needs the real
          converted flag package, because "has a parse happened yet" is only observable there. -->
     <ProjectReference Include="..\..\core\flag\flag.csproj" />
+
+    <!-- ValueAdapterFormatTests: the TestRegisterErr chip (two golib defects: an IValueAdapter
+         shell's own type/identity leaking into %#v instead of the wrapped value's). Proving the
+         fix needs the REAL reflect.ValueOf → fmt.Sprintf bridge, the same MSTest-tier-binds-a-
+         converted-package precedent as sha3/math.big/flag above. -->
+    <ProjectReference Include="..\..\core\reflect\reflect.csproj" />
+    <ProjectReference Include="..\..\core\fmt\fmt.csproj" />
   </ItemGroup>
 
 </Project>
