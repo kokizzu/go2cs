@@ -665,6 +665,7 @@
     <Project Path="tests/Behavioral/NetDeadlineMatrix/NetDeadlineMatrix.csproj" />
     <Project Path="tests/Behavioral/NetListenSmoke/NetListenSmoke.csproj" />
     <Project Path="tests/Behavioral/NewAnonStructIfaceEmbed/NewAnonStructIfaceEmbed.csproj" />
+    <Project Path="tests/Behavioral/NilAdapterOpsClosure/NilAdapterOpsClosure.csproj" />
     <Project Path="tests/Behavioral/NilChannelInSelect/NilChannelInSelect.csproj" />
     <Project Path="tests/Behavioral/NilChannelSelectDefault/NilChannelSelectDefault.csproj" />
     <Project Path="tests/Behavioral/NilMapKey/NilMapKey.csproj" />
