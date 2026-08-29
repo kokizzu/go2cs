@@ -379,8 +379,7 @@ internal static UntypedInt eventsBucketSize => 524288; // 32 MiB of events
 }
 
 [GoRecv] public static void Swap(this ref Events l, nint i, nint j) {
-    l.Ptr(i).Value = l.Ptr(j).Value.ΔClone();
-    l.Ptr(j).Value = l.Ptr(i).Value.ΔClone();
+    (l.Ptr(i).Value, l.Ptr(j).Value) = (l.Ptr(j).Value.ΔClone(), l.Ptr(i).Value.ΔClone());
 }
 
 [GoRecv] public static (ж<Event>, bool) Pop(this ref Events l) {

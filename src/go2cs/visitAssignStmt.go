@@ -661,6 +661,34 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 
 				isInterface, isEmpty := v.isInterface(ident)
 				lhsTypeIsInterface[i] = isInterface && !isEmpty
+			} else if starExpr, ok := lhs.(*ast.StarExpr); ok && lhsLen > 1 {
+				// A STAR-DEREF LHS whose OPERAND has no plain-ident root — the deref of a CALL
+				// result (`*l.Ptr(i)`), of a paren, etc. — is a write to EXISTING storage, exactly
+				// like the plain-base `*v` form counted in the ident != nil arm below. getIdentifier
+				// has no CallExpr arm, so ident is nil here and the deref fell through BOTH arms
+				// above, counting as neither reassigned nor declared: the parallel assignment then
+				// satisfied no tuple-path gate and shattered into sequential stores that drop the
+				// swap's implicit temporary. internal/trace/internal/oldtrace's Events.Swap —
+				// `*l.Ptr(i), *l.Ptr(j) = *l.Ptr(j), *l.Ptr(i)`, the sort.Stable comparator's only
+				// mutator — emitted `Ptr(i).Value = Ptr(j).Value; Ptr(j).Value = Ptr(i).Value;`,
+				// making every swap a no-op that DUPLICATED element j over element i. The corrupted
+				// event stream then failed the old-trace parser's own post-pass consistency checks
+				// ("p N is running before start", "previous sweeping is not ended before a new one").
+				// Counting it REASSIGNED keeps it a simultaneous tuple deconstruction.
+				//
+				// Scoped to lhsLen > 1 deliberately, unlike the two arms above: SIMULTANEITY is the
+				// only property at stake, and a single-element deref write has no hazard to fix. That
+				// single form is also the overwhelmingly common one — 213 sites in the converted
+				// corpus at Go 1.23.12 (233 counting cmd/), 60 in reflect/value.go alone, nearly all
+				// the `*(*T)(p) = v` unsafe-write idiom — so leaving them on their existing path
+				// holds this change's emission footprint to the ONE site in the Go tree that is
+				// genuinely a parallel deref assignment. (Measured: the single-element form emits
+				// identically on either path, so the scoping buys footprint, not correctness.)
+				ident = getIdentifier(starExpr.X)
+				reassignedCount++
+
+				isInterface, isEmpty := v.isInterface(ident)
+				lhsTypeIsInterface[i] = isInterface && !isEmpty
 			}
 		} else {
 			// A STAR-DEREF LHS (`*v = …`) writes through EXISTING storage — never a

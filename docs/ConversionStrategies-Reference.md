@@ -3318,6 +3318,52 @@ inst.Value.Arg = inst.Value.Out;
 
 Note the tell in the "before": the very next statement of the same Go function swaps two plain *locals* (`matchOut, matchArg = matchArg, matchOut`) and was already emitted correctly as `(matchOut, matchArg) = (matchArg, matchOut);` — the divergence was purely the target *shape*. The consequence was silent: every `InstAlt` whose empty-match leg needed swapping got a corrupted dispatch, so `regexp` quietly lost its one-pass engine for `^[a-c]*$`, `^(?:a*)$`, `^.bc(d|e)*$` and friends, and `^[a-c]+$` stopped matching `"abc"` at all. A field write is a write to existing storage exactly as the index and star-deref forms are, so it is now counted as reassigned like them — which also aligns single-selector assignments (`h.flags &= ^writing`) with the narrowing-cast rendering a plain-ident target already got. (Guarded by the `ParallelAssignmentHazard` extension — a pointer-receiver field swap, a cross-struct rotate reading pre-assignment values, and a package-var swap; and by the `RangeVarReassign` / `AndNotAssignNarrow` goldens, whose re-baselines are this routing change.)
 
+### A STAR-DEREF of a CALL result counts as a reassignment — the last shape of the classification gap
+
+The paren-deref *index* form and the *selector* form above each closed one hole in the target
+classifier. The third and last is a **star-deref whose operand has no ident root at all**: `getIdentifier`
+unwraps index/star/selector/chan/array/map nodes but has no `CallExpr` arm, so `*l.Ptr(i)` — the deref of
+a method that returns a pointer *into* a backing store — resolved to a nil root. It then reached neither
+the selector arm nor the index arm of the `ident == nil` branch, and the plain-ident star arm
+(`*v = …`) lives in the `ident != nil` branch it never entered. The target was counted as **neither**
+reassigned nor declared, no tuple-path gate was satisfied, and the parallel assignment shattered:
+
+```go
+// internal/trace/internal/oldtrace/parser.go — Events.Swap, the only mutator sort.Stable calls
+func (l *Events) Swap(i, j int) { *l.Ptr(i), *l.Ptr(j) = *l.Ptr(j), *l.Ptr(i) }
+```
+```csharp
+// before — the second store re-reads the slot the first just overwrote, so the
+// swap is a NO-OP that duplicates element j over element i
+l.Ptr(i).Value = l.Ptr(j).Value.ΔClone();
+l.Ptr(j).Value = l.Ptr(i).Value.ΔClone();
+
+// after — the simultaneous deconstruction
+(l.Ptr(i).Value, l.Ptr(j).Value) = (l.Ptr(j).Value.ΔClone(), l.Ptr(i).Value.ΔClone());
+```
+
+This is the same package the paren-deref fix repaired one layer down (that one fixed the oldtrace *order*
+heap; this is the event list the parser sorts at the end of `parse`), and it was the last converted-code
+divergence in `internal/trace`. The failure mode is worth noting because it is **not** a sorting complaint:
+a corrupted `Swap` makes `sort.Stable` duplicate and lose events, and the damage is reported much later by
+the old-trace parser's own post-pass consistency checks — `p 3 is running before start`, `previous sweeping
+is not ended before a new one` — which read like trace-semantics bugs and point nowhere near the assignment.
+It is also why the divergence hid for so long: `sort.Stable` performs no swaps on an already-ordered input,
+and the event stream only acquires inversions from the `EvGoSysExit` timestamp rewrite that runs immediately
+before the sort. Only traces with enough syscall traffic to reorder anything ever exercised the broken
+`Swap`, so 10 of the 12 old-trace fixtures passed and the two `stress` fixtures failed.
+
+Counting such a deref as a reassignment is scoped to **multi-target** assignments: simultaneity is the only
+property at stake, and a single-element `*(*T)(p) = v` has no hazard to fix. That single-element form is also
+the overwhelmingly common one — 213 sites in the converted corpus at Go 1.23.12, 60 in `reflect/value.go`
+alone, nearly all the `*(*T)(p) = v` unsafe-write idiom — so leaving them on their existing path holds the
+change's emission footprint to the one site in the Go tree that is genuinely a parallel deref assignment.
+(The single-element form was measured to emit identically on either path, so the scoping buys footprint,
+not correctness.)
+(Guarded by the `PointerReceiverSliceSwap` extension — a `cell`/`cells` pair mirroring oldtrace's
+`Event`/`Events`, exercised by disjoint swaps, a full reversal, and a selection sort driven entirely by the
+call-deref swap, output-compared vs `go run`; the pre-fix converter leaves all three visibly uncorrected.)
+
 ### An address-taken reference-typed local heap-boxes too — `Ꮡ(value)` copies are only for reads
 An INHERENTLY heap-allocated local (interface/pointer/slice/map/chan/func) is already a
 reference, so escape analysis blanket-marks it and the box machinery historically skipped it —
