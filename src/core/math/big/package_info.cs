@@ -81,7 +81,7 @@ using static go.math.big_package;
 [assembly: go.GoPositionMap("math/big/ratconv.go", "ratconv.cs", "AA4iggAMEKKCgpSClICCpAACKgAUAoK6gIKAgqSCgoCCtoCCpIKUuJaCgpiSgoKCmJKCgoKogIK4ggAMIKK4gqS2pKSk3KS2pNyCgoKCpqaClIKCgpSmqIKUgqSWhAACJgAVBIKCgpSopLSCgoTEgqiSgoKClMyCloKCgoKCpIKUlIKUloKUgpSCpoKWqJKosoKCgoKUlKrCgpSs0oSCgoKCgqaohIKCloKWgoKCgoKogpSEgoKCgpSWAAIoABkSirKCjtKCgpKCgIKkggABFPKCgIKCyoKAgqSClg==")]
 [assembly: go.GoPositionMap("math/big/ratmarsh.go", "ratmarsh.cs", "ABQosoKUgoKCgpSUgoKCgpSC6JKUgpSClIKClIKCgpSCgpSCgoKosoKUqKSAgqQ=")]
 [assembly: go.GoPositionMap("math/big/roundingmode_string.go", "roundingmode_string.cs", "/oaigoKCgoLugoKU")]
-[assembly: go.GoPositionMap("math/big/sqrt.go", "sqrt.cs", "ABIigoKUAAIYAAwCgpaClpSogoKCgsyCgsy4pOyWAAIQAA4OgoKCsoKCgoKCgoKWgoKCgoK6qqKUgg==")]
+[assembly: go.GoPositionMap("math/big/sqrt.go", "sqrt.cs", "ABIigoKUAAIYAAwCgpaClpSogoKCgsyCgsy4pOyWAAIQAA4OgoKCsoKCgoKCgoKWgoKCgoK6qqKUgg==", "18-20:1;99-108:1")]
 // </GoSourcePositionMaps>
 
 namespace go.math;

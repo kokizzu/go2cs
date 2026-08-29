@@ -151,6 +151,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `log/slog/internal/buffer` | [`log.slog.internal.buffer.md`](current/log.slog.internal.buffer.md) | [`src/core/log/slog/internal/buffer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/buffer) |
 | `maps` | [`maps.md`](current/maps.md) | [`src/core/maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) |
 | `math` | [`math.md`](current/math.md) | [`src/core/math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) |
+| `math/big` | [`math.big.md`](current/math.big.md) | [`src/core/math/big`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/big) |
 | `math/bits` | [`math.bits.md`](current/math.bits.md) | [`src/core/math/bits`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/bits) |
 | `math/cmplx` | [`math.cmplx.md`](current/math.cmplx.md) | [`src/core/math/cmplx`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/cmplx) |
 | `math/rand` | [`math.rand.md`](current/math.rand.md) | [`src/core/math/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/rand) |

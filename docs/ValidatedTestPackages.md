@@ -112,19 +112,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **193 / 215 testable packages validated — 89.8%**
+> ### Phase 4 progress: **194 / 215 testable packages validated — 90.2%**
 >
-> **26,070 matching test verdicts · 149 disclosed** *(updated 2026-08-29 — maintained as part of the
+> **26,294 matching test verdicts · 151 disclosed** *(updated 2026-08-29 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 193 / 208 — 92.8%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 194 / 208 — 93.3%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 178 of 192 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 1 row platform-exclusive (`linux: n/a`).
+> **Linux: 178 of 193 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 1 row platform-exclusive (`linux: n/a`).
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -306,6 +306,7 @@ exactly as the line above it is summed from the columns.
 | [`log/slog/internal/buffer`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/log/slog/internal/buffer) | 1 | 1 | The pool-allocated byte buffer slog's built-in handlers render into — the pooled New/Free round-trip with its oversize-discard rule and the Write/WriteString/WriteByte append path. alloc-profile disclosure on the zero-alloc pool assert: the deferred Free closure heap-allocates where Go's escape analysis plus pool reuse stays allocation-free. · [proof](validation/current/log.slog.internal.buffer.md) |
 | [`maps`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/maps) | 14 | | Generic map helpers and iterators. · linux: 14 · [proof](validation/current/maps.md) |
 | [`math`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math) | 76 | | The core numeric package — IEEE edge cases, rounding, `Inf`/`NaN`. · linux: 76 · [proof](validation/current/math.md) |
+| [`math/big`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/big) | 224 | 2 | Arbitrary-precision `Int`/`Float`/`Rat` arithmetic — the karatsuba/toom multiplication thresholds, GCD and modular machinery, string/scan round-trips across bases and formats; two alloc-profile disclosures, one on the `MemStats` byte meter (the unbalanced-multiply temp-`nat` workspaces the ж-box arc's math/big harvest reclaims). · [proof](validation/current/math.big.md) |
 | [`math/bits`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/bits) | 26 | | Bit-manipulation intrinsics. · linux: 26 · [proof](validation/current/math.bits.md) |
 | [`math/cmplx`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/cmplx) | 24 | | `complex128` transcendental math. · linux: 24 · [proof](validation/current/math.cmplx.md) |
 | [`math/rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/math/rand) | 43 | | PRNG streams, including a child-process race test. · linux: 43 · · [proof](validation/current/math.rand.md) |
