@@ -50,6 +50,11 @@ func attempt(timeout time.Duration) error {
 }
 
 func main() {
+	// The argument is the BUDGET, and the server's WriteTimeout is budget/2 -- so the run that
+	// tests Go's real ceiling (WriteTimeout 500ms, the largest tryTimeouts ever sets) is
+	// `WriteDeadlineBudget 1000`, NOT 500. Every result line prints both numbers so the mapping
+	// cannot be misread from the output either; an earlier prose instruction of mine got this
+	// wrong and was caught only because the reader checked this source instead.
 	budgets := []time.Duration{250 * time.Millisecond, time.Second, 4 * time.Second, 16 * time.Second}
 	if len(os.Args) > 1 {
 		if ms, err := strconv.Atoi(os.Args[1]); err == nil {
@@ -58,9 +63,9 @@ func main() {
 	}
 	for _, b := range budgets {
 		if err := attempt(b); err != nil {
-			fmt.Printf("budget %-6v FAIL  %v\n", b, err)
+			fmt.Printf("budget %-6v (WriteTimeout %-6v) FAIL  %v\n", b, b/2, err)
 		} else {
-			fmt.Printf("budget %-6v PASS\n", b)
+			fmt.Printf("budget %-6v (WriteTimeout %-6v) PASS\n", b, b/2)
 		}
 	}
 }
