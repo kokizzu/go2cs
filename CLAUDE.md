@@ -215,6 +215,14 @@ ONE stdlib in a build; there is now only one on disk.
     was read) — each had the explicit event sitting in the file the whole time. The shape
     heuristics above remain for the cases the tail cannot settle (a crash leaves no timeout
     event), but the tail is checked FIRST and quoted in any census that reports empty verdicts.
+    ⚠ **The tail rule presumes the results file is the RUN'S OWN — verify freshness before
+    reading it** (measured 2026-08-29, the gated-census lane): a host invoked with `--run`
+    currently does NOT rewrite `go2cs_test_results.json`/`.xml` (four-way A/B: order- and
+    exit-code-independent; `WriteResults` has no filter guard and the arg parse advances, so the
+    mechanism is UNROOTED — do not assert one), while the comparison beside them is written
+    fresh. So a stale results.json next to a fresh comparison is NOT a deadline kill, and a
+    gated/filtered census gates on the CAPTURED STREAM (the artifact the comparison is built
+    from) instead. Cheap check either way: the results file's timestamp against the comparison's.
   - `-go2cspath <dir>` — runtime/stdlib root and default output root for converted code (default `~/go2cs`;
     env `GO2CSPATH`). `go2cs -recurse <input> <output>` keeps generated code under the explicit output root
     while `$(go2csPath)` references continue to resolve against this runtime root. **It is also the root the
