@@ -141,9 +141,13 @@ public class LinuxSpawnSeamTests
 
         // THE GATE: Go's own predicate must accept this error. errors.Is walks the chain and
         // consults Errno.Is, which maps ENOTSUP/ENOSYS/EOPNOTSUPP onto errors.ErrUnsupported.
+        // err.Error(), not err: interpolating the error INTERFACE renders the box address
+        // ("Got: 0x716590d03af0" in this witness's own first red run), which tells a reader
+        // nothing about why the gate failed.
         Assert.IsTrue(errors.Is(err, errors.ErrUnsupported),
             "the seam's refusal must satisfy errors.Is(err, errors.ErrUnsupported) — that is what "
-          + $"testenv.SyscallIsNotSupported tests, and eight syscall-suite skips ride on it. Got: {err}");
+          + $"testenv.SyscallIsNotSupported tests, and eight syscall-suite skips ride on it. "
+          + $"Got: {err.Error()}");
 
         // The design's other half: the wall stays NAMED. A kind without a name would trade one
         // regression for another.
