@@ -530,6 +530,28 @@ ONE stdlib in a build; there is now only one on disk.
   (measured 2026-08-15). And never census with `grep -P` on this box: it dies with "-P supports only
   unibyte and UTF-8 locales", so with stderr discarded it returns 0 matches and reads as "no sites"
   — a false-empty census that nearly got banked. Use ripgrep (`rg`)/the Grep tool.
+  **⚠ The false-empty family has a deeper member: instrumentation that never compiled in (measured
+  2026-08-28, the defer-multivalue-spread lane).** A type-aware census was built by patching an
+  `fmt.Fprintf(os.Stderr, …)` marker into a converter helper via a heredoc python script, running
+  `-stdlib` into a seeded temp root, and counting marker lines: ZERO hits across the whole stdlib,
+  and the run looked entirely healthy — the stderr carried the normal spread of converter WARNINGs,
+  proving the conversion had really traversed the corpus. The zero was an artifact. The converter's
+  `.go` sources are CRLF in the working tree; the script's anchors were LF
+  (`"\treturn tuple.Len()\n}"`), so they matched zero times and python's `assert` fired — but the
+  script ran under `set -u` rather than `set -e`, so execution CONTINUED and built an
+  UNINSTRUMENTED binary. Every downstream step then behaved normally, and the census counted a
+  marker that was never compiled in. Two cheap tells were sitting there: the "instrumented" binary
+  was BYTE-IDENTICAL IN SIZE to the uninstrumented one, and `grep -c SPREADCENSUS <binary>`
+  returned 0 — the marker string was not in the executable at all. The durable rules: patch
+  converter sources with the Edit tool (it matches the file's actual bytes), never an LF-anchored
+  script — a script that must exist reads/writes with `newline=''` and anchors on CRLF, or
+  normalizes first; `set -euo pipefail`, never bare `set -u`, in any instrument whose later steps
+  assume an earlier edit succeeded; and ALWAYS positive-control a census before believing a zero —
+  run the instrumented binary over a target KNOWN to contain the shape and confirm it fires with
+  the expected count (the lane's control fired 12/12 on the behavioral guard's spread rows and
+  stayed silent on its two controls, which is what made the real — also zero — production-corpus
+  reading trustworthy). Same family as the `grep -P` and bare-`rg` notes: an instrument that
+  cannot fail reports success over a hole.
   **Scope DELETES by lane prefix too, not just writes** (measured 2026-08-16: a lane's cleanup swept
   the whole shared scratchpad and unrecoverably deleted sibling lanes' artifacts). A cleanup command
   must name your own `<lane>-*` files; `Remove-Item <scratchpad>\*` is a cross-lane destructive act.
