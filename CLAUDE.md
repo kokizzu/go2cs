@@ -1203,6 +1203,15 @@ Each rule below was paid for.
   markers (`$shadowed`) is left undefined at its use site if you take one side of a marked hunk. Neither
   is visible from the conflict markers. **Resolving the marked hunks is not resolving the merge: read
   the merged file whole, and run the thing.**
+- **⚠ An INSERT adjacent to a line the other side edited folds into ONE hunk, and BOTH single-side
+  resolutions silently lose a line** (measured 2026-08-29: master inserted the `go/build` roster row
+  directly above `go/build/constraint`, which the branch had annotated — `--ours` dropped the new
+  row entirely, `--theirs` dropped the annotation; nothing in the markers says a line vanishes, so
+  it reads like an ordinary either/or). Resolve by keeping BOTH sides' content, then **assert the
+  structural invariant** (row/line count before == after + known inserts) instead of eyeballing it —
+  and validate any re-derived aggregate by **positive control against a known-good blob first**: the
+  same derivation must reproduce the other side's banked value exactly before its new value is
+  believed. A derivation that cannot reproduce a known-good value is not a derivation.
 - **⚠ Its MIRROR is the SILENT SUBTRACTION, and it is worse: one lane REMOVES a definition because
   another branch supplies the replacement, and the merge drops the supplier.** Both diffs are pure
   additions/removals, git merges them without a conflict or a warning, and the result compiles
