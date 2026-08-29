@@ -35,7 +35,7 @@ internal static void zeroTB(ref tb buf) {
 internal static void fill(this ж<pallocBits> Ꮡb) {
     ref var b = ref Ꮡb.DerefOrNull();
 
-    for (nint i = 0; i < len(b.Value); i++) {
+    for (nint i = 0; i < 4; i++) {
         b.Value[i] = (uint64)(i * 10 + 1);
     }
 }
@@ -81,7 +81,7 @@ internal static void Main() {
     var h = new holder(trace: Ꮡc);
     h.trace.Value[0] = 0x10;
     h.trace.Value[1] = h.trace.Value[0] + 2;
-    fmt.Println(len(h.trace.Value), h.trace.Value[0], h.trace.Value[1], c[0]);
+    fmt.Println(4, h.trace.Value[0], h.trace.Value[1], c[0]);
     var dst = new slice<uintptr>(2);
     nint nc = copy(dst, (~h.trace).Value[..2]);
     fmt.Println(nc, dst[1]);

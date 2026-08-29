@@ -1896,16 +1896,33 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	// call an ordinary one, so the whole group is gated on the identifier actually resolving to the
 	// universe built-in (see identIsUniverseBuiltin).
 	if ident, ok := callExpr.Fun.(*ast.Ident); ok && v.identIsUniverseBuiltin(ident) {
-		// Go auto-derefs `len(p)`/`cap(p)` for a pointer-to-array; a ж<named-array-wrapper>
-		// argument has no golib len/cap overload (the wrapper itself implements IArray, its box
-		// does not — CS1503, runtime proc.go's `len(mp.cgoCallers)` where cgoCallers is
-		// `*cgoCallers`). Emit the deref explicitly: `len(mp.cgoCallers.Value)`.
+		// `len(p)`/`cap(p)` on a pointer-to-array. A ж<array> argument has no golib overload (the
+		// wrapper implements IArray, its BOX does not — CS1503, runtime proc.go's
+		// `len(mp.cgoCallers)` where cgoCallers is `*cgoCallers`).
+		//
+		// Go computes both from the TYPE: each is N, the expression is a CONSTANT, and the operand
+		// is not evaluated. Emit the constant. The deref form emitted here previously
+		// (`len(p.Value)`) is wrong for a NIL pointer — Go answers N, a deref throws — and reflect's
+		// TestValue_Cap discriminates deliberately: it checks `cap(a)` on `a := &[3]int{1,2,3}`,
+		// then sets `a = nil` and checks `cap(a)` AGAIN, still expecting 3. A fix that derefs passes
+		// the first assertion and dies on the second.
+		//
+		// The pointee no longer has to be NAMED. It was, so an UNNAMED `*[3]int` fell through to
+		// golib's `cap(IArray)` holding a `ж<array<nint>>` — and golib cannot fix that from its
+		// side: `array<T>` keeps its length in the VALUE (C# generics cannot encode N), so a nil box
+		// has no N to read. Only the converter knows N, from the static type.
+		//
+		// Go DOES still evaluate operand function calls and channel receives (the spec's
+		// "not evaluated" carries that carve-out), so those keep the evaluating form rather than
+		// having their side effect silently dropped.
 		if (ident.Name == "len" || ident.Name == "cap") && len(callExpr.Args) == 1 {
 			if ptr, ok := v.info.TypeOf(callExpr.Args[0]).(*types.Pointer); ok {
-				if named, ok := types.Unalias(ptr.Elem()).(*types.Named); ok {
-					if _, isArray := named.Underlying().(*types.Array); isArray {
-						return fmt.Sprintf("%s(%s.Value)", ident.Name, v.convExpr(callExpr.Args[0], nil))
+				if arr, isArray := ptr.Elem().Underlying().(*types.Array); isArray {
+					if !v.exprHasCallOrReceive(callExpr.Args[0]) {
+						return fmt.Sprintf("%d", arr.Len())
 					}
+
+					return fmt.Sprintf("%s(%s.Value)", ident.Name, v.convExpr(callExpr.Args[0], nil))
 				}
 			}
 		}
@@ -5573,4 +5590,44 @@ func typeIsPrimitiveAlias(t types.Type) bool {
 	_, primitive := alias.Rhs().Underlying().(*types.Basic)
 
 	return primitive
+}
+
+// exprHasCallOrReceive reports whether expr contains a function call or a channel receive.
+//
+// Go's `len`/`cap` of a pointer-to-array is a constant computed from the TYPE and does NOT evaluate
+// its operand — except that function calls and channel receives inside the operand ARE evaluated
+// (spec, "Length and capacity"). Folding those away would drop a side effect, so the caller keeps
+// the evaluating emission for them and folds only the side-effect-free operands, which is every
+// instance the corpus and reflect's tests actually contain.
+func (v *Visitor) exprHasCallOrReceive(expr ast.Expr) bool {
+	found := false
+
+	ast.Inspect(expr, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		switch node := n.(type) {
+		case *ast.CallExpr:
+			// A CONVERSION is not a call — `len((*[4]byte)(p))` evaluates nothing. Only a call whose
+			// callee is a value (function or builtin) counts.
+			if ident, ok := node.Fun.(*ast.Ident); ok {
+				if _, isType := v.info.ObjectOf(ident).(*types.TypeName); isType {
+					return true
+				}
+			}
+
+			found = true
+			return false
+		case *ast.UnaryExpr:
+			if node.Op == token.ARROW {
+				found = true
+				return false
+			}
+		}
+
+		return true
+	})
+
+	return found
 }

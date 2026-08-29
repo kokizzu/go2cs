@@ -289,6 +289,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckCrossPkgLib() => CheckTarget("CrossPkgLib");
 
     [TestMethod]
+    public void CheckCrossPkgLiteralNestedField() => CheckTarget("CrossPkgLiteralNestedField");
+
+    [TestMethod]
     public void CheckCrossPkgSameNameAlias() => CheckTarget("CrossPkgSameNameAlias");
 
     [TestMethod]

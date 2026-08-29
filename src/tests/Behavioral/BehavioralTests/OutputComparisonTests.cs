@@ -269,6 +269,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckCrossPackageArrayZeroValue() => CheckTarget("CrossPackageArrayZeroValue");
 
     [TestMethod]
+    public void CheckCrossPkgLiteralNestedField() => CheckTarget("CrossPkgLiteralNestedField");
+
+    [TestMethod]
     public void CheckCrossPkgUser() => CheckTarget("CrossPkgUser");
 
     [TestMethod]

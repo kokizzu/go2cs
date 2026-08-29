@@ -13,10 +13,9 @@ internal static class Go2CsTestHost
             "pclntab_test.go",
             "symtab.go",
             "symtab_test.go",
-            "testdata/main.go",
-            "testdata/pclinetest.h",
-            "testdata/pclinetest.s",
-            "testdata/pcln115.gz",
+        }, new string[]
+        {
+            "testdata",
         }, new string[]
         {
             "testdata",

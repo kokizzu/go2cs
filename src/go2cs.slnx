@@ -348,6 +348,8 @@
     <Project Path="tests/Behavioral/Constraints/Constraints.csproj" />
     <Project Path="tests/Behavioral/CrossPackageArrayZeroValue/CrossPackageArrayZeroValue.csproj" />
     <Project Path="tests/Behavioral/CrossPackageArrayZeroValue/bufpkg/CrossPackageArrayZeroValue.bufpkg.csproj" />
+    <Project Path="tests/Behavioral/CrossPkgLiteralNestedField/CrossPkgLiteralNestedField.csproj" />
+    <Project Path="tests/Behavioral/CrossPkgLiteralNestedField/addrlib/CrossPkgLiteralNestedField.addrlib.csproj" />
     <Project Path="tests/Behavioral/CrossPkgBox/CrossPkgBox.csproj" />
     <Project Path="tests/Behavioral/CrossPkgFuncLib/CrossPkgFuncLib.csproj" />
     <Project Path="tests/Behavioral/CrossPkgLib/CrossPkgLib.csproj" />
