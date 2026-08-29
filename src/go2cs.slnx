@@ -432,6 +432,7 @@
     <Project Path="tests/Behavioral/FormatTypeAdapters/FormatTypeAdapters.csproj" />
     <Project Path="tests/Behavioral/FormatTypeAdapters/typelib/FormatTypeAdapters.typelib.csproj" />
     <Project Path="tests/Behavioral/FuncFieldNestedTupleParam/FuncFieldNestedTupleParam.csproj" />
+    <Project Path="tests/Behavioral/FuncForPCName/FuncForPCName.csproj" />
     <Project Path="tests/Behavioral/FuncTypeNilConversion/FuncTypeNilConversion.csproj" />
     <Project Path="tests/Behavioral/ForeignPairNumericConv/ForeignPairNumericConv.csproj" />
     <Project Path="tests/Behavioral/ForeignPairNumericConv/convlib/ForeignPairNumericConv.convlib.csproj" />

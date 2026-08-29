@@ -529,6 +529,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckFuncFieldUnexportedType() => CheckTarget("FuncFieldUnexportedType");
 
     [TestMethod]
+    public void CheckFuncForPCName() => CheckTarget("FuncForPCName");
+
+    [TestMethod]
     public void CheckFuncLitArgCapture() => CheckTarget("FuncLitArgCapture");
 
     [TestMethod]
