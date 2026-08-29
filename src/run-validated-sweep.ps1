@@ -172,6 +172,16 @@ foreach ($row in $rows) {
         -NotePropertyValue (Get-RosterRowExpectation -Row $row -Goos $targetGoos)
 }
 
+# A row annotated `<goos>: n/a` cannot exist on this OS (ruled 2026-08-29, the registry row):
+# never pending, never validated -- reported by name and removed before any arithmetic, so the
+# header sums and the exit code describe only what can be measured. Windows is untouched by
+# construction: the n/a annotation never answers for the columns.
+$notApplicableRows = @($rows | Where-Object { -not $_.Effective.Applicable })
+foreach ($naRow in $notApplicableRows) {
+    Write-Host ("  N/A   {0,-34} {1}: n/a -- platform-exclusive row; no expectation exists here, now or ever" -f $naRow.Package, $targetGoos) -ForegroundColor DarkGray
+}
+$rows = @($rows | Where-Object { $_.Effective.Applicable })
+
 $expectedTotal = ($rows | ForEach-Object { $_.Effective.Expected } | Measure-Object -Sum).Sum
 Write-Host "validated sweep: $($rows.Count) package(s), $expectedTotal expected verdicts, timeout $TestTimeout" -ForegroundColor Cyan
 
