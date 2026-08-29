@@ -227,21 +227,29 @@ Assert-Equal 'linux: a moved disclosure is never absorbed as capability-absent e
 # three-verdict block for a small, readable fixture; the real crypto/tls block is 3,243.
 $block = [PSCustomObject]@{ Test = 'TestFakeSuite'; BlockSize = 3 }
 $fullBankedNames = @('TestOther', 'TestFakeSuite', 'TestFakeSuite/case1', 'TestFakeSuite/case2')
+# Fixture verdict maps are built in the shape ConvertFrom-ComparisonRecord actually produces --
+# ordinal dictionaries, not PSCustomObjects (a PSObject cannot even hold the case-only verdict-name
+# pairs a legal record may carry; see the reader's own fixture below).
+function New-VerdictMap([hashtable] $Verdicts) {
+    $map = New-Object 'System.Collections.Generic.Dictionary[string,string]' ([System.StringComparer]::Ordinal)
+    foreach ($name in $Verdicts.Keys) { $map.Add([string]$name, [string]$Verdicts[$name]) }
+    return , $map
+}
 $fullComparison = [PSCustomObject]@{
-    go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass'; 'TestFakeSuite/case1' = 'pass'; 'TestFakeSuite/case2' = 'skip' }
-    csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass'; 'TestFakeSuite/case1' = 'pass'; 'TestFakeSuite/case2' = 'skip' }
+    go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass'; 'TestFakeSuite/case1' = 'pass'; 'TestFakeSuite/case2' = 'skip' }
+    csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass'; 'TestFakeSuite/case1' = 'pass'; 'TestFakeSuite/case2' = 'skip' }
 }
 $absentComparison = [PSCustomObject]@{
-    go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
-    csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
+    go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip' }
+    csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip' }
 }
 # The shape a REAL capability-less host produces, measured 2026-08-28: the block root FAILS on both
 # runtimes (Go's own oracle t.Fatal's -- crypto/tls's TestBogoSuite has no capability-absent skip
 # branch at all), and the converter accounts a host-conditionally annotated root as DISCLOSED in
 # exactly that shape, so the live disclosed count is the banked one PLUS the root.
 $absentFailComparison = [PSCustomObject]@{
-    go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
-    csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+    go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+    csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
     disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
 }
 
@@ -251,19 +259,19 @@ Assert-Equal 'capability-absent: the MEASURED collapse -- agreeing FAIL with the
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $absentFailComparison -BankedNames $fullBankedNames).Accepted
 Assert-Equal 'capability-absent: an agreeing FAIL whose extra disclosure is some OTHER row is refused' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
         disclosed = @('TestSomethingElse (alloc-profile): unrelated')
     }) -BankedNames $fullBankedNames).Accepted
 Assert-Equal 'capability-absent: an agreeing FAIL that discloses nothing at all is refused' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
     }) -BankedNames $fullBankedNames).Accepted
 Assert-Equal 'capability-absent: an agreeing SKIP that nonetheless discloses the root is refused' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip' }
         disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
     }) -BankedNames $fullBankedNames).Accepted
 # THE control that keeps a capable-but-slow host red. Identical shortfall, identical 1 matched,
@@ -272,8 +280,8 @@ Assert-Equal 'capability-absent: an agreeing SKIP that nonetheless discloses the
 # measured divergence into a green.
 Assert-Equal 'capability-absent: Go pass / C# fail (capability PRESENT, converted side missed it) is refused' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
         disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
     }) -BankedNames $fullBankedNames).Accepted
 # The control the i7-5820K's real crypto/tls run produced on 2026-08-28, and the one every count
@@ -282,16 +290,16 @@ Assert-Equal 'capability-absent: Go pass / C# fail (capability PRESENT, converte
 # inside a matrix it fully fanned out. The withdrawn rows are the only evidence that says so.
 Assert-Equal 'capability-absent: an agreeing FAIL whose Go side DID fan out (rows withdrawn) is refused' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
         disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
         withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
     }) -BankedNames $fullBankedNames).Accepted
 # ...and a withdrawal that belongs to some OTHER disclosed root says nothing about this block.
 Assert-Equal 'capability-absent: a withdrawal outside the block does not disqualify the collapse' $true `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
         disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
         withdrawn = @('TestSomethingElse/case1')
     }) -BankedNames $fullBankedNames).Accepted
@@ -301,28 +309,61 @@ Assert-Equal 'capability-absent: a surplus (the surplus mechanism''s job, not th
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 5 -Comparison $fullComparison -BankedNames $fullBankedNames).Accepted
 Assert-Equal 'capability-absent: a subtest surviving alongside the collapse is refused, not absorbed' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip'; 'TestFakeSuite/case1' = 'skip' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip'; 'TestFakeSuite/case1' = 'skip' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip'; 'TestFakeSuite/case1' = 'skip' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip'; 'TestFakeSuite/case1' = 'skip' }
     }) -BankedNames $fullBankedNames).Accepted
 Assert-Equal 'capability-absent: the top-level test agreeing on PASS instead of SKIP is refused' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
     }) -BankedNames $fullBankedNames).Accepted
 # A disclosed count that moved for an unrelated reason. The banked shape here is 4 matched + 1
 # disclosed (TestPinned), the collapse is the clean skip -- so the expected live count is that same
 # 1, and a second disclosure means something OTHER than the capability moved.
 Assert-Equal 'capability-absent: a moved disclosed count is refused, not a capability shape' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 1 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestPinned = 'pass'; TestFakeSuite = 'skip' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestPinned = 'fail'; TestFakeSuite = 'skip' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestPinned = 'pass'; TestFakeSuite = 'skip' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestPinned = 'fail'; TestFakeSuite = 'skip' }
         disclosed = @('TestPinned (alloc-profile): x', 'TestOther (alloc-profile): y')
     }) -BankedNames @('TestOther', 'TestPinned', 'TestFakeSuite', 'TestFakeSuite/case1', 'TestFakeSuite/case2')).Accepted
 Assert-Equal 'capability-absent: an unaccounted extra live verdict is refused' $false `
     (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
-        go = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
-        csharp = [PSCustomObject]@{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
     }) -BankedNames $fullBankedNames).Accepted
+
+# ---- 1b3. the comparison-record reader's contract ------------------------------------------------
+# The trap this pins (measured 2026-08-29, G's net/http pre-staging): a Go suite may legally hold
+# verdict names differing ONLY by case (net/http's .../GZIP and .../gzip pairs), which 5.1's
+# ConvertFrom-Json throws on and a PSObject cannot represent at all. The reader must carry the pair
+# DISTINCTLY -- two keys, two different values -- because a folding parser can at best keep one, so
+# distinct values are the fold-detector, not just the count.
+$readerFixturePath = Join-Path ([System.IO.Path]::GetTempPath()) ('go2cs-comparison-fixture-' + [guid]::NewGuid().ToString('n') + '.json')
+try {
+    [System.IO.File]::WriteAllText($readerFixturePath,
+        '{"package":"fake","go":{"TestCase/GZIP":"pass","TestCase/gzip":"fail"},"csharp":{"TestCase/GZIP":"pass"},"withdrawn":["TestW"],"disclosed":["TestD (alloc-profile): x"]}',
+        (New-Object System.Text.UTF8Encoding($false)))
+    $readerRecord = ConvertFrom-ComparisonRecord -Path $readerFixturePath
+    Assert-Equal 'reader: case-only verdict-name pair carried as TWO keys' 2 $readerRecord.go.Count
+    Assert-Equal 'reader: upper-cased member keeps its own verdict' 'pass' $readerRecord.go['TestCase/GZIP']
+    Assert-Equal 'reader: lower-cased member keeps its own verdict' 'fail' $readerRecord.go['TestCase/gzip']
+    Assert-Equal 'reader: lookup is case-sensitive (absent case-variant is absent)' $false $readerRecord.csharp.ContainsKey('TestCase/gzip')
+    Assert-Equal 'reader: withdrawn survives as an array' 'TestW' (@($readerRecord.withdrawn) -join ',')
+    Assert-Equal 'reader: disclosed survives as an array' 1 (@($readerRecord.disclosed).Count)
+}
+finally {
+    if (Test-Path $readerFixturePath) { Remove-Item $readerFixturePath -Force }
+}
+$readerAbsentPath = Join-Path ([System.IO.Path]::GetTempPath()) ('go2cs-comparison-fixture-' + [guid]::NewGuid().ToString('n') + '.json')
+try {
+    [System.IO.File]::WriteAllText($readerAbsentPath, '{"package":"fake"}', (New-Object System.Text.UTF8Encoding($false)))
+    $readerAbsent = ConvertFrom-ComparisonRecord -Path $readerAbsentPath
+    Assert-Equal 'reader: an absent go map is null (the delta rules'' no-maps rejection still fires)' $true ($null -eq $readerAbsent.go)
+    Assert-Equal 'reader: absent withdrawn/disclosed are null' $true (($null -eq $readerAbsent.withdrawn) -and ($null -eq $readerAbsent.disclosed))
+}
+finally {
+    if (Test-Path $readerAbsentPath) { Remove-Item $readerAbsentPath -Force }
+}
 
 # ---- 1c. the exclusion-ledger parser's contract --------------------------------------------------
 # The ledger row's first cell is a PLAIN code span and the roster row's is a LINKED one -- the shape

@@ -357,9 +357,9 @@ function Test-CapabilityAbsentDelta {
         return New-CapabilityAbsentResult $false "the committed proof page names $($blockNames.Count) verdicts under $($Block.Test), not the registered $($Block.BlockSize) -- re-derive the block size before trusting this row"
     }
 
-    $goProperties = $Comparison.go.PSObject.Properties
-    $csProperties = $Comparison.csharp.PSObject.Properties
-    $liveNames = @($goProperties | ForEach-Object { $_.Name })
+    $goMap = $Comparison.go
+    $csMap = $Comparison.csharp
+    $liveNames = @($goMap.Keys)
 
     # Every banked name OUTSIDE the block must still be present live -- the mechanism absorbs the
     # named block collapsing, nothing else.
@@ -380,9 +380,8 @@ function Test-CapabilityAbsentDelta {
         return New-CapabilityAbsentResult $false "$($Block.Test) itself is missing from this run -- an absent capability must still report its one collapsed verdict"
     }
 
-    $goVerdict = $goProperties[$Block.Test].Value
-    $csProperty = $csProperties[$Block.Test]
-    $csVerdict = if ($null -eq $csProperty) { 'absent' } else { $csProperty.Value }
+    $goVerdict = $goMap[$Block.Test]
+    $csVerdict = if (-not $csMap.ContainsKey($Block.Test)) { 'absent' } else { $csMap[$Block.Test] }
     if ($goVerdict -ne $csVerdict) {
         return New-CapabilityAbsentResult $false "$($Block.Test): go '$goVerdict' vs C# '$csVerdict' -- an absent capability collapses IDENTICALLY on both runtimes; a disagreement here is a real divergence on a host that has the capability, not a missing one"
     }
@@ -442,4 +441,48 @@ function Test-CapabilityAbsentDelta {
     }
 
     return New-CapabilityAbsentResult $true $null
+}
+
+# ---- comparison-record reader --------------------------------------------------------------------
+# Reads go2cs_test_comparison.json into the shape the two delta rules above consume: `go`/`csharp`
+# as CASE-SENSITIVE (ordinal) dictionaries, `withdrawn`/`disclosed` as arrays or $null.
+#
+# ⚠ Why not ConvertFrom-Json (measured 2026-08-29, G's net/http pre-staging): a Go test suite can
+# legitimately hold verdict names differing ONLY by case -- net/http's
+# TestTransportContentEncodingCaseInsensitive spawns .../GZIP and .../gzip pairs, which is exactly
+# what a test with that name would do. Windows PowerShell 5.1's JSON->PSObject path folds member
+# names case-insensitively and THROWS on such input ("contains the duplicated keys"), and a
+# PSObject cannot hold the pair at all -- so both the old parser and the old property-bag shape are
+# structurally unable to carry a legal record. The converter's own maps are Go map[string]string,
+# case-sensitive by construction (all eleven case-folding sites in testConversion.go are on paths
+# and env-var names, none on a test name), so the record is sound; only the PowerShell reader was
+# not. JavaScriptSerializer deserializes into case-sensitive dictionaries; the explicit ordinal
+# re-copy below makes that deliberate rather than inherited, and a true duplicate key (the same
+# exact name twice) still throws loudly on Add.
+function ConvertFrom-ComparisonRecord {
+    param([string] $Path)
+
+    if (-not $script:comparisonSerializer) {
+        Add-Type -AssemblyName System.Web.Extensions
+        $script:comparisonSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+        $script:comparisonSerializer.MaxJsonLength = [int]::MaxValue
+    }
+
+    $raw = $script:comparisonSerializer.DeserializeObject([System.IO.File]::ReadAllText($Path))
+    if ($null -eq $raw) { throw "comparison record at $Path deserialized to nothing" }
+
+    $toOrdinalMap = {
+        param($member)
+        if (-not $raw.ContainsKey($member)) { return $null }
+        $map = New-Object 'System.Collections.Generic.Dictionary[string,string]' ([System.StringComparer]::Ordinal)
+        foreach ($entry in $raw[$member].GetEnumerator()) { $map.Add([string]$entry.Key, [string]$entry.Value) }
+        return , $map
+    }
+
+    return [PSCustomObject]@{
+        go        = & $toOrdinalMap 'go'
+        csharp    = & $toOrdinalMap 'csharp'
+        withdrawn = if ($raw.ContainsKey('withdrawn')) { @($raw['withdrawn']) } else { $null }
+        disclosed = if ($raw.ContainsKey('disclosed')) { @($raw['disclosed']) } else { $null }
+    }
 }
