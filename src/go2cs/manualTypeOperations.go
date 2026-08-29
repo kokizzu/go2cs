@@ -1253,6 +1253,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// remainder. Failing BY NAME converts a whole-suite process death into ONE loud row.
 	"internal/syscall/windows": {
 		"NetShareAdd": goosWindows,
+		// The privilege-adjustment member of the struct-passing class, and the one whose corruption
+		// BLAMES THE HOST. Its generated body passes advapi32 the address of a managed
+		// TOKEN_PRIVILEGES: native wants 16 bytes ending in one INLINE LUID_AND_ATTRIBUTES, and the
+		// converted record is 24 whose privilege slot holds a golib `array<>` T[] REFERENCE, so the
+		// kernel reads the two halves of a GC-heap address as the LUID and answers
+		// ERROR_NOT_ALL_ASSIGNED. os's TestDirectorySymbolicLink then SKIPS with a message naming
+		// SeCreateSymbolicLinkPrivilege -- on a box where Go's own suite grants it. Measurement
+		// separated this from the rival root (a detached `&tp.Privileges[0].Luid`) by reading both
+		// sides of the boundary: the MANAGED LUID is correct, only the native image is not. The
+		// hand-own is internal/syscall/windows/windows/zsyscall_windows_privilege_impl.cs.
+		"adjustTokenPrivileges": goosWindows,
 		// The UDP SEND half of the datagram seam. Their generated bodies pass the kernel the address
 		// `sockaddr()` returns -- a pointer into a MANAGED box -- which is the struct-passing class;
 		// internal/syscall/windows/windows/net_windows_impl.cs writes a native stack image through the

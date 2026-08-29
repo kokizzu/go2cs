@@ -2900,6 +2900,34 @@ var unsupportedRuntimeCapabilities = map[string]string{
 	// because the code is a TEST helper, which the converter regenerates by definition.
 	"os_test.createMountPoint": "raw-metal struct overlay on managed bytes",
 
+	// createSymbolicLink is createMountPoint's EXACT sibling, twenty lines down the same file and the
+	// same shape: `(*windows.SymbolicLinkReparseBuffer)(unsafe.Pointer(&byteblob[0]))`, four uint16
+	// fields written through the overlay, then `&buf.PathBuffer[0]` walked as `[2048]uint16` over a
+	// `[1]uint16` inline tail. Identical class, identical impossibility, identical remedy-shaped hole
+	// (regenerated TEST code, so no hand-own can exist), so listing it is CONSISTENCY with the entry
+	// above rather than a new precedent — TestDirectoryJunction is already gated for exactly this.
+	//
+	// It surfaced only on 2026-08-29, and the reason is worth keeping: TestDirectorySymbolicLink never
+	// REACHED it. The test's privilege preamble was failing first, because adjustTokenPrivileges handed
+	// advapi32 a managed TOKEN_PRIVILEGES whose privilege slot is an `array<>` T[] reference, so the
+	// kernel read a GC-heap address as the LUID and answered ERROR_NOT_ALL_ASSIGNED and the test SKIPPED
+	// blaming the host. Repairing that (internal/syscall/windows/windows/zsyscall_windows_privilege_impl.cs)
+	// let the test run on into this wall. One defect standing in front of another is why a skip whose
+	// message names a host capability is worth measuring rather than believing.
+	//
+	// Registry doctrine's cross-package scan, run before adding this: `createSymbolicLink` exists at
+	// exactly ONE site in all of GOROOT (os/os_windows_test.go:346) and is called only from lines 418
+	// and 427, both inside TestDirectorySymbolicLink; the reparse-overlay shape itself appears in
+	// exactly TWO GOROOT test sites, this one and the createMountPoint above. So this entry withdraws
+	// exactly ONE row and reaches no other package. The two PRODUCTION consumers of
+	// SymbolicLinkReparseBuffer (internal/syscall/windows/reparse_windows.go, os/file_windows.go) are
+	// not test code and a test-declaration key cannot reach them.
+	//
+	// ⚠ NOT the durable answer. The real remedy is the byte-buffer-reinterpret fork at the CONVERTER
+	// level — the same arc that owes NetShareAdd its repair — and this gate must retire when that
+	// lands. The board entry stays OPEN.
+	"os_test.createSymbolicLink": "raw-metal struct overlay on managed bytes",
+
 	// The one entry that names a TEST rather than a symbol, because the impossibility is a property of
 	// the host: the test copies os.Executable() — ONE file — into a temp directory 100 times and runs
 	// each copy. os.Executable() is correct (it returns the apphost, os.tests.exe), but an apphost is a
