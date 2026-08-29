@@ -618,7 +618,18 @@ func (v *Visitor) convBasicLit(basicLit *ast.BasicLit, context BasicLitContext) 
 			if basic, ok := tv.Type.Underlying().(*types.Basic); ok {
 				if basic.Info()&types.IsInteger != 0 && tv.Value != nil {
 					intForm = tv.Value.ExactString()
-				} else if basic.Kind() == types.Float32 {
+				} else if basic.Kind() == types.Float32 || basic.Kind() == types.Complex64 {
+					// Complex64 for the same reason the propagated arm below takes it: a complex64
+					// is TWO float32 components, so its float operand is float32 and wants `F`.
+					// Reading the type's TOTAL width instead emits `D`, and golib's
+					// double→complex64 conversion is EXPLICIT (float→complex64 is implicit), so a
+					// bare literal does not bind — CS0266 on reflect's `[]complex64{1.414}`, while
+					// `[]complex128{1.414}` on the line after it compiles precisely because ITS
+					// components are float64.
+					//
+					// The untyped arm below already applied this rule; a composite-literal ELEMENT
+					// never reaches it, because go/types assigns element types DIRECTLY rather than
+					// leaving them untyped for markUntypedConstContexts to propagate.
 					isFloat32 = true
 				} else if basic.Info()&types.IsUntyped != 0 {
 					if constContext := v.untypedConstContext(basicLit); constContext != nil {
