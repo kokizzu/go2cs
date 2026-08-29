@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-3%2F3_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.1/internal.buildcfg.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/internal/buildcfg@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/internal/buildcfg) [![Source](https://img.shields.io/badge/Source-@1.23.12.1-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.1/src/core/internal/buildcfg)
+[![Tests](https://img.shields.io/badge/Tests-3%2F3_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.2/internal.buildcfg.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/internal/buildcfg@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/internal/buildcfg) [![Source](https://img.shields.io/badge/Source-@1.23.12.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.2/src/core/internal/buildcfg)
 
 Package buildcfg provides access to the build configuration described by the current environment. It is for use by build tools such as cmd/go or cmd/compile and for setting up go/build's Default context.
 

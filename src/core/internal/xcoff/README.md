@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-3%2F3_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.1/internal.xcoff.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/internal/xcoff@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/internal/xcoff) [![Source](https://img.shields.io/badge/Source-@1.23.12.1-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.1/src/core/internal/xcoff)
+[![Tests](https://img.shields.io/badge/Tests-3%2F3_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.2/internal.xcoff.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/internal/xcoff@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/internal/xcoff) [![Source](https://img.shields.io/badge/Source-@1.23.12.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.2/src/core/internal/xcoff)
 
 Package xcoff implements access to XCOFF (Extended Common Object File Format) files.
 

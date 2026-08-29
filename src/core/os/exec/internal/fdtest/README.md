@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-1%2F1_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.1/os.exec.internal.fdtest.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/os/exec/internal/fdtest@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/os/exec/internal/fdtest) [![Source](https://img.shields.io/badge/Source-@1.23.12.1-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.1/src/core/os/exec/internal/fdtest)
+[![Tests](https://img.shields.io/badge/Tests-1%2F1_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.2/os.exec.internal.fdtest.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/os/exec/internal/fdtest@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/os/exec/internal/fdtest) [![Source](https://img.shields.io/badge/Source-@1.23.12.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.2/src/core/os/exec/internal/fdtest)
 
 ---
 

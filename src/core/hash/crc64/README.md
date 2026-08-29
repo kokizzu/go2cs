@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-5%2F5_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.1/hash.crc64.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/hash/crc64@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/hash/crc64) [![Source](https://img.shields.io/badge/Source-@1.23.12.1-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.1/src/core/hash/crc64)
+[![Tests](https://img.shields.io/badge/Tests-5%2F5_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.2/hash.crc64.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/hash/crc64@go1.23.12)\
+[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/hash/crc64) [![Source](https://img.shields.io/badge/Source-@1.23.12.2-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.2/src/core/hash/crc64)
 
 Package crc64 implements the 64-bit cyclic redundancy check, or CRC-64, checksum. See [https://en.wikipedia.org/wiki/Cyclic\_redundancy\_check](https://en.wikipedia.org/wiki/Cyclic_redundancy_check) for information.
 
