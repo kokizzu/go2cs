@@ -687,6 +687,7 @@
     <Project Path="tests/Behavioral/ParallelAssignmentHazard/ParallelAssignmentHazard.csproj" />
     <Project Path="tests/Behavioral/ParenIifeNilFuncConv/ParenIifeNilFuncConv.csproj" />
     <Project Path="tests/Behavioral/ParenthesizedConcatContext/ParenthesizedConcatContext.csproj" />
+    <Project Path="tests/Behavioral/ParenTypeConversionCall/ParenTypeConversionCall.csproj" />
     <Project Path="tests/Behavioral/PartialRedeclaration/PartialRedeclaration.csproj" />
     <Project Path="tests/Behavioral/PkgLevelFuncLitLocals/PkgLevelFuncLitLocals.csproj" />
     <Project Path="tests/Behavioral/PipeCloseUnblocksRead/PipeCloseUnblocksRead.csproj" />

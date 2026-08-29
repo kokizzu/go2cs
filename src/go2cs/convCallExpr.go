@@ -2754,7 +2754,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		calleeIdentContext := DefaultIdentContext()
 		calleeIdentContext.suppressGenericTypeArgs = true
 
-		funcName = v.convExpr(callExpr.Fun, []ExprContext{lambdaContext, calleeIdentContext})
+		// A parenthesized TYPE-NAME callee renders UNPARENTHESIZED, so that
+		// `(unsafe.Pointer)(x)` and `unsafe.Pointer(x)` — the same Go expression, twice spelled
+		// — reach the same emission. Rendering the ParenExpr gave `funcName` a parenthesized
+		// form that the `new @unsafe.Pointer(…)` peephole below cannot match (it compares
+		// `funcName` against the bare name), leaving the raw-cast route and CS0030.
+		//
+		// Narrowed to an Ident/SelectorExpr payload ON PURPOSE — exactly the two shapes
+		// isConstructorCall accepts, so the two halves of this fix stay in step. A parenthesized
+		// STAR type `(*int)(p)` must keep its parens: convParenExpr owns the Pointer → ж<T>
+		// uintptr hop for that shape, and unwrapping it loses the hop (measured — it turned two
+		// working round-trip reads into CS1503 "cannot convert from Pointer to in ж<nint>").
+		callee := callExpr.Fun
+
+		if paren, isParen := callee.(*ast.ParenExpr); isParen {
+			if tv, isTyped := v.info.Types[callee]; isTyped && tv.IsType() {
+				switch ast.Unparen(paren.X).(type) {
+				case *ast.Ident, *ast.SelectorExpr:
+					callee = ast.Unparen(paren.X)
+				}
+			}
+		}
+
+		funcName = v.convExpr(callee, []ExprContext{lambdaContext, calleeIdentContext})
 	}
 
 	// A VARIADIC func-literal callee renders as `(params ꓸꓸꓸ@string dirsʗp) => …`, which C# can
@@ -4521,10 +4543,18 @@ func (v *Visitor) needsParentheses(expr ast.Expr) bool {
 }
 
 func (v *Visitor) isConstructorCall(callExpr *ast.CallExpr) bool {
-	// Get the object associated with the function being called
+	// Get the object associated with the function being called.
+	//
+	// ast.Unparen: Go's PARENTHESIZED conversion spelling `(T)(x)` puts an *ast.ParenExpr in
+	// Fun, which fell to the default arm below and reported "not a constructor" for what is
+	// plainly a type callee. `(unsafe.Pointer)(new(int))` then took a different route from the
+	// identical `unsafe.Pointer(new(int))` and emitted an uncompilable cast. The two spellings
+	// are one Go program and must convert alike — the same rule this file already applies to the
+	// two IIFE spellings. Unwrapping cannot widen the answer beyond that: `(*T)(x)` and
+	// `(func())(nil)` unwrap to *ast.StarExpr / *ast.FuncType, which still hit the default arm.
 	var obj types.Object
 
-	switch funExpr := callExpr.Fun.(type) {
+	switch funExpr := ast.Unparen(callExpr.Fun).(type) {
 	case *ast.Ident:
 		obj = v.info.ObjectOf(funExpr)
 	case *ast.SelectorExpr:

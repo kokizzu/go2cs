@@ -1178,6 +1178,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckParenthesizedConcatContext() => CheckTarget("ParenthesizedConcatContext");
 
     [TestMethod]
+    public void CheckParenTypeConversionCall() => CheckTarget("ParenTypeConversionCall");
+
+    [TestMethod]
     public void CheckPartialRedeclaration() => CheckTarget("PartialRedeclaration");
 
     [TestMethod]

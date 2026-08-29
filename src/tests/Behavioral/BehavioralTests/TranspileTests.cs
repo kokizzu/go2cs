@@ -1225,6 +1225,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckParenthesizedConcatContext() => CheckTarget("ParenthesizedConcatContext");
 
     [TestMethod]
+    public void CheckParenTypeConversionCall() => CheckTarget("ParenTypeConversionCall");
+
+    [TestMethod]
     public void CheckPartialRedeclaration() => CheckTarget("PartialRedeclaration");
 
     [TestMethod]
