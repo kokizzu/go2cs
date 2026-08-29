@@ -1,6 +1,38 @@
 // Copyright 2009 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
+// HAND-OWNED COMPANION to syscall/windows/zsyscall_windows_dnsrecord_impl.cs. Only the SIX record
+// payload reads differ from the auto-conversion; everything else is the converter's own emission.
+//
+// Go reads each DNS record's union buffer by reinterpreting it -- `(*syscall.DNSSRVData)(
+// unsafe.Pointer(&r.Data[0]))` -- and the faithful conversion of that is
+//
+//     p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSSRVData>()
+//
+// which CANNOT be made safe here, at any layer. Every payload carries a MANAGED REFERENCE
+// (`DNSSRVData.Target`, `DNSMXData.NameExchange`, `DNSPTRData.Host`, `DNSTXTData.StringArray`), and
+// golib's `ReinterpretAliasesStorage<byte, DNSSRVData>` refuses the safe managed-alias route on the
+// SIZE test alone -- `Unsafe.SizeOf<DNSSRVData>()` is 16, `Unsafe.SizeOf<byte>()` is 1 -- so the
+// call falls through to an `Unsafe.AsRef<DNSSRVData>` over raw bytes that loads eight of them AS AN
+// OBJECT REFERENCE. That is a CLR type-safety break (an access violation, or silent heap corruption
+// on a write), and it happens whether the record is native or managed. Fixing only the syscall
+// wrapper would therefore have turned a contained wrong answer -- "no record" for MX/NS/TXT/SRV/PTR
+// -- into memory corruption, which is why this companion exists at all.
+//
+// The six reads take `syscall.DnsRecordPayload<T>` instead: a REAL managed box the DnsQuery
+// hand-own transcribed and anchored, whose pointer fields are genuine boxes over copied names. Every
+// downstream read ((~v).Target, .Port, .NameExchange, .Host, .StringArray, .StringCount) is
+// unchanged, because the accessor hands back the same shape the reinterpret was reaching for.
+//
+// RETIREMENT CONDITION: this file and its syscall-side partner retire together when the
+// pointer-bearing-union representation arc lands -- the named converter item that stops emitting a
+// Go union buffer whose payloads carry pointers as a bare `array<byte>` -- and the auto-conversion
+// of both files becomes sound. At that point this hand-own must be DROPPED, not merged forward: the
+// converter's own emission becomes the correct one.
+
+[module: go.GoManualConversion]
+
 namespace go;
 
 using context = context_package;
@@ -391,7 +423,7 @@ internal static (@string, slice<ж<SRV>>, error) lookupSRV(this ж<Resolver> Ꮡ
         defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
         var srvs = new slice<ж<SRV>>(0, 10);
         foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_SRV, target)) {
-            var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSSRVData>();
+            var v = syscall.DnsRecordPayload<syscall.DNSSRVData>(p);
             srvs = append(srvs, Ꮡ(new SRV(absDomainName(syscall.UTF16ToString((~array<uint16>.AliasPointer((~v).Target, 256))[..])), (~v).Port, (~v).Priority, (~v).Weight)));
         }
         ((byPriorityWeight)srvs).sort();
@@ -426,7 +458,7 @@ internal static (slice<ж<MX>>, error) lookupMX(this ж<Resolver> Ꮡr, context.
         defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
         var mxs = new slice<ж<MX>>(0, 10);
         foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_MX, name)) {
-            var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSMXData>();
+            var v = syscall.DnsRecordPayload<syscall.DNSMXData>(p);
             mxs = append(mxs, Ꮡ(new MX(absDomainName(windows.UTF16PtrToString((~v).NameExchange)), (~v).Preference)));
         }
         ((byPref)mxs).sort();
@@ -461,7 +493,7 @@ internal static (slice<ж<NS>>, error) lookupNS(this ж<Resolver> Ꮡr, context.
         defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
         var nss = new slice<ж<NS>>(0, 10);
         foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_NS, name)) {
-            var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>();
+            var v = syscall.DnsRecordPayload<syscall.DNSPTRData>(p);
             nss = append(nss, Ꮡ(new NS(absDomainName(syscall.UTF16ToString((~array<uint16>.AliasPointer((~v).Host, 256))[..])))));
         }
         return (nss, default!);
@@ -495,10 +527,19 @@ internal static (slice<@string>, error) lookupTXT(this ж<Resolver> Ꮡr, contex
         defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
         var txts = new slice<@string>(0, 10);
         foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_TEXT, name)) {
-            var d = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSTXTData>();
+            var d = syscall.DnsRecordPayload<syscall.DNSTXTData>(p);
             @string s = ""u8;
-            foreach (var (_, v) in (~array<ж<uint16>>.AliasPointer(Ꮡ(((~d).StringArray[0])), 1024)).slice(-1, (~d).StringCount, (~d).StringCount)) {
-                s += windows.UTF16PtrToString(v);
+
+            // Go walks the union's variable-length `pStringArray[1]` by aliasing a huge window from
+            // &StringArray[0] and re-slicing to StringCount. That idiom cannot survive the managed
+            // payload and must NOT be restored: `Ꮡ(expr)` on a dereferenced value boxes a COPY, so
+            // `array<T>.AliasPointer` finds no element storage (`TryGetElementStorage` fails), takes
+            // its documented raw-address fork, and yields a window of capacity ZERO -- which panics
+            // as `slice bounds out of range [::1] with capacity 0` the moment StringCount is 1. The
+            // transcription already allocated exactly StringCount elements, so the count IS the
+            // length here and a direct index is both simpler and the only correct form.
+            for (nint i = 0; i < (~d).StringCount; i++) {
+                s += windows.UTF16PtrToString((~d).StringArray[i]);
             }
             txts = append(txts, s);
         }
@@ -539,7 +580,7 @@ internal static (slice<@string>, error) lookupAddr(this ж<Resolver> Ꮡr, conte
         defer(syscall.DnsRecordListFree, rec, (uint32)(1), ref ᒐ);
         var ptrs = new slice<@string>(0, 10);
         foreach (var (_, p) in validRecs(rec, syscall.DNS_TYPE_PTR, arpa)) {
-            var v = p.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>();
+            var v = syscall.DnsRecordPayload<syscall.DNSPTRData>(p);
             ptrs = append(ptrs, absDomainName(windows.UTF16PtrToString((~v).Host)));
         }
         return (ptrs, default!);
@@ -590,7 +631,7 @@ Cname:
             if (!syscall.DnsNameCompare(Ꮡname, (~p).Name)) {
                 continue;
             }
-            Ꮡname = (Ꮡr.at(syscall.DNSRecord.ᏑData, 0).Reinterpret<byte, syscall.DNSPTRData>()).Value.Host; name = ref Ꮡname.DerefOrNull();
+            Ꮡname = (syscall.DnsRecordPayload<syscall.DNSPTRData>(Ꮡr)).Value.Host; name = ref Ꮡname.DerefOrNull();
             goto continue_Cname;
         }
         break;

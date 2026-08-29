@@ -441,20 +441,9 @@ public static error /*status*/ DnsQuery(@string name, uint16 qtype, uint32 optio
     return _DnsQuery(_p0, qtype, options, Ꮡextra, Ꮡqrs, Ꮡpr);
 }
 
-internal static error /*status*/ _DnsQuery(ж<uint16> Ꮡname, uint16 qtype, uint32 options, ж<byte> Ꮡextra, ж<ж<DNSRecord>> Ꮡqrs, ж<byte> Ꮡpr) {
-    error status = default!;
+// go2cs generated this placeholder — func _DnsQuery is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var (r0, _, _) = Syscall6(procDnsQuery_W.Addr(), 6, (uintptr)Ꮡname, (uintptr)qtype, (uintptr)options, (uintptr)Ꮡextra, (uintptr)Ꮡqrs, (uintptr)Ꮡpr);
-    if (r0 != 0) {
-        status = ((Errno)r0);
-    }
-    return status;
-}
-
-public static void DnsRecordListFree(ж<DNSRecord> Ꮡrl, uint32 freetype) {
-    Syscall(procDnsRecordListFree.Addr(), 2, (uintptr)Ꮡrl, (uintptr)freetype, 0);
-    return;
-}
+// go2cs generated this placeholder — func DnsRecordListFree is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*errcode*/ GetAdaptersInfo(ж<IpAdapterInfo> Ꮡai, ж<uint32> Ꮡol) {
     error errcode = default!;
