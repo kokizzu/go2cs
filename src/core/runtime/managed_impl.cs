@@ -189,6 +189,14 @@ partial class runtime_package
     // this shim, which hands the cleanup to the converted registration unchanged.
     public static void registerPoolCleanup(Action cleanup) => sync_runtime_registerPoolCleanup(cleanup);
 
+    // godebugRegisterMetric is where internal/godebug's //go:linkname registerMetric crosses into
+    // this assembly (the registerPoolCleanup pattern above). The symbol that linkname names,
+    // godebug_registerMetric (metrics.cs), is `internal` under the exported-ness rule, so the
+    // hand-owned godebug calls this shim, which hands the registration to the converted
+    // implementation unchanged — it swaps the metric's compute0 placeholder for the real counter
+    // read, and runtime/metrics.Read reports it from then on.
+    public static void godebugRegisterMetric(@string name, Func<uint64> read) => godebug_registerMetric(name, read);
+
     // GC runs a garbage collection and blocks the caller until the garbage collection is complete.
     public static void GC()
     {

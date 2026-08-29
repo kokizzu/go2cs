@@ -31,14 +31,21 @@
 // (comma-separated key=value, later entries overriding earlier ones, matching Go's backward parse)
 // and serves every lookup from that snapshot, REPARSING whenever the variable's text changes —
 // which is what Go's update hooks accomplish, and what `Value`'s own contract below promises. An
-// unset or unlisted key yields "", Go's unset default. Not carried over: bisect stack-pattern
-// values (the `value#pattern` suffix is stripped, enabling the setting unconditionally) and the
-// runtime/metrics non-default counters (IncNonDefault is inert — there is no converted metrics
-// consumer).
+// unset or unlisted key yields "", Go's unset default. Both protocol arms Go layers on top of the
+// snapshot are carried over faithfully: a `value#pattern` bisect suffix becomes a real
+// bisect.Matcher consulted per call stack (the converted internal/bisect over the runtime's
+// managed traceback surface — cmd/bisect drives it end to end), and IncNonDefault maintains real
+// per-name counters registered with the runtime's metric table through the godebugRegisterMetric
+// shim (managed_impl.cs, the registerPoolCleanup pattern), so runtime/metrics.Read reports
+// /godebug/non-default-behavior/<name>:events exactly as Go's linkname plumbing does.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
+using bisect = go.@internal.bisect_package;
 using godebugs = go.@internal.godebugs_package;
 
 // Hand-owned native replacement of the converted godebug.go output — the converter skips
@@ -93,9 +100,50 @@ public static @string String(this ж<Setting> Ꮡs) {
 // This counter is exposed in the runtime/metrics value
 // /godebug/non-default-behavior/<name>:events.
 //
-// go2cs: runtime/metrics plumbing with no converted consumer — inert.
+// go2cs: Go keeps the counter on the per-name *setting (shared through its cache) and registers
+// it with the runtime on first increment via the linkname-pulled registerMetric. The managed form
+// keys the counters by name directly — the same sharing — and crosses into the runtime through
+// the public godebugRegisterMetric shim, which swaps the metric's placeholder compute for this
+// counter's read. Go's register() panic for an unregistrable setting is preserved verbatim.
 public static void IncNonDefault(this ж<Setting> Ꮡs) {
+    ref var s = ref Ꮡs.Value;
+
+    string name = s.Name();
+    var info = godebugs.Lookup(name);
+
+    if (info == nil || info.Value.Opaque) {
+        throw panic("godebug: unexpected IncNonDefault of " + s.name);
+    }
+
+    NonDefaultCounter counter = s_nonDefault.GetOrAdd(name, static _ => new NonDefaultCounter());
+
+    if (!counter.Registered) {
+        lock (counter) {
+            if (!counter.Registered) {
+                NonDefaultCounter captured = counter;
+
+                global::go.runtime_package.godebugRegisterMetric(
+                    "/godebug/non-default-behavior/" + name + ":events",
+                    () => Volatile.Read(ref captured.Count));
+
+                counter.Registered = true;
+            }
+        }
+    }
+
+    Interlocked.Increment(ref counter.Count);
 }
+
+// The non-default behavior counters, shared per NAME exactly as Go shares them through the cached
+// per-name *setting. Registered guards the once-per-name runtime registration (Go's
+// nonDefaultOnce), double-checked under the counter's own lock.
+private sealed class NonDefaultCounter {
+    internal ulong Count;
+    internal bool Registered;
+}
+
+private static readonly ConcurrentDictionary<string, NonDefaultCounter> s_nonDefault =
+    new(StringComparer.Ordinal);
 
 // Value returns the current value for the GODEBUG setting s.
 //
@@ -104,6 +152,13 @@ public static void IncNonDefault(this ж<Setting> Ꮡs) {
 // making Value efficient to call as frequently as needed.
 // Clients should therefore typically not attempt their own
 // caching of Value's result.
+//
+// NoInlining: this frame is part of the call-stack surface bisect.Matcher.Stack hashes — the
+// runtime's captureCallers walks the MANAGED stack, and an inlined frame silently vanishes from
+// it (the same reason every entry point in the runtime's traceback funnel is pinned NoInlining).
+// A mid-run JIT-tier flip that removed this frame would re-hash every already-reported bisect
+// call site, and cmd/bisect requires a site's hash to be stable for a whole session.
+[MethodImpl(MethodImplOptions.NoInlining)]
 public static @string Value(this ж<Setting> Ꮡs) {
     ref var s = ref Ꮡs.Value;
 
@@ -112,7 +167,19 @@ public static @string Value(this ж<Setting> Ꮡs) {
     if (godebugs.Lookup(name) == nil && !s.Undocumented()) {
         throw panic("godebug: Value of name not listed in godebugs.All: " + s.name);
     }
-    return settings().TryGetValue(name, out string? value) ? value : "";
+
+    if (!settings().TryGetValue(name, out SettingValue? v)) {
+        return "";
+    }
+
+    // A `value#pattern` setting is enabled per CALL STACK: the matcher decides (and reports
+    // matches through the stderr writer, cmd/bisect's protocol), exactly Go's
+    // `v.bisect != nil && !v.bisect.Stack(&stderr)`.
+    if (v.Matcher is not null && !v.Matcher.Stack(s_bisectStderr)) {
+        return "";
+    }
+
+    return v.Text;
 }
 
 // The current $GODEBUG snapshot, paired with the raw text it was parsed from. Go keeps its cache
@@ -126,17 +193,17 @@ public static @string Value(this ж<Setting> Ꮡs) {
 // silently: `t.Setenv("GODEBUG", …)` — how Go's own suites exercise a setting, and the only way a
 // converted test can reach one — could not be observed once ANY setting had been read, which in a
 // test binary is almost always before the test that sets it runs.
-private static volatile Tuple<string, Dictionary<string, string>> s_settings =
-    new("", new Dictionary<string, string>(StringComparer.Ordinal));
+private static volatile Tuple<string, Dictionary<string, SettingValue>> s_settings =
+    new("", new Dictionary<string, SettingValue>(StringComparer.Ordinal));
 
-private static Dictionary<string, string> settings() {
+private static Dictionary<string, SettingValue> settings() {
     string raw = Environment.GetEnvironmentVariable("GODEBUG") ?? "";
-    Tuple<string, Dictionary<string, string>> current = s_settings;
+    Tuple<string, Dictionary<string, SettingValue>> current = s_settings;
 
     if (string.Equals(current.Item1, raw, StringComparison.Ordinal))
         return current.Item2;
 
-    Tuple<string, Dictionary<string, string>> parsed = new(raw, parseGodebugEnv(raw));
+    Tuple<string, Dictionary<string, SettingValue>> parsed = new(raw, parseGodebugEnv(raw));
 
     // Last writer wins, and every writer parsed the same text it observed — so whichever snapshot
     // is published is self-consistent (the field is volatile, so the dictionary's contents are
@@ -147,11 +214,24 @@ private static Dictionary<string, string> settings() {
     return parsed.Item2;
 }
 
+// One parsed setting: the text before any `#`, plus the bisect matcher compiled from the pattern
+// after it (nil when there is no pattern, or when the pattern fails to compile — Go's parse
+// discards bisect.New's error the same way, leaving v.bisect nil).
+private sealed class SettingValue {
+    internal readonly string Text;
+    internal readonly ж<bisect.Matcher>? Matcher;
+
+    internal SettingValue(string text, ж<bisect.Matcher>? matcher) {
+        Text = text;
+        Matcher = matcher;
+    }
+}
+
 // Parses comma-separated key=value pairs, later entries overriding earlier ones (Go parses
-// backward and pins the first hit — same winner). A `value#pattern` bisect suffix is stripped,
-// keeping just the value.
-private static Dictionary<string, string> parseGodebugEnv(string raw) {
-    Dictionary<string, string> settings = new(StringComparer.Ordinal);
+// backward and pins the first hit — same winner). A `value#pattern` suffix keeps the value's text
+// and compiles the pattern into the entry's bisect matcher, matching Go's parse exactly.
+private static Dictionary<string, SettingValue> parseGodebugEnv(string raw) {
+    Dictionary<string, SettingValue> settings = new(StringComparer.Ordinal);
 
     foreach (string pair in raw.Split(',')) {
         int eq = pair.IndexOf('=');
@@ -162,11 +242,30 @@ private static Dictionary<string, string> parseGodebugEnv(string raw) {
         string value = pair[(eq + 1)..];
         int hash = value.IndexOf('#');
 
-        settings[pair[..eq]] = hash < 0 ? value : value[..hash];
+        if (hash < 0) {
+            settings[pair[..eq]] = new SettingValue(value, null);
+        }
+        else {
+            var (matcher, _) = bisect.New(value[(hash + 1)..]);
+            settings[pair[..eq]] = new SettingValue(value[..hash], matcher);
+        }
     }
 
     return settings;
 }
+
+// The stderr sink bisect matcher reports through — the same fd-2 write Go's runtimeStderr makes,
+// implemented on the converted bisect.Writer interface directly so no adapter is needed here.
+private sealed class BisectStderrWriter : bisect.Writer {
+    public (nint, error) Write(slice<byte> b) {
+        if (len(b) > 0) {
+            System.Console.OpenStandardError().Write(b.ToSpan());
+        }
+        return (len(b), default!);
+    }
+}
+
+private static readonly bisect.Writer s_bisectStderr = new BisectStderrWriter();
 
 // go2cs: retained from the converted output because the package's GoImplement registration
 // (package_info.cs) binds runtimeStderr to bisect.Writer; writes go to standard error directly

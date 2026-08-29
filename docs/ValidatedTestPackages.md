@@ -112,19 +112,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **191 / 215 testable packages validated — 88.8%**
+> ### Phase 4 progress: **192 / 215 testable packages validated — 89.3%**
 >
-> **26,046 matching test verdicts · 149 disclosed** *(updated 2026-08-29 — maintained as part of the
+> **26,051 matching test verdicts · 149 disclosed** *(updated 2026-08-29 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 191 / 208 — 91.8%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 192 / 208 — 92.3%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 178 of 190 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 1 row platform-exclusive (`linux: n/a`).
+> **Linux: 178 of 191 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 1 row platform-exclusive (`linux: n/a`).
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -278,6 +278,7 @@ exactly as the line above it is summed from the columns.
 | [`internal/diff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/diff) | 13 | | The unified-diff engine over its testdata corpus — every edit shape from empty-to-full through EOF-newline edge cases. · linux: 13 · [proof](validation/current/internal.diff.md) |
 | [`internal/fmtsort`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/fmtsort) | 3 | | `fmt`'s map-key ordering — `Value.Convert`, arithmetically-ordered pointer/channel tokens, `-tests` init-order relocation. · linux: 3 · [proof](validation/current/internal.fmtsort.md) |
 | [`internal/fuzz`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/fuzz) | 52 | | Go's fuzzing engine, the layer below `testing`'s fuzz targets — corpus-file marshal/unmarshal round-trips over every basic type (float edge cases, rune validity, integer overflow, malformed records, Windows line endings), the byte-slice mutator table, input minimization, and the worker queue. The first package banked through the host's `TestMain` **flag bridge**: its `TestMain` calls `flag.Parse()`, which now finds the host's own command line declared on `flag.CommandLine` exactly the way `testing.Init()` declares `-test.*`. · linux: 52 · [proof](validation/current/internal.fuzz.md) |
+| [`internal/godebug`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/godebug) | 5 | | The $GODEBUG settings machinery itself, hand-owned end to end and validated against its own contract — the 12-case parse/override table through `t.Setenv` (later entries override earlier, `#` names undocumented settings, `value#pattern` splits), and the TWO protocol arms Go layers on top: `TestCmdBisect` runs x/tools' **cmd/bisect against the converted test host binary itself** — dozens of spawn-and-classify runs whose `value#pattern` matchers decide per CALL STACK through the converted `internal/bisect` over the runtime's managed traceback surface, hash-stable across processes, converging on exactly the three `BISECT BUG` lines the test's own source marks — and `TestMetrics` reads `IncNonDefault`'s per-name counters back as `/godebug/non-default-behavior/<name>:events` through the runtime's metric table (the godebugRegisterMetric shim, the registerPoolCleanup pattern). `TestPanicNilRace` skips identically on both sides (race-build-only). · [proof](validation/current/internal.godebug.md) |
 | [`internal/godebugs`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/godebugs) | 1 | | The GODEBUG registry, cross-checked against the world outside the package: every entry must be documented in GOROOT's `doc/godebug.md` and must have a matching `IncNonDefault()` call site, found by running `go list std cmd` through the real toolchain and reading every `.go` file it names. · linux: 1 · · [proof](validation/current/internal.godebugs.md) |
 | [`internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/gover) | 5 | | Toolchain version ordering. · linux: 5 · [proof](validation/current/internal.gover.md) |
 | [`internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) | 3 | | Minimal integer formatting. · linux: 3 · [proof](validation/current/internal.itoa.md) |
