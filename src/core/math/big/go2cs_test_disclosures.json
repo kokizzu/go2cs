@@ -2,6 +2,12 @@
   "schemaVersion": 1,
   "disclosures": [
     {
+      "name": "TestMulUnbalanced",
+      "class": "alloc-profile",
+      "signature": "multiplication uses too much memory (",
+      "reason": "allocation-byte BUDGET assert on a different meter than the AllocsPerRun rows — runtime.ReadMemStats TotalAlloc delta, which the converted runtime maps to the CLR's own GC.GetTotalAllocatedBytes (a true byte total over every managed allocation, not golib's object-count lower bound): nat(nil).mul of a 50,000-word by 40-word unbalanced multiply must stay within 10x the input size (~400 KB), and the converted path allocates 23,482,832 bytes (58x) — the managed temp-nat slice<T> workspaces the recursive unbalanced multiply mints per block, which Go's escape analysis and nat pooling keep out of its own heap total. Same managed-runtime grounding as the AllocsPerRun rows, measured in bytes instead of objects. Reduction of exactly these sites is the zh-box reduction arc's math/big harvest; this entry retires with it. Measured 23,482,832 bytes = 58x input, 2026-08-29, go1.23.12/windows-amd64."
+    },
+    {
       "name": "TestNewIntAllocs",
       "class": "alloc-profile",
       "signature": "wanted 0 allocations, got ",
