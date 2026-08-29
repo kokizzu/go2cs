@@ -128,6 +128,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `internal/gover` | [`internal.gover.md`](current/internal.gover.md) | [`src/core/internal/gover`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/gover) |
 | `internal/itoa` | [`internal.itoa.md`](current/internal.itoa.md) | [`src/core/internal/itoa`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/itoa) |
 | `internal/platform` | [`internal.platform.md`](current/internal.platform.md) | [`src/core/internal/platform`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/platform) |
+| `internal/poll` | [`internal.poll.md`](current/internal.poll.md) | [`src/core/internal/poll`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/poll) |
 | `internal/profile` | [`internal.profile.md`](current/internal.profile.md) | [`src/core/internal/profile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/profile) |
 | `internal/reflectlite` | [`internal.reflectlite.md`](current/internal.reflectlite.md) | [`src/core/internal/reflectlite`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/reflectlite) |
 | `internal/runtime/atomic` | [`internal.runtime.atomic.md`](current/internal.runtime.atomic.md) | [`src/core/internal/runtime/atomic`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/runtime/atomic) |
