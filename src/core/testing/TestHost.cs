@@ -133,6 +133,15 @@ public static class TestHost
                 PackageAncestry.TryStage(Environment.GetEnvironmentVariable("GOROOT"), registry.Package, runRoot, workingDirectory);
 
                 CreateFixtureDirectories(registry.FixtureDirectories, workingDirectory, runRoot);
+
+                // AFTER the run-directory shape and BEFORE the copies. After, because a link at
+                // `testdata` replaces the empty directory that pass just created; before, because
+                // every copy target's parent is made writable on its way in, and a link is exactly
+                // what must never be made writable — staging first is what puts the refusal in
+                // front of the write instead of behind it.
+                PackageAncestry.StageFixtureLinks(registry.FixtureLinks, Environment.GetEnvironmentVariable("GOROOT"),
+                    registry.Package, workingDirectory, runRoot);
+
                 CopyFixtures(registry.Fixtures, workingDirectory, runRoot);
                 Environment.CurrentDirectory = workingDirectory;
 
@@ -289,7 +298,13 @@ public static class TestHost
                 // unlinked first. A helper re-exec never deletes: its runRoot is the PARENT run's
                 // sandbox, which the parent is still using and owns.
                 if (!helperReExec)
+                {
+                    // The write refusal must not outlive the sandbox it guards: a host run in a
+                    // process that runs another (the guard tier does exactly that) would otherwise
+                    // inherit a protected path that no longer exists.
+                    PackageAncestry.ReleaseFixtureLinks();
                     PackageAncestry.Delete(runRoot);
+                }
             }
             catch
             {
