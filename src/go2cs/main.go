@@ -34,6 +34,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -173,6 +174,7 @@ func main() {
 	convertTestsCmd := commandLine.Bool("tests", false, "Convert eligible Go package tests and emit a runnable test host project")
 	testActionCmd := commandLine.String("test-action", "convert", "Converted-test action: convert, build, run, compare, or all")
 	testTimeoutCmd := commandLine.Duration("test-timeout", 2*time.Minute, "Timeout for each converted-test child process (build/run/compare)")
+	testFilterCmd := commandLine.String("test-filter", "", "Regex handed VERBATIM to BOTH sides of a -test-action compare (go test -run and the converted host --run), so the two runs filter identically. Intended for the block-gated census: exclude a test that BLOCKS the suite by passing an anchored alternation of the parents to keep. A gated census is DIAGNOSTIC ONLY and must never bank a row -- the row banks from an ungated run, after the block is rooted or the divergence disclosed")
 	var recurseVal recurseMode
 	commandLine.Var(&recurseVal, "recurse", "Recursively convert an end-user module and its third-party dependencies (references the pre-converted standard library); use -recurse=module to convert only the module's own packages, leaving the third-party closure referenced but unconverted, and -recurse=nuget to reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local project references (values combine: -recurse=module,nuget)")
 	targetPlatformCmd := commandLine.String("platforms", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), "Target platform(s) for conversion, format: os/arch; comma-separated for a list (windows/amd64,linux/amd64,darwin/amd64), which with -stdlib emits the multi-platform (layout L3) corpus — one GOOS per target")
@@ -376,6 +378,7 @@ Examples:
 		convertTests:        *convertTestsCmd,
 		testAction:          strings.ToLower(strings.TrimSpace(*testActionCmd)),
 		testTimeout:         *testTimeoutCmd,
+		testFilter:          strings.TrimSpace(*testFilterCmd),
 		recurse:             recurseVal.enabled,
 		moduleOnly:          recurseVal.moduleOnly,
 		nugetRefs:           recurseVal.nuget,
@@ -411,6 +414,19 @@ Examples:
 
 		if options.testTimeout <= 0 {
 			log.Fatalln("-test-timeout must be greater than zero")
+		}
+
+		// Same fail-fast posture as -test-timeout above: a filter that cannot compile must die
+		// HERE, naming itself, rather than reaching two child processes that each reject it in
+		// their own dialect. Go's RE2 is the stricter of the two engines the string is handed to
+		// (the converted host parses it with .NET Regex), so compiling it here also rejects a
+		// pattern that only .NET would accept -- which is what keeps the two sides identical.
+		if options.testFilter != "" {
+			for _, element := range strings.Split(options.testFilter, "/") {
+				if _, err := regexp.Compile(element); err != nil {
+					log.Fatalf("Invalid -test-filter %q: %v\n", options.testFilter, err)
+				}
+			}
 		}
 	}
 
