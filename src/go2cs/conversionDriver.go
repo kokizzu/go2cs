@@ -224,8 +224,18 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		if projectFileName, projectFileContents, err = prepareProjectFiles(projectName, packageNamespace, packageOutputPath); err != nil {
 			log.Fatalf("Failed to write project files for directory \"%s\": %s\n", packageOutputPath, err)
 		} else {
-			for i, file := range pkg.Syntax {
-				path := pkg.GoFiles[i]
+			paired, skippedGenerated := syntaxSourceFiles(pkg)
+
+			// Only a cgo package produces these (never met on Windows, where no cgo files are
+			// selected for any stdlib package): the parsed set then carries toolchain-GENERATED
+			// intermediates whose mangled content has no C# conversion. Say so per file — this
+			// line is the only account of why the emitted package is missing its cgo half.
+			for _, skippedPath := range skippedGenerated {
+				showWarning("Skipping generated file %q: not among package %s's plain Go sources (a cgo intermediate has no C# conversion); the package converts best-effort without it", skippedPath, pkg.PkgPath)
+			}
+
+			for _, pair := range paired {
+				file, path := pair.file, pair.path
 
 				// cfg.Dir is the directory the loader ran the go command in, so it is also the
 				// directory whose GOTOOLCHAIN resolution decides which Go release tags the
@@ -500,6 +510,61 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 	}
 
 	return nil
+}
+
+// syntaxSourceFile pairs one parsed file with the on-disk source path it was parsed from.
+type syntaxSourceFile struct {
+	file *ast.File
+	path string
+}
+
+// syntaxSourceFiles pairs pkg.Syntax with the source path each syntax tree was parsed from, in
+// pkg.Syntax order — the package's plain Go sources as paired entries, every other parsed file's
+// path in skipped.
+//
+// go/packages fills Syntax in parallel with CompiledGoFiles, NOT GoFiles, and for a cgo package
+// the two lists differ: each `import "C"` source is replaced in the compiled set by its
+// cgo-generated build-cache intermediates (<name>.cgo1.go, _cgo_gotypes.go, …), so Syntax
+// outgrows GoFiles. The historical `pkg.GoFiles[i]` walk here therefore panicked with
+// index-out-of-range on every cgo package — the whole class on linux/amd64 (internal/testpty,
+// net, os/user, plugin, runtime/cgo); Windows selects no cgo files for any of them, so the lists
+// coincide there and the panic was unreachable, which is why it survived every Windows gate.
+//
+// Rather than pair by index against ANY list, each file's path is derived from its OWN token
+// position — UNADJUSTED, i.e. the raw path the parser was handed: the //line-ADJUSTED Position of
+// a .cgo1.go intermediate reports the original `import "C"` source its directives point back at
+// (misnaming what was actually parsed), and a plain source legally opening with a //line
+// directive would adjust AWAY from its GoFiles spelling and be wrongly skipped. Self-derivation
+// removes the index-pairing class structurally instead of bounds-patching it, and stays honest
+// even when Syntax is misaligned with CompiledGoFiles (an unreadable file drops its slot).
+//
+// The GoFiles MEMBERSHIP test then restores exactly the historical intent — convert the package's
+// plain Go sources: for a non-cgo package every syntax file is a GoFiles member under the same
+// spelling (both lists come from the same `go list` run), so the pairing is byte-identical to the
+// old walk; a non-member is a cgo/toolchain-generated intermediate whose mangled content has no
+// C# conversion (its `import "C"` original never reaches Syntax at all), so it is skipped
+// EXPLICITLY — reported by the caller — rather than processed accidentally under a build-cache
+// path that downstream logic (build-constraint re-check, base-name output routing, hand-own
+// marker probe) would misread as a source file.
+func syntaxSourceFiles(pkg *packages.Package) (paired []syntaxSourceFile, skipped []string) {
+	plainGoFiles := make(map[string]bool, len(pkg.GoFiles))
+
+	for _, path := range pkg.GoFiles {
+		plainGoFiles[filepath.Clean(path)] = true
+	}
+
+	for _, file := range pkg.Syntax {
+		path := pkg.Fset.PositionFor(file.Pos(), false).Filename
+
+		if !plainGoFiles[filepath.Clean(path)] {
+			skipped = append(skipped, path)
+			continue
+		}
+
+		paired = append(paired, syntaxSourceFile{file: file, path: path})
+	}
+
+	return paired, skipped
 }
 
 // aliasCoveredImplementationKeys returns the "canonicalIface|impl" keys of every GoImplement pair
