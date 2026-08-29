@@ -121,6 +121,13 @@ type CallExprContext struct {
 	// body's `ᴛN` marker renders as `ref ᴛN.DerefOrNull()` so the thunk derives the ref at
 	// invoke time (see convExprList).
 	refLoweredTempArgs map[int]bool
+	// multiValueSpreadArity is the result count of a deferred/spawned call's SOLE argument when
+	// that argument is a MULTI-VALUE call spreading into the callee's parameter list
+	// (`defer f(g())`, g returning two results); 0 for every other shape. C# has no splat, so the
+	// tuple itself is the eager argument the rung captures at defer/go time — Go's rule — and the
+	// thunk's `ᴛ1` marker renders component-wise (`f(ᴛ1.Item1, ᴛ1.Item2)`) to spread it when the
+	// call actually runs. Set by convCallExpr from multiValueSpreadArity; read in convExprList.
+	multiValueSpreadArity int
 }
 
 func DefaultCallExprContext() *CallExprContext {

@@ -430,7 +430,22 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			// A ж-box ref-LOWERED position under defer/go (the §3.3 boxed carve-out): the eager
 			// argument (callArgs[i], written below) carries the box; the lambda BODY derives the
 			// ref at invoke time — `ᴛN` becomes `ref ᴛN.DerefOrNull()`.
-			if callContext != nil && callContext.refLoweredTempArgs != nil && callContext.refLoweredTempArgs[i] {
+			if callContext != nil && callContext.multiValueSpreadArity > 1 {
+				// A MULTI-VALUE call as the deferred/spawned call's SOLE argument
+				// (`defer show(two())`, two returning (int, string)). Go evaluates `two()` at the
+				// DEFER STATEMENT and spreads its results across `show`'s parameters when the call
+				// runs. C# has no splat, so the eager argument stays the whole tuple — captured by
+				// the arity-1 rung at exactly Go's moment, and evaluated exactly once — and the
+				// thunk spreads its components at invoke time. Without this the single `ᴛ1` marker
+				// went to a multi-parameter callee whole (`ᴛ1 => show(ᴛ1)`, CS7036/CS1501).
+				components := make([]string, callContext.multiValueSpreadArity)
+
+				for ci := range components {
+					components[ci] = fmt.Sprintf("%s1.Item%d", TempVarMarker, ci+1)
+				}
+
+				result.WriteString(strings.Join(components, ", "))
+			} else if callContext != nil && callContext.refLoweredTempArgs != nil && callContext.refLoweredTempArgs[i] {
 				result.WriteString(fmt.Sprintf("ref %s%d.DerefOrNull()", TempVarMarker, i+1))
 			} else {
 				result.WriteString(fmt.Sprintf("%s%d", TempVarMarker, i+1))

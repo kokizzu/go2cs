@@ -314,6 +314,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDeferLoopCapture() => CheckTarget("DeferLoopCapture");
 
     [TestMethod]
+    public void CheckDeferMultiValueSpread() => CheckTarget("DeferMultiValueSpread");
+
+    [TestMethod]
     public void CheckDeferPanicArg() => CheckTarget("DeferPanicArg");
 
     [TestMethod]
