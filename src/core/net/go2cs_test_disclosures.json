@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestAllocs",
+      "class": "alloc-profile",
+      "signature": "testing.AllocsPerRun counted ",
+      "reason": "zero-alloc assert over the UDP hot path: the test runs WriteMsgUDPAddrPort/ReadMsgUDPAddrPort 1,000 times and requires the steady-state allocation count to be zero, and it is guarded by testenv.SkipIfOptimizationOff precisely because that outcome depends on Go's optimizer. Go reaches zero because escape analysis keeps the 8-byte buffer, the netFD argument shuffle and the AddrPort value stack-resident, and its syscall path writes through a pinned slice header without boxing. The converted path cannot: golib's slice<T> is a struct over a heap T[], every []byte crossing the Conn/PacketConn interface surface is a managed object, and the msghdr marshalling allocates its own buffers per call — so the counter reports ~71 allocations per run (71,000 over 1,000) rather than 0. Structural to the managed runtime, not to net: the CLR publishes no in-process malloc counter, so go2cs's own runtime counter (golib's allocation sites, the structural mirror of runtime.MemStats.Mallocs) is what the host reports, and its counter line is the stable pin"
+    },
+    {
+      "name": "TestTCPReadWriteAllocs",
+      "class": "alloc-profile",
+      "signature": "testing.AllocsPerRun counted ",
+      "reason": "the same zero-alloc assert over the TCP hot path: Read/Write on a loopback conn, 1,000 runs, required to allocate nothing. Go's Read/Write reach the netFD with no heap traffic at all; the converted equivalents allocate through the same three structural sites as TestAllocs — slice<T> over a heap T[], the Conn interface surface, and the per-call syscall argument marshalling — reporting ~35 allocations per run (35,000 over 1,000). Lower than TestAllocs because the TCP path marshals no msghdr and carries no address value, which is itself evidence the count tracks the converted call shape rather than any defect in net"
+    }
+  ]
+}
