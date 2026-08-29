@@ -2841,7 +2841,7 @@ public static partial class builtin
             GoReflect.ValueAdapterWrappedType(left.GetType()) is { } leftWrapped &&
             leftWrapped == GoReflect.ValueAdapterWrappedType(right.GetType()))
         {
-            throw new PanicException($"runtime error: comparing uncomparable type {GetGoTypeName(leftWrapped)}");
+            throw RuntimeErrorPanic.ComparingUncomparableType(GetGoTypeName(leftWrapped));
         }
 
         // Check if both are null
@@ -2858,6 +2858,22 @@ public static partial class builtin
         if (leftType != right.GetType())
             return false;
 
+        // Go's `==` on two interface values PANICS when their shared dynamic type has no equal
+        // algorithm — "runtime error: comparing uncomparable type map[string]int" — and the C#
+        // answered quietly instead, for every shape but the nil-func-adapter one handled above.
+        // Measured against go1.23.12: a map, slice or func held in an interface; a struct or an
+        // array that TRANSITIVELY contains one; and a named type whose underlying type is any of
+        // those, which panics under its OWN name (`main.myMap`, not `map[string]int`).
+        //
+        // ORDERING is load-bearing and mirrors the runtime's, which is also what makes this safe
+        // against the ~1,300 emitted call sites: both nil legs and the dynamic-type mismatch above
+        // answer WITHOUT panicking (`m == nil` is false, `m == someInt` is false — both verified in
+        // Go), so this is reached only once Go itself would have run the type's equal algorithm and
+        // found none. The converter emits AreEqual only for a comparison Go's own type checker
+        // admitted, so a panic raised here is a panic Go raises too.
+        if (!isComparableType(leftType))
+            throw RuntimeErrorPanic.ComparingUncomparableType(uncomparableTypeName(leftType, left));
+
         // Get equality "==" operator for type using reflection,
         // lookup is cached for performance.
         // (This already yields Go's IEEE-754 `==` for boxed floating-point values: on .NET 7+
@@ -2873,6 +2889,40 @@ public static partial class builtin
 
         // Call equality operator
         return (bool)equalityOperator.Invoke(null, [left, right])!;
+    }
+
+    // Comparability is a pure function of the managed Type and immutable for the life of the
+    // process, so the field walk GoReflect.StructFieldsComparable performs is done ONCE per type
+    // and read back from here afterwards. `==` is a hot path — the corpus emits AreEqual on
+    // roughly every `err == io.EOF` in the standard library — and an uncached verdict would
+    // re-reflect over a converted struct's fields on every comparison. A ConcurrentDictionary
+    // probe is a lock-free read for a present key, which is noise beside the reflective
+    // operator Invoke this gate sits immediately in front of.
+    //
+    // Deliberately delegating to GoReflect.IsComparable rather than restating Go's rule: that
+    // method is already the comparability signal the reflection bridge populates abi.Type.Equal
+    // from (reflect.Type.Comparable and reflectlite's Comparable both read it), so `==` and
+    // reflect answering from ONE definition is what keeps them from drifting apart.
+    private static readonly ConcurrentDictionary<Type, bool> s_comparableTypes = [];
+
+    private static bool isComparableType(Type type)
+    {
+        return s_comparableTypes.GetOrAdd(type, static t => GoReflect.IsComparable(t));
+    }
+
+    // Go names the offending type in the message exactly as `%T` spells it, and for an ARRAY that
+    // includes the length — `[1][]int`, never `[][]int`. A managed array<T> does not carry its
+    // length in its Type (only the value knows), so the dims come off the live operand through the
+    // same recovery reflect's descriptor synthesis uses. Every other kind is spelled by the type
+    // alone. GoReflect.GoTypeName is the renderer rather than builtin.GetGoTypeName because the
+    // latter's fallback hands back the RAW managed name for a bare container — `go.slice`1[[...]]`
+    // where Go says `[]int` — since a slice is neither a pointer box, an adapter, nor nested in a
+    // `<pkg>_package` class.
+    private static string uncomparableTypeName(Type type, object value)
+    {
+        return GoReflect.KindOf(type) == GoReflect.Array ?
+            GoReflect.GoTypeName(type, GoReflect.ArrayDimsOfValue(value)) :
+            GoReflect.GoTypeName(type);
     }
 
     /// <summary>

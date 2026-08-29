@@ -80,6 +80,24 @@ public static class RuntimeErrorPanic
         return new PanicException(IntegerDivideByZeroValue?.Invoke() ?? IntegerDivideByZeroMessage);
     }
 
+    private const string ComparingUncomparableTypeMessage = $"{RuntimeErrorMessage}comparing uncomparable type {{0}}";
+
+    /// <summary>
+    /// Go's panic for <c>==</c> between two interface values whose shared dynamic type has no equal
+    /// algorithm — a slice, map or func, or a struct/array that transitively contains one.
+    /// </summary>
+    /// <param name="goTypeName">Dynamic type, spelled as Go spells it (<c>map[string]int</c>, <c>[1][]int</c>, <c>main.withSlice</c>).</param>
+    /// <remarks>
+    /// Recoverable, like every other runtime error minted here: Go raises this from
+    /// <c>runtime.panicunsafe</c>-family code with a <c>runtime.Error</c> value, so a
+    /// <c>defer func(){ recover() }()</c> observes it and prints the message verbatim. Measured
+    /// against go1.23.12 for each shape the caller gates (see <c>builtin.AreEqual</c>).
+    /// </remarks>
+    public static PanicException ComparingUncomparableType(string goTypeName)
+    {
+        return new PanicException(string.Format(ComparingUncomparableTypeMessage, goTypeName));
+    }
+
     private const string MakeSliceLenOutOfRangeMessage = $"{RuntimeErrorMessage}makeslice: len out of range";
     public static PanicException MakeSliceLenOutOfRange()
     {
