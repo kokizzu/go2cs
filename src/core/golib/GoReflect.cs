@@ -138,11 +138,34 @@ public static partial class GoReflect
             return CanonicalBoxType(pointerAdapter.Box.GetType());
 
         // A value-sourced adapter (IValueAdapter) wraps a COPY of a struct this assembly cannot
-        // partial — Go's dynamic type is that struct, never the adapter class.
-        if (value is IValueAdapter { Value: not null } valueAdapter)
-            return valueAdapter.Value.GetType();
+        // partial — Go's dynamic type is that struct, never the adapter class. A wrapped DELEGATE
+        // (a named func type) can itself be nil, and unlike a nil-valued STRUCT — whose boxed copy
+        // is never null — a null delegate reference erases its own runtime type, so there is no
+        // `.GetType()` to call. The adapter's own class always declares exactly one wrapped-value
+        // field (ValueAdapterImplTemplate's `m_value`), and that field's declared TYPE is metadata,
+        // present whether or not the field's current value is null — so a null Value falls back to
+        // it rather than reporting the shell's own class as Go's dynamic type.
+        if (value is IValueAdapter valueAdapter)
+        {
+            return valueAdapter.Value is {} wrapped
+                ? wrapped.GetType()
+                : ValueAdapterWrappedType(value.GetType()) ?? CanonicalBoxType(value.GetType());
+        }
 
         return CanonicalBoxType(value.GetType());
+    }
+
+    private static readonly ConcurrentDictionary<Type, Type?> s_valueAdapterFieldTypes = new();
+
+    /// <summary>
+    /// The declared type of a generated <see cref="IValueAdapter"/> shell's wrapped-value field,
+    /// read from the shell's own TYPE metadata rather than an instance — the one channel that
+    /// still answers when the wrapped value itself is a null delegate.
+    /// </summary>
+    private static Type? ValueAdapterWrappedType(Type adapterType)
+    {
+        return s_valueAdapterFieldTypes.GetOrAdd(adapterType, static t =>
+            t.GetField("m_value", BindingFlags.Instance | BindingFlags.NonPublic)?.FieldType);
     }
 
     /// <summary>

@@ -875,6 +875,12 @@ private static uintptr reflectPointerToken(ΔValue v) {
     if (cur is IжAdapter { Box: not null } pointerAdapter) {
         cur = pointerAdapter.Box;
     }
+    // A value-sourced adapter wrapping a NIL delegate (a named func type crossing a foreign
+    // interface boundary) has a non-null SHELL around a null wrapped value — unwrap before the
+    // nilness test below, or the shell's own identity hash stands in for a nil func's address.
+    if (cur is IValueAdapter valueAdapter) {
+        cur = valueAdapter.Value;
+    }
     if (cur is null || (cur is INilPointer nilable && nilable.IsNilPointer)) {
         return 0;
     }
