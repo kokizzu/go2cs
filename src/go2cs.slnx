@@ -785,6 +785,7 @@
     <Project Path="tests/Behavioral/SelectOperandOnceEval/SelectOperandOnceEval.csproj" />
     <Project Path="tests/Behavioral/SelectOperandSourceOrder/SelectOperandSourceOrder.csproj" />
     <Project Path="tests/Behavioral/SelectRandomFairness/SelectRandomFairness.csproj" />
+    <Project Path="tests/Behavioral/SelectRecvCommShadowRename/SelectRecvCommShadowRename.csproj" />
     <Project Path="tests/Behavioral/SelectSendDefault/SelectSendDefault.csproj" />
     <Project Path="tests/Behavioral/SelectSendRecvMix/SelectSendRecvMix.csproj" />
     <Project Path="tests/Behavioral/SelectSingleFire/SelectSingleFire.csproj" />

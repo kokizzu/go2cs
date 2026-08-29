@@ -1513,6 +1513,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSelectRandomFairness() => CheckTarget("SelectRandomFairness");
 
     [TestMethod]
+    public void CheckSelectRecvCommShadowRename() => CheckTarget("SelectRecvCommShadowRename");
+
+    [TestMethod]
     public void CheckSelectSendDefault() => CheckTarget("SelectSendDefault");
 
     [TestMethod]

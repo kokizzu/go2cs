@@ -1454,6 +1454,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSelectRandomFairness() => CheckTarget("SelectRandomFairness");
 
     [TestMethod]
+    public void CheckSelectRecvCommShadowRename() => CheckTarget("SelectRecvCommShadowRename");
+
+    [TestMethod]
     public void CheckSelectSendDefault() => CheckTarget("SelectSendDefault");
 
     [TestMethod]
