@@ -940,6 +940,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckNamedArrayKeyedLiteral() => CheckTarget("NamedArrayKeyedLiteral");
 
     [TestMethod]
+    public void CheckNamedArrayPointerConversion() => CheckTarget("NamedArrayPointerConversion");
+
+    [TestMethod]
     public void CheckNamedArrayWrapper() => CheckTarget("NamedArrayWrapper");
 
     [TestMethod]

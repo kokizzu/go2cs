@@ -943,6 +943,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckNamedArrayKeyedLiteral() => CheckTarget("NamedArrayKeyedLiteral");
 
     [TestMethod]
+    public void CheckNamedArrayPointerConversion() => CheckTarget("NamedArrayPointerConversion");
+
+    [TestMethod]
     public void CheckNamedArrayWrapper() => CheckTarget("NamedArrayWrapper");
 
     [TestMethod]

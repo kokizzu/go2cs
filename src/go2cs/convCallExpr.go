@@ -916,6 +916,49 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			}
 		}
 
+		// A conversion to a pointer-to-NAMED-ARRAY whose source is a FRESH allocation —
+		// reflect's `(*MyBytesArray0)(new([0]byte))` (all_test.go:4501). It emitted the bare
+		// `(ж<MyBytesArray0>)Ꮡ(new array<byte>(0))` cast, which is CS0030: ж<> is not variant, so
+		// ж<array<byte>> and ж<MyBytesArray0> are unrelated instantiations.
+		//
+		// CONSTRUCT the wrapper and take ITS address, which is exactly what the sibling
+		// composite-literal spelling `&MyBytesArray{1,2,3,4}` already emits one line below in the
+		// same reflect table. Restricted to a fresh allocation ON PURPOSE, because for a fresh one
+		// nothing else can reference the storage, so constructing over it is indistinguishable
+		// from aliasing it.
+		//
+		// The `(*Named)(&existing)` spelling deliberately KEEPS its CS0030 rather than taking this
+		// emission. That was measured, not assumed: a named-ARRAY wrapper's generated field is
+		// `array<T>?` — a Nullable, so it is BOTH larger than the `array<T>` it wraps and a
+		// different shape — and golib's alias gate refuses it on the size test alone. (The named
+		// SLICE wrapper's field is a bare `slice<T>`, identical in size and layout, which is why
+		// the reinterpret arm above is correct there and banked.) Widening that arm to arrays
+		// therefore compiles but hands back a raw-address box whose deref fabricates a managed
+		// reference: measured as an AccessViolationException inside `array<byte>.get_Item` on the
+		// FIRST indexed read. So for `&existing` there is no correct emission available yet, and a
+		// loud CS0030 is the honest answer — constructing there would silently write through a
+		// copy for whole-value assignment, which is the log/slog `WithAttrs` bug this file's
+		// history already paid for.
+		if targetPtr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Pointer); ok {
+			if targetNamed, ok := types.Unalias(targetPtr.Elem()).(*types.Named); ok {
+				if targetArr, ok := targetNamed.Underlying().(*types.Array); ok {
+					if argCall, isCall := arg.(*ast.CallExpr); isCall && len(argCall.Args) == 1 {
+						if newIdent, isIdent := argCall.Fun.(*ast.Ident); isIdent && newIdent.Name == "new" && v.identIsUniverseBuiltin(newIdent) {
+							// Go only permits the conversion when the pointee underlyings are
+							// identical, but assert it rather than inherit it: this arm mints a
+							// wrapper over a zero value, so a mismatch would construct silently.
+							if argPtr, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Pointer); ok && types.Identical(argPtr.Elem().Underlying(), targetArr) {
+								elemName := convertToCSTypeName(v.getAliasQualifiedTypeName(targetArr.Elem(), false))
+								namedCS := convertToCSTypeName(v.getAliasQualifiedTypeName(targetNamed, false))
+
+								return fmt.Sprintf("Ꮡ(new %s(new array<%s>(%s)))", namedCS, elemName, csNintLiteral(targetArr.Len()))
+							}
+						}
+					}
+				}
+			}
+		}
+
 		// A conversion between two NAMED SLICE types sharing an identical underlying — tar's
 		// `sparseElem(s[i*24:])` where s is sparseArray (both `[]byte`): the named-slice
 		// slicing wrapper-return makes the arg the NAMED wrapper, and a direct
