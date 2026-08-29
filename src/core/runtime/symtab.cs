@@ -623,63 +623,16 @@ internal static readonly @string runtimeTextOffsetOutOfˢ = "runtime: text offse
     return gostringnocopy(Ꮡ(md.funcnametab, nameOff));
 }
 
-// FuncForPC returns a *[Func] describing the function that contains the
-// given program counter address, or else nil.
-//
-// If pc represents multiple functions because of inlining, it returns
-// the *Func describing the innermost function, but with an entry of
-// the outermost function.
-//
-// For completely unclear reasons, even though they can import runtime,
-// some widely used packages access this using linkname.
-// Notable members of the hall of shame include:
-//   - gitee.com/quant1x/gox
-//
-// Do not remove or change the type signature.
-// See go.dev/issue/67401.
-//
-//go:linkname FuncForPC
-public static ж<Func> FuncForPC(uintptr pc) {
-    var f = findfunc(pc);
-    if (!f.valid()) {
-        return default!;
-    }
-    // This must interpret PC non-strictly so bad PCs (those between functions) don't crash the runtime.
-    // We just report the preceding function in that situation. See issue 29735.
-    // TODO: Perhaps we should report no function at all in that case.
-    // The runtime currently doesn't have function end info, alas.
-    var (u, uf) = newInlineUnwinder(f, pc);
-    if (!u.isInlined(uf)) {
-        return f._Func();
-    }
-    var sf = u.srcFunc(uf);
-    ref var @file = ref heap<@string>(out var Ꮡfile);
-    (@file, var line) = u.fileLine(uf);
-    var fi = Ꮡ(new funcinl(
-        ones: ~(uint32)0,
-        entry: f.entry(), // entry of the real (the outermost) function.
+// go2cs generated this placeholder — func FuncForPC is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-        name: sf.name(),
-        @file: @file,
-        line: (int32)line,
-        startLine: sf.startLine
-    ));
-    return fi.Reinterpret<funcinl, Func>();
-}
+// go2cs generated this placeholder — func Name is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Name returns the name of the function.
-public static @string Name(this ж<Func> Ꮡf) {
-    if (Ꮡf == nil) {
-        return ""u8;
-    }
-    var fn = Ꮡf.raw();
-    if (fn.isInlined()) {
-        // inlined version
-        var fi = fn.Reinterpret<_func, funcinl>();
-        return funcNameForPrint((~fi).name);
-    }
-    return funcNameForPrint(funcname(Ꮡf.funcInfo()));
-}
+// This must interpret PC non-strictly so bad PCs (those between functions) don't crash the runtime.
+// We just report the preceding function in that situation. See issue 29735.
+// TODO: Perhaps we should report no function at all in that case.
+// The runtime currently doesn't have function end info, alas.
+// entry of the real (the outermost) function.
+// inlined version
 
 // Entry returns the entry address of the function.
 public static uintptr Entry(this ж<Func> Ꮡf) {

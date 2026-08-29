@@ -10,19 +10,15 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using dwarfꓸLineReader = go.debug.dwarf_package.ΔLineReader;
-global using dwarfꓸReader = go.debug.dwarf_package.ΔReader;
-global using dwarfꓸType = go.debug.dwarf_package.ΔType;
-global using osꓸDirEntry = go.io.fs_package.DirEntry;
-global using osꓸFileInfo = go.io.fs_package.FileInfo;
-global using osꓸFileMode = go.io.fs_package.FileMode;
-global using osꓸPathError = go.io.fs_package.PathError;
-global using osꓸSignal = go.os_package.ΔSignal;
-using io = go.io_package;
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
 // </ImportedTypeAliases>
 
 using go;
-using static go.debug.pe_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -36,7 +32,6 @@ using static go.debug.pe_package;
 // when referenced.
 
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("Section", "ΔSection")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -46,15 +41,10 @@ using static go.debug.pe_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<bytes_package.Buffer, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<nobitsSectionReader, io_package.ReaderAt>(Pointer = true)]
-[assembly: GoImplement<os_package.File, io_package.Closer>(Pointer = true)]
-[assembly: GoImplement<os_package.File, io_package.ReaderAt>(Pointer = true)]
-[assembly: GoImplement<ΔSection, io_package.ReaderAt>(Promoted = true)]
+[assembly: GoImplement<Greeter, Greetable>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<io.SectionReader, ж<io.SectionReader>>(Indirect = true)]
 // </ImplicitConversions>
 
 // Go source positions are recorded here, one `GoPositionMap` attribute per converted
@@ -65,16 +55,14 @@ using static go.debug.pe_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/pe/file.go", "file.cs", "AFdWkoKClIKCgpSCrLKCgoKUrLKChIKAgqSCgoKCgoKUlJSCgIKkAAMWtpaCgqiCgpSCgqiCgqiCgqiCgoKAgqSCgpSCAAsYgpKUgoKUgoKCgqgACAqCqJKCloKCpqqigoKmAAsGgoKUpKTMgoKCloKWgoKCgoKUgIKkgIKklJyygoKClICCpoKClJaCgqiCgoKUgJSmgoKWgpSUgqgADCbCgpaGkoKUuoKYkoKUmJKCgoLKgoK6gpaCgqiGkoKCgoKCgoKCgpQABxCCgqKClIKCkoKCgpS2graCgoKUyILMrNYAChCCrtSClgACEoKYkoKCloKYlK6CmIIAATqWgoKWhKSugpiCAAE4loKCloSkzrKCgpaCgIKm", "215-225:1;228-254:2;488-491:1")]
-[assembly: go.GoPositionMap("debug/pe/section.go", "section.cs", "AClAsoKUgoKUAAwaooKUgoKUgoKClAAfSsKuwg==")]
-[assembly: go.GoPositionMap("debug/pe/string.go", "string.cs", "AA8iooKClMyUgpSCgoKUgoKCpoKUhIKClKzEgpSCgpQ=")]
-[assembly: go.GoPositionMap("debug/pe/symbol.go", "symbol.cs", "AB7GAQAKAoKUrLKAgqSmgoKUgoKigoKUkoKUgu6U")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABUcgu6C1qKCgIK2ABAGgoKCloKCgpaCgoKSgpaCgoKCgoI=")]
 // </GoSourcePositionMaps>
 
-namespace go.debug;
+namespace go;
 
-[GoPackage("pe")]
-public static partial class pe_package
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -83,21 +71,6 @@ public static partial class pe_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct nobitsSectionReader {}
-    [GoValueClone("Name")] public partial struct COFFSymbol {}
-    public partial struct COFFSymbolAuxFormat5 {}
-    public partial struct DataDirectory {}
-    public partial struct File {}
-    public partial struct FileHeader {}
-    public partial struct FormatError {}
-    public partial struct ImportDirectory {}
-    [GoValueClone("DataDirectory")] public partial struct OptionalHeader32 {}
-    [GoValueClone("DataDirectory")] public partial struct OptionalHeader64 {}
-    public partial struct Reloc {}
-    public partial struct SectionHeader {}
-    [GoValueClone("Name")] public partial struct SectionHeader32 {}
-    public partial struct StringTable {}
-    public partial struct Symbol {}
-    public partial struct ΔSection {}
+    public partial interface Greetable {}
     // </TypeAccessibility>
 }

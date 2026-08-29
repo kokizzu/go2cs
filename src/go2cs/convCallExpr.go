@@ -784,7 +784,33 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					return fmt.Sprintf("default(%s)!", targetTypeName)
 				}
 
-				return fmt.Sprintf("new %s(%s)", targetTypeName, expr)
+				// A function LITERAL operand (`NamedType(func(...) {...})`) is provably never nil
+				// — it constructs a fresh closure at the conversion site — so the direct `new
+				// %s(%s)` delegate-copy constructor is both correct and the cheaper emission; the
+				// nil-safety wrapper below exists for operands that CAN be nil, not this one.
+				if _, isFuncLit := ast.Unparen(arg).(*ast.FuncLit); isFuncLit {
+					return fmt.Sprintf("new %s(%s)", targetTypeName, expr)
+				}
+
+				// A bare reference to a package-level FUNCTION (`reader(readTen)`, MethodExpression)
+				// is provably never nil too — a Go func declaration cannot be unset, only a
+				// VARIABLE or PARAMETER holding a func value can be nil. Same fast direct path.
+				if ident, isIdent := ast.Unparen(arg).(*ast.Ident); isIdent {
+					if _, isFuncObj := v.info.ObjectOf(ident).(*types.Func); isFuncObj {
+						return fmt.Sprintf("new %s(%s)", targetTypeName, expr)
+					}
+				}
+
+				// Any OTHER operand is not a nil LITERAL, but it can still be nil at RUNTIME — a
+				// `handler func(...)` parameter reaching `HandlerFunc(handler)` (net/http's own
+				// HandleFunc) is exactly this. `new %s(%s)` is the .NET delegate-copy
+				// CONSTRUCTOR: eager, and it throws for a null source before Go's own nil check
+				// downstream ever runs — Go's conversion itself never panics. Route through the
+				// nil-safe golib helper so a null source yields null, matching Go, and only a
+				// non-null source pays for construction.
+				sourceTypeName := v.getCSharpTypeName(v.info.TypeOf(arg))
+
+				return fmt.Sprintf("NilSafeDelegateConversion<%s, %s>(%s)", targetTypeName, sourceTypeName, expr)
 			}
 		}
 

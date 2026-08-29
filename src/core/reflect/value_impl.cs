@@ -881,7 +881,18 @@ private static uintptr reflectPointerToken(ΔValue v) {
     if (cur is IValueAdapter valueAdapter) {
         cur = valueAdapter.Value;
     }
-    if (cur is null || (cur is INilPointer nilable && nilable.IsNilPointer)) {
+    // A nil CHANNEL (or any other golib container struct whose zero value is Go's nil — a boxed
+    // struct is never a null REFERENCE, only its backing core is) needs the same zero-address
+    // answer a nil pointer gets, or two independently-boxed copies of "the same" nil channel
+    // read as two different addresses (RuntimeHelpers.GetHashCode on two separate boxings) —
+    // wrong for any direct reflect.Value.Pointer()/UnsafePointer() call on a nil channel, even
+    // though it turned out NOT to be net/http's TestReadRequest divergence (that one's
+    // deepValueEqualBoxed default-case path never reaches this function; see the readrequest
+    // chip's mailbox report). GoReflect.IsNilGoValue already answers the nil question correctly
+    // and generally — INilPointer for pointers, IMap.IsNil for maps, and (the channel case) the
+    // type's own `== nil` operator — so it strictly widens the narrower pointer-only check it
+    // replaces without narrowing any existing answer.
+    if (cur is null || GoReflect.IsNilGoValue(cur)) {
         return 0;
     }
     // A TYPE DESCRIPTOR pointer is ordered by the type it describes, never by its box identity —

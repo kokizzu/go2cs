@@ -529,6 +529,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckFuncFieldUnexportedType() => CheckTarget("FuncFieldUnexportedType");
 
     [TestMethod]
+    public void CheckFuncForPCName() => CheckTarget("FuncForPCName");
+
+    [TestMethod]
     public void CheckFuncLitArgCapture() => CheckTarget("FuncLitArgCapture");
 
     [TestMethod]
@@ -1159,6 +1162,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckNewAnonStructIfaceEmbed() => CheckTarget("NewAnonStructIfaceEmbed");
 
     [TestMethod]
+    public void CheckNilAdapterOpsClosure() => CheckTarget("NilAdapterOpsClosure");
+
+    [TestMethod]
     public void CheckNilChannelInSelect() => CheckTarget("NilChannelInSelect");
 
     [TestMethod]
@@ -1190,6 +1196,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckNilSliceConversion() => CheckTarget("NilSliceConversion");
+
+    [TestMethod]
+    public void CheckNilVarNamedFuncConv() => CheckTarget("NilVarNamedFuncConv");
 
     [TestMethod]
     public void CheckOptionalInterfaceStructuralAssertion() => CheckTarget("OptionalInterfaceStructuralAssertion");

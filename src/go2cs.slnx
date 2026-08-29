@@ -432,6 +432,7 @@
     <Project Path="tests/Behavioral/FormatTypeAdapters/FormatTypeAdapters.csproj" />
     <Project Path="tests/Behavioral/FormatTypeAdapters/typelib/FormatTypeAdapters.typelib.csproj" />
     <Project Path="tests/Behavioral/FuncFieldNestedTupleParam/FuncFieldNestedTupleParam.csproj" />
+    <Project Path="tests/Behavioral/FuncForPCName/FuncForPCName.csproj" />
     <Project Path="tests/Behavioral/FuncTypeNilConversion/FuncTypeNilConversion.csproj" />
     <Project Path="tests/Behavioral/ForeignPairNumericConv/ForeignPairNumericConv.csproj" />
     <Project Path="tests/Behavioral/ForeignPairNumericConv/convlib/ForeignPairNumericConv.convlib.csproj" />
@@ -665,6 +666,7 @@
     <Project Path="tests/Behavioral/NetDeadlineMatrix/NetDeadlineMatrix.csproj" />
     <Project Path="tests/Behavioral/NetListenSmoke/NetListenSmoke.csproj" />
     <Project Path="tests/Behavioral/NewAnonStructIfaceEmbed/NewAnonStructIfaceEmbed.csproj" />
+    <Project Path="tests/Behavioral/NilAdapterOpsClosure/NilAdapterOpsClosure.csproj" />
     <Project Path="tests/Behavioral/NilChannelInSelect/NilChannelInSelect.csproj" />
     <Project Path="tests/Behavioral/NilChannelSelectDefault/NilChannelSelectDefault.csproj" />
     <Project Path="tests/Behavioral/NilMapKey/NilMapKey.csproj" />
@@ -676,6 +678,7 @@
     <Project Path="tests/Behavioral/NilPointerUintptr/NilPointerUintptr.csproj" />
     <Project Path="tests/Behavioral/NilReceiverNormalization/NilReceiverNormalization.csproj" />
     <Project Path="tests/Behavioral/NilSliceConversion/NilSliceConversion.csproj" />
+    <Project Path="tests/Behavioral/NilVarNamedFuncConv/NilVarNamedFuncConv.csproj" />
     <Project Path="tests/Behavioral/OptionalInterfaceStructuralAssertion/OptionalInterfaceStructuralAssertion.csproj" />
     <Project Path="tests/Behavioral/PackageAliasRootedTypeArgs/PackageAliasRootedTypeArgs.csproj" />
     <Project Path="tests/Behavioral/PackageNameShadowing/PackageNameShadowing.csproj" />

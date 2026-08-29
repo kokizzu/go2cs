@@ -210,6 +210,16 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// asserts over runtime.Callers) are the demonstrated consumers.
 		"Callers":     goosAny,
 		"Frames.Next": goosAny,
+
+		// FuncForPC/Func.Name join the traceback family for the same reason the rest of it is
+		// here: both bodies reach pclntab, which does not exist. managed_impl.cs's header once
+		// ruled a *Func unrecoverable, and that premise EXPIRED when ManagedPointerTokens landed
+		// -- a reflect Value.Pointer() token resolves to the delegate behind it, and a Callers PC
+		// token already carries its Go-spelled name. Name() must come WITH FuncForPC: its own body
+		// Reinterprets Func to _func -- the prefix-downcast the managed model cannot alias -- and
+		// then walks the symbol table, so a *Func whose Name() stayed auto is a handle to nothing.
+		"FuncForPC": goosAny,
+		"Func.Name": goosAny,
 		// The metrics-table mutex (managed_impl.cs). Go's bodies acquire metricsSema, a runtime
 		// sleeping semaphore whose acquire path is getg() → sudog → gopark — the scheduler
 		// machinery that has no managed counterpart — so every path into the metrics table
@@ -801,6 +811,28 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"rawToSockaddrInet6": goosWindows,
 		"sockaddrInet4ToRaw": goosWindows,
 		"sockaddrInet6ToRaw": goosWindows,
+	},
+	// debug/pe's COFF symbol reader pair. Go re-VIEWS one 18-byte symbol record as two struct
+	// shapes — `(*COFFSymbolAuxFormat5)(unsafe.Pointer(&sym))` — a free re-typing of the same
+	// bytes (both structs are exactly 18 bytes, no padding). The managed surrogates are NOT those
+	// bytes: COFFSymbol.Name is an `array<uint8>` MANAGED REFERENCE where Go has 8 inline octets,
+	// so the two shapes share no Go-compatible managed layout, Reinterpret's alias arm correctly
+	// refuses the pair (6 fields vs 7, no recursive field-type match), and the fallback view puns
+	// the C# layouts instead — the scalars land bijectively (write and read cross the same view,
+	// so the values round-trip), but the aux shape's blank `_ [3]uint8` SLOT overlays the Name
+	// reference and answers with the 8-element Name array itself: debug/pe's
+	// TestReadCOFFSymbolAuxInfo prints `_:[0 0 0 0 0 0 0 0]` where Go prints `_:[0 0 0]`.
+	// symbol_impl.cs transcribes the GO layout explicitly at both seams instead: readCOFFSymbols
+	// decodes every 18-byte record — primary and aux alike — through the COFFSymbol shape (for an
+	// aux record that is byte-identical to Go's aux-view read, with the blank-field skip
+	// reproduced), so File.COFFSymbols holds exactly the field values Go's memory holds; and
+	// COFFSymbolReadSectionDefAux decodes that image back into a real COFFSymbolAuxFormat5 box.
+	// Same family as the zero-size/layout-emission arc ("the C# struct is not the Go struct's
+	// bytes"); the board's debug/pe entry records the one-file hand-own of the symbol reader as
+	// this package's sanctioned remedy.
+	"debug/pe": {
+		"readCOFFSymbols":                  goosAny,
+		"File.COFFSymbolReadSectionDefAux": goosAny,
 	},
 	// sync's copyChecker detects a copied Cond by storing its OWN ADDRESS in itself and comparing:
 	// `uintptr(*c) != uintptr(unsafe.Pointer(c))`. Both halves are raw-metal on a managed referent.

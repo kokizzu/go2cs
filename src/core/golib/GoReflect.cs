@@ -162,7 +162,13 @@ public static partial class GoReflect
     /// read from the shell's own TYPE metadata rather than an instance — the one channel that
     /// still answers when the wrapped value itself is a null delegate.
     /// </summary>
-    private static Type? ValueAdapterWrappedType(Type adapterType)
+    /// <remarks>
+    /// Internal, not private: <c>builtin.TryTypeAssert</c> needs the same fallback for the
+    /// identical reason — a C# type pattern (<c>Value: T wrapped</c>) never matches a null
+    /// <c>Value</c>, so asserting a nil-wrapped delegate against its own delegate type has no
+    /// runtime instance to pattern-match against either.
+    /// </remarks>
+    internal static Type? ValueAdapterWrappedType(Type adapterType)
     {
         return s_valueAdapterFieldTypes.GetOrAdd(adapterType, static t =>
             t.GetField("m_value", BindingFlags.Instance | BindingFlags.NonPublic)?.FieldType);
