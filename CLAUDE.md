@@ -736,11 +736,19 @@ ONE stdlib in a build; there is now only one on disk.
   `run-validated-sweep.ps1 -Filter <pkg>` on the merged master, not the lane tip; the lane-tip proof
   is necessary but not sufficient. (2) **Any reflect-bridge-touching change's canary set is the FIVE
   largest banked reflect consumers BY VERDICT COUNT — recomputed from
-  `docs/ValidatedTestPackages.md` at gate time, never carried forward** (as of 2026-08-19 that
-  derivation yields: `go/internal/gcimporter` 583, `go/types` 557, `encoding/json` 491, `crypto/tls`
-  402, `encoding/xml` 386 — order by count; the point is the list is derived, never remembered, so
-  the newest banks are always in it — the escape happened precisely because merge canary sets
-  predated the newest bank). "Reflect-bridge-touching" reads broadly: `src/core/reflect/*_impl.cs`,
+  `docs/ValidatedTestPackages.md` at gate time, never carried forward.** The consumer PREDICATE,
+  explicit since 2026-08-29: **the package's OWN Go source — production OR `_test.go` — imports
+  `reflect`** (test usage counts because the canary protects VERDICTS, and verdicts are produced by
+  test code; a suite leaning on `reflect.DeepEqual` is exactly what a bridge regression breaks).
+  Derivation is a grep of the GOROOT sources plus the roster's counts, both at gate time. As of
+  2026-08-29 it yields: `crypto/tls` 3,643 (bogo-capable hosts only; the collapsed-verdict path
+  otherwise), `go/types` 557, `encoding/json` 491, `encoding/xml` 386, `crypto/x509` 341. ⚠ The
+  PREVIOUS worked example here included `go/internal/gcimporter` (583) — a package with **zero
+  reflect touchpoints in prod or test** — and that membership was then carried across several merge
+  windows with only the counts re-read, until a lane's fresh grep caught it while holding an
+  expensive sweep: the example had substituted for the derivation, which is precisely what this
+  rule forbids, this time performed by the coordinator. Worked examples date and drift; the grep is
+  the rule. "Reflect-bridge-touching" reads broadly: `src/core/reflect/*_impl.cs`,
   `src/core/internal/reflectlite`, golib's `GoReflect.*`/adapter/equality machinery, and the
   go2cs-gen adapter/shell templates all qualify.
 
