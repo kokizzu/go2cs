@@ -247,6 +247,47 @@ public static class StructDeclarationSyntaxExtensions
         return interfaceMembers;
     }
 
+    /// <summary>
+    /// Gets the names of the struct's fields whose initializer is specifically a directional
+    /// channel STAMP — <c>channel&lt;T&gt;.RecvOnly</c> or <c>channel&lt;T&gt;.SendOnly</c>, the
+    /// converter's emission for a <c>&lt;-chan T</c>/<c>chan&lt;- T</c> struct field (e.g.
+    /// <c>net/http</c>'s <c>Request.Cancel</c>). Unlike a VALUE initializer, this is TYPE cargo:
+    /// Go's zero value for a directional channel field is the direction-stamped nil, not a bare
+    /// unstamped one, and that holds for the field REGARDLESS of whether a caller's argument was
+    /// omitted or explicitly nil — there is no Go-expressible way to store a differently-directioned
+    /// nil into a <c>&lt;-chan T</c>-typed slot. <see cref="GenerateConstructor"/> consults this to
+    /// decide when a field-wise constructor's assignment must be skipped for a nil argument (letting
+    /// the field initializer that already ran stand), matching the fixed-array member's own
+    /// zero-argument handling — never for a general "any field with an initializer" case, which
+    /// would wrongly let a value initializer (a field defaulting to a nonzero constant) override an
+    /// explicitly-passed zero.
+    /// </summary>
+    /// <remarks>
+    /// Named-argument default values must be compile-time constants, so this cannot be expressed as
+    /// a parameter default (`Cancel = channel&lt;EmptyStruct&gt;.RecvOnly` does not compile) — the
+    /// fix lives in the constructor BODY, which is why this returns names for GenerateConstructor to
+    /// consult rather than feeding AppendConstructorSignature.
+    /// </remarks>
+    public static HashSet<string> GetChanDirInitializerMembers(
+        this StructDeclarationSyntax structDeclaration)
+    {
+        HashSet<string> chanDirMembers = new(StringComparer.Ordinal);
+
+        foreach (MemberDeclarationSyntax member in structDeclaration.Members)
+        {
+            if (member is not FieldDeclarationSyntax { Declaration.Type: GenericNameSyntax { Identifier.Text: "channel" } } fieldDeclaration)
+                continue;
+
+            foreach (VariableDeclaratorSyntax variable in fieldDeclaration.Declaration.Variables)
+            {
+                if (variable.Initializer?.Value is MemberAccessExpressionSyntax { Name.Identifier.Text: "RecvOnly" or "SendOnly" })
+                    chanDirMembers.Add(variable.Identifier.Text);
+            }
+        }
+
+        return chanDirMembers;
+    }
+
     // A Go interface value: a C# interface, or `object` — which is how `any` is spelled.
     private static bool IsGoInterfaceValue(ITypeSymbol? type)
     {

@@ -301,6 +301,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckCrossPkgUser() => CheckTarget("CrossPkgUser");
 
     [TestMethod]
+    public void CheckCtorFieldInitializerOmitted() => CheckTarget("CtorFieldInitializerOmitted");
+
+    [TestMethod]
     public void CheckDeadPointerParamAlias() => CheckTarget("DeadPointerParamAlias");
 
     [TestMethod]
