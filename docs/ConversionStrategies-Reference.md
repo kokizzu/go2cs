@@ -9052,6 +9052,67 @@ construction: an existing zero-arg variadic defer/go site would have been a comp
 corpus compiles. Guarded by `DeferVariadicCallee` (both statements, both arities, plain func and
 pointer-receiver method, output-compared vs `go run`).
 
+### `defer f(g())` spreads a MULTI-VALUE call: the tuple is the eager argument, the thunk expands it
+
+Go lets a call whose arguments come entirely from one multi-value call omit the intermediate
+variables — `f(g())` passes `g`'s results as `f`'s parameters, and the language permits it *only*
+when that call is the sole argument. Under `defer`/`go` the two halves of the semantics split:
+`g()` is evaluated **at the statement**, on the current goroutine, and `f` runs later (at unwind,
+or on the new goroutine) with the results `g` produced back then.
+
+The eager half was already right — argument capture happens in exactly one place, the argument-list
+renderer, which hands the eager expression to the registration and substitutes a temp parameter
+into the thunk body. What was missing is the expansion: `len(Call.Args)` is **1** for this shape,
+so one `ᴛ1` marker went to a callee wanting N parameters.
+
+```csharp
+defer(ᴛ1 => show(ᴛ1), two(), ref ᒐ);   // BEFORE — two() is (int, string), show takes both: CS7036
+```
+
+C# has no splat, and it needs none: the tuple `g()` returns is a perfectly good single eager
+argument. The arity-1 rung captures it at exactly Go's moment and exactly once, and the thunk
+spreads its components when the call actually runs:
+
+```go
+func two() (int, string)              //  Go:
+defer show(two())                     //      two() runs at the defer; show runs at unwind
+```
+
+```csharp
+defer(ᴛ1 => show(ᴛ1.Item1, ᴛ1.Item2), two(), ref ᒐ);
+```
+
+`Item1…ItemN` are `System.ValueTuple`'s own fields, so NAMED Go results (`(n int, s string)`, which
+emit a named C# tuple) address identically — the element names are compiler aliases, never a
+replacement. Hoisting the results into statement-time locals instead would also be correct, but it
+buys nothing and costs a name: the thunk's parameters are already `ᴛ1…ᴛN`, so the hoisted temps
+would collide with them in the enclosing scope (CS0136).
+
+**Three pieces, each independently red-proven.** The component-wise substitution
+(`convExprList`) is the fix proper. The **temp-parameter force** in `visitDeferStmt`/`visitGoStmt`
+matters only for a FUNC-LITERAL callee — an ordinary callee already takes that form from the
+existing arity test (one argument against N>1 declared parameters), but a literal reaches neither
+that test nor the variadic one (CS0411 without it). And a non-variadic **func-literal callee** is
+the one defer/go shape rendered as an INVOCATION rather than handed to the rung as a delegate, so
+it additionally needs the immediately-invoked-literal delegate cast that phase 1a declines for
+every other defer/go callee (CS0149 without it):
+
+```csharp
+defer(ᴛ1 => ((Action<nint, @string>)((nint n, @string s) => { … }))(ᴛ1.Item1, ᴛ1.Item2), two(), ref ᒐ);
+```
+
+**Reach.** Zero sites in the production corpus — the idiom is a TEST one, which is where it was
+found: Go's own save-and-restore hook `defer reflect.SetArgRegs(reflect.SetArgRegs(a, b, c))`
+(three results into three parameters, the callee returning values so the thunk binds the
+result-discarding `Func` rung) accounts for **four** of the reflect test host's errors, at
+`abi_test.cs` ×3 and `all_test.cs` ×1. A converted-test emission diff over that host moves exactly
+those four lines and nothing else. (Guarded by `DeferMultiValueSpread`: arity 2 and 3, the
+capture-not-re-read case, LIFO ordering, a pointer-receiver method callee, a per-iteration loop, a
+func-literal callee, a variadic callee, and the result-returning save/restore shape — plus two
+CONTROLS that must keep their existing emission, plain matching-arity arguments and a
+SINGLE-value call as the sole argument, both of which stay bare method groups. `go` mirrors every
+arm and is covered by two of its own.)
+
 ### `defer panic(v)` captures its value at the defer, and the sequence survives it
 
 `panic` is the one built-in emitted as a `throw` **statement** rather than as a call, and that made it

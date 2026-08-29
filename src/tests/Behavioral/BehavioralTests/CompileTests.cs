@@ -337,6 +337,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckDeferLoopCapture() => CheckTarget("DeferLoopCapture");
 
     [TestMethod]
+    public void CheckDeferMultiValueSpread() => CheckTarget("DeferMultiValueSpread");
+
+    [TestMethod]
     public void CheckDeferPanicArg() => CheckTarget("DeferPanicArg");
 
     [TestMethod]
