@@ -6,7 +6,9 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using go.golib;
 
 namespace go;
@@ -49,6 +51,16 @@ public class PanicException(object? state, Exception? innerException = null) :
     /// the row-harvest-2 lane a diagnostic round-trip on the only defect it was chasing.
     /// </para>
     /// <para>
+    /// Asking that question of the managed type system alone is not enough, and the gap is the whole
+    /// corpus: a CONVERTED Go error does not implement golib's <c>error</c> interface — the converter
+    /// emits <c>Error</c> as an extension method over its receiver — so <c>state is error</c> matches
+    /// only golib's own carrier. <c>reflect</c>'s <c>panic(&amp;ValueError{...})</c> is the measured
+    /// case: it arrives as a ж box, which implements nothing, carries no <c>String</c>, and answers
+    /// <c>ToString()</c> with its address. It printed <c>panic: 0x2668d34e960</c> and cost two
+    /// investigations their time. A value-held converted error was no better off — it printed the
+    /// .NET type name. Both are why the method set is probed, not merely the interface.
+    /// </para>
+    /// <para>
     /// The <c>Stringer</c> arm is not redundant with <c>ToString()</c>. A Go named type's generated
     /// <c>ToString()</c> forwards to its UNDERLYING value (go2cs-gen's InheritedTypeTemplate), so
     /// <c>panic(2 * time.Second)</c> would print <c>2000000000</c> where Go prints <c>2s</c>. The
@@ -78,7 +90,14 @@ public class PanicException(object? state, Exception? innerException = null) :
             if (state is error goError)
                 return goError.Error().ToString();
 
-            if (TryGoStringMethod(state, out string stringer))
+            // The `error` arm above catches only what golib's own carrier holds. A CONVERTED Go
+            // error implements no managed interface at all — the converter emits a Go method as an
+            // extension method over its receiver — so the question has to be asked of the Go method
+            // set, exactly as Go's `case error:` asks it of the dynamic type's.
+            if (TryGoMethod(state, nameof(error.Error), out string errorText))
+                return errorText;
+
+            if (TryGoMethod(state, "String", out string stringer))
                 return stringer;
         }
         catch (Exception ex) when (ex is not GoexitException)
@@ -89,24 +108,49 @@ public class PanicException(object? state, Exception? innerException = null) :
         return state.ToString() ?? "nil";
     }
 
-    // Go's `stringer` is the structural `interface{ String() string }`, so this asks the same
-    // question of the managed value: does its Go method set carry `String`? A converted Go method is
-    // an extension method over its receiver, and the registry's precedence comparer can hand back
-    // one declared for a DIFFERENT receiver shape (the ж<T> form for a value, or the reverse), so
-    // the receiver is re-checked before the call rather than trusted.
-    private static bool TryGoStringMethod(object state, out string text)
+    // Go's `error`/`stringer` are the structural `interface{ Error() string }` and
+    // `interface{ String() string }`, so this asks the same question of the managed value: does its
+    // Go method set carry the method? A converted Go method is an extension method over its
+    // receiver, so the method set is the extension registry and the RECEIVER is what decides.
+    //
+    // Deciding on the receiver is what keeps Go's method SET honest, which matters most for `Error`: a
+    // pointer-receiver `func (e *T) Error() string` converts to a `[GoRecv] this ref T` primary
+    // plus go2cs-gen's ж<T> overload, and a `T&` parameter can never be an instance of a `T` value —
+    // so the value shape declines and prints as a plain value, exactly as in Go, while the ж box
+    // that a `panic(&T{...})` actually carries binds the pointer overload and prints its text.
+    private static bool TryGoMethod(object state, string name, out string text)
     {
         text = "";
 
-        if (state.GetType().GetExtensionMethod("String") is not { } method ||
-            method.ReturnType != typeof(@string) ||
-            method.GetParameters() is not { Length: 1 } parameters ||
-            !parameters[0].ParameterType.IsInstanceOfType(state))
-        {
+        // Every candidate is considered and the RECEIVER decides, rather than asking
+        // GetExtensionMethod for its single best pick. For a ж box the registry answers the whole
+        // ж<> family — every `Error(this ж<X>)` in every loaded assembly — and the precedence
+        // comparer's winner is routinely some other X, which a receiver re-check can only reject,
+        // never repair. Rejecting it is what left `panic(&ValueError{...})` printing its address
+        // after the interface arm had already been written. Exactly one candidate can pass the
+        // instance test, so the choice is unambiguous rather than merely first.
+        MethodInfo? method = state.GetType().GetExtensionMethods().FirstOrDefault(candidate =>
+            candidate.Name == name &&
+            candidate.ReturnType == typeof(@string) &&
+            candidate.GetParameters() is { Length: 1 } parameters &&
+            parameters[0].ParameterType.IsInstanceOfType(state));
+
+        if (method is null)
             return false;
+
+        try
+        {
+            text = ((@string)method.Invoke(null, [state])!).ToString();
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
+        {
+            // A reflective call BOXES whatever the method threw. The caller's filter has to read the
+            // real exception's type — a Goexit is the goroutine ending and must keep unwinding,
+            // where anything else is only a failed substitution to report — and the wrapper hides
+            // it, so the original is rethrown with its stack intact.
+            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
         }
 
-        text = ((@string)method.Invoke(null, [state])!).ToString();
         return true;
     }
 
