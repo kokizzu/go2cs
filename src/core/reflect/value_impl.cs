@@ -997,19 +997,37 @@ partial struct MapIter {
     [GoReflectCompanion] internal System.Type? mapKeyType;
     [GoReflectCompanion] internal System.Type? mapValueType;
     [GoReflectCompanion] internal flag mapRO;
+
+    // Go's three iterator states, which `mapEnum` alone cannot express. Go reads them off the hiter:
+    // `iter.m.IsValid()` (is a map associated at all), `iter.hiter.initialized()` (has Next run yet),
+    // and `mapiterkey(&iter.hiter) == nil` (has iteration passed the end). Each gates a DIFFERENT
+    // panic, so collapsing them loses Go's distinctions — and a null `mapEnum` cannot stand in for
+    // any of them, because a NIL map is a perfectly valid associated map whose enumerator is null
+    // while Next must still answer false rather than panic.
+    [GoReflectCompanion] internal bool mapAssociated;
+    [GoReflectCompanion] internal bool mapStarted;
+    [GoReflectCompanion] internal bool mapExhausted;
 }
 
 // MapRange returns a range iterator for a map.
 public static ж<MapIter> MapRange(this ΔValue v) {
     ref var it = ref heap<MapIter>(out var Ꮡit);
-    if (v.live is IEnumerable e) {
-        it.mapEnum = e.GetEnumerator();
-    }
+    bindMapIter(ref it, v);
+    return Ꮡit;
+}
+
+// The one place an iterator is bound to a map Value — shared by MapRange and Reset so the two can
+// never disagree about what "associated" means.
+private static void bindMapIter(ref MapIter it, ΔValue v) {
+    it.mapEnum = v.live is IEnumerable e ? e.GetEnumerator() : null;
     System.Type? mapType = v.typ_ == nil ? null : v.typ_.Value.sysType;
     it.mapKeyType = GoReflect.KeyType(mapType);
     it.mapValueType = GoReflect.ElementType(mapType);
     it.mapRO = (flag)(v.flag & flagRO);
-    return Ꮡit;
+    // A NIL map is valid and associated; its enumerator is simply null (Next answers false).
+    it.mapAssociated = v.IsValid();
+    it.mapStarted = false;
+    it.mapExhausted = false;
 }
 
 // MapKeys returns a slice containing all the keys present in the map, in unspecified order.
@@ -1455,8 +1473,33 @@ internal static @string methodName() {
 }
 
 // Next advances the map iterator and reports whether there is another entry.
+//
+// The guards are Go's, not defensive extras: reflect DOCUMENTS these three panics and its own tests
+// assert them (TestMapIterSafety, TestMapIterReset). Answering `false` for a zero iterator instead —
+// which is what `mapEnum is not null && MoveNext()` did on its own — turns a programmer error into a
+// silently empty range, so a loop over a mis-built iterator reads as an empty map.
 [GoRecv] public static bool Next(this ref MapIter iter) {
-    return iter.mapEnum is not null && iter.mapEnum.MoveNext();
+    if (!iter.mapAssociated) {
+        throw panic("MapIter.Next called on an iterator that does not have an associated map Value");
+    }
+    if (iter.mapStarted && iter.mapExhausted) {
+        throw panic("MapIter.Next called on exhausted iterator");
+    }
+    iter.mapStarted = true;
+    bool more = iter.mapEnum is not null && iter.mapEnum.MoveNext();
+    iter.mapExhausted = !more;
+    return more;
+}
+
+// mustBeStarted is Go's shared precondition for the four entry readers (Key, Value, SetIterKey,
+// SetIterValue): each panics with its OWN name, so the caller supplies it.
+[GoRecv] private static void mustBeStarted(this ref MapIter iter, string what) {
+    if (!iter.mapStarted) {
+        throw panic((@string)(what + " called before Next"));
+    }
+    if (iter.mapExhausted) {
+        throw panic((@string)(what + " called on exhausted iterator"));
+    }
 }
 
 // Key returns the key of the iterator's current map entry — typed by the map's DECLARED key type
@@ -1467,6 +1510,7 @@ internal static @string methodName() {
 // `panic("bad type in compare: " + aType.String())` on a nil type, so PRINTING any map with a nil
 // key died inside fmt.
 [GoRecv] public static ΔValue Key(this ref MapIter iter) {
+    iter.mustBeStarted("MapIter.Key");
     object? cur = iter.mapEnum?.Current;
     object? key = cur?.GetType().GetProperty("Key")?.GetValue(cur);
     return iter.mapKeyType is null ? makeReflectValue(key) : makeTypedValue(key, iter.mapKeyType, null, iter.mapRO);
@@ -1475,9 +1519,50 @@ internal static @string methodName() {
 // Value returns the value of the iterator's current map entry, typed by the map's declared value
 // type (see Key).
 [GoRecv] public static ΔValue Value(this ref MapIter iter) {
+    iter.mustBeStarted("MapIter.Value");
     object? cur = iter.mapEnum?.Current;
     object? value = cur?.GetType().GetProperty("Value")?.GetValue(cur);
     return iter.mapValueType is null ? makeReflectValue(value) : makeTypedValue(value, iter.mapValueType, null, iter.mapRO);
+}
+
+// Reset modifies iter to iterate over v — Go's own contract, including Reset(Value{}) detaching the
+// iterator from any map (which is what makes the subsequent Next panic rather than range emptily).
+// Hand-owned because the auto body assigns Go's `hiter`, a struct with no managed form: it left every
+// companion field of a reset iterator pointing at the PREVIOUS map.
+[GoRecv] public static void Reset(this ref MapIter iter, ΔValue v) {
+    if (v.IsValid()) {
+        v.mustBe(Map);
+    }
+    bindMapIter(ref iter, v);
+}
+
+// SetIterKey assigns to v the key of iter's current map entry — Go's `v.Set(iter.Key())` without the
+// intermediate Value allocation, an optimization with no managed analogue, so this IS the Set.
+//
+// Hand-owned for two independent reasons, either sufficient: the auto body gates on
+// `iter.hiter.initialized()`, which is never true here, so it panicked "called before Next" on every
+// correct use; and it reaches the map's key type through `iter.m.typ().Reinterpret<abi.Type,
+// mapType>()`, the prefix-downcast that cannot alias managed storage for a reference-bearing pair.
+public static void SetIterKey(this ΔValue v, ж<MapIter> Ꮡiter) {
+    ref var iter = ref Ꮡiter.DerefOrNull();
+    iter.mustBeStarted("reflect: Value.SetIterKey");
+    v.mustBeAssignable();
+    // Go's `iter.m.mustBeExported()` — do not let an unexported map leak through the iterator.
+    if ((flag)(iter.mapRO & flagRO) != 0) {
+        throw panic("reflect: Value.SetIterKey using value obtained using unexported field");
+    }
+    v.Set(iter.Key());
+}
+
+// SetIterValue assigns to v the value of iter's current map entry (see SetIterKey).
+public static void SetIterValue(this ΔValue v, ж<MapIter> Ꮡiter) {
+    ref var iter = ref Ꮡiter.DerefOrNull();
+    iter.mustBeStarted("reflect: Value.SetIterValue");
+    v.mustBeAssignable();
+    if ((flag)(iter.mapRO & flagRO) != 0) {
+        throw panic("reflect: Value.SetIterValue using value obtained using unexported field");
+    }
+    v.Set(iter.Value());
 }
 
 // ==== reflect.Type canonicalization (hand-owned Value.Type + toType) ====
@@ -1499,8 +1584,44 @@ private static readonly System.Collections.Concurrent.ConcurrentDictionary<(Syst
 // valueMethodName is Go's runtime.Callers-based caller-name resolution for Value panic
 // messages (flag.mustBe's ValueError) — unimplementable over getcallersp; walk the managed
 // stack like methodName. The name is only ever observed in panic text.
+// valueMethodName names the reflect.Value METHOD a panic came from, and Go's callers embed that name
+// VERBATIM — "reflect: reflect.Value.Grow using unaddressable value" — so reflect's own tests assert
+// on the "Value." in the middle (TestGrow, TestSetIter).
+//
+// Delegating to methodName() answered "reflect.Grow", dropping it. That is not a spelling slip: a Go
+// method on Value is emitted as a STATIC EXTENSION method in reflect_package, so the receiver is a
+// parameter and the declaring type is the package, not Value — the receiver methodName() reads off
+// DeclaringType simply is not there to read. Recover it the way the emission encodes it instead: the
+// first parameter IS the ΔValue receiver.
+//
+// The two filters are Go's, not ours. Go requires the frame's method to be EXPORTED (it tests the
+// first rune's case), which is what walks past the unexported mustBe*/…Slow helpers between the
+// panic and the method the caller actually named; and it keeps walking rather than failing, so a
+// frame that is not a Value method is skipped, never guessed at.
 internal static @string valueMethodName() {
-    return methodName();
+    var trace = new System.Diagnostics.StackTrace(2, false);
+    for (int i = 0; i < trace.FrameCount; i++) {
+        var method = trace.GetFrame(i)?.GetMethod();
+        System.Type? decl = method?.DeclaringType;
+        if (method is null || decl is null || !decl.Name.EndsWith("_package")) {
+            continue;
+        }
+        if (method.Name.Length == 0 || !char.IsUpper(method.Name[0])) {
+            continue;
+        }
+        var parameters = method.GetParameters();
+        if (parameters.Length == 0) {
+            continue;
+        }
+        System.Type receiver = parameters[0].ParameterType;
+        if (receiver.IsByRef) {
+            receiver = receiver.GetElementType()!;
+        }
+        if (receiver == typeof(ΔValue)) {
+            return (@string)("reflect.Value." + method.Name);
+        }
+    }
+    return "unknown method"u8;
 }
 
 // canonType returns the canonical reflect.Type wrapper for the underlying type of Ꮡt, keyed by

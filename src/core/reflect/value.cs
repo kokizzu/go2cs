@@ -1544,84 +1544,20 @@ internal static ж<abi.Type> stringType = rtypeOf((@string)""u8);
 
 // go2cs generated this placeholder — func Key is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string reflectMapIterSetKeyˢ = "reflect.MapIter.SetKey"u8;
-
-// SetIterKey assigns to v the key of iter's current map entry.
-// It is equivalent to v.Set(iter.Key()), but it avoids allocating a new Value.
-// As in Go, the key must be assignable to v's type and
-// must not be derived from an unexported field.
-public static void SetIterKey(this ΔValue v, ж<MapIter> Ꮡiter) {
-    ref var iter = ref Ꮡiter.DerefOrNull();
-
-    if (!iter.hiter.initialized()) {
-        throw panic("reflect: Value.SetIterKey called before Next");
-    }
-    @unsafe.Pointer iterkey = (uintptr)mapiterkey(Ꮡiter.of(MapIter.Ꮡhiter));
-    if (iterkey == nil) {
-        throw panic("reflect: Value.SetIterKey called on exhausted iterator");
-    }
-    v.mustBeAssignable();
-    @unsafe.Pointer target = default!;
-    if (v.kind() == ΔInterface) {
-        target = v.ptr;
-    }
-    var t = iter.m.typ().Reinterpret<abi.Type, mapType>();
-    var ktype = t.Value.Key;
-    iter.m.mustBeExported(); // do not let unexported m leak
-    var key = new ΔValue(ktype, iterkey.Value, (flag)((flag)(iter.m.flag | ((flag)(uintptr)(uint8)ktype.Kind())) | flagIndir));
-    key = key.assignTo(reflectMapIterSetKeyˢ, v.typ(), target);
-    typedmemmove(v.typ(), v.ptr, key.ptr);
-}
+// go2cs generated this placeholder — func SetIterKey is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func Value is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string reflectMapIterSetValueˢ = "reflect.MapIter.SetValue"u8;
-
-// SetIterValue assigns to v the value of iter's current map entry.
-// It is equivalent to v.Set(iter.Value()), but it avoids allocating a new Value.
-// As in Go, the value must be assignable to v's type and
-// must not be derived from an unexported field.
-public static void SetIterValue(this ΔValue v, ж<MapIter> Ꮡiter) {
-    ref var iter = ref Ꮡiter.DerefOrNull();
-
-    if (!iter.hiter.initialized()) {
-        throw panic("reflect: Value.SetIterValue called before Next");
-    }
-    @unsafe.Pointer iterelem = (uintptr)mapiterelem(Ꮡiter.of(MapIter.Ꮡhiter));
-    if (iterelem == nil) {
-        throw panic("reflect: Value.SetIterValue called on exhausted iterator");
-    }
-    v.mustBeAssignable();
-    @unsafe.Pointer target = default!;
-    if (v.kind() == ΔInterface) {
-        target = v.ptr;
-    }
-    var t = iter.m.typ().Reinterpret<abi.Type, mapType>();
-    var vtype = t.Value.Elem;
-    iter.m.mustBeExported(); // do not let unexported m leak
-    var elem = new ΔValue(vtype, iterelem.Value, (flag)((flag)(iter.m.flag | ((flag)(uintptr)(uint8)vtype.Kind())) | flagIndir));
-    elem = elem.assignTo(reflectMapIterSetValueˢ, v.typ(), target);
-    typedmemmove(v.typ(), v.ptr, elem.ptr);
-}
+// go2cs generated this placeholder — func SetIterValue is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func Next is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Reset modifies iter to iterate over v.
-// It panics if v's Kind is not [Map] and v is not the zero Value.
-// Reset(Value{}) causes iter to not to refer to any map,
-// which may allow the previously iterated-over map to be garbage collected.
-[GoRecv] public static void Reset(this ref MapIter iter, ΔValue v) {
-    if (v.IsValid()) {
-        v.mustBe(Map);
-    }
-    iter.m = v;
-    iter.hiter = new hiter(nil);
-}
+// go2cs generated this placeholder — func Reset is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func MapRange is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// do not let unexported m leak
+// do not let unexported m leak
 // This is inlinable to take advantage of "function outlining".
 // The allocation of MapIter can be stack allocated if the caller
 // does not allow it to escape.
