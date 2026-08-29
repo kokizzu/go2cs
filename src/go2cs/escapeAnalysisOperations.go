@@ -1900,6 +1900,21 @@ func (v *Visitor) convertToHeapTypeDecl(ident *ast.Ident, createNew bool) string
 		createNew = false
 	}
 
+	// `unsafe.Pointer` belongs in that set and the classifier cannot see it: go/types models it as a
+	// BASIC kind, not a *types.Pointer, while golib models it as `Pointer : ж<uintptr>` — a CLASS
+	// with no parameterless constructor. So `var x unsafe.Pointer` emitted
+	// `heap(new @unsafe.Pointer(), …)`, which is CS1729 (reflect's all_test).
+	//
+	// Deliberately narrowed to THIS site rather than taught to isInherentlyHeapAllocatedType, which
+	// has NINETEEN consumers spanning escape analysis, capture mode, star-expr deref, global
+	// declarations, struct fields and IIFE prologues. Widening it there also flipped a
+	// `ж<unsafe.Pointer>` deref from `.Value` to `.ValueSlot` in UnsafePointerReinterpret — a
+	// project with no stdout comparison, so the change compiled and could not be shown correct.
+	// The zero-value form is the whole of this defect; the rest of that surface is untouched.
+	if basic, isBasic := identType.Underlying().(*types.Basic); isBasic && basic.Kind() == types.UnsafePointer {
+		createNew = false
+	}
+
 	if v.options.preferVarDecl {
 		if createNew {
 			return fmt.Sprintf("ref var %s = ref %s(new %s(), out var %s%s);", varName, v.heapIntrinsicName(), csTypeName, AddressPrefix, csIDName)
