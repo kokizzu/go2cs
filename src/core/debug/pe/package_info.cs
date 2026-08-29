@@ -65,10 +65,10 @@ using static go.debug.pe_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/pe/file.go", "file.cs", "AFdWkoKClIKCgpSCrLKCgoKUrLKChIKAgqSCgoKCgoKUlJSCgIKkAAMWtpaCgqiCgpSCgqiCgqiCgqiCgoKAgqSCgpSCAAsYgpKUgoKUgoKCgqgACAqCqJKCloKCpqqigoKmAAsGgoKUpKTMgoKCloKWgoKCgoKUgIKkgIKklJyygoKClICCpoKClJaCgqiCgoKUgJSmgoKWgpSUgqgADCbCgpaGkoKUuoKYkoKUmJKCgoLKgoK6gpaCgqiGkoKCgoKCgoKCgpQABxCCgqKClIKCkoKCgpS2graCgoKUyILMrNYAChCCrtSClgACEoKYkoKCloKYlK6CmIIAATqWgoKWhKSugpiCAAE4loKCloSkzrKCgpaCgIKm")]
+[assembly: go.GoPositionMap("debug/pe/file.go", "file.cs", "AFdWkoKClIKCgpSCrLKCgoKUrLKChIKAgqSCgoKCgoKUlJSCgIKkAAMWtpaCgqiCgpSCgqiCgqiCgqiCgoKAgqSCgpSCAAsYgpKUgoKUgoKCgqgACAqCqJKCloKCpqqigoKmAAsGgoKUpKTMgoKCloKWgoKCgoKUgIKkgIKklJyygoKClICCpoKClJaCgqiCgoKUgJSmgoKWgpSUgqgADCbCgpaGkoKUuoKYkoKUmJKCgoLKgoK6gpaCgqiGkoKCgoKCgoKCgpQABxCCgqKClIKCkoKCgpS2graCgoKUyILMrNYAChCCrtSClgACEoKYkoKCloKYlK6CmIIAATqWgoKWhKSugpiCAAE4loKCloSkzrKCgpaCgIKm", "215-225:1;228-254:2;488-491:1")]
 [assembly: go.GoPositionMap("debug/pe/section.go", "section.cs", "AClAsoKUgoKUAAwaooKUgoKUgoKClAAfSsKuwg==")]
 [assembly: go.GoPositionMap("debug/pe/string.go", "string.cs", "AA8iooKClMyUgpSCgoKUgoKCpoKUhIKClKzEgpSCgpQ=")]
-[assembly: go.GoPositionMap("debug/pe/symbol.go", "symbol.cs", "AB9mABcCgpSClIKClIKClIKCgoKUgoKm3IKCgoKmlIKUqLKClKyygIKkpoKClIKCooKClJKClILulAAsZgAJAoKClIKCgpSCpoKC")]
+[assembly: go.GoPositionMap("debug/pe/symbol.go", "symbol.cs", "AB7GAQAKAoKUrLKAgqSmgoKUgoKigoKUkoKUgu6U")]
 // </GoSourcePositionMaps>
 
 namespace go.debug;

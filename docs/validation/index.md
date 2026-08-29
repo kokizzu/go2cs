@@ -60,6 +60,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `debug/elf` | [`debug.elf.md`](current/debug.elf.md) | [`src/core/debug/elf`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/elf) |
 | `debug/gosym` | [`debug.gosym.md`](current/debug.gosym.md) | [`src/core/debug/gosym`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/gosym) |
 | `debug/macho` | [`debug.macho.md`](current/debug.macho.md) | [`src/core/debug/macho`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/macho) |
+| `debug/pe` | [`debug.pe.md`](current/debug.pe.md) | [`src/core/debug/pe`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/pe) |
 | `debug/plan9obj` | [`debug.plan9obj.md`](current/debug.plan9obj.md) | [`src/core/debug/plan9obj`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/debug/plan9obj) |
 | `encoding/ascii85` | [`encoding.ascii85.md`](current/encoding.ascii85.md) | [`src/core/encoding/ascii85`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/ascii85) |
 | `encoding/asn1` | [`encoding.asn1.md`](current/encoding.asn1.md) | [`src/core/encoding/asn1`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/encoding/asn1) |
