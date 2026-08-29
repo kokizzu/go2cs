@@ -1,0 +1,465 @@
+<Project>
+
+  <!-- The test project shares its directory with the production project, and NuGet writes each
+       project's restore artifacts (project.assets.json) under MSBuildProjectExtensionsPath, which
+       defaults to obj/ for both. Sharing one path makes the two projects overwrite each other's
+       assets: a production project pulled into the test build graph then reads the TEST project's
+       assets and appears to reference itself through the test closure — MSB4006, "circular
+       dependency involving ResolveProjectReferences". These roots give each project its own. They
+       must be set BEFORE Sdk.props, hence the explicit SDK imports rather than the Sdk attribute. -->
+  <PropertyGroup>
+    <MSBuildProjectExtensionsPath>obj/tests/</MSBuildProjectExtensionsPath>
+    <BaseIntermediateOutputPath>obj/tests/</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin/tests/</BaseOutputPath>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
+    <RootNamespace>go</RootNamespace>
+    <AssemblyName>net.tests</AssemblyName>
+    <Product>go2cs</Product>
+    <Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
+    <AssemblyTitle>$(Description)</AssemblyTitle>
+    <Authors>$(Product) Authors</Authors>
+    <Company>The $(Authors)</Company>
+    <Copyright>Copyright © 2018-2026 $(Company)</Copyright>
+    <RepositoryUrl>https://github.com/ritchiecarroll/go2cs</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <ApplicationIcon>go2cs.ico</ApplicationIcon>
+    <!-- Same rationale as the production template (csproj-template.xml): `annotations` because Go
+         has no non-nullable reference type, and a NoWarn list of the diagnostics that are structural
+         to the Go emission model rather than defects. The two lists must stay in step. -->
+    <Nullable>annotations</Nullable>
+    <NoWarn>CS0162;CS0164;CS0282;CS0660;CS0661;CS1717;CS1718;CS8618;CS8860;CS8974;CS8981;IDE0060;IDE1006;CA2255</NoWarn>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
+    <!-- The compile view must be EXACTLY the direct references the test converter computed: a
+         transitive project reference that contributes a child `go.<pkg>` namespace (e.g.
+         internal/testenv dragging io/fs, namespace go.io) collides with the converter's
+         in-namespace `using io = io_package;` alias emission (CS0576) — the alias machinery is
+         computed against the direct import closure only. -->
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+  </PropertyGroup>
+
+  <!-- Must defer to the bin/tests/ BaseOutputPath above: build outputs are copied to $(OutDir), so
+       an unconditional pin here would put the test host in the PRODUCTION project's bin/. -->
+  <PropertyGroup Condition="'$(OutDir)'=='' AND '$(BaseOutputPath)'==''">
+    <OutDir>bin/$(Configuration)/$(TargetFramework)/</OutDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(USERPROFILE)'==''">
+    <USERPROFILE>$(HOME)</USERPROFILE>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(go2csPath)'==''">
+    <go2csPath Condition="'$(Configuration)'!='Debug'">$(USERPROFILE)/go2cs/</go2csPath>
+    <go2csPath Condition="'$(Configuration)'=='Debug' and '$(SolutionDir)'!=''">$(SolutionDir)</go2csPath>
+    <go2csPath Condition="'$(go2csPath)'==''">$(MSBuildThisFileDirectory)../../</go2csPath>
+  </PropertyGroup>
+
+  <!-- Expose output of source generators as local files -->
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <!-- THE RELOCATABLE SINGLE-FILE TEST HOST (the host-limit retirement). Go's test binary is
+       statically linked, so os/exec-style tests copy it to a temp directory and run the copy; a
+       framework-dependent apphost is build-bound to a same-basename assembly beside it and a lone
+       relocated file dies in hostfxr. Publishing this project therefore produces ONE self-contained
+       executable that survives lone-file relocation — the deployment property the disclosure class
+       named as its own retirement condition. Publish-gated so ordinary build/run keep the fast
+       framework-dependent shape; the RID is the HOST's own (the pipeline runs and relocates the
+       host on the machine that published it — Windows and Linux flavors each publish theirs).
+       Trimming stays OFF: the host's reflection surface (GoReflect, the witness tables) does not
+       trim, per the perf tree's TrimMode lessons. -->
+  <PropertyGroup Condition="'$(_IsPublishing)'=='true'">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)'==''">$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <!-- Explicit compile items only (EnableDefaultCompileItems=false): the production sources are
+       recompiled into the test assembly alongside the converted test sources; nothing else in the
+       shared directory (Generated/**, *.cs.auto review siblings, the production package_info.cs)
+       can leak in because it is never listed. -->
+  <ItemGroup>
+    <Compile Include="conn_test.cs" />
+    <Compile Include="dial_test.cs" />
+    <Compile Include="dnsclient_test.cs" />
+    <Compile Include="dnsname_test.cs" />
+    <Compile Include="error_posix_test.cs" />
+    <Compile Include="error_test.cs" />
+    <Compile Include="error_windows_test.cs" />
+    <Compile Include="external_test.cs" />
+    <Compile Include="file_test.cs" />
+    <Compile Include="go2cs_test_host.cs" />
+    <Compile Include="hosts_test.cs" />
+    <Compile Include="interface_test.cs" />
+    <Compile Include="ip_test.cs" />
+    <Compile Include="iprawsock_test.cs" />
+    <Compile Include="ipsock_test.cs" />
+    <Compile Include="listen_test.cs" />
+    <Compile Include="lookup_test.cs" />
+    <Compile Include="lookup_windows_test.cs" />
+    <Compile Include="mac_test.cs" />
+    <Compile Include="main_conf_test.cs" />
+    <Compile Include="main_posix_test.cs" />
+    <Compile Include="main_test.cs" />
+    <Compile Include="main_windows_test.cs" />
+    <Compile Include="mockserver_test.cs" />
+    <Compile Include="net_test.cs" />
+    <Compile Include="net_windows_test.cs" />
+    <Compile Include="package_info_internal_test.cs" />
+    <Compile Include="package_init_internal_test.cs" />
+    <Compile Include="package_test_info.cs" />
+    <Compile Include="packetconn_test.cs" />
+    <Compile Include="parse_test.cs" />
+    <Compile Include="pipe_test.cs" />
+    <Compile Include="platform_test.cs" />
+    <Compile Include="port_test.cs" />
+    <Compile Include="protoconn_test.cs" />
+    <Compile Include="rawconn_test.cs" />
+    <Compile Include="rawconn_windows_test.cs" />
+    <Compile Include="resolverdialfunc_test.cs" />
+    <Compile Include="sendfile_test.cs" />
+    <Compile Include="server_test.cs" />
+    <Compile Include="tcpconn_keepalive_conf_posix_test.cs" />
+    <Compile Include="tcpconn_keepalive_conf_windows_test.cs" />
+    <Compile Include="tcpconn_keepalive_posix_test.cs" />
+    <Compile Include="tcpconn_keepalive_test.cs" />
+    <Compile Include="tcpsock_test.cs" />
+    <Compile Include="timeout_test.cs" />
+    <Compile Include="udpsock_test.cs" />
+    <Compile Include="unixsock_windows_test.cs" />
+    <Compile Include="writev_test.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../testdata/Isaac.Newton-Opticks.txt" Link="go2cs_shared_fixtures/up1/testdata/Isaac.Newton-Opticks.txt" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="addrselect.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="addrselect_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_aix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_android.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_darwin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_netbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_openbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_resnew.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_resold.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_socknew.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_sockold.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_solaris.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_unix_cgo.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_unix_cgo_res.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_unix_cgo_resn.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_unix_syscall.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="cgo_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="conf.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="conf_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="conn_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dial.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dial_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dial_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dnsclient.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dnsclient_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dnsclient_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dnsclient_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dnsconfig.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dnsconfig_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dnsconfig_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dnsconfig_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="dnsname_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="error_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="error_plan9_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="error_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="error_posix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="error_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="error_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="error_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="error_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="error_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="example_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="external_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fd_fake.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fd_js.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fd_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fd_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fd_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fd_wasip1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="fd_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="file.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="file_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="file_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="file_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="file_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="file_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="file_wasip1.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="file_wasip1_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="file_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hook.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hook_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hook_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hook_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hosts.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="hosts_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="http/testdata/file" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="http/testdata/index.html" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="http/testdata/style.css" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_aix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_bsd_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_bsdvar.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_darwin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_freebsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_solaris.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="interface_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ip.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ip_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="iprawsock.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="iprawsock_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="iprawsock_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="iprawsock_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ipsock.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ipsock_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ipsock_plan9_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ipsock_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="ipsock_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="listen_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lookup.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lookup_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lookup_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lookup_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lookup_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="lookup_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mac.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mac_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="main_cloexec_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="main_conf_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="main_plan9_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="main_posix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="main_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="main_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="main_wasm_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="main_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mockserver_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mptcpsock_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mptcpsock_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="mptcpsock_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="net.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="net_fake.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="net_fake_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="net_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="net_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="netcgo_off.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="netcgo_on.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="netgo_netcgo.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="netgo_off.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="netgo_on.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="nss.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="nss_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="packetconn_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="parse.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="parse_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pipe.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="pipe_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="platform_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="port.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="port_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="port_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="protoconn_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rawconn.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rawconn_stub_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rawconn_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rawconn_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rawconn_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="resolverdialfunc_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rlimit_js.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="rlimit_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sendfile_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sendfile_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sendfile_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sendfile_unix_alt.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sendfile_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sendfile_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="server_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sock_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sock_cloexec.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sock_cloexec_solaris.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sock_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sock_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sock_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sock_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sock_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sock_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockaddr_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockopt_aix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockopt_bsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockopt_fake.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockopt_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockopt_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockopt_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockopt_solaris.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockopt_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockoptip_bsdvar.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockoptip_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockoptip_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockoptip_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sockoptip_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="splice_linux.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="splice_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="splice_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="sys_cloexec.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpconn_keepalive_conf_darwin_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpconn_keepalive_conf_posix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpconn_keepalive_conf_solaris_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpconn_keepalive_conf_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpconn_keepalive_conf_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpconn_keepalive_illumos_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpconn_keepalive_posix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpconn_keepalive_solaris_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpconn_keepalive_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsock.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsock_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsock_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsock_solaris.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsock_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsock_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsock_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsock_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsockopt_darwin.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsockopt_openbsd.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsockopt_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsockopt_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsockopt_solaris.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsockopt_stub.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsockopt_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="tcpsockopt_windows.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/aliases" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/case-hosts" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/domain-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/empty-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/freebsd-usevc-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/hosts" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/igmp" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/igmp6" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/invalid-ndots-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/ipv4-hosts" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/ipv6-hosts" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/large-ndots-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/linux-use-vc-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/negative-ndots-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/openbsd-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/openbsd-tcp-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/search-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/search-single-dot-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/single-request-reopen-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/single-request-resolv.conf" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="testdata/singleline-hosts" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="timeout_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="udpsock.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="udpsock_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="udpsock_plan9_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="udpsock_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="udpsock_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock_linux_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock_plan9.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock_posix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock_readmsg_cloexec.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock_readmsg_cmsg_cloexec.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock_readmsg_other.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock_readmsg_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="unixsock_windows_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="write_unix_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="writev_test.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    <None Include="writev_unix.go" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(go2csPath)core/bufio/bufio.csproj" />
+    <ProjectReference Include="$(go2csPath)core/bytes/bytes.csproj" />
+    <ProjectReference Include="$(go2csPath)core/cmp/cmp.csproj" />
+    <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/sha256/crypto.sha256.csproj" />
+    <ProjectReference Include="$(go2csPath)core/encoding/hex/encoding.hex.csproj" />
+    <ProjectReference Include="$(go2csPath)core/encoding/json/encoding.json.csproj" />
+    <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />
+    <ProjectReference Include="$(go2csPath)core/flag/flag.csproj" />
+    <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
+    <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
+    <ProjectReference Include="$(go2csPath)core/hash/hash.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/poll/internal.poll.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/singleflight/internal.singleflight.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/syscall/windows/internal.syscall.windows.csproj" />
+    <ProjectReference Include="$(go2csPath)core/internal/testenv/internal.testenv.csproj" />
+    <ProjectReference Include="$(go2csPath)core/io/fs/io.fs.csproj" />
+    <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
+    <ProjectReference Include="$(go2csPath)core/log/log.csproj" />
+    <ProjectReference Include="$(go2csPath)core/math/rand/math.rand.csproj" />
+    <ProjectReference Include="$(go2csPath)core/net/internal/socktest/net.internal.socktest.csproj" />
+    <ProjectReference Include="$(go2csPath)core/net/netip/net.netip.csproj" />
+    <ProjectReference Include="$(go2csPath)core/os/exec/os.exec.csproj" />
+    <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
+    <ProjectReference Include="$(go2csPath)core/path/filepath/path.filepath.csproj" />
+    <ProjectReference Include="$(go2csPath)core/reflect/reflect.csproj" />
+    <ProjectReference Include="$(go2csPath)core/regexp/regexp.csproj" />
+    <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
+    <ProjectReference Include="$(go2csPath)core/slices/slices.csproj" />
+    <ProjectReference Include="$(go2csPath)core/strconv/strconv.csproj" />
+    <ProjectReference Include="$(go2csPath)core/strings/strings.csproj" />
+    <ProjectReference Include="$(go2csPath)core/sync/atomic/sync.atomic.csproj" />
+    <ProjectReference Include="$(go2csPath)core/sync/sync.csproj" />
+    <ProjectReference Include="$(go2csPath)core/syscall/syscall.csproj" />
+    <ProjectReference Include="$(go2csPath)core/testing/testing.csproj" />
+    <ProjectReference Include="$(go2csPath)core/time/time.csproj" />
+    <ProjectReference Include="$(go2csPath)core/unsafe/unsafe.csproj" />
+    <ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/net/dns/dnsmessage/vendor.golang.org.x.net.dns.dnsmessage.csproj" />
+    <ProjectReference Include="$(go2csPath)core/vendor/golang.org/x/net/nettest/vendor.golang.org.x.net.nettest.csproj" />
+    <ProjectReference Include="net.csproj" />
+    <ProjectReference Include="$(go2csPath)gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
+  </ItemGroup>
+
+  <!-- Define Go type aliases -->
+  <ItemGroup>
+    <Using Include="go.builtin" Static="True" />
+    <Using Include="System" />
+    <Using Include="System.Numerics" />
+    <Using Include="System.Object" Alias="any" />
+    <Using Include="System.Byte" Alias="uint8" />
+    <Using Include="System.UInt16" Alias="uint16" />
+    <Using Include="System.UInt32" Alias="uint32" />
+    <Using Include="System.UInt64" Alias="uint64" />
+    <Using Include="System.SByte" Alias="int8" />
+    <Using Include="System.Int16" Alias="int16" />
+    <Using Include="System.Int32" Alias="int32" />
+    <Using Include="System.Int64" Alias="int64" />
+    <Using Include="System.Single" Alias="float32" />
+    <Using Include="System.Double" Alias="float64" />
+    <Using Include="System.Numerics.Complex" Alias="complex128" />
+    <Using Include="System.Int32" Alias="rune" />
+    <Using Include="System.Numerics.BigInteger" Alias="GoBigConst" />
+    <Using Include="System.ComponentModel.DescriptionAttribute" Alias="GoTagAttribute" />
+    <Using Include="System.Runtime.CompilerServices.ModuleInitializerAttribute" Alias="GoInitAttribute" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+</Project>
