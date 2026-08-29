@@ -39,7 +39,6 @@ using static go.main_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<main_anonPerson, processAnonymousStruct_data>]
 // </ImplicitConversions>
 
 // Go source positions are recorded here, one `GoPositionMap` attribute per converted
@@ -50,7 +49,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("AnonymousStructs.go", "AnonymousStructs.cs", "AB4siAAHFoKClIqCgoSCABQGhIKMhoqGhIqGhoyKiIKEgoKKhAAEEoSCloaC")]
+[assembly: go.GoPositionMap("AnonStructAssertLiftDedupe.go", "AnonStructAssertLiftDedupe.cs", "ACU0goaChIiGiIaEgoSChoaGhoaChoqCgoaGhoSChoKGhoaGhg==")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -66,11 +65,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct cycleMemo_memo {}
-    internal partial struct main_anonPerson {}
+    internal partial struct main_p {}
+    internal partial struct main_s {}
     internal partial struct main_type {}
-    internal partial struct processAnonymousStruct_data {}
-    internal partial struct settingsᴛ1 {}
-    public partial struct Person {}
     // </TypeAccessibility>
 }

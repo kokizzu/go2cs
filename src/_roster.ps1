@@ -67,6 +67,15 @@ $RosterOsPattern =
     '\s*([a-z][a-z0-9]*)\s*:\s*(\d+)\s*(?:\+\s*(\d+)\s*)?(?=' +
     [regex]::Escape($RosterSegmentSeparator) + '|\||$)'
 
+# The permanently-inapplicable form of the same annotation (ruled 2026-08-29, from the registry
+# row): a package that cannot exist on an OS carries `<goos>: n/a` -- never pending, never
+# validated, counted in neither the Linux header's numerator nor its applicable denominator. Same
+# both-ends anchoring as the numeric form, for the same prose-immunity reason.
+$RosterOsNaPattern =
+    [regex]::Escape($RosterSegmentSeparator) +
+    '\s*([a-z][a-z0-9]*)\s*:\s*n/a\s*(?=' +
+    [regex]::Escape($RosterSegmentSeparator) + '|\||$)'
+
 # One row of the exclusion ledger (the "Excluded packages" table in the same document). Its first
 # cell is a PLAIN code span, never the roster row's linked [`pkg`](url) shape -- that difference is
 # what keeps the two tables apart. Row shape:
@@ -157,8 +166,37 @@ function Get-ValidatedRosterRows {
             }
 
             $rowOs[$key] = [PSCustomObject]@{
-                Expected  = [int]$match.Groups[2].Value
-                Disclosed = if ($match.Groups[3].Success) { [int]$match.Groups[3].Value } else { 0 }
+                Expected   = [int]$match.Groups[2].Value
+                Disclosed  = if ($match.Groups[3].Success) { [int]$match.Groups[3].Value } else { 0 }
+                Applicable = $true
+            }
+        }
+
+        # The n/a form, with the numeric form's refusals repeated verbatim: a key this loop admits
+        # that the one above refuses would make `windows: n/a` a back door, and a row carrying both
+        # `linux: N` and `linux: n/a` holds two answers with no rule for which wins.
+        foreach ($match in [regex]::Matches($line, $RosterOsNaPattern)) {
+            $key = $match.Groups[1].Value
+
+            if ($key -eq 'windows') {
+                throw ("Roster row '$rowPackage' carries a 'windows:' per-OS annotation. The Tests " +
+                    'and Disclosed COLUMNS are the Windows expectation -- record a Windows count ' +
+                    'there, never as an annotation.')
+            }
+
+            if ($RosterOsKeys -notcontains $key) {
+                throw ("Roster row '$rowPackage' carries an unknown per-OS annotation key '$key'. " +
+                    "Known keys: $($RosterOsKeys -join ', ').")
+            }
+
+            if ($rowOs.ContainsKey($key)) {
+                throw "Roster row '$rowPackage' carries more than one '$key' annotation."
+            }
+
+            $rowOs[$key] = [PSCustomObject]@{
+                Expected   = $null
+                Disclosed  = $null
+                Applicable = $false
             }
         }
 
@@ -225,16 +263,18 @@ function Get-RosterRowExpectation {
 
     if ($key -ne 'windows' -and $Row.OS -and $Row.OS.ContainsKey($key)) {
         return [PSCustomObject]@{
-            Expected  = $Row.OS[$key].Expected
-            Disclosed = $Row.OS[$key].Disclosed
-            Source    = $key
+            Expected   = $Row.OS[$key].Expected
+            Disclosed  = $Row.OS[$key].Disclosed
+            Source     = $key
+            Applicable = $Row.OS[$key].Applicable
         }
     }
 
     return [PSCustomObject]@{
-        Expected  = $Row.Expected
-        Disclosed = $Row.Disclosed
-        Source    = 'columns'
+        Expected   = $Row.Expected
+        Disclosed  = $Row.Disclosed
+        Source     = 'columns'
+        Applicable = $true
     }
 }
 
@@ -252,6 +292,10 @@ function Get-RosterRowExpectation {
                         roster maintenance, never host capability, and never absorbed
       unbanked-count    comparison-validated-at-count: a validated run on an OS this row has no
                         expectation for. Neither a pass nor a drift failure
+      not-applicable    the row is annotated `<goos>: n/a` -- the package cannot exist on this OS,
+                        so there is nothing to measure, now or ever (ruled 2026-08-29). The sweep
+                        removes such rows before running them; this answer exists so a caller that
+                        classifies anyway gets the truth rather than a count comparison against null
       count             the banked expectation and reality disagree; one of them is now wrong
 
     On Windows the reachable set is exactly what it was before the OS dimension existed -- pass,
@@ -272,6 +316,10 @@ function Get-SweepRowClassification {
         [switch] $HostConditionalAccepted,
         [switch] $CapabilityAbsentAccepted
     )
+
+    # Before any count math: an inapplicable expectation has null counts, and comparing against
+    # them would classify by accident.
+    if ($Expectation.PSObject.Properties['Applicable'] -and -not $Expectation.Applicable) { return 'not-applicable' }
 
     $disclosedAgrees = ($Expectation.Source -eq 'columns') -or ($GotDisclosed -eq $Expectation.Disclosed)
 
@@ -357,9 +405,9 @@ function Test-CapabilityAbsentDelta {
         return New-CapabilityAbsentResult $false "the committed proof page names $($blockNames.Count) verdicts under $($Block.Test), not the registered $($Block.BlockSize) -- re-derive the block size before trusting this row"
     }
 
-    $goProperties = $Comparison.go.PSObject.Properties
-    $csProperties = $Comparison.csharp.PSObject.Properties
-    $liveNames = @($goProperties | ForEach-Object { $_.Name })
+    $goMap = $Comparison.go
+    $csMap = $Comparison.csharp
+    $liveNames = @($goMap.Keys)
 
     # Every banked name OUTSIDE the block must still be present live -- the mechanism absorbs the
     # named block collapsing, nothing else.
@@ -380,9 +428,8 @@ function Test-CapabilityAbsentDelta {
         return New-CapabilityAbsentResult $false "$($Block.Test) itself is missing from this run -- an absent capability must still report its one collapsed verdict"
     }
 
-    $goVerdict = $goProperties[$Block.Test].Value
-    $csProperty = $csProperties[$Block.Test]
-    $csVerdict = if ($null -eq $csProperty) { 'absent' } else { $csProperty.Value }
+    $goVerdict = $goMap[$Block.Test]
+    $csVerdict = if (-not $csMap.ContainsKey($Block.Test)) { 'absent' } else { $csMap[$Block.Test] }
     if ($goVerdict -ne $csVerdict) {
         return New-CapabilityAbsentResult $false "$($Block.Test): go '$goVerdict' vs C# '$csVerdict' -- an absent capability collapses IDENTICALLY on both runtimes; a disagreement here is a real divergence on a host that has the capability, not a missing one"
     }
@@ -442,4 +489,48 @@ function Test-CapabilityAbsentDelta {
     }
 
     return New-CapabilityAbsentResult $true $null
+}
+
+# ---- comparison-record reader --------------------------------------------------------------------
+# Reads go2cs_test_comparison.json into the shape the two delta rules above consume: `go`/`csharp`
+# as CASE-SENSITIVE (ordinal) dictionaries, `withdrawn`/`disclosed` as arrays or $null.
+#
+# ⚠ Why not ConvertFrom-Json (measured 2026-08-29, G's net/http pre-staging): a Go test suite can
+# legitimately hold verdict names differing ONLY by case -- net/http's
+# TestTransportContentEncodingCaseInsensitive spawns .../GZIP and .../gzip pairs, which is exactly
+# what a test with that name would do. Windows PowerShell 5.1's JSON->PSObject path folds member
+# names case-insensitively and THROWS on such input ("contains the duplicated keys"), and a
+# PSObject cannot hold the pair at all -- so both the old parser and the old property-bag shape are
+# structurally unable to carry a legal record. The converter's own maps are Go map[string]string,
+# case-sensitive by construction (all eleven case-folding sites in testConversion.go are on paths
+# and env-var names, none on a test name), so the record is sound; only the PowerShell reader was
+# not. JavaScriptSerializer deserializes into case-sensitive dictionaries; the explicit ordinal
+# re-copy below makes that deliberate rather than inherited, and a true duplicate key (the same
+# exact name twice) still throws loudly on Add.
+function ConvertFrom-ComparisonRecord {
+    param([string] $Path)
+
+    if (-not $script:comparisonSerializer) {
+        Add-Type -AssemblyName System.Web.Extensions
+        $script:comparisonSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+        $script:comparisonSerializer.MaxJsonLength = [int]::MaxValue
+    }
+
+    $raw = $script:comparisonSerializer.DeserializeObject([System.IO.File]::ReadAllText($Path))
+    if ($null -eq $raw) { throw "comparison record at $Path deserialized to nothing" }
+
+    $toOrdinalMap = {
+        param($member)
+        if (-not $raw.ContainsKey($member)) { return $null }
+        $map = New-Object 'System.Collections.Generic.Dictionary[string,string]' ([System.StringComparer]::Ordinal)
+        foreach ($entry in $raw[$member].GetEnumerator()) { $map.Add([string]$entry.Key, [string]$entry.Value) }
+        return , $map
+    }
+
+    return [PSCustomObject]@{
+        go        = & $toOrdinalMap 'go'
+        csharp    = & $toOrdinalMap 'csharp'
+        withdrawn = if ($raw.ContainsKey('withdrawn')) { @($raw['withdrawn']) } else { $null }
+        disclosed = if ($raw.ContainsKey('disclosed')) { @($raw['disclosed']) } else { $null }
+    }
 }

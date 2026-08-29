@@ -172,6 +172,16 @@ foreach ($row in $rows) {
         -NotePropertyValue (Get-RosterRowExpectation -Row $row -Goos $targetGoos)
 }
 
+# A row annotated `<goos>: n/a` cannot exist on this OS (ruled 2026-08-29, the registry row):
+# never pending, never validated -- reported by name and removed before any arithmetic, so the
+# header sums and the exit code describe only what can be measured. Windows is untouched by
+# construction: the n/a annotation never answers for the columns.
+$notApplicableRows = @($rows | Where-Object { -not $_.Effective.Applicable })
+foreach ($naRow in $notApplicableRows) {
+    Write-Host ("  N/A   {0,-34} {1}: n/a -- platform-exclusive row; no expectation exists here, now or ever" -f $naRow.Package, $targetGoos) -ForegroundColor DarkGray
+}
+$rows = @($rows | Where-Object { $_.Effective.Applicable })
+
 $expectedTotal = ($rows | ForEach-Object { $_.Effective.Expected } | Measure-Object -Sum).Sum
 Write-Host "validated sweep: $($rows.Count) package(s), $expectedTotal expected verdicts, timeout $TestTimeout" -ForegroundColor Cyan
 
@@ -295,7 +305,9 @@ function Test-HostConditionalDelta {
         [int] $Disclosed,          # banked disclosed count (roster column 3)
         [string[]] $Conditional,   # the named host-conditional verdicts (roster annotation)
         [int] $Got,                # the live run's validated count
-        $Comparison,               # the run's go2cs_test_comparison.json, ConvertFrom-Json form
+        $Comparison,               # the run's go2cs_test_comparison.json via ConvertFrom-ComparisonRecord:
+                                   # go/csharp are ORDINAL dictionaries (never PSObjects -- a PSObject
+                                   # cannot hold the legal case-only verdict-name pairs; see _roster.ps1)
         [string[]] $BankedNames    # verdict names from the committed proof page's Verdicts table
     )
 
@@ -328,9 +340,9 @@ function Test-HostConditionalDelta {
         return New-HostConditionalVerdictResult $false @() "committed proof page lists $($BankedNames.Count) verdicts where the roster banks $Expected matched + $Disclosed disclosed -- page and table disagree"
     }
 
-    $goProperties = $Comparison.go.PSObject.Properties
-    $csProperties = $Comparison.csharp.PSObject.Properties
-    $liveNames = @($goProperties | ForEach-Object { $_.Name })
+    $goMap = $Comparison.go
+    $csMap = $Comparison.csharp
+    $liveNames = @($goMap.Keys)
 
     $missing = @($BankedNames | Where-Object { $liveNames -notcontains $_ })
     if ($missing.Count -gt 0) {
@@ -350,10 +362,9 @@ function Test-HostConditionalDelta {
     }
 
     foreach ($name in $extras) {
-        $goVerdict = $goProperties[$name].Value
-        $csProperty = $csProperties[$name]
-        if ($null -eq $csProperty -or $csProperty.Value -ne $goVerdict) {
-            $csVerdict = if ($null -eq $csProperty) { 'absent' } else { $csProperty.Value }
+        $goVerdict = $goMap[$name]
+        if (-not $csMap.ContainsKey($name) -or $csMap[$name] -ne $goVerdict) {
+            $csVerdict = if (-not $csMap.ContainsKey($name)) { 'absent' } else { $csMap[$name] }
             return New-HostConditionalVerdictResult $false @() "conditional verdict ${name}: go '$goVerdict' vs C# '$csVerdict' -- the sides do not agree"
         }
     }
@@ -387,9 +398,10 @@ function Get-HostConditionalVerdict {
     }
 
     $comparison = $null
-    try { $comparison = [System.IO.File]::ReadAllText($comparisonPath) | ConvertFrom-Json } catch {}
+    $comparisonError = $null
+    try { $comparison = ConvertFrom-ComparisonRecord -Path $comparisonPath } catch { $comparisonError = $_.Exception.Message }
     if ($null -eq $comparison) {
-        return [PSCustomObject]@{ Accepted = $false; Extras = @(); Reason = "unreadable comparison record at $comparisonPath" }
+        return [PSCustomObject]@{ Accepted = $false; Extras = @(); Reason = "unreadable comparison record at ${comparisonPath}: $comparisonError" }
     }
 
     # 2>$null is safe here: the sweep loop runs under 'Continue', so a missing page's stderr lines
@@ -457,9 +469,10 @@ function Get-CapabilityAbsentVerdict {
         return [PSCustomObject]@{ Accepted = $false; Reason = "no comparison record at $comparisonPath" }
     }
     $comparison = $null
-    try { $comparison = [System.IO.File]::ReadAllText($comparisonPath) | ConvertFrom-Json } catch {}
+    $comparisonError = $null
+    try { $comparison = ConvertFrom-ComparisonRecord -Path $comparisonPath } catch { $comparisonError = $_.Exception.Message }
     if ($null -eq $comparison) {
-        return [PSCustomObject]@{ Accepted = $false; Reason = "unreadable comparison record at $comparisonPath" }
+        return [PSCustomObject]@{ Accepted = $false; Reason = "unreadable comparison record at ${comparisonPath}: $comparisonError" }
     }
 
     $pageRel = 'docs/validation/current/' + ($Row.Package -replace '/', '.') + '.md'

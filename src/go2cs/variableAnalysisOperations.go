@@ -1723,6 +1723,27 @@ func (v *Visitor) performVariableAnalysis(funcDecl *ast.FuncDecl, signature *typ
 				if commClause, ok := s.(*ast.CommClause); ok {
 					// Handle communication statement assignments
 					if comm, ok := commClause.Comm.(*ast.AssignStmt); ok {
+						// The RECEIVE-ASSIGNMENT arm (`case x := <-c:`) must have its RHS
+						// visited too. processAssignStmt walks the LHS *only* — it declares
+						// the received bindings and never looks at the channel operand — so
+						// before this, no ident inside `<-c` got an identNames mapping and
+						// visitSelectStmt's hoisted temp emitted the RAW name (`var selᴛ1 =
+						// c;`) while every other reference in the region used the
+						// shadow-renamed `cΔ1`. CS0841, not CS0103, because the rename is
+						// NECESSARY: a distinct later `c` in the same C# method scope is what
+						// the bare name binds forward to (reflect's TestChan, all_test.go:1720).
+						//
+						// Visited BEFORE the LHS is declared, which is Go's own evaluation
+						// order — the channel operand is evaluated in the ENCLOSING scope, so
+						// a `case c := <-c:` resolves its RHS `c` to the outer binding rather
+						// than to the one this clause is about to declare.
+						//
+						// Sibling arms (SEND, bare RECEIVE) were given the same treatment
+						// below for the same reason; this closes the third arm.
+						for _, rhs := range comm.Rhs {
+							visitNode(rhs)
+						}
+
 						tracker.processing = true
 						processor := newVarProcessor(
 							tracker,
