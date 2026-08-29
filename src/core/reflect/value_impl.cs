@@ -213,13 +213,32 @@ public static complex128 Complex(this ΔValue v) {
 public static @string String(this ΔValue v) {
     // fmt only calls String() for Kind String; a boxed @string returns itself (a named string
     // wrapper unwraps), anything else the Go "<T Value>" placeholder.
-    if (v.live is @string s) {
+    //
+    // The live object may be a VALUE ADAPTER first. When a package boxes ANOTHER package's named
+    // type into an interface and cannot see a GoImplement record for it, go2cs-gen mints a
+    // `<pkg>_<Type>ᴠ<iface>` shell (IValueAdapter) around the value -- and Go's dynamic type is the
+    // WRAPPED value, never the shell, which is why golib already unwraps here for `==`, type
+    // asserts, type switches and %T. reflect did not, so a foreign named STRING reached the
+    // placeholder below while Kind() -- which resolves through the type descriptor -- correctly
+    // answered String. reflect.DeepEqual's string arm is `v1.String() == v2.String()`, so the
+    // placeholder made two equal values compare UNEQUAL: net's TestResolveIPAddr/TCPAddr/UDPAddr
+    // failed on `!reflect.DeepEqual(err, tt.err)` with both sides printing "unknown network l2tp".
+    //
+    // TryUnwrapWrapperValue cannot cover this: it demands a GoType-marked wrapper carrying a
+    // private `m_value`, and an adapter shell is neither. A value whose Kind() says String must
+    // never render "<T Value>".
+    object? live = v.live;
+
+    if (live is IValueAdapter adapter) {
+        live = adapter.Value;
+    }
+    if (live is @string s) {
         return s;
     }
-    if (v.live is not null && GoReflect.TryUnwrapWrapperValue(v.live, out object? unwrapped) && unwrapped is @string us) {
+    if (live is not null && GoReflect.TryUnwrapWrapperValue(live, out object? unwrapped) && unwrapped is @string us) {
         return us;
     }
-    if (v.live is null) {
+    if (live is null) {
         return "<invalid Value>";
     }
     return (@string)("<" + v.Type().String().ToString() + " Value>");

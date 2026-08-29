@@ -768,6 +768,7 @@
     <Project Path="tests/Behavioral/ReturnPointerFieldOfParam/ReturnPointerFieldOfParam.csproj" />
     <Project Path="tests/Behavioral/ReverseSortNaNOrder/ReverseSortNaNOrder.csproj" />
     <Project Path="tests/Behavioral/ReturnTupleFuncLitArg/ReturnTupleFuncLitArg.csproj" />
+    <Project Path="tests/Behavioral/ResolveErrIdentity/ResolveErrIdentity.csproj" />
     <Project Path="tests/Behavioral/ReservedNameShadows/ReservedNameShadows.csproj" />
     <Project Path="tests/Behavioral/ReservedTypeMethodCollision/ReservedTypeMethodCollision.csproj" />
     <Project Path="tests/Behavioral/RelationalPatternGuard/RelationalPatternGuard.csproj" />
