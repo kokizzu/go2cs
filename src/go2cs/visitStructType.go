@@ -57,7 +57,26 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// per-visitor, so the residual narrows to the cross-FILE and cross-SCOPE splits.
 		var anonLiftKey string
 
-		if _, isAnonStruct := identType.(*types.Struct); isAnonStruct && structSignatureType != nil {
+		// The anonymity test falls back to structSignatureType when there is no identType at
+		// all. convStructType's no-ident branch — a TYPE ASSERTION's anonymous struct operand,
+		// `v0.Interface().(struct{ X, Y int })` — passes identType == nil, so asking only
+		// `identType.(*types.Struct)` answered "not anonymous" for the one shape that is
+		// anonymous BY CONSTRUCTION (a nil identType means no *types.Object names this type).
+		// Both dedupe channels were then skipped and a SECOND name was minted for a type the
+		// registry already held: reflect's TestAddr lifted `TestAddr_p` for `var p struct{ X, Y
+		// int }` and `TestAddr_type` for the assertion, which Go calls one type and C# would
+		// not convert (CS0029). The pointer spelling of the same assertion was always fine —
+		// convStarExpr sources a real *types.Struct — which is what localizes this to the one
+		// path.
+		isAnonStruct := false
+
+		if identType != nil {
+			_, isAnonStruct = identType.(*types.Struct)
+		} else {
+			_, isAnonStruct = structSignatureType.(*types.Struct)
+		}
+
+		if isAnonStruct && structSignatureType != nil {
 			liftScope := ""
 
 			if v.inFunction {
@@ -67,8 +86,14 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			anonLiftKey = liftScope + "\x00" + structSignatureType.String()
 
 			if existing, ok := v.liftedAnonStructNames[anonLiftKey]; ok {
-				v.liftedTypeMap[identType] = existing
+				// Never key the map on a nil identType: liftedNameFor is pointer-keyed, so a
+				// nil entry would answer for any later site whose getType returns nil.
+				if identType != nil {
+					v.liftedTypeMap[identType] = existing
+				}
+
 				v.liftedTypeMap[structSignatureType] = existing
+
 				return existing
 			}
 		}
@@ -95,9 +120,13 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// before.
 		if anonLiftKey != "" {
 			if existing := lookupDynamicTypeName(structSignatureType.String()); existing != "" {
-				v.liftedTypeMap[identType] = existing
+				if identType != nil {
+					v.liftedTypeMap[identType] = existing
+				}
+
 				v.liftedTypeMap[structSignatureType] = existing
 				v.liftedAnonStructNames[anonLiftKey] = existing
+
 				return existing
 			}
 		}
@@ -124,7 +153,10 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// parameters as a binding. See localTypeUsedTypeParams for the used-only scoping.
 		liftedUseName := structTypeName + liftedTypeParamList(v.localTypeUsedTypeParams(identType))
 
-		v.liftedTypeMap[identType] = liftedUseName
+		if identType != nil {
+			v.liftedTypeMap[identType] = liftedUseName
+		}
+
 		v.liftedTypeMap[structSignatureType] = liftedUseName
 
 		if anonLiftKey != "" {
