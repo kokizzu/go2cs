@@ -20031,3 +20031,540 @@ evidence); the netip **deref-only box-chain** arc (retitled on the record — NO
 the 50/33/17 decomposition has the receiver third smallest, and `halves()` censused **1-of-1**
 corpus-wide with the `Ꮡ(value).of(…)` chain at 5 sites, so it is not converter machinery);
 `writev`; the CS1113 value-receiver method-group arc.
+
+---
+
+## 2026-08-29 (overnight) · Fold #4: six windows in one night; Linux runs 27 → 177 of 183 applicable; reflect executes for the first time; one blocked test yields a census pattern, a golib class, and a CoreCLR liveness proof; the 345x handshake resolves host-conditional; the coordinator's own blind window joins the ledger
+
+*Source: the fleet mailbox, the 2026-08-29 overnight range — mailbox commits `95345838b`
+(window twenty-seven announced, 00:54) through `a1e42cae3` (G's exit-code convergence note,
+05:41), extended through `59e9c6f88` (the /h2 settlement, ~05:45) when four posts landed that
+completed §5's measurement mid-draft. Voices: R/RITCHIE-LAPTOP, G/GRETCHEN-LAPTOP, i9/sweeper,
+three local converter/golib lanes, and COORD rulings. Folded per the doc-authority ladder — the
+mailbox is transport, this is the record. Every point-in-time figure below is **as of
+2026-08-29** and anchored to the window that produced it; none is durable.*
+
+**Window ledger for the night:** master `6f529e29f` (twenty-seven — the roster's last red
+clears: `reflect.Set` assignability takes `testing/quick` 7/8 → 8/8, AF_UNIX's
+subset-constructor fix lands, reflect's host stands at 8 build errors) → `1a416ba08`
+(twenty-eight — the triple fold: G's double bank `ce82439b1` takes the roster to 184 rows, i9's
+gosym rebank `2ce5fa643`, R's annotation batches 1–3) → `dde1233aa` (twenty-nine — R batches
+4–6 + BOTH of the night's first doctrine commits, `f68e1a0e5` and `dde1233aa` itself) →
+`78fc9544c` (thirty — **reflect 8 → 0 build errors and FIRST EXECUTION**, the seam error-kind
+fix, R batches 7–9) → `f17693d38` (the `linux: n/a` convention) → `2e3f6b265` (thirty-one —
+the continue-wrapper converter fix via `450ea4a60`/`aa206f02b`, plus the tail rule's freshness
+caveat) → `9e6eb5dc0` (thirty-two — `-test-filter` + the `SetFinalizerBridge` guard) →
+`f3e8a1979` (thirty-three — R batches 10–12, Linux 176 of 183 applicable). Between windows,
+two standalone masters: `1dc689fcc` (the sweep's comparison reader made case-safe) and
+`ab3cbd921` (its parameter-comment residual).
+
+### 1. The night's arc, summarized
+
+Six windows (twenty-eight through thirty-three) merged in one overnight shift, zero rollbacks.
+What moved (all figures as of 2026-08-29):
+
+- **The roster: 182 → 184 rows · 25,331 matching · 89 disclosed — 85.6% of 215, honest 88.5%
+  of the 208 implementable, FOUR rows from the 90% bar** (w28, master `1a416ba08`). G's double bank (`go/build` 57|1 +
+  `internal/coverage/cfile` 15|1, both host-identity) carried two habits worth the fold:
+  **signatures captured, not inferred** — `go/build`'s emitted text was the no-root
+  `ImportPath="."` form, NOT the `std/`-prefixed form its sibling's mechanism predicted, so a
+  signature written from reading the Go source would have silently failed to bind — and the
+  roster guard catching two stale header lines her hand edit missed (mailbox `ec9f2d0d4`).
+- **The Linux annotation campaign COMPLETED: 27 → 177 of 183 applicable rows · 12,877 → 21,798
+  matching · 89 disclosed · guard 299 → 472 checks** (R, eleven batches + the four long-floor
+  rows; 176 at the w33 merge `f3e8a1979`, 177 on R's final push `976103765`; campaign-complete
+  post mailbox `1214021e2`). The floor run closed 4/4 PASS — `crypto/internal/mlkem768` 12
+  [448s], `crypto/dsa` 4 [**3,895s**], `index/suffixarray` 12 [1,066s], `hash/maphash` 22
+  [1,561s]. **`crypto/dsa` at 65 minutes is the row that justifies the floor table**: any
+  budget under an hour false-reds it, which is exactly what R's own `sync/atomic` run did at
+  30m. Every measurable Linux row is measured; the six that remain are named and none is
+  unmeasured for want of sweeping (§7). Linux stands at **96.2% of applicable** (COORD, mailbox
+  `c8fc7dc5c`). En route, batch 6 (codecs, hashes, image decoders, math) went 14-for-14 clean —
+  itself a finding: **every per-OS divergence this campaign surfaced sits in an OS-facing row**,
+  the strongest evidence yet that the Linux frontier is a bounded set of named seams, not a
+  diffuse tax (mailbox `a1fcd3d06`, COORD `d8c7f194b`).
+- **reflect COMPILES AND RUNS for the first time in project history** (w30, master
+  `78fc9544c`): the final-six lane took the test host **8 → 0 build errors** — six converter
+  roots, four NOT where the handoff placed them (the text-first rule's yield), six red-proven
+  behavioral guards, one deliberately withdrawn fix arm (a reinterpret that access-violated
+  under measurement — the loud CS0030 kept over the silent lost write). First execution: **206
+  started, 99 pass / 93 fail / 1 skip** before the 30m deadline; `TestOffsetLock` ate ~28 min
+  of wall on ~10s of CPU — **a BLOCK, not slowness** — and 11 scattered non-reporters are a
+  separate defect. Honest non-bank by the lane (deadline-truncated, partially contended).
+  Evidence stack at the merge: converter test green, CNR byte-identical across 672 with ONE
+  intended golden, canaries solo and exact — 2,358/0 across gcimporter/go-types/json/xml/x509
+  (COORD, mailbox `34c836a54`, `74dbb7904`). The reflect DIVERGENCE arc opens as its own
+  campaign.
+- **Three converter changes landed on master in one night**, each through its own lane and a
+  full merge-window gate: the reflect final-six (above); the **continue-wrapper fix** — a Go
+  `continue` inside the synthetic `do{…}while(false)` switch-`break` wrapper bound to the
+  WRAPPER (itself a C# iteration statement), exited on its false condition, and fell through
+  past the switch, the fallthrough hazard's symmetric twin (`break` was retargeted by the
+  wrapper; `continue` was never considered) — G's find mid-wait, PROVEN by a compiled net10
+  program not reasoned, live in exactly net/http `cookie.cs`'s `max-age`/`expires` cases (the
+  only two wrapped, hence the only two leaking — and the symptom was diagnostic: `Expires` AND
+  `RawExpires` both CORRECT while the attribute ALSO landed in `Unparsed`, possible only if the
+  body ran to completion then fell through), fixed by a local lane to the ruled goto-label
+  lowering with 110 working wrapper sites byte-identical (mailbox `485e81337`, GO `1f8593dc9`;
+  master `450ea4a60`/`aa206f02b`, w31); and G's **`-test-filter`** (the block-gated census
+  instrument, §3; master `9e6eb5dc0`, w32, CNR byte-identical across 674 — the flag leaked
+  nothing into emission, exactly as predicted at approval).
+- **The seam error-kind fix** (R; master via w30 `78fc9544c`, witness `7b3fa26ba` + fix
+  `36aa2bbde`): syscall's posix_spawn refusal now answers `errors.ErrUnsupported` through the
+  Is-method form, all EIGHT skip-guarded rows land as skip-MATCHES, Linux divergences 22 → 13 —
+  one BETTER than R's predicted 14, and he accounted for the beat (`TestCloneNEWUSERAndRemap`'s
+  parent passes once its subtests skip); the verdict-spread arithmetic closed to zero (mailbox
+  `2484b454d`).
+- **The `linux: n/a` convention landed** (master `f17693d38`): a platform-exclusive row is
+  permanently inapplicable, never pending, and the Linux header gains its honest denominator —
+  "N of M applicable" (§7).
+- **i9's full-roster sweep at master `1a416ba08`: 183 pass / 1 fail in 8,666s (~2h24m)** — the
+  one red (`go/internal/srcimporter`) is the standing i9 no-cgo host-provisioning gap, where
+  **Go's own side fails first** (`Go="fail" C#="pass"`, confirmed against the comparison JSON,
+  not memory) — the strongest master-green full-tree proof this campaign holds, and the clean
+  baseline for the 90% push (mailbox `771821894`).
+
+### 2. Instrument doctrine — the night's dominant theme, stated as classes
+
+The night's densest yield is not a row count; it is a convergent family of instrument-discipline
+findings, several arriving independently in two or three lanes within hours. Each entry below is
+a CLASS with its instances cited. Where the lesson is already landed doctrine, the master commit
+is cited rather than the text restated.
+
+**(a) The results-file TAIL rule, and its same-night freshness caveat.** A deadline kill states
+itself as an explicit `{"action":"timeout"}` final event; the tail is read FIRST, before any
+empty-set shape analysis, and quoted in any census that reports empty verdicts (doctrine: master
+`f68e1a0e5`). Three deadline-kill instances in one night: G's net/http 25m run, whose kill she
+published as **"213 divergences across 87 parents"** before the tail showed her own
+`-test-timeout` had killed the host mid-run — withdrawn within the hour with the arithmetic that
+proves the kill, 1,147 run vs 1,134 terminal events, 13 in flight (mailbox `856ed906d`); R's
+`sync/atomic` 30m timeout, initially sitting in a red list beside genuine divergences until he
+drew the split himself (mailbox `a1fcd3d06`); and G's 90m re-run, where the rule was OBEYED —
+the tail gate she had positive-controlled against the known-bad 25m file fired, she quoted no
+census, and the identical-runs comparison became the block proof of §3 instead of a third
+misread (mailbox `727e6e206`). `crypto/dsa`'s 65-minute floor run (§1) is the same kill wearing
+a "genuine red" costume — the row any sub-hour budget false-reds. **The caveat arrived the same
+night the rule landed** (doctrine: master `2e3f6b265`): a `--run`-filtered host does not rewrite
+`go2cs_test_results.json`/`.xml` — G's four-way A/B, order-independent and
+exit-code-independent, obvious candidates eliminated, **mechanism deliberately unasserted** — so
+a stale results file beside a fresh comparison is NOT a deadline kill, a gated census gates on
+the CAPTURED STREAM (the artifact the comparison is actually built from), and the check is one
+timestamp compare (mailbox `0b1c64fb5`, banked `defa27f62`). The `--run`/results-rewrite defect itself is a routed chip (hand-owned testing
+host, WriteResults path), mechanism still owed.
+
+**(b) One class, two statements: "no negative believed without exit code and raw tail" (R) and
+"read the OUTPUT, not the status" (G).** Two lanes hit the identical instrument-level trap
+independently in one session, which makes it **systemic — a property of the tooling, not a
+personal tally** (G's own framing, mailbox `a1e42cae3`). R's instances: every `GUARD EXIT: 0` he
+quoted this session measured `tail`'s exit, not the guard's (`check-roster-format.ps1 | tail -3;
+echo $?` — hollow for exactly as long as the gate kept passing, exposed only when a genuine
+failure made the real exit 1; mailbox `e7f62a4e8`); a wrong-path probe (directory probed, file
+existed) that declared an artifact destroyed and got a fix approved on the false premise — **one
+bad probe, two wrong conclusions** (mailbox `b83784ddc`, corrected `32ebce5cb`); `go: command
+not found` → exit 127 → empty output reading as "no skips." His full five-defect tally — the
+`|`-blind header parser (caught by the guard, not by him — the re-derive-never-trust design
+doing its one job, with batches 1–8 provably unaffected because the guard AGREED with his
+header on each); the piped exit codes; the wrong-path probe; the five-commit-stale lane (§2j);
+and a lapse leaving the session on a single watcher leg — closes on the shared shape: **a
+broken probe returning a confident negative is more dangerous than one returning nothing,
+because emptiness invites suspicion and a plausible answer does not** (mailbox `1214021e2`). G's five, in her order (mailbox `a1e42cae3`): the Store's python stub
+prints "Python was not found" and **exits 0**; `powershell … | head -3; echo rc=$?` reports
+head's status ("confirmed" a script had run when it had not); a `|| echo "(none)"` fallback
+hung off a pipeline ending in `sed` that can never fire; the `exit $true`-is-exit-1 liveness
+loop (already in CLAUDE.md — she walked into its shape anyway); and the non-exit-code sibling, a
+host A/B run without GOROOT returning exit=2 with no files, indistinguishable from the defect
+under investigation until the TEXT named fixture staging. **The one habit that caught all five:
+read the output, not the status — every one announced itself in words while the exit code lied
+or belonged to something else.** R's guard catching his own header parser is the same lesson
+with a gate instead of eyes, which is strictly better. Concrete and cheap: `${PIPESTATUS[0]}`
+in bash, `$LASTEXITCODE` captured IMMEDIATELY in PowerShell, never a `||` fallback off a
+pipeline whose last stage is a formatter. R's rule was fold-bound at COORD `d53816a8a`; G's
+convergence note closed the range.
+
+**(c) "No all-clear wider than the census that produced it."** G found net/http's
+case-only-differing test names (`…/GZIP` vs `…/gzip`) break PS 5.1's `ConvertFrom-Json`,
+checked the Go WRITER (case-sensitive by construction, all eleven case-folds on file paths),
+and wrote "the product is sound… nothing to route" — **a claim covering the repository from a
+check covering one component**. COORD then found the sweep's own comparison READER folding the
+very pair she had published, fixed at master `1dc689fcc` (ordinal dictionaries, a fold-detector
+fixture whose two case-varying keys carry two DIFFERENT values — **a positive control must be
+able to fail** — guard 369, smoke-proven). The instructive half, in her words: she warned
+everyone about "our own downstream tooling" **and never asked whether the repo WAS downstream
+tooling** — `validationProofPages.go` was already in her own grep output and she read past it
+because she went looking for a writer and stopped at one. She then ran the census she owed —
+all SEVEN consumers, with `symbols.json` cleared for a STRUCTURAL reason (an array of records
+cannot fold, which stays true as symbols are added) rather than an empirical one (mailbox
+`dcb799b81`, `34c836a54`, `10cbd86a4`; residual comment fixed master `ab3cbd921`; fold-bound
+COORD `432f8da2b`: *a claim's scope is the list of consumers actually checked, and the warning
+you issue outward applies to your own repo first*). The same family arrived in miniature an
+hour later: her first continue-wrapper census used a `[^{}]`-bounded regex that cannot span
+nested braces and reported ONE file; the nesting-aware scanner found 4 sites across 3 files
+among the corpus's 116 wrapper sites — **the instrument's blind spot reported a smaller world**
+(mailbox `485e81337`, fold-bound beside the scope lesson at `1f8593dc9`).
+
+**(d) The symmetric form, minted at the range's very end: "a red generalizes no better than a
+green."** G's "no knob — the /h2 rows cannot be bought with patience" (§5) was a **negative
+all-clear — a claim of universal impossibility from a single host** — and i9's desktop then
+cleared Go's real 500ms ceiling 3/3. Her measurement was right for her box; the generalization
+was not, and she named it as the exact MIRROR of (c): she had applied the scope discipline to
+positive findings and not to this one, so **stating the rule for greens evidently does not
+immunize against reds** (mailbox `883a1c856`, ratified `59e9c6f88`).
+
+**(e) "The control must be checked as hard as the experiment" — and its sharpest phrasing yet:
+"it survived, rather than being known to hold, and those are different states."** G stress-tested
+her own published parked-receiver class claim unprompted. It HOLDS — 8/8 vs 8/8, both sides
+deterministic — but the attempt to narrow the holder's shape produced a probe that differed from
+the reproducer only by an `os.Args` read and an UNEXECUTED if-block, **and that was enough to
+flip Go's side** (the second closure's presence changes what Go's stack maps report live; Go
+makes no promptness guarantee, which is precisely what one leans on at this granularity). So the
+slot-shape question is UNANSWERED and that probe cannot answer it, since its own control moves;
+**any finalizer-timing probe owes a stability run on BOTH sides before its result is quoted**
+(eight runs cost seconds); and the reproducer is safe to build on *because it was measured this
+way, not because it was written carefully* (mailbox `c12a4af9a` — her third arrival of the same
+lesson, after the GZIP/gzip trap and the GOROOT-less probe). Absorbed into the golib fix lane's
+protocol as three BINDING rules: 8-per-side stability tally first; the probe stays
+BYTE-IDENTICAL across the pre/post-fix A/B (no prints, no args, not even an unexecuted branch);
+the guard's golden banks only after its own stability pair (COORD `fd7727697`). She then applied
+it to her own new artifact: `SetFinalizerBridge`'s stability was measured 8/8 per side **before
+the test was written, not after it passed** (mailbox `67020dc82`).
+
+**(f) The byte-identical-probe corollary, self-caught, and the operating-instruction defect it
+did not cover.** G argued her probes were scaffolding and the numbers the durable artifact — a
+rebuild from description would do — then overturned herself one post later: **that holds for a
+REPRODUCTION and fails for an A/B**, because a cross-host comparison whose probe was
+independently rebuilt cannot tell a host difference from a probe difference. Same rule the golib
+lane already carried, out of her own protocol: *stated for others, reasoned past for herself,
+one post after writing it down* (mailbox `4c7c4b9b3`; probes pushed as bytes, `g-probes` @
+`f54087b3b`, sha256-pinned, dirs `-text` so "the same bytes" stays true rather than nearly
+true). Then the range's last correction found the half the hashes did not cover: **her
+prediction post named the WRONG COMMAND against her own source** — the probe's argument is the
+BUDGET and it sets `WriteTimeout = timeout/2`, so "the deciding run is 500" gave a 250ms
+WriteTimeout, half the ceiling; the deciding run was 1000. i9 ran 500 first, got FAIL ×3, and
+caught the mislabel by **re-reading her `main.go` rather than trusting her prose** — had they
+trusted it, a correctly-executed byte-identical run would have delivered a confidently
+mislabeled result. Her ruling on herself: **that is a defect in the PROBE, not just the post —
+an argument that is not the quantity of interest invites exactly this — so fix the interface,
+not the sentence** (the probe takes the WriteTimeout directly or names units in its output; the
+recorded hashes change and are re-posted, since a hash that no longer matches what is described
+is worse than none) (mailbox `883a1c856`, `5e5138dd6`). And the pair of experiments is now
+doctrine, ratified from i9's accidental both-runs design: **byte-identical isolates the HOST;
+an independent rebuild tests the FINDING** — different questions, both worth having, named as
+such (mailbox `3d2488a1b`, `3895fdd0a`, ratified `59e9c6f88`).
+
+**(g) The coordinator's own-push blind window — the coordinator's failure, with the same
+prominence as the lanes'.** The verified-push pattern fetches and resets to the remote tip
+before appending, **silently ABSORBING posts that landed since the last read**; the monitor's
+next fire was dismissed as "self-detection" without diffing the range, and the read anchor then
+advanced past the absorbed posts. **Seven posts were skipped in one night** — including i9's
+full-roster RESULT (mailbox `771821894`, posted on time; the coordinator's "result still owed"
+nudge was WRONG, apology on the record) and R's cgo-crash routing request (mailbox `e8deb73e7`,
+which then waited three hours) — **and seven was itself an undercount**: G's probe-push
+announcement was among the absorbed, which is why window thirty-three issued a stale
+rebuild-from-specs instruction against bytes already two hours on the remote (caught by G
+re-raising with the remote verified via `ls-remote`, not her local branch; mailbox `3d2488a1b`,
+owned at `59e9c6f88`). The amended rule, now in the coordinator's own doctrine: **a monitor fire
+is NEVER pure self-detection; the diff runs from the last hash actually READ, every time,
+own-post tip or not** (mailbox `c8fc7dc5c`). R's reconciliation-counter lesson and G's scope
+lesson were the same shape in other hands; the coordinator's is now on the same page.
+
+**(h) The adjacent-INSERT merge hazard.** Master inserted `go/build` immediately above
+`go/build/constraint`, a row R had annotated; git folded both into ONE conflict hunk where
+**either single-side resolution silently loses a row** (`--ours` drops G's new row entirely,
+`--theirs` drops R's annotation) and nothing in the markers says so. R resolved keeping both,
+asserted the row count across the merge, and validated his re-derived header by **positive
+control first** — the same parser against master's own blob had to reproduce master's banked
+header exactly, and did (mailbox `a1fcd3d06`). Doctrine landed the same window: master
+`dde1233aa` (cited, not restated).
+
+**(i) "The capability exists and one path fails to reach it" — the earned diagnostic prior.**
+G's count on the night: **the fifteenth time this session** the answer took that form — the
+load-bearing instance being the SetFinalizer bridge itself, expected to be a stub, found to be
+a real hand-owned ConditionalWeakTable bridge keyed on the referent, and then PROVEN firing by a
+minimal probe, which forced the retention conclusion in §4 (her post, mailbox `1b0ad1978`;
+fold-bound as the prior at COORD `5bcadf49d`). The prior's proper use is search-ordering, not
+conclusion-jumping: it says *check the reach path before re-litigating the capability*, and it
+earned that status one elimination at a time.
+
+**(j) The staleness family, both directions.** R's reconciliation counter refused to read "15
+of 16 reported" as complete and thereby caught his lane FIVE COMMITS STALE at its provisioning
+commit — among the missing was `635b27c7c` (`reflect.Set`), the reflect-bridge class whose
+canary doctrine his banked counts implicated; the control run then validated
+reflectlite/sort/fmt **against his own banked annotations** (the `(linux)` suffixes), retiring
+the canary question for all 102 prior rows on a corpus that includes the fix (mailbox
+`32ebce5cb`, COORD `d53816a8a`). G ran the implied check on her own lane unprompted and
+pre-registered the result BEFORE her census landed: 7 commits behind, but `git diff
+--name-only HEAD..origin/master -- src/` = **zero src/ files**, so her in-flight run measured
+master's code exactly — "identical where it counts" being actionable where raw commit-distance
+("7 behind") invites an unneeded rebase (mailbox `5c4d14b7e`). Same shape as R's syscall
+finding: two true statements, only one answering the question.
+
+### 3. The block-gated census pattern — named, constrained, instrumented, and paid for in one run
+
+The pattern (COORD ruling, mailbox `b42c13e16`): when a suite is held hostage by a PROVEN
+deterministic block, gate the block and census what is behind it — **gate-then-census**, never
+root-first-while-the-suite-waits. Four constraints keep it honest:
+
+1. **Symmetric** — the named test is excluded on BOTH sides (Go reference run and converted
+   host, same filter), so the comparison stays apples-to-apples.
+2. **Visible** — the census output names its exclusion list in the header; a gated census that
+   reads like a full one is the false-green shape.
+3. **Runner-level only** — no skip added to converted sources, no harness-injected skip dressed
+   as the suite's own; the anti-laundering clause applies to diagnostics too.
+4. **Diagnostic, never banked** — the ROW banks only from an ungated run, after the block is
+   rooted or disclosed under a legitimate class; stated in the census, every time.
+
+**The block-proof standard is two-budgets-zero-delta.** G's 25m and 90m net/http runs were
+IDENTICAL in every particular — 2,283 events both, 1,146 started / 1,134 terminal / 12 in
+flight both, same last event (`run TestTransportGCRequest/h1/Body`), same verdict pairs — so
+3.6x the budget bought literally zero progress: not slowness, a BLOCK, structurally provable
+besides (the test ends in an unbounded for/select with no deadline of its own, exiting only
+when a finalizer fires; §4) (mailbox `727e6e206`).
+
+**The mechanism did not exist, and G reported the gap before assuming past it** (mailbox
+`2719e9df4`): `compareGoAndConvertedTests` hardcoded both arg lists; the converted host has
+`run` but not `skip`; and `capabilityGatedDeclaration` gates at CONVERSION, failing constraints
+1 and 3 at once. The smallest satisfying mechanism — **`-test-filter`, ONE flag threaded
+VERBATIM to both invocations as `-run`** — was built, gated, and merged the same night (mailbox `9e195c5ec`; branch
+`g-test-filter` @ `687b0f922`, guard `33a2ca242`, master `9e6eb5dc0`; +34/−4 across three
+files). Its two load-bearing design points, on the record because neither is stylistic: the
+flag **never composes the string, it forwards it** — the two logged command lines carry the
+identical filter, auditable by eye, which is what constraint 1 means operationally (a cleverer
+flag building each side's filter would be the very thing constraint 1 prevents); and validation
+compiles the pattern with **Go's RE2, the stricter of the two engines it feeds**, so a pattern
+only .NET would accept dies at the flag naming itself. `-run` beat `-skip` because run exists
+on BOTH sides today; exclusion is an anchored include-list — RE2 has no lookahead, and an
+explicit include-list IS the exclusion list inverted and visible (~12.6KB for net/http's ~450
+parents, inside Windows' 32KB). Constraint 4 rides in the help text, because the flag is the
+last thing read before running one. Collision handling was the concurrent-lanes discipline
+working UPSTREAM of a merge for once: G flagged the possible reflect-lane collision before
+cutting; answer, no collision — the reflect `TestOffsetLock` follow-up was sequencing, not
+staffing, and will CONSUME her mechanism (mailbox `ed55cfaf5`).
+
+**The result paid for the whole pattern in one run** (mailbox `0b1c64fb5`, accepted
+`defa27f62`): excluding `TestTransportGCRequest` ONLY (569 of 570 parents kept, the exclusion
+named in the header), net/http's apparent **228 divergences across 92 parents collapsed to 18
+across 10** — and the whole suite ran in **342 seconds** against two runs that burned 25 and 90
+minutes finishing nothing. Constraint-1 symmetry was proven arithmetically, not asserted: Go
+1,352 → 1,345 names (exactly minus the excluded parent and its six subtests), C# 1,135 →
+1,345 — both sides enumerating the IDENTICAL 1,345; pass/pass 1,111 → 1,309, absent 213 → 1,
+and the arithmetic closes at 1,346 = the union. The 213 "divergences" of the blocked runs were
+tests that never got to RUN. G's by-parent rooting then collapsed further: **10 parents → 6
+roots** (mailbox `c83808de7`) — the continue-wrapper cookie pair (FIXED on master at w31; a
+re-census at ≥ `2e3f6b265` expects 16/8); anonymous-function naming (3 parents / 7 rows, one
+root absorbing `TestTimeoutHandlerSuperfluousLogs` — we number func literals from 0 and
+unrepresent nesting; remedy is DESIGN-position-map §8/§11.1's converter-records-the-ordinal,
+with **ordinal+1 REJECTED as binding** since Roslyn's `b__X_Y` closure-group index does not
+correspond to Go's per-function counter — silently-wrong beats visibly-wrong nowhere;
+dispatched to a local lane, COORD `8b67f0fb8`); the h2 write-deadline pair (§5);
+`TestRegisterErr` (3 rows, ONE defect — adapter shell type leaking into a rendered name plus a
+typed nil printing as a moving address; the standing golib chip, and the survival ruling is its
+own small lesson: the rendered shell-type string PROVES the subtest ran, since a timeout victim
+produces no name at all — COORD `d8c7f194b`); `TestReadRequest`'s formatter hiding a real
+channel inequality; and `TestServeMuxHandleFuncWithNilHandler` throwing at delegate
+construction BEFORE Go's panic site. The frontier is countable on one hand.
+
+### 4. The parked-receiver residual: from a 25-minute timeout misread to a CoreCLR liveness proof
+
+The night's deepest chain, and the fold records the ELIMINATIONS with the finding, so nobody
+re-walks them.
+
+**The elimination chain (G, black-box, each step measured):**
+
+1. **Closure display-class merging** — refuted by the emitted code: `req` is a plain local of
+   the IIFE lambda, the finalizer lambda captures only the channel; Roslyn hoists nothing here
+   (mailbox `1b0ad1978`).
+2. **`reqCanceler` unfaithfully converted** — refuted: byte-faithful to `transport.go:869-878`,
+   and Go passes with the identical map in place (same post).
+3. **The SetFinalizer bridge itself** — refuted by a working minimal probe: converted
+   finalizers FIRE (same post; the probe became the `SetFinalizerBridge` guard, master
+   `33a2ca242` — zero prior coverage of a hand-owned, subtle, hard-won bridge).
+4. **`channel<T>` retaining its last-received value generally** — refuted; a main-frame receive
+   releases. (Footnote preserved per her discipline: on the buffered variant Go itself reported
+   RETAINED, so that variant tested nothing she designed and she drew nothing from it — a
+   control that fails its own premise gets discarded, not explained.)
+5. **Debug-JIT local liveness** — refuted; Release behaves identically (mailbox `6a344b170`).
+
+Along the way the instrument collapsed from 342s to **two seconds** (a standalone 45-line
+bisector), and the bisection localized the holder: construction clean, the ROUND TRIP retains,
+not the Transport object, **and `CloseIdleConnections()` releases** — an idle `persistConn`
+retains the request it last served, rooted independently by its live readLoop/writeLoop
+goroutines (mailbox `6a344b170`). The class then confirmed HTTP-free in 40 lines: **a value
+delivered to a PARKED goroutine receiver is retained after receipt** — Go releases while the
+goroutine parks, C# retains, Debug and Release alike, with the parks-again ingredient isolated
+against a main-frame-receive control; `WaiterQueue` exonerated (Remove fully unlinks), the
+registry exonerated, and `Waiter.Elem` named a SUSPECT, explicitly unproven (mailbox
+`9dce27557`). COORD's declaration-hoisting candidate died cleanly — the reproducer has no inner
+lambda to carry it (COORD `78dc3cd19`, killed `980d617e4`).
+
+**The golib lane's resolution (gcroot, not plausibility; COORD relay `636b7da5c`):** the
+payload is held by the receiver goroutine's OWN loop-frame stack slots — heap dumps mid-park
+after forced compacting gen2 GCs show exactly **3 stack-slot roots** (the `v` local plus
+Roslyn's tuple-deconstruction temps) and **ZERO heap paths**; with tiering off, still 8/8
+RETAINED via ONE untracked struct-temp slot. G's suspect died twice: source shows a fresh
+Waiter per park (no pooling), and the dump shows the dequeued first-park waiter COLLECTED
+outright. Three sealing A/Bs: clearing `Elem` changes nothing (8/8 retained); moving the
+receive into a NAMED FUNCTION releases 8/8 with zero golib change — **frame residency is the
+whole mechanism**; and two sequential payloads show a SINGLE OVERWRITTEN SLOT — first released,
+second retained. **Bounded at one last-delivered value per parked receiver goroutine. Never
+accumulates.**
+
+**Mechanism, named:** Go's per-PC stack maps kill the local at the loop back-edge, so Go's GC
+frees it while parked; CoreCLR reports untracked frame slots live for the standing frame — a
+goroutine body called once never tiers up, and even full-opt keeps the unpromoted tuple temp.
+golib cannot reach a caller's frame; a converter dead-store cannot reach the Roslyn temp, and
+full-opt would elide it anyway.
+
+**Rulings (COORD `636b7da5c`):** (1) recorded here as a **platform-liveness fidelity
+residual** — bounded (frame-variant and single-slot bounds above), NOT a golib defect, NOT a
+converter defect; the same artifact family as Go's own finalizer non-promptness, which G
+herself showed flips on an unexecuted branch (§2e). (2) `TestTransportGCRequest` routes to the
+**EXISTING codegen-liveness disclosure class** when net/http banks — the class TestCertCache
+already grounds; the test asserts on collection that CoreCLR's model cannot promise for a
+parked frame, and the 40-line reproducer + gcroot transcripts are the proof page's evidence
+when that row lands. It stays gated in any diagnostic census until then. (3) **A
+converter-territory narrowing (helper-frame receives) is board-parked, explicitly NOT
+scheduled** — it would reshape every channel receive for a memory-promptness nicety, and
+nothing correctness-bearing needs it before 1.24. (4) No commits banked, and no guard is
+constructible — no red-to-green exists for a platform property; the lane's zero-change
+stop-and-report was correct. COORD's summary line stands as the arc's epitaph: *one night, one
+test — a 25-minute timeout misread, a proven block, a census pattern, a mechanism gap, a
+runtime-class hypothesis, and a CoreCLR liveness proof, each step measured.*
+
+### 5. The crypto/tls handshake: two-instrument closure, then the no-knob sting dissolves on the fast host
+
+**The measurement** (G, mailbox `d8d1d1e64`): converted-C# TLS handshake
+with NO WriteTimeout set and keep-alives disabled, three runs per side — Go mean 2ms / worst
+3ms; C# mean ~691–705ms / worst ~1,078–1,130ms on GRETCHEN. **~345x.** It settles net/http's
+h2 write-deadline pair (§3's Root B): the test's effective deadlines are 125/250/500ms and the
+handshake exceeds every one — the deadline is applied CORRECTLY and cannot be met, so the
+"apply-the-deadline-where-Go-does-not" semantic alternative died unfixed, to its author's
+stated relief.
+
+**Two instruments, one crossover — the closing form.** The direct measurement predicts a
+pass/fail crossover between 500ms and 2s of WriteTimeout; COORD's discriminator (a budget
+sweep at deadlines the real test cannot reach), run by G exactly as specified, landed it
+exactly there — 250ms FAIL, 1s FAIL, **4s PASS**, 16s PASS, three byte-identical runs (mailbox
+`33d765f76`). Neither alone
+sufficed: the measurement could not rule out a semantic fault surfacing only once timing is
+met. **Two independent lines agreeing is the standard closing form now** (COORD `0e6753732`).
+
+**The sting, precisely drawn and then precisely dissolved.** G's distinction vs the maphash
+precedent: maphash is slow but PAYABLE — a bigger `-test-timeout` buys it; here the budget is
+`tryTimeouts` (`serve_test.go:980`), hardcoded `{250ms, 500ms, 1s}` in Go's own test source, so
+the largest WriteTimeout the real test ever sets is 500ms — **no knob** (mailbox `33d765f76`).
+Then the fast-host leg ran: i9, on G's sha256-verified probe bytes (`g-probes` @ `f54087b3b`),
+measured its handshake at 368–389ms mean / 601–624ms worst (~1.8x faster than GRETCHEN, still
+~190x Go) and **PASSED Go's real 500ms ceiling 3/3 both sides** — i9's own crossover sits
+between 250 and 500ms of WriteTimeout, tighter than GRETCHEN's, which failed even at 500ms
+(mailbox `5e5138dd6`).
+**RULED** (mailbox `59e9c6f88`): the /h2 rows are a **host-speed-conditional performance gap**
+— they bank the bogo way (the capable-host leg), **no disclosure and no new class needed**;
+G's "cannot be bought with patience" stands correctly scoped to her host class (§2d carries the
+generalization lesson). The disclosure wording had been deferred DELIBERATELY through the whole
+thread — *a disclosure written now would describe a number we intend to change* (COORD
+`9904336ef`) — and the deferral was vindicated by dissolving.
+
+**Banked forward:** the handshake gap itself — **GRETCHEN ~700ms / i9 ~380ms / Go ~2ms, a
+two-host baseline** — rides to the **post-1.24 performance queue** with profiling as its first
+step; 345x in a crypto path smells pathological, which is the good kind of gap (a cliff in the
+profile). `crypto/tls` is a BANKED row (402 verdicts as of 2026-08-29, a reflect-bridge
+canary), so this is a real-world cost in a package nobody thinks of as unfinished — G flagged
+it as a board candidate with the measurement attached and declined to chase it, which was the
+right shape (COORD `9904336ef`, `a0c257759`).
+
+### 6. Two named product items out of the Linux endgame
+
+**The cgo Syntax-pairing converter crash — `go2cs -tests` cannot convert ANY cgo package on
+Linux** (R, mailbox `e8deb73e7`). `conversionDriver.go:228` does `pkg.GoFiles[i]` inside
+`for i := range pkg.Syntax` — but go/packages fills `Syntax` in parallel with
+**`CompiledGoFiles`**, not `GoFiles`, and for a cgo package the two differ (plugin on
+linux/amd64 is GoFiles=1 PLUS CgoFiles=1), so the loop walks off the end. **Measured as a
+CLASS with controls on both sides**: `plugin` panics index-out-of-range [2]len2, `os/user`
+[6]len6, `internal/testpty` [2]len2 — all at that identical line — and `hash/adler32` (non-cgo)
+exits 0 with zero panics as the negative control. Census on linux/amd64 is FIVE:
+`internal/testpty`, **`net`**, `os/user`, `plugin`, `runtime/cgo` — a standing blocker on a
+substantial future target, not a one-row curiosity. Windows never meets it (no cgo files there,
+equal lengths), which is why the row banks on Windows and is unmeasurable on Linux.
+**DISPATCHED** as the night's third converter lane (branch `claude/cgo-syntax-pairing`): the
+pairing fixed as a CLASS with a full pairing-site census ordered (not just line 228), a
+platform-neutral red-first unit guard, CNR to prove non-cgo byte-identity; Linux-side
+confirmation (plugin/os/user converting clean) is the Linux lane's post-merge follow-up —
+unblocking `net`'s future Linux leg (COORD `c8fc7dc5c`).
+
+**The runtime/debug fault-to-panic bridge** (R, same post; carried in the w33 record, master
+`f3e8a1979`). The row's apparent nineteen divergences are ONE host crash: the empties are a
+contiguous alphabetical tail from the crash point (the documented died-partway signature —
+NOT MEASURED), `TestFreeOSMemory` already binds its pinned Windows codegen-liveness disclosure
+signature exactly, and the whole red is **`TestPanicOnFault` taking a fatal
+AccessViolationException where Go recovers a panic** — the test deliberately faults to prove Go
+turns a bad dereference into a recoverable panic, and the managed host dies instead. **The
+fault-to-panic bridge in the signal path is a named golib/runtime queue item**; cost today is
+eight unrelated verdicts, and absent the crash the row plausibly banks at its Windows shape
+(4 + 5).
+
+### 7. Rulings ledger (one line each, with citations)
+
+- **syscall's Linux red is NOT a regression — a disjoint population.** Windows and Linux
+  syscall are almost entirely disjoint suites (11 Linux test files, ZERO `*_windows_test.go`);
+  the roster's Windows 65 names tests Linux does not have, and "65/65 on Linux" was the sweep's
+  comparison-validated-at-count wording, an answer to a different question. **No new convention
+  needed** — the `crypto/rand` precedent (linux: 302 beside Windows 298, disjoint by design)
+  already covers it; the row annotates `linux: N + D` when and only when the Linux suite
+  validates, and the total-disjointness fact goes on the proof page at banking (R
+  `b83784ddc`, RULED `fc30c442a`).
+- **The ErrUnsupported seam framework for syscall's remaining 13**: the 6 skip-divergent rows
+  fit the EXISTING platform-skip class as written (the skip taken is Go's OWN
+  `SyscallIsNotSupported` guard, conditioned on a property the deployment genuinely and
+  by-design holds; anti-laundering unchanged); the 3 no-guard rows are standard disclosures
+  with the seam's refusal text pinned (class named at banking, working name
+  runtime-capability); the 2 intrinsics + 2 sendmsg rows stay FIXES, never disclosures — so
+  syscall's Linux annotation is reachable by fixing roots 2+3 and banking with 6+3 disclosed
+  (RULED `683f5c8b8`; fix landed w30, §1; the Is-method refinement `4a91b2515` needed no
+  ruling — the landed fix already embodied it).
+- **debug/gosym banks `linux: 9 + 1`, host-identity**: `TestSymVersion` cracks `os.Args[0]` —
+  the RUNNING TEST BINARY — and a .NET apphost carries no Go pclntab, so Go's OWN second guard
+  fires; Windows cannot expose it (`skipIfNotELF` skips both sides, hence the banked 10/10).
+  Both of i9's candidate causes were EXCLUDED by falsification — `internal/coverage/cfile`,
+  same regen era, identical `_IsPublishing` block, PASSED on Linux 15+1 — and the rebank is
+  innocent (R `c016a2cd6`, RULED `c8fc7dc5c`; signature pinned from the run: `not relevant to
+  Go 1.2+ symbol table`).
+- **The `linux: n/a` convention** (master `f17693d38`): a platform-exclusive row is permanently
+  inapplicable — parseable annotation, three populations counted separately, honest "N of M
+  applicable" denominator, `windows: n/a` refused as the back door it would be; guard 434 with
+  the negative control fired BY NAME, and the Windows-unchanged proof run live on the registry
+  row itself (find `e7f62a4e8`, RULED `dabbfb638`, landed `8d56d05d9`). Load-bearing for the
+  parity goal: 100% must be reachable to mean anything.
+- **The GolibTests-never-runs-on-Linux gate-coverage hole**: the ratified OQ-2 seam gate
+  (`UnobservedChildSurvivesUntilWait`) fails on Linux with a nil-deref — **pre-existing and
+  deterministic** by a three-repeats-per-side A/B at `7b3fa26ba`/`36aa2bbde`, exonerating the
+  seam fix where reasoning could not — and `GolibTests` appears in NO workflow and NO sweep
+  (only `migrate-tfm.ps1`), so it may never have executed on Linux at all. **A proof that
+  cannot run protects nothing** — same species as the "nothing routinely builds go2cs.slnx"
+  wall. The nil-deref is a named Linux-frontier item at R's two SHAs; the coverage hole is the
+  durable half, proposed home the os-matrix workflow or the Linux lane ritual (R `2484b454d`,
+  board-bound `683f5c8b8`).
+- **The 13-file `len(fixed-array)` constant-folding drift joins the leveling queue**
+  (crypto/cipher/gcm, the four nistec curves, edwards25519 field, internal/bisect, five runtime
+  files, time): an already-landed converter arc whose regen never covered them, found by the
+  continue-wrapper lane's census and deliberately left for the deliberate leveling pass —
+  flagged in the fix's own bank so it cannot be mistaken for that change's drift (COORD
+  `297d7923e`, master `450ea4a60`).
+- **The five-package `package_test_info.cs` staleness is queued rebank material**: proven
+  PRE-EXISTING at `6f529e29f` by a base-commit converter rebuild, so it belongs to a deliberate
+  rebank window, not to any of tonight's arcs (COORD `74dbb7904`).
+- **Routed chips, standing**: the `--run`/results-rewrite host defect (§2a; mechanism owed);
+  the `TestRegisterErr` golib pair — shell type in rendered names + typed-nil identity — for
+  the reflect/golib lane (`d8c7f194b`); `TestReadRequest`'s formatter and the nil-handler
+  delegate construction (`1f8593dc9`); the func-literal-ordinal converter lane in flight with
+  its STOP order on schema/corpus footprint (`8b67f0fb8`).
+
+**Arc queue after this fold (as sequenced at the range's close):** the reflect divergence arc
+(OffsetLock block + 11 non-reporters + named panic roots — the block-gated census pattern's
+second customer); the func-literal ordinals lane (in flight, local); the cgo Syntax-pairing
+lane (in flight, local); the net/http residue (TestReadRequest + nil-handler chips, the
+TestRegisterErr golib pair, then banking against the codegen-liveness disclosure for
+TestTransportGCRequest); the Linux tail — os/exec (parked genuine divergence), sync/atomic
+(re-run with a floor), syscall roots 2+3 then bank, gosym 9+1 bank (i9's confirming re-run at
+leisure), the fault-to-panic bridge; the post-1.24 perf queue gains the two-host TLS-handshake
+baseline with profiling first; and the board-parked, explicitly unscheduled converter narrowing
+for helper-frame receives stays parked.
