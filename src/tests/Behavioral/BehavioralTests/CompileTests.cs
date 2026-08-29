@@ -541,6 +541,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckFuncLitUntypedConstReturn() => CheckTarget("FuncLitUntypedConstReturn");
 
     [TestMethod]
+    public void CheckFuncTypeNilConversion() => CheckTarget("FuncTypeNilConversion");
+
+    [TestMethod]
     public void CheckFuncTypeParam() => CheckTarget("FuncTypeParam");
 
     [TestMethod]

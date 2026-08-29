@@ -1527,17 +1527,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// yields it for the variadic slot — and every trailing argument is checked because the
 			// nil need not be the first (`f(a, nil, b)`). A SPREAD call (`f(args...)`) passes the
 			// slice whole, so there is no expansion to disambiguate and it is excluded.
-			if funcSignature.Variadic() && i == params.Len()-1 && !callExprContext.hasSpreadOperator {
-				for j := i; j < len(callExpr.Args); j++ {
-					if !argIsUntypedNil(callExpr.Args[j], v.info) {
-						continue
-					}
+			// … and it must be a real INVOCATION. `(func(...int))(nil)` is a CONVERSION whose
+			// callee is a TYPE, but isTypeConversion has no *ast.FuncType arm, so a func-type
+			// conversion is never classified as one and arrives here on the regular call path
+			// with the target signature standing in for a callee. Everything the comment above
+			// argues then inverts: a conversion has no params expansion to disambiguate, its
+			// single operand is the conversion SOURCE, and `default!` already binds
+			// unambiguously to the one delegate target. Casting it to `paramType` cast the nil
+			// to the func's FIRST PARAMETER — `(Actionꓸꓸꓸ<nint>)((nint)(default!))`, CS0030.
+			// The predicate is variadic AND exactly one declared parameter, which is why
+			// `(func(Point, ...Point) int)(nil)` and every non-variadic spelling were unharmed.
+			if calleeTV, isCallee := v.info.Types[callExpr.Fun]; !isCallee || !calleeTV.IsType() {
+				if funcSignature.Variadic() && i == params.Len()-1 && !callExprContext.hasSpreadOperator {
+					for j := i; j < len(callExpr.Args); j++ {
+						if !argIsUntypedNil(callExpr.Args[j], v.info) {
+							continue
+						}
 
-					if callExprContext.castArgToType == nil {
-						callExprContext.castArgToType = make(map[int]string)
-					}
+						if callExprContext.castArgToType == nil {
+							callExprContext.castArgToType = make(map[int]string)
+						}
 
-					callExprContext.castArgToType[j] = convertToCSTypeName(v.getAliasQualifiedTypeName(paramType, false))
+						callExprContext.castArgToType[j] = convertToCSTypeName(v.getAliasQualifiedTypeName(paramType, false))
+					}
 				}
 			}
 

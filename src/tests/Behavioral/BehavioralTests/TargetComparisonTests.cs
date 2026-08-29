@@ -544,6 +544,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckFuncLitUntypedConstReturn() => CheckTarget("FuncLitUntypedConstReturn");
 
     [TestMethod]
+    public void CheckFuncTypeNilConversion() => CheckTarget("FuncTypeNilConversion");
+
+    [TestMethod]
     public void CheckFuncTypeParam() => CheckTarget("FuncTypeParam");
 
     [TestMethod]

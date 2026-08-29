@@ -509,6 +509,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckFuncLitUntypedConstReturn() => CheckTarget("FuncLitUntypedConstReturn");
 
     [TestMethod]
+    public void CheckFuncTypeNilConversion() => CheckTarget("FuncTypeNilConversion");
+
+    [TestMethod]
     public void CheckFuncTypeParam() => CheckTarget("FuncTypeParam");
 
     [TestMethod]
