@@ -112,19 +112,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **184 / 215 testable packages validated — 85.6%**
+> ### Phase 4 progress: **185 / 215 testable packages validated — 86.0%**
 >
-> **25,331 matching test verdicts · 89 disclosed** *(updated 2026-08-29 — maintained as part of the
+> **25,334 matching test verdicts · 89 disclosed** *(updated 2026-08-29 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 184 / 208 — 88.5%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 185 / 208 — 88.9%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 178 of 183 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 1 row platform-exclusive (`linux: n/a`).
+> **Linux: 178 of 184 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 1 row platform-exclusive (`linux: n/a`).
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -290,6 +290,7 @@ exactly as the line above it is summed from the columns.
 | [`internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) | 1 |  | The CPU brand string the runtime reports, read through the converted `internal/cpu` name tables. · linux: 1 · [proof](validation/current/internal.sysinfo.md) |
 | [`internal/testenv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/testenv) | 7 | | The capability probes the rest of the standard library's suites gate themselves on — `HasGoBuild`/`MustHaveExec`/`MustHaveGoRun` consistency, and `TestGoToolLocation`, which resolves `../../../bin/go` from the package's own directory and requires `os.SameFile` agreement with `exec.LookPath("go")`: the test that pins both halves of the host's execution environment, its working directory and its PATH. · linux: 7 · · [proof](validation/current/internal.testenv.md) |
 | [`internal/trace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace) | 92 |  | The execution-trace reader end to end — real trace corpora parsed through the v2 reader (`TestReaderGolden`'s 21 golden streams open by relative path, the fixture family the single-file bundler fix was proven on), the old-trace (1.11–1.21) format converter over its stress corpora — the suite whose swap corruption rooted the parallel-deref-assignment converter fix — summary/MUD statistics, and `TestTraceCPUProfile`'s live `go run` of a profiled testprog, the first consumer of link-staged fixtures (the sandbox compiles real GOROOT sources through a symlink, closing the internal-import class). Three converter/harness arcs met their measure in this one row: sibling-testdata staging, link-staging, and the parallel-assignment family's third arm. · linux: 98 · [proof](validation/current/internal.trace.md) |
+| [`internal/trace/internal/oldtrace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace/internal/oldtrace) | 3 |  | The pre-1.22 execution-trace parser on its own suite — all 12 canned corpora (1.11–1.21 stress, http, fmt and user-task-region streams) parsed and classified good vs deliberately time-unordered with STW reason strings checked, eight historically parser-crashing corrupted inputs required to error rather than crash, and the bucketed `Events` container's whole lifecycle: append across bucket boundaries, iterate, pop until every bucket drops. This parser is where the star-deref-of-call parallel swap lives (`*l.Ptr(i), *l.Ptr(j) = *l.Ptr(j), *l.Ptr(i)`) — the shape the parallel-deref-assignment fix closed after the parent `internal/trace` suite rooted it; this row is the package's own suite validating clean behind it. · [proof](validation/current/internal.trace.internal.oldtrace.md) |
 | [`internal/types/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/types/errors) | 155 |  | Every `go/types` error code, checked two ways against the real type checker: each code's documented Example snippet must actually produce that code, and the codes themselves must stay dense, uniquely named and correctly styled. Its `walkCodes` type-checks `codes.go` through `go/types.Check` on the way in, so this is also the first package to exercise the converted checker over real source. · linux: 155 · · [proof](validation/current/internal.types.errors.md) |
 | [`internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) | 3 |  | AIX XCOFF objects — the 32- and 64-bit section and symbol-table readers over the PowerPC testdata executables, `big`-format archive member enumeration, and the malformed-file error path. · linux: 3 · [proof](validation/current/internal.xcoff.md) |
 | [`internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) | 536 | | The Zstandard decompressor — FSE/Huffman table construction, the sliding window, xxhash checksums, and 500+ fuzz-corpus round-trips. Two of the 536, `TestLarge` and `TestAlloc`, gate themselves on a `zstd` binary being on `PATH` and skip identically on both sides where it is absent; a host that HAS one runs them, and `TestAlloc` asserts an exact zero allocations, so expect it to need an `alloc-profile` disclosure there. · linux: 536 · [proof](validation/current/internal.zstd.md) |
