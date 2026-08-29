@@ -497,6 +497,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckFuncFieldUnexportedType() => CheckTarget("FuncFieldUnexportedType");
 
     [TestMethod]
+    public void CheckFuncForPCName() => CheckTarget("FuncForPCName");
+
+    [TestMethod]
     public void CheckFuncLitArgCapture() => CheckTarget("FuncLitArgCapture");
 
     [TestMethod]

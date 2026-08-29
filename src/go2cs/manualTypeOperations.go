@@ -210,6 +210,16 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// asserts over runtime.Callers) are the demonstrated consumers.
 		"Callers":     goosAny,
 		"Frames.Next": goosAny,
+
+		// FuncForPC/Func.Name join the traceback family for the same reason the rest of it is
+		// here: both bodies reach pclntab, which does not exist. managed_impl.cs's header once
+		// ruled a *Func unrecoverable, and that premise EXPIRED when ManagedPointerTokens landed
+		// -- a reflect Value.Pointer() token resolves to the delegate behind it, and a Callers PC
+		// token already carries its Go-spelled name. Name() must come WITH FuncForPC: its own body
+		// Reinterprets Func to _func -- the prefix-downcast the managed model cannot alias -- and
+		// then walks the symbol table, so a *Func whose Name() stayed auto is a handle to nothing.
+		"FuncForPC": goosAny,
+		"Func.Name": goosAny,
 		// The metrics-table mutex (managed_impl.cs). Go's bodies acquire metricsSema, a runtime
 		// sleeping semaphore whose acquire path is getg() → sudog → gopark — the scheduler
 		// machinery that has no managed counterpart — so every path into the metrics table

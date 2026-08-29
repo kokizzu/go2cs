@@ -68,7 +68,9 @@
 //     process-lifetime tokens, never addresses; Frame.Function is the Go spelling (goFrameName);
 //     Frame.File/Line name the GO position the conversion recorded for that frame, and the
 //     converted `.cs` position where it recorded none (goFramePosition). FuncForPC
-//     and Frame.Func stay unimplemented/nil — a *Func has no managed referent. getcallersp
+//     and Frame.Func stayed unimplemented/nil while a *Func had no managed referent; that
+//     premise EXPIRED when ManagedPointerTokens landed, and FuncForPC/Func.Name are managed
+//     below as of 2026-08-29 (Frame.Func is still nil -- not a token this host mints). getcallersp
 //     itself remains an honest stub: a caller's stack pointer has no managed answer, so the
 //     chain is severed HERE, at the API boundary that does (the methodName precedent).
 //     runtime.Caller stays AUTO-converted and works through the same walk, because the funnel it
@@ -1316,5 +1318,63 @@ partial class runtime_package
 
             return s_callerRecords[(int)(value - 1)];
         }
+    }
+
+    // ------- FuncForPC / Func.Name: a *Func recovered from a token -------
+    //
+    // The header above used to say a *Func has no managed referent. That was true when it was
+    // written and stopped being true when ManagedPointerTokens landed (2026-08-29): reflect's
+    // Value.Pointer() mints an identity token AND registers the object behind it, so a function
+    // VALUE's token resolves back to its delegate, and a Callers() PC token already resolves to a
+    // CallerFrameRecord carrying the Go-spelled name. Both are recoverable; nothing about PCs
+    // being opaque tokens rather than addresses changed.
+    //
+    // What this does NOT restore is Go's *Func as a window onto pclntab — there is still no
+    // symbol table, no entry address and no inline tree. It answers the ONE question callers
+    // actually ask of a *Func recovered from a function value: its name. reflect's own abi_test.go
+    // names every subtest `t.Run(runtime.FuncForPC(fn.Pointer()).Name(), ...)`, and answering ""
+    // there made Go's testing package renumber the subtests #00, #01, ... turning one naming gap
+    // into 83 orphaned comparison rows that read as 83 defects.
+    private static readonly ConditionalWeakTable<object, string> s_funcNames = new();
+
+    // FuncForPC returns a *Func describing the function the token names, or nil when the token
+    // names nothing this host can resolve — which is Go's own answer for a pc in no function.
+    public static ж<Func> FuncForPC(uintptr pc)
+    {
+        string? name = managedFuncName(pc);
+
+        if (string.IsNullOrEmpty(name))
+            return default!;
+
+        ж<Func> box = Ꮡ(new Func());
+        s_funcNames.Add(box, name!);
+        return box;
+    }
+
+    // Name returns the Go spelling recorded when the *Func was minted. A Func this host did not
+    // mint carries no record and answers "", exactly as Go's Name() does for a nil *Func.
+    public static @string Name(this ж<Func> Ꮡf)
+    {
+        if (Ꮡf == nil)
+            return ""u8;
+
+        return s_funcNames.TryGetValue(Ꮡf, out string? name) ? (@string)name : ""u8;
+    }
+
+    // The two token kinds a pc can be in this host, tried in the order that costs least.
+    private static string? managedFuncName(uintptr pc)
+    {
+        // A Callers()/callers() PC: the record already holds the Go spelling goFrameName produced.
+        if (callerFrameRecord(pc) is CallerFrameRecord record && record.Function.Length > 0)
+            return record.Function;
+
+        // A reflect Value.Pointer() token: resolves to the object the token named. For a function
+        // value that is the delegate, whose MethodInfo is what goFrameName spells.
+        object? referent = ManagedPointerTokens.Resolve((nuint)pc);
+
+        while (referent is IInterfaceAdapter { Value: not null } adapter)
+            referent = adapter.Value;
+
+        return referent is Delegate d ? goFrameName(d.Method, null) : null;
     }
 }
