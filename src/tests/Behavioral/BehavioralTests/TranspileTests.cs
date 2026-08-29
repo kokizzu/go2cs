@@ -49,6 +49,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckAnonStructArrayElement() => CheckTarget("AnonStructArrayElement");
 
     [TestMethod]
+    public void CheckAnonStructAssertLiftDedupe() => CheckTarget("AnonStructAssertLiftDedupe");
+
+    [TestMethod]
     public void CheckAnonStructComposedTypes() => CheckTarget("AnonStructComposedTypes");
 
     [TestMethod]
