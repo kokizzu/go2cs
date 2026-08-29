@@ -867,6 +867,17 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   don't, so an incremental build after a target switch silently validates the OTHER target's
   assemblies — purge `bin`/`obj`/`Generated` between target switches before trusting any build or
   suite that follows one.
+- **⚠ The corpus's emission cgo state is `CGO_ENABLED=0`, and a conversion against the committed
+  tree must MATCH it** (measured 2026-08-29, net's Linux first contact — a corpus-level fact, not a
+  lane detail: `net/linux/cgo_stub.cs` is on disk and `cgo_stub.go` is selected ONLY when cgo is
+  off). This is the coherent convention — the converter cannot process cgo C halves regardless (it
+  skips toolchain intermediates loudly since the Syntax-pairing fix), and Go's own cgo-off file
+  selections are fully functional pure-Go paths. The trap is a MIXED-state tree: converting under
+  cgo-ON against a cgo-OFF corpus changes the build-tag file selection, so declarations MIGRATE
+  between files while the stale other-selection file remains — measured as a CS0111 duplicate init
+  forcer in `net` (the forcer moved from cgo_stub.cs to dial.cs with both on disk). Reads exactly
+  like a converter defect; it is an environment mismatch. On any Linux host with gcc (where cgo-on
+  is the default), set `CGO_ENABLED=0` before converting against or regenerating the corpus.
 - **The on-disk corpus can be stale** relative to converter changes made since the last regen; building
   the committed tree measures *that* output, not today's. To measure the current converter you reconvert.
 - **⚠ For ADDRESS-OF/ALIASING (`Ꮡ`-machinery) converter changes, a seeded corpus reconvert-and-BUILD
