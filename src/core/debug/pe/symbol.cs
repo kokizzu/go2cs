@@ -26,78 +26,14 @@ public static UntypedInt COFFSymbolSize => 18;
     public uint8 NumberOfAuxSymbols;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string tooManySymbolsFileMayBeˢ = "too many symbols; file may be corrupt"u8;
+// go2cs generated this placeholder — func readCOFFSymbols is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// readCOFFSymbols reads in the symbol table for a PE file, returning
-// a slice of COFFSymbol objects. The PE format includes both primary
-// symbols (whose fields are described by COFFSymbol above) and
-// auxiliary symbols; all symbols are 18 bytes in size. The auxiliary
-// symbols for a given primary symbol are placed following it in the
-// array, e.g.
-//
-//	...
-//	k+0:  regular sym k
-//	k+1:    1st aux symbol for k
-//	k+2:    2nd aux symbol for k
-//	k+3:  regular sym k+3
-//	k+4:    1st aux symbol for k+3
-//	k+5:  regular sym k+5
-//	k+6:  regular sym k+6
-//
-// The PE format allows for several possible aux symbol formats. For
-// more info see:
-//
-//	https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#auxiliary-symbol-records
-//
-// At the moment this package only provides APIs for looking at
-// aux symbols of format 5 (associated with section definition symbols).
-internal static (slice<COFFSymbol>, error) readCOFFSymbols(ref FileHeader fh, io.ReadSeeker r) {
-    if (fh.PointerToSymbolTable == 0) {
-        return (default!, default!);
-    }
-    if (fh.NumberOfSymbols <= 0) {
-        return (default!, default!);
-    }
-    var (_, err) = r.Seek((int64)fh.PointerToSymbolTable, io.SeekStart);
-    if (err != default!) {
-        return (default!, fmt.Errorf("fail to seek to symbol table: %v"u8, err));
-    }
-    nint c = saferio.SliceCap<COFFSymbol>((uint64)fh.NumberOfSymbols);
-    if (c < 0) {
-        return (default!, errors.New(tooManySymbolsFileMayBeˢ));
-    }
-    var syms = new slice<COFFSymbol>(0, () => new(), c);
-    nint naux = 0;
-    for (var k = (uint32)0; k < fh.NumberOfSymbols; k++) {
-        ref var sym = ref heap(new COFFSymbol(), out var Ꮡsym);
-        if (naux == 0){
-            // Read a primary symbol.
-            err = binary.Read(r, binary.LittleEndian, Ꮡsym);
-            if (err != default!) {
-                return (default!, fmt.Errorf("fail to read symbol table: %v"u8, err));
-            }
-            // Record how many auxiliary symbols it has.
-            naux = (nint)sym.NumberOfAuxSymbols;
-        } else {
-            // Read an aux symbol. At the moment we assume all
-            // aux symbols are format 5 (obviously this doesn't always
-            // hold; more cases will be needed below if more aux formats
-            // are supported in the future).
-            naux--;
-            var aux = Ꮡsym.Reinterpret<COFFSymbol, COFFSymbolAuxFormat5>();
-            err = binary.Read(r, binary.LittleEndian, aux.OrTypedNil());
-            if (err != default!) {
-                return (default!, fmt.Errorf("fail to read symbol table: %v"u8, err));
-            }
-        }
-        syms = append(syms, sym.ΔClone());
-    }
-    if (naux != 0) {
-        return (default!, fmt.Errorf("fail to read symbol table: %d aux symbols unread"u8, naux));
-    }
-    return (syms, default!);
-}
+// Read a primary symbol.
+// Record how many auxiliary symbols it has.
+// Read an aux symbol. At the moment we assume all
+// aux symbols are format 5 (obviously this doesn't always
+// hold; more cases will be needed below if more aux formats
+// are supported in the future).
 
 // isSymNameOffset checks symbol name if it is encoded as offset into string table.
 internal static (bool, uint32) isSymNameOffset([GoArrayDims(8)] array<byte> name) {
@@ -194,32 +130,8 @@ public static UntypedInt IMAGE_COMDAT_SELECT_ASSOCIATIVE => 5;
 
 public static UntypedInt IMAGE_COMDAT_SELECT_LARGEST => 6;
 
-// COFFSymbolReadSectionDefAux returns a blob of auxiliary information
-// (including COMDAT info) for a section definition symbol. Here 'idx'
-// is the index of a section symbol in the main [COFFSymbol] array for
-// the File. Return value is a pointer to the appropriate aux symbol
-// struct. For more info, see:
-//
-// auxiliary symbols: https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#auxiliary-symbol-records
-// COMDAT sections: https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#comdat-sections-object-only
-// auxiliary info for section definitions: https://docs.microsoft.com/en-us/windows/win32/debug/pe-format#auxiliary-format-5-section-definitions
-[GoRecv] public static (ж<COFFSymbolAuxFormat5>, error) COFFSymbolReadSectionDefAux(this ref File f, nint idx) {
-    ж<COFFSymbolAuxFormat5> rv = default!;
-    if (idx < 0 || idx >= len(f.COFFSymbols)) {
-        return (rv, fmt.Errorf("invalid symbol index"u8));
-    }
-    var pesym = Ꮡ(f.COFFSymbols, idx);
-    UntypedInt IMAGE_SYM_CLASS_STATIC = 3;
-    if ((~pesym).StorageClass != (uint8)IMAGE_SYM_CLASS_STATIC) {
-        return (rv, fmt.Errorf("incorrect symbol storage class"u8));
-    }
-    if ((~pesym).NumberOfAuxSymbols == 0 || idx + 1 >= len(f.COFFSymbols)) {
-        return (rv, fmt.Errorf("aux symbol unavailable"u8));
-    }
-    // Locate and return a pointer to the successor aux symbol.
-    var pesymn = Ꮡ(f.COFFSymbols, idx + 1);
-    rv = pesymn.Reinterpret<COFFSymbol, COFFSymbolAuxFormat5>();
-    return (rv, default!);
-}
+// go2cs generated this placeholder — func COFFSymbolReadSectionDefAux is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// Locate and return a pointer to the successor aux symbol.
 
 } // end pe_package
