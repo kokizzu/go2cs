@@ -127,6 +127,22 @@ public sealed class Coro
     /// </remarks>
     public void Switch()
     {
+        // Tested BEFORE the side question, and that order is load-bearing rather than tidy. Go
+        // throws here instead of blocking, because a switch onto a coro that has finished would
+        // park the caller on a permit nothing can ever release — a caller's bookkeeping bug
+        // becoming a silent hang. Asking it first also closes the one way the side test can lie:
+        // a managed thread id is only unique among LIVE threads, so once the coro's thread has
+        // exited its id can be reissued to an unrelated thread, and that thread would otherwise
+        // match m_threadId and take the coro branch into a wait with no peer. Nothing on the coro
+        // side can observe this flag — it is set after the body has finished running — so moving
+        // the check up costs that side nothing.
+        //
+        // iter.Pull cannot reach this at all: its `done` latch is set by the body's own deferred
+        // call before the body returns, and both next and stop test it before switching. This
+        // guards a FUTURE consumer, stated the way Go states it.
+        if (m_exited)
+            throw new InvalidOperationException("coro: coroswitch on exited coro");
+
         if (Environment.CurrentManagedThreadId == m_threadId)
         {
             // The coro side: hand control back, then park until resumed.
@@ -135,15 +151,6 @@ public sealed class Coro
 
             return;
         }
-
-        // The resuming side. Go throws here rather than blocking, and the distinction is the whole
-        // value of the check: a switch onto a coro that has finished would park the caller on a
-        // permit nothing can ever release, turning a caller's bookkeeping bug into a silent hang.
-        // iter.Pull cannot reach this — its `done` flag is set by the body's own deferred call
-        // before the body returns, and both next and stop test it before switching — so this is a
-        // guard against a FUTURE consumer, stated the way Go states it.
-        if (m_exited)
-            throw new InvalidOperationException("coro: coroswitch on exited coro");
 
         m_resume.Release();
         m_yield.Wait();
