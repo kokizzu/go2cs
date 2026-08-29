@@ -140,6 +140,7 @@
 
     <ProjectReference Include="$(go2csPath)core/internal/bisect/internal.bisect.csproj" />
     <ProjectReference Include="$(go2csPath)core/internal/godebugs/internal.godebugs.csproj" />
+    <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
     <ProjectReference Include="$(go2csPath)core/sync/atomic/sync.atomic.csproj" />
     <ProjectReference Include="$(go2csPath)core/sync/sync.csproj" />
     <ProjectReference Include="$(go2csPath)core/unsafe/unsafe.csproj" />
