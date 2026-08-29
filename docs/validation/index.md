@@ -159,6 +159,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `net/http/cookiejar` | [`net.http.cookiejar.md`](current/net.http.cookiejar.md) | [`src/core/net/http/cookiejar`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/cookiejar) |
 | `net/http/fcgi` | [`net.http.fcgi.md`](current/net.http.fcgi.md) | [`src/core/net/http/fcgi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/fcgi) |
 | `net/http/httptest` | [`net.http.httptest.md`](current/net.http.httptest.md) | [`src/core/net/http/httptest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/httptest) |
+| `net/http/httptrace` | [`net.http.httptrace.md`](current/net.http.httptrace.md) | [`src/core/net/http/httptrace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/httptrace) |
 | `net/http/httputil` | [`net.http.httputil.md`](current/net.http.httputil.md) | [`src/core/net/http/httputil`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/httputil) |
 | `net/http/internal` | [`net.http.internal.md`](current/net.http.internal.md) | [`src/core/net/http/internal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal) |
 | `net/http/internal/ascii` | [`net.http.internal.ascii.md`](current/net.http.internal.ascii.md) | [`src/core/net/http/internal/ascii`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/internal/ascii) |

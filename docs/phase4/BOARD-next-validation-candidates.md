@@ -6169,7 +6169,7 @@ converter defects after this census first named it.)
 | `internal/chacha8rand` | 4 | **3** | near-miss, 1 row | array-SHAPE reinterpret (`array.cs:280`) — the seam L10 works through `sockaddr`, here with no kernel in it |
 | `runtime/metrics` | 2 | **1** | near-miss, 1 row | a `//go:linkname` PUSHED into a test package is unwired; the implementation exists in converted `runtime` |
 | ~~`internal/singleflight`~~ | ~~5~~ | ~~**4**~~ | **BANKED 5/5** | the scheduler arc retired the wall — `TestDoAndForgetUnsharedRace` converges in **1.2 s** (was 28.7 min), banked inside the DEFAULT deadline with no `$longTimeouts` entry (SCHED-S2) |
-| `net/http/httptrace` | 2 | **0** | rooted | `reflect.MakeFunc` over func-typed struct fields → `abi.FuncType`'s promoted embedded `Type` ref is null |
+| `net/http/httptrace` | 2 | **2** | ✅ **BANKED 2026-08-29 (2\|0)** — `reflect.MakeFunc` hand-owned | the funcType reinterpret had no managed record behind it (refined root 2026-08-29: `funcLayout` panics `funcLayout of non-func type <nil>` on the zero box the reinterpret recovers); MakeFunc is now Value.Call's exact inverse over the descriptor's carried System.Type — `reflect/makefunc_impl.cs` + golib `GoReflect.MakeGoFuncDelegate`, guarded by the `ReflectMakeFunc` behavioral test |
 | `internal/unsafeheader` | 6 | **0** | rooted (architectural) | the package's entire subject is the slice/string HEADER LAYOUT that `golib` deliberately does not have |
 | `unique` | 19 | **0** | ⚠ REGRESSION — flagged, not decided | host dies: `Fatal error. Internal CLR error. (0x80131506)` in `System.GC.Collect` ← `runtime.GC()` ← `drainMaps`. Board has this package at **4 of 19** (r43e) |
 | `internal/types/errors` | 155 | **0** | ~~converter defect~~ FIXED → now downstream of `go/types` | the Δ-renamed-imported-type defect is fixed (`claude/types-errors-delta-rename`); the package now BUILDS and RUNS, and both tests then die on the `go/types` checker nil-panic — see the sub-row below |
@@ -6229,6 +6229,17 @@ each names a different facet of it, and fixing the narrowest one fixes none of t
   embedded reference that the reinterpret never populated. Same family as the two above — a managed
   shape conjured from an address — with promotion rather than an array as the victim. httptrace is
   a two-test package sitting entirely behind it.
+  **RESOLVED 2026-08-29 — banked 2|0.** The httptrace bank lane refined the root one level down:
+  past the promoted-embed read, `MakeFunc`'s `funcLayout(ftyp, nil)` panics
+  `reflect: funcLayout of non-func type <nil>` because every managed-backed descriptor is a plain
+  `heap<Type>` box (`abi.synthType`) and the `Reinterpret<abi.Type, funcType>()` recovers a zero
+  box. The remedy did not fight the seam — it removed the reinterpret entirely: `MakeFunc` is
+  hand-owned as `Value.Call`'s exact inverse (`reflect/makefunc_impl.cs`, over golib
+  `GoReflect.MakeGoFuncDelegate`'s expression-compiled per-delegate-type factory), reading the
+  delegate type off the descriptor's `sysType` cargo. `reflect/iter.cs`'s rangefunc `Seq`/`Seq2`
+  become live MakeFunc consumers with it. Variadic func types stay a loud refusal (the Span tail —
+  the reverse of `InvokeVariadic`'s family trampolines, unbuilt for want of a consumer), exactly as
+  `Value.CallSlice` records.
 
 ### `runtime/metrics` — 1 of 2, and the missing row is a linkname DIRECTION
 

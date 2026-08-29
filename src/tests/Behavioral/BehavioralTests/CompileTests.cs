@@ -1453,6 +1453,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckReflectliteTypeName() => CheckTarget("ReflectliteTypeName");
 
     [TestMethod]
+    public void CheckReflectMakeFunc() => CheckTarget("ReflectMakeFunc");
+
+    [TestMethod]
     public void CheckReflectMapRangeNilKey() => CheckTarget("ReflectMapRangeNilKey");
 
     [TestMethod]

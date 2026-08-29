@@ -487,6 +487,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"MakeSlice":         goosAny,
 		"MakeMap":           goosAny,
 		"MakeMapWithSize":   goosAny,
+		// MakeFunc's auto body is runtime machinery end to end: it reinterprets the descriptor into
+		// a funcType sub-record no synthesized abi.Type has behind it (the box comes back zero, Kind
+		// 0), asks funcLayout for a stack map over that nothing ("reflect: funcLayout of non-func
+		// type <nil>" — net/http/httptrace's compose was the first operational hit), and pairs an
+		// assembly stub with a closure context the managed runtime cannot execute. The hand-owned
+		// form (reflect/makefunc_impl.cs) is Value.Call's exact inverse: a delegate of the
+		// descriptor's carried System.Type (GoReflect.MakeGoFuncDelegate) marshalling its CLR
+		// arguments into a slice<Value> for fn and the result Values back out under Call's own
+		// assignability rule. makeMethodValue's identical funcLayout read stays auto: only reachable
+		// through flagMethod, which the bridge never sets (Value.Method binds a delegate instead).
+		"MakeFunc": goosAny,
 		// Copy reinterprets BOTH operands' data words as flat `unsafeheader.Slice` headers
 		// (`*(*unsafeheader.Slice)(dst.ptr)`) and hands them to typedslicecopy — a raw memory move
 		// with no managed form, which on the bridge's never-populated ptr slot dereferences a nil ж

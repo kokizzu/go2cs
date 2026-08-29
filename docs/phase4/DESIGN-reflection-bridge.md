@@ -362,6 +362,12 @@
 > failing-first by five separate neuterings. Full design: ConversionStrategies-Reference
 > *`reflect.Value.Call` over a variadic func value is TYPED dispatch*.
 >
+> **AMENDED 2026-08-29:** `MakeFunc` left this list — hand-owned as `Value.Call`'s exact inverse
+> (`reflect/makefunc_impl.cs` over golib `GoReflect.MakeGoFuncDelegate`; fixed-arity full, variadic
+> a loud refusal mirroring `CallSlice`'s stance), banked with `net/http/httptrace` 2|0 and guarded
+> by behavioral `ReflectMakeFunc`. Full design: ConversionStrategies-Reference *`reflect.MakeFunc`
+> is `Value.Call`'s exact inverse*.
+>
 > **NOT implemented — remaining Phase-3 surface:** `MakeFunc`; `CallSlice` (no demonstrated
 > consumer — `text/template` calls `Call`, not `CallSlice`, so the stub's named next consumer is
 > retired as measured-wrong); `Value.Index`/`Value.Slice` over a Kind-String Value
