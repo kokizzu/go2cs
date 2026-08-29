@@ -93,21 +93,7 @@ internal static ж<syscall.LazyProc> procGetProfilesDirectoryW = moduserenv.NewP
 internal static ж<syscall.LazyProc> procWSAGetOverlappedResult = modws2_32.NewProc("WSAGetOverlappedResult"u8);
 internal static ж<syscall.LazyProc> procWSASocketW = modws2_32.NewProc("WSASocketW"u8);
 
-internal static (uint32 ret, error err) adjustTokenPrivileges(syscall.Token token, bool disableAllPrivileges, ж<TOKEN_PRIVILEGES> Ꮡnewstate, uint32 buflen, ж<TOKEN_PRIVILEGES> Ꮡprevstate, ж<uint32> Ꮡreturnlen) {
-    uint32 ret = default!;
-    error err = default!;
-
-    uint32 _p0 = default!;
-    if (disableAllPrivileges) {
-        _p0 = 1;
-    }
-    var (r0, _, e1) = syscall.Syscall6(procAdjustTokenPrivileges.Addr(), 6, (uintptr)token, (uintptr)_p0, (uintptr)Ꮡnewstate, (uintptr)buflen, (uintptr)Ꮡprevstate, (uintptr)Ꮡreturnlen);
-    ret = (uint32)r0;
-    if (true) {
-        err = errnoErr(e1);
-    }
-    return (ret, err);
-}
+// go2cs generated this placeholder — func adjustTokenPrivileges is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ DuplicateTokenEx(syscall.Token hExistingToken, uint32 dwDesiredAccess, ж<syscall.SecurityAttributes> ᏑlpTokenAttributes, uint32 impersonationLevel, TokenType tokenType, ж<syscall.Token> ᏑphNewToken) {
     error err = default!;

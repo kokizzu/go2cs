@@ -57,7 +57,7 @@ using static go.@internal.syscall.windows_package;
 [assembly: go.GoPositionMap("internal/syscall/windows/security_windows.go", "security_windows.cs", "ACNcsoKUppSUAA0eggAxeg==")]
 [assembly: go.GoPositionMap("internal/syscall/windows/syscall_windows.go", "syscall_windows.cs", "ABcqwoKUgoKCgpQA9AH+BIKCgpSCgpQAJ2SSADiGAbKCgoKClIKUlKzM")]
 [assembly: go.GoPositionMap("internal/syscall/windows/version_windows.go", "version_windows.cs", "ABw60pKCggALFIKEgoKCgpSCgoKUgoLaooKqooKssoL+ggAJDoaChIKCgpSCgqY=")]
-[assembly: go.GoPositionMap("internal/syscall/windows/zsyscall_windows.go", "zsyscall_windows.cs", "ABk0opSk2gA3drKCgpSCgoKUpqKCgpSmooKClKaigoKUprKCgoKUprKCgoKUpqKCgpSCgpSmooKClKaigoKUpqKCgpSmooKClIKClKaigoKUprKCgoKUpqKCgqaigoKUpqKCgqaygoKClKaigoKUprKCgoKUprKCgoKUprKCgoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaigoKUprKCgoKUpqKCgqaigoKmooKClKaigoKUpqKCgpQABBaigoKUpqKCgpSmgoKmooKClKaigoKUgoKUpqKCgpSmooKClAAEHrKCgoKU")]
+[assembly: go.GoPositionMap("internal/syscall/windows/zsyscall_windows.go", "zsyscall_windows.cs", "ABk0opSk2gA5kAGigoKUpqKCgpSmooKClKaygoKClKaygoKClKaigoKUgoKUpqKCgpSmooKClKaigoKUpqKCgpSCgpSmooKClKaygoKClKaigoKmooKClKaigoKmsoKCgpSmooKClKaygoKClKaygoKClKaygoKClKaigoKUpqKCgpSmooKClKaigoKUpqKCgpSmooKClKaygoKClKaigoKmooKCpqKCgpSmooKClKaigoKUAAQWooKClKaigoKUpoKCpqKCgpSmooKClIKClKaigoKUpqKCgpQABB6ygoKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.syscall;
