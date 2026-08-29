@@ -16,6 +16,38 @@ import (
 
 const ForVarInitMarker = ">>MARKER:FOR_VAR_INIT<<"
 
+// LoopContinueLabelMarker (formatted with the loop's minted label name, so nested loops never
+// collide) holds the end-of-body slot where a loop declares its wrapped-continue target label —
+// see prepareLoopContinueTarget / finalizeLoopContinueTarget.
+const LoopContinueLabelMarker = ">>MARKER:LOOP_CONTINUE_LABEL_%s<<"
+
+// prepareLoopContinueTarget opens a loop's wrapped-continue bookkeeping: a `do { … } while
+// (false)` switch-break wrapper in the body (visitSwitchStmtCore) is itself a C# iteration
+// statement, so a Go `continue` inside one cannot be emitted bare — it targets a label at the
+// very END of the loop body instead, where control reaches the post clause and condition exactly
+// as `continue` would (flowing through the per-iteration copy-backs, which follow the label).
+// Whether any case needs it is only known after the body has been emitted, so the label's slot in
+// the body's innerSuffix is a marker: the caller appends it AFTER any `continue_<label>:` target
+// and BEFORE the copy-backs, pushes the entry around the body visitation, and hands both to
+// finalizeLoopContinueTarget, which resolves the marker to the labeled empty statement — or to
+// nothing, keeping every label-free loop byte-identical. The label name is minted eagerly (the
+// `continue` temp-name counter feeds no other emission, so an unused mint disturbs nothing).
+func (v *Visitor) prepareLoopContinueTarget() (*continueTargetEntry, string) {
+	entry := &continueTargetEntry{labelName: v.getTempVarName("continue")}
+	return entry, fmt.Sprintf(LoopContinueLabelMarker, entry.labelName)
+}
+
+// finalizeLoopContinueTarget resolves a loop's end-of-body label marker after the body has been
+// emitted: to `<labelName>:;` (column 0, the same rendering as `continue_<label>:;`) when some
+// wrapped continue targeted the loop, to nothing otherwise. See prepareLoopContinueTarget.
+func (v *Visitor) finalizeLoopContinueTarget(entry *continueTargetEntry, marker string) {
+	if entry.labelUsed {
+		v.replaceMarker(marker, fmt.Sprintf("%s%s:;", v.newline, entry.labelName))
+	} else {
+		v.replaceMarker(marker, "")
+	}
+}
+
 func (v *Visitor) visitForStmt(forStmt *ast.ForStmt, target LabeledStmtContext) {
 	// A func literal passed as a call argument in the condition (`for (…; underIs(t, func(u){…}); …)`)
 	// emits its captured-variable snapshot declarations (`var tʗ1 = t;`) — statements, invalid inside
@@ -233,6 +265,11 @@ func (v *Visitor) visitForStmt(forStmt *ast.ForStmt, target LabeledStmtContext) 
 		blockContext.outerSuffix = fmt.Sprintf("%s%s:;", v.newline, getBreakLabelName(target.label))
 	}
 
+	// The wrapped-continue label slot (resolved to a label or dropped after the body emits — see
+	// prepareLoopContinueTarget) sits with the `continue_<label>:` target, ahead of the copy-backs.
+	continueTarget, continueLabelMarker := v.prepareLoopContinueTarget()
+	blockContext.innerSuffix += continueLabelMarker
+
 	// The copy-backs follow the continue label so a `goto continue_<label>` path flows through
 	// them on its way to the post clause (an unlabeled `continue` is handled at its own site).
 	for _, copyBack := range copyBacks {
@@ -240,8 +277,11 @@ func (v *Visitor) visitForStmt(forStmt *ast.ForStmt, target LabeledStmtContext) 
 	}
 
 	v.loopCopyBackStack = append(v.loopCopyBackStack, copyBacks)
+	v.continueTargetStack = append(v.continueTargetStack, continueTarget)
 	v.visitBlockStmt(forStmt.Body, blockContext)
+	v.continueTargetStack = v.continueTargetStack[:len(v.continueTargetStack)-1]
 	v.loopCopyBackStack = v.loopCopyBackStack[:len(v.loopCopyBackStack)-1]
+	v.finalizeLoopContinueTarget(continueTarget, continueLabelMarker)
 
 	for _, perIterVar := range perIterVars {
 		delete(v.forPerIterVars, perIterVar.obj)

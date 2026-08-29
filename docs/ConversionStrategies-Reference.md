@@ -10043,6 +10043,72 @@ loop/switch/select/closure, so no wrapper is emitted and the flag stays where it
 break, a nested-loop `break` that must still fall through, and a break with no fallthrough behind it —
 output-compared vs Go).
 
+### A `continue` in a break-wrapped case targets the LOOP, not the wrapper
+The `do { … } while (false)` switch-break wrapper is itself a C# **iteration statement**, and C# binds
+`continue` to the innermost enclosing one — so a Go `continue` (meaning: continue the enclosing `for`)
+inside a wrapped case continued the *wrapper* instead, which exited on its `false` condition and fell
+through past the switch into the rest of the loop body. The Go `continue`'s intent was silently
+discarded; the wrapper retargeted `break` but never considered `continue` — the symmetric twin of the
+fallthrough hazard above. `net/http`'s `ParseSetCookie` is the live corpus shape: the `max-age` and
+`expires` cases each hold both a switch-`break` (the malformed-attribute bail-out) and a loop-`continue`
+(the parsed-attribute accept), so a *successfully parsed* Max-Age/Expires ran its case to completion and
+then fell through into `c.Unparsed = append(c.Unparsed, …)` — Expires **and** RawExpires parsed
+correctly, yet the raw attribute also landed in `Unparsed`, which is only possible when the case body
+runs to completion and falls out.
+
+Such a `continue` now lowers to a `goto` targeting a labeled empty statement at the very **end of the
+enclosing loop's body**, where control reaches the loop's post-statement and condition exactly as
+`continue` would:
+
+```csharp
+for (nint i = 0; i < len(words); i++) {
+    var exprᴛ1 = words[i];
+    if (exprᴛ1 == "skip"u8) {
+        do {
+            if (i == 0) {
+                fmt.Println(aBreakingAtˢ, i);
+                break;                     // Go break-of-switch — exits the wrapper (its purpose)
+            }
+            fmt.Println(aContinuingAtˢ, i);
+            goto continueᴛ1;               // Go continue-of-loop — a bare C# continue would bind the wrapper
+        } while (false);
+    }
+    else if (exprᴛ1 == "stop"u8) {
+        fmt.Println(aStopAtˢ, i);
+    }
+
+    fmt.Println(aAfterSwitchˢ, i);
+continueᴛ1:;
+}
+```
+
+Mechanics, each load-bearing:
+
+- **The label is minted per loop** (`continueᴛN`, the standard temp-name convention; nested loops each
+  get their own) and **emitted only when some wrapped case actually targets it** — the loop's body
+  suffix carries a marker that resolves to the labeled empty statement or to nothing once the body has
+  been emitted, so every wrapper site *without* a loop-continue stays byte-identical (no label, no
+  goto; an unconditional label would also draw CS0164).
+- **The label precedes the per-iteration copy-backs.** A Go 1.22+ transformed loop (a body closure
+  captures the clause variable) re-declares the variable from a carrier each pass and must copy the
+  final value back before the post clause; the bare-`continue` emission writes those copy-backs inline
+  at the continue site, but the goto path instead flows *through* them — the label sits with the
+  `continue_<label>:` target, ahead of the copy-backs — so a wrapped continue in such a loop cannot
+  leave the carrier stale (which would re-run the same index).
+- **A continue belonging to a nested real loop inside the wrapped case stays a bare `continue`.** The
+  emitter keeps a stack of continue targets — loop entries (for/range) and wrapper entries — and only a
+  continue whose *innermost* entry is a wrapper takes the goto, targeting the nearest loop entry
+  beneath; a for/range loop nested in the case body pushes its own entry and its continues bind it
+  natively, exactly as Go requires.
+- **Labeled `continue L` is untouched** — it already lowers to `goto continue_L`, which passes through
+  the wrapper correctly, and the range/`foreach` form takes the same end-of-body label as `for`.
+
+Guarded by `SwitchBreakContinueWrapper`: the defect shape in a `for` and in a `range` loop, an
+unwrapped-continue control, a break-only wrapped control (byte-identity), a nested inner loop whose
+continue must keep binding inward, a labeled `continue outer` through a wrapper, and the
+per-iteration-capture loop whose wrapped continue must flow through the carrier copy-back — all
+output-compared vs Go.
+
 ## Type Switch Statements
 For a Go type-switch, C#'s type-pattern `switch` works well. The runtime exposes the dynamic type via `.type()`, and the empty interface is `any`:
 

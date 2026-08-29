@@ -1687,6 +1687,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSwitchBreakBeforeFallthrough() => CheckTarget("SwitchBreakBeforeFallthrough");
 
     [TestMethod]
+    public void CheckSwitchBreakContinueWrapper() => CheckTarget("SwitchBreakContinueWrapper");
+
+    [TestMethod]
     public void CheckSwitchBreakInCase() => CheckTarget("SwitchBreakInCase");
 
     [TestMethod]

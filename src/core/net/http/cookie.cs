@@ -189,7 +189,7 @@ public static (ж<ΔCookie>, error) ParseSetCookie(@string line) {
                     secs = -1;
                 }
                 c.Value.MaxAge = secs;
-                continue;
+                goto continueᴛ1;
             } while (false);
         }
         else if (exprᴛ1 == "expires"u8) {
@@ -204,7 +204,7 @@ public static (ж<ΔCookie>, error) ParseSetCookie(@string line) {
                     }
                 }
                 c.Value.Expires = exptime.UTC();
-                continue;
+                goto continueᴛ1;
             } while (false);
         }
         else if (exprᴛ1 == "path"u8) {
@@ -217,6 +217,7 @@ public static (ж<ΔCookie>, error) ParseSetCookie(@string line) {
         }
 
         c.Value.Unparsed = append((~c).Unparsed, parts[i]);
+continueᴛ1:;
     }
     return (c, default!);
 }
