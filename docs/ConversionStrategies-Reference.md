@@ -3318,6 +3318,52 @@ inst.Value.Arg = inst.Value.Out;
 
 Note the tell in the "before": the very next statement of the same Go function swaps two plain *locals* (`matchOut, matchArg = matchArg, matchOut`) and was already emitted correctly as `(matchOut, matchArg) = (matchArg, matchOut);` — the divergence was purely the target *shape*. The consequence was silent: every `InstAlt` whose empty-match leg needed swapping got a corrupted dispatch, so `regexp` quietly lost its one-pass engine for `^[a-c]*$`, `^(?:a*)$`, `^.bc(d|e)*$` and friends, and `^[a-c]+$` stopped matching `"abc"` at all. A field write is a write to existing storage exactly as the index and star-deref forms are, so it is now counted as reassigned like them — which also aligns single-selector assignments (`h.flags &= ^writing`) with the narrowing-cast rendering a plain-ident target already got. (Guarded by the `ParallelAssignmentHazard` extension — a pointer-receiver field swap, a cross-struct rotate reading pre-assignment values, and a package-var swap; and by the `RangeVarReassign` / `AndNotAssignNarrow` goldens, whose re-baselines are this routing change.)
 
+### A STAR-DEREF of a CALL result counts as a reassignment — the last shape of the classification gap
+
+The paren-deref *index* form and the *selector* form above each closed one hole in the target
+classifier. The third and last is a **star-deref whose operand has no ident root at all**: `getIdentifier`
+unwraps index/star/selector/chan/array/map nodes but has no `CallExpr` arm, so `*l.Ptr(i)` — the deref of
+a method that returns a pointer *into* a backing store — resolved to a nil root. It then reached neither
+the selector arm nor the index arm of the `ident == nil` branch, and the plain-ident star arm
+(`*v = …`) lives in the `ident != nil` branch it never entered. The target was counted as **neither**
+reassigned nor declared, no tuple-path gate was satisfied, and the parallel assignment shattered:
+
+```go
+// internal/trace/internal/oldtrace/parser.go — Events.Swap, the only mutator sort.Stable calls
+func (l *Events) Swap(i, j int) { *l.Ptr(i), *l.Ptr(j) = *l.Ptr(j), *l.Ptr(i) }
+```
+```csharp
+// before — the second store re-reads the slot the first just overwrote, so the
+// swap is a NO-OP that duplicates element j over element i
+l.Ptr(i).Value = l.Ptr(j).Value.ΔClone();
+l.Ptr(j).Value = l.Ptr(i).Value.ΔClone();
+
+// after — the simultaneous deconstruction
+(l.Ptr(i).Value, l.Ptr(j).Value) = (l.Ptr(j).Value.ΔClone(), l.Ptr(i).Value.ΔClone());
+```
+
+This is the same package the paren-deref fix repaired one layer down (that one fixed the oldtrace *order*
+heap; this is the event list the parser sorts at the end of `parse`), and it was the last converted-code
+divergence in `internal/trace`. The failure mode is worth noting because it is **not** a sorting complaint:
+a corrupted `Swap` makes `sort.Stable` duplicate and lose events, and the damage is reported much later by
+the old-trace parser's own post-pass consistency checks — `p 3 is running before start`, `previous sweeping
+is not ended before a new one` — which read like trace-semantics bugs and point nowhere near the assignment.
+It is also why the divergence hid for so long: `sort.Stable` performs no swaps on an already-ordered input,
+and the event stream only acquires inversions from the `EvGoSysExit` timestamp rewrite that runs immediately
+before the sort. Only traces with enough syscall traffic to reorder anything ever exercised the broken
+`Swap`, so 10 of the 12 old-trace fixtures passed and the two `stress` fixtures failed.
+
+Counting such a deref as a reassignment is scoped to **multi-target** assignments: simultaneity is the only
+property at stake, and a single-element `*(*T)(p) = v` has no hazard to fix. That single-element form is also
+the overwhelmingly common one — 213 sites in the converted corpus at Go 1.23.12, 60 in `reflect/value.go`
+alone, nearly all the `*(*T)(p) = v` unsafe-write idiom — so leaving them on their existing path holds the
+change's emission footprint to the one site in the Go tree that is genuinely a parallel deref assignment.
+(The single-element form was measured to emit identically on either path, so the scoping buys footprint,
+not correctness.)
+(Guarded by the `PointerReceiverSliceSwap` extension — a `cell`/`cells` pair mirroring oldtrace's
+`Event`/`Events`, exercised by disjoint swaps, a full reversal, and a selection sort driven entirely by the
+call-deref swap, output-compared vs `go run`; the pre-fix converter leaves all three visibly uncorrected.)
+
 ### An address-taken reference-typed local heap-boxes too — `Ꮡ(value)` copies are only for reads
 An INHERENTLY heap-allocated local (interface/pointer/slice/map/chan/func) is already a
 reference, so escape analysis blanket-marks it and the box machinery historically skipped it —
@@ -9051,6 +9097,67 @@ disturbs no defer-time evaluation — there are no operands to evaluate. Emissio
 construction: an existing zero-arg variadic defer/go site would have been a compile error, and the
 corpus compiles. Guarded by `DeferVariadicCallee` (both statements, both arities, plain func and
 pointer-receiver method, output-compared vs `go run`).
+
+### `defer f(g())` spreads a MULTI-VALUE call: the tuple is the eager argument, the thunk expands it
+
+Go lets a call whose arguments come entirely from one multi-value call omit the intermediate
+variables — `f(g())` passes `g`'s results as `f`'s parameters, and the language permits it *only*
+when that call is the sole argument. Under `defer`/`go` the two halves of the semantics split:
+`g()` is evaluated **at the statement**, on the current goroutine, and `f` runs later (at unwind,
+or on the new goroutine) with the results `g` produced back then.
+
+The eager half was already right — argument capture happens in exactly one place, the argument-list
+renderer, which hands the eager expression to the registration and substitutes a temp parameter
+into the thunk body. What was missing is the expansion: `len(Call.Args)` is **1** for this shape,
+so one `ᴛ1` marker went to a callee wanting N parameters.
+
+```csharp
+defer(ᴛ1 => show(ᴛ1), two(), ref ᒐ);   // BEFORE — two() is (int, string), show takes both: CS7036
+```
+
+C# has no splat, and it needs none: the tuple `g()` returns is a perfectly good single eager
+argument. The arity-1 rung captures it at exactly Go's moment and exactly once, and the thunk
+spreads its components when the call actually runs:
+
+```go
+func two() (int, string)              //  Go:
+defer show(two())                     //      two() runs at the defer; show runs at unwind
+```
+
+```csharp
+defer(ᴛ1 => show(ᴛ1.Item1, ᴛ1.Item2), two(), ref ᒐ);
+```
+
+`Item1…ItemN` are `System.ValueTuple`'s own fields, so NAMED Go results (`(n int, s string)`, which
+emit a named C# tuple) address identically — the element names are compiler aliases, never a
+replacement. Hoisting the results into statement-time locals instead would also be correct, but it
+buys nothing and costs a name: the thunk's parameters are already `ᴛ1…ᴛN`, so the hoisted temps
+would collide with them in the enclosing scope (CS0136).
+
+**Three pieces, each independently red-proven.** The component-wise substitution
+(`convExprList`) is the fix proper. The **temp-parameter force** in `visitDeferStmt`/`visitGoStmt`
+matters only for a FUNC-LITERAL callee — an ordinary callee already takes that form from the
+existing arity test (one argument against N>1 declared parameters), but a literal reaches neither
+that test nor the variadic one (CS0411 without it). And a non-variadic **func-literal callee** is
+the one defer/go shape rendered as an INVOCATION rather than handed to the rung as a delegate, so
+it additionally needs the immediately-invoked-literal delegate cast that phase 1a declines for
+every other defer/go callee (CS0149 without it):
+
+```csharp
+defer(ᴛ1 => ((Action<nint, @string>)((nint n, @string s) => { … }))(ᴛ1.Item1, ᴛ1.Item2), two(), ref ᒐ);
+```
+
+**Reach.** Zero sites in the production corpus — the idiom is a TEST one, which is where it was
+found: Go's own save-and-restore hook `defer reflect.SetArgRegs(reflect.SetArgRegs(a, b, c))`
+(three results into three parameters, the callee returning values so the thunk binds the
+result-discarding `Func` rung) accounts for **four** of the reflect test host's errors, at
+`abi_test.cs` ×3 and `all_test.cs` ×1. A converted-test emission diff over that host moves exactly
+those four lines and nothing else. (Guarded by `DeferMultiValueSpread`: arity 2 and 3, the
+capture-not-re-read case, LIFO ordering, a pointer-receiver method callee, a per-iteration loop, a
+func-literal callee, a variadic callee, and the result-returning save/restore shape — plus two
+CONTROLS that must keep their existing emission, plain matching-arity arguments and a
+SINGLE-value call as the sole argument, both of which stay bare method groups. `go` mirrors every
+arm and is covered by two of its own.)
 
 ### `defer panic(v)` captures its value at the defer, and the sequence survives it
 

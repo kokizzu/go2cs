@@ -314,6 +314,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDeferLoopCapture() => CheckTarget("DeferLoopCapture");
 
     [TestMethod]
+    public void CheckDeferMultiValueSpread() => CheckTarget("DeferMultiValueSpread");
+
+    [TestMethod]
     public void CheckDeferPanicArg() => CheckTarget("DeferPanicArg");
 
     [TestMethod]
@@ -1410,6 +1413,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckReservedTypeMethodCollision() => CheckTarget("ReservedTypeMethodCollision");
+
+    [TestMethod]
+    public void CheckResolveErrIdentity() => CheckTarget("ResolveErrIdentity");
 
     [TestMethod]
     public void CheckReturnPointerFieldOfParam() => CheckTarget("ReturnPointerFieldOfParam");

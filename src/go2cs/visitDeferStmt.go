@@ -85,6 +85,16 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		}
 	}
 
+	// A MULTI-VALUE call as the SOLE argument (`defer f(g())`) always takes the temp-parameter
+	// form: the eager argument is the whole tuple and the thunk spreads its components at unwind
+	// (`ᴛ1 => f(ᴛ1.Item1, ᴛ1.Item2)`; see convExprList). The arity test above already forces it for
+	// an ordinary callee — one argument against N>1 declared parameters — but a FUNC-LITERAL callee
+	// (`defer func(n int, s string) { … }(g())`) reaches neither that test nor the variadic one, and
+	// stating it here keeps the form independent of getFunctionParamCount's -1/0 fallbacks.
+	if paramCount > 0 && v.multiValueSpreadArity(deferStmt.Call) > 1 {
+		renderLambdaParams = true
+	}
+
 	if paramCount > 0 {
 		lambdaContext.callArgs = make([]string, paramCount)
 		lambdaContext.renderParams = renderLambdaParams
@@ -226,6 +236,36 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 	}
 
 	v.outputBuilder.WriteString(result.String())
+}
+
+// multiValueSpreadArity reports how many results a deferred/spawned call's SOLE argument
+// spreads into the callee's parameter list — `defer f(g())` with `g` returning (int, string)
+// — and 0 for every other shape. Go permits the spread ONLY when the multi-value call is the
+// call's one and only argument, so the test is exactly that: one argument, itself a call,
+// whose type is a tuple of more than one result.
+//
+// The shape needs the TEMP-PARAMETER form and a component-wise thunk body: C# has no splat, so
+// the eager argument is the tuple itself (`g()`, evaluated once at the defer/go statement,
+// which is Go's rule) and the thunk spreads its components when it runs (see convExprList's
+// substitution site, the one place a deferred call's arguments are captured).
+func (v *Visitor) multiValueSpreadArity(call *ast.CallExpr) int {
+	if len(call.Args) != 1 || call.Ellipsis.IsValid() {
+		return 0
+	}
+
+	innerCall, isCall := ast.Unparen(call.Args[0]).(*ast.CallExpr)
+
+	if !isCall {
+		return 0
+	}
+
+	tuple, isTuple := v.getExprType(innerCall).(*types.Tuple)
+
+	if !isTuple || tuple.Len() < 2 {
+		return 0
+	}
+
+	return tuple.Len()
 }
 
 func (v *Visitor) getFunctionParamCount(expr ast.Expr) int {

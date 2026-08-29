@@ -132,6 +132,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `internal/syscall/windows/registry` | [`internal.syscall.windows.registry.md`](current/internal.syscall.windows.registry.md) | [`src/core/internal/syscall/windows/registry`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/syscall/windows/registry) |
 | `internal/sysinfo` | [`internal.sysinfo.md`](current/internal.sysinfo.md) | [`src/core/internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) |
 | `internal/testenv` | [`internal.testenv.md`](current/internal.testenv.md) | [`src/core/internal/testenv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/testenv) |
+| `internal/trace` | [`internal.trace.md`](current/internal.trace.md) | [`src/core/internal/trace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace) |
 | `internal/types/errors` | [`internal.types.errors.md`](current/internal.types.errors.md) | [`src/core/internal/types/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/types/errors) |
 | `internal/xcoff` | [`internal.xcoff.md`](current/internal.xcoff.md) | [`src/core/internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) |
 | `internal/zstd` | [`internal.zstd.md`](current/internal.zstd.md) | [`src/core/internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) |

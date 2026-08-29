@@ -112,19 +112,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **181 / 215 testable packages validated — 84.2%**
+> ### Phase 4 progress: **182 / 215 testable packages validated — 84.7%**
 >
-> **25,167 matching test verdicts · 87 disclosed** *(updated 2026-08-28 — maintained as part of the
+> **25,259 matching test verdicts · 87 disclosed** *(updated 2026-08-28 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 181 / 208 — 87.0%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 182 / 208 — 87.5%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 27 of 181 rows validated at their Linux counts** — 12,877 matching verdicts · 22 disclosed.
+> **Linux: 27 of 182 rows validated at their Linux counts** — 12,877 matching verdicts · 22 disclosed.
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -284,6 +284,7 @@ summed from the columns.
 | [`internal/syscall/windows/registry`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/syscall/windows/registry) | 6 |  | Registry key/value CRUD against the real Windows registry — create/open/delete keys, round-tripping all value types (SZ/EXPAND_SZ/BINARY/DWORD/QWORD/MULTI_SZ), environment-variable expansion, and the localized MUI string path through `RegLoadMUIStringW` against the live time-zone key. Two non-blittable-struct-by-address wrappers reached first here: `GetDynamicTimeZoneInformation`'s DYNAMIC_TIME_ZONE_INFORMATION mirror and `SetDWordValue`/`SetQWordValue`'s explicit byte-buffer construction, both hand-owned against the established remedies. · [proof](validation/current/internal.syscall.windows.registry.md) |
 | [`internal/sysinfo`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/sysinfo) | 1 |  | The CPU brand string the runtime reports, read through the converted `internal/cpu` name tables. · [proof](validation/current/internal.sysinfo.md) |
 | [`internal/testenv`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/testenv) | 7 | | The capability probes the rest of the standard library's suites gate themselves on — `HasGoBuild`/`MustHaveExec`/`MustHaveGoRun` consistency, and `TestGoToolLocation`, which resolves `../../../bin/go` from the package's own directory and requires `os.SameFile` agreement with `exec.LookPath("go")`: the test that pins both halves of the host's execution environment, its working directory and its PATH. · linux: 7 · · [proof](validation/current/internal.testenv.md) |
+| [`internal/trace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace) | 92 |  | The execution-trace reader end to end — real trace corpora parsed through the v2 reader (`TestReaderGolden`'s 21 golden streams open by relative path, the fixture family the single-file bundler fix was proven on), the old-trace (1.11–1.21) format converter over its stress corpora — the suite whose swap corruption rooted the parallel-deref-assignment converter fix — summary/MUD statistics, and `TestTraceCPUProfile`'s live `go run` of a profiled testprog, the first consumer of link-staged fixtures (the sandbox compiles real GOROOT sources through a symlink, closing the internal-import class). Three converter/harness arcs met their measure in this one row: sibling-testdata staging, link-staging, and the parallel-assignment family's third arm. · [proof](validation/current/internal.trace.md) |
 | [`internal/types/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/types/errors) | 155 |  | Every `go/types` error code, checked two ways against the real type checker: each code's documented Example snippet must actually produce that code, and the codes themselves must stay dense, uniquely named and correctly styled. Its `walkCodes` type-checks `codes.go` through `go/types.Check` on the way in, so this is also the first package to exercise the converted checker over real source. · linux: 155 · · [proof](validation/current/internal.types.errors.md) |
 | [`internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) | 3 |  | AIX XCOFF objects — the 32- and 64-bit section and symbol-table readers over the PowerPC testdata executables, `big`-format archive member enumeration, and the malformed-file error path. · [proof](validation/current/internal.xcoff.md) |
 | [`internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) | 536 | | The Zstandard decompressor — FSE/Huffman table construction, the sliding window, xxhash checksums, and 500+ fuzz-corpus round-trips. Two of the 536, `TestLarge` and `TestAlloc`, gate themselves on a `zstd` binary being on `PATH` and skip identically on both sides where it is absent; a host that HAS one runs them, and `TestAlloc` asserts an exact zero allocations, so expect it to need an `alloc-profile` disclosure there. · [proof](validation/current/internal.zstd.md) |

@@ -1245,6 +1245,14 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	// writes its decls here instead of inline.
 	callExprContext.deferredDecls = context.deferredDecls
 
+	// A deferred/spawned call whose SOLE argument is a MULTI-VALUE call spreads that call's
+	// results across the callee's parameters (`defer f(g())`). Record the arity so the argument
+	// renderer expands the single `ᴛ1` marker component-wise; the eager argument stays the whole
+	// tuple, evaluated once at the defer/go statement exactly as Go requires.
+	if callExprContext.callArgs != nil {
+		callExprContext.multiValueSpreadArity = v.multiValueSpreadArity(callExpr)
+	}
+
 	// Check if the call is using the spread operator "..."
 	if callExpr.Ellipsis.IsValid() {
 		callExprContext.hasSpreadOperator = true
@@ -2705,6 +2713,20 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	if context.renderParams || context.callArgs == nil {
 		if sig := v.variadicFuncLitCallee(callExpr); sig != nil {
 			funcName = fmt.Sprintf("((%s)(%s))", v.iifeDelegateType(sig), funcName)
+		}
+	}
+
+	// The same cast, for the one NON-variadic literal callee the defer/go path also renders as an
+	// INVOCATION: a MULTI-VALUE spread (`defer func(n int, s string) { … }(g())`) takes the
+	// temp-parameter form so the thunk can spread the tuple's components, and a bare lambda literal
+	// cannot be invoked (CS0149). Phase 1a's IIFE cast declines every defer/go callee because such a
+	// literal is normally handed to the rung AS a delegate with no argument list at all — true for
+	// every shape but this one.
+	if context.renderParams && context.callArgs != nil && v.multiValueSpreadArity(callExpr) > 1 {
+		if funcLit, ok := ast.Unparen(callExpr.Fun).(*ast.FuncLit); ok {
+			if sig, ok := v.info.TypeOf(funcLit).(*types.Signature); ok && !sig.Variadic() {
+				funcName = fmt.Sprintf("((%s)(%s))", v.iifeDelegateType(sig), funcName)
+			}
 		}
 	}
 

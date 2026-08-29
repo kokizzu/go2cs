@@ -952,13 +952,23 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// ONE native decode (readNativeSockaddr), which anyToSockaddr — Linux's decode, reached from
 		// Accept4/Getsockname/Getpeername and the UDP receive path — also becomes. ConnectEx is
 		// Windows-only in Go. Accept4 and anyToSockaddr are declared only in Go's Linux sources.
-		"Bind":          goosWindowsLinux,
-		"Connect":       goosWindowsLinux,
-		"ConnectEx":     goosWindows,
-		"Getsockname":   goosWindowsLinux,
-		"Getpeername":   goosWindowsLinux,
-		"Accept4":       goosLinux,
-		"anyToSockaddr": goosLinux,
+		"Bind":      goosWindowsLinux,
+		"Connect":   goosWindowsLinux,
+		"ConnectEx": goosWindows,
+		// The same seam from the WRITE side, and the multicast half of net's residual.
+		// `ip_mreq` is two INLINE in_addr; converted, IPMreq holds both as golib `array<byte>`
+		// MANAGED REFERENCES, and the generated wrapper handed them to setsockopt via
+		// `Ꮡmreq.Reinterpret<IPMreq, byte>()`. golib refuses to alias a reference-bearing pointee
+		// (so it can never fabricate one), the call falls to the address route, and the kernel gets
+		// eight bytes that are two OBJECT REFERENCES -- WSAEINVAL, surfacing as
+		// `setsockopt: The requested address is not valid in its context` on IP_ADD_MEMBERSHIP.
+		// SetsockoptIPv6Mreq is NOT registered: Go returns EWINDOWS there, so there is nothing to
+		// preserve and a hand-own would invent behaviour.
+		"SetsockoptIPMreq": goosWindows,
+		"Getsockname":      goosWindowsLinux,
+		"Getpeername":      goosWindowsLinux,
+		"Accept4":          goosLinux,
+		"anyToSockaddr":    goosLinux,
 		// Recvfrom hands the kernel a MANAGED RawSockaddrAny by address in its generated form, which
 		// the kernel overwrites -- the fifth instance of the kernel-writes-over-managed-array class,
 		// and the first that kills the process (net.Interfaces() -> NetlinkRIB -> AccessViolation).
