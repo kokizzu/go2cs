@@ -1831,6 +1831,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckUintptrUnsafePointerIdiom() => CheckTarget("UintptrUnsafePointerIdiom");
 
     [TestMethod]
+    public void CheckUncomparableEquality() => CheckTarget("UncomparableEquality");
+
+    [TestMethod]
     public void CheckUnexportedEmbeddedMarker() => CheckTarget("UnexportedEmbeddedMarker");
 
     [TestMethod]
