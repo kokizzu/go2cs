@@ -237,6 +237,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// count rather than an approximation. Reached by the /cgo/go-to-c-calls:calls metric's
 		// compute closure for every metrics.Read.
 		"NumCgoCall": goosAny,
+		// NumGoroutine (managed_impl.cs): its body is gcount(), which derives the live count by
+		// SUBTRACTION over scheduler state the managed model never populates — allglen, minus
+		// sched.gFree.n, minus sched.ngsys, minus each P's gFree.n. Every term is zero here, and
+		// gcount's `if n < 1 { n = 1 }` floor then turns the nonsense into a plausible-looking
+		// constant: runtime.NumGoroutine() answered 1 for every program, forever, which is exactly
+		// the shape of wrong that survives unnoticed (a single-goroutine program's answer IS 1).
+		// The managed model has the true count and always did — golib's Goroutine registry
+		// maintains it as the live set changes — so this is a WIRING, not an approximation, and
+		// the one honest divergence is Go's: the count is momentarily stale under concurrent
+		// creation, which Go's own comment on gcount concedes in the same words.
+		"NumGoroutine": goosAny,
 		// totalMutexWaitTimeNanos (managed_impl.cs): the same `allm` walk as NumCgoCall, summing
 		// per-m lock-profile wait times that never exist here. The managed body keeps the two REAL
 		// counter loads (sched.totalMutexWaitTime, sched.totalRuntimeLockWaitTime) and drops only

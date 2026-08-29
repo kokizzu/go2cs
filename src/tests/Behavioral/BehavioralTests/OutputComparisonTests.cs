@@ -743,6 +743,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
 
     [TestMethod]
+    public void CheckIterPullRendezvous() => CheckTarget("IterPullRendezvous");
+
+    [TestMethod]
     public void CheckJsonFixedArrayUnmarshal() => CheckTarget("JsonFixedArrayUnmarshal");
 
     [TestMethod]
