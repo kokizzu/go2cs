@@ -20568,3 +20568,67 @@ TestTransportGCRequest); the Linux tail — os/exec (parked genuine divergence),
 leisure), the fault-to-panic bridge; the post-1.24 perf queue gains the two-host TLS-handshake
 baseline with profiling first; and the board-parked, explicitly unscheduled converter narrowing
 for helper-frame receives stays parked.
+
+
+## 2026-08-29 · internal/godebug BANKS at 5 | 0 by completing its own hand-own — and the bisect arm is the first measured proof the managed traceback surface is hash-stable across processes; internal/concurrent re-measured at 1.23.12: the structural non-bank stands, with a second, LIVE whitebox surface the 2026-08-19 entry did not name (lane `claude/local-internal-banks`, i7-5820K)
+
+**internal/godebug 5|0 (was 3 of 5).** The first pipeline pass reproduced the prior census
+exactly — TestGet pass, TestBisectTestCase pass, TestPanicNilRace skip=skip, TestCmdBisect
+`bisect: fatal error: target failed without printing any matches`, TestMetrics
+`NonDefault value = 0, want 3`. Both failures were the hand-own's own DOCUMENTED shortcuts
+("IncNonDefault is inert", "the `value#pattern` suffix is stripped, enabling the setting
+unconditionally"), and both were rooted rather than disclosed — `runtime-capability`'s admission
+test answers YES for each (a truthful managed implementation exists), so no class could take them.
+
+- **Metrics arm — the consumer OQ-4's neighborhood was waiting for arrived.** The converted
+  runtime already carried the entire receiving side: initMetrics seeds
+  `/godebug/non-default-behavior/<name>:events` with a compute0 placeholder for every non-Opaque
+  entry, and the auto-converted `godebug_registerMetric` (metrics.cs) swaps in a real reader. The
+  whole gap was godebug's inert IncNonDefault plus cross-assembly reach: the linkname target is
+  `internal`, and internal.godebug (mirroring Go's import constraint) had no runtime reference.
+  Remedy is the registerPoolCleanup pattern's third instance — a public `godebugRegisterMetric`
+  shim in runtime/managed_impl.cs, a godebug→runtime ProjectReference (acyclic: internal/bisect
+  already references runtime), and real per-name counters in the hand-own (ConcurrentDictionary
+  keyed by name = Go's shared-per-name cache semantics; once-per-name registration =
+  nonDefaultOnce; Go's unregistrable-setting panic preserved verbatim). The readMetricsManaged
+  divergence note's "the wiring waits for a consumer that demands it" is now half-answered: the
+  godebug counters are wired; the heap-stat closures (⟨OQ-4⟩) remain exactly as stated.
+- **Bisect arm — cmd/bisect drives the converted host end to end.** `value#pattern` now parses
+  into a real converted `bisect.New` matcher consulted per call in Value (Go's
+  `v.bisect != nil && !v.bisect.Stack(&stderr)`), reporting through a hand-written
+  `bisect.Writer` over fd 2. TestCmdBisect passes FOR REAL: x/tools' cmd/bisect (spawned via
+  `go run`) runs the converted test-host binary through a whole bisect session — all-disabled
+  probe, marker collection, subset narrowing — and converges on exactly the three `BISECT BUG`
+  lines the test's own source marks. **That is the first measured proof that captureCallers'
+  interned PC tokens are bisect-stable**: bisect.stack hashes ASLR-normalized PC DELTAS
+  (`stk[i] -= stk[0]`) and compares them across DOZENS of separate host processes, so
+  same-site-same-hash and different-site-different-hash both held cross-process — the token
+  model's first-seen-order interning is deterministic for a deterministic execution prefix.
+  Value is pinned `[MethodImpl(NoInlining)]` because its frame is part of the hashed surface
+  (captureCallers' own documented inline-hop reasoning); the identified residual — a JIT-tier
+  flip inlining the small converted `bisect.Stack` wrapper mid-session and re-hashing every
+  site — did not materialize in the measured runs.
+
+Gates: pipeline validated 5/5 (1 skipped identically on both sides), proof page emitted at
+converter `773afa2c2`; post-bank filtered sweep PASS 1 at 5 [85s], exit 0; check-roster-format
+479 checks at 190 rows; zero compiler warnings in the changed files; package_info.cs untouched
+(no stdlib-metadata regen owed); full `go2cs.slnx` built once after the runtime-API addition per
+doctrine. Roster: **190/215 = 88.4% · 26,048 matching · 148 disclosed · honest 190/208 = 91.3%**;
+the new Windows-only row moves the Linux applicable denominator 188 → 189 (178 validated there,
+unchanged).
+
+**internal/concurrent — re-measured at Go 1.23.12: closed-by-design STANDS, and gets stronger.**
+Conversion succeeds (the 2026-08-19 emitAutoConversionSiblings crash fix holds), the tests build
+fails on exactly the banked single diagnostic — `hashtriemap_test.cs(418,145): error CS0426:
+The type name 'node<,>' does not exist in the type 'concurrent_package'` (the line moved 406→418
+with the 1.23.12 emission; a direct rebuild of the tests project confirms it is the ONLY
+diagnostic) — so the comparison never runs and the 20 verdicts stay unmeasured. One NEW fact the
+2026-08-19 entry did not name: the whitebox surface is not just the dead dumpMap/dumpNode
+scaffolding. **`TestHashTrieMapBadHash` LIVE-assigns the private `keyHash` field**
+(`m.keyHash = func(_ unsafe.Pointer, _ uintptr) uintptr { return 0 }`, hashtriemap_test.go:29)
+to force total collisions — a live test writing the replaced implementation's private hash hook.
+A comparer-backed pluggable hash could honor that one truthfully, but dumpNode's
+`node`/`indirect`/`entry` types still have no truthful managed referent, so the compile wall
+stands either way and the forbidden move (dead scaffolding for dead code) buys nothing. The row
+stays inside the naive denominator awaiting its individual ruling, exactly as the exclusion
+ledger's candidates paragraph records. No artifacts banked.
