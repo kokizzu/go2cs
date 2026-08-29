@@ -73,7 +73,7 @@ public sealed record RegisteredTest(
 /// compiles; a regenerated one always passes it.
 /// </para>
 /// </remarks>
-public sealed class TestRegistry(string package, IReadOnlyList<string> fixtures, IReadOnlyList<string>? fixtureDirectories = null)
+public sealed class TestRegistry(string package, IReadOnlyList<string> fixtures, IReadOnlyList<string>? fixtureDirectories = null, IReadOnlyList<string>? fixtureLinks = null)
 {
     private readonly List<RegisteredTest> m_tests = [];
 
@@ -82,6 +82,22 @@ public sealed class TestRegistry(string package, IReadOnlyList<string> fixtures,
     public IReadOnlyList<string> Fixtures { get; } = fixtures;
 
     public IReadOnlyList<string> FixtureDirectories { get; } = fixtureDirectories ?? [];
+
+    /// <summary>
+    /// Fixture directories staged as a LINK into the real Go source tree rather than as copies —
+    /// the runnable-program trees whose sources a test hands to the real toolchain to compile.
+    /// </summary>
+    /// <remarks>
+    /// These paths appear in NEITHER <see cref="Fixtures"/> nor the test project: their files are
+    /// deliberately not copied, because the copy is the thing the toolchain refuses. The rule
+    /// <c>cmd/go</c> applies is a directory-prefix test — a file compiled outside <c>$GOROOT/src</c>
+    /// may not import <c>internal/…</c> — so the tree has to BE the real directory as far as the
+    /// toolchain can tell. <see cref="PackageAncestry.StageFixtureLinks"/> creates one link each at
+    /// sandbox construction, refuses to let anything write through one, and asks the toolchain
+    /// whether it actually resolves the form it created. Defaulted so a test host generated before
+    /// this list existed still compiles; a regenerated one always passes it.
+    /// </remarks>
+    public IReadOnlyList<string> FixtureLinks { get; } = fixtureLinks ?? [];
 
     public IReadOnlyList<RegisteredTest> Tests => m_tests;
 
