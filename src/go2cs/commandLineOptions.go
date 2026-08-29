@@ -55,6 +55,7 @@ type Options struct {
 	convertTests           bool          // convert the package's _test.go variants into a runnable test project
 	testAction             string        // convert | build | run | compare | all
 	testTimeout            time.Duration // per-child-command timeout for test build/run/compare actions
+	testFilter             string        // -run regex handed VERBATIM to BOTH compare sides (block-gated census)
 	testPackagePath        string        // import path of the package under test (self-import binding, IP-3)
 	testPackageName        string        // package name of the package under test (self-import binding, IP-3)
 	testWhiteboxReference  bool          // internal _test.go files emit into a bridge while production is referenced

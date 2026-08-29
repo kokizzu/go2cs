@@ -5955,8 +5955,17 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	// hash/maphash's C# run self-terminated at exactly 600 s under `-test-timeout 40m`, reporting its
 	// still-running TestSmhasherAvalanche as an empty verdict that reads exactly like a real failure
 	// (the C# suite needs ~15 min where Go's needs 7.6 s — a performance gap, not a correctness one).
-	goOutput, goErr := runCommandWithTimeout(testChildTimeout(options), inputPath, options, "go", "test", "-json", "-count=1",
-		"-timeout", options.testTimeout.String(), ".")
+	// -test-filter is the block-gated census mechanism (coordinator ruling, 2026-08-29): ONE regex
+	// handed VERBATIM to both sides so the two runs filter identically. It is deliberately NOT
+	// composed here - the two command lines carry the SAME string, verifiable by eye in the log,
+	// rather than two expressions someone would have to prove equivalent. A gated census is
+	// DIAGNOSTIC ONLY: the row banks from an ungated run, never from this one.
+	goArgs := []string{"test", "-json", "-count=1", "-timeout", options.testTimeout.String()}
+	if options.testFilter != "" {
+		goArgs = append(goArgs, "-run", options.testFilter)
+	}
+	goArgs = append(goArgs, ".")
+	goOutput, goErr := runCommandWithTimeout(testChildTimeout(options), inputPath, options, "go", goArgs...)
 
 	// The converted side runs the PUBLISHED single-file host (the host-limit retirement) — the
 	// same relocatable artifact an os/exec-style test copies and re-execs, so what the comparison
@@ -5965,9 +5974,13 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		return err
 	}
 
-	csOutput, csErr := runCommandWithTimeout(testChildTimeout(options), outputPath, options, publishedTestHostPath(outputPath, testProject), "--json",
-		"-timeout", options.testTimeout.String(),
+	csArgs := []string{"--json", "-timeout", options.testTimeout.String()}
+	if options.testFilter != "" {
+		csArgs = append(csArgs, "--run", options.testFilter)
+	}
+	csArgs = append(csArgs,
 		"--result", filepath.Join(outputPath, "go2cs_test_results.json"), "--junit", filepath.Join(outputPath, "go2cs_test_results.xml"))
+	csOutput, csErr := runCommandWithTimeout(testChildTimeout(options), outputPath, options, publishedTestHostPath(outputPath, testProject), csArgs...)
 
 	goResults := terminalTestResults(goOutput)
 	csResults := terminalTestResults(csOutput)
