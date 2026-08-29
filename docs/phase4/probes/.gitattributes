@@ -1,0 +1,5 @@
+# These probe sources are run BYTE-IDENTICALLY across hosts as an A/B control: a cross-host
+# comparison whose probe differs cannot tell a host difference from a probe difference. Exempt
+# them from line-ending normalization so a checkout anywhere reproduces the recorded hashes.
+TlsHandshakeCost/* -text
+WriteDeadlineBudget/* -text
