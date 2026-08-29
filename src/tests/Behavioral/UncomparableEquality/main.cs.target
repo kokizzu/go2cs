@@ -44,6 +44,11 @@ partial class main_package {
     public nint Y;
 }
 
+[GoType] partial struct withAny {
+    public nint A;
+    public any V;
+}
+
 [GoType] partial struct sliceErr {
     public slice<nint> S;
 }
@@ -108,6 +113,10 @@ private static readonly @string arrayOfSliceˢ = "array of slice"u8;
 private static readonly @string arrayOfMapˢ = "array of map"u8;
 private static readonly @string dArrayOfSliceˢ = "2-D array of slice"u8;
 private static readonly @string arrayOfStructˢ = "array of struct"u8;
+private static readonly object interfaceFieldPanicsˢ = (@string)"== interface FIELD panics naming the inner type, recoverably =="u8;
+private static readonly @string structWAnyMapˢ = "struct w/ any=map"u8;
+private static readonly @string structWAnySliceˢ = "struct w/ any=slice"u8;
+private static readonly object structWAnyIntˢ = (@string)"struct w/ any=int:"u8;
 private static readonly object nonEmptyInterfaceˢ = (@string)"== non-empty interface =="u8;
 private static readonly @string errorWSliceˢ = "error w/ slice"u8;
 private static readonly object nilComparesNeverPanicˢ = (@string)"== nil compares never panic =="u8;
@@ -222,6 +231,22 @@ internal static void Main() {
     check(arrayOfStructˢ, () => {
         _ = AreEqual(aostructʗ1, aostructʗ1);
     });
+    fmt.Println();
+    fmt.Println(interfaceFieldPanicsˢ);
+    any wa = new withAny(1, new map<@string, nint>{});
+    var waʗ1 = wa;
+    check(structWAnyMapˢ, () => {
+        _ = AreEqual(waʗ1, waʗ1);
+    });
+    any wa2 = new withAny(1, new nint[]{1}.slice());
+    var wa2ʗ1 = wa2;
+    check(structWAnySliceˢ, () => {
+        _ = AreEqual(wa2ʗ1, wa2ʗ1);
+    });
+    any wc1 = new withAny(1, (nint)(5));
+    any wc2 = new withAny(1, (nint)(5));
+    any wc3 = new withAny(1, (nint)(6));
+    fmt.Println(structWAnyIntˢ, AreEqual(wc1, wc2), AreEqual(wc1, wc3));
     fmt.Println();
     fmt.Println(nonEmptyInterfaceˢ);
     error e = new sliceErr(new nint[]{1}.slice());

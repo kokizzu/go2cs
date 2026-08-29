@@ -2887,8 +2887,26 @@ public static partial class builtin
         if (equalityOperator is null)
             return left.Equals(right);
 
-        // Call equality operator
-        return (bool)equalityOperator.Invoke(null, [left, right])!;
+        // Call equality operator.
+        //
+        // DoNotWrapExceptions is load-bearing, not a micro-optimization: this operator is Go's own
+        // equality for the type, so a panic raised INSIDE it is a Go panic and must reach the
+        // caller as one. A struct with an interface-typed FIELD is the case that proves it — the
+        // generated Equals compares such a field back through AreEqual (TypeGenerator routes it
+        // there deliberately, since C# `==` on an interface operand is reference identity), so
+        // `struct{ V any }` holding a map panics one frame down, INSIDE this invoke. Left wrapped,
+        // reflection delivers a TargetInvocationException instead, which recover() does not match
+        // (RuntimeErrorPanic.TryAsPanic adopts PanicException, DivideByZeroException and
+        // NullReferenceException — not that wrapper), so the panic escaped every `defer func(){
+        // recover() }()` and killed the process where Go recovers cleanly. Measured against
+        // go1.23.12: `struct{any=map}` recovers there and, before this flag, exited 2 here with an
+        // unrecovered traceback through InterpretedInvoke_Method.
+        //
+        // The flag is preferred over unwrapping the wrapper afterwards because it keeps ONE
+        // exception identity end to end — nothing to re-throw, no stack to lose, and the
+        // uncomparable panic minted above propagates as itself whether it is raised in this frame
+        // or in a nested one.
+        return (bool)equalityOperator.Invoke(null, BindingFlags.DoNotWrapExceptions, null, [left, right], null)!;
     }
 
     // Comparability is a pure function of the managed Type and immutable for the life of the

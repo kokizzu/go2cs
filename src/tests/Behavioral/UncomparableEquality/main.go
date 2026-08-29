@@ -59,6 +59,20 @@ type point struct {
 	Y int
 }
 
+// withAny is COMPARABLE by Go's static rule (an interface field is comparable), so the
+// comparison proceeds and panics naming the field's INNER dynamic type. It guards the
+// recoverability of the panic across a reflection boundary: the emitted Equals compares
+// an interface-typed field back through golib's AreEqual, and the outer comparison
+// reaches that Equals through a reflective operator invoke — so the panic is raised one
+// frame INSIDE the invoke. Wrapped by reflection it arrives as a TargetInvocationException,
+// which recover() does not match, and the panic escapes every deferred recover and kills
+// the process. Measured: before the fix this exact shape exited 2 with an unrecovered
+// traceback where Go recovers cleanly.
+type withAny struct {
+	A int
+	V any
+}
+
 type sliceErr struct{ S []int }
 
 func (sliceErr) Error() string { return "sliceErr" }
@@ -148,6 +162,22 @@ func main() {
 
 	var aostruct any = [3]withSlice{}
 	check("array of struct", func() { _ = aostruct == aostruct })
+
+	fmt.Println()
+	fmt.Println("== interface FIELD panics naming the inner type, recoverably ==")
+
+	// The struct is comparable, so the panic names the FIELD's dynamic type, not the
+	// struct's — and it is raised inside a reflective invoke, so this is also the
+	// recoverability guard described on withAny.
+	var wa any = withAny{1, map[string]int{}}
+	check("struct w/ any=map", func() { _ = wa == wa })
+
+	var wa2 any = withAny{1, []int{1}}
+	check("struct w/ any=slice", func() { _ = wa2 == wa2 })
+
+	// the same struct with a COMPARABLE payload must still answer, not panic
+	var wc1, wc2, wc3 any = withAny{1, 5}, withAny{1, 5}, withAny{1, 6}
+	fmt.Println("struct w/ any=int:", wc1 == wc2, wc1 == wc3)
 
 	fmt.Println()
 	fmt.Println("== non-empty interface ==")
