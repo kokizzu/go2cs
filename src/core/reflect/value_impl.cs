@@ -89,10 +89,25 @@ internal static ΔValue unpackEface(any i) {
 // yields its canonical nil box — a NON-nil `any` holding `(*T)(nil)`, exactly Go's packEface
 // (the type is never erased to a bare null one call after X2 restored it).
 public static any /*i*/ Interface(this ΔValue v) {
-    return packInterfaceValue(v);
+    return valueInterface(v, true);
 }
 
+// valueInterface carries Go's two preconditions, and the `safe` parameter is what selects between
+// them — it was accepted and IGNORED here, which is why an unexported field's value could be handed
+// out through Interface() when Go refuses it (reflect's own TestUnexported).
+//
+// The distinction the parameter draws is not incidental: reflect calls valueInterface(v, FALSE)
+// from its own internals — Field/MapIndex walks that legitimately read read-only values — and
+// valueInterface(v, TRUE) from Value.Interface(), the exported door. Collapsing the two either lets
+// the read-only value escape to a caller (what happened) or breaks reflect's internal walks. Go's
+// text is embedded verbatim because reflect's tests match on it.
 internal static any /*i*/ valueInterface(ΔValue v, bool safe) {
+    if (v.flag == 0) {
+        throw panic(Ꮡ(new ValueError("reflect.Value.Interface"u8, Invalid)));
+    }
+    if (safe && (flag)(v.flag & flagRO) != 0) {
+        throw panic("reflect.Value.Interface: cannot return value obtained from unexported field or method");
+    }
     return packInterfaceValue(v);
 }
 
@@ -141,7 +156,29 @@ internal static any /*i*/ packInterfaceValue(ΔValue v) {
     return (st is null ? null : GoReflect.CanonicalNilPointer(st))!;
 }
 
+// mustBeKind is Go's per-accessor kind check. Go writes it inline in each accessor — a switch whose
+// default is `panic(&ValueError{"reflect.Value.X", v.kind()})` — and reflect's own tests assert the
+// resulting text ("call of reflect.Value.Bool on float64 Value"), so the ValueError carries both the
+// method name and the offending kind rather than a message built here.
+//
+// WHY THIS IS NOT MERELY A MISSING CHECK. Without it these accessors did not fail to panic; they
+// failed in three DIFFERENT wrong ways, measured against go1.23.12: Bool() reached `(bool)cur!` and
+// threw a raw InvalidCastException, which is NOT a Go panic and which `recover()` cannot catch — so a
+// caller that Go lets recover from instead died, taking the process with it. Int() and Len() answered
+// quietly with a wrong value, which is worse than dying. A Go panic is recoverable by contract; that
+// is the property being restored here, not just the message.
+private static void mustBeKind(this ΔValue v, @string method, params ΔKind[] accepted) {
+    ΔKind k = v.kind();
+    foreach (ΔKind a in accepted) {
+        if (k == a) {
+            return;
+        }
+    }
+    throw panic(Ꮡ(new ValueError(method, k)));
+}
+
 public static bool Bool(this ΔValue v) {
+    v.mustBeKind("reflect.Value.Bool"u8, ΔBool);
     object? cur = v.live;
     if (cur is bool b) {
         return b;
@@ -154,6 +191,7 @@ public static bool Bool(this ΔValue v) {
 }
 
 public static int64 Int(this ΔValue v) {
+    v.mustBeKind("reflect.Value.Int"u8, ΔInt, Int8, Int16, Int32, Int64);
     return numericValue(v.live) switch {
         nint n => (int64)n,
         int i => i,
@@ -165,6 +203,7 @@ public static int64 Int(this ΔValue v) {
 }
 
 public static uint64 Uint(this ΔValue v) {
+    v.mustBeKind("reflect.Value.Uint"u8, ΔUint, Uint8, Uint16, Uint32, Uint64, Uintptr);
     return numericValue(v.live) switch {
         nuint n => (uint64)n,
         uintptr up => (uint64)up.Value,
@@ -177,6 +216,7 @@ public static uint64 Uint(this ΔValue v) {
 }
 
 public static float64 Float(this ΔValue v) {
+    v.mustBeKind("reflect.Value.Float"u8, Float32, Float64);
     return System.Convert.ToDouble(numericValue(v.live));
 }
 
@@ -197,6 +237,7 @@ private static object? numericValue(object? boxed) {
 }
 
 public static complex128 Complex(this ΔValue v) {
+    v.mustBeKind("reflect.Value.Complex"u8, Complex64, Complex128);
     // golib complex64 is its own struct — an unbox-cast to Complex would throw; and a named
     // complex wrapper unwraps to its underlying first (the read mirror of SetComplex).
     object? cur = v.live;
@@ -250,6 +291,7 @@ public static @string String(this ΔValue v) {
 // Slices/channels/named wrappers answer through their own generated `== nil` operator — the same
 // nilness the emitted comparisons observe (isNilGoValue).
 public static bool IsNil(this ΔValue v) {
+    v.mustBeKind("reflect.Value.IsNil"u8, Chan, Func, Map, ΔPointer, ΔUnsafePointer, ΔInterface, ΔSlice);
     // An INTERFACE-kind value's nilness is a property of the INTERFACE, never of whatever
     // pointer it happens to carry: an interface holding a typed nil `(*T)(nil)` is a NON-nil
     // interface (Go packs (type=*T, value=nil) — packInterfaceValue's own encoding). The
@@ -279,6 +321,7 @@ public static bool IsNil(this ΔValue v) {
 // String arm is `Len() == 0`, so that made every non-empty named string report itself ZERO,
 // and encoding/gob then omitted such a field from the wire entirely.
 public static nint Len(this ΔValue v) {
+    v.mustBeKind("reflect.Value.Len"u8, Array, Chan, Map, ΔSlice, ΔString, ΔPointer);
     object? cur = v.live;
     if (cur is not null && cur is not @string && v.kind() == ΔString && GoReflect.TryUnwrapWrapperValue(cur, out object? unwrapped)) {
         cur = unwrapped;
@@ -304,6 +347,7 @@ public static nint Len(this ΔValue v) {
 // pallocBits lesson). The element Value is typed by the STATIC element type and inherits the
 // parent's read-only bits (Go flag stickiness).
 public static ΔValue Index(this ΔValue v, nint i) {
+    v.mustBeKind("reflect.Value.Index"u8, ΔSlice, Array, ΔString);
     ΔKind k = v.kind();
     System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
     System.Type? elemType = GoReflect.ElementType(st);
@@ -430,6 +474,7 @@ public static nint Copy(ΔValue dst, ΔValue src) {
 }
 
 public static ΔValue Slice(this ΔValue v, nint i, nint j) {
+    v.mustBeKind("reflect.Value.Slice"u8, ΔSlice, Array, ΔString);
     ΔKind k = v.kind();
     System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
     System.Type? elemType = GoReflect.ElementType(st);
@@ -641,9 +686,21 @@ public static bool IsZero(this ΔValue v) {
 // An adapter-held *T aliases the adapter's receiver box; a structurally nil pointer yields the
 // invalid zero Value (Go).
 public static ΔValue Elem(this ΔValue v) {
+    v.mustBeKind("reflect.Value.Elem"u8, ΔInterface, ΔPointer);
     ΔKind k = v.kind();
     if (k == ΔInterface) {
-        return makeReflectValue(v.live);
+        // Go's interface arm ORs the parent's read-only bits into the unpacked value
+        // (`if x.flag != 0 { x.flag |= v.flag.ro() }`), and dropping them here is not cosmetic: it
+        // LAUNDERS a read-only Value. An unexported interface-typed field is read-only, but the
+        // value Elem() handed back was not, so Interface() and Call() on it were both allowed where
+        // Go refuses (reflect's own TestCallPanic reaches this by the single .Elem() that separates
+        // its second badCall from its first). The pointer arm below has always carried the bits;
+        // this arm simply never did.
+        ΔValue elem = makeReflectValue(v.live);
+        if (elem.flag != 0) {
+            elem.flag |= (flag)(v.flag & flagRO);
+        }
+        return elem;
     }
     if (k == ΔPointer) {
         object? cur = v.live;
@@ -739,6 +796,7 @@ public static ΔValue Addr(this ΔValue v) {
 // reproduces exactly (it windows the same backing store), so a write through the returned slice
 // is still visible in the array — the semantics Go's callers may rely on.
 public static slice<byte> Bytes(this ΔValue v) {
+    v.mustBeKind("reflect.Value.Bytes"u8, ΔSlice, Array);
     if (v.live is array<byte> arr) {
         // Go panics on an unaddressable byte array rather than silently copying; fmt takes its own
         // element-by-element path for that case and never calls Bytes(). Both messages, and the
@@ -793,6 +851,7 @@ public static void SetBytes(this ΔValue v, slice<byte> x) {
 // STATIC struct type (promoted embeds project as the embedded Go field; a defined-type-over-
 // struct wrapper exposes its underlying's fields; bridge companions are excluded by attribute).
 public static nint NumField(this ΔValue v) {
+    v.mustBeKind("reflect.Value.NumField"u8, Struct);
     System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
     return st is null ? 0 : GoReflect.GoFields(st).Length;
 }
@@ -1011,6 +1070,7 @@ partial struct MapIter {
 
 // MapRange returns a range iterator for a map.
 public static ж<MapIter> MapRange(this ΔValue v) {
+    v.mustBeKind("reflect.Value.MapRange"u8, Map);
     ref var it = ref heap<MapIter>(out var Ꮡit);
     bindMapIter(ref it, v);
     return Ꮡit;
@@ -1230,10 +1290,12 @@ private static void setKinded(ΔValue v, object wide, @string op) {
 }
 
 public static void SetBool(this ΔValue v, bool x) {
+    v.mustBeAssignable(); v.mustBeKind("reflect.Value.SetBool"u8, ΔBool);
     setKinded(v, x, "SetBool"u8);
 }
 
 public static void SetInt(this ΔValue v, int64 x) {
+    v.mustBeAssignable(); v.mustBeKind("reflect.Value.SetInt"u8, ΔInt, Int8, Int16, Int32, Int64);
     setKinded(v, x, "SetInt"u8);
 }
 
@@ -1242,14 +1304,17 @@ public static void SetUint(this ΔValue v, uint64 x) {
 }
 
 public static void SetFloat(this ΔValue v, float64 x) {
+    v.mustBeAssignable(); v.mustBeKind("reflect.Value.SetFloat"u8, Float32, Float64);
     setKinded(v, x, "SetFloat"u8);
 }
 
 public static void SetComplex(this ΔValue v, complex128 x) {
+    v.mustBeAssignable(); v.mustBeKind("reflect.Value.SetComplex"u8, Complex64, Complex128);
     setKinded(v, x, "SetComplex"u8);
 }
 
 public static void SetString(this ΔValue v, @string x) {
+    v.mustBeAssignable(); v.mustBeKind("reflect.Value.SetString"u8, ΔString);
     setKinded(v, x, "SetString"u8);
 }
 
@@ -1420,6 +1485,10 @@ public static ΔValue Method(this ΔValue v, nint i) {
 // (GoReflect.InvokeVariadic) — the tail Value would be unpacked into the array instead of built
 // from the trailing arguments — so this stays a stub for want of a consumer, not for want of a way.
 public static slice<ΔValue> CallSlice(this ΔValue v, slice<ΔValue> @in) {
+    // The kind check precedes the stub deliberately: a WRONG-KIND call has a defined Go answer
+    // (a recoverable ValueError) and reflect's own TestValuePanic asserts it, so that case is
+    // answered correctly even though the operation itself still has no demonstrated consumer.
+    v.mustBeKind("reflect.Value.CallSlice"u8, Func);
     throw new NotImplementedException("reflect.Value.CallSlice is not implemented (no demonstrated consumer)");
 }
 
