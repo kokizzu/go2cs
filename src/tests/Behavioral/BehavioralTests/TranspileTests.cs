@@ -799,6 +799,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckLambdaFunctions() => CheckTarget("LambdaFunctions");
 
     [TestMethod]
+    public void CheckLambdaNilOnlyReturnInference() => CheckTarget("LambdaNilOnlyReturnInference");
+
+    [TestMethod]
     public void CheckLambdaReturnsPointerParam() => CheckTarget("LambdaReturnsPointerParam");
 
     [TestMethod]

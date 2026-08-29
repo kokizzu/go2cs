@@ -535,6 +535,7 @@
     <Project Path="tests/Behavioral/KeywordNamedTypes/KeywordNamedTypes.csproj" />
     <Project Path="tests/Behavioral/KeywordTrueFalseIdent/KeywordTrueFalseIdent.csproj" />
     <Project Path="tests/Behavioral/LambdaFunctions/LambdaFunctions.csproj" />
+    <Project Path="tests/Behavioral/LambdaNilOnlyReturnInference/LambdaNilOnlyReturnInference.csproj" />
     <Project Path="tests/Behavioral/LambdaReturnsPointerParam/LambdaReturnsPointerParam.csproj" />
     <Project Path="tests/Behavioral/LabeledEmptyStmt/LabeledEmptyStmt.csproj" />
     <Project Path="tests/Behavioral/LargeUintptrConst/LargeUintptrConst.csproj" />

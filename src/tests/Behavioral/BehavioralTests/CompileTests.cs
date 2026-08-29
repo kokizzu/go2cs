@@ -799,6 +799,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckLambdaFunctions() => CheckTarget("LambdaFunctions");
 
     [TestMethod]
+    public void CheckLambdaNilOnlyReturnInference() => CheckTarget("LambdaNilOnlyReturnInference");
+
+    [TestMethod]
     public void CheckLambdaReturnsPointerParam() => CheckTarget("LambdaReturnsPointerParam");
 
     [TestMethod]
