@@ -38,9 +38,9 @@
 
 using System;
 
-namespace go;
-
 [module: go.GoManualConversion]
+
+namespace go;
 
 partial class syscall_package
 {
