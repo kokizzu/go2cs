@@ -2825,6 +2825,25 @@ public static partial class builtin
         if (right is IValueAdapter { Value: not null } rightValueAdapter)
             right = rightValueAdapter.Value;
 
+        // Two adapters BOTH still wrapping a nil delegate (neither matched the guard above) are
+        // exactly Go's "comparing uncomparable type" case: func values are comparable only to
+        // nil, never to each other — and that holds even when both sides are nil (verified
+        // against go1.23.12: two independently-nil-wrapped values of one named func type panic
+        // on `==`, where either compared to a literal nil correctly answers false via the null
+        // checks below). Left unguarded, this reaches the shells' generated Equals override,
+        // which calls m_value.Equals(...) on a null m_value and crashes — the general
+        // exception-to-panic translation downstream then reports Go's WRONG panic ("invalid
+        // memory address or nil pointer dereference" instead of "comparing uncomparable type"),
+        // which is what this check preempts. Rhymes with the registererr chip's Defect B
+        // (reflectPointerToken): the same null-Value shell reaching a path built only for the
+        // non-null shape.
+        if (left is IValueAdapter { Value: null } && right is IValueAdapter { Value: null } &&
+            GoReflect.ValueAdapterWrappedType(left.GetType()) is { } leftWrapped &&
+            leftWrapped == GoReflect.ValueAdapterWrappedType(right.GetType()))
+        {
+            throw new PanicException($"runtime error: comparing uncomparable type {GetGoTypeName(leftWrapped)}");
+        }
+
         // Check if both are null
         if (left is null && right is null)
             return true;

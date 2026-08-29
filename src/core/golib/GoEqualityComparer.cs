@@ -75,7 +75,21 @@ internal sealed class GoEqualityComparer<T> : IEqualityComparer<T>
     /// </remarks>
     public int GetHashCode(T obj)
     {
-        return GoEqualityComparer.RootOf(obj)?.GetHashCode() ?? 0;
+        object? root = GoEqualityComparer.RootOf(obj);
+
+        // RootOf's own null guard (its doc comment: "keeps an adapter over a nil named-func
+        // delegate in its wrapper view") means a nil-wrapped map key reaches here as the SHELL,
+        // still not the null. Left unguarded, the shell's generated GetHashCode override calls
+        // m_value.GetHashCode() on a null m_value and crashes — Go's real answer for hashing an
+        // unhashable dynamic value is a panic too, but a SPECIFIC one ("hash of unhashable type
+        // X", verified against go1.23.12: storing a nil-wrapped named-func-type value as a map
+        // key panics exactly this way). Rhymes with the registererr chip's Defect B
+        // (reflectPointerToken): the same null-Value shell reaching a path built only for the
+        // non-null shape.
+        if (root is IValueAdapter { Value: null } && GoReflect.ValueAdapterWrappedType(root.GetType()) is { } wrapped)
+            throw new PanicException($"runtime error: hash of unhashable type {builtin.GetGoTypeName(wrapped)}");
+
+        return root?.GetHashCode() ?? 0;
     }
 }
 

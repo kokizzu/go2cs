@@ -1159,6 +1159,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckNewAnonStructIfaceEmbed() => CheckTarget("NewAnonStructIfaceEmbed");
 
     [TestMethod]
+    public void CheckNilAdapterOpsClosure() => CheckTarget("NilAdapterOpsClosure");
+
+    [TestMethod]
     public void CheckNilChannelInSelect() => CheckTarget("NilChannelInSelect");
 
     [TestMethod]

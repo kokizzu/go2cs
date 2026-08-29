@@ -274,6 +274,19 @@ public static partial class GoReflect
     // Unwraps a value to the one its GO DYNAMIC TYPE describes — the value-level mirror of
     // GoDynamicTypeOf: an interface-carrier chain unwraps to the original value, a pointer-sourced
     // adapter to its receiver box, a value-sourced adapter to the struct copy it wraps.
+    //
+    // The value-adapter tier unwraps UNCONDITIONALLY, unlike GoDynamicTypeOf's own null-guarded
+    // gate: a nil-wrapped delegate's Go dynamic VALUE genuinely is null (a nil Greeter IS a null
+    // delegate), and the sole caller, GoMethodValue, binds this result as the receiver Expression
+    // it compiles against the delegate's OWN type — the shell is never assignable to it. Left
+    // gated here as GoDynamicTypeOf is, a nil-wrapped receiver reached GoMethodValue as the shell
+    // and crashed with an uncaught InvalidCastException from inside the compiled receiver cast
+    // ("Unable to cast object of type 'GreeterᴠGreetable' to type 'Greeter'") — never reaching
+    // Go's real panic at all. Unwrapping to null instead lets the cast succeed and the eventual
+    // call correctly fail invoking a null delegate, which Go's own semantics already expect
+    // (calling a nil func panics with "invalid memory address or nil pointer dereference").
+    // Rhymes with the registererr chip's Defect A (GoDynamicTypeOf): the same null-Value shell
+    // leaking into a path that needs the value it stands for, not the wrapper itself.
     private static object? GoDynamicValueOf(object? value)
     {
         while (value is IInterfaceAdapter { Value: not null } interfaceAdapter)
@@ -282,7 +295,7 @@ public static partial class GoReflect
         if (value is IжAdapter { Box: not null } pointerAdapter)
             return pointerAdapter.Box;
 
-        if (value is IValueAdapter { Value: not null } valueAdapter)
+        if (value is IValueAdapter valueAdapter)
             return valueAdapter.Value;
 
         return value;
