@@ -60,7 +60,7 @@ internal static void Main() {
     inner[0] = 0x21;
     fmt.Println(p13Aliasesˢ, dst[3], lenCapˢ, len(inner), cap(inner));
     fmt.Println(elementIdentityˢ, p.at<uint16>(0) == Ꮡ(dst, 2), windowedIdentityˢ, p.at<uint16>(2) == Ꮡ(dst, 4));
-    fmt.Println(arrayLengthˢ, len(p), len(p.Value));
+    fmt.Println(arrayLengthˢ, 4, len(p.Value));
     ref var raw = ref heap(new array<byte>(8), out var Ꮡraw);
     foreach (var (i, _) in raw) {
         raw[i] = (byte)i;

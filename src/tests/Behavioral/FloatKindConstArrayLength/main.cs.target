@@ -116,7 +116,7 @@ internal static void Main() {
     lit = new byte[]{1, 2}.array(10);
     fmt.Println(compositeˢ, len(lit), lit[0], lit[9]);
     ж<array<byte>> ptr = Ꮡlit;
-    fmt.Println(pointerˢ, len(ptr), ptr.Value[1]);
+    fmt.Println(pointerˢ, 10, ptr.Value[1]);
     var m = new map<@string, array<byte>>{["k"u8] = lit.Clone()};
     fmt.Println(mapValueˢ, len(m["k"u8, () => new array<byte>(10)]), m["k"u8, () => new array<byte>(10)][1]);
     var sl = new array<byte>[]{lit.Clone()}.slice();

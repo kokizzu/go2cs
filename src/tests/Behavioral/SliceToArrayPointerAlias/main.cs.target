@@ -81,7 +81,7 @@ internal static void Main() {
     var dst = new slice<byte>(len(src));
     premultiplyLike(dst, src);
     fmt.Println(windowedLoopˢ, dst);
-    fmt.Println(arrayLengthˢ, len(p), len(p.Value));
+    fmt.Println(arrayLengthˢ, 4, len(p.Value));
 }
 
 } // end main_package
