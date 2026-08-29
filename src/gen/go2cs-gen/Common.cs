@@ -573,8 +573,19 @@ public static class Common
         //
         // Same principle as IsEffectivelyPublic's note below: a name is the wrong oracle for
         // anything go2cs SYNTHESIZED. The converter's generatedTypeScope carries the mirror.
-        if (IsAnonymousTypePlaceholder(identifier))
-            return "public";
+        //
+        // A NESTED lift (typeᴛ<N>_<field>) still carries one: the Go field whose anonymous type it
+        // is. Reading it makes the type's accessibility track its single use site by construction,
+        // so it can never under-rank the field it exists to serve — `struct { A struct{…} }` emits
+        // `public …_A A`, and an internal type there is CS0052/CS0050/CS0051 (reflect's
+        // visiblefields_test, the only site in the corpus).
+        if (TryGetAnonymousLiftResidue(identifier, out string residue))
+        {
+            if (residue.Length == 0)
+                return "public";
+
+            identifier = residue;
+        }
 
         char firstChar = identifier[0];
 
@@ -590,34 +601,75 @@ public static class Common
 
     /// <summary>
     /// Reports whether <paramref name="name"/> — already stripped of its <c>ShadowVarMarker</c> — is
-    /// the converter's SYNTHESIZED anonymous-type name rather than a Go identifier.
+    /// one of the converter's SYNTHESIZED anonymous-type names, returning in
+    /// <paramref name="residue"/> the Go identifier the name still carries (empty when it carries
+    /// none, which is the caller's signal that no export rule applies).
     /// </summary>
     /// <remarks>
-    /// Matches the literal placeholder <c>type</c>, optionally carrying the temp-var arity suffix
-    /// the emitter appends when one scope lifts more than one (<c>typeᴛ1</c>, <c>typeᴛ2</c>, …). It
-    /// deliberately does NOT match a user type whose name merely begins with "type" (<c>typeDecl</c>,
-    /// <c>typeParam</c>) — those are real Go identifiers whose case does encode export status — nor a
-    /// sanitized user type carrying the same suffix marker (<c>Δsliceᴛ</c>, from a Go <c>slice</c>).
-    /// Mirrors the converter's <c>isAnonymousTypePlaceholder</c>.
+    /// Every anonymous struct/interface/composite-literal type is named from the placeholder
+    /// <c>type</c>. The shapes: <c>type</c> and <c>typeᴛ&lt;N&gt;</c> yield an empty residue (the lift
+    /// itself, no Go identifier); <c>typeᴛ&lt;N&gt;_&lt;f&gt;</c> and <c>type_&lt;f&gt;</c> yield
+    /// <c>&lt;f&gt;</c>, the Go FIELD whose anonymous type it is. <c>type</c> is a Go KEYWORD, so no
+    /// user type can collide with the prefix; the match still excludes a user type that merely begins
+    /// with it (<c>typeDecl</c>, <c>typeParam</c>) and a sanitized user type carrying the same arity
+    /// marker (<c>Δsliceᴛ</c>, from a Go <c>slice</c>). Mirrors the converter's
+    /// <c>anonymousLiftResidue</c>.
     /// </remarks>
-    private static bool IsAnonymousTypePlaceholder(string name)
+    private static bool TryGetAnonymousLiftResidue(string name, out string residue)
     {
         const string Placeholder = "type";
 
-        if (name == Placeholder)
+        residue = "";
+
+        if (!name.StartsWith(Placeholder, StringComparison.Ordinal))
+            return false;
+
+        string rest = name.Substring(Placeholder.Length);
+
+        if (rest.Length == 0)
             return true;
 
-        string prefix = Placeholder + TempVarMarker;
+        if (rest[0] == '_')
+        {
+            if (rest.Length == 1)
+                return false;
 
-        if (!name.StartsWith(prefix, StringComparison.Ordinal))
+            residue = rest.Substring(1);
+            return true;
+        }
+
+        if (!rest.StartsWith(TempVarMarker, StringComparison.Ordinal))
             return false;
 
-        string suffix = name.Substring(prefix.Length);
+        rest = rest.Substring(TempVarMarker.Length);
 
-        if (suffix.Length == 0)
+        if (rest.Length == 0)
             return false;
 
-        foreach (char c in suffix)
+        int separator = rest.IndexOf('_');
+
+        if (separator >= 0)
+        {
+            string digits = rest.Substring(0, separator);
+            string field = rest.Substring(separator + 1);
+
+            if (field.Length == 0 || !IsAllDigits(digits))
+                return false;
+
+            residue = field;
+            return true;
+        }
+
+        return IsAllDigits(rest);
+    }
+
+    /// <summary>Reports whether <paramref name="s"/> is a non-empty run of decimal digits.</summary>
+    private static bool IsAllDigits(string s)
+    {
+        if (s.Length == 0)
+            return false;
+
+        foreach (char c in s)
         {
             if (!char.IsDigit(c))
                 return false;

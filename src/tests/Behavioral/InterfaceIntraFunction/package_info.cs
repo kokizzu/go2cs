@@ -66,7 +66,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface main_Printer {}
+    [GoLocalName("Printer")] internal partial interface main_Printer {}
     public partial struct Message {}
     // </TypeAccessibility>
 }

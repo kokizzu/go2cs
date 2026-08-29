@@ -156,7 +156,7 @@ public static partial class tls_package
     // <TypeAccessibility>
     internal partial interface aead {}
     internal partial interface cbcMode {}
-    internal partial interface cloneHash_binaryMarshaler {}
+    [GoLocalName("binaryMarshaler")] internal partial interface cloneHash_binaryMarshaler {}
     internal partial interface constantTimeHash {}
     internal partial interface handshakeMessage {}
     internal partial interface handshakeMessageWithOriginalBytes {}

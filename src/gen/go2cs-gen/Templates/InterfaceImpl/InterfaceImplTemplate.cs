@@ -16,6 +16,24 @@ internal class InterfaceImplTemplate : TemplateBase
     // Template Parameters
     public required string StructName;
     public required string InterfaceName;
+
+    // The name of the struct FIELD that embeds InterfaceName, when it differs from the interface's
+    // simple name; null derives it from the name as before.
+    //
+    // The embed field is normally named after its interface type, so dropping the Δ collision prefix
+    // is enough. A FUNCTION-LOCAL interface lift breaks that: the converter renames the TYPE to
+    // `<Func>_<name>` while the field keeps `<name>`, so reflect's
+    // `func TestCallPanic() { type T1 interface{…}; type T2 struct { T1 } }` emits field `T1` of type
+    // `TestCallPanic_T1` and the derived name addresses nothing — CS1061 on every promoted twin,
+    // CS0120 behind it. A name is the wrong oracle for a lifted type, so ImplementGenerator resolves
+    // this where the SYMBOLS are and hands the answer down, exactly as it already does for
+    // StructIsPublic / InterfaceIsPublic.
+    public string? EmbedFieldName;
+
+    // The embed field the promoted/forwarding bodies address: the resolved name when the generator
+    // supplied one, else the interface's simple name with its Δ collision prefix dropped.
+    private string EmbedField => EmbedFieldName ?? GetSimpleName(InterfaceName, dropCollisionPrefix: true);
+
     public required bool Promoted;
     public required HashSet<string> Overrides;
     public required List<MethodInfo> Methods;
@@ -191,7 +209,7 @@ internal class InterfaceImplTemplate : TemplateBase
                     $"this {qualifiedStruct} {receiver}, {typedParameters}";
 
                 string callParameters = method.GetCallParameters(false);
-                string embedField = GetSimpleName(InterfaceName, dropCollisionPrefix: true);
+                string embedField = EmbedField;
 
                 result.Append($"\r\n\r\n    // Go method set entry for the promoted '{GetSimpleName(InterfaceName)}.{simpleMethodName}()':\r\n");
                 result.Append($"    internal static {method.ReturnType} {EscapeCsKeyword(simpleMethodName)}{method.GetGenericSignature()}({parameterList}){method.GetWhereConstraints()} => ");
@@ -234,7 +252,7 @@ internal class InterfaceImplTemplate : TemplateBase
                     // collision-renamed (bare `ΔHandler.Enabled(…)` binds nothing, CS0103 —
                     // slogtest's `wrapper` embeds slog.ΔHandler as field `Handler`).
                     result.Append($"// '{simpleInterfaceName}.{simpleMethodName}()' implicit implementation mapped to promoted interface receiver method:\r\n        ");
-                    result.Append($"public {method.ReturnType} {method.GetSignature()} => {GetSimpleName(InterfaceName, dropCollisionPrefix: true)}.{simpleMethodName}{method.GetGenericSignature()}({method.CallParameters});");
+                    result.Append($"public {method.ReturnType} {method.GetSignature()} => {EmbedField}.{simpleMethodName}{method.GetGenericSignature()}({method.CallParameters});");
                 }
                 else
                 {

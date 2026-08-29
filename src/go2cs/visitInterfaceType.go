@@ -396,7 +396,27 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 		declaredTypeParams = fmt.Sprintf("<%s>", TypeT)
 	}
 
-	v.recordTypeAccessibility("interface", getSanitizedIdentifier(interfaceTypeName), declaredTypeParams, access, "")
+	// A lifted function-local NAMED interface carries its original Go name, exactly as
+	// visitStructType stamps a lifted function-local struct. Without it the pair is asymmetric —
+	// 68 stamped struct lifts against 0 stamped interface lifts corpus-wide — and go2cs-gen's
+	// embedded-interface promotion cannot see the embed at all: it identifies an embedded interface
+	// field by matching the FIELD name to the interface type's simple name, and a function-local
+	// lift renames the TYPE to `<Func>_<name>` while the field keeps `<name>`. For
+	// `func TestCallPanic() { type T1 interface{…}; type T2 struct { T1 } }` the field is `T1` and
+	// the type is `TestCallPanic_T1`, the match fails, and promotion falls back to naming the TYPE
+	// as the accessor — `recvᴛ.TestCallPanic_T1.Y()`, a member that does not exist (CS1061/CS0120,
+	// reflect's all_test).
+	//
+	// Anonymous lifts have no Go name to stamp, matching the struct side's condition.
+	var localNameAttr string
+
+	if lifted && v.inFunction {
+		if named, ok := identType.(*types.Named); ok {
+			localNameAttr = fmt.Sprintf("[GoLocalName(\"%s\")] ", named.Obj().Name())
+		}
+	}
+
+	v.recordTypeAccessibility("interface", getSanitizedIdentifier(interfaceTypeName), declaredTypeParams, access, localNameAttr)
 
 	if len(inheritedInterfaces) > 0 {
 		inheritedResult += " :" + v.newline
