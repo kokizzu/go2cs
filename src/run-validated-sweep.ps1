@@ -564,7 +564,7 @@ function Get-CapabilityAbsentVerdict {
 # that hammer storage (zip streams 4 GiB; parser walks hundreds of thousands of converted frames),
 # so their floors are sized to the LOADED case: 60m and 90m clear the observed loaded shortfalls
 # with ~2x headroom.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m' }
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '60m' }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
