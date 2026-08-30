@@ -39,7 +39,12 @@ param(
     # row alongside io itself, so a driver iterating the roster one package at a time re-sweeps
     # large rows repeatedly. Substring stays the interactive default, unchanged.
     [switch] $Exact,
-    [switch] $IgnoreDiskPreflight
+    [switch] $IgnoreDiskPreflight,
+    # Tiering A/B measurement only (docs/phase4 tiering census) -- passes -test-release-tc0 through
+    # to every row's go2cs.exe invocation: the C# host publishes Release (explicit -p:go2csPath) and
+    # runs with DOTNET_TieredCompilation=0 instead of the Debug-tier-0 default. Never the default;
+    # a sweep run with this set is not a bank-eligible sweep.
+    [switch] $ReleaseTC0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -592,7 +597,9 @@ foreach ($row in $rows) {
     # deploy-core staging root, say) would be honored instead, and the suite would be built against
     # one tree's metadata while compiling the other's sources.
     $rowStarted = Get-Date
-    $out = & $exe -tests -test-action all -test-timeout $pkgTimeout -go2cspath $src $goDir $outDir 2>&1
+    $tc0Args = @()
+    if ($ReleaseTC0) { $tc0Args = @('-test-release-tc0') }
+    $out = & $exe -tests -test-action all -test-timeout $pkgTimeout @tc0Args -go2cspath $src $goDir $outDir 2>&1
     # Per-row wall time, printed on every verdict line. This is the SWEEP's wall clock for the row
     # (convert + build + both test hosts + compare), which is the number shard planning needs --
     # the go test -json stream's own "Time" fields measure only the Go side and invert exactly the

@@ -5267,7 +5267,7 @@ func executeTestAction(inputPath, outputPath string, options Options) error {
 		if err := publishTestHost(outputPath, testProject, options); err != nil {
 			return err
 		}
-		output, err := runCommandWithTimeout(testChildTimeout(options), outputPath, options, publishedTestHostPath(outputPath, testProject),
+		output, err := runCommandWithTimeoutEnv(testChildTimeout(options), outputPath, options, testHostRunEnv(options), publishedTestHostPath(outputPath, testProject),
 			"--json", "-timeout", options.testTimeout.String())
 		fmt.Print(output)
 		return err
@@ -5287,10 +5287,35 @@ func executeTestAction(inputPath, outputPath string, options Options) error {
 // stdlib reference at the deployed `~/go2cs` root instead of this tree. Publish is incremental
 // (MSBuild's up-to-date checks carry; only the bundling step re-runs warm), so build/run/compare
 // can each call this without re-paying the build.
+//
+// options.testReleaseTC0 takes the OTHER honest seam instead: the template's Debug-conditional
+// default is inside a `Condition="'$(go2csPath)'==''"` guard (test-csproj-template.xml), so passing
+// `-p:go2csPath` explicitly on the command line skips that guard entirely regardless of
+// configuration — the same escape CLAUDE.md documents for a hand-invoked Release build elsewhere.
+// Forward slashes and a trailing slash, matching that documented form exactly; a trailing backslash
+// escapes the closing quote and mangles the path into phantom golib-not-found errors.
 func publishTestHost(outputPath, testProject string, options Options) error {
+	if options.testReleaseTC0 {
+		go2csPathArg := strings.TrimRight(filepath.ToSlash(options.go2csPath), "/") + "/"
+		_, err := runCommandWithTimeout(options.testTimeout, outputPath, options, "dotnet", "publish", testProject,
+			"-c", "Release", "-p:go2csPath="+go2csPathArg, "-o", filepath.Join(outputPath, "bin", "tests", "publish"))
+		return err
+	}
 	_, err := runCommandWithTimeout(options.testTimeout, outputPath, options, "dotnet", "publish", testProject,
 		"-c", "Debug", "-o", filepath.Join(outputPath, "bin", "tests", "publish"))
 	return err
+}
+
+// testHostRunEnv is the extra environment testReleaseTC0 asks the RUN half of the pair for — Release
+// publish alone does not force tier-0 to disappear, since a program can still start at tier-0 and
+// simply never run long enough for the runtime to promote a method; DOTNET_TieredCompilation=0 is
+// the documented .NET knob that disables the tiering system outright; the census this flag exists to
+// measure is exactly whether that combination changes the codegen-liveness disclosure class's shape.
+func testHostRunEnv(options Options) []string {
+	if options.testReleaseTC0 {
+		return []string{"DOTNET_TieredCompilation=0"}
+	}
+	return nil
 }
 
 // publishedTestHostPath is the single-file executable publishTestHost produces: the test project's
@@ -6056,7 +6081,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	}
 	csArgs = append(csArgs,
 		"--result", filepath.Join(outputPath, "go2cs_test_results.json"), "--junit", filepath.Join(outputPath, "go2cs_test_results.xml"))
-	csOutput, csErr := runCommandWithTimeout(testChildTimeout(options), outputPath, options, publishedTestHostPath(outputPath, testProject), csArgs...)
+	csOutput, csErr := runCommandWithTimeoutEnv(testChildTimeout(options), outputPath, options, testHostRunEnv(options), publishedTestHostPath(outputPath, testProject), csArgs...)
 
 	goResults := terminalTestResults(goOutput)
 	csResults := terminalTestResults(csOutput)
@@ -6350,12 +6375,22 @@ func eligibleTerminalTestResults(results map[string]string, manifest testManifes
 }
 
 func runCommandWithTimeout(timeout time.Duration, workingDir string, options Options, name string, args ...string) (string, error) {
+	return runCommandWithTimeoutEnv(timeout, workingDir, options, nil, name, args...)
+}
+
+// runCommandWithTimeoutEnv is runCommandWithTimeout plus caller-supplied extra environment entries,
+// appended after the standard child environment so they win on any key collision (os/exec takes the
+// LAST value for a duplicate key). Introduced for options.testReleaseTC0's DOTNET_TieredCompilation=0
+// — a property of ONE specific child invocation (the converted host's own run), never the whole
+// pipeline's environment, so it does not belong in childEnvWithGo2CSPath's shared construction.
+func runCommandWithTimeoutEnv(timeout time.Duration, workingDir string, options Options, extraEnv []string, name string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Dir = workingDir
 	target := strings.Split(options.targetPlatform, "/")
 	cmd.Env = childEnvWithGo2CSPath(os.Environ(), options.go2csPath)
+	cmd.Env = append(cmd.Env, extraEnv...)
 	if len(target) == 2 {
 		cmd.Env = append(cmd.Env, "GOOS="+target[0], "GOARCH="+target[1])
 	}
