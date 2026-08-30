@@ -593,3 +593,21 @@ func shortGitRevision(path string) string {
 
 	return revision
 }
+
+// publishesRosterArtifacts reports whether a completed comparison may write the COMMITTED validation
+// artifacts — the proof page under docs/validation, that directory's index row, and the package
+// README's Tests badge.
+//
+// `validated` alone does not earn them. It means "every test the run compared matched", and a
+// FILTERED run compares only what its filter admitted, so a one-test -test-filter earns exactly the
+// status a full sweep does. Measured on reflect: `-test-filter '^TestCallPanic$'` wrote a
+// `1/1 validated` badge, a docs/validation index row and a full proof page for a package with 124
+// failing tests — and those three artifacts are precisely the ones a reader trusts.
+//
+// The -test-filter flag's own help has always said a gated census is DIAGNOSTIC ONLY and must never
+// bank a row. That was enforced by the operator remembering it, which is the kind of rule that
+// eventually gets skipped — the same reasoning the seeded-reconvert ritual is mechanical for. This
+// makes it structural: a filtered run leaves no roster trace, whatever its status.
+func publishesRosterArtifacts(status string, testFilter string) bool {
+	return status == "validated" && strings.TrimSpace(testFilter) == ""
+}
