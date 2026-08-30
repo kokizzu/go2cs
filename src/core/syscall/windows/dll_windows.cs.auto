@@ -204,7 +204,7 @@ public static ж<Proc> MustFindProc(this ж<DLL> Ꮡd, @string name) {
 [GoRecv] public static (uintptr, uintptr, error) Call(this ref Proc p, params ꓸꓸꓸuintptr aʗp) {
     var a = aʗp.slice();
 
-    var (ᴛ1, ᴛ2, ᴛ3) = SyscallN(p.Addr(), a.ꓸꓸꓸ);
+    var (ᴛ1, ᴛ2, ᴛ3) = SyscallN(p.Addr(), a);
     return (ᴛ1, ᴛ2, ᴛ3);
 }
 

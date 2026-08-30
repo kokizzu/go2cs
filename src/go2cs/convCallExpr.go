@@ -119,6 +119,15 @@ func (v *Visitor) callFunIsUniversePrint(callExpr *ast.CallExpr) bool {
 // Phases 1a-1c and 4 RETURN directly; the rest fall through and contribute to the final rendering.
 // Splitting this along those seams is planned work — the banners exist so that starts from a map.
 func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) string {
+	// A call into the syscall funnel (Syscall/Syscall6/…/SyscallN) — see
+	// syscallKeepAliveAnalysis.go for why this reproduces Go's own uintptrkeepalive contract
+	// rather than every other call's ordinary argument rendering. Intercepted before anything
+	// else so a pointer-derived argument's box is captured before the general path would convert
+	// it straight to a transient uintptr with nothing left to keep alive.
+	if syscallFunnelCall(v.info, callExpr) {
+		return v.convSyscallFunnelCall(callExpr)
+	}
+
 	// ---- Phase 1a: shapes intercepted before the general call path ----
 	//
 	// Each of these is a Go idiom whose faithful rendering the general path below gets wrong, so
