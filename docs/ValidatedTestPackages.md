@@ -175,7 +175,16 @@ exactly as the line above it is summed from the columns.
      the number — so prose that happens to read "on linux: 5 subtests skip" is not an annotation.
      Under GoTargetOS=<goos> the sweep validates a row against its <goos> annotation where one
      exists and reports comparison-validated-at-count where none does; the Windows path is
-     unchanged, since on Windows the columns always answer. -->
+     unchanged, since on Windows the columns always answer.
+     Per-row execution config: a row whose tests require an execution configuration other than the
+     default carries "· execution: <config>" as its own middle-dot segment, placed before the per-OS
+     annotation and the · [proof](…) link. One config exists: release-tc0 (the converted host
+     published Release and run with DOTNET_TieredCompilation=0). It is an EXECUTION property, never
+     a platform one -- the row's Tests, Disclosed and per-OS numbers mean exactly what they always
+     meant, and only HOW the host is published and run changes. An unknown config is refused by
+     name rather than ignored, and an unannotated row's pipeline leg is character-for-character the
+     one it always produced. Same both-ends anchoring as the per-OS forms, so prose reading
+     "execution: release-tc0 is what it needs" is not an annotation. -->
 
 | Package | Tests | Disclosed | What it exercises |
 |:--|:--:|:--:|:--|

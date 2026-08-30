@@ -40,10 +40,12 @@ param(
     # large rows repeatedly. Substring stays the interactive default, unchanged.
     [switch] $Exact,
     [switch] $IgnoreDiskPreflight,
-    # Tiering A/B measurement only (docs/phase4 tiering census) -- passes -test-release-tc0 through
-    # to every row's go2cs.exe invocation: the C# host publishes Release (explicit -p:go2csPath) and
-    # runs with DOTNET_TieredCompilation=0 instead of the Debug-tier-0 default. Never the default;
-    # a sweep run with this set is not a bank-eligible sweep.
+    # Tiering A/B measurement only (docs/phase4 tiering census) -- runs EVERY row under the
+    # `release-tc0` execution config, annotated or not: the C# host publishes Release (explicit
+    # -p:go2csPath) and runs with DOTNET_TieredCompilation=0 instead of the Debug-tier-0 default.
+    # Distinct from the per-row `execution: release-tc0` roster annotation (owner ruling 2026-08-30),
+    # which opts ONE row in and IS bank-eligible; this blanket switch is not, because a row banked
+    # under a config its own roster line does not declare cannot be reproduced from the table.
     [switch] $ReleaseTC0
 )
 
@@ -189,6 +191,17 @@ $rows = @($rows | Where-Object { $_.Effective.Applicable })
 
 $expectedTotal = ($rows | ForEach-Object { $_.Effective.Expected } | Measure-Object -Sum).Sum
 Write-Host "validated sweep: $($rows.Count) package(s), $expectedTotal expected verdicts, timeout $TestTimeout" -ForegroundColor Cyan
+
+# Announced only when the run actually carries one, so a sweep over default-path rows prints exactly
+# what it always printed. -ReleaseTC0 is announced separately below because it is not a roster fact.
+$executionRows = @($rows | Where-Object { $_.Execution })
+if (-not $ReleaseTC0 -and $executionRows.Count -gt 0) {
+    Write-Host ("  $($executionRows.Count) row(s) carry a per-row execution config: " +
+        (($executionRows | ForEach-Object { "$($_.Package) [$($_.Execution)]" }) -join ', ')) -ForegroundColor Cyan
+}
+if ($ReleaseTC0) {
+    Write-Host '  -ReleaseTC0: EVERY row runs release-tc0 -- an A/B measurement, not a bank-eligible sweep' -ForegroundColor Yellow
+}
 
 if ($targetGoos -ne 'windows') {
     $annotatedCount = @($rows | Where-Object { $_.Effective.Source -ne 'columns' }).Count
@@ -596,10 +609,19 @@ foreach ($row in $rows) {
     # INVALID does that recovery run: a GO2CSPATH pointing at some other real go2cs tree (a
     # deploy-core staging root, say) would be honored instead, and the suite would be built against
     # one tree's metadata while compiling the other's sources.
+    # The per-row EXECUTION config (owner ruling 2026-08-30, Option A). A row that annotates itself
+    # `execution: release-tc0` runs ITS leg under that config; every other row's invocation is
+    # character-for-character the one it has always produced, because Get-RosterExecutionArgs
+    # contributes an EMPTY array for the absent config. The -ReleaseTC0 A/B switch is expressed as
+    # "every row, annotated or not, behaves as if annotated" -- one rule, not two code paths.
+    $rowExecution = if ($ReleaseTC0) { 'release-tc0' } else { $row.Execution }
+    $execArgs = @(Get-RosterExecutionArgs $rowExecution)
+    # Printed on the verdict line so an opted-in row's evidence says so on its face; empty, and
+    # therefore invisible, for every default-path row.
+    $execSuffix = if ($rowExecution) { " [$rowExecution]" } else { '' }
+
     $rowStarted = Get-Date
-    $tc0Args = @()
-    if ($ReleaseTC0) { $tc0Args = @('-test-release-tc0') }
-    $out = & $exe -tests -test-action all -test-timeout $pkgTimeout @tc0Args -go2cspath $src $goDir $outDir 2>&1
+    $out = & $exe -tests -test-action all -test-timeout $pkgTimeout @execArgs -go2cspath $src $goDir $outDir 2>&1
     # Per-row wall time, printed on every verdict line. This is the SWEEP's wall clock for the row
     # (convert + build + both test hosts + compare), which is the number shard planning needs --
     # the go test -json stream's own "Time" fields measure only the Go side and invert exactly the
@@ -650,7 +672,7 @@ foreach ($row in $rows) {
         switch ($class) {
             'pass' {
                 $pass++
-                Write-Host "  PASS  $label $got$osSuffix [${rowSecs}s]" -ForegroundColor Green
+                Write-Host "  PASS  $label $got$osSuffix$execSuffix [${rowSecs}s]" -ForegroundColor Green
             }
             'host-conditional' {
                 $pass++
@@ -682,8 +704,8 @@ foreach ($row in $rows) {
                 # Validated, but NOT at the expectation in force -- normally a silent change in what
                 # the suite asserts, and a failure: the table and reality must agree, one of them is
                 # now wrong.
-                $fail++; $failed += "$pkg (count $got, banked $($row.Effective.Expected))"
-                Write-Host "  COUNT $label $got, banked $($row.Effective.Expected) [${rowSecs}s]" -ForegroundColor Yellow
+                $fail++; $failed += "$pkg (count $got, banked $($row.Effective.Expected))$execSuffix"
+                Write-Host "  COUNT $label $got, banked $($row.Effective.Expected)$execSuffix [${rowSecs}s]" -ForegroundColor Yellow
                 if ($null -ne $hostConditional -and $hostConditional.Reason) {
                     Write-Host "        host-conditional check: $($hostConditional.Reason)" -ForegroundColor Yellow
                 }

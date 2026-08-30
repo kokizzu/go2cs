@@ -123,13 +123,16 @@ $fixtureRows = @(
     "| [``tail/pkg``](https://x/tail) | 4 |  | Ends on the annotation $dot linux: 6 |"
     "| [``winonly/pkg``](https://x/winonly) | 21 |  | Registry things. $dot linux: n/a $dot [proof](p.md) |"
     "| [``naprose/pkg``](https://x/naprose) | 3 |  | Not applicable prose here $dot linux: n/a maybe someday $dot [proof](p.md) |"
+    "| [``exec/pkg``](https://x/exec) | 4 |  | Weak pointers. $dot execution: release-tc0 $dot [proof](p.md) |"
+    "| [``execann/pkg``](https://x/execann) | 4 | 2 | Both annotations. $dot execution: release-tc0 $dot linux: 5 + 1 $dot [proof](p.md) |"
+    "| [``execprose/pkg``](https://x/execprose) | 8 |  | Says the word $dot execution: release-tc0 is what it needs $dot [proof](p.md) |"
 )
 
 $fixture = Read-FixtureRoster $fixtureRows
 $byName = @{}
 foreach ($row in $fixture) { $byName[$row.Package] = $row }
 
-Assert-Equal 'fixture: every row parses' 11 $fixture.Count
+Assert-Equal 'fixture: every row parses' 14 $fixture.Count
 
 Assert-Equal 'columns: matched count' 12 $byName['plain/pkg'].Expected
 Assert-Equal 'columns: blank disclosed reads 0' 0 $byName['plain/pkg'].Disclosed
@@ -192,6 +195,46 @@ Assert-Equal 'expectation: annotated row on Windows names the columns' 'columns'
 Assert-Equal 'expectation: unannotated row falls back to the columns' 12 (Get-RosterRowExpectation -Row $plain -Goos 'linux').Expected
 Assert-Equal 'expectation: unannotated row names the columns' 'columns' (Get-RosterRowExpectation -Row $plain -Goos 'linux').Source
 Assert-Equal 'expectation: a different OS does not read another OS annotation' 'columns' (Get-RosterRowExpectation -Row $annotated -Goos 'darwin').Source
+
+# ---- 1a. the per-row EXECUTION annotation (owner ruling 2026-08-30, Option A) ---------------------
+# The annotation names the local execution CONFIG a row's pipeline leg runs under -- an execution
+# property, never a platform one. The load-bearing assertions here are the NEGATIVE ones: an
+# unannotated row must carry no config and produce an EMPTY argument list, because "nothing changes
+# for a row that did not opt in" is the whole ruling and this is where it is provable without
+# running the gate.
+Assert-Equal 'execution: the annotation parses' 'release-tc0' $byName['exec/pkg'].Execution
+Assert-Equal 'execution: an unannotated row carries none' $true ($null -eq $byName['plain/pkg'].Execution)
+Assert-Equal 'execution: it coexists with a per-OS annotation' 'release-tc0' $byName['execann/pkg'].Execution
+Assert-Equal 'execution: the per-OS annotation beside it still parses' 5 $byName['execann/pkg'].OS['linux'].Expected
+Assert-Equal 'execution: the per-OS disclosed half beside it still parses' 1 $byName['execann/pkg'].OS['linux'].Disclosed
+Assert-Equal 'execution: it is not a per-OS annotation and mints no OS key' 0 $byName['exec/pkg'].OS.Count
+Assert-Equal 'execution: the columns are untouched by it' 4 $byName['exec/pkg'].Expected
+
+# Prose immunity, the same both-ends anchoring the per-OS forms rely on: a segment that continues
+# into words after the config name is a sentence, not an annotation.
+Assert-Equal 'execution prose: a segment continuing past the config is not an annotation' $true `
+    ($null -eq $byName['execprose/pkg'].Execution)
+
+# A config the mapping does not know is refused BY NAME rather than degraded to the default path --
+# a silently-ignored config reads to its author as opted in while running the default, which is the
+# exact failure the annotation exists to prevent.
+Assert-Throws 'execution: an unknown config is refused by name' {
+    Read-FixtureRoster @("| [``x/pkg``](https://x/x) | 3 |  | Typo. $dot execution: release $dot [proof](p.md) |")
+} 'unknown execution annotation'
+Assert-Throws 'execution: a repeated annotation is refused' {
+    Read-FixtureRoster @("| [``y/pkg``](https://x/y) | 3 |  | Twice. $dot execution: release-tc0 $dot execution: release-tc0 $dot [proof](p.md) |")
+} 'more than one execution annotation'
+
+# The config -> converter-argument mapping, which is what actually moves a gate's invocation. The
+# empty case is asserted first and hardest: it is the "nothing changes" guarantee in one line.
+Assert-Equal 'execution args: no config contributes nothing' 0 (@(Get-RosterExecutionArgs $null)).Count
+Assert-Equal 'execution args: an empty config contributes nothing' 0 (@(Get-RosterExecutionArgs '')).Count
+Assert-Equal 'execution args: release-tc0 maps to the converter flag' '-test-release-tc0' `
+    ((@(Get-RosterExecutionArgs 'release-tc0')) -join ' ')
+Assert-Equal 'execution args: release-tc0 contributes exactly one argument' 1 (@(Get-RosterExecutionArgs 'release-tc0')).Count
+Assert-Throws 'execution args: an unknown config throws rather than running the default path' {
+    Get-RosterExecutionArgs 'no-such-config'
+} 'Unknown execution config'
 
 # ---- 1b. the sweep's classification rule ---------------------------------------------------------
 # The rule the sweep reports from, exercised without running the gate. The WINDOWS rows come first
@@ -574,6 +617,12 @@ if ($List) {
             Write-Host ('  {0,-34} {1,-16} {2}' -f $row.Package, $windows, $osText)
         }
     }
+
+    Write-Host ''
+    Write-Host 'per-row execution configs in the roster:' -ForegroundColor Cyan
+    foreach ($row in ($rows | Where-Object { $_.Execution } | Sort-Object Package)) {
+        Write-Host ('  {0,-34} {1,-16} {2}' -f $row.Package, $row.Execution, ((@(Get-RosterExecutionArgs $row.Execution)) -join ' '))
+    }
 }
 
 Write-Host ''
@@ -583,5 +632,6 @@ if ($failures.Count -gt 0) {
     exit 1
 }
 
-Write-Host "roster format guard: $checks checks pass ($($rows.Count) rows, $($linuxRows.Count) with a linux annotation, $($ledger.Count) excluded)" -ForegroundColor Green
+$executionRows = @($rows | Where-Object { $_.Execution })
+Write-Host "roster format guard: $checks checks pass ($($rows.Count) rows, $($linuxRows.Count) with a linux annotation, $($executionRows.Count) with an execution config, $($ledger.Count) excluded)" -ForegroundColor Green
 exit 0
