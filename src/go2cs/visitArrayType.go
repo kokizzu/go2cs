@@ -121,7 +121,16 @@ func (v *Visitor) visitArrayType(arrayType *ast.ArrayType, identType types.Type,
 		}
 
 		if len(arrayLenValue) > 0 && arrayLenValue != arrayLenExpr {
-			v.writeString(target, "[GoType(\"[%s]%s\")] /* [%s]%s */%s", arrayLenValue, csTypeName, arrayLenExpr, csTypeName, v.newline)
+			// arrayLenExpr may itself carry a `/* Go source */` comment from a folded
+			// unsafe.Sizeof/Offsetof/Alignof sub-expression (foldUnsafeConstBuiltin) — fine as the
+			// SOLE comment on a line (a const declaration site) but not here: this annotation wraps
+			// the WHOLE expression in ITS OWN outer comment, and C# does not nest block comments
+			// (runtime's `largePointer` array, whose length folds unsafe.Sizeof, emitted an outer
+			// comment that terminated at the fold's OWN "*/", spilling the rest as raw code —
+			// W2c). Strip the embedded delimiters; the readable Go text between them is unaffected,
+			// now sitting directly inside the one outer comment instead of a redundant nested one.
+			annotatedLenExpr := strings.NewReplacer("/*", "", "*/", "").Replace(arrayLenExpr)
+			v.writeString(target, "[GoType(\"[%s]%s\")] /* [%s]%s */%s", arrayLenValue, csTypeName, annotatedLenExpr, csTypeName, v.newline)
 		} else {
 			v.writeString(target, "[GoType(\"[%s]%s\")] ", arrayLenExpr, csTypeName)
 		}

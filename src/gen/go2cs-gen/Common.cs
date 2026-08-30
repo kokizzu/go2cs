@@ -706,11 +706,17 @@ public static class Common
         _ => GetScope(simpleName) == "public"
     };
 
-    // Returns the explicit C# access modifier on a type declaration (e.g. the converter-emitted
-    // `public partial struct d`), or null when none is present. This lets an explicit modifier
-    // from the converter override the name-based GetScope — e.g. an unexported type that the
-    // converter publicized because it is used as the type of an exported field (CS0051/CS0052).
-    public static string GetExplicitAccessModifier(BaseTypeDeclarationSyntax typeDeclaration)
+    // Returns the explicit C# access modifier on a member declaration (e.g. the converter-emitted
+    // `public partial struct d`, or a method's own `internal static … B(…)`), or null when none is
+    // present. This lets an explicit modifier from the converter override the name-based GetScope —
+    // e.g. an unexported type the converter publicized because it is used as the type of an exported
+    // field (CS0051/CS0052), or a test-declared METHOD the converter downgraded to `internal` because
+    // its signature touches an unexported production type (W3a) — a case a method-NAME casing rule
+    // (GetScope(identifier) in RecvGenerator) cannot see, exactly as a bare-name rule cannot see a
+    // type's own publicization above. Typed over the shared MemberDeclarationSyntax base (not just
+    // BaseTypeDeclarationSyntax) so both TypeGenerator's type declarations and RecvGenerator's method
+    // declarations read the SAME ground truth instead of each re-deriving their own.
+    public static string GetExplicitAccessModifier(MemberDeclarationSyntax typeDeclaration)
     {
         foreach (SyntaxToken modifier in typeDeclaration.Modifiers)
         {

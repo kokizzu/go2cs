@@ -248,7 +248,7 @@ public class TypeGenerator : ISourceGenerator
                         // properties over a MUTABLE m_value, so `box.Value.fn = x` (a write through a
                         // ж<T>.Value ref) persists. Non-struct underlyings (a named type over an interface or
                         // another named type) resolve to null and keep the plain wrapper (no churn).
-                        List<(string typeName, string memberName, bool isReferenceType, bool isProperty)>? forwardedMembers = null;
+                        List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)>? forwardedMembers = null;
                         string? underlyingArrayElem = null;
                         bool mutableValue = false;
 
@@ -256,7 +256,7 @@ public class TypeGenerator : ISourceGenerator
 
                         if (underlyingStruct is not null && underlyingCompilation is not null)
                         {
-                            List<(string typeName, string memberName, bool isReferenceType, bool isProperty)> members = underlyingStruct.GetStructMembers(underlyingCompilation, false);
+                            List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)> members = underlyingStruct.GetStructMembers(underlyingCompilation, false);
 
                             // Only forward + go mutable when the underlying actually contributes fields.
                             // An empty result (e.g. a named type over an array-typed named struct whose
@@ -301,7 +301,7 @@ public class TypeGenerator : ISourceGenerator
                             // struct exposes that struct's fields in Go exactly as a same-package one
                             // does (`type index Index` in a white-box _test.go reading `x.sa`;
                             // `type P otherpkg.Point` reading `p.X`), so it needs the same forwarding.
-                            List<(string typeName, string memberName, bool isReferenceType, bool isProperty)> members =
+                            List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)> members =
                                 StructDeclarationSyntaxExtensions.GetForeignStructMembers(underlyingSymbol, context.Compilation);
 
                             if (members.Count > 0)

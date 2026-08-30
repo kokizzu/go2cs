@@ -148,7 +148,15 @@ func (v *Visitor) variadicElementParts(elem types.Type) (typeName string, identB
 		// `<pkg>_package.` qualifier below would mangle it (`main_package.Action`, CS0426).
 		if _, isCollapsed := methodlessNamedFuncSignature(elem); !isCollapsed {
 			if obj := named.Obj(); obj != nil && obj.Pkg() == v.pkg && !strings.Contains(typeName, ".") {
-				typeName = fmt.Sprintf("%s%s.%s", packageName, PackageSuffix, typeName)
+				// packageScopeClassName (W3b), not a bare packageName+PackageSuffix concatenation:
+				// Go sees ONE package for obj.Pkg() == v.pkg regardless of which file declares elem,
+				// but under the whitebox-reference test model that one Go package emits into TWO C#
+				// classes — a TEST-file-declared type (export_test.go's `AddrRange`) lives in the
+				// bridge class, not the production one, and unconditionally qualifying to production
+				// names a class that never declares it (CS0426). packageScopeClassName already makes
+				// exactly this same-package-two-classes distinction for bare-identifier qualification
+				// elsewhere; this is the identical question for a variadic alias's referent.
+				typeName = fmt.Sprintf("%s.%s", v.packageScopeClassName(obj), typeName)
 				selfQualified = true
 			}
 		}
@@ -541,11 +549,11 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	// A test-file-declared EXPORTED free function whose signature references an unexported same-
 	// package type is downgraded to `internal`: production emits that type internal and is converted
 	// independently of (and before) the test files, so a public helper over it is CS0050/CS0051 (Go's
-	// `func NewDecimal(uint64) *decimal` in strconv's internal_test.go). The recompile test model puts
-	// production + internal + external test files in one self-contained assembly, so internal is both
-	// correct and sufficient (see signatureReferencesUnexportedType). Methods (Recv != nil) already
-	// track their receiver's access below, and unexported helpers are internal already, so this only
-	// touches exported free functions declared in *_test.go.
+	// `func NewDecimal(uint64) *decimal` in strconv's internal_test.go). Internal is both correct and
+	// sufficient regardless of test project model (see signatureReferencesUnexportedProductionType).
+	// Methods (Recv != nil) get the identical whole-signature check applied separately, further down
+	// (testMethodAccessDowngrade, W3a) — this block only ever fires for a free function, so it stops
+	// at that gate rather than duplicating the method path's own gating here.
 	if functionAccess == "public" && funcDecl.Recv == nil && v.isTestFileDecl(funcDecl.Pos()) &&
 		v.signatureReferencesUnexportedProductionType(signature, v.pkg) {
 		functionAccess = "internal"
@@ -620,6 +628,8 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	if len(receiverAccess) > 0 && receiverAccess != "public" {
 		functionAccess = receiverAccess
 	}
+
+	functionAccess = v.testMethodAccessDowngrade(functionAccess, funcDecl, signature)
 
 	if !signatureOnly {
 		resultParameters := &strings.Builder{}
@@ -985,6 +995,12 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 					} else {
 						functionAccess = "internal"
 					}
+
+					// This rebuild path recomputes functionAccess from scratch (see the identical
+					// comment above it), so it needs the same W3a downgrade the normal path gets —
+					// otherwise a test method whose signature happens to need pointer/heap-box
+					// rebuilding would silently lose the downgrade the normal path already applied.
+					functionAccess = v.testMethodAccessDowngrade(functionAccess, funcDecl, signature)
 
 					if directBoxReceiver {
 						// Direct-ж: emit the box itself (`ж<Box<T>> Ꮡb`) as the receiver. The

@@ -21,7 +21,7 @@ internal class StructTypeTemplate : TemplateBase
     public required GeneratorExecutionContext Context;
     public required string StructName;
     public required string FullyQualifiedStructType;
-    public required List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)> StructMembers;
+    public required List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, bool isPublic)> StructMembers;
     public required bool HasEqualityOperators;
     // Non-null exactly when HasEqualityOperators is false: the members whose type cannot use ==
     // (see GetEqualityFallbackMembers). May be empty — a generic struct with no type-parameter-
@@ -37,8 +37,8 @@ internal class StructTypeTemplate : TemplateBase
     private string? m_nonGenericStructName;
     public string NonGenericStructName => m_nonGenericStructName ??= GetSimpleName(StructName, true);
 
-    private List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)>? m_publicStructMembers;
-    private List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)> PublicStructMembers =>
+    private List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, bool isPublic)>? m_publicStructMembers;
+    private List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, bool isPublic)> PublicStructMembers =>
         m_publicStructMembers ??= StructMembers.Where(item =>
         {
             string simpleName = GetSimpleName(item.memberName);
@@ -145,7 +145,7 @@ internal class StructTypeTemplate : TemplateBase
     {
         get
         {
-            (string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)[] promotedStructs = StructMembers.Where(item => item.isPromotedStruct).ToArray();
+            (string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, bool isPublic)[] promotedStructs = StructMembers.Where(item => item.isPromotedStruct).ToArray();
 
             if (promotedStructs.Length == 0)
                 return $"// -- {NonGenericStructName} has no promoted structs";
@@ -165,7 +165,7 @@ internal class StructTypeTemplate : TemplateBase
             // The composed field name must use the unescaped member name — a C#-keyword embed
             // (`type base struct{…}`) arrives escaped `@base`, but `ʗ@base` is invalid ('@' only
             // leads an identifier). The standalone member ACCESS sites keep `@base`.
-            foreach ((string typeName, string memberName, _, _) in promotedStructs)
+            foreach ((string typeName, string memberName, _, _, _) in promotedStructs)
             {
                 if (result.Length > 0)
                     result.Append($"\r\n{TypeElemIndent}");
@@ -199,7 +199,7 @@ internal class StructTypeTemplate : TemplateBase
             // type could hand back the opposite modifier and C# rejects the pair outright (CS8799 —
             // encoding/json's TestAnonymousFields). Every sibling accessor below already scopes by
             // member name; this one was the outlier.
-            foreach ((string typeName, string memberName, _, _) in promotedStructs)
+            foreach ((string typeName, string memberName, _, _, _) in promotedStructs)
             {
                 string memberScope = GetScope(GetSimpleName(memberName));
                 result.Append($"\r\n{TypeElemIndent}[global::System.Diagnostics.CodeAnalysis.UnscopedRef] {memberScope} partial ref {typeName} {memberName} => ref {CapturedVarMarker}{GetUnsanitizedIdentifier(memberName)};");
@@ -223,7 +223,7 @@ internal class StructTypeTemplate : TemplateBase
             Dictionary<string, int> promotedFieldMinDepth = new(StringComparer.Ordinal);
             Dictionary<string, int> promotedFieldMinDepthCount = new(StringComparer.Ordinal);
 
-            foreach ((string promotedStructType, _, _, _) in promotedStructs)
+            foreach ((string promotedStructType, _, _, _, _) in promotedStructs)
             {
                 foreach ((_, string memberName, int depth) in getStructMembers(promotedStructType))
                 {
@@ -244,7 +244,7 @@ internal class StructTypeTemplate : TemplateBase
             bool promotes(string simpleName, int depth) =>
                 promotedFieldMinDepth[simpleName] == depth && promotedFieldMinDepthCount[simpleName] == 1;
 
-            foreach ((string promotedStructType, string promotedMemberName, _, _) in promotedStructs)
+            foreach ((string promotedStructType, string promotedMemberName, _, _, _) in promotedStructs)
             {
                 // Rewrite the embed's type PARAMETERS to this instantiation's type ARGUMENTS on the
                 // promoted member TYPE (a generic embed's field carries `Point`, out of scope here).
@@ -286,7 +286,7 @@ internal class StructTypeTemplate : TemplateBase
 
             result.Append($"\r\n\r\n{TypeElemIndent}// Promoted Struct Field Accessor References");
 
-            foreach ((string promotedStructType, string promotedMemberName, _, _) in promotedStructs)
+            foreach ((string promotedStructType, string promotedMemberName, _, _, _) in promotedStructs)
             {
                 Dictionary<string, string> typeArgMap = GetEmbedTypeArgumentMap(promotedStructType);
 
@@ -397,7 +397,7 @@ internal class StructTypeTemplate : TemplateBase
                         return;
                     }
 
-                    foreach ((string memberType, string memberName, _, bool isEmbedded) in structDecl.GetStructMembers(compilation!, true))
+                    foreach ((string memberType, string memberName, _, bool isEmbedded, _) in structDecl.GetStructMembers(compilation!, true))
                     {
                         collected.Add((memberType, memberName, depth));
 
@@ -491,7 +491,7 @@ internal class StructTypeTemplate : TemplateBase
 
     private string PromotedStructReceivers()
     {
-        (string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)[] promotedStructs = StructMembers.Where(item => item.isPromotedStruct).ToArray();
+        (string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, bool isPublic)[] promotedStructs = StructMembers.Where(item => item.isPromotedStruct).ToArray();
 
         if (promotedStructs.Length == 0)
             return "";
@@ -540,7 +540,7 @@ internal class StructTypeTemplate : TemplateBase
         // qualified rw.Reader.Size(); both generated wrappers were CS0111).
         Dictionary<string, int> promotedMethodCounts = new(StringComparer.Ordinal);
 
-        foreach ((string promotedStructType, _, _, _) in promotedStructs)
+        foreach ((string promotedStructType, _, _, _, _) in promotedStructs)
         {
             HashSet<string> embedMethodNames = new(StringComparer.Ordinal);
 
@@ -596,7 +596,7 @@ internal class StructTypeTemplate : TemplateBase
                         embedMethodNames.Add(m.Name);
                 }
 
-                foreach ((string memberType, _, _, bool isEmbedded) in decl.GetStructMembers(comp!, true))
+                foreach ((string memberType, _, _, bool isEmbedded, _) in decl.GetStructMembers(comp!, true))
                 {
                     if (isEmbedded)
                         countPromotedMethods(memberType, seenTypes);
@@ -604,7 +604,7 @@ internal class StructTypeTemplate : TemplateBase
             }
         }
 
-        foreach ((string promotedStructType, string promotedMemberName, _, _) in promotedStructs)
+        foreach ((string promotedStructType, string promotedMemberName, _, _, _) in promotedStructs)
         {
             // Rewrite the embed's type PARAMETERS to this instantiation's type ARGUMENTS on the
             // promoted method's return + parameter types — a generic embed's method signature may
@@ -711,7 +711,7 @@ internal class StructTypeTemplate : TemplateBase
                 // (`RCode RCode` in dnsmessage.Header) is a plain FIELD, not an embed - recursing
                 // into it falsely promotes the field type's methods (Message got RCode's String()
                 // forwarded as `target.Header.String()`, but Header has no String - CS1929).
-                foreach ((string memberType, _, _, bool isEmbedded) in decl.GetStructMembers(comp!, true))
+                foreach ((string memberType, _, _, bool isEmbedded, _) in decl.GetStructMembers(comp!, true))
                 {
                     if (isEmbedded)
                         collectPromotedMethods(memberType, seenTypes);
@@ -1207,7 +1207,7 @@ internal class StructTypeTemplate : TemplateBase
 
             StringBuilder result = new();
 
-            foreach ((string typeName, string memberName, _, _) in StructMembers)
+            foreach ((string typeName, string memberName, _, _, _) in StructMembers)
             {
                 // A blank `_` field is unaddressable in Go; a second `_` field (own + promoted, or
                 // multiple padding fields) would also make duplicate `Ꮡ_` accessors (CS0111).
@@ -1310,9 +1310,9 @@ internal class StructTypeTemplate : TemplateBase
     private void AppendZeroValueInitializers(StringBuilder result) =>
         AppendZeroValueInitializers(result, StructMembers);
 
-    private void AppendZeroValueInitializers(StringBuilder result, IEnumerable<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)> structMembers)
+    private void AppendZeroValueInitializers(StringBuilder result, IEnumerable<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, bool isPublic)> structMembers)
     {
-        foreach ((string typeName, string memberName, bool isReferenceType, bool isPromotedStruct) in structMembers)
+        foreach ((string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, _) in structMembers)
         {
             if (GetSimpleName(memberName) == "_")
                 continue;
@@ -1397,7 +1397,7 @@ internal class StructTypeTemplate : TemplateBase
             return Context.Compilation.FindTypeSymbol(typeName) is { TypeKind: TypeKind.Struct } typeSymbol &&
                    NeedsConstruction(typeSymbol, seen);
 
-        foreach ((string memberType, string memberName, bool isReferenceType, bool isProperty) in structDecl.GetStructMembers(compilation!, true))
+        foreach ((string memberType, string memberName, bool isReferenceType, bool isProperty, _) in structDecl.GetStructMembers(compilation!, true))
         {
             if (GetSimpleName(memberName) == "_")
                 continue;
@@ -1480,7 +1480,7 @@ internal class StructTypeTemplate : TemplateBase
         return false;
     }
 
-    private void GenerateConstructor(string scope, List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct)> structMembers, StringBuilder result)
+    private void GenerateConstructor(string scope, List<(string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, bool isPublic)> structMembers, StringBuilder result)
     {
         if (structMembers.Count == 0)
             return;
@@ -1497,7 +1497,7 @@ internal class StructTypeTemplate : TemplateBase
         result.AppendLine(")");
         result.AppendLine($"{TypeElemIndent}{{");
 
-        foreach ((string typeName, string memberName, bool isReferenceType, bool isPromotedStruct) in structMembers)
+        foreach ((string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, _) in structMembers)
         {
             result.Append($"{TypeElemIndent}    ");
 
@@ -1595,7 +1595,7 @@ internal class StructTypeTemplate : TemplateBase
         return name.StartsWith("go.array<", StringComparison.Ordinal) || name.StartsWith("array<", StringComparison.Ordinal);
     }
 
-    private static string GetToStringImplementation((string typeName, string memberName, bool isReferenceType, bool isPromotedStruct) item)
+    private static string GetToStringImplementation((string typeName, string memberName, bool isReferenceType, bool isPromotedStruct, bool isPublic) item)
     {
         return item.isReferenceType ? $"{item.memberName}?.ToString() ?? \"<nil>\"" : $"{item.memberName}.ToString()";
     }

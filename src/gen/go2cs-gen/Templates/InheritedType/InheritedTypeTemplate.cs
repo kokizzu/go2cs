@@ -27,7 +27,7 @@ internal class InheritedTypeTemplate : TemplateBase
     // struct's fields are accessible on the named type in Go (`w.fn`). C# has no such access on the
     // wrapper, so the underlying struct's members are forwarded here as get/set properties over the
     // (mutable) `m_value`. Null/empty for every other inherited kind (slice/map/array/numeric/…).
-    public List<(string typeName, string memberName, bool isReferenceType, bool isProperty)>? ForwardedStructMembers = null;
+    public List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)>? ForwardedStructMembers = null;
 
     // For a defined type whose underlying is ITSELF an array-backed [GoType] wrapper
     // (`type pallocBits pageBits`, `type pageBits [8]uint64`), the element type of that underlying
@@ -432,9 +432,20 @@ internal class InheritedTypeTemplate : TemplateBase
             if (ForwardedStructMembers is null || ForwardedStructMembers.Count == 0)
                 return "";
 
+            // A forwarded accessor is public only when BOTH the wrapper itself is public AND the
+            // forwarded member's own type is — the narrowest-wins rule ReceiverMethodTemplate.
+            // TargetScope already applies to a receiver mismatch. Without it, a deliberately PUBLIC
+            // bridge wrapping an unexported production type (runtime's white-box `MSpan`, `type MSpan
+            // = mspan` in export_test.go, exposed so external tests can name it) forwarded `mspan`'s
+            // still-internal field types — `gcBits`, `mutex`, `special`, `addrRange` — through
+            // unconditionally `public` accessors: the wrapper's OWN publicization says nothing about
+            // its FIELDS' accessibility, which stays whatever production emitted per field (W3a).
+            string MemberScope((string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic) member) =>
+                Scope == "public" && member.isPublic ? "public" : "internal";
+
             IEnumerable<string> props = ForwardedStructMembers
                 .Where(member => GetSimpleName(member.memberName) != "_")
-                .Select(member => $"\r\n        [global::System.Diagnostics.CodeAnalysis.UnscopedRef] public ref {member.typeName} {member.memberName} => ref m_value.{member.memberName};");
+                .Select(member => $"\r\n        [global::System.Diagnostics.CodeAnalysis.UnscopedRef] {MemberScope(member)} ref {member.typeName} {member.memberName} => ref m_value.{member.memberName};");
 
             // The field-box accessors (`Ꮡfield`) that a plain struct's partial generates (used by the
             // converter's `receiver.of(Type.Ꮡfield)` field-address form — `&p.x` on a *pinnerBits, where
@@ -446,7 +457,7 @@ internal class InheritedTypeTemplate : TemplateBase
             // accessor (matching the plain-struct template, which only emits them for fields).
             IEnumerable<string> fieldRefs = ForwardedStructMembers
                 .Where(member => GetSimpleName(member.memberName) != "_" && !member.isProperty)
-                .Select(member => $"\r\n        public static ref {member.typeName} {AddressPrefix}{GetUnsanitizedIdentifier(member.memberName)}(ref {ObjectName} instance) => ref instance.m_value.{member.memberName};");
+                .Select(member => $"\r\n        {MemberScope(member)} static ref {member.typeName} {AddressPrefix}{GetUnsanitizedIdentifier(member.memberName)}(ref {ObjectName} instance) => ref instance.m_value.{member.memberName};");
 
             return $"\r\n\r\n        // Forwarded fields of the underlying '{TypeName}'{string.Concat(props)}{string.Concat(fieldRefs)}";
         }
