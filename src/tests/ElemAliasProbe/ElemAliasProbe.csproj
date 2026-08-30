@@ -11,7 +11,7 @@
 
         dotnet run (project src/tests/ElemAliasProbe, config Release), passing an arm name.
 
-    Arms: all, arm0 .. arm5, arm1r, arm2r
+    Arms: all, arm0 .. arm9, arm1r, arm2r
   -->
 
   <PropertyGroup>

@@ -127,7 +127,8 @@ internal class InheritedTypeTemplate : TemplateBase
 
     private string ValueGetter => TypeClass switch
     {
-        "Array" => $"m_value ??= new {TypeName}({TargetTypeSize ?? "0"})",
+        // The Array kind supplies its own BLOCK-bodied Value (see ValueProperty): its lazy backing is
+        // published with an interlocked CAS, which an expression-bodied `??=` cannot express.
         // The array-view wrapper's `Value` must route through `view` (ensure the underlying's lazy
         // backing materializes on THIS wrapper's own m_value, then return a copy sharing that T[]):
         // the converter emits `b.Value[i] = v` inside the wrapper's pointer-receiver methods, and a
@@ -185,9 +186,68 @@ internal class InheritedTypeTemplate : TemplateBase
         _ => $"default({ObjectName})!"
     };
 
+    // A named fixed-size Go array's backing is allocated LAZILY, and the lazy slot is shared mutable
+    // state: `m_value ??= new array<E>(N)` is a read-modify-write, so two threads that first-touch the
+    // SAME zero-valued wrapper each allocate a backing and the second store ORPHANS the first — along
+    // with every element pointer already derived from it. The loss is silent (no fault, no exception),
+    // bounded to a microsecond-wide start-up window, and measured at ~97% of concurrent first-touch
+    // trials (`src/tests/ElemAliasProbe`, arm7 — 872 of 900 at the `??=` emission, 0 of 900 here).
+    //
+    // The publish is therefore an interlocked CAS: every racing thread allocates, exactly one wins the
+    // slot, and the losers DISCARD their allocation before anything can derive an element address from
+    // it — which is what makes the fix correct rather than merely narrower. The cold path pays one CAS,
+    // once per wrapper for the life of the value; the warm path pays a reference load and a null test.
+    //
+    // The slot is a REFERENCE rather than `array<E>?` because an interlocked publish needs ONE machine
+    // word. `array<E>` is a 3-field readonly struct (backing + window low/length), so `array<E>?` is 24
+    // bytes: it can neither be CAS'd nor even READ without tearing while another thread writes it. The
+    // holder carries the WHOLE value, which the narrower alternative — holding the bare `E[]` — would
+    // not: a constructor-supplied array may be an ALIAS WINDOW (`array<E>.Alias`, Go's `(*[N]E)(s)`)
+    // whose `Source` is WIDER than the array, and flattening it to its backing would silently widen the
+    // named array to the whole allocation and shift its origin. It is allocated only where a value was
+    // already being allocated (the lazy backing, `Clone()`, an explicit conversion); `default(T)`
+    // allocates nothing, and the wrapper struct itself SHRINKS from 24 bytes to 8.
+    //
+    // `StrongBox<array<E>>` and not plain `object`: both are one word and both preserve the value, but
+    // an `object` slot makes every warm read an `unbox.any` — a type-check helper CALL in the hot loop
+    // — while the typed holder reads a field at a fixed offset. Measured on the element-address path
+    // (`ref Value[i]`, the form converted element reads and writes emit), 64 cold tables: 1.97 ns/op at
+    // the `??=` emission, 4.13 with an `object` slot, 2.45 with the holder.
+    //
+    // The cost that remains is one dependent load, and the probe reports it honestly (arm9, both
+    // emissions measured in one process): the raw `Value` getter gets FASTER (1.03 -> 0.87 ns/op — the
+    // wrapper struct shrank from 24 bytes to 8, so every Go by-value array copy moved too), the element
+    // path over ONE long-lived table — what the corpus's named arrays actually are, and where the JIT
+    // hoists the loop-invariant getter — moves between -1% and +12% run to run (1.70..1.77 ->
+    // 1.79..1.93 ns/op), and the pathological shape of 64 separate non-resident tables costs +17..25%.
+    // That is the price of closing a silent lost write.
+    //
+    // This closes DOOR 2 of the element-aliasing family (`docs/phase4/INVESTIGATION-element-aliasing.md`):
+    // the wrapper's own getter, reached by ref with no golib on the path, which door 1's per-box publish
+    // gate in `ж<T>.at()` structurally cannot see. It does NOT close a materialization that happens on a
+    // by-value COPY of the wrapper (the copy's field is the one published) — that is the mpallocbits
+    // operator-copy door, tracked separately.
     private string ValueProperty => TypeClass switch
     {
         "Pointer" => "",
+        "Array" =>
+            $$"""
+                      public {{TypeName}} Value
+                      {
+                          get
+                          {
+                              {{ValueFieldType}}? value = m_value;
+
+                              if (value is null)
+                              {
+                                  {{ValueFieldType}} created = new {{ValueFieldType}}(new {{TypeName}}({{TargetTypeSize ?? "0"}}));
+                                  value = global::System.Threading.Interlocked.CompareExchange(ref m_value, created, null) ?? created;
+                              }
+
+                              return value.Value;
+                          }
+                      }
+              """,
         _ => $"        public {TypeName} Value => {ValueGetter};"
     };
 
@@ -304,12 +364,48 @@ internal class InheritedTypeTemplate : TemplateBase
         _ => $"{Value}.ToString()"
     };
 
+    // A Go fixed-size array is COMPARABLE and legal as a map key, so equal arrays must be equal and
+    // hash alike. With no overrides a C# struct inherits ValueType.Equals/GetHashCode, and BOTH read
+    // the single m_value FIELD — which for the Array kind is now a publish holder (see ValueProperty),
+    // i.e. a REFERENCE. Two distinct wrappers over equal content then compared unequal and hashed
+    // differently, so they missed each other in a map and in reflect.DeepEqual: precisely the silent
+    // wrong answer door 2 exists to remove, traded for a different one.
+    //
+    // Both overrides are needed and the `==` operator is neither of them: `EqualityExpression` binds
+    // the wrapper's own `Equals(IArray<E>)` at COMPILE time, which was structural all along and stayed
+    // so — which is exactly why the regression is invisible from the source and had to be measured
+    // (ElemAliasProbe arm10 checks the compile-time and the runtime overload separately: structural
+    // before, `object.Equals` false after, structural again with these).
+    //
+    // The `is {ObjectName}` test keeps ValueType.Equals's type-strictness (a different Go named array
+    // over the same underlying is a different Go type and never equal), while the comparison itself
+    // delegates to array<E>'s element-wise Equals/GetHashCode — so neither depends on the slot's shape
+    // any more, and a future change of carrier cannot move them again.
+    private string EqualityOverrides => TypeClass == "Array" ?
+        $"""
+
+                public override bool Equals(object? obj) => obj is {ObjectName} other && {Value}.Equals(other.{Value});
+
+                public override int GetHashCode() => {Value}.GetHashCode();
+
+        """ : "";
+
     private string ReadOnly => ReadOnlyValue ? "readonly " : "";
 
-    // Only the lazily-allocated Array backing needs a nullable slot (`m_value ??= new array(N)`).
+    // Only the lazily-allocated Array backing needs a nullable slot (null == "not yet materialized").
     // Other mutable cases (a struct-forwarding named type) keep a non-nullable value slot — decoupled
     // from ReadOnlyValue so struct forwarding can be mutable yet non-nullable.
     private string Nullable => TypeClass == "Array" ? "?" : "";
+
+    // The Array kind's slot holds its `array<E>` inside a StrongBox, so the lazy backing can be
+    // published with an interlocked CAS — see ValueProperty for why one machine word is the
+    // requirement, why the holder (not the bare `E[]`) is what preserves the value, and why the holder
+    // is TYPED rather than a plain `object`.
+    private string ValueFieldType => TypeClass == "Array" ? $"global::System.Runtime.CompilerServices.StrongBox<{TypeName}>" : TypeName;
+
+    // The Array kind's constructor wraps its incoming value in the publish holder; every other kind
+    // stores it directly.
+    private string ValueConstructorArgument => TypeClass == "Array" ? $"new {ValueFieldType}(value)" : "value";
 
     // Forwarding properties for a defined-type-over-struct, exposing the underlying struct's fields on
     // the wrapper. `m_value` is mutable (ReadOnlyValue=false) so a write through a ж<T>.Value ref —
@@ -382,16 +478,16 @@ internal class InheritedTypeTemplate : TemplateBase
             {{Scope}} partial {{ObjectKind}} {{ObjectName}}{{ImplementedInterface}}{{ValueCloneInterface}}
             {
                 // Value of the {{ObjectKind}} '{{ObjectName}}'
-                private {{ReadOnly}}{{TypeName}}{{Nullable}} m_value;
+                private {{ReadOnly}}{{ValueFieldType}}{{Nullable}} m_value;
                 {{InterfaceImplementation}}{{ForwardedMembers}}{{ValueCloneImplementation}}
 
-                public {{ConstructorName}}({{TypeName}} value) => m_value = value;
+                public {{ConstructorName}}({{TypeName}} value) => m_value = {{ValueConstructorArgument}};
 
                 public {{ConstructorName}}(NilType _) => m_value = {{NilValueExpression}};
 
         {{ValueProperty}}
                 public override string ToString() => {{ToStringImplementation}};
-        
+        {{EqualityOverrides}}
                 public static bool operator ==({{ObjectName}} left, {{ObjectName}} right) => {{EqualityExpression}};
         
                 public static bool operator !=({{ObjectName}} left, {{ObjectName}} right) => !(left == right);

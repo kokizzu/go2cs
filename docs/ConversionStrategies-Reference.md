@@ -12129,7 +12129,8 @@ rather than adding a lock to it.
 getter is itself a read-modify-write, so two threads first-touching the *same struct instance* by
 ref still race (`ref semTable semtable => ref Ꮡsemtable.Value; semtable[i] = x`). Closing that needs
 an atomic publish inside the generated getter (go2cs-gen). Measured unchanged at ~95% of trials
-(ElemAliasProbe `arm7`).
+(ElemAliasProbe `arm7`) — closed separately, see *The named-array wrapper publishes its lazy backing
+atomically* below.
 
 ### The element address of a VIRGIN named array must materialize through the receiver
 
@@ -12184,6 +12185,91 @@ by-value conversion operator (`implicit operator pageBits(pallocBits value) => v
 materializes on the operator's own parameter copy. First-touch writes through it are lost; once
 anything else materializes `b`, every copy shares the backing and writes land (measured both ways —
 ElemAliasProbe `arm8`). It needs its own increment.
+
+### The named-array wrapper publishes its lazy backing atomically
+
+The third door of the same family, and the one neither of the others can reach: the generated
+wrapper's **own** `Value` getter, reached by a plain `ref` with no golib on the path at all —
+`internal static ref semTable semtable => ref Ꮡsemtable.Value;` and then `semtable[i] = x`. A per-box
+publish gate in `ж<T>.at()` never sees it (there is no `at()` call), and the receiver projection above
+never sees it either (there is no `Ꮡ`). What it meets is `m_value ??= new array<E>(N)`, a
+read-modify-write of shared mutable state: two threads that first-touch the same zero-valued wrapper
+each allocate a backing and the second store **orphans the first**, together with every element
+pointer already derived from it. Silent — no fault, no exception — and confined to a start-up window
+measured in microseconds. Measured at **872 of 900** concurrent first-touch trials (ElemAliasProbe
+`arm7`, 24 threads × 300 trials × 3 batches).
+
+The publish becomes an interlocked CAS. Every racing thread allocates, exactly one wins the slot, and
+the losers discard their allocation *before* anything can derive an element address from it — which is
+what makes it correct rather than merely narrower:
+
+```csharp
+private global::System.Runtime.CompilerServices.StrongBox<array<uint64>>? m_value;   // was: array<uint64>?
+
+public array<uint64> Value
+{
+    get
+    {
+        global::System.Runtime.CompilerServices.StrongBox<array<uint64>>? value = m_value;
+
+        if (value is null)
+        {
+            var created = new global::System.Runtime.CompilerServices.StrongBox<array<uint64>>(new array<uint64>(256));
+            value = global::System.Threading.Interlocked.CompareExchange(ref m_value, created, null) ?? created;
+        }
+
+        return value.Value;
+    }
+}
+```
+
+**Why the slot had to change shape at all.** An interlocked publish needs ONE machine word. `array<E>`
+is a 3-field readonly struct (backing plus the `Alias` window's low/length), so `array<E>?` is 24
+bytes — it can neither be CAS'd nor even *read* without tearing while another thread writes it. The
+narrower one-word alternative, holding the bare `E[]`, does not preserve the value: a
+constructor-supplied array may be an alias **window** (`array<E>.Alias`, Go's `(*[N]E)(s)`) whose
+`Source` is wider than the array, and flattening it to its backing would silently widen the named
+array and shift its origin. The holder carries the whole `array<E>`, so nothing is lost. It is
+`StrongBox<array<E>>` and not plain `object` because an `object` slot makes every warm read an
+`unbox.any` — a type-check helper *call* in the hot loop; measured on the element-address path over 64
+cold tables, `1.97 → 4.13 ns/op` for `object` against `1.97 → 2.45` for the typed holder.
+
+The residual cost is one dependent load and the probe reports it honestly (`arm9`, both emissions in
+one process): the raw `Value` getter gets **faster** (`1.03 → 0.87 ns/op` — the wrapper struct shrank
+from 24 bytes to 8, so every Go by-value array copy moved with it), the element path over ONE
+long-lived table — what the corpus's named arrays actually are, and where the JIT hoists the
+loop-invariant getter — sits between `−1%` and `+12%` run to run, and the pathological shape of 64
+separate non-resident tables costs `+17…25%`.
+
+**The consequence that had to be measured, not reasoned.** A Go fixed-size array is COMPARABLE and
+legal as a map key. With no overrides a C# struct inherits `ValueType.Equals`/`GetHashCode`, and both
+read the single `m_value` field — now a *reference*. So two distinct wrappers over equal content began
+comparing unequal and hashing differently, missing each other in a map and in `reflect.DeepEqual`:
+precisely the silent wrong answer this door exists to remove, traded for a different one. The `==`
+operator hid it completely, because `EqualityExpression` binds the wrapper's own
+`Equals(IArray<E>)` at COMPILE time and that was structural all along. The Array kind therefore emits
+both overrides, delegating to `array<E>`'s element-wise pair so neither depends on the slot's shape
+any more:
+
+```csharp
+public override bool Equals(object? obj) => obj is Table other && Value.Equals(other.Value);
+
+public override int GetHashCode() => Value.GetHashCode();
+```
+
+One golib companion follows for the same reason: `GoReflect.TryUnwrapWrapperValue` reads `m_value` by
+reflection to hand callers the wrapper's underlying value, so it unwraps the holder's extra level (no
+converted or golib type is ever an `IStrongBox`).
+
+Guarded by **`NamedArrayWrapper`**'s map-key probe — two separately built equal keys, a re-store
+through the second, a third distinct key, and the same for the VIRGIN zero array whose backing neither
+side has materialized. Verified as a real gate rather than a green that cannot go red: with the two
+overrides suppressed and nothing else changed, it reports `stdout mismatch C# vs Go`.
+
+**Still not closed, by construction:** a materialization that happens on a by-value COPY of the
+wrapper publishes to the copy's field, so the `arm8` `Ꮡ((pageBits)(b))` door above is untouched. The
+emission-vs-emission blast radius is nil — a generator change alters no committed `.cs`, and the
+suite's Transpile and Target phases stay byte-identical across it.
 
 ### A promoted field whose name equals the enclosing type is Δ-renamed
 
