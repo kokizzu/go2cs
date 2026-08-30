@@ -27,6 +27,7 @@ using static go.NestedAliasUser.inner_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b4e616d6520737472696e673b2044617461205b5d627974653b20436f756e7420696e747d", "Entryᴛ1")]
 [assembly: GoTypeAlias("Entry", "go.NestedAliasUser.inner_package.Entryᴛ1")]
 // </ExportedTypeAliases>
 

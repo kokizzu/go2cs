@@ -27,6 +27,8 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829205b5d6572726f727d", "classify_typeᴛ1")]
+[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829206572726f727d", "classify_type")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

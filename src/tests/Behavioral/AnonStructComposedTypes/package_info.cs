@@ -27,6 +27,9 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696e20696e743b2073747220737472696e673b206572726f727d", "ptrElemsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6e20696e747d", "mapPtrValuesᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b74616720737472696e677d", "nestedᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

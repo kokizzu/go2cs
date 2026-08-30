@@ -20,6 +20,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -300,6 +301,19 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 			}
 
 			lines.Add(fmt.Sprintf("[assembly: GoTypeAlias(\"%s\", \"%s\")]", alias, typeName))
+		}
+
+		// Publish every purely-anonymous (no Go-level alias) struct/interface this package's own
+		// conversion lifted, so a `-tests` reference-model conversion of an internal `_test.go` file
+		// (export_test.go's whole reason to exist) can resolve a cross-assembly reference to the
+		// SAME anonymous type by its structural signature rather than falling back to the raw Go
+		// type text — see GoDynamicTypeLiftAttribute and seedProductionDynamicTypeLifts. The
+		// signature is HEX-ENCODED, the same reasoning as dynamicTypeMarker
+		// (dynamicTypeOperations.go): a struct signature can carry a field's backtick-quoted Go
+		// struct TAG, which can itself carry double quotes and backslashes (`json:"a\"b"`), and hex
+		// digits are the one encoding proof against every text transform between here and parsing.
+		for signature, typeName := range packageDynamicTypeNames {
+			lines.Add(fmt.Sprintf("[assembly: GoDynamicTypeLift(\"%s\", \"%s\")]", hex.EncodeToString([]byte(signature)), typeName))
 		}
 
 		// Sort lines

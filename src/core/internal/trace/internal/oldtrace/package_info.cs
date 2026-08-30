@@ -27,6 +27,7 @@ using static go.@internal.trace.@internal.oldtrace_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b4e616d6520737472696e673b206d696e56657273696f6e20696e7465726e616c2f74726163652f76657273696f6e2e56657273696f6e3b20537461636b20626f6f6c3b2041726773205b5d737472696e673b205341726773205b5d737472696e677d", "EventDescriptionsᴛ1")]
 [assembly: GoTypeAlias("STWReason", "ΔSTWReason")]
 // </ExportedTypeAliases>
 

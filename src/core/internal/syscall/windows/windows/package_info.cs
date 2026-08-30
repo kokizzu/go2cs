@@ -31,6 +31,7 @@ using static go.@internal.syscall.windows_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6f6e63652073796e632e4f6e63653b2073656e64416464722075696e747074723b2072656376416464722075696e747074723b20657272206572726f727d", "sendRecvMsgFuncᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

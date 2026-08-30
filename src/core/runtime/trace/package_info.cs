@@ -28,6 +28,7 @@ using static go.runtime.trace_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b73796e632e4d757465783b20656e61626c65642073796e632f61746f6d69632e426f6f6c7d", "tracingᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -51,7 +52,7 @@ using static go.runtime.trace_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("runtime/trace/annotation.go", "annotation.cs", "ACNMABYCgpKCggACLAASAoCCpAAHFLLalAAFELKCqLKmggAGIAAXIIKCggAFFgAIAoKUkoIAChiygpSssgACEOampg==")]
-[assembly: go.GoPositionMap("runtime/trace/trace.go", "trace.cs", "AIgB8gHSgoSAgqSCgoKClKaC2sKCgoQ=")]
+[assembly: go.GoPositionMap("runtime/trace/trace.go", "trace.cs", "AIgB8gHSgoSAgqSCgoKClKaC2sKCgoQ=", "128-136:1")]
 // </GoSourcePositionMaps>
 
 namespace go.runtime;

@@ -27,6 +27,10 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b436c6f73652829206572726f727d", "Δtype")]
+[assembly: GoDynamicTypeLift("696e746572666163657b4973286572726f722920626f6f6c7d", "testTypeAssertion_type")]
+[assembly: GoDynamicTypeLift("696e746572666163657b52656164285b5d62797465292028696e742c206572726f72297d", "WithInlineField_R")]
+[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829206572726f727d", "testTypeSwitch_type")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

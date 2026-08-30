@@ -458,7 +458,7 @@ func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) str
 	// `range compareTests` from bytes_test.go emitted `struct{a <>byte; …}` — CS1526
 	// + ~170-error parser cascade).
 	if !isUnderlying {
-		if name := deferredDynamicTypeName(t); name != "" {
+		if name := v.deferredDynamicTypeName(t); name != "" {
 			return name
 		}
 	}
@@ -658,7 +658,7 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 	// Cross-file/forward reference to a lifted anonymous struct/interface: shared-registry
 	// name or a deferred marker, never raw Go type text (see the getAliasQualifiedTypeName twin).
 	if !isUnderlying {
-		if name := deferredDynamicTypeName(t); name != "" {
+		if name := v.deferredDynamicTypeName(t); name != "" {
 			return v.usingAliasTypeQualifier(t) + name
 		}
 	}

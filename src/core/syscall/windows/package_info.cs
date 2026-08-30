@@ -28,6 +28,7 @@ using static go.syscall_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6f6e63652073796e632e4f6e63653b20616464722075696e747074723b20657272206572726f727d", "connectExFuncᴛ1")]
 [assembly: GoTypeAlias("Handle", "ΔHandle")]
 [assembly: GoTypeAlias("Signal", "ΔSignal")]
 [assembly: GoTypeAlias("Sockaddr", "ΔSockaddr")]

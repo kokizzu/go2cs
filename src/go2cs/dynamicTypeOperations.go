@@ -57,12 +57,14 @@ func dynamicTypeMarkerSignature(payload string) (string, bool) {
 }
 
 // deferredDynamicTypeName renders a NON-EMPTY anonymous struct/interface type that no
-// per-file lifted name resolved: the shared package registry's lifted name when the
-// declaring file has already been visited (file visits run in deterministic sorted-file
+// per-file lifted name resolved: this visitor's own claim or the PRODUCTION conversion's
+// seeded lift (both via liftedNameFor — see its own comment for why a -tests reference-model
+// conversion needs the second source), then the shared package registry's lifted name when
+// the declaring file has already been visited (file visits run in deterministic sorted-file
 // order), else a deferred marker resolved after the file-visit barrier. Returns "" for
 // any other type — including the EMPTY struct/interface, whose raw `struct{}`/`interface{}`
 // signatures already map to `EmptyStruct`/`any` downstream.
-func deferredDynamicTypeName(t types.Type) string {
+func (v *Visitor) deferredDynamicTypeName(t types.Type) string {
 	switch typ := t.(type) {
 	case *types.Struct:
 		if isEmptyStructType(typ) {
@@ -76,9 +78,17 @@ func deferredDynamicTypeName(t types.Type) string {
 		return ""
 	}
 
+	if name, ok := v.liftedNameFor(t); ok {
+		return name
+	}
+
 	signature := t.String()
 
 	if name := lookupDynamicTypeName(signature); name != "" {
+		return name
+	}
+
+	if name := lookupProductionDynamicTypeName(signature); name != "" {
 		return name
 	}
 
@@ -201,22 +211,40 @@ func lookupDynamicTypeName(signature string) string {
 	return name
 }
 
+// lookupProductionDynamicTypeName is lookupDynamicTypeName's `-tests` INTERNAL-variant sibling:
+// the name PRODUCTION already lifted a purely-anonymous struct/interface under, for a signature
+// this run's own packageDynamicTypeNames has no entry for at all (production's registrations
+// live in a map resetPackageState already replaced for this pass — see productionDynamicTypeNames).
+// "" when unset (a production conversion, the external variant, or simply no match), the same
+// not-yet-resolved contract lookupDynamicTypeName's own callers already handle.
+func lookupProductionDynamicTypeName(signature string) string {
+	packageLock.Lock()
+	name := productionDynamicTypeNames[signature]
+	packageLock.Unlock()
+	return name
+}
+
 // dynamicStructTypeName resolves the C# type name of an expression whose type is
 // a (possibly anonymous) struct, for use where a concrete type name is required —
 // e.g. the `ж.of(StructType.ᏑField)` address-of-field form. It prefers this
-// visitor's per-file lifted name, falls back to the shared package registry, and
-// otherwise emits a marker resolved after the file-visit barrier.
+// visitor's per-file lifted name or the PRODUCTION conversion's seeded lift (both via
+// liftedNameFor), falls back to the shared package registry, and otherwise emits a
+// marker resolved after the file-visit barrier.
 func (v *Visitor) dynamicStructTypeName(expr ast.Expr) string {
 	t := v.getType(expr, false)
 
 	if t != nil {
-		if name, ok := v.liftedTypeMap[t]; ok {
+		if name, ok := v.liftedNameFor(t); ok {
 			return name
 		}
 
 		signature := t.String()
 
 		if name := lookupDynamicTypeName(signature); name != "" {
+			return name
+		}
+
+		if name := lookupProductionDynamicTypeName(signature); name != "" {
 			return name
 		}
 
@@ -258,6 +286,10 @@ func resolveDynamicTypeMarkers(outputFileNames []string) {
 			}
 
 			replacement := lookupDynamicTypeName(signature)
+
+			if replacement == "" {
+				replacement = lookupProductionDynamicTypeName(signature)
+			}
 
 			if replacement == "" {
 				showWarning("Unresolved dynamic struct type: %s in \"%s\"(%d)", signature, fileName, line)

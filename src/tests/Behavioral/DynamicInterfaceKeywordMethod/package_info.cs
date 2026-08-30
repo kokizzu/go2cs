@@ -27,6 +27,8 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b446561646c696e6528292028696e742c20626f6f6c293b20676f3263732f44796e616d6963496e746572666163654b6579776f72644d6574686f642e54427d", "commandContext_type")]
+[assembly: GoDynamicTypeLift("696e746572666163657b4b696e64282920737472696e673b207072697661746528297d", "direct_type")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

@@ -30,6 +30,7 @@ using static go.os.user_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b73796e632e4f6e63653b2075202a6f732f757365722e557365723b20657272206572726f727d", "cacheᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -52,9 +53,9 @@ using static go.os.user_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "ABQq0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS")]
+[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "ABQq0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS", "22-22:1")]
 [assembly: go.GoPositionMap("os/user/lookup_windows.go", "lookup_windows.cs", "ACcegoKCgoKUgqaCuKKCgpSCgpSCgoKUgoLWgoKCgoKmgoLKqqKSgoKCgpSClILM0oKClIKU2NKCgpSCgoKU6JKCggAHEIKUqsSSgoKUlIKClIIACRKCgpSCgpSCgoKClIKClJTWgpKSgpTuAAUUooKClIKCgpSCgpSCgpSCgpSCgpSCgpTc5IKClIKUgoIADh6CggAHEIKClIKClIKCgpSCgtaCgoKUgoKUgoIAChaCyoKClJSmgoKClIKUpoKCgpSmgpKClKaCgoKUkoKUgpSmgoKClIKClIKCuIKCpg==")]
-[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "ADyKAYLOgs6CzoI=")]
+[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "AEmKAYLOgs6CzoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.os;

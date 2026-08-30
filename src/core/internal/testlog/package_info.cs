@@ -27,6 +27,7 @@ using static go.@internal.testlog_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6d752073796e632e4d757465783b2076616c20626f6f6c7d", "panicOnExit0ᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

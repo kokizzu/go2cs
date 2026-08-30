@@ -36,6 +36,7 @@ using static go.os.signal_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b73796e632e4d757465783b206d206d61705b6368616e3c2d206f732e5369676e616c5d2a6f732f7369676e616c2e68616e646c65723b20726566205b36355d696e7436343b2073746f7070696e67205b5d6f732f7369676e616c2e73746f7070696e677d", "handlersᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -61,7 +62,7 @@ using static go.os.signal_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/signal/signal.go", "signal.cs", "ADhIgqaCpoKs0oKEgoSCgoKCgrqWgoKmggAHEuKokoIABjgAFAKCloKEgoKClIKWkoKUgoKCqIKCuKiCgqaCAAcQ0qyyhIKCgpSEgoKCggANIISEhISCgoKoqtSigoKWgoSClAAKEIKCAA4uABICgsqCgoKStPoACRaCgu6CpoKCgoKCgoKCppSC")]
+[assembly: go.GoPositionMap("os/signal/signal.go", "signal.cs", "ADhIgqaCpoKs0oKEgoSCgoKCgrqWgoKmggAHEuKokoIABjgAFAKCloKEgoKClIKWkoKUgoKCqIKCuKiCgqaCAAcQ0qyyhIKCgpSEgoKCggANIISEhISCgoKoqtSigoKWgoSClAAKEIKCAA4uABICgsqCgoKStPoACRaCgu6CpoKCgoKCgoKCppSC", "55-69:1;138-157:1;149-153:1.1;287-293:1")]
 [assembly: go.GoPositionMap("os/signal/signal_unix.go", "signal_unix.cs", "ABEewrKysrSCgriCzoKUgoKUtLiCpoKmgqaC")]
 // </GoSourcePositionMaps>
 

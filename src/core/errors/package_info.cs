@@ -29,6 +29,10 @@ using static go.errors_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b417328616e792920626f6f6c7d", "as_type")]
+[assembly: GoDynamicTypeLift("696e746572666163657b4973286572726f722920626f6f6c7d", "is_type")]
+[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829205b5d6572726f727d", "as_typeᴛ2")]
+[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829206572726f727d", "Unwrap_type")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

@@ -34,6 +34,7 @@ using static go.os_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b73796e632e4d757465783b2064697220737472696e677d", "getwdCacheᴛ1")]
 [assembly: GoTypeAlias("DirEntry", "go.io.fs_package.DirEntry")]
 [assembly: GoTypeAlias("FileInfo", "go.io.fs_package.FileInfo")]
 [assembly: GoTypeAlias("FileMode", "go.io.fs_package.FileMode")]
@@ -74,18 +75,18 @@ using static go.os_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/dir.go", "dir.cs", "ADVQABECgpSCuJQAAiQAEgKClIK4lAACIgAKAoKUgpSUAAcY8oKClJSChgAFKAARAqKCloKClJKCzIKWgoKUkoKClIKCloCCgqQ=")]
+[assembly: go.GoPositionMap("os/dir.go", "dir.cs", "ADVQABECgpSCuJQAAiQAEgKClIK4lAACIgAKAoKUgpSUAAcY8oKClJSChgAFKAARAqKCloKClJKCzIKWgoKUkoKClIKCloCCgqQ=", "126-128:1;150-190:1")]
 [assembly: go.GoPositionMap("os/dir_windows.go", "dir_windows.cs", "ADxYgsiCgoKCAAkSooIAAhDCgoKmlJSUpsoAGYYCgKKAooCigKSC")]
 [assembly: go.GoPositionMap("os/env.go", "env.cs", "ABIgopSCgoKClIKC7JSUgqaClKyyqqKUpKiSrLKUgpaSgoKUpqSmkpSssoKCAAIQ0oLaooKClKiSqJKqog==")]
 [assembly: go.GoPositionMap("os/error.go", "error.cs", "ACY8gAACEvAADB6ApICmkoKssoKUAAIS4gACEuIAAhLiAAIWAAgCgqa4goKmgqiSlKSklA==")]
 [assembly: go.GoPositionMap("os/exec.go", "exec.cs", "AF7SAYK4gqaCyoKCpoLcgoKmooKWgoKClIKClLiigpaCgoKCuJTclIKClIKUAAMS8oKWgoKC3JSmlIKClIKUuKKClqaiggAJFgAkTpCmkAACFgAJAgACIAANAoKsABUirLIAAhDSqqKokqiSrLKqoqyyAAIQ0g==")]
 [assembly: go.GoPositionMap("os/exec_posix.go", "exec_posix.cs", "ACI06IKAgoKCuILKgoKCpoKClpaEgqiCgoKCqKaCAAkWkqaCpoKmgqaC5qKClIKClIKSpMa0goLGtIKUqtSClA==")]
-[assembly: go.GoPositionMap("os/exec_windows.go", "exec_windows.cs", "ABQkAAgCgpSkpISCpLSkpIKCgpSCgoKUggAKBqKClKSkhIKCgoKUgoKCptbcgIK4gqaC1oKEgoKUpoKCgoKUupKClKqigoKCgoKUgsaCuIKClJSUgrSCtIKClKyygoKCgpSCgpSmooKmgqaC")]
+[assembly: go.GoPositionMap("os/exec_windows.go", "exec_windows.cs", "ABQkAAgCgpSkpISCpLSkpIKCgpSCgoKUggAKBqKClKSkhIKCgoKUgoKCptbcgIK4gqaC1oKUgoKUpoKCgoKUupKClKqigoKCgoKUgsaCuIKClJSUgrSCtIKClKyygoKCgpSCgpSmooKmgqaC")]
 [assembly: go.GoPositionMap("os/executable.go", "executable.cs", "AAckAAsC")]
 [assembly: go.GoPositionMap("os/executable_windows.go", "executable_windows.cs", "AAsYgoKCgoKCgpSCppSmgg==")]
-[assembly: go.GoPositionMap("os/file.go", "file.cs", "AD18sAA1XoKmgtzigIKkgt4ACAKAgqaCloKCgoKUgoKU2MKAgqSCgpQABxKiAAoWgqzygIKkgoKUgpaEgpYABBQACQKAgqSCloKWgoKCgpSCgpSowoCCpIKClAAHEqIAChaCAAUQ8oCCpIKClIKUqqKCrLKCiIKogoSCgqiokoKClKqigIKCpIKCgpSAgoKCtq7CAAIQ0gACEuKCgoKUhKyyggAHFtIAAhDSqqKClAAGFLKClIKklAACGAAJAgAMIAANAoSUgoK4goKUpoKClKaCkoKClLgACCAADQKElIKCuIKClKaCgpSmgpKCgpS4AAkWAAgCkpSkpICCtpSkpAACKgASAKigAAI0ABgCrsIAAhLi2qKAgqQAAyQADwLKgoKClILKgpSuwoKClIKCgJSklKqigoKUgoKAlKSUpoKCgpSClIKU2JKClIKClIKUruKCgpSUgoCCgoK2zIKWgoKCgoKClJaCggAHFNKCgpSCgIKk")]
-[assembly: go.GoPositionMap("os/file_posix.go", "file_posix.cs", "AA8m4oKUqtKCgqzigoKq0oKCqtKCgqiygoKUgpSCpqiSgoaClNiygIKkgIKkAAIU8oaClAACEuKGgpQABRDygIKkgIKk3NKAgqSAgqTc0oCCpICCpAACFPKCgoKUpoKCgIKkrNKAgqSAgqTYkoCCpNiSgIKk2JKAgqSqooKUAAIU8oKCgg==")]
-[assembly: go.GoPositionMap("os/file_windows.go", "file_windows.cs", "ACtQAAgCgpTqooKCgpSAgrgACBCohKiS3LKCgpSmAAYQkoKUgoKUgoKCgoKCuJSmgqaigpSAgqSCgIKClLiCrvKApqSCgqrCgoKUkoKClNqigoK6goKUgoKogoKClIKkgIKAgvymgoKClKyygoKClAAGEIKClIKClIKCgoKClMiUvKKCgpSCgpSCgpSu1JaCgIKUgKbIuIKEgoKUgoIABxCUgpaCgpSCpoKCgqassoKClKaCgoKUAAQaAAoClKaClKTYgpSEgoKUhIKCgoKUgpSUgoKClJSUAAdGooKClA==")]
+[assembly: go.GoPositionMap("os/file.go", "file.cs", "AD18sAA1XoKmgtzigIKkgt4ACAKAgqaCloKCgoKUgoKU2MKAgqSCgpQABxKiAAoWgqzygIKkgoKUgpaEgpYABBQACQKAgqSCloKWgoKCgpSCgpSowoCCpIKClAAHEqIAChaCAAUQ8oCCpIKClIKUqqKCrLKCiIKogoSCgqiokoKClKqigIKCpIKCgpSAgoKCtq7CAAIQ0gACEuKCgoKUhKyyggAHFtIAAhDSqqKClAAGFLKClIKklAACGAAJAgAMIAANAoSUgoK4goKUpoKClKaCkoKClLgACCAADQKElIKCuIKClKaCgpSmgpKCgpS4AAkWAAgCkpSkpICCtpSkpAACKgASAKigAAI0ABgCrsIAAhLi2qKAgqQAAyQADwLKgoKClILKgpSuwoKClIKCgJSklKqigoKUgoKAlKSUpoKCgpSClIKU2JKClIKClIKUruKCgpSUgoCCgoK2zIKWgoKCgoKClJaCggAHFNKCgpSCgIKk", "309-311:1")]
+[assembly: go.GoPositionMap("os/file_posix.go", "file_posix.cs", "AA8m4oKUqtKCgqzigoKq0oKCqtKCgqiygoKUgpSCpqiSgoaClNiygIKkgIKkAAIU8oaClAACEuKGgpQABRDygIKkgIKk3NKAgqSAgqTc0oCCpICCpAACFPKCgoKUpoKCgIKkrNKAgqSAgqTYkoCCpNiSgIKk2JKAgqSqooKUAAIU8oKCgg==", "78-80:1;106-108:1;122-124:1;181-187:1")]
+[assembly: go.GoPositionMap("os/file_windows.go", "file_windows.cs", "ACtQAAgCgpTqooKCgpSAgrgACBCohKiS3LKCgpSmAAYQkoKUgoKUgoKCgoKCuJSmgqaigpSAgqSCgIKClLiCrvKApqSCgqrCgoKUkoKClNqigoK6goKUgoKogoKClIKkgIKAgvymgoKClKyygoKClAAGEIKClIKClIKCgoKClMiUvKKCgpSCgpSCgpSu1JaCgIKUgKbIuIKEgoKUgoIABxCUgpaCgpSCpoKCgqassoKClKaCgoKUAAQaAAoClKaClKTYgpSEgoKUhIKCgoKUgpSUgoKClJSUAAdGooKClA==", "243-245:1")]
 [assembly: go.GoPositionMap("os/getwd.go", "getwd.cs", "ABcs8oK6goKUgoKCgsyCmIKCgqaogoKCgoKCzIKUlILMgoKSlIKCloKCgoKUgoKCgrqCgoKClIKmqIKChA==")]
 [assembly: go.GoPositionMap("os/path.go", "path.cs", "AA0mAAgEgoKClAAFEIKClIKUgrqAgoKCyoKmgoKUlAACENKokoKUgpQ=")]
 [assembly: go.GoPositionMap("os/path_windows.go", "path_windows.cs", "ABAmpKaCgoKClIKCgpSClAACGAAJAoKUqJKClJSUAA0eggAHEIKUlIKWppaSgpSmpoKU2paCgsqCgoKCgoKUgoKmlJSC")]
