@@ -63,8 +63,14 @@ func TestRewriteDeferredMarkersReplacesUndecodablePayload(t *testing.T) {
 	var seen []string
 
 	rewriteDeferredMarkers([]string{fileName}, "dynamic type", dynamicTypeMarkerPrefix, dynamicTypeMarkerSuffix,
-		func(_, payload string) (string, bool) {
+		func(_ string, line int, payload string) (string, bool) {
 			seen = append(seen, payload)
+
+			// The scaffold reports WHERE the marker was, which is what makes an unresolvable one
+			// actionable in a file with thousands of lines. This fixture is a single line.
+			if line != 1 {
+				t.Errorf("resolver was told line %d, want 1", line)
+			}
 
 			if _, ok := dynamicTypeMarkerSignature(payload); ok {
 				t.Fatalf("payload %q was expected to be undecodable", payload)

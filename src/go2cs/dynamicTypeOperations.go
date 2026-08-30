@@ -8,8 +8,11 @@ package main
 
 import (
 	"encoding/hex"
+	"fmt"
 	"go/ast"
 	"go/types"
+	"sort"
+	"strings"
 )
 
 // Sentinels wrapping a deferred dynamic-type-name reference, resolved to the lifted
@@ -82,6 +85,96 @@ func deferredDynamicTypeName(t types.Type) string {
 	return dynamicTypeMarker(signature)
 }
 
+// unresolvedDynamicType is one deferred dynamic-type marker the post-barrier pass could not
+// resolve, recorded at the emitted site so a gate can name it. Its emission is the raw Go type
+// text — braces, semicolons, slash-bearing import paths — which is never valid C#, so every
+// record is a GUARANTEED compile failure in the file it names.
+type unresolvedDynamicType struct {
+	signature string
+	fileName  string
+	line      int
+}
+
+// unresolvedDynamicTypes accumulates those records for the life of the process. It is written by
+// resolveDynamicTypeMarkers (which runs after each package's file-visit barrier, and concurrently
+// across packages under -stdlib) and drained by takeUnresolvedDynamicTypes.
+//
+// Deliberately NOT reset per package: the one reader is the -tests gate, and a -tests run is a
+// single conversion per process whose production half, `.cs.auto` review siblings and test
+// variants must all be covered by one verdict. Under -stdlib nothing reads it.
+var unresolvedDynamicTypes []unresolvedDynamicType
+
+// recordUnresolvedDynamicType records one unresolvable marker site.
+func recordUnresolvedDynamicType(signature, fileName string, line int) {
+	packageLock.Lock()
+	unresolvedDynamicTypes = append(unresolvedDynamicTypes, unresolvedDynamicType{signature: signature, fileName: fileName, line: line})
+	packageLock.Unlock()
+}
+
+// takeUnresolvedDynamicTypes returns the recorded sites in a deterministic order and clears the
+// record, so a second conversion in the same process starts clean.
+func takeUnresolvedDynamicTypes() []unresolvedDynamicType {
+	packageLock.Lock()
+	taken := unresolvedDynamicTypes
+	unresolvedDynamicTypes = nil
+	packageLock.Unlock()
+
+	// Files are appended to outputFileNames from concurrent per-file goroutines, so the walk order
+	// — and therefore the record order — varies run to run. Sort so the reported summary does not.
+	sort.Slice(taken, func(i, j int) bool {
+		if taken[i].fileName != taken[j].fileName {
+			return taken[i].fileName < taken[j].fileName
+		}
+
+		if taken[i].line != taken[j].line {
+			return taken[i].line < taken[j].line
+		}
+
+		return taken[i].signature < taken[j].signature
+	})
+
+	return taken
+}
+
+// unresolvedDynamicTypeError is the W2b GATE: it turns any recorded unresolvable dynamic-type
+// marker into a hard error naming every site, and clears the record either way.
+//
+// Why this is fatal rather than advisory, and why only on the -tests path. The fallback emission
+// is the raw Go type signature, which CANNOT compile — so the warning is a free, already-correct
+// prediction of a broken artifact. A `-tests` conversion is one link in a pipeline whose very next
+// step builds that artifact, and the build's own diagnostics point AWAY from the cause: three
+// unresolved types in runtime's export_test produced 202 errors across 106 distinct lines, of
+// which 5 were real sites, with the parse cascade burying them (docs/phase4/
+// CENSUS-runtime-first-contact.md, W2). Exiting 0 there is the same false green CNR's NOT MEASURED
+// rule closes: an emission the converter could not fully regenerate must never read as success.
+//
+// The -stdlib and plain single-package paths keep warn-and-continue deliberately. -stdlib converts
+// 300+ packages, records per-package failures and continues, and has a real downstream gate that
+// names an uncompilable emission by file and error code (the full go2cs-stdlib.slnx build) — there
+// is no silent success to close. A single-package conversion of arbitrary Go is legitimately
+// best-effort, the same judgment the -go2cspath self-location warning records ("deliberately NOT
+// fatal").
+func unresolvedDynamicTypeError() error {
+	unresolved := takeUnresolvedDynamicTypes()
+
+	if len(unresolved) == 0 {
+		return nil
+	}
+
+	var summary strings.Builder
+
+	summary.WriteString(fmt.Sprintf("%d unresolved dynamic type(s) were emitted as raw Go source, which cannot compile:", len(unresolved)))
+
+	for _, entry := range unresolved {
+		summary.WriteString(fmt.Sprintf("\n  %s(%d): %s", entry.fileName, entry.line, entry.signature))
+	}
+
+	summary.WriteString("\n  The converted test project will not build, and its compiler errors will name the parse")
+	summary.WriteString("\n  cascade rather than these types. Failing here so the cause is what gets reported.")
+
+	return fmt.Errorf("%s", summary.String())
+}
+
 // registerDynamicTypeName records the lifted C# name for a package-level
 // anonymous struct/interface type, keyed by its structural signature, so other
 // files in the same package can resolve cross-file references to it.
@@ -147,7 +240,7 @@ func (v *Visitor) dynamicStructTypeName(expr ast.Expr) string {
 // (deferredMarkerOperations.go); only the lookup below is specific to dynamic types.
 func resolveDynamicTypeMarkers(outputFileNames []string) {
 	rewriteDeferredMarkers(outputFileNames, "dynamic type", dynamicTypeMarkerPrefix, dynamicTypeMarkerSuffix,
-		func(fileName, payload string) (string, bool) {
+		func(fileName string, line int, payload string) (string, bool) {
 			signature, decoded := dynamicTypeMarkerSignature(payload)
 
 			if !decoded {
@@ -158,16 +251,23 @@ func resolveDynamicTypeMarkers(outputFileNames []string) {
 				// human or a grep will find it. Substituting only this occurrence, so a second
 				// corrupted marker gets its own report rather than being collapsed into this one.
 				showWarning("Undecodable dynamic-type marker payload \"%s\" in \"%s\"", payload, fileName)
+				// Same gate class as the unresolved case below: the payload replacing the marker is
+				// not valid C# either, so the file is just as certainly unbuildable.
+				recordUnresolvedDynamicType("«undecodable marker payload: "+payload+"»", fileName, line)
 				return payload, false
 			}
 
 			replacement := lookupDynamicTypeName(signature)
 
 			if replacement == "" {
-				showWarning("Unresolved dynamic struct type: %s", signature)
+				showWarning("Unresolved dynamic struct type: %s in \"%s\"(%d)", signature, fileName, line)
 				// Fall back to the raw Go signature: it will not compile, but it names the exact
 				// type that went unresolved, which is far easier to act on than a leftover marker.
 				replacement = signature
+				// Record the site for the -tests gate (unresolvedDynamicTypeError). The warning
+				// alone was a free, always-correct prediction of a broken build that the run then
+				// discarded by exiting 0.
+				recordUnresolvedDynamicType(signature, fileName, line)
 			}
 
 			// Every occurrence of this marker resolves to the same lifted name, so substitute
