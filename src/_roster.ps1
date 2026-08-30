@@ -29,6 +29,17 @@
                    columns ARE the Windows expectation, and a row claiming otherwise is a
                    contradiction the parser refuses rather than silently prefers one half of.
 
+                   A row may also carry an EXECUTION annotation, the same segment shape:
+
+                       <dot> execution: release-tc0
+
+                   That one is not a count and not a platform -- it is the local execution CONFIG
+                   the row's pipeline leg must run under (owner ruling 2026-08-30, Option A). The
+                   Applicable/Expected semantics are untouched by it: a row's banked numbers mean
+                   exactly what they meant, and the annotation says only HOW the converted host is
+                   published and run to produce them. Unannotated rows are the default path and
+                   nothing about them moves.
+
     The same document also carries the EXCLUSION LEDGER (the "Excluded packages" table), read by
     Get-ExclusionLedgerRows. A ledger row's first cell is a PLAIN code span on purpose -- the
     roster row's linked [`pkg`](url) shape is what $RosterRowPattern anchors on, so the two tables
@@ -74,6 +85,29 @@ $RosterOsPattern =
 $RosterOsNaPattern =
     [regex]::Escape($RosterSegmentSeparator) +
     '\s*([a-z][a-z0-9]*)\s*:\s*n/a\s*(?=' +
+    [regex]::Escape($RosterSegmentSeparator) + '|\||$)'
+
+# ---- the per-row EXECUTION annotation (owner ruling 2026-08-30, Option A) ------------------------
+# Some Go tests assert a liveness property Go's compiler provides and the CLR's DEFAULT execution
+# config does not: `codegen-liveness` names the class. The tier-0 A/B measured that the class is a
+# CONFIG artifact rather than a structural one -- internal/weak's suite validates 4/4 under a Release
+# publish with DOTNET_TieredCompilation=0, five consecutive runs -- but the flip is NOT globally
+# safe: two residuals (internal/godebug's line attribution, log/slog's pc=0) are TC0-ONLY failures.
+# So the ruling is per-row opt-in, and this annotation is how a row opts in.
+#
+# It is an EXECUTION property, never a platform one. Nothing about Applicable/Expected moves: the
+# row's Tests and Disclosed columns still mean what they meant, the per-OS annotations still answer
+# for their own OS, and an unannotated row's pipeline leg is byte-for-byte the leg it always was.
+# The value names a config, not a flag list -- Get-RosterExecutionArgs owns that mapping, so the
+# roster never has to know what the converter's command line looks like.
+$RosterExecutionValues = @('release-tc0')
+
+# Same both-ends separator anchoring as the per-OS forms, for the same prose-immunity reason: a
+# sentence reading "the execution: it runs Release" is not an annotation and must not read as one.
+# The value admits internal hyphens (release-tc0) where an OS key does not.
+$RosterExecutionPattern =
+    [regex]::Escape($RosterSegmentSeparator) +
+    '\s*execution\s*:\s*([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\s*(?=' +
     [regex]::Escape($RosterSegmentSeparator) + '|\||$)'
 
 # One row of the exclusion ledger (the "Excluded packages" table in the same document). Its first
@@ -200,12 +234,33 @@ function Get-ValidatedRosterRows {
             }
         }
 
+        # The execution annotation. Refused by NAME on an unknown value rather than ignored: a row
+        # whose author wrote `execution: release` would otherwise run the default path while reading,
+        # to that author, as opted in -- which is the silent-config failure this whole annotation
+        # exists to make impossible. Two of them is two answers with no rule for which wins.
+        $rowExecution = $null
+        foreach ($match in [regex]::Matches($line, $RosterExecutionPattern)) {
+            $value = $match.Groups[1].Value
+
+            if ($RosterExecutionValues -notcontains $value) {
+                throw ("Roster row '$rowPackage' carries an unknown execution annotation " +
+                    "'$value'. Known configs: $($RosterExecutionValues -join ', ').")
+            }
+
+            if ($null -ne $rowExecution) {
+                throw "Roster row '$rowPackage' carries more than one execution annotation."
+            }
+
+            $rowExecution = $value
+        }
+
         [void]$rows.Add([PSCustomObject]@{
             Package     = $rowPackage
             Expected    = $rowExpected
             Disclosed   = $rowDisclosed
             Conditional = $rowConditional
             OS          = $rowOs
+            Execution   = $rowExecution
         })
     }
 
@@ -275,6 +330,44 @@ function Get-RosterRowExpectation {
         Disclosed  = $Row.Disclosed
         Source     = 'columns'
         Applicable = $true
+    }
+}
+
+<#
+.SYNOPSIS
+    The converter arguments one execution config implies. Pure -- no I/O, no state.
+.DESCRIPTION
+    The single place that knows what a config NAME means on a command line, so the roster records an
+    intent and the sweep spells no flags of its own. An empty/absent config is the default path and
+    contributes NOTHING: the invocation an unannotated row produces is character-for-character the
+    invocation it produced before this annotation existed, which is the guarantee the ruling rests on.
+
+    `release-tc0` maps to the converter's existing `-test-release-tc0`, which is the honest seam for
+    BOTH halves of the config and the reason no sweep-side environment injection would suffice: the
+    publish CONFIGURATION is decided inside the converter's own `dotnet publish` invocation
+    (publishTestHost, testConversion.go), where it passes `-c Release` with an explicit
+    `-p:go2csPath` -- the template's `Condition="'$(go2csPath)'==''"` guard is written to be
+    overridden exactly that way, so a Release publish still binds THIS tree rather than the deployed
+    `~/go2cs` root. The run half, `DOTNET_TieredCompilation=0`, rides the same flag
+    (testHostRunEnv), because a Release publish alone does not retire tier-0: a program can start at
+    tier-0 and simply never run long enough to be promoted.
+
+    An unknown config throws rather than degrading to the default -- see the parser's refusal above
+    for why a silently-ignored config is the failure this design exists to prevent.
+.OUTPUTS
+    A string[] of converter arguments; empty for the default path.
+#>
+function Get-RosterExecutionArgs {
+    param([string] $Execution)
+
+    if ([string]::IsNullOrWhiteSpace($Execution)) { return @() }
+
+    switch ($Execution) {
+        'release-tc0' { return @('-test-release-tc0') }
+        default {
+            throw ("Unknown execution config '$Execution'. Known configs: " +
+                "$($RosterExecutionValues -join ', ').")
+        }
     }
 }
 
