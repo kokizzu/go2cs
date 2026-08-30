@@ -2571,4 +2571,50 @@ internal static bool IsVariadic(this ж<rtype> Ꮡt) {
     return funcShapeOf(Ꮡt, "IsVariadic"u8).isVariadic;
 }
 
+// Clear zeroes a slice's elements or empties a map, exactly as Go's Value.Clear does.
+//
+// Hand-owned because its auto body needs TWO things this bridge cannot give it, in ONE function:
+// `~(ж<unsafeheader.Slice>)(uintptr)(v.ptr)` reads the Go data word that is never populated here
+// (the SetBytes defect class), and `v.typ().Reinterpret<abi.Type, sliceType>()` is the descriptor
+// prefix-downcast ReinterpretAliasesStorage correctly refuses, a ж<abi.Type> holding only an
+// abi.Type. Both vanish at this layer: a slice's elements and a map's entries are reachable as
+// ordinary managed containers, so neither the data word nor the descriptor is consulted at all.
+// That is the general shape — a hand-own does not need the descriptor machinery its auto body was
+// reaching for.
+//
+// Go applies NO assignability or export check here (Clear is not in the mustBeAssignable family),
+// so none is added. Zeroing goes through the LIVE container, which aliases the backing array, and
+// that aliasing is what makes the clear visible through every other view of the same slice — the
+// property Go's typedarrayclear has.
+public static void Clear(this ΔValue v) {
+    ΔKind k = v.Kind();
+
+    if (k == ΔSlice) {
+        // A nil slice has no backing and length 0: Go clears nothing and does not panic.
+        if (v.live is not IArray arr) {
+            return;
+        }
+        System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+        System.Type? elem = st is null ? null : GoReflect.ElementType(st);
+        if (elem is null) {
+            throw panic(Ꮡ(new ValueError("reflect.Value.Clear"u8, k)));
+        }
+        object? zero = GoReflect.ZeroValueOf(elem, null);
+        for (nint i = 0; i < arr.Length; i++) {
+            arr[i] = zero;
+        }
+        return;
+    }
+
+    if (k == Map) {
+        // Go's mapclear on a nil map is a no-op; golib's nil map answers Clear() the same way.
+        if (v.live is IMap m) {
+            m.Clear();
+        }
+        return;
+    }
+
+    throw panic(Ꮡ(new ValueError("reflect.Value.Clear"u8, k)));
+}
+
 } // end reflect_package
