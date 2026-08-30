@@ -46,6 +46,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using go.golib;
+using @unsafe = go.unsafe_package;
 
 // Hand-owned native replacement of the converted hashtriemap.go output — the converter skips
 // regenerating a file that carries this marker, so a -stdlib reconvert preserves it (see
@@ -74,6 +75,43 @@ partial class concurrent_package {
     // `root *indirect[K, V]` pointer: a by-value copy of a HashTrieMap shares one map, and
     // NewHashTrieMap hands the map out as a ж<HashTrieMap<K, V>> either way.
     internal mapStore<K, V> store;
+
+    // THE HASH HOOK. Go carries `keyHash func(unsafe.Pointer, uintptr) uintptr` as a plain field and
+    // the package's own test WRITES it: TestHashTrieMapBadHash — one of the suite's two top-level
+    // tests, and the parent of nine of its eighteen subtests — replaces it on a freshly built map
+    // with `func(unsafe.Pointer, uintptr) uintptr { return 0 }` under the comment "Stub out the good
+    // hash function with a terrible one. Everything should still work as expected." The assertion is
+    // therefore not about the hash at all: it is that the map's CONTRACT survives total collision.
+    //
+    // That contract is honored here for real, not simulated. Installing a hook rebuilds the store
+    // behind an IEqualityComparer<K> whose GetHashCode returns whatever the hook returns, leaving
+    // Equals as it was — which is exactly the split Go's test makes (only keyHash is replaced;
+    // keyEqual and valEqual stay the map's own). Every key then lands in one bucket and correctness
+    // rests entirely on equality and on the store's own concurrency guarantees, which is the state
+    // Go's badly-hashed trie is in and the state the nine subtests measure.
+    //
+    // ⚠ Only ONE of the hook's two inputs can be honored, and the other is passed as the NIL pointer
+    // rather than as a plausible substitute. `seed` is genuine — a real per-map salt (see
+    // mapStore.seed) — but the unsafe.Pointer argument means "the key's bytes are AT this address",
+    // and a managed address names no value; that is this whole file's founding premise. A hook that
+    // ignores the address — the only kind that can be honored, and the kind Go's test writes — gets
+    // its exact answer. A hook that dereferences it faults loudly, which is the correct outcome under
+    // the same rule that keeps the descriptor's Hasher empty: a loud failure beats a silent lie.
+    //
+    // Note what this does NOT claim. Because the address is unavailable, every honorable hook is a
+    // function of the seed alone, i.e. constant across keys — so honoring a hook and forcing total
+    // collision are the same act here. Nothing is lost by that: no hook this implementation could
+    // accept was ever able to distinguish two keys.
+    internal Func<@unsafe.Pointer, uintptr, uintptr> keyHash
+    {
+        get => storeOf(ref this).hashHook!;
+        set => installKeyHash(ref this, value);
+    }
+
+    // The map's hash salt. Go draws it from math/rand at construction and feeds it to keyHash as the
+    // second argument; here it serves the same one purpose and nothing else, since the store's own
+    // hashing goes through EqualityComparer<K>.Default and takes no salt of ours.
+    internal uintptr seed => storeOf(ref this).seed;
 }
 
 // The map's backing store. Named as a type of its own so that the [GoType]-generated members of
@@ -98,6 +136,57 @@ internal sealed class mapStore<K, V> : ConcurrentDictionary<K, V>
     // other key, with no lock and no second dictionary. Inert for a value-type K, where null never
     // arrives and the JIT drops the branch.
     internal nilEntry<V>? nilKey;
+
+    // The salt Go's NewHashTrieMap draws from math/rand — genuine here too, and per store. Its only
+    // consumer is an installed hash hook's second argument (see HashTrieMap.keyHash): the dictionary
+    // itself hashes through its comparer and never sees it.
+    internal readonly uintptr seed;
+
+    // The installed whitebox hash hook, or null in the normal case, where the store hashes through
+    // EqualityComparer<K>.Default. Held so HashTrieMap.keyHash can read back what was written, and
+    // so a store rebuilt for any other reason can carry the hook across.
+    internal readonly Func<@unsafe.Pointer, uintptr, uintptr>? hashHook;
+
+    internal mapStore() : this(newSeed(), null) { }
+
+    // A hooked store is built through hookedHash; an unhooked one passes null and gets
+    // ConcurrentDictionary's default comparer, which keeps the fast path — the one unique and
+    // net/netip actually run on — free of the seam entirely.
+    internal mapStore(uintptr seed, Func<@unsafe.Pointer, uintptr, uintptr>? hook)
+        : base(hook is null ? null : new hookedHash<K>(hook, seed))
+    {
+        this.seed = seed;
+        this.hashHook = hook;
+    }
+}
+
+// The comparer an installed hash hook is honored through. Equality is untouched — Go's test replaces
+// keyHash alone — so membership still answers exactly as it did; only bucket placement moves, to
+// wherever the hook says.
+internal sealed class hookedHash<K> : IEqualityComparer<K>
+{
+    private readonly Func<@unsafe.Pointer, uintptr, uintptr> hook;
+    private readonly uintptr seed;
+
+    internal hookedHash(Func<@unsafe.Pointer, uintptr, uintptr> hook, uintptr seed)
+    {
+        this.hook = hook;
+        this.seed = seed;
+    }
+
+    public bool Equals(K? x, K? y)
+    {
+        return EqualityComparer<K>.Default.Equals(x, y);
+    }
+
+    // The hook's answer IS the hash code. The width narrows — Go's uintptr is 64-bit here and a
+    // .NET hash code is 32 — which loses nothing a hash cares about: a narrowing of the hash
+    // function is still a hash function, and the collision behavior the test forces survives it
+    // exactly.
+    public int GetHashCode(K obj)
+    {
+        return unchecked((int)(uint)hook(noAddress, seed).Value);
+    }
 }
 
 // Presence-carrying holder for the nil key's value — see mapStore.nilKey. A plain field could not
@@ -243,6 +332,44 @@ private static mapStore<K, V> storeOf<K, V>(ref HashTrieMap<K, V> ht)
     mapStore<K, V> created = new();
 
     return Interlocked.CompareExchange(ref ht.store, created, null) ?? created;
+}
+
+// The "no address" the hash hook is handed in place of Go's `unsafe.Pointer(&key)` — the nil
+// pointer, stated once. Go passes the address of the key's bytes; there is no such address here, and
+// this file's whole argument is that inventing one would be worse than admitting there is none (see
+// HashTrieMap.keyHash).
+private static readonly @unsafe.Pointer noAddress = new(nil);
+
+// A real per-store salt. The hook's second argument is the one half of its contract that CAN be
+// honored, so it is honored with a genuine random value rather than a constant.
+private static uintptr newSeed()
+{
+    return new uintptr(unchecked((nuint)System.Random.Shared.NextInt64()));
+}
+
+// Installing a hook REBUILDS the store behind it. ConcurrentDictionary fixes its comparer at
+// construction and caches each entry's hash code in its nodes, so swapping the hash of a live
+// dictionary in place would strand every entry already in it. Go's plain field write has no such
+// constraint — its next Load simply hashes differently — so the entries are carried across here to
+// reach the same end state. TestHashTrieMapBadHash writes the hook on an empty map, where the copy
+// moves nothing; a populated map is handled anyway rather than left as a trap.
+//
+// The publish is a single reference write, so a concurrent reader sees either the whole old store or
+// the whole new one. It is NOT atomic with respect to the copy — an entry stored by another thread
+// mid-rebuild can be lost — and Go's field write is no better: both expect the hook to be installed
+// before the map is shared, which is what the test does.
+private static void installKeyHash<K, V>(ref HashTrieMap<K, V> ht, Func<@unsafe.Pointer, uintptr, uintptr> hook)
+{
+    mapStore<K, V> current = storeOf(ref ht);
+    mapStore<K, V> replacement = new(current.seed, hook);
+
+    replacement.nilKey = Volatile.Read(ref current.nilKey);
+
+    foreach (KeyValuePair<K, V> pair in current) {
+        replacement.TryAdd(pair.Key, pair.Value);
+    }
+
+    Volatile.Write(ref ht.store, replacement);
 }
 
 // Go compares the two values with V's own `==`, and for an INTERFACE V that comparison panics when

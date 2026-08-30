@@ -698,6 +698,16 @@ public static partial class GoReflect
             return false;
 
         underlying = valueField.GetValue(src);
+
+        // A named FIXED-SIZE ARRAY wrapper holds its `array<T>` inside a one-word publish holder, so
+        // that the lazily-allocated backing can be installed with an interlocked CAS instead of a racy
+        // `??=` (go2cs-gen's InheritedTypeTemplate, door 2 of the element-aliasing family). The holder
+        // is storage, never a Go value: unwrap the extra level so every caller sees exactly the
+        // `array<T>` it saw when the slot held the value inline. No converted or golib type is ever an
+        // IStrongBox, so nothing else can be caught by this.
+        if (underlying is IStrongBox holder)
+            underlying = holder.Value;
+
         return underlying is not null;
     }
 

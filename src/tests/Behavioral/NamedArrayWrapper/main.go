@@ -95,6 +95,37 @@ func main() {
 	zeroTB(&t)
 	fmt.Println(t[2], len(t)) // 0 4
 
+	// NAMED ARRAY AS A MAP KEY. A Go fixed-size array is COMPARABLE, so a named array is a legal
+	// map key, and two SEPARATELY BUILT arrays with equal contents are the SAME key. In C# the
+	// wrapper is a struct whose equality and hash the map reaches through `object.Equals` and
+	// `GetHashCode` — neither of which is the `==` operator the source shows, and neither of which
+	// the wrapper overrode until the backing moved behind a one-word publish slot (so that the lazy
+	// allocation could be installed with an interlocked CAS instead of a racy `??=`). At that point
+	// the INHERITED ValueType.Equals/GetHashCode began reading a reference field, silently turning
+	// both into identity: k1 and k2 stopped finding each other, the map grew a second entry, and
+	// nothing anywhere reported an error. `==` kept working throughout, which is exactly why this
+	// has to be probed through a map rather than through a comparison.
+	seen := map[tb]int{}
+	var k1, k2 tb
+	k1[0], k1[3] = 7, 9
+	k2[0], k2[3] = 7, 9
+	seen[k1] = 42
+	v, ok := seen[k2]
+	fmt.Println(v, ok, len(seen), k1 == k2) // 42 true 1 true
+	seen[k2] = 43
+	fmt.Println(seen[k1], len(seen)) // 43 1
+	var k3 tb
+	k3[1] = 1
+	seen[k3] = 5
+	fmt.Println(len(seen), seen[k1], seen[k3]) // 2 43 5
+
+	// The same property for a VIRGIN key — the zero array, whose backing has never been
+	// materialized on either side of the comparison.
+	var z1, z2 tb
+	zeroSeen := map[tb]bool{}
+	zeroSeen[z1] = true
+	fmt.Println(zeroSeen[z2], len(zeroSeen), z1 == z2) // true 1 true
+
 	// POINTER-TO-NAMED-ARRAY access (runtime's `m.cgoCallers *cgoCallers` family): index
 	// read/write, len, and slice all auto-deref in Go; the converter routes them through the
 	// wrapper's backing (`h.trace.Value[0]`, `len(h.trace.Value)`, `(~h.trace).Value[..2]`) — the

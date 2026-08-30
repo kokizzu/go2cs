@@ -8808,6 +8808,29 @@ return rangeNum<int8, int64>(v.Int());
 ```
 Guarded by `GenericTypeInference` (`seqOf[T ~int64, N ~int32 | ~int64](n N) Seq[T]`).
 
+### A CONSTANT argument that fixes a type parameter is retyped to the instantiation
+Go infers a type parameter from an untyped constant's default type; go2cs then maps that Go type to C#. The two do not meet: an untyped int defaults to Go `int`, which is go2cs `nint`, but the constant emits as a bare C# literal whose own type is `int` (System.Int32). C# infers the type argument from the ARGUMENT, so `wantValue(0)` makes C# choose `T = int` where Go chose `nint`.
+
+Most such calls are fine and deliberately stay bare, because C# repairs the mismatch wherever an implicit conversion bridges it -- `int` -> `nint` is implicit, so a result that IS the bare type parameter converts at the use site. What cannot be repaired is an **invariant** position: C# generics have no variance for these, so `Action<int, bool>` is not `Action<nint, bool>` and `slice<int>` is not `slice<nint>`. Wherever the type parameter reaches a CONSTRUCTED type, the wrong instantiation is terminal (CS1503/CS0315/CS0411).
+
+Two gates therefore retype the constant to the C# spelling of the type Go resolved (`untypedIntGenericArgCastType`, applied through the per-argument `castArgToType` plumbing):
+
+1. **The sibling `~[]E` lock.** `Index[S ~[]E, E comparable](s S, v E)` (slices): Go fixes `E` from `S`'s core type, but `where S : ISlice<E>` carries no such flow, so C# infers `E` from the value alone and `slice<nint>` then fails the `~[]int` constraint.
+2. **An invariant RESULT position** (`typeParamReachesInvariantResult`): the parameter appears inside a func, slice, array, map, chan or pointer result. `internal/concurrent`'s own test suite ships the control pair that isolates this exactly -- `expectMissing[K, V comparable](t, key K, want V) func(got V, ok bool)` called `expectMissing(t, s, 0)` mis-inferred `V` and its returned delegate then rejected the map's `nint` (CS1503 x16), while `expectDeleted(..., 15) func(deleted bool)` -- the same untyped literal, `V` absent from the result -- compiled untouched.
+
+```csharp
+wantValue((nint)(0))(i, false);      // V reaches func(V, bool) -- retyped
+wantPresent(15)(true);               // V absent from the result -- bare
+bareResult(42);                      // result IS V; implicit conversion repairs it -- bare
+wantValue<nint>(0)(i, false);        // Go wrote the type argument -- bare
+sliceOf((nint)(9));                  // []V is invariant -- retyped
+wantInt64((int64)(1234567890123L));  // the cast follows the RESOLVED width, not always nint
+```
+
+The cast type comes from the resolved type, so it is `nint`, `long`, `byte`, `nuint` and so on as the instantiation requires; a resolved `int32`/`rune` is skipped because a bare C# literal already IS System.Int32. A generic NAMED result is skipped too -- invariant likewise, but the explicit type-argument rule above already pins that instantiation, and retyping the argument as well would be redundant. Non-constant arguments never qualify: their emitted C# already carries the mapped Go type. Folded constant EXPRESSIONS do qualify (`3 + 4`, `1 << 10`), since they emit as bare C# arithmetic in exactly the same way.
+
+Guarded by `GenericUntypedIntArg` (the `~[]E` lock) and `GenericUntypedConstInfer` (the invariant-result gate, its control shapes, and the nint/long/byte widths), both output-compared vs `go run`.
+
 ### Increment/decrement on a type parameter
 `i++` / `i--` on a constrained type parameter binds `IIncrementOperators<T>` / `IDecrementOperators<T>`, which the lifted **Arithmetic** operator set now includes (reflect `rangeNum`'s loop, CS0023). They live in the numeric-only Arithmetic set -- never the string-including Sum set, since `@string` implements neither. The list is emitted in two places that must stay in sync: the converter's `getLiftedConstraints` (`constraintOperations.go`) and the go2cs-gen `InterfaceTypeTemplate`.
 
@@ -12129,7 +12152,8 @@ rather than adding a lock to it.
 getter is itself a read-modify-write, so two threads first-touching the *same struct instance* by
 ref still race (`ref semTable semtable => ref Ꮡsemtable.Value; semtable[i] = x`). Closing that needs
 an atomic publish inside the generated getter (go2cs-gen). Measured unchanged at ~95% of trials
-(ElemAliasProbe `arm7`).
+(ElemAliasProbe `arm7`) — closed separately, see *The named-array wrapper publishes its lazy backing
+atomically* below.
 
 ### The element address of a VIRGIN named array must materialize through the receiver
 
@@ -12184,6 +12208,91 @@ by-value conversion operator (`implicit operator pageBits(pallocBits value) => v
 materializes on the operator's own parameter copy. First-touch writes through it are lost; once
 anything else materializes `b`, every copy shares the backing and writes land (measured both ways —
 ElemAliasProbe `arm8`). It needs its own increment.
+
+### The named-array wrapper publishes its lazy backing atomically
+
+The third door of the same family, and the one neither of the others can reach: the generated
+wrapper's **own** `Value` getter, reached by a plain `ref` with no golib on the path at all —
+`internal static ref semTable semtable => ref Ꮡsemtable.Value;` and then `semtable[i] = x`. A per-box
+publish gate in `ж<T>.at()` never sees it (there is no `at()` call), and the receiver projection above
+never sees it either (there is no `Ꮡ`). What it meets is `m_value ??= new array<E>(N)`, a
+read-modify-write of shared mutable state: two threads that first-touch the same zero-valued wrapper
+each allocate a backing and the second store **orphans the first**, together with every element
+pointer already derived from it. Silent — no fault, no exception — and confined to a start-up window
+measured in microseconds. Measured at **872 of 900** concurrent first-touch trials (ElemAliasProbe
+`arm7`, 24 threads × 300 trials × 3 batches).
+
+The publish becomes an interlocked CAS. Every racing thread allocates, exactly one wins the slot, and
+the losers discard their allocation *before* anything can derive an element address from it — which is
+what makes it correct rather than merely narrower:
+
+```csharp
+private global::System.Runtime.CompilerServices.StrongBox<array<uint64>>? m_value;   // was: array<uint64>?
+
+public array<uint64> Value
+{
+    get
+    {
+        global::System.Runtime.CompilerServices.StrongBox<array<uint64>>? value = m_value;
+
+        if (value is null)
+        {
+            var created = new global::System.Runtime.CompilerServices.StrongBox<array<uint64>>(new array<uint64>(256));
+            value = global::System.Threading.Interlocked.CompareExchange(ref m_value, created, null) ?? created;
+        }
+
+        return value.Value;
+    }
+}
+```
+
+**Why the slot had to change shape at all.** An interlocked publish needs ONE machine word. `array<E>`
+is a 3-field readonly struct (backing plus the `Alias` window's low/length), so `array<E>?` is 24
+bytes — it can neither be CAS'd nor even *read* without tearing while another thread writes it. The
+narrower one-word alternative, holding the bare `E[]`, does not preserve the value: a
+constructor-supplied array may be an alias **window** (`array<E>.Alias`, Go's `(*[N]E)(s)`) whose
+`Source` is wider than the array, and flattening it to its backing would silently widen the named
+array and shift its origin. The holder carries the whole `array<E>`, so nothing is lost. It is
+`StrongBox<array<E>>` and not plain `object` because an `object` slot makes every warm read an
+`unbox.any` — a type-check helper *call* in the hot loop; measured on the element-address path over 64
+cold tables, `1.97 → 4.13 ns/op` for `object` against `1.97 → 2.45` for the typed holder.
+
+The residual cost is one dependent load and the probe reports it honestly (`arm9`, both emissions in
+one process): the raw `Value` getter gets **faster** (`1.03 → 0.87 ns/op` — the wrapper struct shrank
+from 24 bytes to 8, so every Go by-value array copy moved with it), the element path over ONE
+long-lived table — what the corpus's named arrays actually are, and where the JIT hoists the
+loop-invariant getter — sits between `−1%` and `+12%` run to run, and the pathological shape of 64
+separate non-resident tables costs `+17…25%`.
+
+**The consequence that had to be measured, not reasoned.** A Go fixed-size array is COMPARABLE and
+legal as a map key. With no overrides a C# struct inherits `ValueType.Equals`/`GetHashCode`, and both
+read the single `m_value` field — now a *reference*. So two distinct wrappers over equal content began
+comparing unequal and hashing differently, missing each other in a map and in `reflect.DeepEqual`:
+precisely the silent wrong answer this door exists to remove, traded for a different one. The `==`
+operator hid it completely, because `EqualityExpression` binds the wrapper's own
+`Equals(IArray<E>)` at COMPILE time and that was structural all along. The Array kind therefore emits
+both overrides, delegating to `array<E>`'s element-wise pair so neither depends on the slot's shape
+any more:
+
+```csharp
+public override bool Equals(object? obj) => obj is Table other && Value.Equals(other.Value);
+
+public override int GetHashCode() => Value.GetHashCode();
+```
+
+One golib companion follows for the same reason: `GoReflect.TryUnwrapWrapperValue` reads `m_value` by
+reflection to hand callers the wrapper's underlying value, so it unwraps the holder's extra level (no
+converted or golib type is ever an `IStrongBox`).
+
+Guarded by **`NamedArrayWrapper`**'s map-key probe — two separately built equal keys, a re-store
+through the second, a third distinct key, and the same for the VIRGIN zero array whose backing neither
+side has materialized. Verified as a real gate rather than a green that cannot go red: with the two
+overrides suppressed and nothing else changed, it reports `stdout mismatch C# vs Go`.
+
+**Still not closed, by construction:** a materialization that happens on a by-value COPY of the
+wrapper publishes to the copy's field, so the `arm8` `Ꮡ((pageBits)(b))` door above is untouched. The
+emission-vs-emission blast radius is nil — a generator change alters no committed `.cs`, and the
+suite's Transpile and Target phases stay byte-identical across it.
 
 ### A promoted field whose name equals the enclosing type is Δ-renamed
 

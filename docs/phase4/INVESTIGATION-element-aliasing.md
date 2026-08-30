@@ -347,10 +347,45 @@ Also worth recording as doctrine, independent of which option wins:
 
 ---
 
+## 6a. Amendment 2026-08-30 — door 2 is closed (option 3, with a correction)
+
+Lane `claude/local-door2-fix`. Doors 1 and 3 merged as `a6b951a55`; **door 2 — the generated `Value`
+getter's own `??=` — is now closed too**, by option 3 above (the interlocked CAS in go2cs-gen), with
+one correction to how §6 described it and one consequence §6 did not anticipate.
+
+* **Measured, arm7, 24 threads × 300 trials × 3 batches:** `872/900` racing trials before
+  (98.0 % / 97.0 % / 95.7 %), **`0/900`** after. Arms 0–5b, 6 and 8 unchanged; `arm8` still reports
+  EXPOSED, as designed — a publish on a by-value COPY is a different door.
+* **Correction to option 3's sketch.** It proposed holding the backing as a plain `E[]?`. That is not
+  value-preserving: a constructor-supplied `array<E>` may be an **alias window** (`array<E>.Alias`,
+  Go's `(*[N]E)(s)`) whose `Source` is wider than the array, so flattening to the backing would widen
+  the named array and shift its origin. The slot is a `StrongBox<array<E>>` — still one CAS-able
+  machine word, but carrying the whole value. (`object` also carries it and needs no golib companion,
+  but costs an `unbox.any` helper call on every warm read: `1.97 → 4.13 ns/op` on the element path
+  against `1.97 → 2.45` for the typed holder.)
+* **The consequence §6 did not anticipate.** Changing the slot from a struct to a reference silently
+  moved `ValueType.Equals` and `ValueType.GetHashCode`, which a C# struct inherits and which both read
+  that field. Two distinct wrappers over equal content stopped comparing equal and stopped hashing
+  alike — so a Go named array used as a **map key** or compared by `reflect.DeepEqual` began missing
+  itself. The `==` operator hid it entirely (it binds the wrapper's own structural
+  `Equals(IArray<E>)` at compile time), which is why it had to be measured rather than reasoned:
+  probe `arm10` checks the compile-time and the runtime overload separately. The Array kind now emits
+  both overrides, delegating to `array<E>`'s element-wise pair.
+* **Not a golib-free change after all:** `GoReflect.TryUnwrapWrapperValue` reads `m_value` by
+  reflection, so it unwraps the holder's extra level.
+* **New guard:** `NamedArrayWrapper` gains a map-key probe (two separately built equal keys, plus the
+  virgin zero array), proven red at the emission without the overrides.
+* **New probe arms:** `arm9` (warm-getter cost, both emissions in one process against a `TblLazy`
+  transcription of the `??=` shape) and `arm10` (hash/equality parity).
+
+The §6 doctrine line stands and gains a second clause: *a lazy-initialization fix is not finished
+until the publish is atomic* — **and making a publish atomic moves the value out of the struct, so
+every inherited member that read that field has to be re-measured, not re-reasoned.**
+
 ## 7. Artifacts
 
 * `element-aliasing-investigation.md` — this report.
-* `src/tests/ElemAliasProbe/` — the isolation probe (`arm0`…`arm5`, plus `arm1r`/`arm2r` repeat
+* `src/tests/ElemAliasProbe/` — the isolation probe (`arm0`…`arm10`, plus `arm1r`/`arm2r` repeat
   harnesses). Standalone; references the built `golib`/`sync.atomic` assemblies, is registered in no
   solution and enumerated by no gate. `dotnet run --project src/tests/ElemAliasProbe -c Release -- all`.
 

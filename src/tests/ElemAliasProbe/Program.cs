@@ -27,15 +27,83 @@ public struct Node
 
 // A verbatim transcription of the go2cs-gen named-array wrapper emitted for
 //     type cacheTable[K, V] [cacheSize]atomic.Pointer[cacheEntry[K, V]]
-// The load-bearing lines are the nullable m_value field and the null-coalescing Value getter.
+// The load-bearing lines are the m_value slot and the lazy Value getter, which are exactly what door 2
+// changes: the emission was
+//
+//     private array<atomic.Pointer<Node>>? m_value;
+//     public array<atomic.Pointer<Node>> Value => m_value ??= new array<atomic.Pointer<Node>>(N);
+//
+// and `??=` is a read-modify-write, so concurrent first-touch threads each allocate and all but one
+// allocation is orphaned (arm7).  The interlocked publish below is the current emission, verbatim apart
+// from the `?` annotations the probe compiles without a nullable context (see ElemAliasProbe.csproj).
 public struct Tbl : IArray<atomic.Pointer<Node>>
 {
     public const int N = 1021;
 
     // Value of the struct 'cacheTable<K, V>'
+    private System.Runtime.CompilerServices.StrongBox<array<atomic.Pointer<Node>>> m_value;
+
+    public Tbl(array<atomic.Pointer<Node>> value) => m_value = new System.Runtime.CompilerServices.StrongBox<array<atomic.Pointer<Node>>>(value);
+
+    public array<atomic.Pointer<Node>> Value
+    {
+        get
+        {
+            System.Runtime.CompilerServices.StrongBox<array<atomic.Pointer<Node>>> value = m_value;
+
+            if (value is null)
+            {
+                System.Runtime.CompilerServices.StrongBox<array<atomic.Pointer<Node>>> created = new System.Runtime.CompilerServices.StrongBox<array<atomic.Pointer<Node>>>(new array<atomic.Pointer<Node>>(N));
+                value = Interlocked.CompareExchange(ref m_value, created, null) ?? created;
+            }
+
+            return value.Value;
+        }
+    }
+
+    public atomic.Pointer<Node>[] Source => Value;
+
+    public nint Length => Value.Length;
+
+    Array IArray.Source => ((IArray)Value).Source!;
+
+    object IArray.this[nint index]
+    {
+        get => ((IArray)Value)[index];
+        set => ((IArray)Value)[index] = value;
+    }
+
+    public ref atomic.Pointer<Node> this[nint index] => ref Value[index];
+
+    public Span<atomic.Pointer<Node>> ꓸꓸꓸ => ToSpan();
+
+    public Span<atomic.Pointer<Node>> ToSpan() => Value.ToSpan();
+
+    public IEnumerator<(nint, atomic.Pointer<Node>)> GetEnumerator() => Value.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)Value).GetEnumerator();
+
+    public bool Equals(IArray<atomic.Pointer<Node>> other) => Value.Equals(other);
+
+    // Emitted for the Array kind since door 2: with the value behind a reference slot, the inherited
+    // ValueType.Equals/GetHashCode would compare and hash the HOLDER's identity rather than the
+    // array's contents (arm10).
+    public override bool Equals(object obj) => obj is Tbl other && Value.Equals(other.Value);
+
+    public override int GetHashCode() => Value.GetHashCode();
+
+    public object Clone() => new Tbl(Value.Clone());
+}
+
+// The PRE-door-2 emission of the same wrapper, kept so the cost of the interlocked publish can be
+// measured against it in one process (arm9) instead of across two builds.  Correctness arms use Tbl.
+public struct TblLazy : IArray<atomic.Pointer<Node>>
+{
+    public const int N = Tbl.N;
+
     private array<atomic.Pointer<Node>>? m_value;
 
-    public Tbl(array<atomic.Pointer<Node>> value) => m_value = value;
+    public TblLazy(array<atomic.Pointer<Node>> value) => m_value = value;
 
     public array<atomic.Pointer<Node>> Value => m_value ??= new array<atomic.Pointer<Node>>(N);
 
@@ -63,7 +131,7 @@ public struct Tbl : IArray<atomic.Pointer<Node>>
 
     public bool Equals(IArray<atomic.Pointer<Node>> other) => Value.Equals(other);
 
-    public object Clone() => new Tbl(Value.Clone());
+    public object Clone() => new TblLazy(Value.Clone());
 }
 
 // bcache's Cache, transcribed.  ptable is a plain Interlocked slot rather than atomic.Pointer<Tbl>
@@ -222,7 +290,137 @@ public static class Program
         if (arm is "all" or "arm8")
             rc |= Arm8_ByValueWholeWrapperBox();
 
+        if (arm is "all" or "arm9")
+            rc |= Arm9_WarmGetterThroughput();
+
+        if (arm is "all" or "arm10")
+            rc |= Arm10_HashAndEqualityParity();
+
         return rc;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // ARM 10 - door 2 changes the DECLARED TYPE of the wrapper's single field, and a C# struct with no
+    // GetHashCode override hashes through ValueType.GetHashCode, which reads that field.  A Go fixed-
+    // size array is COMPARABLE and legal as a map key, so if the emission's hash silently moved from
+    // structural to reference identity, equal Go arrays would stop landing in the same bucket - a
+    // second silent wrong answer traded for the first.  Measured, not assumed: two DISTINCT wrappers
+    // holding equal content, under both emissions, in one process.
+    // ---------------------------------------------------------------------------------------------
+    private static int Arm10_HashAndEqualityParity()
+    {
+        TblLazy la = new TblLazy(new array<atomic.Pointer<Node>>(TblLazy.N));
+        TblLazy lb = new TblLazy(new array<atomic.Pointer<Node>>(TblLazy.N));
+        Tbl a = new Tbl(new array<atomic.Pointer<Node>>(Tbl.N));
+        Tbl b = new Tbl(new array<atomic.Pointer<Node>>(Tbl.N));
+
+        bool lazyHash = la.GetHashCode() == lb.GetHashCode();
+        bool casHash = a.GetHashCode() == b.GetHashCode();
+
+        // The COMPILE-TIME bound overload (`Equals(IArray<T>)`) and the RUNTIME one a map lookup or
+        // reflect.DeepEqual actually reaches (`object.Equals`) are different methods, and only the
+        // second reads the m_value field's own Equals - so they must both be measured.
+        bool lazyEq = la.Equals(lb);
+        bool casEq = a.Equals(b);
+        bool lazyObjEq = ((object)la).Equals(lb);
+        bool casObjEq = ((object)a).Equals(b);
+
+        Console.WriteLine("arm10 two DISTINCT wrappers holding equal content - hash and equality");
+        Console.WriteLine($"      ??= emission          GetHashCode equal: {lazyHash,-5}   Equals(IArray): {lazyEq,-5}   object.Equals: {lazyObjEq}");
+        Console.WriteLine($"      interlocked publish   GetHashCode equal: {casHash,-5}   Equals(IArray): {casEq,-5}   object.Equals: {casObjEq}");
+
+        bool parity = casHash == lazyHash && casEq == lazyEq && casObjEq == lazyObjEq;
+
+        Console.WriteLine($"      => {(parity ? "PARITY - the publish holder did not move either" : "MOVED - the slot's shape leaked into hashing or equality")}");
+        Console.WriteLine();
+
+        return parity ? 0 : 1024;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // ARM 9 - the door-2 fix's COST gate: the generated wrapper's own `Value` getter on the WARM
+    // (already-materialized) path, reached by ref, with no golib on the call chain at all.  Door 2's
+    // remedy adds an atomic publish to the COLD path only; if the warm path moves materially here,
+    // the remedy is paying on every access and is the wrong shape.
+    //
+    // Both emissions are measured IN ONE PROCESS - `Tbl` (interlocked publish, what go2cs-gen emits
+    // now) against `TblLazy` (the `??=` emission it replaced) - so the comparison needs no second
+    // build and cannot drift as the machine does.
+    //
+    // Three shapes, because the cost of a one-word reference slot depends entirely on which:
+    //   Value.Length, 64 tables  - the raw getter, varying receiver
+    //   ref this[i],   64 tables - `ref Value[index]`, the form converted element reads and writes
+    //                              emit, with a VARYING receiver so the getter cannot be hoisted.
+    //                              This is the WORST case for a reference slot: 64 separate holder
+    //                              objects, one dependent load each, none of them resident.
+    //   ref this[i],   1 table   - the same indexer over ONE long-lived table, which is what the
+    //                              corpus's named arrays actually are (crc tables, nistec point
+    //                              tables, semtable). The getter is loop-invariant here and the JIT
+    //                              hoists it, so the slot's shape stops mattering at all.
+    // ---------------------------------------------------------------------------------------------
+    private const int WarmCells = 64;
+
+    private static int Arm9_WarmGetterThroughput()
+    {
+        const int Warmup = 500_000;
+        const int Iters = 20_000_000;
+
+        var cells = new Tbl[WarmCells];
+        var lazyCells = new TblLazy[WarmCells];
+
+        for (int i = 0; i < WarmCells; i++)
+        {
+            _ = cells[i].Source;            // materialize once each, single-threaded
+            _ = lazyCells[i].Source;
+        }
+
+        Console.WriteLine("arm9  WARM generated-wrapper getter throughput (already-materialized fast path)");
+        Console.WriteLine("      shape                        ??= emission        interlocked publish");
+
+        Row("Value.Length, 64 tables",
+            Bench3(n => { long s = 0; for (int i = 0; i < n; i++) s += lazyCells[i & (WarmCells - 1)].Value.Length; return s; }, Warmup, Iters),
+            Bench3(n => { long s = 0; for (int i = 0; i < n; i++) s += cells[i & (WarmCells - 1)].Value.Length; return s; }, Warmup, Iters));
+
+        Row("ref this[i],  64 tables",
+            Bench3(n => { long s = 0; for (int i = 0; i < n; i++) s += ElemAddr(ref lazyCells[i & (WarmCells - 1)], i & 511); return s; }, Warmup, Iters),
+            Bench3(n => { long s = 0; for (int i = 0; i < n; i++) s += ElemAddr(ref cells[i & (WarmCells - 1)], i & 511); return s; }, Warmup, Iters));
+
+        Row("ref this[i],   1 table ",
+            Bench3(n => { long s = 0; for (int i = 0; i < n; i++) s += ElemAddr(ref lazyCells[0], i & 511); return s; }, Warmup, Iters),
+            Bench3(n => { long s = 0; for (int i = 0; i < n; i++) s += ElemAddr(ref cells[0], i & 511); return s; }, Warmup, Iters));
+
+        Console.WriteLine();
+        return 0;
+    }
+
+    private static unsafe long ElemAddr(ref Tbl table, int index) =>
+        (nint)System.Runtime.CompilerServices.Unsafe.AsPointer(ref table[(nint)index]);
+
+    private static unsafe long ElemAddr(ref TblLazy table, int index) =>
+        (nint)System.Runtime.CompilerServices.Unsafe.AsPointer(ref table[(nint)index]);
+
+    // Runs `body` once for warm-up then three timed passes, reporting the best (least-noise) one.
+    private static double Bench3(Func<int, long> body, int warmup, int iters)
+    {
+        long sink = body(warmup);
+        double best = double.MaxValue;
+
+        for (int pass = 0; pass < 3; pass++)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            sink += body(iters);
+            sw.Stop();
+            best = Math.Min(best, sw.Elapsed.TotalMilliseconds * 1_000_000.0 / iters);
+        }
+
+        GC.KeepAlive(sink);
+        return best;
+    }
+
+    private static void Row(string label, double before, double after)
+    {
+        double pct = (after - before) / before * 100.0;
+        Console.WriteLine($"      {label}      {before,6:n3} ns/op         {after,6:n3} ns/op   ({pct:+0.0;-0.0;0.0}%)");
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -355,7 +553,7 @@ public static class Program
                 raced++;
         }
 
-        Console.WriteLine("arm7  DOOR 2 - generated `Value => m_value ??= …` getter reached by ref (no .at() on the path)");
+        Console.WriteLine("arm7  DOOR 2 - the generated wrapper's own lazy `Value` getter reached by ref (no .at() on the path)");
         Console.WriteLine($"      {threads} threads x {trials} trials");
         Console.WriteLine($"      trials whose ONE struct cell materialized >1 backing array: {raced}/{trials} ({100.0 * raced / trials:n1}%)");
         Console.Write("      distinct-backing histogram:");

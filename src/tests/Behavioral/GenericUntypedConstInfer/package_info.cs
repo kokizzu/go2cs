@@ -10,18 +10,10 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using abiꓸArrayType = go.@internal.abi_package.ΔArrayType;
-global using abiꓸChanDir = go.@internal.abi_package.ΔChanDir;
-global using abiꓸFuncType = go.@internal.abi_package.ΔFuncType;
-global using abiꓸInterfaceType = go.@internal.abi_package.ΔInterfaceType;
-global using abiꓸKind = go.@internal.abi_package.ΔKind;
-global using abiꓸMapType = go.@internal.abi_package.ΔMapType;
-global using abiꓸName = go.@internal.abi_package.ΔName;
-global using abiꓸStructType = go.@internal.abi_package.ΔStructType;
 // </ImportedTypeAliases>
 
 using go;
-using static go.@internal.concurrent_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -40,10 +32,8 @@ using static go.@internal.concurrent_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 // </InterfaceImplementations>
@@ -51,10 +41,22 @@ using static go.@internal.concurrent_package;
 // <ImplicitConversions>
 // </ImplicitConversions>
 
-namespace go.@internal;
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
-[GoPackage("concurrent")]
-public static partial class concurrent_package
+// <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("GenericUntypedConstInfer.go", "GenericUntypedConstInfer.cs", "ABAugoKClAAHEIKC6oKqgqqCpoKmgoKC2oKCAAYUgoLoooIACgiChoKGgoaGhoaCgoSCgoSCgoSChoaChoKChoI=", "24-30:1;37-39:1;72-74:1;84-86:1;90-92:1")]
+// </GoSourcePositionMaps>
+
+namespace go;
+
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -62,22 +64,6 @@ public static partial class concurrent_package
     // the types - public for a Go-exported name, internal otherwise - are defined
     // via declarations below.
 
-    // hashtriemap.cs is a whole-file hand-own ([module: GoManualConversion]) and it is this
-    // package's ONLY Go file, so the converter's driver skips the package outright — this file,
-    // the .csproj and README.md are hand-owned by consequence and never re-emitted (the position
-    // internal/godebug is already in).
-    //
-    // The trie's internal node types (node, entry, indirect) are declared by hashtriemap_whitebox.cs
-    // and are NEVER CONSTRUCTED: the implementation keeps its entries in a ConcurrentDictionary and
-    // has no nodes. They exist so that the package's own `_test.go` — whose dead `dumpMap`/`dumpNode`
-    // debug helpers name `node[K, V]` in a signature — type-checks at all; see that file's header.
-    // Their accessibility is carried here for the same reason every other type's is: the converted
-    // suite compiles into a separate friend assembly, and a bare nested declaration is private.
-
     // <TypeAccessibility>
-    public partial struct HashTrieMap<K, V> {}
-    internal partial struct node<K, V> {}
-    internal partial struct Δentry<K, V> {}
-    internal partial struct Δindirect<K, V> {}
     // </TypeAccessibility>
 }
