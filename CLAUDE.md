@@ -1366,6 +1366,24 @@ Each rule below was paid for.
   evidence of death any more than exit 0 is evidence of success — the rule cuts both directions:
   read the output, and first verify the check CAN see its target (positive-control the probe the
   way gates are positive-controlled).
+- **Positive-control the DETECTOR, not just the gate** (2026-08-30, the pinning census guard): a
+  BOM-less `.ps1` under Windows PowerShell 5.1 mis-reads non-ASCII literals through the system
+  codepage, so a guard's `ᴋ`-matching regex was silently broken and its "0 findings" red was
+  accidentally right for the wrong reason. A new false-signal species: a red whose detector is
+  dead. Any regex-bearing guard on PS 5.1 gets a BOM if it carries non-ASCII, and gets its
+  detection deliberately regressed once before its verdicts are believed.
+- **GC/liveness probes: ONE ARM PER PROCESS** (2026-08-30, the StringData lane): running probe
+  arms back-to-back contaminates them — an in-frame arm's object collects as soon as a LATER arm
+  clobbers the frame, so only the last arm's reading is honest; three arms flipped verdicts on
+  run order before isolation. Same family as the tier-0 finding: what the frame holds decides
+  what collects, so each measurement gets a fresh process.
+- **The `-tests` graph invariant (ruled 2026-08-30, from the W1 arc):** a `-tests` conversion's
+  production emission may differ from `-stdlib`'s only in ways that do NOT change the project
+  GRAPH. The documented closure families all change file text and no reference; the
+  `canUseLongPaths` csproj flip was the first edge-mover and it was fatal (6 cycles), which is
+  the boundary's proof. Mechanical form: `check-solution-integrity.ps1`'s per-GOOS cycle
+  assertion (G2), whose positive control injects the historical edge and requires exactly the
+  six named cycles.
 
 ## Git anchors
 
