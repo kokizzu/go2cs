@@ -512,6 +512,18 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		if err := processTestConversion(inputFilePath, outputFilePath, options); err != nil {
 			log.Fatalf("Failed to convert package tests in %q: %v\n", inputFilePath, err)
 		}
+
+		// The W2b GATE, and the LAST thing a -tests conversion does: any dynamic-type marker that
+		// went unresolved above — in the production emission, a `.cs.auto` review sibling, or a
+		// test variant — was replaced by raw Go type text, which cannot compile. Return it as an
+		// error rather than exiting 0 into a build whose diagnostics point away from the cause.
+		// See unresolvedDynamicTypeError (dynamicTypeOperations.go) for why this is scoped here.
+		//
+		// Riding the existing error return is deliberate: main.go already turns it into a nonzero
+		// exit, so no new call site can forget to check the gate.
+		if err := unresolvedDynamicTypeError(); err != nil {
+			return err
+		}
 	}
 
 	return nil

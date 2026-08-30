@@ -471,14 +471,14 @@ func resolveAdapterNameMarkers(outputFileNames []string, metadataAnchor ...strin
 	// The file walking is shared with the dynamic-type pass — see rewriteDeferredMarkers
 	// (deferredMarkerOperations.go); only the pair resolution below is specific to adapters.
 	rewriteDeferredMarkers(outputFileNames, "adapter-name", adapterNameMarkerPrefix, adapterNameMarkerSuffix,
-		func(fileName, payload string) (string, bool) {
+		func(fileName string, line int, payload string) (string, bool) {
 			structBase, interfaceTypeName, ok := adapterNameMarkerPair(payload)
 
 			if !ok {
 				// A payload that will not decode names no pair, so there is nothing to resolve to;
 				// drop the marker so it cannot survive into the emitted C#. Substituting only THIS
 				// occurrence means a file carrying several bad markers reports each of them.
-				showWarning("Unresolved adapter-name marker in \"%s\"", fileName)
+				showWarning("Unresolved adapter-name marker in \"%s\"(%d)", fileName, line)
 				return "", false
 			}
 

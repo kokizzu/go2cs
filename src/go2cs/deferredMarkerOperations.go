@@ -32,8 +32,12 @@ import (
 //
 // description names the marker kind for the write-failure warning ("dynamic type", "adapter-name").
 //
-// resolve receives the file name (so it can report WHERE an unresolvable marker was found) and the
-// raw payload between the sentinels. It returns the replacement text plus replaceEvery: true
+// resolve receives the file name and the 1-based LINE the marker's opening sentinel sits on (so it
+// can report WHERE an unresolvable marker was found — a bare file name is not actionable in a file
+// with thousands of lines) plus the raw payload between the sentinels. The line is read from the
+// content as it stands when the marker is reached, which is exact because every replacement this
+// pass makes is a type NAME that cannot span lines — the same invariant the line-count assertion
+// below already guards. It returns the replacement text plus replaceEvery: true
 // substitutes every identical marker in the file in one step, which is what a resolver wants when
 // the answer is the same everywhere; false substitutes only this one occurrence, which lets a
 // resolver that warns per marker report each one rather than collapsing them into a single warning.
@@ -41,7 +45,7 @@ import (
 //
 // Files are handled independently and best-effort: an unreadable file is skipped rather than
 // failing the whole conversion, since a marker left in one file cannot corrupt another.
-func rewriteDeferredMarkers(outputFileNames []string, description, prefix, suffix string, resolve func(fileName, payload string) (replacement string, replaceEvery bool)) {
+func rewriteDeferredMarkers(outputFileNames []string, description, prefix, suffix string, resolve func(fileName string, line int, payload string) (replacement string, replaceEvery bool)) {
 	for _, fileName := range outputFileNames {
 		contentBytes, err := os.ReadFile(fileName)
 
@@ -74,7 +78,8 @@ func rewriteDeferredMarkers(outputFileNames []string, description, prefix, suffi
 
 			end += start
 			marker := content[start : end+len(suffix)]
-			replacement, replaceEvery := resolve(fileName, content[start+len(prefix):end])
+			line := strings.Count(content[:start], "\n") + 1
+			replacement, replaceEvery := resolve(fileName, line, content[start+len(prefix):end])
 
 			if replaceEvery {
 				content = strings.ReplaceAll(content, marker, replacement)
