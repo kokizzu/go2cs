@@ -602,3 +602,94 @@ opposite to the F15b ruling.
 - No `dotnet build-server shutdown` was run. No process outside this worktree was touched. Scratch
   files are `tworow-`-prefixed.
 - **Nothing was run against `src/core/testing`** — deliberately, per §2.3's F15b analysis.
+
+---
+
+# Amendment — 2026-08-30: JOB 1's site is closed, and the row is a FAMILY
+
+*Appended by the fix lane (`claude/local-osuser-bank`, i7-5820K, same host/toolchain as the
+original measurement). §1.1–§1.6 above stand exactly as written and are not edited; this block
+records what became visible only once their defect was removed.*
+
+## A1 — §1.4's defect is fixed, and §1.5's sizing was exactly right
+
+The remedy landed as measured: `syscall.GetTokenUser` / `GetTokenPrimaryGroup` plus their shared
+`getInfo` feeder, hand-owned in `src/core/syscall/windows/security_windows.cs` (whole-file marker;
+`security_windows.cs.auto` is the generated form to diff against). Two members, one feeder, one
+consuming package — §1.5's table, unchanged.
+
+The transcription has **two** halves, and the second is not visible from a crash dump. §1.4's
+chain is a TYPE error: the eight bytes are a valid PSID and only their interpretation is wrong, so
+they are read through a `[StructLayout(Sequential)]` native mirror and wrapped as a native box —
+correct, and sufficient to stop the fault. But Windows appends the SID bytes **inside the buffer it
+fills** and points the `Sid` field at them, so the payload is **self-referential**: the address is
+meaningful only while the buffer stays put. golib pins on address-take, but the pin lives on the
+pointer *box*, and the syscall funnel's `GC.KeepAlive` drops the last reference to it as the call
+returns — after which a compaction dangles the kernel's own self-pointer. A type-only fix would
+therefore have passed here and failed intermittently later, under GC pressure, at an unrelated
+site. The buffer is allocated on the Pinned Object Heap and anchored to the SID that points into it
+by a `ConditionalWeakTable` (`zsyscall_windows_addrinfo_impl.cs`'s pattern). Worth carrying to the
+other two forks: **a reinterpret whose payload points back into its own buffer has a lifetime bug
+behind its type bug**, and only the type bug is visible in the stack.
+
+**Value-level proof, not absence-of-crash.** Post-fix, `current()` completes `GetTokenUser`,
+`GetTokenPrimaryGroup`, `SID.String()` on both (the exact frame of §1.3's fault),
+`GetUserProfileDirectory` *and* `lookupUsernameAndDomain` — which asks the OS to resolve the
+transcribed SID and returns early unless it answers `SidTypeUser`. It does not return early, so
+the OS resolved the handle to a real user account.
+
+## A2 — the row is gated by six sites, not one
+
+§1.3's per-test probe is reproduced exactly, one site further down: all five tests die at **one
+new byte-identical frame**, `syscall.NetUserGetInfo`, exit `0xC0000005`. §1.5's "clearing it puts
+all 5 verdicts in play at once" holds in *shape* — one site does gate all five — but there is a
+**chain** of such sites, and no measurement taken from behind the first crash could have seen it.
+The static audit of the remaining path:
+
+| # | Site | Fork | State |
+|--:|:--|:--|:--|
+| 1 | `syscall.GetTokenUser` / `GetTokenPrimaryGroup` / `getInfo` | 3rd (buffer reinterpret) | **fixed 2026-08-30** |
+| 2 | `syscall.NetUserGetInfo` (`**byte` out-param) | 2nd (ptrout) | **blocks all five now** |
+| 3 | `lookupFullNameServer`: `Reinterpret<byte, syscall.UserInfo10>` | 3rd | latent behind 2 — four managed `ж<ushort>` fields |
+| 4 | `lookupUserPrimaryGroup`: `Reinterpret<byte, windows.UserInfo4>` | 3rd | latent — managed `ж<ushort>` fields |
+| 5 | `windows.NetUserGetLocalGroups` (`**byte` out-param) | 2nd (ptrout) | latent — `TestGroupIds` path |
+| 6 | `listGroupsForUsernameAndDomain`: `ReadOnlySpan` over native `LocalGroupUserInfo0[]` | 3rd | latent — a fabricated `ж<uint16>` **per element** |
+
+Sites 2 and 5 are **not discoveries**: `zsyscall_windows_ptrout_impl.cs` names both in its
+*deliberately not taken* list, deferred on the standing fix-it-when-a-suite-reaches-it rule *"with
+no consumer in the corpus today and therefore no value-level proof available."* A suite has now
+reached both, so the stated condition for taking them is met.
+
+The three-fork taxonomy is not merely descriptive here — `os/user` is the first row measured to
+require **both** the out-parameter fork and the buffer-reinterpret fork, alternating: every
+netapi32 call is a `**T` out-param (fork 2) whose returned buffer is then reinterpreted as a
+record of managed references (fork 3). Fixing either alone moves the crash without banking a row.
+
+## A3 — the boundary this lane stopped at
+
+Sites 2 and 5 live in generated `zsyscall_windows.cs` files. The precedented remedy is a
+`manualConversionFuncs` registration plus a body in the ptrout impl — a **converter** change, which
+this lane was scoped out of. The corpus-only alternative, hand-owning `os/user`'s
+`lookup_windows.cs` so it bypasses both wrappers, is the shortcut the durable-path rule rejects: it
+would leave both wrappers wrong for the next consumer and freeze the package's main production
+file. Reported rather than cut.
+
+**Sizing for whoever takes the arc**, on the evidence above: two ptrout registrations + two bodies
+(mechanical — `publishPointerOut` already exists and serves five siblings), and three
+consumer-side transcriptions in `os/user` (sites 3, 4, 6; site 6 is the only non-trivial one, being
+an array of records rather than a single one). All five are value-level provable by the same suite,
+and the row is worth 5 verdicts.
+
+**Not banked.** No roster row, no proof page, no header arithmetic — the row does not validate, and
+a partial result reports rather than banks. `os/user`'s roster row keeps its current classification
+until the arc lands; §1.6's finding that the **E2 premise itself is false** is unaffected by any of
+this and still stands on §1.2's oracle.
+
+- **Hygiene.** Tree restored: the `-tests` run's `os/user/windows/user.cs` modification re-verified
+  as the same pure CRLF phantom the Appendix records, restored; four untracked test artifacts and
+  the gitignored pipeline outputs removed. `golib` untouched. Scratch files are `osuser-`-prefixed.
+- **Recorded for the board, deliberately not cut here:** `ж.NativeBox.cs:66`'s `Value` performs an
+  unguarded `Unsafe.AsRef<T>` for any `T`. Whether it should refuse a non-blittable `T` outright —
+  turning every future instance of this whole fork from a fabricated reference into a loud failure
+  at the reinterpret rather than an AV two frames later — is a real hardening question and a
+  separate one.
