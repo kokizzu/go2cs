@@ -2077,24 +2077,7 @@ internal static ΔValue extendSlice(this ΔValue v, nint n) {
     return v;
 }
 
-// Clear clears the contents of a map or zeros the contents of a slice.
-//
-// It panics if v's Kind is not [Map] or [Slice].
-public static void Clear(this ΔValue v) {
-    var exprᴛ1 = v.Kind();
-    if (exprᴛ1 == ΔSlice) {
-        var sh = ~(ж<unsafeheader.Slice>)(uintptr)(v.ptr);
-        var st = v.typ().Reinterpret<abi.Type, sliceType>();
-        typedarrayclear((~st).Elem, sh.Data, sh.Len);
-    }
-    else if (exprᴛ1 == Map) {
-        mapclear(v.typ(), (uintptr)v.pointer());
-    }
-    else { /* default: */
-        throw panic(Ꮡ(new ValueError("reflect.Value.Clear"u8, v.Kind())));
-    }
-
-}
+// go2cs generated this placeholder — func Clear is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Append appends the values x to a slice s and returns the resulting slice.
 // As in Go, each x's value must be assignable to the slice's element type.

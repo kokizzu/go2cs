@@ -45,10 +45,32 @@ public interface IMap
     /// map clones to a nil map.
     /// </summary>
     IMap CloneMap();
+
+    /// <summary>
+    /// Removes every entry, the way Go's <c>clear(m)</c> and <c>reflect.Value.Clear</c> do. A nil
+    /// map clears to a nil map without panicking, matching Go — <c>clear</c> on a nil map is a no-op.
+    /// </summary>
+    /// <remarks>
+    /// Declared on the NON-generic interface because the callers that need it hold a map whose key
+    /// and value types are not known statically: <c>reflect.Value.Clear</c> reaches an arbitrary
+    /// map through a boxed <c>object</c>, and the generic <c>IDictionary{TKey, TValue}.Clear</c> is
+    /// unreachable from there without reflection. <c>map{TKey, TValue}</c> already declares a
+    /// matching public <c>Clear()</c>, so it satisfies this with no change of its own.
+    /// </remarks>
+    void Clear();
 }
 
 public interface IMap<TKey, TValue> : IMap, IDictionary<TKey, TValue> where TKey : notnull
 {
+    /// <summary>
+    /// Removes every entry — Go's <c>clear(m)</c>. Re-declared here PURELY to disambiguate: this
+    /// interface now inherits a <c>Clear()</c> from both <see cref="IMap"/> and
+    /// <c>ICollection{KeyValuePair{TKey, TValue}}</c>, and a call through <c>IMap{TKey, TValue}</c>
+    /// would otherwise be CS0121-ambiguous. Both inherited members are the same operation on the
+    /// same storage, so collapsing them to one declaration changes no behaviour.
+    /// </summary>
+    new void Clear();
+
     (TValue, bool) this[TKey key, bool _] { get; }
 
     /// <summary>

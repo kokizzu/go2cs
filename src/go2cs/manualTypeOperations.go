@@ -385,7 +385,12 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.Len":       goosAny,
 		"Value.Index":     goosAny,
 		"Value.Elem":      goosAny,
-		"Value.Bytes":     goosAny,
+		"Value.Bytes": goosAny,
+		// Two defects in ONE auto body, which is why it is here: the `v.ptr` data-word read below
+		// AND the `Reinterpret<abi.Type, sliceType>` descriptor prefix-downcast. A hand-own needs
+		// neither — a slice's elements and a map's entries are ordinary managed containers at this
+		// layer. See reflect/value_impl.cs.
+		"Value.Clear":     goosAny,
 		// The WRITE half of Bytes, hand-owned for the same reason one layer down: the auto body is
 		// `*(*[]byte)(v.ptr) = x`, a store through the Go data word this bridge never populates, so
 		// it wrote nowhere for EVERY byte slice — silently. See reflect/value_impl.cs.
