@@ -4213,9 +4213,33 @@ func (v *Visitor) pointerReinterpretManagedSource(callExpr *ast.CallExpr, arg as
 		return nil, "", ""
 	}
 
-	// Pointer-to-array target — keep the pre-existing route (see the header comment).
-	if _, isArray := targetPtr.Elem().Underlying().(*types.Array); isArray {
-		return nil, "", ""
+	// Pointer-to-array target — keep the pre-existing route (see the header comment), UNLESS the
+	// SOURCE pointee is ALSO a named type over the identical array shape: two sibling names for one
+	// underlying array, Go's `(*pageBits)(b)` where `b *pallocBits` and both are `[N]E` (runtime's
+	// mpallocbits.go). That sub-case is exactly what the header comment's exclusion does NOT cover —
+	// the array-target failure mode it describes is a numeric-or-other pointee reinterpreting to an
+	// ARRAY pointee, which golib's Reinterpret gate always refuses (array<E> is a backing-store
+	// REFERENCE, too wide to alias a narrower slot) and would silently fall through to the very
+	// address route this function exists to avoid. Here BOTH sides are the SAME array<E>-backed
+	// [GoType("Array")] wrapper shape — go2cs-gen's InheritedTypeTemplate gives every such wrapper
+	// ONE field (an E[]-backing StrongBox slot), so golib's ReinterpretAliasesStorage sees two
+	// single-field structs of identical layout and correctly takes the aliasing path.
+	//
+	// Emitting the pre-existing route here is not merely suboptimal, it is UNSOUND: the general
+	// conversion path renders `(*pageBits)(b)` as a VALUE conversion — a generated `implicit
+	// operator pageBits(pallocBits value) => value.view` — over a BY-VALUE parameter, so a
+	// still-unmaterialized source's lazy backing materializes on the OPERATOR'S OWN PARAMETER COPY,
+	// never on the caller's storage; every write through the derived pointer before something else
+	// touches the original is silently lost. Measured with a transcription of this exact shape
+	// (ElemAliasProbe arm8): EXPOSED on first touch, fine only once something else has already
+	// materialized the source. Routing through Reinterpret (like every other managed pointer
+	// reinterpret here) never constructs that copy at all.
+	if targetArr, isArray := targetPtr.Elem().Underlying().(*types.Array); isArray {
+		srcArr, srcIsArray := srcPtr.Elem().Underlying().(*types.Array)
+
+		if !srcIsArray || !types.Identical(srcArr, targetArr) {
+			return nil, "", ""
+		}
 	}
 
 	return p,
