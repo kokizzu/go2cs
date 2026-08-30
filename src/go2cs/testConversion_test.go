@@ -1589,7 +1589,7 @@ func TestWriteTestProjectReferenceModelBindsProductionProject(t *testing.T) {
 func TestReferenceModelSeedAnchorsTestClassOnly(t *testing.T) {
 	seed := referenceModelTestPackageInfoSeed("go", "value_test_package", "value_test", "value_package")
 
-	if !strings.Contains(seed, "[GoPackage(\"value_test\")]\r\npublic static partial class value_test_package\r\n{\r\n}\r\n") {
+	if !strings.Contains(seed, "[GoPackage(\"value_test\")]\r\npublic static partial class value_test_package\r\n{\r\n") {
 		t.Fatalf("seed must declare the attributed external test package class:\n%s", seed)
 	}
 	if strings.Contains(seed, "class value_package") {
@@ -1599,6 +1599,48 @@ func TestReferenceModelSeedAnchorsTestClassOnly(t *testing.T) {
 		if !strings.Contains(seed, marker) {
 			t.Fatalf("seed is missing the %s writer marker section:\n%s", marker, seed)
 		}
+	}
+}
+
+// The seed's ONLY body member is the production-init forcing hook — the split-assembly answer to
+// Go's "every `init` in the package, production files included, has run before the first test".
+// [GoInit] is .NET's [ModuleInitializer], which fires on first touch of its OWN module; under the
+// two production-REFERENCE models the production `init` lives in a REFERENCED assembly, so
+// without this hook it runs at the first touch of a production SYMBOL — which may be the second
+// test, or the tenth, or never. Rooted on net/http/pprof, whose `init` installs the /debug/pprof
+// mux: TestDeltaProfile (the one test that goes through a real server) 404'd whenever it ran
+// before any test that touched a production symbol — 8 shuffled runs, both directions, 100%
+// determined by order.
+//
+// The two properties that make the hook work are asserted, not merely its presence: it must carry
+// [GoInit] (a plain method would never run), and its `typeof` target must be `global::`-rooted (a
+// bare name can be occluded by a nested type of the class the hook is written into — the same
+// hazard globalQualifyForcingTarget exists for on the per-import hooks).
+func TestReferenceModelSeedForcesProductionInit(t *testing.T) {
+	seed := referenceModelTestPackageInfoSeed("go", "value_test_package", "value_test", "value_package")
+
+	hook := "[GoInit] internal static void " + packageProductionInitHookMethod +
+		"() {\r\n        builtin.initPackage(typeof(global::go.value_package));\r\n    }\r\n"
+
+	if !strings.Contains(seed, hook) {
+		t.Fatalf("seed must force the referenced production module's initialization:\n%s", seed)
+	}
+
+	// Inside the anchor class, not beside it: a module initializer may be declared anywhere, but
+	// the seed's class is the file's only type and the hook belongs to the test package's own
+	// metadata surface.
+	classAt := strings.Index(seed, "public static partial class value_test_package")
+	if classAt < 0 || strings.Index(seed, hook) < classAt {
+		t.Fatalf("the forcing hook must sit inside the anchor class:\n%s", seed)
+	}
+
+	// A whitebox internal-only suite seeds the bridge as the anchor class and still owes the hook —
+	// it is the shape that NEEDS it, since an internal test file is IN the package and so imports
+	// nothing of it for writeImportInit to hang a per-import hook on.
+	nested := referenceModelTestPackageInfoSeed("go.net.http", "pprof_internal_test_package", "pprof", "pprof_package")
+
+	if !strings.Contains(nested, "builtin.initPackage(typeof(global::go.net.http.pprof_package));") {
+		t.Fatalf("a nested-namespace whitebox seed must force its own production module:\n%s", nested)
 	}
 }
 
