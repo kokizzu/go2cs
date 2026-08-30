@@ -1659,14 +1659,33 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// E's instantiation (int→nint, byte, int64→long, …); emit it AT that C# type so inference
 			// binds the intended argument. A resolved `int32`/`rune` (already System.Int32) and a
 			// value convBasicLit already casts (`(nint)…L`) are left untouched — no cast, no noise (the
-			// wholeExprIsCastOfType skip in convExprList drops the latter). The sibling-lock gate is
-			// deliberately narrow: a FREELY-inferred type parameter (`First[T any](v ...T)`), one
-			// determined DIRECTLY by another argument (`setThrough[P *T, T any](p P, v T)` — C# infers
-			// T from the pointer), and an EXPLICITLY-instantiated call (`NewOption[nint](42)`) all
-			// infer correctly already, so they keep their bare literal. A variadic slot flags every
-			// trailing element; an existing per-arg cast (append/narrow-int/defer) is not overwritten.
+			// wholeExprIsCastOfType skip in convExprList drops the latter).
+			//
+			// The SECOND gate is the same defect reached from the other side, and the sibling lock is
+			// blind to it: a FREELY-inferred type parameter that lands in an INVARIANT C# position.
+			// C# repairs a mis-inferred instantiation wherever an implicit conversion bridges it —
+			// `int`→`nint` is implicit, so a result that IS the bare type parameter (`Max[T](a, b T) T`)
+			// converts at the use site and keeps its bare literal, no churn. A CONSTRUCTED type over the
+			// parameter has no such conversion, because C# generics are INVARIANT: `Action<int, bool>`
+			// is not `Action<nint, bool>`, `slice<int>` is not `slice<nint>`. So when the type parameter
+			// reaches a func/slice/array/map/chan/pointer RESULT, the wrong instantiation is
+			// unrepairable and must be prevented at the argument. internal/concurrent's own test suite
+			// ships the control pair that separates the two exactly:
+			// `expectMissing[K, V comparable](t, key K, want V) func(got V, ok bool)` called
+			// `expectMissing(t, s, 0)` mis-infers V=int and the returned `Action<int, bool>` then
+			// rejects the map's `nint` (CS1503 ×16), while `expectDeleted(…, 15) func(deleted bool)` —
+			// same untyped literal, V absent from the result — compiles untouched.
+			//
+			// A generic NAMED result (`NewOption[T](v T) Option[T]`) is deliberately NOT included: it is
+			// invariant too, but the explicit type-argument arm below already pins it (`NewOption<nint>(42)`),
+			// and retyping the argument as well would only add redundant noise to a site that compiles.
+			// An EXPLICITLY-instantiated call (`NewOption[nint](42)`) needs nothing either — Go wrote the
+			// type argument and the converter emits it. A variadic slot flags every trailing element; an
+			// existing per-arg cast (append/narrow-int/defer) is not overwritten.
 			if paramHasArg {
-				if pTP, ok := types.Unalias(paramType).(*types.TypeParam); ok && typeParamIsSliceElementOfSibling(funcSignature, pTP) {
+				if pTP, ok := types.Unalias(paramType).(*types.TypeParam); ok &&
+					(typeParamIsSliceElementOfSibling(funcSignature, pTP) ||
+						typeParamReachesInvariantResult(funcSignature, pTP)) {
 					lastArg := i
 
 					if funcSignature.Variadic() && i == params.Len()-1 {
@@ -1674,7 +1693,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					}
 
 					for j := i; j <= lastArg; j++ {
-						if castType := v.untypedIntGenericArgCastType(callExpr.Args[j]); castType != "" {
+						if castType := v.genericInferenceArgCastType(callExpr.Args[j]); castType != "" {
 							if callExprContext.castArgToType == nil {
 								callExprContext.castArgToType = make(map[int]string)
 							}
@@ -3655,6 +3674,93 @@ func (v *Visitor) untypedIntGenericArgCastType(arg ast.Expr) string {
 	}
 
 	return convertToCSTypeName(v.getAliasQualifiedTypeName(basic, false))
+}
+
+// genericInferenceArgCastType is untypedIntGenericArgCastType widened to the FOLDED constant
+// EXPRESSION. The syntactic untyped-constant test recognizes a literal, an untyped const ident or
+// selector, and a unary sign over one — but not `1<<10`, `3+4`, or a parenthesized form, which
+// go/types folds to a constant and the converter emits as bare C# arithmetic whose natural type is
+// `int` in exactly the same way. `expectMissing(t, k, 1<<10)` is ordinary Go and mis-infers for
+// precisely the reason the literal does, so the rule covers its own class rather than half of it.
+//
+// The delegation order matters: untypedIntGenericArgCastType is consulted FIRST so its deliberate
+// exclusions still hold — most importantly the TIGHTENED local const, which is declared at its
+// concrete C# type and therefore already infers correctly (see performUntypedConstAnalysis). Only
+// the two expression forms it does not classify are examined here, and only when go/types recorded
+// a constant VALUE for them; a non-constant expression carries the mapped Go type in its emitted C#
+// already and needs no retype. The type test mirrors its sibling exactly, int32/rune included.
+func (v *Visitor) genericInferenceArgCastType(arg ast.Expr) string {
+	if castType := v.untypedIntGenericArgCastType(arg); castType != "" {
+		return castType
+	}
+
+	switch arg.(type) {
+	case *ast.BinaryExpr, *ast.ParenExpr:
+	default:
+		return ""
+	}
+
+	tv, ok := v.info.Types[arg]
+
+	if !ok || tv.Value == nil {
+		return ""
+	}
+
+	basic, ok := types.Unalias(tv.Type).(*types.Basic)
+
+	if !ok || basic.Info()&types.IsInteger == 0 || basic.Info()&types.IsUntyped != 0 {
+		return ""
+	}
+
+	// int32/rune already renders as — and C# infers as — System.Int32 from a bare literal.
+	if basic.Kind() == types.Int32 {
+		return ""
+	}
+
+	return convertToCSTypeName(v.getAliasQualifiedTypeName(basic, false))
+}
+
+// typeParamReachesInvariantResult reports whether type parameter tp appears inside a CONSTRUCTED
+// result type of sig — a func, slice, array, map, chan or pointer over tp — as opposed to a result
+// that IS tp itself. It is the gate for retyping a constant argument at a freely-inferred type
+// parameter (see the call-site cast), and the distinction it draws is C#'s variance rule:
+//
+//   - a result that is the BARE type parameter mis-infers to C# `int`, but the implicit int→nint
+//     conversion repairs it at the use site, so nothing is emitted and no golden moves;
+//   - a result that CONSTRUCTS a type over the parameter is invariant — `Action<int, bool>` is not
+//     `Action<nint, bool>` — so the mis-inference is unrepairable and the argument must carry the
+//     type Go resolved.
+//
+// A generic NAMED result is skipped: invariant likewise, but the explicit type-argument arm already
+// pins that instantiation, and adding an argument cast there would be redundant noise.
+//
+// The structural walk is constraintOperations' typeMentionsTypeParam, which already carries the
+// *types.Signature case this gate turns on — a Go func result renders as a C# delegate, so a type
+// parameter in `func(V, bool)` reaches a materialized type argument exactly as a slice element does.
+// (Its shared sibling typeContainsTypeParams has no Signature case and is left untouched: it answers
+// a different question for other callers.) Each call starts a fresh `seen` set, which is what
+// terminates the recursion on a self-referential named type.
+func typeParamReachesInvariantResult(sig *types.Signature, tp *types.TypeParam) bool {
+	results := sig.Results()
+
+	if results == nil {
+		return false
+	}
+
+	for i := range results.Len() {
+		resultType := types.Unalias(results.At(i).Type())
+
+		switch resultType.(type) {
+		case *types.TypeParam, *types.Named:
+			continue
+		}
+
+		if typeMentionsTypeParam(resultType, tp, map[types.Type]bool{}) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // typeParamIsSliceElementOfSibling reports whether type parameter tp is the ELEMENT type of some

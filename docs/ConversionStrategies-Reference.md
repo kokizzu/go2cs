@@ -8808,6 +8808,29 @@ return rangeNum<int8, int64>(v.Int());
 ```
 Guarded by `GenericTypeInference` (`seqOf[T ~int64, N ~int32 | ~int64](n N) Seq[T]`).
 
+### A CONSTANT argument that fixes a type parameter is retyped to the instantiation
+Go infers a type parameter from an untyped constant's default type; go2cs then maps that Go type to C#. The two do not meet: an untyped int defaults to Go `int`, which is go2cs `nint`, but the constant emits as a bare C# literal whose own type is `int` (System.Int32). C# infers the type argument from the ARGUMENT, so `wantValue(0)` makes C# choose `T = int` where Go chose `nint`.
+
+Most such calls are fine and deliberately stay bare, because C# repairs the mismatch wherever an implicit conversion bridges it -- `int` -> `nint` is implicit, so a result that IS the bare type parameter converts at the use site. What cannot be repaired is an **invariant** position: C# generics have no variance for these, so `Action<int, bool>` is not `Action<nint, bool>` and `slice<int>` is not `slice<nint>`. Wherever the type parameter reaches a CONSTRUCTED type, the wrong instantiation is terminal (CS1503/CS0315/CS0411).
+
+Two gates therefore retype the constant to the C# spelling of the type Go resolved (`untypedIntGenericArgCastType`, applied through the per-argument `castArgToType` plumbing):
+
+1. **The sibling `~[]E` lock.** `Index[S ~[]E, E comparable](s S, v E)` (slices): Go fixes `E` from `S`'s core type, but `where S : ISlice<E>` carries no such flow, so C# infers `E` from the value alone and `slice<nint>` then fails the `~[]int` constraint.
+2. **An invariant RESULT position** (`typeParamReachesInvariantResult`): the parameter appears inside a func, slice, array, map, chan or pointer result. `internal/concurrent`'s own test suite ships the control pair that isolates this exactly -- `expectMissing[K, V comparable](t, key K, want V) func(got V, ok bool)` called `expectMissing(t, s, 0)` mis-inferred `V` and its returned delegate then rejected the map's `nint` (CS1503 x16), while `expectDeleted(..., 15) func(deleted bool)` -- the same untyped literal, `V` absent from the result -- compiled untouched.
+
+```csharp
+wantValue((nint)(0))(i, false);      // V reaches func(V, bool) -- retyped
+wantPresent(15)(true);               // V absent from the result -- bare
+bareResult(42);                      // result IS V; implicit conversion repairs it -- bare
+wantValue<nint>(0)(i, false);        // Go wrote the type argument -- bare
+sliceOf((nint)(9));                  // []V is invariant -- retyped
+wantInt64((int64)(1234567890123L));  // the cast follows the RESOLVED width, not always nint
+```
+
+The cast type comes from the resolved type, so it is `nint`, `long`, `byte`, `nuint` and so on as the instantiation requires; a resolved `int32`/`rune` is skipped because a bare C# literal already IS System.Int32. A generic NAMED result is skipped too -- invariant likewise, but the explicit type-argument rule above already pins that instantiation, and retyping the argument as well would be redundant. Non-constant arguments never qualify: their emitted C# already carries the mapped Go type. Folded constant EXPRESSIONS do qualify (`3 + 4`, `1 << 10`), since they emit as bare C# arithmetic in exactly the same way.
+
+Guarded by `GenericUntypedIntArg` (the `~[]E` lock) and `GenericUntypedConstInfer` (the invariant-result gate, its control shapes, and the nint/long/byte widths), both output-compared vs `go run`.
+
 ### Increment/decrement on a type parameter
 `i++` / `i--` on a constrained type parameter binds `IIncrementOperators<T>` / `IDecrementOperators<T>`, which the lifted **Arithmetic** operator set now includes (reflect `rangeNum`'s loop, CS0023). They live in the numeric-only Arithmetic set -- never the string-including Sum set, since `@string` implements neither. The list is emitted in two places that must stay in sync: the converter's `getLiftedConstraints` (`constraintOperations.go`) and the go2cs-gen `InterfaceTypeTemplate`.
 
