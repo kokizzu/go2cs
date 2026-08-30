@@ -2,6 +2,7 @@ namespace go;
 
 using fmt = fmt_package;
 using Δruntime = runtime_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -17,27 +18,27 @@ partial class main_package {
     builtin.initPackage(typeof(runtime_package));
 }
 
-internal static nint selfLine() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint selfLine() {
     var (_, _, line, _) = Δruntime.Caller(0);
     return line;
 }
 
-internal static nint callerLine() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint callerLine() {
     var (_, _, line, _) = Δruntime.Caller(1);
     return line;
 }
 
-internal static @string callerFile() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string callerFile() {
     var (_, @file, _, _) = Δruntime.Caller(1);
     return @file;
 }
 
-internal static nint grandLine() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint grandLine() {
     var (_, _, line, _) = Δruntime.Caller(2);
     return line;
 }
 
-internal static nint wrapGrand() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint wrapGrand() {
     return grandLine();
 }
 
@@ -45,33 +46,33 @@ internal static (nint, nint) sameSite() {
     return (callerLine(), wrapGrand());
 }
 
-internal static nint siteA() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint siteA() {
     return callerLine();
 }
 
-internal static nint siteB() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint siteB() {
     return callerLine();
 }
 
-internal static bool okAt(nint skip) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static bool okAt(nint skip) {
     var (_, _, _, ok) = Δruntime.Caller(skip);
     return ok;
 }
 
-internal static bool deepOK() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static bool deepOK() {
     return okAt(2);
 }
 
-internal static nint depth() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint depth() {
     var pc = new slice<uintptr>(256);
     return Δruntime.Callers(0, pc);
 }
 
-internal static nint depthPlus1() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint depthPlus1() {
     return depth();
 }
 
-internal static nint depthPlus2() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static nint depthPlus2() {
     return depthPlus1();
 }
 
@@ -112,7 +113,7 @@ private static readonly object tracebackNamesPlainFuncˢ = (@string)"traceback n
 private static readonly @string mainPlainFrameˢ = "main.plainFrame"u8;
 private static readonly object tracebackParenthesizesˢ = (@string)"traceback parenthesizes plain func:"u8;
 
-internal static void Main() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void Main() {
     var (x, y) = sameSite();
     fmt.Println(sameLineAgreementˢ, x == y);
     fmt.Println(selfLineConstantˢ, selfLine() == selfLine());
@@ -159,12 +160,12 @@ internal static bool hasByte(@string s, byte b) {
     return false;
 }
 
-internal static (bool fwd, bool back) callerSeparators() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (bool fwd, bool back) callerSeparators() {
     var (_, @file, _, _) = Δruntime.Caller(0);
     return (hasByte(@file, (rune)'/'), hasByte(@file, (rune)'\\'));
 }
 
-internal static (bool fwd, bool back) framesSeparators() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (bool fwd, bool back) framesSeparators() {
     bool fwd = default!;
     bool back = default!;
 
@@ -184,7 +185,7 @@ internal static (bool fwd, bool back) framesSeparators() {
     return (fwd, back);
 }
 
-internal static @string callerFileTail() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string callerFileTail() {
     var (_, @file, _, _) = Δruntime.Caller(0);
     nint cut = 0;
     nint seen = 0;
@@ -200,7 +201,7 @@ internal static @string callerFileTail() {
     return @file[(int)(cut)..];
 }
 
-internal static bool callerFileRooted() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static bool callerFileRooted() {
     var (_, @file, _, _) = Δruntime.Caller(0);
     if (len(@file) > 0 && @file[0] == (rune)'/') {
         return true;

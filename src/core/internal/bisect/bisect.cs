@@ -179,6 +179,7 @@ namespace go.@internal;
 using Δruntime = runtime_package;
 using sync = sync_package;
 using atomic = go.sync.atomic_package;
+using System.Runtime.CompilerServices;
 using go.sync;
 using ꓸꓸꓸany = Span<any>;
 
@@ -444,7 +445,7 @@ internal static slice<byte> appendFileLine(slice<byte> dst, @string @file, nint 
 // MatchStack assigns the current call stack a change ID.
 // If the stack should be printed, MatchStack prints it.
 // Then MatchStack reports whether a change at the current call stack should be enabled.
-public static bool Stack(this ж<Matcher> Ꮡm, Writer w) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static bool Stack(this ж<Matcher> Ꮡm, Writer w) {
     if (Ꮡm == nil) {
         return true;
     }
@@ -453,7 +454,7 @@ public static bool Stack(this ж<Matcher> Ꮡm, Writer w) {
 
 // stack does the real work for Stack.
 // This lets stack's body handle m == nil and potentially be inlined.
-internal static bool stack(this ж<Matcher> Ꮡm, Writer w) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static bool stack(this ж<Matcher> Ꮡm, Writer w) {
     ref var m = ref Ꮡm.DerefOrNull();
 
     UntypedInt maxStack = 16;
@@ -853,7 +854,7 @@ internal static bool seen(this ж<dedup> Ꮡd, uint64 h) {
 // overwriting whatever was there before.
 [GoRecv] internal static bool seenLossy(this ref dedup d, uint64 h) {
     var cache = Ꮡ(d.recent, (int)((nuint)h % (nuint)len(d.recent)));
-    for (nint i = 0; i < len(cache); i++) {
+    for (nint i = 0; i < 4; i++) {
         if (atomic.LoadUint64(cache.at<uint64>(i)) == h) {
             return true;
         }
@@ -863,7 +864,7 @@ internal static bool seen(this ж<dedup> Ꮡd, uint64 h) {
     foreach (var (_, x) in cache.Value) {
         ch = fnvUint64(ch, x);
     }
-    atomic.StoreUint64(cache.at<uint64>((nint)((nuint)ch % (nuint)len(cache))), h);
+    atomic.StoreUint64(cache.at<uint64>((nint)((nuint)ch % (nuint)4)), h);
     return false;
 }
 

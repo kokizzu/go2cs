@@ -164,11 +164,12 @@ func newFileEntry(file *ast.File, filePath string, manualConversion bool) FileEn
 // newFileVisitor constructs the per-file Visitor with every eagerly-required field initialized.
 // Fields absent here (e.g. tightenedConsts, untypedConstContexts) are deliberately lazy — their
 // operations nil-check before first write.
-func newFileVisitor(fset *token.FileSet, packageTypes *types.Package, info *types.Info, options Options, globalIdentNames map[*ast.Ident]string, globalScope map[string]*types.Var, fileEntry FileEntry) *Visitor {
+func newFileVisitor(fset *token.FileSet, packageTypes *types.Package, info *types.Info, options Options, globalIdentNames map[*ast.Ident]string, globalScope map[string]*types.Var, needsNoInlining map[types.Object]bool, fileEntry FileEntry) *Visitor {
 	return &Visitor{
 		fset:                      fset,
 		pkg:                       packageTypes,
 		info:                      info,
+		needsNoInlining:           needsNoInlining,
 		outputBuilder:             &strings.Builder{},
 		liftedTypeNames:           HashSet[string]{},
 		liftedTypeMap:             map[types.Type]string{},

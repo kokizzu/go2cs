@@ -141,6 +141,7 @@ type Visitor struct {
 	options            Options
 	globalIdentNames   map[*ast.Ident]string // Global identifiers to adjusted names map
 	globalScope        map[string]*types.Var // Global variable scope
+	needsNoInlining    map[types.Object]bool  // package-wide computeNoInliningClosure result — see callerInliningAnalysis.go
 	liftedTypeNames    HashSet[string]
 	liftedTypeMap      map[types.Type]string
 	subStructTypes     map[types.Type][]types.Type

@@ -90,7 +90,7 @@ func emitAutoConversionSiblings(markedFiles []FileEntry, fset *token.FileSet, pa
 			// "this file's destination .cs is hand-owned and the text lands in the .cs.auto review
 			// sibling" — exactly this pass. Constructing through newFileVisitor keeps both correct
 			// by construction and cannot drift again.
-			visitor := newFileVisitor(fset, packageTypes, info, options, globalIdentNames, globalScope, fileEntry)
+			visitor := newFileVisitor(fset, packageTypes, info, options, globalIdentNames, globalScope, map[types.Object]bool{}, fileEntry)
 
 			visitor.visitFile(fileEntry.file)
 
