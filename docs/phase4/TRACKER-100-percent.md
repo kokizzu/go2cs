@@ -11,10 +11,10 @@
 
 | Measure | Value |
 |---|---|
-| **On master (`c7f19d84e`)** | **199 / 208 = 95.7% honest** · 27,725 matching · 154 disclosed · raw 199/215 = 92.6% |
+| **On master (`df9e88c71`)** | **200 / 208 = 96.2% honest** · 27,729 matching · 154 disclosed · raw 200/215 = 93.0% |
 | Shipped in 1.23.12.2 (the release snapshot) | 189 / 208 = 90.9% · 26,043 matching · 148 disclosed |
 | Banked since the release freeze lifted (all merged + swept) | httptrace 2\|0 · buffer 1\|1 · godebug 5\|0 · internal/poll 19\|0 · math/big 224\|2 · **net/http 1,343\|2 (the campaign's largest row)** · iter 28\|0 · **cgi 38\|1** (+ the unique smalls fixes corpus-wide) |
-| **Rows remaining (implementable)** | **9** — `internal/concurrent` banked 20\|0 (the E3 question closed by VALIDATION, never needing its ruling). Remaining: reflect (G's arc), os (2 named arcs), unique + weak (await the tier-0 config ruling), os/user (E2 host-hostile oracle), runtime (**census landed: conversion PERFECT 444=444, four rooted walls W1–W4, campaign open**), runtime/pprof (+its pprof reporter, sequenced behind the frontier), runtime/trace, testing (meta-ruling owed) |
+| **Rows remaining (implementable)** | **8** — `internal/weak` banked 4\|0 as **row 200** under the owner-ratified `execution: release-tc0` annotation (Option A). Remaining: reflect (G's arc), os (2 named arcs), unique (16/20 — TypeFor-Name defect + TestMakeClonesStrings), os/user (E2 host-hostile oracle), runtime (**walls W1+W2 fully DOWN, W3 on i9, W4 queued — G6 full-depth run imminent**), runtime/pprof (+reporter), runtime/trace, testing (meta-ruling owed) |
 | In flight | i9's syscall call-site closure (ladder); the W1-design + W2b-gate lane (runtime walls); G's Reinterpret design + three gated branches invited to merge; the element-aliasing family CLOSED (doors 1–3), caller attribution FIXED, untyped-constant inference FIXED |
 | Linux parity axis | 178 of 195 applicable annotated |
 | Host-exception ledger (i7-class) | net (DNS oracle) · crypto/tls (BoGo wall) · net/http's 4 h2 deadline rows (measured 250–500ms bracket) |
