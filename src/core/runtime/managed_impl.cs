@@ -201,12 +201,25 @@ partial class runtime_package
     public static void GC()
     {
         // Go's gcStart runs clearpools() at the START of every cycle, and that is what ages
-        // sync.Pool's victim cache — without it a Pool never releases what it cached. Two of
-        // clearpools' three arms are wired here; the boringcrypto cache is the one that is not,
-        // because it is cleared by `atomicstorep(p, nil)` pointer stores that have no managed
-        // meaning.
+        // sync.Pool's victim cache — without it a Pool never releases what it cached. All three of
+        // clearpools' arms are wired here.
         if (poolcleanup != default!)
             poolcleanup();
+
+        // The boringcrypto caches, the third arm — and the one that used to be missing, because
+        // Go clears it with `atomicstorep(p, nil)` stores into registered ADDRESSES and the
+        // registered word (an atomic.Pointer[cacheTable[K,V]], whose managed slot holds a
+        // reference) is not pinnable, so its address recovers nothing. golib.BoringCaches carries
+        // the reasoning in full; the short of it is that a registration is a clear DELEGATE here —
+        // the same currency the two arms above already use — so this runs the very Clear that Go's
+        // own comment says the runtime performs at each collection.
+        //
+        // Called DIRECTLY rather than left to the registry's per-collection sentinel: Go's GC() is
+        // documented to complete a full cycle, and bcache's suite reads the registered cache on the
+        // statement after runtime.GC() returns. The converted clearpools() in mgc.cs keeps its
+        // faithful boringCaches walk and is simply inert — nothing registers a raw pointer into it
+        // any more, which is the point rather than a defect.
+        golib.BoringCaches.ClearAll();
 
         // unique's map cleanup, the second arm — verbatim clearpools(): a NON-BLOCKING send that
         // wakes the goroutine unique_runtime_registerUniqueMapCleanup parked on this channel, which
