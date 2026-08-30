@@ -107,6 +107,26 @@ public static class TestHost
         // alone. Its working directory is previousDirectory by definition: that IS the directory
         // the parent spawned it in.
         string? inheritedSandbox = Environment.GetEnvironmentVariable(SandboxMarkerVariable);
+
+        // The environment is the PRIMARY transport, and for a spawner that INHERITS one it is the
+        // whole story. It is not the whole story for a spawner that FILTERS one. net/http/cgi
+        // builds its child's environment from scratch — CGI meta-variables plus, on Windows, only
+        // SystemRoot, COMSPEC, PATHEXT and WINDIR carried over from the host — so the marker above
+        // never arrives, the child fails to recognize itself, sandboxes, and chdirs away from the
+        // cmd.Dir the test chose. cgi's TestDir and TestEnvOverride are the measured witnesses
+        // (2026-08-29): both assert the child's os.Getwd() against a directory the test named, and
+        // both got a fresh sandbox GUID instead while every other cgi verdict passed, because the
+        // CGI behavior itself was right. os/exec could never expose this — exec.Cmd inherits the
+        // environment by default — so cgi is simply the first witness, not a special case: any
+        // package spawning through an environment-filtering API meets the same wall.
+        //
+        // So the same question is asked a second way, of a marker FILE that no environment filter
+        // can reach. It is consulted ONLY when the variable is absent, which is what keeps this
+        // strictly additive: every inheriting spawner answers on the line above and never reaches
+        // the file at all.
+        if (string.IsNullOrEmpty(inheritedSandbox))
+            inheritedSandbox = InheritedSandboxFromMarkerFile(previousDirectory);
+
         bool helperReExec = !string.IsNullOrEmpty(inheritedSandbox);
 
         // The isolated run directory reproduces the SHAPE `go test` gives a package, not just a
@@ -118,8 +138,15 @@ public static class TestHost
             ? (inheritedSandbox!, previousDirectory)
             : CreateRunDirectory(registry.Package);
 
+        // Held open for the whole run, and released in the finally: while this handle lives, the
+        // file it owns asserts that this run is live and its sandbox is real.
+        IDisposable? sandboxMarkerFile = null;
+
         if (!helperReExec)
+        {
             PublishSandboxMarker(runRoot);
+            sandboxMarkerFile = PublishSandboxMarkerFile(runRoot);
+        }
 
         options.ResolveOutputPaths(previousDirectory);
 
@@ -292,6 +319,21 @@ public static class TestHost
 
             try
             {
+                // Released BEFORE the sandbox is torn down, and in its own guard so that a failure
+                // here cannot cost the tree below: the file's whole meaning is "this run is live
+                // and its sandbox exists", and the moment either stops being true it must stop
+                // saying so. On Windows the delete is a kernel property of the handle, so it rides
+                // out an abnormal exit too; elsewhere a killed host can strand the file, which is
+                // exactly the case the reader's liveness check exists to answer.
+                sandboxMarkerFile?.Dispose();
+            }
+            catch
+            {
+                // Best effort, like the teardown below it: process exit closes the handle anyway.
+            }
+
+            try
+            {
                 // The whole run root, so the package-named directory's private parent goes with it.
                 // Junction-aware: a recursive delete does not FOLLOW a link (which is what keeps the
                 // real GOROOT safe) but it does not remove one either, so the ancestry's links are
@@ -369,6 +411,12 @@ public static class TestHost
     // by construction, which is how the os/exec helpers build theirs.
     private const string SandboxMarkerVariable = "GO2CS_TEST_SANDBOX";
 
+    // The SECONDARY transport's file, written beside the test executable — the one location a child
+    // can name with no environment at all, because it derives from the process image rather than
+    // from anything a spawner is free to rewrite. See InheritedSandboxFromMarkerFile for why this
+    // location, and what stops it from being read by a run it does not belong to.
+    private const string SandboxMarkerFileName = ".go2cs-test-sandbox";
+
     // The converted syscall package: type `go.syscall_package` in assembly `syscall`. Resolved by
     // name, for the reason TestFlagBridge gives at length — the generated test projects set
     // DisableTransitiveProjectReferences, so a `testing` -> `syscall` reference would not deploy
@@ -401,6 +449,231 @@ public static class TestHost
     /// </remarks>
     private static void PublishSandboxMarker(string runRoot) =>
         PublishEnvironmentVariable(SandboxMarkerVariable, runRoot);
+
+    /// <summary>
+    /// Publishes the sandbox marker a second way — as a FILE beside the test executable — so a
+    /// helper re-exec'd by a spawner that builds its child a clean environment can still recognize
+    /// itself.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The file lives in <see cref="AppContext.BaseDirectory"/> because that is the one directory
+    /// both sides can name with NO environment: it derives from the running image, and a re-exec'd
+    /// helper is by construction the same image. The working directory cannot serve — cgi's own
+    /// TestDir spawns one child with <c>Dir</c> inside the parent's sandbox and another with no
+    /// <c>Dir</c> at all, which cgi resolves to the executable's directory — and argv cannot serve
+    /// either, because the child's argv is the CGI contract's, not the host's.
+    /// </para>
+    /// <para>
+    /// The handle is held for the run's whole life with <see cref="FileOptions.DeleteOnClose"/>, so
+    /// on Windows the file is a kernel-level assertion that its owner is still running: it goes
+    /// away when the last handle closes, including on a kill, which is the failure mode this
+    /// repository treats as routine. That is the STALENESS half. Elsewhere DeleteOnClose is managed
+    /// cleanup and a killed host can strand the file, so the reader validates liveness rather than
+    /// trusting existence.
+    /// </para>
+    /// <para>
+    /// <c>CreateNew</c>, not <c>Create</c>: if a marker is already there the honest reading is that
+    /// another host of this same executable owns it, and truncating its claim would be worse than
+    /// declining to publish — a run without this file simply behaves as every run did before it
+    /// existed. The one exception is a marker whose owner is demonstrably gone, which is reclaimed
+    /// exactly the way <c>PackageAncestry</c> reclaims an abandoned sandbox, so a stranded file on a
+    /// platform without kernel-backed delete cannot disable the transport forever.
+    /// </para>
+    /// </remarks>
+    private static IDisposable? PublishSandboxMarkerFile(string runRoot)
+    {
+        string marker = Path.Combine(AppContext.BaseDirectory, SandboxMarkerFileName);
+
+        try
+        {
+            FileStream? stream = TryCreateMarker(marker, runRoot);
+
+            if (stream is null && !MarkerOwnerIsLive(marker))
+            {
+                // Only a marker whose owner is provably gone is cleared, and only then is the
+                // create retried — once. Everything uncertain leaves the file alone.
+                File.Delete(marker);
+                stream = TryCreateMarker(marker, runRoot);
+            }
+
+            return stream;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            // Losing this costs the file transport and nothing else: the environment variable is
+            // still published, so every inheriting spawner behaves exactly as before.
+            return null;
+        }
+
+        static FileStream? TryCreateMarker(string path, string runRoot)
+        {
+            try
+            {
+                using Process self = Process.GetCurrentProcess();
+
+                // Shared for read and delete so a child can read it while the owner holds it, and
+                // so the DeleteOnClose teardown is not blocked by a reader.
+                FileStream stream = new(path, FileMode.CreateNew, FileAccess.Write,
+                    FileShare.ReadWrite | FileShare.Delete, bufferSize: 1, FileOptions.DeleteOnClose);
+
+                // Line-separated, because a run root may contain spaces and a PID and a process name
+                // may not.
+                byte[] payload = Encoding.UTF8.GetBytes($"{self.Id}\n{self.ProcessName}\n{runRoot}\n");
+                stream.Write(payload, 0, payload.Length);
+                stream.Flush();
+                return stream;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reads the sandbox marker FILE, and answers with the owning run's root only when this process
+    /// is genuinely one of that run's re-exec'd helpers.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the half that must not be generous. A marker honored by a run it does not belong to
+    /// would make that run skip its sandbox entirely and execute in whatever directory it was
+    /// started in — un-sandboxing a whole package rather than failing loudly — so every one of the
+    /// checks below has to hold, and anything unreadable, unparseable or merely uncertain answers
+    /// null and lets the caller sandbox normally. That is the opposite polarity from
+    /// <c>PackageAncestry</c>'s liveness test, which resolves doubt towards "alive" because there
+    /// the risk runs the other way (deleting a running sibling's tree).
+    /// </para>
+    /// <para>
+    /// <b>Staleness</b> is answered twice: the owner's handle carries DeleteOnClose, and the owner
+    /// is separately checked to be a live process whose name still matches, so neither a crashed
+    /// host on a platform without kernel-backed delete nor a recycled PID can vouch for a run that
+    /// has ended.
+    /// </para>
+    /// <para>
+    /// <b>Collision</b> — a second, genuinely fresh host of the SAME executable, running at the same
+    /// time — is answered by containment. A helper is spawned into a directory its parent chose, and
+    /// the only two the parent controls are its own sandbox and the directory holding the
+    /// executable; those are exactly the two cgi produces (<c>Dir</c> set, and <c>Dir</c> unset,
+    /// which cgi resolves to the executable's directory). A fresh host is started by the pipeline in
+    /// the package's own source directory, which is neither, so it is rejected. The residue this
+    /// leaves is narrow and worth stating plainly: a second host of the same published executable,
+    /// started CONCURRENTLY with the first, from inside the first's sandbox or from the publish
+    /// directory itself, would be taken for a helper. The pipeline cannot produce that — it launches
+    /// from the package directory — so it takes a deliberate hand-run second instance, and what it
+    /// costs is that the second run does not sandbox, which is visible rather than silent.
+    /// </para>
+    /// </remarks>
+    private static string? InheritedSandboxFromMarkerFile(string workingDirectory)
+    {
+        string markerDirectory = AppContext.BaseDirectory;
+        string marker = Path.Combine(markerDirectory, SandboxMarkerFileName);
+
+        try
+        {
+            if (!TryReadMarker(marker, out int ownerId, out string ownerName, out string runRoot))
+                return null;
+
+            // A host must never read its OWN marker back. Within one run the read happens before the
+            // write so it cannot, but a process that runs one host after another (the guard tier
+            // does exactly that) could otherwise meet a handle its own earlier run had not yet
+            // released.
+            using (Process self = Process.GetCurrentProcess())
+            {
+                if (ownerId == self.Id)
+                    return null;
+            }
+
+            if (!OwnerIsLive(ownerId, ownerName) || !Directory.Exists(runRoot))
+                return null;
+
+            // The containment test: this process was started somewhere the owner controls.
+            if (!IsWithin(workingDirectory, runRoot) && !IsWithin(workingDirectory, markerDirectory))
+                return null;
+
+            return runRoot;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            return null;
+        }
+    }
+
+    // Reads the marker's three lines. Every malformed shape answers false, because a marker that
+    // cannot be understood is a marker that cannot be obeyed.
+    private static bool TryReadMarker(string marker, out int ownerId, out string ownerName, out string runRoot)
+    {
+        ownerId = 0;
+        ownerName = "";
+        runRoot = "";
+
+        if (!File.Exists(marker))
+            return false;
+
+        string text;
+
+        try
+        {
+            // FileShare.Delete matters as much as the read share: the owner holds this open with
+            // DeleteOnClose, and without it the open is refused.
+            using FileStream stream = new(marker, FileMode.Open, FileAccess.Read,
+                FileShare.ReadWrite | FileShare.Delete);
+            using StreamReader reader = new(stream, Encoding.UTF8);
+            text = reader.ReadToEnd();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            return false;
+        }
+
+        string[] lines = text.Split('\n');
+
+        if (lines.Length < 3 || !int.TryParse(lines[0].Trim(), out ownerId))
+            return false;
+
+        ownerName = lines[1].Trim();
+        runRoot = lines[2].Trim();
+
+        return ownerName.Length > 0 && runRoot.Length > 0;
+    }
+
+    private static bool MarkerOwnerIsLive(string marker) =>
+        TryReadMarker(marker, out int ownerId, out string ownerName, out _) && OwnerIsLive(ownerId, ownerName);
+
+    // The process NAME is compared alongside the id for the reason PackageAncestry gives: a recycled
+    // PID must not be able to vouch for a run that has ended. Uncertainty answers false here —
+    // see InheritedSandboxFromMarkerFile on why this side resolves doubt towards "sandbox normally".
+    private static bool OwnerIsLive(int ownerId, string ownerName)
+    {
+        try
+        {
+            using Process owner = Process.GetProcessById(ownerId);
+            return string.Equals(owner.ProcessName, ownerName, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    // Path containment, asked the way the rest of this file asks it: case-insensitively, over fully
+    // resolved paths, with the root's own directory counting as inside itself.
+    private static bool IsWithin(string candidate, string root)
+    {
+        try
+        {
+            string full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(candidate));
+            string parent = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+
+            return full.Equals(parent, StringComparison.OrdinalIgnoreCase) ||
+                   full.StartsWith(parent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>
     /// Sets an environment variable in BOTH environments this process has — the CLR's, which the
@@ -472,12 +745,24 @@ public static class TestHost
     /// running is free to rewrite. The executable's own directory is the fallback: it exists by
     /// construction (the host is running out of it) and is writable wherever the build put it.
     /// </para>
+    /// <para>
+    /// The temp path is also DECLINED outright when it resolves inside the Windows directory. That
+    /// is not a hypothetical: <c>GetTempPath</c> falls back to <c>%TMP%</c>, then <c>%TEMP%</c>,
+    /// then <c>%USERPROFILE%</c>, and finally to the Windows directory itself, so a child spawned
+    /// with a filtered environment — cgi's carries neither TMP nor TEMP — asks for a temp directory
+    /// and is handed <c>C:\WINDOWS</c>. Sandboxes then accumulate as <c>C:\WINDOWS\go2cs-tests\…</c>,
+    /// which succeeds or fails purely on whether the run happens to be elevated; the census that
+    /// found this counted 56 such roots, and cgi's own TestDir reported one in its failure message
+    /// (2026-08-29). The last resort of that chain is not a scratch directory in any useful sense —
+    /// it is shared, elevation-gated, and the wrong place for a test's private tree — so the
+    /// executable's directory, which this method already trusts, is strictly the better answer.
+    /// </para>
     /// </remarks>
     private static (string runRoot, string workingDirectory) CreateRunDirectory(string package)
     {
         Exception? firstFailure = null;
 
-        foreach (string root in new[] { Path.GetTempPath(), AppContext.BaseDirectory })
+        foreach (string root in CandidateRunRoots())
         {
             // The isolated run directory reproduces the SHAPE `go test` gives a package, not just a
             // scratch space: its own last segment is the package's directory name, and its parent
@@ -502,6 +787,41 @@ public static class TestHost
         throw new InvalidOperationException(
             "testing: could not create an isolated run directory under the temp path or the test binary's own directory",
             firstFailure);
+    }
+
+    // The bases CreateRunDirectory will try, in order. The temp path leads because it is the right
+    // first choice; it is omitted entirely when it is the Windows directory, for the reason
+    // CreateRunDirectory states at length. Dropping it rather than ranking it lower is deliberate:
+    // there is no condition under which writing a test sandbox into the Windows directory is the
+    // answer, and the executable's own directory is always available.
+    private static IEnumerable<string> CandidateRunRoots()
+    {
+        string temp = Path.GetTempPath();
+
+        if (!IsWindowsDirectory(temp))
+            yield return temp;
+
+        yield return AppContext.BaseDirectory;
+    }
+
+    // True only when this is Windows AND the path is the Windows directory or inside it. Every
+    // uncertainty answers false, which leaves the candidate list exactly as it was before this
+    // check existed.
+    private static bool IsWindowsDirectory(string path)
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            return false;
+
+        try
+        {
+            string windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+
+            return windows.Length > 0 && IsWithin(path, windows);
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     // Reproduces the package directory's own SHAPE: `go test` runs a package where the sibling
