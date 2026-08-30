@@ -23,11 +23,32 @@ internal class InheritedTypeTemplate : TemplateBase
     public string? TargetTypeSize = null;
     public required string TypeClass;
 
+    // W3a wrapper-scaffolding (docs/phase4/DESIGN-w3a-wrapper-scaffolding.md). True (the existing,
+    // unconditional-public behavior) unless the caller knows the wrapped type (TypeName) is itself
+    // not effectively public — set only by the test-file-declared defined-type-over-struct case
+    // today (TypeGenerator.cs). Governs MemberScope below, which the constructor/.Value/conversion
+    // operators use instead of a bare `public`.
+    public bool WrappedTypeIsPublic = true;
+
+    // The accessibility for a member whose signature names TypeName directly (the constructor,
+    // .Value, the underlying conversion operators) — public only when BOTH the wrapper itself
+    // (Scope) and the wrapped type are, the same narrowest-wins rule ForwardedMembers already
+    // applies per forwarded field. A public wrapper over an unexported production type (runtime's
+    // white-box `MSpan` bridging `mspan`) still needs these members internal: IVT already makes
+    // internal free for every consumer, all of which are sibling files in the same test assembly.
+    // StartsWith, not ==: Scope can carry a trailing " readonly" (the "Numeric" TypeClass —
+    // ArbitraryType, ArchFamilyType, ... — sets `Scope = $"{scope} readonly"`), and an exact-match
+    // check against the bare word silently read every numeric wrapper as non-public regardless of
+    // WrappedTypeIsPublic, which is exactly the corpus-wide CS0558 an earlier, unscoped attempt at
+    // this fix measured (see TypeGenerator.cs's isTestFileDeclaration comment for the other half of
+    // that same regression).
+    private string MemberScope => Scope.StartsWith("public") && WrappedTypeIsPublic ? "public" : "internal";
+
     // For a defined type whose underlying is a STRUCT (`type winlibcall libcall`), the underlying
     // struct's fields are accessible on the named type in Go (`w.fn`). C# has no such access on the
     // wrapper, so the underlying struct's members are forwarded here as get/set properties over the
     // (mutable) `m_value`. Null/empty for every other inherited kind (slice/map/array/numeric/…).
-    public List<(string typeName, string memberName, bool isReferenceType, bool isProperty)>? ForwardedStructMembers = null;
+    public List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)>? ForwardedStructMembers = null;
 
     // For a defined type whose underlying is ITSELF an array-backed [GoType] wrapper
     // (`type pallocBits pageBits`, `type pageBits [8]uint64`), the element type of that underlying
@@ -248,7 +269,7 @@ internal class InheritedTypeTemplate : TemplateBase
                           }
                       }
               """,
-        _ => $"        public {TypeName} Value => {ValueGetter};"
+        _ => $"        {MemberScope} {TypeName} Value => {ValueGetter};"
     };
 
     // A wrapper over golib's `uintptr` STRUCT needs its own bridges to the plain numeric world:
@@ -261,7 +282,19 @@ internal class InheritedTypeTemplate : TemplateBase
     // underlying: `any` is System.Object, the base type of everything (CS0553 ×2). No bridge is
     // lost — boxing already converts any value to object, `(Symbol)obj` is the unbox-cast, and
     // the `new Symbol(value)` constructor plus the NilType operators are unaffected.
-    private string UnderlyingConversionOperators => TypeName is "any" or "object" ? "" :
+    // C# requires a user-defined conversion operator to be public — there is no legal non-public
+    // form (CS0558), so the MemberScope narrowing every OTHER wrapped-type-facing member takes
+    // (the constructor, .Value) is not an option here. When the wrapper is public but the wrapped
+    // type is not, NEITHER modifier is legal — public would expose the type (CS0053), internal
+    // would be CS0558 — so the pair is omitted outright rather than weakened. This costs nothing Go
+    // promised: TypeName here is always a Go DEFINED type's underlying (never a true alias — see
+    // the design doc), and Go itself requires an EXPLICIT conversion between a defined type and its
+    // underlying, never an implicit one. The constructor and `.Value` (now correctly internal in
+    // this same case) remain the explicit path for every consumer, all of which are sibling files
+    // in the one test assembly under the whitebox-reference model.
+    private bool OmitUnderlyingConversionOperators => Scope.StartsWith("public") && !WrappedTypeIsPublic;
+
+    private string UnderlyingConversionOperators => TypeName is "any" or "object" || OmitUnderlyingConversionOperators ? "" :
         $$"""
                 // Handle implicit conversions between '{{TypeName}}' and {{ObjectKind}} '{{ObjectName}}'
                 public static implicit operator {{ObjectName}}({{TypeName}} value) => new {{ObjectName}}(value);
@@ -432,9 +465,20 @@ internal class InheritedTypeTemplate : TemplateBase
             if (ForwardedStructMembers is null || ForwardedStructMembers.Count == 0)
                 return "";
 
+            // A forwarded accessor is public only when BOTH the wrapper itself is public AND the
+            // forwarded member's own type is — the narrowest-wins rule ReceiverMethodTemplate.
+            // TargetScope already applies to a receiver mismatch. Without it, a deliberately PUBLIC
+            // bridge wrapping an unexported production type (runtime's white-box `MSpan`, `type MSpan
+            // = mspan` in export_test.go, exposed so external tests can name it) forwarded `mspan`'s
+            // still-internal field types — `gcBits`, `mutex`, `special`, `addrRange` — through
+            // unconditionally `public` accessors: the wrapper's OWN publicization says nothing about
+            // its FIELDS' accessibility, which stays whatever production emitted per field (W3a).
+            string MemberScope((string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic) member) =>
+                Scope == "public" && member.isPublic ? "public" : "internal";
+
             IEnumerable<string> props = ForwardedStructMembers
                 .Where(member => GetSimpleName(member.memberName) != "_")
-                .Select(member => $"\r\n        [global::System.Diagnostics.CodeAnalysis.UnscopedRef] public ref {member.typeName} {member.memberName} => ref m_value.{member.memberName};");
+                .Select(member => $"\r\n        [global::System.Diagnostics.CodeAnalysis.UnscopedRef] {MemberScope(member)} ref {member.typeName} {member.memberName} => ref m_value.{member.memberName};");
 
             // The field-box accessors (`Ꮡfield`) that a plain struct's partial generates (used by the
             // converter's `receiver.of(Type.Ꮡfield)` field-address form — `&p.x` on a *pinnerBits, where
@@ -446,7 +490,7 @@ internal class InheritedTypeTemplate : TemplateBase
             // accessor (matching the plain-struct template, which only emits them for fields).
             IEnumerable<string> fieldRefs = ForwardedStructMembers
                 .Where(member => GetSimpleName(member.memberName) != "_" && !member.isProperty)
-                .Select(member => $"\r\n        public static ref {member.typeName} {AddressPrefix}{GetUnsanitizedIdentifier(member.memberName)}(ref {ObjectName} instance) => ref instance.m_value.{member.memberName};");
+                .Select(member => $"\r\n        {MemberScope(member)} static ref {member.typeName} {AddressPrefix}{GetUnsanitizedIdentifier(member.memberName)}(ref {ObjectName} instance) => ref instance.m_value.{member.memberName};");
 
             return $"\r\n\r\n        // Forwarded fields of the underlying '{TypeName}'{string.Concat(props)}{string.Concat(fieldRefs)}";
         }
@@ -481,7 +525,7 @@ internal class InheritedTypeTemplate : TemplateBase
                 private {{ReadOnly}}{{ValueFieldType}}{{Nullable}} m_value;
                 {{InterfaceImplementation}}{{ForwardedMembers}}{{ValueCloneImplementation}}
 
-                public {{ConstructorName}}({{TypeName}} value) => m_value = {{ValueConstructorArgument}};
+                {{MemberScope}} {{ConstructorName}}({{TypeName}} value) => m_value = {{ValueConstructorArgument}};
 
                 public {{ConstructorName}}(NilType _) => m_value = {{NilValueExpression}};
 

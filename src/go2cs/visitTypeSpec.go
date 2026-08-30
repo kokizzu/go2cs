@@ -201,6 +201,20 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 	} else if v.options.testInlineTypeAccess {
 		// Bridge-owned named types carry accessibility inline. Their metadata anchor can be a
 		// different test class, where an accessibility-only partial would declare a second type.
+		//
+		// A test-file-declared type whose UNDERLYING is an unexported PRODUCTION named type
+		// (runtime's `type MSpan = mspan` in export_test.go, deliberately capitalized so external
+		// test files can name it) is DELIBERATELY NOT downgraded here, unlike the method/value
+		// siblings of this rule (testMethodAccessDowngrade, testDeclaredValueAccess): downgrading
+		// MSpan cascades, because it is a widely-referenced BRIDGE NAME — every other test-file
+		// function/method whose signature mentions MSpan (AllocMSpan, FreeMSpan, MSpanCountAlloc, …)
+		// is ALSO exported and currently computed independently of MSpan's own accessibility, so
+		// downgrading MSpan alone turns dozens of currently-consistent signatures inconsistent
+		// (measured: 32 -> 70 errors). The wrapper's OWN scaffolding referencing the unexported
+		// underlying type directly (InheritedTypeTemplate's constructor/.Value/field-box accessors)
+		// is a real, distinct residual — tracked, not fixed here; it needs either propagating this
+		// downgrade to every consumer of the bridge name (a corpus-wide ripple this task did not
+		// scope) or representing a Go type ALIAS as a true C# alias rather than a wrapper struct.
 		v.pendingTypeAccess = generatedTypeScope(getSanitizedIdentifier(name)) + " "
 	}
 

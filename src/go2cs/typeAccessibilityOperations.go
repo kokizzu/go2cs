@@ -879,18 +879,29 @@ func isPublicizedLiftedType(t types.Type) bool {
 }
 
 // signatureReferencesUnexportedProductionType reports whether a function/method signature references,
-// in any parameter or result position (peeling pointer/slice/array/map/channel wrappers to the
-// element), an unexported named type of pkg that is declared in a PRODUCTION (non-test) file.
+// in the RECEIVER (if any) or any parameter or result position (peeling pointer/slice/array/map/
+// channel wrappers to the element), an unexported named type of pkg that is declared in a PRODUCTION
+// (non-test) file.
 //
 // It is the MIRROR of the production publicization framework, used for test-file-declared symbols:
 // production emits an unexported type as `internal` and is converted independently of (and before)
 // the test files, so a test file's EXPORTED helper — Go's `func NewDecimal(uint64) *decimal` in
 // strconv's internal_test.go — would be a public method whose result type is the less-accessible
-// internal production `decimal` (CS0050). In the recompile test model the test assembly is self-
-// contained (production + internal + external test files compile into ONE assembly, no cross-assembly
-// consumer of a test symbol), so downgrading such a helper to `internal` is both correct and
-// sufficient — internal is at least as restrictive as any accessibility the helper references, and
-// every caller (other test files) lives in the same assembly.
+// internal production `decimal` (CS0050). Sufficiency of `internal` does not depend on WHICH test
+// project model applies: the recompile model's test assembly is self-contained (production + internal
+// + external test files compile into ONE assembly), while the reference/whitebox-reference models
+// still compile a package's WHOLE test suite — internal and external files alike — into one separate
+// test assembly with `InternalsVisibleTo` already granting it sight of production's internals, and no
+// consumer outside either assembly. Either way, internal is at least as restrictive as any accessibility
+// the wrapper references, and every caller lives in the same assembly.
+//
+// The receiver is checked here too (methods only — Recv() is nil for a free function, so this is a
+// no-op for the free-function caller), not just clamped separately from a receiver-type-NAME heuristic
+// (getAccess in generateParametersSignature): a method whose RECEIVER is the same unexported production
+// type as its return/parameters — runtime's export_test.go `func (l *dlogger) B(x bool) *dlogger` — is
+// exactly the shape a text-casing heuristic on a rendered, package-qualified, wrapper-decorated type
+// name (`ж<global::go.runtime_package.dlogger>`) is least reliable at, while this walks the real
+// go/types Object regardless of how the name renders.
 //
 // The PRODUCTION-file restriction is essential: an unexported type declared in a TEST file (sort's
 // `multiSorter` in example_multi_test.go, returned by the exported `OrderedBy`) is publicized AND
@@ -900,6 +911,10 @@ func isPublicizedLiftedType(t types.Type) bool {
 func (v *Visitor) signatureReferencesUnexportedProductionType(sig *types.Signature, pkg *types.Package) bool {
 	if sig == nil {
 		return false
+	}
+
+	if recv := sig.Recv(); recv != nil && v.typeReferencesUnexportedProductionNamed(recv.Type(), pkg) {
+		return true
 	}
 
 	if params := sig.Params(); params != nil {
@@ -977,6 +992,35 @@ func (v *Visitor) typeReferencesUnexportedProductionNamed(t types.Type, pkg *typ
 	}
 
 	return false
+}
+
+// testMethodAccessDowngrade applies the W3a accessibility rule to a test-file-declared METHOD: access
+// starts "public" (from the method's own Go name casing, then narrowed by the receiver-type-NAME
+// heuristic in generateParametersSignature — both TEXT-based), and is downgraded to "internal" when
+// the method is declared in a `_test.go` file and its whole signature — receiver included — actually
+// references an unexported PRODUCTION type (a real go/types fact, not a name heuristic). It is the
+// exact mirror of the rule visitFuncDecl applies to an exported test-file FREE function, generalized
+// to methods: see signatureReferencesUnexportedProductionType's doc comment for why `internal` is
+// always sufficient here, regardless of test project model, and why only a production-file-declared
+// unexported type forces the downgrade.
+//
+// Called from BOTH of visitFuncDecl's method-signature access computations — the normal path and the
+// pointer/heap-box signature-rebuild path — because each independently derives its own starting
+// access from the same text heuristic, and neither alone is a complete accessibility computation for
+// a whitebox-reference test wrapper. This is strictly ADDITIONAL to that heuristic, not a replacement
+// for it: it only ever narrows an already-"public" access, and only for a test-file method, so
+// production (non-test) method accessibility — and any method already narrowed to "internal" by the
+// receiver check — is untouched either way.
+func (v *Visitor) testMethodAccessDowngrade(access string, funcDecl *ast.FuncDecl, signature *types.Signature) string {
+	if access != "public" || funcDecl.Recv == nil || !v.isTestFileDecl(funcDecl.Pos()) {
+		return access
+	}
+
+	if v.signatureReferencesUnexportedProductionType(signature, v.pkg) {
+		return "internal"
+	}
+
+	return access
 }
 
 // testDeclaredValueAccess applies the test-file accessibility downgrade to a package-level VAR or

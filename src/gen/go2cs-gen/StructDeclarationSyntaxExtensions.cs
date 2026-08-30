@@ -71,13 +71,13 @@ public static class StructDeclarationSyntaxExtensions
     }
 
     // Gets fields and properties of a struct, maintaining the order in which they are defined
-    public static List<(string typeName, string memberName, bool isReferenceType, bool isProperty)> GetStructMembers(
+    public static List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)> GetStructMembers(
         this StructDeclarationSyntax structDeclaration,
         Compilation compilation,
         bool filterToRefProperties = false)
     {
         SemanticModel semanticModel = compilation.GetSemanticModel(structDeclaration.SyntaxTree);
-        List<(string typeName, string memberName, bool isReferenceType, bool isProperty)> members = [];
+        List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)> members = [];
 
         foreach (MemberDeclarationSyntax member in structDeclaration.Members)
         {
@@ -99,7 +99,7 @@ public static class StructDeclarationSyntaxExtensions
                         // Determine if the type is a reference type or an unconstrained generic type
                         bool isReferenceType = IsReferenceTypeOrUnconstrainedGeneric(typeSymbol);
 
-                        members.Add((fullyQualifiedTypeName, propertyDeclaration.Identifier.Text, isReferenceType, true));
+                        members.Add((fullyQualifiedTypeName, propertyDeclaration.Identifier.Text, isReferenceType, true, IsMemberTypePublic(typeSymbol)));
 
                         break;
                     }
@@ -111,9 +111,10 @@ public static class StructDeclarationSyntaxExtensions
 
                         // Determine if the type is a reference type or an unconstrained generic type
                         bool isReferenceType = IsReferenceTypeOrUnconstrainedGeneric(typeSymbol);
+                        bool isPublic = IsMemberTypePublic(typeSymbol);
 
                         foreach (VariableDeclaratorSyntax variable in fieldDeclaration.Declaration.Variables)
-                            members.Add((fullyQualifiedTypeName, variable.Identifier.Text, isReferenceType, false));
+                            members.Add((fullyQualifiedTypeName, variable.Identifier.Text, isReferenceType, false, isPublic));
 
                         break;
                     }
@@ -121,6 +122,46 @@ public static class StructDeclarationSyntaxExtensions
         }
 
         return members;
+    }
+
+    // Reports whether a FORWARDED member's own type is effectively public — the same question
+    // ImplementGenerator.AdapterSidePublic and ImplicitConvGenerator ask of a type they are about to
+    // expose through a generated public member (Common.EffectiveScopeIsPublic), asked here of a
+    // struct member a wrapper type forwards. A wrapper's forwarded field/property accessor
+    // (InheritedTypeTemplate.ForwardedMembers) must not be emitted `public` over an internal
+    // PRODUCTION type (CS0050/CS0053) — e.g. runtime's white-box `MSpan` bridge (`type MSpan =
+    // mspan`, exported so tests can use it) forwarding `mspan`'s unexported `gcBits`/`mutex`/
+    // `special`/`addrRange` fields, whose OWN types stay internal even though the bridge struct
+    // around them is deliberately public.
+    //
+    // EffectiveScopeIsPublic alone answers only for the type SYMBOL handed to it, which is wrong for
+    // a CONSTRUCTED GENERIC: `ж<mspan>`'s own DeclaredAccessibility is golib's `ж<T>` definition
+    // (always public) — it says nothing about the TYPE ARGUMENT `mspan` substituted in, which stays
+    // internal. A public accessor returning `ж<mspan>` is still CS0053 for exactly that argument, so
+    // every type argument is checked too (recursively — a generic can nest, `slice<ж<mspan>>`), the
+    // same peeling `typeReferencesUnexportedProductionNamed` (typeAccessibilityOperations.go) does on
+    // the converter's own, parallel Go-side version of this question.
+    public static bool IsMemberTypePublic(ITypeSymbol? typeSymbol)
+    {
+        if (typeSymbol is null)
+            return false;
+
+        if (!Common.EffectiveScopeIsPublic(typeSymbol, Common.GetSimpleName(typeSymbol.Name, dropCollisionPrefix: true)))
+            return false;
+
+        if (typeSymbol is INamedTypeSymbol { IsGenericType: true } named)
+        {
+            foreach (ITypeSymbol typeArg in named.TypeArguments)
+            {
+                if (!IsMemberTypePublic(typeArg))
+                    return false;
+            }
+        }
+
+        if (typeSymbol is IArrayTypeSymbol arrayType)
+            return IsMemberTypePublic(arrayType.ElementType);
+
+        return true;
     }
 
     /// <summary>
@@ -368,11 +409,11 @@ public static class StructDeclarationSyntaxExtensions
     /// C# can reach it — i.e. the friend (<c>InternalsVisibleTo</c>) test assembly, which is precisely
     /// the same-Go-package case where Go permits the selection.
     /// </remarks>
-    public static List<(string typeName, string memberName, bool isReferenceType, bool isProperty)> GetForeignStructMembers(
+    public static List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)> GetForeignStructMembers(
         INamedTypeSymbol structType,
         Compilation compilation)
     {
-        List<(string typeName, string memberName, bool isReferenceType, bool isProperty)> members = [];
+        List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)> members = [];
 
         foreach (ISymbol member in structType.GetMembers())
         {
@@ -399,7 +440,8 @@ public static class StructDeclarationSyntaxExtensions
                 memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                 member.Name,
                 IsReferenceTypeOrUnconstrainedGeneric(memberType),
-                member is IPropertySymbol));
+                member is IPropertySymbol,
+                IsMemberTypePublic(memberType)));
         }
 
         return members;

@@ -58,7 +58,14 @@ public class RecvGenerator : ISourceGenerator
             string packageClassName = methodSyntax.GetParentClassName();
             string packageName = packageClassName.EndsWith(PackageSuffix) ? packageClassName[..^PackageSuffix.Length] : packageClassName;
             string identifier = methodSyntax.Identifier.Text;
-            string scope = GetScope(identifier);
+
+            // GetExplicitAccessModifier ?? GetScope precedence, the same TypeGenerator uses (Common.cs):
+            // the converter's OWN modifier on this method declaration is ground truth (it already knows,
+            // via real go/types facts, whether the method's signature touches an unexported production
+            // type — W3a); a bare name-casing read here cannot see that and would re-widen a method the
+            // converter deliberately narrowed to `internal`, producing this generated overload `public`
+            // over a signature the converter's own copy is not (CS0050/CS0051 in the OPPOSITE direction).
+            string scope = GetExplicitAccessModifier(methodSyntax) ?? GetScope(identifier);
 
             string[] usingStatements = GetFullyQualifiedUsingStatements(syntaxTree, semanticModel);
 
