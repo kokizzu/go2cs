@@ -69,6 +69,14 @@
          so the windows build proves the project graph. -->
     <ProjectReference Include="..\..\core\syscall\syscall.csproj" />
 
+    <!-- WindowsNetUserInfoTests also drives internal/syscall/windows' NetUserGetLocalGroups, the
+         second netapi32 member of the ptrout class. Unconditional for the same reason as syscall
+         above: the package is windows-EXCLUSIVE (every source file sits in its L3 windows/ GOOS
+         folder), so under any other $(GoTargetOS) its csproj compiles nothing and yields an empty
+         assembly — the crypto/x509/internal/macos shape — and referencing it cannot break a
+         cross-target build. The gate FILE is what is conditional. -->
+    <ProjectReference Include="..\..\core\internal\syscall\windows\internal.syscall.windows.csproj" />
+
     <!-- Sha3ReinterpretVectorTests: the ONLY guard the hand-owned sha3 xor.cs has (no _test.go in
          GOROOT, not reachable from a behavioral test). Binding a converted package from an MSTest
          tier follows GenericTests, which references core/sort. -->

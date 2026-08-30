@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
 using static go.builtin;
 using syscall = go.syscall_package;
+using winint = go.@internal.syscall.windows_package;
 
 namespace GolibTests;
 
@@ -212,6 +213,105 @@ public class WindowsNetUserInfoTests
             finally
             {
                 syscall.NetApiBufferFree(p);
+            }
+        }
+    }
+
+    // ---- NetUserGetLocalGroups: the same class, a DIFFERENT fabrication route -------------------
+    //
+    // The buffer here is an ARRAY of LOCALGROUP_USERS_INFO_0, and os/user's converted body did not
+    // Reinterpret it -- it laid a `ReadOnlySpan<LocalGroupUserInfo0>` straight over the native
+    // memory. That record's single field is a `ж<uint16>`, so the span fabricates one managed
+    // reference PER ELEMENT, and the loop's own `entry.Name == nil` test then reads a reference the
+    // collector never handed out. Guarded the same way: walk the native stride, compare every name
+    // against an independent direct P/Invoke.
+
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeLocalGroupUserInfo0
+    {
+        public ushort* Name;
+    }
+
+    [DllImport("netapi32.dll", CharSet = CharSet.Unicode, EntryPoint = "NetUserGetLocalGroups")]
+    private static extern uint NetUserGetLocalGroupsDirect(string? servername, string username, uint level,
+        uint flags, out IntPtr buf, uint prefMaxLen, out uint entriesRead, out uint totalEntries);
+
+    private const uint LG_INCLUDE_INDIRECT = 0x1;
+    private const uint MAX_PREFERRED_LENGTH = 0xFFFFFFFF;
+
+    [TestMethod]
+    public unsafe void LocalGroupsAgreeWithNetapi32Directly()
+    {
+        if (!OnWindows)
+        {
+            Assert.Inconclusive("netapi32 is the windows flavor");
+            return;
+        }
+
+        Assert.AreEqual(8, sizeof(NativeLocalGroupUserInfo0),
+            "LOCALGROUP_USERS_INFO_0 is a single LPWSTR -- and that size IS the array stride");
+
+        // Every Windows host puts these built-ins in these local groups, so the expectation is a
+        // VALUE rather than "whatever both sides happened to read".
+        foreach (var (account, mustContain) in new[] { ("Administrator", "Administrators"), ("Guest", "Guests") })
+        {
+            // ---- the ORACLE ----
+            uint rc = NetUserGetLocalGroupsDirect(null, account, 0, LG_INCLUDE_INDIRECT,
+                out IntPtr direct, MAX_PREFERRED_LENGTH, out uint oracleCount, out _);
+            Assert.AreEqual(0u, rc, $"the oracle itself must succeed for {account}");
+
+            var oracleGroups = new System.Collections.Generic.List<string>();
+
+            try
+            {
+                NativeLocalGroupUserInfo0* o = (NativeLocalGroupUserInfo0*)direct;
+                for (uint i = 0; i < oracleCount; i++)
+                {
+                    oracleGroups.Add(NativeString(o[i].Name));
+                }
+            }
+            finally
+            {
+                NetApiBufferFreeDirect(direct);
+            }
+
+            Assert.IsTrue(oracleGroups.Contains(mustContain),
+                $"{account} must be a member of {mustContain}; oracle saw [{string.Join(", ", oracleGroups)}]");
+
+            // ---- the CONVERTED path ----
+            var (q, qerr) = syscall.UTF16PtrFromString(account);
+            Assert.IsNull(qerr, "UTF16PtrFromString must succeed");
+
+            ref var p0 = ref heap<ж<byte>>(out var Ꮡp0);
+            ref var entriesRead = ref heap(new uint32(), out var ᏑentriesRead);
+            ref var totalEntries = ref heap(new uint32(), out var ᏑtotalEntries);
+
+            var e = winint.NetUserGetLocalGroups(nil, q, 0, LG_INCLUDE_INDIRECT, Ꮡp0,
+                MAX_PREFERRED_LENGTH, ᏑentriesRead, ᏑtotalEntries);
+            Assert.IsNull(e, $"NetUserGetLocalGroups must succeed for {account}, got: {e?.Error().ToString()}");
+
+            try
+            {
+                nuint published = (nuint)(uintptr)p0;
+                Assert.AreNotEqual((nuint)0, published,
+                    $"the wrapper published nothing for {account} -- success reported, caller's pointer left nil");
+
+                Assert.AreEqual(oracleCount, (uint)entriesRead, $"entriesRead must agree with netapi32 for {account}");
+
+                NativeLocalGroupUserInfo0* c = (NativeLocalGroupUserInfo0*)published;
+                var converted = new System.Collections.Generic.List<string>();
+
+                for (uint i = 0; i < (uint)entriesRead; i++)
+                {
+                    converted.Add(NativeString(c[i].Name));
+                }
+
+                CollectionAssert.AreEqual(oracleGroups, converted,
+                    $"the group list must agree with netapi32 element-for-element for {account}");
+            }
+            finally
+            {
+                syscall.NetApiBufferFree(p0);
             }
         }
     }

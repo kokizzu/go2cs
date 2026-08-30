@@ -69,6 +69,15 @@ partial class user_package
         public ushort* FullName;
     }
 
+    // LOCALGROUP_USERS_INFO_0: one LPWSTR, eight bytes on x64 -- and the stride the returned ARRAY
+    // is indexed by. The converted LocalGroupUserInfo0 is the same single field as a `ж<uint16>`,
+    // i.e. a managed reference, which is why the array cannot be walked as that record.
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeLocalGroupUserInfo0
+    {
+        public ushort* Name;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private unsafe struct NativeUserInfo4
     {
@@ -227,6 +236,83 @@ partial class user_package
         }
         finally {
             syscall.NetApiBufferFree(p);
+        }
+    }
+
+    // NetUserGetLocalGroups -> the local groups this user belongs to.
+    //
+    // The THIRD fabrication route in this file, and the only one that is not a Reinterpret. The
+    // converted body laid a `ReadOnlySpan<LocalGroupUserInfo0>` DIRECTLY over the netapi32 buffer:
+    //
+    //     new slice<LocalGroupUserInfo0>(new ReadOnlySpan<LocalGroupUserInfo0>(
+    //         (LocalGroupUserInfo0*)(uintptr)(new @unsafe.Pointer(p0)), (int)entriesRead))
+    //
+    // LocalGroupUserInfo0's single field is a `ж<uint16>`, so that span reinterprets eight raw
+    // kernel bytes per element as a managed OBJECT REFERENCE -- one fabricated reference per group,
+    // and `entry.Name == nil` then tests a reference the collector never handed out. Walking the
+    // native stride explicitly and lifting each name is the whole fix; the group lookup and error
+    // values below are the converted body's, unchanged.
+    internal static unsafe (slice<@string>, error) listGroupsForUsernameAndDomain(@string username, @string domain) {
+        // Check if both the domain name and user should be used.
+        @string query = default!;
+        var (joined, err) = isDomainJoined();
+        if (err == default! && joined && len(domain) != 0) {
+            query = domain + @"\"u8 + username;
+        } else {
+            query = username;
+        }
+        (var q, err) = syscall.UTF16PtrFromString(query);
+        if (err != default!) {
+            return (default!, err);
+        }
+        ref var p0 = ref heap<ж<byte>>(out var Ꮡp0);
+        ref var entriesRead = ref heap(new uint32(), out var ᏑentriesRead);
+        ref var totalEntries = ref heap(new uint32(), out var ᏑtotalEntries);
+        // https://learn.microsoft.com/en-us/windows/win32/api/lmaccess/nf-lmaccess-netusergetlocalgroups
+        // NetUserGetLocalGroups() would return a list of LocalGroupUserInfo0
+        // elements which hold the names of local groups where the user participates.
+        // The list does not follow any sorting order.
+        //
+        // If no groups can be found for this user, NetUserGetLocalGroups() should
+        // always return the SID of a single group called "None", which
+        // also happens to be the primary group for the local user.
+        err = windows.NetUserGetLocalGroups(nil, q, 0, windows.LG_INCLUDE_INDIRECT, Ꮡp0, windows.MAX_PREFERRED_LENGTH, ᏑentriesRead, ᏑtotalEntries);
+        if (err != default!) {
+            return (default!, err);
+        }
+
+        try {
+            NativeLocalGroupUserInfo0* entries = (NativeLocalGroupUserInfo0*)(nuint)(uintptr)p0;
+
+            // A published nil is the defect this member was taken for, and it must not read as an
+            // empty membership: it takes the same error as a genuinely empty list rather than
+            // silently answering "no groups".
+            if (entriesRead == 0 || entries == null) {
+                return (default!, fmt.Errorf("listGroupsForUsernameAndDomain: NetUserGetLocalGroups() returned an empty list for domain: %s, username: %s"u8, domain, username));
+            }
+
+            slice<@string> sids = default!;
+
+            for (uint32 i = 0; i < entriesRead; i++) {
+                ushort* name = entries[i].Name;
+
+                if (name == null) {
+                    continue;
+                }
+
+                var (sid, errΔ1) = lookupGroupName(windows.UTF16PtrToString(copyNativeUtf16(name)));
+
+                if (errΔ1 != default!) {
+                    return (default!, errΔ1);
+                }
+
+                sids = append(sids, sid);
+            }
+
+            return (sids, default!);
+        }
+        finally {
+            syscall.NetApiBufferFree(p0);
         }
     }
 }

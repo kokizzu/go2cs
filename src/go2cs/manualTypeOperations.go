@@ -790,15 +790,21 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// hand-owned; every other lookup_windows.go declaration reads managed values and converts
 	// faithfully, so hand-owning the file wholesale would freeze correct conversions for no gain.
 	//
-	// listGroupsForUsernameAndDomain is the THIRD consumer and is deliberately not here: it reads
-	// NetUserGetLocalGroups' buffer as a `ReadOnlySpan<LocalGroupUserInfo0>` — a different
-	// fabrication route — and lands together with that wrapper in its own change.
+	// listGroupsForUsernameAndDomain is the THIRD consumer, and its route to the same fabrication is
+	// the one worth naming because it is not a Reinterpret at all: it lays a
+	// `ReadOnlySpan<LocalGroupUserInfo0>` DIRECTLY over the native buffer, and that record's single
+	// field is a `ж<uint16>`. A Span<T> over native memory whose T carries a managed reference
+	// fabricates one per element, so an out-parameter's own type says nothing about the safety of
+	// the read — the CALLER decides that, which is the whole lesson of this arc. It lands with
+	// internal/syscall/windows' NetUserGetLocalGroups in the same change, for the same reason the
+	// other two landed with syscall's NetUserGetInfo.
 	//
 	// Declared only in lookup_windows.go, so the entry is inert elsewhere; scoped anyway so a
 	// same-named unix declaration cannot silently inherit a Windows hand-own the way readdir did.
 	"os/user": {
-		"lookupFullNameServer":   goosWindows,
-		"lookupUserPrimaryGroup": goosWindows,
+		"lookupFullNameServer":           goosWindows,
+		"lookupUserPrimaryGroup":         goosWindows,
+		"listGroupsForUsernameAndDomain": goosWindows,
 	},
 	// net.adapterAddresses is the SAME fork as os.readdir/readReparseLink above, at the biggest
 	// record in the corpus — and it is the single producer behind every Windows interface and
@@ -1318,6 +1324,16 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// remainder. Failing BY NAME converts a whole-suite process death into ONE loud row.
 	"internal/syscall/windows": {
 		"NetShareAdd": goosWindows,
+		// This package's member of the PTROUT class (`**byte` out-parameter), taken with its call
+		// site rather than alone. os/user's listGroupsForUsernameAndDomain reads the returned
+		// netapi32 array as a `ReadOnlySpan<LocalGroupUserInfo0>` laid directly over native
+		// memory — and LocalGroupUserInfo0's single field is a `ж<uint16>`, a managed reference. A
+		// Span<T> over native memory whose T carries a reference is a THIRD route to the same
+		// fabrication the two Reinterpret sites take (see the "os/user" entry above), so
+		// publishing a real address while that caller stayed as-is would replace today's contained
+		// nil with a CLR type-safety break. Body in zsyscall_windows_ptrout_impl.cs, transcription
+		// in os/user's lookup_windows_impl.cs, one change.
+		"NetUserGetLocalGroups": goosWindows,
 		// The privilege-adjustment member of the struct-passing class, and the one whose corruption
 		// BLAMES THE HOST. Its generated body passes advapi32 the address of a managed
 		// TOKEN_PRIVILEGES: native wants 16 bytes ending in one INLINE LUID_AND_ATTRIBUTES, and the

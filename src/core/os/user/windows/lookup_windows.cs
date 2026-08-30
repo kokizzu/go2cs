@@ -154,57 +154,7 @@ internal static (@string, error) lookupGroupName(@string groupname) {
 
 // listGroupsForUsernameAndDomain accepts username and domain and retrieves
 // a SID list of the local groups where this user is a member.
-internal static unsafe (slice<@string>, error) listGroupsForUsernameAndDomain(@string username, @string domain) {
-    GoFrame ᒐ = default;
-    try {
-        // Check if both the domain name and user should be used.
-        @string query = default!;
-        var (joined, err) = isDomainJoined();
-        if (err == default! && joined && len(domain) != 0){
-            query = domain + @"\"u8 + username;
-        } else {
-            query = username;
-        }
-        (var q, err) = syscall.UTF16PtrFromString(query);
-        if (err != default!) {
-            return (default!, err);
-        }
-        ref var p0 = ref heap<ж<byte>>(out var Ꮡp0);
-        ref var entriesRead = ref heap(new uint32(), out var ᏑentriesRead);
-        ref var totalEntries = ref heap(new uint32(), out var ᏑtotalEntries);
-        // https://learn.microsoft.com/en-us/windows/win32/api/lmaccess/nf-lmaccess-netusergetlocalgroups
-        // NetUserGetLocalGroups() would return a list of LocalGroupUserInfo0
-        // elements which hold the names of local groups where the user participates.
-        // The list does not follow any sorting order.
-        //
-        // If no groups can be found for this user, NetUserGetLocalGroups() should
-        // always return the SID of a single group called "None", which
-        // also happens to be the primary group for the local user.
-        err = windows.NetUserGetLocalGroups(nil, q, 0, windows.LG_INCLUDE_INDIRECT, Ꮡp0, windows.MAX_PREFERRED_LENGTH, ᏑentriesRead, ᏑtotalEntries);
-        if (err != default!) {
-            return (default!, err);
-        }
-        defer(syscall.NetApiBufferFree, p0, ref ᒐ);
-        if (entriesRead == 0) {
-            return (default!, fmt.Errorf("listGroupsForUsernameAndDomain: NetUserGetLocalGroups() returned an empty list for domain: %s, username: %s"u8, domain, username));
-        }
-        var entries = new slice<windows.LocalGroupUserInfo0>(new ReadOnlySpan<windows.LocalGroupUserInfo0>((windows.LocalGroupUserInfo0*)(uintptr)(new @unsafe.Pointer(p0)), (int)(entriesRead)));
-        slice<@string> sids = default!;
-        foreach (var (_, entry) in entries) {
-            if (entry.Name == nil) {
-                continue;
-            }
-            var (sid, errΔ1) = lookupGroupName(windows.UTF16PtrToString(entry.Name));
-            if (errΔ1 != default!) {
-                return (default!, errΔ1);
-            }
-            sids = append(sids, sid);
-        }
-        return (sids, default!);
-    }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
-}
+// go2cs generated this placeholder — func listGroupsForUsernameAndDomain is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (ж<User>, error) newUser(@string uid, @string gid, @string dir, @string username, @string domain) {
     ref var domainAndUser = ref heap<@string>(out var ᏑdomainAndUser);
