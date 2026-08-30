@@ -268,6 +268,23 @@ partial class runtime_package
         return 0;
     }
 
+    // NumGoroutine returns the number of goroutines that currently exist. Go's body (gcount) derives
+    // that by subtraction over scheduler state — allglen, less sched.gFree.n, less sched.ngsys, less
+    // each P's gFree.n — none of which the managed model populates, so every term was zero and
+    // gcount's own `if n < 1 { n = 1 }` floor reported a constant 1 for every program ever run. The
+    // managed model has the real count: golib's Goroutine registry maintains it as goroutines are
+    // created and retired, including the main goroutine, which is what Go counts too.
+    //
+    // Go's staleness caveat carries over unchanged and for the same reason — "all these variables
+    // can be changed concurrently, so the result can be inconsistent" — since a goroutine may be
+    // created or may exit between the read and the caller's use of it. What does NOT carry over is
+    // gcount's floor: the registry cannot report less than the caller's own goroutine, so there is
+    // no nonsense to clamp.
+    public static nint NumGoroutine()
+    {
+        return Goroutine.Count;
+    }
+
     // totalMutexWaitTimeNanos sums the mutex wait time observed by the runtime. Go's body loads
     // two global counters and then walks the same `allm` list as NumCgoCall for per-m
     // lock-profile wait times — the walk nil-derefs here, and the per-m profiles it would sum

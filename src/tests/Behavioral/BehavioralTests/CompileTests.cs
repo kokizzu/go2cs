@@ -790,6 +790,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckItabLateRegistration() => CheckTarget("ItabLateRegistration");
 
     [TestMethod]
+    public void CheckIterPullRendezvous() => CheckTarget("IterPullRendezvous");
+
+    [TestMethod]
     public void CheckJsonFixedArrayUnmarshal() => CheckTarget("JsonFixedArrayUnmarshal");
 
     [TestMethod]

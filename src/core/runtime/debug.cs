@@ -27,10 +27,7 @@ public static nint NumCPU() {
 
 // go2cs generated this placeholder — func totalMutexWaitTimeNanos is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// NumGoroutine returns the number of goroutines that currently exist.
-public static nint NumGoroutine() {
-    return (nint)gcount();
-}
+// go2cs generated this placeholder — func NumGoroutine is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 //go:linkname debug_modinfo runtime/debug.modinfo
 internal static @string debug_modinfo() {
