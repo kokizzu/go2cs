@@ -622,6 +622,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckGenericTypeInstantiation() => CheckTarget("GenericTypeInstantiation");
 
     [TestMethod]
+    public void CheckGenericUntypedConstInfer() => CheckTarget("GenericUntypedConstInfer");
+
+    [TestMethod]
     public void CheckGenericUntypedIntArg() => CheckTarget("GenericUntypedIntArg");
 
     [TestMethod]
