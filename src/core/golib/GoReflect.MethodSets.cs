@@ -199,10 +199,43 @@ public static partial class GoReflect
 
         if (IsGoInterfaceType(staticType))
         {
-            string name = MethodAt(staticType, index).GoName;
-            Type dynamicType = bindTarget is null ? typeof(object) : GoDynamicTypeOf(bindTarget);
+            GoMethodSetEntry interfaceEntry = MethodAt(staticType, index);
+            string name = interfaceEntry.GoName;
+
+            // Go's methodReceiver decides this refusal from the INTERFACE's own table, before it
+            // resolves anything against the dynamic value (reflect/value.go, the abi.Interface arm).
+            // Mirroring that order matters: the answer must not depend on whether the dynamic type
+            // happens to expose the method, or a same-package receiver that DOES expose it would
+            // dispatch where Go refuses.
+            //
+            // The refusal does not belong at THIS call, though. Go's Value.Method(i) succeeds — it
+            // only sets flagMethod — and the panic comes later, from Call, recoverably. So it is bound
+            // INTO the returned method value and raised on INVOCATION, which puts it back exactly
+            // where Go has it and leaves the Value itself obtainable.
+            //
+            // Throwing MissingMethodException here got BOTH halves wrong, and the second is why the
+            // symptom was unrecognizable: a managed exception is not a Go panic, so the deferred
+            // recover() in reflect's own shouldPanic saw nil and raised its own "did not panic",
+            // masking the real exception entirely. A wrong-KIND failure does not even surface as
+            // itself — which is the argument for the thunk over any eager throw.
+            //
+            // An interface's table carries its unexported methods — go2cs emits them as ordinary C#
+            // interface members, so NumMethod counts them as Go documents. A concrete type's table is
+            // exported-only, in golib BY DESIGN (GetGoMethodSetEntries skips a non-uppercase projected
+            // name) and in Go by ExportedMethods(), which is why the non-interface arm below needs no
+            // equivalent: an exported-only list cannot yield an unexported name.
+            //
+            // Go's OTHER interface-arm refusal — "of method on nil interface value" — is deliberately
+            // absent: Value.Method already refuses a nil interface receiver before reaching here, as
+            // Go's own Value.Method does, so an arm for it would be unreachable.
+            if (name.Length > 0 && char.IsLower(name[0]))
+                return UnexportedMethodRefusal(interfaceEntry, "reflect: Call of unexported method");
+
+            Type dynamicType = GoDynamicTypeOf(bindTarget);
             int dynamicIndex = GoMethodIndex(dynamicType, name);
 
+            // Past both of Go's refusals, a miss has no Go meaning left — it is a genuine lookup
+            // failure and still fails loud, rather than being swallowed by the arms above.
             if (dynamicIndex < 0)
                 throw new MissingMethodException(GoTypeName(dynamicType), name);
 
@@ -391,6 +424,40 @@ public static partial class GoReflect
         LambdaExpression bound = Expression.Lambda(delegateType, body, arguments);
 
         return Expression.Lambda<Func<object?, Delegate>>(Expression.Convert(bound, typeof(Delegate)), receiver).Compile();
+    }
+
+    // A METHOD VALUE that carries one of Go's two interface-method refusals instead of an
+    // implementation: the delegate has the method's own signature, so it is an ordinary method value
+    // to everything that inspects it, and raises the panic only when INVOKED — which is where Go
+    // raises it. Go's Value.Method(i) hands back a refusing method value just like this one; nothing
+    // observes the difference until Call.
+    //
+    // The panic state is a bare string, the form the converter emits for a Go string panic
+    // (`throw panic("unknown type kind")` and its ~200 siblings in the corpus), so recover() sees
+    // what it sees for any other reflect panic.
+    private static Delegate UnexportedMethodRefusal(GoMethodSetEntry entry, string message) =>
+        s_refusalThunks.GetOrAdd((entry.Method, message), static key => CompileRefusalThunk(key.Method, key.Message));
+
+    private static readonly ConcurrentDictionary<(MethodInfo Method, string Message), Delegate> s_refusalThunks = new();
+
+    private static Delegate CompileRefusalThunk(MethodInfo method, string message)
+    {
+        // An INTERFACE method's receiver is `this`, not a leading parameter — unlike the static
+        // emission CompileBoundFactory takes apart — so every parameter here is a real one and none
+        // is skipped. The signature is reproduced exactly rather than approximated, because Call
+        // measures the method value against it before the body ever runs.
+        ParameterExpression[] arguments =
+            [.. method.GetParameters().Select(static (p, i) => Expression.Parameter(p.ParameterType, p.Name ?? $"arg{i}"))];
+
+        Type delegateType = MakeDelegateType([.. arguments.Select(static a => a.Type)], method.ReturnType);
+
+        MethodInfo panicMethod = typeof(builtin).GetMethod(nameof(builtin.panic), [typeof(object)])!;
+
+        Expression body = Expression.Throw(
+            Expression.Call(panicMethod, Expression.Constant(message, typeof(object))),
+            method.ReturnType);
+
+        return Expression.Lambda(delegateType, body, arguments).Compile();
     }
 
     // The Func<>/Action<> delegate type for a Go signature. A shape outside what those families can

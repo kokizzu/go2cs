@@ -412,6 +412,18 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"MapIter.Next":        goosAny,
 		"MapIter.Key":         goosAny,
 		"MapIter.Value":       goosAny,
+		// The rest of the iterator, joining the three above so the hand-own is COMPLETE in both
+		// directions. Reset assigns Go's `hiter` (no managed form), so a reset iterator kept every
+		// companion field pointing at the PREVIOUS map; SetIterKey/SetIterValue gate on
+		// `iter.hiter.initialized()`, never true here, so both panicked "called before Next" on
+		// every correct use — and both also carry the mapType prefix-downcast described just below.
+		// Leaving these three auto is what made the hand-own ASYMMETRIC: the happy path was managed
+		// while Go's zero/exhausted guards were absent and its setters unusable. Measured both ways
+		// against go1.23.12 — TestSetIter/TestMapIterSet panicked when they must not, and
+		// TestMapIterSafety/TestMapIterReset did not panic when they must.
+		"MapIter.Reset":      goosAny,
+		"Value.SetIterKey":   goosAny,
+		"Value.SetIterValue": goosAny,
 		// The map READ pair, same root as MapRange and landed against it: both auto bodies do
 		// `v.typ().Reinterpret<abi.Type, mapType>()` to reach the key/elem types off the embedded
 		// abi.MapType, and a synthesized descriptor has no abi.MapType behind it — the emitted
