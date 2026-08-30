@@ -5450,13 +5450,31 @@ The full identity enumeration golib maintains (invariant: **nil ⟺ `m_array is 
 | `s[a:a]`, `s[len(s):]` of non-nil `s` (even cap 0) | non-nil empty | `Reslice` shares the real backing array |
 | `append(emptySlice)` — nothing to add | that same non-nil empty | `Append` identity return |
 | `append(s, elems...)` with elements | non-nil | in-place or reallocated — always a real array |
+| `f()` — zero-argument variadic call | nil | empty `params` pack → `Span<T>.slice()` answers `default` |
+| `f(nilSlice...)` — spread of nil | nil | `ꓸꓸꓸ`/`ToSpan` of a null backing → same path |
+| `f([]T{}...)`, `f(x[:0]...)` — spread of non-nil empty | non-nil empty | span carries a real reference → the copy path |
 
-Known adjacent gap, deliberately out of this change's scope: a **zero-argument variadic call**
-materializes a non-nil empty (`params Span<T>` → `.slice()`) where Go passes nil. (Guarded
-by the `SliceNilVsEmpty` behavioral test — every row of the table probed with `s == nil`, `len`, and
-`cap` against `go run`; `resliceTailCapZero` discriminates the operator fix, `nilReslice` the
-`Reslice` fix, and `appendNilNothing` the `Append` fix. `NilSliceConversion` continues to guard the
-`[]T(nil)` conversion row.)
+The last three rows close what this section used to record as a **known adjacent gap**: a
+zero-argument variadic call materialized a non-nil empty where Go passes nil, because the pack's
+`Span<T>` was copied through `ReadOnlySpan<T>.ToArray()`, whose `Array.Empty<T>()` is a real (hence
+non-nil) backing array. Nil-ness crosses the C# `params` boundary intact once you read the right
+property: **a span's data reference is null exactly when Go's slice header's data pointer is nil**,
+which is the same invariant `slice<T>` already keeps one level up (`m_array is null` ⟺ nil).
+`SliceExtensions.slice<T>(this Span<T>, …)` now answers `default` for an empty pack whose reference
+is null and takes the copy path otherwise, which separates all three variadic shapes above. Roslyn's
+choice of `default(Span<T>)` for an empty pack is not language-guaranteed, but the degradation if it
+ever changes is to the previous behavior (a real reference, hence non-nil), never to a nil where Go
+has storage; the spread half depends on golib's own `ToSpan`, not on the compiler. One residual, from
+`ToSpan` rather than from the rule: a zero-size element type (`[]struct{}`) spans as `Span<T>.Empty`
+when empty, so an empty non-nil slice of a zero-size type reads as nil across a spread.
+
+(Guarded by the `SliceNilVsEmpty` behavioral test — every row of the table probed with `s == nil`,
+`len`, and `cap` against `go run`; `resliceTailCapZero` discriminates the operator fix, `nilReslice`
+the `Reslice` fix, `appendNilNothing` the `Append` fix, and `packZeroArgs`/`spreadNil` versus
+`spreadEmptyLiteral`/`spreadMakeZero`/`spreadResliceTailCapZero` the variadic rows, with
+`variadicDerived` checking that a pack's nil-ness survives the reslice, no-op append, and
+re-spread a callee typically performs before observing it. `NilSliceConversion` continues to guard
+the `[]T(nil)` conversion row.)
 
 ### A slice of a ZERO-SIZE element type carries no storage — `make([]struct{}, math.MaxInt)` allocates nothing
 

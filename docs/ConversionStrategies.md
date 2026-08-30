@@ -431,7 +431,10 @@ observably non-nil, and nil survives reslicing (`nil[0:0]`) and no-op appends �
 Go programs (and the stdlib's own tests) rely on. The same holds for a DEFINED slice type
 (`type S []int`): the generated wrapper's `== nil` delegates to the wrapped `slice<T>`'s own
 `== nil` (representation nilness), so `S{}` is non-nil while the zero value is nil (named map/channel
-wrappers were already correct — their backing compares by reference).
+wrappers were already correct — their backing compares by reference). It holds across a VARIADIC
+parameter too, where the pack reaches the callee through a C# `params Span<T>` rather than through a
+slice header: a zero-argument call materializes nil, a spread passes exactly the slice it was given,
+and the two are told apart by the span's data reference — null for exactly the headers Go calls nil.
 
 **Full detail:** [Reference → Nil and Zero Values](ConversionStrategies-Reference.md#nil-and-zero-values) —
 null-safe zero values and pointer-to-interface assignment through selector fields; and
