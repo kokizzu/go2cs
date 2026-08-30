@@ -789,6 +789,69 @@ public static void SetBytes(this ΔValue v, slice<byte> x) {
     GoReflect.WritePointerSlot(v.addrBox, stored);
 }
 
+// setRunes is SetBytes's RUNE twin, and it is hand-owned for the identical reason: the auto body is
+// `*(*[]rune)(v.ptr) = x`, a store through the Go data word this bridge never populates.
+//
+// The byte case failed SILENTLY (a write that landed nowhere); this one nil-dereferences instead.
+// That difference is an accident of how the null box happens to fail, not a difference in kind — so
+// the SHAPE `*(*T)(v.ptr) = x` is what marks the defect, and other survivors of it in value.cs may
+// still be storing into nothing without saying so.
+//
+// Reached only through makeRunes, i.e. from the string↔[]rune conversions Value.Convert routes to.
+// Unlike SetBytes there is no element RE-SPELLING step: a rune slice's element already IS the
+// destination's element kind, so the one relation left to apply is the named-wrapper construction a
+// defined slice type needs, and TryConvertTo is where Value.Set already applies exactly that.
+// runes is the READ half of the rune pair — Bytes's counterpart, hand-owned for the third instance
+// of the same shape: the auto body is `~(ж<slice<rune>>)(uintptr)(v.ptr)`, a deref of a box over the
+// data word this bridge never populates.
+//
+// Bytes and SetBytes were hand-owned together because a read and a write of the same storage have to
+// agree; runes and setRunes are the pair that was left behind, and BOTH halves were broken — which
+// is the argument for treating `v.ptr` access as a class rather than fixing instances as they
+// surface.
+//
+// Aliasing: a plain []rune and a NAMED slice type over an unnamed element (reflect's own
+// `MyRunes []int32`) both alias, because the wrapper holds the very slice it wraps. A defined-ELEMENT
+// rune slice would need the element re-spelling TryByteSliceView does for bytes; no such shape exists
+// in reflect's convertTests and none is emitted here, so it is refused rather than silently copied.
+// The non-rune message is Go's own text, which says "Bytes" even in the rune reader.
+internal static slice<rune> runes(this ΔValue v) {
+    v.flag.mustBe(ΔSlice);
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elem = st is null ? null : GoReflect.ElementType(st);
+    if (elem is null || GoReflect.KindOf(elem) != GoReflect.Int32) {
+        throw panic("reflect.Value.Bytes of non-rune slice");
+    }
+    if (v.live is slice<rune> direct) {
+        return direct;
+    }
+    if (v.live is null) {
+        // The nil rune slice: Go's header re-typing answers a nil []rune, nothing to alias.
+        return default!;
+    }
+    if (GoReflect.TryUnwrapWrapperValue(v.live, out object? inner) && inner is slice<rune> unwrapped) {
+        return unwrapped;
+    }
+    throw panic("reflect.Value.Bytes of non-rune slice");
+}
+
+internal static void setRunes(this ΔValue v, slice<rune> x) {
+    v.flag.mustBeAssignable();
+    v.flag.mustBe(ΔSlice);
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elem = st is null ? null : GoReflect.ElementType(st);
+    if (elem is null || GoReflect.KindOf(elem) != GoReflect.Int32) {
+        throw panic("reflect.Value.setRunes of non-rune slice");
+    }
+    if (!GoReflect.TryConvertTo(x, st!, out object? stored)) {
+        throw panic("reflect.Value.setRunes of non-rune slice");
+    }
+    if (v.addrBox is null) {
+        throw panic("reflect.Value.setRunes of value with no aliased storage");
+    }
+    GoReflect.WritePointerSlot(v.addrBox, stored);
+}
+
 // NumField returns the number of fields in the struct v — the PROJECTED Go fields of the
 // STATIC struct type (promoted embeds project as the embedded Go field; a defined-type-over-
 // struct wrapper exposes its underlying's fields; bridge companions are excluded by attribute).
@@ -2400,10 +2463,21 @@ public static ΔType StructOf(slice<StructField> fields) {
 // A conversion the relation cannot express panics with Go's message (fail loud, never a
 // silent wrong value). The result carries the DESTINATION type and inherits v's read-only
 // bits (Go flag stickiness).
+//
+// CONVERSION IS STRICTLY WIDER THAN ASSIGNMENT, AND THAT IS WHY THE SHAPES BELOW LIVE HERE.
+// TryConvertTo is the ASSIGNMENT relation: Value.Set, SetMapIndex and the whole Set{Int,Uint,
+// Float,Complex,String,Bool} family resolve through it. Go permits `[]byte("s")` as a CONVERSION
+// while rejecting `var b []byte = "s"` as an assignment, so teaching TryConvertTo about
+// string↔slice would make `Value.Set` accept a string into a []byte slot — an assignment Go
+// panics on, admitted silently. These shapes are therefore answered HERE, before the shared
+// relation is consulted, and TryConvertTo keeps meaning exactly what its consumers rely on.
 public static ΔValue Convert(this ΔValue v, ΔType t) {
     System.Type? dstType = sysTypeOfReflectType(t);
     if (dstType is null) {
         throw panic("reflect.Value.Convert: convert to non-synthesized type");
+    }
+    if (tryConvertOnlyShape(v, t, dstType, out ΔValue only)) {
+        return only;
     }
     object? src = v.live;
     if (!GoReflect.TryConvertTo(src, dstType, out object? converted)) {
@@ -2411,6 +2485,130 @@ public static ΔValue Convert(this ΔValue v, ΔType t) {
                     " cannot be converted to type " + t.String());
     }
     return makeTypedValue(converted, dstType, arrayDimsOfReflectType(t), (flag)(v.flag & flagRO));
+}
+
+// tryConvertOnlyShape answers the conversions Go allows that ASSIGNMENT does not (see Convert's
+// header for why they cannot go in the shared relation), and reports false for everything else so
+// the caller falls through unchanged.
+//
+// The slice→array arms are not symmetric, and Go is deliberate about it: `[N]T(s)` COPIES, while
+// `(*[N]T)(s)` ALIASES s's backing array. Only the copy is implemented — reflect's own
+// TestConvertSlice2Array pins exactly that ("converting a slice to non-empty array needs to return
+// a non-addressable copy") by mutating the source afterward and requiring the result not to move.
+// The POINTER form's success path would have to hand back a box aliasing the slice's storage;
+// returning a pointer to a copy would satisfy the type and silently break the aliasing Go
+// guarantees, so it refuses instead — Convert's own "fail loud, never a silent wrong value" rule,
+// and the same want-of-a-consumer stance CallSlice takes. Its LENGTH panic is implemented, because
+// that path is reachable and specified (reflect's TestConvertPanic asserts the message).
+private static bool tryConvertOnlyShape(ΔValue v, ΔType t, System.Type dstType, out ΔValue result) {
+    result = default!;
+    ΔKind srcKind = v.kind();
+    ΔKind dstKind = t.Kind();
+
+    // string ↔ []byte / []rune. DELEGATED to the auto-converted cvt* functions rather than
+    // rewritten: unlike the slice→array pair below they contain no unsafe memory work — they are
+    // ordinary reflect-level operations (New/Elem/SetBytes/SetString/setRunes, all bridge-supported)
+    // carrying Go's own UTF-8 encode/decode semantics. Forking that behaviour by hand would buy
+    // nothing. The reason the slice→array arms ARE hand-written is the opposite: their auto forms
+    // move raw memory (unsafeheader.Slice, unsafe_New, typedmemmove) through v.ptr, and the bridge
+    // has no address there — v.live holds a managed object.
+    //
+    // The ELEMENT must be unnamed. That is Go's own rule rather than an approximation of it
+    // (convertOp gates these on pkgPathFor(Elem()) == ""): a named `[]MyByte` does NOT convert to
+    // string, while a named SLICE type over an unnamed element — MyBytes, in reflect's own
+    // convertTests — does.
+    if (srcKind == ΔString && dstKind == ΔSlice && t.Elem().PkgPath() == ""u8) {
+        ΔKind strElem = t.Elem().Kind();
+        if (strElem == Uint8) {
+            result = cvtStringBytes(v, t);
+            return true;
+        }
+        if (strElem == Int32) {
+            result = cvtStringRunes(v, t);
+            return true;
+        }
+    }
+
+    // INTEGER → string is a RUNE conversion in Go — string(97) is "a", not "97" — and an
+    // out-of-range value yields U+FFFD rather than failing. Getting that wrong is silent and
+    // plausible-looking, which is why it delegates to Go's own cvtIntString/cvtUintString instead of
+    // being retyped here. Like the shapes around it this is conversion-only: Go rejects the same
+    // pairing as an assignment, so it must not reach TryConvertTo.
+    if (dstKind == ΔString) {
+        if (srcKind == ΔInt || srcKind == Int8 || srcKind == Int16 || srcKind == Int32 || srcKind == Int64) {
+            result = cvtIntString(v, t);
+            return true;
+        }
+        if (srcKind == ΔUint || srcKind == Uint8 || srcKind == Uint16 || srcKind == Uint32 ||
+            srcKind == Uint64 || srcKind == Uintptr) {
+            result = cvtUintString(v, t);
+            return true;
+        }
+    }
+
+    if (srcKind == ΔSlice && dstKind == ΔString && v.Type().Elem().PkgPath() == ""u8) {
+        ΔKind sliceElem = v.Type().Elem().Kind();
+        if (sliceElem == Uint8) {
+            result = cvtBytesString(v, t);
+            return true;
+        }
+        if (sliceElem == Int32) {
+            result = cvtRunesString(v, t);
+            return true;
+        }
+    }
+
+    if (srcKind == ΔSlice && dstKind == Array) {
+        nint want = t.Len();
+        if (want > v.Len()) {
+            throw panic("reflect: cannot convert slice with length " + strconv.Itoa(v.Len()) +
+                        " to array with length " + strconv.Itoa(want));
+        }
+        result = sliceToArrayCopy(v, t, dstType, want);
+        return true;
+    }
+
+    if (srcKind == ΔSlice && dstKind == ΔPointer && t.Elem().Kind() == Array) {
+        nint want = t.Elem().Len();
+        if (want > v.Len()) {
+            throw panic("reflect: cannot convert slice with length " + strconv.Itoa(v.Len()) +
+                        " to pointer to array with length " + strconv.Itoa(want));
+        }
+        // The LENGTH panic above is this arm's whole contribution for now. The SUCCESS path falls
+        // through deliberately rather than being answered here, and the distinction is the point:
+        // `(*[N]T)(s)` must ALIAS s's backing array. golib already has the machinery for it —
+        // `array<T>.Alias(source, length)`, whose own doc names a copy behind this pointer "a silent
+        // wrong answer" with image/png's TestWriteRGBA as the corpus witness — but reaching it from
+        // here needs a non-generic bridge (element-typed MakeGenericMethod plus the named-wrapper
+        // step, the shape TryByteSliceAs already uses) that does not exist yet, and the result then
+        // has to be boxed as a POINTER that preserves the alias.
+        //
+        // Falling through leaves this case behaving exactly as it did before this change rather than
+        // introducing a new failure mode; what it must never do is return a pointer to a copy, which
+        // would pass reflect's own convertTests — those compare VALUES — while breaking the
+        // guarantee callers actually rely on.
+    }
+
+    return false;
+}
+
+// sliceToArrayCopy builds the NON-ADDRESSABLE copy Go's `[N]T(s)` yields. Non-addressable falls
+// out of construction rather than being enforced: the value carries no addrBox, so CanAddr is
+// false and Index(i).Set cannot reach the source slice — which is the property
+// TestConvertSlice2Array measures.
+private static ΔValue sliceToArrayCopy(ΔValue v, ΔType t, System.Type dstType, nint want) {
+    nint[]? dims = arrayDimsOfReflectType(t);
+    object? box = GoReflect.ZeroValueOf(dstType, dims);
+
+    // A zero-length destination is complete as constructed, and a nil source slice reaches here
+    // legitimately for it — Go converts []byte(nil) to [0]byte. Neither side is indexed.
+    if (want > 0 && box is IArray dst && v.live is IArray src) {
+        for (nint i = 0; i < want; i++) {
+            dst[i] = src[i];
+        }
+    }
+
+    return makeTypedValue(box, dstType, dims, (flag)(v.flag & flagRO));
 }
 
 // FieldByName returns the struct field with the given name over the SAME projected Go field
