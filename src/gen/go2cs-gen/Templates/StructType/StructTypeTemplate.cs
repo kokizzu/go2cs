@@ -764,6 +764,27 @@ internal class StructTypeTemplate : TemplateBase
                     if (!returnTypeIsPublic)
                         methodScope = "internal";
                 }
+
+                // The PARAMETER-side twin of the return-type downgrade above (W3a's promoted-member-
+                // forwarding site, docs/phase4/DESIGN-w3a-wrapper-scaffolding.md's own arc). A VOID-
+                // returning promoted method skips the check above entirely, but its own parameters
+                // can equally reference an unexported type the forwarder must not expose as public —
+                // runtime's white-box `AddrRanges` embeds the unexported `addrRanges`, whose promoted
+                // `cloneInto(*addrRanges)` takes an `*addrRanges` argument (CS0051). Same narrow
+                // gating as the return-type check, and for the identical reason: the accurate
+                // semantic test (ParametersArePublic) widens the conservative name heuristic only for
+                // a direct unexported-value embed / value-embed-box-recv shim — exactly the
+                // promotions this converter reaches cross-package at all. method.Parameters[0] is the
+                // receiver (Skip(1), matching typedParams below); ParametersArePublic already excludes
+                // it (methodSymbol.Parameters never carried one to begin with).
+                if (methodScope == "public")
+                {
+                    bool parametersArePublic = method.Parameters.Skip(1).All(param => GetScope(GetSimpleName(param.type)) == "public") ||
+                        ((directEmbedIsUnexportedValue || method.IsValueEmbedBoxRecv) && method.ParametersArePublic);
+
+                    if (!parametersArePublic)
+                        methodScope = "internal";
+                }
                 // The shim mirrors the SOURCE receiver kind: a by-value method stays by-value
                 // so an RVALUE receiver binds (reflect v.Elem().kind() - CS1510 on forced ref).
                 string recvMod = method.IsRefRecv ? "ref " : "";

@@ -39,6 +39,13 @@ public record MethodInfo
     // Defaults false so any MethodInfo built without semantic type info falls back to the heuristic.
     public bool ReturnTypeIsPublic { get; init; }
 
+    // The parameter-side twin of ReturnTypeIsPublic — true when every parameter (the receiver
+    // excluded; MethodInfo.Parameters as harvested here never includes it) is a PUBLIC C# type
+    // transitively. Defaults false for the same reason ReturnTypeIsPublic does: a MethodInfo built
+    // without semantic type info (a metadata-harvested promotion, GetMetadataPromotedMethods) falls
+    // back to the conservative name heuristic rather than assuming public.
+    public bool ParametersArePublic { get; init; }
+
     // Set when this is a direct-ж (box-receiver, `this ж<T>`) primary being promoted through a POINTER
     // embed: the promoted forwarder must call it on the embed's BOX hop (`target.<embed>`), not the
     // deref'd value (`target.<embed>.Value`) a value-receiver method uses — the box receiver needs ж<T>.
@@ -434,6 +441,14 @@ public static class MethodSyntaxExtensions
             Name = methodSymbol.Name,
             ReturnType = GlobalQualify(methodSymbol.ReturnType.ToDisplayString()),
             ReturnTypeIsPublic = IsEffectivelyPublicType(methodSymbol.ReturnType),
+            // The parameter-side twin of ReturnTypeIsPublic (W3a's promoted-member-forwarding site,
+            // docs/phase4/DESIGN-w3a-wrapper-scaffolding.md's own arc): StructTypeTemplate's
+            // promoted-method forwarder downgrade only ever consulted the RETURN type, so a void
+            // method whose PARAMETER touches an unexported production type (runtime's white-box
+            // `AddrRanges` embeds `addrRanges`, whose promoted `cloneInto(*addrRanges)` takes an
+            // `*addrRanges` argument) stayed unconditionally public regardless — CS0051. No receiver
+            // slot to skip: methodSymbol.Parameters never includes it for an instance method symbol.
+            ParametersArePublic = methodSymbol.Parameters.All(parameter => IsEffectivelyPublicType(parameter.Type)),
             IsInvokerForwardable = invokerForwardable,
             IsSignatureRenderable = signatureRenderable,
             Parameters = parameters,
