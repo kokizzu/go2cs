@@ -24,6 +24,7 @@
        mirroring the L3 corpus's own per-GOOS item mechanism. -->
   <ItemGroup Condition="'$(GoTargetOS)' != 'linux'">
     <Compile Remove="LinuxSpawnSeamTests.cs" />
+    <Compile Remove="LinuxSyscallClockTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
