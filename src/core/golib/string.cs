@@ -223,10 +223,6 @@ public readonly struct @string :
     // needs an explicit form, to widen @string's int Length to the interface's nint.
     nint IByteSeq.Length => m_length;
 
-    // True when this string spans its whole backing array — the case where the array can stand in
-    // for the window without copying.
-    private bool IsWholeBacking => m_offset == 0 && m_length == (m_value?.Length ?? 0);
-
     public slice<byte> Slice(int start, int length)
     {
         return new slice<byte>(m_value ?? [], m_offset + start, m_offset + start + length);
@@ -259,23 +255,13 @@ public readonly struct @string :
 
     public Span<byte> ꓸꓸꓸ => ToSpan(); // Spread operator
 
-    // A pinned VIEW for unsafe.StringData. GCHandle pins an object from its start, so a window that
-    // does not begin at the backing array's start cannot be handed out as a pinned pointer — it
-    // materializes its own bytes first, which is what the byte[]-backed form did for EVERY
-    // sub-string anyway (slicing copied). Whole-backing strings — the overwhelming majority, and
-    // every string that ever reached here before windows existed — pin in place as before.
-    // PinnedBuffer is a class, so this costs one object on the whole-backing path and two on the
-    // windowed one — the materialized copy plus the buffer around it.
-    internal PinnedBuffer buffer
-    {
-        get
-        {
-            AllocationCounter.Count();
-
-            return IsWholeBacking ? new(m_value, m_length) : new(AllocationCounter.CopyOf(Bytes), m_length);
-        }
-    }
-
+    // NOTE: there is deliberately no pinned-view accessor here. `unsafe.StringData` was this
+    // string's only pinning consumer, and its pin was a defect rather than a service: a
+    // `GCHandle.Alloc(…, Pinned)` handle is an unconditional strong root, so a pointer handed to
+    // `runtime.SetFinalizer` kept the very allocation the finalizer was waiting on permanently
+    // alive (unique's TestMakeClonesStrings — see the rationale at that call site). A caller that
+    // genuinely needs the backing held still asks ж for it, which pins ON DEMAND and only when the
+    // pointer is converted to an address; a caller that wants the bytes takes `Slice`.
     public override string ToString()
     {
         return AllocationCounter.Utf8ToString(Bytes);

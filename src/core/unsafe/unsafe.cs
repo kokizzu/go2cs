@@ -915,13 +915,43 @@ public static @string String<TLen>(ж<byte> ptr, TLen len) where TLen : System.N
 public static ж<byte> StringData(@string str) {
     // Go returns nil for an empty string (the doc leaves it unspecified, but the runtime's
     // zero string has a nil data pointer and strings' TestClone asserts StringData identity
-    // across DISTINCT empty strings) — each call here pins a fresh buffer, so only nil
+    // across DISTINCT empty strings) — each call materializes a fresh view, so only nil
     // preserves that identity.
     if (str.Length == 0)
         return new StandardBox<byte>(nil);
 
-    PinnedBuffer buffer = str.buffer;
-    return new ElemRefBox<byte>(buffer, 0);
+    // Go DEFINES this as `&str[0]` — an INTERIOR POINTER into the string's own backing store — so
+    // the faithful model is the array-element reference `Ꮡ(window, 0)`, exactly as SliceData above.
+    // It used to hand back a box over a PINNED view (`@string.buffer`), and that was wrong for the
+    // same two reasons the pinned SliceData box was, plus a third that only a finalizer reaches:
+    //
+    //   1. It PINNED, and `GCHandle.Alloc(…, Pinned)` is an UNCONDITIONAL STRONG ROOT in the GC's
+    //      handle table. Pinning was never what StringData means — an address is only needed when
+    //      the pointer is CONVERTED to uintptr/void*, and ж already pins on demand there
+    //      (EnsureStableAddress). The witness is unique's TestMakeClonesStrings, whose whole
+    //      subject is that an interned handle must not keep the caller's string alive: it sets a
+    //      finalizer on StringData(s), drops s, forces a GC and requires the finalizer to run.
+    //      runtime.SetFinalizer keys its ConditionalWeakTable on the box's ReferentObject, which
+    //      for a pinned-buffer box resolves to the PINNED byte[], while the sentinel holding the
+    //      registration strong-references the box → the PinnedBuffer → the pin. A dependent handle
+    //      tolerates that value→key cycle; the handle TABLE does not, so the key stayed rooted, the
+    //      entry never died, the sentinel never finalized, and the test read "string was improperly
+    //      retained" — a retention defect that looked exactly like a cloning defect. (unique's
+    //      clone<T> was innocent and always had been: an isolation probe over golib alone reproduces
+    //      the retention with no unique, no clone and no intern map in the picture.)
+    //   2. It ignored the string's WINDOW. `@string` is an offset/length view over a shared backing
+    //      array, and GCHandle pins an object from its START, so a window that did not begin at
+    //      index 0 could not be handed out as a pinned pointer at all — it materialized a COPY of
+    //      its own bytes first. `unsafe.StringData(s[1:])` therefore named a fresh allocation rather
+    //      than `&s[1]`, breaking both the aliasing Go guarantees and pointer identity against the
+    //      parent. An element reference names the absolute element Go's pointer does, so the round
+    //      trip through unsafe.String/unsafe.Slice now ALIASES instead of snapshotting.
+    //
+    // Identity is unchanged for every shape that already had it: ElemRefBox compares its canonical
+    // (backing, absolute index) pair, so two calls over one string still answer equal and two
+    // distinct backings still answer unequal — guarded by the StringDataIdentity behavioral test,
+    // whose sub-string arm covers point 2.
+    return Ꮡ(str.Slice(0, str.Length), 0);
 }
 
 } // end unsafe_package
