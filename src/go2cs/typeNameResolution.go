@@ -385,6 +385,17 @@ func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) str
 		if productionName, isProduction := v.whiteboxProductionNamedType(named); isProduction {
 			return productionName
 		}
+
+		// PARKED (docs/phase4/DESIGN-w3a-wrapper-scaffolding.md's own arc, COORD ruling 2026-08-30) —
+		// see the identical note on getFullyQualifiedTypeName's twin arm; this is the SAME question
+		// for the alias-qualified renderer (what getCSharpTypeName/parameter and return types
+		// actually use), which is why the mgcscavenge_test.cs/mpallocbits_test.cs target case routes
+		// through HERE, not the other function alone. Not built on, not banked for this arc.
+		if obj := named.Obj(); obj.Pkg() == v.pkg && (named.TypeArgs() == nil || named.TypeArgs().Len() == 0) {
+			if renamed := getSanitizedIdentifier(obj.Name()); renamed != obj.Name() {
+				return renamed
+			}
+		}
 	}
 
 	// A cross-package INSTANTIATED generic (e.g. `internal/runtime/atomic.Pointer[func(string,
@@ -417,8 +428,10 @@ func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) str
 			// cross-package slash-strip then eats everything before the slash INCLUDING the `curve[`
 			// header, dropping the wrapper (crypto/elliptic's `*nistCurve[*nistec.P224Point]` →
 			// `ж<nistec.P224Point>>`, a CS1519 cascade). Rendering args via getAliasQualifiedTypeName yields their
-			// short, slash-free package-qualified names, so the header survives.
-			return fmt.Sprintf("%s[%s]", obj.Name(), strings.Join(args, ", "))
+			// short, slash-free package-qualified names, so the header survives. getSanitizedIdentifier,
+			// not the raw name, for the same reason the non-generic arm above takes it — a same-
+			// package generic type can collision-rename too (PARKED, see that arm's note).
+			return fmt.Sprintf("%s[%s]", getSanitizedIdentifier(obj.Name()), strings.Join(args, ", "))
 		}
 	}
 
@@ -632,10 +645,20 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 		// to carry the package-class qualifier (see usingAliasTypeQualifier).
 		qualifier := v.usingAliasTypeQualifier(t)
 
-		// A SAME-PACKAGE instantiated generic renders structurally too — each type ARGUMENT recursively
-		// named — otherwise the t.String() fall-through below path-qualifies a cross-package argument and
-		// the slash-strip eats the `Name[` header (crypto/elliptic's embedded `nistCurve[*nistec.P256Point]`
-		// → `nistec.P256Point>`, a CS1519 cascade). The current package is elided, so the bare name stands.
+		// PARKED (docs/phase4/DESIGN-w3a-wrapper-scaffolding.md's own arc, COORD ruling 2026-08-30):
+		// obj.Name() below is getSanitizedIdentifier'd, not raw — this is the SAME-VARIANT named-
+		// type fall-through (the whitebox bridge/production arms above already handle cross-
+		// variant references), reached whenever a `-tests` internal-bridge file references a TYPE
+		// another file in the SAME variant declares — runtime's mgcscavenge_test.go/
+		// mpallocbits_test.go naming export_test.go's `PallocBits`. The declaration side
+		// (visitTypeSpec.go) already Δ-renames a colliding type name via this exact same helper;
+		// this arm named the raw Go identifier instead, so a same-variant cross-file reference to a
+		// collision-renamed type named the ORIGINAL (undeclared) name — CS0426. Real fix, but does
+		// NOT resolve the target case alone (that reference routes through getAliasQualifiedTypeName,
+		// not this function — see its own PARKED note), and its measured blast radius (two seeded
+		// -stdlib reconverts diffed against each other) is real: ~25 files across go/types, reflect,
+		// hash/maphash, net/http and others, unverified for correctness. Not built on, not banked as
+		// a fix for this arc — parked here for the rebank wave that re-baselines those 25 anyway.
 		if typeArgs := named.TypeArgs(); typeArgs != nil && typeArgs.Len() > 0 {
 			args := make([]string, typeArgs.Len())
 
@@ -647,11 +670,11 @@ func (v *Visitor) getFullyQualifiedTypeName(t types.Type, isUnderlying bool) str
 				}
 			}
 
-			return qualifier + obj.Name() + "[" + strings.Join(args, ", ") + "]"
+			return qualifier + getSanitizedIdentifier(obj.Name()) + "[" + strings.Join(args, ", ") + "]"
 		}
 
 		if qualifier != "" {
-			return qualifier + obj.Name()
+			return qualifier + getSanitizedIdentifier(obj.Name())
 		}
 	}
 
