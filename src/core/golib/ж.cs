@@ -201,14 +201,154 @@ public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer, IUnty
         return fieldPtrFunc(ref Value);
     }
 
-    private void ensureArrayBacking(ref T value)
+    // ---- the array-backing publish (see arrayView/publishArrayBacking below) ----
+
+    // Per-INSTANTIATION constant: can a T value carry a LAZILY-materialized array backing that has
+    // to be published into this box's storage before an element pointer is taken?
+    //
+    // ⚠ A reflection-BUILT constrained delegate (GetMethod + MakeGenericMethod(typeof(T)) +
+    // CreateDelegate, in a static initializer) stood in for this guard until 2026-08-10, and that
+    // shape is FATAL under Native AOT: the value-type generic instantiation is reachable only
+    // through reflection, ILC emits no native code for it, and the first ж<> type-init of any
+    // AOT-published program threw NotSupportedException (all 13 perf-suite binaries died before
+    // main — d5c0c9c10). NEVER reintroduce it. The pure TYPE queries below are a different thing
+    // entirely: they build no code, so ILC answers them from the type system.
+    private static readonly bool s_publishArrayBacking = computePublishArrayBacking();
+
+    private static bool computePublishArrayBacking()
     {
-        if (typeof(T).IsValueType && value is IArray boxedView)
+        // Only a VALUE type can lose a lazily-materialized backing to a copy — a class wrapper's
+        // backing is shared by reference, so a "copy" of it is the same object.
+        if (!typeof(T).IsValueType || !typeof(IArray).IsAssignableFrom(typeof(T)))
+            return false;
+
+        // golib's own array<T>/slice<T> — and every named-slice wrapper, which holds a slice<T> in
+        // a NON-nullable field — keep their backing in a field that is assigned at construction.
+        // Nothing about them is lazy, so there is nothing to publish and the box-touch-copy-back
+        // would rewrite identical bytes.
+        //
+        // Excluding them is a CORRECTNESS-of-cost matter, not just tidiness: `slice<T>.Source` is
+        // DEFINED to hand back a DETACHED COPY (AllocationCounter.CopyOf over the window — see
+        // slice.cs and the NilType.cs note), and a windowed `array<T>`'s implicit T[] conversion
+        // copies too. The unconditional box-touch-copy-back this guard replaces therefore
+        // allocated and threw away a FULL COPY OF THE BACKING on every element take through a
+        // ж<slice<T>> — measured at ~6x the array cost for a 64-element slice, and unnoticed
+        // because it is invisible in every gate but a benchmark.
+        if (typeof(ISlice).IsAssignableFrom(typeof(T)))
+            return false;
+
+        return !(typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(array<>));
+
+        // What remains is exactly the shape that IS lazy: a go2cs-gen named fixed-size array
+        // wrapper (`Value => m_value ??= new array<E>(N)`, TypeClass "Array") and the array-VIEW
+        // wrapper over one (`type pallocBits pageBits`). Both hand back the RAW backing from
+        // Source once materialized, which is what makes it usable as the identity token below.
+        // A future value-type IArray that is neither lazy nor excluded here would simply take the
+        // publish path and stay correct — the conservative direction.
+    }
+
+    // The array backing this box has PUBLISHED into its own storage, or null while it has
+    // published none. Written ONLY under `lock (this)`; read with acquire semantics on the fast
+    // path. It serves two purposes at once: `null` is the once-only gate (every thread serializes
+    // until the first publish lands), and a DIFFERENT backing is the reassignment detector (if
+    // `*p = someOtherArray` installs a fresh still-lazy wrapper, the next element take publishes
+    // again rather than trusting a stale "ready" flag).
+    private object? m_publishedArrayBacking;
+
+    /// <summary>
+    /// Gets a view of the array or slice this pointer references, with any lazily-materialized
+    /// backing already published into this box's own storage.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A go2cs-gen named fixed-size array wrapper allocates its backing on FIRST TOUCH
+    /// (<c>Value => m_value ??= new array&lt;E&gt;(N)</c>), and golib can only reach that getter
+    /// by BOXING the wrapper — <see cref="ж{T}"/> is deliberately unconstrained in
+    /// <typeparamref name="T"/>. So the backing materializes on a private copy and has to be
+    /// copied back, or the real storage stays virgin and every write through the returned element
+    /// pointer is silently dropped (the pallocBits lesson at the box-element seam, 47ddd5a50).
+    /// </para>
+    /// <para>
+    /// That box-touch-copy-back is a read-modify-write of shared mutable state, and until
+    /// 2026-08-30 it ran with NO synchronization: two threads reaching a still-lazy wrapper each
+    /// allocated their own backing, and the second copy-back silently discarded the first — along
+    /// with every element already written into it. The element pointers already handed out kept
+    /// naming the orphan, so their writes landed where nothing would ever read them again
+    /// (measured: <c>crypto/internal/boring/bcache</c>'s concurrent section lost entries in ~28%
+    /// of runs). The same unsynchronized copy-back could also be observed HALF DONE — the wrapper
+    /// is several words wide — surfacing as a spurious IndexOutOfRangeException out of the bounds
+    /// check below.
+    /// </para>
+    /// <para>
+    /// The publish is therefore gated per BOX, which is the only durable unit here: the by-value
+    /// copy cannot be, and constraining <typeparamref name="T"/> is not available. The fast path
+    /// stays lock-free — one acquire read, one type test, one reference compare — so an
+    /// already-published box pays no lock, and the slow path runs at most once per box (twice
+    /// only if the pointed-to value is REASSIGNED to a different array).
+    /// </para>
+    /// </remarks>
+    private IArray<Telem> arrayView<Telem>()
+    {
+        if (!s_publishArrayBacking)
         {
-            _ = boxedView.Source; // materializes the lazy backing on the boxed copy
-            value = (T)(object)boxedView; // copy the wrapper (and its backing reference) back
+            // Nothing behind this T is lazy (see computePublishArrayBacking), so the view IS the
+            // storage's view and no publish — and no Source probe — is owed. A non-IArray T is
+            // simply the wrong receiver, and reports the same error it always did.
+            return Value as IArray<Telem> ?? throw notAnArrayOrSlice();
+        }
+
+        // FAST PATH — a backing has already been published, and the view just boxed shares it, so
+        // the copy-back would rewrite identical bytes. Lock-free by construction: while
+        // m_publishedArrayBacking is still null EVERY thread takes the lock, which is exactly the
+        // cold-start window the race lives in.
+        // ACQUIRE: pairs with the release write in publishArrayBacking, so observing a published
+        // backing also means observing the copy-back that installed it.
+        object? published = Volatile.Read(ref m_publishedArrayBacking);
+
+        if (published is not null && Value is IArray<Telem> view && ReferenceEquals(view.Source, published))
+            return view;
+
+        return publishArrayBacking<Telem>();
+    }
+
+    // The at-most-once publish. Kept out of line so arrayView stays small enough to inline.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private IArray<Telem> publishArrayBacking<Telem>()
+    {
+        // Resolve the storage reference BEFORE taking the lock: for a field or element reference
+        // that walk runs through the parent box, and the lock guards the publish, not the walk.
+        ref T value = ref Value;
+
+        lock (this)
+        {
+            if (value is not IArray<Telem> view)
+                throw notAnArrayOrSlice();
+
+            // Materializes the lazy backing on the boxed copy, and hands back the RAW backing
+            // reference — the identity token the fast path compares against. (Only the lazy
+            // wrappers reach here; everything whose Source is defined to copy was excluded by
+            // computePublishArrayBacking, so this neither allocates nor detaches.)
+            object? backing = view.Source;
+
+            if (!ReferenceEquals(backing, m_publishedArrayBacking))
+            {
+                // Copy the whole wrapper — a struct over a SHARED backing reference — back over
+                // the real storage, which lands that reference where every later reader looks.
+                value = (T)(object)view;
+
+                // RELEASE: the copy-back above must be visible to any thread that later observes
+                // this write on the lock-free fast path.
+                Volatile.Write(ref m_publishedArrayBacking, backing);
+            }
+
+            // The view we just published, not a fresh copy of it — the element box then names the
+            // published backing by construction rather than by a re-read that could race.
+            return view;
         }
     }
+
+    private static InvalidOperationException notAnArrayOrSlice() =>
+        new("Cannot get pointer to element at index, type is not an array or slice.");
 
     /// <summary>
     /// Gets a pointer to the element at <paramref name="index"/> of the array or slice this
@@ -216,10 +356,7 @@ public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer, IUnty
     /// </summary>
     public ж<Telem> at<Telem>(nint index)
     {
-        ensureArrayBacking(ref Value);
-
-        if (Value is not IArray<Telem> array)
-            throw new InvalidOperationException("Cannot get pointer to element at index, type is not an array or slice.");
+        IArray<Telem> array = arrayView<Telem>();
 
         if (!array.IndexIsValid(index))
             throw new IndexOutOfRangeException("Index is out of range for array or slice.");
