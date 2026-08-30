@@ -1,10 +1,41 @@
 # W1 — the linkname alias that closes a project cycle
 
-**Status:** DESIGN ONLY. Nothing in this document is implemented.
+**Status:** PARTLY IMPLEMENTED — see the dated block below. W1-S is still design only.
 **Lane:** runtime walls campaign, i7-5820K coordinator machine
 **Date:** 2026-08-30
 **Spec:** [`docs/phase4/CENSUS-runtime-first-contact.md`](docs/phase4/CENSUS-runtime-first-contact.md) §W1
 **Tree read:** `origin/master` @ `a2e726796`; toolchain go1.23.12 / .NET SDK 10.0.400
+
+---
+
+## 2026-08-30 — G2 and W1-M landed (branch `claude/local-w1-mechanism`)
+
+Two commits, in the order §5 rules.
+
+* **G2, alone and first.** The standing corpus cycle assertion is check 5 of
+  `src/tests/Behavioral/check-solution-integrity.ps1` — CNR's own preflight. It DFSes the `src/core`
+  `.csproj` graph once per `$(GoTargetOS)` and requires 0 cycles; measured 0 across 307 projects on
+  **windows, linux AND darwin** at that HEAD (darwin joined because the graph read is free and the
+  per-GOOS `<ItemGroup>` blocks make it a genuinely different graph). Positive control is a
+  parameter, not a procedure: `-InjectReference 'runtime=internal/syscall/windows'` prints §1.3's six
+  cycles verbatim, in this document's order, and exits 1. The same six also come out when the
+  assertion is fed the HEAD converter's REAL `-tests` emission of `runtime.csproj` — the gate and the
+  defect meet end to end.
+* **W1-M, M1 with M2 as its fallback.** `linknamePullWouldCycle` now answers from three oracles in
+  cost order: the convert-set graph when a batch driver built one; the current package's own
+  transitive import closure (if this package already reaches the target, the target cannot reach back
+  — free, and it is the arm the `LinknameVarPull` behavioral test rides); otherwise a memoized
+  `packages.Load(NeedName|NeedImports|NeedDeps)` of the pull TARGET, walked for the current package.
+  An unanswerable question refuses the pull and says so on stderr.
+* **Measured (G5).** `-tests -test-action convert`, HEAD converter vs fixed, byte-compared:
+  `math/bits` **unchanged** across all 24 emitted files (the 25th is the gitignored
+  `go2cs_test_manifest.json`, whose `converterRevision` records the converter's own exe hash and
+  therefore must differ); `runtime` differs in **exactly two** files, `runtime.csproj` (the windows
+  group returns to `<ItemGroup Condition="'$(GoTargetOS)'=='windows'" />`) and
+  `windows/os_windows.cs` (`internal static bool canUseLongPaths;`), both now **byte-identical to the
+  committed `-stdlib` corpus**. The fifth closure family is gone.
+* **Not landed:** W1-S (§3.2's S2 inversion) and the §4.2 populate half, which stay design only and
+  keep the whole §5 gate list. G3/G6/G7/G8/G9 belong to that half and were not run.
 
 ---
 

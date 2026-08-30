@@ -82,8 +82,12 @@ func (c *StdLibConverter) ScanAndConvertFiltered(packageFilter []string) error {
 	c.topologicalSort()
 
 	// Expose the completed convert-set graph so linkname var-pull forwarding can reject a pull whose
-	// project reference would cycle (see linknamePullWouldCycle). Only the -stdlib graph can form
-	// such a cross-package cycle; single-package / -tests conversions leave it nil.
+	// project reference would cycle (see linknamePullWouldCycle). This is the CHEAPEST of the guard's
+	// three oracles, not its only one: a single-package or -tests conversion leaves the graph nil and
+	// answers the same question from a targeted go/packages load of the pull target. This comment used
+	// to claim that "only the -stdlib graph can form such a cross-package cycle" — that was W1, and it
+	// was false. A linkname edge is the one reference the converter emits that Go's import graph does
+	// not contain, so the danger comes from the DIRECTIVE, which a lone package carries just as well.
 	conversionGraph = c.graph
 
 	// Generate conversion report
