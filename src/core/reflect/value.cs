@@ -294,16 +294,9 @@ internal static slice<byte> bytesSlow(this ΔValue v) {
     throw panic(Ꮡ(new ValueError("reflect.Value.Bytes"u8, v.kind())));
 }
 
-// runes returns v's underlying value.
-// It panics if v's underlying value is not a slice of runes (int32s).
-internal static slice<rune> runes(this ΔValue v) {
-    v.mustBe(ΔSlice);
-    if (v.typ().Elem().Kind() != abi.Int32) {
-        throw panic("reflect.Value.Bytes of non-rune slice");
-    }
-    // Slice is always bigger than a word; assume flagIndir.
-    return ~(ж<slice<rune>>)(uintptr)(v.ptr);
-}
+// go2cs generated this placeholder — func runes is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// Slice is always bigger than a word; assume flagIndir.
 
 // CanAddr reports whether the value's address can be obtained with [Value.Addr].
 // Such values are called addressable. A value is addressable if it is
@@ -1802,19 +1795,7 @@ public static void Send(this ΔValue v, ΔValue x) {
 
 // go2cs generated this placeholder — func SetBytes is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// do not let unexported x leak
-// TODO add Elem method, fix mustBe(Slice) to return slice.
-
-// setRunes sets v's underlying value.
-// It panics if v's underlying value is not a slice of runes (int32s).
-internal static void setRunes(this ΔValue v, slice<rune> x) {
-    v.mustBeAssignable();
-    v.mustBe(ΔSlice);
-    if (v.typ().Elem().Kind() != abi.Int32) {
-        throw panic("reflect.Value.setRunes of non-rune slice");
-    }
-    ((ж<slice<rune>>)(uintptr)(v.ptr)).ValueSlot = x;
-}
+// go2cs generated this placeholder — func setRunes is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func SetComplex is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
@@ -1823,6 +1804,9 @@ internal static void setRunes(this ΔValue v, slice<rune> x) {
 // go2cs generated this placeholder — func SetInt is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func SetLen is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// do not let unexported x leak
+// TODO add Elem method, fix mustBe(Slice) to return slice.
 
 // SetCap sets v's capacity to n.
 // It panics if v's Kind is not [Slice] or if n is smaller than the length or
