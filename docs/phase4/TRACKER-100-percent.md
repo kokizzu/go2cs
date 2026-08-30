@@ -11,11 +11,11 @@
 
 | Measure | Value |
 |---|---|
-| **On master (`b64b671c4`)** | **196 / 208 = 94.2% honest** · 27,665 matching · 153 disclosed · raw 196/215 = 91.2% |
+| **On master (`03d03407d`)** | **197 / 208 = 94.7% honest** · 27,703 matching · 154 disclosed · raw 197/215 = 91.6% |
 | Shipped in 1.23.12.2 (the release snapshot) | 189 / 208 = 90.9% · 26,043 matching · 148 disclosed |
-| Banked since the release freeze lifted (all merged + swept) | httptrace 2\|0 · buffer 1\|1 · godebug 5\|0 · internal/poll 19\|0 · math/big 224\|2 · **net/http 1,343\|2 (the campaign's largest row)** · iter 28\|0 |
-| **Rows remaining (implementable)** | **12** |
-| In flight | i9's tier-0 liveness full-roster A/B (could dissolve the codegen-liveness class); G's Reinterpret arc design; the unique smalls lane; cgi staged at 38\|1 pending the next window |
+| Banked since the release freeze lifted (all merged + swept) | httptrace 2\|0 · buffer 1\|1 · godebug 5\|0 · internal/poll 19\|0 · math/big 224\|2 · **net/http 1,343\|2 (the campaign's largest row)** · iter 28\|0 · **cgi 38\|1** (+ the unique smalls fixes corpus-wide) |
+| **Rows remaining (implementable)** | **11** (net/http/pprof folds into the runtime/pprof boss entry as its downstream reporter — census: 6/15, clean frontier, ceiling 15/15) |
+| In flight | i9's tier-0 liveness full-roster A/B (could dissolve the codegen-liveness class); G's Reinterpret arc design; the `-tests` init-forcing fix (retires the order-lucky hazard corpus-wide) |
 | Linux parity axis | 178 of 195 applicable annotated |
 | Host-exception ledger (i7-class) | net (DNS oracle) · crypto/tls (BoGo wall) · net/http's 4 h2 deadline rows (measured 250–500ms bracket) |
 
