@@ -442,6 +442,18 @@ ONE stdlib in a build; there is now only one on disk.
   this variable: **anything a child reads through a case-insensitive resolver must be injected ONCE —
   scrub-then-append, never append-and-hope — and "Windows is fine" proves nothing about the class.**
   The Linux harness pin (`_paths.ps1`) STAYS until a Linux lane re-measures without it.
+- **⚠ TOOLCHAIN RESOLUTION: the pipeline's ORACLE side runs whatever bare `go` resolves on PATH —
+  GOROOT alone does NOT pin it (measured 2026-08-29, the net/http bank lane).** `go2cs.exe` shells
+  out to `go test -json` for the compare oracle, and that child inherits PATH; on a box whose system
+  SDK differs from the pinned one (this machine class: ambient 1.23.1 vs pinned 1.23.12), a shell
+  setting only GOROOT runs the WRONG release's oracle. The failure shape is a new member of the
+  mass-empty family: **Go="" for every test** — the ORACLE side blank while the C# side reads
+  plausible — the mirror of the file-lock signature (C# side blank), and it reads like total
+  conversion failure. Prepend `$env:GOROOT\bin` to PATH in every pipeline shell and verify with bare
+  `go version`, never just `go env GOROOT`. Same family, third member (lane R, 2026-08-29): a bare
+  `go2cs -tests` on a **Linux** host bypasses the sweep's `GoTargetOS` pin and links the WINDOWS
+  dependency set, minting phantom CS0426s that read as Linux defects — net-family Linux work routes
+  through the SWEEP, always.
 - **`TargetComparisonTests` compares goldens with line endings NORMALIZED** (CRLF→LF; see
   `TargetComparisonTests.FileMatch` / `BehavioralRunner.FilesEqual`, both strip CRs). It was a raw
   byte-for-byte compare until 2026-07-07. Content diffs are still caught exactly; a pure line-ending
@@ -900,6 +912,14 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   write, `encoding/xml`'s attribute-namespace translation writing into a copy). The behavioral corpus
   is a SAMPLE of Go's shapes; the stdlib is the population — aliasing changes get measured against the
   population before banking.
+- **⚠ Blast-radius measurement for a converter change: TWO seeded reconverts diffed against each
+  other, never the committed-tree diff** (2026-08-29, the position-table splitter fix). A naive
+  reconvert-vs-committed diff reported 147+ files — almost all PRE-EXISTING unbanked drift from
+  arcs that landed without their regens (the standing position-map staleness two census lanes
+  rooted independently the same day). Seeding one root at the PRE-change converter and one at the
+  CHANGED converter and diffing the two emissions isolates exactly the change's own footprint
+  (26 metadata files, zero production code, in the measured case). The committed tree is a moving
+  baseline; two emissions of the same sources differ only by the change.
 - **Reconvert → overlay → build → bucket (the measurement loop):**
   1. **⚠ SEED FIRST — non-negotiable (learned 2026-07-25, cost a false operational-break alarm):**
      `cp -r src/core <tmp>/core` BEFORE reconverting. The converter emits a hand-owned
@@ -1292,6 +1312,19 @@ Each rule below was paid for.
   documented and still skipped, because no MERGE checked for it: if
   `git diff --name-only <base>..<branch>` lists a `package_info.cs` but no `stdlib-metadata.txt`,
   stop and have the branch run the generate before it merges.
+- **⚠ Two branches writing the SAME wrong number auto-merge CLEANLY.** The roster's header is the
+  measured case (2026-08-29, the banking window): master and an incoming bank both moved the row
+  count 189 → 190 — identical text on both sides, so git folded them without a conflict while the
+  union's truth was 191. The silent-duplication rule's arithmetic twin: at any multi-branch window,
+  header/summary numbers are RECOMPOSED from the merged table, never accepted from either side, and
+  the format guard (guard-as-calculator) runs after EVERY resolution — it caught this one and a
+  hand-composed Linux-denominator slip the same evening.
+- **A liveness/health probe must be able to OBSERVE the thing it asks about** (2026-08-29, the iter
+  lane): a process filter on the worktree path can never match `dotnet.exe` running from Program
+  Files, so a healthy 18-minute build read as reaped and was reported as owed. Silence is not
+  evidence of death any more than exit 0 is evidence of success — the rule cuts both directions:
+  read the output, and first verify the check CAN see its target (positive-control the probe the
+  way gates are positive-controlled).
 
 ## Git anchors
 
