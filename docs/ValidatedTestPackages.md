@@ -125,19 +125,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **198 / 215 testable packages validated — 92.1%**
+> ### Phase 4 progress: **199 / 215 testable packages validated — 92.6%**
 >
-> **27,705 matching test verdicts · 154 disclosed** *(updated 2026-08-30 — maintained as part of the
+> **27,725 matching test verdicts · 154 disclosed** *(updated 2026-08-30 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 198 / 208 — 95.2%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 199 / 208 — 95.7%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 178 of 196 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
+> **Linux: 178 of 197 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -280,6 +280,7 @@ exactly as the line above it is summed from the columns.
 | [`internal/abi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/abi) | 2 | | Runtime ABI helpers (`FuncPC`). · linux: 2 · · [proof](validation/current/internal.abi.md) |
 | [`internal/buildcfg`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/buildcfg) | 3 | | Toolchain build configuration — `GOARM64`/`GOAMD64` feature-level parsing and the `gogoarch` build-tag set. · linux: 3 · [proof](validation/current/internal.buildcfg.md) |
 | [`internal/chacha8rand`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/chacha8rand) | 4 | | The ChaCha8 generator behind `math/rand/v2` and the runtime's per-`m` source — `TestOutput` walks the package's own vector through `Next`/`Refill`, `TestMarshal` marshals and unmarshals the state before every single draw, `TestReseed` proves reseeding moves it, and `TestBlockGeneric` compares the two block implementations word for word. That last row is the array-SHAPE reinterpret: Go's `block_generic` computes IN PLACE through `(*[16][4]uint32)(unsafe.Pointer(buf))`, a rank change no managed nested-array view can reconstruct, so it and `setup` are hand-owned over a `MemoryMarshal.Cast` alias of the same storage — kept independent of the assembly-replacing `block`, down to reusing the package's own auto-converted `qr`, so the test still compares two implementations rather than one against itself. · linux: 4 · [proof](validation/current/internal.chacha8rand.md) |
+| [`internal/concurrent`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/concurrent) | 20 | | The concurrent hash map behind `unique` and `net/netip` — `Load`/`LoadOrStore`/`CompareAndDelete`/`All` over a 128-key set, the delete-all and delete-one orderings, weakly-consistent iteration with mutation running underneath it, and two genuine stress rows per parent that each launch `GOMAXPROCS` goroutines (12 on the sweep host) looping the full lifecycle over shared and unshared keys. The two parents run the SAME nine subtests: `TestHashTrieMapBadHash` first replaces the map's hash function with one returning 0 for every key, so half this row is the entire contract re-proven under total collision. That whitebox write is what the row turned on. The production code is a hand-owned `ConcurrentDictionary` replacement of Go's lock-free trie — the runtime descriptor `Hasher` the original seeds from means "hash the bytes AT this address", which the managed bridge cannot honor — and it now carries a real `keyHash` seam: installing a hook rebuilds the store behind an `IEqualityComparer<K>` whose `GetHashCode` IS the hook's answer, leaving equality untouched exactly as Go's test does, so the collision the test forces is the collision the map gets. The suite's dead `dumpMap`/`dumpNode` debug printers — called by no `Test`, but naming the trie's node types in a signature, which put the whole compilation behind one declaration-phase `CS0426` — are satisfied by a declaration-only companion whose single door throws. · [proof](validation/current/internal.concurrent.md) |
 | [`internal/coverage/cfile`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cfile) | 15 | 1 | The coverage runtime's file side — `ProcessCoverTestDir` reading meta and counter files, the emit APIs driven through a real subprocess harness (`TestCoverageApis` builds and runs a covered binary per sub-case, including the emit-to-directory, emit-to-writer and failing-writer paths), `TestApisOnNocoverBinary`, and the `GOCOVERDIR` handling. The disclosed row is `TestIssue59563TruncatedCoverPkgAll`, which shells out to the real toolchain twice — `go test -coverpkg=all` then `go tool cover -func` — and looks for a row prefixed `internal/coverage/cfile/testdata/issue59563/repro.go`. Both subprocesses SUCCEED and the coverage is CORRECT (`large` at 100.0%, which is what issue 59563 is about); measured A/B, the control and the sandbox emit an identical 10280 rows differing by one prefix, because outside the reported GOROOT the toolchain reads the staged `src/go.mod` as an ordinary module named `std` and qualifies every path. Same root as `go/build`'s disclosed row, manifesting differently. · linux: 15 + 1 · [proof](validation/current/internal.coverage.cfile.md) |
 | [`internal/coverage/cformat`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cformat) | 2 | | Coverage report formatting — per-function and per-package percentage rollups, and the empty-package edge. · linux: 2 · [proof](validation/current/internal.coverage.cformat.md) |
 | [`internal/coverage/cmerge`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/coverage/cmerge) | 2 | | Coverage counter merging — the saturating-add merge policy and the conflicting-metadata clash path. · linux: 2 · [proof](validation/current/internal.coverage.cmerge.md) |
@@ -421,10 +422,13 @@ recorded on that same board.
 | `os/user` | — | E2 | Go's own `go test` fails `TestGroupIds` on the validation host — the reference side never produces a clean baseline, so the harness correctly declines to compare and every converted verdict reads `skip`. The conversion never gets a trial either way. Rejoins the moment the oracle passes. | [ruling][exclusion-ruling] |
 | `internal/unsafeheader` | 6 | E3 | The suite's entire subject is the raw `{Data, Len, Cap}` slice/string header: it fabricates a live slice or string by writing those fields and reinterpreting the struct, and Go's memory model lets the result alias the original storage. A managed slice is not that triple and cannot be aliased into existence — all 6 verdicts fail identically, structurally rather than by defect. | [ruling][exclusion-ruling] |
 
-Candidates that are *not* yet ruled are deliberately absent — `internal/concurrent`,
-`internal/weak` and `crypto/internal/boring/bcache` each await an individual ruling on their own
-measurement, and until one lands they stay inside the naive denominator rather than being counted
-out of it in advance.
+Candidates that are *not* yet ruled are deliberately absent — `internal/weak` and
+`crypto/internal/boring/bcache` each await an individual ruling on their own measurement, and until
+one lands they stay inside the naive denominator rather than being counted out of it in advance.
+`internal/concurrent` was a third such candidate until 2026-08-30, when it validated 20/20 instead:
+the census that was to feed its ruling found the whitebox half honorable and the dead-code half
+merely a compile wall, and both are now closed rather than excluded — which is what the naive
+denominator is for.
 
 [exclusion-ruling]: phase4/BOARD-next-validation-candidates.md#ruling-owner-2026-08-25--the-campaigns-terminal-denominator-is-the-implementable-test-set-with-the-excluded-packages-fully-disclosed-each-with-its-why
 
