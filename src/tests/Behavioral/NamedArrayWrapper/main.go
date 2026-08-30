@@ -115,6 +115,21 @@ func main() {
 	pcs := &cs
 	fmt.Println(pcs[0].bump(), pcs[0].bump(), cs[0].n) // 1 2 2
 
+	// ELEMENT ADDRESS through a pointer receiver on a named ARRAY type (runtime sema.go's
+	// `rootFor` shape, and the one door 47ddd5a50's family left open). A Go pointer receiver
+	// renders as `this ref T s` — no ж<> box — so `&s[i]` takes golib's BY-VALUE two-arg
+	// element-aliasing overload, which boxes the wrapper at the call site. On a VIRGIN wrapper the
+	// lazily-allocated backing then materialized on that private boxing temp and the receiver's
+	// own storage was never written: every element pointer named a fresh throwaway array and every
+	// write through it was silently lost — single-threaded, no concurrency required. That is what
+	// made `semtable.rootFor` hand every caller a pointer into a throwaway 251-entry table.
+	// The emission now routes through the wrapper's own mutating `Value` getter (`Ꮡ(s.Value, i)`),
+	// which materializes in place and hands back an array<E> sharing that storage.
+	var sl slots
+	sl.at(1).v = 77
+	sl.at(2).v = sl.at(1).v + 1
+	fmt.Println(sl[1].v, sl[2].v, sl.at(1).v, sl.sum()) // 77 78 77 155
+
 	// sibling-array reinterprets (the edwards25519 fiatScalar shape)
 	var sm scal
 	fromBytes((*[4]uint64)(&sm.s), 7) // write through Named→underlying reinterpret, VIRGIN field
@@ -174,6 +189,16 @@ type callers [4]uintptr
 type holder struct {
 	trace *callers
 }
+
+// slot/slots exercise the ELEMENT-ADDRESS door: a pointer-receiver method on a named array type
+// that hands back `&s[i]`, the shape runtime's `semTable.rootFor` has.
+type slot struct{ v int }
+
+type slots [4]slot
+
+func (s *slots) at(i int) *slot { return &s[i] }
+
+func (s *slots) sum() int { return s[0].v + s[1].v + s[2].v + s[3].v }
 
 // counter2/counters exercise a pointer-receiver method on an array element through a
 // pointer-to-named-array base.

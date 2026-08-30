@@ -49,7 +49,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "ABY+gKSAooCmooK4hIKCgoKGgoKCgoaCgoiCgoKGgoKCgoKCgoKIgoKChoKCgoaCjIKCgoKCgoKKgoKGgpKSgoKSiJIAABCCAAYQoAAKGIKCuIKCAA0egIA=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABY+gKSAooCmooK4hIKCgoKGgoKCgoaCgoiCgoKGgoKCgoKCgoKIgoKChoKCgoaCjIKCgoKCgoKKgoIAABiCgoKGgpKSgoKSiJIAABCCAAYQoAAKGIKCuIKCAA8igKSA7ICA")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -75,6 +75,8 @@ public static partial class main_package
     internal partial struct pallocBits {}
     internal partial struct pm {}
     [GoValueClone("s")] internal partial struct scal {}
+    internal partial struct slot {}
+    internal partial struct slots {}
     internal partial struct tb {}
     public partial struct Grid {}
     public partial struct unit {}
