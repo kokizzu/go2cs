@@ -1920,6 +1920,11 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		performGlobalVariableAnalysis(entry.file.Decls, pkg.TypesInfo, globalIdentNames, globalScope)
 	}
 
+	// Over allEntries, not prodEntries: a _test.go file can call runtime.Caller/Callers directly
+	// (io/multi_test.go's flatten-depth assertions are the measured case) and needs the same
+	// protection production code does — see callerInliningAnalysis.go.
+	needsNoInlining := computeNoInliningClosure(allEntries, pkg.Types, pkg.TypesInfo)
+
 	collectCaptureModeMethods(pkg)
 	collectTypeSpecRHS(pkg)
 
@@ -2002,7 +2007,7 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 			}()
 		}
 
-		visitor := newFileVisitor(pkg.Fset, pkg.Types, pkg.TypesInfo, options, globalIdentNames, globalScope, entry)
+		visitor := newFileVisitor(pkg.Fset, pkg.Types, pkg.TypesInfo, options, globalIdentNames, globalScope, needsNoInlining, entry)
 		visitor.visitFile(entry.file)
 
 		baseName := strings.TrimSuffix(filepath.Base(entry.filePath), ".go")

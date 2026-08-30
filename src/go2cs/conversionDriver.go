@@ -319,6 +319,11 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 			}
 		}
 
+		// Package-wide, computed once and shared by every file's Visitor — see
+		// callerInliningAnalysis.go. Must run after `files` is fully populated (it walks every
+		// file's declarations) but has no other ordering dependency on the analyses above/below it.
+		needsNoInlining := computeNoInliningClosure(files, packageTypes, info)
+
 		// Perform escape analysis for each file
 		// Identify capture-mode methods (those taking &recv.field) — across the package
 		// and its imports — before escape analysis, so a value var on which one is
@@ -413,7 +418,7 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 					}
 				}()
 
-				visitor := newFileVisitor(fset, packageTypes, info, options, globalIdentNames, globalScope, fileEntry)
+				visitor := newFileVisitor(fset, packageTypes, info, options, globalIdentNames, globalScope, needsNoInlining, fileEntry)
 
 				visitor.visitFile(fileEntry.file)
 

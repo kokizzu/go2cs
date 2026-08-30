@@ -248,6 +248,88 @@ func (v *Visitor) variadicParamType(elem types.Type) string {
 	return aliasName
 }
 
+// callsSkipCountedRuntimeCaller reports whether body calls runtime.Caller or runtime.Callers —
+// both take a skip argument the converted implementation satisfies by counting Go-source frames
+// on a System.Diagnostics.StackTrace (runtime/managed_impl.cs's captureCallers). That machinery's
+// own two frames are hand-marked [MethodImpl(NoInlining)] already (its header names the exact
+// risk), but nothing protects the CALLER's side of the chain: a thin one-line forwarder — the
+// shape flag.Set's call to its own unexported set is — is exactly what a fully-tiered/Release JIT
+// inlines, which silently shifts the frame count by one and the skip-counted call resolves the
+// wrong frame (or none: ok=false, the "?:0" shape). Tier-0 (no inlining at all) never triggers
+// this, which is why it surfaced only under the tiering A/B's Release+TieredCompilation=0 sweep —
+// see docs/phase4/MAILBOX.md, i9, 2026-08-30. FuncForPC itself takes a *pc*, not a skip count, so
+// it is not part of this family; nothing else in the runtime frame-walking surface takes a literal
+// skip argument the way Caller/Callers do.
+func callsSkipCountedRuntimeCaller(info *types.Info, body *ast.BlockStmt) bool {
+	if body == nil || info == nil {
+		return false
+	}
+
+	found := false
+	ast.Inspect(body, func(node ast.Node) bool {
+		if found {
+			return false
+		}
+		sel, ok := node.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		used, ok := info.Uses[sel.Sel].(*types.Func)
+		if !ok || used.Pkg() == nil || used.Pkg().Path() != "runtime" {
+			return true
+		}
+		switch used.Name() {
+		case "Caller", "Callers":
+			found = true
+			return false
+		}
+		return true
+	})
+	return found
+}
+
+// noInliningPrefix returns the [MethodImpl(NoInlining)] attribute text (with its trailing space,
+// ready to prepend to whatever else functionAttributeMarker resolves to) when fnObj is a member
+// of v.needsNoInlining — the package-wide closure computeNoInliningClosure computed before any
+// file in this package was visited, covering both direct runtime.Caller/Callers callers and the
+// thin-forwarder chains that reach them (see callerInliningAnalysis.go; a per-function direct-call
+// check alone is NOT sufficient — flag.Set needs the attribute despite never mentioning
+// runtime.Caller itself, confirmed by hand-testing before this closure existed). Composes with —
+// never replaces — [GoInit]/[GoRecv]: a receiver method that also needs this needs both
+// attributes, not one or the other. Registers the attribute's namespace the same way
+// visitStructType's InteropServices marker does, only when the file actually emits one.
+func (v *Visitor) noInliningPrefix(fnObj types.Object) string {
+	if fnObj != nil && v.needsNoInlining[fnObj] {
+		v.addRequiredUsing("System.Runtime.CompilerServices")
+		return "[MethodImpl(MethodImplOptions.NoInlining)] "
+	}
+	return ""
+}
+
+// litNoInliningPrefix is noInliningPrefix's func-literal counterpart: a closure has no
+// types.Object, so it cannot live in v.needsNoInlining and is instead judged directly against its
+// own body (literalCallsSkipCountedRuntimeCaller) and, for a closure that itself thinly forwards
+// to an already-marked package function, against the same forwarder shape thinForwarderTarget
+// already recognizes for declarations — both in callerInliningAnalysis.go. C#'s lambda-attribute
+// grammar places the attribute list before everything else, including an explicit return type, so
+// every convFuncLit emission site prepends this ahead of its own return-type prefix, not after it.
+func (v *Visitor) litNoInliningPrefix(funcLit *ast.FuncLit) string {
+	needsIt := literalCallsSkipCountedRuntimeCaller(v.info, funcLit)
+
+	if !needsIt {
+		if target := thinForwarderTarget(v.info, v.pkg, funcLit.Body); target != nil {
+			needsIt = v.needsNoInlining[target]
+		}
+	}
+
+	if needsIt {
+		v.addRequiredUsing("System.Runtime.CompilerServices")
+		return "[MethodImpl(MethodImplOptions.NoInlining)] "
+	}
+
+	return ""
+}
+
 func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	// A declaration owned by a manual conversion (see manualTypeOperations.go) emits only a
 	// marker comment — the package's *_impl.cs supplies the implementation.
@@ -1092,12 +1174,12 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		if v.pkg.Path() == "runtime" {
 			v.replaceMarker(functionAttributeMarker, "/* [GoInit] runtime bootstrap init - not run; .NET is the runtime */ ")
 		} else {
-			v.replaceMarker(functionAttributeMarker, "[GoInit] ")
+			v.replaceMarker(functionAttributeMarker, v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))+"[GoInit] ")
 		}
 	} else if strings.HasPrefix(parameterSignature, "this ref ") {
-		v.replaceMarker(functionAttributeMarker, "[GoRecv] ")
+		v.replaceMarker(functionAttributeMarker, v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name))+"[GoRecv] ")
 	} else {
-		v.replaceMarker(functionAttributeMarker, "")
+		v.replaceMarker(functionAttributeMarker, v.noInliningPrefix(v.info.ObjectOf(funcDecl.Name)))
 	}
 
 	var funcExecutionContext string

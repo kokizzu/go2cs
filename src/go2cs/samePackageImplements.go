@@ -156,7 +156,7 @@ func recordSamePackageImplements(fset *token.FileSet, packageTypes *types.Packag
 
 	// A scratch visitor: the record path needs the package's type/name resolution, not any one
 	// file's emission state. It never visits a file and its output builders stay empty.
-	visitor := newFileVisitor(fset, packageTypes, info, options, globalIdentNames, globalScope, newFileEntry(nil, "", false))
+	visitor := newFileVisitor(fset, packageTypes, info, options, globalIdentNames, globalScope, map[types.Object]bool{}, newFileEntry(nil, "", false))
 
 	for _, target := range targets {
 		// One pointer instance per target: types.Implements and getFullyQualifiedTypeName both read
