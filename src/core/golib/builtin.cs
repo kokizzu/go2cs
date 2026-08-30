@@ -1384,7 +1384,12 @@ public static partial class builtin
     /// <param name="map">Named-map value to clear.</param>
     public static void clear<TKey, TValue>(IMap<TKey, TValue> map) where TKey : notnull
     {
-        map.Clear();
+        // Spelled through ICollection rather than as a bare `map.Clear()`: IMap{TKey, TValue}
+        // inherits a Clear from BOTH IMap and ICollection{KeyValuePair{,}}, so the unqualified call
+        // is CS0121-ambiguous. Both name the same operation on the same storage — this picks one
+        // rather than widening the interface, which would force every generated named-map wrapper
+        // to declare a Clear of its own.
+        ((ICollection<KeyValuePair<TKey, TValue>>)map).Clear();
     }
 
     /// <summary>

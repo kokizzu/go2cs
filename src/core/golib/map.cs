@@ -62,15 +62,6 @@ public interface IMap
 
 public interface IMap<TKey, TValue> : IMap, IDictionary<TKey, TValue> where TKey : notnull
 {
-    /// <summary>
-    /// Removes every entry — Go's <c>clear(m)</c>. Re-declared here PURELY to disambiguate: this
-    /// interface now inherits a <c>Clear()</c> from both <see cref="IMap"/> and
-    /// <c>ICollection{KeyValuePair{TKey, TValue}}</c>, and a call through <c>IMap{TKey, TValue}</c>
-    /// would otherwise be CS0121-ambiguous. Both inherited members are the same operation on the
-    /// same storage, so collapsing them to one declaration changes no behaviour.
-    /// </summary>
-    new void Clear();
-
     (TValue, bool) this[TKey key, bool _] { get; }
 
     /// <summary>
@@ -96,6 +87,32 @@ public interface IMap<TKey, TValue> : IMap, IDictionary<TKey, TValue> where TKey
     IMap IMap.CloneMap()
     {
         return IsNil ? default(map<TKey, TValue>) : new map<TKey, TValue>(this);
+    }
+
+    /// <summary>
+    /// Default <see cref="IMap.Clear"/> for any <see cref="IMap{TKey, TValue}"/> — Go's
+    /// <c>clear(m)</c>, forwarded to the storage this map already exposes as an
+    /// <see cref="ICollection{T}"/> of entries, which both the concrete
+    /// <see cref="map{TKey, TValue}"/> and the generated named-map wrappers implement.
+    /// </summary>
+    /// <remarks>
+    /// A DEFAULT rather than a plain interface member, for the same reason
+    /// <see cref="IMap.CloneMap"/> and <see cref="IMap.NilKeyEntry"/> are: every named Go map type
+    /// in the corpus becomes a GENERATED wrapper implementing this interface
+    /// (go2cs-gen's InheritedTypeTemplate), and none of them declares a Clear of its own. Requiring
+    /// one is a breaking change that does not surface at compile time in this repository — the
+    /// wrappers live in already-built package assemblies, so they fail to LOAD instead, and the
+    /// symptom is a ReflectionTypeLoadException from the extension-method scan that reads like an
+    /// unrelated bridge fault. Measured exactly that way: 19 reflect tests went pass -&gt;
+    /// infrastructure-error on a merge, all of them inside GetGoMethodSetCandidates.
+    ///
+    /// Being an EXPLICIT implementation also keeps <c>Clear()</c> unambiguous through an
+    /// <c>IMap{TKey, TValue}</c> reference: it is not a candidate there, so the inherited
+    /// <c>ICollection</c> member wins on its own and <c>builtin.clear</c> still binds.
+    /// </remarks>
+    void IMap.Clear()
+    {
+        ((ICollection<KeyValuePair<TKey, TValue>>)this).Clear();
     }
 
     /// <summary>
