@@ -84,6 +84,33 @@ partial class concurrent_package {
 #pragma warning disable CS8714
 internal sealed class mapStore<K, V> : ConcurrentDictionary<K, V>
 {
+    // THE NIL KEY. Go admits a nil interface as a map key: `HashTrieMap[K, V comparable]`
+    // instantiated at an interface K hashes and compares nil exactly like any other value, and
+    // `unique.Make[testEface](nil)` — a row of Go's own unique suite — depends on it.
+    // ConcurrentDictionary refuses it outright, and refuses it EARLY: every accessor runs its own
+    // `if (key is null) ThrowKeyNullException()` before the comparer is ever consulted, so no
+    // IEqualityComparer<K> can rescue the key. Substituting a sentinel is not available either — a
+    // sentinel has to BE a K, and no object implements an arbitrary named Go interface.
+    //
+    // So the nil key gets one dedicated slot beside the dictionary. A null holder means ABSENT and a
+    // non-null one carries the value, which puts presence in the reference itself: Interlocked over
+    // that one field gives the nil key the same publish/retract atomicity TryAdd/TryRemove give every
+    // other key, with no lock and no second dictionary. Inert for a value-type K, where null never
+    // arrives and the JIT drops the branch.
+    internal nilEntry<V>? nilKey;
+}
+
+// Presence-carrying holder for the nil key's value — see mapStore.nilKey. A plain field could not
+// serve: V may be a value type, so "absent" would be indistinguishable from a stored zero, and a
+// separate bool could not be published with it in one atomic step.
+internal sealed class nilEntry<V>
+{
+    internal readonly V value;
+
+    internal nilEntry(V value)
+    {
+        this.value = value;
+    }
 }
 #pragma warning restore CS8714
 
@@ -98,7 +125,13 @@ public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
 // The ok result indicates whether value was found in the map.
 [GoRecv] public static (V value, bool ok) Load<K, V>(this ref HashTrieMap<K, V> ht, K key)
 {
-    if (storeOf(ref ht).TryGetValue(key, out V? value)) {
+    mapStore<K, V> store = storeOf(ref ht);
+    // The nil key lives beside the dictionary, never in it (see mapStore.nilKey).
+    if (key is null) {
+        nilEntry<V>? entry = Volatile.Read(ref store.nilKey);
+        return entry is null ? (@new<V>().ValueSlot, false) : (entry.value, true);
+    }
+    if (store.TryGetValue(key, out V? value)) {
         return (value!, true);
     }
     return (@new<V>().ValueSlot, false);
@@ -114,6 +147,14 @@ public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
 public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K key, V value)
 {
     mapStore<K, V> store = storeOf(ref Ꮡht.Value);
+    // The nil key's one-shot publish is a single CAS, and it reports the same winner/loser split the
+    // TryAdd loop below does: the thread whose exchange observed no holder stored, everyone else
+    // loaded (see mapStore.nilKey).
+    if (key is null) {
+        nilEntry<V> candidate = new(value);
+        nilEntry<V>? existingEntry = Interlocked.CompareExchange(ref store.nilKey, candidate, null);
+        return existingEntry is null ? (value, false) : (existingEntry.value, true);
+    }
     while (ᐧ) {
         if (store.TryGetValue(key, out V? existing)) {
             return (existing!, true);
@@ -131,6 +172,19 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
 [GoRecv] public static bool /*deleted*/ CompareAndDelete<K, V>(this ref HashTrieMap<K, V> ht, K key, V old)
 {
     mapStore<K, V> store = storeOf(ref ht);
+    // The nil key's retraction is the same compare-and-remove, spelled against its own slot: the CAS
+    // succeeds only if the holder we compared is still the published one, so a racing LoadOrStore
+    // cannot have its value deleted out from under it (see mapStore.nilKey). Key-found-first and the
+    // panic order below hold here too.
+    if (key is null) {
+        nilEntry<V>? entry = Volatile.Read(ref store.nilKey);
+        if (entry is null) {
+            return false;
+        }
+        mustBeComparable(old);
+        return EqualityComparer<V>.Default.Equals(entry.value, old) &&
+               ReferenceEquals(Interlocked.CompareExchange(ref store.nilKey, null, entry), entry);
+    }
     // Go reaches its value comparison only once the key is found, and only then can that comparison
     // panic — mirror both the order and the panic (see mustBeComparable).
     if (!store.ContainsKey(key)) {
@@ -155,6 +209,16 @@ public static Action<Func<K, V, bool>> All<K, V>(this ж<HashTrieMap<K, V>> Ꮡh
 {
     mapStore<K, V> store = storeOf(ref Ꮡht.Value);
     return (Func<K, V, bool> yield) => {
+        // The nil key is not in the dictionary, so the enumeration below cannot reach it — yield it
+        // first, under the key it actually has (see mapStore.nilKey). Reading the holder once keeps
+        // the walk weakly consistent in the same way the dictionary's own enumerator is: a
+        // concurrently published nil entry may or may not be seen, and one deleted mid-walk is
+        // yielded at most once. unique's cleanup pass relies on visiting it at all — without this,
+        // a dead weak pointer under the nil key could never be reclaimed.
+        nilEntry<V>? entry = Volatile.Read(ref store.nilKey);
+        if (entry is not null && !yield(default!, entry.value)) {
+            return;
+        }
         foreach (KeyValuePair<K, V> pair in store) {
             if (!yield(pair.Key, pair.Value)) {
                 return;

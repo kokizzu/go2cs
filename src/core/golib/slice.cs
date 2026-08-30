@@ -14,6 +14,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using go.golib;
 
 namespace go;
@@ -1353,9 +1354,43 @@ public static class SliceExtensions
         return new slice<T>(array, low, high, max);
     }
 
-    // slice from a Span helper function
+    // slice from a Span helper function — in practice the one emission for a VARIADIC parameter's
+    // incoming pack: the converter renders `func f(xs ...T)` as `params ꓸꓸꓸT xsʗp` over a Span<T>
+    // and opens the body with `var xs = xsʗp.slice();` (visitFuncDecl / convFuncLit).
+    //
+    // NIL-NESS CROSSES THIS BOUNDARY, and used to be lost here. Go's zero-argument variadic call
+    // materializes the NIL slice, not an empty one — `func cSeq(o ...uintptr) …; cSeq()` gives
+    // `o == nil` — and Go code reads that difference back (`o == nil`, and reflect.DeepEqual, which
+    // separates nil from empty; unique/clone_test does exactly this). The copy below laundered it:
+    // ReadOnlySpan<T>.ToArray() answers Array.Empty<T>() for an empty span, and a NON-NULL backing
+    // array is precisely what makes a slice<T> non-nil, so every zero-argument variadic call — and
+    // every spread of a nil slice — produced `[]T{}` where Go produces nil.
+    //
+    // The discriminant is the span's DATA REFERENCE, which is null exactly when Go's slice header's
+    // data pointer is nil. That is not a new rule: it is the same one slice<T> itself uses
+    // (`m_array is null` ⟺ nil), read one level down. Measured across every shape that reaches here:
+    //
+    //   zero-argument variadic call      -> null ref   (Roslyn passes default(Span<T>))   Go: nil
+    //   spread of a nil slice            -> null ref   (ToSpan of a null backing)         Go: nil
+    //   spread of []T{} / make([]T, 0)   -> real ref   (Array.Empty<T> is an object)      Go: non-nil
+    //   spread of x[:0] or x[2:2]        -> real ref   (interior of a real array)         Go: non-nil
+    //   any non-empty pack               -> real ref                                      Go: non-nil
+    //
+    // Roslyn's choice of default(Span<T>) for an empty params pack is not language-guaranteed, but
+    // the failure mode if it ever changes is a graceful one: the pack would carry a real reference
+    // and answer non-nil — today's pre-fix behavior — never a crash and never a nil where Go has
+    // storage. The spread half does not depend on the compiler at all; it is golib's own ToSpan.
+    //
+    // ⚠ One documented gap, from ToSpan rather than from here: a ZERO-SIZE element type (`[]struct{}`)
+    // spans as Span<T>.Empty when the length is 0, which has a null reference, so an empty NON-nil
+    // slice of a zero-size type reads as nil across a spread. Nothing in the corpus observes it.
     public static slice<T> slice<T>(this Span<T> source, nint low = -1, nint high = -1, nint max = -1)
     {
+        // Route the nil case through slice<T>'s own re-slicer rather than the copy: it already
+        // answers Go's `nil[0:0] == nil` and panics on any bound that leaves the nil header.
+        if (source.Length == 0 && Unsafe.IsNullRef(ref MemoryMarshal.GetReference(source)))
+            return default(slice<T>).slice(low, high, max);
+
         return AllocationCounter.CopyOf<T>(source).slice(low, high, max);
     }
 

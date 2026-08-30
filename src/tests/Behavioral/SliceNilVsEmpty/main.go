@@ -58,4 +58,43 @@ func main() {
 	var zs []string
 	probe("stringSliceZero", zs == nil, len(zs), cap(zs))
 	probe("stringSliceEmpty", []string{} == nil, len([]string{}), cap([]string{}))
+
+	// THE VARIADIC PACK carries nil-ness too, and it is the shape that reaches the callee through a
+	// C# `params` boundary rather than through a slice header. A zero-argument call materializes NIL
+	// — not an empty slice — while a spread passes exactly the slice it was given, nil or not.
+	// unique/clone_test reads this back through reflect.DeepEqual, which separates the two.
+	variadic("packZeroArgs")
+	variadic("packOneArg", 1)
+	variadic("packTwoArgs", 1, 2)
+
+	var nilPack []byte
+	variadic("spreadNil", nilPack...)
+	variadic("spreadEmptyLiteral", []byte{}...)
+	variadic("spreadMakeZero", make([]byte, 0)...)
+	variadic("spreadResliceTailCapZero", x[2:2]...)
+	variadic("spreadNonEmpty", x...)
+
+	// A nil pack stays nil through the same no-op reslice and append the header cases use above.
+	variadicDerived("packZeroArgsDerived")
+	variadicDerived("packOneArgDerived", 9)
+}
+
+// variadic reports the pack's own identity, exactly as probe does for a slice header.
+func variadic(name string, pack ...byte) {
+	probe(name, pack == nil, len(pack), cap(pack))
+}
+
+// variadicDerived checks that nil-ness survives the operations a callee typically performs on its
+// pack before observing it.
+func variadicDerived(name string, pack ...byte) {
+	probe(name+"/reslice", pack[0:0] == nil, len(pack[0:0]), cap(pack[0:0]))
+	appended := append(pack)
+	probe(name+"/appendNothing", appended == nil, len(appended), cap(appended))
+	fmt.Println(name+"/reSpread", spreadThrough(pack...) == nil)
+}
+
+// spreadThrough forwards its pack to another variadic function, the `f(a...)` idiom fmt uses
+// throughout (Println -> Fprintln(w, a...)): the forwarded pack must keep the original's nil-ness.
+func spreadThrough(pack ...byte) []byte {
+	return pack
 }
