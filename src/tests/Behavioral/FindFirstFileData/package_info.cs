@@ -38,6 +38,8 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b72656c20737472696e673b2073697a6520696e743b207374616d702074696d652e54696d657d", "filesᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b72656c20737472696e673b207374616d702074696d652e54696d657d", "dirsᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

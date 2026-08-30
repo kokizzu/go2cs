@@ -32,6 +32,8 @@ using static go.crypto.@internal.hpke_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b63757276652063727970746f2f656364682e43757276653b20686173682063727970746f2e486173683b206e5365637265742075696e7431367d", "SupportedKEMsᴛ1")]
+[assembly: GoDynamicTypeLift("7374727563747b6b657953697a6520696e743b206e6f6e636553697a6520696e743b20616561642066756e63285b5d6279746529202863727970746f2f6369706865722e414541442c206572726f72297d", "SupportedAEADsᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

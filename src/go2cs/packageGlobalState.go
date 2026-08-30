@@ -354,6 +354,30 @@ var productionLiftedTypeNames HashSet[string]
 // packageLock; reset per package/variant by resetPackageState.
 var productionAliasLiftedTypes map[types.Type]string
 
+// productionDynamicTypeNames pins the PRODUCTION conversion's OWN packageDynamicTypeNames (a
+// purely-anonymous struct/interface's structural signature -> its converter-synthesized lift name,
+// e.g. `interface{F()}` -> "ifaceHash_i") for the `-tests` INTERNAL variant, the sibling of
+// productionAliasLiftedTypes for the case that registry does not cover: a type with no Go-level
+// `type X = ...` alias at all, lifted only because deferredDynamicTypeName/dynamicStructTypeName
+// (dynamicTypeOperations.go) minted it a name during production's own conversion. Without this, the
+// SAME anonymous type reached from an internal `_test.go` file (export_test.go's whole reason to
+// exist) finds no per-file claim and no package-registry entry — packageDynamicTypeNames was reset
+// to a fresh map for the test variant's own pass — and falls to a deferred marker that the
+// post-barrier resolution ALSO cannot resolve, since production's registrations live only in the
+// map resetPackageState already replaced. The result is the raw Go type signature emitted as C#
+// (unbuildable) and, on the `-tests` path, the W2b gate failing the whole conversion.
+//
+// Keyed by structural SIGNATURE, not go/types identity: unlike productionAliasLiftedTypes' exact
+// *types.Type keys (safe because production and the test variant share one type-check pass), the
+// signature string is what dynamicTypeMarker/lookupDynamicTypeName already key on everywhere else,
+// so this registry composes with them without a second identity question. Nil for a production
+// conversion and for the EXTERNAL variant (its own separate `<pkg>_test_package` scope has no
+// production entries to inherit — an anonymous type it needs was either already lifted under the
+// production import's own qualified name or must lift fresh in its own scope). Installed by
+// convertTestVariant from the seed its caller captured before the first variant's
+// resetPackageState; guarded by packageLock; reset per package/variant by resetPackageState.
+var productionDynamicTypeNames map[string]string
+
 // testAmbiguousLocalTypeNames holds the SIMPLE type names declared by BOTH `-tests` variant
 // classes — the package under test (`<pkg>_package`, production files plus its internal `_test.go`
 // files) and the external suite (`<pkg>_test_package`). The merged test metadata files carry a

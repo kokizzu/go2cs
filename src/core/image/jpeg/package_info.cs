@@ -29,6 +29,7 @@ using static go.image.jpeg_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b627566205b343039365d627974653b206920696e743b206a20696e743b206e556e7265616461626c6520696e747d", "decoder_bytes")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

@@ -716,6 +716,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 	// into its own.
 	internalSeed := productionSeed{
 		liftedTypeNames:      packageLiftedTypeNames,
+		dynamicTypeNames:     packageDynamicTypeNames,
 		hoistedConstOrdinals: packageHoistedConstOrdinals,
 		globalTempVarCounts:  globalTempVarCount,
 		importForces:    packageImportForces,
@@ -1614,6 +1615,45 @@ func seedProductionAliasLifts(pkg *packages.Package, productionInfoPath string) 
 	}
 }
 
+// seedProductionDynamicTypeLifts makes the production conversion's purely-anonymous (no Go-level
+// alias) struct/interface lifts reachable from the test compilation — the sibling of
+// seedProductionAliasLifts for the registrations GoTypeAlias/exportedTypeAliases does not cover.
+//
+// `export_test.go` (an INTERNAL test file — package runtime, not runtime_test — whose whole reason
+// to exist is exposing an already-lifted production field or var for a test to read) references an
+// anonymous type production's OWN conversion already gave a name like `ifaceHash_i` or
+// `pageAlloc_scav`. Under the reference model that internal file converts as a SEPARATE bridge
+// compilation unit, so nothing here re-visits alg.go/mgcsweep.go/mgc.go and nothing re-registers
+// the lift — deferredDynamicTypeName/dynamicStructTypeName (dynamicTypeOperations.go) find no
+// per-file claim and no package-registry entry (packageDynamicTypeNames was reset for this pass)
+// and fall to a deferred marker the post-barrier resolution ALSO cannot resolve, since it consults
+// the very same reset registry. The result: the raw Go type signature emitted as unbuildable C#,
+// and on the `-tests` path, the W2b gate failing the whole conversion (docs/phase4/
+// CENSUS-runtime-first-contact.md, W2a).
+//
+// Unlike seedProductionAliasLifts this needs no go/types scope walk: productionDynamicTypeNames is
+// keyed by structural SIGNATURE, exactly what GoDynamicTypeLift already publishes, so the parsed
+// records populate it directly.
+func seedProductionDynamicTypeLifts(productionInfoPath string) {
+	published, err := parseDynamicTypeLifts(productionInfoPath)
+
+	if err != nil || len(published) == 0 {
+		return
+	}
+
+	packageLock.Lock()
+
+	if productionDynamicTypeNames == nil {
+		productionDynamicTypeNames = map[string]string{}
+	}
+
+	for _, entry := range published {
+		productionDynamicTypeNames[entry[0]] = entry[1]
+	}
+
+	packageLock.Unlock()
+}
+
 // seedProductionInterfaceAliases makes the production conversion's DEFINED-OVER-INTERFACE types
 // reachable from the test compilation — the second kind of package-level declaration that has a
 // `global using` and no class member, alongside the anonymous-RHS alias lifts above.
@@ -1813,6 +1853,13 @@ type productionSeed struct {
 	// liftedTypeNames — the anonymous-struct/interface lifts already nested in the class.
 	liftedTypeNames HashSet[string]
 
+	// dynamicTypeNames — production's packageDynamicTypeNames (signature -> lifted name) for a
+	// purely-anonymous struct/interface with no Go-level alias declaration. See
+	// productionDynamicTypeNames (packageGlobalState.go) for why this is a separate registry from
+	// liftedTypeNames (a name-collision SET, not a signature->name MAP) and from
+	// productionAliasLiftedTypes (aliases only).
+	dynamicTypeNames map[string]string
+
 	// hoistedConstOrdinals — per Go const name, the `<name>ᶜ[ordinal]` big-constant fields claimed.
 	hoistedConstOrdinals map[string]int
 
@@ -1861,6 +1908,10 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	// the production `<pkg>_package` class, whose on-disk `.cs` are not regenerated here, so a lift
 	// that reuses one of those names declares the nested type twice.
 	productionLiftedTypeNames = seed.liftedTypeNames
+
+	// Same production-pinned seeding for purely-anonymous types (no Go-level alias) that
+	// production's own conversion already lifted — see productionDynamicTypeNames.
+	productionDynamicTypeNames = seed.dynamicTypeNames
 
 	// Same production-pinned seeding for the hoisted big-constant field ordinals (see
 	// productionHoistedConstOrdinals); claimHoistedConstFieldName folds it in on first claim.
@@ -1914,6 +1965,7 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		loadPackageImplements(productionInfoPath, productionName)
 		seedProductionAliasLifts(pkg, productionInfoPath)
 		seedProductionInterfaceAliases(pkg, productionInfoPath, options)
+		seedProductionDynamicTypeLifts(productionInfoPath)
 	}
 
 	allEntries := make([]FileEntry, 0, len(pkg.Syntax))

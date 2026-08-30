@@ -1140,6 +1140,67 @@ func parseExportedTypeAliasLines(lines []string) ([][2]string, error) {
 	return aliases, nil
 }
 
+// parseDynamicTypeLifts parses a package info file and extracts the GoDynamicTypeLift entries as
+// (structural signature, lifted C# name) tuples — production's own answer for a purely-anonymous
+// struct/interface with no Go-level alias, the sibling of parseExportedTypeAliases for the
+// registrations that attribute does not cover. See GoDynamicTypeLiftAttribute
+// (src/core/golib/GoDynamicTypeLiftAttribute.cs) and seedProductionDynamicTypeLifts.
+func parseDynamicTypeLifts(packageInfoFile string) ([][2]string, error) {
+	lines, err := readPackageInfoLines(packageInfoFile)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return parseDynamicTypeLiftLines(lines)
+}
+
+// parseDynamicTypeLiftLines extracts the GoDynamicTypeLift entries from package-info lines. Shares
+// the ExportedTypeAliases section rather than owning a new one — a GoDynamicTypeLift line is simply
+// a record parseExportedTypeAliasLines' own GoTypeAlias-only pattern does not match, so the two
+// record kinds coexist in one block with neither parser seeing the other's lines.
+func parseDynamicTypeLiftLines(lines []string) ([][2]string, error) {
+	inSection := false
+	var lifts [][2]string
+
+	// Pattern to match: [assembly: GoDynamicTypeLift("<hex signature>", "TypeName")]
+	pattern := regexp.MustCompile(`\[assembly: GoDynamicTypeLift\("([0-9a-f]+)", "([^"]+)"\)\]`)
+
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "// <ExportedTypeAliases>" {
+			inSection = true
+			continue
+		}
+
+		if strings.TrimSpace(line) == "// </ExportedTypeAliases>" {
+			break
+		}
+
+		if !inSection {
+			continue
+		}
+
+		matches := pattern.FindStringSubmatch(line)
+
+		if len(matches) != 3 {
+			continue
+		}
+
+		signature, err := hex.DecodeString(matches[1])
+
+		if err != nil {
+			// Cannot happen for a line this converter wrote — the pattern's own charclass already
+			// restricts the payload to hex digits — but a hand-edited or corrupted file must not
+			// panic the reader that meant only to seed a `-tests` conversion.
+			continue
+		}
+
+		lifts = append(lifts, [2]string{string(signature), matches[2]})
+	}
+
+	return lifts, nil
+}
+
 // implementRecordKey composes the ONE spelling of a GoImplement pair that BOTH sides of the lookup
 // can compute — the LOAD side, reading a dependency's package_info.cs, and the USE side, converting
 // a cast. It serves BOTH record sets, the VALUE form and the POINTER form, because the two sides of

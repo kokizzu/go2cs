@@ -37,6 +37,7 @@ using static go.@internal.reflectlite_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b6220626f6f6c3b207820616e797d", "dummyᴛ1")]
 [assembly: GoTypeAlias("Kind", "go.@internal.abi_package.ΔKind")]
 [assembly: GoTypeAlias("String", "const:ΔString")]
 [assembly: GoTypeAlias("Type", "ΔType")]

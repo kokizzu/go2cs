@@ -30,6 +30,7 @@ using static go.io.fs_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b54696d656f7574282920626f6f6c7d", "Timeout_type")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -58,7 +59,7 @@ using static go.io.fs_package;
 [assembly: go.GoPositionMap("io/fs/format.go", "format.cs", "AA8i4oKCgoSCgoKUgpSCgoKCgoKUgoKEgoSCgpYAAhLigqiChIKCgoKU")]
 [assembly: go.GoPositionMap("io/fs/fs.go", "fs.cs", "ADZqAA0CgpaUqIKCgpSCgpSClABIlAGAooCigKKAooAAMV6CgoKCgoKCpoKClIKCgpSUlKqiqqKokqiSAAkUgKSA5pKC")]
 [assembly: go.GoPositionMap("io/fs/glob.go", "glob.cs", "ABlCAAwCpraigpSAgriAgqSCgIKkloKEgqiCloKCgpSCgoKmqJKUpAAEEPKCgoKWgoKCgpSCpqqigpS2")]
-[assembly: go.GoPositionMap("io/fs/readdir.go", "readdir.cs", "ACs6AAgCgIKmgoKUlIKCloKGAAoQgqaCpoKmgqaCqqKClA==")]
+[assembly: go.GoPositionMap("io/fs/readdir.go", "readdir.cs", "ACs6AAgCgIKmgoKUlIKCloKGAAoQgqaCpoKmgqaCqqKClA==", "46-48:1")]
 [assembly: go.GoPositionMap("io/fs/readfile.go", "readfile.cs", "AB5AAAoCgIKmgoKUlIKAgoKCuIKCgoKUgoKCgpQ=")]
 [assembly: go.GoPositionMap("io/fs/stat.go", "stat.cs", "ABAo4oCCpoKClJI=")]
 [assembly: go.GoPositionMap("io/fs/sub.go", "sub.cs", "ABJEAA4CgpSClICCpAAHEpKClKiSgpSClKiSgIKAgsbWgoKClILWgoKClIKmgoKClIKmlICCpIKWgoKCgoKUlNaigpSSgpQ=")]

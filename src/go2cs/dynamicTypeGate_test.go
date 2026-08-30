@@ -33,19 +33,23 @@ import (
 // registry, which is what made the marker unresolvable.
 const runtimeScavengeIndexSignature = "struct{index runtime.scavengeIndex; releasedBg internal/runtime/atomic.Uintptr; releasedEager internal/runtime/atomic.Uintptr}"
 
-// withDynamicTypeRegistry runs body against a freshly initialized package registry and a drained
-// unresolved-type record, restoring both afterwards so neighbouring tests in this package are
-// unaffected by either.
+// withDynamicTypeRegistry runs body against freshly initialized package AND production registries
+// and a drained unresolved-type record, restoring all three afterwards so neighbouring tests in
+// this package are unaffected by any of them.
 func withDynamicTypeRegistry(t *testing.T, body func()) {
 	t.Helper()
 
 	savedNames := packageDynamicTypeNames
 	packageDynamicTypeNames = make(map[string]string)
 
+	savedProductionNames := productionDynamicTypeNames
+	productionDynamicTypeNames = nil
+
 	takeUnresolvedDynamicTypes()
 
 	defer func() {
 		packageDynamicTypeNames = savedNames
+		productionDynamicTypeNames = savedProductionNames
 		takeUnresolvedDynamicTypes()
 	}()
 
@@ -190,6 +194,43 @@ func TestResolvedDynamicTypeLeavesTheGateGreen(t *testing.T) {
 
 		if gateErr := unresolvedDynamicTypeError(); gateErr != nil {
 			t.Errorf("a fully resolved conversion was failed by the gate: %v", gateErr)
+		}
+	})
+}
+
+// TestResolvedViaProductionRegistryLeavesTheGateGreen is W2a's own positive control: the SAME
+// fixture as TestUnresolvedDynamicTypeIsRecordedWithItsSite, but resolved through
+// productionDynamicTypeNames rather than THIS run's own packageDynamicTypeNames — the registry a
+// `-tests` reference-model conversion seeds from production's persisted GoDynamicTypeLift records
+// (seedProductionDynamicTypeLifts) because nothing in that run re-visits the production source that
+// lifted the type. packageDynamicTypeNames stays EMPTY throughout, which is the point: if the fix
+// regressed to consulting only the same-run registry, this test would fail exactly where
+// TestUnresolvedDynamicTypeIsRecordedWithItsSite still passes.
+func TestResolvedViaProductionRegistryLeavesTheGateGreen(t *testing.T) {
+	withDynamicTypeRegistry(t, func() {
+		productionDynamicTypeNames = map[string]string{runtimeScavengeIndexSignature: "pageAlloc_scav"}
+
+		dir := t.TempDir()
+		path := writeDynamicMarkerFixture(t, dir, "export_test.cs", runtimeScavengeIndexSignature, 1226)
+
+		resolveDynamicTypeMarkers([]string{path})
+
+		emitted, err := os.ReadFile(path)
+
+		if err != nil {
+			t.Fatalf("reading fixture back: %v", err)
+		}
+
+		if !strings.Contains(string(emitted), "pageAlloc_scav") {
+			t.Errorf("the marker did not resolve to the production-registered lifted name; emitted:\n%s", emitted)
+		}
+
+		if len(packageDynamicTypeNames) != 0 {
+			t.Fatalf("packageDynamicTypeNames was written to — this test measures the PRODUCTION registry alone, and a write here would make it pass for the wrong reason")
+		}
+
+		if gateErr := unresolvedDynamicTypeError(); gateErr != nil {
+			t.Errorf("a conversion resolvable only through production's registry was failed by the gate: %v", gateErr)
 		}
 	})
 }

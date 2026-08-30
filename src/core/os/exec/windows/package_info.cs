@@ -39,6 +39,7 @@ using static go.os.exec_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696e20737472696e673b206f757420737472696e677d", "Cmd_cachedLookExtensions")]
 [assembly: GoTypeAlias("Error", "ΔError")]
 // </ExportedTypeAliases>
 
@@ -71,7 +72,7 @@ using static go.os.exec_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/exec/exec.go", "exec.cs", "AMgB7AGCpoAADRqCpoIAzgHkAwAYArqAgqaCgoKCgpSWgIKkloKCgoKUgoKClMqCgriUggALFoCClLYAAhgACwKClIKClq7ClKaCgoKClKrCgpTWgoKUpqKCgoKUgpaAgqaCgpaCgpKCgpSAgqSUpoKmgoKUrsKCgoKUgpaAgqaCgpaCgpKCgpSmgoIAAyIADQKAgqQADBIADAaCloKCgoSCgqiClIKClJSCgrgAASAADgKCgriClIKk2oKCgpSCgoKUgoKClIKEgoKW3IKUloKChIqCgqKEkoKUgoKUuAAHEoKCgpYABRTytMiCgoC47OyCgpaCuOiCgMqk3IKoogAEGIaCAAsC3JYAEiiCAAYoABMCgpSCloKClISCgoK4gqiAuKSChAACFAAMAoKClJaCloKClqb8lrSGgqYACg4ACAKClIKEgoKWgoKAgrbawoKUgpSCgoKCAAYS4oKUgpSCgpSCgoIABRYACAKClIKUgoKUgoKCAAUWAAgCgpSClIKClIKCggANKPKCloCCgqSWkoKCgoKCpqrCgIKCgqTmgoKUgpSCgoKCgoKCgqyyhIKCgoKoggADGoAACgKk7IKClKq0ggACENLctqKCgoKogoKWgriUgriUlIKClIKWgqiCgpbcsoKUgoKClJSmAAscopSk")]
+[assembly: go.GoPositionMap("os/exec/exec.go", "exec.cs", "AMgB7AGCpoAADRqCpoIAzgHkAwAYArqAgqaCgoKCgpSWgIKkloKCgoKUgoKClMqCgriUggALFoCClLYAAhgACwKClIKClq7ClKaCgoKClKrCgpTWgoKUpqKCgoKUgpaAgqaCgpaCgpKCgpSAgqSUpoKmgoKUrsKCgoKUgpaAgqaCgpaCgpKCgpSmgoIAAyIADQKAgqQADBIADAaCloKCgoSCgqiClIKClJSCgrgAASAADgKCgriClIKk2oKCgpSCgoKUgoKClIKEgoKW3IKUloKChIqCgqKEkoKUgoKUuAAHEoKCgpYABRTytMiCgoC47OyCgpaCuOiCgMqk3IKoogAEGIaCAAsC3JYAEiiCAAYoABMCgpSCloKClISCgoK4gqiAuKSChAACFAAMAoKClJaCloKClqb8lrSGgqYACg4ACAKClIKEgoKWgoKAgrbawoKUgpSCgoKCAAYS4oKUgpSCgpSCgoIABRYACAKClIKUgoKUgoKCAAUWAAgCgpSClIKClIKCggANKPKCloCCgqSWkoKCgoKCpqrCgIKCgqTmgoKUgpSCgoKCgoKCgqyyhIKCgoKoggADGoAACgKk7IKClKq0ggACENLctqKCgoKogoKWgriUgriUlIKClIKWgqiCgpbcsoKUgoKClJSmAAscopSk", "408-421:1;468-470:1;496-498:1;530-539:1;579-583:1;627-635:1;732-745:2;944-949:1")]
 [assembly: go.GoPositionMap("os/exec/exec_windows.go", "exec_windows.cs", "ABEcqLKC")]
 [assembly: go.GoPositionMap("os/exec/lp_windows.go", "lp_windows.cs", "ABQmgoKClIKUpoKCgpSmgoKUgoLKgoCCtoKUAAIaAAoCgIKmAAIYAAkCgIKmgpSCgIKClMiClIKUgpSUgoKUgtaCgoKCooKUgpSmlNiSgoKClAABGAALCICCgIKCgpTIgoKmloCCAAcQgoKCqILKgpSUlLiClA==")]
 // </GoSourcePositionMaps>

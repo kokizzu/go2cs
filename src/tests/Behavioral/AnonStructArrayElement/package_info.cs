@@ -27,6 +27,12 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b546167282920737472696e677d", "Composed_Tagged")]
+[assembly: GoDynamicTypeLift("7374727563747b436f756e7420696e747d", "Composed_ByKey")]
+[assembly: GoDynamicTypeLift("7374727563747b4e616d6520737472696e677d", "Composed_Slice")]
+[assembly: GoDynamicTypeLift("7374727563747b53697a652075696e7433323b20436f756e742075696e7436347d", "Stats_BySize")]
+[assembly: GoDynamicTypeLift("7374727563747b53697a652075696e7433327d", "Composed_Ptrs")]
+[assembly: GoDynamicTypeLift("7374727563747b6974656d20696e743b20706164205b345d627974657d", "poolᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter

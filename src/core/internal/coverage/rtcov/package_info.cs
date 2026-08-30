@@ -27,6 +27,7 @@ using static go.@internal.coverage.rtcov_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b4c697374205b5d696e7465726e616c2f636f7665726167652f7274636f762e436f764d657461426c6f623b20506b674d6170206d61705b696e745d696e743b2068617264436f6465644c6973744e656564735570646174696e6720626f6f6c7d", "Metaᴛ1")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
