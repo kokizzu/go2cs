@@ -351,6 +351,37 @@ known `go.go.` double-root-escape family) and `:132` emits `objWith<@unsafe.Poin
 
 ---
 
+### 2026-08-30 amendment — effort estimates corrected against measurement (i9, W3 arc)
+
+W3a and W3b are closed (`claude/i9-w3-accessibility`, commits `2b08b924f`/`b943129cf`; design at
+`docs/phase4/DESIGN-w3a-wrapper-scaffolding.md`), verified fresh against the current corpus: 154 → 39
+→ 11, not carried from this document's original counts. Two corrections to how this census priced
+the remainder:
+
+- **W3c's counts were exactly right (3 errors, two families) — its "trivial" effort estimate was
+  not.** Both families were invisible until the wall in front of them (W3a's wrapper-scaffolding
+  residual, not originally distinguished from the rest of W3a here) came down — this census's own
+  §3 "W2 gates W3" ordering applies one level deeper than stated: within W3, the accessibility wall
+  gates the qualification wall reaching either W3c family at all. Neither is a one-line patch once
+  actually reached: family 1 (`go.go.` double-root escape) needs `isStrippedGoPathPackageRef`'s
+  registry taught about synthetic test-bridge classes, which it was never populated for; family 2
+  (`@unsafe.` unresolved in a witness argument) needs the existing `visitTypeSpec.go` precedent
+  fix's rewrite extended to a second, differently-built emission site. Both real, both small, but
+  "trivial" undersold the investigation each one costs — the count was the free part, not the fix.
+- **A fourth W3a-family site was not in the original census at all**: `AddrRanges`'s promoted
+  `cloneInto` (inherited from its embedded production field by Go's ordinary struct-embedding
+  promotion) forwards through an unconditionally-public overload, the same shape as the
+  constructor/`.Value`/operator sites W3a's own fix now covers, just a different emission path
+  (`TypeGenerator`'s promoted-member forwarding, not `InheritedTypeTemplate`'s wrapper scaffolding).
+  2 of the original 102 were this, uncounted because — like the two W3c families — it was behind the
+  same wall.
+
+Net: the wall's real floor is 11 errors behind 154, not the 3 this document estimated for W3c alone
+— the gap is not a miscount, it is unmeasured depth this census's own build-log method could not see
+past a wall it hadn't yet reached. Full detail and verification numbers: mailbox 2026-08-30, i9.
+
+---
+
 ## 4. Why *all* 444 are behind these walls
 
 Not one of the three walls is test-specific — each breaks the **test assembly as a whole**, and there is
