@@ -1,86 +1,6 @@
 // Copyright 2012 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-
-// Hand-owned (whole file). EVERYTHING here is the converted security_windows.go output verbatim
-// -- see security_windows.cs.auto for the generated form to diff against -- EXCEPT the three
-// members at the end of the file: getInfo, GetTokenUser and GetTokenPrimaryGroup. The marker is
-// whole-file because that is the granularity available without a converter change; the A/B
-// footprint against the .auto sibling is deliberately confined to those three bodies plus the
-// private machinery they call.
-//
-// THE DEFECT, and which of the Windows-syscall forks it belongs to.
-//
-// This is the THIRD fork of the class: not a wrapper handing the kernel a non-blittable struct by
-// ADDRESS (zsyscall_windows_impl.cs), and not a wrapper with a `**T` OUT-parameter the kernel
-// fills (zsyscall_windows_ptrout_impl.cs), but a KERNEL BYTE BUFFER THE CALLER REINTERPRETS. No
-// wrapper is at fault, so no mirror-the-wrapper remedy applies. The same shape as
-// net.adapterAddresses (closed 2026-08-17 by transcription) and crypto/x509's CertContext chain
-// walk; os/user is the third measured consumer.
-//
-//     b := make([]byte, n)                                  // a plain byte buffer -- fine
-//     GetTokenInformation(t, class, &b[0], len(b), &n)      // kernel writes TOKEN_USER into it
-//     return (*Tokenuser)(unsafe.Pointer(&b[0]))            // <- the reinterpret
-//
-// Go's `Tokenuser` is `struct{ User SIDAndAttributes }` and `SIDAndAttributes` is
-// `struct{ Sid *SID; Attributes uint32 }`. Converted, `Sid` is a golib `ж<SID>` -- a MANAGED
-// OBJECT REFERENCE, not an address -- so `(ж<Tokenuser>)(uintptr)(i)` builds a NativeBox whose
-// `Value` is `Unsafe.AsRef<Tokenuser>(rawAddress)`, and the first read of `.User.Sid` FABRICATES
-// an object reference out of the eight raw kernel-written bytes sitting there. The fault surfaces
-// two frames later, at the first use of that reference, inside ж<T>'s uintptr operator:
-// `Fatal error. System.AccessViolationException` at go.ж`1[SID].op_Implicit, reached from
-// syscall.ConvertSidToStringSid <- syscall.SID.String <- os/user.current. It is a process kill,
-// not a catchable failure, which is why the measurement saw ZERO verdicts rather than one failure
-// (docs/phase4/CENSUS-testing-osuser-rows.md, JOB 1).
-//
-// THE REMEDY: transcribe the payload honestly, and hold the buffer still while doing it.
-//
-// Two halves, and the second is the one that is easy to miss.
-//
-//  1. TYPE. The eight bytes ARE a valid PSID -- the LAYOUT is right and only the TYPE is wrong.
-//     So they are read as what they are (a machine word, via a [StructLayout(Sequential)] native
-//     mirror) and wrapped as a NATIVE box over that address. Nothing is copied and nothing is
-//     interpreted: `SID` is Go's `struct{}`, an OPAQUE HANDLE that managed code never reads
-//     through (SID.Len asks the OS via GetLengthSid; SID.Copy and SID.String hand the address
-//     straight back to the kernel), so a native box over the raw address is not merely safe here
-//     but exactly right -- the same reasoning zsyscall_windows_ptrout_impl.cs states for
-//     ConvertStringSidToSid, and the reason THAT wrapper's correctness was never in question
-//     while its caller was corrupt. A zero address becomes the nil pointer, as in Go.
-//
-//  2. LIFETIME -- the half with no analogue in the other two forks. Windows appends the SID bytes
-//     INSIDE the very buffer it filled, and the Sid field points AT THEM: the payload is
-//     SELF-REFERENTIAL, so the address is only meaningful while the buffer stays where the kernel
-//     saw it. An ordinary managed slice backing does not stay: golib pins on address-take, but the
-//     pin lives on the pointer BOX (ж.cs EnsureStableAddress), and the syscall funnel's
-//     GC.KeepAlive releases the last reference to that box as soon as the call returns -- after
-//     which the collector may compact the array and the kernel's self-pointer dangles. That would
-//     be intermittent, GC-timing-dependent, and blamed on anything but its cause. So the buffer is
-//     allocated on the PINNED OBJECT HEAP (GC.AllocateArray(..., pinned: true)), where it never
-//     moves for as long as it is reachable, and its reachability is tied to the SID box that
-//     points into it by a ConditionalWeakTable -- the anchor pattern
-//     zsyscall_windows_addrinfo_impl.cs established for the same problem. That removes the
-//     question rather than timing it, and it needs no explicit unpin: the buffer is collected
-//     normally once the last SID naming it is gone, which is precisely the Go lifetime.
-//
-// WHY NOT COPY THE SID OUT INSTEAD. Copying would need its length, and the only way to ask is
-// GetLengthSid -- i.e. a kernel call THROUGH the very address whose validity is the question.
-// Pinning the buffer answers it without asking.
-//
-// SCOPE. Exactly the two members that reinterpret a token buffer, plus their shared feeder.
-// getInfo keeps its converted signature and semantics and is correct for the scalar token classes;
-// it simply now hands back a pointer to a buffer that does not move. golib's NativeBox is
-// UNCHANGED -- whether ж<T>.Value should refuse a non-blittable T outright is a real hardening
-// question and a separate one, recorded for the board rather than cut here.
-
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-[module: go.GoManualConversion]
-
-// The native mirrors and the buffer transcription are pointer work. Declared rather than
-// inherited -- see zsyscall_windows_impl.cs.
-[module: go.GoRequiresUnsafe]
-
 namespace go;
 
 using @unsafe = unsafe_package;
@@ -396,66 +316,15 @@ public static error Close(this Token t) {
     return CloseHandle(((ΔHandle)(uintptr)t));
 }
 
-// ---- the token-information transcription (hand-owned; see the file header) -------------------
-
-// TOKEN_USER and TOKEN_PRIMARY_GROUP exactly as Windows lays them out: a machine word where the
-// converted record holds a managed `ж<SID>` reference, plus -- for TOKEN_USER -- the DWORD that
-// follows it. Declaring the mirrors rather than reading at hand-computed offsets is what keeps the
-// transcription right on a 32-bit target, where PSID is four bytes and Attributes moves with it.
-[StructLayout(LayoutKind.Sequential)]
-private struct NativeSIDAndAttributes
-{
-    public nuint Sid;
-    public uint32 Attributes;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-private struct NativeTokenuser
-{
-    public NativeSIDAndAttributes User;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-private struct NativeTokenprimarygroup
-{
-    public nuint PrimaryGroup;
-}
-
-// Keeps a kernel-filled token buffer alive for exactly as long as the SID that points INTO it.
-// Windows appends the SID bytes inside the buffer it fills, so the two have one lifetime; the
-// table is weak on the SID, so the buffer is collected the moment nothing can reach the SID any
-// more -- which is precisely when Go's own buffer would become garbage. The buffer sits on the
-// Pinned Object Heap, so "alive" and "still at that address" are the same statement.
-private static readonly ConditionalWeakTable<object, object> s_tokenInfoAnchors = new();
-
-// Wraps a raw PSID the kernel wrote into `buffer` as the opaque native handle the rest of this
-// package already expects, and ties the buffer's lifetime to it.
-//
-// A zero address answers the nil pointer, matching Go's `(*SID)(unsafe.Pointer(uintptr(0)))`, and
-// is returned WITHOUT an anchor on purpose: nil is golib's canonical shared NilBox, so anchoring
-// a buffer to it would key every nil SID in the process to one entry.
-private static ж<SID> nativeSid(nuint address, byte[] buffer) {
-    if (address == 0) {
-        return default!;
-    }
-    var sid = (ж<SID>)(uintptr)address;
-    s_tokenInfoAnchors.AddOrUpdate(sid, buffer);
-    return sid;
-}
-
-// The shared feeder behind getInfo and the two members below. It is the converted getInfo loop
-// verbatim but for WHERE THE BUFFER COMES FROM: the Pinned Object Heap, so the self-referential
-// pointer GetTokenInformation writes into it can never go stale. See the file header, remedy
-// half 2 -- this one line is the whole lifetime half of the fix.
-private static (byte[], error) getTokenInfoBuffer(Token t, uint32 @class, nint initSize) {
+// getInfo retrieves a specified type of information about an access token.
+internal static (@unsafe.Pointer, error) getInfo(this Token t, uint32 @class, nint initSize) {
     ref var n = ref heap<uint32>(out var Ꮡn);
     n = (uint32)initSize;
     while (ᐧ) {
-        byte[] buffer = System.GC.AllocateArray<byte>((int)n, pinned: true);
-        var b = new slice<byte>(buffer);
+        var b = new slice<byte>((nint)(n));
         var e = GetTokenInformation(t, @class, Ꮡ(b, 0), (uint32)len(b), Ꮡn);
         if (e == default!) {
-            return (buffer, default!);
+            return (new @unsafe.Pointer(Ꮡ(b, 0)), default!);
         }
         if (!AreEqual(e, ERROR_INSUFFICIENT_BUFFER)) {
             return (default!, e);
@@ -466,58 +335,24 @@ private static (byte[], error) getTokenInfoBuffer(Token t, uint32 @class, nint i
     }
 }
 
-// getInfo retrieves a specified type of information about an access token.
-//
-// Converted signature and semantics kept; the buffer behind the returned pointer is simply the
-// non-moving one. This remains the faithful shape for the token classes whose payload is plain
-// scalars -- the two classes whose payload points back into its own buffer do not come through
-// here at all, they take the buffer directly and transcribe it (below).
-internal static (@unsafe.Pointer, error) getInfo(this Token t, uint32 @class, nint initSize) {
-    var (buffer, e) = getTokenInfoBuffer(t, @class, initSize);
-    if (e != default!) {
-        return (default!, e);
-    }
-    return (new @unsafe.Pointer(Ꮡ(new slice<byte>(buffer), 0)), default!);
-}
-
 // GetTokenUser retrieves access token t user account information.
-//
-// Transcribed rather than reinterpreted: Go's `(*Tokenuser)(i)` cannot be spelled here, because
-// the field it lands on is a managed reference and the bytes under it are a machine address (file
-// header). The record handed back is a real managed box whose Sid names the kernel's SID as the
-// native handle it is. The kernel's own contract sizes the buffer -- a successful
-// GetTokenInformation has written the whole TOKEN_USER -- which is the same guarantee Go's
-// unchecked cast relies on, so no length test is added that Go does not make.
-public static unsafe (ж<Tokenuser>, error) GetTokenUser(this Token t) {
-    var (buffer, e) = getTokenInfoBuffer(t, TokenUser, 50);
+public static (ж<Tokenuser>, error) GetTokenUser(this Token t) {
+    var (i, e) = t.getInfo(TokenUser, 50);
     if (e != default!) {
         return (default!, e);
     }
-    var Ꮡu = @new<Tokenuser>();
-    fixed (byte* p = buffer) {
-        NativeTokenuser* native = (NativeTokenuser*)p;
-        Ꮡu.Value.User.Sid = nativeSid(native->User.Sid, buffer);
-        Ꮡu.Value.User.Attributes = native->User.Attributes;
-    }
-    return (Ꮡu, default!);
+    return ((ж<Tokenuser>)(uintptr)(i), default!);
 }
 
 // GetTokenPrimaryGroup retrieves access token t primary group information.
 // A pointer to a SID structure representing a group that will become
 // the primary group of any objects created by a process using this access token.
-//
-// The same transcription as GetTokenUser, one field shorter.
-public static unsafe (ж<Tokenprimarygroup>, error) GetTokenPrimaryGroup(this Token t) {
-    var (buffer, e) = getTokenInfoBuffer(t, TokenPrimaryGroup, 50);
+public static (ж<Tokenprimarygroup>, error) GetTokenPrimaryGroup(this Token t) {
+    var (i, e) = t.getInfo(TokenPrimaryGroup, 50);
     if (e != default!) {
         return (default!, e);
     }
-    var Ꮡpg = @new<Tokenprimarygroup>();
-    fixed (byte* p = buffer) {
-        NativeTokenprimarygroup* native = (NativeTokenprimarygroup*)p;
-        Ꮡpg.Value.PrimaryGroup = nativeSid(native->PrimaryGroup, buffer);
-    }
-    return (Ꮡpg, default!);
+    return ((ж<Tokenprimarygroup>)(uintptr)(i), default!);
 }
 
 // GetUserProfileDirectory retrieves path to the
