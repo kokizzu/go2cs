@@ -13,7 +13,9 @@ partial class unix_package {
 public static error /*err*/ Tcsetpgrp(nint fd, int32 pgidʗp) {
     ref var pgid = ref heap(pgidʗp, out var Ꮡpgid);
 
-    var (_, _, errno) = syscall.Syscall6(syscall.SYS_IOCTL, (uintptr)fd, (uintptr)syscall.TIOCSPGRP, (uintptr)Ꮡpgid, 0, 0, 0);
+    var ᴋ0 = Ꮡpgid;
+        var (_, _, errno) = syscall.Syscall6(syscall.SYS_IOCTL, (uintptr)fd, (uintptr)syscall.TIOCSPGRP, (uintptr)ᴋ0, 0, 0, 0);
+    System.GC.KeepAlive(ᴋ0);
     if (errno != 0) {
         return errno;
     }

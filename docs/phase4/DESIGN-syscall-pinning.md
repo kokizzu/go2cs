@@ -188,13 +188,54 @@ broader one). Two things are true simultaneously:
   eroding to `uintptr` first, so Go's rule (4) does not apply to them at all — a typed pointer
   parameter never loses GC visibility at a C#/CLR call boundary the way a bare `uintptr` does.
 
-So today's corpus appears to have ZERO real call sites where the Linux tether is the only thing
-standing between a pointer-derived argument and this exact hazard. That conclusion rests entirely
-on reading GOROOT's Go source under the pinned 1.23.12 release, windows-target reasoning applied
-by analogy to Linux, and has **not been confirmed against an actual `GOOS=linux` reconvert and
-build** — the symmetry principle this arc was asked to honor deserves that confirmation before the
-tether is touched. Recorded here as the finding and the recommendation (retire once confirmed,
-citing this section), not yet executed.
+**Confirmed 2026-08-30 against a real `GOOS=linux` reconvert and build.** A full `-platforms
+linux/amd64` `-stdlib` reconvert with the fixed converter, overlaid and built
+(`-p:GoTargetOS=linux --no-incremental`, obj/bin purged first per the L3 doctrine): 307 projects,
+**0 errors**. The census guard reports **88 sites protected** corpus-wide across both platforms
+(77 Windows + a Linux-specific set — see §7a for why the Linux count needed a second pass to reach
+its true size). Directly inspecting the fresh Linux emission for `runtime/os_linux.go`'s four
+`internal/runtime/syscall.Syscall6` call sites confirms the source-level reading: none carry a
+`Ꮡ`-derived argument, matching Go's own rule (4) exactly — there is nothing for either the tether
+or this arc's fix to protect at that specific boundary.
+
+**Recommendation: retire the Linux tether.** Every real pointer-derived call into the syscall
+funnel that Linux's corpus contains is now covered by this arc's call-site closure — confirmed,
+not inferred. The tether's own resolve step protects nothing today; keeping it "as documented
+defense-in-depth" would mean shipping resolve-based protection with a **measured 68% miss rate at
+adversarial pressure (§3)** for a set of call sites that is empirically empty. That is a worse
+trade than having no tether at all — a defense-in-depth layer that fails silently 68% of the time
+under exactly the pressure profile that would ever need it is not depth, it is a false sense of
+one. Retiring it is a follow-up to this document, not executed here (§10).
+
+## 7a. A real bug the Linux confirmation build found: temp-name collision (CS0128)
+
+The Linux confirmation build (§7) did not merely confirm the design — it found a genuine defect in
+the emission itself, one the Windows-only ladder in §6 could not have surfaced, because no Windows
+corpus file happens to contain two funnel-call statements as direct siblings in one C# block with
+no scope of their own between them. `syscall/linux/lsf_linux.go`'s `SetPromiscMode` does exactly
+that: two `ioctl` calls (`SIOCGIFFLAGS` then `SIOCSIFFLAGS`), both pointer-derived, both direct
+children of one `try` block. `convSyscallFunnelCall` named each statement's first temp `ᴋ0` —
+`tempName := fmt.Sprintf("ᴋ%d", len(v.pendingSyscallKeepAlive))`, and `pendingSyscallKeepAlive` is
+reset to `nil` after every drain — so the second statement's `var ᴋ0 = Ꮡifl;` collided with the
+first's still-in-scope declaration: `CS0128: A local variable or function named 'ᴋ0' is already
+defined in this scope`.
+
+**Exactly one file, exactly one error, across the entire 307-project corpus on both platforms** —
+the loud-failure design paid off again: a real gap surfaced as a build-breaking compile error at
+the first corpus that happened to exercise it, not a silent miscompile.
+
+**Fix:** a new `Visitor.syscallKeepAliveCounter int` field numbers every temp
+`convSyscallFunnelCall` ever creates, monotonically, for the Visitor's whole run — never reset
+alongside `pendingSyscallKeepAlive`. Temp names are no longer restarted at 0 per statement; they
+are merely synthesized identifiers never read back, so global-within-the-file uniqueness costs
+nothing and structurally cannot collide regardless of how sibling statements nest.
+
+Re-verified end to end after the fix: both platforms reconverted and built clean (0 errors each,
+307 projects), the census guard reports 88 sites/0 mismatches, and the Windows-side renumbering
+(`ᴋ0`→`ᴋ1`, `ᴋ2`, …, wherever a file has more than one funnel-call statement) was spot-checked
+against the pre-fix corpus and confirmed to be a pure name change with identical box expressions,
+call sites and KeepAlive pairing — no windows package_info.cs needed re-baselining, because
+renumbering a single digit does not shift any line's position.
 
 ## 8. Windows tether disposition
 
@@ -227,6 +268,11 @@ manifest reliably — not "corrupts on a normal syscall-heavy workload." This si
 not map the transition curve between the two profiles; it was not pursued further, being
 explicitly secondary to the fix itself.
 
-## 10. Open follow-ups
+## 10. Status: closed
 
-* `GOOS=linux` confirmation for §7's Linux-tether recommendation.
+`GOOS=linux` confirmed (§7); the Linux tether is retired, not just recommended for retirement —
+`internal/runtime/syscall/linux/syscall_linux_impl.cs`'s `Syscall6` no longer resolves or
+KeepAlives anything, with the retirement's own reasoning recorded in its header comment. Both
+platforms reconvert and build clean (0 errors, 307 projects each), the census guard reports 88
+sites/0 mismatches, and CNR is byte-identical across 683 behavioral packages. No open items
+remain on this arc.

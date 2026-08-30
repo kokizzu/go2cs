@@ -743,6 +743,20 @@ ONE stdlib in a build; there is now only one on disk.
   Redirect long runs to a file and read the file. And never inject non-ASCII C# source (`Ꮡ`, `ж`,
   `Δ`) through a PowerShell command STRING — the argument pass mojibakes it even when file I/O is
   correct; write such content with the Edit/Write tools.
+  **⚠ The same mojibake hits a `.ps1` SCRIPT FILE ITSELF when Windows PowerShell 5.1 parses it —
+  and unlike the argument case, file I/O is NOT correct here, so the usual fix does not apply**
+  (measured 2026-08-30, the syscall-pinning census-guard lane). A `.ps1` written UTF-8 without a
+  BOM (the Write/Edit tools' default) is read back by 5.1's PARSER under the system codepage, not
+  UTF-8 — so a literal non-ASCII glyph embedded in the script's own source (a regex pattern
+  matching `ᴋ`, a string comparison against `Ꮡ`) silently decodes to mojibake at PARSE time, before
+  the script ever runs. The instrument does not error: it runs, and reports whatever a
+  never-matching pattern reports — in this case a false "0 sites found" that read as a correct RED
+  result against a not-yet-fixed corpus, and stayed silently wrong against a freshly fixed one
+  until the fresh run's *also* being zero broke the positive control. The fix is a UTF-8 BOM on the
+  `.ps1` file itself (`[System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($true))`
+  after writing it any other way) — confirmed to make 5.1 parse the literal correctly. Positive-control
+  any regex-bearing PowerShell instrument that embeds a converter glyph literally: run it against a
+  known-populated target and confirm it finds a nonzero count before trusting a zero anywhere else.
 - **⚠ Banked-row protection at MERGE time — two rules, both paid for by the crypto/tls regression
   (found 2026-08-19; rooted and fixed by lane `claude/tls-regression`).** The flagship row banked
   green on its lane tip and was RED at master the moment its merge landed, because the guilty change

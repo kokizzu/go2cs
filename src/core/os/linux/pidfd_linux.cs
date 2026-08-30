@@ -108,7 +108,11 @@ internal static (ж<ProcessState>, error) pidfdWait(this ж<Process> Ꮡp) {
         ref var rusage = ref heap(new syscall.Rusage(), out var Ꮡrusage);
         syscall.Errno e = default!;
         while (ᐧ) {
-            (_, _, e) = syscall.Syscall6(syscall.SYS_WAITID, _P_PIDFD, handle, (uintptr)Ꮡinfo, syscall.WEXITED, (uintptr)Ꮡrusage, 0);
+            var ᴋ0 = Ꮡinfo;
+            var ᴋ1 = Ꮡrusage;
+                        (_, _, e) = syscall.Syscall6(syscall.SYS_WAITID, _P_PIDFD, handle, (uintptr)ᴋ0, syscall.WEXITED, (uintptr)ᴋ1, 0);
+            System.GC.KeepAlive(ᴋ0);
+            System.GC.KeepAlive(ᴋ1);
             if (e != syscall.EINTR) {
                 break;
             }

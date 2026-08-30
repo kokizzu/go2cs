@@ -51,17 +51,17 @@ using static go.@internal.syscall.unix_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/syscall/unix/at.go", "at.cs", "ABEcgoKCloKClqaCgoKWgoKW")]
-[assembly: go.GoPositionMap("internal/syscall/unix/at_fstatat.go", "at_fstatat.cs", "AAscgoKCgpaCgpY=")]
-[assembly: go.GoPositionMap("internal/syscall/unix/copy_file_range_linux.go", "copy_file_range_linux.cs", "AAoYsgAGEIKClA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/at.go", "at.cs", "ABEcgoKClqKClqaCgoKWooKW")]
+[assembly: go.GoPositionMap("internal/syscall/unix/at_fstatat.go", "at_fstatat.cs", "AAscgoKCgpbCgpY=")]
+[assembly: go.GoPositionMap("internal/syscall/unix/copy_file_range_linux.go", "copy_file_range_linux.cs", "AAoYsgAEEIKClA==")]
 [assembly: go.GoPositionMap("internal/syscall/unix/eaccess_linux.go", "eaccess_linux.cs", "AAkSgg==")]
 [assembly: go.GoPositionMap("internal/syscall/unix/fcntl_unix.go", "fcntl_unix.cs", "AAsi9IKCgpQ=")]
-[assembly: go.GoPositionMap("internal/syscall/unix/getrandom.go", "getrandom.cs", "ABgqkoKUgpS4goKUlA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/getrandom.go", "getrandom.cs", "ABgqkoKUgpSogoKUlA==")]
 [assembly: go.GoPositionMap("internal/syscall/unix/kernel_version_linux.go", "kernel_version_linux.cs", "AAkgAAgCgoCCpqiCgriCgoKUqA==")]
 [assembly: go.GoPositionMap("internal/syscall/unix/net.go", "net.cs", "AAsguLi4uLi4uA==")]
 [assembly: go.GoPositionMap("internal/syscall/unix/nonblocking_unix.go", "nonblocking_unix.cs", "AAoWgoKClKaC")]
 [assembly: go.GoPositionMap("internal/syscall/unix/pidfd_linux.go", "pidfd_linux.cs", "AAkSgoKClKaCgoKU")]
-[assembly: go.GoPositionMap("internal/syscall/unix/tcsetpgrp_linux.go", "tcsetpgrp_linux.cs", "AAoewoKClA==")]
+[assembly: go.GoPositionMap("internal/syscall/unix/tcsetpgrp_linux.go", "tcsetpgrp_linux.cs", "AAoewqKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.syscall;

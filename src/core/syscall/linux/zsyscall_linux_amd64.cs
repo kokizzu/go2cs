@@ -16,7 +16,9 @@ internal static error /*err*/ faccessat(nint dirfd, @string path, uint32 mode) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_FACCESSAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)mode);
+    var ᴋ0 = _p0;
+        var (_, _, e1) = Syscall(SYS_FACCESSAT, (uintptr)dirfd, (uintptr)ᴋ0, (uintptr)mode);
+    System.GC.KeepAlive(ᴋ0);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -32,7 +34,9 @@ internal static error /*err*/ faccessat2(nint dirfd, @string path, uint32 mode, 
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall6(_SYS_faccessat2, (uintptr)dirfd, (uintptr)_p0, (uintptr)mode, (uintptr)flags, 0, 0);
+    var ᴋ1 = _p0;
+        var (_, _, e1) = Syscall6(_SYS_faccessat2, (uintptr)dirfd, (uintptr)ᴋ1, (uintptr)mode, (uintptr)flags, 0, 0);
+    System.GC.KeepAlive(ᴋ1);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -48,7 +52,9 @@ internal static error /*err*/ fchmodat(nint dirfd, @string path, uint32 mode) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_FCHMODAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)mode);
+    var ᴋ2 = _p0;
+        var (_, _, e1) = Syscall(SYS_FCHMODAT, (uintptr)dirfd, (uintptr)ᴋ2, (uintptr)mode);
+    System.GC.KeepAlive(ᴋ2);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -64,7 +70,9 @@ internal static error /*err*/ fchmodat2(nint dirfd, @string path, uint32 mode, n
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall6(_SYS_fchmodat2, (uintptr)dirfd, (uintptr)_p0, (uintptr)mode, (uintptr)flags, 0, 0);
+    var ᴋ3 = _p0;
+        var (_, _, e1) = Syscall6(_SYS_fchmodat2, (uintptr)dirfd, (uintptr)ᴋ3, (uintptr)mode, (uintptr)flags, 0, 0);
+    System.GC.KeepAlive(ᴋ3);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -85,7 +93,11 @@ internal static error /*err*/ linkat(nint olddirfd, @string oldpath, nint newdir
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall6(SYS_LINKAT, (uintptr)olddirfd, (uintptr)_p0, (uintptr)newdirfd, (uintptr)_p1, (uintptr)flags, 0);
+    var ᴋ4 = _p0;
+    var ᴋ5 = _p1;
+        var (_, _, e1) = Syscall6(SYS_LINKAT, (uintptr)olddirfd, (uintptr)ᴋ4, (uintptr)newdirfd, (uintptr)ᴋ5, (uintptr)flags, 0);
+    System.GC.KeepAlive(ᴋ4);
+    System.GC.KeepAlive(ᴋ5);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -102,7 +114,9 @@ internal static (nint fd, error err) openat(nint dirfd, @string path, nint flags
     if (err != default!) {
         return (fd, err);
     }
-    var (r0, _, e1) = Syscall6(SYS_OPENAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)flags, (uintptr)mode, 0, 0);
+    var ᴋ6 = _p0;
+        var (r0, _, e1) = Syscall6(SYS_OPENAT, (uintptr)dirfd, (uintptr)ᴋ6, (uintptr)flags, (uintptr)mode, 0, 0);
+    System.GC.KeepAlive(ᴋ6);
     fd = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -137,7 +151,9 @@ internal static (nint n, error err) readlinkat(nint dirfd, @string path, slice<b
     } else {
         _p1 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall6(SYS_READLINKAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)_p1, (uintptr)len(buf), 0, 0);
+    var ᴋ7 = _p0;
+        var (r0, _, e1) = Syscall6(SYS_READLINKAT, (uintptr)dirfd, (uintptr)ᴋ7, (uintptr)_p1, (uintptr)len(buf), 0, 0);
+    System.GC.KeepAlive(ᴋ7);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -159,7 +175,11 @@ internal static error /*err*/ symlinkat(@string oldpath, nint newdirfd, @string 
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_SYMLINKAT, (uintptr)_p0, (uintptr)newdirfd, (uintptr)_p1);
+    var ᴋ8 = _p0;
+    var ᴋ9 = _p1;
+        var (_, _, e1) = Syscall(SYS_SYMLINKAT, (uintptr)ᴋ8, (uintptr)newdirfd, (uintptr)ᴋ9);
+    System.GC.KeepAlive(ᴋ8);
+    System.GC.KeepAlive(ᴋ9);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -175,7 +195,9 @@ internal static error /*err*/ unlinkat(nint dirfd, @string path, nint flags) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_UNLINKAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)flags);
+    var ᴋ10 = _p0;
+        var (_, _, e1) = Syscall(SYS_UNLINKAT, (uintptr)dirfd, (uintptr)ᴋ10, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ10);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -191,7 +213,11 @@ internal static error /*err*/ utimensat(nint dirfd, @string path, [GoArrayDims(2
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall6(SYS_UTIMENSAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)Ꮡtimes, (uintptr)flag, 0, 0);
+    var ᴋ11 = _p0;
+    var ᴋ12 = Ꮡtimes;
+        var (_, _, e1) = Syscall6(SYS_UTIMENSAT, (uintptr)dirfd, (uintptr)ᴋ11, (uintptr)ᴋ12, (uintptr)flag, 0, 0);
+    System.GC.KeepAlive(ᴋ11);
+    System.GC.KeepAlive(ᴋ12);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -251,7 +277,9 @@ internal static error /*err*/ reboot(nuint magic1, nuint magic2, nint cmd, @stri
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall6(SYS_REBOOT, (uintptr)magic1, (uintptr)magic2, (uintptr)cmd, (uintptr)_p0, 0, 0);
+    var ᴋ13 = _p0;
+        var (_, _, e1) = Syscall6(SYS_REBOOT, (uintptr)magic1, (uintptr)magic2, (uintptr)cmd, (uintptr)ᴋ13, 0, 0);
+    System.GC.KeepAlive(ᴋ13);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -277,7 +305,15 @@ internal static error /*err*/ mount(@string source, @string target, @string fsty
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall6(SYS_MOUNT, (uintptr)_p0, (uintptr)_p1, (uintptr)_p2, (uintptr)flags, (uintptr)Ꮡdata, 0);
+    var ᴋ14 = _p0;
+    var ᴋ15 = _p1;
+    var ᴋ16 = _p2;
+    var ᴋ17 = Ꮡdata;
+        var (_, _, e1) = Syscall6(SYS_MOUNT, (uintptr)ᴋ14, (uintptr)ᴋ15, (uintptr)ᴋ16, (uintptr)flags, (uintptr)ᴋ17, 0);
+    System.GC.KeepAlive(ᴋ14);
+    System.GC.KeepAlive(ᴋ15);
+    System.GC.KeepAlive(ᴋ16);
+    System.GC.KeepAlive(ᴋ17);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -293,7 +329,9 @@ public static error /*err*/ Acct(@string path) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_ACCT, (uintptr)_p0, 0, 0);
+    var ᴋ18 = _p0;
+        var (_, _, e1) = Syscall(SYS_ACCT, (uintptr)ᴋ18, 0, 0);
+    System.GC.KeepAlive(ᴋ18);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -312,7 +350,9 @@ public static error /*err*/ Chdir(@string path) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_CHDIR, (uintptr)_p0, 0, 0);
+    var ᴋ19 = _p0;
+        var (_, _, e1) = Syscall(SYS_CHDIR, (uintptr)ᴋ19, 0, 0);
+    System.GC.KeepAlive(ᴋ19);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -328,7 +368,9 @@ public static error /*err*/ Chroot(@string path) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_CHROOT, (uintptr)_p0, 0, 0);
+    var ᴋ20 = _p0;
+        var (_, _, e1) = Syscall(SYS_CHROOT, (uintptr)ᴋ20, 0, 0);
+    System.GC.KeepAlive(ᴋ20);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -436,7 +478,9 @@ public static error /*err*/ Fchownat(nint dirfd, @string path, nint uid, nint gi
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall6(SYS_FCHOWNAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)uid, (uintptr)gid, (uintptr)flags, 0);
+    var ᴋ21 = _p0;
+        var (_, _, e1) = Syscall6(SYS_FCHOWNAT, (uintptr)dirfd, (uintptr)ᴋ21, (uintptr)uid, (uintptr)gid, (uintptr)flags, 0);
+    System.GC.KeepAlive(ᴋ21);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -593,7 +637,11 @@ public static (nint sz, error err) Getxattr(@string path, @string attr, slice<by
     } else {
         _p2 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall6(SYS_GETXATTR, (uintptr)_p0, (uintptr)_p1, (uintptr)_p2, (uintptr)len(dest), 0, 0);
+    var ᴋ22 = _p0;
+    var ᴋ23 = _p1;
+        var (r0, _, e1) = Syscall6(SYS_GETXATTR, (uintptr)ᴋ22, (uintptr)ᴋ23, (uintptr)_p2, (uintptr)len(dest), 0, 0);
+    System.GC.KeepAlive(ᴋ22);
+    System.GC.KeepAlive(ᴋ23);
     sz = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -611,7 +659,9 @@ public static (nint watchdesc, error err) InotifyAddWatch(nint fd, @string pathn
     if (err != default!) {
         return (watchdesc, err);
     }
-    var (r0, _, e1) = Syscall(SYS_INOTIFY_ADD_WATCH, (uintptr)fd, (uintptr)_p0, (uintptr)mask);
+    var ᴋ24 = _p0;
+        var (r0, _, e1) = Syscall(SYS_INOTIFY_ADD_WATCH, (uintptr)fd, (uintptr)ᴋ24, (uintptr)mask);
+    System.GC.KeepAlive(ᴋ24);
     watchdesc = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -691,7 +741,9 @@ public static (nint sz, error err) Listxattr(@string path, slice<byte> dest) {
     } else {
         _p1 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall(SYS_LISTXATTR, (uintptr)_p0, (uintptr)_p1, (uintptr)len(dest));
+    var ᴋ25 = _p0;
+        var (r0, _, e1) = Syscall(SYS_LISTXATTR, (uintptr)ᴋ25, (uintptr)_p1, (uintptr)len(dest));
+    System.GC.KeepAlive(ᴋ25);
     sz = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -708,7 +760,9 @@ public static error /*err*/ Mkdirat(nint dirfd, @string path, uint32 mode) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_MKDIRAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)mode);
+    var ᴋ26 = _p0;
+        var (_, _, e1) = Syscall(SYS_MKDIRAT, (uintptr)dirfd, (uintptr)ᴋ26, (uintptr)mode);
+    System.GC.KeepAlive(ᴋ26);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -724,7 +778,9 @@ public static error /*err*/ Mknodat(nint dirfd, @string path, uint32 mode, nint 
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall6(SYS_MKNODAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)mode, (uintptr)dev, 0, 0);
+    var ᴋ27 = _p0;
+        var (_, _, e1) = Syscall6(SYS_MKNODAT, (uintptr)dirfd, (uintptr)ᴋ27, (uintptr)mode, (uintptr)dev, 0, 0);
+    System.GC.KeepAlive(ᴋ27);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -735,7 +791,11 @@ public static error /*err*/ Mknodat(nint dirfd, @string path, uint32 mode, nint 
 public static error /*err*/ Nanosleep(ж<Timespec> Ꮡtime, ж<Timespec> Ꮡleftover) {
     error err = default!;
 
-    var (_, _, e1) = Syscall(SYS_NANOSLEEP, (uintptr)Ꮡtime, (uintptr)Ꮡleftover, 0);
+    var ᴋ28 = Ꮡtime;
+    var ᴋ29 = Ꮡleftover;
+        var (_, _, e1) = Syscall(SYS_NANOSLEEP, (uintptr)ᴋ28, (uintptr)ᴋ29, 0);
+    System.GC.KeepAlive(ᴋ28);
+    System.GC.KeepAlive(ᴋ29);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -756,7 +816,11 @@ public static error /*err*/ PivotRoot(@string newroot, @string putold) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_PIVOT_ROOT, (uintptr)_p0, (uintptr)_p1, 0);
+    var ᴋ30 = _p0;
+    var ᴋ31 = _p1;
+        var (_, _, e1) = Syscall(SYS_PIVOT_ROOT, (uintptr)ᴋ30, (uintptr)ᴋ31, 0);
+    System.GC.KeepAlive(ᴋ30);
+    System.GC.KeepAlive(ᴋ31);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -807,7 +871,11 @@ public static error /*err*/ Removexattr(@string path, @string attr) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_REMOVEXATTR, (uintptr)_p0, (uintptr)_p1, 0);
+    var ᴋ32 = _p0;
+    var ᴋ33 = _p1;
+        var (_, _, e1) = Syscall(SYS_REMOVEXATTR, (uintptr)ᴋ32, (uintptr)ᴋ33, 0);
+    System.GC.KeepAlive(ᴋ32);
+    System.GC.KeepAlive(ᴋ33);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -914,7 +982,11 @@ public static error /*err*/ Setxattr(@string path, @string attr, slice<byte> dat
     } else {
         _p2 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (_, _, e1) = Syscall6(SYS_SETXATTR, (uintptr)_p0, (uintptr)_p1, (uintptr)_p2, (uintptr)len(data), (uintptr)flags, 0);
+    var ᴋ34 = _p0;
+    var ᴋ35 = _p1;
+        var (_, _, e1) = Syscall6(SYS_SETXATTR, (uintptr)ᴋ34, (uintptr)ᴋ35, (uintptr)_p2, (uintptr)len(data), (uintptr)flags, 0);
+    System.GC.KeepAlive(ᴋ34);
+    System.GC.KeepAlive(ᴋ35);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -988,7 +1060,9 @@ public static error /*err*/ Unmount(@string target, nint flags) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_UMOUNT2, (uintptr)_p0, (uintptr)flags, 0);
+    var ᴋ36 = _p0;
+        var (_, _, e1) = Syscall(SYS_UMOUNT2, (uintptr)ᴋ36, (uintptr)flags, 0);
+    System.GC.KeepAlive(ᴋ36);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1041,7 +1115,9 @@ internal static (nint n, error err) readlen(nint fd, ж<byte> Ꮡp, nint np) {
     nint n = default!;
     error err = default!;
 
-    var (r0, _, e1) = Syscall(SYS_READ, (uintptr)fd, (uintptr)Ꮡp, (uintptr)np);
+    var ᴋ37 = Ꮡp;
+        var (r0, _, e1) = Syscall(SYS_READ, (uintptr)fd, (uintptr)ᴋ37, (uintptr)np);
+    System.GC.KeepAlive(ᴋ37);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1345,7 +1421,11 @@ public static error /*err*/ Renameat(nint olddirfd, @string oldpath, nint newdir
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall6(SYS_RENAMEAT, (uintptr)olddirfd, (uintptr)_p0, (uintptr)newdirfd, (uintptr)_p1, 0, 0);
+    var ᴋ38 = _p0;
+    var ᴋ39 = _p1;
+        var (_, _, e1) = Syscall6(SYS_RENAMEAT, (uintptr)olddirfd, (uintptr)ᴋ38, (uintptr)newdirfd, (uintptr)ᴋ39, 0, 0);
+    System.GC.KeepAlive(ᴋ38);
+    System.GC.KeepAlive(ᴋ39);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1373,7 +1453,9 @@ internal static (nint written, error err) sendfile(nint outfd, nint infd, ж<int
     nint written = default!;
     error err = default!;
 
-    var (r0, _, e1) = Syscall6(SYS_SENDFILE, (uintptr)outfd, (uintptr)infd, (uintptr)Ꮡoffset, (uintptr)count, 0, 0);
+    var ᴋ40 = Ꮡoffset;
+        var (r0, _, e1) = Syscall6(SYS_SENDFILE, (uintptr)outfd, (uintptr)infd, (uintptr)ᴋ40, (uintptr)count, 0, 0);
+    System.GC.KeepAlive(ᴋ40);
     written = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1430,7 +1512,11 @@ public static (int64 n, error err) Splice(nint rfd, ж<int64> Ꮡroff, nint wfd,
     int64 n = default!;
     error err = default!;
 
-    var (r0, _, e1) = Syscall6(SYS_SPLICE, (uintptr)rfd, (uintptr)Ꮡroff, (uintptr)wfd, (uintptr)Ꮡwoff, (uintptr)len, (uintptr)flags);
+    var ᴋ41 = Ꮡroff;
+    var ᴋ42 = Ꮡwoff;
+        var (r0, _, e1) = Syscall6(SYS_SPLICE, (uintptr)rfd, (uintptr)ᴋ41, (uintptr)wfd, (uintptr)ᴋ42, (uintptr)len, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ41);
+    System.GC.KeepAlive(ᴋ42);
     n = (int64)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1461,7 +1547,9 @@ public static error /*err*/ Truncate(@string path, int64 length) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_TRUNCATE, (uintptr)_p0, (uintptr)length, 0);
+    var ᴋ43 = _p0;
+        var (_, _, e1) = Syscall(SYS_TRUNCATE, (uintptr)ᴋ43, (uintptr)length, 0);
+    System.GC.KeepAlive(ᴋ43);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1472,7 +1560,9 @@ public static error /*err*/ Truncate(@string path, int64 length) {
 public static error /*err*/ Ustat(nint dev, ж<Ustat_t> Ꮡubuf) {
     error err = default!;
 
-    var (_, _, e1) = Syscall(SYS_USTAT, (uintptr)dev, (uintptr)Ꮡubuf, 0);
+    var ᴋ44 = Ꮡubuf;
+        var (_, _, e1) = Syscall(SYS_USTAT, (uintptr)dev, (uintptr)ᴋ44, 0);
+    System.GC.KeepAlive(ᴋ44);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1484,7 +1574,11 @@ internal static (nint fd, error err) accept4(nint s, ж<RawSockaddrAny> Ꮡrsa, 
     nint fd = default!;
     error err = default!;
 
-    var (r0, _, e1) = Syscall6(SYS_ACCEPT4, (uintptr)s, (uintptr)Ꮡrsa, (uintptr)Ꮡaddrlen, (uintptr)flags, 0, 0);
+    var ᴋ45 = Ꮡrsa;
+    var ᴋ46 = Ꮡaddrlen;
+        var (r0, _, e1) = Syscall6(SYS_ACCEPT4, (uintptr)s, (uintptr)ᴋ45, (uintptr)ᴋ46, (uintptr)flags, 0, 0);
+    System.GC.KeepAlive(ᴋ45);
+    System.GC.KeepAlive(ᴋ46);
     fd = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1534,7 +1628,9 @@ internal static (nint nn, error err) getgroups(nint n, ж<_Gid_t> Ꮡlist) {
 internal static error /*err*/ getsockopt(nint s, nint level, nint name, @unsafe.Pointer val, ж<_Socklen> Ꮡvallen) {
     error err = default!;
 
-    var (_, _, e1) = Syscall6(SYS_GETSOCKOPT, (uintptr)s, (uintptr)level, (uintptr)name, (uintptr)val, (uintptr)Ꮡvallen, 0);
+    var ᴋ47 = Ꮡvallen;
+        var (_, _, e1) = Syscall6(SYS_GETSOCKOPT, (uintptr)s, (uintptr)level, (uintptr)name, (uintptr)val, (uintptr)ᴋ47, 0);
+    System.GC.KeepAlive(ᴋ47);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1609,7 +1705,11 @@ internal static (nint n, error err) recvfrom(nint fd, slice<byte> p, nint flags,
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall6(SYS_RECVFROM, (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)flags, (uintptr)Ꮡfrom, (uintptr)Ꮡfromlen);
+    var ᴋ48 = Ꮡfrom;
+    var ᴋ49 = Ꮡfromlen;
+        var (r0, _, e1) = Syscall6(SYS_RECVFROM, (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)flags, (uintptr)ᴋ48, (uintptr)ᴋ49);
+    System.GC.KeepAlive(ᴋ48);
+    System.GC.KeepAlive(ᴋ49);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1639,7 +1739,9 @@ internal static (nint n, error err) recvmsg(nint s, ж<Msghdr> Ꮡmsg, nint flag
     nint n = default!;
     error err = default!;
 
-    var (r0, _, e1) = Syscall(SYS_RECVMSG, (uintptr)s, (uintptr)Ꮡmsg, (uintptr)flags);
+    var ᴋ50 = Ꮡmsg;
+        var (r0, _, e1) = Syscall(SYS_RECVMSG, (uintptr)s, (uintptr)ᴋ50, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ50);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1652,7 +1754,9 @@ internal static (nint n, error err) sendmsg(nint s, ж<Msghdr> Ꮡmsg, nint flag
     nint n = default!;
     error err = default!;
 
-    var (r0, _, e1) = Syscall(SYS_SENDMSG, (uintptr)s, (uintptr)Ꮡmsg, (uintptr)flags);
+    var ᴋ51 = Ꮡmsg;
+        var (r0, _, e1) = Syscall(SYS_SENDMSG, (uintptr)s, (uintptr)ᴋ51, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ51);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1701,7 +1805,11 @@ internal static error /*err*/ futimesat(nint dirfd, @string path, [GoArrayDims(2
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_FUTIMESAT, (uintptr)dirfd, (uintptr)_p0, (uintptr)Ꮡtimes);
+    var ᴋ52 = _p0;
+    var ᴋ53 = Ꮡtimes;
+        var (_, _, e1) = Syscall(SYS_FUTIMESAT, (uintptr)dirfd, (uintptr)ᴋ52, (uintptr)ᴋ53);
+    System.GC.KeepAlive(ᴋ52);
+    System.GC.KeepAlive(ᴋ53);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1717,7 +1825,11 @@ public static error /*err*/ Utime(@string path, ж<Utimbuf> Ꮡbuf) {
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_UTIME, (uintptr)_p0, (uintptr)Ꮡbuf, 0);
+    var ᴋ54 = _p0;
+    var ᴋ55 = Ꮡbuf;
+        var (_, _, e1) = Syscall(SYS_UTIME, (uintptr)ᴋ54, (uintptr)ᴋ55, 0);
+    System.GC.KeepAlive(ᴋ54);
+    System.GC.KeepAlive(ᴋ55);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1733,7 +1845,11 @@ internal static error /*err*/ utimes(@string path, [GoArrayDims(2)] ж<array<Tim
     if (err != default!) {
         return err;
     }
-    var (_, _, e1) = Syscall(SYS_UTIMES, (uintptr)_p0, (uintptr)Ꮡtimes, 0);
+    var ᴋ56 = _p0;
+    var ᴋ57 = Ꮡtimes;
+        var (_, _, e1) = Syscall(SYS_UTIMES, (uintptr)ᴋ56, (uintptr)ᴋ57, 0);
+    System.GC.KeepAlive(ᴋ56);
+    System.GC.KeepAlive(ᴋ57);
     if (e1 != 0) {
         err = errnoErr(e1);
     }

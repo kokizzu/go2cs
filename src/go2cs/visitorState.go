@@ -151,6 +151,16 @@ type Visitor struct {
 	// to the wrong call, so every drain site clears it unconditionally.
 	pendingSyscallKeepAlive []string
 
+	// syscallKeepAliveCounter numbers every temp convSyscallFunnelCall ever creates, monotonically,
+	// for this Visitor's whole run — never reset alongside pendingSyscallKeepAlive above. Naming
+	// each statement's temps from 0 (len of the per-statement slice) collided as CS0128 the moment
+	// two sibling funnel-call statements shared one enclosing C# block with no scope of their own
+	// between them (syscall/linux/lsf_linux.go's SIOCGIFFLAGS/SIOCSIFFLAGS pair, both direct
+	// children of one try block): each independently declared `var ᴋ0 = …;`. A monotonic counter
+	// makes every temp name unique for the file regardless of how its statement nests, at the cost
+	// of not restarting at 0 per function — free, since the name is synthesized and never read back.
+	syscallKeepAliveCounter int
+
 	liftedTypeNames    HashSet[string]
 	liftedTypeMap      map[types.Type]string
 	subStructTypes     map[types.Type][]types.Type

@@ -55,7 +55,9 @@ public static error SetLsfPromisc(@string name, bool m) {
         defer(Close, s, ref ᒐ);
         ref var ifl = ref heap(new iflags(), out var Ꮡifl);
         copy(ifl.name[..], slice<byte>(name));
-        var (_, _, ep) = Syscall(SYS_IOCTL, (uintptr)s, SIOCGIFFLAGS, (uintptr)Ꮡifl);
+        var ᴋ0 = Ꮡifl;
+                var (_, _, ep) = Syscall(SYS_IOCTL, (uintptr)s, SIOCGIFFLAGS, (uintptr)ᴋ0);
+        System.GC.KeepAlive(ᴋ0);
         if (ep != 0) {
             return ep;
         }
@@ -64,7 +66,9 @@ public static error SetLsfPromisc(@string name, bool m) {
         } else {
             ifl.flags &= unchecked((uint16)~(uint16)((uint16)IFF_PROMISC));
         }
-        (_, _, ep) = Syscall(SYS_IOCTL, (uintptr)s, SIOCSIFFLAGS, (uintptr)Ꮡifl);
+        var ᴋ1 = Ꮡifl;
+                (_, _, ep) = Syscall(SYS_IOCTL, (uintptr)s, SIOCSIFFLAGS, (uintptr)ᴋ1);
+        System.GC.KeepAlive(ᴋ1);
         if (ep != 0) {
             return ep;
         }
