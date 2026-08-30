@@ -65,11 +65,19 @@ public static partial class concurrent_package
     // hashtriemap.cs is a whole-file hand-own ([module: GoManualConversion]) and it is this
     // package's ONLY Go file, so the converter's driver skips the package outright — this file,
     // the .csproj and README.md are hand-owned by consequence and never re-emitted (the position
-    // internal/godebug is already in). The trie's internal node types (node, entry, indirect) have
-    // no declaration to carry here any more: the native implementation keeps its entries in a
-    // ConcurrentDictionary and has no nodes.
+    // internal/godebug is already in).
+    //
+    // The trie's internal node types (node, entry, indirect) are declared by hashtriemap_whitebox.cs
+    // and are NEVER CONSTRUCTED: the implementation keeps its entries in a ConcurrentDictionary and
+    // has no nodes. They exist so that the package's own `_test.go` — whose dead `dumpMap`/`dumpNode`
+    // debug helpers name `node[K, V]` in a signature — type-checks at all; see that file's header.
+    // Their accessibility is carried here for the same reason every other type's is: the converted
+    // suite compiles into a separate friend assembly, and a bare nested declaration is private.
 
     // <TypeAccessibility>
     public partial struct HashTrieMap<K, V> {}
+    internal partial struct node<K, V> {}
+    internal partial struct Δentry<K, V> {}
+    internal partial struct Δindirect<K, V> {}
     // </TypeAccessibility>
 }
