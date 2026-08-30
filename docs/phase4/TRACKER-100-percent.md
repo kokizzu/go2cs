@@ -7,15 +7,17 @@
 > Scope: the **Windows validation roster** (the 100% goal's primary axis). The per-OS parity
 > axis is tracked in its own summary line below.
 
-## Where we stand — updated 2026-08-29 (release day, 1.23.12.2)
+## Where we stand — updated 2026-08-29 late evening (release day + the banking cascade)
 
 | Measure | Value |
 |---|---|
-| **On master (shipped in 1.23.12.2)** | **189 / 208 = 90.9% honest** · 26,043 matching · 148 disclosed |
-| Banked on branches, pending post-release merge | `log/slog/internal/buffer` (1\|1) · `math/big` (224\|2) · `internal/godebug` (5\|0) · `net/http/httptrace` (2\|0, the MakeFunc chip @`681c71410`, **preflight clean**) · `internal/poll` (19\|0, **banked @`4a3752f6c`**, both flake re-runs green, format guard positive-controlled) |
-| **Projected at first post-release banking window** | **194 / 208 = 93.3%** |
-| Rows remaining after pending merges | **14** |
-| Linux parity axis | 178 of 189 applicable annotated (net's Linux leg censused at 448/58/73, arc mapped) |
+| **On master (`b64b671c4`)** | **196 / 208 = 94.2% honest** · 27,665 matching · 153 disclosed · raw 196/215 = 91.2% |
+| Shipped in 1.23.12.2 (the release snapshot) | 189 / 208 = 90.9% · 26,043 matching · 148 disclosed |
+| Banked since the release freeze lifted (all merged + swept) | httptrace 2\|0 · buffer 1\|1 · godebug 5\|0 · internal/poll 19\|0 · math/big 224\|2 · **net/http 1,343\|2 (the campaign's largest row)** · iter 28\|0 |
+| **Rows remaining (implementable)** | **12** |
+| In flight | i9's tier-0 liveness full-roster A/B (could dissolve the codegen-liveness class); G's Reinterpret arc design; the unique smalls lane; cgi staged at 38\|1 pending the next window |
+| Linux parity axis | 178 of 195 applicable annotated |
+| Host-exception ledger (i7-class) | net (DNS oracle) · crypto/tls (BoGo wall) · net/http's 4 h2 deadline rows (measured 250–500ms bracket) |
 
 ## The remaining 17, by distance
 
