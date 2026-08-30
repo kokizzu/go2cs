@@ -394,7 +394,16 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// The WRITE half of Bytes, hand-owned for the same reason one layer down: the auto body is
 		// `*(*[]byte)(v.ptr) = x`, a store through the Go data word this bridge never populates, so
 		// it wrote nowhere for EVERY byte slice — silently. See reflect/value_impl.cs.
-		"Value.SetBytes":      goosAny,
+		"Value.SetBytes": goosAny,
+		// The RUNE twin of SetBytes, carrying the identical defect one line over:
+		// `*(*[]rune)(v.ptr) = x`. It is LOUDER than the byte case only by accident of how the
+		// null box fails — a nil dereference rather than a silent no-op — so the SHAPE, not the
+		// symptom, is what marks it. Reached through makeRunes from the string↔[]rune conversions.
+		"Value.setRunes": goosAny,
+		// The READ half of the same rune pair, and the same shape again: `~(*[]rune)(v.ptr)`.
+		// Bytes/SetBytes were hand-owned as a pair for this reason; runes/setRunes are the pair
+		// that was left, and BOTH halves were broken.
+		"Value.runes":         goosAny,
 		"Value.NumField":      goosAny,
 		"Value.Field":         goosAny,
 		"Value.UnsafePointer": goosAny,
