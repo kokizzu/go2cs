@@ -7,9 +7,13 @@
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"go/types"
+	"os"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
 
 // linknameHandles is the set of THIS package's symbol names that carry a definition-side
@@ -21,29 +25,174 @@ import (
 // package alongside projectImports; populated by collectLinknameHandles.
 var linknameHandles HashSet[string]
 
-// conversionGraph is the -stdlib convert-set dependency graph (nil for a single-package or -tests
-// conversion, where no cross-package cycle can arise from the one package under conversion). Set once
-// the graph is built; read by linknamePullWouldCycle. currentPackagePath is the import path of the
-// package currently being converted (set per package in resetPackageState).
+// conversionGraph is the CONVERT-SET dependency graph, built by the -stdlib and -recurse drivers and
+// nil for a single-package or -tests conversion. Set once the graph is built; read by
+// linknamePullWouldCycle. currentPackagePath is the import path of the package currently being
+// converted (set per package in resetPackageState).
+//
+// ⚠ This variable used to be documented as nil "where no cross-package cycle can arise from the one
+// package under conversion", and linknamePullWouldCycle acted on that: no graph, no cycle. The
+// assumption is false, for exactly one emission. Every OTHER cross-package reference the converter
+// emits descends from an `import`, and Go's import graph is acyclic by construction — but a linkname
+// edge is the one reference the converter emits that Go's own graph does NOT contain, which is the
+// entire reason linknamePullWouldCycle was written. The shortcut assumed the danger came from the
+// convert-SET; it comes from the DIRECTIVE, and a directive is visible to a single-package conversion
+// exactly as it is to -stdlib.
+//
+// What it cost (W1, docs/phase4/DESIGN-linkname-push-cycles.md): one variable, two answers, no
+// diagnostic. Converting `runtime` under -stdlib, the graph answered DependsOn(internal/syscall/
+// windows, runtime) = true and runtime's `//go:linkname canUseLongPaths internal/syscall/windows.
+// CanUseLongPaths` kept its plain-field form. Converting the SAME package under -tests, the nil
+// shortcut answered false, the forwarding property was emitted, and internal/syscall/windows was
+// queued for a ProjectReference — which Go's own internal/syscall/windows -> syscall -> runtime
+// closes into a cycle no conversion ORDER can undo, MSB4006, six cycles, runtime and everything in
+// them dead. The corpus-wide assertion that would have caught it is now standing in
+// check-solution-integrity.ps1.
 var conversionGraph *DependencyGraph
 var currentPackagePath string
+
+// linknameCycleAnswer is one memoized "what does this target import?" result. `resolved` is false
+// when the question could not be ANSWERED (the target would not load, or loaded with errors that
+// leave its import list incomplete) — distinct from an answer of "imports nothing", and the
+// difference is the whole point: see the fail-closed arm in linknamePullWouldCycle.
+type linknameCycleAnswer struct {
+	closure  HashSet[string]
+	resolved bool
+}
+
+// linknameTargetClosures memoizes loadLinknameTargetImportClosure per pull target. Keyed by target
+// path AND target platform: the closure of `internal/syscall/windows` is a property of the platform
+// being converted for, and a -platforms run walks several in one process. Not reset per package —
+// the answer does not depend on which package is asking, only the membership test does.
+var linknameTargetClosures = map[string]linknameCycleAnswer{}
 
 // linknamePullWouldCycle reports whether forwarding a var pull to targetPath would create a CYCLIC C#
 // project reference — targetPath is (or transitively depends on) the current package. Go's linkname is
 // link-time and cycle-free; a C# project reference is compile-time and cannot be circular. A downward
 // pull (math/bits → runtime) is safe; the reverse (runtime → internal/syscall/windows.CanUseLongPaths)
-// is not, and keeps its null-field form. Without the graph (single-package / -tests) a lone package
-// cannot form a cross-package cycle, so only a self-reference is rejected.
-func linknamePullWouldCycle(targetPath string) bool {
+// is not, and keeps its plain-field form.
+//
+// Three ways to answer it, in cost order:
+//
+//  1. The convert-set graph, when a batch driver built one. Unchanged.
+//  2. The CURRENT package's own transitive import closure. If this package already reaches the
+//     target, the target cannot reach back — Go's import graph is acyclic, which is the same fact
+//     the whole design rests on — so the pull is downward and safe. Free: resetPackageState already
+//     captured the closure, and it covers every pull whose target the puller also imports.
+//  3. Otherwise a targeted go/packages load of the TARGET, walking its transitive imports for the
+//     current package (M1). Memoized per target, so a run pays one load per distinct pull target —
+//     three in the whole standard library.
+//
+// If (3) cannot answer — the load fails, or the target loads with errors that leave its imports
+// incomplete — the pull is REFUSED (M2, as M1's fallback). An unanswerable cycle question must not
+// be answered "no": answering "no" emits a reference that may not compile at all, while answering
+// "yes" emits the plain field this converter emitted for every such pull before the feature existed.
+// The refusal is announced, because a silent one is indistinguishable from a correct suppression.
+func linknamePullWouldCycle(targetPath string, options Options) bool {
 	if targetPath == currentPackagePath {
 		return true
 	}
 
-	if conversionGraph == nil {
+	if conversionGraph != nil {
+		return conversionGraph.DependsOn(targetPath, currentPackagePath)
+	}
+
+	if _, reachedFromHere := importedPackages[targetPath]; reachedFromHere {
 		return false
 	}
 
-	return conversionGraph.DependsOn(targetPath, currentPackagePath)
+	closure, resolved := linknameTargetImportClosure(targetPath, options)
+
+	if !resolved {
+		return true
+	}
+
+	return closure.Contains(currentPackagePath)
+}
+
+// linknameTargetImportClosure returns the pull target's transitive import closure, loading it at most
+// once per target per platform.
+func linknameTargetImportClosure(targetPath string, options Options) (HashSet[string], bool) {
+	key := targetPath + "|" + options.targetPlatform
+
+	if cached, found := linknameTargetClosures[key]; found {
+		return cached.closure, cached.resolved
+	}
+
+	answer := loadLinknameTargetImportClosure(targetPath, options)
+	linknameTargetClosures[key] = answer
+
+	if !answer.resolved {
+		// Warn ONCE per target (the memo write above is what makes it once). A pull that keeps its
+		// plain-field form because the cycle question could not be answered looks exactly like a pull
+		// correctly suppressed for a real cycle, and the difference matters: the first is a degraded
+		// emission worth investigating, the second is the converter working.
+		showWarning("could not resolve the import closure of linkname pull target %q for %s; the pull keeps its plain-field form rather than risk a cyclic project reference", targetPath, options.targetPlatform)
+	}
+
+	return answer.closure, answer.resolved
+}
+
+// loadLinknameTargetImportClosure loads the pull TARGET by import path and walks its transitive
+// imports. Metadata only (no syntax, no types), from the package under conversion's own directory —
+// the target has to be importable from there for the emitted reference to mean anything — carrying
+// the run's build tags and target platform so the closure is the one this conversion will emit
+// against. A GOOS-specific package has a GOOS-specific closure, which is exactly the case W1 lives in.
+//
+// The sibling test closure (collectSiblingTestClosure) is deliberately NOT reused: it records import
+// PATHS, not edges, so it can say the target is in the test closure but never what the target itself
+// imports — which is the only question here.
+func loadLinknameTargetImportClosure(targetPath string, options Options) linknameCycleAnswer {
+	targetParts := strings.Split(options.targetPlatform, "/")
+
+	if len(targetParts) != 2 || packageSourceDir == "" {
+		return linknameCycleAnswer{}
+	}
+
+	loaded, err := packages.Load(&packages.Config{
+		Mode:       packages.NeedName | packages.NeedImports | packages.NeedDeps,
+		Dir:        packageSourceDir,
+		BuildFlags: options.loaderBuildFlags(),
+		Env: append(os.Environ(),
+			fmt.Sprintf("GOOS=%s", targetParts[0]),
+			fmt.Sprintf("GOARCH=%s", targetParts[1])),
+	}, targetPath)
+
+	if err != nil {
+		return linknameCycleAnswer{}
+	}
+
+	for _, pkg := range loaded {
+		if pkg.PkgPath != targetPath {
+			continue
+		}
+
+		// A package that loaded WITH errors may have dropped imports, and a closure missing one edge
+		// is precisely how a cycle stays invisible. Unanswerable, not empty.
+		if len(pkg.Errors) > 0 {
+			return linknameCycleAnswer{}
+		}
+
+		closure := HashSet[string]{}
+
+		var walk func(pkg *packages.Package)
+
+		walk = func(pkg *packages.Package) {
+			for path, imported := range pkg.Imports {
+				if !closure.Add(path) {
+					continue
+				}
+
+				walk(imported)
+			}
+		}
+
+		walk(pkg)
+
+		return linknameCycleAnswer{closure: closure, resolved: true}
+	}
+
+	return linknameCycleAnswer{}
 }
 
 // collectLinknameHandles scans every file's comments for a definition-side one-argument
@@ -414,7 +563,7 @@ func typeIsPubliclyAccessible(t types.Type) bool {
 // Go 1.23 requires the remote's package to authorize the pull with a matching one-arg handle, which
 // the converter honors by emitting that remote public (see packageVarAccess) — so the forwarding
 // property compiles across the assembly boundary. The comment may sit on the GenDecl or the spec.
-func varLinknamePull(name string, docs ...*ast.CommentGroup) (ref string, pkgPath string, ok bool) {
+func varLinknamePull(name string, options Options, docs ...*ast.CommentGroup) (ref string, pkgPath string, ok bool) {
 	for _, doc := range docs {
 		if doc == nil {
 			continue
@@ -437,9 +586,9 @@ func varLinknamePull(name string, docs ...*ast.CommentGroup) (ref string, pkgPat
 
 			pkgPath = target[:dot]
 
-			// A pull whose forwarding reference would form a project-ref cycle keeps its null-field
+			// A pull whose forwarding reference would form a project-ref cycle keeps its plain-field
 			// form (the pre-feature behavior) — runtime pulling internal/syscall/windows.CanUseLongPaths.
-			if linknamePullWouldCycle(pkgPath) {
+			if linknamePullWouldCycle(pkgPath, options) {
 				return "", "", false
 			}
 

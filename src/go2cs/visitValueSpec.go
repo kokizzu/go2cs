@@ -217,7 +217,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 					// address, so `&zeroVal[0]` (reflect, pulling runtime.zeroVal) would reference a
 					// nonexistent `ᏑzeroVal` box (CS0103). Such a pull falls through to the addressed-
 					// global emission — the pre-feature behavior, which compiles.
-					if ref, pkgPath, ok := varLinknamePull(goIDName, doc, valueSpec.Doc); ok && !v.inFunction && !v.isAddressedGlobal(ident) {
+					if ref, pkgPath, ok := varLinknamePull(goIDName, v.options, doc, valueSpec.Doc); ok && !v.inFunction && !v.isAddressedGlobal(ident) {
 						if i > 0 {
 							v.outputBuilder.WriteString(v.newline)
 						}
