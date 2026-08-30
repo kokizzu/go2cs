@@ -622,6 +622,24 @@ ONE stdlib in a build; there is now only one on disk.
   other WARNINGs are counted as advisory, never fatal. Coordinator ruling 2026-08-08, from lane r48b's
   Linux `FindFirstFileData` finding — see `docs/PLAN-linux-operation.md`. Until F8 platform-gates the
   enumeration, a Linux CNR run therefore reports `FindFirstFileData` as NOT MEASURED by design).
+- **The emitted corpus's project-reference graph must be ACYCLIC, and that is now asserted on every
+  CNR run (2026-08-30).** `check-solution-integrity.ps1` — CNR's preflight — DFSes the `src/core`
+  `.csproj` graph once per `$(GoTargetOS)` (windows, linux, darwin: the per-GOOS `<ItemGroup>` blocks
+  make each target a *different* graph) and requires 0 cycles, naming every cycle it finds. A C#
+  project reference is a **compile-time** edge, so a cycle is MSB4006 and every project on the path
+  stops building; Go's own imports are acyclic by construction, so the only thing that can create one
+  is a reference the converter introduces that Go's graph does not contain — a `//go:linkname`
+  forwarding property, which points wherever the directive names, in **either** direction. That is
+  W1 (`docs/phase4/DESIGN-linkname-push-cycles.md`): a `-tests` conversion of `runtime` emitted
+  `runtime → internal/syscall/windows`, and since Go's own imports contain
+  `internal/syscall/windows → syscall → runtime`, **no conversion order can undo it** — the emitted
+  edge itself has to go. The invariant this makes mechanical is narrower than "`-tests` must not
+  rewrite the production emission" (which the four standing closure families contradict) and sharper
+  than "the push must not add a reference": **a `-tests` conversion's production emission may differ
+  from `-stdlib`'s only in ways that do not change the project GRAPH.** Positive control, kept as a
+  parameter so it needs no tracked-file edit:
+  `./check-solution-integrity.ps1 -TargetOS windows -InjectReference 'runtime=internal/syscall/windows'`
+  must print exactly the six W1 cycles and exit 1.
 - **Run the behavioral suite via the solution, not the project:** `dotnet test src/go2cs.slnx`. Running
   `dotnet test` on `BehavioralTests.csproj` directly breaks because `$(go2csPath)` (→ `$(SolutionDir)`)
   has no solution context, so the `core\golib` ref fails to resolve. The baseline solution is now an
