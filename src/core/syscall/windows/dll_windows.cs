@@ -17,11 +17,35 @@
 //     (see src/archived/Baseline-vs-FullConversion.md, the S1 fork). Here the lazy init is a plain
 //     double-checked lock; CLR reference assignment is atomic, so readers never see a torn value.
 //
-// Soundness note (inherited, documented): argument uintptrs captured by the converted zsyscall
-// wrappers (e.g. uintptr(unsafe.Pointer(&buf[0]))) are TRANSIENT addresses — golib's ж→uintptr
-// conversion cannot pin across the call. The window between capture and the calli below is
-// short and allocation-free, but a compacting GC move in that window would invalidate them;
-// the long-term fix is pinning at the capture seam.
+// Soundness note (superseded 2026-08-30 — the prior version of this note, quoted in full in
+// docs/phase4/DESIGN-syscall-pinning.md, described the hazard this one now describes as CLOSED).
+//
+// A pointer-derived argument to any entry point that funnels through syscalln below (every named
+// Syscall/Syscall6/…/SyscallN, and Proc.Call/LazyProc.Call) is NOT resolved or pinned inside this
+// file at all — the caller's own converted statement does the work, before syscalln is ever
+// reached. convSyscallFunnelCall (src/go2cs/syscallKeepAliveAnalysis.go) captures each pointer-
+// derived argument's ж<T> box into a statement-scoped temp — `var ᴋ0 = Ꮡbuf; … syscalln(…, (uintptr)
+// ᴋ0, …); GC.KeepAlive(ᴋ0);` — so by the time execution reaches the calli dispatch below, every
+// live pointer argument is already held by a named local in a frame that has not yet returned, and
+// stays held until after this call returns. That is an ordinary CLR liveness guarantee, not a pin:
+// nothing here needs to resolve an address back to an object, because the object was never let go.
+// The census guard (src/syscall-keepalive-census.ps1) re-verifies corpus-wide, on demand, that
+// every funnel call site the converter can see still carries this pattern.
+//
+// This replaces two earlier, weaker answers to the same hazard, in order:
+//   1. The ORIGINAL converted form cast a pointer straight to uintptr with nothing left
+//      referencing the box afterward — genuinely unsound: measured to corrupt heap memory under
+//      sustained adversarial GC pressure (a background thread forcing continuous blocking,
+//      compacting Gen2 collections) in well under 2,000,000 iterations.
+//   2. A Windows port of Linux's resolve-based "keystone tether" (see
+//      internal/runtime/syscall/linux/syscall_linux_impl.cs) was implemented, measured under the
+//      same pressure, and REJECTED: write-disabled it was clean, but the resolve step — looking
+//      an address back up in ManagedPointerTokens after the box may already have been collected —
+//      missed 68% of the time (639,432 hits / 1,360,568 misses over 2,000,000 write-disabled
+//      iterations), and write-enabled it crashed. A miss is GC.KeepAlive(null), a documented
+//      no-op, so a miss is silent zero protection. Full data: docs/phase4/DESIGN-syscall-pinning.md.
+// The call-site closure above has no resolve step to miss — verified clean at 2,000,000
+// write-enabled iterations under the identical harness, with nothing to count.
 
 using System;
 using System.Runtime.InteropServices;

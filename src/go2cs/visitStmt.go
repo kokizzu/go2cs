@@ -116,6 +116,7 @@ func (v *Visitor) visitStmt(stmt ast.Stmt, contexts []StmtContext) {
 	case *ast.AssignStmt:
 		format := getStmtContext[FormattingContext](contexts)
 		v.visitAssignStmt(stmtType, format)
+		v.drainSyscallKeepAlive()
 	case *ast.BlockStmt:
 		context := getStmtContext[BlockStmtContext](contexts)
 		v.visitBlockStmt(stmtType, context)
@@ -130,6 +131,7 @@ func (v *Visitor) visitStmt(stmt ast.Stmt, contexts []StmtContext) {
 	case *ast.ExprStmt:
 		format := getStmtContext[FormattingContext](contexts)
 		v.visitExprStmt(stmtType, format)
+		v.drainSyscallKeepAlive()
 	case *ast.ForStmt:
 		target := getStmtContext[LabeledStmtContext](contexts)
 		v.visitForStmt(stmtType, target)

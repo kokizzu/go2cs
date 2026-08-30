@@ -142,6 +142,15 @@ type Visitor struct {
 	globalIdentNames   map[*ast.Ident]string // Global identifiers to adjusted names map
 	globalScope        map[string]*types.Var // Global variable scope
 	needsNoInlining    map[types.Object]bool  // package-wide computeNoInliningClosure result — see callerInliningAnalysis.go
+
+	// pendingSyscallKeepAlive names the temps a syscall-funnel call's pointer-derived arguments
+	// were routed through (see convSyscallFunnelCall, syscallKeepAliveAnalysis.go) — populated
+	// while converting the call expression itself, and drained by the enclosing statement
+	// (visitAssignStmt/visitExprStmt) into a GC.KeepAlive call emitted right after it. Reset to
+	// nil once drained; a non-empty leftover at the next statement would misattribute a keepalive
+	// to the wrong call, so every drain site clears it unconditionally.
+	pendingSyscallKeepAlive []string
+
 	liftedTypeNames    HashSet[string]
 	liftedTypeMap      map[types.Type]string
 	subStructTypes     map[types.Type][]types.Type

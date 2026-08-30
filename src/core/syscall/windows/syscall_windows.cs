@@ -523,24 +523,30 @@ internal static uintptr ptrSize => /* unsafe.Sizeof(uintptr(0)) */ 8;
 internal static error setFilePointerEx(ΔHandle handle, int64 distToMove, ж<int64> ᏑnewFilePointer, uint32 whence) {
     Errno e1 = default!;
     if (/* unsafe.Sizeof(uintptr(0)) */ (uintptr)8 == 8){
-        (_, _, e1) = Syscall6(procSetFilePointerEx.Addr(), 4, (uintptr)handle, (uintptr)distToMove, (uintptr)ᏑnewFilePointer, (uintptr)whence, 0, 0);
+        var ᴋ0 = ᏑnewFilePointer;
+                (_, _, e1) = Syscall6(procSetFilePointerEx.Addr(), 4, (uintptr)handle, (uintptr)distToMove, (uintptr)ᴋ0, (uintptr)whence, 0, 0);
+        System.GC.KeepAlive(ᴋ0);
     } else {
         // Different 32-bit systems disgaree about whether distToMove starts 8-byte aligned.
         var exprᴛ1 = Δruntime.GOARCH;
         if (exprᴛ1 == "386"u8) {
-            (_, _, e1) = Syscall6(procSetFilePointerEx.Addr(), // distToMove is a LARGE_INTEGER, which is 64 bits.
- 5, (uintptr)handle, (uintptr)distToMove, (uintptr)((distToMove >> (int)(32))), (uintptr)ᏑnewFilePointer, (uintptr)whence, 0);
+            var ᴋ0 = ᏑnewFilePointer;
+                        (_, _, e1) = Syscall6(procSetFilePointerEx.Addr(), 5, (uintptr)handle, (uintptr)distToMove, (uintptr)((distToMove >> (int)(32))), (uintptr)ᴋ0, (uintptr)whence, 0);
+            System.GC.KeepAlive(ᴋ0);
         }
         else if (exprᴛ1 == "arm"u8) {
-            (_, _, e1) = Syscall6(procSetFilePointerEx.Addr(), // distToMove must be 8-byte aligned per ARM calling convention
- // https://docs.microsoft.com/en-us/cpp/build/overview-of-arm-abi-conventions#stage-c-assignment-of-arguments-to-registers-and-stack
- 6, (uintptr)handle, 0, (uintptr)distToMove, (uintptr)((distToMove >> (int)(32))), (uintptr)ᏑnewFilePointer, (uintptr)whence);
+            var ᴋ0 = ᏑnewFilePointer;
+                        (_, _, e1) = Syscall6(procSetFilePointerEx.Addr(), 6, (uintptr)handle, 0, (uintptr)distToMove, (uintptr)((distToMove >> (int)(32))), (uintptr)ᴋ0, (uintptr)whence);
+            System.GC.KeepAlive(ᴋ0);
         }
         else { /* default: */
             throw panic("unsupported 32-bit architecture");
         }
 
     }
+    // distToMove is a LARGE_INTEGER, which is 64 bits.
+    // distToMove must be 8-byte aligned per ARM calling convention
+    // https://docs.microsoft.com/en-us/cpp/build/overview-of-arm-abi-conventions#stage-c-assignment-of-arguments-to-registers-and-stack
     if (e1 != 0) {
         return errnoErr(e1);
     }
@@ -999,7 +1005,17 @@ public static error /*err*/ WSASendto(ΔHandle s, ж<WSABuf> Ꮡbufs, uint32 buf
             return err;
         }
     }
-    var (r1, _, e1) = Syscall9(procWSASendTo.Addr(), 9, (uintptr)s, (uintptr)Ꮡbufs, (uintptr)bufcnt, (uintptr)Ꮡsent, (uintptr)flags, (uintptr)(@unsafe.Pointer)rsa, (uintptr)len, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine);
+    var ᴋ0 = Ꮡbufs;
+    var ᴋ1 = Ꮡsent;
+    var ᴋ2 = (@unsafe.Pointer)rsa;
+    var ᴋ3 = Ꮡoverlapped;
+    var ᴋ4 = Ꮡcroutine;
+        var (r1, _, e1) = Syscall9(procWSASendTo.Addr(), 9, (uintptr)s, (uintptr)ᴋ0, (uintptr)bufcnt, (uintptr)ᴋ1, (uintptr)flags, (uintptr)ᴋ2, (uintptr)len, (uintptr)ᴋ3, (uintptr)ᴋ4);
+    System.GC.KeepAlive(ᴋ0);
+    System.GC.KeepAlive(ᴋ1);
+    System.GC.KeepAlive(ᴋ2);
+    System.GC.KeepAlive(ᴋ3);
+    System.GC.KeepAlive(ᴋ4);
     if (r1 == socket_error) {
         if (e1 != 0){
             err = errnoErr(e1);
@@ -1017,7 +1033,17 @@ internal static error /*err*/ wsaSendtoInet4(ΔHandle s, ж<WSABuf> Ꮡbufs, uin
     if (err != default!) {
         return err;
     }
-    var (r1, _, e1) = Syscall9(procWSASendTo.Addr(), 9, (uintptr)s, (uintptr)Ꮡbufs, (uintptr)bufcnt, (uintptr)Ꮡsent, (uintptr)flags, (uintptr)(@unsafe.Pointer)rsa, (uintptr)len, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine);
+    var ᴋ0 = Ꮡbufs;
+    var ᴋ1 = Ꮡsent;
+    var ᴋ2 = (@unsafe.Pointer)rsa;
+    var ᴋ3 = Ꮡoverlapped;
+    var ᴋ4 = Ꮡcroutine;
+        var (r1, _, e1) = Syscall9(procWSASendTo.Addr(), 9, (uintptr)s, (uintptr)ᴋ0, (uintptr)bufcnt, (uintptr)ᴋ1, (uintptr)flags, (uintptr)ᴋ2, (uintptr)len, (uintptr)ᴋ3, (uintptr)ᴋ4);
+    System.GC.KeepAlive(ᴋ0);
+    System.GC.KeepAlive(ᴋ1);
+    System.GC.KeepAlive(ᴋ2);
+    System.GC.KeepAlive(ᴋ3);
+    System.GC.KeepAlive(ᴋ4);
     if (r1 == socket_error) {
         if (e1 != 0){
             err = errnoErr(e1);
@@ -1035,7 +1061,17 @@ internal static error /*err*/ wsaSendtoInet6(ΔHandle s, ж<WSABuf> Ꮡbufs, uin
     if (err != default!) {
         return err;
     }
-    var (r1, _, e1) = Syscall9(procWSASendTo.Addr(), 9, (uintptr)s, (uintptr)Ꮡbufs, (uintptr)bufcnt, (uintptr)Ꮡsent, (uintptr)flags, (uintptr)(@unsafe.Pointer)rsa, (uintptr)len, (uintptr)Ꮡoverlapped, (uintptr)Ꮡcroutine);
+    var ᴋ0 = Ꮡbufs;
+    var ᴋ1 = Ꮡsent;
+    var ᴋ2 = (@unsafe.Pointer)rsa;
+    var ᴋ3 = Ꮡoverlapped;
+    var ᴋ4 = Ꮡcroutine;
+        var (r1, _, e1) = Syscall9(procWSASendTo.Addr(), 9, (uintptr)s, (uintptr)ᴋ0, (uintptr)bufcnt, (uintptr)ᴋ1, (uintptr)flags, (uintptr)ᴋ2, (uintptr)len, (uintptr)ᴋ3, (uintptr)ᴋ4);
+    System.GC.KeepAlive(ᴋ0);
+    System.GC.KeepAlive(ᴋ1);
+    System.GC.KeepAlive(ᴋ2);
+    System.GC.KeepAlive(ᴋ3);
+    System.GC.KeepAlive(ᴋ4);
     if (r1 == socket_error) {
         if (e1 != 0){
             err = errnoErr(e1);
@@ -1064,7 +1100,13 @@ internal static ref connectExFuncᴛ1 connectExFunc => ref ᏑconnectExFunc.Valu
 internal static error /*err*/ connectEx(ΔHandle s, @unsafe.Pointer name, int32 namelen, ж<byte> ᏑsendBuf, uint32 sendDataLen, ж<uint32> ᏑbytesSent, ж<Overlapped> Ꮡoverlapped) {
     error err = default!;
 
-    var (r1, _, e1) = Syscall9(connectExFunc.addr, 7, (uintptr)s, (uintptr)name, (uintptr)namelen, (uintptr)ᏑsendBuf, (uintptr)sendDataLen, (uintptr)ᏑbytesSent, (uintptr)Ꮡoverlapped, 0, 0);
+    var ᴋ0 = ᏑsendBuf;
+    var ᴋ1 = ᏑbytesSent;
+    var ᴋ2 = Ꮡoverlapped;
+        var (r1, _, e1) = Syscall9(connectExFunc.addr, 7, (uintptr)s, (uintptr)name, (uintptr)namelen, (uintptr)ᴋ0, (uintptr)sendDataLen, (uintptr)ᴋ1, (uintptr)ᴋ2, 0, 0);
+    System.GC.KeepAlive(ᴋ0);
+    System.GC.KeepAlive(ᴋ1);
+    System.GC.KeepAlive(ᴋ2);
     if (r1 == 0) {
         if (e1 != 0){
             err = ((error)e1);
