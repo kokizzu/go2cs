@@ -39,11 +39,12 @@ public record MethodInfo
     // Defaults false so any MethodInfo built without semantic type info falls back to the heuristic.
     public bool ReturnTypeIsPublic { get; init; }
 
-    // The parameter-side twin of ReturnTypeIsPublic — true when every parameter (the receiver
-    // excluded; MethodInfo.Parameters as harvested here never includes it) is a PUBLIC C# type
-    // transitively. Defaults false for the same reason ReturnTypeIsPublic does: a MethodInfo built
-    // without semantic type info (a metadata-harvested promotion, GetMetadataPromotedMethods) falls
-    // back to the conservative name heuristic rather than assuming public.
+    // The parameter-side twin of ReturnTypeIsPublic — true when every parameter EXCEPT the receiver
+    // is a PUBLIC C# type transitively. The receiver slot (Parameters[0] of the extension-shaped
+    // symbols Go methods compile to) is excluded by the harvest: its type is the embed itself, which
+    // for an unexported embed is internal by design and says nothing about the promoted signature.
+    // Both harvest paths — the syntax-tree walk and GetMetadataPromotedMethods' referenced-assembly
+    // symbols — route through the symbol-based GetMethodInfo, so both compute this for real.
     public bool ParametersArePublic { get; init; }
 
     // Set when this is a direct-ж (box-receiver, `this ж<T>`) primary being promoted through a POINTER
@@ -335,6 +336,11 @@ public static class MethodSyntaxExtensions
             Name = methodDeclaration.Identifier.Text,
             ReturnType = methodDeclaration.GetReturnType(semanticModel),
             ReturnTypeIsPublic = IsEffectivelyPublicType(semanticModel.GetTypeInfo(methodDeclaration.ReturnType).Type),
+            // Receiver excluded (the `this`-modified parameter): its type is the embed itself,
+            // internal by design for an unexported embed — see the symbol-based harvest below.
+            ParametersArePublic = methodDeclaration.ParameterList.Parameters
+                .Where(param => !param.Modifiers.Any(SyntaxKind.ThisKeyword))
+                .All(param => param.Type is null || IsEffectivelyPublicType(semanticModel.GetTypeInfo(param.Type).Type)),
             IsInvokerForwardable = invokerForwardable,
             IsSignatureRenderable = signatureRenderable,
             GenericTypes = string.Join(", ", typeParameters),
@@ -446,9 +452,15 @@ public static class MethodSyntaxExtensions
             // promoted-method forwarder downgrade only ever consulted the RETURN type, so a void
             // method whose PARAMETER touches an unexported production type (runtime's white-box
             // `AddrRanges` embeds `addrRanges`, whose promoted `cloneInto(*addrRanges)` takes an
-            // `*addrRanges` argument) stayed unconditionally public regardless — CS0051. No receiver
-            // slot to skip: methodSymbol.Parameters never includes it for an instance method symbol.
-            ParametersArePublic = methodSymbol.Parameters.All(parameter => IsEffectivelyPublicType(parameter.Type)),
+            // `*addrRanges` argument) stayed unconditionally public regardless — CS0051. The RECEIVER
+            // slot must be skipped for the extension-shaped symbols Go methods compile to (`this ref
+            // conn c` / `this ж<T>`): the receiver's type is the EMBED, which for an unexported embed
+            // is internal BY DESIGN — counting it demoted every promotion out of an unexported embed
+            // regardless of its real signature (net's public (*TCPConn).Read/Write went internal and
+            // every cross-assembly consumer lost them — CS1929). Only instance-member callers
+            // (interface adapters) have no receiver slot here.
+            ParametersArePublic = (methodSymbol.IsExtensionMethod ? methodSymbol.Parameters.Skip(1) : methodSymbol.Parameters)
+                .All(parameter => IsEffectivelyPublicType(parameter.Type)),
             IsInvokerForwardable = invokerForwardable,
             IsSignatureRenderable = signatureRenderable,
             Parameters = parameters,

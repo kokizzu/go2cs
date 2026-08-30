@@ -770,17 +770,24 @@ internal class StructTypeTemplate : TemplateBase
                 // returning promoted method skips the check above entirely, but its own parameters
                 // can equally reference an unexported type the forwarder must not expose as public —
                 // runtime's white-box `AddrRanges` embeds the unexported `addrRanges`, whose promoted
-                // `cloneInto(*addrRanges)` takes an `*addrRanges` argument (CS0051). Same narrow
-                // gating as the return-type check, and for the identical reason: the accurate
-                // semantic test (ParametersArePublic) widens the conservative name heuristic only for
-                // a direct unexported-value embed / value-embed-box-recv shim — exactly the
-                // promotions this converter reaches cross-package at all. method.Parameters[0] is the
-                // receiver (Skip(1), matching typedParams below); ParametersArePublic already excludes
-                // it (methodSymbol.Parameters never carried one to begin with).
+                // `cloneInto(*addrRanges)` takes an `*addrRanges` argument (CS0051). UNLIKE the
+                // return-type check, the semantic answer rescues UNCONDITIONALLY here: this check is
+                // new, so there is no legacy internal emission to preserve, and gating the rescue on
+                // embed kind demoted Go-public promotions whose rescue flags no path sets — an
+                // EXPORTED value embed's box-recv method harvested from METADATA carries neither
+                // directEmbedIsUnexportedValue nor IsValueEmbedBoxRecv, so sync.WaitGroup's promoted
+                // Add(nint) through an embedding struct went internal and every cross-assembly
+                // consumer lost it (CS1929 — PromotedEmbedUser, and net's TCPConn.Read/Write via the
+                // same shape's unexported-embed twin). Go's rule is that the METHOD NAME decides
+                // visibility; the only legitimate demotion is CS0051 avoidance, which is exactly
+                // "semantic says a non-receiver parameter type is not public".
+                // method.Parameters[0] is the receiver (Skip(1), matching typedParams below);
+                // ParametersArePublic excludes it at both harvest sites (extension-shaped symbols
+                // carry it in Parameters[0], instance symbols never did).
                 if (methodScope == "public")
                 {
                     bool parametersArePublic = method.Parameters.Skip(1).All(param => GetScope(GetSimpleName(param.type)) == "public") ||
-                        ((directEmbedIsUnexportedValue || method.IsValueEmbedBoxRecv) && method.ParametersArePublic);
+                        method.ParametersArePublic;
 
                     if (!parametersArePublic)
                         methodScope = "internal";
