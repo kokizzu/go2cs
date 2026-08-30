@@ -4,9 +4,13 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// The runtime's system-directory snapshot, taken the way a managed program can take it - the
-// Windows sibling of goenvs_impl.cs and goargs_impl.cs in the parent folder, for the same reason
-// and in the same shape.
+// The runtime's Windows osinit residue - the two snapshots a managed program can take for itself,
+// standing in for the two initializers Go runs before any user code and go2cs emits already
+// marked not-run. The Windows sibling of goenvs_impl.cs and goargs_impl.cs in the parent folder,
+// for the same reason and in the same shape.
+//
+// (1) THE SYSTEM DIRECTORY - initSysDirectory, below.
+// (2) LONG-PATH AWARENESS  - initLongPathSupport, at the end of this file.
 //
 // Go fills `runtime.sysDirectory` in initSysDirectory(), which osinit() calls before any user code:
 // `stdcall2(_GetSystemDirectoryA, &sysDirectory[0], len(sysDirectory)-1)`, then it appends a
@@ -80,5 +84,49 @@ partial class runtime_package
 
         sysDirectory[directory.Length] = (byte)'\\';
         sysDirectoryLen = (uintptr)(directory.Length + 1);
+    }
+
+    // Long-path awareness, the second half of what Go's osinit does on Windows.
+    //
+    // Go's initLongPathSupport (os_windows.go) does two things: it sets the PEB's
+    // IsLongPathAwareProcess bit, and it sets `canUseLongPaths = true`. Neither survives conversion -
+    // osinit is the bootstrap go2cs emits already marked not-run, and the body's stdcall0 bottoms
+    // out in asmstdcall, a throwing stub - so canUseLongPaths stayed false. The FIRST half is
+    // already done, by golib's InitializeWindowsLongPaths (builtin.WindowsLongPaths.cs), which is
+    // golib's analogue of osinit and the only code that can perform the write; this method carries
+    // the second half across, because golib references no converted package and cannot reach this
+    // field itself.
+    //
+    // canUseLongPaths is not merely runtime's own state: os_windows.go aliases it onto
+    // internal/syscall/windows.CanUseLongPaths with a //go:linkname, and os.fixLongPath reads that
+    // to decide whether to add the \\?\ prefix. So this one assignment is what makes a converted
+    // program spell a >MAX_PATH path the way the Go binary does. The C# side of that alias is the
+    // isw declaration emitting as a forwarding property to THIS field (linknameVarAliasTargets) -
+    // storage here rather than there, because a project reference runtime -> internal/syscall/
+    // windows would close six cycles through Go's own isw -> syscall -> runtime.
+    //
+    // OUTCOME, NOT INTENT. The value copied is golib's observation that the PEB bit really is set,
+    // never an assumption that the attempt succeeded. Setting this true when the bit is clear would
+    // tell os to stop prefixing paths that then silently fail - a plausible-looking wrong answer,
+    // and worse than the always-prefixed spelling it replaces. Every way the write can fail (an old
+    // Windows, a refused write, an unusual host) leaves golib's flag false, and false is exactly the
+    // pre-existing conservative behavior.
+    //
+    // ORDERING IS STRUCTURAL, not a hope. Reading builtin.WindowsLongPathsEnabled is a static member
+    // access in golib's module, and the CLR runs a module's initializer before the first such access
+    // - so InitializeGoLib, and therefore InitializeWindowsLongPaths, has completed by the time this
+    // read returns. The converse cannot happen: golib has zero project references and cannot touch
+    // runtime, so there is no initialization cycle to reason about. And nothing can observe this
+    // field before this method runs either, for the same reason in this module: any read of
+    // canUseLongPaths - including the one through the isw forwarding property - is a static member
+    // access in the runtime module.
+    //
+    // No OperatingSystem.IsWindows() guard, unlike its sibling above: golib's flag is already false
+    // on every host where the question does not apply, so the guard would be a second answer to a
+    // question that already has one.
+    [ModuleInitializer]
+    internal static void ᴛInitLongPathSupport()
+    {
+        canUseLongPaths = builtin.WindowsLongPathsEnabled;
     }
 }
