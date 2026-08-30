@@ -382,6 +382,75 @@ The §6 doctrine line stands and gains a second clause: *a lazy-initialization f
 until the publish is atomic* — **and making a publish atomic moves the value out of the struct, so
 every inherited member that read that field has to be re-measured, not re-reasoned.**
 
+## 6b. Amendment 2026-08-30 — the mpallocbits operator-copy door is closed
+
+Lane `claude/i9-mpallocbits`. §5.2's "candidate, not yet measured" is measured and fixed. Unlike
+doors 1/2/3, this one is not a materialization RACE at all — no concurrency needed to trigger it,
+single-threaded is sufficient — which is why it was tracked separately from the start.
+
+**Root cause, confirmed (arm8, unchanged as the historical measurement).** Go's
+`(*pageBits)(b).setRange(…)` (`b *pallocBits`, both `[N]uint64` named arrays — literally
+`type pallocBits pageBits`) converted through the general path as a VALUE conversion:
+`Ꮡ((pageBits)(b))`. The generated conversion operator for an Array-kind wrapper takes its argument
+BY VALUE (`implicit operator pageBits(pallocBits value) => value.view`), so the struct COPY is
+made before anything materializes — a still-lazy `b` then materializes on the OPERATOR'S OWN
+PARAMETER COPY, and the caller's storage is never written. Once something else has already
+materialized `b` (warm), every copy already shares the one backing array and the bug is invisible —
+exactly the "exposed on first touch only" signature §5.2 named it by.
+
+**Fix, at the converter (`pointerReinterpretManagedSource`, `convCallExpr.go`).** The function
+already routes every OTHER `(*U)(p)` pointer reinterpret whose source is a managed box through
+golib's `Reinterpret<T,TDst>()` — which ALIASES the source's storage rather than copying through a
+value conversion — but excluded EVERY pointer-to-array target as a blanket rule, because the
+general array case (a numeric or other non-array pointee reinterpreting to an array pointee) fails
+`Reinterpret`'s own safety gate (`array<E>` is a backing-store REFERENCE, too wide to alias a
+narrower slot) and would silently fall back to exactly the address route the function exists to
+avoid. `pallocBits`/`pageBits` are the ONE sub-case that exclusion swept up wrongly: BOTH sides are
+named types over the IDENTICAL array shape, and go2cs-gen's `InheritedTypeTemplate` gives every
+Array-kind wrapper the same one-field shape (a `StrongBox<array<E>>` slot) regardless of its Go
+name — so golib's `ReinterpretAliasesStorage<T,TDst>` (checking layout compatibility, not Go
+identity) correctly recognizes them as alias-safe. Narrowed the exclusion to require the source's
+own pointee to ALSO be an array-underlying type identical to the target's, which is exactly and
+only the sibling-names-over-one-shape case.
+
+Emission changed from:
+
+```csharp
+internal static void allocRange(this ж<pallocBits> Ꮡb, nuint i, nuint n) {
+    ref var b = ref Ꮡb.DerefOrNull();
+    (Ꮡ((pageBits)(b))).setRange(i, n);
+}
+```
+
+to:
+
+```csharp
+internal static void allocRange(this ж<pallocBits> Ꮡb, nuint i, nuint n) {
+    (Ꮡb.Reinterpret<pallocBits, pageBits>()).setRange(i, n);
+}
+```
+
+— routed entirely through machinery that already existed for every other managed-source pointer
+reinterpret; no new golib code, no new converter concept, one exclusion narrowed. The
+`ref var b = ref Ꮡb.DerefOrNull();` prologue drops out too: `Reinterpret` operates on the box
+directly, so the deref-and-rebind this shape used only to feed the doomed value conversion is no
+longer needed.
+
+**Verification.**
+* `ElemAliasProbe` arm8 stays RED, unchanged, and now documents explicitly that it measures the
+  GENERAL hazard (any hand-written `(Dst)(src)` conversion over an Array-kind wrapper), not the
+  corpus's own call site. A new arm8b measures the ACTUAL fixed emission
+  (`Ꮡb.Reinterpret<pallocBits, pageBits>()`) directly: **not exposed, cold or warm.**
+* Every other arm (0, 1-4, 5, 5b, 6, 7, 9, 10) re-run and unchanged from its established result —
+  the narrowed exclusion touches nothing outside the one sub-case.
+* Full corpus reconvert-and-build (seeded, isolated blast radius exactly 2 files —
+  `runtime/mpallocbits.cs` and its `runtime/windows/package_info.cs` position-map companion): 307
+  projects, 0 errors.
+* CNR and the full behavioral suite: see the mailbox report for this lane's numbers at commit time.
+
+Not a design escalation — the shape generalized cleanly through machinery already in the file,
+exactly the outcome the dispatching ruling scoped as the non-escalation branch.
+
 ## 7. Artifacts
 
 * `element-aliasing-investigation.md` — this report.

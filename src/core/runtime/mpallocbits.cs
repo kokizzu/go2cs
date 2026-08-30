@@ -134,7 +134,7 @@ internal static pallocSum summarize(this ж<pallocBits> Ꮡb) {
     nuint cur = default!;
     nuint notSetYet = /* ^uint(0) */ unchecked((nuint)18446744073709551615); // sentinel for start value
     start = notSetYet;
-    for (nint i = 0; i < len(b.Value); i++) {
+    for (nint i = 0; i < 8; i++) {
         var x = b.Value[i];
         if (x == 0) {
             cur += 64;
@@ -164,7 +164,7 @@ internal static pallocSum summarize(this ж<pallocBits> Ꮡb) {
     // Now look inside each uint64 for runs of zeros.
     // All uint64s must be nonzero, or we would have aborted above.
 outer:
-    for (nint i = 0; i < len(b.Value); i++) {
+    for (nint i = 0; i < 8; i++) {
         var x = b.Value[i];
         // Look inside this uint64. We have a pattern like
         // 000000 1xxxxx1 000000
@@ -249,7 +249,7 @@ internal static nuint find1(this ж<pallocBits> Ꮡb, nuint searchIdx) {
     ref var b = ref Ꮡb.DerefOrNull();
 
     _ = b.Value[0]; // lift nil check out of loop
-    for (nuint i = searchIdx / 64; i < (nuint)len(b.Value); i++) {
+    for (nuint i = searchIdx / 64; i < (nuint)8; i++) {
         var x = b.Value[i];
         if (~x == 0) {
             continue;
@@ -274,7 +274,7 @@ internal static (nuint, nuint) findSmallN(this ж<pallocBits> Ꮡb, uintptr npag
 
     nuint end = (nuint)0;
     nuint newSearchIdx = ~(nuint)0;
-    for (nuint i = searchIdx / 64; i < (nuint)len(b.Value); i++) {
+    for (nuint i = searchIdx / 64; i < (nuint)8; i++) {
         var bi = b.Value[i];
         if (~bi == 0) {
             end = 0;
@@ -317,7 +317,7 @@ internal static (nuint, nuint) findLargeN(this ж<pallocBits> Ꮡb, uintptr npag
     nuint start = ~(nuint)0;
     nuint size = (nuint)0;
     nuint newSearchIdx = ~(nuint)0;
-    for (nuint i = searchIdx / 64; i < (nuint)len(b.Value); i++) {
+    for (nuint i = searchIdx / 64; i < (nuint)8; i++) {
         var x = b.Value[i];
         if (x == ~(uint64)0) {
             size = 0;
@@ -352,54 +352,40 @@ internal static (nuint, nuint) findLargeN(this ж<pallocBits> Ꮡb, uintptr npag
 
 // allocRange allocates the range [i, i+n).
 internal static void allocRange(this ж<pallocBits> Ꮡb, nuint i, nuint n) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    (Ꮡ((pageBits)(b))).setRange(i, n);
+    (Ꮡb.Reinterpret<pallocBits, pageBits>()).setRange(i, n);
 }
 
 // allocAll allocates all the bits of b.
 internal static void allocAll(this ж<pallocBits> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    (Ꮡ((pageBits)(b))).setAll();
+    (Ꮡb.Reinterpret<pallocBits, pageBits>()).setAll();
 }
 
 // free1 frees a single page in the pallocBits at i.
 internal static void free1(this ж<pallocBits> Ꮡb, nuint i) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    (Ꮡ((pageBits)(b))).clear(i);
+    (Ꮡb.Reinterpret<pallocBits, pageBits>()).clear(i);
 }
 
 // free frees the range [i, i+n) of pages in the pallocBits.
 internal static void free(this ж<pallocBits> Ꮡb, nuint i, nuint n) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    (Ꮡ((pageBits)(b))).clearRange(i, n);
+    (Ꮡb.Reinterpret<pallocBits, pageBits>()).clearRange(i, n);
 }
 
 // freeAll frees all the bits of b.
 internal static void freeAll(this ж<pallocBits> Ꮡb) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    (Ꮡ((pageBits)(b))).clearAll();
+    (Ꮡb.Reinterpret<pallocBits, pageBits>()).clearAll();
 }
 
 // pages64 returns a 64-bit bitmap representing a block of 64 pages aligned
 // to 64 pages. The returned block of pages is the one containing the i'th
 // page in this pallocBits. Each bit represents whether the page is in-use.
 internal static uint64 pages64(this ж<pallocBits> Ꮡb, nuint i) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    return (Ꮡ((pageBits)(b))).block64(i);
+    return (Ꮡb.Reinterpret<pallocBits, pageBits>()).block64(i);
 }
 
 // allocPages64 allocates a 64-bit block of 64 pages aligned to 64 pages according
 // to the bits set in alloc. The block set is the one containing the i'th page.
 internal static void allocPages64(this ж<pallocBits> Ꮡb, nuint i, uint64 alloc) {
-    ref var b = ref Ꮡb.DerefOrNull();
-
-    (Ꮡ((pageBits)(b))).setBlock64(i, alloc);
+    (Ꮡb.Reinterpret<pallocBits, pageBits>()).setBlock64(i, alloc);
 }
 
 // findBitRange64 returns the bit index of the first set of

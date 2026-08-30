@@ -43,8 +43,8 @@ internal static void fill(this ж<pallocBits> Ꮡb) {
 internal static void Main() {
     ref var e = ref heap(new pallocBits(), out var Ꮡe);
     Ꮡe.fill();
-    fmt.Println((Ꮡ((pageBits)(~Ꮡe))).get(0), (Ꮡ((pageBits)(~Ꮡe))).get(3));
-    (Ꮡ((pageBits)(~Ꮡe))).set(1, 99);
+    fmt.Println((Ꮡe.Reinterpret<pallocBits, pageBits>()).get(0), (Ꮡe.Reinterpret<pallocBits, pageBits>()).get(3));
+    (Ꮡe.Reinterpret<pallocBits, pageBits>()).set(1, 99);
     fmt.Println(e[1]);
     var arr = new uint32[]{10, 20, 30, 40, 50, 60}.array();
     var p = ((pm)(arr[2..5]));
@@ -60,7 +60,7 @@ internal static void Main() {
     fmt.Println(n3, arr3[2], arr3[3], arr3[4], arr3[5]);
     ref var b = ref heap(new pallocBits(), out var Ꮡb);
     b[0] = 5;
-    (Ꮡ((pageBits)(~Ꮡb))).set(2, 30);
+    (Ꮡb.Reinterpret<pallocBits, pageBits>()).set(2, 30);
     fmt.Println(len(b), b[0] + b[2]);
     var src = new pm(new uint32[]{1, 2, 3, 4}.slice());
     var dd = new slice<uint32>(3);
