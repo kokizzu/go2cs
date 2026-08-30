@@ -225,6 +225,74 @@ the exact `-stdlib` emission, a consistent pair. *(An intermediate attempt that 
 left the property form in place and produced 2 × `CS0234 'syscall' does not exist in namespace
 'go.@internal'` — recorded because it confirms the two edits are coupled.)*
 
+#### 2026-08-30 — amendment: W1's ROOT above is wrong, and the correction is what made it fixable
+
+*Added by the W1 arc (`docs/phase4/DESIGN-linkname-push-cycles.md`); the section above stands as
+written, this block records what the fix work found. The MEASUREMENTS above are all sound — the
+MSB4006, the six cycles, the positive control, the coupled-pair neutralisation. What is wrong is the
+paragraph headed **Why the asymmetry**, and the mechanism name in the heading.*
+
+**It is a var PULL, not a push.** The pair is a `//go:linkname` VAR alias: `runtime/os_windows.go`
+carries the two-argument directive and `internal/syscall/windows` carries the one-argument handle.
+The emission comes from `varLinknamePull`, not from the push machinery.
+
+**The cause is not conversion ORDER.** The census wrote that the target "is not in scope" under
+`-stdlib` and that the `-tests` closure pulls it in. Nothing in `varLinknamePull` consults a closure,
+convert-set membership, or a conversion order. The single variable is **`conversionGraph`**, which
+the `-stdlib` and `-recurse` drivers build and a `-tests` run leaves `nil` — and
+`linknamePullWouldCycle` used to answer "no cycle" whenever it was nil. Under `-stdlib` the guard
+evaluated `DependsOn(internal/syscall/windows, runtime) == true` and suppressed the pull; under
+`-tests` the nil shortcut answered false and emitted it. One variable, two answers, no diagnostic.
+
+**Why this correction mattered.** The ordering theory implies a remedy that is **provably
+impossible**: Go's own import graph contains `internal/syscall/windows → syscall → runtime`, so a C#
+project reference `runtime → internal/syscall/windows` is a cycle no matter when it is emitted, in
+which mode, in which order. Re-ordering the queue cannot help, and neither can pruning
+converter-introduced back-edges — one of the six cycles above runs entirely through real Go imports.
+Two of the four candidate remedies died to that one DFS, and what was left was a question about which
+side owns the STORAGE.
+
+**The ruling the section asks for was answered narrower than either option offered.** Not "a push may
+never introduce a production reference" and not "`-tests` must stop rewriting the production
+emission" — both too broad, the second contradicting settled restore doctrine. The invariant is: *a
+`-tests` conversion's production emission may differ from `-stdlib`'s only in ways that do not change
+the project GRAPH.* All four documented closure families satisfy it; `canUseLongPaths` was a fifth and
+the first to move an edge. It is now mechanical — check 5 of `check-solution-integrity.ps1`, CNR's own
+preflight, DFSing the graph per `$(GoTargetOS)`.
+
+**Landed:** the guard armed and answering without the convert-set graph (W1-M), the standing corpus
+cycle assertion (G2), and the storage inversion — `internal/syscall/windows.CanUseLongPaths` now
+emits as the forwarding property and `runtime.canUseLongPaths` holds the storage, which costs **zero**
+new project references because `isw → runtime` already exists and would exist through `syscall`
+regardless (W1-S).
+
+#### 2026-08-30 — amendment: the chip's severity, corrected twice
+
+*The "latent corpus bug found in passing" note above says `os`'s long-path support is "disabled on
+Windows". The STATE it describes is real; the word is not, and the second correction is a measurement
+that was not available when the design was written.*
+
+**First correction (design §4.1).** golib already sets the PEB `IsLongPathAwareProcess` bit from
+`InitializeGoLib`, which is the half that makes an un-prefixed >MAX_PATH path reach the kernel at all.
+What `CanUseLongPaths == false` costs is only that `os.fixLongPath` always takes the
+`addExtendedPrefix` branch — a **spelling divergence on a working path**, not an outage, and the same
+branch Go itself takes on every Windows older than 10.0.15063. golib's own comment had recorded it as
+a deliberate conservative choice.
+
+**Second correction, measured 2026-08-30 by the W1-S lane.** The design still expected the divergence
+to be *observable* — "any test that observes the path a syscall received will see a different string
+than Go's". From inside Go code, through `os`, **it is not observable at all**: `addExtendedPrefix`
+normalizes through `GetFullPathName` *before* prepending `\\?\`, so a `.` segment, a `..` segment, a
+doubled separator, forward slashes and a trailing dot all resolve identically with the prefix and
+without it (seven probes, one differing answer between them: none). A first cut of that measurement
+passed the prefix explicitly — which skips the normalization — and made six probes look like sharp
+discriminators; they are not, and the corrected probe is what `LongPathRoundTrip`'s header records.
+
+**Net severity: a genuine converter-model gap, worth closing and now closed, but never a shipped
+breakage.** Nothing a converted program could observe was wrong. That is also why the behavioral test
+guarding it pins the round TRIP and the outcome-not-intent rule rather than the flag's value — the
+flag's value has no observable consequence to pin.
+
 ---
 
 ### W2 — unresolved anonymous types emitted as **literal Go source** (202 errors)

@@ -1,6 +1,6 @@
 # W1 — the linkname alias that closes a project cycle
 
-**Status:** PARTLY IMPLEMENTED — see the dated block below. W1-S is still design only.
+**Status:** IMPLEMENTED — see the dated blocks below. Both halves landed 2026-08-30.
 **Lane:** runtime walls campaign, i7-5820K coordinator machine
 **Date:** 2026-08-30
 **Spec:** [`docs/phase4/CENSUS-runtime-first-contact.md`](docs/phase4/CENSUS-runtime-first-contact.md) §W1
@@ -36,6 +36,46 @@ Two commits, in the order §5 rules.
   committed `-stdlib` corpus**. The fifth closure family is gone.
 * **Not landed:** W1-S (§3.2's S2 inversion) and the §4.2 populate half, which stay design only and
   keep the whole §5 gate list. G3/G6/G7/G8/G9 belong to that half and were not run.
+
+---
+
+## 2026-08-30 — W1-S landed (branch `claude/local-w1-semantics`)
+
+§3.2's S2 and §4.2's populate half, both as written. The emission, measured against the committed
+corpus by a seeded full reconvert:
+
+```
+internal/syscall/windows/windows/syscall_windows.cs
+-  public static bool CanUseLongPaths;
++  public static bool CanUseLongPaths { get => go.runtime_package.canUseLongPaths; set => go.runtime_package.canUseLongPaths = value; }
+
+runtime/windows/os_windows.cs
+-  internal static bool canUseLongPaths;
++  public static bool canUseLongPaths;
+```
+
+**Both `.csproj` files are byte-identical** — the "zero new project references" claim of §3.2,
+confirmed mechanically rather than argued: `isw → runtime` was already there.
+
+* **The registry** is `linknameVarAliasTargets` (`linknameOperations.go`), one row, with
+  `linknameVarAliasStorage` DERIVED from it for `packageVarAccess`'s publicize arm — the
+  `linknamePushSources` pattern, so the storage side and the forwarding side cannot drift.
+* **Go's authorization is required.** `varLinknameAliasForward` fails closed to a plain field when the
+  target does not carry its one-arg handle, so a row that outlives Go's directive forwards nothing
+  rather than inventing an alias.
+* **The inherited guard** is `varLinknamePull`'s `!isAddressedGlobal` check, applied on the target
+  side: an address-taken target keeps its heap box, because a forwarding property has no `Ꮡ` to name.
+* **One asymmetry accepted, deliberately.** The storage side publicizes on the registry row alone,
+  because while converting the storage package the target's syntax is exactly as invisible as the
+  reverse — the same constraint that makes the registry necessary. A stale row therefore widens an
+  inert member; that is caught where it is actually wrong, by the GOROOT-derived registry guard.
+* **§4.1's severity correction needs a further correction, and it goes the same way.** The design
+  expected the divergence to be observable ("any test that observes the path a syscall received will
+  see a different string"). Through `os`, from Go code, it is **not observable at all**:
+  `addExtendedPrefix` normalizes through `GetFullPathName` before prepending `\\?\`, so `.`, `..`,
+  doubled separators, forward slashes and a trailing dot all resolve identically either way (seven
+  probes, zero differing). That is why G8 pins the round TRIP and the outcome-not-intent rule rather
+  than the flag's value — and it lowers the chip's severity one more notch.
 
 ---
 
