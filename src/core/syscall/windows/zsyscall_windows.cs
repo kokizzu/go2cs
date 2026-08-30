@@ -1639,21 +1639,7 @@ public static error /*neterr*/ NetApiBufferFree(ж<byte> Ꮡbuf) {
 
 // go2cs generated this placeholder — func NetGetJoinInformation is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error /*neterr*/ NetUserGetInfo(ж<uint16> ᏑserverName, ж<uint16> ᏑuserName, uint32 level, ж<ж<byte>> Ꮡbuf) {
-    error neterr = default!;
-
-    var ᴋ158 = ᏑserverName;
-    var ᴋ159 = ᏑuserName;
-    var ᴋ160 = Ꮡbuf;
-        var (r0, _, _) = Syscall6(procNetUserGetInfo.Addr(), 4, (uintptr)ᴋ158, (uintptr)ᴋ159, (uintptr)level, (uintptr)ᴋ160, 0, 0);
-    System.GC.KeepAlive(ᴋ158);
-    System.GC.KeepAlive(ᴋ159);
-    System.GC.KeepAlive(ᴋ160);
-    if (r0 != 0) {
-        neterr = ((Errno)r0);
-    }
-    return neterr;
-}
+// go2cs generated this placeholder — func NetUserGetInfo is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ GetUserNameEx(uint32 nameFormat, ж<uint16> ᏑnameBuffre, ж<uint32> ᏑnSize) {
     error err = default!;

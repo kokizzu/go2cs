@@ -66,8 +66,17 @@
 //       evidence for a CLASS rather than for one advapi32 accident.
 //   CertAddCertificateContextToStore / CertGetCertificateChain -- `**CertContext` /
 //       `**CertChainContext`, the measured consumer (crypto/x509's Windows system verifier).
+//   NetUserGetInfo                                 -- `**byte` over netapi32, freed with
+//       NetApiBufferFree. NOT a member of the publish-and-stop family the five above form: os/user
+//       reads the buffer back as a LEVEL RECORD (`UserInfo10`, `UserInfo4`) whose fields are
+//       managed references, so the address alone would fabricate references rather than merely
+//       return the wrong one. Taken together with the transcriptions in os/user's
+//       lookup_windows_impl.cs -- body and call sites in ONE change, because the body alone is a
+//       regression (see the member's own comment below).
 //
-// All five are guarded at value level by the PointerOutParameter behavioral output test.
+// The first FIVE are guarded at value level by the PointerOutParameter behavioral output test.
+// NetUserGetInfo is proved instead by os/user's own suite, which is the consumer whose absence had
+// kept it untaken: the FullName and PrimaryGroupID it returns are the value-level evidence.
 //
 // DELIBERATELY NOT TAKEN, each for a stated reason rather than for lack of effort:
 //
@@ -80,11 +89,24 @@
 //       identity is owned by the netpoll arc's per-operation record (zsyscall_windows_wsa_impl.cs),
 //       which keys on the ж<Overlapped> the waiter names. Handing back a bare native box would
 //       mint an identity that arc does not know about. It belongs to netpoll.
-//   GetFullPathName (`**uint16`), NetUserGetInfo (`**byte`), and internal/syscall/windows'
-//       CreateEnvironmentBlock (`**uint16`) / NetUserGetLocalGroups (`**byte`) -- the same safe
-//       shape as the five above, with no consumer in the corpus today and therefore no value-level
-//       proof available. Go's own syscall.FullPath passes nil for GetFullPathName's fname, so even
-//       its one caller does not exercise it.
+//   GetFullPathName (`**uint16`) and internal/syscall/windows' CreateEnvironmentBlock
+//       (`**uint16`) -- genuinely the same safe shape as the SID pair: the pointee is `uint16`,
+//       blittable, and read through directly, so no transcription is owed beyond the address. No
+//       consumer in the corpus today and therefore no value-level proof available. Go's own
+//       syscall.FullPath passes nil for GetFullPathName's fname, so even its one caller does not
+//       exercise it.
+//   NetUserGetLocalGroups (`**byte`, internal/syscall/windows) -- HAS a consumer (os/user's
+//       listGroupsForUsernameAndDomain) and is NOT the same safe shape. That caller does not even
+//       use Reinterpret: it builds a `ReadOnlySpan<LocalGroupUserInfo0>` directly over the native
+//       buffer, which is a THIRD fabrication route alongside the two Reinterpret sites, and
+//       LocalGroupUserInfo0 holds a `ж<uint16>` Name. Taken in the SAME arc as NetUserGetInfo but
+//       landing as its own change -- body and call site together, for the same reason.
+//
+// A correction worth stating plainly, because this list previously asserted the opposite: the four
+// members above were recorded as "the same safe shape ... with no corpus consumer". For the two
+// netapi32 ones BOTH halves were wrong. os/user consumes them at three sites, and the shape is safe
+// only until something reads THROUGH the published pointer -- which all three sites do. The
+// out-parameter's own type (`**byte`) says nothing about the record the caller then reads.
 //
 // A wrapper's absence from this file is NOT evidence it is sound -- see the same warning on the
 // struct-passing census in docs/phase4/BOARD-next-validation-candidates.md.
@@ -181,6 +203,40 @@ partial class syscall_package
         }
 
         publishPointerOut(Ꮡname, cell);
+
+        return default!;
+    }
+
+    // NetUserGetInfo(serverName, userName, level, &buf). Same netapi32 convention as
+    // NetGetJoinInformation above -- failure reported through the RETURN VALUE, buffer freed with
+    // NetApiBufferFree -- so the out-cell half is mechanical and identical.
+    //
+    // THE OUT-CELL IS ONLY HALF THE ANSWER, and this member does NOT belong to the
+    // publish-the-address-and-stop family the five above form. `buf` is a `**byte`, so publishing it
+    // is perfectly safe AS A BYTE POINTER; the hazard arrives one line later, in the CALLER. os/user
+    // reads the buffer back as a LEVEL RECORD -- `p.Reinterpret<byte, UserInfo10>()` in
+    // lookupFullNameServer, `p.Reinterpret<byte, UserInfo4>()` in lookupUserPrimaryGroup -- and both
+    // of those records hold `ж<uint16>` fields, i.e. MANAGED REFERENCES. Reinterpreting a
+    // native-backed box KEEPS the address model (Reinterpret answers a NativeBox when IsNative), so
+    // dereferencing one reads raw kernel words into slots the collector reads as object references.
+    // That is a fabricated reference: a CLR type-safety break, and strictly WORSE than the nil those
+    // sites read today, which is merely wrong and contained.
+    //
+    // So this body may not land ALONE. It ships with the transcriptions in os/user's
+    // lookup_windows_impl.cs, which turn the published address into managed values before anything
+    // reads through it. Landing the wrapper first would upgrade a contained wrong-read into heap
+    // corruption -- which is why the member sat untaken rather than being "the same safe shape".
+    public static unsafe error /*neterr*/ NetUserGetInfo(ж<uint16> ᏑserverName, ж<uint16> ᏑuserName, uint32 level, ж<ж<byte>> Ꮡbuf) {
+        nuint cell = 0;
+        uintptr cellAddr = Ꮡbuf == nil ? 0 : (uintptr)(void*)(&cell);
+
+        var (r0, _, _) = Syscall6(procNetUserGetInfo.Addr(), 4, (uintptr)ᏑserverName, (uintptr)ᏑuserName, (uintptr)level, cellAddr, 0, 0);
+
+        if (r0 != 0) {
+            return ((Errno)r0);
+        }
+
+        publishPointerOut(Ꮡbuf, cell);
 
         return default!;
     }

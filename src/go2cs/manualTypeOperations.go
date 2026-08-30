@@ -774,6 +774,32 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"File.readdir":    goosWindowsDarwin,
 		"readReparseLink": goosWindows,
 	},
+	// os/user's two NetUserGetInfo readers are the SAME fork as net.adapterAddresses below, one
+	// structure smaller, and reached through the ptrout class rather than through a []byte the
+	// caller fills itself. syscall.NetUserGetInfo hands back a netapi32 buffer and Go reads it as a
+	// LEVEL RECORD — `(*UserInfo10)(unsafe.Pointer(p))` for the full name, `(*UserInfo4)(...)` for
+	// the primary-group RID. Both records carry `ж<uint16>` fields where native USER_INFO_* has raw
+	// pointers, so the reinterpret falls to a native-address box and the very next dereference
+	// fabricates managed references out of kernel bytes — the identical failure adapterAddresses
+	// had, and precisely why the wrapper could not be taken on its own: publishing a real address
+	// while these callers stayed as-is would upgrade a contained nil into heap corruption.
+	//
+	// The remedy is adapterAddresses': lookup_windows_impl.cs mirrors USER_INFO_10 and USER_INFO_4
+	// blittably, transcribes the fields these two callers actually read, and releases the netapi32
+	// buffer eagerly instead of through the converted defer. Only these TWO functions are
+	// hand-owned; every other lookup_windows.go declaration reads managed values and converts
+	// faithfully, so hand-owning the file wholesale would freeze correct conversions for no gain.
+	//
+	// listGroupsForUsernameAndDomain is the THIRD consumer and is deliberately not here: it reads
+	// NetUserGetLocalGroups' buffer as a `ReadOnlySpan<LocalGroupUserInfo0>` — a different
+	// fabrication route — and lands together with that wrapper in its own change.
+	//
+	// Declared only in lookup_windows.go, so the entry is inert elsewhere; scoped anyway so a
+	// same-named unix declaration cannot silently inherit a Windows hand-own the way readdir did.
+	"os/user": {
+		"lookupFullNameServer":   goosWindows,
+		"lookupUserPrimaryGroup": goosWindows,
+	},
 	// net.adapterAddresses is the SAME fork as os.readdir/readReparseLink above, at the biggest
 	// record in the corpus — and it is the single producer behind every Windows interface and
 	// DNS-configuration answer net can give (interfaceTable, interfaceAddrTable,
@@ -1201,7 +1227,7 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// the remedy is a native out-cell plus a publish at the one moment that can reconcile
 		// them, which only the wrapper knows. The operator is deliberately unchanged.
 		//
-		// FIVE of the corpus's thirteen wrappers of this shape are taken, on the standing
+		// FIVE of the corpus's thirteen wrappers of this shape were taken first, on the standing
 		// fix-it-when-a-suite-reaches-it rule plus the requirement that a VALUE-LEVEL guard can
 		// prove each one ("it no longer returns nil" is exactly the evidence this class's history
 		// says not to trust). The SID pair is a round trip through advapi32 over `**uint16` and
@@ -1211,16 +1237,33 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// crypt32 members are crypto/x509's measured consumer. All five are guarded by the
 		// PointerOutParameter behavioral output test.
 		//
-		// The eight left are left for stated reasons, not for lack of effort: DnsQuery/_DnsQuery
+		// NetUserGetInfo is the SIXTH, and it is taken on different evidence: os/user is the
+		// consumer whose absence had kept it out, and its suite's FullName / PrimaryGroupID are the
+		// value-level proof. It is NOT a publish-and-stop member — see the correction below.
+		//
+		// The seven left are left for stated reasons, not for lack of effort: DnsQuery/_DnsQuery
 		// return a LINKED chain whose converted record holds managed references (the OTHER class,
 		// wanting the ADDRINFOW treatment, in a `net` DNS arc); getQueuedCompletionStatus and its
 		// exported sibling carry an OVERLAPPED whose identity the netpoll arc's per-operation
-		// record owns; and GetFullPathName / NetUserGetInfo (plus internal/syscall/windows'
-		// CreateEnvironmentBlock / NetUserGetLocalGroups) are the same safe shape with no corpus
-		// consumer, hence no available proof.
+		// record owns; and GetFullPathName (plus internal/syscall/windows' CreateEnvironmentBlock)
+		// are genuinely the same safe shape — a blittable `uint16` pointee read through directly —
+		// with no corpus consumer, hence no available proof.
+		//
+		// CORRECTION, because this comment previously said the opposite: the two netapi32 members
+		// NetUserGetInfo and NetUserGetLocalGroups were recorded here as "the same safe shape with
+		// no corpus consumer". BOTH halves were wrong. os/user consumes them at three sites
+		// (lookupFullNameServer, lookupUserPrimaryGroup, listGroupsForUsernameAndDomain), and the
+		// shape is safe only until something reads THROUGH the published pointer — which all three
+		// do, into records holding `ж<uint16>` fields. An out-parameter's own type (`**byte`) says
+		// nothing about the record the caller then reads out of the buffer. Publishing the address
+		// WITHOUT the matching transcription would turn today's contained wrong-read (a nil the
+		// wrapper never filled in) into a fabricated managed reference, which is a CLR type-safety
+		// break. That is why the wrapper and its call sites land in one change, and why
+		// NetUserGetLocalGroups is not registered here yet: its own call site ships with it.
 		"ConvertSidToStringSid": goosWindows,
 		"ConvertStringSidToSid": goosWindows,
 		"NetGetJoinInformation": goosWindows,
+		"NetUserGetInfo":        goosWindows,
 		// The two crypt32 members live in zsyscall_windows_certchain_impl.cs rather than the ptrout
 		// file, together with the two CertFree* routines that pair with them — because for those two
 		// the out-cell is only HALF the answer and the halves are NOT separable.
