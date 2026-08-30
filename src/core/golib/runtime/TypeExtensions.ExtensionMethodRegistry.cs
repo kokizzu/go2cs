@@ -137,6 +137,24 @@ public static partial class TypeExtensions
 
     private static void LoadAssemblyExtensionMethods(Assembly assembly, List<(MethodInfo, Type)> extensionMethods)
     {
+        // A DYNAMIC assembly is one the bridge is BUILDING — go2cs.SynthesizedStructs, where
+        // reflect.StructOf mints its synthesized struct types (GoStructSynthesis). Calling
+        // GetTypes() on it throws ReflectionTypeLoadException whenever any TypeBuilder inside is
+        // still incomplete, and there is no catch on the loop below, so ONE half-built synthesized
+        // struct aborts the WHOLE extension scan and every method-set question that depends on it.
+        //
+        // Measured: 29 reflect tests turned into infrastructure-errors this way, all of them
+        // ReflectionTypeLoadException raised out of GetGoMethodSetCandidates, none of them related
+        // to what the tests were actually exercising. The class is visible on master too (2 tests),
+        // so this is a latent fragility rather than a new one — it simply needs more synthesized
+        // structs in flight to bite.
+        //
+        // Skipping is not a workaround but the correct answer: a dynamic assembly the bridge emits
+        // holds synthesized STRUCTS and can contain no Go extension method by construction, so
+        // there is nothing here to find and the scan loses no candidate by not looking.
+        if (assembly.IsDynamic)
+            return;
+
         string? name = assembly.FullName;
 
         if (string.IsNullOrEmpty(name))
