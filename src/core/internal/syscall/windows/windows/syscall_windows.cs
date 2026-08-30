@@ -19,7 +19,7 @@ partial class windows_package {
 // proper long path handling without the need for fixups.
 //
 //go:linkname CanUseLongPaths
-public static bool CanUseLongPaths;
+public static bool CanUseLongPaths { get => go.runtime_package.canUseLongPaths; set => go.runtime_package.canUseLongPaths = value; }
 
 // UTF16PtrToString is like UTF16ToString, but takes *uint16
 // as a parameter instead of []uint16.

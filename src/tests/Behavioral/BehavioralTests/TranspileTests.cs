@@ -865,6 +865,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckLocalValueIfaceCallConversion() => CheckTarget("LocalValueIfaceCallConversion");
 
     [TestMethod]
+    public void CheckLongPathRoundTrip() => CheckTarget("LongPathRoundTrip");
+
+    [TestMethod]
     public void CheckLookupServicePort() => CheckTarget("LookupServicePort");
 
     [TestMethod]

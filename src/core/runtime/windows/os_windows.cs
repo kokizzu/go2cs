@@ -440,7 +440,7 @@ internal static void initHighResTimer() {
 }
 
 //go:linkname canUseLongPaths internal/syscall/windows.CanUseLongPaths
-internal static bool canUseLongPaths;
+public static bool canUseLongPaths;
 
 // initLongPathSupport enables long path support.
 internal static void initLongPathSupport() {

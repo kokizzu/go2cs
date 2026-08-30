@@ -228,6 +228,31 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						continue
 					}
 
+					// The INVERTED alias (linknameVarAliasTargets): this var is the side that FORWARDS
+					// and another package holds the storage. Same emitted shape as the pull arm above and
+					// for the same reason — Go's alias makes the two declarations one variable, so reads
+					// and writes must both reach the one field — but the directive that pairs them lives
+					// in the OTHER package and is invisible here, so the registry supplies it. The
+					// storage member is public via packageVarAccess's mirror arm.
+					//
+					// The pull arm's address-taken guard is INHERITED rather than reasoned about again: a
+					// forwarding property has no address, so an addressed global would emit `Ꮡ<name>`
+					// against a box this arm never declares (CS0103) — reflect's pull of runtime.zeroVal
+					// is the recorded case of that shape. Such a var falls through to the addressed-global
+					// field emission below, which compiles and is the pre-feature behavior; it also
+					// severs the alias, so if a future row ever lands on an addressed var the storage must
+					// move to golib (S3) rather than be forwarded from here.
+					if ref, ok := v.varLinknameAliasForward(goIDName); ok && !v.inFunction && !v.isAddressedGlobal(ident) {
+						if i > 0 {
+							v.outputBuilder.WriteString(v.newline)
+						}
+
+						access := v.testDeclaredValueAccess(packageVarAccess(goIDName, v.getIdentType(ident)), ident.Pos(), v.getIdentType(ident))
+						csTypeName := convertToCSTypeName(v.getAliasQualifiedTypeName(def.Type(), false))
+						v.writeOutput("%s static %s %s { get => %s; set => %s = value; }", access, csTypeName, csIDName, ref, ref)
+						continue
+					}
+
 					if i > 0 {
 						v.outputBuilder.WriteString(v.newline)
 					}
