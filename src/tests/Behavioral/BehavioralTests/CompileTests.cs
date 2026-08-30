@@ -865,6 +865,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckLocalValueIfaceCallConversion() => CheckTarget("LocalValueIfaceCallConversion");
 
     [TestMethod]
+    public void CheckLongPathRoundTrip() => CheckTarget("LongPathRoundTrip");
+
+    [TestMethod]
     public void CheckLookupServicePort() => CheckTarget("LookupServicePort");
 
     [TestMethod]
