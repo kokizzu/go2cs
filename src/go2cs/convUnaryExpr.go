@@ -17,6 +17,53 @@ import (
 	"strings"
 )
 
+// lazyArrayBackingProjection returns the member access that must be appended to a NAMED
+// fixed-size array expression before it is handed to golib's BY-VALUE element-aliasing overload
+// `Ꮡ<T>(IArray<T> target, int index)` — `".Value"` when one is needed, `""` otherwise.
+//
+// The two-arg overload takes its target by value, so the CALL SITE boxes the wrapper and golib
+// only ever sees that private copy. For golib's own `array<E>` — an eagerly-allocated readonly
+// struct over a shared `E[]` — a copy shares the storage and everything aliases correctly, which
+// is the reasoning the two `Ꮡ(x, i)` receiver arms below were written on. It does NOT hold for a
+// go2cs-gen NAMED fixed-size array wrapper: that wrapper allocates its backing LAZILY
+// (`Value => m_value ??= new array<E>(N)`), so over a still-zero wrapper the backing materializes
+// on the boxing temp and the caller's storage is never written. Every element pointer taken that
+// way names a fresh private array, and every write through it is silently lost — no concurrency
+// required, and single-threaded reproducible (ElemAliasProbe arm5).
+//
+// `.Value` is the fix that needs nothing golib cannot already see: the wrapper's `Value` getter is
+// a MUTATING struct member, so invoking it on the ref receiver (or on a field of it) runs the
+// `??=` against the REAL storage, and the `array<E>` it hands back SHARES that backing. Both
+// wrapper flavors carry it — a direct-array RHS (`type Mont [4]uint64`) yields `Value : array<E>`,
+// and a named RHS (`type pallocBits pageBits`) yields the view wrapper whose `Value` is that named
+// type, itself an `IArray<E>` over the same storage (writtenRHSIsUnnamedArray distinguishes them;
+// neither needs distinguishing here, because both materialize in place and both bind the overload).
+//
+// The `.at<E>(i)` route — which publishes through the box and would also be correct — is NOT
+// available at these two sites: a Go pointer receiver renders as `this ref T recv`, which has no
+// `ж<>` box companion (see convSelectorExpr.go's direct-ж note), and that is exactly why these
+// arms fall back to the two-arg overload in the first place.
+//
+// An UNNAMED `[N]E` base renders as golib `array<E>`, which has no `Value` member and needs none;
+// it returns "" and the emission is unchanged.
+func (v *Visitor) lazyArrayBackingProjection(baseType types.Type) string {
+	if baseType == nil {
+		return ""
+	}
+
+	named, isNamed := types.Unalias(baseType).(*types.Named)
+
+	if !isNamed {
+		return ""
+	}
+
+	if _, isArray := named.Underlying().(*types.Array); !isArray {
+		return ""
+	}
+
+	return ".Value"
+}
+
 // convArrayIndex emits an array/slice index expression for the golib `ж.at<T>(nint)`
 // element-address accessor. Go permits any integer type as an array/slice index and
 // converts it to `int` for the access; the `at` accessor takes `nint`, but C# has no
@@ -679,7 +726,13 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					}
 
 					if baseIsRecvIdent {
-						return fmt.Sprintf("%s(%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.castWideIntegerToInt(indexExpr.Index))
+						// ...but a NAMED array wrapper's backing is LAZY, so the by-value overload
+						// would materialize it on the call site's boxing temp and leave the receiver's
+						// storage virgin — `semtable.rootFor` handed every caller a pointer into a
+						// throwaway 251-entry array, so every semaphore-queue mutation through it was
+						// lost. `.Value` runs the wrapper's own mutating getter against the REAL
+						// storage first (see lazyArrayBackingProjection).
+						return fmt.Sprintf("%s(%s%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.lazyArrayBackingProjection(ptr.Elem()), v.castWideIntegerToInt(indexExpr.Index))
 					}
 
 					elemCSType := convertToCSTypeName(v.getScopeCheckedTypeName(arrayType.Elem()))
@@ -763,8 +816,10 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					// two-arg overload needs no box and aliases correctly regardless: `array<T>` is a
 					// readonly struct wrapping an eagerly-allocated `T[]`, so evaluating the field copies
 					// only the wrapper and the copy SHARES element storage (same reasoning as the
-					// array-PARAMETER case below).
-					return fmt.Sprintf("%s(%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.castWideIntegerToInt(indexExpr.Index))
+					// array-PARAMETER case below) — EXCEPT when the field's type is a NAMED array,
+					// whose wrapper allocates its backing lazily and would materialize it on that
+					// copy. `.Value` materializes in place first; see lazyArrayBackingProjection.
+					return fmt.Sprintf("%s(%s%s, %s)", AddressPrefix, v.convExpr(indexExpr.X, nil), v.lazyArrayBackingProjection(v.getType(indexExpr.X, false)), v.castWideIntegerToInt(indexExpr.Index))
 				} else {
 					// For an indexed reference into an array, we use the "ж.at<T>(index)" syntax.
 					// Prefer the readable file-local package alias for the element type

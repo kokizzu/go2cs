@@ -5194,8 +5194,11 @@ element address leaves the pointer on the older backing array.) (Guarded by `Def
 **Element address of a POINTER-to-array — `&t[i]` where `t` is `*[N]E`.** Go auto-derefs the index
 (`(*t)[i]`), so the element lives in the pointed-to array on the heap; `t` already IS the `ж<[N]E>`
 box. The converter emits `t.at<E>(i)` — ж's `at` materializes the array's lazy backing on the REAL
-storage (a non-boxing constrained interface call) and then returns an element pointer over the shared
-backing. The base is rendered in POINTER context so it yields the box: a deref-aliased pointer
+storage and then returns an element pointer over the shared backing. (How `at` reaches that lazy
+getter has changed twice and matters: a reflection-built constrained delegate first — fatal under
+Native AOT, `d5c0c9c10` — then an unsynchronized box-touch-copy-back, and since 2026-08-30 a
+**per-box atomic publish**; see *The array-backing publish is atomic per box* below.) The base is
+rendered in POINTER context so it yields the box: a deref-aliased pointer
 PARAMETER gives `Ꮡt` (the parameter is `ж<[N]E> Ꮡt`, deref-aliased to `ref var t = ref Ꮡt.Value` in
 the prologue), while a box-valued LOCAL from `new([N]E)` gives the plain `t`. Previously this shape
 fell through every array/slice branch (the base's type is a `*types.Pointer`, not an array or slice)
@@ -5253,7 +5256,11 @@ described above, even though that machinery exists for array fields. Its trigger
 companion, so it emitted `Ꮡr.of(RegArgs.ᏑInts)` for `internal/abi`'s `&r.Ints[reg]` → CS0103. The two-arg
 form needs no box and aliases correctly regardless: `array<T>` is a readonly struct wrapping an eagerly
 allocated `T[]`, so evaluating the field copies only the wrapper while the copy shares element storage —
-the same reasoning the array-*parameter* case above relies on. Seventeen corpus files corrected, several
+the same reasoning the array-*parameter* case above relies on. (That reasoning holds for `array<T>` and
+**not** for a field whose type is a NAMED array, whose wrapper allocates its backing lazily; such a
+field is projected through `.Value` first — see *The element address of a VIRGIN named array must
+materialize through the receiver*. No corpus site currently has that shape; the gate is there because
+the shape is legal Go, not because something was found broken.) Seventeen corpus files corrected, several
 of them silently broken in the same write-dropping way: `runtime`'s `&r.statusTraced[gen%3]`,
 `&h.counts[…]` and `&m.stats[gen]` performed `.CompareAndSwap`/`.Store`/`.Add` **on a copy**;
 `crypto/internal/edwards25519` built its lookup tables via `(&v.points[i]).FromP3(…)` into copies;
@@ -12040,11 +12047,15 @@ index arm's pointer-to-array branch, which renders `t.at<E>(i)` on the assumptio
 pointer-to-array base yields a `ж<[N]E>` box. A Go pointer receiver does not: it renders as
 `this ref T recv`, which has no box companion, so `recv.at<E>(i)` names a member the value does not
 have (CS1061). It needs none — a named fixed-array type is generated as `IArray<E>` over a shared
-backing `E[]`, so the two-arg element-aliasing overload aliases correctly on the wrapper itself:
+backing `E[]`, so the two-arg element-aliasing overload aliases on the wrapper itself. **But that
+wrapper's backing is allocated LAZILY, and the two-arg overload takes its target BY VALUE, so on a
+still-virgin wrapper the backing materialized on the call site's boxing temp and the receiver's own
+storage was never written** — see *The element address of a VIRGIN named array must materialize
+through the receiver* below, which is why the emission carries `.Value`:
 
 ```csharp
 [GoRecv] internal static ж<semaRoot> rootFor(this ref semTable t, nint i) {
-    return Ꮡ(t, i).of(semTableᴛ1.Ꮡroot);          // was: Ꮡ(t.Value[i]).of(…) — a COPY
+    return Ꮡ(t.Value, i).of(semTableᴛ1.Ꮡroot);     // was: Ꮡ(t.Value[i]).of(…) — a COPY
 }
 ```
 
@@ -12067,10 +12078,112 @@ Guarded by the **`SliceElementFieldAddress`** behavioral test — the deliberate
 covering an ordinary field of a slice local and of an array local, a promoted field of a slice field
 reached through a pointer, and `onePassCopy`'s own idioms: two pointers into one element swapped and
 then written through, and a cross-element `*dst = *src`. The pointer-receiver-over-named-array
-sub-case above is guarded by **`NamedArrayAnonElement`**'s Compile and golden phases rather than
-behaviorally: its `main` deliberately never indexes the array, because zero-valuing a named
-fixed-size array type does not yet materialize its backing on the value itself (a separate,
-pre-existing gap that a behavioral assertion there would encode rather than test).
+sub-case above is guarded by **`NamedArrayAnonElement`**'s Compile and golden phases, and — since
+the lazy-backing gap below was closed — behaviorally by **`NamedArrayWrapper`**'s element-address
+probe on a virgin wrapper. (`NamedArrayAnonElement`'s own `main` still deliberately never indexes
+the array; that note said zero-valuing a named fixed-size array "does not yet materialize its
+backing on the value itself", which is exactly the gap the next section closes.)
+
+### The array-backing publish is atomic per box
+
+`ж<T>.at<Telem>(i)` has to reach a go2cs-gen named fixed-size array wrapper's LAZY backing, and
+`ж<T>` is deliberately **unconstrained** in `T`, so golib cannot call an interface member on
+`ref Value` without boxing a copy. The sequence it used was box the wrapper, touch `Source` so the
+backing materializes on that copy, copy the whole wrapper back over the real storage — correct
+single-threaded (that copy-back IS `47ddd5a50`'s fix for the same lost write) and **lossy with two
+threads**, because it is an unsynchronized read-modify-write of shared state. Two threads reaching a
+still-lazy wrapper each allocated their own backing; the second copy-back discarded the first along
+with every element already written into it, and the element pointers already handed out kept naming
+the orphan. Because the wrapper is several words wide, the half-done copy-back could also be
+*observed*, surfacing as a spurious `IndexOutOfRangeException` out of `at`'s bounds check rather
+than as a lost write.
+
+`crypto/internal/boring/bcache`'s concurrent section is the measured victim: entries lost in ~28% of
+runs, and always in the first ~15 of 102,100 — the fingerprint of a bounded start-up window rather
+than of a broken CAS or a GC interaction (both A/B-eliminated).
+
+The publish is now gated per **box**, which is the only durable unit available: the by-value copy
+cannot be one, and constraining `T` is not on the table — the constrained-CALL route was torn out in
+`d5c0c9c10` for killing every Native AOT binary at type-init. `m_publishedArrayBacking` serves two
+jobs at once: `null` is the once-only gate (every thread serializes through `lock (this)`, which is
+exactly the cold-start window the race lives in), and a *different* backing is the reassignment
+detector, so no stale ready-flag can hand out a pointer into a private copy after `*p` is assigned a
+fresh zero wrapper. The fast path is lock-free — one acquire read, one type test, one reference
+compare.
+
+The publish path is also narrowed to the shapes that actually *are* lazy, which fixed a second,
+separate defect the old unconditional probe carried. golib's own `array<T>`/`slice<T>` and every
+named-slice wrapper hold their backing in a field, so there is nothing to publish — and
+**`slice<T>.Source` is defined to return a DETACHED COPY**, so the old code allocated and threw away
+a full copy of the backing on *every* element take through a `ж<slice<T>>`. Measured (isolated
+processes, median of three): slice `.at()` **215.09 → 29.00 ns/op**, array `23.66 → 21.84`, named
+wrapper `28.51 → 26.22`. Every shape got faster; the fix removes an allocation from the hot path
+rather than adding a lock to it.
+
+> **Doctrine: a lazy-initialization fix is not finished until the publish is atomic.** `47ddd5a50`
+> correctly diagnosed "the allocation landed on the copy and the real storage stayed virgin" and
+> added the copy-back. The single-threaded repair of a lost-write defect is exactly the shape that
+> leaves a concurrency residue behind.
+
+**Not closed by this**, because no golib-side gate can be: the generated `Value => m_value ??= …`
+getter is itself a read-modify-write, so two threads first-touching the *same struct instance* by
+ref still race (`ref semTable semtable => ref Ꮡsemtable.Value; semtable[i] = x`). Closing that needs
+an atomic publish inside the generated getter (go2cs-gen). Measured unchanged at ~95% of trials
+(ElemAliasProbe `arm7`).
+
+### The element address of a VIRGIN named array must materialize through the receiver
+
+The arm above hands `&t[i]` to golib's by-value `Ꮡ<T>(IArray<T> target, int index)`, which was
+reasoned sound because "a named fixed-array type is generated as `IArray<E>` over a shared backing
+`E[]`". That is true of golib's own `array<E>` — an eagerly-allocated readonly struct, where a copy
+shares the storage — and **false of the go2cs-gen wrapper**, whose backing is allocated on first
+touch:
+
+```csharp
+private array<E>? m_value;
+public  array<E>  Value => m_value ??= new array<E>(N);
+```
+
+The overload takes its target by value, so the CALL SITE boxes the wrapper and golib only ever sees
+that private copy. Over a still-zero wrapper the `??=` therefore ran on the boxing temp, the
+receiver's storage stayed virgin, and **every element pointer named a fresh throwaway array — every
+write through it silently lost, single-threaded, no concurrency required.** `runtime`'s `rootFor` is
+the only access path to `semtable`, so nothing ever materialized the shared table: each call handed
+back a pointer into its own private 251-entry array of zero `semaRoot`s. (Latent only because
+`sync`'s Mutex/RWMutex/WaitGroup are hand-owned on `SemaphoreSlim` and never reach
+`runtime.semacquire`.)
+
+The emission projects through the wrapper's own `Value` getter first:
+
+```csharp
+Ꮡ(t.Value, i)      // was: Ꮡ(t, i)
+```
+
+`Value` is a **mutating struct member**, so invoking it on the `ref` receiver (or on a field of one)
+runs the `??=` against the REAL storage, and the `array<E>` it returns shares that backing — so the
+element box aliases the receiver. Both wrapper flavors carry it: a direct-array RHS
+(`type Mont [4]uint64`) exposes `Value : array<E>`, and a named RHS (`type pallocBits pageBits`)
+yields the view wrapper whose `Value` is that named type, itself an `IArray<E>` over the same
+storage. An UNNAMED `[N]E` base renders as golib `array<E>`, has no `Value` member and needs none,
+so the projection is gated on the base being a named type over an array
+(`lazyArrayBackingProjection`, `convUnaryExpr.go`) and every other site is unchanged — a seeded
+whole-corpus reconvert, diffed emission-against-emission, moves **exactly one file**:
+`runtime/sema.cs`.
+
+The `.at<E>(i)` route would also be correct (it publishes through the box — see golib's
+`arrayView`/`publishArrayBacking`), but it is unavailable here for the same reason this arm exists
+at all: a `[GoRecv] ref` receiver has no `ж<>` box.
+
+Guarded by **`NamedArrayWrapper`**'s `slots`/`slot` probe — a pointer-receiver method returning
+`&s[i]` on a virgin wrapper, written through and read back. Verified as a real gate rather than a
+green that cannot go red: at the previous emission it reports `stdout mismatch C# vs Go`.
+
+**A different door, measured and NOT closed by this.** `runtime/mpallocbits.cs`'s
+`Ꮡ((pageBits)(b))` binds golib's standard-box `Ꮡ<T>(in T)` over a value produced by the generated
+by-value conversion operator (`implicit operator pageBits(pallocBits value) => value.view`), which
+materializes on the operator's own parameter copy. First-touch writes through it are lost; once
+anything else materializes `b`, every copy shares the backing and writes land (measured both ways —
+ElemAliasProbe `arm8`). It needs its own increment.
 
 ### A promoted field whose name equals the enclosing type is Δ-renamed
 

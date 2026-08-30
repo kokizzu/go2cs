@@ -88,6 +88,10 @@ internal static void Main() {
     ref var cs = ref heap(new counters(), out var Ꮡcs);
     var pcs = Ꮡcs;
     fmt.Println(pcs.at<counter2>(0).bump(), pcs.at<counter2>(0).bump(), cs[0].n);
+    slots sl = default!;
+    sl.at(1).Value.v = 77;
+    sl.at(2).Value.v = (~sl.at(1)).v + 1;
+    fmt.Println(sl[1].v, sl[2].v, (~sl.at(1)).v, sl.sum());
     scal sm = new();
     var ᴛ1 = sm.s.Value;
     fromBytes(ref ᴛ1, 7);
@@ -139,6 +143,20 @@ internal static void @double(ref mont @out, ref nonMont arg) {
 
 [GoType] partial struct holder {
     internal ж<callers> trace;
+}
+
+[GoType] partial struct slot {
+    internal nint v;
+}
+
+[GoType("[4]slot")] partial struct slots;
+
+[GoRecv] internal static ж<slot> at(this ref slots s, nint i) {
+    return Ꮡ(s.Value, i);
+}
+
+[GoRecv] internal static nint sum(this ref slots s) {
+    return s.Value[0].v + s.Value[1].v + s.Value[2].v + s.Value[3].v;
 }
 
 [GoType] partial struct counter2 {
