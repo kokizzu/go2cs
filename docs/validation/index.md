@@ -160,6 +160,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `mime/multipart` | [`mime.multipart.md`](current/mime.multipart.md) | [`src/core/mime/multipart`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/multipart) |
 | `mime/quotedprintable` | [`mime.quotedprintable.md`](current/mime.quotedprintable.md) | [`src/core/mime/quotedprintable`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/mime/quotedprintable) |
 | `net` | [`net.md`](current/net.md) | [`src/core/net`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net) |
+| `net/http` | [`net.http.md`](current/net.http.md) | [`src/core/net/http`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http) |
 | `net/http/cookiejar` | [`net.http.cookiejar.md`](current/net.http.cookiejar.md) | [`src/core/net/http/cookiejar`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/cookiejar) |
 | `net/http/fcgi` | [`net.http.fcgi.md`](current/net.http.fcgi.md) | [`src/core/net/http/fcgi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/fcgi) |
 | `net/http/httptest` | [`net.http.httptest.md`](current/net.http.httptest.md) | [`src/core/net/http/httptest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http/httptest) |
