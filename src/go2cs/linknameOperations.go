@@ -231,6 +231,23 @@ func packageVarAccess(goIDName string, varType types.Type) string {
 		return "public"
 	}
 
+	// The INVERTED-ALIAS direction's mirror image, and the exact shape packageFuncAccess already
+	// carries for linknamePushSources: this var is the STORAGE side of a var alias whose forwarding
+	// property lives in another package, so that property reads it across an assembly boundary and an
+	// unexported Go name would otherwise be `internal` there. Its own package never opened it with a
+	// one-arg handle — runtime's canUseLongPaths carries the two-ARG pull, and the handle authorizing
+	// the alias sits on the OTHER side — so this arm reads the alias registry alone, exactly as the
+	// push arm reads the push registry alone.
+	//
+	// The type gate is the handle arm's, for the handle arm's reason (CS0052/CS0053: a public member
+	// cannot expose a less-accessible type). A row whose storage type fails it is a broken row rather
+	// than a silent degradation — the forwarder on the other side then cannot see the member and says
+	// so at compile time — and TestLinknameVarAliasPublicizesTheStorageSide is what keeps the live row
+	// from becoming one.
+	if linknameVarAliasStorage[currentPackagePath+"."+goIDName] && typeIsPubliclyAccessible(varType) {
+		return "public"
+	}
+
 	return getAccess(goIDName)
 }
 
@@ -524,6 +541,87 @@ var linknamePushSources = func() map[string]bool {
 	return sources
 }()
 
+// linknameVarAlias is the disposition of a `//go:linkname` VAR alias whose storage the converter
+// INVERTS. `storage` names the package and member that hold the one real variable
+// ("<pkgPath>.<member>"); the package this entry is keyed under emits a forwarding property to it
+// instead of a field of its own.
+//
+// A Go var alias is a link-time identity — `runtime.canUseLongPaths` and
+// `internal/syscall/windows.CanUseLongPaths` are the same word of memory, arranged with no import in
+// either direction. C# has no link-time identity: one assembly must hold the field and the other must
+// reach it through a member reference, which is a COMPILE-TIME edge and therefore must be acyclic. So
+// for every aliased pair the converter has to answer one question — WHICH SIDE HOLDS THE STORAGE —
+// and the project graph forces the answer: storage goes in whichever package the other one already
+// depends on.
+//
+// varLinknamePull answers it exactly one way: storage always goes to the package named on the RIGHT
+// of the two-argument directive. That is right whenever the pull points DOWN the dependency order
+// (math/bits -> runtime) and wrong whenever it points UP, where linknamePullWouldCycle can only
+// refuse — emitting two unrelated fields, which compiles and is silently incorrect. This registry is
+// how the upward case is INVERTED instead of given up on.
+type linknameVarAlias struct {
+	storage string
+}
+
+// linknameVarAliasTargets is the registry of `//go:linkname` VAR aliases whose storage is inverted,
+// keyed "<declaringPkgPath>.<Symbol>" — the declaration that becomes the FORWARDER.
+//
+// Curated, for the identical reason linknamePushTargets is, and the constraint is worth restating
+// because it is what makes a registry the only available mechanism: converting
+// `internal/syscall/windows`, the converter cannot see `runtime`'s directive at all. A package is
+// converted from its own syntax, and its dependencies contribute TYPES, not comments. From isw's side
+// `var CanUseLongPaths bool` under a one-arg handle is indistinguishable from any other opened var;
+// nothing in it names runtime, and nothing can. The missing half is recorded here as a judgment, and
+// TestLinknameVarAliasRegistryMatchesGoSource re-derives both halves from GOROOT so the judgment
+// cannot rot.
+//
+// One row today, because the corpus exposes exactly one upward pair. The three DOWNWARD pulls
+// (math/bits's overflowError and divideError, time/sleep_test's haveHighResSleep) need no row: their
+// forwarding property already points the safe way and varLinknamePull emits it.
+var linknameVarAliasTargets = map[string]linknameVarAlias{
+	// Windows long-path awareness. runtime/os_windows.go carries the two-argument directive
+	// (`//go:linkname canUseLongPaths internal/syscall/windows.CanUseLongPaths`) and isw's
+	// syscall_windows.go carries the one-argument handle that authorizes it — so Go's own write lives
+	// in runtime and the alias points UP, out of runtime into a package that reaches back.
+	//
+	// It reaches back through Go's OWN imports, which is why no conversion order and no pruning of
+	// converter-introduced edges can help: `internal/syscall/windows -> syscall -> runtime` is three
+	// real import edges, so a project reference `runtime -> internal/syscall/windows` is a cycle
+	// however it is emitted (measured: that single edge takes the corpus graph from 0 cycles to 6,
+	// MSB4006). Inverting costs ZERO new references — isw already references runtime for the
+	// GetSystemDirectory push forwarder, and would reach it through syscall regardless.
+	//
+	// Storage in `runtime` is also where it belongs on the merits: that is where Go's own write is
+	// (initLongPathSupport sets canUseLongPaths = true), and it is the side that keeps the graph
+	// acyclic. FORWARDING ALONE WOULD BE A NO-OP — the managed model runs neither osinit nor the
+	// stdcall the Go body uses — so the populate half is part of the same change: golib records
+	// whether it actually set the PEB IsLongPathAwareProcess bit, and runtime/windows/
+	// os_windows_impl.cs copies that OUTCOME into canUseLongPaths. Tying the flag to the outcome
+	// rather than the intent is the point: if the bit was not set, telling os to stop prefixing
+	// produces paths that silently fail — a plausible-looking wrong answer, the failure mode this
+	// project rules against. See docs/phase4/DESIGN-linkname-push-cycles.md.
+	"internal/syscall/windows.CanUseLongPaths": {storage: "runtime.canUseLongPaths"},
+}
+
+// linknameVarAliasStorage is the reverse index of linknameVarAliasTargets: the set of STORAGE members
+// ("<pkgPath>.<member>") a forwarding property reads, so packageVarAccess can emit each public. Built
+// once from the registry so the two can never disagree — the same derivation, for the same reason, as
+// linknamePushSources.
+//
+// The derivation is not a convenience. Two hand-maintained lists of the same fact are exactly how the
+// storage side and the forwarding side come to disagree, and a disagreement here is silent in the
+// worst direction: the forwarder compiles against a member it cannot see only if some OTHER rule
+// happened to publicize it, and stops compiling the day that rule changes.
+var linknameVarAliasStorage = func() map[string]bool {
+	storage := map[string]bool{}
+
+	for _, alias := range linknameVarAliasTargets {
+		storage[alias.storage] = true
+	}
+
+	return storage
+}()
+
 // typeIsPubliclyAccessible reports whether a value of type t can be exposed by a `public` member —
 // every NAMED type it references must be exported (or already publicized, or a universe type like
 // `error`). Composites recurse to their element; an anonymous struct/signature and any other shape is
@@ -600,4 +698,42 @@ func varLinknamePull(name string, options Options, docs ...*ast.CommentGroup) (r
 	}
 
 	return "", "", false
+}
+
+// varLinknameAliasForward recognizes a package var that is the FORWARDING side of an inverted
+// `//go:linkname` var alias (linknameVarAliasTargets) and returns the C# reference to the member that
+// holds the storage — `go.runtime_package.canUseLongPaths` — so the var is emitted as a forwarding
+// property to it rather than a field of its own. This is varLinknamePull's inverse: there the LOCAL
+// declaration carries the two-arg directive and forwards to the remote it names, here the local
+// declaration carries only Go's one-arg HANDLE and the directive naming it lives in the package that
+// keeps the storage, invisible from this side. Hence the registry.
+//
+// Go's authorization is still required. The one-arg handle is what opens a var to a linkname alias at
+// all, and a registry row is a recorded judgment about a pair, not a license to rewrite an ordinary
+// declaration into a reference to somebody else's field: a row that named a var its own package never
+// opened would not be faithful, and — the failure mode that matters — a row left behind after Go
+// retired the handle would silently keep forwarding. Requiring the handle makes both fail CLOSED, to
+// the plain field this converter emitted before the feature existed. It is the same requirement
+// funcLinknamePush's handle shape enforces for the push direction.
+//
+// linknameTargetAlias both QUEUES the storage package for a project reference and spells the
+// qualifier this file must use to reach it. Queuing is not a formality even where the reference
+// already exists for another reason — for this pair isw already references runtime via the
+// GetSystemDirectory push forwarder, and would reach it through syscall regardless — because the
+// emission's correctness must not depend on some other emission happening to queue it first. It is a
+// set, so for a package already referenced it is a no-op and the emitted `.csproj` does not change.
+func (v *Visitor) varLinknameAliasForward(goIDName string) (ref string, ok bool) {
+	alias, isAliased := linknameVarAliasTargets[currentPackagePath+"."+goIDName]
+
+	if !isAliased || !linknameHandles.Contains(goIDName) {
+		return "", false
+	}
+
+	dot := strings.LastIndex(alias.storage, ".")
+
+	if dot <= 0 || dot == len(alias.storage)-1 {
+		return "", false
+	}
+
+	return v.linknameTargetAlias(alias.storage[:dot]) + "." + getSanitizedIdentifier(alias.storage[dot+1:]), true
 }
