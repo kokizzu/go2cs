@@ -313,3 +313,33 @@ func TestValidationProofCellEscaping(t *testing.T) {
 		t.Errorf("newline was not folded: %q", escaped)
 	}
 }
+
+// TestFilteredRunPublishesNoRosterArtifacts pins the rule that a gated census leaves no roster
+// trace. The status a filtered run earns is indistinguishable from a full sweep's — `validated`
+// means "everything COMPARED matched" — so the filter, not the status, has to be what decides.
+// Measured motivation: `-test-filter '^TestCallPanic$'` against reflect produced a `1/1 validated`
+// README badge, a docs/validation index row and a full proof page for a package with 124 failing
+// tests.
+func TestFilteredRunPublishesNoRosterArtifacts(t *testing.T) {
+	if !publishesRosterArtifacts("validated", "") {
+		t.Error("an UNFILTERED validated run must publish: that is how a row banks")
+	}
+
+	// The positive control above and these negatives share one predicate, so the rule cannot be
+	// half-applied the way an inline condition at one call site can.
+	for _, filter := range []string{"^TestCallPanic$", "^(TestA|TestB)$", "  ^TestA$  "} {
+		if publishesRosterArtifacts("validated", filter) {
+			t.Errorf("a FILTERED validated run must publish nothing; filter %q was allowed to", filter)
+		}
+	}
+
+	// Whitespace alone is not a filter — trimming it must not turn a real filter into "unfiltered",
+	// nor an empty one into a suppression.
+	if !publishesRosterArtifacts("validated", "   ") {
+		t.Error("whitespace-only filter is no filter: it must still publish")
+	}
+
+	if publishesRosterArtifacts("failed", "") {
+		t.Error("a non-validated status must never publish, filtered or not")
+	}
+}

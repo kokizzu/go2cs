@@ -6311,7 +6311,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	}
 	// The differential that just proved the package is the proof: publish it as a committed page
 	// under docs/validation (no-op outside a repository checkout). See validationProofPages.go.
-	if result.Status == "validated" {
+	if publishesRosterArtifacts(result.Status, options.testFilter) {
 		if err := emitValidationProofPage(outputPath, result, manifest, disclosures, disclosureNotes, options); err != nil {
 			return fmt.Errorf("write validation proof page: %w", err)
 		}
@@ -6323,6 +6323,12 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		if err := refreshPackageReadmeAfterProof(outputPath, options); err != nil {
 			return fmt.Errorf("refresh package README: %w", err)
 		}
+	} else if result.Status == "validated" {
+		// Suppressed, and said OUT LOUD: a silent skip on exactly the run that must not write these
+		// would read as "the artifacts were already current".
+		fmt.Fprintf(os.Stderr, "WARNING: -test-filter %q was active, so NO validation artifacts were published for %s "+
+			"(proof page, docs/validation index row, README Tests badge). A gated census is DIAGNOSTIC ONLY; "+
+			"re-run WITHOUT -test-filter to bank a row.\n", options.testFilter, manifest.PackageImportPath)
 	}
 	if len(disclosed) > 0 {
 		classes := HashSet[string]{}
