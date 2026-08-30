@@ -1,16 +1,22 @@
 # DESIGN — the descriptor contract: record cargo, shape cargo, and the prefix downcast
 
-> Status: **design, no code cut.** Routed to G by COORD (2026-08-30) as ONE design over three items
-> that were separately rooted and would have produced three contradictory answers: the Reinterpret
-> prefix-downcast, `reflect.StructOf`'s synthesis failure, and the missing channel-direction cargo on
-> MakeFunc results. They are one question — *what does a descriptor carry, and what will the CLR let
-> us build over it* — and this document answers it once.
+> Status: **one leg built and validated, two legs specified.** Routed to G by COORD (2026-08-30) as
+> ONE design over three items that were separately rooted and would have produced three contradictory
+> answers: the Reinterpret prefix-downcast, `reflect.StructOf`'s synthesis failure, and the missing
+> channel-direction cargo on MakeFunc results. They are one question — *what does a descriptor carry,
+> and what will the CLR let us build over it* — and this document answers it once.
+>
+> **§4.3 (synthesis) is ANSWERED, built and measured** — `g-synthesis-ivt` @ `3f2e02bc0`, parked for
+> the rebank wave. **§4.1 (record cargo) and §4.2 (shape cargo) remain specified but unbuilt**, and
+> this document is written to be their spec for a fresh-context pass: both open questions are ruled,
+> the measured facts are separated from the proposals, and the gates are listed per item.
 
 ## 0. What is measured versus what is proposed
 
-Everything in §1–§3 is **measured** on this tree; §4–§6 are **proposal**. The split is explicit
-because two of the three items in this design were mis-rooted at least once by me before measurement
-corrected them, and a reader deserves to know which sentences carry evidence.
+The split is explicit because **two of the three items here were mis-rooted at least once before
+measurement corrected them**, and a reader deserves to know which sentences carry evidence. §4.3
+additionally records the four readings it took to get right (§4.3.1), because the failure modes
+generalize.
 
 | Claim | Status |
 |---|---|
@@ -18,7 +24,8 @@ corrected them, and a reader deserves to know which sentences carry evidence.
 | `StructOf` fails on **internal** field types, not on layout or on `ΔFuncType` | measured, positive-controlled |
 | MakeFunc results carry **no** direction and **no** result-side dims cargo | measured (`argChanDir=Unstamped`) |
 | 62 prefix-downcast sites / 17 target types / 13 files | measured (census) |
-| The remedies in §4–§6 | **proposed, unbuilt** |
+| §4.3's remedy (IVT to the synthesis assembly, BOTH projects) | **built and measured** — full-census A/B, `TypeLoadException` 1 → 0, 0 regressions |
+| §4.1 record cargo, §4.2 shape cargo | **proposed, unbuilt** — rulings applied, gates listed |
 
 ---
 
@@ -165,17 +172,66 @@ so `marshalMakeFuncResult` can be handed the *Go* result type rather than a bare
 the channel-direction assignment becomes decidable where it is currently invisible. This is the
 minimum that closes §3 without inventing a parallel type system.
 
-### 4.3 Synthesis — grant the dynamic assembly access
+### 4.3 Synthesis — grant the dynamic assembly access — **ANSWERED AND MEASURED**
 
-Emit `System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute` on the
-`go2cs.SynthesizedStructs` assembly for each assembly a synthesized field type references. The
-attribute is not currently used anywhere in the tree (checked). This is bounded — it changes the
-assembly setup in `GoStructSynthesis.mint`, not the synthesis design — and it is what re-priced this
-item down from a synthesis arc.
+> Status: **built and validated**, `g-synthesis-ivt` @ `3f2e02bc0`. Rides the REBANK WAVE, not a
+> standalone merge (COORD ruling): the grant line lands in every generated `.csproj`, so merging it
+> alone would turn CNR standing-red at master and make every lane's csproj churn ambiguous against
+> the "production-`.csproj` change is REAL drift" classifier. That is drift-masking for the whole
+> fleet. Reflect work stacks on this branch in the interim; reflect's bank lists it as a dependency.
 
-Open question for review: whether to emit it eagerly for the whole closure, or lazily per referenced
-assembly as fields are added. Lazy is tighter; eager is simpler and the assembly is process-local and
-run-only.
+**The answer: `InternalsVisibleTo` for `go2cs.SynthesizedStructs`, in BOTH the production and the
+test-host project.** IVT is the mechanism the corpus already uses to let a test assembly see internal
+production types, and unlike the attribute first tried it is honoured by the type **loader** — it
+changes accessibility itself rather than merely relaxing check enforcement.
+
+```
+full reflect census A/B, both sides on master + g-dynamic-scan:
+  BASE   pass=202  fail=126  infra=23   TypeLoadException=1
+  IVT    pass=203  fail=126  infra=22   TypeLoadException=0
+  TestStructOfExportRules   infrastructure-error -> pass      regressions NONE
+  go test -count=1 ./...    ok go2cs 162.397s
+```
+The `TypeLoadException` class is **eliminated**, not merely reduced — which is the result worth more
+than the single row.
+
+**Rejected, with the reason each fell:**
+
+| Candidate | Outcome |
+|---|---|
+| `IgnoresAccessChecksTo` | **measured INERT.** Governs the JIT's access checks for compiled method bodies; `CreateType` is the type loader's field validation — a different enforcement layer, so it was the wrong remedy CLASS, not a faulty implementation. |
+| Go-unexported types emitted C# `public` | **dead.** MORE permissive than Go: a public `rtype` is reachable by every C# consumer of the corpus, where Go grants external packages nothing. Go exportedness rides the NAME's case, not C# accessibility, so widening the C# surface buys nothing Go asked for — and it would collide with the W3a machinery, which is built on unexported production types being internal. |
+
+### 4.3.1 The four readings — a method note that belongs with the result
+
+This item produced **four readings, three of them wrong, each wrong for a different reason.** It is
+recorded because the failure modes generalize well beyond synthesis:
+
+```
+IgnoresAccessChecksTo      "works"   -> INERT          measured a filtered run against a STALE baseline
+hand-edited csproj         "3 -> 2"  -> NEVER APPLIED  the -tests run REGENERATES the csproj; the edit
+                                                       was gone. `grep -c` returning 0 is the only
+                                                       reason this was caught
+converter IVT, production  "inert"   -> UNDER-APPLIED  the failing type lives in the TEST assembly
+                                                       (`S1 : TestStructOfExportRules_S1
+                                                        asm=reflect.tests public=False`)
+both grants                 pass     -> holds, full-census confirmed
+```
+
+Two habits caught all three, and neither is cleverness:
+
+1. **Print the PRECONDITION so a measurement proves it tested what it claims.** Every A/B here
+   reports `ivt-in-csproj=0/1` per side. Without it, an experiment whose change never applied is
+   indistinguishable from a change that did nothing.
+2. **Instrument to NAME the failing thing rather than infer it.** The bare `TypeLoadException` names
+   nothing; printing the field's type, assembly and accessibility is what turned "IVT is falsified"
+   into "IVT is applied to the wrong assembly".
+
+> **A correct remedy applied to an incomplete surface looks exactly like a wrong remedy.**
+
+That sentence is the item's real lesson. The production-only grant measured identical to no grant at
+all, and one more report would have told the coordinator their approved candidate was falsified when
+it was in fact right.
 
 ---
 
