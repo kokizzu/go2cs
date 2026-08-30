@@ -2,6 +2,7 @@ namespace go;
 
 using fmt = fmt_package;
 using Δruntime = runtime_package;
+using System.Runtime.CompilerServices;
 
 partial class main_package {
 
@@ -17,7 +18,7 @@ partial class main_package {
     builtin.initPackage(typeof(runtime_package));
 }
 
-internal static @string who() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string who() {
     var pc = new slice<uintptr>(1);
     if (Δruntime.Callers(2, pc) == 0) {
         return ""u8;
@@ -110,14 +111,14 @@ internal static void nestedSiblings() {
     o();
 }
 
-internal static void run(Action f) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void run(Action f) {
     f();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object viaArgˢ = (@string)"via-arg:"u8;
 
-internal static void viaArg() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void viaArg() {
     run(() => {
         fmt.Println(viaArgˢ, who());
     });
