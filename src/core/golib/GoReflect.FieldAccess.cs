@@ -777,6 +777,32 @@ public static partial class GoReflect
         ((IDictionary<K, V>)map)[(K)key!] = (V)value!;
     }
 
+    private static readonly ConcurrentDictionary<(Type keyType, Type elemType), Action<object, object?>> s_mapDeleters = new();
+
+    /// <summary>
+    /// Deletes the entry stored under a key in a live golib map — Go's <c>delete(m, k)</c>, reached
+    /// from <c>reflect.Value.SetMapIndex</c> when the element Value is the ZERO Value.
+    /// </summary>
+    /// <remarks>
+    /// Go gives <c>SetMapIndex</c> two operations behind one signature: an invalid <c>elem</c> DELETES
+    /// the key, any other assigns it. That is not a detail of the API's shape — it is the only way
+    /// <c>reflect</c> can delete at all, since there is no <c>Value.DeleteMapIndex</c>. Deleting an
+    /// absent key is a no-op in Go, as is deleting from a nil map, so neither is an error here.
+    /// </remarks>
+    public static void DeleteMapEntry(object map, Type keyType, Type elemType, object? key)
+    {
+        s_mapDeleters.GetOrAdd((keyType, elemType), static k =>
+            typeof(GoReflect).GetMethod(nameof(deleteMapEntry), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(k.keyType, k.elemType).CreateDelegate<Action<object, object?>>())(map, key);
+    }
+
+    private static void deleteMapEntry<K, V>(object map, object? key) where K : notnull
+    {
+        // IMap<K,V>'s Remove, not IDictionary's, so golib's dedicated NIL-key slot is reached — the
+        // backing Dictionary cannot hold a null key and the non-generic surface cannot see that entry.
+        ((IMap<K, V>)map).Remove((K)key!);
+    }
+
     private static readonly ConcurrentDictionary<(Type keyType, Type elemType), Func<object, object?, (bool, object?)>> s_mapGetters = new();
 
     /// <summary>

@@ -1171,16 +1171,35 @@ public static ΔValue MakeMapWithSize(ΔType typ, nint n) {
 public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
     v.flag.mustBe(Map);
     v.flag.mustBeExported();
+    key.flag.mustBeExported();
     System.Type st = v.typ_.Value.sysType!;
     object? liveMap = v.live;
-    if (liveMap is null || (liveMap is IMap m && m.IsNil)) {
-        throw panic("assignment to entry in nil map");
-    }
     System.Type keyType = GoReflect.KeyType(st)!;
     System.Type elemType = GoReflect.ElementType(st)!;
+    bool nilMap = liveMap is null || (liveMap is IMap m && m.IsNil);
+
+    // Go puts TWO operations behind this one signature: a ZERO elem Value DELETES the key, anything
+    // else assigns it. reflect has no Value.DeleteMapIndex, so this is the only way it can delete.
+    //
+    // The distinction is also what decides the NIL-MAP answer, which is why the check cannot be one
+    // guard at the top. Go raises "assignment to entry in nil map" from mapassign; mapdelete is a
+    // no-op on a nil map and never panics — `delete(m, k)` on a nil map is ordinary, legal Go.
+    // Guarding both arms together made the DELETE inherit the ASSIGN path's panic (reflect's own
+    // TestNilMap), while the assignment beside it was already right, down to Go's exact text.
     if (elem.flag == 0) {
-        // Go: an invalid elem DELETES the key — no demonstrated consumer yet.
-        throw new NotImplementedException("reflect.Value.SetMapIndex: delete-on-invalid-elem is not implemented (next consumer: encoding/json)");
+        if (nilMap) {
+            return;
+        }
+        if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? dk)) {
+            throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
+                        " is not assignable to type " + GoReflect.GoTypeName(keyType));
+        }
+        GoReflect.DeleteMapEntry(liveMap!, keyType, elemType, dk);
+        return;
+    }
+    elem.flag.mustBeExported();
+    if (nilMap) {
+        throw panic("assignment to entry in nil map");
     }
     if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k)) {
         throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
