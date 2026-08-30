@@ -141,7 +141,7 @@ public static class StructDeclarationSyntaxExtensions
     // every type argument is checked too (recursively — a generic can nest, `slice<ж<mspan>>`), the
     // same peeling `typeReferencesUnexportedProductionNamed` (typeAccessibilityOperations.go) does on
     // the converter's own, parallel Go-side version of this question.
-    private static bool IsMemberTypePublic(ITypeSymbol? typeSymbol)
+    public static bool IsMemberTypePublic(ITypeSymbol? typeSymbol)
     {
         if (typeSymbol is null)
             return false;

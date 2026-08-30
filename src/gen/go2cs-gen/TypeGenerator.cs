@@ -254,6 +254,12 @@ public class TypeGenerator : ISourceGenerator
 
                         (StructDeclarationSyntax? underlyingStruct, Compilation? underlyingCompilation) = context.GetStructDeclaration(typeDefinition);
 
+                        // Captured for the W3a wrapper-scaffolding fix below — the SAME symbol
+                        // GetForeignStructMembers already resolves in the `else if` arm, needed again
+                        // once execution is past that arm's own scope. Null under the ordinary
+                        // same-compilation path (underlyingStruct is not null then instead).
+                        INamedTypeSymbol? foreignUnderlyingSymbol = null;
+
                         if (underlyingStruct is not null && underlyingCompilation is not null)
                         {
                             List<(string typeName, string memberName, bool isReferenceType, bool isProperty, bool isPublic)> members = underlyingStruct.GetStructMembers(underlyingCompilation, false);
@@ -309,7 +315,40 @@ public class TypeGenerator : ISourceGenerator
                                 forwardedMembers = members;
                                 mutableValue = true;
                             }
+
+                            foreignUnderlyingSymbol = underlyingSymbol;
                         }
+
+                        // W3a wrapper-scaffolding fix (docs/phase4/DESIGN-w3a-wrapper-scaffolding.md,
+                        // ruled 2026-08-30). The wrapper's OWN constructor/.Value/conversion operators
+                        // reference the WRAPPED type directly (TypeName), independent of whether the
+                        // WRAPPER itself (ObjectName) is public — a public MSpan wrapping an unexported
+                        // mspan still needs an internal constructor/`.Value`, exactly the
+                        // ForwardedMembers question one level up (see InheritedTypeTemplate.MemberScope).
+                        //
+                        // Scoped to a TEST-FILE-declared wrapper specifically (checked via the emitted
+                        // C# file's own path — every `-tests` emission preserves the "_test" suffix,
+                        // `export_test.go` -> `export_test.cs`, with no new stamping mechanism needed).
+                        // An UNSCOPED first attempt at this fix downgraded ORDINARY PRODUCTION wrapper
+                        // operators too (measured: unsafe_package.ArbitraryType, internal/goarch's
+                        // ArchFamilyType both newly failed CS0558) — production conversion is one
+                        // coordinated pass where a wrapper and its underlying are emitted together, so
+                        // nothing there needs this question asked; only the `-tests` bridge case, where
+                        // the wrapper's underlying can come from a separately-converted assembly with
+                        // its own accessibility, does.
+                        bool isTestFileDeclaration = syntaxTree.FilePath.EndsWith("_test.cs", StringComparison.OrdinalIgnoreCase);
+
+                        // Two sources for the underlying's own symbol, matching the two resolution
+                        // arms above: same-compilation source (measured: NOT what fires for runtime's
+                        // whitebox-reference wrappers — production is a referenced assembly there, so
+                        // underlyingStruct/underlyingCompilation are null) or the foreign/metadata
+                        // symbol GetForeignStructMembers already resolved. Either answers the same
+                        // question; only one is ever non-null for a given wrapper.
+                        ITypeSymbol? underlyingStructSymbol = !isTestFileDeclaration ? null :
+                            underlyingStruct is not null && underlyingCompilation is not null
+                                ? underlyingCompilation.GetSemanticModel(underlyingStruct.SyntaxTree).GetDeclaredSymbol(underlyingStruct) as ITypeSymbol
+                                : foreignUnderlyingSymbol;
+                        bool wrappedTypeIsPublic = underlyingStructSymbol is null || StructDeclarationSyntaxExtensions.IsMemberTypePublic(underlyingStructSymbol);
 
                         generatedSource = new InheritedTypeTemplate
                         {
@@ -324,6 +363,7 @@ public class TypeGenerator : ISourceGenerator
                             ForwardedStructMembers = forwardedMembers,
                             UnderlyingArrayElementType = underlyingArrayElem,
                             ValueClone = valueCloneFields.Length > 0,
+                            WrappedTypeIsPublic = wrappedTypeIsPublic,
                             UsingStatements = usingStatements
                         }
                         .Generate();
