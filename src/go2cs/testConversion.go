@@ -2967,6 +2967,54 @@ var unsupportedRuntimeCapabilities = map[string]string{
 	// while a gate is active. Nothing is broken today (the only gated declarations live in os, whose
 	// TestMain asserts nothing), but CHECK FOR SUCH A TestMain before adding a declaration-keyed
 	// entry — and prefer a disclosure whenever the tests can still run.
+	//
+	// Checked for net/http: main_test.go's TestMain only runs goroutineLeaked() after m.Run() exits
+	// 0 — a post-hoc stack census with no dependency on which tests ran, unlike os/exec's helper
+	// registry. Gating testTransportGCRequest below removes it cleanly.
+
+	// codegen-liveness: managed GC provably retains the object (wrapper-field round-trip trigger,
+	// 10-variant isolation 2026-08-29). testTransportGCRequest registers a runtime.SetFinalizer on a
+	// freshly built *Request, round-trips it through Transport.Do, then busy-polls runtime.GC() until
+	// the finalizer closes a channel — Go's own long-standing, non-flaky liveness test. The converted
+	// host never observes the finalizer: the request is genuinely retained, not merely slow to
+	// collect, so no retry/patience window fixes it (this is `codegen-liveness`'s existing structural
+	// bar — DESIGN-object-lifetime-disclosure.md §2's "genuinely unreachable" clause fails — not the
+	// newer `object-lifetime` timing class, whose admission test this row cannot pass).
+	//
+	// A minimal, isolated repro (golib's actual SetFinalizer/GC() bridge bodies, copied verbatim; 10
+	// variants; both Debug and Release; both configs identical) settled the mechanism and REFUTES the
+	// dispatch's own working hypothesis: the IIFE-plus-polling-loop calling shape that
+	// testTransportGCRequest itself uses collects cleanly in every structural variant tried (inline
+	// poll, poll in a separate frame, no lambda at all — all ~15ms). What DOES reproduce, in six
+	// independent variants (a parked background thread, a background thread that exits immediately,
+	// BlockingCollection<T>, a plain Queue<T>, a bare static-field handoff with no collection type,
+	// and — the minimal case — a same-thread, no-concurrency wrap-then-read) is: store the finalized
+	// object into a wrapper object's field, then read that field back (`wrapper.Field.SomeProperty`).
+	// That is exactly what the real persistConn.readLoop does with the request — repeatedly, through
+	// the requestAndChan/transportRequest wrapper (Request.Method, Request.Close, .trace, .cancel(...))
+	// — never a bare pass-by-argument. This is `codegen-liveness`'s FOURTH documented trigger shape
+	// (the other three: a by-value slice header's address-exposed caller temp, a two-result call's
+	// address-exposed temp, a frame-rooted large buffer) — new in KIND, same CLASS.
+	//
+	// Why a gate and not a disclosure, per the same fork os_test.TestRemoveAllWithExecutedProcess
+	// took: the disclosure manifest pins a FAILURE's captured signature, and this test doesn't fail —
+	// it HANGS, forever, with no output to pin. DESIGN-object-lifetime-disclosure.md §3c named this
+	// exact gap against internal/weak's TestPointerFinalizer (structurally identical: a still-rooted
+	// object whose finalizer a test blocks on forever) and left it to ⟨OQ-L3⟩, unruled until this row
+	// forced it: candidate remedies were (a) a timeout-matched disclosure shape, or (b) a test-host
+	// watchdog turning a per-test deadline into synthesizable failure text. Neither is built yet, so
+	// this row gates on the existing declaration-keyed mechanism instead — the SAME fork
+	// unsupportedRuntimeCapabilities has always drawn between "the tests can still run, disclose the
+	// divergence" and "nothing to run, name the capability."
+	//
+	// ⚠ RETIREMENT: this entry retires the day either (⟨OQ-L3⟩'s remedy) a hang gets a disclosable
+	// shape AND this row is re-pointed at that shape instead, or (unlikely, tracked for completeness)
+	// a future CLR ships address-exposed-slot liveness precise enough to release a wrapper-stored
+	// reference at last use rather than end of frame — the same condition DESIGN-object-lifetime-
+	// disclosure.md ⟨OQ-L5⟩ already names for TestFreeOSMemory's sibling pin. Until either lands, do
+	// not widen this entry to cover other codegen-liveness-shaped hangs by pattern-matching the
+	// reason string; each gets its own entry with its own evidence, per the map's own discipline.
+	"net/http_test.testTransportGCRequest": "codegen-liveness: managed GC provably retains the object (wrapper-field round-trip trigger, 10-variant isolation 2026-08-29)",
 }
 
 // unsupportedRuntimeCapability reports whether fn requires a listed unsupported runtime capability,
