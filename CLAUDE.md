@@ -1175,6 +1175,15 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
        `-tests` closure imports more. **Staging corollary (paid for 2026-08-26): never
        `git add -A`/`git add .` on a tree that has had a sweep or `-tests` run against it — name
        the paths; the hook shape survives numstat filters and lands in the commit silently.**
+       Two additions, 2026-08-29/30: the **FIFTH shape** — a `GoPositionMap` funcLit/range
+       argument the `-tests` emission adds and `-stdlib` omits (rooted independently by two
+       lanes the same day; survives numstat filters; evidenced by banked `cookiejar` carrying
+       it) — same class, classify-and-restore per the side the tree rests on. And ONE-WAY
+       emission changes are NOT closure shapes: the `-tests` init-forcing hook (+7 lines in
+       `package_test_info.cs`, landed 2026-08-30) appears at a row's next test-source
+       REGENERATION and stays — 193 reference-model banked test infos are stale-until-rebank by
+       design, no standing restore, and the rebank wave that levels them owes the full-roster
+       sweep (the throwing-production-init regression shape can only materialize there).
        Whether a sweep SHOWS them depends on which
        side the committed tree currently rests on, so do not treat either state as the invariant:
        when the tree rests on the `-tests` side they are invisible to a sweep and surface only under
