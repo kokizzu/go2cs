@@ -1080,7 +1080,73 @@ func referenceModelTestPackageInfoSeed(projectNamespace, testClassName, goPackag
 	b.WriteString(fmt.Sprintf("namespace %s;\r\n", projectNamespace))
 	b.WriteString("\r\n")
 	b.WriteString(fmt.Sprintf("[GoPackage(\"%s\")]\r\n", goPackageName))
-	b.WriteString(fmt.Sprintf("public static partial class %s\r\n{\r\n}\r\n", testClassName))
+	b.WriteString(fmt.Sprintf("public static partial class %s\r\n{\r\n", testClassName))
+	b.WriteString(productionInitForcingHook(projectNamespace, productionClassName))
+	b.WriteString("}\r\n")
+
+	return b.String()
+}
+
+// packageProductionInitHookMethod names the production-init forcing hook productionInitForcingHook
+// emits. Deliberately NOT in the shared symbol table beside PackageTestInitHookMethod: that table
+// carries the names BOTH sides need, and `initᴛᴛtests` is there because go2cs-gen's
+// PartialStubGenerator must recognize it and never stub it. This hook is emitted whole, with a
+// body, so no generator ever sees an unimplemented partial to stub and no C# projection of the
+// name is owed. The doubled temp marker keeps it clear of the relocated-package-var method space
+// ("init" + marker + <var name>, initOrderOperations.go), and the `production` word keeps it clear
+// of both `initᴛᴛtests` and the per-import forcing hooks importInitName builds.
+const packageProductionInitHookMethod = "init" + TempVarMarker + TempVarMarker + "production"
+
+// productionInitForcingHook renders the `[GoInit]` method that runs the REFERENCED production
+// assembly's module constructor, i.e. the package-under-test's own `init` functions, before
+// anything else in the test module runs.
+//
+// Go's contract is that every `init` in the package - the PRODUCTION files' included - has run
+// before the first test does. A converted `init` is `[GoInit]` = .NET's [ModuleInitializer],
+// which makes the weaker per-MODULE guarantee writeImportInit already documents: it runs at first
+// access to something in its OWN module. Under the two production-REFERENCE models the test
+// assembly is a separate module that REFERENCES the production assembly of the SAME Go package,
+// so the production `init` runs at the first TOUCH of a production symbol - which may be the
+// second test, or the tenth, or never.
+//
+// The per-import hooks writeImportInit emits do not reach it, and the reason is structural rather
+// than an oversight: they are emitted from an import SPEC, and the case that needs forcing here
+// has no import to hang one on. An EXTERNAL test file (`package foo_test`) does import the
+// package under test and so is already covered by that machinery; an INTERNAL one
+// (`package foo`) is IN the package and imports nothing of it, which is exactly the shape
+// net/http/pprof has. Its `init` installs the whole /debug/pprof mux, and TestDeltaProfile -
+// the one test that goes through a real server rather than calling handlers directly - got a 404
+// whenever it ran before any test that touched a production symbol. Measured both directions
+// over eight shuffled runs, 100% determined by test order.
+//
+// Emitting it unconditionally, rather than gating on "does the production package initialize
+// anything", is deliberate and follows the same reasoning noInitPseudoPackages already applies:
+// running an empty module constructor is a guaranteed no-op, the runtime runs one at most once,
+// and this is ONE hook per test project rather than one per import - so the gate would buy
+// nothing and could only mis-answer. The RECOMPILE model needs no hook at all and never seeds
+// this file: there the production sources ARE compile items of the test assembly, so their
+// `[GoInit]`s are already this module's own.
+//
+// One ordering nuance, stated rather than engineered around: Roslyn orders a module's
+// initializers lexically, and the tests csproj sorts its compile items by name, so a test file
+// sorting before `package_test_info.cs` has its own `init` run before this hook. That matches the
+// guarantee the converter already declines to make ACROSS files of one package (writeImportInit),
+// and it does not touch the property this hook exists for - every module initializer runs before
+// `Main`, hence before the first test.
+//
+// The `typeof` target is spelled `global::`-rooted, the same collision-proof form the seed's own
+// `global using static` line uses and globalQualifyForcingTarget composes for a shadowed import
+// hook, so no name in scope can occlude it.
+func productionInitForcingHook(projectNamespace, productionClassName string) string {
+	var b strings.Builder
+
+	b.WriteString("    // Go runs every `init` in the package under test - the production files' included -\r\n")
+	b.WriteString("    // before the first test. The production package is a REFERENCED assembly here, whose\r\n")
+	b.WriteString("    // module constructor .NET would not run until something in it is touched, so that\r\n")
+	b.WriteString("    // initialization is forced before anything else in this test module runs.\r\n")
+	b.WriteString(fmt.Sprintf("    [GoInit] internal static void %s() {\r\n", packageProductionInitHookMethod))
+	b.WriteString(fmt.Sprintf("        builtin.initPackage(typeof(global::%s.%s));\r\n", projectNamespace, productionClassName))
+	b.WriteString("    }\r\n")
 
 	return b.String()
 }

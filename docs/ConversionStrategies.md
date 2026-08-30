@@ -118,6 +118,13 @@ plus its hook. NAMED imports went unforced until 2026-08-26, which is why `log/s
 captures `log/internal.DefaultOutput`, a value **`log`'s** `init` installs — captured nil whenever a
 program touched `slog` first, and then dereferenced it.
 
+A converted **test** project gets one more hook for the same reason. Go runs every `init` in the
+package under test — the production files' included — before the first test, but a `-tests` project
+*references* the production assembly rather than recompiling it, so that `init` would otherwise wait
+for the first touch of a production symbol. `package_test_info.cs` therefore forces the production
+module directly; see
+[the reference](ConversionStrategies-Reference.md#a--tests-production-reference-project-forces-the-package-under-tests-own-init).
+
 A package whose emitted C# differs by platform keeps the differing files in per-`GOOS` subfolders, and its
 `.csproj` compiles exactly one of them — `<Compile Include="$(GoTargetOS)/*.cs" />`, defaulting to
 `windows`. Files identical on every platform stay flat, so this touches only the packages that genuinely

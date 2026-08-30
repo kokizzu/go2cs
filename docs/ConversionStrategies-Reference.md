@@ -1017,9 +1017,11 @@ initialization is variables; it cannot cost a missed one.
 
 The `-tests` emission carries all of this unchanged — the hook is written by the same import visitor,
 so an import in a `_test.go` file (which is where `image/gif`'s blank import is) forces from the test
-assembly. The one exception is the `-tests` external variant's import of the **package under test**,
-which binds to a class compiled into that same assembly: there is no separate module constructor to
-force, so no hook is emitted.
+assembly. Under the **recompile** model the external variant's import of the *package under test*
+binds a class compiled into that same assembly, so there is no separate module constructor and no
+hook; under the two **production-reference** models there genuinely is one, and the ordinary
+per-import hook forces it (`iter`'s `pull_test.cs` carries a real `initᴛᴛimportꓸiter()`). What that
+does **not** cover is the subject of the next subsection.
 Guarded by the `NamedImportInitOrder` behavioral test — four packages in the reduced `log/slog` shape,
 where `store` holds a value and initializes nothing, `writer`'s `init` writes it, `reader`'s `init`
 CAPTURES it, and `main` touches only `reader`, from a function body. Before the fix Go printed
@@ -1036,6 +1038,88 @@ pseudo-package skip, while `TestPackageInitializesTransitively` and
 covering each shape — no init at all, constant-only initializers, a `func init()`, a non-constant
 variable initializer, and reaching an initializing package one and two hops away — plus the
 unknown-path direction.
+
+### A `-tests` production-reference project forces the package under test's own `init`
+
+Go's contract for a test binary is stronger than "imports first": every `init` **in the package
+under test** — the *production* files' included — has run before the first test does. The subsection
+above closes the import half. This one closes the half the import machinery structurally cannot
+reach.
+
+Under the two production-**reference** test models (`reference` and `whitebox-reference`) the test
+assembly is a separate module that *references* the production assembly of the **same** Go package.
+`[GoInit]` is `[ModuleInitializer]`, which fires at first access to something in its *own* module,
+so the production `init` ran at the first **touch of a production symbol** — which may be the second
+test, or the tenth, or never. A test that only observes an `init` **side effect** therefore sees
+nothing at all when it happens to run first.
+
+An **external** test file (`package foo_test`) writes `import "foo"`, so the per-import hook already
+forces it. An **internal** one (`package foo`) is *in* the package and imports nothing of it: there
+is no import spec for `writeImportInit` to hang a hook on, and nothing else was forcing the module.
+
+`net/http/pprof` is the shape that made it observable (2026-08-29). Its whole mux surface is
+installed by its `init` (`http.HandleFunc("/debug/pprof/", Index)`, …), its test file is `package
+pprof`, and `TestDeltaProfile` is the only test that goes through a real `httptest` server rather
+than calling handlers directly. It got **404** whenever it ran before any test that touched a
+production symbol — measured over eight shuffled runs that split four/four *exactly* on order, plus
+the unshuffled pipeline (where `TestDeltaProfile` sorts first) making nine observations. Every
+banked `-tests` row that observes an `init` side effect was order-**lucky** rather than proven safe,
+which is precisely why the class stayed invisible: most suites happen to touch something first.
+
+The remedy is one hook, seeded into `package_test_info.cs`'s anchor class by
+`referenceModelTestPackageInfoSeed`, using the same `RunModuleConstructor` mechanism as the import
+hooks:
+
+```csharp
+[GoPackage("pprof")]
+public static partial class pprof_internal_test_package
+{
+    // <TypeAccessibility> … </TypeAccessibility>
+
+    // Go runs every `init` in the package under test - the production files' included -
+    // before the first test. The production package is a REFERENCED assembly here, whose
+    // module constructor .NET would not run until something in it is touched, so that
+    // initialization is forced before anything else in this test module runs.
+    [GoInit] internal static void initᴛᴛproduction() {
+        builtin.initPackage(typeof(global::go.net.http.pprof_package));
+    }
+}
+```
+
+Four decisions, each mirroring one the import hooks already made.
+
+**It is emitted unconditionally**, with no "does the production package initialize anything" gate.
+The import hooks pay for that gate because they emit one hook *per import per package* corpus-wide;
+this is **one hook per test project**, an empty module constructor is a guaranteed no-op, and the
+runtime runs one at most once — so a gate could buy nothing and could only mis-answer.
+
+**The recompile model gets nothing**, and structurally rather than by a check: it never seeds this
+file. There the production sources *are* compile items of the test assembly, so their `[GoInit]`s
+are already that module's own.
+
+**The `typeof` target is `global::`-rooted unconditionally**, where the import hooks root only on a
+detected shadow. The import hooks are conditional because over-qualifying would churn thousands of
+corpus sites; here there is exactly one site per test project and it is new, so the collision-proof
+spelling costs nothing and needs no `forcingTargetShadowed` analysis to stay correct.
+
+**The residual ordering nuance is stated, not engineered around.** Roslyn orders a module's
+initializers lexically and the tests csproj sorts its compile items by name, so a test file sorting
+before `package_test_info.cs` has its own `init` run before this hook. That is the same guarantee the
+converter already declines to make *across* files of one package, and it does not touch the property
+the hook exists for: every module initializer runs before `Main`, hence before the first test.
+
+**What it does and does not buy on the row that found it.** With `init` forced, pprof's
+`TestDeltaProfile` goes `skip` → `infrastructure-error`, landing on the same
+`pprof_mutexProfileInternal` stub that already fails `TestHandlers//debug/pprof/mutex`. The deferred
+`init` was **masking a capability gap**; removing the mask changes the shape of the divergence, never
+its existence. The row reads 6 of 15 either way. That is the general lesson as much as the specific
+one — an ordering defect that hides a stub reads as a *skip*, which is the least alarming verdict
+there is.
+
+Guarded by `TestReferenceModelSeedForcesProductionInit`, which asserts the two properties that make
+the hook work rather than its mere presence — that it carries `[GoInit]` (a plain method would never
+run) and that its `typeof` is `global::`-rooted — over both the flat and the nested-namespace
+whitebox shape.
 
 ### A NuGet-referenced standard library carries its exported metadata IN THE CONVERTER
 
