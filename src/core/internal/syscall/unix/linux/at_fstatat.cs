@@ -15,7 +15,11 @@ public static error Fstatat(nint dirfd, @string path, ж<syscall.Stat_t> Ꮡstat
     if (err != default!) {
         return err;
     }
-    var (_, _, errno) = syscall.Syscall6(fstatatTrap, (uintptr)dirfd, (uintptr)p, (uintptr)Ꮡstat, (uintptr)flags, 0, 0);
+    var ᴋ0 = p;
+    var ᴋ1 = Ꮡstat;
+        var (_, _, errno) = syscall.Syscall6(fstatatTrap, (uintptr)dirfd, (uintptr)ᴋ0, (uintptr)ᴋ1, (uintptr)flags, 0, 0);
+    System.GC.KeepAlive(ᴋ0);
+    System.GC.KeepAlive(ᴋ1);
     if (errno != 0) {
         return errno;
     }

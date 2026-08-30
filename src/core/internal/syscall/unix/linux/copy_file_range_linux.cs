@@ -12,13 +12,11 @@ public static (nint n, error err) CopyFileRange(nint rfd, ж<int64> Ꮡroff, nin
     nint n = default!;
     error err = default!;
 
-    var (r1, _, errno) = syscall.Syscall6(copyFileRangeTrap,
-        (uintptr)rfd,
-        (uintptr)Ꮡroff,
-        (uintptr)wfd,
-        (uintptr)Ꮡwoff,
-        (uintptr)len,
-        (uintptr)flags);
+    var ᴋ0 = Ꮡroff;
+    var ᴋ1 = Ꮡwoff;
+        var (r1, _, errno) = syscall.Syscall6(copyFileRangeTrap, (uintptr)rfd, (uintptr)ᴋ0, (uintptr)wfd, (uintptr)ᴋ1, (uintptr)len, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ0);
+    System.GC.KeepAlive(ᴋ1);
     n = (nint)r1;
     if (errno != 0) {
         err = errno;

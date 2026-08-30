@@ -20,7 +20,9 @@ public static error Unlinkat(nint dirfd, @string path, nint flags) {
     if (err != default!) {
         return err;
     }
-    var (_, _, errno) = syscall.Syscall(unlinkatTrap, (uintptr)dirfd, (uintptr)p, (uintptr)flags);
+    var ᴋ0 = p;
+        var (_, _, errno) = syscall.Syscall(unlinkatTrap, (uintptr)dirfd, (uintptr)ᴋ0, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ0);
     if (errno != 0) {
         return errno;
     }
@@ -32,7 +34,9 @@ public static (nint, error) Openat(nint dirfd, @string path, nint flags, uint32 
     if (err != default!) {
         return (0, err);
     }
-    var (fd, _, errno) = syscall.Syscall6(openatTrap, (uintptr)dirfd, (uintptr)p, (uintptr)flags, (uintptr)perm, 0, 0);
+    var ᴋ1 = p;
+        var (fd, _, errno) = syscall.Syscall6(openatTrap, (uintptr)dirfd, (uintptr)ᴋ1, (uintptr)flags, (uintptr)perm, 0, 0);
+    System.GC.KeepAlive(ᴋ1);
     if (errno != 0) {
         return (0, errno);
     }

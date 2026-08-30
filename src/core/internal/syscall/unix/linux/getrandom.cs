@@ -30,10 +30,9 @@ public static (nint n, error err) GetRandom(slice<byte> p, GetRandomFlag flags) 
     if (ᏑgetrandomUnsupported.Load()) {
         return (0, syscall.ENOSYS);
     }
-    var (r1, _, errno) = syscall.Syscall(getrandomTrap,
-        (uintptr)Ꮡ(p, 0),
-        (uintptr)len(p),
-        (uintptr)flags);
+    var ᴋ0 = Ꮡ(p, 0);
+        var (r1, _, errno) = syscall.Syscall(getrandomTrap, (uintptr)ᴋ0, (uintptr)len(p), (uintptr)flags);
+    System.GC.KeepAlive(ᴋ0);
     if (errno != 0) {
         if (errno == syscall.ENOSYS) {
             ᏑgetrandomUnsupported.Store(true);

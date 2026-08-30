@@ -13,7 +13,9 @@ internal static (uintptr, error) writev(nint fd, slice<Δsyscall.Iovec> iovecs) 
     uintptr r = default!;
     Δsyscall.Errno e = default!;
     while (ᐧ) {
-        (r, _, e) = Δsyscall.Syscall(Δsyscall.SYS_WRITEV, (uintptr)fd, (uintptr)Ꮡ(iovecs, 0), (uintptr)len(iovecs));
+        var ᴋ0 = Ꮡ(iovecs, 0);
+                (r, _, e) = Δsyscall.Syscall(Δsyscall.SYS_WRITEV, (uintptr)fd, (uintptr)ᴋ0, (uintptr)len(iovecs));
+        System.GC.KeepAlive(ᴋ0);
         if (e != Δsyscall.EINTR) {
             break;
         }

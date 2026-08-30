@@ -165,7 +165,8 @@ func (v *Visitor) convSyscallFunnelCall(callExpr *ast.CallExpr) string {
 		}
 
 		boxExpr := fullExpr[len(syscallFunnelUintptrCastPrefix):]
-		tempName := fmt.Sprintf("ᴋ%d", len(v.pendingSyscallKeepAlive))
+		tempName := fmt.Sprintf("ᴋ%d", v.syscallKeepAliveCounter)
+		v.syscallKeepAliveCounter++
 
 		if v.hoistedDecls != nil {
 			v.hoistedDecls.WriteString(fmt.Sprintf("%s%svar %s = %s;", v.newline, v.indent(v.indentLevel), tempName, boxExpr))
