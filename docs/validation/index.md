@@ -142,6 +142,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `internal/trace` | [`internal.trace.md`](current/internal.trace.md) | [`src/core/internal/trace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace) |
 | `internal/trace/internal/oldtrace` | [`internal.trace.internal.oldtrace.md`](current/internal.trace.internal.oldtrace.md) | [`src/core/internal/trace/internal/oldtrace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace/internal/oldtrace) |
 | `internal/types/errors` | [`internal.types.errors.md`](current/internal.types.errors.md) | [`src/core/internal/types/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/types/errors) |
+| `internal/weak` | [`internal.weak.md`](current/internal.weak.md) | [`src/core/internal/weak`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/weak) |
 | `internal/xcoff` | [`internal.xcoff.md`](current/internal.xcoff.md) | [`src/core/internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) |
 | `internal/zstd` | [`internal.zstd.md`](current/internal.zstd.md) | [`src/core/internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) |
 | `io` | [`io.md`](current/io.md) | [`src/core/io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) |

@@ -42,7 +42,14 @@ once its remedy lands, because the arithmetic below moves when it goes.
   this one is *how counting itself denominates*. Established by the `io`/`strings`/`bytes` banks.
 - **`codegen-liveness`** — a test asserts, from inside its own frame, that an object it just stopped
   using is now collectible. Go's GC drops a local at its last use via per-safepoint liveness maps;
-  the CLR reports a frame's slots live for the frame's whole lifetime.[^codegen-liveness]
+  the CLR reports a frame's slots live for the frame's whole lifetime.[^codegen-liveness] **That
+  second clause is true of the DEFAULT execution configuration, not of the CLR as such** — measured
+  2026-08-30 by the tier-0 A/B, which found the property is a tier-0 artifact and disappears under a
+  Release publish with `DOTNET_TieredCompilation=0`. The class therefore stands where it stands, and
+  a row whose tests need that configuration says so on its own line instead (`execution:
+  release-tc0`, ruled the same day); `internal/weak` is the first, at 4/4. The flip is **not** global:
+  two failures are TC0-only in the other direction, so a blanket config would trade one class for
+  another rather than retire this one.
 - **`host-identity`** — a test's assert can be satisfied only by the test-hosting machinery claiming
   Go's testing-package identity (`testing.tRunner`, `testing.go`) for a frame that is actually the
   hand-owned test host. The host is a structural replacement (F15b: one testing package), and the
@@ -125,19 +132,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **199 / 215 testable packages validated — 92.6%**
+> ### Phase 4 progress: **200 / 215 testable packages validated — 93.0%**
 >
-> **27,725 matching test verdicts · 154 disclosed** *(updated 2026-08-30 — maintained as part of the
+> **27,729 matching test verdicts · 154 disclosed** *(updated 2026-08-30 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 199 / 208 — 95.7%.** Both numbers are
+> **Against the implementable set (215 − 7 excluded = 208): 200 / 208 — 96.2%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > seven, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 178 of 197 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
+> **Linux: 178 of 198 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -319,6 +326,7 @@ exactly as the line above it is summed from the columns.
 | [`internal/trace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace) | 92 |  | The execution-trace reader end to end — real trace corpora parsed through the v2 reader (`TestReaderGolden`'s 21 golden streams open by relative path, the fixture family the single-file bundler fix was proven on), the old-trace (1.11–1.21) format converter over its stress corpora — the suite whose swap corruption rooted the parallel-deref-assignment converter fix — summary/MUD statistics, and `TestTraceCPUProfile`'s live `go run` of a profiled testprog, the first consumer of link-staged fixtures (the sandbox compiles real GOROOT sources through a symlink, closing the internal-import class). Three converter/harness arcs met their measure in this one row: sibling-testdata staging, link-staging, and the parallel-assignment family's third arm. · linux: 98 · [proof](validation/current/internal.trace.md) |
 | [`internal/trace/internal/oldtrace`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/trace/internal/oldtrace) | 3 |  | The pre-1.22 execution-trace parser on its own suite — all 12 canned corpora (1.11–1.21 stress, http, fmt and user-task-region streams) parsed and classified good vs deliberately time-unordered with STW reason strings checked, eight historically parser-crashing corrupted inputs required to error rather than crash, and the bucketed `Events` container's whole lifecycle: append across bucket boundaries, iterate, pop until every bucket drops. This parser is where the star-deref-of-call parallel swap lives (`*l.Ptr(i), *l.Ptr(j) = *l.Ptr(j), *l.Ptr(i)`) — the shape the parallel-deref-assignment fix closed after the parent `internal/trace` suite rooted it; this row is the package's own suite validating clean behind it. · [proof](validation/current/internal.trace.internal.oldtrace.md) |
 | [`internal/types/errors`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/types/errors) | 155 |  | Every `go/types` error code, checked two ways against the real type checker: each code's documented Example snippet must actually produce that code, and the codes themselves must stay dense, uniquely named and correctly styled. Its `walkCodes` type-checks `codes.go` through `go/types.Check` on the way in, so this is also the first package to exercise the converted checker over real source. · linux: 155 · · [proof](validation/current/internal.types.errors.md) |
+| [`internal/weak`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/weak) | 4 | | Go's weak pointers — `Make`/`Strong` round-trips across `runtime.GC()`, the canonical-handle equality contract over a ten-element set (a second weak pointer made from a `Strong()` result must compare equal to the first, while distinct referents must not), the finalizer ordering that requires the handle to read nil *before* the finalizer runs, and the issue-69210 regression stress, which races `GOMAXPROCS-1` goroutines through weak-to-strong conversions for a full second while another goroutine holds the collector in its mark phase. The production code is hand-owned, and by a wide margin: Go's original is two `//go:linkname` declarations into `mheap_` span metadata, one of which re-derives an object pointer from a raw address — a question the CLR does not answer at all — so the managed-native rewrite keeps the observable contract on a `WeakReference` over the `ж<T>` box plus a `ConditionalWeakTable` that makes the handle canonical per referent. The row carries `execution: release-tc0` because its assertions are the `codegen-liveness` shape from the inside: a test stops using a local and then requires the collector to have already reclaimed it. Under the default tier-0 configuration the CLR reports a frame's slots live for the frame's whole lifetime, so the referent is never collected — measured directly on this row, 2026-08-30: `TestPointer` fails outright (*expected weak pointer to be nil*), and `TestPointerFinalizer` does not fail at all, it **blocks to the package deadline** on a finalizer that can never run, burning the full 600 s while the suite's other three verdicts land in under 1.1 s. `TestPointerEquality` passes either way, which is the class being precise rather than broad: that test nils its own slice, so the slot is overwritten instead of merely unused. Under the annotated configuration all four pass, in 27 s warm. · execution: release-tc0 · [proof](validation/current/internal.weak.md) |
 | [`internal/xcoff`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/xcoff) | 3 |  | AIX XCOFF objects — the 32- and 64-bit section and symbol-table readers over the PowerPC testdata executables, `big`-format archive member enumeration, and the malformed-file error path. · linux: 3 · [proof](validation/current/internal.xcoff.md) |
 | [`internal/zstd`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/zstd) | 536 | | The Zstandard decompressor — FSE/Huffman table construction, the sliding window, xxhash checksums, and 500+ fuzz-corpus round-trips. Two of the 536, `TestLarge` and `TestAlloc`, gate themselves on a `zstd` binary being on `PATH` and skip identically on both sides where it is absent; a host that HAS one runs them, and `TestAlloc` asserts an exact zero allocations, so expect it to need an `alloc-profile` disclosure there. · linux: 536 · [proof](validation/current/internal.zstd.md) |
 | [`io`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/io) | 60 | 1 | The core reader/writer contracts — pipes over real goroutine rendezvous, `MultiReader`/`MultiWriter` flattening via `runtime.Callers`, `OffsetWriter` on real temp files (`os.runtime_rand`), `WriteString` interface dispatch under `-tests` renaming; alloc-count disclosures. · linux: 60 + 1 · [proof](validation/current/io.md) |
@@ -431,12 +439,13 @@ recorded on that same board.
 | `os/user` | — | E2 | Go's own `go test` fails `TestGroupIds` on the validation host — the reference side never produces a clean baseline, so the harness correctly declines to compare and every converted verdict reads `skip`. The conversion never gets a trial either way. Rejoins the moment the oracle passes. | [ruling][exclusion-ruling] |
 | `internal/unsafeheader` | 6 | E3 | The suite's entire subject is the raw `{Data, Len, Cap}` slice/string header: it fabricates a live slice or string by writing those fields and reinterpreting the struct, and Go's memory model lets the result alias the original storage. A managed slice is not that triple and cannot be aliased into existence — all 6 verdicts fail identically, structurally rather than by defect. | [ruling][exclusion-ruling] |
 
-Candidates that are *not* yet ruled are deliberately absent — `internal/weak` and
-`crypto/internal/boring/bcache` each await an individual ruling on their own measurement, and until
-one lands they stay inside the naive denominator rather than being counted out of it in advance.
-`internal/concurrent` was a third such candidate until 2026-08-30, when it validated 20/20 instead:
-the census that was to feed its ruling found the whitebox half honorable and the dead-code half
-merely a compile wall, and both are now closed rather than excluded — which is what the naive
+Candidates that are *not* yet ruled are deliberately absent — `crypto/internal/boring/bcache`
+awaits an individual ruling on its own measurement, and until one lands it stays inside the naive
+denominator rather than being counted out of it in advance. Two others left this list the same way,
+by validating rather than by being ruled out, both on 2026-08-30: `internal/concurrent` at 20/20,
+when the census that was to feed its ruling found the whitebox half honorable and the dead-code half
+merely a compile wall; and `internal/weak` at 4/4, once the per-row execution config gave it the
+configuration its liveness assertions need. Neither needed an exclusion — which is what the naive
 denominator is for.
 
 [exclusion-ruling]: phase4/BOARD-next-validation-candidates.md#ruling-owner-2026-08-25--the-campaigns-terminal-denominator-is-the-implementable-test-set-with-the-excluded-packages-fully-disclosed-each-with-its-why
