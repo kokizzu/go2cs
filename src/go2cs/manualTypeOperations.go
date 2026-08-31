@@ -317,6 +317,27 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Type.ArrayType":  goosAny,
 		"Type.Elem":       goosAny,
 		"Type.Key":        goosAny,
+		// Type.FuncType is the THIRD prefix downcast of that same family, and it failed identically:
+		// the auto body's tag check is right (`Kind() != Func → nil`, Go's own "or nil if its tag
+		// does not match") and its `Reinterpret<Type, ΔFuncType>` is rightly refused, so a perfectly
+		// good func type arrives at reflect's funcLayout as nil and is renamed "funcLayout of
+		// non-func type" one frame up. Measured consumer: reflect's TestFuncLayout, 10 comparison
+		// rows. Synthesized from the carried System.Type exactly as StructType/ArrayType are.
+		"Type.FuncType": goosAny,
+		// FuncType.InSlice / FuncType.OutSlice are why the accessor alone is not enough, and they
+		// are a WORSE instance of the same defect rather than a separate one. Go keeps a func's
+		// parameter and result descriptors in the memory immediately AFTER the FuncType record, so
+		// the auto bodies walk there arithmetically (`unsafe.Sizeof(*t)`, plus 16 for TFlagUncommon)
+		// and build a span of `*Type` over that address. The managed model has no such layout, and
+		// the span's element type is `ж<Type>` — a MANAGED REFERENCE — so the auto form fabricates
+		// one reference per parameter out of whatever follows the value slot. That is the same
+		// type-safety break the descriptor downcast was refused for, arrived at by a different road.
+		//
+		// Both derive from the descriptor's carried System.Type over GoReflect.TryFuncShape — the
+		// SAME projection reflect's hand-owned rtype.NumIn/In/NumOut/Out use one layer up, so the
+		// two layers cannot disagree about a func's shape.
+		"FuncType.InSlice":  goosAny,
+		"FuncType.OutSlice": goosAny,
 		// Type.Len is the third accessor of that same recursion, and the one whose failure is
 		// nastiest: it reads a length out of the memory following the descriptor's value slot, so
 		// two array descriptors read two different pieces of garbage and haveIdenticalUnderlyingType
