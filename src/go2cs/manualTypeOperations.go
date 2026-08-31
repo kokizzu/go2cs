@@ -248,6 +248,24 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// the one honest divergence is Go's: the count is momentarily stale under concurrent
 		// creation, which Go's own comment on gcount concedes in the same words.
 		"NumGoroutine": goosAny,
+		// gcount (managed_impl.cs): NumGoroutine's own body, and the reason hand-owning NumGoroutine
+		// could only fix ONE caller. The same subtraction over never-populated scheduler state serves
+		// THREE more consumers that reach gcount DIRECTLY rather than through NumGoroutine, so each
+		// still receives the clamped constant 1: metrics.cs:424's /sched/goroutines compute closure,
+		// and mprof.cs's goroutine-profile SIZE (1384) and COUNT (1397). Wiring gcount to the same
+		// registry NumGoroutine already reads fixes all three at one seam rather than three times
+		// over, and removes the oddity of a public API disagreeing with its own implementation.
+		//
+		// Declared per-GOOS (windows/linux/darwin proc.go) but identical in all three, and identical
+		// in the managed model too — so this is the lock_sema shape: goosAny scope, ONE flat body in
+		// managed_impl.cs, all three declarations taking the placeholder.
+		//
+		// The divergence is MEASURED, and recorded in that file's Honest-divergences ledger rather
+		// than waved at: golib's count reads early-by-one while goroutines are starting and decays
+		// LATE — 9 where Go reports 1, sampled immediately after a WaitGroup releases. Go's own
+		// staleness caveat covers the first half; the decay lag is ours, and it is a named board item
+		// with a defined trigger, not a silent approximation.
+		"gcount": goosAny,
 		// totalMutexWaitTimeNanos (managed_impl.cs): the same `allm` walk as NumCgoCall, summing
 		// per-m lock-profile wait times that never exist here. The managed body keeps the two REAL
 		// counter loads (sched.totalMutexWaitTime, sched.totalRuntimeLockWaitTime) and drops only
@@ -385,12 +403,12 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.Len":       goosAny,
 		"Value.Index":     goosAny,
 		"Value.Elem":      goosAny,
-		"Value.Bytes": goosAny,
+		"Value.Bytes":     goosAny,
 		// Two defects in ONE auto body, which is why it is here: the `v.ptr` data-word read below
 		// AND the `Reinterpret<abi.Type, sliceType>` descriptor prefix-downcast. A hand-own needs
 		// neither — a slice's elements and a map's entries are ordinary managed containers at this
 		// layer. See reflect/value_impl.cs.
-		"Value.Clear":     goosAny,
+		"Value.Clear": goosAny,
 		// The WRITE half of Bytes, hand-owned for the same reason one layer down: the auto body is
 		// `*(*[]byte)(v.ptr) = x`, a store through the Go data word this bridge never populates, so
 		// it wrote nowhere for EVERY byte slice — silently. See reflect/value_impl.cs.
