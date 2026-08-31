@@ -158,8 +158,12 @@ ONE stdlib in a build; there is now only one on disk.
     (`strings`, `syscall/windows`) — pointing away from the cause and reading exactly like a converter
     regression that dropped public members. Same family as the `-go2cspath` empty-`<ImportedTypeAliases>`
     trap below: **a path the converter half-recognizes is worse than one it rejects.** Native paths convert
-    clean first time. (Durable fix if ever wanted: compare with `filepath.Clean` so the two spellings of
-    one path cannot diverge.)
+    clean first time. (The durable fix LANDED 2026-08-28, `433e9e4e0`: `isPathUnder` +
+    `checkGoRootSpelling` + 3 guard tests — the loader-side comparison is path-normalized now. ⚠ The
+    PROJECT-IDENTITY side has a measured open residual: `std.<pkg>`-named csproj artifacts dated AFTER
+    the fix, with all sources namespace-correct — 2 csproj carrying `RootNamespace=go.std` while 13
+    `.cs` declare `namespace go;` — from a run that exited reporting success. Mechanism unestablished,
+    G owns the root-cause; do not re-diagnose the loader side, it is fixed and guarded.)
     ⚠ **It bites through the ENVIRONMENT just as readily as through an argument, and the Bash tool is
     where that happens** (paid again 2026-08-26). `run-validated-sweep.ps1` and the `-tests` pipeline
     read `GOROOT` from the environment, so `export GOROOT="C:/Users/.../sdk/go1.23.12"` — the
@@ -424,7 +428,37 @@ ONE stdlib in a build; there is now only one on disk.
   missing-runner path already exits 1 (measured, both wrappers, `-File` and `-Command`), so the
   exit-**0** sighting is a host- or wrapper-dependent swallow — which is the argument for stating the
   code rather than inheriting it.
-- **⚠ CASE-INSENSITIVE ENVIRONMENT-VARIABLE RACES — Windows-immune, POSIX-live, MSBuild is the
+- **FALSE-GREEN route #7 — a `go2cs-gen` (analyzer) change is invisible to EVERY standing gate except
+  a behavioral COMPILE (found 2026-08-30, the W3a promoted-forwarder regression; fixed `0df5a3f2b`).**
+  CNR is transpile-only, so generator output never enters its verdict; the stdlib solution compiles
+  one assembly at a time, so an accessibility demotion that breaks only CROSS-assembly consumers
+  stays green there (`internal` binds fine same-assembly); and the corpus 307/0 + CNR-byte-identical
+  ladder a converter arc normally runs therefore proves NOTHING about gen changes. The W3 merge
+  demoted net's public `TCPConn.Read/Write` promoted forwarders to internal and shipped green on
+  exactly that ladder; the escape was caught days later by a derived net/http canary sweep — the only
+  union gate that compiles a cross-assembly consumer of metadata-promoted surface. **Rule: any change
+  under `src/gen/` owes a full behavioral COMPILE phase (slnx-dev build or the runner's Compile) and
+  at least one cross-assembly consumer gate before banking.** Corollary paid the same night: ONE red
+  behavioral project collapses the full-suite verdict into 651-suspect attribution (the Transpile
+  phase rewrites every `.cs` first, so no assembly is up-to-date and the batch-build failure
+  attributes everywhere) — measured: exactly 1 Release assembly written corpus-wide vs a clean
+  78-project filtered batch. "651 suspects" means "one project is red", not "the corpus is broken".
+- **⚠ MID-BATTERY SOURCE FREEZE — while any gate battery is running, converter/gen/golib source is
+  untouchable, on ANY branch (ruled 2026-08-30).** The behavioral runners rebuild `go2cs.exe` from
+  DISK source the moment a `.go` file is newer than the binary, and golib/gen compile into every
+  project the battery builds — so an edit mid-run makes the remaining legs measure a MIX of committed
+  and uncommitted state (route #1's stale-binary trap inverted: a too-FRESH binary). Lanes queue
+  their cuts until the battery's summary prints; the coordinator announces battery start/close on the
+  mailbox for exactly this reason.
+- **⚠ STANDALONE (no-solution-context) builds of tests/behavioral projects measure the DEPLOY ROOT,
+  not the repo — and the errors look SEMANTIC (paid 2026-08-30, cost one full invalidated bisect).**
+  Without `$(SolutionDir)`, `$(go2csPath)` falls back to the machine-global deploy root
+  (`%USERPROFILE%/go2cs` / `%GOPATH%\src\go2cs`), which is STALE between deploys. A missing root is
+  loud (CS0246 on `go`); a stale root is not — it produces plausible type-mismatch errors (CS1503,
+  CS1929, CS0234 on a newer attribute) that read as real regressions and are COMMIT-INDEPENDENT,
+  which is how a bisect probe built this way reported "no green endpoint" across three anchors whose
+  in-solution builds were all green. **Any standalone build of a project under `src/tests` must pin
+  `-p:go2csPath=<repo>/src/` (forward slashes), and a bisect probe must carry the pin.**
   collision site (root-caused 2026-08-21, fixed at the converter 2026-08-22).** A POSIX environment
   block is case-SENSITIVE, so `GO2CSPATH=/root/go2cs` and `go2csPath=/root/go2cs/src/` are two
   entries; MSBuild materializes environment variables as properties and resolves property NAMES
@@ -758,9 +792,14 @@ ONE stdlib in a build; there is now only one on disk.
   `Get-Process BehavioralRunner,dotnet`, not the output file. **`-First N` is WORSE: it terminates
   the pipeline once satisfied and KILLS the upstream native process mid-run** (measured 2026-08-16:
   a `-stdlib` reconvert died at ~100/304 with exit −1, reading exactly like a converter failure).
-  Redirect long runs to a file and read the file. And never inject non-ASCII C# source (`Ꮡ`, `ж`,
-  `Δ`) through a PowerShell command STRING — the argument pass mojibakes it even when file I/O is
-  correct; write such content with the Edit/Write tools.
+  Redirect long runs to a file and read the file — and redirect with **`Start-Process
+  -RedirectStandardOutput`**, not `... *>&1 | Out-File`: the pipeline form BUFFERS, so a run that
+  dies leaves a few-hundred-byte log ending mid-line, indistinguishable from an external kill
+  (measured 2026-08-31, a 485-byte log from a dead full-suite run). In BASH, `*>&1` is not
+  redirection syntax at all — the shell GLOBS it, silently no-op'ing the command (measured
+  2026-08-31: one CNR and two runner attempts read as failures that never ran). And never inject
+  non-ASCII C# source (`Ꮡ`, `ж`, `Δ`) through a PowerShell command STRING — the argument pass
+  mojibakes it even when file I/O is correct; write such content with the Edit/Write tools.
   **⚠ The same mojibake hits a `.ps1` SCRIPT FILE ITSELF when Windows PowerShell 5.1 parses it —
   and unlike the argument case, file I/O is NOT correct here, so the usual fix does not apply**
   (measured 2026-08-30, the syscall-pinning census-guard lane). A `.ps1` written UTF-8 without a

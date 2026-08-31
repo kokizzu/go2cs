@@ -7,17 +7,17 @@
 > Scope: the **Windows validation roster** (the 100% goal's primary axis). The per-OS parity
 > axis is tracked in its own summary line below.
 
-## Where we stand — updated 2026-08-29 late evening (release day + the banking cascade)
+## Where we stand — updated 2026-08-31 early morning (the two-train overnight: window8 + the soundness train)
 
 | Measure | Value |
 |---|---|
-| **On master (`df9e88c71`)** | **200 / 208 = 96.2% honest** · 27,729 matching · 154 disclosed · raw 200/215 = 93.0% |
+| **On master (`649ad72d8`)** | **200 / 208 = 96.2% honest** · 27,729 matching · 154 disclosed · raw 200/215 = 93.0% — unchanged on paper; the overnight was soundness and unblocking, and the machinery behind the next banks is the healthiest it has been |
 | Shipped in 1.23.12.2 (the release snapshot) | 189 / 208 = 90.9% · 26,043 matching · 148 disclosed |
-| Banked since the release freeze lifted (all merged + swept) | httptrace 2\|0 · buffer 1\|1 · godebug 5\|0 · internal/poll 19\|0 · math/big 224\|2 · **net/http 1,343\|2 (the campaign's largest row)** · iter 28\|0 · **cgi 38\|1** (+ the unique smalls fixes corpus-wide) |
-| **Rows remaining (implementable)** | **8** — `internal/weak` banked 4\|0 as **row 200** under the owner-ratified `execution: release-tc0` annotation (Option A). Remaining: reflect (G's arc), os (2 named arcs), unique (16/20 — TypeFor-Name defect + TestMakeClonesStrings), os/user (E2 host-hostile oracle), runtime (**walls W1+W2 fully DOWN, W3 on i9, W4 queued — G6 full-depth run imminent**), runtime/pprof (+reporter), runtime/trace, testing (meta-ruling owed) |
-| In flight | **i9: runtime's build at 11 errors and falling** (walls W1+W2 fully down, W3's wrapper cut landed 154→39→11 — the semantic bill prints at zero); G: three branches actively pushing (reflect disclosures, fidelity batch, dynamic scan); R returning via car inverter, ptrout sites queued; unique at 16/20 fully attributed (StringData leak class KILLED corpus-wide; the platform-liveness residual isolated pure); os/user 1-of-6 sites fixed, five sized and queued; both owner rulings banked (Option A, testing Option 1) — zero pending decisions |
-| Linux parity axis | 178 of 195 applicable annotated |
-| Host-exception ledger (i7-class) | net (DNS oracle) · crypto/tls (BoGo wall) · net/http's 4 h2 deadline rows (measured 250–500ms bracket) |
+| Landed overnight (two pushed trains, every merge union-gated) | G's nine reflect/fidelity branches + the §4.3 IVT answer · the W3a promoted-forwarder gen regression FOUND-FIXED (net's public TCPConn surface restored; caught by the derived net/http canary, invisible to CNR/stdlib gates) · R's gettimeofday intrinsics · os/user's full ptrout arc with the DC-independent 4/4 guard · both standing behavioral Output reds closed at one root (G's probe fix) · the zero-match filter guard · **attribute-flush-die at the test host (a throwing goroutine is now a 7-second loud red, not a 40-minute silent deadline burn)** · **reflect's four runtime offset-bridges BOUND — TestOffsetLock: unbounded hang → PASS in 6s; reflect iterates at ~88s** · chip-2 documented per its own dead-code measurement |
+| **Rows remaining (implementable)** | **8** — reflect (offset bridges bound, suite fast, fidelity landed; remaining: the descriptor fresh pass per `DESIGN-descriptor-contract.md` + the 12-test block family), os (seam row settling, then bankable), unique (16/20, residual isolated pure, disclosure-shaped), os/user (E2 oracle stands; the ptrout members now proven — bank decision grows the denominator honestly), runtime (fresh-pass prompt staged; the semantic bill prints at zero), runtime/pprof, runtime/trace, testing (Option 1 ruled, implementation sequenced) |
+| In flight | R: exit seam + host-path guard, then gcount consumers; G: the std.reflect identity residual (measured scope) + the init-hook relocation spec parked for the rebank wave; coordinator: rebank-wave planning read next; behavioral suite FULLY GREEN at master (652/652, zero Output failures) |
+| Linux parity axis | 178 of 195 applicable annotated · stdlib `GoTargetOS=linux` builds green at master (battery5) |
+| Host-exception ledger (i7-class) | net (DNS oracle) · crypto/tls (BoGo wall) · net/http's 4 h2 deadline rows (measured 250–500ms bracket) · **net/http's GO oracle itself now package-fails on this host (1,326/1,326 test-level passes, exit-time leak check) — sweep-form comparisons are unmeasurable here; the C# side proved by full direct run.** Counter-observations from G's laptop: net PASSES there, crypto/tls's BoGo FANS OUT — a banked count is host-dependent, so a red on one machine is not evidence about the row until the same host reproduces it |
 
 ## The remaining 17, by distance
 
