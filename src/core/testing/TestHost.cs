@@ -1018,7 +1018,18 @@ public static class TestHost
     /// the whole run's evidence, and a package that had already passed six tests recorded zero.
     /// </para>
     /// </remarks>
-    private static void ReportFatalGoroutineException(TestRunner runner, TestReporter reporter, TestRegistry registry, TestOptions options, Exception failure)
+    /// <remarks>
+    /// <para>
+    /// <paramref name="exit"/> exists so the DEATH is assertable. The other two thirds —
+    /// attribution and the flush — are observable from their own artifacts, but "and then the
+    /// process ended with 2" is the half that actually converts a hang into a red, and a test that
+    /// called <see cref="Environment.Exit"/> would take its own host down. Production passes null
+    /// and gets <c>Environment.Exit</c>, so the shipped path is byte-identical; only a guard supplies
+    /// anything else. Test-visible seams are a cost, and this one is paid deliberately rather than
+    /// leaving the exit code resting on a manual repro.
+    /// </para>
+    /// </remarks>
+    private static void ReportFatalGoroutineException(TestRunner runner, TestReporter reporter, TestRegistry registry, TestOptions options, Exception failure, Action<int>? exit = null)
     {
         try
         {
@@ -1048,8 +1059,20 @@ public static class TestHost
             // Reporting the death must never be what prevents it.
         }
 
-        Environment.Exit(2);
+        (exit ?? Environment.Exit)(2);
     }
+
+    /// <summary>
+    /// The guard seam for <see cref="ReportFatalGoroutineException"/>: same path, with the process
+    /// death handed to <paramref name="exit"/> instead of taken.
+    /// </summary>
+    /// <remarks>
+    /// Internal rather than public, and named for what it is. A guard that reached the real overload
+    /// would kill the test host on its first assertion; one that reimplemented the sequence would
+    /// guard a copy rather than the shipped code, which is the failure this whole arc was about.
+    /// </remarks>
+    internal static void ReportFatalGoroutineExceptionForGuard(TestRunner runner, TestReporter reporter, TestRegistry registry, TestOptions options, Exception failure, Action<int> exit) =>
+        ReportFatalGoroutineException(runner, reporter, registry, options, failure, exit);
 
     private static void WriteResults(string? path, string package, TestOptions options, IReadOnlyList<TestEvent> events)
     {
