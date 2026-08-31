@@ -25,6 +25,14 @@ import (
 // became `@go.internal.…` — a parse error in internal/godebug's GoImplement attribute).
 var packageQualifiedNameRegex = regexp.MustCompile(`@?[\p{L}_][\p{L}\p{N}_]*(?:\.@?[\p{L}_][\p{L}\p{N}_]*)*`)
 
+// rootQualifyScanRegex is packageQualifiedNameRegex with the C# root escape allowed IN FRONT of the
+// match, used only by rootQualifySubNamespaceTypeRefs. The base pattern cannot match `::`, so an
+// escaped reference reaches a plain scan as its bare inner path and is indistinguishable from an
+// unrooted one — which is exactly how a `global::go.…` reference got rooted a second time. Carrying
+// the prefix into the match is what lets that arm recognize and skip it; every other consumer of the
+// base pattern is unaffected.
+var rootQualifyScanRegex = regexp.MustCompile(`(?:global::)?@?[\p{L}_][\p{L}\p{N}_]*(?:\.@?[\p{L}_][\p{L}\p{N}_]*)*`)
+
 // systemCollidingTypeNames are top-level types of C# namespace `System` whose names a Go package can
 // legitimately reuse for one of its own exported types (e.g. `internal/profile.ValueType`,
 // `go/ast.Object`, `bytes.Buffer`). Assembly-level GoImplement/GoImplicitConv attributes are emitted
@@ -52,7 +60,28 @@ var systemCollidingTypeNames = NewHashSet([]string{
 // are returned unchanged, so single-segment GoImplements — every behavioral-test case — emit
 // byte-identically (no golden churn).
 func rootQualifySubNamespaceTypeRefs(name string) string {
-	return packageQualifiedNameRegex.ReplaceAllStringFunc(name, func(match string) string {
+	return rootQualifyScanRegex.ReplaceAllStringFunc(name, func(match string) string {
+		// A `global::`-ESCAPED reference is already absolutely qualified — that is the entire point
+		// of the escape — so nothing here may re-root it. The scan regex carries the prefix only so
+		// this arm can SEE it: packageQualifiedNameRegex cannot match `::`, so an escaped reference
+		// used to arrive here as its bare inner path, indistinguishable from an unrooted one.
+		//
+		// runtime's `-tests` metadata is the measured case. The white-box bridge class arrives as
+		// `global::go.runtime_internal_test_package.TestingT`; the inner `go.runtime_internal_test_package`
+		// matched, tested as `go.`-prefixed, and asked isStrippedGoPathPackageRef — which walks to its
+		// LAST line and answers `packageChildNamespaces["go.go"]`. That is TRUE for runtime's test
+		// closure, because it imports `go/token`, so a class that is not a `go/*` package at all was
+		// re-rooted to `global::go.go.runtime_internal_test_package.TestingT` and CS0234'd against the
+		// real `go.go` namespace those `go/*` imports create. The same file spells the same class
+		// correctly one line above, in a `global using static` the escape reaches unmangled.
+		//
+		// Skipping the escape is the general statement of that, and it is safe in the other direction
+		// too: an escaped reference that genuinely names a `go/*` package already carries its full
+		// `global::go.go.…` path, so there is nothing left to add.
+		if strings.HasPrefix(match, rootEscapePrefix) {
+			return match
+		}
+
 		if strings.HasPrefix(match, RootNamespace+".") {
 			// A go/*-package ref whose root the strip removed (`go.ast_package` for go/ast, whose
 			// real namespace is `go.go`) is re-rooted to `go.go.ast_package`; the GoImplement/
@@ -64,6 +93,28 @@ func rootQualifySubNamespaceTypeRefs(name string) string {
 			}
 
 			return match
+		}
+
+		// A leading segment that is an IMPORT ALIAS rather than a package CLASS: the converted
+		// sources reach `unsafe.Pointer` through a file-local `using @unsafe = unsafe_package;`, so
+		// the rendered reference is `@unsafe.Pointer` — no `_package` segment for the scan below to
+		// key on, and no alias in scope at assembly-attribute level, where the record actually
+		// lands. It emitted verbatim and CS0246'd on the namespace `unsafe`.
+		//
+		// Same FILE-LOCAL-ALIAS class the Δ-shadow arm below already handles (`Δio.fs_package` →
+		// `go.io.fs_package`), reached through the other spelling: Δ marks an alias renamed around a
+		// child-namespace collision, `@` marks one escaped around a C# keyword. Both are devices of
+		// the file that declared them and neither survives into an assembly attribute, so both owe
+		// the REAL class path.
+		//
+		// Gated on the package class being one this conversion actually imported, so the rewrite can
+		// only ever name a class that exists — an escaped segment that is not an imported package
+		// falls through untouched.
+		if first, rest, hasRest := strings.Cut(match, "."); hasRest && strings.HasPrefix(first, "@") &&
+			!strings.Contains(match, PackageSuffix) {
+			if class := strings.TrimPrefix(first, "@") + PackageSuffix; packageQualifiedNamespaces[RootNamespace+"."+class] {
+				return RootNamespace + "." + class + "." + rest
+			}
 		}
 
 		for i, seg := range strings.Split(match, ".") {

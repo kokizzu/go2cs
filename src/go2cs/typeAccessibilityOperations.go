@@ -989,9 +989,59 @@ func (v *Visitor) typeReferencesUnexportedProductionNamed(t types.Type, pkg *typ
 		return v.typeReferencesUnexportedProductionNamed(t.Elem(), pkg)
 	case *types.Signature:
 		return v.signatureReferencesUnexportedProductionType(t, pkg)
+	case *types.Interface, *types.Struct:
+		return v.liftsToSynthesizedInternalType(t)
 	}
 
 	return false
+}
+
+// liftsToSynthesizedInternalType reports whether an ANONYMOUS struct/interface reaches C# as a
+// converter-SYNTHESIZED type, which is emitted `internal` and therefore cannot appear in a public
+// declaration's type.
+//
+// The fourth position the accessibility rule looks through, and the one the *types.Named arms above
+// structurally cannot see: an anonymous type has no Obj, no package and no export bit, so every arm
+// that ends at "a NAMED type's own package, export and declaring file" answers false for it — while
+// the emission lifts it to a real C# type all the same. runtime's `IfaceHash` is the measured case:
+// `var IfaceHash = ifaceHash` over `func ifaceHash(i interface{ … }, seed uintptr) uintptr` types as
+// a *types.Signature whose first parameter is a bare *types.Interface, production lifts that
+// interface to `[GoType("dyn")] internal partial interface ifaceHash_i` in alg.cs, and the public
+// field over it is CS0052.
+//
+// EMPTY is not lifted, matching deferredDynamicTypeName's own gate exactly: `struct{}` and
+// `interface{}` map to `EmptyStruct`/`any` downstream, both public, so neither constrains anything.
+//
+// ALIAS-lifted types are deliberately EXCLUDED, and this is the distinction that makes the rule
+// correct rather than merely conservative. A lift reached through `productionAliasLiftedTypes` — a
+// Go-level `type X = struct{…}` — takes the ALIAS NAME's own exportedness, so it can legitimately be
+// public: measured corpus-wide, of 1,630 `[GoType("dyn")]` declarations exactly ONE is public, and
+// it is `internal/fuzz`'s `CorpusEntryᴛ1` from the exported alias `type CorpusEntry = struct{…}`.
+// Downgrading on that would be wrong, and a blanket "lifted implies internal" rule would have done
+// it. Only the SYNTHESIZED lift — a name the converter minted for a type Go never named — is
+// unconditionally internal.
+//
+// No production-file gate, unlike the Named arm, and the asymmetry is deliberate: an unexported
+// NAMED type declared in a `_test.go` file is visible to the test assembly and forces no downgrade,
+// but a synthesized lift is `internal` wherever it is declared, so a public declaration over one is
+// a build error in the test file's own compilation just as much as across it.
+func (v *Visitor) liftsToSynthesizedInternalType(t types.Type) bool {
+	switch typ := t.(type) {
+	case *types.Struct:
+		if isEmptyStructType(typ) {
+			return false
+		}
+	case *types.Interface:
+		if typ.Empty() {
+			return false
+		}
+	default:
+		return false
+	}
+
+	_, aliasLifted := v.liftedNameFor(t)
+
+	return !aliasLifted
 }
 
 // testMethodAccessDowngrade applies the W3a accessibility rule to a test-file-declared METHOD: access
