@@ -249,10 +249,30 @@ public static class TestHost
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
 
-            // TEST-HOST-ONLY: contain an unhandled exception escaping a goroutine so it fails ONE
-            // test instead of the whole run. See TestRunner.ContainGoroutineException — a converted
-            // program keeps Go's process-death fidelity, which is golib's default.
-            Goroutine.ContainUnhandledExceptions(runner.ContainGoroutineException);
+            // TEST-HOST-ONLY: an unhandled exception escaping a goroutine is attributed to the test
+            // that started it, the run's evidence is flushed, and the process then DIES — Go's own
+            // semantics, which golib already keeps for a converted program and which the host must
+            // not soften.
+            //
+            // It used to be contained and the run allowed to continue, on the reasoning that one
+            // test's stray exception should not cost the whole run. Measured, that reasoning does not
+            // hold: recording the failure cannot UNBLOCK whatever the dead goroutine was going to
+            // signal. A goroutine that dies before its `wg.Done()` leaves the test parked in
+            // `sync.Wait` forever, the package deadline eventually fires, and the timeout path
+            // discards every verdict — so containment did not save one test, it lost the entire
+            // package AND took the evidence with it.
+            //
+            // Measured instance (reflect, 2026-08-30): TestOffsetLock's four goroutines each threw
+            // `NotImplementedException: addReflectOff` in under a second. Contained, that presented as
+            // an UNBOUNDED HANG which ate a 40-minute deadline and truncated reflect's suite to a
+            // meaningless 99 pass / 93 fail / 1 skip. The exception was recorded correctly the whole
+            // time and nobody could see it. Dying loudly names the defect in one second instead.
+            //
+            // Go has no quietly-dead goroutine, so there is nothing here to be faithful TO by
+            // surviving. Same attribute-then-flush shape as the panic path below; the panic path does
+            // not exit explicitly because the unhandled panic itself ends the process, while a
+            // contained exception has already been caught and must be ended deliberately.
+            Goroutine.ContainUnhandledExceptions(ex => ReportFatalGoroutineException(runner, reporter, registry, options, ex));
 
             // TEST-HOST-ONLY: a PANIC escaping a goroutine still kills the process — that is Go's
             // behavior and the oracle must keep observing it — but it no longer takes the run's
@@ -974,6 +994,61 @@ public static class TestHost
         {
             Console.Error.WriteLine($"go2cs test host: could not record the goroutine panic: {ex}");
         }
+    }
+
+    /// <summary>
+    /// Ends the run on an unhandled NON-panic exception that escaped a goroutine: attribute it to the
+    /// owning test, flush the evidence, say so in Go's shape, and exit.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The exit is the point. A goroutine that dies takes with it whatever it was going to signal —
+    /// most often a <c>WaitGroup.Done</c> — so any goroutine failure that is merely RECORDED can still
+    /// park the test forever. That is not a hypothetical: it is how one sub-second
+    /// <c>NotImplementedException</c> became a 40-minute deadline burn and truncated a whole package's
+    /// verdicts (see the install site).
+    /// </para>
+    /// <para>
+    /// Exit code 2 matches Go's status for an unrecovered panic, which is the nearest thing Go has to
+    /// this situation — in Go a failure of this kind IS a panic, and the process dies. The message
+    /// goes to stderr in Go's shape so a comparison run reads it the way it reads Go's.
+    /// </para>
+    /// <para>
+    /// Flushing BEFORE exiting is what the panic path had to learn: the fatal route otherwise discards
+    /// the whole run's evidence, and a package that had already passed six tests recorded zero.
+    /// </para>
+    /// </remarks>
+    private static void ReportFatalGoroutineException(TestRunner runner, TestReporter reporter, TestRegistry registry, TestOptions options, Exception failure)
+    {
+        try
+        {
+            // Attribution first — this is the same recording the contained path always did, and it is
+            // what names the owning test in the results.
+            runner.ContainGoroutineException(failure);
+            WriteResults(options.ResultFile, registry.Package, options, reporter.Events);
+            WriteJUnit(options.JUnitFile, registry.Package, reporter.Events);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"go2cs test host: could not record the fatal goroutine exception: {ex}");
+        }
+
+        try
+        {
+            // Go's shape: the headline, a blank line, then the detail. A converted program's
+            // unrecovered panic reaches stderr the same way.
+            Console.Error.WriteLine($"panic: {failure.Message}");
+            Console.Error.WriteLine();
+            Console.Error.WriteLine(failure.ToString());
+            Console.Error.Flush();
+            Console.Out.Flush();
+        }
+        catch
+        {
+            // Reporting the death must never be what prevents it.
+        }
+
+        Environment.Exit(2);
     }
 
     private static void WriteResults(string? path, string package, TestOptions options, IReadOnlyList<TestEvent> events)
