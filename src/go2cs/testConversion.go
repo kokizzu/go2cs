@@ -6172,6 +6172,41 @@ func testChildTimeout(options Options) time.Duration {
 	return options.testTimeout + testChildTimeoutGrace
 }
 
+// filterMatchedNothing reports the error a `-test-filter` run owes when the filter matched NOTHING,
+// and whether it fired at all. Extracted from compareGoAndConvertedTests so the decision is unit
+// testable on its own terms rather than only through a full differential run.
+//
+// The rule is narrow BY CONSTRUCTION, and each conjunct earns its place:
+//
+//   - testFilter != "" — an UNFILTERED package with no verdicts is a different (and already
+//     handled) situation; this guard is about the filter specifically.
+//   - matched && status == "validated" — fire only on a run that would OTHERWISE have reported a
+//     validated pass. That keeps it off `not-applicable` packages, whose zero verdicts are a
+//     property of the package rather than of the filter, and stops it from overwriting a real
+//     failure that has already cleared Matched.
+//   - goCount == 0 && csCount == 0 — BOTH sides empty. A filter that matched on one side only
+//     already surfaces as one-sided rows, i.e. mismatches, and stays fatal through the existing
+//     path; demanding both empty keeps this guard from claiming those.
+//
+// excludedCount does not gate the decision, only the MESSAGE. A filter can legitimately match
+// nothing because its target is a deliberately EXCLUDED declaration, which at exit-code level is
+// indistinguishable from a filter that silently matched nothing. Both measured nothing, so both
+// stay non-zero exits — the operator is told which case they are in instead of guessing.
+func filterMatchedNothing(testFilter, status string, matched bool, goCount, csCount, excludedCount int) (string, bool) {
+	if testFilter == "" || !matched || status != "validated" || goCount != 0 || csCount != 0 {
+		return "", false
+	}
+
+	excludedNote := "the package excludes no declarations, so the regex itself matched nothing"
+	if excludedCount > 0 {
+		excludedNote = fmt.Sprintf("the package excludes %d declaration(s) — the filter may be naming one of them", excludedCount)
+	}
+
+	return fmt.Sprintf(
+		"-test-filter %q matched NO tests on either side: zero verdicts were compared, so this run "+
+			"measured nothing and must not read as a pass (%s)", testFilter, excludedNote), true
+}
+
 func compareGoAndConvertedTests(inputPath, outputPath, testProject string, options Options) error {
 	// -test-timeout is the PACKAGE deadline, handed to BOTH sides so they agree: `go test -timeout`
 	// and the converted host's own `--timeout`. Without it each side silently used its OWN 10-minute
@@ -6352,6 +6387,41 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		}
 		result.Errors = append(result.Errors, "converted tests: "+csErr.Error())
 	}
+
+	// ZERO-MATCH GUARD. A `-test-filter` run that matches NOTHING produced no verdicts at all, and
+	// without this it reported SUCCESS: neither side ran a test, so both exit 0, every count is
+	// zero, no mismatch exists to fail on, and the run reads exactly like a clean validation. That
+	// is the census equivalent of a vacuous proof — a gated census exists to MEASURE something, and
+	// a filter typo, a renamed test, or a regex whose anchoring is subtly wrong all land here
+	// silently. The failure mode is the same shape as the false-green routes catalogued in
+	// CLAUDE.md: not a wrong answer, an answer about nothing that is indistinguishable from a right
+	// one.
+	//
+	// Deliberately narrow. It fires only on a run that would OTHERWISE have reported a validated
+	// pass, so it cannot touch a package with no eligible tests (`not-applicable`, whose zero
+	// verdicts are a property of the package and not of the filter), and it cannot mask a real
+	// failure that has already cleared Matched. It also requires BOTH sides empty: a filter that
+	// matched on one side only already surfaces as one-sided rows — i.e. mismatches — and stays
+	// fatal through the existing path.
+	//
+	// No new Status string. Clearing Matched routes through the existing `validated` -> `failing`
+	// mapping immediately below, so every downstream consumer (proof-page gating, roster tooling,
+	// the sweep script's row parser) keeps reading the vocabulary it already knows; the MESSAGE
+	// carries the meaning rather than a new token nothing has been taught.
+	//
+	// The excluded-declaration note answers a distinction R raised while this was being cut: a
+	// filter can legitimately match nothing because its target is a DELIBERATELY EXCLUDED
+	// declaration, which at exit-code level is indistinguishable from a filter that silently matched
+	// nothing. Both still measured nothing, so both are still a non-zero exit — the guard does not
+	// exempt the excluded case, it TELLS the operator which case they are in instead of leaving them
+	// to guess.
+	if violation, fired := filterMatchedNothing(
+		options.testFilter, result.Status, result.Matched,
+		len(goResults), len(csResults), len(result.Excluded)); fired {
+		result.Matched = false
+		result.Errors = append(result.Errors, violation)
+	}
+
 	if !result.Matched && result.Status == "validated" {
 		result.Status = "failing"
 	}
