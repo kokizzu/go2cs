@@ -22,8 +22,12 @@ family, and ONE full-roster sweep proves the union. That is the same economics a
    TWO measured failed remedies prove reference-side fixes desync the generator (5→71 both
    times; `claude/g-runtime-zero` arc record, 2026-08-31). The fix is coordinated
    converter+generator or declaration-side. **Owner: fresh full-context lane (i9 candidate — the
-   owner nudges it for wave execution). Gate: runtime -tests build reaches ZERO; then the
-   SEMANTIC BILL pipeline run prints — the wave's headline deliverable.**
+   owner nudges it for wave execution). The arc OPENS with a two-seeded-emissions SIZING pass —
+   the blast radius is unmeasured (both discards died at runtime's own build, never reaching a
+   corpus reconvert), and the number reports to the coordinator BEFORE the cut so a
+   generator-sized arc is discovered while re-scoping is cheap (G's review amendment,
+   2026-08-31). Gate: runtime -tests build reaches ZERO; then the SEMANTIC BILL pipeline run
+   prints — the wave's headline deliverable.**
 2. **Init-hook relocation** (owner-sourced; G's scout is the spec, 2026-08-31 mailbox): the
    `initᴛᴛimportꓸ*` hooks move to package_info.cs's machinery area, csproj emission gains the
    explicit-first `<Compile>` item that pins module-initializer order (measured enabler; the
