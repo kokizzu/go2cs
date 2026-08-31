@@ -5364,18 +5364,10 @@ internal static void badunlockosthread() {
     @throw(runtimeInternalErrorˢ2);
 }
 
-internal static int32 gcount() {
-    var n = (int32)atomic.Loaduintptr(Ꮡallglen) - sched.gFree.n - Ꮡsched.of(schedt.Ꮡngsys).Load();
-    foreach (var (_, pp) in allp) {
-        n -= pp.Value.gFree.n;
-    }
-    // All these variables can be changed concurrently, so the result can be inconsistent.
-    // But at least the current goroutine is running.
-    if (n < 1) {
-        n = 1;
-    }
-    return n;
-}
+// go2cs generated this placeholder — func gcount is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// All these variables can be changed concurrently, so the result can be inconsistent.
+// But at least the current goroutine is running.
 
 internal static int32 mcount() {
     return (int32)(sched.mnext - sched.nmfreed);

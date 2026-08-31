@@ -56,6 +56,19 @@
 //   - Goexit is exact for the GOROUTINE case (defers run, recover() sees nil, no other goroutine is
 //     affected) and GATED for the main goroutine, whose "main ends but the program keeps running"
 //     shape has no managed counterpart yet — docs/phase4/DESIGN-goexit.md option C.
+//   - gcount — and therefore NumGoroutine, /sched/goroutines, and the goroutine profile's size and
+//     count — reports golib's live goroutine registry. It COUNTS UP EARLY-BY-ONE AND DECAYS LATE.
+//     Measured against Go on the same program: with eight goroutines blocked on a channel it reads 8
+//     where Go reads 9, and immediately after the WaitGroup releases them it reads 9 where Go reads
+//     1. Go's own caveat — "all these variables can be changed concurrently, so the result can be
+//     inconsistent" — covers the climb; the DECAY LAG is ours, because a goroutine's registry slot is
+//     retired after its body returns rather than at the instant it does. Stated in those terms rather
+//     than as "approximate" because the DIRECTION is what matters to consumers: a leak check sampling
+//     during teardown reads a stale HIGH count, which reads as a leak rather than as a miscount.
+//     Not repaired: no consumer's guard needs prompt decay today (net/http/httputil's leak check
+//     passes against these values at its `<= 4` threshold), so a timing fix would be speculative
+//     machinery. It is a board item whose trigger is the first flaky leak check, or the first
+//     consumer that needs prompt decay.
 //   - LockOSThread/UnlockOSThread are no-ops BY CONSTRUCTION, not by omission: go2cs runs each
 //     goroutine on its own managed thread, so the guarantee they exist to provide — "this
 //     goroutine will not be migrated to another OS thread" — already holds unconditionally.
@@ -296,6 +309,25 @@ partial class runtime_package
     public static nint NumGoroutine()
     {
         return Goroutine.Count;
+    }
+
+    // gcount is the body NumGoroutine above used to call, and the one THREE other consumers still
+    // reach directly: metrics.cs's /sched/goroutines compute closure, and mprof.cs's goroutine-profile
+    // size and count. Hand-owning NumGoroutine alone left all three on the auto body's clamped
+    // constant 1, so a program could report a true count through the public API and a fabricated one
+    // through its own metrics and profiles in the same breath.
+    //
+    // Same registry, same answer, no second source of truth — which is why this is done here rather
+    // than repeated at each call site.
+    //
+    // What does NOT carry over is the auto body's `if n < 1 { n = 1 }` floor. Go needs it because its
+    // subtraction over concurrently-changing scheduler state can transiently go negative; the registry
+    // cannot report fewer goroutines than the caller's own, so there is no nonsense to clamp and a
+    // floor could only hide a real zero if one ever arose. The count's measured divergence — early by
+    // one climbing, late to decay — is in this file's Honest-divergences ledger.
+    internal static int32 gcount()
+    {
+        return (int32)Goroutine.Count;
     }
 
     // totalMutexWaitTimeNanos sums the mutex wait time observed by the runtime. Go's body loads
