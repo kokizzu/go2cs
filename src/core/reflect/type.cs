@@ -412,7 +412,7 @@ internal static abiꓸName newName(@string n, @string tag, bool exported, bool e
     // in a method set.
     // See https://golang.org/ref/spec#Uniqueness_of_identifiers
     public @string PkgPath;
-    public ΔType Type; // method type
+    public ΔType Type;  // method type
     public ΔValue Func; // func with receiver as first argument
     public nint Index;  // index for Type.Method
 }
@@ -465,21 +465,27 @@ internal static slice<@string> kindNames = new golib.SparseArray<@string>{
 // Implemented in the runtime package.
 //
 //go:noescape
-internal static partial @unsafe.Pointer resolveNameOff(@unsafe.Pointer ptrInModule, int32 off);
+internal static @unsafe.Pointer resolveNameOff(@unsafe.Pointer ptrInModule, int32 off) {
+    return go.runtime_package.reflect_resolveNameOff(ptrInModule, off);
+}
 
 // resolveTypeOff resolves an *rtype offset from a base type.
 // The (*rtype).typeOff method is a convenience wrapper for this function.
 // Implemented in the runtime package.
 //
 //go:noescape
-internal static partial @unsafe.Pointer resolveTypeOff(@unsafe.Pointer rtype, int32 off);
+internal static @unsafe.Pointer resolveTypeOff(@unsafe.Pointer rtype, int32 off) {
+    return go.runtime_package.reflect_resolveTypeOff(rtype, off);
+}
 
 // resolveTextOff resolves a function pointer offset from a base type.
 // The (*rtype).textOff method is a convenience wrapper for this function.
 // Implemented in the runtime package.
 //
 //go:noescape
-internal static partial @unsafe.Pointer resolveTextOff(@unsafe.Pointer rtype, int32 off);
+internal static @unsafe.Pointer resolveTextOff(@unsafe.Pointer rtype, int32 off) {
+    return go.runtime_package.reflect_resolveTextOff(rtype, off);
+}
 
 // addReflectOff adds a pointer to the reflection lookup map in the runtime.
 // It returns a new ID that can be used as a typeOff or textOff, and will
@@ -495,7 +501,9 @@ internal static partial @unsafe.Pointer resolveTextOff(@unsafe.Pointer rtype, in
 //
 //go:linkname addReflectOff
 //go:noescape
-internal static partial int32 addReflectOff(@unsafe.Pointer ptr);
+internal static int32 addReflectOff(@unsafe.Pointer ptr) {
+    return go.runtime_package.reflect_addReflectOff(ptr);
+}
 
 // resolveReflectName adds a name to the reflection lookup map in the runtime.
 // It returns a new nameOff that can be used to refer to the pointer.
@@ -874,7 +882,7 @@ internal static (ΔMethod m, bool ok) MethodByName(this ж<interfaceType> Ꮡt, 
     // field name. It is empty for upper case (exported) field names.
     // See https://golang.org/ref/spec#Uniqueness_of_identifiers
     public @string PkgPath;
-    public ΔType Type;    // field type
+    public ΔType Type;      // field type
     public StructTag Tag; // field tag string
     public uintptr Offset;   // offset within struct, in bytes
     public slice<nint> Index; // index sequence for Type.FieldByIndex

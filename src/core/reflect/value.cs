@@ -2079,8 +2079,8 @@ public static SelectDir SelectDefault => 3; // default
 // When a receive operation is selected, the received Value is returned by Select.
 [GoType] partial struct SelectCase {
     public SelectDir Dir; // direction of case
-    public ΔValue Chan;   // channel to use (for send or receive)
-    public ΔValue Send;   // value to send (for send)
+    public ΔValue Chan;     // channel to use (for send or receive)
+    public ΔValue Send;     // value to send (for send)
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

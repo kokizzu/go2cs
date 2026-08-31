@@ -709,7 +709,7 @@ internal static (slice<@unsafe.Pointer>, slice<slice<int32>>) reflect_typelinks(
 // See go.dev/issue/67401.
 //
 //go:linkname reflect_resolveNameOff reflect.resolveNameOff
-internal static @unsafe.Pointer reflect_resolveNameOff(@unsafe.Pointer ptrInModule, int32 off) {
+public static @unsafe.Pointer reflect_resolveNameOff(@unsafe.Pointer ptrInModule, int32 off) {
     return new @unsafe.Pointer(resolveNameOff(ptrInModule, ((nameOff)off)).Bytes);
 }
 
@@ -727,7 +727,7 @@ internal static @unsafe.Pointer reflect_resolveNameOff(@unsafe.Pointer ptrInModu
 // See go.dev/issue/67401.
 //
 //go:linkname reflect_resolveTypeOff reflect.resolveTypeOff
-internal static @unsafe.Pointer reflect_resolveTypeOff(@unsafe.Pointer Δrtype, int32 off) {
+public static @unsafe.Pointer reflect_resolveTypeOff(@unsafe.Pointer Δrtype, int32 off) {
     return new @unsafe.Pointer(toRType((ж<_type>)(uintptr)(Δrtype)).typeOff(((typeOff)off)));
 }
 
@@ -743,7 +743,7 @@ internal static @unsafe.Pointer reflect_resolveTypeOff(@unsafe.Pointer Δrtype, 
 // See go.dev/issue/67401.
 //
 //go:linkname reflect_resolveTextOff reflect.resolveTextOff
-internal static @unsafe.Pointer reflect_resolveTextOff(@unsafe.Pointer Δrtype, int32 off) {
+public static @unsafe.Pointer reflect_resolveTextOff(@unsafe.Pointer Δrtype, int32 off) {
     return (uintptr)toRType((ж<_type>)(uintptr)(Δrtype)).textOff(((textOff)off));
 }
 
@@ -764,7 +764,7 @@ internal static @unsafe.Pointer reflectlite_resolveTypeOff(@unsafe.Pointer Δrty
 // reflect_addReflectOff adds a pointer to the reflection offset lookup map.
 //
 //go:linkname reflect_addReflectOff reflect.addReflectOff
-internal static int32 reflect_addReflectOff(@unsafe.Pointer ptr) {
+public static int32 reflect_addReflectOff(@unsafe.Pointer ptr) {
     reflectOffsLock();
     if (reflectOffs.m == default!) {
         reflectOffs.m = new map<int32, @unsafe.Pointer>();
