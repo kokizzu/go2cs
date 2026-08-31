@@ -664,6 +664,31 @@ public static partial class GoReflect
     // Memoized WHOLE, not just its [GoType] gate: the answer is one per-type-immutable
     // ConstructorInfo, and TryConvertTo reaches this per VALUE from reflect.Value.Set /
     // SetMapIndex / Call / Convert — so the constructor scan was repeated per call too.
+    //
+    // THE BINDING FLAGS ARE LOAD-BEARING, and public-only was a latent bug the W3 accessibility arc
+    // made reachable — the same shape TypeParamCaster carried in builtin.TypeParamConversions.cs.
+    // A wrapper for a Go-UNEXPORTED named type is emitted with an `internal` underlying-value
+    // constructor (`internal namedPlainBytes(slice<byte> value)`), so a public-only scan sees only
+    // the two PUBLIC forms — the make ctor `(nint length, nint capacity, nint low)`, whose declared
+    // arity is 3, and the `(NilType)` form this loop excludes by design — finds no one-argument
+    // candidate, and answers null. Null here does not degrade: it silently DELETES Go's
+    // named/unnamed assignability rule for every unexported named type, so `reflect.Value.Set` of a
+    // raw underlying into such a slot is refused as unassignable. Measured on ReflectBridgeClosure,
+    // where it surfaced two arms away as `panic: reflect.Value.SetBytes of non-byte slice` —
+    // TryByteSliceAs had already spelled the ELEMENT correctly and was refused only when it asked
+    // this probe for the `type namedPlainBytes []byte` wrapper.
+    //
+    // The fix is on the PROBE, not on the generated accessibility. That constructor is golib
+    // MARSHALLING surface — Go has no such member, and Go exportedness is decided by the Go name's
+    // case, never by C# accessibility. Promoting it to public to satisfy a probe would widen the C#
+    // surface for something Go never asked for, which is never-more-permissive-than-Go pointing the
+    // other way; a probe reading members golib itself owns is not a permission question. The sibling
+    // probe on this same shape — TryUnwrapWrapperValue's `m_value` field — was already NonPublic, so
+    // this only brings the constructor half into step with the field half.
+    //
+    // Widening cannot make the scan ambiguous: the emitted wrapper set is exactly {make ctor (arity
+    // 3, public), underlying ctor (arity 1), NilType ctor (arity 1, excluded)}, so precisely one
+    // candidate qualifies whether or not it is public.
     private static ConstructorInfo? wrapperConstructorOf(Type t)
     {
         return s_wrapperConstructors.GetOrAdd(t, static type =>
@@ -671,7 +696,8 @@ public static partial class GoReflect
             if (goTypeMarkerOf(type) is null)
                 return null;
 
-            foreach (ConstructorInfo ctor in type.GetConstructors())
+            foreach (ConstructorInfo ctor in type.GetConstructors(
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
             {
                 ParameterInfo[] parameters = ctor.GetParameters();
 

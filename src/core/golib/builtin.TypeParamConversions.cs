@@ -100,21 +100,42 @@ public static partial class builtin
     }
 
     // Reflection-cached bridge for a numeric wrapper instantiation: reads/writes the wrapper
-    // through its public Value member and single-argument constructor. A generated
-    // [GoType("num:*")] wrapper exposes Value as a PROPERTY; handwritten wrappers (golib
-    // uintptr, the managed-referent manual types) expose a public FIELD so Interlocked/Volatile
-    // seams can take `ref x.Value` - probe both. Static per-T caches keep the reflection cost
-    // to first use.
+    // through its Value member and single-argument constructor. A generated [GoType("num:*")]
+    // wrapper exposes Value as a PROPERTY; handwritten wrappers (golib uintptr, the
+    // managed-referent manual types) expose a FIELD so Interlocked/Volatile seams can take
+    // `ref x.Value` - probe both. Static per-T caches keep the reflection cost to first use.
+    //
+    // THE BINDING FLAGS ARE LOAD-BEARING, and public-only was a latent bug that the W3
+    // accessibility arc made reachable. A wrapper for a Go-UNEXPORTED named type is emitted with
+    // `internal` members — `internal stringID(uint64 value)` and `internal uint64 Value` — so a
+    // public-only probe reads them as ABSENT and the caster throws "no numeric wrapper surface",
+    // which names a missing member rather than an invisible one. Measured on
+    // NamedNumericOperatorConstraint (`type stringID uint64`; the NAME says string, the TYPE is a
+    // named unsigned).
+    //
+    // The fix is on the PROBE, not on the generated accessibility, and that direction is the whole
+    // point: `Value` and the single-argument constructor are golib MARSHALLING surface — Go has no
+    // such member, and ConvertToType is reached only from golib's own element conversion (the `copy`
+    // path between named types). Promoting them to public to satisfy a probe would widen the C#
+    // surface for something Go never asked for, which is the never-more-permissive-than-Go rule
+    // pointing the other way. A probe reading members it owns is not a permission question.
     private static class TypeParamCaster<[DynamicallyAccessedMembers(
         DynamicallyAccessedMemberTypes.PublicConstructors |
+        DynamicallyAccessedMemberTypes.NonPublicConstructors |
         DynamicallyAccessedMemberTypes.PublicProperties |
-        DynamicallyAccessedMemberTypes.PublicFields
+        DynamicallyAccessedMemberTypes.NonPublicProperties |
+        DynamicallyAccessedMemberTypes.PublicFields |
+        DynamicallyAccessedMemberTypes.NonPublicFields
     )] T>
     {
-        private static readonly PropertyInfo? s_valueProperty = typeof(T).GetProperty("Value");
-        private static readonly FieldInfo? s_valueField = s_valueProperty is null ? typeof(T).GetField("Value") : null;
+        private const BindingFlags ValueSurface = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        private static readonly PropertyInfo? s_valueProperty = typeof(T).GetProperty("Value", ValueSurface);
+        private static readonly FieldInfo? s_valueField = s_valueProperty is null ? typeof(T).GetField("Value", ValueSurface) : null;
         private static readonly Type? s_valueType = s_valueProperty?.PropertyType ?? s_valueField?.FieldType;
-        private static readonly ConstructorInfo? s_valueCtor = s_valueType is null ? null : typeof(T).GetConstructor([s_valueType]);
+        private static readonly ConstructorInfo? s_valueCtor = s_valueType is null
+            ? null
+            : typeof(T).GetConstructor(ValueSurface, binder: null, [s_valueType], modifiers: null);
 
         public static T FromUInt64(ulong value)
         {
