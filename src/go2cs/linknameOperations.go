@@ -523,6 +523,50 @@ var linknamePushTargets = map[string]linknamePush{
 	"os/signal.signal_ignored":      {source: "runtime.signal_ignored", bareDecl: true},
 	"os/signal.signal_recv":         {source: "runtime.signal_recv", bareDecl: true},
 	"os/signal.signalWaitUntilIdle": {source: "runtime.signalWaitUntilIdle", bareDecl: true},
+	// reflect's FOUR offset bridges to the runtime, pushed by runtime/runtime1.go. Until these rows
+	// existed all four took throwing PartialStubGenerator stubs, and reflect's entire name/type/text
+	// offset surface was unimplemented — `addReflectOff` is simply the one a test reached first.
+	//
+	// WHAT IT COST, measured (reflect, 2026-08-30): TestOffsetLock's four goroutines each threw
+	// `NotImplementedException: addReflectOff` in under a second. The dying goroutines never reached
+	// their `wg.Done()`, so the test parked in `sync.Wait` forever — an UNBOUNDED HANG that ate a
+	// 40-minute deadline and truncated reflect's whole suite to a meaningless 99 pass / 93 fail /
+	// 1 skip. (The hang half is answered separately in the test host; this row answers the throw.)
+	//
+	// THE DIRECTION IS SAFE, and that is the load-bearing fact rather than an assumption:
+	// `src/core/reflect/reflect.csproj` already carries a ProjectReference on
+	// `core/runtime/runtime.csproj`, so the pusher is UPSTREAM of the target and the reference the
+	// forwarder needs is already there. This is the mirror of W1's direction — the case
+	// linknamePullWouldCycle exists to refuse — and binding it closes no cycle at all.
+	//
+	// EACH IS HONORABLE, by this registry's own standard (the os.runtime_args test: a forwarder must
+	// not hand back "a plausible-looking wrong answer"). All four pushed bodies are ordinary converted
+	// Go over `runtime.reflectOffs`, a MANAGED map, and the resolvers share one shape:
+	//
+	//   1. walk `firstmoduledata` for a compile-time offset — empty in the managed model, so no match;
+	//   2. fall back to the `reflectOffs` map, which is exactly where addReflectOff put it;
+	//   3. otherwise `throw` in Go's own shape.
+	//
+	// So the reflect-MINTED round trip (addReflectOff -> resolveNameOff/TypeOff/TextOff) runs end to
+	// end through the managed map — the round trip TestOffsetLock exercises — and an offset that
+	// genuinely has no managed answer fails LOUDLY rather than quietly. Nothing here can return a
+	// confident wrong value, which is the only condition on which these rows are honorable.
+	//
+	// SHAPES DIFFER and are recorded per row, because the matcher fails closed in both directions:
+	// reflect/type.go gives addReflectOff a one-arg `//go:linkname addReflectOff` HANDLE, while the
+	// three resolvers are the older BARE shape — `//go:noescape` and a prose "Implemented in the
+	// runtime package", no directive of their own.
+	//
+	// internal/reflectlite's siblings are deliberately NOT added here. runtime pushes them too
+	// (reflectlite_resolveNameOff / reflectlite_resolveTypeOff), but reflectlite already answers those
+	// partials from a hand-written `type_impl.cs`, and a converter-emitted body would collide with it —
+	// the exact hazard this registry's header warns about. Those placeholders `return default!`, which
+	// IS the plausible-wrong-answer shape, so replacing them with real forwarders is a genuine
+	// improvement — but it means REMOVING a hand-own, which is its own change with its own gates.
+	"reflect.addReflectOff":  {source: "runtime.reflect_addReflectOff"},
+	"reflect.resolveNameOff": {source: "runtime.reflect_resolveNameOff", bareDecl: true},
+	"reflect.resolveTypeOff": {source: "runtime.reflect_resolveTypeOff", bareDecl: true},
+	"reflect.resolveTextOff": {source: "runtime.reflect_resolveTextOff", bareDecl: true},
 }
 
 // linknamePushSources is the reverse index of the FORWARDED entries of linknamePushTargets: the set
