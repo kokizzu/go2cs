@@ -531,25 +531,7 @@ public static error /*neterr*/ NetShareDel(ж<uint16> ᏑserverName, ж<uint16> 
     return neterr;
 }
 
-public static error /*neterr*/ NetUserGetLocalGroups(ж<uint16> ᏑserverName, ж<uint16> ᏑuserName, uint32 level, uint32 flags, ж<ж<byte>> Ꮡbuf, uint32 prefMaxLen, ж<uint32> ᏑentriesRead, ж<uint32> ᏑtotalEntries) {
-    error neterr = default!;
-
-    var ᴋ44 = ᏑserverName;
-    var ᴋ45 = ᏑuserName;
-    var ᴋ46 = Ꮡbuf;
-    var ᴋ47 = ᏑentriesRead;
-    var ᴋ48 = ᏑtotalEntries;
-        var (r0, _, _) = syscall.Syscall9(procNetUserGetLocalGroups.Addr(), 8, (uintptr)ᴋ44, (uintptr)ᴋ45, (uintptr)level, (uintptr)flags, (uintptr)ᴋ46, (uintptr)prefMaxLen, (uintptr)ᴋ47, (uintptr)ᴋ48, 0);
-    System.GC.KeepAlive(ᴋ44);
-    System.GC.KeepAlive(ᴋ45);
-    System.GC.KeepAlive(ᴋ46);
-    System.GC.KeepAlive(ᴋ47);
-    System.GC.KeepAlive(ᴋ48);
-    if (r0 != 0) {
-        neterr = ((syscall.Errno)r0);
-    }
-    return neterr;
-}
+// go2cs generated this placeholder — func NetUserGetLocalGroups is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static void rtlGetVersion(ж<_OSVERSIONINFOW> Ꮡinfo) {
     var ᴋ49 = Ꮡinfo;
