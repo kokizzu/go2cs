@@ -501,12 +501,87 @@ public static partial class GoReflect
 
         if (ret == typeof(void))
             outs = Type.EmptyTypes;
-        else if (ret.IsGenericType && ret.FullName?.StartsWith("System.ValueTuple`", StringComparison.Ordinal) == true)
-            outs = ret.GetGenericArguments();
+        else if (IsValueTuple(ret))
+            outs = FlattenValueTuple(ret);
         else
             outs = [ret];
 
         return true;
+    }
+
+    /// <summary>Whether <paramref name="type"/> is a <c>System.ValueTuple</c> instantiation.</summary>
+    private static bool IsValueTuple(Type type)
+    {
+        return type.IsGenericType && type.FullName?.StartsWith("System.ValueTuple`", StringComparison.Ordinal) == true;
+    }
+
+    /// <summary>
+    /// The Go RESULT list a multi-return delegate's tuple carries, flattened through any nesting.
+    /// </summary>
+    /// <remarks>
+    /// A ValueTuple holds at most SEVEN values inline; an eighth generic argument is TRest, itself a
+    /// ValueTuple carrying the remainder, and the nesting repeats. <c>GetGenericArguments</c> alone
+    /// therefore answers the tuple's SHAPE, not Go's result list: for a nine-result func it returns
+    /// eight entries whose last is <c>ValueTuple&lt;T8, T9&gt;</c> — one short, and with a type in the
+    /// final slot that is not a Go result at all.
+    ///
+    /// That is a wrong ANSWER rather than a refusal, which is what made it costly: reflect's
+    /// <c>NumOut</c>/<c>Out</c> read this list, and MakeFunc compares <c>len(results)</c> against it,
+    /// so a Go func returning nine values met "reflect: wrong return count from function created by
+    /// MakeFunc" — an error naming the caller's own return statement for a miscount this made.
+    /// Measured on reflect's TestReflectMakeFuncCallABI, the suite's largest mismatch family.
+    ///
+    /// Walking TRest is the whole fix, and it is the exact mirror of the packing side in
+    /// reflect/makefunc_impl.cs — one side reads the shape, the other builds it, and they have to
+    /// agree about where the seam is.
+    /// </remarks>
+    private static Type[] FlattenValueTuple(Type tuple)
+    {
+        // Count first, then fill: two cheap walks over a chain that is at most a few links long,
+        // and no collection type this file does not already import.
+        int count = 0;
+        Type level = tuple;
+
+        while (true)
+        {
+            Type[] elements = level.GetGenericArguments();
+
+            // Eight arguments means the last is TRest — but only when it is itself a tuple. A
+            // legitimate eight-element shape whose final argument is an ordinary type is not a nest
+            // and must be taken whole.
+            if (elements.Length == 8 && IsValueTuple(elements[7]))
+            {
+                count += 7;
+                level = elements[7];
+                continue;
+            }
+
+            count += elements.Length;
+            break;
+        }
+
+        Type[] flattened = new Type[count];
+        int next = 0;
+        level = tuple;
+
+        while (true)
+        {
+            Type[] elements = level.GetGenericArguments();
+
+            if (elements.Length == 8 && IsValueTuple(elements[7]))
+            {
+                for (int i = 0; i < 7; i++)
+                    flattened[next++] = elements[i];
+
+                level = elements[7];
+                continue;
+            }
+
+            for (int i = 0; i < elements.Length; i++)
+                flattened[next++] = elements[i];
+
+            return flattened;
+        }
     }
 
     // -------- variadic invocation (Value.Call over a `params Span<T>` tail) --------
