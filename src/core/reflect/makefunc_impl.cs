@@ -75,15 +75,20 @@ public static ΔValue MakeFunc(ΔType typ, Func<slice<ΔValue>, slice<ΔValue>> 
     }
     // A Go multi-return arrives back as the delegate's declared ValueTuple — captured from the
     // Invoke signature rather than re-derived from outs, so the packed tuple is the exact type the
-    // delegate returns. ValueTuple nests beyond seven elements (TRest), where a flat constructor
-    // lookup no longer holds; no Go func in the corpus returns eight values, so that shape fails
-    // loud rather than packing a wrong tuple.
+    // delegate returns.
+    //
+    // Beyond SEVEN results the tuple NESTS: `ValueTuple<T1..T7, TRest>` where TRest is itself a
+    // ValueTuple carrying the remainder, recursively. A flat `CreateInstance(returnType, values)`
+    // cannot express that — it hands eight arguments to a constructor whose eighth parameter is a
+    // tuple, not a value — so this shape used to refuse outright, on the stated grounds that no Go
+    // func in the corpus returned eight values.
+    //
+    // That condition is now FALSE, which is exactly the retirement the refusal recorded: reflect's
+    // own `TestReflectMakeFuncCallABI` is the demonstrated consumer, and it is 27 verdicts — the
+    // largest single mismatch family in reflect's suite (measured 2026-08-31). The subtests report
+    // as EMPTY rather than failed, because the parent throws before any of them produces a verdict,
+    // which is why the family reads as absent rather than broken.
     System.Type returnType = st.GetMethod("Invoke")!.ReturnType;
-    if (outs.Length > 7) {
-        throw new NotImplementedException(
-            "reflect.MakeFunc of a func type with " + outs.Length.ToString() +
-            " results is not implemented (ValueTuple nests beyond seven; no demonstrated consumer)");
-    }
     nint[]?[]? paramDims = Ꮡt.Value.funcParamDims;
 
     object? invoke(object?[] rawArgs) {
@@ -108,7 +113,7 @@ public static ΔValue MakeFunc(ΔType typ, Func<slice<ΔValue>, slice<ΔValue>> 
         for (int i = 0; i < outs.Length; i++) {
             marshalled[i] = marshalMakeFuncResult(results[i], outs[i]);
         }
-        return outs.Length == 1 ? marshalled[0] : System.Activator.CreateInstance(returnType, marshalled);
+        return outs.Length == 1 ? marshalled[0] : packResultTuple(returnType, marshalled, 0);
     }
 
     Delegate del = GoReflect.MakeGoFuncDelegate(st, invoke);
@@ -117,6 +122,34 @@ public static ΔValue MakeFunc(ΔType typ, Func<slice<ΔValue>, slice<ΔValue>> 
     var v = new ΔValue(Ꮡt, default!, ((flag)(uintptr)(nuint)Func));
     v.boxed = del;
     return v;
+}
+
+// The delegate's declared result tuple, built from the marshalled results starting at offset.
+//
+// A C# ValueTuple carries at most SEVEN values inline; an eighth generic argument is TRest, itself a
+// ValueTuple holding the remainder, and the nesting repeats. So the shape is decided by the TYPE,
+// never by the count: read how many generic arguments returnType actually has, fill the inline ones
+// from the flat results, and when there is a TRest slot, recurse into it with the offset advanced by
+// the seven just consumed. A Go func returning nine values lands as
+// `ValueTuple<T1..T7, ValueTuple<T8, T9>>` and this builds exactly that.
+//
+// Driving off the type rather than off `outs.Length` is what makes it correct for every arity
+// without a table: the delegate factory already chose the tuple shape, and this only has to agree
+// with it. `CreateInstance` on each level is the same call the flat path always used.
+private static object? packResultTuple(System.Type tupleType, object?[] values, int offset) {
+    System.Type[] elements = tupleType.GetGenericArguments();
+    object?[] args = new object?[elements.Length];
+    int inline = elements.Length == 8 ? 7 : elements.Length;
+
+    for (int i = 0; i < inline; i++) {
+        args[i] = values[offset + i];
+    }
+
+    if (elements.Length == 8) {
+        args[7] = packResultTuple(elements[7], values, offset + 7);
+    }
+
+    return System.Activator.CreateInstance(tupleType, args);
 }
 
 // One result Value, marshalled into the delegate's CLR result slot under the SAME assignability
