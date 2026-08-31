@@ -293,6 +293,13 @@ Examples:
 		}
 	})
 
+	// Is this binary itself current? Every harness that runs the converter already asks, but the
+	// paths that consult NOTHING are the hand-invoked ones — and their caller is a person at a
+	// shell, so the only place the question can be asked for them is here. Advisory and never
+	// fatal, on the -go2cspath precedent; silent when no source tree sits beside the executable.
+	// See converterStaleness.go.
+	warnIfConverterStale()
+
 	// Normalize the RESOLVED GOROOT once, here, rather than at each of the dozen sites that compare a
 	// path against it. filepath.Clean folds the spelling variants of one directory that this host can
 	// still resolve — forward slashes on Windows, a trailing separator, a doubled one, an interior
