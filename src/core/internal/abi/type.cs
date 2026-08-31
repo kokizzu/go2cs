@@ -23,7 +23,7 @@ partial class abi_package {
     public TFlag TFlag;   // extra type information flags
     public uint8 Align_;   // alignment of variable with this type
     public uint8 FieldAlign_;   // alignment of struct field with this type
-    public ΔKind Kind_;  // enumeration for C
+    public ΔKind Kind_;    // enumeration for C
     // function for comparing objects of this type
     // (ptr to object A, ptr to object B) -> ==?
     public Func<@unsafe.Pointer, @unsafe.Pointer, bool> Equal;
@@ -357,15 +357,7 @@ public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
 
 // go2cs generated this placeholder — func ArrayType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// FuncType returns t cast to a *FuncType, or nil if its tag does not match.
-public static ж<ΔFuncType> FuncType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    if (t.Kind() != Func) {
-        return default!;
-    }
-    return Ꮡt.Reinterpret<Type, ΔFuncType>();
-}
+// go2cs generated this placeholder — func FuncType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // InterfaceType returns t cast to a *InterfaceType, or nil if its tag does not match.
 public static ж<ΔInterfaceType> InterfaceType(this ж<Type> Ꮡt) {
@@ -393,7 +385,7 @@ public static ж<ΔInterfaceType> InterfaceType(this ж<Type> Ꮡt) {
 
 [GoType] partial struct ΔInterfaceType {
     public partial ref Type Type { get; }
-    public ΔName PkgPath;    // import path
+    public ΔName PkgPath;      // import path
     public slice<Imethod> Methods; // sorted by hash
 }
 
@@ -500,38 +492,9 @@ public static ж<Type> Out(this ж<ΔFuncType> Ꮡt, nint i) {
     return (Ꮡt.OutSlice()[i]);
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string tInCount0ˢ = "t.inCount > 0"u8;
+// go2cs generated this placeholder — func InSlice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static unsafe slice<ж<Type>> InSlice(this ж<ΔFuncType> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    var uadd = /* unsafe.Sizeof(*t) */ (uintptr)56;
-    if ((TFlag)(t.TFlag & TFlagUncommon) != 0) {
-        uadd += /* unsafe.Sizeof(UncommonType{}) */ (uintptr)16;
-    }
-    if (t.InCount == 0) {
-        return default!;
-    }
-    return new slice<ж<Type>>(new ReadOnlySpan<ж<Type>>((Type**)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), uadd, tInCount0ˢ)), (int)(t.InCount)));
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string outCount0ˢ = "outCount > 0"u8;
-
-public static unsafe slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    var outCount = (uint16)t.NumOut();
-    if (outCount == 0) {
-        return default!;
-    }
-    var uadd = /* unsafe.Sizeof(*t) */ (uintptr)56;
-    if ((TFlag)(t.TFlag & TFlagUncommon) != 0) {
-        uadd += /* unsafe.Sizeof(UncommonType{}) */ (uintptr)16;
-    }
-    return new slice<ж<Type>>(new ReadOnlySpan<ж<Type>>((Type**)(uintptr)(addChecked((uintptr)@unsafe.Pointer.FromRef(ref t), uadd, outCount0ˢ)) + (int)(t.InCount), (int)(t.InCount + outCount) - (int)(t.InCount)));
-}
+// go2cs generated this placeholder — func OutSlice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 [GoRecv] public static bool IsVariadic(this ref ΔFuncType t) {
     return (uint16)(t.OutCount & ((uint16)(1 << (int)(15)))) != 0;
@@ -543,7 +506,7 @@ public static unsafe slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
 }
 
 [GoType] partial struct StructField {
-    public ΔName Name;  // name is always non-empty
+    public ΔName Name;    // name is always non-empty
     public ж<Type> Typ; // type of field
     public uintptr Offset; // byte offset of field
 }

@@ -297,6 +297,99 @@ public static ж<ΔArrayType> ArrayType(this ж<Type> Ꮡt) {
     return s_arrayTypes.GetOrAdd(Ꮡt, static box => synthesizeArrayType(box));
 }
 
+// ==== the FUNC specialization — the same operation, and the same answer ==========================
+//
+// FuncType is the third member of the prefix-downcast family StructType and ArrayType above already
+// answer, and it failed the same way: the auto body tag-checks correctly (`Kind() != Func → nil`,
+// Go's own "or nil if its tag does not match") and then reaches
+// `Reinterpret<Type, ΔFuncType>`, which golib rightly refuses — ΔFuncType is larger than Type and
+// carries managed references, so aliasing the header's storage as the wider record would fabricate
+// references. The refusal is correct; what it PRODUCES is a nil one frame up, where reflect's
+// funcLayout renames it `funcLayout of non-func type` for a type that is perfectly good.
+//
+// Measured consumer: reflect's TestFuncLayout, whose export_test reaches funcLayout through exactly
+// that downcast. 10 comparison rows on this host.
+//
+// InSlice/OutSlice had to come with it, and they are the reason fixing the accessor alone is not
+// enough. Go stores a func's parameter and result descriptors in the memory IMMEDIATELY AFTER the
+// FuncType record — the auto bodies walk there by pointer arithmetic (`unsafe.Sizeof(*t)`, plus 16
+// when TFlagUncommon is set) and build a span of `*Type` over it. That layout is the linker's, and
+// the managed model has no equivalent; worse, the span's element type is `ж<Type>`, a MANAGED
+// reference, so reading it over a fabricated address is the same class of type-safety break the
+// descriptor downcast itself was refused for.
+//
+// Both are synthesized instead, from the descriptor's carried System.Type over GoReflect.TryFuncShape
+// — the SAME projection reflect's own hand-owned rtype.NumIn/In/NumOut/Out use one layer up
+// (value_impl.cs), so the descriptor layer and the reflect layer cannot disagree about a func's
+// shape. That is the property the Elem/Key hand-owns above were written for, applied to funcs.
+private static readonly System.Collections.Concurrent.ConcurrentDictionary<ж<Type>, ж<ΔFuncType>> s_funcTypes = new();
+
+// FuncType returns t cast to a *FuncType, or nil if its tag does not match.
+public static ж<ΔFuncType> FuncType(this ж<Type> Ꮡt) {
+    if (Ꮡt == nil || Ꮡt.Value.Kind() != Func || Ꮡt.Value.sysType is null) {
+        return default!;
+    }
+    return s_funcTypes.GetOrAdd(Ꮡt, static box => synthesizeFuncType(box));
+}
+
+private static ж<ΔFuncType> synthesizeFuncType(ж<Type> Ꮡt) {
+    if (!GoReflect.TryFuncShape(Ꮡt.Value.sysType!, out System.Type[]? ins, out System.Type[]? outs, out bool isVariadic)) {
+        return default!;
+    }
+
+    // Go packs the variadic flag into OutCount's top bit (abi/type.go: "top bit is set if last input
+    // parameter is ..."), and NumOut masks it back off. Carrying the bit rather than a separate
+    // field is what lets IsVariadic/NumOut stay the auto conversions they already are.
+    uint16 outCount = (uint16)outs.Length;
+
+    if (isVariadic) {
+        outCount |= 1 << 15;
+    }
+    return new StandardBox<ΔFuncType>(new ΔFuncType(
+        Type: Ꮡt.Value,
+        InCount: (uint16)ins.Length,
+        OutCount: outCount
+    ));
+}
+
+// The parameter descriptors, derived rather than walked. Per-parameter array dims come from the
+// descriptor's own funcParamDims cargo, which exists for exactly this: an array parameter's LENGTH
+// is not recoverable from `array<T>` alone.
+private static slice<ж<Type>> synthesizeFuncSide(ж<ΔFuncType> Ꮡt, bool wantIns) {
+    if (Ꮡt == nil) {
+        return default!;
+    }
+    System.Type? st = Ꮡt.Value.Type.sysType;
+
+    if (st is null || !GoReflect.TryFuncShape(st, out System.Type[]? ins, out System.Type[]? outs, out _)) {
+        return default!;
+    }
+    System.Type[] side = wantIns ? ins : outs;
+
+    if (side.Length == 0) {
+        return default!;
+    }
+    nint[]?[]? dims = Ꮡt.Value.Type.funcParamDims;
+    var descriptors = new ж<Type>[side.Length];
+
+    for (int i = 0; i < side.Length; i++) {
+        // funcParamDims indexes the INPUTS; results carry no dims cargo today, which is a known
+        // narrowing rather than an oversight — an array RESULT's length is the same gap one step
+        // further out, and nothing measured reaches it yet.
+        nint[]? paramDims = wantIns && dims is not null && i < dims.Length ? dims[i] : null;
+        descriptors[i] = synthType(side[i], paramDims);
+    }
+    return new slice<ж<Type>>(descriptors);
+}
+
+public static slice<ж<Type>> InSlice(this ж<ΔFuncType> Ꮡt) {
+    return synthesizeFuncSide(Ꮡt, wantIns: true);
+}
+
+public static slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
+    return synthesizeFuncSide(Ꮡt, wantIns: false);
+}
+
 // ==== the descriptor ACCESSORS that reach an element or a key: Elem() / Key() ====
 //
 // The SAME prefix-downcast idiom as the specializations above, one level in: Go's Elem() casts the

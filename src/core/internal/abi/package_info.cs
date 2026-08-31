@@ -63,7 +63,7 @@ using static go.@internal.abi_package;
 [assembly: go.GoPositionMap("internal/abi/escape.go", "escape.cs", "AAkmAAoCgu6SgpQ=")]
 [assembly: go.GoPositionMap("internal/abi/funcpc.go", "funcpc.cs", "AAgsAA4S")]
 [assembly: go.GoPositionMap("internal/abi/switch.go", "switch.cs", "AB9AgoK4lKQ=")]
-[assembly: go.GoPositionMap("internal/abi/type.go", "type.cs", "AFWIApKClAAiWvKCgIKkpoCkgqiQppKokqaCABkuooKU1qKClAACFPIAEjKCAD9EsoKUlKSsrKysrKysAAhOsoKUAAQYsoKUqLKClKiQppCkgAAIEIKCgpSmooKClKiQAA8isqSSpJKkkqSSABpAgqaCpoKmgtaigoKUgpTUooKClIKClKaCAA0cggAlUqLaoqiSqJKoktqigoKCgoLMkoKUgqyygoKCgoKU6pKClIKokoKUgoKmgoKUgpSCgoKEgoKClIKClIKWgoKCgoKCgpY=")]
+[assembly: go.GoPositionMap("internal/abi/type.go", "type.cs", "AFWIApKClAAiWvKCgIKkpoCkgqiQppKokqaCABkuooKU1qKClAACFPIAEjKCAD9EsoKUlKSsrKysrKysAAhOsoKUAAYosoKUqJCmkKSAAAgQgoKClKaigoKUqJAADyKypJKkkqSSpJIAGkCCpoKmgqaCAAYyggANHIIAJVKi2qKokqiSqJLaooKCgoKCzJKClIKssoKCgoKClOqSgpSCqJKClIKCpoKClIKUgoKChIKCgpSCgpSCloKCgoKCgoKW")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
