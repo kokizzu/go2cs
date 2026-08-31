@@ -25,7 +25,40 @@ generalize.
 | MakeFunc results carry **no** direction and **no** result-side dims cargo | measured (`argChanDir=Unstamped`) |
 | 62 prefix-downcast sites / 17 target types / 13 files | measured (census) |
 | §4.3's remedy (IVT to the synthesis assembly, BOTH projects) | **built and measured** — full-census A/B, `TypeLoadException` 1 → 0, 0 regressions |
-| §4.1 record cargo, §4.2 shape cargo | **proposed, unbuilt** — rulings applied, gates listed |
+| §4.1 record cargo | **proposed, unbuilt — but now with a MEASURED CONSUMER** (§0.1) |
+| §4.2 shape cargo | **RETIRED on measurement** — its stated target blocks nothing (§0.1) |
+
+### 0.1 The 2026-08-31 re-measurement, which moved the two halves in OPPOSITE directions
+
+This design was written before reflect's suite had ever been run end to end. When it was
+(`-test-action all`, 2026-08-31) the baseline came back at **~115 mismatches / 52 already-disclosed**,
+and it settled both proposals — against the order this document originally recommended.
+
+**§4.2 shape cargo is RETIRED.** Its stated target was the MakeFunc result boundary, where a
+receive-only channel marshals into a bidirectional slot. That observation (§3) is still TRUE and is
+still a latent correctness gap — but it blocks **no verdict**. reflect's chan tests fail earlier and
+elsewhere: `TestChanOfDir` on the `typelinks` stub, `TestChan` on `makechan`, both reached before any
+marshalling happens. Implementing `funcResultDims`/`funcResultDirs` would have moved reflect's count
+by zero. Two corrections belong with it: `abi.synthType` ALREADY accepts a `GoChanDir`, so only
+per-result plumbing was ever missing; and the family that LOOKED like shape cargo's own —
+`TestReflectMakeFuncCallABI`, 27 rows, the largest in the suite — proved to be a ValueTuple ARITY
+refusal with nothing to do with cargo (fixed 2026-08-31, `068cbee60` + `d4b345c9c`; 27 → 3).
+
+**§4.1 record cargo is PROMOTED, and now has its first demonstrated consumer.** `TestFuncLayout` (9
+rows) fails as `reflect: funcLayout of non-func type <nil>`, because reflect's own `export_test.go`
+reaches it through `funcLayout(t.common().Reinterpret<abi.Type, abiꓸFuncType>(), …)` — §1's prefix
+downcast, verbatim. The refusal is correct at its own layer; what it PRODUCES is a nil argument one
+frame up, where `funcLayout` renames it a "non-func type" for a type that is perfectly good. That is
+exactly the operation §4.1 exists to make decidable, and it is the first time this item has had a
+measured consumer rather than a design argument.
+
+**Method note, because the reading was wrong twice before it was right.** The first baseline counted
+the C# test host's raw `"action":"fail"` records; those are not the verdict — the COMPARISON is, and
+it is what applies disclosures. That error made 39 already-disclosed alloc rows look like an
+undisclosed backlog and produced a recommendation that would have bought nothing. A second reading
+then made the disclosure signatures look drifted, which was an artifact of reading only the first 150
+characters of the failure text. Both were caught before anything was built on them; every number
+above comes from the comparison record, not the host stream.
 
 ---
 
@@ -136,7 +169,14 @@ The unifying claim: a descriptor box should carry **the most-derived record**, a
 carry **only what no managed type can express**. Today the first is missing entirely and the second is
 half-built, and each item above is a symptom of one of those.
 
-### 4.1 Record cargo — box the derived record, make the downcast a type test
+### 4.1 Record cargo — box the derived record, make the downcast a type test — **PROMOTED 2026-08-31**
+
+> **This is the arc's live item, and it now has a measured consumer.** `TestFuncLayout` (9 verdicts)
+> fails as `reflect: funcLayout of non-func type <nil>` because reflect's own `export_test.go` calls
+> `funcLayout(t.common().Reinterpret<abi.Type, abiꓸFuncType>(), …)` — §1's prefix downcast. The
+> refusal is right where it stands; what reaches `funcLayout` is a nil, reported as a bad TYPE rather
+> than as the refusal it is. Re-verify §1.1's 62-site census at head before sizing: it was taken
+> 2026-08-29 and this project's counts move.
 
 Let the descriptor box for a func type hold a `ΔFuncType`, not merely its `abi.Type` prefix. Then:
 
@@ -158,7 +198,13 @@ Open question for review: whether the derived record is boxed at descriptor **co
 one path; on-demand avoids widening every descriptor. I lean construction and want the argument
 tested.
 
-### 4.2 Shape cargo — complete it symmetrically
+### 4.2 Shape cargo — complete it symmetrically — **RETIRED 2026-08-31, see §0.1**
+
+> **Do not build this as a bank-path item.** Measured against reflect's full suite, the target below
+> blocks no verdict: the chan tests fail earlier, on the `typelinks` and `makechan` stubs, before any
+> marshalling is reached. The gap it describes is real but LATENT. It is also smaller than written —
+> `abi.synthType` already accepts a `GoChanDir`, so only the per-result plumbing is absent. Kept here
+> as the record of a correctness gap and of a retired proposal, not as work.
 
 `funcParamDims` proves the mechanism; it is simply incomplete. Extend the same descriptor cargo to:
 
