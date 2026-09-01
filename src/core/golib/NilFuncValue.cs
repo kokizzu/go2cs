@@ -35,3 +35,45 @@ public sealed class NilFuncValue
         Type = type;
     }
 }
+
+/// <summary>
+/// The FUNC boundary accessor — the delegate-shaped sibling of <c>ж&lt;T&gt;.OrTypedNil</c>.
+/// </summary>
+public static class NilFuncExtensions
+{
+    /// <summary>
+    /// Boxes a func value for an EMPTY-interface slot, carrying its type when the value is nil.
+    /// </summary>
+    /// <typeparam name="TDelegate">The Go func type's C# delegate — the eface type word.</typeparam>
+    /// <param name="value">The func value, which may be <c>null</c>.</param>
+    /// <remarks>
+    /// <para>
+    /// Go's nil func inside an interface is a VALUE with a dynamic type: <c>any((func())(nil))</c> is
+    /// a NON-nil interface, <c>%T</c> prints <c>func()</c>, and <c>reflect.TypeOf</c> answers that
+    /// func type rather than nil. A Go func lowers to a managed delegate whose nil IS <c>null</c>,
+    /// which is correct in every func-typed slot and type-erasing in an interface.
+    /// </para>
+    /// <para>
+    /// A CAST cannot carry the type across that boundary the way the pointer box does: <c>ж&lt;T&gt;</c>
+    /// is a value that holds its pointee type, so <c>(object)((ж&lt;T&gt;)nil)</c> keeps it, whereas
+    /// <c>(object)(Action)null</c> is simply <c>null</c> — the cast is erased at the box. That is why
+    /// the pointer boundary needs only a null-coalesce to a canonical box while the func boundary
+    /// needs a carrier, and why the variadic-func CAST the converter already emits pins the type only
+    /// for a NON-null value.
+    /// </para>
+    /// <para>
+    /// The converter emits this at every func-into-<c>any</c> site whose value can be null (the
+    /// <c>TypedNilFuncAccessor</c> symbol); a func literal or method group is never null and takes
+    /// nothing. A NON-empty interface target needs it not — no Go interface but the empty one can be
+    /// satisfied by a bare func type, since a func type has no methods.
+    /// </para>
+    /// </remarks>
+    public static object OrTypedNilFunc<TDelegate>(this TDelegate? value)
+        where TDelegate : Delegate
+    {
+        // The canonical instance, never a fresh carrier — two typed nils of one func type must
+        // compare reference-equal wherever the comparison is an untyped object reference compare,
+        // exactly as ж<T>.NilBox does for pointers.
+        return (object?)value ?? GoReflect.CanonicalNilFunc(typeof(TDelegate));
+    }
+}

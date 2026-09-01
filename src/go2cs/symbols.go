@@ -104,6 +104,23 @@ const NilDeferringDerefAccessor = "DerefOrNull()"
 // the receiver box itself (AdapterImplTemplate). Includes `()` as it is a method call.
 const TypedNilBoxAccessor = "OrTypedNil()"
 
+// TypedNilFuncAccessor is the golib extension method a FUNC takes on its way into an EMPTY
+// interface (`any`) - the delegate-shaped sibling of TypedNilBoxAccessor, and needed for the
+// same reason at the same boundary: `any((func())(nil))` is a NON-nil interface whose %T
+// prints `func()` and whose reflect.TypeOf answers that func type.
+//
+// What differs is WHY a cast cannot serve here. A pointer's canonical nil is a ж<T> VALUE that
+// holds its pointee type, so boxing it keeps the type; a func's nil is a null DELEGATE, and
+// `(object)(Action)null` is just `null` - the cast is erased at the box. The variadic-func cast
+// this boundary already emits therefore pins the dynamic type only for a NON-null value, and a
+// nil one needs a carrier (golib's NilFuncValue, interned by GoReflect.CanonicalNilFunc).
+//
+// Unlike the pointer arm, a nil CONVERSION is not exempt: `(*T)(nil)` already renders the
+// canonical box, while `(func())(nil)` renders `(Action)(default!)` - a cast of null, which is
+// exactly the shape that loses the word. Only a func LITERAL or a method group is provably
+// non-null. Includes `()` as it is a method call.
+const TypedNilFuncAccessor = "OrTypedNilFunc()"
+
 // The -tests package-init hook: the erasable classic-partial method a production
 // package_init.cs static ctor ends with when converting under -tests, IMPLEMENTED by the
 // internal test variant's relocated-initializer file (go2cs initOrderOperations.go /
