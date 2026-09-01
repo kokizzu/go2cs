@@ -2748,6 +2748,21 @@ that the row is an ARC, not a defect. The arc, in descending value, with what ea
    `unsafe.Slice(StringData(s), len(s))` a true aliasing window (which is what Go's does), and give
    `StringData(s) == StringData(s)` for free. Small, principled, and touching a hand-owned file with
    subtle empty-string history — worth doing WITH the item-1 work rather than alone.
+   > **AMENDED 2026-09-01 (the +136 attribution run):** this item is DONE and the entry above is
+   > history — `e1ef6ca85` deleted the eager pin on 2026-08-30 (it was a leak class: the pinned
+   > handle strong-rooted every outliving string's backing, and a non-zero-offset window
+   > materialized a COPY, breaking Go's sub-string aliasing; `StringDataIdentity` guards the
+   > repair). Its replacement — a boxed `slice<byte>` window handed to `ElemRefBox` — costs
+   > **+24 B/op**, and the "136 B" this item recorded turned out to be a MAGNITUDE COINCIDENCE
+   > with the later os TestWriteStringAlloc +136.00 regression, whose dominant **+112.00 is the
+   > element-aliasing merge's 8-byte `m_publishedArrayBacking` field on the abstract base `ж<T>`
+   > (× 14 boxes on that path; correctness-load-bearing, the per-box publish gate — not
+   > revertible)**. Full A/B decomposition, reconciled to the byte with two cross-controls
+   > (TestUTF16Alloc +8.00 = one box; utf16 TestAllocationsDecode +0.00 = zero boxes): the census
+   > record's 2026-09-01 amendment. The surviving surgical item: an `ElemRefBox<T>` internal
+   > `(T[] backing, nint absoluteIndex)` ctor removes one object + ~56 B per StringData call
+   > (row lands BELOW pre-regression, 17 → 16 allocs) — queued as the WriteStringAlloc arc's
+   > first increment.
 
 **What this lane changes about `os`'s accounting: nothing.** The row still diverges, so `os` stays at
 681 of 683 agreeing + 1 disclosed + 34 matching skips + 4 capability-excluded, with one real

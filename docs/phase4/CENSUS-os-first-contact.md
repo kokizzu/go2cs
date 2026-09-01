@@ -487,3 +487,39 @@ runs — and the row the first contact could not attribute has been rooted, fixe
 stands between it and the roster is two rows that standing doctrine explicitly declines to disclose:
 one an open converter arc that `host-limit`'s own bar excludes (b), one an owner ruling that only the
 owner can reopen (c). Both need a decision, and neither is a measurement problem.
+
+
+---
+
+## AMENDED 2026-09-01 (the +136 attribution run, coordinator sub-agent) — §A.2(c)'s hypothesis REFUTED; two-step decomposition reconciled to the byte
+
+The +136.00 B/op on TestWriteStringAlloc (1,184.64 → 1,320.64, count 17 unchanged) is NOT the
+item-5 eager pin returning — that match was magnitude coincidence. Same-host A/B, full interval,
+unfiltered suite scope, endpoints reproducing the census figures exactly:
+
+- **+112.00 at `a6b951a55`** (the element-aliasing merge; golib `3598acf5d` adds the 8-byte
+  `m_publishedArrayBacking` field to the abstract base `ж<T>` — the per-box publish gate that took
+  the materialization race from 261/300 to 0/300). The tax is **8 B × boxes allocated**,
+  proportional not flat: 14 boxes on this path (+112), one on TestUTF16Alloc (+8.00, measured same
+  runs), zero on unicode/utf16 TestAllocationsDecode (+0.00, measured). Correctness-load-bearing;
+  not revertible.
+- **+24.00 at `e1ef6ca85`** (StringData's eager pin DELETED — it was a leak class via the pinned
+  handle's strong root and broke Go's sub-string aliasing by materializing offset copies;
+  `StringDataIdentity` guards the repair). The correct interior-pointer window costs a 56 B boxed
+  `slice<byte>` where the 32 B `PinnedBuffer` used to sit. Correctness-driven; not revertible.
+- **±0.64** — one 64-byte one-off inside the 100-iteration window, non-monotone across history,
+  cancels between the endpoints. Jitter, not a step.
+
+**Breadth: no banked or disclosed verdict at risk** — every alloc assert in the corpus is a COUNT
+(counts moved nowhere measured: 17→17, 4→4, 10→10) and no disclosure signature pins a
+go2cs-produced byte figure (all 32 manifests swept).
+
+**The arc's first increment (proposed by the run, queued):** an `ElemRefBox<T>` internal
+`(T[] backing, nint absoluteIndex)` ctor removes one object + ~56 B per StringData call — the row
+lands BELOW the pre-regression figure (17 → 16 allocs) with no change to identity, aliasing or
+lifetime. Owes GolibTests + `go2cs.slnx` + the String/Unsafe behavioral filters + StringDataIdentity.
+
+**Instrument law (measured here, +167.04 between scopes on ONE tree):** an alloc row's B/op is
+comparable only against a figure taken at the same suite scope — `AllocsPerRun`'s single warmup
+does not cover one-time costs a full run has already paid, so a filtered census must never compare
+its bytes against a full-run record.
