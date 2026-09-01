@@ -48,6 +48,21 @@ family, and ONE full-roster sweep proves the union. That is the same economics a
    grant line joins every generated csproj. Merges as a Stage-A converter change; its corpus
    effect arrives with the Stage-B regen. *(Verify branch still merge-clean at wave head.)*
 
+4. **Hand-own scope-routing fix** (found 2026-09-01 by A2 step 3's seeded three-target gate;
+   PRE-EXISTING at master, A/B-proven byte-identical red — same file/line/column, both binaries,
+   one seed): `platformHandOwnDestinations` routes a hand-own by its PRINCIPAL's emitter set and
+   ignores the registration's GOOS SCOPE, so `runtime/linux/trace_impl.cs` (scope `goosLinux`)
+   lands FLAT and windows compiles it beside the undisplaced generated body — CS0111. The corpus
+   guard's principal-in-all-folders `continue` is the matching hole; nothing had run a
+   three-target merge since the scope was introduced. Exactly 1 of 74 hand-owns moves.
+   **STAGE-B BLOCKER — the regen IS a three-target merge.** Owner: G (ruled 2026-09-01; they hold
+   both staging roots and the standing A/B). The rule: route by the targets whose emission
+   actually DISPLACED a member the hand-own defines — evidence the merge already holds (the
+   placeholder witness) — which subsumes the unscoped case; narrow the guard's `continue` to
+   match, red captured FIRST per the registry-guard pattern. Discriminating gate: the merged
+   staging build goes 1 error → 0 on windows with the file landing linux/-routed, byte-identical
+   to the committed corpus.
+
 ### Stage B — the seeded multi-target regen (coordinator-executed)
 One seeded reconvert per target (windows/linux/darwin), full ritual (seed corpus +
 version.props + docs/validation; marker gate path-precise; never twice into one root), then ONE
