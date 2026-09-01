@@ -455,6 +455,10 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"ChanOf":              goosAny,
 		"MapOf":               goosAny,
 		"MakeChan":            goosAny,
+		// FuncOf is the same family one step harder: it assembles a funcType record behind a
+		// prototype func value it reads out of memory, and a Go func here IS a managed delegate.
+		// The composed delegate type is GoReflect.TryFuncShape's exact inverse.
+		"FuncOf":              goosAny,
 		// Value.Close reads the channel direction by reinterpreting the descriptor onto the
 		// linker's chanType record -- the non-deterministic read abi.ChanDir was hand-owned to
 		// retire, still live here -- and then calls the chanclose runtime stub.

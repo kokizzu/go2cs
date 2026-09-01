@@ -791,6 +791,85 @@ public static partial class GoReflect
         return true;
     }
 
+    /// <summary>
+    /// The delegate type for a Go func signature — <see cref="TryFuncShape"/>'s INVERSE, and what
+    /// <c>reflect.FuncOf</c> constructs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Composed to be exactly what <see cref="TryFuncShape"/> reads back, so a type built here
+    /// round-trips through <c>NumIn</c>/<c>In</c>/<c>NumOut</c>/<c>Out</c>/<c>IsVariadic</c>
+    /// unchanged. That is the whole contract, and it is why the two live together: parameters become
+    /// the delegate's <c>Invoke</c> parameters; a variadic tail becomes the trailing
+    /// <c>Span&lt;T&gt;</c> that the read side tests for (never a <c>slice&lt;T&gt;</c>, which it
+    /// would report non-variadic); and the results become <c>void</c>, the single type, or a
+    /// ValueTuple that nests past seven exactly as <c>FlattenValueTuple</c> unnests it.
+    /// </para>
+    /// <para>
+    /// Go's own <c>FuncOf</c> builds a funcType record by reinterpreting a prototype func value's
+    /// memory. There is no such record here — a Go func value IS a managed delegate — so the type is
+    /// composed rather than reconstructed, the same substitution ChanOf and MapOf make.
+    /// </para>
+    /// </remarks>
+    public static Type MakeGoFuncType(Type[] ins, Type[] outs, bool isVariadic)
+    {
+        Type[] parameters = (Type[])ins.Clone();
+
+        if (isVariadic)
+        {
+            if (parameters.Length == 0)
+                throw new ArgumentException("a variadic Go func needs at least one parameter", nameof(isVariadic));
+
+            Type tail = parameters[^1];
+
+            Type? elem = tail.IsGenericType && tail.GetGenericTypeDefinition() == typeof(slice<>)
+                ? tail.GetGenericArguments()[0]
+                : ElementType(tail);
+
+            if (elem is null)
+                throw new ArgumentException($"variadic tail '{tail.Name}' is not a slice", nameof(ins));
+
+            parameters[^1] = typeof(Span<>).MakeGenericType(elem);
+        }
+
+        return MakeDelegateType(parameters, makeGoResultType(outs));
+    }
+
+    // Go's result list as ONE managed return type: none is void, one is itself, and several are the
+    // ValueTuple the converter already returns from a multi-result func.
+    private static Type makeGoResultType(Type[] outs)
+    {
+        switch (outs.Length)
+        {
+            case 0:
+                return typeof(void);
+            case 1:
+                return outs[0];
+        }
+
+        if (outs.Length <= 7)
+            return valueTupleDefinition(outs.Length).MakeGenericType(outs);
+
+        // Past seven the eighth argument is TRest and holds the remainder — the chain
+        // FlattenValueTuple walks, built here in the same shape.
+        return valueTupleDefinition(8).MakeGenericType([.. outs[..7], makeGoResultType(outs[7..])]);
+    }
+
+    private static Type valueTupleDefinition(int arity)
+    {
+        return arity switch
+        {
+            2 => typeof(ValueTuple<,>),
+            3 => typeof(ValueTuple<,,>),
+            4 => typeof(ValueTuple<,,,>),
+            5 => typeof(ValueTuple<,,,,>),
+            6 => typeof(ValueTuple<,,,,,>),
+            7 => typeof(ValueTuple<,,,,,,>),
+            8 => typeof(ValueTuple<,,,,,,,>),
+            _ => throw new ArgumentOutOfRangeException(nameof(arity))
+        };
+    }
+
     /// <summary>Whether <paramref name="type"/> is a <c>System.ValueTuple</c> instantiation.</summary>
     private static bool IsValueTuple(Type type)
     {
