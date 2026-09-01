@@ -148,23 +148,47 @@ func applyImportInitSection(packageInfoLines []string, mergeExisting bool) []str
 		return packageInfoLines
 	}
 
-	entries := HashSet[string]{}
+	// Keyed by the hook's METHOD NAME — the import's identity — and NOT by the rendered line. Two
+	// renderings of the same hook differ legitimately: the forcing target is root-qualified or bare
+	// depending on the emission unit that decided it (forcingTargetShadowed keys on the class the
+	// hook is written into). A merging write therefore meets the SAME method under TWO spellings,
+	// and a line-keyed set keeps both — two methods of one name in one partial class, which is
+	// CS0111. Measured on crypto/x509, whose `math/big` reaches the test variants by more than one
+	// route:
+	//
+	//	[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(go.math.big_package));
+	//	[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(math.big_package));
+	//
+	// The FRESH entry wins: it is this emission unit's own decision, computed against the class this
+	// file declares, where a seeded line was decided for a different one. Identity comes from
+	// importInitName, a pure function of the import path, so the two halves cannot disagree on what
+	// "the same hook" means.
+	entries := map[string]string{}
 
 	if mergeExisting {
 		for i := startLineIndex + 1; i < endLineIndex; i++ {
 			line := strings.TrimSpace(packageInfoLines[i])
 
-			if line != "" {
-				entries.Add(line)
+			if line == "" {
+				continue
+			}
+
+			if name := importInitLineName(line); name != "" {
+				entries[name] = line
 			}
 		}
 	}
 
 	for importPath, forcingTarget := range packageImportInits {
-		entries.Add(importInitLine(importPath, forcingTarget))
+		entries[importInitName(importPath)] = importInitLine(importPath, forcingTarget)
 	}
 
-	merged := entries.Keys()
+	merged := make([]string, 0, len(entries))
+
+	for _, line := range entries {
+		merged = append(merged, line)
+	}
+
 	sort.Strings(merged)
 
 	indented := make([]string, 0, len(merged))
@@ -175,4 +199,29 @@ func applyImportInitSection(packageInfoLines []string, mergeExisting bool) []str
 
 	return append(packageInfoLines[:startLineIndex+1],
 		append(indented, packageInfoLines[endLineIndex:]...)...)
+}
+
+// importInitLineName extracts a rendered hook line's METHOD NAME — the import's identity, and the
+// only part of the line that is decided by the import rather than by the emission unit. It is what
+// lets a merging write recognize a seeded entry and this pass's entry as the SAME hook when their
+// forcing targets are spelled differently (see applyImportInitSection).
+//
+// Deliberately narrow: it matches only the shape importInitLine renders, and answers "" for anything
+// else, so a line this file did not write is carried through the merge untouched rather than being
+// silently reinterpreted.
+func importInitLineName(line string) string {
+	const lead = "[GoInit] internal static void "
+
+	if !strings.HasPrefix(line, lead) {
+		return ""
+	}
+
+	rest := line[len(lead):]
+	open := strings.Index(rest, "(")
+
+	if open <= 0 {
+		return ""
+	}
+
+	return rest[:open]
 }
