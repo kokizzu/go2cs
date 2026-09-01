@@ -105,9 +105,21 @@ THE LIVE BOARD AT MIGRATION (verify everything against the mailbox tail + tracke
    ACTIVELY PAIRED: i9 + G on a function-scoped capture coordination fix, currently evaluating
    i9's candidate to reuse the existing `boxRefVars`/`Ꮡm.Value` box-referencing mechanism
    (convIdent.go:209-238 — same CS8175 root, already solved once) with three open sizing
-   questions on the mailbox (analysis-vs-emission population, mechanism precedence, read-only
-   safety generalization); the new-registry skeleton is the fallback. **At its merge: runtime
-   ZERO → Stage A CLOSES → the SEMANTIC BILL prints** (full pipeline + run-layer bucket
+   questions on the mailbox — SUPERSEDED by the pairing's own measurements before migration:
+   boxRefVars is the WRONG destination (receiver timing — Go snapshots at method-value
+   EVALUATION, the box reads at CALL; the route would have converted the loud CS8175 into the
+   SILENT twin defect that ALREADY SHIPS: composite-literal method values over func-typed
+   elements print Go `a b` vs C# `b b`, measured, 20-line standalone repro on the mailbox), and
+   the converging-registry fallback is REFUTED both across statements (per-evaluation snapshots
+   are correct and must differ) and within one (the closure needs the variable, the method value
+   needs a copy — the sites must DIVERGE). Fix direction: extend the existing top-level
+   method-value treatment (enterLambdaConversion + prepareStmtCaptures + hoisted declarations,
+   visitAssignStmt:1293/1642) to the NESTED position — the gap is the declaration SLOT. Split
+   agreed: G traces the destination, i9 builds the two-seeded/CNR verification harness; G is
+   also censusing the silent `[]func()` form in the production corpus (emission-attached). The
+   parked typed-nil arm's slnx gate is honestly still OWED (a mixed-tree build was killed rather
+   than trusted). **At the paired fix's merge: runtime ZERO → Stage A CLOSES → the SEMANTIC BILL
+   prints** — and the silent twin's rows join whatever it touches (full pipeline + run-layer bucket
    classification, posted as a census record — i9's deliverable; warn: generous -test-timeout,
    tail-first reading, and the -tests manifest dupe fix is already merged so CS0111
    initᴛᴛimportꓸ* should NOT recur).
