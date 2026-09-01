@@ -75,6 +75,34 @@ first position. With that, the move does not merely preserve the contract — it
 "hooks precede their own file's inits, and cross-file order is nobody's" to "ALL import hooks precede
 ALL of the package's inits, deterministically, corpus-wide."
 
+### 3.1 The file is NOT always at the package root — measured, and it complicates the item
+
+The scout wrote the step above as though `package_info.cs` sat at one known path in every package.
+**It does not.** Censused 2026-09-01 over the 305 production csprojs under `src/core`: **35 packages
+have no `package_info.cs` at their root**, and every one of them is an L3 per-GOOS package that keeps
+it in the platform folder instead — `os/windows/package_info.cs`, `net/linux/package_info.cs`,
+`syscall/darwin/package_info.cs`, and so on for `runtime`, `time`, `mime`, `archive/tar`,
+`internal/poll`, `path/filepath`, `os/exec`, `crypto/x509`, and the rest.
+
+This matters because an explicit `<Compile Include>` of a path that does not exist is not a no-op:
+MSBuild adds the item and the compiler then fails on a missing source file. So the emitted item has
+to follow the package's layout:
+
+* **flat package** — `<Compile Include="package_info.cs" />`.
+* **L3 package** — the file is at `$(GoTargetOS)/package_info.cs`, so the item must be the
+  conditioned form, alongside the conditioned `<Compile Include="$(GoTargetOS)/*.cs" />` that
+  `platformLayout.go` already emits for exactly these packages.
+* **platform-EXCLUSIVE package** — `crypto/x509/internal/macos` carries ONLY
+  `darwin/package_info.cs`. Under the default windows target that project legitimately compiles
+  nothing, so an item naming `$(GoTargetOS)/package_info.cs` unconditionally would name a file that
+  does not exist and turn a package that currently builds empty into a hard error.
+
+The machinery to distinguish these already exists — `platformLayout.go` knows each package's platform
+set and is what decides whether a csproj gets the conditioned include at all — so this is a shaping
+constraint on the item, not a blocker. But it means step 2 of §5 is a per-layout emission change
+rather than one template line, and it is the first thing a fresh implementer would otherwise
+discover the hard way, on a corpus-wide build.
+
 ## 4. `package_init.cs` and the static-constructor route — asked, and now CLOSED
 
 The `initTests` hook is NOT in `package_info.cs`. It lives in **`package_init.cs`** (5 committed
@@ -121,7 +149,8 @@ a rebank-style regen.
 Recommended sequence:
 
 1. ~~Decide `package_info.cs` vs `package_init.cs`~~ — **settled in §4: `package_info.cs`.**
-2. Land the **compile-ordering change first**, as its own gated step. It is independently correct and
+2. Land the **compile-ordering change first**, as its own gated step (per §3.1 it is a per-layout
+   emission change, not one template line). It is independently correct and
    independently testable, and it is what makes step 3 safe.
 3. Then relocate the hooks.
 
