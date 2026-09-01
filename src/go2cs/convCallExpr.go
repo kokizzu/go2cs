@@ -4283,18 +4283,32 @@ func (v *Visitor) reinterpretManagedEmission(callExpr *ast.CallExpr, arg ast.Exp
 	// Both arms wrap in Ꮡ(…) so the expression stays a ж<unsafe.Pointer> for the deref/pointer
 	// contexts the four call sites serve. golib's Reinterpret keeps its own refusal for this shape
 	// as defense-in-depth for emissions that have not been reconverted yet.
-	if targetPtr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Pointer); ok {
-		if basic, isBasic := types.Unalias(targetPtr.Elem()).(*types.Basic); isBasic && basic.Kind() == types.UnsafePointer {
-			boxExpr := v.convExpr(src, []ExprContext{identContext})
+	//
+	// The target may sit under MORE than one pointer level — Go reads a func value's code pointer as
+	// `**(**unsafe.Pointer)(unsafe.Pointer(&fn))`, because a func value points at a funcval whose
+	// first word is that pointer. The rationale above does not care how deep it is: at every level the
+	// destination is still `unsafe.Pointer`, which a storage reinterpret still cannot serve. So unwrap
+	// the levels and wrap the carrying form in one Ꮡ(…) per level, which the emitted derefs unwind
+	// symmetrically. Matching only the single level left the func shape on the fallthrough, where its
+	// pointee is a DELEGATE — a reference type, so the alias gate refuses on its very first clause and
+	// the address route's deref is a nil dereference. reflect's TestValuePointerAndUnsafePointer builds
+	// its case table EAGERLY, so that one element killed the whole test before any subtest ran: seven
+	// empty verdicts from one throw.
+	if levels, ok := unsafePointerTargetLevels(v.info.TypeOf(callExpr)); ok {
+		boxExpr := v.convExpr(src, []ExprContext{identContext})
+		carried := fmt.Sprintf("new @unsafe.Pointer((uintptr)%s)", boxExpr)
 
-			if srcPtr, isPtr := types.Unalias(v.info.TypeOf(src)).(*types.Pointer); isPtr {
-				if srcBasic, srcIsBasic := types.Unalias(srcPtr.Elem()).(*types.Basic); srcIsBasic && srcBasic.Kind() == types.Uintptr {
-					return fmt.Sprintf("Ꮡ(new @unsafe.Pointer(~%s))", boxExpr), true
-				}
+		if srcPtr, isPtr := types.Unalias(v.info.TypeOf(src)).(*types.Pointer); isPtr {
+			if srcBasic, srcIsBasic := types.Unalias(srcPtr.Elem()).(*types.Basic); srcIsBasic && srcBasic.Kind() == types.Uintptr {
+				carried = fmt.Sprintf("new @unsafe.Pointer(~%s)", boxExpr)
 			}
-
-			return fmt.Sprintf("Ꮡ(new @unsafe.Pointer((uintptr)%s))", boxExpr), true
 		}
+
+		for i := 0; i < levels; i++ {
+			carried = "Ꮡ(" + carried + ")"
+		}
+
+		return carried, true
 	}
 
 	// Go's prefix-downcast idiom — allocate the larger record, hand out a pointer to its embedded
@@ -4404,6 +4418,36 @@ func unwrapsToAbiTypeHeader(t types.Type) bool {
 	}
 
 	return isAbiTypeHeader(strct.Field(0).Type())
+}
+
+// unsafePointerTargetLevels reports how many pointer levels stand between t and an `unsafe.Pointer`
+// pointee, and whether t is such a type at all — 1 for `*unsafe.Pointer`, 2 for `**unsafe.Pointer`,
+// and false for everything else. It is the depth-aware form of the single-level test the
+// unsafe.Pointer carrying arm used to make; see reinterpretManagedEmission for why depth is not
+// something that arm should care about.
+func unsafePointerTargetLevels(t types.Type) (int, bool) {
+	levels := 0
+
+	for {
+		ptr, isPtr := types.Unalias(t).(*types.Pointer)
+
+		if !isPtr {
+			return 0, false
+		}
+
+		levels++
+		elem := types.Unalias(ptr.Elem())
+
+		if basic, isBasic := elem.(*types.Basic); isBasic {
+			if basic.Kind() == types.UnsafePointer {
+				return levels, true
+			}
+
+			return 0, false
+		}
+
+		t = elem
+	}
 }
 
 // arrayPointerAliasEmission renders golib's element-window alias for a `(*[N]T)(unsafe.Pointer(p))`
