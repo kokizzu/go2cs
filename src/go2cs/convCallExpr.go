@@ -219,6 +219,20 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 
 				return fmt.Sprintf("((%s)nil)", targetCS)
 			}
+
+			// A nil→DIRECTIONAL-CHANNEL conversion — `(chan<- string)(nil)` — is the zero value
+			// of the directional type, and the plain cast of `default!` erased the direction the
+			// conversion exists to apply, so `reflect.TypeOf((chan<- string)(nil))` read the
+			// bidirectional type (TestAll #12, TestChanOfDir's checkSameType rows). Rendered as
+			// the directional nil factory, the same emission every other zero-value site uses.
+			// A conversion of nil to a BIDIRECTIONAL channel returns "" here and keeps its
+			// existing path, byte for byte. Note this is the CONSTRUCTION half of the narrowing
+			// r39d excluded, not the priced half: a cast of nil has a syntactic hook and mints a
+			// fresh value; the 89 assignment/argument/return positions the exclusion counted
+			// copy a LIVE channel and remain unstamped (see chanDirectionCargo.go).
+			if nilChan := v.chanDirNilValue(v.info.TypeOf(callExpr)); nilChan != "" {
+				return nilChan
+			}
 		}
 
 		// A compile-time FLOAT constant CONVERSION whose operand references a named untyped-float
@@ -4763,12 +4777,28 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 			// `myMap(nil)` is already claimed further down (ConvertibleTo holds for it) and casts
 			// correctly, so only the type-LITERAL spelling ever broke.
 			//
-			// Slice and channel literals are deliberately NOT claimed alongside it, having no
-			// defect to fix: `[]byte(nil)` binds golib's real `builtin.slice<T>(T[])` conversion
-			// helper — the same one `[]byte("…")` is emitted against — and yields the nil slice,
-			// while `(chan T)(nil)` already renders as a cast. Claiming either would rewrite
-			// ~25 corpus sites to no effect.
+			// Slice and BIDIRECTIONAL channel literals are deliberately NOT claimed alongside
+			// it, having no defect to fix: `[]byte(nil)` binds golib's real
+			// `builtin.slice<T>(T[])` conversion helper — the same one `[]byte("…")` is emitted
+			// against — and yields the nil slice, while `(chan T)(nil)` already renders as a
+			// cast. Claiming either would rewrite ~25 corpus sites to no effect.
 			if _, targetIsMap := targetType.Underlying().(*types.Map); targetIsMap {
+				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
+					return true, v.getAliasQualifiedTypeName(targetType, false)
+				}
+			}
+
+			// An untyped-nil operand converting to a DIRECTIONAL channel literal —
+			// `(chan<- string)(nil)`, reflect's TypeOf descriptor idiom for a directional type
+			// (TestAll #12, TestChanOfDir). The bidirectional form stays unclaimed per the note
+			// above — its cast of `default!` IS the correct nil — but the directional cast
+			// erased the direction the conversion exists to apply. Claimed exactly as the map
+			// arm is, so the conversion renderer's nil interception (chanDirNilValue) emits the
+			// directional nil factory. chanDirCargoName is the gate: non-empty only for a
+			// directional, undefined channel type, so every other channel conversion keeps its
+			// path byte for byte. Part of the 2026-09-01 r39d amendment — see
+			// chanDirectionCargo.go.
+			if chanDirCargoName(targetType) != "" {
 				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
 					return true, v.getAliasQualifiedTypeName(targetType, false)
 				}

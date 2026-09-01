@@ -3331,7 +3331,7 @@ internal static void initContextClose(this ж<Rows> Ꮡrs, context.Context ctx, 
 internal static void awaitDone(this ж<Rows> Ꮡrs, context.Context ctx, context.Context txctx, context.Context closectx) {
     ref var rs = ref Ꮡrs.DerefOrNull();
 
-    /*<-*/channel<EmptyStruct> txctxDone = default!;
+    /*<-*/channel<EmptyStruct> txctxDone = /*<-*/channel<EmptyStruct>.RecvOnly;
     if (txctx != default!) {
         txctxDone = txctx.Done();
     }

@@ -91,6 +91,18 @@ public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? 
     if (st is null) {
         return default!;
     }
+    // Unstamped IS the bidirectional channel's canonical spelling (GoChanDir's own doc: a channel
+    // nothing narrowed answers Both), so an explicit Both must fold into it HERE, at the one entry
+    // every descriptor passes through — or the same Go type gets TWO descriptors keyed "@3" and ""
+    // and type identity silently splits. That is not hypothetical: reflect.ChanOf(BothDir, T) and
+    // MakeChan both stamped Both while every value-derived bidirectional channel reads Unstamped,
+    // so checkSameType(ChanOf(BothDir, T1), (chan T1)(nil)) failed on descriptor identity before
+    // any direction semantics were even in play (TestChanOf's first assertion). Normalizing at the
+    // stamp SITES instead would re-open the split with every new site — the token-class lesson:
+    // one authority, and this is it.
+    if (chanDir == GoChanDir.Both) {
+        chanDir = GoChanDir.Unstamped;
+    }
     string dimsKey = descriptorDimsKey(arrayDims, funcParamDims, chanDir, keyDims);
     return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims, funcParamDims, chanDir, keyDims));
 }
@@ -487,10 +499,20 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
 // have nothing but a zero value to read.
 //
 // Unstamped cargo still answers BothDir, and that is not a fallback but the same honest answer this
-// accessor gave before the cargo existed: a channel nothing narrowed IS bidirectional. What is
-// deliberately NOT carried is a NARROWING conversion — `var s chan<- int = ch` still describes the
-// bidirectional type, because the narrowing has no emission position to stamp and no measured
-// consumer asks (the r39d rule, and the same boundary the func-param dims draw at results).
+// accessor gave before the cargo existed: a channel nothing narrowed IS bidirectional.
+//
+// AMENDED 2026-09-01 — the narrowing exclusion below stood on "no measured consumer asks", and
+// that premise DIED: reflect's own suite measured four (TestAll #12, TestTypes #20-22, TestChanOf,
+// TestChanOfDir), so the coordinator ruled the narrowing CARRIED and the construction-shaped
+// positions (a directional var's zero, a nil cast) joined the converter's stamp set — see
+// chanDirectionCargo.go for the amended site list. What the exclusion still covers is only the
+// LIVE-COPY narrowing (`var s chan<- int = ch`), which remains a plain struct copy with no
+// construction to hook and no measured consumer yet. The original sentence is kept beneath so the
+// next reader sees why the rule stood and how it fell rather than meeting a hole:
+//   (pre-amendment) What is deliberately NOT carried is a NARROWING conversion — `var s chan<- int
+//   = ch` still describes the bidirectional type, because the narrowing has no emission position
+//   to stamp and no measured consumer asks (the r39d rule, and the same boundary the func-param
+//   dims draw at results).
 //
 // The read this replaced was the worst kind of wrong: NON-DETERMINISTIC, reinterpreting the
 // descriptor onto the linker's chanType record and reading `.Dir` out of the memory after the value
