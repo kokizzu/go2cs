@@ -26,6 +26,12 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 	// types already record the Δ form explicitly (below), so this covers the auto-emitted kinds.
 	if nameCollisions[typeSpec.Name.Name] {
 		name = getSanitizedIdentifier(typeSpec.Name.Name)
+
+		if testTypeRenames != nil {
+			if obj := v.info.ObjectOf(typeSpec.Name); obj != nil {
+				testTypeRenames[obj] = true
+			}
+		}
 	}
 
 	// A DEFINED type over an INTERFACE (`type Token any`, `type Reader io.Reader`) has EXACTLY the

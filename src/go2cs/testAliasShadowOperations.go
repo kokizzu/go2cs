@@ -467,7 +467,19 @@ func (v *Visitor) whiteboxBridgeNamedType(named *types.Named) (string, bool) {
 	if named == nil || !v.whiteboxBridgeObject(named.Obj()) {
 		return "", false
 	}
-	name := getSanitizedIdentifier(named.Obj().Name())
+	// The reference renders during the EXTERNAL variant's own conversion, whose nameCollisions is
+	// a fresh, unrelated map (resetPackageState) computed over a file set that never includes the
+	// internal declaration being referenced here — so it cannot answer "did THIS declaration
+	// collide". testTypeRenames is session-scoped and object-keyed for exactly this: it was
+	// populated by the INTERNAL variant's own pass, against the same declaration object, when the
+	// declaration itself was Δ-renamed (visitTypeSpec). See testTypeRenames's doc comment.
+	obj := named.Obj()
+	name := obj.Name()
+	if testTypeRenames[obj] {
+		name = getCollisionAvoidanceIdentifier(name)
+	} else {
+		name = getCoreSanitizedIdentifier(name)
+	}
 	if typeArgs := named.TypeArgs(); typeArgs != nil && typeArgs.Len() > 0 {
 		args := make([]string, typeArgs.Len())
 		for i := 0; i < typeArgs.Len(); i++ {
