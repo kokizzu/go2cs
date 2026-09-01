@@ -186,6 +186,27 @@ private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, 
     if (ptrBytes >= 0) {
         t.PtrBytes = (uintptr)(nuint)ptrBytes;
     }
+    // KindDirectIface — the descriptor bit that says "an interface holding this type stores the
+    // value ITSELF in the data word", which is Go's isDirectIface rule: pointer-shaped types
+    // (pointer, chan, map, func, unsafe.Pointer) and the one-element array / one-field struct that
+    // reduces to one. synthType never stamped it, so every synthesized descriptor answered
+    // IfaceIndir() == true unconditionally.
+    //
+    // MEASURED LATENT, not shipped-wrong (reflect, 2026-09-01): stamping it moves the reflect row
+    // count by ZERO — no row fixed, none broken — and the reason is structural rather than lucky.
+    // The widest reader, abi.cs:174's addRcvr, tests `IfaceIndir() || Pointers()`, and every type
+    // this bit turns on is pointer-shaped, so PtrBytes != 0 already made that disjunction true;
+    // the remaining readers (packEface, copyVal, Select, storeRcvr) are not reached with a
+    // correctly-classified direct-iface type on this suite. The zero is a real measurement and not
+    // a change that failed to compile: the positive control — stamping UNCONDITIONALLY — breaks
+    // exactly one row (TestFuncLayout/uintptr.func(uintptr)), which is the misclassification of a
+    // non-pointer-shaped type reaching funcLayout. So the readers are live; the honest
+    // classification simply agrees with what they already concluded.
+    //
+    // Kind() masks with KindMask (31), so bit 5 cannot disturb the kind it sits beside.
+    if (GoReflect.GoIsDirectIface(st, arrayDims)) {
+        t.Kind_ |= (ΔKind)KindDirectIface;
+    }
     // Carry Go comparability on the descriptor: reflect.Type.Comparable and internal/reflectlite's
     // Comparable both report `Equal != nil`, and errors.Is gates its equality match on the latter — so a
     // comparable Go type (e.g. the *errorString behind a sentinel like csv.ErrFieldCount) must have a
