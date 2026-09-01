@@ -226,8 +226,12 @@ internal static class TestFormat
     /// through an unsigned magnitude also carries the top of the <c>uint64</c> range, which a signed
     /// coercion could not represent at all and so disclosed as a bad verb.
     /// <para>
-    /// <c>%x</c>/<c>%X</c> additionally accept a byte slice or a string and render its BYTES; the
-    /// other two bases do not, matching Go, which formats such an operand element-wise instead.
+    /// <c>%x</c>/<c>%X</c> additionally accept a byte slice or a string and render its BYTES. The
+    /// other two bases take neither, which matches Go for a STRING -- Go bad-verbs <c>%o</c> on one
+    /// itself -- but NOT for a byte slice, where Go renders element-wise (<c>[336 255]</c>) and this
+    /// shim discloses a bad verb instead. Named as a known gap rather than implied to be parity:
+    /// element-wise rendering applies to every slice, not just bytes, so it belongs with the shim's
+    /// other unimplemented breadth rather than being smuggled in behind the integer bases.
     /// </para>
     /// </remarks>
     private static string FormatBase(char verb, bool alternate, object? arg)
