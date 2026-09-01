@@ -1708,12 +1708,57 @@ public static ΔValue Method(this ΔValue v, nint i) {
 // A GOROOT-wide census finds no other caller either. The machinery it would need now exists
 // (GoReflect.InvokeVariadic) — the tail Value would be unpacked into the array instead of built
 // from the trailing arguments — so this stays a stub for want of a consumer, not for want of a way.
+// CallSlice calls the variadic function v with the input arguments in, assigning the slice
+// in[len(in)-1] to v's final variadic argument. It is Call with ONE difference — the final argument
+// IS the tail rather than the first of the spread — so it is Call's machinery with that one
+// substitution, not a second implementation.
+//
+// It stood as a NotImplementedException marked "no demonstrated consumer". There are two now
+// (TestVariadic, TestVariadicMethodValue), which is the whole trigger for writing it: the marker was
+// a statement about the corpus, not about the operation's difficulty.
 public static slice<ΔValue> CallSlice(this ΔValue v, slice<ΔValue> @in) {
-    // The kind check precedes the stub deliberately: a WRONG-KIND call has a defined Go answer
-    // (a recoverable ValueError) and reflect's own TestValuePanic asserts it, so that case is
-    // answered correctly even though the operation itself still has no demonstrated consumer.
+    // The kind check precedes everything deliberately: a WRONG-KIND call has a defined Go answer
+    // (a recoverable ValueError) and reflect's own TestValuePanic asserts it.
     v.mustBeKind("reflect.Value.CallSlice"u8, Func);
-    throw new NotImplementedException("reflect.Value.CallSlice is not implemented (no demonstrated consumer)");
+    v.flag.mustBeExported();
+    object? fn = v.live;
+    if (fn is null) {
+        throw panic("reflect.Value.CallSlice: call of nil function");
+    }
+    var del = (Delegate)fn;
+    if (!GoReflect.TryFuncShape(del.GetType(), out System.Type[]? ins, out System.Type[]? outs, out bool isVariadic)) {
+        throw panic("reflect.Value.CallSlice: not a func value");
+    }
+    // Go's three gates for the CallSlice form, with its own text. Unlike Call, the argument count
+    // is EXACT: the tail arrives as one slice rather than as a spread.
+    if (!isVariadic) {
+        throw panic("reflect: CallSlice of non-variadic function");
+    }
+    if (len(@in) < ins.Length) {
+        throw panic("reflect: CallSlice with too few input arguments");
+    }
+    if (len(@in) > ins.Length) {
+        throw panic("reflect: CallSlice with too many input arguments");
+    }
+    nint fixedCount = ins.Length - 1;
+    object?[] args = new object?[fixedCount];
+    for (nint i = 0; i < fixedCount; i++) {
+        args[i] = marshalCallArg(@in[i], ins[i]);
+    }
+    // The final argument is checked against the func's own []T parameter — which is exactly what
+    // marshalCallArg does, so Go's assignability rule AND its "CallSlice using X as type []T" panic
+    // text come for free rather than being restated here.
+    ΔValue tailArg = @in[fixedCount];
+    marshalCallArg(tailArg, ins[^1]);
+    System.Type tailElem = ins[^1].GetGenericArguments()[0];
+    nint tailLen = tailArg.Len();
+    // `Array` alone is reflect.Array (a Kind constant is in scope here), so this one is qualified —
+    // the same collision callVariadic annotates.
+    System.Array tail = System.Array.CreateInstance(tailElem, (int)tailLen);
+    for (nint i = 0; i < tailLen; i++) {
+        tail.SetValue(marshalCallArg(tailArg.Index(i), tailElem), (int)i);
+    }
+    return callResults(GoReflect.InvokeVariadic(del, args, tail), outs);
 }
 
 // sysTypeOfReflectType recovers the managed System.Type a canonical reflect.Type wrapper
