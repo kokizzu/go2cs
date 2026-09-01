@@ -2198,7 +2198,20 @@ private static bool isExportedGoName(string name) {
 // the shape that will expose it, and the remedy is declaration-order cargo, not a re-sort here.
 internal static StructField Field(this ж<rtype> Ꮡt, nint i) {
     System.Type st = Ꮡt.Value.t.sysType!;
-    return structFieldOf(st, GoReflect.GoFields(st)[(int)i], [i]);
+    // Go's two guards, in Go's order and with Go's own text — rtype.Field checks the kind and
+    // structType.Field the bound. Without the second, an out-of-range index left the CLR to raise
+    // IndexOutOfRangeException from the projected-field array, and a CLR exception is not a Go
+    // panic: reflect's own fieldIndexRecover recovers and finds nothing, so TestTypeFieldOutOfRange
+    // Panic reported an infrastructure error rather than the panic it was asserting. The guard is
+    // what turns the failure back into the behavior the test is written about.
+    if (Ꮡt.Kind() != Struct) {
+        throw panic("reflect: Field of non-struct type " + Ꮡt.String());
+    }
+    GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(st);
+    if (i < 0 || i >= fields.Length) {
+        throw panic("reflect: Field index out of bounds");
+    }
+    return structFieldOf(st, fields[(int)i], [i]);
 }
 
 // FieldByIndex walks an index PATH, one hop per element, and is Go's own loop verbatim — the only
@@ -2705,6 +2718,22 @@ public static ΔType SliceOf(ΔType t) {
 // Note this is not a shortcut past the lookup: Go's own typesByString is documented to return
 // nothing ("It may be empty"), and every caller is written to mint on that miss. The managed
 // runtime simply misses always, because it has no ahead-of-time type table to hit.
+
+// typelinks returns the linker's per-module type sections and the offsets of the types in them.
+// There is no such table in a managed process — no ahead-of-time section holds the program's Go
+// types — so the honest answer is the EMPTY one, and empty is a contract-legal answer rather than a
+// stub's excuse: Go documents typesByString, its only real consumer, as returning a result that
+// "may be empty (no known types with that string)", and every caller of that is written to MINT the
+// type on the miss. The managed runtime simply misses always, which is exactly why the six type
+// constructors above compose their types instead of looking them up.
+//
+// The auto form is a `NotImplementedException` stub, and a stub is a THROW where the contract
+// permits an answer — ten reflect rows died on it. TestTypelinksSorted asserts the table is sorted
+// and passes over an empty one because there is no pair to be out of order, which is the correct
+// result and not a vacuous one: an empty sequence IS sorted.
+internal static (slice<@unsafe.Pointer> sections, slice<slice<int32>> offset) typelinks() {
+    return (default!, default!);
+}
 
 // FuncOf returns the function type with the given argument and result types — the SIXTH member of
 // the family above, and the one that could not compose from an existing generic container. Go's own

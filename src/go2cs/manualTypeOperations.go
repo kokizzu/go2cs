@@ -459,6 +459,10 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// prototype func value it reads out of memory, and a Go func here IS a managed delegate.
 		// The composed delegate type is GoReflect.TryFuncShape's exact inverse.
 		"FuncOf":              goosAny,
+		// typelinks is the linker's type table; a managed process has none, and EMPTY is the
+		// contract-legal answer (Go documents its only consumer, typesByString, as possibly
+		// empty, and every caller mints on the miss). The auto form is a throwing stub.
+		"typelinks":           goosAny,
 		// Value.Close reads the channel direction by reinterpreting the descriptor onto the
 		// linker's chanType record -- the non-deterministic read abi.ChanDir was hand-owned to
 		// retire, still live here -- and then calls the chanclose runtime stub.
