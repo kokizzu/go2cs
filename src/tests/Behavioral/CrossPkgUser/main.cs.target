@@ -352,13 +352,13 @@ internal static void Main() {
         fmt.Println(verdictScoreˢ, sc.Score());
         sc = new talliesжScored(Ꮡ(new tallies(pts: 7)));
         fmt.Println(talliesScoreˢ, sc.Score());
-        var cal = (Action<ж<CrossPkgLib.Sensor>, CrossPkgLib.Celsius>)(CrossPkgLib.Calibrate);
+        var cal = ((Action<ж<CrossPkgLib.Sensor>, CrossPkgLib.Celsius>)(CrossPkgLib.Calibrate));
         var mx = Ꮡ(new CrossPkgLib.Sensor(Name: "mx"u8, Temp: 10D));
         cal(mx, 4D);
         fmt.Println((float64)(~mx).Temp);
-        var hot = (Func<CrossPkgLib.Sensor, bool>)(CrossPkgLib.Hot);
+        var hot = ((Func<CrossPkgLib.Sensor, bool>)(CrossPkgLib.Hot));
         fmt.Println(hot(mx.Value), hot(new CrossPkgLib.Sensor(Temp: 60D)));
-        var madd = (Func<CrossPkgLib.Celsius, CrossPkgLib.Celsius, CrossPkgLib.Celsius>)(CrossPkgLib.Add);
+        var madd = ((Func<CrossPkgLib.Celsius, CrossPkgLib.Celsius, CrossPkgLib.Celsius>)(CrossPkgLib.Add));
         fmt.Println((float64)madd(2D, 3D));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

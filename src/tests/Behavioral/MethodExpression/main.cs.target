@@ -24,16 +24,16 @@ internal static nint get(this counter c) {
 }
 
 internal static void Main() {
-    var f = (Func<ж<counter>, nint, nint>)(add);
+    var f = ((Func<ж<counter>, nint, nint>)(add));
     var c = Ꮡ(new counter(n: 10));
     fmt.Println(f(c, 5));
     fmt.Println(f(c, 2));
     var cv = c.Value;
     fmt.Println(cv.get());
-    var g = (Func<counter, nint>)(get);
+    var g = ((Func<counter, nint>)(get));
     fmt.Println(g(c.Value));
     nint apply(Func<ж<counter>, nint, nint> fn, ж<counter> @base, nint dΔ1) => fn(@base, dΔ1);
-    fmt.Println(apply((Func<ж<counter>, nint, nint>)(add), c, 3));
+    fmt.Println(apply(((Func<ж<counter>, nint, nint>)(add)), c, 3));
     fmt.Println(g(c.Value));
     Func<nint, nint> bump = c.add;
     fmt.Println(bump(4));

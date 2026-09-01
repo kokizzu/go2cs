@@ -757,10 +757,39 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// with the receiver prepended; render that signature as the concrete delegate type and cast
 	// the method's static form to it: `(Func<ж<timers>, int64, int64>)run` — for a `[GoRecv]`
 	// method the RecvGenerator's ж-overload matches the delegate exactly, and a direct-ж method's
-	// primary form does. FuncPCABIInternal-style `any` parameters then take a real delegate.
+	// primary form does. FuncPCABIInternal-style `any` parameters then take a real delegate. All
+	// three return sites below wrap the cast in an OUTER paren pair: a cast-expression is a
+	// unary-expression, not a postfix-expression, so a directly-invoked method expression
+	// (`I.M(nil)`) parses `(T)(x)(args)` as `(T)(x(args))` — invoking the uncast x first, CS0149 —
+	// unless the whole cast is `((T)(x))(args)`.
 	if sel, ok := v.info.Selections[selectorExpr]; ok && sel.Kind() == types.MethodExpr {
 		delegateType := convertToCSTypeName(v.getCSharpTypeName(v.info.TypeOf(selectorExpr)))
 		methodName := v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))
+
+		// An INTERFACE method expression (`I.M`, runtime stack_test.go's `I.M(nil)` /
+		// `reflect.ValueOf(I.M)`) has no static/extension form to reference at all — unlike a
+		// concrete type, Go's interface methods become genuine C# instance methods on the
+		// interface, callable only as `recv.M(...)`, never as a bare or qualified method group
+		// (bare `M` is CS0246/CS0123: no such symbol exists outside instance-call position).
+		// Render the dispatch directly as a lambda: `(Action<I>)((p0) => p0.M())`. This bypasses
+		// the qualifier logic below entirely: package qualification belongs to delegateType's own
+		// (already-correct) rendering of I, never to the instance-called method name.
+		if _, isInterface := types.Unalias(sel.Recv()).Underlying().(*types.Interface); isInterface {
+			if fn, ok := sel.Obj().(*types.Func); ok {
+				if sig, ok := fn.Type().(*types.Signature); ok {
+					params := []string{"p0"}
+					args := make([]string, 0, sig.Params().Len())
+
+					for i := 0; i < sig.Params().Len(); i++ {
+						name := fmt.Sprintf("p%d", i+1)
+						params = append(params, name)
+						args = append(args, name)
+					}
+
+					return fmt.Sprintf("((%s)((%s) => p0.%s(%s)))", delegateType, strings.Join(params, ", "), methodName, strings.Join(args, ", "))
+				}
+			}
+		}
 
 		// A FOREIGN-package type's method expression — `(*http.Request).Write` (net/http/httputil
 		// persist.go), or `(*Reader).ReadBytes` in an EXTERNAL test (`package bufio_test`) that
@@ -789,7 +818,34 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 			methodName = aliasQualifier + "." + methodName
 		}
 
-		return fmt.Sprintf("(%s)(%s)", delegateType, methodName)
+		// A method expression on the POINTER type (`(*T).Method`) whose underlying declaration
+		// has a Go VALUE receiver — legal, since a value-receiver method is in *T's method set
+		// too (runtime stack_test.go's `(*structWithMethod).caller`). Neither of the two forms
+		// the comment above relies on applies: it isn't `[GoRecv]` (that's the POINTER-receiver
+		// case) and it isn't direct-ж, so its only C# form is the plain-value primary (`this T`),
+		// which cannot bind the delegate's `ж<T>` first parameter (CS1503/CS0123). Wrap it in a
+		// lambda that dereferences the box and forwards: `(Func<ж<T>, R>)(p0 => Method(p0.Value))`.
+		if fn, ok := sel.Obj().(*types.Func); ok {
+			if sig, ok := fn.Type().(*types.Signature); ok && sig.Recv() != nil {
+				_, exprRecvIsPointer := types.Unalias(sel.Recv()).(*types.Pointer)
+				_, declRecvIsPointer := types.Unalias(sig.Recv().Type()).(*types.Pointer)
+
+				if exprRecvIsPointer && !declRecvIsPointer && !packageDirectBoxReceiverMethods[fn.Origin()] {
+					params := []string{"p0"}
+					args := []string{"p0.Value"}
+
+					for i := 0; i < sig.Params().Len(); i++ {
+						name := fmt.Sprintf("p%d", i+1)
+						params = append(params, name)
+						args = append(args, name)
+					}
+
+					return fmt.Sprintf("((%s)((%s) => %s(%s)))", delegateType, strings.Join(params, ", "), methodName, strings.Join(args, ", "))
+				}
+			}
+		}
+
+		return fmt.Sprintf("((%s)(%s))", delegateType, methodName)
 	}
 
 	// A method call on a manually-converted foreign-receiver method (`gp.guintptr()` on a *g —

@@ -63,7 +63,7 @@ private static readonly object literalPresentˢ = (@string)"literal present:"u8;
 internal static void Main() {
     fmt.Println(funcˢ, nameOf(passInt));
     fmt.Println(funcˢ, nameOf(passString));
-    fmt.Println(methodˢ, nameOf((Action<receiver>)(method)));
+    fmt.Println(methodˢ, nameOf(((Action<receiver>)(method))));
     var literal = () => {
     };
     fmt.Println(literalPresentˢ, nameOf(literal) != "<empty name>"u8 && nameOf(literal) != "<nil Func>"u8);
