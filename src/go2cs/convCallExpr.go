@@ -4297,7 +4297,113 @@ func (v *Visitor) reinterpretManagedEmission(callExpr *ast.CallExpr, arg ast.Exp
 		}
 	}
 
+	// Go's prefix-downcast idiom — allocate the larger record, hand out a pointer to its embedded
+	// Type header, cast back — has no managed answer as a REINTERPRET: a ж<abi.Type> holds only an
+	// abi.Type, so there is nothing behind it to downcast to, and golib's alias gate rightly refuses
+	// (ReinterpretAliasesStorage). The address route it falls back to yields a box that reads as
+	// zero, which is why funcLayout died on its own entry gate ("reflect: funcLayout of non-func
+	// type <nil>"). But the descriptor CARRIES a System.Type, and for the records whose Go cargo is
+	// recoverable from it the answer is to SYNTHESIZE rather than to downcast — so emit the
+	// synthesizing accessor instead. See internal/abi/type_impl.cs.
+	if emission, ok := v.synthesizedDowncastEmission(callExpr, src, srcElem, identContext); ok {
+		return emission, true
+	}
+
 	return fmt.Sprintf("%s.Reinterpret<%s, %s>()", v.convExpr(src, []ExprContext{identContext}), srcElem, targetElem), true
+}
+
+// The internal/abi record types the managed model can synthesize from a descriptor's carried
+// System.Type, keyed by the abi type name and valued by the accessor that does it. Deliberately a
+// CURATED list and not a rule about embedding: an entry belongs here only once an accessor actually
+// exists and its cargo has been measured, exactly as manualConversionFuncs is curated.
+var synthesizedAbiDowncasts = map[string]string{
+	"FuncType": "FuncType",
+}
+
+// synthesizedDowncastEmission renders a prefix downcast to a synthesizable abi record as that
+// record's accessor, reporting false for every other shape. The source is either the abi.Type
+// header itself (`t.common()`) or a single-field wrapper over it (`reflect.rtype`, Go's
+// `type rtype struct { t abi.Type }`) — the wrapper is unwrapped with the SAME Reinterpret whose
+// alias arm golib already takes for that correspondence, so the composition adds no new mechanism.
+func (v *Visitor) synthesizedDowncastEmission(callExpr *ast.CallExpr, src ast.Expr, srcElem string, identContext ExprContext) (string, bool) {
+	targetPtr, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Pointer)
+
+	if !ok {
+		return "", false
+	}
+
+	targetNamed, ok := types.Unalias(targetPtr.Elem()).(*types.Named)
+
+	if !ok || targetNamed.Obj().Pkg() == nil || targetNamed.Obj().Pkg().Path() != "internal/abi" {
+		return "", false
+	}
+
+	accessor, ok := synthesizedAbiDowncasts[targetNamed.Obj().Name()]
+
+	if !ok {
+		return "", false
+	}
+
+	// The record embeds the Type header as its first field; that is both what makes it a prefix
+	// downcast and where the header's own type name comes from, so it is read rather than assumed.
+	targetStruct, ok := targetNamed.Underlying().(*types.Struct)
+
+	if !ok || targetStruct.NumFields() == 0 {
+		return "", false
+	}
+
+	headerType := targetStruct.Field(0).Type()
+
+	if !isAbiTypeHeader(headerType) {
+		return "", false
+	}
+
+	srcPtr, ok := types.Unalias(v.info.TypeOf(src)).(*types.Pointer)
+
+	if !ok {
+		return "", false
+	}
+
+	boxExpr := v.convExpr(src, []ExprContext{identContext})
+
+	// The header itself: the accessor binds directly.
+	if isAbiTypeHeader(srcPtr.Elem()) {
+		return fmt.Sprintf("%s.%s()", boxExpr, accessor), true
+	}
+
+	// A single-field wrapper over the header: unwrap first, then bind.
+	if unwrapsToAbiTypeHeader(srcPtr.Elem()) {
+		headerElem := convertToCSTypeName(v.getAliasQualifiedTypeName(headerType, false))
+		return fmt.Sprintf("%s.Reinterpret<%s, %s>().%s()", boxExpr, srcElem, headerElem, accessor), true
+	}
+
+	return "", false
+}
+
+// isAbiTypeHeader reports whether t is internal/abi.Type, the header every descriptor record embeds.
+func isAbiTypeHeader(t types.Type) bool {
+	named, ok := types.Unalias(t).(*types.Named)
+
+	if !ok {
+		return false
+	}
+
+	obj := named.Obj()
+
+	return obj.Pkg() != nil && obj.Pkg().Path() == "internal/abi" && obj.Name() == "Type"
+}
+
+// unwrapsToAbiTypeHeader reports whether t is a struct whose ONE field is the abi.Type header —
+// Go's `type rtype struct { t abi.Type }`, the correspondence golib's ReinterpretAliasesStorage
+// already recognizes as an alias-safe single-field wrapper.
+func unwrapsToAbiTypeHeader(t types.Type) bool {
+	strct, ok := types.Unalias(t).Underlying().(*types.Struct)
+
+	if !ok || strct.NumFields() != 1 {
+		return false
+	}
+
+	return isAbiTypeHeader(strct.Field(0).Type())
 }
 
 // arrayPointerAliasEmission renders golib's element-window alias for a `(*[N]T)(unsafe.Pointer(p))`

@@ -521,4 +521,32 @@ private static ж<ΔArrayType> synthesizeArrayType(ж<Type> Ꮡt) {
     ));
 }
 
+// Whether this descriptor stands for a STACK FRAME LAYOUT rather than for a Go type — the
+// System.Type-less kind the descriptor contract admits as first-class
+// (DESIGN-descriptor-contract.md §3, amended 2026-08-31).
+//
+// reflect.funcLayout MINTS such a descriptor: Go's own source sets Align_, Size_ and PtrBytes and
+// nothing else, deliberately, because "the returned type exists only for GC". A frame is not a Go
+// type, so there is no System.Type for the box to carry and no synthType path that could stamp one
+// — the descriptor is outside the "carries a System.Type plus side cargo" premise, not an edge of it.
+//
+// The test is on the KIND, never on the absence of a System.Type. That distinction is the whole
+// point: a descriptor that BYPASSED synthType still names a real Go type and so still reports a
+// real Kind, and must keep tripping canonType's assert; only a descriptor naming NO Go kind at all
+// is admitted here. Go's Kind_ is left zero by the mint and Kind() masks with KindMask, so Invalid
+// is exactly "this descriptor names no Go kind". It also fails CLOSED: were a future Go release to
+// start stamping a kind on the frame type, this predicate would stop recognizing it and the assert
+// would fire — a loud stop, not a silent admission.
+//
+// Deliberately NOT a new field on Type. ReinterpretAliasesStorage keys its alias decision on
+// Unsafe.SizeOf<T>(), so widening abi.Type would move that gate for every pair involving it —
+// a corpus-wide blast radius for a marker, when Go's own encoding already carries the fact.
+// The kind is the SOLE discriminator here on purpose: adding "and it has no System.Type" would
+// make this a conjunction containing the absence test, and a reader could then reasonably carry
+// the absence half forward as the operative one. Callers establish the absence; this answers only
+// "does this descriptor name a Go kind at all".
+public static bool IsFrameLayoutDescriptor(this ж<Type> Ꮡt) {
+    return Ꮡt != nil && Ꮡt.Value.Kind() == Invalid;
+}
+
 } // end abi_package

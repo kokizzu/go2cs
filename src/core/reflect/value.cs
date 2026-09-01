@@ -333,7 +333,7 @@ internal static readonly @string tvSize0ˢ = "tv.Size() != 0"u8;
 
 internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @in) {
     // Get function pointer, type.
-    var t = v.typ().Reinterpret<abi.Type, funcType>();
+    var t = v.typ().FuncType();
     @unsafe.Pointer fn = default!;
     ΔValue rcvr = new(nil);
     ж<abi.Type> rcvrtype = default!;
@@ -857,7 +857,7 @@ internal static (ж<abi.Type> rcvrtype, ж<funcType> t, @unsafe.Pointer fn) meth
         }
         rcvrtype = iface.Value.itab.Value.Type;
         fn = @unsafe.Pointer.FromBox(Ꮡ(@unsafe.Slice((~iface).itab.at(abi.ITab.ᏑFun, 0), i + 1), i));
-        t = tt.typeOff((~m).Typ).Reinterpret<abi.Type, funcType>();
+        t = tt.typeOff((~m).Typ).FuncType();
     } else {
         rcvrtype = v.typ();
         var ms = v.typ().ExportedMethods();
@@ -871,7 +871,7 @@ internal static (ж<abi.Type> rcvrtype, ж<funcType> t, @unsafe.Pointer fn) meth
         ref var ifn = ref heap<@unsafe.Pointer>(out var Ꮡifn);
         ifn = (uintptr)textOffFor(v.typ(), m.Ifn);
         fn = @unsafe.Pointer.FromBox(Ꮡifn);
-        t = typeOffFor(v.typ(), m.Mtyp).Reinterpret<abi.Type, funcType>();
+        t = typeOffFor(v.typ(), m.Mtyp).FuncType();
     }
     return (rcvrtype, t, fn);
 }
