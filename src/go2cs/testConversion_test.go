@@ -4614,3 +4614,127 @@ func importInitClaims() []string {
 
 	return claims
 }
+
+// Cross-variant guard for a Δ-renamed package-level VAR — the twin of
+// TestTestVariantPinsProductionTypeAgainstTestMethodCollision for a var rather than a method, and
+// the shape runtime's `export_test.go` has: `var Lock = lock` beside an unrelated `RWMutex.Lock`
+// METHOD, which getCollisionAvoidanceIdentifier resolves by Δ-renaming the VAR. The white-box
+// bridge reference the EXTERNAL variant emits for `pkg.Lock` renders through whiteboxBridgeMember,
+// whose own nameCollisions is a fresh per-variant map that never saw the internal declaration — so
+// it spelled the bare `Lock` against a member emitted as `ΔLock` (metrics_test.cs, CS1503 x2).
+//
+// The link that closes it is the SESSION-scoped, object-keyed testTypeRenames, and this guard
+// exists because a registration for it sat in visitValueSpec for a while and could never fire:
+// performGlobalVariableAnalysis renames a package-level var declarator FIRST, so by the time the
+// visitor reads getIdentName the name is already `ΔLock` and nameCollisions answers false for it.
+// The registration therefore lives at that rename site, and this test pins BOTH halves — the
+// record, and the bridge spelling that reads it — plus the discrimination that a var no method
+// collides with keeps its plain name on both sides.
+func TestTestVariantBridgeFollowsRenamedPackageVar(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads a module fixture through go/packages")
+	}
+
+	dir := t.TempDir()
+
+	writeModuleFiles(t, dir, map[string]string{
+		"go.mod": "module example/bridgevar\n\ngo 1.23\n",
+		"value.go": "package bridgevar\n\ntype mutex struct{ n int }\n\n" +
+			"func lock(m *mutex) {}\n\nfunc unlock(m *mutex) {}\n\n" +
+			"func NewMutex() *mutex { return &mutex{} }\n",
+		"export_test.go": "package bridgevar\n\n" +
+			// The collision: an exported package-level VAR sharing a name with an unrelated
+			// type's METHOD, both contributed by the internal test half.
+			"type RWMutex struct{ n int }\n\n" +
+			"func (rw *RWMutex) Lock() {}\n\n" +
+			"var Lock = lock\n\n" +
+			// Discrimination: no method is named `Unlocked`, so this var must stay bare.
+			"var Unlocked = unlock\n",
+		"external_test.go": "package bridgevar_test\n\nimport \"example/bridgevar\"\n\n" +
+			"func externalProbe() {\n\tm := bridgevar.NewMutex()\n\tbridgevar.Lock(m)\n\tbridgevar.Unlocked(m)\n}\n",
+	})
+
+	internal, external := loadBothTestVariantsForDir(t, dir)
+
+	if internal == nil || external == nil {
+		t.Fatal("both test variants must load")
+	}
+
+	outputPath := t.TempDir()
+	bridgeName := getSanitizedImport("bridgevar_internal_test" + PackageSuffix)
+
+	// The white-box reference model's own option set (convertTestVariants) — the bridge spelling
+	// this guard measures exists only under it.
+	base := Options{
+		indentSpaces:           4,
+		preferVarDecl:          true,
+		useChannelOperators:    true,
+		testProductionPath:     "example/bridgevar",
+		testProductionName:     "bridgevar",
+		testMetadataAnchorName: bridgeName,
+		testWhiteboxReference:  true,
+		testInternalBridgeName: bridgeName,
+	}
+
+	// Session scope mirrors processTestConversion: ONE registry across both variant passes.
+	testMethodRenames = make(map[types.Object]bool)
+	testTypeRenames = make(map[types.Object]bool)
+	whiteboxInternalTestObjects = collectWhiteboxInternalTestObjects(internal)
+	whiteboxBridgeDeclaredNames = collectWhiteboxBridgeDeclaredNames(internal)
+	whiteboxBridgeTypeNames = collectWhiteboxBridgeTypeNames(internal)
+
+	t.Cleanup(func() {
+		testMethodRenames = nil
+		testTypeRenames = nil
+		whiteboxInternalTestObjects = nil
+		whiteboxBridgeDeclaredNames = HashSet[string]{}
+		whiteboxBridgeTypeNames = HashSet[string]{}
+	})
+
+	internalOptions := testVariantOptions(base, testProjectWhiteboxReference, false, bridgeName)
+
+	if _, _, err := convertTestVariant(internal, testFileEntries(internal), outputPath, "go", productionSeed{}, internalOptions); err != nil {
+		t.Fatal(err)
+	}
+
+	exportCs := readConvertedTestFile(t, outputPath, "export_test.cs")
+
+	// Fixture liveness: the collision must really have Δ-renamed the var, and only that one.
+	if !strings.Contains(exportCs, ShadowVarMarker+"Lock") {
+		t.Fatalf("the fixture is inert: the colliding package-level var must be Δ-renamed:\n%s", exportCs)
+	}
+	if strings.Contains(exportCs, ShadowVarMarker+"Unlocked") {
+		t.Fatalf("a package-level var no method collides with must keep its plain name:\n%s", exportCs)
+	}
+
+	// The record the external pass reads, asserted against the very objects go/types resolved —
+	// the link that was missing while the registration sat in visitValueSpec.
+	scope := internal.Types.Scope()
+	lockObj := scope.Lookup("Lock")
+	unlockedObj := scope.Lookup("Unlocked")
+
+	if lockObj == nil || unlockedObj == nil {
+		t.Fatal("the fixture's package-level vars must resolve in the internal variant's scope")
+	}
+	if !testTypeRenames[lockObj] {
+		t.Error("the Δ-renamed package-level var must be recorded for the other variant to read")
+	}
+	if testTypeRenames[unlockedObj] {
+		t.Error("a var that was never renamed must not be recorded")
+	}
+
+	externalOptions := testVariantOptions(base, testProjectWhiteboxReference, true, bridgeName)
+
+	if _, _, err := convertTestVariant(external, testFileEntries(external), outputPath, "go", productionSeed{}, externalOptions); err != nil {
+		t.Fatal(err)
+	}
+
+	externalCs := readConvertedTestFile(t, outputPath, "external_test.cs")
+
+	if !strings.Contains(externalCs, bridgeName+"."+ShadowVarMarker+"Lock(") {
+		t.Errorf("the external variant's bridge reference must follow the internal variant's Δ-renamed var:\n%s", externalCs)
+	}
+	if !strings.Contains(externalCs, bridgeName+".Unlocked(") {
+		t.Errorf("the external variant must keep the bare name for a var that never collided:\n%s", externalCs)
+	}
+}

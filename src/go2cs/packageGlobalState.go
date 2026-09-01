@@ -218,6 +218,14 @@ var testMethodRenames map[types.Object]bool
 // testMethodRenames is: both variants share one go/packages load, so the external variant's
 // reference resolves by object identity to the very declaration registered during the internal
 // pass. Nil outside -tests conversions.
+//
+// It carries VARS and CONSTS as well as types — same mechanism, same cross-variant blindness (the
+// export_test.go `var Lock = lock` beside `RWMutex.Lock`, read back by whiteboxBridgeMember). Each
+// kind registers at ITS OWN rename site, and they are not the same file: a TYPE at visitTypeSpec, a
+// CONST at visitValueSpec's CONST arm, and a package-level VAR at performGlobalVariableAnalysis —
+// which renames the var declarator BEFORE any visitor runs, so by visitValueSpec the name is
+// already `ΔLock` and nameCollisions no longer answers for it. Guarded by
+// TestTestVariantBridgeFollowsRenamedPackageVar.
 var testTypeRenames map[types.Object]bool
 
 // packageBuiltinShadows holds Go built-in names (`clear`, `len`, …) that the current package ALSO
