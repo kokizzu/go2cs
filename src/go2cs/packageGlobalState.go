@@ -59,6 +59,15 @@ var exportedTypeAliases map[string]string
 
 var importedTypeAliases map[string]string
 
+// importedTypeAliasSourceDirs records which foreign dependency's SourceDir published each key in
+// importedTypeAliases. go2cs's alias keys are short-name-only (`<rootPackageName>.<member>`), which
+// cannot distinguish two DIFFERENT import paths that happen to declare the same package name —
+// runtime/trace and internal/trace are both literally `package trace`. A reference that resolves
+// (via go/types, which IS path-correct) to a package that never published anything under a given
+// key must not adopt a DIFFERENT package's entry for it just because the short name matches; see
+// aliasResolvedSelector's consultation of this map.
+var importedTypeAliasSourceDirs map[string]string
+
 // packageInlineFuncTypeNames records the names of this package's NON-GENERIC METHODLESS named func
 // types — the ones visitFuncType renders inline as their base delegate and whose named declaration
 // is skipped (there is no `<name>_package.<Δname>` type). Their exported-type-alias must NOT be

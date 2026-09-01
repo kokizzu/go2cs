@@ -963,6 +963,7 @@ func applyExportedTypeAliases(results [][2]string, info PackageInfo, derived boo
 
 		packageLock.Lock()
 		importedTypeAliases[alias] = typeName
+		importedTypeAliasSourceDirs[alias] = filepath.Clean(info.SourceDir)
 
 		if derived {
 			derivedTypeAliases.Add(alias)
