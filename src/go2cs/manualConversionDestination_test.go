@@ -151,3 +151,173 @@ var csharpDeclarationLine = regexp.MustCompile(`(?m)^\s*(?:\[[^\]]*\]\s*)*(?:pub
 // which is the failure mode that makes a merge-seam guard worthless — nobody believes a check that
 // cries wolf, and this one exists to be believed.
 var csharpCallableName = regexp.MustCompile(`\b([A-Za-z_][A-Za-z0-9_]*)\s*\(`)
+
+// TestManualConversionRegistrationsDisplaceSomething is the SOURCE direction of the same ledger: a
+// registration must actually DISPLACE a generated body. The guard above asks whether the
+// displacement ARRIVES; this one asks whether it ever DEPARTS, and the two fail apart.
+//
+// The defect, stated as the defect. `manualConversionFuncs` is keyed by NAME, and a Go METHOD's key
+// carries its receiver — "Value.extendSlice", never the bare "extendSlice". The bare form matches no
+// declaration, so the converter displaces nothing, the generated body survives, the hand-owned
+// `_impl.cs` body beside it becomes a duplicate, and the package dies CS0111. The guard above passes
+// cleanly on exactly that mistake, because the `_impl.cs` really does define the member — which is
+// how the trap has been paid three separate times, most recently by reflect's `extendSlice`
+// (2026-09-01). Worse than an ordinary build failure: a `-tests` build that fails leaves the PREVIOUS
+// comparison record in place, so the run reports the old verdicts and reads as "the fix does not
+// work" rather than as a compile error.
+//
+// The registry's OTHER field has had this guard for a while, with the reasoning already written
+// down. TestEveryManualConversionScopeNamesAKnownGOOS exists because a scope naming "win" "matches no
+// target at all, which silently turns the entry off everywhere — the auto body is emitted and
+// compiles, and the hand-own it was protecting is simply gone." That sentence is true word for word
+// of a mistyped NAME. Only the name field lacked the check.
+//
+// WITNESS. The converter writes one fixed line wherever it displaces a func body (visitFuncDecl.go's
+// placeholder), so this is a filesystem scan of the same cost class as the guard above: no
+// type-checking, no overload resolution, no Go toolchain.
+//
+// IN SYNC BY CONSTRUCTION, not by luck. A hand-own bank must ship its regenerated package with it, or
+// the committed corpus carries BOTH the generated body and the new `_impl.cs` body and fails to
+// compile. Registration and placeholder therefore land in the same commit, and this guard cannot red
+// merely because the corpus lags the converter.
+//
+// WHAT IT CANNOT SEE, stated because a guard's blind spot is worth more written down than
+// rediscovered. The placeholder names funcDecl.Name.Name — the member alone — so this test strips a
+// key's receiver before matching and therefore cannot tell "Value.extendSlice" from a bare
+// "extendSlice" while a placeholder for that member already sits in the corpus. That is not the
+// trap's actual shape: a NEW hand-own keyed bare produces no placeholder at all (the same mechanism
+// that makes reflect.methodName visible here — a key matching no declaration displaces nothing), and
+// isManualFuncDecl is the single decision behind both the displacement and the placeholder, so
+// witness and displacement cannot disagree. What survives is the narrow case of editing an ALREADY
+// CORRECT key down to its bare form without regenerating, where the stale placeholder answers for
+// the new key until the next regen — and the CS0111 that follows is caught by the corpus build, one
+// layer out, exactly as the over-collection in handOwnedDefinitions above is.
+//
+// NO EXEMPTION LIST, and that was measured rather than assumed. The three `runtime` entries declared
+// in runtime2.go look structurally unwitnessable — `runtime/runtime2.cs` is a whole-file hand-own, so
+// the converter never emits that file — but it emits their placeholders into `runtime2.cs.auto`, the
+// review sibling it writes for exactly that case, and searching the siblings takes the residual set
+// to zero. The sibling is the right place to look, not a loophole: it is the converter's own record
+// of what it WOULD emit, which is precisely this test's question. Note the asymmetry with
+// handOwnedDefinitions above, which SKIPS `.cs.auto` — its question is "does a HAND-OWN define
+// this?", and a sibling is not a hand-own. Same files, opposite treatment, both correct; do not
+// "unify" them.
+//
+// manualConversionTypes is deliberately NOT covered. All three of its entries (guintptr, puintptr,
+// muintptr) are witnessed in that same sibling, so a types arm would restate this one over three
+// names and add no independent signal.
+func TestManualConversionRegistrationsDisplaceSomething(t *testing.T) {
+	coreDir := filepath.Join("..", "core")
+
+	if _, err := os.Stat(coreDir); err != nil {
+		t.Skip("src/core is not beside the converter; nothing to walk")
+	}
+
+	var undisplaced []string
+	witnessed := 0
+
+	for pkg, funcs := range manualConversionFuncs {
+		placeholders := generatedFuncPlaceholders(t, filepath.Join(coreDir, filepath.FromSlash(pkg)))
+
+		for name := range funcs {
+			// A method registration names the RECEIVER type and the member; the placeholder names the
+			// member alone, because it is written from funcDecl.Name.Name.
+			member := name
+			if dot := strings.LastIndex(member, "."); dot >= 0 {
+				member = member[dot+1:]
+			}
+
+			if placeholders[member] {
+				witnessed++
+				continue
+			}
+
+			undisplaced = append(undisplaced, pkg+"."+name)
+		}
+	}
+
+	sort.Strings(undisplaced)
+
+	for _, entry := range undisplaced {
+		t.Errorf("manualConversionFuncs registers %s, but the converter displaced no body for it — the "+
+			"entry matches no Go declaration in that package. A method key needs its receiver "+
+			"(\"Value.extendSlice\", not \"extendSlice\"); a renamed or removed upstream declaration needs "+
+			"the entry retired. Either way the generated body survives, a hand-owned one beside it is a "+
+			"duplicate, and the package fails CS0111 — reported through a -tests run that reuses the "+
+			"previous comparison record and so reads as a failed fix", entry)
+	}
+
+	// A census that finds nothing reports every registration as undisplaced, which reads as a
+	// catastrophic registry rather than as a broken instrument. Anchor it, the way the scope guard
+	// anchors its own.
+	if witnessed == 0 {
+		t.Error("no registration matched a generated placeholder anywhere in the corpus; the placeholder " +
+			"census is broken, not the registry")
+	}
+}
+
+// generatedFuncPlaceholders returns the member names the converter displaced a func body for in ONE
+// package: the generated `.cs` at the package root, the per-GOOS folders layout L3 routes a
+// platform-scoped declaration into, and the `.cs.auto` review siblings (see the caller's note on why
+// the siblings count here and not in handOwnedDefinitions).
+//
+// Scope is the package's OWN files — root plus GOOS folders — not a full recursive walk. A converted
+// package's subdirectories are usually OTHER packages (net/http holds cgi, httptest, …), and counting
+// a child's placeholder for its parent would be a false PASS on exactly the question this test asks.
+func generatedFuncPlaceholders(t *testing.T, packageDir string) map[string]bool {
+	t.Helper()
+
+	witnessed := map[string]bool{}
+
+	dirs := []string{packageDir}
+
+	// Layout L3's platform folders, and ONLY those: a GOOS-named subdirectory can also be a package
+	// (`internal/syscall/windows` is the corpus's only one), but a package's placeholders sit in its
+	// OWN platform folder — depth 2 from here — and this walk stops at depth 1, so a child package's
+	// placeholders cannot answer for its parent. Measured 2026-09-01 rather than assumed:
+	// `internal/syscall/windows/*.cs` carries no placeholder at all; all NINE of them are in
+	// `internal/syscall/windows/windows/`, its own platform folder. A csproj test was written here
+	// first and then removed: it could not be made to fire, because the depth rule already closes the
+	// case, and an unexercisable branch in a guard is exactly what this file's neighbours refuse to
+	// carry.
+	if entries, err := os.ReadDir(packageDir); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() && isKnownGOOS(entry.Name()) {
+				dirs = append(dirs, filepath.Join(packageDir, entry.Name()))
+			}
+		}
+	}
+
+	for _, dir := range dirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+
+		for _, entry := range entries {
+			name := entry.Name()
+
+			if entry.IsDir() || !(strings.HasSuffix(name, ".cs") || strings.HasSuffix(name, ".cs.auto")) {
+				continue
+			}
+
+			content, readErr := os.ReadFile(filepath.Join(dir, name))
+			if readErr != nil {
+				continue
+			}
+
+			for _, match := range generatedFuncPlaceholder.FindAllStringSubmatch(string(content), -1) {
+				witnessed[match[1]] = true
+			}
+		}
+	}
+
+	return witnessed
+}
+
+// The displacement witness, anchored on the converter's own prefix rather than on the trailing prose.
+// `runtime/runtime2.cs` carries 13 HAND-WRITTEN lines ending in the same words ("func set is
+// hand-converted with managed semantics — see the package's *_impl.cs"), a wording the converter emits
+// nowhere; a pattern loose enough to match those would let a hand-own satisfy a guard about generated
+// output, and this test would report clean while measuring nothing.
+var generatedFuncPlaceholder = regexp.MustCompile(`(?m)^// go2cs generated this placeholder — func ([A-Za-z_][A-Za-z0-9_]*) is hand-converted\b`)

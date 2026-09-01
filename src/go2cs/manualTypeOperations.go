@@ -531,12 +531,18 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"deepValueEqual": goosAny,
 		// Phase-3 write-back (the chip): Set writes through the addressable Value's aliased ж box
 		// (Go's assignTo semantics over the golib assert machinery); Zero builds valid zero Values
-		// (a pointer kind yields the canonical typed-nil box); methodName walks the managed stack
-		// (runtime.Caller has no managed form — its getcallersp chain NotImplementedException'd
-		// every mustBe* panic path, errors TestAs's first operational hit).
-		"Value.Set":  goosAny,
-		"Zero":       goosAny,
-		"methodName": goosAny,
+		// (a pointer kind yields the canonical typed-nil box). The stack-walking member this chip also
+		// named was registered here as `methodName`, and `reflect` does not declare that: Go's name is
+		// `valueMethodName` (value.go), registered further down with its own note. The dead key
+		// displaced nothing, emitted no placeholder and is retired — 2026-09-01, found by
+		// TestManualConversionRegistrationsDisplaceSomething, which it is also the first catch of. The
+		// reasoning it carried belongs to `valueMethodName`: runtime.Caller has no managed form, and
+		// its getcallersp chain NotImplementedException'd every mustBe* panic path, errors TestAs's
+		// first operational hit. (value_impl.cs's own superseded `methodName()` body is inert — called
+		// by nothing — and stays for the reflect lane to dispose of; its comment carries the
+		// receiver-drop reasoning that made the separate valueMethodName body necessary.)
+		"Value.Set": goosAny,
+		"Zero":      goosAny,
 		// Phase-3 increment 2 (the chip): the call & construction half. Value.Call invokes the
 		// boxed delegate (DynamicInvoke; results typed by the STATIC out types); the Set* family
 		// coerces through GoReflect.TryConvertTo and writes through the aliased box; New/
