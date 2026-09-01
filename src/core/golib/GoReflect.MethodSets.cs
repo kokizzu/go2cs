@@ -13,6 +13,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using go.golib;
+using static go2cs.Symbols;
 
 #pragma warning disable IL2026
 #pragma warning disable IL2060
@@ -460,22 +461,132 @@ public static partial class GoReflect
         return Expression.Lambda(delegateType, body, arguments).Compile();
     }
 
-    // The Func<>/Action<> delegate type for a Go signature. A shape outside what those families can
-    // express (a by-ref or pointer parameter, or more parameters than they have arities) fails LOUD
-    // rather than yielding a delegate that would misinterpret the signature.
+    // The delegate type for a Go signature — a DECLARED family wherever one exists, a MINTED type
+    // for the residual.
+    //
+    // DECLARED-FIRST IS A CONTRACT, NOT A PREFERENCE. Go INTERNS func types, so `FuncOf(in, out,
+    // variadic)` must answer the SAME type a converted package spells that signature with — which is
+    // exactly what reflect's own TestFuncOf asserts (checkSameType). A converted `func(T1) string`
+    // IS `Func<T1, @string>`, so a freshly minted type of the same shape would be a different
+    // System.Type and the identity would fail. Three families declare, in widening order: the BCL's
+    // Func<>/Action<> through 16 parameters, golib's own ladder continuing them through 24
+    // (funcArity.cs), and the variadic families whose tail is `params Span<T>` through 8 fixed
+    // parameters (variadic.cs). Every one of those ceilings is ASKED OF THE METADATA below rather
+    // than restated here, so a rung added to either file is reached the day it is written and this
+    // routing cannot drift from what the corpus actually binds.
+    //
+    // Past every ceiling nothing declares a delegate — and nothing could, since a converted package
+    // could not spell one either — so the type is MINTED (GoDelegateSynthesis). Go's own limit is 128
+    // parameters, and its reflect suite drives a 51-parameter FuncOf (all_test.go, issue #54669).
+    //
+    // A shape no family can take as a TYPE ARGUMENT — a by-ref or pointer parameter — still fails
+    // LOUD, at every width, rather than yielding a delegate that would misinterpret the signature.
+    // The mint is reached by WIDTH, never by shape: an expression tree carries neither of those, so
+    // a minted delegate of that shape is one MakeGoFuncDelegate and CompileBoundFactory would refuse
+    // anyway, and a type that exists but cannot be bound is worse than the refusal this has always
+    // been. The `Span<T>` variadic tail is the ONE exception, and it is not a shape the mint invents:
+    // the variadic families carry it themselves and InvokeVariadic's typed trampolines consume it.
     private static Type MakeDelegateType(Type[] parameterTypes, Type returnType)
+    {
+        bool isAction = returnType == typeof(void);
+
+        // A trailing `Span<T>` IS Go's variadic tail. MakeGoFuncType writes it and TryFuncShape reads
+        // it; this is the third and last place that convention is known, and it is read here only to
+        // pick the family — the tail is passed to the mint untouched. The variadic families take the
+        // tail's ELEMENT as their type argument, because a byref-like type cannot be one at all.
+        if (parameterTypes.Length > 0 && parameterTypes[^1] is { IsGenericType: true } tail &&
+            tail.GetGenericTypeDefinition() == typeof(Span<>))
+        {
+            int fixedArity = parameterTypes.Length - 1;
+
+            Type? family = GolibFamily((isAction ? "go.Action" : "go.Func") + EllipsisOperator + '`' +
+                                       (isAction ? fixedArity + 1 : fixedArity + 2));
+
+            if (family is null)
+                return GoDelegateSynthesis.SynthesizeDelegateType(parameterTypes, returnType);
+
+            Type[] withElement = [.. parameterTypes[..fixedArity], tail.GetGenericArguments()[0]];
+            Type[] arguments = isAction ? withElement : [.. withElement, returnType];
+
+            return InstantiateFamily(family, arguments, parameterTypes, returnType);
+        }
+
+        // The BCL family, through its own ceiling — the route every signature the corpus has ever
+        // produced takes, unchanged, and the one whose loud refusal a by-ref or pointer parameter
+        // meets.
+        if (BclDeclaresFamily(parameterTypes.Length, isAction))
+        {
+            try
+            {
+                return isAction
+                    ? Expression.GetActionType(parameterTypes)
+                    : Expression.GetFuncType([.. parameterTypes, returnType]);
+            }
+            catch (Exception ex) when (ex is ArgumentException or TypeLoadException)
+            {
+                throw NoDelegateForm(parameterTypes, returnType, ex);
+            }
+        }
+
+        Type? rung = GolibFamily((isAction ? "go.Action`" : "go.Func`") +
+                                 (isAction ? parameterTypes.Length : parameterTypes.Length + 1));
+
+        if (rung is null)
+            return GoDelegateSynthesis.SynthesizeDelegateType(parameterTypes, returnType);
+
+        return InstantiateFamily(rung, isAction ? parameterTypes : [.. parameterTypes, returnType], parameterTypes, returnType);
+    }
+
+    // One family rung instantiated, with the SAME loud refusal the BCL arm raises — a parameter a
+    // generic family cannot take is exactly what MakeGenericType rejects here.
+    private static Type InstantiateFamily(Type family, Type[] arguments, Type[] parameterTypes, Type returnType)
     {
         try
         {
-            return returnType == typeof(void)
-                ? Expression.GetActionType(parameterTypes)
-                : Expression.GetFuncType([.. parameterTypes, returnType]);
+            return family.MakeGenericType(arguments);
         }
         catch (Exception ex) when (ex is ArgumentException or TypeLoadException)
         {
-            throw new NotImplementedException(
-                $"reflect: Go method signature ({string.Join(", ", parameterTypes.Select(static p => p.Name))}) -> " +
-                $"{returnType.Name} has no Func<>/Action<> delegate form", ex);
+            throw NoDelegateForm(parameterTypes, returnType, ex);
         }
+    }
+
+    // The refusal, unchanged in text: a signature that reaches it has no delegate form the bridge can
+    // bind, and `reflect.FuncOf` re-raises this message as its own panic.
+    private static NotImplementedException NoDelegateForm(Type[] parameterTypes, Type returnType, Exception inner)
+    {
+        return new NotImplementedException(
+            $"reflect: Go method signature ({string.Join(", ", parameterTypes.Select(static p => p.Name))}) -> " +
+            $"{returnType.Name} has no Func<>/Action<> delegate form", inner);
+    }
+
+    private static readonly ConcurrentDictionary<string, Type?> s_declaredFamilies = new(StringComparer.Ordinal);
+
+    // Whether the BCL declares a delegate family rung of this width — i.e. where
+    // Expression.GetActionType/GetFuncType stop. Asked of corelib rather than written down as a 16
+    // here: a ceiling recorded in two places drifts, and this one is not ours to record. (`Func` with
+    // no parameters is `Func`1`, so the formula covers arity zero; `Action` with none is the
+    // non-generic type, which is the one name that carries no arity suffix.)
+    private static bool BclDeclaresFamily(int arity, bool isAction)
+    {
+        string name = isAction
+            ? arity == 0 ? "System.Action" : "System.Action`" + arity
+            : "System.Func`" + (arity + 1);
+
+        return DeclaredFamily(typeof(object).Assembly, name) is not null;
+    }
+
+    // A DECLARED family rung, by metadata name, memoized: the routing asks per call and the answer is
+    // fixed when the assembly loads — the s_boundFactories rule, and correctly absent from
+    // ClearTypeCaches for the same reason (a late-loading assembly cannot add a rung to corelib or to
+    // golib itself).
+    private static Type? GolibFamily(string name)
+    {
+        return DeclaredFamily(typeof(GoReflect).Assembly, name);
+    }
+
+    private static Type? DeclaredFamily(Assembly assembly, string name)
+    {
+        return s_declaredFamilies.GetOrAdd(name, (n, a) => a.GetType(n, throwOnError: false), assembly);
     }
 }
