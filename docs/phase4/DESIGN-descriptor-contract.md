@@ -142,6 +142,21 @@ kind is not load-bearing), and it is **not** `ΔFuncType`'s ref-returning embed 
 
 A descriptor box carries a `System.Type` plus side cargo for what a `System.Type` cannot express.
 
+**Amendment, 2026-08-31 (ruled; landed with the `funcLayout` predicate cut).** That sentence is the
+premise of everything below it, and it has one admitted exception: the contract also recognizes a
+**`System.Type`-less descriptor as a first-class kind** -- a **stack frame layout**. `reflect.funcLayout`
+mints one per distinct signature (Go's own source sets `Align_`, `Size_` and `PtrBytes` and nothing
+else, because "the returned type exists only for GC"), and `export_test`'s `FuncLayout` then wraps it
+with `toType`. A frame is not a Go type, so there is no `System.Type` for the box to carry and no
+`synthType` path that could stamp one; the descriptor is *outside* the premise rather than an edge of
+it. `canonType` recognizes the **kind** -- `Kind() == Invalid`, i.e. "names no Go kind at all" -- and
+never the absence of a `System.Type`: a descriptor that bypassed `synthType` still names a real Go
+type, still reports a real `Kind`, and still trips the assert exactly as before. The admission is
+evidenced by a measured no-identity-path walk (`funcLayout`'s five production callers either discard
+the frametype or use it only for `Size()`/`unsafe_New`/`framePool`; no production `toType`/`canonType`
+site is fed one), and the recognition fails CLOSED -- were a future Go release to stamp a kind on the
+frame type, the predicate would stop matching and the assert would fire rather than admit silently.
+
 ```
 carried today   funcParamDims   per-PARAMETER array dims           (Ꮡt.Value.funcParamDims)
                 array dims      per-field / per-hop                ([GoArrayDims], [GoMapKeyDims])

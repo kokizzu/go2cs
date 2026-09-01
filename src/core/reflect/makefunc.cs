@@ -59,7 +59,7 @@ internal static ΔValue makeMethodValue(@string op, ΔValue v) {
     ref var rcvr = ref heap<ΔValue>(out var Ꮡrcvr);
     rcvr = new ΔValue(v.typ(), v.ptr, fl);
     // v.Type returns the actual type of the method value.
-    var ftyp = v.Type()._<ж<rtype>>().Reinterpret<rtype, funcType>();
+    var ftyp = v.Type()._<ж<rtype>>().Reinterpret<rtype, abi.Type>().FuncType();
     var code = methodValueCallCodePtr();
     // methodValue contains a stack map for use by the runtime
     var (_, _, abid) = funcLayout(ftyp, nil);

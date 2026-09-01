@@ -1789,12 +1789,29 @@ internal static ΔType canonType(ж<abi.Type> Ꮡt) {
     }
     System.Type? st = Ꮡt.Value.sysType;
     if (st is null) {
+        // A descriptor naming NO Go kind is a stack FRAME LAYOUT, not a Go type — the
+        // System.Type-less kind the descriptor contract admits as first-class
+        // (DESIGN-descriptor-contract.md §3, amended 2026-08-31). reflect.funcLayout mints one per
+        // distinct signature and export_test's FuncLayout then wraps it with toType; there is no
+        // System.Type for a frame and no synthType path that could stamp one. Un-interned is CORRECT
+        // for it — two frames are not "the same Go type" in any sense interning is about, and the
+        // measured walk (bank commit) shows the frame descriptor reaches no identity, equality or
+        // adapter path: funcLayout's five production callers either discard the frametype or use it
+        // only for Size()/unsafe_New/framePool, and no production toType/canonType site is fed one.
+        //
+        // This is NOT the absence of a System.Type standing in for a mark. The kind is the
+        // discriminator, and that keeps the hole the assert exists to close firmly shut: a
+        // descriptor that BYPASSED synthType still names a real Go type, still reports a real Kind,
+        // and so still lands on the assert below exactly as before.
+        // Static form, not extension form: this file imports abi as a class ALIAS, and an alias
+        // does not bring extension methods into scope.
+        if (abi.IsFrameLayoutDescriptor(Ꮡt)) {
+            return new rtypeжΔType(toRType(Ꮡt));
+        }
         // No System.Type stamped on the descriptor: the feeding path did not go through
         // abi.synthType. Such a wrapper is UN-interned — it would compare unequal to the
         // canonical Type for the same Go type, silently reintroducing the reversed-map-sort
-        // bug this file fixes. This branch is dead today (synthType always stamps sysType
-        // after its own nil guard, and every canonType caller feeds a synthType/abi.TypeOf
-        // box or nil), so assert to surface a future non-canonical feeder LOUDLY in dev
+        // bug this file fixes. Assert to surface a non-canonical feeder LOUDLY in dev
         // (Debug builds) while still degrading gracefully in Release rather than crashing.
         System.Diagnostics.Debug.Assert(false,
             "reflect.canonType: abi.Type has no System.Type (synthType was bypassed); the " +
