@@ -54,7 +54,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AEuOAYKEgoKYgoKCgoaCgoSCgoaCgoaCgoKGgoKGgoKGgoKYgoKYggAAFIKCgpqC")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AD+OAYKEgoKYgoKCgoaCgoSCgoaCgoaCgoKGgoKGgoKGgoKYgoKYggAAFIKCgpqC")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -82,4 +82,15 @@ public static partial class main_package
     internal partial struct record {}
     internal partial struct stringMap {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    // </ImportInitializers>
 }

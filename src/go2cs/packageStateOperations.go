@@ -96,6 +96,7 @@ func resetPackageState(pkg *packages.Package) {
 	initFuncCounter = 0
 	usesUnsafeCode = false
 	packageImportForces = HashSet[string]{}
+	packageImportInits = map[string]string{}
 	packageRefLoweringResult = nil
 
 	// Capture the package-level Go doc (rendered to Markdown) for the NuGet README
@@ -177,7 +178,6 @@ func newFileVisitor(fset *token.FileSet, packageTypes *types.Package, info *type
 		liftedAnonStructNames:     map[string]string{},
 		subStructTypes:            map[types.Type][]types.Type{},
 		packageImports:            &strings.Builder{},
-		importInits:          &strings.Builder{},
 		requiredUsings:            HashSet[string]{},
 		importQueue:               HashSet[string]{},
 		referencedForeignPackages: HashSet[string]{},

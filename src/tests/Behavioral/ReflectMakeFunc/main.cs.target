@@ -5,18 +5,6 @@ using reflect = reflect_package;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
 internal static void makeSwap(any fptr) {
     var swap = (slice<reflectꓸValue> @in) => new reflectꓸValue[]{@in[1], @in[0]}.slice();
     var fn = reflect.ValueOf(fptr).Elem();

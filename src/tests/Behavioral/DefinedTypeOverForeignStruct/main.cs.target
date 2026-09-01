@@ -6,12 +6,6 @@ using DefinedTypeOverForeignStruct;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 [GoType("DefinedTypeOverForeignStruct.ptlike_package.Outer")] partial struct alias;
 
 [GoRecv] internal static @string describe(this ref alias a) {

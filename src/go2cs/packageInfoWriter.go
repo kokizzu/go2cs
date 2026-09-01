@@ -784,6 +784,13 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		log.Fatalf("Failed to find '<%s>...</%s>' section for inserting type accessibility declarations into package info file \"%s\"\n", TypeAccessibilitySection, TypeAccessibilitySection, packageInfoFileName)
 	}
 
+	// The imported-package force hooks. Same class-body placement and the same merge semantics as the
+	// section above, and inserted AFTER it so the two machinery blocks have a deterministic order
+	// (see ensureImportInitSection). This is where the hooks live since 2026-09-01; before that each
+	// was spliced into the class body of the file whose import spec produced it.
+	packageInfoLines = ensureImportInitSection(packageInfoLines)
+	packageInfoLines = applyImportInitSection(packageInfoLines, mergeExisting)
+
 	// Go source position maps. Same merge semantics as every other section: a whole-package
 	// conversion rebuilds the section from this run's records alone, while a merging write (the
 	// -tests flow, single-file conversions) keeps existing records for files this conversion did

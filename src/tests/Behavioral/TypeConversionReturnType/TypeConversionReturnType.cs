@@ -7,12 +7,6 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 [GoType("dyn")] internal partial struct test_R0 {
     internal @string @string;
     internal ж<nint> @int;

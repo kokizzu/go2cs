@@ -61,7 +61,7 @@ using static go.main_package;
 [assembly: go.GoPositionMap("abi.go", "abi.cs", "AA1cgoKClIKCgpSCgoKUAAIYgoKUgoKUAAUQggACEoI=")]
 [assembly: go.GoPositionMap("compiletype.go", "compiletype.cs", "AAQegKaAqICmgKaA")]
 [assembly: go.GoPositionMap("escape.go", "escape.cs", "AAYmgoLugoKU")]
-[assembly: go.GoPositionMap("main.go", "main.cs", "AAwOgoKChISCgg==")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "7oKCgoSEgoI=")]
 [assembly: go.GoPositionMap("switch.go", "switch.cs", "ABdAgoKYlKQ=")]
 [assembly: go.GoPositionMap("type.go", "type.cs", "AESIAoKClAAgRKKMqIKCgIKkpoCkgqiApoKogqaCABQuooKU1qKClAACFIIADiSigpSmggAUMqKCgpQAKgiigpSUpKysrKysrKwABBKilIKkgqSCpIKkgqSoooKUqKKClKiigpSoooKUqKKClKiApoCkgAAIEIKCgpSmooKClKiAAA4igqSCpIKkgqSCpqKClAANMoKmgqaCpoLWooKClIKU1KKCgpSCgpSmggANHIIADFKC2oKogqiCqILagoKCgoKCzIKClIKsgoKCgoKClOqCgpSCqIKClIKCpoKClIKUgoKChIKCgpSCgpSCloKCgoKCgoKW")]
 // </GoSourcePositionMaps>
@@ -123,4 +123,14 @@ public static partial class main_package
     public partial struct ΔName {}
     public partial struct ΔStructType {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    // </ImportInitializers>
 }

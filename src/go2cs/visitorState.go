@@ -208,11 +208,6 @@ type Visitor struct {
 	importQueue           HashSet[string]
 	requiredUsings        HashSet[string]
 	typeAliasDeclarations *strings.Builder
-	// importInits collects this FILE's imported-package module-initializer hooks — the
-	// `[GoInit] … builtin.initPackage(typeof(<pkg>_package));` methods that force an imported
-	// package's `init` to run before this package's own, for every import form (see
-	// writeImportInit). Spliced into the top of the file's class body at ImportInitMarker.
-	importInits *strings.Builder
 	// emittedClassName is the `partial class <name>` this FILE's declarations are emitted into —
 	// `<pkg>_package`, or the per-variant override under -tests (visitFile computes it; this is the
 	// same expression, recorded so emitters running INSIDE the class body can ask what encloses

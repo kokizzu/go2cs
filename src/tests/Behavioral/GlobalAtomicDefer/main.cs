@@ -6,18 +6,6 @@ using sync;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(sync.atomic_package));
-}
-
 internal static ж<atomic.Int32> Ꮡlocked = new StandardBox<atomic.Int32>(default(atomic.Int32));
 internal static ref atomic.Int32 locked => ref Ꮡlocked.Value;
 internal static ж<atomic.Uint64> ᏑrunGoid = new StandardBox<atomic.Uint64>(default(atomic.Uint64));
