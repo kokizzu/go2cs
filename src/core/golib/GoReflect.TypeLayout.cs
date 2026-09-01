@@ -172,6 +172,151 @@ public static partial class GoReflect
 
     private static readonly ConcurrentDictionary<Type, nint> s_ptrBytes = new();
 
+    /// <summary>
+    /// Reports whether a Go type is POINTER-SHAPED — Go's <c>isDirectIface</c> — i.e. whether an
+    /// interface holding it stores the value itself in the data word rather than a pointer to a copy.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Go's rule is mechanical: a pointer, chan, map, func or unsafe.Pointer is pointer-shaped; an
+    /// array is pointer-shaped only when it has EXACTLY one element and that element is itself
+    /// pointer-shaped; a struct only when it has EXACTLY one field, likewise. Everything else is not.
+    /// The one-element condition is the whole distinction reflect's own TestArrayOfDirectIface and
+    /// TestStructOfDirectIface turn on: <c>[1]*byte</c> is pointer-shaped and <c>[0]*byte</c> is not,
+    /// however pointer-shaped the element type is.
+    /// </para>
+    /// <para>
+    /// This is a CLASSIFICATION, not a memory-layout claim. It answers what SHAPE a Go type has; it
+    /// does not assert that the managed bridge stores such a value inline, because it does not — a
+    /// bridge <c>reflect.Value</c> carries a boxed managed object and its <c>ptr</c> word is unused.
+    /// Callers that need the classification (reflect's <c>InterfaceData</c>) may read it; callers
+    /// that would use it to SELECT a memory model must not. See the note at
+    /// <see cref="GoPtrBytesOf"/> for the sibling that does describe layout.
+    /// </para>
+    /// <para>
+    /// An array whose dimensions are unknown answers FALSE (not pointer-shaped) rather than
+    /// guessing, which is the conservative direction: it is what every descriptor already reported
+    /// before this predicate existed, so an unknown-dims type cannot change behavior by consulting it.
+    /// </para>
+    /// </remarks>
+    public static bool GoIsDirectIface(Type t, nint[]? arrayDims = null)
+    {
+        // Memoized on the dims-less path for the same reason GoPtrBytesOf is: the struct arm
+        // recurses through GoFields, and this is consulted per descriptor synthesis.
+        if (arrayDims is null)
+            return s_directIface.GetOrAdd(t, static key => goIsDirectIface(key, null, 0));
+
+        return goIsDirectIface(t, arrayDims, 0);
+    }
+
+    private static readonly ConcurrentDictionary<Type, bool> s_directIface = new();
+
+    private static bool goIsDirectIface(Type t, nint[]? arrayDims, int depth)
+    {
+        if (depth > MaxLayoutDepth)
+            return false;
+
+        switch (KindOf(t))
+        {
+            case Pointer or UnsafePointer or Map or Chan or Func:
+                return true;
+
+            case Array:
+            {
+                // Exactly one element, and that element pointer-shaped in turn. Unknown dims
+                // answer false — see the remarks: the conservative direction.
+                if (arrayDims is not { Length: > 0 } || arrayDims[0] != 1)
+                    return false;
+
+                Type? elem = ElementType(t);
+
+                if (elem is null)
+                    return false;
+
+                return goIsDirectIface(elem, arrayDims.Length > 1 ? arrayDims[1..] : null, depth + 1);
+            }
+
+            case Struct:
+            {
+                GoFieldInfo[] fields = GoFields(t);
+
+                return fields.Length == 1 && goIsDirectIface(fields[0].Type, fields[0].ArrayDims, depth + 1);
+            }
+
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>
+    /// For a pointer-shaped type (one <see cref="GoIsDirectIface"/> answers true for), reports
+    /// whether the single pointer the value reduces to is nil.
+    /// </summary>
+    /// <remarks>
+    /// A pointer-shaped type reduces, by the same one-element array / one-field struct rule
+    /// <see cref="GoIsDirectIface"/> walks, to exactly ONE pointer — which is why an interface can
+    /// hold it in the data word at all. This answers that pointer's nilness, so a caller
+    /// reconstructing an interface data word can distinguish the zero value (a nil pointer, word 0)
+    /// from a live one. It lives beside the predicate because the two share the reduction; it
+    /// answers a VALUE question where the predicate answers a TYPE one.
+    /// </remarks>
+    public static bool GoDirectIfaceWordIsNil(object? value, Type t, nint[]? arrayDims = null)
+    {
+        return goDirectIfaceWordIsNil(value, t, arrayDims, 0);
+    }
+
+    private static bool goDirectIfaceWordIsNil(object? value, Type t, nint[]? arrayDims, int depth)
+    {
+        // A missing value reduces to a nil word, and so does anything we cannot walk: the caller
+        // asked about a type it had already classified pointer-shaped, so an unwalkable shape here
+        // is a bridge gap, and "nil" is the answer that reports the zero value rather than
+        // inventing a live pointer.
+        if (value is null || depth > MaxLayoutDepth)
+            return true;
+
+        // Unwrap adapter carriers FIRST, and unwrap them exactly as GoDynamicTypeOf does — the
+        // caller pairs this value with the type GoDynamicTypeOf reported, so the two walks have to
+        // agree about what the value IS or the type says "array" while the value is a shell. Note
+        // IsNilGoValue does NOT unwrap (it probes the value's own type for `== nil`), which is why
+        // reflectPointerToken unwraps before calling it and why this must too: an adapter-wrapped
+        // nil pointer answers its SHELL's nilness otherwise, i.e. "not nil", inverting the word.
+        while (value is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            value = interfaceAdapter.Value;
+
+        if (value is IжAdapter { Box: not null } pointerAdapter)
+            value = pointerAdapter.Box;
+        else if (value is IValueAdapter { Value: not null } valueAdapter)
+            value = valueAdapter.Value;
+
+        switch (KindOf(t))
+        {
+            case Pointer or UnsafePointer or Map or Chan or Func:
+                return IsNilGoValue(value);
+
+            case Array:
+            {
+                Type? elem = ElementType(t);
+
+                if (elem is null)
+                    return true;
+
+                return goDirectIfaceWordIsNil(firstArrayElement(value, elem), elem,
+                    arrayDims is { Length: > 1 } ? arrayDims[1..] : null, depth + 1);
+            }
+
+            case Struct:
+            {
+                GoFieldInfo[] fields = GoFields(t);
+
+                return fields.Length != 1 ||
+                       goDirectIfaceWordIsNil(fields[0].Read(value), fields[0].Type, fields[0].ArrayDims, depth + 1);
+            }
+
+            default:
+                return true;
+        }
+    }
+
     private static nint goPtrBytesOf(Type t, nint[]? arrayDims, int depth)
     {
         if (depth > MaxLayoutDepth)

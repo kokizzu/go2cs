@@ -447,6 +447,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.Field":         goosAny,
 		"Value.UnsafePointer": goosAny,
 		"Value.Pointer":       goosAny,
+		// The auto body reads the interface's two words by dereferencing `v.ptr` as an
+		// *[2]uintptr, and a bridge Value has no `ptr` — it carries a boxed managed object — so
+		// every InterfaceData call nil-panicked in `~`. Go declares BOTH words unspecified and
+		// the API deprecated, so the hand-own answers the one property that has observable
+		// meaning and that reflect's own tests read it for: direct-iface-ness, off the same
+		// GoReflect.GoIsDirectIface authority abi.synthType stamps KindDirectIface from.
+		// See reflect/value_impl.cs.
+		"Value.InterfaceData": goosAny,
 		"Value.MapRange":      goosAny,
 		"MapIter.Next":        goosAny,
 		"MapIter.Key":         goosAny,

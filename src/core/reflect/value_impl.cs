@@ -1024,6 +1024,56 @@ public static uintptr Pointer(this ΔValue v) {
     return reflectPointerToken(v);
 }
 
+// InterfaceData returns a pair of unspecified uintptr values.
+//
+// THE CONTRACT HERE IS THE ABSENCE OF ONE, AND THAT IS WHAT MAKES THIS ANSWERABLE. Go's own doc
+// declares the API deprecated and BOTH words unspecified: "the memory model makes no guarantee",
+// and the pair "does not carry a type". So there is no address a caller may portably read out of
+// this — reading word 1 AS an address is already outside what Go promises. The bridge could not
+// honor such a read in any case: a bridge Value carries a boxed managed object (see the header of
+// this file) and its `ptr` word is unused, which is exactly why the converted form — a raw
+// `~(ж<array<uintptr>>)(uintptr)(v.ptr)` deref — nil-panicked here.
+//
+// What the word DOES carry observable meaning about, and what reflect's own tests read it for, is
+// DIRECT-IFACE-NESS: whether an interface holding this dynamic type stores the value itself in the
+// data word (pointer-shaped — so a zero value reads 0) or a pointer to a copy (so the word is an
+// address, and never 0). That is a TYPE-LEVEL classification the bridge computes truthfully, so
+// this reimplements the CONTRACT at the boundary rather than the mechanism, the same doctrine
+// sync's Mutex follows. The word is a CLASSIFICATION SIGNAL, NOT AN ADDRESS — do not add a
+// consumer that dereferences it.
+//
+// The classification comes from GoReflect.GoIsDirectIface, the SAME authority abi.synthType stamps
+// KindDirectIface from, so the descriptor bit and this word cannot disagree about one type.
+public static array<uintptr> InterfaceData(this ΔValue v) {
+    v.mustBe(ΔInterface);
+    var data = new array<uintptr>(2);
+    object? cur = v.live;
+    // A nil interface has neither a type nor data — Go reads {0, 0} out of the eface directly.
+    if (cur is null) {
+        return data;
+    }
+    System.Type dyn = GoReflect.GoDynamicTypeOf(cur);
+    nint[]? dims = GoReflect.ArrayDimsOfValue(cur);
+    // Word 0 stands for the dynamic TYPE descriptor: present, therefore non-zero.
+    data[0] = interfaceWordToken(cur);
+    // Word 1 is the data word. Pointer-shaped: the value IS the word, so it is 0 exactly when the
+    // single pointer it reduces to is nil. Otherwise the value lives behind a pointer, and an
+    // address is never 0 — including for a zero-SIZE type, where Go points every such value at
+    // runtime.zerobase, which is precisely the [0]*byte half of TestArrayOfDirectIface.
+    data[1] = GoReflect.GoIsDirectIface(dyn, dims)
+        ? (GoReflect.GoDirectIfaceWordIsNil(cur, dyn, dims) ? 0 : interfaceWordToken(cur))
+        : interfaceWordToken(cur);
+    return data;
+}
+
+// A stable, non-zero stand-in for an interface word. Object identity, the same fallback
+// reflectPointerToken ends on — but never 0, because a present word is the property the caller is
+// entitled to observe, and GetHashCode does not promise a non-zero result.
+private static uintptr interfaceWordToken(object cur) {
+    uint hash = (uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cur);
+    return ((uintptr)(nuint)(hash == 0 ? 1u : hash));
+}
+
 // A slice's Go data address is `&s[0]` — its BACKING STORE plus its window offset — so the token
 // combines the two, exactly as deepValueEqual's identityRoot does. A nil slice has no storage and
 // tokens 0, which is what the nil test one level up already answers for every other kind.
