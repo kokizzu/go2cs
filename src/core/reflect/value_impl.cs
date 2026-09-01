@@ -2706,6 +2706,41 @@ public static ΔType SliceOf(ΔType t) {
 // nothing ("It may be empty"), and every caller is written to mint on that miss. The managed
 // runtime simply misses always, because it has no ahead-of-time type table to hit.
 
+// FuncOf returns the function type with the given argument and result types — the SIXTH member of
+// the family above, and the one that could not compose from an existing generic container. Go's own
+// body assembles a funcType record behind a prototype it reads out of memory
+// (`ifunc = (func())(nil)` reinterpreted as a ж<funcType>), so the auto form nil-dereferenced in `~`
+// before doing anything else; a Go func value here IS a managed delegate, and there is no record.
+//
+// The composed delegate type is built to be exactly what GoReflect.TryFuncShape reads back, so
+// NumIn/In/NumOut/Out/IsVariadic round-trip — the two are written as inverses and live together.
+public static ΔType FuncOf(slice<ΔType> @in, slice<ΔType> @out, bool variadic) {
+    // Go's own gate, and its exact text.
+    if (variadic && (len(@in) == 0 || @in[len(@in) - 1].Kind() != ΔSlice)) {
+        throw panic("reflect.FuncOf: last arg of variadic func must be slice");
+    }
+    if (len(@in) + len(@out) > 128) {
+        throw panic("reflect.FuncOf: too many arguments");
+    }
+    System.Type[] ins = new System.Type[len(@in)];
+    for (nint i = 0; i < len(@in); i++) {
+        ins[i] = sysTypeOfReflectType(@in[i]) ?? throw panic("reflect.FuncOf: non-synthesized argument type");
+    }
+    System.Type[] outs = new System.Type[len(@out)];
+    for (nint i = 0; i < len(@out); i++) {
+        outs[i] = sysTypeOfReflectType(@out[i]) ?? throw panic("reflect.FuncOf: non-synthesized result type");
+    }
+    System.Type ft;
+    try {
+        ft = GoReflect.MakeGoFuncType(ins, outs, variadic);
+    } catch (Exception ex) {
+        // A signature outside the Func<>/Action<> families fails LOUD rather than yielding a
+        // delegate that would misdescribe it — the boundary MakeDelegateType already draws.
+        throw panic("reflect.FuncOf: " + ex.Message);
+    }
+    return toType(abi.synthType(ft));
+}
+
 // ChanOf returns the channel type with the given direction and element type.
 public static ΔType ChanOf(ΔChanDir dir, ΔType t) {
     // Go validates the direction before anything else, and this is its exact text.

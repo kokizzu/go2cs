@@ -4,12 +4,6 @@ using fmt = fmt_package;
 
 partial class inner_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 [GoType] partial struct Buffer {
     public @string Data;
     public nint N;

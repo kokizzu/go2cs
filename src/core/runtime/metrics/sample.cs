@@ -28,11 +28,14 @@ using @unsafe = unsafe_package;
 
 partial class metrics_package {
 
-// Go runs a blank-imported package's `init` before this package's own; .NET would never
-// load an assembly nothing references, so the side effects the import exists for are forced.
-[GoInit] internal static void initᴛᴛblankImportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
+// The `runtime` force hook that stood here is GONE, and both halves of why are worth the line.
+// Its name was `initᴛᴛblankImportꓸruntime` — a spelling the converter has not emitted since the
+// 2026-08-26 widening from blank-imports-only to every import form, frozen here because a hand-owned
+// file is not re-emitted. And the hook itself no longer belongs in any source file: since the
+// relocation (docs/phase4/DESIGN-import-hook-relocation.md) every one of a package's force hooks
+// lives in its package_info.cs, which this package's now carries — including `runtime`, under the
+// name the converter actually emits. Leaving this one would have been a second, dead-named forcing
+// of the same package: harmless at runtime, and exactly the kind of thing nobody finds later.
 
 // Sample captures a single metric sample. The `public` is carried HERE because this file is
 // hand-owned: sample.go left the convert set, so the regenerated package_info.cs no longer

@@ -6,18 +6,6 @@ using System.Runtime.CompilerServices;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
 [MethodImpl(MethodImplOptions.NoInlining)] internal static @string who() {
     var pc = new slice<uintptr>(1);
     if (Δruntime.Callers(2, pc) == 0) {

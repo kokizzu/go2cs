@@ -4,12 +4,6 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 internal static nint search(slice<nint> xs, nint t) {
     for (nint bΔ1 = 0; bΔ1 < len(xs); bΔ1++) {
         if (xs[bΔ1] == t) {

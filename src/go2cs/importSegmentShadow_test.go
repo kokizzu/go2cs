@@ -10,7 +10,6 @@ import (
 	"go/types"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -177,30 +176,34 @@ func TestTestLocalTypeShadowRootsForcingHook(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	emitted, err := filepath.Glob(filepath.Join(outputPath, "*_test.cs"))
+	// Assert the FORCING TARGET the conversion decided on, not the text of a file it landed in.
+	// The rooting decision is what this guard is about, and packageImportInits records it per import
+	// path — which is where it lives since the hook relocation moved the emission out of the
+	// importing file's class body and into the emission unit's metadata file. That file is written
+	// by the DRIVER (convertTestVariants → writePackageInfoFile), not by the single-variant call
+	// this test exercises, so no glob over `outputPath` can see the hooks at all any more: a
+	// file-reading form of this guard fails its two positive assertions loudly and passes its
+	// NEGATIVE one vacuously, since "the bare form is absent" is trivially true of a file that holds
+	// no hook. Keying on the decision is both closer to the property and impossible to satisfy by
+	// accident.
+	shadowed, forced := packageImportInits["sync/atomic"]
 
-	if err != nil || len(emitted) == 0 {
-		t.Fatalf("no converted test file was emitted into %s (err %v)", outputPath, err)
+	if !forced {
+		t.Fatalf("sync/atomic was not forced at all; claims: %v", importInitClaims())
 	}
 
-	converted := strings.Builder{}
-
-	for _, path := range emitted {
-		converted.WriteString(readGenerated(t, path))
-	}
-
-	source := converted.String()
-
-	if !strings.Contains(source, "initPackage(typeof(global::go.sync.atomic_package))") {
-		t.Errorf("the forcing hook must be rooted past the test-local `sync` type (CS0426 otherwise):\n%s", source)
-	}
-
-	if strings.Contains(source, "initPackage(typeof(sync.atomic_package))") {
-		t.Errorf("the bare form is the defect — it binds `sync` to the nested test type:\n%s", source)
+	if shadowed != "global::go.sync.atomic_package" {
+		t.Errorf("the forcing hook must be rooted past the test-local `sync` type (CS0426 otherwise), got %q", shadowed)
 	}
 
 	// The unshadowed import in the SAME file stays bare, so the gate is not a blanket rooting.
-	if !strings.Contains(source, "initPackage(typeof(fmt_package))") {
-		t.Errorf("an unshadowed import must keep its bare target — the gate exists to hold the corpus footprint at zero:\n%s", source)
+	bare, forced := packageImportInits["fmt"]
+
+	if !forced {
+		t.Fatalf("fmt was not forced at all; claims: %v", importInitClaims())
+	}
+
+	if bare != "fmt_package" {
+		t.Errorf("an unshadowed import must keep its bare target — the gate exists to hold the corpus footprint at zero, got %q", bare)
 	}
 }

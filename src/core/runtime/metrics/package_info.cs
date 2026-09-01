@@ -51,8 +51,8 @@ using static go.runtime.metrics_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("runtime/metrics/description.go", "description.cs", "APQChAemgoKUgoKCggAHFKiS")]
-[assembly: go.GoPositionMap("runtime/metrics/value.go", "value.cs", "AB5KkqyygpSssoKUrLKClA==")]
+[assembly: go.GoPositionMap("runtime/metrics/description.go", "description.cs", "AO4ChAemgoKUgoKCggAHFKiS")]
+[assembly: go.GoPositionMap("runtime/metrics/value.go", "value.cs", "ABhKkqyygpSssoKUrLKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.runtime;
@@ -72,4 +72,16 @@ public static partial class metrics_package
     public partial struct ValueKind {}
     public partial struct ΔFloat64Histogram {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebugs() => builtin.initPackage(typeof(go.@internal.godebugs_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    // </ImportInitializers>
 }

@@ -188,20 +188,16 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			goIDName := v.getIdentName(ident)
 			csIDName := getSanitizedIdentifier(goIDName)
 
-			// The variable twin of visitTypeSpec's Δ-rename registration — `export_test.go`'s
-			// `var Lock = lock` collides with RWMutex's OWN method `Lock` (an unrelated type in
-			// the SAME internal-test-declared file), Δ-renaming the var to `ΔLock` exactly as
-			// getCollisionAvoidanceIdentifier's own doc comment describes for a type-vs-method
-			// collision — but a var can collide there too, and the external variant's OWN
-			// nameCollisions is the same wrong, per-variant map whiteboxBridgeNamedType's doc
-			// comment already explains for types. testTypeRenames is object-keyed and
-			// session-scoped for exactly this cross-variant visibility; nothing here is
-			// type-specific, so a renamed var registers into the identical map.
-			if nameCollisions[goIDName] && testTypeRenames != nil {
-				if obj := v.info.ObjectOf(ident); obj != nil {
-					testTypeRenames[obj] = true
-				}
-			}
+			// NOTE — a package-level VAR's Δ-rename is NOT registered here, and a block that tried
+			// could never fire: performGlobalVariableAnalysis has already renamed the declarator
+			// (globalIdentNames), so `goIDName` above is the POST-rename `ΔLock`, against which
+			// `nameCollisions` answers false while `csIDName` comes out correct anyway (the
+			// sanitizers are idempotent). That is the split that made the emission right and the
+			// cross-variant record empty. The registration lives at the rename site instead —
+			// variableAnalysisOperations.go's performGlobalVariableAnalysis — so the decision and
+			// the record are one statement pair. The CONST arm below keeps its own registration:
+			// performGlobalVariableAnalysis skips non-`*types.Var` objects, so a const reaches this
+			// visitor with its raw Go name and this is its only rename site.
 
 			if csIDName == "_" {
 				if v.inFunction {
@@ -760,7 +756,10 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			goIDName := v.getIdentName(ident)
 			csIDName := getSanitizedIdentifier(goIDName)
 
-			// The const twin of the var registration above — see its comment.
+			// The const twin of performGlobalVariableAnalysis's var registration — see the NOTE in
+			// the VAR arm above and testTypeRenames's doc comment. A const is not a `*types.Var`,
+			// so the global analysis pass never renames it and `goIDName` here is still the raw Go
+			// name: this IS the rename site for a const, and the record belongs with it.
 			if nameCollisions[goIDName] && testTypeRenames != nil {
 				if obj := v.info.ObjectOf(ident); obj != nil {
 					testTypeRenames[obj] = true

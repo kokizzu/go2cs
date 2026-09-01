@@ -76,6 +76,15 @@ un-gated member, so it would have rotted at the next golib change, and the exper
 (struct/interface promotion hand-simulated *before* `go2cs-gen` existed) are covered by real
 behavioral tests now. Git keeps it at `d3223d252` if a shape is ever wanted back. **After changing a
 golib/runtime API, build `src/go2cs.slnx` once before banking** — ~90 s, and no other gate covers it.
+⚠ Two golib cost rules, both measured 2026-09-01: **a golib change adding INSTANCE state to `ж<T>`
+(or any per-box base class) is a corpus-wide byte-cost change** — +8 B lands on EVERY pointer box,
+proportional to boxes allocated per path (measured 14/1/0 boxes across three alloc rows), so the
+commit states the cost even when correctness demands the field (the element-aliasing publish gate
+did; its unfavorable direction shipped unmeasured and later burned an attribution run). And **an
+alloc row's B/op is only comparable against a figure taken at the same suite scope** — filtered vs
+unfiltered differed by +167.04 B/op on ONE tree (AllocsPerRun's single warmup doesn't cover
+one-time costs a full run has already paid), so a filtered census never compares its bytes against
+a full-run record: the alloc-instrument sibling of the gated-census stream rule.
 
 Converter internals (full taxonomy in [`docs/Architecture.md`](docs/Architecture.md)):
 - Entry: `src/go2cs/main.go`. Stdlib driver: `src/go2cs/stdLibConverter.go` (builds the package
@@ -283,7 +292,12 @@ ONE stdlib in a build; there is now only one on disk.
     run so the r41 "never convert twice into one root" rule is mechanical rather than remembered — then
     classifies every emitted artifact (shared / variant / partial / exclusive) and writes
     `<dir>\platform-manifest.json`. It writes **nothing** into the corpus: `-go2cspath` is read as the seed
-    and never as an output. Emitted-vs-seeded is decided by a sentinel modification time, not by content,
+    and never as an output. ⚠ In any multi-target staging comparison, "differs" means NOTHING until
+    you know which side was actually WRITTEN: a single-target conversion re-emits only its own
+    target's per-GOOS files, so a per-PATH diff across staging roots reports fresh-vs-seeded pairs
+    as differences (a confounded census nearly banked 60 false hits, 2026-09-01) — compare only
+    paths BOTH conversions write, or classify by write-evidence first.
+    Emitted-vs-seeded is decided by a sentinel modification time, not by content,
     because the control target's emission is *supposed* to reproduce the seed byte for byte. The manifest
     carries the marker gate per target (hand-owned files the seed held, and any the run emitted as a plain
     `.cs` — must be zero) so a failed seeding cannot be mistaken for a platform finding.
@@ -468,6 +482,17 @@ ONE stdlib in a build; there is now only one on disk.
   phase rewrites every `.cs` first, so no assembly is up-to-date and the batch-build failure
   attributes everywhere) — measured: exactly 1 Release assembly written corpus-wide vs a clean
   78-project filtered batch. "651 suspects" means "one project is red", not "the corpus is broken".
+- **FALSE-GREEN route #8 — a guard DISARMED by a LEGITIMATE change (found 2026-09-01, the
+  init-hook relocation).** Distinct from routes #1–#7: nothing is stale and nothing mis-runs — the
+  guarded property genuinely moved house, and a guard asserting an assembly-level property by
+  grepping ONE emitted file goes silently VACUOUS in its negative direction ("the bare form must
+  not appear" is trivially satisfied by a file that no longer holds the construct at all). The
+  positive direction fails loudly and gets fixed; the negative just stops testing, and the exit
+  code says two failures when the real damage is four assertions. Glob-widening cannot fix the
+  class when a DRIVER writes the artifact the exercised call never touches. Remedy: assert the
+  DECISION (the recorded map/registry the pass writes — `packageImportInits` in the measured
+  case), never the artifact's text, and re-check a guard's negative arm whenever the construct it
+  greps for legitimately relocates.
 - **⚠ MID-BATTERY SOURCE FREEZE — while any gate battery is running, converter/gen/golib source is
   untouchable, on ANY branch (ruled 2026-08-30).** The behavioral runners rebuild `go2cs.exe` from
   DISK source the moment a `.go` file is newer than the binary, and golib/gen compile into every
@@ -746,7 +771,12 @@ ONE stdlib in a build; there is now only one on disk.
   32 GB — and runs the table's rows at roughly 3–4x the i9 numbers.** Measured there on day one:
   full behavioral suite **2,820–4,131s** solo (the 4,131s end was a cold-ish tree; **2,820s**
   re-measured 2026-08-10 — either end is well over the table's 1,575s ceiling), CNR **1,505s** solo / **~3,190s** with two
-  sibling lanes, converter `go test ./...` **200s** solo / **332s** loaded, full `go2cs.slnx` Debug
+  sibling lanes, converter `go test ./...` **200s** solo / **332s** loaded — ⚠ and go test's own
+  DEFAULT `-timeout` is 10m, which a loaded run on this class now reaches: a healthy suite was
+  killed at exactly 600.4s with a goroutine dump that reads like a hang (2026-09-01; 236s solo,
+  578s under one sub-agent's load, dead at the wall under two) — pass an explicit
+  `go test -timeout 30m` on any box carrying concurrent work, and read a FAIL at ~600s as the
+  wall, not the code — full `go2cs.slnx` Debug
   build **1,432s** cold, `archive/zip`'s Debug test suite **774s** (vs 391s on the i9). ⚠ Those
   day-one figures are themselves STALE as the corpus grows — re-measured 2026-08-21 on the same
   i7-5820K: full behavioral suite **~6,552s at 603 packages** (and the runner batch-build default needed **9,000s** at 604 projects -- the stock 2,400s false-redded a healthy run, 2026-08-22), full `go2cs.slnx` Debug
@@ -774,7 +804,7 @@ ONE stdlib in a build; there is now only one on disk.
 
   | Command | Measured (warm) | Set timeout | Notes |
   |---|---|---|---|
-  | `run-behavioral.ps1` (full, 4 phases) | **~370–1575s (6–26 min; 642s measured 2026-08-07 at 549 projects with a sibling lane converting; 416–957s on 2026-08-05 SOLO at 545 across four r41 stage gates — the spread is warm-vs-cold C# build state, not load; 626s on 2026-08-04 at 544, 1575s on 2026-08-02 with THREE sibling worktrees running pipelines)** | 2100s | 549/549 Transpile+Compile+Target; 523 Output-compared, 26 skipped (no `package main`); the top of the range is concurrent-lane load — budget for it. ⚠ At that load the **Go toolchain itself** can crash building one project (`panic: … compress/flate.(*huff…` inside `go build`) and the runner reports it as a Go build failure; re-run that one project filtered before believing it |
+  | `run-behavioral.ps1` (full, 4 phases) | **~370–1575s (6–26 min; 642s measured 2026-08-07 at 549 projects with a sibling lane converting; 416–957s on 2026-08-05 SOLO at 545 across four r41 stage gates — the spread is warm-vs-cold C# build state, not load; 626s on 2026-08-04 at 544, 1575s on 2026-08-02 with THREE sibling worktrees running pipelines)** | 2100s | 549/549 Transpile+Compile+Target; 523 Output-compared, 26 skipped (no `package main`); the top of the range is concurrent-lane load — budget for it. ⚠ At that load the **Go toolchain itself** can crash building one project (`panic: … compress/flate.(*huff…` inside `go build`) and the runner reports it as a Go build failure; re-run that one project filtered before believing it. Data point 2026-09-01: **1,916s at 652 projects, laptop-class host, SOLO, runner invoked DIRECTLY** (not via the Stop-preference wrapper) with `--build-timeout 10800 --build-one-timeout 900` — the stock 2400s batch cap sized at ~604 projects would have reported the whole corpus NOT MEASURED at 652 |
   | `check-no-regression.ps1` (full) | **~1,050–1,750s (17–29 min; re-measured 2026-08-17/19 at ~625 packages on the i7-5820K: 1,059s and 1,132s solo, 1,440s and 1,711s under sibling-lane load; laptops ran 720s (G) and 1,060s (R). The prior row read 350–510s/700s at 574 packages on the dead i9 — a timeout kept at that figure kills every healthy run on this corpus)** | 2400s | transpile-only, no compile/run; re-transpiles unconditionally |
   | `run-behavioral.ps1 --filter <Name>` | **~10–20s** (8 projects) | default | the iteration loop — use this, not the full suite |
   | `go2cs -stdlib -comments` (full reconvert) | **~195–240s (240s measured r47a 2026-08-08 with two sibling lanes; 223s at r41, 2026-08-05)** | 600s | 307 projects; per-file work is sub-second, the cost is `go/packages`. A three-target `-platforms` merge is ~3x this (545s measured r50a) |
@@ -837,7 +867,15 @@ ONE stdlib in a build; there is now only one on disk.
   CNR verdict was nearly lost the same way. The tell costs one command:
   `head -c 200 <log> | tr -d -c '\000' | wc -c` — a nonzero NUL count means every grep against
   that log has been lying — then decode (`iconv -f UTF-16LE`) before grepping. Same
-  silence-not-error family as the globbed `*>&1` and the buffered pipe above. And never inject
+  silence-not-error family as the globbed `*>&1` and the buffered pipe above.
+  **⚠ THE TRUNCATED-LOG READING INVERTS FOR POWERSHELL WRAPPERS (measured 2026-09-01, a
+  self-inflicted two-runner race):** a wrapper running at `$ErrorActionPreference='Stop'`
+  (`run-behavioral.ps1` line 49) dies on the FIRST native stderr line — killing the WRAPPER and
+  leaving the runner alive, orphaned, and invisible. The truncated log reads exactly like the run
+  being killed and invites the restart that puts two runners in one behavioral tree. Before
+  believing a truncated wrapper log, census for the CHILD by executable path; a lane driving a
+  long native child invokes it DIRECTLY (or at `'Continue'`), never through a Stop-preference
+  wrapper. And never inject
   non-ASCII C# source (`Ꮡ`, `ж`, `Δ`) through a PowerShell command STRING — the argument pass
   mojibakes it even when file I/O is correct; write such content with the Edit/Write tools.
   **⚠ The same mojibake hits a `.ps1` SCRIPT FILE ITSELF when Windows PowerShell 5.1 parses it —
@@ -1040,6 +1078,14 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   CHANGED converter and diffing the two emissions isolates exactly the change's own footprint
   (26 metadata files, zero production code, in the measured case). The committed tree is a moving
   baseline; two emissions of the same sources differ only by the change.
+  ⚠ Two mechanical tells the ritual owes on EVERY run (paid 2026-09-01 — a lane's "old" binary
+  never existed and the diff silently compared committed-tree-vs-fixed, reporting 724 phantom
+  files): (1) `go build -o <path> <dir>` with a bare directory as the last positional can land
+  the binary at `<dir>/go2cs.exe` and leave the named `-o` path NONEXISTENT while exiting 0 —
+  verify the built binary exists at the exact path you will invoke; (2) before trusting any
+  two-root diff, assert BOTH sides' emitted files carry THIS RUN's mtimes — a diff between a real
+  reconvert and an untouched seed returns a normal-looking result with nothing marking it invalid
+  (the emitted-before-seeded family, build-step edition).
 - **Reconvert → overlay → build → bucket (the measurement loop):**
   1. **⚠ SEED FIRST — non-negotiable (learned 2026-07-25, cost a false operational-break alarm):**
      `cp -r src/core <tmp>/core` BEFORE reconverting. ⚠ The SEED ITSELF can fail halfway and
@@ -1473,7 +1519,20 @@ Each rule below was paid for.
 - **A gate that has never been made to fail proves nothing.** Before trusting a census/self-verify that
   reports zero, regress one site deliberately, confirm it reports exactly that site, then fix and
   re-verify — and confirm the restore is byte-identical. The same principle as the positive controls
-  the corpus loop uses: a green that cannot go red is not a measurement.
+  the corpus loop uses: a green that cannot go red is not a measurement. Two refinements, both
+  measured 2026-09-01: **a positive control must neuter a check no OTHER check subsumes** — under
+  defense-in-depth, a broken control still reads green because a downstream check catches the
+  regression it injected, so the control proves nothing about the check it targets (verify the
+  control's red names the RIGHT assertion); and **a finding's PROSE is not its record** — a routed
+  finding's description (a chip, a board line, a relayed diagnosis) is re-derived from the captured
+  comparison/measurement record before anything is built on it, because the sweep-encoding chip's own
+  description ("go pass vs C# fail") was wrong on the load-bearing detail and a rule built as
+  described would have refused the very host it existed for.
+- **The warm-design trap:** the speculative branch is easiest to write while the design is still warm
+  — and twice in one day (2026-09-01) a lane built guard/fix machinery, could not make it FAIL under
+  its own control, and deleted it with the measurement recorded in a comment at the site. An
+  unexercisable branch in a guard is a false-green seed; deleting it with its evidence is the
+  deliverable, not a loss.
 - **⚠ A merge that touches `package_info.cs` must carry the matching `stdlib-metadata.txt` change —
   check it in the PREFLIGHT.** `stdlib-metadata.txt` is generated FROM the corpus (`go generate .` in
   `src/go2cs`, gated by `TestStdLibMetadataInSync` under the converter's own `go test`), and a corpus

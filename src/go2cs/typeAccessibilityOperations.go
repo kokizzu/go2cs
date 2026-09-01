@@ -105,7 +105,23 @@ func ensureTypeAccessibilitySection(packageInfoLines []string) []string {
 		return migrateProseBlock(packageInfoLines, legacyTypeAccessibilityFirstLine, openTag, typeAccessibilityProseLines())
 	}
 
-	insertIndex := -1
+	insertIndex := classBodyInsertIndex(packageInfoLines)
+
+	if insertIndex < 0 {
+		return packageInfoLines
+	}
+
+	block := typeAccessibilitySectionLines()
+
+	return append(packageInfoLines[:insertIndex], append(block, packageInfoLines[insertIndex:]...)...)
+}
+
+// classBodyInsertIndex returns the line index just inside the FIRST package class's body, or -1 when
+// the file declares no class. Shared by the two class-body sections (TypeAccessibility and
+// ImportInitializers) rather than written twice: a second copy of this walk is the same drift the
+// newFileVisitor extraction closed, and both sections must agree on where a class body starts or
+// they can be inserted into different ones.
+func classBodyInsertIndex(packageInfoLines []string) int {
 	sawClassDeclaration := false
 
 	for i, line := range packageInfoLines {
@@ -117,26 +133,18 @@ func ensureTypeAccessibilitySection(packageInfoLines []string) []string {
 			// An Allman-braced declaration puts the opening brace on the next line; a K&R one
 			// (never emitted today, but cheap to honor) ends the declaration line with it.
 			if strings.HasSuffix(trimmed, "{") {
-				insertIndex = i + 1
-				break
+				return i + 1
 			}
 
 			continue
 		}
 
 		if sawClassDeclaration && trimmed == "{" {
-			insertIndex = i + 1
-			break
+			return i + 1
 		}
 	}
 
-	if insertIndex < 0 {
-		return packageInfoLines
-	}
-
-	block := typeAccessibilitySectionLines()
-
-	return append(packageInfoLines[:insertIndex], append(block, packageInfoLines[insertIndex:]...)...)
+	return -1
 }
 
 // generatedTypeScope mirrors go2cs-gen's Common.GetScope — the rule TypeGenerator uses to pick the

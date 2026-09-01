@@ -7,24 +7,6 @@ using go.os;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸsignal() {
-    builtin.initPackage(typeof(go.os.signal_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object initiallyIgnoredˢ = (@string)"initially ignored:"u8;
 private static readonly object afterIgnoreˢ = (@string)"after Ignore:"u8;

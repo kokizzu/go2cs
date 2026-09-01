@@ -6,18 +6,6 @@ using sync;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(sync.atomic_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object zeroˢ = (@string)"zero:"u8;
 private static readonly object storeNilˢ = (@string)"store &nil:"u8;

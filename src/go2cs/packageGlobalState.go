@@ -218,6 +218,14 @@ var testMethodRenames map[types.Object]bool
 // testMethodRenames is: both variants share one go/packages load, so the external variant's
 // reference resolves by object identity to the very declaration registered during the internal
 // pass. Nil outside -tests conversions.
+//
+// It carries VARS and CONSTS as well as types — same mechanism, same cross-variant blindness (the
+// export_test.go `var Lock = lock` beside `RWMutex.Lock`, read back by whiteboxBridgeMember). Each
+// kind registers at ITS OWN rename site, and they are not the same file: a TYPE at visitTypeSpec, a
+// CONST at visitValueSpec's CONST arm, and a package-level VAR at performGlobalVariableAnalysis —
+// which renames the var declarator BEFORE any visitor runs, so by visitValueSpec the name is
+// already `ΔLock` and nameCollisions no longer answers for it. Guarded by
+// TestTestVariantBridgeFollowsRenamedPackageVar.
 var testTypeRenames map[types.Object]bool
 
 // packageBuiltinShadows holds Go built-in names (`clear`, `len`, …) that the current package ALSO
@@ -311,6 +319,24 @@ var usesUnsafeCode bool
 // needs exactly ONE hook, and it belongs to the first file that names it. Reset per package/variant
 // by resetPackageState; written under packageLock.
 var packageImportForces HashSet[string]
+
+// packageImportInits holds each force hook's FORCING TARGET — the C# package class the emitted
+// `typeof(...)` names, already `global::`-qualified where the leading segment would be occluded —
+// keyed by the import path it forces. The visitor decides the target because only it can see the
+// scope; the metadata writer composes the block, because only it knows the indentation.
+// The hooks used to be spliced into the importing FILE's class body; since the relocation they are
+// collected here and written once into the emission unit's metadata file (package_info.cs, or
+// package_test_info.cs for a -tests variant), which is what takes a machinery block out of every one
+// of the 684 production files that carries one. Keyed rather than ordered because the emission sorts
+// by import path: hook order is not correctness-bearing — each hook forces ONE assembly, whose own
+// module constructor runs that assembly's hooks first, so Go's transitive ordering is reproduced by
+// the forcing itself rather than by the order of the calls — and a map plus a sort is deterministic
+// where visit order is merely reproducible.
+//
+// Drained by writePackageInfoFile, which is called once per emitted metadata file (production, then
+// each -tests variant), so a hook lands in the file belonging to the unit that emitted it. Reset per
+// package/variant by resetPackageState; written under packageLock.
+var packageImportInits map[string]string
 
 // packageDoc holds the current package's Go doc comment as godoc-markup TEXT, for the NuGet README.
 // It is rendered to Markdown at emission time by renderPackageDoc, which is where the source

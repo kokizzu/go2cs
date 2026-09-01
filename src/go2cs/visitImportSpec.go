@@ -428,37 +428,32 @@ func (v *Visitor) writeImportInit(csNamespace string) {
 		return
 	}
 
-	// A hand-owned file's emission lands in the non-compiled `.cs.auto` review sibling, so it still
-	// SHOWS the hook (the sibling is a faithful record of what the converter would emit) but must
-	// never CLAIM the package-wide slot — a claim from a file that compiles nothing would suppress
-	// the hook in the real sibling that needs it, and the import would go unforced. Same fence as
-	// claimLiftedTypeName / the hoist collector's.
-	if !v.manualConversion {
-		packageLock.Lock()
-		alreadyForced := packageImportForces.Contains(v.currentImportPath)
-
-		if !alreadyForced {
-			packageImportForces.Add(v.currentImportPath)
-		}
-
-		packageLock.Unlock()
-
-		if alreadyForced {
-			return
-		}
-	}
-
-	v.importInits.WriteString(fmt.Sprintf("%s// Go runs an imported package's `init` before this package's own; .NET would never load%s", v.newline, v.newline))
-	v.importInits.WriteString(fmt.Sprintf("// an assembly nothing has touched yet, so that initialization is forced here.%s", v.newline))
-	v.importInits.WriteString(fmt.Sprintf("[GoInit] internal static void %s() {%s", importInitName(v.currentImportPath), v.newline))
 	forcingTarget := csNamespace
 
 	if v.forcingTargetShadowed(csNamespace) {
 		forcingTarget = globalQualifyForcingTarget(csNamespace)
 	}
 
-	v.importInits.WriteString(fmt.Sprintf("%sbuiltin.initPackage(typeof(%s));%s", v.indent(1), forcingTarget, v.newline))
-	v.importInits.WriteString(fmt.Sprintf("}%s", v.newline))
+	// The hand-own FENCE that stood here until the relocation, and why it is gone rather than moved.
+	// While a hook lived in the importing FILE's class body, a hand-owned file's emission landed in
+	// the non-compiled `.cs.auto` review sibling — so it had to SHOW the hook without CLAIMING the
+	// package-wide slot, or the slot would be taken by a file that compiles nothing and the import
+	// would go unforced. The cost of that fence was the mirror case: a package whose ONLY importer of
+	// X is hand-owned had no file left to claim the slot, so X was forced NOWHERE. Censused at the
+	// relocation: 14 such hooks across 8 packages, plus two that exist only because somebody wrote
+	// them by hand (crypto/internal/boring/bcache, runtime/metrics). With the hook in the metadata
+	// file the question does not arise — there is no file to claim, the package's import set is the
+	// union of every file's including the hand-owned ones, and every one of those imports is already
+	// a ProjectReference, so nothing here can move the project graph.
+	packageLock.Lock()
+	defer packageLock.Unlock()
+
+	if packageImportForces.Contains(v.currentImportPath) {
+		return
+	}
+
+	packageImportForces.Add(v.currentImportPath)
+	packageImportInits[v.currentImportPath] = forcingTarget
 }
 
 // forcingTargetShadowed reports whether the emitted `typeof(<ns>)` of a forcing hook would bind its
@@ -489,6 +484,20 @@ func (v *Visitor) writeImportInit(csNamespace string) {
 // THIS class occludes — packageScopeClassName answers which class declares a package-level object,
 // so a production type does not qualify a hook written into the test-variant class (and vice
 // versa), keeping the `-stdlib` and `-tests` emissions of the production files identical.
+//
+// SINCE THE RELOCATION the hook is written into the emission unit's metadata file, not into the
+// file whose import spec produced it, so `emittedClassName` answers for the hook's HOME class only
+// where the two coincide. They coincide for the production unit (every production file emits into
+// `<pkg>_package`, which is the class package_info.cs declares) and for the external test variant
+// (`<pkg>_test_package`, which is the class package_test_info.cs declares). They do NOT coincide for
+// the INTERNAL test variant, whose files emit into the production class while its hooks land in the
+// test class — so a test-only import shadowed by a TEST-declared type of the same leading segment
+// would be under-qualified there. That case has no instance in the corpus (nothing in the converted
+// standard library declares such a type at all, which is why this guard covers the class rather than
+// an instance), it is guarded by tests/Behavioral/ImportSegmentTypeShadow, and it fails LOUDLY as
+// CS0426 rather than silently if it ever arises. Stated rather than papered over with a conservative
+// qualification, which would make the production files' `-stdlib` and `-tests` emissions differ —
+// the property this check exists to preserve.
 func (v *Visitor) forcingTargetShadowed(csNamespace string) bool {
 	if strings.HasPrefix(csNamespace, "global::") || v.pkg == nil || v.emittedClassName == "" {
 		return false
