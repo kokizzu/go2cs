@@ -61,4 +61,16 @@ func main() {
 	d.Name = "D"
 
 	fmt.Println("argument", got, call(d.label))
+
+	// 5. The ASSIGNMENT position, where the receiver is ALSO captured by a sibling closure — which
+	//    heap-boxes it. The capture machinery declines to snapshot a heap-boxed variable, which is
+	//    right for the closure (it has to observe the write through the shared box) and wrong for
+	//    the method value (it must not), so the receiver was read at call time and reported the
+	//    POST-write value.
+	e := frame{Name: "e"}
+	watch := func() string { return e.Name }
+	bound := e.label
+	e.Name = "E"
+
+	fmt.Println("assign  ", bound(), watch())
 }

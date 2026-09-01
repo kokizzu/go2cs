@@ -1016,6 +1016,56 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 			}
 		}
 
+		// The ASSIGNMENT member of the receiver-snapshot family (the non-assignment members are
+		// handled at the value-context arm below, which carries the full account). visitAssignStmt
+		// asks the capture machinery for the receiver snapshot that gives `m := x.label` Go's
+		// bind-a-COPY semantics, and gets one — UNLESS something has heap-boxed the variable, at
+		// which point processPotentialCapture returns early on `boxRefVars` ("must NOT be
+		// snapshot-captured"). That early return is right for a CLOSURE, which has to observe later
+		// writes through the shared box, and wrong for a value-receiver method value, which must
+		// not. With no snapshot the receiver renders as the box and is read at CALL time:
+		//
+		//	x := frame{Name: "a"}; f := func() string { return x.Name }; m := x.label; x.Name = "b"
+		//	    Go   "a b"        the method value copied at evaluation, the closure sees the write
+		//	    C#   "b b"        `var m = () => Ꮡx.Value.label();`   -- measured, built and run
+		//
+		// So the site mints its OWN temp exactly where the machinery declines, and only there:
+		// gated on the variable actually being box-ref, so the ordinary path keeps producing the
+		// one snapshot it already produces correctly (two would be a second copy of one evaluation).
+		// Gated on a VALUE, non-interface receiver besides — a pointer receiver binds the ADDRESS
+		// and must not be copied at all, and marking one for snapshot is what turned an earlier
+		// attempt at this family into CS1003/CS1002 across production files. A seeded census of the
+		// whole standard library found 54 assignment-context method-value sites, of which 8 are
+		// box-ref and ALL 8 are pointer-receiver (database/sql, go/parser x4, go/types x2, net) —
+		// so this arm fires nowhere in the corpus today and the emission is expected byte-identical;
+		// it closes a shape that is one refactor away, not an observed wrong answer.
+		if recvExpr == "" {
+			if recvIdent, isIdent := selectorExpr.X.(*ast.Ident); isIdent && v.hoistedDecls != nil && v.lambdaCapture != nil && v.isLambdaBoxRefVar(v.info.ObjectOf(recvIdent)) {
+				if funcObj, ok := v.info.ObjectOf(selectorExpr.Sel).(*types.Func); ok {
+					if sig, ok := funcObj.Type().(*types.Signature); ok && sig.Recv() != nil {
+						_, isPtrRecv := sig.Recv().Type().(*types.Pointer)
+
+						if !isPtrRecv && !types.IsInterface(sig.Recv().Type()) {
+							if recvType := v.getType(selectorExpr.X, false); recvType != nil {
+								if _, isPtr := recvType.(*types.Pointer); !isPtr {
+									v.lambdaCapture.detectingCaptures = false
+									snapshotName := v.getCapturedVarName(recvIdent.Name)
+
+									savedInLambda := v.lambdaCapture.conversionInLambda
+									v.lambdaCapture.conversionInLambda = false
+									snapshotInit := v.convExpr(selectorExpr.X, nil)
+									v.lambdaCapture.conversionInLambda = savedInLambda
+
+									v.hoistedDecls.WriteString(fmt.Sprintf("%s%svar %s = %s;%s", v.newline, v.indent(v.indentLevel), snapshotName, snapshotInit, v.newline))
+									recvExpr = snapshotName
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
 		if recvExpr == "" {
 			recvExpr = v.convExpr(selectorExpr.X, nil)
 		}

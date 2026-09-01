@@ -18,6 +18,7 @@ private static readonly object typedˢ = (@string)"typed   "u8;
 private static readonly object boxedˢ = (@string)"boxed   "u8;
 private static readonly object distinctˢ = (@string)"distinct"u8;
 private static readonly object argumentˢ = (@string)"argument"u8;
+private static readonly object assignˢ = (@string)"assign  "u8;
 
 internal static void Main() {
     ref var a = ref heap<frame>(out var Ꮡa);
@@ -55,6 +56,14 @@ internal static void Main() {
     d.Name = "D"u8;
     var dʗ2 = d;
     fmt.Println(argumentˢ, got, call(() => dʗ2.label()));
+    ref var e = ref heap<frame>(out var Ꮡe);
+    e = new frame(Name: "e"u8);
+    @string watch() => Ꮡe.Value.Name;
+    var eʗ1 = e;
+    
+    var bound = () => eʗ1.label();
+    e.Name = "E"u8;
+    fmt.Println(assignˢ, bound(), watch());
 }
 
 } // end main_package

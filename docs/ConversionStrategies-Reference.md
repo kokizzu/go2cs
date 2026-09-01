@@ -9071,7 +9071,7 @@ is exactly what the snapshot models. (Guarded by `MethodValueReassignCapture`'s 
 pointer-receiver method value assigned to a pre-declared func var, with the mutation read back through
 the original local, output-compared vs Go.)
 
-### A VALUE-receiver method value snapshots its receiver in NON-assignment positions too
+### A VALUE-receiver method value snapshots its receiver in EVERY position
 The receiver snapshot above exists because Go binds a value receiver by **copy at evaluation** — `x.M`
 saves the receiver when the method value is created, not when the resulting func is called. The two
 `visitAssignStmt` sites did that for assignment contexts. Every *other* position — a composite-literal
@@ -9117,12 +9117,37 @@ Three properties make the snapshot correct rather than merely compiling:
   element of it", which is what gives a nested element a valid declaration position. Where no sink
   exists the previous rendering stands: never apply a rename you cannot also declare.
 
+The **assignment** position needed the same treatment for a different immediate reason. There the
+snapshot is asked of the capture machinery, and it is delivered — until something heap-boxes the
+variable, at which point `processPotentialCapture` returns early on `boxRefVars` ("must NOT be
+snapshot-captured"). That early return is correct for a CLOSURE, which has to observe later writes
+through the shared box, and wrong for a value-receiver method value, which must not:
+
+```go
+x := frame{Name: "a"}
+f := func() string { return x.Name }   // heap-boxes x
+m := x.label
+x.Name = "b"
+fmt.Println(m(), f())                  // Go: a b   —   C# was: b b
+```
+
+So that site mints its own temp too, gated on the variable actually *being* box-ref, so the ordinary
+path keeps producing the one snapshot it already produces correctly — two would be a second copy of a
+single evaluation. It is gated on a value, non-interface receiver besides: a pointer receiver binds the
+ADDRESS and must not be copied, and marking one for snapshot is what turns this fix into CS1003/CS1002
+across production files. A census of the whole standard library found **54** assignment-context
+method-value sites, of which 8 are box-ref and **all 8 are pointer-receiver** (`database/sql`,
+`go/parser` ×4, `go/types` ×2, `net`) — so this arm fires nowhere in the corpus today and its emission
+is byte-identical. Both silent members are reachable and neither is currently reached: they close a
+shape one refactor away, not an observed wrong answer.
+
 Restricted to a plain ident receiver of non-pointer type — the shape an emission-attached census of the
 whole standard library found (19 sites: `bytes` ×3, `strings` ×3, `encoding/json` ×8, `crypto/tls` ×3,
 `crypto/internal/hpke` ×2, of which 12 have an ident receiver). A pointer base auto-deref'd to a value
 receiver would need the *deref* snapshotted rather than the pointer, and keeps its existing emission.
-(Guarded by `MethodValueReceiverSnapshot`, which output-compares all four positions — typed element,
-`any` element, cross-statement independence, and call argument — against `go run`.)
+(Guarded by `MethodValueReceiverSnapshot`, which output-compares all five positions — typed element,
+`any` element, cross-statement independence, call argument, and the box-ref assignment — against
+`go run`.)
 
 ### A bare function value in `:=` takes its named delegate type, not `var`
 Go's short-declaration from a bare function value whose type is a **named** func type — text/template/parse's `state := lexText`, where `lexText` is `func(*lexer) stateFn` and `type stateFn func(*lexer) stateFn` (the classic self-referential state machine) — infers the local as the *unnamed* signature. The converter cannot emit `var state = lexText;` (a C# method group has no `var`-inferable delegate type — CS8917), and typing the local structurally as `Func<ж<lexer>, stateFn>` makes it a **distinct** C# delegate from the `stateFn` the method group produces and that each `state = state(l)` reassignment yields (CS0029). It declares the local with the matching package named delegate instead:
