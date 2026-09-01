@@ -74,18 +74,6 @@ private static readonly object ptrFieldNodeˢ = (@string)"ptr field node:"u8;
     ж<Base> Basic();
 }
 
-[GoType("dyn")] internal partial interface main_typeᴛ1 {
-    ж<Base> Basic();
-}
-
-[GoType("dyn")] internal partial interface main_typeᴛ2 {
-    ж<Base> Basic();
-}
-
-[GoType("dyn")] internal partial interface main_typeᴛ3 {
-    ж<Base> Basic();
-}
-
 internal static void Main() {
     var u = Ꮡ(new Uint(nil));
     u.Value.Label = uintˢ;
@@ -102,13 +90,13 @@ internal static void Main() {
     i.Value.Label = intˢ;
     Node ni = new IntжNode(i);
     {
-        var (bi, okI) = ni._<main_typeᴛ1>(ᐧ); if (okI) {
+        var (bi, okI) = ni._<main_type>(ᐧ); if (okI) {
             bi.Basic().Value.BitSize = 32;
         }
     }
     fmt.Println(intAfterWriteThroughˢ, (~i).BitSize, (~i).Label);
     switch (n.type()) {
-    case {} Δt when Δt._<main_typeᴛ2>(out var t): {
+    case {} Δt when Δt._<main_type>(out var t): {
         fmt.Println(typeSwitchMatchedAnonˢ, (~t.Basic()).BitSize);
         break;
     }
@@ -118,7 +106,7 @@ internal static void Main() {
         break;
     }}
     any anyValue = new Uint(nil);
-    var (_, valueOK) = anyValue._<main_typeᴛ3>(ᐧ);
+    var (_, valueOK) = anyValue._<main_type>(ᐧ);
     fmt.Println(uintValueAssertsToAnonˢ, valueOK);
     var inner = Ꮡ(new Uint(nil));
     inner.Value.Label = innerˢ;

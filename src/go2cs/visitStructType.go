@@ -118,8 +118,34 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// been visited already for its name to be registered, which is guaranteed within one file
 		// (declaration order) and not across files. A cross-file instance still splits, exactly as
 		// before.
+		//
+		// Guarded the same way visitInterfaceType's twin block is: C#'s rule is TYPE accessibility
+		// >= MEMBER accessibility, so a reuse is only unsafe when the member this lift names
+		// (liftNameNeedsPublicType — the segment after the lift name's last underscore, i.e. the
+		// actual field/param Go declared) is EXPORTED but the reuse candidate's OWN inferred
+		// accessibility (generatedTypeScope, mirroring go2cs-gen's GetScope) is not. An unexported
+		// member never conflicts with any reuse — internal is C#'s accessibility floor — even when
+		// the COMBINED lift name reads public by first character alone (comparing combined names,
+		// this block's first version, wrongly rejected safe reuses on that basis; see
+		// visitInterfaceType's twin comment for the concrete hash_test.go/IfaceKey case that
+		// caught it). A FUNCTION-LOCAL lift needs no check: localTypeAccess writes an EXPLICIT
+		// `internal` there, overriding name inference, so reusing any name is safe. Falling
+		// through to a fresh mint when the check fails is always safe too — it is the pre-fix
+		// behavior — and only forgoes a dedup opportunity, never breaks one.
 		if anonLiftKey != "" {
-			if existing := lookupDynamicTypeName(structSignatureType.String()); existing != "" {
+			existing := lookupDynamicTypeName(structSignatureType.String())
+
+			// The reference-model `-tests` sibling of the same-pass check above: a name
+			// PRODUCTION already lifted and published via GoDynamicTypeLift for this exact
+			// signature (see seedProductionDynamicTypeLifts and visitInterfaceType's twin of
+			// this block, added for hash_test.go's IfaceKey/ifaceHash pair). Interfaces needed
+			// it to compile at all; structs had no failing case yet, but the gap is the same
+			// architectural hole, so closed identically rather than left latent.
+			if existing == "" {
+				existing = lookupProductionDynamicTypeName(structSignatureType.String())
+			}
+
+			if existing != "" && (v.inFunction || !liftNameNeedsPublicType(name) || generatedTypeScope(existing) == "public") {
 				if identType != nil {
 					v.liftedTypeMap[identType] = existing
 				}

@@ -72,12 +72,8 @@ internal static void takesReader(takesReader_r r) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object compositeLiteralReadˢ = (@string)"CompositeLiteral: Read ="u8;
 
-[GoType("dyn")] internal partial interface testCompositeLiteral_readers {
-    (nint, error) Read(slice<byte> _Δp0);
-}
-
 internal static void testCompositeLiteral() {
-    var readers = new testCompositeLiteral_readers[]{new fakeReader(nil)}.slice();
+    var readers = new takesReader_r[]{new fakeReader(nil)}.slice();
     var buf = new slice<byte>(4);
     var (n, _) = readers[0].Read(buf);
     fmt.Println(compositeLiteralReadˢ, ((@string)(buf[..(int)(n)])));
