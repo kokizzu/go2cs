@@ -45,8 +45,9 @@ internal static class TestFormat
     }
 
     /// <summary>
-    /// Formats a Go format string with common-verb coverage: %v %s %q %d %x %X %c %t %e %E %f %F
-    /// %g %G %T %%. Width/precision are honored for floats; other flags are parsed and ignored.
+    /// Formats a Go format string with common-verb coverage: %v %s %q %d %x %X %o %b %c %t %e %E
+    /// %f %F %g %G %T %%. Width/precision are honored for floats, and `#` selects the alternate
+    /// form of the integer bases (0x/0X/0b/0); the remaining flags are parsed and ignored.
     /// Unknown verbs, missing arguments, and extra arguments render in Go's disclosure style
     /// (%!x(...), %!v(MISSING), %!(EXTRA ...)) so a formatting gap is visible, never silent.
     /// </summary>
@@ -73,8 +74,20 @@ internal static class TestFormat
 
             // %[flags][width][.precision]verb
             i++;
+
+            // Go's `#` selects the ALTERNATE form, and for the integer bases it is the difference
+            // between `deadbeef` and `0xdeadbeef` — the form test messages actually use. The other
+            // flags remain parsed-and-ignored (width/padding is a larger surface than a diagnostic
+            // shim needs).
+            bool alternate = false;
+
             while (i < format.Length && format[i] is '+' or '-' or '#' or ' ' or '0')
+            {
+                if (format[i] == '#')
+                    alternate = true;
+
                 i++;
+            }
 
             while (i < format.Length && char.IsAsciiDigit(format[i]))
                 i++;
@@ -109,7 +122,7 @@ internal static class TestFormat
                 continue;
             }
 
-            result.Append(Format(verb, precision, args[argIndex++]));
+            result.Append(Format(verb, precision, alternate, args[argIndex++]));
         }
 
         if (argIndex < args.Length)
@@ -129,7 +142,7 @@ internal static class TestFormat
         return result.ToString();
     }
 
-    private static string Format(char verb, int precision, object? arg)
+    private static string Format(char verb, int precision, bool alternate, object? arg)
     {
         switch (verb)
         {
@@ -147,7 +160,9 @@ internal static class TestFormat
                 return TryGetInt64(arg, out long rune) ? char.ConvertFromUtf32(checked((int)rune)) : BadVerb(verb, arg);
             case 'x':
             case 'X':
-                return FormatHex(verb, arg);
+            case 'o':
+            case 'b':
+                return FormatBase(verb, alternate, arg);
             case 'e':
             case 'E':
             case 'f':
@@ -202,20 +217,112 @@ internal static class TestFormat
         return false;
     }
 
-    private static string FormatHex(char verb, object? arg)
+    /// <summary>
+    /// Renders the integer bases -- <c>%x</c>, <c>%X</c>, <c>%o</c>, <c>%b</c> -- the way Go does.
+    /// </summary>
+    /// <remarks>
+    /// Go formats an integer in these bases by MAGNITUDE with a leading minus, never as a two's
+    /// complement word: <c>%x</c> of <c>-31</c> is <c>-1f</c>, not <c>ffffffffffffffe1</c>. Going
+    /// through an unsigned magnitude also carries the top of the <c>uint64</c> range, which a signed
+    /// coercion could not represent at all and so disclosed as a bad verb.
+    /// <para>
+    /// <c>%x</c>/<c>%X</c> additionally accept a byte slice or a string and render its BYTES; the
+    /// other two bases do not, matching Go, which formats such an operand element-wise instead.
+    /// </para>
+    /// </remarks>
+    private static string FormatBase(char verb, bool alternate, object? arg)
     {
-        string hex;
+        int radix = verb switch { 'o' => 8, 'b' => 2, _ => 16 };
+        string digits;
 
-        if (TryGetInt64(arg, out long integral))
-            hex = integral.ToString("x", CultureInfo.InvariantCulture);
+        if (TryGetIntegral(arg, out ulong magnitude, out bool negative))
+            digits = Digits(magnitude, radix);
+        else if (radix != 16)
+            return BadVerb(verb, arg);
         else if (TryGetBytes(arg, out byte[] bytes))
-            hex = Convert.ToHexStringLower(bytes); // the RAW bytes, which need not be valid UTF-8
+            digits = Convert.ToHexStringLower(bytes); // the RAW bytes, which need not be valid UTF-8
         else if (arg is @string or string)
-            hex = Convert.ToHexStringLower(Encoding.UTF8.GetBytes(Default(arg)));
+            digits = Convert.ToHexStringLower(Encoding.UTF8.GetBytes(Default(arg)));
         else
             return BadVerb(verb, arg);
 
-        return verb == 'X' ? hex.ToUpperInvariant() : hex;
+        if (verb == 'X')
+            digits = digits.ToUpperInvariant();
+
+        if (alternate)
+            digits = verb switch { 'x' => "0x", 'X' => "0X", 'b' => "0b", _ => "0" } + digits;
+
+        // The sign sits OUTSIDE the alternate prefix, as Go writes it: `-0x1f`.
+        return negative ? "-" + digits : digits;
+    }
+
+    /// <summary>
+    /// Coerces any Go integer argument to a sign-and-magnitude pair.
+    /// </summary>
+    /// <remarks>
+    /// Every Go integer kind but one arrives here as a CLR primitive. <c>uintptr</c> is golib's own
+    /// STRUCT -- it wraps an <c>nuint</c> so that inference and boxing keep reporting the Go type --
+    /// so a switch over primitives alone misses it silently, which is the whole of the defect this
+    /// helper was extracted to fix: reflect's <c>TestValuePointerAndUnsafePointer</c> prints both
+    /// sides of its comparison with <c>%#x</c>, and the shim answered <c>%!x(uintptr=...)</c> for
+    /// each of them, hiding the very values the assert had failed on.
+    /// </remarks>
+    private static bool TryGetIntegral(object? arg, out ulong magnitude, out bool negative)
+    {
+        negative = false;
+
+        switch (arg)
+        {
+            case sbyte or short or int or long:
+                return Magnitude(Convert.ToInt64(arg, CultureInfo.InvariantCulture), out magnitude, out negative);
+            case nint nativeSigned:
+                return Magnitude(nativeSigned, out magnitude, out negative);
+            case byte or ushort or uint or ulong:
+                magnitude = Convert.ToUInt64(arg, CultureInfo.InvariantCulture);
+                return true;
+            case nuint nativeUnsigned:
+                magnitude = nativeUnsigned;
+                return true;
+            case uintptr pointer:
+                magnitude = pointer.Value;
+                return true;
+            default:
+                magnitude = 0UL;
+                return false;
+        }
+    }
+
+    // Negating long.MinValue overflows the signed domain, so the magnitude is taken in the unsigned
+    // one instead -- ~v + 1 is the same two's-complement negation without the trap.
+    private static bool Magnitude(long value, out ulong magnitude, out bool negative)
+    {
+        negative = value < 0L;
+        magnitude = negative ? unchecked((ulong)~value) + 1UL : (ulong)value;
+        return true;
+    }
+
+    /// <summary>
+    /// The unsigned magnitude in the given radix, lower-case and without leading zeros.
+    /// </summary>
+    private static string Digits(ulong magnitude, int radix)
+    {
+        if (magnitude == 0UL)
+            return "0";
+
+        const string Alphabet = "0123456789abcdef";
+
+        // Base 2 is the widest of the three, so 64 digits covers every radix and every value.
+        Span<char> buffer = stackalloc char[64];
+        int index = buffer.Length;
+        ulong divisor = (ulong)radix;
+
+        while (magnitude != 0UL)
+        {
+            buffer[--index] = Alphabet[(int)(magnitude % divisor)];
+            magnitude /= divisor;
+        }
+
+        return new string(buffer[index..]);
     }
 
     private static string FormatFloat(char verb, int precision, object? arg)
@@ -284,20 +391,40 @@ internal static class TestFormat
         return result.ToString();
     }
 
+    /// <summary>
+    /// Coerces an integer argument to a signed <see cref="long"/>, for the verbs that need a scalar
+    /// rather than a magnitude (<c>%c</c>'s rune, <c>%e</c>/<c>%f</c>/<c>%g</c>'s integral operand).
+    /// </summary>
+    /// <remarks>
+    /// It defers to <see cref="TryGetIntegral"/> rather than switching over primitives itself,
+    /// because the obvious spelling of that switch is a trap: <c>IntPtr</c>/<c>UIntPtr</c> do NOT
+    /// implement <see cref="IConvertible"/>, so a case label listing <c>nint</c> and then calling
+    /// <see cref="Convert.ToInt64(object, IFormatProvider)"/> compiles and then THROWS at run time --
+    /// and since Go's <c>int</c> converts to <c>nint</c>, that turned a <c>%x</c> on the commonest
+    /// integer kind in the corpus into a cast exception that failed the whole test as an
+    /// infrastructure error rather than mis-rendering one operand.
+    /// A value outside the signed range is still refused, as before.
+    /// </remarks>
     private static bool TryGetInt64(object? arg, out long value)
     {
-        switch (arg)
+        if (TryGetIntegral(arg, out ulong magnitude, out bool negative))
         {
-            case sbyte or byte or short or ushort or int or uint or long or nint or nuint:
-                value = Convert.ToInt64(arg, CultureInfo.InvariantCulture);
+            // |long.MinValue| is one past long.MaxValue, so the negative bound is the wider one.
+            if (negative && magnitude <= (ulong)long.MaxValue + 1UL)
+            {
+                value = unchecked(-(long)magnitude);
                 return true;
-            case ulong ulongValue when ulongValue <= long.MaxValue:
-                value = (long)ulongValue;
+            }
+
+            if (!negative && magnitude <= (ulong)long.MaxValue)
+            {
+                value = (long)magnitude;
                 return true;
-            default:
-                value = 0L;
-                return false;
+            }
         }
+
+        value = 0L;
+        return false;
     }
 
     private static string TrimGoPrefix(string goTypeName) =>
