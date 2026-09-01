@@ -11,6 +11,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"path/filepath"
 	"strings"
 )
 
@@ -695,17 +696,63 @@ func (v *Visitor) isPointerReceiverMethodCall(selectorExpr *ast.SelectorExpr) bo
 // resolve through the alias maps anyway — those are keyed `<package>.<member>` — so gating here is
 // the property stated once rather than a special case per emission site.
 func (v *Visitor) aliasResolvedSelector(selectorExpr *ast.SelectorExpr, rendered string) string {
-	if !v.selectorBaseIsPackage(selectorExpr) {
+	pkgName := v.selectorBasePackageObj(selectorExpr)
+
+	if pkgName == nil {
+		return rendered
+	}
+
+	if !aliasSourceMatchesPackage(rendered, pkgName.Imported()) {
 		return rendered
 	}
 
 	return getAliasedTypeName(rendered)
 }
 
+// aliasSourceMatchesPackage reports whether a published entry for the raw "pkg.Member" key
+// (importedTypeAliasSourceDirs — see applyExportedTypeAliases), if one exists, actually came from
+// the package THIS reference resolves to. go2cs's alias table is keyed by short DECLARED package
+// name, not import path, so two different import paths that declare the same package name collide
+// on one key — runtime/trace and internal/trace are both literally `package trace`. Without this
+// check, a reference to the package that published NOTHING under the key silently adopted the
+// OTHER package's entry (CS1955: a bare `trace.Log` resolving through go's own type-checker to
+// runtime/trace picked up internal/trace's unrelated `Log` → `ΔLog` rename instead).
+//
+// No published entry at all is NOT a mismatch — most keys are published by exactly the package
+// being referenced, and a package that publishes no aliases (needs no rename) must fall through to
+// its own unrenamed spelling exactly as if this check did not exist.
+func aliasSourceMatchesPackage(rendered string, pkg *types.Package) bool {
+	if pkg == nil {
+		return true
+	}
+
+	packageLock.Lock()
+	sourceDir, published := importedTypeAliasSourceDirs[rendered]
+	packageLock.Unlock()
+
+	if !published {
+		return true
+	}
+
+	dir, ok := importPackageDirs[pkg.Path()]
+
+	if !ok || dir.Dir == "" {
+		return true
+	}
+
+	return filepath.Clean(dir.Dir) == sourceDir
+}
+
 // selectorBaseIsPackage reports whether the selector qualifies a PACKAGE (`time.Second`) rather
 // than a value/type expression. Parentheses are peeled; anything that is not a bare identifier
 // bound to a *types.PkgName is not a package qualifier.
 func (v *Visitor) selectorBaseIsPackage(selectorExpr *ast.SelectorExpr) bool {
+	return v.selectorBasePackageObj(selectorExpr) != nil
+}
+
+// selectorBasePackageObj extracts the *types.PkgName the selector's base identifier is bound to,
+// peeling parens first, or nil if the base is not a bare package-qualifying identifier.
+func (v *Visitor) selectorBasePackageObj(selectorExpr *ast.SelectorExpr) *types.PkgName {
 	base := selectorExpr.X
 
 	for {
@@ -721,12 +768,12 @@ func (v *Visitor) selectorBaseIsPackage(selectorExpr *ast.SelectorExpr) bool {
 	ident, isIdent := base.(*ast.Ident)
 
 	if !isIdent {
-		return false
+		return nil
 	}
 
-	_, isPackage := v.info.ObjectOf(ident).(*types.PkgName)
+	pkgName, _ := v.info.ObjectOf(ident).(*types.PkgName)
 
-	return isPackage
+	return pkgName
 }
 
 func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context LambdaContext) string {

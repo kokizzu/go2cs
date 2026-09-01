@@ -44,6 +44,7 @@ func resetPackageState(pkg *packages.Package) {
 	currentPackagePath = pkg.PkgPath
 	exportedTypeAliases = make(map[string]string)
 	importedTypeAliases = make(map[string]string)
+	importedTypeAliasSourceDirs = make(map[string]string)
 	packageInlineFuncTypeNames = make(map[string]bool)
 	importedPointerImplements = HashSet[string]{}
 	importedValueImplements = HashSet[string]{}
