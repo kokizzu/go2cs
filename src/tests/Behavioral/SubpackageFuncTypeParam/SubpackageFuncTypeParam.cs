@@ -6,18 +6,6 @@ using sync;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(sync.atomic_package));
-}
-
 // type applyFunc is a methodless func type — rendered inline as its base delegate
 
 internal static int32 run(Func<ж<atomic.Int32>, int32> f, ж<atomic.Int32> Ꮡc) {

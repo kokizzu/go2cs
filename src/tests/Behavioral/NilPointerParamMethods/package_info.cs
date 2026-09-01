@@ -49,7 +49,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "ABtAgoKUqoLYooCCpNqiguqigoKqooKCgpTaooKUgqqigsqCgpSmooKAgoK2ggAgBoKEgpKClJKClJCUgoKQlIKCkJSCgoKQkpCUgoKCgJKAlIKCkJKQlIKCkJKQkpCSkJKSgpaCgoKmgg==", "106-111:1;120-123:1;124-127:2;128-128:3;132-132:4;136-136:5;141-141:6;142-142:7;147-147:8;148-148:9;152-152:10;153-153:11;157-157:12;158-158:13;159-159:14;160-160:15;161-164:16")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AA9AgoKUqoLYooCCpNqiguqigoKqooKCgpTaooKUgqqigsqCgpSmooKAgoK2ggAgBoKEgpKClJKClJCUgoKQlIKCkJSCgoKQkpCUgoKCgJKAlIKCkJKQlIKCkJKQkpCSkJKSgpaCgoKmgg==", "106-111:1;120-123:1;124-127:2;128-128:3;132-132:4;136-136:5;141-141:6;142-142:7;147-147:8;148-148:9;152-152:10;153-153:11;157-157:12;158-158:13;159-159:14;160-160:15;161-164:16")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -67,4 +67,15 @@ public static partial class main_package
     // <TypeAccessibility>
     internal partial struct node {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    // </ImportInitializers>
 }

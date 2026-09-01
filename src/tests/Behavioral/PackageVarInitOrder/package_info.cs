@@ -50,7 +50,7 @@ using static go.main_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("entries.go", "entries.cs", "AA8q")]
-[assembly: go.GoPositionMap("main.go", "main.cs", "ABEegqaCgoKCgoKCgoaCgoI=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AAsegqaCgoKCgoKCgoaCgoI=")]
 [assembly: go.GoPositionMap("registry.go", "registry.cs", "AAkQgqaCgoIAFDCC")]
 // </GoSourcePositionMaps>
 
@@ -73,4 +73,14 @@ public static partial class main_package
     internal partial struct reg {}
     internal partial struct table {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    // </ImportInitializers>
 }

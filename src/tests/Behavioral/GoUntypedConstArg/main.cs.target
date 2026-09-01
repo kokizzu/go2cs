@@ -4,12 +4,6 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 internal static UntypedInt poly => 0x82f63b78;
 
 internal static channel<uint32> done = new channel<uint32>(1);

@@ -5,12 +5,6 @@ using @unsafe = unsafe_package;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 internal static nint readInto(ж<uint16> Ꮡbuf, nint toread, slice<uint16> src) {
     return copy((~array<uint16>.AliasPointer(Ꮡbuf, 10000)).slice(-1, toread, toread), src);
 }

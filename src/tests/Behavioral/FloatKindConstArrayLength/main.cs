@@ -6,12 +6,6 @@ using fmt = fmt_package;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 internal static UntypedFloat globalLen => 1e2;
 internal static UntypedFloat namedLen => 1e1;
 internal static UntypedFloat exprLen => /* 1e3 / 1e1 */ 100;

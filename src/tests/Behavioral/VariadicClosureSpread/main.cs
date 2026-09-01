@@ -6,12 +6,6 @@ using ꓸꓸꓸnint = Span<nint>;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 internal static void Main() {
     @string format(@string f, params ꓸꓸꓸany aʗp) {
         var a = aʗp.slice();

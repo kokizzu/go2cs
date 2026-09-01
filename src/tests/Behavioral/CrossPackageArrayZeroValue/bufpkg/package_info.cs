@@ -67,4 +67,13 @@ public static partial class bufpkg_package
     [GoValueClone("Inner")] public partial struct Nested {}
     [GoValueClone("Buf", "Seed")] public partial struct State {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }

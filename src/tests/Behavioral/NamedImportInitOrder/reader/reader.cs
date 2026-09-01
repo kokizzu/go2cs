@@ -6,12 +6,6 @@ using go.NamedImportInitOrder;
 
 partial class reader_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸNamedImportInitOrderꓸwriter() {
-    builtin.initPackage(typeof(go.NamedImportInitOrder.writer_package));
-}
-
 internal static @string captured;
 
 [GoInit] internal static void init() {

@@ -5,12 +5,6 @@ using go.ItabLateRegistration;
 
 partial class latelib_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸItabLateRegistrationꓸlib() {
-    builtin.initPackage(typeof(go.ItabLateRegistration.lib_package));
-}
-
 public static (@string, nint) Prime() {
     ref var c = ref heap<lib.Circle>(out var Ꮡc);
     c = new lib.Circle(R: 7);

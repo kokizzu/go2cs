@@ -6,18 +6,6 @@ using encoding;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object iface1ˢ = (@string)"iface1:"u8;
 private static readonly object int2ˢ = (@string)"int2:"u8;

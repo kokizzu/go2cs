@@ -17,11 +17,13 @@ import (
 const TypeAliasMarker = ">>MARKER:TYPEALIASES<<"
 const UsingsMarker = ">>MARKER:USINGS<<"
 
-// ImportInitMarker reserves the top of the file's class body for the imported-package
-// module-initializer hooks (writeImportInit). The import declarations are visited as part of
-// the decl walk that follows the class-open line, so the hooks are only known afterwards — and
-// they must lead the class body, ahead of the file's own `init` functions.
-const ImportInitMarker = ">>MARKER:IMPORTINITS<<"
+// ImportInitMarker used to reserve the top of the file's class body for the imported-package
+// module-initializer hooks. Those hooks now live in the emission unit's metadata file
+// (writeImportInit → packageImportInits → writeImportInitSection), so no file reserves anything for
+// them and the marker is gone with the reservation. The ordering guarantee it existed to provide is
+// stronger where they went: package_info.cs is the FIRST compile item of every generated project, so
+// ALL of a package's import hooks precede ALL of its own `init` functions, deterministically —
+// where this marker could only order a hook ahead of the inits of its own file.
 
 func (v *Visitor) Visit(node ast.Node) ast.Visitor {
 	if node != nil {
@@ -96,19 +98,10 @@ func (v *Visitor) visitFile(file *ast.File) {
 
 	v.writeOutput(UsingsMarker)
 	v.writeOutputLn("partial class %s {", packageClassName)
-	v.writeOutput(ImportInitMarker)
 
 	for _, decl := range file.Decls {
 		v.visitDecl(decl)
 	}
-
-	// Splice the blank-import hooks in HERE — every import spec has been visited (imports are a
-	// file's first declarations), and the trailing-newline bookkeeping below inspects the buffer's
-	// LAST characters. An unreplaced marker is opaque to needsNewLine, so a file whose class body is
-	// EMPTY (a doc-only or `//go:build ignore` source — hash/crc32/gen.cs, os/signal/doc.cs,
-	// regexp/syntax/doc.cs, strconv/doc.cs) ended in the marker text rather than a blank line and
-	// gained a spurious second one. Replacing before that check keeps a hookless file byte-identical.
-	v.replaceMarker(ImportInitMarker, v.importInits.String())
 
 	if v.options.includeComments {
 		// Add any remaining standalone comments

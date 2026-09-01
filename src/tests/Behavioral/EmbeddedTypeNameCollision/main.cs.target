@@ -6,18 +6,6 @@ using EmbeddedTypeNameCollision;
 
 partial class main_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸEmbeddedTypeNameCollisionꓸinner() {
-    builtin.initPackage(typeof(EmbeddedTypeNameCollision.inner_package));
-}
-
 [GoType] partial struct Buffer {
     public partial ref EmbeddedTypeNameCollision.inner_package.Buffer ΔBuffer { get; }
     public @string Tag;
