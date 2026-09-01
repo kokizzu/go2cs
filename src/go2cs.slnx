@@ -585,6 +585,7 @@
     <Project Path="tests/Behavioral/MethodSelector/MethodSelector.csproj" />
     <Project Path="tests/Behavioral/MethodValueReassignCapture/MethodValueReassignCapture.csproj" />
     <Project Path="tests/Behavioral/MethodValueReceiverEscape/MethodValueReceiverEscape.csproj" />
+    <Project Path="tests/Behavioral/MethodValueReceiverSnapshot/MethodValueReceiverSnapshot.csproj" />
     <Project Path="tests/Behavioral/MethodlessFuncType/MethodlessFuncType.csproj" />
     <Project Path="tests/Behavioral/MethodlessFuncTypeAssert/MethodlessFuncTypeAssert.csproj" />
     <Project Path="tests/Behavioral/MinMaxBuiltin/MinMaxBuiltin.csproj" />

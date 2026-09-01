@@ -896,6 +896,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckMethodValueReceiverEscape() => CheckTarget("MethodValueReceiverEscape");
 
     [TestMethod]
+    public void CheckMethodValueReceiverSnapshot() => CheckTarget("MethodValueReceiverSnapshot");
+
+    [TestMethod]
     public void CheckMinMaxBuiltin() => CheckTarget("MinMaxBuiltin");
 
     [TestMethod]

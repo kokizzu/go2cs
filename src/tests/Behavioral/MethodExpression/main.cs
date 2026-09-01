@@ -37,7 +37,8 @@ internal static void Main() {
     d.compute = (nint p1) => new reader(readTen).sum(p1);
     fmt.Println(d.compute(3));
     var sh = new shifter(delta: 2);
-    fmt.Println(((@string)mapRunes((rune p1) => sh.shift(p1), slice<rune>((@string)"AB"))));
+    var shʗ1 = sh;
+    fmt.Println(((@string)mapRunes((rune p1) => shʗ1.shift(p1), slice<rune>((@string)"AB"))));
 }
 
 [GoType] partial struct shifter {
