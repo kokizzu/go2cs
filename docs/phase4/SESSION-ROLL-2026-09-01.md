@@ -56,8 +56,8 @@ polling `git ls-remote origin claude/mailbox` every 60s, emitting on tip change 
 signal; ScheduleWakeup loops (~40–50 min, `<<autonomous-loop-dynamic>>`) are the fallback
 heartbeat and the battery poll.
 
-FLEET & CHANNELS: R = RITCHIE-LAPTOP (active: reflect tail; watcher armed — mailbox pushes wake
-him). G = GRETCHEN-LAPTOP (standing by, 24×7 at owner's word, own budget; watcher armed). i9 =
+FLEET & CHANNELS: R = R-LAPTOP (active: reflect tail; watcher armed — mailbox pushes wake
+him). G = G-LAPTOP (standing by, 24×7 at owner's word, own budget; watcher armed). i9 =
 direct bridge channel `bridge:session_01M44y2xR21xwQDMM2vjNnvx` via SendMessage AND the mailbox
 (its own budget is SHARED with yours — the owner nudges it awake when needed). Every dispatch
 carries: the never-end-a-turn-to-wait rule, the watcher re-arm line, branch-off-current-master +

@@ -36,7 +36,7 @@ arm** (the review lane's protocol), every cell reported as **median [min–max]*
 dispersion the first increment's output lacked. Arms: V1-current, **V2u** (the parent-mandated
 union-slot variant, §2.1), and **V5i2** (V5 with §5's real element shape and amendment-7's nil
 contract). Representative process shown; cross-process median ranges quoted where a verdict
-depends on them. JIT = CoreCLR 10.0.11 PGO-warmed; AOT = Native AOT 10.0.11; GRETCHEN-LAPTOP.
+depends on them. JIT = CoreCLR 10.0.11 PGO-warmed; AOT = Native AOT 10.0.11; G-LAPTOP.
 
 | workload · JIT | V1 median [min–max] | V2u | V5i2 | V2u/V1 | V5/V1 |
 |:--|--:|--:|--:|--:|--:|

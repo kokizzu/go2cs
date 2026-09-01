@@ -1315,6 +1315,14 @@ reads backwards on the one platform 5.1 runs on).
 
 ## Conventions
 
+- **⚠ SECURITY — no real machine names or other internal-infrastructure identifiers on ANY pushed
+  surface (owner order, 2026-09-01).** Every committed file, mailbox entry, commit message and branch
+  name refers to fleet machines ONLY by their nicknames — `R-LAPTOP`, `G-LAPTOP`, `i9`,
+  `i7`/`coordinator`. Real hostnames, UNC paths carrying them, and any other detail that exposes the
+  owner's internal network (share names, non-public usernames) stay off GitHub entirely. The
+  2026-09-01 scrub replaced every occurrence at both public tips (master and the mailbox branch); git
+  HISTORY retains the originals (owner-accepted) — so never reintroduce one by quoting a pre-scrub
+  record verbatim: re-census with a case-insensitive grep before banking any doc that copies old text.
 - C# style: see [`docs/coding-style.md`](docs/coding-style.md) (Allman braces, 4 spaces, `m_`/`s_`/`t_`
   field prefixes, explicit types over `var`, language keywords over BCL types, `\uXXXX` for non-ASCII).
 - Conversion strategy: [`docs/ConversionStrategies.md`](docs/ConversionStrategies.md) — a high-level,

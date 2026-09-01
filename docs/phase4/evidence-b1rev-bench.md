@@ -8,7 +8,7 @@ pass-by-pass so drift hits both arms equally.
 
 ## V5/V1 ratio per isolated process
 
-| workload | JIT r1 | r2 | r3 | r4 | median | design (GRETCHEN) |
+| workload | JIT r1 | r2 | r3 | r4 | median | design (G-LAPTOP) |
 |:--|--:|--:|--:|--:|--:|--:|
 | std `Value` (rw)   | 0.79 | 0.68 | 0.64 | 0.68 | **0.68** | 0.58 |
 | std `DerefOrNull`  | 0.52 | 0.70 | 0.59 | 0.60 | **0.60** | 0.56 |
@@ -16,7 +16,7 @@ pass-by-pass so drift hits both arms equally.
 | mixed 90/8/1.5/.5  | 0.76 | 0.71 | 0.78 | 0.77 | **0.77** | 0.61 |
 | native `Value`     | 0.59 | 0.57 | 0.59 | 0.52 | **0.58** | 0.33 |
 
-| workload | AOT r2 | r3 | r4 | median | design (GRETCHEN) |
+| workload | AOT r2 | r3 | r4 | median | design (G-LAPTOP) |
 |:--|--:|--:|--:|--:|--:|
 | std `Value` (rw)   | 0.78 | 0.91 | 0.94 | **0.91** | 0.85 |
 | std `DerefOrNull`  | 0.72 | 0.70 | 0.64 | **0.70** | 0.67 |

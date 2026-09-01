@@ -12,7 +12,7 @@ P-F2 discharge; this one owns everything the review found unmeasured.
 
 Run: `dotnet run -c Release` ×4 (JIT arm), then publish `-p:PublishAot=true` and run the exe ×4
 (AOT arm; needs MSVC link.exe — prepend the VS Installer dir to PATH). Outputs of record:
-`output-jit-4proc.txt` / `output-aot-4proc.txt` (GRETCHEN-LAPTOP, CoreCLR/NativeAOT 10.0.11,
+`output-jit-4proc.txt` / `output-aot-4proc.txt` (G-LAPTOP, CoreCLR/NativeAOT 10.0.11,
 2026-08-26; JIT processes 1–2 briefly overlapped a killed AOT warmup — verified equal to the
 solo processes 3–4 within ±1.2 % on the V1 baseline row).
 

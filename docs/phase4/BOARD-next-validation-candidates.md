@@ -17725,7 +17725,7 @@ Two harness findings, both budget rather than corpus, and both worth not re-payi
 
 ## 2026-08-22 · The .NET 10 performance scout — same-silicon three-way: broad 10–20% JIT wins, String HALVES, three named regressions, and the bflat Fib anomaly attributed (lane G, `claude/dotnet10-perf-scout`)
 
-**Method.** SDK 10.0.400 (GA-line — "current .NET 10", not an RC) installed side-by-side to a user-local dir; the machine's 9.0 default untouched. Because the corpus targets `net9.0`, the 10 leg selects the runtime via env (`DOTNET_ROOT` + `DOTNET_ROLL_FORWARD=LatestMajor`), verified by a `FrameworkDescription` probe (ambient `.NET 9.0.18` → leg-B `.NET 10.0.11` → restored) — both legs execute IDENTICAL IL, so the delta is pure runtime/JIT codegen. All legs same-day, same silicon (Ryzen 5 PRO 6650U, 6C/12T, GRETCHEN-LAPTOP — CORRECTED 2026-08-22 from an original "Ryzen 7 PRO 6850U … NOT the perf-canon 6650U host": the pre-anchor fleet records had both laptops as 6850U, and this box probes as a 6650U, the perf-canon CLASS. Nothing in this entry moves — every figure here is a same-machine A/B and the ratios were always internal to this box — but the silicon is now named correctly per LANES.md), quiet box, `run-performance.ps1 --no-aot`, median-of-5 discipline unchanged. Go columns reproduce across legs within noise (e.g. Fib 118.3 vs 119.0) — the same-day control the method demands.
+**Method.** SDK 10.0.400 (GA-line — "current .NET 10", not an RC) installed side-by-side to a user-local dir; the machine's 9.0 default untouched. Because the corpus targets `net9.0`, the 10 leg selects the runtime via env (`DOTNET_ROOT` + `DOTNET_ROLL_FORWARD=LatestMajor`), verified by a `FrameworkDescription` probe (ambient `.NET 9.0.18` → leg-B `.NET 10.0.11` → restored) — both legs execute IDENTICAL IL, so the delta is pure runtime/JIT codegen. All legs same-day, same silicon (Ryzen 5 PRO 6650U, 6C/12T, G-LAPTOP — CORRECTED 2026-08-22 from an original "Ryzen 7 PRO 6850U … NOT the perf-canon 6650U host": the pre-anchor fleet records had both laptops as 6850U, and this box probes as a 6650U, the perf-canon CLASS. Nothing in this entry moves — every figure here is a same-machine A/B and the ratios were always internal to this box — but the silicon is now named correctly per LANES.md), quiet box, `run-performance.ps1 --no-aot`, median-of-5 discipline unchanged. Go columns reproduce across legs within noise (e.g. Fib 118.3 vs 119.0) — the same-day control the method demands.
 
 **Execution time, milliseconds (Go | 9-JIT | 10-JIT | 10Δ vs 9):**
 
@@ -18330,7 +18330,7 @@ favorable direction after the tranche — expect it, do not read it as drift.
 
 ## 2026-08-23 · MEASURED — JOB-007's Linux leg: the formal dual-OS consolidation sweep at `18770d083` is **152 green of 162** with **ZERO regressions**, and every one of the ten FAILs is an already-classified seam (lane R)
 
-Release-trigger condition (d), Linux half. Run at merged master `18770d083` on RITCHIE-LAPTOP (Ryzen 7 PRO 6850U, WSL2 Ubuntu 22.04), gate first: `go2cs-stdlib.slnx -p:GoTargetOS=linux` native `--no-incremental` **0 errors / 149 warnings in 465 s** — the same warning count as before the poller merged, so the union added none. Sweep aggregate **19,113 s (5.3 h)**; per-row wall times banked in [`DATA-sweep-row-walltimes.md`](DATA-sweep-row-walltimes.md) beside the i9's Windows table (H5).
+Release-trigger condition (d), Linux half. Run at merged master `18770d083` on R-LAPTOP (Ryzen 7 PRO 6850U, WSL2 Ubuntu 22.04), gate first: `go2cs-stdlib.slnx -p:GoTargetOS=linux` native `--no-incremental` **0 errors / 149 warnings in 465 s** — the same warning count as before the poller merged, so the union added none. Sweep aggregate **19,113 s (5.3 h)**; per-row wall times banked in [`DATA-sweep-row-walltimes.md`](DATA-sweep-row-walltimes.md) beside the i9's Windows table (H5).
 
 ### The arithmetic — a QUADRUPLE, because the per-OS ruling added a verdict class
 
@@ -19522,7 +19522,7 @@ linkname design; production-recover loud-fail honesty fix; full leveling (post-B
 
 ## 2026-08-29 · Fold #3: net's empty class goes extinct; the fixture saga ends on the BUNDLER; a silent SUBTRACTION reds the linux corpus at master; pprof reclassifies to a frontier; the defer/go capture defect is narrowed to synthesized lambdas
 
-*Source: the fleet mailbox, 2026-08-28 and 2026-08-29 entries (R/RITCHIE-LAPTOP, G/laptop,
+*Source: the fleet mailbox, 2026-08-28 and 2026-08-29 entries (R/R-LAPTOP, G/laptop,
 i9/sweeper, the local lanes, and COORD rulings). Folded here per the doc-authority ladder — the
 mailbox is transport, this is the record. Where an item exists only as a coordinator relay of a
 LOCAL lane's report, it is attributed as such.*
@@ -20050,7 +20050,7 @@ corpus-wide with the `Ꮡ(value).of(…)` chain at 5 sites, so it is not convert
 *Source: the fleet mailbox, the 2026-08-29 overnight range — mailbox commits `95345838b`
 (window twenty-seven announced, 00:54) through `a1e42cae3` (G's exit-code convergence note,
 05:41), extended through `59e9c6f88` (the /h2 settlement, ~05:45) when four posts landed that
-completed §5's measurement mid-draft. Voices: R/RITCHIE-LAPTOP, G/GRETCHEN-LAPTOP, i9/sweeper,
+completed §5's measurement mid-draft. Voices: R/R-LAPTOP, G/G-LAPTOP, i9/sweeper,
 three local converter/golib lanes, and COORD rulings. Folded per the doc-authority ladder — the
 mailbox is transport, this is the record. Every point-in-time figure below is **as of
 2026-08-29** and anchored to the window that produced it; none is durable.*
@@ -20445,7 +20445,7 @@ runtime-class hypothesis, and a CoreCLR liveness proof, each step measured.*
 
 **The measurement** (G, mailbox `d8d1d1e64`): converted-C# TLS handshake
 with NO WriteTimeout set and keep-alives disabled, three runs per side — Go mean 2ms / worst
-3ms; C# mean ~691–705ms / worst ~1,078–1,130ms on GRETCHEN. **~345x.** It settles net/http's
+3ms; C# mean ~691–705ms / worst ~1,078–1,130ms on G-LAPTOP. **~345x.** It settles net/http's
 h2 write-deadline pair (§3's Root B): the test's effective deadlines are 125/250/500ms and the
 handshake exceeds every one — the deadline is applied CORRECTLY and cannot be met, so the
 "apply-the-deadline-where-Go-does-not" semantic alternative died unfixed, to its author's
@@ -20464,9 +20464,9 @@ precedent: maphash is slow but PAYABLE — a bigger `-test-timeout` buys it; her
 `tryTimeouts` (`serve_test.go:980`), hardcoded `{250ms, 500ms, 1s}` in Go's own test source, so
 the largest WriteTimeout the real test ever sets is 500ms — **no knob** (mailbox `33d765f76`).
 Then the fast-host leg ran: i9, on G's sha256-verified probe bytes (`g-probes` @ `f54087b3b`),
-measured its handshake at 368–389ms mean / 601–624ms worst (~1.8x faster than GRETCHEN, still
+measured its handshake at 368–389ms mean / 601–624ms worst (~1.8x faster than G-LAPTOP, still
 ~190x Go) and **PASSED Go's real 500ms ceiling 3/3 both sides** — i9's own crossover sits
-between 250 and 500ms of WriteTimeout, tighter than GRETCHEN's, which failed even at 500ms
+between 250 and 500ms of WriteTimeout, tighter than G-LAPTOP's, which failed even at 500ms
 (mailbox `5e5138dd6`).
 **RULED** (mailbox `59e9c6f88`): the /h2 rows are a **host-speed-conditional performance gap**
 — they bank the bogo way (the capable-host leg), **no disclosure and no new class needed**;
@@ -20475,7 +20475,7 @@ generalization lesson). The disclosure wording had been deferred DELIBERATELY th
 thread — *a disclosure written now would describe a number we intend to change* (COORD
 `9904336ef`) — and the deferral was vindicated by dissolving.
 
-**Banked forward:** the handshake gap itself — **GRETCHEN ~700ms / i9 ~380ms / Go ~2ms, a
+**Banked forward:** the handshake gap itself — **G-LAPTOP ~700ms / i9 ~380ms / Go ~2ms, a
 two-host baseline** — rides to the **post-1.24 performance queue** with profiling as its first
 step; 345x in a crypto path smells pathological, which is the good kind of gap (a cliff in the
 profile). `crypto/tls` is a BANKED row (402 verdicts as of 2026-08-29, a reflect-bridge
