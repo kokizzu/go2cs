@@ -1,9 +1,10 @@
 # DESIGN — relocating the forced-init import hooks out of mainline code
 
 **Status:** step 2 of §5 LANDED 2026-09-01 (the compile-ordering precondition, §3.2); the hook
-relocation itself is still spec. Owner-sourced scout (2026-08-31), accepted by coordinator
-ruling the same day; the implementation is a corpus-wide emission change and lands in the **rebank
-wave**, whose full-roster sweep is its gate.
+relocation itself is still spec, and its **sizing census is in** (§4.1 — size, two hand-own blockers,
+and the `initᴛᴛtests`-retirement question answered NO). Owner-sourced scout (2026-08-31), accepted by
+coordinator ruling the same day; the implementation is a corpus-wide emission change and lands in the
+**rebank wave**, whose full-roster sweep is its gate.
 
 **The goal is readability.** Every file that imports a package currently carries a `[GoInit]`
 machinery block near the top of its class body. The owner asked whether those can move to
@@ -54,11 +55,22 @@ reintroduce the 2026-08-26 bug in the package that motivated the 2026-08-26 fix.
 test is the positive control for this work, and on this proof it is a genuine one rather than a
 formality.
 
-**Structural note.** `package_info.cs` today contains ONLY assembly-level attributes in its
-XML-comment-delimited regions. Hosting a `[GoInit]` method means it must also gain a
-`static partial class <pkg>_package` body — a shape change to a file that is ALSO an INPUT to
-dependent packages' transpiles (the `ImportedTypeAliases`/`GoImplement` records are read back off
-disk), so the cross-package read path wants checking before anything is cut.
+**Structural note — WRONG, and corrected on measurement 2026-09-01.** This paragraph originally read
+that `package_info.cs` "contains ONLY assembly-level attributes", so hosting a `[GoInit]` method
+would mean the file must *gain* a `static partial class <pkg>_package` body — a shape change to a
+file that is ALSO an INPUT to dependent packages' transpiles, with a cross-package read path to
+clear before anything is cut. **It does not have to gain one: 359 of the 360 committed
+`package_info.cs` already declare that class, with a populated body** (the `<TypeAccessibility>`
+block lives inside it — e.g. `crypto/internal/boring/bcache/package_info.cs:58`). The single
+exception is `unsafe`, which is hand-owned and skip-listed from conversion. The hook is therefore one
+more member of a class body that already exists, and there is no shape change and no read-path risk
+to clear.
+
+**And the mechanism has a banked precedent.** `package_test_info.cs` already hosts a forced-init
+module initializer in exactly this position — `[GoInit] internal static void initᴛᴛproduction() {
+builtin.initPackage(typeof(…)); }` — in `internal/weak`, `internal/concurrent` and
+`internal/syscall/windows`. An info-file carrying a `[GoInit]` that forces another assembly's module
+constructor is shipped code, not a new idea.
 
 ## 3. The enabling change (measured, not proposed)
 
@@ -161,9 +173,60 @@ closed.** This does not impugn `package_init.cs`'s existing use: sequencing init
 own class is a different job, and an explicit ordered sequence is right for it. What a cctor cannot
 be is the TRIGGER for a cross-package forced init.
 
-**Still unmeasured:** whether the move retires the `-tests`-closure drift class. The `initTests` hook
-is emitted by a `-tests` run while the committed corpus rests on the `-stdlib` side, so no single
-tree shows the interaction without a conversion the scout was not going to run mid-merge.
+**ANSWERED 2026-09-01, and the answer is NO — the move cannot retire the `-tests`-closure
+`initᴛᴛtests` drift class.** This paragraph previously read "Still unmeasured", and the wave plan's
+Stage-A2 bullet inherited the same expectation ("may retire sweep-dirt class 2's `initᴛᴛtests`
+shape — measure the retirement, don't assume it"). The two constructs are unrelated:
+
+* An import hook is `[GoInit]`/`ModuleInitializer` forcing **another assembly's** module constructor.
+* `initᴛᴛtests` is a **`static partial void` declared inside `package_init.cs`'s static
+  constructor** (`Symbols.PackageTestInitHookMethod`), the hook by which a `-tests` run splices the
+  internal test variant's relocated **variable** initializers into the production class's Go
+  `InitOrder` sequence. Four committed sites: `net/http`, `math/big`, `internal/trace`,
+  `internal/syscall/windows/windows`.
+
+Different file, different construct, different trigger. Three controls over the committed corpus
+confirm it rather than leaving it as a reading: **zero** `package_init.cs` carries an import hook;
+the hook-carrying file set and the `initᴛᴛtests` file set are **disjoint**; and **zero**
+`package_info.cs` carries an import hook today — which also makes the relocation target a clean
+baseline for the emission A/B that step 3 still owes.
+
+### 4.1 Sizing census (2026-09-01) — the size, and two blockers the spec did not carry
+
+Measured over the committed corpus at `5b9038d8c` with `git grep` (a bare `rg` honors
+`src/core/.gitignore` and under-counts), keyed on `builtin.initPackage(typeof(` — the hook body,
+which is unique to it. Positive control: `log/slog/logger.cs` reads 2 hooks at lines 23 and 29,
+the exact site §2's proof names.
+
+| set | hooks | files |
+|---|---|---|
+| corpus-wide | 3,194 | 959 |
+| **production emission** (what a `-stdlib` regen sees) | **2,125** | **684** |
+| test variants | 1,069 | 275 |
+
+314 production packages carry hooks; **median 5, max 44** (`net/http`). So the readability win is 684
+production files each shedding 1–44 machinery blocks, consolidating into 314 `package_info.cs`.
+A further 111 `[GoInit] internal static void init…` in the corpus are the packages' own converted
+`init` functions and do not move.
+
+**Two hand-owned files carry an import hook by hand, and both must be edited in the same commit as
+the relocation.** Neither is visible from the converter source; both fell out of the census.
+
+* `crypto/internal/boring/bcache/cache.cs` — `[module: go.GoManualConversion]`, carrying
+  `initᴛᴛimportꓸsyncꓸatomic`. Its `.cs.auto` sibling carries the **identical name**, which proves
+  the converter would emit it and that §1's hand-own fence is the only reason it does not claim the
+  package slot today. Relocate, and that emission lands in `bcache_package` through
+  `package_info.cs` while the hand-own keeps its copy: **CS0111 duplicate member**, a hard error in
+  a package with a banked row.
+* `runtime/metrics/sample.cs` — also hand-owned, carrying `initᴛᴛblankImportꓸruntime`. That name
+  shape **no longer exists in the converter** (`blankImport` is gone from `src/go2cs`; the hand-own
+  froze it before the 2026-08-26 widening). So it is NOT a collision and would fail silently: two
+  forced inits of `runtime`, one of them dead-named machinery. It is the only claim on that slot in
+  the package.
+
+**Still owed by step 3:** the emission delta itself — two seeded conversions, pre- and post-change,
+diffed against **each other** rather than against the committed tree (the committed tree is a moving
+baseline; see CLAUDE.md's blast-radius rule).
 
 ## 5. Blast radius, sequence, guard
 
@@ -179,7 +242,10 @@ Recommended sequence:
    what makes it a safe, separately-gated precondition rather than part of the risky step.
 3. Then relocate the hooks. **This is the step that has behavioral effect**, and it is where
    `tests/Behavioral/NamedImportInitOrder` stops being a formality — per §2 a relocation without
-   step 2 reintroduces log/slog's nil-deref.
+   step 2 reintroduces log/slog's nil-deref. **It carries the two hand-own edits of §4.1 in the same
+   commit** (`crypto/internal/boring/bcache/cache.cs`, a hard CS0111; `runtime/metrics/sample.cs`, a
+   silent duplicate), and it OPENS with the two-seeded-emissions blast-radius measurement §4.1 still
+   lists as owed.
 
 `tests/Behavioral/NamedImportInitOrder` must stay green throughout; per §2 it is a real positive
 control, not a formality. A `-stdlib` reconvert plus CNR covers the emission change; the wave's
