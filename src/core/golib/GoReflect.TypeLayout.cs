@@ -274,6 +274,20 @@ public static partial class GoReflect
         if (value is null || depth > MaxLayoutDepth)
             return true;
 
+        // Unwrap adapter carriers FIRST, and unwrap them exactly as GoDynamicTypeOf does — the
+        // caller pairs this value with the type GoDynamicTypeOf reported, so the two walks have to
+        // agree about what the value IS or the type says "array" while the value is a shell. Note
+        // IsNilGoValue does NOT unwrap (it probes the value's own type for `== nil`), which is why
+        // reflectPointerToken unwraps before calling it and why this must too: an adapter-wrapped
+        // nil pointer answers its SHELL's nilness otherwise, i.e. "not nil", inverting the word.
+        while (value is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            value = interfaceAdapter.Value;
+
+        if (value is IжAdapter { Box: not null } pointerAdapter)
+            value = pointerAdapter.Box;
+        else if (value is IValueAdapter { Value: not null } valueAdapter)
+            value = valueAdapter.Value;
+
         switch (KindOf(t))
         {
             case Pointer or UnsafePointer or Map or Chan or Func:
