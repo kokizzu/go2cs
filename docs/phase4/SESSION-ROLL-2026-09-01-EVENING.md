@@ -33,6 +33,23 @@ the successor live with your session identity. This is the anti-collision rule p
 2026-09-01 morning: if a claim from another PROMPT-1 successor is already on the mailbox, you are
 the STANDBY — say so and await the owner's word instead of proceeding.
 
+**YOUR SECOND ACTION — gate and land the migration train.** The predecessor's final train is
+PUBLIC on branch `claude/session-roll-evening` (this file rides it) but NOT yet on master,
+because two gates were still running at migration: (1) CNR at the train tip (a battery was
+mid-CNR when the session ended — its task died with the session, leaving the predecessor
+worktree's behavioral tree part-transpiled: harmless, CNR re-transpiles unconditionally), and
+(2) the os/user post-merge filtered sweep at the merge result (owed by the banked-row rule for
+the row-201 banking merge; restore its sweep dirt after). Procedure: fetch the branch, verify its
+tip contains the merges this file's header names, run the converter suite is ALREADY proven at
+the tip (ok 274s, in the dead battery's log) but re-run if you prefer your own reading, run CNR
+(expect: byte-identical — every merged change was individually CNR-proven; any drift is
+stop-and-diagnose), run `run-validated-sweep.ps1 -Filter 'os/user' -Exact` at the tip (expect
+5/5), then fast-forward master to the tip, push, verify, and post the landing on the mailbox —
+including the TRACKER PING to Ritchie: roster **201/209** going public is tracker-visible motion.
+The predecessor worktree (`.claude/worktrees/laughing-neumann-b1f809`, branch
+`claude/fleet-coordinator-go2cs-9a756e` = the train tip) and the merged agent worktrees are
+yours to tidy afterward.
+
 READ FIRST, in order: repo `CLAUDE.md` (doctrine — including everything banked 2026-09-01:
 doctrine batches 1–2, FALSE-GREEN route #8, the canary split, the seeding/partial-seed ritual,
 the census rules); your auto-memory MEMORY.md (owner rulings: address him as "Ritchie", chips
