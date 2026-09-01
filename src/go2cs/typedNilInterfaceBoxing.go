@@ -326,6 +326,24 @@ func (v *Visitor) funcExprNeverRendersNull(expr ast.Expr) bool {
 		_, isFunc := v.info.Uses[expr.Sel].(*types.Func)
 
 		return isFunc
+	case *ast.CallExpr:
+		// A func CONVERSION is exactly as nullable as its operand — the pointer twin's own words for
+		// the same shape. `Doubler(func(w int) int { … })` renders as a delegate CONSTRUCTION and can
+		// no more be null than the literal it wraps (tests/Behavioral/MethodlessFuncTypeAssert is the
+		// corpus instance, and it is where this arm was found missing).
+		//
+		// The DIFFERENCE from the pointer twin, and it is the whole reason this file exists: a NIL
+		// conversion is not exempt here. `(*T)(nil)` already renders the canonical typed-nil box, so
+		// the pointer arm passes it through; `(func())(nil)` renders `(Action)(default!)` — a cast of
+		// null — which is precisely the shape that loses the type word. Recursing into the operand
+		// gives that for free: a nil operand is not provably non-null, so it takes the carrier.
+		if len(expr.Args) == 1 {
+			if isConversion, _ := v.isTypeConversion(expr); isConversion {
+				return v.funcExprNeverRendersNull(expr.Args[0])
+			}
+		}
+
+		return false
 	}
 
 	return false
