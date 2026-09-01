@@ -370,6 +370,7 @@
     <Project Path="tests/Behavioral/DeferEvalParamFunc/DeferEvalParamFunc.csproj" />
     <Project Path="tests/Behavioral/DeferFrameScopes/DeferFrameScopes.csproj" />
     <Project Path="tests/Behavioral/DeferHeapFieldPtrMethod/DeferHeapFieldPtrMethod.csproj" />
+    <Project Path="tests/Behavioral/DescriptorCarrierFieldName/DescriptorCarrierFieldName.csproj" />
     <Project Path="tests/Behavioral/DeferHeapLocalPtrMethod/DeferHeapLocalPtrMethod.csproj" />
     <Project Path="tests/Behavioral/DeferInterfaceReturn/DeferInterfaceReturn.csproj" />
     <Project Path="tests/Behavioral/DeferLambdaParam/DeferLambdaParam.csproj" />

@@ -356,6 +356,19 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			target.WriteString(v.newline)
 		}
 
+		// The DESCRIPTOR CARRIER for a field whose Go type is a defined-over-interface type the
+		// emission erased to a `using` alias: the field's C# type is `object` (or the target
+		// interface), which carries no Go name, so reflect.Type.Field(i).Type.Name() answered ""
+		// where Go answers the declared name. Same rule and same reason as the dims cargo directly
+		// above — the datum cannot live in the managed type, so it travels as a stamp. Only the
+		// field's OWN type is stamped here; what Elem()/Key() hand down needs the carrier on the
+		// DESCRIPTOR rather than at the access, which is a descriptor-shape change sequenced after
+		// this one.
+		if carrier := v.descriptorCarrierFor(v.getType(field.Type, false)); carrier != "" {
+			v.writeString(target, "[GoDescriptorType(Self = typeof(%s))]", carrier)
+			target.WriteString(v.newline)
+		}
+
 		var indentOffset int
 
 		if v.inFunction {

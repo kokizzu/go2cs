@@ -624,6 +624,25 @@ public static partial class GoReflect
     }
 
     /// <summary>
+    /// The DESCRIPTOR CARRIER a struct FIELD carries as a converter stamp — the uninhabited
+    /// interface that holds the Go name of a defined-over-interface type the emission erased to a
+    /// <c>using</c> alias — or null when the field carries none.
+    /// </summary>
+    /// <remarks>
+    /// Read off the <see cref="FieldInfo"/> exactly as <see cref="FieldStampedDims"/> reads
+    /// <c>[GoArrayDims]</c>, and for the same reason: the datum cannot live in the managed field
+    /// type, so the converter puts it in the emitted C#. Only <c>Self</c> is read — the
+    /// <c>Elem</c>/<c>Key</c> slots need the carrier on the descriptor rather than at the access,
+    /// which is a descriptor-shape change sequenced after this one.
+    /// </remarks>
+    public static Type? FieldDescriptorType(FieldInfo field)
+    {
+        return field.GetCustomAttributes(typeof(GoDescriptorTypeAttribute), false) is [GoDescriptorTypeAttribute { Self: { } carrier }]
+            ? carrier
+            : null;
+    }
+
+    /// <summary>
     /// The array dims of a map-typed STRUCT FIELD's KEY, from the converter's
     /// <c>[GoMapKeyDims]</c> stamp — what <c>reflect.Type.Key()</c> hands down — or null when the
     /// field carries none.

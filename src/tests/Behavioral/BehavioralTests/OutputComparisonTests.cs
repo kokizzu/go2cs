@@ -365,6 +365,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDerivedInterfaceStructuralProbe() => CheckTarget("DerivedInterfaceStructuralProbe");
 
     [TestMethod]
+    public void CheckDescriptorCarrierFieldName() => CheckTarget("DescriptorCarrierFieldName");
+
+    [TestMethod]
     public void CheckDirectBoxReceiverPassedWhole() => CheckTarget("DirectBoxReceiverPassedWhole");
 
     [TestMethod]

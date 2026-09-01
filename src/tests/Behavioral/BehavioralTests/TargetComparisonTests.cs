@@ -391,6 +391,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckDerivedInterfaceStructuralProbe() => CheckTarget("DerivedInterfaceStructuralProbe");
 
     [TestMethod]
+    public void CheckDescriptorCarrierFieldName() => CheckTarget("DescriptorCarrierFieldName");
+
+    [TestMethod]
     public void CheckDirectBoxReceiverPassedWhole() => CheckTarget("DirectBoxReceiverPassedWhole");
 
     [TestMethod]

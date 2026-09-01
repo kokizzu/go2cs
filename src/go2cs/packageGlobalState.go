@@ -126,6 +126,12 @@ var importedPackageSources map[string]*packages.Package
 // output, arrived at by accident. Reset and repopulated per package alongside importPackageDirs.
 var importedPackages map[string]*packages.Package
 
+// currentPackageSource is the loaded go/packages entry for the package being converted — the one
+// handle importedPackages deliberately does NOT hold, since that map is the package's IMPORTS. The
+// descriptor-carrier predicate needs syntax for the DECLARING package of a type it meets, and that
+// package is as often the current one as an imported one. Reset alongside importedPackages.
+var currentPackageSource *packages.Package
+
 var constImportedTypeAliases HashSet[string]
 
 // derivedTypeAliases marks the importedTypeAliases keys that were DERIVED from a dependency's own

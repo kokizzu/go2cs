@@ -12,6 +12,8 @@ import (
 	"go/types"
 	"regexp"
 	"strings"
+
+	"golang.org/x/tools/go/packages"
 )
 
 func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
@@ -152,6 +154,30 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 		}
 
 		v.typeAliasDeclarations.WriteString(fmt.Sprintf("global using %s = %s;%s", aliasName, typeName, v.newline))
+
+		// THE DESCRIPTOR CARRIER. The `global using` above is a COMPILE-TIME construct: it leaves no
+		// metadata, so the Go name this declaration gives the type is gone by the time the reflection
+		// bridge sees a value of it — `reflect.TypeFor[Token]().Name()` answers "" where Go answers
+		// "Token", and for the non-empty case it answers the TARGET interface's name, which belongs to
+		// a different Go type. The alias is not the defect (it is what makes Go's universal
+		// assignability to `any` fall out of C# assignment for free, and no C# type carries a name AND
+		// keeps that), so the VALUE stays exactly as it is and only the DESCRIPTOR gains an identity:
+		// an UNINHABITED interface that nothing implements and no value is ever of, carrying the Go
+		// name as [GoLocalName] so golib's existing naming reconstruction answers it with no change of
+		// its own. Emitted only for a DEFINED type over an interface, never for a real Go alias — Go
+		// reports an alias's TARGET name, so a carrier there would invent a wrong name rather than fix
+		// one (`os.DirEntry`/`os.FileInfo` are that case, 19 descriptor positions in the corpus).
+		//
+		// It carries NO [GoType]: TypeGenerator keys on that attribute, and a carrier is not a Go type
+		// anything is emitted for. Measured — with all five go2cs-gen generators live in one
+		// compilation, a carrier draws zero generated output.
+		if definedOverInterface && !v.inFunction {
+			carrierAccess := getAccess(name)
+
+			v.writeOutputLn("// Descriptor carrier for `%s` — uninhabited; see GoDescriptorTypeAttribute.", typeSpec.Name.Name)
+			v.writeOutputLn("[GoLocalName(\"%s\")] %s interface %s%s { }", typeSpec.Name.Name, carrierAccess, aliasName, DescriptorCarrierSuffix)
+			v.writeOutputLn("")
+		}
 
 		// Add exported type aliases to package info. Never for a function-local declaration: it is
 		// not part of the package's exported surface whatever its Go name looks like, and the lift
@@ -412,6 +438,97 @@ func samePackageTypeQualifier() string {
 	}
 
 	return nsSegments + "." + classQualifier + "/"
+}
+
+
+// DescriptorCarrierSuffix marks a converter-minted DESCRIPTOR CARRIER - the uninhabited interface
+// that holds the Go name of a defined-over-interface type the emission erased to a `using` alias.
+// U+1D05 LATIN LETTER SMALL CAPITAL D, chosen to sit in the same small-capital family as the
+// existing temp (U+1D1B) and value-adapter (U+1D20) markers.
+const DescriptorCarrierSuffix = "\u1D05"
+
+// descriptorCarrierFor returns the fully-qualified C# name of the descriptor carrier for t, or ""
+// when t needs none. This is the SAME predicate usingAliasTargetType applies (foreignTypeAliases.go)
+// and it is deliberately the same three questions in the same order:
+//
+//  1. a Go type ALIAS gets NO carrier. Go reports the TARGET's name for one, so a carrier would
+//     invent a wrong name rather than restore a lost one. Measured: 30 descriptor positions in the
+//     corpus are aliases (os.FileInfo, os.DirEntry, net/http.http2timer).
+//  2. a type whose underlying is not an interface gets none - it is emitted as a real named type
+//     and already carries its name.
+//  3. a DEFINED type over an interface gets one ONLY when the declaration's RHS is a NAMED type.
+//     An inline definition (`type X interface{...}`) is a real nested C# interface and needs
+//     nothing; that distinction lives only in the RHS syntax, which is why the declaring package's
+//     handle is consulted. A package loaded without syntax yields "" rather than a guess.
+func (v *Visitor) descriptorCarrierFor(t types.Type) string {
+	if t == nil {
+		return ""
+	}
+
+	named, isNamed := t.(*types.Named)
+
+	if !isNamed {
+		return ""
+	}
+
+	obj := named.Obj()
+
+	if obj == nil || obj.Pkg() == nil || obj.IsAlias() {
+		return ""
+	}
+
+	if _, isInterface := obj.Type().Underlying().(*types.Interface); !isInterface {
+		return ""
+	}
+
+	handle := descriptorCarrierPackage(obj.Pkg())
+
+	if handle == nil {
+		return ""
+	}
+
+	switch definedTypeSpecRHS(handle, obj.Name()).(type) {
+	case *ast.Ident, *ast.SelectorExpr:
+	default:
+		return ""
+	}
+
+	// The carrier's C# name must be the one the DECLARATION used, collision rename included: a
+	// defined type whose name is also a method name in its own package is Δ-prefixed at the
+	// declaration (encoding/xml declares `type Token any` alongside `(*Decoder).Token()`, so the
+	// alias and its carrier are ΔToken/ΔTokenᴅ). Naming the unrenamed form here emits
+	// `typeof(Tokenᴅ)` against a declared `ΔTokenᴅ` — CS0246, and caught by the first smoke run.
+	// packageHasMethodNamed is the types-level form of the same test performNameCollisionAnalysis
+	// applies, and is what the foreign-collision derivation already uses for this exact question.
+	aliasName := getCoreSanitizedIdentifier(obj.Name())
+
+	if packageHasMethodNamed(obj.Pkg(), obj.Name()) {
+		aliasName = getCollisionAvoidanceIdentifier(obj.Name())
+	}
+
+	if obj.Pkg() == v.pkg {
+		return aliasName + DescriptorCarrierSuffix
+	}
+
+	return fmt.Sprintf("%s.%s_package.%s%s", RootNamespace, convertToCSTypeName(obj.Pkg().Path()), aliasName, DescriptorCarrierSuffix)
+}
+
+// descriptorCarrierPackage resolves the loaded handle whose SYNTAX the predicate above reads - the
+// package under conversion, or one of its imports.
+func descriptorCarrierPackage(pkg *types.Package) *packages.Package {
+	if pkg == nil {
+		return nil
+	}
+
+	if currentPackageSource != nil && currentPackageSource.Types == pkg {
+		return currentPackageSource
+	}
+
+	packageLock.Lock()
+	handle := importedPackages[pkg.Path()]
+	packageLock.Unlock()
+
+	return handle
 }
 
 // golibAliasSafeNames maps the golib csproj-level `<Using Alias="...">` names to equivalents

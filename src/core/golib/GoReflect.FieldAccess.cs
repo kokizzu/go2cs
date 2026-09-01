@@ -272,6 +272,14 @@ public static partial class GoReflect
         public readonly GoChanDir ChanDir;
 
         /// <summary>
+        /// The DESCRIPTOR CARRIER for this field's own Go type — the uninhabited interface holding
+        /// the Go name of a defined-over-interface type the emission erased to a `using` alias, from
+        /// the converter's <c>[GoDescriptorType(Self = ...)]</c> stamp. Null for every field whose
+        /// managed type already carries its Go name, which is almost all of them.
+        /// </summary>
+        public readonly Type? DescriptorSelf;
+
+        /// <summary>
         /// The field's raw Go struct TAG, verbatim — <c>asn1:"optional,explicit,tag:0"</c> — or the
         /// empty string when the field carries none. The converter emits every tagged field's tag as
         /// <c>[GoTag]</c> at the declaration, so this is the declared text, not a reconstruction.
@@ -283,10 +291,11 @@ public static partial class GoReflect
         internal readonly FieldInfo[] Path;
         internal readonly bool[] BoxHop;
 
-        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false, GoChanDir chanDir = GoChanDir.Unstamped, nint[]? keyDims = null)
+        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false, GoChanDir chanDir = GoChanDir.Unstamped, nint[]? keyDims = null, Type? descriptorSelf = null)
         {
             Name = name;
             Type = type;
+            DescriptorSelf = descriptorSelf;
             Exported = name.Length > 0 && name != "_" && char.IsUpper(name[0]);
             ArrayDims = arrayDims;
             KeyDims = keyDims;
@@ -375,7 +384,7 @@ public static partial class GoReflect
                 string goName = name[CapturedVarMarker.Length..];
                 nint[]? embedDims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : FieldStampedDims(field);
                 GoChanDir embedDir = KindOf(field.FieldType) == Chan ? FieldChanDir(t, field) : GoChanDir.Unstamped;
-                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], embedTagOf(t, field, goName), embedded: true, chanDir: embedDir, keyDims: FieldMapKeyDims(field)));
+                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], embedTagOf(t, field, goName), embedded: true, chanDir: embedDir, keyDims: FieldMapKeyDims(field), descriptorSelf: FieldDescriptorType(field)));
                 continue;
             }
 
@@ -393,7 +402,7 @@ public static partial class GoReflect
             // through a pointer or a map element — the two hops no zero instance can measure.
             nint[]? dims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : FieldStampedDims(field);
             GoChanDir fieldDir = KindOf(field.FieldType) == Chan ? FieldChanDir(t, field) : GoChanDir.Unstamped;
-            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field), chanDir: fieldDir, keyDims: FieldMapKeyDims(field)));
+            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field), chanDir: fieldDir, keyDims: FieldMapKeyDims(field), descriptorSelf: FieldDescriptorType(field)));
         }
 
         reorderToGoDeclarationOrder(t, result, first);
