@@ -216,8 +216,8 @@ internal static nint fillFast(this ж<worker> Ꮡw, slice<byte> b) {
 [GoRecv] internal static error /*err*/ initWorker(this ref worker w, nint level) {
     switch (ᐧ) {
     case {} when level is 0: {
-        w.fill = (Func<ж<worker>, slice<byte>, nint>)(fillFast);
-        w.step = (Action<ж<worker>>)(bump);
+        w.fill = ((Func<ж<worker>, slice<byte>, nint>)(fillFast));
+        w.step = ((Action<ж<worker>>)(bump));
         break;
     }
     default: {
