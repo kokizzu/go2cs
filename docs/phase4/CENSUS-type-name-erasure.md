@@ -867,3 +867,146 @@ than in place, per the CENSUS amendment convention.
 
 No converter, golib, gen or corpus file is modified by this branch. The only change is this
 amendment.
+
+---
+
+## AMENDMENT #2 — 2026-09-01 (evening): **A1 is UNNECESSARY** — the predicate already exists, answers 100% of positions, and the metadata increment collapses to zero work
+
+> Same branch, merged forward to master `26f3aaa67`. Commissioned to CUT the `GoTypeAlias`
+> `Defined` flag after sizing it. The sizing says there is nothing to cut: the converter can
+> already decide *carrier / no carrier* at every descriptor position from data in hand, with no
+> metadata, no `package_info.cs` churn, no `stdlib-metadata.txt` regen and no golib change.
+> **A1 is therefore reported, not banked.** A2 and A3 are sized below with a live mechanism probe.
+
+### A1 — the finding
+
+The commission's premise was that `[assembly: GoTypeAlias(name, target)]` cannot distinguish a
+DEFINED type over an interface from an ordinary Go alias (`type DirEntry = fs.DirEntry`), so a
+`Defined` flag was owed before any consumer-side substitution could be safe. **The premise is
+correct about the RECORD and wrong about the CONVERTER.** The distinction never needed to travel
+through metadata, because the converter loads with `packages.LoadAllSyntax`
+(`conversionDriver.go:89`) and therefore holds the declaring package's types *and syntax* for the
+whole closure. `foreignTypeAliases.go`'s **`usingAliasTargetType`** already implements exactly this
+predicate — it was written for the missing-`package_info.cs` case and its own comment states the
+rule:
+
+> *"A DEFINED type over an INTERFACE … is emitted as a using alias rather than a nested type — but
+> ONLY when the declaration's RHS is a NAMED type … That distinction lives only in the
+> declaration's RHS, so it is read from the dependency's syntax; a dependency loaded without syntax
+> yields nothing rather than a guess."*
+
+### The measurement
+
+Instrument: the converter patched at the same four descriptor positions, but this time classifying
+**every** interface-underlying named/alias type it meets — no hardcoded population — into
+`ALIAS` (`obj.IsAlias()`), `DEF-NAMED` (defined, RHS an `*ast.Ident`/`*ast.SelectorExpr`),
+`DEF-INLINE` (defined, RHS an inline interface literal) or `NOSYN` (unanswerable). Marker verified
+compiled into the binary; positive-controlled on `crypto/rsa` before the corpus run. Full
+`-stdlib -comments` run: exit 0, 300 `.csproj` emitted, 553,645-byte stderr capture, NUL-count 0
+(UTF-8, safe to grep).
+
+**4,435 classified positions:**
+
+| Class | Count | Meaning | Carrier? |
+|---|--:|---|:--:|
+| `DEF-INLINE` | **4,339** | `type X interface{…}` — already a real, correctly-named C# interface | no |
+| **`DEF-NAMED`** | **66** | the carrier population | **yes** |
+| `ALIAS` | **30** | a Go type alias — Go itself reports the TARGET's name | **no** |
+| `NOSYN` | **0** | unanswerable from data in hand | — |
+
+**Two things make this decisive.**
+
+1. **`DEF-NAMED` = 66, reproducing the first sizing census to the digit** — same total, same
+   per-kind split (37 result / 23 param / 4 field / 2 param-rebuilt) and same per-type split
+   (`driver.Value` 27, `crypto.PublicKey` 15, `xml.Token` 11, `crypto.PrivateKey` 6,
+   `DecrypterOpts` 3, `plugin.Symbol` 2, `json.Token` 2) — by a **completely independent
+   predicate** that knows none of those names.
+2. **`NOSYN` = 0.** Not "small": absent from the histogram. Every position was answerable.
+
+**And the hazard A1 existed to prevent is real and is already prevented.** The 30 `ALIAS` hits are
+`os.FileInfo` ×14, `net/http.http2timer` ×11 and `os.DirEntry` ×5 — the coordinator's worked
+example, measured live. A metadata-free naive stamp would have given all 30 a carrier and reported
+`os.DirEntry` where Go reports `fs.DirEntry`: a *new* wrong-name class, the very defect this arc
+exists to close. The existing predicate declines every one.
+
+**Conclusion: no `Defined` flag, no attribute change, no `package_info.cs` churn, no
+`stdlib-metadata.txt` regen.** Cutting it would add a field nothing reads — throwaway by
+construction. A2/A3 call `usingAliasTargetType` (or a small shared extraction of it) instead.
+
+### A2 / A3 — the mechanism probe
+
+A self-contained C# probe (`tne-a2`, one file) exercising every recovery route golib could use,
+with its own negative controls, against the real `golib` and analyzer. **No golib change, no
+corpus touched.**
+
+| # | Route | Result |
+|---|---|---|
+| A2-1 | FIELD — `FieldInfo.GetCustomAttributes` (what `synthesizeStructField` holds) | **recovered** |
+| A2-2 | PARAM — `MethodInfo.GetParameters()[i]` (the method-table route) | **recovered** |
+| A2-3 | PARAM — `Delegate.Method` (exactly `GoReflect.FuncParamDims`' read) | **recovered** |
+| A2-4 | PARAM — the delegate **TYPE** alone (all `synthesizeFuncSide` holds) | **NOT RECOVERABLE** |
+| A3-1 | RESULT — `MethodInfo.ReturnParameter` | **recovered** |
+| A3-2 | RESULT — the delegate **TYPE** alone | **NOT RECOVERABLE** |
+
+Both negative controls fire, so the recoveries are measurements rather than a detector that always
+says yes.
+
+And the naming half, **with no golib change**:
+
+```
+carrier tneEfaceᴅ    HasGoName=True   GoTypeName=tnea2.tneEface   PkgPath=tnea2   Kind=20
+erased  object       HasGoName=False  GoTypeName=interface {}     PkgPath=        Kind=20
+```
+
+§6's Option-3 claim is confirmed by measurement: the carrier answers Go's name, package path and
+`HasGoName` correctly through golib's *existing* reconstruction, and — importantly — its `Kind` is
+**identical** to the erased type's (20 = `Interface`), so substituting it perturbs no Kind.
+
+### What the probe re-sizes
+
+The commission grouped field + param as one increment ("27 marks on the existing dims-cargo
+precedent"). The probe says they are **different sizes**, because
+`synthesizeFuncSide` derives from the delegate TYPE and A2-4 is not recoverable there:
+
+* **A2a — FIELD (4 marks).** `FieldStampedDims` already reads attributes straight off the
+  `FieldInfo` (`GoReflect.TypeLayout.cs:621`). A carrier needs **one new attribute + one read**.
+  No descriptor-struct change. This is the smallest possible real increment and the only part of
+  Stage A that is genuinely "the existing precedent".
+* **A2b — PARAM (23 marks).** Recoverable on the method-table and delegate-VALUE routes, but *not*
+  where `synthesizeFuncSide` stands. A param carrier must therefore ride as **descriptor cargo**,
+  exactly as `funcParamDims` does — a new slot on `abi.Type` **and** its inclusion in
+  `descriptorDimsKey`, or two Go types over one managed delegate would share a descriptor (the
+  same argument that comment already makes for `chanDir` and `keyDims`).
+* **A3 — RESULT (37 marks).** `[return: …]` **is** expressible and readable via
+  `MethodInfo.ReturnParameter` — that question is answered YES. But `abi.Type` has **no result-side
+  cargo slot at all**, and the code says so outright: *"funcParamDims indexes the INPUTS; results
+  carry no dims cargo today, which is a known narrowing rather than an oversight."* A3 needs a new
+  cargo field, its key inclusion, and a result-side reader. Confirmed as the largest item, and
+  correctly sequenced last.
+
+### Revised shape
+
+| Increment | Marks | Cost | Descriptor-struct change? |
+|---|--:|---|:--:|
+| ~~A1 metadata flag~~ | — | **zero — not needed** | — |
+| A2a field | 4 | attribute + `FieldInfo` read | no |
+| A2b param | 23 | + cargo slot + interning-key change | **yes** |
+| A3 result | 37 | + new cargo slot + key + reader | **yes** |
+
+The carrier declaration itself (16 declaring sites) rides with A2a; step 1 already proved
+`src/gen/` needs nothing.
+
+### Gates run for this amendment
+
+| Gate | Verdict |
+|---|---|
+| A1 classifier compiled-in check (marker in binary) | **PASS** |
+| A1 classifier positive control (`crypto/rsa`) | **PASS** — 5 `DEF-NAMED`, matching the census's 5, and it separated `crypto.PublicKey` (carrier) from `crypto.SignerOpts` (inline, no carrier) |
+| A1 full-corpus classification | **PASS** — exit 0, 300 csproj, 4,435 records, `NOSYN` 0 |
+| Cross-derivation agreement (independent predicate vs hardcoded census) | **PASS** — 66 = 66, same per-kind and per-type split |
+| A2/A3 mechanism probe, both negative controls firing | **PASS** |
+| Instrument reverted byte-identical | **PASS** — `git diff HEAD` empty, clean status |
+| Merge-forward to master `26f3aaa67` + add/add resolution control | **PASS** — master's blob verified intact as the resolved file's first 692 lines (CR-stripped) |
+| Converter `go test`, CNR, two-seeded diff, stdlib build, sweeps | **NOT RUN** — no cut was taken; nothing is banked but measurements |
+
+No converter, golib, gen or corpus file is modified by this branch.
