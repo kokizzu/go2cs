@@ -74,8 +74,19 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 		// edwards25519's `var identity, _ = new(Point).SetBytes(…)`) and left the rest
 		// uninitialized. Route through the ValueTuple component-read emission instead.
 		// In-function specs keep the existing path (`:=` tuples are visitAssignStmt's).
+		//
+		// A two-value TYPE ASSERTION (`var y, ok = x.(T)`) deconstructs the identical way — Go's
+		// comma-ok form is not exclusive to `:=`, and go/types marks the assertion's own type a
+		// 2-tuple in EITHER declaration form (the isTuple check below already accounts for it
+		// correctly). The CallExpr-only gate simply never considered the shape: runtime's
+		// gc_test.go testAssertVar assigned the whole `(error?, bool)` tuple to a bare `error y`
+		// with `ok` left `default!` (CS0029) — same defect this branch exists to prevent, one
+		// expression kind short of catching it.
 		if !v.inFunction && valueSpec.Type == nil && len(valueSpec.Names) > 1 && len(valueSpec.Values) == 1 {
-			if _, isCall := valueSpec.Values[0].(*ast.CallExpr); isCall {
+			_, isCall := valueSpec.Values[0].(*ast.CallExpr)
+			_, isTypeAssert := valueSpec.Values[0].(*ast.TypeAssertExpr)
+
+			if isCall || isTypeAssert {
 				if tuple, isTuple := v.info.TypeOf(valueSpec.Values[0]).(*types.Tuple); isTuple {
 					v.visitPackageTupleVarSpec(valueSpec, tuple)
 					return
@@ -89,9 +100,13 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 		// rest (CS0029; time appendFormat read a zero abs). Emit the C# tuple deconstruction
 		// (`var (name, offset, abs) = t.locabs();`), matching the `:=` form. Gated to specs
 		// with no heap-escaping name (an escaping name needs its `ref heap<T>` box decl —
-		// none in the corpus takes this shape yet).
+		// none in the corpus takes this shape yet). Widened to a two-value TYPE ASSERTION for
+		// the identical reason as the package-level branch above — see that comment.
 		if v.inFunction && valueSpec.Type == nil && len(valueSpec.Names) > 1 && len(valueSpec.Values) == 1 {
-			if _, isCall := valueSpec.Values[0].(*ast.CallExpr); isCall {
+			_, isCall := valueSpec.Values[0].(*ast.CallExpr)
+			_, isTypeAssert := valueSpec.Values[0].(*ast.TypeAssertExpr)
+
+			if isCall || isTypeAssert {
 				if _, isTuple := v.info.TypeOf(valueSpec.Values[0]).(*types.Tuple); isTuple {
 					// The gate is "does this name get a `Ꮡname` BOX", which is identHasHeapBox —
 					// NOT the raw identEscapesHeap flag, which the escape analysis blanket-sets for
