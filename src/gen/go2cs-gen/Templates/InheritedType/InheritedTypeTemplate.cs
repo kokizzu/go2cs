@@ -316,11 +316,28 @@ internal class InheritedTypeTemplate : TemplateBase
     // A named type over a plain INTEGER needs the UntypedInt bridge for named untyped
     // consts: `(token)(endBlockMarker)` (compress/flate, CS0030 ×2) would otherwise chain
     // two user-defined conversions (UntypedInt→uint32, uint32→token), which C# never
-    // composes. Floats keep their existing routes (untyped float consts render literally).
+    // composes.
     private string UntypedIntBridgeOperator => TypeName is "byte" or "uint8" or "uint16" or "uint32" or "uint64" or "int8" or "int16" or "int32" or "int64" or "nint" or "nuint" or "rune" ?
         $"""
 
                 public static implicit operator {ObjectName}(UntypedInt value) => new {ObjectName}(({TypeName})value);
+
+        """ : "";
+
+    // The float twin of the bridge above — needed because a Go literal with an EXPONENT (`const
+    // gcCPULimiterUpdatePeriod = 10e6`) is a FLOAT literal syntactically even when its value is a
+    // whole number, so go/types classifies the untyped constant as UntypedFloat, not UntypedInt.
+    // A BARE reference to it (or arithmetic over it, `x / 2`) renders as the golib UntypedFloat
+    // WRAPPER struct exactly like a named untyped INT constant renders as UntypedInt
+    // (exprRendersUntypedConstWrapper) — go/types only accepts this at an integer-typed call site
+    // (runtime's `advance(gcCPULimiterUpdatePeriod)`, a time.Duration parameter) when the value IS
+    // exactly representable as one, so by the time this operator is ever reached the cast through
+    // UntypedFloat's own existing conversion to the primitive underlying type can never truncate a
+    // fraction Go itself would have rejected.
+    private string UntypedFloatBridgeOperator => TypeName is "byte" or "uint8" or "uint16" or "uint32" or "uint64" or "int8" or "int16" or "int32" or "int64" or "nint" or "nuint" or "rune" ?
+        $"""
+
+                public static implicit operator {ObjectName}(UntypedFloat value) => new {ObjectName}(({TypeName})value);
 
         """ : "";
 
@@ -537,7 +554,7 @@ internal class InheritedTypeTemplate : TemplateBase
                 public static bool operator !=({{ObjectName}} left, {{ObjectName}} right) => !(left == right);
         
         {{UnderlyingConversionOperators}}
-                    {{UintptrBridgeOperators}}{{UntypedIntBridgeOperator}}{{StringSurfaceMembers}}
+                    {{UintptrBridgeOperators}}{{UntypedIntBridgeOperator}}{{UntypedFloatBridgeOperator}}{{StringSurfaceMembers}}
                 // Handle comparisons between 'nil' and {{ObjectKind}} '{{ObjectName}}'
                 public static bool operator ==({{ObjectName}} value, NilType nil) => {{NilComparisonExpression}};
         

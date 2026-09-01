@@ -553,14 +553,34 @@ func (v *Visitor) whiteboxBridgeUse(ident *ast.Ident) bool {
 
 func (v *Visitor) whiteboxBridgeMember(ident *ast.Ident) string {
 	name := getSanitizedIdentifier(v.getIdentName(ident))
-	switch v.info.ObjectOf(ident).(type) {
+	switch obj := v.info.ObjectOf(ident).(type) {
 	case *types.Func:
 		name = getSanitizedFunctionName(v.getIdentName(ident))
 		if testMethodRenames[v.info.ObjectOf(ident)] {
 			name = ShadowVarMarker + name
 		}
 	case *types.TypeName:
+		// A TRUE ALIAS a `_test.go` file declares (`type G = g`, export_test.go) is emitted as its
+		// own `global using` — a COMPILATION-scoped construct, member of no class — so bridge-
+		// qualifying it here is CS0426, the type-name twin of testDeclaredAliasSpelledBare's same
+		// rule for the types.Type-based resolution path (typeNameResolution.go). Render it bare;
+		// the caller's dot-selector context is exactly where a `global using` name already
+		// resolves, matching the internal variant's own spelling of the same alias.
+		if obj.IsAlias() {
+			return getSanitizedIdentifier(v.getIdentName(ident))
+		}
+
 		name = convertToCSTypeName(v.getIdentName(ident))
+	case *types.Var, *types.Const:
+		// The var/const twin of the *types.TypeName case above: `getSanitizedIdentifier` at line
+		// 555 already ran, but against the EXTERNAL variant's own nameCollisions — wrong for the
+		// identical reason whiteboxBridgeNamedType's doc comment explains for types
+		// (export_test.go's `var Lock = lock` collides with RWMutex's own `Lock` method and
+		// Δ-renames to `ΔLock`; the external variant's own collision map never saw it). Re-derive
+		// from the session-scoped, object-keyed record instead.
+		if testTypeRenames[v.info.ObjectOf(ident)] {
+			name = getCollisionAvoidanceIdentifier(v.getIdentName(ident))
+		}
 	}
 	return v.options.testInternalBridgeName + "." + name
 }

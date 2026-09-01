@@ -39,7 +39,7 @@ public static float64 Abs(this MyFloat f) {
 }
 
 internal static bool isInf(float64 f, nint sign) {
-    return sign >= 0 && f > MaxFloat64 || sign <= 0 && f < -MaxFloat64;
+    return sign >= 0 && f > MaxFloat64 || sign <= 0 && f < /* -MaxFloat64 */ -1.7976931348623157e+308D;
 }
 
 internal static void bits64(@string label, uint64 got, uint64 want) {

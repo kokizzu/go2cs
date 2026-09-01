@@ -173,6 +173,21 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 			goIDName := v.getIdentName(ident)
 			csIDName := getSanitizedIdentifier(goIDName)
 
+			// The variable twin of visitTypeSpec's Δ-rename registration — `export_test.go`'s
+			// `var Lock = lock` collides with RWMutex's OWN method `Lock` (an unrelated type in
+			// the SAME internal-test-declared file), Δ-renaming the var to `ΔLock` exactly as
+			// getCollisionAvoidanceIdentifier's own doc comment describes for a type-vs-method
+			// collision — but a var can collide there too, and the external variant's OWN
+			// nameCollisions is the same wrong, per-variant map whiteboxBridgeNamedType's doc
+			// comment already explains for types. testTypeRenames is object-keyed and
+			// session-scoped for exactly this cross-variant visibility; nothing here is
+			// type-specific, so a renamed var registers into the identical map.
+			if nameCollisions[goIDName] && testTypeRenames != nil {
+				if obj := v.info.ObjectOf(ident); obj != nil {
+					testTypeRenames[obj] = true
+				}
+			}
+
 			if csIDName == "_" {
 				if v.inFunction {
 					csIDName = v.getTempVarName("_")
@@ -729,6 +744,13 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 		for i, ident := range valueSpec.Names {
 			goIDName := v.getIdentName(ident)
 			csIDName := getSanitizedIdentifier(goIDName)
+
+			// The const twin of the var registration above — see its comment.
+			if nameCollisions[goIDName] && testTypeRenames != nil {
+				if obj := v.info.ObjectOf(ident); obj != nil {
+					testTypeRenames[obj] = true
+				}
+			}
 
 			if csIDName == "_" {
 				if v.inFunction {
