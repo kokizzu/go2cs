@@ -135,8 +135,18 @@ THE LIVE BOARD AT MIGRATION (verify everything against the mailbox tail + tracke
    agreed: G traces the destination, i9 builds the two-seeded/CNR verification harness; G is
    also censusing the silent `[]func()` form in the production corpus (emission-attached). The
    parked typed-nil arm's slnx gate is honestly still OWED (a mixed-tree build was killed rather
-   than trusted). **At the paired fix's merge: runtime ZERO → Stage A CLOSES → the SEMANTIC BILL
-   prints** — and the silent twin's rows join whatever it touches (full pipeline + run-layer bucket
+   than trusted). ⚠ FINAL PRE-MIGRATION DEEPENING (mailbox, after the migration announcement —
+   READ G's three-member post IN FULL before any ruling here): the family is THREE members, and
+   two are SILENTLY WRONG IN THE BANKED CORPUS TODAY — the plain ASSIGNMENT path (`m := x.label`
+   with the variable heap-boxed elsewhere) also reads the receiver at CALL time (Go `a b` vs C#
+   `b b`, built and run), member #2 is the composite-literal/call-arg box-ref form, member #3 is
+   the loud CS8175. One cause: a value-receiver method value must copy its receiver at
+   EVALUATION; which member appears is decided by how the enclosing slot happened to render the
+   variable. **G's explicit warning binds the successor: any box-routed fix closes #3 by
+   converting it into #2 — runtime hits zero, the bill prints, and a WRONG answer banks quietly.
+   The fix must land the evaluation-time snapshot for ALL THREE members, and the silently-wrong
+   banked rows join the accounting.** **At the paired fix's TRUE merge: runtime ZERO → Stage A
+   CLOSES → the SEMANTIC BILL prints.** (full pipeline + run-layer bucket
    classification, posted as a census record — i9's deliverable; warn: generous -test-timeout,
    tail-first reading, and the -tests manifest dupe fix is already merged so CS0111
    initᴛᴛimportꓸ* should NOT recur).
