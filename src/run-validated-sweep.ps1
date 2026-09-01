@@ -2,9 +2,14 @@
 #
 # The charter's operational gate: after any change to golib, go2cs-gen, the converter or the
 # corpus, every already-validated package must still validate -- verdict for verdict, at its
-# exact banked count. This script is that gate. (One narrow, named exception: a row that declares
-# HOST-CONDITIONAL verdicts may exceed its banked floor by exactly those named rows -- see
-# Test-HostConditionalDelta below. Any other count movement is still a failure.)
+# exact banked count. This script is that gate. (Three narrow, named exceptions, each PROVEN from
+# the run's own evidence before it is granted: a row that declares HOST-CONDITIONAL verdicts may
+# exceed its banked floor by exactly those named rows (Test-HostConditionalDelta); a row with a
+# registered capability-conditional block may fall short by exactly that block when the capability
+# is ABSENT and both runtimes collapse together (Test-CapabilityAbsentDelta); and the same row may
+# fall short by exactly that block when the capability is PRESENT but the converted side cannot
+# produce it inside the test's own deadline AND the package's committed manifest already discloses
+# the block root as `host-limit` (Test-HostLimitDelta). Any other count movement is still a failure.)
 #
 # The roster is READ FROM docs/ValidatedTestPackages.md rather than hardcoded, so it can never
 # drift from the table a banking commit just updated: the table is the single source of truth for
@@ -233,6 +238,11 @@ $pass = 0; $fail = 0; $failed = @(); $started = Get-Date
 # reported by name and summarized apart, the same shape BehavioralRunner's NOT MEASURED takes, and
 # it still exits non-zero for the same reason: an unbanked count must never read as a green gate.
 $cvac = 0; $cvacRows = @()
+# Rows that passed as HOST-LIMITED: validated, and at a count smaller than the roster's because a
+# committed `host-limit` disclosure accounts for a block this host provably cannot produce. They
+# count as passes -- nothing regressed -- but a full sweep must not report their banked verdicts as
+# re-validated when they were not, so they are named here as well as on their own verdict line.
+$hostLimited = @()
 
 # 'Continue' for the sweep itself: merging a native command's stderr with 2>&1 wraps each line in
 # an ErrorRecord in PS 5.1, so under 'Stop' one benign converter warning (e.g. the unsafe.Sizeof
@@ -464,11 +474,14 @@ function Get-HostConditionalVerdict {
 # when the shortfall matches that package's registered block size exactly -- anything else still
 # falls through to the same hard failure as before. In particular a host that HAS the capability but
 # whose converted side misses the runner's own deadline produces the identical shortfall with Go
-# PASSING, and is refused: that is a real divergence, and the row routes to a faster host.
+# PASSING, and this rule refuses it -- that shortfall is the converted side's, and it is absorbed
+# only where the package's own COMMITTED manifest already discloses it: the THIRD host state, owned
+# by Test-HostLimitDelta and Get-HostLimitVerdict below.
 #
 # Registered by package; BlockSize is the full-capability verdict count for Test (the top-level test
 # itself plus every Go subtest under it) -- re-derive it from the committed proof page rather than
-# trust this number cold if the suite's own case matrix ever changes.
+# trust this number cold if the suite's own case matrix ever changes. ONE registration serves BOTH
+# shortfall rules on purpose: no package can reach either absorption without being named here.
 $capabilityConditionalBlocks = @{
     'crypto/tls' = @{ Test = 'TestBogoSuite'; BlockSize = 3243 }
 }
@@ -508,6 +521,79 @@ function Get-CapabilityAbsentVerdict {
 
     return Test-CapabilityAbsentDelta -Expected $Row.Effective.Expected -Disclosed $Row.Effective.Disclosed -Block $Block `
         -Got $Got -Comparison $comparison -BankedNames $bankedNames.ToArray()
+}
+
+# ---- host-limited verdicts (the THIRD host state) ------------------------------------------------
+# Same registered block, same two evidence artifacts, plus a third that only this rule reads: the
+# package's own COMMITTED disclosure manifest. The rule and its reasoning live in _roster.ps1
+# (Test-HostLimitDelta); this reads the evidence and calls it, mirroring the two readers above.
+#
+# Reached ONLY when Get-CapabilityAbsentVerdict has already declined, so the two shortfall shapes
+# can never both answer for one run -- and they are mutually exclusive on the evidence anyway (that
+# rule needs an agreeing non-pass block root, this one needs a PASSING Go root).
+function Get-HostLimitVerdict {
+    param([PSCustomObject] $Row, [int] $Got, [string] $OutDir, [PSCustomObject] $Block)
+
+    $comparisonPath = Join-Path $OutDir 'go2cs_test_comparison.json'
+    if (-not (Test-Path $comparisonPath)) {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "no comparison record at $comparisonPath" }
+    }
+    $comparison = $null
+    $comparisonError = $null
+    try { $comparison = ConvertFrom-ComparisonRecord -Path $comparisonPath } catch { $comparisonError = $_.Exception.Message }
+    if ($null -eq $comparison) {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "unreadable comparison record at ${comparisonPath}: $comparisonError" }
+    }
+
+    $pageRel = 'docs/validation/current/' + ($Row.Package -replace '/', '.') + '.md'
+    $pageLines = & git -C $repo show "HEAD:$pageRel" 2>$null
+    if ($LASTEXITCODE -ne 0 -or -not $pageLines) {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "no committed proof page at HEAD:$pageRel" }
+    }
+
+    $bankedNames = New-Object System.Collections.Generic.List[string]
+    $inVerdicts = $false
+    foreach ($pageLine in @($pageLines)) {
+        if ($pageLine -match '^##\s') { $inVerdicts = [bool]($pageLine -match '^##\s+Verdicts\b'); continue }
+        if ($inVerdicts -and $pageLine -match '^\|\s*`([^`]+)`\s*\|') { [void]$bankedNames.Add($Matches[1]) }
+    }
+
+    # The third artifact, and the absorption's admission gate. TWO properties are needed and they
+    # are not the same one: the manifest must be the file the CONVERTER read (it is the run's own
+    # input -- the disclosure in the record above exists because of it), and it must be COMMITTED,
+    # so no uncommitted edit can mint an absorption out of a scratch file. Hence the on-disk read
+    # for the first and the two git assertions for the second.
+    #
+    # ReadAllText rather than `git show`: PS 5.1 decodes a native command's bytes through the
+    # console codepage and these manifests carry UTF-8 prose. Only ASCII fields are consumed here,
+    # but reading the file correctly is cheaper than reasoning about which bytes survive.
+    $manifestPath = Join-Path $OutDir 'go2cs_test_disclosures.json'
+    $manifestRel = 'src/core/' + $Row.Package + '/go2cs_test_disclosures.json'
+    if (-not (Test-Path $manifestPath)) {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "no disclosure manifest at $manifestPath -- nothing pins $($Block.Test)" }
+    }
+    if (-not (& git -C $repo ls-files -- $manifestRel)) {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "the disclosure manifest at $manifestRel is untracked -- only a COMMITTED pin can admit a shortfall" }
+    }
+    & git -C $repo -c core.safecrlf=false diff --quiet --ignore-cr-at-eol HEAD -- $manifestRel
+    if ($LASTEXITCODE -ne 0) {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "the disclosure manifest at $manifestRel differs from HEAD -- only a COMMITTED pin can admit a shortfall" }
+    }
+
+    # An absent ENTRY is not an error here: it is left to the rule, which refuses a null pin by name
+    # so the fixtures can exercise that refusal without a manifest on disk.
+    $pin = $null
+    try {
+        $manifest = [System.IO.File]::ReadAllText($manifestPath) | ConvertFrom-Json
+        $entry = @($manifest.disclosures | Where-Object { $_.name -eq $Block.Test })
+        if ($entry.Count -eq 1) { $pin = [PSCustomObject]@{ Class = $entry[0].class; Signature = $entry[0].signature } }
+    }
+    catch {
+        return [PSCustomObject]@{ Accepted = $false; Reason = "unreadable disclosure manifest at ${manifestPath}: $($_.Exception.Message)" }
+    }
+
+    return Test-HostLimitDelta -Expected $Row.Effective.Expected -Disclosed $Row.Effective.Disclosed -Block $Block `
+        -Got $Got -Comparison $comparison -BankedNames $bankedNames.ToArray() -Pin $pin
 }
 
 # Packages whose C# suite legitimately exceeds the default package deadline. hash/maphash's
@@ -660,12 +746,26 @@ foreach ($row in $rows) {
         # don't. Consulted only when the plain classification already failed, same cost discipline
         # as the surplus check above.
         $capabilityAbsent = $null
+        $hostLimit = $null
         if ($class -ne 'pass' -and $capabilityConditionalBlocks.ContainsKey($pkg)) {
-            $capabilityAbsent = Get-CapabilityAbsentVerdict -Row $row -Got $got -OutDir $outDir -Block $capabilityConditionalBlocks[$pkg]
+            $rowBlock = $capabilityConditionalBlocks[$pkg]
+            $capabilityAbsent = Get-CapabilityAbsentVerdict -Row $row -Got $got -OutDir $outDir -Block $rowBlock
 
             if ($capabilityAbsent.Accepted) {
                 $class = Get-SweepRowClassification -Expectation $row.Effective -Got $got -GotDisclosed $gotDisclosed `
                     -TargetGoos $targetGoos -CapabilityAbsentAccepted
+            }
+            else {
+                # The THIRD host state: the capability was PRESENT and the converted side could not
+                # produce the block inside the deadline the test itself carries. Absorbed only where
+                # the package's COMMITTED manifest already discloses the block root as `host-limit`
+                # AND the withdrawn Go-side rows ARE that block's banked sub-verdicts, name for name.
+                $hostLimit = Get-HostLimitVerdict -Row $row -Got $got -OutDir $outDir -Block $rowBlock
+
+                if ($hostLimit.Accepted) {
+                    $class = Get-SweepRowClassification -Expectation $row.Effective -Got $got -GotDisclosed $gotDisclosed `
+                        -TargetGoos $targetGoos -HostLimitAccepted
+                }
             }
         }
 
@@ -682,6 +782,15 @@ foreach ($row in $rows) {
                 $pass++
                 $block = $capabilityConditionalBlocks[$pkg]
                 Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked - $($block.BlockSize) ($($block.Test) capability absent) [${rowSecs}s]" -ForegroundColor Green
+            }
+            'host-limit' {
+                # A pass, and NOT a silent one: the line states the shortfall, the block that
+                # accounts for it, and that the capability was PRESENT -- so this can never read as
+                # the row having met its banked count. Summarized again at the end for a full sweep.
+                $pass++
+                $block = $capabilityConditionalBlocks[$pkg]
+                $hostLimited += "$pkg ($got matched + $gotDisclosed disclosed, banked $($row.Effective.Expected) + $($row.Effective.Disclosed); $($block.Test) host-limit disclosed)"
+                Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked - $($block.BlockSize) ($($block.Test) host-limit disclosed; capability PRESENT, converted side over the deadline) [${rowSecs}s]" -ForegroundColor Green
             }
             'unbanked-count' {
                 # COMPARISON-VALIDATED-AT-COUNT, the honest interim the per-OS ruling names. The
@@ -712,6 +821,9 @@ foreach ($row in $rows) {
                 if ($null -ne $capabilityAbsent -and $capabilityAbsent.Reason) {
                     Write-Host "        capability-absent check: $($capabilityAbsent.Reason)" -ForegroundColor Yellow
                 }
+                if ($null -ne $hostLimit -and $hostLimit.Reason) {
+                    Write-Host "        host-limit check: $($hostLimit.Reason)" -ForegroundColor Yellow
+                }
             }
         }
     }
@@ -726,7 +838,9 @@ $elapsed = [int]((Get-Date) - $started).TotalSeconds
 Write-Host ''
 # The comparison-validated-at-count segment appears only when there is one to report -- which on
 # Windows is never, so the summary line is byte-for-byte the line it has always printed there.
-$summary = "sweep: $pass pass / $fail fail"
+$summary = "sweep: $pass pass"
+if ($hostLimited.Count) { $summary += " ($($hostLimited.Count) host-limited)" }
+$summary += " / $fail fail"
 if ($cvac) { $summary += " / $cvac comparison-validated-at-count" }
 $summary += "  (${elapsed}s)"
 Write-Host $summary -ForegroundColor $(if ($fail -or $cvac) { 'Red' } else { 'Green' })
@@ -915,6 +1029,13 @@ if ($drift) {
 }
 
 $ErrorActionPreference = $prevEap
+
+if ($hostLimited.Count) {
+    Write-Host ''
+    Write-Host 'host-limited -- validated, at a count a committed host-limit disclosure accounts for on THIS host:' -ForegroundColor DarkYellow
+    $hostLimited | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    Write-Host '  (the banked count stands; it is what a host that can produce the block scores -- see the manifest entry for the retirement condition)' -ForegroundColor DarkGray
+}
 
 if ($cvac) {
     Write-Host ''
