@@ -9071,6 +9071,59 @@ is exactly what the snapshot models. (Guarded by `MethodValueReassignCapture`'s 
 pointer-receiver method value assigned to a pre-declared func var, with the mutation read back through
 the original local, output-compared vs Go.)
 
+### A VALUE-receiver method value snapshots its receiver in NON-assignment positions too
+The receiver snapshot above exists because Go binds a value receiver by **copy at evaluation** — `x.M`
+saves the receiver when the method value is created, not when the resulting func is called. The two
+`visitAssignStmt` sites did that for assignment contexts. Every *other* position — a composite-literal
+element, a call argument — reached `convSelectorExpr`'s param-carrying lambda instead, which rendered
+the receiver **live** and so re-read it per call. The comment there recorded that as a caveat; it is
+observable, and it presents as three unrelated-looking symptoms depending only on how the enclosing
+slot happened to render the variable:
+
+```go
+x := frame{Name: "a"}
+parts := []func() string{ x.label, func() string { return x.Name } }
+x.Name = "b"
+fmt.Println(parts[0](), parts[1]())   // Go: a b
+```
+```csharp
+// before — the receiver read from the box at CALL time, printing "b b"
+var parts = new Func<@string>[]{ () => Ꮡx.Value.label(), () => Ꮡx.Value.Name }.slice();
+
+// after — the method value binds its own copy; the closure still sees the variable
+var xʗ1 = x;
+var parts = new Func<@string>[]{ () => xʗ1.label(), () => Ꮡx.Value.Name }.slice();
+```
+
+Spelling the same shape `[]any{…}` renders the receiver as the bare ref-local alias instead
+(`() => x.label()`), which a lambda cannot capture at all — **CS8175**, the loud member of the family
+and the one a `runtime -tests` conversion surfaced. Both close with the one snapshot; a fix that
+instead routes the receiver through the box closes the loud member by converting it into the silent
+one.
+
+Three properties make the snapshot correct rather than merely compiling:
+
+- **It is per-EVALUATION, never shared.** Two method values over one variable in different statements
+  bind different receivers (`p`, then `q` after a write), so each mints its own snapshot. Converging
+  every capture of one variable onto a single name — the shape a persistent capture-name registry
+  would impose — would print `p p`.
+- **It diverges from a sibling closure over the same variable, deliberately.** In the example above the
+  method value must report the pre-write receiver and the closure the post-write one, from one
+  statement. The snapshot's initializer is therefore rendered *outside* lambda context while the
+  wrapper body binds the snapshot name, which also bypasses `convIdent`'s box rewrite — renaming
+  inside it yields `Ꮡxʗ1.Value`, a box nothing declares (**CS0103**).
+- **It is gated on a statement-level sink existing.** The declaration goes to `v.hoistedDecls`, the
+  same buffer `convFuncLit` drains into for a func literal "on the RHS or inside a composite-literal
+  element of it", which is what gives a nested element a valid declaration position. Where no sink
+  exists the previous rendering stands: never apply a rename you cannot also declare.
+
+Restricted to a plain ident receiver of non-pointer type — the shape an emission-attached census of the
+whole standard library found (19 sites: `bytes` ×3, `strings` ×3, `encoding/json` ×8, `crypto/tls` ×3,
+`crypto/internal/hpke` ×2, of which 12 have an ident receiver). A pointer base auto-deref'd to a value
+receiver would need the *deref* snapshotted rather than the pointer, and keeps its existing emission.
+(Guarded by `MethodValueReceiverSnapshot`, which output-compares all four positions — typed element,
+`any` element, cross-statement independence, and call argument — against `go run`.)
+
 ### A bare function value in `:=` takes its named delegate type, not `var`
 Go's short-declaration from a bare function value whose type is a **named** func type — text/template/parse's `state := lexText`, where `lexText` is `func(*lexer) stateFn` and `type stateFn func(*lexer) stateFn` (the classic self-referential state machine) — infers the local as the *unnamed* signature. The converter cannot emit `var state = lexText;` (a C# method group has no `var`-inferable delegate type — CS8917), and typing the local structurally as `Func<ж<lexer>, stateFn>` makes it a **distinct** C# delegate from the `stateFn` the method group produces and that each `state = state(l)` reassignment yields (CS0029). It declares the local with the matching package named delegate instead:
 

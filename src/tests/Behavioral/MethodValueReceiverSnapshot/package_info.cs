@@ -49,13 +49,13 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AAoggICigKSGgoKCgoKKgoaCgoqCgoKKgoKKgvqApIKCgpTKgOyA", "36-36:1")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AAsegAAIBIiUyoSIlMqEioKigqKEiIKCkoQ=", "25-25:1;38-38:2;59-59:3")]
 // </GoSourcePositionMaps>
 
 namespace go;
 
-[GoPackage("main")]
 [GoTestMatchingConsoleOutput]
+[GoPackage("main")]
 public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
@@ -65,9 +65,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct counter {}
-    internal partial struct dispatcher {}
-    internal partial struct shifter {}
+    internal partial struct frame {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import

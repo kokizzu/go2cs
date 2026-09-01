@@ -946,6 +946,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckMethodValueReceiverEscape() => CheckTarget("MethodValueReceiverEscape");
 
     [TestMethod]
+    public void CheckMethodValueReceiverSnapshot() => CheckTarget("MethodValueReceiverSnapshot");
+
+    [TestMethod]
     public void CheckMinMaxBuiltin() => CheckTarget("MinMaxBuiltin");
 
     [TestMethod]
