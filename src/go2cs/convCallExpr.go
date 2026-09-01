@@ -1281,6 +1281,29 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			return expr
 		}
 
+		// A conversion to an EXPORTED defined-type-over-STRUCT whose immediate underlying is itself
+		// an UNEXPORTED named struct — runtime export_test.go's `type PageCache pageCache`, then
+		// `PageCache(pageCache{...})` / `PageCache(pp.allocToCache())` — has no C# conversion
+		// operator to cast through: go2cs-gen's W3a wrapper-scaffolding (InheritedTypeTemplate's
+		// OmitUnderlyingConversionOperators) deliberately omits the operator pair for a
+		// test-file-declared wrapper whose wrapped type is not itself public (a user-defined
+		// conversion operator has no legal non-public form, CS0558, so neither modifier is legal —
+		// the pair is omitted rather than weakened), leaving the constructor as the one remaining
+		// explicit path, since every consumer is a sibling file in the same whitebox test assembly.
+		// The plain cast the fallback below emits therefore cannot compile (CS0030): there is no
+		// operator for `((PageCache)pageCacheValue)` to bind. Route through the constructor
+		// instead — it is ALWAYS emitted regardless of whether the operator pair is, so
+		// `new PageCache(pageCacheValue)` compiles whether or not the cast would have.
+		if targetNamed, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Named); ok && targetNamed.Obj().Exported() {
+			if _, targetIsStruct := targetNamed.Underlying().(*types.Struct); targetIsStruct {
+				if argNamed, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Named); ok && !argNamed.Obj().Exported() {
+					if _, argIsStruct := argNamed.Underlying().(*types.Struct); argIsStruct {
+						return fmt.Sprintf("(new %s(%s))", targetTypeName, expr)
+					}
+				}
+			}
+		}
+
 		// Determine if we need parentheses around the expression
 		if v.needsParentheses(arg) {
 			if targetIsBasic {
