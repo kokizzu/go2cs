@@ -32,7 +32,12 @@ family, and ONE full-roster sweep proves the union. That is the same economics a
    `initᴛᴛimportꓸ*` hooks move to package_info.cs's machinery area, csproj emission gains the
    explicit-first `<Compile>` item that pins module-initializer order (measured enabler; the
    naive move reproduces log/slog's nil-deref). May retire sweep-dirt class 2's `initᴛᴛtests`
-   shape — measure the retirement, don't assume it.
+   shape — measure the retirement, don't assume it. *(ANSWERED 2026-09-01, G's sizing census,
+   mailbox `52607b382`: NO — different file, construct and trigger; three controls; class 2's
+   fourth shape survives the wave and Stage C's classifier amendment is written expecting it.
+   The census also sized the cut — 2,125 production hooks / 684 files / 314 packages — and named
+   two hand-own blockers that must ride the relocation commit: bcache's hand-carried hook, a hard
+   CS0111 on collision, and runtime/metrics' frozen dead-name hook, a silent duplicate.)*
 3. **g-synthesis-ivt** (parked branch `3f2e02bc0`, validated 2026-08-30): the IVT-to-synthesis
    grant line joins every generated csproj. Merges as a Stage-A converter change; its corpus
    effect arrives with the Stage-B regen. *(Verify branch still merge-clean at wave head.)*
@@ -83,6 +88,14 @@ some may have leveled silently; my 2026-08-31 curated emission saw six, not seve
 - Mid-wave, the mid-battery source freeze applies fleet-wide during every Stage-D leg.
 
 ## Open items feeding the wave but not gating it
+- **crypto/tls third-host-state sweep encoding** (owner-forwarded chip, 2026-09-01): teach
+  `run-validated-sweep.ps1`/`_roster.ps1` the BoGo host state the acceptance machinery does not
+  encode — runner PRESENT but the managed shim provably unable to clear the BoGo child's fixed
+  10-minute wall on this host class (the committed TestBogoSuite host-limit disclosure carries the
+  measurements) — accepting the go-pass/C#-collapse ONLY when the shortfall is exactly the bogo
+  sub-verdict set and nothing else (anti-waving-through preserved; follow `Test-HostConditionalDelta`).
+  Should land BEFORE Stage D so the full-roster sweep on the coordinator host reads crypto/tls
+  honestly instead of refusing on count.
 - reflect descriptor pass (G, in flight) — banks on its own train when ready; if it merges before
   Stage B, its emission (if any) joins the regen truth.
 - testing Option-1 implementation — post-wave, first increment the -tests-on-testing F15b guard.
