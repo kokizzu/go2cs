@@ -173,6 +173,19 @@ private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, 
         t.Align_ = (uint8)align;
         t.FieldAlign_ = (uint8)align;
     }
+    // PtrBytes is the pointer-bearing PREFIX of the type, and it is what Pointers() reports. Leaving
+    // it unstamped made every synthesized descriptor answer "I hold no pointers", which is a claim
+    // and not an absence: reflect's addTypeBits builds a frame's pointer bitmap from each parameter's
+    // Kind() but returns immediately unless Pointers() is true, so funcLayout's stack bitmap came out
+    // empty, and the frame type's own PtrBytes — which funcLayout derives FROM that bitmap — was then
+    // zero, emptying the GC bitmap as well. Stamped only when KNOWN: GoPtrBytesOf reports -1 for the
+    // same unknowable-array case GoSizeOf does, and a guess here would be worse than the honest zero,
+    // because three sites read the VALUE and not merely its nil-ness (reflect/type.cs's ptrs
+    // divisions and typeptrdata's field walk).
+    nint ptrBytes = GoReflect.GoPtrBytesOf(st, arrayDims);
+    if (ptrBytes >= 0) {
+        t.PtrBytes = (uintptr)(nuint)ptrBytes;
+    }
     // Carry Go comparability on the descriptor: reflect.Type.Comparable and internal/reflectlite's
     // Comparable both report `Equal != nil`, and errors.Is gates its equality match on the latter — so a
     // comparable Go type (e.g. the *errorString behind a sentinel like csv.ErrFieldCount) must have a

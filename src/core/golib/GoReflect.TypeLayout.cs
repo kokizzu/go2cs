@@ -123,6 +123,143 @@ public static partial class GoReflect
     }
 
     /// <summary>
+    /// The Go (amd64) <c>PtrBytes</c> of the type <paramref name="t"/> represents — "the number of
+    /// (prefix) bytes in the type that can contain pointers", which is what
+    /// <c>abi.Type.Pointers()</c> tests and what the garbage collector would scan. 0 for a type that
+    /// holds no pointer at all, and -1 when it cannot be known (the same unknowable-array case
+    /// <see cref="GoSizeOf"/> reports, since one unknown element size makes the prefix a guess).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It reads the SAME memoized struct pass as <see cref="GoSizeOf"/>, <see cref="GoAlignOf"/> and
+    /// <see cref="GoFieldOffsets"/>, so a descriptor's stamped <c>Size_</c> and <c>PtrBytes</c> can
+    /// never disagree about one type — the property that made this a sibling of those rather than a
+    /// second layout model.
+    /// </para>
+    /// <para>
+    /// The per-kind values are Go's own memory shapes, not C#'s: a <c>string</c> is {ptr, len} so its
+    /// pointer prefix is ONE word while its size is two; a slice is {ptr, len, cap} so likewise 8 of
+    /// 24; an interface is {type, data} and BOTH words are scanned, so 16 of 16. An array's prefix
+    /// runs to the last element that can hold a pointer — <c>(n-1)*elemSize + elemPtrBytes</c>, and 0
+    /// when the element holds none, which is why a <c>[1000]int</c> costs the collector nothing.
+    /// A struct's prefix ends at its last pointer-bearing field, so it is the max of
+    /// <c>offset + fieldPtrBytes</c> and 0 when no field qualifies.
+    /// </para>
+    /// <para>
+    /// The demonstrated consumer is reflect's <c>funcLayout</c>: <c>addTypeBits</c> builds a frame's
+    /// pointer bitmap from each parameter's <c>Kind()</c>, but returns immediately unless
+    /// <c>Pointers()</c> is true, and <c>Pointers()</c> is exactly <c>PtrBytes != 0</c>. With
+    /// PtrBytes unstamped every synthesized descriptor answered "I hold no pointers", so the stack
+    /// bitmap came out empty and the frame's own PtrBytes — which funcLayout derives FROM that
+    /// bitmap — was then zero as well, emptying the GC bitmap too.
+    /// </para>
+    /// </remarks>
+    public static nint GoPtrBytesOf(Type t, nint[]? arrayDims = null)
+    {
+        // Memoized for the dims-less case, which is every synthType call that is not an array —
+        // i.e. the hot one. It has to be: synthType runs per descriptor synthesis, and an
+        // unmemoized walk here made crypto/internal/nistec go from 354s to past its 600s deadline
+        // (measured 2026-09-01 by the reflect-consumer canary set, which is what that gate is for).
+        // structLayoutOf's own memo does not cover this: it caches a struct's offsets and size, not
+        // the pointer-prefix walk over them, and the recursion into field types is the expensive part.
+        // A dims-carrying array is NOT cached — nint[] has reference identity, not value identity,
+        // so it cannot key a memo correctly, and those calls are rare.
+        if (arrayDims is null)
+            return s_ptrBytes.GetOrAdd(t, static key => goPtrBytesOf(key, null, 0));
+
+        return goPtrBytesOf(t, arrayDims, 0);
+    }
+
+    private static readonly ConcurrentDictionary<Type, nint> s_ptrBytes = new();
+
+    private static nint goPtrBytesOf(Type t, nint[]? arrayDims, int depth)
+    {
+        if (depth > MaxLayoutDepth)
+            return -1;
+
+        switch (KindOf(t))
+        {
+            // Scalars hold no pointer, so the collector scans none of them.
+            case Bool or Int8 or Uint8 or Int16 or Uint16 or Int32 or Uint32 or Float32
+                 or Int or Uint or Int64 or Uint64 or Uintptr or Float64
+                 or Complex64 or Complex128:
+                return 0;
+
+            // One pointer word, and it is first: {ptr, len} and {ptr, len, cap}.
+            case String or Slice:
+                return 8;
+
+            // Both words of an interface are scanned.
+            case Interface:
+                return 16;
+
+            case Pointer or UnsafePointer or Map or Chan or Func:
+                return 8;
+
+            case Array:
+            {
+                if (arrayDims is not { Length: > 0 })
+                    return -1;
+
+                Type? elem = ElementType(t);
+
+                if (elem is null)
+                    return -1;
+
+                nint[]? elemDims = arrayDims.Length > 1 ? arrayDims[1..] : null;
+                nint elemPtrBytes = goPtrBytesOf(elem, elemDims, depth + 1);
+
+                // A pointer-free element makes the whole array pointer-free however long it is.
+                if (elemPtrBytes <= 0)
+                    return elemPtrBytes;
+
+                if (arrayDims[0] <= 0)
+                    return 0;
+
+                nint elemSize = goSizeOf(elem, elemDims, depth + 1);
+
+                return elemSize < 0 ? -1 : (arrayDims[0] - 1) * elemSize + elemPtrBytes;
+            }
+
+            case Struct:
+            {
+                StructLayout layout = structLayoutOf(t, depth);
+
+                if (layout.Size < 0)
+                    return -1;
+
+                GoFieldInfo[] fields = GoFields(t);
+
+                if (fields.Length != layout.Offsets.Length)
+                    return -1;
+
+                nint ptrBytes = 0;
+
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    nint fieldPtrBytes = goPtrBytesOf(fields[i].Type, fields[i].ArrayDims, depth + 1);
+
+                    if (fieldPtrBytes < 0)
+                        return -1;
+
+                    if (fieldPtrBytes == 0)
+                        continue;
+
+                    nint end = layout.Offsets[i] + fieldPtrBytes;
+
+                    if (end > ptrBytes)
+                        ptrBytes = end;
+                }
+
+                return ptrBytes;
+            }
+
+            default:
+                return -1;
+        }
+    }
+
+    /// <summary>
     /// The Go (amd64) byte OFFSET of each projected Go field of the struct type
     /// <paramref name="t"/>, in <see cref="GoFields"/> order — or <c>null</c> when
     /// <paramref name="t"/> is not a struct kind, or when any field's Go size cannot be known
