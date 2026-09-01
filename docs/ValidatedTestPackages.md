@@ -132,19 +132,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **200 / 215 testable packages validated — 93.0%**
+> ### Phase 4 progress: **201 / 215 testable packages validated — 93.5%**
 >
-> **27,729 matching test verdicts · 154 disclosed** *(updated 2026-08-30 — maintained as part of the
+> **27,734 matching test verdicts · 154 disclosed** *(updated 2026-09-01 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 7 excluded = 208): 200 / 208 — 96.2%.** Both numbers are
+> **Against the implementable set (215 − 6 excluded = 209): 201 / 209 — 96.2%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
-> seven, each with its class, mechanism and evidence, are in
+> six, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 178 of 198 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
+> **Linux: 178 of 199 applicable rows validated at their Linux counts** — 21,807 matching verdicts · 90 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -367,6 +367,7 @@ exactly as the line above it is summed from the columns.
 | [`os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec) | 116 | | Running external processes end to end, driven by Go's own helper protocol — which re-executes the test binary itself as the child, so every `Cmd` path here is exercised against a real process tree: pipes and `StdinPipe`/`StdoutPipe` teardown, `Output`/`CombinedOutput`/`Wait`, `ExtraFiles` handle inheritance, environment de-duplication and NUL rejection, `LookPath` with Windows `PATHEXT` and `ErrDot`, exit-status plumbing, and `context` cancellation with `Cancel`/`WaitDelay` including the interrupt-and-hang matrix. The 27 verdicts once disclosed as the roster's first **`host-limit`** class — `TestCommand` and `TestLookPathWindows` COPY the test executable and run the copy, which a framework-dependent apphost could not survive — **pass on their own measurement since 2026-08-27**: the `-tests` host publishes as a self-contained single-file executable, the lone relocated copy runs exactly as Go's statically linked binary does, and the class entry retired with them per its own self-retiring text. · [proof](validation/current/os.exec.md) |
 | [`os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) | 1 |  | The file-descriptor existence probe; its one test is Windows-gated and the converted run reaches Go's own `runtime.GOOS` guard and skips exactly where Go does. · linux: 1 · [proof](validation/current/os.exec.internal.fdtest.md) |
 | [`os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/signal) | 1 | | Console-signal delivery (Ctrl+Break) through real channels and `select`. On Linux the whole POSIX surface validates through the PosixSignalRegistration bridge carrying Go's sighandler decision — Notify/Stop/Reset/Ignore, the nohup families over inherited SIG_IGN (seeded from real dispositions at start, exactly Go's initsig), NotifyContext, the stress and timing suites, and `TestAllThreadsSyscallSignals` matching Go's own cgo skip via the ENOTSUP hand-own; the two disclosed rows are the execution tracer and the cgo pty controlling terminal, runtime capabilities the managed host does not model. · linux: 29 + 2 · [proof](validation/current/os.signal.md) |
+| [`os/user`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/user) | 5 | | Windows account lookup end to end — `Current()`, `Lookup`/`LookupId` by name and by SID string, `LookupGroup`/`LookupGroupId`, and the local-group membership walk behind `GroupIds()`. This is the consumer the native pointer-out arc was built for: `NetUserGetInfo` and `NetUserGetLocalGroups` return buffers the kernel itself allocates, and `LookupAccountSid` appends the SID bytes *inside* the buffer it fills — self-referential, so the transcription anchors that buffer rather than trusting a managed copy, a distinction a type-only fix would have passed here and failed intermittently under GC pressure. `lookupUserPrimaryGroup`, `lookupFullNameServer` and `listGroupsForUsernameAndDomain` are hand-converted against those native shapes. · [proof](validation/current/os.user.md) |
 | [`path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path) | 9 | | Pure path manipulation (`Clean`/`Split`/`Join`/`Match`…). · linux: 9 · [proof](validation/current/path.md) |
 | [`path/filepath`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path/filepath) | 61 | | Path algebra plus the Windows symlink machinery — `EvalSymlinks` through the hand-owned `FindFirstFile` blittable mirror, `Glob`/`Walk`, junction-aware `TempDir` cleanup, `testenv.GOROOT` via the pipeline's exported root, and 20 privilege-gated skips agreeing with Go's · host-conditional (symlink-creation privilege — the parent test skips before spawning them without it): `TestWalkSymlinkRoot/no_slash`, `TestWalkSymlinkRoot/slash`, `TestWalkSymlinkRoot/abs_no_slash`, `TestWalkSymlinkRoot/abs_with_slash`, `TestWalkSymlinkRoot/double_link_no_slash`, `TestWalkSymlinkRoot/double_link_with_slash` · linux: 54 · [proof](validation/current/path.filepath.md) |
 | [`plugin`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/plugin) | 1 |  | That a program importing `plugin` links and starts at all — Go's own regression test for issue 28789 is an empty body asserting precisely that, and the converted binary runs it. · [proof](validation/current/plugin.md) |
@@ -399,7 +400,7 @@ exactly as the line above it is summed from the columns.
 ## Excluded packages
 
 The naive denominator above — 215 — counts every converted package whose Go 1.23.12 sources define
-a `Test` function. Seven of those cannot be validated *at all*, and not because the work is
+a `Test` function. Six of those cannot be validated *at all*, and not because the work is
 unfinished: each is blocked by a property of the target that no amount of converter effort changes.
 The campaign's real goal is 100% of what remains, so both denominators are always reported and
 nothing disappears quietly — every exclusion is carried here with its class, its mechanism and the
@@ -424,6 +425,18 @@ whose platform gains the tests — **rejoins the denominator the day the evidenc
 as the `chan-direction` disclosure class retired itself the other way. An exclusion is a
 measurement with a date on it, never a permanent write-off.
 
+**`os/user` is the first ledger row to exercise that clause, on 2026-09-01.** It was carried as
+E2 because Go's own `go test` failed `TestGroupIds` on the validation host, leaving no clean
+baseline to compare against. The re-probe that admitted it back is the whole of the evidence and
+is stated rather than summarized: bare `go test -count=1 os/user` on the banking host now reports
+`ok os/user 0.184s`, exit 0, with all five tests passing under `-v` — `TestGroupIds` among them.
+The oracle being clean is what the exclusion said it was waiting for, so the row banked the
+ordinary way, from that host's own shard, against that same clean baseline. Note the direction
+this moves the arithmetic: rejoining **grows** the implementable denominator 208 → 209 at the same
+time as it grows the numerator 200 → 201, so the row is worth no more to the percentage than any
+other row — which is precisely the point of admitting it back rather than leaving a passing suite
+parked outside the count.
+
 *Verdicts* below is the naive count the suite would contribute if it could be compared: `0` where
 the platform yields no eligible test, `—` where no baseline exists to count against. *Rooting*
 links the owner ruling that admitted the class; the per-package measurements behind each row are
@@ -436,7 +449,6 @@ recorded on that same board.
 | `net/internal/socktest` | 0 | E1 | A socket-testing helper library other packages' suites import, not a package with a suite of its own — it declares no test entry points to compare. | [ruling][exclusion-ruling] |
 | `log/syslog` | 0 | E1 | There is no syslog on Windows; Go's own constraints exclude the entire suite on this target. | [ruling][exclusion-ruling] |
 | `runtime/race` | 0 | E1 | Race-detector runtime support is only testable under the `-race` instrumented build; outside it Go declares no eligible tests, and the converted corpus has no such build at all. | [ruling][exclusion-ruling] |
-| `os/user` | — | E2 | Go's own `go test` fails `TestGroupIds` on the validation host — the reference side never produces a clean baseline, so the harness correctly declines to compare and every converted verdict reads `skip`. The conversion never gets a trial either way. Rejoins the moment the oracle passes. | [ruling][exclusion-ruling] |
 | `internal/unsafeheader` | 6 | E3 | The suite's entire subject is the raw `{Data, Len, Cap}` slice/string header: it fabricates a live slice or string by writing those fields and reinterpreting the struct, and Go's memory model lets the result alias the original storage. A managed slice is not that triple and cannot be aliased into existence — all 6 verdicts fail identically, structurally rather than by defect. | [ruling][exclusion-ruling] |
 
 Candidates that are *not* yet ruled are deliberately absent — `crypto/internal/boring/bcache`

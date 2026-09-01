@@ -183,6 +183,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `os/exec` | [`os.exec.md`](current/os.exec.md) | [`src/core/os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec) |
 | `os/exec/internal/fdtest` | [`os.exec.internal.fdtest.md`](current/os.exec.internal.fdtest.md) | [`src/core/os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) |
 | `os/signal` | [`os.signal.md`](current/os.signal.md) | [`src/core/os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/signal) |
+| `os/user` | [`os.user.md`](current/os.user.md) | [`src/core/os/user`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/user) |
 | `path` | [`path.md`](current/path.md) | [`src/core/path`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path) |
 | `path/filepath` | [`path.filepath.md`](current/path.filepath.md) | [`src/core/path/filepath`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/path/filepath) |
 | `plugin` | [`plugin.md`](current/plugin.md) | [`src/core/plugin`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/plugin) |
