@@ -9339,7 +9339,7 @@ internal static error /*err*/ writeRequest(this ж<http2clientStream> Ꮡcs, ж<
             }
         }
         http2traceWroteRequest(cs.trace, err);
-        /*<-*/channel<time.Time> respHeaderTimer = default!;
+        /*<-*/channel<time.Time> respHeaderTimer = /*<-*/channel<time.Time>.RecvOnly;
         channel<EmptyStruct> respHeaderRecv = default!;
         {
             var d = cc.responseHeaderTimeout(); if (d != 0) {

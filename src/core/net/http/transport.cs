@@ -3084,7 +3084,7 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
             }
             return (re.res, default!);
         }
-        /*<-*/channel<time.Time> respHeaderTimer = default!;
+        /*<-*/channel<time.Time> respHeaderTimer = /*<-*/channel<time.Time>.RecvOnly;
         var ctxDoneChan = req.ctx.Done();
         var pcClosed = pc.closech;
         while (ᐧ) {

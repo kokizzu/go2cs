@@ -289,6 +289,49 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// a managed answer. log's Output → Caller(calldepth) and testing/slogtest's withSource →
 		// Caller(1) are the demonstrated consumers.
 		"callers": goosAny,
+		// netpollGenericInit (netpoll_impl.cs) — the RUNTIME poller's one-time start-up, and a
+		// MODULE-INIT killer rather than a test failure, which is why it is here at all.
+		//
+		// The corpus already ruled where the network poller lives: internal/poll's ten //go:linkname
+		// entry points are hand-owned on a managed poller (internal/poll/windows/runtime_netpoll_impl.cs,
+		// DESIGN-netpoll-managed-poller.md §9, ruled 2026-08-13), and that design states in terms that
+		// runtime/netpoll.cs and runtime/<goos>/netpoll_*.cs "stay converted and DEAD; zero runtime
+		// edits". That scope covered internal/poll's consumers. It did not cover runtime's OWN test
+		// suite, which reaches this function DIRECTLY: export_test.go re-exports it as
+		// runtime.NetpollGenericInit, and netpoll_os_test.go calls it from a package-level init() — so
+		// the converted test host threw "getg: external (assembly or cgo) function is not implemented"
+		// in its static constructor, before a single test executed, and every verdict came back empty.
+		// This entry is that ruling's one narrow amendment, and its whole extent: ONE function, so the
+		// design's "zero runtime edits" still holds for everything the design was actually about.
+		//
+		// WHY A NO-OP IS THE TRUE BODY, not a silencer. netpollGenericInit's entire job in Go is to
+		// create the OS poller object — CreateIoCompletionPort on Windows, epoll_create1+eventfd on
+		// Linux, kqueue on Darwin — that the SCHEDULER then drains from findRunnable and sysmon. Under
+		// go2cs a goroutine is a managed thread the CLR schedules, so nothing would ever drain it: a
+		// perfectly-wired conversion would allocate a completion port and abandon it. Every reader of
+		// the state it would publish is in that same unreachable scheduler — measured at the windows
+		// target, `netpollinited()` has SIX call sites and all six are proc.cs (findRunnable, sysmon,
+		// injectglist, stopm, checkdead), and the one read of netpollInited outside netpoll.cs itself
+		// is time.cs's runtime timer heap, which the managed model also does not run.
+		//
+		// And the honest behaviour is delivered by GO'S OWN GUARD rather than by anything invented
+		// here: all three flavors open netpoll(delay) with "the poller object was never created →
+		// return an empty gList" (iocphandle == _INVALID_HANDLE_VALUE / epfd == -1 / kq == -1). Not
+		// creating it therefore leaves each flavor's poll in its own already-correct
+		// nothing-to-report branch, which is the true statement under go2cs: no goroutine is ever
+		// parked on the runtime's poller, so no goroutine ever becomes runnable through it.
+		//
+		// netpollInited is deliberately LEFT AT ZERO. Setting it would assert "the runtime poller is
+		// up" while iocphandle stays invalid — an incoherent pair a later reader of that dead code
+		// would have to untangle — and the truthful answer is that the runtime's poller is not up and
+		// never will be. Polling is available; it is just not here.
+		//
+		// NOT hand-owned, on purpose: netpollBreak. Its auto body reaches stdcall4 → getg and keeps
+		// throwing, so proc_test.go's TestNetpollBreak fails as ONE loud, locatable row instead of
+		// going quietly green — which is stubs_impl.cs's standing rule for an unported path, and the
+		// right outcome for a test whose premise (a poller wait that a break interrupts) the managed
+		// model does not have. A no-op there would buy a green that means nothing.
+		"netpollGenericInit": goosAny,
 	},
 	// internal/abi.TypeOf reads an interface's type-word via unsafe.Pointer to reach a Go runtime
 	// type descriptor that has no managed form (the reflection bridge — Phase 4). type_impl.cs

@@ -218,18 +218,7 @@ internal static void poll_runtime_pollServerInit() {
     netpollGenericInit();
 }
 
-internal static void netpollGenericInit() {
-    if (ᏑnetpollInited.Load() == 0) {
-        lockInit(ref netpollInitLock, lockRankNetpollInit);
-        lockInit(ref pollcache.@lock, lockRankPollCache);
-        @lock(ᏑnetpollInitLock);
-        if (ᏑnetpollInited.Load() == 0) {
-            netpollinit();
-            ᏑnetpollInited.Store(1);
-        }
-        unlock(ᏑnetpollInitLock);
-    }
-}
+// go2cs generated this placeholder — func netpollGenericInit is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static bool netpollinited() {
     return ᏑnetpollInited.Load() != 0;
