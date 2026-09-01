@@ -875,9 +875,18 @@ ONE stdlib in a build; there is now only one on disk.
   windows with only the counts re-read, until a lane's fresh grep caught it while holding an
   expensive sweep: the example had substituted for the derivation, which is precisely what this
   rule forbids, this time performed by the coordinator. Worked examples date and drift; the grep is
-  the rule. "Reflect-bridge-touching" reads broadly: `src/core/reflect/*_impl.cs`,
-  `src/core/internal/reflectlite`, golib's `GoReflect.*`/adapter/equality machinery, and the
-  go2cs-gen adapter/shell templates all qualify.
+  the rule. ⚠ SECOND carried-membership catch (2026-09-01): `crypto/internal/nistec` (2,195) ALSO
+  imports reflect nowhere — it had been travelling in the set beside gcimporter and was carried
+  again the day before a lane's fresh derivation dropped both. "Reflect-bridge-touching" reads
+  broadly: `src/core/reflect/*_impl.cs`, `src/core/internal/reflectlite`, golib's
+  `GoReflect.*`/adapter/equality machinery, and the go2cs-gen adapter/shell templates all qualify.
+  **And the canary RULE is now split (R's proposal, ratified 2026-09-01):** a change to the reflect
+  BRIDGE takes the reflect-importer canaries above; a change to `abi.synthType`/golib **descriptor
+  synthesis** takes a **COST canary as well**, because synthesis runs on every interface boxing
+  corpus-wide — a blast radius the importer predicate cannot see at all (an unmemoized
+  `GoPtrBytesOf` pushed nistec from 354s past its 600s deadline; the memoized re-measure is 384s).
+  `crypto/internal/nistec` re-enters as exactly that cost canary: run it and compare its WALL TIME
+  against the recorded baseline, not just its verdict.
 
 ### Performance comparison suite (`src/tests/Performance`, 2026-07-02)
 - **Purpose:** answer "how fast is the transpiled C# vs the original Go?" — 14 small `Perf*` benchmark
@@ -1033,7 +1042,14 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   baseline; two emissions of the same sources differ only by the change.
 - **Reconvert → overlay → build → bucket (the measurement loop):**
   1. **⚠ SEED FIRST — non-negotiable (learned 2026-07-25, cost a false operational-break alarm):**
-     `cp -r src/core <tmp>/core` BEFORE reconverting. The converter emits a hand-owned
+     `cp -r src/core <tmp>/core` BEFORE reconverting. ⚠ The SEED ITSELF can fail halfway and
+     carry on (fleet-confirmed twice in one day, 2026-09-01): `Copy-Item -Recurse` dies on
+     go2cs-gen's long `obj\...\Generated\` paths, and under the ritual's own required
+     `$ErrorActionPreference='Continue'` the copy continues past the death — a PARTIAL seed,
+     which is the unseeded-root hazard through a door this rule never named. Exclude build output
+     (`bin`/`obj`/`Generated`) from the seed copy and verify the seeded `.cs` COUNT before
+     converting; afterward, an emitted-files control (untouched seeded files reproducing HEAD
+     byte-for-byte) is what makes a suspect seed's readings trustworthy. The converter emits a hand-owned
      file as `<file>.cs.auto` ONLY when the `[module: GoManualConversion]`-marked file already
      exists at the output path; an EMPTY temp root gives the marker nothing to detect, so every
      hand-owned whole-file rewrite is emitted as plain `.cs` and the standard overlay rule
