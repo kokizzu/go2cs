@@ -447,6 +447,26 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.Field":         goosAny,
 		"Value.UnsafePointer": goosAny,
 		"Value.Pointer":       goosAny,
+		// The last two type constructors on the typelinks path, joining PointerTo/ArrayOf/SliceOf/
+		// StructOf above for the same recorded reason: the auto body looks the constructed type up
+		// by NAME through typesByString -> typelinks(), the linker-built type table, which is a
+		// NotImplementedException stub here. MakeChan joins them because its auto body calls the
+		// `makechan` runtime stub. See reflect/value_impl.cs.
+		"ChanOf":              goosAny,
+		"MapOf":               goosAny,
+		"MakeChan":            goosAny,
+		// Value.Close reads the channel direction by reinterpreting the descriptor onto the
+		// linker's chanType record -- the non-deterministic read abi.ChanDir was hand-owned to
+		// retire, still live here -- and then calls the chanclose runtime stub.
+		"Value.Close":         goosAny,
+		// The auto body reads the interface's two words by dereferencing `v.ptr` as an
+		// *[2]uintptr, and a bridge Value has no `ptr` — it carries a boxed managed object — so
+		// every InterfaceData call nil-panicked in `~`. Go declares BOTH words unspecified and
+		// the API deprecated, so the hand-own answers the one property that has observable
+		// meaning and that reflect's own tests read it for: direct-iface-ness, off the same
+		// GoReflect.GoIsDirectIface authority abi.synthType stamps KindDirectIface from.
+		// See reflect/value_impl.cs.
+		"Value.InterfaceData": goosAny,
 		"Value.MapRange":      goosAny,
 		"MapIter.Next":        goosAny,
 		"MapIter.Key":         goosAny,
@@ -531,12 +551,18 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"deepValueEqual": goosAny,
 		// Phase-3 write-back (the chip): Set writes through the addressable Value's aliased ж box
 		// (Go's assignTo semantics over the golib assert machinery); Zero builds valid zero Values
-		// (a pointer kind yields the canonical typed-nil box); methodName walks the managed stack
-		// (runtime.Caller has no managed form — its getcallersp chain NotImplementedException'd
-		// every mustBe* panic path, errors TestAs's first operational hit).
-		"Value.Set":  goosAny,
-		"Zero":       goosAny,
-		"methodName": goosAny,
+		// (a pointer kind yields the canonical typed-nil box). The stack-walking member this chip also
+		// named was registered here as `methodName`, and `reflect` does not declare that: Go's name is
+		// `valueMethodName` (value.go), registered further down with its own note. The dead key
+		// displaced nothing, emitted no placeholder and is retired — 2026-09-01, found by
+		// TestManualConversionRegistrationsDisplaceSomething, which it is also the first catch of. The
+		// reasoning it carried belongs to `valueMethodName`: runtime.Caller has no managed form, and
+		// its getcallersp chain NotImplementedException'd every mustBe* panic path, errors TestAs's
+		// first operational hit. (value_impl.cs's own superseded `methodName()` body is inert — called
+		// by nothing — and stays for the reflect lane to dispose of; its comment carries the
+		// receiver-drop reasoning that made the separate valueMethodName body necessary.)
+		"Value.Set": goosAny,
+		"Zero":      goosAny,
 		// Phase-3 increment 2 (the chip): the call & construction half. Value.Call invokes the
 		// boxed delegate (DynamicInvoke; results typed by the STATIC out types); the Set* family
 		// coerces through GoReflect.TryConvertTo and writes through the aliased box; New/

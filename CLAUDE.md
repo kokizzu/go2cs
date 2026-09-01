@@ -875,9 +875,18 @@ ONE stdlib in a build; there is now only one on disk.
   windows with only the counts re-read, until a lane's fresh grep caught it while holding an
   expensive sweep: the example had substituted for the derivation, which is precisely what this
   rule forbids, this time performed by the coordinator. Worked examples date and drift; the grep is
-  the rule. "Reflect-bridge-touching" reads broadly: `src/core/reflect/*_impl.cs`,
-  `src/core/internal/reflectlite`, golib's `GoReflect.*`/adapter/equality machinery, and the
-  go2cs-gen adapter/shell templates all qualify.
+  the rule. ⚠ SECOND carried-membership catch (2026-09-01): `crypto/internal/nistec` (2,195) ALSO
+  imports reflect nowhere — it had been travelling in the set beside gcimporter and was carried
+  again the day before a lane's fresh derivation dropped both. "Reflect-bridge-touching" reads
+  broadly: `src/core/reflect/*_impl.cs`, `src/core/internal/reflectlite`, golib's
+  `GoReflect.*`/adapter/equality machinery, and the go2cs-gen adapter/shell templates all qualify.
+  **And the canary RULE is now split (R's proposal, ratified 2026-09-01):** a change to the reflect
+  BRIDGE takes the reflect-importer canaries above; a change to `abi.synthType`/golib **descriptor
+  synthesis** takes a **COST canary as well**, because synthesis runs on every interface boxing
+  corpus-wide — a blast radius the importer predicate cannot see at all (an unmemoized
+  `GoPtrBytesOf` pushed nistec from 354s past its 600s deadline; the memoized re-measure is 384s).
+  `crypto/internal/nistec` re-enters as exactly that cost canary: run it and compare its WALL TIME
+  against the recorded baseline, not just its verdict.
 
 ### Performance comparison suite (`src/tests/Performance`, 2026-07-02)
 - **Purpose:** answer "how fast is the transpiled C# vs the original Go?" — 14 small `Perf*` benchmark
@@ -1033,7 +1042,14 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   baseline; two emissions of the same sources differ only by the change.
 - **Reconvert → overlay → build → bucket (the measurement loop):**
   1. **⚠ SEED FIRST — non-negotiable (learned 2026-07-25, cost a false operational-break alarm):**
-     `cp -r src/core <tmp>/core` BEFORE reconverting. The converter emits a hand-owned
+     `cp -r src/core <tmp>/core` BEFORE reconverting. ⚠ The SEED ITSELF can fail halfway and
+     carry on (fleet-confirmed twice in one day, 2026-09-01): `Copy-Item -Recurse` dies on
+     go2cs-gen's long `obj\...\Generated\` paths, and under the ritual's own required
+     `$ErrorActionPreference='Continue'` the copy continues past the death — a PARTIAL seed,
+     which is the unseeded-root hazard through a door this rule never named. Exclude build output
+     (`bin`/`obj`/`Generated`) from the seed copy and verify the seeded `.cs` COUNT before
+     converting; afterward, an emitted-files control (untouched seeded files reproducing HEAD
+     byte-for-byte) is what makes a suspect seed's readings trustworthy. The converter emits a hand-owned
      file as `<file>.cs.auto` ONLY when the `[module: GoManualConversion]`-marked file already
      exists at the output path; an EMPTY temp root gives the marker nothing to detect, so every
      hand-owned whole-file rewrite is emitted as plain `.cs` and the standard overlay rule
@@ -1134,11 +1150,18 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      Two knowns that are NOT: the SIX root attribution files the converter re-copies (`src/core/README.md`
      and its five siblings — measured 2026-08-17; this note previously named only the one — all show
      modified with an EMPTY `git diff --numstat`, pure CRLF phantoms; restore them), and
-     the hand-owned-by-consequence **class of three** — `internal/concurrent`, `internal/godebug`
-     and `internal/weak` (r59 measured; the note previously named godebug alone) — each a package
-     whose entire single Go file is hand-owned, so `unmarkedFileCount == 0` makes the driver
-     `continue` before `writeProjectFile` and its `.csproj`, `package_info.cs` **and `README.md`**
-     are hand-owned by consequence, never re-emitted.
+     the hand-owned-by-consequence **class of FOUR** — `crypto/internal/boring/bcache`,
+     `internal/concurrent`, `internal/godebug` and `internal/weak` (censused 2026-09-01 at
+     `3e31de03a` over all 306 production packages; the note previously said three, and before that
+     godebug alone — bcache was the member nobody had counted, evidenced by the hand-edited
+     position-map hash in its `package_info.cs` at `f1df6cbd9`, which a re-emitting converter would
+     never need a human to fix) — each a package whose every non-test Go file is hand-owned, so
+     `unmarkedFileCount == 0` makes the driver `continue` before `writeProjectFile` and its
+     `.csproj`, `package_info.cs` **and `README.md`** are hand-owned by consequence, never
+     re-emitted. (`unsafe` is also fully hand-owned but by the OTHER mechanism — skip-listed.)
+     Consequence counted the same day: the hand-own FENCE leaves **8 forced-init hooks missing**
+     inside this frozen class (godebug 4, concurrent 3, weak 1) that only Stage B's frozen-README
+     option (a) can fix — the relocation cannot, since these `package_info.cs` are never re-emitted.
   3. Build single packages with **`dotnet build <pkg>.csproj -c Debug`** — `src/core/Directory.Build.props`
      pins `$(go2csPath)` to the src root, so `core\golib` + the `go2cs-gen` analyzer resolve to live source
      with **no `-p:go2csPath` flag**; or build the whole `go2cs-stdlib.slnx` (~92–150 s warm, 305 assemblies — the 306th, `crypto/x509/internal/macos`, is darwin-exclusive and compiles nothing under the default `$(GoTargetOS)`).

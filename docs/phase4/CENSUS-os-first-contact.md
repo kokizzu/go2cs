@@ -331,3 +331,195 @@ those needs a seeded whole-corpus reconvert, which I did not run.** If it is the
 > disclosed but its stated reason no longer describes the counter). Incidental and rooted by control:
 > `os`'s committed `package_info.cs` carries unbanked converter drift (the `funcLits` position-map
 > argument), which is NOT the `-tests` closure class and would need banking, not restoring.**
+
+---
+
+## AMENDMENT — 2026-09-01: re-measured at master `bfc63d487` for a bank attempt. The seam row settled; the package still does NOT reach bankable shape, on two rows that standing doctrine refuses to disclose.
+
+**Measurement only, again.** No converter change, no roster row, no proof page. Nothing from either
+run is banked except this amendment and the `TestUTF16Alloc` prose refresh ruled on 2026-08-29.
+
+| | |
+|---|---|
+| Corpus | `bfc63d487` (master; the symlink-privilege arc `868c6d3ed` is merged) |
+| Toolchain | Go **1.23.12**, .NET **10.0.400**, `net10.0`, `windows/amd64` |
+| Host | i7-5820K (6C/12T Haswell-E), Windows 11 — same machine class as the first contact |
+| Command | `go2cs -tests -test-action all -test-timeout 10m -go2cspath <wt>\src <GOROOT>\src\os <wt>\src\core\os` |
+| Wall time | **2 min 46 s** (run 1), **run 2 re-run as the manifest control** |
+| Exit | 1, from the package rollup — the expected shape for a suite with any divergence |
+
+### A.1 Headline arithmetic, and every delta from the first contact explained
+
+| Metric | Census 2026-08-29 | This run | Delta |
+|---|---|---|---|
+| Verdict rows (both sides) | 686 | **685** | **−1** — `TestDirectorySymbolicLink` left the measured set |
+| Matching | 682 | **682** | 0 |
+| Non-matching | 4 | **3** | −1, same cause |
+| — disclosed | 1 | **1** | 0 |
+| — undisclosed residual | 3 | **2** | −1, same cause |
+| Capability-gated (never executed) | 3 | **4** | **+1**, same cause |
+| Matching skips | 20 | **20** | 0 |
+| Empty C# verdicts | 0 | **0** | 0 |
+| Rows present on one side only | 0 | **0** | 0 |
+| Excluded (benchmarks + examples) | 35 (12 + 23) | **35 (12 + 23)** | 0 |
+
+**The single delta is one row changing bucket, and it is the merged arc's own predicted arithmetic.**
+`868c6d3ed` states it in advance: *"Before: 686 measured / 682 matching / 4 non-matching / 3 gated.
+After: 685 measured / 682 matching / 3 non-matching / 4 gated."* That is reproduced here exactly.
+
+Closure, to the digit:
+
+```
+matched 682  +  disclosed 1  +  undisclosed residual 2   =  685 measured
+measured 685 +  gated 4      +  benchmarks/examples 35   =  724 declared rows
+Go side  : 665 pass + 20 skip                            =  685
+C#  side : 662 pass + 20 skip + 2 fail + 1 infra-error   =  685
+```
+
+**Verdict-shape check passes.** Zero empty C# verdicts, so this is neither the truncated-run
+signature (a contiguous alphabetical tail) nor the file-lock signature (all-empty). The comparison
+record's TAIL was read FIRST and carries **no `action":"timeout"` event** — the deadline did not
+fire, and the `-test-timeout` was an explicit `10m`, never the 2m default.
+
+### A.2 The four rows, re-classified against today's tree
+
+**(a) `TestDirectorySymbolicLink` — SETTLED, and it is neither passing nor privilege-blocked.** It is
+now **capability-gated** and never executes: `gated` carries
+`{"name": "TestDirectorySymbolicLink", "capabilities": "raw-metal struct overlay on managed bytes"}`,
+from the `os_test.createSymbolicLink` entry that merged with the seam fix. The privilege half of
+§3.2's candidate root was **confirmed and repaired** — root (A), the struct-passing seam, proven at
+the byte level and fixed by the `adjustTokenPrivileges` blittable mirror; root (B), the detached
+LUID out-parameter, refuted by the same probe. §3.2's proposed root was therefore correct.
+
+Two things this run cannot say, stated rather than glossed: because the gate is applied at
+CONVERSION time the row never runs, so **this run does not itself re-measure the privilege grant**
+— that measurement is `ca24bcbab`'s own probe (`AdjustTokenPrivileges err = <nil> — privilege
+GRANTED`). And **no elevation or Developer-Mode question arises on this host at all**: the old
+`ERROR_NOT_ALL_ASSIGNED` message that blamed the machine is gone, which was the entire point of the
+fix. The gate carries its own retirement note and must retire with the byte-buffer-reinterpret arc.
+
+**(b) `TestNetworkSymbolicLink` — unchanged, and NOT authored as a disclosure here.** Go=`pass`,
+C#=`infrastructure-error`, verbatim the declared `NetShareAdd` / `SHARE_INFO_2` limit. It is left
+undisclosed deliberately, because on the evidence it does not clear the `host-limit` bar the roster
+itself sets: *"an entry must name a structural property of the deployment shape, never an
+unimplemented-but-fixable defect."* This is not a deployment-shape property — it is a converted
+wrapper whose remedy is named and whose board entry is **OPEN**, and the gate comment 20 lines away
+in `testConversion.go` says so in the same breath (*"the durable remedy is the byte-buffer-reinterpret
+fork at the CONVERTER level — the same arc that owes NetShareAdd its repair"*). The board's own
+ratification of remedy 2 called the result *"a real mismatch rather than a skip … an honest
+mismatch — Go passes it."* Disclosing it would convert a measured, open arc into a declared limit,
+which is the laundering the class's bar exists to prevent. **Ruling owed; not a lane call.**
+
+**(c) `TestWriteStringAlloc` — re-measured, still non-zero, still not disclosable under ruling #1.**
+
+```
+go2cs: testing.AllocsPerRun counted 1,700 go2cs-runtime object allocations (132,064 bytes)
+over 100 run(s) …
+expected 0 allocs for File.WriteString, got 17
+```
+
+Per run: **17 allocations, 1,320.64 B/op.**
+
+| Record | allocs/run | B/op |
+|---|---:|---:|
+| r39-osalloc, 2026-08-03 | — | 3,168 |
+| First contact, 2026-08-29 | 17 | 1,184.64 |
+| **This run, 2026-09-01** | **17** | **1,320.64** |
+
+⚠ **The byte figure ROSE by exactly 136.00 B/op while the count did not move.** Flagged, not rooted:
+136 B is precisely the figure the arc's own item 5 carries (*"`unsafe.StringData` pins eagerly
+(136 B)"*), and `unsafe.StringData` was changed in the interval (`e1ef6ca85`, merged `67d875d11`,
+which removed an unconditional pinned `GCHandle`). Whether that is the same 136 bytes reappearing
+elsewhere, or an unrelated coincidence of magnitude, is **UNMEASURED** — no decomposition was run.
+It is recorded because a silent 11.5 % regression on the one row that blocks this package's bank is
+worth someone's attention even when it does not change the verdict.
+
+The classification is unchanged and is **not** the measuring lane's to change: **owner ruling #1 of
+2026-08-02** holds that *"a want-zero alloc assert is satisfiable, so disclosing it would soften the
+doctrine the badges depend on"*, and records that refusing the disclosure is exactly what forced the
+9,208-byte figure to be decomposed rather than argued about — finding two silent `ж<T>` allocations
+that every pointer read in the corpus was paying. The coordinator re-affirmed it on 2026-08-29
+(*"Still a zero bound, still an arc, not a disclosure"*). **Overturning it is an owner ruling.**
+
+**(d) `TestUTF16Alloc` — disclosed, and the ruled prose refresh is CARRIED by this amendment's
+commit.** Measured `got 4 allocs, want 1` — 20 allocations / 1,440 bytes over 5 runs = **4 allocs,
+288 B/op** (census: 4 allocs, 280 B/op; the count has not moved). The 2026-08-29 ruling — *"stays
+disclosed, prose rewritten at os's bank to the honest current reason (managed allocation-profile
+overhead, alloc-profile class)"* — is implemented in `src/core/os/go2cs_test_disclosures.json`: the
+class moves `alloc-count-semantics` → `alloc-profile`, and the retired units-mismatch argument is
+replaced by the structural one, which Go's own source makes plain — `syscall.UTF16ToString([]uint16{'a','b','c'})`
+allocates one object in Go because escape analysis keeps the array literal in the frame, where the
+managed model must heap-allocate that array and its slice descriptor before the produced `@string`
+is counted. **The signature is deliberately unchanged** (`" allocs, want "`), so the mechanical
+match is preserved; run 2 is the positive control that it still absorbs the row.
+
+### A.3 What the tree still carries — classified by control, and all of it restored
+
+Both runs left the same five tracked files modified. A **production-only control**
+(`go2cs -comments -go2cspath <wt>\src <GOROOT>\src\os <wt>\src\core\os`, exit 0, no `-tests`) was run
+against a restored tree, and the two diffs are **byte-identical except for one file**:
+
+| File | Diff | Classification |
+|---|---|---|
+| `src/core/os/os.csproj` | **+2** — `<InternalsVisibleTo Include="go2cs.SynthesizedStructs" />` | **Unbanked converter drift.** Reproduced by the production-only control, so NOT the `-tests` closure class and NOT the IP-4 test-artifact exclusion (which is already committed). |
+| `src/core/os/windows/exec.cs` | **3/3** — `(Func<…>)(Release)` → `((Func<…>)(Release))` | **Unbanked converter drift**, same control. |
+| `src/core/os/windows/file_windows.cs` | **1/1** — same extra-parenthesized delegate cast | **Unbanked converter drift**, same control. |
+| `src/core/os/windows/exec_windows.cs` | empty numstat, LF↔CRLF only | **CRLF phantom** (class 1). |
+| `src/core/os/windows/package_init.cs` | **+7** — `initᴛᴛtests();` and its `static partial void` declaration | **`-tests`-closure drift, shape 4.** The ONLY file the control did not reproduce. Standing restore while `os`'s test sources are unbanked. |
+
+**All five restored to HEAD; the ~25 untracked test artifacts removed.** Nothing here is banked,
+because the validated-package commit policy commits test sources when a package *validates*, and
+`os` does not.
+
+⚠ **§5's `funcLits` finding is CLOSED and needs no further action** — the four `package_info.cs`
+position-map records it reported did **not** reappear in either run. The regen train (`f1df6cbd9`,
+three-target seeded reconvert) banked them corpus-wide in the interval, which also settles §5's open
+question — it was *"three packages regenerated since the feature landed"*, and the rest have since
+been levelled — in the rare-feature-vs-latent-drift dichotomy §5 could not decide. Two *new* members
+joined the same family in its place (the `SynthesizedStructs` grant and the delegate-cast parens
+above), so the family is alive; only this instance of it is gone.
+
+### A.4 Verdict
+
+**`os` does not bank today, and the blocker is doctrine rather than measurement.** The suite is in
+excellent shape — 682 of 685 matching (99.56 %), zero unreached, zero empty, identical across two
+runs — and the row the first contact could not attribute has been rooted, fixed and settled. What
+stands between it and the roster is two rows that standing doctrine explicitly declines to disclose:
+one an open converter arc that `host-limit`'s own bar excludes (b), one an owner ruling that only the
+owner can reopen (c). Both need a decision, and neither is a measurement problem.
+
+
+---
+
+## AMENDED 2026-09-01 (the +136 attribution run, coordinator sub-agent) — §A.2(c)'s hypothesis REFUTED; two-step decomposition reconciled to the byte
+
+The +136.00 B/op on TestWriteStringAlloc (1,184.64 → 1,320.64, count 17 unchanged) is NOT the
+item-5 eager pin returning — that match was magnitude coincidence. Same-host A/B, full interval,
+unfiltered suite scope, endpoints reproducing the census figures exactly:
+
+- **+112.00 at `a6b951a55`** (the element-aliasing merge; golib `3598acf5d` adds the 8-byte
+  `m_publishedArrayBacking` field to the abstract base `ж<T>` — the per-box publish gate that took
+  the materialization race from 261/300 to 0/300). The tax is **8 B × boxes allocated**,
+  proportional not flat: 14 boxes on this path (+112), one on TestUTF16Alloc (+8.00, measured same
+  runs), zero on unicode/utf16 TestAllocationsDecode (+0.00, measured). Correctness-load-bearing;
+  not revertible.
+- **+24.00 at `e1ef6ca85`** (StringData's eager pin DELETED — it was a leak class via the pinned
+  handle's strong root and broke Go's sub-string aliasing by materializing offset copies;
+  `StringDataIdentity` guards the repair). The correct interior-pointer window costs a 56 B boxed
+  `slice<byte>` where the 32 B `PinnedBuffer` used to sit. Correctness-driven; not revertible.
+- **±0.64** — one 64-byte one-off inside the 100-iteration window, non-monotone across history,
+  cancels between the endpoints. Jitter, not a step.
+
+**Breadth: no banked or disclosed verdict at risk** — every alloc assert in the corpus is a COUNT
+(counts moved nowhere measured: 17→17, 4→4, 10→10) and no disclosure signature pins a
+go2cs-produced byte figure (all 32 manifests swept).
+
+**The arc's first increment (proposed by the run, queued):** an `ElemRefBox<T>` internal
+`(T[] backing, nint absoluteIndex)` ctor removes one object + ~56 B per StringData call — the row
+lands BELOW the pre-regression figure (17 → 16 allocs) with no change to identity, aliasing or
+lifetime. Owes GolibTests + `go2cs.slnx` + the String/Unsafe behavioral filters + StringDataIdentity.
+
+**Instrument law (measured here, +167.04 between scopes on ONE tree):** an alloc row's B/op is
+comparable only against a figure taken at the same suite scope — `AllocsPerRun`'s single warmup
+does not cover one-time costs a full run has already paid, so a filtered census must never compare
+its bytes against a full-run record.

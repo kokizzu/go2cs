@@ -1024,6 +1024,56 @@ public static uintptr Pointer(this ΔValue v) {
     return reflectPointerToken(v);
 }
 
+// InterfaceData returns a pair of unspecified uintptr values.
+//
+// THE CONTRACT HERE IS THE ABSENCE OF ONE, AND THAT IS WHAT MAKES THIS ANSWERABLE. Go's own doc
+// declares the API deprecated and BOTH words unspecified: "the memory model makes no guarantee",
+// and the pair "does not carry a type". So there is no address a caller may portably read out of
+// this — reading word 1 AS an address is already outside what Go promises. The bridge could not
+// honor such a read in any case: a bridge Value carries a boxed managed object (see the header of
+// this file) and its `ptr` word is unused, which is exactly why the converted form — a raw
+// `~(ж<array<uintptr>>)(uintptr)(v.ptr)` deref — nil-panicked here.
+//
+// What the word DOES carry observable meaning about, and what reflect's own tests read it for, is
+// DIRECT-IFACE-NESS: whether an interface holding this dynamic type stores the value itself in the
+// data word (pointer-shaped — so a zero value reads 0) or a pointer to a copy (so the word is an
+// address, and never 0). That is a TYPE-LEVEL classification the bridge computes truthfully, so
+// this reimplements the CONTRACT at the boundary rather than the mechanism, the same doctrine
+// sync's Mutex follows. The word is a CLASSIFICATION SIGNAL, NOT AN ADDRESS — do not add a
+// consumer that dereferences it.
+//
+// The classification comes from GoReflect.GoIsDirectIface, the SAME authority abi.synthType stamps
+// KindDirectIface from, so the descriptor bit and this word cannot disagree about one type.
+public static array<uintptr> InterfaceData(this ΔValue v) {
+    v.mustBe(ΔInterface);
+    var data = new array<uintptr>(2);
+    object? cur = v.live;
+    // A nil interface has neither a type nor data — Go reads {0, 0} out of the eface directly.
+    if (cur is null) {
+        return data;
+    }
+    System.Type dyn = GoReflect.GoDynamicTypeOf(cur);
+    nint[]? dims = GoReflect.ArrayDimsOfValue(cur);
+    // Word 0 stands for the dynamic TYPE descriptor: present, therefore non-zero.
+    data[0] = interfaceWordToken(cur);
+    // Word 1 is the data word. Pointer-shaped: the value IS the word, so it is 0 exactly when the
+    // single pointer it reduces to is nil. Otherwise the value lives behind a pointer, and an
+    // address is never 0 — including for a zero-SIZE type, where Go points every such value at
+    // runtime.zerobase, which is precisely the [0]*byte half of TestArrayOfDirectIface.
+    data[1] = GoReflect.GoIsDirectIface(dyn, dims)
+        ? (GoReflect.GoDirectIfaceWordIsNil(cur, dyn, dims) ? 0 : interfaceWordToken(cur))
+        : interfaceWordToken(cur);
+    return data;
+}
+
+// A stable, non-zero stand-in for an interface word. Object identity, the same fallback
+// reflectPointerToken ends on — but never 0, because a present word is the property the caller is
+// entitled to observe, and GetHashCode does not promise a non-zero result.
+private static uintptr interfaceWordToken(object cur) {
+    uint hash = (uint)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cur);
+    return ((uintptr)(nuint)(hash == 0 ? 1u : hash));
+}
+
 // A slice's Go data address is `&s[0]` — its BACKING STORE plus its window offset — so the token
 // combines the two, exactly as deepValueEqual's identityRoot does. A nil slice has no storage and
 // tokens 0, which is what the nil test one level up already answers for every other kind.
@@ -1343,6 +1393,53 @@ public static ΔValue MakeMap(ΔType typ) {
 }
 
 // MakeMapWithSize creates a new empty map value of the specified map type with a size hint.
+// Close closes the channel v. It panics if v's Kind is not Chan or v is receive-only.
+//
+// Two defects in the auto body, and the first is a fifth member of a family already retired once.
+// It reads the direction by REINTERPRETING the descriptor onto the linker's chanType record and
+// taking `.Dir` out of the memory after the value slot — the read abi.ChanDir was hand-owned to
+// replace, and whose own comment calls it "the worst kind of wrong: NON-DETERMINISTIC". A
+// synthesized descriptor has no trailing chanType record at all, so this site answered
+// receive-only for bidirectional channels and TestChan/TestSelect both died on an ordinary
+// cv.Close(). The direction is CARGO on the descriptor and abi.ChanDir is its reader. (Three more
+// of these live inside Select; the rselect runtime stub blocks that one for now.)
+//
+// Second: chanclose is a runtime stub that closes a runtime hchan. A golib channel closes itself.
+public static void Close(this ΔValue v) {
+    v.mustBe(Chan);
+    v.mustBeExported();
+    if ((ΔChanDir)(((ΔChanDir)(nint)abi.ChanDir(v.typ())) & SendDir) == 0) {
+        throw panic("reflect: close of receive-only channel");
+    }
+    if (v.live is IChannel ch) {
+        ch.Close();
+        return;
+    }
+    // Go's own text for the nil case, which its runtime raises one frame down.
+    throw panic("close of nil channel");
+}
+
+// MakeChan creates a new channel with the specified type and buffer size — MakeMapWithSize's
+// sibling, and the same shape of fix: the auto body calls the `makechan` runtime stub, which
+// allocates a runtime hchan and has no managed form. A golib channel<T> is an ordinary container
+// with a make, so it is made the way a map is.
+public static ΔValue MakeChan(ΔType typ, nint buffer) {
+    System.Type? st = sysTypeOfReflectType(typ);
+    if (st is null || GoReflect.KindOf(st) != GoReflect.Chan) {
+        throw panic("reflect.MakeChan of non-chan type");
+    }
+    // Go's two gates, with its own text: a directional type cannot be made, and a buffer cannot be
+    // negative.
+    if (typ.ChanDir() != BothDir) {
+        throw panic("reflect.MakeChan: unidirectional channel type");
+    }
+    if (buffer < 0) {
+        throw panic("reflect.MakeChan: negative buffer size");
+    }
+    // A MADE channel is bidirectional whatever the descriptor it came from carried.
+    return makeTypedValue(GoReflect.MakeContainer(st, buffer), st, null, default, GoChanDir.Both);
+}
+
 public static ΔValue MakeMapWithSize(ΔType typ, nint n) {
     System.Type? st = sysTypeOfReflectType(typ);
     if (st is null || GoReflect.KindOf(st) != GoReflect.Map) {
@@ -2590,6 +2687,72 @@ public static ΔType SliceOf(ΔType t) {
         throw panic("reflect: SliceOf of non-synthesized type");
     }
     return toType(abi.synthType(typeof(slice<>).MakeGenericType(st)));
+}
+
+// ChanOf and MapOf are the LAST TWO type constructors still on the typelinks path, and they die
+// exactly where PointerTo, ArrayOf and SliceOf died above: before Go's own body assembles the
+// chanType/mapType record it looks the type up by NAME through typesByString → typelinks(), the
+// linker-built table of every type in the binary, which has no managed form and is a
+// NotImplementedException stub. Ten reflect rows reach that stub, nine of them through these two.
+//
+// Falling through to Go's own "Make a channel type" branch would not help, and that is worth
+// stating because it is the tempting smaller fix: that branch reconstructs the record by
+// REINTERPRETING a prototype's memory (`(channel<unsafe.Pointer>)(default!)` read back as a
+// ж<chanType>), which is the same linker-record reconstruction this bridge never needs. golib's
+// channel<T> and map<K,V> ARE the Go types, so the constructed type is composed the way its three
+// siblings compose theirs.
+//
+// Note this is not a shortcut past the lookup: Go's own typesByString is documented to return
+// nothing ("It may be empty"), and every caller is written to mint on that miss. The managed
+// runtime simply misses always, because it has no ahead-of-time type table to hit.
+
+// ChanOf returns the channel type with the given direction and element type.
+public static ΔType ChanOf(ΔChanDir dir, ΔType t) {
+    // Go validates the direction before anything else, and this is its exact text.
+    if (dir != RecvDir && dir != SendDir && dir != BothDir) {
+        throw panic("reflect.ChanOf: invalid dir");
+    }
+    System.Type? st = sysTypeOfReflectType(t);
+    if (st is null) {
+        throw panic("reflect: ChanOf of non-synthesized type");
+    }
+    // The direction rides the descriptor as cargo — GoChanDir maps onto abi's ChanDir with no
+    // translation (Recv 1, Send 2, Both 3) — which is what rtype.ChanDir reads back out.
+    return toType(abi.synthType(typeof(channel<>).MakeGenericType(st), null, null, ((GoChanDir)(byte)(nint)dir)));
+}
+
+// MapOf returns the map type with the given key and element types.
+public static ΔType MapOf(ΔType key, ΔType elem) {
+    // Go's own gate FIRST, and its exact text: a key type with no equality cannot key a map. The
+    // ORDER is load-bearing, not cosmetic — TestMapOf proves the panic with
+    // `MapOf(TypeOf((func())(nil)), TypeOf(false))`, whose key type has no synthesized System.Type
+    // to recover, so any check that needs one has to come after this or it reports the wrong panic
+    // (and dereferencing the key's common() for its Equal, which is what Go does, is a nil
+    // dereference here). Type.Comparable reads the descriptor's Equal — the same signal synthType
+    // stamps from GoReflect.IsComparable — so this asks Go's question of Go's own authority.
+    // A nil Type reaching here is NOT an invalid key type, and must not be reported as one — that
+    // would turn a bridge gap into a passing test. It means reflect.TypeOf answered nil, which it
+    // does for a TYPED-NIL FUNC: the converter emits `TypeOf((func())(nil))` as `TypeOf((Action)
+    // (default!))`, a bare null, and abi.TypeOf's `a == default!` guard cannot see a type word
+    // there. Go's interface carries the type word even when the func value is nil, which is what
+    // golib's NilFuncValue exists to reproduce, and it is not being minted at that boxing site.
+    // Named here rather than absorbed, so the panic points at the real root instead of a nil
+    // dereference. TestMapOf's shouldPanic stays red until the emission carries the type.
+    if (key == default! || elem == default!) {
+        throw panic("reflect.MapOf: nil Type (reflect.TypeOf answered nil — typed-nil func boxed without its type word; see golib NilFuncValue)");
+    }
+    if (!key.Comparable()) {
+        throw panic("reflect.MapOf: invalid key type " + key.String());
+    }
+    System.Type? kst = sysTypeOfReflectType(key);
+    System.Type? est = sysTypeOfReflectType(elem);
+    if (kst is null || est is null) {
+        throw panic("reflect: MapOf of non-synthesized type");
+    }
+    // An ARRAY key carries its dimensions as keyDims — the cargo slot a map descriptor already
+    // keeps, and what rtype.Key() hands back down.
+    return toType(abi.synthType(typeof(map<,>).MakeGenericType(kst, est), null, null,
+        GoChanDir.Unstamped, arrayDimsOfReflectType(key)));
 }
 
 // StructOf returns the struct type containing fields — ArrayOf's sibling one order of magnitude up,

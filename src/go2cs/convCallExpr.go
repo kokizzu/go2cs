@@ -1281,6 +1281,40 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			return expr
 		}
 
+		// A conversion to an EXPORTED, TEST-FILE-DECLARED defined-type-over-STRUCT whose immediate
+		// underlying is itself an UNEXPORTED named struct — runtime export_test.go's
+		// `type PageCache pageCache`, then `PageCache(pageCache{...})` / `PageCache(pp.allocToCache())`
+		// — has no C# conversion operator to cast through: go2cs-gen's W3a wrapper-scaffolding
+		// (InheritedTypeTemplate's OmitUnderlyingConversionOperators) deliberately omits the operator
+		// pair for a test-file-declared wrapper whose wrapped type is not itself public (a
+		// user-defined conversion operator has no legal non-public form, CS0558, so neither modifier
+		// is legal — the pair is omitted rather than weakened), leaving the constructor as the one
+		// remaining explicit path, since every consumer is a sibling file in the same whitebox test
+		// assembly. The plain cast the fallback below emits therefore cannot compile (CS0030): there
+		// is no operator for `((PageCache)pageCacheValue)` to bind. Route through the constructor
+		// instead — it is ALWAYS emitted regardless of whether the operator pair is, so
+		// `new PageCache(pageCacheValue)` compiles whether or not the cast would have.
+		//
+		// The TEST-FILE-DECLARED condition on the TARGET is load-bearing, not incidental — measured
+		// 2026-09-01 via a two-seeded-reconvert-diffed-against-each-other blast-radius check that
+		// caught the first (unguarded) version of this fix breaking log/slog's `value.go`:
+		// `type timeTime time.Time` is the SAME exported/unexported-struct shape in reverse (the
+		// UNEXPORTED type wraps the EXPORTED one, declared in PRODUCTION source), and its existing
+		// cast `((time.Time)a)` already compiles fine there via a real conversion operator — W3a's
+		// omission is specific to a test-file wrapper, so applying the constructor route unconditionally
+		// tried `new time.Time(a)` against `time.Time`'s OWN ordinary constructors, none of which
+		// accept a `timeTime` argument (CS1503, resolving to the nearest unrelated overload instead).
+		// declaredInTestFile is the existing idiom for exactly this signal (testAliasShadowOperations.go).
+		if targetNamed, ok := types.Unalias(v.info.TypeOf(callExpr)).(*types.Named); ok && targetNamed.Obj().Exported() && v.declaredInTestFile(targetNamed.Obj()) {
+			if _, targetIsStruct := targetNamed.Underlying().(*types.Struct); targetIsStruct {
+				if argNamed, ok := types.Unalias(v.info.TypeOf(arg)).(*types.Named); ok && !argNamed.Obj().Exported() {
+					if _, argIsStruct := argNamed.Underlying().(*types.Struct); argIsStruct {
+						return fmt.Sprintf("(new %s(%s))", targetTypeName, expr)
+					}
+				}
+			}
+		}
+
 		// Determine if we need parentheses around the expression
 		if v.needsParentheses(arg) {
 			if targetIsBasic {

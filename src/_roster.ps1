@@ -46,7 +46,7 @@
     in one document can never be confused by either parser; the document's own HTML comment
     beneath the ledger states the same rule from the other side.
 
-    Nothing here has side effects; it defines four functions and returns.
+    Nothing here has side effects; it defines pure functions and returns.
 
 .NOTES
     Requires PowerShell 5.1 (Windows) or PowerShell 7+ (any platform).
@@ -381,6 +381,10 @@ function Get-RosterExecutionArgs {
                         the disclosed count)
       host-conditional  the surplus was PROVEN to be the row's named host-conditional verdicts
                         (that proof is evidence-based and lives in the sweep; this takes its answer)
+      host-limit        a shortfall PROVEN to be a registered block the converted side could not
+                        produce on this host, absorbed by the block root's own COMMITTED host-limit
+                        disclosure. The third host state (Test-HostLimitDelta); same evidence
+                        discipline as the two above -- this takes its answer
       disclosed-moved   an annotated row's matching count agreed and its DISCLOSED count did not --
                         roster maintenance, never host capability, and never absorbed
       unbanked-count    comparison-validated-at-count: a validated run on an OS this row has no
@@ -407,7 +411,8 @@ function Get-SweepRowClassification {
         [int] $GotDisclosed = 0,
         [Parameter(Mandatory)][string] $TargetGoos,
         [switch] $HostConditionalAccepted,
-        [switch] $CapabilityAbsentAccepted
+        [switch] $CapabilityAbsentAccepted,
+        [switch] $HostLimitAccepted
     )
 
     # Before any count math: an inapplicable expectation has null counts, and comparing against
@@ -419,6 +424,7 @@ function Get-SweepRowClassification {
     if (-not $disclosedAgrees) { return 'disclosed-moved' }
     if ($HostConditionalAccepted) { return 'host-conditional' }
     if ($CapabilityAbsentAccepted) { return 'capability-absent' }
+    if ($HostLimitAccepted) { return 'host-limit' }
     if ($Got -eq $Expectation.Expected) { return 'pass' }
 
     if ($TargetGoos.Trim().ToLowerInvariant() -ne 'windows' -and $Expectation.Source -eq 'columns') {
@@ -582,6 +588,213 @@ function Test-CapabilityAbsentDelta {
     }
 
     return New-CapabilityAbsentResult $true $null
+}
+
+# ---- host-limited verdicts (the THIRD host state, and the SECOND shortfall shape) -----------------
+# The rule above owns the shortfall an ABSENT capability produces, and its LAST check refuses, by
+# name, every shortfall whose Go side FANNED THE MATRIX OUT -- correctly, on the evidence IT reads:
+# the case matrix existed, so the lost verdicts are the converted side's alone. What that rule cannot
+# see is the one artifact that changes what such a loss MEANS: a COMMITTED `host-limit` disclosure
+# pinning the block root. That class is the project's existing, reviewed vocabulary for exactly this
+# shape -- a divergence the converted host's DEPLOYMENT SHAPE structurally cannot close, banked with
+# a failure signature and a self-retiring condition rather than waved through -- and the converter's
+# own compare oracle already accepts the row under it (matchTerminalStatuses), which is why the
+# pipeline reports the very same run as `status: validated, matched: true` while only the sweep's
+# COUNT gate refuses.
+#
+# So a capability-conditional block has THREE host states, not two:
+#
+#   runner present, host fast enough   the block fans out on both sides and every sub-verdict
+#                                      MATCHES -- the roster's banked ceiling (crypto/tls 3643 + 1)
+#   runner absent                      the matrix never exists: the block collapses to one verdict on
+#                                      BOTH runtimes with NO fan-out, and the two counts fall
+#                                      together -- Test-CapabilityAbsentDelta
+#   runner present, host too slow      Go fans the matrix out, the converted side dies on the
+#                                      runner's own fixed deadline, and the block root becomes a
+#                                      DISCLOSED divergence -- this rule (crypto/tls 400 + 2)
+#
+# THE DISCRIMINATOR IS THE FAN-OUT, NOT THE ROOT'S VERDICT (measured 2026-09-01, i7 coordinator, the
+# run this rule was written against). The tempting reading is that state 3 is the Go-pass/C#-fail
+# pair and state 2 the agreeing non-pass one; it is NOT, and a rule built that way would refuse the
+# very host it exists for. crypto/tls's own manifest documents both arms and the sweep measured the
+# second: `TestBogoSuite` go='fail' C#='fail', 3,242 rows withdrawn, root disclosed `host-limit`,
+# status validated. Go's oracle fans out all 3,242 cases in under a minute and its ROOT still fails
+# on a handful of them; the converted side dies at the 600 s wall with the pinned signature; and the
+# compare oracle admits either arm (hostConditionalFailureMatches takes the primary signature OR the
+# host-conditional one). So the two rules partition the space on the WITHDRAWALS -- that rule refuses
+# any, this one requires exactly the block's own -- and no run can be read both ways.
+#
+# The third state is NOT a weaker second: it carries strictly MORE evidence. A capability-absent
+# collapse has no fan-out to point at, so its discriminator is the ABSENCE of withdrawn rows; this
+# shape's discriminator is their PRESENCE, name for name. The converter withdraws every Go-side row
+# beneath a signature-matched disclosed root and publishes the list, so the record itself ENUMERATES
+# the lost verdicts -- and this rule requires that enumeration to BE the block's banked sub-verdicts
+# exactly, in both directions, rather than merely to count to its size.
+#
+# What is NOT host-limited, and must stay red: any shortfall the committed manifest does not pin as
+# `host-limit`; any shortfall whose withdrawn set is not exactly the block's banked sub-verdicts (a
+# rogue loss cancelling against a rogue withdrawal is the arithmetic this refuses to be fooled by);
+# any run whose converted side did not FAIL on the block root; a root that SKIPPED on the Go side (Go
+# has no capability-absent skip branch here, and a skipping root cannot have fanned anything out);
+# any surviving block subtest; any banked verdict outside the block going missing; any live verdict
+# the row does not account for; and any disclosed movement other than the block root itself joining.
+# The MISSING PIN is the load-bearing refusal -- this rule can only ever absorb what a reviewed,
+# committed, self-retiring disclosure already describes, so it generalizes to no other shortfall and
+# to no unpinned package. And note what the sweep never even reaches: a converted side that failed
+# for some OTHER reason is a MISMATCH inside the converter's own oracle, so no "Validated N" line is
+# printed and the row fails as FAIL, not COUNT. The signature pin does that work upstream of here.
+$HostLimitDisclosureClass = 'host-limit'
+
+# The Go-side root verdicts this rule admits, and the arms crypto/tls's manifest documents: `pass`
+# (the primary pinned divergence -- Go clean, converted side over the wall) and `fail` (Go's own
+# oracle red on a handful of the cases it fanned out). `skip` is absent ON PURPOSE, and so is an
+# absent root: neither can coexist with the fan-out this rule demands.
+$HostLimitGoRootVerdicts = @('pass', 'fail')
+
+function Test-HostLimitDelta {
+    param(
+        [int] $Expected,           # banked matching-verdict count (roster column 2, the CEILING here)
+        [int] $Disclosed,          # banked disclosed count (roster column 3)
+        [PSCustomObject] $Block,   # @{ Test = <top-level name>; BlockSize = <int> }
+        [int] $Got,
+        $Comparison,
+        [string[]] $BankedNames,
+        $Pin                       # the COMMITTED manifest entry for $Block.Test: @{ Class; Signature }
+    )
+
+    function New-HostLimitResult([bool] $accepted, [string] $reason) {
+        return [PSCustomObject]@{ Accepted = $accepted; Reason = $reason }
+    }
+
+    # Ordinal, for the same case-sensitivity reason ConvertFrom-ComparisonRecord states -- and a SET
+    # rather than an array because this rule compares two three-thousand-name populations to one
+    # another: the sibling's `-notcontains` scans are quadratic and would spend minutes here.
+    function New-OrdinalSet([string[]] $names) {
+        $set = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
+        foreach ($name in $names) { [void]$set.Add($name) }
+        return , $set
+    }
+
+    $shortfall = $Expected - $Got
+    if ($shortfall -ne $Block.BlockSize) {
+        return New-HostLimitResult $false "shortfall $shortfall does not match $($Block.Test)'s registered block size $($Block.BlockSize) -- a lost verdict outside the named block is never host-limited"
+    }
+    if ($null -eq $Comparison -or $null -eq $Comparison.go -or $null -eq $Comparison.csharp) {
+        return New-HostLimitResult $false 'comparison record carries no per-test verdict maps'
+    }
+
+    # THE ADMISSION GATE. Everything below proves WHICH verdicts were lost; this proves the loss was
+    # already disclosed, committed and reviewed. Without it the rule would be a general "accept a
+    # block-sized shortfall", which is the change this design exists to not be.
+    if ($null -eq $Pin) {
+        return New-HostLimitResult $false "the committed disclosure manifest does not pin $($Block.Test) -- an undisclosed shortfall is a divergence, never a host state"
+    }
+    if ($Pin.Class -ne $HostLimitDisclosureClass) {
+        return New-HostLimitResult $false "the committed manifest pins $($Block.Test) as '$($Pin.Class)', not '$HostLimitDisclosureClass' -- only that class names a deployment-shape ceiling this rule may absorb"
+    }
+
+    if ($BankedNames.Count -ne ($Expected + $Disclosed)) {
+        return New-HostLimitResult $false "committed proof page lists $($BankedNames.Count) verdicts where the roster banks $Expected matched + $Disclosed disclosed -- page and table disagree"
+    }
+
+    $blockPrefix = "$($Block.Test)/"
+    $blockNames = @($BankedNames | Where-Object { $_ -eq $Block.Test -or $_.StartsWith($blockPrefix) })
+    if ($blockNames.Count -ne $Block.BlockSize) {
+        return New-HostLimitResult $false "the committed proof page names $($blockNames.Count) verdicts under $($Block.Test), not the registered $($Block.BlockSize) -- re-derive the block size before trusting this row"
+    }
+
+    $blockSet = New-OrdinalSet $blockNames
+    $goMap = $Comparison.go
+    $csMap = $Comparison.csharp
+    $liveNames = @($goMap.Keys)
+    $liveSet = New-OrdinalSet $liveNames
+
+    # Every banked name OUTSIDE the block must still be present live -- the mechanism absorbs the
+    # named block, nothing else.
+    $expectedOutside = @($BankedNames | Where-Object { -not $blockSet.Contains($_) })
+    $missingOutside = @($expectedOutside | Where-Object { -not $liveSet.Contains($_) })
+    if ($missingOutside.Count -gt 0) {
+        return New-HostLimitResult $false "banked verdicts outside the block missing from this run: $($missingOutside -join ', ')"
+    }
+
+    # No block subtest may survive in the COMPARED set (each was withdrawn beneath the disclosed
+    # root), and the root itself must be there to carry the disclosure.
+    $liveBlockNames = @($liveNames | Where-Object { $_ -eq $Block.Test -or $_.StartsWith($blockPrefix) })
+    if (@($liveBlockNames | Where-Object { $_ -ne $Block.Test }).Count -gt 0) {
+        return New-HostLimitResult $false "subtests under $($Block.Test) survive in this run's compared set -- the block did not collapse, re-diagnose rather than absorb"
+    }
+    if ($liveBlockNames -notcontains $Block.Test) {
+        return New-HostLimitResult $false "$($Block.Test) itself is missing from this run -- a host-limited block must still report its one collapsed root"
+    }
+
+    # The root's verdict pair. The CONVERTED side must be the half that failed -- that is the whole
+    # claim of a host limit -- and the Go root must be one of the two arms the manifest documents.
+    # Note this is NOT the discriminator against the capability-absent shape; the fan-out below is.
+    $goVerdict = $goMap[$Block.Test]
+    $csVerdict = if (-not $csMap.ContainsKey($Block.Test)) { 'absent' } else { $csMap[$Block.Test] }
+    if ($csVerdict -ne 'fail') {
+        return New-HostLimitResult $false "$($Block.Test): go '$goVerdict' vs C# '$csVerdict' -- a host-limited block's converted side FAILS on the pinned signature; anything else is not this shape"
+    }
+    if ($HostLimitGoRootVerdicts -notcontains $goVerdict) {
+        return New-HostLimitResult $false "$($Block.Test): go '$goVerdict' -- a host-limited block's Go root is '$($HostLimitGoRootVerdicts -join "' or '")'; a skipped or absent root cannot have fanned out the matrix this rule requires"
+    }
+
+    # THE FAN-OUT, NAME FOR NAME -- the binding property AND the discriminator. The shortfall count
+    # above says only "the right SIZE went missing"; this says the missing rows are the block's own
+    # banked sub-verdicts and nothing else, in both directions. A rogue loss cancelling against a
+    # rogue withdrawal is the exact arithmetic this refuses to be fooled by. It is also the evidence
+    # the capability-absent rule cannot have -- there the matrix never existed, and that rule refuses
+    # on ANY withdrawal under the block -- so requiring exactly the block's own partitions the two
+    # rules cleanly whatever the roots report. Withdrawals OUTSIDE the block are left alone, as they
+    # are there: one would move the shortfall and be caught by the first check.
+    $withdrawn = @()
+    if ($null -ne $Comparison.withdrawn) { $withdrawn = @($Comparison.withdrawn) }
+    $withdrawnUnderBlock = @($withdrawn | Where-Object { $_ -eq $Block.Test -or $_.StartsWith($blockPrefix) })
+    $withdrawnSet = New-OrdinalSet $withdrawnUnderBlock
+    $expectedWithdrawn = @($blockNames | Where-Object { $_ -ne $Block.Test })
+    $expectedWithdrawnSet = New-OrdinalSet $expectedWithdrawn
+
+    $notWithdrawn = @($expectedWithdrawn | Where-Object { -not $withdrawnSet.Contains($_) })
+    $unexpectedWithdrawn = @($withdrawnUnderBlock | Where-Object { -not $expectedWithdrawnSet.Contains($_) })
+    if ($notWithdrawn.Count -gt 0 -or $unexpectedWithdrawn.Count -gt 0) {
+        $detail = @()
+        if ($notWithdrawn.Count -gt 0) { $detail += "$($notWithdrawn.Count) banked sub-verdict(s) were NOT withdrawn (first: $($notWithdrawn[0]))" }
+        if ($unexpectedWithdrawn.Count -gt 0) { $detail += "$($unexpectedWithdrawn.Count) withdrawn name(s) the proof page does not bank (first: $($unexpectedWithdrawn[0]))" }
+        return New-HostLimitResult $false ("the withdrawn Go-side rows are not exactly $($Block.Test)'s banked sub-verdicts -- " +
+            ($detail -join '; ') + ' -- the shortfall must BE the block and nothing else')
+    }
+
+    # The disclosed accounting: the banked disclosures plus the block root, which the compare oracle
+    # accounts as DISCLOSED (never as an agreed match) in this shape. Anything else is a disclosure
+    # that moved for an unrelated reason, which is what this family of checks exists to catch.
+    $liveDisclosedEntries = @()
+    if ($null -ne $Comparison.disclosed) { $liveDisclosedEntries = @($Comparison.disclosed) }
+    $expectedDisclosed = $Disclosed + 1
+    if ($liveDisclosedEntries.Count -ne $expectedDisclosed) {
+        return New-HostLimitResult $false "disclosed count moved ($($liveDisclosedEntries.Count) live vs $expectedDisclosed expected -- the $Disclosed banked plus $($Block.Test) itself) -- not a host-limited shape"
+    }
+
+    # A disclosure entry reads "<TestName> (<class>): <reason>", so the class the compare oracle
+    # ACTUALLY applied to this run is readable here -- and is cross-checked against the committed pin
+    # rather than assumed from it. Record and pin disagreeing means one of them is describing a
+    # different divergence than the other.
+    $rootEntry = @($liveDisclosedEntries | Where-Object { ($_ -split ' \(', 2)[0] -eq $Block.Test })
+    if ($rootEntry.Count -eq 0) {
+        return New-HostLimitResult $false "$($Block.Test) is not among this run's disclosures -- the extra disclosure is some other row, so this is not the collapse it looks like"
+    }
+    $liveClass = if ($rootEntry[0] -match ('^' + [regex]::Escape($Block.Test) + '\s\(([^)]+)\):')) { $Matches[1] } else { '' }
+    if ($liveClass -ne $Pin.Class) {
+        return New-HostLimitResult $false "$($Block.Test) is disclosed as '$liveClass' in this run but pinned as '$($Pin.Class)' in the committed manifest -- record and pin disagree"
+    }
+
+    # Nothing live may go unaccounted for: the outside names plus the one collapsed root, exactly.
+    $accountedFor = New-OrdinalSet (@($expectedOutside) + @($Block.Test))
+    $unaccounted = @($liveNames | Where-Object { -not $accountedFor.Contains($_) })
+    if ($unaccounted.Count -gt 0) {
+        return New-HostLimitResult $false "live verdicts this row does not account for: $($unaccounted -join ', ')"
+    }
+
+    return New-HostLimitResult $true $null
 }
 
 # ---- comparison-record reader --------------------------------------------------------------------

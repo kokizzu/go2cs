@@ -289,6 +289,15 @@ Assert-Equal 'windows: a proven capability-absent shortfall passes' 'capability-
 Assert-Equal 'linux: a moved disclosure is never absorbed as capability-absent either' 'disclosed-moved' `
     (Get-SweepRowClassification -Expectation $linAnnotated -Got 12 -GotDisclosed 0 -TargetGoos 'linux' -CapabilityAbsentAccepted)
 
+Assert-Equal 'windows: a proven host-limited shortfall passes as its own class' 'host-limit' `
+    (Get-SweepRowClassification -Expectation $winPlain -Got 6 -GotDisclosed 0 -TargetGoos 'windows' -HostLimitAccepted)
+Assert-Equal 'linux: a moved disclosure is never absorbed as host-limited either' 'disclosed-moved' `
+    (Get-SweepRowClassification -Expectation $linAnnotated -Got 12 -GotDisclosed 0 -TargetGoos 'linux' -HostLimitAccepted)
+# It is a THIRD bucket, never a re-spelling of the second: a caller that proved neither still gets
+# the same hard count failure, and the two switches never collapse into one another.
+Assert-Equal 'windows: an unproven shortfall is still a count failure with the new bucket present' 'count' `
+    (Get-SweepRowClassification -Expectation $winPlain -Got 6 -GotDisclosed 0 -TargetGoos 'windows')
+
 # ---- 1b2. the capability-absent mirror check, exercised end to end ------------------------------
 # Test-CapabilityAbsentDelta/Get-CapabilityAbsentVerdict have no roster-row fixture of their own
 # (they read a comparison record and a committed proof page, not a table row), so this proves the
@@ -401,6 +410,179 @@ Assert-Equal 'capability-absent: an unaccounted extra live verdict is refused' $
         go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
         csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
     }) -BankedNames $fullBankedNames).Accepted
+
+# ---- 1b2a. the host-limited mirror -- the THIRD host state, exercised end to end ------------------
+# The shape the capability-absent rule refuses on its LAST check, and must go on refusing: the
+# capability was PRESENT, Go fanned the whole matrix out, and the converted side could not produce it
+# inside the deadline the test itself carries. What makes it absorbable is not a weaker check, it is
+# a THIRD evidence artifact the other rule never reads -- the package's COMMITTED disclosure manifest
+# pinning the block root as `host-limit` -- plus the strongest identity evidence available anywhere
+# in this family: the converter WITHDRAWS every Go-side row beneath a signature-matched disclosed
+# root and publishes the list, so the record enumerates the lost verdicts by name and this rule
+# requires that enumeration to BE the block's banked sub-verdicts, both directions, nothing else.
+#
+# ⚠ THE DISCRIMINATOR IS THE FAN-OUT, NOT THE ROOT PAIR, and both arms below are real. The tempting
+# reading -- state 3 is Go-pass/C#-fail, state 2 is the agreeing non-pass -- is WRONG and would build
+# a rule that refuses the very host it exists for: the i7 coordinator's measured crypto/tls run
+# (2026-09-01) reports `TestBogoSuite` go='fail' C#='fail' with 3,242 rows withdrawn, because Go's
+# oracle fans out every case in under a minute and its root still fails on a handful of them. Both
+# arms are pinned here so neither can be lost to the other.
+#
+# Same three-verdict miniature as the block above: root + two cases, banked 4 matched + 0 disclosed,
+# of which 3 are the block, so a host-limited run scores 1 matched + 1 disclosed (the root).
+$hostLimitPin = [PSCustomObject]@{ Class = 'host-limit'; Signature = 'runner failed: exit status 1' }
+$hostLimitComparison = [PSCustomObject]@{
+    go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+    csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+    withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+    disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+}
+# The MEASURED arm: the same run with Go's own root red too, which is what the sweep host produces.
+$hostLimitFailComparison = [PSCustomObject]@{
+    go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+    csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+    withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+    disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+}
+
+Assert-Equal 'host-limit: the pinned arm -- Go pass, C# fail, block withdrawn, root disclosed -- is accepted' $true `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $hostLimitComparison `
+        -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: the MEASURED arm -- Go fail, C# fail, block withdrawn, root disclosed -- is accepted' $true `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $hostLimitFailComparison `
+        -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+
+# THE ADMISSION GATE, in both of its failure directions. Without a committed pin this rule would be
+# a general "accept a block-sized shortfall", which is the change it exists not to be.
+Assert-Equal 'host-limit: no committed pin refuses the identical evidence' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $hostLimitComparison `
+        -BankedNames $fullBankedNames -Pin $null).Accepted
+Assert-Equal 'host-limit: a pin of some OTHER class refuses the identical evidence' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $hostLimitComparison `
+        -BankedNames $fullBankedNames -Pin ([PSCustomObject]@{ Class = 'alloc-profile'; Signature = 'x' })).Accepted
+
+# THE BINDING PROPERTY: the shortfall must BE the block's own sub-verdicts. A right-SIZED loss whose
+# withdrawn names are not the banked ones is exactly the cancellation this refuses to be fooled by --
+# asserted in both directions, since a rogue loss and a rogue withdrawal cancel in the count.
+Assert-Equal 'host-limit: a banked sub-verdict that was NOT withdrawn is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        withdrawn = @('TestFakeSuite/case1')
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: a withdrawn name the proof page does not bank is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case3')
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: no fan-out at all is refused -- nothing proves WHICH verdicts were lost' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+
+# THE PARTITION, asserted in BOTH directions on the two evidence shapes that differ ONLY in whether
+# the Go side fanned out. $absentFailComparison is byte-identical to $hostLimitFailComparison but for
+# the missing `withdrawn` rows -- same roots, same verdicts, same disclosure -- and the two rules
+# answer oppositely on the pair. That is the whole design: neither rule is a relaxation of the other,
+# and no run can be read both ways.
+Assert-Equal 'partition: a fail/fail collapse with NO fan-out is capability-absent, refused here' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $absentFailComparison `
+        -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'partition: ...and the capability-absent rule ACCEPTS that same no-fan-out evidence' $true `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $absentFailComparison `
+        -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'partition: a fail/fail collapse WITH the fan-out is host-limited, accepted here' $true `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $hostLimitFailComparison `
+        -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'partition: ...and the capability-absent rule REFUSES that same fanned-out evidence' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $hostLimitFailComparison `
+        -BankedNames $fullBankedNames).Accepted
+Assert-Equal 'partition: the capability-absent rule also refuses the Go-pass arm this rule accepts' $false `
+    (Test-CapabilityAbsentDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $hostLimitComparison `
+        -BankedNames $fullBankedNames).Accepted
+
+# The verdict pair. The CONVERTED side must be the half that failed, and a SKIPPED Go root is refused
+# even with a full fan-out -- Go has no capability-absent skip branch here, and a skipping root
+# cannot have fanned anything out, so such a record is incoherent rather than absorbable.
+Assert-Equal 'host-limit: an agreeing SKIP root is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison $absentComparison `
+        -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: a SKIPPED Go root is refused even WITH the full fan-out' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: a C# side that did NOT fail is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+
+# The remaining shapes, each closing one way a real change could pass for this one.
+Assert-Equal 'host-limit: a shortfall that is not the registered block size is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 2 -Comparison $hostLimitComparison `
+        -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: a surplus is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 5 -Comparison $hostLimitComparison `
+        -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: a subtest surviving in the compared set is refused, not absorbed' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass'; 'TestFakeSuite/case1' = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail'; 'TestFakeSuite/case1' = 'pass' }
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: a banked verdict OUTSIDE the block going missing is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestFakeSuite = 'fail' }
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: an unaccounted extra live verdict is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass'; TestRogue = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail'; TestRogue = 'pass' }
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+        disclosed = @('TestFakeSuite (host-limit): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: a disclosed count that moved beyond the root is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+        disclosed = @('TestFakeSuite (host-limit): x', 'TestOther (alloc-profile): y')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+Assert-Equal 'host-limit: an extra disclosure that is some OTHER row is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+        disclosed = @('TestSomethingElse (host-limit): unrelated')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+# The record's own class must agree with the pin: the compare oracle spells the class it actually
+# applied into the entry, so pin and record describing different divergences is caught here.
+Assert-Equal 'host-limit: a root disclosed under a class other than the pinned one is refused' $false `
+    (Test-HostLimitDelta -Expected 4 -Disclosed 0 -Block $block -Got 1 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'fail' }
+        withdrawn = @('TestFakeSuite/case1', 'TestFakeSuite/case2')
+        disclosed = @('TestFakeSuite (performance-margin): the runner outruns its own deadline')
+    }) -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
+# A row whose proof page and roster columns disagree carries inconsistent banked evidence -- absorb
+# nothing, exactly as the sibling rule refuses there.
+Assert-Equal 'host-limit: a proof page that disagrees with the roster columns is refused' $false `
+    (Test-HostLimitDelta -Expected 5 -Disclosed 0 -Block $block -Got 2 -Comparison $hostLimitComparison `
+        -BankedNames $fullBankedNames -Pin $hostLimitPin).Accepted
 
 # ---- 1b3. the comparison-record reader's contract ------------------------------------------------
 # The trap this pins (measured 2026-08-29, G's net/http pre-staging): a Go suite may legally hold
