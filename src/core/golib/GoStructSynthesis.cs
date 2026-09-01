@@ -157,6 +157,39 @@ public static class GoStructSynthesis
     // processes (27.0 MB either way at 10k types).
     private const string DynamicAssemblyName = "go2cs.SynthesizedStructs";
 
+    /// <summary>
+    /// The ONE dynamic module golib mints into — this file's structs and
+    /// <see cref="GoDelegateSynthesis"/>'s func types alike.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The assembly NAME is the load-bearing part, and it is why there is one module rather than two:
+    /// every converted csproj carries exactly one friend grant for a golib mint —
+    /// <c>&lt;InternalsVisibleTo Include="go2cs.SynthesizedStructs" /&gt;</c>, emitted by the
+    /// converter (<c>projectFileWriter.go</c>) and by the test-project template — which is what lets
+    /// a minted type's field or signature name an <c>internal</c> converted type, i.e. an unexported
+    /// Go type. A second dynamic assembly would need a second grant in every generated csproj and a
+    /// corpus-wide regen to carry it, for nothing: type identity is (assembly, name), and the two
+    /// mints name from separate counters under separate prefixes (<c>structᴛN</c>, <c>funcᴛN</c>).
+    /// </para>
+    /// <para>
+    /// A monitor is reentrant, so the mint below reaches this while already holding the lock — which
+    /// is correct, and is why the creation lives here rather than being duplicated at both callers.
+    /// </para>
+    /// </remarks>
+    internal static ModuleBuilder SharedModule
+    {
+        get
+        {
+            lock (s_mintLock)
+            {
+                return s_module ??= AssemblyBuilder
+                    .DefineDynamicAssembly(new AssemblyName(DynamicAssemblyName), AssemblyBuilderAccess.Run)
+                    .DefineDynamicModule(DynamicAssemblyName);
+            }
+        }
+    }
+
     // A synthesized ARRAY field's zero value, reached from the emitted parameterless constructor by
     // slot. It is a fresh value per call, never a shared prototype: ZeroValueOf builds real backing
     // storage for a dims-carrying array, and handing every instance one instance of it would alias
@@ -246,9 +279,7 @@ public static class GoStructSynthesis
     // Called under s_mintLock.
     private static Type mint(ReadOnlySpan<GoSynthField> fields, string pkgPath)
     {
-        s_module ??= AssemblyBuilder
-            .DefineDynamicAssembly(new AssemblyName(DynamicAssemblyName), AssemblyBuilderAccess.Run)
-            .DefineDynamicModule(DynamicAssemblyName);
+        ModuleBuilder module = SharedModule;
 
         string typeName = "structᴛ" + (++s_nextTypeId).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -264,7 +295,7 @@ public static class GoStructSynthesis
 
         if (pkgPath.Length == 0)
         {
-            tb = s_module.DefineType("go.synth." + typeName, TypeAttributes.Public | StructAttributes, typeof(ValueType));
+            tb = module.DefineType("go.synth." + typeName, TypeAttributes.Public | StructAttributes, typeof(ValueType));
         }
         else
         {
