@@ -1396,9 +1396,15 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if paramHasArg {
 				// Check if the parameter type is an anonymous struct
 				if structType, exprType := v.extractStructType(callExpr.Args[i]); structType != nil && !v.liftedTypeExists(structType) {
+					// An argument matching a callee's own anonymous-struct parameter shares that
+					// parameter's externally-significant type — see liftAtCallBoundary's doc
+					// comment (visitorState.go) for why this publishes into the wide dedup
+					// registry rather than staying scoped to this call's enclosing function.
+					v.liftAtCallBoundary = true
 					v.indentLevel++
 					v.visitStructType(structType, exprType, params.At(i).Name(), nil, true, nil)
 					v.indentLevel--
+					v.liftAtCallBoundary = false
 				}
 
 				// Check if the parameter type is an anonymous interface

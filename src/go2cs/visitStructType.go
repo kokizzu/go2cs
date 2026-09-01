@@ -190,9 +190,13 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		}
 
 		// Package-level lifted structs are shared across the package so other files
-		// can resolve cross-file references to this anonymous type (function-local
-		// lifts are file/function-scoped and stay out of the shared registry).
-		if !v.inFunction && structSignatureType != nil {
+		// can resolve cross-file references to this anonymous type (an ordinary function-local
+		// lift is file/function-scoped and stays out of the shared registry) — EXCEPT a lift at a
+		// call boundary (see liftAtCallBoundary's doc comment): its type is externally significant
+		// across function scopes the same way a package-level declaration's is, so it publishes
+		// too, letting whichever side of a matching signature/call-argument pair is visited first
+		// win the name and the second side simply reuse it via the wide lookup below.
+		if (!v.inFunction || v.liftAtCallBoundary) && structSignatureType != nil {
 			registerDynamicTypeName(structSignatureType.String(), structTypeName)
 		}
 

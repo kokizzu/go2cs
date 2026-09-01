@@ -27,6 +27,7 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b4e616d6520737472696e673b2041676520696e747d", "processAnonymousStruct_data")]
 [assembly: GoDynamicTypeLift("7374727563747b566572626f736520626f6f6c3b205265747269657320696e747d", "settingsᴛ1")]
 // </ExportedTypeAliases>
 
@@ -40,7 +41,6 @@ using static go.main_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
-[assembly: GoImplicitConv<main_anonPerson, processAnonymousStruct_data>]
 // </ImplicitConversions>
 
 // Go source positions are recorded here, one `GoPositionMap` attribute per converted
@@ -51,7 +51,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("AnonymousStructs.go", "AnonymousStructs.cs", "ABgsiAAHFoKClIqCgoSCABQGhIKMhoqGhIqGhoyKiIKEgoKKhAAEEoSCloaC")]
+[assembly: go.GoPositionMap("AnonymousStructs.go", "AnonymousStructs.cs", "ABgsiAAHFoKClIqCgoSCAA8GhIKMhoqGhIqGhoyKiIKEgoKKhAAEEoSCloaC")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -68,7 +68,6 @@ public static partial class main_package
 
     // <TypeAccessibility>
     internal partial struct cycleMemo_memo {}
-    internal partial struct main_anonPerson {}
     internal partial struct main_type {}
     internal partial struct processAnonymousStruct_data {}
     internal partial struct settingsᴛ1 {}

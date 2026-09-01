@@ -27,6 +27,7 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b737472696e673b202a696e743b20676f3263732f54797065436f6e76657273696f6e52657475726e547970652e503b20676f3263732f54797065436f6e76657273696f6e52657475726e547970652e4d7d", "test_R0")]
 [assembly: GoTypeAlias("M", "go.map<nint, nint>")]
 [assembly: GoTypeAlias("P", "go.ж<bool>")]
 // </ExportedTypeAliases>
