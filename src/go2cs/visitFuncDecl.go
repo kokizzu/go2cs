@@ -496,6 +496,10 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 		}
 	}
 
+	// A parameter/result's own anonymous-struct or -interface type is externally significant
+	// across function scopes (see liftAtCallBoundary's doc comment) — set for both loops below.
+	v.liftAtCallBoundary = true
+
 	// Loop through function results to check if any are structs
 	if funcDecl.Type.Results != nil {
 		for index, field := range funcDecl.Type.Results.List {
@@ -543,6 +547,8 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 			}
 		}
 	}
+
+	v.liftAtCallBoundary = false
 
 	functionPrefixMarker := fmt.Sprintf(FunctionPrefixMarker, goFunctionName)
 	functionAccessMarker := fmt.Sprintf(FunctionAccessMarker, goFunctionName)

@@ -51,11 +51,6 @@ private static readonly object packageGlobalAnonymousˢ = (@string)"\n=== Packag
 private static readonly object inFunctionVarSliceOfˢ = (@string)"\n=== In-Function var Slice of Anonymous Struct ==="u8;
 private static readonly object anonymousStructWithEmptyˢ = (@string)"\n=== Anonymous Struct With Empty Interface Field ==="u8;
 
-[GoType("dyn")] internal partial struct main_anonPerson {
-    public @string Name;
-    public nint Age;
-}
-
 [GoType("dyn")] internal partial struct main_type {
     internal @string name;
     internal uint32 size;
@@ -63,15 +58,15 @@ private static readonly object anonymousStructWithEmptyˢ = (@string)"\n=== Anon
 
 internal static void Main() {
     var namedPerson = new Person(Name: "Alice"u8, Age: 30);
-    var anonPerson = new main_anonPerson(Name: "Bob"u8, Age: 25);
+    var anonPerson = new processAnonymousStruct_data(Name: "Bob"u8, Age: 25);
     any someInterface = anonPerson;
-    var (_, ok) = someInterface._<main_anonPerson>(ᐧ);
+    var (_, ok) = someInterface._<processAnonymousStruct_data>(ᐧ);
     fmt.Println(anonymousStructTypeˢ, ok);
     someInterface = namedPerson;
-    (_, ok) = someInterface._<main_anonPerson>(ᐧ);
+    (_, ok) = someInterface._<processAnonymousStruct_data>(ᐧ);
     fmt.Println(namedStructWithIdenticalˢ, ok);
     fmt.Println(functionParameterTestsˢ);
-    processAnonymousStruct(new main_anonPerson(Name: "Charlie"u8, Age: 40));
+    processAnonymousStruct(new processAnonymousStruct_data(Name: "Charlie"u8, Age: 40));
     processAnonymousStruct(anonPerson);
     processAnonymousStruct(new processAnonymousStruct_data(namedPerson.Name, namedPerson.Age));
     fmt.Println(packageGlobalAnonymousˢ);

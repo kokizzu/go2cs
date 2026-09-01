@@ -255,6 +255,18 @@ type Visitor struct {
 	// FuncDecl variables
 	inFunction      bool
 	currentFuncDecl *ast.FuncDecl
+	// liftAtCallBoundary marks an anonymous-struct/interface lift reached from a function's OWN
+	// parameter/result declaration or from a call argument being passed to a known callee's
+	// matching parameter — positions whose type is externally significant ACROSS function scopes,
+	// unlike an ordinary function-body-local lift. visitStructType's package-wide dedup registry
+	// is otherwise populated only for package-level (!inFunction) lifts, so two different
+	// functions referencing the identical anonymous-struct shape purely through their own
+	// signatures/call sites could never unify (CS1503: runtime's
+	// testTracebackArgs2/testTracebackArgs5, the traceback pre-pass sizing census). Toggled around
+	// exactly the three call sites that reach a signature or call-argument position
+	// (visitFuncDecl's parameter/result loops, convCallExpr's argument classification) — never
+	// left set across an intervening visit.
+	liftAtCallBoundary bool
 	// heapIntrinsicShadowed reports that a Go DECLARATION named `heap` is visible where the
 	// current function's heap-box emissions land, so each of them must spell golib's boxing
 	// intrinsic as `builtin.heap` rather than the bare `heap` (see heapIntrinsicName). Set per
