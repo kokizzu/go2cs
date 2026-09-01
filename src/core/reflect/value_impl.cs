@@ -620,6 +620,51 @@ public static void Grow(this ΔValue v, nint n) {
     GoReflect.WritePointerSlot(v.addrBox, converted);
 }
 
+// extendSlice returns a NEW slice Value whose length is n greater — the backing operation under
+// reflect.Append and AppendSlice.
+//
+// The FOURTH member of the raw-slice-header family, and the last one still auto-converted: Slice,
+// Slice3 and Grow each carry the same note above, because Go reads and edits the header through
+// `*(*unsafeheader.Slice)(v.ptr)` and the bridge never populates `ptr`. So
+// `~(ж<unsafeheader.Slice>)(uintptr)(v.ptr)` dereferenced nil for every caller, which is why this
+// surfaced as "invalid memory address or nil pointer dereference" inside `~` rather than as a
+// missing feature (TestAppend and TestImplicitAppendConversion, measured 2026-09-01).
+//
+// Unlike Grow this needs NO addressability, and Go says why in its own comment: it shallow-copies
+// the header first, so the growth is "fine to treat as assignable since we allocate a new slice
+// header" — the SOURCE slice is never mutated. The managed form is the same shape over the same
+// golib window machinery Slice and Slice3 use: grow the capacity, then take a 0..len+n window. When
+// GrowSlice does not reallocate, that window SHARES the backing store, which is exactly Go's
+// semantics for an append that fits within capacity — and is why the window is taken from the
+// grown container rather than from a fresh one.
+//
+// The result carries v's OWN type where it can: appending to a named slice type yields that named
+// type in Go, so the window is coerced back through the single convertibility relation Grow uses,
+// falling back to the plain `slice<T>` when it will not convert.
+internal static ΔValue extendSlice(this ΔValue v, nint n) {
+    v.flag.mustBeExported();
+    v.flag.mustBe(ΔSlice);
+    if (n < 0) {
+        throw panic("reflect.Value.extendSlice: negative len");
+    }
+    System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elemType = GoReflect.ElementType(st);
+    if (elemType is null) {
+        throw panic(Ꮡ(new ValueError("reflect.Value.extendSlice", v.kind())));
+    }
+    object? live = v.live;
+    if (live is not ISlice source) {
+        throw panic("reflect.Value.extendSlice: slice of nil container");
+    }
+    nint want = source.Length + n;
+    object grown = GoReflect.GrowSlice(live, elemType, n) ?? live;
+    object window = GoReflect.SliceWindow(grown, elemType, 0, want);
+    if (st is not null && GoReflect.TryConvertTo(window, st, out object? named)) {
+        window = named;
+    }
+    return makeTypedValue(window, st ?? typeof(slice<>).MakeGenericType(elemType), null, (flag)(v.flag & flagRO));
+}
+
 // IsZero reports whether v is the zero value for its type.
 //
 // Go's own form is three DESCRIPTOR reads over flat memory — an `Equal` function pointer against

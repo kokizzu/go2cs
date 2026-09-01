@@ -1977,27 +1977,13 @@ internal static void grow(this ΔValue v, nint n) {
 
 }
 
-// extendSlice extends a slice by n elements.
-//
-// Unlike Value.grow, which modifies the slice in place and
-// does not change the length of the slice in place,
-// extendSlice returns a new slice value with the length
-// incremented by the number of specified elements.
-internal static ΔValue extendSlice(this ΔValue v, nint n) {
-    v.mustBeExported();
-    v.mustBe(ΔSlice);
-    // Shallow copy the slice header to avoid mutating the source slice.
-    ref var sh = ref heap<unsafeheader.Slice>(out var Ꮡsh);
-    sh = ~(ж<unsafeheader.Slice>)(uintptr)(v.ptr);
-    var s = Ꮡsh;
-    v.ptr = new @unsafe.Pointer(s);
-    v.flag = (flag)(flagIndir | ((flag)(uintptr)(nuint)ΔSlice)); // equivalent flag to MakeSlice
-    v.grow(n); // fine to treat as assignable since we allocate a new slice header
-    s.Value.Len += n;
-    return v;
-}
+// go2cs generated this placeholder — func extendSlice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func Clear is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// Shallow copy the slice header to avoid mutating the source slice.
+// equivalent flag to MakeSlice
+// fine to treat as assignable since we allocate a new slice header
 
 // Append appends the values x to a slice s and returns the resulting slice.
 // As in Go, each x's value must be assignable to the slice's element type.

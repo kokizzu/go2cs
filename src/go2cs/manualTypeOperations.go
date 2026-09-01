@@ -713,6 +713,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// loop past internal/saferio's 10 MiB chunk). Bridged as an ordinary managed
 		// reallocation written back through the aliased box, exactly like SetLen.
 		"Value.Grow": goosAny,
+		// extendSlice is the FOURTH member of that raw-slice-header family and the last one
+		// still auto-converted — Slice, Slice3 and Grow all preceded it. Same never-populated
+		// v.ptr, same `~(ж<unsafeheader.Slice>)(uintptr)(v.ptr)` nil dereference, and it sits
+		// under reflect.Append/AppendSlice, so every append through reflect died inside `~`
+		// (TestAppend, TestImplicitAppendConversion). Bridged over the same golib window
+		// machinery Slice and Slice3 use; it needs no addressability because Go shallow-copies
+		// the header first and never mutates the source.
+		"Value.extendSlice": goosAny,
 		// Value.IsZero is three descriptor reads a synthesized descriptor never populates —
 		// an Equal function pointer against the shared zeroVal buffer, a TFlagRegularMemory
 		// all-bits-zero scan, and `v.ptr == nil` for a non-indirect value. The Array and
