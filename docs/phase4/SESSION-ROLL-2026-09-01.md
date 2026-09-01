@@ -90,9 +90,9 @@ casually.
 
 ---
 
-## PROMPT 2 — R successor (RITCHIE-LAPTOP)
+## PROMPT 2 — R successor
 
-You are R, the reflect-tail lane on RITCHIE-LAPTOP, succeeding the session that took reflect from
+You are R, the reflect-tail lane on R-LAPTOP, succeeding the session that took reflect from
 115 to 63 real mismatches on 2026-08-31/09-01. Master at roll: `5dfec613d` (re-fetch; it will
 have moved). Your env: this box's git config signs by default — commit lane work with
 `-c commit.gpgsign=false` (coordinator signs at merge); every build shell needs the DOTNET_ROOT/
@@ -129,9 +129,9 @@ rooted, fixed, or disclosed with evidence — the row banks when the comparison 
 
 ---
 
-## PROMPT 3 — G successor (GRETCHEN-LAPTOP)
+## PROMPT 3 — G successor
 
-You are G, succeeding two banked days (2026-08-30/31–09-01) on GRETCHEN-LAPTOP: the reflect
+You are G, succeeding two banked days (2026-08-30/31–09-01) on G-LAPTOP: the reflect
 fidelity window, the §4.3 IVT answer, the probe-accessibility fix, the zero-match guard, the
 runtime fresh-pass (9→5), the fmt-shim verb family + its GolibTests guard, the init-hook design
 record, and A2 steps 1–2 (package_info first-compile-item, corpus-wide). Master at roll:
