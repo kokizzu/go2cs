@@ -16,6 +16,7 @@ import (
 	"reflect"
 	"runtime"
 	"slices"
+	"sort"
 	"strings"
 	"testing"
 
@@ -3342,6 +3343,43 @@ func readConvertedTestFile(t *testing.T, dir, name string) string {
 	return string(data)
 }
 
+// readConvertedAssembly returns every `.cs` a conversion emitted into dir, concatenated — the right
+// reading for a guard whose property is per-ASSEMBLY rather than per-file (one forcing hook per
+// imported package, one adapter per pair, and so on). Naming a single file makes such a guard
+// hostage to WHICH file the emission happens to put the answer in: the hook relocation moved the
+// force hooks from the importing file's class body to the emission unit's metadata file, and every
+// assertion that named `value_test.cs` either failed loudly or — the dangerous half — passed
+// vacuously, since "the string is absent" is trivially true of a file that never held it.
+func readConvertedAssembly(t *testing.T, dir string) string {
+	t.Helper()
+
+	emitted, err := filepath.Glob(filepath.Join(dir, "*.cs"))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(emitted) == 0 {
+		t.Fatalf("no converted file was emitted into %s", dir)
+	}
+
+	sort.Strings(emitted)
+
+	assembly := strings.Builder{}
+
+	for _, path := range emitted {
+		data, readErr := os.ReadFile(path)
+
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+
+		assembly.Write(data)
+	}
+
+	return assembly.String()
+}
+
 // B2 guard (production-name pinning): a `_test.go` METHOD declared over a production TYPE's name
 // must Δ-rename the TEST-side declarator — the production .cs on disk keeps the bare name, so the
 // pre-fix element rename split one assembly into two disagreeing halves (strings' export_test.go
@@ -3643,8 +3681,17 @@ func TestTestVariantPinsProductionBlankImportForces(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if unseededCs := readConvertedTestFile(t, unseeded, "value_test.cs"); !strings.Contains(unseededCs, hook) {
-		t.Fatalf("an unseeded test emission must force the blank import itself (%s):\n%s", hook, unseededCs)
+	// Assert the CLAIM, not its rendering. "One hook per assembly, owned by the production half when
+	// seeded" is a decision the conversion records in packageImportInits (keyed by import path);
+	// before the hook relocation that decision happened to surface as text in `value_test.cs`, and
+	// since the relocation it surfaces in the emission unit's metadata file — which the DRIVER
+	// writes (convertTestVariants → writePackageInfoFile), not the single-variant call this test
+	// exercises. Reading a file therefore made the positive assertion fail loudly and, worse, made
+	// the negative one below pass VACUOUSLY: absence is trivially true of a file that never held it.
+	// Keying on the claim is both closer to the property and impossible to satisfy by accident.
+	if _, claimed := packageImportInits["crypto/sha256"]; !claimed {
+		t.Fatalf("an unseeded test emission must force the blank import itself (%s); claims: %v",
+			hook, importInitClaims())
 	}
 
 	seeded := t.TempDir()
@@ -3654,8 +3701,9 @@ func TestTestVariantPinsProductionBlankImportForces(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if seededCs := readConvertedTestFile(t, seeded, "value_test.cs"); strings.Contains(seededCs, hook) {
-		t.Fatalf("the production half already forces %q — a second hook in the same class is CS0111:\n%s", "crypto/sha256", seededCs)
+	if _, claimed := packageImportInits["crypto/sha256"]; claimed {
+		t.Fatalf("the production half already forces %q — a second hook in the same class is CS0111; claims: %v",
+			"crypto/sha256", importInitClaims())
 	}
 }
 
@@ -4550,4 +4598,19 @@ func TestFunctionLocalTypesShareOneAccessibility(t *testing.T) {
 	if strings.Contains(valueCs, "] partial struct TestLocals_") {
 		t.Errorf("a bare local declaration lets the generator scope it from the hoisted name:\n%s", valueCs)
 	}
+}
+
+// importInitClaims lists the import paths the current conversion pass has claimed a force hook for,
+// sorted — the failure text for the guard above, which asserts on the CLAIM rather than on where the
+// emission happens to render it.
+func importInitClaims() []string {
+	claims := make([]string, 0, len(packageImportInits))
+
+	for importPath := range packageImportInits {
+		claims = append(claims, importPath)
+	}
+
+	sort.Strings(claims)
+
+	return claims
 }
