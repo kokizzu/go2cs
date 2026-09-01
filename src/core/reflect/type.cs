@@ -1444,144 +1444,20 @@ internal static ref Δsync.Map lookupCache => ref ᏑlookupCache.Value; // map[c
 internal static ж<funcLookupCacheᴛ1> ᏑfuncLookupCache = new StandardBox<funcLookupCacheᴛ1>(new funcLookupCacheᴛ1(nil));
 internal static ref funcLookupCacheᴛ1 funcLookupCache => ref ᏑfuncLookupCache.Value;
 
-// ChanOf returns the channel type with the given direction and element type.
-// For example, if t represents int, ChanOf(RecvDir, t) represents <-chan int.
-//
-// The gc runtime imposes a limit of 64 kB on channel element types.
-// If t's size is equal to or exceeds this limit, ChanOf panics.
-public static ΔType ChanOf(ΔChanDir dir, ΔType t) {
-    var typ = t.common();
-    // Look in cache.
-    var ckey = new cacheKey(Chan, typ, nil, (uintptr)(nint)dir);
-    {
-        var (chΔ1, ok) = ᏑlookupCache.Load(ckey); if (ok) {
-            return new rtypeжΔType(chΔ1._<ж<rtype>>());
-        }
-    }
-    // This restriction is imposed by the gc compiler and the runtime.
-    if ((~typ).Size_ >= ((uintptr)1 << (int)(16))) {
-        throw panic("reflect.ChanOf: element size too large");
-    }
-    // Look in known types.
-    @string s = default!;
-    var exprᴛ1 = dir;
-    if (exprᴛ1 == SendDir) {
-        s = "chan<- "u8 + stringFor(typ);
-    }
-    else if (exprᴛ1 == RecvDir) {
-        s = "<-chan "u8 + stringFor(typ);
-    }
-    else if (exprᴛ1 == BothDir) {
-        @string typeStr = stringFor(typ);
-        if (typeStr[0] == (rune)'<'){
-            // typ is recv chan, need parentheses as "<-" associates with leftmost
-            // chan possible, see:
-            // * https://golang.org/ref/spec#Channel_types
-            // * https://github.com/golang/go/issues/39897
-            s = "chan ("u8 + typeStr + ")"u8;
-        } else {
-            s = "chan "u8 + typeStr;
-        }
-    }
-    else { /* default: */
-        throw panic("reflect.ChanOf: invalid dir");
-    }
+// go2cs generated this placeholder — func ChanOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    foreach (var (_, tt) in typesByString(s)) {
-        var chΔ2 = tt.Reinterpret<abi.Type, chanType>();
-        if ((~chΔ2).Elem == typ && (~chΔ2).Dir == ((abiꓸChanDir)(nint)dir)) {
-            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt).OrTypedNil());
-            return tiΔ1._<ΔType>();
-        }
-    }
-    // Make a channel type.
-    ref var ichan = ref heap<any>(out var Ꮡichan);
+// go2cs generated this placeholder — func MapOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    ichan = (channel<@unsafe.Pointer>)(default!);
-    var prototype = ~Ꮡichan.Reinterpret<any, ж<chanType>>();
-    ref var ch = ref heap<chanType>(out var Ꮡch);
-    ch = prototype.Value;
-    ch.TFlag = abi.TFlagRegularMemory;
-    ch.Dir = ((abiꓸChanDir)(nint)dir);
-    ch.Str = resolveReflectName(newName(s, ""u8, false, false));
-    ch.Hash = fnv1((~typ).Hash, (rune)'c', (byte)(nint)dir);
-    ch.Elem = typ;
-    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡch.of(chanType.ᏑType)).OrTypedNil());
-    return ti._<ΔType>();
-}
-
-// MapOf returns the map type with the given key and element types.
-// For example, if k represents int and e represents string,
-// MapOf(k, e) represents map[int]string.
-//
-// If the key type is not a valid map key type (that is, if it does
-// not implement Go's == operator), MapOf panics.
-public static ΔType MapOf(ΔType key, ΔType elem) {
-    var ktyp = key.common();
-    var etyp = elem.common();
-    if ((~ktyp).Equal == default!) {
-        throw panic("reflect.MapOf: invalid key type " + stringFor(ktyp));
-    }
-    // Look in cache.
-    var ckey = new cacheKey(Map, ktyp, etyp, 0);
-    {
-        var (mtΔ1, ok) = ᏑlookupCache.Load(ckey); if (ok) {
-            return mtΔ1._<ΔType>();
-        }
-    }
-    // Look in known types.
-    @string s = "map["u8 + stringFor(ktyp) + "]"u8 + stringFor(etyp);
-    foreach (var (_, tt) in typesByString(s)) {
-        var mtΔ2 = tt.Reinterpret<abi.Type, mapType>();
-        if ((~mtΔ2).Key == ktyp && (~mtΔ2).Elem == etyp) {
-            var (tiΔ1, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(tt).OrTypedNil());
-            return tiΔ1._<ΔType>();
-        }
-    }
-    // Make a map type.
-    // Note: flag values must match those used in the TMAP case
-    // in ../cmd/compile/internal/reflectdata/reflect.go:writeType.
-    ref var imap = ref heap<any>(out var Ꮡimap);
-
-    imap = ((map<@unsafe.Pointer, @unsafe.Pointer>)default!);
-    ref var mt = ref heap<mapType>(out var Ꮡmt);
-    mt = (~Ꮡimap.Reinterpret<any, ж<mapType>>()).Value;
-    mt.Str = resolveReflectName(newName(s, ""u8, false, false));
-    mt.TFlag = 0;
-    mt.Hash = fnv1((~etyp).Hash, (rune)'m', (byte)(((~ktyp).Hash >> (int)(24))), (byte)(((~ktyp).Hash >> (int)(16))), (byte)(((~ktyp).Hash >> (int)(8))), (byte)(~ktyp).Hash);
-    mt.Key = ktyp;
-    mt.Elem = etyp;
-    mt.Bucket = bucketOf(ktyp, etyp);
-    var ktypʗ1 = ktyp;
-    mt.Hasher = (@unsafe.Pointer p, uintptr seed) => typehash(ktypʗ1, p, seed);
-    mt.Flags = 0;
-    if ((~ktyp).Size_ > abi.MapMaxKeyBytes){
-        mt.KeySize = (uint8)goarch.PtrSize;
-        mt.Flags |= (uint32)(1); // indirect key
-    } else {
-        mt.KeySize = (uint8)(~ktyp).Size_;
-    }
-    if ((~etyp).Size_ > abi.MapMaxElemBytes){
-        mt.ValueSize = (uint8)goarch.PtrSize;
-        mt.Flags |= (uint32)(2); // indirect value
-    } else {
-        mt.MapType.ValueSize = (uint8)(~etyp).Size_;
-    }
-    mt.MapType.BucketSize = (uint16)(~mt.Bucket).Size_;
-    if (isReflexive(ktyp)) {
-        mt.Flags |= (uint32)(4);
-    }
-    if (needKeyUpdate(ktyp)) {
-        mt.Flags |= (uint32)(8);
-    }
-    if (hashMightPanic(ktyp)) {
-        mt.Flags |= (uint32)(16);
-    }
-    mt.PtrToThis = 0;
-    var (ti, _) = ᏑlookupCache.LoadOrStore(ckey, toRType(Ꮡmt.of(mapType.ᏑType)).OrTypedNil());
-    return ti._<ΔType>();
-}
-
+// Look in cache.
+// This restriction is imposed by the gc compiler and the runtime.
+// typ is recv chan, need parentheses as "<-" associates with leftmost
+// chan possible, see:
+// * https://golang.org/ref/spec#Channel_types
+// * https://github.com/golang/go/issues/39897
+// Look in cache.
+// Look in known types.
+// indirect key
+// indirect value
 internal static slice<ΔType> funcTypes;
 
 internal static ж<Δsync.Mutex> ᏑfuncTypesMutex = new StandardBox<Δsync.Mutex>(default(Δsync.Mutex));

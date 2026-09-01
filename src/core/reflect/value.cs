@@ -1169,18 +1169,7 @@ internal static nint capNonSlice(this ΔValue v) {
     throw panic(Ꮡ(new ValueError("reflect.Value.Cap"u8, v.kind())));
 }
 
-// Close closes the channel v.
-// It panics if v's Kind is not [Chan] or
-// v is a receive-only channel.
-public static void Close(this ΔValue v) {
-    v.mustBe(Chan);
-    v.mustBeExported();
-    var tt = v.typ().Reinterpret<abi.Type, chanType>();
-    if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & SendDir) == 0) {
-        throw panic("reflect: close of receive-only channel");
-    }
-    chanclose((uintptr)v.pointer());
-}
+// go2cs generated this placeholder — func Close is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // CanComplex reports whether [Value.Complex] can be used without panicking.
 public static bool CanComplex(this ΔValue v) {
@@ -2198,21 +2187,7 @@ public static ΔValue SliceAt(ΔType typ, @unsafe.Pointer p, nint n) {
     return new ΔValue(SliceOf(typ).common(), new @unsafe.Pointer(Ꮡs), (flag)(flagIndir | ((flag)(uintptr)(nuint)ΔSlice)));
 }
 
-// MakeChan creates a new channel with the specified type and buffer size.
-public static ΔValue MakeChan(ΔType typ, nint buffer) {
-    if (typ.Kind() != Chan) {
-        throw panic("reflect.MakeChan of non-chan type");
-    }
-    if (buffer < 0) {
-        throw panic("reflect.MakeChan: negative buffer size");
-    }
-    if (typ.ChanDir() != BothDir) {
-        throw panic("reflect.MakeChan: unidirectional channel type");
-    }
-    var t = typ.common();
-    @unsafe.Pointer ch = (uintptr)makechan(t, buffer);
-    return new ΔValue(t, ch.Value, ((flag)(uintptr)(nuint)Chan));
-}
+// go2cs generated this placeholder — func MakeChan is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func MakeMap is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 

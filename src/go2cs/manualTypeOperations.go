@@ -447,6 +447,18 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.Field":         goosAny,
 		"Value.UnsafePointer": goosAny,
 		"Value.Pointer":       goosAny,
+		// The last two type constructors on the typelinks path, joining PointerTo/ArrayOf/SliceOf/
+		// StructOf above for the same recorded reason: the auto body looks the constructed type up
+		// by NAME through typesByString -> typelinks(), the linker-built type table, which is a
+		// NotImplementedException stub here. MakeChan joins them because its auto body calls the
+		// `makechan` runtime stub. See reflect/value_impl.cs.
+		"ChanOf":              goosAny,
+		"MapOf":               goosAny,
+		"MakeChan":            goosAny,
+		// Value.Close reads the channel direction by reinterpreting the descriptor onto the
+		// linker's chanType record -- the non-deterministic read abi.ChanDir was hand-owned to
+		// retire, still live here -- and then calls the chanclose runtime stub.
+		"Value.Close":         goosAny,
 		// The auto body reads the interface's two words by dereferencing `v.ptr` as an
 		// *[2]uintptr, and a bridge Value has no `ptr` — it carries a boxed managed object — so
 		// every InterfaceData call nil-panicked in `~`. Go declares BOTH words unspecified and
