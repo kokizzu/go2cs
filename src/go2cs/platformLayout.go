@@ -197,11 +197,23 @@ func packageCarriesPlatformLayout(packageOutputPath string) bool {
 // stock template's own lines; a caller-supplied -csproj template that lacks them gets no block (and
 // a warning from applyPlatformLayoutBlocks) rather than a mangled project file.
 const (
-	platformCompileAnchor = "    <Compile Include=\"*.cs\" />\r\n"
+	platformCompileAnchor = "    <Compile Include=\"*.cs\" Exclude=\"package_info.cs\" />\r\n"
 
 	platformCompileBlock = "    <!-- Layout L3: this package's platform-varying sources live in per-GOOS subfolders, so\r\n" +
 		"         exactly one platform's copy joins the compilation (docs/phase4/DESIGN-multiplatform-corpus.md). -->\r\n" +
-		"    <Compile Include=\"$(GoTargetOS)/*.cs\" />\r\n"
+		"    <Compile Include=\"$(GoTargetOS)/*.cs\" Exclude=\"$(GoTargetOS)/package_info.cs\" />\r\n"
+
+	// An L3 package keeps package_info.cs in the per-GOOS folder rather than at its root, so the
+	// template's root-level first item never matches and this is the one that carries the ordering
+	// guarantee for these packages. It attaches BEFORE the root glob — its whole purpose is to be
+	// the compilation's first item — while the per-GOOS SOURCE glob above still attaches after it,
+	// leaving the established root-then-per-GOOS order of everything else untouched. Both are
+	// Exists()-guarded: a platform-exclusive package built for a target it does not serve (the
+	// darwin-only crypto/x509/internal/macos under windows) has no folder to name, and an item
+	// naming an absent file is CS2001 rather than a no-op.
+	platformPackageInfoAnchor = "    <Compile Include=\"package_info.cs\" Condition=\"Exists('package_info.cs')\" />\r\n"
+
+	platformPackageInfoBlock = "    <Compile Include=\"$(GoTargetOS)/package_info.cs\" Condition=\"Exists('$(GoTargetOS)/package_info.cs')\" />\r\n"
 
 	platformPropertyAnchor = "  <ItemGroup>\r\n    <!-- Remove all .cs files, including those in sub-folders -->\r\n"
 
@@ -222,9 +234,10 @@ func applyPlatformLayoutBlocks(projectFileContents string, projectFileName strin
 	}
 
 	compileAt := strings.Index(projectFileContents, platformCompileAnchor)
+	packageInfoAt := strings.Index(projectFileContents, platformPackageInfoAnchor)
 	propertyAt := strings.Index(projectFileContents, platformPropertyAnchor)
 
-	if compileAt < 0 || propertyAt < 0 {
+	if compileAt < 0 || packageInfoAt < 0 || propertyAt < 0 {
 		// The package carries per-GOOS sources but this template has nowhere to say so; emitting the
 		// project file unchanged would leave those sources out of the build entirely, which is worth a
 		// word rather than a silent short compile.
@@ -234,10 +247,15 @@ func applyPlatformLayoutBlocks(projectFileContents string, projectFileName strin
 		return projectFileContents
 	}
 
-	// Insert from the LAST anchor backwards so the first insertion cannot move the second's offset.
+	// Insert from the LAST anchor backwards so an earlier insertion cannot move a later one's offset.
+	// File order is property < packageInfo < compile, so they are applied in reverse.
 	contents := projectFileContents[:compileAt+len(platformCompileAnchor)] +
 		platformCompileBlock +
 		projectFileContents[compileAt+len(platformCompileAnchor):]
+
+	contents = contents[:packageInfoAt+len(platformPackageInfoAnchor)] +
+		platformPackageInfoBlock +
+		contents[packageInfoAt+len(platformPackageInfoAnchor):]
 
 	return contents[:propertyAt] + platformPropertyBlock + contents[propertyAt:]
 }

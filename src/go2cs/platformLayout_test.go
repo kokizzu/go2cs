@@ -146,7 +146,7 @@ func TestPackageCarriesPlatformLayout(t *testing.T) {
 func TestApplyPlatformLayoutBlocks(t *testing.T) {
 	rendered := applyPlatformLayoutBlocks(string(csprojTemplate), "internal.goos.csproj")
 
-	if !strings.Contains(rendered, "<Compile Include=\"$(GoTargetOS)/*.cs\" />") {
+	if !strings.Contains(rendered, "<Compile Include=\"$(GoTargetOS)/*.cs\" Exclude=\"$(GoTargetOS)/package_info.cs\" />") {
 		t.Fatal("the conditioned per-GOOS <Compile Include> was not emitted")
 	}
 
@@ -155,7 +155,7 @@ func TestApplyPlatformLayoutBlocks(t *testing.T) {
 	}
 
 	removeAt := strings.Index(rendered, "<Compile Remove=\"**/*.cs\" />")
-	includeAt := strings.Index(rendered, "<Compile Include=\"$(GoTargetOS)/*.cs\" />")
+	includeAt := strings.Index(rendered, "<Compile Include=\"$(GoTargetOS)/*.cs\" Exclude=\"$(GoTargetOS)/package_info.cs\" />")
 
 	if removeAt < 0 || includeAt < removeAt {
 		t.Error("the per-GOOS include must follow <Compile Remove=\"**/*.cs\" />, which would otherwise remove it")
@@ -182,14 +182,14 @@ func TestApplyPlatformLayoutBlocks(t *testing.T) {
 // name is a GOOS must not be folded into its parent.
 func TestNormalizeArtifactLogicalPaths(t *testing.T) {
 	artifacts := map[string]artifactState{
-		"internal/goos/internal.goos.csproj":                        {},
-		"internal/goos/goos.cs":                                     {},
-		"internal/goos/windows/zgoos_windows.cs":                    {},
-		"internal/goos/linux/unix.cs":                               {},
-		"internal/syscall/windows/internal.syscall.windows.csproj":  {},
-		"internal/syscall/windows/syscall_windows.cs":               {},
-		"internal/syscall/windows/registry/registry.csproj":         {},
-		"internal/syscall/windows/registry/key.cs":                  {},
+		"internal/goos/internal.goos.csproj":                       {},
+		"internal/goos/goos.cs":                                    {},
+		"internal/goos/windows/zgoos_windows.cs":                   {},
+		"internal/goos/linux/unix.cs":                              {},
+		"internal/syscall/windows/internal.syscall.windows.csproj": {},
+		"internal/syscall/windows/syscall_windows.cs":              {},
+		"internal/syscall/windows/registry/registry.csproj":        {},
+		"internal/syscall/windows/registry/key.cs":                 {},
 	}
 
 	normalizeArtifactLogicalPaths(artifacts)
@@ -219,5 +219,72 @@ func TestGoosOfTarget(t *testing.T) {
 		if got := goosOfTarget(target); got != want {
 			t.Errorf("goosOfTarget(%q) = %q, want %q", target, got, want)
 		}
+	}
+}
+
+// TestPackageInfoIsTheFirstCompileItem proves the ordering guarantee the forced-init import hooks
+// depend on: Roslyn runs module initializers in compilation ITEM order, so package_info.cs has to be
+// the first <Compile> item for "every import hook precedes every one of the package's own inits" to
+// be deterministic rather than an alphabetical accident (a bare glob puts package_info.cs wherever
+// its name happens to sort, which for log/slog is AFTER logger.cs and is exactly the nil-deref
+// tests/Behavioral/NamedImportInitOrder exists to catch).
+//
+// Both layouts are checked from the one template, because one shape has to serve both: a flat
+// package holds the file at its root, an L3 package holds it in the per-GOOS folder, and each item
+// is Exists()-guarded so the other simply does not match. A platform-exclusive package built for a
+// target it does not serve matches NEITHER, which is why the guard is Exists() and not an
+// unconditional item — that item would be CS2001, not a no-op.
+func TestPackageInfoIsTheFirstCompileItem(t *testing.T) {
+	const (
+		rootInclude    = "<Compile Include=\"package_info.cs\" Condition=\"Exists('package_info.cs')\" />"
+		perGOOSInclude = "<Compile Include=\"$(GoTargetOS)/package_info.cs\" Condition=\"Exists('$(GoTargetOS)/package_info.cs')\" />"
+		rootGlob       = "<Compile Include=\"*.cs\" Exclude=\"package_info.cs\" />"
+	)
+
+	flat := string(csprojTemplate)
+
+	rootAt := strings.Index(flat, rootInclude)
+	globAt := strings.Index(flat, rootGlob)
+
+	if rootAt < 0 {
+		t.Fatal("the flat package_info.cs <Compile Include> was not emitted; a flat package loses the ordering guarantee")
+	}
+
+	if globAt < 0 {
+		t.Fatal("the root glob no longer carries Exclude=\"package_info.cs\"; without it the file is compiled TWICE (CS2002)")
+	}
+
+	if rootAt > globAt {
+		t.Error("package_info.cs must precede the root glob, or its module initializers do not run first")
+	}
+
+	if removeAt := strings.Index(flat, "<Compile Remove=\"**/*.cs\" />"); removeAt < 0 || rootAt < removeAt {
+		t.Error("the package_info.cs include must follow <Compile Remove=\"**/*.cs\" />, which would otherwise remove it")
+	}
+
+	// L3: the per-GOOS companion carries the guarantee for the 34 packages whose package_info.cs is
+	// not at the root, and it too must land ahead of every glob.
+	l3 := applyPlatformLayoutBlocks(flat, "os.csproj")
+
+	perGOOSAt := strings.Index(l3, perGOOSInclude)
+
+	if perGOOSAt < 0 {
+		t.Fatal("the per-GOOS package_info.cs <Compile Include> was not emitted; every L3 package loses the ordering guarantee")
+	}
+
+	if l3GlobAt := strings.Index(l3, rootGlob); l3GlobAt < 0 || perGOOSAt > l3GlobAt {
+		t.Error("the per-GOOS package_info.cs must precede the root glob")
+	}
+
+	perGOOSGlobAt := strings.Index(l3, "<Compile Include=\"$(GoTargetOS)/*.cs\" Exclude=\"$(GoTargetOS)/package_info.cs\" />")
+
+	if perGOOSGlobAt < 0 || perGOOSAt > perGOOSGlobAt {
+		t.Error("the per-GOOS package_info.cs must precede the per-GOOS source glob")
+	}
+
+	// The per-GOOS SOURCE glob still follows the root glob: this change reorders package_info.cs
+	// only, and must not quietly reshuffle everything else's initializer order.
+	if l3GlobAt := strings.Index(l3, rootGlob); l3GlobAt > perGOOSGlobAt {
+		t.Error("the per-GOOS source glob moved ahead of the root glob; that reorders initializers this change has no business touching")
 	}
 }
