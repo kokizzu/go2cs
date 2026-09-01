@@ -378,6 +378,17 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 								// `default!` skips them, leaving a null backing (len 0 / NRE on
 								// index). Mirrors go2cs-gen's NeedsConstruction.
 								v.writeOutput("%s %s = new();", csTypeName, csIDName)
+							} else if nilChan := v.chanDirNilValue(def.Type()); nilChan != "" {
+								// A DIRECTIONAL channel local (`var left chan<- chan T`): the
+								// direction is part of the Go type and `default!` erases it, so
+								// the zero value is the directional nil factory — the same arm
+								// zeroValueInitializer carries for the named-result prologues.
+								// This inline ladder is a DELIBERATE copy of that helper (it
+								// resolves array lengths from the AST for the symbolic-length
+								// comment), and the chan rung had never joined the copy:
+								// reflect's TestChanOf read TypeOf(left) as bidirectional off
+								// exactly this gap.
+								v.writeOutput("%s %s = %s;", csTypeName, csIDName, nilChan)
 							} else {
 								v.writeOutput("%s %s = default!;", csTypeName, csIDName)
 							}
@@ -446,6 +457,11 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 							v.writeOutput("%s static %s %s = new(nil);", access, csTypeName, csIDName)
 						} else if needsConstruction {
 							v.writeOutput("%s static %s %s = new();", access, csTypeName, csIDName)
+						} else if nilChan := v.chanDirNilValue(def.Type()); nilChan != "" {
+							// A directional-channel GLOBAL: same rung as the local branch above,
+							// for the same reason — the implicit field default erases the
+							// direction the type carries.
+							v.writeOutput("%s static %s %s = %s;", access, csTypeName, csIDName, nilChan)
 						} else {
 							v.writeOutput("%s static %s %s;", access, csTypeName, csIDName)
 						}

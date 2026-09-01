@@ -18,22 +18,32 @@ import (
 // the live channel and stamps it on the abi.Type, which is what makes reflect.Type.ChanDir() and
 // String() answer `chan<- string` rather than the bidirectional type.
 //
-// Three emission sites stamp it, and they are the three places a directional channel VALUE is born
-// in converted code — the same finite set the array dims occupy, position for position:
+// The emission sites that stamp it are the places a directional channel VALUE is born in
+// converted code — the same finite set the array dims occupy, position for position:
 //
 //   - `make(chan<- T[, n])` — the MADE channel (convCallExpr's make arm);
-//   - the ZERO value of a directional channel type: a `var` declaration, a named result, and a
-//     struct FIELD's initializer (zeroValueInitializer / visitStructType), which is the position
-//     `new(chan<- string)` and reflectlite's `struct{ x chan<- string }` read;
-//   - `new(chan<- T)`, whose pointee is that same zero value (convCallExpr's new arm).
+//   - the ZERO value of a directional channel type: a `var` declaration (LOCAL and GLOBAL — both
+//     rungs of visitValueSpec's inline ladder since 2026-09-01; before that the doc claimed this
+//     site and the implementation lacked it, which is exactly how reflect's TestChanOf read
+//     `TypeOf(left)` as bidirectional), a named result (zeroValueInitializer), a struct FIELD's
+//     initializer (visitStructType), and an array ELEMENT (visitArrayType);
+//   - `new(chan<- T)`, whose pointee is that same zero value (convCallExpr's new arm);
+//   - a CONVERSION OF NIL to a directional type — `(chan<- string)(nil)` — which mints the same
+//     zero value through a cast (convCallExpr's nil-conversion arm, added 2026-09-01: see below).
 //
-// What is deliberately NOT stamped, and why:
+// What is deliberately NOT stamped, and why — AMENDED 2026-09-01, because the original rule's
+// premise died on measurement:
 //
-//   - a NARROWING conversion (`var s chan<- int = ch`) keeps the source value's direction. Go makes
-//     a new value of a new TYPE there, but the narrowing has no construction to hook — it is a
-//     plain struct copy — and stamping it would mean an explicit call at every assignment, argument
-//     and return of a directional channel in the corpus (89 such positions) for a datum no measured
-//     consumer reads. The r39d rule: a dims-less descriptor is a state the bridge already handles.
+//   - a NARROWING conversion of a LIVE channel (`var s chan<- int = ch`) keeps the source value's
+//     direction. Go makes a new value of a new TYPE there, but the narrowing has no construction
+//     to hook — it is a plain struct copy — and stamping it would mean an explicit call at every
+//     assignment, argument and return of a directional channel in the corpus (89 such positions).
+//     The ORIGINAL r39d exclusion covered the nil-cast and the zero-value var too, justified as
+//     "a datum no measured consumer reads" — and then reflect's own suite measured FOUR consumers
+//     (TestAll #12, TestTypes #20-22, TestChanOf, TestChanOfDir), so the coordinator ruled the
+//     narrowing CARRIED (2026-09-01) and the construction-shaped positions above joined the stamp
+//     set. What remains excluded is only the live-copy narrowing, which no measured consumer
+//     reads YET; if one appears, this paragraph is the precedent for how the rule falls.
 //   - a DEFINED channel type (`type closeWaiter chan struct{}`) is not stamped, for the same reason
 //     a defined ARRAY type carries no dims: its managed form is a go2cs-gen wrapper struct rather
 //     than `channel<T>`, so there is no field to carry the cargo and no reader to consume it. An
