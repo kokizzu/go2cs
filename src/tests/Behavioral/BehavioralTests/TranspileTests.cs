@@ -943,6 +943,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckMethodValueReceiverEscape() => CheckTarget("MethodValueReceiverEscape");
 
     [TestMethod]
+    public void CheckMethodValueReceiverSnapshot() => CheckTarget("MethodValueReceiverSnapshot");
+
+    [TestMethod]
     public void CheckMinMaxBuiltin() => CheckTarget("MinMaxBuiltin");
 
     [TestMethod]

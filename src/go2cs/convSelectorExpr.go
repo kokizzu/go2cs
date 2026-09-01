@@ -1016,6 +1016,56 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 			}
 		}
 
+		// The ASSIGNMENT member of the receiver-snapshot family (the non-assignment members are
+		// handled at the value-context arm below, which carries the full account). visitAssignStmt
+		// asks the capture machinery for the receiver snapshot that gives `m := x.label` Go's
+		// bind-a-COPY semantics, and gets one — UNLESS something has heap-boxed the variable, at
+		// which point processPotentialCapture returns early on `boxRefVars` ("must NOT be
+		// snapshot-captured"). That early return is right for a CLOSURE, which has to observe later
+		// writes through the shared box, and wrong for a value-receiver method value, which must
+		// not. With no snapshot the receiver renders as the box and is read at CALL time:
+		//
+		//	x := frame{Name: "a"}; f := func() string { return x.Name }; m := x.label; x.Name = "b"
+		//	    Go   "a b"        the method value copied at evaluation, the closure sees the write
+		//	    C#   "b b"        `var m = () => Ꮡx.Value.label();`   -- measured, built and run
+		//
+		// So the site mints its OWN temp exactly where the machinery declines, and only there:
+		// gated on the variable actually being box-ref, so the ordinary path keeps producing the
+		// one snapshot it already produces correctly (two would be a second copy of one evaluation).
+		// Gated on a VALUE, non-interface receiver besides — a pointer receiver binds the ADDRESS
+		// and must not be copied at all, and marking one for snapshot is what turned an earlier
+		// attempt at this family into CS1003/CS1002 across production files. A seeded census of the
+		// whole standard library found 54 assignment-context method-value sites, of which 8 are
+		// box-ref and ALL 8 are pointer-receiver (database/sql, go/parser x4, go/types x2, net) —
+		// so this arm fires nowhere in the corpus today and the emission is expected byte-identical;
+		// it closes a shape that is one refactor away, not an observed wrong answer.
+		if recvExpr == "" {
+			if recvIdent, isIdent := selectorExpr.X.(*ast.Ident); isIdent && v.hoistedDecls != nil && v.lambdaCapture != nil && v.isLambdaBoxRefVar(v.info.ObjectOf(recvIdent)) {
+				if funcObj, ok := v.info.ObjectOf(selectorExpr.Sel).(*types.Func); ok {
+					if sig, ok := funcObj.Type().(*types.Signature); ok && sig.Recv() != nil {
+						_, isPtrRecv := sig.Recv().Type().(*types.Pointer)
+
+						if !isPtrRecv && !types.IsInterface(sig.Recv().Type()) {
+							if recvType := v.getType(selectorExpr.X, false); recvType != nil {
+								if _, isPtr := recvType.(*types.Pointer); !isPtr {
+									v.lambdaCapture.detectingCaptures = false
+									snapshotName := v.getCapturedVarName(recvIdent.Name)
+
+									savedInLambda := v.lambdaCapture.conversionInLambda
+									v.lambdaCapture.conversionInLambda = false
+									snapshotInit := v.convExpr(selectorExpr.X, nil)
+									v.lambdaCapture.conversionInLambda = savedInLambda
+
+									v.hoistedDecls.WriteString(fmt.Sprintf("%s%svar %s = %s;%s", v.newline, v.indent(v.indentLevel), snapshotName, snapshotInit, v.newline))
+									recvExpr = snapshotName
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
 		if recvExpr == "" {
 			recvExpr = v.convExpr(selectorExpr.X, nil)
 		}
@@ -1127,7 +1177,67 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 					// (bodyCapturesReceiverInValueMethodValue) so the box exists. Only conversionInLambda
 					// is toggled — currentLambdaVars is preserved so an ENCLOSING lambda's renames still
 					// apply when this method value nests inside a func literal.
-					return fmt.Sprintf("(%s) => %s.%s(%s)", paramDecls.String(), v.convExprInLambdaContext(selectorExpr.X),
+					//
+					// The receiver is SNAPSHOT into a statement-level local first, because Go copies a
+					// value receiver when the method value is EVALUATED, not when the resulting func is
+					// called ("the method value x.M … the receiver is evaluated and saved"). Rendering
+					// it live re-reads it per call, which goes wrong in two different ways depending on
+					// how the enclosing slot rendered the variable — and both were measured against
+					// `go run` before this was written:
+					//
+					//	`[]func() string{x.label, …}`  ->  `() => Ꮡx.Value.label()`  ->  Go `a b`, C# `b b`
+					//	`[]any{x.label, …}`            ->  `() => x.label()`         ->  CS8175 (ref local)
+					//
+					// The assignment context reaches the same shape through visitAssignStmt's two
+					// method-value sites, which snapshot only while nothing else has heap-boxed the
+					// variable; once something has, the box render wins there too. One cause, three
+					// presentations. The snapshot's initializer is rendered OUTSIDE lambda context (it
+					// sits at statement level, where the plain local/alias is in scope) while the
+					// wrapper body binds the snapshot name, so the box rewrite in convIdent — which
+					// would otherwise turn the renamed ident into `Ꮡxʗ1.Value`, a box that does not
+					// exist — is bypassed entirely rather than fought.
+					//
+					// Gated on a statement-level sink EXISTING: the declaration has to land somewhere,
+					// and a rename with nowhere to declare is CS0103. Where there is no sink the
+					// previous rendering stands — declare-or-do-not-rename. Restricted to a plain
+					// IDENT receiver of non-pointer type, which is the shape the census found; a
+					// pointer base auto-deref'd to a value receiver would need the deref snapshotted,
+					// not the pointer, and is left to its existing emission rather than guessed at.
+					snapshotName := ""
+
+					if recvIdent, isIdent := selectorExpr.X.(*ast.Ident); isIdent && v.hoistedDecls != nil && v.lambdaCapture != nil {
+						if recvType := v.getType(selectorExpr.X, false); recvType != nil {
+							if _, isPtr := recvType.(*types.Pointer); !isPtr {
+								// getCapturedVarName only advances its per-name counter once the
+								// detection phase is over (prepareStmtCaptures clears the flag for the
+								// same reason); minting while it is still set hands out one name twice.
+								v.lambdaCapture.detectingCaptures = false
+								snapshotName = v.getCapturedVarName(recvIdent.Name)
+
+								savedInLambda := v.lambdaCapture.conversionInLambda
+								v.lambdaCapture.conversionInLambda = false
+								snapshotInit := v.convExpr(selectorExpr.X, nil)
+								v.lambdaCapture.conversionInLambda = savedInLambda
+
+								// Leading newline+indent per entry is the hoisted-decls convention; the
+								// TRAILING pair is what generateCaptureDeclarations also writes, and is
+								// what keeps the following text off this declaration's line — the flush
+								// substitutes the buffer FOR the statement's own leading newline (see
+								// visitAssignStmt's flush), so a buffer that only leads glues the next
+								// statement on. Same reasoning convSyscallFunnelCall records for its
+								// temps.
+								v.hoistedDecls.WriteString(fmt.Sprintf("%s%svar %s = %s;%s", v.newline, v.indent(v.indentLevel), snapshotName, snapshotInit, v.newline))
+							}
+						}
+					}
+
+					recvRender := snapshotName
+
+					if recvRender == "" {
+						recvRender = v.convExprInLambdaContext(selectorExpr.X)
+					}
+
+					return fmt.Sprintf("(%s) => %s.%s(%s)", paramDecls.String(), recvRender,
 						v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)), paramUses.String())
 				}
 			}
