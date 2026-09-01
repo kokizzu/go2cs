@@ -1134,11 +1134,18 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
      Two knowns that are NOT: the SIX root attribution files the converter re-copies (`src/core/README.md`
      and its five siblings — measured 2026-08-17; this note previously named only the one — all show
      modified with an EMPTY `git diff --numstat`, pure CRLF phantoms; restore them), and
-     the hand-owned-by-consequence **class of three** — `internal/concurrent`, `internal/godebug`
-     and `internal/weak` (r59 measured; the note previously named godebug alone) — each a package
-     whose entire single Go file is hand-owned, so `unmarkedFileCount == 0` makes the driver
-     `continue` before `writeProjectFile` and its `.csproj`, `package_info.cs` **and `README.md`**
-     are hand-owned by consequence, never re-emitted.
+     the hand-owned-by-consequence **class of FOUR** — `crypto/internal/boring/bcache`,
+     `internal/concurrent`, `internal/godebug` and `internal/weak` (censused 2026-09-01 at
+     `3e31de03a` over all 306 production packages; the note previously said three, and before that
+     godebug alone — bcache was the member nobody had counted, evidenced by the hand-edited
+     position-map hash in its `package_info.cs` at `f1df6cbd9`, which a re-emitting converter would
+     never need a human to fix) — each a package whose every non-test Go file is hand-owned, so
+     `unmarkedFileCount == 0` makes the driver `continue` before `writeProjectFile` and its
+     `.csproj`, `package_info.cs` **and `README.md`** are hand-owned by consequence, never
+     re-emitted. (`unsafe` is also fully hand-owned but by the OTHER mechanism — skip-listed.)
+     Consequence counted the same day: the hand-own FENCE leaves **8 forced-init hooks missing**
+     inside this frozen class (godebug 4, concurrent 3, weak 1) that only Stage B's frozen-README
+     option (a) can fix — the relocation cannot, since these `package_info.cs` are never re-emitted.
   3. Build single packages with **`dotnet build <pkg>.csproj -c Debug`** — `src/core/Directory.Build.props`
      pins `$(go2csPath)` to the src root, so `core\golib` + the `go2cs-gen` analyzer resolve to live source
      with **no `-p:go2csPath` flag**; or build the whole `go2cs-stdlib.slnx` (~92–150 s warm, 305 assemblies — the 306th, `crypto/x509/internal/macos`, is darwin-exclusive and compiles nothing under the default `$(GoTargetOS)`).
