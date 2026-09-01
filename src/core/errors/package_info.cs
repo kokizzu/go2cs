@@ -31,7 +31,7 @@ using static go.errors_package;
 // <ExportedTypeAliases>
 [assembly: GoDynamicTypeLift("696e746572666163657b417328616e792920626f6f6c7d", "as_type")]
 [assembly: GoDynamicTypeLift("696e746572666163657b4973286572726f722920626f6f6c7d", "is_type")]
-[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829205b5d6572726f727d", "as_typeᴛ2")]
+[assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829205b5d6572726f727d", "is_typeᴛ1")]
 [assembly: GoDynamicTypeLift("696e746572666163657b556e777261702829206572726f727d", "Unwrap_type")]
 // </ExportedTypeAliases>
 
@@ -59,7 +59,7 @@ using static go.errors_package;
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("errors/errors.go", "errors.cs", "ADx6ogAHEII=")]
 [assembly: go.GoPositionMap("errors/join.go", "join.cs", "AAomAAoCgoKCpoKUpoKCpu6mgpaCgoKmpoI=")]
-[assembly: go.GoPositionMap("errors/wrap.go", "wrap.cs", "ABUi4oaClAACKAARAoKWggAOBoKCgpSAgqSUgoLGgoKmtAAELAARAoKUgpSCgoKUgoKUAA4GgoKCgpSAgqSUgoLGgoKUgqa0")]
+[assembly: go.GoPositionMap("errors/wrap.go", "wrap.cs", "ABUi4oaClAACKAARAoKWggAKBoKCgpSAgqSUgoLGgoKmtAAELAARAoKUgpSCgoKUgoKU5oKCgoKUgIKklIKCxoKClIKmtA==")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -76,11 +76,8 @@ public static partial class errors_package
     // <TypeAccessibility>
     internal partial interface Unwrap_type {}
     internal partial interface as_type {}
-    internal partial interface as_typeᴛ1 {}
-    internal partial interface as_typeᴛ2 {}
     internal partial interface is_type {}
     internal partial interface is_typeᴛ1 {}
-    internal partial interface is_typeᴛ2 {}
     internal partial struct errorString {}
     internal partial struct joinError {}
     // </TypeAccessibility>

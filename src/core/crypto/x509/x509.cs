@@ -1608,11 +1608,6 @@ internal static readonly @string x509OnlyCAsAreAllowedToˢ = "x509: only CAs are
 internal static readonly @string x509InternalErrorˢ = "x509: internal error: supported public key does not implement Equal"u8;
 internal static readonly @string x509ProvidedPrivateKeyˢ = "x509: provided PrivateKey doesn't match parent's PublicKey"u8;
 
-// Check that the signer's public key matches the private key, if available.
-[GoType("dyn")] internal partial interface CreateCertificate_privateKey {
-    bool Equal(cryptoꓸPublicKey _);
-}
-
 // CreateCertificate creates a new X.509 v3 certificate based on a template.
 // The following members of template are currently used:
 //
@@ -1728,7 +1723,7 @@ public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certific
         subjectKeyId = h[..];
     }
     {
-        var (privPub, okΔ1) = key.Public()._<CreateCertificate_privateKey>(ᐧ); if (!okΔ1){
+        var (privPub, okΔ1) = key.Public()._<alreadyInChain_pubKeyEqual>(ᐧ); if (!okΔ1){
             return (default!, errors.New(x509InternalErrorˢ));
         } else 
         if (parent.PublicKey != default! && !privPub.Equal(parent.PublicKey)) {

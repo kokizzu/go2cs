@@ -63,10 +63,6 @@ public static bool Is(error err, error target) {
 }
 
 [GoType("dyn")] internal partial interface is_typeᴛ1 {
-    error Unwrap();
-}
-
-[GoType("dyn")] internal partial interface is_typeᴛ2 {
     slice<error> Unwrap();
 }
 
@@ -81,14 +77,14 @@ internal static bool @is(error err, error target, bool targetComparable) {
             }
         }
         switch (err.type()) {
-        case {} Δx when Δx._<is_typeᴛ1>(out var x): {
+        case {} Δx when Δx._<Unwrap_type>(out var x): {
             err = x.Unwrap();
             if (err == default!) {
                 return false;
             }
             break;
         }
-        case {} Δx when Δx._<is_typeᴛ2>(out var x): {
+        case {} Δx when Δx._<is_typeᴛ1>(out var x): {
             foreach (var (_, errΔ1) in x.Unwrap()) {
                 if (@is(errΔ1, target, targetComparable)) {
                     return true;
@@ -143,14 +139,6 @@ public static bool As(error err, any target) {
     bool As(any _);
 }
 
-[GoType("dyn")] internal partial interface as_typeᴛ1 {
-    error Unwrap();
-}
-
-[GoType("dyn")] internal partial interface as_typeᴛ2 {
-    slice<error> Unwrap();
-}
-
 internal static bool @as(error err, any target, reflectlite.Value targetVal, reflectliteꓸType targetType) {
     while (ᐧ) {
         if (reflectlite.TypeOf(err).AssignableTo(targetType)) {
@@ -163,14 +151,14 @@ internal static bool @as(error err, any target, reflectlite.Value targetVal, ref
             }
         }
         switch (err.type()) {
-        case {} Δx when Δx._<as_typeᴛ1>(out var x): {
+        case {} Δx when Δx._<Unwrap_type>(out var x): {
             err = x.Unwrap();
             if (err == default!) {
                 return false;
             }
             break;
         }
-        case {} Δx when Δx._<as_typeᴛ2>(out var x): {
+        case {} Δx when Δx._<is_typeᴛ1>(out var x): {
             foreach (var (_, errΔ1) in x.Unwrap()) {
                 if (errΔ1 == default!) {
                     continue;
