@@ -476,7 +476,29 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// instance then carried a backing-less array and every dims read answered [0]N.
 		if arrayType, ok := ast.Unparen(field.Type).(*ast.ArrayType); ok {
 			if arrayType.Len != nil {
-				fieldInitializer = fmt.Sprintf(" = new(%s)", v.arrayZeroValueArgs(v.convExpr(arrayType.Len, nil), fieldType))
+				lengthExpr := v.convExpr(arrayType.Len, nil)
+
+				// A LIFTED struct (an anonymous type pulled out of its enclosing function to a
+				// top-level declaration) can no longer see that function's own locals, so an array
+				// length spelled as a bare identifier reference (`const n = ...; y [n]byte`) is not
+				// just unresolvable -- it can silently rebind to an unrelated same-named C# member
+				// elsewhere in the shared partial-class package (runtime's gc_test.go `const n`
+				// inside TestHugeGCInfo bound to malloc_test.go's unrelated package-level `var n =
+				// flag.Int(...)`, CS1503 on the type mismatch; a same-typed collision would have
+				// compiled and silently used the WRONG value). Go's own grammar guarantees an array
+				// length is always a compile-time constant, so folding it to a literal is never
+				// wrong for a NON-lifted field either -- narrowed to lifted alone as the surgical
+				// fix for the shape that actually breaks, leaving the general expression path
+				// unchanged everywhere else.
+				if lifted {
+					if tv, ok := v.info.Types[arrayType.Len]; ok && tv.Value != nil {
+						if folded, ok := constArrayLength(tv.Value); ok {
+							lengthExpr = folded
+						}
+					}
+				}
+
+				fieldInitializer = fmt.Sprintf(" = new(%s)", v.arrayZeroValueArgs(lengthExpr, fieldType))
 			}
 		}
 
