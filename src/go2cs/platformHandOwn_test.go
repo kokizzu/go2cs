@@ -18,6 +18,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -316,10 +317,24 @@ func TestCorpusHandOwnsFollowTheirPrincipals(t *testing.T) {
 			principal := strings.TrimSuffix(stem, "_impl") + ".cs"
 			principalAt, found := names[principal]
 
+			// A principal present in EVERY folder used to end the question here — "shared either
+			// way" — and that skip is the hole this arm closes. Being emitted on every target says
+			// the principal is built everywhere; it says nothing about whether the COMPANION applies
+			// everywhere, because manualConversionFuncs scopes a registration per GOOS. `runtime`'s
+			// trace.go is converted on all three targets while only linux DISPLACES `StartTrace`
+			// (registered goosLinux), so runtime/linux/trace_impl.cs is correct and a flat copy is a
+			// CS0111 on windows — the shape the three-target merge produced and this guard waved
+			// through (found 2026-09-01 by a seeded temp-root build; A/B'd byte-identical at master,
+			// so it is the merge's routing rule, not any one arc).
+			if found && len(principalAt) == len(goosDirs) && len(goosDirs) > 0 {
+				assertScopedHandOwnFollowsItsRegistration(t, coreDir, packageDir, name, locations)
+				continue
+			}
+
 			// No principal in this package: a go2cs runtime companion with no Go file behind it
 			// (runtime/managed_impl.cs, internal/poll/runtime_sema_impl.cs). No evidence, no rule.
-			// Present everywhere the package has folders, or flat: shared either way.
-			if !found || len(principalAt) == 0 || len(principalAt) == len(goosDirs) || (len(principalAt) == 1 && principalAt[0] == "") {
+			// A flat principal is shared, and shared needs no per-GOOS reasoning.
+			if !found || len(principalAt) == 0 || (len(principalAt) == 1 && principalAt[0] == "") {
 				continue
 			}
 
@@ -493,5 +508,200 @@ func assertFileExists(t *testing.T, filePath string, want bool) {
 
 	if got := err == nil; got != want {
 		t.Errorf("exists(%q) = %v, want %v", filePath, got, want)
+	}
+}
+
+// assertScopedHandOwnFollowsItsRegistration is the arm for a companion whose PRINCIPAL is emitted on
+// every target. The principal's ubiquity settles nothing on its own: `manualConversionFuncs` scopes a
+// registration per GOOS, so a shared Go source can keep its generated body on two targets and carry a
+// placeholder on the third, and the companion belongs only where the displacement happened.
+//
+// The expected location set is derived from the REGISTRY — the union of the goosScopes of the
+// registered members this hand-own defines. That is deliberately a DIFFERENT derivation from the one
+// the merge's routing uses (which reads the displacement placeholders out of each target's emission):
+// two independent derivations agreeing is worth more than one shared, and a guard that re-implements
+// the fix is only testing that the fix ran.
+//
+// Silent when the file defines no registered member (an unregistered companion has no scope to
+// follow) or when every member is unscoped (goosAny — genuinely shared, and today's flat placement is
+// right).
+func assertScopedHandOwnFollowsItsRegistration(t *testing.T, coreDir string, packageDir string, name string, locations []string) {
+	t.Helper()
+
+	pkg := filepath.ToSlash(strings.TrimPrefix(strings.TrimPrefix(packageDir, coreDir), string(filepath.Separator)))
+	funcScopes, registered := manualConversionFuncs[pkg]
+
+	if !registered {
+		return
+	}
+
+	// THIS file's members, not the package's. handOwnedDefinitions walks every hand-own in the
+	// package, and using it here made the first run of this guard answer for the wrong file: with
+	// `runtime`'s trace_impl.cs deliberately moved flat, the union over ALL of runtime's hand-owns
+	// contained an unscoped member, the helper concluded "shared", and the very file the guard was
+	// written for went unreported — while three other packages were flagged on evidence that was not
+	// theirs either. Scope the read to the companion under test.
+	defined := handOwnedDefinitionsInFile(t, packageDir, name, locations)
+	scoped := map[string]bool{}
+	sawRegisteredMember := false
+
+	for key, scope := range funcScopes {
+		member := key
+
+		if dot := strings.LastIndex(member, "."); dot >= 0 {
+			member = member[dot+1:]
+		}
+
+		if !defined[member] {
+			continue
+		}
+
+		sawRegisteredMember = true
+
+		// One unscoped member makes the whole companion shared: it is needed wherever the principal
+		// is built, which is everywhere.
+		if len(scope) == 0 {
+			return
+		}
+
+		for _, goos := range scope {
+			scoped[goos] = true
+		}
+	}
+
+	if !sawRegisteredMember || len(scoped) == 0 {
+		return
+	}
+
+	want := sortedKeys(scoped)
+	got := append([]string(nil), locations...)
+	sort.Strings(got)
+
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("%s: %s is in [%s] but the registrations it defines are scoped to [%s]; a companion whose members are "+
+			"displaced on only some targets belongs in exactly those GOOS folders — flat compiles it beside the "+
+			"undisplaced body (CS0111). Its principal being emitted on every target does not make the companion shared.",
+			packageDir, name, orFlat(strings.Join(got, " ")), strings.Join(want, " "))
+	}
+}
+
+// handOwnedDefinitionsInFile returns the member names ONE hand-owned companion declares, read from
+// every location the corpus holds it in (a companion legitimately exists in two GOOS folders — see
+// runtime's lock_sema_impl.cs). It reuses the declaration-line and callable-name patterns
+// manualConversionDestination_test.go calibrated against this corpus, so the two guards agree on what
+// counts as a definition.
+func handOwnedDefinitionsInFile(t *testing.T, packageDir string, name string, locations []string) map[string]bool {
+	t.Helper()
+
+	defined := map[string]bool{}
+
+	for _, location := range locations {
+		dir := packageDir
+
+		if location != "" {
+			dir = filepath.Join(packageDir, location)
+		}
+
+		contents, err := os.ReadFile(filepath.Join(dir, name))
+
+		if err != nil {
+			continue
+		}
+
+		text := string(contents)
+
+		for _, line := range csharpDeclarationLine.FindAllString(text, -1) {
+			for _, match := range csharpCallableName.FindAllStringSubmatch(line, -1) {
+				defined[match[1]] = true
+			}
+		}
+	}
+
+	return defined
+}
+
+// TestFuncPlaceholderLeadMatchesTheFormat pins the two placeholder constants to each other. The lead
+// is a separate constant rather than a slice of the format because the readers SCAN for it, and a
+// derived prefix would silently follow the format if somebody reworded the line — leaving the scans
+// matching a string the converter no longer writes, which is a false NEGATIVE in two guards at once
+// (the registry's source-side check would report every registration as undisplaced; L3's merge would
+// see no displacement anywhere and quietly fall back to the old routing).
+func TestFuncPlaceholderLeadMatchesTheFormat(t *testing.T) {
+	rendered := fmt.Sprintf(funcPlaceholderFormat, "SomeMember")
+
+	if !strings.HasPrefix(rendered, funcPlaceholderLead) {
+		t.Errorf("funcPlaceholderLead %q is not a prefix of the rendered placeholder %q — every scanner of "+
+			"this witness would stop matching while the emission kept writing it", funcPlaceholderLead, rendered)
+	}
+
+	if !strings.Contains(rendered, "SomeMember") {
+		t.Errorf("the placeholder format must carry the member name: %q", rendered)
+	}
+}
+
+// TestMergeRoutesScopedHandOwnByDisplacement is the routing narrowing, over the shape that broke:
+// a principal EMITTED on all three targets whose body is displaced on only one. The old rule read
+// the emitter set, called the companion shared, left it flat, and windows compiled it beside its own
+// undisplaced body — CS0111 on `runtime.StartTrace`, the whole merged corpus failing to build.
+//
+// Note what this fixture does that newHandOwnEmissions does not: it writes the principal's emitted
+// BYTES into each staging root, because the displacement witness is a line inside them. The synthetic
+// emissions elsewhere in this file describe artifacts that never touch disk, which is exactly why the
+// narrowing falls back to the emitter set there and those tests keep passing unchanged.
+func TestMergeRoutesScopedHandOwnByDisplacement(t *testing.T) {
+	coreDir := filepath.Join(t.TempDir(), "core")
+	targets := []string{"windows/amd64", "linux/amd64", "darwin/amd64"}
+
+	writeTestFile(t, filepath.Join(coreDir, "runtime", "runtime.csproj"), "<Project />")
+	writeTestFile(t, filepath.Join(coreDir, "runtime", "trace_impl.cs"), "hand-owned, linux only")
+
+	for _, goos := range []string{"windows", "linux", "darwin"} {
+		writeTestFile(t, filepath.Join(coreDir, "runtime", goos, "trace.cs"), "converted "+goos)
+	}
+
+	emissions := make([]*platformEmission, 0, len(targets))
+
+	for _, target := range targets {
+		goos := goosOfTarget(target)
+		root := filepath.Join(t.TempDir(), goos)
+
+		// Only the LINUX emission displaces the body; the other two carry it.
+		body := "public static error StartTrace() { … }"
+
+		if goos == "linux" {
+			body = fmt.Sprintf(funcPlaceholderFormat, "StartTrace")
+		}
+
+		writeTestFile(t, filepath.Join(root, "core", "runtime", goos, "trace.cs"), body)
+
+		emissions = append(emissions, &platformEmission{
+			target: target,
+			root:   root,
+			artifacts: map[string]artifactState{
+				"runtime/" + goos + "/trace.cs": {logical: "runtime/trace.cs", emitted: true},
+				"runtime/trace_impl.cs":         {logical: "runtime/trace_impl.cs"},
+				"runtime/runtime.csproj":        {logical: "runtime/runtime.csproj"},
+			},
+		})
+	}
+
+	if _, _, _, err := mergeHandOwnedArtifacts(coreDir, targets, emissions); err != nil {
+		t.Fatalf("mergeHandOwnedArtifacts failed: %v", err)
+	}
+
+	routed := filepath.Join(coreDir, "runtime", "linux", "trace_impl.cs")
+
+	if _, err := os.Stat(routed); err != nil {
+		t.Errorf("the companion must land in the folder whose emission DISPLACED its member: %v", err)
+	}
+
+	for _, wrong := range []string{
+		filepath.Join(coreDir, "runtime", "trace_impl.cs"),
+		filepath.Join(coreDir, "runtime", "windows", "trace_impl.cs"),
+		filepath.Join(coreDir, "runtime", "darwin", "trace_impl.cs"),
+	} {
+		if _, err := os.Stat(wrong); err == nil {
+			t.Errorf("%s must not exist: windows and darwin keep the generated body, so a copy there is CS0111", wrong)
+		}
 	}
 }
