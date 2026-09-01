@@ -205,6 +205,21 @@ var nameCollisions map[string]bool
 // -tests conversions. See performNameCollisionAnalysis / registerTestMethodRenames.
 var testMethodRenames map[types.Object]bool
 
+// testTypeRenames holds package-level TYPE declarations that were Δ-renamed by an ordinary
+// same-variant collision (getCollisionAvoidanceIdentifier via visitTypeSpec) — the "expose a field
+// via a method sharing the type's name" idiom (export_test.go's `type PallocBits pallocBits` next
+// to `func (*PallocData) PallocBits() *PallocBits`), which Δ-prefixes the TYPE and leaves the
+// METHOD bare (getCollisionAvoidanceIdentifier's own doc comment). That rename is captured
+// correctly within the variant that declares it, but nameCollisions is reset per variant
+// (resetPackageState) while a white-box EXTERNAL-variant reference to the same declaration
+// (whiteboxBridgeNamedType) renders through its OWN, unrelated collision set — which has no entry
+// for a name the external variant's files never declare — so the bridge reference emitted the bare
+// name against a Δ-renamed declaration. Object-keyed and SESSION-scoped for the identical reason
+// testMethodRenames is: both variants share one go/packages load, so the external variant's
+// reference resolves by object identity to the very declaration registered during the internal
+// pass. Nil outside -tests conversions.
+var testTypeRenames map[types.Object]bool
+
 // packageBuiltinShadows holds Go built-in names (`clear`, `len`, …) that the current package ALSO
 // declares as a method or function. In Go a method `func (x T) clear()` and the universe `clear`
 // built-in coexist (the method is only reached as `x.clear()`), but in C# the method is emitted as a

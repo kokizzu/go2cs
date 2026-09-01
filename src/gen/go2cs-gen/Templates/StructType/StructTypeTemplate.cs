@@ -464,7 +464,11 @@ internal class StructTypeTemplate : TemplateBase
                         if (GetSimpleName(fieldSymbol.Name) == "_")
                             continue;
 
-                        yield return (fieldSymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), fieldSymbol.Name);
+                        // A SYMBOL's .Name never carries the `@` a C# keyword needs (unlike syntax
+                        // Identifier.Text, which GetStructMembers's source-based sibling reads) —
+                        // escape it before it reaches emitted C# (runtime's white-box AddrRange
+                        // promoting addrRange.base: CS1519/CS1001/CS1002 in the generated accessor).
+                        yield return (fieldSymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), EscapeCsKeyword(fieldSymbol.Name));
                     }
 
                     // A REFERENCED assembly's generated wrapper exposes its embedded member and its
@@ -482,7 +486,7 @@ internal class StructTypeTemplate : TemplateBase
                         if (property.IsIndexer || GetSimpleName(property.Name) == "_")
                             continue;
 
-                        yield return (property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), property.Name);
+                        yield return (property.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), EscapeCsKeyword(property.Name));
                     }
                 }
             }

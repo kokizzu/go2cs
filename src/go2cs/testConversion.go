@@ -698,6 +698,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 	// export_test pattern) resolve by object identity to entries registered during the internal
 	// pass — resetPackageState deliberately does not clear this map.
 	testMethodRenames = make(map[types.Object]bool)
+	testTypeRenames = make(map[types.Object]bool)
 	whiteboxInternalTestObjects = collectWhiteboxInternalTestObjects(internal)
 
 	whiteboxBridgeDeclaredNames = HashSet[string]{}

@@ -438,7 +438,13 @@ public static class StructDeclarationSyntaxExtensions
 
             members.Add((
                 memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                member.Name,
+                // GetStructMembers's SOURCE-based sibling reads syntax Identifier.Text, which already
+                // carries the converter's own `@`-escape when the Go field name is a C# keyword
+                // (pageCache's `base` field declares as `@base`). A SYMBOL's .Name never does — escape
+                // it here so a forwarded keyword-named field (runtime's white-box PageCache/AddrRange
+                // wrappers over pageCache.base/addrRange.base) emits `@base`, not a bare `base` that
+                // parses as the base-access keyword (CS1519/CS1001/CS1002 in the generated forwarder).
+                Common.EscapeCsKeyword(member.Name),
                 IsReferenceTypeOrUnconstrainedGeneric(memberType),
                 member is IPropertySymbol,
                 IsMemberTypePublic(memberType)));

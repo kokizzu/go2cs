@@ -277,24 +277,20 @@ public class TypeGenerator : ISourceGenerator
                                 // A defined type over an ARRAY-backed [GoType] wrapper — `type pallocBits
                                 // pageBits` where `type pageBits [8]uint64` — is len()'d / indexed directly
                                 // in Go, which needs IArray on THIS wrapper (golib `len(IArray)`, CS1503
-                                // otherwise; runtime mpallocbits.go). Detect it from the underlying's own
-                                // [GoType] definition (`[N]elem`, not a `[]` slice) and implement
-                                // IArray<elem> as a view over m_value (IArrayViewTypeTemplate).
-                                string? underlyingDefinition = GetGoTypeDefinition(underlyingStruct);
+                                // otherwise; runtime mpallocbits.go). The chain can run more than one hop
+                                // deep (pallocBits's OWN [GoType] spells "pageBits", a plain name, not the
+                                // array literal — only pageBits's carries that), so the walk is recursive,
+                                // not a single read. Detect it from wherever the chain bottoms out at a
+                                // `[N]elem` definition (never a `[]` slice) and implement IArray<elem> as
+                                // a view over m_value (IArrayViewTypeTemplate).
+                                underlyingArrayElem = ResolveArrayElementType(context, typeDefinition, []);
 
-                                if (underlyingDefinition is not null && underlyingDefinition.StartsWith("[") && !underlyingDefinition.StartsWith("[]"))
+                                if (underlyingArrayElem is not null)
                                 {
-                                    int closeBracket = underlyingDefinition.IndexOf(']');
-
-                                    if (closeBracket > 0 && closeBracket < underlyingDefinition.Length - 1)
-                                    {
-                                        underlyingArrayElem = underlyingDefinition[(closeBracket + 1)..].Trim();
-
-                                        // The view's ref accessor must ensure the underlying's lazily-
-                                        // allocated backing lands on THIS wrapper's own m_value (a
-                                        // readonly field would force a defensive copy and lose writes).
-                                        mutableValue = true;
-                                    }
+                                    // The view's ref accessor must ensure the underlying's lazily-
+                                    // allocated backing lands on THIS wrapper's own m_value (a
+                                    // readonly field would force a defensive copy and lose writes).
+                                    mutableValue = true;
                                 }
                             }
                         }
@@ -314,6 +310,18 @@ public class TypeGenerator : ISourceGenerator
                             {
                                 forwardedMembers = members;
                                 mutableValue = true;
+                            }
+                            else
+                            {
+                                // The METADATA twin of the array-backed-wrapper walk above (same chain,
+                                // same runtime example — a `-tests` wrapper's underlying-of-underlying can
+                                // cross the assembly seam at either hop, so the recursive walk tries both
+                                // source and metadata resolution at every step regardless of which one
+                                // resolved THIS hop).
+                                underlyingArrayElem = ResolveArrayElementType(context, typeDefinition, []);
+
+                                if (underlyingArrayElem is not null)
+                                    mutableValue = true;
                             }
 
                             foreignUnderlyingSymbol = underlyingSymbol;
@@ -581,6 +589,60 @@ public class TypeGenerator : ISourceGenerator
 
         return GlobalQualify(result);
     }
+    // Walks a defined-type-over-defined-type chain to its ARRAY-backed bottom, recursively — Go
+    // permits arbitrary depth (`type pallocBits pageBits`, `type pageBits [8]uint64`: pallocBits's
+    // OWN [GoType] spells the plain name "pageBits", not an array literal; only pageBits's does,
+    // one hop further), so a single GetGoTypeDefinition read only ever sees whichever hop it was
+    // pointed at. Each hop tries SOURCE resolution first, then METADATA — the whitebox `-tests`
+    // bridge can cross the assembly seam at any point in the chain, independent of where an
+    // earlier or later hop resolved. Returns the array's ELEMENT type, or null once the chain
+    // bottoms out at something else (a struct with real fields, an interface, a slice, an
+    // unresolvable name) before ever reaching a `[N]elem` definition. `seen` guards against a
+    // malformed cycle looping forever; Go itself forbids one, same posture as the embed walk above.
+    private static string? ResolveArrayElementType(GeneratorExecutionContext context, string typeName, HashSet<string> seen)
+    {
+        if (!seen.Add(typeName))
+            return null;
+
+        INamedTypeSymbol? containingType = null;
+        string? definition;
+        (StructDeclarationSyntax? structDecl, Compilation? structCompilation) = context.GetStructDeclaration(typeName);
+
+        if (structDecl is not null)
+        {
+            definition = GetGoTypeDefinition(structDecl);
+            containingType = (structCompilation?.GetSemanticModel(structDecl.SyntaxTree).GetDeclaredSymbol(structDecl) as INamedTypeSymbol)?.ContainingType;
+        }
+        else if (context.FindUnderlyingStructSymbol(typeName) is { } symbol)
+        {
+            definition = GetGoTypeDefinition(symbol);
+            containingType = symbol.ContainingType;
+        }
+        else
+            return null;
+
+        if (definition is null)
+            return null;
+
+        if (definition.StartsWith("[") && !definition.StartsWith("[]"))
+        {
+            int closeBracket = definition.IndexOf(']');
+            return closeBracket > 0 && closeBracket < definition.Length - 1 ? definition[(closeBracket + 1)..].Trim() : null;
+        }
+
+        // A BARE name (no `.` at all) is Go's own same-package convention — `type pallocBits
+        // pageBits` needs no `runtime_package.` prefix because pageBits lives in the identical
+        // package, so its [GoType] spells just "pageBits". Neither GetStructDeclaration nor
+        // FindUnderlyingStructSymbol's "go.-rooted" retry reaches that far — the retry only
+        // restores a missing `go.` ROOT, not an entirely missing PACKAGE segment — so a bare
+        // recursion target is qualified with the CURRENT hop's own containing package before the
+        // next lookup, reusing the exact qualified form that already resolves everywhere else.
+        if (!definition.Contains('.') && containingType is not null)
+            definition = $"{containingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{definition}";
+
+        return ResolveArrayElementType(context, definition, seen);
+    }
+
     // Reads a struct declaration's own [GoType("…")] definition string (first constructor argument,
     // quotes stripped) — used to inspect the UNDERLYING type of a defined-over-defined chain
     // (`type pallocBits pageBits`: pageBits' definition is "[8]uint64"). Null when the struct has no
@@ -609,6 +671,21 @@ public class TypeGenerator : ISourceGenerator
         }
 
         return null;
+    }
+
+    // METADATA counterpart to the overload above: reads a foreign symbol's own [GoType] attribute
+    // via Roslyn's symbol-level AttributeData rather than syntax (a real MSBuild build resolves a
+    // cross-assembly underlying-of-underlying — e.g. `-tests` whitebox PallocBits -> pallocBits ->
+    // pageBits, where pallocBits itself is only reachable as metadata — by symbol, never syntax).
+    // AttributeData.ConstructorArguments already holds the resolved constant, unlike
+    // AttributeSyntax's raw quoted token text, so no quote-stripping is needed here.
+    private static string? GetGoTypeDefinition(ITypeSymbol typeSymbol)
+    {
+        string? value = typeSymbol.GetAttributes()
+            .FirstOrDefault(attribute => attribute.AttributeClass?.Name is $"{AttributeName}Attribute" or AttributeName)
+            ?.ConstructorArguments.FirstOrDefault().Value as string;
+
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     // Unions the two reasons a member cannot compare with C# `==` into the one set the template
