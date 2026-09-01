@@ -80,6 +80,16 @@ public static partial class GoReflect
 {
     private static readonly ConcurrentDictionary<MethodInfo, Func<object?, Delegate>> s_boundFactories = [];
     private static readonly ConcurrentDictionary<MethodInfo, Type> s_methodFuncTypes = [];
+
+    // The pointer-lookup form of s_methodFuncTypes, and the reason it needs its OWN cache: the same
+    // MethodInfo yields a DIFFERENT Go func type depending on whether it was reached through T or
+    // through *T, so the receiver type has to be part of the key. (The note above about these caches
+    // being MethodInfo-keyed "correctly so" holds for a method's own fixed signature; Go's type-side
+    // Func is not that signature — it is the signature with the LOOKUP type as its receiver.)
+    private static readonly ConcurrentDictionary<(Type Receiver, MethodInfo Method), Type> s_pointerReceiverFuncTypes = [];
+
+    // Its delegate counterpart, keyed the same way and for the same reason.
+    private static readonly ConcurrentDictionary<(Type Receiver, MethodInfo Method), Delegate> s_pointerReceiverFuncs = [];
     private static readonly ConcurrentDictionary<MethodInfo, Delegate> s_methodFuncs = [];
 
     /// <summary>
@@ -150,6 +160,30 @@ public static partial class GoReflect
     public static Type GoMethodFuncType(Type? t, int index)
     {
         MethodInfo method = MethodAt(t, index).Method;
+        ParameterInfo[] parameters = method.GetParameters();
+
+        // Go's Type.Method(i).Func describes "a function whose first argument is the receiver", and
+        // that receiver is the type the method was LOOKED UP ON, never the one it was declared with
+        // — reflect's own rtype.Method builds the signature with `in = append(in, t)`, t being the
+        // type Method was called on. A VALUE-receiver method belongs to *T's method set as well as
+        // T's, so reaching it through TypeOf(&p) must present *Point as argument 0. Presenting the
+        // declared Point there is what made Value.Call reject ValueOf(&p) with
+        // "reflect: Call using *Point as type Point" (TestMethod, TestDirectIfaceMethod).
+        //
+        // Exactly one substitution, and only where it is provable: t is a POINTER whose pointee is
+        // precisely the declared receiver. A pointer-receiver method already declares ж<X> and is
+        // untouched; an interface method carries no receiver parameter to substitute, which is also
+        // Go's rule (interfaceType.Method prepends nothing).
+        if (t is not null && parameters.Length > 0 &&
+            KindOf(t) == Pointer && ElementType(t) == parameters[0].ParameterType)
+        {
+            return s_pointerReceiverFuncTypes.GetOrAdd((t, method), static key =>
+            {
+                Type[] ins = [.. key.Method.GetParameters().Select(static p => p.ParameterType)];
+                ins[0] = key.Receiver;
+                return MakeDelegateType(ins, key.Method.ReturnType);
+            });
+        }
 
         return s_methodFuncTypes.GetOrAdd(method, static m => MakeDelegateType(
             [.. m.GetParameters().Select(static p => p.ParameterType)], m.ReturnType));
@@ -171,6 +205,41 @@ public static partial class GoReflect
             return null;
 
         Type funcType = GoMethodFuncType(t, index);
+        ParameterInfo[] parameters = entry.Method.GetParameters();
+
+        // When GoMethodFuncType retyped the receiver to the POINTER it was looked up through (see
+        // there), the method itself still takes the pointee by value, so CreateDelegate would refuse
+        // the signature. Compile a thin adapter that dereferences the box and calls through — the
+        // same expression-compiled route the bound factories use, and keyed by receiver AND method
+        // for the same reason the type cache is.
+        if (t is not null && parameters.Length > 0 &&
+            KindOf(t) == Pointer && ElementType(t) == parameters[0].ParameterType)
+        {
+            return s_pointerReceiverFuncs.GetOrAdd((t, entry.Method), key =>
+            {
+                ParameterInfo[] ps = key.Method.GetParameters();
+                ParameterExpression[] args = new ParameterExpression[ps.Length];
+                args[0] = Expression.Parameter(key.Receiver, "recv");
+
+                for (int i = 1; i < ps.Length; i++)
+                    args[i] = Expression.Parameter(ps[i].ParameterType, ps[i].Name);
+
+                MethodInfo read = typeof(GoReflect).GetMethod(nameof(ReadPointerSlot),
+                    BindingFlags.Public | BindingFlags.Static)!;
+
+                Expression[] call = new Expression[ps.Length];
+                // ReadPointerSlot handles every box shape the bridge mints, so the adapter does not
+                // need to know which one it was handed.
+                call[0] = Expression.Convert(
+                    Expression.Call(read, Expression.Convert(args[0], typeof(object))),
+                    ps[0].ParameterType);
+
+                for (int i = 1; i < ps.Length; i++)
+                    call[i] = args[i];
+
+                return Expression.Lambda(funcType, Expression.Call(key.Method, call), args).Compile();
+            });
+        }
 
         return s_methodFuncs.GetOrAdd(entry.Method, m => Delegate.CreateDelegate(funcType, m));
     }
