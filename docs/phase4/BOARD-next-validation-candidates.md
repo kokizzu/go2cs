@@ -20658,3 +20658,126 @@ A comparer-backed pluggable hash could honor that one truthfully, but dumpNode's
 stands either way and the forbidden move (dead scaffolding for dead code) buys nothing. The row
 stays inside the naive denominator awaiting its individual ruling, exactly as the exclusion
 ledger's candidates paragraph records. No artifacts banked.
+
+---
+
+## `unique` classified at master: an HONEST NON-BANK — 7 of 20 measured, and a naming blocker that no disclosure can express (2026-09-01, coordinator lane)
+
+Commissioned to classify `unique`'s residual toward a bank on the tracker's reading
+("16/20, residual isolated pure, disclosure-shaped — GC-liveness territory"). The
+classification came back **non-bankable**, on a blocker that is not a liveness question at
+all. Same outcome shape as the same day's `os` attempt, and for the same doctrinal reason: a
+disclosure names a structural property of the deployment shape, never an
+unimplemented-but-fixable defect.
+
+Full pipeline at master `6aa91b0f6`, Go 1.23.12, explicit `-test-timeout 10m`:
+`go2cs -tests -test-action all <GOROOT>\src\unique <worktree>\src\core\unique`, exit 1.
+**The results-file tail carries NO `action:"timeout"` event** — the run completed; the
+mass-empty family is not in play and no shape inference was needed.
+
+### The arithmetic — and a correction to the tracker's row
+
+The C# host produced **20 terminal rows: 8 pass, 12 fail**. Against Go's 20, matching by
+name and verdict, **7 match**:
+
+| Set | Rows | State |
+|---|---|---|
+| `TestMakeCloneSeq` + 6 of its 7 subtests | 7 | **match** (pass/pass) — the r41c `makeCloneSeq` root stays closed |
+| `TestHandle` 8 value subtests | 8 | Go `pass` / C# `fail` — `checkMapsFor` |
+| `TestHandle` parent | 1 | Go `pass` / C# `fail` (propagated) |
+| `TestMakeClonesStrings` | 1 | Go `pass` / C# `fail` |
+| `testEface` naming pairs | 3 logical (6 comparison rows) | one side has NO matching row |
+
+**The tracker's "16/20" is contradicted, and the coincidence is diagnostic: 16 is exactly the
+MISMATCH-entry count in the comparison's own error string.** The reading appears to be the
+mismatch count transcribed as the match count. The last board-recorded figure before this was
+`4 of 19` (r43e), and that entry already named "the `TypeFor`/`Name` subtest-naming rows" as an
+unresolved root — so the optimistic row was never backed by a measurement here. Corrected in
+`docs/phase4/TRACKER-100-percent.md` with this run as the evidence.
+
+### Blocker A — the `testEface` naming divergence. NOT disclosable, on two independent grounds
+
+`type testEface any` is emitted as **`global using testEface = object;`** — a C# `using`
+alias, not a type. The Go name is ERASED at conversion, so `reflect.TypeFor[T]().Name()`
+answers the empty string where Go answers `testEface`, and `t.Run` then names the subtest from
+that empty string. Measured, both directions:
+
+* C# emits `TestHandle//<nil>`, `TestHandle//"hello"`, `TestMakeCloneSeq/#00`
+  (`#00` being Go's own fallback for an empty `t.Run` name).
+* Go emits `TestHandle/testEface/<nil>`, `TestHandle/testEface/"hello"`,
+  `TestMakeCloneSeq/testEface`.
+
+This is **systemic, not a `unique` quirk**: a census of the committed corpus finds **167
+`global using <Name> = object;` sites** — `crypto.PublicKey`, `crypto.PrivateKey`,
+`crypto.DecrypterOpts` and their re-exports among them. Every named type whose underlying type
+is the empty interface loses its name to reflect.
+
+It cannot be disclosed:
+
+1. **Doctrine.** The CLR is perfectly capable of carrying a named type here; the erasure is an
+   EMISSION-MODEL choice (it is what makes Go's universal assignability to `any` fall out of C#
+   assignment for free). That is an unimplemented-but-fixable property of the converter, not a
+   structural property of the deployment shape — the exact bar today's `os` ruling set.
+2. **Mechanism, and this one is decisive on its own.** A disclosure pins a signature on a
+   FAILING NAMED ROW. Here the two sides do not share a row to pin: Go's `.../testEface/<nil>`
+   has no C# counterpart and C#'s `...//<nil>` has no Go counterpart. The oracle matches by test
+   name, so a name mismatch is unpinnable — the same mechanism gap that
+   `DESIGN-object-lifetime-disclosure.md` §3c records for the hang shape, met from a new
+   direction.
+
+**Named remedy (owner of the row, not this lane):** carry the Go name for a
+named-empty-interface type into the emission so reflect can recover it, without losing implicit
+assignability. Blast radius is the 167 alias sites; `crypto`'s key types make it a corpus-wide
+reflect-fidelity question, not a test-naming nicety.
+
+### Blocker B — the 10 GC rows ARE codegen-liveness, measured, and disclosure-shaped once A is gone
+
+The eight `checkMapsFor` failures all report Go's own message
+`value <v> still referenced a handle (or tiny block?)`, and `TestMakeClonesStrings` reports
+`string was improperly retained`. Both ask the collector to take an object while the asserting
+frame is still running.
+
+The converted test frame is faithful and the shape is the banked one: `v0` and `v1` are plain
+locals of the subtest lambda; `Handle<T>` is a **struct** holding `ж<T>`; `Value()` is an
+extension method taking that struct **by value**; and `drainMaps` + `checkMapsFor` run in the
+SAME frame. By-value struct consumption materializes a caller temp that CoreCLR's GC info
+reports live for the whole method — verbatim the `TestOnceXGC` mechanism already banked in
+`src/core/sync/go2cs_test_disclosures.json`.
+
+**Measured, not asserted — frame-residency A/B over the real `internal/weak` machinery,
+ONE ARM PER PROCESS, four fresh processes per arm:**
+
+| Arm | What it does | Result |
+|---|---|---|
+| `static` (positive control) | box rooted by a static field | **RETAINED** 4/4 |
+| `callee` (positive control) | box built in a `NoInlining` callee; only the weak `Pointer` returned | **RELEASED** 4/4 |
+| `frame` (the measurement) | box is a frame LOCAL, last use is a by-value consumption, `runtime.GC()` and the check in that same frame | **RETAINED** 4/4 |
+
+Both controls fire in their own direction, so the probe can observe retention AND release —
+it is not a gate that cannot go red. The conclusion is the platform-liveness lane's, reached
+independently: **frame residency is the whole mechanism.**
+
+**This also answers the commissioning question about the weak/CWT machinery directly: there is
+NO leak and NO named fixable remedy there.** The `callee` arm releases 4/4 through
+`internal/weak`'s `WeakReference` + `ConditionalWeakTable` canonical index and `runtime.GC()`'s
+unique-cleanup arm — the machinery releases exactly when nothing roots the box. `unique`'s
+intern map, `weak.Pointer`'s handle indirection and the cleanup wiring in
+`runtime/managed_impl.cs` are all exonerated.
+
+So the 10 rows are **`codegen-liveness`** (structural — the object CANNOT be collected while the
+frame runs), not `object-lifetime` (temporal): they fail
+`DESIGN-object-lifetime-disclosure.md` §2's *"genuinely unreachable at that point"* clause,
+which is precisely the sibling boundary that document's ⟨OQ-L1⟩ ratified.
+
+### Disposition
+
+`unique` does **not** bank. Its test artifacts were restored, not committed — the standing
+outcome for this package, now for a rooted reason rather than a wall. All 11 dirt items
+classified as known non-drift before restoring: one CRLF phantom (`doc.cs`, empty numstat),
+one `.cs.auto` sibling, the init-forcing hook RELOCATING from `handle.cs` into
+`package_info.cs`'s `<ImportInitializers>` block, the position-map funcLit argument (the 5th
+closure shape), and the `go2cs.SynthesizedStructs` `InternalsVisibleTo` grant. **No real drift.**
+
+**The row is bankable the day Blocker A is fixed** — at that point all 10 remaining rows are
+`codegen-liveness` disclosures whose A/B evidence is the table above, and the arithmetic closes
+at 20/20 with 10 disclosed. Nothing else stands in the way.
