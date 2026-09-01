@@ -1326,35 +1326,16 @@ internal static bool haveIdenticalType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, boo
 
 // go2cs generated this placeholder — func haveIdenticalUnderlyingType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// go2cs generated this placeholder — func typelinks is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string sizeofRtype0ˢ = "sizeof(rtype) > 0"u8;
+
 // Non-composite types of equal kind have same underlying type
 // (the predefined instance of the type).
 // Composite types.
 // Might have the same methods but still
 // need a run time conversion.
-
-// typelinks is implemented in package runtime.
-// It returns a slice of the sections in each module,
-// and a slice of *rtype offsets in each module.
-//
-// The types in each module are sorted by string. That is, the first
-// two linked types of the first module are:
-//
-//	d0 := sections[0]
-//	t1 := (*rtype)(add(d0, offset[0][0]))
-//	t2 := (*rtype)(add(d0, offset[0][1]))
-//
-// and
-//
-//	t1.String() < t2.String()
-//
-// Note that strings are not unique identifiers for types:
-// there can be more than one with a given string.
-// Only types we might want to look up are included:
-// pointers, channels, maps, slices, and arrays.
-internal static partial (slice<@unsafe.Pointer> sections, slice<slice<int32>> offset) typelinks();
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string sizeofRtype0ˢ = "sizeof(rtype) > 0"u8;
 
 // rtypeOff should be an internal detail,
 // but widely used packages access it using linkname.
