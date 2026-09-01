@@ -1343,36 +1343,22 @@ public static bool CanInterface(this ΔValue v) {
 
 // go2cs generated this placeholder — func valueInterface is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// go2cs generated this placeholder — func InterfaceData is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// go2cs generated this placeholder — func IsNil is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
 // Do not allow access to unexported values via Interface,
 // because they might be pointers that should not be
 // writable or methods or function that should not be callable.
 // Special case: return the element inside the interface.
 // Empty interface has one layout, all interfaces with
 // methods have a second layout.
-
-// InterfaceData returns a pair of unspecified uintptr values.
-// It panics if v's Kind is not Interface.
-//
-// In earlier versions of Go, this function returned the interface's
-// value as a uintptr pair. As of Go 1.4, the implementation of
-// interface values precludes any defined use of InterfaceData.
-//
-// Deprecated: The memory representation of interface values is not
-// compatible with InterfaceData.
-public static array<uintptr> InterfaceData(this ΔValue v) {
-    v.mustBe(ΔInterface);
-    // The compiler loses track as it converts to uintptr. Force escape.
-    escapes(v.ptr);
-    // We treat this as a read operation, so we allow
-    // it even for unexported data, because the caller
-    // has to import "unsafe" to turn it into something
-    // that can be abused.
-    // Interface value is always bigger than a word; assume flagIndir.
-    return (~(ж<array<uintptr>>)(uintptr)(v.ptr)).Clone();
-}
-
-// go2cs generated this placeholder — func IsNil is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
+// The compiler loses track as it converts to uintptr. Force escape.
+// We treat this as a read operation, so we allow
+// it even for unexported data, because the caller
+// has to import "unsafe" to turn it into something
+// that can be abused.
+// Interface value is always bigger than a word; assume flagIndir.
 // Both interface and slice are nil if first word is 0.
 // Both are always bigger than a word; assume flagIndir.
 
