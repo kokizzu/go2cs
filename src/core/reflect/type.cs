@@ -1492,103 +1492,12 @@ internal static ΔType initFuncTypes(nint n) {
     finally { ᒐ.Run(); }
 }
 
-// FuncOf returns the function type with the given argument and result types.
-// For example if k represents int and e represents string,
-// FuncOf([]Type{k}, []Type{e}, false) represents func(int) string.
-//
-// The variadic argument controls whether the function is variadic. FuncOf
-// panics if the in[len(in)-1] does not represent a slice and variadic is
-// true.
-public static ΔType FuncOf(slice<ΔType> @in, slice<ΔType> @out, bool variadic) {
-    GoFrame ᒐ = default;
-    try {
-        if (variadic && (len(@in) == 0 || @in[len(@in) - 1].Kind() != ΔSlice)) {
-            throw panic("reflect.FuncOf: last arg of variadic func must be slice");
-        }
-        // Make a func type.
-        ref var ifunc = ref heap<any>(out var Ꮡifunc);
+// go2cs generated this placeholder — func FuncOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-        ifunc = (Action)(default!);
-        var prototype = ~Ꮡifunc.Reinterpret<any, ж<funcType>>();
-        nint n = len(@in) + len(@out);
-        if (n > 128) {
-            throw panic("reflect.FuncOf: too many arguments");
-        }
-        var o = New(initFuncTypes(n)).Elem();
-        var ft = (ж<funcType>)(uintptr)((@unsafe.Pointer)o.Field(0).Addr().Pointer());
-        var args = @unsafe.Slice((ж<ж<rtype>>)(uintptr)((@unsafe.Pointer)o.Field(1).Addr().Pointer()), n).slice(0, 0, n);
-        ft.Value = prototype.Value;
-        // Build a hash and minimally populate ft.
-        uint32 hash = default!;
-        foreach (var (_, inΔ1) in @in) {
-            var t = inΔ1._<ж<rtype>>();
-            args = builtin.append(args, t);
-            hash = fnv1(hash, (byte)(((~t).t.Hash >> (int)(24))), (byte)(((~t).t.Hash >> (int)(16))), (byte)(((~t).t.Hash >> (int)(8))), (byte)(~t).t.Hash);
-        }
-        if (variadic) {
-            hash = fnv1(hash, (rune)'v');
-        }
-        hash = fnv1(hash, (rune)'.');
-        foreach (var (_, outΔ1) in @out) {
-            var t = outΔ1._<ж<rtype>>();
-            args = builtin.append(args, t);
-            hash = fnv1(hash, (byte)(((~t).t.Hash >> (int)(24))), (byte)(((~t).t.Hash >> (int)(16))), (byte)(((~t).t.Hash >> (int)(8))), (byte)(~t).t.Hash);
-        }
-        ft.Value.TFlag = 0;
-        ft.Value.Hash = hash;
-        ft.Value.InCount = (uint16)len(@in);
-        ft.Value.OutCount = (uint16)len(@out);
-        if (variadic) {
-            ft.Value.OutCount |= (uint16)((uint16)(1 << (int)(15)));
-        }
-        // Look in cache.
-        {
-            var (ts, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
-                foreach (var (_, t) in ts._<slice<ж<abi.Type>>>()) {
-                    if (haveIdenticalUnderlyingType(ft.of(funcType.ᏑType), t, true)) {
-                        return new rtypeжΔType(toRType(t));
-                    }
-                }
-            }
-        }
-        // Not in cache, lock and retry.
-        ᏑfuncLookupCache.of(funcLookupCacheᴛ1.ᏑMutex).Lock();
-        defer(ᏑfuncLookupCache.of(funcLookupCacheᴛ1.ᏑMutex).Unlock, ref ᒐ);
-        {
-            var (ts, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
-                foreach (var (_, t) in ts._<slice<ж<abi.Type>>>()) {
-                    if (haveIdenticalUnderlyingType(ft.of(funcType.ᏑType), t, true)) {
-                        return new rtypeжΔType(toRType(t));
-                    }
-                }
-            }
-        }
-        ΔType addToCache(ж<abi.Type> tt) {
-            slice<ж<abi.Type>> rts = default!;
-            {
-                var (rti, ok) = ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Load(hash); if (ok) {
-                    rts = rti._<slice<ж<abi.Type>>>();
-                }
-            }
-            ᏑfuncLookupCache.of(funcLookupCacheᴛ1.Ꮡm).Store(hash, builtin.append(rts, tt));
-            return toType(tt);
-        }
-        // Look in known types for the same string representation.
-        @string str = funcStr(ft);
-        foreach (var (_, tt) in typesByString(str)) {
-            if (haveIdenticalUnderlyingType(ft.of(funcType.ᏑType), tt, true)) {
-                return addToCache(tt);
-            }
-        }
-        // Populate the remaining fields of ft and store in cache.
-        ft.Value.Str = resolveReflectName(newName(str, ""u8, false, false));
-        ft.Value.PtrToThis = 0;
-        return addToCache(ft.of(funcType.ᏑType));
-    }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
-}
-
+// Look in cache.
+// Not in cache, lock and retry.
+// Look in known types for the same string representation.
+// Populate the remaining fields of ft and store in cache.
 internal static @string stringFor(ж<abi.Type> Ꮡt) {
     return toRType(Ꮡt).String();
 }
