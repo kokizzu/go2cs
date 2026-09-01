@@ -1,6 +1,7 @@
 # DESIGN — relocating the forced-init import hooks out of mainline code
 
-**Status:** spec, not yet implemented. Owner-sourced scout (2026-08-31), accepted by coordinator
+**Status:** step 2 of §5 LANDED 2026-09-01 (the compile-ordering precondition, §3.2); the hook
+relocation itself is still spec. Owner-sourced scout (2026-08-31), accepted by coordinator
 ruling the same day; the implementation is a corpus-wide emission change and lands in the **rebank
 wave**, whose full-roster sweep is its gate.
 
@@ -97,11 +98,34 @@ to follow the package's layout:
   nothing, so an item naming `$(GoTargetOS)/package_info.cs` unconditionally would name a file that
   does not exist and turn a package that currently builds empty into a hard error.
 
-The machinery to distinguish these already exists — `platformLayout.go` knows each package's platform
-set and is what decides whether a csproj gets the conditioned include at all — so this is a shaping
-constraint on the item, not a blocker. But it means step 2 of §5 is a per-layout emission change
-rather than one template line, and it is the first thing a fresh implementer would otherwise
-discover the hard way, on a corpus-wide build.
+### 3.2 Resolved: ONE shape serves every layout, because `Exists()` absorbs the difference
+
+§3.1 concluded that step 2 was "a per-layout emission change rather than one template line". That was
+too pessimistic, and the implementation (2026-09-01) settles it: the item has to be layout-AWARE, but
+it does not have to be layout-SWITCHED. Both forms are emitted unconditionally and each is guarded by
+`Exists()`, so exactly the right one matches and the other is silently inert:
+
+```xml
+<Compile Include="package_info.cs" Condition="Exists('package_info.cs')" />
+<Compile Include="$(GoTargetOS)/package_info.cs" Condition="Exists('$(GoTargetOS)/package_info.cs')" />
+<Compile Include="*.cs" Exclude="package_info.cs" />
+<Compile Include="$(GoTargetOS)/*.cs" Exclude="$(GoTargetOS)/package_info.cs" />
+```
+
+The per-GOOS pair is still added only to L3 packages (by `platformLayout.go`), so a flat package's
+project file never mentions `$(GoTargetOS)` at all. Verified on real corpus packages rather than a
+scratch project: `bytes` compiles `package_info.cs` first, `os` compiles `windows/package_info.cs`
+first, and darwin-only `crypto/x509/internal/macos` built for windows matches neither guard and
+yields an EMPTY compile-item list — no CS2001, exactly the build-nothing behavior it had before.
+
+Two mechanics worth keeping, both measured and both cheap to rediscover the hard way:
+
+* The `Exclude` on each glob is **load-bearing, not tidiness.** Without it the file is included
+  twice and the build emits `warning CS2002: Source file specified multiple times` on every project.
+  Because the root glob's text is also `platformLayout.go`'s insertion anchor, changing it means
+  moving that anchor in the same commit.
+* `--` is illegal inside an XML comment, so the rationale comment cannot use it. The csproj metadata
+  tests catch this immediately, which is how it was found.
 
 ## 4. `package_init.cs` and the static-constructor route — asked, and now CLOSED
 
@@ -149,10 +173,13 @@ a rebank-style regen.
 Recommended sequence:
 
 1. ~~Decide `package_info.cs` vs `package_init.cs`~~ — **settled in §4: `package_info.cs`.**
-2. Land the **compile-ordering change first**, as its own gated step (per §3.1 it is a per-layout
-   emission change, not one template line). It is independently correct and
-   independently testable, and it is what makes step 3 safe.
-3. Then relocate the hooks.
+2. ~~Land the **compile-ordering change first**, as its own gated step~~ — **LANDED 2026-09-01**
+   (§3.2). It carries no behavioral change on its own: `package_info.cs` contributes no module
+   initializers today, so moving it to first position reorders nothing that runs. That is exactly
+   what makes it a safe, separately-gated precondition rather than part of the risky step.
+3. Then relocate the hooks. **This is the step that has behavioral effect**, and it is where
+   `tests/Behavioral/NamedImportInitOrder` stops being a formality — per §2 a relocation without
+   step 2 reintroduces log/slog's nil-deref.
 
 `tests/Behavioral/NamedImportInitOrder` must stay green throughout; per §2 it is a real positive
 control, not a formality. A `-stdlib` reconvert plus CNR covers the emission change; the wave's
