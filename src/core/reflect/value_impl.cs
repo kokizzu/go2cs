@@ -323,6 +323,22 @@ public static bool IsNil(this ΔValue v) {
 public static nint Len(this ΔValue v) {
     v.mustBeKind("reflect.Value.Len"u8, Array, Chan, Map, ΔSlice, ΔString, ΔPointer);
     object? cur = v.live;
+    // Go's Ptr arm (lenNonSlice), mirroring Cap's one method up: pointer-to-array answers the
+    // array TYPE's length; pointer-to-anything-else panics with Go's own text. The kind gate above
+    // already admitted ΔPointer — HALF the arm had landed — but the switch below had no pointer
+    // case, so every pointer Value fell to the `_ => 0` default: a SILENT wrong for ptr-to-array
+    // ("Len = 0 want 3", TestValue_Len) and a missing panic for ptr-to-slice, both faces of the
+    // same absent arm.
+    if (v.kind() == ΔPointer) {
+        var elem = abi.Elem(v.typ());
+        if (elem != nil && abi.Kind(ref elem.Value) == abi.Array) {
+            if (elem.Value.arrayDims is { Length: > 0 } dims) {
+                return dims[0];
+            }
+            return cur is not null && GoReflect.ReadPointerSlot(cur) is IArray pa ? pa.Length : 0;
+        }
+        throw panic("reflect: call of reflect.Value.Len on ptr to non-array Value");
+    }
     if (cur is not null && cur is not @string && v.kind() == ΔString && GoReflect.TryUnwrapWrapperValue(cur, out object? unwrapped)) {
         cur = unwrapped;
     }
@@ -553,6 +569,32 @@ public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
 public static nint Cap(this ΔValue v) {
     object? cur = v.live;
     ΔKind k = v.kind();
+    // Go's Ptr arm (capNonSlice): a pointer to an ARRAY answers the array TYPE's length — from the
+    // type, so it works on a nil pointer too — and a pointer to anything else panics with its own
+    // text, not the generic ValueError. The descriptor route is Go's `v.typ().Elem().Len()`
+    // verbatim: a POINTER descriptor hands its pointee's dims down unshifted (the cargo rule), so
+    // Elem() carries the array's length. A live pointee is the fallback for a descriptor whose
+    // dims were never measured.
+    //
+    // KNOWN RESIDUAL, measured: the NIL half of TestValue_Cap/Len stays red. Go's answer for a nil
+    // *[3]int is 3 because the length lives in the TYPE; the managed `ж<array<T>>` carries no
+    // length and the canonical typed-nil box is keyed by type alone, so BOTH routes below honestly
+    // answer 0 there — the dims exist nowhere in the value or its managed type. This is the third
+    // member of the construction-position cargo family (channel direction landed 2026-09-01; the
+    // func type word is the typed-nil-func arc): a typed-nil pointer-to-array needs its pointee
+    // dims stamped at the nil CONSTRUCTION (`a = nil` on a *[3]int), converter-side work of the
+    // same shape as chanDirNilValue. Fixing the live and panic-text halves without buying the nil
+    // half with a guess is the r39d pattern: answer what is knowable, name what is not.
+    if (k == ΔPointer) {
+        var elem = abi.Elem(v.typ());
+        if (elem != nil && abi.Kind(ref elem.Value) == abi.Array) {
+            if (elem.Value.arrayDims is { Length: > 0 } dims) {
+                return dims[0];
+            }
+            return cur is not null && GoReflect.ReadPointerSlot(cur) is IArray pa ? pa.Length : 0;
+        }
+        throw panic("reflect: call of reflect.Value.Cap on ptr to non-array Value");
+    }
     if (cur is null && (k == ΔSlice || k == Array || k == Chan)) {
         return 0;
     }
