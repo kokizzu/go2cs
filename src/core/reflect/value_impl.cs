@@ -1283,15 +1283,36 @@ public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
     System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
     System.Type? keyType = GoReflect.KeyType(st);
     System.Type? elemType = GoReflect.ElementType(st);
-    object? liveMap = v.live;
-    // Go: indexing a nil map is legal and yields the zero Value — unlike ASSIGNING to one, which
-    // panics — so this is a miss, not an error.
-    if (liveMap is null || keyType is null || elemType is null || (liveMap is IMap nilProbe && nilProbe.IsNil)) {
+    if (keyType is null || elemType is null) {
         return new ΔValue(nil);
     }
+    // ORDER IS THE CONTRACT HERE, not a detail. Go checks the KEY's assignability before it touches
+    // the map at all — `key.assignTo("reflect.Value.MapIndex", tt.Key, nil)` runs ahead of
+    // mapaccess, and the nil-map answer is decided INSIDE mapaccess, after that check. Doing the
+    // nil-map early return first made a wrong-typed key on a NIL map answer "miss" where Go panics,
+    // which is exactly what TestMap asserts: it sets mv to its zero value (nil) on the line before
+    // and then indexes it with a key of the wrong defined type.
+    // NOTE for whoever closes TestMap's "not assignable" row: the gate below is not strict enough,
+    // and the OBVIOUS tightening is MEASURED WRONG. Go applies ASSIGNABILITY here, which is
+    // stricter than what TryMarshalAssignable accepts — that helper admits a named wrapper into its
+    // underlying slot under Go's named↔unnamed clause, but the clause requires one side to be
+    // UNNAMED and a predeclared type like `string` is named (spec: "Predeclared types, defined
+    // types, and type parameters are called named types"), so `type S string` is NOT assignable to
+    // `string` and Go panics where this returns a miss. Replacing the check with
+    // `key.Type().AssignableTo(...)` — Go's own relation — does NOT fix that row and DOES break
+    // TestArrayOfGenericAlg (measured: 48 -> 49, 0 fixed, 1 broken), so the bridge's AssignableTo is
+    // not a drop-in here. The real correction is in the shared helper's unwrap arm, which is
+    // corpus-wide and wants its own sizing pass and its own canaries.
     if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k)) {
-        throw panic("reflect.Value.MapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
+        // Go's own text, from assignTo: "value of type", not "key of type".
+        throw panic("reflect.Value.MapIndex: value of type " + GoReflect.GoTypeName(key.live?.GetType()) +
                     " is not assignable to type " + GoReflect.GoTypeName(keyType));
+    }
+    object? liveMap = v.live;
+    // Indexing a nil map is legal and yields the zero Value — unlike ASSIGNING to one, which
+    // panics — so this is a miss, not an error.
+    if (liveMap is null || (liveMap is IMap nilProbe && nilProbe.IsNil)) {
+        return new ΔValue(nil);
     }
     if (!GoReflect.TryGetMapEntry(liveMap, keyType, elemType, k, out object? e)) {
         return new ΔValue(nil);
