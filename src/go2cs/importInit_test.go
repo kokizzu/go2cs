@@ -392,3 +392,86 @@ func TestPackageInitializesTransitivelyFailsOpen(t *testing.T) {
 		}
 	}
 }
+
+// TestImportInitSectionMergeIsKeyedByHookIdentity pins the merge's UNIQUENESS invariant: one hook per
+// imported package per emission unit, whatever the forcing target is spelled as.
+//
+// The defect it locks out, stated as the defect. The forcing target is root-qualified or bare
+// depending on which class the deciding unit was writing into (forcingTargetShadowed), so a merging
+// write — the -tests seed, which carries the PRODUCTION package_info.cs's entries into a variant's
+// file — meets the same hook under two spellings. A merge keyed on the rendered LINE keeps both, and
+// two methods of one name in one partial class is CS0111. Measured on crypto/x509, whose `math/big`
+// reaches the test variants by more than one route, and caught by the canary battery on master:
+//
+//	package_test_info.cs(139,35): CS0111 'x509_test_package' already defines 'initᴛᴛimportꓸmathꓸbig'
+//
+// This asserts the DECISION — how many hooks of a given identity the merge yields, and which one
+// survives — rather than the text of any emitted file. A guard that grepped a corpus file for the
+// duplicate would go vacuous the moment the section moved or was renamed (FALSE-GREEN route 8), and
+// would say nothing about WHICH spelling won.
+func TestImportInitSectionMergeIsKeyedByHookIdentity(t *testing.T) {
+	previous := packageImportInits
+	t.Cleanup(func() { packageImportInits = previous })
+
+	// This unit's own decision: the BARE spelling, as a variant writing into its own class renders it.
+	packageImportInits = map[string]string{"math/big": "math.big_package"}
+
+	hook := importInitName("math/big")
+
+	// The seeded half, decided by the PRODUCTION unit against a different class, hence root-qualified.
+	seeded := importInitLine("math/big", "go.math.big_package")
+
+	lines := []string{
+		"public static partial class x509_test_package",
+		"{",
+		importInitIndent + "// <" + ImportInitSection + ">",
+		importInitIndent + seeded,
+		importInitIndent + "// </" + ImportInitSection + ">",
+		"}",
+	}
+
+	merged := applyImportInitSection(lines, true)
+
+	occurrences := 0
+	var surviving string
+
+	for _, line := range merged {
+		if trimmed := strings.TrimSpace(line); importInitLineName(trimmed) == hook {
+			occurrences++
+			surviving = trimmed
+		}
+	}
+
+	if occurrences != 1 {
+		t.Fatalf("the merge must yield exactly ONE hook per import identity, got %d:\n%s",
+			occurrences, strings.Join(merged, "\n"))
+	}
+
+	// The FRESH entry wins: it was decided against the class this file declares, where the seeded one
+	// was decided against another.
+	if want := importInitLine("math/big", "math.big_package"); surviving != want {
+		t.Errorf("this unit's own rendering must win the merge:\n got %s\nwant %s", surviving, want)
+	}
+}
+
+// TestImportInitLineNameReadsOnlyItsOwnShape keeps the identity extractor narrow. A line this file did
+// not render must answer "" so the merge carries it through untouched rather than reinterpreting it —
+// the merge keys on this, so a loose match would silently collapse two unrelated entries into one.
+func TestImportInitLineNameReadsOnlyItsOwnShape(t *testing.T) {
+	rendered := importInitLine("math/big", "math.big_package")
+
+	if got := importInitLineName(rendered); got != importInitName("math/big") {
+		t.Errorf("importInitLineName(%q) = %q, want %q", rendered, got, importInitName("math/big"))
+	}
+
+	for _, foreign := range []string{
+		"",
+		"// a comment",
+		"public partial struct T {}",
+		"[GoInit] internal static void initᴛᴛproduction() { builtin.initPackage(typeof(x)); }",
+	} {
+		if got := importInitLineName(foreign); got != "" && !strings.HasPrefix(foreign, "[GoInit] internal static void init") {
+			t.Errorf("importInitLineName(%q) = %q, want \"\" for a line this file did not render", foreign, got)
+		}
+	}
+}
