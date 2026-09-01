@@ -109,7 +109,7 @@ const TypedNilBoxAccessor = "OrTypedNil()"
 // same reason at the same boundary: `any((func())(nil))` is a NON-nil interface whose %T
 // prints `func()` and whose reflect.TypeOf answers that func type.
 //
-// What differs is WHY a cast cannot serve here. A pointer's canonical nil is a ж<T> VALUE that
+// What differs is WHY a cast cannot serve here. A pointer's canonical nil is a box VALUE that
 // holds its pointee type, so boxing it keeps the type; a func's nil is a null DELEGATE, and
 // `(object)(Action)null` is just `null` - the cast is erased at the box. The variadic-func cast
 // this boundary already emits therefore pins the dynamic type only for a NON-null value, and a
@@ -117,8 +117,8 @@ const TypedNilBoxAccessor = "OrTypedNil()"
 //
 // Unlike the pointer arm, a nil CONVERSION is not exempt: `(*T)(nil)` already renders the
 // canonical box, while `(func())(nil)` renders `(Action)(default!)` - a cast of null, which is
-// exactly the shape that loses the word. Only a func LITERAL or a method group is provably
-// non-null. Includes `()` as it is a method call.
+// exactly the shape that loses the word. Only a func LITERAL or a method group - plain or
+// QUALIFIED - is provably non-null. Includes `()` as it is a method call.
 const TypedNilFuncAccessor = "OrTypedNilFunc()"
 
 // The -tests package-init hook: the erasable classic-partial method a production

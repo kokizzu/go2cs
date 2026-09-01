@@ -282,11 +282,19 @@ func (v *Visitor) applyTypedNilFuncBox(valueType types.Type, neverNull bool, ren
 // funcExprNeverRendersNull reports whether a func-typed expression's RENDERING provably cannot be a
 // null delegate — the func arm's twin of pointerExprNeverRendersNull, and deliberately narrower.
 //
-// The two shapes that qualify are the two the corpus is almost entirely made of (censused at the
-// boundary, 2026-09-01: 35 of 38 func-into-`any` sites): a func LITERAL, which allocates a delegate,
-// and an identifier naming a declared FUNC, which is a method group. Both are non-null by
-// construction, and exempting them is what holds this change's footprint to the three sites that
-// can actually be nil.
+// The shapes that qualify are the ones the corpus is almost entirely made of (censused at the
+// boundary, 2026-09-01): a func LITERAL, which allocates a delegate, and a METHOD GROUP — an
+// identifier naming a declared func, or a SELECTOR naming one through its package or receiver
+// (`fmt.Sprint`). All are non-null by construction, and exempting them is what holds this change's
+// footprint to the sites that can actually be nil.
+//
+// ⚠ The SELECTOR arm was missing from the first cut, and the census inherited the omission because
+// the sizing probe reused this predicate: `text/template`'s `fmt.Sprint`/`Sprintf`/`Sprintln` were
+// counted as nullable and reported as a 3-site production blast radius. They are method groups and
+// can never be null. With the arm present the production radius is ZERO — every func the corpus
+// boxes into `any` is provably non-null — and the treatment reaches only the test dimension, where
+// typed nils are written deliberately. A predicate that a census is keyed on is a predicate whose
+// gaps the census cannot see.
 //
 // A nil CONVERSION is NOT exempt, and that is the one place this differs from the pointer twin.
 // `(*T)(nil)` already renders the canonical typed-nil box, so the pointer arm can pass it through;
@@ -301,6 +309,21 @@ func (v *Visitor) funcExprNeverRendersNull(expr ast.Expr) bool {
 		return true
 	case *ast.Ident:
 		_, isFunc := v.info.Uses[expr].(*types.Func)
+
+		return isFunc
+	case *ast.SelectorExpr:
+		// A QUALIFIED method group — `fmt.Sprint`, or a method value read off a receiver. The
+		// selection's object is what decides it, not the expression's shape: `x.f` where f is a
+		// FIELD of func type is an ordinary nullable value and must fall through.
+		if selection, ok := v.info.Selections[expr]; ok {
+			_, isFunc := selection.Obj().(*types.Func)
+
+			return isFunc
+		}
+
+		// No selection record: a package-qualified reference (`fmt.Sprint`), whose object is
+		// recorded against the selector's own identifier.
+		_, isFunc := v.info.Uses[expr.Sel].(*types.Func)
 
 		return isFunc
 	}
