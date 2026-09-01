@@ -338,12 +338,26 @@ func (v *Visitor) litNoInliningPrefix(funcLit *ast.FuncLit) string {
 	return ""
 }
 
+// funcPlaceholderFormat is the ONE definition of the line the converter writes where a
+// manualConversionFuncs registration displaces a func body. It is a WITNESS two other places read,
+// which is why it lives here beside its emission rather than being spelled three times: the
+// registry's source-side guard (manualConversionDestination_test.go) uses it to prove every
+// registration displaces something, and layout L3's merge uses it to learn which TARGETS a
+// displacement actually happened on — which is what routes a scope-restricted hand-own to the
+// folders it belongs in (platformHandOwn.go).
+const funcPlaceholderFormat = "// go2cs generated this placeholder — func %s is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])"
+
+// funcPlaceholderLead is the format's fixed prefix, for the readers that scan for the line rather
+// than render it. Kept as its own constant rather than derived, and pinned to the format by
+// TestFuncPlaceholderLeadMatchesTheFormat so the two cannot drift apart silently.
+const funcPlaceholderLead = "// go2cs generated this placeholder — func "
+
 func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	// A declaration owned by a manual conversion (see manualTypeOperations.go) emits only a
 	// marker comment — the package's *_impl.cs supplies the implementation.
 	if v.isManualFuncDecl(funcDecl) {
 		v.outputBuilder.WriteString(v.newline)
-		v.writeOutput("// go2cs generated this placeholder — func %s is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])", funcDecl.Name.Name)
+		v.writeOutput(funcPlaceholderFormat, funcDecl.Name.Name)
 		v.outputBuilder.WriteString(v.newline)
 		return
 	}

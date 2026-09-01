@@ -52,6 +52,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path"
@@ -216,7 +217,7 @@ func resolveHandOwnPlacements(coreDir string, targets []string, emissions []*pla
 			placements = append(placements, handOwnPlacement{
 				logical:      logical,
 				principal:    principal,
-				destinations: platformHandOwnDestinations(coreDir, pkg, targets, principalEmitters),
+				destinations: platformHandOwnDestinations(coreDir, pkg, targets, handOwnEmitters(principal, targets, emissions, principalEmitters)),
 				candidates:   handOwnCandidateDirs(coreDir, pkg, targets),
 			})
 
@@ -331,4 +332,64 @@ func readSingleHandOwnCopy(candidates []string, name string) ([]byte, bool, erro
 	}
 
 	return contents, source != "", nil
+}
+
+// handOwnEmitters narrows a principal's emitter set to the targets the hand-own is actually NEEDED
+// on, and it is the difference between a correct L3 merge and a windows corpus that does not build.
+//
+// The rule this refines: platformHandOwnDestinations routes a companion by whether its PRINCIPAL was
+// emitted everywhere. That reads the wrong fact. Being emitted on every target says the principal is
+// BUILT everywhere; it says nothing about whether the companion APPLIES everywhere, because
+// manualConversionFuncs scopes a registration per GOOS. runtime's trace.go is converted on all three
+// targets while only the linux emission DISPLACES `StartTrace` (registered goosLinux) — so
+// runtime/linux/trace_impl.cs is right, a flat copy compiles it beside windows's undisplaced body,
+// and the build dies CS0111. Measured 2026-09-01 by a seeded three-target merge, and A/B'd
+// byte-identical against the master converter, so it is this routing rule rather than any one arc.
+//
+// The narrowing reads the DISPLACEMENT itself: a target needs the companion exactly when its own
+// emission of the principal carries a placeholder (funcPlaceholderLead — the one line the converter
+// writes where a registration displaces a body, defined beside its emission in visitFuncDecl.go).
+// That subsumes the old rule rather than special-casing it: an unscoped registration displaces on
+// every target and still yields flat.
+//
+// TWO deliberate fallbacks to the caller's emitter set, both "no evidence, no narrowing":
+//
+//   - A WHOLE-FILE hand-own, whose principal is the `.cs.auto` review sibling. The whole file is
+//     displaced there, so there is no placeholder inside it to count; the sibling's own emitter set
+//     already answers exactly which platforms compile the Go file it replaces.
+//   - A companion whose members nothing displaces — a go2cs runtime companion with no Go file behind
+//     it (runtime/managed_impl.cs, internal/poll/runtime_sema_impl.cs). Same discipline the corpus
+//     guard applies to a principal-less companion: no evidence, leave the placement alone.
+func handOwnEmitters(principal string, targets []string, emissions []*platformEmission, principalEmitters []string) []string {
+	if strings.HasSuffix(principal, ".cs.auto") {
+		return principalEmitters
+	}
+
+	displacing := make([]string, 0, len(principalEmitters))
+
+	for i, target := range targets {
+		if i >= len(emissions) || emissions[i] == nil {
+			continue
+		}
+
+		for rawPath, state := range emissions[i].artifacts {
+			if !state.emitted || state.logicalPath(rawPath) != principal {
+				continue
+			}
+
+			contents, err := os.ReadFile(filepath.Join(emissions[i].root, "core", filepath.FromSlash(rawPath)))
+
+			if err == nil && bytes.Contains(contents, []byte(funcPlaceholderLead)) {
+				displacing = append(displacing, target)
+			}
+
+			break
+		}
+	}
+
+	if len(displacing) == 0 {
+		return principalEmitters
+	}
+
+	return displacing
 }
