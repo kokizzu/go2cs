@@ -231,6 +231,15 @@ ONE stdlib in a build; there is now only one on disk.
     durable half of the rule stands regardless: a stale results.json next to a fresh comparison
     is NOT a deadline kill; a gated/filtered census gates on the CAPTURED STREAM; and the cheap
     check is the results file's timestamp against the comparison's.
+    ⚠ **A FAILED `-tests` BUILD leaves the PREVIOUS comparison record in place** — the family's
+    nastiest member, paid three times by one lane (2026-08/09). The pipeline rewrites
+    `go2cs_test_comparison/results.json` only when a run completes, so a fix whose build DIED
+    (e.g. a hand-own registered under a bare name where Go declares a method — key `"Type.method"`
+    — displacing nothing and duplicating into CS0111) re-reads the OLD record and reports the OLD
+    failures: it reads exactly like "the fix does not work", or worse, like a stable count. Before
+    believing any post-fix count, verify the build the record claims actually succeeded and the
+    record is newer than the edit; for the registry case, checking the placeholder was actually
+    emitted is the cheap tell. The record is only the verdict when the run that wrote it completed.
   - `-go2cspath <dir>` — runtime/stdlib root and default output root for converted code (default `~/go2cs`;
     env `GO2CSPATH`). `go2cs -recurse <input> <output>` keeps generated code under the explicit output root
     while `$(go2csPath)` references continue to resolve against this runtime root. **It is also the root the
@@ -242,7 +251,17 @@ ONE stdlib in a build; there is now only one on disk.
     `go2cs <pkg-dir>` inside a clone resolves against that clone with no flag or env; and a **loud
     once-per-run stderr warning** naming the resolved path and the consequence when none is found
     (deliberately NOT fatal — converting standalone code with no deployed root is legitimate). An explicitly
-    configured *working* root always wins. `-recurse` warns but never self-locates (without a second
+    configured *working* root always wins.
+    ⚠ **Single-package mode emits BESIDE ITS INPUT — `-go2cspath` does NOT redirect its output**
+    (measured 2026-08-31: `go2cs -go2cspath <tmp>\src <GOROOT>\src\internal\abi` wrote seventeen
+    artifacts into GOROOT and nothing into the temp root, and the byte-identity gate then diffed
+    the seeded copy against its own source — IDENTICAL, vacuously, with oracle contamination on
+    top). Pass the output dir as the SECOND POSITIONAL for any single-package emission you intend
+    to diff. Two tells, both cheap: an "emission" whose mtimes predate the seed's copy is not an
+    emission; and a byte-identity green is only believable after its negative control (inject one
+    blank line → the gate must go red → the restore must be byte-identical) — a gate diffing a
+    seeded copy against its own source is a gate that cannot go red.
+    `-recurse` warns but never self-locates (without a second
     positional its root doubles as the output root, so moving it would move the generated tree);
     `-recurse=nuget` does neither (published package refs need no local root); `-stdlib` does neither (its
     root IS the output root the run itself populates, so an absent `golib` is the normal first-conversion
@@ -322,7 +341,13 @@ ONE stdlib in a build; there is now only one on disk.
   or via `[System.IO.File]::ReadAllText/WriteAllText`, never PS 5.1 `Get-Content`/`Out-File`.
   **Three more census/launch traps, each paid repeatedly (2026-08-17):** a DEFAULT ripgrep honors
   `src/core/.gitignore` and under-counts the marker census by one — census with `git grep` or a raw
-  filesystem walk, never bare `rg` over `src/core`. `Start-Process -ArgumentList` in ARRAY form does
+  filesystem walk, never bare `rg` over `src/core`. A census over CONVERTED C# never keys on a
+  type's spelled NAME: the converter deliberately mints aliases (`_type`, `Δio`, `abiꓸFuncType`,
+  the whole `ꓸ` family), so a spelling-matched scan silently under-reports by every alias in scope
+  — measured 2026-08-31 at ~1.9x, when 59 of 117 `Reinterpret` descriptor sites were spelled
+  `_type` (runtime's `global using` alias for `abi.Type`) and were invisible to a name-keyed census
+  however many times it was re-run. Resolve what the name denotes, or enumerate the aliases first
+  and search for all of them. `Start-Process -ArgumentList` in ARRAY form does
   not quote a path containing a space (`C:\Program Files\Go` dies as `Failed to access input file
   path "C:\Program"`, reading exactly like a missing GOROOT — three lanes paid this); pass ONE
   pre-quoted argument string. And `MSB4166 "child node exited prematurely"` is a BUILD-INFRASTRUCTURE
@@ -560,7 +585,14 @@ ONE stdlib in a build; there is now only one on disk.
   **The detachment flags are load-bearing (measured 2026-08-14, the argv-stop and os-signal lanes):**
   `Start-Process -WindowStyle Hidden` with output redirected to a log file survives the reap;
   `Start-Process -NoNewWindow` followed by `Wait-Process` does NOT — the wait re-parents the session's
-  fate onto the child and the turn boundary kills it exactly as if it had been spawned inline. Poll the
+  fate onto the child and the turn boundary kills it exactly as if it had been spawned inline.
+  ⚠ `Wait-Process` has ALSO reported a still-running target as exited, twice in a row (2026-09-01,
+  the residual-pass lane): a background-wrapped `Wait-Process -Id` said done while
+  `Get-CimInstance Win32_Process` showed the host alive with a live `go2cs.exe` child — one
+  redundant CNR raced into the same behavioral tree before it was caught (the r41 overlap hazard,
+  avoided only just). Mechanism unconfirmed; treat any `Wait-Process` "done" as unverified until a
+  positive `Get-Process -Id` poll agrees (`while (Get-Process -Id $pid) { Start-Sleep 20 }` read
+  correctly where the wait lied). Poll the
   log file (or the process by PID) instead of `Wait-Process` — and write the poll POSITIVELY
   (`while` + explicit `exit 0`/`exit 1`), never `until ! powershell -Command "exit (Get-Process …)"`:
   `exit $true` is exit code 1, so that loop ends instantly and reports "exited" while the process
@@ -797,7 +829,15 @@ ONE stdlib in a build; there is now only one on disk.
   dies leaves a few-hundred-byte log ending mid-line, indistinguishable from an external kill
   (measured 2026-08-31, a 485-byte log from a dead full-suite run). In BASH, `*>&1` is not
   redirection syntax at all — the shell GLOBS it, silently no-op'ing the command (measured
-  2026-08-31: one CNR and two runner attempts read as failures that never ran). And never inject
+  2026-08-31: one CNR and two runner attempts read as failures that never ran).
+  **⚠ PowerShell-REDIRECTED output is UTF-16, and an ASCII grep over it returns a well-formed
+  EMPTY** (measured twice 2026-08-31, independently): both `go2cs.exe … > log 2>&1` and a
+  `Tee-Object` log land as UTF-16LE, so `grep <marker>` finds nothing and reads as "probes never
+  fired" / "the run never happened" — a full retraction was built on six such empty greps, and a
+  CNR verdict was nearly lost the same way. The tell costs one command:
+  `head -c 200 <log> | tr -d -c '\000' | wc -c` — a nonzero NUL count means every grep against
+  that log has been lying — then decode (`iconv -f UTF-16LE`) before grepping. Same
+  silence-not-error family as the globbed `*>&1` and the buffered pipe above. And never inject
   non-ASCII C# source (`Ꮡ`, `ж`, `Δ`) through a PowerShell command STRING — the argument pass
   mojibakes it even when file I/O is correct; write such content with the Edit/Write tools.
   **⚠ The same mojibake hits a `.ps1` SCRIPT FILE ITSELF when Windows PowerShell 5.1 parses it —
@@ -1111,10 +1151,21 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   UTF-8/no-BOM (`[System.IO.File]::ReadAllText/WriteAllText` + `UTF8Encoding($false)`) — PS 5.1
   `Get-Content` reads the converter's BOM-less UTF-8 as ANSI and `Out-File utf8` re-encodes the damage,
   double-encoding the `©` in `<Copyright>` on every pass (this is what created, then tripled, the
-  258-file corpus mojibake; root-caused and leveled in the r11 bank).
+  258-file corpus mojibake; root-caused and leveled in the r11 bank). Python has the same trap in
+  the OTHER direction: `utf-8-sig` STRIPS a BOM on read but always ADDS one on write, so a
+  read-sig/write-sig round trip silently BOMs a BOM-less file (caught 2026-08-31 by the
+  hand-application byte-identity bar during a probe restore). Three encodings, three silent
+  corruptions — PS 5.1 ANSI, UTF-16 redirects, utf-8-sig — one rule: byte-compare any
+  restore/round-trip against the original before trusting it.
 - **Metric:** measure **packages-compiling**, not raw error count. Fixing file-inclusion bugs (e.g. the
   filename build-constraint fix) *raises* the error count because newly-included files surface their own
-  latent defects — that's progress, not regression.
+  latent defects — that's progress, not regression. The claim "my fix caused N new errors" is
+  therefore never banked without the five-minute control (named 2026-09-01, after a
+  substantially-correct fix was discarded on the misread): REVERT the fix, build PAST the original
+  blocker, and see whether the "new" errors are still there. Unmasked errors appear precisely where
+  compilation could not previously reach — i.e. in files OTHER than the ones you touched — so "the
+  errors are in different files from my change" is evidence of unmasking, never evidence of
+  causation.
 - **A corpus regen that moves `package_info.cs` records owes `go generate .` in `src/go2cs`** —
   `stdlib-metadata.txt` is generated FROM the corpus and gated by `TestStdLibMetadataInSync` under the
   plain converter `go test`, so banking a regen without the regenerate leaves the converter gate red at
@@ -1174,6 +1225,14 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
     defect then "reproduces" against clean, HEAD-matching source with a clean `git status` (measured
     2026-08-16, cost one invalid run). After any hand-own swap: touch the file or build
     `--no-incremental` before believing a repro.
+  - **⚠ A hand-APPLIED edit to a generated file must be proven BYTE-IDENTICAL to the converter's
+    own emission before it banks** (standing bar, ruled 2026-08-31). Regenerate into a seeded root
+    and byte-compare the hand-applied file against the emission: the first measured
+    hand-application was ONE BLANK LINE short of what the converter emits, and without the check
+    the next regen reports that cosmetic delta as drift and bills a phantom investigation to
+    whoever runs it. The comparison is only meaningful when the emission actually landed in the
+    compared root (see the single-package output-positional trap above) and only after the gate's
+    negative control has been made to fail once.
   - **⚠ Phase-4 operational: two hand-owned patterns, and a WHOLE-FILE rewrite MUST carry the marker.** Making a
     package *run* (not just compile) often needs a native reimplementation where the literal conversion compiles
     but cannot work — e.g. `sync`'s Mutex/RWMutex/WaitGroup (2026-07-11), whose Go runtime sleeping semaphore
