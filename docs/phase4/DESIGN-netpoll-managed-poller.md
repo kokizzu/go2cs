@@ -1173,6 +1173,46 @@ reason about), single-waiter-per-mode (no queue/fairness dimension), generation 
 - `runtime` entire — `netpoll.cs`, `windows/netpoll_windows.cs` stay converted-and-dead, per the
   doctrine's "becomes unreachable" clause. Zero runtime edits.
 
+> **AMENDED 2026-09-01 — "zero runtime edits" holds for every consumer this design was about, and
+> costs exactly ONE function outside them.** The scope above is internal/poll's callers. It does not
+> cover `runtime`'s OWN test suite, which reaches the seam directly: `export_test.go` re-exports
+> `netpollGenericInit` as `runtime.NetpollGenericInit`, and `netpoll_os_test.go` calls it from a
+> package-level `init()`. So the first `-tests` run of `runtime` that got far enough to compile threw
+> `getg: external (assembly or cgo) function is not implemented` in the test host's STATIC
+> CONSTRUCTOR — `netpollGenericInit → netpollinit → stdcall4 → getg()` — before a single test
+> executed, and every verdict came back empty. That is the whole-host mass-empty shape, not a test
+> failure, which is why it is worth one narrow exception.
+>
+> The exception: `netpollGenericInit` joins `manualConversionFuncs["runtime"]` (`goosAny`) with a
+> NO-OP body in the new flat `runtime/netpoll_impl.cs`. Blast radius, measured by the two-emission
+> control (a baseline-converter emission and a changed-converter emission into two seeded roots,
+> diffed against each other rather than against the committed tree): **two files per target** —
+> `netpoll.cs` (12-line body → 1 placeholder line) and that target's `package_info.cs` (the ONE
+> `GoPositionMap` entry for `runtime/netpoll.go`). Identical footprint on the windows and linux
+> targets; the map line is byte-identical across all three.
+>
+> The no-op is an EQUIVALENCE, not a silencer, and both halves were measured. (1) Nothing reads the
+> state it would publish: `netpollinited()` has six call sites and all six are `proc.cs` — the
+> scheduler the managed host never enters — and the one read of `netpollInited` outside `netpoll.cs`
+> is `time.cs`'s runtime timer heap, equally unreachable. (2) The honest behaviour is delivered by
+> GO'S OWN GUARD: all three flavors open `netpoll(delay)` with "the poller object was never created →
+> return an empty gList" (`iocphandle == _INVALID_HANDLE_VALUE` / `epfd == -1` / `kq == -1`), so
+> declining to create it leaves each flavor in the branch Go wrote for exactly this condition — which
+> is true here, since no goroutine is ever parked on the runtime's poller. `netpollInited` is
+> deliberately left at zero: setting it would assert "the runtime poller is up" while the handle stays
+> invalid, an incoherent pair for a later reader of that dead code.
+>
+> `netpollBreak` is deliberately NOT hand-owned. Its auto body reaches `stdcall4 → getg` and keeps
+> throwing, so `proc_test.go`'s `TestNetpollBreak` fails as one loud, locatable row rather than going
+> quietly green — `stubs_impl.cs`'s standing rule for an unported path, and the right outcome for a
+> test whose premise (a poller wait a break interrupts) the managed model does not have. `netpoll`
+> needs no hand-own at all; guard (2) already answers it.
+>
+> This also settles the tempting alternative for the record: a real managed `getg()` would NOT have
+> fixed this path. `stdcall` bottoms out in `asmcgocall`, itself a bodyless partial with no `_impl`
+> body anywhere in the corpus, so a fabricated `g` moves the crash exactly one frame deeper — the
+> design's §3.1 "shallow wall" measured one level lower down.
+
 **New hand-owned surface:**
 
 | Artifact | Kind | Census effect |
