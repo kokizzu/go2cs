@@ -130,13 +130,35 @@ func declaredAssemblyName(contents string) string {
 }
 
 // insertFriendAssemblyAccess grants the package's colocated test assembly access to its internal
-// members. Inserted AFTER template rendering — never as a template verb — so the template keeps its
-// historical verb count and a user-supplied `-csproj` template (which cannot know about the slot)
-// renders exactly as before; Sprintf would otherwise append a `%!s(EXTRA …)` diagnostic into every
-// generated project. Anchored on the first closing PropertyGroup, which every usable template has.
+// members, and the reflection bridge's STRUCT-SYNTHESIS assembly the same. Inserted AFTER template
+// rendering — never as a template verb — so the template keeps its historical verb count and a
+// user-supplied `-csproj` template (which cannot know about the slot) renders exactly as before;
+// Sprintf would otherwise append a `%!s(EXTRA …)` diagnostic into every generated project. Anchored
+// on the first closing PropertyGroup, which every usable template has.
+//
+// THE SECOND FRIEND, and why it is an accessibility grant rather than anything cleverer.
+// `reflect.StructOf` mints a CLR value type into a fixed-name dynamic assembly
+// (golib GoStructSynthesis, `go2cs.SynthesizedStructs`). A synthesized struct whose FIELD TYPE is
+// internal to a converted package cannot be LOADED from there without a grant, and the failure is
+// undiagnosable in place: CreateType throws a bare TypeLoadException naming nothing, and the
+// half-built TypeBuilder then poisons the whole assembly for every later GetTypes(). Measured with a
+// positive control inside that assembly — `array<ж<int>>` (all public) mints, `array<ж<rtype>>` does
+// not, and `rtype` is internal; same shape, same layout, accessibility the only difference.
+// reflect.FuncOf hits it head-on, since initFuncTypes asks for `struct{ FuncType abi.FuncType;
+// Args [n]*rtype }`.
+//
+// IVT and not IgnoresAccessChecksTo: that attribute was tried first and measured INERT (identical
+// verdicts and identical TypeLoadException counts, base and branch in one batch). It governs the
+// JIT's access checks for compiled method bodies; CreateType is the TYPE LOADER's field validation,
+// a different enforcement layer. IVT changes accessibility itself, which is the layer that refuses.
+//
+// IVT and not emitting Go-unexported types as C# public: that would be MORE permissive than Go —
+// a public rtype is reachable by every C# consumer of the corpus, where Go grants external packages
+// nothing — and Go exportedness here is carried by the NAME's case, not by C# accessibility, so
+// widening the C# surface buys nothing Go asked for. One named friend assembly is the narrow grant.
 func insertFriendAssemblyAccess(projectFileContents string) string {
 	const anchor = "</PropertyGroup>"
-	const friendItemGroup = "\r\n\r\n  <!-- Same-package Go tests run in a separate assembly but retain package-private access. -->\r\n  <ItemGroup>\r\n    <InternalsVisibleTo Include=\"$(AssemblyName).tests\" />\r\n  </ItemGroup>"
+	const friendItemGroup = "\r\n\r\n  <!-- Same-package Go tests run in a separate assembly but retain package-private access. -->\r\n  <ItemGroup>\r\n    <InternalsVisibleTo Include=\"$(AssemblyName).tests\" />\r\n    <!-- reflect.StructOf mints synthesized structs into this fixed-name dynamic assembly; a field type that is internal here cannot be loaded from there without the grant. -->\r\n    <InternalsVisibleTo Include=\"go2cs.SynthesizedStructs\" />\r\n  </ItemGroup>"
 
 	idx := strings.Index(projectFileContents, anchor)
 
