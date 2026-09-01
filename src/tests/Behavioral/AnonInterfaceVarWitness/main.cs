@@ -52,10 +52,6 @@ internal static labelerᴛ1 labeler = new thingжlabelerᴛ1(Ꮡ(new thing(n: 41
 }
 internal static originᴛ1 origin = new originᴛ1(x: 3, y: 4);
 
-[GoType("dyn")] internal partial interface main_eq {
-    bool Equal(any x);
-}
-
 internal static void Main() {
     var a = Ꮡ(new thing(n: 7));
     var b = Ꮡ(new thing(n: 7));
@@ -63,7 +59,7 @@ internal static void Main() {
     fmt.Println(a.Equal(b.OrTypedNil()), a.Equal(c.OrTypedNil()), a.Public());
     fmt.Println(labeler.Label());
     fmt.Println(origin.x, origin.y);
-    main_eq eq = new thingжmain_eq(a);
+    _ᴛ1 eq = new thingж_ᴛ1(a);
     fmt.Println(eq.Equal(b.OrTypedNil()), eq.Equal(c.OrTypedNil()));
 }
 

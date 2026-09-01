@@ -55,14 +55,6 @@ internal static (bool single, bool multi) classify(any v) {
 private static readonly object multiUnwrapCountˢ = (@string)"multi unwrap count:"u8;
 private static readonly object singleUnwrapˢ = (@string)"single unwrap:"u8;
 
-[GoType("dyn")] internal partial interface main_type {
-    slice<error> Unwrap();
-}
-
-[GoType("dyn")] internal partial interface main_typeᴛ1 {
-    error Unwrap();
-}
-
 internal static void Main() {
     var e1 = new simpleErr("boom"u8);
     var m = new multiWrap(errs: new error[]{e1}.slice());
@@ -74,12 +66,12 @@ internal static void Main() {
     var (es, em) = classify(e1);
     fmt.Printf("simpleErr:  single=%v multi=%v\n"u8, es, em);
     {
-        var (u, ok) = ((any)m)._<main_type>(ᐧ); if (ok) {
+        var (u, ok) = ((any)m)._<classify_typeᴛ1>(ᐧ); if (ok) {
             fmt.Println(multiUnwrapCountˢ, len(u.Unwrap()));
         }
     }
     {
-        var (u, ok) = ((any)s)._<main_typeᴛ1>(ᐧ); if (ok) {
+        var (u, ok) = ((any)s)._<classify_type>(ᐧ); if (ok) {
             fmt.Println(singleUnwrapˢ, u.Unwrap());
         }
     }

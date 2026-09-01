@@ -43,7 +43,6 @@ using static go.main_package;
 [assembly: GoImplement<thing, _ᴛ1>(Pointer = true)]
 [assembly: GoImplement<thing, _ᴛ2>(Pointer = true)]
 [assembly: GoImplement<thing, labelerᴛ1>(Pointer = true)]
-[assembly: GoImplement<thing, main_eq>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -57,7 +56,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "ABAugoKmgqaCAB8wgoKChIKChoI=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABAugoKmgqaCABswgoKChIKChoI=")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -76,7 +75,6 @@ public static partial class main_package
     internal partial interface _ᴛ1 {}
     internal partial interface _ᴛ2 {}
     internal partial interface labelerᴛ1 {}
-    internal partial interface main_eq {}
     internal partial struct originᴛ1 {}
     internal partial struct thing {}
     // </TypeAccessibility>

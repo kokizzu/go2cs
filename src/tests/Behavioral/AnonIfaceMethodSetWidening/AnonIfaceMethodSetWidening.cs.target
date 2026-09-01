@@ -40,11 +40,6 @@ private static readonly object pointerNotWidenedWrongˢ = (@string)"pointer-not-
     @string Bar();
 }
 
-[GoType("dyn")] internal partial interface main_typeᴛ1 {
-    @string Foo();
-    @string Bar();
-}
-
 internal static void Main() {
     fooer v = new gadget(1);
     {
@@ -56,7 +51,7 @@ internal static void Main() {
     }
     fooer p = new gadgetжfooer(Ꮡ(new gadget(2)));
     {
-        var (b, ok) = p._<main_typeᴛ1>(ᐧ); if (ok){
+        var (b, ok) = p._<main_type>(ᐧ); if (ok){
             fmt.Println(pointerWidenedOkˢ, b.Foo(), b.Bar());
         } else {
             fmt.Println(pointerNotWidenedWrongˢ);

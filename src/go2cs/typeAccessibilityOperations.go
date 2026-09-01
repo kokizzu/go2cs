@@ -214,6 +214,33 @@ func generatedTypeScope(identifier string) string {
 	return "internal"
 }
 
+// liftNameNeedsPublicType reports whether a dedup REUSE candidate for a `<Container>_<Member>`-style
+// lift name is safe from the accessibility angle, i.e. whether the MEMBER this lift names (the
+// segment after the LAST underscore — the struct field, parameter, or unnamed-result index the
+// caller formatted in) is itself exported.
+//
+// This is deliberately NOT generatedTypeScope(name): that reads the FIRST character of the WHOLE
+// mangled name, which is the right question for "what accessibility will a FRESH mint under this
+// name get" (go2cs-gen infers it the same way) but the wrong one for "does the FIELD that will
+// HOLD a REUSED type need that type to be public." A field's own accessibility is independent of
+// its container's — runtime hash_test.go's `IfaceKey.i` (unexported field, exported struct) mangles
+// to `IfaceKey_i`, which reads PUBLIC by first character alone, yet the field itself compiles
+// `internal IfaceKey_i i;`: an internal field never conflicts with ANY type accessibility (C#'s rule
+// is type >= member, and internal is the floor), so gating on the combined name here would refuse a
+// perfectly safe reuse (confirmed: it did, until this function replaced that check — the ifaceHash_i
+// reuse hash_test.go needs to compile at all was itself rejected by the combined-name version).
+// AnonymousInterfaces' `WithInlineField.R` is the opposite case this still catches: the segment "R"
+// is exported, so a reuse candidate whose OWN generatedTypeScope reads internal is correctly refused.
+func liftNameNeedsPublicType(name string) bool {
+	member := name
+
+	if idx := strings.LastIndexByte(name, '_'); idx >= 0 && idx+1 < len(name) {
+		member = name[idx+1:]
+	}
+
+	return generatedTypeScope(member) == "public"
+}
+
 // anonymousLiftResidue reports whether name — already stripped of its ShadowVarMarker — is one of the
 // converter's SYNTHESIZED anonymous-type names, and returns the Go identifier the name still carries
 // (empty when it carries none, which is the caller's signal that no export rule applies).

@@ -45,7 +45,6 @@ using static go.main_package;
 [assembly: GoImplement<fakeError, error>]
 [assembly: GoImplement<fakeReader, WithInlineField_R>]
 [assembly: GoImplement<fakeReader, takesReader_r>]
-[assembly: GoImplement<fakeReader, testCompositeLiteral_readers>]
 [assembly: GoImplement<fill_dst, io_package.Writer>(Promoted = true)]
 [assembly: GoImplement<fill_dst, io_package.Writer>]
 [assembly: GoImplement<tally, io_package.Writer>(Pointer = true)]
@@ -62,7 +61,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("AnonymousInterfaces.go", "AnonymousInterfaces.cs", "ABsSgpTEAAwKgoCClAALCoKCggAJCIKCgoIADRCCgoKCAA4WgKKA1IKCgt6CggAICoCigKKA6IKCAAYQguqCgpSCgoKUgoKUAAgSgoKClKaCgoKCgoKEgoKEgg==")]
+[assembly: go.GoPositionMap("AnonymousInterfaces.go", "AnonymousInterfaces.cs", "ABsSgpTEAAwKgoCClAALCoKCgtiCgoKCAA0QgoKCggAOFoCigNSCgoLegoIACAqAooCigOiCggAGEILqgoKUgoKClIKClAAIEoKCgpSmgoKCgoKChIKChII=")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -79,7 +78,6 @@ public static partial class main_package
 
     // <TypeAccessibility>
     internal partial interface takesReader_r {}
-    internal partial interface testCompositeLiteral_readers {}
     internal partial interface testTypeAssertion_type {}
     internal partial interface testTypeSwitch_type {}
     internal partial struct byteRepeat {}

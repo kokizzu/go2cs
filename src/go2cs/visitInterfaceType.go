@@ -110,6 +110,56 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 
 	// Intra-function type declarations are not allowed in C#
 	if lifted {
+		// Structurally IDENTICAL anonymous interfaces are ONE Go type — the interface twin of
+		// visitStructType's dedup (that function's own anonLiftKey/lookupDynamicTypeName block),
+		// which this type never had. Without it, two occurrences of the same anonymous interface
+		// shape each mint their OWN nominally-distinct C# type, and passing one where the other
+		// is expected fails even though Go calls them one type. Concretely: runtime's
+		// `ifaceHash(i interface{ F() }, seed uintptr)` (alg.go, production) and hash_test.go's
+		// `IfaceKey.i interface{ F() }` field share this exact shape; hash_test.go calls the
+		// production function through the export_test.go bridge (`IfaceHash(k.i, 0)`), so
+		// `k.i`'s field type must BE `ifaceHash_i`, not a second `IfaceKey_i` (CS1503).
+		// Checked in order: the same-pass registry (lookupDynamicTypeName — a within-pass reuse
+		// interfaces never had either, mirroring the struct side), then production's registry
+		// (lookupProductionDynamicTypeName — the reference-model `-tests` case: a later test
+		// pass adopting a name PRODUCTION already lifted and published via GoDynamicTypeLift;
+		// see seedProductionDynamicTypeLifts). A hit means an equivalent type already compiles
+		// somewhere reachable, so no new declaration is emitted at all — return its name.
+		//
+		// C#'s rule is TYPE accessibility >= MEMBER accessibility, so a reuse is only unsafe when
+		// the member this lift names (liftNameNeedsPublicType — the segment after the lift name's
+		// last underscore, i.e. the actual field/param Go declared) is EXPORTED but the reuse
+		// candidate's OWN inferred accessibility (generatedTypeScope, mirroring go2cs-gen's
+		// GetScope) is not. AnonymousInterfaces' `WithInlineField.R` (exported field, so the "R"
+		// segment needs public) reusing `takesReader_r` (internal, for an unrelated unexported
+		// param) is exactly that: CS0050/CS0051/CS0052. An unexported member — hash_test.go's
+		// `IfaceKey.i` field, the "i" segment — never conflicts with ANY reuse: internal is C#'s
+		// accessibility floor, so `ifaceHash_i` (also internal) is always safe for it, even though
+		// the COMBINED name "IfaceKey_i" itself reads public by first character (an earlier,
+		// wrong version of this check compared combined names and rejected that exact reuse). A
+		// FUNCTION-LOCAL lift needs no check at all: localTypeAccess writes an EXPLICIT `internal`
+		// there, overriding name inference entirely, so reuse is always safe regardless of case.
+		// Falling through to a fresh mint when the check fails is always safe too — it is the
+		// pre-fix behavior — and only forgoes a dedup opportunity, never breaks one.
+		if signatureType := v.getType(interfaceType, false); signatureType != nil {
+			signature := signatureType.String()
+			existing := lookupDynamicTypeName(signature)
+
+			if existing == "" {
+				existing = lookupProductionDynamicTypeName(signature)
+			}
+
+			if existing != "" && (v.inFunction || !liftNameNeedsPublicType(name) || generatedTypeScope(existing) == "public") {
+				if identType != nil {
+					v.liftedTypeMap[identType] = existing
+				}
+
+				v.liftedTypeMap[signatureType] = existing
+
+				return existing
+			}
+		}
+
 		if v.inFunction {
 			if target == nil {
 				target = &strings.Builder{}
