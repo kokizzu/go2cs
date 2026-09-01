@@ -1742,13 +1742,22 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 		// as UntypedInt and breaks a following conversion or inference; pure-literal arithmetic like
 		// `x + 2*3` has no wrapper and is left alone).
 		//
-		// COMPARISON needs nothing here: the only operand shape that could not resolve is a
-		// BigInteger-backed reference (`x > Two129` — GoBigConst has no implicit operator with
-		// `double`, CS0019), and bigIntegerConstMaterialization now casts such a reference at the
-		// reference itself, in EVERY concrete numeric context. Re-casting here would only double it
-		// (`(float64)(float64)Two129` — the bare-ident form carries no parens, so the
-		// wholeExprIsCastOfType redundancy guard below does not recognize it). A wrapper-backed
-		// comparison operand resolves via its implicit conversion and was never cast.
+		// A BARE named-const reference in a COMPARISON needs nothing here: the only such operand
+		// shape that could not resolve is a BigInteger-backed reference (`x > Two129` — GoBigConst
+		// has no implicit operator with `double`, CS0019), and bigIntegerConstMaterialization now
+		// casts such a reference at the reference itself, in EVERY concrete numeric context.
+		// Re-casting here would only double it (`(float64)(float64)Two129` — the bare-ident form
+		// carries no parens, so the wholeExprIsCastOfType redundancy guard below does not recognize
+		// it). A single wrapper-backed comparison operand resolves via its own implicit conversion
+		// and was never cast — but a COMPUTED operand combining TWO DIFFERENT wrapper kinds (runtime
+		// mgclimit_test.go's `procs * capacityPerProc`, UntypedInt * UntypedFloat) has neither an
+		// operator overload of its own nor a concrete operand for the arithmetic case below to key
+		// off, so it silently resolves through whichever primitive type BOTH wrappers happen to
+		// share first (int32) — comparing that against a genuinely concrete `ulong` on the other
+		// side is then CS0034, ambiguous between widening the ulong up and narrowing the int32's
+		// wrapper-mediated result down. Comparison gets the identical arithmetic-operand treatment
+		// below for exactly this computed-operand shape; a bare named-const reference is unaffected,
+		// since untypedConstOperand's own bare-reference arm only recurses into a COMPUTED operand.
 		var castLeft, castRight bool
 
 		untypedConstOperand := func(operand ast.Expr) bool {
@@ -1765,10 +1774,19 @@ func (v *Visitor) convBinaryExprCore(binaryExpr *ast.BinaryExpr, context Pattern
 			return v.isComputedConstOperand(operand) && v.containsUntypedNamedConstRef(operand)
 		}
 
+		// The COMPUTED-only half of untypedConstOperand — excludes a BARE named-const reference,
+		// which a comparison resolves fine without help (see the comment above).
+		computedUntypedConstOperand := func(operand ast.Expr) bool {
+			return !v.isUntypedNamedConstRef(operand) && untypedConstOperand(operand)
+		}
+
 		switch binaryExpr.Op {
 		case token.ADD, token.SUB, token.MUL, token.QUO, token.REM:
 			castLeft = untypedConstOperand(binaryExpr.X)
 			castRight = !castLeft && untypedConstOperand(binaryExpr.Y)
+		case token.EQL, token.NEQ, token.LSS, token.LEQ, token.GTR, token.GEQ:
+			castLeft = computedUntypedConstOperand(binaryExpr.X)
+			castRight = !castLeft && computedUntypedConstOperand(binaryExpr.Y)
 		}
 
 		// An operand whose own emission is ALREADY exactly this cast — the widened-const narrowing
