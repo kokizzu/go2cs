@@ -229,13 +229,11 @@ Assert-Throws 'execution: a repeated annotation is refused' {
 # empty case is asserted first and hardest: it is the "nothing changes" guarantee in one line.
 Assert-Equal 'execution args: no config contributes nothing' 0 (@(Get-RosterExecutionArgs $null)).Count
 Assert-Equal 'execution args: an empty config contributes nothing' 0 (@(Get-RosterExecutionArgs '')).Count
-# ⚠ These assert the CURRENT converter flags, and they have been wrong at master since the converter
-# retired `-test-release-tc0` in favour of `-test-config Release`: the guard kept asserting the dead
-# spelling while _roster.ps1 emitted the live one, so `check-roster-format.ps1` was RED at master and
-# every `execution: release-tc0` row would have been handed a flag the converter no longer defines.
-# A mapping guard has to name the flags the converter actually parses, or it guards the wrong thing
-# in the one direction that matters.
-Assert-Equal 'execution args: release-tc0 maps to the converter flags' '-test-config Release' `
+# These assert the CURRENT converter flags. They were briefly wrong -- asserting the retired
+# `-test-release-tc0` while _roster.ps1 already emitted `-test-config Release` -- and were corrected
+# in train 12; the lesson kept here is that a mapping guard has to name the flags the converter
+# actually parses, or it guards the wrong thing in the one direction that matters.
+Assert-Equal 'execution args: release-tc0 maps to the converter flag' '-test-config Release' `
     ((@(Get-RosterExecutionArgs 'release-tc0')) -join ' ')
 Assert-Equal 'execution args: release-tc0 contributes exactly two arguments' 2 (@(Get-RosterExecutionArgs 'release-tc0')).Count
 # The opt-OUT mirror (2026-09-02, the Release+TC0 default flip). It states its WHOLE configuration --
