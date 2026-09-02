@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestCaller",
+      "class": "runtime-capability",
+      "signature": "incorrect symbol info",
+      "reason": "runtime-capability: symtab_test.go's assertion requires f.Entry() < pc -- the function's entry address always strictly precedes a call site's return address within it. go2cs has no addresses, only opaque per-call-site PC tokens (the deliberate model managed_impl.cs's header documents throughout); FuncForPC(pc) mints a *Func whose Entry() returns that SAME token, so Entry() == pc by construction and the < assertion can never hold. Inventing a value strictly less than the token (e.g. subtracting a constant) would satisfy the assert with a number that means nothing this host can stand behind -- the same class of laundering the ManagedPointerTokens/reflect pointer-identity disclosures already refuse. Falsifiable in the parts that matter: the same assertion also checks ok, Name()'s suffix, and the file/line range: if any of THOSE ever mismatch, the row is a real defect, not this disclosure -- only the Entry()>=pc arm is pinned. Measured 2026-09-02: ok=true, Name()=the correct qualified name, file/line correct, Entry()==pc exactly (e.g. 27==27) on every reported iteration."
+    }
+  ]
+}
