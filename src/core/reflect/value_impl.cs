@@ -3222,16 +3222,33 @@ public static ΔType StructOf(slice<StructField> fields) {
             // the way Go reaches even its partial support is the uncommonType layout trick this
             // hand-own replaces (an rtype followed in memory by a method array). So the boundary is
             // a loud panic, with Go's exact message wherever Go's own condition matches.
-            if (GoReflect.GoMethodCount(ft) > 0) {
-                if (i > 0) {
+            // Go SUPPORTS the shapes below that are not refused here — a first-and-only embed with
+            // methods, and an embedded INTERFACE — so the blanket panic that used to sit at the end
+            // of this block is gone. The method set those shapes need is emitted onto the minted
+            // type by GoStructSynthesis as real methods, which is what lets an interface assertion
+            // bind through AdapterBinder exactly as it does for a converted type.
+            //
+            // Go phrases these over `ft.Uncommon() != nil` — "does the type declare ANY method" —
+            // and the two arms inside it are gated DIFFERENTLY (type.go:2465-2470). Both
+            // distinctions are load-bearing for TestStructOfWithInterface's four-entry table.
+            if (GoReflect.GoHasAnyMethods(ft)) {
+                // The not-first-field refusal asks `unt.Mcount > 0`, the METHOD SET — so an embedded
+                // value whose methods all take a pointer receiver (StructIPtr, the table's
+                // `impl: false` entry) does NOT panic here; it simply fails to implement, which is
+                // what that entry asserts.
+                if (i > 0 && GoReflect.GoMethodCount(ft) > 0) {
                     throw panic("reflect: embedded type with methods not implemented if type is not first field");
                 }
-                if (n > 1) {
+                // For a POINTER embed Go refuses any second field; for a non-pointer it refuses only
+                // when the type is pointer-shaped (`Kind_&KindDirectIface`), because an interface
+                // then holds a pointer to the struct rather than a copy of it. SettablePointer is
+                // exactly that case and its method set is EMPTY, which is why the outer gate cannot
+                // be a method-count test.
+                if (n > 1 && (field.Type.Kind() == ΔPointer || GoReflect.GoIsDirectIface(ft))) {
                     throw panic(field.Type.Kind() == ΔPointer
                         ? "reflect: embedded type with methods not implemented if there is more than one field"
                         : "reflect: embedded type with methods not implemented for non-pointer type");
                 }
-                throw panic("reflect.StructOf: embedded type with methods is not implemented");
             }
         }
         if (!seen.Add(name) && name != "_") {
