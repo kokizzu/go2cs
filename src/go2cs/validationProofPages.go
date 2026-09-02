@@ -215,6 +215,27 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 		len(names)-len(disclosed), len(disclosed), provenance.goVersion, provenance.platform)
 	fmt.Fprintf(&page, "[`src/core/%s`](%s/tree/master/src/core/%s).\n", provenance.importPath, go2csRepositoryURL, provenance.importPath)
 
+	// Every verdict carries the level it was measured at (coordinator ruling, 2026-09-02): a
+	// timing-bounded row's pass/fail can depend on build configuration and JIT tiering, so a reader
+	// comparing two proof pages — or the same page across a regeneration — must never have to assume
+	// which one this was. Rendered unconditionally, not just for the non-default case. An unset
+	// Configuration (a testComparison built before this field existed, or by hand in a test fixture)
+	// reads as Debug, which is what every such record was actually produced under.
+	configuration := comparison.Environment.Configuration
+	if configuration == "" {
+		configuration = "Debug"
+	}
+
+	if configuration == "Release" {
+		tiering := "off"
+		if comparison.Environment.Tiered {
+			tiering = "on"
+		}
+		fmt.Fprintf(&page, "\nMeasured at `Release` (tiered JIT %s).\n", tiering)
+	} else {
+		fmt.Fprintf(&page, "\nMeasured at `%s`.\n", configuration)
+	}
+
 	if skipped > 0 {
 		fmt.Fprintf(&page, "\nBoth runtimes skip %d of the matched tests identically.\n", skipped)
 	}

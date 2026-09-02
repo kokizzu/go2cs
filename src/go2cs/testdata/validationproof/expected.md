@@ -11,6 +11,8 @@ comparison — it is the evidence behind the `fixture/pkg` row in
 **2 matched · 3 disclosed** — Go 1.23.1, `windows/amd64`, converted package
 [`src/core/fixture/pkg`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/fixture/pkg).
 
+Measured at `Debug`.
+
 Both runtimes skip 1 of the matched tests identically.
 
 ## Verdicts

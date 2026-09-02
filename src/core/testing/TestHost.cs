@@ -1093,7 +1093,20 @@ public static class TestHost
                     dotnetRuntime = RuntimeInformation.FrameworkDescription,
                     culture = CultureInfo.CurrentCulture.Name,
                     timezone = Environment.GetEnvironmentVariable("TZ"),
-                    shuffleSeed = options.ShuffleSeed
+                    shuffleSeed = options.ShuffleSeed,
+                    // The Go-side comparison record carries the SAME two fields (testEnvironmentRecord,
+                    // testConversion.go), derived from the options that chose this publish/run
+                    // configuration. This side records what the host actually IS and actually ran
+                    // with, observed rather than assumed -- a compile-time constant baked in by which
+                    // `dotnet publish -c` built this binary, and a runtime read of the exact
+                    // environment variable testHostRunEnv sets, so the two readings can never silently
+                    // drift apart even if something outside the pipeline changes the environment.
+#if DEBUG
+                    configuration = "Debug",
+#else
+                    configuration = "Release",
+#endif
+                    tiered = Environment.GetEnvironmentVariable("DOTNET_TieredCompilation") != "0"
                 },
                 events
             };
