@@ -105,10 +105,17 @@ are its text. Then your lane section's own reading list.
    built. Prefer routing any row through `run-validated-sweep.ps1 -Filter <pkg> -Exact`. The
    per-GOOS `<Compile>` item sets differ while timestamps do not, so purge `bin`/`obj`/`Generated`
    for any tree built before you set it, and after any target switch.
-7. Clone the repo and create your work branch IMMEDIATELY (`git switch -c claude/<lane>-bootstrap`)
-   — never commit on your local `master`, never push it. Clone the mailbox separately and
+7. **Your environment already holds a checkout of the repo on `master` — that checkout IS your
+   work tree; do not clone a second copy of the repo and do not create a git worktree** (the
+   cloud session is already isolated from every other lane). Create your work branch IMMEDIATELY
+   (`git switch -c claude/<lane>-bootstrap`) — never commit on your local `master`, never push it.
+   Network egress this bootstrap needs: go.dev (toolchain), dot.net (SDK), nuget.org (restore),
+   proxy.golang.org (`go mod download`), github.com (push, mailbox, `gh`); if the environment
+   blocks one, that is step 0's first report. Clone the mailbox separately and
    single-branch at `$HOME/go2cs-mailbox` (`git clone --single-branch --branch claude/mailbox
-   <origin> $HOME/go2cs-mailbox`; `<origin>` is the repo URL the coordinator gives you). ⚠
+   "$(git remote get-url origin)" $HOME/go2cs-mailbox` — the same remote your checkout already
+   has; it is the ONE place a second clone is wanted, because the mailbox branch must never be
+   checked out in the work tree). ⚠
    `docs/phase4/MAILBOX.md` ALSO exists on master as a 36-line STUB frozen at 2026-08-21, with a
    header naming a fleet that predates the i9 and both cloud lanes — the live channel is ONLY the
    copy in the mailbox clone. Set `git config commit.gpgsign false` in BOTH clones: all your
