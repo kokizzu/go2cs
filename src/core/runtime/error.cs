@@ -10,12 +10,6 @@ using @unsafe = unsafe_package;
 
 partial class runtime_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
-    builtin.initPackage(typeof(@internal.bytealg_package));
-}
-
 // The Error interface identifies a run time error.
 [GoType] partial interface ΔError :
     error

@@ -79,11 +79,11 @@ internal static ж<Δhchan> makechan(ref chantype t, nint size) {
     if ((~elem).Size_ >= ((uintptr)1 << (int)(16))) {
         @throw(makechanInvalidChannelˢ);
     }
-    if (hchanSize % (uintptr)maxAlign != 0 || (~elem).Align_ > maxAlign) {
+    if ((uintptr)(hchanSize % (uintptr)maxAlign) != 0 || (~elem).Align_ > maxAlign) {
         @throw(makechanBadAlignmentˢ);
     }
     var (mem, overflow) = math.MulUintptr((~elem).Size_, (uintptr)size);
-    if (overflow || mem > (uintptr)maxAlloc - hchanSize || size < 0) {
+    if (overflow || mem > (uintptr)((uintptr)maxAlloc - hchanSize) || size < 0) {
         throw panic(((plainError)(@string)makechanSizeOutOfRangeˢ));
     }
     // Hchan does not contain pointers interesting for GC when elements stored in buf do not contain pointers.

@@ -115,7 +115,7 @@ retry:
         // Ignore the ETIMEDOUT error for now, but try to dive deep and
         // figure out what really happened with n == ETIMEOUT,
         // see https://go.dev/issue/59679 for details.
-        if (n != -_EINTR && n != -_ETIMEDOUT) {
+        if (n != (int32)(-_EINTR) && n != (int32)(-_ETIMEDOUT)) {
             println((@string)"runtime: kevent on fd"u8, kq, (@string)"failed with"u8, -n);
             @throw(runtimeNetpollFailedˢ);
         }

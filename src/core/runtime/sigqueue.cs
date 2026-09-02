@@ -49,10 +49,10 @@ partial class runtime_package {
 
 [GoType("dyn")] partial struct sigᴛ1 {
     internal note note;
-    internal array<uint32> mask = new((_NSIG + 31) / 32);
-    internal array<uint32> wanted = new((_NSIG + 31) / 32);
-    internal array<uint32> ignored = new((_NSIG + 31) / 32);
-    internal array<uint32> recv = new((_NSIG + 31) / 32);
+    internal array<uint32> mask = new(3);
+    internal array<uint32> wanted = new(3);
+    internal array<uint32> ignored = new(3);
+    internal array<uint32> recv = new(3);
     internal atomic.Uint32 state;
     internal atomic.Uint32 delivering;
     internal bool inuse;

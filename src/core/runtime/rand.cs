@@ -49,12 +49,12 @@ internal static void randinit() {
     var seed = ᏑglobalRand.of(globalRandᴛ1.Ꮡseed);
     if (startupRand != default!){
         foreach (var (i, c) in startupRand) {
-            seed.Value[i % len(seed)] ^= (byte)(c);
+            seed.Value[i % 32] ^= (byte)(c);
         }
         builtin.clear(startupRand);
         startupRand = default!;
     } else {
-        if (readRandom((~seed)[..]) != len(seed)) {
+        if (readRandom((~seed)[..]) != 32) {
             // readRandom should never fail, but if it does we'd rather
             // not make Go binaries completely unusable, so make up
             // some random data based on the current time.

@@ -88,10 +88,10 @@ internal static void netpollBreak() {
         if (n == oneSize) {
             break;
         }
-        if (n == -_EINTR) {
+        if (n == (int32)(-_EINTR)) {
             continue;
         }
-        if (n == -_EAGAIN) {
+        if (n == (int32)(-_EAGAIN)) {
             return;
         }
         println((@string)"runtime: netpollBreak write failed with"u8, -n);

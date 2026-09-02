@@ -27,7 +27,7 @@ internal static void addWakeupEvent(int32 kq) {
         if (n == 0) {
             break;
         }
-        if (n == -_EINTR) {
+        if (n == (int32)(-_EINTR)) {
             // All changes contained in the changelist should have been applied
             // before returning EINTR. But let's be skeptical and retry it anyway,
             // to make a 100% commitment.
@@ -54,7 +54,7 @@ internal static void wakeNetpoll(int32 kq) {
         if (n == 0) {
             break;
         }
-        if (n == -_EINTR) {
+        if (n == (int32)(-_EINTR)) {
             // Check out the comment in addWakeupEvent.
             continue;
         }

@@ -11,12 +11,6 @@ using @internal;
 
 partial class runtime_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() {
-    builtin.initPackage(typeof(@internal.abi_package));
-}
-
 internal static uintptr c0 => /* uintptr((8-goarch.PtrSize)/4*2860486313 + (goarch.PtrSize-4)/4*33054211828000289) */ unchecked((uintptr)33054211828000289);
 internal static uintptr c1 => /* uintptr((8-goarch.PtrSize)/4*3267000013 + (goarch.PtrSize-4)/4*23344194077549503) */ unchecked((uintptr)23344194077549503);
 

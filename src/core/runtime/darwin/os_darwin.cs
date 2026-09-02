@@ -156,7 +156,7 @@ internal static void sigNoteSleep(ж<note> _) {
         entersyscallblock();
         var n = read(sigNoteRead, new @unsafe.Pointer(Ꮡb), 1);
         exitsyscall();
-        if (n != -_EINTR) {
+        if (n != (int32)(-_EINTR)) {
             return;
         }
     }

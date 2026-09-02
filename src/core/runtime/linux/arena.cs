@@ -92,12 +92,6 @@ using runtime.@internal;
 
 partial class runtime_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntimeꓸinternalꓸsys() {
-    builtin.initPackage(typeof(runtime.@internal.sys_package));
-}
-
 // Functions starting with arena_ are meant to be exported to downstream users
 // of arenas. They should wrap these functions in a higher-lever API.
 //
@@ -214,18 +208,18 @@ internal static uintptr userArenaChunkPages => /* userArenaChunkBytes / pageSize
 internal static uintptr userArenaChunkMaxAllocBytes => /* userArenaChunkBytes / 4 */ 2097152;
 
 /* [GoInit] runtime bootstrap init - not run; .NET is the runtime */ internal static void init() {
-    if (userArenaChunkPages * (uintptr)pageSize != userArenaChunkBytes) {
+    if ((uintptr)(userArenaChunkPages * (uintptr)pageSize) != userArenaChunkBytes) {
         @throw("user arena chunk size is not a multiple of the page size"u8);
     }
     if (userArenaChunkBytes % physPageSize != 0) {
         @throw("user arena chunk size is not a multiple of the physical page size"u8);
     }
     if (userArenaChunkBytes < heapArenaBytes){
-        if ((uintptr)heapArenaBytes % userArenaChunkBytes != 0) {
+        if ((uintptr)((uintptr)heapArenaBytes % userArenaChunkBytes) != 0) {
             @throw("user arena chunk size is smaller than a heap arena, but doesn't divide it"u8);
         }
     } else {
-        if (userArenaChunkBytes % (uintptr)heapArenaBytes != 0) {
+        if ((uintptr)(userArenaChunkBytes % (uintptr)heapArenaBytes) != 0) {
             @throw("user arena chunks size is larger than a heap arena, but not a multiple"u8);
         }
     }

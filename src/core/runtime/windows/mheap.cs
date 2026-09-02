@@ -30,7 +30,7 @@ internal const bool physPageAlignedStacks = /* GOOS == "openbsd" */ false;
 
 [GoType("dyn")] partial struct mheap_central {
     internal mcentral mcentral;
-    internal array<byte> pad = new((uintptr)((uintptr)cpu.CacheLinePadSize - /* unsafe.Sizeof(mcentral{}) */ (uintptr)168 % (uintptr)cpu.CacheLinePadSize) % cpu.CacheLinePadSize);
+    internal array<byte> pad = new(24);
 }
 
 [GoType("dyn")] partial struct mheap_userArena {
@@ -588,7 +588,7 @@ internal static ж<mspan> spanOf(uintptr Δp) {
     arenaIdx ri = arenaIndex(Δp);
     if (arenaL1Bits == 0){
         // If there's no L1, then ri.l1() can't be out of bounds but ri.l2() can.
-        if (ri.l2() >= (nuint)len(mheap_.arenas[0])) {
+        if (ri.l2() >= (nuint)1048576) {
             return default!;
         }
     } else {
