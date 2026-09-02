@@ -155,7 +155,7 @@ internal static ref sync.Map decompressors => ref Ꮡdecompressors.Value; // map
 // The common methods [Store] and [Deflate] are built in.
 public static void RegisterDecompressor(uint16 method, Func<io.Reader, io.ReadCloser> dcomp) {
     {
-        var (_, dup) = Ꮡdecompressors.LoadOrStore(method, dcomp); if (dup) {
+        var (_, dup) = Ꮡdecompressors.LoadOrStore(method, (dcomp).OrTypedNilFunc()); if (dup) {
             throw panic("decompressor already registered");
         }
     }
@@ -165,7 +165,7 @@ public static void RegisterDecompressor(uint16 method, Func<io.Reader, io.ReadCl
 // The common methods [Store] and [Deflate] are built in.
 public static void RegisterCompressor(uint16 method, Func<io.Writer, (io.WriteCloser, error)> comp) {
     {
-        var (_, dup) = Ꮡcompressors.LoadOrStore(method, comp); if (dup) {
+        var (_, dup) = Ꮡcompressors.LoadOrStore(method, (comp).OrTypedNilFunc()); if (dup) {
             throw panic("compressor already registered");
         }
     }

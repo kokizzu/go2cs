@@ -412,7 +412,7 @@ internal static Action<ж<encodeState>, reflectꓸValue, encOpts> typeEncoder(re
     // Compute the real encoder and replace the indirect func with it.
     f = newTypeEncoder(t, true);
     Ꮡwg.Done();
-    ᏑencoderCache.Store(t, f);
+    ᏑencoderCache.Store(t, (f).OrTypedNilFunc());
     return f;
 }
 

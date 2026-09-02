@@ -572,7 +572,7 @@ internal static void processDelayed(this ж<Checker> Ꮡcheck, nint top) {
             if ((~a).desc != nil){
                 Ꮡcheck.trace((~(~a).desc).pos.Pos(), "-- "u8 + (~(~a).desc).format, (~(~a).desc).args.ꓸꓸꓸ);
             } else {
-                Ꮡcheck.trace(nopos, delayedPˢ, (~a).f);
+                Ꮡcheck.trace(nopos, delayedPˢ, ((~a).f).OrTypedNilFunc());
             }
         }
         (~a).f(); // may append to check.delayed
