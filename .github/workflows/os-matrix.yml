@@ -46,16 +46,17 @@ on:
           - linux
           - darwin
       stage:
-        description: 'What to run: census (compile the corpus flavor), behavioral-smoke (harness proof), sweep-shard (filtered validated sweep)'
+        description: 'What to run: census (compile the corpus flavor), behavioral-smoke (harness proof), behavioral-full (the whole enumeration in slices), sweep-shard (filtered validated sweep)'
         type: choice
         required: true
         default: census
         options:
           - census
           - behavioral-smoke
+          - behavioral-full
           - sweep-shard
       filter:
-        description: 'Shard filter — package substring for sweep-shard, project substring for behavioral-smoke. Blank takes the stage default.'
+        description: 'Shard filter — package substring for sweep-shard, project substring for behavioral-smoke. IGNORED by behavioral-full, which runs the whole enumeration in slices. Blank takes the stage default.'
         type: string
         required: false
         default: ''
@@ -179,6 +180,27 @@ jobs:
                                          # (healthy disk) + a COLD 307-project NuGet restore.
               'behavioral-smoke' = 90    # converter `go build` + a filtered 4-phase run whose
                                          # shared core closure is built from cold.
+              'behavioral-full'  = 150   # the WHOLE enumeration in slices with a purge between.
+                                         # PROVISIONAL, and deliberately labelled so: the first
+                                         # real run of this leg replaces it. What IS measured, on
+                                         # a 4-core Linux host at GoTargetOS=linux: a 3-project
+                                         # slice costs 274s COLD (bin/obj/Generated purged, so the
+                                         # core closure is rebuilt) and 58s warm. Subtracting a
+                                         # ~5.3 s/project marginal puts the cold fixed term near
+                                         # 258s and the warm one near 42s.
+                                         #
+                                         # Do NOT read ~62 min off that. The fixed term is NOT a
+                                         # constant: the runner pre-builds the UNION of a slice's
+                                         # dependencies, which was 6 shared deps for those 3
+                                         # projects and is ~31 for the whole corpus, so a
+                                         # 164-project slice pays materially more than the numbers
+                                         # above. src/core does stay warm across slices (the purge
+                                         # never touches it), so slices 2..n pay the warm term --
+                                         # but the extrapolation from 3 projects to 655 is an
+                                         # extrapolation, not a measurement, and it is the one
+                                         # thing here that has never been run end to end.
+                                         # 150 is chosen to clear a pessimistic reading of it with
+                                         # the headroom the table's own doctrine asks for.
               'sweep-shard'      = 210   # one -tests convert/build/run/compare cycle per matched
                                          # row; the sweep's own per-package floors reach 120m.
           }
@@ -463,6 +485,137 @@ jobs:
           & ./.github/annotate-summary.ps1 -Title "census $goos/$rid" -Lines $summary
 
           exit $buildExit
+
+      # -------------------------------------------------------------------------------------
+      # behavioral-full — the NATIVE-HOST leg accumulator 180 turned into a concrete need.
+      #
+      # A platform-exclusive guard's golden and its MSTest entries are verified ONLY on a
+      # native-host leg: a foreign host skips every phase by name (that is what the marker is
+      # for), and CNR is transpile-only, so a missing golden is nobody's business there either.
+      # ScmRightsSeam and SendtoSeam are linux-exclusive and RUN here; the six windows-exclusives
+      # are SKIPPED by name, and that skip line is part of what this leg asserts.
+      #
+      # WHY SLICES. Every behavioral project copies the same 55-dll core closure into its own
+      # bin, so the per-project cost is FLAT at ~29.7 MB regardless of the package's weight
+      # (measured twice, agreeing: 29.8 and 29.7). At 655 measurable projects that is ~19.5 GB
+      # against ~14 GB free on a hosted runner -- the enumeration does not fit as one batch, and
+      # narrowing it is not an option because the guarantee is about EVERY package.
+      #
+      # The purge is what makes the slices cheap rather than merely possible: it takes
+      # src/tests/Behavioral only, -mindepth 2, so src/core stays warm and the ~236 s fixed cost
+      # is paid ONCE for the whole leg. It must never take the runner's own bin -- doing that
+      # once cost a run that died `exit 127, No such file or directory`.
+      # -------------------------------------------------------------------------------------
+      - name: Behavioral full — every package, in slices, on its native host
+        if: needs.plan.outputs.stage == 'behavioral-full'
+        shell: pwsh
+        env:
+          # Same reasoning as behavioral-smoke: the runner's OWN budgets cannot be influenced by
+          # the job timeout, so a generous job budget alone would be worthless.
+          GO2CS_BUILD_TIMEOUT: '5400'
+          GO2CS_BUILD_ONE_TIMEOUT: '1800'
+          GO2CS_TRANSPILE_TIMEOUT: '300'
+          GO2CS_RUN_TIMEOUT: '120'
+          SLICES: '4'
+        run: |
+          $ErrorActionPreference = 'Continue'
+
+          $goos = $env:GOOS_TARGET
+          $rid = $env:RID
+          $art = Join-Path $PWD 'artifacts'
+          New-Item -ItemType Directory -Force -Path $art | Out-Null
+
+          $exeName = if ($IsWindows) { 'go2cs.exe' } else { 'go2cs' }
+          Push-Location 'src/go2cs'
+          try { & go build -o "bin/$exeName" . ; $goExit = $LASTEXITCODE }
+          finally { Pop-Location }
+          if ($goExit -ne 0) { Write-Host "::error::converter go build failed with exit $goExit"; exit $goExit }
+
+          $runner = if ($IsWindows) {
+              './src/tests/Behavioral/BehavioralRunner/bin/Debug/net10.0/BehavioralRunner.exe'
+          } else {
+              './src/tests/Behavioral/BehavioralRunner/bin/Debug/net10.0/BehavioralRunner'
+          }
+
+          & dotnet build ./src/tests/Behavioral/BehavioralRunner/BehavioralRunner.csproj -c Debug `
+              -p:go2csPath="$PWD/src/" -p:UseSharedCompilation=false
+
+          # FALSE-GREEN route #6: an instrument that cannot find its own runner reports success
+          # over a hole. Assert it exists before anything reads a verdict from it.
+          if (-not (Test-Path $runner)) {
+              Write-Host "::error::BehavioralRunner not found at $runner"
+              exit 1
+          }
+
+          $n = [int]$env:SLICES
+          $sizes = @()
+          $totals = @()
+          $failed = @()
+
+          for ($i = 1; $i -le $n; $i++) {
+              Write-Host "==> slice $i/$n"
+              $log = Join-Path $art "behavioral-full-$goos-$rid-slice$i.log"
+
+              & $runner --slice "$i/$n" *>&1 | Tee-Object -FilePath $log
+              $rc = $LASTEXITCODE
+              if ($rc -ne 0) { $failed += "slice $i/$n (exit $rc)" }
+
+              # The header the runner prints for exactly this: both numbers, machine-readable.
+              $hdr = Select-String -Path $log -Pattern '^SLICE (\d+)/(\d+): (\d+) of (\d+) measurable' |
+                  Select-Object -First 1
+              if (-not $hdr) {
+                  Write-Host "::error::slice $i/$n printed no SLICE header -- the run did not reach the enumeration"
+                  $failed += "slice $i/$n (no header)"
+              }
+              else {
+                  $sizes += [int]$hdr.Matches[0].Groups[3].Value
+                  $totals += [int]$hdr.Matches[0].Groups[4].Value
+              }
+
+              # PURGE between slices -- src/tests/Behavioral only, -mindepth 2, never the runner's
+              # own bin and never src/core. Depth-UNLIMITED: a maxdepth purge misses most of the
+              # output (measured elsewhere at 274 of 388 directories missed).
+              Get-ChildItem -Path './src/tests/Behavioral' -Directory -Recurse -Force `
+                      -Include 'bin','obj','Generated' -ErrorAction SilentlyContinue |
+                  Where-Object { $_.FullName -notmatch '[\\/](BehavioralRunner|BehavioralTests)[\\/]' } |
+                  Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
+          # THE COUNT ASSERTION. A partition bug that drops packages is FALSE-GREEN route #3's
+          # shape through a new door -- every slice passes and the corpus is not covered -- so the
+          # sizes must SUM to the measurable total and every slice must agree on what that total
+          # is. Asserted, never trusted.
+          $sum = ($sizes | Measure-Object -Sum).Sum
+          $distinctTotals = $totals | Sort-Object -Unique
+
+          if ($sizes.Count -ne $n) {
+              Write-Host "::error::expected $n slice headers, saw $($sizes.Count)"
+              $failed += 'missing slice headers'
+          }
+          elseif ($distinctTotals.Count -ne 1) {
+              Write-Host "::error::slices disagree on the measurable total: $($distinctTotals -join ', ')"
+              $failed += 'total disagreement'
+          }
+          elseif ($sum -ne $distinctTotals[0]) {
+              Write-Host "::error::slice sizes sum to $sum but the measurable total is $($distinctTotals[0]) -- the partition dropped packages"
+              $failed += 'partition short'
+          }
+          else {
+              Write-Host "==> partition OK: $($sizes -join ' + ') = $sum of $($distinctTotals[0]) measurable"
+          }
+
+          $summary = @(
+              "## Behavioral full -- GOOS=$goos ($rid)"
+              ''
+              "Slices ``$n`` -- sizes ``$($sizes -join ', ')`` -- sum ``$sum`` of ``$($distinctTotals -join ',')`` measurable"
+              ''
+              $(if ($failed.Count -gt 0) { "FAILED: $($failed -join '; ')" } else { 'All slices green and the partition covers the enumeration.' })
+          )
+          $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          & ./.github/annotate-summary.ps1 -Title "behavioral-full $goos/$rid" -Lines $summary
+
+          if ($failed.Count -gt 0) { exit 1 }
+          exit 0
 
       # -------------------------------------------------------------------------------------
       # behavioral-smoke — prove the harness itself runs on this runner.
