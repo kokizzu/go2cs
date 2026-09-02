@@ -102,7 +102,13 @@ private static extern int readdir_r_native(nint dir, nint entry, nint result);
 
     // If this file has no dirinfo, create one. The atomic field is reached through the corpus's
     // own field-pointer idiom (`Ꮡfile.of(File.Ꮡdirinfo)`), the same one file.cs uses for it.
-    var d = new StandardBox<dirInfo>(nil);
+    // Declared as the BASE `ж<dirInfo>`, not `var`. `Load()` below returns `ж<dirInfo>`, and
+    // `StandardBox<T>` derives FROM `ж<T>` -- so inferring the derived type here makes that
+    // assignment a base-to-derived conversion the compiler rejects (CS0266). This was `var d =
+    // new ж<dirInfo>()` until the box-kind split (36b7e9d96) mechanically flipped every `new
+    // ж<T>` to `new StandardBox<T>`, which is correct at the allocation and wrong at the
+    // inference. Naming the type is also what docs/coding-style.md asks for.
+    ж<dirInfo> d = new StandardBox<dirInfo>(nil);
     while (ᐧ) {
         d = Ꮡfile.of(File.Ꮡdirinfo).Load();
         if (d != nil) {
