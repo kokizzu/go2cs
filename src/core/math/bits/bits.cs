@@ -370,21 +370,9 @@ public static nint /*n*/ Len64(uint64 x) {
     return n + (nint)len8tab[(int)(x)];
 }
 
-// --- Add with carry ---
+// go2cs generated this placeholder — func Add is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Add returns the sum with carry of x, y and carry: sum = x + y + carry.
-// The carry input must be 0 or 1; otherwise the behavior is undefined.
-// The carryOut output is guaranteed to be 0 or 1.
-//
-// This function's execution time does not depend on the inputs.
-public static (nuint sum, nuint carryOut) Add(nuint x, nuint y, nuint carry) {
-    if (UintSize == 32) {
-        var (s32, c32) = Add32((uint32)x, (uint32)y, (uint32)carry);
-        return ((nuint)s32, (nuint)c32);
-    }
-    var (s64, c64) = Add64((uint64)x, (uint64)y, (uint64)carry);
-    return ((nuint)s64, (nuint)c64);
-}
+// --- Add with carry ---
 
 // Add32 returns the sum with carry of x, y and carry: sum = x + y + carry.
 // The carry input must be 0 or 1; otherwise the behavior is undefined.
@@ -418,21 +406,9 @@ public static (uint64 sum, uint64 carryOut) Add64(uint64 x, uint64 y, uint64 car
     return (sum, carryOut);
 }
 
-// --- Subtract with borrow ---
+// go2cs generated this placeholder — func Sub is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Sub returns the difference of x, y and borrow: diff = x - y - borrow.
-// The borrow input must be 0 or 1; otherwise the behavior is undefined.
-// The borrowOut output is guaranteed to be 0 or 1.
-//
-// This function's execution time does not depend on the inputs.
-public static (nuint diff, nuint borrowOut) Sub(nuint x, nuint y, nuint borrow) {
-    if (UintSize == 32) {
-        var (d32, b32) = Sub32((uint32)x, (uint32)y, (uint32)borrow);
-        return ((nuint)d32, (nuint)b32);
-    }
-    var (d64, b64) = Sub64((uint64)x, (uint64)y, (uint64)borrow);
-    return ((nuint)d64, (nuint)b64);
-}
+// --- Subtract with borrow ---
 
 // Sub32 returns the difference of x, y and borrow, diff = x - y - borrow.
 // The borrow input must be 0 or 1; otherwise the behavior is undefined.
@@ -467,21 +443,9 @@ public static (uint64 diff, uint64 borrowOut) Sub64(uint64 x, uint64 y, uint64 b
     return (diff, borrowOut);
 }
 
-// --- Full-width multiply ---
+// go2cs generated this placeholder — func Mul is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Mul returns the full-width product of x and y: (hi, lo) = x * y
-// with the product bits' upper half returned in hi and the lower
-// half returned in lo.
-//
-// This function's execution time does not depend on the inputs.
-public static (nuint hi, nuint lo) Mul(nuint x, nuint y) {
-    if (UintSize == 32) {
-        var (hΔ1, lΔ1) = Mul32((uint32)x, (uint32)y);
-        return ((nuint)hΔ1, (nuint)lΔ1);
-    }
-    var (h, l) = Mul64((uint64)x, (uint64)y);
-    return ((nuint)h, (nuint)l);
-}
+// --- Full-width multiply ---
 
 // Mul32 returns the 64-bit product of x and y: (hi, lo) = x * y
 // with the product bits' upper half returned in hi and the lower

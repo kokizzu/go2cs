@@ -697,17 +697,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// typesByString), which a synthesized descriptor has none of -- TestGCBits nil-dereferenced
 		// there once C2's gcbits reached the body. The hand-own takes *T from abi.synthType(ж<st>),
 		// exactly as New and PointerTo already do. See reflect/value_impl.cs.
-		"NewAt":             goosAny,
-		"MakeSlice":         goosAny,
+		"NewAt":     goosAny,
+		"MakeSlice": goosAny,
 		// SliceAt's auto body called `unsafeslice` (a //go:linkname runtime helper minted as a
 		// throwing PartialStub) and then reinterpreted a raw unsafeheader.Slice{Data,Len,Cap} as a
 		// slice Value, which the managed model has no representation for. The hand-own validates (Go
 		// runtime.unsafeslice's three panics -- len < 0, nil pointer with length, elemSize*len
 		// overflow) and builds the ALIASING slice<T> over the pointer's storage via (ж<T>)(uintptr)p
 		// + unsafe.Slice<T>. See reflect/value_impl.cs.
-		"SliceAt":           goosAny,
-		"MakeMap":           goosAny,
-		"MakeMapWithSize":   goosAny,
+		"SliceAt":         goosAny,
+		"MakeMap":         goosAny,
+		"MakeMapWithSize": goosAny,
 		// MakeFunc's auto body is runtime machinery end to end: it reinterprets the descriptor into
 		// a funcType sub-record no synthesized abi.Type has behind it (the box comes back zero, Kind
 		// 0), asks funcLayout for a stack map over that nothing ("reflect: funcLayout of non-func
@@ -1655,6 +1655,35 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// submission was never made, because the once-guarded lookup ahead of it had failed. Both
 		// directions need it, so fixing it here is what a future WSARecvMsg hand-own inherits.
 		"loadWSASendRecvMsg": goosWindows,
+	},
+	// The three WORD-SIZE leaves of math/bits, and only those three. math/big calls Mul and Add from
+	// the innermost loop of Montgomery multiplication -- every RSA private-key operation -- and the
+	// converter emits each as a TWO-LEVEL body: a `UintSize == 32` branch, a nested call to the
+	// 64-bit leaf, and a tuple materialised at each level. Go pays none of it; cmd/compile
+	// intrinsifies bits.Mul64 to one MULQ at the call site (ssagen/ssa.go:5022) and aliases
+	// math/big's own mulWW onto it (:5113).
+	//
+	// Two measured mechanisms live in that shape, and collapsing to ONE BCL call removes both:
+	//   - `UintSize == 32` is a STRUCT comparison per call (2.72x). bits.cs:21 emits
+	//     `public static UntypedInt UintSize => 64;`, whose operator== is Equals over a private
+	//     Compare the JIT compiles standalone at IL 141 and never inlines.
+	//   - IL size over the JIT's default inlining budget (1.32-1.42x): the two-level shape puts Mul
+	//     at IL 83 and Add at IL 87, and DOTNET_JitDisasmSummary shows both compiled standalone.
+	//
+	// MEASURED, Release + DOTNET_TieredCompilation=0, one variable, records to distinct paths:
+	// the addMulVVW loop 22.4 -> 2.76-2.89 ns/word (8.1x), and the RSA-2048 PSS signature
+	// 68.5 -> 22.8 ms (3.0x, -67%), taking it from 82x Go to 27x. The loop figure sits on the
+	// slice-bound floor, so what remains is golib's slice<T>, not the call.
+	//
+	// Mul64/Add64/Sub64 are deliberately NOT registered: they are not on this path, and a withdrawn
+	// earlier cut registered exactly those (and not these three) for a measured ZERO -- it made the
+	// inner body faster behind an outer wrapper the JIT still would not inline. Bodies in
+	// core/math/bits/bits_impl.cs, where Add carries the one AggressiveInlining the measurement
+	// showed it needs and Mul deliberately does not.
+	"math/bits": {
+		"Add": goosAny,
+		"Mul": goosAny,
+		"Sub": goosAny,
 	},
 }
 
