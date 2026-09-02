@@ -404,3 +404,15 @@
     it at the one site that writes the placeholder. Behavioral identity is free here (comments only);
     the A/B is a regen diff whose every hunk must be comment lines. Found 2026-09-02 while cutting
     the `getgcmask` seam.
+
+    *Second instance, same day, and it sharpens the remedy: the `recvmsgRaw` displacement
+    (`syscall/linux/syscall_linux.cs`) leaves exactly ONE orphan — `// receive at least one normal
+    byte` — and it lands not above a closing brace but directly above the NEXT declaration,
+    `sendmsgN`, where it reads as that function's documentation and is actively misleading rather
+    than merely inert. So the count of orphans is not the severity: one line in the wrong place
+    costs a reader more than thirty-two in an obviously empty one. That argues for the second
+    option above (fold the interior comments INTO the placeholder) over dropping them, since
+    dropping is indistinguishable from folding at this site while folding also fixes the
+    thirty-two-line case. Whatever is chosen must be applied at the one site that writes the
+    placeholder, so both shapes are covered by one change. Found 2026-09-02 cutting the ancillary
+    (recvmsgRaw / SendmsgN) seam; banked as emitted, never hand-patched.*
