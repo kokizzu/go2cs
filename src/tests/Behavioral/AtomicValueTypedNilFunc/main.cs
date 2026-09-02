@@ -1,0 +1,78 @@
+namespace go;
+
+using fmt = fmt_package;
+using atomic = sync.atomic_package;
+using sync;
+
+partial class main_package {
+
+internal static void recovered(@string label, Action fn) {
+    GoFrame ᒐ = default;
+    try {
+        defer(() => {
+            {
+                var r = recover(); if (r != default!) {
+                    fmt.Printf("%s: PANIC %v\n"u8, label, r);
+                    return;
+                }
+            }
+            fmt.Printf("%s: ok\n"u8, label);
+        }, ref ᒐ);
+        fn();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string liveThenTypedNilSameTypeˢ = "live then typed-nil, same type"u8;
+private static readonly @string typedNilThenLiveSameTypeˢ = "typed-nil then live, same type"u8;
+private static readonly @string typedNilThenTypedNilˢ = "typed-nil then typed-nil, DIFFERENT type"u8;
+private static readonly @string liveThenLiveSameTypeˢ = "live then live, same type"u8;
+private static readonly @string intThenStringDifferentˢ = "int then string, different type"u8;
+private static readonly object loadedAndCalledˢ = (@string)"loaded and called:"u8;
+
+internal static void Main() {
+    ref var v1 = ref heap(new atomic.Value(), out var Ꮡv1);
+    Ꮡv1.Store((nint fd) => {
+        _ = fd;
+    });
+    recovered(liveThenTypedNilSameTypeˢ, () => {
+        Ꮡv1.Store(((Action<nint>)(default!)).OrTypedNilFunc());
+    });
+    ref var v2 = ref heap(new atomic.Value(), out var Ꮡv2);
+    Ꮡv2.Store(((Action<nint>)(default!)).OrTypedNilFunc());
+    recovered(typedNilThenLiveSameTypeˢ, () => {
+        Ꮡv2.Store((nint fd) => {
+            _ = fd;
+        });
+    });
+    ref var v3 = ref heap(new atomic.Value(), out var Ꮡv3);
+    Ꮡv3.Store(((Action<nint>)(default!)).OrTypedNilFunc());
+    recovered(typedNilThenTypedNilˢ, () => {
+        Ꮡv3.Store(((Action<@string>)(default!)).OrTypedNilFunc());
+    });
+    ref var v4 = ref heap(new atomic.Value(), out var Ꮡv4);
+    Ꮡv4.Store((nint fd) => {
+        _ = fd;
+    });
+    recovered(liveThenLiveSameTypeˢ, () => {
+        Ꮡv4.Store((nint fd) => {
+            _ = fd;
+        });
+    });
+    ref var v5 = ref heap(new atomic.Value(), out var Ꮡv5);
+    Ꮡv5.Store((nint)(1));
+    recovered(intThenStringDifferentˢ, () => {
+        Ꮡv5.Store((@string)"x"u8);
+    });
+    ref var v6 = ref heap(new atomic.Value(), out var Ꮡv6);
+    Ꮡv6.Store(nint (nint fd) => fd * 2);
+    {
+        var (f, ok) = Ꮡv6.Load()._<Func<nint, nint>>(ᐧ); if (ok) {
+            fmt.Println(loadedAndCalledˢ, f(21));
+        }
+    }
+}
+
+} // end main_package

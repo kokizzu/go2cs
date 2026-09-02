@@ -125,6 +125,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckAtomicValue() => CheckTarget("AtomicValue");
 
     [TestMethod]
+    public void CheckAtomicValueTypedNilFunc() => CheckTarget("AtomicValueTypedNilFunc");
+
+    [TestMethod]
     public void CheckAtomicValues() => CheckTarget("AtomicValues");
 
     [TestMethod]

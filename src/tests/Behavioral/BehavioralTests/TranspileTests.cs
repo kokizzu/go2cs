@@ -121,6 +121,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckAtomicValue() => CheckTarget("AtomicValue");
 
     [TestMethod]
+    public void CheckAtomicValueTypedNilFunc() => CheckTarget("AtomicValueTypedNilFunc");
+
+    [TestMethod]
     public void CheckAtomicValues() => CheckTarget("AtomicValues");
 
     [TestMethod]
