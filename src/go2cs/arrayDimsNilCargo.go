@@ -30,17 +30,27 @@ import (
 // `_test.go` files and NONE is in production code, which is why a `-stdlib` census of this defect
 // reports zero and why the number that sized this cut came from `-tests`.
 //
-// WHAT IS DELIBERATELY NOT STAMPED, and it is the same exclusion chanDirectionCargo.go draws for
-// a DEFINED channel type: a pointer to a NAMED array type — `type mediumScalarEven [8192]byte`,
-// `(*mediumScalarEven)(nil)` — carries nothing here, because the named array gets its own C#
-// struct whose `[GoType("[8192]byte")]` already holds the dimension. Four of the thirteen sites
-// are that shape (reflect's `*MyBytesArray0` pair and both `runtime/arena_test.go` sites) and they
-// are CORRECT today; stamping them would move four goldens for no behavior. The walk below
-// therefore descends through UNNAMED array elements only and stops at the first named one, whose
-// own declaration carries the rest.
+// A POINTER TO A NAMED ARRAY IS STAMPED TOO, and the first cut of this file said the opposite.
+// `type mediumScalarEven [8192]byte` gets its own C# struct carrying `[GoType("[8192]byte")]`, so
+// the emission of `(*mediumScalarEven)(nil)` — `((ж<mediumScalarEven>)nil)` — looks as though the
+// dimension survives. It does not: nothing reads it back. The nil still reaches
+// `GoReflect.PointeeArrayDims`, which answers null because there is no pointee to measure, so
+// `synthType` gets no dims and `Elem()` describes a dimension-less array. What the named case
+// preserves is C# TYPE IDENTITY — `%T`, type-switch arms, reference inequality — not the length.
+// MEASURED by the TypedNilPtrArrayDims guard, both shapes, against `go run`:
+// `reflect.TypeOf((*named)(nil)).Elem().Len()` is 3 in Go and was 0 here, for a package-level
+// named array and a function-local one alike. The walk below therefore descends through
+// `Underlying()`, which sees a named array exactly as it sees a literal one.
+//
+// WHAT IS STILL NOT STAMPED is the DEFINED POINTER type — `type MyBytesArrayPtr0 *[0]byte` —
+// and that is a different kind of exclusion: not a judgment about whether it needs the cargo, but
+// the fact that it has nowhere to put it. A defined pointer emits as a go2cs-gen wrapper CLASS,
+// not as `ж<T>`, so `NilBoxOfDims` does not exist on it and stamping it is a build error at every
+// such site. Its length would have to live in the wrapper's own `[GoType]` metadata, which is a
+// generator change with its own gate ladder. Three of the thirteen sites are that shape.
 
 // nilArrayPtrDims returns the Go array dimensions a nil pointer-to-array conversion must carry,
-// outermost first, or nil when the target is not a pointer to an UNNAMED array.
+// outermost first, or nil when the target is not an UNDEFINED pointer to an array.
 func nilArrayPtrDims(t types.Type) []int64 {
 	if t == nil {
 		return nil
@@ -60,11 +70,11 @@ func nilArrayPtrDims(t types.Type) []int64 {
 
 	var dims []int64
 
-	// types.Unalias, not Underlying: an ALIAS for an array type IS that array type and carries no
-	// declaration of its own, exactly as an alias for a channel type is stamped while a DEFINED
-	// channel type is not. A *types.Named stops the walk — its own emission holds the dimension.
+	// Underlying(), so a NAMED array is seen exactly as a literal one: its own emission carries the
+	// dimension in metadata but nothing reads that back for a nil pointer (see the header). Unalias
+	// first because an ALIAS for an array type IS that array type and has no declaration of its own.
 	for elem := types.Unalias(ptr.Elem()); ; {
-		arr, isArr := elem.(*types.Array)
+		arr, isArr := elem.Underlying().(*types.Array)
 
 		if !isArr {
 			break
@@ -77,7 +87,7 @@ func nilArrayPtrDims(t types.Type) []int64 {
 	return dims
 }
 
-// nilArrayPtrValue renders the NIL pointer to an unnamed array carrying its dimensions — what
+// nilArrayPtrValue renders the NIL pointer to an array carrying its dimensions — what
 // `(*[N]E)(nil)` is — or "" when the target carries no dimensions this emission stamps.
 //
 // The dimensions are rendered as C# `long` literals, matching GoArrayDimsAttribute's deliberate

@@ -34,8 +34,8 @@ internal static void Main() {
     fmt.Println(sameTypeSameReflectTypeˢ, AreEqual(reflect.TypeOf(a), reflect.TypeOf(b)));
     fmt.Println(boxedNilIsNonNilˢ, a != default!);
     fmt.Printf("dynamic type: %T\n"u8, a);
-    fmt.Println(packageLevelNamedArrayˢ, reflect.TypeOf(((ж<pkgNamed3>)nil)).Elem().Len());
-    fmt.Println(localNamedArrayElemLenˢ, reflect.TypeOf(((ж<main_named3>)nil)).Elem().Len());
+    fmt.Println(packageLevelNamedArrayˢ, reflect.TypeOf(ж<pkgNamed3>.NilBoxOfDims(3L)).Elem().Len());
+    fmt.Println(localNamedArrayElemLenˢ, reflect.TypeOf(ж<main_named3>.NilBoxOfDims(3L)).Elem().Len());
 }
 
 } // end main_package
