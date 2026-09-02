@@ -1377,6 +1377,14 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			// target gets independent backing storage (see cloneValueCopy).
 			rhsExpr = v.cloneValueCopy(lhs, rhs, rhsExpr)
 
+			// A directional channel LHS taking a bidirectional value narrows the Go type with no
+			// construction to hook (`s = ch`) — the assignment arm of the live-copy narrowing
+			// (see chanDirNarrowedValue). A `:=` define is never a narrowing: the LHS type IS the
+			// RHS type, so chanDirCargoName finds no direction and this is a no-op.
+			if narrowedChan := v.chanDirNarrowedValue(v.info.TypeOf(lhs), v.info.TypeOf(rhs), rhsExpr); narrowedChan != "" {
+				rhsExpr = narrowedChan
+			}
+
 			// Narrow-integer arithmetic RHS assigned to a narrow LHS needs a cast back to the LHS
 			// type (see narrowArithmeticCastType). The existing bitwise-assign / `&^=` wrappers take
 			// precedence (their own cast already applies).
@@ -1881,6 +1889,15 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					// A `:=`-declared local initialized from an existing array value takes golib's
 					// `.Clone()` for independent backing storage (see cloneValueCopy).
 					rhsExpr = v.cloneValueCopy(lhs, rhs, rhsExpr)
+
+					// A directional channel LHS taking a bidirectional value narrows the Go type
+					// with no construction to hook (`s = ch`), so the direction is re-stamped onto
+					// the value here — the assignment arm of the live-copy narrowing (see
+					// chanDirNarrowedValue). A `:=` define is never a narrowing: the LHS type IS
+					// the RHS type, so chanDirCargoName finds no direction and this is a no-op.
+					if narrowedChan := v.chanDirNarrowedValue(v.info.TypeOf(lhs), v.info.TypeOf(rhs), rhsExpr); narrowedChan != "" {
+						rhsExpr = narrowedChan
+					}
 
 					// Give a discarded method group or lambda the target type C# cannot infer. The
 					// parentheses are load-bearing for the lambda form: `(Func<…>)(nint p1) => …`

@@ -39,11 +39,11 @@ internal static void Main() {
         var f1ʗ1 = f1;
         defer(ᴛ1 => f1ʗ1(ᴛ1), fourthˢ, ref ᒐ);
         var msgs = new channel<@string>(2);
-        var cancel = makeStop(stoppedˢ, msgs);
+        var cancel = makeStop(stoppedˢ, msgs.WithDirection(GoChanDir.Send));
         var cancelʗ1 = cancel;
         defer(() => cancelʗ1(), ref ᒐ);
         var msgsʗ1 = msgs;
-        goǃ(() => makeStop(goStoppedˢ, msgsʗ1)());
+        goǃ(() => makeStop(goStoppedˢ, msgsʗ1.WithDirection(GoChanDir.Send))());
         fmt.Println(ᐸꟷ(msgs));
         var drained = new channel<nint>(1);
         var drainedʗ1 = drained;

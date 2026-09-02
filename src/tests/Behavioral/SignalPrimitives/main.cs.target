@@ -20,9 +20,9 @@ internal static void Main() {
     signal.Ignore(Δos.Interrupt);
     fmt.Println(afterIgnoreˢ, signal.Ignored(Δos.Interrupt));
     var c = new channel<osꓸSignal>(1);
-    signal.Notify(c, Δos.Interrupt);
+    signal.Notify(c.WithDirection(GoChanDir.Send), Δos.Interrupt);
     fmt.Println(afterNotifyˢ, signal.Ignored(Δos.Interrupt));
-    signal.Stop(c);
+    signal.Stop(c.WithDirection(GoChanDir.Send));
     fmt.Println(afterStopˢ, signal.Ignored(Δos.Interrupt));
     signal.Ignore(Δos.Interrupt);
     fmt.Println(afterIgnoreAgainˢ, signal.Ignored(Δos.Interrupt));

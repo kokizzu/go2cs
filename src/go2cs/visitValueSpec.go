@@ -577,6 +577,16 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 							valExpr = fmt.Sprintf("(%s)(%s)", narrowCast, valExpr)
 						}
 
+						// A directional channel var taking a BIDIRECTIONAL value narrows the Go
+						// type without constructing anything (`var s <-chan T = ch`), so the
+						// direction has to be re-stamped onto the value here — the live-copy
+						// position chanDirectionCargo.go's exclusion deferred until reflect
+						// measured a consumer. Same shape as the narrow-arithmetic wrap above:
+						// a post-conversion wrap keyed on the DECLARED type versus the value's.
+						if narrowedChan := v.chanDirNarrowedValue(def.Type(), v.info.TypeOf(valueSpec.Values[i]), valExpr); narrowedChan != "" {
+							valExpr = narrowedChan
+						}
+
 						if hoistBuf.Len() > 0 {
 							// The decls carry their own leading newline + per-line indentation;
 							// writeOutput below re-indents the declaration line that follows.

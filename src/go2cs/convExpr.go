@@ -100,6 +100,11 @@ type CallExprContext struct {
 	callArgs              []string
 	replacementArgs       []string
 	castArgToType         map[int]string
+	// suffixArgWith appends a member call to the indexed argument's RENDER — the suffix twin of
+	// castArgToType's prefix cast, for a wrap that must read left-to-right off the value
+	// (`ch.WithDirection(GoChanDir.Recv)`, the channel-direction narrowing at an argument
+	// position — see chanDirNarrowedValue).
+	suffixArgWith map[int]string
 	// wrapArgWithNew wraps the indexed argument in a constructor call (`new slice<E>(arg)`) — the
 	// S-where-[]E-expected materialization (see convExprList).
 	wrapArgWithNew map[int]string

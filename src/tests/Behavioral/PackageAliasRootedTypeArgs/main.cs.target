@@ -114,10 +114,10 @@ internal static void Main() {
     iface s = new Stringish[]{new Header(Name: "if"u8, Size: 6)}.slice();
     anonI t = new zed(v: 11);
     var sendCh = new channel<Header>(1);
-    sends send = sendCh;
+    sends send = sendCh.WithDirection(GoChanDir.Send);
     var recvCh = new channel<Header>(1);
     recvCh.ᐸꟷ(new Header(Name: "recv"u8, Size: 12));
-    recvs recv = recvCh;
+    recvs recv = recvCh.WithDirection(GoChanDir.Recv);
     f.ᐸꟷ("ch"u8);
     send.ᐸꟷ(new Header(Name: "send"u8, Size: 13));
     k0();

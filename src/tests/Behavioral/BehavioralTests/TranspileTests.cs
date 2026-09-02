@@ -1471,6 +1471,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckReflectChanDirection() => CheckTarget("ReflectChanDirection");
 
     [TestMethod]
+    public void CheckReflectChanNarrowing() => CheckTarget("ReflectChanNarrowing");
+
+    [TestMethod]
     public void CheckReflectConvertAssignable() => CheckTarget("ReflectConvertAssignable");
 
     [TestMethod]

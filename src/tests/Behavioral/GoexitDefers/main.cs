@@ -56,7 +56,7 @@ internal static void Main() {
                 }
                 logʗ3.ᐸꟷ(goroutineDefer1Ranˢ);
             }, ref ᒐ);
-            exitFromHelper(logʗ1);
+            exitFromHelper(logʗ1.WithDirection(GoChanDir.Send));
             logʗ1.ᐸꟷ(goroutineResumedˢ);
         }
         catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

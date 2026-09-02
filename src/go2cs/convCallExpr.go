@@ -1508,6 +1508,21 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				targetType := paramType
 				replacementArg := v.checkForDynamicStructs(argType, targetType)
 
+				// A bidirectional channel passed to a DIRECTIONAL parameter narrows the Go type
+				// with no construction to hook — the argument arm of the live-copy narrowing (see
+				// chanDirNarrowedValue). It rides the per-argument SUFFIX channel rather than
+				// castArgToType's prefix cast, because the re-stamp reads off the value
+				// (`ch.WithDirection(...)`); the marker below is what convExprList appends.
+				if narrowSuffix := v.chanDirNarrowedValue(paramType, argType, DynamicCastArgMarker); narrowSuffix != "" {
+					if suffix, found := strings.CutPrefix(narrowSuffix, DynamicCastArgMarker); found {
+						if callExprContext.suffixArgWith == nil {
+							callExprContext.suffixArgWith = make(map[int]string)
+						}
+
+						callExprContext.suffixArgWith[i] = suffix
+					}
+				}
+
 				// If a replacement argument is found, add it to the replacementArgs slice,
 				// creating the slice if it doesn't exist yet
 				if len(replacementArg) > 0 {

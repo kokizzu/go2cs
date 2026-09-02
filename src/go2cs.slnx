@@ -767,6 +767,7 @@
     <Project Path="tests/Behavioral/ReflectArrayOf/ReflectArrayOf.csproj" />
     <Project Path="tests/Behavioral/ReflectBridgeClosure/ReflectBridgeClosure.csproj" />
     <Project Path="tests/Behavioral/ReflectChanDirection/ReflectChanDirection.csproj" />
+    <Project Path="tests/Behavioral/ReflectChanNarrowing/ReflectChanNarrowing.csproj" />
     <Project Path="tests/Behavioral/ReflectConvertAssignable/ReflectConvertAssignable.csproj" />
     <Project Path="tests/Behavioral/ReflectFieldAddrWrite/ReflectFieldAddrWrite.csproj" />
     <Project Path="tests/Behavioral/ReflectFuncArrayParamDims/ReflectFuncArrayParamDims.csproj" />
