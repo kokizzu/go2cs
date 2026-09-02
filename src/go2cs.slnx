@@ -765,6 +765,7 @@
     <Project Path="tests/Behavioral/ReceiverNestedFieldAddress/ReceiverNestedFieldAddress.csproj" />
     <Project Path="tests/Behavioral/ReceiverPointerValue/ReceiverPointerValue.csproj" />
     <Project Path="tests/Behavioral/ReflectArrayOf/ReflectArrayOf.csproj" />
+    <Project Path="tests/Behavioral/ReflectAssignabilityNamed/ReflectAssignabilityNamed.csproj" />
     <Project Path="tests/Behavioral/ReflectBridgeClosure/ReflectBridgeClosure.csproj" />
     <Project Path="tests/Behavioral/ReflectChanDirection/ReflectChanDirection.csproj" />
     <Project Path="tests/Behavioral/ReflectChanNarrowing/ReflectChanNarrowing.csproj" />
