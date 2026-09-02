@@ -68,6 +68,21 @@ public readonly struct UntypedInt : IEquatable<UntypedInt>
     // then truncated the negative index and returned "0" (TestUitoa), or threw on the slice bound
     // (TestFormatUintVarlen). Only a payload at/above 2^63 changes answer; every signed-only or
     // in-int64-range comparison is bit-for-bit what it was.
+    //
+    // ⚠ THE ATTRIBUTE IS LOAD-BEARING AND MEASURED, not precautionary (the math/bits word-size
+    // arc, 2026-09-02): this body is IL 141 — over the JIT's default inlining budget — so
+    // `DOTNET_JitDisasmSummary` showed it compiled STANDALONE and every wrapper comparison in the
+    // corpus paid a call per evaluation, measured at 2.72x on `UintSize == 32` in addMulVVW's
+    // loop. The converter emits every package-level untyped integer constant as a property of
+    // this struct (6,667 declarations in 193 packages; 1,986 comparison sites — census in
+    // docs/phase4/DESIGN-untyped-const-emission.md), so the comparison path is corpus-wide.
+    // Inlined, the JIT constant-folds through readonly-struct ops and a foldable comparison
+    // (`UintSize == 32`) dies at JIT time — Go's own compile-time folding, one stage later.
+    // UntypedFloat/UntypedComplex deliberately take NO attribute: read, not assumed — neither
+    // has this private Compare, and their operators are one-line m_value compares already
+    // within budget. If a future runtime inlines IL-141 bodies unaided, the attribute becomes
+    // redundant rather than wrong (the bits_impl.cs precedent).
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     private static int Compare(UntypedInt left, UntypedInt right)
     {
         if (left.m_unsigned == right.m_unsigned)
@@ -87,6 +102,7 @@ public readonly struct UntypedInt : IEquatable<UntypedInt>
         return CastTo<uint64>(left.m_value).CompareTo(CastTo<uint64>(right.m_value));
     }
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public bool Equals(UntypedInt other) => Compare(this, other) == 0;
 
     public override bool Equals(object? obj)
@@ -114,12 +130,16 @@ public readonly struct UntypedInt : IEquatable<UntypedInt>
 
     public override int GetHashCode() => m_value.GetHashCode();
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static bool operator <(UntypedInt left, UntypedInt right) => Compare(left, right) < 0;
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static bool operator <=(UntypedInt left, UntypedInt right) => Compare(left, right) <= 0;
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static bool operator >(UntypedInt left, UntypedInt right) => Compare(left, right) > 0;
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static bool operator >=(UntypedInt left, UntypedInt right) => Compare(left, right) >= 0;
 
     public static UntypedInt operator +(UntypedInt left, UntypedInt right) => left.m_value + right.m_value;
@@ -140,8 +160,10 @@ public readonly struct UntypedInt : IEquatable<UntypedInt>
 
     public override string ToString() => m_unsigned ? CastTo<uint64>(m_value).ToString() : m_value.ToString();
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static bool operator ==(UntypedInt left, UntypedInt right) => left.Equals(right);
 
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     public static bool operator !=(UntypedInt left, UntypedInt right) => !(left == right);
 
     // Handle implicit conversions between 'nint' and struct 'UntypedInt'
