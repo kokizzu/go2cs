@@ -11,14 +11,27 @@
 //
 // The defect this pins (measured 2026-09-02): convCallExpr intercepted EVERY funnel call before
 // the general path threaded `callArgs`, and convSyscallFunnelCall takes no LambdaContext, so a
-// DEFERRED funnel call rendered its arguments inside the THUNK BODY while every eager slot stayed
+// DEFERRED funnel call rendered its arguments inside the CALL ITSELF while every eager slot stayed
 // empty —
 //
-//	defer((ᴛ1, ᴛ2, ᴛ3, ᴛ4) => syscall.Syscall(syscall.SYS_CLOSE, (uintptr)fds[i], 0, 0), , , , , ref ᒐ)
+//	defer(syscall.Syscall(syscall.SYS_CLOSE, (uintptr)fds[i], 0, 0), , , , , ref ᒐ)
 //
-// CS0839 ×4, and a SEMANTIC defect underneath the compile error: `fds[i]` inside the thunk is read
-// at UNWIND, where Go reads it at the defer statement. The corpus instance is runtime's
-// memmove_linux_amd64_test.go:44, which is why runtime's Linux `-tests` build is the row-level gate.
+// CS0839 ×4, and a SEMANTIC defect underneath the compile error: `fds[i]` inside the callee's own
+// argument list is read at UNWIND, where Go reads it at the defer statement. The corpus instance
+// is runtime's memmove_linux_amd64_test.go:44, which is why runtime's Linux `-tests` build is the
+// row-level gate.
+//
+// The correct emission is the ORDINARY deferred-call form — the callee as a bare method group,
+// every argument in an eager slot:
+//
+//	defer(syscall.Syscall, trap, (uintptr)fds[i], (uintptr)(0), (uintptr)(0), ref ᒐ)
+//
+// binding golib's `defer<T1, T2, T3, T4, TResult>(Func<…>, T1, T2, T3, T4, ref GoFrame)`. An
+// earlier cut of this guard expected a temp-parameter THUNK there, because the commit beside it
+// forced that form for every result-returning callee on a premise that turned out to be false
+// (golib carries Func-shaped `defer` overloads at every arity but 0). That rung is withdrawn; the
+// assertions below are deliberately arity-INDEPENDENT, so the one fixture covers unix's 4-argument
+// `syscall.Syscall` and Windows's 5-argument form with no per-platform expected string.
 //
 // This lives in the CONVERTER suite rather than in tests/Behavioral because the shape cannot be
 // written portably in Go: `syscall.Syscall` is `(trap, a1, a2, a3)` on unix and
@@ -31,7 +44,6 @@
 package main
 
 import (
-	"fmt"
 	"go/build"
 	"path/filepath"
 	"runtime"
@@ -163,8 +175,8 @@ func deferStatementLine(t *testing.T, mainCs string) string {
 // TestDeferredSyscallFunnelCallFillsItsEagerArgumentSlots pins the positive property and both
 // controls. Proven against a neuter: restoring the unconditional interception (dropping the
 // `context.callArgs == nil` guard in convCallExpr) makes the positive report the malformed
-// `syscall.Syscall(trap, (uintptr)fds[i], 0, 0), , , ,` form and leaves both controls passing —
-// so the controls are measuring the scope, not carrying the verdict.
+// `defer(syscall.Syscall(trap, (uintptr)fds[i], 0, 0), , , ,` form on every assertion below, and
+// leaves both controls passing — so the controls are measuring the scope, not carrying the verdict.
 func TestDeferredSyscallFunnelCallFillsItsEagerArgumentSlots(t *testing.T) {
 	if testing.Short() {
 		t.Skip("integration test: runs the real converter over a module fixture")
@@ -173,34 +185,45 @@ func TestDeferredSyscallFunnelCallFillsItsEagerArgumentSlots(t *testing.T) {
 	mainCs := convertDeferredSyscallFunnelFixture(t)
 	deferLine := deferStatementLine(t, mainCs)
 
-	arity := syscallFunnelFixtureArity()
-	temps := make([]string, arity)
+	// The callee is handed over as a bare METHOD GROUP, so every argument sits in an eager slot
+	// and is evaluated at the defer statement, exactly as Go evaluates it. The defect's signature
+	// is the opposite: the callee rendered as a CALL, its arguments consumed inside it.
+	const methodGroup = "defer(syscall.Syscall, "
 
-	for i := range temps {
-		temps[i] = fmt.Sprintf("%s%d", TempVarMarker, i+1)
+	if !strings.Contains(deferLine, methodGroup) {
+		t.Errorf("the deferred funnel callee is not handed over as a method group:\n    %s", deferLine)
 	}
 
-	joined := strings.Join(temps, ", ")
-
-	// The thunk takes one parameter per argument and its BODY references nothing but those
-	// parameters — every argument is therefore evaluated at the defer statement, as Go does, and
-	// the callee's results are dropped by the statement body, as Go drops them.
-	thunk := fmt.Sprintf("(%s) => syscall.Syscall(%s)", joined, joined)
-
-	if !strings.Contains(deferLine, thunk) {
-		t.Errorf("deferred funnel call does not render the temp-parameter thunk %q:\n    %s", thunk, deferLine)
+	if strings.Contains(deferLine, "syscall.Syscall(") {
+		t.Errorf("the deferred funnel callee is rendered as a CALL, so its arguments are read at unwind rather than at the defer statement:\n    %s", deferLine)
 	}
 
-	// The per-iteration argument is an EAGER slot, not a thunk-body read. Its absence is the
-	// CS0839 shape; its presence INSIDE the thunk would be the semantic defect (read at unwind).
-	eager := deferLine[strings.Index(deferLine, thunk)+len(thunk):]
+	// The per-iteration argument is an EAGER slot, not a read inside the callee. Its absence is
+	// the CS0839 shape; its presence inside the call would be the semantic defect.
+	//
+	// The eager region is located rather than assumed: under the defect the method-group prefix is
+	// ABSENT, and an unguarded strings.Index would return -1 and panic the whole test on its own
+	// failure path — losing the slot-count and empty-slot findings below, which are exactly the
+	// ones that describe the defect. Measured: the first neuter of this guard did panic here.
+	eagerAt := strings.Index(deferLine, methodGroup)
 
-	if !strings.Contains(eager, "fds[i]") {
-		t.Errorf("the per-iteration argument is not in an eager slot:\n    %s", deferLine)
+	if eagerAt >= 0 {
+		eager := deferLine[eagerAt:]
+
+		if !strings.Contains(eager, "fds[i]") {
+			t.Errorf("the per-iteration argument is not in an eager slot:\n    %s", deferLine)
+		}
+
+		// Every argument the Go source passes reaches a slot: the fixture's arity is what the
+		// host's syscall package declares, and the emitted statement carries exactly that many
+		// commas between the callee and the frame argument.
+		if slots := strings.Count(eager, ",") - 1; slots != syscallFunnelFixtureArity() {
+			t.Errorf("expected %d eager argument slots, counted %d:\n    %s", syscallFunnelFixtureArity(), slots, deferLine)
+		}
 	}
 
-	// An empty argument slot is the defect's signature, and it survives a `strings.Contains` of
-	// the thunk on its own — assert against it directly.
+	// An empty argument slot is the defect's other signature, and it survives the method-group
+	// check on its own — assert against it directly.
 	if strings.Contains(deferLine, ", ,") {
 		t.Errorf("deferred funnel call has an EMPTY argument slot (CS0839):\n    %s", deferLine)
 	}
