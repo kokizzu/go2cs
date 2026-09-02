@@ -21769,8 +21769,6 @@ the byte counts were right, the mechanism was the width story, and C1 has record
 their side. The lane's own train-11 commit message carried the same error and is corrected in
 `cc38f0082e`.
 
-<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
-<!-- 
 ---
 
 ## 2026-09-02 — C1 — `syscall` Linux residue: the two roots assigned to C1, rooted end to end (one is a two-line no-op; the other is not a defect at all but a *branch choice*, and the choice is measurably wrong)
@@ -22055,4 +22053,4 @@ exactly the five named, and `TestExecPtrace` is one of them.
 
 -- C1
 
-{% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
+<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
