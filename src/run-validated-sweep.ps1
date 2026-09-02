@@ -691,7 +691,20 @@ $longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto
 # session-wide zero would bring them back short. Harmless on the other two targets by construction:
 # Windows os/user carries no cgo constraint at all, and darwin selects the cgo_* files through the
 # `(cgo || darwin)` disjunct whatever CGO_ENABLED says.
-$cgoOffPackages = @{ 'os/user' = $true }
+# 'net' and 'plugin' joined 2026-09-02 by the same one-variable A/B on the same host:
+#   net     CGO_ENABLED=1 -> FAIL in 183 s, zero verdicts, the build dying with cgo_stub.cs absent
+#                            from the run's own drift list (not re-emitted because not selected);
+#                            the committed tree holds only that cgo-OFF arm.
+#           CGO_ENABLED=0 -> the suite BUILDS and runs 503 verdicts. The row still does not
+#                            validate on this host -- it is the Linux frontier lane R mapped, and
+#                            it hit its own 40m deadline here -- but the pin is what makes the
+#                            comparison legitimate at all, which is a separate question from
+#                            whether the row passes.
+#   plugin  CGO_ENABLED=1 -> FAIL in 126 s.
+#           CGO_ENABLED=0 -> PASS 1. plugin_dlopen.go ((linux && cgo) || ...) is literal C
+#                            (import "C", #include <dlfcn.h>); plugin_stubs.go (... || !cgo) is
+#                            pure Go and is the arm the corpus holds.
+$cgoOffPackages = @{ 'os/user' = $true; 'net' = $true; 'plugin' = $true }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
