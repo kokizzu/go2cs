@@ -2488,6 +2488,125 @@ internal static ΔChanDir ChanDir(this ж<rtype> Ꮡt) {
 // attributable error into an unbounded hang (measured — 51 verdicts lost to a package deadline
 // against the 1 the bridge buys). Guard first, receive second, in that order and for that reason.
 
+// Select executes a select operation described by the list of cases — blocks until one case can
+// proceed, makes a uniform pseudo-random choice, and returns the chosen index (and, for a receive,
+// the value and comma-ok bit).
+//
+// The auto conversion could not run for TWO reasons, and this closes both:
+//   (1) it read each case's channel DIRECTION by reinterpreting the descriptor onto the linker's
+//       chanType record (`(~tt).Dir`) — the same NON-DETERMINISTIC read Value.Close was hand-owned
+//       to retire; a synthesized descriptor has no trailing chanType record, so a `chan int` was
+//       misread as directional and TestSelect/TestSelectMaxCases panicked on a valid case;
+//   (2) the select itself was the `rselect` runtime STUB.
+// Fixing (1) ALONE is negative — the two rows would stop panicking on direction and reach the
+// rselect stub, moving from `fail` to infrastructure-error — so the direction cargo (abi.ChanDir,
+// mirroring Close/recv/send) and the engine bridge land together, which is why this is one hand-own
+// and not two.
+//
+// The select ALGORITHM is golib's own — builtin.select / SelectRuntime, already run for the
+// converter's own `select` statements — reached here through GoReflect.RunSelect with each case's
+// LIVE channel (IChannel) and its already-marshalled boxed send value. No runtimeSelect record, no
+// pointer-token round trip, no rselect: the reflect Value holds the channel object directly.
+// Concurrency semantics (closed-ready, nil-never-ready, default, blocking, fairness) are the
+// engine's contract, unchanged.
+public static (nint chosen, ΔValue recv, bool recvOK) Select(slice<SelectCase> cases) {
+    if (len(cases) > 65536) {
+        throw panic("reflect.Select: too many cases (max 65536)");
+    }
+    // Non-default cases, in case order, as parallel arrays for GoReflect.RunSelect; opToCase maps a
+    // returned op index back to the original case index, and recvElem carries a receive case's
+    // element type for building the result Value. A nil-channel case still occupies an op slot
+    // (channel null → never-ready), matching Go's "treat invalid cases as blocking forever".
+    var channels = new System.Collections.Generic.List<IChannel?>();
+    var isSend = new System.Collections.Generic.List<bool>();
+    var sendValues = new System.Collections.Generic.List<object?>();
+    var recvElem = new System.Collections.Generic.List<System.Type?>();
+    var opToCase = new System.Collections.Generic.List<nint>();
+    bool haveDefault = false;
+    nint defaultCase = -1;
+
+    for (nint i = 0; i < len(cases); i++) {
+        SelectCase c = cases[i];
+        var dir = c.Dir;
+        if (dir == SelectDefault) {
+            if (haveDefault) {
+                throw panic("reflect.Select: multiple default cases");
+            }
+            haveDefault = true;
+            defaultCase = i;
+            if (c.Chan.IsValid()) {
+                throw panic("reflect.Select: default case has Chan value");
+            }
+            if (c.Send.IsValid()) {
+                throw panic("reflect.Select: default case has Send value");
+            }
+        } else if (dir == SelectSend) {
+            var ch = c.Chan;
+            if (!ch.IsValid()) {
+                // A nil channel: a blocking-forever case, no further validation (Go continues here).
+                channels.Add(null); isSend.Add(true); sendValues.Add(null); recvElem.Add(null); opToCase.Add(i);
+                continue;
+            }
+            ch.mustBe(Chan);
+            ch.mustBeExported();
+            if ((ΔChanDir)(((ΔChanDir)(nint)abi.ChanDir(ch.typ())) & SendDir) == 0) {
+                throw panic("reflect.Select: SendDir case using recv-only channel");
+            }
+            var v = c.Send;
+            if (!v.IsValid()) {
+                throw panic("reflect.Select: SendDir case missing Send value");
+            }
+            v.mustBeExported();
+            System.Type? elem = GoReflect.ElementType(sysTypeOfReflectType(toType(ch.typ())));
+            if (ch.live is not IChannel sch || elem is null) {
+                throw panic(Ꮡ(new ValueError("reflect.Select", ch.kind())));
+            }
+            if (!marshalIntoSlot(v, elem, out object? sent)) {
+                throw panic("reflect.Select: value of type " + GoReflect.GoTypeName(v.live?.GetType()) +
+                            " is not assignable to type " + GoReflect.GoTypeName(elem));
+            }
+            channels.Add(sch); isSend.Add(true); sendValues.Add(sent); recvElem.Add(null); opToCase.Add(i);
+        } else if (dir == SelectRecv) {
+            if (c.Send.IsValid()) {
+                throw panic("reflect.Select: RecvDir case has Send value");
+            }
+            var ch = c.Chan;
+            if (!ch.IsValid()) {
+                channels.Add(null); isSend.Add(false); sendValues.Add(null); recvElem.Add(null); opToCase.Add(i);
+                continue;
+            }
+            ch.mustBe(Chan);
+            ch.mustBeExported();
+            if ((ΔChanDir)(((ΔChanDir)(nint)abi.ChanDir(ch.typ())) & RecvDir) == 0) {
+                throw panic("reflect.Select: RecvDir case using send-only channel");
+            }
+            System.Type? elem = GoReflect.ElementType(sysTypeOfReflectType(toType(ch.typ())));
+            if (ch.live is not IChannel rch || elem is null) {
+                throw panic(Ꮡ(new ValueError("reflect.Select", ch.kind())));
+            }
+            channels.Add(rch); isSend.Add(false); sendValues.Add(null); recvElem.Add(elem); opToCase.Add(i);
+        } else {
+            throw panic("reflect.Select: invalid Dir");
+        }
+    }
+
+    var (opWinner, recvValue, recvOk) = GoReflect.RunSelect(channels.ToArray(), isSend.ToArray(), sendValues.ToArray(), haveDefault);
+    if (opWinner < 0) {
+        // A default fired (only reachable when haveDefault): the chosen case is the default, and a
+        // default carries no received value.
+        return (defaultCase, new ΔValue(nil), false);
+    }
+    nint chosen = opToCase[(int)opWinner];
+    // A receive win builds the result Value from the channel's element type — a closed-and-drained
+    // receive delivers the element's zero (RunSelect returns null there, ok=false), fabricated
+    // through the one zero-builder so IsZero()/Interface() agree with reflect.Zero of the same type.
+    if (recvElem[(int)opWinner] is {} elemType) {
+        object? boxed = recvOk ? recvValue : GoReflect.ZeroValueOf(elemType, null);
+        return (chosen, makeTypedValue(boxed, elemType, null, (flag)0), recvOk);
+    }
+    return (chosen, new ΔValue(nil), false);
+}
+
 // recv receives from a channel Value, blocking unless nb. It reports Go's (value, ok) pair, where
 // a not-selected non-blocking receive answers the INVALID zero Value, exactly as the auto form did.
 internal static (ΔValue val, bool ok) recv(this ΔValue v, bool nb) {

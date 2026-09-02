@@ -168,6 +168,19 @@ public sealed class SelectOp
 }
 
 /// <summary>
+/// The NON-generic bridge from a channel value to a <see cref="SelectOp"/>, for a caller that holds
+/// a channel only as <see cref="IChannel"/> and a BOXED case value — reflect.Select through
+/// <c>GoReflect.RunSelect</c>. <see cref="channel{T}"/> already exposes <c>Sending</c>/<c>Receiving</c>
+/// for the converter's own typed <c>select</c> statements; this is the same construction reached
+/// non-generically, so the two paths mint identical descriptors. Internal, like <see cref="SelectOp"/>
+/// itself — no new public golib surface is introduced by it (only <c>GoReflect.RunSelect</c> is public).
+/// </summary>
+internal interface ISelectableChannel
+{
+    SelectOp SelectOpFor(bool isSend, object? sendValue);
+}
+
+/// <summary>
 /// The single-fire authority for one blocked <c>select</c>: every waker (a plain send, a plain
 /// receive, another select's commit, or a close) must claim the select by winning the
 /// <see cref="Winner"/> CAS before touching any of its waiters; exactly one claim can succeed.
@@ -1024,7 +1037,7 @@ internal static class SelectRuntime
 /// Represents a concurrency primitive that operates like a Go channel.
 /// </summary>
 /// <typeparam name="T">Target type for channel.</typeparam>
-public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
+public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>, ISelectableChannel
 {
     // The entire channel state lives in the heap core so struct copies share one channel (Go
     // channel values are references) and the zero value (all-null) is the NIL channel.
@@ -1148,6 +1161,13 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     /// <c>builtin.select</c>. A nil channel registers a never-ready descriptor.
     /// </summary>
     public SelectOp Receiving => new(m_core, isSend: false, sendValue: null);
+
+    // The non-generic ISelectableChannel bridge (reflect.Select via GoReflect.RunSelect): the SAME
+    // SelectOp construction as Sending/Receiving above, reached without T in hand. The boxed
+    // sendValue rides the descriptor exactly as Sending's typed value does (SelectOp.SendValue is
+    // object?, so the engine handles both identically); a nil channel (null m_core) mints a
+    // never-ready descriptor, matching Sending/Receiving.
+    SelectOp ISelectableChannel.SelectOpFor(bool isSend, object? sendValue) => new(m_core, isSend, sendValue);
 
     /// <summary>
     /// Closes the channel.
