@@ -37,8 +37,26 @@ internal class ReceiverMethodTemplate : TemplateBase
     // on as `ref T`, and the callee's first field read/write raises the nil-pointer panic with Go's
     // message, at Go's point — after any side effect the callee performed first. A non-nil box is
     // unaffected (the same real slot).
-    public override string TemplateBody =>
-        $$"""
+    // A B′-S0 arm-(a) primary returns `ref T` — the receiver itself (the R3 ruling, 2026-09-02:
+    // Go's fluent `return v` returns the receiver POINTER, which the primary cannot mint). The
+    // twin restores the ж surface for every existing consumer: it delegates (discarding the ref —
+    // the mutation already landed in the box's own storage through DerefOrNull) and returns ITS
+    // OWN box, which IS Go's receiver pointer — `p := Ꮡv.M(…); p == Ꮡv` holds by construction
+    // (the identity guard row in ZhBoxSelectionProbeTests' fluent class).
+    private bool IsRefReturnPrimary =>
+        Method.ReturnType.StartsWith("ref ", StringComparison.Ordinal);
+
+    public override string TemplateBody => IsRefReturnPrimary
+        ? $$"""
+            [{{GeneratedCodeAttribute}}]
+            {{TargetScope}} static {{ReceiverParamType}} {{Method.Name}}{{Method.GetGenericSignature()}}({{DeclParams}}){{Method.GetWhereConstraints()}}
+            {
+                ref var {{ReceiverParamName}} = ref {{ReceiverBoxName}}.{{NilDeferringDerefAccessor}};
+                {{ReceiverParamName}}.{{Method.Name}}({{CallParams}});
+                return {{ReceiverBoxName}};
+            }
+        """
+        : $$"""
             [{{GeneratedCodeAttribute}}]
             {{TargetScope}} static {{Method.ReturnType}} {{Method.Name}}{{Method.GetGenericSignature()}}({{DeclParams}}){{Method.GetWhereConstraints()}}
             {

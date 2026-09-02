@@ -247,13 +247,28 @@ func (a *refLoweringAnalysis) classifyMethodBodiesR3() {
 			return false
 		})
 
-		// A receiver appearing among a return's results but classified through the ReturnStmt
-		// parent above is only the BARE form; a receiver nested inside a composite or call in a
-		// result reaches here through that expression's own parent and has already escaped. What
-		// remains is the multi-result mixed family: count non-receiver results on returns that
-		// also carry the receiver.
-		if !escapes && bareReturns > 0 {
+		// Return-shape analysis, two halves. (1) The multi-result mixed family: a return carrying
+		// the bare receiver beside other results (`return v, nil`) — count the others. (2) The
+		// FLUENT-THROUGH-CALLEE family, caught by TYPE rather than by ident: a result whose static
+		// type is the receiver's own pointer type but is NOT the bare receiver ident
+		// (`return v.carryPropagateGeneric()` — Go returns the receiver's pointer THROUGH the
+		// chained callee) needs a ж the primary does not have; under a ref receiver the chained
+		// call would bind the callee's own primary and return `ref`, which cannot satisfy a
+		// ж-typed return (CS). At S0 that is an escape; S1's parameter half is where chained
+		// ref-returns become expressible. The selector-base USE check above cannot see this — the
+		// use is emittable, the RETURN of its result is not.
+		if !escapes {
+			recvPtrType := a.info.Defs[verdict.decl.Recv.List[0].Names[0]].Type()
+
 			ast.Inspect(verdict.decl.Body, func(n ast.Node) bool {
+				if escapes {
+					return false
+				}
+
+				if _, inLit := n.(*ast.FuncLit); inLit {
+					return false // a literal's returns are its own
+				}
+
 				ret, isReturn := n.(*ast.ReturnStmt)
 
 				if !isReturn {
@@ -265,13 +280,18 @@ func (a *refLoweringAnalysis) classifyMethodBodiesR3() {
 				for _, result := range ret.Results {
 					if id, isID := result.(*ast.Ident); isID && a.info.Uses[id] == verdict.recvObj {
 						carriesReceiver = true
+						continue
+					}
+
+					if resultType := a.info.TypeOf(result); resultType != nil && types.Identical(resultType, recvPtrType) {
+						escapes = true
+						return false
 					}
 				}
 
 				if carriesReceiver {
 					for _, result := range ret.Results {
 						if id, isID := result.(*ast.Ident); !isID || a.info.Uses[id] != verdict.recvObj {
-							_ = id
 							otherReturnResults++
 						}
 					}

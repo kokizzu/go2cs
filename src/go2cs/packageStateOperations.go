@@ -94,6 +94,7 @@ func resetPackageState(pkg *packages.Package) {
 	packageCaptureModeMethods = make(map[*types.Func]bool)
 	packageCaptureModeBoxIdents = make(map[types.Object]bool)
 	packageDirectBoxReceiverMethods = make(map[*types.Func]bool)
+	packageRefReturnPrimaryMethods = make(map[*types.Func]bool)
 	initFuncCounter = 0
 	usesUnsafeCode = false
 	packageImportForces = HashSet[string]{}

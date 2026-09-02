@@ -912,6 +912,28 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 				return fmt.Sprintf("%s%s.%s", AddressPrefix, v.getIdentName(ident), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
 			}
 		}
+
+		// B′-S0 arm (a), OQ-7's row at the caller: a RESULT-USED call of a ref-return primary
+		// (`return v.carryPropagateGeneric()` in a ж-form sibling) must bind the TWIN — the
+		// primary returns `ref T`, which cannot satisfy the ж-typed consumer, and the twin
+		// returns its own box, which IS Go's value here. A deref-aliased pointer receiver
+		// carries its box in scope, so route through it. A DISCARDED call keeps the plain alias
+		// and binds the primary — the mint-free direct form the selection exists for.
+		if obj := sel.Obj(); obj != nil {
+			if fn, isFunc := obj.(*types.Func); isFunc && packageRefReturnPrimaryMethods[fn.Origin()] && v.exprIsDerefAliasedPointer(selectorExpr.X) {
+				resultUsed := true
+
+				if discarded, isCall := v.resultDiscardedExpr.(*ast.CallExpr); isCall && discarded.Fun == selectorExpr {
+					resultUsed = false
+				}
+
+				if resultUsed {
+					if ident, ok := selectorExpr.X.(*ast.Ident); ok {
+						return fmt.Sprintf("%s%s.%s", AddressPrefix, v.getIdentName(ident), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
+					}
+				}
+			}
+		}
 	}
 
 	// A POINTER-RECEIVER method called on an ELEMENT of a pointer-to-NAMED-ARRAY —

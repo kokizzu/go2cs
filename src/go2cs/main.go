@@ -430,6 +430,10 @@ Examples:
 		dualRecv:            *dualRecvCmd,
 	}
 
+	// The capture-mode pass runs across four drivers with no options in reach; the flag mirrors
+	// into its package global once, here (see selectRefReturnPrimaries).
+	dualRecvEnabled = options.dualRecv
+
 	if options.convertTests {
 		// -tests and -recurse compose badly today (the recursive module walk has its own
 		// conversion driver and output routing); convert the module first, then its packages'

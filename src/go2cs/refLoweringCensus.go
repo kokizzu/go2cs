@@ -353,9 +353,11 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 		// census still leaves the drivers' package state exactly as it found it.
 		censusCaptureModeMethods := packageCaptureModeMethods
 		censusDirectBoxMethods := packageDirectBoxReceiverMethods
+		censusRefReturnPrimaries := packageRefReturnPrimaryMethods
 
 		packageCaptureModeMethods = make(map[*types.Func]bool)
 		packageDirectBoxReceiverMethods = make(map[*types.Func]bool)
+		packageRefReturnPrimaryMethods = make(map[*types.Func]bool)
 
 		collectCaptureModeMethods(pkg)
 
@@ -364,6 +366,7 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 
 		packageCaptureModeMethods = censusCaptureModeMethods
 		packageDirectBoxReceiverMethods = censusDirectBoxMethods
+		packageRefReturnPrimaryMethods = censusRefReturnPrimaries
 	}
 
 	// A′-world resolution: the union of every package's records, exported candidates included.

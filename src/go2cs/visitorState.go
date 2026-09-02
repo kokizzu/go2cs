@@ -141,7 +141,7 @@ type Visitor struct {
 	options            Options
 	globalIdentNames   map[*ast.Ident]string // Global identifiers to adjusted names map
 	globalScope        map[string]*types.Var // Global variable scope
-	needsNoInlining    map[types.Object]bool  // package-wide computeNoInliningClosure result — see callerInliningAnalysis.go
+	needsNoInlining    map[types.Object]bool // package-wide computeNoInliningClosure result — see callerInliningAnalysis.go
 
 	// pendingSyscallKeepAlive names the temps a syscall-funnel call's pointer-derived arguments
 	// were routed through (see convSyscallFunnelCall, syscallKeepAliveAnalysis.go) — populated
@@ -161,9 +161,9 @@ type Visitor struct {
 	// of not restarting at 0 per function — free, since the name is synthesized and never read back.
 	syscallKeepAliveCounter int
 
-	liftedTypeNames    HashSet[string]
-	liftedTypeMap      map[types.Type]string
-	subStructTypes     map[types.Type][]types.Type
+	liftedTypeNames HashSet[string]
+	liftedTypeMap   map[types.Type]string
+	subStructTypes  map[types.Type][]types.Type
 
 	// inUsingAliasTarget is set only while a type alias's `global using` RHS is being rendered.
 	// That RHS resolves at COMPILATION scope — outside `namespace go` and outside the emitted
@@ -298,8 +298,13 @@ type Visitor struct {
 	// currentFuncName/currentFuncPrefix are owned by visitFuncDecl and are STALE at package level
 	// (see convFuncLit's package-level lift block).
 	packageInitLiftName string
-	paramNames          HashSet[string]
-	paramObjects        map[types.Object]bool
+	// currentRefReturnPrimary marks the function being visited as a B′-S0 arm-(a) ref-return
+	// primary (packageRefReturnPrimaryMethods): its declared return is `ref T` and its bare
+	// receiver-returns emit `return ref v;` (visitReturnStmt). Set per function declaration in
+	// visitFuncDecl, stale outside one — the same ownership convention as currentFuncName.
+	currentRefReturnPrimary bool
+	paramNames              HashSet[string]
+	paramObjects            map[types.Object]bool
 	// erasedTypeParams holds the current FUNCTION declaration's pointer-core (erased) type
 	// parameters, identity-keyed to their pointer types (see collectErasedTypeParams) — the
 	// single source every renderer/classifier consults so the erasure flips coherently, and
@@ -343,8 +348,8 @@ type Visitor struct {
 	// reordering, collapse, or double conversion of an expression can perturb the counter.
 	funcLitEntries []funcLitEntry
 	varNames       map[*types.Var]string
-	hasDefer               bool
-	hasRecover             bool
+	hasDefer       bool
+	hasRecover     bool
 	// pendingTypeAccess carries an explicit C# access modifier ("public ") for the type
 	// declaration currently being emitted — set by visitTypeSpec for an unexported type that
 	// must be publicized (used as an exported struct field; see packagePublicizedTypes), and

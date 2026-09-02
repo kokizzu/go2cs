@@ -165,6 +165,13 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 					// ThreadLocal capture, which raced across threads for distinct receivers.
 					capturedRecvName = AddressPrefix + recvName
 
+					// B′-S0 arm (a): a ref-return primary has NO box — the receiver IS the ref
+					// parameter, and Go's `return v` is the receiver itself: `return ref v;`.
+					// The selection guarantees every return in such a method is this shape.
+					if v.currentRefReturnPrimary {
+						capturedRecvName = "ref " + getSanitizedIdentifier(recvName)
+					}
+
 					break
 				}
 			}
