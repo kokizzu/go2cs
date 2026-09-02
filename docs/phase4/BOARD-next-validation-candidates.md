@@ -3171,6 +3171,24 @@ to be hand-owned (the first was `StartProcess`/`_STARTUPINFOEXW`, 2026-07-19). `
 a census predicted, and the reason `path/filepath`'s `EvalSymlinks` family took the C# test host down
 mid-run.
 
+> **Amendment 2026-09-02 (C2, from the Sendto cut) — the class has a THIRD outcome, and it is the
+> quietest: not a fault and not a wrong answer, but a wrong DESTINATION that the network forgives.**
+> Linux `syscall.Sendto` handed the kernel the address of a managed `RawSockaddrInet4`; the sixteen
+> bytes it actually received were `02 00 | AE 54 | 00 00 00 00 | <a managed reference>` — family and
+> port CORRECT, because they are inline scalars, and the destination address `0.0.0.0`, because the
+> four bytes at that offset are the managed struct's padding while the reference that should hold the
+> octets sits eight bytes further on. Linux treats `0.0.0.0` as a destination meaning "this host", so
+> every loopback send arrived at the right socket and a loopback guard read GREEN over a send to
+> entirely the wrong address. **A guard for an address-encoding member of this class needs a
+> destination the kernel must actually honour** — `SendtoSeam` binds `127.0.0.2` for exactly this
+> reason, and its first draft on `127.0.0.1` passed against the defective body.
+>
+> **And `net.Interfaces()` was safe for a reason that does not generalize.** `NetlinkRIB` calls
+> `Sendto` with a `SockaddrNetlink`, whose raw struct is `Family`/`Pad`/`Pid`/`Groups` — all scalars,
+> so it is accidentally blittable and has no reference to misplace. Membership in this class is
+> decided per ADDRESS FAMILY, not per wrapper: the same wrapper is correct for netlink and wrong for
+> `Inet4`/`Inet6`/`Unix`/`Linklayer`. That is why nothing had noticed.
+
 **The class.** A generated wrapper passes `uintptr(unsafe.Pointer(&s))` for a converted struct whose
 C# layout is not the native one — any struct holding a golib `array<T>` (Go's inline `[N]T`) or a
 `ж<T>` (Go's pointer field) where Windows expects inline bytes or a raw address. The kernel then

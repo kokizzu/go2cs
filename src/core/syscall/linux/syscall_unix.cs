@@ -478,19 +478,7 @@ internal static error /*err*/ sendtoInet6(nint fd, slice<byte> p, nint flags, ж
     return sendto(fd, p, flags, ptr, n);
 }
 
-public static error /*err*/ Sendto(nint fd, slice<byte> p, nint flags, Sockaddr to) {
-    error err = default!;
-
-    @unsafe.Pointer ptr = default!;
-    _Socklen salen = default!;
-    if (to != default!) {
-        (ptr, salen, err) = to.sockaddr();
-        if (err != default!) {
-            return err;
-        }
-    }
-    return sendto(fd, p, flags, ptr, salen);
-}
+// go2cs generated this placeholder — func Sendto is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ SetsockoptByte(nint fd, nint level, nint opt, byte valueʗp) {
     ref var value = ref heap(valueʗp, out var Ꮡvalue);

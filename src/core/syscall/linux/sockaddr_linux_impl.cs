@@ -40,16 +40,26 @@
 //   - anyToSockaddr, Linux's decode (Go's is a free function here, the method form is Windows's):
 //     FLATTEN the managed RawSockaddrAny back to the 112-byte native image its fields transcribe
 //     (Family at 0, Data at 2..15, Pad at 16..111) and hand that to the one decode -- so any
-//     remaining auto caller (the UDP receive path, Recvmsg) decodes correctly once ITS fill is.
+//     remaining auto caller (Recvmsg) decodes correctly once ITS fill is;
+//   - Recvfrom (2026-08-30) and Sendto (2026-09-02): the UDP pair, added when each was REACHED,
+//     which is the rule this file's scope has followed throughout rather than an exception to it.
 //
-// DELIBERATELY NOT COVERED, named rather than left to be rediscovered: Recvfrom / Sendto / Recvmsg
-// / Sendmsg -- the UDP and ancillary paths -- still pass `&rsa` / the encoder's address; L10 drew
-// the same line (fix a censused wrapper when a suite REACHES it), and nothing on the TCP path
-// touches them. writeNativeSockaddr / readNativeSockaddr are what they would need. The
-// SockaddrUnix / SockaddrLinklayer / SockaddrNetlink ENCODERS stay auto: they have no port alias,
-// their raw structs are consumed here only through writeNativeSockaddr (which calls them for Go's
-// own validation and length rules), and the address they return is never handed to the kernel by
-// a covered wrapper.
+// DELIBERATELY NOT COVERED, named rather than left to be rediscovered: Recvmsg / Sendmsg -- the
+// ancillary paths -- still pass `&rsa` / the encoder's address; L10 drew the same line (fix a
+// censused wrapper when a suite REACHES it), and they need a native msghdr plus an iovec array and
+// two-way control-message handling, which is more than writeNativeSockaddr / readNativeSockaddr.
+// The SockaddrUnix / SockaddrLinklayer / SockaddrNetlink ENCODERS stay auto: they have no port
+// alias, their raw structs are consumed here only through writeNativeSockaddr (which calls them for
+// Go's own validation and length rules), and the address they return is never handed to the kernel
+// by a covered wrapper.
+//
+// AND syscall's OWN sendtoInet4 / sendtoInet6 / recvfromInet4 / recvfromInet6 STAY AUTO, which is a
+// decision already on the record and worth not re-litigating: internal/syscall/unix/linux/
+// net_linux_impl.cs's header censused the linux flavor and found ZERO call sites for them, because
+// internal/poll reaches its //go:linkname copies instead. They carry this file's exact defect in
+// eleven lines -- and they are dead code, so hand-owning them would be corpus surface for no
+// behavior. Sendto is covered here and they are not for one reason only: netlink_linux.cs's
+// NetlinkRIB CALLS Sendto, and nothing calls them.
 //
 // THE DEPENDENCY, MEASURED AND STATED UP FRONT. This file moves the socket wall; it does not open
 // the gate. On the Linux flavor a socket is un-armable -- internal/poll/linux/runtime_netpoll_impl.cs
@@ -517,6 +527,39 @@ partial class syscall_package
 
         var (sa, err) = readNativeSockaddr(buffer, addrlen);
         return ((nint)r1, sa, err);
+    }
+
+    // Sendto is Recvfrom's direction reversed and takes Bind/Connect's shape, not Recvfrom's: the
+    // kernel READS the address here, so there is no stack buffer to decode afterwards and no
+    // AF_UNSPEC sentinel to distinguish "nothing written" -- just the native image built once and
+    // handed to the package's own generated `sendto`.
+    //
+    // What was wrong with the generated body: Go's Sendto calls `to.sockaddr()` and passes the
+    // `unsafe.Pointer` it returns. That pointer addresses a MANAGED raw struct -- SockaddrInet4's
+    // `raw`, whose `Addr` and `Zero` are `array<byte>` OBJECT REFERENCES rather than inline bytes --
+    // so the kernel reads two references where it expects four address bytes and eight zero bytes,
+    // and the datagram goes to whatever those references decode to. It cannot corrupt the managed
+    // heap the way Recvfrom's write did (the kernel only reads), which is why this is the LAYOUT
+    // half of the wall rather than the write-over-managed half, and why it was safe to leave until
+    // a caller reached it.
+    //
+    // A nil `to` is NOT an error and must not go through writeNativeSockaddr: Go leaves `ptr` nil
+    // and `salen` zero and calls sendto anyway, which is how a datagram goes out on a CONNECTED
+    // socket. `@unsafe.Pointer`'s uintptr bridge answers 0 for both nil representations, so the
+    // default value reaches the kernel as the null address Go sends.
+    public static unsafe error /*err*/ Sendto(nint fd, slice<byte> p, nint flags, Sockaddr to) {
+        if (to == default!) {
+            return sendto(fd, p, flags, default!, 0);
+        }
+
+        byte* buffer = stackalloc byte[nativeSockaddrLen];
+        var (n, err) = writeNativeSockaddr(to, buffer);
+
+        if (err != default!) {
+            return err;
+        }
+
+        return sendto(fd, p, flags, new @unsafe.Pointer((uintptr)(void*)buffer), n);
     }
 
     // Accept4 is Go's own body (syscall_linux.go) over the trampoline instead of the typed generated
