@@ -24,10 +24,18 @@
 // the fixture assumes. Treat every "fixture-verified" mechanism below as untested
 // against reality until a real package exercises it.
 //   - clean                  : matched=true, errors=[] (LIVE: unicode/utf8)
-//   - host-crash-at-init     : results.json absent, comparison errors[] carries a
-//                              "converted tests: ... failed: exit status N" entry
-//                              with a .NET stack-trace shape (LIVE: runtime, the
-//                              getg NotImplementedException record)
+//   - host-crash-at-init     : comparison errors[] carries a "converted tests: ...
+//                              failed: exit status N" entry with a .NET stack-trace
+//                              shape (LIVE: runtime, the getg NotImplementedException
+//                              record). Package-level, reported regardless of whether
+//                              results.json loaded: when it's absent this is the only
+//                              signal and classification stops there; when it DID
+//                              load (a real, partial record up to the crash), this is
+//                              reported ALONGSIDE the per-test rows rather than
+//                              instead of them (LIVE, second shape: runtime again —
+//                              a goroutine panic in TestCaller took the whole host
+//                              down mid-run, after 849 real per-test rows had
+//                              already been produced; see testdata/runtime-panic/)
 //   - timeout                : results.json's last event is
 //                              {"test":"","action":"timeout"} (fixture-verified
 //                              against the doctrine's documented shape)
@@ -204,23 +212,44 @@ func classifyPackage(dir string) error {
 		}
 	}
 
-	if resultsErr != nil {
-		if crashDetail, isCrash := hostCrashAtInit(comparison.Errors); isCrash {
-			fmt.Printf("PACKAGE-LEVEL: host-crash-at-init — results.json absent, comparison errors[] "+
-				"carries the process-invocation failure:\n  %s\n", truncate(crashDetail, 400))
+	// The host-crash-at-init signature is a PACKAGE-LEVEL event whether or not
+	// results.json loaded. When results.json is absent, this is the only signal
+	// available and there is nothing further to classify. When results.json DID
+	// load, the crash line still belongs in errors[] — the pipeline can write a
+	// real, partial results.json right up to the moment the whole process exits
+	// non-zero (e.g. an unhandled goroutine panic) — so it is reported ALONGSIDE
+	// the per-test rows below, not instead of them. Skipped from the per-line
+	// loop afterward so it isn't ALSO reported as "unclassified".
+	crashDetail, isCrash := hostCrashAtInit(comparison.Errors)
 
+	if isCrash {
+		fmt.Printf("PACKAGE-LEVEL: host-crash-at-init — comparison errors[] carries the process-invocation "+
+			"failure (results.json %s):\n  %s\n", resultsLoadState(resultsErr), truncate(crashDetail, 400))
+
+		if resultsErr != nil {
 			return nil
 		}
-
+	} else if resultsErr != nil {
 		fmt.Printf("results.json unavailable (%v) and no host-crash signature found in comparison errors[] — "+
 			"treating remaining errors[] entries as unclassified\n", resultsErr)
 	}
 
-	findings := classifyErrors(comparison, results)
+	findings := classifyErrors(comparison, results, crashDetail)
 
 	reportFindings(findings)
 
 	return nil
+}
+
+// resultsLoadState renders whether results.json loaded, for the package-level
+// host-crash-at-init line -- absent (nothing further to classify) vs loaded
+// (a real, partial record exists alongside the crash and is reported below).
+func resultsLoadState(resultsErr error) string {
+	if resultsErr != nil {
+		return "absent"
+	}
+
+	return "loaded"
 }
 
 func loadResults(path string) (*ResultsFile, error) {
@@ -252,7 +281,7 @@ func hostCrashAtInit(errors []string) (string, bool) {
 	return "", false
 }
 
-func classifyErrors(comparison ComparisonFile, results *ResultsFile) []Finding {
+func classifyErrors(comparison ComparisonFile, results *ResultsFile, skipLine string) []Finding {
 	var eventsByTest map[string][]ResultEvent
 
 	if results != nil {
@@ -270,6 +299,12 @@ func classifyErrors(comparison ComparisonFile, results *ResultsFile) []Finding {
 	findings := make([]Finding, 0, len(comparison.Errors))
 
 	for _, line := range comparison.Errors {
+		// Already reported as the PACKAGE-LEVEL host-crash-at-init line above --
+		// skip it here so it isn't ALSO counted as a per-line "unclassified" row.
+		if skipLine != "" && line == skipLine {
+			continue
+		}
+
 		m := errorLinePattern.FindStringSubmatch(line)
 		if m == nil {
 			findings = append(findings, Finding{

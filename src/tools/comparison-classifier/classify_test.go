@@ -118,6 +118,61 @@ func TestClassifyPackage_NativeFault(t *testing.T) {
 	}
 }
 
+// TestClassifyPackage_RuntimePanic is a REAL fixture, not a hand-built one: the
+// actual go2cs_test_comparison.json/go2cs_test_results.json from a runtime -tests
+// compare run that hit a genuine nil-pointer panic in TestCaller on a goroutine,
+// taking the whole host down mid-run (849 real rows already produced by then).
+// This is the shape that exposed the classifier's original gap: the
+// host-crash-at-init signature landed in comparison.errors[] ALONGSIDE a results.json
+// that loaded fine, and the tool used to only check that signature when results.json
+// failed to load at all -- so it fell through to "unclassified" instead of being
+// reported as the package-level event it is. Locks in the fix.
+func TestClassifyPackage_RuntimePanic(t *testing.T) {
+	out := captureStdout(t, func() {
+		if err := classifyPackage("testdata/runtime-panic"); err != nil {
+			t.Fatalf("classifyPackage: %v", err)
+		}
+	})
+
+	if !strings.Contains(out, "PACKAGE-LEVEL: host-crash-at-init") {
+		t.Errorf("expected the package-level host-crash-at-init line even though results.json loaded, got first 500 chars:\n%s", firstN(out, 500))
+	}
+
+	if !strings.Contains(out, "results.json loaded") {
+		t.Errorf("expected the package-level line to state results.json loaded (not absent), got first 500 chars:\n%s", firstN(out, 500))
+	}
+
+	// The per-test rows must still be there, alongside the package-level line --
+	// this is the whole point of the fix, not just the line's presence.
+	if !strings.Contains(out, "TestCaller") {
+		t.Errorf("expected TestCaller's own per-test row to still be reported alongside the package-level line, got:\n%s", out)
+	}
+
+	if !strings.Contains(out, "go-panic-text") {
+		t.Errorf("expected TestCaller classified go-panic-text (real panic text captured), got:\n%s", out)
+	}
+
+	if !strings.Contains(out, "empty-unreached") {
+		t.Errorf("expected the 800+ shadow rows still classified as empty-unreached, got:\n%s", out)
+	}
+
+	// The crash line must be reported exactly ONCE -- not also duplicated as an
+	// "unclassified" per-line row now that classifyErrors skips it.
+	if n := strings.Count(out, "converted tests:"); n != 1 {
+		t.Errorf("expected the host-crash-at-init errors[] line to appear exactly once (package-level only, not also duplicated into unclassified), got %d occurrences", n)
+	}
+}
+
+// firstN returns the first n bytes of s, for a bounded test-failure message
+// against an 850-row real fixture's full output.
+func firstN(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+
+	return s[:n] + "... [truncated]"
+}
+
 // TestClassifyPackage_Timeout covers the tail-first doctrine's primary case: a
 // results.json whose last event is {"test":"","action":"timeout"}. The tool must
 // report the package-level timeout line and return WITHOUT descending into per-test
