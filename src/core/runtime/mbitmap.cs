@@ -1775,172 +1775,39 @@ internal static slice<byte> reflect_gcbits(any x) {
     return getgcmask(x);
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string badArgumentToGetgcmaskˢ = "bad argument to getgcmask: expected type to be a pointer to the value type whose mask is being queried"u8;
-internal static readonly @string foundNonZeroedTailOfˢ = "found non-zeroed tail of allocation"u8;
-internal static readonly @string foundTwoDifferentMasksˢ = "found two different masks from two different methods"u8;
+// go2cs generated this placeholder — func getgcmask is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Returns GC type info for the pointer stored in ep for testing.
-// If ep points to the stack, only static live information will be returned
-// (i.e. not for objects which are only dynamically live stack objects).
-internal static slice<byte> /*mask*/ getgcmask(any epʗp) {
-    slice<byte> mask = default!;
-
-    ref var ep = ref heap(epʗp, out var Ꮡep);
-    var e = efaceOf(Ꮡep).Value;
-    @unsafe.Pointer Δp = e.data;
-    var t = e._type;
-    ж<_type> et = default!;
-    if ((abiꓸKind)((~t).Kind_ & abi.KindMask) != abi.Pointer) {
-        @throw(badArgumentToGetgcmaskˢ);
-    }
-    et = (t.Reinterpret<_type, ptrtype>()).Value.Elem;
-    // data or bss
-    foreach (var (_, datap) in activeModules()) {
-        // data
-        if ((~datap).data <= (uintptr)Δp && (uintptr)Δp < (~datap).edata) {
-            var bitmap = datap.Value.gcdatamask.bytedata;
-            var n = et.Value.Size_;
-            mask = new slice<byte>((nint)(n / (uintptr)goarch.PtrSize));
-            for (var i = (uintptr)0; i < n; i += goarch.PtrSize) {
-                var off = ((uintptr)Δp + i - (~datap).data) / (uintptr)goarch.PtrSize;
-                mask[(nint)(i / (uintptr)goarch.PtrSize)] = (byte)(((addb(bitmap, off / 8).Value >> (int)((off % 8)))) & 1);
-            }
-            return mask;
-        }
-        // bss
-        if ((~datap).bss <= (uintptr)Δp && (uintptr)Δp < (~datap).ebss) {
-            var bitmap = datap.Value.gcbssmask.bytedata;
-            var n = et.Value.Size_;
-            mask = new slice<byte>((nint)(n / (uintptr)goarch.PtrSize));
-            for (var i = (uintptr)0; i < n; i += goarch.PtrSize) {
-                var off = ((uintptr)Δp + i - (~datap).bss) / (uintptr)goarch.PtrSize;
-                mask[(nint)(i / (uintptr)goarch.PtrSize)] = (byte)(((addb(bitmap, off / 8).Value >> (int)((off % 8)))) & 1);
-            }
-            return mask;
-        }
-    }
-    // heap
-    {
-        var (@base, s, _) = findObject((uintptr)Δp, 0, 0); if (@base != 0) {
-            if ((~s).spanclass.noscan()) {
-                return default!;
-            }
-            var limit = @base + (~s).elemsize;
-            // Move the base up to the iterator's start, because
-            // we want to hide evidence of a malloc header from the
-            // caller.
-            var tp = s.typePointersOfUnchecked(@base);
-            @base = tp.addr;
-            // Unroll the full bitmap the GC would actually observe.
-            var maskFromHeap = new slice<byte>((nint)((limit - @base) / (uintptr)goarch.PtrSize));
-            while (ᐧ) {
-                uintptr addr = default!;
-                {
-                    (tp, addr) = tp.next(limit); if (addr == 0) {
-                        break;
-                    }
-                }
-                maskFromHeap[(nint)((addr - @base) / (uintptr)goarch.PtrSize)] = 1;
-            }
-            // Double-check that every part of the ptr/scalar we're not
-            // showing the caller is zeroed. This keeps us honest that
-            // that information is actually irrelevant.
-            for (var i = limit; i < (~s).elemsize; i++) {
-                if (~(ж<byte>)(uintptr)((@unsafe.Pointer)i) != 0) {
-                    @throw(foundNonZeroedTailOfˢ);
-                }
-            }
-            // Callers (and a check we're about to run) expects this mask
-            // to end at the last pointer.
-            while (len(maskFromHeap) > 0 && maskFromHeap[len(maskFromHeap) - 1] == 0) {
-                maskFromHeap = maskFromHeap[..(int)(len(maskFromHeap) - 1)];
-            }
-            if ((abiꓸKind)((~et).Kind_ & abi.KindGCProg) == 0) {
-                // Unroll again, but this time from the type information.
-                var maskFromType = new slice<byte>((nint)((limit - @base) / (uintptr)goarch.PtrSize));
-                tp = s.typePointersOfType(et, @base);
-                while (ᐧ) {
-                    uintptr addr = default!;
-                    {
-                        (tp, addr) = tp.next(limit); if (addr == 0) {
-                            break;
-                        }
-                    }
-                    maskFromType[(nint)((addr - @base) / (uintptr)goarch.PtrSize)] = 1;
-                }
-                // Validate that the prefix of maskFromType is equal to
-                // maskFromHeap. maskFromType may contain more pointers than
-                // maskFromHeap produces because maskFromHeap may be able to
-                // get exact type information for certain classes of objects.
-                // With maskFromType, we're always just tiling the type bitmap
-                // through to the elemsize.
-                //
-                // It's OK if maskFromType has pointers in elemsize that extend
-                // past the actual populated space; we checked above that all
-                // that space is zeroed, so just the GC will just see nil pointers.
-                var differs = false;
-                foreach (var (i, _) in maskFromHeap) {
-                    if (maskFromHeap[i] != maskFromType[i]) {
-                        differs = true;
-                        break;
-                    }
-                }
-                if (differs) {
-                    print((@string)"runtime: heap mask="u8);
-                    foreach (var (_, b) in maskFromHeap) {
-                        print(b);
-                    }
-                    println();
-                    print((@string)"runtime: type mask="u8);
-                    foreach (var (_, b) in maskFromType) {
-                        print(b);
-                    }
-                    println();
-                    print((@string)"runtime: type="u8, toRType(et).@string(), (@string)"\n"u8);
-                    @throw(foundTwoDifferentMasksˢ);
-                }
-            }
-            // Select the heap mask to return. We may not have a type mask.
-            mask = maskFromHeap;
-            // Make sure we keep ep alive. We may have stopped referencing
-            // ep's data pointer sometime before this point and it's possible
-            // for that memory to get freed.
-            KeepAlive(ep);
-            return mask;
-        }
-    }
-    // stack
-    {
-        var gp = getg(); if ((~(~(~gp).m).curg).stack.lo <= (uintptr)Δp && (uintptr)Δp < (~(~(~gp).m).curg).stack.hi) {
-            var found = false;
-            ref var u = ref heap(new unwinder(), out var Ꮡu);
-            for (Ꮡu.initAt((~(~(~gp).m).curg).sched.pc, (~(~(~gp).m).curg).sched.sp, 0, (~(~gp).m).curg, 0); u.valid(); Ꮡu.next()) {
-                if (u.frame.sp <= (uintptr)Δp && (uintptr)Δp < u.frame.varp) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                var (locals, _, _) = u.frame.getStackMap(false);
-                if (locals.n == 0) {
-                    return mask;
-                }
-                var size = (uintptr)locals.n * (uintptr)goarch.PtrSize;
-                var n = (t.Reinterpret<_type, ptrtype>()).Value.Elem.Value.Size_;
-                mask = new slice<byte>((nint)(n / (uintptr)goarch.PtrSize));
-                for (var i = (uintptr)0; i < n; i += goarch.PtrSize) {
-                    var off = ((uintptr)Δp + i - u.frame.varp + size) / (uintptr)goarch.PtrSize;
-                    mask[(nint)(i / (uintptr)goarch.PtrSize)] = locals.ptrbit(off);
-                }
-            }
-            return mask;
-        }
-    }
-    // otherwise, not something the GC knows about.
-    // possibly read-only data, like malloc(0).
-    // must not have pointers
-    return mask;
-}
+// data or bss
+// data
+// bss
+// heap
+// Move the base up to the iterator's start, because
+// we want to hide evidence of a malloc header from the
+// caller.
+// Unroll the full bitmap the GC would actually observe.
+// Double-check that every part of the ptr/scalar we're not
+// showing the caller is zeroed. This keeps us honest that
+// that information is actually irrelevant.
+// Callers (and a check we're about to run) expects this mask
+// to end at the last pointer.
+// Unroll again, but this time from the type information.
+// Validate that the prefix of maskFromType is equal to
+// maskFromHeap. maskFromType may contain more pointers than
+// maskFromHeap produces because maskFromHeap may be able to
+// get exact type information for certain classes of objects.
+// With maskFromType, we're always just tiling the type bitmap
+// through to the elemsize.
+//
+// It's OK if maskFromType has pointers in elemsize that extend
+// past the actual populated space; we checked above that all
+// that space is zeroed, so just the GC will just see nil pointers.
+// Select the heap mask to return. We may not have a type mask.
+// Make sure we keep ep alive. We may have stopped referencing
+// ep's data pointer sometime before this point and it's possible
+// for that memory to get freed.
+// stack
+// otherwise, not something the GC knows about.
+// possibly read-only data, like malloc(0).
+// must not have pointers
 
 } // end runtime_package

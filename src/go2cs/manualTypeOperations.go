@@ -104,6 +104,19 @@ func (scope goosScope) includes(goos string) bool {
 // same manual files — declarations whose bodies are inseparable from the manual types' semantics.
 var manualConversionFuncs = map[string]map[string]goosScope{
 	"runtime": {
+		// getgcmask answers a TYPE's GC pointer bitmap, and Go answers it by reading the GC's own
+		// heap metadata: findObject, the span's typePointersOfUnchecked iterator, activeModules'
+		// data/bss bitmaps, the stack's locals map. None of those exist in a managed runtime, so the
+		// converted body cannot work here and does not fail cheaply -- reflect's TestGCBits reports
+		// infrastructure-error rather than a failure, because the process does not survive the walk.
+		//
+		// It is hand-owned rather than DISCLOSED because the datum is not lost: the bitmap is a
+		// TYPE-level property, and golib's layout walk already enumerates exactly the words that
+		// define it -- the same walk PtrBytes comes from, where PtrBytes reports where the last
+		// pointer word ENDS and the mask reports WHICH words they are. GoReflect.GoGCMaskOf answers
+		// from that walk, so the hand-own reports the same truth at finer resolution rather than
+		// substituting a plausible one. runtime/mbitmap_impl.cs holds the body.
+		"getgcmask":  goosAny,
 		"g.guintptr": goosAny,
 		"setGNoWB":   goosAny,
 		"setMNoWB":   goosAny,

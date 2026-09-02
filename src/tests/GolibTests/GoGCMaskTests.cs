@@ -114,4 +114,23 @@ public class GoGCMaskTests
             Assert.AreEqual(ptrBytes == 0 ? -1 : (int)(ptrBytes / 8) - 1, last, $"{t.Name}: last scanned word vs PtrBytes");
         }
     }
+    // -------- the seam's own primitive: runtime.getgcmask reaches the pointee TYPE through
+    // PointeeTypeOfValue, so the boxed-pointer contract is guarded here rather than only through
+    // reflect's suite. The negative arm is the one that matters: getgcmask THROWS Go's
+    // "bad argument" text on a null answer, so a helper that answered a type for a non-pointer
+    // would silently turn a Go panic into a wrong mask.
+    [TestMethod]
+    public void PointeeTypeOfValueReadsThroughAPointerBox()
+    {
+        Assert.AreEqual(typeof(Xptrscalar), GoReflect.PointeeTypeOfValue(Ꮡ(new Xptrscalar())), "*Xptrscalar");
+        Assert.AreEqual(typeof(byte), GoReflect.PointeeTypeOfValue(Ꮡ((byte)7)), "*byte");
+    }
+
+    [TestMethod]
+    public void PointeeTypeOfValueRefusesWhatIsNotAPointer()
+    {
+        Assert.IsNull(GoReflect.PointeeTypeOfValue(null), "null");
+        Assert.IsNull(GoReflect.PointeeTypeOfValue(new Xptrscalar()), "a value, not a pointer to one");
+        Assert.IsNull(GoReflect.PointeeTypeOfValue((@string)"s"), "a string is not a pointer");
+    }
 }
