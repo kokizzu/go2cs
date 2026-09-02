@@ -2042,6 +2042,31 @@ func (v *Visitor) hoistReceiverEvaluation(selectorExpr *ast.SelectorExpr, render
 		return rendered
 	}
 
+	// A POINTER-typed receiver expression under a VALUE receiver is Go's implicit deref: `rh.p.label`
+	// with `p *frame` and a value-receiver `label` IS `(*rh.p).label`, so what Go saves is the
+	// POINTEE's copy, not the pointer. This helper hoists the expression as the enclosing context
+	// renders it, which for that shape is the box — and binding a `ж<T>` where the emitted extension
+	// wants a `T` does not compile (**CS1929**, measured on `rh.p.label`). Hoisting the pointer would
+	// also be semantically wrong even where it did compile, since the deref would then happen at CALL
+	// time and observe later writes to the pointee.
+	//
+	// Left on the previous rendering rather than guessed at: emitting the deref here would have to
+	// reproduce the selector's own auto-deref, and getting that subtly wrong is how a receiver ends up
+	// aliasing the wrong storage. The shape keeps whatever correctness it had before this commit and
+	// is COUNTED, exactly as a sink-less site is — the same declare-or-do-not-rename discipline, one
+	// level up: do not hoist what you cannot render correctly.
+	if recvType := v.getType(selectorExpr.X, false); recvType != nil {
+		if _, exprIsPointer := recvType.Underlying().(*types.Pointer); exprIsPointer {
+			if funcObj, ok := v.info.ObjectOf(selectorExpr.Sel).(*types.Func); ok {
+				if sig, ok := funcObj.Type().(*types.Signature); ok && sig.Recv() != nil {
+					if _, recvIsPointer := sig.Recv().Type().(*types.Pointer); !recvIsPointer {
+						return rendered
+					}
+				}
+			}
+		}
+	}
+
 	// Shares getCapturedVarName's per-prefix counter so a receiver temp can never collide with a
 	// capture name; the flag it clears is the same one prepareStmtCaptures clears, and for the same
 	// reason (the counter does not advance while the detection phase is still set, which would hand
