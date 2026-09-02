@@ -95,6 +95,26 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		renderLambdaParams = true
 	}
 
+	// A callee that RETURNS results does NOT need the temp-parameter form at arity N, and an
+	// earlier cut of this file said it did. golib carries BOTH shapes of `defer` at every arity
+	// with parameters -- `defer<T1, T2>(Action<T1, T2>, T1, T2, ref GoFrame)` and
+	// `defer<T1, T2, TResult>(Func<T1, T2, TResult>, T1, T2, ref GoFrame)`, 17 Action forms and 16
+	// Func forms in builtin.DeferRegistrations.cs -- so a result-returning callee passes as a bare
+	// method group and the corpus has been compiling exactly that for months
+	// (`defer(os.RemoveAll, @base, ref ᒐ)`, `defer(syscall.Close, fd, ref ᒐ)`).
+	//
+	// Arity ZERO is the real asymmetry and the arity-0 rung below is where it belongs: `defer` has
+	// ONE nullary overload, `defer(Action, ref GoFrame)`, and no `Func<TResult>` form -- which is
+	// why a nullary result-returning callee must be wrapped in a lambda and an arity-N one must not.
+	//
+	// The withdrawn rung was written to explain a CS0839 on a deferred syscall-funnel call, and it
+	// explained nothing: that emission's empty argument slots came from convCallExpr intercepting
+	// every funnel call ahead of the `callArgs` threading, which is fixed at the root in
+	// convCallExpr now. The rung changed the malformed emission's SHAPE without filling a slot,
+	// while rewriting six unrelated behavioral projects from a clean method group into a thunk that
+	// costs a closure allocation per defer. Measured and withdrawn 2026-09-02; the overload table
+	// is one grep and settles it, so check it before re-deriving this.
+
 	if paramCount > 0 {
 		lambdaContext.callArgs = make([]string, paramCount)
 		lambdaContext.renderParams = renderLambdaParams

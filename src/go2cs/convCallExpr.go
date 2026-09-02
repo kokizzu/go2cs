@@ -125,7 +125,31 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	// else so a pointer-derived argument's box is captured before the general path would convert
 	// it straight to a transient uintptr with nothing left to keep alive.
 	if syscallFunnelCall(v.info, callExpr) {
-		return v.convSyscallFunnelCall(callExpr)
+		// A DEFERRED or SPAWNED funnel call (callArgs non-nil) does NOT take the interception:
+		// it renders through the general path below, exactly like any other callee, so the
+		// temp-parameter form fills its eager-argument slots. Intercepting it filled nothing —
+		// convSyscallFunnelCall takes no LambdaContext and cannot reach callArgs, so the
+		// arguments rendered inside the THUNK BODY while every slot stayed empty:
+		// `defer((ᴛ1, ᴛ2, ᴛ3, ᴛ4) => syscall.Syscall(SYS_CLOSE, (uintptr)fds[i], 0, 0), , , , ,
+		// ref ᒐ)` — CS0839 ×4, and a SEMANTIC defect underneath it, since `fds[i]` would then be
+		// read at unwind rather than at the defer statement (measured 2026-09-02 on
+		// runtime/memmove_linux_amd64_test.go:44 and on a scratch reproducer whose loop mutates
+		// the slice after the defer).
+		//
+		// Falling through rather than threading the context into convSyscallFunnelCall is the
+		// smaller and the more honest fix: the general path is where a deferred argument's
+		// defer-specific treatment already lives (convExprList's untyped-constant default-type
+		// cast, castArgToType, the ref-lowered box carve-out), and reimplementing that beside the
+		// funnel's own rendering would be a second copy of it, drifting on its own schedule. One
+		// rule, one shape.
+		//
+		// What the interception exists for — the uintptrkeepalive contract — is preserved by
+		// REJECTING the one shape the general path cannot carry (below), not by re-deriving it.
+		if context.callArgs == nil {
+			return v.convSyscallFunnelCall(callExpr)
+		}
+
+		v.rejectDeferredSyscallKeepAlive(callExpr)
 	}
 
 	// ---- Phase 1a: shapes intercepted before the general call path ----
