@@ -1,4 +1,4 @@
-// TestFlagBridge.cs - Gbtc
+﻿// TestFlagBridge.cs - Gbtc
 // Copyright © 2026 The go2cs Authors. All rights reserved.
 //
 // Use of this source code is governed by an MIT-style license
@@ -110,7 +110,7 @@ internal static class TestFlagBridge
         registrar.String("test.gocoverdir", "", "write coverage intermediate files to this directory");
         registrar.String("test.list", "", "list tests, examples, and benchmarks matching `regexp` then exit");
         registrar.String("test.run", options.RunPattern, "run only tests and examples matching `regexp`");
-        registrar.String("test.skip", "", "do not list or run tests matching `regexp`");
+        registrar.String("test.skip", options.SkipPattern, "do not list or run tests matching `regexp`");
         registrar.String("test.memprofile", "", "write an allocation profile to `file`");
         registrar.Int("test.memprofilerate", 0, "set memory allocation profiling `rate` (see runtime.MemProfileRate)");
         registrar.String("test.cpuprofile", "", "write a cpu profile to `file`");
@@ -150,6 +150,7 @@ internal static class TestFlagBridge
         registrar.Bool("v", options.Verbose, "verbose: print additional output");
         registrar.Bool("short", options.Short, "run smaller test suite to save time");
         registrar.String("run", options.RunPattern, "run only tests and examples matching `regexp`");
+        registrar.String("skip", options.SkipPattern, "do not list or run tests matching `regexp`");
         registrar.Int("count", options.Count, "run tests and benchmarks `n` times");
         registrar.Int("parallel", options.Parallel, "run at most `n` tests in parallel");
         registrar.String("shuffle", options.ShuffleValue, "randomize the execution order of tests and benchmarks");
