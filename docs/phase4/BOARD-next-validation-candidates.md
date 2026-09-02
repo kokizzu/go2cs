@@ -21001,6 +21001,59 @@ is the one used here — re-run the same tests filtered, on an idle box, and see
 the row's own disclosure already carries a measured bracket, the bracket is the yardstick and the only
 question is which side of it the host sits on.
 
+
+### Amendment, 2026-09-02 (same lane, same day) — **the prediction above is FALSIFIED, and the rung values it quotes do not exist**
+
+The entry states: *"on any Linux host that keeps the managed h2 handshake inside 500 ms under full-suite
+load, `net/http` validates at `linux: 1343 + 2`… If a larger-host run reports anything else, the
+difference is real and this entry is wrong."* **A larger-host run reported otherwise, so the entry is
+wrong by its own terms.** Measured on a 10-thread Linux host, solo, 572 s wall against a 40 m budget with
+**zero** `"action":"timeout"` events in the record: **1341 matching + 2 disclosed + 2 UNDISCLOSED** —
+`TestWriteDeadlineEnforcedPerStream` and its `/h2`, the same two — with **Go passing on that same host in
+the same run** as the native control. The row does not bank there either.
+
+**Second error, and it originates upstream of me but I propagated it.** This entry quotes the retry ladder
+as *125 ms, then 250 ms, then 500 ms*, taken from the row's committed `performance-margin` disclosure.
+Go 1.23.12's actual ladder is `{250 * time.Millisecond, 500 * time.Millisecond, 1 * time.Second}`
+(`net/http/serve_test.go:980`). **No rung of the quoted description exists in this release.** I took the
+prose as the record instead of re-deriving from source — precisely the failure CLAUDE.md names when it
+says a finding's description is not its record — and I did so while building a prediction on top of it.
+The reference bracket **(250 ms, 500 ms]** appears to survive the correction (two failures then a pass,
+with the rung values mis-transcribed one position down), but that is a reading of someone else's
+measurement, not a re-measurement, and it is flagged as such.
+
+**What the corrected ladder does to this entry's own numbers:** "all three rungs fail on the container,
+so the handshake exceeds 500 ms" should read **exceeds 1 s**. My conclusion was understated, not
+overstated.
+
+**Where the load hypothesis actually lands, stated more carefully than I stated it.** It is not dead and
+it is not what I claimed. Two controls now exist and they do not point at host size:
+
+| condition | host | result |
+|---|---|---|
+| full 1,345-test suite | 4 cores | all rungs fail |
+| full 1,345-test suite | 10 cores | all rungs fail (250 / 500 / 1000) |
+| the two tests FILTERED, idle box | 4 cores | **passes** |
+
+So the divergence is **concurrency-sensitive but not core-count-sensitive in the 4→10 range**: under
+full-suite load the managed h2 handshake exceeds 1 s on both hosts measured, and adding cores did not buy
+a rung. My error was inferring "this host is too small" from "load makes the difference" — a real
+observation and the wrong conclusion drawn from it, since the filtered control only ever showed that load
+matters, never that capacity was the binding constraint.
+
+**The general form in this entry needs the same correction.** It says a timing-shaped divergence measured
+on a host smaller than the reference "is a statement about the host until a control separates the two",
+and offers the filtered re-run as the cheap control. The filtered control separates **load** from **no
+load**; it does not separate **this host** from **a bigger host**, and I used it as though it did. The
+control that answers host size is a bigger host, which is what falsified this. Keep the cheap control —
+it is still worth running first — but do not let a filtered pass license a prediction about hardware.
+
+**Still not minting a disclosure**, and now for a firmer reason than the entry gave: two hosts and a
+native Go control on the larger of them say the converted h2 handshake does not clear 1 s under suite
+concurrency, which makes this a real converted-side property rather than a host limit — but establishing
+*that* is a root-cause question about the managed TLS handshake under load, not a disclosure to mint from
+this lane. The row stays unannotated for Linux.
+
 ---
 
 ## 2026-09-02 · `net`'s 73 unreported Linux verdicts have ONE root, and it is not the deadline: `TestUnixgramServer/0` blocks the converted host indefinitely — proven by a 40 m/60 m A/B whose event streams are identical (lane C1, cloud Linux, 4 cores)
@@ -21067,5 +21120,62 @@ the verdict sets are equal, the deadline is not the constraint and the tail is a
 time to be bought. A deadline-killed run should be A/B'd against a longer one **before** its shortfall is
 priced, because "needs a bigger timeout" and "hangs on one test" produce the identical tail event and the
 identical `NOT MEASURED` verdict, and only the A/B separates them.
+
+
+### Amendment, 2026-09-02 (same lane, same day) — the dichotomy above is FALSE, and the root is simpler: `someTimeout` is ONE HOUR
+
+The entry above says `packetTransponder` sets three deadlines before its `ReadFrom`, "so a conn honouring
+its deadline cannot block there — it would error, send, and `close(ch)` would release the test's select
+loop", and concludes the hang must be either a deadline not honoured or a block earlier in the subtest.
+**`net`'s own test constant is `someTimeout = 1 * time.Hour` (`conn_test.go:18`).** A conn honouring that
+deadline blocks for an hour, which is longer than any package deadline the pipeline has ever given this
+package — so the hang needs **no** deadline defect to explain it, and the dichotomy the entry poses is not
+a real fork. I read the helper and not the constant, and the correction is mine.
+
+**What a filtered diagnostic then established, with the test running ALONE on an idle container** — which
+also removes contention as an explanation, the reading a 4-core box most needed to rule out:
+
+- **Both unixgram sockets are BOUND and open.** `/proc/net/unix` carries both endpoints as Type 2
+  (`SOCK_DGRAM`) — `/tmp/<n>/sock` for the server and the client — with live fds on the host process. So
+  `ListenPacket`, `newLocalServer` and `buildup` all completed: the "block earlier in the subtest" half of
+  the dichotomy is **eliminated by measurement**, not by argument.
+- **Both peers are parked in `ReadFrom`.** The two `goroutine-N` threads and both `go2cs test:` threads sit
+  in `futex_do_wait`; `packetTransceiver` reached its `ReadFrom`, which means its `WriteTo` returned
+  **without error** (an error would have gone down `ch` and freed the select loop).
+- **The netpoller is idle.** `go2cs-netpoll` sits in `ep_poll` with nothing to deliver — no readiness
+  pending on the registered descriptors.
+
+**So the root is the cluster's root, not a separate one:** a unixgram `WriteTo` reports success while the
+peer's `ReadFrom` never receives. `TestReadUnixgramWithUnnamedSocket` and `TestUnixgramLinuxAbstractLongName`
+show the same failure with a *short* deadline and therefore FAIL (`connection refused`, then read
+`i/o timeout`); `TestUnixgramServer/0` shows it with a one-hour deadline and therefore HANGS. One defect,
+two presentations, and the deadline value is the only thing that decides which.
+
+That also re-prices the fix the right way round: this is not "a hang to unblock" plus "two failures to
+root" — it is one unixgram delivery defect worth **three failing tests and 73 unreported verdicts**.
+
+**Unproven and left unproven deliberately:** whether the datagram reaches the kernel at all. `ss` is not
+installed on this container and `/proc/net/unix` carries no queue depths, so I could not read the peer
+socket's receive queue while it hung. The idle netpoller is suggestive — a queued datagram should have
+raised readiness — but that inference assumes those fds are registered with that epoll, which I did not
+verify. A host with `ss` can settle it in one command during the hang, and that is the next measurement
+rather than a conclusion drawn here.
+
+**Filtered control, run after the above and decisive on the contention question.** `TestUnixgramServer`
+alone, `-test-filter`, 6 m package deadline, nothing else on the box. The host's entire record is **four
+events**:
+
+    (pkg)                 run
+    TestUnixgramServer    run
+    TestUnixgramServer/0  run
+    (pkg)                 timeout 360   "package timeout after 00:06:00"
+
+Six minutes, zero progress past the `run` event, with the machine otherwise idle — while Go passes the
+parent and all three subtests. **Contention is eliminated as an explanation**, which was the reading a
+4-core container most needed ruled out, and the block reproduces identically at a third deadline (6 m
+alongside 40 m and 60 m). Three deadlines, one result.
+
+*(Diagnostic only, per the standing rule — a `-test-filter` record never banks a row, and this one was
+deleted rather than left for a later run to read as its own.)*
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
