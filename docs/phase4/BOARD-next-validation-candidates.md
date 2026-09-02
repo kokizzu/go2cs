@@ -20808,3 +20808,59 @@ binds the wrapper to it. Getting the auto-deref subtly wrong is how a receiver e
 wrong storage, which is why it was named rather than guessed at. Guard: a behavioral position with
 a pointer-typed field receiver and a value-receiver method, mutation between creation and call,
 output-compared against `go run`. Candidate owner: a coordinator sub-agent after the family closes.
+
+## `TryMarshalAssignable`'s named/unnamed unwrap arms are CORRECT — the "narrow the wrong-admit class" arc is refuted by a 70,071-admit census, and the whole wrong class is ONE known row (2026-09-02, lane R-LAPTOP, reflect tail)
+
+The reflection bridge's `GoReflect.TryMarshalAssignable` (golib `GoReflect.ValueMarshalling.cs`)
+has two arms that admit a value across a Go named↔unnamed boundary: **A-wrap** constructs the value
+into a named wrapper through its generated single-argument constructor, **B-unwrap** unwraps a named
+wrapper's `m_value` into its underlying-typed slot. Go's ASSIGNMENT rule requires identical
+underlying types with at least one side UNNAMED, and a standing question was whether these arms
+admit the both-NAMED case they should refuse (a wrong admit would let `type S string` fill a
+`string` slot, which Go's assignment forbids — `reflect.Value.MapIndex`'s TestMap row asserts
+exactly that panic and the bridge answered a miss instead).
+
+**The arc as framed — instrument the arms, classify every admit, narrow the wrong class in the
+shared helper — is REFUTED, because the shared helper is also the CONVERSION path, and Go's
+`Convert` legally admits both-named (`type A int` → `type B int` is a valid conversion; the same
+pair is not a valid assignment).** An env-gated stderr trace on both arms, tagged with the arm and
+the calling method two frames up, over a full reflect `-tests` run:
+
+    total admits captured                                    70,071
+      conversion path (TryConvertTo / TryByteSliceAs)        70,065   <- both-named is GO-LEGAL here
+      assignment path, correct-Go (one side unnamed)              5
+      assignment path, BOTH-NAMED and WRONG                        1   <- the entire wrong class
+
+The 70,065 conversion admits are dominated by six shapes at 10–20k each — the
+`TestArrayOfGC`/`ChanOfGC`/`MapOfGC…` GC tests round-tripping through `reflect.Value.Convert`.
+**Narrowing the arm to Go's assignment rule, as the arc directed, would refuse all 70,065 legal
+conversions to fix one row.** So the shared helper must NOT be touched.
+
+**The one wrong admit is `B-unwrap` from `reflect.Value.MapIndex`: `TestMap_S → string`** — the same
+row already on the reflect tail, left honestly red by the `MapIndex` key-order commit (`e9cea1e3b`,
+2026-09-01), whose in-code note already records that the naive tightening is measured-wrong.
+
+### Disposition — the remedy is a per-ASSIGNMENT-caller gate, worth exactly one row
+
+The fix belongs at the handful of ASSIGNMENT callers (`MapIndex`, and its `Set`/`SetMapIndex`
+siblings — the sites that apply Go's assignment relation, distinct from the `Set{Int,…}`/`Convert`
+callers that apply conversion), NOT in the shared helper. Two constraints, both measured:
+
+- **NOT the bridge's own `reflect.Type.AssignableTo`** — replacing the `MapIndex` gate with
+  `key.Type().AssignableTo(keyDeclared)` does NOT fix TestMap and DOES break TestArrayOfGenericAlg
+  (reflect 48 → 49, 0 fixed / 1 broken; measured 2026-09-01). So the bridge's AssignableTo is not a
+  correct drop-in for this predicate.
+- **NOT the conversion helper** — that is the 70,065-admit path this census exists to protect.
+
+The residual arc is therefore a CORRECT named/unnamed assignability predicate — one side genuinely
+unnamed, where "unnamed" is the raw golib container / `ж<T>` box / delegate / array-of-CLR and a
+predeclared type like `string` is NAMED (Go spec: "Predeclared types, defined types, and type
+parameters are called named types") — gated at the ~5 assignment callers. **Worth exactly the one
+TestMap row.** Approved and owned by lane R (sizing-first); alternatively that row may be absorbed by
+the typed-nil-func neighborhood if it reaches the same site first, in which case it is one row
+reported superseded rather than cut twice.
+
+**Instrument note for the next reader:** the trace lines concatenate under the test host's stderr
+capture, so a per-LINE parse reports ~60 where the ASCII-grep count is 70,071 — parse with a
+whole-file `findall`, not per line, and the two reconcile. The instrument was reverted after the
+run (golib byte-identical to master); this record is the deliverable.
