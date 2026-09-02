@@ -774,7 +774,24 @@ $longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto
 # 1.23.12 stdlib for `cgo` and checking each such file's imports against src/core, reflect's
 # nih_test.go is the ONLY member -- one file, one import. Every other cgo-gated test file imports
 # only packages the corpus carries, so debug/pe, os/exec and os/signal stay count-only and unpinned.
-$cgoOffPackages = @{ 'os/user' = $true; 'net' = $true; 'plugin' = $true; 'reflect' = $true }
+#
+# 'syscall' joined 2026-09-02 under a FOURTH predicate, and the coordinator WIDENED the table's
+# rule to state it: cgo changes which FILES are converted OR which BRANCH the ORACLE'S OWN TESTS
+# TAKE. syscall's file selection is not cgo-conditional at all -- the three AllThreadsSyscall tests
+# open with `if err == ENOTSUP { t.Skip("AllThreadsSyscall disabled with cgo") }`, and real Go
+# returns ENOTSUP there ONLY when cgo is linked. Measured on one host, one release, one variable:
+# CGO_ENABLED=0 -> pass/pass/pass, CGO_ENABLED=1 -> skip/skip/skip.
+#
+# Why that had to be pinned rather than left to the ambient state: the CONVERTED side skips those
+# three too, with the same text -- but for an unrelated reason. Our banked runtime_doAllThreadsSyscall
+# hand-own returns ENOTSUP because a managed runtime cannot run a raw syscall on every OS thread, and
+# the test reads that errno as "cgo is linked". So at ambient cgo-ON the row AGREES by a coincidence
+# of errno, with the oracle configured into the same limitation we have for a different cause -- the
+# instrument-built-out-of-the-thing-under-test family, and not something to bank an agreement on.
+# Pinned cgo-OFF the three read go=pass / cs=skip, which is the honest shape: a disclosed HOST LIMIT
+# (minted separately), never a match. The doctrine already decided it -- both comparison sides share
+# ONE cgo state and the converted side can only be the corpus's.
+$cgoOffPackages = @{ 'os/user' = $true; 'net' = $true; 'plugin' = $true; 'reflect' = $true; 'syscall' = $true }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
