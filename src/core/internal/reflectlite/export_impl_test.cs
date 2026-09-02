@@ -37,7 +37,7 @@ partial class reflectlite_internal_test_package
         System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
 
         if (st is null || GoReflect.KindOf(st) != GoReflect.Struct)
-            throw panic("DEBUG Field: st=" + (st is null ? "<null>" : st.FullName) + " kindof=" + (st is null ? "?" : GoReflect.KindOf(st).ToString()) + " vkind=" + v.kind().ToString());
+            throw panic("reflect: Field of non-struct type");
 
         GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(st);
 
