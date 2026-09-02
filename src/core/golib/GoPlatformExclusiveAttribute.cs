@@ -32,6 +32,31 @@ namespace go;
 /// enumerated exactly as an unmarked package.
 /// </para>
 /// <para>
+/// <para>
+/// THE GATING SET IS DERIVED, AND THE DERIVATION HAS TWO CRITERIA, NOT ONE. The first is a real
+/// CNR on the foreign host: a package it reports NOT MEASURED cannot be type-checked there and is
+/// marked. That was the whole rule when this attribute landed (2026-09-02), and it named six
+/// windows-exclusive packages plus <c>ScmRightsSeam</c>. Two amendments the same day, each from a
+/// package the CNR derivation cannot see:
+/// </para>
+/// <para>
+/// <b>SendtoSeam moved from early-out to marker, 2026-09-02.</b> The F8 derivation left it
+/// unmarked because it type-checks everywhere and carried a <c>runtime.GOOS</c> early-out printing
+/// one fixed line off Linux -- green and honest, as that note said. What the early-out could not fix
+/// is the GOLDEN: the package still transpiled on both hosts, and its emitted C# DIFFERS by platform
+/// (the Windows <c>syscall</c> flavor mints Δ-prefixed <c>Sockaddr</c>/<c>Handle</c> aliases the
+/// Linux one does not), so the committed <c>.cs</c> had to be one platform's and read as standing
+/// drift on the other -- which its own commit predicted by name. A skipped package is neither
+/// transpiled nor compared, so the marker retires that drift where the early-out could not. So the
+/// SECOND criterion is: a package whose EMISSION is platform-dependent, even though its source
+/// type-checks everywhere.
+/// </para>
+/// <para>
+/// <b>LocalTimeZone</b> is the third criterion and was flagged rather than marked for exactly the
+/// right reason: it type-checks on Linux and fails at the OUTPUT phase on a kernel32 fault, which no
+/// CNR can see. One marker covers all three cases by construction -- a non-native host skips every
+/// phase -- which is why the skip lines say "cannot measure" rather than "cannot type-check".
+/// </para>
 /// Hand-added to a package's <c>package_info.cs</c> beside <c>[GoTestMatchingConsoleOutput]</c>, and
 /// preserved across a re-transpile by the same mechanism (measured on ScmRightsSeam: re-transpiling
 /// with the marker present leaves the file differing from its pre-marker self by exactly the one
