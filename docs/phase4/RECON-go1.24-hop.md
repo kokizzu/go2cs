@@ -471,3 +471,325 @@ dotnet build <trial>/src/go2cs-stdlib.slnx -c Debug -m --no-incremental \
 ```
 
 Classify every emitted file by the sentinel mtime before reading any diff.
+
+---
+
+## DELTA — 2026-09-02, read by a coordinator sub-agent against this record and [`../PLAN-corpus-upgrade.md`](../PLAN-corpus-upgrade.md) §1.2/§1.3
+
+> **Read-only, and it corrects nothing above.** No build, test, converter or sweep was run — a gate
+> battery was live on the host. Everything here is a file read, a `git grep`, a walk over an
+> installed SDK, or a cited web read.
+>
+> **What this block is for.** Two records already cover this hop and they split it along an axis
+> that leaves a seam: the PLAN **surveyed the release notes and could not measure**; §0–§9 above
+> **measured and did not re-read the release notes**. Every item below lives in that gap — a
+> release-note change whose corpus consequence the empirical capture's method could not see, or an
+> empirical result whose release-note cause was never named.
+>
+> **Provenance is stated per claim.** *Re-derived* = measured here, from the primary source, before
+> it was written down. *Carried* = taken from §0–§9 above or from the originating sub-agent report
+> and **not** re-derived. §D.8 is the ledger.
+>
+> Measured at worktree HEAD `62c63b572` (origin/master). The originating report measured at
+> `8be95f75c`, a descendant — which is why one census count below differs from that record's by one
+> file. Census counts are re-measured, never carried.
+
+### D.1 The target release — a second derivation, and the series is closed
+
+| | value | provenance |
+|:--|:--|:--|
+| Last 1.24 patch | **go1.24.13** | **re-derived** — [go.dev/doc/devel/release](https://go.dev/doc/devel/release), independently of the module-proxy enumeration §1 used |
+| Its release date | **2026-02-04** | same |
+| go1.24.0 released | 2025-02-11 | same |
+| What 1.24.13 carries | security fixes to the `go` command and `crypto/tls`; bug fixes to `crypto/x509` | same |
+
+§1's target was reached from the module proxy's `golang.org/toolchain/@v/list` because `go.dev` was
+blocked from that container. It is reached here from `go.dev` itself and **it agrees**, so the target
+is now two-derivation. `PLAN-corpus-upgrade.md`'s §1.1 row for 1.24 — final patch `1.24.13`, dated
+`2026-02-04`, **EOL** 2026-02-10 at 1.26.0 — needs no re-read, which is exactly what its own rule 5
+predicts for a closed series.
+
+⚠ One provisioning consequence for H1: **a 1.24.13 toolchain is no longer a current download.** The
+module-proxy route in the Appendix above is therefore not merely a workaround for a blocked
+container — for an EOL series it may be the *primary* provisioning route on any host. That
+strengthens proposed amendment #1 from "worth stating as an alternative" to something closer to
+load-bearing.
+
+**Local inventory (re-derived, the i7 coordinator host):** the SDK root holds `go1.18` and
+`go1.23.12` only. **No Go 1.24 SDK exists on this machine**, which bounds every claim below: nothing
+here reads 1.24 sources. Claims about **1.23.12** are measured; claims about 1.24 *file selection*
+are inferences from the release notes plus §3's measured flag readings, and are marked **[INF]**.
+
+### D.2 The eight findings, ranked by expected blast radius
+
+Rank is expected blast radius on the converted corpus and the roster, **not** effort. The component
+column is what a lane would actually open.
+
+| # | Finding | Blast radius | go2cs component | Provenance |
+|:--:|:--|:--|:--|:--|
+| **1** | **Roster re-derivation** — 10 rows / 2,321 verdicts whose Go package is gone (2,195 of them `crypto/internal/nistec`, also the fleet's declared **cost canary**), 99 rows / 13,146 verdicts with changed test sources = **55.8% of banked verdicts** | whole roster | H10 campaign | **carried** from §7 above |
+| **2** | **The hand-owned `testing` host is exposed through `TB`, not just `T`/`B`** — `TB` gains **two interface members** (`Chdir`, `Context`), reached through a go2cs-gen adapter; `B.Loop` lands against **115 of 207** roster packages carrying benchmarks | up to 115 rows can fail to **BUILD** — zero verdicts, the runbook's "failed with none" class, not a divergence | hand-owned `src/core/testing` + `go2cs-gen` adapter | host gap and sizing **re-derived** (§D.4); rewrite extent **[INF]**, ceiling stated |
+| **3** | **Four newly-baselined experiments, and they are NEW FLAGS** — `swissmap`, `spinbitmutex`, `synchashtriemap` (all `_on`) and `synctest` (`_off`) do not exist in 1.23.12 at all. Behind them: a Swiss-table `map` family, a new `internal/runtime/maps` package, `sync/map.cs`, and **four hand-owned runtime lock principals that a spinbit selection DESELECTS while they still exist** | `runtime` + `sync` — under nearly everything; the ladder is already stuck in `runtime` | converted `runtime`; the hand-owned lock family; **H6's classification** | flag set, file families and hand-own set **re-derived** (§D.3); per-file 1.24 selection **[INF]** |
+| **4** | **The compile ladder past `runtime`** — rungs 4+ unmeasured, **169 of 357 projects never reached**; rung 3's `global::`-qualification loss is a **generator** wall (route #7) whose cause is explicitly not established | unknown, and the darwin precedent (19 → 10 → 9 → 0) says the shape is a ladder | converted corpus + `go2cs-gen` | **carried** from §5/§8 above — measured *as unmeasured* |
+| **5** | **The FIPS-140 reorg** — 38 added `crypto/internal/fips140*` packages, 7 removed underneath, plus 29 new generic-constraint WARNINGs in two of them whose "emission may not compile" prediction is **untested** (neither package was reached) | `crypto` wholesale; 6 new NuGet IDs | H3 → H7 → H11 | **carried** from §2/§4 above |
+| **6** | **The hand-own bill** — 4 vanished principals + 39 changed, **plus the deselected category finding #3 adds**; two of the four are hand-owned-**by-consequence packages** (`internal/concurrent`, `internal/weak`) whose Go packages cease to exist | 108 distinct hand-owns in scope; **2 package-identity decisions**, not refreshes | H6 | counts **carried** from §6 above; the missing category is new here |
+| **7** | **`encoding.TextAppender` / `BinaryAppender`** — "standard library types implementing `TextMarshaler` and/or `BinaryMarshaler` now also implement these interfaces" ([go1.24 §encoding](https://go.dev/doc/go1.24)); **27 corpus packages** in the exposure set | 27 packages, mechanical on reconvert — but the witness half is `go2cs-gen`'s `ImplementGenerator`, i.e. **route #7**, invisible to CNR | converter witness emission (`[assembly: GoImplement]`) + `ImplementGenerator` | exposure set **re-derived** (66 files / **27** packages); the quoted note **carried** |
+| **8** | **`go test -json` now emits build output and failures as JSON** — the verdict parser is **safe**; the **diagnostic** goes silent, adding a second, unrelated cause to the `Go=""` mass-empty signature | every row in H10, as a **misdiagnosis** risk rather than a failure | `src/go2cs/testConversion.go` (the compare oracle) | **re-derived** both halves (§D.5) |
+
+Below the line, ranked but outside the eight: the **corpus deletion bill** (31 files measured above,
+and a **floor** — proposed amendment #6 shows the package-level arm is missing); **`os.Root`** on the
+most platform-entangled package (H8); the build-ID / VCS-version asymmetry between the two sides of
+the comparison (§D.6); **`os/user`**, whose 1.24 delta lands on a hand-own the fleet is actively
+ruling on; and **generic type aliases**, measured above at **zero** cost to this hop, whose bill
+belongs to the first converted end-user app instead.
+
+### D.3 The four experiments are NEW flags — and one of them creates a hand-own category this record's classification cannot see
+
+> "…a new builtin `map` implementation based on Swiss Tables … and a new runtime-internal mutex
+> implementation" … disabled by `GOEXPERIMENT=noswissmap` and `GOEXPERIMENT=nospinbitmutex`
+> respectively. — [go1.24 §Runtime](https://go.dev/doc/go1.24) (**re-derived**)
+
+**This is the headline runtime change of Go 1.24 and it appears nowhere in
+`PLAN-corpus-upgrade.md` §1.2.** The plan names `sync.Map`'s hash-trie change; it does not name the
+*builtin* map. §3 above touches it only obliquely — it measured `swissmap` as newly baselined `_on`
+— and never connects it to a file set.
+
+**A precision on §3, re-derived.** §3 reads *"Also newly baselined: `spinbitmutex`, `swissmap`,
+`synchashtriemap` … plus `synctest`"* beside `aliastypeparams`. A listing of 1.23.12's
+`internal/goexperiment/` shows `exp_aliastypeparams_{off,on}.go` present and **no `swissmap`,
+`spinbitmutex`, `synchashtriemap` or `synctest` files at all**; `flags.go` at that release declares
+`AliasTypeParams` and none of the other four. So these are **two different events**:
+`aliastypeparams` **existed and flipped**, the other four are **new flags**. The distinction is
+load-bearing for the deletion set — a brand-new flag cannot leave a superseded `goexperiment`
+variant on disk, but the **packages it gates** absolutely can, and `sync/map.cs` is the one §5
+already measured as a build-tag-flip deletion.
+
+**B1 — the map family (re-derived, 1.23.12 side).** 1.23.12's `runtime/` holds `map.go`,
+`map_fast32.go`, `map_fast64.go`, `map_faststr.go`; the corpus holds exactly the four matching
+`src/core/runtime/map*.cs`, and **none of them is hand-owned** (the line-anchored marker grep scoped
+to `src/core/runtime/map*.cs` returns nothing). 1.23.12's `internal/runtime/` holds `atomic`,
+`exithook`, `syscall` **only** — there is no `internal/runtime/maps`, consistent with §2's census
+listing it among 1.24's additions. **[INF]** with `swissmap` baseline-ON, 1.24 selects a Swiss-table
+implementation and those four file names are superseded; if so the four corpus files are deletion-set
+members of exactly the class §5 measured at rung 1 — where the seeded root keeps the superseded
+variant and the result is **CS0102, not a diff**. §5's 28-member "principal gone" list is printed
+truncated, so **whether the four `map*.cs` are already inside it is unknowable from this record** and
+is worth one check at H5. `internal/runtime/maps` is separately a NEW package of the kind Phase 3
+found hardest — a runtime-internal data structure over `unsafe`, ABI descriptors and pointer
+arithmetic — sitting under nearly everything, which is consistent with §2's `runtime` +3,185 non-test
+lines.
+
+**B2 — the spinbit mutex deselects four hand-owned lock principals that still exist.**
+Re-derived, 1.23.12 side: `runtime/` holds `lock_futex.go`, `lock_js.go`, `lock_sema.go`,
+`lock_wasip1.go`, `lockrank*.go` and **no `lock_spinbit.go`**. The corpus holds nine `lock*.cs` under
+`src/core/runtime`, of which **four carry the hand-own marker**:
+
+```
+src/core/runtime/darwin/lock_sema_impl.cs
+src/core/runtime/linux/lock_futex_impl.cs
+src/core/runtime/lock_managed_impl.cs
+src/core/runtime/windows/lock_sema_impl.cs
+```
+
+CLAUDE.md describes `lock_managed_impl.cs` as the flat, platform-neutral managed core of the
+mutex/note protocol and `linux/lock_futex_impl.cs` as the futex flavor's 2-arg
+`notetsleep_internal` — this is the corpus's most delicate hand-own family.
+
+**Why §6's method cannot see it.** §6 classifies each hand-own by mapping it to its Go principal and
+asking whether that principal is **GONE / CHANGED / IDENTICAL**. `lock_futex.go` and `lock_sema.go`
+**still exist in 1.24**, so under that predicate they read as *changed* at worst — and §6 duly
+reports `runtime/lock_sema.go −121 (×2 flavors)` and `runtime/lock_futex.go −93` among its 39.
+**[INF]** But with `spinbitmutex` ON, a new `lock_spinbit.go` is selected on the mainstream
+architectures and those principals are **no longer compiled at all** there. A hand-own whose
+principal is *deselected* is a **fourth category** beside gone/changed/identical, and it is silent in
+precisely the runbook's stated H6 failure mode — the file is excluded from the convert set, the
+corpus compiles, the suites are green.
+
+**Consequence for the amendments above.** This is the strongest argument for **proposed amendment
+#4** (a per-package `go list -f '{{.GoFiles}}'` diff between releases): it is one command, it
+predicted rung 1 exactly, and it is the **only** instrument that answers B1 and B2. One step further
+than #4 proposes: run it over **`runtime` and `sync` specifically, before H5** — that is where all
+four newly-baselined experiments land. And **proposed amendment #5's three-way split becomes a
+four-way one**: changed / vanished / hand-owned-by-consequence-package-vanished / **principal
+deselected**.
+
+### D.4 The testing host: the gap is on `TB`, and its gate is a BUILD
+
+The PLAN already rules the test host a mandatory H4 item (⟨OQ-3⟩, risk **R12**) and names the five
+new methods. What it does not carry — and what decides the size of the work — is **which surface**
+they land on and **how many rows can fail to build**.
+
+**Host side, re-derived.** `src/core/testing/testing.cs` declares `struct T` (line 21), an explicit
+`interface TB` (line 53) whose own comment says it carries *"full public member set so the compiled
+shape never drifts"*, and `struct B` (line 88) declaring exactly one member, `public nint N;`. `TB`'s
+18 members include `Setenv` and `TempDir`. A recursive grep of the whole hand-owned host for the new
+names finds **no `Chdir`, no `Context()` member and no `Loop` at all** — the only `Chdir` anywhere
+under `src/core/testing` is `testLog.Chdir` in the *converted* subpackage
+`internal/testdeps/deps.cs`, which is the testlog interface and unrelated.
+
+**Upstream side, re-derived** ([pkg.go.dev/testing@go1.24.13](https://pkg.go.dev/testing@go1.24.13)):
+`TB` includes **`Chdir(dir string)` and `Context() context.Context`** as formal interface members,
+`*B` gains `Loop() bool`, and all three arrived in go1.24.0. That is the part the PLAN's list does
+not say and it is the load-bearing part: the host's `TB` is consumed through a **generated adapter**,
+so an interface that gains members is an adapter that must forward them — go2cs-gen territory, i.e.
+**route #7**, invisible to CNR.
+
+**Blast radius, re-derived.** The host's own remark states that benchmark **bodies still compile into
+the test assembly** even though benchmark *declarations* are disclosed-unsupported and never run. So
+`for b.Loop() { … }` in an upstream-rewritten benchmark is a **compile error**, and a compile error is
+the runbook's "failed with none" class — zero verdicts for the whole row.
+
+| sizing over the 207 roster names, resolved against 1.23.12 GOROOT | count |
+|:--|--:|
+| roster names resolving to a GOROOT package dir | **207** |
+| …with ≥1 `_test.go` declaring `func Benchmark` | **115** |
+| `b.N` **matching lines** across those | **1,191** |
+| `b.N` **occurrences** across those | **1,194** |
+| …with `os.Chdir` in `_test.go` (a `t.Chdir` rewrite candidate) | 4 |
+| …with `context.Background`/`WithCancel` in `_test.go` (a `t.Context` candidate) | 14 |
+
+⚠ **The 1,191 / 1,194 pair is one counting unit, not two populations, and it is stated because a
+later reader will otherwise take it for drift.** The difference is exactly 3, all in
+`net/http/serve_test.go`, where three lines read `b.Errorf("b.N=%d but handled %d", b.N, handled)` —
+two matches per line, one of them a literal inside a format string. **1,191 is the line count; 1,194
+is the occurrence count.** Both are ceilings and neither changes the finding.
+
+**A second derivation from the other side, re-derived.** The committed converted test emission
+carries `b.N` on **916 lines across 161 files in 94 packages** (`git grep` over
+`src/core/**/*_test.cs`). That is a different and smaller population — only banked rows have
+committed test sources — and it is the exposure that already exists on disk, independent of any
+GOROOT walk.
+
+**[INF]** How many of the 1,191 sites upstream actually rewrote to `b.Loop()` in 1.24 is **not
+measurable without the SDK**. Go's own notes recommend `b.Loop` "in place of the typical loop
+structures involving `b.N`" ([go1.24 §testing](https://go.dev/doc/go1.24), re-derived), which is the
+basis for expecting a non-trivial fraction. **The exact number is one grep of a 1.24 tree**
+(`grep -rl 'b\.Loop()' <goroot124>/src`) and it should be the first thing measured when an SDK lands —
+it converts the hop's largest sizing unknown into a list.
+
+### D.5 `go test -json` build JSON — the verdict parser is SAFE, the diagnostic is not
+
+> "…`go test -json` now reports build output and failures in JSON, interleaved with test result
+> JSON. These are distinguished by new `Action` types…" — [go1.24 §Go command](https://go.dev/doc/go1.24)
+> (**re-derived**), revertible with `GODEBUG=gotestjsonbuildtext=1`.
+
+The PLAN names `go build -json` but not this. It matters because **`go test -json` is the `-tests`
+pipeline's comparison oracle** — `testConversion.go:6330` at this HEAD builds
+`{"test", "-json", "-count=1", "-timeout", …}`.
+
+**Re-derived, and the obvious fear is wrong.** `terminalTestResults` (`:6585`) and
+`terminalTestOutputs` (`:6603`) each open with
+
+```go
+if json.Unmarshal([]byte(line), &event) != nil || event.Test == "" {
+    continue
+}
+switch event.Action {
+case "pass", "fail", "skip", "timeout", "infrastructure-error":
+```
+
+New build-related `Action` types carry an import path and **no `Test` field**, so the
+`event.Test == ""` guard skips them. **No verdict can be mis-parsed**, and that is worth recording
+because it is the half a lane would fear first.
+
+**The real exposure is diagnostic, and it is a false SIGNAL, not a false green.** Before 1.24 an
+oracle-side **build failure** printed text into the captured Go output. In 1.24 it becomes JSON lines
+this parser silently drops — leaving **zero Go verdicts with no readable diagnostic**, which is
+precisely the oracle-side-blank shape CLAUDE.md catalogues and whose *documented* cause is "the
+oracle ran the wrong release". **1.24 gives that signature a second, unrelated cause**, and a lane
+meeting it will reach for the documented one first.
+
+Disposition — a finding, not a proposal to implement: either set `GODEBUG=gotestjsonbuildtext=1` on
+the oracle child for the hop (one environment entry, preserves today's behaviour exactly), or teach
+the compare path to surface build-failure events as errors (the durable path). Either way the
+runbook's §3.4 rule — a shard's report must distinguish *failed with named verdicts* from *failed
+with none* — needs this cause added to its list. **Stage: H4, and it must land before H10**, where
+every row meets it.
+
+### D.6 Smaller items, each naming a cause this record left unnamed
+
+| item | evidence | consequence |
+|:--|:--|:--|
+| **`crypto/rand.Reader` uses `getrandom` via vDSO on Linux 6.11+** ([go1.24 §crypto/rand](https://go.dev/doc/go1.24), **re-derived**) | this is the release-note **cause** of §5's rung-2 `_@` defect: the file is `runtime/vgetrandom_linux.go`, which does not exist in 1.23.12 | it is **Linux-only**, and §5 built **only** `-p:GoTargetOS=linux` — so the windows and darwin flavors will not meet rung 2 at all and **their ladders will differ**. A scheduling consequence this record could not draw |
+| **the `tool` verb in `go.mod`** ([go1.24 §Go command](https://go.dev/doc/go1.24)) | the PLAN flags `modfile.ParseLax`'s silent unknown-verb drop as a check to run | **carried**: the converter's go.mod readers use `golang.org/x/mod/modfile` rather than a line scan, and the pinned x/mod declares a `Tool` type — narrowing the plan's concern from a risk to a one-line confirmation at H4 |
+| **linker build ID + VCS-derived main-module version by default** ([go1.24 §Linker, §Go command](https://go.dev/doc/go1.24)) | the converted host is built by `dotnet`, the oracle by `go` | a **differential-harness** hazard: the artifacts exist on **one side only**, and `debug/buildinfo` is a banked row (197 verdicts, +232 test lines per §7). A potential *new* divergence class, not a rebank |
+
+Also worth naming, all release-note causes for deltas §2/§7 report without one: `debug/elf`'s new
+`DynamicVersions`/`Symbol.HasVersion` surface (the `+489` test-line delta); `net/http`'s new
+`Protocols`/`HTTP2` fields (the heaviest changed row, `+1,370`); `crypto/subtle.XORBytes`'s new
+overlap panic, which supplies the semantic change **one of §6's four vanished-principal hand-owns**
+(`crypto/subtle/xor_generic.cs`) must absorb — an H6 classification input a file-level differential
+cannot provide.
+
+### D.7 Runbook ordering — this is a MINOR hop, so channel 1 is LIVE
+
+`GoCorpusMigration.md` §1.1 names three channels that move emitted C# even when the Go source did
+not, and says which are live is knowable in advance. **Re-derived from the source rather than
+assumed**, as §1.1 instructs: `releaseTagsForVersion` (`src/go2cs/directiveOperations.go:264`) trims
+any patch or pre-release suffix and expands `go1.1 … go1.<minor>`. So:
+
+- **Hop A (1.23.1 → 1.23.12) produced a byte-identical tag list — the channel was INERT**, which is
+  why its census was ∅.
+- **This hop adds `go1.24` to the list.** Every `//go:build go1.24` guard in the Go tree flips, and
+  which files each package includes changes with it. Channel 1 is **live**, and channel 2 (imported
+  type aliases) moves with it.
+
+**Consequence for H9:** the runbook requires the golden diff's size be **PREDICTED before the rebank
+is run**, with a diff that materially exceeds the prediction read as a finding rather than a rebank.
+At hop A that prediction was trivially zero on channel 1. Here it is not, and the prediction is
+mechanical: grep the 1.24 tree for `//go:build` lines naming `go1.24`. For scale, the 1.23.12 tree
+carries 23 files guarded on `go1.21` and 1 on `go1.23` (**re-derived**) and **zero** on `go1.24` —
+the population is small, so the prediction is cheap, not that it is empty.
+
+**Nothing here reopens a ruling.** ⟨OQ-2⟩ (synctest out of the 1.24 hop), ⟨OQ-3⟩ (the hop owns the
+test host), ⟨OQ-4⟩ (generic aliases want their own DESIGN) and §9's recommendation to **hold the hop
+until 100% on 1.23.12** all stand untouched. This block changes the hop's *content*, not its
+*schedule*.
+
+### D.8 Provenance ledger — what was re-derived here, and the discrepancies
+
+**Re-derived from the primary source before being written down:** the last-1.24-patch row and its
+date (go.dev release history); the local SDK inventory; the absence of `swissmap`/`spinbitmutex`/
+`synchashtriemap`/`synctest` from 1.23.12's `internal/goexperiment/` and from its `flags.go`; the
+1.23.12 `runtime/` map and lock file listings and the absence of `internal/runtime/maps`; the four
+marked hand-owned lock `*_impl.cs` and the fact that no `runtime/map*.cs` is marked; the 27-package
+`TextAppender`/`BinaryAppender` exposure set; the `event.Test == ""` guards in both terminal parsers;
+`releaseTagsForVersion`'s minor-keying; the `TB`/`B` member surface of the hand-owned host and the
+upstream 1.24 `TB`/`B` surface; the roster extraction (207 unique names, reproducing the originating
+report's list byte-for-byte) and its benchmark sizing; and the four release-note passages quoted
+above (Swiss Tables + the runtime-internal mutex and their `GOEXPERIMENT` names, `go test -json`'s
+build JSON and its `gotestjsonbuildtext` revert, `B.Loop`, and `crypto/rand`'s vDSO `getrandom`) —
+plus, unquoted but read on the same fetch, that `testing/synctest` still requires
+`GOEXPERIMENT=synctest` at build time, which is ⟨OQ-2⟩'s premise.
+
+**Carried, not re-derived** (from §0–§9 of this record, which measured them, or from the originating
+sub-agent report): the roster bill (10 gone / 99 changed, and the verdict counts); the compile
+ladder's rungs and the 169-unreached figure; the FIPS-140 counts; the hand-own bill's 4/39/38/27
+split; the 31-file deletion set; the x/mod `Tool`-type reading; the release-note readings NOT among
+the five re-derived quotations above (`encoding`'s appender sentence, `crypto/subtle.XORBytes`'s new
+overlap panic, `debug/elf`'s and `net/http`'s new surface, the linker/VCS-version defaults, the
+`tool` verb, `os.Root`, `runtime.AddCleanup`, `os/user`'s Windows work); and every **[INF]** about
+1.24 file selection, which no host on this machine can settle.
+
+**Discrepancies found, all benign and all stated rather than smoothed:**
+
+1. **`b.N` sizing, 1,191 vs 1,194** — one counting unit, not two populations. Exactly 3, all in
+   `net/http/serve_test.go`, from lines carrying `b.N` twice. Detailed in §D.4.
+2. **The hand-own marker census reads 100 at `62c63b572`**, against the originating report's 101 at
+   its descendant HEAD `8be95f75c` — one commit, one file. The census is re-measured, never carried,
+   and it moves in both directions; CLAUDE.md's most recent standing figure is 73. **State the grep
+   with the number.** Companion `*_impl.cs` files count 77 here, against §6's 75 at the trial base.
+3. **Line numbers in `testConversion.go` differ by a constant ~155** from the originating report's
+   (oracle `:6330` here vs `:6469` there; parsers `:6585`/`:6603` vs `:6739`/`:6757`). Same code,
+   different revision. The quoted guard is byte-identical.
+4. **A recursive grep of `src/core/testing` finds one `Chdir`** — `testLog.Chdir` in the converted
+   subpackage `internal/testdeps` — where the originating report's non-recursive
+   `src/core/testing/*.cs` grep found none. The report's claim about the **hand-owned host** stands;
+   the extra hit is an unrelated testlog member in a package the converter emits.
+
+**What this block does NOT establish:** anything about 1.24 source files (no SDK on this host — the
+one command that settles B1, B2 and the `map*.cs` deletion question together is proposed amendment
+#4's per-package `go list -f '{{.GoFiles}}'` diff); the `b.Loop` rewrite extent, whose ceiling is
+stated; whether the four `runtime/map*.cs` are inside §5's truncated 28-member gone list; and
+anything operational, which is where the roster bill is actually paid and none of which was
+exercised here or above.

@@ -231,6 +231,23 @@ address randomization on 64-bit.
 
 The 1.23 → 1.23.12 rehearsal hop has **zero** language delta. That is the point of it.
 
+> **Pointer, 2026-09-02 — the MEASURED half of §1.2/§1.3 now exists, in
+> [`phase4/RECON-go1.24-hop.md`](phase4/RECON-go1.24-hop.md).** That record is lane C2's empirical
+> capture of the 1.24 hop (342/342 packages convert, the compile ladder, the hand-own and roster
+> bills), and its closing **DELTA block, dated 2026-09-02**, was written against *this* survey: it
+> re-derives §1.1's 1.24 row from a second source, and it sizes ⟨OQ-3⟩'s test-host item — the gap
+> is on the `TB` **interface** (`Chdir`, `Context`), not just on `T`/`B`, and `B.Loop` reaches **115
+> of 207** roster packages, where a rewritten benchmark body is a BUILD failure rather than a
+> divergence. It names **two items this survey does not carry**: the **Swiss-table `map` and
+> spinbit-mutex experiments as NEW `GOEXPERIMENT` flags** (§1.2 names `sync.Map`'s hash trie but
+> neither the *builtin* map nor the runtime-internal mutex, and all four 1.24 flags are new rather
+> than flipped); and a **hand-own category the H6 re-audit's gone/changed/identical classification
+> is structurally blind to** — a principal that still EXISTS but is **DESELECTED** by a
+> newly-baselined experiment, which is what `spinbitmutex` does to four hand-owned runtime lock
+> files. **No ruling above is reopened.** ⟨OQ-2⟩, ⟨OQ-3⟩ and ⟨OQ-4⟩ stand as written, and §9 of
+> that record supports holding the hop until 100% on 1.23.12: the delta changes the hop's CONTENT,
+> not its SCHEDULE.
+
 ### 1.4 The toolchain question — what go2cs itself must build with
 
 This is the section with the most load-bearing finding on the page.
