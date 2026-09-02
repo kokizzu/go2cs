@@ -5,6 +5,8 @@ using reflect = reflect_package;
 
 partial class main_package {
 
+[GoType("[3]byte")] partial struct pkgNamed3;
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object distinctTypesˢ = (@string)"distinct types:"u8;
 private static readonly object t3ElemLenˢ = (@string)"t3 elem len:"u8;
@@ -13,7 +15,8 @@ private static readonly object valueCapOfNil3Intˢ = (@string)"value Cap of nil 
 private static readonly object sameTypeEqualˢ = (@string)"same type equal:"u8;
 private static readonly object sameTypeSameReflectTypeˢ = (@string)"same type, same reflect.Type:"u8;
 private static readonly object boxedNilIsNonNilˢ = (@string)"boxed nil is non-nil interface:"u8;
-private static readonly object namedArrayElemLenˢ = (@string)"named array elem len:"u8;
+private static readonly object packageLevelNamedArrayˢ = (@string)"package-level named array elem len:"u8;
+private static readonly object localNamedArrayElemLenˢ = (@string)"local named array elem len:"u8;
 
 [GoLocalName("named3")] [GoType("[3]byte")] internal partial struct main_named3;
 
@@ -31,8 +34,8 @@ internal static void Main() {
     fmt.Println(sameTypeSameReflectTypeˢ, AreEqual(reflect.TypeOf(a), reflect.TypeOf(b)));
     fmt.Println(boxedNilIsNonNilˢ, a != default!);
     fmt.Printf("dynamic type: %T\n"u8, a);
-    var tn = reflect.TypeOf(((ж<main_named3>)nil));
-    fmt.Println(namedArrayElemLenˢ, tn.Elem().Len());
+    fmt.Println(packageLevelNamedArrayˢ, reflect.TypeOf(((ж<pkgNamed3>)nil)).Elem().Len());
+    fmt.Println(localNamedArrayElemLenˢ, reflect.TypeOf(((ж<main_named3>)nil)).Elem().Len());
 }
 
 } // end main_package

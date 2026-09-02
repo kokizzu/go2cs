@@ -5,6 +5,9 @@ import (
 	"reflect"
 )
 
+// pkgNamed3 is runtime/arena_test.go's shape: a PACKAGE-LEVEL named array type.
+type pkgNamed3 [3]byte
+
 func main() {
 	// 1. Two typed nils of DIFFERENT pointer-to-array types are different Go types.
 	t0 := reflect.TypeOf((*[0]byte)(nil))
@@ -27,8 +30,13 @@ func main() {
 	fmt.Println("boxed nil is non-nil interface:", a != nil)
 	fmt.Printf("dynamic type: %T\n", a)
 
-	// 5. The named-array control: this shape already works, and must keep working.
+	// 5. The NAMED-array arms. A named array gets its own C# struct carrying [GoType("[3]byte")],
+	// which is why this cut does NOT stamp a pointer to one -- so these two lines are the assertion
+	// that the exclusion is sound, and they are deliberately BOTH shapes: a package-level named
+	// array (runtime/arena_test.go's mediumScalarEven) and a function-LOCAL one, because a local
+	// type is lifted differently by the converter and the two need not answer alike.
+	fmt.Println("package-level named array elem len:", reflect.TypeOf((*pkgNamed3)(nil)).Elem().Len())
+
 	type named3 [3]byte
-	tn := reflect.TypeOf((*named3)(nil))
-	fmt.Println("named array elem len:", tn.Elem().Len())
+	fmt.Println("local named array elem len:", reflect.TypeOf((*named3)(nil)).Elem().Len())
 }
