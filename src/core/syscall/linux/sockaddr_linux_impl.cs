@@ -131,6 +131,39 @@ partial class syscall_package
         public fixed byte Addr[8];
     }
 
+    // msghdr and iovec exactly as Linux lays them out on amd64 -- the ancillary seam's mirrors.
+    // Go's own SizeofMsghdr is 0x38 (56), which this reproduces field for field: 8 Name + 4
+    // Namelen + 4 pad + 8 Iov + 8 Iovlen + 8 Control + 8 Controllen + 4 Flags + 4 pad. The two
+    // pads are Go's Pad_cgo_0 / Pad_cgo_1 and they are REAL -- the kernel reads the fields after
+    // them at their padded offsets, so leaving them out would shift Iov by four bytes.
+    //
+    // Every pointer here is a RAW pointer, which is the whole point: the converted Msghdr holds
+    // `ж<byte> Name` / `ж<Iovec> Iov` / `ж<byte> Control`, i.e. OBJECT REFERENCES, and handing the
+    // kernel that struct's address makes it read heap addresses as user pointers. It also makes a
+    // NIL stop being nil: `(ж<byte>)(uintptr)0` is `new NativeBox<byte>(0)`, an object, so a Go
+    // `msg_name == NULL` arrives non-NULL and a connected socket answers EISCONN. That is the
+    // failure ScmRightsSeam measured before this file grew these two structs.
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeIovec
+    {
+        public byte* Base;
+        public nuint Len;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct NativeMsghdr
+    {
+        public byte* Name;
+        public uint32 Namelen;
+        public uint32 Pad0;
+        public NativeIovec* Iov;
+        public nuint Iovlen;
+        public byte* Control;
+        public nuint Controllen;
+        public int32 Flags;
+        public int32 Pad1;
+    }
+
     // sockaddr_nl: 12 bytes of scalars -- already blittable, mirrored so the layout is stated here.
     [StructLayout(LayoutKind.Sequential)]
     private struct NativeSockaddrNetlink
@@ -560,6 +593,153 @@ partial class syscall_package
         }
 
         return sendto(fd, p, flags, new @unsafe.Pointer((uintptr)(void*)buffer), n);
+    }
+
+    // ---- the ANCILLARY seam: recvmsgRaw / sendmsgN ------------------------------------------------
+    //
+    // ONE body each covers SIX entry points. recvmsgRaw is called by Recvmsg, recvmsgInet4 and
+    // recvmsgInet6, so ONE body covers all three. The send side takes the public SendmsgN instead,
+    // for the reason stated on it: the raw helper's pointer parameter is already managed, and only
+    // the public function still holds the typed Sockaddr that can be re-encoded.
+    //
+    // recvmsgRaw is the CORRUPTING half of this class and sendmsgN the misdirecting half: the
+    // kernel WRITES through msg.Name and msg.Control, and reads through them on the send side.
+    // Both hand the kernel a managed Msghdr today, whose Name/Iov/Control are object references.
+    //
+    // recvmsgRaw keeps its `ж<RawSockaddrAny>` OUT-parameter and fills it, rather than decoding to
+    // a Sockaddr here: its three callers each read `rsa.Addr.Family` and hand `&rsa` to
+    // anyToSockaddr, so a faithful drop-in has to leave that contract alone. The transcription
+    // below is the exact inverse of anyToSockaddr's flatten (Family at 0, Data at 2..15, Pad at
+    // 16..111), which is why the two stay in step.
+    internal static unsafe (nint n, nint oobn, nint recvflags, error err) recvmsgRaw(nint fd, slice<byte> p, slice<byte> oob, nint flags, ж<RawSockaddrAny> Ꮡrsa) {
+        byte* nameBuf = stackalloc byte[nativeSockaddrLen];
+        byte zero = 0;
+
+        NativeIovec iov = default;
+        NativeMsghdr msg = default;
+
+        msg.Name = nameBuf;
+        msg.Namelen = (uint32)SizeofSockaddrAny;
+
+        if (len(p) > 0) {
+            iov.Base = (byte*)(nint)(uintptr)Ꮡ(p, 0);
+            iov.Len = (nuint)len(p);
+        }
+
+        if (len(oob) > 0) {
+            // Go's own rule, kept verbatim: a control-only receive on a stream socket must still
+            // offer one normal byte, or the kernel returns nothing at all.
+            if (len(p) == 0) {
+                var (sockType, sockErr) = GetsockoptInt(fd, SOL_SOCKET, SO_TYPE);
+
+                if (sockErr != default!) {
+                    return (0, 0, 0, sockErr);
+                }
+
+                if (sockType != SOCK_DGRAM) {
+                    iov.Base = &zero;
+                    iov.Len = 1;
+                }
+            }
+
+            msg.Control = (byte*)(nint)(uintptr)Ꮡ(oob, 0);
+            msg.Controllen = (nuint)len(oob);
+        }
+
+        msg.Iov = &iov;
+        msg.Iovlen = 1;
+
+        var (r0, _, e1) = Syscall(SYS_RECVMSG, (uintptr)fd, (uintptr)(void*)(&msg), (uintptr)flags);
+
+        if (e1 != 0) {
+            return (0, 0, 0, errnoErr(e1));
+        }
+
+        // The kernel wrote the sender's address into the stack buffer; transcribe it back into the
+        // caller's managed RawSockaddrAny, which is what its three callers read.
+        ref var rsa = ref Ꮡrsa.Value;
+        rsa.Addr.Family = *(uint16*)nameBuf;
+
+        for (nint i = 0; i < 14; i++) {
+            rsa.Addr.Data[i] = (int8)nameBuf[2 + i];
+        }
+
+        for (nint i = 0; i < 96; i++) {
+            rsa.Pad[i] = (int8)nameBuf[16 + i];
+        }
+
+        return ((nint)r0, (nint)msg.Controllen, (nint)msg.Flags, default!);
+    }
+
+    // SendmsgN is recvmsgRaw's direction reversed, and it is the PUBLIC function rather than the
+    // raw helper for a reason the receive side does not have: sendmsgN's `ptr` parameter is
+    // already the address of a MANAGED raw sockaddr (whatever `to.sockaddr()` returned), so there
+    // is nothing there to transcribe faithfully -- the typed Sockaddr has to be re-encoded, and
+    // only SendmsgN still holds it. Bind/Connect take the same shape for the same reason.
+    //
+    // Go passes NULL for a connected socket, and a connected socket REJECTS a sendmsg carrying an
+    // address with EISCONN. The generated body turns that NULL into an object -- `(ж<byte>)(uintptr)0`
+    // is `new NativeBox<byte>(0)` -- so the kernel reads a non-NULL msg_name and answers EISCONN.
+    // That is the failure ScmRightsSeam measured before this body existed; here a nil `to` simply
+    // leaves msg.Name null.
+    //
+    // sendmsgN itself, and sendmsgNInet4/sendmsgNInet6, stay AUTO: with this body in place their
+    // only remaining callers are each other, and internal/poll reaches the //go:linkname copies in
+    // internal/syscall/unix/linux/net_linux_impl.cs instead -- the same reason sendtoInet4/6 are
+    // left alone (see the file header).
+    public static unsafe (nint n, error err) SendmsgN(nint fd, slice<byte> p, slice<byte> oob, Sockaddr to, nint flags) {
+        byte zero = 0;
+
+        NativeIovec iov = default;
+        NativeMsghdr msg = default;
+
+        if (to != default!) {
+            byte* nameBuf = stackalloc byte[nativeSockaddrLen];
+            var (nameLen, nameErr) = writeNativeSockaddr(to, nameBuf);
+
+            if (nameErr != default!) {
+                return (0, nameErr);
+            }
+
+            msg.Name = nameBuf;
+            msg.Namelen = (uint32)nameLen;
+        }
+
+        if (len(p) > 0) {
+            iov.Base = (byte*)(nint)(uintptr)Ꮡ(p, 0);
+            iov.Len = (nuint)len(p);
+        }
+
+        if (len(oob) > 0) {
+            // Go's own rule, kept verbatim: a control-only send on a stream socket must still
+            // carry one normal byte.
+            if (len(p) == 0) {
+                var (sockType, sockErr) = GetsockoptInt(fd, SOL_SOCKET, SO_TYPE);
+
+                if (sockErr != default!) {
+                    return (0, sockErr);
+                }
+
+                if (sockType != SOCK_DGRAM) {
+                    iov.Base = &zero;
+                    iov.Len = 1;
+                }
+            }
+
+            msg.Control = (byte*)(nint)(uintptr)Ꮡ(oob, 0);
+            msg.Controllen = (nuint)len(oob);
+        }
+
+        msg.Iov = &iov;
+        msg.Iovlen = 1;
+
+        var (r0, _, e1) = Syscall(SYS_SENDMSG, (uintptr)fd, (uintptr)(void*)(&msg), (uintptr)flags);
+
+        if (e1 != 0) {
+            return (0, errnoErr(e1));
+        }
+
+        return ((nint)r0, default!);
     }
 
     // Accept4 is Go's own body (syscall_linux.go) over the trampoline instead of the typed generated
