@@ -43,7 +43,7 @@ partial class atomic_package {
     }
     while (ᐧ) {
         any cur = Volatile.Read(ref v.v);
-        if (cur != default! && cur.GetType() != val.GetType()) {
+        if (cur != default! && GoReflect.GoDynamicTypeOf(cur) != GoReflect.GoDynamicTypeOf(val)) {
             throw panic("sync/atomic: store of inconsistently typed value into Value");
         }
         if (ReferenceEquals(Interlocked.CompareExchange(ref v.v, val, cur), cur)) {
@@ -63,7 +63,7 @@ partial class atomic_package {
     }
     while (ᐧ) {
         any cur = Volatile.Read(ref v.v);
-        if (cur != default! && cur.GetType() != @new.GetType()) {
+        if (cur != default! && GoReflect.GoDynamicTypeOf(cur) != GoReflect.GoDynamicTypeOf(@new)) {
             throw panic("sync/atomic: swap of inconsistently typed value into Value");
         }
         if (ReferenceEquals(Interlocked.CompareExchange(ref v.v, @new, cur), cur)) {
@@ -81,7 +81,7 @@ partial class atomic_package {
     if (@new == default!) {
         throw panic("sync/atomic: compare and swap of nil value into Value");
     }
-    if (old != default! && old.GetType() != @new.GetType()) {
+    if (old != default! && GoReflect.GoDynamicTypeOf(old) != GoReflect.GoDynamicTypeOf(@new)) {
         throw panic("sync/atomic: compare and swap of inconsistently typed values");
     }
     while (ᐧ) {
@@ -96,7 +96,7 @@ partial class atomic_package {
             }
             continue;
         }
-        if (cur.GetType() != @new.GetType()) {
+        if (GoReflect.GoDynamicTypeOf(cur) != GoReflect.GoDynamicTypeOf(@new)) {
             throw panic("sync/atomic: compare and swap of inconsistently typed value into Value");
         }
         // Compare current to old via runtime equality (value types compare by value), matching Go's
