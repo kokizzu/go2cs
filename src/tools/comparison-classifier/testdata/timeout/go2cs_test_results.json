@@ -1,0 +1,5 @@
+{"schemaVersion":1,"package":"synthetictimeout","environment":{"dotnetRuntime":".NET 10.0.11","culture":"","timezone":"UTC","shuffleSeed":null},"events":[
+{"package":"synthetictimeout","test":"","action":"run","elapsed":0,"output":null,"source":null,"line":null},
+{"package":"synthetictimeout","test":"TestSlow","action":"run","elapsed":0,"output":null,"source":"x_test.go","line":5},
+{"package":"synthetictimeout","test":"","action":"timeout","elapsed":1800,"output":"package timeout after 00:30:00","source":null,"line":null}
+]}

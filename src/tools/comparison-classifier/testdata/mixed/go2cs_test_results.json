@@ -1,0 +1,15 @@
+{"schemaVersion":1,"package":"syntheticmixed","environment":{"dotnetRuntime":".NET 10.0.11","culture":"","timezone":"UTC","shuffleSeed":null},"events":[
+{"package":"syntheticmixed","test":"","action":"run","elapsed":0,"output":null,"source":null,"line":null},
+{"package":"syntheticmixed","test":"TestKilledMidRun","action":"run","elapsed":0,"output":null,"source":"x_test.go","line":10},
+{"package":"syntheticmixed","test":"TestStubHit","action":"run","elapsed":0,"output":null,"source":"x_test.go","line":20},
+{"package":"syntheticmixed","test":"TestStubHit","action":"fail","elapsed":0.001,"output":"System.NotImplementedException: someHelper: external (assembly or cgo) function is not implemented\r\n   at go.syntheticmixed_package.someHelper()","source":"x_test.go","line":20},
+{"package":"syntheticmixed","test":"TestPanicDiff","action":"run","elapsed":0,"output":null,"source":"x_test.go","line":30},
+{"package":"syntheticmixed","test":"TestPanicDiff","action":"fail","elapsed":0.002,"output":"panic: something went wrong\r\n\r\ngoroutine 1 [running]:","source":"x_test.go","line":30},
+{"package":"syntheticmixed","test":"TestAssertDiff","action":"run","elapsed":0,"output":null,"source":"x_test.go","line":40},
+{"package":"syntheticmixed","test":"TestAssertDiff","action":"fail","elapsed":0.003,"output":"expected 5 but got 3\nsome more detail on the next line","source":"x_test.go","line":40},
+{"package":"syntheticmixed","test":"TestWeirdGoSide","action":"run","elapsed":0,"output":null,"source":"x_test.go","line":50},
+{"package":"syntheticmixed","test":"TestWeirdGoSide","action":"pass","elapsed":0.001,"output":null,"source":"x_test.go","line":50},
+{"package":"syntheticmixed","test":"TestClean","action":"run","elapsed":0,"output":null,"source":"x_test.go","line":60},
+{"package":"syntheticmixed","test":"TestClean","action":"pass","elapsed":0.001,"output":null,"source":"x_test.go","line":60},
+{"package":"syntheticmixed","test":"","action":"fail","elapsed":0.05,"output":null,"source":null,"line":null}
+]}

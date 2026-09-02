@@ -1,0 +1,9 @@
+{
+  "package": "syntheticnativefault",
+  "status": "compared",
+  "go": {"TestBeforeCrash": "pass", "TestAfterCrash": "pass"},
+  "csharp": {"TestBeforeCrash": "pass", "TestAfterCrash": ""},
+  "matched": false,
+  "skipped": [], "disclosed": [], "excluded": [],
+  "errors": ["TestAfterCrash: Go=\"pass\" C#=\"\""]
+}

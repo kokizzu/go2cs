@@ -1,0 +1,6 @@
+{"schemaVersion":1,"package":"syntheticnativefault","environment":{"dotnetRuntime":".NET 10.0.11","culture":"","timezone":"UTC","shuffleSeed":null},"events":[
+{"package":"syntheticnativefault","test":"","action":"run","elapsed":0,"output":null,"source":null,"line":null},
+{"package":"syntheticnativefault","test":"TestBeforeCrash","action":"run","elapsed":0,"output":null,"source":"x_test.go","line":5},
+{"package":"syntheticnativefault","test":"TestBeforeCrash","action":"pass","elapsed":0.001,"output":null,"source":"x_test.go","line":5},
+{"package":"syntheticnativefault","test":"TestAfterCrash","action":"run","elapsed":0,"output":null,"source":"x_test.go","line":15}
+]}
