@@ -247,8 +247,10 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
     return (pid, 0, err);
 }
 
-// HELD -- DO NOT give these bodies without fixing Exec's argv/envp marshalling first. Measured
-// 2026-09-02; the empty-body cut was built, run, and WITHDRAWN on this evidence.
+// The Exec bracket's two runtime pulls, given the empty bodies the managed model owes them. HELD
+// once (2026-09-02) and released only after the prerequisite landed -- the history is kept below
+// because the ORDER was the whole lesson: these bodies are sound on their own and were still
+// unsafe to ship, because they unmask what runs after them.
 //
 // exec_unix.go declares the pair as //go:linkname pulls, so they emit bodyless and
 // PartialStubGenerator supplies a throwing stub. That makes syscall.Exec die before the kernel,
@@ -279,13 +281,15 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
 // and spawns the next generation. This is the open "wrapper passes managed memory by address"
 // class the project already tracks, met through a new door.
 //
-// So the throwing stub is, accidentally, the recursion brake -- and one honest infrastructure-error
-// is strictly better than a fork bomb on every host that sweeps this row. The bodies are withheld
-// until Exec marshals argv/envp into UNMANAGED memory, which is a fix this very file already knows
-// how to write: MarshalStringZ/MarshalStringVector/FreeStringVector below do exactly that for the
-// posix_spawn seam, under the header's own rule that every buffer handed to a native call lives in
-// unmanaged memory for the duration and is freed in a finally. That is the next step, and it is
-// the thing to do BEFORE re-attempting the bodies.
+// So the throwing stub WAS, accidentally, the recursion brake -- and one honest
+// infrastructure-error is strictly better than a fork bomb on every host that sweeps this row. The
+// bodies were withheld until Exec marshalled argv/envp into UNMANAGED memory.
+//
+// THAT PREREQUISITE LANDED -- see Exec's own block above -- and it landed as its OWN commit measured
+// on its OWN pair: with the stub still braking, the row came back 55 rows / 37 agreeing / 13
+// disclosed / 5 errors, identical to the baseline, TestExec still failing with the same stack at the
+// same stub. A fix that changes nothing visible is exactly what that commit should produce, and
+// proving it changed nothing is why it was not folded into this one.
 //
 // WHY NOT FORWARD to runtime's real body, since runtime/linux/proc.cs:4983 carries one: the
 // converter emits a linkname target public only for linknameForwardTargets rows
@@ -298,6 +302,14 @@ public static (nint pid, uintptr handle, error err) StartProcess(@string argv0, 
 internal static partial void runtime_BeforeExec();
 
 internal static partial void runtime_AfterExec();
+
+// The bodies the block above argues for. Empty is the whole implementation: both are func(),
+// nothing is computed, and the runtime state they would guard does not exist in this model.
+internal static partial void runtime_BeforeExec() {
+}
+
+internal static partial void runtime_AfterExec() {
+}
 
 // execveLibc is non-nil on OS using libc syscall, set to execve in exec_libc.go; this
 // avoids a build dependency for other platforms.
