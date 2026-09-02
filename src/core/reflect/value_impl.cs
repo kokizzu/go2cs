@@ -1348,10 +1348,10 @@ public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
     // named↔unnamed pair passes and is left to the helper's named/unnamed arms; an INTERFACE
     // destination passes and is left to the helper's interface arm, since a concrete type IS
     // assignable to an interface it satisfies). A predeclared type like `string` is NAMED (spec).
-    if (isBothNamedMismatch(GoReflect.GoDynamicTypeOf(key.live!), keyType)) {
-        throw panic("reflect.Value.MapIndex: value of type " + GoReflect.GoTypeName(key.live?.GetType()) +
-                    " is not assignable to type " + GoReflect.GoTypeName(keyType));
-    }
+    // The both-named refusal used to be re-derived HERE, ahead of the helper. It is RETIRED:
+    // TryMarshalAssignable now enforces Go's assignability at its own arms when the caller asks
+    // for it (GoTypeRelation.Assignable, below), and the branch immediately following throws the
+    // identical text -- so the rule lives in one place and this caller keeps its own message.
     if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k, GoReflect.GoTypeRelation.Assignable)) {
         // Go's own text, from assignTo: "value of type", not "key of type".
         throw panic("reflect.Value.MapIndex: value of type " + GoReflect.GoTypeName(key.live?.GetType()) +
@@ -1629,6 +1629,11 @@ public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
     // assignable", never "assignment to entry in nil map". The sibling of MapIndex's gate, and the
     // same census-derived predicate: two different Go-named types (TestMap's second shouldPanic
     // row). A VALID key type is untouched, so a legal delete on a nil map stays legal (TestNilMap).
+    // NOT retired, unlike MapIndex's copy: this gate is load-bearing for ORDER, not only for the
+    // rule. Go checks the key BEFORE it touches the map, and the assign path's own key check sits
+    // AFTER the nil-map panic below -- so without this, a wrong-typed key on a NIL map would report
+    // "assignment to entry in nil map" where Go reports the assignability failure. The arm answers
+    // the question; it cannot express when the caller must ask it. Same trap MapIndex documents.
     if (isBothNamedMismatch(GoReflect.GoDynamicTypeOf(key.live!), keyType)) {
         throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
                     " is not assignable to type " + GoReflect.GoTypeName(keyType));

@@ -404,7 +404,7 @@ public static partial class GoReflect
         // nor any arm above, which is Go-correct (the invalid direction stays rejected — reflect's
         // TestMakeFuncInvalidReturnAssignments' U->T still panics).
         if (KindOf(dynamicSrc.GetType()) == Struct && KindOf(dstType) == Struct &&
-            (!HasGoName(dynamicSrc.GetType()) || !HasGoName(dstType)) &&
+            !RefusedByGoAssignability(relation, dynamicSrc.GetType(), dstType) &&
             haveIdenticalGoStructLayout(dynamicSrc.GetType(), dstType) &&
             tryCopyGoStructFields(dynamicSrc, dstType, out marshalled))
         {
