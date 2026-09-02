@@ -20926,4 +20926,57 @@ capture, so a per-LINE parse reports ~60 where the ASCII-grep count is 70,071 �
 whole-file `findall`, not per line, and the two reconcile. The instrument was reverted after the
 run (golib byte-identical to master); this record is the deliverable.
 
+
+---
+
+## 2026-09-02 · `net/http`'s h2 write-deadline rows are a HOST-CAPACITY margin, not a Linux property — the managed TLS handshake bracket, and a falsifiable prediction for the Linux row (lane C1, cloud Linux, 4 cores)
+
+**The row's own committed disclosure predicted this by name.** `net/http` carries one manifest entry,
+`TestWriteDeadlineExtendedOnNewRequest/h2`, class `performance-margin`, signature
+`TLS handshake error from`. Its text brackets the managed handshake using the *sibling* test as the
+instrument: `TestWriteDeadlineEnforcedPerStream/h2` runs Go's own `tryTimeouts` ladder, setting
+`Server.WriteTimeout` to 125 ms, then 250 ms, then 500 ms on successive attempts, and on the reference
+box **125 ms and 250 ms fail with that exact signature while 500 ms passes** — bracketing the handshake
+to **(250 ms, 500 ms]**.
+
+**On a 4-core cloud container under the full 1,345-test suite, all three rungs fail** — including the
+500 ms one — so the handshake there exceeds 500 ms. The mechanism is Go's own: `conn.serve()` arms the
+server write deadline *before* calling `Handshake`, so `WriteTimeout` bounds the TLS handshake itself
+rather than only post-handshake response writes. The client therefore loses **Get #1**, and the
+write-deadline semantics these tests were written to check are never reached at all.
+
+Three observations isolate it, and each had an available opposite reading:
+
+- **`/h1` PASSES, only `/h2` fails**, in both tests. h1 carries no TLS, so TLS is the variable rather
+  than the deadline logic.
+- **The failure is on Get #1, inside the handshake** — so no semantic claim about write-deadline
+  enforcement or extension can be drawn from these failures in either direction.
+- **Filtered on an idle box, `EnforcedPerStream` PASSES** (`-test-action compare`, exit 0, the disclosed
+  sibling absorbed as `performance-margin`, nothing else divergent). That control is what turns "fails
+  under load" from a hunch into a measurement: same host, same binary, load the only variable.
+
+**Arithmetic, corrected.** The undisclosed shortfall is **2 verdicts, not 4**: `go=1345`,
+`disclosed=2` (the `Extended` pair), leaving `TestWriteDeadlineEnforcedPerStream` and its `/h2` as the
+only undisclosed disagreements. An earlier posting of 4 counted the already-disclosed pair and is
+withdrawn.
+
+**No disclosure was minted, deliberately, and this is the case where minting one would be wrong rather
+than merely out of a lane's authority.** The reference bracket says 500 ms passes, so
+`EnforcedPerStream/h2` is not a *cannot* — it is a row this host is too small to run. Disclosing it
+would convert a host-capacity limit into a permanent corpus claim, and it would destroy the instrument
+the existing disclosure depends on, since that entry's bracket **is** this test's ladder.
+
+**PREDICTION, stated so a later run can falsify it:** on any Linux host that keeps the managed h2
+handshake inside 500 ms under full-suite load, `net/http` validates at **`linux: 1343 + 2`** —
+identical to its Windows columns, with no new disclosure and no change to the committed manifest. If a
+larger-host run reports anything else, the difference is real and this entry is wrong. Until such a
+run exists the row stays **unannotated** for Linux; a 4-core container is not evidence about the
+corpus. Note for whoever takes it: the GitHub OS-matrix ubuntu runners are the same shape as the
+container that produced this, so they cannot answer it.
+
+**The general form, which outlives this row:** a timing-shaped divergence measured on a host smaller
+than the reference is a statement about the host until a control separates the two. The cheap control
+is the one used here — re-run the same tests filtered, on an idle box, and see whether they pass. Where
+the row's own disclosure already carries a measured bracket, the bracket is the yardstick and the only
+question is which side of it the host sits on.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
