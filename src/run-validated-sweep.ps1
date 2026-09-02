@@ -673,6 +673,26 @@ $longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto
 # the i7 class (the mass-empty shape), and at 40m the same tree validates 472/472 in ~1,480 s -- deadline
 # sizing, not divergence (measured twice: the MakeFunc canary gate 2026-08-29 and the A2a gate 2026-09-02).
 
+# ---- per-package cgo state ------------------------------------------------------------------------
+# A package whose Go FILE SELECTION is cgo-conditional must be converted in the same cgo state the
+# committed corpus was emitted in. That state is CGO_ENABLED=0 (CLAUDE.md's emission-state rule), so
+# both sides of the comparison see ONE selection; converting cgo-ON against a cgo-OFF corpus changes
+# which files exist and the build dies on declarations that migrated.
+#
+# 'os/user' joined 2026-09-02, measured on a cloud Linux host as a one-variable A/B on the same row:
+#   CGO_ENABLED=1 -> FAIL in 12 s, zero verdicts, the closure build dying; the run leaves
+#                    cgo_unix_test.cs / cgo_user_test.cs behind, artifacts with no Windows counterpart
+#   CGO_ENABLED=0 -> validated at 12, all 12 agreeing, 0 disclosed, 0 withdrawn, a strict superset of
+#                    the 5 banked Windows names (the 7 extra are lookup_unix_test.go's, which
+#                    `unix && !android && !cgo && !darwin` selects only when cgo is off)
+#
+# PER-PACKAGE, never session-wide: the three rows whose Linux annotations were derived cgo-ON
+# (debug/buildinfo, go/internal/gcimporter, go/internal/srcimporter) keep their state, and a
+# session-wide zero would bring them back short. Harmless on the other two targets by construction:
+# Windows os/user carries no cgo constraint at all, and darwin selects the cgo_* files through the
+# `(cgo || darwin)` disjunct whatever CGO_ENABLED says.
+$cgoOffPackages = @{ 'os/user' = $true }
+
 foreach ($row in $rows) {
     $pkg = $row.Package
     # The import path is already forward-slash-separated, which is exactly the form Join-Path
@@ -709,8 +729,24 @@ foreach ($row in $rows) {
     # therefore invisible, for every default-path row.
     $execSuffix = if ($rowExecution) { " [$rowExecution]" } else { '' }
 
+    # The row's cgo state, restored unconditionally so one pinned package cannot leak into the next.
+    $cgoPinned = $cgoOffPackages.ContainsKey($pkg)
+    $priorCgo = $env:CGO_ENABLED
+    if ($cgoPinned) {
+        Write-Host "  pinning CGO_ENABLED=0 for $pkg -- its Go file selection is cgo-conditional and the corpus is emitted cgo-off" -ForegroundColor DarkGray
+        $env:CGO_ENABLED = '0'
+    }
+
     $rowStarted = Get-Date
-    $out = & $exe -tests -test-action all -test-timeout $pkgTimeout @execArgs -go2cspath $src $goDir $outDir 2>&1
+    try {
+        $out = & $exe -tests -test-action all -test-timeout $pkgTimeout @execArgs -go2cspath $src $goDir $outDir 2>&1
+    }
+    finally {
+        if ($cgoPinned) {
+            if ($null -eq $priorCgo) { Remove-Item Env:\CGO_ENABLED -ErrorAction SilentlyContinue }
+            else { $env:CGO_ENABLED = $priorCgo }
+        }
+    }
     # Per-row wall time, printed on every verdict line. This is the SWEEP's wall clock for the row
     # (convert + build + both test hosts + compare), which is the number shard planning needs --
     # the go test -json stream's own "Time" fields measure only the Go side and invert exactly the
