@@ -1858,6 +1858,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckTypedNilPtrArrayDims() => CheckTarget("TypedNilPtrArrayDims");
 
     [TestMethod]
+    public void CheckTypedNilPtrArrayPositions() => CheckTarget("TypedNilPtrArrayPositions");
+
+    [TestMethod]
     public void CheckTypedPointerCastDeref() => CheckTarget("TypedPointerCastDeref");
 
     [TestMethod]
