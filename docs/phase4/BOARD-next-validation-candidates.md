@@ -20781,3 +20781,30 @@ closure shape), and the `go2cs.SynthesizedStructs` `InternalsVisibleTo` grant. *
 **The row is bankable the day Blocker A is fixed** — at that point all 10 remaining rows are
 `codegen-liveness` disclosures whose A/B evidence is the table above, and the arithmetic closes
 at 20/20 with 10 disclosed. Nothing else stands in the way.
+
+---
+
+## OPEN (2026-09-02, found by lane G-LAPTOP while building the receiver-snapshot family's untested variants) — a VALUE-receiver method value over a POINTER-typed receiver expression emits the box where the value is wanted: CS1929, pre-existing, unreached in production
+
+**The shape.** Go's implicit deref through a field path: `rh.p.label` where `p *frame` and `label`
+has a VALUE receiver is `(*rh.p).label` — what Go saves at method-value evaluation is the POINTEE's
+copy. The converter renders the wrapper over the pointer expression, so the generated extension method
+(which takes the value) is offered a `ж<frame>`: `error CS1929`. Two errors on a three-arm probe.
+
+**Attribution, by the five-minute control (CLAUDE.md's "revert the fix, build past the blocker").**
+The error first appeared in a file commit 3 of the receiver-snapshot family had just rewritten, and
+was about to be reported as that commit's regression; the family-tip converter (commits 1+2 only)
+reproduces the IDENTICAL two errors on the same program. The family neither caused nor cures it.
+Commit 3 (`claude/g-receiver-eval-once`) carries a guard that SKIPS the hoist for this shape so it
+does not rewrite emission it cannot render correctly ("do not hoist what you cannot render").
+
+**Reach.** Unreached in the production corpus (307/0 compiles at master); a converter GAP, not a live
+break. Any corpus site the commit-3 census instrument finds in this shape is counted here, never
+under the family's diff.
+
+**Remedy (unassigned; sized cut wanted).** The correct emission hoists the pointee COPY at evaluation
+(`var recvʗ1 = rh.p.Value;`-shaped, i.e. the selector's own auto-deref reproduced faithfully) and
+binds the wrapper to it. Getting the auto-deref subtly wrong is how a receiver ends up aliasing the
+wrong storage, which is why it was named rather than guessed at. Guard: a behavioral position with
+a pointer-typed field receiver and a value-receiver method, mutation between creation and call,
+output-compared against `go run`. Candidate owner: a coordinator sub-agent after the family closes.
