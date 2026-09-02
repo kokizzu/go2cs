@@ -20926,4 +20926,22 @@ capture, so a per-LINE parse reports ~60 where the ASCII-grep count is 70,071 �
 whole-file `findall`, not per line, and the two reconcile. The instrument was reverted after the
 run (golib byte-identical to master); this record is the deliverable.
 
+## FINDINGS (2026-09-02) — two shapes worth meeting before the next bridge or method-value arc
+
+**One rule, TWO minters — a bridge change can be green on the probe and wrong on the row.**
+`reflect.rtype.Field(i)` mints its struct-field descriptor through its own `structFieldDescriptor`,
+*beside* `abi.synthesizeStructType`, whose header states the one-rule invariant both are supposed to
+honor. A change that substitutes at one minter and not the other passes a probe aimed at the other
+and fails the verdict — so a descriptor/bridge change enumerates the minters before it measures,
+and either substitutes at both or states why one is out of scope.
+
+**The method-value family's fourth face has TWO mechanisms, not one** (4 of 17 sites red-first).
+**M1** — the receiver EXPRESSION is deferred into the wrapper lambda, so any non-trivial expression
+at a lambda site re-executes per call; this is **kind-independent**. **M2** — the root-ident
+snapshot aliases through a REFERENCE-semantics base (the value-receiver lambda path), which is a
+third axis the M1 predicate never reads. The pairing is the lesson: one commit needed two axes in
+its control where it varied one, and the next needed two mechanisms where it saw one — the same
+error in both directions. Both are covered by the evaluate-once ruling; recorded here so a future
+census names both before it counts.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

@@ -10,7 +10,11 @@
 > [`docs/DotNetMigration.md`](docs/DotNetMigration.md) — are the **living procedure** for release
 > hops: they **lead**, amended in-stage from lessons learned, and no plan or record overrides them on
 > procedure. `docs/PLAN-*.md` hold ruled strategy and instance campaigns; their OQ rulings are
-> settled, and only a new ruling reopens one. `docs/phase4/` RECON-/REHEARSAL-/CENSUS-/DATA-/STAGE0-
+> settled, and only a new ruling reopens one — but a ruling's **SCOPE** is a claim about *who reaches
+> the seam*, not a permanent property: the netpoll ruling's "zero runtime edits" covered
+> `internal/poll`'s consumers and never runtime's own suite reaching `netpollGenericInit` through an
+> `export_test` re-export, so a NEW consumer re-opens the scope question without re-opening the
+> ruling (2026-09-01; the remedy was one honest no-op equivalence, both halves measured). `docs/phase4/` RECON-/REHEARSAL-/CENSUS-/DATA-/STAGE0-
 > files are point-in-time **records** — amended with dated blocks, never rewritten, never executed
 > from. The BOARD is the append-only findings ledger; the mailbox is transport, not record. A lesson
 > lands the day it is learned: procedure → the runbook; harness/gate doctrine → this file; findings
@@ -33,7 +37,8 @@ the last build scripts that referenced it (`convert-gosrc.*`) were removed 2026-
 > **General working principles** (think before coding, simplicity first, surgical changes, goal-driven
 > execution) live in the user-global `~/.claude/CLAUDE.md` so they apply across all projects. This file adds
 > the go2cs-specific discipline: root-cause against the real emitted `.cs`/`.cs.target` (the golden is the
-> authoritative record), keep the A/B footprint minimal, change *only* the goldens a fix must, and prove no
+> authoritative record) and **read the emission BEFORE spending a gate battery — it is the cheapest layer
+> and it keeps paying**, keep the A/B footprint minimal, change *only* the goldens a fix must, and prove no
 > corpus drift with `check-no-regression` — **compiling is not correctness** (that is the Phase-3 → Phase-4
 > distinction). And **prefer the durable path over the shortcut**: when a task could be solved
 > quickly-but-throwaway or correctly-but-harder, take the harder, general fix — a converter change over a
@@ -228,6 +233,10 @@ ONE stdlib in a build; there is now only one on disk.
     was read) — each had the explicit event sitting in the file the whole time. The shape
     heuristics above remain for the cases the tail cannot settle (a crash leaves no timeout
     event), but the tail is checked FIRST and quoted in any census that reports empty verdicts.
+    ⚠ Not every crash is tail-silent: a **module-init** death states itself there too — a
+    `NotImplementedException` thrown from the host's static constructor is written into the tail
+    verbatim (2026-09-01) — so a mass-empty on a flavor with no run layer is the same one-line
+    read, not an inference.
     ⚠ **The tail rule presumes the results file is the RUN'S OWN — verify freshness before
     reading it** (measured 2026-08-29, the gated-census lane): a host invoked **DIRECTLY** with
     `--run` did not rewrite `go2cs_test_results.json`/`.xml` (four-way A/B: order- and
@@ -369,6 +378,25 @@ ONE stdlib in a build; there is now only one on disk.
   MSB4166s, zero CS diagnostics) that reached its real 9-of-10 verdict in 45 s once
   `MSBUILDDISABLENODEREUSE=1` was set; set it for any back-to-back `-tests` queue before believing a
   diagnostic-free build failure.
+  **Five more launch/instrument traps, each paid 2026-09-01/02.** (1) **Git Bash rewrites `cmd /c`
+  into `cmd C:\`** — MSYS path conversion eats the `/c` — so the command never runs: `cmd` opens
+  interactively, reads EOF, exits **0**. A "runner gate" passed that way with a log holding only the
+  cmd banner; the EMPTY grep for its verdict line, not the exit code, is what caught it. Drive
+  `cmd /c` from PowerShell (a `.ps1` launched by `powershell -File`) or set `MSYS_NO_PATHCONV=1`,
+  and **grep a gate's log for its verdict line before believing "exit 0"** — route #6's shape,
+  hand-typed. (2) **`robocopy` from Git Bash with forward-slash paths copies NOTHING and exits 1**,
+  which is robocopy's SUCCESS code — a silent no-op that reads as a completed stage. (3) **The
+  behavioral runner shells out to a BARE `dotnet`**, so the SDK must be on PATH: `DOTNET_ROOT`
+  alone does not prevent NETSDK1045. (4) **Never locate a comparison binary by a recursive glob's
+  first hit** — `Get-ChildItem -Recurse -Filter <name>.exe | Select -First 1` returned
+  `bin\Release\Go\…` ahead of `bin\Release\net10.0\…` (G sorts before n), so a byte-identical
+  289/289 "C# matches Go exactly" reading was ONE binary printed twice, and the runner reporting a
+  real gap was right; name the TFM path, and positive-control an output comparison by making the C#
+  side differ once. (5) **The LF-anchor trap is not converter-only** — harness C# is CRLF under the
+  same `eol=crlf` pin, so an LF-anchored patch to `BehavioralRunner/Program.cs` matches zero times
+  and the build that follows reports exit 0 with 0 errors *because the file was never changed*.
+  (`strings` also cannot see a .NET UTF-16 literal: use `strings -el`, and check the checker against
+  a literal known to be present.)
 - **FALSE-GREEN route #3 — NESTED sub-library packages were never enumerated (fixed 2026-08-02).** All
   three transpile gates walked `tests\Behavioral\*` **top-level only**, so the 22 sub-library packages
   nested inside a test folder (`IoLike\FsLike`, `VersionedImport\vlib`, `CrossPackageArrayZeroValue\bufpkg`,
@@ -482,6 +510,21 @@ ONE stdlib in a build; there is now only one on disk.
   phase rewrites every `.cs` first, so no assembly is up-to-date and the batch-build failure
   attributes everywhere) — measured: exactly 1 Release assembly written corpus-wide vs a clean
   78-project filtered batch. "651 suspects" means "one project is red", not "the corpus is broken".
+- **⚠ An UNBANKED package's `-tests` assembly is in NO standing gate — route #7's shape, one
+  assembly over (found 2026-09-01 by a lane's own sweep, by no gate).** CNR is transpile-only and
+  the stdlib solution compiles PRODUCTION assemblies, so nothing at master ever builds the test
+  emission of a package that has not banked: `reflect`'s `-tests` assembly sat compile-broken at
+  master after a widened lift dedup bound a PUBLIC lifted struct's member shape to an INTERNAL
+  prior lift — the dedup crossing ACCESSIBILITY tiers, CS0050/51/52 — with every standing gate
+  green. **Standing amendment: any converter change touching lift identity, dedup registries or
+  anonymous-type naming owes a `-tests -test-action build` of `reflect` at the MERGE RESULT, beside
+  CNR.** The same hole has a second door: **the production-only two-seeded diff is blind to
+  TEST-side emission** — a carrier stamp that dangled two banked rows lived in `x509_test.cs`,
+  which `-stdlib` never writes, so the diff matched its prediction exactly and said nothing about
+  the footprint that broke them. A converter change that emits CROSS-PACKAGE references therefore
+  (a) lands its corpus footprint in the SAME train — the two-seeded diff applied verbatim,
+  byte-identity asserted, exactly as a hand-own registration lands with its body — and (b) owes a
+  `-tests` emission census of the banked rows it can reach, beside the `-stdlib` diff.
 - **FALSE-GREEN route #8 — a guard DISARMED by a LEGITIMATE change (found 2026-09-01, the
   init-hook relocation).** Distinct from routes #1–#7: nothing is stale and nothing mis-runs — the
   guarded property genuinely moved house, and a guard asserting an assembly-level property by
@@ -640,6 +683,14 @@ ONE stdlib in a build; there is now only one on disk.
   querying process: a `Where-Object { $_.CommandLine -like '*check-no-regression*' }` sweep matches
   the very command line performing the sweep, so it reports a phantom survivor and, if you kill it,
   kills your own shell.
+  **Three probe-hygiene rules from the same family (2026-09-01/02).** **Process AGE is read from
+  `CreationDate` against `Get-Date`**, never against an assumed clock — a healthy three-minute-old
+  run was killed in the belief it had been hanging for hours. **`pgrep -f <name>` matches its own
+  wrapper's command line** — the bash edition of the self-match above — so a `while pgrep -f` wait
+  loop spins forever on its own reflection after the child has exited; match on `/proc/*/exe`, i.e.
+  the executable, never on a pattern that can match the process running the check. And **completion
+  inferred from a SIDE EFFECT is not completion**: a file reverted because a running CNR had already
+  transpiled it is a footprint, not an exit code — check the run.
   Two adjacent PS 5.1 traps the same lanes paid for:
   a repo script's `Write-Host` output goes to the INFORMATION stream, so capture with `*>&1`
   (a bare `2>&1` silently drops every `==>` status line and the log reads as hung); and the sweep's
@@ -677,6 +728,28 @@ ONE stdlib in a build; there is now only one on disk.
   stayed silent on its two controls, which is what made the real — also zero — production-corpus
   reading trustworthy). Same family as the `grep -P` and bare-`rg` notes: an instrument that
   cannot fail reports success over a hole.
+  **⚠ The general form, named after five instances in ONE day (2026-09-01): an instrument built out
+  of the thing under test cannot independently measure it — the corrective is a SECOND
+  DERIVATION.** The sharpest instance is structural: **a `-stdlib` census answers "how much does the
+  corpus change" and is BLIND to "does the fix reach the row" whenever the motivating site is in a
+  `_test.go` file** — `-stdlib` never writes test emission, so those are two questions and they cost
+  two runs. The others rhyme: a probe keyed on its own incomplete predicate reports the predicate;
+  a probe blind to unwired slots reports the wiring; a type-name census was believable only once a
+  `go/parser` derivation reproduced it, and a classifier's 66 only once an independent predicate
+  reached the same number. Four corollaries, all measured 2026-09-01/02. **Name the LAYER a census
+  is attached to**: a `claude/g-*` lookup over bare `g-*` refs returned a confident EMPTY, and a
+  working-tree line-ending count under the `eol=crlf` pin was reported as a COMMITTED fact (the blob
+  is LF, the checkout makes it CRLF, and `git checkout --` "cured" a state that was never in the
+  index) — two retractions in one night, both from an unnamed layer. **An empty enumeration inside a
+  redirected log is not evidence of absence** until a second instrument agrees. **An EMPTY diff
+  after a "fix" is the fix saying it was not needed**, never the gate agreeing. And **count errors
+  with the strict `error (CS|MSB|NETSDK)[0-9]+` pattern only** — a loose `grep -cE 'error '` scored
+  1 error on a clean 831-assembly build by matching `internal.oserror ->`, and matched the word
+  inside Go type names (`(…, error)`) where a case-sensitive `ERROR` read 0 against the loose
+  grep's 140. ⚠ Finally, **a census attaches to the DEFECT's boundary — defined by the EXISTING
+  marker set — not to the boundary the dispatch named**: a call-argument census missed two
+  composite-literal sites the pointer twin's `anyBoxedPtrArgs` already marks, one of them a live
+  defect. Grep the marker set first, and attach at every site it covers.
   **Scope DELETES by lane prefix too, not just writes** (measured 2026-08-16: a lane's cleanup swept
   the whole shared scratchpad and unrecoverably deleted sibling lanes' artifacts). A cleanup command
   must name your own `<lane>-*` files; `Remove-Item <scratchpad>\*` is a cross-lane destructive act.
@@ -811,7 +884,7 @@ ONE stdlib in a build; there is now only one on disk.
   | single `core` pkg build | **~6s** (log/slog) – **~60s** cold (go/types) | 180–400s | cold includes the dependency chain |
   | full `go2cs-stdlib.slnx` build | **~92–188s** warm (307 projects; 149s measured r50a at `-p:GoTargetOS=windows`, 188s at r41 and 158s at r40, all with `-p:UseSharedCompilation=false`, the isolation flag a lane uses instead of `build-server shutdown`). ⚠ **i7-5820K on a healthy disk: 516s** `--no-incremental` (2026-08-14) | 600s (900s on the i7 class) | cold restore adds a few minutes. `-p:GoTargetOS=linux` is a DIFFERENT build and **completes clean: 307/307, 0 errors, 475s** (2026-08-14, after the three-target regen wave — `docs/phase4/CENSUS-linux-compile-wall.md` §10). It must be run `--no-incremental`: what differs between targets is the `<Compile>` ITEM SET, not any source timestamp |
   | full `go2cs.slnx` build | **~87s** `--no-incremental` / **~39s** incremental (573 projects; measured 2026-08-07) | 900s | the ONLY gate that compiles the non-generated solution members (utilities, examples) — run it after any golib/runtime API change. ⚠ Under concurrent-lane load a `go2cs-gen` run can die with `AccessViolationException` inside `TypeGenerator`'s recursive `PromotedStructDeclarations`, reported as an `error` against the package (seen once on `core/runtime`, NOT reproducible in two immediate retries with identical flags): re-run before believing it, exactly as with the Go-toolchain crash above |
-  | `run-validated-sweep.ps1` (full roster) | **~46–53 min solo (3,138s measured 2026-08-07 at 109 packages / 13,611 verdicts; the roster is 131 packages / 14,769 matching verdicts / 47 disclosed, re-measured 2026-08-14 — so budget well ABOVE the 3,138s figure, and re-measure; ~90+ min under two concurrent lane loads — both r47 attempts were killed externally before finishing, so no clean loaded figure exists)** | run it BACKGROUNDED from the COORDINATOR session only — ⚠ a LANE parking a detached sweep and ending its turn gets it KILLED (the lane's process tree is reaped; happened twice on 2026-08-08 at 106/110 and 98/110, log ends between packages with no summary — recovery: re-run `roster − logged` inline and check the verdict arithmetic closes) | ~29 s for a typical package; i9 full roster measured **7,059-7,705s** at 159-162 rows (2026-08-22) -- the 46-53 min row is the dead i9-13900K era and stands only as the ratio anchor; use `-Filter` for anything but a final gate. ⚠ **EIGHT** packages carry per-package deadline FLOORS in the script's `$longTimeouts` (`hash/maphash` 60m, `index/suffixarray` 120m, `crypto/dsa` 120m, `archive/zip` 60m, `go/parser` 90m, `crypto/internal/mlkem768` 30m, `crypto/tls` 30m, `time` 40m -- its 1.23.12 suite is 169 tests and ~19 min on laptop-class — the table grew three rows and two floors moved by 2026-08-25, which is WHY the shard map derives its reserved set from the script at generation time instead of copying this sentence; **the script is the authority, this prose is a pointer**), **slow-host-calibrated** since 2026-08-10 — the original i9-sized values false-red every bare sweep on this machine class (hash/maphash and crypto/dsa both reported `FAIL … package timeout after 00:30:00` here; maphash then validated **22/22 in 2,406 s / 40.1 min** given room). The table is also a **floor, not an override** since the same date: a LARGER `-TestTimeout` raises it for a still-slower box (a smaller one still loses, since under-budgeting these four is the false red the table exists to prevent) — before that fix the flag was silently ignored for exactly the four packages that need it |
+  | `run-validated-sweep.ps1` (full roster) | **~46–53 min solo (3,138s measured 2026-08-07 at 109 packages / 13,611 verdicts; the roster is 131 packages / 14,769 matching verdicts / 47 disclosed, re-measured 2026-08-14 — so budget well ABOVE the 3,138s figure, and re-measure; ~90+ min under two concurrent lane loads — both r47 attempts were killed externally before finishing, so no clean loaded figure exists)** | run it BACKGROUNDED from the COORDINATOR session only — ⚠ a LANE parking a detached sweep and ending its turn gets it KILLED (the lane's process tree is reaped; happened twice on 2026-08-08 at 106/110 and 98/110, log ends between packages with no summary — recovery: re-run `roster − logged` inline and check the verdict arithmetic closes) | ~29 s for a typical package; i9 full roster measured **7,059-7,705s** at 159-162 rows (2026-08-22) -- the 46-53 min row is the dead i9-13900K era and stands only as the ratio anchor; use `-Filter` for anything but a final gate. ⚠ **TEN** packages carry per-package deadline FLOORS in the script's `$longTimeouts` (re-counted 2026-09-02; `sync/atomic` 60m and `net` 40m joined since the eight) (`hash/maphash` 60m, `index/suffixarray` 120m, `crypto/dsa` 120m, `archive/zip` 60m, `go/parser` 90m, `crypto/internal/mlkem768` 30m, `crypto/tls` 30m, `time` 40m -- its 1.23.12 suite is 169 tests and ~19 min on laptop-class — the table grew three rows and two floors moved by 2026-08-25, which is WHY the shard map derives its reserved set from the script at generation time instead of copying this sentence; **the script is the authority, this prose is a pointer**), **slow-host-calibrated** since 2026-08-10 — the original i9-sized values false-red every bare sweep on this machine class (hash/maphash and crypto/dsa both reported `FAIL … package timeout after 00:30:00` here; maphash then validated **22/22 in 2,406 s / 40.1 min** given room). The table is also a **floor, not an override** since the same date: a LARGER `-TestTimeout` raises it for a still-slower box (a smaller one still loses, since under-budgeting these four is the false red the table exists to prevent) — before that fix the flag was silently ignored for exactly the four packages that need it |
 
   Materially *past* these means the test host has hung under lock contention, not real work — stop and
   clear it rather than waiting 10–20 min. **Re-measure and update this table when the corpus grows again**;
@@ -892,6 +965,17 @@ ONE stdlib in a build; there is now only one on disk.
   after writing it any other way) — confirmed to make 5.1 parse the literal correctly. Positive-control
   any regex-bearing PowerShell instrument that embeds a converter glyph literally: run it against a
   known-populated target and confirm it finds a nonzero count before trusting a zero anywhere else.
+  **⚠ A SHARED PowerShell instrument owes a run on BOTH editions before it banks (measured
+  2026-09-02).** `_roster.ps1`'s comparison reader took `Add-Type -AssemblyName
+  System.Web.Extensions` — a genuine PS 5.1 case-folding fix, smoke-proven on Windows only, and
+  .NET-Framework-ONLY. Under pwsh 7 the script died at its second block, so the sweep's three
+  absorption arms (host-conditional, capability-absent, host-limit) silently **DECLINED on every
+  Linux host**, and the catch's own message named the missing assembly rather than the missing
+  capability — pointing at the wrong artifact, in the file that decides whether a row banks. The
+  fix is an edition-conditional reader (Desktop keeps `JavaScriptSerializer`; Core uses
+  `System.Text.Json.JsonDocument`, explicit, never `-AsHashtable` behaviour inherited from a newer
+  host), and the guard exercises both. **Rule: 5.1 on a Windows lane AND 7 on a Linux lane — or the
+  OS-matrix linux leg — before a shared `.ps1` change merges.**
 - **⚠ Banked-row protection at MERGE time — two rules, both paid for by the crypto/tls regression
   (found 2026-08-19; rooted and fixed by lane `claude/tls-regression`).** The flagship row banked
   green on its lane tip and was RED at master the moment its merge landed, because the guilty change
@@ -905,7 +989,10 @@ ONE stdlib in a build; there is now only one on disk.
   explicit since 2026-08-29: **the package's OWN Go source — production OR `_test.go` — imports
   `reflect`** (test usage counts because the canary protects VERDICTS, and verdicts are produced by
   test code; a suite leaning on `reflect.DeepEqual` is exactly what a bridge regression breaks).
-  Derivation is a grep of the GOROOT sources plus the roster's counts, both at gate time. As of
+  Derivation is a grep of the GOROOT sources for `reflect` as an **IMPORT** — a name-LIST match
+  over-matches (`go/doc/comment`'s `std.go` carries the name as data), so positive-control the
+  predicate before using it (`encoding/json` in, `cmp` out) — plus the roster's counts, both at
+  gate time. As of
   2026-08-29 it yields: `crypto/tls` 3,643 (bogo-capable hosts only; the collapsed-verdict path
   otherwise), `go/types` 557, `encoding/json` 491, `encoding/xml` 386, `crypto/x509` 341. ⚠ The
   PREVIOUS worked example here included `go/internal/gcimporter` (583) — a package with **zero
@@ -925,6 +1012,15 @@ ONE stdlib in a build; there is now only one on disk.
   `GoPtrBytesOf` pushed nistec from 354s past its 600s deadline; the memoized re-measure is 384s).
   `crypto/internal/nistec` re-enters as exactly that cost canary: run it and compare its WALL TIME
   against the recorded baseline, not just its verdict.
+- **⚠ The three-run flake standard, and the A/B a re-converting SWEEP silently invalidates
+  (2026-09-01/02).** A row that fails once is not a finding: the standard is **fail-WITH the change,
+  pass CLEAN, pass again WITH the change restored** — three runs, in that order, before anything is
+  attributed to a commit. The strong form is what costs lanes: **reverting the `.cs` is not an A/B
+  when the instrument re-converts.** `run-validated-sweep.ps1` re-emits from the LIVE binary, so a
+  hand-reverted corpus file is overwritten before the row runs and both arms measure the same
+  converter — which is exactly what happened on the h2 deadline rows, identical signatures on both
+  sides reading as "the change is innocent". Swap the **PRESERVED pre-change `go2cs.exe`** into the
+  sweep path instead, and state which binary each arm ran.
 
 ### Performance comparison suite (`src/tests/Performance`, 2026-07-02)
 - **Purpose:** answer "how fast is the transpiled C# vs the original Go?" — 14 small `Perf*` benchmark
@@ -1069,6 +1165,15 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   forcer in `net` (the forcer moved from cgo_stub.cs to dial.cs with both on disk). Reads exactly
   like a converter defect; it is an environment mismatch. On any Linux host with gcc (where cgo-on
   is the default), set `CGO_ENABLED=0` before converting against or regenerating the corpus.
+  ⚠ **It bites from the TEST side too, and there the state is PER-PACKAGE** (measured 2026-09-02 on
+  a Linux lane as a one-variable A/B on `os/user`, whose Go file selection is cgo-conditional): a
+  sweep converts under the session's `CGO_ENABLED`, so a cgo-ON run selects `_test.go` files the
+  cgo-OFF corpus never carried, leaves untracked `cgo_*_test.cs` artifacts behind, and dies in the
+  closure build in ~12 s with **zero verdicts** — a build failure that reads like a conversion
+  defect. Both comparison sides must share ONE cgo state, and the converted side can only be the
+  corpus's. `run-validated-sweep.ps1` pins it per package (`$cgoOffPackages`, beside
+  `$longTimeouts`); a row whose file selection is cgo-conditional joins that table rather than
+  depending on the session it happened to run in.
 - **The on-disk corpus can be stale** relative to converter changes made since the last regen; building
   the committed tree measures *that* output, not today's. To measure the current converter you reconvert.
 - **⚠ For ADDRESS-OF/ALIASING (`Ꮡ`-machinery) converter changes, a seeded corpus reconvert-and-BUILD
@@ -1095,6 +1200,21 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   two-root diff, assert BOTH sides' emitted files carry THIS RUN's mtimes — a diff between a real
   reconvert and an untouched seed returns a normal-looking result with nothing marking it invalid
   (the emitted-before-seeded family, build-step edition).
+- **⚠ The bank unit for a converter change's corpus footprint is the two-seeded diff's HUNKS, never
+  its FILE set (measured 2026-09-02).** Applying the A/B's ten whole files onto a corpus that is
+  stale in OTHER families carries those families in with them: the whole-file application landed
+  six relocation hooks into one `package_info.cs` while the file that declares them — byte-identical
+  between the two binaries, so never flagged — still declared three, and the result was CS0111 ×3.
+  Byte-identity to the new emission PASSED and an exact path-set assertion PASSED; neither can see
+  a file the diff never named. The tell was arithmetic: **279 applied diff lines against 32
+  measured**. Apply the change's OWN lines (the re-done application was 9 hunks / 24 lines, zero
+  `GoPositionMap` and zero import-hook lines in the delta, with one untouched package as the direct
+  control, and built clean everywhere); position maps and relocation hooks belong to the deliberate
+  regen, not to a converter train. ⚠ **And COMMIT the corpus edit BEFORE any sweep** (paid twice in
+  one day): a sweep wrapper's restore step (`git checkout HEAD -- src/core`) cannot distinguish your
+  uncommitted work from the sweep's own dirt, so hand-applied hunks vanished between two rows and
+  the second row failed **invalidly** — a phantom red. Ordering is the fix, not the script; re-run
+  the application's own assertions after any restore.
 - **Reconvert → overlay → build → bucket (the measurement loop):**
   1. **⚠ SEED FIRST — non-negotiable (learned 2026-07-25, cost a false operational-break alarm):**
      `cp -r src/core <tmp>/core` BEFORE reconverting. ⚠ The SEED ITSELF can fail halfway and
@@ -1432,6 +1552,9 @@ rewriting. It also deploys the `go2cs-gen` analyzer, writes a root `Directory.Bu
 `$(go2csPath)` to the deploy root (so no `-p:go2csPath` is needed), generates `go2cs-core.slnx`, and builds
 to verify. The other src PowerShell utilities `clean-bin.ps1` (remove bin/obj/Generated) and
 `set-version.ps1` each also have a `.bat` launcher.
+⚠ Purge with that instrument, or with an explicitly depth-UNLIMITED walk: an ad-hoc
+`find … -maxdepth 3` purge missed 274 of 388 output directories and drove a lane's disk into the
+harness's own free-space floor (2026-09-02).
 **⚠ Its default target is MACHINE-GLOBAL** — `%GOPATH%\src\go2cs`, shared with every sibling worktree —
 so never run it bare as a gate. It supports **`-WhatIf`** (a real dry run: the three non-cmdlet writes
 are explicitly `ShouldProcess`-gated, and the solution enumeration reads the SOURCE so the projected
@@ -1516,6 +1639,12 @@ Each rule below was paid for.
   the shape allows it cheaply. Put it in the tier every lane already pays for (the converter's own
   `go test ./...`, beside `projitemsIntegrity_test`) so the class turns into a red converter suite at
   the merge rather than a red corpus later.
+  ⚠ **And check what the check's WITNESS is made of.** A displacement guard whose witness is
+  ON-DISK placeholders is ENVIRONMENT-dependent for TEST-side hand-owns: it passes on a tree that
+  has run that package's `-tests` and fails on every clean clone, because an unbanked row has no
+  committed test emission (2026-09-02). Ruled remedy: a GOROOT `_test.go` witness arm, matched by
+  CLASS rather than by name and counted separately as the weaker witness; the production arm is
+  unchanged.
 - **A branch behind master shows master's newer files as DELETIONS.** This is the stale-base illusion,
   not data loss, and it has been mis-read as a lane destroying work more than once. Diff from the
   **merge base** (`git merge-base A B`), never from a moving tip.
@@ -1524,7 +1653,20 @@ Each rule below was paid for.
 - **A separated stack must be verified from BOTH branches** — `git log --oneline master..<branch>` on
   each shows what a merge would really carry.
 - **Re-fetch immediately before any merge in a live campaign.** Refs move under you; arithmetic against
-  a SHA you read ten minutes ago is arithmetic against a tree nobody has.
+  a SHA you read ten minutes ago is arithmetic against a tree nobody has. ⚠ A rebase REWRITES a SHA
+  someone else has already been handed: **never force-push a tip whose SHA has been posted — post
+  the fresh SHA first** (paid twice in one day, 2026-09-01, the second time crossing a coordinator
+  merge that was reading the old one).
+- **Three merge mechanics, measured 2026-09-01/02.** **Union CNR is never skipped on composition
+  reasoning** — "both sides are transpile-clean, so the union is" is not a verdict, and the case it
+  cannot see is exactly the one that bit: a merge carrying a NEW behavioral test cut from an older
+  base went red at the union (the `CollidingPackageNames` red). **A conflict dry-run does not need
+  `git merge-tree --write-tree`** — that subcommand is unavailable on this box's git; the form that
+  works is a temporary-index `read-tree -m --aggressive -i <base> <ours> <theirs>` plus
+  `git merge-file -p` over each unmerged path, a 3-way CONTENT check that never touches the
+  worktree, so it is legal under the mid-battery source freeze. And **rebase equivalence is checked
+  by TREE, not by commit list**: `git diff <merge-of-old-tip> <rebased-tip>` coming back EMPTY is
+  what proves a running battery's verdicts transfer to a train rebuilt on new SHAs.
 - **A gate that has never been made to fail proves nothing.** Before trusting a census/self-verify that
   reports zero, regress one site deliberately, confirm it reports exactly that site, then fix and
   re-verify — and confirm the restore is byte-identical. The same principle as the positive controls
@@ -1537,11 +1679,27 @@ Each rule below was paid for.
   comparison/measurement record before anything is built on it, because the sweep-encoding chip's own
   description ("go pass vs C# fail") was wrong on the load-bearing detail and a rule built as
   described would have refused the very host it existed for.
+  Two more, 2026-09-02. **A control only tests the AXIS YOU VARIED**: eight plausible, well-formed,
+  entirely wrong findings passed BOTH of a census's controls because every repro varied box-ref and
+  none varied RECEIVER KIND — so list the axes the predicate actually reads, and vary each one in a
+  control. **And a control that does not use the CALLER's input shape is not a control for the
+  caller**: a helper's self-test passed lines with content while every real call site passes BLANK
+  lines, and a `Mandatory [string[]]` parameter rejects an empty ELEMENT (`[AllowEmptyCollection]`
+  does not cover it), so the helper threw on every real invocation while the step's verdict and its
+  artifact both looked normal — a guard that could never go green, caught only because a dispatch's
+  annotations arrived from something else. Test with the exact type and shape the call sites pass.
 - **The warm-design trap:** the speculative branch is easiest to write while the design is still warm
   — and twice in one day (2026-09-01) a lane built guard/fix machinery, could not make it FAIL under
   its own control, and deleted it with the measurement recorded in a comment at the site. An
   unexercisable branch in a guard is a false-green seed; deleting it with its evidence is the
   deliverable, not a loss.
+  **Its positive twin: a negative result is BANKED — in CODE at the gate, or in the RECORD**
+  (both 2026-09-01/02). A measured-wrong next step recorded where the next reader will stand — the
+  `MapIndex` follow-up marked *measured wrong: 0 fixed, 1 broken*, in the code at the site it would
+  be attempted from — and a commissioned fix **cancelled with its measurement attached** each cost
+  one line and save the next lane the whole attempt. The cancellation carries its own rule:
+  **a predicate the converter already holds beats a metadata field nothing reads** (the proposed
+  flag was dropped because an existing classifier already answers the same question, counts and all).
 - **⚠ A merge that touches `package_info.cs` must carry the matching `stdlib-metadata.txt` change —
   check it in the PREFLIGHT.** `stdlib-metadata.txt` is generated FROM the corpus (`go generate .` in
   `src/go2cs`, gated by `TestStdLibMetadataInSync` under the converter's own `go test`), and a corpus

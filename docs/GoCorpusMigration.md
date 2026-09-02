@@ -309,7 +309,12 @@ skip a step of it, so the non-negotiables are restated rather than referenced:
   under-counts — census with `git grep` or a raw filesystem walk.
 - **Classify emitted-vs-seeded by a sentinel modification time**, not by content: seeding puts every
   repository file in the staging root, so an overlay can never reveal a file the converter has
-  *stopped* emitting unless the classification is time-based.
+  *stopped* emitting unless the classification is time-based. **A hop's corpus-side DELETION bill is
+  a first-class number, and this classification is the only thing that can see it.** The 1.24 trial
+  measured **31 files** — 28 whose principal Go file is gone, 2 build-tag flips (`sync/map.cs` among
+  them), 1 other — and an unclassified stale sibling is not a diff but a COMPILE ERROR: the
+  `aliastypeparams` baseline flip emits the `_on` file while the seed still holds the `_off` one,
+  i.e. CS0102. State the bill with the emission census; do not discover it at the build.
 - **Overlay `.cs`, `.csproj` and `README.md`, excluding `*.cs.auto`.** Two knowns that are not drift:
   the root attribution files the converter re-copies (modified with an **empty** numstat — pure
   line-ending phantoms, restore them), and the **hand-owned-by-consequence** packages, whose single Go

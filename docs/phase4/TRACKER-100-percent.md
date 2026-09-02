@@ -3,7 +3,10 @@
 > **LIVING coordinator-maintained surface.** Updated at every banking window; every number here
 > is re-derived from [`docs/ValidatedTestPackages.md`](../ValidatedTestPackages.md) (the
 > authority) and the mailbox record at update time — never carried forward. If this file and
-> the roster disagree, the roster is right and this file is stale.
+> the roster disagree, the roster is right and this file is stale. ⚠ That applies to the **row
+> tables**, not only to the header: a distance table carried forward while its rows banked elsewhere
+> named two already-banked packages as unattempted and nearly sent a lane at them (2026-09-02).
+> Re-derive every table from the roster at each touch.
 > Scope: the **Windows validation roster** (the 100% goal's primary axis). The per-OS parity
 > axis is tracked in its own summary line below.
 

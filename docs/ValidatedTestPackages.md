@@ -414,7 +414,11 @@ expensive. Each exclusion is ruled individually, on measurement. Three classes a
   test set empty on windows/amd64. There is nothing to validate; the comparison is vacuous by Go's
   own definition.
 - **E2 — broken oracle.** Go's own suite fails on the reference side, so no clean differential
-  baseline exists to compare the conversion against.
+  baseline exists to compare the conversion against. ⚠ **An E2 exclusion is only as durable as the
+  HOST that measured it** — a failing oracle can be a property of one machine rather than of the
+  target — so a **fleet-wide re-probe comes before any machinery is built on the exclusion**
+  (`os/user`, 2026-09-01: the row banked from a host whose oracle probed clean; had no host been
+  clean, the honest form was an oracle-side host-limit disclosure, not a standing exclusion).
 - **E3 — the test's subject *is* the replaced representation.** The suite measures the raw memory
   model a safe managed runtime deliberately does not have, so any pass would be fabrication rather
   than implementation.

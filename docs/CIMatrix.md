@@ -75,6 +75,16 @@ gh workflow run os-matrix.yml -f goos=linux  -f stage=sweep-shard -f filter=comp
 There is no `all` value: one dispatch per flavor keeps each leg's artifacts, budget and verdict
 separate, which is what makes a wall readable. Dispatching all three is three cheap clicks.
 
+**A restricted-egress lane can dispatch — but not always by the same tool.** Dispatch capability is
+per-TOOL, not per-account: on a container whose egress policy blocks the Actions blob domain,
+`gh workflow run` returned **403** while the GitHub MCP `actions_run_trigger` returned **204** for
+the same workflow, so a lane that cannot trigger one way tries the other before reporting the
+workflow unavailable. The same policy blocks `go.dev` and every .NET CDN, so such a lane provisions
+its own toolchains by other routes — the Go release as a **module** from `proxy.golang.org`, and
+.NET from the distribution's own package rather than a Microsoft CDN. Those are facts about the
+lane, never about this workflow: what it measures is unchanged, and the readable channel for the
+results is the annotations route below.
+
 The Go toolchain is **derived, never written here** — the workflow reads `<GoStdLibVersion>` out of
 `src/version.props` and hands that exact release to `setup-go`. Both the converter and the sweep
 refuse a toolchain whose release differs from that pin (such a run is NOT MEASURED, never a
@@ -143,6 +153,10 @@ budget — **says how much it dropped** rather than truncating silently.
 and carry the finding to the status board or the fleet mailbox in the same words the fleet uses —
 a census as a census (assemblies produced, buckets by code), a sweep row as its arithmetic. A
 result that stays in a GitHub run page is a result nobody has.
+
+Relay a sweep row from its **comparison RECORD**, never from its pass line: the disclosed count is
+not on the pass line, so a row summarized from it under-reports by exactly the disclosures — and a
+disclosure count is half of what makes a row honest.
 
 ## Reading a run
 

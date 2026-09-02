@@ -149,6 +149,15 @@ The shapes available, none of them chosen here:
 Option 2 is the smaller surface and the better fit for the corpus's shape; it is recorded as an
 observation, not a ruling.
 
+**Amendment 2026-09-02 — the first casualty is pinned, and it sizes the keystone.** Read from
+frames the runner now carries (through check-run annotations alone, no artifact download), a
+converted program dies in **`syscall.init()` → `Getrlimit` → `rawSyscall`** — one package EARLIER
+than this finding predicted, which named `os`'s static constructor. The minimum keystone to reach
+`Main` is therefore **`rawSyscall` plus the `libc_getrlimit` trampoline**, and the consequence for
+scoping is the useful half: **neither an `os`-only nor an `fmt`-only scope is the right unit** —
+the entry point is reached before either package's own initialization runs. Option 2 above is the
+shape this sizing favors; it remains an observation pending the owner's read.
+
 ## 5. Known-unknowns this settles, and one it does not
 
 Settled from [`../CIMatrix.md`](../CIMatrix.md)'s darwin list:
