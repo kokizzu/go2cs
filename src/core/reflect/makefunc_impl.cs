@@ -64,15 +64,13 @@ public static ΔValue MakeFunc(ΔType typ, Func<slice<ΔValue>, slice<ΔValue>> 
     if (st is null || !GoReflect.TryFuncShape(st, out System.Type[]? ins, out System.Type[]? outs, out bool isVariadic)) {
         throw panic("reflect: call of MakeFunc with non-Func type");
     }
-    if (isVariadic) {
-        // The delegate factory would refuse the Span<T> tail anyway (no expression tree can carry a
-        // byref-like parameter); refusing HERE names the operation rather than the mechanism. The
-        // route that exists is the reverse of GoReflect.InvokeVariadic's typed family trampolines —
-        // unbuilt for want of a demonstrated consumer, exactly as Value.CallSlice records.
-        throw new NotImplementedException(
-            "reflect.MakeFunc of the variadic func type '" + GoReflect.GoTypeName(st) +
-            "' is not implemented (no demonstrated consumer; see GoReflect.MakeGoFuncDelegate)");
-    }
+    // A VARIADIC func (isVariadic) is no longer refused here: its delegate's tail lowers to a
+    // byref-like `params Span<T>` an expression tree cannot carry, and MakeGoFuncDelegate now carries
+    // it through the typed makeVariadicFunc{N}/makeVariadicAction{N} family (the reverse of
+    // InvokeVariadic's call trampolines, GoReflect.MakeVariadicDelegate.cs). The invoker below is
+    // shape-agnostic: `ins` already presents the variadic parameter as its slice, so a `func(int,
+    // ...int)` arrives as two args -- the int and the packed `[]int` -- exactly as the trampoline packs it.
+    _ = isVariadic;
     // A Go multi-return arrives back as the delegate's declared ValueTuple — captured from the
     // Invoke signature rather than re-derived from outs, so the packed tuple is the exact type the
     // delegate returns.

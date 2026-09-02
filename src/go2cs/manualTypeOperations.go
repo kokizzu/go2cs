@@ -676,6 +676,13 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.SetMapIndex": goosAny,
 		"New":               goosAny,
 		"MakeSlice":         goosAny,
+		// SliceAt's auto body called `unsafeslice` (a //go:linkname runtime helper minted as a
+		// throwing PartialStub) and then reinterpreted a raw unsafeheader.Slice{Data,Len,Cap} as a
+		// slice Value, which the managed model has no representation for. The hand-own validates (Go
+		// runtime.unsafeslice's three panics -- len < 0, nil pointer with length, elemSize*len
+		// overflow) and builds the ALIASING slice<T> over the pointer's storage via (ж<T>)(uintptr)p
+		// + unsafe.Slice<T>. See reflect/value_impl.cs.
+		"SliceAt":           goosAny,
 		"MakeMap":           goosAny,
 		"MakeMapWithSize":   goosAny,
 		// MakeFunc's auto body is runtime machinery end to end: it reinterprets the descriptor into
