@@ -21567,4 +21567,107 @@ and is **two** (`bits.Mul` → `Mul64`, `bits.Add` → `Add64`, each materialisi
 ValueTuple), so the attribute went on all four levels; on the outer pair alone it would have measured
 the wrong thing. Both consoles reference golib and `math/bits` by ABSOLUTE path, so the
 per-configuration `$(go2csPath)` Release trap cannot reach them. Neither is proposed for banking.
+## 2026-09-02 · `EnvironBlockWalk`'s golden is per-GOOS and only Windows can satisfy it — a behavioural-corpus instance of the L3 alias question, stated as a finding with no fix (lane C1, cloud Linux)
+
+**The observation, from a Linux CNR at master.** `EnvironBlockWalk/package_info.cs` is one of twelve
+files a Linux CNR reports as CHANGED, and it is the only one of the twelve that is informative: the
+other eleven belong to the six platform-exclusive packages whose byte-identical check CNR itself
+declares vacuous. This one type-checks, converts fully, and still differs — so it is a real,
+standing, per-GOOS golden difference rather than an artifact of an unmeasurable package.
+
+**What differs, and why.** The committed golden carries three imported aliases:
+
+    18: global using syscallꓸHandle   = go.syscall_package.ΔHandle;
+    19: global using syscallꓸSignal   = go.syscall_package.ΔSignal;
+    20: global using syscallꓸSockaddr = go.syscall_package.ΔSockaddr;
+
+and `syscall`'s own per-GOOS declarations are split:
+
+    GoTypeAlias          windows   linux   darwin
+    Handle                     1       0        0
+    Signal                     1       1        1
+    Sockaddr                   1       0        0
+
+A Linux conversion re-derives the imported-alias section from the linux flavour and therefore emits
+**only `syscallꓸSignal`**, dropping the two that flavour never declares. The golden was minted on
+Windows, where all three exist. Neither emission is wrong for its own flavour; the golden simply
+encodes one of them.
+
+**Why it is NOT platform-exclusive, which is the load-bearing distinction.** The program uses
+`syscall.Environ` and `syscall.Getenv` — both platform-neutral. It compiles and runs on every
+flavour, so it is correctly absent from F8's gating set (six windows-native packages), and marking it
+platform-exclusive to silence the diff would be false: it would suppress a package that genuinely
+works everywhere.
+
+**Same shape as the withdrawn L3 alias arc, arriving through the behavioural corpus instead of the
+stdlib.** That arc was withdrawn when a differential showed the Linux emission re-derives the section
+wholesale rather than merging a windows-seeded alias forward — measured on `syscall`'s flat
+`package_test_info.cs`. This is that same mechanism seen in a behavioural golden, and it is why the
+census the arc produced was kept even though its code was not: the shape is real, it simply is not
+the defect that arc's predicate targeted.
+
+**NO FIX PROPOSED, deliberately.** Three shapes exist and each has a real cost: mint the golden
+per-GOOS (a golden set per flavour, and every future behavioural golden inherits the question); make
+the goldens alias-insensitive (weakens a byte-exact comparison to silence one line); or accept that a
+Linux CNR reports one CHANGED file and diff it against this named baseline (free, and what the lane
+does today). Choosing between them is a goldens-strategy decision, not a lane call, and nothing is
+blocked meanwhile — the diff is one file, named here, and reproducible from any Linux CNR at master.
+
+**The general form.** A per-GOOS golden difference in a package that type-checks everywhere is NOT the
+same class as a platform-exclusive package, and the two must not be conflated: the first is a golden
+that encodes one flavour's emission, the second is code one flavour cannot compile. F8's marker
+answers the second and must not be reached for to silence the first.
+
+
+---
+
+## 2026-09-02 · The Linux-parity residual is FIVE rows and FOUR unrelated roots — the state of each, so the next reader starts from it rather than re-deriving (lane C1, cloud Linux)
+
+Master `64a064098` carries **Linux: 194 of 199 applicable**. The five unannotated rows are not a
+backlog of one kind; they are four unrelated roots plus one row waiting on another lane's arc. Stated
+per-row because the whole cost of this block is that the next lane does not re-derive it.
+
+| row | state | root | owner |
+|---|---|---|---|
+| `runtime/debug` | **CUT, banks `4 + 6`** | `TestPanicOnFault` takes the process down (mmaps PROT_READ, writes, expects SIGSEGV→panic; no SEH equivalent on the CLR) | C1 — rebases after train 11 |
+| `syscall` | **13 mints banked**, 14th approved | the posix_spawn seam, five refused `SysProcAttr` fields | C1 |
+| `net` | **ROOTED, not open** | `RawSockaddrUnix` 24 managed bytes vs the kernel's 110 | C2 (sockaddr seam) |
+| `net/http` | measured; needs a bigger host | managed h2 TLS handshake vs `WriteTimeout` under load | bank on G's WSL |
+| `internal/poll` | open, blocked | waits on the typed-nil widening arm | whichever lane takes that root |
+
+**`runtime/debug` — cut, not pending.** `TestPanicOnFault` is worth NINE verdicts rather than one: the
+host reports a single verdict (`TestFreeOSMemory`, first alphabetically) and tests 2..10 are a
+contiguous alphabetical tail of absences, because the process dies. Excluded through the `host-fatal`
+class — withdrawn from BOTH sides by name and COUNTED in disclosed — the row derives `4 + 6` from its
+own comparison record, matching its Windows columns plus the new entry.
+
+**`syscall` — the residue is three roots, not one row.** The thirteen `platform-skip` mints and the
+approved fourteenth (`TestExecPtrace`, `host-limit`) all discharge ONE property: the posix_spawn seam
+refusing `Credential`, `Cloneflags`, `Unshareflags`, `Chroot`, `Ptrace` — the same property `os/exec`'s
+`TestCredentialNoSetGroups` discloses, reached from a second package. What remains after them is
+**four rows across three unrelated roots**: `runtime_BeforeExec` unimplemented (`TestExec`), the
+EISCONN pair (`TestPassFD`, `TestSCMCredentials` — the sockaddr seam, C2's), and `Setegid`/`Seteuid`
+answering "operation not supported" (`TestSetuidEtc`).
+
+**`net` — rooted, and it is one defect, not 73.** The 73 unreported verdicts collapse to a single
+unixgram delivery failure: `sendto` returns ECONNREFUSED because the encoder hands the kernel a
+managed `RawSockaddrUnix` whose `Path` is a 16-byte reference where `sun_path[108]` is expected. The
+apparent "hang" is the same defect with a one-hour deadline (`someTimeout`) instead of a short one.
+Two independent measurements agree: zero queue depth on both sockets during the block, and
+ECONNREFUSED with `n=0` from a 60-line reproducer.
+
+**`net/http` — a host limit, not a Linux property.** The row's own committed `performance-margin`
+disclosure brackets the managed TLS handshake to (250 ms, 500 ms] on the reference box using the
+sibling test's `tryTimeouts` ladder as the instrument. A 4-core container misses the 500 ms rung under
+the full 1,345-test suite and PASSES the same tests filtered on an idle box — so the shortfall is
+load. No disclosure was minted, deliberately: doing so would convert a host-capacity limit into a
+permanent corpus claim AND destroy the instrument the existing entry depends on.
+
+**The general form, which is why this is a block rather than a list.** "Unannotated" is a property of
+the ROSTER, not a diagnosis: of five such rows here, one is cut and waiting on a train, one is rooted
+and reassigned by root, one is a host limit needing no code at all, one is blocked on another arc, and
+only the residue of the fifth is genuinely open work. A residual counted by rows over-states the
+work remaining by a factor of several, and counting it by ROOTS is what made the C1/C2 split
+resolvable by evidence rather than by territory.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
