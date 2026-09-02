@@ -325,6 +325,28 @@ public static partial class TypeExtensions
                     candidates.Add(method);
             }
 
+            // A RUNTIME-MINTED struct carries its promoted methods as its OWN declared statics, not
+            // as extension methods, so the scan above cannot see them: nothing writes an extension
+            // method for a type that did not exist when the process started. GoStructSynthesis emits
+            // them receiver-first (argument 0 is the struct), which is the same shape an extension
+            // method has, so they drop into the candidate list unchanged.
+            //
+            // They belong HERE, in the candidate source, and not in the entries table alone. Both
+            // GetGoMethodSetEntries and StructurallyImplements read this list — that is what the ONE
+            // SOURCE RULE means — and a promotion added downstream in the table gave
+            // reflect.Type.MethodByName the right answer while an interface assertion on the same
+            // type still answered MISS. Measured, on TestStructOfEmbeddedIfaceMethodCall.
+            if (key.element.IsValueType && key.element.IsDynamicType())
+            {
+                foreach (MethodInfo declared in key.element.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly))
+                {
+                    ParameterInfo[] parameters = declared.GetParameters();
+
+                    if (parameters.Length > 0 && parameters[0].ParameterType == key.element)
+                        candidates.Add(declared);
+                }
+            }
+
             return candidates;
         });
     }

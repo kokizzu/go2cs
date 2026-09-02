@@ -313,11 +313,18 @@ public static class GoStructSynthesis
         // Only the SEEDED fields are collected: the constructor below is the one thing emitted after
         // the field walk, and it touches nothing else.
         List<(FieldBuilder field, int slot)>? seeded = null;
+        // The EMBEDDED fields, kept as they are defined so the promoted-method emission below has
+        // the FieldBuilder to load from without re-deriving a name through clrFieldName's blank
+        // counter (which is stateful across the walk and would not replay).
+        List<(FieldBuilder field, Type fieldType)>? embedded = null;
         int blanks = 0;
 
         foreach (GoSynthField field in fields)
         {
             FieldBuilder fb = tb.DefineField(clrFieldName(field, ref blanks), field.Type, FieldAttributes.Public);
+
+            if (field.Embedded)
+                (embedded ??= []).Add((fb, field.Type));
 
             if (field.Tag.Length > 0)
                 fb.SetCustomAttribute(new CustomAttributeBuilder(s_goTagCtor, new object[] { field.Tag }));
@@ -363,6 +370,9 @@ public static class GoStructSynthesis
         if (seeded is not null)
             emitZeroConstructor(tb, seeded);
 
+        if (embedded is not null)
+            emitPromotedMethods(tb, embedded);
+
         Type minted = tb.CreateType();
 
         // The container must be CREATED, once, or the nested type's DeclaringType cannot be loaded
@@ -381,6 +391,171 @@ public static class GoStructSynthesis
     // order — which is already right. (The draft of this design proposed emitting an all-fields
     // constructor for ordering; it is a no-op, and would have added a fragile bijection between
     // parameter names and field names for nothing.)
+    /// <summary>
+    /// Emits, onto the type being minted, the methods its EMBEDDED fields promote — Go's
+    /// <c>StructOf</c> gives the new type its embedded field's method set, and a synthesized type
+    /// otherwise has none.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Emitted <b>static, receiver-first</b> — argument 0 is the struct itself — because that is the
+    /// shape the run-time method-set machinery already speaks: a converted Go method reaches
+    /// <c>GetGoMethodSetCandidates</c> as a C# EXTENSION method, which is static with the receiver as
+    /// argument 0, and <c>GoReflect</c> binds every entry by reading
+    /// <c>GetParameters()[0].ParameterType</c>. An ordinary instance method would carry no receiver
+    /// parameter and would not match that convention.
+    /// </para>
+    /// <para>
+    /// These are REAL <c>MethodInfo</c>s on the created type, which is the whole point of emitting
+    /// here rather than synthesizing a <c>DynamicMethod</c> beside the table: a DynamicMethod is
+    /// invisible to <see cref="System.Reflection.MethodInvoker"/> (its signature is never
+    /// materialised, so <c>MethodInvoker.Create</c> nil-dereferences), and <c>AdapterBinder</c> —
+    /// which every duck-typed interface assertion goes through — binds a shell by building
+    /// <c>MethodInvoker[]</c>. Measured: a DynamicMethod-based promotion satisfied the structural
+    /// probe and then killed the binder, so reflection saw the method and an interface assertion on
+    /// the same value crashed.
+    /// </para>
+    /// <para>
+    /// Go's rules, not conveniences: a VALUE embed promotes only value-receiver methods (the method
+    /// set of <c>T</c> carries those alone), an AMBIGUOUS selector — one name offered by two embeds
+    /// at the same depth — promotes neither, and a shape the forwarder cannot express is DECLINED
+    /// rather than emitted, so the type never advertises a method that cannot be called. An embedded
+    /// INTERFACE promotes stubs that PANIC with Go's own text (<c>embeddedIfaceMethStub</c>,
+    /// type.go:2721): the method must exist so the minted type satisfies the interface, and must
+    /// refuse when called.
+    /// </para>
+    /// </remarks>
+    /// <param name="tb">The type being minted.</param>
+    /// <param name="embedded">Its embedded fields, as defined, with their types.</param>
+    private static void emitPromotedMethods(TypeBuilder tb, List<(FieldBuilder field, Type fieldType)> embedded)
+    {
+        Dictionary<string, (FieldBuilder field, Type fieldType, MethodInfo target, bool isInterface)> promoted = [];
+        HashSet<string> ambiguous = [];
+
+        foreach ((FieldBuilder field, Type fieldType) in embedded)
+        {
+            if (fieldType.IsInterface)
+            {
+                foreach (golib.GoMethodSetEntry entry in golib.TypeExtensions.GetGoInterfaceMethodEntries(fieldType))
+                    record(entry.GoName, (field, fieldType, entry.Method, true));
+            }
+            else
+            {
+                // Go's method-set rule decides which set the embed contributes, and the two cases
+                // differ: an embedded *T promotes T's value AND pointer receiver methods, an
+                // embedded T only its value-receiver ones. ResolveReceiverElement is the ONE place
+                // that box-vs-value distinction is made at run time, so it is asked here rather than
+                // re-derived — a `ж<T>` field is the pointer case, anything else the value case.
+                golib.TypeExtensions.ResolveReceiverElement(fieldType, out Type element, out bool isPointer);
+
+                foreach (golib.GoMethodSetEntry entry in golib.TypeExtensions.GetGoMethodSetEntries(element, isPointer))
+                    record(entry.GoName, (field, fieldType, entry.Method, false));
+            }
+        }
+
+        foreach (string name in ambiguous)
+            promoted.Remove(name);
+
+        foreach ((string goName, (FieldBuilder field, Type fieldType, MethodInfo target, bool isInterface) item) in promoted)
+            emitOne(tb, goName, item.field, item.target, item.isInterface);
+
+        void record(string goName, (FieldBuilder, Type, MethodInfo, bool) item)
+        {
+            if (!promoted.TryAdd(goName, item))
+                ambiguous.Add(goName);
+        }
+    }
+
+    /// <summary>
+    /// Emits one promoted method: a static, receiver-first method named for the Go method, whose body
+    /// either forwards through the embedded field or panics with Go's embedded-interface message.
+    /// </summary>
+    private static void emitOne(TypeBuilder tb, string goName, FieldBuilder field, MethodInfo target, bool isInterface)
+    {
+        ParameterInfo[] targetParameters = target.GetParameters();
+
+        // An interface member carries no receiver parameter; a concrete method reaches here as an
+        // extension method whose argument 0 IS the receiver and must not be repeated.
+        int skip = isInterface ? 0 : 1;
+
+        if (!isInterface && targetParameters.Length == 0)
+            return;
+
+        Type[] signature = new Type[targetParameters.Length - skip + 1];
+        signature[0] = tb;
+
+        for (int i = skip; i < targetParameters.Length; i++)
+        {
+            if (targetParameters[i].ParameterType.IsByRef)
+                return;
+
+            signature[i - skip + 1] = targetParameters[i].ParameterType;
+        }
+
+        // Whether the forwarder must DEREFERENCE the embedded box before calling. An embedded *T
+        // whose promoted method takes a VALUE receiver is exactly this case: the field is `ж<T>` and
+        // the target wants `T`, which is legal Go (a *T's method set contains T's value-receiver
+        // methods) and needs a `.Value` read on the way. Without it the field type never matches the
+        // receiver and the method is silently declined — measured as `test-1-0 … fails to implement
+        // Iface`, the embedded *StructI arm, while the *StructIPtr arm beside it passed because its
+        // methods take the box directly.
+        MethodInfo? deref = null;
+
+        if (!isInterface)
+        {
+            Type receiver = targetParameters[0].ParameterType;
+
+            // A by-ref receiver cannot be satisfied from a field loaded by value.
+            if (receiver.IsByRef)
+                return;
+
+            if (!receiver.IsAssignableFrom(field.FieldType))
+            {
+                if (!GoReflect.TryBoxPointee(field.FieldType, out Type? pointee) || !receiver.IsAssignableFrom(pointee))
+                    return;
+
+                deref = field.FieldType.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance)?.GetGetMethod();
+
+                if (deref is null)
+                    return;
+            }
+        }
+
+        MethodBuilder mb = tb.DefineMethod(
+            goName,
+            MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig,
+            target.ReturnType,
+            signature);
+
+        ILGenerator il = mb.GetILGenerator();
+
+        if (isInterface)
+        {
+            il.Emit(OpCodes.Ldstr, "reflect: StructOf does not support methods of embedded interfaces");
+            il.EmitCall(OpCodes.Call, s_panicFactory, null);
+            il.Emit(OpCodes.Throw);
+            return;
+        }
+
+        // ldarga on argument 0 -- the struct arrives by value and ldfld needs its address.
+        il.Emit(OpCodes.Ldarga_S, (byte)0);
+        il.Emit(OpCodes.Ldfld, field);
+
+        if (deref is not null)
+        {
+            // `ж<T>.Value` returns `ref T`, so the ldobj is what turns the managed reference into
+            // the value the target's receiver parameter expects.
+            il.EmitCall(OpCodes.Callvirt, deref, null);
+            il.Emit(OpCodes.Ldobj, targetParameters[0].ParameterType);
+        }
+
+        for (int i = 1; i < signature.Length; i++)
+            il.Emit(OpCodes.Ldarg, i);
+
+        il.EmitCall(OpCodes.Call, target, null);
+        il.Emit(OpCodes.Ret);
+    }
+
     private static string clrFieldName(GoSynthField field, ref int blanks)
     {
         // An EMBEDDED field is recognized downstream by its `ʗ` prefix and by nothing else — not by
@@ -466,6 +641,10 @@ public static class GoStructSynthesis
         return result;
     }
 
+    // builtin.panic(object) -> PanicException, thrown by an embedded-interface stub. A GO panic and
+    // not a plain exception: reflect's own shouldPanic recovers it, and a managed exception is not a
+    // Go panic, so a NotImplementedException here surfaces as "did not panic" instead.
+    private static readonly MethodInfo s_panicFactory = typeof(builtin).GetMethod(nameof(builtin.panic), BindingFlags.Public | BindingFlags.Static, [typeof(object)])!;
     private static readonly ConstructorInfo s_goTypeCtor = typeof(GoTypeAttribute).GetConstructor([typeof(string)])!;
     private static readonly ConstructorInfo s_goTagCtor = typeof(GoTagAttribute).GetConstructor([typeof(string)])!;
     private static readonly ConstructorInfo s_goArrayDimsCtor = typeof(GoArrayDimsAttribute).GetConstructor([typeof(long[])])!;

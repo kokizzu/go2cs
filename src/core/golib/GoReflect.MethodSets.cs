@@ -118,6 +118,36 @@ public static partial class GoReflect
     }
 
     /// <summary>
+    /// Whether the Go type <paramref name="t"/> declares ANY method — value- OR pointer-receiver —
+    /// which is what Go's <c>rtype.Uncommon() != nil</c> reports.
+    /// </summary>
+    /// <remarks>
+    /// NOT the same question as <see cref="GoMethodCount"/>, and the difference is load-bearing where
+    /// Go's own guards are phrased over <c>Uncommon()</c>: the method SET of a value <c>T</c> excludes
+    /// pointer-receiver methods, so a struct whose only method is <c>func (p *T) Set(int)</c> answers
+    /// <c>GoMethodCount == 0</c> while Go still sees an uncommon section and applies its
+    /// <c>StructOf</c> refusals to it (<c>reflect.TestStructOfWithInterface</c>'s <c>SettablePointer</c>
+    /// arm, whose two-field embed Go rejects and a method-count test does not).
+    /// </remarks>
+    /// <param name="t">Managed type standing for the Go type, or <c>null</c>.</param>
+    /// <returns><c>true</c> when either method set is non-empty.</returns>
+    public static bool GoHasAnyMethods(Type? t)
+    {
+        if (t is null)
+            return false;
+
+        if (GoMethodTable(t).Length > 0)
+            return true;
+
+        // The pointer view of the same element: `ж<T>` sees T's value- AND pointer-receiver methods.
+        // An interface or an already-pointer type has nothing further to ask about.
+        if (t.IsInterface || TryBoxPointee(t, out _))
+            return false;
+
+        return golib.TypeExtensions.GetGoMethodSetEntries(t, valueIsPointer: true).Length > 0;
+    }
+
+    /// <summary>
     /// The Go NAME of the <paramref name="index"/>'th method of <paramref name="t"/>'s method set,
     /// in Go's method order (sorted by name).
     /// </summary>
