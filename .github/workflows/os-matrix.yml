@@ -392,6 +392,14 @@ jobs:
 
           # The step carries the BUILD's verdict. For darwin a red run with a bucketed census IS
           # the successful outcome of the exercise -- read the summary, not the checkmark.
+          # The summary is ALSO emitted as annotations. Both places a leg's evidence normally
+          # lands -- the job summary and the uploaded artifact -- are served from Azure blob
+          # storage, so a host whose egress allows api.github.com but denies that domain can read
+          # every step's CONCLUSION and none of its content. Annotations come back from the
+          # check-runs REST API itself, which keeps this leg readable from such a host (and puts
+          # the headline on the run page besides). Nothing above is replaced.
+          & ./.github/annotate-summary.ps1 -Title "census $goos/$rid" -Lines $summary
+
           exit $buildExit
 
       # -------------------------------------------------------------------------------------
@@ -473,6 +481,14 @@ jobs:
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
           Set-Content -LiteralPath (Join-Path $art "behavioral-smoke-$goos-$rid-summary.md") -Value $summary -Encoding utf8
 
+          # The summary is ALSO emitted as annotations. Both places a leg's evidence normally
+          # lands -- the job summary and the uploaded artifact -- are served from Azure blob
+          # storage, so a host whose egress allows api.github.com but denies that domain can read
+          # every step's CONCLUSION and none of its content. Annotations come back from the
+          # check-runs REST API itself, which keeps this leg readable from such a host (and puts
+          # the headline on the run page besides). Nothing above is replaced.
+          & ./.github/annotate-summary.ps1 -Title "behavioral-smoke $goos/$rid" -Lines $summary
+
           exit $runExit
 
       # -------------------------------------------------------------------------------------
@@ -551,6 +567,14 @@ jobs:
 
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
           Set-Content -LiteralPath (Join-Path $art "sweep-$goos-$rid-summary.md") -Value $summary -Encoding utf8
+
+          # The summary is ALSO emitted as annotations. Both places a leg's evidence normally
+          # lands -- the job summary and the uploaded artifact -- are served from Azure blob
+          # storage, so a host whose egress allows api.github.com but denies that domain can read
+          # every step's CONCLUSION and none of its content. Annotations come back from the
+          # check-runs REST API itself, which keeps this leg readable from such a host (and puts
+          # the headline on the run page besides). Nothing above is replaced.
+          & ./.github/annotate-summary.ps1 -Title "sweep $goos/$rid" -Lines $summary
 
           exit $sweepExit
 

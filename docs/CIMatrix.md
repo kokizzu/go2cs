@@ -99,6 +99,19 @@ Nothing is automatic and nothing is written back. Every leg uploads an `artifact
 (**7-day retention**, uploaded on failure too) and writes its headline table into the run's job
 summary, so a verdict is readable without downloading anything.
 
+Every leg ALSO echoes its summary as **annotations** (`.github/annotate-summary.ps1`). That is
+not decoration: a job summary and an uploaded artifact are both served from Azure blob storage
+(`productionresultssa*.blob.core.windows.net`, reached by a 302 from `api.github.com`), so a host
+whose egress policy allows the API and denies that domain — which is the position a
+restricted-egress cloud lane is in — can dispatch a run, read every job and step *conclusion*, and
+not one line of what the run measured. Annotations come back from
+`GET /repos/{owner}/{repo}/check-runs/{id}/annotations` as JSON from the API itself, so the
+headline survives that block, and it lands on the run page where a reader sees it without opening
+the summary tab. The summary and the artifact are written exactly as before; this is a second,
+cheaper-to-read copy. GitHub caps annotations at ten per level per step, so the helper packs the
+text into a few chunks, stays clear of the length cap, and — when a summary is longer than the
+budget — **says how much it dropped** rather than truncating silently.
+
 **The triggerer owns the relay.** Read the summary, download the artifact if the detail matters,
 and carry the finding to the status board or the fleet mailbox in the same words the fleet uses —
 a census as a census (assemblies produced, buckets by code), a sweep row as its arithmetic. A
