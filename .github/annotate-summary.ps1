@@ -34,8 +34,16 @@ param(
     [string] $Title,
 
     # The summary lines, in order. Emitted verbatim apart from workflow-command escaping.
+    #
+    # AllowEmptyString is load-bearing, not defensive: PowerShell rejects a Mandatory [string[]]
+    # argument the moment ONE element is the empty string, and every summary this is called with
+    # is full of them (a markdown table needs blank lines around it). Without it the helper throws
+    # `Cannot bind argument to parameter 'Lines' because it is an empty string` on every real
+    # call while passing any hand-written test whose lines all have content -- a helper that could
+    # never fire, which is how it shipped in the first version.
     [Parameter(Mandatory)]
     [AllowEmptyCollection()]
+    [AllowEmptyString()]
     [string[]] $Lines,
 
     # Per-annotation character budget. GitHub truncates beyond roughly 4 KB; stay clear of it.
