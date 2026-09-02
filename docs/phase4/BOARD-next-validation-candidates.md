@@ -21469,4 +21469,58 @@ Platform (Windows ≡ WSL to within ~1 ms on the same silicon), certificate/key 
 goroutines get dedicated threads). ⚠ And the ~21% non-signature remainder is **not `nistec`**: TLS
 1.3's default key share is **X25519** (`handshake_client.go:153`), so that segment is
 `crypto/ecdh` → `crypto/internal/edwards25519/field` plus the record layer and parsing.
+
+---
+
+## 2026-09-02 · `EnvironBlockWalk`'s golden is per-GOOS and only Windows can satisfy it — a behavioural-corpus instance of the L3 alias question, stated as a finding with no fix (lane C1, cloud Linux)
+
+**The observation, from a Linux CNR at master.** `EnvironBlockWalk/package_info.cs` is one of twelve
+files a Linux CNR reports as CHANGED, and it is the only one of the twelve that is informative: the
+other eleven belong to the six platform-exclusive packages whose byte-identical check CNR itself
+declares vacuous. This one type-checks, converts fully, and still differs — so it is a real,
+standing, per-GOOS golden difference rather than an artifact of an unmeasurable package.
+
+**What differs, and why.** The committed golden carries three imported aliases:
+
+    18: global using syscallꓸHandle   = go.syscall_package.ΔHandle;
+    19: global using syscallꓸSignal   = go.syscall_package.ΔSignal;
+    20: global using syscallꓸSockaddr = go.syscall_package.ΔSockaddr;
+
+and `syscall`'s own per-GOOS declarations are split:
+
+    GoTypeAlias          windows   linux   darwin
+    Handle                     1       0        0
+    Signal                     1       1        1
+    Sockaddr                   1       0        0
+
+A Linux conversion re-derives the imported-alias section from the linux flavour and therefore emits
+**only `syscallꓸSignal`**, dropping the two that flavour never declares. The golden was minted on
+Windows, where all three exist. Neither emission is wrong for its own flavour; the golden simply
+encodes one of them.
+
+**Why it is NOT platform-exclusive, which is the load-bearing distinction.** The program uses
+`syscall.Environ` and `syscall.Getenv` — both platform-neutral. It compiles and runs on every
+flavour, so it is correctly absent from F8's gating set (six windows-native packages), and marking it
+platform-exclusive to silence the diff would be false: it would suppress a package that genuinely
+works everywhere.
+
+**Same shape as the withdrawn L3 alias arc, arriving through the behavioural corpus instead of the
+stdlib.** That arc was withdrawn when a differential showed the Linux emission re-derives the section
+wholesale rather than merging a windows-seeded alias forward — measured on `syscall`'s flat
+`package_test_info.cs`. This is that same mechanism seen in a behavioural golden, and it is why the
+census the arc produced was kept even though its code was not: the shape is real, it simply is not
+the defect that arc's predicate targeted.
+
+**NO FIX PROPOSED, deliberately.** Three shapes exist and each has a real cost: mint the golden
+per-GOOS (a golden set per flavour, and every future behavioural golden inherits the question); make
+the goldens alias-insensitive (weakens a byte-exact comparison to silence one line); or accept that a
+Linux CNR reports one CHANGED file and diff it against this named baseline (free, and what the lane
+does today). Choosing between them is a goldens-strategy decision, not a lane call, and nothing is
+blocked meanwhile — the diff is one file, named here, and reproducible from any Linux CNR at master.
+
+**The general form.** A per-GOOS golden difference in a package that type-checks everywhere is NOT the
+same class as a platform-exclusive package, and the two must not be conflated: the first is a golden
+that encodes one flavour's emission, the second is code one flavour cannot compile. F8's marker
+answers the second and must not be reached for to silence the first.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
