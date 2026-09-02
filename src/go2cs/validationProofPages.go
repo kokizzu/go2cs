@@ -226,14 +226,24 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 		configuration = "Debug"
 	}
 
+	// The oracle clause is appended to the SAME sentence, not a new one — beside the configuration
+	// is what was asked for, and a reader should never have to reconcile two separate provenance
+	// lines that could in principle disagree. Omitted entirely when the probe could not run (a
+	// testComparison built before this field existed, or by hand in a test fixture, or a genuine
+	// best-effort miss); the sentence still reads correctly without it.
+	oracleClause := ""
+	if comparison.Environment.OracleGoVersion != "" {
+		oracleClause = fmt.Sprintf(", oracle `%s`", comparison.Environment.OracleGoVersion)
+	}
+
 	if configuration == "Release" {
 		tiering := "off"
 		if comparison.Environment.Tiered {
 			tiering = "on"
 		}
-		fmt.Fprintf(&page, "\nMeasured at `Release` (tiered JIT %s).\n", tiering)
+		fmt.Fprintf(&page, "\nMeasured at `Release` (tiered JIT %s)%s.\n", tiering, oracleClause)
 	} else {
-		fmt.Fprintf(&page, "\nMeasured at `%s`.\n", configuration)
+		fmt.Fprintf(&page, "\nMeasured at `%s`%s.\n", configuration, oracleClause)
 	}
 
 	if skipped > 0 {

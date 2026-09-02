@@ -5488,15 +5488,45 @@ func testHostRunEnv(options Options) []string {
 type testEnvironmentRecord struct {
 	Configuration string `json:"configuration"`
 	Tiered        bool   `json:"tiered"`
+
+	// OracleGoVersion is the bare `go version` output of the toolchain that actually ran the
+	// oracle `go test -json` child for THIS comparison — see oracleGoVersion below. Distinct from
+	// the test manifest's GoVersion (the converter's own runtime.Version(), i.e. what built go2cs
+	// itself): this field answers "what ran the Go side of the comparison", which is unanswerable
+	// from evidence after the fact without it (coordinator ruling, 2026-09-02, from a container
+	// whose bare `go` silently resolved a different release than the pinned GOROOT). Omitted, not
+	// empty-stringed, when the probe itself could not run — a comparison that already completed
+	// must not be invalidated by a version probe failing after the fact.
+	OracleGoVersion string `json:"oracleGoVersion,omitempty"`
 }
 
 // testEnvironmentFromOptions derives the record from the same two options testHostRunEnv reads, so
-// the two can never disagree about what "tiered" means for a given configuration.
+// the two can never disagree about what "tiered" means for a given configuration. Pure and
+// side-effect-free by design (see TestTestEnvironmentRecordRoundTrips) — OracleGoVersion is filled
+// in separately by the caller, since answering it means actually running a child process.
 func testEnvironmentFromOptions(options Options) testEnvironmentRecord {
 	return testEnvironmentRecord{
 		Configuration: options.testConfig,
 		Tiered:        !(options.testConfig == "Release" && !options.testTiered),
 	}
+}
+
+// oracleGoVersion runs `go version` through the EXACT SAME child-invocation mechanism the oracle
+// `go test` command itself uses (runCommandWithTimeout, in the same working directory, under the
+// same options-derived environment) — so it resolves the SAME `go` on the SAME PATH the real oracle
+// run just did, not whatever `go env GOROOT` claims. GOROOT is a claim about where the toolchain
+// SHOULD be; this is a direct observation of the toolchain that ACTUALLY ran, closing the gap a
+// container class exposed: bare `go` there resolved 1.24.7 against the corpus's pinned 1.23.12 with
+// GOROOT reading correctly the whole time. Best-effort: a comparison the real oracle run already
+// completed must not be invalidated by this probe failing after the fact, so an error answers "".
+func oracleGoVersion(inputPath string, options Options) string {
+	output, err := runCommandWithTimeout(options.testTimeout, inputPath, options, "go", "version")
+
+	if err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(output)
 }
 
 // publishedTestHostPath is the single-file executable publishTestHost produces: the test project's
@@ -6304,6 +6334,10 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	goArgs = append(goArgs, ".")
 	goOutput, goErr := runCommandWithTimeout(testChildTimeout(options), inputPath, options, "go", goArgs...)
 
+	// Captured immediately after the real oracle run, same directory, same options — see
+	// oracleGoVersion's own doc comment for why this is not `go env GOROOT`.
+	oracleVersion := oracleGoVersion(inputPath, options)
+
 	// The converted side runs the PUBLISHED single-file host (the host-limit retirement) — the
 	// same relocatable artifact an os/exec-style test copies and re-execs, so what the comparison
 	// measures is the deployment shape the verdicts claim.
@@ -6362,10 +6396,12 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	if !manifestHasEligibleTests(manifest) {
 		status = "not-applicable"
 	}
+	environment := testEnvironmentFromOptions(options)
+	environment.OracleGoVersion = oracleVersion
 	result := testComparison{
 		Package: filepath.Base(inputPath), Status: status, Go: goResults, CSharp: csResults,
 		Matched: true, Skipped: []string{}, Disclosed: []string{}, Excluded: excludedDeclarations(manifest), Errors: []string{},
-		Gated: gated, Withdrawn: []string{}, Environment: testEnvironmentFromOptions(options),
+		Gated: gated, Withdrawn: []string{}, Environment: environment,
 	}
 	if disclosureErr != nil {
 		result.Matched = false

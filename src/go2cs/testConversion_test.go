@@ -4785,6 +4785,13 @@ func TestTestEnvironmentRecordRoundTrips(t *testing.T) {
 				t.Errorf("record.Tiered (%v) and testHostRunEnv's TC0 (%v) describe the SAME run and must disagree in sign — an untiered run cannot record Tiered:true", record.Tiered, gotRunEnvTC0)
 			}
 
+			// OracleGoVersion is filled in separately by the caller (compareGoAndConvertedTests),
+			// never by testEnvironmentFromOptions — it names a child-process observation, not
+			// something derivable from options alone. Set it here to a synthetic value so the round
+			// trip below actually exercises the field, matching how production code assembles the
+			// full record before marshaling it.
+			record.OracleGoVersion = "go version go1.23.12 " + runtime.GOOS + "/" + runtime.GOARCH
+
 			// The round trip: what a proof-page regeneration reads back is exactly what this
 			// comparison run recorded, byte for byte through JSON — not just equal Go values.
 			data, err := json.Marshal(record)
@@ -4798,6 +4805,17 @@ func TestTestEnvironmentRecordRoundTrips(t *testing.T) {
 			}
 			if roundTripped != record {
 				t.Errorf("round trip changed the record: %+v -> %s -> %+v", record, data, roundTripped)
+			}
+
+			// omitempty: a comparison whose version probe genuinely missed must not print a
+			// misleading empty string into every proof page and comparison record going forward.
+			record.OracleGoVersion = ""
+			data, err = json.Marshal(record)
+			if err != nil {
+				t.Fatalf("marshal (empty OracleGoVersion): %v", err)
+			}
+			if strings.Contains(string(data), "oracleGoVersion") {
+				t.Errorf("OracleGoVersion is empty but still appeared in the record: %s", data)
 			}
 		})
 	}
