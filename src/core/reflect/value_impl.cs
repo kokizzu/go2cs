@@ -2920,11 +2920,12 @@ public static ΔType ArrayOf(nint length, ΔType elem) {
     nint[] dims = new nint[1 + (elemDims is null ? 0 : elemDims.Length)];
     dims[0] = length;
     elemDims?.CopyTo(dims, 1);
-    // Go's own address-space guard, over the size the bridge can know — GoSizeOf answers -1 for a
-    // type whose Go size is not derivable (a dimension-less array), and an unknown element size is
-    // no basis for a panic, so the check applies exactly where it has an answer.
-    nint elemSize = GoReflect.GoSizeOf(st, elemDims);
-    if (elemSize > 0 && (nuint)length > nuint.MaxValue / (nuint)elemSize) {
+    // Go's own address-space guard, over the size the bridge can know — TryGoSizeOf answers
+    // derivability separately from the size (a dimension-less array is unknowable and no basis
+    // for a panic), which is what keeps an element of 2^63 bytes and up a SIZE here rather than
+    // the negative number the old signed answer made it, silently skipping this very check.
+    if (GoReflect.TryGoSizeOf(st, elemDims, out nuint elemSize) && elemSize > 0 &&
+        (nuint)length > nuint.MaxValue / elemSize) {
         throw panic("reflect.ArrayOf: array size would exceed virtual address space");
     }
     return toType(abi.synthType(typeof(array<>).MakeGenericType(st), dims));
@@ -3172,7 +3173,13 @@ public static ΔType StructOf(slice<StructField> fields) {
     }
     var synth = new GoSynthField[(int)n];
     @string pkgpath = ""u8;
-    nuint total = 0;
+    // Go's structOf accumulator, in Go's own three variables and Go's own width. `size` is a
+    // uintptr there and must be unsigned here: a legal Go struct reaches 2^64-3, which is what
+    // TestStructOfTooLarge builds out of two half-address-space arrays, and a signed accumulator
+    // goes negative exactly where the four overflow guards below are supposed to fire.
+    nuint size = 0;
+    nuint typalign = 1;
+    nuint lastzero = 0;
     var seen = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
     for (nint i = 0; i < n; i++) {
         StructField field = fields[i];
@@ -3239,22 +3246,58 @@ public static ΔType StructOf(slice<StructField> fields) {
         }
         nint[]? dims = arrayDimsOfReflectType(field.Type);
         nint[]? keyDims = keyDimsOfReflectType(field.Type);
-        // Go's address-space guard, over the sizes the bridge can know — GoSizeOf answers -1 for a
-        // type whose Go size is not derivable (a dimension-less array), and an unknown field size is
-        // no basis for a panic, so the accumulation covers exactly the fields that have an answer.
-        nint fieldSize = GoReflect.GoSizeOf(ft, GoReflect.KindOf(ft) == GoReflect.Array ? dims : null);
-        if (fieldSize > 0) {
-            nuint grown = total + (nuint)fieldSize;
-            if (grown < total) {
+        // Go's address-space guards, all FOUR of them and in Go's order (type.go's structOf):
+        //
+        //     offset := align(size, uintptr(ft.Align_)); if offset < size { panic(...) }
+        //     size = offset + ft.Size_;                  if size < offset { panic(...) }
+        //     ... size++ for a trailing zero-sized field, and align(size, typalign) at the end,
+        //         each with its own wrap test
+        //
+        // They are wraparound tests on an UNSIGNED accumulator, which is why the width above is
+        // nuint. TryGoSizeOf answers derivability separately from the size, so a dimension-less
+        // array is still "no basis for a panic" while a 2^63-and-up field is a real size rather
+        // than a negative number the old `fieldSize > 0` gate silently skipped.
+        if (GoReflect.TryGoSizeOf(ft, GoReflect.KindOf(ft) == GoReflect.Array ? dims : null, out nuint fieldSize)) {
+            nuint fieldAlign = (nuint)GoReflect.GoAlignOf(ft);
+            if (fieldAlign == 0) {
+                fieldAlign = 1;
+            }
+            nuint offset = (size + fieldAlign - 1) / fieldAlign * fieldAlign;
+            if (offset < size) {
                 throw panic("reflect.StructOf: struct size would exceed virtual address space");
             }
-            total = grown;
+            if (fieldAlign > typalign) {
+                typalign = fieldAlign;
+            }
+            size = offset + fieldSize;
+            if (size < offset) {
+                throw panic("reflect.StructOf: struct size would exceed virtual address space");
+            }
+            if (fieldSize == 0) {
+                lastzero = size;
+            }
         }
         // The dims rendering comes from abi.descriptorDimsKey and is not restated, so a shape key
         // and the descriptor it stands for can never separate the same two types differently.
         string dimsKey = abi.descriptorDimsKey(dims, null, chanDirOfReflectType(field.Type), keyDims);
         synth[(int)i] = new GoSynthField(name, ft, (@string)field.Tag, field.Anonymous, dims, keyDims, dimsKey);
     }
+    // Go's trailing byte for a non-zero struct ending in a zero-sized field, so that a pointer
+    // past the last field cannot escape the object -- and its own wrap test, which is the third
+    // of the four cases the test exercises.
+    if (size > 0 && lastzero == size) {
+        size++;
+        if (size == 0) {
+            throw panic("reflect.StructOf: struct size would exceed virtual address space");
+        }
+    }
+
+    // And the whole struct's own alignment, the fourth.
+    nuint aligned = (size + typalign - 1) / typalign * typalign;
+    if (aligned < size) {
+        throw panic("reflect.StructOf: struct size would exceed virtual address space");
+    }
+
     return toType(abi.synthType(GoStructSynthesis.SynthesizeStructType(synth, pkgpath)));
 }
 

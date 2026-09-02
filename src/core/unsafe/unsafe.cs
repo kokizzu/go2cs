@@ -507,8 +507,14 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
 // INSTANCE. Marshal.SizeOf remains the fallback for the shapes GoSizeOf declines (-1), so no
 // operand that resolves today stops resolving.
 public static uintptr Sizeof<T>(T x) {
-    nint size = GoReflect.GoSizeOf(typeof(T), GoReflect.ArrayDimsOfValue(x));
-    return size >= 0 ? (uintptr)size : (uintptr)Marshal.SizeOf<T>();
+    // TryGoSizeOf answers derivability separately from the size, which matters here: the old
+    // signed form reported a type of 2^63 bytes and up as -1, indistinguishable from
+    // "unknown", and this line then answered with Marshal.SizeOf<T>() -- a DIFFERENT layout
+    // model's number for a type whose Go size was in fact known exactly. The marshalled
+    // fallback now applies only where the Go size genuinely is not derivable.
+    return GoReflect.TryGoSizeOf(typeof(T), GoReflect.ArrayDimsOfValue(x), out nuint size)
+        ? (uintptr)size
+        : (uintptr)Marshal.SizeOf<T>();
 }
 
 // Offsetof returns the offset within the struct of the field represented by x,

@@ -90,35 +90,75 @@ public static partial class GoReflect
     /// </summary>
     public static nint GoSizeOf(Type t, nint[]? arrayDims = null)
     {
-        return goSizeOf(t, arrayDims, 0);
+        return TryGoSizeOf(t, arrayDims, out nuint size) && size <= (nuint)nint.MaxValue ? (nint)size : -1;
     }
 
-    private static nint goSizeOf(Type t, nint[]? arrayDims, int depth)
+    /// <summary>
+    /// The Go (amd64) size of the type <paramref name="t"/> represents, as the UNSIGNED width Go
+    /// itself uses, with derivability answered by the return value rather than by the size.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="GoSizeOf"/>'s <c>-1</c> answers TWO different questions, and they stop being the
+    /// same question at 2^63: Go's size is a <c>uintptr</c> and a legal Go struct really does reach
+    /// 2^64-3 (<c>reflect.TestStructOfTooLarge</c> builds exactly that from two half-address-space
+    /// arrays), where a signed answer goes NEGATIVE and is indistinguishable from "not derivable".
+    /// Every caller of the signed form read the sentinel as "unknown", so a huge type did not merely
+    /// lose precision — <c>unsafe.Sizeof</c> fell back to the managed marshalled size, a synthesized
+    /// descriptor left <c>Size_</c> unstamped, and <c>reflect.StructOf</c>/<c>ArrayOf</c> skipped the
+    /// address-space guard the huge type was the whole point of.
+    /// </para>
+    /// <para>
+    /// A size that overflows the address space is reported as NOT derivable rather than saturated:
+    /// Go answers that case with a panic inside the type constructor, so the panic stays where Go
+    /// puts it and this reports only what it can describe.
+    /// </para>
+    /// </remarks>
+    public static bool TryGoSizeOf(Type t, nint[]? arrayDims, out nuint size)
     {
+        return tryGoSizeOf(t, arrayDims, 0, out size);
+    }
+
+    private static bool tryGoSizeOf(Type t, nint[]? arrayDims, int depth, out nuint size)
+    {
+        size = 0;
+
         if (depth > MaxLayoutDepth)
-            return -1;
+            return false;
 
         switch (KindOf(t))
         {
-            case Bool or Int8 or Uint8: return 1;
-            case Int16 or Uint16: return 2;
-            case Int32 or Uint32 or Float32: return 4;
-            case Int or Uint or Int64 or Uint64 or Uintptr or Float64 or Complex64: return 8;
-            case Complex128 or String or Interface: return 16;
-            case Slice: return 24;
-            case Pointer or UnsafePointer or Map or Chan or Func: return 8;
+            case Bool or Int8 or Uint8: size = 1; return true;
+            case Int16 or Uint16: size = 2; return true;
+            case Int32 or Uint32 or Float32: size = 4; return true;
+            case Int or Uint or Int64 or Uint64 or Uintptr or Float64 or Complex64: size = 8; return true;
+            case Complex128 or String or Interface: size = 16; return true;
+            case Slice: size = 24; return true;
+            case Pointer or UnsafePointer or Map or Chan or Func: size = 8; return true;
             case Array:
             {
-                if (arrayDims is not { Length: > 0 })
-                    return -1;
+                if (arrayDims is not { Length: > 0 } || arrayDims[0] < 0)
+                    return false;
 
-                nint elemSize = goSizeOf(ElementType(t)!, arrayDims.Length > 1 ? arrayDims[1..] : null, depth + 1);
-                return elemSize < 0 ? -1 : elemSize * arrayDims[0];
+                if (!tryGoSizeOf(ElementType(t)!, arrayDims.Length > 1 ? arrayDims[1..] : null, depth + 1, out nuint elemSize))
+                    return false;
+
+                nuint length = (nuint)arrayDims[0];
+
+                if (elemSize != 0 && length > nuint.MaxValue / elemSize)
+                    return false;
+
+                size = elemSize * length;
+                return true;
             }
             case Struct:
-                return structLayoutOf(t, depth).Size;
+            {
+                StructLayout layout = structLayoutOf(t, depth);
+                size = layout.Size;
+                return layout.Known;
+            }
             default:
-                return -1;
+                return false;
         }
     }
 
@@ -361,16 +401,19 @@ public static partial class GoReflect
                 if (arrayDims[0] <= 0)
                     return 0;
 
-                nint elemSize = goSizeOf(elem, elemDims, depth + 1);
+                // The prefix arithmetic below is nint, so an element too large to name there is
+                // an unanswerable PtrBytes rather than a truncated one.
+                if (!tryGoSizeOf(elem, elemDims, depth + 1, out nuint elemSizeBytes) || elemSizeBytes > (nuint)nint.MaxValue)
+                    return -1;
 
-                return elemSize < 0 ? -1 : (arrayDims[0] - 1) * elemSize + elemPtrBytes;
+                return (arrayDims[0] - 1) * (nint)elemSizeBytes + elemPtrBytes;
             }
 
             case Struct:
             {
                 StructLayout layout = structLayoutOf(t, depth);
 
-                if (layout.Size < 0)
+                if (!layout.Known)
                     return -1;
 
                 GoFieldInfo[] fields = GoFields(t);
@@ -420,7 +463,7 @@ public static partial class GoReflect
     /// </remarks>
     public static nint[]? GoFieldOffsets(Type t)
     {
-        return KindOf(t) == Struct && structLayoutOf(t, 0) is { Size: >= 0 } layout ? layout.Offsets : null;
+        return KindOf(t) == Struct && structLayoutOf(t, 0) is { Known: true } layout ? layout.Offsets : null;
     }
 
     /// <summary>The Go (amd64) alignment of a type (struct = max field alignment; array = element alignment).</summary>
@@ -448,7 +491,11 @@ public static partial class GoReflect
     // -------- the one struct layout walk (offsets, size and alignment from a single pass) --------
 
     /// <summary>A struct's Go layout: per-field offsets, the aligned total size (-1 when unknowable), and the struct's own alignment.</summary>
-    private readonly record struct StructLayout(nint[] Offsets, nint Size, nint Align);
+    // Size is UNSIGNED and derivability is its own flag rather than a negative sentinel: a legal
+    // Go struct reaches 2^64-3, where a signed size is negative and indistinguishable from
+    // "unknown" (see TryGoSizeOf). The pass already computed this bool as a local; it now carries
+    // it instead of encoding it.
+    private readonly record struct StructLayout(nint[] Offsets, nuint Size, nint Align, bool Known);
 
     private static readonly ConcurrentDictionary<Type, StructLayout> s_structLayouts = new();
 
@@ -480,11 +527,11 @@ public static partial class GoReflect
             return cached;
 
         if (depth > MaxLayoutDepth)
-            return new StructLayout([], -1, 8);
+            return new StructLayout([], 0, 8, false);
 
         GoFieldInfo[] fields = GoFields(t);
         nint[] offsets = new nint[fields.Length];
-        nint size = 0;
+        nuint size = 0;
         nint maxAlign = 1;
         bool sizeKnown = true;
 
@@ -498,22 +545,45 @@ public static partial class GoReflect
                 continue;
 
             nint[]? dims = KindOf(field.Type) == Array ? field.ArrayDims : null;
-            nint fieldSize = goSizeOf(field.Type, dims, depth + 1);
 
-            if (fieldSize < 0)
+            if (!tryGoSizeOf(field.Type, dims, depth + 1, out nuint fieldSize))
             {
                 sizeKnown = false;
                 continue;
             }
 
-            size = (size + align - 1) / align * align;
-            offsets[i] = size;
-            size += fieldSize;
+            nuint alignment = (nuint)align;
+            nuint aligned = (size + alignment - 1) / alignment * alignment;
+
+            // Rounding up, adding a field, or naming an offset past the address space describes no
+            // layout this can report. Go answers each of them with a panic inside StructOf, so the
+            // panic stays there and the QUERY simply says it cannot tell. The offset ceiling is the
+            // narrower of the three -- Offsets is nint, and only a struct already past 2^63 can
+            // reach it, which is the same population as the other two.
+            if (aligned < size || aligned > (nuint)nint.MaxValue)
+            {
+                sizeKnown = false;
+                continue;
+            }
+
+            offsets[i] = (nint)aligned;
+            size = aligned + fieldSize;
+
+            if (size < aligned)
+            {
+                sizeKnown = false;
+            }
         }
 
+        nuint totalAlign = (nuint)maxAlign;
+        nuint total = sizeKnown ? (size + totalAlign - 1) / totalAlign * totalAlign : 0;
+
+        if (sizeKnown && total < size)
+            sizeKnown = false;
+
         StructLayout layout = sizeKnown
-            ? new StructLayout(offsets, (size + maxAlign - 1) / maxAlign * maxAlign, maxAlign)
-            : new StructLayout([], -1, maxAlign);
+            ? new StructLayout(offsets, total, maxAlign, true)
+            : new StructLayout([], 0, maxAlign, false);
 
         s_structLayouts[t] = layout;
         return layout;
@@ -681,12 +751,14 @@ public static partial class GoReflect
     /// </remarks>
     public static byte[]? GoGCMaskOf(Type t, nint[]? arrayDims = null)
     {
-        nint size = GoSizeOf(t, arrayDims);
-
-        if (size < 0)
+        // A mask is one BYTE per pointer word, so a type large enough to need more words than an
+        // array can hold has no representable mask -- reported as no mask at all, which is what Go
+        // reports for a noscan span. That was already the outcome through GoSizeOf's negative
+        // sentinel; it is now the stated reason rather than an accident of the signed width.
+        if (!TryGoSizeOf(t, arrayDims, out nuint size) || size / (nuint)GoWordSize > int.MaxValue)
             return null;
 
-        byte[] mask = new byte[size / GoWordSize];
+        byte[] mask = new byte[size / (nuint)GoWordSize];
 
         return fillGCMask(mask, 0, t, arrayDims, 0) ? mask : null;
     }
@@ -750,10 +822,13 @@ public static partial class GoReflect
                 if (elemPtrBytes == 0)
                     return true;
 
-                nint elemSize = goSizeOf(elem, elemDims, depth + 1);
-
-                if (elemSize <= 0)
+                if (!tryGoSizeOf(elem, elemDims, depth + 1, out nuint elemSizeBytes) ||
+                    elemSizeBytes == 0 || elemSizeBytes > (nuint)nint.MaxValue)
+                {
                     return false;
+                }
+
+                nint elemSize = (nint)elemSizeBytes;
 
                 for (nint i = 0; i < arrayDims[0]; i++)
                 {
@@ -773,7 +848,7 @@ public static partial class GoReflect
             {
                 StructLayout layout = structLayoutOf(t, depth);
 
-                if (layout.Size < 0)
+                if (!layout.Known)
                     return false;
 
                 GoFieldInfo[] fields = GoFields(t);

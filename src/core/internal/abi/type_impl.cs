@@ -178,9 +178,10 @@ private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, 
     t.funcParamDims = funcParamDims;
     t.chanDir = chanDir;
     t.keyDims = keyDims;
-    nint size = GoReflect.GoSizeOf(st, arrayDims);
-    if (size >= 0) {
-        t.Size_ = (uintptr)(nuint)size;
+    // Derivability is the question, not the sign: a Go size of 2^63 and up came back -1 from
+    // the signed form and left Size_ UNSTAMPED on a type whose size was known exactly.
+    if (GoReflect.TryGoSizeOf(st, arrayDims, out nuint size)) {
+        t.Size_ = (uintptr)size;
         nint align = GoReflect.GoAlignOf(st);
         t.Align_ = (uint8)align;
         t.FieldAlign_ = (uint8)align;
