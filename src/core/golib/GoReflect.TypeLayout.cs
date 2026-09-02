@@ -590,13 +590,32 @@ public static partial class GoReflect
     }
 
     /// <summary>
-    /// The array dims of an array-typed STRUCT FIELD, recovered from a cached zero instance of
-    /// the declaring struct — the converter emits the Go dimension as a field initializer
+    /// The array dims of an array-typed STRUCT FIELD — from the field's <c>[GoArrayDims]</c> STAMP
+    /// when it carries one, and otherwise recovered from a cached zero instance of the declaring
+    /// struct, because the converter emits the Go dimension as a field initializer
     /// (<c>= new(4)</c>, nested <c>new(128, () =&gt; new(4))</c>) that the generated parameterless
-    /// constructor runs, so the dims are already in the emitted C# with no attribute needed.
+    /// constructor runs, so a CONVERTED struct's dims are already in the emitted C# with no
+    /// attribute needed.
     /// </summary>
+    /// <remarks>
+    /// The stamp is consulted FIRST, and the order is the whole point rather than an optimization.
+    /// A struct minted by <see cref="GoStructSynthesis"/> — every <c>reflect.StructOf</c> result —
+    /// knows its array fields' dims at MINT time and now stamps them; asking for those dims used to
+    /// mean instantiating the struct and MEASURING the field, which allocates. Go computes such a
+    /// length rather than allocating it, so a `StructOf` with a 2^63-element array field answered
+    /// Go's question instantly and killed the process here: reflect's <c>TestStructOfTooLarge</c>,
+    /// reported as an infrastructure-error because no failure survives to be reported.
+    ///
+    /// The zero-instance route stays for the converted case, where the datum genuinely lives in the
+    /// initializer and there is no stamp — and note that the cache itself is shared with
+    /// <see cref="FieldChanDir"/>, which recovers a channel field's direction the same way and is
+    /// untouched by this.
+    /// </remarks>
     public static nint[]? FieldArrayDims(Type declaringType, FieldInfo field)
     {
+        if (FieldStampedDims(field) is { Length: > 0 } stamped)
+            return stamped;
+
         if (!declaringType.IsValueType)
             return null;
 
