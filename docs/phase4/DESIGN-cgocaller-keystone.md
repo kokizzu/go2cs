@@ -292,9 +292,38 @@ costs nothing and is worth more than a map that merely works today.
    syscall a converted program makes. **So this revises §3.1's implication that a keystone plus a
    real `FuncPCABI0` reaches `Main`: it does not.** Those two make the CALL happen; the call site's
    own marshalling is what makes it correct, and on this path the two are needed together. Sizing
-   consequence: the reach-`Main` unit is keystone + `FuncPCABI0` + the pointer call sites on the
-   init path, and the last of those is not enumerated here — a census of pointer-bearing
-   trampoline call sites in the init closure is owed before an implementation is scheduled.
+   consequence: the reach-`Main` unit is keystone + `FuncPCABI0` + the pointer call sites, and
+   **that last term is now censused** (it was named as owed here; this is the answer).
+
+   **THE CENSUS — half the darwin keystone surface is pointer-bearing.** Measured two ways at
+   master `62c63b572`, because a census keyed on one spelling under-reports by every other:
+
+   | | emitted C# | Go source |
+   |---|--:|--:|
+   | keystone call sites | **149** | 151 |
+   | ... passing a managed address | **75** | 66 |
+   | ... pure scalars | 74 | 85 |
+   | distinct trampolines | **126** | **126** |
+   | ... pointer-bearing | **72** | 62 |
+
+   The two derivations agree EXACTLY on the trampoline total (126) and the emission side is the
+   operative one. The 10-trampoline gap is explained rather than split: `getcwd`, `getfsstat`,
+   `mlock`, `mprotect`, `msync`, `munlock`, `pread`, `pwrite`, `sendto`, `writev` assign
+   `_p0 = unsafe.Pointer(&buf[0])` on a line BEFORE the call and pass `uintptr(_p0)` inside it, so
+   a call-local scan of the Go source cannot see the pointer while the emission's own `_p0` channel
+   can (spot-checked on `sendto` and `writev`). The Go-side set is a strict SUBSET of the emission
+   set — zero trampolines go the other way — which is what makes the larger number the safe one.
+
+   **Three channels, not one, and the first count found only the first**: a direct `Ꮡx` argument
+   (37 sites), a `_p0` local assigned from `Ꮡ(p, 0)` or `@unsafe.Pointer.FromBox` (46 sites), and a
+   `ж<T>` parameter cast straight to `uintptr` with no `Ꮡ` in sight (`setgroups`'s `groups`,
+   `setrlimit`'s `rlim`). A census keyed on `Ꮡ` alone reports 37 — half the truth.
+
+   **The init path itself is small and both of its members are pointer-bearing.** `syscall`'s own
+   init is `rlimit.go`'s: `Getrlimit(RLIMIT_NOFILE, &lim)` unconditionally, then `setrlimit` only
+   when `Cur != Max`. Two calls, two managed addresses. So reaching `Main` needs the keystone,
+   `FuncPCABI0`, and marshalling at **two** call sites — the other 73 are the cost of a WORKING
+   darwin, not of a STARTING one, and that is the distinction the sizing needs.
 5. **Nothing else.** As in §2.4.4, no behavior change is asked of anything outside the keystone.
 
 ### 3.5 The question §2 left: darwin has NO `AllThreadsSyscall` analogue, and nothing to keep put
@@ -341,6 +370,11 @@ if it stays companions-only, said explicitly rather than implied.
 
 ### 3.7 What §3 does not settle, named rather than hidden
 
+- **The pointer call-site census is DONE** (§3.4) and is no longer an unknown: 75 of 149 sites,
+  72 of 126 trampolines, two of them on the init path. What it does not settle is the SHAPE of
+  the marshalling at each — `Exec`-style unmanaged-for-the-duration is the ruled pattern, but
+  whether 73 sites want that individually or want one helper is a design question, not a
+  measurement one.
 - **Trampoline identity in the managed model — the single largest open question.**
   `FuncPCABI0(libc_write_trampoline)` receives a *delegate*. Whether the implementation can recover
   the trampoline's NAME from it at runtime, or whether the converter must emit an explicit symbol
