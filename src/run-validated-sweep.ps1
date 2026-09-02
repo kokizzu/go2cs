@@ -30,6 +30,11 @@
 #                                                   #   than a $longTimeouts floor raises that too)
 #   ./run-validated-sweep.ps1 -SkipBuild            # reuse the current go2cs.exe as-is
 #   ./run-validated-sweep.ps1 -IgnoreDiskPreflight  # proceed on a nearly-full drive anyway
+#   ./run-validated-sweep.ps1 -TestConfig Release   # A/B measurement, not a bank-eligible sweep --
+#                                                   #   EVERY row publishes Release (untiered by
+#                                                   #   default; add -TestTiered to opt back in),
+#                                                   #   annotated or not, exactly like the pipeline's
+#                                                   #   own -test-config/-test-tiered it threads to
 [CmdletBinding()]
 param(
     [string] $Filter,
@@ -45,14 +50,45 @@ param(
     # large rows repeatedly. Substring stays the interactive default, unchanged.
     [switch] $Exact,
     [switch] $IgnoreDiskPreflight,
-    # Tiering A/B measurement only (docs/phase4 tiering census) -- runs EVERY row under the
-    # `release-tc0` execution config, annotated or not: the C# host publishes Release (explicit
-    # -p:go2csPath) and runs with DOTNET_TieredCompilation=0 instead of the Debug-tier-0 default.
-    # Distinct from the per-row `execution: release-tc0` roster annotation (owner ruling 2026-08-30),
-    # which opts ONE row in and IS bank-eligible; this blanket switch is not, because a row banked
-    # under a config its own roster line does not declare cannot be reproduced from the table.
-    [switch] $ReleaseTC0
+    # Sweep-wide A/B measurement (docs/phase4 tiering/configuration census), 2026-09-02: generalized
+    # from the old blanket -ReleaseTC0 switch to mirror the pipeline's own -test-config/-test-tiered
+    # (the SAME flags -- Get-RosterExecutionArgs and this pair now emit identical argument shapes for
+    # the Release+untiered case, so there are not two mechanisms to keep in sync, only one). Runs
+    # EVERY row under the given config, annotated or not, and OVERRIDES a row's own per-row
+    # `execution: release-tc0` roster annotation for the duration of this sweep. Distinct from that
+    # annotation (owner ruling 2026-08-30), which opts ONE row in and IS bank-eligible: this blanket
+    # form is not, because a row banked under a config its own roster line does not declare cannot be
+    # reproduced from the table. Default 'Debug' changes NOTHING -- the roster's meaning, and every
+    # row's invocation, stay character-for-character what they were before this parameter existed.
+    [ValidateScript({
+        if ($_ -notin @('Debug', 'Release')) {
+            throw "-TestConfig must be 'Debug' or 'Release' (got '$_') -- the converter itself only recognizes those two."
+        }
+        $true
+    })]
+    [string] $TestConfig = 'Debug',
+    # Meaningless with -TestConfig Debug (same rule as the converter's own -test-tiered). With
+    # -TestConfig Release, opts back IN to the CLR's default tiered JIT -- Release's own default here
+    # is DOTNET_TieredCompilation=0, since a verdict that depends on JIT promotion timing is not
+    # reproducible run to run (the same reasoning -test-config's own commit recorded).
+    [switch] $TestTiered,
+    # Split the (already Filter/Exact/Applicable-filtered) row set into -ShardCount contiguous,
+    # roster-order pieces and run only the -ShardIndex'th (1-based) -- owner ruling 2026-09-02, this
+    # host's own known thermal limit: a ~2-hour continuous full-roster run is exactly the load that
+    # trips it, so a multi-hour census is broken into shards with a cooldown gap BETWEEN separate
+    # invocations (the gap is the caller's job, not this script's -- it is not a sleep this process
+    # would hold a build lock through). Both omitted (the default) runs the whole set in one piece,
+    # unchanged from before this parameter existed. `-ShardCount 1` is accepted as a no-op spelling.
+    [ValidateRange(1, [int]::MaxValue)]
+    [int] $ShardCount = 1,
+    [ValidateRange(1, [int]::MaxValue)]
+    [int] $ShardIndex = 1
 )
+
+if ($ShardIndex -gt $ShardCount) {
+    Write-Host "*** -ShardIndex $ShardIndex exceeds -ShardCount $ShardCount ***" -ForegroundColor Red
+    exit 1
+}
 
 $ErrorActionPreference = 'Stop'
 
@@ -194,18 +230,42 @@ foreach ($naRow in $notApplicableRows) {
 }
 $rows = @($rows | Where-Object { $_.Effective.Applicable })
 
+# Sharding, over the SAME final row set the sweep would otherwise process (post Filter/Exact/
+# Applicable) -- roster order is the row order already established above, so "shard by the roster's
+# own order" falls out of slicing this array as-is, no re-sort needed. Contiguous chunks, last shard
+# absorbs any remainder from the ceiling division.
+if ($ShardCount -gt 1) {
+    $preShardTotal = $rows.Count
+    $shardSize = [Math]::Ceiling($preShardTotal / $ShardCount)
+    $startIdx = ($ShardIndex - 1) * $shardSize
+    $endIdx = [Math]::Min($startIdx + $shardSize - 1, $preShardTotal - 1)
+    $rows = if ($startIdx -gt $preShardTotal - 1) { @() } else { @($rows[$startIdx..$endIdx]) }
+    Write-Host "  shard $ShardIndex/${ShardCount}: $($rows.Count) row(s) of $preShardTotal (roster order, size $shardSize)" -ForegroundColor Cyan
+}
+
+# Sweep-wide config override: non-default TestConfig or TestTiered means EVERY row runs under it,
+# superseding any per-row `execution:` annotation for this run only (see the invocation site below).
+$sweepConfigOverride = ($TestConfig -ne 'Debug') -or $TestTiered
+$sweepConfigLabel = if ($TestConfig -eq 'Release' -and $TestTiered) { 'Release (tiered)' } else { $TestConfig }
+
 $expectedTotal = ($rows | ForEach-Object { $_.Effective.Expected } | Measure-Object -Sum).Sum
-Write-Host "validated sweep: $($rows.Count) package(s), $expectedTotal expected verdicts, timeout $TestTimeout" -ForegroundColor Cyan
+# test-config printed UNCONDITIONALLY, even at the Debug default -- the same reasoning the pipeline's
+# own comparison-record field was given (not omitempty): a reader must never assume Debug by absence,
+# and "no log can be read without knowing which configuration produced it" is the point of this row.
+Write-Host ("validated sweep: $($rows.Count) package(s), $expectedTotal expected verdicts, " +
+    "timeout $TestTimeout, test-config $sweepConfigLabel") -ForegroundColor Cyan
 
 # Announced only when the run actually carries one, so a sweep over default-path rows prints exactly
-# what it always printed. -ReleaseTC0 is announced separately below because it is not a roster fact.
+# what it always printed. The sweep-wide override is announced separately below because it is not a
+# roster fact, and because it SUPERSEDES these per-row annotations rather than adding to them.
 $executionRows = @($rows | Where-Object { $_.Execution })
-if (-not $ReleaseTC0 -and $executionRows.Count -gt 0) {
+if (-not $sweepConfigOverride -and $executionRows.Count -gt 0) {
     Write-Host ("  $($executionRows.Count) row(s) carry a per-row execution config: " +
         (($executionRows | ForEach-Object { "$($_.Package) [$($_.Execution)]" }) -join ', ')) -ForegroundColor Cyan
 }
-if ($ReleaseTC0) {
-    Write-Host '  -ReleaseTC0: EVERY row runs release-tc0 -- an A/B measurement, not a bank-eligible sweep' -ForegroundColor Yellow
+if ($sweepConfigOverride) {
+    Write-Host ("  -TestConfig ${sweepConfigLabel}: EVERY row runs under it, annotated or not -- " +
+        'an A/B measurement, not a bank-eligible sweep') -ForegroundColor Yellow
 }
 
 if ($targetGoos -ne 'windows') {
@@ -744,13 +804,23 @@ foreach ($row in $rows) {
     # The per-row EXECUTION config (owner ruling 2026-08-30, Option A). A row that annotates itself
     # `execution: release-tc0` runs ITS leg under that config; every other row's invocation is
     # character-for-character the one it has always produced, because Get-RosterExecutionArgs
-    # contributes an EMPTY array for the absent config. The -ReleaseTC0 A/B switch is expressed as
-    # "every row, annotated or not, behaves as if annotated" -- one rule, not two code paths.
-    $rowExecution = if ($ReleaseTC0) { 'release-tc0' } else { $row.Execution }
-    $execArgs = @(Get-RosterExecutionArgs $rowExecution)
-    # Printed on the verdict line so an opted-in row's evidence says so on its face; empty, and
-    # therefore invisible, for every default-path row.
-    $execSuffix = if ($rowExecution) { " [$rowExecution]" } else { '' }
+    # contributes an EMPTY array for the absent config. The sweep-wide -TestConfig/-TestTiered
+    # override (2026-09-02, generalized from -ReleaseTC0) is expressed as "every row, annotated or
+    # not, behaves as if annotated with THIS config" -- one rule, not two code paths, and it takes
+    # the -test-config/-test-tiered flags directly rather than through the roster's config-name
+    # indirection, since a sweep-wide A/B is not limited to the one config the roster vocabulary
+    # names.
+    if ($sweepConfigOverride) {
+        $execArgs = @('-test-config', $TestConfig)
+        if ($TestTiered) { $execArgs += '-test-tiered' }
+        $execSuffix = " [test-config=$TestConfig$(if ($TestTiered) { ' tiered' })]"
+    }
+    else {
+        $execArgs = @(Get-RosterExecutionArgs $row.Execution)
+        # Printed on the verdict line so an opted-in row's evidence says so on its face; empty, and
+        # therefore invisible, for every default-path row.
+        $execSuffix = if ($row.Execution) { " [$($row.Execution)]" } else { '' }
+    }
 
     # The row's cgo state, restored unconditionally so one pinned package cannot leak into the next.
     $cgoPinned = $cgoOffPackages.ContainsKey($pkg)

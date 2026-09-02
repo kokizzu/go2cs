@@ -342,15 +342,17 @@ function Get-RosterRowExpectation {
     contributes NOTHING: the invocation an unannotated row produces is character-for-character the
     invocation it produced before this annotation existed, which is the guarantee the ruling rests on.
 
-    `release-tc0` maps to the converter's existing `-test-release-tc0`, which is the honest seam for
-    BOTH halves of the config and the reason no sweep-side environment injection would suffice: the
-    publish CONFIGURATION is decided inside the converter's own `dotnet publish` invocation
-    (publishTestHost, testConversion.go), where it passes `-c Release` with an explicit
+    `release-tc0` maps to the converter's `-test-config Release` (2026-09-02: generalized from the
+    retired `-test-release-tc0` bool into `-test-config Debug|Release` + `-test-tiered`; Release's own
+    DEFAULT is untiered, exactly matching this annotation's meaning, so no `-test-tiered` is added
+    here -- this mapping is the config's ORIGINAL meaning, not a new one). The honest seam for BOTH
+    halves of the config, still: the publish CONFIGURATION is decided inside the converter's own
+    `dotnet publish` invocation (publishTestHost, testConversion.go), where Release passes an explicit
     `-p:go2csPath` -- the template's `Condition="'$(go2csPath)'==''"` guard is written to be
     overridden exactly that way, so a Release publish still binds THIS tree rather than the deployed
-    `~/go2cs` root. The run half, `DOTNET_TieredCompilation=0`, rides the same flag
-    (testHostRunEnv), because a Release publish alone does not retire tier-0: a program can start at
-    tier-0 and simply never run long enough to be promoted.
+    `~/go2cs` root. The run half, `DOTNET_TieredCompilation=0` by default at Release, rides the same
+    flag (testHostRunEnv), because a Release publish alone does not retire tier-0: a program can start
+    at tier-0 and simply never run long enough to be promoted.
 
     An unknown config throws rather than degrading to the default -- see the parser's refusal above
     for why a silently-ignored config is the failure this design exists to prevent.
@@ -363,7 +365,7 @@ function Get-RosterExecutionArgs {
     if ([string]::IsNullOrWhiteSpace($Execution)) { return @() }
 
     switch ($Execution) {
-        'release-tc0' { return @('-test-release-tc0') }
+        'release-tc0' { return @('-test-config', 'Release') }
         default {
             throw ("Unknown execution config '$Execution'. Known configs: " +
                 "$($RosterExecutionValues -join ', ').")
