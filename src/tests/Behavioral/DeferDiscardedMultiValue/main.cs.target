@@ -38,9 +38,9 @@ internal static void Main() {
         nint n = 1;
         var @base = (uintptr)4;
         var off = (uintptr)2;
-        defer((ᴛ1, ᴛ2) => triple(ᴛ1, ᴛ2), multiValueEagerˢ, n, ref ᒐ);
-        defer(ᴛ1 => single(ᴛ1), singleResultˢ, ref ᒐ);
-        defer((ᴛ1, ᴛ2, ᴛ3, ᴛ4) => quad(ᴛ1, ᴛ2, ᴛ3, ᴛ4), sysConst, @base + off, (uintptr)(65536), (uintptr)(0), ref ᒐ);
+        defer(triple, multiValueEagerˢ, n, ref ᒐ);
+        defer(single, singleResultˢ, ref ᒐ);
+        defer(quad, sysConst, @base + off, (uintptr)(65536), (uintptr)(0), ref ᒐ);
         n = 99;
         fmt.Println(bodyDoneNˢ, n);
     }
