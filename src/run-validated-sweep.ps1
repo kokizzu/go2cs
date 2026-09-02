@@ -668,7 +668,10 @@ function Get-HostLimitVerdict {
 # that hammer storage (zip streams 4 GiB; parser walks hundreds of thousands of converted frames),
 # so their floors are sized to the LOADED case: 60m and 90m clear the observed loaded shortfalls
 # with ~2x headroom.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '60m' }
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '60m'; 'net' = '40m' }
+# 'net' joined 2026-09-02: at the 10m default the C# host dies an EXPLICIT results-tail deadline kill on
+# the i7 class (the mass-empty shape), and at 40m the same tree validates 472/472 in ~1,480 s -- deadline
+# sizing, not divergence (measured twice: the MakeFunc canary gate 2026-08-29 and the A2a gate 2026-09-02).
 
 foreach ($row in $rows) {
     $pkg = $row.Package
