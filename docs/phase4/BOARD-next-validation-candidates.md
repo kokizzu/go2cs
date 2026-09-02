@@ -21403,4 +21403,70 @@ NOT moved by the two above (crash frames measured 2026-09-02, e0dcdb4f5, train-4
 - C2 (gcbits): `TestGCBits` on the `NewAt`/`ptrTo` wall.
 - G (StructOf-embedded trio): row 3 GO after the freeze; rows 1–2 are the synthesis root's (C2's arc).
 
+
+---
+
+## The 53× RSA gap is NOT arithmetic — `math/bits` intrinsics measured, TWO NULLS (G, 2026-09-02)
+
+**The finding outranks the cut that produced it.** Reached from `net/http`'s h2 write-deadline pair
+(itself a Debug-build margin, see the pipeline-configuration ruling); this is the residual underneath.
+
+### What was measured (Release + `DOTNET_TieredCompilation=0`, one host, sequential, distinct records)
+
+| measurement | Go | converted | ratio |
+|---|--:|--:|--:|
+| TLS 1.3 handshake, steady-state median | 2.59 ms | 57.87 ms | 22× |
+| TLS 1.3 handshake, first in process | 3.73 ms | 1.1530 s | — |
+| **RSA-2048 PSS signature** | **0.834 ms** | **44.5 ms** (WSL) / **64.6 ms** (Windows) | **53× / 77×** |
+
+The signature is **79%** of the handshake residual — direct attribution, since a TLS 1.3 handshake
+performs exactly ONE server CertificateVerify signature.
+
+### The hypothesis, and why it was WRONG
+
+Go intrinsifies the whole `math/bits` family (`Mul64`→`MULQ`, `OnesCount64`→`POPCNT`,
+`LeadingZeros64`→`LZCNT`, `RotateLeft64`→`ROL`, `ReverseBytes64`→`BSWAP`) and additionally aliases
+`math/big`'s own `mulWW` to the `Mul64` intrinsic (`ssa.go:5113`→`:5022`), while declaring
+`addMulVVW` bodyless in `arith_decl.go` (hand-written assembly). go2cs necessarily emits the portable
+fallbacks. The natural conclusion — that this emulation is the 53× — **is false.**
+
+**Cut and measured** (`claude/g-mathbits-intrinsics` `1de4445dc`, kept as a negative-result branch):
+sixteen functions hand-owned onto `Math.BigMul` / `BitOperations` / `BinaryPrimitives` / `UInt128`.
+
+* **Workload A/B — RSA-2048 signature: NULL.** 64.59 ms before, 64.65 ms after. Instrument proven wired: the after assembly contains `BigMul`/`BitOperations`/`BinaryPrimitives` and the before assembly contains none (checker positive-controlled against `Mul64`/`bits_package`, after a first `strings`-based scan returned a false zero for names that MUST be present).
+* **Primitive micro-probe — the intrinsics ARE faster, and it does not matter:**
+
+| primitive | Go | before | after | speedup | after ÷ Go |
+|---|--:|--:|--:|--:|--:|
+| `Mul64` | 0.474 ns | 5.759 ns | 3.025 ns | 1.90× | **6.4×** |
+| `OnesCount64` | 0.230 ns | 5.177 ns | 2.908 ns | 1.78× | **12.6×** |
+| `RotateLeft64` | 0.740 ns | 4.179 ns | 2.618 ns | 1.60× | **3.5×** |
+| `Add64` | 0.506 ns | 4.883 ns | 4.814 ns | **1.01× TIED** | 9.5× |
+
+* **Hash-path A/B — `hash/maphash` at Release+TC0: NULL.** 353 s before, 340 s after (arm walls 355.3 / 344.9 s) — **-3.7%**, against a 20% bank threshold; **22/22 PASS on both arms**. This was the one workload the RSA A/B could not see (`RotateLeft`, `OnesCount`, `ReverseBytes`), and the 1.6-1.8x primitive gains are swamped there exactly as the 1.90x `Mul64` gain was in RSA.
+
+An RSA-2048 CRT modexp performs ~5×10⁵ word multiplies; at 5.76→3.03 ns that is ~1.4 ms saved against
+a 64.6 ms signature — **~2%, inside the arms' own spread.** That is the whole explanation of the null.
+
+### What it means for the seam hunt — do not re-walk these
+
+* **`math/bits` is NOT the seam.** Correct cut, measured zero at workload level.
+* **`math/big`'s `addMulVVW` is probably not either** — it is the same arithmetic-level fix to a cost that is not arithmetic.
+* **The residual is the emission's value/slice plumbing.** Even after the cut, `Mul64` costs **6.4× Go** for what is ONE `mul` instruction on both sides. That factor is call/return across the `bits_package` boundary, the tuple return, and `slice<Word>` indexing with bounds checks — not the operation. **A single-instruction operation costing 6.4× in the emission's calling convention is the number that hypothesis now has.**
+* **`Add64`/`Sub64` gain nothing from `UInt128`** — the JIT does not lower it better than Go's bit-algebra reconstruction. Anyone revisiting this should drop those two first.
+
+### Correctness note (the cut is right, just not useful)
+
+`math/bits` **26/26** and `math/big` **224/224** both unmoved with the sixteen replacements live —
+real evidence the mappings are semantically correct at Go's edges (`LeadingZeros64(0)==64`,
+`Len64(0)==0`, `RotateLeft64` with negative `k`).
+
+### Eliminated by measurement, so nobody re-walks them
+
+Platform (Windows ≡ WSL to within ~1 ms on the same silicon), certificate/key type (`httptest` and
+`PerfTlsHandshake` embed the SAME RSA-2048 testcert), session resumption (`PerfTlsHandshake` sets no
+`ClientSessionCache`; Go's default is nil), .NET ThreadPool starvation (`golib/builtin.cs:79` —
+goroutines get dedicated threads). ⚠ And the ~21% non-signature remainder is **not `nistec`**: TLS
+1.3's default key share is **X25519** (`handshake_client.go:153`), so that segment is
+`crypto/ecdh` → `crypto/internal/edwards25519/field` plus the record layer and parsing.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
