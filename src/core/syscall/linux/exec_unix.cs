@@ -5,10 +5,14 @@
 // Fork, exec, wait, etc.
 
 // go2cs NATIVE IMPLEMENTATION (hand-owned; replaces the converted exec_unix.go output).
-// Everything in this file except forkExec is the converted output verbatim — ForkLock and its
-// acquire/release discipline, the ProcAttr/SysProcAttr shapes, argument validation, Exec, and
-// StartProcess are pure Go logic that converts faithfully. forkExec alone cannot work as literally
-// converted: its child half (exec_linux.cs's forkAndExecInChild, now unreachable dead code) runs
+// Everything in this file except forkExec and Exec is the converted output verbatim — ForkLock
+// and its acquire/release discipline, the ProcAttr/SysProcAttr shapes, argument validation and
+// StartProcess are pure Go logic that converts faithfully. TWO functions cannot work as literally
+// converted, for the same underlying reason — what the managed heap means to the kernel — and each
+// carries its own block at its own site. Exec (2026-09-02) handed execve MANAGED argv/envp and
+// produced a fork bomb; it now marshals into unmanaged memory like everything else here. forkExec
+// is the older and larger of the two: its child half (exec_linux.cs's forkAndExecInChild, now
+// unreachable dead code) runs
 // MANAGED code between clone() and execve(), and no managed instruction is async-signal-safe in a
 // multithreaded CLR process — the impossibility is by rule, not by measurement
 // (docs/phase4/DESIGN-linux-exec.md §2, ratified 2026-08-22 with all seven OQs).
@@ -304,50 +308,80 @@ internal static Func<ж<byte>, ж<ж<byte>>, ж<ж<byte>>, error> execveDarwin;
 internal static Func<ж<byte>, ж<ж<byte>>, ж<ж<byte>>, error> execveOpenBSD;
 
 // Exec invokes the execve(2) system call.
+// go2cs NATIVE half (hand-owned; see the block below). The converted body was Go's verbatim,
+// and on this runtime that body cannot work: it handed execve MANAGED memory.
+//
+// WHAT IT COST, measured 2026-09-02. Go's exec_unix.go builds argv0p/argvp/envvp with
+// BytePtrFromString/SlicePtrFromStrings -- in Go, pointers into pinned-by-construction storage --
+// and the converted output passed them straight through as
+// `(uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(argvp, 0)).Value)`, i.e. a **byte into the managed
+// heap. execve then read whatever those addresses meant to the KERNEL, which is not what they mean
+// to the CLR. The exec'd image came up with a corrupted argv and environ: /proc/<pid>/cmdline was
+// garbage and /proc/<pid>/environ was EMPTY on every sampled generation. Losing argv loses
+// `-test.run`, and losing environ loses GO_WANT_HELPER_PROCESS, so Go's own TestExec helper re-ran
+// the WHOLE suite -- including TestExec, which spawns -- and the row FORK BOMBED: 96 processes in
+// ~7 minutes, each a child of the last. (That chain is itself the proof execve never replaced the
+// image, since execve keeps the pid.) The run filter was exonerated by positive control: the host
+// honors -test.run and runs a single named test alone.
+//
+// This is the project's open "wrapper hands managed memory to a native call by address" class,
+// reached through a Linux door. The remedy is the rule this file's own header already states for
+// the posix_spawn seam -- every buffer handed to a native call lives in UNMANAGED memory for the
+// duration of the call and is freed in a finally -- served by the same three helpers the seam uses.
+//
+// WHAT IS PRESERVED VERBATIM. Go returns EINVAL when any argument contains an embedded NUL, and
+// that contract is observable, so the BytePtrFromString/SlicePtrFromStrings calls STAY -- they are
+// kept purely as the validators they also are, their pointers discarded. The rlimit restore and the
+// BeforeExec/AfterExec bracket keep their exact positions. The non-linux execve branches
+// (solaris/illumos/aix, darwin/ios, openbsd) are dropped rather than carried: this file is
+// linux/exec_unix.cs under layout L3, so Δruntime.GOOS is "linux" and every one of them was dead
+// code guarded by a constant. Dropping them is what lets the unmanaged buffers be typed IntPtr
+// instead of being laundered back through ж<byte> for callees that cannot run here.
 public static error /*err*/ Exec(@string argv0, slice<@string> argv, slice<@string> envv) {
     error err = default!;
 
-    (var argv0p, err) = BytePtrFromString(argv0);
+    // Validation only -- Go's EINVAL-on-embedded-NUL contract. The pointers these produce are
+    // deliberately discarded; the buffers execve actually receives are the unmanaged ones below.
+    (_, err) = BytePtrFromString(argv0);
     if (err != default!) {
         return err;
     }
-    (var argvp, err) = SlicePtrFromStrings(argv);
+    (_, err) = SlicePtrFromStrings(argv);
     if (err != default!) {
         return err;
     }
-    (var envvp, err) = SlicePtrFromStrings(envv);
+    (_, err) = SlicePtrFromStrings(envv);
     if (err != default!) {
         return err;
     }
-    runtime_BeforeExec();
-    var rlim = ᏑorigRlimitNofile.Load();
-    if (rlim != nil) {
-        Setrlimit(RLIMIT_NOFILE, rlim);
+
+    IntPtr argv0ʋ = IntPtr.Zero;
+    IntPtr argvʋ = IntPtr.Zero;
+    IntPtr envvʋ = IntPtr.Zero;
+
+    try {
+        argv0ʋ = MarshalStringZ(argv0);
+        argvʋ = MarshalStringVector(argv);
+        envvʋ = MarshalStringVector(envv);
+
+        runtime_BeforeExec();
+        var rlim = ᏑorigRlimitNofile.Load();
+        if (rlim != nil) {
+            Setrlimit(RLIMIT_NOFILE, rlim);
+        }
+        var (_, _, err1) = RawSyscall(SYS_EXECVE, (uintptr)argv0ʋ, (uintptr)argvʋ, (uintptr)envvʋ);
+        // Reached only when execve FAILED -- on success this process is already gone, and the
+        // finally below never runs, which is correct: the image that owned the memory is gone too.
+        runtime_AfterExec();
+        return err1;
     }
-    error err1 = default!;
-    if (Δruntime.GOOS == "solaris"u8 || Δruntime.GOOS == "illumos"u8 || Δruntime.GOOS == "aix"u8){
-        // RawSyscall should never be used on Solaris, illumos, or AIX.
-        err1 = execveLibc(
-            (uintptr)argv0p,
-            (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(argvp, 0)).Value),
-            (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(envvp, 0)).Value));
-    } else 
-    if (Δruntime.GOOS == "darwin"u8 || Δruntime.GOOS == "ios"u8){
-        // Similarly on Darwin.
-        err1 = execveDarwin(argv0p, Ꮡ(argvp, 0), Ꮡ(envvp, 0));
-    } else 
-    if (Δruntime.GOOS == "openbsd"u8 && Δruntime.GOARCH != "mips64"u8){
-        // Similarly on OpenBSD.
-        err1 = execveOpenBSD(argv0p, Ꮡ(argvp, 0), Ꮡ(envvp, 0));
-    } else {
-        var (ᴛ1, ᴛ2, ᴛ3) = RawSyscall(SYS_EXECVE,
-            (uintptr)argv0p,
-            (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(argvp, 0)).Value),
-            (uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(envvp, 0)).Value));
-        (_, _, err1) = (ᴛ1, ᴛ2, ᴛ3);
+    finally {
+        FreeStringVector(envvʋ);
+        FreeStringVector(argvʋ);
+        if (argv0ʋ != IntPtr.Zero) {
+            System.Runtime.InteropServices.Marshal.FreeHGlobal(argv0ʋ);
+        }
     }
-    runtime_AfterExec();
-    return err1;
 }
 
 // ============================== the posix_spawn seam ==============================
