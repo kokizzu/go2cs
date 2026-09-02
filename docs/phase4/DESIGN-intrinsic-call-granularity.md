@@ -7,6 +7,14 @@ blast radii rather than against an argument.
 Author: G, 2026-09-02. Measurements: `BOARD-next-validation-candidates.md`, the `math/bits` two-null
 block and the `addMulVVW` block that follows it.
 
+> ⚠ **READ §10 FIRST.** Sections 2 and 5 were written before two falsifiers were run and they are
+> **SUPERSEDED**: they attribute the cost to the cross-assembly boundary, which §10 measures at
+> **~1.0×**. The real mechanisms are an `UntypedInt` struct comparison evaluated per call (2.72×) and
+> IL size over the JIT's inlining budget (1.32–1.42×), both in the emitted body. §10 also replaces the
+> first candidate. The superseded sections are kept per this directory's amend-never-rewrite rule, so
+> the wrong attribution and its cause stay visible — but nothing in §2 or §5 should be quoted without
+> §10 beside it.
+
 ---
 
 ## 1. What this buys the objective
@@ -160,3 +168,81 @@ measurement.
 If B's measured movement is near the predicted 40%, it is worth its converter change. If it is near
 A's 24%, the simpler A2 is worth comparing. If it is small, **C** is the answer and this document is
 the record of why.
+
+---
+
+## 10. RULING and the falsifiers' answers (2026-09-02, appended after §1–9)
+
+**The coordinator HELD this document at DRAFT** rather than authorising a prototype of Candidate B,
+because §5's central number carried a tell the draft did not explain: variant **E** (same-assembly
+local copy, attribute) read **4.0 ns/word** while **E-CROSS** (the same code in a scratch `bits`
+assembly, the same attribute on the same four methods) read **11.1**. *A JIT that inlines identical IL
+emits identical machine code whichever assembly the IL came from* — so a 2.75× gap between those arms
+could not be "the boundary's cost", and the `A/G` pair that §5 rested on inherited the same question.
+
+**The hold was correct and the draft's §5 was wrong.** Two falsifiers settled it.
+
+### Falsifier 1 — optimization state of every referenced assembly, read in-process: REFUTED
+
+`DebuggableAttribute` on `typeof(bits_package).Assembly`, golib and each console, printed from inside
+the probe: **`IsJITOptimizerDisabled=False` everywhere**, both consoles. No Debug callee reached a
+Release console, so the table was not void on that ground.
+
+### Falsifier 2 — the JIT's own report
+
+`DOTNET_JitPrintInlinedMethods` requires a checked JIT and produced nothing; **`DOTNET_JitDisasmSummary=1`
+works on the release runtime** and answers by which methods are compiled at all.
+
+*Arm A (corpus `bits`, no attribute) — NOT inlined:*
+
+```
+29: JIT compiled go.math.bits_package:Mul(nuint,nuint)        [FullOpts, IL size=83, code size=141]
+32: JIT compiled go.math.bits_package:Add(nuint,nuint,nuint)  [FullOpts, IL size=87, code size=152]
+```
+
+*Arm E-CROSS (scratch `bits`, attribute) — INLINED:* `bits_package` appears **zero** times in that
+arm's entire compile list; the timed lambda reads `[FullOpts, IL size=63, code size=800]`.
+
+**So the assembly boundary never prevented inlining.** The attribute overrides the size budget across
+it, and the default JIT declines on **IL size (83/87 bytes)**, not on provenance.
+
+### Variant H — the difference the benchmark did not model
+
+`H` = `E` with the emitted `UintSize` restored (`bits.cs:21` emits `public static UntypedInt UintSize
+=> 64;`, a property returning the generated struct) in place of the `const int` my transcription used.
+
+```
+E  same-asm, attr, const        4.02 - 4.05 ns/word
+H  same-asm, attr, UntypedInt  10.95 - 11.06        H / E = 2.72 - 2.73x
+E-CROSS  cross-asm, attr, UntypedInt  10.96 - 12.31  == H, within noise
+```
+
+**`H` reproduces `E-CROSS`.** The assembly boundary is **~1.0×**; §5's "4.17×" was an artifact of the
+hand-written copy.
+
+### The seam, restated
+
+1. **`UintSize == 32` is a struct comparison evaluated per call — 2.72×.** `UntypedInt.operator ==` is `left.Equals(right)` over a private `Compare` the JIT compiles standalone at **IL 141** and never inlines. Go folds this branch at compile time. **This is a property of emitted UNTYPED CONSTANTS, not of `math/bits`.**
+2. **IL size over the inlining budget — 1.32–1.42×**, from the two-level chain, tuples and conversions.
+
+⚠ **~1.5× of `A` is unapportioned** (`4.02 × 2.72 × 1.38 = 15.1` vs a measured 22.4) and is named, not
+absorbed; the likely reading is compounding, and it is **not** claimed as boundary cost.
+
+### Candidate map, revised
+
+* **A1-as-attribute-carrier: REJECTED** (coordinator, on the draft's own argument). **A2: HELD.** **C: stays available.**
+* **NEW FIRST MOVE — the one-level word-size hand-own.** Replace `Mul`/`Add`/`Sub` with a single BCL call each: this removes the nested level, the inter-level tuples **and** the `UintSize` branch together — the 2.72× and the 1.38× in one cut, with no converter change. ⚠ It is exactly the level the **withdrawn** `math/bits` cut did not register (it took `Mul64`/`Add64`/`Sub64`), which explains that cut's 0.0% far better than "intrinsics do not help".
+* **Candidate B is DEMOTED.** Most of the recoverable cost is reachable without a converter intrinsic table, and B is not clean for `Add64`/`Sub64` in any case — no single BCL call exists, so site emission would be the carry formula or a golib helper, i.e. a cross-assembly call again.
+
+### The question this opens, flagged and NOT sized here
+
+Whether `UntypedInt`-versus-literal comparisons should fold in the emission **generally**. The 2.72×
+was measured in `math/bits` but the mechanism is not specific to it: any emitted `UntypedInt` compared
+against a literal in a hot path pays a non-inlined struct equality call for what Go treats as a
+compile-time constant. That is a converter design question with a corpus-wide radius, larger than this
+document, and it is raised here rather than answered.
+
+### Status
+
+**Still a DRAFT, and now with a different first candidate than §5 proposed.** Nothing is cut. The next
+measurement owed is the one-level word-size hand-own, before/after on the RSA probe at Release+TC0.

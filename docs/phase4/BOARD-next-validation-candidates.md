@@ -21489,6 +21489,7 @@ Two runs, spread under 2%.
 | **C** | `Span<ulong>` | `bits.Mul` | cross | — | 14.23 – 14.34 | 7.7× |
 | **E-CROSS** | `slice<nuint>` | `bits.Mul` | cross | **yes** | 10.96 – 11.24 | 6.0× |
 | **G** | `slice<nuint>` | local copy | **same** | — | 5.36 – 5.38 | 2.9× |
+| **H** | `slice<nuint>` | local copy | **same** | **yes** | 10.95 – 11.06 | 5.9× |  *(UntypedInt branch)*
 | **E** | `slice<nuint>` | local copy | **same** | **yes** | 4.01 – 4.05 | 2.2× |
 | **D** | `slice<nuint>` | `Math.BigMul` | — | — | 2.72 – 2.77 | 1.5× |
 | **B** raw | `Span<ulong>` | `Math.BigMul` | — | — | 1.85 – 1.86 | 1× |
@@ -21499,14 +21500,45 @@ Two runs, spread under 2%.
 ### Apportionment — every pair below differs in EXACTLY ONE thing
 
 ```
-cross-assembly boundary        A / G      4.16 - 4.17x   <- DOMINANT
-AggressiveInlining, cross-asm  A / E-CROSS 2.00 - 2.01x
-AggressiveInlining, same-asm   G / E      1.32 - 1.34x
-golib slice vs Span            D / B      1.47 - 1.50x
-Word generated-struct wrapper  F / A      1.08 - 1.09x   <- nearly free
+UntypedInt `UintSize` branch   H / E       2.72 - 2.73x   <- DOMINANT
+AggressiveInlining, same-asm   G / E       1.32 - 1.42x
+golib slice vs Span            D / B       1.47 - 1.50x
+Word generated-struct wrapper  F / A       1.08 - 1.09x   <- nearly free
+assembly boundary              H vs E-CROSS  WITHIN NOISE -> ~1.0x
 ```
 
-**The assembly boundary is the seam, not the primitives, not the containers, and not the wrapper.**
+**The seam is the EMITTED BODY, and the assembly boundary is not part of it.** `H` (same assembly)
+and `E-CROSS` (cross assembly) carry the identical body and the identical attribute and read
+**10.95–11.06** against **10.96–12.31** — the same number. A JIT that inlines identical IL emits
+identical machine code whichever assembly it came from, and that is what the measurement shows.
+
+Two mechanisms, both in the body:
+
+1. **`UintSize == 32` is a struct comparison, evaluated per call — 2.72×.** `bits.cs:21` emits `public static UntypedInt UintSize => 64;` — a property returning the generated `UntypedInt` struct, whose `operator ==` is `left.Equals(right)` over a private `Compare` the JIT compiles standalone at **IL 141** and never inlines. Go folds this branch at compile time; the emission evaluates it on every `bits.Mul` and every `bits.Add`. **This is a converter-level property of untyped constants, not of `math/bits`** — any emitted `UntypedInt` compared against a literal in a hot path pays it.
+2. **IL size over the inlining budget — 1.32–1.42×.** `bits_package:Mul` and `Add` are **83 and 87 IL bytes** from the two-level chain, tuples and conversions, so the JIT declines by default; `AggressiveInlining` overrides it.
+
+⚠ **~1.5× of `A` remains unapportioned** and is named rather than absorbed: `4.02 × 2.72 × 1.38 = 15.1`
+against a measured `A` of 22.4. The likely reading is compounding — an un-inlined call whose body
+itself contains a non-inlined `UntypedInt.Compare` pays both, and the two do not multiply cleanly. It
+is **not** claimed as boundary cost.
+
+### ⚠ CORRECTED BEFORE MERGE — what this block said first, and why it was wrong
+
+This block originally read **"cross-assembly boundary A/G 4.16–4.17× ← DOMINANT"** and concluded *"the
+assembly boundary is the seam."* **That was wrong, and the number was an artifact of the instrument.**
+
+The tell was raised by the coordinator: `E` (4.0 ns/word) and `E-CROSS` (11.1) are the *same code with
+the same attribute on the same four methods*, and a JIT cannot produce 2.75× from provenance alone. Two
+falsifiers settled it — the assemblies were all optimized (`IsJITOptimizerDisabled=False` read
+in-process, so not a Debug-callee artifact), and the JIT summary showed the cross-assembly chain **was**
+inlined under the attribute (`bits_package` absent from the arm's compile list entirely). The gap was
+**my hand-written `G`/`E` copies using `const int UintSizeLocal = 64`** where the emission uses the
+`UntypedInt` property. Variant `H` restores that one difference and reproduces `E-CROSS` exactly.
+
+The failure is the same class the block already warned about — **`A/G` differed on TWO axes, assembly
+AND body** — committed by the person who wrote the removes-column rule one section earlier. Kept
+visible rather than quietly replaced, because a retracted number with its cause is worth more than a
+corrected one without.
 A same-assembly copy with no attribute at all is already **4.2×** faster than the emitted form.
 
 ### E's prediction, written BEFORE the run and scored
@@ -21517,13 +21549,7 @@ A same-assembly copy with no attribute at all is already **4.2×** faster than t
 held: inlining removed call overhead but the tuple materialisation and `nuint`↔`uint64` conversions at
 two levels survive, which is the 2.2× floor.
 
-### What each remedy candidate is now worth
-
-| candidate | measured | converter change? |
-|---|--:|---|
-| `AggressiveInlining` on the registry's hand-owned leaves | **2.0×** | no |
-| emit the BCL call AT THE SITE (= same-assembly + inlined) | **5.5×** | yes |
-| additionally fix slice + tuples (raw ceiling) | 12.1× | golib + emission |
+### What each remedy candidate is now worth| candidate | measured | converter change? ||---|--:|---|| **one-level word-size hand-own** (`Mul`/`Add`/`Sub` → a single BCL call each) | **~3.7×** (removes the 2.72× branch AND the 1.38× decline together) | no — a hand-own || `AggressiveInlining` alone, body unchanged | 1.32 – 1.42× | no || converter intrinsic table, emit at the site | **not needed for most of the above** | yes || additionally fix slice + tuples (raw ceiling) | 12.1× | golib + emission |⚠ The one-level hand-own is the level the WITHDRAWN `math/bits` cut did NOT register — it registered`Mul64`/`Add64`/`Sub64` and not the word-size `Mul`/`Add`/`Sub` that `math/big` actually calls. Sothat cut left the two-level chain and the `UintSize` branch standing, which explains its 0.0% farbetter than "intrinsics do not help".
 
 ### ⚠ Two labelling corrections, recorded because they are the failure mode here
 
