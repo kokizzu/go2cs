@@ -275,7 +275,27 @@ costs nothing and is worth more than a map that merely works today.
 3. **A real `FuncPCABI0`** resolving trampoline → symbol → `NativeLibrary.GetExport` over
    `/usr/lib/libSystem.B.dylib`. `os/darwin/dir_darwin_impl.cs` already proves that mechanism for
    one symbol.
-4. **Nothing else.** As in §2.4.4, no behavior change is asked of anything outside the keystone.
+4. **Pointer arguments marshalled at their CALL SITES, per COORD's `Setgroups` ruling (§2.5) —
+   which lands on darwin's CRITICAL PATH, not on an edge case.** The ruling is that `cgocaller`
+   stays pointer-agnostic because it takes `uintptr`s and cannot tell a pointer from an integer;
+   darwin's keystones take `uintptr`s for the same reason, so it transfers verbatim. What makes it
+   urgent here rather than incidental is WHICH call needs it first. The pinned first casualty is
+   `syscall.init()` → `Getrlimit`, and its emitted body is
+
+   ```csharp
+   // syscall/darwin/zsyscall_darwin_amd64.cs:871
+   var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_getrlimit_trampoline), (uintptr)which, (uintptr)Ꮡlim, 0);
+   ```
+
+   `Ꮡlim` is a MANAGED box address handed to the kernel through the `uintptr` channel, and
+   `getrlimit` **writes** through it. That is the struct-passing seam, on darwin, at the first
+   syscall a converted program makes. **So this revises §3.1's implication that a keystone plus a
+   real `FuncPCABI0` reaches `Main`: it does not.** Those two make the CALL happen; the call site's
+   own marshalling is what makes it correct, and on this path the two are needed together. Sizing
+   consequence: the reach-`Main` unit is keystone + `FuncPCABI0` + the pointer call sites on the
+   init path, and the last of those is not enumerated here — a census of pointer-bearing
+   trampoline call sites in the init closure is owed before an implementation is scheduled.
+5. **Nothing else.** As in §2.4.4, no behavior change is asked of anything outside the keystone.
 
 ### 3.5 The question §2 left: darwin has NO `AllThreadsSyscall` analogue, and nothing to keep put
 
