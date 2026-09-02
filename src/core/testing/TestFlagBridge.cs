@@ -186,6 +186,31 @@ internal static class TestFlagBridge
     /// (crypto/tls's bogo <c>os.Exit(89)</c>) can behave as Go specifies.
     /// </para>
     /// </remarks>
+    /// <summary>
+    /// The command line THIS RUN was handed — <see cref="TestHost.Run"/>'s own <c>args</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Go's <c>flag.Parse()</c> is <c>CommandLine.Parse(os.Args[1:])</c>, and in a real converted
+    /// test binary that IS this array: the generated host is
+    /// <c>Main(string[] args) => TestHost.Run(registry, args)</c>. The two only diverge when the
+    /// host is driven IN-PROCESS — the MSTest tier the golib guards use — where the ambient
+    /// command line belongs to the test RUNNER, not to the run.
+    /// </para>
+    /// <para>
+    /// ⚠ MEASURED (2026-09-02, Linux, GolibTests): with the converted flag package referenced,
+    /// the ambient parse rejected MSTest's own <c>--port</c> against
+    /// <c>CommandLine = NewFlagSet(os.Args[0], ExitOnError)</c>, printed the <c>-test.*</c> set
+    /// under <c>Usage of .../testhost.dll</c> and called <c>os.Exit(2)</c> — killing the test HOST
+    /// PROCESS mid-suite (<c>Test Run Aborted</c>, 82 of 474). It reached that parse from any of
+    /// the FIVE guard classes that drive <c>TestHost.Run</c>, so patching the classes that happen
+    /// to trip it today is the wrong shape: two of the five already owned <c>flag.CommandLine</c>
+    /// and the other three did not, and a sixth class tomorrow re-opens it. The run's own args are
+    /// the authority, in one place.
+    /// </para>
+    /// </remarks>
+    internal static string[]? HostCommandLine { get; set; }
+
     public static void Parse()
     {
         Type? flagPackage = Type.GetType(FlagPackageTypeName, throwOnError: false);
@@ -198,7 +223,47 @@ internal static class TestFlagBridge
         if (parsed.Invoke(null, []) is bool alreadyParsed && alreadyParsed)
             return;
 
-        Bind(flagPackage, "Parse").Invoke(null, []);
+        // The package-level Parse() reduces to CommandLine.Parse(os.Args[1:]); calling the FlagSet
+        // method directly over the host's own args is the SAME call with the same argument in a
+        // real test binary, and the right one where the ambient command line is the runner's.
+        // A host that never announced its args (nothing does today) keeps Go's exact call.
+        if (HostCommandLine is not { } hostArgs || !TryParseHostArgs(flagPackage, hostArgs))
+            Bind(flagPackage, "Parse").Invoke(null, []);
+    }
+
+    // CommandLine.Parse(hostArgs) through the converted package's own extension method.
+    // Everything is resolved by NAME for the reason the whole bridge is: the host must not
+    // reference flag. False — never a throw — when the shape is not what this expects, so an
+    // unexpected flag package degrades to Go's own call rather than taking the run down.
+    private static bool TryParseHostArgs(Type flagPackage, string[] hostArgs)
+    {
+        object? commandLine =
+            flagPackage.GetProperty("CommandLine", BindingFlags.Public | BindingFlags.Static)?.GetValue(null) ??
+            flagPackage.GetField("CommandLine", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+
+        if (commandLine is null)
+            return false;
+
+        MethodInfo? parse = flagPackage
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .FirstOrDefault(candidate => candidate.Name == "Parse" &&
+                                         candidate.GetParameters() is [{ } receiver, { } arguments] &&
+                                         receiver.ParameterType.IsInstanceOfType(commandLine) &&
+                                         arguments.ParameterType == typeof(slice<@string>));
+
+        if (parse is null)
+            return false;
+
+        @string[] converted = new @string[hostArgs.Length];
+
+        for (int i = 0; i < hostArgs.Length; i++)
+        {
+            converted[i] = hostArgs[i];
+        }
+
+        parse.Invoke(null, [commandLine, new slice<@string>(converted)]);
+
+        return true;
     }
 
     /// <summary>

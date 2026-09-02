@@ -76,6 +76,12 @@ public static class TestHost
         // lazily, so that everything a test can observe is inside the counting window.
         AllocationCounter.Enable();
 
+        // The run's own command line, announced once so nothing downstream has to ask the PROCESS
+        // for it. See TestFlagBridge.HostCommandLine: in a real converted test binary this array
+        // already IS os.Args[1:], so this is inert there; in the in-process MSTest tier it is the
+        // difference between parsing this run's arguments and parsing the test RUNNER's.
+        TestFlagBridge.HostCommandLine = args;
+
         TestOptions options;
 
         try
