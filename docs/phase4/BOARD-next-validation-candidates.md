@@ -19379,7 +19379,6 @@ precondition; the `Reinterpret` source-retention shape (NetShareAdd) is a named 
 S0b riders bind: the slog-class A/Bs carry byte-identical controls, and census-grade figures are
 never quoted as emission-grade.
 
-<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
 
 ---
 
@@ -20808,3 +20807,64 @@ binds the wrapper to it. Getting the auto-deref subtly wrong is how a receiver e
 wrong storage, which is why it was named rather than guessed at. Guard: a behavioral position with
 a pointer-typed field receiver and a value-receiver method, mutation between creation and call,
 output-compared against `go run`. Candidate owner: a coordinator sub-agent after the family closes.
+
+---
+
+## 2026-09-02 · Two Linux-axis findings from the never-measured sixteen: netip's disclosure set is the managed allocation regime rather than the Windows host, and cgo state is a per-package **build** variable with a measured seven-member class (lane C1, cloud Linux)
+
+**1. `net/netip`'s 57 disclosures reproduce leaf-for-leaf on Linux — the zh-box arc owes ONE pass, not
+two.** The row validated at `linux: 210 + 57` against a Windows `210 + 57`: identical on **both**
+numbers. Those 57 are the three `AllocsPerRun` families — `TestNoAllocs`, `TestAddrStringAllocs`,
+`TestParsePrefixAllocs` — want-0/want-1 asserts Go satisfies by stack allocation and inlining where
+the converted path measurably heap-allocates, each leaf pinned on its own counter line. Their
+reproducing identically on a second OS says the set is a property of the **managed allocation
+regime**, not of the Windows host or its toolchain.
+
+What that changes for the arc's owner: the netip harvest retires the same 57 leaves on both platforms
+when the reduction lands, so the arc owes one measurement pass and one bank, not a Windows pass plus a
+Linux re-derivation. If a future run finds the two platforms' disclosed sets diverging, that is a real
+change in the allocation regime and not noise — the invariance is now a recorded baseline it can be
+measured against.
+
+**2. cgo state is a per-package variable that decides which PRODUCTION files exist, and the class has
+exactly seven members at Go 1.23.12.** The corpus's emission state is `CGO_ENABLED=0`. A sweep
+converting under `CGO_ENABLED=1` therefore compiles a different source set than the committed tree
+holds for any package whose file selection is cgo-conditional: declarations migrate between files, the
+stale other-selection file remains, and the build dies on the duplicates — **zero verdicts, and it
+reads exactly like a converter regression.**
+
+Established by a one-variable A/B on `os/user`, same host, same tree, same row:
+
+| arm | result |
+|---|---|
+| `CGO_ENABLED=1` | FAIL in 12 s, zero verdicts, closure build dying; leaves `cgo_unix_test.cs` / `cgo_user_test.cs` behind, artifacts with no Windows counterpart |
+| `CGO_ENABLED=0` | validated at **12** — all agreeing, 0 disclosed, 0 withdrawn, a strict superset of the 5 banked Windows names, nothing absent |
+
+**The census, so the class is met once rather than one package at a time.** Grepping the roster's 199
+applicable rows for `//go:build` lines mentioning `cgo`, split by production vs test:
+
+| package | prod | test | consequence |
+|---|---|---|---|
+| `net` | 16 | 1 | **build failure** — `cgo_stub.go` `(unix && !cgo && !darwin)` vs `cgo_unix.go` `((cgo && unix) \|\| darwin)` are mutually exclusive; the corpus holds `net/linux/cgo_stub.cs`, so it is the cgo-OFF side. Measured FAIL at 183 s with `cgo_stub.cs` absent from the run's own drift list — i.e. not re-emitted, because it was not selected. Needs the pin. |
+| `os/user` | 7 | 4 | **build failure** — pinned; validates at 12 |
+| `plugin` | 2 | 0 | **converter crash** — `plugin_dlopen.go` `((linux && cgo) \|\| …)` is literal C (`import "C"`, `#include <dlfcn.h>`); `plugin_stubs.go` `(… \|\| !cgo)` is pure Go, and the corpus holds `plugin_stubs.cs`. So the crash at `conversionDriver.go:228` is a **cgo-state artifact, not a converter defect** — a candidate for the pin, and the reading of that row's root should be corrected. UNMEASURED as of this entry; C1 runs the arm. |
+| `crypto/internal/boring` | 1 | 0 | **inert** — `notboring.go`'s constraint is a negated conjunction containing `boringcrypto`, already true when that tag is off, so cgo does not move its selection. Banked `linux: 3`, no pin. |
+| `debug/pe` | 0 | 1 | **count only** — `file_cgo_test.go` `//go:build cgo` holds `TestDefaultLinkerDWARF` / `TestInternalLinkerDWARF` / `TestExternalLinkerDWARF`, which ARE the row's Linux surplus. `linux: 13` vs Windows 10 is cgo-ON's three extra tests, and they pass because on Linux both runtimes skip them in agreement (`testDWARF` skips when `GOOS != "windows"`). |
+| `os/exec` | 0 | 1 | **count only** — `exec_linux_test.go` `linux && cgo`; unmeasured (R2 docket) |
+| `os/signal` | 0 | 1 | **count only** — `signal_cgo_test.go`; banked `linux: 29 + 2` |
+
+**The rule the class yields, and the trap in it: the count moves in BOTH directions, so neither cgo
+state is the safe default.** Pinning off fixes `net` and `os/user` and would *reduce* `debug/pe` from
+13 to 10; a session-wide zero brings the three cgo-ON-derived rows (`debug/buildinfo` 204,
+`go/internal/gcimporter` 582, `go/internal/srcimporter` 7) back short. The remedy is therefore a
+**per-package table** (`$cgoOffPackages` beside `$longTimeouts` in `run-validated-sweep.ps1`, applied
+around the converter invocation and restored in a `finally`), pinning what the corpus's emission state
+requires and leaving every other row alone. A test-only-conditional row's annotation is only
+meaningful beside the cgo state it was taken in, which is worth stating on the row rather than
+assuming.
+
+**Carried into the runbook** (`docs/GoCorpusMigration.md` §3.3) rather than left here, because a
+version hop re-derives every row and would meet this on its first cgo-conditional package: the
+existing precondition covers the Go side (a count discrepancy); this is the converted side (a build
+failure), and the census is the cheap way to meet the class once.
+<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

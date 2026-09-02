@@ -650,6 +650,40 @@ repetition count and where the reading is recorded, and do it before the map lea
   which tests the **Go side** runs, a worker with a C toolchain and one without are **not measuring
   the same thing**, and the difference presents as a verdict-count discrepancy attributable to nothing
   in the corpus.
+- **The worker's cgo STATE is pinned per package, not just recorded.** The bullet above is about the
+  Go side and presents as a count discrepancy; this is the other half and it presents as a **build
+  failure with zero verdicts**, which reads like a converter regression and is not one. For a package
+  whose **production** file selection is cgo-conditional, the cgo state decides *which `.go` files
+  exist* — so a conversion run under `CGO_ENABLED=1` against a corpus emitted at `CGO_ENABLED=0`
+  compiles a different source set than the committed tree holds: declarations migrate between files
+  while the stale other-selection file remains, and the build dies on the duplicates. Both sides of
+  the comparison must share **one** cgo state, and the converted side can only be the selection the
+  committed tree holds — i.e. the corpus's emission state, which is `CGO_ENABLED=0`.
+
+  Measured 2026-09-02 on Linux as a one-variable A/B on `os/user`: `CGO_ENABLED=1` failed in 12 s with
+  zero verdicts; `CGO_ENABLED=0` validated at 12, all agreeing, a strict superset of the 5 banked
+  Windows names (the 7 extra are `lookup_unix_test.go`'s, selected only when cgo is off). The remedy
+  is the sweep's `$cgoOffPackages` table beside `$longTimeouts` — **per-package, never session-wide**,
+  because rows whose annotations were derived cgo-ON (`debug/buildinfo`, `go/internal/gcimporter`,
+  `go/internal/srcimporter`) come back short under a global zero.
+
+  **A hop re-derives every row, so census the class first rather than meeting it one package at a
+  time.** The census is a grep of the target release's `//go:build` lines for `cgo`, split by whether
+  the conditional files are production or test-only:
+
+  - **production-conditional** — the build-failure class; these need the pin. At Go 1.23.12 the
+    roster's members are `net` (16 files), `os/user` (7), `plugin` (2) and `crypto/internal/boring`
+    (1, and inert unless the `boringcrypto` tag is on, since its constraint is a negated conjunction
+    that is already true without it).
+  - **test-only-conditional** — no build failure; the cgo state decides which *tests* run, so it
+    decides the **count**, and the annotation is only meaningful beside the state it was taken in. At
+    1.23.12: `debug/pe`, `os/exec`, `os/signal`. `debug/pe`'s Linux surplus is exactly this — its
+    `linux: 13` against a Windows 10 is three tests in `file_cgo_test.go` (`//go:build cgo`) that
+    exist in the run only because cgo is on.
+
+  The count moves in both directions, so neither state is "safer": pinning cgo off fixes `net` and
+  `os/user` and would *reduce* `debug/pe`. Pin what the corpus's emission state requires and leave the
+  rest alone.
 
 ### 3.4 The ledger
 
