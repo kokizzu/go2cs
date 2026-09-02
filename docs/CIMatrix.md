@@ -30,6 +30,33 @@ distinction is worth a dispatch before a Linux arc is planned around it.
 multiplies it. When every machine is committed, a shard can run here instead of waiting — filtered,
 one dispatch per shard, results read from the artifacts.
 
+## The one schedule — the darwin regression guard
+
+**`goos=darwin stage=census` runs daily at 04:41 UTC, and nothing else does.** It is still not a
+merge gate: no push trigger, no pull_request trigger, and no other flavor or stage on a timer. It is
+a regression guard whose conclusion is read on the morning board.
+
+**Why darwin and only darwin.** windows and linux are each compiled by standing gates on the fleet's
+own machines, so a mechanical break in either surfaces the day it lands. **Nothing compiles the
+darwin flavor.** On 2026-09-02 a one-line CS0266 — `var` inferring `StandardBox<T>` where the base
+`ж<T>` was needed, left in `os/darwin/dir_darwin_impl.cs` by the box-kind split's 754-site emitter
+flip (`36b7e9d96`) — was found **seven days** after it landed, by the first darwin dispatch since,
+on both mac legs byte-identically. The alternative to a schedule is not "no cost"; it is "however
+long until someone looks". A census is 10–17 runner minutes.
+
+**A scheduled event carries no inputs**, so the `plan` job resolves the effective
+goos/stage/filter/dotnet once — `schedule` takes the fixed darwin/census pair, a dispatch takes its
+own inputs unchanged — and every consumer downstream reads `needs.plan.outputs.*` rather than
+`inputs.*`. Dispatch behaviour is unchanged by construction: nothing outside that one branch was
+re-decided. The resolution is positive-controlled in all four arms, negative control included (with
+the schedule branch neutered, a schedule event falls to `linux`, not `darwin` — so the `darwin` in
+the live arm is the branch firing and not a default agreeing by luck).
+
+**Reading a red scheduled census:** it is a regression attributable to that day's trains, not a
+newly discovered wall. darwin has compiled clean since 2026-08-23 (census run 32649840220, zero
+errors on both architectures). Root it against the day's merges, exactly as the CS0266 above was
+rooted.
+
 ## How to trigger
 
 Actions → **OS matrix (on demand)** → *Run workflow*. Or from the CLI:
@@ -98,6 +125,19 @@ budget is a ceiling, not an allowance.
 Nothing is automatic and nothing is written back. Every leg uploads an `artifacts/` bundle
 (**7-day retention**, uploaded on failure too) and writes its headline table into the run's job
 summary, so a verdict is readable without downloading anything.
+
+Every leg ALSO echoes its summary as **annotations** (`.github/annotate-summary.ps1`). That is
+not decoration: a job summary and an uploaded artifact are both served from Azure blob storage
+(`productionresultssa*.blob.core.windows.net`, reached by a 302 from `api.github.com`), so a host
+whose egress policy allows the API and denies that domain — which is the position a
+restricted-egress cloud lane is in — can dispatch a run, read every job and step *conclusion*, and
+not one line of what the run measured. Annotations come back from
+`GET /repos/{owner}/{repo}/check-runs/{id}/annotations` as JSON from the API itself, so the
+headline survives that block, and it lands on the run page where a reader sees it without opening
+the summary tab. The summary and the artifact are written exactly as before; this is a second,
+cheaper-to-read copy. GitHub caps annotations at ten per level per step, so the helper packs the
+text into a few chunks, stays clear of the length cap, and — when a summary is longer than the
+budget — **says how much it dropped** rather than truncating silently.
 
 **The triggerer owns the relay.** Read the summary, download the artifact if the detail matters,
 and carry the finding to the status board or the fleet mailbox in the same words the fleet uses —

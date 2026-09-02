@@ -960,9 +960,13 @@ namespace BehavioralRunner
                     // one layer in (see that helper).
                     string csErr = StdErrSummary(cs.StdErr), goErr = StdErrSummary(go.StdErr);
 
+                    // A wider budget than Truncate's 300-char default ON PURPOSE: this summary
+                    // now carries the innermost cause AND its first frames, and the frames are the
+                    // half that names the caller. Truncating them away would leave the report
+                    // saying exactly what it said before this was worth changing.
                     string detail = csErr.Length == 0 && goErr.Length == 0
                         ? " (neither side wrote to stderr)"
-                        : $" -- C# stderr: \"{Truncate(csErr)}\"; Go stderr: \"{Truncate(goErr)}\"";
+                        : $" -- C# stderr: \"{Truncate(csErr, MismatchStdErrBudget)}\"; Go stderr: \"{Truncate(goErr, MismatchStdErrBudget)}\"";
 
                     results[p].Phases[Phase.Output] = Status.Fail;
                     results[p].Messages.Add($"exit code mismatch: C# {cs.ExitCode} vs Go {go.ExitCode}{detail}");
@@ -1528,6 +1532,8 @@ namespace BehavioralRunner
             }
 
             List<string> inner = [];
+            List<string> frames = [];
+            bool collecting = false;
 
             foreach (string line in text.Replace("\r", "").Split('\n'))
             {
@@ -1536,16 +1542,69 @@ namespace BehavioralRunner
                 if (trimmed.StartsWith("---> ", StringComparison.Ordinal))
                 {
                     inner.Add(trimmed);
+
+                    // A new innermost cause supersedes whatever frames were collected for the
+                    // previous one: only the LAST `--->` is reported, so only its frames are wanted.
+                    frames.Clear();
+                    collecting = true;
+                    continue;
                 }
+
+                if (!collecting)
+                {
+                    continue;
+                }
+
+                if (trimmed.StartsWith("at ", StringComparison.Ordinal))
+                {
+                    if (frames.Count < MaxReportedFrames)
+                    {
+                        frames.Add(trimmed);
+                    }
+
+                    continue;
+                }
+
+                // Anything that is neither a frame nor a nesting marker ends this exception's
+                // stack -- `--- End of inner exception stack trace ---` above all.
+                collecting = false;
             }
 
-            return inner.Count switch
+            string cause = inner.Count switch
             {
                 0 => first,
                 1 => $"{first} {inner[^1]}",
                 _ => $"{first} [+{inner.Count - 1} nested] {inner[^1]}"
             };
+
+            return frames.Count == 0 ? cause : $"{cause} || {string.Join(" | ", frames)}";
         }
+
+        /// <summary>
+        /// How many frames of the innermost exception's stack to carry in a mismatch report.
+        /// </summary>
+        /// <remarks>
+        /// Four is enough to name the failing leaf and the converted Go function that called it,
+        /// which is the question a stub-throw failure actually poses -- WHICH caller reached the
+        /// unimplemented entry point first. The darwin run-layer probe of 2026-09-02 is the worked
+        /// example of needing it: the report read `NotImplementedException: rawSyscall: external
+        /// (assembly or cgo) function is not implemented` and could name neither the Go function
+        /// that called `rawSyscall` nor the package initializer above it, so the design record had
+        /// to leave "the first failing call" unpinned. The frames were in the text the whole time --
+        /// golib's crash handler writes `ex.ToString()`, which carries them -- and this helper threw
+        /// them away one line before they were read, which is the same evidence loss the `---&gt;`
+        /// reading was minted to fix, one layer further in.
+        ///
+        /// Bounded rather than unbounded because a mismatch report is one line in a summary: an
+        /// unbounded stack would push the cause itself past the caller's truncation, re-creating
+        /// the problem in the other direction.
+        /// </remarks>
+        private const int MaxReportedFrames = 4;
+
+        /// <summary>
+        /// Character budget for each side's stderr in an exit-code-mismatch report.
+        /// </summary>
+        private const int MismatchStdErrBudget = 900;
 
         private static string Truncate(string s, int max = 300)
         {

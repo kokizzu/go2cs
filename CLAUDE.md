@@ -1043,8 +1043,17 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
   **Two L3 gate lessons (measured 2026-08-15, the three-target leveling lane):** (1) a change whose
   files live in linux/darwin per-GOOS folders is NOT compiled by the default windows build — the
   windows `go2cs-stdlib.slnx` gate alone would have skipped 15 of that regen's 27 files, so L3 work
-  owes a `-p:GoTargetOS=linux` build too (darwin does not currently build — `os/dir.cs` cannot
-  resolve `File.readdir`, 19 pre-existing errors proven at master; census that, don't re-diagnose).
+  owes a `-p:GoTargetOS=linux` build too. ⚠ **The darwin half of this note was STALE for ten days
+  and is corrected here (2026-09-02): darwin COMPILES CLEAN** — census run 32649840220 at
+  `c003d32af`, **zero errors on osx-x64 AND osx-arm64**, the wall history **19 → 10 → 9 → 0**
+  closed by lane G within ~24 hours of the first darwin build ever attempted, re-confirmed green
+  at master by the 2026-08-25 census (run 32852475367, both legs). The retired text said "darwin
+  does not currently build — `os/dir.cs` cannot resolve `File.readdir`, 19 pre-existing errors";
+  that is the state of 2026-08-22, and it survived here long enough to be copied into a lane
+  prompt and to send a lane looking for a wall that no longer exists. **The darwin census is a
+  REGRESSION GUARD now, cheap and dispatchable at any branch tip** (`.github/workflows/os-matrix.yml`,
+  `goos=darwin stage=census`), not a wall to census. What darwin still lacks is a RUN layer, which
+  is a separate and open question: `docs/phase4/FINDING-darwin-run-layer.md`).
   (2) **A `GoTargetOS` switch poisons `obj/`**: the `<Compile>` item set changes while timestamps
   don't, so an incremental build after a target switch silently validates the OTHER target's
   assemblies — purge `bin`/`obj`/`Generated` between target switches before trusting any build or

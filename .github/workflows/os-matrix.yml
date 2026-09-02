@@ -4,7 +4,19 @@
 # (check-no-regression.ps1, run-behavioral.ps1, run-validated-sweep.ps1) run on the fleet's own
 # machines against measured budgets; this is a supplement that reaches hardware the fleet does not
 # own — both macOS legs above all — and a native-Linux control for readings the WSL lane produced.
-# It runs on workflow_dispatch ONLY: no push trigger, no pull_request trigger, no schedule.
+# It is never triggered by code: no push trigger and no pull_request trigger. It runs on
+# workflow_dispatch, and on ONE daily schedule that runs the darwin census and nothing else.
+#
+# Why darwin has a schedule and the other flavors do not: windows and linux are each compiled by
+# standing gates on the fleet's own machines, so a mechanical break in either surfaces the day it
+# lands. NOTHING compiles the darwin flavor. On 2026-09-02 a one-line CS0266 -- `var` inferring
+# `StandardBox<T>` where the base `ж<T>` was needed, left by the box-kind split's 754-site emitter
+# flip (36b7e9d96) -- was found SEVEN DAYS after it landed, by the first darwin dispatch since. The
+# alternative to a schedule is not "no cost", it is "however long until someone looks". A census is
+# 10-17 runner minutes; seven days of a silently red platform is the price it replaces.
+#
+# The scheduled run is still NOT A MERGE GATE. It is a regression guard whose conclusion is read on
+# the morning board: a red scheduled census is a regression attributable to the day's trains.
 #
 # Guide: docs/CIMatrix.md. Corpus mechanics, GoTargetOS flavors and the measured budget rows the
 # timeouts below are scaled from: CLAUDE.md.
@@ -12,6 +24,16 @@
 name: OS matrix (on demand)
 
 on:
+  # A scheduled event carries NO inputs -- `inputs.*` is empty for every one of them -- so the plan
+  # job below resolves the effective goos/stage/filter/dotnet once and every consumer reads its
+  # outputs rather than `inputs.*`. That is what keeps workflow_dispatch behaviour byte-identical
+  # while giving the schedule somewhere to get its values from.
+  #
+  # 04:41 UTC: a quiet hour, and deliberately not on the hour -- every repository that asks for
+  # "daily" gets `0 4`, and GitHub delays a congested cron rather than dropping it.
+  schedule:
+    - cron: '41 4 * * *'
+
   workflow_dispatch:
     inputs:
       goos:
@@ -55,7 +77,10 @@ permissions:
 concurrency:
   # github.event.inputs rather than the inputs context: this expression is evaluated before the
   # workflow's own contexts are in play, and the github context is the spelling guaranteed there.
-  group: os-matrix-${{ github.ref }}-${{ github.event.inputs.goos }}-${{ github.event.inputs.stage }}
+  # A scheduled run has no `github.event.inputs`, so both halves fall back to the schedule's own
+  # pair; without the fallback every scheduled run would share one empty group with any other
+  # input-less event.
+  group: os-matrix-${{ github.ref }}-${{ github.event.inputs.goos || 'darwin' }}-${{ github.event.inputs.stage || 'census' }}
   cancel-in-progress: false
 
 env:
@@ -76,6 +101,12 @@ jobs:
     outputs:
       matrix: ${{ steps.derive.outputs.matrix }}
       go-version: ${{ steps.derive.outputs.go-version }}
+      # The EFFECTIVE dispatch parameters. Every consumer downstream reads these rather than
+      # `inputs.*`, because `inputs.*` is empty on a schedule event.
+      goos: ${{ steps.derive.outputs.goos }}
+      stage: ${{ steps.derive.outputs.stage }}
+      filter: ${{ steps.derive.outputs.filter }}
+      dotnet: ${{ steps.derive.outputs.dotnet }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -86,8 +117,35 @@ jobs:
         env:
           INPUT_GOOS: ${{ inputs.goos }}
           INPUT_STAGE: ${{ inputs.stage }}
+          INPUT_FILTER: ${{ inputs.filter }}
+          INPUT_DOTNET: ${{ inputs.dotnet }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           $ErrorActionPreference = 'Stop'
+
+          # ---- effective parameters --------------------------------------------------------
+          # A `schedule` event carries no inputs at all, so it gets the scheduled guard's fixed
+          # pair. Resolving it HERE, once, is what lets the rest of the workflow stay written
+          # against a single source; a dispatch is unchanged because its inputs are always present.
+          if ($env:EVENT_NAME -eq 'schedule') {
+              $goos = 'darwin'; $stage = 'census'; $filter = ''; $dotnet = '10.0.x'
+              Write-Host "scheduled regression guard: goos=$goos stage=$stage (inputs are empty on a schedule event)"
+          }
+          else {
+              $goos = $env:INPUT_GOOS; $stage = $env:INPUT_STAGE
+              $filter = $env:INPUT_FILTER; $dotnet = $env:INPUT_DOTNET
+          }
+
+          # Defaulting rather than trusting: a `workflow_dispatch` through the REST API may omit an
+          # input that the form would have filled, and an empty $stage would otherwise reach the
+          # budget lookup below and throw "Unknown stage ''" instead of doing the obvious thing.
+          if (-not $goos)   { $goos = 'linux' }
+          if (-not $stage)  { $stage = 'census' }
+          if (-not $dotnet) { $dotnet = '10.0.x' }
+          if ($null -eq $filter) { $filter = '' }
+
+          $env:INPUT_GOOS = $goos
+          $env:INPUT_STAGE = $stage
 
           # The Go release is READ FROM version.props, never written here. run-validated-sweep.ps1
           # and the converter both refuse a toolchain whose release differs from <GoStdLibVersion>
@@ -150,13 +208,17 @@ jobs:
 
           Add-Content -Path $env:GITHUB_OUTPUT -Value "matrix=$json" -Encoding utf8
           Add-Content -Path $env:GITHUB_OUTPUT -Value "go-version=$goVersion" -Encoding utf8
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "goos=$goos" -Encoding utf8
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "stage=$stage" -Encoding utf8
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "filter=$filter" -Encoding utf8
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "dotnet=$dotnet" -Encoding utf8
 
   # ---------------------------------------------------------------------------------------------
   # run — one leg per (goos, runner, rid).
   # ---------------------------------------------------------------------------------------------
   run:
     needs: plan
-    name: ${{ inputs.stage }} (${{ matrix.goos }} / ${{ matrix.rid }})
+    name: ${{ needs.plan.outputs.stage }} (${{ matrix.goos }} / ${{ matrix.rid }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.timeout }}
     strategy:
@@ -175,7 +237,7 @@ jobs:
       GoTargetOS: ${{ matrix.goos }}
       GOOS_TARGET: ${{ matrix.goos }}
       RID: ${{ matrix.rid }}
-      STAGE: ${{ inputs.stage }}
+      STAGE: ${{ needs.plan.outputs.stage }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -195,7 +257,7 @@ jobs:
           # NETSDK1045 -- an SDK cannot target a framework newer than itself. That is the
           # release-line control behaving correctly on a 1.23.1.x anchor build, not a corpus break;
           # read it as operator error and re-dispatch with 10.0.x.
-          dotnet-version: ${{ inputs.dotnet }}
+          dotnet-version: ${{ needs.plan.outputs.dotnet }}
 
       - name: Environment report
         shell: pwsh
@@ -235,7 +297,7 @@ jobs:
       # census — compile the corpus flavor and bucket the errors by CS code.
       # -------------------------------------------------------------------------------------
       - name: Census — build the corpus flavor
-        if: inputs.stage == 'census'
+        if: needs.plan.outputs.stage == 'census'
         shell: pwsh
         run: |
           # 'Continue': the build's own diagnostics are the measurement, and a native command's
@@ -392,16 +454,24 @@ jobs:
 
           # The step carries the BUILD's verdict. For darwin a red run with a bucketed census IS
           # the successful outcome of the exercise -- read the summary, not the checkmark.
+          # The summary is ALSO emitted as annotations. Both places a leg's evidence normally
+          # lands -- the job summary and the uploaded artifact -- are served from Azure blob
+          # storage, so a host whose egress allows api.github.com but denies that domain can read
+          # every step's CONCLUSION and none of its content. Annotations come back from the
+          # check-runs REST API itself, which keeps this leg readable from such a host (and puts
+          # the headline on the run page besides). Nothing above is replaced.
+          & ./.github/annotate-summary.ps1 -Title "census $goos/$rid" -Lines $summary
+
           exit $buildExit
 
       # -------------------------------------------------------------------------------------
       # behavioral-smoke — prove the harness itself runs on this runner.
       # -------------------------------------------------------------------------------------
       - name: Behavioral smoke — converter build + filtered run
-        if: inputs.stage == 'behavioral-smoke'
+        if: needs.plan.outputs.stage == 'behavioral-smoke'
         shell: pwsh
         env:
-          SMOKE_FILTER: ${{ inputs.filter }}
+          SMOKE_FILTER: ${{ needs.plan.outputs.filter }}
           # BehavioralRunner's OWN budgets, in seconds: no timeout the caller sets can influence
           # them, so a generous job budget alone would be worthless if the runner killed its child
           # first. Sized for a cold 4-core hosted runner, where the shared core closure is built
@@ -473,16 +543,24 @@ jobs:
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
           Set-Content -LiteralPath (Join-Path $art "behavioral-smoke-$goos-$rid-summary.md") -Value $summary -Encoding utf8
 
+          # The summary is ALSO emitted as annotations. Both places a leg's evidence normally
+          # lands -- the job summary and the uploaded artifact -- are served from Azure blob
+          # storage, so a host whose egress allows api.github.com but denies that domain can read
+          # every step's CONCLUSION and none of its content. Annotations come back from the
+          # check-runs REST API itself, which keeps this leg readable from such a host (and puts
+          # the headline on the run page besides). Nothing above is replaced.
+          & ./.github/annotate-summary.ps1 -Title "behavioral-smoke $goos/$rid" -Lines $summary
+
           exit $runExit
 
       # -------------------------------------------------------------------------------------
       # sweep-shard — a filtered validated sweep against `go test -json` on this platform.
       # -------------------------------------------------------------------------------------
       - name: Sweep shard — filtered validated sweep
-        if: inputs.stage == 'sweep-shard'
+        if: needs.plan.outputs.stage == 'sweep-shard'
         shell: pwsh
         env:
-          SWEEP_FILTER: ${{ inputs.filter }}
+          SWEEP_FILTER: ${{ needs.plan.outputs.filter }}
           # Raises the sweep's 10m default for a 4-core hosted runner. The script's per-package
           # $longTimeouts entries are FLOORS, not overrides: a larger -TestTimeout raises them, a
           # smaller one still loses, so this value cannot under-budget the four long rows.
@@ -552,6 +630,14 @@ jobs:
           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $summary
           Set-Content -LiteralPath (Join-Path $art "sweep-$goos-$rid-summary.md") -Value $summary -Encoding utf8
 
+          # The summary is ALSO emitted as annotations. Both places a leg's evidence normally
+          # lands -- the job summary and the uploaded artifact -- are served from Azure blob
+          # storage, so a host whose egress allows api.github.com but denies that domain can read
+          # every step's CONCLUSION and none of its content. Annotations come back from the
+          # check-runs REST API itself, which keeps this leg readable from such a host (and puts
+          # the headline on the run page besides). Nothing above is replaced.
+          & ./.github/annotate-summary.ps1 -Title "sweep $goos/$rid" -Lines $summary
+
           exit $sweepExit
 
       # -------------------------------------------------------------------------------------
@@ -561,7 +647,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: os-matrix-${{ inputs.stage }}-${{ matrix.goos }}-${{ matrix.rid }}
+          name: os-matrix-${{ needs.plan.outputs.stage }}-${{ matrix.goos }}-${{ matrix.rid }}
           path: artifacts/
           retention-days: 7
           if-no-files-found: warn
