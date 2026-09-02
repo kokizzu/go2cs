@@ -181,14 +181,26 @@ jobs:
               'behavioral-smoke' = 90    # converter `go build` + a filtered 4-phase run whose
                                          # shared core closure is built from cold.
               'behavioral-full'  = 150   # the WHOLE enumeration in slices with a purge between.
-                                         # Measured on a 4-core Linux host at 655 measurable
-                                         # projects: fixed ~236s (converter build + cold core
-                                         # closure + shared-dep prebuild, paid ONCE because the
-                                         # purge never touches src/core) plus ~5.3 s/project,
-                                         # i.e. ~62 min. 150 is that with the headroom the table's
-                                         # own doctrine asks for, since the marginal was measured
-                                         # on two pure-compute families and socket/filesystem
-                                         # packages will run slower in the Output phase.
+                                         # PROVISIONAL, and deliberately labelled so: the first
+                                         # real run of this leg replaces it. What IS measured, on
+                                         # a 4-core Linux host at GoTargetOS=linux: a 3-project
+                                         # slice costs 274s COLD (bin/obj/Generated purged, so the
+                                         # core closure is rebuilt) and 58s warm. Subtracting a
+                                         # ~5.3 s/project marginal puts the cold fixed term near
+                                         # 258s and the warm one near 42s.
+                                         #
+                                         # Do NOT read ~62 min off that. The fixed term is NOT a
+                                         # constant: the runner pre-builds the UNION of a slice's
+                                         # dependencies, which was 6 shared deps for those 3
+                                         # projects and is ~31 for the whole corpus, so a
+                                         # 164-project slice pays materially more than the numbers
+                                         # above. src/core does stay warm across slices (the purge
+                                         # never touches it), so slices 2..n pay the warm term --
+                                         # but the extrapolation from 3 projects to 655 is an
+                                         # extrapolation, not a measurement, and it is the one
+                                         # thing here that has never been run end to end.
+                                         # 150 is chosen to clear a pessimistic reading of it with
+                                         # the headroom the table's own doctrine asks for.
               'sweep-shard'      = 210   # one -tests convert/build/run/compare cycle per matched
                                          # row; the sweep's own per-package floors reach 120m.
           }
