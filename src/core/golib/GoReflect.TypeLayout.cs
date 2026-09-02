@@ -462,6 +462,11 @@ public static partial class GoReflect
     // produced. That is exactly what a managed reference classified as Struct once cost here.
     private const int MaxLayoutDepth = 128;
 
+    // Go's goarch.PtrSize on the platforms this corpus targets. Named rather than spelled 8 at each
+    // use so the GC-mask walk's granularity reads as "one entry per pointer word" and not as an
+    // arbitrary divisor -- the distinction the mask's own doc comment turns on.
+    private const nint GoWordSize = 8;
+
     // The one Go struct layout walk. Offsets, size and alignment come out of a SINGLE pass and are
     // memoized per type, so no two of them can describe different shapes, and a struct reached once
     // per field of every enclosing struct is walked once in total.
@@ -621,6 +626,147 @@ public static partial class GoReflect
 
         object? zero = s_zeroInstances.GetOrAdd(declaringType, static t => Activator.CreateInstance(t));
         return zero is null ? null : ArrayDimsOfValue(field.GetValue(zero));
+    }
+
+    /// <summary>
+    /// Go's GC pointer bitmap for the type <paramref name="t"/> represents: one byte per POINTER
+    /// WORD of the object, <c>1</c> where that word holds a pointer the collector must scan and
+    /// <c>0</c> where it does not, from the object's base upward. Null when the type's size or
+    /// layout is not derivable.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the same truth <see cref="GoPtrBytesOf"/> reports at coarser resolution — that one
+    /// answers where the LAST pointer word ends, this one answers WHICH words they are — and it
+    /// reads the same memoized layout pass, so a type's mask and its <c>PtrBytes</c> can never
+    /// disagree. The per-kind pointer words are Go's own memory shapes, not C#'s: a string is
+    /// {ptr,len} so word 0 only; a slice is {ptr,len,cap}, likewise word 0; an interface is
+    /// {type,data} and BOTH words are scanned; an array repeats its element's mask; a struct places
+    /// each field's mask at that field's offset.
+    /// </para>
+    /// <para>
+    /// The GRANULARITY is one entry per pointer-word, taken from <c>runtime.getgcmask</c>'s own
+    /// construction (<c>make([]byte, n/goarch.PtrSize)</c>, indexed <c>[i/goarch.PtrSize]</c>) and
+    /// NOT from reflect's doc comment, which says "one entry per byte" about the bitmap's storage.
+    /// The distinction is load-bearing: <c>verifyGCBits</c> accepts a mask LONGER than expected
+    /// (Go's iterator runs out to the size class) but compares by prefix, so a byte-vs-word
+    /// transposition fails everywhere while a longer answer passes.
+    /// </para>
+    /// </remarks>
+    public static byte[]? GoGCMaskOf(Type t, nint[]? arrayDims = null)
+    {
+        nint size = GoSizeOf(t, arrayDims);
+
+        if (size < 0)
+            return null;
+
+        byte[] mask = new byte[size / GoWordSize];
+
+        return fillGCMask(mask, 0, t, arrayDims, 0) ? mask : null;
+    }
+
+    // Sets the pointer words of `t` into `mask`, at `wordBase` words from the object's base.
+    // Returns false when the type's layout is not derivable, which makes the whole mask unanswerable
+    // rather than silently short — a mask that is WRONG passes no prefix check, and one that is
+    // merely absent is an honest "cannot say".
+    private static bool fillGCMask(byte[] mask, nint wordBase, Type t, nint[]? arrayDims, int depth)
+    {
+        if (depth > MaxLayoutDepth)
+            return false;
+
+        void set(nint word)
+        {
+            if (word >= 0 && word < mask.Length)
+                mask[word] = 1;
+        }
+
+        switch (KindOf(t))
+        {
+            case Bool or Int8 or Uint8 or Int16 or Uint16 or Int32 or Uint32 or Float32
+                 or Int or Uint or Int64 or Uint64 or Uintptr or Float64
+                 or Complex64 or Complex128:
+                return true;
+
+            // {ptr, len} and {ptr, len, cap}: the pointer is first and it is the only one.
+            case String or Slice:
+                set(wordBase);
+                return true;
+
+            // {type, data} — both words are scanned.
+            case Interface:
+                set(wordBase);
+                set(wordBase + 1);
+                return true;
+
+            case Pointer or UnsafePointer or Map or Chan or Func:
+                set(wordBase);
+                return true;
+
+            case Array:
+            {
+                if (arrayDims is not { Length: > 0 })
+                    return false;
+
+                Type? elem = ElementType(t);
+
+                if (elem is null)
+                    return false;
+
+                nint[]? elemDims = arrayDims.Length > 1 ? arrayDims[1..] : null;
+
+                // A pointer-free element makes the whole array pointer-free however long it is,
+                // which is also what keeps a [1_000_000]int from costing a million iterations here.
+                nint elemPtrBytes = goPtrBytesOf(elem, elemDims, depth + 1);
+
+                if (elemPtrBytes < 0)
+                    return false;
+
+                if (elemPtrBytes == 0)
+                    return true;
+
+                nint elemSize = goSizeOf(elem, elemDims, depth + 1);
+
+                if (elemSize <= 0)
+                    return false;
+
+                for (nint i = 0; i < arrayDims[0]; i++)
+                {
+                    nint at = wordBase + i * elemSize / GoWordSize;
+
+                    if (at >= mask.Length)
+                        break;
+
+                    if (!fillGCMask(mask, at, elem, elemDims, depth + 1))
+                        return false;
+                }
+
+                return true;
+            }
+
+            case Struct:
+            {
+                StructLayout layout = structLayoutOf(t, depth);
+
+                if (layout.Size < 0)
+                    return false;
+
+                GoFieldInfo[] fields = GoFields(t);
+
+                if (fields.Length != layout.Offsets.Length)
+                    return false;
+
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    if (!fillGCMask(mask, wordBase + layout.Offsets[i] / GoWordSize, fields[i].Type, fields[i].ArrayDims, depth + 1))
+                        return false;
+                }
+
+                return true;
+            }
+
+            default:
+                return false;
+        }
     }
 
     /// <summary>
