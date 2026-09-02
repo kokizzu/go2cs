@@ -6659,6 +6659,27 @@ func runCommandWithTimeoutEnv(timeout time.Duration, workingDir string, options 
 		// directory are.
 		cmd.Env = append(cmd.Env, "PATH="+filepath.Join(options.goRoot, "bin")+string(os.PathListSeparator)+os.Getenv("PATH"))
 	}
+
+	// TZ is part of go test's environment for the same reason GOROOT and PATH above are, and it
+	// has to be set HERE rather than inside the host because the converted snapshot is taken
+	// before any host code runs: runtime.envs is filled by a [ModuleInitializer]
+	// (runtime/goenvs_impl.cs), which .NET runs at assembly load, and syscall.envs is a static
+	// field initializer over that. TestHost.Run's own Environment.SetEnvironmentVariable pin
+	// therefore reaches the CLR (TimeZoneInfo.Local) but NEVER syscall.Getenv on unix, so a
+	// converted time-sensitive test ran under the HOST's zone while its Windows counterpart ran
+	// under the pin -- measured 2026-09-02 on a fleet box sitting at America/Chicago, five hours
+	// off. Making the snapshot live instead was refused deliberately: Go documents it as "set at
+	// process start" (GOROOT's own doc) and setenv_c mirrors into the C environment only under
+	// cgo, so a later os.Setenv does not and should not appear there. Setting it at LAUNCH keeps
+	// that semantic exactly and needs no corpus or golib change.
+	//
+	// It goes in the SHARED path, not in testHostRunEnv: `go test` (the oracle) is launched
+	// through runCommandWithTimeout with no extra environment, so a host-only pin would leave
+	// the two sides of one comparison in DIFFERENT zones -- trading a cross-platform divergence
+	// for a cross-side one. A test that changes TZ within its own process is unaffected; only
+	// the starting value is pinned, which is what TestHost.Run was already trying to do.
+	cmd.Env = append(cmd.Env, "TZ=UTC")
+
 	output, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
 		return string(output), fmt.Errorf("%s timed out after %s", name, timeout)
