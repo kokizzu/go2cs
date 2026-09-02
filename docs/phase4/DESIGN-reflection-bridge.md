@@ -620,3 +620,45 @@ Only two call sites in the corpus read `reflect.Value.Pointer`: `internal/fmtsor
 validated 3/3 including `TestInterface`'s grouping assertion) and
 `vendor/golang.org/x/crypto/internal/alias`, which compares slice-element pointers and never reaches
 the descriptor branch.
+
+## Fix — a raw `GetType()` is not an eface type word (2026-09-02)
+
+`NilFuncValue` carries Go's eface **type word** for a nil func, and the design's soundness
+condition is that every observer resolves it through one of four bridge hooks —
+`GoDynamicTypeOf`, `builtin.TryTypeAssert`, `TryMarshalAssignable`, `IsNilGoValue`. An observer
+that calls `GetType()` directly sits outside that set and is wrong in BOTH directions at once: it
+answers `typeof(NilFuncValue)` where a LIVE value of the same func type answers the delegate type
+(a false inequality), and it answers the SAME class for nils of two DIFFERENT func types (a false
+equality, which the per-type interning cannot reach because interning distinguishes instances, not
+classes). The second is the dangerous one: nothing panics, a wrong-typed store is simply accepted.
+
+A census of the production corpus (`git grep`, not bare `rg` — `src/core/.gitignore` under-counts
+it) found 82 `GetType()` uses across 23 files, of which 74 are bridge machinery *implementing* the
+hooks. The entire population of raw eface type-word comparisons in converted code is **four sites
+in one file** — `sync/atomic/value.cs` 46/66/84/99, the `Store`/`Swap`/`CompareAndSwap`
+consistency checks — and that file is hand-owned (`[module: go.GoManualConversion]`, checked
+line-anchored). That is why the remedy is the hand-own's four comparisons rather than a converter
+emission rule: there is no emission at these sites to change. Consumer: `internal/poll`'s
+`TestSplicePipePool`, which stores a real `func(int)` and then `(func(int))(nil)`.
+
+⚠ The census instrument's edge, stated rather than implied: it keys on `GetType()`. A type-word
+comparison written another way — an `is` pattern, an `Equals`, a type captured into a variable and
+compared later — would not appear. The indirect shapes were checked and only bridge-internal ones
+were found, but a future site written that way is invisible to this census.
+
+### The family this belongs to: a nil CONVERSION loses its type cargo
+
+Three constructs, one emission site, one lesson — recorded together so the fourth is not derived
+from scratch. Go writes a typed nil as a conversion, and the managed rendering of that conversion
+drops whatever the Go TYPE carried that C# has no room for:
+
+| construct | what is lost | the arm that restores it |
+|---|---|---|
+| `(<-chan T)(nil)` | the channel's DIRECTION | `chanDirNilValue` (chanDirectionCargo.go) |
+| `(*[N]T)(nil)` | the array's LENGTH | `nilArrayPtrValue` |
+| `(func())(nil)` | the func TYPE (eface type word) | `OrTypedNilFunc` → `NilFuncValue` |
+
+Each renders as a cast of a null/default — the shape that carries nothing — so each needs an arm at
+the nil-conversion interception in `convCallExpr` putting the cargo back. A NON-nil value of the
+same type needs no arm: it carries its own type. If a fourth construct appears, it joins this table
+rather than earning a fourth independent derivation.
