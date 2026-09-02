@@ -1,0 +1,344 @@
+# CENSUS — the roster at Release + tiering-off, against the Debug bank
+
+> Measured 2026-09-02 by lane i9 on the fleet's bogo-capable Windows host, running
+> `run-validated-sweep.ps1 -TestConfig Release` over **all 201 banked rows** in four shards.
+> The committed proof pages under `docs/validation/current/` are the **Debug baseline** this delta
+> is taken against.
+>
+> **Why it exists.** The owner ruled (2026-09-02) that the validation configuration of record becomes
+> **Release with tiering off**, Debug remaining available by flag. That ruling needs to know what the
+> roster actually does at the new default before the default moves — not whether one row moves, but
+> whether the roster is the same roster. This census is that measurement.
+>
+> **Base commit: `ac385553e`** (lane branch `claude/i9-sweep-testconfig`, immediately before train 11
+> landed). Every figure below is that tree, not master's current head — stated because a census whose
+> layer is unnamed is the trap this repo's own doctrine names, and because train 11 landed mid-census.
+
+## Verdict
+
+**195 of 201 rows are unchanged at Release+TC0.** Six rows are flagged, and they do not all mean the
+same thing: **five are findings about the configuration** (`net/http`'s two movers, `sync`'s three
+retiring disclosures, the two TC0-only residuals, and `crypto/tls`'s Release-only crash) and **one is
+a configuration-INDEPENDENT regression** the census merely surfaced (`errors`). **Two rows** need a
+per-row opt-out for the flip to be safe, and both are measured rather than inferred.
+
+The configuration findings are **net favourable, and by more than the opt-outs cost**: six disclosed
+divergences retire at the new default (`net/http`'s write-deadline trio, `sync`'s two alloc-count
+assertions and `TestPoolGC`) against one unfavourable mover (`net/http`'s `TestRegisterErr`) and two
+rows needing an opt-out annotation. Retiring a disclosure is the strongest form of good news this
+campaign has: it means the converted code stops needing an excuse, not that the excuse was relabelled.
+
+> **AMENDED 2026-09-02.** The phrase "`crypto/tls`'s Release-only crash" above is the census's own
+> point-in-time reading and did not survive re-measurement. Under the three-run standard the row
+> **completes at Release** (2 of 3 runs, 3,644 / 3,644 both times); the access violation is a single
+> unreproduced host death under census load, carried as an open item rather than a Release finding, and
+> nothing about Release is required to explain it. §4's amendment carries the record. The count of
+> flagged rows is unchanged — what changed is what one of them means.
+
+> **AMENDED 2026-09-02 (second).** Two more phrases above did not survive measurement, in the
+> favourable direction: **"one unfavourable mover (`net/http`'s `TestRegisterErr`)" — there is no
+> unfavourable mover.** It measured as a third TC0-only residual (§1 and §2 amendments), so it is
+> opted out rather than rooted, and **"two rows needing an opt-out annotation" is now three**:
+> `internal/godebug`, `log/slog`, `net/http`.
+>
+> The census's bottom line therefore reads: six disclosed divergences retire at the new default,
+> against **three** rows needing a measured per-row opt-out and **nothing** owed a root before the
+> flip. Every one of the six flagged rows is now either a retiring disclosure, a per-row opt-out, a
+> configuration-independent regression the census merely surfaced (`errors`), or an unreproduced
+> host death carried open (`crypto/tls`). None is a Release defect.
+
+| shard | rows | wall | log |
+|---|---|---|---|
+| 1/4 | 51 | 1,233 s | `i9-sweep-shard1of4-attempt3.log` |
+| 2/4 | 51 | 1,601 s | `i9-sweep-shard2of4-attempt3.log` |
+| 3/4 | 51 | 2,234 s | `i9-sweep-shard3of4-attempt3.log` |
+| 4/4 | 48 | 1,622 s | `i9-sweep-shard4of4-attempt3.log` |
+
+Sharded with a ten-minute cooldown between shards because this host's own thermal limit reboots it
+under a continuous multi-hour sweep — the first attempt died that way at 13 minutes. Each shard ran
+detached (`Start-Process -WindowStyle Hidden`, PID-polled positively); the corpus and
+`docs/validation/current` were restored to HEAD after every shard.
+
+## 1. Movers — verdicts that changed direction
+
+### `net/http` — one favourable, one unfavourable
+
+**Favourable, and it retires a disclosure.** `TestWriteDeadlineExtendedOnNewRequest` and both its
+subtests (`/h1`, `/h2`) report `pass` on **both** sides at Release+TC0, and the row's `disclosed` list
+is **empty**. At Debug this row carries a `performance-margin` disclosure — the founding row of that
+class. At the new default it does not need one: the handshake fits the deadline when the code is
+optimized and the JIT is not re-tiering underneath it.
+
+This was predicted by name and in shape before the run ("*a genuine PASS at Release+TC0, not merely
+disclosed under a different label*"), which is the only reason it is worth stating as a prediction
+rather than a result.
+
+**Unfavourable, and unpredicted.** `TestRegisterErr` — and its subtest
+`TestRegisterErr//a:&http.handler{i:0}` — move `Go="pass" C#="fail"`. Not chased here; the record is
+preserved. It is the one result that argues the flip is not free.
+
+> **AMENDED 2026-09-02 — reclassified. This is not an unfavourable mover; it is a third TC0-only
+> residual**, measured as a one-axis A/B and recovering completely under `-TestTiered` (§2's
+> amendment carries the measurement and the `runtime.Caller(3)` mechanism). The row needs an
+> `execution: release-tiered` annotation, not a root.
+>
+> The preserved record this paragraph mentions is `i9-shard1-moved-rows/net.http.comparison.json`,
+> and reading it back adds something the census did not state: at Release+TC0 it carries **zero**
+> empty verdicts and **exactly two** errors — both of them `TestRegisterErr`. So `TestRegisterErr`
+> is the ONLY undisclosed failure of `net/http` at Release+TC0, and **with the opt-out the row is
+> green at Release**. The census's own evidence was stronger than the census's reading of it.
+
+`TestTransportGCRequest` remains **excluded** (`requires unsupported …`) at both configurations, as
+expected: a gate is about whether the host can run the declaration at all, not about timing.
+
+### `sync` — three more disclosures retire
+
+`TestMapClearNoAllocations`, `TestMapRangeNoAllocations` and `TestPoolGC` all pass at Release+TC0
+where they are disclosed at Debug. Full working in §6, including the four that correctly do NOT
+retire.
+
+## 2. TC0-only residuals — the flip's opt-out list
+
+Two rows fail **only** because tiering is off, and both recover with it on. One variable, same host,
+same converter, same `go1.23.12` oracle on both arms:
+
+| row | Release + TC0 | Release + `-TestTiered` |
+|---|---|---|
+| `internal/godebug` | **FAIL** — `TestCmdBisect` `Go="pass" C#="fail"` | **PASS 5/5** (51 s) |
+| `log/slog` | **FAIL** — `TestCallDepth` `Go="pass" C#="fail"` | **PASS 194/194** (38 s) |
+
+Both are PC/line-attribution assertions, which is precisely what tiering's presence supplies. These are
+the mirror of `internal/weak`'s existing `execution: release-tc0` annotation — that row opts INTO
+tiering-off because its `codegen-liveness` assertions need it; these two opt OUT because theirs need
+tiering. One vocabulary, two directions, each per-row and each measured.
+
+**Both were predicted in prose by this repo's own doctrine** long before this census — the
+`internal/weak` roster entry names "internal/godebug's line attribution" and "log/slog's pc=0" as the
+reason `release-tc0` was made per-row opt-in rather than global. The census's contribution is that it
+covers every banked row rather than the two anyone happened to look at, and after 201 rows those two
+are still the only TC0-sensitive residuals.
+
+### AMENDMENT 2026-09-02 — there is a THIRD residual: `net/http`'s `TestRegisterErr`. The opt-out list is three rows.
+
+Measured after this census as a one-axis A/B (both arms Release, same host, same converter, corpus
+restored from HEAD before each, record state cleared between, each arm's record preserved):
+
+| row | Release + TC0 | Release + `-TestTiered` |
+|---|---|---|
+| `net/http` | **FAIL** — `TestRegisterErr//a:&http.handler{i:0}` and its parent, `Go="pass" C#="fail"` | **pass / pass**, both |
+
+**Exactly two verdicts moved between the arms (398 → 396 errors) and they are exactly the two
+`TestRegisterErr` entries.** Its other four subtests agree in both arms.
+
+**The mechanism is the same one, and it was read from source before the run rather than fitted to it.**
+`net/http/server.go:2819` captures the registration site with **`runtime.Caller(3)`** — a FIXED
+frame-depth walk — and the failing subtest is precisely the one asserting
+`conflicts with pattern.* \(registered at .*/server_test.go:\d+`. `src/core/runtime/managed_impl.cs`
+keeps the converted runtime's own helpers `NoInlining` and says why at lines 1235-1240: *"the CLR's
+StackTrace does not report inlined frames, and Go's unwinder does … so an inlined hop would silently
+shift every answer by one."* That protects the runtime's frames; it cannot protect the **walked** chain
+(`ServeMux.Handle` → `register` → `registerErr`), which TC0 inlines and tier-0 does not.
+
+So the sentence above — "after 201 rows those two are still the only TC0-sensitive residuals" — is
+**superseded**: there are three, all PC/line-attribution assertions, all recovering with tiering on.
+The opt-out list for the flip is **`internal/godebug`, `log/slog`, `net/http`**.
+
+⚠ **`_roster.ps1` cannot express the opt-out yet.** `Get-RosterExecutionArgs` knows exactly one value
+(`release-tc0` → `-test-config Release`) and THROWS on anything else, so the flip cut must add
+`release-tiered` → `-test-config Release -test-tiered`. Same shape as the live break fixed earlier in
+this arc, where `release-tc0` still pointed at the retired `-test-release-tc0` flag.
+
+## 3. Build regressions — surfaced, not caused
+
+### `errors` — a banked row whose test assembly no longer builds
+
+`CS0122: 'errors_package.is_typeᴛ1' is inaccessible due to its protection level`, at
+`join_test.cs:49`. **Configuration-independent** — accessibility is a compile-time property and
+`-test-config` never touches conversion, only publish and run.
+
+The mechanism is the lift dedup crossing an assembly boundary: the banked `join_test.cs` declares its
+own file-local `[GoType("dyn")] partial interface TestJoin_typeᴛ1`, while a fresh conversion deletes
+that and rebinds the cast to the production assembly's same-shape `is_typeᴛ1`, which is `internal` —
+invisible to the separate test assembly. That is the documented "deduplicated same-shape anonymous
+structs" class **reappearing** after it was leveled, which the doctrine says is news rather than a
+phantom to restore.
+
+Found by this census only because a roster-wide `-tests` reconversion is the only instrument that
+walks every banked row's test emission: CNR is transpile-only, and the stdlib solution compiles
+production assemblies.
+
+## 4. Unmeasured — host deaths, not verdicts
+
+### `crypto/tls` — access violation in the bogo shim
+
+The largest row on the roster produced no verdict. Its stream ends with a bare
+`{"test":"","action":"fail","elapsed":332.46}` — no `timeout` event, no results files — and the
+comparison record carries the cause:
+
+```
+use of closed network connection, child error 'exit status 0xc0000005', stdout: (empty),
+stderr: flag provided but not defined: -on-resume-verify-fail
+Usage of [...crypto.tls.tests.exe -port 64975 -shim-id 1747 -ipv6 -bogo-mode -resume-count 1 ...]
+```
+
+`0xc0000005` is an access violation. Two findings sit here, and the **first gates the flip**: the same
+shim accepts `-on-resume-verify-fail` at Debug on this very host (the row banks 3,643 verdicts there
+with the bogo suite live), so at Release a flag **registration** that exists at Debug is missing. The
+leading hypothesis — Go's package-level `var x = flag.Bool(...)` registrations converting to static
+field initializers on a `beforefieldinit` type, which an optimizing JIT may run lazily at first
+static-field *access* rather than at package init — is corpus-wide if true. The second finding is that
+an unrecognized flag produces an access violation where Go's shim exits 2.
+
+**Re-measured 2026-09-02, after the census: the row COMPLETES at Release and the crash did not
+reproduce.** A standalone `-tests` build plus a filtered sweep of this row alone, same host, same
+converter, Release+TC0: `"status": "validated"`, `"matched": true`, **3,644 / 3,644** verdicts, sweep
+exit 0.
+
+That is **one failure and one pass**, which is two of three and in the wrong order, so the row is
+recorded here as **unreproduced rather than cleared**. The two runs also differ in a way that points
+somewhere: the census took this row INSIDE shard 1 after ~20 minutes of continuous sweep load, on a
+host whose thermal limit had rebooted it earlier the same day; the re-measure took it alone against a
+warm build. Nothing about Release is required to explain the crash, and ten separate probes declined
+to produce it — eight synthetic arms (sockets, goroutines, non-main-goroutine exit, single-file
+publish, tiering both ways) and two direct invocations of the real shim.
+
+**Two behaviours were reported here as converted-vs-Go divergences and are RETRACTED — both are Go's
+own, faithfully converted.** They are recorded rather than deleted because the retraction is the
+useful part.
+
+`crypto/tls/handshake_test.go`'s `TestMain` installs a custom `flag.Usage`:
+
+```go
+bogoMode = flag.Bool("bogo-mode", false, "Enabled bogo shim mode, ignore everything else")   // :47
+    fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args)                        // :405
+    if *bogoMode { os.Exit(89) }                                                             // :407
+```
+
+1. **The bracketed usage line is Go's own.** Go prints `%s` of `os.Args` — the whole SLICE — so the
+   brackets are Go's formatting, not a FlagSet constructed from a slice. `flag.CommandLine` still
+   takes `os.Args[0]` exactly as Go does. A synthetic converted test host prints the ordinary form
+   only because it has no custom `flag.Usage`.
+2. **Exit 89 is Go's own.** Go exits 89 whenever `bogoMode` is set, which is also why the unknown
+   flag ALONE exits 2 (bogoMode false, ordinary `ExitOnError`) while bogo's full shape — which
+   includes `-bogo-mode` — exits 89.
+
+`src/core/crypto/tls/handshake_test.cs:487,490` reproduces both lines. **Nothing is owed here**, and a
+"fix" for either would replace correct code with a real divergence.
+
+The lesson the retraction carries: a converted-vs-Go claim is only a claim about Go once Go's side of
+that ROW has been read. The shim's flags are declared in `bogo_shim_test.go`, so that file was read
+and the search stopped there — while this row's `TestMain` lives in `handshake_test.go`. "Not what the
+flag package normally does" is not the same statement as "not what Go does here."
+
+### AMENDMENT 2026-09-02 — run 3 of 3 closes the three-run standard: the row COMPLETES, and the gate's `crypto/tls` half is MET
+
+Run 3 was taken on a **quiet box** (nothing else running), Release+TC0, 20:48:04–20:54:59Z, 414 s — the
+context stated because run 1's was the census's shard load. The three-run record is therefore:
+
+| run | context | outcome | entries |
+|---|---|---|---|
+| 1 | inside census shard 1, ~20 min continuous load | **DIED** — `0xc0000005` | none |
+| 2 | isolated, warm build | **COMPLETED**, `matched: true`, sweep exit 0 | 3,644 / 3,644 |
+| 3 | quiet box | **COMPLETED**, `matched: false` | 3,644 / 3,644 |
+
+**Two of three completing**, which is the condition ruled sufficient: the row moves out of UNMEASURED
+to *completes at Release (3,644), one unreproduced host death under census load, recorded*, and the
+`crypto/tls` half of the flip's gate is **MET with the death carried as an open item, not a blocker**.
+The crash-dump instrument (`DOTNET_DbgEnableMiniDump=1`) was conditioned on a **second** death and is
+not deployed; the access violation has now declined to reproduce twice.
+
+**Run 3 is red, and every error in it is ORACLE-side.** This matters more than the colour:
+
+```
+errors:  ORACLE-side   (Go=fail C#=pass)   7
+         CONVERTED-side (Go=pass C#=fail)   0
+         process-level                      2
+disclosed: TestCertCache (codegen-liveness) — absorbed correctly
+environment { configuration: Release, tiered: false, oracleGoVersion: go version go1.23.12 windows/amd64 }
+```
+
+The seven are `TestBogoSuite` and six of its version-negotiation cases — `Downgrade-TLS10-Client`,
+`Downgrade-TLS12-Client`, `MinimumVersion-Client-TLS11-TLS1-TLS`, `MinimumVersion-Client-TLS13-TLS12-TLS`,
+`MinimumVersion-Client2-TLS13-TLS11-TLS`, `WrongMessageType-TLS13-ServerHello-TLS` — each failing on
+**Go's own bogo runner** while the converted side passed. By construction that cannot be converted-code
+drift: the converted code produced the right answer and the oracle did not. It is this row's documented
+Go-side bogo flakiness, recorded here with named cases rather than as a general warning.
+
+`TestCertCache` appears in the raw go-vs-C# diff as a converted-side failure and is **not** one for
+accounting purposes — it is the committed `codegen-liveness` disclosure (an address-exposed frame temp
+is not lifetime-tracked by the CLR, so the object stays reachable until the method returns and the
+refcount cannot fall while the test is looking; measured identically in a separately built optimized
+Release host). The pipeline absorbed it correctly.
+
+**A reading recorded above is withdrawn here.** The paragraph before this amendment offers the census's
+load/thermal confound as "the one I would chase next." Run 3 did not test it: the row did not die on the
+quiet box, so the hypothesis stands **untested rather than falsified**, and the confound remains the open
+question about run 1 that it always was. (A mid-turn claim that run 3 *had* falsified it was made from
+the sweep's `FAIL` line before the failure MODE was read — `exit status 1` is `go test`'s ordinary
+"tests failed", not the `0xc0000005` crash — and is withdrawn with the mechanism named, since the error
+is the reusable part.)
+
+**One question is raised and deliberately not answered here.** A bogo-capable host whose *oracle* flakes
+is a FOURTH host shape, and the roster's three proven states (full count / capability-absent /
+host-limit) do not absorb it — so a run like this one fails the row on Go's flake with the converted
+side clean. That is a roster-absorption question; it is recorded, and `_roster.ps1` is untouched.
+
+## 5. Infrastructure — settled, not counted
+
+`internal/types/errors` failed shard 3 with `MSBUILD : error MSB4166: Child node "2" exited
+prematurely` and zero CS diagnostics — the shape this repo classifies as build infrastructure rather
+than a package root. `MSBUILDDISABLENODEREUSE=1` was already set, so the documented mitigation did not
+prevent it. Re-run in isolation at `-TestConfig Release`: **PASS 155/155, 71 s.**
+
+Not a finding, and not counted — which is why shard 3 reads 49/2 in the record above and 48/3 in its
+own log.
+
+## 6. `sync` — three disclosures retire (the surplus, attributed)
+
+`sync` reports **47 matching verdicts against 44 banked**, with a completely clean comparison
+(`"status": "validated"`, `"matched": true`, zero divergence entries). The surplus of three is not
+extra tests: the verdict NAME SETS are identical on both sides (51 rows). It is **three disclosed
+divergences becoming genuine matches**, and the arithmetic closes exactly — Debug banks 44 matched + 7
+disclosed = 51; Release+TC0 gives 47 matched + 4 disclosed = 51.
+
+Each of the seven Debug-disclosed rows, checked individually against the census record's C# map:
+
+| row disclosed at Debug | C# at Release+TC0 |
+|---|---|
+| `TestMapClearNoAllocations` | **pass** — disclosure retires |
+| `TestMapRangeNoAllocations` | **pass** — disclosure retires |
+| `TestPoolGC` | **pass** — disclosure retires |
+| `TestOnceXGC` | fail — still disclosed |
+| `TestOnceXGC/OnceFunc` | fail — still disclosed |
+| `TestOnceXGC/OnceValue` | fail — still disclosed |
+| `TestOnceXGC/OnceValues` | fail — still disclosed |
+
+The three that retire are two alloc-count assertions and one GC test — precisely the class where the
+non-optimizing JIT adds allocations and extends lifetimes that optimized code does not. That is a
+coherent mechanism rather than a coincidence, and it is the same favourable direction as `net/http`'s
+write-deadline disclosure.
+
+The four that remain are the `codegen-liveness` family, and one reading was considered and **rejected
+on measurement**: that these had become unnecessary too. They have not. The disclosure's own
+explicitly testable claim — that the failure *"holds in fully optimized code, not just under the
+non-optimizing JIT"* — is **confirmed** by this census, on the very row that tests it.
+
+## What this census does and does not license
+
+It licenses the flip's **shape**: Release+TC0 as the default with a per-row `release-tiered` opt-out,
+because the opt-out list is two rows and both are measured.
+
+On the flip **itself** the evidence moved after the census was first written, and in the favourable
+direction. The gate as ruled was "`crypto/tls` must COMPLETE at Release"; on the only measurement of
+that question it does, 3,644 / 3,644. What remains is a judgement rather than a measurement — whether
+one unreproduced crash on a thermally-limited host, against ten probes that could not reproduce it,
+is a reason to hold a default that six retiring disclosures argue for. That call is the
+coordinator's; this record's job is to state that the crash is unreproduced, that the two runs
+differed in load, and that nothing about Release is required to explain it.
+
+What the census does NOT license in any reading: treating `TestRegisterErr`'s Release-only failure as
+settled, or the `crypto/tls` host death as explained. Those are open regardless of the flip. (The two
+shim "divergences" once listed here are retracted — see §4; they were Go's own behaviour.)
+
+Records preserved for every flagged row (`crypto.tls`, `internal.godebug`, `log.slog`, `net.http`,
+`sync`) before each restore.

@@ -30,11 +30,20 @@
 #                                                   #   than a $longTimeouts floor raises that too)
 #   ./run-validated-sweep.ps1 -SkipBuild            # reuse the current go2cs.exe as-is
 #   ./run-validated-sweep.ps1 -IgnoreDiskPreflight  # proceed on a nearly-full drive anyway
+#   ./run-validated-sweep.ps1                       # DEFAULT since 2026-09-02: Release, tiering
+#                                                   #   OFF, per-row `execution:` annotations
+#                                                   #   RESPECTED (three rows opt back into tiering
+#                                                   #   via release-tiered) -- the bank-eligible path
 #   ./run-validated-sweep.ps1 -TestConfig Release   # A/B measurement, not a bank-eligible sweep --
-#                                                   #   EVERY row publishes Release (untiered by
-#                                                   #   default; add -TestTiered to opt back in),
-#                                                   #   annotated or not, exactly like the pipeline's
-#                                                   #   own -test-config/-test-tiered it threads to
+#                                                   #   EXPLICITLY passing either flag (even the
+#                                                   #   default's own value) makes EVERY row publish
+#                                                   #   under it, annotated or NOT, superseding the
+#                                                   #   per-row annotations. That is the difference
+#                                                   #   between this line and the one above: same
+#                                                   #   config, different treatment of the roster.
+#                                                   #   Untiered by default; add -TestTiered to opt
+#                                                   #   back in, exactly like the pipeline's own
+#                                                   #   -test-config/-test-tiered it threads to
 [CmdletBinding()]
 param(
     [string] $Filter,
@@ -66,7 +75,12 @@ param(
         }
         $true
     })]
-    [string] $TestConfig = 'Debug',
+    # DEFAULT FLIPPED to Release 2026-09-02 (owner ruling: the validation configuration of record is
+    # Release with tiering off; Debug stays available by flag; the defaults flip after the Release
+    # census, which is complete -- docs/phase4/CENSUS-release-tc0-delta.md). The paragraph above's
+    # "Default 'Debug' changes NOTHING" no longer describes the default; it still describes what an
+    # EXPLICIT -TestConfig does, which is what the override predicate below now keys on.
+    [string] $TestConfig = 'Release',
     # Meaningless with -TestConfig Debug (same rule as the converter's own -test-tiered). With
     # -TestConfig Release, opts back IN to the CLR's default tiered JIT -- Release's own default here
     # is DOTNET_TieredCompilation=0, since a verdict that depends on JIT promotion timing is not
@@ -243,9 +257,26 @@ if ($ShardCount -gt 1) {
     Write-Host "  shard $ShardIndex/${ShardCount}: $($rows.Count) row(s) of $preShardTotal (roster order, size $shardSize)" -ForegroundColor Cyan
 }
 
-# Sweep-wide config override: non-default TestConfig or TestTiered means EVERY row runs under it,
-# superseding any per-row `execution:` annotation for this run only (see the invocation site below).
-$sweepConfigOverride = ($TestConfig -ne 'Debug') -or $TestTiered
+# Sweep-wide config override: an EXPLICITLY PASSED TestConfig or TestTiered means EVERY row runs
+# under it, superseding any per-row `execution:` annotation for this run only (see the invocation
+# site below).
+#
+# ⚠ This keys on whether the caller SPECIFIED the parameter, not on its VALUE, and that distinction
+# became load-bearing when the default flipped to Release on 2026-09-02. The predicate used to read
+# `($TestConfig -ne 'Debug') -or $TestTiered`, which was correct only while the default was Debug:
+# carried forward past the flip it makes EVERY default run an override, and an override SUPERSEDES
+# per-row `execution:` annotations -- so the three measured opt-out rows (internal/godebug,
+# log/slog, net/http, all `release-tiered`) would silently run at TC0 and fail, and no bank would be
+# eligible because every run would print the A/B warning. The bug would have looked like three
+# regressions rather than one predicate.
+#
+# Keying on specification keeps both meanings intact and fails SAFE in the one ambiguous case: an
+# explicit `-TestConfig Release` (same as the default) counts as an override, so it forces
+# uniformity and marks the run non-bank-eligible. That can only ever cost a re-run; the opposite
+# reading could silently bank a row under a config its own roster line does not declare, which is
+# precisely what the override's own bank-eligibility rule exists to prevent.
+$sweepConfigOverride = $PSBoundParameters.ContainsKey('TestConfig') -or
+                       $PSBoundParameters.ContainsKey('TestTiered')
 $sweepConfigLabel = if ($TestConfig -eq 'Release' -and $TestTiered) { 'Release (tiered)' } else { $TestConfig }
 
 $expectedTotal = ($rows | ForEach-Object { $_.Effective.Expected } | Measure-Object -Sum).Sum

@@ -22054,3 +22054,102 @@ exactly the five named, and `TestExecPtrace` is one of them.
 -- C1
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
+
+## 2026-09-02 · HOST QUALIFICATION — i9's Go-side bogo runner FLAKES: seven `crypto/tls` cases failed on the ORACLE with the converted side clean, and the ruled reading is "not a row finding" (lane i9, coordinator ruling same day)
+
+Recorded here because the run it came from is otherwise indistinguishable from a converted-code
+regression: the sweep prints `FAIL crypto/tls`, the row's `status` is `"failing"` and `matched` is
+`false`, and none of that is about the conversion.
+
+**The run.** Run 3 of the three-run standard applied to the row's earlier host death — quiet box
+(nothing else running), Release + `DOTNET_TieredCompilation=0`, 2026-09-02 20:48:04–20:54:59Z, 414 s.
+
+```
+go entries 3644  /  csharp entries 3644          identical to the passing run 2
+environment { configuration: Release, tiered: false,
+              oracleGoVersion: go version go1.23.12 windows/amd64 }
+status "failing"   matched false
+
+errors:  ORACLE-side   (Go=fail C#=pass)   7
+         CONVERTED-side (Go=pass C#=fail)   0
+         process-level                      2
+disclosed: TestCertCache (codegen-liveness) -- absorbed correctly
+```
+
+**The seven, named, so a later sighting can be compared rather than re-derived:**
+
+```
+TestBogoSuite                                           Go=fail  C#=pass
+TestBogoSuite/Downgrade-TLS10-Client                    Go=fail  C#=pass
+TestBogoSuite/Downgrade-TLS12-Client                    Go=fail  C#=pass
+TestBogoSuite/MinimumVersion-Client-TLS11-TLS1-TLS      Go=fail  C#=pass
+TestBogoSuite/MinimumVersion-Client-TLS13-TLS12-TLS     Go=fail  C#=pass
+TestBogoSuite/MinimumVersion-Client2-TLS13-TLS11-TLS    Go=fail  C#=pass
+TestBogoSuite/WrongMessageType-TLS13-ServerHello-TLS    Go=fail  C#=pass
+```
+
+Six version-negotiation / downgrade cases plus the parent. Every one failed on **Go's own bogo
+runner** while the converted side passed, which by construction cannot be converted-code drift: the
+converted code produced the right answer and the oracle did not.
+
+**The ruling (COORD, 2026-09-02), because the shape invites the wrong three reactions.** A run whose
+failure set is entirely `Go=fail / C#=pass` with **zero** converted-side failures is a run in which
+the ORACLE failed to produce a reference — the `os/user` oracle-side shape arriving as a FLAKE rather
+than a deterministic host limit. Therefore:
+
+- **The row's bank verdict is taken from a run with a CLEAN oracle.** Run 2 (3,644 / 3,644,
+  `matched: true`, sweep exit 0) is exactly that.
+- **This is evidence about the HOST's oracle**, recorded here with the cases and the date. It is
+  **never a disclosure on the row** and **never a converted-side finding**.
+- **`_roster.ps1` grows no fourth arm.** The three proven host states (full count /
+  capability-absent / host-limit) are unchanged; this is not a fourth one.
+- **What the SWEEP owes** is routed as its own cut (coordinator's, not this lane's): when a row's
+  failure set is oracle-only, re-run the row ONCE before failing it, and on a second oracle-only
+  result fail it as *oracle unstable on this host* — the three-run standard applied to the oracle
+  side, so a Go flake can never silently fail a clean converted row. **Until that lands, a lane
+  meeting this shape re-runs by hand and cites this entry.**
+
+**The near-miss that makes it worth a board entry.** The sweep line reads `FAIL crypto/tls [414s]`
+and the child reports `exit status 1`; that was read as the earlier access violation recurring and
+almost written up as a second crash. It is not — `exit status 1` is `go test`'s ordinary "tests
+failed", a crash is `0xc0000005` / 3221225477, and this record carries **zero** crash signatures and
+no deadline event in either spelling. **Read the failure MODE before writing the word "crash"**: the
+crash-signature grep and the results tail are one command each and they decide it.
+
+
+## 2026-09-02 · OPEN, and NOT a row property — a `net/http` A/B carried 390 unreported verdicts that the census's own clean run of the same row, same host, same configuration did NOT (lane i9)
+
+Banked so the next lane meeting this does not spend the run I spent proving it is not what it looks
+like. It looks like a Release regression in `net/http`. It is not.
+
+**The pair.** Both at Release, same host, same converter, corpus restored from HEAD before each:
+
+| run | context | unreported (`Go="pass" C#=""`) | errors |
+|---|---|---|---|
+| census `net/http` | in-shard, behind other packages (WARM), 174 s | **0** | **2** — both `TestRegisterErr` |
+| A/B arm A | row alone, `go2cs_test_manifest.json` deleted first (COLD), 352 s | **390** | 398 |
+| A/B arm B | as arm A but `-TestTiered`, 358 s | **390** | 396 |
+
+The two A/B arms' unreported NAME SETS are **byte-identical** (0 differing lines), and neither record
+carries a `timeout` event in either spelling; both hosts exited at ~355 s against a 600 s wall. So it
+is not a deadline kill, not slowness, and not tiering — it is deterministic and identical across a
+varied axis.
+
+**The census's record settles what it is not.** `i9-shard1-moved-rows/net.http.comparison.json` is the
+same row at the same `configuration: Release, tiered: false` on the same host, and it reports **all**
+1,343 verdicts with exactly two errors. A row that reports everything in one run and parks 390 in the
+next is not exhibiting a property of the row, the configuration, or the conversion.
+
+**What differs, and what is NOT asserted.** The census run was warm and in-shard; the A/B arms each
+deleted the manifest and paid a full rebuild (the 174 s → 352 s doubling). That is the only difference
+identified, and **the mechanism is unrooted** — a cold rebuild has no obvious path to 390 unreported
+verdicts, and the standing shape heuristics do not settle it either (no deadline event to read; the
+set is neither a clean alphabetical tail nor plainly the `t.Parallel()` set). It is recorded as an
+open observation, not a diagnosis.
+
+**Two rules it re-earns.** *State cold-vs-warm when comparing two runs* — it is the only variable that
+separated these three. And *preserve a failed row's comparison record before any restore*: the census
+record is the entire reason this could be classified at all, and it was nearly missed because a
+`find … | head` truncated it out of view and the absence was read as a fact. A filtered view answers
+a different question than the one asked.
+

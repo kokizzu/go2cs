@@ -100,7 +100,14 @@ $RosterOsNaPattern =
 # for their own OS, and an unannotated row's pipeline leg is byte-for-byte the leg it always was.
 # The value names a config, not a flag list -- Get-RosterExecutionArgs owns that mapping, so the
 # roster never has to know what the converter's command line looks like.
-$RosterExecutionValues = @('release-tc0')
+# 'release-tiered' joined 2026-09-02 with the Release+TC0 default flip, and it is the MIRROR of
+# 'release-tc0': where that one opted a row INTO tiering-off while Debug was the default, this one
+# opts a row back OUT of it now that Release+TC0 is. Three rows carry it, each measured as a
+# one-axis A/B rather than inferred -- internal/godebug (TestCmdBisect), log/slog (TestCallDepth)
+# and net/http (TestRegisterErr) -- all three PC/line-attribution assertions that tiering's presence
+# is what supplies. 'release-tc0' is RETAINED though the flip makes it redundant: it still names
+# exactly what it always named, and a row that opted in deliberately should keep saying so.
+$RosterExecutionValues = @('release-tc0', 'release-tiered')
 
 # Same both-ends separator anchoring as the per-OS forms, for the same prose-immunity reason: a
 # sentence reading "the execution: it runs Release" is not an annotation and must not read as one.
@@ -366,6 +373,11 @@ function Get-RosterExecutionArgs {
 
     switch ($Execution) {
         'release-tc0' { return @('-test-config', 'Release') }
+        # The opt-OUT. -test-tiered is meaningless without -test-config Release (the converter says
+        # so on the flag itself), so both are passed rather than relying on the converter default
+        # being Release -- an execution annotation states its whole configuration, so it cannot
+        # silently change meaning if a default moves again.
+        'release-tiered' { return @('-test-config', 'Release', '-test-tiered') }
         default {
             throw ("Unknown execution config '$Execution'. Known configs: " +
                 "$($RosterExecutionValues -join ', ').")
