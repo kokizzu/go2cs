@@ -503,6 +503,12 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 				// panics at the deref instead of crossing intact. See typedNilInterfaceBoxing.go.
 				if resultParams != nil && i < resultParams.Len() {
 					exprContexts = v.emptyInterfacePointerContexts(resultParams.At(i).Type(), expr, exprContexts)
+
+					// A `return nil` whose RESULT is a pointer-to-array carries the array's length for
+					// the same reason an assignment does -- `array<E>` erases it and the caller's
+					// reflection sees only the erased type. archive/tar's readHeader is the corpus's
+					// shape (`return nil, nil, err`, result `*block` = `[512]byte`).
+					exprContexts = v.appendNilArrayDimsTypeContext(exprContexts, expr, resultParams.At(i).Type())
 				}
 
 				resultExpr := v.convExpr(expr, exprContexts)

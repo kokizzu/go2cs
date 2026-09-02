@@ -1,0 +1,1 @@
+module go2cs/TypedNilPtrArrayPositions

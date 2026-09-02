@@ -89,6 +89,14 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 		basicLitContext := DefaultBasicLitContext()
 		identContext := DefaultIdentContext()
 
+		// A bare `nil` bound for a pointer-to-ARRAY parameter carries the array length that
+		// `array<E>` erases; convCallExpr's params walk recorded the target type per argument index.
+		// Set ON THIS identContext rather than appended as a second one: getExprContext returns the
+		// FIRST match in the slice, so an appended IdentContext behind this one is unreachable.
+		if callContext != nil && callContext.nilArrayTypes != nil {
+			identContext.nilArrayTarget = callContext.nilArrayTypes[i]
+		}
+
 		// Check for call context, such as arguments allows u8 strings or is a pointer type
 		if callContext != nil {
 			// Index out of bounds default to false here, so variadic params are handled correctly

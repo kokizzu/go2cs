@@ -40,6 +40,10 @@ type CallExprContext struct {
 	useGoStringArg map[int]bool
 	argTypeIsPtr   map[int]bool
 	interfaceTypes map[int]types.Type
+	// nilArrayTypes carries a pointer-to-ARRAY parameter's type to the argument slot, so a bare
+	// `nil` argument keeps the array length `array<E>` erases (arrayDimsNilCargo.go). Sibling of
+	// interfaceTypes and populated in the same params walk; empty for every other call.
+	nilArrayTypes map[int]types.Type
 	// emptyInterfaceArgs marks arguments whose PARAMETER is a real empty interface (`any`):
 	// a func-LITERAL argument there is natural-typed by C# (no delegate target), so its Go
 	// result type must be stated explicitly or inference picks the arms' literal type
@@ -153,6 +157,7 @@ func DefaultCallExprContext() *CallExprContext {
 		anyBoxedPtrArgs:     make(map[int]bool),
 		anyBoxedFuncArgs:    make(map[int]bool),
 		interfaceTypes:      make(map[int]types.Type),
+		nilArrayTypes:       make(map[int]types.Type),
 		hasSpreadOperator:   false,
 		keyValueSource:      StructSource,
 		keyValueIdent:       nil,
@@ -363,6 +368,12 @@ func (c IndexExprContext) getDefault() StmtContext {
 }
 
 type IdentContext struct {
+	// nilArrayTarget is the STATIC target type of a bare `nil` whose destination is an undefined
+	// pointer to an array. `*[3]int` renders as `ж<array<nint>>` and `array<E>` cannot hold the 3,
+	// so the length rides the value (arrayDimsNilCargo.go) -- and it can only be attached where the
+	// target is still known, which is the position, not convIdent. Nil for every other expression.
+	nilArrayTarget types.Type
+
 	// isField marks a FIELD selection (vs a method/function name) — fields skip the
 	// function-name Main→ΔMain special (see convIdent's isMethod arm).
 	isField bool

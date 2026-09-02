@@ -7,6 +7,7 @@
 package main
 
 import (
+	"go/ast"
 	"go/types"
 	"strconv"
 	"strings"
@@ -109,4 +110,58 @@ func (v *Visitor) nilArrayPtrValue(t types.Type, targetCS string) string {
 	}
 
 	return targetCS + ".NilBoxOfDims(" + strings.Join(rendered, ", ") + ")"
+}
+
+// nilArrayPtrValueForTarget is nilArrayPtrValue for the positions where the target is known as a
+// types.Type rather than as an AST type expression -- assignment, variable declaration, call
+// argument and result. The conversion positions in convCallExpr already hold a rendered target
+// (convStarExpr's lift, or the resolved name), so they call nilArrayPtrValue directly; here the
+// rendering is the one the converter uses everywhere else for a types.Type.
+//
+// Returns "" for anything that is not an UNDEFINED pointer to an array, so a caller can use it as
+// a straight substitution test.
+func (v *Visitor) nilArrayPtrValueForTarget(t types.Type) string {
+	if len(nilArrayPtrDims(t)) == 0 {
+		return ""
+	}
+
+	return v.nilArrayPtrValue(t, v.getCSharpTypeName(t))
+}
+
+// identIsUniverseNilExpr reports the bare `nil` literal -- the only expression whose emission the
+// dims cargo replaces. A SHADOWING object named nil is not the literal and must not be touched,
+// which is the same distinction convIdent draws.
+func (v *Visitor) identIsUniverseNilExpr(expr ast.Expr) bool {
+	ident, ok := expr.(*ast.Ident)
+
+	if !ok {
+		return false
+	}
+
+	return v.identIsUniverseNil(ident)
+}
+
+// appendNilArrayDimsTypeContext is the position-independent half of the cargo's plumbing: given a
+// bare `nil` and the STATIC target type it is bound for, it appends the IdentContext convIdent
+// reads. Callers differ only in where the target comes from -- an assignment's left-hand side, a
+// signature's result, a call's parameter -- so they all end here.
+//
+// Returns `base` unchanged for anything that is not a nil bound for an undefined pointer-to-array,
+// which keeps every call site a one-line wrap with no condition of its own.
+func (v *Visitor) appendNilArrayDimsTypeContext(base []ExprContext, expr ast.Expr, target types.Type) []ExprContext {
+	if target == nil || !v.identIsUniverseNilExpr(expr) {
+		return base
+	}
+
+	if v.nilArrayPtrValueForTarget(target) == "" {
+		return base
+	}
+
+	identContext := DefaultIdentContext()
+	identContext.nilArrayTarget = target
+
+	out := make([]ExprContext, len(base), len(base)+1)
+	copy(out, base)
+
+	return append(out, identContext)
 }

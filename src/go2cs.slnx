@@ -900,6 +900,7 @@
     <Project Path="tests/Behavioral/TypeSwitchPointerAdapter/TypeSwitchPointerAdapter.csproj" />
     <Project Path="tests/Behavioral/TypedErrorAssertThroughAdapter/TypedErrorAssertThroughAdapter.csproj" />
     <Project Path="tests/Behavioral/TypedNilInterface/TypedNilInterface.csproj" />
+    <Project Path="tests/Behavioral/TypedNilPtrArrayPositions/TypedNilPtrArrayPositions.csproj" />
     <Project Path="tests/Behavioral/TypedPointerCastDeref/TypedPointerCastDeref.csproj" />
     <Project Path="tests/Behavioral/UdpLoopbackRoundTrip/UdpLoopbackRoundTrip.csproj" />
     <Project Path="tests/Behavioral/UdpWriteMsgAddrPort/UdpWriteMsgAddrPort.csproj" />
