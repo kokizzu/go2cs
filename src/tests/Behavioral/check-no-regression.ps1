@@ -176,7 +176,7 @@ foreach ($proj in $projects) {
 }
 
 if ($skippedExclusive.Count -gt 0) {
-    Write-Host "==> SKIPPED (platform-exclusive, $($skippedExclusive.Count)): native to another platform, so this $hostGoos host cannot type-check them:" -ForegroundColor DarkCyan
+    Write-Host "==> SKIPPED (platform-exclusive, $($skippedExclusive.Count)): native to another platform, so this $hostGoos host cannot measure them:" -ForegroundColor DarkCyan
     $skippedExclusive | ForEach-Object { Write-Host "    $($_.Name) [$($_.Platforms)]" -ForegroundColor DarkCyan }
 }
 

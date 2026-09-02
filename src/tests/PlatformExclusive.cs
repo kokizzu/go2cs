@@ -17,6 +17,13 @@
 // reported the result as a failure or -- worse -- as a byte-identical pass over a file it never
 // regenerated. Marking the package makes the skip LOUD and BY NAME, which is the point: a silent
 // drop from the enumeration would trade one invisible problem for another.
+//
+// NOT ALWAYS A TYPE-CHECK FAILURE, which is why the skip lines say "cannot measure" rather than
+// "cannot type-check". Most marked packages fail at TRANSPILE (the converter cannot type-check
+// unix-only or Win32-only syscall API), but LocalTimeZone type-checks anywhere and fails at OUTPUT:
+// its converted form reaches syscall.GetTimeZoneInformation and faults on kernel32 off Windows.
+// One marker covers both by construction -- a non-native host skips EVERY phase -- so the wording
+// is the thing that has to stay honest about which phase actually bites.
 
 using System;
 using System.IO;
