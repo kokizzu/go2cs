@@ -1421,6 +1421,16 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			var paramType types.Type
 			paramHasArg := callExpr.Args != nil && i < len(callExpr.Args)
 
+			// A pointer-to-ARRAY parameter given a bare `nil` keeps the array's length as cargo --
+			// the argument's twin of the assignment and result positions. Recorded here because this
+			// is the walk holding both the parameter's type and the argument's index; convExprList
+			// consumes it. runtime's `sigprocmask(_SIG_SETMASK, &sigset_all, nil)` is the shape.
+			if paramHasArg && callExprContext != nil && callExprContext.nilArrayTypes != nil &&
+				v.identIsUniverseNilExpr(callExpr.Args[i]) &&
+				v.nilArrayPtrValueForTarget(params.At(i).Type()) != "" {
+				callExprContext.nilArrayTypes[i] = params.At(i).Type()
+			}
+
 			if paramHasArg {
 				// Check if the parameter type is an anonymous struct
 				if structType, exprType := v.extractStructType(callExpr.Args[i]); structType != nil && !v.liftedTypeExists(structType) {

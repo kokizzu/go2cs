@@ -54,6 +54,16 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 	// context the typeless `default!`. A shadowing object is not the literal and falls through to
 	// normal identifier rendering, mirroring the `true`/`false` handling below.
 	if v.identIsUniverseNil(ident) {
+		// A nil bound for a pointer-to-ARRAY target carries the array's LENGTH, which `array<E>`
+		// erases and nothing downstream can recover -- the position that knows the target puts it
+		// in nilArrayTarget (see appendNilArrayDimsContext). Ahead of both returns below because
+		// the cargo IS the pointer's nil value, in either context.
+		if context.nilArrayTarget != nil {
+			if nilArray := v.nilArrayPtrValueForTarget(context.nilArrayTarget); nilArray != "" {
+				return nilArray
+			}
+		}
+
 		if context.isPointer {
 			return "nil"
 		}

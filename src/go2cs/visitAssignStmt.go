@@ -72,6 +72,20 @@ func (v *Visitor) appendRhsPtrContext(base []ExprContext, rhs ast.Expr) []ExprCo
 // LHS discards the value, so it takes no clone. (Known remaining edge: a named↔underlying
 // array CONVERSION RHS — `[4]int(named)` — is excluded as a call result but hands the
 // wrapper's backing through the implicit operator uncloned.)
+// appendNilArrayDimsContext carries the ARRAY LENGTH of a pointer-to-array assignment target down
+// to the `nil` on the right-hand side. `*[3]int` converts to `ж<array<nint>>` and `array<E>` is
+// LENGTH-ERASED, so a plain `default!` loses the 3 -- and unlike the conversion position, nothing
+// downstream can recover it: `OrTypedNil()` sees only the erased C# type by the time the value
+// reaches the reflection boundary. The dimension has to ride the value from the one place it is
+// still statically known, which is here.
+//
+// Measured, not assumed: reflect/all_test.go's TestValue_Cap and TestValue_Len assign `nil` to a
+// local `*[3]int` and then call ValueOf(a).Cap()/.Len(), where Go answers 3 and the erased form
+// answers 0.
+func (v *Visitor) appendNilArrayDimsContext(base []ExprContext, rhs ast.Expr, lhs ast.Expr) []ExprContext {
+	return v.appendNilArrayDimsTypeContext(base, rhs, v.getExprType(lhs))
+}
+
 func (v *Visitor) cloneValueCopy(lhs ast.Expr, rhs ast.Expr, rhsExpr string) string {
 	if lhs != nil {
 		if ident := getIdentifier(lhs); ident != nil && ident.Name == "_" {
@@ -1332,7 +1346,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 				contexts = append(contexts, indexResultContext)
 			}
 
-			rhsExpr := v.convExpr(rhs, contexts)
+			rhsExpr := v.convExpr(rhs, v.appendNilArrayDimsContext(contexts, rhs, lhs))
 
 			if assignStmt.Tok == token.DEFINE && ident != nil && !v.isReassignment(ident) {
 				rhsExpr = v.materializeDefaultTypedConstDeclValue(ident, rhs, rhsExpr)
@@ -1563,7 +1577,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 			basicLitContext.spanTargetUnsupported = true
 			contexts = append(contexts, basicLitContext)
 
-			rhsExpr := v.convExpr(rhs, contexts)
+			rhsExpr := v.convExpr(rhs, v.appendNilArrayDimsContext(contexts, rhs, lhsExprs[i]))
 
 			// A for-init tuple element declared from an existing array value takes golib's
 			// `.Clone()` for independent backing storage (see cloneValueCopy).
@@ -1689,7 +1703,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 				result.WriteString(v.convExpr(lhs, lhsContexts))
 				result.WriteString(operator)
 
-				rhsExpr := v.convExpr(rhs, v.appendEmptyIfaceLitContext(v.appendRhsPtrContext(contexts, rhs), lhs))
+				rhsExpr := v.convExpr(rhs, v.appendNilArrayDimsContext(v.appendEmptyIfaceLitContext(v.appendRhsPtrContext(contexts, rhs), lhs), rhs, lhs))
 
 				// Box an untyped CONSTANT assigned to an EMPTY-interface LHS at Go's default type (the
 				// numeric twin of appendEmptyIfaceLitContext's @string boxing); a no-op for a non-empty
@@ -1752,7 +1766,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					result.WriteString(v.convExpr(lhs, lhsContexts))
 					result.WriteString(operator)
 
-					rhsExpr := v.convExpr(rhs, v.appendEmptyIfaceLitContext(v.appendRhsPtrContext(contexts, rhs), lhs))
+					rhsExpr := v.convExpr(rhs, v.appendNilArrayDimsContext(v.appendEmptyIfaceLitContext(v.appendRhsPtrContext(contexts, rhs), lhs), rhs, lhs))
 
 					// Box an untyped CONSTANT reassigned to an EMPTY-interface LHS at Go's default type
 					// (twin of appendEmptyIfaceLitContext's @string boxing); a no-op otherwise. The

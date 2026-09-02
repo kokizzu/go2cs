@@ -206,7 +206,7 @@ internal static void newosproc(ж<m> Ꮡmp) {
         }
         return -r;
     });
-    sigprocmask(_SIG_SETMASK, Ꮡoset, nil);
+    sigprocmask(_SIG_SETMASK, Ꮡoset, ж<sigset>.NilBoxOfDims(2L));
     if (ret != 0) {
         print((@string)"runtime: failed to create new OS thread (have "u8, mcount(), (@string)" already; errno="u8, ret, (@string)")\n"u8);
         if (ret == _EAGAIN) {

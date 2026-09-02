@@ -112,9 +112,9 @@ internal static void vdsoInitFromSysinfoEhdr(ref vdsoInfo info, ж<elfEhdr> Ꮡh
     // Fish out the useful bits of the dynamic table.
     ж<array<uint32>> hash = default!;
     ж<array<uint32>> gnuhash = default!;
-    info.symstrings = default!;
-    info.symtab = default!;
-    info.versym = default!;
+    info.symstrings = ж<array<byte>>.NilBoxOfDims(1125899906842623L);
+    info.symtab = ж<array<elfSym>>.NilBoxOfDims(46912496118442L);
+    info.versym = ж<array<uint16>>.NilBoxOfDims(562949953421311L);
     info.verdef = default!;
     for (nint i = 0; dyn.Value[i].d_tag != _DT_NULL; i++) {
         var dt = dyn.at<elfDyn>(i);
@@ -144,7 +144,7 @@ internal static void vdsoInitFromSysinfoEhdr(ref vdsoInfo info, ж<elfEhdr> Ꮡh
         return; // Failed
     }
     if (info.verdef == nil) {
-        info.versym = default!;
+        info.versym = ж<array<uint16>>.NilBoxOfDims(562949953421311L);
     }
     if (gnuhash != nil){
         // Parse the GNU hash table header.

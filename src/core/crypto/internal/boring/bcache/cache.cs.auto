@@ -73,7 +73,7 @@ internal static ж<cacheTable<K, V>> table<K, V>(this ж<Cache<K, V>> Ꮡc) {
         var p = Ꮡc.of(Cache<K, V>.Ꮡptable).Load();
         if (p == nil) {
             p = @new<cacheTable<K, V>>();
-            if (!Ꮡc.of(Cache<K, V>.Ꮡptable).CompareAndSwap(nil, p)) {
+            if (!Ꮡc.of(Cache<K, V>.Ꮡptable).CompareAndSwap(ж<cacheTable<K, V>>.NilBoxOfDims(1021L), p)) {
                 continue;
             }
         }
@@ -87,7 +87,7 @@ internal static ж<cacheTable<K, V>> table<K, V>(this ж<Cache<K, V>> Ꮡc) {
 public static void Clear<K, V>(this ж<Cache<K, V>> Ꮡc) {
     // The runtime does this at the start of every garbage collection
     // (itself, not by calling this function).
-    Ꮡc.of(Cache<K, V>.Ꮡptable).Store(nil);
+    Ꮡc.of(Cache<K, V>.Ꮡptable).Store(ж<cacheTable<K, V>>.NilBoxOfDims(1021L));
 }
 
 // Get returns the cached value associated with v,

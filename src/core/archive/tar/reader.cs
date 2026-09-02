@@ -414,24 +414,24 @@ internal static (ж<Header>, ж<block>, error) readHeader(this ж<Reader> Ꮡtr)
     // Two blocks of zero bytes marks the end of the archive.
     {
         var (_, err) = io.ReadFull(tr.r, tr.blk[..]); if (err != default!) {
-            return (default!, default!, err); // EOF is okay here; exactly 0 bytes read
+            return (default!, ж<block>.NilBoxOfDims(512L), err); // EOF is okay here; exactly 0 bytes read
         }
     }
     if (bytes.Equal(tr.blk[..], zeroBlock[..])) {
         {
             var (_, err) = io.ReadFull(tr.r, tr.blk[..]); if (err != default!) {
-                return (default!, default!, err); // EOF is okay here; exactly 1 block of zeros read
+                return (default!, ж<block>.NilBoxOfDims(512L), err); // EOF is okay here; exactly 1 block of zeros read
             }
         }
         if (bytes.Equal(tr.blk[..], zeroBlock[..])) {
-            return (default!, default!, io.EOF); // normal EOF; exactly 2 block of zeros read
+            return (default!, ж<block>.NilBoxOfDims(512L), io.EOF); // normal EOF; exactly 2 block of zeros read
         }
-        return (default!, default!, ErrHeader); // Zero block and then non-zero block
+        return (default!, ж<block>.NilBoxOfDims(512L), ErrHeader); // Zero block and then non-zero block
     }
     // Verify the header matches a known format.
     Format format = Ꮡtr.of(Reader.Ꮡblk).getFormat();
     if (format == FormatUnknown) {
-        return (default!, default!, ErrHeader);
+        return (default!, ж<block>.NilBoxOfDims(512L), ErrHeader);
     }
     parser p = default!;
     var hdr = @new<Header>();

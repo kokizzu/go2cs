@@ -1855,6 +1855,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckTypedNilPtrArrayDims() => CheckTarget("TypedNilPtrArrayDims");
 
     [TestMethod]
+    public void CheckTypedNilPtrArrayPositions() => CheckTarget("TypedNilPtrArrayPositions");
+
+    [TestMethod]
     public void CheckTypedPointerCastDeref() => CheckTarget("TypedPointerCastDeref");
 
     [TestMethod]
