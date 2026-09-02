@@ -21068,4 +21068,83 @@ time to be bought. A deadline-killed run should be A/B'd against a longer one **
 priced, because "needs a bigger timeout" and "hangs on one test" produce the identical tail event and the
 identical `NOT MEASURED` verdict, and only the A/B separates them.
 
+
+---
+
+## 2026-09-02 · `net/http`'s h2 write-deadline rows are NOT a host-capacity margin — BOTH predictions falsified on a 10-core host, and the residual is managed-vs-native TLS handshake latency that scales with SINGLE-THREAD speed (lane G, G-LAPTOP WSL2, 10 cores, solo)
+
+The entry above staffed this row on core count: the theory was that a 4-vCPU container under
+1,345-test load could not hold the h2 write-deadline pair, and that a wider Linux host would clear it
+at `linux: 1343 + 2` with no new disclosure. **That prediction is falsified, and so is the theory
+behind it.** Both are recorded here by name so the row is not re-staffed on either.
+
+### Measured
+
+| | |
+|---|---|
+| host | G-LAPTOP WSL2, **`nproc` 10**, 16 GB, **solo**, Ubuntu 22.04.5, kernel 6.18.33.2 |
+| toolchain | go **1.23.12** (`GOROOT=/usr/local/go1.23.12`, bare `go version` verified), .NET SDK **10.0.400**, `GOTOOLCHAIN=local`, clone at master `3bbb04ca4` |
+| wall | **572 s** against a 40 m budget |
+| `"action":"timeout"` events | **0** — read FIRST; this is a real failure, not a deadline kill |
+| go | 1345 entries — 1329 pass, 16 skip |
+| C# | 1345 entries — **1325 pass, 16 skip, 4 fail** |
+| **result** | **1341 matching + 2 disclosed + 2 UNDISCLOSED** (predicted: 1343 + 2) |
+
+The 2 undisclosed are `TestWriteDeadlineEnforcedPerStream` and `/h2` — the pair the entry above
+predicted would PASS here. `TestWriteDeadlineExtendedOnNewRequest` + `/h2` absorbed as
+`performance-margin` exactly as expected.
+
+### The failure text, and the h1/h2 split
+
+```
+TestWriteDeadlineEnforcedPerStream/h2   fail  elapsed=1.5619664
+  server log: http: TLS handshake error from 127.0.0.1:42840:
+              write tcp 127.0.0.1:43587->127.0.0.1:42840: i/o timeout
+  failed at 250000000  →  retrying at 500000000
+  failed at 500000000  →  retrying at 1000000000
+  failed at 1000000000 →  all attempts failed
+```
+
+`/h1` passes on BOTH tests (0.51 s, 0.38 s); only the TLS-bearing `/h2` fails. That split is the
+row's own confirmation that the handshake — not the WriteTimeout mechanism generally — is what the
+deadline cannot cover.
+
+### The control that makes this clean: GO PASSED ON THE SAME HOST, SAME RUN
+
+The obvious confound on a WSL2 box is virtualized loopback inflating a 127.0.0.1 TLS handshake. **It
+is exonerated without a new experiment, because the native control was already in the data:** Go's
+side passed every one of these tests on this host, this loopback, this run, completing inside the
+250 ms rung. A network-stack explanation would have failed both sides. Parallelism is exonerated the
+same way — 10 cores, solo, a *wider* miss than the 4-vCPU container.
+
+What remains is **managed-vs-native TLS handshake latency, serial**: (250 ms, 500 ms] on the i9
+reference, **> 1 s** here. The consistent reading is single-thread speed — a mobile part versus a
+desktop — and TLS handshake work does not parallelise.
+
+### Correction to the committed disclosure's ladder
+
+The manifest entry describes `tryTimeouts` as `125 ms / 250 ms / 500 ms`. Go 1.23.12's actual ladder
+(`net/http/serve_test.go:980`) is **`{250 ms, 500 ms, 1 s}`** — no rung of the stated description
+exists in this release. The bracket conclusion survives (the author almost certainly mis-transcribed
+the rung values one position down: two failures then a pass IS `(250 ms, 500 ms]`), and the
+correction makes the host comparison rung-for-rung rather than an inference across two
+differently-described ladders:
+
+| host | 250 ms | 500 ms | 1 s | managed handshake |
+|---|---|---|---|---|
+| i9 (reference) | fail | **pass** | — | (250 ms, 500 ms] |
+| G-LAPTOP WSL2, 10 cores, solo | fail | fail | **fail** | **> 1 s** |
+
+### Standing
+
+**No disclosure minted** — the reference bracket still says 500 ms passes on a fast desktop, so this
+is a *slow host*, not a *cannot*. **The Linux row stays UNANNOTATED.** The host's role is recorded
+honestly: right for wide rows and for rows a container deadline-kills, **wrong for near-threshold
+serial-latency rows** — do not route a timing row here on core count.
+
+**The instrument this owes:** the gap is a number nobody has measured directly. A `PerfTlsHandshake`
+row in `src/tests/Performance` (N loopback TLS 1.3 handshakes, in-memory cert, self-timed, compared
+across Go / C# JIT / C# AOT) turns "the ladder fails" into a ratio measurable on every host in the
+fleet, with the i9 — the fastest single thread available — as the natural reference. Sized before
+cut, per the standing rule.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
