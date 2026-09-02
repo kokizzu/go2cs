@@ -563,13 +563,7 @@ public static partial class GoReflect
     /// </remarks>
     public static nint[]? PointeeArrayDims(object? value)
     {
-        object? box = value;
-
-        while (box is IInterfaceAdapter { Value: not null } interfaceAdapter)
-            box = interfaceAdapter.Value;
-
-        if (box is IжAdapter { Box: not null } pointerAdapter)
-            box = pointerAdapter.Box;
+        object? box = unwrapAdapters(value);
 
         // A nil pointer has nothing to measure, and an opaque managed handle has no pointee at all
         // (the descent rule's value-side twin — see TryPointerBoxElement).
@@ -580,6 +574,38 @@ public static partial class GoReflect
         }
 
         return ArrayDimsOfValue(ReadPointerSlot(box));
+    }
+
+    /// <summary>
+    /// The POINTEE type of a boxed Go pointer value — the managed answer to <c>(*T)</c>'s
+    /// <c>T</c> — or null when <paramref name="value"/> is not a Go pointer at all.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="PointeeArrayDims"/> this asks the TYPE, so a nil pointer answers
+    /// normally: <c>ж&lt;T&gt;</c> is a class and a nil one still reports <c>T</c>. Nilness only
+    /// bars READING the pointee, which is why the nil test lives in the dims path and not here.
+    /// </remarks>
+    public static Type? PointeeTypeOfValue(object? value)
+    {
+        object? box = unwrapAdapters(value);
+
+        return box is not null && TryPointerBoxElement(box.GetType(), out Type? pointee) ? pointee : null;
+    }
+
+    // The adapter hops a boxed Go value may carry before the pointer box itself is reached: an
+    // interface value wraps its dynamic value, and a named-pointer adapter wraps the ж box. Both
+    // value-side descents above need the same unwrap, so it is written once rather than twice.
+    private static object? unwrapAdapters(object? value)
+    {
+        object? box = value;
+
+        while (box is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            box = interfaceAdapter.Value;
+
+        if (box is IжAdapter { Box: not null } pointerAdapter)
+            box = pointerAdapter.Box;
+
+        return box;
     }
 
     private static object? firstArrayElement(object arrayValue, Type elemType)
