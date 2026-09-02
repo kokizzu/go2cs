@@ -61,7 +61,10 @@ internal static @string viaFieldMethodValue(this ж<widget> Ꮡw) {
 }
 
 internal static @string viaBareMethodValue(this ж<widget> Ꮡw) {
-    return call(() => Ꮡw.Value.tag());
+    ref var w = ref Ꮡw.DerefOrNull();
+
+    var recvʗ1 = w;
+    return call(() => recvʗ1.tag());
 }
 
 internal static void Main() {
