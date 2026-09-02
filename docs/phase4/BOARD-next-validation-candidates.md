@@ -21000,4 +21000,72 @@ than the reference is a statement about the host until a control separates the t
 is the one used here — re-run the same tests filtered, on an idle box, and see whether they pass. Where
 the row's own disclosure already carries a measured bracket, the bracket is the yardstick and the only
 question is which side of it the host sits on.
+
+---
+
+## 2026-09-02 · `net`'s 73 unreported Linux verdicts have ONE root, and it is not the deadline: `TestUnixgramServer/0` blocks the converted host indefinitely — proven by a 40 m/60 m A/B whose event streams are identical (lane C1, cloud Linux, 4 cores)
+
+**The measurement that settles it.** The same `net` suite was run twice on one host, cgo-OFF, differing only
+in `-TestTimeout` (40 m, then 60 m). The two event streams are **identical**:
+
+| | 40 m run | 60 m run |
+|---|---|---|
+| tests started | 528 | 528 |
+| terminal verdicts | 501 (383 pass / 63 skip / 55 fail) | 501 (383 pass / 63 skip / 55 fail) |
+| orphaned (`run`, never terminal) | 27 | 27 |
+| last event in the stream | `TestUnixgramServer/0` `run` | `TestUnixgramServer/0` `run` |
+| tail event | `elapsed 2400`, `package timeout after 00:40:00` | `elapsed 3600`, `package timeout after 01:00:00` |
+
+Terminal-set symmetric difference: **empty**. Orphan-set symmetric difference: **empty**. Twenty extra
+minutes bought **zero** additional verdicts. A suite that is merely slow makes progress; this one does
+not, so the deadline is not the constraint and raising it further cannot help.
+
+**The block is a single test, and the stream says so positionally.** `TestUnixgramServer` `run` is event
+1029 of 1031 and `TestUnixgramServer/0` `run` is event 1030 — **nothing follows**. The other 26 orphans
+are not independent hangs: 24 carry `t.Parallel()` and are the parked parallel batch (the documented
+two-phase shape — a serial-phase death leaves the whole parallel batch unreported), and the remaining
+two, `TestAllocs` and `TestUDPIPVersionReadMsg`, each emit an explicit `infrastructure-error` and the
+phase moves on past them. Go's own side **passes** `TestUnixgramServer` and all three subtests.
+
+**It sits in a coherent unixgram cluster**, which is what makes it a root rather than an oddity:
+
+    TestReadUnixgramWithUnnamedSocket    go=pass  C#=fail   connection refused | read unixgram /tmp/.../sock: i/o timeout
+    TestUnixgramLinuxAbstractLongName    go=pass  C#=fail   connection refused | read unixgram @abstract_test: i/o timeout
+    TestUnixgramConnLocalAndRemoteNames  go=pass  C#=fail   got 0x7ef6ac05ed18; want 0x7ef6ac05f368
+    TestUnixgramServer/0                 go=pass  C#=(hang)
+    TestUnixgramAutobind                 go=pass  C#=pass
+
+Two of the three failures share one shape — a datagram send refused, then the peer's read reaching its
+deadline — and `TestUnixgramServer/0` performs that same round trip. **What it does NOT share is the
+outcome, and that is the part worth stating precisely:** `packetTransponder` (`mockserver_test.go:440`)
+sets `SetDeadline`, `SetReadDeadline` **and** `SetWriteDeadline` to `someTimeout` before its `ReadFrom`,
+so a conn honouring its deadline cannot block there indefinitely — it would error, send on the channel,
+and `close(ch)` would end the test's select loop. The hang therefore localises to either a deadline not
+being honoured on that conn or a block earlier in the subtest (`ListenPacket`, `newLocalServer`,
+`buildup`). **I have not distinguished those, and this entry does not claim to.**
+
+**Correction to my own earlier posting.** I recorded `net`'s 40 m result as *"needs more than 40 m on this
+host class — a deadline datapoint for the ledger, not a divergence."* Both halves are wrong: it does not
+need more time, and it is a divergence. The 60 m run is what falsified it.
+
+**Refinement to R's Linux-frontier map, not a contradiction of it.** R recorded 73 unreported; this host
+reproduced 73 exactly (go 576 / C# 503), along with `Buffers_WriteTo`'s writev-9 to the digit. What is new
+is that the 73 are **not 73 problems**. They are one hang plus its consequences: the serial tail
+alphabetically at-or-after `TestUnixgramServer` (`TestUnixgramWrite`, `TestUnixgramZeroByteBuffer`,
+`TestUnixgramZeroBytePayload`, `TestZeroByteRead`, …) and the 24 parked parallel parents with their
+subtests. Closing one test therefore unblocks the whole tail, which changes what fixing it is worth by
+an order of magnitude — the same re-pricing `runtime/debug`'s `TestPanicOnFault` needed.
+
+**FALSIFIABLE PREDICTION, and the run that tests it is already tasked.** G is standing up WSL2 as the
+fleet's big Linux host and is to run `net` at 60 m. If the hang is a deadlock, that run stops at
+`TestUnixgramServer/0` with the same 501 terminal verdicts on a much larger box. If instead it runs
+further, the block is contention on a 4-core container and this entry is wrong. Either way the answer is
+one run away and needs no new instrument.
+
+**The general form.** Two runs of one suite at different deadlines are a cheap and decisive instrument: if
+the verdict sets are equal, the deadline is not the constraint and the tail is a block to be located, not
+time to be bought. A deadline-killed run should be A/B'd against a longer one **before** its shortfall is
+priced, because "needs a bigger timeout" and "hangs on one test" produce the identical tail event and the
+identical `NOT MEASURED` verdict, and only the A/B separates them.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
