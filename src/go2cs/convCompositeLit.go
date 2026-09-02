@@ -672,6 +672,17 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 					callContext.argTypeIsPtr[i] = true
 					callContext.anyBoxedPtrArgs[i] = true
 				}
+
+				// The FUNC sibling of the arm above, and the one slot of this family that was
+				// measurably WRONG rather than merely unreached: `[]any{nilFunc}` emitted a bare
+				// null, so the element compared equal to nil where Go — whose interface holds
+				// (func-type, nil) — says it does not. Measured `true false` against Go's
+				// `false false`, with the map-VALUE slot beside it already correct.
+				if eltType := v.getType(elt, false); eltType != nil {
+					if _, eltIsFunc := eltType.Underlying().(*types.Signature); eltIsFunc {
+						callContext.anyBoxedFuncArgs[i] = true
+					}
+				}
 			}
 		}
 	}
@@ -1292,6 +1303,14 @@ func (v *Visitor) markAnyFieldLits(structType *types.Struct, elts []ast.Expr, co
 		if _, eltIsPtr := v.getType(elt, false).(*types.Pointer); eltIsPtr {
 			context.argTypeIsPtr[i] = true
 			context.anyBoxedPtrArgs[i] = true
+		}
+
+		// The FUNC sibling, in the positional `any` FIELD slot — `[]struct{ v any }{{nilFunc}}`
+		// is the same shape as the element arm one level in.
+		if eltType := v.getType(elt, false); eltType != nil {
+			if _, eltIsFunc := eltType.Underlying().(*types.Signature); eltIsFunc {
+				context.anyBoxedFuncArgs[i] = true
+			}
 		}
 	}
 }

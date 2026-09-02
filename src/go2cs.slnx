@@ -884,6 +884,7 @@
     <Project Path="tests/Behavioral/TypeAssert/TypeAssert.csproj" />
     <Project Path="tests/Behavioral/TypeConversion/TypeConversion.csproj" />
     <Project Path="tests/Behavioral/TypeConversionInterfaceParam/TypeConversionInterfaceParam.csproj" />
+    <Project Path="tests/Behavioral/TypedNilFuncBoundaries/TypedNilFuncBoundaries.csproj" />
     <Project Path="tests/Behavioral/TypeConversionReturnType/TypeConversionReturnType.csproj" />
     <Project Path="tests/Behavioral/TypeInference/TypeInference.csproj" />
     <Project Path="tests/Behavioral/TypeSwitch/TypeSwitch.csproj" />

@@ -1950,6 +1950,17 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 						}
 
 						if argType := v.getType(callExpr.Args[j], false); argType != nil {
+							// The FUNC half of this boundary. A func value crossing into a real
+							// `any` parameter carries its Go type, and the delegate representing
+							// nil is a bare `null` that carries nothing once boxed — the same
+							// argument the pointer arm below makes for its box. Consumed in
+							// convExprList, which applies the predicate that exempts method groups
+							// and literals (they can never be null, and an extension method cannot
+							// be invoked on a method group at all).
+							if _, argIsFunc := argType.Underlying().(*types.Signature); argIsFunc {
+								callExprContext.anyBoxedFuncArgs[j] = true
+							}
+
 							if _, argIsPtr := argType.(*types.Pointer); argIsPtr {
 								ident := getIdentifier(callExpr.Args[j])
 
@@ -2399,6 +2410,13 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					// still applies, around the result.
 					if isEmptyInterfaceTarget(sliceUnder.Elem()) {
 						for i := 1; i < len(callExpr.Args); i++ {
+							// The func sibling of the pointer arm below, at the same built-in slot.
+							if argType := v.getType(callExpr.Args[i], false); argType != nil {
+								if _, argIsFunc := argType.Underlying().(*types.Signature); argIsFunc {
+									callExprContext.anyBoxedFuncArgs[i] = true
+								}
+							}
+
 							if _, argIsPtr := v.getType(callExpr.Args[i], false).(*types.Pointer); argIsPtr {
 								callExprContext.argTypeIsPtr[i] = true
 								callExprContext.anyBoxedPtrArgs[i] = true

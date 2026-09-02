@@ -7341,7 +7341,7 @@ internal static void doInit1(ж<initTask> Ꮡt) {
             // Load stats non-atomically since tracinit is updated only by this init goroutine.
             var after = inittrace;
             var f = (ᏑfirstFunc.Reinterpret<@unsafe.Pointer, Action>()).ValueSlot;
-            @string pkg = funcpkgpath(findfunc(abi.FuncPCABIInternal(f)));
+            @string pkg = funcpkgpath(findfunc(abi.FuncPCABIInternal((f).OrTypedNilFunc())));
             array<byte> sbuf = new(24);
             print((@string)"init "u8, pkg, (@string)" @"u8);
             print(((@string)fmtNSAsMS(sbuf[..], (uint64)(start - runtimeInitTime))), (@string)" ms, "u8);

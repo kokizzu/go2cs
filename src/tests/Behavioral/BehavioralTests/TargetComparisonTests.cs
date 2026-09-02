@@ -1813,6 +1813,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckTypedErrorAssertThroughAdapter() => CheckTarget("TypedErrorAssertThroughAdapter");
 
     [TestMethod]
+    public void CheckTypedNilFuncBoundaries() => CheckTarget("TypedNilFuncBoundaries");
+
+    [TestMethod]
     public void CheckTypedNilInterface() => CheckTarget("TypedNilInterface");
 
     [TestMethod]

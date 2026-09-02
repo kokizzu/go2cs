@@ -52,6 +52,16 @@ type CallExprContext struct {
 	// typedNilInterfaceBoxing.go). Distinct from argTypeIsPtr, which decides the BOX-vs-value-
 	// alias rendering and fires for pointer slots of every kind.
 	anyBoxedPtrArgs map[int]bool
+	// anyBoxedFuncArgs is the FUNC sibling of anyBoxedPtrArgs, at the same slots and for the same
+	// reason: a Go func entering an EMPTY interface is a value WITH a dynamic type, and the managed
+	// delegate that represents nil is a bare `null` which carries nothing once boxed. The keyed
+	// composite-literal field and `panic`'s value already reach the treatment through their own
+	// paths; these are the slots that did not (see typedNilInterfaceBoxing.go).
+	//
+	// There is no `delete`-on-an-`any`-keyed-map sibling, and that is a property of Go rather than
+	// an omission: a func type is not comparable, so hashing one panics at run time
+	// ("hash of unhashable type func(int) int") and the slot is unreachable for a func value.
+	anyBoxedFuncArgs map[int]bool
 	// genericResultInferredFuncArgs marks func-LITERAL arguments whose DECLARED parameter type
 	// is a signature with a type parameter in its RESULT list (`OnceValue[T any](f func() T)`).
 	// C# must infer that type argument FROM THE LAMBDA'S RETURN TYPE, so the arms' natural C#
@@ -136,6 +146,7 @@ func DefaultCallExprContext() *CallExprContext {
 		useGoStringArg:      make(map[int]bool),
 		argTypeIsPtr:        make(map[int]bool),
 		anyBoxedPtrArgs:     make(map[int]bool),
+		anyBoxedFuncArgs:    make(map[int]bool),
 		interfaceTypes:      make(map[int]types.Type),
 		hasSpreadOperator:   false,
 		keyValueSource:      StructSource,

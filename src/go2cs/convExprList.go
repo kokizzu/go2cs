@@ -262,6 +262,17 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			resultExpr += "." + TypedNilBoxAccessor
 		}
 
+		// The FUNC twin of the boundary above. applyTypedNilFuncBox is a no-op for every non-func
+		// shape and for a func that provably cannot be null, so the marker selects the SLOT and the
+		// predicate decides the VALUE — which is what keeps the treatment off the 93-of-99 method
+		// groups and literals the corpus is almost entirely made of. It parenthesizes, unlike the
+		// pointer arm's append: member access binds tighter than a cast in C#, and a func's nil
+		// CONVERSION renders `(Action)(default!)`, where a bare trailing accessor would land on the
+		// operand instead of the cast's result.
+		if callContext != nil && callContext.anyBoxedFuncArgs[i] && !spreadArg && !totalReplacement {
+			resultExpr = v.applyTypedNilFuncBox(v.getType(expr, false), v.funcExprNeverRendersNull(expr), resultExpr)
+		}
+
 		if !totalReplacement && replacementArgs != nil && i < len(replacementArgs) && len(replacementArgs[i]) > 0 {
 			resultExpr = strings.ReplaceAll(replacementArgs[i], DynamicCastArgMarker, resultExpr)
 		}

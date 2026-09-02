@@ -223,7 +223,7 @@ public static /*<-*/channel<Time> After(Duration d) {
 // be used to cancel the call using its Stop method.
 // The returned Timer's C field is not used and will be nil.
 public static ж<Timer> AfterFunc(Duration d, Action f) {
-    return newTimer(when(d), 0, goFunc, f, nil);
+    return newTimer(when(d), 0, goFunc, (f).OrTypedNilFunc(), nil);
 }
 
 internal static void goFunc(any arg, uintptr seq, int64 delta) {
