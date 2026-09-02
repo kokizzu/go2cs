@@ -1816,6 +1816,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckTypedNilFuncBoundaries() => CheckTarget("TypedNilFuncBoundaries");
 
     [TestMethod]
+    public void CheckTypedNilPtrArrayDims() => CheckTarget("TypedNilPtrArrayDims");
+
+    [TestMethod]
     public void CheckTypedNilInterface() => CheckTarget("TypedNilInterface");
 
     [TestMethod]

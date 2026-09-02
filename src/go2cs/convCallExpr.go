@@ -208,13 +208,27 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				// named C# type, and convStarExpr is the site that performs that lift (the plain
 				// name path emits an unresolvable raw `struct{…}` signature instead).
 				if starExpr := typeLiteralPointerTarget(callExpr.Fun); starExpr != nil {
-					return fmt.Sprintf("((%s)nil)", v.convStarExpr(starExpr, DefaultStarExprContext()))
+					pointerCS := v.convStarExpr(starExpr, DefaultStarExprContext())
+
+					// `(*[N]E)(nil)` — the array LENGTH is part of the Go type and `array<E>`
+					// cannot hold it, so it rides the value (arrayDimsNilCargo.go).
+					if nilArray := v.nilArrayPtrValue(v.info.TypeOf(callExpr), pointerCS); nilArray != "" {
+						return nilArray
+					}
+
+					return fmt.Sprintf("((%s)nil)", pointerCS)
 				}
 
 				targetCS := convertToCSTypeName(targetTypeName)
 
 				if aliased, ok := v.foreignAliasedTypeName(v.info.TypeOf(callExpr)); ok {
 					targetCS = aliased
+				}
+
+				// The same cargo through the named-target path — an ALIAS for `*[N]E` resolves to
+				// a name here rather than to a StarExpr, and carries the dimension identically.
+				if nilArray := v.nilArrayPtrValue(v.info.TypeOf(callExpr), targetCS); nilArray != "" {
+					return nilArray
 				}
 
 				return fmt.Sprintf("((%s)nil)", targetCS)

@@ -37,7 +37,7 @@ internal static void Main() {
     var b = Ꮡ(new MyArray(new array<byte>(4)));
     a.Value[0] = 1;
     fmt.Println(b4Independentˢ, a.Value, b.Value);
-    ж<MyEmptyArray> nilp = ((ж<MyEmptyArray>)nil);
+    ж<MyEmptyArray> nilp = ж<MyEmptyArray>.NilBoxOfDims(0L);
     fmt.Println(c1Nilˢ, nilp == nil);
     var c = Ꮡ(new MyArray(new byte[]{1, 2, 3, 4}.array()));
     c.Value[1] = 9;
