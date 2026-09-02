@@ -21178,4 +21178,41 @@ alongside 40 m and 60 m). Three deadlines, one result.
 *(Diagnostic only, per the standing rule — a `-test-filter` record never banks a row, and this one was
 deleted rather than left for a later run to read as its own.)*
 
+
+### Amendment, 2026-09-02 — **the prediction is CONFIRMED on a 10-thread host, independently, and the 73 rows are verified as one root rather than argued into one**
+
+The entry above predicted: *on a >4-core Linux host at 60 m, `net` stops at `TestUnixgramServer/0` with
+501 terminal verdicts and the same 27 orphans; if it instead completes, the block is contention on a small
+container and this entry is wrong.* A different lane ran it on a 10-thread WSL2 host, solo, cgo-OFF, and
+the run **deadline-killed at 60 m with the final `run` pair `TestUnixgramServer` → `TestUnixgramServer/0`**
+— the predicted test, named in advance.
+
+| | this container (4 cores) | the big host (10 threads) |
+|---|---|---|
+| terminal verdicts | 501 | **506** |
+| orphaned | 27 | **28** |
+| last `run` event | `TestUnixgramServer/0` | `TestUnixgramServer/0` |
+| tail | `timeout after 01:00:00` | `timeout after 01:00:00` |
+
+Within one on each count, on two hosts differing by 2.5x in thread count. **Contention is dead as an
+explanation** — it was already ruled out here by the filtered single-test control, and a bigger box
+reproducing the same block at the same test settles it from the other direction.
+
+**And the one-root claim was VERIFIED there rather than inherited from this entry.** The absent set on that
+host is alphabetically EARLY (`TestAcceptTimeout`, `TestCloseRead`, `TestConnClose`…), which is not a
+deadline tail's shape — the shape heuristics alone would have read it as scattered and published dozens of
+findings. Parsing GOROOT's `net/*_test.go` gave 304 test functions of which 28 carry `t.Parallel()`; of the
+41 absent top-level names, **28 are exactly that parallel set with zero of them reporting**, and the
+remaining 13 are a contiguous U→W alphabetical tail beginning exactly at the block. Serial phase dies at
+`TestUnixgramServer/0`, takes the 13 serial tests after it, and the parallel batch never starts.
+**41 names / 73 verdict rows / ONE root**, derived independently.
+
+That is the difference between one finding and seventy-three, and it is the two-phase rule doing precisely
+what it was written for.
+
+**What the confirmation does NOT settle**, and is worth keeping separate: the unixgram delivery defect
+itself is still un-rooted below the observation that a `WriteTo` reports success while the peer's
+`ReadFrom` never receives. The queue-depth question this entry left open (`ss -xa` during the hang) remains
+the next cheap measurement, and that host has `ss`.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
