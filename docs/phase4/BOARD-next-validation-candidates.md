@@ -21568,3 +21568,65 @@ ValueTuple), so the attribute went on all four levels; on the outer pair alone i
 the wrong thing. Both consoles reference golib and `math/bits` by ABSOLUTE path, so the
 per-configuration `$(go2csPath)` Release trap cannot reach them. Neither is proposed for banking.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
+
+## 2026-09-02 · HOST QUALIFICATION — i9's Go-side bogo runner FLAKES: seven `crypto/tls` cases failed on the ORACLE with the converted side clean, and the ruled reading is "not a row finding" (lane i9, coordinator ruling same day)
+
+Recorded here because the run it came from is otherwise indistinguishable from a converted-code
+regression: the sweep prints `FAIL crypto/tls`, the row's `status` is `"failing"` and `matched` is
+`false`, and none of that is about the conversion.
+
+**The run.** Run 3 of the three-run standard applied to the row's earlier host death — quiet box
+(nothing else running), Release + `DOTNET_TieredCompilation=0`, 2026-09-02 20:48:04–20:54:59Z, 414 s.
+
+```
+go entries 3644  /  csharp entries 3644          identical to the passing run 2
+environment { configuration: Release, tiered: false,
+              oracleGoVersion: go version go1.23.12 windows/amd64 }
+status "failing"   matched false
+
+errors:  ORACLE-side   (Go=fail C#=pass)   7
+         CONVERTED-side (Go=pass C#=fail)   0
+         process-level                      2
+disclosed: TestCertCache (codegen-liveness) -- absorbed correctly
+```
+
+**The seven, named, so a later sighting can be compared rather than re-derived:**
+
+```
+TestBogoSuite                                           Go=fail  C#=pass
+TestBogoSuite/Downgrade-TLS10-Client                    Go=fail  C#=pass
+TestBogoSuite/Downgrade-TLS12-Client                    Go=fail  C#=pass
+TestBogoSuite/MinimumVersion-Client-TLS11-TLS1-TLS      Go=fail  C#=pass
+TestBogoSuite/MinimumVersion-Client-TLS13-TLS12-TLS     Go=fail  C#=pass
+TestBogoSuite/MinimumVersion-Client2-TLS13-TLS11-TLS    Go=fail  C#=pass
+TestBogoSuite/WrongMessageType-TLS13-ServerHello-TLS    Go=fail  C#=pass
+```
+
+Six version-negotiation / downgrade cases plus the parent. Every one failed on **Go's own bogo
+runner** while the converted side passed, which by construction cannot be converted-code drift: the
+converted code produced the right answer and the oracle did not.
+
+**The ruling (COORD, 2026-09-02), because the shape invites the wrong three reactions.** A run whose
+failure set is entirely `Go=fail / C#=pass` with **zero** converted-side failures is a run in which
+the ORACLE failed to produce a reference — the `os/user` oracle-side shape arriving as a FLAKE rather
+than a deterministic host limit. Therefore:
+
+- **The row's bank verdict is taken from a run with a CLEAN oracle.** Run 2 (3,644 / 3,644,
+  `matched: true`, sweep exit 0) is exactly that.
+- **This is evidence about the HOST's oracle**, recorded here with the cases and the date. It is
+  **never a disclosure on the row** and **never a converted-side finding**.
+- **`_roster.ps1` grows no fourth arm.** The three proven host states (full count /
+  capability-absent / host-limit) are unchanged; this is not a fourth one.
+- **What the SWEEP owes** is routed as its own cut (coordinator's, not this lane's): when a row's
+  failure set is oracle-only, re-run the row ONCE before failing it, and on a second oracle-only
+  result fail it as *oracle unstable on this host* — the three-run standard applied to the oracle
+  side, so a Go flake can never silently fail a clean converted row. **Until that lands, a lane
+  meeting this shape re-runs by hand and cites this entry.**
+
+**The near-miss that makes it worth a board entry.** The sweep line reads `FAIL crypto/tls [414s]`
+and the child reports `exit status 1`; that was read as the earlier access violation recurring and
+almost written up as a second crash. It is not — `exit status 1` is `go test`'s ordinary "tests
+failed", a crash is `0xc0000005` / 3221225477, and this record carries **zero** crash signatures and
+no deadline event in either spelling. **Read the failure MODE before writing the word "crash"**: the
+crash-signature grep and the results tail are one command each and they decide it.
+
