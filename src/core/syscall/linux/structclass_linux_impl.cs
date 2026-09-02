@@ -99,7 +99,7 @@ partial class syscall_package
         seedNativeFdSet(Ꮡw, ref nativeW);
         seedNativeFdSet(Ꮡe, ref nativeE);
 
-        if (Ꮡtimeout is not null) {
+        if (Ꮡtimeout is not null && !Ꮡtimeout.IsNilPointer) {
             ref var tv = ref Ꮡtimeout.Value;
             nativeTimeout.Sec = tv.Sec;
             nativeTimeout.Usec = tv.Usec;
@@ -107,10 +107,10 @@ partial class syscall_package
 
         // A nil set reaches the kernel as address 0 in Go — "do not watch this class" — and a nil
         // timeout means block forever. Both must stay nil rather than becoming a zeroed buffer.
-        uintptr rAddr = Ꮡr is null ? (uintptr)0 : (uintptr)(nint)(&nativeR);
-        uintptr wAddr = Ꮡw is null ? (uintptr)0 : (uintptr)(nint)(&nativeW);
-        uintptr eAddr = Ꮡe is null ? (uintptr)0 : (uintptr)(nint)(&nativeE);
-        uintptr timeoutAddr = Ꮡtimeout is null ? (uintptr)0 : (uintptr)(nint)(&nativeTimeout);
+        uintptr rAddr = Ꮡr is null || Ꮡr.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&nativeR);
+        uintptr wAddr = Ꮡw is null || Ꮡw.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&nativeW);
+        uintptr eAddr = Ꮡe is null || Ꮡe.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&nativeE);
+        uintptr timeoutAddr = Ꮡtimeout is null || Ꮡtimeout.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&nativeTimeout);
 
         var (r0, _, e1) = Syscall6(SYS_SELECT, (uintptr)nfd, rAddr, wAddr, eAddr, timeoutAddr, 0);
         nint n = (nint)r0;
@@ -122,7 +122,7 @@ partial class syscall_package
         copyNativeFdSet(ref nativeW, Ꮡw);
         copyNativeFdSet(ref nativeE, Ꮡe);
 
-        if (Ꮡtimeout is not null) {
+        if (Ꮡtimeout is not null && !Ꮡtimeout.IsNilPointer) {
             ref var tv = ref Ꮡtimeout.Value;
             tv.Sec = nativeTimeout.Sec;
             tv.Usec = nativeTimeout.Usec;
@@ -136,7 +136,7 @@ partial class syscall_package
     }
 
     private static unsafe void seedNativeFdSet(ж<FdSet> Ꮡset, ref NativeFdSetLinuxAmd64 native) {
-        if (Ꮡset is null)
+        if (Ꮡset is null || Ꮡset.IsNilPointer)
             return;
 
         ref var fds = ref Ꮡset.Value;
@@ -148,7 +148,7 @@ partial class syscall_package
     }
 
     private static unsafe void copyNativeFdSet(ref NativeFdSetLinuxAmd64 native, ж<FdSet> Ꮡset) {
-        if (Ꮡset is null)
+        if (Ꮡset is null || Ꮡset.IsNilPointer)
             return;
 
         ref var fds = ref Ꮡset.Value;
@@ -187,7 +187,7 @@ partial class syscall_package
 
         NativeFlockLinuxAmd64 native = default;
 
-        if (Ꮡlk is not null) {
+        if (Ꮡlk is not null && !Ꮡlk.IsNilPointer) {
             ref var lk = ref Ꮡlk.Value;
             native.Type = lk.Type;
             native.Whence = lk.Whence;
@@ -198,11 +198,11 @@ partial class syscall_package
             copyPadIn(lk.Pad_cgo_1, native.Pad_cgo_1, 4);
         }
 
-        uintptr lkAddr = Ꮡlk is null ? (uintptr)0 : (uintptr)(nint)(&native);
+        uintptr lkAddr = Ꮡlk is null || Ꮡlk.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&native);
 
         var (_, _, errno) = Syscall(fcntl64Syscall, fd, (uintptr)cmd, lkAddr);
 
-        if (Ꮡlk is not null) {
+        if (Ꮡlk is not null && !Ꮡlk.IsNilPointer) {
             ref var lk = ref Ꮡlk.Value;
             lk.Type = native.Type;
             lk.Whence = native.Whence;
@@ -266,7 +266,7 @@ partial class syscall_package
             throw new InvalidOperationException($"syscall: NativeStatfsLinuxAmd64 is {sizeof(NativeStatfsLinuxAmd64)} bytes, the kernel's struct statfs is {nativeStatfsSizeLinuxAmd64}");
 
         NativeStatfsLinuxAmd64 native = default;
-        uintptr bufAddr = Ꮡbuf is null ? (uintptr)0 : (uintptr)(nint)(&native);
+        uintptr bufAddr = Ꮡbuf is null || Ꮡbuf.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&native);
 
         var (_, _, e1) = Syscall(SYS_STATFS, (uintptr)_p0, bufAddr, 0);
         if (e1 != 0) {
@@ -282,7 +282,7 @@ partial class syscall_package
             throw new InvalidOperationException($"syscall: NativeStatfsLinuxAmd64 is {sizeof(NativeStatfsLinuxAmd64)} bytes, the kernel's struct statfs is {nativeStatfsSizeLinuxAmd64}");
 
         NativeStatfsLinuxAmd64 native = default;
-        uintptr bufAddr = Ꮡbuf is null ? (uintptr)0 : (uintptr)(nint)(&native);
+        uintptr bufAddr = Ꮡbuf is null || Ꮡbuf.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&native);
 
         var (_, _, e1) = Syscall(SYS_FSTATFS, (uintptr)fd, bufAddr, 0);
         if (e1 != 0) {
@@ -357,7 +357,7 @@ partial class syscall_package
             throw new InvalidOperationException($"syscall: NativeSysinfoLinuxAmd64 is {sizeof(NativeSysinfoLinuxAmd64)} bytes, the kernel's struct sysinfo is {nativeSysinfoSizeLinuxAmd64}");
 
         NativeSysinfoLinuxAmd64 native = default;
-        uintptr infoAddr = Ꮡinfo is null ? (uintptr)0 : (uintptr)(nint)(&native);
+        uintptr infoAddr = Ꮡinfo is null || Ꮡinfo.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&native);
 
         var (_, _, e1) = RawSyscall(SYS_SYSINFO, infoAddr, 0, 0);
         if (e1 != 0) {
@@ -433,7 +433,7 @@ partial class syscall_package
 
         NativeTimexLinuxAmd64 native = default;
 
-        if (Ꮡbuf is not null) {
+        if (Ꮡbuf is not null && !Ꮡbuf.IsNilPointer) {
             ref var tx = ref Ꮡbuf.Value;
             native.Modes = tx.Modes;
             native.Offset = tx.Offset;
@@ -462,12 +462,12 @@ partial class syscall_package
             copyPadIn(tx.Pad_cgo_3, native.Pad_cgo_3, 44);
         }
 
-        uintptr bufAddr = Ꮡbuf is null ? (uintptr)0 : (uintptr)(nint)(&native);
+        uintptr bufAddr = Ꮡbuf is null || Ꮡbuf.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&native);
 
         var (r0, _, e1) = Syscall(SYS_ADJTIMEX, bufAddr, 0, 0);
         nint state = (nint)r0;
 
-        if (Ꮡbuf is not null) {
+        if (Ꮡbuf is not null && !Ꮡbuf.IsNilPointer) {
             ref var tx = ref Ꮡbuf.Value;
             tx.Modes = native.Modes;
             tx.Offset = native.Offset;

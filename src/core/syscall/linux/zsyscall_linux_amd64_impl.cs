@@ -147,7 +147,7 @@ partial class syscall_package
 
         NativeStatLinuxAmd64 native = default;
         // A nil *Stat_t reaches the kernel as address 0 in Go and answers EFAULT; keep that.
-        uintptr statAddr = Ꮡstat is null ? (uintptr)0 : (uintptr)(nint)(&native);
+        uintptr statAddr = Ꮡstat is null || Ꮡstat.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&native);
 
         var (_, _, e1) = Syscall(SYS_FSTAT, (uintptr)fd, statAddr, 0);
         if (e1 != 0) {
@@ -175,7 +175,7 @@ partial class syscall_package
             throw new InvalidOperationException($"syscall: NativeStatLinuxAmd64 is {sizeof(NativeStatLinuxAmd64)} bytes, the kernel's struct stat is {nativeStatSizeLinuxAmd64}");
 
         NativeStatLinuxAmd64 native = default;
-        uintptr statAddr = Ꮡstat is null ? (uintptr)0 : (uintptr)(nint)(&native);
+        uintptr statAddr = Ꮡstat is null || Ꮡstat.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&native);
 
         var (_, _, e1) = Syscall6(SYS_NEWFSTATAT, (uintptr)fd, (uintptr)_p0, statAddr, (uintptr)flags, 0, 0);
         if (e1 != 0) {
@@ -269,8 +269,8 @@ partial class syscall_package
 
         int32 nativeStatus = 0;
         NativeRusageLinuxAmd64 nativeRusage = default;
-        uintptr statusAddr = Ꮡwstatus is null ? (uintptr)0 : (uintptr)(nint)(&nativeStatus);
-        uintptr rusageAddr = Ꮡrusage is null ? (uintptr)0 : (uintptr)(nint)(&nativeRusage);
+        uintptr statusAddr = Ꮡwstatus is null || Ꮡwstatus.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&nativeStatus);
+        uintptr rusageAddr = Ꮡrusage is null || Ꮡrusage.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&nativeRusage);
 
         var (r0, _, e1) = Syscall6(SYS_WAIT4, (uintptr)pid, statusAddr, (uintptr)options, rusageAddr, 0, 0);
         nint wpid = (nint)r0;
@@ -278,11 +278,11 @@ partial class syscall_package
             return (wpid, errnoErr(e1));
         }
 
-        if (Ꮡwstatus is not null) {
+        if (Ꮡwstatus is not null && !Ꮡwstatus.IsNilPointer) {
             Ꮡwstatus.Value = nativeStatus;
         }
 
-        if (Ꮡrusage is not null) {
+        if (Ꮡrusage is not null && !Ꮡrusage.IsNilPointer) {
             ref var ru = ref Ꮡrusage.Value;
             ru.Utime = new Timeval{ Sec = nativeRusage.Utime.Sec, Usec = nativeRusage.Utime.Usec };
             ru.Stime = new Timeval{ Sec = nativeRusage.Stime.Sec, Usec = nativeRusage.Stime.Usec };
@@ -350,7 +350,7 @@ partial class syscall_package
 
         NativeUtsnameLinux native = default;
         // A nil *Utsname reaches the kernel as address 0 in Go and answers EFAULT; keep that.
-        uintptr bufAddr = Ꮡbuf is null ? (uintptr)0 : (uintptr)(nint)(&native);
+        uintptr bufAddr = Ꮡbuf is null || Ꮡbuf.IsNilPointer ? (uintptr)0 : (uintptr)(nint)(&native);
 
         var (_, _, e1) = RawSyscall(SYS_UNAME, bufAddr, 0, 0);
         if (e1 != 0) {
