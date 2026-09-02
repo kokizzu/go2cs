@@ -2044,124 +2044,13 @@ public static SelectDir SelectDefault => 3; // default
     public ΔValue Send;     // value to send (for send)
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string reflectSelectˢ = "reflect.Select"u8;
+// go2cs generated this placeholder — func Select is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Select executes a select operation described by the list of cases.
-// Like the Go select statement, it blocks until at least one of the cases
-// can proceed, makes a uniform pseudo-random choice,
-// and then executes that case. It returns the index of the chosen case
-// and, if that case was a receive operation, the value received and a
-// boolean indicating whether the value corresponds to a send on the channel
-// (as opposed to a zero value received because the channel is closed).
-// Select supports a maximum of 65536 cases.
-public static (nint chosen, ΔValue recv, bool recvOK) Select(slice<SelectCase> cases) {
-    nint chosen = default!;
-    ΔValue recv = new(nil);
-    bool recvOK = default!;
-
-    if (len(cases) > 65536) {
-        throw panic("reflect.Select: too many cases (max 65536)");
-    }
-    // NOTE: Do not trust that caller is not modifying cases data underfoot.
-    // The range is safe because the caller cannot modify our copy of the len
-    // and each iteration makes its own copy of the value c.
-    slice<runtimeSelect> runcases = default!;
-    if (len(cases) > 4){
-        // Slice is heap allocated due to runtime dependent capacity.
-        runcases = new slice<runtimeSelect>(len(cases));
-    } else {
-        // Slice can be stack allocated due to constant capacity.
-        runcases = new slice<runtimeSelect>(len(cases), 4);
-    }
-    var haveDefault = false;
-    foreach (var (i, c) in cases) {
-        var rc = Ꮡ(runcases, i);
-        rc.Value.dir = c.Dir;
-        var exprᴛ1 = c.Dir;
-        if (exprᴛ1 == SelectDefault) {
-            if (haveDefault) {
-                // default
-                throw panic("reflect.Select: multiple default cases");
-            }
-            haveDefault = true;
-            if (c.Chan.IsValid()) {
-                throw panic("reflect.Select: default case has Chan value");
-            }
-            if (c.Send.IsValid()) {
-                throw panic("reflect.Select: default case has Send value");
-            }
-        }
-        else if (exprᴛ1 == SelectSend) {
-            do {
-                var ch = c.Chan;
-                if (!ch.IsValid()) {
-                    break;
-                }
-                ch.mustBe(Chan);
-                ch.mustBeExported();
-                var tt = ch.typ().Reinterpret<abi.Type, chanType>();
-                if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & SendDir) == 0) {
-                    throw panic("reflect.Select: SendDir case using recv-only channel");
-                }
-                rc.Value.ch = (uintptr)ch.pointer();
-                rc.Value.typ = toRType(tt.of(chanType.ᏑType));
-                ref var v = ref heap<ΔValue>(out var Ꮡv);
-                v = c.Send;
-                if (!v.IsValid()) {
-                    throw panic("reflect.Select: SendDir case missing Send value");
-                }
-                v.mustBeExported();
-                v = v.assignTo(reflectSelectˢ, (~tt).Elem, nil);
-                if ((flag)(v.flag & flagIndir) != 0){
-                    rc.Value.val = v.ptr;
-                } else {
-                    rc.Value.val = @unsafe.Pointer.FromBox(Ꮡv.of(reflect_package.ΔValue.Ꮡptr));
-                }
-                escapes((~rc).val);
-            } while (false);
-        }
-        else if (exprᴛ1 == SelectRecv) {
-            do {
-                if (c.Send.IsValid()) {
-                    // The value to send needs to escape. See the comment at rselect for
-                    // why we need forced escape.
-                    throw panic("reflect.Select: RecvDir case has Send value");
-                }
-                var ch = c.Chan;
-                if (!ch.IsValid()) {
-                    break;
-                }
-                ch.mustBe(Chan);
-                ch.mustBeExported();
-                var tt = ch.typ().Reinterpret<abi.Type, chanType>();
-                if ((ΔChanDir)(((ΔChanDir)(nint)(~tt).Dir) & RecvDir) == 0) {
-                    throw panic("reflect.Select: RecvDir case using send-only channel");
-                }
-                rc.Value.ch = (uintptr)ch.pointer();
-                rc.Value.typ = toRType(tt.of(chanType.ᏑType));
-                rc.Value.val = (uintptr)unsafe_New((~tt).Elem);
-            } while (false);
-        }
-        else { /* default: */
-            throw panic("reflect.Select: invalid Dir");
-        }
-
-    }
-    (chosen, recvOK) = rselect(runcases);
-    if (runcases[chosen].dir == SelectRecv) {
-        var tt = runcases[chosen].typ.Reinterpret<rtype, chanType>();
-        var t = tt.Value.Elem;
-        @unsafe.Pointer p = runcases[chosen].val;
-        var fl = ((flag)(uintptr)(uint8)t.Kind());
-        if (t.IfaceIndir()){
-            recv = new ΔValue(t, p.Value, (flag)(fl | flagIndir));
-        } else {
-            recv = new ΔValue(t, ~(ж<@unsafe.Pointer>)(uintptr)(p), fl);
-        }
-    }
-    return (chosen, recv, recvOK);
-}
+// Slice is heap allocated due to runtime dependent capacity.
+// Slice can be stack allocated due to constant capacity.
+// default
+// The value to send needs to escape. See the comment at rselect for
+// why we need forced escape.
 
 /*
  * constructors

@@ -515,6 +515,11 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// size -- the mirror of internal/reflectlite's registration, for the same root; the
 		// hand-own swaps through golib's non-generic ISlice indexer. See reflect/value_impl.cs.
 		"Swapper":             goosAny,
+		// Select read each case's direction by reinterpreting the descriptor onto the linker's
+		// chanType record (the non-deterministic read abi.ChanDir retired) AND ran through the
+		// rselect runtime stub. The hand-own uses the direction cargo and bridges golib's own
+		// select engine (GoReflect.RunSelect); rselect is left dead. See reflect/value_impl.cs.
+		"Select":              goosAny,
 		// Value.Close reads the channel direction by reinterpreting the descriptor onto the
 		// linker's chanType record -- the non-deterministic read abi.ChanDir was hand-owned to
 		// retire, still live here -- and then calls the chanclose runtime stub.
