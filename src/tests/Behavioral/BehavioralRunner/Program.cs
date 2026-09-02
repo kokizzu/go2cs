@@ -226,6 +226,33 @@ namespace BehavioralRunner
                 .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
                 .ToList()!;
 
+            // F8 -- PLATFORM-EXCLUSIVE packages are removed from the enumeration and reported BY NAME.
+            // A package whose Go source only type-checks on some platforms (ScmRightsSeam's unix-only
+            // syscall API on Windows; FindFirstFileData's Win32 surface on Linux) cannot be measured
+            // here at all: the converter emits a best-effort conversion and every phase downstream then
+            // reports a failure that is really a host mismatch. Skipping SILENTLY would be worse than
+            // the failure, so the names and their platforms are printed and counted separately, and
+            // they never enter the pass/fail denominators.
+            List<string> platformExclusive = projects
+                .Where(n => PlatformExclusive.ShouldSkip(Path.Combine(s_behavioralDir, n), out _))
+                .ToList();
+
+            if (platformExclusive.Count > 0)
+            {
+                projects = projects.Except(platformExclusive).ToList();
+
+                Console.WriteLine($"SKIPPED (platform-exclusive, {platformExclusive.Count}): native to another platform, so this {PlatformExclusive.HostGoos} host cannot type-check them:");
+
+                foreach (string n in platformExclusive)
+                {
+                    PlatformExclusive.ShouldSkip(Path.Combine(s_behavioralDir, n), out string platforms);
+                    Console.WriteLine($"    {n} [{platforms}]");
+                }
+
+                Console.WriteLine();
+            }
+
+
             if (listOnly)
             {
                 foreach (string p in projects)

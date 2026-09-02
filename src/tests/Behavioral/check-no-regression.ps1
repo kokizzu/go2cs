@@ -130,12 +130,62 @@ Write-Host "==> transpiling $($projects.Count) behavioral packages (deepest-firs
 # Those, and a non-zero converter exit (the same hole's previously-unhandled sibling: the loop printed
 # the failure but the verdict stayed green), fail the gate by name as NOT MEASURED. Every other
 # WARNING is advisory (e.g. unsafe.Sizeof usage) -- present on a healthy run, counted, never fatal.
+# F8 -- PLATFORM-EXCLUSIVE packages. A package whose Go source only type-checks on some platforms
+# carries [GoPlatformExclusive("<goos>", ...)] in its package_info.cs (hand-added, preserved across
+# a re-transpile -- measured). On a NON-native host the converter cannot type-check it, so this gate
+# reported it NOT MEASURED: correct, but indistinguishable BY NAME from a real conversion failure,
+# which is how a genuine regression could hide among expected lines. The class bites both ways --
+# ScmRightsSeam (unix-only syscall API) on Windows is the exact mirror of FindFirstFileData on Linux.
+#
+# Such a package is SKIPPED BY NAME on a non-native host: printed with its platform, counted in its
+# own summary line, and excluded from the transpile loop and the byte-identical denominator -- never
+# silently dropped from the enumeration, which would trade one invisible problem for another.
+function Get-PlatformExclusivePlatforms {
+    param([string] $PackageDir)
+
+    $infoFile = Join-Path $PackageDir 'package_info.cs'
+
+    if (-not (Test-Path $infoFile)) { return @() }
+
+    # Line-anchored, like the corpus's own GoManualConversion census: the attribute NAME can appear
+    # in a comment, and an unanchored match would gate a package on prose.
+    $line = @(Get-Content -LiteralPath $infoFile | Where-Object { $_ -match '^\s*\[GoPlatformExclusive\(' }) |
+        Select-Object -First 1
+
+    if (-not $line) { return @() }
+
+    return @([regex]::Matches($line, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
+}
+
+$hostGoos = if ($env:GoTargetOS) { $env:GoTargetOS } elseif ($IsWindowsHost) { 'windows' } elseif ($IsMacOS) { 'darwin' } else { 'linux' }
+$skippedExclusive = @()
+$measurable = @()
+
+foreach ($proj in $projects) {
+    $platforms = Get-PlatformExclusivePlatforms $proj.FullName
+
+    if ($platforms.Count -gt 0 -and $platforms -notcontains $hostGoos) {
+        $skippedExclusive += [pscustomobject]@{
+            Name      = Get-RelativeDisplayPath $proj.FullName $behavioral
+            Platforms = ($platforms -join ', ')
+        }
+    }
+    else {
+        $measurable += $proj
+    }
+}
+
+if ($skippedExclusive.Count -gt 0) {
+    Write-Host "==> SKIPPED (platform-exclusive, $($skippedExclusive.Count)): native to another platform, so this $hostGoos host cannot type-check them:" -ForegroundColor DarkCyan
+    $skippedExclusive | ForEach-Object { Write-Host "    $($_.Name) [$($_.Platforms)]" -ForegroundColor DarkCyan }
+}
+
 $savedEAP = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 $unmeasured = @()
 $advisoryWarnings = 0
 try {
-    foreach ($proj in $projects) {
+    foreach ($proj in $measurable) {
         $lines = @(& $go2csExe -go2cspath $go2csRoot $proj.FullName 2>&1 | ForEach-Object { "$_" })
         # Report the path relative to the behavioral root: a bare .Name is ambiguous for nested
         # sub-libraries (three of them are called "inner", two "latelib").
@@ -167,7 +217,12 @@ $changed = & git -C $repoRoot status --short -- "src/tests/Behavioral/*.cs" "src
     Where-Object { $_ -notmatch "Behavioral(Tests|Runner)/" }
 
 if (-not $changed -and $unmeasured.Count -eq 0) {
-    Write-Host "==> NO REGRESSION: generated C# and .csproj are byte-identical across all $($projects.Count) behavioral packages ($advisoryWarnings advisory converter warnings)." -ForegroundColor Green
+    # N is ENUMERATED-MINUS-SKIPPED: a platform-exclusive package this host cannot type-check was
+    # never transpiled, so counting it toward "byte-identical across all N" is the vacuous claim F8
+    # exists to stop. The skipped names are restated here so the verdict line and the skip line
+    # cannot drift apart in a log someone reads later.
+    $skipNote = if ($skippedExclusive.Count -gt 0) { " ($($skippedExclusive.Count) platform-exclusive skipped: $(($skippedExclusive | ForEach-Object { $_.Name }) -join ", "))" } else { "" }
+    Write-Host "==> NO REGRESSION: generated C# and .csproj are byte-identical across all $($measurable.Count) behavioral packages ($advisoryWarnings advisory converter warnings)$skipNote." -ForegroundColor Green
     exit 0
 }
 

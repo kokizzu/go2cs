@@ -1999,6 +1999,8 @@ public class A1_TranspileTests : BehavioralTestBase
 
     private void CheckTarget(string targetProject)
     {
+        SkipIfPlatformExclusive(targetProject);
+
         TranspileProject(targetProject, true);
     }
 }
