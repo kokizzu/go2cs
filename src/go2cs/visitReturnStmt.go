@@ -518,6 +518,17 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 					resultExpr = appendValueClone(resultExpr, v.getExprType(expr))
 				}
 
+				// A bidirectional channel returned as a DIRECTIONAL result narrows the Go type with
+				// no construction to hook (`func f() <-chan T { return ch }`) — the return arm of
+				// the live-copy narrowing (see chanDirNarrowedValue). Keyed on the declared RESULT
+				// type versus the expression's own, so a result that is already directional, or
+				// bidirectional on both sides, renders unchanged.
+				if resultParams != nil && i < resultParams.Len() {
+					if narrowedChan := v.chanDirNarrowedValue(resultParams.At(i).Type(), v.getExprType(expr), resultExpr); narrowedChan != "" {
+						resultExpr = narrowedChan
+					}
+				}
+
 				// Box an untyped CONSTANT returned as an EMPTY interface at Go's default type (the
 				// numeric twin of the castToGoString @string boxing above), so a later `x.(int)` on the
 				// result matches Go's boxed `int` dynamic type. A non-empty interface result routes
