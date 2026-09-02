@@ -122,16 +122,33 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// Guarded the same way visitInterfaceType's twin block is: C#'s rule is TYPE accessibility
 		// >= MEMBER accessibility, so a reuse is only unsafe when the member this lift names
 		// (liftNameNeedsPublicType — the segment after the lift name's last underscore, i.e. the
-		// actual field/param Go declared) is EXPORTED but the reuse candidate's OWN inferred
-		// accessibility (generatedTypeScope, mirroring go2cs-gen's GetScope) is not. An unexported
-		// member never conflicts with any reuse — internal is C#'s accessibility floor — even when
-		// the COMBINED lift name reads public by first character alone (comparing combined names,
-		// this block's first version, wrongly rejected safe reuses on that basis; see
-		// visitInterfaceType's twin comment for the concrete hash_test.go/IfaceKey case that
-		// caught it). A FUNCTION-LOCAL lift needs no check: localTypeAccess writes an EXPLICIT
-		// `internal` there, overriding name inference, so reusing any name is safe. Falling
-		// through to a fresh mint when the check fails is always safe too — it is the pre-fix
-		// behavior — and only forgoes a dedup opportunity, never breaks one.
+		// actual field/param Go declared) is EXPORTED. An unexported member never conflicts with
+		// any reuse — internal is C#'s accessibility floor — even when the COMBINED lift name
+		// reads public by first character alone (comparing combined names, this block's first
+		// version, wrongly rejected safe reuses on that basis; see visitInterfaceType's twin
+		// comment for the concrete hash_test.go/IfaceKey case that caught it). A FUNCTION-LOCAL
+		// lift needs no check: localTypeAccess writes an EXPLICIT `internal` there, overriding
+		// name inference, so reusing any name is safe. Falling through to a fresh mint when the
+		// check fails is always safe — it only forgoes a dedup opportunity, never breaks one.
+		//
+		// A THIRD disjunct used to also allow reuse whenever generatedTypeScope(existing) read
+		// "public" — trusting the CANDIDATE's own name-based accessibility guess as a stand-in for
+		// its real recorded accessibility. That guess cannot see localTypeAccess's override: a
+		// package-wide-registered function-local type is ALWAYS internal regardless of what its
+		// mangled name's capitalization suggests (localTypeAccess's own doc comment), so the guess
+		// reads "public" for any such type whose enclosing function happens to be exported —
+		// exactly reflect's `TestTypeFieldOutOfRangePanic_i` (all_test.go, function-local, always
+		// internal) reused by `Δtypeᴛ37`'s public field `A` (visiblefields_test.go): CS0052/50/51.
+		// 0d6549ae5 widened package-wide registration to call-boundary function-local lifts, which
+		// is what first let a name-mangling-inherits-the-enclosing-function registrant reach this
+		// check at all — the guess itself was always unsound here, just never exercised against
+		// one before. Removed rather than repaired: a truthful check needs the candidate's REAL
+		// recorded accessibility, which means seeing past this file's own visit (cross-file,
+		// concurrent, no barrier here the way deferredDynamicTypeName's marker path has), and the
+		// fallback is unconditionally safe regardless. Measured before removing it (i9's
+		// cross-tier census, 2026-09-01): 0 hits in the whole `-stdlib` corpus, 2 in reflect's own
+		// `-tests` (both false — guess public, actual internal), 0 in the five reflect-importer
+		// canaries' `-tests` — this removal costs no currently-safe dedup anywhere measured.
 		if anonLiftKey != "" {
 			existing := lookupDynamicTypeName(structSignatureType.String())
 
@@ -145,7 +162,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 				existing = lookupProductionDynamicTypeName(structSignatureType.String())
 			}
 
-			if existing != "" && (v.inFunction || !liftNameNeedsPublicType(name) || generatedTypeScope(existing) == "public") {
+			if existing != "" && (v.inFunction || !liftNameNeedsPublicType(name)) {
 				if identType != nil {
 					v.liftedTypeMap[identType] = existing
 				}

@@ -548,6 +548,7 @@
     <Project Path="tests/Behavioral/LambdaReturnsPointerParam/LambdaReturnsPointerParam.csproj" />
     <Project Path="tests/Behavioral/LabeledEmptyStmt/LabeledEmptyStmt.csproj" />
     <Project Path="tests/Behavioral/LargeUintptrConst/LargeUintptrConst.csproj" />
+    <Project Path="tests/Behavioral/LiftAccessibilityTier/LiftAccessibilityTier.csproj" />
     <Project Path="tests/Behavioral/LiftedLocalTypes/LiftedLocalTypes.csproj" />
     <Project Path="tests/Behavioral/LibraryImportPartial/LibraryImportPartial.csproj" />
     <Project Path="tests/Behavioral/LinknameVarPull/LinknameVarPull.csproj" />

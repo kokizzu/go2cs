@@ -128,19 +128,25 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 		//
 		// C#'s rule is TYPE accessibility >= MEMBER accessibility, so a reuse is only unsafe when
 		// the member this lift names (liftNameNeedsPublicType — the segment after the lift name's
-		// last underscore, i.e. the actual field/param Go declared) is EXPORTED but the reuse
-		// candidate's OWN inferred accessibility (generatedTypeScope, mirroring go2cs-gen's
-		// GetScope) is not. AnonymousInterfaces' `WithInlineField.R` (exported field, so the "R"
-		// segment needs public) reusing `takesReader_r` (internal, for an unrelated unexported
-		// param) is exactly that: CS0050/CS0051/CS0052. An unexported member — hash_test.go's
-		// `IfaceKey.i` field, the "i" segment — never conflicts with ANY reuse: internal is C#'s
-		// accessibility floor, so `ifaceHash_i` (also internal) is always safe for it, even though
-		// the COMBINED name "IfaceKey_i" itself reads public by first character (an earlier,
-		// wrong version of this check compared combined names and rejected that exact reuse). A
-		// FUNCTION-LOCAL lift needs no check at all: localTypeAccess writes an EXPLICIT `internal`
-		// there, overriding name inference entirely, so reuse is always safe regardless of case.
-		// Falling through to a fresh mint when the check fails is always safe too — it is the
-		// pre-fix behavior — and only forgoes a dedup opportunity, never breaks one.
+		// last underscore, i.e. the actual field/param Go declared) is EXPORTED. AnonymousInterfaces'
+		// `WithInlineField.R` (exported field, so the "R" segment needs public) reusing
+		// `takesReader_r` (internal by name — first character 't' — for an unrelated unexported
+		// param) is exactly the case this correctly refuses: CS0050/CS0051/CS0052 if it didn't. An
+		// unexported member — hash_test.go's `IfaceKey.i` field, the "i" segment — never conflicts
+		// with ANY reuse: internal is C#'s accessibility floor, so `ifaceHash_i` (also internal) is
+		// always safe for it, even though the COMBINED name "IfaceKey_i" itself reads public by
+		// first character (an earlier, wrong version of this check compared combined names and
+		// rejected that exact reuse). A FUNCTION-LOCAL lift needs no check at all: localTypeAccess
+		// writes an EXPLICIT `internal` there, overriding name inference entirely, so reuse is
+		// always safe regardless of case. Falling through to a fresh mint when the check fails is
+		// always safe — it only forgoes a dedup opportunity, never breaks one.
+		//
+		// A THIRD disjunct used to also allow reuse whenever generatedTypeScope(existing) read
+		// "public" — the struct twin's comment (visitStructType.go) has the full account of why it
+		// was unsound (it cannot see localTypeAccess's override) and the measurement that showed
+		// removing it costs no currently-safe dedup anywhere in the corpus (i9's cross-tier census,
+		// 2026-09-01: 0 hits `-stdlib`-wide, 2 in reflect's own `-tests`, both false, 0 in the five
+		// reflect-importer canaries' `-tests`).
 		if signatureType := v.getType(interfaceType, false); signatureType != nil {
 			signature := signatureType.String()
 			existing := lookupDynamicTypeName(signature)
@@ -149,7 +155,7 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 				existing = lookupProductionDynamicTypeName(signature)
 			}
 
-			if existing != "" && (v.inFunction || !liftNameNeedsPublicType(name) || generatedTypeScope(existing) == "public") {
+			if existing != "" && (v.inFunction || !liftNameNeedsPublicType(name)) {
 				if identType != nil {
 					v.liftedTypeMap[identType] = existing
 				}
