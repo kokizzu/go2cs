@@ -11,7 +11,14 @@
 05) ~~Check implementation of standalone `convFieldList` visitor - add test code for when is it encountered - or remove~~
 06) ~~Check implementation of standalone `convInterfaceType` visitor - add test code for when is it encountered - or remove~~
 07) ~~Check implementation of standalone `convStructType` visitor - add test code for when is it encountered - or remove~~
-08) Complete map type implementation (`visitMapType`)
+08) ~~Complete map type implementation (`visitMapType`)~~ **DONE (struck 2026-09-02 on verified
+    evidence):** `visitMapType.go` is a full implementation — it emits the
+    `[GoType("map[K, V]")] partial struct` forward declaration go2cs-gen's Map template implements,
+    resolves key/value through the alias-qualified type name, hoists a function-local map type to
+    member level via `liftLocalTypeDecl`, and re-resolves through `liftedTypeMap` so a
+    self-referential local (`type recursiveMap map[string]recursiveMap`) does not render a name that
+    no longer exists. Its own comment records the closure: *"The old stub emitted only a comment,
+    leaving the type undeclared (CS0246)."* Called from `visitTypeSpec.go:267`.
 09) ~~Complete type switch implementation (`visitTypeSwitchStmt`) -- see `visitSwitchStmt`~~
 10) ~~Complete select statement implementation (`visitSelectStmt`) Handle edge cases~~
   a) ~~Handle `case i3, ok := (<-c3):  // same as: i3, ok := <-c`~~
@@ -36,7 +43,15 @@
 22) ~~For package names, e.g., `unsafe_package` - currently prefix is being unnecessarily sanitized, e.g., `@unsafe_package` - need to check name as a whole~~
 23) ~~Left side of an assign with a pointer de-ref, e.g., `(~e)` needs to be `e.val` instead~~
 24) ~~Update auto-interface implementation to ignore various invalid implement targets~~
-25) Add option to allow recursive conversion of dependent packages
+25) ~~Add option to allow recursive conversion of dependent packages~~ **DONE (struck 2026-09-02 on
+    verified evidence):** `-recurse` (`main.go:199-200`, `moduleConverter.go`), with three composable
+    values rather than one — bare `-recurse` converts an end-user module plus its third-party
+    closure, `-recurse=module` narrows the SCOPE to the module's own packages (the closure is still
+    referenced into `pkg\<import-path>`, so a dependency go2cs cannot convert can't hold up the
+    module's own code — issue #32), and `-recurse=nuget` swaps the local `$(go2csPath)` project
+    references for published `go.<pkg>`/`go.lib`/`go.gen` package references. Values combine
+    (`-recurse=module,nuget`). Options at `commandLineOptions.go:31-36`; usage lines at
+    `main.go:284-288`.
 
 xx) ~~Setup reference code packages / path options for Go modules~~
     1) ~~Assume code builds in Go / toolchain executed, i.e., local source exists~~
@@ -71,20 +86,38 @@ xx) Complete code comment conversions, this may be predicated on the following:
     1) ~~Struct embedding (inheritance)~~
     2) ~~Struct interface implementations~~
     3) ~~Interface inheritance~~
-    4) map type definitions (IMap implementation)
-    5) channel type definitions (IChannel implementation)
+    4) ~~map type definitions (IMap implementation)~~ **DONE (struck 2026-09-02 on verified
+       evidence):** `Templates/InheritedType/IMapTypeTemplate.cs`, dispatched from
+       `InheritedTypeTemplate.cs:122`
+    5) ~~channel type definitions (IChannel implementation)~~ **DONE (struck 2026-09-02 on verified
+       evidence):** `Templates/InheritedType/IChannelTypeTemplate.cs`, dispatched from
+       `InheritedTypeTemplate.cs:123`
     6) other...
 02) ~~Restructure behavioral tests:~~
     1) ~~Mode to compare raw code to target file, ignoring comments~~
        ~~1) Set this up soon to better handle regression testing of go2cs changes~~
     2) Future tests can be setup to compare with comments once go2c2 has better support
-03) Convert and RUN the stdlib's own `_test.go` suites as the ultimate correctness gate
+03) ~~Convert and RUN the stdlib's own `_test.go` suites as the ultimate correctness gate
     (Go `go test` output vs converted C# test output). If a converted package passes its own
     upstream tests, its runtime semantics are validated against the hardest spec available — the
     thesis being that once the stdlib converts/compiles/passes-its-own-tests, almost any Go program
     will. Needs: opt-in stdlib-test emit mode (today `*._test.cs` is excluded), a `testing.T/B` shim
     (or convert `testing`), and a per-package go-test-vs-c#-test diff. Start with already-compiling
-    leaves (strconv, math/bits, unicode/utf8). See docs/Roadmap.md "ultimate correctness gate".
+    leaves (strconv, math/bits, unicode/utf8). See docs/Roadmap.md "ultimate correctness gate".~~
+    **DONE — the GATE EXISTS, struck 2026-09-02 on verified evidence; the campaign it enables is
+    Phase 4 and is tracked elsewhere, which is the distinction this strike is careful about.** This
+    item asked for the instrument, and all three of its "Needs:" clauses shipped: the opt-in emit
+    mode is `-tests` (`main.go`), the `testing` shim is the hand-owned `src/core/testing` host —
+    skip-listed in the conversion queue by `isNonConvertedStdLibPackage` (`stdLibConverter.go:215-222`)
+    so there is ONE testing package structurally rather than by remap — and the per-package
+    differential is `-test-action compare`, which diffs the converted host's terminal results against
+    `go test -json -count=1` (`main.go:194`, `-test-action convert|build|run|compare|all`). Driven in
+    bulk by `src/run-validated-sweep.ps1`. The three named starting leaves are all banked roster rows:
+    `unicode/utf8` was the first suite to pass, 2026-07-17 (`docs/ValidatedTestPackages.md:398`),
+    with `math/bits` (:343) and `strconv` (:382) beside it. What is NOT claimed here: the roster is a
+    live campaign, not a closed to-do — its standing count is maintained in
+    `docs/ValidatedTestPackages.md`, whose own header is the authority, and the remaining packages
+    are tracked there and on the Phase-4 board rather than under this line.
 04) [LOW PRIORITY — slight visual improvement only] Move "publicize" accessibility rendering out of
     the converter and into a go2cs-gen pass, so the visible converted code keeps Go-shaped
     declarations. Today the converter emits `public` inline for an unexported Go type reached through

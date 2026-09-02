@@ -98,9 +98,21 @@
    counter because a temp dir must be STABLE run to run; a shared counter would move with thread
    interleaving under `-parallel`. `SanitizeName` itself is untouched — it also names subtests, where
    the string feeds the `go test -json` differential.
-9. **`TestReporter` subtest-name escaping** — Go escapes control bytes in subtest names
+9. ~~**`TestReporter` subtest-name escaping**~~ — **DONE 2026-08-03 (`166d9b72e`); struck 2026-09-02
+   on re-verified evidence.** `SanitizeName` (`src/core/testing/TestExecution.cs:833-855`) walks the
+   name rune by rune: Go's own `testing/match.go` space list folds to `_`, a Go-printable rune passes
+   through, and everything else takes `AppendGoEscape` (:899) — the body of `strconv.QuoteRune`, so
+   U+001A reads `\x1a` exactly as Go writes it. The method's `<remarks>` (:825-831) names this item's
+   own incident verbatim: *"os's TestReadStdin has two inputs containing U+001A across 462 subtests:
+   924 lines that read exactly like a mass failure and were none, on a top-level test that AGREED."*
+   The "wants the full sweep as its gate" clause is discharged by construction plus every roster
+   sweep since — the differential oracle pairs results BY NAME, so a wrong escape cannot be
+   cosmetic: it shows up as one-sided `Go="pass" C#=""` rows on every package it touches, and the
+   roster has swept clean past this code on every bank since, including the 2026-08-25 corpus hop
+   that re-derived every row from the new release's own test sources.
+   Original text, for the record: *"Go escapes control bytes in subtest names
    (`\x1a`), the C# host emits them raw: 924 cosmetically-paired lines in os's `TestReadStdin`
-   report. Touches every package's report format → wants the full sweep as its gate.
+   report. Touches every package's report format → wants the full sweep as its gate."*
 10. ~~**`-tests` csproj emission strips the `GoValidationProofFile` block**~~ — **DONE (r39 train,
     2026-08-03).** `validationPackBlock` gates on `convertStdLib` OR a `-tests` rewrite whose output
     csproj lives under the runtime root's `core\` tree (`testsRewriteOfCorePackage` — structural, so
@@ -145,22 +157,55 @@
     re-flips it on every roster package, where it is restored. The §7 debt is unchanged in
     substance — only which side the tree rests on between runs. (b) The 16 committed `.cs.auto`
     review siblings turned out to be **tracked, with 11 stale**, which is now item 18.
-13. **`C:\go2cs-build` debris** — ~30 stale scratch/probe/recon directories from r26–r34 (`ab*`,
-    `fmtcheck*`, `r3x-*` leftovers, `scratch*`, `splitmain`, …) plus the landed chip worktrees.
-    Delete after confirming each is branch-landed.
+13. ~~**`C:\go2cs-build` debris**~~ — **DISSOLVED 2026-09-02, with its scope stated.** The debris was
+    recorded in the i9-13900K desktop era, and that machine died of hardware failure on 2026-08-09
+    (CLAUDE.md's budget table records the replacement), taking its scratch root with it. Re-checked
+    on the coordinator: `C:\go2cs-build` does not exist. The honest limit on that evidence, said
+    rather than glossed: this is a ONE-HOST check, and nothing here can see another machine's disk —
+    so if a surviving fleet machine is ever found carrying that root, it is a fresh item filed
+    against that machine BY NICKNAME, not a reopening of this one, which named a host that no longer
+    exists. Original text, for the record: *"~30 stale scratch/probe/recon directories from r26–r34
+    (`ab*`, `fmtcheck*`, `r3x-*` leftovers, `scratch*`, `splitmain`, …) plus the landed chip
+    worktrees. Delete after confirming each is branch-landed."*
 14. **ConversionStrategies-Reference.md ~line 10734** — two unrelated topics mashed onto one line
     (reflectlite mini-bridge paragraph runs into the AllocsPerRun discussion); chip-reported,
     cosmetic.
-15. **`reflect.Value.Len()` reports 0 for EVERY channel.** `src/core/reflect/value_impl.cs`'s `Len`
-    switch has no `IChannel` arm, so a channel falls through to `_ => 0`; `internal/reflectlite`'s
-    `chanlen` likewise returns `default`, and `reflect`'s own `chanlen`/`chancap` partials are dead
+15. ~~**`reflect.Value.Len()` reports 0 for EVERY channel.**~~ — **DONE 2026-08-20 (`22940de2f`, the
+    channel-direction-cargo + `Value.Recv`/`Send` arc); struck 2026-09-02 on re-verified evidence.**
+    The arm is at `src/core/reflect/value_impl.cs:354` — `IChannel c => c.Length,` — exactly the
+    one-line fix this item prescribed, and the comment above it records the gap in this item's own
+    terms ("this arm was simply missing, so every channel Value reported 0 while Cap answered
+    correctly one method away"). `Cap`'s arm is one method down at :604. The item's two secondary
+    claims are discharged with it, and both were re-checked rather than carried: `reflect`'s
+    `chanlen`/`chancap` partials (`value.cs:2654`, `:2648`) are indeed dead, because their only
+    callers are `lenNonSlice`/`capNonSlice` (`value.cs:1434`, `:1153`) and those are unreachable —
+    `Len` and `Cap` are hand-own placeholders (`value.cs:1431`, `:1151`), so the whole Go-side chain
+    is displaced and a repo-wide grep finds the two helpers named only in comments. And
+    `internal/reflectlite`'s `chanlen` (`value.cs:245`, `value_impl.cs:28`) has zero call sites in
+    the package. Original text, for the record: *"`src/core/reflect/value_impl.cs`'s `Len` switch has
+    no `IChannel` arm, so a channel falls through to `_ => 0`; `internal/reflectlite`'s `chanlen`
+    likewise returns `default`, and `reflect`'s own `chanlen`/`chancap` partials are dead
     `NotImplementedException` stubs. `Cap()` DOES have the arm and is correct. Found while reviewing
     the synchronous-timer-channel arc (r39b), which made the gap *accidentally* right for timer
     channels — `len` of one is legitimately 0 — while it stays wrong for every ordinary buffered
-    channel. Pre-existing, no known consumer; the fix is one `IChannel c => c.Length` arm.
-16. **A `-tests` run STRIPS the validation-pack block from a banked package's `.csproj`, so a full
-    sweep drifts all 72 of them.** `validationPackBlock` (`src/go2cs/projectFileWriter.go`) returns
-    `""` unless `options.convertStdLib`, and the `-tests` pipeline is not a `-stdlib` conversion —
+    channel. Pre-existing, no known consumer; the fix is one `IChannel c => c.Length` arm."*
+16. ~~**A `-tests` run STRIPS the validation-pack block from a banked package's `.csproj`, so a full
+    sweep drifts all 72 of them.**~~ — **DONE (r39 train, 2026-08-03); struck 2026-09-02 on
+    re-verified evidence. This is the same defect as item 10, recorded twice from two directions** —
+    10 from the fix, 16 from the r39b sweep that measured it — so it closes on 10's landing and
+    nothing further was owed. `validationPackBlock` (`src/go2cs/projectFileWriter.go:193-195`) now
+    returns `""` only when `!options.convertStdLib && !rewriteOfCorePackage(projectFileName,
+    options)`, which is precisely the remedy this item prescribed: emit the block whenever the
+    OUTPUT is a stdlib package rather than only under `-stdlib`. `rewriteOfCorePackage` (:221-230)
+    tests the output LOCATION structurally — "under `<go2csPath>\core\`" — so a behavioral fixture,
+    a `-recurse` tree or an end-user module keeps its historical csproj bytes while every
+    regeneration of a corpus package keeps its proof sheet. The gate's own comment (:186-192) names
+    this item's failure mode verbatim ("the standing `0 8` restore family"), and the predicate has
+    since been widened twice more against the same reasoning — to the plain single-package
+    regeneration form, and to the README Tests badge (:562), which took the identical gate on
+    2026-08-20. Original text, for the record: *"`validationPackBlock`
+    (`src/go2cs/projectFileWriter.go`) returns `""` unless `options.convertStdLib`, and the `-tests`
+    pipeline is not a `-stdlib` conversion —
     so every pipeline run regenerates `<pkg>.csproj` without the
     `GoValidationProofFile` / `VALIDATION.md` pack, a uniform `0/8` diff. Harmless while the drift
     is restored (a sweep is a gate, not a rebank), but it is a **loaded gun for the whole-corpus
@@ -168,7 +213,7 @@
     block is `Exists`-guarded on both ends and therefore correct for any conversion, so the fix is
     to emit it whenever the output is a stdlib package rather than only under `-stdlib`. Found by
     the r39b sweep (72 pass / 0 fail, 321 drifting files: 132 banked test sources, 92 production
-    `.cs`, 72 csproj, 15 test hosts, 8 `package_info.cs`, 2 `package_init.cs`).
+    `.cs`, 72 csproj, 15 test hosts, 8 `package_info.cs`, 2 `package_init.cs`)."*
 17. **`Timer.C`/`Ticker.C` are emitted BIDIRECTIONAL, so Go-illegal sends compile.** `sleep.cs` and
     `tick.cs` emit `public /*<-*/channel<Time> C;` — the receive-only direction is a comment, not a
     type. Go rejects `t.C <- v`; converted C# accepts it. Newly consequential since r39b: a value a
@@ -256,38 +301,62 @@
     (`slice.m_array`, `ж.m_val`, one in `GoReflect.ValueMarshalling`) want `= null!` on the fields;
     the code was deliberately NOT added to golib's suppression list, so the to-do stays visible.
 
+    **(a) and (b) are DONE — r48c-warnroots, 2026-08-08 (`c0ad7df5d`); struck 2026-09-02 on
+    re-verified evidence. (c) and (d) stay OPEN, and (d)'s prescribed remedy is now wrong in
+    detail — see below.** Both converter roots landed together and both are guarded under the
+    converter's own `go test`. **(a)** `src/go2cs/namedResultLiveness.go` decides per named result
+    whether its zero-value local is still owed, conservatively (a nil body, `namedReturnDeferMode`
+    and the GoFrame named exit all force the declaration, because there the reader is GENERATED code
+    rather than the Go body); its header states the measurement this item recorded — *"That one shape
+    was 1,218 of the corpus's 1,219 CS0219 warnings"* — and `namedResultLiveness_test.go` holds the
+    guard. **(b)** `src/go2cs/convBasicLit.go` splits the emission on the literal's RESOLVED integer
+    type (`intLiteralResolvedInteger`, :465): a Go `int64` resolution emits the bare `…L` the Go
+    source's own digits read as, everything else keeps `nint` but wrapped `unchecked(…)` so the
+    conversion is legal without the warning; `nativeIntConstWidth_test.go` guards it, and
+    `wholeExprIsCastOfType` learned to peel the `unchecked(` wrapper so the 17 redundancy guards that
+    share it do not re-wrap the fold. The result is recorded, measured not estimated, in
+    [`phase4/DESIGN-warning-suppression.md`](phase4/DESIGN-warning-suppression.md) §11: **`CS8778`
+    620 → 0** (§11.1) and **`CS0219` 1,219 → 52, none of the 52 a named-return prologue** (§11.2),
+    against a corpus-wide **1,945 → 158** with every other warning code moving by exactly zero —
+    which is the load-bearing row, since it says nothing was traded away.
+    **(d)'s prescribed `= null!` does not apply site-for-site any more, and that is worth carrying
+    rather than re-discovering:** of the three fields it names, `slice.m_array` is a `readonly` field
+    of a `readonly struct` (`src/core/golib/slice.cs:56,58`), where an initializer does not run for
+    `default(slice<T>)` at all; and `ж.m_val` has MOVED — it is now `StandardBox<T>.m_val`
+    (`src/core/golib/ж.StandardBox.cs:38,42`), where `T` is UNCONSTRAINED, so `= null!` is ill-formed
+    outright (`= default!` is the only spelling that compiles). Whoever takes (d) therefore derives
+    the form per site and states the reasoning per field, rather than applying this item's one
+    remedy three times. **(c)'s count of 26 is likewise stale**: `DynamicallyAccessedMembers`
+    annotations have since landed in five golib files (`builtin.cs`,
+    `builtin.TypeParamConversions.cs`, `error.cs`, `ж.Contracts.cs`, `ж.PointerExtensions.cs`) and
+    one justified `UnconditionalSuppressMessage("Trimming", "IL2070")` sits at
+    `ж.PointerExtensions.cs:254` as the house style, so whoever takes (c) re-measures the inventory
+    first — counted with the strict `warning (CS|IL|IDE|CA)[0-9]+` pattern, since a loose match on
+    the word scores hits inside Go type names — rather than carrying this item's figure. Neither
+    number was re-measured here: a warning count needs a build, and this strike ran read-only under a
+    fleet gate battery.
+
 ## Recorded residuals (no work owed unless the surrounding facts change)
 
-21. **A LEADING `[` is still read as a generic bracket, so `[]<-chan <module path>.T` renders
-    mangled.** The r45a fix (issue #33's third report) stopped `convertToCSFullTypeName`'s
-    import-path rewrite from eating the type CONSTRUCTOR in front of the path, which is what turned
-    `<-chan …/mongo-driver/…` into `<_chan …` and then into an unbounded self-recursion. The
-    `<-chan []T` nesting is fixed with it; the `[]<-chan T` nesting is not, because `genericStart`
-    takes the FIRST `[` in the string as the start of a generic argument list and a leading slice
-    constructor truncates the path scan to nothing. The fix is to require a generic bracket to
-    FOLLOW a path byte (a generic `[` always follows the name it instantiates) — which is correct,
-    but re-routes every `[]<pkg>/<sub>.T` in the corpus from the suffix-less `else` branch to the
-    main one, i.e. a `_package`-suffix emission change corpus-wide. That did not belong in an urgent
-    crash fix and is not owed now: the shape needs a slice OF receive-only channels of a
-    module-path type, and the array-branch bound landed in the same change means it produces a named
-    `WARNING` and a finite wrong name rather than killing the run. Pinned as an explicit decision at
-    the end of `TestConvertToCSFullTypeNameConstructedModulePaths`; do this one WITH a corpus
-    reconvert, never on its own.
-14. **The `.ValueSlot` entry-alias residual is now empty — but the arm still exists elsewhere.**
-    Retiring the type-selected `.ValueSlot` arm at the pointer ENTRY alias (r37b) was required to
-    avoid regressing 9 nil-reachable aliases; `.ValueSlot` stays selected for box-of-pointer LOCALS,
-    named-result boxes, `heap(out …)` and the reflection bridge's field paths, where the box is
-    non-nil by construction. Nothing is owed unless one of those sites ever becomes nil-reachable —
-    recorded so the asymmetry is deliberate rather than forgotten.
-15. ~~**Seven banked `DerefOrNil()` sites survive in committed `*_test.cs`**~~ — **LEVELLED
-    2026-08-04 (r40-rebank, commit C), exactly as this item predicted and with no separate work.**
-    (`container/ring`, `go/token`, `index/suffixarray`, `testing/quick`.) The rebank's 73-package
-    sweep ran every one of those packages' `-tests` pipelines, and each site re-emitted as
-    `DerefOrNull()`. Verified: zero `DerefOrNil` sites remain in any committed `*_test.cs`.
-    Original text, for the record: *"A `-stdlib` reconvert does not re-emit banked test sources, so
-    they still carry the retired accessor; they re-emit as `DerefOrNull()` the next time each
-    package's `-tests` pipeline runs. Levels naturally with the whole-corpus rebank or with each
-    package's next validation pass — no separate work."*
+> **Renumbered 2026-09-02 — read this before citing a number from this section.** The numbering had
+> drifted into duplicates: this section opened with a SECOND `21` (a number the first run never used,
+> filed after `22`) and then re-used `14` and `15`, which already name live items under *Repo
+> hygiene*. Striking or dispatching by number was therefore ambiguous, which is what this fixes. The
+> three misnumbered entries are renumbered and moved to the END of the section, so every number in
+> this file is now unique and increases in document order. Old references resolve as:
+> **residuals `21` → 27**, **residuals `14` → 28**, **residuals `15` → 29**. Items **23–26 keep their
+> numbers deliberately**, and that is the whole reason the block was not simply renumbered to 27+:
+> every one of them is cited BY NUMBER somewhere that cannot be edited to follow. `24` in
+> [`phase4/BOARD-next-validation-candidates.md`](phase4/BOARD-next-validation-candidates.md) and
+> `phase4/SESSION-STATE-2026-08-09.md`, `25` in the same session record, and `23`, `24`, `25` and
+> `26` each in a commit SUBJECT — history, which no edit here can reach. Renumbering them would have
+> invalidated all of that to save three lines of edit, so the three genuinely ambiguous entries moved
+> instead. Items **1–22 are untouched**; in particular `18` still names the `.cs.auto` re-measure
+> item, which CLAUDE.md cites twice and several other documents cite besides — no reference to it
+> anywhere needs to change. Nothing in the moved items' text
+> changed — only their numbers and their position. `21` is now UNUSED: the first numbering run never
+> reached it (it goes 20 → 22), and the entry that had claimed it here is 27. A gap is not a defect;
+> a duplicate was, and only the duplicates were touched.
 
 23. **Published 1.23.1.5 nupkg READMEs show .NET Source @1.23.1.4 — the badge TEXT trails the
     deployed version by one (user-reported from the go.sync gallery page, 2026-08-09).** Known,
@@ -416,3 +485,37 @@
     thirty-two-line case. Whatever is chosen must be applied at the one site that writes the
     placeholder, so both shapes are covered by one change. Found 2026-09-02 cutting the ancillary
     (recvmsgRaw / SendmsgN) seam; banked as emitted, never hand-patched.*
+
+27. **A LEADING `[` is still read as a generic bracket, so `[]<-chan <module path>.T` renders
+    mangled.** *(Numbered `21` in this section until 2026-09-02 — see the section note; text
+    unchanged.)* The r45a fix (issue #33's third report) stopped `convertToCSFullTypeName`'s
+    import-path rewrite from eating the type CONSTRUCTOR in front of the path, which is what turned
+    `<-chan …/mongo-driver/…` into `<_chan …` and then into an unbounded self-recursion. The
+    `<-chan []T` nesting is fixed with it; the `[]<-chan T` nesting is not, because `genericStart`
+    takes the FIRST `[` in the string as the start of a generic argument list and a leading slice
+    constructor truncates the path scan to nothing. The fix is to require a generic bracket to
+    FOLLOW a path byte (a generic `[` always follows the name it instantiates) — which is correct,
+    but re-routes every `[]<pkg>/<sub>.T` in the corpus from the suffix-less `else` branch to the
+    main one, i.e. a `_package`-suffix emission change corpus-wide. That did not belong in an urgent
+    crash fix and is not owed now: the shape needs a slice OF receive-only channels of a
+    module-path type, and the array-branch bound landed in the same change means it produces a named
+    `WARNING` and a finite wrong name rather than killing the run. Pinned as an explicit decision at
+    the end of `TestConvertToCSFullTypeNameConstructedModulePaths`; do this one WITH a corpus
+    reconvert, never on its own.
+28. **The `.ValueSlot` entry-alias residual is now empty — but the arm still exists elsewhere.**
+    *(Numbered `14` in this section until 2026-09-02 — see the section note; text unchanged.)*
+    Retiring the type-selected `.ValueSlot` arm at the pointer ENTRY alias (r37b) was required to
+    avoid regressing 9 nil-reachable aliases; `.ValueSlot` stays selected for box-of-pointer LOCALS,
+    named-result boxes, `heap(out …)` and the reflection bridge's field paths, where the box is
+    non-nil by construction. Nothing is owed unless one of those sites ever becomes nil-reachable —
+    recorded so the asymmetry is deliberate rather than forgotten.
+29. ~~**Seven banked `DerefOrNil()` sites survive in committed `*_test.cs`**~~ — **LEVELLED
+    2026-08-04 (r40-rebank, commit C), exactly as this item predicted and with no separate work.**
+    *(Numbered `15` in this section until 2026-09-02 — see the section note; text unchanged.)*
+    (`container/ring`, `go/token`, `index/suffixarray`, `testing/quick`.) The rebank's 73-package
+    sweep ran every one of those packages' `-tests` pipelines, and each site re-emitted as
+    `DerefOrNull()`. Verified: zero `DerefOrNil` sites remain in any committed `*_test.cs`.
+    Original text, for the record: *"A `-stdlib` reconvert does not re-emit banked test sources, so
+    they still carry the retired accessor; they re-emit as `DerefOrNull()` the next time each
+    package's `-tests` pipeline runs. Levels naturally with the whole-corpus rebank or with each
+    package's next validation pass — no separate work."*
