@@ -142,15 +142,33 @@ warm build. Nothing about Release is required to explain the crash, and ten sepa
 to produce it — eight synthetic arms (sockets, goroutines, non-main-goroutine exit, single-file
 publish, tiering both ways) and two direct invocations of the real shim.
 
-Two divergences from Go DID reproduce on the shim, on demand, and are independent of the crash — the
-row validates with both present:
+**Two behaviours were reported here as converted-vs-Go divergences and are RETRACTED — both are Go's
+own, faithfully converted.** They are recorded rather than deleted because the retraction is the
+useful part.
 
-1. `flag.CommandLine`'s name is the whole argv slice (`Usage of [exe -port 64975 …]`) where Go prints
-   `os.Args[0]`. Specific to this row; a synthetic converted test host prints the correct form.
-2. Exit **89** under bogo's full flag shape where Go exits **2** (exit 2 with the unknown flag alone).
+`crypto/tls/handshake_test.go`'s `TestMain` installs a custom `flag.Usage`:
 
-Neither prevents the row from validating, so neither is the gate; both are honest converted-vs-Go
-divergences owed their own item.
+```go
+bogoMode = flag.Bool("bogo-mode", false, "Enabled bogo shim mode, ignore everything else")   // :47
+    fmt.Fprintf(flag.CommandLine.Output(), "Usage of %s:\n", os.Args)                        // :405
+    if *bogoMode { os.Exit(89) }                                                             // :407
+```
+
+1. **The bracketed usage line is Go's own.** Go prints `%s` of `os.Args` — the whole SLICE — so the
+   brackets are Go's formatting, not a FlagSet constructed from a slice. `flag.CommandLine` still
+   takes `os.Args[0]` exactly as Go does. A synthetic converted test host prints the ordinary form
+   only because it has no custom `flag.Usage`.
+2. **Exit 89 is Go's own.** Go exits 89 whenever `bogoMode` is set, which is also why the unknown
+   flag ALONE exits 2 (bogoMode false, ordinary `ExitOnError`) while bogo's full shape — which
+   includes `-bogo-mode` — exits 89.
+
+`src/core/crypto/tls/handshake_test.cs:487,490` reproduces both lines. **Nothing is owed here**, and a
+"fix" for either would replace correct code with a real divergence.
+
+The lesson the retraction carries: a converted-vs-Go claim is only a claim about Go once Go's side of
+that ROW has been read. The shim's flags are declared in `bogo_shim_test.go`, so that file was read
+and the search stopped there — while this row's `TestMain` lives in `handshake_test.go`. "Not what the
+flag package normally does" is not the same statement as "not what Go does here."
 
 ## 5. Infrastructure — settled, not counted
 
@@ -205,8 +223,9 @@ is a reason to hold a default that six retiring disclosures argue for. That call
 coordinator's; this record's job is to state that the crash is unreproduced, that the two runs
 differed in load, and that nothing about Release is required to explain it.
 
-What the census does NOT license in any reading: treating `TestRegisterErr`'s Release-only failure or
-the two shim divergences as settled. Those are open regardless of the flip.
+What the census does NOT license in any reading: treating `TestRegisterErr`'s Release-only failure as
+settled, or the `crypto/tls` host death as explained. Those are open regardless of the flip. (The two
+shim "divergences" once listed here are retracted — see §4; they were Go's own behaviour.)
 
 Records preserved for every flagged row (`crypto.tls`, `internal.godebug`, `log.slog`, `net.http`,
 `sync`) before each restore.
