@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"go/types"
 )
 
@@ -97,4 +98,51 @@ func (v *Visitor) chanDirNilValue(t types.Type) string {
 	}
 
 	return v.getCSharpTypeName(t) + member
+}
+
+// chanDirNarrowedValue wraps an already-rendered channel expression in golib's
+// `.WithDirection(...)` re-stamp when the value NARROWS from a bidirectional Go channel type into a
+// directional one — `var s <-chan T = ch`, the argument of a `func(<-chan T)`, a directional result.
+// Returns "" when the flow is not a narrowing, which leaves every other emission byte-identical.
+//
+// This is the LIVE-COPY position the exclusion at the top of this file deferred, and it is the one
+// the reflection bridge could not answer without: the construction-shaped positions stamp the
+// direction at BIRTH (make/zero/new/nil-cast, through channel<T>'s directional constructors), but a
+// narrowing has no construction to hook — Go makes a value of a new TYPE out of a value that
+// already exists. The re-stamp shares the SAME core, so Go's channel identity (==, Equals and the
+// hash all read the core) and every operation survive; only the carried direction differs.
+// reflect's TestMakeFuncInvalidReturnAssignments is the measured consumer: it returns a `<-chan int`
+// narrowed from `make(chan int)` into a `chan int` result, and Go REFUSES that widening — unstamped,
+// the marshalling identity arm sees two bidirectional `channel<int>` values and admits it.
+//
+// dst is the STATIC target type (the declared var type, the parameter type, the result type); src is
+// the expression's own type. A DEFINED channel type on either side (`type closeWaiter chan struct{}`)
+// is a go2cs-gen wrapper with no direction cargo, exactly as chanDirCargoName already refuses.
+func (v *Visitor) chanDirNarrowedValue(dst, src types.Type, rendered string) string {
+	if dst == nil || src == nil || rendered == "" {
+		return ""
+	}
+
+	dstDir := chanDirCargoName(dst)
+
+	if dstDir == "" {
+		return ""
+	}
+
+	// The SOURCE must be a bidirectional, undefined channel: a source that already carries the
+	// destination's direction is not a narrowing (it was stamped at birth or narrowed upstream),
+	// and a named/defined source has no direction cargo to re-stamp.
+	srcResolved := types.Unalias(src)
+
+	if _, isNamed := srcResolved.(*types.Named); isNamed {
+		return ""
+	}
+
+	srcChan, isChan := srcResolved.Underlying().(*types.Chan)
+
+	if !isChan || srcChan.Dir() != types.SendRecv {
+		return ""
+	}
+
+	return fmt.Sprintf("%s.WithDirection(%s)", rendered, dstDir)
 }
