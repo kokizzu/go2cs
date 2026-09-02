@@ -129,7 +129,28 @@ field initializers on a `beforefieldinit` type, which an optimizing JIT may run 
 static-field *access* rather than at package init — is corpus-wide if true. The second finding is that
 an unrecognized flag produces an access violation where Go's shim exits 2.
 
-Root not yet established; it is the next item after this census.
+**Re-measured 2026-09-02, after the census: the row COMPLETES at Release and the crash did not
+reproduce.** A standalone `-tests` build plus a filtered sweep of this row alone, same host, same
+converter, Release+TC0: `"status": "validated"`, `"matched": true`, **3,644 / 3,644** verdicts, sweep
+exit 0.
+
+That is **one failure and one pass**, which is two of three and in the wrong order, so the row is
+recorded here as **unreproduced rather than cleared**. The two runs also differ in a way that points
+somewhere: the census took this row INSIDE shard 1 after ~20 minutes of continuous sweep load, on a
+host whose thermal limit had rebooted it earlier the same day; the re-measure took it alone against a
+warm build. Nothing about Release is required to explain the crash, and ten separate probes declined
+to produce it — eight synthetic arms (sockets, goroutines, non-main-goroutine exit, single-file
+publish, tiering both ways) and two direct invocations of the real shim.
+
+Two divergences from Go DID reproduce on the shim, on demand, and are independent of the crash — the
+row validates with both present:
+
+1. `flag.CommandLine`'s name is the whole argv slice (`Usage of [exe -port 64975 …]`) where Go prints
+   `os.Args[0]`. Specific to this row; a synthetic converted test host prints the correct form.
+2. Exit **89** under bogo's full flag shape where Go exits **2** (exit 2 with the unknown flag alone).
+
+Neither prevents the row from validating, so neither is the gate; both are honest converted-vs-Go
+divergences owed their own item.
 
 ## 5. Infrastructure — settled, not counted
 
@@ -176,8 +197,16 @@ non-optimizing JIT"* — is **confirmed** by this census, on the very row that t
 It licenses the flip's **shape**: Release+TC0 as the default with a per-row `release-tiered` opt-out,
 because the opt-out list is two rows and both are measured.
 
-It does **not** license the flip **yet**, on its own evidence: `crypto/tls`'s Release-only crash is a
-missing flag registration on the roster's largest row, and its root lands first.
+On the flip **itself** the evidence moved after the census was first written, and in the favourable
+direction. The gate as ruled was "`crypto/tls` must COMPLETE at Release"; on the only measurement of
+that question it does, 3,644 / 3,644. What remains is a judgement rather than a measurement — whether
+one unreproduced crash on a thermally-limited host, against ten probes that could not reproduce it,
+is a reason to hold a default that six retiring disclosures argue for. That call is the
+coordinator's; this record's job is to state that the crash is unreproduced, that the two runs
+differed in load, and that nothing about Release is required to explain it.
+
+What the census does NOT license in any reading: treating `TestRegisterErr`'s Release-only failure or
+the two shim divergences as settled. Those are open regardless of the flip.
 
 Records preserved for every flagged row (`crypto.tls`, `internal.godebug`, `log.slog`, `net.http`,
 `sync`) before each restore.
