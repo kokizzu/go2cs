@@ -506,6 +506,11 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// contract-legal answer (Go documents its only consumer, typesByString, as possibly
 		// empty, and every caller mints on the miss). The auto form is a throwing stub.
 		"typelinks":           goosAny,
+		// export_test.go's IsExported resolves the descriptor's name offset into the linker's
+		// name blob and reads its flag byte -- nil-deref on a synthesized descriptor. The
+		// property is answerable from the bridge's own name machinery; body in the
+		// export_impl_test.cs companion (the reflectlite pattern).
+		"IsExported":          goosAny,
 		// Value.Close reads the channel direction by reinterpreting the descriptor onto the
 		// linker's chanType record -- the non-deterministic read abi.ChanDir was hand-owned to
 		// retire, still live here -- and then calls the chanclose runtime stub.
