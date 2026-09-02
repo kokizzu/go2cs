@@ -104,10 +104,13 @@ func (v *Visitor) applyTypedNilPointerBox(value ast.Expr, rendered string) strin
 	valueType := v.getType(value, false)
 
 	if _, isPointer := valueType.(*types.Pointer); !isPointer {
-		// The sibling treatment this file owns, at the same boundary and mutually exclusive
+		// The sibling treatments this file owns, at the same boundary and mutually exclusive
 		// with the pointer one: a VARIADIC func value must carry its Go func type, or C#'s
-		// synthesized natural delegate becomes the box's dynamic type. See the file header.
-		return v.applyVariadicFuncBoxCast(valueType, rendered)
+		// synthesized natural delegate becomes the box's dynamic type; and a func value that can
+		// be NULL must carry its type through a carrier, since the cast is erased at the box.
+		// Cast first, then carry — the cast is what makes the carrier's type word the Go one.
+		// See the file header.
+		return v.applyTypedNilFuncBox(valueType, v.funcExprNeverRendersNull(value), v.applyVariadicFuncBoxCast(valueType, rendered))
 	}
 
 	if v.pointerExprNeverRendersNull(value) {
@@ -137,7 +140,10 @@ func (v *Visitor) applyTypedNilPointerBoxToType(valueType types.Type, rendered s
 	}
 
 	if _, isPointer := valueType.(*types.Pointer); !isPointer {
-		return v.applyVariadicFuncBoxCast(valueType, rendered)
+		// No AST expression to test, so the func arm takes its conservative answer — a tuple
+		// element deconstructed from a call result is exactly the shape that can be nil, and it is
+		// neither a literal nor a method group.
+		return v.applyTypedNilFuncBox(valueType, false, v.applyVariadicFuncBoxCast(valueType, rendered))
 	}
 
 	return rendered + "." + TypedNilBoxAccessor
@@ -242,6 +248,102 @@ func (v *Visitor) pointerExprNeverRendersNull(expr ast.Expr) bool {
 				return v.pointerExprNeverRendersNull(expr.Args[0])
 			}
 		}
+	}
+
+	return false
+}
+
+// applyTypedNilFuncBox carries a FUNC value's Go type across the empty-interface boundary when the
+// value can be null. It is the delegate-shaped sibling of the pointer arm's TypedNilBoxAccessor, and
+// it exists because a CAST is not a value: `ж<T>` holds its pointee type so boxing it keeps the type,
+// while `(object)(Action)null` is simply `null`. The variadic cast this boundary already applies
+// therefore pins the dynamic type only for a NON-null func — which is why this runs AFTER it, over
+// the cast's result, so the carrier's type word is the Go func type rather than C#'s natural one.
+//
+// A no-op for every value shape but a func, and for a func that provably cannot be null.
+func (v *Visitor) applyTypedNilFuncBox(valueType types.Type, neverNull bool, rendered string) string {
+	if rendered == "" || valueType == nil || neverNull {
+		return rendered
+	}
+
+	if _, isFunc := valueType.Underlying().(*types.Signature); !isFunc {
+		return rendered
+	}
+
+	// PARENTHESIZED, unlike the pointer arm's append. Member access binds tighter than a cast in C#,
+	// so `(Action)(default!).OrTypedNilFunc()` parses as `(Action)((default!).OrTypedNilFunc())` —
+	// the cast lands on the accessor's RESULT and the operand it was meant to type is bare `default!`.
+	// The pointer arm never meets this because its renderings arrive already parenthesized
+	// (`((ж<T>)nil)`); a func's nil CONVERSION does not, and that is exactly the shape this arm
+	// exists for. Measured on the emitted C#, not reasoned about.
+	return "(" + rendered + ")." + TypedNilFuncAccessor
+}
+
+// funcExprNeverRendersNull reports whether a func-typed expression's RENDERING provably cannot be a
+// null delegate — the func arm's twin of pointerExprNeverRendersNull, and deliberately narrower.
+//
+// The shapes that qualify are the ones the corpus is almost entirely made of (censused at the
+// boundary, 2026-09-01): a func LITERAL, which allocates a delegate, and a METHOD GROUP — an
+// identifier naming a declared func, or a SELECTOR naming one through its package or receiver
+// (`fmt.Sprint`). All are non-null by construction, and exempting them is what holds this change's
+// footprint to the sites that can actually be nil.
+//
+// ⚠ The SELECTOR arm was missing from the first cut, and the census inherited the omission because
+// the sizing probe reused this predicate: `text/template`'s `fmt.Sprint`/`Sprintf`/`Sprintln` were
+// counted as nullable and reported as a 3-site production blast radius. They are method groups and
+// can never be null. With the arm present the production radius is ZERO — every func the corpus
+// boxes into `any` is provably non-null — and the treatment reaches only the test dimension, where
+// typed nils are written deliberately. A predicate that a census is keyed on is a predicate whose
+// gaps the census cannot see.
+//
+// A nil CONVERSION is NOT exempt, and that is the one place this differs from the pointer twin.
+// `(*T)(nil)` already renders the canonical typed-nil box, so the pointer arm can pass it through;
+// `(func())(nil)` renders `(Action)(default!)` — a cast of null, i.e. precisely the shape that loses
+// the type word — so it needs the carrier like any other nullable func. Reading that difference off
+// the pointer arm rather than measuring it would have exempted the one expression TestMapOf uses.
+func (v *Visitor) funcExprNeverRendersNull(expr ast.Expr) bool {
+	switch expr := expr.(type) {
+	case *ast.ParenExpr:
+		return v.funcExprNeverRendersNull(expr.X)
+	case *ast.FuncLit:
+		return true
+	case *ast.Ident:
+		_, isFunc := v.info.Uses[expr].(*types.Func)
+
+		return isFunc
+	case *ast.SelectorExpr:
+		// A QUALIFIED method group — `fmt.Sprint`, or a method value read off a receiver. The
+		// selection's object is what decides it, not the expression's shape: `x.f` where f is a
+		// FIELD of func type is an ordinary nullable value and must fall through.
+		if selection, ok := v.info.Selections[expr]; ok {
+			_, isFunc := selection.Obj().(*types.Func)
+
+			return isFunc
+		}
+
+		// No selection record: a package-qualified reference (`fmt.Sprint`), whose object is
+		// recorded against the selector's own identifier.
+		_, isFunc := v.info.Uses[expr.Sel].(*types.Func)
+
+		return isFunc
+	case *ast.CallExpr:
+		// A func CONVERSION is exactly as nullable as its operand — the pointer twin's own words for
+		// the same shape. `Doubler(func(w int) int { … })` renders as a delegate CONSTRUCTION and can
+		// no more be null than the literal it wraps (tests/Behavioral/MethodlessFuncTypeAssert is the
+		// corpus instance, and it is where this arm was found missing).
+		//
+		// The DIFFERENCE from the pointer twin, and it is the whole reason this file exists: a NIL
+		// conversion is not exempt here. `(*T)(nil)` already renders the canonical typed-nil box, so
+		// the pointer arm passes it through; `(func())(nil)` renders `(Action)(default!)` — a cast of
+		// null — which is precisely the shape that loses the type word. Recursing into the operand
+		// gives that for free: a nil operand is not provably non-null, so it takes the carrier.
+		if len(expr.Args) == 1 {
+			if isConversion, _ := v.isTypeConversion(expr); isConversion {
+				return v.funcExprNeverRendersNull(expr.Args[0])
+			}
+		}
+
+		return false
 	}
 
 	return false
