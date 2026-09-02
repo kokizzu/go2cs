@@ -370,12 +370,12 @@ public static partial class GoReflect
         ParameterInfo[] parameters = invoke.GetParameters();
 
         // `Array` alone is the GoReflect.Array Kind constant in this scope, so System.Array is qualified.
+        // A byref-like `params Span<T>` variadic tail cannot ride an expression tree, so the typed
+        // makeVariadicFunc{N}/makeVariadicAction{N} family carries it in a LAMBDA instead -- the reverse
+        // of InvokeVariadic's call family (GoReflect.MakeVariadicDelegate.cs).
         if (System.Array.Exists(parameters, static p => p.ParameterType.IsByRef || p.ParameterType.IsByRefLike))
         {
-            throw new NotImplementedException(
-                $"reflect: MakeFunc of the variadic func type '{GoTypeName(delegateType)}' is not implemented — its " +
-                "tail lowers to a byref-like 'params Span<T>' no expression tree can carry (no demonstrated consumer; " +
-                "the route is the reverse of GoReflect.InvokeVariadic's typed family trampolines)");
+            return BuildVariadicMakeFactory(delegateType, invoke, parameters);
         }
 
         ParameterExpression invokerParameter = Expression.Parameter(typeof(Func<object?[], object?>), "invoker");
