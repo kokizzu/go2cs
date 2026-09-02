@@ -370,11 +370,11 @@ if it stays companions-only, said explicitly rather than implied.
 
 ### 3.7 What §3 does not settle, named rather than hidden
 
-- **The pointer call-site census is DONE** (§3.4) and is no longer an unknown: 75 of 149 sites,
-  72 of 126 trampolines, two of them on the init path. What it does not settle is the SHAPE of
-  the marshalling at each — `Exec`-style unmanaged-for-the-duration is the ruled pattern, but
-  whether 73 sites want that individually or want one helper is a design question, not a
-  measurement one.
+- **The pointer call-site census is DONE** (§3.4) and the marshalling SHAPE is now settled too
+  (§3.8): 75 of 149 sites, 72 of 126 trampolines, two on the init path — and the 92 pointer
+  ARGUMENTS split into three populations, of which 45 need pinning rather than marshalling and
+  11 need two lines, leaving ~10 struct mirrors as the whole cost. Neither of §3.7's original
+  two options was the answer.
 - **Trampoline identity in the managed model — the single largest open question.**
   `FuncPCABI0(libc_write_trampoline)` receives a *delegate*. Whether the implementation can recover
   the trampoline's NAME from it at runtime, or whether the converter must emit an explicit symbol
@@ -395,6 +395,61 @@ if it stays companions-only, said explicitly rather than implied.
   **instrument for the loop rather than shorten it** — have the probe print the resolved symbol
   table and the first N resolutions before the first call, so one dispatch answers a batch — and to
   hold the hardware ask until that probe says how deep the chase goes.
+
+### 3.8 The marshalling SHAPE — three populations, not one, and the ceremony fits almost none of them
+
+§3.7 left this as "one helper versus per-site", and the coordinator asked for it priced by what each
+does to readability and to the audit rule (*every buffer handed to a native call lives in unmanaged
+memory for the duration*). **Both framings assume one population. There are three, and they want
+three different mechanisms with very different costs.**
+
+Classified from Go's own signatures — the enclosing `func`'s declared parameter type for every pointer
+argument at a darwin keystone call, paren-balanced scan, at master `62c63b572`. **The unit here is
+pointer ARGUMENTS (92), not call SITES (75): a site can pass several.** Both numbers are right at
+their own level and neither substitutes for the other.
+
+| population | args | what it needs | ceremony |
+|---|--:|---|---|
+| **buffer** — `*byte`, `**byte`, `unsafe.Pointer`, slice/string element | **45** | a stable address for the call | **pin, do not marshal**: no copy, no free, no `finally` |
+| **scalar out-param** — `*_Socklen`, `*_Gid_t`, `*_C_int`, `*uintptr` | **9** | one integer written back | `stackalloc` + one copy back: two lines |
+| **scalar array** — `*[2]int32` (`pipe`, `socketpair`) | **2** | two integers written back | `stackalloc` + copy back |
+| **struct pointer** — `Stat_t`, `Statfs_t`, `Rlimit`, `Rusage`, `Timeval`, `Timespec`, `RawSockaddrAny`, `Msghdr`, `FdSet`, `Dirent` | **30** | an explicit-layout mirror + copy in/out | the real work |
+| unclassified — five inside `forkAndExecInChild`, one `sendfile length` | 6 | named, not guessed | sized when reached |
+
+**The buffers are 45 of 92 and they need no unmanaged memory at all.** The audit rule's GUARANTEE is
+that the address the kernel sees is stable for the call and the bytes are the caller's; pinning
+(`fixed`, or a pinned `GCHandle`) gives exactly that, without a copy, without a free, and without a
+`finally`. Reading the rule as "must be `AllocHGlobal`" would copy 45 buffers for nothing and make
+the call sites worse. The rule should be stated by its guarantee, not by its mechanism.
+
+**The `Exec` precedent's ceremony is needed for ~none of these, and the reason is structural.**
+`exec_unix.cs`'s `posix_spawn` seam carries seven `IntPtr` locals, a long `try`, and a conditional
+`finally` — because `posix_spawn` RETAINS its `file_actions` and `spawnattr` across several calls,
+and because a `char**` vector has no managed original to pin. **Every darwin keystone call is a single
+synchronous syscall that retains nothing**, so its buffers live exactly as long as the call and
+`stackalloc` covers every out-param without a `finally` at all. The precedent is the right pattern for
+the case it was written for and the wrong template for this one.
+
+**So the answer to §3.7's question is neither of its two options.** Not one helper — the three
+populations do not share a signature. Not 73 per-site marshallings — 45 need no marshalling and 11
+need two lines. What remains is **~10 distinct struct mirrors** covering the 30 struct-pointer
+arguments, and those are the whole cost.
+
+**What the Linux side already gives, and what it does not.** The corpus carries native mirrors for
+four of the ten types — but every one is arch- and OS-suffixed: `NativeStatLinuxAmd`,
+`NativeTimevalLinuxAmd`, `NativeRusageLinuxAmd`, `NativeFdSetLinuxAmd`. Darwin's layouts differ
+(darwin's `Timeval` is `{int64, int32}` where Linux's is `{int64, int64}`), so **the pattern transfers
+and the layouts do not** — a mirror that exists is not a mirror darwin can use, and reading the name
+as reusable would be the same mistake as reading `%#v`'s success on one shape as success on another.
+`NativeTimespec` is the one unsuffixed mirror and is the only reuse candidate; it still gets checked
+against darwin's header rather than assumed.
+
+**Reach-`Main` is unchanged and still two call sites** (§3.4): `rlimit.go`'s `Getrlimit` plus
+`setrlimit`, both `*Rlimit` — so the first increment needs the keystone, `FuncPCABI0`, and **one**
+struct mirror. The other nine mirrors are the cost of a working darwin, not a starting one, and they
+can land one at a time behind a running program.
+
+---
 
 ## 4. What is NOT proposed
 
