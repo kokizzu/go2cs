@@ -253,6 +253,7 @@
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/behavioral/">
+    <Project Path="tests/Behavioral/AnonInterfaceConversion/AnonInterfaceConversion.csproj" />
     <Project Path="tests/Behavioral/BehavioralRunner/BehavioralRunner.csproj" />
     <Project Path="tests/Behavioral/BehavioralTests/BehavioralTests.csproj" />
   </Folder>
