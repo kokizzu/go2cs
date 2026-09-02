@@ -49,7 +49,7 @@ namespace go;
 /// wrong-kind box.
 /// </para>
 /// </remarks>
-public abstract class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer, IUntypedSlotAccess
+public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointer, IUntypedSlotAccess
 {
     // The ONE storage fact every kind shares: whether this box IS the nil pointer. STRUCTURAL —
     // set only at construction, by the kind ctor contracts (see the class remarks); the

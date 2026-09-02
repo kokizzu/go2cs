@@ -565,8 +565,16 @@ public static partial class GoReflect
     {
         object? box = unwrapAdapters(value);
 
+        // A nil pointer minted by a `(*[N]E)(nil)` conversion CARRIES its dims, because the
+        // construction is the only place they could ride: there is no pointee to measure and no
+        // attribute slot at an expression position. Consulted ahead of the nil refusal below, and
+        // ONLY that shape answers here — a live pointer still measures its pointee, and a plain
+        // typed nil still answers "nothing to measure".
+        if (box is IGoNilArrayPointer { Dims.Length: > 0 } nilArray)
+            return toNintDims(nilArray.Dims);
+
         // A nil pointer has nothing to measure, and an opaque managed handle has no pointee at all
-        // (the descent rule's value-side twin — see TryPointerBoxElement).
+        // (the descent rule’s value-side twin — see TryPointerBoxElement).
         if (box is null || box is INilPointer { IsNilPointer: true } ||
             !TryPointerBoxElement(box.GetType(), out Type? pointee) || KindOf(pointee) != Array)
         {
