@@ -233,6 +233,21 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// then walks the symbol table, so a *Func whose Name() stayed auto is a handle to nothing.
 		"FuncForPC": goosAny,
 		"Func.Name": goosAny,
+		// Entry/FileLine complete the *Func the line above started: FuncForPC/Name answered "what is
+		// this function called", but a *Func minted by FuncForPC carries no real _func/moduledata --
+		// calling Entry() or FileLine() on it still fell through to funcInfo()'s firstmoduledata walk,
+		// which is a permanent empty stub (symtab.cs's Ꮡfirstmoduledata, assigned exactly once, to a
+		// moduledata with an always-empty pclntable) and can never resolve. That is TestCaller's crash
+		// (runtime_test), not a goroutine race: any resolved Func reaching Entry() dies here,
+		// unconditionally, on any goroutine. The managed side table (managed_impl.cs) widens to carry
+		// the originating PC beside the name; Entry() returns that token directly -- consistent with
+		// the header's "PC values are opaque process-lifetime tokens" doctrine, since a token IS this
+		// host's answer to "what identifies this function" -- and FileLine(pc) resolves through the
+		// SAME callerFrameRecord Go-position data Callers()/Frames.Next() already use, answering Go's
+		// own no-position case ("", 0) when no record exists. firstmoduledata and Frame.Func are
+		// deliberately untouched by this arc; see docs/phase4/CENSUS-runtime-semantic-bill.md.
+		"Func.Entry":    goosAny,
+		"Func.FileLine": goosAny,
 		// The metrics-table mutex (managed_impl.cs). Go's bodies acquire metricsSema, a runtime
 		// sleeping semaphore whose acquire path is getg() → sudog → gopark — the scheduler
 		// machinery that has no managed counterpart — so every path into the metrics table

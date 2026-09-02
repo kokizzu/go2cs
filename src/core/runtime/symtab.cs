@@ -627,43 +627,20 @@ internal static readonly @string runtimeTextOffsetOutOfˢ = "runtime: text offse
 
 // go2cs generated this placeholder — func Name is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// go2cs generated this placeholder — func Entry is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// go2cs generated this placeholder — func FileLine is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
 // This must interpret PC non-strictly so bad PCs (those between functions) don't crash the runtime.
 // We just report the preceding function in that situation. See issue 29735.
 // TODO: Perhaps we should report no function at all in that case.
 // The runtime currently doesn't have function end info, alas.
 // entry of the real (the outermost) function.
 // inlined version
-
-// Entry returns the entry address of the function.
-public static uintptr Entry(this ж<Func> Ꮡf) {
-    var fn = Ꮡf.raw();
-    if (fn.isInlined()) {
-        // inlined version
-        var fi = fn.Reinterpret<_func, funcinl>();
-        return (~fi).entry;
-    }
-    return fn.funcInfo().entry();
-}
-
-// FileLine returns the file name and line number of the
-// source code corresponding to the program counter pc.
-// The result will not be accurate if pc is not a program
-// counter within f.
-public static (@string @file, nint line) FileLine(this ж<Func> Ꮡf, uintptr pc) {
-    @string @file = default!;
-
-    ref var f = ref Ꮡf.DerefOrNull();
-    var fn = Ꮡf.raw();
-    if (fn.isInlined()) {
-        // inlined version
-        var fi = fn.Reinterpret<_func, funcinl>();
-        return ((~fi).@file, (nint)(~fi).line);
-    }
-    // Pass strict=false here, because anyone can call this function,
-    // and they might just be wrong about targetpc belonging to f.
-    (@file, var line32) = funcline1(Ꮡf.funcInfo(), pc, false);
-    return (@file, (nint)line32);
-}
+// inlined version
+// inlined version
+// Pass strict=false here, because anyone can call this function,
+// and they might just be wrong about targetpc belonging to f.
 
 // startLine returns the starting line number of the function. i.e., the line
 // number of the func keyword.
