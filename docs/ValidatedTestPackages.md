@@ -464,6 +464,70 @@ merely a compile wall; and `internal/weak` at 4/4, once the per-row execution co
 configuration its liveness assertions need. Neither needed an exclusion — which is what the naive
 denominator is for.
 
+### The 215, derived — and the fourteen rows that are not yet banked
+
+The naive denominator was a number the ledger asserted and no reader could reproduce. It is derived
+here instead, so the subtraction above has something to subtract *from*. Re-derived 2026-09-02 on
+windows/amd64 against `go1.23.12` with `GOROOT` pinned explicitly (`go version` reports the binary's
+own build stamp, not the root it resolves, so the pin is stated rather than assumed):
+
+- **306** — `go list std`.
+- **219** — of those, the packages carrying at least one `func Test` declaration in their GOROOT
+  sources. Counted tag-*independently* over every `*_test.go` in the package directory, which is why
+  four of the five E1 rows above — `internal/syscall/unix`, `net/internal/socktest`, `log/syslog`,
+  `runtime/race` — are inside this figure and then subtracted: Go's constraints select none of their
+  test files here, but their sources do define the tests. (The fifth, `internal/runtime/syscall`, is
+  not inside it at all; see the note below.) The regex admits a bare
+  `func Test(t *testing.T)` — `internal/diff` declares one and is a banked row, so the stricter
+  `^func Test[A-Z]` form would contradict the table above.
+- **215** — of those, the packages that exist in the corpus as a converted package (a production
+  `.csproj` under `src/core`). The four that do not are GOROOT directories with **zero** non-test
+  `.go` files, so no production package is converted and there is nothing for a host to reference:
+  `embed/internal/embedtest`, `internal/coverage/test`, `net/internal/cgotest`,
+  `runtime/internal/wasitest`. Only `embedtest` carries a ruling today (board, 2026-08-11).
+- **201** banked · **14** remaining. The fourteen, by disposition:
+  - **5 are the ledger rows above** that are inside the 215 — `internal/syscall/unix`,
+    `net/internal/socktest`, `log/syslog`, `runtime/race`, `internal/unsafeheader`.
+  - **3 are lane-owned** — `reflect`, `runtime`, `unique`.
+  - **6 have no lane named in any dated record** — `os` (682/686), `testing` (Option 1 ruled,
+    sequenced), `runtime/pprof` (capability frontier), `net/http/pprof` (5 of 15), `runtime/trace`
+    (0 of 2), `crypto/internal/boring/bcache` (0 of 1, unruled).
+
+  `201 + 5 + 3 + 6 = 215`, and the nine non-ledger rows are the implementable remainder.
+
+**`net/http/pprof` is one of those nine and had appeared in no accounting at all** — no roster row,
+no ledger row, and absent from the coordinator tracker's list of remaining rows, which named eight.
+It is converted (`src/core/net/http/pprof`), declares four `func Test`, and was measured **5 of 15**
+on 2026-08-14 (board, *Scout batch 2*): `TestHandlers` fails with seven subtests
+infrastructure-erroring, `TestDeltaProfile` skips where Go passes, and profile collection has no
+managed body — the same capability frontier `runtime/pprof` and `runtime/trace` sit behind. It is
+named here so the remainder is nine rather than eight.
+
+**⚠ One ledger row sits OUTSIDE the naive denominator, and the subtraction above therefore carries
+it wrongly.** `internal/runtime/syscall` is **not in `go list std` on windows/amd64 at all** — Go's
+build constraints exclude every file, which is what its own E1 mechanism says — so it cannot be a
+member of a set derived from that listing, and `215 − 6` subtracts one non-member. Strictly, five of
+the six exclusions are inside the 215 and the Windows-axis implementable set is **210**, giving
+201 / 210 — 95.7%. The header is left as it stands, and the row is left in the ledger, deliberately:
+
+- The 215 is reachable by two live memberships that differ by exactly one swap, and both land on
+  215. The board's recorded derivation (2026-08-17) counted **`src/core` directories** whose GOROOT
+  sources define a `Test` — which counts `internal/runtime/syscall` **in** (it is converted, with an
+  L3 `linux/` folder, and GOROOT carries `syscall_linux_test.go`) and then subtracts hand-owned
+  `testing`: *"216 … minus hand-owned `testing` that is the roster header's 215"*. The derivation
+  above counts **`go list std` on this target** — which counts `testing` **in** (it is an ordinary
+  member with 59 `func Test` and a `.csproj`) and `internal/runtime/syscall` **out**. Under the
+  first membership `215 − 6 = 209` is exact; under the second it is one too many.
+- The campaign's own accounting now follows the second: the owner ruling of 2026-08-30 puts
+  `testing` on the road to a *validating* row (Option 1 — bucket D banks), and a row that can bank
+  must be inside the denominator it banks against.
+- Which correction to take — strike the row from the **Windows** ledger and re-derive the header, or
+  keep it and teach `src/check-roster-format.ps1` to subtract only the ledger rows inside the naive
+  denominator (its `implementable = testable − ledger.Count` currently assumes all of them are) — is
+  a ruling, not a docs fix, and it moves a published headline. It is **owed to the owner**; nothing
+  here changes a banked row or a stated count. Note also that the row is a real *Linux*-axis
+  testable package, so striking it from the Windows ledger must not lose the measurement.
+
 [exclusion-ruling]: phase4/BOARD-next-validation-candidates.md#ruling-owner-2026-08-25--the-campaigns-terminal-denominator-is-the-implementable-test-set-with-the-excluded-packages-fully-disclosed-each-with-its-why
 
 <!-- The ledger table above deliberately does NOT link its package names as [`pkg`](url): that shape

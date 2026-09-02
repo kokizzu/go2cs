@@ -22152,4 +22152,184 @@ record is the entire reason this could be classified at all, and it was nearly m
 `find … | head` truncated it out of view and the absence was read as a fact. A filtered view answers
 a different question than the one asked.
 
+---
+
+## 2026-09-02 — coordinator sub-agent — the 215 re-derived from `go list std`: `net/http/pprof` was in NO accounting, one ledger row is OUTSIDE the denominator it is subtracted from, and the recorded `216 − testing` derivation disagrees with today's by exactly that pair
+
+A read-only census over the worktree found four record contradictions in the roster's own
+arithmetic. Every number below was **re-derived from primary sources for this entry** rather than
+taken from the census: `go list std` with `GOROOT` pinned explicitly to the `go1.23.12` root
+(`go version` reports the binary's build stamp, not the root it resolves — an ambient `GOROOT`
+pointing at a `go1.23.1` installation resolved package directories under *that* root while
+`go version` still printed `go1.23.12`, so the pin is stated, not assumed), a `func Test` regex over
+every `*_test.go` in each package's GOROOT directory, and a `.csproj` probe under `src/core`.
+
+### The six numbers
+
+| # | Measure | Value | How |
+|:--|:--|--:|:--|
+| 1 | `go list std`, windows/amd64, `go1.23.12` | **306** | GOROOT pinned; `go env GOROOT` echoed back before the run |
+| 2 | …carrying ≥1 `func Test` in GOROOT sources | **219** | tag-INDEPENDENT glob over `*_test.go`; the regex admits a bare `func Test(t *testing.T)`, which `internal/diff` — a **banked** row — declares, so the stricter `^func Test[A-Z]` form would manufacture a banked-not-testable contradiction |
+| 3 | …**and** converted (a production `.csproj` under `src/core`) | **215** | reproduces the roster header's denominator exactly |
+| 4 | banked roster rows | **201** | parsed with the roster's own committed row regex; Tests column sums to 27,734 and Disclosed to 154, both matching the header to the digit |
+| 5 | remaining | **14** | 215 − 201 |
+| 6 | 14 = 3 lane-owned + 5 ledger-inside-215 + 6 unowned | **closes** | see below |
+
+The four packages separating 219 from 215 — `embed/internal/embedtest`,
+`internal/coverage/test`, `net/internal/cgotest`, `runtime/internal/wasitest` — are GOROOT
+directories with **zero** non-test `.go` files and no `.csproj`: there is no production package for
+a host to reference. Only `embedtest` carries a ruling (2026-08-11). The other three have no board
+row of any kind.
+
+**Positive controls on the `func Test` count:** `strings` 68, `unicode/utf8` 14, `sort` 29, `cmp` 4,
+`internal/diff` 1 — each a banked row whose count is consistent with its record. **Negatives:**
+`unsafe` 0, `internal/goarch` 0.
+
+### The 14, by disposition
+
+- **5 are ledger rows inside the 215** — `internal/syscall/unix`, `net/internal/socktest`,
+  `log/syslog`, `runtime/race`, `internal/unsafeheader`.
+- **3 are lane-owned** — `reflect` (R-LAPTOP), `runtime` (i9), `unique` (coordinator sub-agent, via
+  the type-name carrier arc; the row is not independently dispatchable).
+- **6 have no lane named in any dated record**, with their last recorded state:
+
+| Package | `func Test` | Last recorded state (source) |
+|:--|--:|:--|
+| `os` | 225 | **682 / 686.** Two implementable blockers, neither disclosable: the `NetShareAdd` byte-buffer fork ("queued, next free full lane") and the `WriteStringAlloc` machinery-alloc arc (`ElemRefBox (T[],nint)` increment queued). — tracker, re-derived 2026-09-02 |
+| `testing` | 59 | **Option 1 ruled, sequenced post-wave** (see below). No verdict count has ever been recorded on this board. |
+| `runtime/pprof` | 45 | **37 requested, 15 reached, then the crash — 1 pass, 10 fail, 3 infrastructure-error, 1 skip.** Reclassified a **capability frontier**, "sequenced LAST in the Windows chase queue, possibly the release's honest disclosure story". — Fold #3, 2026-08-29 (R) |
+| `net/http/pprof` | 4 | **5 of 15.** "`TestHandlers` fails and seven of its subtests infrastructure-error … `TestDeltaProfile` skips where Go passes. Profile collection has no managed body — sibling of `runtime/pprof`'s and `runtime/trace`'s stubs" — *Scout batch 2*, 2026-08-14 (lane B), under *"Four packages measured for the FIRST time"* |
+| `runtime/trace` | 2 | **0 of 2.** "`NotImplementedException: getg` … Both tests enter the tracer through `getg`; no managed body exists." — 2026-08-14; restated the same day in the *"no re-measure owed until a relevant capability lands"* list. ⚠ That condition has arguably **fired**: the `getg` module-init no-op equivalence landed at `65b6dd5ba`. Whether it reaches this path is unmeasured — 2 verdicts, the cheapest probe on the list. |
+| `crypto/internal/boring/bcache` | 1 | **0 of 1.** "`NotImplementedException: registerCache` … a `PartialStubGenerator` stub reached from `Register[K,V]`" — *Scout batch 2*, 2026-08-14. Still **unruled**, so the roster keeps it inside the naive denominator. |
+
+### Finding 1 — `net/http/pprof` appeared in NO accounting
+
+It is a converted package (`src/core/net/http/pprof/net.http.pprof.csproj`, `pprof.cs`,
+`package_info.cs`), it is inside the 215, it declares four `func Test`, and it was **measured 5 of
+15** on this board. It appears in **no roster row**, **no exclusion-ledger row**, and **not** in the
+tracker's list of remaining rows, which names eight. Before the correction below,
+`grep 'http/pprof' docs/ValidatedTestPackages.md` returned **nothing** — positive control on the
+grep: `net/http` returned 10 hits in the same file, so the empty was absence, not a broken probe.
+
+The implementable remainder is therefore **nine**, not eight: the tracker's eight plus this row.
+`201 + 9 + 5 = 215`. The roster's *Excluded packages* section now derives the 215 from `go list std`
+and names all fourteen, this row among them.
+
+### Finding 2 — one ledger row is OUTSIDE the naive denominator, so `215 − 6` subtracts a non-member
+
+`internal/runtime/syscall` is **not in `go list std` on windows/amd64 at all** — build constraints
+exclude every file, which is exactly what its own E1 mechanism says ("there is not even a package to
+convert"). It therefore cannot be a member of a set derived from that listing. Five of the six
+exclusions are inside the 215; strictly, the Windows-axis implementable set is **210** and the ratio
+is **201 / 210 — 95.7%**, where the header states 209 and 96.2%.
+
+This board asserted the opposite on 2026-08-09 (*the r56a breadth harvest*, "the twelve rooted
+non-validators"): *"`internal/runtime/syscall` … Joins `net/internal/socktest`,
+`internal/syscall/unix`, `log/syslog` and `runtime/race`: **in the naive 215 denominator**, cannot
+bank on this target."* The first four of that group **are** in the 215 (their sources define tests
+that Go's constraints then deselect — the count above is tag-independent, which is precisely why
+they are inside it and then subtracted). The fifth is not, because there is no package on this
+target for the glob to reach. The grouping was right about four rows and wrong about the one it was
+written for.
+
+**Nothing published was changed for this.** `src/check-roster-format.ps1` computes
+`implementable = testable − ledger.Count`, i.e. it *assumes* every ledger row is inside the naive
+denominator, and it has no check that can see otherwise — so the two corrections available are (a)
+strike the row from the **Windows** ledger and re-derive the header, or (b) keep it and teach the
+guard to subtract only in-denominator rows. Both move a published headline; both are rulings, not
+docs fixes. **Owed to the owner.** Note the row is a genuine *Linux*-axis testable package —
+`src/core/internal/runtime/syscall` is converted with an L3 `linux/` folder and GOROOT carries
+`syscall_linux_test.go` with one `func Test` — so option (a) must not lose the measurement.
+
+### Finding 3 — the recorded derivation of 215 and today's disagree by exactly one swap
+
+Both derivations land on **215**, by different routes and with **different memberships**. Quoted in
+full, both sides:
+
+> **2026-08-17, *HARVEST — the pure-compute tail re-measured*, "The enumeration, and what it
+> excludes":** *"**305** converted package directories under `src/core` carry a production `.csproj`
+> (306 counting the hand-written `golib`); **216** have a `func Test` in their Go 1.23.1 GOROOT
+> sources; minus hand-owned `testing` that is the roster header's **215**, and 215 − 150 banked =
+> **65** unbanked."*
+
+> **2026-09-02, this entry:** `go list std` on windows/amd64 = **306** → with a `func Test` in GOROOT
+> sources = **219** → converted = **215**. `testing` is an ordinary member (59 `func Test`,
+> `src/core/testing/testing.csproj`); `internal/runtime/syscall` is absent from the listing.
+
+The reconciliation is exact and is the same pair as Finding 2. The 2026-08-17 route enumerates
+**`src/core` directories**, which counts `internal/runtime/syscall` **IN** (it is converted) and
+then hand-subtracts `testing` **OUT** (it is hand-owned). Today's route enumerates **`go list std`
+on this target**, which counts `testing` **IN** and `internal/runtime/syscall` **OUT**. One swap,
+both totals 215, and the difference is invisible in the total — which is how the phantom survived
+three weeks of arithmetic that "came out right".
+
+**The roster now follows the second derivation, and says so.** Two reasons, both on the record:
+today's live arithmetic requires it (201 banked + 14 remaining = 215 only if `testing` is *inside*,
+and the tracker's remaining list has named `testing` throughout), and the owner ruling below puts
+`testing` on the road to a **validating** row — a row that can bank must be inside the denominator it
+banks against. The 2026-08-17 derivation stands as the record of its own date; it is not rewritten.
+
+### Finding 4 — `testing`'s "Option 1 ruled" — the ruling IS located, and it is owed a durable home
+
+The tracker's *"| **testing** | meta | Option 1 ruled; post-wave. |"* cites no ruling, and nothing on
+this board states what Option 1 is. Both halves were found:
+
+- **What Option 1 is** — `docs/phase4/CENSUS-testing-osuser-rows.md`, *"Option 1 — validate the
+  meaningful subset; E-class the rest, by bucket"*: build and run **bucket D** (10 verdicts, the
+  public-API in-process self-tests) through the pipeline and rule buckets A/B/C excluded with a
+  per-bucket mechanism — A (20 whitebox host internals) E3, B (21 subprocess re-exec) under the
+  E1/`-race` precedent and the ruled host-identity disclosure, C (8 benchmark machinery) Phase-4D.
+  The census names its own real cost: *"the `-tests` guard + a landing place for converted `testing`
+  test sources that does not collide with the host (the F15b problem) — the real cost, and it is a
+  converter/layout change, not a test change"*, and the precedent it sets: *"this would be the first
+  row admitted on a **ruled subset** of its own suite."* The four buckets are stated disjoint and to
+  sum exactly to 59.
+- **The ruling itself** — `docs/phase4/MAILBOX.md` on branch `claude/mailbox`, commit `b88ab4b20`,
+  **2026-08-30**, *"COORD: OWNER RULING — testing takes Option 1 (revisitable)"*, quoting the owner:
+  *"Option 1 is fine -- can always revisit at a later day if a use case or argument makes a stronger
+  case for other (or new) options."* It also fixes the implementation's first increment (close the
+  unguarded `-tests`-on-`testing` F15b collision) and sequences it behind the W3 endgame.
+
+⚠ **The ruling has never landed outside the mailbox**, whose own protocol says *"campaign rulings →
+the BOARD … The mailbox is transport, not record; an answer given here that changes doctrine is a
+defect until it lands in its durable home."* Master's `docs/phase4/MAILBOX.md` is the 36-line
+protocol stub — the entry lives only on the mailbox branch, so a reader at master could not reach it
+from either the tracker or this board. **This entry is that landing.** Its consequence for the
+arithmetic is Finding 3's: under Option 1 `testing` becomes a partially-validating row, so it is
+inside the denominator, not subtracted from it.
+
+### Finding 5 — a guard-shape defect on an unmerged branch (not present at master; recorded so the merge can carry the fix)
+
+Commit `1fb37f437` on `origin/claude/c1-board-syscall-roots` appends C1's `syscall` Linux-residue
+section by **splitting this file's final guard line in two**: it replaces the one-line
+`<!-- (endraw) … -->` guard with the bare opener `<!-- `, writes the section, and re-adds the tail
+half `(endraw) … -->` as the new last line. The guard is a single HTML comment whose *purpose* is to
+hide a Liquid tag; split that way, the whole appended section (284 lines) sits **inside an HTML
+comment** and renders nowhere on the published page, and the file carries two guard fragments where
+doctrine requires exactly one, final. It is greppable in source, which is why it survives review.
+
+**At master `62c63b572` the file is well-formed** — a comment-balance pass finds exactly two
+self-closing HTML comments, the guard at line 1 and the guard at the final line, and exactly one
+literal Liquid `raw` open and one `endraw` close, in that order, with no conflict markers. The four
+interior `-->` hits are not comment closers: three are `.NET` exception text
+(`---> go.PanicException`) quoted in prose, and the fourth is this board's own note about this exact
+hazard (2026-08-23), which spells the tag without its brace syntax on purpose because quoting it
+inside the raw guard would terminate the guard. So there was nothing to repair here and
+this entry does not touch that region. **The one-line remedy at the merge:** delete the orphan
+`<!-- ` line and place the appended section **above** the intact guard line, which is what every
+other append on this board does.
+
+*Instruments: read-only. No build, test, converter or sweep was run. `check-roster-format.ps1` was
+run read-only before and after the roster edit — identical both times (544 of 546 checks pass; the
+two failures are pre-existing at master `62c63b572`, both `execution args: release-tc0` fixture
+assertions about the retired `-test-release-tc0` converter flag, fixed on
+`origin/claude/i9-roster-guard-testconfig` and not touched here). Positive control on the guard's
+ledger arithmetic: injecting one fake ledger row moved it to 6 of 548, naming all four arithmetic
+assertions (excluded count 7 vs 6, difference 208 vs 209, denominator 208 vs 209, percentage 96.6 vs
+96.2); the file was restored byte-identical (SHA-256 verified) and the guard returned to 2 of 546 —
+so the prose added to the roster is invisible to both the ledger and roster parsers, and their green
+is a measurement rather than a vacuum.*
+
+-- coordinator sub-agent
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
