@@ -3,9 +3,8 @@
 > **Status: SIZING ONLY. No code.** Coordinator ruling 2026-09-02 took option (a) — the
 > keystone-backed `cgocaller`, OQ-1's ruled shape — over nine per-call hand-owns, and directed that
 > it be sized ONCE for both consumers because they need the same piece. This file is that single
-> sizing. **§2 is C1's (the Linux credential wrappers); §3 is C2's (the darwin run layer) and is
-> left for C2 to write.** Nothing here is implemented, and nothing should be until the sizing is
-> ruled.
+> sizing. **§2 is C1's (the Linux credential wrappers); §3 is C2's (the darwin run layer).**
+> Nothing here is implemented, and nothing should be until the sizing is ruled.
 
 ## 1. What `cgocaller` is, and why both consumers arrive at it
 
@@ -27,6 +26,27 @@ structurally a cgo host.** It has OS threads the Go runtime never created and ca
 That is the exact condition Go's own source tests for when it chooses between its two
 implementations of a call. So wherever Go says "if cgo, do it this way", the converted corpus
 should almost always be taking the cgo branch — and today it cannot, because `cgocaller` throws.
+
+### 1.1 The two consumers are the SAME primitive, differing on three axes
+
+`syscall.cgocaller` and darwin's ten keystones (`Syscall`, `Syscall6`, `Syscall9`, `syscall`,
+`syscall6`, `syscall6X`, `syscallX`, `syscallPtr`, `rawSyscall`, `rawSyscall6`) are one primitive —
+an indirect call to a native function pointer with N `uintptr` arguments — differing on exactly
+three axes, each stated here once rather than twice below:
+
+| axis | Linux (§2) | darwin (§3) |
+|---|---|---|
+| how the fn pointer is obtained | package-level `unsafe.Pointer` (`cgo_libc_setegid`), cgo-populated at link time, **`nil` in our corpus** — which is why the ENOTSUP path runs | `abi.FuncPCABI0(libc_write_trampoline)`, **`0` today** |
+| arity and result width | 1, 2, 3 | up to 9, three result widths |
+| errno | folded into the return value by the shim (§2.4.2) | keystones set `libc_errno` via `__error()`, caller reads it (§3.4.2) |
+
+Both pointer-acquisition rows reduce to one question — resolve a libc symbol to an address — with
+one answer: `NativeLibrary.GetExport` over `libc.so.6` / `libSystem.B.dylib`. The arity row is why
+the family is **sized by darwin**, with Linux taking a subset: .NET has no variadic indirect call,
+so a managed `cgocaller` is necessarily a family of arity-specialised delegates rather than one
+function. The errno row is a per-platform thin wrapper over one shared call mechanism.
+
+---
 
 ## 2. Consumer A — the Linux credential wrappers (C1)
 
@@ -182,29 +202,145 @@ the keystone's contract stays a pure `uintptr` bridge with no pointer semantics 
 
 ## 3. Consumer B — the darwin run layer (C2)
 
-*Left for C2 to write (`FuncPCABI0` + the syscall keystone sizing; the darwin sizing it extends is
-already on master at `DESIGN-darwin-run-layer.md`).*
+The full darwin sizing is on master at [`DESIGN-darwin-run-layer.md`](DESIGN-darwin-run-layer.md)
+(census, ABI read off `sys_darwin_amd64.s`, cost, gates, open questions) and is **not repeated
+here**. This section says only what the SHARED keystone must provide for darwin, and answers the
+two questions §2 left for it.
 
-**C2 has established the structural argument for why this is ONE document, and it is stronger than
-"sized once to save effort": `syscall.cgocaller` and darwin's ten keystones (`Syscall`, `Syscall6`,
-`Syscall9`, `syscall`, `syscall6`, `syscall6X`, `syscallX`, `syscallPtr`, `rawSyscall`,
-`rawSyscall6`) are the SAME primitive** — an indirect call to a native function pointer with N
-`uintptr` arguments — differing on exactly three axes, each of which this document should state
-once rather than twice:
+### 3.1 Why darwin arrives at the same primitive, and by a much wider door
 
-| axis | Linux (§2) | darwin (§3) |
-|---|---|---|
-| how the fn pointer is obtained | package-level `unsafe.Pointer` (`cgo_libc_setegid`), cgo-populated at link time, **`nil` in our corpus** — which is why the ENOTSUP path runs | `abi.FuncPCABI0(libc_write_trampoline)`, **`0` today** |
-| arity and result width | 1, 2, 3 | up to 9, three result widths |
-| errno | folded into the return value by the shim (§2.4.2) | keystones set `libc_errno`, caller reads it |
+Linux reaches this bridge for **nine functions**. Darwin reaches it for **everything**: Go's darwin
+port has no trap numbers at all, so every syscall is a libc call through an assembly trampoline
+whose address is taken with `abi.FuncPCABI0` and handed to a keystone. Measured at master
+`e4c5b5b8`:
 
-Both pointer-acquisition rows reduce to one question — resolve a libc symbol to an address — with
-one answer: `NativeLibrary.GetExport` over `libc.so.6` / `libSystem.B.dylib`. The arity row is why
-the family is sized by darwin and Linux takes a subset. The errno row is a per-platform thin
-wrapper over one shared call mechanism.
+| | count |
+|:--|--:|
+| `libc_*_trampoline` declarations, `syscall/darwin` | **126** |
+| `libc_*_trampoline` declarations, whole darwin flavor | **142** |
+| `//go:cgo_import_dynamic` pragmas in `syscall/zsyscall_darwin_amd64.go` | **123** |
+| distinct libSystem symbols across ALL darwin Go sources in GOROOT | **267** |
+| bodyless partials in `fmt`'s darwin closure (51 packages) | **255** |
 
-*§3 should also say whether `runtime_doAllThreadsSyscall`'s `ENOTSUP` has a darwin analogue that
-must likewise stay put (§2.4.4).*
+So the consequence for §1's framing is sharper on darwin than on Linux: a converted darwin program
+does not fail when it does something unusual, it fails **when it starts**. The first casualty is
+pinned — `syscall.init()` → `Getrlimit` → `rawSyscall` — which is one package earlier than either
+`os` or `fmt`, so neither is the right scope unit.
+
+### 3.2 The ten keystones collapse to three axes, not ten bodies
+
+`Syscall`, `Syscall6`, `Syscall9`, `syscall`, `syscall6`, `syscall6X`, `syscallX`, `syscallPtr`,
+`rawSyscall`, `rawSyscall6` differ on **arity** (3/6/9), **result width** (32-bit / 64-bit /
+pointer) and **raw-vs-cooked**. Read off `TEXT runtime·syscall(SB)`, the width axis is the *only*
+reason the `X` variants exist — `syscall`/`syscall6` compare the low 32 bits (`CMPL`),
+`syscallX`/`syscall6X` compare all 64 (`CMPQ`), `syscallPtr` treats NULL as the error. One
+parameterized managed helper covers all ten.
+
+Three ABI facts that make this smaller than it looks, each answering a question a reader will have:
+
+- **The g0 struct-pointer marshalling does not survive into the managed form.** Go's keystone takes
+  a pointer to `{fn, a1, a2, a3, r1, r2, err}` because it is called on the g0 stack via `libcCall`.
+  There is no g0 here; the arguments arrive as ordinary `uintptr` parameters on the emitted
+  partial's own signature. The managed shape is *simpler* than the Go original.
+- **There is no vararg problem.** `XORL AX, AX` is the System V AMD64 convention for "no vector
+  registers used", and a fixed `uintptr`-only indirect call satisfies it exactly. The four
+  genuinely variadic libc entries the corpus reaches (`ioctl`, `fcntl`, `open`, `openat`) are each
+  called through one fixed arity, and Go calls them the same way.
+- **No struct-by-value returns anywhere in the family.** Every keystone returns
+  `(uintptr r1, uintptr r2, Errno err)`; the pair is `AX`/`DX`.
+
+### 3.3 `FuncPCABI0` is the half nobody notices is missing
+
+`src/core/internal/abi/funcpc_impl.cs` is a three-line hand-own whose entire body is
+`return default;` — i.e. **0**. It compiles, it returns a plausible value, and it is wrong. So even
+a perfect keystone would be handed a null function pointer today; the trampoline mechanism is
+unimplemented end to end, not missing one entry point.
+
+The map it needs is **derivable twice over, and the two derivations cross-check each other for
+free**: every pragma has the form
+`//go:cgo_import_dynamic libc_<n> <sym> "/usr/lib/libSystem.B.dylib"`, all 123 were compared and
+`<n>` equals `<sym>` with **zero mismatches**, and the converter *preserves the pragma* into the
+emitted C# (123 comment lines in `zsyscall_darwin_amd64.cs`). So the implementation can derive the
+map from the trampoline name AND from the pragma and assert they agree — a standing guard that
+costs nothing and is worth more than a map that merely works today.
+
+### 3.4 What §3 needs from the keystone
+
+1. **Arities up to 9 and three result widths.** This is the row that sizes the family; §2's 1/2/3
+   is a subset. Same primitive, wider.
+2. **Errno by `__error()`, not folded into the return.** `result == -1` ⇒ call `__error()`
+   (imported as `libc_error`) and dereference the returned `int*`. This is the axis where the two
+   consumers genuinely differ (§2.4.2's shim folds errno into the return value), and it is a thin
+   per-platform wrapper over one shared call mechanism — not two mechanisms.
+3. **A real `FuncPCABI0`** resolving trampoline → symbol → `NativeLibrary.GetExport` over
+   `/usr/lib/libSystem.B.dylib`. `os/darwin/dir_darwin_impl.cs` already proves that mechanism for
+   one symbol.
+4. **Nothing else.** As in §2.4.4, no behavior change is asked of anything outside the keystone.
+
+### 3.5 The question §2 left: darwin has NO `AllThreadsSyscall` analogue, and nothing to keep put
+
+§2.4.4 requires that `AllThreadsSyscall` and `runtime_doAllThreadsSyscall` keep returning `ENOTSUP`.
+**That requirement is Linux-only and imposes nothing on §3.** `AllThreadsSyscall` is declared in
+`syscall_linux.go` and nowhere else in `syscall`; `doAllThreadsSyscall` lives in
+`runtime/os_linux.go` and `runtime/proc.go`. Neither exists on darwin, so there is no darwin
+`ENOTSUP` guard to preserve and no darwin equivalent of §2's cgo/no-cgo fork.
+
+**The reason is worth stating, because it reframes §2.** Darwin's `Setegid` is not a special case at
+all — it is trampoline number N:
+
+```csharp
+// src/core/syscall/darwin/zsyscall_darwin_amd64.cs:1413
+public static error /*err*/ Setegid(nint egid) {
+    var (_, _, e1) = syscall(abi.FuncPCABI0(libc_setegid_trampoline), (uintptr)egid, 0, 0);
+```
+
+The nine credential wrappers are special **on Linux only**, and only because Linux's raw syscall is
+task-local while glibc's wrapper broadcasts to every pthread via nptl's setxid. Darwin routes
+*every* syscall through libc already, so the credential functions inherit correct process-wide
+semantics from the same keystone that makes `fmt.Println` work. **One keystone; §2's nine are a
+consequence of it on Linux and are not even a category on darwin.** That is the strongest form of
+"these are one piece", and it is the reason this section is short: most of §2's careful reasoning
+about *which* mechanism the credential wrappers need has no darwin counterpart to state.
+
+### 3.6 Blast radius
+
+| item | size |
+|:--|--:|
+| `internal/abi/funcpc_impl.cs` rewritten (today `return default;`) | 1 file |
+| the keystone family — 10 declarations over one parameterized helper | ~1–2 files |
+| the symbol map, errno | 0 new files (derived; `__error()` is one more resolved symbol) |
+| **new `[module: GoManualConversion]` markers** | **0 expected** — these are `*_impl.cs` companions |
+| **new `*_impl.cs` companions** | **+2 to +3** (darwin goes 2 → 4–5; linux has 13) |
+
+**No corpus emission movement expected**: a companion supplements declarations the converter already
+emits. An implementation that finds itself needing a converter change is a **stop-and-post**, not a
+scope increase. Gates the cut will owe: the darwin census (compile), `behavioral-smoke` on **both**
+mac legs (the run gate, and darwin's first), `check-solution-integrity.ps1` across all three
+targets, and the marker-census delta posted with the commit — with **no CNR and no converter suite**
+if it stays companions-only, said explicitly rather than implied.
+
+### 3.7 What §3 does not settle, named rather than hidden
+
+- **Trampoline identity in the managed model — the single largest open question.**
+  `FuncPCABI0(libc_write_trampoline)` receives a *delegate*. Whether the implementation can recover
+  the trampoline's NAME from it at runtime, or whether the converter must emit an explicit symbol
+  table, decides whether `FuncPCABI0` is a lookup or a converter change. It is a managed-reflection
+  question that cannot be settled without running it on darwin.
+- **Whether `GetExport` resolves all 267 symbols.** Some may be macros, weak, or versioned. One is
+  proven; 267 is an assertion.
+- **`crypto/x509/internal/macos`'s 29 bodyless partials** use `syscall_x509`, a keystone variant
+  with its own ABI. Out of scope for reaching `Main`; named so it is not met as a surprise.
+- **The arm64 debt, priced separately.** Every committed darwin arch file is `_amd64` (8 of them,
+  zero `_arm64`), so Apple silicon compiles amd64 constants. **The keystone design does not change
+  with the arch; the tables do** — this is a layout question (a per-GOARCH dimension inside a GOOS,
+  which L3 does not have) and should be ruled on its own, named here only so a green arm64 run layer
+  built on amd64 tables is never mistaken for done.
+- **The feedback loop.** No darwin hardware in the fleet: ~10–17 minutes per CI round trip with no
+  stack traces. Coarse keystone failures (symbol not found, wrong arity, errno not read) survive
+  that loop; chasing an initializer chain call by call does not. The recommendation on record is to
+  **instrument for the loop rather than shorten it** — have the probe print the resolved symbol
+  table and the first N resolutions before the first call, so one dispatch answers a batch — and to
+  hold the hardware ask until that probe says how deep the chase goes.
 
 ## 4. What is NOT proposed
 
@@ -214,4 +350,4 @@ must likewise stay put (§2.4.4).*
 - **Not** a general cgo layer. `cgocaller` is one bridge with one signature; nothing here proposes
   converting cgo C halves, which the converter cannot process regardless.
 
--- C1 (§1, §2; §3 pending C2)
+-- C1 (§1, §2) and C2 (§3)
