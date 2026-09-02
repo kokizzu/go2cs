@@ -164,13 +164,21 @@ Nine functions in one package; one test (`TestSetuidEtc`, 21 assertions) moves f
 The syscall row's Linux residue falls by one. The `ENOTSUP` hand-own stays banked as the disclosed
 state until this lands, per the ruling.
 
-**Open question for the ruling, stated rather than assumed away:** `Setgroups` passes a **pointer**
-(`&a[0]`, a `*_Gid_t` into a Go slice). Under this corpus that is the same
-managed-memory-by-address class that produced the `Exec` fork bomb on 2026-09-02 — so `Setgroups`
-needs its argument marshalled into unmanaged memory for the duration of the call, exactly as the
-`exec_unix.cs` posix_spawn seam does. The other eight pass scalars and do not. Whether that
-marshalling belongs in `cgocaller` (which cannot know which arguments are pointers) or at the one
-call site that has one is a design decision this section does not make.
+**`Setgroups`'s pointer argument — RULED 2026-09-02, at the CALL SITE.** `Setgroups` passes a
+**pointer** (`&a[0]`, a `*_Gid_t` into a Go slice); the other eight pass scalars. Under this corpus
+that pointer is the same managed-memory-by-address class that produced the `Exec` fork bomb the same
+day, so it must be marshalled into unmanaged memory for the duration of the call.
+
+The ruling puts that marshalling **at the one call site that has a pointer, not in `cgocaller`**, and
+the reason is structural rather than stylistic: `cgocaller` takes `uintptr`s. It cannot distinguish a
+pointer argument from an integer one, so it could not do the marshalling correctly even if it were
+the tidier place — it would have to guess. `cgocaller` therefore stays **pointer-agnostic**, and
+`Setgroups` marshals its `gid_t` array exactly as `exec_unix.cs`'s `Exec` marshals argv/envp:
+unmanaged for the duration, freed in a `finally`.
+
+This is the same shape as the seam rule the corpus already carries — every buffer handed to a native
+call lives in unmanaged memory for the duration of the call — applied one function over, and it means
+the keystone's contract stays a pure `uintptr` bridge with no pointer semantics anywhere in it.
 
 ## 3. Consumer B — the darwin run layer (C2)
 
