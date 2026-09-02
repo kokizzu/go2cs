@@ -325,6 +325,20 @@ func (v *Visitor) convExprList(exprs []ast.Expr, prevEndPos token.Pos, callConte
 			}
 		}
 
+		// Append a per-argument member call — the suffix twin of castArgToType's prefix cast, for a
+		// wrap that reads left-to-right off the value rather than around it (the channel-direction
+		// narrowing at an argument position: `ch.WithDirection(GoChanDir.Recv)`). A KEYED
+		// struct-literal element suffixes the VALUE only, exactly as the two wraps above do.
+		if callContext != nil && callContext.suffixArgWith != nil {
+			if suffix, ok := callContext.suffixArgWith[i]; ok && len(suffix) > 0 {
+				if label, value, found := strings.Cut(resultExpr, ": "); found && isSimpleIdentifierName(label) {
+					resultExpr = fmt.Sprintf("%s: %s%s", label, value, suffix)
+				} else {
+					resultExpr = fmt.Sprintf("%s%s", resultExpr, suffix)
+				}
+			}
+		}
+
 		// Re-wrap a func-typed argument as a lambda so a constraint-proxy delegate position can
 		// apply the ж<element>↔proxy user-defined conversion that a bare method-group conversion
 		// cannot (`newPoint: nistec.NewP224Point` → `newPoint: () => nistec.NewP224Point()`). The
