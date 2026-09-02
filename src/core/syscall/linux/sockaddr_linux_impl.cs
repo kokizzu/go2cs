@@ -42,16 +42,41 @@
 //     (Family at 0, Data at 2..15, Pad at 16..111) and hand that to the one decode -- so any
 //     remaining auto caller (Recvmsg) decodes correctly once ITS fill is;
 //   - Recvfrom (2026-08-30) and Sendto (2026-09-02): the UDP pair, added when each was REACHED,
-//     which is the rule this file's scope has followed throughout rather than an exception to it.
+//     which is the rule this file's scope has followed throughout rather than an exception to it;
+//   - recvmsgRaw and SendmsgN (2026-09-02): the ANCILLARY pair, and the one place this file's
+//     coverage is ASYMMETRIC between the two directions. That asymmetry is worth stating because
+//     it is not a preference and reading the file will not otherwise explain it.
 //
-// DELIBERATELY NOT COVERED, named rather than left to be rediscovered: Recvmsg / Sendmsg -- the
-// ancillary paths -- still pass `&rsa` / the encoder's address; L10 drew the same line (fix a
-// censused wrapper when a suite REACHES it), and they need a native msghdr plus an iovec array and
-// two-way control-message handling, which is more than writeNativeSockaddr / readNativeSockaddr.
-// The SockaddrUnix / SockaddrLinklayer / SockaddrNetlink ENCODERS stay auto: they have no port
-// alias, their raw structs are consumed here only through writeNativeSockaddr (which calls them for
-// Go's own validation and length rules), and the address they return is never handed to the kernel
-// by a covered wrapper.
+//     RECEIVE displaces the RAW helper. recvmsgRaw is called by Recvmsg, recvmsgInet4 and
+//     recvmsgInet6, so one body covers three entry points; and it keeps its `ж<RawSockaddrAny>`
+//     OUT-parameter and FILLS it rather than decoding to a Sockaddr, because those three callers
+//     each read `rsa.Addr.Family` and hand `&rsa` to anyToSockaddr. A faithful drop-in leaves that
+//     contract alone, so the transcription back into the managed struct is the exact INVERSE of
+//     anyToSockaddr's flatten -- which is what keeps the two in step and why they are adjacent.
+//
+//     SEND displaces the PUBLIC function, and could not do otherwise. sendmsgN was written first
+//     and abandoned: its `ptr` parameter is ALREADY the address of a managed raw sockaddr (whatever
+//     `to.sockaddr()` returned), so there is nothing there to transcribe faithfully -- the typed
+//     Sockaddr has to be re-encoded through writeNativeSockaddr, and only SendmsgN still holds it.
+//     That is Bind/Connect's shape, arrived at by hitting the wall rather than by choosing it.
+//     sendmsgN / sendmsgNInet4 / sendmsgNInet6 therefore stay auto for the sendtoInet4/6 reason
+//     below: with SendmsgN bypassing it, their only remaining callers are each other.
+//
+//     The defect they share announces itself unusually loudly for this class. Both hand the kernel
+//     a MANAGED Msghdr whose Name/Iov/Control are `ж<T>` object references, and on the send side
+//     `msg.Name = (ж<byte>)(uintptr)(ptr)` turns Go's NULL into `new NativeBox<byte>(0)` -- an
+//     OBJECT -- so a connected socket answers EISCONN rather than misdirecting silently. On an
+//     UNCONNECTED socket the same line sends to a garbage destination, which is the quiet variant.
+//     Measured by ScmRightsSeam before either body existed (control-first).
+//
+// DELIBERATELY NOT COVERED, named rather than left to be rediscovered: Recvmsg and Sendmsg
+// themselves need nothing further -- Recvmsg's fill comes from the covered recvmsgRaw and Sendmsg
+// delegates to the covered SendmsgN -- so what remains uncovered here is Go's OWN sockaddr()
+// encoder METHODS on SockaddrUnix / SockaddrLinklayer / SockaddrNetlink, which stay auto (this
+// file transcribes all three natively in writeNativeSockaddr; what stays auto is the Go-side
+// method each of them carries). They have no port alias, their raw structs are consumed here
+// only through writeNativeSockaddr -- which calls them for Go's own validation and length
+// rules -- and the address they return is never handed to the kernel by a covered wrapper.
 //
 // AND syscall's OWN sendtoInet4 / sendtoInet6 / recvfromInet4 / recvfromInet6 STAY AUTO, which is a
 // decision already on the record and worth not re-litigating: internal/syscall/unix/linux/
