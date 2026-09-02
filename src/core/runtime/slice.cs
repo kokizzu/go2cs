@@ -227,7 +227,7 @@ internal static Δsliceᴛ growslice(@unsafe.Pointer oldPtr, nint newLen, nint o
         lenmem = (uintptr)oldLen * (uintptr)goarch.PtrSize;
         newlenmem = (uintptr)newLen * (uintptr)goarch.PtrSize;
         capmem = roundupsize((uintptr)newcap * (uintptr)goarch.PtrSize, noscan);
-        overflow = (uintptr)newcap > maxAlloc / goarch.PtrSize;
+        overflow = (uintptr)newcap > (uintptr)(maxAlloc / goarch.PtrSize);
         newcap = (nint)(capmem / (uintptr)goarch.PtrSize);
         break;
     }

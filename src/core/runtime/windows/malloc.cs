@@ -497,7 +497,7 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
             // We can't use this, so don't ask.
             v = default!;
         } else 
-        if (arenaIndex(Δp + n - 1) >= (arenaIdx)((nuint)1 << (int)(arenaBits))){
+        if (arenaIndex(Δp + n - 1) >= (nuint)((arenaIdx)((nuint)1 << (int)(arenaBits)))){
             // Outside addressable heap. Can't use.
             v = default!;
         } else {
@@ -554,10 +554,10 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
         if (Δp + size < Δp){
             bad = regionExceedsUintptrˢ;
         } else 
-        if (arenaIndex(Δp) >= (arenaIdx)((nuint)1 << (int)(arenaBits))){
+        if (arenaIndex(Δp) >= (nuint)((arenaIdx)((nuint)1 << (int)(arenaBits)))){
             bad = baseOutsideUsableAddressˢ;
         } else 
-        if (arenaIndex(Δp + size - 1) >= (arenaIdx)((nuint)1 << (int)(arenaBits))) {
+        if (arenaIndex(Δp + size - 1) >= (nuint)((arenaIdx)((nuint)1 << (int)(arenaBits)))) {
             bad = endOutsideUsableAddressˢ;
         }
         if (bad != ""u8) {
@@ -913,7 +913,7 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
     // a size class. In practice this is completely fine, since the largest small
     // size class has a single object in it already, precisely to make the transition
     // to large objects smooth.
-    if (size <= maxSmallSize - mallocHeaderSize){
+    if (size <= (uintptr)(maxSmallSize - mallocHeaderSize)){
         if (noscan && size < maxTinySize){
             // Tiny allocator.
             //
@@ -996,7 +996,7 @@ internal static @unsafe.Pointer mallocgc(uintptr size, ж<_type> Ꮡtyp, bool ne
                 size += mallocHeaderSize;
             }
             uint8 sizeclass = default!;
-            if (size <= smallSizeMax - 8){
+            if (size <= (uintptr)(smallSizeMax - 8)){
                 sizeclass = size_to_class8[(nint)(divRoundUp(size, smallSizeDiv))];
             } else {
                 sizeclass = size_to_class128[(nint)(divRoundUp(size - (uintptr)smallSizeMax, largeSizeDiv))];

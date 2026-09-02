@@ -15,7 +15,7 @@ partial class runtime_package {
 
 [GoType("dyn")] partial struct cbsᴛ1 {
     internal mutex @lock; // use cbsLock / cbsUnlock for race instrumentation.
-    internal array<winCallback> ctxt = new(cb_max);
+    internal array<winCallback> ctxt = new(2000);
     internal map<winCallbackKey, nint> index;
     internal nint n;
 }
@@ -283,7 +283,7 @@ internal static uintptr /*code*/ compileCallback(eface fn, bool cdecl) {
     if (fn._type == nil || ((abiꓸKind)((~fn._type).Kind_ & abi.KindMask)) != abi.Func) {
         throw panic("compileCallback: expected function with one uintptr-sized result");
     }
-    var ft = fn._type.Reinterpret<_type, functype>();
+    var ft = fn._type.FuncType();
     // Check arguments and construct ABI translation.
     abiDesc abiMap = default!;
     foreach (var (_, t) in ft.InSlice()) {

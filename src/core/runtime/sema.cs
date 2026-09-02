@@ -51,7 +51,7 @@ internal static UntypedInt semTabSize => 251;
 
 [GoType("dyn")] partial struct semTableᴛ1 {
     internal semaRoot root;
-    internal array<byte> pad = new((uintptr)cpu.CacheLinePadSize - /* unsafe.Sizeof(semaRoot{}) */ (uintptr)24);
+    internal array<byte> pad = new(40);
 }
 
 [GoType("[251]semTableᴛ1")] /* [semTabSize]semTableᴛ1 */

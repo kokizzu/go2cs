@@ -831,7 +831,7 @@ search:
             // change those to emptyRest states.
             // It would be nice to make this a separate function, but
             // for loops are not currently inlineable.
-            if (i == abi.MapBucketCount - 1){
+            if (i == (uintptr)(abi.MapBucketCount - 1)){
                 if (b.overflow(Ꮡt) != nil && (~b.overflow(Ꮡt)).tophash[0] != emptyRest) {
                     goto notLast;
                 }
@@ -912,7 +912,7 @@ internal static void mapiterinit(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<hiter> Ꮡi
     if (Ꮡh == nil || h.count == 0) {
         return;
     }
-    if (/* unsafe.Sizeof(hiter{}) */ (uintptr)96 / (uintptr)goarch.PtrSize != 12) {
+    if ((uintptr)(/* unsafe.Sizeof(hiter{}) */ (uintptr)96 / (uintptr)goarch.PtrSize) != 12) {
         @throw(hashIterSizeIncorrectˢ); // see cmd/compile/internal/reflectdata/reflect.go
     }
     it.h = Ꮡh;
