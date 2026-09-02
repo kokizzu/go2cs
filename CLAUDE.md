@@ -1004,9 +1004,12 @@ ONE stdlib in a build; there is now only one on disk.
   covers a package that type-checks everywhere but FAULTS at run time (`LocalTimeZone`'s kernel32
   call): an Output-phase exclusive. The OTHER cross-platform class is ACCEPTED, not gated — a package
   that runs meaningfully on both platforms whose emission differs only by the `Δ`-alias flavour
-  (`EnvironBlockWalk`; `SendtoSeam` is a second member with a second SHAPE, a generated ADAPTER TYPE
-  NAME in production `.cs` that follows the alias — `SockaddrInet4жΔSockaddr` on Windows,
-  `жSockaddr` on Linux — measured by C1 against a master control, identical numstat both trees) is
+  (`EnvironBlockWalk` — the class's ONE unremediated member as of `f1d73e848`; `SendtoSeam` was the
+  second and carried the second SHAPE, a generated ADAPTER TYPE NAME in production `.cs` that follows
+  the alias — `SockaddrInet4жΔSockaddr` on Windows, `жSockaddr` on Linux — measured by C1 against a
+  master control with identical numstat on both trees, until `e731145b7c` gave it the linux marker
+  and a Linux-regenerated golden in train 12; a follow-up census naming a third member was a glyph
+  SUBSTRING over-match, `ΔHandle` inside `ΔHandler`, its transpile byte-identical) is
   NAMED beside the package, with a standing Linux-CNR derivation (CHANGED files whose whole diff is
   the alias hunk or the adapter-name hunk) so its members surface by census rather than one at a time;
   a Linux CNR's honest verdict on this corpus is "clean modulo the windows-alias class", never "clean".
