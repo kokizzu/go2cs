@@ -387,3 +387,20 @@
     needs syntactically ON the declaration) / field-level-different (e.g. `[GoTag]`); (4) record
     the classification in ConversionStrategies-Reference and move what cleanly moves. Readability
     is the goal; behavioral identity is the bar.*
+
+26. **A displaced function's COMMENTS are left orphaned under the placeholder.** When
+    `manualConversionFuncs` displaces a function, the converter emits its one-line placeholder and
+    then the whole body's interior comments with no code under them. `runtime/mbitmap.cs` after the
+    `getgcmask` hand-own carries 32 such lines — `// data or bss`, `// heap`, `// Move the base up to
+    the iterator's start, because / we want to hide evidence of a malloc header from the / caller.`,
+    `// must not have pointers` — a paragraph of Go's reasoning about a body that is no longer there,
+    directly above the closing brace of the package class. It compiles, so no gate sees it, and it is
+    byte-identical to the emission, so it is not drift either; it is purely a readability cost, and it
+    lands on exactly the files a reader is most likely to open (the ones with a hand-own worth
+    understanding). It will recur at every future displacement of a comment-rich function, and the
+    corpus has 73 marked files today. Scope: decide whether a displaced body's interior comments
+    should be dropped, or moved INTO the placeholder as an indented block that reads as "what the Go
+    body did" — the second is more useful to a reader and costs the same emission pass — then apply
+    it at the one site that writes the placeholder. Behavioral identity is free here (comments only);
+    the A/B is a regen diff whose every hunk must be comment lines. Found 2026-09-02 while cutting
+    the `getgcmask` seam.
