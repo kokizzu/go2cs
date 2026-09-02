@@ -49,6 +49,25 @@ foreach (string testDir in behavioralTestDirs)
 // effect of running it on a different platform.
 targetTests.Sort(StringComparer.Ordinal);
 
+// F8 -- the platform-exclusive projects, i.e. those this host may not write a golden for. The two
+// jobs below split on this set, and they split ASYMMETRICALLY on purpose:
+//
+//   * the four generated <TestMethods> blocks KEEP their entries, because BehavioralTestBase's
+//     CheckTarget calls SkipIfPlatformExclusive first and reports Inconclusive by name at RUN time.
+//     Dropping the entries here would make the generated classes host-dependent -- a Windows run and
+//     a Linux run of this utility would emit different files, and whichever ran last would show the
+//     other host's projects as deletions. The entries are a pure function of the project set; only
+//     the goldens are a function of the HOST.
+//
+//   * the .cs.target goldens are SKIPPED, because the .cs beside a non-native project here is a
+//     best-effort conversion of a package this host cannot type-check. Copying it over the golden
+//     would bank that best-effort output as the record of what the converter emits -- and the
+//     package's native host would then fail its Target phase against it. Where no golden exists yet
+//     the copy mints an untracked one, which is the same drift wearing a different name.
+List<string> platformExclusive = targetTests
+    .Where(targetTest => PlatformExclusive.ShouldSkip(Path.GetFullPath(Path.Combine(behavioralRoot, targetTest)), out _))
+    .ToList();
+
 (string testClass, Func<string, bool>? filter)[] testClasses =
 [
     ("TranspileTests", null),                       // Tests transpilation of Go code to C# code
@@ -106,8 +125,28 @@ foreach ((string testClass, Func<string, bool>? filter) in testClasses)
 
 if (args.Length > 0 && args[0] == "--createTargetFiles")
 {
-    // For each Go file converted to C#, create a target file for regression testing comparisons
-    foreach (string targetTest in targetTests)
+    // Report the skip LOUDLY and BY NAME, in the runners' wording. A silent drop from the golden
+    // job would trade a visible wrong golden for an invisible missing one, and the next reader would
+    // have no way to tell "this host declined" from "this project has no goldens".
+    if (platformExclusive.Count > 0)
+    {
+        Console.WriteLine($"SKIPPED (platform-exclusive, {platformExclusive.Count}): native to another platform, so this {PlatformExclusive.HostGoos} host cannot mint their goldens:");
+
+        foreach (string targetTest in platformExclusive)
+        {
+            PlatformExclusive.ShouldSkip(Path.GetFullPath(Path.Combine(behavioralRoot, targetTest)), out string platforms);
+            Console.WriteLine($"    {targetTest} [{platforms}] -- .cs.target left as it stands; [TestMethod] entries still generated");
+        }
+
+        Console.WriteLine();
+    }
+
+    // For each Go file converted to C#, create a target file for regression testing comparisons.
+    // MEASURED (negative control, 2026-09-02): this Except IS the guard and the banner above is NOT.
+    // Neutering only this line back to `targetTests` still printed the full SKIPPED block and
+    // re-minted ScmRightsSeam's golden -- so a reader trusting the banner would have believed the
+    // skip held. Do not "simplify" the report and the exclusion into one place that only prints.
+    foreach (string targetTest in targetTests.Except(platformExclusive))
     {
         string projPath = Path.GetFullPath(Path.Combine(behavioralRoot, targetTest));
 
