@@ -71,8 +71,24 @@ param(
     # -TestConfig Release, opts back IN to the CLR's default tiered JIT -- Release's own default here
     # is DOTNET_TieredCompilation=0, since a verdict that depends on JIT promotion timing is not
     # reproducible run to run (the same reasoning -test-config's own commit recorded).
-    [switch] $TestTiered
+    [switch] $TestTiered,
+    # Split the (already Filter/Exact/Applicable-filtered) row set into -ShardCount contiguous,
+    # roster-order pieces and run only the -ShardIndex'th (1-based) -- owner ruling 2026-09-02, this
+    # host's own known thermal limit: a ~2-hour continuous full-roster run is exactly the load that
+    # trips it, so a multi-hour census is broken into shards with a cooldown gap BETWEEN separate
+    # invocations (the gap is the caller's job, not this script's -- it is not a sleep this process
+    # would hold a build lock through). Both omitted (the default) runs the whole set in one piece,
+    # unchanged from before this parameter existed. `-ShardCount 1` is accepted as a no-op spelling.
+    [ValidateRange(1, [int]::MaxValue)]
+    [int] $ShardCount = 1,
+    [ValidateRange(1, [int]::MaxValue)]
+    [int] $ShardIndex = 1
 )
+
+if ($ShardIndex -gt $ShardCount) {
+    Write-Host "*** -ShardIndex $ShardIndex exceeds -ShardCount $ShardCount ***" -ForegroundColor Red
+    exit 1
+}
 
 $ErrorActionPreference = 'Stop'
 
@@ -213,6 +229,19 @@ foreach ($naRow in $notApplicableRows) {
     Write-Host ("  N/A   {0,-34} {1}: n/a -- platform-exclusive row; no expectation exists here, now or ever" -f $naRow.Package, $targetGoos) -ForegroundColor DarkGray
 }
 $rows = @($rows | Where-Object { $_.Effective.Applicable })
+
+# Sharding, over the SAME final row set the sweep would otherwise process (post Filter/Exact/
+# Applicable) -- roster order is the row order already established above, so "shard by the roster's
+# own order" falls out of slicing this array as-is, no re-sort needed. Contiguous chunks, last shard
+# absorbs any remainder from the ceiling division.
+if ($ShardCount -gt 1) {
+    $preShardTotal = $rows.Count
+    $shardSize = [Math]::Ceiling($preShardTotal / $ShardCount)
+    $startIdx = ($ShardIndex - 1) * $shardSize
+    $endIdx = [Math]::Min($startIdx + $shardSize - 1, $preShardTotal - 1)
+    $rows = if ($startIdx -gt $preShardTotal - 1) { @() } else { @($rows[$startIdx..$endIdx]) }
+    Write-Host "  shard $ShardIndex/${ShardCount}: $($rows.Count) row(s) of $preShardTotal (roster order, size $shardSize)" -ForegroundColor Cyan
+}
 
 # Sweep-wide config override: non-default TestConfig or TestTiered means EVERY row runs under it,
 # superseding any per-row `execution:` annotation for this run only (see the invocation site below).
