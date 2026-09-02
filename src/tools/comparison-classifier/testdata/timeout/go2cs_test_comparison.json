@@ -1,0 +1,9 @@
+{
+  "package": "synthetictimeout",
+  "status": "compared",
+  "go": {"TestSlow": "pass"},
+  "csharp": {"TestSlow": ""},
+  "matched": false,
+  "skipped": [], "disclosed": [], "excluded": [],
+  "errors": ["TestSlow: Go=\"pass\" C#=\"\""]
+}

@@ -1,0 +1,35 @@
+{
+  "package": "syntheticmixed",
+  "status": "compared",
+  "go": {
+    "TestNeverReached": "pass",
+    "TestKilledMidRun": "pass",
+    "TestStubHit": "pass",
+    "TestPanicDiff": "pass",
+    "TestAssertDiff": "pass",
+    "TestWeirdGoSide": "",
+    "TestClean": "pass"
+  },
+  "csharp": {
+    "TestNeverReached": "",
+    "TestKilledMidRun": "",
+    "TestStubHit": "fail",
+    "TestPanicDiff": "fail",
+    "TestAssertDiff": "fail",
+    "TestWeirdGoSide": "pass",
+    "TestClean": "pass"
+  },
+  "matched": false,
+  "skipped": [],
+  "disclosed": [],
+  "excluded": [],
+  "errors": [
+    "TestNeverReached: Go=\"pass\" C#=\"\"",
+    "TestKilledMidRun: Go=\"pass\" C#=\"\"",
+    "TestStubHit: Go=\"pass\" C#=\"fail\"",
+    "TestPanicDiff: Go=\"pass\" C#=\"fail\"",
+    "TestAssertDiff: Go=\"pass\" C#=\"fail\"",
+    "TestWeirdGoSide: Go=\"\" C#=\"pass\"",
+    "this line does not match the expected shape at all"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "package": "syntheticclean",
+  "status": "compared",
+  "go": {"TestOne": "pass", "TestTwo": "pass"},
+  "csharp": {"TestOne": "pass", "TestTwo": "pass"},
+  "matched": true,
+  "skipped": [],
+  "disclosed": [],
+  "excluded": [],
+  "errors": []
+}
