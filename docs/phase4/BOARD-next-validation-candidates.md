@@ -21671,3 +21671,289 @@ work remaining by a factor of several, and counting it by ROOTS is what made the
 resolvable by evidence rather than by territory.
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
+<!-- 
+---
+
+## 2026-09-02 — C1 — `syscall` Linux residue: the two roots assigned to C1, rooted end to end (one is a two-line no-op; the other is not a defect at all but a *branch choice*, and the choice is measurably wrong)
+
+Root 1 was cut, measured, and **WITHDRAWN** — the empty bodies FORK BOMB the row (96 processes in
+~7 minutes). Root 2 lands on `cgocaller`, which the sibling hand-own's own header parks as "the cgo
+boundary, a separate question", so it is posted for a ruling rather than taken. Branch
+`claude/c1-syscall-exec-hooks` is at `c2d140db5` and is **comment-only against master** —
+47 added lines, zero behavior, diff-verified. `be61a6fa1` (the code half) must not be seated.
+
+### Root 1 — `runtime_BeforeExec` / `runtime_AfterExec` (`TestExec`): scheduler bookkeeping with no managed counterpart, exactly the banked entersyscall/exitsyscall judgment
+
+**Symptom.** `System.NotImplementedException: runtime_BeforeExec: external (assembly or cgo)
+function is not implemented` — `PartialStubGenerator.cs:111`'s verbatim text, thrown on the first
+`syscall.Exec`.
+
+**Chain, each link read rather than assumed.**
+
+| link | evidence |
+|---|---|
+| declaration | `src/core/syscall/linux/exec_unix.cs:247,249` — bodyless `internal static partial void`, from `exec_unix.go`'s two `//go:linkname` pulls |
+| callers | `exec_unix.cs:275` (before execve) and `:302` (after a **failed** execve) — the ONLY two, both inside `Exec` |
+| no body ⟹ stub | `PartialStubGenerator` emits the throwing stub for a bodyless partial |
+| Go's body | `$GOROOT/src/runtime/proc.go:4992` = `execLock.lock()` + a darwin/ios-only `pendingPreemptSignals` drain; `:5008` = `execLock.unlock()` |
+
+**Why nothing is the right body — and it is stronger than "unnecessary".** `execLock` has exactly
+two readers in the whole runtime, both read out of the 1.23.12 source:
+
+1. `proc.go:2839/2844` — `newm1`/`newosproc`, i.e. **Go's own OS-thread creation** (`// Prevent
+   process clone`, issue #19546).
+2. `signal_unix.go:372/389` — `preemptM`, and that reader is **`if GOOS == "darwin" || GOOS ==
+   "ios"`**, i.e. unreachable on linux and part of async-preemption machinery the managed model
+   never runs.
+
+So on linux the write-lock's sole purpose is to serialize against `newosproc`. A converted program
+has no `newosproc`: threads are created by the CLR, which does not consult `runtime_package`. The
+lock is therefore not merely unneeded here — **it could not serialize anything even if it were
+taken**, which is the honest reason rather than a convenience. The darwin drain reads
+`pendingPreemptSignals`, a counter only `preemptM` increments, so it is unreachable twice over.
+
+The post-condition is the same: `Exec` replaces the process image via `SYS_EXECVE`, so no runtime
+bookkeeping survives to be left inconsistent; and on the failure path `AfterExec` releases a lock
+that was never taken.
+
+Both are `func()`. Nothing is computed, so there is no plausible answer to fabricate — the same
+argument `syscall_linux_impl.cs`'s header already records for `runtime_entersyscall` /
+`runtime_exitsyscall`, and for the same class of obligation.
+
+**Placement is forced by the facts, not chosen.** `exec_unix.cs` exists per-GOOS in `linux/` and
+`darwin/`. The linux copy is ALREADY a whole-file hand-own (`[module: go.GoManualConversion]`,
+line 34 — the posix_spawn seam), so the bodies belong in it, 28 lines above their caller. The
+darwin copy carries **zero** markers — it is converted output a `-stdlib` reconvert would clobber
+— so darwin keeps its throwing stub and is unchanged by this cut. (Darwin has no run layer;
+`FINDING-darwin-run-layer.md` owns that.) A flat file is impossible: the declaration does not
+exist on Windows, so a flat implementing part is CS0759.
+
+**"Why not forward?" — asked, because `runtime` DOES carry a real converted body, and answered.**
+`runtime/linux/proc.cs:4983` holds `syscall_runtime_BeforeExec`/`AfterExec` fully converted
+(`execLock.@lock()`/`.unlock()`, darwin drain and all), pushed here by runtime's
+`//go:linkname syscall_runtime_BeforeExec syscall.runtime_BeforeExec`. Two things stand between
+that and a forwarder, and only the second is a judgment:
+
+- **Mechanical.** The converter emits a linkname target `public` only for rows in the curated
+  `linknameForwardTargets` whitelist (`visitFuncDecl.go:1877`). This pair is not in it, so the
+  runtime body is `internal` and unreachable across the assembly boundary. Adding the row is a
+  **converter** change, hence a ruling, not a lane cut. (The forwarder *direction* is fine —
+  `syscall → runtime`, an edge Go's own imports already carry, so no W1-style graph cycle. I
+  checked that specifically, because the push shape is what produced W1's six.)
+- **Substantive.** It would buy nothing. The lock's only linux reader is `newosproc`, which this
+  model never calls, so a forwarded lock/unlock pair guards nothing while running the runtime's
+  mutex protocol at exec time — risk for no protection. Empty body and forward are semantically
+  identical *here*; they stop being identical only if the managed runtime ever routes thread
+  creation through `newm1`, and that is the fact to re-check before preferring one.
+
+Recorded in the source comment too, so it is not rediscovered as an oversight. If the coordinator
+prefers the forward on faithfulness grounds, the registry row is the whole change and this cut
+retires cleanly.
+
+**Size:** two bodies plus the rationale, one already-hand-owned file, no converter change, no
+registration, no other platform touched.
+
+### …and then the measurement said no, so it is withdrawn
+
+The argument above is sound and I still hold it. The row still did not improve — it **fork bombed**:
+96 `syscall.tests` processes in ~7 minutes, ~1 per 3 s, each a CHILD of the last. **That chain is
+itself the proof `execve` did not replace the image**, since execve keeps the pid. Three sampled
+generations carried garbage `/proc/<pid>/cmdline` and empty `/proc/<pid>/environ`; a fourth was an
+ordinary spawn from `TestDeathSignal`, so UNFILTERED suites were running. Positive control
+exonerating the run filter: the host honors `-test.run=^TestZeroSysProcAttr$` and runs it alone.
+
+**The reading, labelled as the INFERENCE it is:** `Exec` hands `execve` MANAGED memory —
+`argv0p`/`argvp`/`envvp` from `BytePtrFromString`/`SlicePtrFromStrings`, passed as
+`(uintptr)@unsafe.Pointer.FromRef(ref (Ꮡ(argvp, 0)).Value)`, a `**byte` into the managed heap. The
+exec'd image comes up with corrupted argv and environ, loses `-test.run` and
+`GO_WANT_HELPER_PROCESS`, runs the whole suite including `TestExec`, and spawns the next
+generation. That is the **open "wrapper passes managed memory by address" class** this board already
+tracks, reached through a new door — and this one is on Linux.
+
+So the throwing stub is, accidentally, the recursion brake, and one honest infrastructure-error
+beats a fork bomb on every host that sweeps the row. **Next step recorded at the site rather than in
+a plan: marshal `Exec`'s argv/envp into UNMANAGED memory BEFORE re-attempting the bodies** — the
+same file already does exactly that for the posix_spawn seam
+(`MarshalStringZ`/`MarshalStringVector`/`FreeStringVector`), under its header's rule that every
+buffer handed to a native call lives in unmanaged memory for the duration and is freed in a
+`finally`.
+
+### Root 2 — `Setegid`/`Seteuid` "operation not supported": the banked ENOTSUP is correct for `AllThreadsSyscall` and wrong for these callers, because Go offers them a second implementation the managed host is a better fit for
+
+**Symptom.** `TestSetuidEtc`: `[0] "Setegid(1)" failed: operation not supported`.
+
+**Chain.** `Setegid(1)` → `cgo_libc_setegid == nil` (no cgo layer in a converted binary) →
+`AllThreadsSyscall(SYS_SETRESGID, minus1, 1, minus1)` (`syscall_linux.cs:1103`) →
+`runtime_doAllThreadsSyscall` → **the banked hand-own's deliberate `ENOTSUP`**
+(`syscall_linux_impl.cs:96`) → `errnoErr(95)` → `zerrors_linux_amd64.cs:1611` `[95] = "operation
+not supported"` → `t.Errorf("[%d] %q failed: %v")`. Every link read; the string is the errno's,
+not a paraphrase.
+
+**This is not a stub and not a bug.** `runtime_doAllThreadsSyscall`'s ENOTSUP is banked *with* its
+rationale, and the rationale is right about its own function: a managed host owns threads Go's
+runtime never sees, which is precisely the condition under which Go itself answers ENOTSUP, and
+that answer is what turned `TestAllThreadsSyscallSignals` from an infrastructure-error into the
+same skip Go takes.
+
+**What the rooting adds is that these nine callers never had to reach it.** Read from the 1.23.12
+source: **all nine** linux credential setters — `Setegid`, `Seteuid`, `Setgid`, `Setuid`,
+`Setgroups`, `Setregid`, `Setreuid`, `Setresgid`, `Setresuid` — carry TWO implementations and pick
+by whether cgo is linked:
+
+```go
+if cgo_libc_setegid == nil {
+    if _, _, e1 := AllThreadsSyscall(SYS_SETRESGID, minus1, uintptr(egid), minus1); e1 != 0 { … }
+} else if ret := cgocaller(cgo_libc_setegid, uintptr(egid)); ret != 0 { … }
+```
+
+A **cgo** Go binary passes `TestSetuidEtc` — it never sees ENOTSUP, because Go deliberately routes
+to **libc's `setegid`**, which glibc implements with the nptl `setxid` broadcast that reaches every
+thread, foreign ones included. The ENOTSUP branch is Go's answer for the *non-cgo* runtime whose
+stop-the-world replay is the only broadcast it has.
+
+So the converted program takes the ENOTSUP branch for one reason only: `cgo_libc_setegid` is nil.
+And the argument the hand-own makes — *the managed host has foreign threads the runtime cannot
+broadcast over* — is the argument for it being the **cgo case**, which is the branch that WORKS.
+The corpus is one branch away from the right answer and is taking the other one.
+
+### The recommendation's own measurement — libc's broadcast is real, and it lands on Go's expected string
+
+The case for (a) rests on a claim it would be cheap to assert and wrong to: *libc's `setegid`
+reaches threads the caller did not create.* Measured on this host rather than believed
+(a lane-local `SetxidProbe` — a thread parks, main calls `setegid(1)`, both read their
+own `/proc/self/task/<tid>/status`):
+
+```
+BEFORE (uid=0):
+  main     tid=…766   Gid:	0	0	0	0
+  thread   tid=…767   Gid:	0	0	0	0
+AFTER  setegid(1) returned 0:
+  main     tid=…766   Gid:	0	1	0	1
+  thread   tid=…767   Gid:	0	1	0	1
+```
+
+The parked thread moved. And `0 1 0 1` is **byte-for-byte** what `TestSetuidEtc` compares against
+for that row (`{call: "Setegid(1)", filter: "Gid:", expect: "\t0\t1\t0\t1"}`), so this is not
+"a different error" — it is the passing value.
+
+**Scope, stated because it is the one place this could fail:** glibc's setxid broadcast walks its
+OWN thread list, i.e. every `pthread_create` thread. .NET's Linux threads are pthreads, so CLR
+threads are on that list; a thread made by a bare `clone(2)` behind glibc's back would not be, and
+nothing in the converted corpus makes one. The probe's parked thread is exactly the shape in
+question: foreign to Go's runtime, ordinary to glibc.
+
+**Why this is a ruling and not a cut.** Reaching that branch means `cgocaller` and the nine
+`cgo_libc_*` pointers, and `syscall_linux_impl.cs`'s header explicitly parks `cgocaller` as a
+separate question. Two shapes, and the existing ruling already prefers one:
+
+- **(a) implement `cgocaller` against the libc keystone** and populate the nine pointers. This is
+  the shape `FINDING-linux-run-layer.md` OQ-1 already ruled — *"bind libc, one keystone P/Invoke,
+  not N per-call hand-owns"* — and the keystone exists (`internal/runtime/syscall/linux/
+  syscall_linux_impl.cs`, `[LibraryImport("libc")]`).
+- **(b) nine hand-own bodies** P/Invoking libc directly — the per-call shape that ruling rejected.
+
+I have not built either. What I can say from measurement is that the *branch* is the defect, not
+the ENOTSUP, and that the fix's blast radius is nine functions and one test.
+
+**Go's own test guards make the split explicit, and this is the strongest evidence in the block.**
+All three tests that call `AllThreadsSyscall` **directly** open by skipping on ENOTSUP:
+
+```go
+if _, _, err := syscall.AllThreadsSyscall(syscall.SYS_PRCTL, PR_SET_KEEPCAPS, 0, 0); err == syscall.ENOTSUP {
+    t.Skip("AllThreadsSyscall disabled with cgo")
+}
+```
+`TestAllThreadsSyscall` :304, `TestAllThreadsSyscallError` :593, `TestAllThreadsSyscallBlockedSyscall`
+:606 — and those three skip correctly on both runtimes today, which is exactly what the banked
+hand-own bought.
+
+`TestSetuidEtc` has **no** ENOTSUP guard, and its only skips are non-root, the swarming builder, and
+alpine (:524-535). Go did not forget it: in Go, ENOTSUP is a **legitimate answer for the raw API and
+an impossible one for the nine wrappers**, because whichever branch a build takes the wrappers WORK
+— cgo routes them to libc, non-cgo to a runtime broadcast that really happens. The converted
+corpus returns it for both because they share a bottom the nine were never meant to reach on a host
+with foreign threads.
+
+None of the three guards is disturbed by fixing the branch: they call the raw API, which keeps
+answering ENOTSUP.
+
+**Host state, checked so the row is not read as a skip:** `id -u` = **0**, `/etc/alpine-release`
+absent, `USER` unset — none of `TestSetuidEtc`'s three skip guards fires, so the full 20-entry
+table runs on both sides.
+
+### The measurement — the rooting's own control, stated before the run and then run
+
+**Prediction, written before the sweep:** if `AllThreadsSyscall`→ENOTSUP is the root, then **every**
+`TestSetuidEtc` entry fails with the identical string, not the two named, because all of them call
+one of those nine. If only some fail, this rooting is wrong.
+
+Run: `run-validated-sweep.ps1 -Filter syscall -Exact -TestTimeout 30m` under the pinned wrapper
+(gate printed `go version go1.23.12 linux/amd64`, `PIN VERIFIED`), at master `64a064098`, 287 s.
+Record preserved before the restore.
+
+**Confirmed, and I was off by one in the count — the table is 21 entries, not 20 (indices `[0]`
+through `[20]`), and all 21 fail:**
+
+```
+[0] "Setegid(1)" failed: operation not supported
+[1] "Setegid(0)" failed: operation not supported
+[2] "Seteuid(1)" failed: operation not supported
+[3] "Setuid(0)" failed: operation not supported
+[4] "Setgid(1)" failed: operation not supported
+…
+[18] "Setresuid(1,0,2)" failed: operation not supported
+[19] "Setresuid(0,2,1)" failed: operation not supported
+[20] "Setresuid(0,0,0)" failed: operation not supported
+```
+
+Nine distinct functions, twenty-one calls, one string. Go: `pass`.
+
+**And the contrast is in the SAME record, which is the part worth keeping.** The three tests that
+call the raw API report **`go=skip  cs=skip`** — agreeing — on the C# side via
+`"AllThreadsSyscall disabled with cgo"`, reached through the hand-own's ENOTSUP:
+
+| test | go | c# |
+|---|---|---|
+| `TestAllThreadsSyscall` | skip | skip |
+| `TestAllThreadsSyscallError` | skip | skip |
+| `TestAllThreadsSyscallBlockedSyscall` | skip | skip |
+| `TestSetuidEtc` | **pass** | **fail** |
+
+One ENOTSUP, one record: it makes three tests agree and the fourth diverge. That is the whole
+finding in four rows — the answer is right for the API and wrong for the wrappers, because Go
+routes the wrappers around it precisely when the host is the shape this one is.
+
+**Root 1's verdict came back with its own stack, and it exonerates everything around it:**
+
+```
+INFRASTRUCTURE-ERROR TestExecHelper — System.NotImplementedException:
+    runtime_BeforeExec: external (assembly or cgo) function is not implemented
+  at go.syscall_package.runtime_BeforeExec()  … PartialStubGenerator/…runtime_BeforeExec.3.stub.g.cs:18
+  at go.syscall_package.Exec(…)               … src/core/syscall/linux/exec_unix.cs:275
+  at go.syscall_test_package.TestExecHelper(…) … src/core/syscall/exec_unix_test.cs:374
+```
+
+Read the frames: the PARENT spawned the child successfully (the posix_spawn seam works), the child
+entered `TestExecHelper`, and the throw is on the first line of `Exec` that isn't argument
+marshalling. **The stub is the only thing between this test and a pass** — nothing else in the exec
+path is implicated.
+
+### Residue arithmetic, and what it means for the row
+
+55 rows both sides. **37 agreeing + 13 disclosed (the banked posix_spawn `platform-skip` set) + 5
+errors = 55** — it closes, so nothing is unaccounted for.
+
+| remaining error | owner |
+|---|---|
+| `TestExec` | **root 1, C1** — cut, measured, WITHDRAWN (see below); the stub is the recursion brake |
+| `TestSetuidEtc` | **root 2, C1** — posted for a ruling, not cut |
+| `TestExecPtrace` | the approved 14th mint (`host-limit`), staged |
+| `TestPassFD` | C2 (the SCM_RIGHTS seam) |
+| `TestSCMCredentials` | C2 (the SCM_RIGHTS seam) |
+
+The 5 → 4 fall the 14th mint was expected to produce is confirmed as available: the residue is
+exactly the five named, and `TestExecPtrace` is one of them.
+
+-- C1
+
+{% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
