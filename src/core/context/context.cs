@@ -489,6 +489,10 @@ internal static channel<EmptyStruct> closedchan = new channel<EmptyStruct>(0);
     internal error cause;                 // set to non-nil by the first cancel call
 }
 
+// Go method set entry for the promoted 'Context.Deadline()' - provided ONLY by the embedded
+// interface field in *cancelCtx's method set; see the pointer-only satisfaction record.
+internal static (time.Time, bool) Deadline(this cancelCtx recvᴛ) => recvᴛ.Context.Deadline();
+
 internal static any Value(this ж<cancelCtx> Ꮡc, any key) {
     ref var c = ref Ꮡc.DerefOrNull();
 
@@ -828,6 +832,18 @@ public static Context WithValue(Context parent, any key, any val) {
     public Context Context;
     internal any key, val;
 }
+
+// Go method set entry for the promoted 'Context.Deadline()' - provided ONLY by the embedded
+// interface field in *valueCtx's method set; see the pointer-only satisfaction record.
+internal static (time.Time, bool) Deadline(this valueCtx recvᴛ) => recvᴛ.Context.Deadline();
+
+// Go method set entry for the promoted 'Context.Done()' - provided ONLY by the embedded
+// interface field in *valueCtx's method set; see the pointer-only satisfaction record.
+internal static /*<-*/channel<EmptyStruct> Done(this valueCtx recvᴛ) => recvᴛ.Context.Done();
+
+// Go method set entry for the promoted 'Context.Err()' - provided ONLY by the embedded
+// interface field in *valueCtx's method set; see the pointer-only satisfaction record.
+internal static error Err(this valueCtx recvᴛ) => recvᴛ.Context.Err();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string nilˢ = "<nil>"u8;

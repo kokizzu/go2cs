@@ -16,12 +16,26 @@ import (
 
 const StructPrefixMarker = ">>MARKER:STRUCT_%s_PREFIX<<"
 
-// Handles struct types in the context of a TypeSpec, ValueSpec, or FieldList
+// promotedInterfaceForwarder is one `[GoRecv]` extension a DUAL-embed struct owes: a method the
+// struct's *T method set obtains ONLY through an embedded-interface field (the pointer-only
+// satisfaction arm below). Collected during the embed walk, emitted right after the struct's
+// declaration closes.
+type promotedInterfaceForwarder struct {
+	structName    string
+	embedName     string
+	method        *types.Func
+	valueReceiver bool
+}
+
 func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Type, name string, doc *ast.CommentGroup, lifted bool, target *strings.Builder) (structTypeName string) {
 	// The struct's OWN type, captured before the embed loop shadows `identType` with each field's —
 	// the promoted-pair guard below asks go/types whether the STRUCT implements the embedded
 	// interface, and it must ask about the right side.
 	declaredStructType := identType
+
+	// Re-entrancy mark: a field's anonymous type can recurse into visitStructType, and each
+	// invocation must emit exactly the forwarders its own embed walk collected.
+	forwarderMark := len(v.promotedInterfaceForwarders)
 
 	var preLiftIndentLevel int
 	var structPrefix *strings.Builder
@@ -727,6 +741,93 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 					}
 
 					packageLock.Unlock()
+				} else if types.Implements(types.NewPointer(declaredStructType), ifaceType) {
+					// POINTER-ONLY satisfaction through a DUAL embed — the fakeDNSPacketConn shape
+					// (net's dnsclient_unix_test.go:966): the struct embeds this interface AND a
+					// struct, and an explicit pointer-receiver override (or a pointer-receiver
+					// collision resolver) shadows the interface-promoted method OUT of the VALUE
+					// method set, so the value-form check above is FALSE while *T implements. The
+					// value-form Promoted record would be an OVER-CLAIM here — a VALUE stored into
+					// `any` would assert true where Go says false (measured on the three-arm probe,
+					// 2026-09-02) — so this arm mints the POINTER-form record instead, and emits a
+					// `[GoRecv]` forwarder below for each method only the interface field provides,
+					// which is what lets go2cs-gen's existing pointer-record adapter compose (under
+					// the record alone the ImplementGenerator emitted NOTHING for the pair, silently
+					// — the missing extension surface was why). Dispatch then matches Go: the box
+					// satisfies, the value refuses, the explicit override wins, the field forwards
+					// the rest. Guarded by tests/Behavioral/EmbeddedInterfaceWitness's dual-embed
+					// arms; the reached corpus consumer is net's Linux DNS-client suite (35 verdicts
+					// behind `c.(PacketConn)` selecting the STREAM arm on a UDP conn).
+					//
+					// KNOWN RESIDUAL, stated not silently narrowed: this arm walks DIRECT embeds, so
+					// pointer-only satisfaction whose interface methods arrive at depth >= 2 (a
+					// struct embed whose OWN embedded interface supplies them) mints nothing here —
+					// no corpus consumer reaches that shape today, and the census that says so is
+					// the two-seeded diff this cut banks with.
+					pointerRecordName := PointerPrefix + "<" + structTypeName + ">"
+
+					packageLock.Lock()
+
+					if implementations, exists := interfaceImplementations[csFullTypeName]; exists {
+						implementations.Add(pointerRecordName)
+					} else {
+						interfaceImplementations[csFullTypeName] = NewHashSet([]string{pointerRecordName})
+					}
+
+					packageLock.Unlock()
+
+					for i := range ifaceType.NumMethods() {
+						method := ifaceType.Method(i)
+
+						// The forwarder exists only for a method whose *T-method-set provider IS
+						// the interface promotion through this embed: an explicit method or a
+						// struct-embed promotion already has its extension, and an equal-depth
+						// collision resolves to nil (Go removed it; emitting would resurrect it —
+						// the JOB-010 direction).
+						provider, _, _ := types.LookupFieldOrMethod(declaredStructType, true, v.pkg, method.Name())
+
+						providerFunc, isFunc := provider.(*types.Func)
+
+						if !isFunc || providerFunc.Type().(*types.Signature).Recv() == nil {
+							continue
+						}
+
+						if _, recvIsIface := providerFunc.Type().(*types.Signature).Recv().Type().Underlying().(*types.Interface); !recvIsIface {
+							continue
+						}
+
+						if sig, ok := method.Type().(*types.Signature); ok && sig.Variadic() {
+							// Not reached by any current corpus consumer; a variadic forwarder needs
+							// the params-array spelling the adapter matcher expects, which this arm
+							// does not synthesize. Loud, so a future consumer is a report, not a
+							// silent method-set hole.
+							showWarning("embedded-interface promoted method %s.%s is variadic - pointer-form forwarder not emitted", structTypeName, method.Name())
+							continue
+						}
+
+						// An interface-promoted method that ALSO survives in the VALUE method set
+						// (nothing shadows it — pointerOnly's Read, not its Write) is a value
+						// method in Go, so its forwarder takes the value-receiver extension form
+						// the generator's own Promoted path emits (no [GoRecv], no ref) — which is
+						// what keeps reflect's NumMethod arithmetic matching Go on BOTH forms
+						// (measured: ptr 2 / val 1 in Go; the all-ref first cut read val 0).
+						valueReceiver := false
+						valueMethodSet := types.NewMethodSet(declaredStructType)
+
+						for j := range valueMethodSet.Len() {
+							if valueMethodSet.At(j).Obj() == providerFunc {
+								valueReceiver = true
+								break
+							}
+						}
+
+						v.promotedInterfaceForwarders = append(v.promotedInterfaceForwarders, promotedInterfaceForwarder{
+							structName:    structTypeName,
+							embedName:     embedName,
+							method:        method,
+							valueReceiver: valueReceiver,
+						})
+					}
 				}
 
 				v.writeString(target, "%s %s %s;", getAccess(goTypeName), csEmitTypeName, embedName)
@@ -843,6 +944,8 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 
 	v.indentLevel--
 	v.writeStringLn(target, "}")
+
+	v.emitPromotedInterfaceForwarders(target, forwarderMark)
 
 	if structPrefix == nil {
 		v.replaceMarkerString(target, structPrefixMarker, "")
@@ -1011,4 +1114,93 @@ func (v *Visitor) structZeroValueNeedsConstructionRec(t types.Type, seen map[*ty
 	}
 
 	return false
+}
+
+// emitPromotedInterfaceForwarders writes the `[GoRecv]` extensions collected since mark — one per
+// method a DUAL-embed struct's *T method set obtains ONLY through an embedded-interface field —
+// immediately after the struct declaration, so the extension surface is complete before go2cs-gen
+// composes the pointer-form adapter the arm's `GoImplement<T, Iface>(Pointer = true)` record asks
+// for (under the record alone the ImplementGenerator emits nothing, silently). Go's promotion
+// makes such a method delegate to the field — nil-panicking if the field was never assigned,
+// which is Go's own behavior for the shape and exactly what the forwarder reproduces. Emitted at
+// the struct's own indent, so a function-local lift rides currentFuncPrefix to member level with
+// its type. Variadic methods were excluded (with a warning) at collection.
+func (v *Visitor) emitPromotedInterfaceForwarders(target *strings.Builder, mark int) {
+	for _, fwd := range v.promotedInterfaceForwarders[mark:] {
+		signature := fwd.method.Type().(*types.Signature)
+
+		var params, args strings.Builder
+
+		for i := range signature.Params().Len() {
+			param := signature.Params().At(i)
+			paramName := param.Name()
+
+			if paramName == "" || paramName == "_" {
+				paramName = fmt.Sprintf("arg%dᴛ", i+1)
+			}
+
+			paramName = getSanitizedIdentifier(paramName)
+
+			params.WriteString(", ")
+			params.WriteString(convertToCSTypeName(v.getAliasQualifiedTypeName(param.Type(), false)))
+			params.WriteRune(' ')
+			params.WriteString(paramName)
+
+			if i > 0 {
+				args.WriteString(", ")
+			}
+
+			args.WriteString(paramName)
+		}
+
+		var resultType string
+		results := signature.Results()
+
+		switch results.Len() {
+		case 0:
+			resultType = "void"
+		case 1:
+			resultType = convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(0).Type(), false))
+		default:
+			var tuple strings.Builder
+
+			tuple.WriteRune('(')
+
+			for i := range results.Len() {
+				if i > 0 {
+					tuple.WriteString(", ")
+				}
+
+				tuple.WriteString(convertToCSTypeName(v.getAliasQualifiedTypeName(results.At(i).Type(), false)))
+			}
+
+			tuple.WriteRune(')')
+			resultType = tuple.String()
+		}
+
+		methodName := getSanitizedIdentifier(fwd.method.Name())
+
+		// C# forbids a method more accessible than its parameter types (CS0051), so an exported
+		// interface method promoted onto an UNEXPORTED struct takes the struct's accessibility —
+		// the same floor visitFuncDecl's explicit-method emission lands on.
+		access := getAccess(fwd.method.Name())
+
+		if getAccess(fwd.structName) == "internal" {
+			access = "internal"
+		}
+
+		target.WriteString(v.newline)
+		v.writeStringLn(target, "// Go method set entry for the promoted '%s.%s()' - provided ONLY by the embedded", fwd.embedName, methodName)
+		v.writeStringLn(target, "// interface field in *%s's method set; see the pointer-only satisfaction record.", fwd.structName)
+
+		if fwd.valueReceiver {
+			// The method survives in Go's VALUE method set (nothing shadows it), so the forwarder
+			// is a value method — the generator's own Promoted-path extension form.
+			v.writeStringLn(target, "%s static %s %s(this %s recvᴛ%s) => recvᴛ.%s.%s(%s);", access, resultType, methodName, fwd.structName, params.String(), fwd.embedName, methodName, args.String())
+		} else {
+			v.writeStringLn(target, "[GoRecv] %s static %s %s(this ref %s recvᴛ%s) => recvᴛ.%s.%s(%s);", access, resultType, methodName, fwd.structName, params.String(), fwd.embedName, methodName, args.String())
+		}
+	}
+
+	v.promotedInterfaceForwarders = v.promotedInterfaceForwarders[:mark]
 }

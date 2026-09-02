@@ -73,6 +73,7 @@ internal static void Main() {
     check(holderˢ, new holder(Reader: new iolike.Base(Tag: "held"u8), prefix: "h:"u8));
     LocalPromotion();
     checkConflicted();
+    checkPointerOnly();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -117,6 +118,55 @@ internal static void checkConflicted() {
         }
     }
     fmt.Println(conflictedNumMethodˢ, reflect.TypeOf(v).NumMethod());
+}
+
+[GoType] partial struct pointerBase {
+    internal @string tag;
+}
+
+[GoRecv] internal static @string Write(this ref pointerBase b, @string s) {
+    return "pb:"u8 + s + b.tag;
+}
+
+[GoType] partial struct pointerOnly {
+    public EmbeddedInterfaceWitness.iolike_package.ReadWriter ReadWriter;
+    internal partial ref pointerBase pointerBase { get; }
+}
+
+// Go method set entry for the promoted 'ReadWriter.Read()' - provided ONLY by the embedded
+// interface field in *pointerOnly's method set; see the pointer-only satisfaction record.
+internal static @string Read(this pointerOnly recvᴛ) => recvᴛ.ReadWriter.Read();
+
+[GoRecv] internal static @string Write(this ref pointerOnly p, @string s) {
+    return "po:"u8 + s;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object pointerOnlyPtrYesˢ = (@string)"pointerOnly ptr: yes"u8;
+private static readonly object pointerOnlyPtrNoˢ = (@string)"pointerOnly ptr: no"u8;
+private static readonly object pointerOnlyValYesˢ = (@string)"pointerOnly val: yes"u8;
+private static readonly object pointerOnlyValNoˢ = (@string)"pointerOnly val: no"u8;
+private static readonly object pointerOnlyNumMethodPtrˢ = (@string)"pointerOnly NumMethod ptr:"u8;
+private static readonly object valˢ = (@string)"val:"u8;
+
+internal static void checkPointerOnly() {
+    any ptr = Ꮡ(new pointerOnly(nil));
+    {
+        var (rw, ok) = ptr._<iolike.ReadWriter>(ᐧ); if (ok){
+            fmt.Println(pointerOnlyPtrYesˢ, rw.Write("x"u8));
+        } else {
+            fmt.Println(pointerOnlyPtrNoˢ);
+        }
+    }
+    any val = new pointerOnly(nil);
+    {
+        var (_, ok) = val._<iolike.ReadWriter>(ᐧ); if (ok){
+            fmt.Println(pointerOnlyValYesˢ);
+        } else {
+            fmt.Println(pointerOnlyValNoˢ);
+        }
+    }
+    fmt.Println(pointerOnlyNumMethodPtrˢ, reflect.TypeOf(ptr).NumMethod(), valˢ, reflect.TypeOf(val).NumMethod());
 }
 
 } // end main_package

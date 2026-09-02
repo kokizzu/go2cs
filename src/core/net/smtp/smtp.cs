@@ -400,6 +400,10 @@ public static error Rcpt(this ж<Client> Ꮡc, @string to) {
     public io_package.WriteCloser WriteCloser;
 }
 
+// Go method set entry for the promoted 'WriteCloser.Write()' - provided ONLY by the embedded
+// interface field in *dataCloser's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Write(this dataCloser recvᴛ, slice<byte> p) => recvᴛ.WriteCloser.Write(p);
+
 [GoRecv] internal static error Close(this ref dataCloser d) {
     d.WriteCloser.Close();
     var (_, _, err) = (~d.c).Text.of(textproto.Conn.ᏑReader).ReadResponse(250);

@@ -15,11 +15,11 @@
 //
 //   - wrapper  — embedded interface + own method. The defect.
 //   - plain    — both methods declared directly. Worked before and must keep working; it is what
-//                proved the runtime resolves satisfaction structurally when the methods exist.
+//     proved the runtime resolves satisfaction structurally when the methods exist.
 //   - holder   — an ORDINARY field whose name equals its type's simple name. Go promotes nothing,
-//                so it must NOT satisfy ReadWriter. Both shapes emit the IDENTICAL C# field, so
-//                this is what stops any fix from resting on a name heuristic (the same ambiguity
-//                that once made dwarf forward Common() through a named field).
+//     so it must NOT satisfy ReadWriter. Both shapes emit the IDENTICAL C# field, so
+//     this is what stops any fix from resting on a name heuristic (the same ambiguity
+//     that once made dwarf forward Common() through a named field).
 //
 // NumMethod is printed for each because the fix adds entries to the Go method set: it must add
 // exactly the promoted ones and nothing else (a stray BCL interface method would inflate the count
@@ -74,6 +74,7 @@ func main() {
 	check("holder", holder{Reader: iolike.Base{Tag: "held"}, prefix: "h:"})
 	LocalPromotion()
 	checkConflicted()
+	checkPointerOnly()
 }
 
 // LocalPromotion is Shape A's guard -- EXPORTED-case deliberately, because the defect needs the
@@ -125,4 +126,47 @@ func checkConflicted() {
 	}
 
 	fmt.Println("conflicted NumMethod:", reflect.TypeOf(v).NumMethod())
+}
+
+// pointerOnly is Shape D's guard: the fakeDNSPacketConn shape (net's dnsclient_unix_test.go) — an
+// embedded INTERFACE and an embedded STRUCT whose method names collide at depth 1, with an explicit
+// POINTER-receiver override resolving the collision. Go's method sets split by receiver form:
+// *pointerOnly has Write (the override) plus Read (promoted from the interface field), so the
+// POINTER satisfies ReadWriter; the value's Write is shadowed by a method it cannot take, so the
+// VALUE does not. The conversion once answered no for BOTH — the promoted-record arm checks the
+// value form only, so no witness was minted and `c.(PacketConn)` picked the TCP arm on a UDP conn
+// (35 of net's Linux first-contact divergences). The fix mints the POINTER-form record and the
+// field-forwarding method-set entry; the value row below is what keeps it from over-claiming (the
+// one-line Promoted-record fix flipped the pointer row and broke this one — measured before the
+// real fix was written). The interface field stays nil and Read is never called through it,
+// exactly as the corpus consumer leaves it.
+type pointerBase struct{ tag string }
+
+func (b *pointerBase) Write(s string) string { return "pb:" + s + b.tag }
+
+type pointerOnly struct {
+	iolike.ReadWriter // interface embed: sole provider of Read; also names Write
+	pointerBase       // struct embed: also names Write at depth 1 — ambiguous, both removed
+}
+
+func (p *pointerOnly) Write(s string) string { return "po:" + s } // depth-0 resolver
+
+func checkPointerOnly() {
+	var ptr any = &pointerOnly{}
+
+	if rw, ok := ptr.(iolike.ReadWriter); ok {
+		fmt.Println("pointerOnly ptr: yes", rw.Write("x"))
+	} else {
+		fmt.Println("pointerOnly ptr: no")
+	}
+
+	var val any = pointerOnly{}
+
+	if _, ok := val.(iolike.ReadWriter); ok {
+		fmt.Println("pointerOnly val: yes")
+	} else {
+		fmt.Println("pointerOnly val: no")
+	}
+
+	fmt.Println("pointerOnly NumMethod ptr:", reflect.TypeOf(ptr).NumMethod(), "val:", reflect.TypeOf(val).NumMethod())
 }

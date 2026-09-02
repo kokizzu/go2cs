@@ -42,6 +42,7 @@ using static go.main_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<LocalPromotion_inner, go.EmbeddedInterfaceWitness.iolike_package.Reader>(Promoted = true)]
+[assembly: GoImplement<pointerOnly, go.EmbeddedInterfaceWitness.iolike_package.ReadWriter>(Pointer = true)]
 [assembly: GoImplement<wrapper, go.EmbeddedInterfaceWitness.iolike_package.Reader>(Promoted = true)]
 // </InterfaceImplementations>
 
@@ -56,7 +57,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AA5SgOiAooD+gAAJBIKAgpSmgIKUpvaCgoKCggALGIKKhISAgpQADiKChICClKY=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AA5SgOiAooD+gAAJBIKAgpSmgIKUpvaCgoKCgoIACxiCioSEgIKUAA4igoSAgpSmAAYigAALDoAACgSChICClKaEgIKUpg==")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -76,6 +77,8 @@ public static partial class main_package
     internal partial struct conflicted {}
     internal partial struct holder {}
     internal partial struct plain {}
+    internal partial struct pointerBase {}
+    internal partial struct pointerOnly {}
     internal partial struct wrapper {}
     // </TypeAccessibility>
 
