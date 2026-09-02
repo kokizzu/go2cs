@@ -91,5 +91,8 @@ public static (ж<Plugin>, error) Open(@string path) {
 public static (Symbol, error) Lookup(this ж<Plugin> Ꮡp, @string symName) {
     return lookup(ref (Ꮡp).DerefOrNull(), symName);
 }
+// Descriptor carrier for `Symbol` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("Symbol")] public interface Symbolᴅ { }
+
 
 } // end plugin_package

@@ -207,6 +207,12 @@ public static void RegisterHash(Hash h, Func<hash.Hash> f) {
     }
     hashes[h] = f;
 }
+// Descriptor carrier for `PublicKey` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("PublicKey")] public interface PublicKeyᴅ { }
+
+// Descriptor carrier for `PrivateKey` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("PrivateKey")] public interface PrivateKeyᴅ { }
+
 
 // Signer is an interface for an opaque private key that can be used for
 // signing operations. For example, an RSA key kept in a hardware module.
@@ -250,5 +256,8 @@ public static void RegisterHash(Hash h, Func<hash.Hash> f) {
     // details.
     (slice<byte> plaintext, error err) Decrypt(io.Reader rand, slice<byte> msg, DecrypterOpts opts);
 }
+// Descriptor carrier for `DecrypterOpts` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("DecrypterOpts")] public interface DecrypterOptsᴅ { }
+
 
 } // end crypto_package

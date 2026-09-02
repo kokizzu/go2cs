@@ -1483,6 +1483,7 @@ internal static ref sync.Mutex writerMutex => ref ᏑwriterMutex.Value;
     // Leaf. This must implement crypto.Signer with an RSA, ECDSA or Ed25519 PublicKey.
     // For a server up to TLS 1.2, it can also implement crypto.Decrypter with
     // an RSA PublicKey.
+    [GoDescriptorType(Self = typeof(go.crypto_package.PrivateKeyᴅ))]
     public cryptoꓸPrivateKey PrivateKey;
     // SupportedSignatureAlgorithms is an optional list restricting what
     // signature algorithms the PrivateKey can be used for.

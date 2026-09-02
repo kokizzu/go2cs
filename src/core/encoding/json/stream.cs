@@ -298,6 +298,9 @@ public static error UnmarshalJSON(this ж<RawMessage> Ꮡm, slice<byte> data) {
 internal static Marshaler _ᴛ1ʗ = new RawMessageжMarshaler(((ж<RawMessage>)nil));
 
 internal static Unmarshaler _ᴛ2ʗ = new RawMessageжUnmarshaler(((ж<RawMessage>)nil));
+// Descriptor carrier for `Token` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("Token")] public interface ΔTokenᴅ { }
+
 
 internal static UntypedInt tokenTopValue => iota;
 internal static UntypedInt tokenArrayStart => 1;
