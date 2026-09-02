@@ -229,9 +229,23 @@ Assert-Throws 'execution: a repeated annotation is refused' {
 # empty case is asserted first and hardest: it is the "nothing changes" guarantee in one line.
 Assert-Equal 'execution args: no config contributes nothing' 0 (@(Get-RosterExecutionArgs $null)).Count
 Assert-Equal 'execution args: an empty config contributes nothing' 0 (@(Get-RosterExecutionArgs '')).Count
-Assert-Equal 'execution args: release-tc0 maps to the converter flag' '-test-release-tc0' `
+# ⚠ These assert the CURRENT converter flags, and they have been wrong at master since the converter
+# retired `-test-release-tc0` in favour of `-test-config Release`: the guard kept asserting the dead
+# spelling while _roster.ps1 emitted the live one, so `check-roster-format.ps1` was RED at master and
+# every `execution: release-tc0` row would have been handed a flag the converter no longer defines.
+# A mapping guard has to name the flags the converter actually parses, or it guards the wrong thing
+# in the one direction that matters.
+Assert-Equal 'execution args: release-tc0 maps to the converter flags' '-test-config Release' `
     ((@(Get-RosterExecutionArgs 'release-tc0')) -join ' ')
-Assert-Equal 'execution args: release-tc0 contributes exactly one argument' 1 (@(Get-RosterExecutionArgs 'release-tc0')).Count
+Assert-Equal 'execution args: release-tc0 contributes exactly two arguments' 2 (@(Get-RosterExecutionArgs 'release-tc0')).Count
+# The opt-OUT mirror (2026-09-02, the Release+TC0 default flip). It states its WHOLE configuration --
+# -test-config Release AND -test-tiered -- rather than leaning on the converter's default being
+# Release, so the annotation cannot change meaning if a default moves again.
+Assert-Equal 'execution args: release-tiered maps to the converter flags' '-test-config Release -test-tiered' `
+    ((@(Get-RosterExecutionArgs 'release-tiered')) -join ' ')
+Assert-Equal 'execution args: release-tiered contributes exactly three arguments' 3 (@(Get-RosterExecutionArgs 'release-tiered')).Count
+Assert-Equal 'execution values: both configs are known to the roster vocabulary' 'release-tc0, release-tiered' `
+    (($RosterExecutionValues | Sort-Object) -join ', ')
 Assert-Throws 'execution args: an unknown config throws rather than running the default path' {
     Get-RosterExecutionArgs 'no-such-config'
 } 'Unknown execution config'

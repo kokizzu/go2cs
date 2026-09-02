@@ -1205,6 +1205,22 @@ ONE stdlib in a build; there is now only one on disk.
   **grep the converter's flags before building an instrument**, and NAME both sides' configuration.
   ⚠ **Owner ruling (2026-09-02 11:44): the validation configuration of RECORD is Release with tiering
   off; Debug stays available by flag; the pipeline and sweep defaults flip after the Release census.**
+  ⚠ **THE FLIP LANDED 2026-09-02**, the census complete (`docs/phase4/CENSUS-release-tc0-delta.md`:
+  195 of 201 rows unchanged, six disclosures retiring, nothing owed a root). `-test-config` defaults
+  to **Release** and `run-validated-sweep.ps1`'s `-TestConfig` to **Release**; Debug is a flag away.
+  **THREE rows opt back OUT via a new `execution: release-tiered` annotation** — `internal/godebug`
+  (`TestCmdBisect`), `log/slog` (`TestCallDepth`) and `net/http` (`TestRegisterErr`) — all three
+  PC/line-attribution assertions that tiering's presence supplies, each measured as a one-axis A/B,
+  never inferred. `release-tc0` is retained though redundant. ⚠ **The sweep's override predicate had
+  to change WITH the default and it is the trap in this flip:** it was `($TestConfig -ne 'Debug') -or
+  $TestTiered`, which carried past the flip makes EVERY default run an override — and an override
+  SUPERSEDES per-row annotations, so all three opt-outs would silently run at TC0 and fail while no
+  run stayed bank-eligible. It now keys on whether the caller SPECIFIED the parameter
+  (`$PSBoundParameters.ContainsKey`), so the default respects annotations and is bank-eligible while
+  any EXPLICIT flag — the default's own value included — forces uniformity and is not. A default's
+  value and a default's *explicitness* are different questions, and a predicate written when they
+  coincided answers the wrong one afterwards. Proof pages and comparison records written before the
+  flip still say Debug and are stale-until-reswept BY DESIGN; a rebank wave levels them.
 - **⚠ HOST QUALIFICATION for a network row: preflight `go test -count=1 net` BEFORE any net-family run
   (2026-09-02).** A host whose Go's OWN suite fails is disqualified as a bank host (a container
   answering `TestLookupCNAME` with the CDN CNAME and no IPv6; a WSL host failing that AND all 18
