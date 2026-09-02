@@ -70,4 +70,32 @@ partial class reflect_internal_test_package
 
         return false;
     }
+
+    // Go satisfies export_test.go's bodyless `func gcbits(any) []byte // provided by runtime`
+    // with `//go:linkname reflect_gcbits reflect.gcbits` from runtime/mbitmap.go — so in Go this
+    // IS runtime.getgcmask, under a second name. The corpus cannot cross that seam and the reason
+    // is structural rather than incidental: the push's DESTINATION is declared in a _test.go, and
+    // the -tests pipeline emits it into `reflect_internal_test_package`, a different class from
+    // `reflect_package` where a production-side push would land; runtime exposes reflect_gcbits as
+    // `internal` with no InternalsVisibleTo for reflect. Without a body here go2cs-gen's
+    // PartialStubGenerator mints a throwing stub and TestGCBits reports infrastructure-error
+    // whatever runtime answers — measured 2026-09-02, and it was the ONLY such stub in any
+    // *_internal_test_package across the generated output on that box.
+    //
+    // So this restates runtime.getgcmask's two golib calls rather than inventing a channel: ONE
+    // authority (GoReflect's layout walk, which is where PtrBytes comes from), two Go-named entry
+    // points, exactly as Go has two names for one function. The bad-argument PANIC is deliberately
+    // not restated — that text is runtime's, verifyGCBits only ever calls this as
+    // GCBits(New(typ).Interface()), and a nil answer is what Go reports for a noscan span.
+    internal static slice<byte> gcbits(any ep)
+    {
+        System.Type? elem = GoReflect.PointeeTypeOfValue(ep);
+
+        if (elem is null)
+            return default!;
+
+        byte[]? mask = GoReflect.GoGCMaskOf(elem, GoReflect.PointeeArrayDims(ep));
+
+        return mask is null ? default! : new slice<byte>(mask);
+    }
 }
