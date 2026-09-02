@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using Δruntime = runtime_package;
 using syscall = syscall_package;
 
 partial class main_package {
@@ -16,6 +17,7 @@ internal static void fatal(@string what, error err) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object linuxOnlySeamSkippedOnˢ = (@string)"linux-only seam: skipped on"u8;
 private static readonly @string socketReceiverˢ = "socket(receiver)"u8;
 private static readonly @string bindˢ = "bind"u8;
 private static readonly @string getsocknameˢ = "getsockname"u8;
@@ -36,12 +38,16 @@ private static readonly object nilToSenderEqualsˢ = (@string)"nil-to sender equ
 internal static void Main() {
     GoFrame ᒐ = default;
     try {
+        if (Δruntime.GOOS != "linux"u8) {
+            fmt.Println(linuxOnlySeamSkippedOnˢ, Δruntime.GOOS);
+            return;
+        }
         ref var receiverAddr = ref heap<array<byte>>(out var ᏑreceiverAddr);
         receiverAddr = new byte[]{127, 0, 0, 2}.array();
         var (receiver, err) = syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0);
         fatal(socketReceiverˢ, err);
         defer(syscall.Close, receiver, ref ᒐ);
-        fatal(bindˢ, syscall.Bind(receiver, new syscall.SockaddrInet4жSockaddr(Ꮡ(new syscall.SockaddrInet4(Addr: receiverAddr.Clone(), Port: 0)))));
+        fatal(bindˢ, syscall.Bind(receiver, new syscall.SockaddrInet4жΔSockaddr(Ꮡ(new syscall.SockaddrInet4(Addr: receiverAddr.Clone(), Port: 0)))));
         (var bound, err) = syscall.Getsockname(receiver);
         fatal(getsocknameˢ, err);
         var dst = bound._<ж<syscall.SockaddrInet4>>();
@@ -51,7 +57,7 @@ internal static void Main() {
         fatal(socketSenderˢ, err);
         defer(syscall.Close, sender, ref ᒐ);
         var to = Ꮡ(new syscall.SockaddrInet4(Addr: (~dst).Addr.Clone(), Port: (~dst).Port));
-        fatal(sendtoAddressedˢ, syscall.Sendto(sender, slice<byte>("addressed"u8), 0, new syscall.SockaddrInet4жSockaddr(to)));
+        fatal(sendtoAddressedˢ, syscall.Sendto(sender, slice<byte>("addressed"u8), 0, new syscall.SockaddrInet4жΔSockaddr(to)));
         var buf = new slice<byte>(64);
         (var n, var from, err) = syscall.Recvfrom(receiver, buf, 0);
         fatal(recvfromAddressedˢ, err);
@@ -59,7 +65,7 @@ internal static void Main() {
         var first = from._<ж<syscall.SockaddrInet4>>();
         fmt.Println(addressedSenderIsIn1278ˢ, (~first).Addr[0] == 127);
         fmt.Println(addressedSenderHasAPortˢ, (~first).Port != 0);
-        fatal(connectˢ, syscall.Connect(sender, new syscall.SockaddrInet4жSockaddr(to)));
+        fatal(connectˢ, syscall.Connect(sender, new syscall.SockaddrInet4жΔSockaddr(to)));
         fatal(sendtoNilToˢ, syscall.Sendto(sender, slice<byte>("connected"u8), 0, default!));
         (n, from, err) = syscall.Recvfrom(receiver, buf, 0);
         fatal(recvfromNilToˢ, err);

@@ -56,6 +56,7 @@ package main
 
 import (
 	"fmt"
+	"runtime"
 	"syscall"
 )
 
@@ -67,6 +68,16 @@ func fatal(what string, err error) {
 }
 
 func main() {
+	// This guards the LINUX seam only. Raw syscall sockets on Windows need WSAStartup (net performs
+	// it, a raw program does not), so on any other host both Go and the converted C# print the one
+	// fixed line below and stop before the first socket call -- the behavioral suite stays green
+	// everywhere, and the linux run is the real guard. runtime.GOOS converts to the runtime's own
+	// constant, so the two sides agree on every host.
+	if runtime.GOOS != "linux" {
+		fmt.Println("linux-only seam: skipped on", runtime.GOOS)
+		return
+	}
+
 	// 127.0.0.2, not .1 -- see the header: .1 cannot tell a correct encode from 0.0.0.0.
 	receiverAddr := [4]byte{127, 0, 0, 2}
 
