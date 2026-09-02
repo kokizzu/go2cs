@@ -241,7 +241,7 @@ namespace BehavioralRunner
             {
                 projects = projects.Except(platformExclusive).ToList();
 
-                Console.WriteLine($"SKIPPED (platform-exclusive, {platformExclusive.Count}): native to another platform, so this {PlatformExclusive.HostGoos} host cannot type-check them:");
+                Console.WriteLine($"SKIPPED (platform-exclusive, {platformExclusive.Count}): native to another platform, so this {PlatformExclusive.HostGoos} host cannot measure them:");
 
                 foreach (string n in platformExclusive)
                 {

@@ -335,7 +335,7 @@ public abstract class BehavioralTestBase
         {
             Assert.Inconclusive(
                 $"SKIPPED (platform-exclusive): {targetProject} is native to [{platforms}]; " +
-                $"this host measures as {PlatformExclusive.HostGoos}, where its Go source cannot be type-checked.");
+                $"this host measures as {PlatformExclusive.HostGoos}, where it cannot be measured.");
         }
     }
 
