@@ -77,12 +77,12 @@ internal static void filter(/*<-*/channel<nint> src, channel/*<-*/<nint> dst, ni
 
 internal static void sieve() {
     var ch = new channel<nint>(0);
-    goǃ(generate, ch);
+    goǃ(generate, ch.WithDirection(GoChanDir.Send));
     while (ᐧ) {
         nint prime = ᐸꟷ(ch);
         fmt.Print(prime, (@string)"\n"u8);
         var ch1 = new channel<nint>(0);
-        goǃ(filter, ch, ch1, prime);
+        goǃ(filter, ch.WithDirection(GoChanDir.Recv), ch1.WithDirection(GoChanDir.Send), prime);
         ch = ch1;
         if (prime > 40) {
             break;
@@ -192,7 +192,7 @@ internal static void Main() {
     });
     fibonacci(fΔ1, quit);
     var mychanl = new channel<@string>(0);
-    goǃ(sendOnly, mychanl);
+    goǃ(sendOnly, mychanl.WithDirection(GoChanDir.Send));
     var (result, ok) = ᐸꟷ(mychanl, ꟷ);
     fmt.Println(result, ok);
     foreach (var v in range(((IntSlice)s).All())) {

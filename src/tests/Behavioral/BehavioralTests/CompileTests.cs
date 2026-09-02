@@ -1465,6 +1465,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckReflectChanDirection() => CheckTarget("ReflectChanDirection");
 
     [TestMethod]
+    public void CheckReflectChanNarrowing() => CheckTarget("ReflectChanNarrowing");
+
+    [TestMethod]
     public void CheckReflectConvertAssignable() => CheckTarget("ReflectConvertAssignable");
 
     [TestMethod]
