@@ -94,6 +94,236 @@ func collectCaptureModeMethods(pkg *packages.Package) {
 			}
 		}
 	}
+
+	selectRefReturnPrimaries(pkg)
+}
+
+// selectRefReturnPrimaries is B′-S0's arm-(a) selection, run after the capture-mode fixpoint so
+// the decision is FINAL before anything downstream reads the maps (the ref-lowering pass's X3
+// flavor read, the local-reversion census, the signature form — a later demotion would corrupt
+// pass-4 verdicts, which is why there is no backstop and the predicate must be sound here).
+//
+// A method is selected when its ONLY box need is Go's fluent `return v`: it is currently
+// direct-ж, `bodyReturnsReceiver` fires, none of the other nine escape triggers fires, EVERY
+// return in the body (nested func literals excluded — their returns are their own) is exactly the
+// bare receiver ident (an early `return nil` or a `return v, err` needs the ж form), the receiver
+// base has struct storage (XM-3), and the method is not a linkname participant (XM-4, probed with
+// the same pure scan the ref-lowering pass uses). Selection then runs its own DOWNWARD fixpoint:
+// a member calling any still-direct-ж method ON ITS RECEIVER is demoted back (a ref receiver
+// cannot bind a ж twin — the compile-probe matrix's CS1929 row), repeated until stable.
+//
+// S1 hardening, stated not silently skipped: the hand-own veto (XM-1) is NOT probed here — the
+// destination-path probe the driver uses is not in reach at capture time, and the S0 target
+// packages carry zero markers (verified 2026-09-02). Before any wider rollout this veto moves
+// into the selection.
+func selectRefReturnPrimaries(pkg *packages.Package) {
+	if !dualRecvEnabled {
+		return
+	}
+
+	handles := censusLinknameHandles(pkg.Syntax)
+	selected := map[*types.Func]*captureCandidate{}
+
+	for _, candidate := range captureModeCandidates {
+		origin := candidate.funcObj.Origin()
+
+		if !packageDirectBoxReceiverMethods[origin] || candidate.funcObj.Pkg() != pkg.Types {
+			continue
+		}
+
+		signature, hasSignature := candidate.funcObj.Type().(*types.Signature)
+
+		if !hasSignature || signature.Recv() == nil {
+			continue
+		}
+
+		recvType := types.Unalias(signature.Recv().Type())
+		pointer, isPointer := recvType.(*types.Pointer)
+
+		if !isPointer {
+			continue
+		}
+
+		if _, isStruct := pointer.Elem().Underlying().(*types.Struct); !isStruct {
+			continue // XM-3: no struct storage to ref
+		}
+
+		if handles.Contains(candidate.funcObj.Name()) {
+			continue // XM-4
+		}
+
+		recvObj := receiverObjectFor(candidate)
+
+		if recvObj == nil {
+			continue
+		}
+
+		if !bodyReturnsReceiver(candidate.body, candidate.recvName) {
+			continue // the box need is something else; the nine-trigger check below explains it
+		}
+
+		if bodyTakesReceiverFieldAddress(candidate.body, candidate.recvName, recvObj, candidate.info) ||
+			bodyReassignsReceiver(candidate.body, candidate.recvName, signature.Recv(), candidate.info) ||
+			bodyUsesReceiverAsPointerValue(candidate.body, candidate.recvName, candidate.info) ||
+			bodyCapturesReceiverInClosure(candidate.body, candidate.recvName, signature.Recv(), candidate.info) ||
+			bodyHasPointerMethodValueOnReceiver(candidate.body, candidate.recvName, candidate.info) ||
+			bodyCapturesReceiverInValueMethodValue(candidate.body, candidate.recvName, candidate.info) ||
+			bodyHasGoStmtLambdaCapturingReceiver(candidate.body, candidate.recvName, signature.Recv(), candidate.info) ||
+			bodyPassesReceiverAsPointerArg(candidate.body, candidate.recvName, candidate.info) ||
+			bodyWrappedInDeferContext(candidate.body, candidate.recvName, candidate.info) {
+			continue
+		}
+
+		if !allReturnsAreBareReceiver(candidate.body, recvObj, candidate.info) {
+			continue
+		}
+
+		if bodyHasOwnDefer(candidate.body) {
+			// A deferring body emits inside a GoFrame try, and C# forbids `ref` returns inside
+			// try — the ж form stays. (No S0-package method defers; stated for the wider world.)
+			continue
+		}
+
+		selected[origin] = candidate
+	}
+
+	// The downward fixpoint: a selected method calling a still-direct-ж method on its receiver
+	// demotes (its body needs the box after all). effectiveDirectBox answers "boxed in the world
+	// this selection creates" — direct-ж minus the current selection.
+	for changed := true; changed; {
+		changed = false
+
+		for origin, candidate := range selected {
+			if bodyCallsMethodOnReceiverWhere(candidate.body, candidate.recvName, candidate.info, func(callee *types.Func) bool {
+				calleeOrigin := callee.Origin()
+				return packageDirectBoxReceiverMethods[calleeOrigin] && selected[calleeOrigin] == nil
+			}) {
+				delete(selected, origin)
+				changed = true
+			}
+		}
+	}
+
+	for origin := range selected {
+		delete(packageDirectBoxReceiverMethods, origin)
+		delete(packageCaptureModeMethods, origin)
+		packageRefReturnPrimaryMethods[origin] = true
+	}
+}
+
+// receiverObjectFor resolves the candidate's receiver *types.Var through its body's own uses —
+// the candidate does not retain the declaration, and any use of the receiver name resolving to a
+// *types.Var whose type is the receiver type is the receiver (parameters cannot shadow it at
+// method scope; a shadowing LOCAL would resolve to a different object, which is exactly why the
+// object — not the name — is what the bare-return check compares).
+func receiverObjectFor(candidate *captureCandidate) types.Object {
+	signature, _ := candidate.funcObj.Type().(*types.Signature)
+
+	if signature == nil || signature.Recv() == nil {
+		return nil
+	}
+
+	var found types.Object
+
+	ast.Inspect(candidate.body, func(n ast.Node) bool {
+		if found != nil {
+			return false
+		}
+
+		if ident, ok := n.(*ast.Ident); ok && ident.Name == candidate.recvName {
+			if obj := candidate.info.Uses[ident]; obj != nil {
+				if v, isVar := obj.(*types.Var); isVar && types.Identical(v.Type(), signature.Recv().Type()) {
+					found = obj
+					return false
+				}
+			}
+		}
+
+		return true
+	})
+
+	return found
+}
+
+// allReturnsAreBareReceiver reports whether EVERY return statement in the body (outside nested
+// func literals) consists of exactly one result that IS the receiver object — the R3 arm-(a)
+// precondition. Any other return (an early `return nil`, a `return v, err`, a
+// `return v.chain()`) needs a ж the primary does not have.
+func allReturnsAreBareReceiver(body *ast.BlockStmt, recvObj types.Object, info *types.Info) bool {
+	bare := true
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		if !bare {
+			return false
+		}
+
+		if _, isLit := n.(*ast.FuncLit); isLit {
+			return false
+		}
+
+		ret, isReturn := n.(*ast.ReturnStmt)
+
+		if !isReturn {
+			return true
+		}
+
+		if len(ret.Results) != 1 {
+			bare = false
+			return false
+		}
+
+		ident, isIdent := ret.Results[0].(*ast.Ident)
+
+		if !isIdent || info.Uses[ident] != recvObj {
+			bare = false
+			return false
+		}
+
+		return true
+	})
+
+	return bare
+}
+
+// bodyCallsMethodOnReceiverWhere reports whether the body contains a method CALL whose receiver
+// expression is the bare receiver ident and whose callee satisfies the predicate — the downward
+// fixpoint's probe, shaped after bodyCallsDirectBoxMethodOnReceiver but parameterized so it can
+// ask about the world the selection is constructing rather than the global map.
+func bodyCallsMethodOnReceiverWhere(body *ast.BlockStmt, recvName string, info *types.Info, matches func(*types.Func) bool) bool {
+	found := false
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		call, isCall := n.(*ast.CallExpr)
+
+		if !isCall {
+			return true
+		}
+
+		selector, isSelector := call.Fun.(*ast.SelectorExpr)
+
+		if !isSelector {
+			return true
+		}
+
+		base, isIdent := selector.X.(*ast.Ident)
+
+		if !isIdent || base.Name != recvName {
+			return true
+		}
+
+		if callee, isFunc := info.Uses[selector.Sel].(*types.Func); isFunc && matches(callee) {
+			found = true
+			return false
+		}
+
+		return true
+	})
+
+	return found
 }
 
 // scanFileForCaptureModeMethods marks the file's capture-mode methods in the shared set.
@@ -171,6 +401,18 @@ type captureCandidate struct {
 	recvName string
 	info     *types.Info
 }
+
+// dualRecvEnabled mirrors options.dualRecv for the capture-mode pass, which has no options in
+// reach across its four drivers. Set once in main; read only by selectRefReturnPrimaries.
+var dualRecvEnabled bool
+
+// packageRefReturnPrimaryMethods is B′-S0's arm-(a) selection (the 2026-09-02 R3 ruling): fluent
+// pointer-receiver methods whose ONLY box need is `return v`, emitted as `[GoRecv] this ref T`
+// primaries returning `ref T` (the receiver itself) with RecvGenerator's twin returning its own
+// box. Populated by selectRefReturnPrimaries AFTER the capture-mode fixpoint — members are REMOVED
+// from the two capture maps there, so every later consumer (signature form, param heap-boxing,
+// the ref-lowering X3 flavor read) sees one consistent world. Reset with its siblings.
+var packageRefReturnPrimaryMethods map[*types.Func]bool
 
 // captureModeCandidates holds every pointer-receiver method seen while scanning the package and
 // its imports, used by the transitive fixpoint in collectCaptureModeMethods.
@@ -1271,6 +1513,32 @@ func (v *Visitor) bodyCallsCaptureModeMethodOnObject(target types.Object, body a
 		}
 
 		if v.isCaptureModeMethod(selectorExpr) {
+			found = true
+			return false
+		}
+
+		return true
+	})
+
+	return found
+}
+
+// bodyHasOwnDefer reports whether the body contains a defer statement of its OWN (nested func
+// literals' defers belong to the literal) — arm (a)'s GoFrame exclusion: C# forbids `ref` returns
+// inside try, and a deferring body emits as one.
+func bodyHasOwnDefer(body *ast.BlockStmt) bool {
+	found := false
+
+	ast.Inspect(body, func(n ast.Node) bool {
+		if found {
+			return false
+		}
+
+		if _, isLit := n.(*ast.FuncLit); isLit {
+			return false
+		}
+
+		if _, isDefer := n.(*ast.DeferStmt); isDefer {
 			found = true
 			return false
 		}

@@ -306,6 +306,11 @@ type Visitor struct {
 	promotedInterfaceForwarders []promotedInterfaceForwarder
 	paramNames                  HashSet[string]
 	paramObjects                map[types.Object]bool
+	// currentRefReturnPrimary marks the function being visited as a B′-S0 arm-(a) ref-return
+	// primary (packageRefReturnPrimaryMethods): its declared return is `ref T` and its bare
+	// receiver-returns emit `return ref v;` (visitReturnStmt). Set per function declaration in
+	// visitFuncDecl, stale outside one — the same ownership convention as currentFuncName.
+	currentRefReturnPrimary bool
 	// erasedTypeParams holds the current FUNCTION declaration's pointer-core (erased) type
 	// parameters, identity-keyed to their pointer types (see collectErasedTypeParams) — the
 	// single source every renderer/classifier consults so the erasure flips coherently, and

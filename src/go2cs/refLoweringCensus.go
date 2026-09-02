@@ -100,6 +100,9 @@ type refCensusPackage struct {
 	// OtherVetoSites lists every argument shape the §3.3 rows could NOT classify — must be empty
 	// or each entry re-opens the emission-shape table.
 	OtherVetoSites []refCallArg `json:"otherVetoSites,omitempty"`
+	// Methods carries the B′ §4.1 verdicts with their R3 arms (the 2026-09-02 amendment) — the S0
+	// report reads the two target packages' per-method classification from here.
+	Methods map[string]*refMethodVerdict `json:"methods,omitempty"`
 }
 
 // refCensusTotals is the corpus-wide roll-up per target.
@@ -350,9 +353,11 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 		// census still leaves the drivers' package state exactly as it found it.
 		censusCaptureModeMethods := packageCaptureModeMethods
 		censusDirectBoxMethods := packageDirectBoxReceiverMethods
+		censusRefReturnPrimaries := packageRefReturnPrimaryMethods
 
 		packageCaptureModeMethods = make(map[*types.Func]bool)
 		packageDirectBoxReceiverMethods = make(map[*types.Func]bool)
+		packageRefReturnPrimaryMethods = make(map[*types.Func]bool)
 
 		collectCaptureModeMethods(pkg)
 
@@ -361,6 +366,7 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 
 		packageCaptureModeMethods = censusCaptureModeMethods
 		packageDirectBoxReceiverMethods = censusDirectBoxMethods
+		packageRefReturnPrimaryMethods = censusRefReturnPrimaries
 	}
 
 	// A′-world resolution: the union of every package's records, exported candidates included.
@@ -396,6 +402,7 @@ func censusOneTarget(options Options, target string, packageFilter []string) (*r
 			Summary: summary,
 			Funcs:   result.Funcs,
 			Locals:  result.Locals,
+			Methods: result.Methods,
 		}
 
 		loweredPositions := map[refPosKey]bool{}

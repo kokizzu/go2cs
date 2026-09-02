@@ -551,3 +551,43 @@ when B′ **and** Phase C land — the ruling's sequencing, unchanged here.
 edwards25519 board entry (2026-08-20, lane `claude/zh-box-reduction-impl`); the B′ commissioning
 ruling (2026-08-20); the S0/S1 discriminator harvest (2026-08-21); `DESIGN-readmemstats-surface.md`
 (pattern); fresh `-ref-census` and corpus-surface measurements, this machine, go1.23.1, 2026-08-21.*
+
+---
+
+## 10. AMENDMENT 2026-09-02 — the fluent-body gap, measured and RULED (R3)
+
+> Added, not rewritten (the doc-type rule). Found at the S0 emitter's first `return` — before any
+> emitter line existed — and ruled the same day (coordinator, mailbox `01c110efb`).
+
+**The gap.** §3.1 fixes the primary's return type as the ж form's and its twin snippet DELEGATES
+the return; OQ-7 rules the primary cannot yield the receiver's box. Both cannot hold for a body
+whose Go text is `return v`: with only `ref Element v` in hand, the primary must either MINT a box
+(relocating the exact allocation B′ removes, and breaking ж-path pointer identity through the
+delegating twin — Go's `p := Ꮡv.Multiply(…); p == Ꮡv` is true) or fail to compile. The panel did
+not catch it; writing the first return did.
+
+**The census** (go/types walk of the two S0 packages at the pin, GOROOT-guarded instrument):
+**RECV-ONLY 38 / NO-RECV 32 / MIXED 5** — the MIXED five are `field.SetBytes`, `field.SqrtRatio`,
+`SetBytes`, `SetUniformBytes`, `SetCanonicalBytes` (the `return v, nil` / `return nil, err` family).
+
+**The ruling (R3):**
+
+- **(a) RECV-ONLY — the primary returns `ref T`** (the receiver itself: free, allocation-less, and
+  chain-capable at direct sites), its receiver-returns emitted `return ref v;`. **The twin
+  delegates and then returns its own `Ꮡv`** — Go's own semantics, since the method returns the
+  receiver pointer and the twin holds it; identity is a GUARD row, not an argument
+  (`ZhBoxFluentPrimaryTests.TwinReturnsItsOwnBox_TheIdentityGuard`, proven able to go red by the
+  fresh-box neuter). §3.1's "return unchanged" rationale binds the TWIN, which keeps the ж
+  signature for every existing consumer; the primary's consumers are only the new selection sites.
+- **(b) NO-RECV — the §3 shapes verbatim.** Nothing new.
+- **(c) MIXED — a new declaration veto, `XM-6-receiver-escapes`:** a body that conditionally hands
+  out its receiver pointer NEEDS the box; these five stay twin-only. Their traffic is the SetBytes
+  family whose keeps A3's floor already prices on the boxed path, so the ≤10-floor prediction is
+  untouched.
+
+**The matrix rows landed FIRST, per the ruling's order** — four compile probes (plain-local
+selects the ref-return primary; ж-typed keeps the twin; ref-capture of the chain compiles;
+result-used-by-value COMPILES and binds the primary, deliberately inverted to document that OQ-7's
+result-used row is enforced at CONVERTER EMISSION, not by C#) and two execution guards (twin
+identity + chain; primary mutating the caller's storage with no box in existence). 21/21 with the
+original 15, the identity neuter reds exactly one row, restore verified.

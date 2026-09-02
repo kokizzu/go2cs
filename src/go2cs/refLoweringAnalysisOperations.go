@@ -343,6 +343,11 @@ func analyzeRefLowering(fset *token.FileSet, syntax []*ast.File, pkg *types.Pack
 		analysis.censusLocals(file, parents, lowered)
 	}
 
+	// Pass 5: the R3 arms (the 2026-09-02 amendment) — after the fixed point, because the
+	// lowered-argument arm consults the resolved position set. Analysis-only until the S0
+	// emitter reads the verdicts under -dual-recv.
+	analysis.classifyMethodBodiesR3()
+
 	return analysis.result
 }
 
@@ -2018,7 +2023,9 @@ func (a *refLoweringAnalysis) classifyLocalAddressDisposition(addrExpr ast.Expr,
 
 // buildParentMap builds the child→parent index one classification walk climbs. Built per file,
 // per pass use; the map is the price of climbing from an ident without a quadratic path search.
-func buildParentMap(file *ast.File) map[ast.Node]ast.Node {
+// (Widened from *ast.File to ast.Node for pass 5's per-declaration walk — the body only ever
+// ast.Inspects, so any root works and every existing call site passes a file unchanged.)
+func buildParentMap(file ast.Node) map[ast.Node]ast.Node {
 	parents := map[ast.Node]ast.Node{}
 	var stack []ast.Node
 
@@ -2107,6 +2114,10 @@ type refLoweringSummary struct {
 	MethodsEligible int `json:"methodsEligible,omitempty"`
 	// MethodRecvVetoCounts breaks the ineligible remainder down by XM arm.
 	MethodRecvVetoCounts map[string]int `json:"methodRecvVetoCounts,omitempty"`
+	// R3Arms tallies still-eligible methods by the fluent-body ruling's arm (the 2026-09-02
+	// amendment): ref-return vs plain. XM-6's own count sits in MethodRecvVetoCounts with the
+	// other vetoes.
+	R3Arms map[string]int `json:"r3Arms,omitempty"`
 }
 
 // summarizeRefLowering rolls one package result up. Shape counts include only arguments whose
@@ -2118,6 +2129,7 @@ func summarizeRefLowering(result *refLoweringPackageResult) refLoweringSummary {
 		VetoCounts:           map[string]int{},
 		KeptLocalReasons:     map[string]int{},
 		MethodRecvVetoCounts: map[string]int{},
+		R3Arms:               map[string]int{},
 	}
 
 	// B′ §4.1 (S0a). Counted per METHOD, and every veto on a method is counted, so the arm tallies
@@ -2129,6 +2141,7 @@ func summarizeRefLowering(result *refLoweringPackageResult) refLoweringSummary {
 
 		if verdict.Eligible() {
 			summary.MethodsEligible++
+			summary.R3Arms[verdict.R3Arm]++
 			continue
 		}
 

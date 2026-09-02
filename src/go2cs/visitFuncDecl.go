@@ -607,7 +607,22 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	blockContext.innerPrefix = functionBlockPrefixMarker
 	typeParams, constraints := v.getGenericDefinition(currentFuncType.Type())
 
-	v.writeOutput("%s%s static%s%s %s %s%s(%s)%s%s", functionAttributeMarker, functionAccessMarker, functionUnsafeMarker, functionPartialMarker, v.generateResultSignature(signature), csFunctionName, typeParams, functionParametersMarker, constraints, functionExecContextMarker)
+	resultSignature := v.generateResultSignature(signature)
+
+	// B′-S0 arm (a) — the R3 ruling (2026-09-02): a ref-return primary declares `ref T` where the
+	// Go signature says `*T`. The selection's bare-return precondition guarantees exactly one
+	// result of the receiver's own pointer type, so the rewrite is total here; the body's
+	// `return v` sites take `return ref v;` in visitReturnStmt, and RecvGenerator's twin restores
+	// the ж surface (returning its OWN box — Go's receiver pointer) for every existing consumer.
+	v.currentRefReturnPrimary = packageRefReturnPrimaryMethods != nil && packageRefReturnPrimaryMethods[currentFuncType.Origin()]
+
+	if v.currentRefReturnPrimary {
+		if pointer, isPointer := types.Unalias(signature.Results().At(0).Type()).(*types.Pointer); isPointer {
+			resultSignature = "ref " + v.getCSharpTypeName(pointer.Elem())
+		}
+	}
+
+	v.writeOutput("%s%s static%s%s %s %s%s(%s)%s%s", functionAttributeMarker, functionAccessMarker, functionUnsafeMarker, functionPartialMarker, resultSignature, csFunctionName, typeParams, functionParametersMarker, constraints, functionExecContextMarker)
 
 	// The CONVERTED body text (for detecting whether a pointer parameter's deref VALUE alias is
 	// actually referenced — a param used only through its box gets no alias; see below). Captured

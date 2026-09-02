@@ -388,10 +388,23 @@ public static class MethodSyntaxExtensions
 
     private static string GetReturnType(this MethodDeclarationSyntax methodDeclaration, SemanticModel semanticModel)
     {
-        TypeInfo typeInfo = semanticModel.GetTypeInfo(methodDeclaration.ReturnType);
+        TypeSyntax returnSyntax = methodDeclaration.ReturnType;
+        string refPrefix = "";
+
+        // A `ref T` return (a B′-S0 ref-return primary) wraps its type in RefTypeSyntax, which is
+        // not itself a type expression — GetTypeInfo answers null on it and the fallback said
+        // "object", silently mis-typing the generated twin. Unwrap and carry the modifier; the
+        // ReceiverMethodTemplate keys its own-box-returning twin variant on this prefix.
+        if (returnSyntax is RefTypeSyntax refReturn)
+        {
+            refPrefix = "ref ";
+            returnSyntax = refReturn.Type;
+        }
+
+        TypeInfo typeInfo = semanticModel.GetTypeInfo(returnSyntax);
         ITypeSymbol? typeSymbol = typeInfo.Type;
 
-        return GlobalQualify(typeSymbol?.ToDisplayString() ?? "object");
+        return refPrefix + GlobalQualify(typeSymbol?.ToDisplayString() ?? "object");
     }
 
     public static MethodInfo GetMethodInfo(this IMethodSymbol methodSymbol)

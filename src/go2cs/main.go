@@ -211,6 +211,7 @@ func main() {
 	showParseTreeCmd := commandLine.Bool("tree", false, "Show parse tree")
 	csprojFileCmd := commandLine.String("csproj", "", "Path to custom .csproj template file")
 	debugModeCmd := commandLine.Bool("debug", false, "Enable debug mode")
+	dualRecvCmd := commandLine.Bool("dual-recv", false, "B′ S0: eligible pointer-receiver methods emit the ref-receiver PRIMARY beside the ж twin (flag-gated; scratch-root regens only until S2's rebank ride)")
 
 	var positionals []string
 	positionals, err = parseArgsInterspersed(commandLine, os.Args[1:])
@@ -426,7 +427,12 @@ Examples:
 		parseCgoTargets:     *parseCgoTargetsCmd,
 		showParseTree:       *showParseTreeCmd,
 		debugMode:           *debugModeCmd,
+		dualRecv:            *dualRecvCmd,
 	}
+
+	// The capture-mode pass runs across four drivers with no options in reach; the flag mirrors
+	// into its package global once, here (see selectRefReturnPrimaries).
+	dualRecvEnabled = options.dualRecv
 
 	if options.convertTests {
 		// -tests and -recurse compose badly today (the recursive module walk has its own
