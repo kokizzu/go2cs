@@ -691,7 +691,30 @@ $longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto
 # session-wide zero would bring them back short. Harmless on the other two targets by construction:
 # Windows os/user carries no cgo constraint at all, and darwin selects the cgo_* files through the
 # `(cgo || darwin)` disjunct whatever CGO_ENABLED says.
-$cgoOffPackages = @{ 'os/user' = $true }
+# 'net' and 'plugin' joined 2026-09-02 by the same one-variable A/B on the same host:
+#   net     CGO_ENABLED=1 -> FAIL in 183 s, zero verdicts, the build dying with cgo_stub.cs absent
+#                            from the run's own drift list (not re-emitted because not selected);
+#                            the committed tree holds only that cgo-OFF arm.
+#           CGO_ENABLED=0 -> the suite BUILDS and runs 503 verdicts. The row still does not
+#                            validate on this host -- it is the Linux frontier lane R mapped, and
+#                            it hit its own 40m deadline here -- but the pin is what makes the
+#                            comparison legitimate at all, which is a separate question from
+#                            whether the row passes.
+#   plugin  CGO_ENABLED=1 -> FAIL in 126 s.
+#           CGO_ENABLED=0 -> PASS 1. plugin_dlopen.go ((linux && cgo) || ...) is literal C
+#                            (import "C", #include <dlfcn.h>); plugin_stubs.go (... || !cgo) is
+#                            pure Go and is the arm the corpus holds.
+# 'reflect' joined 2026-09-02 under a THIRD predicate the coordinator ruled from C2's cgo-ON
+# reflect -tests build failure: a file that is TEST-conditional on cgo AND imports a package the
+# corpus does not carry. reflect/nih_test.go is `//go:build cgo` and imports `runtime/cgo`, which
+# has no src/core counterpart -- so under cgo-ON the test variant cannot build at all. This is the
+# exception to "test-only conditionality is a count question, never a build one".
+#
+# The predicate is CENSUSED and bounded, not assumed: walking every //go:build line in the whole
+# 1.23.12 stdlib for `cgo` and checking each such file's imports against src/core, reflect's
+# nih_test.go is the ONLY member -- one file, one import. Every other cgo-gated test file imports
+# only packages the corpus carries, so debug/pe, os/exec and os/signal stay count-only and unpinned.
+$cgoOffPackages = @{ 'os/user' = $true; 'net' = $true; 'plugin' = $true; 'reflect' = $true }
 
 foreach ($row in $rows) {
     $pkg = $row.Package
