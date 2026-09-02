@@ -1922,6 +1922,8 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     private void CheckTarget(string targetProject)
     {
+        SkipIfPlatformExclusive(targetProject);
+
         string projPath = Path.GetFullPath($"{TestRootPath}{targetProject}");
 
         // Transpile project, if needed

@@ -317,6 +317,28 @@ public abstract class BehavioralTestBase
     // [assembly: GoImplement] records when deciding whether to mint a local value adapter). Walking
     // top-level only left those sub-libraries permanently un-regenerated, which both froze them at an
     // old converter and made the parent's golden unable to fail on a regression in that area.
+    /// <summary>
+    /// F8 -- a behavioral package whose Go source only type-checks on some platforms is INCONCLUSIVE
+    /// on any other host, with the platform named.
+    /// </summary>
+    /// <remarks>
+    /// Inconclusive rather than Pass or Fail, and the distinction is the whole point. A Pass would be
+    /// a vacuous green over a package the converter could not type-check; a Fail would be indis-
+    /// tinguishable by name from a real conversion regression, which is how one could hide among
+    /// expected lines. Inconclusive says exactly what happened and does not pretend to a verdict.
+    /// </remarks>
+    protected static void SkipIfPlatformExclusive(string targetProject)
+    {
+        string projPath = Path.GetFullPath($"{TestRootPath}{targetProject}");
+
+        if (PlatformExclusive.ShouldSkip(projPath, out string platforms))
+        {
+            Assert.Inconclusive(
+                $"SKIPPED (platform-exclusive): {targetProject} is native to [{platforms}]; " +
+                $"this host measures as {PlatformExclusive.HostGoos}, where its Go source cannot be type-checked.");
+        }
+    }
+
     private static string[] GoPackageDirs(string projPath) =>
         new[] { projPath }
             .Concat(Directory.GetDirectories(projPath, "*", SearchOption.AllDirectories)

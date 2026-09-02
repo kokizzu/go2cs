@@ -29,6 +29,7 @@
   -->
   <ItemGroup>
     <Compile Include="../../ConverterBuildInputs.cs" Link="ConverterBuildInputs.cs" />
+    <Compile Include="../../PlatformExclusive.cs" Link="PlatformExclusive.cs" />
   </ItemGroup>
 
   <!-- Define Go type aliases -->
