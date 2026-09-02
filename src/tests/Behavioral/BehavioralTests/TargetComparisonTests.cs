@@ -1564,6 +1564,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSameUnderlyingNamedConv() => CheckTarget("SameUnderlyingNamedConv");
 
     [TestMethod]
+    public void CheckScmRightsSeam() => CheckTarget("ScmRightsSeam");
+
+    [TestMethod]
     public void CheckSelectEscapeBinding() => CheckTarget("SelectEscapeBinding");
 
     [TestMethod]
