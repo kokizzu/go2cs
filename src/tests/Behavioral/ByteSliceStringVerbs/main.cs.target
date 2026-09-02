@@ -7,7 +7,7 @@ partial class main_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object sprintfˢ = (@string)"sprintf:"u8;
 
-[GoType("[]byte")] internal partial struct main_named;
+[GoLocalName("named")] [GoType("[]byte")] internal partial struct main_named;
 
 internal static void Main() {
     slice<byte> nilBytes = default!;

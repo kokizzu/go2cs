@@ -47,7 +47,7 @@ func (v *Visitor) visitChanType(chanType *ast.ChanType, identType types.Type, na
 	}
 
 	v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access, "")
-	v.writeStringLn(target, "[GoType(\"chan %s\")] %spartial struct %s;", elemType, access, getSanitizedIdentifier(name))
+	v.writeStringLn(target, "%s[GoType(\"chan %s\")] %spartial struct %s;", v.localNameAttrFor(identType), elemType, access, getSanitizedIdentifier(name))
 	finish()
 }
 

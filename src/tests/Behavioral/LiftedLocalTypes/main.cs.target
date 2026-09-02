@@ -34,9 +34,9 @@ internal static void Main() {
     localInterfaceEmbed();
 }
 
-[GoType("num:nint")] internal partial struct embeddedLocalTypes_myInt;
+[GoLocalName("myInt")] [GoType("num:nint")] internal partial struct embeddedLocalTypes_myInt;
 
-[GoType("num:nint")] internal partial struct embeddedLocalTypes_MyInt;
+[GoLocalName("MyInt")] [GoType("num:nint")] internal partial struct embeddedLocalTypes_MyInt;
 
 [GoType("dyn")] internal partial struct embeddedLocalTypes_embed {
     public nint Q;
@@ -75,11 +75,11 @@ internal static void embeddedLocalTypes() {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string sevenˢ = "seven"u8;
 
-[GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_myTime;
+[GoLocalName("myTime")] [GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_myTime;
 
-[GoType("time_package.Duration")] internal partial struct foreignUnderlyingLocalTypes_myDur;
+[GoLocalName("myDur")] [GoType("time_package.Duration")] internal partial struct foreignUnderlyingLocalTypes_myDur;
 
-[GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_inner;
+[GoLocalName("inner")] [GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypes_inner;
 
 internal static void foreignUnderlyingLocalTypes() {
     var m = new map<ж<foreignUnderlyingLocalTypes_myTime>, @string>();
@@ -96,9 +96,9 @@ internal static void foreignUnderlyingLocalTypes() {
     }
 }
 
-[GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypesAgain_myTime;
+[GoLocalName("myTime")] [GoType("time_package.Time")] internal partial struct foreignUnderlyingLocalTypesAgain_myTime;
 
-[GoType("time_package.Duration")] internal partial struct foreignUnderlyingLocalTypesAgain_myDur;
+[GoLocalName("myDur")] [GoType("time_package.Duration")] internal partial struct foreignUnderlyingLocalTypesAgain_myDur;
 
 internal static void foreignUnderlyingLocalTypesAgain() {
     var t = @new<foreignUnderlyingLocalTypesAgain_myTime>();

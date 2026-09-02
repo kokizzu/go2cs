@@ -6,7 +6,7 @@ partial class main_package {
 
 internal static UntypedFloat gPi => 3.141592653589793;
 
-[GoType("num:float32")] internal partial struct main_meters;
+[GoLocalName("meters")] [GoType("num:float32")] internal partial struct main_meters;
 
 internal static void Main() {
     complex64 c64 = complex(2.5F, -3.5F);

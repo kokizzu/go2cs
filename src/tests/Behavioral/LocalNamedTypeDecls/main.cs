@@ -8,23 +8,23 @@ partial class main_package {
     public nint X, Y;
 }
 
-[GoType("[]main_Point")] internal partial struct main_Points;
+[GoLocalName("Points")] [GoType("[]main_Point")] internal partial struct main_Points;
 
-[GoType("map[@string, nint]")] internal partial struct main_Tally;
+[GoLocalName("Tally")] [GoType("map[@string, nint]")] internal partial struct main_Tally;
 
-[GoType("chan nint")] internal partial struct main_Stream;
+[GoLocalName("Stream")] [GoType("chan nint")] internal partial struct main_Stream;
 
-[GoType("[3]nint")] internal partial struct main_Triple;
+[GoLocalName("Triple")] [GoType("[3]nint")] internal partial struct main_Triple;
 
 [GoType("dyn")] internal partial struct main_Node {
     public nint V;
 }
 
-[GoType("ж<main_Node>")] internal partial class main_NodePtr;
+[GoLocalName("NodePtr")] [GoType("ж<main_Node>")] internal partial class main_NodePtr;
 
-[GoType("[]main_recursiveSlice")] internal partial struct main_recursiveSlice;
+[GoLocalName("recursiveSlice")] [GoType("[]main_recursiveSlice")] internal partial struct main_recursiveSlice;
 
-[GoType("map[@string, main_recursiveMap]")] internal partial struct main_recursiveMap;
+[GoLocalName("recursiveMap")] [GoType("map[@string, main_recursiveMap]")] internal partial struct main_recursiveMap;
 
 internal static void Main() {
     var pts = new main_Points(new main_Point[]{new(1, 2), new(3, 4), new(5, 6)}.slice());
