@@ -675,6 +675,11 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Value.SetZero":     goosAny,
 		"Value.SetMapIndex": goosAny,
 		"New":               goosAny,
+		// NewAt built its result type with the internal blob-based ptrTo (PtrToThis/typeOff/String/
+		// typesByString), which a synthesized descriptor has none of -- TestGCBits nil-dereferenced
+		// there once C2's gcbits reached the body. The hand-own takes *T from abi.synthType(ж<st>),
+		// exactly as New and PointerTo already do. See reflect/value_impl.cs.
+		"NewAt":             goosAny,
 		"MakeSlice":         goosAny,
 		"MakeMap":           goosAny,
 		"MakeMapWithSize":   goosAny,

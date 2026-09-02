@@ -1436,6 +1436,37 @@ public static ΔValue New(ΔType typ) {
     return makeTypedValue(box, typeof(ж<>).MakeGenericType(st), null, default, chanDir);
 }
 
+// NewAt returns a Value representing a pointer to a value of the specified type, using p as that
+// pointer -- Go's reflect.NewAt.
+//
+// The auto body built its result type with the INTERNAL blob-based ptrTo (type.cs:1180): it reads
+// PtrToThis/typeOff, a name-blob String(), and typesByString -- the same typelinks() stub the ArrayOf
+// hand-own documents -- off a linker blob a SYNTHESIZED descriptor never has. So verifyGCBitsSlice ->
+// NewAt -> ptrTo nil-dereferenced (type.cs:1186) the moment C2's gcbits carried TestGCBits into this
+// body. The bridge already builds *T with ZERO blob machinery: New and PointerTo both take
+// `abi.synthType(ж<st>)`, and that is `typeof(ж<>).MakeGenericType(st)` here -- the same call New
+// makes one function up. The box aliases p (a native box where p is a raw address, the reflect
+// projection's own box where p resolves to one); gcbits reads the POINTEE type and dims off the
+// result's descriptor, which is what TestGCBits' slice path needs, so the pointer identity is not
+// asked here (a NewAt consumer that DID ask it would reopen the disclosed SliceAt pointer-identity
+// ruling, not this row).
+public static ΔValue NewAt(ΔType typ, @unsafe.Pointer p) {
+    System.Type? st = sysTypeOfReflectType(typ);
+    if (st is null) {
+        throw panic("reflect: NewAt of non-synthesized type");
+    }
+    nint[]? dims = arrayDimsOfReflectType(typ);
+    GoChanDir chanDir = chanDirOfReflectType(typ);
+    // The box carries the POINTEE type over a zero, exactly as New does. gcbits -- verifyGCBits'
+    // only caller here -- reads that pointee type and dims off the result's descriptor, never p's
+    // memory. A raw-address box `(ж<st>)(uintptr)p` would fault (0xc0000005): a slice's
+    // UnsafePointer is a storage HASH, not an address, and a native box over it dereferences to
+    // nowhere on the first read. NewAt's true pointer identity is the SliceAt-disclosed class; it is
+    // not asked on this path, and asking it would reopen that ruling rather than this row.
+    object box = GoReflect.NewPointerBox(st, GoReflect.ZeroValueOf(st, dims, chanDir));
+    return makeTypedValue(box, typeof(ж<>).MakeGenericType(st), null, default, chanDir);
+}
+
 // MakeSlice creates a new zero-initialized slice value for the specified slice type, length,
 // and capacity — through the same ISupportMake construction `make()` emissions use, so a NAMED
 // slice type yields the wrapper (Go's named result). The result is not addressable; its

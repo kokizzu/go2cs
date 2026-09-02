@@ -342,6 +342,12 @@
       "class": "alloc-profile",
       "signature": "Creating small zero values caused ",
       "reason": "alloc-profile: want-zero AllocsPerRun assert on reflect.Zero for small values. Go returns a value whose data word fits inline and allocates nothing; the managed bridge must materialize a boxed zero for the same Value."
+    },
+    {
+      "name": "TestGCBits",
+      "class": "runtime-capability",
+      "signature": "heapBits incorrect",
+      "reason": "runtime-capability: the verifyGCBitsSlice path compares a slice's HEAP-ALLOCATION GC bitmap. Go's gcbits(*E) reads the heap object at the pointer and returns the element's pointer bits REPEATED by the allocation's size class -- have [1] want [1 1], have [1] want [1 1 ...x10000], have [0 1] want [0 1 0 1]. The managed gcbits answers from the POINTEE TYPE's layout (GoReflect.GoGCMaskOf) -- the element's bits ONCE -- because the managed model has no allocation size class to repeat by, and reflect.NewAt's *E carries no cap it was never given. The non-slice verifyGCBits path (New(typ).Interface()) is unaffected. Same managed-model class as the alloc-count and pointer-identity disclosures (coordinator ruling 2026-09-02; C2's gcbits authority, R mints the reflect manifest entry)."
     }
   ]
 }

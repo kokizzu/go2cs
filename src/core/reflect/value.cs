@@ -2104,13 +2104,7 @@ internal static ref array<byte> zeroVal => ref ᏑzeroVal.Value;
 
 // This is a pointer to a not-in-heap type.
 
-// NewAt returns a Value representing a pointer to a value of the
-// specified type, using p as that pointer.
-public static ΔValue NewAt(ΔType typ, @unsafe.Pointer p) {
-    var fl = ((flag)(uintptr)(nuint)ΔPointer);
-    var t = typ._<ж<rtype>>();
-    return new ΔValue(t.ptrTo(), p.Value, fl);
-}
+// go2cs generated this placeholder — func NewAt is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // assignTo returns a value v that can be assigned directly to dst.
 // It panics if v is not assignable to dst.
