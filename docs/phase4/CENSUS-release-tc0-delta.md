@@ -35,6 +35,18 @@ campaign has: it means the converted code stops needing an excuse, not that the 
 > nothing about Release is required to explain it. §4's amendment carries the record. The count of
 > flagged rows is unchanged — what changed is what one of them means.
 
+> **AMENDED 2026-09-02 (second).** Two more phrases above did not survive measurement, in the
+> favourable direction: **"one unfavourable mover (`net/http`'s `TestRegisterErr`)" — there is no
+> unfavourable mover.** It measured as a third TC0-only residual (§1 and §2 amendments), so it is
+> opted out rather than rooted, and **"two rows needing an opt-out annotation" is now three**:
+> `internal/godebug`, `log/slog`, `net/http`.
+>
+> The census's bottom line therefore reads: six disclosed divergences retire at the new default,
+> against **three** rows needing a measured per-row opt-out and **nothing** owed a root before the
+> flip. Every one of the six flagged rows is now either a retiring disclosure, a per-row opt-out, a
+> configuration-independent regression the census merely surfaced (`errors`), or an unreproduced
+> host death carried open (`crypto/tls`). None is a Release defect.
+
 | shard | rows | wall | log |
 |---|---|---|---|
 | 1/4 | 51 | 1,233 s | `i9-sweep-shard1of4-attempt3.log` |
@@ -65,6 +77,17 @@ rather than a result.
 `TestRegisterErr//a:&http.handler{i:0}` — move `Go="pass" C#="fail"`. Not chased here; the record is
 preserved. It is the one result that argues the flip is not free.
 
+> **AMENDED 2026-09-02 — reclassified. This is not an unfavourable mover; it is a third TC0-only
+> residual**, measured as a one-axis A/B and recovering completely under `-TestTiered` (§2's
+> amendment carries the measurement and the `runtime.Caller(3)` mechanism). The row needs an
+> `execution: release-tiered` annotation, not a root.
+>
+> The preserved record this paragraph mentions is `i9-shard1-moved-rows/net.http.comparison.json`,
+> and reading it back adds something the census did not state: at Release+TC0 it carries **zero**
+> empty verdicts and **exactly two** errors — both of them `TestRegisterErr`. So `TestRegisterErr`
+> is the ONLY undisclosed failure of `net/http` at Release+TC0, and **with the opt-out the row is
+> green at Release**. The census's own evidence was stronger than the census's reading of it.
+
 `TestTransportGCRequest` remains **excluded** (`requires unsupported …`) at both configurations, as
 expected: a gate is about whether the host can run the declaration at all, not about timing.
 
@@ -94,6 +117,36 @@ tiering. One vocabulary, two directions, each per-row and each measured.
 reason `release-tc0` was made per-row opt-in rather than global. The census's contribution is that it
 covers every banked row rather than the two anyone happened to look at, and after 201 rows those two
 are still the only TC0-sensitive residuals.
+
+### AMENDMENT 2026-09-02 — there is a THIRD residual: `net/http`'s `TestRegisterErr`. The opt-out list is three rows.
+
+Measured after this census as a one-axis A/B (both arms Release, same host, same converter, corpus
+restored from HEAD before each, record state cleared between, each arm's record preserved):
+
+| row | Release + TC0 | Release + `-TestTiered` |
+|---|---|---|
+| `net/http` | **FAIL** — `TestRegisterErr//a:&http.handler{i:0}` and its parent, `Go="pass" C#="fail"` | **pass / pass**, both |
+
+**Exactly two verdicts moved between the arms (398 → 396 errors) and they are exactly the two
+`TestRegisterErr` entries.** Its other four subtests agree in both arms.
+
+**The mechanism is the same one, and it was read from source before the run rather than fitted to it.**
+`net/http/server.go:2819` captures the registration site with **`runtime.Caller(3)`** — a FIXED
+frame-depth walk — and the failing subtest is precisely the one asserting
+`conflicts with pattern.* \(registered at .*/server_test.go:\d+`. `src/core/runtime/managed_impl.cs`
+keeps the converted runtime's own helpers `NoInlining` and says why at lines 1235-1240: *"the CLR's
+StackTrace does not report inlined frames, and Go's unwinder does … so an inlined hop would silently
+shift every answer by one."* That protects the runtime's frames; it cannot protect the **walked** chain
+(`ServeMux.Handle` → `register` → `registerErr`), which TC0 inlines and tier-0 does not.
+
+So the sentence above — "after 201 rows those two are still the only TC0-sensitive residuals" — is
+**superseded**: there are three, all PC/line-attribution assertions, all recovering with tiering on.
+The opt-out list for the flip is **`internal/godebug`, `log/slog`, `net/http`**.
+
+⚠ **`_roster.ps1` cannot express the opt-out yet.** `Get-RosterExecutionArgs` knows exactly one value
+(`release-tc0` → `-test-config Release`) and THROWS on anything else, so the flip cut must add
+`release-tiered` → `-test-config Release -test-tiered`. Same shape as the live break fixed earlier in
+this arc, where `release-tc0` still pointed at the retired `-test-release-tc0` flag.
 
 ## 3. Build regressions — surfaced, not caused
 
