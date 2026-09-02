@@ -974,6 +974,7 @@
     <Project Path="tests/Performance/PerfString/PerfString.csproj" />
     <Project Path="tests/Performance/PerfStringMatch/PerfStringMatch.csproj" />
     <Project Path="tests/Performance/PerfStringView/PerfStringView.csproj" />
+    <Project Path="tests/Performance/PerfTlsHandshake/PerfTlsHandshake.csproj" />
   </Folder>
   <Folder Name="/utilities/">
     <File Path="set-version.ps1" />
