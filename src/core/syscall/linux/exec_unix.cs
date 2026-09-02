@@ -575,6 +575,78 @@ internal static void FreeStringVector(IntPtr vector) {
     System.Runtime.InteropServices.Marshal.FreeHGlobal(vector);
 }
 
+// ------------------ the two runtime pulls Exec brackets itself with ------------------
+// exec_unix.go declares them as //go:linkname pulls, so the converter emits the pair bodyless
+// above. With no body PartialStubGenerator supplies a THROWING stub, and the first syscall.Exec
+// on Linux therefore dies before it reaches the kernel -- Go's own TestExec, whose helper child
+// calls Exec directly, reported exactly that (measured 2026-09-02, syscall row at master):
+//
+//     INFRASTRUCTURE-ERROR TestExecHelper -- System.NotImplementedException:
+//         runtime_BeforeExec: external (assembly or cgo) function is not implemented
+//       at go.syscall_package.runtime_BeforeExec()   ... PartialStubGenerator/...stub.g.cs
+//       at go.syscall_package.Exec(...)              ... exec_unix.cs (the call below)
+//       at go.syscall_test_package.TestExecHelper(...)
+//
+// The frames exonerate everything around them: the parent SPAWNED the child successfully through
+// the seam above, and the throw is the first line of Exec that is not argument marshalling.
+//
+// WHY NOTHING IS THE RIGHT BODY -- and here that is a stronger statement than "unnecessary".
+// Go's bodies (runtime/proc.go:4992 and :5008) are execLock.lock() / execLock.unlock(), plus a
+// darwin/ios-only drain of pendingPreemptSignals. execLock has exactly TWO readers in the whole
+// runtime, and neither exists in this model:
+//
+//   1. proc.go:2839/2844 -- newm1/newosproc, Go's own OS-thread creation ("Prevent process
+//      clone", issue #19546). A converted program has no newosproc: threads come from the CLR,
+//      which never consults runtime_package. Taking the write lock here could not serialize
+//      against them, so the lock is not merely unneeded -- it is UNABLE to do its job. That is
+//      the honest reason, and it is why this is not a convenient omission.
+//   2. signal_unix.go:372/389 -- preemptM, guarded `if GOOS == "darwin" || GOOS == "ios"`:
+//      unreachable on linux, and part of async-preemption machinery the managed model does not
+//      run at all. The same guard makes BeforeExec's drain unreachable twice over, since only
+//      preemptM increments pendingPreemptSignals.
+//
+// The post-condition agrees. Exec replaces the process image via SYS_EXECVE, so no runtime
+// bookkeeping survives to be left inconsistent; and on the failure path (execve returned, image
+// intact) AfterExec releases a lock that was never taken.
+//
+// Both are func(). Nothing is computed and no converted code reads state they would have set, so
+// there is no plausible answer to fabricate -- this is the same judgment syscall_linux_impl.cs
+// records for runtime_entersyscall / runtime_exitsyscall, reached for the same class of
+// obligation: the managed host already satisfies the contract by a different mechanism.
+//
+// WHY NOT FORWARD -- asked and answered, because runtime DOES carry a real converted body and the
+// next reader will find it. runtime/linux/proc.cs holds syscall_runtime_BeforeExec/AfterExec fully
+// converted (execLock.@lock() / .unlock(), the darwin drain and all), pushed here by runtime's
+// `//go:linkname syscall_runtime_BeforeExec syscall.runtime_BeforeExec`. Two things stand between
+// that and a forwarder, and only the second is a judgment:
+//
+//   - MECHANICAL: the converter emits a linkname target `public` only for rows in the curated
+//     linknameForwardTargets whitelist (visitFuncDecl.go). This pair is not in it, so the runtime
+//     body is `internal` and unreachable across the assembly boundary. Adding the row is a
+//     CONVERTER change, not a corpus one. (The forwarder direction itself would be fine --
+//     syscall -> runtime, an edge Go's own imports already carry, so no W1-style graph cycle.)
+//   - SUBSTANTIVE: it would buy nothing. The lock's only reader on linux is newosproc, which this
+//     model never calls, so a forwarded lock/unlock pair guards nothing while running the runtime's
+//     mutex protocol at exec time -- risk for no protection. The empty body and the forward are
+//     semantically identical HERE; they would stop being identical only if the managed runtime ever
+//     routed thread creation through newm1, and that is the fact to re-check before preferring one.
+//
+// So: not an oversight, and not a shortcut either. Recorded rather than left for rediscovery.
+//
+// SCOPE. Linux only, and the placement is forced rather than chosen. exec_unix.cs also exists
+// under darwin/, where it is CONVERTED output carrying no [module: GoManualConversion] marker --
+// a body added there would be clobbered by the next -stdlib reconvert -- so darwin keeps its
+// throwing stub and is unchanged by this. A flat implementing part is impossible: the declaration
+// does not exist on Windows, so it would be CS0759. The bodyless declarations stay where the
+// converter put them, keeping this file's "converted output verbatim except forkExec" claim true;
+// PartialStubGenerator skips a partial that has an implementing part anywhere in the compilation,
+// which is the same mechanism sync/atomic's doc_impl.cs uses.
+internal static partial void runtime_BeforeExec() {
+}
+
+internal static partial void runtime_AfterExec() {
+}
+
 // glibc flag values (spawn.h) and the pidfd_open syscall number (linux-x64).
 internal const short POSIX_SPAWN_SETSIGMASK = 0x08;
 internal const short POSIX_SPAWN_SETPGROUP = 0x02;
