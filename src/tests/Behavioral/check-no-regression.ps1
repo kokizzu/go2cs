@@ -30,7 +30,21 @@
 #>
 [CmdletBinding()]
 param(
-    [switch] $Revert
+    [switch] $Revert,
+
+    # POSITIVE CONTROL for the platform-alias-drift check below, as a parameter so exercising it
+    # needs no tracked-file edit (the same idiom check-solution-integrity.ps1's -InjectReference
+    # uses). Naming a documented member here removes it from the list, and the check must then
+    # report that package as UNDOCUMENTED and fail. A check that has never been made to fail is
+    # not a measurement.
+    [string[]] $OmitAliasDriftMembers = @(),
+
+    # Run ONLY the platform-alias-drift classification over the CURRENT working tree and exit --
+    # no transpile, no git status of anything else. This exists so the check is CONTROLLABLE: a
+    # guard whose only exercise costs a 25-minute full run is a guard nobody will positive-control,
+    # and one that has never been made to fail is not a measurement. Intended use is immediately
+    # after a real run has left the tree dirty, once plain and once with -OmitAliasDriftMembers.
+    [switch] $AliasDriftCheckOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -66,6 +80,8 @@ Write-Host "==> solution-integrity preflight" -ForegroundColor Cyan
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 # 1. Build a current converter binary (cheap; only relinks if the Go sources changed).
+if (-not $AliasDriftCheckOnly) {
+
 Write-Host "==> go build -o $go2csExe" -ForegroundColor Cyan
 Push-Location $converterSrc
 try {
@@ -73,6 +89,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "go build failed ($LASTEXITCODE)" }
 }
 finally { Pop-Location }
+
+}
 
 # 2. Re-transpile every behavioral Go package. A test-target dir is defined by Go-source presence (a
 #    *.go file), not by a .csproj (cf. commit 2cbe71947). This naturally excludes the C# tooling dirs
@@ -185,6 +203,9 @@ $ErrorActionPreference = 'Continue'
 $unmeasured = @()
 $advisoryWarnings = 0
 try {
+    # -AliasDriftCheckOnly skips the whole transpile: the classification below reads the
+    # working tree a REAL run has already dirtied, which is what makes controlling it cheap.
+    if ($AliasDriftCheckOnly) { $measurable = @() }
     foreach ($proj in $measurable) {
         $lines = @(& $go2csExe -go2cspath $go2csRoot $proj.FullName 2>&1 | ForEach-Object { "$_" })
         # Report the path relative to the behavioral root: a bare .Name is ambiguous for nested
@@ -215,6 +236,108 @@ finally { $ErrorActionPreference = $savedEAP }
 #    regression.)
 $changed = & git -C $repoRoot status --short -- "src/tests/Behavioral/*.cs" "src/tests/Behavioral/*.csproj" |
     Where-Object { $_ -notmatch "Behavioral(Tests|Runner)/" }
+
+# ---------------------------------------------------------------------------------------------
+# PLATFORM-ALIAS DRIFT -- the standing check (coordinator ruling 2026-09-02, option 1: named, not
+# merely tolerated).
+#
+# A behavioral package whose committed emission was captured on Windows carries the Delta-prefixed
+# syscall aliases (syscallHandle -> Delta-Handle, syscallSockaddr -> Delta-Sockaddr) that ONLY the
+# Windows syscall flavor mints -- syscall/windows/package_info.cs declares them and the linux
+# flavor has none. A Linux CNR therefore re-emits those files without the prefix and reports them
+# CHANGED forever. For a package that runs meaningfully on ONE platform the remedy is F8's marker
+# (SendtoSeam, SockaddrRoundTrip). For a package that must RUN on BOTH -- EnvironBlockWalk guards
+# syscall.Environ, hand-owned on Windows and auto on Linux -- the marker would throw away a real
+# run to silence a golden mismatch, and per-GOOS behavioral goldens are a cost no single row
+# justifies. So the drift is ACCEPTED, and this check is what stops 'accepted' from decaying into
+# 'unnoticed': the alias-drift set must be a SUBSET of the documented members below. A new member
+# is loud, by name, the day it appears.
+#
+# The members surface one at a time as packages are added and only ever on a Linux run, which is
+# exactly why a list nobody checks would go stale silently.
+$documentedAliasDriftPackages = @(
+    'EnvironBlockWalk'   # golden captured on Windows; runs on both platforms, so no F8 marker
+) | Where-Object { $OmitAliasDriftMembers -notcontains $_ }
+
+function Test-IsPlatformAliasDrift {
+    <#
+    .SYNOPSIS
+        True when a changed file's ENTIRE diff is the Windows-vs-Linux syscall alias difference.
+    .DESCRIPTION
+        The drift IS the prefix, so the predicate is: delete the whole-line alias `global using`
+        declarations (they exist on one side only), strip the prefix character from what remains,
+        and require the two sides to be identical. Any other hunk -- a real regression in the same
+        file -- leaves a difference and the file is NOT classified, which is the property that
+        makes accepting the drift safe.
+    #>
+    param([string] $RelPath)
+
+    # Built from CODEPOINTS, never from literals. A BOM-less .ps1 is parsed by Windows PowerShell
+    # 5.1 under the system codepage, so an embedded non-ASCII glyph mojibakes at PARSE time and a
+    # regex that can never match reports a confident zero (measured 2026-08-30 on another
+    # instrument). This file is BOM-less and carries non-ASCII only in comments, where it is
+    # harmless; keeping the load-bearing characters as codepoints means that stays true.
+    # [string], not [char]: String.Replace picks its (char, char) overload for a [char] first
+    # argument and then cannot bind '' to the second, so a [char] here throws at the first line
+    # that actually needs stripping. Measured: the two-arm control passed WITHOUT reaching this
+    # code at all, because every line in those diffs was a whole alias-using line and was
+    # `continue`d above -- it took the negative control (a real hunk alongside the drift) to
+    # execute the line and expose it. A control only tests the axis it varies.
+    $delta = [string][char]0x0394    # the alias prefix the Windows syscall flavor mints
+    $dot   = [string][char]0xA4F8    # the converter's qualified-name separator (regex only, but kept symmetric)
+    $aliasUsingPattern = "^[-+]\s*global using syscall$dot\w+ = go\.syscall_package\.$delta\w+;\s*$"
+
+    $diff = & git -C $repoRoot diff --unified=0 -- $RelPath
+    if (-not $diff) { return $false }   # no textual diff at all is not this class
+
+    $minus = @()
+    $plus  = @()
+    foreach ($line in $diff) {
+        if ($line -match '^(diff |index |--- |\+\+\+ |@@|new file|deleted file|similarity|rename )') { continue }
+        if ($line -match $aliasUsingPattern) { continue }
+        if ($line.StartsWith('-'))     { $minus += $line.Substring(1).Replace($delta, '') }
+        elseif ($line.StartsWith('+')) { $plus  += $line.Substring(1).Replace($delta, '') }
+    }
+
+    if ($minus.Count -ne $plus.Count) { return $false }
+    for ($i = 0; $i -lt $minus.Count; $i++) {
+        if ($minus[$i] -ne $plus[$i]) { return $false }
+    }
+    return $true
+}
+
+$aliasDriftDocumented   = @()
+$aliasDriftUndocumented = @()
+if ($hostGoos -ne 'windows' -and $changed) {
+    foreach ($entry in $changed) {
+        $rel = ($entry -replace '^\s*\S+\s+', '')
+        if (-not (Test-IsPlatformAliasDrift $rel)) { continue }
+        $pkg = Split-Path (Split-Path $rel -Parent) -Leaf
+        if ($documentedAliasDriftPackages -contains $pkg) { $aliasDriftDocumented += $rel }
+        else { $aliasDriftUndocumented += "$rel  [package: $pkg]" }
+    }
+}
+
+if ($aliasDriftDocumented.Count -gt 0) {
+    Write-Host "==> PLATFORM-ALIAS DRIFT (documented, $($aliasDriftDocumented.Count)): the whole diff is the Windows-vs-Linux syscall alias, accepted per the 2026-09-02 ruling:" -ForegroundColor DarkCyan
+    $aliasDriftDocumented | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkCyan }
+}
+
+if ($aliasDriftUndocumented.Count -gt 0) {
+    Write-Host "==> UNDOCUMENTED PLATFORM-ALIAS DRIFT ($($aliasDriftUndocumented.Count)): a NEW member of a class that is accepted only while its membership is known." -ForegroundColor Red
+    $aliasDriftUndocumented | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+    Write-Host "    Either mark the package [GoPlatformExclusive] if it runs on one platform only, or add it to" -ForegroundColor Red
+    Write-Host "    \$documentedAliasDriftPackages in this script with a note saying which platform captured its golden." -ForegroundColor Red
+}
+
+if ($AliasDriftCheckOnly) {
+    if ($aliasDriftUndocumented.Count -gt 0) {
+        Write-Host "==> ALIAS-DRIFT CHECK: FAILED -- $($aliasDriftUndocumented.Count) undocumented member(s)." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "==> ALIAS-DRIFT CHECK: OK -- $($aliasDriftDocumented.Count) documented, 0 undocumented (of $(@($changed).Count) changed file(s) inspected)." -ForegroundColor Green
+    exit 0
+}
 
 if (-not $changed -and $unmeasured.Count -eq 0) {
     # N is ENUMERATED-MINUS-SKIPPED: a platform-exclusive package this host cannot type-check was
