@@ -10,6 +10,16 @@
 // hand-own builds the native image with writeNativeSockaddr and hands ITS address to the package's
 // own generated `sendto`, exactly as Bind and Connect already do.
 //
+// PLATFORM-EXCLUSIVE, not early-out (2026-09-02). This package is marked [GoPlatformExclusive("linux")]
+// and is skipped by name on every other host. It replaced a runtime.GOOS early-out that printed one
+// fixed line and returned before the first socket call -- correct as far as it went, since raw syscall
+// sockets on Windows need WSAStartup (net performs it, a raw program does not) and the program would
+// otherwise have been a permanent red row there. What the early-out could NOT fix is the GOLDEN: the
+// package still transpiled on Windows, and the emitted C# differs by platform (the Windows syscall
+// flavor mints the Δ-prefixed Sockaddr/Handle aliases the linux one does not), so the committed .cs
+// had to be one platform's and read as standing drift on the other. A skipped package is neither
+// transpiled nor compared, so the marker retires that drift; the golden below is the LINUX emission.
+//
 // A no-fault check proves nothing here, for the same reason SockaddrRoundTrip states it: a mirror
 // with the wrong offsets sends a datagram to the wrong place WITHOUT crashing. So every line below
 // is a value the KERNEL moved -- a payload that had to arrive at an address the encode produced,
@@ -56,7 +66,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"syscall"
 )
 
@@ -68,16 +77,6 @@ func fatal(what string, err error) {
 }
 
 func main() {
-	// This guards the LINUX seam only. Raw syscall sockets on Windows need WSAStartup (net performs
-	// it, a raw program does not), so on any other host both Go and the converted C# print the one
-	// fixed line below and stop before the first socket call -- the behavioral suite stays green
-	// everywhere, and the linux run is the real guard. runtime.GOOS converts to the runtime's own
-	// constant, so the two sides agree on every host.
-	if runtime.GOOS != "linux" {
-		fmt.Println("linux-only seam: skipped on", runtime.GOOS)
-		return
-	}
-
 	// 127.0.0.2, not .1 -- see the header: .1 cannot tell a correct encode from 0.0.0.0.
 	receiverAddr := [4]byte{127, 0, 0, 2}
 
