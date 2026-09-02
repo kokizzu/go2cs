@@ -229,9 +229,9 @@ Assert-Throws 'execution: a repeated annotation is refused' {
 # empty case is asserted first and hardest: it is the "nothing changes" guarantee in one line.
 Assert-Equal 'execution args: no config contributes nothing' 0 (@(Get-RosterExecutionArgs $null)).Count
 Assert-Equal 'execution args: an empty config contributes nothing' 0 (@(Get-RosterExecutionArgs '')).Count
-Assert-Equal 'execution args: release-tc0 maps to the converter flag' '-test-release-tc0' `
+Assert-Equal 'execution args: release-tc0 maps to the converter flag' '-test-config Release' `
     ((@(Get-RosterExecutionArgs 'release-tc0')) -join ' ')
-Assert-Equal 'execution args: release-tc0 contributes exactly one argument' 1 (@(Get-RosterExecutionArgs 'release-tc0')).Count
+Assert-Equal 'execution args: release-tc0 contributes exactly two arguments' 2 (@(Get-RosterExecutionArgs 'release-tc0')).Count
 Assert-Throws 'execution args: an unknown config throws rather than running the default path' {
     Get-RosterExecutionArgs 'no-such-config'
 } 'Unknown execution config'
