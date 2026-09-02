@@ -1248,6 +1248,22 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// and the first that kills the process (net.Interfaces() -> NetlinkRIB -> AccessViolation).
 		// syscall/linux/sockaddr_linux_impl.cs answers it with the mirror's native image + typed decode.
 		"Recvfrom": goosLinux,
+		// Sendto is Recvfrom's own direction reversed, and the same seam: `to.sockaddr()` hands back
+		// the address of a MANAGED raw struct (`box.Value.raw`, whose `Addr`/`Zero` fields are
+		// `array<byte>` object references, not inline bytes) and the generated body passes that
+		// address straight to the kernel. The kernel only READS here, so this is not the
+		// write-over-managed-memory class Recvfrom belongs to and it cannot smash the heap — it is
+		// the LAYOUT half of the same wall, the one zsyscall_windows_impl.cs was hand-owned for:
+		// the kernel reads object references where it expects a 4-byte address and a 2-byte port,
+		// so the destination is garbage rather than the caller's. Bind/Connect are the template
+		// (same direction, same helper), not Recvfrom's stack-buffer-then-decode: build the native
+		// image with writeNativeSockaddr and hand ITS address to the package's own generated
+		// `sendto`, which was never the broken part — its payload already travels by pinned
+		// slice-element address and its errno handling stays where the converter put it.
+		//
+		// goosLinux like the rest of this file's set: writeNativeSockaddr is the linux flavor's
+		// helper, and darwin/windows declare their own Sendto over their own layouts.
+		"Sendto": goosLinux,
 		// The class's remaining LINUX members, closed PROACTIVELY on 2026-08-28 rather than when
 		// reached — the one place this table's per-member-when-reached rule was deliberately not
 		// followed, and the reason is measured. verifyheap on a crashed os/exec host found the

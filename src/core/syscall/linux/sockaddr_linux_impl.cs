@@ -519,6 +519,39 @@ partial class syscall_package
         return ((nint)r1, sa, err);
     }
 
+    // Sendto is Recvfrom's direction reversed and takes Bind/Connect's shape, not Recvfrom's: the
+    // kernel READS the address here, so there is no stack buffer to decode afterwards and no
+    // AF_UNSPEC sentinel to distinguish "nothing written" -- just the native image built once and
+    // handed to the package's own generated `sendto`.
+    //
+    // What was wrong with the generated body: Go's Sendto calls `to.sockaddr()` and passes the
+    // `unsafe.Pointer` it returns. That pointer addresses a MANAGED raw struct -- SockaddrInet4's
+    // `raw`, whose `Addr` and `Zero` are `array<byte>` OBJECT REFERENCES rather than inline bytes --
+    // so the kernel reads two references where it expects four address bytes and eight zero bytes,
+    // and the datagram goes to whatever those references decode to. It cannot corrupt the managed
+    // heap the way Recvfrom's write did (the kernel only reads), which is why this is the LAYOUT
+    // half of the wall rather than the write-over-managed half, and why it was safe to leave until
+    // a caller reached it.
+    //
+    // A nil `to` is NOT an error and must not go through writeNativeSockaddr: Go leaves `ptr` nil
+    // and `salen` zero and calls sendto anyway, which is how a datagram goes out on a CONNECTED
+    // socket. `@unsafe.Pointer`'s uintptr bridge answers 0 for both nil representations, so the
+    // default value reaches the kernel as the null address Go sends.
+    public static unsafe error /*err*/ Sendto(nint fd, slice<byte> p, nint flags, Sockaddr to) {
+        if (to == default!) {
+            return sendto(fd, p, flags, default!, 0);
+        }
+
+        byte* buffer = stackalloc byte[nativeSockaddrLen];
+        var (n, err) = writeNativeSockaddr(to, buffer);
+
+        if (err != default!) {
+            return err;
+        }
+
+        return sendto(fd, p, flags, new @unsafe.Pointer((uintptr)(void*)buffer), n);
+    }
+
     // Accept4 is Go's own body (syscall_linux.go) over the trampoline instead of the typed generated
     // wrapper: the kernel fills the stack buffer, the "RawSockaddrAny too small" panic and the
     // close-on-decode-failure are kept verbatim. Accept (syscall_linux_accept4.go) is pure Go over
