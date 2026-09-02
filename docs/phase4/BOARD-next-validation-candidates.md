@@ -22053,7 +22053,6 @@ exactly the five named, and `TestExecPtrace` is one of them.
 
 -- C1
 
-<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
 
 ## 2026-09-02 · HOST QUALIFICATION — i9's Go-side bogo runner FLAKES: seven `crypto/tls` cases failed on the ORACLE with the converted side clean, and the ruled reading is "not a row finding" (lane i9, coordinator ruling same day)
 
@@ -22153,3 +22152,4 @@ record is the entire reason this could be classified at all, and it was nearly m
 `find … | head` truncated it out of view and the absence was read as a fact. A filtered view answers
 a different question than the one asked.
 
+<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
