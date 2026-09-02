@@ -17,10 +17,16 @@
 ## Verdict
 
 **195 of 201 rows are unchanged at Release+TC0.** Six rows are flagged, and they do not all mean the
-same thing: **four are findings about the configuration** (`net/http`'s two movers, the two TC0-only
-residuals, and `crypto/tls`'s Release-only crash), **one is a configuration-INDEPENDENT regression**
-the census merely surfaced (`errors`), and **one is arithmetic not yet attributed** (`sync`). **Two
-rows** need a per-row opt-out for the flip to be safe, and both are measured rather than inferred.
+same thing: **five are findings about the configuration** (`net/http`'s two movers, `sync`'s three
+retiring disclosures, the two TC0-only residuals, and `crypto/tls`'s Release-only crash) and **one is
+a configuration-INDEPENDENT regression** the census merely surfaced (`errors`). **Two rows** need a
+per-row opt-out for the flip to be safe, and both are measured rather than inferred.
+
+The configuration findings are **net favourable, and by more than the opt-outs cost**: six disclosed
+divergences retire at the new default (`net/http`'s write-deadline trio, `sync`'s two alloc-count
+assertions and `TestPoolGC`) against one unfavourable mover (`net/http`'s `TestRegisterErr`) and two
+rows needing an opt-out annotation. Retiring a disclosure is the strongest form of good news this
+campaign has: it means the converted code stops needing an excuse, not that the excuse was relabelled.
 
 | shard | rows | wall | log |
 |---|---|---|---|
@@ -54,6 +60,12 @@ preserved. It is the one result that argues the flip is not free.
 
 `TestTransportGCRequest` remains **excluded** (`requires unsupported …`) at both configurations, as
 expected: a gate is about whether the host can run the declaration at all, not about timing.
+
+### `sync` — three more disclosures retire
+
+`TestMapClearNoAllocations`, `TestMapRangeNoAllocations` and `TestPoolGC` all pass at Release+TC0
+where they are disclosed at Debug. Full working in §6, including the four that correctly do NOT
+retire.
 
 ## 2. TC0-only residuals — the flip's opt-out list
 
@@ -129,18 +141,35 @@ prevent it. Re-run in isolation at `-TestConfig Release`: **PASS 155/155, 71 s.*
 Not a finding, and not counted — which is why shard 3 reads 49/2 in the record above and 48/3 in its
 own log.
 
-## 6. Open arithmetic
+## 6. `sync` — three disclosures retire (the surplus, attributed)
 
-`sync` reports **47 matching verdicts against 44 banked** with a completely clean comparison
-(`"status": "validated"`, `"matched": true`, zero divergence entries). The surplus of three is not yet
-attributed.
+`sync` reports **47 matching verdicts against 44 banked**, with a completely clean comparison
+(`"status": "validated"`, `"matched": true`, zero divergence entries). The surplus of three is not
+extra tests: the verdict NAME SETS are identical on both sides (51 rows). It is **three disclosed
+divergences becoming genuine matches**, and the arithmetic closes exactly — Debug banks 44 matched + 7
+disclosed = 51; Release+TC0 gives 47 matched + 4 disclosed = 51.
 
-One reading was considered and **rejected on measurement**: that the row's committed `TestOnceXGC`
-disclosures had become unnecessary. They have not. At Release+TC0 the C# side still reports
-`TestOnceXGC`, `/OnceFunc`, `/OnceValue` and `/OnceValues` as `fail` against Go's `pass`, absorbed by
-those disclosures exactly as banked. The disclosure's own explicitly testable claim — that the failure
-*"holds in fully optimized code, not just under the non-optimizing JIT"* — is **confirmed** by this
-census.
+Each of the seven Debug-disclosed rows, checked individually against the census record's C# map:
+
+| row disclosed at Debug | C# at Release+TC0 |
+|---|---|
+| `TestMapClearNoAllocations` | **pass** — disclosure retires |
+| `TestMapRangeNoAllocations` | **pass** — disclosure retires |
+| `TestPoolGC` | **pass** — disclosure retires |
+| `TestOnceXGC` | fail — still disclosed |
+| `TestOnceXGC/OnceFunc` | fail — still disclosed |
+| `TestOnceXGC/OnceValue` | fail — still disclosed |
+| `TestOnceXGC/OnceValues` | fail — still disclosed |
+
+The three that retire are two alloc-count assertions and one GC test — precisely the class where the
+non-optimizing JIT adds allocations and extends lifetimes that optimized code does not. That is a
+coherent mechanism rather than a coincidence, and it is the same favourable direction as `net/http`'s
+write-deadline disclosure.
+
+The four that remain are the `codegen-liveness` family, and one reading was considered and **rejected
+on measurement**: that these had become unnecessary too. They have not. The disclosure's own
+explicitly testable claim — that the failure *"holds in fully optimized code, not just under the
+non-optimizing JIT"* — is **confirmed** by this census, on the very row that tests it.
 
 ## What this census does and does not license
 
