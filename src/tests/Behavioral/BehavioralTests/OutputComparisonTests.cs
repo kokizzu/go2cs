@@ -476,6 +476,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckFloatKindConstArrayLength() => CheckTarget("FloatKindConstArrayLength");
 
     [TestMethod]
+    public void CheckForeignIfaceFieldPointer() => CheckTarget("ForeignIfaceFieldPointer");
+
+    [TestMethod]
     public void CheckForInitMixedTypes() => CheckTarget("ForInitMixedTypes");
 
     [TestMethod]
@@ -660,6 +663,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckGoStmtValueReturn() => CheckTarget("GoStmtValueReturn");
+
+    [TestMethod]
+    public void CheckGoSyntaxIfaceFieldPointer() => CheckTarget("GoSyntaxIfaceFieldPointer");
 
     [TestMethod]
     public void CheckGoUntypedConstArg() => CheckTarget("GoUntypedConstArg");

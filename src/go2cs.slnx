@@ -430,6 +430,8 @@
     <Project Path="tests/Behavioral/FloatConstIntContext/FloatConstIntContext.csproj" />
     <Project Path="tests/Behavioral/FloatFormatting/FloatFormatting.csproj" />
     <Project Path="tests/Behavioral/FloatKindConstArrayLength/FloatKindConstArrayLength.csproj" />
+    <Project Path="tests/Behavioral/ForeignIfaceFieldPointer/ForeignIfaceFieldPointer.csproj" />
+    <Project Path="tests/Behavioral/ForeignIfaceFieldPointer/addrlib/ForeignIfaceFieldPointer.addrlib.csproj" />
     <Project Path="tests/Behavioral/ForInitMixedTypes/ForInitMixedTypes.csproj" />
     <Project Path="tests/Behavioral/ForInitShadowedUse/ForInitShadowedUse.csproj" />
     <Project Path="tests/Behavioral/ForLoopPerIterationVars/ForLoopPerIterationVars.csproj" />
@@ -505,6 +507,7 @@
     <Project Path="tests/Behavioral/GoShiftSemantics/GoShiftSemantics.csproj" />
     <Project Path="tests/Behavioral/GoStmtReceiverLambda/GoStmtReceiverLambda.csproj" />
     <Project Path="tests/Behavioral/GoStmtValueReturn/GoStmtValueReturn.csproj" />
+    <Project Path="tests/Behavioral/GoSyntaxIfaceFieldPointer/GoSyntaxIfaceFieldPointer.csproj" />
     <Project Path="tests/Behavioral/GoUntypedConstArg/GoUntypedConstArg.csproj" />
     <Project Path="tests/Behavioral/HeapKeywordVar/HeapKeywordVar.csproj" />
     <Project Path="tests/Behavioral/HexByteStringLiteral/HexByteStringLiteral.csproj" />
