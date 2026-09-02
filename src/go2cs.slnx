@@ -802,7 +802,6 @@
     <Project Path="tests/Behavioral/SamePackageImplementNoWitness/SamePackageImplementNoWitness.csproj" />
     <Project Path="tests/Behavioral/SamePackageImplementNoWitness/ledger/SamePackageImplementNoWitness.ledger.csproj" />
     <Project Path="tests/Behavioral/SameUnderlyingNamedConv/SameUnderlyingNamedConv.csproj" />
-    <Project Path="tests/Behavioral/ScmRightsSeam/ScmRightsSeam.csproj" />
     <Project Path="tests/Behavioral/SelectEscapeBinding/SelectEscapeBinding.csproj" />
     <Project Path="tests/Behavioral/SelectOperandOnceEval/SelectOperandOnceEval.csproj" />
     <Project Path="tests/Behavioral/SelectOperandSourceOrder/SelectOperandSourceOrder.csproj" />

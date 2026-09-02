@@ -119,6 +119,32 @@ $onDisk = Get-ChildItem -Path $behavioral -Recurse -Filter *.csproj -File |
     ForEach-Object { Get-RelativeDisplayPath $_.FullName $srcRoot } |
     Sort-Object
 
+# 1a. F8 (2026-09-02): a behavioral package marked [GoPlatformExclusive("...")] in its package_info.cs whose
+#     native platforms do NOT include windows is EXEMPT from go2cs.slnx -- the solution builds the windows
+#     flavour of the corpus on every host, so such a package (ScmRightsSeam: unix-only syscall API) cannot
+#     compile there on ANY host; it is built only by the native-host runner, by path. The marker regex is
+#     line-anchored (the attribute name appears in prose) and mirrors src/tests/PlatformExclusive.cs.
+#     Windows-native exclusives (FindFirstFileData and the other five) stay registered: they compile in the
+#     windows flavour everywhere and only their Output phase is host-bound. A registered non-windows-native
+#     package is reported as a violation (it turns the slnx gate red by construction -- measured at the
+#     train-11 union battery, 23 errors, all ScmRightsSeam).
+$markerRegex = [regex]'(?m)^\s*\[(?:go\.)?GoPlatformExclusive\s*\(([^)]*)\)\]'
+$exempt = @()
+foreach ($rel in $onDisk) {
+    $dir  = Split-Path -Parent (Join-Path $srcRoot $rel)
+    $info = Join-Path $dir 'package_info.cs'
+    if (-not (Test-Path -LiteralPath $info)) { continue }
+    $m = $markerRegex.Match([System.IO.File]::ReadAllText($info))
+    if (-not $m.Success) { continue }
+    $platforms = @([regex]::Matches($m.Groups[1].Value, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value.ToLowerInvariant() })
+    if ($platforms.Count -gt 0 -and ($platforms -notcontains 'windows')) { $exempt += $rel }
+}
+if ($exempt.Count -gt 0) {
+    Write-Host "==> EXEMPT from go2cs.slnx (platform-exclusive, not windows-native; built only by the native-host runner):" -ForegroundColor DarkYellow
+    $exempt | ForEach-Object { Write-Host "    $_" }
+    $onDisk = @($onDisk | Where-Object { $_ -notin $exempt })
+}
+
 # 2. Every tests/Behavioral/*.csproj registered in go2cs.slnx. Folder elements use Name="..." (not
 #    Path=), so this Path-anchored pattern matches only <Project> entries.
 $slnxText   = Get-Content -Raw -LiteralPath $slnxPath
@@ -131,6 +157,13 @@ $missing  = @($onDisk     | Where-Object { $_ -notin $registered })  # on disk, 
 $dangling = @($registered | Where-Object { $_ -notin $onDisk })      # in the solution, not on disk
 
 $ok = $true
+
+$wrongRegistered = @($exempt | Where-Object { $_ -in $registered })
+if ($wrongRegistered.Count -gt 0) {
+    Write-Host "==> REGISTERED but not windows-native -- cannot compile in the solution's windows flavour on any host; remove from go2cs.slnx:" -ForegroundColor Red
+    $wrongRegistered | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+    $ok = $false
+}
 
 if ($missing.Count -gt 0) {
     $ok = $false
