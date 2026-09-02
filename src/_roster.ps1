@@ -816,27 +816,80 @@ function Test-HostLimitDelta {
 function ConvertFrom-ComparisonRecord {
     param([string] $Path)
 
-    if (-not $script:comparisonSerializer) {
-        Add-Type -AssemblyName System.Web.Extensions
-        $script:comparisonSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
-        $script:comparisonSerializer.MaxJsonLength = [int]::MaxValue
+    $text = [System.IO.File]::ReadAllText($Path)
+
+    # Two readers, one shape, because neither type exists on both editions: System.Web.Extensions is
+    # .NET Framework only (it cannot load under PowerShell 7 -- every Linux host, and any Windows host
+    # driving these instruments with pwsh rather than 5.1), and System.Text.Json is not present on 5.1.
+    # Both must yield ORDINAL dictionaries for the case-sensitivity reason above. `ConvertFrom-Json
+    # -AsHashtable` is deliberately NOT used on Core: it happens to preserve case-only pairs on 7.5,
+    # but that is inherited behaviour rather than a stated contract, and the whole point of the
+    # explicit re-copy below is that the ordinal choice is deliberate.
+    $goMap = $null
+    $csMap = $null
+    $withdrawn = $null
+    $disclosed = $null
+
+    if ($PSVersionTable.PSEdition -eq 'Desktop') {
+        if (-not $script:comparisonSerializer) {
+            Add-Type -AssemblyName System.Web.Extensions
+            $script:comparisonSerializer = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+            $script:comparisonSerializer.MaxJsonLength = [int]::MaxValue
+        }
+
+        $raw = $script:comparisonSerializer.DeserializeObject($text)
+        if ($null -eq $raw) { throw "comparison record at $Path deserialized to nothing" }
+
+        $toOrdinalMap = {
+            param($member)
+            if (-not $raw.ContainsKey($member)) { return $null }
+            $map = New-Object 'System.Collections.Generic.Dictionary[string,string]' ([System.StringComparer]::Ordinal)
+            foreach ($entry in $raw[$member].GetEnumerator()) { $map.Add([string]$entry.Key, [string]$entry.Value) }
+            return , $map
+        }
+
+        $goMap = & $toOrdinalMap 'go'
+        $csMap = & $toOrdinalMap 'csharp'
+        $withdrawn = if ($raw.ContainsKey('withdrawn')) { @($raw['withdrawn']) } else { $null }
+        $disclosed = if ($raw.ContainsKey('disclosed')) { @($raw['disclosed']) } else { $null }
     }
+    else {
+        $document = $null
+        try {
+            $document = [System.Text.Json.JsonDocument]::Parse($text)
+            if ($null -eq $document) { throw "comparison record at $Path deserialized to nothing" }
+            $root = $document.RootElement
 
-    $raw = $script:comparisonSerializer.DeserializeObject([System.IO.File]::ReadAllText($Path))
-    if ($null -eq $raw) { throw "comparison record at $Path deserialized to nothing" }
+            $toOrdinalMap = {
+                param($member)
+                $element = [System.Text.Json.JsonElement]::new()
+                if (-not $root.TryGetProperty($member, [ref] $element)) { return $null }
+                $map = New-Object 'System.Collections.Generic.Dictionary[string,string]' ([System.StringComparer]::Ordinal)
+                foreach ($property in $element.EnumerateObject()) { $map.Add($property.Name, $property.Value.GetString()) }
+                return , $map
+            }
 
-    $toOrdinalMap = {
-        param($member)
-        if (-not $raw.ContainsKey($member)) { return $null }
-        $map = New-Object 'System.Collections.Generic.Dictionary[string,string]' ([System.StringComparer]::Ordinal)
-        foreach ($entry in $raw[$member].GetEnumerator()) { $map.Add([string]$entry.Key, [string]$entry.Value) }
-        return , $map
+            $toArray = {
+                param($member)
+                $element = [System.Text.Json.JsonElement]::new()
+                if (-not $root.TryGetProperty($member, [ref] $element)) { return $null }
+                return , @($element.EnumerateArray() | ForEach-Object { $_.GetString() })
+            }
+
+            $goMap = & $toOrdinalMap 'go'
+            $csMap = & $toOrdinalMap 'csharp'
+            $withdrawn = & $toArray 'withdrawn'
+            $disclosed = & $toArray 'disclosed'
+        }
+        finally {
+            if ($null -ne $document) { $document.Dispose() }
+        }
     }
 
     return [PSCustomObject]@{
-        go        = & $toOrdinalMap 'go'
-        csharp    = & $toOrdinalMap 'csharp'
-        withdrawn = if ($raw.ContainsKey('withdrawn')) { @($raw['withdrawn']) } else { $null }
-        disclosed = if ($raw.ContainsKey('disclosed')) { @($raw['disclosed']) } else { $null }
+        go        = $goMap
+        csharp    = $csMap
+        withdrawn = $withdrawn
+        disclosed = $disclosed
     }
 }
