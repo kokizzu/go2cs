@@ -257,11 +257,26 @@ generated output. Without `global::`, `runtime` does not resolve from inside `na
 generated type in the package fails — `CS0246: 'runtime' could not be found` — cascading into
 CS0111 / CS0102 / CS0116 / CS0715 as the partial declarations lose their context.
 
-**What triggers it is 1.24's namespace graph**: the release moves `runtime/internal/{math,sys}` to
-`internal/runtime/{math,sys}` and adds `internal/runtime/maps` (the `swissmap` baseline — which is
-also why the deletion set removes exactly `runtime/map{,_fast32,_fast64,_faststr}.cs`), so `runtime`
-acquires imports it did not have. **Why the qualifier is dropped is NOT established** — the
-generator's qualification decision was not read.
+**The mechanism** (read from `src/gen/go2cs-gen/Common.cs:225–277` at the coordinator's direction):
+`GetFullyQualifiedUsingStatements` asks the semantic model to BIND each source `using`. A bound
+namespace is re-emitted as `using global::<ns>;`; an **unbound** one falls through to
+`directive.GetText().ToString().Trim()` — the source directive verbatim, which is exactly the
+`global::`-less line. So "the qualifier is dropped" means "**the source `using runtime.@internal;`
+does not bind in the 1.24 compilation**", and the generator merely echoes it into every generated
+type in the package.
+
+> ⚠ **WHY it fails to bind is NOT established, and the measurement above is CONFOUNDED — stated
+> because the confound is in this record's own method.** The obvious reading is 1.24's package moves
+> (`runtime/internal/{math,sys}` → `internal/runtime/{math,sys}`). But a follow-up census found that
+> **the deletion set derived in this section is incomplete BY CONSTRUCTION**: it enumerates stale
+> files only inside packages the run *converted*, so a package that **ceases to exist** leaves a
+> complete stale directory — sources, `package_info.cs` **and its `.csproj`** — with no fresh file to
+> key on. `runtime/internal/math` and `runtime/internal/sys` survived exactly that way in the
+> measured root. And `go.runtime.@internal` is in fact still declared in the 1.24 root, by
+> `runtime/internal/startlinetest`, which the release keeps — so "the namespace is gone" was never
+> the whole story either. **The 29-vs-0 count, the generator-wall classification and the fall-through
+> mechanism all stand; the CAUSE of the unbound using does not, and a re-run against a
+> package-level-cleaned root is what settles it.**
 
 > **Two wrong readings, kept on the record because the control is what caught the second.** The first
 > bucketing of this rung reported "all 120 in `runtime/runtime.cs`" — **there is no such file**; the
@@ -422,6 +437,14 @@ schedule pressure, mid-hop, is how a package acquires a hand-own nobody can late
 5. **H6 should split "hand-own whose principal changed" from "hand-own whose principal VANISHED",
    and again from "hand-owned-by-consequence PACKAGE that vanished".** They are three different
    bills; only the first is a refresh.
+6. **The deletion derivation needs a PACKAGE-level arm, not only a file-level one inside converted
+   packages** — and this is the amendment I am most confident of, because I found it by being wrong
+   rather than by reading. A release that DELETES a package leaves, in a seeded root, a complete
+   stale package with a live `.csproj` that the solution still builds; a file-level pass keyed on
+   "packages the run converted" cannot see it, because such a package has no fresh file to key on.
+   §5's **31-file** figure is therefore a FLOOR: the real bill is *31 files plus N whole packages*.
+   The package-level test is mechanical — a directory holding a `.csproj`, with no file emitted this
+   run, whose Go package exists in the OLD release's `src/` and not in the NEW one.
 
 ---
 
