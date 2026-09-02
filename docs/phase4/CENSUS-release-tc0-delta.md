@@ -28,6 +28,13 @@ assertions and `TestPoolGC`) against one unfavourable mover (`net/http`'s `TestR
 rows needing an opt-out annotation. Retiring a disclosure is the strongest form of good news this
 campaign has: it means the converted code stops needing an excuse, not that the excuse was relabelled.
 
+> **AMENDED 2026-09-02.** The phrase "`crypto/tls`'s Release-only crash" above is the census's own
+> point-in-time reading and did not survive re-measurement. Under the three-run standard the row
+> **completes at Release** (2 of 3 runs, 3,644 / 3,644 both times); the access violation is a single
+> unreproduced host death under census load, carried as an open item rather than a Release finding, and
+> nothing about Release is required to explain it. §4's amendment carries the record. The count of
+> flagged rows is unchanged — what changed is what one of them means.
+
 | shard | rows | wall | log |
 |---|---|---|---|
 | 1/4 | 51 | 1,233 s | `i9-sweep-shard1of4-attempt3.log` |
@@ -169,6 +176,59 @@ The lesson the retraction carries: a converted-vs-Go claim is only a claim about
 that ROW has been read. The shim's flags are declared in `bogo_shim_test.go`, so that file was read
 and the search stopped there — while this row's `TestMain` lives in `handshake_test.go`. "Not what the
 flag package normally does" is not the same statement as "not what Go does here."
+
+### AMENDMENT 2026-09-02 — run 3 of 3 closes the three-run standard: the row COMPLETES, and the gate's `crypto/tls` half is MET
+
+Run 3 was taken on a **quiet box** (nothing else running), Release+TC0, 20:48:04–20:54:59Z, 414 s — the
+context stated because run 1's was the census's shard load. The three-run record is therefore:
+
+| run | context | outcome | entries |
+|---|---|---|---|
+| 1 | inside census shard 1, ~20 min continuous load | **DIED** — `0xc0000005` | none |
+| 2 | isolated, warm build | **COMPLETED**, `matched: true`, sweep exit 0 | 3,644 / 3,644 |
+| 3 | quiet box | **COMPLETED**, `matched: false` | 3,644 / 3,644 |
+
+**Two of three completing**, which is the condition ruled sufficient: the row moves out of UNMEASURED
+to *completes at Release (3,644), one unreproduced host death under census load, recorded*, and the
+`crypto/tls` half of the flip's gate is **MET with the death carried as an open item, not a blocker**.
+The crash-dump instrument (`DOTNET_DbgEnableMiniDump=1`) was conditioned on a **second** death and is
+not deployed; the access violation has now declined to reproduce twice.
+
+**Run 3 is red, and every error in it is ORACLE-side.** This matters more than the colour:
+
+```
+errors:  ORACLE-side   (Go=fail C#=pass)   7
+         CONVERTED-side (Go=pass C#=fail)   0
+         process-level                      2
+disclosed: TestCertCache (codegen-liveness) — absorbed correctly
+environment { configuration: Release, tiered: false, oracleGoVersion: go version go1.23.12 windows/amd64 }
+```
+
+The seven are `TestBogoSuite` and six of its version-negotiation cases — `Downgrade-TLS10-Client`,
+`Downgrade-TLS12-Client`, `MinimumVersion-Client-TLS11-TLS1-TLS`, `MinimumVersion-Client-TLS13-TLS12-TLS`,
+`MinimumVersion-Client2-TLS13-TLS11-TLS`, `WrongMessageType-TLS13-ServerHello-TLS` — each failing on
+**Go's own bogo runner** while the converted side passed. By construction that cannot be converted-code
+drift: the converted code produced the right answer and the oracle did not. It is this row's documented
+Go-side bogo flakiness, recorded here with named cases rather than as a general warning.
+
+`TestCertCache` appears in the raw go-vs-C# diff as a converted-side failure and is **not** one for
+accounting purposes — it is the committed `codegen-liveness` disclosure (an address-exposed frame temp
+is not lifetime-tracked by the CLR, so the object stays reachable until the method returns and the
+refcount cannot fall while the test is looking; measured identically in a separately built optimized
+Release host). The pipeline absorbed it correctly.
+
+**A reading recorded above is withdrawn here.** The paragraph before this amendment offers the census's
+load/thermal confound as "the one I would chase next." Run 3 did not test it: the row did not die on the
+quiet box, so the hypothesis stands **untested rather than falsified**, and the confound remains the open
+question about run 1 that it always was. (A mid-turn claim that run 3 *had* falsified it was made from
+the sweep's `FAIL` line before the failure MODE was read — `exit status 1` is `go test`'s ordinary
+"tests failed", not the `0xc0000005` crash — and is withdrawn with the mechanism named, since the error
+is the reusable part.)
+
+**One question is raised and deliberately not answered here.** A bogo-capable host whose *oracle* flakes
+is a FOURTH host shape, and the roster's three proven states (full count / capability-absent /
+host-limit) do not absorb it — so a run like this one fails the row on Go's flake with the converted
+side clean. That is a roster-absorption question; it is recorded, and `_roster.ps1` is untouched.
 
 ## 5. Infrastructure — settled, not counted
 
