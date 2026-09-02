@@ -34,6 +34,22 @@ $IsWindowsHost = if ($null -eq (Get-Variable -Name 'IsWindows' -ErrorAction Sile
 # Executable suffix for a built .NET apphost or Go binary.
 $ExeSuffix = if ($IsWindowsHost) { '.exe' } else { '' }
 
+# The GOOS flavor THIS HOST is native to -- one derivation, for the same reason $IsWindowsHost is one
+# derivation: $IsMacOS and $IsLinux are PowerShell 6+ automatic variables that DO NOT EXIST on
+# Windows PowerShell 5.1, where each reads $null -> falsey, so a consumer restating the ladder gets
+# it silently wrong on exactly the platform 5.1 runs on. The ladder therefore starts from the host
+# fact already resolved above and only then consults the pwsh-only variables, which is safe because
+# 5.1 can never reach them.
+#
+# An unrecognized non-Windows host answers $null rather than a guess. Every consumer of this value
+# treats $null as "leave the status-quo default alone" -- naming a flavor the corpus may not carry
+# would be the guess this repository's harness rules forbid.
+$HostGoos =
+    if ($IsWindowsHost) { 'windows' }
+    elseif ($IsMacOS)   { 'darwin' }
+    elseif ($IsLinux)   { 'linux' }
+    else                { $null }
+
 # The corpus flavor a NON-Windows host binds by default. Every L3 csproj defaults `GoTargetOS` to
 # `windows` when the property is EMPTY (the corpus reference target), which is right on Windows and
 # wrong everywhere else: a linux host then builds the windows flavor, whose `os_package` module
@@ -44,13 +60,35 @@ $ExeSuffix = if ($IsWindowsHost) { '.exe' } else { '' }
 # every child `dotnet` invocation of every instrument picks it up, with an explicit `-p:GoTargetOS`
 # or a pre-set env var still winning. Windows behavior is untouched by construction.
 #
-# Scoped to $IsLinux, not `-not $IsWindowsHost`: a macOS host must NOT inherit `linux` (its own
-# flavor is `darwin`, and that corpus does not build today — 19 pre-existing errors, censused), so
-# darwin keeps the status-quo windows default until its own lane earns a binding. $IsLinux is a
-# pwsh 6+ automatic variable; on Windows PowerShell 5.1 it does not exist, which resolves $null →
-# falsey → the block is inert exactly where it should be.
-if ($IsLinux -and [string]::IsNullOrEmpty($env:GoTargetOS)) {
-    $env:GoTargetOS = 'linux'
+# The binding is DERIVED from $HostGoos rather than scoped to a literal, so it covers every
+# non-Windows flavor the corpus carries and cannot go stale one host at a time. Windows is excluded
+# by the value, not by a platform test: 'windows' IS the csproj default, so the one host that
+# already binds the right flavor gets no variable at all and its behavior is untouched by
+# construction. A $null $HostGoos (a host this file cannot name) is excluded the same way.
+#
+# History, kept because the SCOPE moved and the reason it moved matters:
+#
+#   2026-08-21 -- introduced scoped to $IsLinux precisely, on the stated ground that "a macOS host
+#   must NOT inherit `linux` (its own flavor is `darwin`, and that corpus does not build today --
+#   19 pre-existing errors, censused), so darwin keeps the status-quo windows default until its own
+#   lane earns a binding."
+#
+#   2026-09-02 -- WIDENED to darwin: that wall is CLOSED and the scope reason expired with it. The
+#   darwin corpus compiles clean -- census run 32649840220 at c003d32af, ZERO errors on osx-x64 AND
+#   osx-arm64, the wall history 19 -> 10 -> 9 -> 0 inside ~24 hours of the first darwin build ever
+#   attempted, re-confirmed green at master by the 2026-08-25 census (run 32852475367, both legs).
+#   Until this amendment a LOCAL darwin instrument still silently took the WINDOWS flavor on the
+#   strength of a wall that no longer existed. CI never had the gap: .github/workflows/os-matrix.yml
+#   binds GoTargetOS from matrix.goos at job level, which is why this stayed invisible.
+#
+# What darwin still lacks is a RUN layer, not a compile flavor: its libc trampolines are bodyless
+# partials that PartialStubGenerator fills with a throw, so a converted program exits 2 on its first
+# syscall (docs/phase4/FINDING-darwin-run-layer.md -- characterized 2026-08-25, not fixed). That is
+# an argument for building darwin's run layer; it is NOT an argument for compiling the windows
+# flavor on a Mac, which is wrong at SOURCE SELECTION -- before any run layer is reached -- and
+# makes a darwin host measure a corpus it is not.
+if ($HostGoos -and $HostGoos -ne 'windows' -and [string]::IsNullOrEmpty($env:GoTargetOS)) {
+    $env:GoTargetOS = $HostGoos
 }
 
 # Pin GO2CSPATH on Linux so the converter's child-env `$(go2csPath)` race has one value on both

@@ -124,20 +124,27 @@ $ExclusionLedgerClasses = @('E1', 'E2', 'E3')
 .SYNOPSIS
     The GOOS flavor this host validates -- the corpus flavor a build here actually binds.
 .DESCRIPTION
-    `_paths.ps1` pins $env:GoTargetOS to 'linux' on a Linux host precisely because every L3 csproj
-    defaults the property to `windows` when it is EMPTY. That default is the whole rule: the
-    environment variable wins where one is set, and 'windows' is what an unset one means -- on
-    Windows because it is right, and on macOS because darwin's corpus does not build yet and keeps
-    the status-quo default until its own lane earns one.
+    `_paths.ps1` pins $env:GoTargetOS to the HOST's own flavor on every non-Windows host, precisely
+    because every L3 csproj defaults the property to `windows` when it is EMPTY. That default is the
+    whole rule: the environment variable wins where one is set, and 'windows' is what an unset one
+    means -- which is right on Windows and only there.
 
-    The $IsLinux fallback covers a consumer that dot-sourced this file WITHOUT _paths.ps1; it is
-    inert on Windows PowerShell 5.1, where $IsLinux does not exist ($null -> falsey).
+    2026-09-02: this paragraph used to end "...and on macOS because darwin's corpus does not build
+    yet and keeps the status-quo default until its own lane earns one". That wall is CLOSED -- the
+    darwin corpus compiles clean, census run 32649840220 at c003d32af, zero errors on osx-x64 and
+    osx-arm64 -- so _paths.ps1 pins `darwin` on a macOS host and this function reports it. Darwin's
+    remaining gap is the RUN layer (docs/phase4/FINDING-darwin-run-layer.md), which sits downstream
+    of the flavor and is not a reason to bind the wrong one.
+
+    The $IsMacOS/$IsLinux fallbacks cover a consumer that dot-sourced this file WITHOUT _paths.ps1;
+    both are inert on Windows PowerShell 5.1, where neither variable exists ($null -> falsey).
 #>
 function Get-SweepTargetGoos {
     if (-not [string]::IsNullOrWhiteSpace($env:GoTargetOS)) {
         return $env:GoTargetOS.Trim().ToLowerInvariant()
     }
 
+    if ($IsMacOS) { return 'darwin' }
     if ($IsLinux) { return 'linux' }
 
     return 'windows'
