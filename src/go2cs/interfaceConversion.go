@@ -1014,3 +1014,20 @@ func adapterTypeRef(structTypeName string, interfaceTypeName string) string {
 
 	return adapterNameMarker(structBase, interfaceTypeName) + typeArgs
 }
+
+// interfaceTypeLiteralTarget reports the ANONYMOUS interface type literal a conversion targets --
+// `interface{}(x)` / `interface{ Foo() int }(x)`, parenthesised or not -- or nil when the call's
+// callee is anything else. A NAMED interface target is deliberately not reported: it has a
+// types.Object, so isTypeConversion's ordinary peel already resolves it.
+func interfaceTypeLiteralTarget(fun ast.Expr) *ast.InterfaceType {
+	for {
+		switch expr := fun.(type) {
+		case *ast.ParenExpr:
+			fun = expr.X
+		case *ast.InterfaceType:
+			return expr
+		default:
+			return nil
+		}
+	}
+}

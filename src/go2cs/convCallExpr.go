@@ -212,6 +212,43 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	// T(x) is a CALL in Go's grammar but a conversion in meaning, so it forks off here before
 	// any of the call machinery below runs.
 
+	// A conversion whose target is an ANONYMOUS INTERFACE type literal -- `interface{}(x)`, or
+	// `interface{ Foo() int }(x)`. Go writes it as a call; C# has no such form, and the target has
+	// no types.Object for isTypeConversion's peel to find, so without this arm it fell through to
+	// the ordinary call machinery and emitted the LIFTED interface's name as a callee --
+	// `main_typeᴛ1(t)`, which is CS1955 (a type is not invocable). The same shape the
+	// IndexListExpr arm below was added for.
+	//
+	// Routed through convertToInterfaceType -- the ASSIGNMENT path's own helper -- rather than
+	// through a rendered target name, for two reasons the plain-name path cannot serve: an
+	// anonymous interface must be LIFTED to a named C# type and the name path emits the raw
+	// `interface{…}` signature instead (the same trap convStarExpr documents for `(*struct{…})`
+	// targets), and a Go conversion to an interface IS an assignment in meaning, so sharing the
+	// helper is what makes the conversion and assignment forms agree by construction rather than
+	// by two renderings that happen to match.
+	if ifaceLit := interfaceTypeLiteralTarget(callExpr.Fun); ifaceLit != nil && len(callExpr.Args) == 1 {
+		ifaceType := v.info.TypeOf(ifaceLit)
+		argType := v.info.TypeOf(callExpr.Args[0])
+
+		if ifaceType != nil && argType != nil {
+			// The CAST is load-bearing, and the measurement that says so is worth the line: the
+			// FIRST cut of this arm routed through convertToInterfaceType alone, emitted
+			// `var c = t;`, and COMPILED, RAN and PRINTED THE RIGHT NUMBERS while losing Go's
+			// static type -- `c` was the concrete `T`, not `interface{ Foo() int }`, and it even
+			// called the right method, which is why the loss is quiet. That is the false green
+			// this arm's guard exists to refuse.
+			//
+			// The CAST is not optional the way it is at an assignment: a Go conversion has no
+			// declared slot to supply the static type, so `x := interface{ Foo() int }(t)` must
+			// name the (lifted) interface or C# infers the CONCRETE type and the Go type is lost
+			// -- it compiles and even calls the right method, which is why the loss is quiet.
+			// convertToInterfaceType still runs first: it records the witness the lift needs.
+			converted := v.convertToInterfaceType(ifaceType, argType, v.convExpr(callExpr.Args[0], nil))
+
+			return fmt.Sprintf("(%s)(%s)", v.getCSharpTypeName(ifaceType), converted)
+		}
+	}
+
 	// Check if the call is a type conversion
 	if ok, targetTypeName := v.isTypeConversion(callExpr); ok {
 		arg := callExpr.Args[0]
@@ -4742,6 +4779,9 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 			// `Seq2Like[K, V](fn)` shape. The single-param IndexExpr case above already peels;
 			// without this arm the two-param form fell through as a plain (non-invocable) call
 			// (CS1955 on the emitted `Seq2Like<K, V>(…)`).
+			// An ANONYMOUS INTERFACE target is the same family and is handled EARLIER, in
+			// Phase 1b: it has no types.Object for this peel to find at all. See the
+			// interfaceTypeLiteralTarget arm there, including why its cast is load-bearing.
 			targetExpr = funExpr.X
 			continue
 		case *ast.StarExpr:

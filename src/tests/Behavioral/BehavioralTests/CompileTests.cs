@@ -37,6 +37,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckAnonIfaceThroughPointerAdapter() => CheckTarget("AnonIfaceThroughPointerAdapter");
 
     [TestMethod]
+    public void CheckAnonInterfaceConversion() => CheckTarget("AnonInterfaceConversion");
+
+    [TestMethod]
     public void CheckAnonInterfaceCrossFile() => CheckTarget("AnonInterfaceCrossFile");
 
     [TestMethod]
