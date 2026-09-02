@@ -13,6 +13,10 @@ recheck, the commit-3 measurement, the regen's own control builds) stopped at `b
 init-hook and cast-drift regen is what got the host far enough to actually RUN tests instead of
 dying at process init, and that is the reason this bill has 849 rows to classify instead of one.
 
+**Run environment:** `CGO_ENABLED=0`, matching the corpus's own pinned convention (CLAUDE.md) — the
+setting that makes the 8 cgo-callback rows in `unclassified` (below) a separate, already-understood
+divergence class (cgo-conditional tests reached despite the pin) rather than 8 new findings.
+
 ## Bucket one: `TestCaller` / `textAddr` — a real nil-pointer panic, not an infrastructure gap
 
 Per dispatch, this leads ahead of the other findings.
@@ -44,17 +48,34 @@ real one; the duplicates don't change the bucket.
 that is null at the point `Func.Entry()` calls it through the generated `RecvGenerator` shell
 (`go.runtime_package.textAddr.global__go.runtime_package.moduledata.g.cs:27`). `TestCaller` builds
 a `runtime.Frames` iterator via `runtime.Callers` inside a goroutine (`testCallerFoo` →
-`testCallerBar` → the closure at `symtab_test.go:20`) and walks it with `Func.Entry()`. Something
-in that path constructs or copies a `moduledata` whose text-section base pointer is never
-populated for a goroutine-local call — plausible given this repo's own documented open class of
-"managed-referent" pointer/descriptor gaps in the syscall/reflection boundary, but this bill is a
-classification, not a root-cause; naming the exact uninitialized field is the next lane's work if
-this one is picked up.
+`testCallerBar` → the closure at `symtab_test.go:20`) and walks it with `Func.Entry()`.
 
-**A second, separately-panicking test, same shape:** `TestArenaCollision` (`go-panic-text`,
-`KeepNArenaHints` → nil pointer, `export_test.cs:620`) — different site, same mechanism class
-(managed-referent field null where Go's raw pointer arithmetic would just compute an address). Two
-independent real panics is why runtime is a `go-panic-text` bucket of 2, not 1.
+**UPDATE, post-sizing (per dispatch, item 2):** the root is not goroutine-timing and not a
+"managed-referent" descriptor gap as first guessed here — it is structural and unconditional.
+`ΔfuncInfo.entry()` (`symtab.cs:722-724`) reads `f.datap.textAddr(...)`, and `f.datap` is nil because
+`funcInfo(this ж<_func> Ꮡf)` (`symtab.cs:259-278`) resolves it by walking a linked list from
+`Ꮡfirstmoduledata` looking for a module whose `pclntable` byte range contains the `_func` value's own
+address — and `Ꮡfirstmoduledata` is declared exactly once in the whole package
+(`symtab.cs:367`, `new StandardBox<moduledata>(new moduledata(nil))`) and never assigned again. Its
+`pclntable` is permanently empty, the search's own guard skips it every time, and `mod` stays nil on
+every call that reaches this path — not intermittently, not specific to goroutines, structurally
+guaranteed. TestCaller is simply the test that happens to call `.Entry()` on a resolved `Func`. Full
+trace and the predicted moved set are in the mailbox sizing post (i9, "item 2 SIZED") rather than
+duplicated here in full; this update exists so the doc doesn't stand corrected only in a channel
+that scrolls away.
+
+**A second, separately-panicking test — NOT the same mechanism, corrected after sizing bucket one
+properly:** `TestArenaCollision` (`go-panic-text`, `KeepNArenaHints` → nil pointer, `export_test.cs:620`).
+This entry originally called it "the same mechanism class" as `TestCaller`; that was wrong and is
+corrected here rather than left standing. `KeepNArenaHints` is a direct translation with no
+generator shell involved at all — `hint = hint.Value.next` on a `ж<arenaHint>` chain seeded from
+`mheap_.arenaHints`, faithfully mirroring Go's own `hint = hint.next; if hint == nil { return }`. If
+it panics, `mheap_.arenaHints`'s chain has fewer real entries than Go's OS-facing allocator builds —
+a DATA gap in the managed arena/heap subsystem, not a code-generation issue. It is also a different
+severity: it ran on the main test thread inside `TestExecution.Execute`'s own try/catch (`FAIL ...
+exit status 1`, caught and reported as an ordinary test failure) rather than on an goroutine outside
+that scope, so it did NOT take the host down the way `TestCaller` did. Two unrelated defects, not
+two instances of one — see the mailbox sizing post for the full trace of both.
 
 ## The whole-host crash's shadow: 833 `empty-unreached`, 1 `empty-in-progress-killed`
 
