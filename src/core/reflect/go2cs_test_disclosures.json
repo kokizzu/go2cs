@@ -348,6 +348,12 @@
       "class": "runtime-capability",
       "signature": "unexpected underlying array",
       "reason": "runtime-capability: reflect.SliceAt builds a slice that aliases the pointer's memory faithfully (len/cap/nil and the negative/nil-pointer/overflow panics all agree with Go), but its Value.Pointer() is a STORAGE-IDENTITY token -- HashCode.Combine(backing, low), kept stable for encoding/json's cycle detector and internal/fmtsort's map ordering -- while uintptr(unsafe.Pointer(&p[0])) is the pinned data address. The two are managed-model projections of one storage that coincide only for native memory; making them equal would pin managed storage on every Pointer() call and move the cycle-detector hot path off its cheap hash, so the identity is disclosed rather than unified (coordinator ruling 2026-09-02; token-unification refused)."
+    },
+    {
+      "name": "TestGCBits",
+      "class": "runtime-capability",
+      "signature": "heapBits incorrect",
+      "reason": "runtime-capability: the verifyGCBitsSlice path compares a slice's HEAP-ALLOCATION GC bitmap. Go's gcbits(*E) reads the heap object at the pointer and returns the element's pointer bits REPEATED by the allocation's size class -- have [1] want [1 1], have [1] want [1 1 ...x10000], have [0 1] want [0 1 0 1]. The managed gcbits answers from the POINTEE TYPE's layout (GoReflect.GoGCMaskOf) -- the element's bits ONCE -- because the managed model has no allocation size class to repeat by, and reflect.NewAt's *E carries no cap it was never given. The non-slice verifyGCBits path (New(typ).Interface()) is unaffected. Same managed-model class as the alloc-count and pointer-identity disclosures (coordinator ruling 2026-09-02; C2's gcbits authority, R mints the reflect manifest entry)."
     }
   ]
 }
