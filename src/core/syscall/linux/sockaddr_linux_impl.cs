@@ -40,16 +40,26 @@
 //   - anyToSockaddr, Linux's decode (Go's is a free function here, the method form is Windows's):
 //     FLATTEN the managed RawSockaddrAny back to the 112-byte native image its fields transcribe
 //     (Family at 0, Data at 2..15, Pad at 16..111) and hand that to the one decode -- so any
-//     remaining auto caller (the UDP receive path, Recvmsg) decodes correctly once ITS fill is.
+//     remaining auto caller (Recvmsg) decodes correctly once ITS fill is;
+//   - Recvfrom (2026-08-30) and Sendto (2026-09-02): the UDP pair, added when each was REACHED,
+//     which is the rule this file's scope has followed throughout rather than an exception to it.
 //
-// DELIBERATELY NOT COVERED, named rather than left to be rediscovered: Recvfrom / Sendto / Recvmsg
-// / Sendmsg -- the UDP and ancillary paths -- still pass `&rsa` / the encoder's address; L10 drew
-// the same line (fix a censused wrapper when a suite REACHES it), and nothing on the TCP path
-// touches them. writeNativeSockaddr / readNativeSockaddr are what they would need. The
-// SockaddrUnix / SockaddrLinklayer / SockaddrNetlink ENCODERS stay auto: they have no port alias,
-// their raw structs are consumed here only through writeNativeSockaddr (which calls them for Go's
-// own validation and length rules), and the address they return is never handed to the kernel by
-// a covered wrapper.
+// DELIBERATELY NOT COVERED, named rather than left to be rediscovered: Recvmsg / Sendmsg -- the
+// ancillary paths -- still pass `&rsa` / the encoder's address; L10 drew the same line (fix a
+// censused wrapper when a suite REACHES it), and they need a native msghdr plus an iovec array and
+// two-way control-message handling, which is more than writeNativeSockaddr / readNativeSockaddr.
+// The SockaddrUnix / SockaddrLinklayer / SockaddrNetlink ENCODERS stay auto: they have no port
+// alias, their raw structs are consumed here only through writeNativeSockaddr (which calls them for
+// Go's own validation and length rules), and the address they return is never handed to the kernel
+// by a covered wrapper.
+//
+// AND syscall's OWN sendtoInet4 / sendtoInet6 / recvfromInet4 / recvfromInet6 STAY AUTO, which is a
+// decision already on the record and worth not re-litigating: internal/syscall/unix/linux/
+// net_linux_impl.cs's header censused the linux flavor and found ZERO call sites for them, because
+// internal/poll reaches its //go:linkname copies instead. They carry this file's exact defect in
+// eleven lines -- and they are dead code, so hand-owning them would be corpus surface for no
+// behavior. Sendto is covered here and they are not for one reason only: netlink_linux.cs's
+// NetlinkRIB CALLS Sendto, and nothing calls them.
 //
 // THE DEPENDENCY, MEASURED AND STATED UP FRONT. This file moves the socket wall; it does not open
 // the gate. On the Linux flavor a socket is un-armable -- internal/poll/linux/runtime_netpoll_impl.cs
