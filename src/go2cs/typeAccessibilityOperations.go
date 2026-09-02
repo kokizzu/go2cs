@@ -249,6 +249,64 @@ func liftNameNeedsPublicType(name string) bool {
 	return generatedTypeScope(member) == "public"
 }
 
+// productionLiftReuseReachable reports whether a dedup candidate that came from the PRODUCTION
+// registry (lookupProductionDynamicTypeName — a name production's OWN conversion lifted and
+// published via GoDynamicTypeLift, seeded by seedProductionDynamicTypeLifts) may be adopted by the
+// `-tests` conversion currently running.
+//
+// This is the question liftNameNeedsPublicType above does NOT answer, and cannot: every disjunct of
+// that check reasons inside ONE assembly — it asks whether a C# member declared HERE may be typed by
+// a type declared HERE. A production-registry hit is different in kind, because the adopting code
+// may be compiled into a DIFFERENT assembly than the declaration it adopts, and on that arm no
+// declaration is emitted at all (the caller returns the candidate name outright), so what decides
+// the outcome is the candidate's accessibility THERE.
+//
+// Measured 2026-09-01 (bisected; first bad commit 5442b402e "Residual pass round 3: anonymous
+// struct/interface dedup, cross-variant and within-pass" — its parent a5e3347f5 is the last good).
+// `errors` has four test files and ALL FOUR are `package errors_test`, so it has no sibling internal
+// test file, so its production .csproj carries no `InternalsVisibleTo` (insertFriendAssemblyAccess,
+// projectFileWriter.go) and the external suite compiles into a plain referencing assembly. Its
+// join_test.go writes `err.(interface{ Unwrap() []error })` inside TestJoin — function-local, so the
+// old guard's `v.inFunction` disjunct short-circuited unconditionally — and the run adopted
+// production's `is_typeᴛ1` for it instead of minting the local `TestJoin_typeᴛ1` it used to declare:
+//
+//	join_test.cs(49,48): error CS0122: 'errors_package.is_typeᴛ1' is inaccessible due to its
+//	protection level
+//
+// The rule this pins is therefore about REACHABILITY, not about C#'s type-vs-member accessibility
+// rule: a cross-assembly reuse is admissible only if the reused declaration can be named from the
+// assembly doing the reusing.
+//
+//   - The INTERNAL variant is always reachable: whether production is recompiled into the test
+//     assembly (testProjectRecompile) or referenced with the `InternalsVisibleTo $(AssemblyName).tests`
+//     grant a package with internal test files always emits (testProjectWhiteboxReference), the test
+//     files compile with package-private sight of production. testExternalVariant is the existing
+//     per-variant fact convertTestVariants already sets (testVariantOptions); nothing new is recorded.
+//   - The EXTERNAL variant may only adopt a PUBLIC candidate. It is `<pkg>_test`, a separate Go
+//     package that reaches production by IMPORT, and the grant it would need is exactly the one
+//     `errors` does not have. Refusing an internal candidate is unconditionally safe: the caller
+//     falls through to minting its own lift, which is what the emission did before 5442b402e and
+//     what a package with no production lift of that shape does anyway.
+//
+// Deliberately NOT keyed on whether the production csproj happens to carry the IVT grant: that is a
+// property of a file this run may not have written, read at a moment the emission cannot check, and
+// getting it wrong fails the build. Public-or-internal-variant is decidable from state this
+// conversion already holds and errs toward a fresh mint.
+//
+// The callers (visitInterfaceType, visitStructType) conjoin this with liftNameNeedsPublicType rather
+// than replacing it — the two rules answer different questions and a reuse must satisfy both.
+func productionLiftReuseReachable(existing string, options Options) bool {
+	if existing == "" {
+		return false
+	}
+
+	if !options.testExternalVariant {
+		return true
+	}
+
+	return generatedTypeScope(existing) == "public"
+}
+
 // anonymousLiftResidue reports whether name — already stripped of its ShadowVarMarker — is one of the
 // converter's SYNTHESIZED anonymous-type names, and returns the Go identifier the name still carries
 // (empty when it carries none, which is the caller's signal that no export rule applies).
