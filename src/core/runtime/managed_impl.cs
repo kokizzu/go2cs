@@ -83,7 +83,8 @@
 //     converted `.cs` position where it recorded none (goFramePosition). FuncForPC
 //     and Frame.Func stayed unimplemented/nil while a *Func had no managed referent; that
 //     premise EXPIRED when ManagedPointerTokens landed, and FuncForPC/Func.Name are managed
-//     below as of 2026-08-29 (Frame.Func is still nil -- not a token this host mints). getcallersp
+//     below as of 2026-08-29, joined by Func.Entry/Func.FileLine as of 2026-09-02 (Frame.Func is
+//     still nil -- not a token this host mints). getcallersp
 //     itself remains an honest stub: a caller's stack pointer has no managed answer, so the
 //     chain is severed HERE, at the API boundary that does (the methodName precedent).
 //     runtime.Caller stays AUTO-converted and works through the same walk, because the funnel it
@@ -1390,7 +1391,7 @@ partial class runtime_package
         }
     }
 
-    // ------- FuncForPC / Func.Name: a *Func recovered from a token -------
+    // ------- FuncForPC / Func.Name / Func.Entry / Func.FileLine: a *Func recovered from a token -------
     //
     // The header above used to say a *Func has no managed referent. That was true when it was
     // written and stopped being true when ManagedPointerTokens landed (2026-08-29): reflect's
@@ -1400,12 +1401,29 @@ partial class runtime_package
     // being opaque tokens rather than addresses changed.
     //
     // What this does NOT restore is Go's *Func as a window onto pclntab — there is still no
-    // symbol table, no entry address and no inline tree. It answers the ONE question callers
-    // actually ask of a *Func recovered from a function value: its name. reflect's own abi_test.go
+    // symbol table and no inline tree. It answers the questions callers actually ask of a *Func
+    // recovered from a function value or a traceback frame: its name (reflect's own abi_test.go
     // names every subtest `t.Run(runtime.FuncForPC(fn.Pointer()).Name(), ...)`, and answering ""
     // there made Go's testing package renumber the subtests #00, #01, ... turning one naming gap
-    // into 83 orphaned comparison rows that read as 83 defects.
-    private static readonly ConditionalWeakTable<object, string> s_funcNames = new();
+    // into 83 orphaned comparison rows that read as 83 defects), and — since 2026-09-02 — its
+    // Entry() and FileLine(pc). Both fell through to the auto-converted funcInfo()/firstmoduledata
+    // walk until now, which is a permanent empty stub (symtab.cs's Ꮡfirstmoduledata, assigned
+    // exactly once, to a moduledata whose pclntable is always empty) and could never resolve —
+    // structurally, not intermittently, which is why TestCaller (runtime_test, symtab_test.go)
+    // crashed the whole host on any goroutine that happened to reach Entry(). The record below
+    // widens to carry the PC beside the name rather than adding a second table, so FuncForPC mints
+    // both in the one mint site. Entry() returns that PC directly — this host's documented answer
+    // to "what identifies this function" (PC values are opaque process-lifetime tokens, never
+    // addresses; see the file header) — and FileLine(pc) resolves the SAME Go-position data
+    // Callers()/Frames.Next() already serve, through callerFrameRecord. firstmoduledata and
+    // Frame.Func are deliberately UNCHANGED by this arc: see docs/phase4/CENSUS-runtime-semantic-bill.md.
+    private sealed class FuncRecord
+    {
+        public string Name = string.Empty;
+        public uintptr Pc;
+    }
+
+    private static readonly ConditionalWeakTable<object, FuncRecord> s_funcRecords = new();
 
     // FuncForPC returns a *Func describing the function the token names, or nil when the token
     // names nothing this host can resolve — which is Go's own answer for a pc in no function.
@@ -1417,7 +1435,7 @@ partial class runtime_package
             return default!;
 
         ж<Func> box = Ꮡ(new Func());
-        s_funcNames.Add(box, name!);
+        s_funcRecords.Add(box, new FuncRecord { Name = name!, Pc = pc });
         return box;
     }
 
@@ -1428,7 +1446,45 @@ partial class runtime_package
         if (Ꮡf == nil)
             return ""u8;
 
-        return s_funcNames.TryGetValue(Ꮡf, out string? name) ? (@string)name : ""u8;
+        return s_funcRecords.TryGetValue(Ꮡf, out FuncRecord? record) ? (@string)record.Name : ""u8;
+    }
+
+    // Entry returns the PC token this *Func was minted from. Go's Entry() names "the entry
+    // address of the function"; this host has no addresses, only opaque per-call-site tokens
+    // (the file header's standing doctrine), and a token already IS this host's answer to which
+    // function a *Func names — the same identity Name() reads out of the same record. A Func
+    // this host did not mint (Ꮡf == nil, or a box with no record — there should be none minted
+    // any other way) answers 0, matching Go's zero-entry case for an unresolved Func.
+    public static uintptr Entry(this ж<Func> Ꮡf)
+    {
+        if (Ꮡf == nil)
+            return 0;
+
+        return s_funcRecords.TryGetValue(Ꮡf, out FuncRecord? record) ? record.Pc : 0;
+    }
+
+    // FileLine returns the Go position recorded for pc, exactly as Callers()/Frames.Next() already
+    // resolve it — a CallerFrameRecord keyed directly by the token, with no per-function line
+    // table to walk (each call site is its own token here, unlike Go's linker-built pclntab where
+    // one function's *Func spans many pcs). Go's own doc is explicit that pc need not belong to f
+    // ("anyone can call this function, and they might just be wrong about targetpc belonging to
+    // f"), so this reads pc alone; the common case is a caller passing Ꮡf.Entry() straight back in,
+    // which resolves because Entry() returns exactly the token FuncForPC minted Ꮡf from. No record
+    // for pc answers Go's own no-position case: ("", 0).
+    public static (@string @file, nint line) FileLine(this ж<Func> Ꮡf, uintptr pc)
+    {
+        @string @file = default!;
+
+        if (Ꮡf == nil)
+            return (@file, 0);
+
+        CallerFrameRecord? record = callerFrameRecord(pc);
+
+        if (record is null)
+            return (@file, 0);
+
+        @file = record.File;
+        return (@file, record.Line);
     }
 
     // The two token kinds a pc can be in this host, tried in the order that costs least.

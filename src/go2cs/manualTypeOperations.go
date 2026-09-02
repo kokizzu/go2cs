@@ -168,17 +168,20 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"sigenable":  goosLinux,
 		"sigdisable": goosLinux,
 		"sigignore":  goosLinux,
-		// runtime.StartTrace (trace.go, linux flavor): the execution tracer is a serialization of
-		// the scheduler the managed host does not have — the converted body's first step is
-		// semacquire → getg, an unimplemented g-model intrinsic, so every trace.Start THREW as an
-		// infrastructure error. Go's StartTrace returns an error by signature, and a capability the
-		// host cannot provide is honestly an ERROR, not a crash (the AllThreadsSyscall→ENOTSUP
-		// pattern): the hand-own (linux/trace_impl.cs) returns a named tracing-not-supported error,
-		// so runtime/trace.Start propagates it and a test asserting trace output fails cleanly with
-		// a disclosable signature (os/signal's TestSignalTrace is the measured consumer). Scoped
-		// linux because that is the flavor the Phase-4 Linux measurements compile; darwin's copy
-		// stays auto until its own arc.
-		"StartTrace": goosLinux,
+		// runtime.StartTrace (trace.go, build-tag-free — selected on every platform): the execution
+		// tracer is a serialization of the scheduler the managed host does not have — the converted
+		// body's first step is semacquire → getg, an unimplemented g-model intrinsic, so every
+		// trace.Start THREW as an infrastructure error. Go's StartTrace returns an error by
+		// signature, and a capability the host cannot provide is honestly an ERROR, not a crash (the
+		// AllThreadsSyscall→ENOTSUP pattern): the hand-own (<goos>/trace_impl.cs, identical content
+		// on each flavor since the error text is not platform-specific) returns a named
+		// tracing-not-supported error, so runtime/trace.Start propagates it and a test asserting
+		// trace output fails cleanly with a disclosable signature (runtime's own TestCrashWhileTracing
+		// and os/signal's TestSignalTrace are the measured consumers). Scoped windowsLinux — extended
+		// from linux-only 2026-09-02 once TestCrashWhileTracing showed windows hitting the identical
+		// gap; darwin's copy stays auto until its own arc (the lock_sema_impl.cs precedent: one
+		// hand-own, routed by L3 into a copy per targeted platform).
+		"StartTrace": goosWindowsLinux,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and
@@ -233,6 +236,21 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// then walks the symbol table, so a *Func whose Name() stayed auto is a handle to nothing.
 		"FuncForPC": goosAny,
 		"Func.Name": goosAny,
+		// Entry/FileLine complete the *Func the line above started: FuncForPC/Name answered "what is
+		// this function called", but a *Func minted by FuncForPC carries no real _func/moduledata --
+		// calling Entry() or FileLine() on it still fell through to funcInfo()'s firstmoduledata walk,
+		// which is a permanent empty stub (symtab.cs's Ꮡfirstmoduledata, assigned exactly once, to a
+		// moduledata with an always-empty pclntable) and can never resolve. That is TestCaller's crash
+		// (runtime_test), not a goroutine race: any resolved Func reaching Entry() dies here,
+		// unconditionally, on any goroutine. The managed side table (managed_impl.cs) widens to carry
+		// the originating PC beside the name; Entry() returns that token directly -- consistent with
+		// the header's "PC values are opaque process-lifetime tokens" doctrine, since a token IS this
+		// host's answer to "what identifies this function" -- and FileLine(pc) resolves through the
+		// SAME callerFrameRecord Go-position data Callers()/Frames.Next() already use, answering Go's
+		// own no-position case ("", 0) when no record exists. firstmoduledata and Frame.Func are
+		// deliberately untouched by this arc; see docs/phase4/CENSUS-runtime-semantic-bill.md.
+		"Func.Entry":    goosAny,
+		"Func.FileLine": goosAny,
 		// The metrics-table mutex (managed_impl.cs). Go's bodies acquire metricsSema, a runtime
 		// sleeping semaphore whose acquire path is getg() → sudog → gopark — the scheduler
 		// machinery that has no managed counterpart — so every path into the metrics table
