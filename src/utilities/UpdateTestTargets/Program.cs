@@ -42,6 +42,13 @@ foreach (string testDir in behavioralTestDirs)
     targetTests.Add(dirParts[^1]);
 }
 
+// Directory.GetDirectories' enumeration order is host- and filesystem-dependent (Windows: a
+// case-insensitive sort; Linux: raw directory-entry order, effectively unordered) -- sorting here
+// makes the four generated <TestMethods> blocks below identical regardless of which host the
+// utility runs on, so adding one test project no longer reorders every existing line as a side
+// effect of running it on a different platform.
+targetTests.Sort(StringComparer.Ordinal);
+
 (string testClass, Func<string, bool>? filter)[] testClasses =
 [
     ("TranspileTests", null),                       // Tests transpilation of Go code to C# code
