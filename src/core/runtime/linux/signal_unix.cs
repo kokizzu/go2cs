@@ -991,7 +991,7 @@ internal static void ensureSigM() {
                     sigdelset(ref (ᏑsigBlocked).DerefOrNull(), i);
                 }
             }
-            sigprocmask(_SIG_SETMASK, ᏑsigBlocked, nil);
+            sigprocmask(_SIG_SETMASK, ᏑsigBlocked, ж<sigset>.NilBoxOfDims(2L));
             while (ᐧ) {
                 var selᴛ2 = enableSigChan;
                 var selᴛ3 = disableSigChan;
@@ -1008,7 +1008,7 @@ internal static void ensureSigM() {
                     }
                     break;
                 }}
-                sigprocmask(_SIG_SETMASK, ᏑsigBlocked, nil);
+                sigprocmask(_SIG_SETMASK, ᏑsigBlocked, ж<sigset>.NilBoxOfDims(2L));
                 maskUpdatedChan.ᐸꟷ(new EmptyStruct());
             }
         }
@@ -1155,7 +1155,7 @@ internal static bool sigfwdgo(uint32 sig, ж<siginfo> Ꮡinfo, @unsafe.Pointer c
 //go:nosplit
 //go:nowritebarrierrec
 internal static void sigsave(ж<sigset> Ꮡp) {
-    sigprocmask(_SIG_SETMASK, nil, Ꮡp);
+    sigprocmask(_SIG_SETMASK, ж<sigset>.NilBoxOfDims(2L), Ꮡp);
 }
 
 // msigrestore sets the current thread's signal mask to sigmask.
@@ -1169,7 +1169,7 @@ internal static void sigsave(ж<sigset> Ꮡp) {
 internal static void msigrestore(sigset sigmaskʗp) {
     ref var sigmask = ref heap(sigmaskʗp.Clone(), out var Ꮡsigmask);
 
-    sigprocmask(_SIG_SETMASK, Ꮡsigmask, nil);
+    sigprocmask(_SIG_SETMASK, Ꮡsigmask, ж<sigset>.NilBoxOfDims(2L));
 }
 
 // Apply GOOS-specific overrides here, rather than in osinit,
@@ -1215,10 +1215,10 @@ internal static void initᴛsigsetAllExiting() { sigsetAllExiting = ((Func<sigse
 //go:nowritebarrierrec
 internal static void sigblock(bool exiting) {
     if (exiting) {
-        sigprocmask(_SIG_SETMASK, ᏑsigsetAllExiting, nil);
+        sigprocmask(_SIG_SETMASK, ᏑsigsetAllExiting, ж<sigset>.NilBoxOfDims(2L));
         return;
     }
-    sigprocmask(_SIG_SETMASK, Ꮡsigset_all, nil);
+    sigprocmask(_SIG_SETMASK, Ꮡsigset_all, ж<sigset>.NilBoxOfDims(2L));
 }
 
 // unblocksig removes sig from the current thread's signal mask.
@@ -1231,7 +1231,7 @@ internal static void sigblock(bool exiting) {
 internal static void unblocksig(uint32 sig) {
     ref var set = ref heap(new sigset(), out var Ꮡset);
     sigaddset(ref set, (nint)sig);
-    sigprocmask(_SIG_UNBLOCK, Ꮡset, nil);
+    sigprocmask(_SIG_UNBLOCK, Ꮡset, ж<sigset>.NilBoxOfDims(2L));
 }
 
 // minitSignals is called when initializing a new m to set the
@@ -1280,7 +1280,7 @@ internal static void minitSignalMask() {
             sigdelset(ref nmask, i);
         }
     }
-    sigprocmask(_SIG_SETMASK, Ꮡnmask, nil);
+    sigprocmask(_SIG_SETMASK, Ꮡnmask, ж<sigset>.NilBoxOfDims(2L));
 }
 
 // unminitSignals is called from dropm, via unminit, to undo the

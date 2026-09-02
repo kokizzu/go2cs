@@ -392,7 +392,7 @@ internal static UntypedInt eventsBucketSize => 524288; // 32 MiB of events
     if (b == eventsBucketSize - 1 || l.off == l.n) {
         // We've consumed the last event from the bucket, so drop the bucket and
         // allow GC to collect it.
-        l.buckets[a] = default!;
+        l.buckets[a] = ж<array<Event>>.NilBoxOfDims(524288L);
     }
     return (ptr, true);
 }
