@@ -799,9 +799,239 @@ function Test-HostLimitDelta {
     return New-HostLimitResult $true $null
 }
 
+# ---- the ORACLE-ONLY failure (the three-run standard, applied to the ORACLE side) -----------------
+# Every rule above answers the question "this row validated, but at the WRONG COUNT -- may the
+# difference be absorbed?". This one answers a question none of them can reach, because it happens
+# one step earlier: the row did not validate AT ALL, and the reason is that GO'S OWN TEST BINARY
+# failed cases the converted side passed.
+#
+# MEASURED (2026-09-02, crypto/tls run 3): the row COMPLETED -- 3,644 Go rows against 3,644 C# rows,
+# neither side truncated -- and the entire failure set was seven `TestBogoSuite/*` cases plus their
+# parent, every one of them Go=fail / C#=pass, with ZERO Go=pass / C#=fail entries anywhere. The
+# converted side was clean; the oracle flaked. The sweep reported `FAIL crypto/tls`, which is a
+# green corpus failing a gate on the reference implementation's own flake.
+#
+# THE RULING (coordinator, 2026-09-02): the three-run flake standard -- fail-WITH, pass-CLEAN, pass
+# again -- is not a property of the converted side. It is a property of MEASUREMENT, and it applies
+# to whichever side moved. So a row whose failure set is oracle-only is RE-RUN ONCE before it fails;
+# a clean re-run banks and says loudly that the oracle flaked once; a second oracle-only result is
+# `oracle unstable on this host` -- its own verdict word, counted apart, still a non-zero exit,
+# because two unreproducible oracle reds are a host to fix, never a green gate. A row with ANY
+# converted-side failure is untouched: FAIL, first time, no re-run.
+#
+# WHAT THIS IS NOT. It is not a fourth roster absorption arm -- the roster grows no annotation, no
+# count moves, and Get-SweepRowClassification is not extended. A re-run either produces this row's
+# banked count or it does not; this rule decides only whether the sweep is entitled to ASK twice.
+#
+# The refusals below are the whole safety argument, and each one closes a shape that would otherwise
+# read like an oracle flake:
+#
+#   status not `failing`   a conversion-blocked / infrastructure-blocked / not-applicable record
+#                          describes a run that never compared anything
+#   a GATED record         a `-test-filter` run answers for its filter's survivors and rewrites the
+#                          SAME file a full run writes (testConversion.go's TestFilter field exists
+#                          for exactly this) -- never this row's full evidence
+#   entry counts unequal   a truncated side is a dead run, and its missing rows would read as
+#                          one-sided divergences whose C# half is absent, not passing
+#   a deadline or crash    the results-file TAIL states a package deadline kill or a crash outright
+#     signature            (CLAUDE.md's "read the tail FIRST" rule); a killed run is never a flake
+#   any converted-side     one Go=pass / C#=fail entry and the failure set is this corpus's own,
+#     divergence           whatever else is in it
+#   an unreadable error    a census gap, a stale manifest, a blocked capability or the zero-match
+#     entry                guard is an infrastructure statement, not a divergence -- refused BY NAME
+#                          rather than skipped, so a new error shape can never be waved through
+#
+# The two tolerated non-divergence entries are the EXIT-STATUS lines (`go test: ...` and
+# `converted tests: ...`), and tolerating them is not a hole: an exit code here is a CONSEQUENCE of
+# the divergence set, not independent evidence. Go's binary exits non-zero because the cases it
+# flaked failed; the converted host exits non-zero because crypto/tls carries agreed fail/fail rows
+# (its fixtures expired 2025-01-01) which block the compare oracle's own exit-code forgiveness the
+# moment any mismatch exists. Every way those exits could mean something WORSE is caught
+# independently and above: a build or publish death leaves zero verdict rows (the count check), a
+# deadline kill states itself in the tail (the signature scan), and a mid-run crash leaves one-sided
+# rows (the count check, then the C#-half check). Refusing the lines themselves would make this rule
+# unfireable for the only case it was written from.
+
+# The mismatch line matchTerminalStatuses writes: `fmt.Sprintf("%s: Go=%q C#=%q", ...)`, optionally
+# followed by a parenthetical when a pinned disclosure signature did not match. Anchored at the
+# start and non-greedy on the name so the SHORTEST name wins; the trailing parenthetical is ignored
+# here because the go/cs pair it qualifies is refused by the fail/pass test anyway.
+$OracleOnlyDivergencePattern = '^(?<name>.+?): Go="(?<go>[^"]*)" C#="(?<cs>[^"]*)"'
+
+# The two error entries that are a CONSEQUENCE of the divergence set rather than evidence of their
+# own -- see the paragraph above. Ordinal prefix match; anything else is refused by name.
+$OracleOnlyToleratedErrorPrefixes = @('go test: ', 'converted tests: ')
+
+# A run that was KILLED or CRASHED, in the words the artifacts actually use. Scanned over the
+# results-file tail AND over the comparison record's own error text, because the same event reaches
+# the two places in two spellings: plain in the host's own stream, BACKSLASH-ESCAPED when it is
+# carried inside another JSON string. `\\?` before each quote admits both -- a substring count of
+# the plain form alone returned 0 on a record whose tail states the kill (CLAUDE.md, 2026-09-02).
+#
+# Every entry here fails SAFE: a false match refuses the re-run and the row reports FAIL exactly as
+# it does today, so a signature that is occasionally present in a test's captured output costs
+# nothing but the arm not firing.
+$OracleOnlyKillSignatures = @(
+    '\\?"action\\?"\s*:\s*\\?"timeout\\?"'                  # the package-deadline event, both spellings
+    'package timeout after'                                 # that event's own output text
+    '\\?"action\\?"\s*:\s*\\?"infrastructure-error\\?"'     # the host's non-verdict terminal action
+    '0xc0000142'                                            # STATUS_DLL_INIT_FAILED -- a torn publish tree
+    'Unhandled exception'                                   # the CLR's crash banner
+    'NotImplementedException'                               # the measured module-init death
+    'Test Run Aborted'                                      # an aborted host run
+    'fatal error: '                                         # Go's own runtime crash banner
+)
+
+<#
+.SYNOPSIS
+    Decides whether a failed row's failure set is ORACLE-ONLY -- every divergence Go=fail with
+    C#=pass, on a run that otherwise completed. Pure -- no I/O, no state.
+.OUTPUTS
+    OracleOnly (bool), Flaked (the divergent test names, for the ledger note), Reason (why not).
+#>
+function Test-OracleOnlyFailure {
+    param(
+        $Comparison,            # go2cs_test_comparison.json via ConvertFrom-ComparisonRecord
+        # The run's OWN go2cs_test_results.json tail, or $null when there was none to read.
+        # DELIBERATELY UNTYPED. A `[string]` parameter COERCES $null to the empty string, so the
+        # "no tail" refusal below could never fire through it -- an unreadable tail would have read
+        # as a clean one and the re-run would have fired on a run whose deadline nobody checked.
+        # Caught by this rule's own fixtures on the first run (sweep-oracle-rerun-selftest.ps1),
+        # which is the whole argument for exercising a rule with the shapes its CALLER passes.
+        $TailText
+    )
+
+    # Local to this function -- nested definitions do not leak into the script scope.
+    function New-OracleOnlyResult([bool] $oracleOnly, [string[]] $flaked, [string] $reason) {
+        return [PSCustomObject]@{ OracleOnly = $oracleOnly; Flaked = $flaked; Reason = $reason }
+    }
+
+    if ($null -eq $Comparison -or $null -eq $Comparison.go -or $null -eq $Comparison.csharp) {
+        return New-OracleOnlyResult $false @() 'comparison record carries no per-test verdict maps'
+    }
+
+    if ($Comparison.status -ne 'failing') {
+        return New-OracleOnlyResult $false @() ("comparison status is '$($Comparison.status)', not 'failing' -- " +
+            'only a run that COMPLETED and diverged can be an oracle flake')
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($Comparison.testFilter)) {
+        return New-OracleOnlyResult $false @() ("the record was produced under -test-filter '$($Comparison.testFilter)' -- " +
+            'a gated record answers for its filter, never for the row')
+    }
+
+    $goCount = $Comparison.go.Count
+    $csCount = $Comparison.csharp.Count
+
+    if ($goCount -eq 0 -or $csCount -eq 0) {
+        return New-OracleOnlyResult $false @() ("the run produced $goCount Go and $csCount C# verdict row(s) -- " +
+            'a side with no verdicts is a run that did not happen, never a flake')
+    }
+    if ($goCount -ne $csCount) {
+        return New-OracleOnlyResult $false @() ("entry counts incomplete: $goCount Go row(s) against $csCount C# row(s) -- " +
+            'a truncated run, not an oracle flake')
+    }
+
+    # EMPTY as well as absent: a results file that exists and holds nothing is a host that wrote no
+    # stream, which is a dead run and not a tail this can read either way.
+    if ([string]::IsNullOrEmpty($TailText)) {
+        return New-OracleOnlyResult $false @() ('no readable results-file tail -- the deadline/crash question ' +
+            'cannot be answered, so it is answered NO')
+    }
+
+    $errorEntries = @()
+    if ($null -ne $Comparison.errors) { $errorEntries = @($Comparison.errors | ForEach-Object { [string]$_ }) }
+
+    # The tail AND the record's own error text, one scan: the escaped spelling is exactly what an
+    # event embedded in the record's JSON looks like.
+    $scanned = @($TailText) + $errorEntries
+    foreach ($signature in $OracleOnlyKillSignatures) {
+        foreach ($text in $scanned) {
+            if ($text -match $signature) {
+                return New-OracleOnlyResult $false @() ("a deadline/crash signature is present (matched '$signature') -- " +
+                    'a killed or crashed run is never an oracle flake')
+            }
+        }
+    }
+
+    if ($errorEntries.Count -eq 0) {
+        return New-OracleOnlyResult $false @() 'the record lists no divergence at all -- there is nothing to attribute to the oracle'
+    }
+
+    $flaked = New-Object System.Collections.Generic.List[string]
+
+    foreach ($entry in $errorEntries) {
+        if ($entry -match $OracleOnlyDivergencePattern) {
+            $name = $Matches['name']
+            $goVerdict = $Matches['go']
+            $csVerdict = $Matches['cs']
+
+            if ($goVerdict -ne 'fail' -or $csVerdict -ne 'pass') {
+                return New-OracleOnlyResult $false @() ("${name}: Go='$goVerdict' C#='$csVerdict' -- " +
+                    "an oracle flake is Go='fail' with C#='pass'; anything else is this corpus's own divergence")
+            }
+
+            [void]$flaked.Add($name)
+            continue
+        }
+
+        $tolerated = $false
+        foreach ($prefix in $OracleOnlyToleratedErrorPrefixes) {
+            if ($entry.StartsWith($prefix, [System.StringComparison]::Ordinal)) { $tolerated = $true; break }
+        }
+
+        if (-not $tolerated) {
+            return New-OracleOnlyResult $false @() "the record carries a non-divergence error this rule does not read: $entry"
+        }
+    }
+
+    if ($flaked.Count -eq 0) {
+        return New-OracleOnlyResult $false @() ('the record carries exit-status lines but no per-test divergence -- ' +
+            'nothing to attribute to the oracle')
+    }
+
+    return New-OracleOnlyResult $true $flaked.ToArray() $null
+}
+
+<#
+.SYNOPSIS
+    The TAIL of the converted host's own results file, as text. $null when there is no file.
+.DESCRIPTION
+    The artifact CLAUDE.md's "read the results-file TAIL FIRST" rule names: TestHost.WriteResults
+    appends its package-level event (the deadline kill among them) LAST and serializes the whole
+    stream, so the answer to "was this run killed?" is always in the final bytes.
+
+    The LAST $Bytes rather than the whole file, because a 3,600-verdict package's results file is
+    megabytes of event log and this is called on a gate's hot path. FileShare ReadWrite so another
+    handle cannot turn the read into an exception the caller would have to guess about; a tail that
+    cuts a UTF-8 sequence mid-character costs one replacement glyph and no signature.
+#>
+function Get-ResultsTailText {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [int] $Bytes = 65536
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+
+    $stream = [System.IO.File]::Open($Path, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+    try {
+        $take = [int][Math]::Min([long]$Bytes, $stream.Length)
+        if ($take -le 0) { return '' }
+
+        [void]$stream.Seek(-[long]$take, [System.IO.SeekOrigin]::End)
+        $buffer = New-Object byte[] $take
+        $read = $stream.Read($buffer, 0, $take)
+
+        return [System.Text.Encoding]::UTF8.GetString($buffer, 0, $read)
+    }
+    finally { $stream.Dispose() }
+}
+
 # ---- comparison-record reader --------------------------------------------------------------------
 # Reads go2cs_test_comparison.json into the shape the two delta rules above consume: `go`/`csharp`
-# as CASE-SENSITIVE (ordinal) dictionaries, `withdrawn`/`disclosed` as arrays or $null.
+# as CASE-SENSITIVE (ordinal) dictionaries, `withdrawn`/`disclosed` as arrays or $null, plus the
+# three scalar/array members the oracle-only rule reads: `status`, `errors` and `testFilter`.
 #
 # ⚠ Why not ConvertFrom-Json (measured 2026-08-29, G's net/http pre-staging): a Go test suite can
 # legitimately hold verdict names differing ONLY by case -- net/http's
@@ -831,6 +1061,9 @@ function ConvertFrom-ComparisonRecord {
     $csMap = $null
     $withdrawn = $null
     $disclosed = $null
+    $status = $null
+    $recordErrors = $null
+    $testFilter = $null
 
     if ($PSVersionTable.PSEdition -eq 'Desktop') {
         if (-not $script:comparisonSerializer) {
@@ -854,6 +1087,9 @@ function ConvertFrom-ComparisonRecord {
         $csMap = & $toOrdinalMap 'csharp'
         $withdrawn = if ($raw.ContainsKey('withdrawn')) { @($raw['withdrawn']) } else { $null }
         $disclosed = if ($raw.ContainsKey('disclosed')) { @($raw['disclosed']) } else { $null }
+        $status = if ($raw.ContainsKey('status')) { [string]$raw['status'] } else { $null }
+        $recordErrors = if ($raw.ContainsKey('errors')) { @($raw['errors'] | ForEach-Object { [string]$_ }) } else { $null }
+        $testFilter = if ($raw.ContainsKey('testFilter')) { [string]$raw['testFilter'] } else { $null }
     }
     else {
         $document = $null
@@ -878,10 +1114,22 @@ function ConvertFrom-ComparisonRecord {
                 return , @($element.EnumerateArray() | ForEach-Object { $_.GetString() })
             }
 
+            # The scalar sibling of $toArray, for the two string members. GetString() on an absent
+            # property is not reachable -- TryGetProperty gates it exactly as it gates the two above.
+            $toText = {
+                param($member)
+                $element = [System.Text.Json.JsonElement]::new()
+                if (-not $root.TryGetProperty($member, [ref] $element)) { return $null }
+                return $element.GetString()
+            }
+
             $goMap = & $toOrdinalMap 'go'
             $csMap = & $toOrdinalMap 'csharp'
             $withdrawn = & $toArray 'withdrawn'
             $disclosed = & $toArray 'disclosed'
+            $status = & $toText 'status'
+            $recordErrors = & $toArray 'errors'
+            $testFilter = & $toText 'testFilter'
         }
         finally {
             if ($null -ne $document) { $document.Dispose() }
@@ -889,9 +1137,12 @@ function ConvertFrom-ComparisonRecord {
     }
 
     return [PSCustomObject]@{
-        go        = $goMap
-        csharp    = $csMap
-        withdrawn = $withdrawn
-        disclosed = $disclosed
+        go         = $goMap
+        csharp     = $csMap
+        withdrawn  = $withdrawn
+        disclosed  = $disclosed
+        status     = $status
+        errors     = $recordErrors
+        testFilter = $testFilter
     }
 }

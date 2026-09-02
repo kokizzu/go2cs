@@ -11,6 +11,15 @@
 # produce it inside the test's own deadline AND the package's committed manifest already discloses
 # the block root as `host-limit` (Test-HostLimitDelta). Any other count movement is still a failure.)
 #
+# ONE further exception, and it is not a count exception at all: a row whose failure set is
+# ORACLE-ONLY -- every divergence Go=fail with C#=pass, no converted-side failure, no deadline or
+# crash signature, both sides' entry counts complete -- is RE-RUN ONCE before it fails, because the
+# three-run flake standard is a property of measurement and applies to whichever side moved
+# (Test-OracleOnlyFailure, coordinator ruling 2026-09-02, from a crypto/tls run whose converted side
+# passed 3,644 rows and whose oracle flaked eight). A clean re-run banks and says so loudly; a second
+# oracle-only result is `oracle unstable on this host`, counted apart from FAIL and still non-zero.
+# The roster grows NO arm for this: no annotation, no count moves, no classification bucket.
+#
 # The roster is READ FROM docs/ValidatedTestPackages.md rather than hardcoded, so it can never
 # drift from the table a banking commit just updated: the table is the single source of truth for
 # which packages are banked and what counts they carry. (The parsing lives in _roster.ps1, guarded
@@ -303,6 +312,23 @@ $cvac = 0; $cvacRows = @()
 # count as passes -- nothing regressed -- but a full sweep must not report their banked verdicts as
 # re-validated when they were not, so they are named here as well as on their own verdict line.
 $hostLimited = @()
+# The ORACLE-side three-run standard (coordinator ruling 2026-09-02; the rule is
+# Test-OracleOnlyFailure in _roster.ps1). Two buckets, and they are opposites:
+#   $oracleFlakedRows  rows whose FIRST run diverged only on the oracle side and whose SECOND run
+#                      produced a verdict. Their verdict is run 2's -- $pass counts a clean one --
+#                      and they are named here because a row that needed two runs must never read
+#                      like a row that needed one.
+#   $unstableRows      rows whose SECOND run was oracle-only as well. Their own verdict word,
+#                      counted apart from $fail, and still a non-zero exit: two unreproducible
+#                      oracle reds are a host to qualify, not a gate to pass.
+$oracleFlakedRows = @()
+$unstable = 0; $unstableRows = @()
+# Where a failed row's evidence is PRESERVED before the re-run overwrites it (CLAUDE.md: a gate
+# preserves a failed row's comparison record BEFORE any restore or cleanup -- a union battery once
+# deleted the only evidence of which rows diverged). Under the repo's gitignored scratch root, so
+# the preserved copies can never read as corpus dirt; stamped with the SWEEP's start so one run's
+# rows land together.
+$oracleEvidenceRoot = Join-Path $repo ('scratchpad/sweep-oracle-flake/' + $started.ToString('yyyyMMdd-HHmmss'))
 
 # 'Continue' for the sweep itself: merging a native command's stderr with 2>&1 wraps each line in
 # an ErrorRecord in PS 5.1, so under 'Stop' one benign converter warning (e.g. the unsafe.Sizeof
@@ -656,6 +682,112 @@ function Get-HostLimitVerdict {
         -Got $Got -Comparison $comparison -BankedNames $bankedNames.ToArray() -Pin $pin
 }
 
+# ---- the ORACLE-ONLY failure (the three-run standard, applied to the ORACLE side) ----------------
+# The three rules above all answer "this row VALIDATED at the wrong count -- absorb the difference?".
+# This one is reached one step earlier, on a row that produced no "Validated N" line at all, and it
+# absorbs NOTHING: it decides only whether the sweep may ask a second time. The rule and its whole
+# refusal ladder live in _roster.ps1 (Test-OracleOnlyFailure); this reads the evidence and calls it,
+# mirroring the three readers above.
+#
+# TWO artifacts, and both must be THIS ATTEMPT'S OWN. That is the one thing this reader adds over
+# its siblings, and it is not decoration: the pipeline's records are gitignored, `git clean -fd`
+# skips ignored paths, and a restore cannot clear them -- so a warm tree carries the PREVIOUS run's
+# comparison record and results file, byte-identical in shape to this run's (CLAUDE.md's three
+# record-file rules, and the FAILED-BUILD case that re-reads an old record and reports old
+# failures). A staleness test against the attempt's own start time is exact, costs one file stat,
+# and is the difference between reading this run and reading the last one.
+function Get-OracleOnlyVerdict {
+    param([string] $OutDir, [datetime] $Since)
+
+    function New-OracleReaderRejection([string] $reason) {
+        return [PSCustomObject]@{ OracleOnly = $false; Flaked = @(); Reason = $reason }
+    }
+
+    $comparisonPath = Join-Path $OutDir 'go2cs_test_comparison.json'
+    $resultsPath = Join-Path $OutDir 'go2cs_test_results.json'
+
+    if (-not (Test-Path $comparisonPath)) {
+        return New-OracleReaderRejection "no comparison record at $comparisonPath"
+    }
+    if ((Get-Item -LiteralPath $comparisonPath).LastWriteTime -lt $Since) {
+        return New-OracleReaderRejection ("the comparison record at $comparisonPath predates this attempt " +
+            "(started $Since) -- a warm tree's record from an earlier run is not this run's evidence")
+    }
+    if (-not (Test-Path $resultsPath)) {
+        return New-OracleReaderRejection ("no converted-host results file at $resultsPath -- the tail rule has " +
+            'nothing to read, so the deadline/crash question is answered NO')
+    }
+    if ((Get-Item -LiteralPath $resultsPath).LastWriteTime -lt $Since) {
+        return New-OracleReaderRejection ("the results file at $resultsPath predates this attempt (started $Since) -- " +
+            'a stale tail cannot answer the deadline/crash question for this run')
+    }
+
+    $comparison = $null
+    $comparisonError = $null
+    try { $comparison = ConvertFrom-ComparisonRecord -Path $comparisonPath } catch { $comparisonError = $_.Exception.Message }
+    if ($null -eq $comparison) {
+        return New-OracleReaderRejection "unreadable comparison record at ${comparisonPath}: $comparisonError"
+    }
+
+    $tail = $null
+    try { $tail = Get-ResultsTailText -Path $resultsPath } catch { return New-OracleReaderRejection "unreadable results tail at ${resultsPath}: $($_.Exception.Message)" }
+
+    return Test-OracleOnlyFailure -Comparison $comparison -TailText $tail
+}
+
+# Copies one attempt's record, results and JUnit files aside BEFORE the next attempt overwrites
+# them. Missing files are skipped rather than reported: the caller has already established which
+# artifacts exist, and a preserve step must never be the thing that fails a row.
+function Save-OracleEvidence {
+    param([string] $Package, [string] $OutDir, [int] $Attempt)
+
+    $dest = Join-Path $oracleEvidenceRoot ('{0}/run{1}' -f ($Package -replace '/', '.'), $Attempt)
+    [void](New-Item -ItemType Directory -Force -Path $dest)
+
+    foreach ($name in @('go2cs_test_comparison.json', 'go2cs_test_results.json', 'go2cs_test_results.xml')) {
+        $file = Join-Path $OutDir $name
+        if (Test-Path $file) { Copy-Item -LiteralPath $file -Destination (Join-Path $dest $name) -Force }
+    }
+
+    return $dest
+}
+
+# ONE invocation path, called by the first attempt and by the oracle re-run alike. It is a function
+# rather than two call sites for the reason the silent-duplication rule states: a re-run whose
+# command line has drifted from the run it is repeating is not a re-run, and two independently
+# maintained copies of an argument list is exactly the shape that drifts without a conflict.
+# $exe and $src come from script scope, as they do for the three evidence readers above.
+function Invoke-SweepRow {
+    param(
+        [Parameter(Mandatory)][string] $Package,
+        [Parameter(Mandatory)][string] $GoDir,
+        [Parameter(Mandatory)][string] $OutDir,
+        [Parameter(Mandatory)][string] $PkgTimeout,
+        [string[]] $ExecArgs = @(),
+        [switch] $CgoOff
+    )
+
+    # The row's cgo state, restored unconditionally so one pinned package cannot leak into the next.
+    $priorCgo = $env:CGO_ENABLED
+
+    if ($CgoOff) {
+        Write-Host "  pinning CGO_ENABLED=0 for $Package -- its Go file selection is cgo-conditional and the corpus is emitted cgo-off" -ForegroundColor DarkGray
+        $env:CGO_ENABLED = '0'
+    }
+
+    try {
+        $captured = & $exe -tests -test-action all -test-timeout $PkgTimeout @ExecArgs -go2cspath $src $GoDir $OutDir 2>&1
+    }
+    finally {
+        if ($CgoOff) {
+            if ($null -eq $priorCgo) { Remove-Item Env:\CGO_ENABLED -ErrorAction SilentlyContinue }
+            else { $env:CGO_ENABLED = $priorCgo }
+        }
+    }
+
+    return $captured
+}
+
 # Packages whose C# suite legitimately exceeds the default package deadline. hash/maphash's
 # SMHasher matrix runs ~15 minutes in C# (7.6 s in Go — a performance gap, not a correctness one)
 # and was BANKED under 30m; at the default it reports a timeout with every test up to the cut
@@ -822,30 +954,57 @@ foreach ($row in $rows) {
         $execSuffix = if ($row.Execution) { " [$($row.Execution)]" } else { '' }
     }
 
-    # The row's cgo state, restored unconditionally so one pinned package cannot leak into the next.
     $cgoPinned = $cgoOffPackages.ContainsKey($pkg)
-    $priorCgo = $env:CGO_ENABLED
-    if ($cgoPinned) {
-        Write-Host "  pinning CGO_ENABLED=0 for $pkg -- its Go file selection is cgo-conditional and the corpus is emitted cgo-off" -ForegroundColor DarkGray
-        $env:CGO_ENABLED = '0'
-    }
 
     $rowStarted = Get-Date
-    try {
-        $out = & $exe -tests -test-action all -test-timeout $pkgTimeout @execArgs -go2cspath $src $goDir $outDir 2>&1
-    }
-    finally {
-        if ($cgoPinned) {
-            if ($null -eq $priorCgo) { Remove-Item Env:\CGO_ENABLED -ErrorAction SilentlyContinue }
-            else { $env:CGO_ENABLED = $priorCgo }
-        }
-    }
+    $out = Invoke-SweepRow -Package $pkg -GoDir $goDir -OutDir $outDir -PkgTimeout $pkgTimeout -ExecArgs $execArgs -CgoOff:$cgoPinned
     # Per-row wall time, printed on every verdict line. This is the SWEEP's wall clock for the row
     # (convert + build + both test hosts + compare), which is the number shard planning needs --
     # the go test -json stream's own "Time" fields measure only the Go side and invert exactly the
-    # rows that dominate a shard (hash/maphash: 7.6s in Go, ~40min in C#).
+    # rows that dominate a shard (hash/maphash: 7.6s in Go, ~40min in C#). After an oracle re-run it
+    # is the SECOND attempt's wall, which is the run the verdict below describes.
     $rowSecs = [int]((Get-Date) - $rowStarted).TotalSeconds
     $verdict = ($out | Select-String 'Validated (\d+) tests against go test' | Select-Object -First 1)
+
+    # ---- the ORACLE RE-RUN ARM (coordinator ruling 2026-09-02) -----------------------------------
+    # Reached only when the row produced NO "Validated N" line, which is where an oracle flake always
+    # lands: any mismatch clears Matched, so the converter returns an error and never prints it.
+    # Test-OracleOnlyFailure (_roster.ps1) then reads the run's own evidence and answers one
+    # question -- was every divergence Go=fail with C#=pass, on a run that otherwise completed? If
+    # so the row is re-run ONCE and the SECOND run is what the classification below describes; if
+    # the second run is oracle-only as well the row takes its own verdict word rather than FAIL.
+    # A row with any converted-side failure never enters here: the rule refuses it by name, its
+    # reason is printed under the FAIL line, and nothing about that row's handling has moved.
+    $oracleFlakedNames = @()
+    $oracleUnstable = $false
+    $oracleReason = $null
+
+    if (-not $verdict) {
+        $oracle = Get-OracleOnlyVerdict -OutDir $outDir -Since $rowStarted
+        $oracleReason = $oracle.Reason
+
+        if ($oracle.OracleOnly) {
+            $oracleFlakedNames = @($oracle.Flaked)
+            # PRESERVE BEFORE THE RE-RUN. The second attempt overwrites the record and the results
+            # file in place, so this is the only moment run 1's evidence exists.
+            $preserved = Save-OracleEvidence -Package $pkg -OutDir $outDir -Attempt 1
+            Write-Host ("  RERUN $label oracle-only failure set: $($oracleFlakedNames.Count) case(s), every one Go=fail/C#=pass, " +
+                "zero converted-side failures -- re-running once [${rowSecs}s]") -ForegroundColor Magenta
+            Write-Host "        run 1 evidence preserved at $preserved" -ForegroundColor DarkGray
+
+            $rowStarted = Get-Date
+            $out = Invoke-SweepRow -Package $pkg -GoDir $goDir -OutDir $outDir -PkgTimeout $pkgTimeout -ExecArgs $execArgs -CgoOff:$cgoPinned
+            $rowSecs = [int]((Get-Date) - $rowStarted).TotalSeconds
+            $verdict = ($out | Select-String 'Validated (\d+) tests against go test' | Select-Object -First 1)
+
+            if (-not $verdict) {
+                $oracleSecond = Get-OracleOnlyVerdict -OutDir $outDir -Since $rowStarted
+                $oracleReason = $oracleSecond.Reason
+                $oracleUnstable = $oracleSecond.OracleOnly
+                [void](Save-OracleEvidence -Package $pkg -OutDir $outDir -Attempt 2)
+            }
+        }
+    }
 
     if ($verdict) {
         $got = [int]$verdict.Matches[0].Groups[1].Value
@@ -958,11 +1117,38 @@ foreach ($row in $rows) {
                 }
             }
         }
+
+        # THE LEDGER NOTE. A row that needed two runs must never read like a row that needed one, so
+        # the flake is stated on the row's own face, next to the verdict it produced -- and the
+        # verdict above describes RUN 2, whatever it was. The names are capped at a dozen so this
+        # stays the one loud line the ruling asks for; the full set is in the preserved run-1 record,
+        # whose path was printed when the re-run was announced.
+        if ($oracleFlakedNames.Count -gt 0) {
+            $shown = @($oracleFlakedNames | Select-Object -First 12)
+            $moreNote = if ($oracleFlakedNames.Count -gt $shown.Count) { " (+$($oracleFlakedNames.Count - $shown.Count) more in the preserved run-1 record)" } else { '' }
+            Write-Host ("        ORACLE FLAKED ONCE -- run 1 diverged on the oracle side only " +
+                "($($oracleFlakedNames.Count) case(s) Go=fail/C#=pass); run 2 is the verdict above. " +
+                "Flaked: $($shown -join ', ')$moreNote") -ForegroundColor Magenta
+            $oracleFlakedRows += "$pkg ($($oracleFlakedNames.Count) oracle-only case(s) on run 1, re-run classified '$class')"
+        }
+    }
+    elseif ($oracleUnstable) {
+        # BOTH runs oracle-only. Its own verdict word, counted apart from FAIL -- the converted side
+        # passed every one of these cases twice, so calling it a corpus failure would be false, and
+        # calling it a pass would be a green gate over an unmeasurable host. Non-zero exit either way.
+        $unstable++
+        $unstableRows += "$pkg ($($oracleFlakedNames.Count) oracle-only case(s) on run 1; run 2 oracle-only as well)"
+        Write-Host "  ORACLE $label oracle unstable on this host -- two oracle-only runs, no converted-side failure in either [${rowSecs}s]" -ForegroundColor Red
+        Write-Host "        both runs' evidence preserved under $oracleEvidenceRoot" -ForegroundColor DarkGray
     }
     else {
         $fail++; $failed += $pkg
         Write-Host "  FAIL  $label [${rowSecs}s]" -ForegroundColor Red
         $out | Select-Object -Last 3 | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkGray }
+        # WHY the oracle re-run did not fire. Printed always, because the interesting case is the one
+        # where a reader expected it to: a stale record, a deadline in the tail, or a converted-side
+        # divergence each say something different about what this row just did.
+        if ($oracleReason) { Write-Host "        oracle-only check: $oracleReason" -ForegroundColor DarkGray }
     }
 }
 
@@ -972,10 +1158,12 @@ Write-Host ''
 # Windows is never, so the summary line is byte-for-byte the line it has always printed there.
 $summary = "sweep: $pass pass"
 if ($hostLimited.Count) { $summary += " ($($hostLimited.Count) host-limited)" }
+if ($oracleFlakedRows.Count) { $summary += " ($($oracleFlakedRows.Count) after an oracle re-run)" }
 $summary += " / $fail fail"
+if ($unstable) { $summary += " / $unstable oracle-unstable" }
 if ($cvac) { $summary += " / $cvac comparison-validated-at-count" }
 $summary += "  (${elapsed}s)"
-Write-Host $summary -ForegroundColor $(if ($fail -or $cvac) { 'Red' } else { 'Green' })
+Write-Host $summary -ForegroundColor $(if ($fail -or $cvac -or $unstable) { 'Red' } else { 'Green' })
 
 # The pipeline regenerates each package's committed test artifacts in place. Content drift is a
 # real signal; CRLF-only churn is not (autocrlf smudges LF fixtures on checkout) -- so report by
@@ -1169,6 +1357,21 @@ if ($hostLimited.Count) {
     Write-Host '  (the banked count stands; it is what a host that can produce the block scores -- see the manifest entry for the retirement condition)' -ForegroundColor DarkGray
 }
 
+if ($oracleFlakedRows.Count) {
+    Write-Host ''
+    Write-Host 'oracle flaked once -- run 1 diverged ONLY on the oracle side (Go=fail / C#=pass, no converted-side failure); run 2 is what the verdict describes:' -ForegroundColor Magenta
+    $oracleFlakedRows | ForEach-Object { Write-Host "  $_" -ForegroundColor Magenta }
+    Write-Host "  (run 1's comparison record and results file are preserved under $oracleEvidenceRoot)" -ForegroundColor DarkGray
+}
+
+if ($unstable) {
+    Write-Host ''
+    Write-Host 'oracle unstable on this host -- BOTH runs diverged only on the oracle side; the converted rows passed each time:' -ForegroundColor Red
+    $unstableRows | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+    Write-Host '  (the three-run standard on the oracle side: fail-with, pass-clean, pass-again. Two unreproducible oracle reds' -ForegroundColor DarkGray
+    Write-Host '   are a host to qualify -- go test -count=1 <pkg> on this box -- never a corpus regression, and never a green gate.)' -ForegroundColor DarkGray
+}
+
 if ($cvac) {
     Write-Host ''
     Write-Host "comparison-validated-at-count -- validated, with no $targetGoos expectation in the roster to bank against:" -ForegroundColor Cyan
@@ -1182,6 +1385,12 @@ if ($fail) {
     $failed | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
     exit 1
 }
+
+# An oracle-unstable row is not a green gate either, for the same reason and by the same shape: the
+# row was NOT measured on this host, and an unmeasured row must never read as a pass. It is counted
+# and reported apart from $fail because what it names is different -- the reference implementation
+# on this box, not the corpus.
+if ($unstable) { exit 1 }
 
 # An unbanked count is not a green gate: it exits non-zero exactly as it did before this dimension
 # existed, only now it is reported as itself rather than as a count failure.
