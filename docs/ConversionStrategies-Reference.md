@@ -9221,10 +9221,68 @@ correct by construction, which is why its diff is wider than its behavioural yie
 Restricted to a plain ident receiver of non-pointer type — the shape an emission-attached census of the
 whole standard library found (19 sites: `bytes` ×3, `strings` ×3, `encoding/json` ×8, `crypto/tls` ×3,
 `crypto/internal/hpke` ×2, of which 12 have an ident receiver). A pointer base auto-deref'd to a value
-receiver would need the *deref* snapshotted rather than the pointer, and keeps its existing emission.
+receiver needs the *deref* snapshotted rather than the pointer, and takes the rule in the next section.
 (Guarded by `MethodValueReceiverSnapshot`, which output-compares all five positions — typed element,
 `any` element, cross-statement independence, call argument, and the box-ref assignment — against
 `go run`.)
+
+### A VALUE receiver reached through a POINTER expression hoists the POINTEE's copy
+Go's implicit dereference: `h.p.label` with `p *frame` and a value-receiver `label` IS `(*h.p).label`,
+so what the method value saves is **the pointee's copy**, taken at evaluation. Two consequences follow,
+and they are separate questions — a later write *through* the pointer is not visible through the method
+value, and *repointing* the pointer afterwards is not either.
+
+The evaluate-once rule above renders the receiver as the enclosing context does, which for this shape is
+the **box**, and binding a `ж<T>` where the emitted extension wants a `T` does not compile:
+
+```go
+h := holder{p: &frame{Name: "a"}}   // p is *frame; label has a VALUE receiver
+fieldV := h.p.label
+h.p.Name = "A"
+fmt.Println(fieldV(), h.p.label())  // Go: a A
+```
+```csharp
+// before — the receiver expression rendered as the box, per call
+var hʗ1 = h;
+var fieldV = () => hʗ1.p.label();   // CS1929: ж<frame> offered to label(frame)
+
+// after — the temp holds the DEREF, so it is the pointee's copy at evaluation
+var recvʗ1 = ~h.p;
+var fieldV = () => recvʗ1.label();
+h.p.Value.Name = "A"u8;
+```
+
+`operator ~` returns `T` **by value**, so a value receiver's copy semantics come out of the dereference
+itself rather than out of a rule about it: a mutation inside the method reaches the copy and never the
+pointee, and the temp is pinned to the pointee that was there at evaluation. The check runs *before* the
+bare-ident early return, because for a pointer ident the once-evaluated rendering already in hand is the
+BOX — a different value from the pointee, so hoisting it is not the "second copy of one evaluation" that
+return exists to prevent.
+
+Two narrowings, each matching a rule the CALL path (`(~z).make(n)`) already proved: a deref-**aliased**
+receiver expression — a pointer parameter, or the enclosing method's pointer receiver — already renders
+as the value, so a second `~` would dereference a non-pointer (CS0023) and the temp takes the plain
+rendering (`var recvʗ1 = p;`); and a **promoted** method reaches its receiver through the `.of(…)` hop
+machinery, so it keeps its existing emission. Both the assignment arm and the value (call-argument) arm
+take the hoist — the same defect stood in both, and fixing one of them is not the fix.
+
+Footprint, measured as two seeded whole-stdlib emissions diffed against **each other** (never against
+the committed tree, which is a moving baseline): **zero** in `src/core` — 0 changed files and 0 hunks
+across 6004 files per side, 0 unreadable, with both conversions exiting 0 and both emissions asserted
+to carry the run's own mtimes. The shape is unreached in the production corpus, which is why it was
+declined rather than guessed at when the evaluate-once family landed. It is *not* unreached in the behavioral corpus: `ReceiverCapturedInClosure`'s
+`viaBareMethodValue` is exactly it — a pointer RECEIVER ident under a value-receiver `tag` — and its
+golden re-baselines from `call(() => Ꮡw.Value.tag())` to a once-evaluated `var recvʗ1 = w;`. Its sibling
+`viaFieldMethodValue` (`w.id.render`, a *value* field) is untouched, which is the narrowing working:
+what matters is the type of the receiver EXPRESSION, not of the base it is reached through. No output
+moves there — nothing writes between creation and call — so it is a correct-by-construction change with
+no locally observable consumer, stated as such. (Guarded by `MethodValuePointeeCopy`, which
+output-compares nine positions against `go run`: pointer field, repointed pointer, pointer local ident,
+call argument, a call-shaped pointer receiver counted for evaluate-once, a method with parameters, the
+value receiver's own mutation-does-not-reach-the-pointee direction, a pointer parameter, and a
+pointer-typed slice element. Eight of the nine positions are `CS1929` on the pre-cut converter — nine
+errors, the call-argument position carrying two sites — and the ninth, the pointer parameter, compiles
+there and silently reports the pointee as it stands at CALL time.)
 
 ### A bare function value in `:=` takes its named delegate type, not `var`
 Go's short-declaration from a bare function value whose type is a **named** func type — text/template/parse's `state := lexText`, where `lexText` is `func(*lexer) stateFn` and `type stateFn func(*lexer) stateFn` (the classic self-referential state machine) — infers the local as the *unnamed* signature. The converter cannot emit `var state = lexText;` (a C# method group has no `var`-inferable delegate type — CS8917), and typing the local structurally as `Func<ж<lexer>, stateFn>` makes it a **distinct** C# delegate from the `stateFn` the method group produces and that each `state = state(l)` reassignment yields (CS0029). It declares the local with the matching package named delegate instead:

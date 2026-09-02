@@ -946,6 +946,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckMethodSelector() => CheckTarget("MethodSelector");
 
     [TestMethod]
+    public void CheckMethodValuePointeeCopy() => CheckTarget("MethodValuePointeeCopy");
+
+    [TestMethod]
     public void CheckMethodValueReassignCapture() => CheckTarget("MethodValueReassignCapture");
 
     [TestMethod]

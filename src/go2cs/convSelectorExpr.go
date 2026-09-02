@@ -1229,8 +1229,8 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 					// and a rename with nowhere to declare is CS0103. Where there is no sink the
 					// previous rendering stands — declare-or-do-not-rename. Restricted to a plain
 					// IDENT receiver of non-pointer type, which is the shape the census found; a
-					// pointer base auto-deref'd to a value receiver would need the deref snapshotted,
-					// not the pointer, and is left to its existing emission rather than guessed at.
+					// POINTER receiver expression auto-deref'd to a value receiver takes the pointee
+					// hoist immediately below instead, because what it has to snapshot is the DEREF.
 					snapshotName := ""
 
 					if recvIdent, isIdent := selectorExpr.X.(*ast.Ident); isIdent && v.hoistedDecls != nil && v.lambdaCapture != nil {
@@ -1256,6 +1256,20 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 								// temps.
 								v.hoistedDecls.WriteString(fmt.Sprintf("%s%svar %s = %s;%s", v.newline, v.indent(v.indentLevel), snapshotName, snapshotInit, v.newline))
 							}
+						}
+					}
+
+					// The AUTO-DEREF'd pointee — the VALUE-context member of the shape the assignment
+					// arm hoists through hoistReceiverEvaluation, and broken here in exactly the same
+					// way: `call(h.p.label)` with `p *frame` renders the box into the wrapper and
+					// offers a `ж<frame>` to an extension that wants a `frame` (**CS1929**), while Go
+					// saved `(*h.p)`'s copy when the argument was evaluated. Same two narrowings as
+					// the assignment arm (a deref-aliased ident is already the value; a promoted
+					// method keeps its `.of(…)` hop emission), and the same sink rule — no sink, no
+					// rename.
+					if snapshotName == "" && v.receiverExprIsAutoDerefdPointee(selectorExpr) {
+						if sel := v.info.Selections[selectorExpr]; sel != nil && sel.Kind() == types.MethodVal && len(sel.Index()) == 1 {
+							snapshotName = v.hoistReceiverTemp(selectorExpr.X, !v.exprIsDerefAliasedPointer(selectorExpr.X))
 						}
 					}
 
@@ -2038,33 +2052,97 @@ func (v *Visitor) hoistReceiverEvaluation(selectorExpr *ast.SelectorExpr, render
 		return rendered
 	}
 
+	// A POINTER-typed receiver expression under a VALUE receiver is Go's implicit deref: `h.p.label`
+	// with `p *frame` and a value-receiver `label` IS `(*h.p).label`, so what Go saves is the
+	// POINTEE'S COPY, not the pointer. Hoisting the expression as the enclosing context renders it
+	// — the box — binds a `ж<T>` where the emitted extension wants a `T`, which does not compile
+	// (**CS1929**), and would be semantically wrong even where it did: the deref would then happen at
+	// CALL time and observe later writes to the pointee, and a repointed pointer would be followed.
+	//
+	// So the temp holds the DEREF, which is what makes this shape a hoist rather than a decline: the
+	// pointee copy IS the once-evaluated receiver, and `operator ~` returns `T` by value, so the
+	// copy semantics of a value receiver come from the deref itself rather than from a rule about
+	// it. This checks BEFORE the bare-ident early return below, because there the ident's own
+	// once-evaluated rendering is the BOX — a different value from the pointee, so hoisting it is
+	// not the second copy of one evaluation that return exists to prevent.
+	//
+	// Two narrowings, each matching a rule the CALL path already proved (the `(~z).make(n)` arm):
+	// a receiver expression that is already deref-ALIASED (a pointer parameter, or the enclosing
+	// method's pointer receiver) renders as the VALUE, so a second `~` would deref a non-pointer
+	// (CS0023); and a PROMOTED method (selection index depth > 1) reaches its receiver through the
+	// `.of(…)` hop machinery, so it keeps its existing emission rather than being handed a deref
+	// this helper cannot place — do not hoist what you cannot render correctly.
+	if v.receiverExprIsAutoDerefdPointee(selectorExpr) {
+		if sel := v.info.Selections[selectorExpr]; sel != nil && sel.Kind() == types.MethodVal && len(sel.Index()) == 1 {
+			if tempName := v.hoistReceiverTemp(selectorExpr.X, !v.exprIsDerefAliasedPointer(selectorExpr.X)); tempName != "" {
+				return tempName
+			}
+		}
+
+		return rendered
+	}
+
 	if _, isIdent := selectorExpr.X.(*ast.Ident); isIdent {
 		return rendered
 	}
 
-	// A POINTER-typed receiver expression under a VALUE receiver is Go's implicit deref: `rh.p.label`
-	// with `p *frame` and a value-receiver `label` IS `(*rh.p).label`, so what Go saves is the
-	// POINTEE's copy, not the pointer. This helper hoists the expression as the enclosing context
-	// renders it, which for that shape is the box — and binding a `ж<T>` where the emitted extension
-	// wants a `T` does not compile (**CS1929**, measured on `rh.p.label`). Hoisting the pointer would
-	// also be semantically wrong even where it did compile, since the deref would then happen at CALL
-	// time and observe later writes to the pointee.
-	//
-	// Left on the previous rendering rather than guessed at: emitting the deref here would have to
-	// reproduce the selector's own auto-deref, and getting that subtly wrong is how a receiver ends up
-	// aliasing the wrong storage. The shape keeps whatever correctness it had before this commit and
-	// is COUNTED, exactly as a sink-less site is — the same declare-or-do-not-rename discipline, one
-	// level up: do not hoist what you cannot render correctly.
-	if recvType := v.getType(selectorExpr.X, false); recvType != nil {
-		if _, exprIsPointer := recvType.Underlying().(*types.Pointer); exprIsPointer {
-			if funcObj, ok := v.info.ObjectOf(selectorExpr.Sel).(*types.Func); ok {
-				if sig, ok := funcObj.Type().(*types.Signature); ok && sig.Recv() != nil {
-					if _, recvIsPointer := sig.Recv().Type().(*types.Pointer); !recvIsPointer {
-						return rendered
-					}
-				}
-			}
-		}
+	if tempName := v.hoistReceiverTemp(selectorExpr.X, false); tempName != "" {
+		return tempName
+	}
+
+	return rendered
+}
+
+// receiverExprIsAutoDerefdPointee reports whether a method value's receiver EXPRESSION is
+// POINTER-typed while the method's declared receiver is a VALUE — Go's implicit dereference,
+// `h.p.label` ≡ `(*h.p).label`. The pointer is NOT what the method value saves; the pointee's copy
+// is. Interface receivers are excluded: they are a genuine C# instance method over the interface
+// value and never take this path.
+func (v *Visitor) receiverExprIsAutoDerefdPointee(selectorExpr *ast.SelectorExpr) bool {
+	recvType := v.getType(selectorExpr.X, false)
+
+	if recvType == nil {
+		return false
+	}
+
+	if _, exprIsPointer := recvType.Underlying().(*types.Pointer); !exprIsPointer {
+		return false
+	}
+
+	funcObj, ok := v.info.ObjectOf(selectorExpr.Sel).(*types.Func)
+
+	if !ok {
+		return false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.Recv() == nil || types.IsInterface(sig.Recv().Type()) {
+		return false
+	}
+
+	_, recvIsPointer := sig.Recv().Type().(*types.Pointer)
+
+	return !recvIsPointer
+}
+
+// hoistReceiverTemp evaluates a method value's receiver expression into a statement-level temp and
+// returns the temp's name, or "" when it cannot be declared. `deref` renders the temp's initializer
+// as the pointee (`~expr`) rather than the expression itself, which is what an auto-deref'd
+// pointer receiver expression saves.
+//
+// The initializer is RE-RENDERED outside lambda context rather than reusing the caller's string,
+// and that is load-bearing, not tidiness. The caller's rendering is produced in-lambda, so a
+// captured base reads as the capture machinery's snapshot name (`h6ʗ1.f`) — and that snapshot is
+// declared into this SAME hoist buffer, AFTER this temp, because the capture declarations are
+// generated later in the emission order. Hoisting the in-lambda string therefore emits
+// `var recvʗ1 = h6ʗ1.f;` above `var h6ʗ1 = h6;` — use-before-declaration, CS0841, on every
+// captured base. Rendering the ORIGINAL expression in the enclosing context yields `h6.f`, which is
+// in scope at the statement position where this declaration lands. Same discipline the ident arms
+// already use, and for the same reason.
+func (v *Visitor) hoistReceiverTemp(recvExpr ast.Expr, deref bool) string {
+	if v.hoistedDecls == nil || v.lambdaCapture == nil {
+		return ""
 	}
 
 	// Shares getCapturedVarName's per-prefix counter so a receiver temp can never collide with a
@@ -2074,22 +2152,17 @@ func (v *Visitor) hoistReceiverEvaluation(selectorExpr *ast.SelectorExpr, render
 	v.lambdaCapture.detectingCaptures = false
 	tempName := v.getCapturedVarName(receiverTempPrefix)
 
-	// The initializer is RE-RENDERED outside lambda context rather than reusing the caller's
-	// string, and that is load-bearing, not tidiness. The caller's rendering is produced in-lambda,
-	// so a captured base reads as the capture machinery's snapshot name (`h6ʗ1.f`) — and that
-	// snapshot is declared into this SAME hoist buffer, AFTER this temp, because the capture
-	// declarations are generated later in the emission order. Hoisting the in-lambda string
-	// therefore emits `var recvʗ1 = h6ʗ1.f;` above `var h6ʗ1 = h6;` — use-before-declaration,
-	// CS0841, on every captured base. Rendering the ORIGINAL expression in the enclosing context
-	// yields `h6.f`, which is in scope at the statement position where this declaration lands.
-	// Same discipline the ident arms already use, and for the same reason.
 	savedInLambda := v.lambdaCapture.conversionInLambda
 	v.lambdaCapture.conversionInLambda = false
-	initExpr := v.convExpr(selectorExpr.X, nil)
+	initExpr := v.convExpr(recvExpr, nil)
 	v.lambdaCapture.conversionInLambda = savedInLambda
 
 	if initExpr == "" {
-		return rendered
+		return ""
+	}
+
+	if deref {
+		initExpr = PointerDerefOp + initExpr
 	}
 
 	v.hoistedDecls.WriteString(fmt.Sprintf("%s%svar %s = %s;%s", v.newline, v.indent(v.indentLevel), tempName, initExpr, v.newline))
