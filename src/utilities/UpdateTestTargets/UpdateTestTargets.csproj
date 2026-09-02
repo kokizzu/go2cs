@@ -7,4 +7,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!--
+    F8's "is this behavioral package native to this host" predicate, shared with BehavioralRunner and
+    BehavioralTestBase. LINKED by path for the same reason they link it: this utility takes no
+    assembly dependency on either runner, and a re-derived marker parse here is a fourth chance for
+    the harnesses to disagree about which packages a host may write goldens for.
+  -->
+  <ItemGroup>
+    <Compile Include="../../tests/PlatformExclusive.cs" Link="PlatformExclusive.cs" />
+  </ItemGroup>
+
 </Project>
