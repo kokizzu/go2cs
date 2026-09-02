@@ -21567,4 +21567,104 @@ and is **two** (`bits.Mul` → `Mul64`, `bits.Add` → `Add64`, each materialisi
 ValueTuple), so the attribute went on all four levels; on the outer pair alone it would have measured
 the wrong thing. Both consoles reference golib and `math/bits` by ABSOLUTE path, so the
 per-configuration `$(go2csPath)` Release trap cannot reach them. Neither is proposed for banking.
+## 2026-09-02 · The struct-passing seam restated at its TRUE size: the CLR AUTO-LAYOUTS any struct holding a reference, so the kernel reads the WRONG FIELD — not a wrong-width one (lane C2, cloud Linux; offsets measured, not reasoned)
+
+**The class was under-described for as long as it has been known, and the under-description sends people
+to the wrong fix.** Every prior statement of it — including the one in this lane's own train-11 commit —
+said some version of "one word where four bytes belong": a `ж<T>` or `array<T>` field is 8 or 16 bytes of
+object reference where the kernel wants inline storage, so the fields *after* it are pushed along. That
+is a WIDTH story, and a width story invites a width remedy: widen the field, mirror the declared order,
+count the bytes again. It is wrong. **A C# struct containing an object reference does not get sequential
+layout at all** — the CLR is free to reorder its fields, and it does. The kernel does not read a
+too-narrow version of the field the code assigned; it reads *a different field*.
+
+Measured with `Unsafe.ByteOffset` against the converted types themselves, `GoTargetOS=linux`, x64:
+
+```
+Msghdr             SizeOf=80   native=56
+  Name         managed=  0   native=  0
+  Namelen      managed= 40   native=  8     <-- MOVED
+  Pad_cgo_0    managed= 48   native= 12     <-- MOVED
+  Iov          managed=  8   native= 16     <-- MOVED
+  Iovlen       managed= 24   native= 24
+  Control      managed= 16   native= 32     <-- MOVED
+  Controllen   managed= 32   native= 40     <-- MOVED
+  Flags        managed= 44   native= 48     <-- MOVED
+  Pad_cgo_1    managed= 64   native= 52     <-- MOVED
+
+RawSockaddrUnix    SizeOf=24   native=110
+  Family       managed=  0   native=  0
+  Path         managed=  8   native=  2     <-- MOVED
+
+RawSockaddrInet4   SizeOf=40   native=16
+  Family       managed=  0   native=  0
+  Port         managed=  2   native=  2
+  Addr         managed=  8   native=  4     <-- MOVED
+  Zero         managed= 24   native=  8     <-- MOVED
+
+Iovec              SizeOf=16   native=16
+  Base         managed=  0   native=  0
+  Len          managed=  8   native=  8
+```
+
+**`Msghdr` is the worked example, and it explains two errnos that had no explanation.** Of nine fields,
+only `Name` (0) and `Iovlen` (24) land where the kernel expects them. At native offset 8 — where the
+kernel reads `msg_namelen` — sits **`Iov`, an object reference**: always non-zero on a live message, and
+huge. A non-zero `msg_namelen` on an established unix STREAM socket is **EISCONN** by definition
+(`unix_stream_sendmsg`); on the DATAGRAM path the same non-zero namelen sends the kernel to validate an
+"address" at `msg_name` — the `NativeBox<byte>(0)` heap object a nil `to` produces — and that is
+**EINVAL**. Both were observed at master, three runs each, on a reduction of Go's own
+`TestSCMCredentials`; both were previously attributed to the nil-name conversion alone, which cannot be
+the whole story because the C# code *does* assign `Namelen = 0` — at managed offset 40, which the kernel
+reads as part of `msg_controllen`.
+
+**`Iovec` is the converse and is the sharper half of the finding.** Every offset correct, `SizeOf`
+correct — and still unusable, because `Base` is a managed reference: the kernel reads a heap address
+where a data address belongs. **Right place, wrong value.** So "the offsets check out" is not a
+clearance, and neither is "the size matches".
+
+**`RawSockaddrInet4` is the confirmation, derived twice, months apart, by different instruments.** The
+train-8 `Sendto` arc instrumented the generated body and dumped the sixteen bytes it hands the kernel:
+
+```
+02 00   AE 54   00 00 00 00   30 04 4A 68 ED 7F 00 00
+family  port    ADDRESS       the reference sitting where Zero belongs
+```
+
+Family and port right, four ZERO bytes at native offset 4, a heap pointer at native offset 8. That is
+exactly what `Addr managed=8, Zero managed=24` predicts, and the byte dump was taken before this probe
+existed. Two independent derivations agreeing is what makes the offsets safe to build on.
+
+**Why `RawSockaddrUnix` announced itself where `RawSockaddrInet4` hid.** Both are equally broken. Inet4's
+damage was invisible on loopback because a destination of `0.0.0.0` means "this host" to Linux, so a
+loopback datagram arrived anyway (every non-loopback destination went silently elsewhere — the silent
+variant). Unix's `sun_path` starts at native offset 2, where the managed struct has the low half of
+`Family` plus padding, and the path bytes are 6 bytes further on behind a heap pointer; the path names
+nothing that exists, so `sendto` answers **ECONNREFUSED** immediately. The loud one was found first, which
+is an accident of address family, not a difference in severity.
+
+**DOCTRINE (accumulator 179).** The remedy for this class is **encode into a native buffer** (what
+`writeNativeSockaddr` and `NativeMsghdr` do) **or an explicit-layout blittable mirror** — never a managed
+struct handed to the kernel by address, and never a width adjustment to the declared struct. Two
+corollaries the measurements force:
+- **A struct with no reference fields is not automatically safe** and a struct with correct offsets is not
+  safe either — check the field CONTENTS as well (`Iovec`).
+- **Do not reason about a managed layout; measure it.** `Unsafe.ByteOffset` over the converted type is
+  four lines and settles it; two of the three structs above had a *documented* mechanism that was wrong
+  in the detail that decides the remedy.
+
+**Reproducing it.** A console project referencing `core/golib` and the package under test, built with
+`-p:GoTargetOS=linux -p:go2csPath=<repo>/src/`; for each field,
+`Unsafe.ByteOffset(ref Unsafe.As<TStruct,byte>(ref s), ref Unsafe.As<TField,byte>(ref s.Field))`, printed
+against the native offsets from the platform headers. Nothing is mutated and nothing is written to the
+corpus, so it is safe to run against any tree.
+
+**Where it was found:** attributing C1's two Linux roots of the sockaddr seam (`RawSockaddrUnix`
+ECONNREFUSED — closed at master by train 8's `Sendto`, attributed by a three-arm A/B; the
+EISCONN/EINVAL pair — closed by train 11's `SendmsgN`). C1's handover reported `RawSockaddrUnix` as
+"24 managed bytes where the kernel wants 110, `Path` a 16-byte reference instead of 108 inline bytes":
+the byte counts were right, the mechanism was the width story, and C1 has recorded the correction from
+their side. The lane's own train-11 commit message carried the same error and is corrected in
+`cc38f0082e`.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
