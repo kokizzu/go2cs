@@ -260,16 +260,16 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckCompositeElementStringConcat() => CheckTarget("CompositeElementStringConcat");
 
     [TestMethod]
-    public void CheckConstrainedSliceParamInPlace() => CheckTarget("ConstrainedSliceParamInPlace");
-
-    [TestMethod]
-    public void CheckConstraintProxyEmbeddedInterface() => CheckTarget("ConstraintProxyEmbeddedInterface");
-
-    [TestMethod]
     public void CheckConstShadowsParam() => CheckTarget("ConstShadowsParam");
 
     [TestMethod]
     public void CheckConstSubexprOverflow() => CheckTarget("ConstSubexprOverflow");
+
+    [TestMethod]
+    public void CheckConstrainedSliceParamInPlace() => CheckTarget("ConstrainedSliceParamInPlace");
+
+    [TestMethod]
+    public void CheckConstraintProxyEmbeddedInterface() => CheckTarget("ConstraintProxyEmbeddedInterface");
 
     [TestMethod]
     public void CheckCrossPackageArrayZeroValue() => CheckTarget("CrossPackageArrayZeroValue");
@@ -380,10 +380,10 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDotImportRenamedType() => CheckTarget("DotImportRenamedType");
 
     [TestMethod]
-    public void CheckDynamicInterfaceKeywordMethod() => CheckTarget("DynamicInterfaceKeywordMethod");
+    public void CheckDynIfaceParamNameCollision() => CheckTarget("DynIfaceParamNameCollision");
 
     [TestMethod]
-    public void CheckDynIfaceParamNameCollision() => CheckTarget("DynIfaceParamNameCollision");
+    public void CheckDynamicInterfaceKeywordMethod() => CheckTarget("DynamicInterfaceKeywordMethod");
 
     [TestMethod]
     public void CheckElementAddressUnsignedIndex() => CheckTarget("ElementAddressUnsignedIndex");
@@ -437,13 +437,13 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckFieldDimsCargo() => CheckTarget("FieldDimsCargo");
 
     [TestMethod]
-    public void CheckFieldNamedAsType() => CheckTarget("FieldNamedAsType");
-
-    [TestMethod]
     public void CheckFieldNameShadowsLoopVar() => CheckTarget("FieldNameShadowsLoopVar");
 
     [TestMethod]
     public void CheckFieldNameTypeMethodCollision() => CheckTarget("FieldNameTypeMethodCollision");
+
+    [TestMethod]
+    public void CheckFieldNamedAsType() => CheckTarget("FieldNamedAsType");
 
     [TestMethod]
     public void CheckFileNameBuildConstraints() => CheckTarget("FileNameBuildConstraints");
@@ -467,6 +467,24 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckFloatKindConstArrayLength() => CheckTarget("FloatKindConstArrayLength");
 
     [TestMethod]
+    public void CheckForInitMixedTypes() => CheckTarget("ForInitMixedTypes");
+
+    [TestMethod]
+    public void CheckForInitShadowedUse() => CheckTarget("ForInitShadowedUse");
+
+    [TestMethod]
+    public void CheckForLoopPerIterationVars() => CheckTarget("ForLoopPerIterationVars");
+
+    [TestMethod]
+    public void CheckForMethodInitPost() => CheckTarget("ForMethodInitPost");
+
+    [TestMethod]
+    public void CheckForVarMasksBlockLevel() => CheckTarget("ForVarMasksBlockLevel");
+
+    [TestMethod]
+    public void CheckForVarMasksFuncLevel() => CheckTarget("ForVarMasksFuncLevel");
+
+    [TestMethod]
     public void CheckForeignPairNumericConv() => CheckTarget("ForeignPairNumericConv");
 
     [TestMethod]
@@ -479,25 +497,7 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckForeignValueImplementSuppression() => CheckTarget("ForeignValueImplementSuppression");
 
     [TestMethod]
-    public void CheckForInitMixedTypes() => CheckTarget("ForInitMixedTypes");
-
-    [TestMethod]
-    public void CheckForInitShadowedUse() => CheckTarget("ForInitShadowedUse");
-
-    [TestMethod]
-    public void CheckForLoopPerIterationVars() => CheckTarget("ForLoopPerIterationVars");
-
-    [TestMethod]
     public void CheckFormatTypeAdapters() => CheckTarget("FormatTypeAdapters");
-
-    [TestMethod]
-    public void CheckForMethodInitPost() => CheckTarget("ForMethodInitPost");
-
-    [TestMethod]
-    public void CheckForVarMasksBlockLevel() => CheckTarget("ForVarMasksBlockLevel");
-
-    [TestMethod]
-    public void CheckForVarMasksFuncLevel() => CheckTarget("ForVarMasksFuncLevel");
 
     [TestMethod]
     public void CheckFuncFieldNestedTupleParam() => CheckTarget("FuncFieldNestedTupleParam");
@@ -515,9 +515,6 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckFuncLitCaptureInCondition() => CheckTarget("FuncLitCaptureInCondition");
 
     [TestMethod]
-    public void CheckFuncLiteralCallerNames() => CheckTarget("FuncLiteralCallerNames");
-
-    [TestMethod]
     public void CheckFuncLitNumericTupleReturn() => CheckTarget("FuncLitNumericTupleReturn");
 
     [TestMethod]
@@ -525,6 +522,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckFuncLitUntypedConstReturn() => CheckTarget("FuncLitUntypedConstReturn");
+
+    [TestMethod]
+    public void CheckFuncLiteralCallerNames() => CheckTarget("FuncLiteralCallerNames");
 
     [TestMethod]
     public void CheckFuncTypeNilConversion() => CheckTarget("FuncTypeNilConversion");
@@ -638,19 +638,10 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckGlobalTupleVarDecl() => CheckTarget("GlobalTupleVarDecl");
 
     [TestMethod]
-    public void CheckGoexitDefers() => CheckTarget("GoexitDefers");
-
-    [TestMethod]
     public void CheckGoNamespaceShadow() => CheckTarget("GoNamespaceShadow");
 
     [TestMethod]
     public void CheckGoOnlyFloatLiteralForms() => CheckTarget("GoOnlyFloatLiteralForms");
-
-    [TestMethod]
-    public void CheckGoroutinePanicExitCode() => CheckTarget("GoroutinePanicExitCode");
-
-    [TestMethod]
-    public void CheckGoroutineParkStorm() => CheckTarget("GoroutineParkStorm");
 
     [TestMethod]
     public void CheckGoShiftSemantics() => CheckTarget("GoShiftSemantics");
@@ -663,6 +654,15 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckGoUntypedConstArg() => CheckTarget("GoUntypedConstArg");
+
+    [TestMethod]
+    public void CheckGoexitDefers() => CheckTarget("GoexitDefers");
+
+    [TestMethod]
+    public void CheckGoroutinePanicExitCode() => CheckTarget("GoroutinePanicExitCode");
+
+    [TestMethod]
+    public void CheckGoroutineParkStorm() => CheckTarget("GoroutineParkStorm");
 
     [TestMethod]
     public void CheckGuardedNilPointerParamDeref() => CheckTarget("GuardedNilPointerParamDeref");
@@ -695,16 +695,22 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckIncDecPointerField() => CheckTarget("IncDecPointerField");
 
     [TestMethod]
-    public void CheckIndexedElementDirectBoxMethod() => CheckTarget("IndexedElementDirectBoxMethod");
+    public void CheckIndexExprCaseLabel() => CheckTarget("IndexExprCaseLabel");
 
     [TestMethod]
-    public void CheckIndexExprCaseLabel() => CheckTarget("IndexExprCaseLabel");
+    public void CheckIndexedElementDirectBoxMethod() => CheckTarget("IndexedElementDirectBoxMethod");
 
     [TestMethod]
     public void CheckInferredForeignTypeNoImport() => CheckTarget("InferredForeignTypeNoImport");
 
     [TestMethod]
     public void CheckInitOrderTupleSpecs() => CheckTarget("InitOrderTupleSpecs");
+
+    [TestMethod]
+    public void CheckIntFormFloatConst() => CheckTarget("IntFormFloatConst");
+
+    [TestMethod]
+    public void CheckIntMinLiterals() => CheckTarget("IntMinLiterals");
 
     [TestMethod]
     public void CheckInterfaceAssertionMapKey() => CheckTarget("InterfaceAssertionMapKey");
@@ -735,12 +741,6 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckInterfaceUntypedIntCompare() => CheckTarget("InterfaceUntypedIntCompare");
-
-    [TestMethod]
-    public void CheckIntFormFloatConst() => CheckTarget("IntFormFloatConst");
-
-    [TestMethod]
-    public void CheckIntMinLiterals() => CheckTarget("IntMinLiterals");
 
     [TestMethod]
     public void CheckInvalidRuneString() => CheckTarget("InvalidRuneString");
@@ -884,12 +884,6 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckMethodGroupGenericArg() => CheckTarget("MethodGroupGenericArg");
 
     [TestMethod]
-    public void CheckMethodlessFuncType() => CheckTarget("MethodlessFuncType");
-
-    [TestMethod]
-    public void CheckMethodlessFuncTypeAssert() => CheckTarget("MethodlessFuncTypeAssert");
-
-    [TestMethod]
     public void CheckMethodOnBoxedGlobalIndex() => CheckTarget("MethodOnBoxedGlobalIndex");
 
     [TestMethod]
@@ -903,6 +897,12 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckMethodValueReceiverSnapshot() => CheckTarget("MethodValueReceiverSnapshot");
+
+    [TestMethod]
+    public void CheckMethodlessFuncType() => CheckTarget("MethodlessFuncType");
+
+    [TestMethod]
+    public void CheckMethodlessFuncTypeAssert() => CheckTarget("MethodlessFuncTypeAssert");
 
     [TestMethod]
     public void CheckMinMaxBuiltin() => CheckTarget("MinMaxBuiltin");
@@ -971,6 +971,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckNamedImportInitOrder() => CheckTarget("NamedImportInitOrder");
 
     [TestMethod]
+    public void CheckNamedIntSignednessConv() => CheckTarget("NamedIntSignednessConv");
+
+    [TestMethod]
     public void CheckNamedInterfaceAdapterIdentity() => CheckTarget("NamedInterfaceAdapterIdentity");
 
     [TestMethod]
@@ -978,9 +981,6 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckNamedInterfacePointerMethodSet() => CheckTarget("NamedInterfacePointerMethodSet");
-
-    [TestMethod]
-    public void CheckNamedIntSignednessConv() => CheckTarget("NamedIntSignednessConv");
 
     [TestMethod]
     public void CheckNamedMapCrossPkgKey() => CheckTarget("NamedMapCrossPkgKey");
@@ -1217,10 +1217,10 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckParenIifeNilFuncConv() => CheckTarget("ParenIifeNilFuncConv");
 
     [TestMethod]
-    public void CheckParenthesizedConcatContext() => CheckTarget("ParenthesizedConcatContext");
+    public void CheckParenTypeConversionCall() => CheckTarget("ParenTypeConversionCall");
 
     [TestMethod]
-    public void CheckParenTypeConversionCall() => CheckTarget("ParenTypeConversionCall");
+    public void CheckParenthesizedConcatContext() => CheckTarget("ParenthesizedConcatContext");
 
     [TestMethod]
     public void CheckPartialRedeclaration() => CheckTarget("PartialRedeclaration");
@@ -1253,10 +1253,10 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckPointerEmbedBoxReceiver() => CheckTarget("PointerEmbedBoxReceiver");
 
     [TestMethod]
-    public void CheckPointerEmbeddingPromotion() => CheckTarget("PointerEmbeddingPromotion");
+    public void CheckPointerEmbedValueChainPromotion() => CheckTarget("PointerEmbedValueChainPromotion");
 
     [TestMethod]
-    public void CheckPointerEmbedValueChainPromotion() => CheckTarget("PointerEmbedValueChainPromotion");
+    public void CheckPointerEmbeddingPromotion() => CheckTarget("PointerEmbeddingPromotion");
 
     [TestMethod]
     public void CheckPointerFieldArrayElementAddress() => CheckTarget("PointerFieldArrayElementAddress");
@@ -1397,6 +1397,12 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckRefLoweredNilTiming() => CheckTarget("RefLoweredNilTiming");
+
+    [TestMethod]
+    public void CheckRefLoweredParams() => CheckTarget("RefLoweredParams");
+
+    [TestMethod]
     public void CheckReflectArrayOf() => CheckTarget("ReflectArrayOf");
 
     [TestMethod]
@@ -1413,9 +1419,6 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckReflectFuncArrayParamDims() => CheckTarget("ReflectFuncArrayParamDims");
-
-    [TestMethod]
-    public void CheckReflectliteTypeName() => CheckTarget("ReflectliteTypeName");
 
     [TestMethod]
     public void CheckReflectMakeFunc() => CheckTarget("ReflectMakeFunc");
@@ -1448,10 +1451,7 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectZeroAndGrow() => CheckTarget("ReflectZeroAndGrow");
 
     [TestMethod]
-    public void CheckRefLoweredNilTiming() => CheckTarget("RefLoweredNilTiming");
-
-    [TestMethod]
-    public void CheckRefLoweredParams() => CheckTarget("RefLoweredParams");
+    public void CheckReflectliteTypeName() => CheckTarget("ReflectliteTypeName");
 
     [TestMethod]
     public void CheckReinterpretPinLifetime() => CheckTarget("ReinterpretPinLifetime");
@@ -1490,6 +1490,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckRuntimeCallerFrames() => CheckTarget("RuntimeCallerFrames");
 
     [TestMethod]
+    public void CheckSStringElision() => CheckTarget("SStringElision");
+
+    [TestMethod]
     public void CheckSamePackageImplementNoWitness() => CheckTarget("SamePackageImplementNoWitness");
 
     [TestMethod]
@@ -1526,6 +1529,12 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSetFinalizerBridge() => CheckTarget("SetFinalizerBridge");
 
     [TestMethod]
+    public void CheckShadowLocalOverRecvName() => CheckTarget("ShadowLocalOverRecvName");
+
+    [TestMethod]
+    public void CheckShadowRangeVarOverRecvName() => CheckTarget("ShadowRangeVarOverRecvName");
+
+    [TestMethod]
     public void CheckShadowedCompoundAssign() => CheckTarget("ShadowedCompoundAssign");
 
     [TestMethod]
@@ -1542,12 +1551,6 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckShadowedVarMethodCallLHS() => CheckTarget("ShadowedVarMethodCallLHS");
-
-    [TestMethod]
-    public void CheckShadowLocalOverRecvName() => CheckTarget("ShadowLocalOverRecvName");
-
-    [TestMethod]
-    public void CheckShadowRangeVarOverRecvName() => CheckTarget("ShadowRangeVarOverRecvName");
 
     [TestMethod]
     public void CheckSharedEmbeddedInterfaceMember() => CheckTarget("SharedEmbeddedInterfaceMember");
@@ -1605,9 +1608,6 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckSpreadOperator() => CheckTarget("SpreadOperator");
-
-    [TestMethod]
-    public void CheckSStringElision() => CheckTarget("SStringElision");
 
     [TestMethod]
     public void CheckStatLayoutTruth() => CheckTarget("StatLayoutTruth");
@@ -1670,10 +1670,10 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckStructPromotionWithInterface() => CheckTarget("StructPromotionWithInterface");
 
     [TestMethod]
-    public void CheckStructuralAssertFailSoftMiss() => CheckTarget("StructuralAssertFailSoftMiss");
+    public void CheckStructWithDelegate() => CheckTarget("StructWithDelegate");
 
     [TestMethod]
-    public void CheckStructWithDelegate() => CheckTarget("StructWithDelegate");
+    public void CheckStructuralAssertFailSoftMiss() => CheckTarget("StructuralAssertFailSoftMiss");
 
     [TestMethod]
     public void CheckSubpackageFuncTypeParam() => CheckTarget("SubpackageFuncTypeParam");
@@ -1739,21 +1739,6 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckTypeConversionInterfaceParam() => CheckTarget("TypeConversionInterfaceParam");
 
     [TestMethod]
-    public void CheckTypedErrorAssertThroughAdapter() => CheckTarget("TypedErrorAssertThroughAdapter");
-
-    [TestMethod]
-    public void CheckTypedNilFuncBoundaries() => CheckTarget("TypedNilFuncBoundaries");
-
-    [TestMethod]
-    public void CheckTypedNilPtrArrayDims() => CheckTarget("TypedNilPtrArrayDims");
-
-    [TestMethod]
-    public void CheckTypedNilInterface() => CheckTarget("TypedNilInterface");
-
-    [TestMethod]
-    public void CheckTypedPointerCastDeref() => CheckTarget("TypedPointerCastDeref");
-
-    [TestMethod]
     public void CheckTypeInference() => CheckTarget("TypeInference");
 
     [TestMethod]
@@ -1779,6 +1764,21 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckTypeSwitchTagShadowRename() => CheckTarget("TypeSwitchTagShadowRename");
+
+    [TestMethod]
+    public void CheckTypedErrorAssertThroughAdapter() => CheckTarget("TypedErrorAssertThroughAdapter");
+
+    [TestMethod]
+    public void CheckTypedNilFuncBoundaries() => CheckTarget("TypedNilFuncBoundaries");
+
+    [TestMethod]
+    public void CheckTypedNilInterface() => CheckTarget("TypedNilInterface");
+
+    [TestMethod]
+    public void CheckTypedNilPtrArrayDims() => CheckTarget("TypedNilPtrArrayDims");
+
+    [TestMethod]
+    public void CheckTypedPointerCastDeref() => CheckTarget("TypedPointerCastDeref");
 
     [TestMethod]
     public void CheckUdpLoopbackRoundTrip() => CheckTarget("UdpLoopbackRoundTrip");
@@ -1874,6 +1874,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckValueAdapterDynamicType() => CheckTarget("ValueAdapterDynamicType");
 
     [TestMethod]
+    public void CheckVarNamedAsType() => CheckTarget("VarNamedAsType");
+
+    [TestMethod]
     public void CheckVariableCapture() => CheckTarget("VariableCapture");
 
     [TestMethod]
@@ -1896,9 +1899,6 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckVariadicSlotInterfaces() => CheckTarget("VariadicSlotInterfaces");
-
-    [TestMethod]
-    public void CheckVarNamedAsType() => CheckTarget("VarNamedAsType");
 
     [TestMethod]
     public void CheckVersionedImport() => CheckTarget("VersionedImport");

@@ -62,7 +62,8 @@ type Options struct {
 	testInternalBridgeName string        // C# class that owns internal-test declarations under whitebox reference
 	testClassNameOverride  string        // per-variant emitted package class override for internal test files
 	testMetadataAnchorName string        // C# class that owns test-generated adapters under reference models
-	testReleaseTC0         bool          // -test-release-tc0: publish the C# host Release (+ explicit -p:go2csPath, replacing the Debug-conditional default) and run it with DOTNET_TieredCompilation=0 -- tiering A/B measurement only, never a default; see docs/phase4 tiering census
+	testConfig             string        // -test-config Debug|Release: publish/run configuration for the converted test host (default Debug -- unchanged pipeline behavior); Release also publishes with an explicit -p:go2csPath, replacing the Debug-conditional csproj-template default. See docs/phase4 tiering census
+	testTiered             bool          // -test-tiered: explicit opt-back-IN to the CLR's default tiered JIT when testConfig is Release (Release's own default is DOTNET_TieredCompilation=0, for deterministic timing-bounded verdicts -- see the tiering census); meaningless when testConfig is Debug
 	testProductionPath     string        // original package path retained after reference-mode self-binding is cleared
 	testProductionName     string        // original package name retained for white-box object routing
 	testExternalVariant    bool          // current variant is the external <name>_test package

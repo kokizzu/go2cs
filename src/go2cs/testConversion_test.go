@@ -7,6 +7,7 @@
 package main
 
 import (
+	"encoding/json"
 	"go/ast"
 	"go/build"
 	"go/token"
@@ -4736,5 +4737,86 @@ func TestTestVariantBridgeFollowsRenamedPackageVar(t *testing.T) {
 	}
 	if !strings.Contains(externalCs, bridgeName+".Unlocked(") {
 		t.Errorf("the external variant must keep the bare name for a var that never collided:\n%s", externalCs)
+	}
+}
+
+// TestTestEnvironmentRecordRoundTrips exercises the three meaningful -test-config/-test-tiered
+// combinations end to end: testEnvironmentFromOptions derives the record testHostRunEnv's own
+// decision must agree with (so proof pages and the actual run environment can never silently
+// diverge), and the record survives a JSON round trip unchanged, which is what a proof-page
+// regeneration and the fixture loader in validationProofPages_test.go both depend on.
+func TestTestEnvironmentRecordRoundTrips(t *testing.T) {
+	cases := []struct {
+		name          string
+		testConfig    string
+		testTiered    bool
+		wantConfig    string
+		wantTiered    bool
+		wantRunEnvTC0 bool // true when testHostRunEnv must return DOTNET_TieredCompilation=0
+	}{
+		{name: "Debug default", testConfig: "Debug", testTiered: false, wantConfig: "Debug", wantTiered: true, wantRunEnvTC0: false},
+		{name: "Debug with -test-tiered (meaningless, must not affect Debug)", testConfig: "Debug", testTiered: true, wantConfig: "Debug", wantTiered: true, wantRunEnvTC0: false},
+		{name: "Release default forces tiering off", testConfig: "Release", testTiered: false, wantConfig: "Release", wantTiered: false, wantRunEnvTC0: true},
+		{name: "Release with -test-tiered opts back in", testConfig: "Release", testTiered: true, wantConfig: "Release", wantTiered: true, wantRunEnvTC0: false},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			options := Options{testConfig: c.testConfig, testTiered: c.testTiered}
+			record := testEnvironmentFromOptions(options)
+
+			if record.Configuration != c.wantConfig {
+				t.Errorf("Configuration = %q, want %q", record.Configuration, c.wantConfig)
+			}
+			if record.Tiered != c.wantTiered {
+				t.Errorf("Tiered = %v, want %v", record.Tiered, c.wantTiered)
+			}
+
+			// The record's Tiered field and testHostRunEnv's actual environment must describe the
+			// SAME decision — that is the whole reason testEnvironmentFromOptions reads the same
+			// two options testHostRunEnv does, rather than being handed a value to trust.
+			env := testHostRunEnv(options)
+			gotRunEnvTC0 := len(env) == 1 && env[0] == "DOTNET_TieredCompilation=0"
+
+			if gotRunEnvTC0 != c.wantRunEnvTC0 {
+				t.Errorf("testHostRunEnv(%+v) = %v, want DOTNET_TieredCompilation=0 present: %v", options, env, c.wantRunEnvTC0)
+			}
+			if gotRunEnvTC0 == record.Tiered {
+				t.Errorf("record.Tiered (%v) and testHostRunEnv's TC0 (%v) describe the SAME run and must disagree in sign — an untiered run cannot record Tiered:true", record.Tiered, gotRunEnvTC0)
+			}
+
+			// OracleGoVersion is filled in separately by the caller (compareGoAndConvertedTests),
+			// never by testEnvironmentFromOptions — it names a child-process observation, not
+			// something derivable from options alone. Set it here to a synthetic value so the round
+			// trip below actually exercises the field, matching how production code assembles the
+			// full record before marshaling it.
+			record.OracleGoVersion = "go version go1.23.12 " + runtime.GOOS + "/" + runtime.GOARCH
+
+			// The round trip: what a proof-page regeneration reads back is exactly what this
+			// comparison run recorded, byte for byte through JSON — not just equal Go values.
+			data, err := json.Marshal(record)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+
+			var roundTripped testEnvironmentRecord
+			if err := json.Unmarshal(data, &roundTripped); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			if roundTripped != record {
+				t.Errorf("round trip changed the record: %+v -> %s -> %+v", record, data, roundTripped)
+			}
+
+			// omitempty: a comparison whose version probe genuinely missed must not print a
+			// misleading empty string into every proof page and comparison record going forward.
+			record.OracleGoVersion = ""
+			data, err = json.Marshal(record)
+			if err != nil {
+				t.Fatalf("marshal (empty OracleGoVersion): %v", err)
+			}
+			if strings.Contains(string(data), "oracleGoVersion") {
+				t.Errorf("OracleGoVersion is empty but still appeared in the record: %s", data)
+			}
+		})
 	}
 }

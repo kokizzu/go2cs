@@ -5443,14 +5443,15 @@ func executeTestAction(inputPath, outputPath string, options Options) error {
 // (MSBuild's up-to-date checks carry; only the bundling step re-runs warm), so build/run/compare
 // can each call this without re-paying the build.
 //
-// options.testReleaseTC0 takes the OTHER honest seam instead: the template's Debug-conditional
-// default is inside a `Condition="'$(go2csPath)'==''"` guard (test-csproj-template.xml), so passing
-// `-p:go2csPath` explicitly on the command line skips that guard entirely regardless of
-// configuration — the same escape CLAUDE.md documents for a hand-invoked Release build elsewhere.
-// Forward slashes and a trailing slash, matching that documented form exactly; a trailing backslash
-// escapes the closing quote and mangles the path into phantom golib-not-found errors.
+// options.testConfig == "Release" takes the OTHER honest seam instead: the template's
+// Debug-conditional default is inside a `Condition="'$(go2csPath)'==''"` guard
+// (test-csproj-template.xml), so passing `-p:go2csPath` explicitly on the command line skips that
+// guard entirely regardless of configuration — the same escape CLAUDE.md documents for a
+// hand-invoked Release build elsewhere. Forward slashes and a trailing slash, matching that
+// documented form exactly; a trailing backslash escapes the closing quote and mangles the path into
+// phantom golib-not-found errors.
 func publishTestHost(outputPath, testProject string, options Options) error {
-	if options.testReleaseTC0 {
+	if options.testConfig == "Release" {
 		go2csPathArg := strings.TrimRight(filepath.ToSlash(options.go2csPath), "/") + "/"
 		_, err := runCommandWithTimeout(options.testTimeout, outputPath, options, "dotnet", "publish", testProject,
 			"-c", "Release", "-p:go2csPath="+go2csPathArg, "-o", filepath.Join(outputPath, "bin", "tests", "publish"))
@@ -5461,16 +5462,71 @@ func publishTestHost(outputPath, testProject string, options Options) error {
 	return err
 }
 
-// testHostRunEnv is the extra environment testReleaseTC0 asks the RUN half of the pair for — Release
-// publish alone does not force tier-0 to disappear, since a program can still start at tier-0 and
-// simply never run long enough for the runtime to promote a method; DOTNET_TieredCompilation=0 is
-// the documented .NET knob that disables the tiering system outright; the census this flag exists to
-// measure is exactly whether that combination changes the codegen-liveness disclosure class's shape.
+// testHostRunEnv is the extra environment a Release configuration asks the RUN half of the pair
+// for. Release publish alone does not force tier-0 to disappear, since a program can still start at
+// tier-0 and simply never run long enough for the runtime to promote a method; DOTNET_TieredCompilation=0
+// is the documented .NET knob that disables the tiering system outright, and it is Release's DEFAULT
+// here — ruled 2026-09-02 from measurement, not assumption: the same published binary run six times
+// gave deterministic sub-millisecond verdicts with tiering off and flipped verdicts run-to-run with
+// it on (net/http's h2 write-deadline row), because a timing-bounded row's pass/fail can depend on
+// which run happens to hit the tier-0→tier-1 promotion boundary. -test-tiered opts back IN to the
+// CLR's default tiering when that A/B measurement itself is what's wanted. Meaningless under Debug,
+// which this function never touches.
 func testHostRunEnv(options Options) []string {
-	if options.testReleaseTC0 {
+	if options.testConfig == "Release" && !options.testTiered {
 		return []string{"DOTNET_TieredCompilation=0"}
 	}
 	return nil
+}
+
+// testEnvironmentRecord is the configuration-provenance twin of TestHost.cs's own `environment`
+// block in go2cs_test_results.json (dotnetRuntime/culture/timezone/shuffleSeed) — recorded here too,
+// in the COMPARISON record and from there the proof page, so a verdict carries the level it was
+// measured at without a reader needing to cross-reference the results file. Tiered reflects the
+// EFFECTIVE state (true unless Release AND not overridden by -test-tiered), matching what
+// testHostRunEnv above actually decided, not just the raw flag.
+type testEnvironmentRecord struct {
+	Configuration string `json:"configuration"`
+	Tiered        bool   `json:"tiered"`
+
+	// OracleGoVersion is the bare `go version` output of the toolchain that actually ran the
+	// oracle `go test -json` child for THIS comparison — see oracleGoVersion below. Distinct from
+	// the test manifest's GoVersion (the converter's own runtime.Version(), i.e. what built go2cs
+	// itself): this field answers "what ran the Go side of the comparison", which is unanswerable
+	// from evidence after the fact without it (coordinator ruling, 2026-09-02, from a container
+	// whose bare `go` silently resolved a different release than the pinned GOROOT). Omitted, not
+	// empty-stringed, when the probe itself could not run — a comparison that already completed
+	// must not be invalidated by a version probe failing after the fact.
+	OracleGoVersion string `json:"oracleGoVersion,omitempty"`
+}
+
+// testEnvironmentFromOptions derives the record from the same two options testHostRunEnv reads, so
+// the two can never disagree about what "tiered" means for a given configuration. Pure and
+// side-effect-free by design (see TestTestEnvironmentRecordRoundTrips) — OracleGoVersion is filled
+// in separately by the caller, since answering it means actually running a child process.
+func testEnvironmentFromOptions(options Options) testEnvironmentRecord {
+	return testEnvironmentRecord{
+		Configuration: options.testConfig,
+		Tiered:        !(options.testConfig == "Release" && !options.testTiered),
+	}
+}
+
+// oracleGoVersion runs `go version` through the EXACT SAME child-invocation mechanism the oracle
+// `go test` command itself uses (runCommandWithTimeout, in the same working directory, under the
+// same options-derived environment) — so it resolves the SAME `go` on the SAME PATH the real oracle
+// run just did, not whatever `go env GOROOT` claims. GOROOT is a claim about where the toolchain
+// SHOULD be; this is a direct observation of the toolchain that ACTUALLY ran, closing the gap a
+// container class exposed: bare `go` there resolved 1.24.7 against the corpus's pinned 1.23.12 with
+// GOROOT reading correctly the whole time. Best-effort: a comparison the real oracle run already
+// completed must not be invalidated by this probe failing after the fact, so an error answers "".
+func oracleGoVersion(inputPath string, options Options) string {
+	output, err := runCommandWithTimeout(options.testTimeout, inputPath, options, "go", "version")
+
+	if err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(output)
 }
 
 // publishedTestHostPath is the single-file executable publishTestHost produces: the test project's
@@ -5622,6 +5678,11 @@ type testComparison struct {
 	// which is live data (net/http carries one entry, TestTransportGCRequest), so a boolean of that
 	// name would collide with an array on the very rows most worth reading carefully.
 	TestFilter string `json:"testFilter,omitempty"`
+
+	// Environment carries the publish/run configuration this comparison was measured at — see
+	// testEnvironmentRecord. Present on every comparison record (not omitempty): a reader must never
+	// have to assume Debug by absence, since the whole point is that a verdict states its own level.
+	Environment testEnvironmentRecord `json:"environment"`
 }
 
 // capabilityGatedDeclaration records one test declaration the converted host provably cannot run,
@@ -6273,6 +6334,10 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	goArgs = append(goArgs, ".")
 	goOutput, goErr := runCommandWithTimeout(testChildTimeout(options), inputPath, options, "go", goArgs...)
 
+	// Captured immediately after the real oracle run, same directory, same options — see
+	// oracleGoVersion's own doc comment for why this is not `go env GOROOT`.
+	oracleVersion := oracleGoVersion(inputPath, options)
+
 	// The converted side runs the PUBLISHED single-file host (the host-limit retirement) — the
 	// same relocatable artifact an os/exec-style test copies and re-execs, so what the comparison
 	// measures is the deployment shape the verdicts claim.
@@ -6331,10 +6396,12 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	if !manifestHasEligibleTests(manifest) {
 		status = "not-applicable"
 	}
+	environment := testEnvironmentFromOptions(options)
+	environment.OracleGoVersion = oracleVersion
 	result := testComparison{
 		Package: filepath.Base(inputPath), Status: status, Go: goResults, CSharp: csResults,
 		Matched: true, Skipped: []string{}, Disclosed: []string{}, Excluded: excludedDeclarations(manifest), Errors: []string{},
-		Gated: gated, Withdrawn: []string{},
+		Gated: gated, Withdrawn: []string{}, Environment: environment,
 	}
 	if disclosureErr != nil {
 		result.Matched = false
