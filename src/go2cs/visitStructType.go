@@ -151,6 +151,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 		// canaries' `-tests` — this removal costs no currently-safe dedup anywhere measured.
 		if anonLiftKey != "" {
 			existing := lookupDynamicTypeName(structSignatureType.String())
+			admissible := existing != "" && (v.inFunction || !liftNameNeedsPublicType(name))
 
 			// The reference-model `-tests` sibling of the same-pass check above: a name
 			// PRODUCTION already lifted and published via GoDynamicTypeLift for this exact
@@ -158,11 +159,26 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 			// this block, added for hash_test.go's IfaceKey/ifaceHash pair). Interfaces needed
 			// it to compile at all; structs had no failing case yet, but the gap is the same
 			// architectural hole, so closed identically rather than left latent.
+			//
+			// And it carries the same cross-ASSEMBLY question its interface twin does, for the same
+			// reason: the candidate may live in another assembly and this arm emits no declaration
+			// at all, so what decides the outcome is the candidate's accessibility THERE. Measured
+			// on the interface side (2026-09-01, bisected to 5442b402e — `errors`' external suite
+			// adopting production's internal `is_typeᴛ1`, `join_test.cs(49,48): error CS0122:
+			// 'errors_package.is_typeᴛ1' is inaccessible due to its protection level`); the struct
+			// arm reaches production's registry through the identical path and is gated identically
+			// rather than left to produce the same defect under a shape nobody has hit yet. A
+			// cross-assembly reuse is admissible only when the reused declaration is REACHABLE from
+			// the assembly doing the reusing — see productionLiftReuseReachable; `v.inFunction` and
+			// liftNameNeedsPublicType reason within ONE assembly, so they are conjoined with it
+			// rather than allowed to escape it. Falling through to a fresh mint is always safe.
 			if existing == "" {
 				existing = lookupProductionDynamicTypeName(structSignatureType.String())
+				admissible = productionLiftReuseReachable(existing, v.options) &&
+					(v.inFunction || !liftNameNeedsPublicType(name))
 			}
 
-			if existing != "" && (v.inFunction || !liftNameNeedsPublicType(name)) {
+			if admissible {
 				if identType != nil {
 					v.liftedTypeMap[identType] = existing
 				}

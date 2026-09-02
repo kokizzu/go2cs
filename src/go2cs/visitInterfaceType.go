@@ -150,12 +150,28 @@ func (v *Visitor) visitInterfaceType(interfaceType *ast.InterfaceType, identType
 		if signatureType := v.getType(interfaceType, false); signatureType != nil {
 			signature := signatureType.String()
 			existing := lookupDynamicTypeName(signature)
+			admissible := existing != "" && (v.inFunction || !liftNameNeedsPublicType(name))
 
+			// The PRODUCTION-registry arm carries an accessibility question the same-pass arm above
+			// cannot have: its candidate may live in ANOTHER assembly, and this arm emits no
+			// declaration at all. 2026-09-01, bisected to 5442b402e — `errors`' external suite (all
+			// four of its test files are `package errors_test`, so its production csproj carries no
+			// InternalsVisibleTo) adopted production's internal `is_typeᴛ1` for join_test.go's
+			// function-local `interface{ Unwrap() []error }`: `join_test.cs(49,48): error CS0122:
+			// 'errors_package.is_typeᴛ1' is inaccessible due to its protection level`. A
+			// cross-assembly reuse is admissible only when the reused declaration is REACHABLE from
+			// the assembly doing the reusing — see productionLiftReuseReachable, which is why
+			// neither `v.inFunction` nor liftNameNeedsPublicType may ESCAPE the check here the way
+			// they legitimately do above (both reason within ONE assembly, so they are conjoined
+			// with the reachability rule, not replaced by it). Falling through to a fresh mint is
+			// exactly what this emission did before 5442b402e.
 			if existing == "" {
 				existing = lookupProductionDynamicTypeName(signature)
+				admissible = productionLiftReuseReachable(existing, v.options) &&
+					(v.inFunction || !liftNameNeedsPublicType(name))
 			}
 
-			if existing != "" && (v.inFunction || !liftNameNeedsPublicType(name)) {
+			if admissible {
 				if identType != nil {
 					v.liftedTypeMap[identType] = existing
 				}
