@@ -1468,6 +1468,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckReflectArrayOf() => CheckTarget("ReflectArrayOf");
 
     [TestMethod]
+    public void CheckReflectAssignabilityNamed() => CheckTarget("ReflectAssignabilityNamed");
+
+    [TestMethod]
     public void CheckReflectBridgeClosure() => CheckTarget("ReflectBridgeClosure");
 
     [TestMethod]

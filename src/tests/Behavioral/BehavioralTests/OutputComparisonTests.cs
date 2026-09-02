@@ -1406,6 +1406,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectArrayOf() => CheckTarget("ReflectArrayOf");
 
     [TestMethod]
+    public void CheckReflectAssignabilityNamed() => CheckTarget("ReflectAssignabilityNamed");
+
+    [TestMethod]
     public void CheckReflectBridgeClosure() => CheckTarget("ReflectBridgeClosure");
 
     [TestMethod]
