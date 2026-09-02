@@ -511,6 +511,10 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// property is answerable from the bridge's own name machinery; body in the
 		// export_impl_test.cs companion (the reflectlite pattern).
 		"IsExported":          goosAny,
+		// Swapper reads the slice header through unsafe.Pointer and swaps flat memory by element
+		// size -- the mirror of internal/reflectlite's registration, for the same root; the
+		// hand-own swaps through golib's non-generic ISlice indexer. See reflect/value_impl.cs.
+		"Swapper":             goosAny,
 		// Value.Close reads the channel direction by reinterpreting the descriptor onto the
 		// linker's chanType record -- the non-deterministic read abi.ChanDir was hand-owned to
 		// retire, still live here -- and then calls the chanclose runtime stub.

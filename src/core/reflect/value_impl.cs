@@ -2827,6 +2827,43 @@ public static ΔType SliceOf(ΔType t) {
 // nothing ("It may be empty"), and every caller is written to mint on that miss. The managed
 // runtime simply misses always, because it has no ahead-of-time type table to hit.
 
+// Swapper returns a function that swaps the elements in the provided slice.
+//
+// Swapper panics if the provided interface is not a slice.
+//
+// The MIRROR of internal/reflectlite's hand-owned Swapper (swapper_impl.cs), one layer up, for the
+// same root: Go's body reads the slice header through unsafe.Pointer and swaps flat memory by
+// element size, and the auto form nil-dereferenced unpacking the eface (`~(ж<slice<T>>)(uintptr)
+// (v.ptr)` on a bridge Value whose ptr is unused — TestSwapper died in `~`). Swapping through
+// golib's non-generic ISlice indexer applies the slice window offset, so swaps land on the shared
+// backing store exactly as Go's do — reflectlite's copy has carried sort.Slice on this since the
+// first operational hit.
+public static Action<nint, nint> Swapper(any Δslice) {
+    if (Δslice is not ISlice s) {
+        throw panic(Ꮡ(new ValueError("Swapper", ValueOf(Δslice).Kind())));
+    }
+    // Fast path for slices of size 0 and 1. Nothing to swap.
+    switch (s.Length) {
+    case 0: {
+        return (nint _, nint _) => {
+            throw panic("reflect: slice index out of range");
+        };
+    }
+    case 1: {
+        return (nint i, nint j) => {
+            if (i != 0 || j != 0) {
+                throw panic("reflect: slice index out of range");
+            }
+        };
+    }}
+    return (nint i, nint j) => {
+        if (!s.IndexIsValid(i) || !s.IndexIsValid(j)) {
+            throw panic("reflect: slice index out of range");
+        }
+        (s[i], s[j]) = (s[j], s[i]);
+    };
+}
+
 // typelinks returns the linker's per-module type sections and the offsets of the types in them.
 // There is no such table in a managed process — no ahead-of-time section holds the program's Go
 // types — so the honest answer is the EMPTY one, and empty is a contract-legal answer rather than a
