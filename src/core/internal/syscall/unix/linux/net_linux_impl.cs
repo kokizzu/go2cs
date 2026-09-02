@@ -62,12 +62,26 @@
 // rule" (platformHandOwn_test.go, TestMergeLeavesPrincipalLessCompanionsWhereTheyAre). Verified by
 // re-running the three-target emission after the rename.
 //
-// SCOPE. S1 only: RecvfromInet4/6 and SendtoInet4/6. The four msghdr helpers -- RecvmsgInet4/6,
-// SendmsgNInet4/6 -- keep their throwing stubs, because S2 is evidence-gated: no roster row consumes
-// them today, and the coordinator's ratification holds them PROPOSED until one does. When they land
-// they need a native msghdr + iovec (56/16 bytes on amd64) and two-way control-message handling,
-// which is why they are a stage rather than a paragraph. Linux only; darwin has the same stubs and
-// no buildable corpus to measure them against.
+// SCOPE. S1 AND S2 -- all eight: RecvfromInet4/6, SendtoInet4/6, RecvmsgInet4/6, SendmsgNInet4/6.
+//
+// S2's four were held PROPOSED here on the evidence gate this file wrote for itself: "no roster row
+// consumes them today". The consumer arrived and was measured rather than argued -- net's own suite
+// reports TestUDPIPVersionReadMsg, TestUDPConnSpecificMethods and TestAllocs as `Go="pass"
+// C#="infrastructure-error"`, each dying on PartialStubGenerator's body for an unimplemented
+// partial. Ratified on that evidence, with the qualification stated rather than glossed: `net` is
+// not a BANKED linux row, so the consumer is a row in progress, and the ratification's spirit was a
+// consumer rather than a banked one.
+//
+// The stage turned out smaller than its own sizing predicted, in two ways worth recording because
+// they are the reason this is a paragraph after all. First, the msghdr + iovec machinery it named
+// (56/16 bytes on amd64) already existed one assembly over, written for syscall's own
+// recvmsgRaw/SendmsgN; it is FACTORED there into GoRecvmsgNative/GoSendmsgNative rather than
+// copied, so there is one implementation and ScmRightsSeam re-proves it through both callers.
+// Second, there is no registration and no converter change: the helpers are already `partial`
+// declarations carrying their //go:linkname, and PartialStubGenerator skips any partial whose
+// PartialImplementationPart is non-null, so writing a body displaces its stub by construction.
+//
+// Linux only; darwin has the same stubs and no run layer to measure them against.
 
 using System;
 
@@ -179,6 +193,98 @@ partial class unix_package
     }
 
     // The one send path both families share, so the payload rule lives in exactly one place.
+
+    // ---- S2: the four msghdr helpers ------------------------------------------------------------
+    //
+    // These were PROPOSED-and-stubbed when this file was written (see the SCOPE note in the header),
+    // on the rule that a hand-own lands when a consumer REACHES it. The consumer arrived and was
+    // measured: net's own suite reports TestUDPIPVersionReadMsg, TestUDPConnSpecificMethods and
+    // TestAllocs as `Go="pass" C#="infrastructure-error"`, each dying on
+    //
+    //     NotImplementedException: RecvmsgInet4: external (assembly or cgo) function is not implemented
+    //
+    // which is PartialStubGenerator's body for an unimplemented partial. Writing these four
+    // DISPLACES those stubs by construction -- its predicate skips any partial whose
+    // PartialImplementationPart is non-null -- so there is no registration and no converter change.
+    //
+    // Each body is Go's own (syscall_unix.go recvmsgInet4/sendmsgNInet4), composed from the two
+    // seams this file and syscall already share: the sockaddr encode/decode is S1's
+    // GoWrite/GoReadNativeSockaddrInet4/6, and the msghdr/iovec/control machinery is
+    // GoRecvmsgNative/GoSendmsgNative. No native type crosses the assembly boundary.
+
+    public static partial (nint n, nint oobn, nint recvflags, error err) RecvmsgInet4(nint fd, slice<byte> p, slice<byte> oob, nint flags, ж<syscall.SockaddrInet4> from) {
+        unsafe {
+            byte* buffer = stackalloc byte[syscall.GoNativeSockaddrLen];
+            uint32 nameLen = syscall.GoNativeSockaddrLen;
+
+            var (n, oobn, recvflags, err) = syscall.GoRecvmsgNative(fd, p, oob, flags, buffer, ref nameLen);
+
+            if (err != default!) {
+                return (0, 0, 0, err);
+            }
+
+            // Go reinterprets the raw image as a RawSockaddrInet4 and copies Port/Addr; here the
+            // shared decoder does it, filling `from` by ASSIGNMENT so no managed address is exposed.
+            var decodeErr = syscall.GoReadNativeSockaddrInet4(buffer, (syscall._Socklen)nameLen, from);
+
+            if (decodeErr != default!) {
+                return (n, oobn, recvflags, decodeErr);
+            }
+
+            return (n, oobn, recvflags, default!);
+        }
+    }
+
+    public static partial (nint n, nint oobn, nint recvflags, error err) RecvmsgInet6(nint fd, slice<byte> p, slice<byte> oob, nint flags, ж<syscall.SockaddrInet6> from) {
+        unsafe {
+            byte* buffer = stackalloc byte[syscall.GoNativeSockaddrLen];
+            uint32 nameLen = syscall.GoNativeSockaddrLen;
+
+            var (n, oobn, recvflags, err) = syscall.GoRecvmsgNative(fd, p, oob, flags, buffer, ref nameLen);
+
+            if (err != default!) {
+                return (0, 0, 0, err);
+            }
+
+            var decodeErr = syscall.GoReadNativeSockaddrInet6(buffer, (syscall._Socklen)nameLen, from);
+
+            if (decodeErr != default!) {
+                return (n, oobn, recvflags, decodeErr);
+            }
+
+            return (n, oobn, recvflags, default!);
+        }
+    }
+
+    // Go: `ptr, salen, err := to.sockaddr(); return sendmsgN(fd, p, oob, ptr, salen, flags)`. The
+    // encode is S1's writer into a stack image, so the kernel never sees a managed address -- which
+    // is the whole defect this family carries.
+    public static partial (nint n, error err) SendmsgNInet4(nint fd, slice<byte> p, slice<byte> oob, ж<syscall.SockaddrInet4> to, nint flags) {
+        unsafe {
+            byte* buffer = stackalloc byte[syscall.GoNativeSockaddrLen];
+            var (nameLen, err) = syscall.GoWriteNativeSockaddrInet4(to, buffer);
+
+            if (err != default!) {
+                return (0, err);
+            }
+
+            return syscall.GoSendmsgNative(fd, p, oob, buffer, (uint32)nameLen, flags);
+        }
+    }
+
+    public static partial (nint n, error err) SendmsgNInet6(nint fd, slice<byte> p, slice<byte> oob, ж<syscall.SockaddrInet6> to, nint flags) {
+        unsafe {
+            byte* buffer = stackalloc byte[syscall.GoNativeSockaddrLen];
+            var (nameLen, err) = syscall.GoWriteNativeSockaddrInet6(to, buffer);
+
+            if (err != default!) {
+                return (0, err);
+            }
+
+            return syscall.GoSendmsgNative(fd, p, oob, buffer, (uint32)nameLen, flags);
+        }
+    }
+
     private static unsafe error sendtoNative(nint fd, slice<byte> p, nint flags, byte* addr, syscall._Socklen addrlen) {
         byte zero = 0;
         uintptr payload = len(p) > 0 ? (uintptr)Ꮡ(p, 0) : (uintptr)(void*)(&zero);

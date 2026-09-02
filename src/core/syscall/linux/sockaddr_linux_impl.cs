@@ -638,13 +638,102 @@ partial class syscall_package
     // 16..111), which is why the two stay in step.
     internal static unsafe (nint n, nint oobn, nint recvflags, error err) recvmsgRaw(nint fd, slice<byte> p, slice<byte> oob, nint flags, ж<RawSockaddrAny> Ꮡrsa) {
         byte* nameBuf = stackalloc byte[nativeSockaddrLen];
+
+        uint32 nameLen = (uint32)SizeofSockaddrAny;
+
+        var (n, oobn, recvflags, err) = GoRecvmsgNative(fd, p, oob, flags, nameBuf, ref nameLen);
+
+        if (err != default!) {
+            return (0, 0, 0, err);
+        }
+
+        // The kernel wrote the sender's address into the stack buffer; transcribe it back into the
+        // caller's managed RawSockaddrAny, which is what its three callers read. This is the exact
+        // INVERSE of anyToSockaddr's flatten (Family at 0, Data at 2..15, Pad at 16..111), which is
+        // what keeps the two in step.
+        ref var rsa = ref Ꮡrsa.Value;
+        rsa.Addr.Family = *(uint16*)nameBuf;
+
+        for (nint i = 0; i < 14; i++) {
+            rsa.Addr.Data[i] = (int8)nameBuf[2 + i];
+        }
+
+        for (nint i = 0; i < 96; i++) {
+            rsa.Pad[i] = (int8)nameBuf[16 + i];
+        }
+
+        return (n, oobn, recvflags, default!);
+    }
+
+
+    // SendmsgN is recvmsgRaw's direction reversed, and it is the PUBLIC function rather than the
+    // raw helper for a reason the receive side does not have: sendmsgN's `ptr` parameter is
+    // already the address of a MANAGED raw sockaddr (whatever `to.sockaddr()` returned), so there
+    // is nothing there to transcribe faithfully -- the typed Sockaddr has to be re-encoded, and
+    // only SendmsgN still holds it. Bind/Connect take the same shape for the same reason.
+    //
+    // Go passes NULL for a connected socket, and a connected socket REJECTS a sendmsg carrying an
+    // address with EISCONN. The generated body turns that NULL into an object -- `(ж<byte>)(uintptr)0`
+    // is `new NativeBox<byte>(0)` -- so the kernel reads a non-NULL msg_name and answers EISCONN.
+    // That is the failure ScmRightsSeam measured before this body existed; here a nil `to` simply
+    // leaves msg.Name null.
+    //
+    // sendmsgN itself, and sendmsgNInet4/sendmsgNInet6, stay AUTO: with this body in place their
+    // only remaining callers are each other, and internal/poll reaches the //go:linkname copies in
+    // internal/syscall/unix/linux/net_linux_impl.cs instead -- the same reason sendtoInet4/6 are
+    // left alone (see the file header).
+    public static unsafe (nint n, error err) SendmsgN(nint fd, slice<byte> p, slice<byte> oob, Sockaddr to, nint flags) {
+        byte* nameBuf = null;
+        uint32 nameLen = 0;
+        byte* buffer = stackalloc byte[nativeSockaddrLen];
+
+        if (to != default!) {
+            var (encoded, nameErr) = writeNativeSockaddr(to, buffer);
+
+            if (nameErr != default!) {
+                return (0, nameErr);
+            }
+
+            nameBuf = buffer;
+            nameLen = (uint32)encoded;
+        }
+
+        // A nil `to` leaves nameBuf NULL, which is the whole point: the generated body turned Go's
+        // NULL into `new NativeBox<byte>(0)` -- an object -- and a connected socket answered EISCONN.
+        return GoSendmsgNative(fd, p, oob, nameBuf, nameLen, flags);
+    }
+
+
+    // ---- the CROSS-ASSEMBLY seam for the msghdr family ------------------------------------------
+    //
+    // internal/syscall/unix's RecvmsgInet4/6 and SendmsgNInet4/6 are the //go:linkname copies
+    // internal/poll reaches, and they live in a DIFFERENT ASSEMBLY. S1 already settled how this
+    // file exports across that boundary and these two follow it rather than inventing a second
+    // convention: a `Go`-prefixed PUBLIC helper, with the native mirrors staying PRIVATE. The
+    // existing members of that set are GoNativeSockaddrLen, GoWriteNativeSockaddrInet4/6 and
+    // GoReadNativeSockaddrInet4/6; these are the msghdr family's, so NativeMsghdr and NativeIovec
+    // never leave this file and no native type crosses the assembly line.
+    //
+    // They are recvmsgRaw's and SendmsgN's bodies with the ADDRESS handling lifted out -- the
+    // caller supplies the native sockaddr image (send) or the buffer to receive one into
+    // (receive). That is the shape BOTH sides of the boundary already hold: syscall's own callers
+    // through writeNativeSockaddr and the RawSockaddrAny transcription, and
+    // internal/syscall/unix's through GoWriteNativeSockaddrInet4 / GoReadNativeSockaddrInet4.
+    //
+    // Factored rather than duplicated deliberately: ScmRightsSeam already proves these exact
+    // lines through recvmsgRaw and SendmsgN, and a second copy would be a second thing to keep
+    // right. The two callers below are re-proven by that guard after the factoring.
+
+    // nameBuf receives the sender's address image; nameLen is the buffer's capacity going in.
+    // Returns the kernel's n / control length / flags, exactly as recvmsgRaw reports them.
+    public static unsafe (nint n, nint oobn, nint recvflags, error err) GoRecvmsgNative(nint fd, slice<byte> p, slice<byte> oob, nint flags, byte* nameBuf, ref uint32 nameLen) {
         byte zero = 0;
 
         NativeIovec iov = default;
         NativeMsghdr msg = default;
 
         msg.Name = nameBuf;
-        msg.Namelen = (uint32)SizeofSockaddrAny;
+        msg.Namelen = nameLen;
 
         if (len(p) > 0) {
             iov.Base = (byte*)(nint)(uintptr)Ꮡ(p, 0);
@@ -680,54 +769,26 @@ partial class syscall_package
             return (0, 0, 0, errnoErr(e1));
         }
 
-        // The kernel wrote the sender's address into the stack buffer; transcribe it back into the
-        // caller's managed RawSockaddrAny, which is what its three callers read.
-        ref var rsa = ref Ꮡrsa.Value;
-        rsa.Addr.Family = *(uint16*)nameBuf;
-
-        for (nint i = 0; i < 14; i++) {
-            rsa.Addr.Data[i] = (int8)nameBuf[2 + i];
-        }
-
-        for (nint i = 0; i < 96; i++) {
-            rsa.Pad[i] = (int8)nameBuf[16 + i];
-        }
+        // The kernel rewrites msg_namelen with what it actually wrote; hand it back so a caller
+        // that DECODES the image (internal/syscall/unix's Inet4/6 helpers) passes the real length
+        // to readNativeSockaddr rather than the buffer's capacity -- S1's Recvfrom reads its
+        // addrlen back for the same reason.
+        nameLen = msg.Namelen;
 
         return ((nint)r0, (nint)msg.Controllen, (nint)msg.Flags, default!);
     }
 
-    // SendmsgN is recvmsgRaw's direction reversed, and it is the PUBLIC function rather than the
-    // raw helper for a reason the receive side does not have: sendmsgN's `ptr` parameter is
-    // already the address of a MANAGED raw sockaddr (whatever `to.sockaddr()` returned), so there
-    // is nothing there to transcribe faithfully -- the typed Sockaddr has to be re-encoded, and
-    // only SendmsgN still holds it. Bind/Connect take the same shape for the same reason.
-    //
-    // Go passes NULL for a connected socket, and a connected socket REJECTS a sendmsg carrying an
-    // address with EISCONN. The generated body turns that NULL into an object -- `(ж<byte>)(uintptr)0`
-    // is `new NativeBox<byte>(0)` -- so the kernel reads a non-NULL msg_name and answers EISCONN.
-    // That is the failure ScmRightsSeam measured before this body existed; here a nil `to` simply
-    // leaves msg.Name null.
-    //
-    // sendmsgN itself, and sendmsgNInet4/sendmsgNInet6, stay AUTO: with this body in place their
-    // only remaining callers are each other, and internal/poll reaches the //go:linkname copies in
-    // internal/syscall/unix/linux/net_linux_impl.cs instead -- the same reason sendtoInet4/6 are
-    // left alone (see the file header).
-    public static unsafe (nint n, error err) SendmsgN(nint fd, slice<byte> p, slice<byte> oob, Sockaddr to, nint flags) {
+    // nameBuf holds an ALREADY-ENCODED native sockaddr image of nameLen bytes, or is null for a
+    // connected socket -- Go's nil `to`, and the case whose generated form answered EISCONN.
+    public static unsafe (nint n, error err) GoSendmsgNative(nint fd, slice<byte> p, slice<byte> oob, byte* nameBuf, uint32 nameLen, nint flags) {
         byte zero = 0;
 
         NativeIovec iov = default;
         NativeMsghdr msg = default;
 
-        if (to != default!) {
-            byte* nameBuf = stackalloc byte[nativeSockaddrLen];
-            var (nameLen, nameErr) = writeNativeSockaddr(to, nameBuf);
-
-            if (nameErr != default!) {
-                return (0, nameErr);
-            }
-
+        if (nameBuf != null) {
             msg.Name = nameBuf;
-            msg.Namelen = (uint32)nameLen;
+            msg.Namelen = nameLen;
         }
 
         if (len(p) > 0) {
