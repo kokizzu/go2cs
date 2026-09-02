@@ -95,6 +95,28 @@ func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
 		renderLambdaParams = true
 	}
 
+	// A callee that RETURNS results takes the temp-parameter form too, for exactly the reason the
+	// arity-0 rung states below: a deferred call's results are always discarded (Go drops them at
+	// unwind), and a result-returning callee is a `Func<…>`, which golib's `defer` overloads —
+	// all `Action` shaped — cannot take. The arity-0 path has always known this and wraps in a
+	// lambda (`() => k.Close()`, an error-returning Close). The arity-N path did NOT, and the
+	// omission is not a missing wrap but a MALFORMED emission: convCallExpr renders the whole call
+	// while `lambdaContext.callArgs` stays empty, so the arguments come out as empty slots —
+	// `defer(syscall.Syscall(SYS_MUNMAP, base+off, 65536, 0), , , , , ref ᒐ)`, CS0839 ×4, measured
+	// on runtime's memmove_linux_amd64_test.go:44 (2026-09-02). Forcing the temp-parameter form
+	// gives `(ᴛ1, ᴛ2, ᴛ3, ᴛ4) => syscall.Syscall(ᴛ1, ᴛ2, ᴛ3, ᴛ4)`: the thunk's body is a statement,
+	// so the results are dropped exactly as Go drops them, and the arguments are still the EAGER
+	// ones evaluated at defer time. One rule, stated once, for both arities.
+	if paramCount > 0 {
+		if funType := v.getType(deferStmt.Call.Fun, false); funType != nil {
+			if sig, ok := funType.(*types.Signature); ok {
+				if sig.Results() != nil && sig.Results().Len() > 0 {
+					renderLambdaParams = true
+				}
+			}
+		}
+	}
+
 	if paramCount > 0 {
 		lambdaContext.callArgs = make([]string, paramCount)
 		lambdaContext.renderParams = renderLambdaParams

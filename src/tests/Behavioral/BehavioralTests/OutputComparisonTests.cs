@@ -302,6 +302,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckDeferClosure() => CheckTarget("DeferClosure");
 
     [TestMethod]
+    public void CheckDeferDiscardedMultiValue() => CheckTarget("DeferDiscardedMultiValue");
+
+    [TestMethod]
     public void CheckDeferEvalParam() => CheckTarget("DeferEvalParam");
 
     [TestMethod]

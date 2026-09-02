@@ -366,6 +366,7 @@
     <Project Path="tests/Behavioral/DeferArgEnclosingCapture/DeferArgEnclosingCapture.csproj" />
     <Project Path="tests/Behavioral/DeferCallOrder/DeferCallOrder.csproj" />
     <Project Path="tests/Behavioral/DeferClosure/DeferClosure.csproj" />
+    <Project Path="tests/Behavioral/DeferDiscardedMultiValue/DeferDiscardedMultiValue.csproj" />
     <Project Path="tests/Behavioral/DeferEvalParam/DeferEvalParam.csproj" />
     <Project Path="tests/Behavioral/DeferEvalParamFunc/DeferEvalParamFunc.csproj" />
     <Project Path="tests/Behavioral/DeferFrameScopes/DeferFrameScopes.csproj" />
