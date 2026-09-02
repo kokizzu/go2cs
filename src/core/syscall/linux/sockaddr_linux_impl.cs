@@ -825,7 +825,18 @@ partial class syscall_package
             return (0, errnoErr(e1));
         }
 
-        return ((nint)r0, default!);
+        nint n = (nint)r0;
+
+        // Go's own tail (syscall_linux.go:830), and it belongs HERE for the reason Go puts it
+        // here: sendmsgN is the single funnel for SendmsgN, sendmsgNInet4 and sendmsgNInet6, so
+        // one copy covers all three. The byte counted by the kernel on a control-only send is
+        // the DUMMY the block above supplies, not the caller's payload -- reporting it would
+        // tell the caller a byte of its data went out when it passed none.
+        if (len(oob) > 0 && len(p) == 0) {
+            n = 0;
+        }
+
+        return (n, default!);
     }
 
     // Accept4 is Go's own body (syscall_linux.go) over the trampoline instead of the typed generated

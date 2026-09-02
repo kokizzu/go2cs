@@ -18,6 +18,14 @@
 // The proof that the received FD is the sent one is a value the KERNEL moved: the parent writes a
 // known byte string into a pipe before sending its read end, and the child-side descriptor must
 // read exactly that back. Two DIFFERENT descriptors cannot both do that.
+//
+// THE CONTROL-ONLY PHASE IS A SECOND SHAPE, NOT A REPETITION. Go's sendmsgN supplies a dummy
+// byte itself when the caller passes an empty payload on a stream socket, and then reports 0
+// written -- the byte the kernel counted was not the caller's. Phase 1 above passes a real
+// payload byte, so it can never reach that tail; a hand-own of sendmsgN that drops it answers
+// 1 where Go answers 0 and phase 1 stays green, which is exactly what happened. The pairing
+// matters as much as the count: `sent == 0` alone is satisfied by a send that did nothing, so
+// the descriptor must still arrive and still read the staged bytes.
 package main
 
 import (
@@ -87,4 +95,43 @@ func main() {
 	fatal("read(received fd)", err)
 	syscall.Close(fds[0])
 	fmt.Println("received descriptor reads the staged bytes:", rn == len(secret) && string(got[:rn]) == secret)
+
+	// PHASE 2: the control-only send. Empty payload, so sendmsgN's own dummy byte is what the
+	// kernel counts and the reported count must be 0.
+	var pipe2Fds [2]int
+	fatal("pipe2 (phase 2)", syscall.Pipe2(pipe2Fds[:], 0))
+	pipe2Read, pipe2Write := pipe2Fds[0], pipe2Fds[1]
+	defer syscall.Close(pipe2Read)
+
+	n2, err := syscall.Write(pipe2Write, []byte(secret))
+	fatal("write(pipe 2)", err)
+	fatal("close(pipe2Write)", syscall.Close(pipe2Write))
+	fmt.Println("bytes staged in the second pipe:", n2 == len(secret))
+
+	pair2, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
+	fatal("socketpair (phase 2)", err)
+	sender2, receiver2 := pair2[0], pair2[1]
+	defer syscall.Close(sender2)
+	defer syscall.Close(receiver2)
+
+	rights2 := syscall.UnixRights(pipe2Read)
+	sent2, err := syscall.SendmsgN(sender2, nil, rights2, nil, 0)
+	fatal("sendmsg (control only)", err)
+	fmt.Println("control-only send reports no payload bytes:", sent2 == 0)
+
+	// ... and it really sent: the descriptor arrives and reads the staged bytes back.
+	payload2 := make([]byte, 8)
+	oob2 := make([]byte, syscall.CmsgSpace(4))
+	_, oobn2, _, _, err := syscall.Recvmsg(receiver2, payload2, oob2, 0)
+	fatal("recvmsg (phase 2)", err)
+	scms2, err := syscall.ParseSocketControlMessage(oob2[:oobn2])
+	fatal("parse control (phase 2)", err)
+	fds2, err := syscall.ParseUnixRights(&scms2[0])
+	fatal("parse rights (phase 2)", err)
+
+	got2 := make([]byte, len(secret))
+	rn2, err := syscall.Read(fds2[0], got2)
+	fatal("read(received fd, phase 2)", err)
+	syscall.Close(fds2[0])
+	fmt.Println("control-only descriptor reads the staged bytes:", rn2 == len(secret) && string(got2[:rn2]) == secret)
 }
