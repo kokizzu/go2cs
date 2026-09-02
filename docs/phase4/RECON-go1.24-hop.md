@@ -233,8 +233,46 @@ the keyword there. Only the composed TYPE name is wrong.
 identifiers in the 1.23.12 control.** A single-root, single-site defect, and small — but it is a
 CONVERTER change, so this record states it and proposes nothing.
 
-**Rung 3 and beyond are UNMEASURED.** `runtime` sits under nearly everything, so 169 of 357 projects
-were never reached. The ladder is real and the darwin precedent (19 → 10 → 9 → 0 across four
+### Rung 3 — 120 errors / 49 distinct, ALL in `runtime`, 188/357 assemblies — and it is a GENERATOR wall
+
+Measured 2026-09-02 by patching the `_@` defect in the **scratch converter clone only** (marked as a
+measurement patch in its own source, never committed; `git status src/go2cs` empty before and after),
+seeding a **fresh** root, reconverting — 342/342 again, `_@` identifiers **3 → 0** — re-deriving the
+deletion set independently for that root (**31 again**) and rebuilding.
+
+**The errors are not in converter emission at all.** Read verbatim, 85 of the 120 are in **go2cs-gen's
+generated output** (`Generated/go2cs-gen/go2cs.TypeGenerator/go.runtime_package.{_func,finblock,note.1,…}.g.cs`),
+plus 6 in `runtime2.cs` and 2 in `mfinal.cs`. That is **route #7's territory — a class no `-stdlib`
+diff can see**, because CNR is transpile-only and generator output never enters its verdict.
+
+**Root, with its control.** The generated type files carry, at line 15:
+
+| | the generated using |
+|:--|:--|
+| **1.23.12 (control)** | `using global::go.runtime.@internal;` — correctly qualified |
+| **1.24.13 (trial)** | `using runtime.@internal;` — **`global::go.` gone** |
+
+Occurrences of the unqualified form: **0** in the 1.23.12 generated output, **29** in the 1.24.13
+generated output. Without `global::`, `runtime` does not resolve from inside `namespace go;` and every
+generated type in the package fails — `CS0246: 'runtime' could not be found` — cascading into
+CS0111 / CS0102 / CS0116 / CS0715 as the partial declarations lose their context.
+
+**What triggers it is 1.24's namespace graph**: the release moves `runtime/internal/{math,sys}` to
+`internal/runtime/{math,sys}` and adds `internal/runtime/maps` (the `swissmap` baseline — which is
+also why the deletion set removes exactly `runtime/map{,_fast32,_fast64,_faststr}.cs`), so `runtime`
+acquires imports it did not have. **Why the qualifier is dropped is NOT established** — the
+generator's qualification decision was not read.
+
+> **Two wrong readings, kept on the record because the control is what caught the second.** The first
+> bucketing of this rung reported "all 120 in `runtime/runtime.cs`" — **there is no such file**; the
+> regex `runtime/[a-z_0-9/]*\.cs` matched a suffix of the real generated paths. And the first root
+> offered was "the generator composes `internal/runtime/*` backwards", which is **wrong**: the
+> namespace is correct in both releases and only the `global::` qualifier is missing. Reasoning from
+> one emission would have banked the second; running the control is what separated a guess from a
+> measurement.
+
+**Rungs 4+ remain UNMEASURED.** `runtime` sits under nearly everything, so 169 of 357 projects were
+still never reached. The ladder is real and the darwin precedent (19 → 10 → 9 → 0 across four
 censuses) is the shape to expect.
 
 ---
@@ -319,9 +357,10 @@ the cheaper half of the bill.
 
 ## 8. What this record does NOT establish
 
-1. **Rung 3 and beyond of the compile ladder.** 169 of 357 projects were never reached. Everything
-   past `runtime` is unmeasured, including whether §4's 29-site generic-constraint warning is right
-   that its emission does not compile.
+1. ~~**Rung 3**~~ — **MEASURED, §5**: a `global::`-qualification loss in go2cs-gen's using emission,
+   0 occurrences in the control vs 29 in the trial. **Rungs 4+ remain unmeasured**: 169 of 357
+   projects were still never reached, including whether §4's 29-site generic-constraint warning is
+   right that its emission does not compile. WHY the qualifier is dropped is also not established.
 2. **Anything operational.** No test suite was converted, built or run at 1.24. The roster bill in §7
    is an exposure census, not a validation forecast.
 3. **Windows and darwin flavors at 1.24.** Only `-p:GoTargetOS=linux` was built.
