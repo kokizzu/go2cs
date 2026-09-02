@@ -21469,4 +21469,76 @@ Platform (Windows ≡ WSL to within ~1 ms on the same silicon), certificate/key 
 goroutines get dedicated threads). ⚠ And the ~21% non-signature remainder is **not `nistec`**: TLS
 1.3's default key share is **X25519** (`handshake_client.go:153`), so that segment is
 `crypto/ecdh` → `crypto/internal/edwards25519/field` plus the record layer and parsing.
+
+---
+
+## `addMulVVW` as emitted is 13.1× a raw loop — the seam is CALL GRANULARITY, apportioned (G, 2026-09-02)
+
+Follows the `math/bits` two-null block above. That cut proved the arithmetic is not the 53× RSA gap;
+this measures what is. **`math/big`'s `addMulVVW` inner loop** — the innermost loop of Montgomery
+multiplication, i.e. of every RSA private-key operation — 32 words × 200 k reps, **Release +
+`DOTNET_TieredCompilation=0`**, same data and an observed sink for every variant so none is dead code.
+Two runs, spread under 2%.
+
+### Variants — the table names what each one REMOVES, and the attributions are DERIVED from it
+
+| variant | container | multiply | assembly | attr | ns/word | vs B |
+|---|---|---|---|---|--:|--:|
+| **F** FULL emitted | `slice<Word>` | `bits.Mul` | cross | — | **24.15 – 24.35** | **13.1×** |
+| **A** emitted | `slice<nuint>` | `bits.Mul` | cross | — | 22.31 – 22.38 | 12.1× |
+| **C** | `Span<ulong>` | `bits.Mul` | cross | — | 14.23 – 14.34 | 7.7× |
+| **E-CROSS** | `slice<nuint>` | `bits.Mul` | cross | **yes** | 10.96 – 11.24 | 6.0× |
+| **G** | `slice<nuint>` | local copy | **same** | — | 5.36 – 5.38 | 2.9× |
+| **E** | `slice<nuint>` | local copy | **same** | **yes** | 4.01 – 4.05 | 2.2× |
+| **D** | `slice<nuint>` | `Math.BigMul` | — | — | 2.72 – 2.77 | 1.5× |
+| **B** raw | `Span<ulong>` | `Math.BigMul` | — | — | 1.85 – 1.86 | 1× |
+
+`Word` is `math/big`'s own generated `[GoType("num:nuint")]` struct, copied verbatim from its
+`Generated/` output — not a reproduction.
+
+### Apportionment — every pair below differs in EXACTLY ONE thing
+
+```
+cross-assembly boundary        A / G      4.16 - 4.17x   <- DOMINANT
+AggressiveInlining, cross-asm  A / E-CROSS 2.00 - 2.01x
+AggressiveInlining, same-asm   G / E      1.32 - 1.34x
+golib slice vs Span            D / B      1.47 - 1.50x
+Word generated-struct wrapper  F / A      1.08 - 1.09x   <- nearly free
+```
+
+**The assembly boundary is the seam, not the primitives, not the containers, and not the wrapper.**
+A same-assembly copy with no attribute at all is already **4.2×** faster than the emitted form.
+
+### E's prediction, written BEFORE the run and scored
+
+> *"E improves substantially but does NOT reach B: I predict 2–6× of B (3.7–11.4 ns/word)."*
+
+**Both E arms landed inside it** — same-assembly 2.2×, cross-assembly 6.0×. The stated mechanism also
+held: inlining removed call overhead but the tuple materialisation and `nuint`↔`uint64` conversions at
+two levels survive, which is the 2.2× floor.
+
+### What each remedy candidate is now worth
+
+| candidate | measured | converter change? |
+|---|--:|---|
+| `AggressiveInlining` on the registry's hand-owned leaves | **2.0×** | no |
+| emit the BCL call AT THE SITE (= same-assembly + inlined) | **5.5×** | yes |
+| additionally fix slice + tuples (raw ceiling) | 12.1× | golib + emission |
+
+### ⚠ Two labelling corrections, recorded because they are the failure mode here
+
+1. The first run printed the slice and call attributions **swapped** (variant C removes the slice and keeps the call; D does the opposite). Numbers right, labels backwards — it would have pointed the design item at golib's slice instead of the call boundary.
+2. `C/G` was then quoted as "cross-assembly boundary" while differing in **container AND assembly**. The clean pair is **A/G**, and the true factor is 4.17×, not 2.7×.
+
+Both survive review by looking self-consistent, which is why the table above names what each variant
+REMOVES and the attribution lines are derived from that column rather than typed beside it.
+
+### Method
+
+Instrument is a scratch console (`CConv`, plus `CConvE` against a scratch `core/math/bits` copy whose
+`Mul`/`Mul64`/`Add`/`Add64` carry the attribute — **never the corpus**). Call depth was checked first
+and is **two** (`bits.Mul` → `Mul64`, `bits.Add` → `Add64`, each materialising and destructuring a
+ValueTuple), so the attribute went on all four levels; on the outer pair alone it would have measured
+the wrong thing. Both consoles reference golib and `math/bits` by ABSOLUTE path, so the
+per-configuration `$(go2csPath)` Release trap cannot reach them. Neither is proposed for banking.
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
