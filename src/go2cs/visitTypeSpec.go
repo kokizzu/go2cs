@@ -280,7 +280,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			// fixed-size ARRAY fields needs the forwarded `Clone()` (see wrapperValueCloneAttr).
 			inlineAttrs := v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access, wrapperValueCloneAttr(rhsType))
 
-			v.writeStringLn(target, "[GoType(\"%s\")] %s%spartial struct %s;", csName, inlineAttrs, access, getSanitizedIdentifier(name))
+			v.writeStringLn(target, "%s[GoType(\"%s\")] %s%spartial struct %s;", v.localNameAttrFor(identType), csName, inlineAttrs, access, getSanitizedIdentifier(name))
 			finish()
 		} else {
 			v.outputBuilder.WriteString(v.convSelectorExpr(typeSpecType, DefaultLambdaContext()))
@@ -309,7 +309,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			}
 
 			v.recordTypeAccessibility("class", getSanitizedIdentifier(name), "", access, "")
-			v.writeStringLn(target, "[GoType(\"%s\")] %spartial class %s;", pointerTypeName, access, getSanitizedIdentifier(name))
+			v.writeStringLn(target, "%s[GoType(\"%s\")] %spartial class %s;", v.localNameAttrFor(identType), pointerTypeName, access, getSanitizedIdentifier(name))
 			usesUnsafeCode = true
 			finish()
 		}
@@ -367,6 +367,30 @@ func (v *Visitor) liftLocalTypeDeclName(name string) string {
 	}
 
 	return v.getUniqueLiftedTypeName(name)
+}
+
+// localNameAttrFor renders the `[GoLocalName("<name>")] ` stamp for a lifted FUNCTION-LOCAL named
+// type declaration, or "" at package scope — where the C# identifier IS the Go name and the stamp
+// would be noise. The attribute is what lets golib's GoTypeName answer Go's OWN name for a lifted
+// type: goBareTypeName already prefers goLocalNameOf for ANY type, so the receiving half has been
+// in place since the dyn-lift sites (visitStructType/visitInterfaceType) established the pattern —
+// the NAMED local-type lift branches simply never joined it. Without the stamp every such type
+// reported the lifted `<Func>_<name>` identifier as its Go name, whose first rune is the enclosing
+// FUNCTION's: reflect's TestExported read `type p *P` as exported off the 'T' in
+// `TestExported_p`, and TestSliceOf's String() printed `[]reflect_test.TestSliceOf_T` where Go
+// prints `[]reflect_test.T`. Shared by every lift-emitting branch (visitIdent's wrapper kinds,
+// visitTypeSpec's SelectorExpr/StarExpr, visitArrayType, visitChanType, visitMapType), mirroring
+// the dyn sites' composition verbatim.
+func (v *Visitor) localNameAttrFor(identType types.Type) string {
+	if !v.inFunction {
+		return ""
+	}
+
+	if named, ok := identType.(*types.Named); ok {
+		return fmt.Sprintf("[GoLocalName(\"%s\")] ", named.Obj().Name())
+	}
+
+	return ""
 }
 
 // liftedTypeDeclaredBy reports whether t is the type the given declaration INTRODUCES, rather than

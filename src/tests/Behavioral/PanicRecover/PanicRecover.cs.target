@@ -102,7 +102,7 @@ internal static @string panicValueKind(Action f) {
     return @out;
 }
 
-[GoType("@string")] internal partial struct panicValues_label;
+[GoLocalName("label")] [GoType("@string")] internal partial struct panicValues_label;
 
 internal static void panicValues() {
     fmt.Println(panicValueKind(() => {

@@ -32,9 +32,14 @@
 package main
 
 import (
+	"go/ast"
+	"go/build"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -213,11 +218,26 @@ func TestManualConversionRegistrationsDisplaceSomething(t *testing.T) {
 		t.Skip("src/core is not beside the converter; nothing to walk")
 	}
 
+	// The GOROOT the corpus was converted from — the source of the weaker, test-side witness below.
+	goRoot := build.Default.GOROOT
+	if goRoot == "" {
+		goRoot = runtime.GOROOT()
+	}
+
 	var undisplaced []string
 	witnessed := 0
+	testWitnessed := 0
 
 	for pkg, funcs := range manualConversionFuncs {
 		placeholders := generatedFuncPlaceholders(t, filepath.Join(coreDir, filepath.FromSlash(pkg)))
+
+		// Lazily parsed on the first entry that misses its production placeholder — a hand-own of a
+		// GOROOT `_test.go` declaration (reflect's export_test.go IsExported) has no on-disk
+		// placeholder until reflect `-tests` has run in THIS tree, so a clone that has never run it
+		// would report the entry undisplaced. Its Go declaration is in the package's own test files,
+		// which every clone has, so that is the witness. Nil until needed; empty map means "parsed,
+		// none found" (distinct from "not yet parsed").
+		var testFuncs map[string]bool
 
 		for name := range funcs {
 			// A method registration names the RECEIVER type and the member; the placeholder names the
@@ -232,11 +252,31 @@ func TestManualConversionRegistrationsDisplaceSomething(t *testing.T) {
 				continue
 			}
 
+			// Weaker witness: the production body was not displaced on disk, but the name IS a
+			// declaration in the package's GOROOT test files — a test-only hand-own (export_test.go).
+			// Tallied separately; the production arm above stays first and decides the common case.
+			if testFuncs == nil {
+				testFuncs = testDeclaredFuncs(goRoot, pkg)
+			}
+			if testFuncs[member] {
+				testWitnessed++
+				continue
+			}
+
 			undisplaced = append(undisplaced, pkg+"."+name)
 		}
 	}
 
 	sort.Strings(undisplaced)
+
+	// The weaker witness is tallied separately AND surfaced: an entry that relies on it has no
+	// on-disk production placeholder, so a reviewer who sees this count non-zero can confirm each
+	// such entry is a genuine GOROOT-test-file hand-own (IsExported; GCBits when it lands) rather
+	// than a production displacement the strong arm should have caught.
+	if testWitnessed > 0 {
+		t.Logf("%d registration(s) witnessed only by their GOROOT _test.go declaration (no on-disk "+
+			"production placeholder); this is the test-side hand-own case (e.g. reflect.IsExported)", testWitnessed)
+	}
 
 	for _, entry := range undisplaced {
 		t.Errorf("manualConversionFuncs registers %s, but the converter displaced no body for it — the "+
@@ -254,6 +294,52 @@ func TestManualConversionRegistrationsDisplaceSomething(t *testing.T) {
 		t.Error("no registration matched a generated placeholder anywhere in the corpus; the placeholder " +
 			"census is broken, not the registry")
 	}
+}
+
+// testDeclaredFuncs returns the set of top-level function and method NAMES declared in the GOROOT
+// package's own `_test.go` files (both the in-package and the external `<pkg>_test` test files sit
+// in the same directory). It is the weaker, test-side witness for a registration whose production
+// body was not displaced on disk — a hand-own of a GOROOT test declaration
+// (reflect/export_test.go's IsExported), whose generated placeholder exists only where the package's
+// `-tests` conversion has run. Keyed by the member name (funcDecl.Name.Name), matching the
+// production arm's receiver-stripped `member`. An unreadable/absent GOROOT package yields an empty
+// set, which correctly leaves the entry undisplaced rather than silently witnessing it.
+func testDeclaredFuncs(goRoot, pkg string) map[string]bool {
+	names := map[string]bool{}
+
+	if goRoot == "" {
+		return names
+	}
+
+	dir := filepath.Join(goRoot, "src", filepath.FromSlash(pkg))
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return names
+	}
+
+	fset := token.NewFileSet()
+
+	for _, entry := range entries {
+		name := entry.Name()
+
+		if entry.IsDir() || !strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+
+		file, parseErr := parser.ParseFile(fset, filepath.Join(dir, name), nil, 0)
+		if parseErr != nil {
+			continue
+		}
+
+		for _, decl := range file.Decls {
+			if funcDecl, ok := decl.(*ast.FuncDecl); ok && funcDecl.Name != nil {
+				names[funcDecl.Name.Name] = true
+			}
+		}
+	}
+
+	return names
 }
 
 // generatedFuncPlaceholders returns the member names the converter displaced a func body for in ONE

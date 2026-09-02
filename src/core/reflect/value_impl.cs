@@ -323,6 +323,22 @@ public static bool IsNil(this ΔValue v) {
 public static nint Len(this ΔValue v) {
     v.mustBeKind("reflect.Value.Len"u8, Array, Chan, Map, ΔSlice, ΔString, ΔPointer);
     object? cur = v.live;
+    // Go's Ptr arm (lenNonSlice), mirroring Cap's one method up: pointer-to-array answers the
+    // array TYPE's length; pointer-to-anything-else panics with Go's own text. The kind gate above
+    // already admitted ΔPointer — HALF the arm had landed — but the switch below had no pointer
+    // case, so every pointer Value fell to the `_ => 0` default: a SILENT wrong for ptr-to-array
+    // ("Len = 0 want 3", TestValue_Len) and a missing panic for ptr-to-slice, both faces of the
+    // same absent arm.
+    if (v.kind() == ΔPointer) {
+        var elem = abi.Elem(v.typ());
+        if (elem != nil && abi.Kind(ref elem.Value) == abi.Array) {
+            if (elem.Value.arrayDims is { Length: > 0 } dims) {
+                return dims[0];
+            }
+            return cur is not null && GoReflect.ReadPointerSlot(cur) is IArray pa ? pa.Length : 0;
+        }
+        throw panic("reflect: call of reflect.Value.Len on ptr to non-array Value");
+    }
     if (cur is not null && cur is not @string && v.kind() == ΔString && GoReflect.TryUnwrapWrapperValue(cur, out object? unwrapped)) {
         cur = unwrapped;
     }
@@ -553,6 +569,32 @@ public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
 public static nint Cap(this ΔValue v) {
     object? cur = v.live;
     ΔKind k = v.kind();
+    // Go's Ptr arm (capNonSlice): a pointer to an ARRAY answers the array TYPE's length — from the
+    // type, so it works on a nil pointer too — and a pointer to anything else panics with its own
+    // text, not the generic ValueError. The descriptor route is Go's `v.typ().Elem().Len()`
+    // verbatim: a POINTER descriptor hands its pointee's dims down unshifted (the cargo rule), so
+    // Elem() carries the array's length. A live pointee is the fallback for a descriptor whose
+    // dims were never measured.
+    //
+    // KNOWN RESIDUAL, measured: the NIL half of TestValue_Cap/Len stays red. Go's answer for a nil
+    // *[3]int is 3 because the length lives in the TYPE; the managed `ж<array<T>>` carries no
+    // length and the canonical typed-nil box is keyed by type alone, so BOTH routes below honestly
+    // answer 0 there — the dims exist nowhere in the value or its managed type. This is the third
+    // member of the construction-position cargo family (channel direction landed 2026-09-01; the
+    // func type word is the typed-nil-func arc): a typed-nil pointer-to-array needs its pointee
+    // dims stamped at the nil CONSTRUCTION (`a = nil` on a *[3]int), converter-side work of the
+    // same shape as chanDirNilValue. Fixing the live and panic-text halves without buying the nil
+    // half with a guess is the r39d pattern: answer what is knowable, name what is not.
+    if (k == ΔPointer) {
+        var elem = abi.Elem(v.typ());
+        if (elem != nil && abi.Kind(ref elem.Value) == abi.Array) {
+            if (elem.Value.arrayDims is { Length: > 0 } dims) {
+                return dims[0];
+            }
+            return cur is not null && GoReflect.ReadPointerSlot(cur) is IArray pa ? pa.Length : 0;
+        }
+        throw panic("reflect: call of reflect.Value.Cap on ptr to non-array Value");
+    }
     if (cur is null && (k == ΔSlice || k == Array || k == Chan)) {
         return 0;
     }
@@ -1292,17 +1334,24 @@ public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
     // nil-map early return first made a wrong-typed key on a NIL map answer "miss" where Go panics,
     // which is exactly what TestMap asserts: it sets mv to its zero value (nil) on the line before
     // and then indexes it with a key of the wrong defined type.
-    // NOTE for whoever closes TestMap's "not assignable" row: the gate below is not strict enough,
-    // and the OBVIOUS tightening is MEASURED WRONG. Go applies ASSIGNABILITY here, which is
-    // stricter than what TryMarshalAssignable accepts — that helper admits a named wrapper into its
-    // underlying slot under Go's named↔unnamed clause, but the clause requires one side to be
-    // UNNAMED and a predeclared type like `string` is named (spec: "Predeclared types, defined
-    // types, and type parameters are called named types"), so `type S string` is NOT assignable to
-    // `string` and Go panics where this returns a miss. Replacing the check with
-    // `key.Type().AssignableTo(...)` — Go's own relation — does NOT fix that row and DOES break
-    // TestArrayOfGenericAlg (measured: 48 -> 49, 0 fixed, 1 broken), so the bridge's AssignableTo is
-    // not a drop-in here. The real correction is in the shared helper's unwrap arm, which is
-    // corpus-wide and wants its own sizing pass and its own canaries.
+    // Go applies ASSIGNABILITY here, which is stricter than what TryMarshalAssignable accepts: that
+    // helper is ALSO the conversion path, and Go's Convert admits two DIFFERENT named types with
+    // identical underlying (`type A int` → `type B int`) while assignment does not — a 70,071-admit
+    // census over this suite found the helper's arms 99.99% correct-Go conversions with exactly ONE
+    // assignment-wrong admit, and it is THIS site (`type S string` key into a `string`-keyed map).
+    // So the fix is the caller-side assignment gate below, not a change to the shared helper (which
+    // would refuse 70k legal conversions) and NOT the bridge's Type.AssignableTo (measured wrong at
+    // this site: 48 → 49, 0 fixed / 1 broken — it carries interface/conversion logic this does not
+    // want). See the board's unwrap-arm disposition (2026-09-02).
+    //
+    // The rule, narrowly: two DIFFERENT Go-NAMED types are never assignable (identity passes; a
+    // named↔unnamed pair passes and is left to the helper's named/unnamed arms; an INTERFACE
+    // destination passes and is left to the helper's interface arm, since a concrete type IS
+    // assignable to an interface it satisfies). A predeclared type like `string` is NAMED (spec).
+    if (isBothNamedMismatch(GoReflect.GoDynamicTypeOf(key.live!), keyType)) {
+        throw panic("reflect.Value.MapIndex: value of type " + GoReflect.GoTypeName(key.live?.GetType()) +
+                    " is not assignable to type " + GoReflect.GoTypeName(keyType));
+    }
     if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k)) {
         // Go's own text, from assignTo: "value of type", not "key of type".
         throw panic("reflect.Value.MapIndex: value of type " + GoReflect.GoTypeName(key.live?.GetType()) +
@@ -1481,6 +1530,16 @@ public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
     System.Type keyType = GoReflect.KeyType(st)!;
     System.Type elemType = GoReflect.ElementType(st)!;
     bool nilMap = liveMap is null || (liveMap is IMap m && m.IsNil);
+
+    // Go checks the KEY's assignability FIRST — `key.assignTo(...)` runs ahead of both the
+    // delete/assign split and the nil-map panic — so a wrong-typed key on a nil map answers "not
+    // assignable", never "assignment to entry in nil map". The sibling of MapIndex's gate, and the
+    // same census-derived predicate: two different Go-named types (TestMap's second shouldPanic
+    // row). A VALID key type is untouched, so a legal delete on a nil map stays legal (TestNilMap).
+    if (isBothNamedMismatch(GoReflect.GoDynamicTypeOf(key.live!), keyType)) {
+        throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
+                    " is not assignable to type " + GoReflect.GoTypeName(keyType));
+    }
 
     // Go puts TWO operations behind this one signature: a ZERO elem Value DELETES the key, anything
     // else assigns it. reflect has no Value.DeleteMapIndex, so this is the only way it can delete.
@@ -2784,6 +2843,56 @@ public static ΔType SliceOf(ΔType t) {
 // Note this is not a shortcut past the lookup: Go's own typesByString is documented to return
 // nothing ("It may be empty"), and every caller is written to mint on that miss. The managed
 // runtime simply misses always, because it has no ahead-of-time type table to hit.
+
+// isBothNamedMismatch is the one-row assignment-caller predicate the unwrap-arm census produced:
+// the exact case Go's assignment rule refuses that the shared marshalling helper (which is also the
+// conversion path) admits — two DIFFERENT Go-NAMED types. It answers TRUE only there, so an
+// identity pair, a named↔unnamed pair, and an interface destination all pass through to the helper
+// unchanged. Kept deliberately narrow — no interface-satisfaction or conversion logic — because
+// that breadth is exactly what made the bridge's Type.AssignableTo the wrong tool here.
+private static bool isBothNamedMismatch(System.Type srcType, System.Type dstType) {
+    if (srcType == dstType || dstType.IsInterface) {
+        return false;
+    }
+    return GoReflect.HasGoName(srcType) && GoReflect.HasGoName(dstType);
+}
+
+// Swapper returns a function that swaps the elements in the provided slice.
+//
+// Swapper panics if the provided interface is not a slice.
+//
+// The MIRROR of internal/reflectlite's hand-owned Swapper (swapper_impl.cs), one layer up, for the
+// same root: Go's body reads the slice header through unsafe.Pointer and swaps flat memory by
+// element size, and the auto form nil-dereferenced unpacking the eface (`~(ж<slice<T>>)(uintptr)
+// (v.ptr)` on a bridge Value whose ptr is unused — TestSwapper died in `~`). Swapping through
+// golib's non-generic ISlice indexer applies the slice window offset, so swaps land on the shared
+// backing store exactly as Go's do — reflectlite's copy has carried sort.Slice on this since the
+// first operational hit.
+public static Action<nint, nint> Swapper(any Δslice) {
+    if (Δslice is not ISlice s) {
+        throw panic(Ꮡ(new ValueError("Swapper", ValueOf(Δslice).Kind())));
+    }
+    // Fast path for slices of size 0 and 1. Nothing to swap.
+    switch (s.Length) {
+    case 0: {
+        return (nint _, nint _) => {
+            throw panic("reflect: slice index out of range");
+        };
+    }
+    case 1: {
+        return (nint i, nint j) => {
+            if (i != 0 || j != 0) {
+                throw panic("reflect: slice index out of range");
+            }
+        };
+    }}
+    return (nint i, nint j) => {
+        if (!s.IndexIsValid(i) || !s.IndexIsValid(j)) {
+            throw panic("reflect: slice index out of range");
+        }
+        (s[i], s[j]) = (s[j], s[i]);
+    };
+}
 
 // typelinks returns the linker's per-module type sections and the offsets of the types in them.
 // There is no such table in a managed process — no ahead-of-time section holds the program's Go
