@@ -21348,4 +21348,41 @@ yet read what `sendto` writes for a `SockaddrUnix`. That read is one function an
 **The reproducer is not committed.** It would be a known-failing behavioral test today, and the suite's
 value is that it is green; it lands as a guard when the seam closes.
 
+---
+
+## 2026-09-02 · reflect crash-residue item 2 BANKED, and the MakeFunc/Variadic family SPLIT so nobody re-derives it (lane R-LAPTOP, reflect tail)
+
+Two rows off the crash residue, banked on `claude/reflect-tail-r-lite` (rebased onto master `21f7c9677`):
+
+- **unsafeslice / `TestSliceAt` — DISCLOSED, not green** (coordinator ruling 2026-09-02, token-unification
+  REFUSED). The SliceAt hand-own aliases the pointer's memory faithfully — `(ж<T>)(uintptr)p` recovers the
+  managed box the reflect projection handed out, `@unsafe.Slice<T>` windows it — and ports Go
+  runtime.unsafeslice's three panics; len/cap/nil and every panic agree with Go. The ONE unrepresentable
+  assertion is `s.Pointer() == uintptr(&p[0])`: reflect's `Value.Pointer()` is a STORAGE-IDENTITY token
+  (`HashCode.Combine(backing, low)`, kept stable for encoding/json's cycle detector and internal/fmtsort),
+  while `uintptr(unsafe.Pointer(&p[0]))` is the pinned data address — two managed projections of one
+  storage that coincide only for native memory. Class `runtime-capability`, in reflect's manifest.
+- **MakeFunc-variadic / `TestMakeFuncVariadic` — GREEN.** The refusal was mechanical, not fundamental: a
+  Go variadic lowers to a delegate with a `params Span<T>` tail an expression tree cannot carry, but a
+  LAMBDA can. The make-trampoline family (`GoReflect.MakeVariadicDelegate.cs`, 0..8 fixed × Action/Func) is
+  the reverse of `InvokeVariadic`'s call family; `CompileGoFuncFactory` routes a byref-like tail to it.
+
+**THE SPLIT — do not re-derive it.** The other five MakeFunc/Variadic reds sit on DISTINCT roots and are
+NOT moved by the two above (crash frames measured 2026-09-02, e0dcdb4f5, train-4-stable):
+- `TestMakeFuncStackCopy` — `reflect: call of reflect.Value.Type on zero Value` (abiTypeSlow), a
+  zero-Value handling issue in the call path.
+- `TestMakeFuncValidReturnAssignments` — `reflect: call of MakeFunc with non-Func type` (a different
+  MakeFunc guard, not the variadic path).
+- `TestReflectMakeFuncCallABI` — an ABI value mismatch (27-verdict family, the largest single mismatch;
+  the tuple-nesting >7 arm is a separate makefunc_impl concern).
+- `TestVariadicMethodValue` — variadic METHOD type (not MakeFunc).
+- `TestVariadicType` — a nil-deref in the test body (a type-construction issue, not MakeFunc).
+
+**Reports received to this ledger (recorded, NOT re-derived):**
+- C2 (item 3, `30347fbd45`): `TestStructOfTooLarge` → GREEN — the StructOf `nint`-vs-`uintptr` size
+  accumulator; the root sat one layer below the missing panics and fixing it corrected three other call
+  sites. First green out of the StructOf synthesis arc; C2 does not claim the reflect number.
+- C2 (gcbits): `TestGCBits` on the `NewAt`/`ptrTo` wall.
+- G (StructOf-embedded trio): row 3 GO after the freeze; rows 1–2 are the synthesis root's (C2's arc).
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
