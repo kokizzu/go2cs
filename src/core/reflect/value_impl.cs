@@ -1457,6 +1457,68 @@ public static ΔValue MakeSlice(ΔType typ, nint len, nint cap) {
     return makeTypedValue(GoReflect.MakeContainer(st, len, cap), st, null, default);
 }
 
+// SliceAt returns a Value representing a slice whose underlying array starts at p and whose length
+// and capacity are n -- Go's reflect analog of unsafe.Slice.
+//
+// The auto body called `unsafeslice` -- a //go:linkname runtime helper the converter mints as a
+// THROWING PartialStub -- then built a RAW unsafeheader.Slice{Data,Len,Cap} and reinterpreted it as
+// a slice Value, which the managed model cannot represent (a slice<T> is backed by managed storage,
+// not a {ptr,len,cap} header). This hand-own does Go runtime.unsafeslice's VALIDATION -- len < 0, a
+// nil pointer with positive length, and elemSize*len (plus the base pointer) overflowing the address
+// space all panic -- then builds the ALIASING slice<T> over the pointer's storage through the same
+// machinery Go's own unsafe.Slice rides: `(ж<T>)(uintptr)p` recovers the managed box the reflect
+// projection handed out (or a native box), and `@unsafe.Slice<T>` windows it, so `s.Pointer()` is the
+// input address exactly. `SliceAt(t, nil, 0)` is the nil slice. TestSliceAt guards it with
+// shouldPanic(""), which accepts any message, so the panics read as reflect.SliceAt.
+public static ΔValue SliceAt(ΔType typ, @unsafe.Pointer p, nint n) {
+    System.Type? elem = sysTypeOfReflectType(typ);
+    if (elem is null) {
+        throw panic("reflect.SliceAt: invalid element type");
+    }
+    System.Type sliceType = sysTypeOfReflectType(SliceOf(typ))!;
+    nuint elemSize = (nuint)GoReflect.GoSizeOf(elem);
+    nuint addr = (nuint)(uintptr)p;
+    if (n < 0) {
+        throw panic("reflect.SliceAt: len out of range");
+    }
+    if (elemSize != 0) {
+        nuint un = (nuint)n;
+        nuint mem = unchecked(elemSize * un);
+        bool overflow = un != 0 && mem / un != elemSize;
+        // mem > -addr is Go's `mem > -uintptr(ptr)`: base pointer plus mem wraps past the top of the
+        // address space. For addr 0 it reduces to mem > 0, i.e. the nil-pointer-with-length panic.
+        if (overflow || mem > unchecked((nuint)0 - addr)) {
+            throw panic(addr == 0
+                ? "reflect.SliceAt: ptr is nil and len is not zero"
+                : "reflect.SliceAt: len out of range");
+        }
+    }
+    else if (addr == 0 && n > 0) {
+        throw panic("reflect.SliceAt: ptr is nil and len is not zero");
+    }
+    if (addr == 0 && n == 0) {
+        // Go builds a {nil,0,0} header here; the managed twin is the type's own nil slice.
+        return makeTypedValue(GoReflect.ZeroValueOf(sliceType, null), sliceType, null, default);
+    }
+    return makeTypedValue(sliceAtOverPointer(elem, (uintptr)p, n), sliceType, null, default);
+}
+
+private static readonly System.Collections.Concurrent.ConcurrentDictionary<System.Type, System.Func<uintptr, nint, object>> s_sliceAtMakers = new();
+
+// Builds `@unsafe.Slice<T>((ж<T>)addr, n)` for a RUNTIME element type -- unsafe.Slice's own
+// negative/nil checks and its native / managed-window / snapshot arms, dispatched on T.
+private static object sliceAtOverPointer(System.Type elem, uintptr addr, nint n) {
+    return s_sliceAtMakers.GetOrAdd(elem, static et =>
+        typeof(reflect_package).GetMethod(nameof(sliceAtOverPointerT),
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+            .MakeGenericMethod(et).CreateDelegate<System.Func<uintptr, nint, object>>())(addr, n);
+}
+
+private static object sliceAtOverPointerT<T>(uintptr addr, nint n) {
+    ж<T> typed = (ж<T>)addr;
+    return @unsafe.Slice<T>(typed, (uintptr)n);
+}
+
 // MakeMap creates a new empty map value of the specified map type.
 public static ΔValue MakeMap(ΔType typ) {
     return MakeMapWithSize(typ, 0);

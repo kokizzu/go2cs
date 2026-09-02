@@ -342,6 +342,12 @@
       "class": "alloc-profile",
       "signature": "Creating small zero values caused ",
       "reason": "alloc-profile: want-zero AllocsPerRun assert on reflect.Zero for small values. Go returns a value whose data word fits inline and allocates nothing; the managed bridge must materialize a boxed zero for the same Value."
+    },
+    {
+      "name": "TestSliceAt",
+      "class": "runtime-capability",
+      "signature": "unexpected underlying array",
+      "reason": "runtime-capability: reflect.SliceAt builds a slice that aliases the pointer's memory faithfully (len/cap/nil and the negative/nil-pointer/overflow panics all agree with Go), but its Value.Pointer() is a STORAGE-IDENTITY token -- HashCode.Combine(backing, low), kept stable for encoding/json's cycle detector and internal/fmtsort's map ordering -- while uintptr(unsafe.Pointer(&p[0])) is the pinned data address. The two are managed-model projections of one storage that coincide only for native memory; making them equal would pin managed storage on every Pointer() call and move the cycle-detector hot path off its cheap hash, so the identity is disclosed rather than unified (coordinator ruling 2026-09-02; token-unification refused)."
     }
   ]
 }

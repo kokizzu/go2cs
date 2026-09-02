@@ -2065,16 +2065,7 @@ internal static partial @unsafe.Pointer unsafe_NewArray(ж<abi.Type> _Δp0, nint
 
 // go2cs generated this placeholder — func MakeSlice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// SliceAt returns a [Value] representing a slice whose underlying
-// data starts at p, with length and capacity equal to n.
-//
-// This is like [unsafe.Slice].
-public static ΔValue SliceAt(ΔType typ, @unsafe.Pointer p, nint n) {
-    unsafeslice(typ.common(), p, n);
-    ref var s = ref heap<unsafeheader.Slice>(out var Ꮡs);
-    s = new unsafeheader.Slice(Data: p, Len: n, Cap: n);
-    return new ΔValue(SliceOf(typ).common(), new @unsafe.Pointer(Ꮡs), (flag)(flagIndir | ((flag)(uintptr)(nuint)ΔSlice)));
-}
+// go2cs generated this placeholder — func SliceAt is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func MakeChan is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
