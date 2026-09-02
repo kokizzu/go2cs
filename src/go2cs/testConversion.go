@@ -5269,6 +5269,37 @@ func writeNoTestsManifest(production *packages.Package, inputPath, outputPath st
 	return writeJSONFile(filepath.Join(outputPath, testManifestFileName), manifest)
 }
 
+// writeComparisonRecord is the ONE write path for go2cs_test_comparison.json, and it exists so the
+// gated stamp cannot be forgotten at a call site. A `-test-filter` run rewrites the SAME record a
+// full run writes, and nothing in the file says which it is -- worse, the fleet's restore step
+// cannot clear it, because the record is gitignored and `git clean -fd` skips ignored paths. So a
+// diagnostic record survives into the next run looking exactly like that run's own output; a gated
+// census once read its own filter's survivor set back as a package's verdicts and called the row
+// bankable, with arithmetic the only tell.
+//
+// Routing every writer through here rather than stamping at each of the three sites is what makes
+// the guard able to fail: a unit test calls this function and reads the file back, so deleting the
+// stamp reddens it. Three scattered assignments would each have been invisible to any test that
+// does not run the whole pipeline -- a guard green for the wrong reason.
+func writeComparisonRecord(outputPath string, result any, testFilter string) error {
+	if testFilter != "" {
+		switch record := result.(type) {
+		case map[string]any:
+			record["testFilter"] = testFilter
+		case *testComparison:
+			record.TestFilter = testFilter
+		default:
+			// Refusing is the point. A value (rather than pointer) testComparison, or any shape
+			// added later, would take the stamp silently nowhere and publish a gated record that
+			// reads as a full one -- the exact failure this function exists to prevent, arriving
+			// through the function meant to prevent it. Fail loudly instead of writing a lie.
+			return fmt.Errorf("cannot stamp the -test-filter expression onto a %T comparison record: "+
+				"pass *testComparison or map[string]any, or a gated record would publish as a full run", result)
+		}
+	}
+	return writeJSONFile(filepath.Join(outputPath, "go2cs_test_comparison.json"), result)
+}
+
 func writeJSONFile(fileName string, value any) error {
 	data, err := json.MarshalIndent(value, "", "  ")
 	if err != nil {
@@ -5363,7 +5394,7 @@ func executeTestAction(inputPath, outputPath string, options Options) error {
 			"package": filepath.Base(inputPath), "status": "infrastructure-blocked", "matched": false,
 			"errors": []string{"unsupported testing capabilities: " + strings.Join(blocked, ", ")},
 		}
-		if err := writeJSONFile(filepath.Join(outputPath, "go2cs_test_comparison.json"), result); err != nil {
+		if err := writeComparisonRecord(outputPath, result, options.testFilter); err != nil {
 			return err
 		}
 		return fmt.Errorf("converted tests are infrastructure-blocked: %s", strings.Join(blocked, ", "))
@@ -5372,7 +5403,7 @@ func executeTestAction(inputPath, outputPath string, options Options) error {
 	if !manifestHasEligibleTests(manifest) {
 		if options.testAction == "all" || options.testAction == "compare" {
 			result := map[string]any{"package": filepath.Base(inputPath), "status": "not-applicable", "matched": true, "errors": []string{}}
-			if err := writeJSONFile(filepath.Join(outputPath, "go2cs_test_comparison.json"), result); err != nil {
+			if err := writeComparisonRecord(outputPath, result, options.testFilter); err != nil {
 				return err
 			}
 		}
@@ -5576,6 +5607,21 @@ type testComparison struct {
 	// proof page so the omission is stated rather than absorbed. Empty for every package whose
 	// disclosed tests have no subtests, which is all of them before crypto/tls's TestBogoSuite.
 	Withdrawn []string `json:"withdrawn,omitempty"`
+
+	// TestFilter records the -test-filter expression a GATED run was produced under, and it exists
+	// because the record does not otherwise know how it was made. A filtered run rewrites the SAME
+	// go2cs_test_comparison.json a full run writes, with nothing distinguishing the two -- and the
+	// fleet's restore step cannot clear it either, since the file is gitignored and `git clean -fd`
+	// skips ignored paths. So a diagnostic record survives into the next run looking exactly like
+	// that run's own output, which is how a gated census once reported a row "bankable" off its own
+	// filter's survivor set. Carrying the EXPRESSION rather than a bare true is deliberate: it says
+	// WHICH names could have been withheld, so a reader can tell whether an absence is the filter or
+	// the conversion. Empty and omitted for every ungated run, so an unfiltered record is unchanged.
+	//
+	// NOTE the key is testFilter and not `gated`: `gated` is already taken by the Gated array above,
+	// which is live data (net/http carries one entry, TestTransportGCRequest), so a boolean of that
+	// name would collide with an array on the very rows most worth reading carefully.
+	TestFilter string `json:"testFilter,omitempty"`
 }
 
 // capabilityGatedDeclaration records one test declaration the converted host provably cannot run,
@@ -6426,7 +6472,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	if !result.Matched && result.Status == "validated" {
 		result.Status = "failing"
 	}
-	if err := writeJSONFile(filepath.Join(outputPath, "go2cs_test_comparison.json"), result); err != nil {
+	if err := writeComparisonRecord(outputPath, &result, options.testFilter); err != nil {
 		return err
 	}
 	if !result.Matched {
