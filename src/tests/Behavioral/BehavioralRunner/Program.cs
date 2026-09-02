@@ -143,6 +143,7 @@ namespace BehavioralRunner
         {
             // ----- argument parsing -----
             string? filter = null;
+            int sliceIndex = 0, sliceCount = 0;   // 0/0 = no slicing
             bool updateTargets = false;
             bool listOnly = false;
             HashSet<Phase> phases = new() { Phase.Transpile, Phase.Compile, Phase.Target, Phase.Output };
@@ -159,6 +160,9 @@ namespace BehavioralRunner
                 {
                     case "--filter" when i + 1 < args.Length:
                         filter = args[++i];
+                        break;
+                    case "--slice" when i + 1 < args.Length:
+                        if (!TryParseSlice(args[++i], out sliceIndex, out sliceCount)) return 2;
                         break;
                     case "--phase" when i + 1 < args.Length:
                         if (ParsePhases(args[++i]) is not { } parsed) return 2;
@@ -253,6 +257,32 @@ namespace BehavioralRunner
             }
 
 
+            // ----- SLICE -----
+            // Applied AFTER the platform-exclusive removal, deliberately: the slices then partition
+            // the MEASURABLE set evenly, and the leg's count assertion (sum of slice sizes == the
+            // measurable total) is about the packages that were actually run. Slicing first would
+            // hand one slice all six windows-exclusives and make its denominator meaningless.
+            //
+            // Both numbers are printed on one machine-readable line because the leg needs BOTH: the
+            // per-slice size to sum, and the total to check every slice agrees on it. A partition bug
+            // that drops packages shows up as a sum that is short -- which is route #3's shape (an
+            // enumeration silently missing packages) reached through a new door, so it is asserted
+            // rather than trusted.
+            // Captured BEFORE the slice narrows it: this is what DISCOVERY produced, and it is what
+            // the corpus-floor guard below must judge. Testing the post-slice count would make the
+            // guard fire on every legitimate slice (measured: --slice 1/200 tripped it at 4 of 655),
+            // and exempting slices from the guard instead would open a hole -- a slice run against a
+            // broken discovery would then pass. Narrowing is deliberate; discovery collapsing is not.
+            int discoveredMeasurable = projects.Count;
+
+            if (sliceCount > 0)
+            {
+                int measurable = discoveredMeasurable;
+                projects = Slice(projects, sliceIndex, sliceCount);
+                Console.WriteLine($"SLICE {sliceIndex}/{sliceCount}: {projects.Count} of {measurable} measurable projects");
+                Console.WriteLine();
+            }
+
             if (listOnly)
             {
                 foreach (string p in projects)
@@ -273,9 +303,9 @@ namespace BehavioralRunner
             // that failure is silent -- the run reports "3 project(s)" and passes, which is the shape of
             // a false green rather than a fault. A floor rather than a pinned count, because CLAUDE.md's
             // standing instruction for this corpus is to measure, never to decrement.
-            if (filter is null && projects.Count < 400)
+            if (filter is null && discoveredMeasurable < 400)
             {
-                Console.Error.WriteLine($"Behavioral discovery found only {projects.Count} projects under {s_behavioralDir}.");
+                Console.Error.WriteLine($"Behavioral discovery found only {discoveredMeasurable} projects under {s_behavioralDir}.");
                 Console.Error.WriteLine("That is far below the corpus size; discovery is broken, so this run would prove nothing.");
                 return 2;
             }
@@ -466,6 +496,60 @@ namespace BehavioralRunner
         // [assembly: GoImplement] records when deciding whether to mint a local value adapter). Walking
         // top-level only left those sub-libraries permanently un-regenerated, which both froze them at an
         // old converter and made the parent's golden unable to fail on a regression in that area.
+        /// <summary>
+        /// Parses <c>--slice i/n</c>: the i-th of n contiguous, disjoint pieces of the enumeration,
+        /// 1-based.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This exists because <c>--filter</c> CANNOT express a partition: it is a case-insensitive
+        /// SUBSTRING match, so `--filter S` selects 455 of 664 projects rather than the 79 whose names
+        /// begin with S, and no set of filter arguments covers the enumeration exactly or disjointly.
+        /// A behavioral leg that must run every package on a disk too small to hold them all needs a
+        /// real partition, and this is it.
+        /// </para>
+        /// <para>
+        /// SLICING THE TOP-LEVEL LIST IS SAFE FOR THE DEEPEST-FIRST INVARIANT, which is the one thing
+        /// worth checking before adding it (FALSE-GREEN route #3 exists because that invariant was
+        /// once broken silently). Deepest-first ordering is applied by <see cref="GoPackageDirs"/>
+        /// WITHIN a project -- a project and its nested sub-libraries are transpiled together, deepest
+        /// first, in one step -- so a project is self-contained and carries its sub-libraries with it
+        /// into whichever slice it lands in. No slice boundary can separate a sub-library from its
+        /// consumer.
+        /// </para>
+        /// </remarks>
+        private static bool TryParseSlice(string value, out int index, out int count)
+        {
+            index = count = 0;
+            string[] parts = value.Split('/');
+
+            if (parts.Length != 2 ||
+                !int.TryParse(parts[0], out index) || !int.TryParse(parts[1], out count) ||
+                count < 1 || index < 1 || index > count)
+            {
+                Console.Error.WriteLine($"--slice expects i/n with 1 <= i <= n (got '{value}')");
+                index = count = 0;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// The i-th of n contiguous pieces of <paramref name="all"/>, sized so the pieces differ by
+        /// at most one and their lengths SUM to the whole -- the property the leg's count assertion
+        /// checks, and the one a partition bug would break silently.
+        /// </summary>
+        private static List<string> Slice(List<string> all, int index, int count)
+        {
+            int baseSize = all.Count / count;
+            int remainder = all.Count % count;
+            // The first `remainder` pieces take one extra, so every element lands in exactly one.
+            int start = (index - 1) * baseSize + Math.Min(index - 1, remainder);
+            int size = baseSize + (index <= remainder ? 1 : 0);
+            return all.GetRange(start, size);
+        }
+
         private static string[] GoPackageDirs(string projPath) =>
             new[] { projPath }
                 .Concat(Directory.GetDirectories(projPath, "*", SearchOption.AllDirectories)
@@ -1370,6 +1454,12 @@ namespace BehavioralRunner
 
                 Options:
                   --filter <substr>     Only projects whose name contains <substr> (case-insensitive).
+                  --slice <i>/<n>       Run only the i-th of n contiguous, disjoint pieces of the
+                                        enumeration (1-based), applied after platform-exclusive
+                                        skipping. Unlike --filter (a SUBSTRING match, which cannot
+                                        partition), slices are disjoint and their sizes sum to the
+                                        measurable total. Prints "SLICE i/n: k of m measurable
+                                        projects" for the caller to sum and assert.
                   --phase <list>        Comma list of: transpile,compile,target,output,all (default all).
                   --update-targets      Transpile, then copy each .cs to its .cs.target golden, and stop.
                   --list                List matched projects and exit.
