@@ -292,9 +292,38 @@ costs nothing and is worth more than a map that merely works today.
    syscall a converted program makes. **So this revises §3.1's implication that a keystone plus a
    real `FuncPCABI0` reaches `Main`: it does not.** Those two make the CALL happen; the call site's
    own marshalling is what makes it correct, and on this path the two are needed together. Sizing
-   consequence: the reach-`Main` unit is keystone + `FuncPCABI0` + the pointer call sites on the
-   init path, and the last of those is not enumerated here — a census of pointer-bearing
-   trampoline call sites in the init closure is owed before an implementation is scheduled.
+   consequence: the reach-`Main` unit is keystone + `FuncPCABI0` + the pointer call sites, and
+   **that last term is now censused** (it was named as owed here; this is the answer).
+
+   **THE CENSUS — half the darwin keystone surface is pointer-bearing.** Measured two ways at
+   master `62c63b572`, because a census keyed on one spelling under-reports by every other:
+
+   | | emitted C# | Go source |
+   |---|--:|--:|
+   | keystone call sites | **149** | 151 |
+   | ... passing a managed address | **75** | 66 |
+   | ... pure scalars | 74 | 85 |
+   | distinct trampolines | **126** | **126** |
+   | ... pointer-bearing | **72** | 62 |
+
+   The two derivations agree EXACTLY on the trampoline total (126) and the emission side is the
+   operative one. The 10-trampoline gap is explained rather than split: `getcwd`, `getfsstat`,
+   `mlock`, `mprotect`, `msync`, `munlock`, `pread`, `pwrite`, `sendto`, `writev` assign
+   `_p0 = unsafe.Pointer(&buf[0])` on a line BEFORE the call and pass `uintptr(_p0)` inside it, so
+   a call-local scan of the Go source cannot see the pointer while the emission's own `_p0` channel
+   can (spot-checked on `sendto` and `writev`). The Go-side set is a strict SUBSET of the emission
+   set — zero trampolines go the other way — which is what makes the larger number the safe one.
+
+   **Three channels, not one, and the first count found only the first**: a direct `Ꮡx` argument
+   (37 sites), a `_p0` local assigned from `Ꮡ(p, 0)` or `@unsafe.Pointer.FromBox` (46 sites), and a
+   `ж<T>` parameter cast straight to `uintptr` with no `Ꮡ` in sight (`setgroups`'s `groups`,
+   `setrlimit`'s `rlim`). A census keyed on `Ꮡ` alone reports 37 — half the truth.
+
+   **The init path itself is small and both of its members are pointer-bearing.** `syscall`'s own
+   init is `rlimit.go`'s: `Getrlimit(RLIMIT_NOFILE, &lim)` unconditionally, then `setrlimit` only
+   when `Cur != Max`. Two calls, two managed addresses. So reaching `Main` needs the keystone,
+   `FuncPCABI0`, and marshalling at **two** call sites — the other 73 are the cost of a WORKING
+   darwin, not of a STARTING one, and that is the distinction the sizing needs.
 5. **Nothing else.** As in §2.4.4, no behavior change is asked of anything outside the keystone.
 
 ### 3.5 The question §2 left: darwin has NO `AllThreadsSyscall` analogue, and nothing to keep put
@@ -341,6 +370,11 @@ if it stays companions-only, said explicitly rather than implied.
 
 ### 3.7 What §3 does not settle, named rather than hidden
 
+- **The pointer call-site census is DONE** (§3.4) and the marshalling SHAPE is now settled too
+  (§3.8): 75 of 149 sites, 72 of 126 trampolines, two on the init path — and the 92 pointer
+  ARGUMENTS split into three populations, of which 45 need pinning rather than marshalling and
+  11 need two lines, leaving ~10 struct mirrors as the whole cost. Neither of §3.7's original
+  two options was the answer.
 - **Trampoline identity in the managed model — the single largest open question.**
   `FuncPCABI0(libc_write_trampoline)` receives a *delegate*. Whether the implementation can recover
   the trampoline's NAME from it at runtime, or whether the converter must emit an explicit symbol
@@ -361,6 +395,61 @@ if it stays companions-only, said explicitly rather than implied.
   **instrument for the loop rather than shorten it** — have the probe print the resolved symbol
   table and the first N resolutions before the first call, so one dispatch answers a batch — and to
   hold the hardware ask until that probe says how deep the chase goes.
+
+### 3.8 The marshalling SHAPE — three populations, not one, and the ceremony fits almost none of them
+
+§3.7 left this as "one helper versus per-site", and the coordinator asked for it priced by what each
+does to readability and to the audit rule (*every buffer handed to a native call lives in unmanaged
+memory for the duration*). **Both framings assume one population. There are three, and they want
+three different mechanisms with very different costs.**
+
+Classified from Go's own signatures — the enclosing `func`'s declared parameter type for every pointer
+argument at a darwin keystone call, paren-balanced scan, at master `62c63b572`. **The unit here is
+pointer ARGUMENTS (92), not call SITES (75): a site can pass several.** Both numbers are right at
+their own level and neither substitutes for the other.
+
+| population | args | what it needs | ceremony |
+|---|--:|---|---|
+| **buffer** — `*byte`, `**byte`, `unsafe.Pointer`, slice/string element | **45** | a stable address for the call | **pin, do not marshal**: no copy, no free, no `finally` |
+| **scalar out-param** — `*_Socklen`, `*_Gid_t`, `*_C_int`, `*uintptr` | **9** | one integer written back | `stackalloc` + one copy back: two lines |
+| **scalar array** — `*[2]int32` (`pipe`, `socketpair`) | **2** | two integers written back | `stackalloc` + copy back |
+| **struct pointer** — `Stat_t`, `Statfs_t`, `Rlimit`, `Rusage`, `Timeval`, `Timespec`, `RawSockaddrAny`, `Msghdr`, `FdSet`, `Dirent` | **30** | an explicit-layout mirror + copy in/out | the real work |
+| unclassified — five inside `forkAndExecInChild`, one `sendfile length` | 6 | named, not guessed | sized when reached |
+
+**The buffers are 45 of 92 and they need no unmanaged memory at all.** The audit rule's GUARANTEE is
+that the address the kernel sees is stable for the call and the bytes are the caller's; pinning
+(`fixed`, or a pinned `GCHandle`) gives exactly that, without a copy, without a free, and without a
+`finally`. Reading the rule as "must be `AllocHGlobal`" would copy 45 buffers for nothing and make
+the call sites worse. The rule should be stated by its guarantee, not by its mechanism.
+
+**The `Exec` precedent's ceremony is needed for ~none of these, and the reason is structural.**
+`exec_unix.cs`'s `posix_spawn` seam carries seven `IntPtr` locals, a long `try`, and a conditional
+`finally` — because `posix_spawn` RETAINS its `file_actions` and `spawnattr` across several calls,
+and because a `char**` vector has no managed original to pin. **Every darwin keystone call is a single
+synchronous syscall that retains nothing**, so its buffers live exactly as long as the call and
+`stackalloc` covers every out-param without a `finally` at all. The precedent is the right pattern for
+the case it was written for and the wrong template for this one.
+
+**So the answer to §3.7's question is neither of its two options.** Not one helper — the three
+populations do not share a signature. Not 73 per-site marshallings — 45 need no marshalling and 11
+need two lines. What remains is **~10 distinct struct mirrors** covering the 30 struct-pointer
+arguments, and those are the whole cost.
+
+**What the Linux side already gives, and what it does not.** The corpus carries native mirrors for
+four of the ten types — but every one is arch- and OS-suffixed: `NativeStatLinuxAmd`,
+`NativeTimevalLinuxAmd`, `NativeRusageLinuxAmd`, `NativeFdSetLinuxAmd`. Darwin's layouts differ
+(darwin's `Timeval` is `{int64, int32}` where Linux's is `{int64, int64}`), so **the pattern transfers
+and the layouts do not** — a mirror that exists is not a mirror darwin can use, and reading the name
+as reusable would be the same mistake as reading `%#v`'s success on one shape as success on another.
+`NativeTimespec` is the one unsuffixed mirror and is the only reuse candidate; it still gets checked
+against darwin's header rather than assumed.
+
+**Reach-`Main` is unchanged and still two call sites** (§3.4): `rlimit.go`'s `Getrlimit` plus
+`setrlimit`, both `*Rlimit` — so the first increment needs the keystone, `FuncPCABI0`, and **one**
+struct mirror. The other nine mirrors are the cost of a working darwin, not a starting one, and they
+can land one at a time behind a running program.
+
+---
 
 ## 4. What is NOT proposed
 
