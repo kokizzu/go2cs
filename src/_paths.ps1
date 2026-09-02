@@ -91,10 +91,11 @@ if ($HostGoos -and $HostGoos -ne 'windows' -and [string]::IsNullOrEmpty($env:GoT
     $env:GoTargetOS = $HostGoos
 }
 
-# Pin GO2CSPATH on Linux so the converter's child-env `$(go2csPath)` race has one value on both
-# names. When the var is unset, the converter defaults it to `~/go2cs` AND os.Setenv()s it into
-# its own environment (main.go:93); every pipeline child then inherits that entry — clone-root,
-# no trailing separator — BESIDE the correct injected `go2csPath=<src>/` (testConversion.go:5663).
+# Pin GO2CSPATH on every non-Windows host so the converter's child-env `$(go2csPath)` race has one
+# value on both names. When the var is unset, the converter defaults it to `~/go2cs` AND
+# os.Setenv()s it into its own environment (main.go:93); every pipeline child then inherits that
+# entry — clone-root, no trailing separator — BESIDE the correct injected `go2csPath=<src>/`
+# (testConversion.go:5663).
 # POSIX environs are case-sensitive so both entries coexist, but MSBuild maps environment
 # variables onto properties CASE-INSENSITIVELY, and which entry wins the one `$(go2csPath)` slot
 # is enumeration-order-dependent — a per-process coin flip. A losing draw resolves the analyzer
@@ -103,13 +104,23 @@ if ($HostGoos -and $HostGoos -ne 'windows' -and [string]::IsNullOrEmpty($env:GoT
 # failure (`Go="pass" C#=""`). That intermittency killed three Linux measurement campaigns before
 # the binlog named it: `Property 'go2csPath' with value '/root/go2cs' expanded from the
 # environment.` Pinning the var to the slash-terminated src root makes either race winner
-# correct. Windows is untouched twice over: the block is $IsLinux-scoped, and Windows env blocks
-# are case-insensitive at the OS level (one slot, injection wins deterministically) — the race is
-# structurally POSIX-only. An already-set GO2CSPATH still wins here (empty-guard), and every
-# instrument still passes -go2cspath explicitly; this pin only stops the converter's own default
-# from leaking a wrong root into its children. The complete converter-side fix (dedupe at the
-# child-env builder) is priced on the board (2026-08-21 entry).
-if ($IsLinux -and [string]::IsNullOrEmpty($env:GO2CSPATH)) {
+# correct. Windows is untouched twice over: the pin is scoped away from it by $HostGoos, and
+# Windows env blocks are case-insensitive at the OS level (one slot, injection wins
+# deterministically) — the race is structurally POSIX-only. An already-set GO2CSPATH still wins
+# here (empty-guard), and every instrument still passes -go2cspath explicitly; this pin only stops
+# the converter's own default from leaking a wrong root into its children. The complete
+# converter-side fix (dedupe at the child-env builder) is priced on the board (2026-08-21 entry).
+#
+#   2026-09-02 -- SCOPE WIDENED from $IsLinux to $HostGoos, in the same cut as the GoTargetOS pin
+#   above and on a ground this comment was already making: the race "is structurally POSIX-only",
+#   and darwin IS POSIX -- case-sensitive environ, the same converter default, the same
+#   case-insensitive MSBuild property mapping -- so a macOS host could lose the identical coin flip
+#   while the $IsLinux literal said nothing about it. Scoping on the derived value rather than on a
+#   platform test leaves Linux and Windows byte-for-byte what they were ($HostGoos is 'linux' and
+#   'windows' respectively, so the guard admits and excludes exactly whom it did) and stops the
+#   scope going stale one host at a time -- which is precisely how the GoTargetOS pin above went
+#   stale, and why both are now derived from one host fact instead of two literals.
+if ($HostGoos -and $HostGoos -ne 'windows' -and [string]::IsNullOrEmpty($env:GO2CSPATH)) {
     $env:GO2CSPATH = $PSScriptRoot.TrimEnd('/', '\') + '/'
 }
 
