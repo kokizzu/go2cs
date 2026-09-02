@@ -175,14 +175,21 @@ function Get-PlatformExclusivePlatforms {
     return @([regex]::Matches($line, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
 }
 
-$hostGoos = if ($env:GoTargetOS) { $env:GoTargetOS } elseif ($IsWindowsHost) { 'windows' } elseif ($IsMacOS) { 'darwin' } else { 'linux' }
+# The flavor this run MEASURES. An explicit GoTargetOS wins, because that is a deliberate
+# cross-flavor build and the skip set must follow it; with none set the answer is the host's own
+# native flavor, which src\_paths.ps1 derives ONCE as $HostGoos (and pins into GoTargetOS itself on
+# every non-Windows host, so the two branches agree there by construction). Restated here until
+# 2026-09-02 -- a second copy of the ladder is how a consumer drifts away from the pin that binds
+# its own child builds, and the local name would have to be $HostGoos-with-different-capitalization,
+# i.e. the SAME variable, not a shadow of it.
+$measuredGoos = if ($env:GoTargetOS) { $env:GoTargetOS } else { $HostGoos }
 $skippedExclusive = @()
 $measurable = @()
 
 foreach ($proj in $projects) {
     $platforms = Get-PlatformExclusivePlatforms $proj.FullName
 
-    if ($platforms.Count -gt 0 -and $platforms -notcontains $hostGoos) {
+    if ($platforms.Count -gt 0 -and $platforms -notcontains $measuredGoos) {
         $skippedExclusive += [pscustomobject]@{
             Name      = Get-RelativeDisplayPath $proj.FullName $behavioral
             Platforms = ($platforms -join ', ')
@@ -194,7 +201,7 @@ foreach ($proj in $projects) {
 }
 
 if ($skippedExclusive.Count -gt 0) {
-    Write-Host "==> SKIPPED (platform-exclusive, $($skippedExclusive.Count)): native to another platform, so this $hostGoos host cannot measure them:" -ForegroundColor DarkCyan
+    Write-Host "==> SKIPPED (platform-exclusive, $($skippedExclusive.Count)): native to another platform, so this $measuredGoos host cannot measure them:" -ForegroundColor DarkCyan
     $skippedExclusive | ForEach-Object { Write-Host "    $($_.Name) [$($_.Platforms)]" -ForegroundColor DarkCyan }
 }
 
