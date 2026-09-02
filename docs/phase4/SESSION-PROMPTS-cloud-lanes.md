@@ -124,7 +124,8 @@ are its text. Then your lane section's own reading list.
 8. **SMOKE GATE (your SECOND mailbox entry — the first is the CLAIM, see the protocol):** converter
    `go test -count=1 -timeout 30m ./...` from `src/go2cs`; then
    `pwsh src/tests/Behavioral/check-solution-integrity.ps1`; then warm the tree with one
-   `dotnet build src/core/unicode/utf8/utf8.csproj -c Debug` (note its wall), then
+   `dotnet build src/core/unicode/utf8/unicode.utf8.csproj -c Debug` (projects are namespace-named;
+   note its wall), then
    `pwsh src/run-validated-sweep.ps1 -Filter unicode/utf8 -Exact -TestTimeout 30m`. `-TestTimeout`
    is ALSO the deadline the pipeline gives `dotnet publish` of the test host, so on a cold container
    the stock value can expire in the BUILD, not the tests — and the results file's tail states a
@@ -566,6 +567,21 @@ row your change reaches is REPORTED to R and the coordinator, never claimed.
 - **Bootstrap script:** the moment two sessions have paid the bootstrap by hand, C1 banks
   `src/bootstrap-linux-lane.sh` (idempotent: toolchains, pins, the smoke gate) so every later cloud
   session starts with one command. Ruled worth banking then, not before.
+- **Measured on the first two cloud containers (2026-09-01/02), for the next lane's bootstrap:**
+  the egress policy blocked `go.dev`, `dl.google.com` and every Microsoft .NET distribution host;
+  `proxy.golang.org`, `archive.ubuntu.com`, `api.nuget.org`, `packages.microsoft.com` and
+  `github.com` were reachable. Both lanes acquired Go through the toolchain-module mechanism
+  (`GOTOOLCHAIN=go1.23.12 go version` fetches `golang.org/toolchain@v0.0.1-go1.23.12.linux-amd64`
+  in seconds — first-class, then copy the tree OUT of the read-only module cache and `chmod -R u+w`)
+  and .NET through Ubuntu's source-built `dotnet-sdk-10.0` package (RULED acceptable for
+  correctness measurements with the provenance stated in every bank; not a disqualifier for
+  wall-clock figures since cost baselines bind per host). Remote branch DELETE is refused on both
+  containers (the coordinator deletes probe branches). The two containers had DIFFERENT GitHub
+  egress: one `gh` worked through proxy-injected credentials, the other was hard-403 ("GitHub
+  access is not enabled for this session") — so a dispatch capability is measured per container,
+  never assumed. Both were 4-core / 15 GB / 28 GB free (3 GB above the sweep's floor). The
+  converter suite ran in ~99 s there. The work-tree checkout is a SHALLOW clone (archaeology needs
+  the full-depth mailbox clone plus a fetch of master into it).
 - **Registration:** the coordinator acknowledges each lane's CLAIM on the mailbox (which registers
   the nickname for the silence-watch and the reap rules) and announces both lanes to R-LAPTOP,
   G-LAPTOP and i9 at the first CLAIM.
