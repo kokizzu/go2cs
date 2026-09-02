@@ -22,6 +22,12 @@ import (
 // conversionInLambda flag is toggled — currentLambdaVars is preserved (not reset as
 // enterLambdaConversion would), so an ENCLOSING lambda's captured-var renames still apply when the
 // method value nests inside a func literal. Restored to the prior value afterward.
+// receiverTempPrefix names the statement-level temp a method value's receiver is evaluated into
+// when the receiver is not a bare ident (see hoistReceiverEvaluation). It is a prefix rather than a
+// whole name so it shares getCapturedVarName's counter with the capture snapshots, which is what
+// keeps `recvʗ1` from ever colliding with a real variable's `xʗ1`.
+const receiverTempPrefix = "recv"
+
 func (v *Visitor) convExprInLambdaContext(expr ast.Expr) string {
 	if v.lambdaCapture == nil {
 		return v.convExpr(expr, nil)
@@ -1070,6 +1076,28 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 			recvExpr = v.convExpr(selectorExpr.X, nil)
 		}
 
+		// EVALUATE-ONCE. Go saves the receiver when the method value is created, not when the
+		// resulting func is called; every emission below wraps the receiver in a LAMBDA, which
+		// defers it to each invocation instead. Hoisting the already-rendered receiver into a
+		// statement-level temp is kind-correct BY CONSTRUCTION rather than by a per-kind rule:
+		// whatever `recvExpr` holds at this point is exactly what Go saves — a value COPY for a
+		// value receiver, the bound ADDRESS for a pointer receiver (the `Ꮡ…` forms computed
+		// above), the interface VALUE for an interface receiver — because the arms above have
+		// already produced the kind-appropriate expression. Re-deriving it per kind here would be
+		// the shape-first mistake that binds the address of a COPY.
+		//
+		// Measured at the family tip, all four in this arm (Go vs converted C#):
+		//
+		//	callRecv := makeFrame().label   receiver fn re-executed per call   1  vs  2
+		//	idxMapV  := m13["k"].label      map lookup re-done per call        m13 vs M13
+		//	chainPtr := p15.f.label         chain re-read through the pointer  p15 vs P15
+		//	callPtr  := makePtr().bump      POINTER receiver, same as the first 1  vs  2
+		//
+		// The last one is why this is not restricted to value receivers: a pointer receiver's
+		// expression can carry a side effect in exactly one legal shape (a call RETURNING a
+		// pointer — a value result is not addressable), and it defers identically.
+		recvExpr = v.hoistReceiverEvaluation(selectorExpr, recvExpr)
+
 		// A BOUND METHOD VALUE with parameters — `d.compute = metricReader(read).compute`
 		// (runtime metrics.go; compute takes (*statAggregate, *metricValue)) — forwards through
 		// a lambda carrying the METHOD'S OWN parameters: the previous emission hardcoded arity
@@ -1975,4 +2003,96 @@ func (v *Visitor) getSelIdentContext(selectorExpr *ast.SelectorExpr) IdentContex
 	}
 
 	return context
+}
+
+// hoistReceiverEvaluation renders a method value's receiver EXACTLY ONCE, into a statement-level
+// temp, and returns the name the wrapper lambda should bind instead of the expression.
+//
+// Go's rule (spec, Method values): the receiver expression is evaluated and SAVED when the method
+// value is created. Every wrapper-lambda emission in this file defers it to each invocation
+// instead, which is wrong in two independent ways that were measured separately:
+//
+//   - a receiver expression that CALLS something re-executes it per invocation -- a side-effect
+//     defect, not a timing nicety, and it is KIND-INDEPENDENT (measured on both a value receiver,
+//     `makeFrame().label`, and a pointer receiver, `makePtr().bump`: Go counts 1, C# counted 2);
+//   - a receiver expression that READS through a reference-semantics base -- a pointer, a map --
+//     re-reads live state, because the capture machinery's root-ident snapshot copies the
+//     REFERENCE and keeps aliasing the same object (`p15.f.label`, `m13["k"].label`).
+//
+// The temp is kind-correct BY CONSTRUCTION rather than by a per-kind rule: `rendered` is whatever
+// the arm above already produced, which is exactly what Go saves -- a value COPY for a value
+// receiver, the bound ADDRESS (`Ꮡ…`) for a pointer receiver, the interface VALUE for an interface
+// receiver. Deriving the temp's content from the KIND here instead would invite the shape-first
+// error of snapshotting a value and binding ITS address, which silently redirects every write
+// through the method value into the copy.
+//
+// A bare IDENT receiver is returned untouched, and that is not an exception to the once-rule: a
+// local read has no side effect and nothing to alias, and the ident paths have already produced a
+// once-evaluated temp of their own (the capture machinery's snapshot, or the box-ref arm above).
+// Hoisting it again would emit a second copy of a single evaluation, not a second evaluation.
+//
+// Where there is no statement-level sink, the previous rendering stands and the site is left as it
+// was -- never apply a rename you cannot also declare.
+func (v *Visitor) hoistReceiverEvaluation(selectorExpr *ast.SelectorExpr, rendered string) string {
+	if rendered == "" || v.hoistedDecls == nil || v.lambdaCapture == nil {
+		return rendered
+	}
+
+	if _, isIdent := selectorExpr.X.(*ast.Ident); isIdent {
+		return rendered
+	}
+
+	// A POINTER-typed receiver expression under a VALUE receiver is Go's implicit deref: `rh.p.label`
+	// with `p *frame` and a value-receiver `label` IS `(*rh.p).label`, so what Go saves is the
+	// POINTEE's copy, not the pointer. This helper hoists the expression as the enclosing context
+	// renders it, which for that shape is the box — and binding a `ж<T>` where the emitted extension
+	// wants a `T` does not compile (**CS1929**, measured on `rh.p.label`). Hoisting the pointer would
+	// also be semantically wrong even where it did compile, since the deref would then happen at CALL
+	// time and observe later writes to the pointee.
+	//
+	// Left on the previous rendering rather than guessed at: emitting the deref here would have to
+	// reproduce the selector's own auto-deref, and getting that subtly wrong is how a receiver ends up
+	// aliasing the wrong storage. The shape keeps whatever correctness it had before this commit and
+	// is COUNTED, exactly as a sink-less site is — the same declare-or-do-not-rename discipline, one
+	// level up: do not hoist what you cannot render correctly.
+	if recvType := v.getType(selectorExpr.X, false); recvType != nil {
+		if _, exprIsPointer := recvType.Underlying().(*types.Pointer); exprIsPointer {
+			if funcObj, ok := v.info.ObjectOf(selectorExpr.Sel).(*types.Func); ok {
+				if sig, ok := funcObj.Type().(*types.Signature); ok && sig.Recv() != nil {
+					if _, recvIsPointer := sig.Recv().Type().(*types.Pointer); !recvIsPointer {
+						return rendered
+					}
+				}
+			}
+		}
+	}
+
+	// Shares getCapturedVarName's per-prefix counter so a receiver temp can never collide with a
+	// capture name; the flag it clears is the same one prepareStmtCaptures clears, and for the same
+	// reason (the counter does not advance while the detection phase is still set, which would hand
+	// out one name twice).
+	v.lambdaCapture.detectingCaptures = false
+	tempName := v.getCapturedVarName(receiverTempPrefix)
+
+	// The initializer is RE-RENDERED outside lambda context rather than reusing the caller's
+	// string, and that is load-bearing, not tidiness. The caller's rendering is produced in-lambda,
+	// so a captured base reads as the capture machinery's snapshot name (`h6ʗ1.f`) — and that
+	// snapshot is declared into this SAME hoist buffer, AFTER this temp, because the capture
+	// declarations are generated later in the emission order. Hoisting the in-lambda string
+	// therefore emits `var recvʗ1 = h6ʗ1.f;` above `var h6ʗ1 = h6;` — use-before-declaration,
+	// CS0841, on every captured base. Rendering the ORIGINAL expression in the enclosing context
+	// yields `h6.f`, which is in scope at the statement position where this declaration lands.
+	// Same discipline the ident arms already use, and for the same reason.
+	savedInLambda := v.lambdaCapture.conversionInLambda
+	v.lambdaCapture.conversionInLambda = false
+	initExpr := v.convExpr(selectorExpr.X, nil)
+	v.lambdaCapture.conversionInLambda = savedInLambda
+
+	if initExpr == "" {
+		return rendered
+	}
+
+	v.hoistedDecls.WriteString(fmt.Sprintf("%s%svar %s = %s;%s", v.newline, v.indent(v.indentLevel), tempName, initExpr, v.newline))
+
+	return tempName
 }
