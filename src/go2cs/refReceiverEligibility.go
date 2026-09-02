@@ -44,6 +44,22 @@ const (
 	// hand-owned file and is therefore already caught by XM-1 — and the census will say so rather
 	// than leaving the arm's emptiness to be assumed.
 	refRecvVetoBoxRepresented = "XM-5-box-represented"
+	// XM-6: the receiver ESCAPES — the R3 ruling's veto (2026-09-02 amendment), covering both the
+	// return dimension (the receiver appears among a return's results beside non-receiver results —
+	// the `return v, nil` family) and the use dimension (any body use of the receiver identifier
+	// outside the emittable set: a selector base, a bare receiver-return, or an argument at a
+	// LOWERED same-package parameter position — everything else needs the box the primary does not
+	// have, including any use inside a nested func literal, whose closure cannot capture a ref).
+	// Measured on the S0 packages before it was ruled: ~13 of 75 eligible methods, all top-level
+	// orchestrators whose per-run call counts are noise against the field-op leaf traffic that
+	// drives the A3 floor.
+	refRecvVetoReceiverEscapes = "XM-6-receiver-escapes"
+)
+
+// R3 arms recorded on eligible verdicts by classifyMethodBodiesR3 (the 2026-09-02 amendment).
+const (
+	refRecvR3ArmRefReturn = "ref-return"
+	refRecvR3ArmPlain     = "plain"
 )
 
 // refRecvBoxRepresentedTypes is XM-5's curated set, keyed `<canonical-pkg-path>.<TypeName>`. Empty
@@ -60,6 +76,18 @@ type refMethodVerdict struct {
 	Name     string   `json:"name"`
 	Exported bool     `json:"exported"`
 	Vetoes   []string `json:"vetoes,omitempty"`
+	// R3Arm records the fluent-body ruling's arm for an ELIGIBLE method (the 2026-09-02 dated
+	// amendment): "ref-return" — every return result is the bare receiver, so the PRIMARY returns
+	// `ref T` and its receiver-returns rewrite to `return ref v;` with the twin returning its own
+	// box; "plain" — no return mentions the receiver, the ratified §3 shapes verbatim. Empty when
+	// the method is vetoed (XM-6 included). Filled by classifyMethodBodiesR3 (pass 5), which runs
+	// AFTER the Phase-A fixed point because its lowered-argument arm consults the resolved set.
+	R3Arm string `json:"r3Arm,omitempty"`
+
+	// The declaration and receiver object, retained for pass 5's body walk (never serialized —
+	// the census output stays position-independent).
+	decl    *ast.FuncDecl
+	recvObj types.Object
 }
 
 // Eligible reports whether this method may carry the ref-receiver primary.
@@ -120,7 +148,148 @@ func (a *refLoweringAnalysis) classifyMethodReceiver(funcDecl *ast.FuncDecl, obj
 		verdict.Vetoes = append(verdict.Vetoes, refRecvVetoBoxRepresented)
 	}
 
+	// Retained for pass 5 (classifyMethodBodiesR3): the R3 body walk needs the declaration and
+	// the receiver's own object, and only this call site holds both.
+	verdict.decl = funcDecl
+
+	if len(funcDecl.Recv.List) > 0 && len(funcDecl.Recv.List[0].Names) > 0 {
+		verdict.recvObj = a.info.Defs[funcDecl.Recv.List[0].Names[0]]
+	}
+
 	return verdict
+}
+
+// classifyMethodBodiesR3 is pass 5 of analyzeRefLowering — the R3 arms (the 2026-09-02 dated
+// amendment in DESIGN-zh-box-b-prime.md §10). It runs AFTER the Phase-A fixed point because its
+// lowered-argument arm consults the resolved position set: for each still-ELIGIBLE method it walks
+// the body once, classifying every use of the receiver identifier and every return statement, and
+// records either an arm (ref-return / plain) or the XM-6 veto.
+//
+// The emittable-use set is deliberately CLOSED — a shape this pass cannot prove box-free vetoes
+// the method rather than trusting the emitter to improvise (the same whitelist discipline the A1
+// classifier runs on): a SELECTOR BASE (`v.f`, `v.M(…)` — the ref renders both directly), a BARE
+// receiver-return (arm ref-return's rewrite), and an ARGUMENT at a same-package parameter position
+// the fixed point LOWERED (`feMul(v, x, y)` — the position takes `ref`, so `ref v` is the exact
+// A2 row-2 plain-local emission). An unnamed receiver has no uses by construction and takes the
+// plain arm. Everything else — receiver as a ж-position argument, deref-assignment through it,
+// composite capture, any use inside a nested func literal (a closure cannot capture a ref) —
+// escapes, and escaping is XM-6.
+func (a *refLoweringAnalysis) classifyMethodBodiesR3() {
+	for _, verdict := range a.result.Methods {
+		if !verdict.Eligible() || verdict.decl == nil || verdict.decl.Body == nil {
+			continue
+		}
+
+		if verdict.recvObj == nil {
+			verdict.R3Arm = refRecvR3ArmPlain
+			continue
+		}
+
+		parents := buildParentMap(verdict.decl)
+		bareReturns, otherReturnResults, escapes := 0, 0, false
+
+		ast.Inspect(verdict.decl.Body, func(n ast.Node) bool {
+			if escapes {
+				return false
+			}
+
+			ident, isIdent := n.(*ast.Ident)
+
+			if !isIdent || a.info.Uses[ident] != verdict.recvObj {
+				return true
+			}
+
+			// A receiver use inside a nested func literal escapes unconditionally: the primary's
+			// receiver is a ref, and C# closures cannot capture one.
+			for p := parents[ident]; p != nil; p = parents[p] {
+				if _, inLit := p.(*ast.FuncLit); inLit {
+					escapes = true
+					return false
+				}
+
+				if p == verdict.decl.Body {
+					break
+				}
+			}
+
+			switch parent := parents[ident].(type) {
+			case *ast.SelectorExpr:
+				if parent.X == ident {
+					return true // v.f / v.M(…) — renders off the ref directly
+				}
+			case *ast.StarExpr:
+				// `*v` — a deref THROUGH the receiver, read or written (`*v = feZero`, `x := *v`).
+				// Under a ref receiver the deref is the receiver itself: `v = feZero` / `x = v`.
+				// Unconditionally emittable; it is what un-vetoes the Zero/One/Set family.
+				return true
+			case *ast.ReturnStmt:
+				bareReturns++
+				return true
+			case *ast.CallExpr:
+				for argIndex, arg := range parent.Args {
+					if arg != ident {
+						continue
+					}
+
+					if callee := a.resolveCandidateCallee(parent); callee != nil && callee.Pkg() == a.pkg {
+						key := refPosKey{PkgPath: a.pkg.Path(), Func: callee.Name(), Index: argIndex}
+
+						if a.result.LoweredPositions[key] {
+							return true // argument at a LOWERED position — `ref v`, the row-2 emission
+						}
+					}
+
+					break
+				}
+			}
+
+			escapes = true
+			return false
+		})
+
+		// A receiver appearing among a return's results but classified through the ReturnStmt
+		// parent above is only the BARE form; a receiver nested inside a composite or call in a
+		// result reaches here through that expression's own parent and has already escaped. What
+		// remains is the multi-result mixed family: count non-receiver results on returns that
+		// also carry the receiver.
+		if !escapes && bareReturns > 0 {
+			ast.Inspect(verdict.decl.Body, func(n ast.Node) bool {
+				ret, isReturn := n.(*ast.ReturnStmt)
+
+				if !isReturn {
+					return true
+				}
+
+				carriesReceiver := false
+
+				for _, result := range ret.Results {
+					if id, isID := result.(*ast.Ident); isID && a.info.Uses[id] == verdict.recvObj {
+						carriesReceiver = true
+					}
+				}
+
+				if carriesReceiver {
+					for _, result := range ret.Results {
+						if id, isID := result.(*ast.Ident); !isID || a.info.Uses[id] != verdict.recvObj {
+							_ = id
+							otherReturnResults++
+						}
+					}
+				}
+
+				return true
+			})
+		}
+
+		switch {
+		case escapes, bareReturns > 0 && otherReturnResults > 0:
+			verdict.Vetoes = append(verdict.Vetoes, refRecvVetoReceiverEscapes)
+		case bareReturns > 0:
+			verdict.R3Arm = refRecvR3ArmRefReturn
+		default:
+			verdict.R3Arm = refRecvR3ArmPlain
+		}
+	}
 }
 
 // refReceiverHasRefStorage reports whether a pointer receiver's base type has struct storage a
