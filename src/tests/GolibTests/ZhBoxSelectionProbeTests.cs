@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -133,6 +133,17 @@ public class ZhBoxSelectionProbeTests
 
         if (!string.IsNullOrEmpty(location) && File.Exists(location))
             builder.Add(MetadataReference.CreateFromFile(location));
+    }
+
+    /// <summary>
+    /// The R3 arm-(a) tests' bridge into this matrix's compiler/reference plumbing — same scaffold,
+    /// same classification, a string verdict so the caller carries no Roslyn types.
+    /// </summary>
+    internal static void ProbePublic(string statement, string extra, out string bound, out int errors)
+    {
+        ProbeResult result = Probe(statement, extra);
+        bound = result.Bound.ToString();
+        errors = result.Errors.Length;
     }
 
     private static ProbeResult Probe(string statement, string extra = "")
@@ -394,5 +405,123 @@ public class ZhBoxSelectionProbeTests
         // the primary was never a candidate. Assert the pair really is a pair.
         Assert.AreEqual(Bound.Primary, Probe("local.Add(1);").Bound, "the ref-receiver primary must be reachable");
         Assert.AreEqual(Bound.Twin, Probe("Box.Add(1);").Bound, "the ж twin must be reachable");
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// R3 arm (a) — the ref-return fluent primary (ruled 2026-09-02; DESIGN-zh-box-b-prime.md's dated
+// amendment block carries the gap and the census: RECV-ONLY 38 / NO-RECV 32 / MIXED 5 in the S0
+// target packages). A RECV-ONLY method's Go body is `return v`; the primary cannot yield the
+// receiver's box (OQ-7), so under R3 the PRIMARY returns `ref T` (the receiver itself, free) and
+// the TWIN delegates then returns ITS OWN box — which is exactly Go's semantics, since Go's
+// `return v` returns the receiver pointer and the twin HOLDS that pointer. These tests pin both
+// halves: the compile-time selection semantics of the ref-return shape (string-form pair through
+// the same Roslyn probe), and the runtime identity/mutation contract (real pair, executed).
+// ---------------------------------------------------------------------------------------------
+
+/// <summary>The R3 arm-(a) synthetic pair, REAL and executable — the identity guard runs on it.</summary>
+public struct FluentElem
+{
+    public int V;
+}
+
+public static class FluentElemExtensions
+{
+    /// <summary>The R3 primary: ref-return of the receiver, allocation-free.</summary>
+    public static ref FluentElem Add(this ref FluentElem v, int delta)
+    {
+        v.V += delta;
+        return ref v;
+    }
+
+    /// <summary>The twin: delegates to the primary, returns ITS OWN box — Go's receiver pointer.</summary>
+    public static ж<FluentElem> Add(this ж<FluentElem> Ꮡv, int delta)
+    {
+        Ꮡv.DerefOrNull().Add(delta);
+        return Ꮡv;
+    }
+}
+
+[TestClass]
+public class ZhBoxFluentPrimaryTests
+{
+    // The string-form of the SAME pair for the Roslyn selection probes. Kept textually beside the
+    // real pair above; the executable pair is the identity guard's subject, the string pair the
+    // selection probes' — one shape, two instruments.
+    private const string FluentExtra = """
+        public struct FluentElem { public int V; }
+        public static class FluentElemExtensions
+        {
+            public static ref FluentElem Add(this ref FluentElem v, int delta) { v.V += delta; return ref v; }
+            public static ж<FluentElem> Add(this ж<FluentElem> Ꮡv, int delta) { Ꮡv.DerefOrNull().Add(delta); return Ꮡv; }
+        }
+        """;
+
+    [TestMethod]
+    public void PlainLocalSelectsTheRefReturnPrimary()
+    {
+        ZhBoxSelectionProbeTests.ProbePublic("FluentElem e = default; e.Add(1);", FluentExtra, out var bound, out int errors);
+        Assert.AreEqual(0, errors);
+        Assert.AreEqual("Primary", bound, "a plain local must select the ref-return primary exactly as it selects today's shape");
+    }
+
+    [TestMethod]
+    public void BoxTypedReceiverSelectsTheTwinUnderRefReturn()
+    {
+        ZhBoxSelectionProbeTests.ProbePublic("ж<FluentElem> b = default!; b.Add(1);", FluentExtra, out var bound, out int errors);
+        Assert.AreEqual(0, errors);
+        Assert.AreEqual("Twin", bound, "a ж-typed receiver must keep the twin under the ref-return primary");
+    }
+
+    [TestMethod]
+    public void RefCaptureOfTheChainCompiles()
+    {
+        // The chain-forward property the ref return buys: a direct site MAY capture the ref
+        // without any box existing anywhere.
+        ZhBoxSelectionProbeTests.ProbePublic("FluentElem e = default; ref FluentElem r = ref e.Add(1); r.V++;", FluentExtra, out var bound, out int errors);
+        Assert.AreEqual(0, errors, "ref-capturing the primary's chain must compile");
+        Assert.AreEqual("Primary", bound);
+    }
+
+    [TestMethod]
+    public void ResultUsedByValueCompilesAndBindsThePrimary_TheConverterOwnsThisRow()
+    {
+        // ⚠ DELIBERATELY INVERTED expectations, documenting the enforcement locus: `var p =
+        // e.Add(1)` COMPILES under a ref-return primary (the ref converts to a value copy) and
+        // binds the primary — the compiler does NOT catch result-use, so OQ-7's "result-used
+        // direct calls stay on the twin" is enforced at CONVERTER EMISSION, not by C#. If this row
+        // ever starts refusing, the enforcement boundary moved and the selection table's
+        // documentation must move with it.
+        ZhBoxSelectionProbeTests.ProbePublic("FluentElem e = default; var p = e.Add(1); p.V++;", FluentExtra, out var bound, out int errors);
+        Assert.AreEqual(0, errors, "the value-copy capture is LEGAL C# — the converter, not the compiler, owns this row");
+        Assert.AreEqual("Primary", bound);
+    }
+
+    [TestMethod]
+    public void TwinReturnsItsOwnBox_TheIdentityGuard()
+    {
+        // Go: `p := Ꮡv.Add(1)` yields the SAME pointer — `p == Ꮡv` is true. The twin returns its
+        // own box, so identity holds by construction; this row is what makes that a measured fact.
+        ж<FluentElem> box = new StandardBox<FluentElem>(default(FluentElem));
+
+        ж<FluentElem> result = box.Add(41);
+
+        Assert.IsTrue(ReferenceEquals(box, result), "the twin must return the receiver's OWN box — Go pointer identity");
+        Assert.AreEqual(41, box.DerefOrNull().V, "the primary's mutation must be visible through the caller's box");
+
+        // And the chain composes on the twin path exactly as Go's fluent chains do.
+        Assert.IsTrue(ReferenceEquals(box, box.Add(1).Add(1)));
+        Assert.AreEqual(43, box.DerefOrNull().V);
+    }
+
+    [TestMethod]
+    public void PrimaryMutatesTheCallersStorageDirectly()
+    {
+        // The allocation-free half: no box anywhere, the ref chain writes the local in place.
+        FluentElem e = default;
+
+        e.Add(2).Add(3);
+
+        Assert.AreEqual(5, e.V, "the ref-return chain must write the caller's storage with no box in existence");
     }
 }
