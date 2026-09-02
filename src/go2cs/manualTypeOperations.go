@@ -508,30 +508,41 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// by NAME through typesByString -> typelinks(), the linker-built type table, which is a
 		// NotImplementedException stub here. MakeChan joins them because its auto body calls the
 		// `makechan` runtime stub. See reflect/value_impl.cs.
-		"ChanOf":              goosAny,
-		"MapOf":               goosAny,
-		"MakeChan":            goosAny,
+		"ChanOf":   goosAny,
+		"MapOf":    goosAny,
+		"MakeChan": goosAny,
 		// FuncOf is the same family one step harder: it assembles a funcType record behind a
 		// prototype func value it reads out of memory, and a Go func here IS a managed delegate.
 		// The composed delegate type is GoReflect.TryFuncShape's exact inverse.
-		"FuncOf":              goosAny,
+		"FuncOf": goosAny,
 		// typelinks is the linker's type table; a managed process has none, and EMPTY is the
 		// contract-legal answer (Go documents its only consumer, typesByString, as possibly
 		// empty, and every caller mints on the miss). The auto form is a throwing stub.
-		"typelinks":           goosAny,
+		"typelinks": goosAny,
 		// export_test.go's IsExported resolves the descriptor's name offset into the linker's
 		// name blob and reads its flag byte -- nil-deref on a synthesized descriptor. The
 		// property is answerable from the bridge's own name machinery; body in the
 		// export_impl_test.cs companion (the reflectlite pattern).
-		"IsExported":          goosAny,
+		"IsExported": goosAny,
+		// gcbits answers reflect's TestGCBits, and Go satisfies export_test.go's bodyless
+		// `func gcbits(any) []byte // provided by runtime` with
+		// `//go:linkname reflect_gcbits reflect.gcbits` -- so in Go this IS runtime.getgcmask under
+		// a second name. The corpus cannot cross that seam: the push's DESTINATION is declared in a
+		// _test.go, which -tests emits into reflect_internal_test_package rather than into
+		// reflect_package where a production-side push would land, and runtime exposes
+		// reflect_gcbits as internal with no InternalsVisibleTo for reflect. Without this
+		// registration go2cs-gen mints a throwing PartialStubGenerator stub and TestGCBits reports
+		// infrastructure-error whatever runtime answers (measured 2026-09-02). The body is in
+		// export_impl_test.cs beside IsExported -- the reflectlite pattern.
+		"gcbits": goosAny,
 		// Swapper reads the slice header through unsafe.Pointer and swaps flat memory by element
 		// size -- the mirror of internal/reflectlite's registration, for the same root; the
 		// hand-own swaps through golib's non-generic ISlice indexer. See reflect/value_impl.cs.
-		"Swapper":             goosAny,
+		"Swapper": goosAny,
 		// Value.Close reads the channel direction by reinterpreting the descriptor onto the
 		// linker's chanType record -- the non-deterministic read abi.ChanDir was hand-owned to
 		// retire, still live here -- and then calls the chanclose runtime stub.
-		"Value.Close":         goosAny,
+		"Value.Close": goosAny,
 		// The auto body reads the interface's two words by dereferencing `v.ptr` as an
 		// *[2]uintptr, and a bridge Value has no `ptr` — it carries a boxed managed object — so
 		// every InterfaceData call nil-panicked in `~`. Go declares BOTH words unspecified and
