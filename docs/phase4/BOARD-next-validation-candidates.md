@@ -21215,4 +21215,56 @@ itself is still un-rooted below the observation that a `WriteTo` reports success
 `ReadFrom` never receives. The queue-depth question this entry left open (`ss -xa` during the hang) remains
 the next cheap measurement, and that host has `ss`.
 
+
+### Amendment, 2026-09-02 — **`WriteTo` DOES error. A 60-line reproducer falsifies this entry's "reports success" claim, and the corrected reading points AT the sockaddr seam where the old one pointed away from it**
+
+The two amendments above rest on a sentence this one retracts: *"a unixgram `WriteTo` reports success
+while the peer's `ReadFrom` never receives"*. **It does not report success.** Reduced to two sockets in a
+temp directory, one `WriteTo`, one `ReadFrom` under a 1-second deadline — short on purpose, since
+`someTimeout = 1 * time.Hour` is the only reason the upstream failure presents as a hang rather than a
+verdict:
+
+    GO   write: n=19 err=<nil>
+         read:  n=19 payload="UNIXGRAM ROUND TRIP" peer_nil=false
+
+    C#   write: n=0  err=write unixgram …/cli.sock->…/srv.sock: sendto: connection refused
+         read:  FAILED err=read unixgram …/srv.sock: i/o timeout
+
+Three runs each, byte-identical every time; the converted build is clean with zero strict errors. No test
+framework, no sweep, no deadline arithmetic.
+
+**How the wrong claim got published, because the mechanism is the reusable part.** It was an INFERENCE
+dressed as an observation: `packetTransceiver` reaches its `ReadFrom`, therefore its `WriteTo` must have
+returned nil. The host's event stream carries no event for a write's return value, so I never saw it —
+and the entry should have said "not observed" instead of asserting the opposite. A `/proc` inspection and
+a filtered control both agreed with everything around that sentence, which is exactly why it survived:
+**surrounding measurements corroborate the frame, not the unmeasured claim inside it.**
+
+**The hang survives the correction and is now mechanical rather than inferred**, which is why this
+sharpens the entry instead of overturning it. The write fails, so `packetTransceiver` sends on `trch` and
+returns, closing it. `packetTransponder` is parked in `ReadFrom` for an hour because nothing arrives, so
+`tpch` never closes — and the test's loop is `for trch != nil || tpch != nil` (`server_test.go:308`),
+waiting for BOTH. One channel closes, the other cannot, and the host sits until the package deadline. The
+73 rows follow from that with no lost datagram required.
+
+**Two independent measurements now converge on the same boundary.** A sibling lane's `ss -xa` during the
+hang reports both sockets at **Recv-Q 0 / Send-Q 0** — the datagram reaches no queue; this reproducer
+reports **ECONNREFUSED from `sendto`, `n=0`** — it is never accepted. The send does not leave, and the
+kernel *rejects* it rather than dropping it.
+
+**That relocates the suspect.** ECONNREFUSED on `sendto` to a bound, existing unixgram socket is the
+kernel objecting to the DESTINATION — i.e. the sockaddr encoder. `net/linux/fd_unix.cs:21` pins
+`writeToSyscallName = "sendto"`, and `Sendto` sits in the Linux sockaddr seam's own
+deliberately-not-covered list beside `Sendmsg`, behind an evidence gate whose stated rule is *"fix a
+censused wrapper when a suite REACHES it"*. The "silently lost" reading pointed away from that seam; the
+measured one points into it.
+
+**Still labelled a hypothesis:** that this and `syscall`'s `TestPassFD` / `TestSCMCredentials` EISCONN
+pair share one root. Both are unix-domain sends whose destination is handed to an uncovered wrapper and
+both fail at the kernel boundary — but ECONNREFUSED and EISCONN are different rejections, and no one has
+yet read what `sendto` writes for a `SockaddrUnix`. That read is one function and it is the next step.
+
+**The reproducer is not committed.** It would be a known-failing behavioral test today, and the suite's
+value is that it is green; it lands as a guard when the seam closes.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
