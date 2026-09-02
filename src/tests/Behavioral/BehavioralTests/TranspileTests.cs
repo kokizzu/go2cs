@@ -388,6 +388,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckDerivedInterfaceStructuralProbe() => CheckTarget("DerivedInterfaceStructuralProbe");
 
     [TestMethod]
+    public void CheckDescriptorCarrierFieldName() => CheckTarget("DescriptorCarrierFieldName");
+
+    [TestMethod]
     public void CheckDirectBoxReceiverPassedWhole() => CheckTarget("DirectBoxReceiverPassedWhole");
 
     [TestMethod]

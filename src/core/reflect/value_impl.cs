@@ -2737,7 +2737,16 @@ private static ж<abi.Type> structFieldDescriptor(GoReflect.GoFieldInfo f) {
     // A channel field carries its DIRECTION the same way an array field carries its length: off
     // the initializer the converter emitted, read from the declaring struct's zero instance.
     GoChanDir fieldDir = kind == GoReflect.Chan ? f.ChanDir : GoChanDir.Unstamped;
-    return abi.synthType(f.Type, dims, null, fieldDir, keyDims);
+    // The DESCRIPTOR CARRIER, when the converter stamped one: this field's Go type is a DEFINED
+    // type over a named interface, which the emission erased to a `using` alias, so f.Type is the
+    // bare object/target interface and carries no Go name. Substituting the carrier changes only
+    // what the DESCRIPTOR reports — the field's storage, offset and Kind are untouched, a carrier
+    // being an interface exactly as the erased type is. This is the SAME substitution
+    // abi.synthesizeStructType makes, and it has to be made in both places for the reason this
+    // function's own header gives: the identity walk and the abi.StructType a caller reads are
+    // built from ONE rule, and a carrier applied to only one of them would make two descriptors
+    // for one field disagree about its name.
+    return abi.synthType(f.DescriptorSelf ?? f.Type, dims, null, fieldDir, keyDims);
 }
 
 // PointerTo returns the pointer type with element t — the managed ж<T> pointer form,

@@ -321,9 +321,16 @@ private static ж<ΔStructType> synthesizeStructType(ж<Type> Ꮡt) {
         nint[]? dims = fieldKind == GoReflect.Array || fieldKind == GoReflect.Pointer || fieldKind == GoReflect.Map ? info.ArrayDims : null;
         nint[]? fieldKeyDims = fieldKind == GoReflect.Map || fieldKind == GoReflect.Pointer ? info.KeyDims : null;
         GoChanDir fieldDir = fieldKind == GoReflect.Chan ? info.ChanDir : GoChanDir.Unstamped;
+        // The DESCRIPTOR CARRIER, when the converter stamped one: this field's Go type is a
+        // DEFINED type over a named interface, which the emission erased to a `using` alias, so
+        // info.Type is the bare `object`/target interface and carries no Go name. Substituting the
+        // carrier changes only what the DESCRIPTOR reports — the field's storage, offset and Kind
+        // are untouched (a carrier is an interface, exactly as the erased type is), and the offsets
+        // this loop pairs with come from GoFieldOffsets over the real managed type either way.
+        System.Type fieldDescriptorType = info.DescriptorSelf ?? info.Type;
         fields[i] = new StructField(
             Name: default!,
-            Typ: synthType(info.Type, dims, null, fieldDir, fieldKeyDims),
+            Typ: synthType(fieldDescriptorType, dims, null, fieldDir, fieldKeyDims),
             Offset: (uintptr)(nuint)offsets[i]
         );
     }

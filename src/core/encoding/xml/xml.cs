@@ -60,6 +60,9 @@ partial class xml_package {
     public Name Name;
     public @string Value;
 }
+// Descriptor carrier for `Token` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("Token")] public interface ΔTokenᴅ { }
+
 
 // A StartElement represents an XML start element.
 [GoType] partial struct StartElement {
@@ -213,6 +216,7 @@ public static ΔToken CopyToken(ΔToken t) {
     internal ж<stack> free;
     internal bool needClose;
     internal Name toClose;
+    [GoDescriptorType(Self = typeof(ΔTokenᴅ))]
     internal ΔToken nextToken;
     internal nint nextByte;
     internal map<@string, @string> ns;

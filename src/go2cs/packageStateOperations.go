@@ -116,6 +116,7 @@ func resetPackageState(pkg *packages.Package) {
 	importPackageDirs = make(map[string]importedPackageMeta)
 	importedPackageSources = make(map[string]*packages.Package)
 	importedPackages = make(map[string]*packages.Package)
+	currentPackageSource = pkg
 	packageInitFacts = make(map[string]bool)
 
 	var captureImportDirs func(imports map[string]*packages.Package)

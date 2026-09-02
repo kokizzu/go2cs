@@ -45,6 +45,9 @@ using errors = errors_package;
 using reflect = reflect_package;
 
 partial class driver_package {
+// Descriptor carrier for `Value` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("Value")] public interface Valueᴅ { }
+
 
 // Go runs an imported package's `init` before this package's own; .NET would never load
 // an assembly nothing has touched yet, so that initialization is forced here.
@@ -74,6 +77,7 @@ partial class driver_package {
     // Ordinal position of the parameter starting from one and is always set.
     public nint Ordinal;
     // Value is the parameter value.
+    [GoDescriptorType(Self = typeof(Valueᴅ))]
     public Value Value;
 }
 

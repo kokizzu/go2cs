@@ -690,3 +690,323 @@ Environment for every step: `GOROOT=<sdk-root>\go1.23.12` in its **backslash** s
 (a forward-slash GOROOT misroutes emission into `namespace go.std.*`), .NET 10 first on PATH,
 `MSBUILDDISABLENODEREUSE=1`. Verified with bare `go version` → `go1.23.12` and
 `dotnet --version` → `10.0.400` before any number here was believed.
+
+---
+
+## AMENDMENT — 2026-09-01 (later), Stage-A commission: the gen experiment PASSES, and the sizing census STOPS the cut
+
+> Branch `claude/coord-type-name-carrier`, cut from master `9ddffc528`. Commissioned to execute
+> **Stage A** of §6's recommendation after the coordinator ruled Option 3. Steps 1 and 2 of the
+> commission were run; **step 3 (the cut) was NOT taken**, because step 2's measurement fires the
+> commission's own stop rule. Everything below is measured at that head.
+
+### Step 1 — the go2cs-gen carrier experiment: PASSES, unambiguously
+
+§7 item 2 named this the arc's largest unknown: does any generator mint a witness, adapter, shell
+or promotion for an uninhabited descriptor carrier? A hand-written probe package (three files,
+built with the analyzer attached and its `obj/**/Generated` output read directly) answers **no**,
+with every generator demonstrably alive in the same compilation.
+
+Carriers under test, nested in a `<pkg>_package` class, `[GoLocalName]` **only**:
+
+```csharp
+[GoLocalName("tneEface")]      internal interface tneEfaceᴅ { }        // class (i)
+[GoLocalName("tneNamedIface")] internal interface tneNamedIfaceᴅ { }   // class (ii)
+```
+
+referenced only as attribute cargo on a field whose C# type is still `object`.
+
+| Generator | Trigger it keys on | Fired in this compilation? | Touched a carrier? |
+|---|---|:--:|:--:|
+| `ImplementGenerator` | `[assembly: GoImplement<S,I>]` | ✔ 1 file | **no** |
+| `ImplicitConvGenerator` | `[assembly: GoImplicitConv<S,T>]` | ✔ 1 file | **no** |
+| `PartialStubGenerator` | a bodyless `partial` method | ✔ 1 file | **no** |
+| `RecvGenerator` | `[GoRecv]` on a method | ✔ 1 file | **no** |
+| `TypeGenerator` | `[GoType]` on a type declaration | ✔ 4 files | **no** |
+
+**8 generated files; a grep for `tneEface|tneNamedIface|GoDescriptorType` across all of them
+returns 0.** The positive controls are not decorative: `ctrlIface` minted a full
+`[GoInterfaceShell]` plus its runtime shell class, and `ctrlStruct` minted the real explicit
+interface implementation — so the empty result for the carriers is a measurement, not a dead
+detector.
+
+**Why it is structural rather than lucky:** every generator keys on an attribute the converter
+emits deliberately. `TypeGenerator` keys on `[GoType]`; a carrier carries only `[GoLocalName]`, so
+its `AttributeFinder` never sees it. `ImplementGenerator` / `ImplicitConvGenerator` key on assembly
+records the converter would never write for a type nothing is ever assigned to.
+
+**Bonus measurement — the mistaken variant is harmless.** A `[GoType]`-stamped EMPTY interface
+(`ctrlEmptyIface`) produces exactly one inert 754-byte re-declaration: **no `[GoInterfaceShell]`,
+no shell class, no adapter**, because `TypeGenerator`'s `EmitShells` requires
+`interfaceMethods.Length > 0`. So "the carrier must not carry `[GoType]`" is a cleanliness rule,
+not a safety rule.
+
+**Verdict: green light on the generator question. `src/gen/` needs no change.**
+
+### Step 2 — the sizing census: 66 descriptor positions, 21 files, 13 packages
+
+Instrument: the converter patched at the four descriptor-emission positions that exist today
+(struct field — `visitStructType.go`'s field loop; func parameter — `visitFuncDecl.go`'s two
+`emitGoArrayDimsAttribute` sites; func result — `generateResultSignature`), each emitting one
+stderr record when the position's `types.Type` is, or reaches through one `Elem()`/`Key()` hop,
+one of the census population. The population is **hardcoded to the measured 13 names** rather than
+predicated, because `go/types` alone cannot tell `type X any` from `type X interface{}` — the same
+fact `visitTypeSpec`'s own comment records — and a hardcoded set is exact for a sizing question.
+
+*Instrument honesty:* the marker string was verified present in the built binary and the binary's
+size verified different from the uninstrumented one (both tells from the false-empty-census rule),
+and the instrument was positive-controlled on `crypto` alone before the corpus run: **3 marks,
+exactly matching `crypto/crypto.go`'s source** (two `Public() PublicKey` results, one
+`DecrypterOpts` parameter). `crypto.PrivateKey` correctly scored **zero** — declared, but in no
+descriptor position inside its own package.
+
+Corpus run: full `-stdlib -comments` into an isolated temp root, exit 0, **549 s**, 300 `.csproj` /
+1,686 `.cs` emitted (the traversal sanity check). The root was deliberately **not** seeded: this
+run reads stderr only and its output is discarded, so the seeding ritual's purpose (protecting
+hand-owns, badges and L3 routing in an *overlaid* emission) does not apply — and an unseeded root
+cannot touch `src/core`. That is a deviation from the reconvert ritual, stated rather than hidden.
+
+**66 marks:**
+
+| By kind | | By type | | By slot | |
+|---|--:|---|--:|---|--:|
+| result | **37** | `database/sql/driver.Value` | 20 | self | 59 |
+| param | **23** | `crypto.PublicKey` | 15 | elem | 7 |
+| field | **4** | `encoding/xml.Token` | 11 | **key** | **0** |
+| param-rebuilt | **2** | `[]database/sql/driver.Value` | 7 | | |
+| | | `crypto.PrivateKey` | 6 | | |
+| | | `crypto.DecrypterOpts` | 3 | | |
+| | | `plugin.Symbol` | 2 | | |
+| | | `encoding/json.Token` | 2 | | |
+
+**13 packages / 21 Go source files** — this is the post-merge sweep list, and all 13 are banked:
+`database/sql/driver` 15 · `database/sql` 12 · `encoding/xml` 11 · `crypto/rsa` 5 ·
+`crypto/tls` 4 · `crypto/ed25519` 3 · `crypto/ecdsa` 3 · `crypto/ecdh` 3 · `crypto` 3 ·
+`plugin` 2 · `encoding/json` 2 · `crypto/x509` 2 · `crypto/internal/hpke` 1.
+
+Files: `crypto/crypto.go`, `crypto/ecdh/ecdh.go`, `crypto/ecdsa/ecdsa.go`,
+`crypto/ed25519/ed25519.go`, `crypto/internal/hpke/hpke.go`, `crypto/rsa/rsa.go`,
+`crypto/tls/{auth,common,tls}.go`, `crypto/x509/{verify,x509}.go`,
+`database/sql/{convert,ctxutil,sql}.go`, `database/sql/driver/{driver,types}.go`,
+`encoding/json/stream.go`, `encoding/xml/{marshal,xml}.go`,
+`plugin/{plugin,plugin_stubs}.go`.
+
+Plus the **16 declaring sites** of §1a, which gain a carrier declaration.
+
+Plus the reflect call sites, censused from GOROOT rather than from the converter: **0** direct
+`reflect.TypeFor[<one of the population>]`, and **1** `reflect.TypeOf((*T)(nil)).Elem()` — at
+`reflect/all_test.go:5404`, in an **unbanked** package.
+
+### Why step 2 stops the cut
+
+The commission's stop rule: *"If any step's measurement says the arc is bigger than a
+converter-emission cut (for example the generator must change), STOP at that step and report."*
+The generator does not have to change — step 1 settled that, and that is the arc's good news.
+Four other things do, and the sizing census is what makes them visible:
+
+1. **The emission-only half of Stage A buys nothing measurable.** The two positions a converter can
+   fix with no golib involvement — a direct `TypeFor[X]()` and the `TypeOf((*X)(nil))` idiom —
+   total **one site in the entire standard library, in an unbanked package**. All **66** positions
+   that touch banked rows are field / param / result, and every one of them needs the cargo to be
+   *read back* by `abi.synthType`'s field walk (`type_impl.cs:314`), param walk (`:414`) and elem
+   arm (`:471`). **Stage A is a golib descriptor-synthesis change, not an emission-only change.**
+2. **That pulls in a gate this arc was not sized for.** CLAUDE.md's standing rule: a change to
+   `abi.synthType` / golib **descriptor synthesis** takes a **cost canary** as well as the
+   reflect-importer canaries, because synthesis runs on every interface boxing corpus-wide. The
+   `crypto/internal/nistec` wall-time comparison joins the ladder.
+3. **56% of the work sits at a position with no precedent.** 37 of 66 marks are **results**, and
+   the corpus has *no* return-value cargo mechanism today — `emitGoArrayDimsAttribute` is applied
+   to parameters and fields only. A `[return: GoDescriptorType(...)]` emission is new surface, and
+   new surface at the majority position is not a small cut.
+4. **A metadata-format change is required for correctness, not convenience.** A cross-package
+   consumer learns about an exported alias from the declaring package's
+   `[assembly: GoTypeAlias(name, target)]` record — and that record **cannot today distinguish a
+   DEFINED type over an interface from an ordinary Go alias**. `os` re-exports
+   `type DirEntry = fs.DirEntry`, where Go itself answers `fs.DirEntry`; stamping a carrier there
+   would invent a *new* wrong-name class — the very defect class this arc exists to close.
+   `GoTypeAliasAttribute` needs a `Defined` flag (golib + converter + `package_info.cs` +
+   `stdlib-metadata.txt` regen) before any consumer-side substitution is safe.
+
+None of these is a reason to abandon Option 3 — the recommendation stands, and step 1 removed its
+largest risk. They are a reason for the coordinator to re-price Stage A as a **converter + golib
+descriptor-synthesis arc carrying a metadata-format increment**, rather than the emission-only cut
+the commission described, and to sequence its gate ladder accordingly.
+
+### Suggested re-shape (for the ruling, not executed here)
+
+* **A1 — metadata first, sizing-first:** the `GoTypeAlias` `Defined` flag alone. The converter
+  records it, golib carries it, `go generate .` regenerates `stdlib-metadata.txt`. No behavior
+  change and no descriptor change; it is the correctness precondition for everything after, and it
+  gates on its own (converter `go test`, CNR, the seven declaring packages' `package_info.cs`).
+* **A2 — the carrier declaration + the field and param positions** (27 of 66 marks: 23 param, 4
+  field), reusing the existing cargo-attribute precedent exactly, with the golib read added to
+  `synthType`'s field and param walks. Gates include the cost canary.
+* **A3 — the result position** (37 marks), the one that needs new emission surface.
+* **Stage B** unchanged and still out of scope.
+
+### What step 1 changed in §6's claims
+
+§6's Option 3 said *"golib's delta is plausibly zero."* That is **correct for the naming
+reconstruction** — every reader in the §6 table answers correctly for a carrier with no change,
+and step 1 shows the generator side needs nothing either. It is **wrong for the descriptor
+plumbing**: `synthType` must learn to read the cargo at three sites. The §6 table measured what a
+carrier would *answer*; it did not measure how a carrier would *arrive*. Corrected here rather
+than in place, per the CENSUS amendment convention.
+
+### Gates run for this amendment, and what was not
+
+| Gate | Verdict |
+|---|---|
+| go2cs-gen carrier experiment, all five generators live, generated output read | **PASS** — 8 files, 0 carrier mentions |
+| Instrument positive control (`crypto`, predicted count) | **PASS** — 3 marks, exact |
+| Instrument compiled-in check (marker present in binary, size differs from baseline) | **PASS** |
+| Full `-stdlib` census run | **PASS** — exit 0, 549 s, 300 csproj / 1,686 cs |
+| Instrument reverted byte-identical | **PASS** — `git diff HEAD` empty across all three patched files |
+| Converter `go test -count=1 ./...` | **NOT RUN** — no converter change is being banked |
+| CNR · solution integrity · behavioral compile · `go2cs-stdlib.slnx` · canary sweeps · cost canary | **NOT RUN** — no cut was taken |
+
+No converter, golib, gen or corpus file is modified by this branch. The only change is this
+amendment.
+
+---
+
+## AMENDMENT #2 — 2026-09-01 (evening): **A1 is UNNECESSARY** — the predicate already exists, answers 100% of positions, and the metadata increment collapses to zero work
+
+> Same branch, merged forward to master `26f3aaa67`. Commissioned to CUT the `GoTypeAlias`
+> `Defined` flag after sizing it. The sizing says there is nothing to cut: the converter can
+> already decide *carrier / no carrier* at every descriptor position from data in hand, with no
+> metadata, no `package_info.cs` churn, no `stdlib-metadata.txt` regen and no golib change.
+> **A1 is therefore reported, not banked.** A2 and A3 are sized below with a live mechanism probe.
+
+### A1 — the finding
+
+The commission's premise was that `[assembly: GoTypeAlias(name, target)]` cannot distinguish a
+DEFINED type over an interface from an ordinary Go alias (`type DirEntry = fs.DirEntry`), so a
+`Defined` flag was owed before any consumer-side substitution could be safe. **The premise is
+correct about the RECORD and wrong about the CONVERTER.** The distinction never needed to travel
+through metadata, because the converter loads with `packages.LoadAllSyntax`
+(`conversionDriver.go:89`) and therefore holds the declaring package's types *and syntax* for the
+whole closure. `foreignTypeAliases.go`'s **`usingAliasTargetType`** already implements exactly this
+predicate — it was written for the missing-`package_info.cs` case and its own comment states the
+rule:
+
+> *"A DEFINED type over an INTERFACE … is emitted as a using alias rather than a nested type — but
+> ONLY when the declaration's RHS is a NAMED type … That distinction lives only in the
+> declaration's RHS, so it is read from the dependency's syntax; a dependency loaded without syntax
+> yields nothing rather than a guess."*
+
+### The measurement
+
+Instrument: the converter patched at the same four descriptor positions, but this time classifying
+**every** interface-underlying named/alias type it meets — no hardcoded population — into
+`ALIAS` (`obj.IsAlias()`), `DEF-NAMED` (defined, RHS an `*ast.Ident`/`*ast.SelectorExpr`),
+`DEF-INLINE` (defined, RHS an inline interface literal) or `NOSYN` (unanswerable). Marker verified
+compiled into the binary; positive-controlled on `crypto/rsa` before the corpus run. Full
+`-stdlib -comments` run: exit 0, 300 `.csproj` emitted, 553,645-byte stderr capture, NUL-count 0
+(UTF-8, safe to grep).
+
+**4,435 classified positions:**
+
+| Class | Count | Meaning | Carrier? |
+|---|--:|---|:--:|
+| `DEF-INLINE` | **4,339** | `type X interface{…}` — already a real, correctly-named C# interface | no |
+| **`DEF-NAMED`** | **66** | the carrier population | **yes** |
+| `ALIAS` | **30** | a Go type alias — Go itself reports the TARGET's name | **no** |
+| `NOSYN` | **0** | unanswerable from data in hand | — |
+
+**Two things make this decisive.**
+
+1. **`DEF-NAMED` = 66, reproducing the first sizing census to the digit** — same total, same
+   per-kind split (37 result / 23 param / 4 field / 2 param-rebuilt) and same per-type split
+   (`driver.Value` 27, `crypto.PublicKey` 15, `xml.Token` 11, `crypto.PrivateKey` 6,
+   `DecrypterOpts` 3, `plugin.Symbol` 2, `json.Token` 2) — by a **completely independent
+   predicate** that knows none of those names.
+2. **`NOSYN` = 0.** Not "small": absent from the histogram. Every position was answerable.
+
+**And the hazard A1 existed to prevent is real and is already prevented.** The 30 `ALIAS` hits are
+`os.FileInfo` ×14, `net/http.http2timer` ×11 and `os.DirEntry` ×5 — the coordinator's worked
+example, measured live. A metadata-free naive stamp would have given all 30 a carrier and reported
+`os.DirEntry` where Go reports `fs.DirEntry`: a *new* wrong-name class, the very defect this arc
+exists to close. The existing predicate declines every one.
+
+**Conclusion: no `Defined` flag, no attribute change, no `package_info.cs` churn, no
+`stdlib-metadata.txt` regen.** Cutting it would add a field nothing reads — throwaway by
+construction. A2/A3 call `usingAliasTargetType` (or a small shared extraction of it) instead.
+
+### A2 / A3 — the mechanism probe
+
+A self-contained C# probe (`tne-a2`, one file) exercising every recovery route golib could use,
+with its own negative controls, against the real `golib` and analyzer. **No golib change, no
+corpus touched.**
+
+| # | Route | Result |
+|---|---|---|
+| A2-1 | FIELD — `FieldInfo.GetCustomAttributes` (what `synthesizeStructField` holds) | **recovered** |
+| A2-2 | PARAM — `MethodInfo.GetParameters()[i]` (the method-table route) | **recovered** |
+| A2-3 | PARAM — `Delegate.Method` (exactly `GoReflect.FuncParamDims`' read) | **recovered** |
+| A2-4 | PARAM — the delegate **TYPE** alone (all `synthesizeFuncSide` holds) | **NOT RECOVERABLE** |
+| A3-1 | RESULT — `MethodInfo.ReturnParameter` | **recovered** |
+| A3-2 | RESULT — the delegate **TYPE** alone | **NOT RECOVERABLE** |
+
+Both negative controls fire, so the recoveries are measurements rather than a detector that always
+says yes.
+
+And the naming half, **with no golib change**:
+
+```
+carrier tneEfaceᴅ    HasGoName=True   GoTypeName=tnea2.tneEface   PkgPath=tnea2   Kind=20
+erased  object       HasGoName=False  GoTypeName=interface {}     PkgPath=        Kind=20
+```
+
+§6's Option-3 claim is confirmed by measurement: the carrier answers Go's name, package path and
+`HasGoName` correctly through golib's *existing* reconstruction, and — importantly — its `Kind` is
+**identical** to the erased type's (20 = `Interface`), so substituting it perturbs no Kind.
+
+### What the probe re-sizes
+
+The commission grouped field + param as one increment ("27 marks on the existing dims-cargo
+precedent"). The probe says they are **different sizes**, because
+`synthesizeFuncSide` derives from the delegate TYPE and A2-4 is not recoverable there:
+
+* **A2a — FIELD (4 marks).** `FieldStampedDims` already reads attributes straight off the
+  `FieldInfo` (`GoReflect.TypeLayout.cs:621`). A carrier needs **one new attribute + one read**.
+  No descriptor-struct change. This is the smallest possible real increment and the only part of
+  Stage A that is genuinely "the existing precedent".
+* **A2b — PARAM (23 marks).** Recoverable on the method-table and delegate-VALUE routes, but *not*
+  where `synthesizeFuncSide` stands. A param carrier must therefore ride as **descriptor cargo**,
+  exactly as `funcParamDims` does — a new slot on `abi.Type` **and** its inclusion in
+  `descriptorDimsKey`, or two Go types over one managed delegate would share a descriptor (the
+  same argument that comment already makes for `chanDir` and `keyDims`).
+* **A3 — RESULT (37 marks).** `[return: …]` **is** expressible and readable via
+  `MethodInfo.ReturnParameter` — that question is answered YES. But `abi.Type` has **no result-side
+  cargo slot at all**, and the code says so outright: *"funcParamDims indexes the INPUTS; results
+  carry no dims cargo today, which is a known narrowing rather than an oversight."* A3 needs a new
+  cargo field, its key inclusion, and a result-side reader. Confirmed as the largest item, and
+  correctly sequenced last.
+
+### Revised shape
+
+| Increment | Marks | Cost | Descriptor-struct change? |
+|---|--:|---|:--:|
+| ~~A1 metadata flag~~ | — | **zero — not needed** | — |
+| A2a field | 4 | attribute + `FieldInfo` read | no |
+| A2b param | 23 | + cargo slot + interning-key change | **yes** |
+| A3 result | 37 | + new cargo slot + key + reader | **yes** |
+
+The carrier declaration itself (16 declaring sites) rides with A2a; step 1 already proved
+`src/gen/` needs nothing.
+
+### Gates run for this amendment
+
+| Gate | Verdict |
+|---|---|
+| A1 classifier compiled-in check (marker in binary) | **PASS** |
+| A1 classifier positive control (`crypto/rsa`) | **PASS** — 5 `DEF-NAMED`, matching the census's 5, and it separated `crypto.PublicKey` (carrier) from `crypto.SignerOpts` (inline, no carrier) |
+| A1 full-corpus classification | **PASS** — exit 0, 300 csproj, 4,435 records, `NOSYN` 0 |
+| Cross-derivation agreement (independent predicate vs hardcoded census) | **PASS** — 66 = 66, same per-kind and per-type split |
+| A2/A3 mechanism probe, both negative controls firing | **PASS** |
+| Instrument reverted byte-identical | **PASS** — `git diff HEAD` empty, clean status |
+| Merge-forward to master `26f3aaa67` + add/add resolution control | **PASS** — master's blob verified intact as the resolved file's first 692 lines (CR-stripped) |
+| Converter `go test`, CNR, two-seeded diff, stdlib build, sweeps | **NOT RUN** — no cut was taken; nothing is banked but measurements |
+
+No converter, golib, gen or corpus file is modified by this branch.

@@ -163,6 +163,9 @@ public static nint Status(this Sensor s) {
 public static nint Grade(this Sensor s) {
     return 1;
 }
+// Descriptor carrier for `Token` — uninhabited; see GoDescriptorTypeAttribute.
+[GoLocalName("Token")] public interface ΔTokenᴅ { }
+
 
 public static nint Token(this Sensor s) {
     return (nint)(float64)s.Temp;
