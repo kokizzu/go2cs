@@ -322,11 +322,27 @@ public static class GoStructSynthesis
             if (field.Tag.Length > 0)
                 fb.SetCustomAttribute(new CustomAttributeBuilder(s_goTagCtor, new object[] { field.Tag }));
 
-            // The stamps mirror the converter's own rule (fieldCargoDims): a field that IS an array
-            // carries its dims in the constructor below and is NOT stamped — stamping it would put
-            // the same datum in two places — while a pointer hop's or a map's dims have no value to
-            // measure and must be in the metadata.
+            // EVERY field carrying dims is STAMPED, an array field included, and an array field is
+            // ALSO seeded. The earlier rule -- "a field that IS an array carries its dims in the
+            // constructor below and is NOT stamped, stamping it would put the same datum in two
+            // places" -- read the seed and the stamp as two copies of one datum. They are not: the
+            // SEED's job is a VALUE (the zero instance's field really holds an `array<T>` of the Go
+            // length, which is what a reader of the INSTANCE needs), and the STAMP's job is
+            // METADATA (the length, answerable without an instance). Conflating them is what made
+            // the metadata path ALLOCATE: `GoReflect.FieldArrayDims` recovered the length by
+            // materializing a zero instance and MEASURING the field, so a `StructOf` whose array
+            // field is 2^63 elements long tried to allocate 2^63 elements where Go only ever
+            // computes a size -- reflect's TestStructOfTooLarge, an infrastructure-error rather
+            // than a failure, because the process cannot survive the question.
+            //
+            // With the stamp present, `FieldArrayDims` answers from metadata and never instantiates
+            // (see its stamp-first arm). The seed STAYS because materializing the value is a
+            // DIFFERENT job that nothing here has measured away; retiring it is its own change with
+            // its own evidence, not a side effect of this one.
             bool isArray = GoReflect.KindOf(field.Type) == GoReflect.Array;
+
+            if (field.ArrayDims is { Length: > 0 } stamped)
+                fb.SetCustomAttribute(new CustomAttributeBuilder(s_goArrayDimsCtor, new object[] { toLongDims(stamped) }));
 
             if (isArray)
             {
@@ -339,9 +355,6 @@ public static class GoStructSynthesis
             }
             else
             {
-                if (field.ArrayDims is { Length: > 0 } stamped)
-                    fb.SetCustomAttribute(new CustomAttributeBuilder(s_goArrayDimsCtor, new object[] { toLongDims(stamped) }));
-
                 if (field.KeyDims is { Length: > 0 } keyStamped)
                     fb.SetCustomAttribute(new CustomAttributeBuilder(s_goMapKeyDimsCtor, new object[] { toIntDims(keyStamped) }));
             }
