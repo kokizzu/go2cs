@@ -9141,6 +9141,41 @@ method-value sites, of which 8 are box-ref and **all 8 are pointer-receiver** (`
 is byte-identical. Both silent members are reachable and neither is currently reached: they close a
 shape one refactor away, not an observed wrong answer.
 
+### The receiver EXPRESSION is evaluated exactly once, for every kind and every shape
+The rule above is about the receiver's *value*; this one is about the *expression*. Go saves the
+receiver when the method value is created, so `f().M` calls `f` exactly once and `a.b.M` reads the path
+exactly once. Every wrapper-lambda emission deferred that expression into the lambda, re-doing it on
+each invocation. **Two independent mechanisms**, and the second is invisible if you only look for the
+first:
+
+- **M1 — the expression is deferred.** Re-executes calls and re-reads paths per invocation. It is
+  **kind-independent**: measured red on a value receiver (`makeFrame().label`, Go calls it once, the
+  conversion called it per invocation) *and* on a pointer receiver (`makePtr().bump`, likewise). The
+  pointer case is reachable in exactly one shape — a call *returning a pointer*, since a value result
+  is not addressable — which is why "pointer receivers emit method groups, so they already evaluate
+  once" is true of every shape but that one, and false overall.
+- **M2 — the root-ident snapshot aliases.** The capture machinery snapshots the root ident of the
+  receiver expression, which is sufficient for a base with VALUE semantics (a struct, a slice header)
+  and useless for one with REFERENCE semantics: copying a pointer or a map header still reads the same
+  object. `p15.f.label` and `m13["k"].label` both re-read live state through the copy.
+
+So a field chain is correct over a struct and broken over a pointer, with identical syntax — the
+discriminator is the base's storage, not the shape.
+
+The cut hoists the receiver into a statement-level temp and binds the temp. The temp is kind-correct
+**by construction**: whatever the arm already rendered is exactly what Go saves — a value copy, the
+bound `Ꮡ` address, or the interface value — so nothing derives the temp's content from the kind, which
+is where a shape-first version would snapshot a value and bind *its* address. The initializer is
+re-rendered in the ENCLOSING context, not reused from the caller: the caller's string is produced
+in-lambda, so a captured base reads as the capture machinery's snapshot name, and that snapshot is
+declared into the same hoist buffer *after* this temp — emitting `var recvʗ1 = h6ʗ1.f;` above
+`var h6ʗ1 = h6;`, **CS0841** on every captured base.
+
+A bare ident receiver is left alone, which is not an exception: a local read has no side effect and
+nothing to alias, and the ident paths already produce a once-evaluated temp of their own. Most sites
+the cut rewrites were therefore *already correct, by accident of value semantics*; it makes them
+correct by construction, which is why its diff is wider than its behavioural yield.
+
 Restricted to a plain ident receiver of non-pointer type — the shape an emission-attached census of the
 whole standard library found (19 sites: `bytes` ×3, `strings` ×3, `encoding/json` ×8, `crypto/tls` ×3,
 `crypto/internal/hpke` ×2, of which 12 have an ident receiver). A pointer base auto-deref'd to a value

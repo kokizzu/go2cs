@@ -36,6 +36,8 @@ using static go.main_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<frame, namer>(Pointer = true)]
+[assembly: GoImplement<frame, namer>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -49,7 +51,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AAsegAAJBIiUyoSIlMqEioKigqKEiIKCkoSekoKihA==", "25-25:1;38-38:2;59-59:3;71-71:4")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AAsegKqAAA0egoKqgoIAGAaIlMqEiJTKhIqCooKihIiCgpKEnpKCooSKgrKEhpKChIiCooSGgqKChIiCgrKChIiCgoKChIqSgoKChIiCsoSKkoKChI6CsoSIgoKihIyCooKE", "55-55:1;68-68:2;89-89:3;101-101:4;163-163:5")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -65,7 +67,9 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface namer {}
     internal partial struct frame {}
+    internal partial struct holder {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import
