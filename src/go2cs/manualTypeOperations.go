@@ -887,6 +887,12 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// `partial struct Value { object boxed }` field (typ_/flag set from the Phase-1
 	// synthetic abi.Type, so Kind()/IsValid() work from value.cs unchanged); swapper_impl.cs
 	// swaps through golib's non-generic ISlice indexer. See docs/phase4/DESIGN-reflection-bridge.md.
+	//
+	// internal/reflectlite MIRRORS reflect's hand-own set for the mini-surface it exposes, so the
+	// same three func names (rtype.String, rtype.Implements, haveIdenticalUnderlyingType) appear in
+	// BOTH this sub-map and the "reflect" one above — different packages, not duplicate keys (a
+	// duplicate key in one Go map literal is a compile error; this file compiles). A file-wide key
+	// census reads them as duplicates; the seam says otherwise here so the next reader does not.
 	"internal/reflectlite": {
 		"ValueOf":     goosAny,
 		"unpackEface": goosAny,

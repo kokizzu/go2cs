@@ -1107,6 +1107,28 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     /// </summary>
     public static channel<T> RecvOnly => new(GoChanDir.Recv, nil);
 
+    // A live channel value re-stamped with a directional Go type — the SAME core (so Go's identity
+    // and every operation survive), a different direction. It is what a live-copy NARROWING emits
+    // (`var s <-chan T = ch`): the converter renders the bidirectional source and wraps it here, so
+    // the reflection bridge reads the narrowed direction off the value instead of the bidirectional
+    // one the source was born with. The construction-shaped positions (make/zero/new/nil-cast)
+    // stamp at birth through the other constructors; this is the one position where the value
+    // already exists and only its TYPE narrows.
+    private channel(ChanCore<T>? core, GoChanDir direction)
+    {
+        m_core = core;
+        m_direction = direction;
+    }
+
+    /// <summary>
+    /// Returns this channel value re-stamped with the given directional Go type — the same core,
+    /// a different <see cref="Direction"/>. The live-copy narrowing carrier.
+    /// </summary>
+    public channel<T> WithDirection(GoChanDir direction)
+    {
+        return new channel<T>(m_core, direction);
+    }
+
     /// <summary>
     /// Gets the Go direction of this value's channel type, or <see cref="GoChanDir.Unstamped"/>
     /// when no source stamped one — which the reflection bridge reports as bidirectional.

@@ -225,6 +225,24 @@ public static partial class GoReflect
             return dstType == nilFunc.Type;
         }
 
+        // A DIRECTIONAL channel value is not assignable to a channel slot the C# type erases to the
+        // bidirectional `channel<T>`: Go refuses a `<-chan T`/`chan<- T` SOURCE flowing into a
+        // `chan T` result (a directional channel cannot widen). The slot carries no direction here
+        // (`channel<T>` IS the bidirectional representation), so a stamped-directional source is
+        // rejected treating the slot as bidirectional — the case reflect's
+        // TestMakeFuncInvalidReturnAssignments asserts (a `RecvOnly` channel returned into a
+        // `chan int` result must panic). A BIDIRECTIONAL source (Unstamped) never trips this and
+        // narrows into a directional slot freely (the valid direction — the identity arm below
+        // admits it). This arm is INERT until the converter's live-copy narrowing stamp makes a
+        // source directional at all: the two halves of one cut, and a census found ZERO directional
+        // channel sources marshalled today, so it can regress none of the 108 current admits.
+        if (src is IChannel { Direction: not GoChanDir.Unstamped } &&
+            typeof(IChannel).IsAssignableFrom(dstType))
+        {
+            marshalled = null;
+            return false;
+        }
+
         // Identity — including a pointer-sourced interface value unwrapping to its receiver box
         // (Go: the interface holds the *T) and the canonical typed-nil box of the same type.
         object dynamicSrc = src;
