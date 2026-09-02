@@ -1334,17 +1334,24 @@ public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
     // nil-map early return first made a wrong-typed key on a NIL map answer "miss" where Go panics,
     // which is exactly what TestMap asserts: it sets mv to its zero value (nil) on the line before
     // and then indexes it with a key of the wrong defined type.
-    // NOTE for whoever closes TestMap's "not assignable" row: the gate below is not strict enough,
-    // and the OBVIOUS tightening is MEASURED WRONG. Go applies ASSIGNABILITY here, which is
-    // stricter than what TryMarshalAssignable accepts — that helper admits a named wrapper into its
-    // underlying slot under Go's named↔unnamed clause, but the clause requires one side to be
-    // UNNAMED and a predeclared type like `string` is named (spec: "Predeclared types, defined
-    // types, and type parameters are called named types"), so `type S string` is NOT assignable to
-    // `string` and Go panics where this returns a miss. Replacing the check with
-    // `key.Type().AssignableTo(...)` — Go's own relation — does NOT fix that row and DOES break
-    // TestArrayOfGenericAlg (measured: 48 -> 49, 0 fixed, 1 broken), so the bridge's AssignableTo is
-    // not a drop-in here. The real correction is in the shared helper's unwrap arm, which is
-    // corpus-wide and wants its own sizing pass and its own canaries.
+    // Go applies ASSIGNABILITY here, which is stricter than what TryMarshalAssignable accepts: that
+    // helper is ALSO the conversion path, and Go's Convert admits two DIFFERENT named types with
+    // identical underlying (`type A int` → `type B int`) while assignment does not — a 70,071-admit
+    // census over this suite found the helper's arms 99.99% correct-Go conversions with exactly ONE
+    // assignment-wrong admit, and it is THIS site (`type S string` key into a `string`-keyed map).
+    // So the fix is the caller-side assignment gate below, not a change to the shared helper (which
+    // would refuse 70k legal conversions) and NOT the bridge's Type.AssignableTo (measured wrong at
+    // this site: 48 → 49, 0 fixed / 1 broken — it carries interface/conversion logic this does not
+    // want). See the board's unwrap-arm disposition (2026-09-02).
+    //
+    // The rule, narrowly: two DIFFERENT Go-NAMED types are never assignable (identity passes; a
+    // named↔unnamed pair passes and is left to the helper's named/unnamed arms; an INTERFACE
+    // destination passes and is left to the helper's interface arm, since a concrete type IS
+    // assignable to an interface it satisfies). A predeclared type like `string` is NAMED (spec).
+    if (isBothNamedMismatch(GoReflect.GoDynamicTypeOf(key.live!), keyType)) {
+        throw panic("reflect.Value.MapIndex: value of type " + GoReflect.GoTypeName(key.live?.GetType()) +
+                    " is not assignable to type " + GoReflect.GoTypeName(keyType));
+    }
     if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k)) {
         // Go's own text, from assignTo: "value of type", not "key of type".
         throw panic("reflect.Value.MapIndex: value of type " + GoReflect.GoTypeName(key.live?.GetType()) +
@@ -1523,6 +1530,16 @@ public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
     System.Type keyType = GoReflect.KeyType(st)!;
     System.Type elemType = GoReflect.ElementType(st)!;
     bool nilMap = liveMap is null || (liveMap is IMap m && m.IsNil);
+
+    // Go checks the KEY's assignability FIRST — `key.assignTo(...)` runs ahead of both the
+    // delete/assign split and the nil-map panic — so a wrong-typed key on a nil map answers "not
+    // assignable", never "assignment to entry in nil map". The sibling of MapIndex's gate, and the
+    // same census-derived predicate: two different Go-named types (TestMap's second shouldPanic
+    // row). A VALID key type is untouched, so a legal delete on a nil map stays legal (TestNilMap).
+    if (isBothNamedMismatch(GoReflect.GoDynamicTypeOf(key.live!), keyType)) {
+        throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
+                    " is not assignable to type " + GoReflect.GoTypeName(keyType));
+    }
 
     // Go puts TWO operations behind this one signature: a ZERO elem Value DELETES the key, anything
     // else assigns it. reflect has no Value.DeleteMapIndex, so this is the only way it can delete.
@@ -2826,6 +2843,19 @@ public static ΔType SliceOf(ΔType t) {
 // Note this is not a shortcut past the lookup: Go's own typesByString is documented to return
 // nothing ("It may be empty"), and every caller is written to mint on that miss. The managed
 // runtime simply misses always, because it has no ahead-of-time type table to hit.
+
+// isBothNamedMismatch is the one-row assignment-caller predicate the unwrap-arm census produced:
+// the exact case Go's assignment rule refuses that the shared marshalling helper (which is also the
+// conversion path) admits — two DIFFERENT Go-NAMED types. It answers TRUE only there, so an
+// identity pair, a named↔unnamed pair, and an interface destination all pass through to the helper
+// unchanged. Kept deliberately narrow — no interface-satisfaction or conversion logic — because
+// that breadth is exactly what made the bridge's Type.AssignableTo the wrong tool here.
+private static bool isBothNamedMismatch(System.Type srcType, System.Type dstType) {
+    if (srcType == dstType || dstType.IsInterface) {
+        return false;
+    }
+    return GoReflect.HasGoName(srcType) && GoReflect.HasGoName(dstType);
+}
 
 // Swapper returns a function that swaps the elements in the provided slice.
 //
