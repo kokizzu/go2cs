@@ -319,7 +319,105 @@ public static partial class GoReflect
             }
         }
 
+        // Go's struct named/unnamed assignability: two struct types with IDENTICAL underlying
+        // (same fields — name, managed type, tag, embeddedness, in declaration order) are
+        // assignable when at least one side is unnamed. A struct reaches HERE rather than the
+        // wrapper arm above because it has a FIELD constructor, not a single-argument wrapper
+        // constructor, so wrapperConstructorOf is null and every arm to this point missed it.
+        // reflect's TestMakeFuncValidReturnAssignments — an unnamed struct{a,b,c int} returned
+        // into a named T slot — is the measured consumer; a census over the reflect suite
+        // (569,986 marshalling calls) found EXACTLY ONE such pair and ZERO both-named admits in
+        // the struct space, so the rule stays narrow: genuine STRUCT kind only (slices and Complex
+        // are value-types too, but convert through the wrapper arm above), identical underlying, at
+        // least one side unnamed. Two DIFFERENT NAMED structs match neither the unnamed clause here
+        // nor any arm above, which is Go-correct (the invalid direction stays rejected — reflect's
+        // TestMakeFuncInvalidReturnAssignments' U->T still panics).
+        if (KindOf(dynamicSrc.GetType()) == Struct && KindOf(dstType) == Struct &&
+            (!HasGoName(dynamicSrc.GetType()) || !HasGoName(dstType)) &&
+            haveIdenticalGoStructLayout(dynamicSrc.GetType(), dstType) &&
+            tryCopyGoStructFields(dynamicSrc, dstType, out marshalled))
+        {
+            return true;
+        }
+
         return false;
+    }
+
+    // Go's haveIdenticalUnderlyingType for two struct types, over the bridge's own field
+    // projection (GoFields, which keeps an embed as a single embedded field exactly as Go's
+    // direct-field walk does): same field count, each field identical by name, managed type, tag
+    // and embeddedness, in order. Stricter than Go only in comparing the managed field TYPE by
+    // identity rather than recursively — which cannot OVER-admit (a genuinely identical Go layout
+    // emits identical managed field types), and the census confirmed the one suite consumer is
+    // admitted with nothing else moving.
+    private static bool haveIdenticalGoStructLayout(Type a, Type b)
+    {
+        if (a == b)
+            return true;
+
+        GoFieldInfo[] fa = GoFields(a), fb = GoFields(b);
+
+        if (fa.Length != fb.Length)
+            return false;
+
+        bool anyUnexported = false;
+
+        for (int i = 0; i < fa.Length; i++)
+        {
+            if (fa[i].Name != fb[i].Name || fa[i].Type != fb[i].Type ||
+                fa[i].Tag != fb[i].Tag || fa[i].Embedded != fb[i].Embedded)
+                return false;
+
+            if (!fa[i].Exported)
+                anyUnexported = true;
+        }
+
+        // Go's haveIdenticalUnderlyingType folds each UNEXPORTED field's declaring package into its
+        // identity: an unexported field's PkgPath IS its struct's import path (value_impl.cs mints a
+        // field descriptor exactly so — `f.Exported ? "" : GoPackagePath(st)`). Two structs whose
+        // field names and types match but which carry a matching UNEXPORTED field from DIFFERENT
+        // packages are therefore NOT identical. reflect's TestUnaddressableField is the measured
+        // consumer of this clause the other way round: it sets an unnamed `struct{buf []byte}` in
+        // reflect_test from a `reflect.Buffer` whose `buf` is reflect's own, and Go REFUSES the Set
+        // — so omitting this check wrongly ADMITTED it and moved a second row. An exported-only
+        // layout is package-independent (an exported field's PkgPath is ""), so the check is gated
+        // on there being an unexported field at all.
+        if (anyUnexported && GoPackagePath(a) != GoPackagePath(b))
+            return false;
+
+        return true;
+    }
+
+    // Field-copy construction for an identical-underlying struct assignment: a fresh dst instance
+    // carrying every field from src by name. A value-type struct boxes through Activator, so the
+    // sets land on the box this returns; src and dst share managed field names because the same
+    // converter emitted both, so a name miss means the layouts were not identical after all.
+    private static bool tryCopyGoStructFields(object src, Type dstType, out object? marshalled)
+    {
+        marshalled = null;
+
+        object? dst = Activator.CreateInstance(dstType);
+
+        if (dst is null)
+            return false;
+
+        Type srcType = src.GetType();
+
+        foreach (FieldInfo df in dstType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (df.Name.Contains("k__BackingField", StringComparison.Ordinal))
+                continue;
+
+            FieldInfo? sf = srcType.GetField(df.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+            if (sf is null)
+                return false;
+
+            df.SetValue(dst, sf.GetValue(src));
+        }
+
+        marshalled = dst;
+        return true;
     }
 
     // ==== FABRICATION — producing a value of a type from nothing ====
