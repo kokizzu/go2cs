@@ -832,6 +832,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckLibraryImportPartial() => CheckTarget("LibraryImportPartial");
 
     [TestMethod]
+    public void CheckLiftAccessibilityTier() => CheckTarget("LiftAccessibilityTier");
+
+    [TestMethod]
     public void CheckLiftedLocalTypes() => CheckTarget("LiftedLocalTypes");
 
     [TestMethod]
