@@ -80,6 +80,14 @@ public static ж<Conn> Client(net.Conn conn, ж<Config> Ꮡconfig) {
     internal ж<Config> config;
 }
 
+// Go method set entry for the promoted 'Listener.Addr()' - provided ONLY by the embedded
+// interface field in *listener's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr Addr(this listener recvᴛ) => recvᴛ.Listener.Addr();
+
+// Go method set entry for the promoted 'Listener.Close()' - provided ONLY by the embedded
+// interface field in *listener's method set; see the pointer-only satisfaction record.
+internal static error Close(this listener recvᴛ) => recvᴛ.Listener.Close();
+
 // Accept waits for and returns the next incoming TLS connection.
 // The returned connection is of type *Conn.
 [GoRecv] internal static (net.Conn, error) Accept(this ref listener l) {

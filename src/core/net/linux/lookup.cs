@@ -310,6 +310,18 @@ public static (slice<netipꓸAddr>, error) LookupNetIP(this ж<Resolver> Ꮡr, c
     internal context.Context lookupValues;
 }
 
+// Go method set entry for the promoted 'Context.Deadline()' - provided ONLY by the embedded
+// interface field in *onlyValuesCtx's method set; see the pointer-only satisfaction record.
+internal static (time.Time, bool) Deadline(this onlyValuesCtx recvᴛ) => recvᴛ.Context.Deadline();
+
+// Go method set entry for the promoted 'Context.Done()' - provided ONLY by the embedded
+// interface field in *onlyValuesCtx's method set; see the pointer-only satisfaction record.
+internal static /*<-*/channel<EmptyStruct> Done(this onlyValuesCtx recvᴛ) => recvᴛ.Context.Done();
+
+// Go method set entry for the promoted 'Context.Err()' - provided ONLY by the embedded
+// interface field in *onlyValuesCtx's method set; see the pointer-only satisfaction record.
+internal static error Err(this onlyValuesCtx recvᴛ) => recvᴛ.Context.Err();
+
 internal static context.Context _ᴛ1ʗ = new onlyValuesCtxжContext(((ж<onlyValuesCtx>)nil));
 
 // Value performs a lookup if the original context hasn't expired.

@@ -3990,6 +3990,14 @@ internal static void WriteHeader(this ж<timeoutWriter> Ꮡtw, nint code) {
     internal error closeErr;
 }
 
+// Go method set entry for the promoted 'Listener.Accept()' - provided ONLY by the embedded
+// interface field in *onceCloseListener's method set; see the pointer-only satisfaction record.
+internal static (net.Conn, error) Accept(this onceCloseListener recvᴛ) => recvᴛ.Listener.Accept();
+
+// Go method set entry for the promoted 'Listener.Addr()' - provided ONLY by the embedded
+// interface field in *onceCloseListener's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr Addr(this onceCloseListener recvᴛ) => recvᴛ.Listener.Addr();
+
 internal static error Close(this ж<onceCloseListener> Ꮡoc) {
     ref var oc = ref Ꮡoc.DerefOrNull();
 
@@ -4058,6 +4066,26 @@ internal static void ServeHTTP(this initALPNRequest h, ResponseWriter rw, ж<Req
     internal @string name;
     public net_package.Conn Conn;
 }
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *loggingConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this loggingConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *loggingConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this loggingConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *loggingConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this loggingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *loggingConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this loggingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *loggingConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this loggingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
 
 internal static ж<sync.Mutex> ᏑuniqNameMu = new StandardBox<sync.Mutex>(default(sync.Mutex));
 internal static ref sync.Mutex uniqNameMu => ref ᏑuniqNameMu.Value;

@@ -419,6 +419,18 @@ internal static Func<map<@string, any>, @string> inGroup(@string name, Func<map<
     internal Action<ж<slog.Record>> mod;
 }
 
+// Go method set entry for the promoted 'Handler.Enabled()' - provided ONLY by the embedded
+// interface field in *wrapper's method set; see the pointer-only satisfaction record.
+internal static bool Enabled(this wrapper recvᴛ, context.Context arg1ᴛ, slogꓸLevel arg2ᴛ) => recvᴛ.Handler.Enabled(arg1ᴛ, arg2ᴛ);
+
+// Go method set entry for the promoted 'Handler.WithAttrs()' - provided ONLY by the embedded
+// interface field in *wrapper's method set; see the pointer-only satisfaction record.
+internal static slogꓸHandler WithAttrs(this wrapper recvᴛ, slice<slog.Attr> attrs) => recvᴛ.Handler.WithAttrs(attrs);
+
+// Go method set entry for the promoted 'Handler.WithGroup()' - provided ONLY by the embedded
+// interface field in *wrapper's method set; see the pointer-only satisfaction record.
+internal static slogꓸHandler WithGroup(this wrapper recvᴛ, @string name) => recvᴛ.Handler.WithGroup(name);
+
 [GoRecv] internal static error Handle(this ref wrapper h, context.Context ctx, slog.Record rʗp) {
     ref var r = ref heap(rʗp.ΔClone(), out var Ꮡr);
 
