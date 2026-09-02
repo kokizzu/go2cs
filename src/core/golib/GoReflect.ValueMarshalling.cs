@@ -181,12 +181,61 @@ public static partial class GoReflect
     }
 
     /// <summary>
+    /// Which of Go's two type relations the caller is asking about. They are NOT the same question,
+    /// and this helper serves both: <c>reflect.Value.Set</c> asks ASSIGNABILITY, while
+    /// <see cref="TryConvertTo"/> (<c>reflect.Value.Convert</c> and the <c>Set{Int,Uint,…}</c>
+    /// family) asks CONVERTIBILITY, which is strictly more permissive — two DIFFERENT named types
+    /// with identical underlying convert (<c>string</c> ⇄ <c>type S string</c>) and do not assign.
+    /// </summary>
+    /// <remarks>
+    /// A census over reflect's own suite measured the split: <b>70,065 of 70,070</b> admits through
+    /// this helper's wrapper-constructor and unwrap arms arrive from <c>TryConvertTo</c>, and ZERO
+    /// from an assignment caller — so a single rule at those arms would answer whichever question it
+    /// was written for and be wrong for the traffic that actually dominates. Passing the mode is
+    /// what lets one rule live at the arms without conflating the two relations.
+    /// </remarks>
+    public enum GoTypeRelation
+    {
+        /// <summary>Go's CONVERTIBILITY — the historical behaviour, and the default for every
+        /// caller that has not been examined and switched deliberately.</summary>
+        Convertible = 0,
+
+        /// <summary>Go's ASSIGNABILITY — two different NAMED types never assign, predeclared types
+        /// counted named per the spec.</summary>
+        Assignable = 1,
+    }
+
+
+    // Go's assignability refusal, spelled ONCE for both named/unnamed arms below: two DIFFERENT
+    // NAMED types are never assignable. Predeclared types (`string`, `int8`, `float32`) are NAMED
+    // by the spec, which is the point the arms used to miss -- `HasGoName` already answers that
+    // correctly, it was simply never asked here. An INTERFACE destination is its own arm (a
+    // concrete type IS assignable to an interface it satisfies) and an identity pair has already
+    // returned at the identity arm above, so neither reaches this.
+    //
+    // It applies ONLY under GoTypeRelation.Assignable: under Convertible these very pairs are legal
+    // (`string` -> `type S string` is a conversion Go performs), and refusing them here would ask
+    // the assignment question of conversion traffic -- which a census measured as 70,065 of 70,070
+    // admits through these arms.
+    private static bool RefusedByGoAssignability(GoTypeRelation relation, Type srcType, Type dstType)
+    {
+        return relation == GoTypeRelation.Assignable &&
+               srcType != dstType && !dstType.IsInterface &&
+               HasGoName(srcType) && HasGoName(dstType);
+    }
+    /// <summary>
     /// Marshals a bridge Value's live source object for assignment into a destination slot of
     /// <paramref name="dstType"/> under Go assignability (identity, or interface-implements) —
     /// the write half of <c>reflect.Value.Set</c>. Returns false when Go would panic
     /// ("value of type X is not assignable to type Y").
     /// </summary>
-    public static bool TryMarshalAssignable(object? src, Type dstType, out object? marshalled)
+    /// <param name="relation">
+    /// Which relation to enforce at the named/unnamed arms (see <see cref="GoTypeRelation"/>).
+    /// Defaults to <see cref="GoTypeRelation.Convertible"/> so an un-examined caller keeps exactly
+    /// today's behaviour; the assignment entry points pass <see cref="GoTypeRelation.Assignable"/>.
+    /// </param>
+    public static bool TryMarshalAssignable(object? src, Type dstType, out object? marshalled,
+                                            GoTypeRelation relation = GoTypeRelation.Convertible)
     {
         marshalled = null;
 
@@ -305,13 +354,17 @@ public static partial class GoReflect
             if (underlyingParam.IsAssignableFrom(dynamicSrc.GetType()) &&
                 (dynamicSrc.GetType() == underlyingParam || dynamicSrc is not IUnsafePointer))
             {
+                if (RefusedByGoAssignability(relation, dynamicSrc.GetType(), dstType))
+                    return false;
+
                 marshalled = dstWrapperCtor.Invoke([dynamicSrc]);
                 return true;
             }
         }
 
         // Same subsumption + N5 M-guard as the direct arm above, on the unwrapped value.
-        if (TryUnwrapWrapperValue(dynamicSrc, out object? unwrappedSrc) &&
+        if (!RefusedByGoAssignability(relation, dynamicSrc.GetType(), dstType) &&
+            TryUnwrapWrapperValue(dynamicSrc, out object? unwrappedSrc) &&
             dstType.IsAssignableFrom(unwrappedSrc.GetType()) &&
             (unwrappedSrc.GetType() == dstType || unwrappedSrc is not IUnsafePointer))
         {

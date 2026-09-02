@@ -1352,7 +1352,7 @@ public static ΔValue MapIndex(this ΔValue v, ΔValue key) {
         throw panic("reflect.Value.MapIndex: value of type " + GoReflect.GoTypeName(key.live?.GetType()) +
                     " is not assignable to type " + GoReflect.GoTypeName(keyType));
     }
-    if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k)) {
+    if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k, GoReflect.GoTypeRelation.Assignable)) {
         // Go's own text, from assignTo: "value of type", not "key of type".
         throw panic("reflect.Value.MapIndex: value of type " + GoReflect.GoTypeName(key.live?.GetType()) +
                     " is not assignable to type " + GoReflect.GoTypeName(keyType));
@@ -1388,7 +1388,7 @@ public static void Set(this ΔValue v, ΔValue x) {
     if (dstType is null || v.addrBox is null) {
         throw panic("reflect: Set using unaddressable value");
     }
-    if (!GoReflect.TryMarshalAssignable(x.live, dstType, out object? marshalled)) {
+    if (!GoReflect.TryMarshalAssignable(x.live, dstType, out object? marshalled, GoReflect.GoTypeRelation.Assignable)) {
         throw panic("reflect.Set: value of type " + GoReflect.GoTypeName(x.live?.GetType()) +
                     " is not assignable to type " + GoReflect.GoTypeName(dstType));
     }
@@ -1646,7 +1646,7 @@ public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
         if (nilMap) {
             return;
         }
-        if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? dk)) {
+        if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? dk, GoReflect.GoTypeRelation.Assignable)) {
             throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
                         " is not assignable to type " + GoReflect.GoTypeName(keyType));
         }
@@ -1657,11 +1657,11 @@ public static void SetMapIndex(this ΔValue v, ΔValue key, ΔValue elem) {
     if (nilMap) {
         throw panic("assignment to entry in nil map");
     }
-    if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k)) {
+    if (!GoReflect.TryMarshalAssignable(key.live, keyType, out object? k, GoReflect.GoTypeRelation.Assignable)) {
         throw panic("reflect.Value.SetMapIndex: key of type " + GoReflect.GoTypeName(key.live?.GetType()) +
                     " is not assignable to type " + GoReflect.GoTypeName(keyType));
     }
-    if (!GoReflect.TryMarshalAssignable(elem.live, elemType, out object? e)) {
+    if (!GoReflect.TryMarshalAssignable(elem.live, elemType, out object? e, GoReflect.GoTypeRelation.Assignable)) {
         throw panic("reflect.Value.SetMapIndex: value of type " + GoReflect.GoTypeName(elem.live?.GetType()) +
                     " is not assignable to type " + GoReflect.GoTypeName(elemType));
     }
@@ -1829,7 +1829,7 @@ private static object? marshalCallArg(ΔValue arg, System.Type want) {
 // renderer is what makes a channel send and a call argument box a typed nil the same way.
 private static bool marshalIntoSlot(ΔValue arg, System.Type want, out object? marshalled) {
     object? source = want.IsInterface || want == typeof(object) ? packInterfaceValue(arg) : arg.live;
-    return GoReflect.TryMarshalAssignable(source, want, out marshalled);
+    return GoReflect.TryMarshalAssignable(source, want, out marshalled, GoReflect.GoTypeRelation.Assignable);
 }
 
 // The delegate's raw result as Values typed by the func's STATIC out types — a Go multi-return
