@@ -5702,6 +5702,117 @@ type capabilityGatedDeclaration struct {
 // TestGCMAsm (board: "TestGCMAsm closes as a source-defined platform skip").
 const platformSkipClass = "platform-skip"
 
+// hostFatalClass names a test the converted host cannot RUN AT ALL -- not one whose verdict
+// diverges, but one whose execution takes the whole process down, so every test after it in its
+// phase is lost too. runtime/debug's TestPanicOnFault is the first member: it mmaps a PROT_READ
+// page and writes to it, expecting SetPanicOnFault to convert the hardware fault into a
+// recoverable panic; Go installs a SIGSEGV handler, the CLR on Linux has no SEH equivalent, and
+// the process dies -- costing that row NINE verdicts rather than one.
+//
+// It is the one class that CHANGES WHAT RUNS rather than labelling what a run produced. The
+// named test is withdrawn from BOTH sides by name (`go test -skip` and the host's own `--skip`,
+// one string handed to each) so the comparison stays symmetric, and it is counted in DISCLOSED
+// -- never hidden. A bankable exclusion differs from the gated census the doctrine forbids in
+// exactly this: it is named in the committed manifest with a class and a reason, auditable in
+// the same place as every other disclosure, and it shows up in the row's published counts.
+//
+// It is EXCLUDED from matchTerminalStatuses on purpose (see the arm there): a host-fatal test
+// produces no verdict on either side, so there is no status pair for it to absorb, and admitting
+// it as one would make it a second way to disclose a failure -- the laundering the ruling forbids.
+const hostFatalClass = "host-fatal"
+
+// hostFatalSkipExpression builds the ONE regexp handed verbatim to both sides. Anchored per name
+// so `TestFoo` cannot withdraw `TestFooBar`, and sorted so the string is stable run to run (a
+// reader comparing two logs should see the same expression, not a map-iteration reshuffle).
+// Returns "" when the manifest names no host-fatal test, which is every package but one.
+func hostFatalSkipExpression(disclosures map[string]testDisclosure) string {
+	var names []string
+	for name, d := range disclosures {
+		if d.Class == hostFatalClass {
+			names = append(names, regexp.QuoteMeta(name))
+		}
+	}
+	if len(names) == 0 {
+		return ""
+	}
+	sort.Strings(names)
+	return "^(?:" + strings.Join(names, "|") + ")$"
+}
+
+// hostFatalMintViolations enforces the class's mint rule (coordinator ruling, 2026-09-02): a
+// host-fatal entry must NOT name a test that any committed proof page records as a MATCHING
+// verdict. The rule exists because this class is the only one that changes what RUNS, and the
+// manifest is shared across platforms -- so an entry naming a test that exists and agrees on
+// another flavour would apply the skip there too and convert a working row into a disclosed one,
+// with both sides agreeing because both were told to skip. Silent shrinkage of a banked row.
+//
+// Checked from COMMITTED DATA rather than a cross-platform run: docs/validation/current/*.md is
+// the corpus's own record of what agreed where, it is in the repository already, and one pass over
+// it costs nothing. runtime/debug's TestPanicOnFault passes the rule only because panic_test.go is
+// //go:build unix -- the Windows page lists nine tests and never mentions it -- which is a fact
+// about that test rather than a property of the class, and precisely why the rule is mechanical.
+//
+// A `goos` qualifier on the entry would be more expressive; it is deliberately NOT built until a
+// real entry needs one. Refusing is enough while the answer is always "no such row".
+func hostFatalMintViolations(outputPath string, disclosures map[string]testDisclosure) []string {
+	fatal := map[string]bool{}
+	for name, d := range disclosures {
+		if d.Class == hostFatalClass {
+			fatal[name] = true
+		}
+	}
+	if len(fatal) == 0 {
+		return nil
+	}
+	root := findGo2CSRootAbove(outputPath)
+	if root == "" {
+		return nil
+	}
+	dir := filepath.Join(filepath.Dir(root), "docs", validationDocsDirName, validationCurrentDirName)
+	pages, err := filepath.Glob(filepath.Join(dir, "*.md"))
+	if err != nil || len(pages) == 0 {
+		// No committed pages to check against is not a violation -- a fresh clone or a staging
+		// root legitimately has none. The rule can only refuse on POSITIVE evidence of agreement.
+		return nil
+	}
+	row := regexp.MustCompile("^\\|\\s*`([^`]+)`\\s*\\|([^|]*)\\|([^|]*)\\|")
+	var violations []string
+	for _, page := range pages {
+		data, err := os.ReadFile(page)
+		if err != nil {
+			continue
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			m := row.FindStringSubmatch(strings.TrimSpace(line))
+			if m == nil || !fatal[m[1]] {
+				continue
+			}
+			if strings.TrimSpace(m[2]) == strings.TrimSpace(m[3]) {
+				violations = append(violations, fmt.Sprintf(
+					"%s is disclosed %s, but %s records it as a MATCHING verdict (%s/%s): excluding it "+
+						"would withdraw a row that platform runs successfully",
+					m[1], hostFatalClass, filepath.Base(page), strings.TrimSpace(m[2]), strings.TrimSpace(m[3])))
+			}
+		}
+	}
+	sort.Strings(violations)
+	return violations
+}
+
+// hostFatalNames lists the excluded tests for the DISCLOSED column, sorted. They appear in
+// neither side's results by construction, so without this the counts would silently shrink --
+// which is the hidden-test outcome the ruling forbids.
+func hostFatalNames(disclosures map[string]testDisclosure) []string {
+	var out []string
+	for name, d := range disclosures {
+		if d.Class == hostFatalClass {
+			out = append(out, name+" ("+hostFatalClass+"): "+d.Reason)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
 // testDisclosure pins one test-level disclosed divergence — extending the declaration-level
 // "disclosed-unsupported" vocabulary (req §2.7) to individual test outcomes. A hand-owned,
 // repo-committed manifest beside the converted package lists tests whose Go=pass/C#=fail
@@ -5802,8 +5913,17 @@ func loadTestDisclosures(outputPath string) (map[string]testDisclosure, []string
 
 	disclosures := make(map[string]testDisclosure, len(manifest.Disclosures))
 	for _, disclosure := range manifest.Disclosures {
-		if disclosure.Name == "" || disclosure.Class == "" || disclosure.Signature == "" || disclosure.Reason == "" {
-			return nil, nil, fmt.Errorf("disclosure entries require name, class, signature, and reason: %+v", disclosure)
+		// The signature requirement is CLASS-AWARE, and hostFatalClass is the one exemption: its
+		// test is withdrawn from both command lines and produces no verdict on either side, so
+		// there is no captured output for a signature to pin. Requiring one would mean inventing a
+		// string nothing can ever match -- worse than useless, because it would read as a pin.
+		// Every other class keeps the requirement: the signature IS the integrity guard that stops
+		// a disclosure absorbing a regression beyond the documented divergence.
+		if disclosure.Name == "" || disclosure.Class == "" || disclosure.Reason == "" {
+			return nil, nil, fmt.Errorf("disclosure entries require name, class, and reason: %+v", disclosure)
+		}
+		if disclosure.Signature == "" && disclosure.Class != hostFatalClass {
+			return nil, nil, fmt.Errorf("disclosure entries require a signature except for %s: %+v", hostFatalClass, disclosure)
 		}
 		if _, exists := disclosures[disclosure.Name]; exists {
 			return nil, nil, fmt.Errorf("duplicate disclosure for %s", disclosure.Name)
@@ -6026,7 +6146,14 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 			// mismatch even if the failure text happens to contain the pinned skip message.
 			// Without this the class would be a second way to disclose a failure, which is the
 			// laundering the ruling forbids.
-			if disclosure, ok := disclosures[name]; ok && disclosure.Class != platformSkipClass &&
+			//
+			// hostFatalClass is excluded for a DIFFERENT reason and it is worth stating separately:
+			// that class withdraws its test from both command lines, so it produces no verdict on
+			// either side and there is no status pair here for it to absorb. If one ever reaches
+			// this arm the exclusion did not take -- the test RAN -- and reading it as disclosed
+			// would hide exactly that. It must fall through to a mismatch and be seen.
+			if disclosure, ok := disclosures[name]; ok &&
+				disclosure.Class != platformSkipClass && disclosure.Class != hostFatalClass &&
 				goStatus == "pass" && csStatus == "fail" {
 				if strings.Contains(csOutputs[name], disclosure.Signature) {
 					disclosed = append(disclosed, name)
@@ -6327,9 +6454,28 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	// composed here - the two command lines carry the SAME string, verifiable by eye in the log,
 	// rather than two expressions someone would have to prove equivalent. A gated census is
 	// DIAGNOSTIC ONLY: the row banks from an ungated run, never from this one.
+	// The disclosure manifest is read BEFORE either child runs, because a host-fatal entry has to
+	// withdraw its test from BOTH command lines rather than be reclassified after the fact. Every
+	// other class labels a verdict a run produced; this one decides what the run contains.
+	disclosures, disclosureNotes, disclosureErr := loadTestDisclosures(outputPath)
+	if violations := hostFatalMintViolations(outputPath, disclosures); len(violations) > 0 {
+		// Refused BEFORE either child runs, so a bad entry cannot quietly withdraw a row that some
+		// platform passes. Fatal rather than a warning: the whole point of the class is that it
+		// changes what runs, and a warning would let the withdrawal happen anyway.
+		return fmt.Errorf("host-fatal disclosure refused at mint:\n  %s", strings.Join(violations, "\n  "))
+	}
+	hostFatalSkip := hostFatalSkipExpression(disclosures)
+
 	goArgs := []string{"test", "-json", "-count=1", "-timeout", options.testTimeout.String()}
 	if options.testFilter != "" {
 		goArgs = append(goArgs, "-run", options.testFilter)
+	}
+	// Handed VERBATIM to both sides, exactly as -test-filter is: the SAME string on the two command
+	// lines, verifiable by eye in the log, rather than two expressions someone would have to prove
+	// equivalent. Go's -skip and the host's --skip compile it identically (same `/` split, same
+	// per-segment regexes), which is what keeps the two runs answering the same question.
+	if hostFatalSkip != "" {
+		goArgs = append(goArgs, "-skip", hostFatalSkip)
 	}
 	goArgs = append(goArgs, ".")
 	goOutput, goErr := runCommandWithTimeout(testChildTimeout(options), inputPath, options, "go", goArgs...)
@@ -6349,6 +6495,9 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	if options.testFilter != "" {
 		csArgs = append(csArgs, "--run", options.testFilter)
 	}
+	if hostFatalSkip != "" {
+		csArgs = append(csArgs, "--skip", hostFatalSkip)
+	}
 	csArgs = append(csArgs,
 		"--result", filepath.Join(outputPath, "go2cs_test_results.json"), "--junit", filepath.Join(outputPath, "go2cs_test_results.xml"))
 	csOutput, csErr := runCommandWithTimeoutEnv(testChildTimeout(options), outputPath, options, testHostRunEnv(options), publishedTestHostPath(outputPath, testProject), csArgs...)
@@ -6356,7 +6505,6 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	goResults := terminalTestResults(goOutput)
 	csResults := terminalTestResults(csOutput)
 	csOutputs := terminalTestOutputs(csOutput)
-	disclosures, disclosureNotes, disclosureErr := loadTestDisclosures(outputPath)
 	var manifest testManifest
 	var censusGaps []string
 	var gated []capabilityGatedDeclaration
@@ -6535,6 +6683,13 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		result.Matched = false
 		result.Errors = append(result.Errors, violation)
 	}
+
+	// The host-fatal names appear in NEITHER side's results, by construction -- they were withdrawn
+	// from both command lines. Without adding them here the counts would silently shrink, which is
+	// the hidden-test outcome the ruling forbids: runtime/debug banks 4 + 6, never 4 + 5 with the
+	// test quietly gone. Appended after the comparison so they cannot influence matching.
+	result.Disclosed = append(result.Disclosed, hostFatalNames(disclosures)...)
+	sort.Strings(result.Disclosed)
 
 	if !result.Matched && result.Status == "validated" {
 		result.Status = "failing"

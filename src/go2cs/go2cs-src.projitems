@@ -87,6 +87,7 @@
     <None Include="$(MSBuildThisFileDirectory)go.sum" />
     <None Include="$(MSBuildThisFileDirectory)goFrameOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)HashSet.go" />
+    <None Include="$(MSBuildThisFileDirectory)hostFatalClass_test.go" />
     <None Include="$(MSBuildThisFileDirectory)hoistedLiteralOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)identifierNaming.go" />
     <None Include="$(MSBuildThisFileDirectory)iifeOperations.go" />

@@ -50,12 +50,19 @@ internal sealed class TestOptions
     public string? JUnitFile { get; private set; }
     private Regex[]? Filters { get; set; }
 
+    // -skip is -run's inverse and MUST compile identically: same `/` split, same per-segment regexes.
+    // Go documents it as "run only those tests that do NOT match", "like for -run". If the two sides
+    // compiled it differently the converted host would withdraw a different set than the `go test`
+    // oracle handed the same string -- two runs answering different questions with nothing failing.
+    private Regex[]? SkipFilters { get; set; }
+
     // The RAW text of -run and -shuffle, kept beside the compiled forms because TestFlagBridge
     // republishes this run's command line to the converted flag package and a converted test READS
     // it back: os/exec's TestMain gates on flag.Lookup("test.run").Value.String() being empty. A
     // Regex[] cannot answer that question — Regex.ToString() would report the first SEGMENT of a
     // `/`-split pattern — so the value the host was given is what gets carried.
     public string RunPattern { get; private set; } = "";
+    public string SkipPattern { get; private set; } = "";
     public string ShuffleValue { get; private set; } = "off";
 
     /// <summary>
@@ -182,6 +189,13 @@ internal sealed class TestOptions
                     options.Filters = value.Split('/').Select(part =>
                         new Regex(part, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1.0D))).ToArray();
                     break;
+                case "skip":
+                case "test.skip":
+                    value ??= NextValue(args, ref index, name);
+                    options.SkipPattern = value;
+                    options.SkipFilters = value.Split('/').Select(part =>
+                        new Regex(part, RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1.0D))).ToArray();
+                    break;
                 case "count":
                 case "test.count":
                     value ??= NextValue(args, ref index, name);
@@ -235,16 +249,22 @@ internal sealed class TestOptions
             JUnitFile = Path.GetFullPath(Path.Combine(baseDirectory, JUnitFile));
     }
 
-    public bool ShouldRun(string fullName)
+    public bool ShouldRun(string fullName) =>
+        Matches(Filters, fullName) && !(SkipFilters is not null && Matches(SkipFilters, fullName));
+
+    // ONE matcher for both directions on purpose. -run and -skip differ only in the SIGN of the
+    // answer, so sharing the segment walk is what keeps them from drifting -- a -skip matching
+    // subtests differently from -run would withdraw a different set on each side of the comparison.
+    private static bool Matches(Regex[]? filters, string fullName)
     {
-        if (Filters is null)
+        if (filters is null)
             return true;
 
         string[] nameParts = fullName.Split('/');
-        int count = Math.Min(nameParts.Length, Filters.Length);
+        int count = Math.Min(nameParts.Length, filters.Length);
         for (int i = 0; i < count; i++)
         {
-            if (!Filters[i].IsMatch(nameParts[i]))
+            if (!filters[i].IsMatch(nameParts[i]))
                 return false;
         }
         return true;
