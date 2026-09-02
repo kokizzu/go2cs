@@ -695,49 +695,9 @@ public static error /*err*/ SetsockoptIPMreqn(nint fd, nint level, nint opt, ж<
     return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡmreq), /* unsafe.Sizeof(*mreq) */ (uintptr)12);
 }
 
-internal static (nint n, nint oobn, nint recvflags, error err) recvmsgRaw(nint fd, slice<byte> p, slice<byte> oob, nint flags, ж<RawSockaddrAny> Ꮡrsa) {
-    nint n = default!;
-    nint oobn = default!;
-    nint recvflags = default!;
-    error err = default!;
+// go2cs generated this placeholder — func recvmsgRaw is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    ref var msg = ref heap(new Msghdr(), out var Ꮡmsg);
-    msg.Name = Ꮡrsa.Reinterpret<RawSockaddrAny, byte>();
-    msg.Namelen = (uint32)SizeofSockaddrAny;
-    ref var iov = ref heap(new Iovec(), out var Ꮡiov);
-    if (len(p) > 0) {
-        iov.Base = Ꮡ(p, 0);
-        iov.SetLen(len(p));
-    }
-    ref var dummy = ref heap(new byte(), out var Ꮡdummy);
-    if (len(oob) > 0) {
-        if (len(p) == 0) {
-            nint sockType = default!;
-            (sockType, err) = GetsockoptInt(fd, SOL_SOCKET, SO_TYPE);
-            if (err != default!) {
-                return (n, oobn, recvflags, err);
-            }
-            // receive at least one normal byte
-            if (sockType != SOCK_DGRAM) {
-                iov.Base = Ꮡdummy;
-                iov.SetLen(1);
-            }
-        }
-        msg.Control = Ꮡ(oob, 0);
-        msg.SetControllen(len(oob));
-    }
-    msg.Iov = Ꮡiov;
-    msg.Iovlen = 1;
-    {
-        (n, err) = recvmsg(fd, Ꮡmsg, flags); if (err != default!) {
-            return (n, oobn, recvflags, err);
-        }
-    }
-    oobn = (nint)msg.Controllen;
-    recvflags = (nint)msg.Flags;
-    return (n, oobn, recvflags, err);
-}
-
+// receive at least one normal byte
 internal static (nint n, error err) sendmsgN(nint fd, slice<byte> p, slice<byte> oob, @unsafe.Pointer ptr, _Socklen salen, nint flags) {
     nint n = default!;
     error err = default!;

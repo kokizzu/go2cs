@@ -424,19 +424,7 @@ public static error /*err*/ Sendmsg(nint fd, slice<byte> p, slice<byte> oob, Soc
     return err;
 }
 
-public static (nint n, error err) SendmsgN(nint fd, slice<byte> p, slice<byte> oob, Sockaddr to, nint flags) {
-    error err = default!;
-
-    @unsafe.Pointer ptr = default!;
-    _Socklen salen = default!;
-    if (to != default!) {
-        (ptr, salen, err) = to.sockaddr();
-        if (err != default!) {
-            return (0, err);
-        }
-    }
-    return sendmsgN(fd, p, oob, ptr, salen, flags);
-}
+// go2cs generated this placeholder — func SendmsgN is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (nint n, error err) sendmsgNInet4(nint fd, slice<byte> p, slice<byte> oob, ж<SockaddrInet4> Ꮡto, nint flags) {
     error err = default!;

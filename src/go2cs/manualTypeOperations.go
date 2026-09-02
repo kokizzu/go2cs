@@ -1294,6 +1294,25 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// goosLinux like the rest of this file's set: writeNativeSockaddr is the linux flavor's
 		// helper, and darwin/windows declare their own Sendto over their own layouts.
 		"Sendto": goosLinux,
+		// The ANCILLARY pair, and the one member of this class whose defect announces itself with a
+		// specific errno rather than as a fault or a wrong answer. Both hand the kernel a MANAGED
+		// Msghdr whose Name/Iov/Control are `ж<T>` OBJECT REFERENCES, and recvmsgRaw is the
+		// corrupting direction -- the kernel WRITES the sender's address and the control data
+		// through two of them, which is Recvfrom's defect with two write targets.
+		//
+		// SendmsgN's tell was measured before either body was written (ScmRightsSeam, control-first):
+		// `msg.Name = (ж<byte>)(uintptr)(ptr)` turns Go's NULL into `new NativeBox<byte>(0)`, an
+		// OBJECT, so the kernel reads a non-NULL msg_name where Go passed none and a CONNECTED
+		// socket answers EISCONN. A nil that stops being nil on the way to the kernel.
+		//
+		// The receive side displaces the RAW helper, which covers Recvmsg, recvmsgInet4 and
+		// recvmsgInet6 with one body. The send side displaces the PUBLIC function, because
+		// sendmsgN's pointer parameter is already a managed address with nothing faithful to
+		// transcribe -- only SendmsgN still holds the typed Sockaddr that writeNativeSockaddr can
+		// re-encode. sendmsgN / sendmsgNInet4 / sendmsgNInet6 stay auto for the sendtoInet4/6
+		// reason: internal/poll reaches the //go:linkname copies, not these.
+		"recvmsgRaw": goosLinux,
+		"SendmsgN":   goosLinux,
 		// The class's remaining LINUX members, closed PROACTIVELY on 2026-08-28 rather than when
 		// reached — the one place this table's per-member-when-reached rule was deliberately not
 		// followed, and the reason is measured. verifyheap on a crashed os/exec host found the
