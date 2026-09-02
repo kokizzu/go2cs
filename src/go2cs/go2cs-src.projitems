@@ -62,6 +62,7 @@
     <None Include="$(MSBuildThisFileDirectory)deadPointerParamAlias_test.go" />
     <None Include="$(MSBuildThisFileDirectory)deferredMarkerOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)deferredMarkers_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)deferredSyscallFunnel_test.go" />
     <None Include="$(MSBuildThisFileDirectory)dependencyGraph.go" />
     <None Include="$(MSBuildThisFileDirectory)dependencyGraph_test.go" />
     <None Include="$(MSBuildThisFileDirectory)diagnosticOutput.go" />

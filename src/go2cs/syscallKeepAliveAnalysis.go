@@ -191,6 +191,40 @@ func (v *Visitor) convSyscallFunnelCall(callExpr *ast.CallExpr) string {
 	return fmt.Sprintf("%s(%s)", funcExpr, strings.Join(args, ", "))
 }
 
+// rejectDeferredSyscallKeepAlive panics if a DEFERRED or SPAWNED funnel call carries a
+// pointer-derived argument — the one funnel shape convCallExpr's general path cannot carry, and
+// the reason that fall-through is a rejection rather than a silent widening.
+//
+// The uintptrkeepalive contract this file implements is STATEMENT-scoped: the ᴋ temps
+// convSyscallFunnelCall hoists are kept alive by drainSyscallKeepAlive, which visitStmt runs
+// immediately after the statement it just converted. Under `defer`/`go` the STATEMENT is the
+// defer/go statement while the CALL runs at unwind (or on another goroutine), so the emitted
+// `GC.KeepAlive(ᴋN)` would fire before the syscall it protects — reintroducing, silently, exactly
+// the lifetime bug the machinery exists to prevent. A defer-scoped keepalive is a different
+// contract (the box must be captured BY the thunk and released after it returns), which is a
+// design, not a patch.
+//
+// Go 1.23.12 contains no such call. Censused 2026-09-02 over the whole GOROOT: exactly two
+// deferred funnel calls exist — runtime/memmove_linux_amd64_test.go:44 (`defer
+// syscall.Syscall(syscall.SYS_MUNMAP, base+off, 65536, 0)`) and race/race_windows_test.go:33
+// (`defer syscall.Syscall(VirtualFree.Addr(), 3, mem, 1<<20, MEM_RELEASE)`) — and neither has a
+// pointer-derived argument; both pass integers only. There are no spawned ones. So the shape is
+// rejected LOUDLY rather than emitted with a keepalive that keeps nothing alive: the same trade
+// convSyscallFunnelCall's own cast-prefix panic already makes one door over, and the panic text
+// names the real remedy rather than the symptom.
+func (v *Visitor) rejectDeferredSyscallKeepAlive(callExpr *ast.CallExpr) {
+	for i, arg := range callExpr.Args {
+		if pointerDerivedArgSource(v.info, arg) == nil {
+			continue
+		}
+
+		panic(fmt.Sprintf(
+			"@rejectDeferredSyscallKeepAlive - deferred/spawned syscall funnel call has pointer-derived argument %d (%s): the uintptrkeepalive contract is statement-scoped, so its GC.KeepAlive would run at the defer/go statement while the syscall itself runs at unwind. Go 1.23.12 contains no call of this shape; carrying one needs a defer-scoped keepalive design (the box captured by the thunk, released after it returns), not an emission",
+			i, v.getPrintedNode(arg),
+		))
+	}
+}
+
 // drainSyscallKeepAlive emits `GC.KeepAlive(temp);` for every temp convSyscallFunnelCall recorded
 // while converting the statement visitStmt just finished, and clears the pending list — called
 // unconditionally after both visitAssignStmt and visitExprStmt so a syscall-funnel call reached
