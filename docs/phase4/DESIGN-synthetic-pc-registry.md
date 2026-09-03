@@ -135,9 +135,15 @@ C2's discriminator is right and its stated *form* needs one correction, which th
 
 ## 6. Census — measured at `ab24c098e`, reproducible
 
+**The predicate, stated first, because getting it wrong is what made this section need a correction.** An occurrence is a CALL SITE when its line is not a `//` comment and not the
+`partial uintptr <name>(` declaration or implementation. "Followed by `(`" is NOT a substitute:
+this corpus writes prose *about* a call site in the call site's own syntax, so a comment can quote
+a call. Both figures below are derived by the one predicate.
+
 ```
-FuncPCABI0        291 sites, 239 distinct arguments
-FuncPCABIInternal  93 sites
+                      raw   comments   decl/impl   CALL SITES
+FuncPCABI0            293       2          2          289      (239 distinct arguments)
+FuncPCABIInternal      95       4          2           89
 cgo_import_dynamic pragmas: 271 (204 distinct names)
 
 by the corrected discriminator, over the 239 distinct arguments:
@@ -155,16 +161,28 @@ funcInfo 66   findfunc 61   CallersFrames 25   runtime.Callers( 16   FuncForPC 1
 class B/C split by stripping `_trampoline` from each distinct `FuncPCABI0` argument and matching
 `<n>` or `libc_<n>` against the pragma-name set.
 
-**Two figures that differ from C2's and are reconciled rather than averaged.** C2 measured 180
-class-B trampoline sites and 95 `FuncPCABIInternal`; this census reads 291 `FuncPCABI0` sites total
-and 93 `FuncPCABIInternal`. The per-package figures agree exactly where they overlap
-(`zsyscall_darwin_amd64` 125, `exec_libc2` 22, `corefoundation` 16, `security` 12), so the
-difference is **scope, not predicate**: C2's 180 counts the syscall/x509 trampolines and excludes
-`runtime/darwin/sys_darwin.cs`'s 51, which are the same class (46 pragmas in that file). The
-`FuncPCABIInternal` 93-vs-95 gap is two sites and is not yet reconciled — **it is recorded as open
-rather than rounded away**, because a two-site gap in a census is exactly where a mis-scoped glob
-hides.
+**The census gap with C2 is CLOSED, and the resolution is that my predicate was wrong.** C2
+measured 95 `FuncPCABIInternal` and decomposed it 95 raw / 91 code / 89 call sites; an earlier
+draft of this section carried **93**, from a paren-based proxy for "is code". Four comment lines
+carry the name and **two of them contain a paren**, so the proxy counted them as code:
 
+```
+internal/abi/funcpc.cs:24        // FuncPCABIInternal returns the entry PC ...        (no paren)
+internal/abi/funcpc_impl.cs:17   // Implementation of FuncPCABIInternal                (no paren)
+runtime/darwin/os_darwin.cs:412  // abi.FuncPCABIInternal(sighandler) matches ...      HAS A PAREN
+runtime/linux/os_linux.cs:503    // abi.FuncPCABIInternal(sighandler) matches ...      HAS A PAREN
+```
+
+C2's decomposition stands. `FuncPCABI0`'s 289 was unchanged by the correction — its two comment
+lines happen to lack parens — which means the old figure was right *by luck of the same flawed
+test*, and it is re-derived here under the correct predicate rather than left standing on the
+wrong one. The class B/C split is unaffected: the 239 distinct arguments are identical under both
+predicates, because neither comment line carries an argument-shaped mention and the declarations'
+`(any f)` does not match an argument extraction that requires the closing paren.
+
+The FIRST gap remains scope and is unchanged: C2's 180 class-B sites exclude
+`runtime/darwin/sys_darwin.cs`'s 51, which are the same class; per-package figures agree exactly
+where they overlap.
 *Boundary case, named not asserted:* five class-C members still end in `_trampoline`
 (`nanotime_`, `walltime_`, `raiseproc_`, `osinit_hack_`, `sigprocmask_`). They may be darwin
 trampolines whose pragma uses a third naming form, or runtime-internal trampolines into assembly.
@@ -192,16 +210,21 @@ Whichever they are, they are not resolvable by the rule as stated, and the desig
 * **No mechanism for class C.** Named, refused, and documented so the refusal survives.
 * **No `lostProfileEvent` change.** It is faithful.
 
-## 9. Open questions for the ruling
+## 9. Questions — RULED 2026-09-03
 
-1. **Scope of the first increment.** Class B alone (darwin's 209, unblocking C2's increment), class A
-   alone (the registry plus symbolizer, unblocking pprof and `textAddr`), or both? They share only
-   the entry point; the mechanisms are disjoint.
-2. **The two-site `FuncPCABIInternal` gap** between this census and C2's — worth one derivation to
-   close before anything is cut, since the census is what the cut will be sized against.
-3. **Whether class C's throw should be made LOUDER** — today it is `return default`, i.e. silent and
-   wrong, which is what made this hole invisible for so long. A throw naming the function and the
-   class would convert every future instance into a loud failure at the call rather than a plausible
-   zero.
+All three are answered; the section is kept as the record of what was asked and what was decided.
+
+1. **Scope of the first increment — RULED: class A alone, plus class C's loud throws.** Class B
+   stays with C2's darwin increment, where its consumer is. The mechanisms are disjoint and share
+   only the entry point, so nothing waits on anything.
+2. **The `FuncPCABIInternal` gap — CLOSED, and my predicate was the defect.** Resolved in §6 by
+   enumeration: 95 raw / 91 code / **89 call sites**, C2's decomposition. The earlier 93 came from
+   a paren-based proxy for "is code" that counted two comment lines quoting a call. Recorded rather
+   than quietly amended, because the wrong number had already been published once and a right-
+   looking total reached the wrong way is the failure mode that survives review.
+3. **Class C's throw LOUDER — RULED: yes, and it rides the first increment.** Today's
+   `return default` is silent and wrong, which is exactly what kept this hole invisible; a throw
+   naming the function and the class converts every future instance into a loud failure at the call
+   rather than a plausible zero.
 
 -- C1 (design owner), with §4 by C2
