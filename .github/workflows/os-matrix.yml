@@ -46,7 +46,7 @@ on:
           - linux
           - darwin
       stage:
-        description: 'What to run: census (compile the corpus flavor), behavioral-smoke (harness proof), behavioral-full (the whole enumeration in slices), sweep-shard (filtered validated sweep)'
+        description: 'What to run: census (compile the corpus flavor), behavioral-smoke (harness proof), behavioral-full (the whole enumeration in slices), sweep-shard (filtered validated sweep), behavioral-stderr (run named projects directly and keep their WHOLE stderr — the runner quotes one line per death)'
         type: choice
         required: true
         default: census
@@ -54,9 +54,10 @@ on:
           - census
           - behavioral-smoke
           - behavioral-full
+          - behavioral-stderr
           - sweep-shard
       filter:
-        description: 'Shard filter — package substring for sweep-shard, project substring for behavioral-smoke. IGNORED by behavioral-full, which runs the whole enumeration in slices. Blank takes the stage default.'
+        description: 'Shard filter — package substring for sweep-shard, project substring for behavioral-smoke. IGNORED by behavioral-full, which runs the whole enumeration in slices. Blank takes the stage default. Comma-separated project NAMES for behavioral-stderr.'
         type: string
         required: false
         default: ''
@@ -180,6 +181,10 @@ jobs:
                                          # (healthy disk) + a COLD 307-project NuGet restore.
               'behavioral-smoke' = 90    # converter `go build` + a filtered 4-phase run whose
                                          # shared core closure is built from cold.
+              'behavioral-stderr' = 60   # converter go build + transpile/compile of a handful of
+                                         # NAMED projects (the first pulls the core closure from
+                                         # cold) + one direct run per project under the runner's
+                                         # own 120 s budget. PROVISIONAL until the first run.
               'behavioral-full'  = 150   # the WHOLE enumeration in slices with a purge between.
                                          # PROVISIONAL, and deliberately labelled so: the first
                                          # real run of this leg replaces it. What IS measured, on
@@ -705,6 +710,93 @@ jobs:
           & ./.github/annotate-summary.ps1 -Title "behavioral-smoke $goos/$rid" -Lines $summary
 
           exit $runExit
+
+      - name: Behavioral stderr — run named projects directly and keep the WHOLE stderr
+        if: needs.plan.outputs.stage == 'behavioral-stderr'
+        shell: pwsh
+        env:
+          STDERR_PROJECTS: ${{ needs.plan.outputs.filter }}
+          GO2CS_BUILD_TIMEOUT: '5400'
+          GO2CS_BUILD_ONE_TIMEOUT: '1800'
+          GO2CS_TRANSPILE_TIMEOUT: '300'
+          GO2CS_RUN_TIMEOUT: '120'
+        run: |
+          $ErrorActionPreference = 'Continue'
+
+          $goos = $env:GOOS_TARGET
+          $rid = $env:RID
+          $art = Join-Path $PWD 'artifacts'
+          New-Item -ItemType Directory -Force -Path $art | Out-Null
+
+          $names = @($env:STDERR_PROJECTS -split '[,;\s]+' | Where-Object { $_ })
+
+          if ($names.Count -eq 0) {
+              Write-Host "::error::behavioral-stderr needs the filter input as comma-separated project names"
+              exit 2
+          }
+
+          $behavioral = Join-Path $PWD 'src/tests/Behavioral'
+          $exit = 0
+
+          foreach ($p in $names) {
+              $proj = Join-Path $behavioral $p
+
+              if (-not (Test-Path -LiteralPath (Join-Path $proj "$p.csproj"))) {
+                  Write-Host "::error::no behavioral project named '$p'"
+                  $exit = 1
+                  continue
+              }
+
+              # Build exactly as the runner does (converter go build, transpile, Release compile);
+              # the filter is a substring, so a full project name matches itself and any project
+              # that CONTAINS it -- harmless for the build, and the run below names the exe by path.
+              Write-Host "==> $p: transpile + compile through the runner"
+              & ./src/tests/Behavioral/run-behavioral.ps1 -IgnoreDiskPreflight --filter $p --phase transpile,compile *>&1 |
+                  Tee-Object -FilePath (Join-Path $art "stderr-build-$p-$goos-$rid.log")
+
+              $exe = Join-Path $proj "bin/Release/net10.0/$p"
+              if ($IsWindows) { $exe += '.exe' }
+
+              if (-not (Test-Path -LiteralPath $exe)) {
+                  Write-Host "::error::$p: no apphost at $exe after the compile phase"
+                  $exit = 1
+                  continue
+              }
+
+              # The runner's launch, reproduced: the apphost, no arguments, cwd = src/tests/Behavioral
+              # (Path.GetDirectoryName(projPath)), the job's own environment (GoTargetOS bound), and
+              # the same 120 s budget -- so what this prints is what the Output phase saw, whole.
+              $outFile = Join-Path $art "stderr-$p-$goos-$rid.stdout.txt"
+              $errFile = Join-Path $art "stderr-$p-$goos-$rid.stderr.txt"
+              $proc = Start-Process -FilePath $exe -WorkingDirectory $behavioral -NoNewWindow -PassThru `
+                  -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+
+              $finished = $proc.WaitForExit([int]$env:GO2CS_RUN_TIMEOUT * 1000)
+
+              if (-not $finished) {
+                  Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+                  $code = 'TIMEOUT'
+              }
+              else {
+                  $code = $proc.ExitCode
+              }
+
+              $err = @(Get-Content -LiteralPath $errFile -ErrorAction SilentlyContinue)
+              $out = @(Get-Content -LiteralPath $outFile -ErrorAction SilentlyContinue)
+
+              Write-Host "==> $p: exit $code; stderr $($err.Count) lines; stdout $($out.Count) lines"
+
+              $lines = @(
+                  "## stderr $p -- GOOS=$goos ($rid) -- exit $code"
+                  ''
+                  '```'
+              ) + $err + @('```')
+
+              Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $lines
+              & ./.github/annotate-summary.ps1 -Title "stderr $p $goos/$rid" -Lines $lines
+          }
+
+          exit $exit
 
       # -------------------------------------------------------------------------------------
       # sweep-shard — a filtered validated sweep against `go test -json` on this platform.
