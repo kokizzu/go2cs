@@ -13,28 +13,56 @@ import (
 	"strings"
 )
 
-// syscallFunnelFuncNames names the syscall-package functions Go's own compiler marks
-// uintptrkeepalive: a uintptr argument derived from a pointer is only guaranteed to name live
-// storage for calls into exactly this set (see unsafe.Pointer's own doc comment, rule (4), which
-// the converted unsafe.cs carries verbatim). Everywhere else — including a plain call recorded on
-// a variable first — Go itself gives no such guarantee, so this converter fix reproduces exactly
-// Go's own contract rather than inventing a broader one.
+// syscallFunnelFuncNames names the funnel functions whose uintptr arguments must be treated as
+// live pointers. The set is Go's own `//go:uintptrkeepalive` set — a uintptr argument derived from
+// a pointer is only guaranteed to name live storage for calls into exactly this set (see
+// unsafe.Pointer's own doc comment, rule (4), which the converted unsafe.cs carries verbatim);
+// everywhere else — including a plain call recorded on a variable first — Go itself gives no such
+// guarantee, so this converter fix reproduces Go's own contract rather than inventing a broader
+// one. Censused against GOROOT (go1.23.12, `//go:uintptrkeepalive` outside cmd/) on 2026-09-02:
+// exactly four declarations, all in package syscall — RawSyscall, RawSyscall6 (syscall_linux.go:50,
+// 58) and Syscall, Syscall6 (:69, 91).
 //
-// go2cs's syscalln (src/core/syscall/windows/dll_windows.cs) dispatches through a raw
-// delegate*-unmanaged calli with no marshaling layer of its own, which is what makes the managed
-// side responsible for honoring this contract explicitly — the .NET P/Invoke marshaler would
-// normally do it for a POINTER-typed parameter, but every argument here arrives as a bare
-// numeric uintptr, indistinguishable from any other integer once computed.
+// Two members are here for a go2cs-specific reason Go's directive set does not have to state, and
+// both rest on the same fact: the CLR heap MOVES, where Go's does not. Go needs uintptrkeepalive
+// only against STACK COPYING (which is why its funnels are also //go:nosplit and why an assembly
+// funnel needs no directive at all); a managed address handed across a native boundary here is
+// pinned for the LIFETIME OF THE BOX that produced it (golib `ж<T>.EnsureStableAddress`, whose
+// GCHandle is an instance field released with the box), so an unheld box is a relocatable buffer
+// the kernel may still be writing through. Hence:
+//
+//   - the Windows funnels Syscall9/12/15/18/N, which carry no Go directive: go2cs's syscalln
+//     (src/core/syscall/windows/dll_windows.cs) dispatches through a raw delegate*-unmanaged calli
+//     with no marshaling layer of its own, so the managed side is responsible for honoring the
+//     contract explicitly — the .NET P/Invoke marshaler would normally do it for a POINTER-typed
+//     parameter, but every argument here arrives as a bare numeric uintptr, indistinguishable from
+//     any other integer once computed;
+//   - internal/runtime/syscall.Syscall6 (see syscallFunnelPackagePaths), which carries no Go
+//     directive because it is written in assembly — but in this corpus it is the BOTTOM of the
+//     Linux boundary itself ([LibraryImport("libc","syscall")], reached by every syscall-package
+//     funnel), and its own package calls it with the pointer-derived shape (EpollCtl,
+//     internal/runtime/syscall/syscall_linux.go:36).
 var syscallFunnelFuncNames = map[string]bool{
+	"RawSyscall": true, "RawSyscall6": true,
 	"Syscall": true, "Syscall6": true, "Syscall9": true,
 	"Syscall12": true, "Syscall15": true, "Syscall18": true,
 	"SyscallN": true,
 }
 
-// syscallFunnelCall reports whether callExpr calls one of the syscall-package funnel functions —
-// resolved via go/types, matching flag.Set's own `fn.Pkg().Path()+"."+fn.Name()` idiom
-// (testConversion.go) rather than a name-only guess, so a same-named function in an unrelated
-// package can never false-match.
+// syscallFunnelPackagePaths names the packages whose members syscallFunnelFuncNames applies to.
+// Matching on the PATH rather than on the name alone is what keeps a same-named function in an
+// unrelated package from false-matching; both paths declare only funnels of this shape among these
+// names (internal/runtime/syscall declares Syscall6 and nothing else the map names), so one shared
+// name set covers both without a per-package table.
+var syscallFunnelPackagePaths = map[string]bool{
+	"syscall":                  true,
+	"internal/runtime/syscall": true,
+}
+
+// syscallFunnelCall reports whether callExpr calls one of the funnel functions — resolved via
+// go/types, matching flag.Set's own `fn.Pkg().Path()+"."+fn.Name()` idiom (testConversion.go)
+// rather than a name-only guess, so a same-named function in an unrelated package can never
+// false-match.
 func syscallFunnelCall(info *types.Info, callExpr *ast.CallExpr) bool {
 	var ident *ast.Ident
 
@@ -49,7 +77,7 @@ func syscallFunnelCall(info *types.Info, callExpr *ast.CallExpr) bool {
 
 	fn, ok := info.Uses[ident].(*types.Func)
 
-	return ok && fn.Pkg() != nil && fn.Pkg().Path() == "syscall" && syscallFunnelFuncNames[fn.Name()]
+	return ok && fn.Pkg() != nil && syscallFunnelPackagePaths[fn.Pkg().Path()] && syscallFunnelFuncNames[fn.Name()]
 }
 
 // pointerDerivedArgSource returns the innermost operand X of the `uintptr(unsafe.Pointer(X))`
@@ -119,7 +147,7 @@ func exprNamesType(info *types.Info, expr ast.Expr, pkgPath, typeName string) bo
 // comment for why the whole argument is converted rather than the inner operand in isolation.
 const syscallFunnelUintptrCastPrefix = "(uintptr)"
 
-// convSyscallFunnelCall emits a call to one of the syscall-package funnel functions with each
+// convSyscallFunnelCall emits a call to one of the funnel functions (syscallFunnelCall) with each
 // pointer-derived argument (pointerDerivedArgSource) routed through a statement-scoped temp
 // holding the box itself, cast to uintptr at the call site — reproducing Go's own uintptrkeepalive
 // contract (the temp is what visitStmt's drainSyscallKeepAlive keeps alive after the statement,
