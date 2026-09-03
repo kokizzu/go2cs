@@ -1655,6 +1655,41 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// submission was never made, because the once-guarded lookup ahead of it had failed. Both
 		// directions need it, so fixing it here is what a future WSARecvMsg hand-own inherits.
 		"loadWSASendRecvMsg": goosWindows,
+		// The MODULE-ENUMERATION member of the struct-passing class, and the one this package's own
+		// hand-own header named and left for the suite that would reach it. runtime/pprof's suite
+		// reached it: newProfileBuilder calls readMapping on EVERY profile it builds, so the two
+		// tests that feed profileBuilder nothing but SYNTHETIC []uint64 records — proto_test.go's
+		// TestConvertCPUProfileNoSamples and TestEmptyStack, which touch no profiler at all — die
+		// before their first assertion, and so does every other test that builds a profile.
+		//
+		// The defect is the class's textbook shape, one record bigger than Process32First's.
+		// MODULEENTRY32W is 1080 bytes ending in szModule[256] and szExePath[260] INLINE; the
+		// converted ModuleEntry32 holds both as golib `array<uint16>` MANAGED REFERENCES, so the
+		// CLR auto-layouts the record at roughly 64 bytes with the two references grouped. The
+		// generated wrapper hands kernel32 `(uintptr)ᏑmoduleEntry` and the caller has already set
+		// `module.Size = SizeofModuleEntry32` — which the converter folds from Go's `unsafe.Sizeof`
+		// to the NATIVE 1080 — so Module32FirstW writes a full 1080-byte native record over that
+		// ~64-byte managed object. About a kilobyte of GC heap past the box is overwritten, and the
+		// ExePath field now holds module-path characters where an object reference belongs.
+		//
+		// It announces itself rather than lying: readMapping's very next statement is
+		// `syscall.UTF16ToString(module.ExePath[:])`, and the measured death is an
+		// ACCESS_VIOLATION inside `slice<ushort>..ctor` reached from `array<ushort>.get_Item(Range)`
+		// — the same manifestation findFirstFile1 produced one package over, for the same reason.
+		// (When the fabricated reference happens to resolve, the corruption instead surfaces
+		// downstream: the census's ungated run died in `internal/testlog`'s class constructor,
+		// reached from peBuildID two statements later, which reads as a defect in a package that
+		// has nothing to do with it.)
+		//
+		// Remedy: the ordinary blittable mirror this class has taken four times already
+		// (GetTimeZoneInformation, findFirstFile1, Process32First, adjustTokenPrivileges) — a
+		// `fixed`-buffer native image on the stack, the SAME LazyProc call, and a field-for-field
+		// copy back into the converted struct. It applies here where it could not apply to
+		// NetShareAdd because both wrappers receive the record as a TYPED `*ModuleEntry32`, exactly
+		// as this package's zsyscall_windows_impl.cs header predicted. Bodies in
+		// zsyscall_windows_module_impl.cs.
+		"Module32First": goosWindows,
+		"Module32Next":  goosWindows,
 	},
 	// The three WORD-SIZE leaves of math/bits, and only those three. math/big calls Mul and Add from
 	// the innermost loop of Montgomery multiplication -- every RSA private-key operation -- and the
