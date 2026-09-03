@@ -126,6 +126,15 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// package_info and README. crypto/internal/alias/alias_impl.cs holds the body.
 		"AnyOverlap": goosAny,
 	},
+	"vendor/golang.org/x/crypto/internal/alias": {
+		// The vendored purego twin of crypto/internal/alias.AnyOverlap: the same four-take address ordering,
+		// one reflect call deeper (`reflect.ValueOf(Ꮡ(x, 0)).Pointer()`), reached by chacha20 and
+		// chacha20poly1305 through InexactOverlap — the CHACHA20 cipher suites crypto/tls negotiates. Same
+		// structural body on golib slice<T>.Overlaps, same reason, same registration shape (one non-test Go
+		// file, so a whole-file marker would hand-own the package by consequence). InexactOverlap stays auto.
+		// vendor/golang.org/x/crypto/internal/alias/alias_purego_impl.cs holds the body.
+		"AnyOverlap": goosAny,
+	},
 	"slices": {
 		// overlaps has AnyOverlap's four-take shape and its race; its callers Insert/Replace take the
 		// hard-case rotation on TRUE, where startIdx panics `needle not found` for a source that does not
@@ -1867,7 +1876,7 @@ func (v *Visitor) isManualBoxReceiverMethod(obj types.Object) bool {
 		return false
 	}
 
-	funcScopes, ok := manualConversionFuncs[fn.Pkg().Path()]
+	funcScopes, ok := manualConversionFuncs[resolveGorootVendoredPath(fn.Pkg().Path())]
 
 	if !ok {
 		return false
@@ -1911,11 +1920,20 @@ func (v *Visitor) isManualFuncDecl(funcDecl *ast.FuncDecl) bool {
 // `goos` is the conversion's TARGET operating system, which decides whether a scoped entry applies
 // here at all — see goosScope. The analysis passes must pass the same value emission will, or a
 // declaration would be hoisted-into and then emitted as a placeholder (or the reverse).
+// The registry is keyed by the package's ON-DISK path — for a GOROOT-vendored package the `vendor/`-
+// prefixed one, the key the dependency graph, the corpus directory and the ledger guards all use. The
+// type-checker spells that package WITHOUT the prefix (`golang.org/x/crypto/internal/alias`, because
+// conversionDriver loads a package by its directory and `go list` reports a vendored dir's ImportPath
+// unprefixed — measured 2026-09-03), so every lookup canonicalizes through resolveGorootVendoredPath
+// first; a registration under the on-disk key was otherwise never consulted (a two-seeded three-target
+// diff of the first vendored registration read ZERO paths). Idempotent for an already-prefixed key and
+// a no-op for every plain stdlib path.
 func isManualFuncDeclInPackage(pkgPath string, goos string, funcDecl *ast.FuncDecl) bool {
 	if funcDecl == nil || funcDecl.Name == nil {
 		return false
 	}
 
+	pkgPath = resolveGorootVendoredPath(pkgPath)
 	funcName := funcDecl.Name.Name
 	recvName := ""
 

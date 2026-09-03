@@ -498,3 +498,53 @@ func TestCallableNameAdmitsOnlyGenericHandOwnBodies(t *testing.T) {
 		t.Fatalf("the corpus walk did not newly admit slices.overlaps<E> — the motivating generic hand-own body is missing from %s", coreDir)
 	}
 }
+
+// A registry key is the package's ON-DISK path, and for a GOROOT-vendored package that carries the
+// `vendor/` prefix the type-checker's Package.Path() does not (conversionDriver loads by directory;
+// `go list` reports a vendored directory's ImportPath unprefixed). The first vendored registration —
+// vendor/golang.org/x/crypto/internal/alias — was never consulted for exactly that reason: its two-seeded
+// three-target diff read ZERO paths. The lookup canonicalizes through resolveGorootVendoredPath, and this
+// guard holds it there from both spellings. Skipped, never vacuously green, when GOROOT has no vendored
+// copy to resolve against.
+func TestManualFuncLookupReachesVendoredRegistrationFromTypeCheckerSpelling(t *testing.T) {
+	const onDisk = "vendor/golang.org/x/crypto/internal/alias"
+	const typeChecker = "golang.org/x/crypto/internal/alias"
+
+	if _, registered := manualConversionFuncs[onDisk]["AnyOverlap"]; !registered {
+		t.Fatalf("manualConversionFuncs[%q] no longer registers AnyOverlap; this guard needs a vendored registration to exercise", onDisk)
+	}
+
+	if _, err := os.Stat(filepath.Join(build.Default.GOROOT, "src", "vendor", filepath.FromSlash(typeChecker))); err != nil {
+		t.Skipf("GOROOT %s carries no vendored %s: nothing to resolve against", build.Default.GOROOT, typeChecker)
+	}
+
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "alias_purego.go", "package alias\nfunc AnyOverlap(x, y []byte) bool { return false }\nfunc InexactOverlap(x, y []byte) bool { return false }\n", 0)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	decls := map[string]*ast.FuncDecl{}
+
+	for _, decl := range file.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok {
+			decls[fn.Name.Name] = fn
+		}
+	}
+
+	for _, spelling := range []string{onDisk, typeChecker} {
+		if !isManualFuncDeclInPackage(spelling, "linux", decls["AnyOverlap"]) {
+			t.Errorf("isManualFuncDeclInPackage(%q, linux, AnyOverlap) = false; the vendored registration is unreachable from that spelling", spelling)
+		}
+
+		if isManualFuncDeclInPackage(spelling, "linux", decls["InexactOverlap"]) {
+			t.Errorf("isManualFuncDeclInPackage(%q, linux, InexactOverlap) = true; only AnyOverlap is registered", spelling)
+		}
+	}
+
+	// The canonicalization is a no-op for a plain stdlib path: crypto/internal/alias keys itself.
+	if !isManualFuncDeclInPackage("crypto/internal/alias", "linux", decls["AnyOverlap"]) {
+		t.Errorf("isManualFuncDeclInPackage(crypto/internal/alias, linux, AnyOverlap) = false; the unvendored twin's registration regressed")
+	}
+}
