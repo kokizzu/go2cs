@@ -2145,7 +2145,19 @@ The other consumers this unblocks are all registration-by-blank-import: `databas
 
 ## `os` — 681 of 683 rows agree + 1 disclosed; ONE residual, now ROOTED (r35-os → r39-osalloc, 2026-08-03)
 
-> **Current state is the r39-osalloc sub-section at the END of this block** — 681 of 683 rows agreeing
+> ⚠ **CURRENT STATE, 2026-09-02 (lane `claude/sub-os-row`), measured on the i7 at Debug/tiered
+> against a `go1.23.12` oracle: `os` is 683 of 685 agreeing + 1 disclosed (`TestUTF16Alloc`), with
+> exactly ONE real divergence left — `TestWriteStringAlloc`.** Go: 665 pass / 20 skip. C#: 663 pass /
+> 20 skip / 2 fail. 39 capability-excluded declarations, 4 gated capability entries. The
+> `NetShareAdd`/`SHARE_INFO_2` host-killer is CLOSED (see the ✅ block in *`os`'s "REGRESSION" is a
+> HOST CAPABILITY* at the end of this file); the row moved 682 → 683 agreeing, two real divergences
+> → one. **`os` does not bank, and now for exactly one reason:** ruling #1 holds a want-ZERO alloc
+> assert to be satisfiable in principle, so `TestWriteStringAlloc` is a real divergence rather than a
+> disclosure. It currently reads **`expected 0 allocs for File.WriteString, got 17`** (1,700 golib
+> allocations / 132,000 bytes over 100 runs). The sub-sections below are the arc that got it here.
+>
+> *Header as it stood before 2026-09-02:* **Current state is the r39-osalloc sub-section at the END
+> of this block** — 681 of 683 rows agreeing
 > (173 of 175 top-level), 34 matching skips, 4 capability-excluded, and exactly one real divergence
 > (`TestWriteStringAlloc`). r39 decomposed that divergence to the byte and closed 65.6 % of it in two
 > golib fixes; the remainder is architectural and is recorded there as an arc, so `os` does NOT bank on
@@ -7401,6 +7413,83 @@ a NATIVE-address box with the managed identity already gone. There is nothing le
 
 Whichever lands, verify at VALUE level as the class demands: probe A above is the oracle — the share
 must actually be created and `NetShareDel` must remove it.
+
+### ✅ CLOSED 2026-09-02 (lane `claude/sub-os-row`) — remedy 3, and the root was one level deeper than remedy 1's rejection
+
+`NetShareAdd` is **implemented**. `TestNetworkSymbolicLink` agrees with Go on this host, and the
+declared capability limit is retired: `os` moves from **682 of 685 agreeing + 1 disclosed with TWO
+real divergences** to **683 of 685 + 1 disclosed with ONE**. It still does not bank, for the reason
+it never did — `TestWriteStringAlloc`, ruling #1 — and that row is now the *only* thing between `os`
+and a bank.
+
+**The root, one level under what this entry recorded.** The entry above says the wrapper "receives a
+NATIVE-address box with the managed identity already gone", and left it there. But the address route
+HAS a recovery seam — the provenance record — and `zsyscall_windows_certchain_impl.cs` already uses
+it to recover a reference-bearing struct at a boundary wrapper
+(`ManagedPointerTokens.Resolve(scalar) is ж<SSLExtraCertChainPolicyPara>`). So the obvious first move
+was to reuse it here, and it **does not work** — for a reason worth writing down, because it is what
+separates the two shapes:
+
+> `Resolve` VALIDATES ON READ — alive **and still pinned there**. `RegisterPinned` is called by the
+> `uintptr` operator either way, but `EnsureStableAddress` can only pin when `PinnableStorage` is
+> non-null, and a StandardBox of a **reference-bearing** pointee has no `m_slot` at all (a
+> reference-containing layout cannot be pinned), so `PinnableStorage` is null, no pin is taken,
+> `IsPinnedAt` answers false and `Resolve` answers **null**. The certchain scalar resolves because it
+> came from `MintOpaque`, which registers by the box's `PointerOrderToken` — a stable identity, not
+> an address. Two different registration routes; only one of them has a key that survives.
+
+Measured, not argued, in a standalone probe against golib with a reference-FREE **control** on the
+same run: a filled reference-bearing `StandardBox` reports `PinnableStorage is null = True`,
+`Resolve(own address)` = NULL and `Resolve(derived address)` = NULL, while the reference-free control
+resolves on both. (Probe hygiene note earned the hard way: the first arm used a `default`-valued
+record, whose box reads as a **nil pointer**, so `Reinterpret` returned `NilBox` at address 0 and both
+NULLs were vacuous. A reading taken through a nil pointer is not a reading — fill the record.)
+
+**The remedy — remedy 3, narrowed.** `PointerExtensions.Reinterpret`'s unpinnable arm now REMEMBERS
+its source box against the DERIVED box, in a `ConditionalWeakTable` beside `s_mintedReferents`
+(`ManagedPointerTokens.RememberReinterpretSource` / `ReinterpretSource`). Keyed on the box rather than
+on a number, so there is nothing to validate and nothing to go stale. It is **purely additive**: the
+derived pointer's numeric value and box kind are byte-for-byte what they were, and only a caller that
+asks by name sees anything new — asserted as its own guard rather than claimed.
+
+The gate is `IsReferenceOrContainsReferences<T>() && !IsReferenceOrContainsReferences<TDst>()`, and
+the DESTINATION half is the load-bearing one: a reference-bearing destination is Go's prefix-downcast
+idiom — reflect's `(*structType)(unsafe.Pointer(t))` over an `abi.Type`, which is unpinnable too and
+is **hot** — and it neither needs the source nor should pay for it. A reference-free destination is
+the boundary idiom `(*byte)(unsafe.Pointer(&record))`, whose whole purpose is to cross into a
+syscall. Corpus census at the time of writing: **~30 `Reinterpret<…, byte>` sites, all in syscall/os/
+net boundary code, all cold**; reflect's downcast pairs are not among them.
+
+With the source in hand the hand-own is the ORDINARY mirror-and-copy this class has always used —
+a `[StructLayout(Sequential)]` `NativeShareInfo2` local, size-asserted against the documented 56,
+`allocUtf16z` for each `LPWSTR`, freed in a `finally` because `SHARE_INFO_2` is input-only. Nothing is
+fabricated out of a raw address, which is what made remedy 1 unacceptable: the real managed record is
+in hand before a byte is transcribed. Two paths still THROW rather than guess — a level other than 2
+(the buffer's shape IS the level), and a level-2 buffer with no recoverable source (a genuinely native
+record; no such caller exists in the corpus, and passing the scalar through — which is right in the
+certchain wrapper, where an unrecognized scalar IS an address — is exactly the fatal path here).
+
+**Verified at VALUE level, as this entry demanded.** The oracle is Go's own test, which does not merely
+call the wrapper: it Stats the share through its UNC path, requires `os.SameFile` agreement with the
+local directory, creates a symlink INTO the share, reads it back with `os.Readlink` and resolves it
+with `filepath.EvalSymlinks` — and its deferred `NetShareDel` is a `t.Fatal`. A mirror with wrong
+offsets cannot pass that; the share must really be created and really be removable.
+
+**Gates.** No converter source changed, so no CNR and no two-seeded diff is owed. GolibTests
+**480/480** (474 before, +6 new guards; no `Test Run Aborted`, and the 485-vs-480 declared gap is the
+two Linux-only test files, pre-existing). The retention guard's **negative control** was run: deleting
+the destination half of the gate fails exactly `AReferenceBearingDESTINATIONIsNotRemembered` and
+nothing else, and the restore is byte-identical (sha256 verified). `internal/syscall/windows` builds
+0 errors. `os` pipeline re-run at Debug/tiered against a `go1.23.12` oracle, on an elevated host with
+`LanmanServer` Running and symlink creation available — i.e. a host where Go's own
+`TestNetworkSymbolicLink` PASSES, which is the precondition this entry exists to state.
+
+**What this leaves for the class.** The four sibling wrappers in the table above are unchanged and
+still take the ordinary mirror remedy. What has changed is that the *byte-reinterpret* fork of the
+class — a record reaching its wrapper as a `*byte` with no typed pointer anywhere — is now repairable
+at all, where before it had only a declared limit. That is the ж-box arc's B1 input satisfied for this
+shape without the arc: source retention was the missing half, and it turns out to cost a weak table
+entry at ~30 cold sites rather than a box-layout change.
 
 **A measurement rule this leaves behind.** A converted suite that dies with a native fault is not
 automatically a regression, and a bisect is not automatically the right instrument. Root the fault
@@ -22428,5 +22517,35 @@ of 548, exit 0.
 against a pinned GOROOT and touches no repository file.*
 
 -- coordinator sub-agent
+
+---
+
+## 2026-09-02 -- `net/http`'s h2 deadline pair survives a clean golib A/B, and the row needs MORE than 30m on the i7 at Debug (lane `claude/sub-os-row`)
+
+Two measurements, taken as canary work for the `NetShareAdd` retention and worth keeping on their
+own account.
+
+**1. The h2 pair is not moved by a golib pointer change -- measured, not assumed.** `net/http` is the
+second-largest reflect importer on the derived canary set, and it FAILED on the change's arm with
+exactly four divergent rows: `TestWriteDeadlineEnforcedPerStream`, its `/h2`,
+`TestWriteDeadlineExtendedOnNewRequest`, its `/h2`. The A/B was run rather than the failure excused
+by the known-artifact note: with the change REVERTED to the parent commit, the SAME four rows fail,
+identically. Two legs of the three-run standard (fail-with, fail-without); the re-restored third leg
+was not run, and this entry does not claim it. This is an independent confirmation of the
+build-CONFIGURATION reading CLAUDE.md records for that pair (Debug publish + default tiering) from a
+direction that lane did not take -- a corpus-wide golib change moves it zero rows.
+
+**2. `net/http` is UNDER-BUDGETED at 30m on this machine class, and the two arms bracket it.** The
+change's arm completed in **1,836 s**; the clean arm took **2,171 s** and its results tail states
+`package timeout after 00:30:00` outright. The deadline kill's signature is the documented one and is
+worth restating because it nearly reads as a regression: the killed arm showed **18 extra empty
+verdicts** on top of the four real failures -- a contiguous alphabetical tail
+(`TestWriteHeader*`, `TestWriteResponse`, `TestWriteSetCookies`, `TestZeroLengthPostAndResponse*`)
+plus the parked parallel batch interleaved among it, which reads *scattered* and is not. Two arms of
+the same package, 335 s apart, one side of the budget each: that is the whole margin. `net/http` is
+not in `run-validated-sweep.ps1`'s `$longTimeouts`, and on this host at Debug it wants a floor the
+way `net` (40m) and `crypto/tls` (30m) already have one. Not added here -- a floor is a change to the
+shared sweep and belongs to whoever owns the Release-config flip that is about to re-time every row
+anyway -- but the number is recorded so the next lane meets the measurement instead of the surprise.
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

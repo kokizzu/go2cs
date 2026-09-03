@@ -159,7 +159,60 @@ public static class PointerExtensions
         // derived box's lifetime where it can be pinned (see TryPinnedReinterpret, which also says why
         // that is the array/slice-element reference and nothing else). Where it cannot, keep the
         // pre-existing raw-address behavior — never something newly wrong.
-        return box.TryPinnedReinterpret<TDst>() ?? (ж<TDst>)(uintptr)box;
+        if (box.TryPinnedReinterpret<TDst>() is { } pinned)
+            return pinned;
+
+        ж<TDst> derived = (ж<TDst>)(uintptr)box;
+
+        // THE UNPINNABLE CLASS — remember the source, because nothing else can recover it.
+        //
+        // The address route's own recovery seam is the provenance record: the uintptr operator
+        // calls ManagedPointerTokens.RegisterPinned, and a boundary wrapper resolves the scalar
+        // back to the box (the certchain hand-own does exactly that for its opaque extra-policy
+        // pointer). That seam VALIDATES ON READ — "alive AND still pinned there" — so it answers
+        // MISS for a source whose storage cannot be pinned at all, which is precisely the
+        // reference-bearing pointee: no m_slot, so PinnableStorage is null, so no pin, so
+        // IsPinnedAt is false and Resolve returns null. Measured, with a reference-free control
+        // resolving on the same run: docs/phase4/BOARD-next-validation-candidates.md, the
+        // SHARE_INFO_2 entry.
+        //
+        // For that class the scalar is not merely unrecoverable, it is not an address a moment
+        // later either — so a hand-owned wrapper handed this pointer has, today, nothing at all to
+        // read. Remembering the source against the DERIVED BOX closes that with no change any
+        // existing consumer can observe: the numeric value is byte for byte what it was, the box
+        // kind is what it was, and only a caller that asks by name (ReinterpretSource) sees
+        // anything new. It also gives the derived pointer the referent-liveness Go's own collector
+        // gives a pointer obtained through unsafe.Pointer.
+        //
+        // NARROW BY DESTINATION, deliberately. A reference-BEARING destination is Go's
+        // prefix-downcast idiom — reflect's (*structType)(unsafe.Pointer(t)) over an abi.Type,
+        // which is unpinnable too and is HOT — and it neither needs nor wants this: nothing hands
+        // that pointer to native code. A reference-FREE destination is the boundary idiom,
+        // `(*byte)(unsafe.Pointer(&record))`, whose whole purpose is to cross into a syscall. The
+        // corpus census at the time of writing is ~30 such sites, all in syscall/os/net boundary
+        // code and all cold.
+        if (RemembersReinterpretSource<T, TDst>.Value && box.PinnableStorage is null)
+            ManagedPointerTokens.RememberReinterpretSource(derived, box);
+
+        return derived;
+    }
+
+    /// <summary>
+    /// Whether a non-representable reinterpret from <typeparamref name="T"/> to
+    /// <typeparamref name="TDst"/> should REMEMBER its source box against the derived pointer.
+    /// Cached per type pair.
+    /// </summary>
+    /// <remarks>
+    /// A reference-bearing source is the class whose address the provenance record cannot serve; a
+    /// reference-free destination is the class that is about to be handed to native code. Both
+    /// together are the boundary idiom this exists for, and they exclude the prefix-downcast
+    /// idiom — see the call site.
+    /// </remarks>
+    internal static class RemembersReinterpretSource<T, TDst>
+    {
+        internal static readonly bool Value =
+            RuntimeHelpers.IsReferenceOrContainsReferences<T>() &&
+            !RuntimeHelpers.IsReferenceOrContainsReferences<TDst>();
     }
 
     /// <summary>

@@ -75,6 +75,15 @@ public static class ManagedPointerTokens
     // entry beside it dies with the referent as designed.
     private static readonly ConditionalWeakTable<object, object> s_mintedReferents = new();
 
+    // derived reinterpret box → the SOURCE box it was reinterpreted from, for the one class the
+    // address-keyed table above provably cannot serve: a pointee that carries managed references
+    // has no pinnable storage, so no provenance entry can ever validate on read and the scalar is
+    // not an address a moment later either. Keyed on the DERIVED BOX rather than on a number, so
+    // there is nothing to validate and nothing to go stale; ConditionalWeakTable so the tie is
+    // exactly the derived pointer's own lifetime, the same lifetime doctrine as s_mintedReferents.
+    // Written only from PointerExtensions.Reinterpret's unpinnable arm — see the rationale there.
+    private static readonly ConditionalWeakTable<object, object> s_reinterpretSources = new();
+
     // token → the box that token named. WeakReference so a remembered pointer is still collectable.
     //
     // CONCURRENT, and read WITHOUT a lock, because Resolve sits on the `uintptr → ж<T>` conversion
@@ -239,6 +248,53 @@ public static class ManagedPointerTokens
         s_mintedReferents.Add(minted, box);
 
         return minted;
+    }
+
+    /// <summary>
+    /// Records that <paramref name="derived"/> is the reinterpretation of <paramref name="source"/>,
+    /// for a source whose storage cannot be pinned and whose address therefore names nothing a
+    /// boundary wrapper could read.
+    /// </summary>
+    /// <remarks>
+    /// Called only from <c>PointerExtensions.Reinterpret</c>'s unpinnable arm, which owns the
+    /// narrowing (reference-bearing source, reference-free destination — the
+    /// <c>(*byte)(unsafe.Pointer(&amp;record))</c> boundary idiom, never reflect's prefix downcast).
+    /// </remarks>
+    public static void RememberReinterpretSource(object derived, object source)
+    {
+        if (derived is null || source is null)
+            return;
+
+        // AddOrUpdate rather than Add: one source box can legitimately be reinterpreted twice, and
+        // a repeat must not throw the way Add does on a duplicate key.
+        s_reinterpretSources.AddOrUpdate(derived, source);
+    }
+
+    /// <summary>
+    /// Recovers the box <paramref name="derived"/> was reinterpreted FROM, or <c>null</c> when it
+    /// was not produced by the unpinnable reinterpret arm.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the seam a hand-owned boundary wrapper uses when it is handed a pointer whose
+    /// managed identity the address model has already discarded — the struct-passing class where
+    /// the record reaching the wrapper is a <c>*byte</c> rather than a typed pointer, so the
+    /// mirror-and-copy remedy has nothing to copy FROM. <c>internal/syscall/windows.NetShareAdd</c>
+    /// is the worked instance.
+    /// </para>
+    /// <para>
+    /// A <c>null</c> answer is a real answer and callers must treat it as one: it means the pointer
+    /// is either genuinely native or came from a route that keeps its address meaningful, and a
+    /// wrapper that cannot proceed without the source must say so loudly rather than read the
+    /// scalar as a record.
+    /// </para>
+    /// </remarks>
+    public static object? ReinterpretSource(object derived)
+    {
+        if (derived is null)
+            return null;
+
+        return s_reinterpretSources.TryGetValue(derived, out object? source) ? source : null;
     }
 
     /// <summary>

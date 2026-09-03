@@ -4,9 +4,9 @@
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// A DECLARED CAPABILITY LIMIT, not a repair — the one member of the syscall struct-passing class
-// whose established remedy is measured unreachable. Coordinator ruling 2026-08-14; the full
-// mechanism and the three costed remedies are in
+// The syscall STRUCT-PASSING class, in the shape that had no remedy until the source-retention
+// seam existed: a record that reaches its wrapper as a `*byte` with its managed identity already
+// discarded. Mechanism and history:
 // docs/phase4/BOARD-next-validation-candidates.md, "RETRACTED — `os`'s REGRESSION is a HOST
 // CAPABILITY, and the killer is SHARE_INFO_2".
 //
@@ -33,27 +33,41 @@
 // readable address; only the measured go2cs layout faults. So the fault is the field REORDERING,
 // not the presence of managed references.
 //
-// WHY THE ESTABLISHED REMEDY DOES NOT REACH IT. Every other member of this class (syscall's
-// GetTimeZoneInformation, findFirstFile1/findNextFile1, Process32First/Next, the sockaddr family)
-// is repaired by hand-owning the wrapper against a blittable mirror and copying field-for-field at
-// the boundary. That needs the wrapper to SEE the struct, and here it never does: the only caller
-// in all of GOROOT is os's TestNetworkSymbolicLink, which writes `(*byte)(unsafe.Pointer(&p))`.
-// That converts to `Ꮡp.Reinterpret<windows.SHARE_INFO_2, byte>()`, and `Reinterpret` correctly
-// REFUSES to alias a reference-bearing struct as `byte`, falling back to `(ж<byte>)(uintptr)box` —
-// a native-address box with the managed identity already gone. There is nothing left to copy from.
-// Reading the struct back out of that raw address would fabricate managed references from it, which
-// ж.PointerExtensions.cs names as a CLR type-safety break and "strictly worse than the
-// wrong-but-contained read the address route produces". The durable answer belongs to the ж-box
-// arc: once the non-aliasing Reinterpret fallback RETAINS its source object, a hand-owned wrapper
-// can reach the struct and the ordinary mirror-and-copy applies. Until then, this.
+// WHY THE ORDINARY REMEDY DID NOT REACH IT, AND WHAT CHANGED. Every other member of this class
+// (syscall's GetTimeZoneInformation, findFirstFile1/findNextFile1, Process32First/Next, the
+// sockaddr family) is repaired by hand-owning the wrapper against a blittable mirror and copying
+// field-for-field at the boundary. That needs the wrapper to SEE the struct, and here it never
+// does: the only caller in all of GOROOT is os's TestNetworkSymbolicLink, which writes
+// `(*byte)(unsafe.Pointer(&p))`. That converts to `Ꮡp.Reinterpret<windows.SHARE_INFO_2, byte>()`,
+// and `Reinterpret` correctly REFUSES to alias a reference-bearing struct as `byte`, falling back
+// to the raw-address route.
 //
-// WHAT THIS BUYS. Before it, a host where the Server service is reachable — elevated session,
-// LanmanServer running, i.e. a host where Go's own TestNetworkSymbolicLink PASSES — dies at
-// test ~32 of os's 174 and measures NOTHING; `os` reads 31 of 679 where the board records 681 of
-// 683. Failing by name converts that whole-suite process death into ONE loud row. It is a real
-// mismatch rather than a skip, and that is the honest report: Go passes this test and go2cs cannot.
+// The address route has a recovery seam — the provenance record, which the certchain hand-own uses
+// to recover its opaque extra-policy pointer (`ManagedPointerTokens.Resolve(scalar)`). It was
+// MEASURED not to serve this shape, and that measurement is the reason this file changed:
+// Resolve validates on read ("alive AND still pinned there"), a reference-bearing pointee has no
+// pinnable storage, so no pin is taken, so IsPinnedAt is false and Resolve answers null. A probe
+// with a reference-FREE control resolving on the same run is on the board entry.
 //
-// THE BOUNDARY OF THE LIMIT, so it is readable in place. `internal/syscall/windows` holds four more
+// So the source is now remembered against the DERIVED box instead of against a number —
+// `PointerExtensions.Reinterpret`'s unpinnable arm, recovered here by
+// `ManagedPointerTokens.ReinterpretSource`. That is the ordinary mirror-and-copy remedy with the
+// missing half restored, not a new mechanism: nothing is fabricated out of a raw address (the
+// route ж.PointerExtensions.cs names a CLR type-safety break), because the real managed record is
+// in hand before a single byte is transcribed.
+//
+// WHAT IS STILL DECLARED RATHER THAN DONE. Two paths cannot be served and say so loudly instead of
+// handing netapi32 a record it would dereference:
+//
+//   * a level other than 2 — the buffer's SHAPE is the level, and nothing in GOROOT passes another
+//     one, so guessing would be the whole defect class again one struct over; and
+//   * a level-2 buffer whose source cannot be recovered — a genuinely native SHARE_INFO_2 built by
+//     native code would land here, and there is no such caller in the corpus. Passing the scalar
+//     through unchanged is what the certchain wrapper does for its own unrecognized scalars, and it
+//     is right there because an unrecognized scalar IS an address; here it is exactly the fatal
+//     path, so this one throws.
+//
+// THE BOUNDARY OF THE CLASS, so it is readable in place. `internal/syscall/windows` holds four more
 // wrappers of the same shape. None is hand-owned here — the board's standing rule is to fix a
 // censused wrapper when a suite reaches it, not speculatively — and each is repairable by the
 // ORDINARY mirror remedy, because each receives the struct as a typed pointer rather than through a
@@ -78,40 +92,202 @@
 // that "which struct is non-blittable" does not by itself say where the repair goes; who OWNS the
 // memory the struct is read out of does.
 //
-// Whichever remedy eventually lands for this one, verify at VALUE level as the class demands: the
-// probe above is the oracle — the share must actually be created and NetShareDel must remove it.
+// VERIFIED AT VALUE LEVEL, as the class demands — "it no longer crashes" proves nothing, because a
+// mirror with wrong offsets returns garbage without faulting. The oracle is os's own
+// TestNetworkSymbolicLink, which does not merely call this: it Stats the share through its UNC path,
+// requires os.SameFile agreement with the local directory, creates a symlink INTO the share, reads
+// it back and resolves it with filepath.EvalSymlinks — and its deferred NetShareDel is a t.Fatal, so
+// the share must really have been created and must really be removable. The row agrees with Go on a
+// host where the Server service is reachable.
 
 using System;
+using System.Runtime.InteropServices;
 
 // Hand-owned (no zsyscall_windows_impl.go exists, so a reconvert never regenerates this file);
 // the converter drops NetShareAdd from zsyscall_windows.cs via manualConversionFuncs and leaves a
 // placeholder comment where its body was.
 [module: go.GoManualConversion]
 
+// The native mirror is addressed and filled through pointers. Declared rather than inherited.
+[module: go.GoRequiresUnsafe]
+
 namespace go.@internal.syscall;
+
+using syscall = syscall_package;
 
 partial class windows_package
 {
     /// <summary>
-    /// Declares the capability limit above rather than corrupting the caller's process.
+    /// The native <c>SHARE_INFO_2</c> netapi32 reads — 56 bytes on x64, with <c>LPWSTR</c> fields as
+    /// plain machine words so the CLR cannot reorder anything.
     /// </summary>
     /// <remarks>
-    /// Go's signature is preserved exactly (<c>neterr error</c>), but the failure is a THROW, not a
-    /// returned <c>error</c>: a returned error would let a caller treat it as an ordinary
-    /// <c>NERR_*</c> and continue, and Go's own test treats exactly two of those as a skip. The
-    /// limit is not a runtime condition the caller can retry around — it is a property of the
-    /// conversion — so it announces itself the way the other declared-unimplemented boundaries in
-    /// the corpus do.
+    /// Sequential layout with natural alignment reproduces the documented offsets exactly
+    /// (0, 8, 16, 24, 28, 32, 40, 48); the boundary asserts the total against the documented 56 so a
+    /// future edit that perturbs the shape fails here rather than inside netapi32. A LOCAL of the
+    /// wrapper, never a field: the mirror lives for the duration of one call, which is the whole of
+    /// this record's documented lifetime (<c>NetShareAdd</c> copies what it needs).
     /// </remarks>
-    public static error /*neterr*/ NetShareAdd(ж<uint16> ᏑserverName, uint32 level, ж<byte> Ꮡbuf, ж<uint16> ᏑparmErr)
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeShareInfo2
     {
-        throw new NotSupportedException(
-            "internal/syscall/windows: NetShareAdd is not supported by the converted runtime — " +
-            "SHARE_INFO_2 carries managed references, so the CLR auto-layouts it 48 bytes with the " +
-            "references grouped first, and netapi32 would dereference the integer 1 as shi2_path " +
-            "(access violation). The buffer reaches this wrapper as a raw address with its managed " +
-            "identity already discarded, so the blittable-mirror remedy used elsewhere in this class " +
-            "cannot be applied here. See docs/phase4/BOARD-next-validation-candidates.md, " +
-            "\"RETRACTED — os's REGRESSION is a HOST CAPABILITY, and the killer is SHARE_INFO_2\".");
+        public nuint Netname;
+        public uint Type;
+        public nuint Remark;
+        public uint Permissions;
+        public uint MaxUses;
+        public uint CurrentUses;
+        public nuint Path;
+        public nuint Passwd;
+    }
+
+    // The documented native size on x64. Stated so the mirror's own layout is checked at the
+    // boundary rather than assumed — the failure this file exists to prevent is a silent offset.
+    private const int NativeShareInfo2Size = 56;
+
+    /// <summary>
+    /// Adds a share, transcribing the caller's converted <c>SHARE_INFO_2</c> into the native record
+    /// netapi32 expects.
+    /// </summary>
+    /// <remarks>
+    /// Go's signature is preserved exactly (<c>neterr error</c>) and a real <c>NET_API_STATUS</c> is
+    /// returned as a <c>syscall.Errno</c> the way the generated wrapper did, so Go's own caller-side
+    /// handling — its <c>ERROR_ACCESS_DENIED</c> / <c>NERR_ServerNotStarted</c> skip — behaves
+    /// exactly as it does under Go. The two unserviceable paths THROW rather than return an error,
+    /// because they are properties of the conversion rather than runtime conditions a caller could
+    /// retry around, and returning a plausible <c>NERR_*</c> would let a caller mistake one for the
+    /// other.
+    /// </remarks>
+    public static unsafe error /*neterr*/ NetShareAdd(ж<uint16> ᏑserverName, uint32 level, ж<byte> Ꮡbuf, ж<uint16> ᏑparmErr)
+    {
+        if (level != 2)
+        {
+            throw new NotSupportedException(
+                $"internal/syscall/windows: NetShareAdd level {(uint)level} is not supported by the " +
+                "converted runtime — the buffer's SHAPE is the level, and only level 2 (SHARE_INFO_2) " +
+                "has a transcription here because it is the only level any caller in GOROOT passes. " +
+                "See docs/phase4/BOARD-next-validation-candidates.md, \"RETRACTED — os's REGRESSION " +
+                "is a HOST CAPABILITY, and the killer is SHARE_INFO_2\".");
+        }
+
+        if (ManagedPointerTokens.ReinterpretSource(Ꮡbuf) is not ж<SHARE_INFO_2> Ꮡinfo)
+        {
+            throw new NotSupportedException(
+                "internal/syscall/windows: NetShareAdd was handed a level-2 buffer whose SHARE_INFO_2 " +
+                "could not be recovered. A converted `(*byte)(unsafe.Pointer(&p))` records its source " +
+                "against the derived pointer (PointerExtensions.Reinterpret's unpinnable arm); a " +
+                "pointer with no such record is either genuinely native or came from a route this " +
+                "wrapper cannot read, and handing netapi32 the scalar as a record is the access " +
+                "violation this transcription exists to prevent. See " +
+                "docs/phase4/BOARD-next-validation-candidates.md, \"RETRACTED — os's REGRESSION is a " +
+                "HOST CAPABILITY, and the killer is SHARE_INFO_2\".");
+        }
+
+        if (sizeof(NativeShareInfo2) != NativeShareInfo2Size)
+        {
+            throw new InvalidOperationException(
+                $"internal/syscall/windows: the NativeShareInfo2 mirror is {sizeof(NativeShareInfo2)} " +
+                $"bytes where netapi32 reads {NativeShareInfo2Size} — every field past the first would " +
+                "come from the wrong offset.");
+        }
+
+        ref SHARE_INFO_2 managed = ref Ꮡinfo.Value;
+
+        NativeShareInfo2 native = default;
+        void* netname = null;
+        void* remark = null;
+        void* path = null;
+        void* passwd = null;
+
+        try
+        {
+            if (managed.Netname != nil)
+            {
+                netname = allocUtf16z(managed.Netname);
+                native.Netname = (nuint)netname;
+            }
+
+            native.Type = (uint)managed.Type;
+
+            if (managed.Remark != nil)
+            {
+                remark = allocUtf16z(managed.Remark);
+                native.Remark = (nuint)remark;
+            }
+
+            native.Permissions = (uint)managed.Permissions;
+            native.MaxUses = (uint)managed.MaxUses;
+            native.CurrentUses = (uint)managed.CurrentUses;
+
+            if (managed.Path != nil)
+            {
+                path = allocUtf16z(managed.Path);
+                native.Path = (nuint)path;
+            }
+
+            if (managed.Passwd != nil)
+            {
+                passwd = allocUtf16z(managed.Passwd);
+                native.Passwd = (nuint)passwd;
+            }
+
+            // The two remaining pointer arguments are reference-FREE pointees, so golib's address
+            // route pins them and reports real storage — nothing to transcribe. They are held in
+            // named locals across the call for the same reason every generated funnel call site
+            // holds its pointer arguments (see syscall/windows/dll_windows.cs's soundness note).
+            var ᴋ0 = ᏑserverName;
+            var ᴋ1 = ᏑparmErr;
+
+            var (r0, _, _) = syscall.Syscall6(procNetShareAdd.Addr(), 4, (uintptr)ᴋ0, (uintptr)level, (uintptr)(void*)(&native), (uintptr)ᴋ1, 0, 0);
+
+            System.GC.KeepAlive(ᴋ0);
+            System.GC.KeepAlive(ᴋ1);
+
+            if (r0 != 0)
+                return ((syscall.Errno)r0);
+
+            return default!;
+        }
+        finally
+        {
+            // Freed here, always: SHARE_INFO_2 is input-only for NetShareAdd — netapi32 copies the
+            // share's name, path and remark into its own store during the call — so nothing native
+            // escapes and the share outlives these allocations.
+            if (netname != null)
+                NativeMemory.Free(netname);
+
+            if (remark != null)
+                NativeMemory.Free(remark);
+
+            if (path != null)
+                NativeMemory.Free(path);
+
+            if (passwd != null)
+                NativeMemory.Free(passwd);
+        }
+    }
+
+    // Copies a NUL-terminated managed UTF-16 run (syscall.UTF16PtrFromString's `*uint16`, an element
+    // pointer into a managed []uint16) into one native WCHAR block, terminator included. The
+    // terminator is part of the data, so the length is found by walking to it — through a `fixed`,
+    // which holds the backing array still for exactly the copy. Same shape as the certchain
+    // hand-own's helper of the same name; duplicated rather than shared because the two live in
+    // different assemblies and neither wants a public surface for it.
+    private static unsafe void* allocUtf16z(ж<uint16> text)
+    {
+        fixed (uint16* source = &text.Value)
+        {
+            nint length = 0;
+
+            while (source[length] != 0)
+                length++;
+
+            uint16* allocation = (uint16*)NativeMemory.Alloc((nuint)(length + 1) * sizeof(uint16));
+
+            for (nint i = 0; i <= length; i++)
+                allocation[i] = source[i];
+
+            return allocation;
+        }
     }
 }
