@@ -503,3 +503,40 @@ So the two parked guards stay parked through A by design, and land with B. If A 
 slice/chan row here, the prediction is wrong in an interesting way — it would mean a value-site route
 already seeds dims somewhere this design has not accounted for, and that route must be found and
 written down before B is cut on an assumption it contradicts.
+
+### 10.4 The gate ledger at the seating tip (2026-09-03)
+
+Increment A was rebased onto master `9bb83df3e` as `claude/reflect-cargo-inc1-m18`: the two source
+conflicts were one duplicate commit (`919662458` == master's `e8800ae2a`, the `valueMethodName` seat)
+dropped by `rebase --onto`; the doc's add/add resolved to this text. Verified by arithmetic — 11 commits
+over master, the doc byte-equal to the posted tip's, A's applied delta identical to `b3caf3fa0`'s over
+its nine non-doc files.
+
+**Canaries, all seven rows swept on R-LAPTOP with the increment in place** (verdicts read from the
+proof pages the sweep rewrites, never from the run log):
+
+| row | swept | banked | reading |
+|:--|--:|--:|:--|
+| `debug/dwarf` | 40 · 0 | 40 | census hit — its two predicted `[GoArrayDims(2)]` landed, `entry_test.go:45`, `:135` |
+| `debug/elf` | 31 · 0 | 31 | census hit |
+| `encoding/json` | 491 · 0 | 491 | canary |
+| `go/types` | 557 · 0 | 557 | canary |
+| `net` | 472 · 2 | 472 | canary and census hit — the one predicted stamp landed on `argLists [][2]string` |
+| `crypto/tls` | 400 · 2 | 3643 | validated on the sweep's host-limit arm: 3643 − the 3243-verdict `TestBogoSuite` block; the banked count stands |
+| `net/http` | died | 1343 | **unreadable on any host today** — see below |
+
+`net/http` was attempted twice on this host at this tip and died mid-stream both times (656 s at
+950/1345; 286 s at 791/1345) on `crypto/aes: invalid buffer overlap` in `gcm.cs:361 counterCrypt` beneath
+the TLS 1.3 client's `readServerCertificate`, on a goroutine of a test built to race handshakes — the i7's
+own signature, four deaths across two host classes. That is a corpus defect in the AES-GCM overlap guard
+under concurrent handshakes, **owned by C2** (COORD, 2026-09-03), on a path that touches no descriptor
+cargo: **not attributable to A**, and by the same ruling not a gate A waits on. The four-death table and
+the preserved records are on the mailbox.
+
+**Gates at `2720a3977`:** converter suite `ok 208.289s` (a first run reported `FAIL` at 1835 s — a
+laptop suspension spanning the run consumed its own 30-minute deadline; re-run awake, green).
+Dotnet gates, same tip: G1 stdlib solution 0 errors across 307 projects (windows default); G2 GolibTests 507 passed / 3 failed, the three identity-verified as `CreateSymbolicLink` refusals
+("a required privilege is not held by the client") in `FixtureLinkStagingTests` — a host privilege,
+unchanged from the lane tip, not code; G3 behavioral OUTPUT on
+`FieldDimsCargo` PASS — Transpile, Compile, Target and Output all green ([Output] running C# vs Go, comparing exit code + stdout... 1 compared, 0 failed PASS (1 pr); G4 reflect's `-tests` assembly convert and build exit 0, `reflect.tests.dll` written fresh at 09:23:58 (converter built by the behavioral runner at 09:20 from this tip); G5 `nistec` cost canary as a same-host
+A/B, PRE (`e8c078637`) PASS 2195 at 174 s cold / 145 s warm vs A PASS 2195 at 90 s warm — A faster than PRE on both readings, so no cost regression; a third A reading is in flight to characterize the favorable delta, which is more likely variance than merit.
