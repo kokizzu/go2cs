@@ -174,6 +174,41 @@ separates.
 it could not be made to fail — which is the warm-design trap. This is recorded so the next darwin
 increment starts from a measured population instead of re-deriving it.
 
+#### CORRECTION 2026-09-03 (C2, same day) — two MECHANISMS above are wrong; both conclusions stand
+
+Left in place rather than rewritten, because this is a dated record and the wrong reasoning is worth
+seeing beside the right one. Ruled by COORD on the run-layer design's §0.
+
+**(a) The pthread cond/mutex subset is dormant, but not for the reason given above.** The paragraph
+says the seven are unreachable because the lock/note protocol is hand-owned flat at `goosAny`. The
+displacement is real — `lock_managed_impl.cs` supplies `lock2`, `unlock2`, `notesleep`, `notewakeup`,
+`notetsleepg`, `noteSleepDeadline`, `mutexContended`, and `runtime/darwin/lock_sema.cs` carries a
+generated placeholder for each — but **`notetsleep` is NOT among them.** It keeps its converted body,
+and that body is the trio's only caller (`semacreate`, `lock_sema.cs:68`).
+
+The real argument is empirical and stronger. Measured: `semasleep` and `semawakeup` have **no caller
+at all**; `semacreate` has exactly one, `notetsleep`; and `notetsleep`'s three callers are **identical
+on all three flavours** — `proc.cs:1669` (stop-the-world), `proc.cs:2157` (safepoint), `proc.cs:6101`
+(sysmon). **Linux and windows run real workloads against that exact call graph and their semaphore
+trio never fires**, because the managed model does not enter those scheduler paths — the same measured
+fact (`schedinit` never runs) that makes `internal/cpu`'s `doinit` unreachable. Below `notetsleep`,
+darwin's graph is not merely similar to theirs; it is the same file.
+
+**(b) Darwin's missing `nanotime_impl.cs` is deliberate and documented, not an unnoticed gap.** The
+paragraph above frames it as a first concrete missing member that the other two flavours had already
+filled. The linux file's own header says otherwise, and said it first: *"Per-GOOS rather than flat
+because darwin already has a real body (sys_darwin.cs's nanotime1 over its own `$INTERNAL` trap), and a
+flat implementation would collide with it."*
+
+What survives — and what that header independently confirms — is the **sizing**, which is the half this
+record was useful for: darwin's `nanotime1` is a BODIED function, so displacing it needs a
+`manualConversionFuncs` entry (a converter change, with a two-seeded diff and a hunk-only footprint),
+where linux and windows were bodyless partials displaced by writing a body. The novelty claim does not.
+
+Both corrections were self-caught while designing the increment this record was written to inform, and
+both came from the same failure: citing a file without reading what it already said.
+
+
 ## 4. What would have to be built
 
 The Linux keystone was one entry point over libc's `syscall(2)`. Darwin's is structurally larger,
