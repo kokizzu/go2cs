@@ -158,7 +158,11 @@ internal static bool isCapDacOverrideSet() {
     uintptr _CAP_DAC_OVERRIDE = 1;
     ref var c = ref heap(new caps(), out var Ꮡc);
     c.hdr.version = _LINUX_CAPABILITY_VERSION_3;
-    var (_, _, err) = RawSyscall(SYS_CAPGET, (uintptr)Ꮡc.of(caps.Ꮡhdr), (uintptr)Ꮡc.at(caps.Ꮡdata, 0), 0);
+    var ᴋ0 = Ꮡc.of(caps.Ꮡhdr);
+    var ᴋ1 = Ꮡc.at(caps.Ꮡdata, 0);
+        var (_, _, err) = RawSyscall(SYS_CAPGET, (uintptr)ᴋ0, (uintptr)ᴋ1, 0);
+    System.GC.KeepAlive(ᴋ0);
+    System.GC.KeepAlive(ᴋ1);
     return err == 0 && (uint32)(c.data[0].effective & capToMask(_CAP_DAC_OVERRIDE)) != 0;
 }
 

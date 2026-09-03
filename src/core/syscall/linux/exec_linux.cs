@@ -193,7 +193,9 @@ internal static (nint pid, Errno err) forkAndExecInChild(ж<byte> Ꮡargv0, slic
                 }
             }
         }
-        RawSyscall(SYS_WRITE, (uintptr)mapPipe[1], (uintptr)@unsafe.Pointer.FromBox(Ꮡerr2), /* unsafe.Sizeof(err2) */ (uintptr)8);
+        var ᴋ0 = @unsafe.Pointer.FromBox(Ꮡerr2);
+                RawSyscall(SYS_WRITE, (uintptr)mapPipe[1], (uintptr)ᴋ0, /* unsafe.Sizeof(err2) */ (uintptr)8);
+        System.GC.KeepAlive(ᴋ0);
         Close(mapPipe[1]);
     }
     return (pid, 0);
@@ -410,7 +412,9 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
                 goto childerror;
             }
         }
-        (pid, _, err1) = RawSyscall(SYS_READ, (uintptr)mapPipe[0], (uintptr)@unsafe.Pointer.FromBox(Ꮡerr2), /* unsafe.Sizeof(err2) */ (uintptr)8);
+        var ᴋ1 = @unsafe.Pointer.FromBox(Ꮡerr2);
+                (pid, _, err1) = RawSyscall(SYS_READ, (uintptr)mapPipe[0], (uintptr)ᴋ1, /* unsafe.Sizeof(err2) */ (uintptr)8);
+        System.GC.KeepAlive(ᴋ1);
         if (err1 != 0) {
             goto childerror;
         }
@@ -445,7 +449,9 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
             pgrp = (int32)pid;
         }
         // Place process group in foreground.
-        (_, _, err1) = RawSyscall(SYS_IOCTL, (uintptr)sys.Ctty, (uintptr)TIOCSPGRP, (uintptr)Ꮡpgrp);
+        var ᴋ2 = Ꮡpgrp;
+                (_, _, err1) = RawSyscall(SYS_IOCTL, (uintptr)sys.Ctty, (uintptr)TIOCSPGRP, (uintptr)ᴋ2);
+        System.GC.KeepAlive(ᴋ2);
         if (err1 != 0) {
             goto childerror;
         }
@@ -462,11 +468,15 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
         if ((uintptr)(sys.Unshareflags & (uintptr)CLONE_NEWUSER) != 0 && sys.GidMappings != default!) {
             dirfd = (nint)_AT_FDCWD;
             {
-                (fd1, _, err1) = RawSyscall6(SYS_OPENAT, (uintptr)dirfd, (uintptr)Ꮡ(psetgroups, 0), (uintptr)O_WRONLY, 0, 0, 0); if (err1 != 0) {
+                var ᴋ3 = Ꮡ(psetgroups, 0);
+                                (fd1, _, err1) = RawSyscall6(SYS_OPENAT, (uintptr)dirfd, (uintptr)ᴋ3, (uintptr)O_WRONLY, 0, 0, 0);
+                System.GC.KeepAlive(ᴋ3); if (err1 != 0) {
                     goto childerror;
                 }
             }
-            (pid, _, err1) = RawSyscall(SYS_WRITE, fd1, (uintptr)Ꮡ(setgroups, 0), (uintptr)len(setgroups));
+            var ᴋ4 = Ꮡ(setgroups, 0);
+                        (pid, _, err1) = RawSyscall(SYS_WRITE, fd1, (uintptr)ᴋ4, (uintptr)len(setgroups));
+            System.GC.KeepAlive(ᴋ4);
             if (err1 != 0) {
                 goto childerror;
             }
@@ -476,11 +486,15 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
                 }
             }
             {
-                (fd1, _, err1) = RawSyscall6(SYS_OPENAT, (uintptr)dirfd, (uintptr)Ꮡ(pgid, 0), (uintptr)O_WRONLY, 0, 0, 0); if (err1 != 0) {
+                var ᴋ5 = Ꮡ(pgid, 0);
+                                (fd1, _, err1) = RawSyscall6(SYS_OPENAT, (uintptr)dirfd, (uintptr)ᴋ5, (uintptr)O_WRONLY, 0, 0, 0);
+                System.GC.KeepAlive(ᴋ5); if (err1 != 0) {
                     goto childerror;
                 }
             }
-            (pid, _, err1) = RawSyscall(SYS_WRITE, fd1, (uintptr)Ꮡ(gidmap, 0), (uintptr)len(gidmap));
+            var ᴋ6 = Ꮡ(gidmap, 0);
+                        (pid, _, err1) = RawSyscall(SYS_WRITE, fd1, (uintptr)ᴋ6, (uintptr)len(gidmap));
+            System.GC.KeepAlive(ᴋ6);
             if (err1 != 0) {
                 goto childerror;
             }
@@ -493,11 +507,15 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
         if ((uintptr)(sys.Unshareflags & (uintptr)CLONE_NEWUSER) != 0 && sys.UidMappings != default!) {
             dirfd = (nint)_AT_FDCWD;
             {
-                (fd1, _, err1) = RawSyscall6(SYS_OPENAT, (uintptr)dirfd, (uintptr)Ꮡ(puid, 0), (uintptr)O_WRONLY, 0, 0, 0); if (err1 != 0) {
+                var ᴋ7 = Ꮡ(puid, 0);
+                                (fd1, _, err1) = RawSyscall6(SYS_OPENAT, (uintptr)dirfd, (uintptr)ᴋ7, (uintptr)O_WRONLY, 0, 0, 0);
+                System.GC.KeepAlive(ᴋ7); if (err1 != 0) {
                     goto childerror;
                 }
             }
-            (pid, _, err1) = RawSyscall(SYS_WRITE, fd1, (uintptr)Ꮡ(uidmap, 0), (uintptr)len(uidmap));
+            var ᴋ8 = Ꮡ(uidmap, 0);
+                        (pid, _, err1) = RawSyscall(SYS_WRITE, fd1, (uintptr)ᴋ8, (uintptr)len(uidmap));
+            System.GC.KeepAlive(ᴋ8);
             if (err1 != 0) {
                 goto childerror;
             }
@@ -515,7 +533,11 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
         // To make this model work we must further mark / as MS_PRIVATE.
         // This is what the standard unshare command does.
         if ((uintptr)(sys.Unshareflags & (uintptr)CLONE_NEWNS) == CLONE_NEWNS) {
-            (_, _, err1) = RawSyscall6(SYS_MOUNT, (uintptr)Ꮡnone.at<byte>(0), (uintptr)Ꮡslash.at<byte>(0), 0, (uintptr)((uintptr)MS_REC | (uintptr)MS_PRIVATE), 0, 0);
+            var ᴋ9 = Ꮡnone.at<byte>(0);
+            var ᴋ10 = Ꮡslash.at<byte>(0);
+                        (_, _, err1) = RawSyscall6(SYS_MOUNT, (uintptr)ᴋ9, (uintptr)ᴋ10, 0, (uintptr)((uintptr)MS_REC | (uintptr)MS_PRIVATE), 0, 0);
+            System.GC.KeepAlive(ᴋ9);
+            System.GC.KeepAlive(ᴋ10);
             if (err1 != 0) {
                 goto childerror;
             }
@@ -523,7 +545,9 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
     }
     // Chroot
     if (Ꮡchroot != nil) {
-        (_, _, err1) = RawSyscall(SYS_CHROOT, (uintptr)Ꮡchroot, 0, 0);
+        var ᴋ11 = Ꮡchroot;
+                (_, _, err1) = RawSyscall(SYS_CHROOT, (uintptr)ᴋ11, 0, 0);
+        System.GC.KeepAlive(ᴋ11);
         if (err1 != 0) {
             goto childerror;
         }
@@ -557,7 +581,11 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
         // so it is safe to always use _LINUX_CAPABILITY_VERSION_3.
         caps.hdr.version = _LINUX_CAPABILITY_VERSION_3;
         {
-            (_, _, err1) = RawSyscall(SYS_CAPGET, (uintptr)Ꮡcaps.of(syscall_package.caps.Ꮡhdr), (uintptr)Ꮡcaps.at(syscall_package.caps.Ꮡdata, 0), 0); if (err1 != 0) {
+            var ᴋ12 = Ꮡcaps.of(syscall_package.caps.Ꮡhdr);
+            var ᴋ13 = Ꮡcaps.at(syscall_package.caps.Ꮡdata, 0);
+                        (_, _, err1) = RawSyscall(SYS_CAPGET, (uintptr)ᴋ12, (uintptr)ᴋ13, 0);
+            System.GC.KeepAlive(ᴋ12);
+            System.GC.KeepAlive(ᴋ13); if (err1 != 0) {
                 goto childerror;
             }
         }
@@ -570,7 +598,11 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
             caps.data[(nint)(capToIndex(c))].inheritable |= (uint32)(capToMask(c));
         }
         {
-            (_, _, err1) = RawSyscall(SYS_CAPSET, (uintptr)Ꮡcaps.of(syscall_package.caps.Ꮡhdr), (uintptr)Ꮡcaps.at(syscall_package.caps.Ꮡdata, 0), 0); if (err1 != 0) {
+            var ᴋ14 = Ꮡcaps.of(syscall_package.caps.Ꮡhdr);
+            var ᴋ15 = Ꮡcaps.at(syscall_package.caps.Ꮡdata, 0);
+                        (_, _, err1) = RawSyscall(SYS_CAPSET, (uintptr)ᴋ14, (uintptr)ᴋ15, 0);
+            System.GC.KeepAlive(ᴋ14);
+            System.GC.KeepAlive(ᴋ15); if (err1 != 0) {
                 goto childerror;
             }
         }
@@ -585,7 +617,9 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
     }
     // Chdir
     if (Ꮡdir != nil) {
-        (_, _, err1) = RawSyscall(SYS_CHDIR, (uintptr)Ꮡdir, 0, 0);
+        var ᴋ16 = Ꮡdir;
+                (_, _, err1) = RawSyscall(SYS_CHDIR, (uintptr)ᴋ16, 0, 0);
+        System.GC.KeepAlive(ᴋ16);
         if (err1 != 0) {
             goto childerror;
         }
@@ -689,13 +723,18 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
         }
     }
     // Time to exec.
-    (_, _, err1) = RawSyscall(SYS_EXECVE,
-        (uintptr)Ꮡargv0,
-        (uintptr)@unsafe.Pointer.FromBox(Ꮡ(argv, 0)),
-        (uintptr)@unsafe.Pointer.FromBox(Ꮡ(envv, 0)));
+    var ᴋ17 = Ꮡargv0;
+    var ᴋ18 = @unsafe.Pointer.FromBox(Ꮡ(argv, 0));
+    var ᴋ19 = @unsafe.Pointer.FromBox(Ꮡ(envv, 0));
+        (_, _, err1) = RawSyscall(SYS_EXECVE, (uintptr)ᴋ17, (uintptr)ᴋ18, (uintptr)ᴋ19);
+    System.GC.KeepAlive(ᴋ17);
+    System.GC.KeepAlive(ᴋ18);
+    System.GC.KeepAlive(ᴋ19);
 childerror:
-    RawSyscall(SYS_WRITE, // send error code on pipe
- (uintptr)pipe, (uintptr)@unsafe.Pointer.FromBox(Ꮡerr1), /* unsafe.Sizeof(err1) */ (uintptr)8);
+    var ᴋ20 = @unsafe.Pointer.FromBox(Ꮡerr1);
+        RawSyscall(SYS_WRITE, (uintptr)pipe, (uintptr)ᴋ20, /* unsafe.Sizeof(err1) */ (uintptr)8);
+    System.GC.KeepAlive(ᴋ20);
+    // send error code on pipe
     while (ᐧ) {
         RawSyscall(SYS_EXIT, 253, 0, 0);
     }

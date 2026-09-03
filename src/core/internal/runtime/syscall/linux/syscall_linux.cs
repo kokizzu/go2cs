@@ -35,7 +35,9 @@ public static (int32 n, uintptr errno) EpollWait(int32 epfd, slice<EpollEvent> e
 }
 
 public static uintptr /*errno*/ EpollCtl(int32 epfd, int32 op, int32 fd, ж<EpollEvent> Ꮡevent) {
-    var (_, _, e) = Syscall6(SYS_EPOLL_CTL, (uintptr)epfd, (uintptr)op, (uintptr)fd, (uintptr)Ꮡevent, 0, 0);
+    var ᴋ0 = Ꮡevent;
+        var (_, _, e) = Syscall6(SYS_EPOLL_CTL, (uintptr)epfd, (uintptr)op, (uintptr)fd, (uintptr)ᴋ0, 0, 0);
+    System.GC.KeepAlive(ᴋ0);
     return e;
 }
 

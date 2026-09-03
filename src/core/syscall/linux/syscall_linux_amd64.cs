@@ -103,7 +103,9 @@ public static (Time_t tt, error err) Time(ж<Time_t> Ꮡt) {
 
 //go:nosplit
 internal static Errno rawSetrlimit(nint resource, ж<Rlimit> Ꮡrlim) {
-    var (_, _, errno) = RawSyscall(SYS_SETRLIMIT, (uintptr)resource, (uintptr)Ꮡrlim, 0);
+    var ᴋ0 = Ꮡrlim;
+        var (_, _, errno) = RawSyscall(SYS_SETRLIMIT, (uintptr)resource, (uintptr)ᴋ0, 0);
+    System.GC.KeepAlive(ᴋ0);
     return errno;
 }
 
