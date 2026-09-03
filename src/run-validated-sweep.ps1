@@ -759,10 +759,36 @@ function Get-HostLimitVerdict {
 # that hammer storage (zip streams 4 GiB; parser walks hundreds of thousands of converted frames),
 # so their floors are sized to the LOADED case: 60m and 90m clear the observed loaded shortfalls
 # with ~2x headroom.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '60m'; 'net' = '40m' }
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '60m'; 'net' = '40m'; 'net/http' = '60m' }
 # 'net' joined 2026-09-02: at the 10m default the C# host dies an EXPLICIT results-tail deadline kill on
 # the i7 class (the mass-empty shape), and at 40m the same tree validates 472/472 in ~1,480 s -- deadline
 # sizing, not divergence (measured twice: the MakeFunc canary gate 2026-08-29 and the A2a gate 2026-09-02).
+#
+# 'net/http' joined 2026-09-02, and its floor is sized to a TRUNCATED measurement -- read the arithmetic
+# below before moving it. Two arms of the SAME row, i7 class, Debug (the configuration the pipeline
+# publishes today), bracket the 30m the train passes: one arm finished in 1,836 s, the other took
+# 2,171 s and its results tail states `package timeout after 00:30:00` outright. The killed arm's
+# signature is the documented one and nearly reads as a regression: 18 EXTRA empty verdicts on top of
+# the row's four real h2 deadline failures (a separate, known disclosure-class item -- not what this
+# floor is about) -- a contiguous alphabetical tail with the parked parallel batch interleaved through
+# it, which reads SCATTERED and is not. Measured by lane claude/sub-os-row; board entry 2026-09-02 in
+# docs/phase4/BOARD-next-validation-candidates.md.
+#
+# ARITHMETIC. 30m = 1,800 s is demonstrably short and the 10m default more so. The board does not
+# decompose the two figures into convert/build/run legs, so take them as row walls: either way the
+# killed arm proves the RUN leg alone exceeds 1,800 s, by however long the 18 unreported verdicts
+# want -- 2,171 s is a LOWER BOUND on this row, not its cost. That rules out the next bracket up:
+# 40m = 2,400 s clears the observed top by 1.11x, which is INSIDE the 335 s (18%) spread the two arms
+# show on one host on one day, and BELOW every headroom this table already carries (hash/maphash 1.50x
+# over its 2,406 s, net 1.62x over its ~1,480 s, crypto/tls 2.79x over its 644.8 s, mlkem768 4.14x over
+# its 434.7 s, zip and parser ~2x on their LOADED figures -- and a full sweep's disk/cache pressure is
+# the 2.5-3x multiplier the zip/parser entry above measures). 60m = 3,600 s is the next bracket the
+# table already uses and it lands inside that band: 2.00x the deadline that demonstrably cut the run,
+# 1.66x the observed top, 1.96x the completed arm. Applying net's own 1.62x to 2,171 s gives 3,517 s --
+# 58.6 min, i.e. this same bracket -- so 60m is what this table's sizing habit produces, not a generous
+# round-up; nothing measured argues for 90m/120m, which are the storage-hammering and heavy-tail rows.
+# Re-measure when the Release + tiering-off configuration of record lands -- it re-times every row, and
+# this is a Debug figure taken on one machine class.
 
 # ---- per-package cgo state ------------------------------------------------------------------------
 # A package whose Go FILE SELECTION is cgo-conditional must be converted in the same cgo state the
