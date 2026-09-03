@@ -647,6 +647,8 @@ OUTPUT battery. Names are the symptom; identity is the gate.
 > converter emits a ZERO nested-array element with inner arrays of length 0 (runtime truth of a wrong
 > value, `new array<nint>[]{}.array(2)`); the rows use populated inner arrays and the emission gap is
 > routed with its sibling, the elided-`&` pointer element. A third detour, also routed: a `Printf` whose
-> FIRST variadic argument is a `.String()` call is emitted with its format literal split and a stray
-> cast (CS1003/CS1010); the chan guard binds two locals first. **Three converter defects found by
+> FORMAT STRING holds a comma inside parentheses (`ArrayOf(3,int)`) is emitted with its literal split
+> and a stray cast (CS1003/CS1010) — first mis-diagnosed as the `.String()` first argument, then pinned
+> by elimination (plain locals still mangle; `Println` with the same text converts); the chan guard
+> prints that row with `Println`. **Three converter defects found by
 > guards written to measure reflect; none is B's, all three have their own item.**

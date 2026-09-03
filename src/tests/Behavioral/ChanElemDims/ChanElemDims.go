@@ -26,8 +26,6 @@ func main() {
 	// C seeds the value side: an identity row against a boundary side is a boundary row (section 12.4's
 	// prediction was wrong on exactly this, and says so). That identity is C's row.
 	ct := reflect.ChanOf(reflect.BothDir, reflect.ArrayOf(3, reflect.TypeOf(0)))
-	// Two locals: a Printf whose FIRST variadic argument is a .String() call is mangled by the converter
-	// (format literal split, stray cast) -- a converter defect routed separately; the guard measures reflect.
 	name := ct.String()
 	n := ct.Elem().Len()
 	// Println, not Printf: a Printf FORMAT containing a comma inside parentheses is mangled by the converter
