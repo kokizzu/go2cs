@@ -579,13 +579,29 @@ partial class syscall_package
         // zero-valued RawSockaddrAny, this gets it by clearing the family word the check reads.
         *(uint16*)buffer = AF_UNSPEC;
 
-        // The payload travels by pinned slice-element address -- the one managed storage the runtime
-        // can be asked to hold still -- exactly as every generated zsyscall wrapper does. An empty
-        // slice has no element to take, so it passes a valid address of a zero-length region.
-        uintptr payload = len(p) > 0 ? (uintptr)Ꮡ(p, 0) : (uintptr)(void*)(&zero);
+        // The payload travels by pinned slice-element address, exactly as every generated zsyscall
+        // wrapper does. An empty slice has no element to take, so it passes a valid address of a
+        // zero-length region. The pin is NOT unconditional -- this comment used to say the address
+        // was "the one managed storage the runtime can be asked to hold still", which reads as a
+        // permanent guarantee and is wrong: see the box-lifetime note below.
+        // The BOX, not merely the address. `(uintptr)` pins through a GCHandle stored on the box,
+        // so the pin lasts the BOX's reachability -- hold it across the call or the pin ends and the
+        // address may move (measured on an unheld box: the old address reads 0x00000000). This is
+        // the converter's own ᴋN + GC.KeepAlive shape, hand-written because the ternary keeps Go's
+        // zero-length path.
+        ж<byte> ᴋp = default!;
+        uintptr payload;
+
+        if (len(p) > 0) {
+            ᴋp = Ꮡ(p, 0);
+            payload = (uintptr)ᴋp;
+        } else {
+            payload = (uintptr)(void*)(&zero);
+        }
 
         var (r1, _, e1) = Syscall6(SYS_RECVFROM, (uintptr)fd, payload, (uintptr)len(p),
                                    (uintptr)flags, (uintptr)(void*)buffer, (uintptr)(void*)(&addrlen));
+        System.GC.KeepAlive(ᴋp);
 
         if (e1 != 0) {
             return ((nint)r1, default!, errnoErr(e1));
@@ -751,11 +767,18 @@ partial class syscall_package
     //
     // The mirror is NativeIovec, already declared in this file for the msghdr family, and the
     // conversion PINS rather than marshals: `(uintptr)` on a p-box is not a bare address read --
-    // its managed arm calls EnsureStableAddress() (a DURABLE pin, deliberately not `fixed`, whose
-    // own comment reads "fixed pins only for its own statement, and the address outlives that
-    // statement by definition") and then registers the pin with ManagedPointerTokens. So the bytes
-    // the kernel writes are the CALLER'S bytes at a stable address for the call -- the audit rule
-    // this class is held to: no copy in, no copy out, nothing to miss on the way back.
+    // its managed arm calls EnsureStableAddress() (a pin that outlives the statement, deliberately
+    // not `fixed`, whose own comment reads "fixed pins only for its own statement, and the address
+    // outlives that statement by definition") and then registers the pin with ManagedPointerTokens.
+    // So the bytes the kernel writes are the CALLER'S bytes at a stable address for the call -- the
+    // audit rule this class is held to: no copy in, no copy out, nothing to miss on the way back.
+    //
+    // WITH THE CLAUSE THAT WAS MISSING, and it is load-bearing: the GCHandle lives ON THE BOX, so
+    // the pin lasts the BOX's reachability and not one instant longer. "DURABLE" was read here as
+    // unconditional; it is not. A measured probe with only the uintptr retained saw the address
+    // MOVE and the old one read 0x00000000. Every call below therefore holds its box across the
+    // syscall -- that is what the GC.KeepAlive lines are, and without them this paragraph would be
+    // describing a guarantee the code does not have.
     //
     // ONE syscall per call, with the EINTR retry left where Go has it (internal/poll's writev): the
     // caller owns the loop, this owns the layout. Go caps the vector at IOV_MAX/1024, so the native
@@ -781,12 +804,18 @@ partial class syscall_package
 
         try {
             for (nint i = 0; i < count; i++) {
-                // (uintptr) on the box is the pin AND the address -- see above.
+                // (uintptr) on the box is the pin AND the address -- see above -- for as long as the
+                // BOX is reachable, which is why iovecs is kept alive across the call below.
                 native[i].Base = (byte*)(nint)(uintptr)iovecs[i].Base;
                 native[i].Len = (nuint)iovecs[i].Len;
             }
 
             var (r, _, e) = Syscall(SYS_WRITEV, (uintptr)fd, (uintptr)(nint)native, (uintptr)count);
+            // Every native[i].Base is a pinned address into a managed buffer reached through
+            // iovecs[i].Base; keeping the SLICE alive keeps all of those boxes reachable across the
+            // call, so this function OWNS its safety rather than borrowing it from internal/poll's
+            // fd.iovecs three frames up.
+            System.GC.KeepAlive(iovecs);
             return (r, e);
         } finally {
             if (heap != null) {
@@ -803,11 +832,17 @@ partial class syscall_package
         NativeIovec iov = default;
         NativeMsghdr msg = default;
 
+        // Declared out here rather than inside the blocks below: the pin lasts the BOX's lifetime,
+        // and the syscall is past the end of both blocks.
+        ж<byte> ᴋp = default!;
+        ж<byte> ᴋoob = default!;
+
         msg.Name = nameBuf;
         msg.Namelen = nameLen;
 
         if (len(p) > 0) {
-            iov.Base = (byte*)(nint)(uintptr)Ꮡ(p, 0);
+            ᴋp = Ꮡ(p, 0);
+            iov.Base = (byte*)(nint)(uintptr)ᴋp;
             iov.Len = (nuint)len(p);
         }
 
@@ -827,7 +862,8 @@ partial class syscall_package
                 }
             }
 
-            msg.Control = (byte*)(nint)(uintptr)Ꮡ(oob, 0);
+            ᴋoob = Ꮡ(oob, 0);
+            msg.Control = (byte*)(nint)(uintptr)ᴋoob;
             msg.Controllen = (nuint)len(oob);
         }
 
@@ -835,6 +871,8 @@ partial class syscall_package
         msg.Iovlen = 1;
 
         var (r0, _, e1) = Syscall(SYS_RECVMSG, (uintptr)fd, (uintptr)(void*)(&msg), (uintptr)flags);
+        System.GC.KeepAlive(ᴋp);
+        System.GC.KeepAlive(ᴋoob);
 
         if (e1 != 0) {
             return (0, 0, 0, errnoErr(e1));
@@ -857,13 +895,19 @@ partial class syscall_package
         NativeIovec iov = default;
         NativeMsghdr msg = default;
 
+        // Declared out here rather than inside the blocks below: the pin lasts the BOX's lifetime,
+        // and the syscall is past the end of both blocks.
+        ж<byte> ᴋp = default!;
+        ж<byte> ᴋoob = default!;
+
         if (nameBuf != null) {
             msg.Name = nameBuf;
             msg.Namelen = nameLen;
         }
 
         if (len(p) > 0) {
-            iov.Base = (byte*)(nint)(uintptr)Ꮡ(p, 0);
+            ᴋp = Ꮡ(p, 0);
+            iov.Base = (byte*)(nint)(uintptr)ᴋp;
             iov.Len = (nuint)len(p);
         }
 
@@ -883,7 +927,8 @@ partial class syscall_package
                 }
             }
 
-            msg.Control = (byte*)(nint)(uintptr)Ꮡ(oob, 0);
+            ᴋoob = Ꮡ(oob, 0);
+            msg.Control = (byte*)(nint)(uintptr)ᴋoob;
             msg.Controllen = (nuint)len(oob);
         }
 
@@ -891,6 +936,8 @@ partial class syscall_package
         msg.Iovlen = 1;
 
         var (r0, _, e1) = Syscall(SYS_SENDMSG, (uintptr)fd, (uintptr)(void*)(&msg), (uintptr)flags);
+        System.GC.KeepAlive(ᴋp);
+        System.GC.KeepAlive(ᴋoob);
 
         if (e1 != 0) {
             return (0, errnoErr(e1));

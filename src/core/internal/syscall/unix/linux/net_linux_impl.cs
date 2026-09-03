@@ -117,11 +117,21 @@ partial class unix_package
 
             // Go passes a valid pointer even for an empty buffer; `Ꮡ(p, 0)` is the pinned slice-element
             // route (ж<T> converts straight to uintptr, as at_fstatat.cs does with Ꮡstat), and an empty
-            // slice has no element to take -- hence the stack byte.
-            uintptr payload = len(p) > 0 ? (uintptr)Ꮡ(p, 0) : (uintptr)(void*)(&zero);
+            // slice has no element to take -- hence the stack byte. The pin is the BOX's, and lasts
+            // only while the box is reachable, so the box is held across the call below.
+            ж<byte> ᴋp = default!;
+            uintptr payload;
+
+            if (len(p) > 0) {
+                ᴋp = Ꮡ(p, 0);
+                payload = (uintptr)ᴋp;
+            } else {
+                payload = (uintptr)(void*)(&zero);
+            }
 
             var (r1, _, errno) = syscall.Syscall6((uintptr)sysRecvfrom, (uintptr)fd, payload, (uintptr)len(p),
                                                   (uintptr)flags, (uintptr)(void*)buffer, (uintptr)(void*)(&addrlen));
+            System.GC.KeepAlive(ᴋp);
 
             if (errno != 0) {
                 return (0, errno);
@@ -142,10 +152,19 @@ partial class unix_package
             byte* buffer = stackalloc byte[syscall.GoNativeSockaddrLen];
             uint32 addrlen = syscall.GoNativeSockaddrLen;
             byte zero = 0;
-            uintptr payload = len(p) > 0 ? (uintptr)Ꮡ(p, 0) : (uintptr)(void*)(&zero);
+            ж<byte> ᴋp = default!;
+            uintptr payload;
+
+            if (len(p) > 0) {
+                ᴋp = Ꮡ(p, 0);
+                payload = (uintptr)ᴋp;
+            } else {
+                payload = (uintptr)(void*)(&zero);
+            }
 
             var (r1, _, errno) = syscall.Syscall6((uintptr)sysRecvfrom, (uintptr)fd, payload, (uintptr)len(p),
                                                   (uintptr)flags, (uintptr)(void*)buffer, (uintptr)(void*)(&addrlen));
+            System.GC.KeepAlive(ᴋp);
 
             if (errno != 0) {
                 return (0, errno);
@@ -287,10 +306,19 @@ partial class unix_package
 
     private static unsafe error sendtoNative(nint fd, slice<byte> p, nint flags, byte* addr, syscall._Socklen addrlen) {
         byte zero = 0;
-        uintptr payload = len(p) > 0 ? (uintptr)Ꮡ(p, 0) : (uintptr)(void*)(&zero);
+        ж<byte> ᴋp = default!;
+        uintptr payload;
+
+        if (len(p) > 0) {
+            ᴋp = Ꮡ(p, 0);
+            payload = (uintptr)ᴋp;
+        } else {
+            payload = (uintptr)(void*)(&zero);
+        }
 
         var (_, _, errno) = syscall.Syscall6((uintptr)sysSendto, (uintptr)fd, payload, (uintptr)len(p),
                                              (uintptr)flags, (uintptr)(void*)addr, (uintptr)(uint32)addrlen);
+        System.GC.KeepAlive(ᴋp);
 
         if (errno != 0) {
             return errno;
