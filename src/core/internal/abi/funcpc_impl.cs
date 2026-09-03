@@ -53,6 +53,9 @@ partial class abi_package
 
     private static uintptr FuncPC(any f, string entryPoint)
     {
+        // This arm stays a plain exception on purpose, and the asymmetry with the panic below is
+        // the point: a call site handing FuncPC something that is not a func is a CONVERTER defect,
+        // which is exactly what `infrastructure-error` is for. A missing body is not.
         if (f is not Delegate target)
         {
             throw new ArgumentException(
@@ -61,13 +64,29 @@ partial class abi_package
 
         MethodInfo method = target.Method;
 
-        // NotSupported rather than NotImplemented, and the distinction is the point: for a Go
-        // assembly routine there is no managed body to write and no address to hand back, so this
-        // can never be "implemented later" the way a missing feature can. The message is the
-        // signature a disclosure matches on, so it names the function.
+        // A PANIC, and not a plain exception, for two independent reasons — the second is the one
+        // that nearly went the other way.
+        //
+        // Mechanically: the test host classifies a non-panic exception escaping a test body as
+        // `infrastructure-error` (TestExecution.Execute's last arm), and a disclosure absorbs a
+        // verdict of exactly `fail` (testConversion.go, matchTerminalStatuses). An
+        // infrastructure-error is therefore unbankable — it cannot be disclosed, only left as a
+        // mismatch.
+        //
+        // Honestly: that classification would ALSO be a lie. `InfrastructureFailed` means "a host
+        // defect" — the comment above that arm says so — and there is no host defect here. The
+        // host is fine; this corpus simply has no code address for a function written in assembly.
+        // That is a property of the port, which is what a panic reports and what the
+        // `runtime-capability` disclosure class records. The convenient answer and the correct one
+        // agree, but they were checked separately.
+        //
+        // Go itself has no runtime behaviour to model: a bad FuncPC argument is a COMPILE error
+        // there. So this is not "what Go does" — it is the honest report of a limit Go never has.
+        //
+        // The message names the function, because it is the signature a disclosure matches on.
         if (method.IsDefined(typeof(GoExternalStubAttribute), inherit: false))
         {
-            throw new NotSupportedException(
+            throw panic(
                 $"{entryPoint}: no program counter exists for {GoSyntheticPC.GoNameOf(method)} — " +
                 "it is an external (assembly or cgo) function with no managed body in this corpus");
         }
