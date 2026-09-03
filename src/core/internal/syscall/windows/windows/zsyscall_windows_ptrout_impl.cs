@@ -23,6 +23,15 @@
 // ships with the transcription in os/user's lookup_windows_impl.cs, never on its own: publishing a
 // real address while that call site stayed as-is would upgrade today's contained nil into a
 // fabricated managed reference, which is a CLR type-safety break.
+//
+// THE FOUR ORDINARY POINTER ARGUMENTS carry the reference file's other closure, for the same reason
+// it gives: golib pins managed storage for the BOX's lifetime only (`m_pin`, a GCHandle owned by
+// that one box), and a hand-own gets none of `convSyscallFunnelCall`'s `var ᴋN`/`GC.KeepAlive`
+// emission because the converter drops a `[module: go.GoManualConversion]` file from the convert
+// set. `serverName`/`userName` are UTF16PtrFromString element references into managed
+// `slice<uint16>`s; `entriesRead`/`totalEntries` are `heap(new uint32(), ...)` boxes the KERNEL
+// WRITES, and a domain query can block for as long as a DC takes to answer. The out-cell needs no
+// such holder -- it is a native stack local.
 
 using System;
 
@@ -62,6 +71,11 @@ partial class windows_package
         uintptr cellAddr = Ꮡbuf == nil ? 0 : (uintptr)(void*)(&cell);
 
         var (r0, _, _) = syscall.Syscall9(procNetUserGetLocalGroups.Addr(), 8, (uintptr)ᏑserverName, (uintptr)ᏑuserName, (uintptr)level, (uintptr)flags, cellAddr, (uintptr)prefMaxLen, (uintptr)ᏑentriesRead, (uintptr)ᏑtotalEntries, 0);
+
+        System.GC.KeepAlive(ᏑserverName);
+        System.GC.KeepAlive(ᏑuserName);
+        System.GC.KeepAlive(ᏑentriesRead);
+        System.GC.KeepAlive(ᏑtotalEntries);
 
         if (r0 != 0) {
             return ((syscall.Errno)r0);

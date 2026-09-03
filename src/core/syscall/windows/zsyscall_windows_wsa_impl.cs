@@ -684,9 +684,40 @@ partial class syscall_package
     // ---- The record's native overlapped, for this package's other hand-owns ----------------------
 
     // ConnectEx lives in syscall_windows_impl.cs (it was hand-owned by the sockaddr lane before this
-    // arc existed) and needs the same record machinery as the wrappers above.
-    internal static unsafe uintptr rearmOverlapped(ΔHandle handle, ж<Overlapped> Ꮡoverlapped, nint mode) {
-        return (uintptr)(void*)operationFor(handle, Ꮡoverlapped, mode).Rearm();
+    // arc existed) and needs the same record machinery as the wrappers above -- INCLUDING the pin
+    // retention, which is why this takes the boxes rather than leaving the caller to KeepAlive them.
+    //
+    // A `GC.KeepAlive` after the call is the right closure for a SYNCHRONOUS wrapper, and it is
+    // exactly wrong here: ConnectEx's lpOverlapped may not be NULL, so the submit is asynchronous by
+    // construction and the kernel's use of lpSendBuffer (and of lpdwBytesSent, which the
+    // documentation ties to lpSendBuffer's presence) begins where a KeepAlive would end. The pin has
+    // to live for the FLIGHT, which is precisely what m_pins is -- the file header's own reason:
+    // "Holding the address would not be enough: the pin is a GCHandle owned by that one box and
+    // released with it."
+    //
+    // The retention is taken AFTER Rearm and cannot be reordered: Rearm() clears the previous
+    // submit's pins, so a box pinned before it would be dropped on the spot. Folding both into one
+    // call is what makes that ordering unstateable at the call site rather than merely documented.
+    internal static unsafe uintptr rearmOverlapped(ΔHandle handle, ж<Overlapped> Ꮡoverlapped, nint mode, INilPointer? pinFirst, INilPointer? pinSecond) {
+        OverlappedOp operation = operationFor(handle, Ꮡoverlapped, mode);
+        uintptr native = (uintptr)(void*)operation.Rearm();
+
+        retainForFlight(operation, pinFirst);
+        retainForFlight(operation, pinSecond);
+
+        return native;
+    }
+
+    // A nil pointer names no managed storage and took no pin -- ж.cs's uintptr operator answers 0
+    // for it before EnsureStableAddress is ever reached -- so there is nothing to hold still, and a
+    // native-backed box's address is not managed storage either. Both are retained anyway rather
+    // than tested for: holding an object that owns no pin costs one list slot until the next Rearm,
+    // and a test for "is this one of the two harmless kinds" is a predicate that can drift away from
+    // the operator's. Only the C# null and the structural nil are skipped.
+    private static void retainForFlight(OverlappedOp operation, INilPointer? box) {
+        if (box is not null && !box.IsNilPointer) {
+            operation.Pin(box);
+        }
     }
 
     // ---- The INITIALISATION pair -----------------------------------------------------------------
