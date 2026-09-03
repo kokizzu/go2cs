@@ -649,8 +649,43 @@ func (c *StdLibConverter) getOutputPath(pkgPath string) string {
 	return filepath.Join(c.go2csPath, "core", pkgPath)
 }
 
-// convertPackage converts a single package
-func (c *StdLibConverter) convertPackage(inputPath, outputPath string) error {
+// defaultConvertTimeout is the per-package conversion cap the -stdlib driver applies when
+// -convert-timeout is not passed. It is a SAFETY NET against a hung conversion, never a
+// performance assumption: the number has to clear the slowest legitimate package on the slowest
+// legitimate host, because everything it kills early is reported as a failed package and a
+// killed-but-healthy conversion reads exactly like a converter defect. It was hard-coded at this
+// value until 2026-09-02, when concurrent lane load on an i7-class machine pushed one package's
+// conversion past it mid two-seeded A/B -- which would have banked a whole package as a spurious
+// emission difference. Raise it with -convert-timeout rather than editing this constant.
+const defaultConvertTimeout = 10 * time.Minute
+
+// validateConvertTimeout rejects a non-positive -convert-timeout, naming the flag. Same fail-fast
+// posture as -test-timeout: a zero or negative cap fires the instant the conversion starts, so it
+// must die at the command line rather than surface as every package timing out at once.
+func validateConvertTimeout(timeout time.Duration) error {
+	if timeout <= 0 {
+		return fmt.Errorf("-convert-timeout must be greater than zero (got %s)", timeout)
+	}
+
+	return nil
+}
+
+// packageConvertTimeout is the per-package cap this run applies. A zero value means the Options
+// were built in code rather than parsed from the command line (unit tests, an internal driver);
+// those take the default instead of firing instantly.
+func (c *StdLibConverter) packageConvertTimeout() time.Duration {
+	if c.options.convertTimeout > 0 {
+		return c.options.convertTimeout
+	}
+
+	return defaultConvertTimeout
+}
+
+// runPackageConversionWithTimeout runs one package's conversion under the per-package cap,
+// recovering a panic in the conversion goroutine as an ordinary error. When the cap fires the
+// error names both the elapsed budget and the flag that changes it, so the next reader learns the
+// knob from the failure text rather than from this source file.
+func runPackageConversionWithTimeout(timeout time.Duration, convert func() error) error {
 	// Use a channel to synchronize completion
 	done := make(chan error, 1)
 
@@ -662,17 +697,24 @@ func (c *StdLibConverter) convertPackage(inputPath, outputPath string) error {
 			}
 		}()
 
-		// Call the existing processConversion function
-		done <- processConversion(inputPath, true, outputPath, c.options)
+		done <- convert()
 	}()
 
-	// Set a timeout for package conversion (10 minutes should be plenty)
 	select {
 	case err := <-done:
 		return err
-	case <-time.After(10 * time.Minute):
-		return fmt.Errorf("conversion timed out after 10 minutes")
+	case <-time.After(timeout):
+		return fmt.Errorf("conversion timed out after %s (per-package -convert-timeout cap; raise it, e.g. -convert-timeout %s -- the cap is a safety net against a hung conversion, never a performance assumption)",
+			timeout, timeout*3)
 	}
+}
+
+// convertPackage converts a single package
+func (c *StdLibConverter) convertPackage(inputPath, outputPath string) error {
+	return runPackageConversionWithTimeout(c.packageConvertTimeout(), func() error {
+		// Call the existing processConversion function
+		return processConversion(inputPath, true, outputPath, c.options)
+	})
 }
 
 // GenerateDependencyGraph creates a visual representation of the dependency graph

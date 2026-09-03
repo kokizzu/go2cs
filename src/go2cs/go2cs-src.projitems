@@ -39,6 +39,7 @@
     <None Include="$(MSBuildThisFileDirectory)conversionDriver_test.go" />
     <None Include="$(MSBuildThisFileDirectory)converterStaleness.go" />
     <None Include="$(MSBuildThisFileDirectory)converterStaleness_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)convertTimeout_test.go" />
     <None Include="$(MSBuildThisFileDirectory)convExpr.go" />
     <None Include="$(MSBuildThisFileDirectory)convExprList.go" />
     <None Include="$(MSBuildThisFileDirectory)convFuncLit.go" />

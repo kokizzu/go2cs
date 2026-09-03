@@ -190,6 +190,7 @@ func main() {
 	goPathCmd := commandLine.String("gopath", goPath, "Path to Go path directory")
 	go2csPathCmd := commandLine.String("go2cspath", go2csPath, "Path to C# converted code")
 	convertStdLibCmd := commandLine.Bool("stdlib", false, "Convert Go standard library (implies -tags purego by default; pass an explicit -tags to override)")
+	convertTimeoutCmd := commandLine.Duration("convert-timeout", defaultConvertTimeout, "Per-package cap the -stdlib driver applies to ONE package's conversion; Go duration syntax, must be greater than zero. It is a safety net against a hung conversion, never a performance assumption -- a slow host under concurrent load can legitimately need far more than the default, and a package killed early is reported as a failed package")
 	convertTestsCmd := commandLine.Bool("tests", false, "Convert eligible Go package tests and emit a runnable test host project")
 	testActionCmd := commandLine.String("test-action", "convert", "Converted-test action: convert, build, run, compare, or all")
 	testTimeoutCmd := commandLine.Duration("test-timeout", 2*time.Minute, "Timeout for each converted-test child process (build/run/compare)")
@@ -404,6 +405,7 @@ Examples:
 		goPath:              *goPathCmd,
 		go2csPath:           *go2csPathCmd,
 		convertStdLib:       convertStdLib,
+		convertTimeout:      *convertTimeoutCmd,
 		convertTests:        *convertTestsCmd,
 		testAction:          strings.ToLower(strings.TrimSpace(*testActionCmd)),
 		testTimeout:         *testTimeoutCmd,
@@ -433,6 +435,13 @@ Examples:
 	// The capture-mode pass runs across four drivers with no options in reach; the flag mirrors
 	// into its package global once, here (see selectRefReturnPrimaries).
 	dualRecvEnabled = options.dualRecv
+
+	// Validated unconditionally rather than under -stdlib (the only mode that reads it today):
+	// a non-positive cap is never meaningful in any mode, and the value the user typed is worth
+	// rejecting where they typed it. Same fail-fast posture as -test-timeout below.
+	if err := validateConvertTimeout(options.convertTimeout); err != nil {
+		log.Fatalln(err)
+	}
 
 	if options.convertTests {
 		// -tests and -recurse compose badly today (the recursive module walk has its own
