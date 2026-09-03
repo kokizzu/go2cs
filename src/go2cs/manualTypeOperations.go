@@ -135,6 +135,17 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// vendor/golang.org/x/crypto/internal/alias/alias_purego_impl.cs holds the body.
 		"AnyOverlap": goosAny,
 	},
+	"vendor/golang.org/x/net/route": {
+		// route.init probes the byte order through `(*[4]byte)(unsafe.Pointer(&i))` on a uint32 local —
+		// the raw-metal fork golib names at array<T>.AliasPointer (an array<T> cannot be fabricated from a
+		// scalar's bytes), measured by the first darwin behavioral census as an index panic inside the
+		// module initializer of every net importer (net imports x/net/route on BSDs only). The companion
+		// vendor/golang.org/x/net/route/darwin/sys_impl.cs answers the question with
+		// BitConverter.IsLittleEndian and keeps the rest of init verbatim. Darwin-scoped: sys.go is BSD-only,
+		// so the converted init never existed in the linux or windows emission. A displaced init emits only
+		// the placeholder, so the companion carries the [GoInit] module initializer itself.
+		"init": goosDarwin,
+	},
 	"slices": {
 		// overlaps has AnyOverlap's four-take shape and its race; its callers Insert/Replace take the
 		// hard-case rotation on TRUE, where startIdx panics `needle not found` for a source that does not
