@@ -406,3 +406,45 @@ path does. It is an **assumption, recorded, not a measurement** — the same pos
 the setxid-twin question on linux, where a library's thread-broadcast behaviour turned out not to be
 derivable from the syscall it wraps. The first mac dispatch is what can move it from assumed to
 measured, and until then no claim in this record depends on it being true.
+
+### 7.6 MEASURED 2026-09-03 (C2, after COORD accepted §7) — the probe ran, the prediction held, and the bound has a population
+
+§7.2 was written as a code read with the probe named as the cut's first acceptance step. The probe
+now exists and has run: `src/tests/GolibTests/DarwinKeystoneArgsRecoveryTests.cs` on
+`claude/c2-darwin-keystone-probe` (committed unmeasured with its prediction on record, then measured
+in a follow-up commit, never by editing the first). Linux host, GolibTests linux flavour, Debug,
+filtered: **5 of 5, zero aborts**, build 0 strict errors, exactly the prediction.
+
+| arm | what it drives | predicted | measured |
+|:--|:--|:--|:--|
+| 1 | a `fcntl_args`-shaped box through the EXACT emission form `new @unsafe.Pointer(Ꮡargs)` → `ManagedPointerTokens.Resolve` | same box back, aliasing the call site's storage | **PASS** |
+| 2 | the layout read off the recovered type by reflection | five `int32` at 0/4/8/12/16, size 20 | **PASS** |
+| 3 | a `nanotime1_r`-shaped result struct | 0/8/12, size 16 | **PASS** |
+| 4 | a reference-bearing shape (`mmap_args`'s `unsafe.Pointer` fields) | resolves to **nothing** | **PASS, null branch** |
+| 5 | an unpinned number, and nil | MISS | **PASS** |
+
+The instrument can go red in both directions — arms 1–3 need a non-null resolve, 4–5 a null one — so
+the green is a measurement, not a tautology. Two things the run settles that §7.2 could only state:
+
+**The core round trip was already banked one step removed.** Before writing the probe the existing
+guards were opened, and `NativeAddressStabilityTests.PinnedConversionRegistersItsProvenance` /
+`PointerProvenanceTests.StructSlotAddressResolvesToItsBox` already measure
+`heap<T>` → `(uintptr)Ꮡvalue` → `Resolve` → the same box. The new file covers only what they do not:
+the `unsafe.Pointer` wrapper the emission actually uses, the reflection step after recovery, and the
+negative arm.
+
+**The bound has a measured population — 3 of the 13 lifted darwin structs.** Censused with
+`fcntl_args` as the positive control (it must show five fields — a first pass whose regex missed the
+multi-declarator `int32 fd, cmd, arg;` form reported TEN structs as empty and therefore "reference-
+free", the false-empty caught only by that control): ten are reference-free (the eight-member
+`syscall_*_args` family, `crypto_x509_syscall_args`, `nanotime1_r`, `fcntl_args`) and three carry
+managed references — **`mmap_args`** (`unsafe.Pointer` ×2), **`mach_vm_region_args`** (`ж<…>` ×4 plus an
+`unsafe.Pointer`), **`proc_regionfilename_args`** (`ж<byte>`). Mechanically: `StandardBox` gives a
+reference-bearing `T` an `m_val` and **no `m_slot`**, `PinnableStorage` is `m_slot`, so
+`EnsureStableAddress` pins nothing, `IsPinnedAt` answers false, and `Resolve`'s validate-on-read misses
+(`ж.StandardBox.cs:54–62`, `ж.cs:444–478`). For those three the §7.2 recovery does not reach, the
+dispatcher throws naming the trampoline (§7.3), and the converter-emitted per-symbol layout record is
+the remedy — now a remedy with a named population rather than a hypothetical fallback. None of the
+three is on the floor-of-five path (§3); whether any is reachable at all in the managed model is the
+same question §3 of design-1 asked of the semaphore trio, and it is left open here rather than
+answered by assertion.
