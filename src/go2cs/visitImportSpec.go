@@ -812,6 +812,13 @@ var majorVersionSegmentRegex = regexp.MustCompile(`^v[0-9]+$`)
 func convertImportPathToNamespace(importPath string, packageSuffix string) string {
 	importPath = resolveGorootVendoredPath(importPath)
 
+	// The import GRAPH is keyed by the path as written; only the emitted NAMESPACE elides the
+	// repository's own `go2cs/` module marker, and it must elide it here for the same reason
+	// getProjectName does on the declaration side — see trimGo2CSModulePrefix.
+	graphKey := importPath
+
+	importPath = trimGo2CSModulePrefix(importPath)
+
 	// Split import path by "/"
 	importPathParts := strings.Split(importPath, "/")
 
@@ -833,7 +840,7 @@ func convertImportPathToNamespace(importPath string, packageSuffix string) strin
 	// second reaches the identical answer through the /vN branch below, and nothing in the corpus
 	// imports the last two — so trusting the graph everywhere keeps the promise the exclusion was
 	// making, instead of asserting it.
-	if meta, ok := importPackageDirs[importPath]; ok && meta.Name != "" && len(importPathParts) > 0 {
+	if meta, ok := importPackageDirs[graphKey]; ok && meta.Name != "" && len(importPathParts) > 0 {
 		importPathParts[len(importPathParts)-1] = meta.Name
 	} else if len(importPathParts) > 1 {
 		// A MAJOR-VERSION directory (`math/rand/v2`): the Go package is named for the PARENT
