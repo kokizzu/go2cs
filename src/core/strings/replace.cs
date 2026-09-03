@@ -290,11 +290,11 @@ internal static ж<genericReplacer> makeGenericReplacer(slice<@string> oldnew) {
             r.Value.mapping[key[j]] = 1;
         }
     }
-    foreach (var (_, b) in (~r).mapping) {
+    foreach (var (_, b) in (~r).mapping.Clone()) {
         r.Value.tableSize += (nint)b;
     }
     byte index = default!;
-    foreach (var (i, b) in (~r).mapping) {
+    foreach (var (i, b) in (~r).mapping.Clone()) {
         if (b == 0){
             r.Value.mapping[i] = (byte)(~r).tableSize;
         } else {

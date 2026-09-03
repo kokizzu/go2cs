@@ -16770,9 +16770,41 @@ The return type is now the concrete nested `slice<T>.Enumerator` struct (the sha
 * `slice<T>` reaches `IEnumerable<(nint, T)>` through `ISlice<T>` → `IArray<T>`, which the old public method satisfied implicitly. The interface member is now an **explicit** implementation returning the same struct boxed — so LINQ, an interface-typed local, and anything holding the slice as `IEnumerable<(nint, T)>` behave exactly as before, at exactly the cost they already paid. Only the pattern path is free.
 * go2cs-gen's `ISliceTypeTemplate` (every `type S []E` named-slice wrapper) forwarded the interface. It now forwards `global::go.slice<E>.Enumerator` and carries the same explicit interface member, so a named slice type ranges as cheaply as the `slice<E>` it wraps — otherwise every `for range` over a named slice would have kept the box.
 
-`array<T>.GetEnumerator()` is the identical shape and is deliberately **not** changed here: Go's `range` over an array value ranges a COPY, so the eager-vs-lazy capture point is a semantic question there rather than a purely mechanical one, and it wants its own measured change.
+`array<T>.GetEnumerator()` was the identical shape and was deliberately left alone here, because the copy Go's array range takes had to be placed first; it is settled in the section below.
 
 Guarded by `SliceRangeAllocationTests` in `GolibTests`, which asserts **zero** bytes via `GC.GetAllocatedBytesForCurrentThread` across 1,000 loops (whole slice, sub-window with window-relative indices, and the nil slice), plus the interface-path equivalence. It is a measured guard on purpose: restoring the interface return type still compiles and still produces correct output — it just allocates again — so only bytes can catch the regression. Neutering to the interface return reports 48 B/loop; restoring the original iterator body reports exactly 136 B/loop.
+
+### `range` over an ARRAY VALUE iterates a COPY — the snapshot is the range EXPRESSION's `.Clone()`
+
+Go evaluates a range expression **once** before the loop, so `for i, v := range a` over an array VALUE iterates a copy: a write to the container inside the body is invisible to every later iteration. The emitted `array<T>` (and the generated named-array wrapper) is a struct over a shared `T[]` backing, so the plain operand ALIASES the container — the emission read the writes back, diverging from `go run` on every such loop:
+
+```go
+a := [4]int{1, 2, 3, 4}
+for i, v := range a {
+    if i == 0 { a[1], a[2], a[3] = 91, 92, 93 }
+    fmt.Println(i, v)                 // Go: 1 2 3 4        emitted (before): 1 91 92 93
+}
+```
+
+The range expression is simply the array value-copy site nobody had emitted (see *Array VALUE-COPY at every transfer site* above — `range` was listed there for the iteration VARIABLE, never for the operand). It now takes the same strongly-typed suffix every other such transfer takes:
+
+```csharp
+foreach (var (i, v) in a.Clone()) { … }        // array value    — snapshot, Go's copy
+foreach (var (i, v) in h.arr.Clone()) { … }    // struct field   — likewise a value
+foreach (var (i, v) in r.Clone()) { … }        // named array    — the wrapper's own Clone()
+```
+
+Scoped exactly as gc's own rule is (`cmd/compile/internal/walk/order.go`'s `rangeStmt`), so three shapes stay UNCOPIED because Go copies nothing there either — and each is a control in the guard:
+
+* **No value iteration variable.** With at most one iteration variable and a constant length, Go does not evaluate the range expression at all, so `for i := range a` reads the LIVE array through the index. A blank value (`for i, _ := range a`) is the same case.
+* **A POINTER to an array.** `for i, v := range p` shares the pointee; the emission keeps the bare `p.Value`.
+* **A slice.** Its copy is the header, which the struct assignment already is.
+
+`exprReadsValueNeedingClone` narrows the rest: only a read out of EXISTING storage (ident, selector, index, deref) can alias — a composite literal, call result, or conversion is freshly constructed and reachable by no other name, and a return already clones on its own way out.
+
+With the operand snapshotted, `array<T>`'s enumerator reads LIVE storage and needs no capture point of its own, which is what finally let it shed the iterator method: `GetEnumerator()` returns the nested `array<T>.Enumerator` STRUCT, and go2cs-gen's `IArrayTypeTemplate` / `IArrayViewTypeTemplate` forward that struct (with the explicit `IEnumerable<(nint, T)>` member beside it) so named array types range as cheaply. Measured with `GC.GetAllocatedBytesForCurrentThread` over 1,000 loops: **72 B/loop → 0 B/loop** on the pattern path, and 103 → 79 B/loop on the boxing interface path, which now boxes a struct instead of driving a state machine. Snapshotting inside the enumerator instead would have been wrong in both directions — it would allocate on every loop AND copy for the two shapes above where Go shares.
+
+Guarded two ways: `ArrayRangeSnapshot` (behavioral, output-compared against `go run`) mutates the container mid-loop across the array value, named-array, struct-field, nested-array, `=`-form, mutable-range-var and aliased-element shapes, with the pointer, slice and index-only arms as controls that must NOT copy; `ArrayRangeAllocationTests` (`GolibTests`) asserts the zero bytes, with the boxing interface path as the nonzero control that makes the zero mean something.
 
 ## The `go.golib` support namespace
 

@@ -77,7 +77,7 @@ internal static void defPredeclaredTypes() {
     foreach (var (_, t) in Typ) {
         def(new TypeNameжObject(NewTypeName(nopos, nil, (~t).name, new BasicжΔType(t))));
     }
-    foreach (var (_, t) in basicAliases) {
+    foreach (var (_, t) in basicAliases.Clone()) {
         def(new TypeNameжObject(NewTypeName(nopos, nil, (~t).name, new BasicжΔType(t))));
     }
     // type any = interface{}
@@ -151,7 +151,7 @@ internal static array<predeclaredConstsᴛ1> predeclaredConsts = new predeclared
 }.array();
 
 internal static void defPredeclaredConsts() {
-    foreach (var (_, c) in predeclaredConsts) {
+    foreach (var (_, c) in predeclaredConsts.Clone()) {
         def(new ConstжObject(NewConst(nopos, nil, c.name, new BasicжΔType(Typ[c.kind]), c.val)));
     }
 }
