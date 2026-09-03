@@ -355,10 +355,20 @@ const funcPlaceholderLead = "// go2cs generated this placeholder — func "
 func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	// A declaration owned by a manual conversion (see manualTypeOperations.go) emits only a
 	// marker comment — the package's *_impl.cs supplies the implementation.
+	//
+	// The comment sink still has to be served, because this return skips BOTH places a converted
+	// declaration drains it: the writeDoc below, which flushes the free-floating comments standing
+	// AHEAD of the declaration, and the body visit, which flushes the ones INSIDE it. Unserved,
+	// neither set is dropped — both are misplaced, since the drain is positional and the next
+	// declaration's own writeDoc takes everything positioned before it. So the preceding comments
+	// are written here exactly as they would be above a converted declaration, and the ones inside
+	// the displaced span are retired: they document a body this file does not contain.
 	if v.isManualFuncDecl(funcDecl) {
 		v.outputBuilder.WriteString(v.newline)
+		v.writeDoc(nil, funcDecl.Pos())
 		v.writeOutput(funcPlaceholderFormat, funcDecl.Name.Name)
 		v.outputBuilder.WriteString(v.newline)
+		v.discardStandAloneComments(funcDecl.Pos(), funcDecl.End())
 		return
 	}
 

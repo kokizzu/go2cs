@@ -160,6 +160,46 @@ func removeCommentPos(slice []token.Pos, pos token.Pos) []token.Pos {
 	return slice
 }
 
+// discardStandAloneComments retires — WITHOUT emitting — every free-floating comment positioned
+// inside [fromPos, toPos].
+//
+// Every other retirement in this file happens because a comment was written somewhere. This one
+// exists for the single shape that has no writer at all: a declaration whose body is DISPLACED to a
+// hand-own (visitFuncDecl's manualConversionFuncs placeholder) is never visited, so the comments
+// inside it never reach an emission point. Leaving them in the sink does not merely delay them, it
+// MISPLACES them — the drain is positional, so the NEXT declaration's writeDoc flushes everything
+// standing before it and a displaced body's commentary resurfaces as that declaration's doc comment
+// (syscall_linux's recvmsgRaw comment reading as sendmsgN's) or, when the displaced declaration was
+// the file's last, as a block after the class's closing brace (runtime mbitmap's getgcmask, 32
+// lines). Discarding is the faithful answer rather than a lossy one: those comments document a body
+// this file does not contain, and the hand-own that does contain it carries its own.
+//
+// Only the sink is touched, so a comment the AST attached to a node (a Doc group) is unaffected —
+// visitFile already removed those, and they travel with the node they belong to.
+func (v *Visitor) discardStandAloneComments(fromPos, toPos token.Pos) {
+	if !v.options.includeComments || fromPos == token.NoPos || toPos == token.NoPos {
+		return
+	}
+
+	// The index is sorted and a FileSet lays every position of one file ahead of the next, so the
+	// span is one contiguous run — seek to its start rather than rescanning the file's comments.
+	first := sort.Search(len(v.sortedCommentPos), func(i int) bool { return v.sortedCommentPos[i] >= fromPos })
+	discarded := 0
+
+	for _, pos := range v.sortedCommentPos[first:] {
+		if pos > toPos {
+			break
+		}
+
+		delete(v.standAloneComments, pos)
+		discarded++
+	}
+
+	if discarded > 0 {
+		v.sortedCommentPos = append(v.sortedCommentPos[:first], v.sortedCommentPos[first+discarded:]...)
+	}
+}
+
 // writeTrailingComment appends the free-floating comment(s) sitting on the SAME source line as the
 // just-emitted statement's end, so a Go end-of-line comment stays an end-of-line comment.
 //

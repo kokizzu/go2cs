@@ -78,42 +78,6 @@ public static ж<Frames> CallersFrames(slice<uintptr> callers) {
 
 // go2cs generated this placeholder — func Next is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Find the next frame.
-// We need to look for 2 frames so we know what
-// to return for the "more" result.
-// Pre-expand cgo frames. We could do this
-// incrementally, too, but there's no way to
-// avoid allocation in this case anyway.
-// We store the pc of the start of the instruction following
-// the instruction in question (the call or the inline mark).
-// This is done for historical reasons, and to make FuncForPC
-// work correctly for entries in the result of runtime.Callers.
-// It's important that interpret pc non-strictly as cgoTraceback may
-// have added bogus PCs with a valid funcInfo but invalid PCDATA.
-// Note: entry is not modified. It always refers to a real frame, not an inlined one.
-// File/line from funcline1 below are already correct.
-// When CallersFrame is invoked using the PC list returned by Callers,
-// the PC list includes virtual PCs corresponding to each outer frame
-// around an innermost real inlined PC.
-// We also want to support code passing in a PC list extracted from a
-// stack trace, and there only the real PCs are printed, not the virtual ones.
-// So check to see if the implied virtual PC for this PC (obtained from the
-// unwinder itself) is the next PC in ci.callers. If not, insert it.
-// The +1 here correspond to the pc-- above: the output of Callers
-// and therefore the input to CallersFrames is return PCs from the stack;
-// The pc-- backs up into the CALL instruction (not the first byte of the CALL
-// instruction, but good enough to find it nonetheless).
-// There are no cycles in implied virtual PCs (some number of frames were
-// inlined, but that number is finite), so this unpacking cannot cause an infinite loop.
-// Skip, because tracebackPCs (inside runtime.Callers) would too.
-// Note: File,Line set below
-// Pop one frame from the frame list. Keep the rest.
-// Avoid allocation in the common case, which is 1 or 2 frames.
-// In the rare case when there are no frames at all, we return Frame{}.
-// Compute file/line just before we need to return it,
-// as it can be expensive. This avoids computing file/line
-// for the Frame we find but don't return. See issue 32093.
-
 // runtime_FrameStartLine returns the start line of the function in a Frame.
 //
 // runtime_FrameStartLine should be an internal detail,
@@ -630,17 +594,6 @@ internal static readonly @string runtimeTextOffsetOutOfˢ = "runtime: text offse
 // go2cs generated this placeholder — func Entry is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func FileLine is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// This must interpret PC non-strictly so bad PCs (those between functions) don't crash the runtime.
-// We just report the preceding function in that situation. See issue 29735.
-// TODO: Perhaps we should report no function at all in that case.
-// The runtime currently doesn't have function end info, alas.
-// entry of the real (the outermost) function.
-// inlined version
-// inlined version
-// inlined version
-// Pass strict=false here, because anyone can call this function,
-// and they might just be wrong about targetpc belonging to f.
 
 // startLine returns the starting line number of the function. i.e., the line
 // number of the func keyword.

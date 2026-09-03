@@ -28,28 +28,6 @@ partial class reflect_package {
 
 // go2cs generated this placeholder — func deepValueEqual is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// We want to avoid putting more in the visited map than we need to.
-// For any possible reference cycle that might be encountered,
-// hard(v1, v2) needs to return true for at least one of the types in the cycle,
-// and it's safe and valid to get Value's internal pointer.
-// not-in-heap pointers can't be cyclic.
-// At least, all of our current uses of runtime/internal/sys.NotInHeap
-// have that property. The runtime ones aren't cyclic (and we don't use
-// DeepEqual on them anyway), and the cgo-generated ones are
-// all empty structs.
-// Nil pointers cannot be cyclic. Avoid putting them in the visited map.
-// For a Pointer or Map value, we need to check flagIndir,
-// which we do by calling the pointer method.
-// For Slice or Interface, flagIndir is always set,
-// and using v.ptr suffices.
-// Canonicalize order to reduce number of entries in visited.
-// Assumes non-moving garbage collector.
-// Short circuit if references are already seen.
-// Remember for later.
-// Special case for []byte, which is common.
-// Can't do better than this:
-// Normal equality suffices
-
 // DeepEqual reports whether x and y are “deeply equal,” defined as follows.
 // Two values of identical type are deeply equal if one of the following cases applies.
 // Values of distinct types are never deeply equal.

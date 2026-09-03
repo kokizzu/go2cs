@@ -11,9 +11,6 @@ partial class runtime_package {
 
 // go2cs generated this placeholder — func GOMAXPROCS is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// WebAssembly has no threads yet, so only one CPU is possible.
-// newprocs will be processed by startTheWorld
-
 // NumCPU returns the number of logical CPUs usable by the current process.
 //
 // The set of available CPUs is checked by querying the operating system

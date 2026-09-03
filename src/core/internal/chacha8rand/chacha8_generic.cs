@@ -56,10 +56,6 @@ partial class chacha8rand_package {
 
 // go2cs generated this placeholder — func setup is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Convert to uint64 to do half as many stores to memory.
-// Constants; same as in ChaCha20: "expand 32-byte k"
-// Counters.
-// Zeros.
 internal static void _ᴛ1() {
     // block and block_generic must have same type
     var x = block;
@@ -68,17 +64,6 @@ internal static void _ᴛ1() {
 }
 
 // go2cs generated this placeholder — func block_generic is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// Load block i from b[*][i] into local variables.
-// 4 iterations of eight quarter-rounds each is 8 rounds
-// Store block i back into b[*][i].
-// Add b4..b11 back to the original key material,
-// like in ChaCha20, to avoid trivial invertibility.
-// There is no entropy in b0..b3 and b12..b15
-// so we can skip the additions and save some time.
-// On a big-endian system, reading the uint32 pairs as uint64s
-// will word-swap them compared to little-endian, so we word-swap
-// them here first to make the next swap get the right answer.
 
 // qr is the (inlinable) ChaCha8 quarter round.
 internal static (uint32 _a, uint32 _b, uint32 _c, uint32 _d) qr(uint32 a, uint32 b, uint32 c, uint32 d) {

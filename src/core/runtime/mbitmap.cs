@@ -1777,37 +1777,4 @@ internal static slice<byte> reflect_gcbits(any x) {
 
 // go2cs generated this placeholder — func getgcmask is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// data or bss
-// data
-// bss
-// heap
-// Move the base up to the iterator's start, because
-// we want to hide evidence of a malloc header from the
-// caller.
-// Unroll the full bitmap the GC would actually observe.
-// Double-check that every part of the ptr/scalar we're not
-// showing the caller is zeroed. This keeps us honest that
-// that information is actually irrelevant.
-// Callers (and a check we're about to run) expects this mask
-// to end at the last pointer.
-// Unroll again, but this time from the type information.
-// Validate that the prefix of maskFromType is equal to
-// maskFromHeap. maskFromType may contain more pointers than
-// maskFromHeap produces because maskFromHeap may be able to
-// get exact type information for certain classes of objects.
-// With maskFromType, we're always just tiling the type bitmap
-// through to the elemsize.
-//
-// It's OK if maskFromType has pointers in elemsize that extend
-// past the actual populated space; we checked above that all
-// that space is zeroed, so just the GC will just see nil pointers.
-// Select the heap mask to return. We may not have a type mask.
-// Make sure we keep ep alive. We may have stopped referencing
-// ep's data pointer sometime before this point and it's possible
-// for that memory to get freed.
-// stack
-// otherwise, not something the GC knows about.
-// possibly read-only data, like malloc(0).
-// must not have pointers
-
 } // end runtime_package

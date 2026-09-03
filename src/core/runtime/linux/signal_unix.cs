@@ -183,13 +183,6 @@ internal static bool sigInstallGoHandler(uint32 sig) {
 
 // go2cs generated this placeholder — func sigignore is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// SIGPROF is handled specially for profiling.
-// SIGPROF is handled specially for profiling.
-// If initsig does not install a signal handler for a
-// signal, then to go back to the state before Notify
-// we should remove the one we installed.
-// SIGPROF is handled specially for profiling.
-
 // clearSignalHandlers clears all signal handlers that are not ignored
 // back to the default. This is called by the child after a fork, so that
 // we can enable the signal mask for the exec without worrying about

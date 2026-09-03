@@ -377,19 +377,6 @@ internal static bool Comparable(this rtype t) {
 
 // go2cs generated this placeholder — func implements is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// The same algorithm applies in both cases, but the
-// method tables for an interface type and a concrete type
-// are different, so the code is duplicated.
-// In both cases the algorithm is a linear scan over the two
-// lists - T's methods and V's methods - simultaneously.
-// Since method tables are stored in a unique sorted order
-// (alphabetical, with no duplicate method names), the scan
-// through V's methods must hit a match for each of T's
-// methods along the way, or else V does not implement T.
-// This lets us run the scan in overall linear time instead of
-// the quadratic time  a naive search would require.
-// See also ../runtime/iface.go.
-
 // directlyAssignable reports whether a value x of type V can be directly
 // assigned (using memmove) to a value of type T.
 // https://golang.org/doc/go_spec.html#Assignability
@@ -426,16 +413,6 @@ internal static bool haveIdenticalType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, boo
 }
 
 // go2cs generated this placeholder — func haveIdenticalUnderlyingType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// Non-composite types of equal kind have same underlying type
-// (the predefined instance of the type).
-// Composite types.
-// Special case:
-// x is a bidirectional channel value, T is a channel type,
-// and x's type V and T have identical element types.
-// Otherwise continue test for identical underlying type.
-// Might have the same methods but still
-// need a run time conversion.
 
 // toType converts from a *rtype to a Type that can be returned
 // to the client of package reflect. In gc, the only concern is that

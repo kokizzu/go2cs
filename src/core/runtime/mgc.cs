@@ -411,54 +411,6 @@ internal static ref workType work => ref Ꮡwork.Value;
 
 // go2cs generated this placeholder — func GC is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// We consider a cycle to be: sweep termination, mark, mark
-// termination, and sweep. This function shouldn't return
-// until a full cycle has been completed, from beginning to
-// end. Hence, we always want to finish up the current cycle
-// and start a new one. That means:
-//
-// 1. In sweep termination, mark, or mark termination of cycle
-// N, wait until mark termination N completes and transitions
-// to sweep N.
-//
-// 2. In sweep N, help with sweep N.
-//
-// At this point we can begin a full cycle N+1.
-//
-// 3. Trigger cycle N+1 by starting sweep termination N+1.
-//
-// 4. Wait for mark termination N+1 to complete.
-//
-// 5. Help with sweep N+1 until it's done.
-//
-// This all has to be written to deal with the fact that the
-// GC may move ahead on its own. For example, when we block
-// until mark termination N, we may wake up in cycle N+2.
-// Wait until the current sweep termination, mark, and mark
-// termination complete.
-// We're now in sweep N or later. Trigger GC cycle N+1, which
-// will first finish sweep N if necessary and then enter sweep
-// termination N+1.
-// Wait for mark termination N+1 to complete.
-// Finish sweep N+1 before returning. We do this both to
-// complete the cycle and because runtime.GC() is often used
-// as part of tests and benchmarks to get the system into a
-// relatively stable and isolated state.
-// Callers may assume that the heap profile reflects the
-// just-completed cycle when this returns (historically this
-// happened because this was a STW GC), but right now the
-// profile still reflects mark termination N, not N+1.
-//
-// As soon as all of the sweep frees from cycle N+1 are done,
-// we can go ahead and publish the heap profile.
-//
-// First, wait for sweeping to finish. (We know there are no
-// more spans on the sweep queue, but we may be concurrently
-// sweeping spans, so we have to wait.)
-// Now we're really done with sweeping, so we can publish the
-// stable heap profile. Only do this if we haven't already hit
-// another mark termination.
-
 // gcWaitOnMark blocks until GC finishes the Nth mark phase. If GC has
 // already completed this mark phase, it returns immediately.
 internal static void gcWaitOnMark(uint32 n) {

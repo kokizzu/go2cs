@@ -47,26 +47,11 @@ internal static void @lock(ж<mutex> Ꮡl) {
 
 // go2cs generated this placeholder — func lock2 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Speculative grab for lock.
-// wait is either MUTEX_LOCKED or MUTEX_SLEEPING
-// depending on whether there is a thread sleeping
-// on this mutex. If we ever change l->key from
-// MUTEX_SLEEPING to some other value, we must be
-// careful to change it back to MUTEX_SLEEPING before
-// returning, to ensure that the sleeping thread gets
-// its wakeup call.
-// On uniprocessors, no point spinning.
-// On multiprocessors, spin for ACTIVE_SPIN attempts.
-// Try for lock, spinning.
-// Try for lock, rescheduling.
-// Sleep.
 internal static void unlock(ж<mutex> Ꮡl) {
     unlockWithRank(Ꮡl);
 }
 
 // go2cs generated this placeholder — func unlock2 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// restore the preemption request in case we've cleared it in newstack
 
 // One-time notifications.
 internal static void noteclear(ж<note> Ꮡn) {
@@ -84,8 +69,6 @@ internal static void noteclear(ж<note> Ꮡn) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string notetsleepNotOnG0ˢ = "notetsleep not on g0"u8;
 
-// Sleep for an arbitrary-but-moderate interval to poll libc interceptors.
-// Sleep for an arbitrary-but-moderate interval to poll libc interceptors.
 internal static bool notetsleep(ж<note> Ꮡn, int64 ns) {
     var gp = getg();
     if (gp != (~(~gp).m).g0 && (~(~gp).m).preemptoff != ""u8) {

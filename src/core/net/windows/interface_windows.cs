@@ -13,8 +13,6 @@ partial class net_package {
 
 // go2cs generated this placeholder — func adapterAddresses is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// recommended initial size
-
 // If the ifindex is zero, interfaceTable returns mappings of all
 // network interfaces. Otherwise it returns a mapping of a specific
 // interface.

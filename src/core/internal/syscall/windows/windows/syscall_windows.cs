@@ -256,14 +256,14 @@ internal static ref sendRecvMsgFuncᴛ1 sendRecvMsgFunc => ref ᏑsendRecvMsgFun
     public uint32 Flags;
 }
 
+//sys	WSASocket(af int32, typ int32, protocol int32, protinfo *syscall.WSAProtocolInfo, group uint32, flags uint32) (handle syscall.Handle, err error) [failretval==syscall.InvalidHandle] = ws2_32.WSASocketW
+//sys	WSAGetOverlappedResult(h syscall.Handle, o *syscall.Overlapped, bytes *uint32, wait bool, flags *uint32) (err error) = ws2_32.WSAGetOverlappedResult
 // go2cs generated this placeholder — func loadWSASendRecvMsg is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func WSASendMsg is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func WSARecvMsg is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-//sys	WSASocket(af int32, typ int32, protocol int32, protinfo *syscall.WSAProtocolInfo, group uint32, flags uint32) (handle syscall.Handle, err error) [failretval==syscall.InvalidHandle] = ws2_32.WSASocketW
-//sys	WSAGetOverlappedResult(h syscall.Handle, o *syscall.Overlapped, bytes *uint32, wait bool, flags *uint32) (err error) = ws2_32.WSAGetOverlappedResult
 public static UntypedInt ComputerNameNetBIOS => 0;
 public static UntypedInt ComputerNameDnsHostname => 1;
 public static UntypedInt ComputerNameDnsDomain => 2;

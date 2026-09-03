@@ -316,9 +316,6 @@ public static (uintptr pc, @string @file, nint line, bool ok) Caller(nint skip) 
 
 // go2cs generated this placeholder — func Callers is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// runtime.callers uses pc.array==nil as a signal
-// to print a stack trace. Pick off 0-length pc here
-// so that we don't let a nil pc slice get to it.
 internal static @string defaultGOROOT; // set by cmd/link
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

@@ -5332,10 +5332,6 @@ internal static void dolockOSThread() {
 
 // go2cs generated this placeholder — func lockOSThread is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// If we need to start a new thread from the locked
-// thread, we need the template thread. Start it now
-// while we're in a known-good state.
-
 // dounlockOSThread is called by UnlockOSThread and unlockOSThread below
 // after they update m->locked. Do not allow preemption during this call,
 // or else the m might be in different in this function than in the caller.
@@ -5366,8 +5362,6 @@ internal static void badunlockosthread() {
 
 // go2cs generated this placeholder — func gcount is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// All these variables can be changed concurrently, so the result can be inconsistent.
-// But at least the current goroutine is running.
 internal static int32 mcount() {
     return (int32)(sched.mnext - sched.nmfreed);
 }

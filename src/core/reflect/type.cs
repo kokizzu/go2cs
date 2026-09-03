@@ -593,13 +593,6 @@ internal static slice<abi.Method> exportedMethods(this ж<rtype> Ꮡt) {
 
 // go2cs generated this placeholder — func PkgPath is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// We are looking for the first index i where the string becomes >= s.
-// This is a copy of sort.Search, with f(h) replaced by (t.nameOff(methods[h].name).name() >= name).
-// avoid overflow when computing h
-// i ≤ h < j
-// preserves f(i-1) == false
-// preserves f(j) == true
-// i == j, f(i-1) == false, and f(j) (= f(i)) == true  =>  answer is i.
 internal static @string pkgPathFor(ж<abi.Type> Ꮡt) {
     return toRType(Ꮡt).PkgPath();
 }
@@ -1258,19 +1251,6 @@ internal static bool ConvertibleTo(this ж<rtype> Ꮡt, ΔType u) {
 
 // go2cs generated this placeholder — func implements is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// The same algorithm applies in both cases, but the
-// method tables for an interface type and a concrete type
-// are different, so the code is duplicated.
-// In both cases the algorithm is a linear scan over the two
-// lists - T's methods and V's methods - simultaneously.
-// Since method tables are stored in a unique sorted order
-// (alphabetical, with no duplicate method names), the scan
-// through V's methods must hit a match for each of T's
-// methods along the way, or else V does not implement T.
-// This lets us run the scan in overall linear time instead of
-// the quadratic time  a naive search would require.
-// See also ../runtime/iface.go.
-
 // specialChannelAssignability reports whether a value x of channel type V
 // can be directly assigned (using memmove) to another channel type T.
 // https://golang.org/doc/go_spec.html#Assignability
@@ -1330,12 +1310,6 @@ internal static bool haveIdenticalType(ж<abi.Type> ᏑT, ж<abi.Type> ᏑV, boo
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string sizeofRtype0ˢ = "sizeof(rtype) > 0"u8;
-
-// Non-composite types of equal kind have same underlying type
-// (the predefined instance of the type).
-// Composite types.
-// Might have the same methods but still
-// need a run time conversion.
 
 // rtypeOff should be an internal detail,
 // but widely used packages access it using linkname.
@@ -1429,16 +1403,6 @@ internal static ref funcLookupCacheᴛ1 funcLookupCache => ref ᏑfuncLookupCach
 
 // go2cs generated this placeholder — func MapOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Look in cache.
-// This restriction is imposed by the gc compiler and the runtime.
-// typ is recv chan, need parentheses as "<-" associates with leftmost
-// chan possible, see:
-// * https://golang.org/ref/spec#Channel_types
-// * https://github.com/golang/go/issues/39897
-// Look in cache.
-// Look in known types.
-// indirect key
-// indirect value
 internal static slice<ΔType> funcTypes;
 
 internal static ж<Δsync.Mutex> ᏑfuncTypesMutex = new StandardBox<Δsync.Mutex>(default(Δsync.Mutex));
@@ -1475,10 +1439,6 @@ internal static ΔType initFuncTypes(nint n) {
 
 // go2cs generated this placeholder — func FuncOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Look in cache.
-// Not in cache, lock and retry.
-// Look in known types for the same string representation.
-// Populate the remaining fields of ft and store in cache.
 internal static @string stringFor(ж<abi.Type> Ꮡt) {
     return toRType(Ꮡt).String();
 }
@@ -1725,9 +1685,6 @@ internal static slice<byte> appendGCProg(slice<byte> dst, ж<abi.Type> Ꮡtyp) {
 
 // go2cs generated this placeholder — func SliceOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Look in cache.
-// Look in known types.
-
 // The structLookupCache caches StructOf lookups.
 // StructOf does not share the common lookupCache since we need to pin
 // the memory associated with *structTypeFixedN.
@@ -1815,48 +1772,6 @@ internal static bool isPaddedField(ΔType t, nint i) {
 
 // go2cs generated this placeholder — func StructOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Update string and hash
-// Embedded field
-// Embedded ** and *interface{} are illegal
-// TODO(sbinet).  Issue 15924.
-// Issue 15924.
-// TODO(sbinet).
-// Issue 15924.
-// TODO(sbinet)
-// Issue 15924.
-// Issue 15924.
-// TODO(sbinet)
-// Issue 15924.
-// This is a non-zero sized struct that ends in a
-// zero-sized field. We add an extra byte of padding,
-// to ensure that taking the address of the final
-// zero-sized field can't manufacture a pointer to the
-// next object in the heap. See issue 9401.
-// A *rtype representing a struct is followed directly in memory by an
-// array of method objects representing the methods attached to the
-// struct. To get the same layout for a run time generated type, we
-// need an array directly following the uncommonType memory.
-// A similar strategy is used for funcTypeFixed4, ...funcTypeFixedN.
-// TODO(sbinet): Once we allow embedding multiple types,
-// methods will need to be sorted like the compiler does.
-// TODO(sbinet): Once we allow non-exported methods, we will
-// need to compute xcount as the number of exported methods.
-// Round the size up to be a multiple of the alignment.
-// Look in cache.
-// Not in cache, lock and retry.
-// Look in known types.
-// even if 't' wasn't a structType with methods, we should be ok
-// as the 'u uncommonType' field won't be accessed except when
-// tflag&abi.TFlagUncommon is set.
-// will be length of prog
-// gcprog should not include anything for any field after
-// the last field that contains pointer data
-// Ignore pointerless fields.
-// Pad to start of this field with zeros.
-// emit a 0 bit
-// repeat previous bit
-// n-1 times
-// structs of 1 direct iface type can be direct
 internal static void embeddedIfaceMethStub() {
     throw panic("reflect: StructOf does not support methods of embedded interfaces");
 }
@@ -1916,22 +1831,6 @@ internal static uintptr typeptrdata(ж<abi.Type> Ꮡt) {
 
 // go2cs generated this placeholder — func ArrayOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Look in cache.
-// Look in known types.
-// No pointers.
-// In memory, 1-element array looks just like the element.
-// Element is small with pointer mask; array is still small.
-// Create direct pointer mask by turning each 1 bit in elem
-// into length 1 bits in larger mask.
-// Runtime needs pointer masks to be a multiple of uintptr in size.
-// Create program that emits one element
-// and then repeats to make the array.
-// will be length of prog
-// Pad from ptrdata to size.
-// Emit literal 0 bit, then repeat as needed.
-// Repeat length-1 times.
-// overestimate but ok; must match program
-// array of 1 direct iface type can be direct
 internal static slice<byte> appendVarint(slice<byte> x, uintptr v) {
     for (; v >= 0x80; v >>= (int)(7)) {
         x = builtin.append(x, (byte)((uintptr)(v | 0x80)));

@@ -141,6 +141,28 @@ internal static ж<eface> efaceOf(ж<any> Ꮡep) {
 
 // go2cs generated this placeholder — type Δguintptr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// The guintptr, muintptr, and puintptr are all used to bypass write barriers.
+// It is particularly important to avoid write barriers when the current P has
+// been released, because the GC thinks the world is stopped, and an
+// unexpected write barrier would not be synchronized with the GC,
+// which can lead to a half-executed write barrier that has marked the object
+// but not queued it. If the GC skips the object and completes before the
+// queuing can occur, it will incorrectly free the object.
+//
+// We tried using special assignment functions invoked only when not
+// holding a running P, but then some updates to a particular memory
+// word went through write barriers and some did not. This breaks the
+// write barrier shadow checking mode, and it is also scary: better to have
+// a word that is completely ignored by the GC than to have one for which
+// only a few updates are ignored.
+//
+// Gs and Ps are always reachable via true pointers in the
+// allgs and allp lists or (during allocation before they reach those lists)
+// from stack variables.
+//
+// Ms are always reachable via true pointers either from allm or
+// freem. Unlike Gs and Ps we do free Ms, so it's important that
+// nothing ever hold an muintptr across a safe point.
 // go2cs generated this placeholder — func ptr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func set is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -165,28 +187,6 @@ internal static ж<eface> efaceOf(ж<any> Ꮡep) {
 
 // go2cs generated this placeholder — func setMNoWB is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// The guintptr, muintptr, and puintptr are all used to bypass write barriers.
-// It is particularly important to avoid write barriers when the current P has
-// been released, because the GC thinks the world is stopped, and an
-// unexpected write barrier would not be synchronized with the GC,
-// which can lead to a half-executed write barrier that has marked the object
-// but not queued it. If the GC skips the object and completes before the
-// queuing can occur, it will incorrectly free the object.
-//
-// We tried using special assignment functions invoked only when not
-// holding a running P, but then some updates to a particular memory
-// word went through write barriers and some did not. This breaks the
-// write barrier shadow checking mode, and it is also scary: better to have
-// a word that is completely ignored by the GC than to have one for which
-// only a few updates are ignored.
-//
-// Gs and Ps are always reachable via true pointers in the
-// allgs and allp lists or (during allocation before they reach those lists)
-// from stack variables.
-//
-// Ms are always reachable via true pointers either from allm or
-// freem. Unlike Gs and Ps we do free Ms, so it's important that
-// nothing ever hold an muintptr across a safe point.
 [GoType] partial struct gobuf {
     // The offsets of sp, pc, and g are known to (hard-coded in) libmach.
     //

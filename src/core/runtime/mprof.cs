@@ -1715,8 +1715,4 @@ internal static void saveg(uintptr pc, uintptr sp, ж<g> Ꮡgp, ref profilerecor
 
 // go2cs generated this placeholder — func Stack is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Force traceback=1 to override GOTRACEBACK setting,
-// so that Stack's results are consistent.
-// GOTRACEBACK is only about crash dumps.
-
 } // end runtime_package

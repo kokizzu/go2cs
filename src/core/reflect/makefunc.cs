@@ -24,8 +24,6 @@ partial class reflect_package {
 
 // go2cs generated this placeholder — func MakeFunc is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// makeFuncImpl contains a stack map for use by the runtime
-
 // makeFuncStub is an assembly function that is the code half of
 // the function returned from MakeFunc. It expects a *callReflectFunc
 // as its context register, and its job is to invoke callReflect(ctxt, frame)
