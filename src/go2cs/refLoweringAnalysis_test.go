@@ -951,3 +951,84 @@ func convValue() { sinkD((*[4]uint64)(globalArrPtr)) }
 		t.Errorf("sinkC#0 must stay lowered (conv-of-address; vetoes %v, strippedBy %q)", p.Vetoes, p.StrippedBy)
 	}
 }
+
+// TestReceiverFieldAddressExcludesPrimary guards B′'s eligibility rule (ruling 2026-09-03,
+// superseding the capture-mode keep-box): a method that takes the address of a RECEIVER FIELD
+// cannot be a ref-return primary. It needs the box receiver, because only `Ꮡv.of(field)` yields an
+// ALIASING field pointer — a ref receiver's `Ꮡ(v.field)` boxes a COPY and drops the write. TWO
+// shapes reach that address and both must exclude:
+//   - EXPLICIT `&v.field` — bodyTakesReceiverFieldAddress (the pre-existing sibling);
+//   - IMPLICIT `v.field.M()` where field is a value struct and M has a pointer receiver, so Go
+//     addresses v.field to make the call — bodyTakesImplicitReceiverFieldAddress (the fix). This is
+//     the edwards25519 projP2.Zero case (`v.X.Zero()`), promoted to a `this ref projP2 v` receiver
+//     whose body still emitted `Ꮡv.of(projP2.ᏑX).Zero()` — 99 CS0103 across the package.
+// The pointer-field call `o.ptr.Bump()` is the negative control: that address is the pointee's,
+// reached through a box that already exists, so it is NOT a receiver-field address.
+func TestReceiverFieldAddressExcludesPrimary(t *testing.T) {
+	pkg := loadRefLoweringFixture(t, map[string]string{
+		"go.mod": "module fieldaddr\n\ngo 1.23\n",
+		"p.go": `package fieldaddr
+
+type Inner struct{ n int }
+
+func (i *Inner) Bump() { i.n++ }
+
+type Outer struct {
+	x   Inner
+	ptr *Inner
+}
+
+func (o *Outer) Explicit() *Outer   { _ = &o.x; return o }
+func (o *Outer) Implicit() *Outer   { o.x.Bump(); return o }
+func (o *Outer) ThroughPtr() *Outer { o.ptr.Bump(); return o }
+func (o *Outer) Bare() *Outer       { return o }
+`,
+	}, false)
+
+	info := pkg.TypesInfo
+
+	find := func(name string) (*ast.BlockStmt, string, types.Object) {
+		t.Helper()
+
+		for _, file := range pkg.Syntax {
+			for _, decl := range file.Decls {
+				fn, ok := decl.(*ast.FuncDecl)
+
+				if !ok || fn.Recv == nil || fn.Name.Name != name {
+					continue
+				}
+
+				return fn.Body, fn.Recv.List[0].Names[0].Name, recvObjectOf(fn, info)
+			}
+		}
+
+		t.Fatalf("method %s not found in fixture", name)
+
+		return nil, "", nil
+	}
+
+	// Shape 1 — explicit &o.x: the explicit predicate fires, the implicit one does not.
+	if body, recv, obj := find("Explicit"); !bodyTakesReceiverFieldAddress(body, recv, obj, info) {
+		t.Error("Explicit: bodyTakesReceiverFieldAddress must catch `&o.x`")
+	} else if bodyTakesImplicitReceiverFieldAddress(body, recv, obj, info) {
+		t.Error("Explicit: bodyTakesImplicitReceiverFieldAddress must not fire on an explicit `&` (distinct shapes)")
+	}
+
+	// Shape 2 — implicit &o.x via a pointer-method call on a value struct field: the implicit
+	// predicate fires, the explicit one does not.
+	if body, recv, obj := find("Implicit"); !bodyTakesImplicitReceiverFieldAddress(body, recv, obj, info) {
+		t.Error("Implicit: bodyTakesImplicitReceiverFieldAddress must catch `o.x.Bump()` (Bump ptr-receiver, x value struct)")
+	} else if bodyTakesReceiverFieldAddress(body, recv, obj, info) {
+		t.Error("Implicit: bodyTakesReceiverFieldAddress must not fire (no explicit `&`)")
+	}
+
+	// Negative control — pointer field: no receiver-field address is taken (the pointer is the box).
+	if body, recv, obj := find("ThroughPtr"); bodyTakesImplicitReceiverFieldAddress(body, recv, obj, info) {
+		t.Error("ThroughPtr: `o.ptr.Bump()` takes no receiver-field address (ptr is already a pointer)")
+	}
+
+	// Control — bare receiver return: neither predicate fires.
+	if body, recv, obj := find("Bare"); bodyTakesReceiverFieldAddress(body, recv, obj, info) || bodyTakesImplicitReceiverFieldAddress(body, recv, obj, info) {
+		t.Error("Bare: no receiver-field-address predicate should fire on `return o`")
+	}
+}
