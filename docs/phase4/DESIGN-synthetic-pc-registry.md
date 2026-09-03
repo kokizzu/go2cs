@@ -228,3 +228,154 @@ All three are answered; the section is kept as the record of what was asked and 
    rather than a plausible zero.
 
 -- C1 (design owner), with §4 by C2
+
+## 10. Increment 1, as landed — 2026-09-03
+
+Authorised by COORD on 2026-09-03 (spend the `TestFuncPC` verdict; marker approved with route #7;
+class-C throw authorised). §§1-9 are unchanged; this section records what was built, what was
+measured, and the two places the design's own reasoning had to be corrected by measurement.
+
+### 10.1 The enabling fact, measured rather than assumed
+
+`any` is `System.Object` (`golib.csproj:76`), and every call site passes a bare method group. That is
+legal since C# 10 by **natural delegate type** inference — verified with a standalone probe, which
+reports `warning CS8974: Converting method group 'G' to non-delegate type 'object'` and builds — so
+inside `FuncPCABI0(any f)` the argument is a real `System.Delegate` and `f.Method` is the target's
+`MethodInfo`. §7's "`RuntimeMethodHandle` is the natural identity" is therefore reachable from a body,
+and the increment needs no converter change.
+
+### 10.2 The discriminator cost the design did not price
+
+§5.1's discriminator is a **build-time** fact (the pragma map). Increment 1 needs a **runtime** one,
+and both free candidates are measurably wrong:
+
+| candidate | what it actually separates | measured counter-example |
+|:--|:--|:--|
+| bodyless `partial` DECLARATION | **B ∪ C**, not C | darwin's `libc_fork_trampoline` (`zsyscall_darwin_amd64.cs:1814`) is class B and is bodyless |
+| `[GeneratedCode("go2cs-gen", …)]` | every generator's output | `runtime/time.cs:1065` passes `(*timers).run` through a RecvGenerator ж-overload — class A, and it carries the attribute |
+
+So the marker is stamped by `PartialStubGenerator` itself. It is exact **by construction**, not by
+care: that generator already declines to stub a partial another generator implements and one a
+hand-written `*_impl.cs` supplies, so "it stubbed X" ⟺ "nothing in the compilation implements X".
+Cost, named up front rather than discovered: a `src/gen/` change, hence route #7.
+
+**Increment 1 therefore refuses B and C together**, which §5 did not say and which is the honest
+scope: the property visible at runtime is "no managed body", and B's resolution arm is keyed on data
+this layer does not have. It slots in later without moving anything built here.
+
+### 10.3 Why the refusal is a PANIC
+
+The convenient answer and the correct one agree here, and they were checked separately.
+
+*Mechanically*: `TestExecution.Execute`'s last arm classifies a non-panic exception escaping a test as
+`infrastructure-error`, and `matchTerminalStatuses` absorbs a disclosure only when the C# verdict is
+exactly `fail`. A plain exception is unbankable.
+
+*Honestly*: that classification would also be false. `InfrastructureFailed` means a HOST defect — the
+arm's own comment says so — and there is none. The host is fine; this corpus has no code address for
+a function written in assembly, which is a property of the port. Go has no runtime behaviour to model
+either way: a bad `FuncPC` argument is a COMPILE error there.
+
+The non-delegate arm stays a plain exception on purpose: a call site handing `FuncPC` a non-func IS a
+converter defect, which is what `infrastructure-error` is for.
+
+### 10.4 Blast radius — measured, and empty on `reflect`
+
+COORD ruled that a class-C throw reached by a banked row's live path is a ruling moment. The candidate
+was `reflect`: `makefunc.cs:81` is `methodValueCallCodePtr() => abi.FuncPCABI0(methodValueCall)`,
+called from `makeMethodValue` (`makefunc.cs:61`), and `methodValueCall` is stubbed — the emitted stub
+carries the marker (verified in `Generated/go2cs-gen/go2cs.PartialStubGenerator/`, 67 of 67 stubs
+marked).
+
+It is **unreachable**, by two independent derivations:
+
+1. *Census.* `makeMethodValue` is called from exactly one place — `value.cs:1975`, guarded by
+   `v.flag & flagMethod != 0`. Every one of the 19 `flagMethod` occurrences in production `reflect` is
+   a read (`&`), a shift (`>> flagMethodShift`), the declaration, or a comment. **Nothing writes it.**
+2. *The corpus's own statement.* `makefunc_impl.cs:24`, written by the reflection-bridge work and not
+   by this arc: *"makeMethodValue's identical funcLayout read stays AUTO deliberately: it is only
+   reachable through flagMethod, which the bridge never sets — Value.Method binds the receiver into an
+   ordinary delegate instead (GoReflect.GoMethodValue), so no Value ever takes that path."*
+
+`Value.Method` is hand-owned (`value_impl.cs:1867`) and returns `makeTypedValue(bound, …, v.flag &
+flagRO)` — it never sets the bit. So the ruling moment does not arise for `reflect`.
+
+**And a correction to the premise, which matters more than the answer: `reflect` is not a banked
+row.** The roster's 201 rows contain `internal/reflectlite` (30 verdicts), not `reflect`. Across all
+201, exactly ONE carries a direct `FuncPCABI*` call site — `internal/abi` itself, the row the
+increment deliberately spends. (`golib` appears in a naive grep only because this arc's own comments
+name the function; it has no call.) The other holders are unbanked: `reflect`, `runtime`,
+`runtime/pprof`, `syscall/darwin`, `crypto/x509/internal/macos`, `internal/syscall/unix/darwin`.
+
+The TRANSITIVE question — a banked row reaching a class-C call through `runtime` — is bounded by
+four measurements and is not claimed to be closed by them:
+
+* `go` statements emit golib's `goǃ`, not `newproc`, so `newproc1`'s `FuncPCABI0(goexit)` is reached
+  only from `coro.cs` and `debugcall.cs`;
+* `newosproc`'s `clone`/`mstart` sit behind `newm`, i.e. Go's scheduler, which `schedinit` never
+  starts;
+* the Linux signal layer's `[ModuleInitializer]` (`signal_posix_impl.cs:274`) is a hand-own reading
+  dispositions through libc `sigaction` directly — it does not call the converted `initsig`/`setsig`,
+  which is where `FuncPCABI0(sigtramp)` lives;
+* `cpuprof.cs`'s four are reached from `runtime/pprof`, which is unbanked and is this arc's next
+  consumer.
+
+A grep bounds this; only a sweep closes it. Said plainly rather than presented as a proof.
+
+### 10.5 A naming gap, recorded rather than guessed
+
+`GoNameOf` composes the import path from the package class, so a Go METHOD reaches it as
+`runtime.run` where Go prints `runtime.(*timers).run`: the converter emits methods as extension
+methods on the package class, so the receiver is a parameter rather than a declaring type. The
+receiver is derivable (extension method whose first parameter is `ж<T>`), and it is deliberately NOT
+derived here: nothing symbolizes that PC today, the read-back side is still dead, and increment 2's
+wiring is where a real consumer can say what it needs. Recorded so it is met with evidence rather than
+rediscovered.
+
+### 10.6 What increment 1 does NOT do
+
+* No read-back wiring. `runtime`'s `findfunc`/`funcInfo`/`FuncForPC`/`CallersFrames` still cannot
+  resolve a PC — that is increment 2, and §6's consumer counts (66/61/25/16/15/11) are its size.
+* No class-B resolution. Still C2's darwin increment, now slotting in as an arm ahead of the refusal.
+* No `pclntab`, no line tables, no `getg()` change, no `lostProfileEvent` change. §8 stands.
+
+### 10.7 Acceptance — `internal/abi`, measured against a prediction recorded first
+
+The prediction was written down before the record was read (name derivation, both verdicts, the
+failure text, and the expectation that the host would NOT die). It held on every point.
+
+```
+TestFuncPC             Go="pass"  C#="fail"
+TestFuncPCCompileError Go="pass"  C#="pass"
+
+panic: FuncPCABI0: no program counter exists for internal/abi.FuncPCTestFn — it is an
+external (assembly or cgo) function with no managed body in this corpus
+   at go.internal.abi_package.FuncPC(...) in internal/abi/funcpc_impl.cs:line 89
+   at go.internal.abi_test_package.TestFuncPC(...) in internal/abi/abi_test.cs:line 23
+
+environment: { configuration: Release, tiered: false,
+               oracleGoVersion: go version go1.23.12 linux/amd64 }
+results.json tail: no timeout event, plain or escaped
+```
+
+Three things that measurement settles rather than argues:
+
+* **The verdict word is `fail`, not `infrastructure-error`** — §10.3's routing works, so the row is
+  disclosable at all.
+* **The name came out `internal/abi.FuncPCTestFn`** — the internal-test-package rule in §10.1's
+  symbolizer is exercised by the first real consumer, not just by its guard.
+* **The host did not die.** One test failed and the *other still ran and passed*. That is the cheapest
+  available evidence that no class-C `FuncPCABI*` sits on the converted runtime's startup path — the
+  failure mode would have been a mass-empty package, not one attributed verdict.
+
+With the disclosure in place the row re-compares clean:
+
+```
+Validated 1 tests against go test (0 skipped identically on both sides,
+1 disclosed-divergent (runtime-capability), 0 disclosed-unsupported declarations excluded).
+```
+
+`internal/abi`: **2 matched → 1 matched + 1 disclosed**, exactly the cost authorised on 2026-09-03,
+and the roster's only banked row holding a direct `FuncPCABI*` call site.
+
+-- C1, increment 1
