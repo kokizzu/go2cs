@@ -21,7 +21,7 @@ internal static bool prefixMatch<T>(T s, T sep)
     if (len(s) < n) {
         return false;
     }
-    return ((T)(s[..(int)(n)])).ToGoString() == sep.ToGoString();
+    return s[..(int)(n)].ToGoString() == sep.ToGoString();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -43,6 +43,8 @@ private static readonly @string x9876ˢ = "x98:76"u8;
 private static readonly object appendRunStringˢ = (@string)"appendRun(string):"u8;
 private static readonly @string abcdeˢ = "abcde"u8;
 private static readonly object appendRunByteˢ = (@string)"appendRun([]byte):"u8;
+private static readonly object wholeStringˢ = (@string)"whole(string):"u8;
+private static readonly object wholeByteˢ = (@string)"whole([]byte):"u8;
 
 internal static void Main() {
     @string str = helloˢ;
@@ -61,6 +63,7 @@ internal static void Main() {
     fmt.Println(headˢ, headSum(x9876ˢ), headSum(slice<byte>("y10:23"u8)));
     fmt.Println(appendRunStringˢ, ((@string)appendRun(default!, abcdeˢ)));
     fmt.Println(appendRunByteˢ, ((@string)appendRun(slice<byte>("<"u8), slice<byte>("abcde"u8))));
+    fmt.Println(wholeStringˢ, ((@string)wholeSpan(str)), wholeByteˢ, ((@string)wholeSpan(bs)));
 }
 
 internal static nint digitSum<T>(T s)
@@ -73,7 +76,7 @@ internal static nint digitSum<T>(T s)
         }
         return n;
     }
-    return parse(((T)(s[0..2]))) + parse(((T)(s[3..5])));
+    return parse(s[0..2]) + parse(s[3..5]);
 }
 
 internal static T trimHead<T>(T s, nint n)
@@ -81,10 +84,10 @@ internal static T trimHead<T>(T s, nint n)
 {
     for (nint i = 0; i < n; i++) {
         if (len(s) > 1) {
-            s = ((T)(s[1..]));
+            s = s[1..];
         }
     }
-    return ((T)(s[0..]));
+    return s[0..];
 }
 
 internal static nint headSum<T>(T s)
@@ -99,13 +102,19 @@ internal static byte lastByte<T>(T s)
     return s[len(s) - 1];
 }
 
+internal static T wholeSpan<T>(T s)
+    where T : /* []byte | string */ IByteSeq<T, byte>, new()
+{
+    return s[..];
+}
+
 internal static slice<byte> appendRun<Bytes>(slice<byte> dst, Bytes src)
     where Bytes : /* []byte | string */ IByteSeq<Bytes, byte>, new()
 {
     dst = append(dst, (byte)((rune)'['));
     if (len(src) > 1) {
-        dst = append(dst, ((Bytes)(src[1..(int)(len(src) - 1)])).ꓸꓸꓸ);
-        dst = append(dst, ((Bytes)(src[(int)(len(src) - 1)..])).ꓸꓸꓸ);
+        dst = append(dst, src[1..(int)(len(src) - 1)].ꓸꓸꓸ);
+        dst = append(dst, src[(int)(len(src) - 1)..].ꓸꓸꓸ);
     }
     dst = append(dst, (byte)((rune)']'));
     return dst;

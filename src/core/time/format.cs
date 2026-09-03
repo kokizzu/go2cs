@@ -521,7 +521,7 @@ internal static (nint x, error err) atoi<bytes>(bytes s)
     var neg = false;
     if (len(s) > 0 && (s[0] == (rune)'-' || s[0] == (rune)'+')) {
         neg = s[0] == (rune)'-';
-        s = ((bytes)(s[1..]));
+        s = s[1..];
     }
     (var q, var rem, err) = leadingInt(s);
     x = (nint)q;
@@ -1703,11 +1703,11 @@ internal static (nint ns, @string rangeErrString, error err) parseNanoseconds<by
         return (ns, rangeErrString, err);
     }
     if (nbytes > 10) {
-        value = ((bytes)(value[..10]));
+        value = value[..10];
         nbytes = 10;
     }
     {
-        (ns, err) = atoi(((bytes)(value[1..(int)(nbytes)]))); if (err != default!) {
+        (ns, err) = atoi(value[1..(int)(nbytes)]); if (err != default!) {
             return (ns, rangeErrString, err);
         }
     }
@@ -1749,7 +1749,7 @@ internal static (uint64 x, bytes rem, error err) leadingInt<bytes>(bytes s)
             return (0, rem, errLeadingInt);
         }
     }
-    return (x, ((bytes)(s[(int)(i)..])), default!);
+    return (x, s[(int)(i)..], default!);
 }
 
 // leadingFraction consumes the leading [0-9]* from s.

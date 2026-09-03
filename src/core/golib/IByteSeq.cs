@@ -34,7 +34,7 @@ public interface IByteSeq<T> : IByteSeq
     // Spread source (Go's s...). A `string | []byte`-constrained body may spread the value into a
     // variadic — `append(dst, src[lo:hi]...)` in encoding/json's generic appendString — where the
     // sub-slice is typed as the constraint type parameter again. A type parameter has no members of
-    // its own, so the spread `ꓸꓸꓸ` must live on the constraint interface for `((Bytes)(…)).ꓸꓸꓸ` to
+    // its own, so the spread `ꓸꓸꓸ` must live on the constraint interface for `src[lo..hi].ꓸꓸꓸ` to
     // bind. Both members already expose it: slice<T> as Span<T>, @string as Span<byte>.
     Span<T> ꓸꓸꓸ { get; }
 }
@@ -48,11 +48,11 @@ public interface IByteSeq<T> : IByteSeq
 // `string | []byte` sub-slices constantly (time's parseRFC3339 takes seven sub-slices per
 // call), and Go types each result as the type parameter again. When the indexer returned
 // `IByteSeq<T>`, every one of those sub-slices BOXED the struct result — 48 bytes for
-// slice<T>, 24 for @string — and the converter's `((bytes)(…))` cast then unboxed it, so a
+// slice<T>, 24 for @string — and a converter-emitted `((bytes)(…))` cast then unboxed it, so a
 // Go function that allocates nothing allocated per sub-slice in C#. Returning TSelf makes the
-// call a `constrained.` direct call on the value type: no box, and the cast becomes an
-// identity conversion that emits no IL. See GolibTests ByteSeqAllocationTests, which measures
-// the difference against a deliberately boxed control.
+// call a `constrained.` direct call on the value type: no box, and the converter emits the
+// range expression bare, because it already IS the type parameter. See GolibTests
+// ByteSeqAllocationTests, which measures the difference against a deliberately boxed control.
 //
 // Sub-slicing is the only member that needs TSelf, so it lives alone on this interface and
 // IByteSeq<T> keeps the members whose signatures do not mention the sequence type. Consumers
