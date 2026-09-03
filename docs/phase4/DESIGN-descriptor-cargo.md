@@ -715,3 +715,50 @@ form, box-form count 0, placeholder present: the `-tests` path reads the same pr
 path reads. The corrected measurement base is master + B MERGED (the content train 20 lands), and the
 PRE record preserved from B's bare tip is replaced by one taken at that merge. The lesson is a rule: a
 measurement tree must contain every seat the cut depends on, asserted by ancestry before any gate.
+
+## 14. R1.1 — the residual behind R1, rooted and closed at the same seam (2026-09-03)
+
+**Reading that sized it.** R1's arms on master `93a131a3f` + B `ab7ce0534` (PRE `c20342cc3`) and + R1
+`0ea282661` (CUT): both `{pass 311, fail 76, skip 1}`, 19 mismatches, **BROKEN {} · FIXED {}**. The
+target row `TestFuncLayout/func(reflect_test.S)` went from five failed assertions (`size`, `argsize`,
+`retOffset` = 0 want 32; `stack`, `gc` = [] want [0 0 1 1]) to the two bitmaps alone — the accessor
+route reads the fields, so the sizes are right, and nothing downstream of them is.
+
+**Site.** Both bitmaps are one function: `newAbiDesc` fills `abid.stackPtrs` through
+`addTypeBits(stackPtrs, stkStep.stkOff, arg)` (`abi.go:422/455`), and the frame type's `gc` IS that
+bitvector (`funcLayout`: `x.GCData = &abid.stackPtrs.data[0]`). `addTypeBits`' Array and Struct arms
+raw-reinterpret the descriptor (`Reinterpret<abi.Type, arrayType|structType>`), reading `Len 0` / no
+`Fields` on a synthesized descriptor — regAssign's defect one call over. The `Pointers()` gate ahead of
+it is not the blocker: B's synthesis stamps `PtrBytes` when known (`type_impl.cs:198`).
+
+**Cut.** The same displacement: `"addTypeBits": goosAny` beside `abiSeq.regAssign`, the companion in
+`abi_impl.cs` reading `Ꮡt.ArrayType()` / `Ꮡt.StructType()`, loud panic on an unreadable descriptor,
+scalar arms verbatim; `type.cs` placeholder applied as two-seeded hunks (PRE = R1's converter).
+
+**Prediction (COORD, before the arm ran).** Both remaining assertions clear (`stack` and `gc` read
+`[0 0 1 1]`); BROKEN {} against the standing PRE record; FIXED ⊇ that row; the two-seeded footprint
+two more paths in `reflect`.
+
+**Measured.** Reflect `-tests` on the PRE tree's content + R1 + R1.1 (`0dfc95e21`): build **0 errors**; `{pass 313, fail 74, skip 1}`, **17 mismatches** (from 19). Against PRE `{311, 76, 1}`: **BROKEN {} · FIXED {`TestFuncLayout`, `TestFuncLayout/func(reflect_test.S)`}**; against R1's own record: BROKEN {} · FIXED the same two — the prediction hit on every point. Footprint: two paths in `reflect` — `type.cs` +1/−40 applied as hunks (delta lines byte-identical to the emission), `package_info.cs`'s position-map line excluded by rule. Pre-rebase commit `799727fa0`.
+
+**Class after R1.1, sized per site** (raw `Reinterpret<abi.Type, structType|arrayType>` in emitted reflect
+production; second-derived — an Explore agent's read and independent greps agree). Eight functions, eleven
+sites, and **seven of the eight are DEAD in the C# port**: every Go caller is itself a placeholder whose
+hand-owned body never calls back into the emitted helper —
+
+| Emitted site(s) | Sole Go caller(s) | Caller in C# | Live? |
+|---|---|---|---|
+| `isReflexive` / `needKeyUpdate` / `hashMightPanic` (Array+Struct arms, `type.cs`) | `MapOf` (`type.go:1862/1865/1868`) | placeholder `type.cs:1404`, hand-owned `value_impl.cs:3300` on `synthType(typeof(map<,>)…)` | dead |
+| `typeptrdata` (Struct arm) | `StructOf` only (`type.go:2643`; `ArrayOf`/`FuncOf` compute `PtrBytes` inline) | placeholder `type.cs:1773`, hand-owned `value_impl.cs:3376` | dead |
+| `bytesSlow` (Array arm, `value.cs`) | `Value.Bytes` | hand-owned `value_impl.cs:890` (Array arm off `array<byte>` + `CanAddr()`) | dead |
+| `lenNonSlice` (Array arm, `value.cs`) | `Value.Len` | hand-owned `value_impl.cs:326` (`IArray.Length` / `arrayDims`); `Cap` `:574`, `SetLen` `:618` likewise | dead |
+| `FieldByNameFunc`'s embedded walk (`type.cs:1094`) | `rtype.FieldByNameFunc` → `structType.FieldByNameFunc` | live entry `type.cs:628`, which raw-reinterprets `rtype → structType` at `:634` BEFORE the walk (so the walk is never reached on a synthesized descriptor) | live, unreached; **zero Go tests** call `FieldByNameFunc` |
+| `rtype → structType` reinterpret at the EXPORTED entries — `Field` / `FieldByIndex` / `FieldByName` / `FieldByNameFunc` / `NumField` (`type.go:748/756/764/772/796`) | Go's public `Type` API | `Field`, `FieldByIndex`, `FieldByName`, `NumField` are placeholders (hand-owned in `value_impl.cs`); `FieldByNameFunc` is the LIVE emitted entry (`type.cs:628`, reinterpret at `:634`) — an entry live with its walk dead beneath it | live, unreached: **0 calls to `FieldByNameFunc` in Go's reflect tests** — a measured boundary, not a surprise, for whoever un-hand-owns a sibling |
+
+None of the sixteen remaining mismatching tests has any of the eleven sites on its path (TestBytes runs
+through the hand-owned `Bytes`; TestIsZero / TestSetLenCap / TestDeepEqualAllocs through the hand-owned
+`Len` / `Cap` / `SetLen`; TestFieldByName through `value_impl.cs:3689` + `promotedFieldByName`;
+TestImplicitMapConversion is `MapIndex` / `SetMapIndex`, not `MapOf`). Nothing here is worth a cut: the
+dead seven are latent (they compile, and un-hand-owning `MapOf` / `StructOf` / `Len` / `Bytes` would make
+them silently wrong — `isReflexive` on empty `Fields` answers `true`, `typeptrdata` answers 0), and this
+table is their record, because a comment in an emitted file would not survive a regen. The last row is the shape the census did not cover, named as a row so the next lane meets it as a measured boundary.
