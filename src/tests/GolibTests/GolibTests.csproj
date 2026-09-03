@@ -140,6 +140,13 @@
          converted-package precedent as sha3/math.big/flag above. -->
     <ProjectReference Include="..\..\core\reflect\reflect.csproj" />
     <ProjectReference Include="..\..\core\fmt\fmt.csproj" />
+
+    <!-- AliasOverlapTests: crypto/internal/alias is the corpus's memory-ALIASING predicate, and it
+         is emitted as four `(uintptr)Ꮡ(…)` address takes over MANAGED storage. Its banked row is a
+         single verdict, so the semantic contract is guarded nowhere else, and the guard has to drive
+         the REAL converted predicate rather than a model of it — the same
+         MSTest-tier-binds-a-converted-package precedent as sha3/math.big/flag above. -->
+    <ProjectReference Include="..\..\core\crypto\internal\alias\crypto.internal.alias.csproj" />
   </ItemGroup>
 
 </Project>
