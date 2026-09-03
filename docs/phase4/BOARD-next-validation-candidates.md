@@ -22332,4 +22332,101 @@ is a measurement rather than a vacuum.*
 
 -- coordinator sub-agent
 
+---
+
+## 2026-09-02 — coordinator sub-agent — OWNER RULING: the implementable denominator is the STRICT set, 210 — the phantom ledger row struck, `net/http/pprof` named, and the published 209 reconciled as one swap
+
+The contradiction the previous entry recorded as *owed to the owner* is ruled. **The roster's
+implementable denominator is 210, not 209, and the honest ratio is 201 / 210 — 95.7%.** Nothing
+about a banked row moves; what moves is one subtraction that was never legitimate.
+
+**THE ARITHMETIC, END TO END.** The naive denominator is unchanged at **215** — every converted
+package whose Go 1.23.12 sources define a `Test` function, derived in the roster from
+`go list std` (306) → carries a `func Test` (219) → exists in the corpus as a converted package
+(215). Of those 215, **five** are legitimately excluded, not six:
+
+- `internal/syscall/unix` (E1), `net/internal/socktest` (E1), `log/syslog` (E1), `runtime/race`
+  (E1), `internal/unsafeheader` (E3) — all five members of `go list std` on windows/amd64, all five
+  inside the 215, all five subtracted from it.
+- `internal/runtime/syscall` was the sixth and is **struck**: it is not in `go list std` on
+  windows/amd64 at all, so it was never a member of the set it was being subtracted from. Re-verified
+  for this entry with `GOROOT` pinned explicitly to the `go1.23.12` root (`go version` reports the
+  binary's build stamp, not the root it resolves, so the pin is stated): `go version` →
+  `go1.23.12 windows/amd64`, `go env GOROOT` → the pinned root, `go env GOOS/GOARCH` →
+  `windows/amd64`, `go list std` → **306** entries, `internal/runtime/syscall` **absent**, and the
+  other five ledger rows plus `testing` and `net/http/pprof` all **present**.
+
+So `215 − 5 = 210`, and `201 / 210 = 95.7%` (the format guard rounds it, away from zero, from the
+two counts it derives itself).
+
+**THE OLD 209 RECONCILED — one swap, not one error.** The 215 was reachable by two live memberships
+that differ by exactly one package each way, and both land on 215, which is how the phantom survived
+weeks of arithmetic that "came out right". The board's 2026-08-17 derivation counted `src/core`
+directories whose GOROOT sources define a `Test`: `internal/runtime/syscall` **in** (it is converted,
+with an L3 `linux/` folder, and GOROOT carries `syscall_linux_test.go`), hand-owned `testing`
+subtracted. The 2026-09-02 derivation counts `go list std` on this target: `testing` **in** (an
+ordinary member, 59 `func Test`, a `.csproj`), `internal/runtime/syscall` **out**. Under the first
+membership `215 − 6 = 209` was exact; under the second it was one too many. The campaign follows the
+second — the owner ruling of 2026-08-30 puts `testing` on the road to a *validating* row (Option 1,
+bucket D banks), and a row that can bank must be inside the denominator it banks against — so the
+ledger, not the derivation, is what had to move.
+
+**THE SECOND CORRECTION.** `net/http/pprof` is converted (`src/core/net/http/pprof`, with its own
+`.csproj` and `pprof.cs`), declares four `func Test` in GOROOT, and was measured **5 of 15** on
+2026-08-14 (this board, *Scout batch 2*) — and appeared in no roster row, no ledger row and no
+tracker list. With the ledger corrected the remainder closes from both sides: `210 − 201 = 9`, and
+the nine are `reflect`, `runtime`, `unique` (lane-owned) plus `os`, `testing`, `runtime/pprof`,
+`net/http/pprof`, `runtime/trace`, `crypto/internal/boring/bcache`. The implementable remainder is
+**nine**, and every surface that names it now names the same nine.
+
+**WHAT THE STRIKE DOES NOT DO: lose the measurement.** `internal/runtime/syscall` is a genuine
+*Linux*-axis testable package — converted with an L3 `linux/` folder, and GOROOT carries
+`syscall_linux_test.go`. What the strike removes is a **Windows** exclusion that was excluding
+nothing. Its E1 reading is kept verbatim in the note that now sits under the ledger table, explicitly
+as the Windows half of its story, and the row belongs to Linux's own denominator when the per-OS
+denominators land (`DESIGN-peros-roster.md` already computes windows as `215 − 5 = 210` on its own
+scoping, which is the same number from the other direction).
+
+**SURFACES.** `docs/ValidatedTestPackages.md` — header line (`215 − 5 excluded = 210`, `201 / 210`,
+95.7%, "The five", plus one sentence of prose in the header itself naming why the denominator moved);
+the exclusion section's opening count (six → five); the ledger table (row struck) with a new two-paragraph
+note under it carrying the strike's reason and the Linux-axis measurement; `os/user`'s rejoin
+arithmetic (`208 → 209` becomes `209 → 210`, with the as-published figures kept in a parenthesis);
+and the derivation subsection updated from *owed to the owner* to *ruled*, its E1 bullet, its
+disposition bullet and its remainder line now closing against the header (`210 − 201 = 9`).
+`docs/phase4/TRACKER-100-percent.md` — the on-master ratio (`201 / 210 = 95.7% honest`), the
+implementable-remainder count (8 → 9) and its named list (`net/http/pprof` added, bcache re-labelled
+the ninth, "implementable 209" → 210); that file declares the roster its authority and states that it
+is stale when the two disagree, so leaving it at 96.2% was not an option. **Deliberately NOT touched:**
+`docs/NEWS.md` and `docs/news/*` (dated history, true when written); `docs/phase4/SESSION-ROLL-*`
+(dated session records); `docs/phase4/DESIGN-roster-per-os-bubbles.md` and
+`docs/phase4/DESIGN-peros-roster.md` (design proposals quoting a point-in-time header — the former's
+quoted Linux line is already stale by 17 rows, which is what makes it a snapshot rather than a live
+surface); every earlier board entry (append-only). `docs/README.md` quotes the naive 215, which this
+ruling does not move, and `src/go2cs/validationProofPages.go` with its
+`testdata/validationproof/expected.md` carry no campaign figure at all — both verified by grep, both
+correctly untouched.
+
+**THE GUARD IS THE CALCULATOR, AND IT NEEDED NO CHANGE.** `check-roster-format.ps1` computes
+`implementable = testable − ledger.Count` and recomputes the difference, the denominator and the
+percentage from the table — so striking the row is the whole edit and the header follows.
+Before: `roster format guard: 550 checks pass (201 rows, 195 with a linux annotation, 4 with an
+execution config, 6 excluded)`, exit 0. After: `roster format guard: 548 checks pass (201 rows, 195
+with a linux annotation, 4 with an execution config, 5 excluded)`, exit 0 — two fewer checks because
+the two per-ledger-row assertions (ruled class, five-column render) go with the struck row.
+
+*Positive control, because a green that cannot go red is not a measurement:* the header was reverted
+to `(215 − 6 excluded = 209): 201 / 209 — 96.2%` against the corrected ledger, and the guard went RED
+at exactly the four arithmetic assertions — *excluded count* expected 5 got 6, *stated difference*
+expected 210 got 209, *denominator* expected 210 got 209, *percentage* expected 95.7 got 96.2 —
+exit 1. The file was restored and verified **byte-identical by SHA-256**
+(`99cfc67667dfa3ae452c4bfe3d6046b1e2fc9879c88eb172c6f44514a5acb2fc`), and the guard returned to 548
+of 548, exit 0.
+
+*Instruments: read-only apart from the three documents edited. No build, converter run, test or sweep
+— a train battery was running on the host. The `go list std` verification is a toolchain query
+against a pinned GOROOT and touches no repository file.*
+
+-- coordinator sub-agent
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
