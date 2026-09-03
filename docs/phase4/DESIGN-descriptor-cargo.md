@@ -546,3 +546,11 @@ A/B, PRE (`e8c078637`) PASS 2195 at 174 s cold / 145 s warm vs A PASS 2195 at 90
 > gap, so the "A faster on both readings" sentence above was the fast tail of run-to-run variance, not
 > merit. Corrected characterization: **A is within noise of PRE; no cost regression** — the gate's
 > verdict is unchanged, its wording was over-read. Three readings, one host, all warm but the first PRE.
+
+> **§11 MEASURED 2026-09-03 at the seated tip `6dcbd7211`** — the parked `SliceOfArrayTypeName` guard,
+> Go and C# binaries run directly and diffed row by row (positive control: the outputs differ):
+> PASS `[6]uint8`, `[2][3]int`, `[]Grid`; FAIL `[][6]uint8` → `[][]uint8`, `[][3]int` → `[][]int`,
+> `[][2][3]int` → `[][][]int`, `map[[2]int][]int` → `map[[]int][]int`, `[]*[4]byte` → `[]*[]uint8`,
+> `chan [3]int` → `chan []int`, and `Elem()` of `[][6]uint8` → `[]uint8` with `Len()` 0. **Ten of ten as
+> predicted.** A alone fixes no value-site row, and no unaccounted seeding route exists — the premise B
+> cuts on. `Len()` answering 0 for an unknown is the `null = unknown` model read at its consumer.
