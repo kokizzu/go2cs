@@ -906,8 +906,17 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// so it takes the receiver BOX (`this ж<g>`). A deref-aliased pointer receiver (`ref var gp
 	// = ref Ꮡgp.Value`) renders as the value alias, which binds neither the box form nor identity;
 	// emit the box itself — `Ꮡgp.guintptr()`.
+	//
+	// The box must actually EXIST, which is why the gate is exprHasReceiverBoxInScope and not the
+	// broader exprIsDerefAliasedPointer it reads like. A registration displaces a BODY; it does not
+	// decide the declaration's receiver FORM, and a hand-own of a `[GoRecv] this ref T` method is
+	// called exactly as the converted one was. Gating on "is deref-aliased" spelled `Ꮡrecv` inside
+	// `[GoRecv] this ref T` bodies, where nothing declares it — reflect's `addArg` emitted
+	// `Ꮡa.regAssign(Ꮡt, 0)` (CS0103) the moment `abiSeq.regAssign` was registered. Where the box is
+	// genuinely in scope both forms bind (RecvGenerator mints the ж twin beside a `ref` primary),
+	// so keeping the box route there is what makes this narrowing corpus-inert.
 	if sel, ok := v.info.Selections[selectorExpr]; ok && sel.Kind() == types.MethodVal {
-		if obj := sel.Obj(); obj != nil && v.isManualBoxReceiverMethod(obj) && v.exprIsDerefAliasedPointer(selectorExpr.X) {
+		if obj := sel.Obj(); obj != nil && v.isManualBoxReceiverMethod(obj) && v.exprHasReceiverBoxInScope(selectorExpr.X) {
 			if ident, ok := selectorExpr.X.(*ast.Ident); ok {
 				return fmt.Sprintf("%s%s.%s", AddressPrefix, v.getIdentName(ident), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
 			}
