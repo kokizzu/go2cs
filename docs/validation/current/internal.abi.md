@@ -6,14 +6,27 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `internal/abi` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `e2182a59e`*
+*Validated 2026-09-03 · converter `8873a1437`*
 
-**2 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**1 matched · 1 disclosed** — Go 1.23.12, `linux/amd64`, converted package
 [`src/core/internal/abi`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/internal/abi).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.23.12 linux/amd64`.
 
 ## Verdicts
 
 | Test | `go test` | go2cs |
 |:--|:--:|:--:|
-| `TestFuncPC` | pass | pass |
+| `TestFuncPC` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestFuncPCCompileError` | pass | pass |
+
+## Disclosed divergences
+
+A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
+a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
+hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/internal/abi/go2cs_test_disclosures.json);
+a disclosed test that fails any *other* way is still a hard mismatch.
+
+| Test | Class | Pinned reason |
+|:--|:--|:--|
+| `TestFuncPC` | `runtime-capability` | the test compares FuncPCABI0(FuncPCTestFn) against FuncPCTestFnAddr, and Go writes that expected value from _test.s -- assembly the pipeline never converts. So the managed side has no real code address on EITHER arm: FuncPCTestFn is a bodyless partial with no managed body, and FuncPCTestFnAddr is declared, read, and never written. Until 2026-09-03 both arms were 0 and the row passed VACUOUSLY, matching Go's pass for the opposite reason (a real address on both sides); the synthetic-PC registry replaced that silent zero with a loud refusal, which is the signature pinned here. It cannot be retired by making the registry more complete: a token for an assembly routine is refused BY CONSTRUCTION (DESIGN-synthetic-pc-registry.md, class C) because it would be dereferenced or compared as an address, and there is nothing to resolve it to. Retirement needs a real code address for FuncPCTestFn on both arms, which this port has no mechanism to produce, so this entry may be permanent. |
