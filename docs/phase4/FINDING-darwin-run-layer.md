@@ -131,6 +131,84 @@ Bodyless `partial` declarations in the darwin flavor of `fmt`'s closure, by pack
 Not all need bodies (many are unreachable for a `fmt`-only program), but the syscall entry points and
 the trampoline mechanism are on the path of *every* converted program.
 
+### AMENDMENT 2026-09-03 (C2) — the class-C reachability read: which of runtime's deferred trampolines are genuinely dormant, and the ONE that is not
+
+The class-B emission arc (`claude/c2-darwin-classb`) deliberately deferred **43** runtime trampolines
+rather than reaching them with a name normalizer: 37 bind on the pragma's SYMBOL rather than its local
+name, and 6 carry no darwin pragma at all. This is the reachability read on that set, taken statically
+against the corpus — darwin has no run layer, so nothing here is observed throwing.
+
+**The population closes exactly.** All 43 have a `FuncPCABI0` call site (zero unmapped) and **41**
+appear in the converted darwin runtime; the two absent, `pthread_key_create_trampoline` and
+`pthread_setspecific_trampoline`, are `sys_darwin_arm64.go` and so are correctly outside an amd64
+corpus (the set difference in the other direction is empty). All 41 sit in ONE emitted file,
+`runtime/darwin/sys_darwin.cs`, and none is in a hand-owned file. By subsystem: pthread 13,
+bootstrap/misc 7, signals 6, file/fd 6, memory 4, netpoll 2, time 2, exit 1.
+
+**The pthread cond/mutex subset is genuinely dormant, and the tree had already decided it.** Those
+seven are driven by `semacreate` / `semasleep` / `semawakeup` in `os_darwin.cs`, which are reached only
+through the lock/note protocol — and that protocol is hand-owned FLAT at `goosAny`:
+`runtime/lock_managed_impl.cs` supplies `lock2`, `unlock2`, `notesleep`, `notewakeup`, `notetsleepg`,
+`noteSleepDeadline` and `mutexContended`, and `manualConversionFuncs` displaces them for every GOOS.
+So they stay throwing correctly, matching the posture `manualTypeOperations.go` already states for the
+sibling case — *"has no reachable caller, so it stays auto and stays throwing rather than being
+hand-owned speculatively."* Note that `lock_sema_impl.cs`, one of the two companions §3 counts,
+hand-owns exactly ONE function (`notetsleep_internal`) and does not displace the sema trio.
+
+**The exception is TIME, and it sharpens §3's count into a named gap.** `nanotime_trampoline` and
+`walltime_trampoline` are reached from `nanotime1` / `walltime`, and linux's own hand-own states the
+stake: *"That throw is NOT a dormant edge: nanotime is read by cpuprof, metrics, mgc, mgcmark,
+mgcpacer, mprof, netpoll and debuglog."* **Both `linux` and `windows` carry
+`runtime/<goos>/nanotime_impl.cs`; `darwin` does not.** So §3's "darwin: 2 companions" has a first
+concrete missing member whose remedy has already shipped twice.
+
+**And it is priced differently from those two, which is the part an estimate from the precedent gets
+wrong.** On linux and windows `nanotime1` is a **bodyless partial** in `stubs3.cs`, displaced simply by
+writing a body — no registry entry, no converter change. On darwin it is a **BODIED** converted
+function in `sys_darwin.cs` calling `libcCall(FuncPCABI0(nanotime_trampoline), …)`, so displacing it
+requires a `manualConversionFuncs` entry: a converter change carrying a two-seeded emission diff and a
+hunk-only corpus footprint. Same fix by name, the two different displacement mechanisms CLAUDE.md
+separates.
+
+**Deliberately not cut here.** With no run layer there is nothing to control such a hand-own against —
+it could not be made to fail — which is the warm-design trap. This is recorded so the next darwin
+increment starts from a measured population instead of re-deriving it.
+
+#### CORRECTION 2026-09-03 (C2, same day) — two MECHANISMS above are wrong; both conclusions stand
+
+Left in place rather than rewritten, because this is a dated record and the wrong reasoning is worth
+seeing beside the right one. Ruled by COORD on the run-layer design's §0.
+
+**(a) The pthread cond/mutex subset is dormant, but not for the reason given above.** The paragraph
+says the seven are unreachable because the lock/note protocol is hand-owned flat at `goosAny`. The
+displacement is real — `lock_managed_impl.cs` supplies `lock2`, `unlock2`, `notesleep`, `notewakeup`,
+`notetsleepg`, `noteSleepDeadline`, `mutexContended`, and `runtime/darwin/lock_sema.cs` carries a
+generated placeholder for each — but **`notetsleep` is NOT among them.** It keeps its converted body,
+and that body is the trio's only caller (`semacreate`, `lock_sema.cs:68`).
+
+The real argument is empirical and stronger. Measured: `semasleep` and `semawakeup` have **no caller
+at all**; `semacreate` has exactly one, `notetsleep`; and `notetsleep`'s three callers are **identical
+on all three flavours** — `proc.cs:1669` (stop-the-world), `proc.cs:2157` (safepoint), `proc.cs:6101`
+(sysmon). **Linux and windows run real workloads against that exact call graph and their semaphore
+trio never fires**, because the managed model does not enter those scheduler paths — the same measured
+fact (`schedinit` never runs) that makes `internal/cpu`'s `doinit` unreachable. Below `notetsleep`,
+darwin's graph is not merely similar to theirs; it is the same file.
+
+**(b) Darwin's missing `nanotime_impl.cs` is deliberate and documented, not an unnoticed gap.** The
+paragraph above frames it as a first concrete missing member that the other two flavours had already
+filled. The linux file's own header says otherwise, and said it first: *"Per-GOOS rather than flat
+because darwin already has a real body (sys_darwin.cs's nanotime1 over its own `$INTERNAL` trap), and a
+flat implementation would collide with it."*
+
+What survives — and what that header independently confirms — is the **sizing**, which is the half this
+record was useful for: darwin's `nanotime1` is a BODIED function, so displacing it needs a
+`manualConversionFuncs` entry (a converter change, with a two-seeded diff and a hunk-only footprint),
+where linux and windows were bodyless partials displaced by writing a body. The novelty claim does not.
+
+Both corrections were self-caught while designing the increment this record was written to inform, and
+both came from the same failure: citing a file without reading what it already said.
+
+
 ## 4. What would have to be built
 
 The Linux keystone was one entry point over libc's `syscall(2)`. Darwin's is structurally larger,

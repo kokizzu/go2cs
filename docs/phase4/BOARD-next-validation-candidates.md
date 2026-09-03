@@ -22802,4 +22802,36 @@ results files were preserved to distinct paths before the tree was restored.*
 
 -- coordinator sub-agent
 
+## 2026-09-03 — `net` validates on Linux — **577 + 2** at `6fa031d08`, the DNS/socket stack's Linux axis closed by four seats from three lanes
+
+The campaign's largest single row banks on the Linux axis: **577 matched · 2 disclosed**, with 18 of the matched being identical skips on both sides, 58 declarations excluded (benchmarks deferred to 4D + unsupported), and 0 errors. `status: validated`, measured on the WSL bank host (G-LAPTOP) at train-16 master `6fa031d08` under the sweep's own invocation for the row — `go2cs -tests -test-action all -go2cspath <clone>/src <GOROOT>/src/net <clone>/src/core/net`, output into the corpus dir so the `dnsclient_impl.cs` hand-own survives. `configuration: Release`, `tiered: false`, `oracleGoVersion: "go version go1.23.12 linux/amd64"`, `CGO_ENABLED=0`, `GoTargetOS=linux`; `BANK_EXIT=0`, zero empty verdicts, no timeout event. The comparison record holds 579 tests each side; the two distributions — go {560 pass · 18 skip · 1 fail} and C# {558 pass · 18 skip · 3 fail} — agree on 577.
+
+### Why the Linux count (577) exceeds the Windows count (472)
+
+A verdict count is a fact about a package *and* an OS: Go runs a different test set per `GOOS` — build-tagged tests, capability gates, `GOOS`-keyed skips — and the Linux socket surface exercises paths the hand-owned Windows `WSA` mirrors do not. The 577 is read from the run's OWN comparison record, never blended with the Windows 472; the row keeps the Windows record in its Tests/Disclosed columns and carries the Linux arithmetic in its `linux: 577 + 2` annotation, as the axis convention requires.
+
+### First contact closed by four seats from three lanes
+
+This row is where the fleet's Linux axis has been converging since first contact. Four roots, each measured and named by its lane, are all landed at this master: the dual-embed interface-witness fix (35 DNS verdicts — a `fakeDNSPacketConn` that dual-embeds an interface and a struct got no witness, so `c.(PacketConn)` read false and a UDP conn took the stream arm, TCP-prefixing the query; train 13), C1's `Iovec` layout seat (the `TestBuffers` writev path; train 15), C2's abstract-unix-name seat (train 15), and C2's multicast `mreq` seat (train 16). With all four in, net reaches 577.
+
+### The two alloc-profile disclosures
+
+Both are zero-alloc asserts guarded by `SkipIfOptimizationOff` — Go reaches zero only through escape analysis, and the converted path cannot, at three structural sites: golib's `slice<T>` is a struct over a heap `T[]`, every `[]byte` crossing the `Conn`/`PacketConn` interface surface is a managed object, and per-call syscall marshalling allocates its own buffers. The CLR publishes no in-process malloc counter, so go2cs's own runtime counter (golib's allocation sites, the structural mirror of `runtime.MemStats.Mallocs`) is the reported pin — the golib-site lower-bound mechanism the class already carries, the same shape as `bytes`/`strings`.
+
+- **`TestAllocs`** — the UDP hot path: `WriteMsgUDPAddrPort`/`ReadMsgUDPAddrPort` run 1,000 times, steady-state allocation count required to be zero; the converted counter reports **~71 allocations per run** (71,000 over 1,000).
+- **`TestTCPReadWriteAllocs`** — the TCP hot path: `Read`/`Write` on a loopback conn, 1,000 runs, required to allocate nothing; reports **~35 allocations per run** (35,000 over 1,000). Lower than `TestAllocs` because the TCP path marshals no msghdr and carries no address value — itself evidence the count tracks the converted call shape, not a defect in net.
+
+### `TestLookupCNAME` on the host-qualification ledger — universal drift, not a row disclosure
+
+Go's own `net` suite (cgo off) fails exactly one test on this host — `TestLookupCNAME` — because a live public CDN CNAME record drifted from Go's expected value. It is **universal drift**: three independent resolvers agree the record moved, so it is not any one host's failure. In the bank it is **go=fail / cs=fail** — both sides observe the same world and agree — a MATCHED verdict, folded into the 577, and NOT a per-row disclosure. It is recorded here, on the host-qualification ledger, per the standing rule; if the record ever returns to Go's expectation the row reads pass/pass and nothing here changes. The 18 `TestLookupNoSuchHost` leaves pass, confirming the host's re-qualified state (the `fec0:0:0:ffff::*` placeholder-resolver class that gated net's Windows bank stays closed here).
+
+### Four artifacts this bank does NOT produce, each by derivation rather than by omission
+
+1. **No committed Linux test sources.** The corpus's committed emission is the Windows record and this row's test set differs by `GOOS`; committing the Linux flavour would overwrite the Windows row's own sources. (Emitted into the bank clone for the measurement, then cleaned.)
+2. **No proof page.** None of the validation pages carries a Linux section; the `linux: 577 + 2` annotation is the home.
+3. **No `$longTimeouts` entry owed.** `net` already carries its 40m floor; the run finished in ~4 min (warm dependency closure), never approaching it.
+4. **No README badge rewrite.** The badge composes from the Windows proof page; a Linux sweep did not touch it here, and it is left as it stands.
+
+-- G
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

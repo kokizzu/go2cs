@@ -1041,9 +1041,26 @@ func (a *refLoweringAnalysis) classifyParamUse(ident *ast.Ident, parents map[ast
 			}
 
 			// p.f — auto-deref field access, or a method on p.
-			if sel, ok := a.info.Uses[p.Sel].(*types.Func); ok {
-				_ = sel
+			if method, ok := a.info.Uses[p.Sel].(*types.Func); ok {
 				// A method call (or method value) ON p — receivers stay ж in Phase A (§3.2 X3).
+				//
+				// B′ S1 §4.3 relaxes this ONE arm: once a primary exists, a method CALL on a
+				// ref-held receiver is no longer a representation change, so the X3 veto lifts for
+				// a directly-selectable method. Three conditions, each load-bearing:
+				//   (1) -dual-recv-params on (the primaries the call would bind exist);
+				//   (2) it is a genuine CALL, not a method VALUE — a value needs a delegate over
+				//       the box (§4.2's method-value row stays twin), so `p.M` outside call
+				//       position keeps the veto;
+				//   (3) M's emitted receiver is a REF, not a direct-ж box receiver — a box-receiver
+				//       method (selectorTargetIsDirectBoxMethod's converter twin) binds only a
+				//       `ж<T>`, so calling it forces the box back and the veto must stand.
+				// This is what un-vetoes feMul/feSquare (their trailing `v.carryPropagate()`), so
+				// Element.Multiply/Square move off the twin at S1. `forward-unlowered` is the
+				// ceiling on the corpus-wide unstrip; the A1 instrument measures the delta.
+				if dualRecvParamsEnabled && a.methodCallIsRefSelectable(method, p, parents) {
+					return a.classifyPointeeUse(p, parents)
+				}
+
 				return refVetoX3Repr, nil
 			}
 
@@ -1350,6 +1367,38 @@ func exprTypeIsPointer(info *types.Info, node ast.Node) bool {
 	_, isPtr := exprType.Underlying().(*types.Pointer)
 
 	return isPtr
+}
+
+// methodCallIsRefSelectable reports whether a method invocation `p.M(…)` on a pointer parameter p
+// can bind on a REF-held receiver — the B′ S1 §4.3 relaxation predicate. It relaxes the X3 veto
+// only for a genuine call to a method whose emitted receiver is a `ref T` rather than a `ж<T>` box.
+//
+// selectorExpr is the `p.M` node; its parent must be the *ast.CallExpr for this to be a call and
+// not a method value (a value needs a delegate over the box, so the box must survive — the veto
+// stands). A pointer receiver is required (a value-receiver method already binds a value without a
+// box). A DIRECT-ж method (packageDirectBoxReceiverMethods — a field-address/capture-mode method
+// the capture-mode pass, which runs before this analysis, has already marked) emits `this ж<T>` and
+// binds only a box, so calling it forces the box back: veto stands. Everything else is either an
+// ordinary `[GoRecv] this ref T` method or an S0 ref-return primary, both ref-bindable.
+func (a *refLoweringAnalysis) methodCallIsRefSelectable(method *types.Func, selectorExpr *ast.SelectorExpr, parents map[ast.Node]ast.Node) bool {
+	call, isCall := parents[selectorExpr].(*ast.CallExpr)
+
+	if !isCall || call.Fun != selectorExpr {
+		return false // a method VALUE, not a call — its delegate needs the box
+	}
+
+	if !methodHasPointerReceiver(method) {
+		return false // a value receiver never needed a box; the veto never applied
+	}
+
+	// A direct-ж (box-receiver) method binds only `ж<T>`; calling it re-materializes the box.
+	// A NIL map means the capture-mode pre-pass never answered, so the flavor is UNKNOWN — keep
+	// the veto (do not relax on a bet), mirroring receiverUseKeptReason's own nil-guard.
+	if packageDirectBoxReceiverMethods == nil {
+		return false
+	}
+
+	return !packageDirectBoxReceiverMethods[method.Origin()]
 }
 
 // methodHasPointerReceiver reports whether method's receiver is a pointer type.

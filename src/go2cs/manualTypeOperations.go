@@ -74,6 +74,15 @@ var goosWindows = goosScope{"windows"}
 // nothing to link against — the exact os.(*File).readdir lesson, one package down.
 var goosLinux = goosScope{"linux"}
 
+// goosDarwin scopes an entry to the darwin flavor alone. Its first member is runtime's nanotime1:
+// linux and windows declare it BODYLESS (stubs3.cs) and are displaced simply by writing a body, so
+// they need no registry entry at all, while darwin's sys_darwin.cs carries a real converted body over
+// its own libc trampoline — a bodied function is displaced only through this registry. Scoping it
+// darwin-only is therefore not a preference but the shape of the difference: an unscoped entry would
+// turn the other two flavors' bodyless partials into placeholders that their own *_impl.cs already
+// implements, which is CS0111 rather than a displacement.
+var goosDarwin = goosScope{"darwin"}
+
 // goosWindowsLinux scopes an entry to the two flavors that each hand-own the SAME declaration in
 // their own per-GOOS file — the sockaddr family: Windows in syscall/windows/syscall_windows_impl.cs
 // (L10), Linux in syscall/linux/sockaddr_linux_impl.cs (the 2026-08-22 mirror). darwin declares the
@@ -104,6 +113,14 @@ func (scope goosScope) includes(goos string) bool {
 // same manual files — declarations whose bodies are inseparable from the manual types' semantics.
 var manualConversionFuncs = map[string]map[string]goosScope{
 	"runtime": {
+		// runtime.nanotime1 — darwin's monotonic clock. The other two flavors reach the same golib
+		// clock (MonotonicClock.Nanoseconds()) by writing a body into a bodyless partial and need no
+		// entry here; darwin's converted body calls libcCall(FuncPCABI0(nanotime_trampoline), …) into a
+		// throwing external stub, and a BODIED function is displaced only through this registry. The
+		// throw is not a dormant edge: nanotime is read by cpuprof, metrics, mgc, mgcmark, mgcpacer,
+		// mprof, netpoll and debuglog, so the first call into any of them dies. See
+		// docs/phase4/DESIGN-darwin-run-layer-1.md.
+		"nanotime1": goosDarwin,
 		// getgcmask answers a TYPE's GC pointer bitmap, and Go answers it by reading the GC's own
 		// heap metadata: findObject, the span's typePointersOfUnchecked iterator, activeModules'
 		// data/bss bitmaps, the stack's locals map. None of those exist in a managed runtime, so the
@@ -1805,10 +1822,16 @@ func (v *Visitor) isManualType(goTypeName string) bool {
 }
 
 // isManualBoxReceiverMethod reports whether obj is a listed foreign-receiver manual method
-// (a manualConversionFuncs "recvTypeName.funcName" entry). Such a method captures the
-// receiver's IDENTITY (e.g. g.guintptr wraps the *g itself), so its manual implementation
-// takes the receiver BOX (`this ж<T>`) — a deref-aliased call site must pass the box, not
-// the value alias (see convSelectorExpr).
+// (a manualConversionFuncs "recvTypeName.funcName" entry). The motivating members capture the
+// receiver's IDENTITY (e.g. g.guintptr wraps the *g itself), so their manual implementation takes
+// the receiver BOX (`this ж<T>`) and a deref-aliased call site must pass the box rather than the
+// value alias (see convSelectorExpr).
+//
+// It answers MEMBERSHIP only. A registration displaces a BODY; it decides nothing about the
+// declaration's receiver FORM, and the registry holds `[GoRecv] this ref T` members too — so the
+// call site pairs this with exprHasReceiverBoxInScope, which asks whether a box exists to pass.
+// Reading membership alone as "takes the box" put `Ꮡa.regAssign(Ꮡt, 0)` into reflect's addArg,
+// a `this ref abiSeq a` body with no such box (CS0103, measured 2026-09-03).
 func (v *Visitor) isManualBoxReceiverMethod(obj types.Object) bool {
 	fn, ok := obj.(*types.Func)
 

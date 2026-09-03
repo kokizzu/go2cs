@@ -19,6 +19,13 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using go.golib;
 
+// go2cs HAND-OWNED (whole file) — part of the Phase-4 test host, a structural replacement for Go's
+// testing package rather than a conversion of it (the rationale and the measured clobber are in
+// testing.cs). No converted source emits at this path, so this marker declares ownership rather than
+// resolving a collision; the mechanical guards are the -stdlib skip list (isNonConvertedStdLibPackage)
+// and testConversion.go's -tests refusal (requireConvertibleTestTarget).
+[module: go.GoManualConversion]
+
 namespace go.testing_runtime;
 /// <summary>
 /// One running test or subtest — the state behind the <c>*testing.T</c> a converted test body holds.
@@ -107,6 +114,7 @@ public sealed class TestExecution
     private int m_ownerThread;
     private int m_tempDirSequence;
     private bool m_parallel;
+    private bool m_envSet;
     private bool m_holdsParallelSlot;
     private bool m_finished;
     private bool m_failed;
@@ -318,14 +326,65 @@ public sealed class TestExecution
         return m_runner.RunChild(this, name, action);
     }
 
+    /// <summary>
+    /// Go's <c>common.isParallel</c> for this execution, read under the lock
+    /// <see cref="Parallel"/> writes it under.
+    /// </summary>
+    private bool IsParallel
+    {
+        get
+        {
+            lock (m_syncRoot)
+                return m_parallel;
+        }
+    }
+
+    /// <summary>
+    /// Whether this execution or ANY ancestor has called <c>t.Parallel</c>.
+    /// </summary>
+    /// <remarks>
+    /// Go's <c>T.Setenv</c> walks the whole chain — <c>for c := &amp;t.common; c != nil; c = c.parent</c>
+    /// (testing.go:1515) — and its own comment says why: a NON-parallel subtest of a PARALLEL parent
+    /// still runs concurrently with tests outside that parent, so it is only serial with respect to
+    /// its siblings. <c>Setenv</c> mutates the whole process, so the ancestor's parallelism disqualifies
+    /// the child just as the child's own would. Checking only this execution's flag — which is what
+    /// this host did until 2026-09-03 — accepts exactly the two cases Go's own suite pins,
+    /// <c>TestSetenvWithParallelParentBeforeSetenv</c> and its grand-parent sibling.
+    /// </remarks>
+    private bool HasParallelSelfOrAncestor()
+    {
+        for (TestExecution? execution = this; execution is not null; execution = execution.m_parent)
+        {
+            if (execution.IsParallel)
+                return true;
+        }
+
+        return false;
+    }
+
+    // Go's three panic texts for the Setenv/Parallel contract, VERBATIM from testing.go (1444-1448,
+    // 1523) at the pinned go1.23.12. They are quoted rather than composed because Go's own tests
+    // compare the recovered value against the whole string with ==, so a paraphrase, a truncation at
+    // the semicolon (what this host shipped), or an interpolated test name all read as "no panic".
+    private const string ParallelCalledMultipleTimesText =
+        "testing: t.Parallel called multiple times";
+    private const string ParallelAfterSetenvText =
+        "testing: t.Parallel called after t.Setenv; cannot set environment variables in parallel tests";
+    private const string SetenvAfterParallelText =
+        "testing: t.Setenv called after t.Parallel; cannot set environment variables in parallel tests";
+
     public void Parallel()
     {
         if (!TryEnsureOwner(nameof(Parallel)))
             return;
         lock (m_syncRoot)
         {
+            // Go's order, which is observable: isParallel is tested before isEnvSet, so a test that
+            // is both already-parallel and env-set recovers the "multiple times" text.
             if (m_parallel)
-                throw new InvalidOperationException($"testing: {Name} called Parallel more than once");
+                throw builtin.panic(ParallelCalledMultipleTimesText);
+            if (m_envSet)
+                throw builtin.panic(ParallelAfterSetenvText);
             m_parallel = true;
         }
         ParallelSource.TrySetResult();
@@ -467,8 +526,15 @@ public sealed class TestExecution
     {
         if (!TryEnsureOwner(nameof(Setenv)))
             return;
-        if (m_parallel)
-            throw new InvalidOperationException("testing: t.Setenv called after t.Parallel");
+
+        if (HasParallelSelfOrAncestor())
+            throw builtin.panic(SetenvAfterParallelText);
+
+        // Set BEFORE the environment is written, as Go does (testing.go:1525, ahead of the
+        // common.Setenv call): a later t.Parallel must be refused whether or not the write below
+        // succeeded, because the test has already declared an intent to mutate process state.
+        lock (m_syncRoot)
+            m_envSet = true;
 
         // Write BOTH env stores the corpus reads through. The corpus has two disjoint env-reader
         // paths on the Linux flavor, and a foundational test host must feed both or it fixes one

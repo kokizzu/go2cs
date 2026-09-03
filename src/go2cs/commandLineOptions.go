@@ -30,18 +30,19 @@ type Options struct {
 	convertStdLib       bool
 	convertTimeout      time.Duration // -convert-timeout: per-package cap the -stdlib driver applies to one package's conversion; zero means an Options built in code rather than from the command line, which takes defaultConvertTimeout
 	recurse             bool
-	recurseOutputRoot   string // -recurse: writable root for generated src\ + pkg\ trees; defaults to go2csPath
-	mainModulePath      string // -recurse: import path of the app (main) module; routes its packages to src\, deps to pkg\
-	mainModuleDir       string // -recurse: DIRECTORY of the app (main) module; the context a module-cache package is loaded from (see processConversion)
-	packageImportPath   string // -recurse: import path of the ONE package being converted right now; set per package by convertAll, not from the command line
-	moduleOnly          bool   // -recurse=module: convert the input module's OWN packages only; the third-party closure is referenced (into pkg\) but not converted
-	nugetRefs           bool   // -recurse=nuget: reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local $(go2csPath) project references
+	recurseOutputRoot   string   // -recurse: writable root for generated src\ + pkg\ trees; defaults to go2csPath
+	mainModulePath      string   // -recurse: import path of the app (main) module; routes its packages to src\, deps to pkg\
+	mainModuleDir       string   // -recurse: DIRECTORY of the app (main) module; the context a module-cache package is loaded from (see processConversion)
+	packageImportPath   string   // -recurse: import path of the ONE package being converted right now; set per package by convertAll, not from the command line
+	moduleOnly          bool     // -recurse=module: convert the input module's OWN packages only; the third-party closure is referenced (into pkg\) but not converted
+	nugetRefs           bool     // -recurse=nuget: reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local $(go2csPath) project references
 	targetPlatform      string   // the ONE os/arch a conversion emits for; every pass reads this
 	targetPlatforms     []string // -platforms: the full requested list (len 1 for every ordinary run); targetPlatform is its first entry
 	platformCensusDir   string   // -platform-census: staging + manifest directory for a multi-target emission census (no corpus output)
 	platformStageDir    string   // -platform-stage: where a multi-target EMISSION stages its per-target conversions; a temporary directory this run owns and removes when empty
 	refCensusPath       string   // -ref-census: JSON output path for the ж-box A1 ref-lowering census (analysis only, no corpus output)
 	dualRecv            bool     // -dual-recv: B′ S0 — eligible pointer-receiver methods emit the `[GoRecv] this ref T` PRIMARY (R3 arms; the ж twin is minted by RecvGenerator). Flag-gated and corpus-inert: default off, scratch-root regens only until S2's own rebank ride
+	dualRecvParams      bool     // -dual-recv-params: B′ S1 (requires -dual-recv) — the PARAMETER half: primaries lower their pointer params (twin ref-forwards), the §4.2 call-site table lands corpus-wide, and the §4.3 X3 method-call arm relaxes for directly-selectable methods (feMul/feSquare unstrip). Kept a SEPARATE flag so `-dual-recv` alone still emits the S0 floor after S1 lands — the measurability condition (coordinator, 2026-09-03)
 	buildTags           []string // -tags: build tags applied to package loading AND constraint evaluation
 	tagsExplicit        bool     // whether -tags was passed on the command line (vs. the -stdlib purego default)
 	indentSpaces        int
@@ -66,6 +67,7 @@ type Options struct {
 	testMetadataAnchorName string        // C# class that owns test-generated adapters under reference models
 	testConfig             string        // -test-config Debug|Release: publish/run configuration for the converted test host (default Debug -- unchanged pipeline behavior); Release also publishes with an explicit -p:go2csPath, replacing the Debug-conditional csproj-template default. See docs/phase4 tiering census
 	testTiered             bool          // -test-tiered: explicit opt-back-IN to the CLR's default tiered JIT when testConfig is Release (Release's own default is DOTNET_TieredCompilation=0, for deterministic timing-bounded verdicts -- see the tiering census); meaningless when testConfig is Debug
+	testAllowHandOwn       bool          // -test-allow-handown: deliberately convert a package the -stdlib queue skips (testing, unsafe, ...) into a SCRATCH root; refused by default because the default output path IS the hand-owned tree -- see requireConvertibleTestTarget
 	testProductionPath     string        // original package path retained after reference-mode self-binding is cleared
 	testProductionName     string        // original package name retained for white-box object routing
 	testExternalVariant    bool          // current variant is the external <name>_test package
@@ -73,9 +75,9 @@ type Options struct {
 	// records land in. It must be the info file of the COMPILATION that compiles the mapped
 	// source, because the records are assembly-scoped: production sources answer through
 	// package_info.cs, and each test variant through its own test-info anchor.
-	positionMapTarget      string
-	testInlineTypeAccess   bool          // internal bridge types carry accessibility on their source declaration
-	testFriendAssembly     bool          // production internals may be consumed by the separate test assembly
+	positionMapTarget    string
+	testInlineTypeAccess bool // internal bridge types carry accessibility on their source declaration
+	testFriendAssembly   bool // production internals may be consumed by the separate test assembly
 }
 
 // packageUnderTestPath returns the import path of the package under test, whichever field the

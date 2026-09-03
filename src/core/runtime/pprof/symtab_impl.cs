@@ -46,10 +46,36 @@
 
 namespace go.runtime;
 
+using runtime = runtime_package;
+
 partial class pprof_package
 {
     // Expands the final pc in stk to include all "callers" if pc is inline. Nothing is inline here,
     // for the reasons above, so the stack is returned unchanged — Go's own "Not a Go function" and
     // "Nothing inline at tracepc" branches, which are the two that can fire in this corpus.
     internal static partial slice<uintptr> runtime_expandFinalInlineFrame(slice<uintptr> stk) => stk;
+
+    // ---- The two symbolization destinations, and both are Go's own branch ----
+
+    // Go's body is:
+    //     if !f.funcInfo.valid() { return f.Function }
+    //     u, uf := newInlineUnwinder(f.funcInfo, f.PC); return u.srcFunc(uf).name()
+    // The inline half exists to give a generic function its unsubstituted symbol name. `funcInfo` is
+    // never valid in this corpus — findfunc skips every module with an empty pclntable and the only
+    // moduledata is a permanent empty stub — so the FIRST branch is the one that fires, exactly as it
+    // does for runtime_expandFinalInlineFrame above. Returning f.Function is Go's answer here, not an
+    // approximation of it.
+    internal static partial @string runtime_FrameSymbolName(ж<runtime.Frame> f) => f.Value.Function;
+
+    // Go's body is `return f.startLine`, unconditionally. Two facts make 0 the EXACT answer rather
+    // than a stand-in: `Frame.startLine` is `internal` to the runtime assembly, so this one cannot
+    // read it across the boundary at all; and nothing in the corpus ever ASSIGNS it — a census of
+    // `startLine` writes finds exactly one occurrence corpus-wide and it is this function's own
+    // caller reading the value back (pprof/proto.cs:633). The field is therefore always its zero
+    // value, and 0 is what Go's body would return.
+    //
+    // It is honest for the same reason the frame carries no file or line: a synthetic PC knows WHICH
+    // FUNCTION and not which instruction, so there is no start line to know. When a consumer measures
+    // a need for one, the converter's per-method record is the route — see DESIGN-pc-readback.md §3.1.
+    internal static partial nint runtime_FrameStartLine(ж<runtime.Frame> f) => 0;
 }

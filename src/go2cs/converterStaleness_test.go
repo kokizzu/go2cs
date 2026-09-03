@@ -7,8 +7,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -142,7 +144,216 @@ func TestAdjacentConverterSourceAbsentWhenDeployed(t *testing.T) {
 	}
 }
 
+// THE ENUMERATION — the 2026-09-03 incident's own shape. The advisory named ONE file where six
+// inputs were newer, and a lane reasoned from that single name ("that entry only touches syscall")
+// to the conclusion that its measurement stood. Three files touched must yield a count of THREE and
+// all three paths, never the newest one.
+func TestStaleConverterInputsEnumeratesEveryNewerInput(t *testing.T) {
+	root := syntheticConverterRoot(t)
+
+	builtAt := time.Now().Add(-2 * time.Hour)
+	touchAll(t, root, builtAt)
+
+	touched := []string{"visitFuncDecl.go", "main.go", "csproj-template.xml"}
+
+	for index, name := range touched {
+		// Distinct instants so the newest-first ordering is asserted, not accidental.
+		touch(t, filepath.Join(root, name), time.Now().Add(time.Duration(index)*time.Minute))
+	}
+
+	stale := staleConverterInputs(root, builtAt)
+
+	if len(stale) != len(touched) {
+		t.Fatalf("expected %d stale inputs, got %d: %v", len(touched), len(stale), staleRelPaths(stale))
+	}
+
+	found := map[string]bool{}
+
+	for _, input := range stale {
+		found[input.relPath] = true
+	}
+
+	for _, name := range touched {
+		if !found[name] {
+			t.Errorf("%q was modified after the binary but is missing from the enumeration: %v", name, staleRelPaths(stale))
+		}
+	}
+
+	// Newest first: csproj-template.xml was touched last.
+	if stale[0].relPath != "csproj-template.xml" {
+		t.Errorf("enumeration must be newest-first; got %v", staleRelPaths(stale))
+	}
+}
+
+// An input NOT newer than the binary is not stale — the enumeration must not simply list the whole
+// build-input set, or the refusal would fire on every fresh build.
+func TestStaleConverterInputsEmptyWhenBinaryIsCurrent(t *testing.T) {
+	root := syntheticConverterRoot(t)
+
+	touchAll(t, root, time.Now().Add(-2*time.Hour))
+
+	if stale := staleConverterInputs(root, time.Now()); len(stale) != 0 {
+		t.Errorf("a binary newer than every input is current; enumeration returned %v", staleRelPaths(stale))
+	}
+}
+
+// The emission-affecting split. A converter `_test.go` is a real build input by the shared
+// definition (ConverterBuildInputs.cs enumerates every *.go, and the harness predicates rebuild on
+// one) but `go build` excludes it from go2cs.exe, so it cannot have changed the emission. Everything
+// else in the set can — the embedded assets especially, which is route #5's whole point.
+func TestStaleInputsClassifyEmissionAffecting(t *testing.T) {
+	root := syntheticConverterRoot(t)
+
+	builtAt := time.Now().Add(-2 * time.Hour)
+	writeFile(t, filepath.Join(root, "visitFuncDecl_test.go"), "package main\n")
+	touchAll(t, root, builtAt)
+
+	touch(t, filepath.Join(root, "visitFuncDecl_test.go"), time.Now())
+	touch(t, filepath.Join(root, "csproj-template.xml"), time.Now())
+	touch(t, filepath.Join(root, "go.sum"), time.Now())
+
+	report := &stalenessReport{sourceDir: root, builtAt: builtAt, inputs: staleConverterInputs(root, builtAt)}
+
+	if len(report.inputs) != 3 {
+		t.Fatalf("expected 3 stale inputs, got %v", staleRelPaths(report.inputs))
+	}
+
+	if report.emissionAffecting() != 2 {
+		t.Errorf("the embedded asset and go.sum are emission-affecting and the _test.go is not; got %d of 3", report.emissionAffecting())
+	}
+
+	for _, input := range report.inputs {
+		wantAffects := input.relPath != "visitFuncDecl_test.go"
+
+		if input.affectsEmission != wantAffects {
+			t.Errorf("%q: affectsEmission = %v, want %v", input.relPath, input.affectsEmission, wantAffects)
+		}
+	}
+}
+
+// THE DECISION TABLE. -stdlib and -tests refuse; the named flag is the only escape; every other
+// shape — the single-file/single-package scratch probe, and -recurse — keeps the advisory.
+func TestStalenessRefusalAppliesToTheBankedDriversOnly(t *testing.T) {
+	cases := []struct {
+		name       string
+		stale      bool
+		converting bool
+		allowStale bool
+		refuses    bool
+	}{
+		{"stdlib or tests, stale, no flag: REFUSE", true, true, false, true},
+		{"stdlib or tests, stale, flag passed: proceed", true, true, true, false},
+		{"single package, stale: advisory only", true, false, false, false},
+		{"single package, stale, flag passed: advisory only", true, false, true, false},
+		{"stdlib or tests, current binary: proceed", false, true, false, false},
+		{"single package, current binary: proceed", false, false, false, false},
+	}
+
+	for _, testCase := range cases {
+		if got := stalenessRefuses(testCase.stale, testCase.converting, testCase.allowStale); got != testCase.refuses {
+			t.Errorf("%s: stalenessRefuses(%v, %v, %v) = %v, want %v",
+				testCase.name, testCase.stale, testCase.converting, testCase.allowStale, got, testCase.refuses)
+		}
+	}
+}
+
+// A refusal that does not say how to proceed teaches the reader to reach for something worse, and
+// the deliberate case (an A/B against a preserved binary) must stay reachable by name.
+func TestRefusalCarriesTheEnumerationAndBothRemedies(t *testing.T) {
+	root := syntheticConverterRoot(t)
+
+	builtAt := time.Now().Add(-2 * time.Hour)
+	touchAll(t, root, builtAt)
+	touch(t, filepath.Join(root, "visitFuncDecl.go"), time.Now())
+
+	report := &stalenessReport{sourceDir: root, builtAt: builtAt, inputs: staleConverterInputs(root, builtAt)}
+	refusal := report.refusal()
+
+	for _, required := range []string{
+		"visitFuncDecl.go",         // the enumeration itself
+		"1 converter build input",  // the extent, grammatical at one
+		"emission-affecting",       // the split
+		"go build",                 // remedy one
+		"-allow-stale-converter",   // remedy two, named so a stale run says so in its command line
+		root,                       // where to run the rebuild
+	} {
+		if !strings.Contains(refusal, required) {
+			t.Errorf("the refusal must carry %q:\n%s", required, refusal)
+		}
+	}
+}
+
+// The cap keeps a wide staleness readable without hiding its extent: ten names plus the remainder,
+// with the total still stated in full.
+func TestReportCapsTheListedPathsButNotTheCount(t *testing.T) {
+	root := syntheticConverterRoot(t)
+
+	for index := 0; index < 12; index++ {
+		writeFile(t, filepath.Join(root, fmt.Sprintf("visit%02d.go", index)), "package main\n")
+	}
+
+	builtAt := time.Now().Add(-2 * time.Hour)
+	touchAll(t, root, builtAt)
+
+	for index := 0; index < 12; index++ {
+		touch(t, filepath.Join(root, fmt.Sprintf("visit%02d.go", index)), time.Now())
+	}
+
+	report := &stalenessReport{sourceDir: root, builtAt: builtAt, inputs: staleConverterInputs(root, builtAt)}
+
+	if len(report.inputs) != 12 {
+		t.Fatalf("expected 12 stale inputs, got %v", staleRelPaths(report.inputs))
+	}
+
+	body := report.body("  ")
+
+	if !strings.Contains(body, "12 converter build inputs were") {
+		t.Errorf("the count must state the full extent even when the list is capped:\n%s", body)
+	}
+
+	if !strings.Contains(body, "... and 2 more") {
+		t.Errorf("expected the capped remainder line for 12 inputs at a cap of %d:\n%s", maxListedStaleInputs, body)
+	}
+
+	if listed := strings.Count(body, "  * visit"); listed != maxListedStaleInputs {
+		t.Errorf("expected %d listed paths, counted %d:\n%s", maxListedStaleInputs, listed, body)
+	}
+}
+
+// An asset named by //go:embed in two different sources is ONE build input. A count that
+// double-reported it would be reporting the directives rather than the inputs — and this report's
+// whole job is to state an extent a reader can trust.
+func TestConverterBuildInputsDeduplicatesSharedAssets(t *testing.T) {
+	root := syntheticConverterRoot(t)
+
+	writeFile(t, filepath.Join(root, "secondEmbedder.go"),
+		"package main\n\nimport _ \"embed\"\n\n//go:embed csproj-template.xml\nvar alsoTemplate string\n")
+
+	template := filepath.Join(root, "csproj-template.xml")
+	occurrences := 0
+
+	for _, stamp := range converterBuildInputs(root) {
+		if inputKey(stamp.path) == inputKey(template) {
+			occurrences++
+		}
+	}
+
+	if occurrences != 1 {
+		t.Errorf("an asset embedded by two sources is one build input; counted %d", occurrences)
+	}
+}
+
 // --- helpers -------------------------------------------------------------------------------------
+
+func staleRelPaths(inputs []staleInput) []string {
+	paths := make([]string, 0, len(inputs))
+
+	for _, input := range inputs {
+		paths = append(paths, input.relPath)
+	}
+
+	return paths
+}
 
 // syntheticConverterRoot builds a miniature converter source tree: marker files, a nested internal/
 // package, and an embedded asset named by a //go:embed directive.

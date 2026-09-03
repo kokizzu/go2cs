@@ -23,6 +23,8 @@
     <None Include="$(MSBuildThisFileDirectory)syscallKeepAliveAnalysis.go" />
     <None Include="$(MSBuildThisFileDirectory)syscallFunnelSet_test.go" />
     <None Include="$(MSBuildThisFileDirectory)captureModeOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)cgoDynamicImports.go" />
+    <None Include="$(MSBuildThisFileDirectory)cgoDynamicImports_test.go" />
     <None Include="$(MSBuildThisFileDirectory)chainedCallScaling_test.go" />
     <None Include="$(MSBuildThisFileDirectory)chanDirectionCargo.go" />
     <None Include="$(MSBuildThisFileDirectory)childEnvGo2CSPath_test.go" />
@@ -73,6 +75,7 @@
     <None Include="$(MSBuildThisFileDirectory)directiveOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)disclosedParentAggregation_test.go" />
     <None Include="$(MSBuildThisFileDirectory)displacedCommentDrain_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)displacedRefReceiverCall_test.go" />
     <None Include="$(MSBuildThisFileDirectory)dynamicStructOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)dynamicTypeGate_test.go" />
     <None Include="$(MSBuildThisFileDirectory)dynamicTypeOperations.go" />

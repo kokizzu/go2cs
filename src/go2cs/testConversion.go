@@ -69,6 +69,115 @@ const (
 	internalTestPackageInfoFileName = "package_info_internal_test.cs"
 )
 
+// stdLibImportPathOf reports the standard-library import path a directory denotes, or "" when the
+// directory is not under GOROOT/src. The spelling is Go's — forward slashes — because that is what
+// isNonConvertedStdLibPackage and every other import-path predicate compare against.
+//
+// The comparison is path-normalized rather than textual for the reason main.go's checkGoRootSpelling
+// documents: a forward-slash GOROOT on Windows is a spelling `go` itself accepts, and a prefix test
+// against the backslash form silently answers "not stdlib" — which here would silently answer "not
+// hand-owned" and wave the refusal through, the exact failure the guard exists to stop.
+func stdLibImportPathOf(dir string, goRoot string) string {
+	if dir == "" || goRoot == "" {
+		return ""
+	}
+
+	sourceRoot := filepath.Join(goRoot, "src")
+
+	if !isPathUnder(dir, sourceRoot) {
+		return ""
+	}
+
+	relative, err := filepath.Rel(sourceRoot, dir)
+
+	if err != nil {
+		return ""
+	}
+
+	if relative == "." {
+		return ""
+	}
+
+	return filepath.ToSlash(relative)
+}
+
+// requireConvertibleTestTarget refuses a -tests run whose target is a package the -stdlib queue
+// deliberately skips, unless -test-allow-handown says the caller means it.
+//
+// WHY THIS EXISTS, and why the skip list alone did not cover it. isNonConvertedStdLibPackage gates
+// the -stdlib QUEUE — its callers are scanStdLib and the ref-lowering census, and nothing on the
+// -tests path ever consulted it. So `go2cs -tests <GOROOT>/src/testing <repo>/src/core/testing`,
+// which is the shape every other row is converted with and therefore the shape a hand or a script
+// reaches for, ran happily and converted Go's production testing.go, benchmark.go, match.go,
+// allocs.go, cover.go, example.go, fuzz.go, newcover.go and run_example.go INTO the directory the
+// hand-owned Phase-4 test host lives in.
+//
+// MEASURED 2026-09-03, both halves, in an isolated worktree:
+//
+//   - Without the file-level marker: testing.cs's 685 hand-written lines were replaced by Go's
+//     converted testing.go (+2622/-560), and the publish then failed CS0117/CS1929 in the host's
+//     own TestHost.cs and TestExecution.cs on M.Runner, M.Run and T.Execution — members Go's
+//     testing.go does not declare.
+//   - With the marker (now committed on all ten host files): testing.cs survived byte-identical
+//     and a testing.cs.auto sibling appeared, but the other nine converted files still landed in
+//     the same testing_package and the publish failed with 56 errors, 25 of them CS0111 duplicate
+//     members plus CS0260/CS0102/CS1537 — the F15b "ONE testing package, period" collision, exactly
+//     as isNonConvertedStdLibPackage's comment predicts.
+//
+// So the marker is necessary but not sufficient: it protects the one file whose path collides, and
+// nothing protects the assembly. This guard is what makes the mistyped command inert.
+//
+// The predicate is isNonConvertedStdLibPackage itself rather than a second list of names, so a
+// package added to the skip list tomorrow is refused here the same day without anyone remembering
+// to update a twin.
+//
+// The OVERRIDE is deliberate, not a courtesy. The census that produced the measurements above is a
+// legitimate and repeatable thing to want — it is how the admission arithmetic for `testing`'s own
+// suite was established — and refusing it outright would push the next person to comment the guard
+// out instead. What the flag does NOT do is make such a run bankable: the collision above is
+// structural, so the emission is only ever something to read and throw away, and the caller is told
+// to point it at a scratch root.
+func requireConvertibleTestTarget(inputPath string, options Options) error {
+	importPath := stdLibImportPathOf(inputPath, options.goRoot)
+
+	if importPath == "" || !isNonConvertedStdLibPackage(importPath) {
+		return nil
+	}
+
+	if options.testAllowHandOwn {
+		return nil
+	}
+
+	reason := fmt.Sprintf("%q is deliberately kept out of the conversion queue", importPath)
+	damage := "converting it would write a second copy of the package into the tree its hand-written counterpart lives in"
+
+	switch {
+	case importPath == "testing":
+		reason = "`testing` is ENTIRELY HAND-OWNED: src/core/testing is the Phase-4 test host, go2cs " +
+			"machinery standing in for a state machine over Go's goroutine scheduler, not a transcription of it"
+		damage = "the conversion's natural output path IS that host's directory, so this run would overwrite " +
+			"the hand-written testing.cs with Go's converted testing.go and emit its converted siblings " +
+			"(benchmark.cs, match.cs, allocs.cs, ...) beside the host files, producing the F15b " +
+			"\"ONE testing package, period\" collision the skip list names"
+	case importPath == "unsafe" || importPath == "builtin":
+		reason = fmt.Sprintf("`%s` is a compiler intrinsic with no convertible source", importPath)
+		damage = "there is nothing to convert, so the run can only damage what is already there"
+	case importPath == "cmd" || strings.HasPrefix(importPath, "cmd/"):
+		reason = fmt.Sprintf("%q is the Go toolchain, not the standard library", importPath)
+		damage = "the corpus has no counterpart for it, so the emission would have nothing to compile against"
+	}
+
+	return fmt.Errorf(
+		"-tests refuses %s: %s, and %s. "+
+			"The -stdlib queue has skipped it since isNonConvertedStdLibPackage was written; this guard is the "+
+			"-tests half of that same decision, which was missing until 2026-09-03. "+
+			"If you are deliberately measuring what the conversion WOULD produce, pass -test-allow-handown and "+
+			"give the run a SCRATCH output root (a second positional argument) so the emission lands somewhere "+
+			"you can throw away -- it is a census, never a row: the collision above is structural and no such "+
+			"run can bank",
+		importPath, reason, damage)
+}
+
 // Markers substituted into test-csproj-template.xml by writeTestProject (embedded-resource
 // template, following the csproj-template.xml precedent — never a hardcoded csproj string).
 const (
@@ -2080,6 +2189,16 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	collectAddressedGlobals(allEntries, pkg.Types, pkg.TypesInfo)
 	computeImportAliasRenames(allEntries, pkg.Types, packageNamespace)
 	collectPublicizedTypes(pkg.Types)
+
+	// Bind the //go:cgo_import_dynamic pragmas here too, and not only because the sequence is
+	// mirrored: a -tests conversion RECOMPILES the production sources into the test assembly, so
+	// that assembly declares the same trampolines and needs the same records to resolve them. It is
+	// also the direction that fails badly if skipped -- applyCgoDynamicImports rewrites an existing
+	// section from what THIS run bound, so a driver that never binds would silently empty a section
+	// the -stdlib emission had populated. The EXTERNAL variant carries no production files, binds
+	// nothing, and correctly emits nothing: it declares no trampolines either.
+	collectCgoDynamicImportsFromEntries(allEntries)
+
 	preloadImportedTypeAliases(allEntries, options)
 
 	// Tier C hoisted string literals (§4.4's `-tests` invariants). The INTERNAL test variant

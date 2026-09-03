@@ -66,6 +66,44 @@ using static go.crypto.x509.@internal.macOS_package;
 [assembly: go.GoPositionMap("crypto/x509/internal/macos/security.go", "security.cs", "ADuIAYIAFy6ylIKklKS8spSCpJSkmJKClIKUpJiygoKmgpTUmLKCgoKUkoKU1JiSgoKUpJiSgoKClKSYspKUgpSkmJKCgoKCgoKCgpSkmJKCpJiSgoKUpMiSgoKUgoKk")]
 // </GoSourcePositionMaps>
 
+// Dynamically imported C entry points are recorded here, one `GoCgoImportDynamic` attribute
+// per `//go:cgo_import_dynamic` pragma this package binds to a trampoline declaration, so
+// that `abi.FuncPCABI0` of that trampoline resolves to the REAL address of the exported
+// symbol rather than to a token. The value is dereferenced by design - the trampoline's
+// caller jumps to it - which is why a stub carrying no record here is left a loud throw
+// instead: an address that is merely plausible is fatal at the first call.
+
+// <CgoDynamicImports>
+[assembly: go.GoCgoImportDynamic("x509_CFArrayAppendValue_trampoline", "CFArrayAppendValue", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFArrayCreateMutable_trampoline", "CFArrayCreateMutable", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFArrayGetCount_trampoline", "CFArrayGetCount", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFArrayGetValueAtIndex_trampoline", "CFArrayGetValueAtIndex", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFDataCreate_trampoline", "CFDataCreate", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFDataGetBytePtr_trampoline", "CFDataGetBytePtr", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFDataGetLength_trampoline", "CFDataGetLength", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFDateCreate_trampoline", "CFDateCreate", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFDictionaryGetValueIfPresent_trampoline", "CFDictionaryGetValueIfPresent", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFEqual_trampoline", "CFEqual", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFErrorCopyDescription_trampoline", "CFErrorCopyDescription", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFErrorGetCode_trampoline", "CFErrorGetCode", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFNumberGetValue_trampoline", "CFNumberGetValue", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFRelease_trampoline", "CFRelease", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFStringCreateExternalRepresentation_trampoline", "CFStringCreateExternalRepresentation", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_CFStringCreateWithBytes_trampoline", "CFStringCreateWithBytes", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+[assembly: go.GoCgoImportDynamic("x509_SecCertificateCopyData_trampoline", "SecCertificateCopyData", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecCertificateCreateWithData_trampoline", "SecCertificateCreateWithData", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecPolicyCreateSSL_trampoline", "SecPolicyCreateSSL", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecTrustCreateWithCertificates_trampoline", "SecTrustCreateWithCertificates", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecTrustEvaluateWithError_trampoline", "SecTrustEvaluateWithError", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecTrustEvaluate_trampoline", "SecTrustEvaluate", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecTrustGetCertificateAtIndex_trampoline", "SecTrustGetCertificateAtIndex", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecTrustGetCertificateCount_trampoline", "SecTrustGetCertificateCount", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecTrustGetResult_trampoline", "SecTrustGetResult", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecTrustSetVerifyDate_trampoline", "SecTrustSetVerifyDate", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecTrustSettingsCopyCertificates_trampoline", "SecTrustSettingsCopyCertificates", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+[assembly: go.GoCgoImportDynamic("x509_SecTrustSettingsCopyTrustSettings_trampoline", "SecTrustSettingsCopyTrustSettings", "/System/Library/Frameworks/Security.framework/Versions/A/Security")]
+// </CgoDynamicImports>
+
 namespace go.crypto.x509.@internal;
 
 [GoPackage("macOS")]
