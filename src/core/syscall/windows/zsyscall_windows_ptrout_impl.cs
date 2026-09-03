@@ -50,6 +50,32 @@
 // pointer. The cell is a stack local, live for exactly the call -- the mirror-is-a-local
 // doctrine this package established for the synchronous members of the other class.
 //
+// THE OTHER ARGUMENTS ARE A DIFFERENT CLASS AGAIN, and this file owes them the call-site closure
+// the converter cannot supply here. Every `(uintptr)<box>` below hands the kernel the address of
+// MANAGED storage, and golib's `ж<T> -> uintptr` operator pins that storage for the BOX's
+// lifetime and nothing longer: `EnsureStableAddress` (ж.cs:451) stores a `PinnedBuffer` in the
+// box's own `m_pin` field, the buffer owns a `GCHandle.Alloc(..., Pinned)`, and when the box
+// becomes unreachable the handle is freed by a finalizer and the next compacting collection may
+// move memory the kernel is still reading or writing. The provenance table cannot save it -- it
+// is weak on purpose (ж.PointerTokens.cs:59-61) -- and holding the REFERENT is not enough, since
+// a live but unpinned array is a relocatable array.
+//
+// Nothing else supplies that holder for a HAND-OWN. dll_windows.cs's own soundness note is
+// explicit that a pointer-derived argument "is NOT resolved or pinned inside this file at all --
+// the caller's own converted statement does the work": `convSyscallFunnelCall` captures each one
+// into a `var ᴋN = <box>; ... (uintptr)ᴋN ...; System.GC.KeepAlive(ᴋN);` closure. A
+// `[module: go.GoManualConversion]` file is dropped from the convert set, so it receives no such
+// emission, and the resolve-based tether that would have covered it was measured (68% miss) and
+// REJECTED. The bodies below are therefore written in the converter's own shape, by hand: the
+// argument box is already a named PARAMETER, so the temp is unnecessary and the closure is one
+// `System.GC.KeepAlive` per pointer argument, placed immediately after the call so it covers
+// every return path. The unqualified original of this shape -- an address cast with nothing
+// referencing the box afterward -- is the form dll_windows.cs records as "measured to corrupt
+// heap memory under sustained adversarial GC pressure ... in well under 2,000,000 iterations".
+//
+// The out-CELL needs none of this: it is a native stack local, so its address is not managed
+// storage and there is nothing to pin.
+//
 // WHICH MEMBERS ARE HERE, AND WHY THE REST ARE NOT. The corpus emits THIRTEEN wrappers of this
 // shape (eleven in `syscall`, two in `internal/syscall/windows`). The transcription above is
 // mechanical and would compile for all of them; it is applied to five, on the standing
@@ -151,11 +177,36 @@ partial class syscall_package
     // ConvertSidToStringSidW(sid, &stringSid). The result is a LocalAlloc'd UTF-16 string the
     // caller frees with LocalFree, and `uint16` is blittable, so the published native box is read
     // through directly by utf16PtrToString -- no transcription is owed beyond the address itself.
+    //
+    // `Ꮡsid` CAN BE MANAGED STORAGE, which is worth stating because the natural guess -- "a *SID is
+    // an opaque native handle" -- is only half true and the safe half. The corpus mints `ж<SID>` on
+    // exactly two roads, censused rather than assumed:
+    //
+    //   NATIVE, and safe by construction. `nativeSid` (security_windows.cs:437) wraps the raw PSID
+    //       GetTokenInformation wrote into a POH-allocated buffer, so `NativeAddress != 0` and the
+    //       operator returns that address before EnsureStableAddress is ever reached (ж.cs:628) --
+    //       no pin exists because nothing managed is being addressed. os/user reaches this road
+    //       through `(~u).User.Sid.String()`.
+    //   MANAGED, and the reason for the KeepAlive below. `LookupSID` builds
+    //       `Ꮡ(b, 0).Reinterpret<byte, SID>()` over `new slice<byte>(n)` (:223), `SID.Copy` does the
+    //       same (:262), and `StringToSid` returns `sid.Copy()` after LocalFree-ing the native box
+    //       this file's sibling published (:184-188) -- so even the road that STARTS native hands
+    //       the caller a managed SID. `ReinterpretAliasesStorage<byte, SID>` is true (both sides
+    //       blittable, SID no larger), so the result is a FieldRefBox whose PinnableStorage is the
+    //       slice's backing array, and the `(uintptr)` below pins that array through THIS box and
+    //       nothing else. os/user reaches this road through `syscall.StringToSid(uid)` followed by
+    //       `.String()` / `.LookupAccount()`.
+    //
+    // The KeepAlive is what holds the second road's pin for the call; on the first it costs nothing
+    // and asserts nothing, which is the right shape for a wrapper that cannot see which road its
+    // caller took.
     public static unsafe error /*err*/ ConvertSidToStringSid(ж<SID> Ꮡsid, ж<ж<uint16>> ᏑstringSid) {
         nuint cell = 0;
         uintptr cellAddr = ᏑstringSid == nil ? 0 : (uintptr)(void*)(&cell);
 
         var (r1, _, e1) = Syscall(procConvertSidToStringSidW.Addr(), 2, (uintptr)Ꮡsid, cellAddr, 0);
+
+        System.GC.KeepAlive(Ꮡsid);
 
         if (r1 == 0) {
             // Left untouched on failure, as Go leaves it: the kernel wrote nothing.
@@ -175,7 +226,11 @@ partial class syscall_package
         nuint cell = 0;
         uintptr cellAddr = Ꮡsid == nil ? 0 : (uintptr)(void*)(&cell);
 
+        // `ᏑstringSid` is UTF16PtrFromString's `Ꮡ(a, 0)` -- an element reference into a managed
+        // `slice<uint16>`, pinned through this box alone.
         var (r1, _, e1) = Syscall(procConvertStringSidToSidW.Addr(), 2, (uintptr)ᏑstringSid, cellAddr, 0);
+
+        System.GC.KeepAlive(ᏑstringSid);
 
         if (r1 == 0) {
             return errnoErr(e1);
@@ -196,7 +251,14 @@ partial class syscall_package
         nuint cell = 0;
         uintptr cellAddr = Ꮡname == nil ? 0 : (uintptr)(void*)(&cell);
 
+        // `ᏑbufType` is a kernel WRITE into a `heap(new uint32(), out var Ꮡstatus)` box -- the shape
+        // os/user's isDomainJoined passes -- so its one-element `uint32[]` must not move while
+        // netapi32 is filling it in. `Ꮡserver` is nil at that caller and 0 crosses, but the wrapper
+        // is public API and a non-nil server name is an ordinary UTF16PtrFromString slice.
         var (r0, _, _) = Syscall(procNetGetJoinInformation.Addr(), 3, (uintptr)Ꮡserver, cellAddr, (uintptr)ᏑbufType);
+
+        System.GC.KeepAlive(Ꮡserver);
+        System.GC.KeepAlive(ᏑbufType);
 
         if (r0 != 0) {
             return ((Errno)r0);
@@ -230,7 +292,12 @@ partial class syscall_package
         nuint cell = 0;
         uintptr cellAddr = Ꮡbuf == nil ? 0 : (uintptr)(void*)(&cell);
 
+        // Both names are UTF16PtrFromString slices, and this call can BLOCK for as long as a domain
+        // controller takes to answer -- the widest window in this file for a collection to land in.
         var (r0, _, _) = Syscall6(procNetUserGetInfo.Addr(), 4, (uintptr)ᏑserverName, (uintptr)ᏑuserName, (uintptr)level, cellAddr, 0, 0);
+
+        System.GC.KeepAlive(ᏑserverName);
+        System.GC.KeepAlive(ᏑuserName);
 
         if (r0 != 0) {
             return ((Errno)r0);

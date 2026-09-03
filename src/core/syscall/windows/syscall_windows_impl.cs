@@ -414,6 +414,21 @@ partial class syscall_package
     // The generated `connectEx` below is bypassed for the same reason Getsockname bypasses its
     // wrapper: it takes a typed ж<Overlapped>, and a native control block is not one. The error
     // handling is that wrapper's, verbatim (r1 == 0 -> e1, else EINVAL).
+    //
+    // THE TWO OPTIONAL BUFFER ARGUMENTS ARE RETAINED ON THE OPERATION RECORD, not KeepAlive'd. Both
+    // cross as `(uintptr)<box>`, which pins managed storage for that BOX's lifetime and no longer
+    // (golib's m_pin is a GCHandle the box owns and its finalizer frees), and nothing else holds
+    // them: a hand-own receives none of convSyscallFunnelCall's `var ᴋN`/`GC.KeepAlive` emission,
+    // because the converter drops a [module: go.GoManualConversion] file from the convert set. A
+    // KeepAlive after the call would be the wrong closure anyway -- ConnectEx's lpOverlapped may not
+    // be NULL, so the send is asynchronous and the kernel reads lpSendBuffer AFTER this returns.
+    // rearmOverlapped therefore takes both boxes and parks them in the record's m_pins for the
+    // flight, exactly as stageBuffers does for WSARecv/WSASend.
+    //
+    // internal/poll passes nil for both today (fd_windows.cs's ConnectEx submits `nil, 0, nil`), so
+    // 0 crosses and the pins are skipped; net's socktest hook forwards whatever it is given, and the
+    // wrapper is public API besides. The retention is what makes a non-nil caller sound rather than
+    // lucky -- it is not a fix for anything the corpus exercises today, and is stated as such.
     public static unsafe error ConnectEx(ΔHandle fd, ΔSockaddr sa, ж<byte> ᏑsendBuf, uint32 sendDataLen, ж<uint32> ᏑbytesSent, ж<Overlapped> Ꮡoverlapped) {
         var err = LoadConnectEx();
 
@@ -429,7 +444,7 @@ partial class syscall_package
             return err;
         }
 
-        uintptr overlapped = rearmOverlapped(fd, Ꮡoverlapped, wsaModeWrite);
+        uintptr overlapped = rearmOverlapped(fd, Ꮡoverlapped, wsaModeWrite, ᏑsendBuf, ᏑbytesSent);
 
         var (r1, _, e1) = Syscall9(connectExFunc.addr, 7, (uintptr)fd, (uintptr)(void*)buffer, (uintptr)n, (uintptr)ᏑsendBuf, (uintptr)sendDataLen, (uintptr)ᏑbytesSent, overlapped, 0, 0);
 
