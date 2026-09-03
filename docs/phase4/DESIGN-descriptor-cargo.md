@@ -554,3 +554,72 @@ A/B, PRE (`e8c078637`) PASS 2195 at 174 s cold / 145 s warm vs A PASS 2195 at 90
 > `chan [3]int` → `chan []int`, and `Elem()` of `[][6]uint8` → `[]uint8` with `Len()` 0. **Ten of ten as
 > predicted.** A alone fixes no value-site row, and no unaccounted seeding route exists — the premise B
 > cuts on. `Len()` answering 0 for an unknown is the `null = unknown` model read at its consumer.
+
+## 12. Increment B — the value site and the constructors, designed before it is cut (2026-09-03)
+
+### 12.1 What the source says the two routes are
+
+`abi.TypeOf(any)` (`internal/abi/type_impl.cs:242`) is the VALUE route: it classifies the boxed
+value's dynamic type and measures what it can — `ArrayDimsOfValue` for an array, `PointeeArrayDims`
+for a pointer, `ChanDirOfValue` for a channel — then interns through `synthType(dyn, dims,
+paramDims, chanDir)`, the four-argument overload, so a value never carries `keyDims`. A slice, map or
+channel value therefore reaches the descriptor with NO element cargo at all, and `[][6]uint8{{}}`
+interns as `slice<array<byte>>` with nothing to distinguish it from `[][8]uint8{{}}`.
+
+The CONSTRUCTED route drops cargo the other way: `SliceOf(t)` is
+`synthType(typeof(slice<>).MakeGenericType(st))` — the element's descriptor is consulted only for its
+System.Type, its `arrayDims`/`chanDir`/`keyDims` discarded; `ChanOf` passes `null` dims; `PointerTo`
+passes nothing (§7's pointer row: constructed `*[]uint8`, declared `*[6]uint8`); `MapOf` already
+carries the KEY's dims (`arrayDimsOfReflectType(key)` as `keyDims`) and drops the element's. `ArrayOf`
+is the one constructor that passes dims, which is why top-level arrays were never wrong.
+
+Both routes intern on the same key — `descriptorDimsKey` = `join(arrayDims) + "@dir" + "#keyDims"` —
+so identity between them falls out of feeding the SAME cargo in, exactly as §8.1 states.
+
+### 12.2 The fork, and the arm taken
+
+Two ways to seed a value-site slice/map descriptor: **(a) carry the cargo on the value** — a dims slot
+on `slice<T>`/`map<K,V>` stamped by the converter at every literal and `make`; **(b) measure a present
+element or key**, the way `ArrayDimsOfValue` already measures a nested array through its first element
+(and already states `null` for an empty outer: "nested dims unknowable from an empty outer").
+
+(a) is complete but costs +8 B on every slice header corpus-wide for a shape that is rare, and needs a
+converter arm at every construction site. (b) is the arm `abi.TypeOf` already uses one kind over, costs
+nothing, needs no converter change, and fixes every measured consumer — the `TestDeepEqualAllocs`,
+`TestFuncLayout` and `TestTypes` rows all name NON-EMPTY literals. **B takes (b)** and states two
+boundaries rather than working around them:
+
+- **An EMPTY slice or map of unnamed arrays still collapses** (`[][6]uint8{}` with no element has
+  nothing to measure). Recorded here; closed by increment C = arm (a) with its cost stated.
+- **A channel VALUE's element length cannot be measured** (its buffer is not peekable), so `chan [3]int`
+  by value stays `chan []int` until C carries it on the channel the way direction already rides
+  (`channel<T>.m_direction`, stamped by the converter's `chanDirectionCargo` seam). The `ChanElemDims`
+  guard holds that row, parked red by design. `ChanOf`'s CONSTRUCTED route is fixed in B.
+
+### 12.3 The cut
+
+1. golib `GoReflect`: `SliceElemArrayDims(value)` — first element's dims through `ArrayDimsOfValue` /
+   `PointeeArrayDims`; `MapKeyArrayDims(value)` / `MapElemArrayDims(value)` — first entry's key/value
+   dims; all `null` when empty or nil. `IMap` gains a first-entry accessor for the non-generic path.
+2. `abi.TypeOf(any)`: the switch gains the Slice and Map arms and calls the five-argument `synthType`
+   with `keyDims`.
+3. reflect constructors: `SliceOf`, `ChanOf`, `PointerTo` pass the element's `arrayDims`/`chanDir`/
+   `keyDims` unshifted (the same rule A's `Elem()` hands them down by); `MapOf` adds the element's
+   `arrayDims` beside the key dims it already carries.
+
+### 12.4 Predictions, per row, before the cut
+
+- `CanonicalTypeIdentity` (9 rows, all non-empty): **9 of 9 green** after B; today rows 1–9 are red
+  except where both routes happen to collapse alike.
+- `SliceOfArrayTypeName` (8 shapes + the `Elem()` line, chan row moved out, `[]*[4]byte` made present):
+  **all green** after B.
+- `ChanElemDims`: constructed row green, value row **red by boundary** — the increment-C marker.
+- The `pointer` and `map key` over-distinct rows of §7 become **equal** (rows 3 and 4/5 above).
+
+### 12.5 Acceptance
+
+The identity guard, `encoding/gob` at 106 (a Type-identity consumer banked green WITH the collapse — a
+canary against damage), the five importer canaries derived at gate time, the `nistec` cost canary as a
+same-host A/B (golib on the boxing path), a two-seeded reconvert diff (expected: ZERO corpus footprint —
+B changes no emission), union CNR, and the standard converter-suite / stdlib / GolibTests / behavioral
+OUTPUT battery. Names are the symptom; identity is the gate.
