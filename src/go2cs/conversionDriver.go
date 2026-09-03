@@ -375,6 +375,13 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// global — so this ordering is a display concern only; see performRefLoweringAnalysis.)
 		collectLinknameHandles(pkg.Syntax)
 
+		// Bind this package's //go:cgo_import_dynamic pragmas to the trampoline declarations they
+		// stand for, so package_info.cs can publish the records golib's GoCgoDynamicImports resolves
+		// abi.FuncPCABI0 of a darwin trampoline through (see cgoDynamicImports.go). Package-wide for
+		// the same reason the linkname pass is: the pragma and the declaration it names need not
+		// share a file.
+		collectCgoDynamicImports(pkg.Syntax)
+
 		// Preload the imported type aliases of every package these files import, BEFORE converting any
 		// file, so a foreign renamed type reached transitively (through a value whose package this file
 		// does not itself import) resolves through its recorded alias regardless of file order (see

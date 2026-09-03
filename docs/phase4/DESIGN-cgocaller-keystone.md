@@ -312,6 +312,40 @@ emitted C# (123 comment lines in `zsyscall_darwin_amd64.cs`). So the implementat
 map from the trampoline name AND from the pragma and assert they agree — a standing guard that
 costs nothing and is worth more than a map that merely works today.
 
+#### AMENDMENT 2026-09-03 (the class-B emission, at the cut) — the census re-derived over the whole darwin tree, and what §3.3's cross-check is really worth
+
+§3.3's figures were taken over `zsyscall_darwin_amd64.go` alone (123 pragmas). Re-derived over all
+**1650** `//go:cgo_import_dynamic` records in Go 1.23.12 outside `cmd/` and `vendor/`:
+
+* **The resolvable darwin population is 345, selected by the library argument being an ABSOLUTE
+  PATH.** Every darwin record names one; every other platform names a BARE library (windows' 51
+  `kernel32.dll`, openbsd/solaris' `libc.so`, aix's `libc.a/shr_64.o`) or names none at all, as
+  `runtime/race`'s **196** darwin records do. Selecting on `^/` and selecting on "`.dylib` or a
+  framework path" are independent derivations of the same 345 and agree on every one. A `.dylib`
+  SUFFIX gate is the near-miss: it drops exactly the 28 `crypto/x509/internal/macos` framework
+  records, which carry no suffix.
+* **§3.3's cross-check holds where it was measured and does not generalize.** In §3.3's own notation
+  (`libc_<n>`, `<n>` == `<sym>`) the claim is `local == "libc_" + symbol`, and that is true for
+  **312** of the 345 — not 345, and not the 0 an earlier draft of this amendment reported by reading
+  the claim as `local == symbol`. The 33 exceptions are 28 `x509_<sym>`, 3 `libresolv_<sym>`, one
+  `libc<sym>` with no underscore, and one outlier, `libc_error` / `__error`, which is the ONLY record
+  in all 345 whose local does not even end with its symbol. That single row is the argument against
+  the cross-check: it would be right 344 times and silently wrong once.
+* **The trampoline-to-pragma binding is mechanical OUTSIDE `runtime` and nowhere inside it.** Over
+  all **340** bodyless `*_trampoline` declarations in darwin-reachable files,
+  `trampoline == local + "_trampoline"` holds **297 of 297** outside `runtime` and **0 of 43** inside
+  it — 37 of those bind on the SYMBOL instead, and 6 (`osinit_hack`, `exit`, `nanotime`, `walltime`,
+  `sigprocmask`, `raiseproc`) carry no darwin pragma at all and are genuinely class C. So §3.3's
+  "derivable twice over" is true for the population the converter emits and false for `runtime`,
+  whose correspondence lives in the `.s` file the converter does not read.
+
+The emission cut on this basis is **173 records per darwin target** (126 `syscall`, 28
+`crypto/x509/internal/macos`, 19 `internal/syscall/unix`), published as `GoCgoImportDynamic` assembly
+attributes in a `<CgoDynamicImports>` section of `package_info.cs` and resolved by golib's
+`GoCgoDynamicImports`. `runtime`'s 43 are deferred by name rather than reached with a normalizer that
+would cover 334 of 340 and guess at the remainder. `funcpc_impl.cs` still reads none of it: the
+consumer line lands when increment 1's rewrite of that file is at master.
+
 ### 3.4 What §3 needs from the keystone
 
 1. **Arities up to 9 and three result widths.** This is the row that sizes the family; §2's 1/2/3

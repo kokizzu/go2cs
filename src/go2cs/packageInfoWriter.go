@@ -797,6 +797,7 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 	// not re-emit -- which is the only route production records have into a recompile-model test
 	// assembly, whose compile set excludes package_info.cs in favor of the seeded test-info file.
 	packageInfoLines = applyGoSourcePositionMaps(packageInfoLines, packageInfoFileName, mergeExisting)
+	packageInfoLines = applyCgoDynamicImports(packageInfoLines, packageInfoFileName, mergeExisting)
 
 	// Remove trailing empty lines
 	for i := len(packageInfoLines) - 1; i >= 0; i-- {
