@@ -185,10 +185,32 @@ public sealed class TestRunner
         // The test whose goroutine this is: an AsyncLocal flows with the ExecutionContext that
         // ThreadPool.QueueUserWorkItem captures — exactly how golib dispatches a goroutine — so the
         // attribution survives any depth of goroutine spawning goroutines.
+        string owner = TestExecution.Current?.Name ?? "";
+
         if (TestExecution.Current is TestExecution execution)
             execution.RecordGoroutineFailure(ex);
         else
             RecordInfrastructureFailure("", $"unhandled exception on a goroutine outside any test: {ex}");
+
+        // The package's terminal event, for the SAME reason ReportGoroutinePanic writes one: the
+        // caller flushes the evidence and exits, so RunAll never reaches its own terminal event.
+        //
+        // Without this line the non-panic death is the one truncation in the family that leaves NO
+        // MARKER AT ALL. The other two announce themselves — a panic writes "died on an unrecovered
+        // panic in a goroutine", a package deadline writes an "action":"timeout" event — but an
+        // unhandled .NET exception escaping a goroutine simply STOPPED the results stream mid-test,
+        // with no timeout and no death event, and the only tell was that the stream ended. Measured
+        // in the runtime/pprof walls census (2026-09-03): a `pprof_goroutineProfileWithLabels` stub
+        // throwing inside Goroutine.Run took the host down during TestGoroutineProfileLabelRace, and
+        // a slice reading 2 of 7 verdicts was indistinguishable from a mass-empty conversion failure
+        // until its log was read by hand. The mass-empty family's diagnostic rule — read the results
+        // tail first, because a kill states itself — was simply FALSE for this member.
+        //
+        // It names the exception TYPE and the test that owned the goroutine, because those are the
+        // two facts that turn "the stream stopped" into an attributable failure.
+        m_reporter.ReportPackage("fail", output: owner.Length > 0
+            ? $"test binary died on an unhandled {ex.GetType().Name} on a goroutine started by {owner}"
+            : $"test binary died on an unhandled {ex.GetType().Name} on a goroutine outside any test");
     }
 
     /// <summary>
