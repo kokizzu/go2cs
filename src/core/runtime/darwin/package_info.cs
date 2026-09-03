@@ -249,7 +249,7 @@ using static go.runtime_package;
 [assembly: go.GoPositionMap("runtime/stubs_nonlinux.go", "stubs_nonlinux.cs", "AAgUkg==")]
 [assembly: go.GoPositionMap("runtime/symtab.go", "symtab.cs", "AEWeAbKCggAE/AEALwIAAiAADQKClIKCAAIgAA8GgpSChIKUloKUzJaEgoKmlJasspKElJaCggAJFIKU3oKEAA0cgqaCptiCgoKClIKCgqYAavwBAAoCgoKUAAIqABICgoKClIKCgoKCggALGoKCgoKoABs6goIADB4ADASChKaogpSCgoKCgpSCgpSClKiCgoKCloKCggAHLgASAoKCgpSCgqaSgqYAAhLigoKClJSUgpSCgriokoKUAAqsAQANAoKSgpQAAhLigoKmAAcQgqaCqJIAAhgACQKoAAIkABACgoKUhIKCloKChIKWgpaCAAwagoKUAAIU8oKUqAAPKML4lqSCnLKCgoKCyoKC3IKCgoKClIKC/pSCloKCgpSUgoKSgpKCgoKClO6CgoKmgoKCgoKCgu6ClpS6gpaEgoKCgoKCgpSWgqaCgpSmgoKCgoKmgoKmpoKCgqaAgrYAAhgADAKCgpSCgpSUgqaC1oKCgoKUqJKCgpKSgoKCgoKUuIKmgoKUgqaCgpSCAAIcAAsCgpSqooKUgoKGooKUgoIAAhwAEAaCgpSCgpSChIKCgpSCgqiSooKCgoKClJQACyYADwiClA==")]
 [assembly: go.GoPositionMap("runtime/symtabinl.go", "symtabinl.cs", "ADOGAQAQAoKClIKCtoIABxCCqJKCgpSCqJIAAhwACwKClIIABxIAAhAACAKC")]
-[assembly: go.GoPositionMap("runtime/sys_darwin.go", "sys_darwin.cs", "ABEyABACkoKCgqTY4pKCgoKkAAUeABECkoKCgqQAARIADAKCgoKk2OKSgoKCpAAFEAAKApKCgoKkAAUQAAoCkoIABhIACgKSggAIDuKagoKCpJ7ygoKkmMKCgoKkmMKCgqSYwoKCgqSYwqSYwoKkmMKCpAABRgAhApKUpAAKDtIAARCCpJjCgqSYwoKkmMKCpJjCgoKklKKCgqSYwqSe8qSYwqSYwqrCgoKkmNKCgqToooi4goKUgpSkAAEaAAsCgoKkmMKCgqSYwoKCpJjCypSCgqSYwqSYwoKCpJjCgoKCgoKkmMKCgoKCgqToopiCpJiigqSYwoKCgoKkmMKCgoKkmMKCgqSYwoKCpJjCgoKCpJjCgoKCpJjCgoKCgqSYwoKCpMaSqJKCgriCpAAKDgAHEgAJAoIACB6kAAgGkgAGFqQ=")]
+[assembly: go.GoPositionMap("runtime/sys_darwin.go", "sys_darwin.cs", "ABEyABACkoKCgqTY4pKCgoKkAAUeABECkoKCgqQAARIADAKCgoKk2OKSgoKCpAAFEAAKApKCgoKkAAUQAAoCkoIABhIACgKSggAIDuKagoKCpJ7ygoKkmMKCgoKkmMKCgqSYwoKCgqSYwqSYwoKkmMKCpAABRgAhApKUpAAKDtIAARCCpJjCgqSYwoKkmMKCpJjCgoKklKKCgqSYwqSe8qSYwqSYwqrCgoKkmNKCgqQAAywAARoACwKCgqSYwoKCpJjCgoKkmMLKlIKCpJjCpJjCgoKkmMKCgoKCgqSYwoKCgoKCpOiimIKkmKKCpJjCgoKCgqSYwoKCgqSYwoKCpJjCgoKkmMKCgoKkmMKCgoKkmMKCgoKCpJjCgoKkxpKokoKCuIKkAAoOAAcSAAkCggAIHqQACAaSAAYWpA==")]
 [assembly: go.GoPositionMap("runtime/sys_libc.go", "sys_libc.cs", "AAoi9IKCgpSCgqYAESSUgoKU")]
 [assembly: go.GoPositionMap("runtime/sys_nonppc64x.go", "sys_nonppc64x.cs", "AAgS")]
 [assembly: go.GoPositionMap("runtime/sys_x86.go", "sys_x86.cs", "AAwgooKCgoKC")]
@@ -446,7 +446,6 @@ public static partial class runtime_package
     internal partial struct modulehash {}
     internal partial struct mspan {}
     [GoValueClone("heapStats", "pause_ns", "pause_end")] internal partial struct mstats {}
-    internal partial struct nanotime1_r {}
     internal partial struct neverCallThisFunction {}
     internal partial struct newmHandoffᴛ1 {}
     internal partial struct notInHeap {}
