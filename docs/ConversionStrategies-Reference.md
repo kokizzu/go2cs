@@ -122,6 +122,52 @@ converted code). That last one also exercises `internal` as a **namespace** segm
 recovered path produces — `go.example.com.app.@internal.web.api_package`, keyword-escaped on both the
 declaration and reference sides.
 
+### The repository's own `go2cs/` module marker is elided — on BOTH sides, by one rule
+
+The behavioral corpus and the package-test fixtures declare `module go2cs/<Name>`, and that leading
+segment is a repository marker rather than a namespace segment: `module go2cs/<Name>` and a bare
+`module <Name>` emit the same `namespace go;` + `<Name>_package`, which is the only reason both
+spellings can coexist in one tree (618 marked declarations against 46 bare ones). Eliding it is safe
+by construction — a fetchable module path's first element must contain a dot, because it is a host
+name, and `go2cs` has none, so the marker cannot swallow a real dependency's first segment.
+
+A module path is nonetheless spelled **twice** by every conversion, and the elision has to reach both
+spellings. `getProjectName` (`importOperations.go`) is the DECLARATION side: it decides the emitted
+`namespace`, the project name, and the `<ProjectReference>` file name derived from it.
+`convertImportPathToNamespace` (`visitImportSpec.go`) is the IMPORT side: it decides a
+`using <alias> = …` target, a bare `using <namespace>;`, and the `typeof` of an init-forcing hook. The
+marker was elided by the first and kept by the second, so every reference to a `go2cs/…` path named a
+namespace that nothing emits, and such a package could not be imported at all:
+
+```csharp
+// value.cs — the DECLARATION                    // external_test.cs — the IMPORT
+namespace go;                                    using harness = go2cs.convertedtestharness_package;
+partial class convertedtestharness_package {     using static go2cs.convertedtestharness_package;
+```
+
+`error CS0234` ×2, which is why the end-to-end `-tests` fixture at
+`src/tests/PackageTests/ConvertedTestHarness` never built from the day it was written — a `module
+go2cs/convertedtestharness` whose own external test variant self-imports it. Both sides now route
+through one function (`trimGo2CSModulePrefix`), the declaration side being the canonical one because
+the committed corpus already rests on it and because the 46 bare declarations exist *only* to dodge
+this asymmetry. A behavioral test that holds a nested sub-package is the measured case: under
+`module IoLike` the parent imports `IoLike/FsLike`, which has no marker to disagree about, while the
+same tree under `module go2cs/IoLike` would declare `go.IoLike.FsLike_package` and import
+`go2cs.IoLike.FsLike_package`. Agreeing here retires that constraint rather than entrenching it —
+it does not oblige any existing module to be respelled, and none is.
+
+The elision is deliberately confined to a path a `go.mod` DECLARES. A path recovered from a directory
+instead (`getImportPackageInfo`'s `build.Import` arm, whose canonical path is `GOROOT/src`- or
+`GOPATH`-relative) is left alone: this is a module-path rule, and a directory that merely happens to
+sit under a `go2cs` folder is not a module declaring that path.
+
+Guarded by `TestModulePathNamespaceAgreesAcrossSides`
+(`src/go2cs/moduleNamespaceAgreement_test.go`), which runs the marked single- and multi-segment cases
+plus two controls — a bare module, which must reach the identical class, and an ordinary
+`example.com/foo/bar`, which must keep every segment — through **both** derivations and requires one
+answer. The guard pins the agreement rather than either side's output, because either side alone can
+be self-consistently wrong.
+
 ### The emitted project PATH is budgeted — the file name compresses, the identity never does
 
 Recovering the full import path made every project name correct, and on a deep dependency tree it made

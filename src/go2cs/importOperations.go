@@ -198,7 +198,7 @@ func getProjectName(importPath string, options Options) (string, string) {
 
 	importPath = strings.ReplaceAll(importPath, "\\", "/")
 	importPath = strings.TrimPrefix(importPath, "/")
-	importPath = strings.TrimPrefix(importPath, "go2cs/")
+	importPath = trimGo2CSModulePrefix(importPath)
 
 	// Replace path separators with dots
 	parts := strings.Split(importPath, "/")
@@ -214,6 +214,48 @@ func getProjectName(importPath string, options Options) (string, string) {
 	}
 
 	return projectName, namespace
+}
+
+// go2csModulePrefix is this repository's own module-path convention. The behavioral corpus and the
+// package-test fixtures declare `module go2cs/<Name>`, and that leading segment is a REPOSITORY
+// marker rather than a namespace segment: `module go2cs/<Name>` and a bare `module <Name>` have
+// always emitted the same `namespace go;` + `<Name>_package`, which is the only reason the two
+// spellings can coexist in one tree.
+const go2csModulePrefix = "go2cs/"
+
+// trimGo2CSModulePrefix elides that marker from an import path on its way to a namespace or a
+// project name.
+//
+// It is ONE function because the elision has to happen on BOTH sides of a reference. It lived inline
+// in getProjectName — the DECLARATION side, which decides the emitted `namespace`, the project name,
+// and the <ProjectReference> file name derived from it — while convertImportPathToNamespace, the
+// IMPORT side, which decides a `using <alias> = …` target, a bare `using <namespace>;` and a forcing
+// hook's `typeof`, kept the marker as a namespace segment. Any reference to a `go2cs/…` path
+// therefore named a namespace the declaration never emits, and a package could not be imported at
+// all: `module go2cs/convertedtestharness` declares `go.convertedtestharness_package` while its own
+// external test variant imported `go2cs.convertedtestharness_package` — CS0234 ×2, which is what
+// left the end-to-end `-tests` fixture unbuildable from the day it was written.
+//
+// The DECLARATION side is the one made canonical, for three reasons.
+//
+//   - The committed corpus already rests on it. 618 behavioral modules are `go2cs/<Name>` and emit
+//     `namespace go;`; keeping the marker instead would rename every one of them, their project
+//     files and their solution entries, and buy nothing.
+//   - The 46 BARE modules exist only to dodge this asymmetry. A behavioral test holding a nested
+//     sub-package is the measured case: under `module IoLike` the parent imports `IoLike/FsLike`,
+//     which has no marker to disagree about, while the same tree under `module go2cs/IoLike`
+//     declares `go.IoLike.FsLike_package` and imports `go2cs.IoLike.FsLike_package`. Agreeing here
+//     retires that constraint instead of entrenching it; no existing module is respelled.
+//   - Nothing outside this repository can hold such a path. A fetchable module path's first element
+//     must contain a dot, because it is a host name; `go2cs` has none, so the marker is repo-private
+//     by construction and eliding it cannot swallow a real dependency's first segment.
+//
+// It is deliberately NOT applied to a path recovered from a DIRECTORY rather than declared by a
+// go.mod (getImportPackageInfo's build.Import arm, whose canonical path is GOROOT/src- or
+// GOPATH-relative). This is a module-path rule; a directory that merely happens to sit under a
+// `go2cs` folder is not a module declaring that path.
+func trimGo2CSModulePrefix(importPath string) string {
+	return strings.TrimPrefix(importPath, go2csModulePrefix)
 }
 
 // maxRelativeProjectPath bounds, by construction, the length of a generated project's path RELATIVE
