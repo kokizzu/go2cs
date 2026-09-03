@@ -88,23 +88,28 @@ func parseCgoImportDynamic(text string) (local string, symbol string, library st
 // result the per-package emission consults, because the pragma and the declaration it names need
 // not share a file.
 //
-// The rule is deliberately narrow, and the boundary is measured rather than chosen. Over all 340
-// bodyless `*_trampoline` declarations in darwin-reachable files of Go 1.23.12:
+// The rule is deliberately narrow, and the boundary is measured rather than chosen. Two EXACT
+// spellings, over the bodyless `*_trampoline` declarations in darwin-reachable files of Go 1.23.12:
 //
-//   - OUTSIDE runtime it holds 297 of 297, with no exceptions — every one in syscall,
+//   - OUTSIDE runtime the pragma's local IS the trampoline's stem — `libc_read` binds
+//     `libc_read_trampoline` — and it holds 297 of 297, every one in syscall,
 //     crypto/x509/internal/macos and internal/syscall/unix.
-//   - INSIDE runtime it holds 0 of 43. Thirty-seven bind on the SYMBOL instead
-//     (`pthread_attr_init_trampoline` ← `libc_pthread_attr_init pthread_attr_init`), and six
-//     (`osinit_hack`, `exit`, `nanotime`, `walltime`, `sigprocmask`, `raiseproc`) have no darwin
-//     pragma at ALL — `exit` and `sigprocmask` carry one only on aix and solaris.
+//   - INSIDE runtime the declaration drops the `libc_` prefix the pragma carries — `libc_fcntl`
+//     binds `fcntl_trampoline` — and it holds 36 of the 41 declarations. The class-B seat refused
+//     this shape as a correspondence "that lives in the .s file this converter does not read"; the
+//     keystone cut read that file once (sys_darwin_amd64.s and sys_darwin_arm64.s): 34 of the 36
+//     have a body of exactly one primary CALL/BL to libc_<stem> (plus libc_error on the errno
+//     path), mlock's amd64 body is UNDEF (Go never reaches it on amd64; the pragma still names the
+//     real symbol, so the record is a benign superset) and sigaltstack's only other call sits in an
+//     #ifdef GOOS_ios branch. So the spelling is measured-exact for darwin. The five it leaves
+//     (`nanotime`, `walltime`, `sigprocmask`, `raiseproc`, `osinit_hack`) are multi-call or
+//     differently-named bodies — Go's own assembly, genuinely class C, where the resolver's "no
+//     record ⇒ loud throw" is the right answer — and no `libc_<stem>` pragma exists for them, so the
+//     spelling cannot reach them by construction.
 //
-// Those six are Go's own assembly, so they are genuinely class C and the resolver's "no record ⇒
-// loud throw" is already the right answer for them. The other 37 are a different shape whose
-// trampoline-to-pragma correspondence lives in the `.s` file this converter does not read, so they
-// mint nothing here rather than being reached by a normalizer. A rule that stripped `_trampoline`,
-// then optionally stripped `libc_`, then matched the symbol would cover 334 of the 340 — and would
-// be exactly the plausible-and-wrong answer this arc exists to remove, since the six it still
-// missed would resolve to whatever a near-miss happened to name.
+// What stays refused is the NORMALIZER: a rule that stripped suffixes and then matched on the
+// symbol would reach the class-C bodies by near-miss and hand the resolver whatever a neighbour
+// happened to name. Both spellings here require the exact pragma for the exact declaration.
 //
 // A pragma with no matching declaration mints nothing: the record's whole purpose is to be found
 // from an emitted method, so one that no method can reach is dead metadata.
@@ -169,9 +174,25 @@ func collectCgoDynamicImports(files []*ast.File) {
 
 			record, ok := pragmas[local]
 
+			// runtime's spelling. Outside runtime the pragma's local IS the trampoline's stem
+			// (`libc_read` <-> `libc_read_trampoline`); inside it the declaration drops the `libc_`
+			// prefix the pragma carries (`libc_fcntl` <-> `fcntl_trampoline`). Measured over Go 1.23.12's
+			// runtime/darwin: 46 pragmas, 41 trampoline declarations, this rule binds 36 and the ten it
+			// leaves are pragmas with NO trampoline at all (__error, mach_absolute_time, clock_gettime,
+			// getpid, kill, ...: consumed directly by Go's assembly), which no rule should bind. It is
+			// a second exact spelling, not a normalizer: it fires only when the prefixed local exists,
+			// and a declaration matching neither spelling still mints nothing.
+			if !ok {
+				record, ok = pragmas["libc_"+local]
+			}
+
 			if !ok {
 				continue
 			}
+
+			// The declaration's own name is the binding's truth under either spelling: it is the
+			// method name FuncPCABI0 will see, and therefore the key the resolver matches on.
+			record.trampoline = name
 
 			if cgoDynamicImports == nil {
 				cgoDynamicImports = map[string]cgoDynamicImportRecord{}

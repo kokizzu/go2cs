@@ -45,6 +45,11 @@ public static class GoCgoDynamicImports
     // every symbol the darwin syscall package imports — and NativeLibrary.Load is not free.
     private static readonly ConcurrentDictionary<string, nint> s_libraries = new();
 
+    // The reverse map, so the dispatch bottom can NAME the symbol it was handed when it must refuse
+    // a call: libcCall receives an address and nothing else, and "cannot dispatch 0x7fff..." is not
+    // a message anyone can act on. Filled at resolution, read only on the failure path.
+    private static readonly ConcurrentDictionary<nint, string> s_symbols = new();
+
     /// <summary>
     /// Attempts to resolve <paramref name="method"/> as a cgo-imported trampoline.
     /// </summary>
@@ -83,6 +88,7 @@ public static class GoCgoDynamicImports
 
         entryPoint = Resolve(record.Symbol, record.Library);
         s_entryPoints[method] = entryPoint;
+        s_symbols[entryPoint] = record.Symbol;
         return true;
     }
 
@@ -117,7 +123,17 @@ public static class GoCgoDynamicImports
                 $"go2cs: '{library}' does not export '{symbol}', named by a //go:cgo_import_dynamic pragma");
         }
 
+        s_symbols[address] = symbol;
         return address;
+    }
+
+    /// <summary>
+    /// Names the symbol a previously resolved address belongs to, or <c>null</c> when this process
+    /// never resolved it — for the dispatch bottom's refusal messages, never for control flow.
+    /// </summary>
+    public static string? SymbolOf(nint entryPoint)
+    {
+        return s_symbols.TryGetValue(entryPoint, out string? symbol) ? symbol : null;
     }
 
     private static GoCgoImportDynamicAttribute? FindRecord(MethodInfo method)

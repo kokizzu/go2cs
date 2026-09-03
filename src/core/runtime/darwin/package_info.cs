@@ -250,7 +250,6 @@ using static go.runtime_package;
 [assembly: go.GoPositionMap("runtime/symtab.go", "symtab.cs", "AEWeAbKCggAE/AEALwIAAiAADQKClIKCAAIgAA8GgpSChIKUloKUzJaEgoKmlJasspKElJaCggAJFIKU3oKEAA0cgqaCptiCgoKClIKCgqYAavwBAAoCgoKUAAIqABICgoKClIKCgoKCggALGoKCgoKoABs6goIADB4ADASChKaogpSCgoKCgpSCgpSClKiCgoKCloKCggAHLgASAoKCgpSCgqaSgqYAAhLigoKClJSUgpSCgriokoKUAAqsAQANAoKSgpQAAhLigoKmAAcQgqaCqJIAAhgACQKoAAIkABACgoKUhIKCloKChIKWgpaCAAwagoKUAAIU8oKUqAAPKML4lqSCnLKCgoKCyoKC3IKCgoKClIKC/pSCloKCgpSUgoKSgpKCgoKClO6CgoKmgoKCgoKCgu6ClpS6gpaEgoKCgoKCgpSWgqaCgpSmgoKCgoKmgoKmpoKCgqaAgrYAAhgADAKCgpSCgpSUgqaC1oKCgoKUqJKCgpKSgoKCgoKUuIKmgoKUgqaCgpSCAAIcAAsCgpSqooKUgoKGooKUgoIAAhwAEAaCgpSCgpSChIKCgpSCgqiSooKCgoKClJQACyYADwiClA==")]
 [assembly: go.GoPositionMap("runtime/symtabinl.go", "symtabinl.cs", "ADOGAQAQAoKClIKCtoIABxCCqJKCgpSCqJIAAhwACwKClIIABxIAAhAACAKC")]
 [assembly: go.GoPositionMap("runtime/sys_darwin.go", "sys_darwin.cs", "ABEyABACkoKCgqTY4pKCgoKkAAUeABECkoKCgqQAARIADAKCgoKk2OKSgoKCpAAFEAAKApKCgoKkAAUQAAoCkoIABhIACgKSggAIDuKagoKCpJ7ygoKkmMKCgoKkmMKCgqSYwoKCgqSYwqSYwoKkmMKCpAABRgAhApKUpAAKDtIAARCCpJjCgqSYwoKkmMKCpJjCgoKklKKCgqSYwqSe8qSYwqSYwqrCgoKkmNKCgqQAAywAARoACwKCgqSYwoKCpJjCgoKkmMLKlIKCpJjCpJjCgoKkmMKCgoKCgqSYwoKCgoKCpOiimIKkmKKCpJjCgoKCgqSYwoKCgqSYwoKCpJjCgoKkmMKCgoKkmMKCgoKkmMKCgoKCpJjCgoKkxpKokoKCuIKkAAoOAAcSAAkCggAIHqQACAaSAAYWpA==")]
-[assembly: go.GoPositionMap("runtime/sys_libc.go", "sys_libc.cs", "AAoi9IKCgpSCgqYAESSUgoKU")]
 [assembly: go.GoPositionMap("runtime/sys_nonppc64x.go", "sys_nonppc64x.cs", "AAgS")]
 [assembly: go.GoPositionMap("runtime/sys_x86.go", "sys_x86.cs", "AAwgooKCgoKC")]
 [assembly: go.GoPositionMap("runtime/tagptr_64bit.go", "tagptr_64bit.cs", "ABpyooKClJSClKiSppSClIKUqJI=")]
@@ -281,6 +280,52 @@ using static go.runtime_package;
 [assembly: go.GoPositionMap("runtime/vdso_in_none.go", "vdso_in_none.cs", "AAgWkg==")]
 [assembly: go.GoPositionMap("runtime/write_err.go", "write_err.cs", "AAgUkoI=")]
 // </GoSourcePositionMaps>
+
+// Dynamically imported C entry points are recorded here, one `GoCgoImportDynamic` attribute
+// per `//go:cgo_import_dynamic` pragma this package binds to a trampoline declaration, so
+// that `abi.FuncPCABI0` of that trampoline resolves to the REAL address of the exported
+// symbol rather than to a token. The value is dereferenced by design - the trampoline's
+// caller jumps to it - which is why a stub carrying no record here is left a loud throw
+// instead: an address that is merely plausible is fatal at the first call.
+
+// <CgoDynamicImports>
+[assembly: go.GoCgoImportDynamic("close_trampoline", "close", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("exit_trampoline", "_exit", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("fcntl_trampoline", "fcntl", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("issetugid_trampoline", "issetugid", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("kevent_trampoline", "kevent", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("kqueue_trampoline", "kqueue", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("mach_vm_region_trampoline", "mach_vm_region", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("madvise_trampoline", "madvise", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("mlock_trampoline", "mlock", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("mmap_trampoline", "mmap", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("munmap_trampoline", "munmap", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("open_trampoline", "open", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pipe_trampoline", "pipe", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("proc_regionfilename_trampoline", "proc_regionfilename", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_attr_getstacksize_trampoline", "pthread_attr_getstacksize", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_attr_init_trampoline", "pthread_attr_init", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_attr_setdetachstate_trampoline", "pthread_attr_setdetachstate", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_cond_init_trampoline", "pthread_cond_init", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_cond_signal_trampoline", "pthread_cond_signal", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_cond_timedwait_relative_np_trampoline", "pthread_cond_timedwait_relative_np", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_cond_wait_trampoline", "pthread_cond_wait", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_create_trampoline", "pthread_create", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_kill_trampoline", "pthread_kill", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_mutex_init_trampoline", "pthread_mutex_init", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_mutex_lock_trampoline", "pthread_mutex_lock", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_mutex_unlock_trampoline", "pthread_mutex_unlock", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("pthread_self_trampoline", "pthread_self", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("raise_trampoline", "raise", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("read_trampoline", "read", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("setitimer_trampoline", "setitimer", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("sigaction_trampoline", "sigaction", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("sigaltstack_trampoline", "sigaltstack", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("sysctl_trampoline", "sysctl", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("sysctlbyname_trampoline", "sysctlbyname", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("usleep_trampoline", "usleep", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("write_trampoline", "write", "/usr/lib/libSystem.B.dylib")]
+// </CgoDynamicImports>
 
 namespace go;
 

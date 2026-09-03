@@ -122,20 +122,30 @@ func libc_excluded_empty_trampoline()
 }
 
 // TestCgoDynamicImportsBindingIsMechanical pins the binding rule and, more importantly, its
-// BOUNDARY. `trampoline == local + "_trampoline"` holds for 297 of 297 declarations outside
-// runtime and 0 of 43 inside it, where 37 bind on the SYMBOL instead and 6 have no darwin pragma at
-// all. This converter deliberately mints nothing for either runtime shape rather than reaching them
-// with a normalizer that would cover 334 of 340 and guess at the rest.
+// BOUNDARY. Two EXACT spellings bind and nothing else does: outside runtime the pragma's local is the
+// trampoline's stem (`libc_getgroups` / `libc_getgroups_trampoline`, 297 of 297); inside runtime the
+// declaration drops the `libc_` prefix the pragma carries (`libc_pthread_attr_init` /
+// `pthread_attr_init_trampoline`). The class-B seat refused the runtime shape as "a correspondence
+// that lives in the .s file this converter does not read"; the keystone cut read that file once —
+// Go 1.23.12's sys_darwin_amd64.s and sys_darwin_arm64.s: of the 36 runtime trampolines the second
+// spelling binds, 34 have a body of exactly one primary CALL/BL to libc_<stem> (plus libc_error on
+// the errno path), mlock's amd64 body is UNDEF (Go never reaches it there; the pragma still names the
+// real symbol) and sigaltstack's only other call sits in an #ifdef GOOS_ios branch — and every
+// trampoline it leaves unbound is multi-call or differently named (nanotime -> mach_absolute_time +
+// mach_timebase_info, walltime -> clock_gettime, sigprocmask -> pthread_sigmask, raiseproc -> getpid +
+// kill, osinit_hack) and must stay class C. So the second spelling is measured-exact, not a
+// normalizer: it fires only when the prefixed pragma exists, and a declaration matching neither
+// spelling, or a pragma with no declaration, still mints nothing.
 //
-// Red-provable by adding a symbol-keyed fallback to collectCgoDynamicImports: the runtime row binds
-// and this test names it.
+// Red-provable by widening the lookup (a symbol-keyed or suffix-stripping fallback): nanotime_trampoline
+// or somethingElse binds and this test names it.
 func TestCgoDynamicImportsBindingIsMechanical(t *testing.T) {
 	const source = `package p
 
 // The syscall/macos/internal-syscall shape: local + "_trampoline" is the declaration.
 //go:cgo_import_dynamic libc_getgroups getgroups "/usr/lib/libSystem.B.dylib"
 
-// The runtime shape: the declaration is named for the SYMBOL, not the local.
+// The runtime shape: the declaration drops the pragma local's libc_ prefix (bound since the keystone).
 //go:cgo_import_dynamic libc_pthread_attr_init pthread_attr_init "/usr/lib/libSystem.B.dylib"
 
 // A pragma whose trampoline this package does not declare.
@@ -154,12 +164,16 @@ func somethingElse()
 
 	records := collectCgoTestRecords(t, source)
 
-	if got := sortedRecordKeys(records); strings.Join(got, ",") != "libc_getgroups_trampoline" {
-		t.Fatalf("bound %v, want only libc_getgroups_trampoline", got)
+	if got := sortedRecordKeys(records); strings.Join(got, ",") != "libc_getgroups_trampoline,pthread_attr_init_trampoline" {
+		t.Fatalf("bound %v, want exactly the two spellings' declarations: libc_getgroups_trampoline and pthread_attr_init_trampoline", got)
 	}
 
-	if _, bound := records["pthread_attr_init_trampoline"]; bound {
-		t.Error("bound runtime's symbol-named trampoline — that correspondence lives in the .s file this converter does not read, so binding it here is a guess")
+	if record := records["pthread_attr_init_trampoline"]; record.symbol != "pthread_attr_init" || record.trampoline != "pthread_attr_init_trampoline" {
+		t.Errorf("the runtime spelling must bind libc_pthread_attr_init to pthread_attr_init_trampoline with the DECLARATION's name as the record's trampoline: %+v", record)
+	}
+
+	if _, bound := records["libc_orphan_trampoline"]; bound {
+		t.Error("bound a pragma with no declaration — a record no emitted method can reach is dead metadata")
 	}
 
 	if _, bound := records["nanotime_trampoline"]; bound {
@@ -301,6 +315,47 @@ func TestBothDriversCollectCgoDynamicImports(t *testing.T) {
 
 		if !strings.Contains(string(source), "collectCgoDynamicImports") {
 			t.Errorf("%s never binds cgo dynamic imports — a package_info write from this driver would EMPTY a section the other driver populated, which is worse than emitting nothing", driver)
+		}
+	}
+}
+
+// runtime's pragmas spell their local with a `libc_` prefix the trampoline declaration drops
+// (`//go:cgo_import_dynamic libc_fcntl fcntl ...` beside `func fcntl_trampoline()`), where every
+// other darwin package keeps the local as the stem (`libc_read` / `libc_read_trampoline`). The pass
+// binds BOTH spellings exactly and NORMALIZES neither: a pragma with no declaration mints nothing
+// under either, and a declaration matching neither mints nothing. Measured over Go 1.23.12's
+// runtime/darwin before the rule was written: 46 pragmas, 41 declarations, 36 bound, 10 unbound
+// with no declaration to bind (consumed by Go's assembly directly).
+func TestRuntimeSpellingBindsThroughTheLibcPrefix(t *testing.T) {
+	records := collectCgoTestRecords(t, `package runtime
+
+//go:cgo_import_dynamic libc_fcntl fcntl "/usr/lib/libSystem.B.dylib"
+//go:cgo_import_dynamic libc_read read "/usr/lib/libSystem.B.dylib"
+//go:cgo_import_dynamic libc_getpid getpid "/usr/lib/libSystem.B.dylib"
+
+func fcntl_trampoline()
+func libc_read_trampoline()
+func orphan_trampoline()
+`)
+
+	if got := sortedRecordKeys(records); strings.Join(got, ",") != "fcntl_trampoline,libc_read_trampoline" {
+		t.Fatalf("expected exactly the two bound trampolines, got %v", got)
+	}
+
+	if r := records["fcntl_trampoline"]; r.trampoline != "fcntl_trampoline" || r.symbol != "fcntl" {
+		t.Fatalf("runtime spelling must bind libc_fcntl to fcntl_trampoline with the DECLARATION's name as the record's trampoline: %+v", r)
+	}
+
+	if r := records["libc_read_trampoline"]; r.trampoline != "libc_read_trampoline" || r.symbol != "read" {
+		t.Fatalf("the stem spelling must keep binding beside the runtime one: %+v", r)
+	}
+
+	// The negatives are the rule's whole discipline: libc_getpid has no trampoline (Go's assembly
+	// calls it directly) and must not be minted from the pragma alone; orphan_trampoline matches
+	// neither spelling and must not be minted from the declaration alone.
+	for _, absent := range []string{"libc_getpid_trampoline", "getpid_trampoline", "orphan_trampoline"} {
+		if _, bound := records[absent]; bound {
+			t.Fatalf("%s must not be minted: a pragma without a declaration, or a declaration matching neither spelling, binds nothing", absent)
 		}
 	}
 }

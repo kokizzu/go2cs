@@ -121,6 +121,14 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// mprof, netpoll and debuglog, so the first call into any of them dies. See
 		// docs/phase4/DESIGN-darwin-run-layer-1.md.
 		"nanotime1": goosDarwin,
+		// runtime.libcCall — darwin's dispatch bottom: every libc trampoline in sys_darwin.cs is reached
+		// through libcCall(FuncPCABI0(x_trampoline), &args). Its converted body opens with getg() and
+		// ends in asmcgocall, four bodyless intrinsics with no implementing part anywhere (the
+		// generator stubs all four), so a real function pointer handed to it dies one line in. The
+		// hand-own (runtime/darwin/libccall_impl.cs) drops the g0 switch and the libcall* profiler
+		// bookkeeping the managed host has no counterpart for and dispatches the call itself. Bodied,
+		// so displaced here. See docs/phase4/DESIGN-darwin-run-layer-2.md §2.2 and §7.
+		"libcCall": goosDarwin,
 		// getgcmask answers a TYPE's GC pointer bitmap, and Go answers it by reading the GC's own
 		// heap metadata: findObject, the span's typePointersOfUnchecked iterator, activeModules'
 		// data/bss bitmaps, the stack's locals map. None of those exist in a managed runtime, so the
@@ -767,19 +775,19 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// It is a name COMPOSER now, fed by [CallerMemberName] — a compile-time constant no JIT can
 		// remove — which is why the five mustBe* members below join it: the attribute has to sit on
 		// THEIR parameters, and they are emitted into value.cs, which every -tests run regenerates.
-		"valueMethodName":       goosAny,
-		"flag.mustBe":           goosAny,
-		"flag.mustBeExported":   goosAny,
-		"flag.mustBeExportedSlow": goosAny,
-		"flag.mustBeAssignable": goosAny,
+		"valueMethodName":           goosAny,
+		"flag.mustBe":               goosAny,
+		"flag.mustBeExported":       goosAny,
+		"flag.mustBeExportedSlow":   goosAny,
+		"flag.mustBeAssignable":     goosAny,
 		"flag.mustBeAssignableSlow": goosAny,
 		// Append/AppendSlice are package-level FUNCTIONS in Go, so Go's own climb sees a `reflect.X`
 		// frame, never `reflect.Value.X`, and prints "unknown method" — measured against go1.23.12.
 		// The emission gives them a ΔValue first parameter, which is exactly what made the retired
 		// walk match them and MANUFACTURE "reflect.Value.Append": a name Go never prints, on two
 		// public entry points, tested by nothing. They are hand-owned to thread the sentinel.
-		"Append":      goosAny,
-		"AppendSlice": goosAny,
+		"Append":           goosAny,
+		"AppendSlice":      goosAny,
 		"rtype.Key":        goosAny,
 		"rtype.Len":        goosAny,
 		"rtype.NumIn":      goosAny,
