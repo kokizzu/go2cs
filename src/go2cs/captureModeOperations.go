@@ -1383,11 +1383,39 @@ func (v *Visitor) exprIsDerefdPointerParam(expr ast.Expr) bool {
 	return isPtr
 }
 
+// exprHasReceiverBoxInScope reports whether a deref-aliased pointer identifier ALSO has its box
+// `Ꮡ<name>` declared in the enclosing scope — the box-bearing SUBSET of exprIsDerefAliasedPointer
+// below, and the only predicate that licenses SPELLING `Ꮡx` at a call site:
+//
+//   - a pointer PARAMETER is emitted `ж<T> Ꮡp` with `ref var p = ref Ꮡp.Value`, so the box IS the
+//     parameter and always exists;
+//   - a pointer RECEIVER has a box only when the enclosing method is DIRECT-ж (`this ж<T> Ꮡrecv`).
+//     A `[GoRecv] this ref T recv` primary is the value alias and NOTHING else — no `Ꮡrecv` is
+//     declared anywhere in that body.
+//
+// The two are worth separating because exprIsDerefAliasedPointer answers a DIFFERENT question, and
+// answers it correctly for both arms: "does `x` already render as the pointed-to value, so a `~`
+// deref would be CS0023?" Reading it as "does `x` have a box?" is what put `Ꮡa.regAssign(Ꮡt, 0)`
+// into reflect's `addArg` — a `[GoRecv] this ref abiSeq a` body — the moment `abiSeq.regAssign` was
+// registered as a hand-own (CS0103, measured 2026-09-03).
+//
+// The ordinary (non-displaced) call path never needs this gate, and that is a property of the
+// capture-mode fixpoint rather than luck: it routes a caller through a receiver box only when the
+// CALLEE is direct-ж, and bodyCallsDirectBoxMethodOnReceiver promotes the caller to direct-ж when it
+// is — so the box it spells is always declared. A manualConversionFuncs registration is what
+// bypassed that pairing; requiring the box here restores it.
+func (v *Visitor) exprHasReceiverBoxInScope(expr ast.Expr) bool {
+	return v.exprIsDerefdPointerParam(expr) || v.exprIsCurrentDirectBoxReceiver(expr)
+}
+
 // exprIsDerefAliasedPointer reports whether expr is a bare identifier that is a deref-aliased
 // pointer — a pointer PARAMETER or a pointer RECEIVER, both emitted as the pointed-to value
-// (`ref T x`, with the box `Ꮡx` separate), not the box itself. A pointer LOCAL, by contrast, holds
-// the box directly. Callers that would otherwise deref a pointer (`~x`) must skip it for these,
-// since `x` is already the value (a `~` on it would deref a non-pointer → CS0023).
+// (`ref T x`), not the box itself. A pointer LOCAL, by contrast, holds the box directly. Callers
+// that would otherwise deref a pointer (`~x`) must skip it for these, since `x` is already the
+// value (a `~` on it would deref a non-pointer → CS0023).
+//
+// It says NOTHING about whether a box `Ꮡx` exists — a `[GoRecv] this ref T` receiver has none. Use
+// exprHasReceiverBoxInScope above for that question.
 func (v *Visitor) exprIsDerefAliasedPointer(expr ast.Expr) bool {
 	if v.exprIsDerefdPointerParam(expr) {
 		return true

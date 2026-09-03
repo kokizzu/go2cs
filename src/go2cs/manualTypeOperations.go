@@ -1805,10 +1805,16 @@ func (v *Visitor) isManualType(goTypeName string) bool {
 }
 
 // isManualBoxReceiverMethod reports whether obj is a listed foreign-receiver manual method
-// (a manualConversionFuncs "recvTypeName.funcName" entry). Such a method captures the
-// receiver's IDENTITY (e.g. g.guintptr wraps the *g itself), so its manual implementation
-// takes the receiver BOX (`this ж<T>`) — a deref-aliased call site must pass the box, not
-// the value alias (see convSelectorExpr).
+// (a manualConversionFuncs "recvTypeName.funcName" entry). The motivating members capture the
+// receiver's IDENTITY (e.g. g.guintptr wraps the *g itself), so their manual implementation takes
+// the receiver BOX (`this ж<T>`) and a deref-aliased call site must pass the box rather than the
+// value alias (see convSelectorExpr).
+//
+// It answers MEMBERSHIP only. A registration displaces a BODY; it decides nothing about the
+// declaration's receiver FORM, and the registry holds `[GoRecv] this ref T` members too — so the
+// call site pairs this with exprHasReceiverBoxInScope, which asks whether a box exists to pass.
+// Reading membership alone as "takes the box" put `Ꮡa.regAssign(Ꮡt, 0)` into reflect's addArg,
+// a `this ref abiSeq a` body with no such box (CS0103, measured 2026-09-03).
 func (v *Visitor) isManualBoxReceiverMethod(obj types.Object) bool {
 	fn, ok := obj.(*types.Func)
 
