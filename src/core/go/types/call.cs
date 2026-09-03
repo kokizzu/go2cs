@@ -766,7 +766,7 @@ internal static void selector(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<as
                         } else {
                             funcMode = cgofunc;
                         }
-                        foreach (var (_, prefix) in cgoPrefixes) {
+                        foreach (var (_, prefix) in cgoPrefixes.Clone()) {
                             // cgo objects are part of the current package (in file
                             // _cgo_gotypes.go). Use regular lookup.
                             (_, exp) = check.scope.LookupParent(prefix + sel, check.pos);

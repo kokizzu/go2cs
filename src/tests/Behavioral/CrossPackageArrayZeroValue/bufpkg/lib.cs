@@ -32,7 +32,7 @@ public static uint64 Sum(ж<State> Ꮡs) {
     ref var s = ref Ꮡs.DerefOrNull();
 
     var total = (uint64)0;
-    foreach (var (_, v) in s.Buf) {
+    foreach (var (_, v) in s.Buf.Clone()) {
         total += v;
     }
     return total;
