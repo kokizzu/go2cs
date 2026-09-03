@@ -164,15 +164,16 @@ func removeCommentPos(slice []token.Pos, pos token.Pos) []token.Pos {
 // inside [fromPos, toPos].
 //
 // Every other retirement in this file happens because a comment was written somewhere. This one
-// exists for the single shape that has no writer at all: a declaration whose body is DISPLACED to a
-// hand-own (visitFuncDecl's manualConversionFuncs placeholder) is never visited, so the comments
-// inside it never reach an emission point. Leaving them in the sink does not merely delay them, it
-// MISPLACES them — the drain is positional, so the NEXT declaration's writeDoc flushes everything
-// standing before it and a displaced body's commentary resurfaces as that declaration's doc comment
-// (syscall_linux's recvmsgRaw comment reading as sendmsgN's) or, when the displaced declaration was
-// the file's last, as a block after the class's closing brace (runtime mbitmap's getgcmask, 32
-// lines). Discarding is the faithful answer rather than a lossy one: those comments document a body
-// this file does not contain, and the hand-own that does contain it carries its own.
+// exists for the single shape that has no writer at all: a declaration DISPLACED to a hand-own —
+// visitFuncDecl's manualConversionFuncs placeholder, and visitTypeSpec's manualConversionTypes twin
+// — is never visited, so the comments inside its span never reach an emission point. Leaving them
+// in the sink does not merely delay them, it MISPLACES them — the drain is positional, so the NEXT
+// declaration's writeDoc flushes everything standing before it and a displaced declaration's
+// commentary resurfaces as that declaration's doc comment (syscall_linux's recvmsgRaw comment
+// reading as sendmsgN's) or, when the displaced declaration was the file's last, as a block after
+// the class's closing brace (runtime mbitmap's getgcmask, 32 lines). Discarding is the faithful
+// answer rather than a lossy one: those comments document a declaration this file does not contain,
+// and the hand-own that does contain it carries its own.
 //
 // Only the sink is touched, so a comment the AST attached to a node (a Doc group) is unaffected —
 // visitFile already removed those, and they travel with the node they belong to.

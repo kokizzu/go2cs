@@ -195,6 +195,15 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 	// package's *_impl.cs declares the type. Both its plain and collision-renamed forms are
 	// recorded (a type-vs-method collision Δ-prefixes the TYPE — guintptr → Δguintptr) so the
 	// GoImplicitConv attribute emission can skip conversions referencing either rendering.
+	//
+	// The comment sink is served here for the same reason visitFuncDecl's placeholder serves it, and
+	// in the same two calls: this return skips the writeDoc a converted type-kind emitter would have
+	// performed (visitStructType/visitInterfaceType write one; the forward-declaration kinds reach it
+	// through the NEXT declaration) and never visits the declaration's own span. Unserved, neither
+	// set is dropped — both are misplaced, since the drain is positional and the next declaration's
+	// writeDoc takes everything standing before it. The drain is anchored on the SPEC rather than the
+	// GenDecl so a grouped `type ( … )` serves each of its specs in turn; a doc comment the parser
+	// attached to either node is not in the sink at all (visitFile removed it) and is unaffected.
 	if v.isManualType(typeSpec.Name.Name) {
 		packageLock.Lock()
 		packageManualTypeNames[name] = true
@@ -205,8 +214,10 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			v.outputBuilder.WriteString(v.newline)
 		}
 
+		v.writeDoc(nil, typeSpec.Pos())
 		v.writeOutput("// go2cs generated this placeholder — type %s is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])", name)
 		v.outputBuilder.WriteString(v.newline)
+		v.discardStandAloneComments(typeSpec.Pos(), typeSpec.End())
 		return
 	}
 

@@ -139,8 +139,6 @@ internal static ж<eface> efaceOf(ж<any> Ꮡep) {
     return Ꮡep.Reinterpret<any, eface>();
 }
 
-// go2cs generated this placeholder — type Δguintptr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
 // The guintptr, muintptr, and puintptr are all used to bypass write barriers.
 // It is particularly important to avoid write barriers when the current P has
 // been released, because the GC thinks the world is stopped, and an
@@ -163,6 +161,8 @@ internal static ж<eface> efaceOf(ж<any> Ꮡep) {
 // Ms are always reachable via true pointers either from allm or
 // freem. Unlike Gs and Ps we do free Ms, so it's important that
 // nothing ever hold an muintptr across a safe point.
+// go2cs generated this placeholder — type Δguintptr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
 // go2cs generated this placeholder — func ptr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func set is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
