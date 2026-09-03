@@ -182,6 +182,21 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// gap; darwin's copy stays auto until its own arc (the lock_sema_impl.cs precedent: one
 		// hand-own, routed by L3 into a copy per targeted platform).
 		"StartTrace": goosWindowsLinux,
+		// runtime.StopTrace, StartTrace's companion and registered for the same reason one level
+		// down. StartTrace's own hand-own comment claimed "StopTrace and the rest of the tracer stay
+		// auto: they are unreachable while StartTrace refuses" — MEASURED FALSE 2026-09-02, and the
+		// witness is runtime/trace's own suite: TestTraceDoubleStart's FIRST statement (trace_test.go
+		// line 39) is a bare Stop(), before any Start, so runtime/trace.Stop → runtime.StopTrace →
+		// traceAdvance → semacquire → semacquire1 → getg() threw and the row read
+		// infrastructure-error where its sibling read a clean fail. A no-op is the FAITHFUL body, not
+		// a convenience: Go documents StopTrace as stopping tracing "if it was previously enabled",
+		// tracing is never enabled on this host because StartTrace always refuses, and the signature
+		// has no error channel to report anything through — so doing nothing is precisely what Go's
+		// own contract prescribes here. The auto body's traceAdvance(true) would additionally
+		// early-return at its own gen==0 check even if semacquire worked, so nothing observable is
+		// being skipped. ReadTrace and the rest of the tracer genuinely do stay auto: they are
+		// reached only from the goroutine trace.Start spawns AFTER it succeeds, which it never does.
+		"StopTrace": goosWindowsLinux,
 		// The PROCESS-CONTROL surface (managed_impl.cs). Each of these is a public runtime API
 		// whose converted body drives Go's own scheduler / GC pacer — stopTheWorld, gcStart,
 		// mcall(gosched_m), the g/m/p stack walk — machinery that has no managed counterpart and

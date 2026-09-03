@@ -134,11 +134,7 @@ internal static ref uint32 traceShutdownSema => ref ᏑtraceShutdownSema.Value;
 
 // go2cs generated this placeholder — func StartTrace is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// StopTrace stops tracing, if it was previously enabled.
-// StopTrace only returns after all the reads for the trace have completed.
-public static void StopTrace() {
-    traceAdvance(true);
-}
+// go2cs generated this placeholder — func StopTrace is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string traceNonEmptyFullTraceˢ = "trace: non-empty full trace buffer for done generation"u8;
