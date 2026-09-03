@@ -123,12 +123,6 @@ internal static slice<@string> kindNames = new golib.SparseArray<@string>{
 
 // go2cs generated this placeholder — func TypeOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Types are either static (for compiler-created types) or
-// heap-allocated but always reachable (for reflection-created
-// types, held in the central map). So there is no need to
-// escape types. noescape here help avoid unnecessary escape
-// of v.
-
 // TypeFor returns the abi.Type for a type parameter.
 public static ж<Type> TypeFor<T>() {
     T v = default!;

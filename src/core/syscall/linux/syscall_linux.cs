@@ -621,16 +621,6 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrNetl
 
 // go2cs generated this placeholder — func Getsockname is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// "Abstract" Unix domain socket.
-// Rewrite leading NUL as @ for textual display.
-// (This is the standard convention.)
-// Not friendly to overwrite in place,
-// but the callers below don't care.
-// Assume path ends at NUL.
-// This is not technically the Linux semantics for
-// abstract Unix domain sockets--they are supposed
-// to be uninterpreted fixed-size binary blobs--but
-// everyone uses this convention.
 public static (array<byte> value, error err) GetsockoptInet4Addr(nint fd, nint level, nint opt) {
     ref var value = ref heap(new array<byte>(4), out var Ꮡvalue);
     error err = default!;
@@ -697,7 +687,6 @@ public static error /*err*/ SetsockoptIPMreqn(nint fd, nint level, nint opt, ж<
 
 // go2cs generated this placeholder — func recvmsgRaw is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// receive at least one normal byte
 internal static (nint n, error err) sendmsgN(nint fd, slice<byte> p, slice<byte> oob, @unsafe.Pointer ptr, _Socklen salen, nint flags) {
     nint n = default!;
     error err = default!;

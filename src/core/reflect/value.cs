@@ -176,8 +176,6 @@ internal static any packEface(ΔValue v) {
 
 // go2cs generated this placeholder — func unpackEface is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// NOTE: don't read e.word until we know whether it is really a pointer or not.
-
 // A ValueError occurs when a Value method is invoked on
 // a [Value] that does not support it. Such cases are documented
 // in the description of each method.
@@ -257,9 +255,6 @@ internal static void mustBeAssignableSlow(this flag f) {
 
 // go2cs generated this placeholder — func Bool is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Preserve flagRO instead of using v.flag.ro() so that
-// v.Addr().Elem() is equivalent to v (#32772)
-// panicNotBool is split out to keep Bool inlineable.
 internal static void panicNotBool(this ΔValue v) {
     v.mustBe(ΔBool);
 }
@@ -268,8 +263,6 @@ internal static ж<abi.Type> bytesType = rtypeOf((slice<byte>)(default!));
 
 // go2cs generated this placeholder — func Bytes is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// bytesSlow is split out to keep Bytes inlineable for unnamed []byte.
-// ok to use v.typ_ directly as comparison doesn't cause escape
 internal static slice<byte> bytesSlow(this ΔValue v) {
     var exprᴛ1 = v.kind();
     if (exprᴛ1 == ΔSlice) {
@@ -295,8 +288,6 @@ internal static slice<byte> bytesSlow(this ΔValue v) {
 }
 
 // go2cs generated this placeholder — func runes is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// Slice is always bigger than a word; assume flagIndir.
 
 // CanAddr reports whether the value's address can be obtained with [Value.Addr].
 // Such values are called addressable. A value is addressable if it is
@@ -1149,7 +1140,6 @@ internal static @string funcName(Func<slice<ΔValue>, slice<ΔValue>> fʗp) {
 
 // go2cs generated this placeholder — func Cap is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// capNonSlice is split out to keep Cap inlineable for slice kinds.
 internal static nint capNonSlice(this ΔValue v) {
     ΔKind k = v.kind();
     var exprᴛ1 = k;
@@ -1188,25 +1178,6 @@ public static bool CanComplex(this ΔValue v) {
 // go2cs generated this placeholder — func Elem is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func Field is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// This is a pointer to a not-in-heap object. ptr points to a uintptr
-// in the heap. That uintptr is the address of a not-in-heap object.
-// In general, pointers to not-in-heap objects can be total junk.
-// But Elem() is asking to dereference it, so the user has asserted
-// that at least it is a valid pointer (not just an integer stored in
-// a pointer slot). So let's check, to make sure that it isn't a pointer
-// that the runtime will crash on if it sees it during GC or write barriers.
-// Since it is a not-in-heap pointer, all pointers to the heap are
-// forbidden! That makes the test pretty easy.
-// See issue 48399.
-// The returned value's address is v's value.
-// Inherit permission bits from v, but clear flagEmbedRO.
-// Using an unexported field forces flagRO.
-// Either flagIndir is set and v.ptr points at struct,
-// or flagIndir is not set and v.ptr is the actual struct data.
-// In the former case, we want v.ptr + offset.
-// In the latter case, we must have field.offset = 0,
-// so v.ptr + field.offset is still the correct address.
 
 // FieldByIndex returns the nested field corresponding to index.
 // It panics if evaluation requires stepping through a nil
@@ -1297,15 +1268,6 @@ internal static ж<abi.Type> uint8Type = rtypeOf((uint8)0);
 
 // go2cs generated this placeholder — func Index is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Either flagIndir is set and v.ptr points at array,
-// or flagIndir is not set and v.ptr is the actual array data.
-// In the former case, we want v.ptr + offset.
-// In the latter case, we must be doing Index(0), so offset = 0,
-// so v.ptr + offset is still the correct address.
-// bits same as overall array
-// Element flag same as Elem of Pointer.
-// Addressable, indirect, possibly read-only.
-
 // CanInt reports whether Int can be used without panicking.
 public static bool CanInt(this ΔValue v) {
     var exprᴛ1 = v.kind();
@@ -1336,21 +1298,6 @@ public static bool CanInterface(this ΔValue v) {
 
 // go2cs generated this placeholder — func IsNil is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Do not allow access to unexported values via Interface,
-// because they might be pointers that should not be
-// writable or methods or function that should not be callable.
-// Special case: return the element inside the interface.
-// Empty interface has one layout, all interfaces with
-// methods have a second layout.
-// The compiler loses track as it converts to uintptr. Force escape.
-// We treat this as a read operation, so we allow
-// it even for unexported data, because the caller
-// has to import "unsafe" to turn it into something
-// that can be abused.
-// Interface value is always bigger than a word; assume flagIndir.
-// Both interface and slice are nil if first word is 0.
-// Both are always bigger than a word; assume flagIndir.
-
 // IsValid reports whether v represents a value.
 // It returns false if v is the zero Value.
 // If [Value.IsValid] returns false, all other methods except String panic.
@@ -1361,19 +1308,6 @@ public static bool IsValid(this ΔValue v) {
 }
 
 // go2cs generated this placeholder — func IsZero is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// If the type is comparable, then compare directly with zero.
-// v.ptr doesn't escape, as Equal functions are compiler generated
-// and never escape. The escape analysis doesn't know, as it is a
-// function pointer call.
-// For some types where the zero value is a value where all bits of this type are 0
-// optimize it.
-// If the type is comparable, then compare directly with zero.
-// See noescape justification above.
-// For some types where the zero value is a value where all bits of this type are 0
-// optimize it.
-// This should never happen, but will act as a safeguard for later,
-// as a default value doesn't makes sense here.
 
 // isZero For all zeros, performance is not as good as
 // return bytealg.Count(b, byte(0)) == len(b)
@@ -1419,9 +1353,6 @@ internal static bool isZero(slice<byte> b) {
 
 // go2cs generated this placeholder — func SetZero is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// This should never happen, but will act as a safeguard for later,
-// as a default value doesn't makes sense here.
-
 // Kind returns v's Kind.
 // If v is the zero Value ([Value.IsValid] returns false), Kind returns Invalid.
 public static ΔKind Kind(this ΔValue v) {
@@ -1430,7 +1361,6 @@ public static ΔKind Kind(this ΔValue v) {
 
 // go2cs generated this placeholder — func Len is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// lenNonSlice is split out to keep Len inlineable for slice kinds.
 internal static nint lenNonSlice(this ΔValue v) {
     {
         ΔKind k = v.kind();
@@ -1465,17 +1395,6 @@ internal static ж<abi.Type> stringType = rtypeOf((@string)""u8);
 // go2cs generated this placeholder — func MapIndex is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func MapKeys is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// Do not require key to be exported, so that DeepEqual
-// and other programs can use all the keys returned by
-// MapKeys as arguments to MapIndex. If either the map
-// or the key is unexported, though, the result will be
-// considered unexported. This is consistent with the
-// behavior for structs, which allow read but not write
-// of unexported fields.
-// Someone deleted an entry from the map since we
-// called maplen above. It's a data race, but nothing
-// we can do about it.
 
 // hiter's structure matches runtime.hiter's structure.
 // Having a clone here allows us to embed a map iterator
@@ -1523,13 +1442,6 @@ internal static ж<abi.Type> stringType = rtypeOf((@string)""u8);
 // go2cs generated this placeholder — func Reset is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func MapRange is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// do not let unexported m leak
-// do not let unexported m leak
-// This is inlinable to take advantage of "function outlining".
-// The allocation of MapIter can be stack allocated if the caller
-// does not allow it to escape.
-// See https://blog.filippo.io/efficient-go-apis-with-the-inliner/
 
 // Force slow panicking path not inlined, so it won't add to the
 // inlining budget of the caller.
@@ -1658,23 +1570,11 @@ public static bool OverflowUint(this ΔValue v, uint64 x) {
     throw panic(Ꮡ(new ValueError("reflect.Value.OverflowUint"u8, v.kind())));
 }
 
-// go2cs generated this placeholder — func Pointer is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
 //go:nocheckptr
 // This prevents inlining Value.Pointer when -d=checkptr is enabled,
 // which ensures cmd/compile can recognize unsafe.Pointer(v.Pointer())
 // and make an exception.
-// The compiler loses track as it converts to uintptr. Force escape.
-// Since it is a not-in-heap pointer, all pointers to the heap are
-// forbidden! See comment in Value.Elem and issue #48399.
-// As the doc comment says, the returned pointer is an
-// underlying code pointer but not necessarily enough to
-// identify a single function uniquely. All method expressions
-// created via reflect have the same underlying code pointer,
-// so their Pointers are equal. The function used here must
-// match the one used in makeMethodValue.
-// Non-nil func value points at data block.
-// First word of data block is actual code.
+// go2cs generated this placeholder — func Pointer is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Recv receives and returns a value from the channel v.
 // It panics if v's Kind is not [Chan].
@@ -1716,9 +1616,6 @@ public static void Send(this ΔValue v, ΔValue x) {
 
 // go2cs generated this placeholder — func SetLen is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// do not let unexported x leak
-// TODO add Elem method, fix mustBe(Slice) to return slice.
-
 // SetCap sets v's capacity to n.
 // It panics if v's Kind is not [Slice] or if n is smaller than the length or
 // greater than the capacity of the slice.
@@ -1755,11 +1652,6 @@ public static void SetPointer(this ΔValue v, @unsafe.Pointer x) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string invalidValueˢ = "<invalid Value>"u8;
 
-// Reinterpret as *unsafeheader.Slice to edit.
-// do not advance pointer, to avoid pointing beyond end of slice
-// Reinterpret as *unsafeheader.Slice to edit.
-// do not advance pointer, to avoid pointing beyond end of slice
-// stringNonString is split out to keep String inlineable for string kinds.
 internal static @string stringNonString(this ΔValue v) {
     if (v.kind() == Invalid) {
         return invalidValueˢ;
@@ -1791,8 +1683,6 @@ public static bool TrySend(this ΔValue v, ΔValue x) {
 }
 
 // go2cs generated this placeholder — func Type is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// inline of toRType(v.typ()), for own inlining in inline test
 
 //go:noinline
 internal static ΔType typeSlow(this ΔValue v) {
@@ -1872,17 +1762,6 @@ public static uintptr UnsafeAddr(this ΔValue v) {
 
 // go2cs generated this placeholder — func UnsafePointer is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Since it is a not-in-heap pointer, all pointers to the heap are
-// forbidden! See comment in Value.Elem and issue #48399.
-// As the doc comment says, the returned pointer is an
-// underlying code pointer but not necessarily enough to
-// identify a single function uniquely. All method expressions
-// created via reflect have the same underlying code pointer,
-// so their Pointers are equal. The function used here must
-// match the one used in makeMethodValue.
-// Non-nil func value points at data block.
-// First word of data block is actual code.
-
 // StringHeader is the runtime representation of a string.
 // It cannot be used safely or portably and its representation may
 // change in a later release.
@@ -1955,10 +1834,6 @@ internal static void grow(this ΔValue v, nint n) {
 // go2cs generated this placeholder — func extendSlice is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func Clear is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// Shallow copy the slice header to avoid mutating the source slice.
-// equivalent flag to MakeSlice
-// fine to treat as assignable since we allocate a new slice header
 
 // Append appends the values x to a slice s and returns the resulting slice.
 // As in Go, each x's value must be assignable to the slice's element type.
@@ -2046,12 +1921,6 @@ public static SelectDir SelectDefault => 3; // default
 
 // go2cs generated this placeholder — func Select is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Slice is heap allocated due to runtime dependent capacity.
-// Slice can be stack allocated due to constant capacity.
-// default
-// The value to send needs to escape. See the comment at rselect for
-// why we need forced escape.
-
 /*
  * constructors
  */
@@ -2092,8 +1961,6 @@ internal static ж<array<byte>> ᏑzeroVal = new StandardBox<array<byte>>(new ar
 internal static ref array<byte> zeroVal => ref ᏑzeroVal.Value;
 
 // go2cs generated this placeholder — func New is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// This is a pointer to a not-in-heap type.
 
 // go2cs generated this placeholder — func NewAt is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 

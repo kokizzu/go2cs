@@ -955,16 +955,6 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrUnix> �
 
 // go2cs generated this placeholder — func Sockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// "Abstract" Unix domain socket.
-// Rewrite leading NUL as @ for textual display.
-// (This is the standard convention.)
-// Not friendly to overwrite in place,
-// but the callers below don't care.
-// Assume path ends at NUL.
-// This is not technically the Linux semantics for
-// abstract Unix domain sockets--they are supposed
-// to be uninterpreted fixed-size binary blobs--but
-// everyone uses this convention.
 public static (ΔHandle fd, error err) Socket(nint domain, nint typ, nint proto) {
     if (domain == AF_INET6 && SocketDisableIPv6) {
         return (InvalidHandle, EAFNOSUPPORT);

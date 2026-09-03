@@ -312,8 +312,6 @@ internal static ref mstats memstats => ref Ꮡmemstats.Value;
 
 // go2cs generated this placeholder — func ReadMemStats is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// nil check test before we switch stacks, see issue 61158
-
 // doubleCheckReadMemStats controls a double-check mode for ReadMemStats that
 // ensures consistency between the values that ReadMemStats is using and the
 // runtime-internal stats.
@@ -786,30 +784,6 @@ internal static void release(this ж<consistentHeapStats> Ꮡm) {
 
 // go2cs generated this placeholder — func read is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Getting preempted after this point is not safe because
-// we read allp. We need to make sure a STW can't happen
-// so it doesn't change out from under us.
-// Get the current generation. We can be confident that this
-// will not change since read is serialized and is the only
-// one that modifies currGen.
-// Prevent writers without a P from writing while we update gen.
-// Rotate gen, effectively taking a snapshot of the state of
-// these statistics at the point of the exchange by moving
-// writers to the next set of deltas.
-//
-// This exchange is safe to do because we won't race
-// with anyone else trying to update this value.
-// Allow P-less writers to continue. They'll be writing to the
-// next generation now.
-// Spin until there are no more writers.
-// At this point we've observed that each sequence
-// number is even, so any future writers will observe
-// the new gen value. That means it's safe to read from
-// the other deltas in the stats buffer.
-// Perform our responsibilities and free up
-// stats[prevGen] for the next time we want to take
-// a snapshot.
-// Finally, copy out the complete delta.
 [GoType] partial struct cpuStats {
 // All fields are CPU time in nanoseconds computed by comparing
 // calls of nanotime. This means they're all overestimates, because

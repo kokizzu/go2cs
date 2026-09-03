@@ -103,11 +103,6 @@ public static void Broadcast(this ж<Cond> Ꮡc) {
 
 // go2cs generated this placeholder — func check is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Check if c has been copied in three steps:
-// 1. The first comparison is the fast-path. If c has been initialized and not copied, this will return immediately. Otherwise, c is either not initialized, or has been copied.
-// 2. Ensure c is initialized. If the CAS succeeds, we're done. If it fails, c was either initialized concurrently and we simply lost the race, or c has been copied.
-// 3. Do step 1 again. Now that c is definitely initialized, if this fails, c was copied.
-
 // noCopy may be added to structs which must not be copied
 // after the first use.
 //

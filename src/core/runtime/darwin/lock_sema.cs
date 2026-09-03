@@ -38,25 +38,11 @@ internal static void @lock(ж<mutex> Ꮡl) {
 
 // go2cs generated this placeholder — func lock2 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Speculative grab for lock.
-// On uniprocessor's, no point spinning.
-// On multiprocessors, spin for ACTIVE_SPIN attempts.
-// Unlocked. Try to lock.
-// Someone else has it.
-// l->waitm points to a linked list of M's waiting
-// for this lock, chained through m->nextwaitm.
-// Queue this M.
-// Queued. Wait.
 internal static void unlock(ж<mutex> Ꮡl) {
     unlockWithRank(Ꮡl);
 }
 
 // go2cs generated this placeholder — func unlock2 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// Other M's are waiting for the lock.
-// Dequeue an M.
-// Dequeued an M.  Wake it.
-// restore the preemption request in case we've cleared it in newstack
 
 // One-time notifications.
 internal static void noteclear(ж<note> Ꮡn) {
@@ -74,32 +60,6 @@ internal static void noteclear(ж<note> Ꮡn) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string notetsleepNotOnG0ˢ = "notetsleep not on g0"u8;
 
-// Successfully set waitm to locked.
-// What was it before?
-// Nothing was waiting. Done.
-// Two notewakeups! Not allowed.
-// Must be the waiting m. Wake it up.
-// Must be locked (got wakeup).
-// Queued. Sleep.
-// gp and deadline are logically local variables, but they are written
-// as parameters so that the stack space they require is charged
-// to the caller.
-// This reduces the nosplit footprint of notetsleep_internal.
-// Register for wakeup on n->waitm.
-// Must be locked (got wakeup).
-// Queued. Sleep.
-// Registered. Sleep.
-// Acquired semaphore, semawakeup unregistered us.
-// Done.
-// Interrupted or timed out. Still registered. Semaphore not acquired.
-// Deadline hasn't arrived. Keep sleeping.
-// Deadline arrived. Still registered. Semaphore not acquired.
-// Want to give up and return, but have to unregister first,
-// so that any notewakeup racing with the return does not
-// try to grant us the semaphore when we don't expect it.
-// No wakeup yet; unregister if possible.
-// Wakeup happened so semaphore is available.
-// Grab it to avoid getting out of sync.
 internal static bool notetsleep(ж<note> Ꮡn, int64 ns) {
     var gp = getg();
     if (gp != (~(~gp).m).g0) {

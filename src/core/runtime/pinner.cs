@@ -22,19 +22,6 @@ partial class runtime_package {
 
 // go2cs generated this placeholder — func Unpin is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Check the pinner cache first.
-// Didn't get anything from the pinner cache.
-// We set this finalizer once and never clear it. Thus, if the
-// pinner gets cached, we'll reuse it, along with its finalizer.
-// This lets us avoid the relatively expensive SetFinalizer call
-// when reusing from the cache. The finalizer however has to be
-// resilient to an empty pinner being finalized, which is done
-// by checking p.refs' length.
-// only required to make the test idempotent
-// Put the pinner back in the cache, but only if the
-// cache is empty. If application code is reusing Pinners
-// on its own, we want to leave the backing store in place
-// so reuse is more efficient.
 internal static UntypedInt pinnerSize => 64;
 internal static uintptr pinnerRefStoreSize => /* (pinnerSize - unsafe.Sizeof([]unsafe.Pointer{})) / unsafe.Sizeof(unsafe.Pointer(nil)) */ 5;
 

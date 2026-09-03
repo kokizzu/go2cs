@@ -153,8 +153,6 @@ internal static any packEface(Value v) {
 
 // go2cs generated this placeholder — func unpackEface is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// NOTE: don't read e.word until we know whether it is really a pointer or not.
-
 // A ValueError occurs when a Value method is invoked on
 // a Value that does not support it. Such cases are documented
 // in the description of each method.
@@ -214,16 +212,6 @@ public static bool CanSet(this Value v) {
 
 // go2cs generated this placeholder — func IsNil is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// The returned value's address is v's value.
-// Special case: return the element inside the interface.
-// Empty interface has one layout, all interfaces with
-// methods have a second layout.
-// if v.flag&flagMethod != 0 {
-// 	return false
-// }
-// Both interface and slice are nil if first word is 0.
-// Both are always bigger than a word; assume flagIndir.
-
 // IsValid reports whether v represents a value.
 // It returns false if v is the zero Value.
 // If IsValid returns false, all other methods except String panic.
@@ -249,9 +237,6 @@ internal static partial nint maplen(@unsafe.Pointer _);
 
 // go2cs generated this placeholder — func Len is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Slice is bigger than a word; assume flagIndir.
-// String is bigger than a word; assume flagIndir.
-
 // NumMethod returns the number of exported methods in the value's method set.
 internal static nint numMethod(this Value v) {
     if (v.typ() == nil) {
@@ -261,8 +246,6 @@ internal static nint numMethod(this Value v) {
 }
 
 // go2cs generated this placeholder — func Set is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// do not let unexported x leak
 
 // Type returns v's type.
 public static ΔType Type(this Value v) {

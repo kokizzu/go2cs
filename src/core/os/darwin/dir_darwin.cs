@@ -38,22 +38,6 @@ partial class os_package {
 
 // go2cs generated this placeholder — func readdir is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// We lost the race: try again.
-// EOF
-// Darwin may return a zero inode when a directory entry has been
-// deleted but not yet removed from the directory. The man page for
-// getdirentries(2) states that programs are responsible for skipping
-// those entries:
-//
-//   Users of getdirentries() should skip entries with d_fileno = 0,
-//   as such entries represent files which have been deleted but not
-//   yet removed from the directory entry.
-//
-// Check for useless names before allocating a string.
-// File disappeared between readdir and stat.
-// Treat as if it didn't exist.
-// File disappeared between readdir + stat.
-// Treat as if it didn't exist.
 internal static FileMode dtToType(uint8 typ) {
     var exprᴛ1 = typ;
     if (exprᴛ1 == syscall.DT_BLK) {

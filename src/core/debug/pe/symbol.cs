@@ -28,13 +28,6 @@ public static UntypedInt COFFSymbolSize => 18;
 
 // go2cs generated this placeholder — func readCOFFSymbols is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// Read a primary symbol.
-// Record how many auxiliary symbols it has.
-// Read an aux symbol. At the moment we assume all
-// aux symbols are format 5 (obviously this doesn't always
-// hold; more cases will be needed below if more aux formats
-// are supported in the future).
-
 // isSymNameOffset checks symbol name if it is encoded as offset into string table.
 internal static (bool, uint32) isSymNameOffset([GoArrayDims(8)] array<byte> name) {
     name = name.Clone();
@@ -131,7 +124,5 @@ public static UntypedInt IMAGE_COMDAT_SELECT_ASSOCIATIVE => 5;
 public static UntypedInt IMAGE_COMDAT_SELECT_LARGEST => 6;
 
 // go2cs generated this placeholder — func COFFSymbolReadSectionDefAux is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// Locate and return a pointer to the successor aux symbol.
 
 } // end pe_package

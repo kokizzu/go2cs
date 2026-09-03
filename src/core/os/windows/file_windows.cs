@@ -470,8 +470,6 @@ internal static (@string, error) normaliseLinkPath(@string path) {
 
 // go2cs generated this placeholder — func readReparseLink is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// the path is not a symlink or junction but another type of reparse
-// point
 internal static (@string, error) readlink(@string name) {
     var (s, err) = readReparseLink(fixLongPath(name));
     if (err != default!) {
