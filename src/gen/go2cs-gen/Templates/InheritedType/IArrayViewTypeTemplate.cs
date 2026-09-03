@@ -65,12 +65,7 @@ internal static class IArrayViewTypeTemplate
 
                 public global::System.Span<{{targetTypeName}}> ToSpan() => view.ToSpan();
 
-                // Forwards the CONCRETE struct enumerator, not IEnumerator<(nint, T)> — see
-                // IArrayTypeTemplate; the interface member becomes explicit so IArray<T>'s
-                // IEnumerable<(nint, T)> is still satisfied on the boxing path.
-                public global::go.array<{{targetTypeName}}>.Enumerator GetEnumerator() => view.GetEnumerator();
-
-                global::System.Collections.Generic.IEnumerator<(nint, {{targetTypeName}})> global::System.Collections.Generic.IEnumerable<(nint, {{targetTypeName}})>.GetEnumerator() => ((global::System.Collections.Generic.IEnumerable<(nint, {{targetTypeName}})>)view).GetEnumerator();
+                public global::System.Collections.Generic.IEnumerator<(nint, {{targetTypeName}})> GetEnumerator() => view.GetEnumerator();
 
                 global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => ((global::System.Collections.IEnumerable)view).GetEnumerator();
 

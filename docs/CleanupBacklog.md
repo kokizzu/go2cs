@@ -48,22 +48,9 @@
    `Enumerator` STRUCT (the interface members stay, explicit, for LINQ/interface consumers), and
    go2cs-gen's `ISliceTypeTemplate` forwards the struct so named slice types get it too. Guarded at
    zero bytes by `GolibTests/SliceRangeAllocationTests`.
-   ~~**Successor item:** `array<T>.GetEnumerator()` is the identical iterator-method shape and was
+   **Successor item:** `array<T>.GetEnumerator()` is the identical iterator-method shape and was
    deliberately left alone — Go's `range` over an array value ranges a COPY, so the eager-vs-lazy
-   capture point is a semantic question there, not a mechanical one. Wants its own measured
-   change.~~ — **DONE (2026-09-02).** The semantic question answered a CORRECTNESS defect, not only
-   an allocation one: nothing took the copy at all, so a converted `for i, v := range a` observed
-   writes made to `a` inside its own body and diverged from `go run` on every such loop. The copy
-   belongs to the range EXPRESSION, where gc itself puts it (`walk/order.go`'s `rangeStmt`), and it
-   is emitted as the same `.Clone()` every other Go array value-copy site takes — scoped to a
-   non-blank VALUE iteration variable over an array value read out of existing storage, so
-   `for i := range a`, a pointer-to-array and a slice stay uncopied exactly as in Go. With the
-   operand snapshotted the enumerator is free to read live storage, so `GetEnumerator()` became the
-   nested `Enumerator` struct (go2cs-gen's `IArrayTypeTemplate` / `IArrayViewTypeTemplate` forward
-   it for named array types): **72 B/loop → 0**, boxing interface path 103 → 79. Guarded by the
-   `ArrayRangeSnapshot` behavioral test (mutate-during-range, output-compared, with the pointer,
-   slice and index-only arms as controls that must NOT copy) and `GolibTests/ArrayRangeAllocationTests`
-   (zero bytes, with the boxing path as the nonzero control).
+   capture point is a semantic question there, not a mechanical one. Wants its own measured change.
 7. ~~**`IByteSeq<T>` interface-boxing**~~ — **DONE (r38-ibyteseq, 2026-08-03).** The constraint is now
    self-referential (`IByteSeq<TSelf, T> : IByteSeq<T> where TSelf : IByteSeq<TSelf, T>`, emitted as
    `where bytes : IByteSeq<bytes, byte>`), so the sub-slice indexer returns the CONCRETE type and
