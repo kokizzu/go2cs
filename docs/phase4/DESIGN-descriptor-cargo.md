@@ -540,3 +540,9 @@ Dotnet gates, same tip: G1 stdlib solution 0 errors across 307 projects (windows
 unchanged from the lane tip, not code; G3 behavioral OUTPUT on
 `FieldDimsCargo` PASS — Transpile, Compile, Target and Output all green ([Output] running C# vs Go, comparing exit code + stdout... 1 compared, 0 failed PASS (1 pr); G4 reflect's `-tests` assembly convert and build exit 0, `reflect.tests.dll` written fresh at 09:23:58 (converter built by the behavioral runner at 09:20 from this tip); G5 `nistec` cost canary as a same-host
 A/B, PRE (`e8c078637`) PASS 2195 at 174 s cold / 145 s warm vs A PASS 2195 at 90 s warm — A faster than PRE on both readings, so no cost regression; a third A reading is in flight to characterize the favorable delta, which is more likely variance than merit.
+
+> **Amended 2026-09-03, third `nistec` reading.** A second warm A run read **154 s** against the
+> first's 90 s, with PRE at 145 s warm / 174 s cold. The spread *within* A (64 s) exceeds the A-vs-PRE
+> gap, so the "A faster on both readings" sentence above was the fast tail of run-to-run variance, not
+> merit. Corrected characterization: **A is within noise of PRE; no cost regression** — the gate's
+> verdict is unchanged, its wording was over-read. Three readings, one host, all warm but the first PRE.
