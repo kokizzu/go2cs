@@ -40,11 +40,27 @@ namespace go;
 /// order, and no contribution at all from a package that declares no trampolines.
 /// </para>
 /// <para>
-/// The map is derivable twice over and the two derivations cross-check for free: every pragma in the
-/// darwin tree has the form <c>//go:cgo_import_dynamic libc_&lt;n&gt; &lt;sym&gt; "&lt;lib&gt;"</c>, and
-/// <c>&lt;n&gt;</c> equals <c>&lt;sym&gt;</c> across all of them. The converter emits from the pragma it
-/// already preserves into the emission, so the record and the comment above the declaration cannot
-/// drift apart without the emission itself changing.
+/// The population is selected by the pragma's own shape rather than by a hand-listed set of
+/// libraries: the library argument is an ABSOLUTE PATH. Over the 1650 <c>//go:cgo_import_dynamic</c>
+/// records in Go 1.23.12 outside <c>cmd/</c> and <c>vendor/</c>, every darwin record names one
+/// (<c>/usr/lib/libSystem.B.dylib</c>, <c>/usr/lib/libresolv.9.dylib</c>, and the two
+/// <c>/System/Library/Frameworks/...</c> frameworks <c>crypto/x509/internal/macos</c> imports) while
+/// every other platform names a BARE library - windows' 51 <c>kernel32.dll</c>, openbsd and solaris'
+/// <c>libc.so</c>, aix's <c>libc.a/shr_64.o</c> - or names none at all, as <c>runtime/race</c>'s 196
+/// darwin records do. Selecting on the leading slash and selecting on "<c>.dylib</c> or a framework
+/// path" are two independent derivations of the same 345 records and they agree on every one, which
+/// is what makes the shape safe to read instead of a list a later Go release could add to.
+/// </para>
+/// <para>
+/// An earlier draft of this comment claimed the local name and the symbol are equal across the
+/// darwin tree and offered that as a free cross-check. Measured, they are equal in <b>0</b> of the
+/// 345: the real relation is <c>local == "libc_" + symbol</c> in 312 of them, and the framework and
+/// libresolv records follow neither. The cross-check does not exist, and the binding rule the
+/// converter uses is the one that does - see <c>cgoDynamicImports.go</c>, where a record is minted
+/// only for a bodyless <c>func &lt;local&gt;_trampoline()</c> whose package carries the matching
+/// pragma. That holds for 297 of 297 declarations outside <c>runtime</c> and 0 of 43 inside it, so
+/// runtime's trampolines - whose correspondence lives in the <c>.s</c> file the converter does not
+/// read - mint nothing and stay class C rather than being reached by a normalizer.
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]

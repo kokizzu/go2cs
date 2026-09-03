@@ -2080,6 +2080,16 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 	collectAddressedGlobals(allEntries, pkg.Types, pkg.TypesInfo)
 	computeImportAliasRenames(allEntries, pkg.Types, packageNamespace)
 	collectPublicizedTypes(pkg.Types)
+
+	// Bind the //go:cgo_import_dynamic pragmas here too, and not only because the sequence is
+	// mirrored: a -tests conversion RECOMPILES the production sources into the test assembly, so
+	// that assembly declares the same trampolines and needs the same records to resolve them. It is
+	// also the direction that fails badly if skipped -- applyCgoDynamicImports rewrites an existing
+	// section from what THIS run bound, so a driver that never binds would silently empty a section
+	// the -stdlib emission had populated. The EXTERNAL variant carries no production files, binds
+	// nothing, and correctly emits nothing: it declares no trampolines either.
+	collectCgoDynamicImportsFromEntries(allEntries)
+
 	preloadImportedTypeAliases(allEntries, options)
 
 	// Tier C hoisted string literals (§4.4's `-tests` invariants). The INTERNAL test variant
