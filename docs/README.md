@@ -11,12 +11,12 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ## 📰 NEWS — Over 90% of the standard-library test suites pass in C#, on .NET 10 and Go 1.23.12
 
-**189 of the 215 testable standard-library packages pass their own Go test suites in C#** — 26,043
-matching verdicts against `go test -json`, compared verdict for verdict, with 148 divergences
-disclosed by exact failure signature and nothing else waived. Seven of those 215 cannot be validated
+**201 of the 215 testable standard-library packages pass their own Go test suites in C#** — 27,734
+matching verdicts against `go test -json`, compared verdict for verdict, with 154 divergences
+disclosed by exact failure signature and nothing else waived. Five of those 215 cannot be validated
 at all — no eligible tests on this platform, a broken upstream oracle, or a suite whose whole
 subject is the raw memory layout a managed runtime deliberately does not have — so the honest
-denominator is **208, putting the roster at 90.9%**. Each of the seven is listed with its class,
+denominator is **210, putting the roster at 95.7%**. Each of the five is listed with its class,
 mechanism and evidence in the [exclusion ledger](ValidatedTestPackages.md#excluded-packages), and
 any one of them rejoins the count the day its evidence changes. A package appears on the
 [roster](ValidatedTestPackages.md) only when *every* eligible test agrees, and every row links a
