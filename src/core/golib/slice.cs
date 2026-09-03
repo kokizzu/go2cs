@@ -558,6 +558,65 @@ public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquata
         return new slice<T>(m_array, m_low + low, m_low + high, m_low + max);
     }
 
+    /// <summary>
+    /// Reports whether this slice's window <c>[0, len)</c> and <paramref name="other"/>'s share any
+    /// element storage — Go's <c>slices.overlaps</c> and <c>crypto/internal/alias.AnyOverlap</c>,
+    /// answered STRUCTURALLY (canonical backing identity + absolute index-range intersection) rather
+    /// than by ordering element addresses.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Go writes both predicates as <c>uintptr(unsafe.Pointer(&amp;x[0])) &lt;= uintptr(unsafe.Pointer(&amp;y[len(y)-1]))
+    /// &amp;&amp; …</c>, and the converter emits that literally as four <c>(uintptr)Ꮡ(…)</c> takes. Each take
+    /// pins its backing through a finalizable holder on a box that is garbage the instant the take
+    /// returns, so the pin is released by the FINALIZER, not by the next take — and a collection landing
+    /// between two takes relocates an operand whose earlier pin has already been finalized, leaving the
+    /// ordering to compare two heap layouts. Measured (2026-09-03, Release, tiering off, 4 cores, 16
+    /// threads): the mirrored predicate tore five threads on ONE collection 17 s in, the converted
+    /// <c>alias.AnyOverlap</c> answered TRUE for two distinct fresh arrays 9 s in, and the converted GCM
+    /// <c>Open</c> raised <c>crypto/aes: invalid buffer overlap</c> 27 s in — the panic that killed the
+    /// banked net/http row on two host classes. Backing identity and index ranges cannot tear.
+    /// </para>
+    /// <para>
+    /// Arms: a zero-length side names no memory (Go ignores everything beyond the length); a zero-size
+    /// element type never overlaps (Go's <c>elemSize == 0</c> early-out — load-bearing here, because
+    /// every zero-size slice shares ONE static backing, <see cref="GoZeroSizeFacts{T}.Storage"/>); two
+    /// native-backed windows compare their address ranges exactly; a managed window and a native one
+    /// live in different spaces and never overlap; two managed windows overlap iff they share the
+    /// canonical backing array and their absolute index ranges intersect.
+    /// </para>
+    /// </remarks>
+    public bool Overlaps(slice<T> other)
+    {
+        if (m_length <= 0 || other.m_length <= 0)
+            return false;
+
+        if (GoZeroSizeFacts<T>.IsZeroSize)
+            return false;
+
+        if (m_nativeBase != 0 || other.m_nativeBase != 0)
+        {
+            if (m_nativeBase == 0 || other.m_nativeBase == 0)
+                return false;
+
+            nuint size = (nuint)Unsafe.SizeOf<T>();
+            nuint thisStart = m_nativeBase + (nuint)m_low * size;
+            nuint thisEnd = thisStart + (nuint)m_length * size;
+            nuint otherStart = other.m_nativeBase + (nuint)other.m_low * size;
+            nuint otherEnd = otherStart + (nuint)other.m_length * size;
+
+            return thisStart < otherEnd && otherStart < thisEnd;
+        }
+
+        if (m_array is null || !ReferenceEquals(m_array, other.m_array))
+            return false;
+
+        nint thisLow = m_low, thisHigh = m_low + m_length;
+        nint otherLow = other.m_low, otherHigh = other.m_low + other.m_length;
+
+        return thisLow < otherHigh && otherLow < thisHigh;
+    }
+
     public nint IndexOf(in T item)
     {
         // A zero-size type has exactly ONE value, so every element of a non-empty slice equals the

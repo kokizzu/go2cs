@@ -467,19 +467,7 @@ internal static void rotateRight<E>(slice<E> s, nint r) {
     rotateLeft(s, len(s) - r);
 }
 
-// overlaps reports whether the memory ranges a[0:len(a)] and b[0:len(b)] overlap.
-internal static bool overlaps<E>(slice<E> a, slice<E> b) {
-    if (len(a) == 0 || len(b) == 0) {
-        return false;
-    }
-    var elemSize = @unsafe.Sizeof(a[0]);
-    if (elemSize == 0) {
-        return false;
-    }
-    // TODO: use a runtime/unsafe facility once one becomes available. See issue 12445.
-    // Also see crypto/internal/alias/alias.go:AnyOverlap
-    return (uintptr)Ꮡ(a, 0) <= (uintptr)Ꮡ(b, len(b) - 1) + (elemSize - 1) && (uintptr)Ꮡ(b, 0) <= (uintptr)Ꮡ(a, len(a) - 1) + (elemSize - 1);
-}
+// go2cs generated this placeholder — func overlaps is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // startIdx returns the index in haystack where the needle starts.
 // prerequisite: the needle must be aliased entirely inside the haystack.
