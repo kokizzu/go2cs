@@ -2011,6 +2011,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckVersionedImport() => CheckTarget("VersionedImport");
 
     [TestMethod]
+    public void CheckWritevIovecSeam() => CheckTarget("WritevIovecSeam");
+
+    [TestMethod]
     public void CheckWrittenCaptureParam() => CheckTarget("WrittenCaptureParam");
 
     [TestMethod]
