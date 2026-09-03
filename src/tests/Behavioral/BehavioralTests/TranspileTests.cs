@@ -1618,6 +1618,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSetFinalizerBridge() => CheckTarget("SetFinalizerBridge");
 
     [TestMethod]
+    public void CheckSetegidBroadcastSeam() => CheckTarget("SetegidBroadcastSeam");
+
+    [TestMethod]
     public void CheckShadowLocalOverRecvName() => CheckTarget("ShadowLocalOverRecvName");
 
     [TestMethod]

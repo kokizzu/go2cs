@@ -416,45 +416,7 @@ public static (slice<nint> gids, error err) Getgroups() {
 
 internal static @unsafe.Pointer cgo_libc_setgroups; // non-nil if cgo linked.
 
-public static error /*err*/ Setgroups(slice<nint> gids) {
-    error err = default!;
-
-    var n = (uintptr)len(gids);
-    if (n == 0) {
-        if (cgo_libc_setgroups == nil) {
-            {
-                var (_, _, e1) = AllThreadsSyscall(_SYS_setgroups, 0, 0, 0); if (e1 != 0) {
-                    err = errnoErr(e1);
-                }
-            }
-            return err;
-        }
-        {
-            var ret = cgocaller(cgo_libc_setgroups, 0, 0); if (ret != 0) {
-                err = errnoErr(((Errno)ret));
-            }
-        }
-        return err;
-    }
-    var a = new slice<_Gid_t>(len(gids));
-    foreach (var (i, v) in gids) {
-        a[i] = ((_Gid_t)(uint32)v);
-    }
-    if (cgo_libc_setgroups == nil) {
-        {
-            var (_, _, e1) = AllThreadsSyscall(_SYS_setgroups, n, (uintptr)Ꮡ(a, 0), 0); if (e1 != 0) {
-                err = errnoErr(e1);
-            }
-        }
-        return err;
-    }
-    {
-        var ret = cgocaller(cgo_libc_setgroups, n, (uintptr)Ꮡ(a, 0)); if (ret != 0) {
-            err = errnoErr(((Errno)ret));
-        }
-    }
-    return err;
-}
+// go2cs generated this placeholder — func Setgroups is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 [GoType("num:uint32")] partial struct WaitStatus;
 

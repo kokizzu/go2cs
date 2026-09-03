@@ -178,6 +178,54 @@ buys *uniformity with darwin*, not correctness that a `DllImport` lacks.
    `ENOTSUP`. That is a hard requirement of this design, not a side effect — the fix must move the
    nine wrappers *without* moving the raw API.
 
+#### AMENDMENT 2026-09-03 (increment 1, at the cut) — where `SET_RETVAL` lives, and what the `Setgroups` probe measured
+
+Two things in §2.4 above are amended by the increment that implements it. Both are recorded here
+rather than rewritten in place, because the reasoning that changed is the useful part.
+
+**(a) The errno convention lives in the SHIMS, not in `cgocaller` — ruled 2026-09-03.** Item 2 places
+`SET_RETVAL` in `cgocaller`. That is one layer too high, and Go's own structure says so:
+`cgo_libc_setegid` does not point at libc's `setegid`, it points at a **shim** in
+`runtime/cgo/linux_syscall.c` that applies the macro and then returns. The port therefore mints nine
+`[UnmanagedCallersOnly]` managed shims, each over a `[LibraryImport("libc", SetLastError = true)]`
+binding, and the nine `cgo_libc_*` hold **their** addresses. `cgocaller` stays a pure `uintptr`
+bridge — an arity-dispatched indirect call and nothing else — which is exactly what item 4 and the
+pointer-agnostic ruling want, and what §3 reuses unchanged.
+
+The second reason is mechanical and would have bitten later: a raw `delegate* unmanaged<…>` call
+**cannot use `SetLastError`**, so a `cgocaller`-side convention would have had to read
+`__errno_location()` *after* the call and hope nothing on the thread clobbered errno in the window.
+Inside a `[LibraryImport(SetLastError = true)]` shim the runtime captures errno at the call boundary
+and `Marshal.GetLastPInvokeError()` reads it back with no window at all.
+
+**(b) `Setgroups`'s call-site marshalling is CONFIRMED, and the confirming measurement corrected a
+prediction that would otherwise have shipped a hazard.** The §2.5 ruling was challenged before the
+cut on the reading that golib's `uintptr` operator on a box already pins durably
+(`EnsureStableAddress` → `PinnedBuffer.PinOnly`, explicitly *not* a statement-scoped `fixed`), which
+would have made the marshalling unnecessary and increment 1 a zero-converter-change cut. A four-arm
+probe settled it, with the movement control run FIRST so that "stable" could mean anything:
+
+| arm | what it varied | result |
+|:--|:--|:--|
+| 0 — control | an UNPINNED array across the same compacting GC | **moved** — the probe can observe movement |
+| 1 — aliasing | write through the taken address | visible in the slice: same storage, not a copy |
+| 2 — pin, box NOT held | only the `uintptr` kept, as at the call site | **address moved; the old address read zeroes** |
+| 3 — pin, box HELD | a reference to the box kept alive | address stable, value intact |
+
+Five runs, identical. The pin is real and is **scoped to the box's lifetime** — which the operator's
+own comment says — and the call site passes the *address*, never the box, so the temporary is
+unreachable before `cgocaller` is even entered, and `a` is a local whose last use is that
+expression. The array is therefore collectable during the libc call. **The ruling stands: the
+`gid_t` array is copied into unmanaged memory that lives for the whole call and is freed in a
+`finally`.** The cost of the correction is one `manualConversionFuncs` entry (`Setgroups`,
+`goosLinux`) with the converter suite and the two-seeded diff it brings; the other eight setters
+pass scalars, and no scalar has a lifetime.
+
+The general form is worth carrying beyond this design: **`(uintptr)Ꮡ(x)` handed to a native call is
+safe only while something holds the box.** That is a sibling of the managed-struct-layout class this
+corpus has been closing — the same "managed memory handed to the kernel" family, reached by
+LIFETIME rather than by LAYOUT, and invisible to any layout remedy.
+
 ### 2.5 Blast radius and what banks
 
 Nine functions in one package; one test (`TestSetuidEtc`, 21 assertions) moves from fail to pass.

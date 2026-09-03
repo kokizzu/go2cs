@@ -1345,6 +1345,20 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Fstatfs":    goosLinux,
 		"Sysinfo":    goosLinux,
 		"Adjtimex":   goosLinux,
+		// The cgocaller keystone's one displaced wrapper (DESIGN-cgocaller-keystone.md §2,
+		// increment 1). Setgroups is the only one of syscall_linux.go's nine credential setters
+		// that passes a POINTER -- &a[0] into a []_Gid_t -- and the generated body hands that to
+		// the cgo shim as `(uintptr)Ꮡ(a, 0)`. golib's uintptr operator DOES pin the storage, but
+		// for the BOX's lifetime, and the call site passes the ADDRESS rather than the box.
+		// MEASURED 2026-09-03 with a four-arm probe whose movement control fired first: keeping
+		// only the uintptr, a compacting GC moved the array and the old address read zeroes;
+		// keeping the box, the address was stable. So the slice is collectable during the libc
+		// call and the argument must live in unmanaged memory for its duration -- the same seam
+		// rule exec_unix.cs's Exec applies to argv/envp. cgocaller itself stays pointer-agnostic
+		// (it takes uintptrs and cannot tell a pointer from an integer), so the marshalling
+		// belongs at this one call site and nowhere else; the other eight setters pass scalars
+		// and need no displacement at all. cgocaller_linux_impl.cs holds the body.
+		"Setgroups": goosLinux,
 		// The OVERLAPPED family — the SUBMIT SEAM of the managed netpoller arc
 		// (docs/phase4/DESIGN-netpoll-managed-poller.md §4.3/§4.4/§4.5;
 		// syscall/windows/zsyscall_windows_wsa_impl.cs carries the full write-up). Same

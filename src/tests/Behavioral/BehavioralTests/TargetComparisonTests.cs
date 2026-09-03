@@ -1621,6 +1621,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSetFinalizerBridge() => CheckTarget("SetFinalizerBridge");
 
     [TestMethod]
+    public void CheckSetegidBroadcastSeam() => CheckTarget("SetegidBroadcastSeam");
+
+    [TestMethod]
     public void CheckShadowLocalOverRecvName() => CheckTarget("ShadowLocalOverRecvName");
 
     [TestMethod]

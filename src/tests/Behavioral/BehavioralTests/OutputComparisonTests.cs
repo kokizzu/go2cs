@@ -1556,6 +1556,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSetFinalizerBridge() => CheckTarget("SetFinalizerBridge");
 
     [TestMethod]
+    public void CheckSetegidBroadcastSeam() => CheckTarget("SetegidBroadcastSeam");
+
+    [TestMethod]
     public void CheckShadowLocalOverRecvName() => CheckTarget("ShadowLocalOverRecvName");
 
     [TestMethod]
