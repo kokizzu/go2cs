@@ -747,11 +747,14 @@ jobs:
                   continue
               }
 
-              # Build exactly as the runner does (converter go build, transpile, Release compile);
+              # Build exactly as the runner does (converter go build, transpile, Release compile).
+            # The phase list is QUOTED: a bare transpile,compile is a PowerShell ARRAY in argument
+            # position and reaches the runner as two words (`Unknown phase: transpile compile`, run
+            # 33804782714);
               # the filter is a substring, so a full project name matches itself and any project
               # that CONTAINS it -- harmless for the build, and the run below names the exe by path.
               Write-Host "==> ${p}: transpile + compile through the runner"
-              & ./src/tests/Behavioral/run-behavioral.ps1 -IgnoreDiskPreflight --filter $p --phase transpile,compile *>&1 |
+              & ./src/tests/Behavioral/run-behavioral.ps1 -IgnoreDiskPreflight --filter $p --phase 'transpile,compile' *>&1 |
                   Tee-Object -FilePath (Join-Path $art "stderr-build-$p-$goos-$rid.log")
 
               $exe = Join-Path $proj "bin/Release/net10.0/$p"
