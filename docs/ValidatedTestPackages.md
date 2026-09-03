@@ -138,11 +138,15 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 6 excluded = 209): 201 / 209 — 96.2%.** Both numbers are
+> **Against the implementable set (215 − 5 excluded = 210): 201 / 210 — 95.7%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
-> six, each with its class, mechanism and evidence, are in
-> [Excluded packages](#excluded-packages) below.
+> five, each with its class, mechanism and evidence, are in
+> [Excluded packages](#excluded-packages) below. The denominator moved 209 → 210 by owner ruling on
+> 2026-09-02: `internal/runtime/syscall` was a phantom inside it — not a member of `go list std` on
+> windows/amd64 at all, so a set derived from that listing could never subtract it — and
+> `net/http/pprof`, converted and testable and in no accounting at all, is named in the remainder
+> below.
 >
 > **Linux: 195 of 199 applicable rows validated at their Linux counts** — 22,583 matching verdicts · 159 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
 
@@ -400,7 +404,7 @@ exactly as the line above it is summed from the columns.
 ## Excluded packages
 
 The naive denominator above — 215 — counts every converted package whose Go 1.23.12 sources define
-a `Test` function. Six of those cannot be validated *at all*, and not because the work is
+a `Test` function. Five of those cannot be validated *at all*, and not because the work is
 unfinished: each is blocked by a property of the target that no amount of converter effort changes.
 The campaign's real goal is 100% of what remains, so both denominators are always reported and
 nothing disappears quietly — every exclusion is carried here with its class, its mechanism and the
@@ -436,10 +440,11 @@ is stated rather than summarized: bare `go test -count=1 os/user` on the banking
 `ok os/user 0.184s`, exit 0, with all five tests passing under `-v` — `TestGroupIds` among them.
 The oracle being clean is what the exclusion said it was waiting for, so the row banked the
 ordinary way, from that host's own shard, against that same clean baseline. Note the direction
-this moves the arithmetic: rejoining **grows** the implementable denominator 208 → 209 at the same
+this moves the arithmetic: rejoining **grows** the implementable denominator 209 → 210 at the same
 time as it grows the numerator 200 → 201, so the row is worth no more to the percentage than any
 other row — which is precisely the point of admitting it back rather than leaving a passing suite
-parked outside the count.
+parked outside the count. (Published that day as 208 → 209; striking the phantom ledger row on
+2026-09-02 lifts both ends by one. The rejoin itself is unchanged.)
 
 *Verdicts* below is the naive count the suite would contribute if it could be compared: `0` where
 the platform yields no eligible test, `—` where no baseline exists to count against. *Rooting*
@@ -448,12 +453,28 @@ recorded on that same board.
 
 | Package | Verdicts | Class | Mechanism | Rooting |
 |:--|:--:|:--:|:--|:--:|
-| `internal/runtime/syscall` | 0 | E1 | Linux/Unix-only: the converter itself refuses with *build constraints exclude all Go files* on windows/amd64 — there is not even a package to convert. | [ruling][exclusion-ruling] |
 | `internal/syscall/unix` | 0 | E1 | A Unix-only package; no `Test` declaration survives the windows/amd64 build constraints, and the pipeline reports `not-applicable` with zero errors. | [ruling][exclusion-ruling] |
 | `net/internal/socktest` | 0 | E1 | A socket-testing helper library other packages' suites import, not a package with a suite of its own — it declares no test entry points to compare. | [ruling][exclusion-ruling] |
 | `log/syslog` | 0 | E1 | There is no syslog on Windows; Go's own constraints exclude the entire suite on this target. | [ruling][exclusion-ruling] |
 | `runtime/race` | 0 | E1 | Race-detector runtime support is only testable under the `-race` instrumented build; outside it Go declares no eligible tests, and the converted corpus has no such build at all. | [ruling][exclusion-ruling] |
 | `internal/unsafeheader` | 6 | E3 | The suite's entire subject is the raw `{Data, Len, Cap}` slice/string header: it fabricates a live slice or string by writing those fields and reinterpreting the struct, and Go's memory model lets the result alias the original storage. A managed slice is not that triple and cannot be aliased into existence — all 6 verdicts fail identically, structurally rather than by defect. | [ruling][exclusion-ruling] |
+
+**`internal/runtime/syscall` was struck from this ledger on 2026-09-02, by owner ruling, because it
+was never inside the denominator it was being subtracted from.** It is not a member of
+`go list std` on windows/amd64 at all — Go's build constraints exclude every one of its files,
+which is exactly what its own E1 mechanism said (*build constraints exclude all Go files*: the
+converter refuses it, so on this target there is not even a package to convert) — and a phantom
+cannot be subtracted from a set derived from that listing. `215 − 6` therefore took one too many;
+the strict Windows-axis implementable set is `215 − 5 = 210`. Nothing else moves: no banked row
+changes, and the header's numbers are recomputed by
+[`src/check-roster-format.ps1`](../src/check-roster-format.ps1) from the table above rather than
+hand-set.
+
+**The measurement is not lost with the row.** `internal/runtime/syscall` is a genuine *Linux*-axis
+testable package — converted, with an L3 `linux/` folder under `src/core/internal/runtime/syscall`,
+and GOROOT carries `syscall_linux_test.go` — so what the strike removes is a Windows exclusion that
+was excluding nothing, not a Linux row. The E1 reading above is the Windows half of its story, and
+the row belongs to Linux's own denominator when the per-OS denominators land.
 
 Candidates that are *not* yet ruled are deliberately absent — `crypto/internal/boring/bcache`
 awaits an individual ruling on its own measurement, and until one lands it stays inside the naive
@@ -474,10 +495,11 @@ own build stamp, not the root it resolves, so the pin is stated rather than assu
 - **306** — `go list std`.
 - **219** — of those, the packages carrying at least one `func Test` declaration in their GOROOT
   sources. Counted tag-*independently* over every `*_test.go` in the package directory, which is why
-  four of the five E1 rows above — `internal/syscall/unix`, `net/internal/socktest`, `log/syslog`,
+  all four E1 rows above — `internal/syscall/unix`, `net/internal/socktest`, `log/syslog`,
   `runtime/race` — are inside this figure and then subtracted: Go's constraints select none of their
-  test files here, but their sources do define the tests. (The fifth, `internal/runtime/syscall`, is
-  not inside it at all; see the note below.) The regex admits a bare
+  test files here, but their sources do define the tests. (A fifth E1 row,
+  `internal/runtime/syscall`, was struck from the ledger on 2026-09-02 precisely because it is not
+  inside it at all — see the note beside that table, and the block below.) The regex admits a bare
   `func Test(t *testing.T)` — `internal/diff` declares one and is a banked row, so the stricter
   `^func Test[A-Z]` form would contradict the table above.
 - **215** — of those, the packages that exist in the corpus as a converted package (a production
@@ -486,47 +508,52 @@ own build stamp, not the root it resolves, so the pin is stated rather than assu
   `embed/internal/embedtest`, `internal/coverage/test`, `net/internal/cgotest`,
   `runtime/internal/wasitest`. Only `embedtest` carries a ruling today (board, 2026-08-11).
 - **201** banked · **14** remaining. The fourteen, by disposition:
-  - **5 are the ledger rows above** that are inside the 215 — `internal/syscall/unix`,
+  - **5 are the ledger rows above**, all of them inside the 215 — `internal/syscall/unix`,
     `net/internal/socktest`, `log/syslog`, `runtime/race`, `internal/unsafeheader`.
   - **3 are lane-owned** — `reflect`, `runtime`, `unique`.
   - **6 have no lane named in any dated record** — `os` (682/686), `testing` (Option 1 ruled,
     sequenced), `runtime/pprof` (capability frontier), `net/http/pprof` (5 of 15), `runtime/trace`
     (0 of 2), `crypto/internal/boring/bcache` (0 of 1, unruled).
 
-  `201 + 5 + 3 + 6 = 215`, and the nine non-ledger rows are the implementable remainder.
+  `201 + 5 + 3 + 6 = 215`, and the nine non-ledger rows are the implementable remainder — which is
+  the header's arithmetic read from the other side: `210 − 201 = 9`.
 
 **`net/http/pprof` is one of those nine and had appeared in no accounting at all** — no roster row,
-no ledger row, and absent from the coordinator tracker's list of remaining rows, which named eight.
+no ledger row, and absent from the coordinator tracker's list of remaining rows, which named eight
+until this ruling and names nine now.
 It is converted (`src/core/net/http/pprof`), declares four `func Test`, and was measured **5 of 15**
 on 2026-08-14 (board, *Scout batch 2*): `TestHandlers` fails with seven subtests
 infrastructure-erroring, `TestDeltaProfile` skips where Go passes, and profile collection has no
 managed body — the same capability frontier `runtime/pprof` and `runtime/trace` sit behind. It is
 named here so the remainder is nine rather than eight.
 
-**⚠ One ledger row sits OUTSIDE the naive denominator, and the subtraction above therefore carries
-it wrongly.** `internal/runtime/syscall` is **not in `go list std` on windows/amd64 at all** — Go's
-build constraints exclude every file, which is what its own E1 mechanism says — so it cannot be a
-member of a set derived from that listing, and `215 − 6` subtracts one non-member. Strictly, five of
-the six exclusions are inside the 215 and the Windows-axis implementable set is **210**, giving
-201 / 210 — 95.7%. The header is left as it stands, and the row is left in the ledger, deliberately:
+**⚠ One ledger row sat OUTSIDE the naive denominator, and the owner ruling of 2026-09-02 struck
+it.** `internal/runtime/syscall` is **not in `go list std` on windows/amd64 at all** — Go's build
+constraints exclude every file, which is what its own E1 mechanism said — so it could not be a
+member of a set derived from that listing, and `215 − 6` subtracted one non-member. Five exclusions
+are inside the 215, the strict Windows-axis implementable set is **210**, and the header above now
+reports 201 / 210 — 95.7% — recomputed by the format guard from the corrected ledger, not
+hand-set. The struck row's Linux-axis measurement is kept in the note beside the ledger table.
 
-- The 215 is reachable by two live memberships that differ by exactly one swap, and both land on
-  215. The board's recorded derivation (2026-08-17) counted **`src/core` directories** whose GOROOT
+Why the phantom survived weeks of arithmetic that "came out right": the 215 is reachable by two
+live memberships that differ by exactly one swap, and both land on 215.
+
+- The board's recorded derivation (2026-08-17) counted **`src/core` directories** whose GOROOT
   sources define a `Test` — which counts `internal/runtime/syscall` **in** (it is converted, with an
   L3 `linux/` folder, and GOROOT carries `syscall_linux_test.go`) and then subtracts hand-owned
   `testing`: *"216 … minus hand-owned `testing` that is the roster header's 215"*. The derivation
   above counts **`go list std` on this target** — which counts `testing` **in** (it is an ordinary
   member with 59 `func Test` and a `.csproj`) and `internal/runtime/syscall` **out**. Under the
-  first membership `215 − 6 = 209` is exact; under the second it is one too many.
-- The campaign's own accounting now follows the second: the owner ruling of 2026-08-30 puts
-  `testing` on the road to a *validating* row (Option 1 — bucket D banks), and a row that can bank
-  must be inside the denominator it banks against.
-- Which correction to take — strike the row from the **Windows** ledger and re-derive the header, or
-  keep it and teach `src/check-roster-format.ps1` to subtract only the ledger rows inside the naive
-  denominator (its `implementable = testable − ledger.Count` currently assumes all of them are) — is
-  a ruling, not a docs fix, and it moves a published headline. It is **owed to the owner**; nothing
-  here changes a banked row or a stated count. Note also that the row is a real *Linux*-axis
-  testable package, so striking it from the Windows ledger must not lose the measurement.
+  first membership `215 − 6 = 209` was exact; under the second it was one too many.
+- The campaign's own accounting follows the second, and the owner ruling of 2026-08-30 is why: it
+  puts `testing` on the road to a *validating* row (Option 1 — bucket D banks), and a row that can
+  bank must be inside the denominator it banks against.
+- Two corrections were available — strike the row from the **Windows** ledger and re-derive the
+  header, or keep it and teach `src/check-roster-format.ps1` to subtract only the ledger rows inside
+  the naive denominator (its `implementable = testable − ledger.Count` assumes all of them are). The
+  owner took the first. It moves a published headline, which is why it was owed to a ruling rather
+  than taken as a docs fix; the guard needed no change at all, because that subtraction is exact
+  once the ledger holds only members.
 
 [exclusion-ruling]: phase4/BOARD-next-validation-candidates.md#ruling-owner-2026-08-25--the-campaigns-terminal-denominator-is-the-implementable-test-set-with-the-excluded-packages-fully-disclosed-each-with-its-why
 
