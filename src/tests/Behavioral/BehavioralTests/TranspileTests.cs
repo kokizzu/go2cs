@@ -1903,6 +1903,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckUnicodeConsoleOutput() => CheckTarget("UnicodeConsoleOutput");
 
     [TestMethod]
+    public void CheckUnixAbstractAddrName() => CheckTarget("UnixAbstractAddrName");
+
+    [TestMethod]
     public void CheckUnnamedMapNilConversion() => CheckTarget("UnnamedMapNilConversion");
 
     [TestMethod]

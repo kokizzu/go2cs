@@ -368,7 +368,12 @@ partial class syscall_package
     // Go's anyToSockaddr, arm for arm, over a native image instead of a reinterpreted managed
     // struct. The one definition of that decode: Getsockname, Getpeername, Accept4 and
     // anyToSockaddr all land here.
-    private static unsafe (Sockaddr, error) readNativeSockaddr(byte* buffer, _Socklen len) {
+    // `capacity` is how many bytes of `buffer` the CALLER guarantees are readable and zero-
+    // initialised past what the kernel wrote. It is NOT addrlen, and the difference is the
+    // whole AF_UNIX arm below: Go reads sun_path as a FIXED 108-byte array and ignores the
+    // reported length entirely, so a bound taken from addrlen silently changes the answer for
+    // an abstract socket, whose addrlen is 2.
+    private static unsafe (Sockaddr, error) readNativeSockaddr(byte* buffer, _Socklen len, nint capacity) {
         uint16 family = *(uint16*)buffer;
 
         if (family == AF_NETLINK) {
@@ -410,7 +415,14 @@ partial class syscall_package
             // Go rewrites a leading NUL as '@' for textual display of an abstract socket and then
             // reads the name up to the first NUL, bounded by len(Path) = 108; the bound here is the
             // same, clipped to the length the kernel reported.
-            nint pathMax = (nint)(uint32)len - 2;
+            // MEASURED against `go run` on Linux (autobound abstract socket): Go answers "@"
+            // -- name length 1, first byte 64 -- where bounding on the reported length answers
+            // the empty string. The kernel reports addrlen == 2 for such a socket, so a bound
+            // of len-2 is ZERO: the '@' rewrite is skipped and the scan stops before it starts.
+            // Go's own arm never consults addrlen here -- it rewrites Path[0] and scans to the
+            // first NUL over the fixed 108-byte array -- so the bound has to come from the
+            // BUFFER. unixsock_test.go's TestUnix{,gram}ConnLocalAndRemoteNames are the rows.
+            nint pathMax = capacity - 2;
 
             if (pathMax > 108) {
                 pathMax = 108;
@@ -510,7 +522,7 @@ partial class syscall_package
             return (default!, errnoErr(e1));
         }
 
-        return readNativeSockaddr(buffer, addrlen);
+        return readNativeSockaddr(buffer, addrlen, nativeSockaddrLen);
     }
 
     public static unsafe (Sockaddr sa, error err) Getpeername(nint fd) {
@@ -523,7 +535,7 @@ partial class syscall_package
             return (default!, errnoErr(e1));
         }
 
-        return readNativeSockaddr(buffer, addrlen);
+        return readNativeSockaddr(buffer, addrlen, nativeSockaddrLen);
     }
 
     // Recvfrom is the FIFTH confirmed instance of the kernel-writes-over-a-managed-array class
@@ -583,7 +595,7 @@ partial class syscall_package
             return ((nint)r1, default!, default!);
         }
 
-        var (sa, err) = readNativeSockaddr(buffer, addrlen);
+        var (sa, err) = readNativeSockaddr(buffer, addrlen, nativeSockaddrLen);
         return ((nint)r1, sa, err);
     }
 
@@ -858,7 +870,7 @@ partial class syscall_package
             throw panic("RawSockaddrAny too small");
         }
 
-        var (sa, err) = readNativeSockaddr(buffer, addrlen);
+        var (sa, err) = readNativeSockaddr(buffer, addrlen, nativeSockaddrLen);
 
         if (err != default!) {
             Close(nfd);
@@ -896,7 +908,7 @@ partial class syscall_package
             buffer[16 + i] = (byte)rsa.Pad[i];
         }
 
-        return readNativeSockaddr(buffer, SizeofSockaddrAny);
+        return readNativeSockaddr(buffer, SizeofSockaddrAny, nativeSockaddrLen);
     }
 
     // ---- the datagram seam: what internal/syscall/unix's hand-own consumes ------------------------
@@ -929,7 +941,7 @@ partial class syscall_package
     // datagram that decodes to another family is a kernel contract violation on an AF_INET socket,
     // and is reported rather than silently ignored.
     public static unsafe error GoReadNativeSockaddrInet4(byte* buffer, _Socklen len, ж<SockaddrInet4> into) {
-        var (sa, err) = readNativeSockaddr(buffer, len);
+        var (sa, err) = readNativeSockaddr(buffer, len, (nint)(uint32)len);
 
         if (err != default!) {
             return err;
@@ -945,7 +957,7 @@ partial class syscall_package
     }
 
     public static unsafe error GoReadNativeSockaddrInet6(byte* buffer, _Socklen len, ж<SockaddrInet6> into) {
-        var (sa, err) = readNativeSockaddr(buffer, len);
+        var (sa, err) = readNativeSockaddr(buffer, len, (nint)(uint32)len);
 
         if (err != default!) {
             return err;
