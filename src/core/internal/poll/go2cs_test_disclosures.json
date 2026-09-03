@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "disclosures": [
+    {
+      "name": "TestSplicePipePool",
+      "class": "codegen-liveness",
+      "signature": "leaked descriptors: ",
+      "reason": "The test drops its references and asserts their collection. Under the CLR's frame liveness the pipes' slice-header copies \u2014 the `append` result and JIT spill slots of the test's OWN frame, with no source-level name \u2014 stay reported live where Go's precise stack maps report them dead, so the pipes stay reachable, their finalizers never become due and destroyPipe never closes the descriptors. Measured by heap ROOT PATH (dotnet-dump gcroot: three frame slots of TestSplicePipePool \u2192 the `ps` backing array \u2192 all 64 pipe boxes; sync.Pool's chains EMPTY, so poolCleanup released everything it cached; finalizers unreached rather than broken), identical at Debug and at Release+TC0 (zero verdicts moved, identical descriptor set), and UNCHANGED when the only emission-level copy \u2014 the range enumeration \u2014 was removed (64 boxes before and after, the null controlled by the built assembly postdating the patched source). Not an internal/poll defect and not reachable by an emission change; the managed frame cannot satisfy the assertion at the language level. Same conservatism as sync's TestOnceXGC and TestPoolGC. SCOPE NOTE: the signature is the failure's message prefix, and the descriptor numbers vary per run, so a PARTIAL leak would also match it \u2014 unlike TestPoolGC, which pins an exact count. A real retention regression in the pipe pool would therefore hide behind this entry; the compensating check is that sync.Pool's chains were measured EMPTY here, so pool retention is separately observable."
+    }
+  ]
+}

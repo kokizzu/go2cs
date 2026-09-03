@@ -22547,5 +22547,148 @@ not in `run-validated-sweep.ps1`'s `$longTimeouts`, and on this host at Debug it
 way `net` (40m) and `crypto/tls` (30m) already have one. Not added here -- a floor is a change to the
 shared sweep and belongs to whoever owns the Release-config flip that is about to re-time every row
 anyway -- but the number is recorded so the next lane meets the measurement instead of the surprise.
+## 2026-09-03 — `internal/poll` validates on Linux — `TestSplicePipePool` disclosed `codegen-liveness`, with the heap root path verbatim
+
+`internal/poll` is a Windows-banked row (19 · 0). On Linux Go compiles a different test set: the
+COM-port and WSASocket rows disappear and `splice_linux_test.go` appears, so the Linux arithmetic is
+its own. Every Linux verdict matches `go test` except one, and that one is disclosed rather than
+tolerated.
+
+### The divergence
+
+`TestSplicePipePool` allocates 64 splice pipes, returns them all to `sync.Pool`, drops the slice
+that held them, then GCs in a loop and asserts every write descriptor has been closed by the pipes'
+finalizers. Under the CLR none ever is: the loop spins until the test's own deadline and reports
+all 64 descriptors leaked.
+
+### The root, measured rather than argued
+
+A heap dump taken while the loop was spinning, `gcroot` on a leaked `splicePipe` box (Release
+publish, `dotnet-dump`) — **verbatim**:
+
+```
+Thread 6e5c:
+    7eef53ffe440 55bf47f64a84 go.internal.poll_test_package.TestSplicePipePool(go.`1<T>)
+        rbp-270: 00007eef53ffe5a0
+          -> 7eef8e89ba48     go.<go.internal.poll_package+splicePipe>[]
+          -> 7eef8e8974d0     go.StandardBox<go.internal.poll_package+splicePipe>
+
+        rbp-138: 00007eef53ffe6d8
+          -> 7eef8e89ba48     go.<go.internal.poll_package+splicePipe>[]
+          -> 7eef8e8974d0     go.StandardBox<go.internal.poll_package+splicePipe>
+
+        rbp-b0: 00007eef53ffe760
+          -> 7eef8e89ba48     go.<go.internal.poll_package+splicePipe>[]
+          -> 7eef8e8974d0     go.StandardBox<go.internal.poll_package+splicePipe>
+
+Found 3 unique roots.
+```
+
+Every root is a **frame slot of the test's own method** — three of them, all pointing at the one
+`splicePipe[]` backing array, which holds all 64 boxes. The named local `ps` is assigned `default!`
+at its source line, so none of the three is `ps`; they are slice-header copies — the `append`
+result and JIT spill temps — with no source-level name to null. Go's precise stack maps report
+those dead at that point; the CLR reports them live. The pipes therefore stay reachable, their
+finalizers never become due, and `destroyPipe` never runs.
+
+### Three controls, so the attribution is a measurement
+
+1. **`sync.Pool` is not the retainer.** Its chains dumped **empty** — `poolCleanup` had already
+   released everything it cached. Pool retention stays separately observable, which matters for the
+   scope note below.
+2. **The JIT's optimization level does not reach it.** Debug vs Release+TC0: **zero** verdicts
+   moved, identical descriptor set.
+3. **The one emission-level copy that could be nulled is not a root.** The converter's range
+   enumeration over `ps` (`foreach (var (_, vᴛ1) in ps)`) was replaced with an index loop — one
+   axis, everything else untouched — and the live count was **unchanged to the object**: 64 boxes,
+   67 sentinels, identical to baseline. The null was controlled by confirming the built assembly
+   postdated the patched source, so it is a measurement and not an unapplied patch.
+
+Control 3 falsifies "the converter's enumeration keeps it alive" to the object and leaves the
+managed frame itself — the same conservatism `sync`'s `TestOnceXGC` and `TestPoolGC` already
+disclose, and the same class string: **`codegen-liveness`** (not `gc-liveness`; the corpus class is
+`codegen-liveness` and that is what the sweep matches).
+
+### The disclosure's scope note, stated rather than buried
+
+The pinned signature is `leaked descriptors: `, the failure's message prefix. The descriptor
+numbers vary per run, so — unlike `TestPoolGC`, which pins an exact count — **a partial leak would
+match this entry too**. A real retention regression in the pipe pool could hide behind it. The
+compensating observation is control 1: the pool's chains were measured empty, so pool retention is
+separately observable and a regression there would show as something other than this signature.
+The note is carried inside the manifest entry's own `reason`, where the next reader stands.
+
+### A measured property worth carrying: this row's wall is a function of the BUDGET, not of the work
+
+`TestSplicePipePool` derives its own timeout from `t.Deadline()` — `timeout = deadline.Sub(now)`
+less 10% — so when it cannot succeed it consumes **90% of whatever package deadline it is given**
+and nothing runs after it (it is alphabetically last in this suite). Two points, measured:
+
+| `-test-timeout` | `TestSplicePipePool` elapsed | package total | the other 12 verdicts |
+|:--|--:|--:|--:|
+| 60m | 3234.5 s | 3240.6 s | 6.1 s |
+| 15m | 804.6 s | 810.6 s | 6.1 s |
+
+(The other twelve verdicts run *before* it and cost 6.1 s on both points; nothing measurable runs
+after it. The column is labelled for what was measured — the suite minus this one test — rather
+than for where it sits in the ordering.)
+
+Total ≈ 0.9 × T + 6 s, on both points. The consequence is the opposite of the usual one: **this row
+needs no `$longTimeouts` floor at all.** A floor would not protect it — it cannot time out, because
+it always finishes inside 90% of its budget — it would only make the row cost that much wall on
+every sweep. At the sweep's default 10m the row costs ~9 min; at a 60m floor it would cost ~54 min
+for exactly the same verdicts. The general shape is worth naming: **a test that sizes itself from
+`t.Deadline()` converts a deadline into a duration**, so the budget-vs-wall reasoning the timeout
+table encodes runs backwards for it — bigger budget, longer row, same result.
+
+### The arithmetic, and a correction to the figure it was commissioned at
+
+Two bare sweeps — no `-TestConfig`, no `-TestTimeout`, so the row publishes under the configuration
+of record with per-row annotations respected, which is what makes a sweep bank-eligible:
+
+| run | tree | result | wall |
+|:--|:--|:--|--:|
+| control | `f3a6e6ac8` (pre-train-14 base + this disclosure) | `CVAC internal/poll 12 (validated)` | 726 s |
+| bank | `7abd9e442` (rebased on landed master `8c15217c8`) | `CVAC internal/poll 12 (validated)` | 717 s |
+
+Identical. Train 14 carried converter, golib, `go2cs-gen` and `run-validated-sweep.ps1` changes, so
+the bank was re-taken at the merge result rather than inherited from the base — and it moved
+nothing for this row. Both comparison records read `matched: true`, `status: validated`,
+`configuration: Release`, `tiered: false`, and
+`oracleGoVersion: "go version go1.23.12 linux/amd64"`.
+
+Thirteen Linux verdicts: **twelve pass, one disclosed** — so the annotation is `linux: 12 + 1`. The
+bank was commissioned at "13 with 1 disclosed"; that counts the disclosed verdict into the matched
+half. The converter's own README badge arithmetic agrees independently — it rewrote itself to
+`12/13` during the sweep. The roster header moves 195 → **196** of 199 applicable rows, 22,583 →
+**22,595** matching verdicts, 159 → **160** disclosed; the format guard computed all three
+independently (551 checks pass), and the prediction recorded before running it held on all three.
+
+### Three artifacts this bank does NOT produce, each by derivation rather than by omission
+
+A Linux-axis bank is not a Windows bank with a different number, and three of the usual artifacts
+are answered by the corpus rather than by doing them:
+
+1. **Committed test sources.** Corpus-wide: **22** committed `*_windows_test.cs`, **0**
+   `*_linux_test.cs` or `*_unix_test.cs`. The committed emission is the Windows record exactly as
+   the Tests and Disclosed columns are. `internal/poll`'s test set genuinely differs by GOOS — its
+   `error_test.cs` alone is 30 lines shorter under Linux — so committing the Linux flavour would
+   overwrite the Windows row's own reproducible sources.
+2. **The proof page.** **0** of the pages under `docs/validation/current/` carry a Linux section;
+   the only two files mentioning "linux" do so in Windows-run test *names*. The Linux arithmetic's
+   home is the roster annotation, which is where this bank put it.
+3. **A `$longTimeouts` floor.** Measured above: the row cannot time out, so a floor cannot protect
+   it and would only make it cost ~54 min a sweep instead of ~9.
+
+A fourth artifact belongs with (2) and is easy to bank by accident: **the package README badge**. A
+Linux sweep rewrote `src/core/internal/poll/README.md` from the Windows record `19/19` to the Linux
+`12/13`. It composes from the committed proof page's counts, so it is a Windows artifact too and is
+restored, not banked, from a Linux host.
+
+*One correction to the doctrine's own wording while it is in view: the pipeline's comparison record
+for this row is a FILE, `go2cs_test_comparison.json`, not the `go2cs_test_comparison/results.json`
+directory the tail-reading rules name. The rules still apply; the path does not.*
+
+-- C1
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
