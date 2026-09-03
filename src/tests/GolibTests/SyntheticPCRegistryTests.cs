@@ -121,9 +121,13 @@ namespace GolibTests
         [TestMethod]
         public void APcOutsideTheRangeResolvesToNothing()
         {
-            // The negative control. Zero is the value the old `return default` produced, so a registry
-            // that answered it with a function would re-create the exact defect this replaces.
-            foreach (nuint outside in new nuint[] { 0, 1, 8, 0x1000, 0x7FFF_FFFF })
+            // The negative control, and it carries a second duty since the read-back landed: these
+            // are the shapes of the corpus's OTHER two token spaces, and the registry must not answer
+            // for either. `1, 2, 8` are caller-frame tokens (`s_callerRecords.Count`, small integers)
+            // and must keep routing to runtime's caller table; `0x7FFF_FFFF` is managed-pointer
+            // shaped (a 32-bit hash). Zero is the value the old `return default` produced, so a
+            // registry answering it with a function would re-create the exact defect this replaces.
+            foreach (nuint outside in new nuint[] { 0, 1, 2, 8, 0x1000, 0x7FFF_FFFF, uint.MaxValue })
             {
                 Assert.IsNull(GoSyntheticPC.Resolve(outside), $"0x{outside:X} is not a synthetic PC");
                 Assert.IsFalse(GoSyntheticPC.IsSynthetic(outside), $"0x{outside:X} is not a synthetic PC");
@@ -137,17 +141,27 @@ namespace GolibTests
             // on arm64 — so a caller that dereferences one faults immediately instead of reading a
             // stranger's memory. The property is ASSERTED rather than demonstrated on purpose:
             // demonstrating it means faulting the test host.
+            // 64-bit only, and the refusal below is the other half of the same rule: an earlier
+            // draft narrowed the base to 0xF000_0000 on a 32-bit runtime, where it OVERLAPS
+            // ManagedPointerTokens (an unconstrained 32-bit hash), so a resolver consulting both
+            // could answer a pointer token as a function. The mint refuses rather than narrowing.
+            if (IntPtr.Size != 8)
+            {
+                Assert.ThrowsException<PlatformNotSupportedException>(() => GoSyntheticPC.Of(DemoFn),
+                    "a 32-bit runtime must be refused at the mint, not given a narrowed range");
+                return;
+            }
+
             nuint pc = GoSyntheticPC.Of(DemoFn);
 
-            if (IntPtr.Size == 8)
-            {
-                Assert.IsTrue(pc >= unchecked((nuint)0xFFFF_8000_0000_0000UL),
-                    "a 64-bit token must sit in the non-user half of the address space");
-            }
-            else
-            {
-                Assert.IsTrue(pc >= 0xF000_0000U, "a 32-bit token must sit above any managed code");
-            }
+            Assert.IsTrue(pc >= unchecked((nuint)0xFFFF_8000_0000_0000UL),
+                "a token must sit in the non-user half of the address space");
+
+            // Disjoint from the corpus's other two token spaces BY CONSTRUCTION, which is what lets
+            // one resolver answer for all three: caller frames are `s_callerRecords.Count` (small
+            // integers) and managed pointers are 32-bit hashes. Both are below 2^32; a token is not.
+            Assert.IsTrue(pc > uint.MaxValue,
+                "a token must not collide with the caller-frame or managed-pointer token spaces");
         }
 
         [TestMethod]
