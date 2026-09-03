@@ -216,7 +216,7 @@ delegate type, so "the first to intern would answer `In(0).Len()` for both".
 
 **So the positional model can already express per-element cargo. The slots are not the gap.**
 
-### The gap is that each container kind made its own local choice
+### The measured asymmetry
 
 | kind | CONSTRUCTED route | DECLARED route | identity | who carries the cargo |
 |:--|:--|:--|:--|:--|
@@ -225,9 +225,25 @@ delegate type, so "the first to intern would answer `In(0).Len()` for both".
 | map key | `map[[2]int]int`, `Key().Len()`=2 | `map[[]int]int`, `Key().Len()`=0 | **FALSE** | **constructed only** |
 | func param | `In(0).Len()`=0 both | — | TRUE | **neither** (`FuncOf` never fills the slot) |
 
-Three kinds, three different failures, and **pointer and map key are mirror images** — one carries on
-the declared route, the other on the constructed route. That is not one bug with three symptoms; it
-is the absence of a RULE, with each site having chosen locally and reasonably.
+### Why — three mechanisms, three coverages, not four choices
+
+This table first read as four sites each having chosen locally, which is how it was recorded.
+**That was a description standing in for a cause.** There are three sources of cargo, each documented,
+each with its own coverage, and every asymmetry above is an intersection:
+
+| source | covers | so |
+|:--|:--|:--|
+| `abi.TypeOf` measures from a value | *"an ARRAY value and a POINTER's pointee ONLY"* (its declaration) | pointer's DECLARED route carries; slice's does not |
+| constructors receive `ΔType`s | `ArrayOf`, `PointerTo`, `MapOf` | map key's CONSTRUCTED route carries |
+| `fieldDimsCargo` stamps a field | pointer, map — **not slice, not chan** (its walk has no slice case) | field-derived slices carry nothing |
+
+Nobody chose four times. Pointer is covered by the value-measuring source and not the field one; map
+key by the constructor source; slice and chan by none. **Pointer and map key look like mirror images
+because they are covered by DIFFERENT sources, not because two authors disagreed.**
+
+The practical consequence is that the repair is two-sided: golib alone cannot fix a kind whose
+converter-side source never stamps it, and the converter alone cannot fix a renderer that drops what
+it is handed.
 
 Two consequences fall out:
 
@@ -395,10 +411,138 @@ landing.
 
 Gates, because this is golib on the boxing path: `go2cs.slnx`, GolibTests, the five
 largest-reflect-importer canaries derived at gate time (`crypto/tls`, `net/http`, `go/types`,
-`encoding/json`, `net` — derived 2026-09-03, control `encoding/json` IN / `cmp` OUT), the behavioral
+`encoding/json`, `net` — derived 2026-09-03 from PARSED IMPORTS, controls `encoding/json` IN / `cmp` OUT /
+`go/doc/comment` OUT -- the third is load-bearing, see §10.3), the behavioral
 **Output** phase (not only Compile — a `%T` change shows first in the stdout comparisons against
 `go run`), the `nistec` **cost canary** against its recorded wall, and union CNR.
 
 Rows: `TestDeepEqualAllocs` (2 — fix-then-disclose, the family entry earned from its OWN
 results-file signature, never from resemblance), `TestFuncLayout` (2), `TestTypes` (1, gated on BOTH
 increments).
+
+## 10. Increment A, measured (2026-09-03)
+
+Increment A is the `Elem()` hand-down fix: slices and channels leave the *consuming* arm and pass
+their dims down unshifted beside pointers and maps, and the converter stamps a slice's and a
+channel's element dims at struct-field positions.
+
+### 10.1 The corpus footprint is one stamp, on a real production shape
+
+A two-seeded diff — both roots seeded at 3679 `.cs`, both emissions writing 1656 fresh files, PRE
+built from `e8c078637` and CUT from `b3caf3fa0` — differs in **two paths**:
+
+```
+internal/trace/internal/oldtrace/parser.cs        + [GoArrayDims(524288)]
+internal/trace/internal/oldtrace/package_info.cs  (its position-map consequence)
+```
+
+The stamped field is `buckets []*[eventsBucketSize]Event` — a slice of pointer to array, the shape
+`elementArrayDims` unwraps. Every hunk is the predicted class and there is no hunk outside it.
+
+The part worth recording is not the size but the **location**: every prior instance of this defect
+was in a probe or guard written to find it. `internal/trace`'s event buckets are production corpus
+code, so the collapse was reachable outside the shapes built to provoke it.
+
+### 10.2 The production diff is structurally blind to three banked rows
+
+`-stdlib` never writes test emission, so the two-seeded diff cannot see a stamp that lands in a
+`_test.go`-derived file. A syntactic census (`go/parser`, struct-field positions only —
+`visitStructType.go:401` is the sole call site of `emitFieldDimsAttributes`) over all 202 banked rows
+finds four test-side sites in three of them:
+
+| row | file | field | type |
+|:--|:--|:--|:--|
+| `debug/dwarf` | `entry_test.go:45`, `:135` | `ranges` | `[][2]uint64` |
+| `debug/elf` | `file_test.go:550` | `pcRanges` | `[][2]uint64` |
+| `net` | `iprawsock_test.go:132` | `argLists` | `[][2]string` |
+
+The census is a deliberately **independent derivation** — syntax, not the converter's `go/types`
+predicate — and over production files it reproduces §10.1's single site exactly, at the line the
+emission stamped. Positive control fires on that site; negative control (`unicode/utf8`) silent.
+
+`debug/dwarf` then closed the loop end to end: the census predicted two stamps, the emission
+delivered exactly two `[GoArrayDims(2)]`, and the row swept **40/40**, its banked count.
+
+### 10.3 The importer derivation must parse imports, not match text
+
+The canary set in §9 was first derived by a line-anchored grep for `"reflect"`. It returned 88 banked
+importers **topped by `go/doc/comment` at 10059 verdicts** — a package whose `std.go:35` carries
+`"reflect",` as a *list element*, and which CLAUDE.md names as exactly this over-match.
+
+Both controls in place at the time — `encoding/json` IN, `cmp` OUT — **passed**, because both vary
+the axis "imports it or doesn't" and neither varies "mentions it as data". A control only tests the
+axis it varies.
+
+Re-derived from parsed import declarations: 86 rows. The grep had wrongly admitted two, both `go/*`
+packages carrying stdlib name lists — `go/doc/comment` and `go/internal/gccgoimporter`. The third
+control pins the axis the first pair could not see, and is why §9 now names three.
+
+## 11. Increment B, PREDICTED before it is cut (2026-09-03)
+
+Recorded before the measurement so it can be wrong in public.
+
+The parked `SliceOfArrayTypeName` guard exercises **value** sites — `reflect.TypeOf([][6]uint8{{}})`
+on composite literals — not struct fields. Increment A's converter half stamps only field positions
+(`visitStructType.go:401` is `emitFieldDimsAttributes`' sole call site), so **A alone should fix none
+of that guard's previously-red slice/chan rows.** A's golib half (the `Elem()` hand-down and the
+name-threading through the slice/chan arms) is *necessary* machinery but has nothing to carry until B
+seeds the value site.
+
+Per-row prediction, A-only:
+
+| row | predicted | why |
+|:--|:--|:--|
+| `[6]uint8`, `[2][3]int` | PASS | top-level arrays already carry dims via `= new(N)` |
+| `[]Grid` | PASS | a DEFINED array type renders by name; no dims needed |
+| `[][6]uint8`, `[][3]int`, `[][2][3]int` | FAIL | value-site seeding is B |
+| `[]*[4]byte`, `chan [3]int` | FAIL | same |
+| `map[[2]int][]int` | FAIL | same, key side |
+| `Elem().String()`/`Len()` line | FAIL | the type-side question B exists to answer |
+
+So the two parked guards stay parked through A by design, and land with B. If A turns out to fix a
+slice/chan row here, the prediction is wrong in an interesting way — it would mean a value-site route
+already seeds dims somewhere this design has not accounted for, and that route must be found and
+written down before B is cut on an assumption it contradicts.
+
+### 10.4 The gate ledger at the seating tip (2026-09-03)
+
+Increment A was rebased onto master `9bb83df3e` as `claude/reflect-cargo-inc1-m18`: the two source
+conflicts were one duplicate commit (`919662458` == master's `e8800ae2a`, the `valueMethodName` seat)
+dropped by `rebase --onto`; the doc's add/add resolved to this text. Verified by arithmetic — 11 commits
+over master, the doc byte-equal to the posted tip's, A's applied delta identical to `b3caf3fa0`'s over
+its nine non-doc files.
+
+**Canaries, all seven rows swept on R-LAPTOP with the increment in place** (verdicts read from the
+proof pages the sweep rewrites, never from the run log):
+
+| row | swept | banked | reading |
+|:--|--:|--:|:--|
+| `debug/dwarf` | 40 · 0 | 40 | census hit — its two predicted `[GoArrayDims(2)]` landed, `entry_test.go:45`, `:135` |
+| `debug/elf` | 31 · 0 | 31 | census hit |
+| `encoding/json` | 491 · 0 | 491 | canary |
+| `go/types` | 557 · 0 | 557 | canary |
+| `net` | 472 · 2 | 472 | canary and census hit — the one predicted stamp landed on `argLists [][2]string` |
+| `crypto/tls` | 400 · 2 | 3643 | validated on the sweep's host-limit arm: 3643 − the 3243-verdict `TestBogoSuite` block; the banked count stands |
+| `net/http` | died | 1343 | **unreadable on any host today** — see below |
+
+`net/http` was attempted twice on this host at this tip and died mid-stream both times (656 s at
+950/1345; 286 s at 791/1345) on `crypto/aes: invalid buffer overlap` in `gcm.cs:361 counterCrypt` beneath
+the TLS 1.3 client's `readServerCertificate`, on a goroutine of a test built to race handshakes — the i7's
+own signature, four deaths across two host classes. That is a corpus defect in the AES-GCM overlap guard
+under concurrent handshakes, **owned by C2** (COORD, 2026-09-03), on a path that touches no descriptor
+cargo: **not attributable to A**, and by the same ruling not a gate A waits on. The four-death table and
+the preserved records are on the mailbox.
+
+**Gates at `2720a3977`:** converter suite `ok 208.289s` (a first run reported `FAIL` at 1835 s — a
+laptop suspension spanning the run consumed its own 30-minute deadline; re-run awake, green).
+Dotnet gates, same tip: G1 stdlib solution 0 errors across 307 projects (windows default); G2 GolibTests 507 passed / 3 failed, the three identity-verified as `CreateSymbolicLink` refusals
+("a required privilege is not held by the client") in `FixtureLinkStagingTests` — a host privilege,
+unchanged from the lane tip, not code; G3 behavioral OUTPUT on
+`FieldDimsCargo` PASS — Transpile, Compile, Target and Output all green ([Output] running C# vs Go, comparing exit code + stdout... 1 compared, 0 failed PASS (1 pr); G4 reflect's `-tests` assembly convert and build exit 0, `reflect.tests.dll` written fresh at 09:23:58 (converter built by the behavioral runner at 09:20 from this tip); G5 `nistec` cost canary as a same-host
+A/B, PRE (`e8c078637`) PASS 2195 at 174 s cold / 145 s warm vs A PASS 2195 at 90 s warm — A faster than PRE on both readings, so no cost regression; a third A reading is in flight to characterize the favorable delta, which is more likely variance than merit.
+
+> **Amended 2026-09-03, third `nistec` reading.** A second warm A run read **154 s** against the
+> first's 90 s, with PRE at 145 s warm / 174 s cold. The spread *within* A (64 s) exceeds the A-vs-PRE
+> gap, so the "A faster on both readings" sentence above was the fast tail of run-to-run variance, not
+> merit. Corrected characterization: **A is within noise of PRE; no cost regression** — the gate's
+> verdict is unchanged, its wording was over-read. Three readings, one host, all warm but the first PRE.
