@@ -182,6 +182,39 @@ owes its own guard:
 | 3 | Two-seeded darwin diff shows more than the placeholder swap | the registration reached further than intended; re-scope before landing |
 | 4 | `walltime` also moves | a bundling error — §2.2 keeps it out deliberately |
 
+### CORRECTION 2026-09-03 (C2, after the cut) — Tier A was already built, and §5's prediction was measured WRONG
+
+Appended rather than rewritten: this is a seated record, and a prediction is only worth having if it
+cannot be edited after the result. Both corrections were self-caught, one before the cut and one by it.
+
+**(a) Tier A is not work — it already exists.** `src/tests/GolibTests/MonotonicClockTests.cs` carries
+exactly the three properties §4 proposed: `MonotonicClockNeverGoesBackwards`,
+`MonotonicClockAdvancesOverRealTime` (a 20 ms floor *and* a 5 s ceiling) and
+`MonotonicClockHasSubSecondResolution`. It is not `Compile-Remove`d in `GolibTests.csproj`, so it
+compiles under every `$(GoTargetOS)` and is exercised by the Windows and Linux lanes on every run.
+**The only NEW guard work in increment 1 was Tier B**, the wiring — which §4 had already identified as
+the tier that catches the regression. Tier A is a citation, not a deliverable.
+
+**(b) §5's prediction was wrong, and the measurement says how.** §5 predicted the darwin diff would
+touch one path and that **no `package_info.cs` would move**, reasoning that "a registration adds no
+assembly-level record". That is true of the RECORD sections and false here, for two reasons §5 did not
+consider:
+
+* Go's `nanotime1` body declares an anonymous result struct that the converter lifts as
+  `nanotime1_r`. The body is its **only** source, so displacing the body removes the lift — and
+  `package_info.cs` carries that lift's declaration in its **TypeAccessibility** section.
+* Shrinking the emitted file **re-encodes its `GoPositionMap`**.
+
+Measured: windows **0**, linux **0**, darwin **2** — `sys_darwin.cs` (−22/+1) and `package_info.cs`
+(−2/+1). A revised prediction naming exactly those two paths was recorded before the battery reported
+and matched.
+
+**The rule this generalizes into, which is the part worth keeping:** the class-B arc's bar of *zero
+`GoPositionMap` lines in a footprint delta* does **not** transfer to a change that REMOVES code. There,
+the footprint was purely additive and any map line would have been foreign drift; here the map line is
+the change's own and its absence would mean the emission had not shrunk. A footprint's line KINDS are
+read against what the change does, not against a remembered number.
+
 The prediction on record: the two-seeded windows and linux diffs read **0**, the darwin diff touches
 **`runtime/darwin/sys_darwin.cs`** (the body becomes a placeholder) plus the new
 `runtime/darwin/nanotime_impl.cs`, and **no** `package_info.cs` moves — the registration adds no
