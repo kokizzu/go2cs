@@ -112,6 +112,26 @@ func (scope goosScope) includes(goos string) bool {
 // Free functions ("funcName") and methods on other types ("recvTypeName.funcName") owned by the
 // same manual files — declarations whose bodies are inseparable from the manual types' semantics.
 var manualConversionFuncs = map[string]map[string]goosScope{
+	"crypto/internal/alias": {
+		// AnyOverlap orders element ADDRESSES — four `(uintptr)Ꮡ(…)` takes, each pinning its backing only
+		// until the box that took it is finalized, so a collection landing between two takes relocates one
+		// operand and the ordering compares two heap layouts. Measured 2026-09-03 (Release, tiering off):
+		// the converted predicate answered TRUE for two distinct fresh arrays 9 s into a 16-thread stress,
+		// and the converted GCM Open raised `crypto/aes: invalid buffer overlap` 27 s in — the panic that
+		// killed the banked net/http row on two host classes. Displaced onto golib slice<T>.Overlaps
+		// (canonical backing identity + absolute index range: the managed-referent arm of the S1/CS0030
+		// fork). InexactOverlap stays auto — its `Ꮡ(x, 0) == Ꮡ(y, 0)` early-out is already structural.
+		// Registered here rather than marked: the package has exactly one non-test Go file, and a whole-file
+		// marker would hand-own it BY CONSEQUENCE (the internal/godebug class) and freeze its csproj,
+		// package_info and README. crypto/internal/alias/alias_impl.cs holds the body.
+		"AnyOverlap": goosAny,
+	},
+	"slices": {
+		// overlaps has AnyOverlap's four-take shape and its race; its callers Insert/Replace take the
+		// hard-case rotation on TRUE, where startIdx panics `needle not found` for a source that does not
+		// alias — the same death one panic text over. Same structural body, same reason; slices/slices_impl.cs.
+		"overlaps": goosAny,
+	},
 	"runtime": {
 		// runtime.nanotime1 — darwin's monotonic clock. The other two flavors reach the same golib
 		// clock (MonotonicClock.Nanoseconds()) by writing a body into a bodyless partial and need no

@@ -148,6 +148,10 @@
          the REAL converted predicate rather than a model of it — the same
          MSTest-tier-binds-a-converted-package precedent as sha3/math.big/flag above. -->
     <ProjectReference Include="..\..\core\crypto\internal\alias\crypto.internal.alias.csproj" />
+    <!-- AliasOverlapRaceTests: the GCM Open shape that killed net/http, driven through the REAL converted
+         crypto/aes + crypto/cipher (counterCrypt -> aes Encrypt -> alias.InexactOverlap). -->
+    <ProjectReference Include="..\..\core\crypto\aes\crypto.aes.csproj" />
+    <ProjectReference Include="..\..\core\crypto\cipher\crypto.cipher.csproj" />
   </ItemGroup>
 
 </Project>

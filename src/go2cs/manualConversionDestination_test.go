@@ -155,7 +155,11 @@ var csharpDeclarationLine = regexp.MustCompile(`(?m)^\s*(?:\[[^\]]*\]\s*)*(?:pub
 // which the corpus build then catches at the first consumer; under-collection costs a false FAIL,
 // which is the failure mode that makes a merge-seam guard worthless — nobody believes a check that
 // cries wolf, and this one exists to be believed.
-var csharpCallableName = regexp.MustCompile(`\b([A-Za-z_][A-Za-z0-9_]*)\s*\(`)
+// A C# callable name, with an OPTIONAL type-parameter list between the name and its parameter list:
+// a hand-owned body for a GENERIC Go function is spelled `overlaps<E>(…)`, and the first such
+// registration (slices.overlaps, the overlap-race remedy, 2026-09-03) was reported as having no
+// body by the un-widened form, which required `(` to follow the name directly.
+var csharpCallableName = regexp.MustCompile(`\b([A-Za-z_][A-Za-z0-9_]*)\s*(?:<[^()]*>)?\s*\(`)
 
 // TestManualConversionRegistrationsDisplaceSomething is the SOURCE direction of the same ledger: a
 // registration must actually DISPLACE a generated body. The guard above asks whether the
@@ -407,3 +411,90 @@ func generatedFuncPlaceholders(t *testing.T, packageDir string) map[string]bool 
 // nowhere; a pattern loose enough to match those would let a hand-own satisfy a guard about generated
 // output, and this test would report clean while measuring nothing.
 var generatedFuncPlaceholder = regexp.MustCompile(`(?m)^// go2cs generated this placeholder — func ([A-Za-z_][A-Za-z0-9_]*) is hand-converted\b`)
+
+// TestCallableNameAdmitsOnlyGenericHandOwnBodies is the positive control for csharpCallableName's
+// type-parameter arm (the overlap-race remedy, 2026-09-03). The un-widened form required `(` to follow
+// the name directly, so the FIRST registered generic hand-own body — slices.overlaps<E> — was reported
+// by TestManualConversionRegistrationsHaveBodies as having no body: a false FAIL on a body that exists.
+// Three assertions, so the widening cannot read as a loosening: (1) the old form reproduces the false
+// FAIL on that body and the widened form collects it; (2) on a non-generic declaration both forms agree;
+// (3) over EVERY hand-own file in the corpus, the widened form collects exactly the old form's names
+// plus names whose declaration carries a type-parameter list — nothing else is newly admitted, so a
+// dead hand-own (a name nothing displaces) is named by the widened collector exactly as it was before.
+func TestCallableNameAdmitsOnlyGenericHandOwnBodies(t *testing.T) {
+	old := regexp.MustCompile(`\b([A-Za-z_][A-Za-z0-9_]*)\s*\(`)
+	generic := regexp.MustCompile(`\b([A-Za-z_][A-Za-z0-9_]*)\s*<[^()]*>\s*\(`)
+
+	collect := func(re *regexp.Regexp, line string) map[string]bool {
+		names := map[string]bool{}
+		for _, m := range re.FindAllStringSubmatch(line, -1) {
+			names[m[1]] = true
+		}
+		return names
+	}
+
+	// (1) the motivating body, spelled as slices/slices_impl.cs spells it
+	genericDecl := "    internal static bool overlaps<E>(slice<E> a, slice<E> b)"
+
+	if collect(old, genericDecl)["overlaps"] {
+		t.Fatalf("the un-widened callable-name form collected overlaps<E> — the false FAIL this control reproduces no longer reproduces; re-derive the control")
+	}
+
+	if !collect(csharpCallableName, genericDecl)["overlaps"] {
+		t.Fatalf("csharpCallableName does not collect the generic hand-own body %q", genericDecl)
+	}
+
+	// (2) a non-generic declaration reads the same under both forms
+	plainDecl := "    public static bool AnyOverlap(slice<byte> x, slice<byte> y)"
+
+	if !collect(old, plainDecl)["AnyOverlap"] || !collect(csharpCallableName, plainDecl)["AnyOverlap"] {
+		t.Fatalf("both forms must collect the non-generic declaration %q", plainDecl)
+	}
+
+	// (3) corpus-wide: new − old is exactly the generic declarations, and the motivating body is in it
+	coreDir := filepath.Join("..", "core")
+	newlyAdmitted := map[string]string{}
+
+	err := filepath.Walk(coreDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".cs") || strings.HasSuffix(path, ".cs.auto") {
+			return nil
+		}
+
+		content, readErr := os.ReadFile(path)
+
+		if readErr != nil {
+			return nil
+		}
+
+		text := string(content)
+
+		if !strings.Contains(filepath.Base(path), "_impl") && !manualConversionMarker.MatchString(text) {
+			return nil
+		}
+
+		for _, line := range csharpDeclarationLine.FindAllString(text, -1) {
+			before := collect(old, line)
+
+			for name := range collect(csharpCallableName, line) {
+				if before[name] {
+					continue
+				}
+
+				if !collect(generic, line)[name] {
+					t.Errorf("%s: the widened collector newly admits %q on a line with no type-parameter list: %q", path, name, strings.TrimSpace(line))
+				}
+
+				newlyAdmitted[name] = path
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("walking %s: %v", coreDir, err)
+	}
+
+	if _, ok := newlyAdmitted["overlaps"]; !ok {
+		t.Fatalf("the corpus walk did not newly admit slices.overlaps<E> — the motivating generic hand-own body is missing from %s", coreDir)
+	}
+}
