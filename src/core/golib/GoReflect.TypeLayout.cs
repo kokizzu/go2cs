@@ -600,7 +600,9 @@ public static partial class GoReflect
     /// </summary>
     public static nint[]? ArrayDimsOfValue(object? value)
     {
-        if (value is not IArray arr)
+        // An ISlice is an IArray but its Length is not a dimension: refuse it here so no caller can reach
+        // the hole (defense in depth beside elemArrayDims).
+        if (value is ISlice || value is not IArray arr)
             return null;
 
         nint length = arr.Length;
@@ -655,6 +657,13 @@ public static partial class GoReflect
     // The element's own dims: an array measures itself, a pointer measures its pointee (any depth).
     private static nint[]? elemArrayDims(object? element)
     {
+        // A SLICE contributes no dims: its length is a property of the VALUE, not of the type -- stamping
+        // it made TypeOf(map[string][]string) depend on the first enumerated entry's length (net/http's
+        // http.Header DeepEqual regression, 2026-09-03). Only an array<T> measures itself; ISlice : IArray,
+        // so the slice test comes first -- the same predicate trap the array-range Clone defect hit in
+        // array.cs this week.
+        if (element is ISlice)
+            return null;
         return element is IArray ? ArrayDimsOfValue(element) : PointeeArrayDims(element);
     }
 
