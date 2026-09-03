@@ -676,9 +676,11 @@ public static partial class testing_package
     /// </summary>
     public static bool Verbose() => TestHost.VerboseMode;
 
-    // Formatting is intentionally NOT the fmt package's: the test host stays fmt-free so it never
-    // sits underneath the very package a converted fmt test suite is exercising. See TestFormat's
-    // remarks for the full rationale.
+    // Formatting IS the fmt package's, exactly as Go's own testing composes it: Log is
+    // fmt.Sprintln and Logf is fmt.Sprintf. The earlier fmt-free rule and the measurements
+    // that retired it (fmt's own suite self-reporting at 63/1/0 under this reference, the
+    // graph still acyclic on all three targets, and the closure and build-time cost that was
+    // accepted for it) are recorded in TestFormat's remarks.
     private static string Sprint(ReadOnlySpan<any> args) => TestFormat.Sprint(args);
 
     private static string Sprintf(@string format, ReadOnlySpan<any> args) => TestFormat.Sprintf(format, args);

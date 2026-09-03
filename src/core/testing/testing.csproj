@@ -66,9 +66,13 @@
          so whatever it pulls in sits underneath every suite, that package's own included. golib is
          the runtime; `time` is here for exactly one member, testing.T.Deadline, whose Go signature
          returns a real time.Time and which no primitive or golib stand-in can satisfy (see
-         testing.cs). Notably ABSENT: fmt — the host formats with its own TestFormat instead. -->
+         testing.cs). `fmt` was deliberately ABSENT until 2026-09-03, when the host began
+         formatting through it as Go's own testing does; TestFormat's remarks carry the two
+         reasons that kept it out, the measurements that retired them, and the cost accepted
+         for it (this closure 38 → 58 projects, a cold test-host build 9s → 19s). -->
     <ProjectReference Include="../golib/golib.csproj" />
     <ProjectReference Include="../time/time.csproj" />
+    <ProjectReference Include="../fmt/fmt.csproj" />
     <ProjectReference Include="../../gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 
