@@ -52,10 +52,14 @@ namespace go;
 /// is what makes the shape safe to read instead of a list a later Go release could add to.
 /// </para>
 /// <para>
-/// An earlier draft of this comment claimed the local name and the symbol are equal across the
-/// darwin tree and offered that as a free cross-check. Measured, they are equal in <b>0</b> of the
-/// 345: the real relation is <c>local == "libc_" + symbol</c> in 312 of them, and the framework and
-/// libresolv records follow neither. The cross-check does not exist, and the binding rule the
+/// An earlier draft of this comment offered the pragma's NAMING as a free cross-check, generalizing
+/// a count taken over one file to the whole darwin tree. Measured, <c>local == "libc_" + symbol</c>
+/// holds in <b>312</b> of the 345 - a majority, not a rule. The 33 exceptions are 28
+/// <c>x509_&lt;sym&gt;</c>, 3 <c>libresolv_&lt;sym&gt;</c>, one <c>libc&lt;sym&gt;</c> with no
+/// underscore, and one outlier, <c>libc_error</c> / <c>__error</c>, which is the single record in all
+/// 345 whose local does not even END with its symbol. That last row is the argument against the
+/// cross-check rather than the count is: it would be correct 344 times and silently wrong once. The
+/// binding rule the
 /// converter uses is the one that does - see <c>cgoDynamicImports.go</c>, where a record is minted
 /// only for a bodyless <c>func &lt;local&gt;_trampoline()</c> whose package carries the matching
 /// pragma. That holds for 297 of 297 declarations outside <c>runtime</c> and 0 of 43 inside it, so
