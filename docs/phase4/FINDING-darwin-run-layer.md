@@ -282,3 +282,63 @@ budget on three `TypeInitializationException`s and truncated the one exception t
 with the intervening depth as a count — where the program died, and why. A Go panic report still
 reduces to its first line, unchanged, and an empty stderr stays empty so the "neither side wrote to
 stderr" branch still fires.
+
+## 7. Amendment 2026-09-03 — the run layer exists: the first converted programs run on macOS
+
+**What changed since §4.** The keystone this finding sized (§4, option 2 — one `FuncPCABI0` over an
+already-emitted symbol map plus a small dispatch family) landed on master with train 19 as
+`88f01638c`: `runtime.libcCall` displaced through `manualConversionFuncs` to
+`runtime/darwin/libccall_impl.cs`, golib `GoLibcCall` (arity 0–9 over unmanaged Cdecl function
+pointers, `__error` as the errno reader), `GoCgoDynamicImports.SymbolOf` so a refusal names its
+symbol, `syscall/darwin`'s twelve bodyless entry points over one helper, and the converter's second
+pragma spelling (`libc_<stem>` → `<stem>_trampoline`) binding 36 runtime records. Its acceptance was
+stated MEASURABLE-NOT-GATED: a mac-runner dispatch that MOVES the death past `getrlimit` — to
+`sysctl`, `setrlimit` or `fcntl` per the floor — with the prediction posted before the run.
+
+**The first acceptance read (dispatched at master `93a131a3f`, prediction posted first as mailbox
+`f8cd28677`, result as `fc1ab7d97`).** The death did not move. It vanished for the set measured.
+
+| run | leg | result, quoted from the step's own tail |
+|:--|:--|:--|
+| behavioral-smoke [33783959515](https://github.com/ritchiecarroll/go2cs/actions/runs/33783959515) (filter `Defer`, 24 projects) | osx-arm64 (macos-15) | `Transpile pass 24 · Compile pass 24 · Target pass 24 · Output pass 24, fail 0` — `[Output] running C# vs Go, comparing exit code + stdout... 24 compared, 0 failed` — `PASS (24 projects, 202.4s)` |
+| | osx-x64 (macos-15-intel) | identical summary — `PASS (24 projects, 554.7s)` |
+| census [33783950663](https://github.com/ritchiecarroll/go2cs/actions/runs/33783950663) (`dotnet build src/go2cs-stdlib.slnx -c Debug -m --no-incremental -p:GoTargetOS=darwin`) | osx-arm64 | 306 projects / **306 assemblies** / 0 with no assembly / 0 error lines / exit 0 / 510 s |
+| | osx-x64 | 306 / **306** / 0 / 0 / exit 0 / 1245 s |
+
+Before the keystone the same smoke stage failed every project at Output with `exit code mismatch:
+C# 2 vs Go 0` — the module-initializer death this finding convicted in §2 (`syscall.init() →
+Getrlimit → rawSyscall`, both architectures, runs 32852477992 / 32863205314). After it, no program
+on either architecture died at all: `getrlimit` dispatched, and so did everything else the twenty-four
+programs' init, `fmt` and defer/panic/recover paths reach, and the stdout + exit-code comparison
+against `go run` passed 24 of 24. **Scoring the prediction honestly:** it said the death would MOVE
+to one of three named symbols; none of the three was reached as a death because each resolved and
+dispatched like the rest. The prediction was conservative, not wrong in direction, and it is recorded
+as such. Read as a census, never as a wall: the smoke set is `Defer`-filtered (24 of ~700), so what is
+measured is the init path, `fmt`, and defer/panic/recover — not the corpus. The full-enumeration
+census (`behavioral-full`, four index slices with a purge between, both architectures) is the next
+increment's measurement; its per-class prediction is posted before its dispatch and its reading
+belongs in a later dated block here, not in this one.
+
+**Two facts for the record.** (1) The committed darwin flavour is amd64-only (§5's "second,
+independent darwin debt"), and osx-arm64 passed identically — so the arm64 tables debt is not on
+this path; the keystone commit's recorded arm64 debt is narrower (variadic libc callees called
+register-style, correct for amd64) and is exactly what a file-creating program would meet first.
+(2) Both legs ran the pinned toolchain (`go1.23.12` from the runner's hostedtoolcache) with
+`GoTargetOS: darwin` bound in the job env — the mechanism §5 had already proved reaches MSBuild.
+
+**§5, re-read against this.** *"Whether anything past the census can run at all"* — settled the other
+way now: **yes**, for every program on the smoke set's symbol reach. *"Which platform the behavioral
+transpile targets"* and the arm64 goldens question — the Target phase passed 24 of 24 on both
+architectures again, and now with a run behind it, so the Windows-captured goldens hold on darwin
+for that set at the run level too.
+
+**NEWS candidate for the owner's surfaces** (the owner decides where, if anywhere, it publishes):
+
+> **2026-09-03 — go2cs programs run on macOS.** The darwin run layer's keystone landed with train 19:
+> Go's libc trampolines, which the converter had emitted as throwing stubs since the first darwin
+> execution on 2026-08-25, now resolve by symbol against `libSystem` and dispatch through one managed
+> keystone (`runtime.libcCall` over golib's `GoLibcCall`). The first acceptance dispatch on GitHub's
+> macOS runners ran the behavioral `Defer` smoke set — 24 converted programs — to Go-identical output
+> on both Apple silicon and Intel, with the whole 306-package darwin corpus compiling clean on both.
+> Windows and Linux remain the validated platforms; darwin is measured by the run layer's next
+> increments, one census at a time.
