@@ -308,6 +308,16 @@ ONE stdlib in a build; there is now only one on disk.
     believing any post-fix count, verify the build the record claims actually succeeded and the
     record is newer than the edit; for the registry case, checking the placeholder was actually
     emitted is the cheap tell. The record is only the verdict when the run that wrote it completed.
+  - `-convert-timeout <dur>` — the `-stdlib` driver's cap on ONE package's conversion; Go duration
+    syntax, default **10m**, must be > 0 (`log.Fatal` otherwise). It is a **safety net against a hung
+    conversion, never a performance assumption**: the value has to clear the slowest legitimate
+    package on the slowest legitimate host, because a killed-but-healthy conversion is reported as a
+    FAILED package — named in the log, counted in the summary, listed in `failed_packages.txt` — and
+    reads exactly like a converter defect. It was hard-coded at 10m until 2026-09-02, when concurrent
+    lane load on the i7 class pushed one package past it mid two-seeded A/B, which would have banked a
+    whole package as a spurious emission difference. The fired message names the package, the elapsed
+    budget and this flag, so raise it there (`-convert-timeout 90m`) rather than editing a constant —
+    and pass the SAME value to both binaries of an A/B, since the cap is part of what a run measures.
   - `-go2cspath <dir>` — runtime/stdlib root and default output root for converted code (default `~/go2cs`;
     env `GO2CSPATH`). `go2cs -recurse <input> <output>` keeps generated code under the explicit output root
     while `$(go2csPath)` references continue to resolve against this runtime root. **It is also the root the

@@ -28,6 +28,7 @@ type Options struct {
 	goPath              string
 	go2csPath           string
 	convertStdLib       bool
+	convertTimeout      time.Duration // -convert-timeout: per-package cap the -stdlib driver applies to one package's conversion; zero means an Options built in code rather than from the command line, which takes defaultConvertTimeout
 	recurse             bool
 	recurseOutputRoot   string // -recurse: writable root for generated src\ + pkg\ trees; defaults to go2csPath
 	mainModulePath      string // -recurse: import path of the app (main) module; routes its packages to src\, deps to pkg\
