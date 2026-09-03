@@ -126,4 +126,28 @@ public class GoroutineFatalHostTests
         Assert.IsTrue(json.Contains("addReflectOff", StringComparison.Ordinal),
             "the flushed evidence must carry the failure that caused the death, not merely exist");
     }
+    // THE MARKER. The other two host-death signatures announce themselves -- a panic writes
+    // "died on an unrecovered panic in a goroutine", a package deadline writes an "action":"timeout"
+    // event -- but until this line existed an unhandled .NET exception escaping a goroutine simply
+    // STOPPED the results stream mid-test, with no timeout and no death event. Measured in the
+    // runtime/pprof walls census (2026-09-03): a stub throwing inside Goroutine.Run took the host
+    // down and a slice reading 2 of 7 verdicts was indistinguishable from a mass-empty conversion
+    // failure until its log was read by hand. The family's own diagnostic rule -- read the results
+    // tail first, because a kill states itself -- was FALSE for exactly this member.
+    [TestMethod]
+    public void TheDeathWritesAPackageTerminalEventNamingTheException()
+    {
+        (TestRunner runner, TestReporter reporter, TestOptions options, _, _) = NewHost();
+
+        TestHost.ReportFatalGoroutineExceptionForGuard(runner, reporter, new TestRegistry("guard", []), options, ThrownFailure(), _ => { });
+
+        TestEvent[] terminal = reporter.Events.Where(e => e.Test.Length == 0).ToArray();
+
+        Assert.AreNotEqual(0, terminal.Length,
+            "no package-level event: the stream would simply STOP mid-test, which is the markerless truncation this closes");
+        Assert.IsTrue(terminal.Any(e => (e.Output ?? "").Contains("test binary died", StringComparison.Ordinal)),
+            "the package event must SAY the binary died, in the shape the panic path already uses");
+        Assert.IsTrue(terminal.Any(e => (e.Output ?? "").Contains(nameof(NotImplementedException), StringComparison.Ordinal)),
+            "the event must name the exception TYPE -- 'died' alone does not attribute the death to anything");
+    }
 }
