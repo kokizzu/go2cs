@@ -15,6 +15,9 @@ private static readonly object mapOfStringArrayOf3Intˢ = (@string)"6 MapOf(stri
 private static readonly object typeOf23IntElemElemLen3ˢ = (@string)"7 TypeOf([][2][3]int).Elem().Elem().Len() == 3:   "u8;
 private static readonly object typeOf4ByteElemElemLen4ˢ = (@string)"8 TypeOf([]*[4]byte).Elem().Elem().Len() == 4:    "u8;
 private static readonly object deepEqual6Uint88Uint8ˢ = (@string)"9 DeepEqual([][6]uint8, [][8]uint8) == false:     "u8;
+private static readonly object typeOfMapStringStringˢ = (@string)"10 TypeOf(map[string][]string{len1}) == TypeOf(map[string][]string{len2}):"u8;
+private static readonly object typeOfIntLen1TypeOfIntˢ = (@string)"11 TypeOf([][]int{len1}) == TypeOf([][]int{len2}):"u8;
+private static readonly object deepEqualSameMapˢ = (@string)"12 DeepEqual(same map, different insertion order):"u8;
 
 internal static void Main() {
     var sixes = new array<uint8>[]{new uint8[]{}.array(6)}.slice();
@@ -33,6 +36,15 @@ internal static void Main() {
     var ptrs = new ж<array<byte>>[]{Ꮡ(new byte[]{}.array(4))}.slice();
     fmt.Println(typeOf4ByteElemElemLen4ˢ, reflect.TypeOf(ptrs).Elem().Elem().Len() == 4);
     fmt.Println(deepEqual6Uint88Uint8ˢ, !reflect.DeepEqual(sixes, eights));
+    var m1 = new map<@string, slice<@string>>{["a"u8] = new @string[]{"x"u8}.slice()};
+    var m2 = new map<@string, slice<@string>>{["b"u8] = new @string[]{"x"u8, "y"u8}.slice()};
+    fmt.Println(typeOfMapStringStringˢ, AreEqual(reflect.TypeOf(m1), reflect.TypeOf(m2)));
+    var s1 = new slice<nint>[]{new nint[]{1}.slice()}.slice();
+    var s2 = new slice<nint>[]{new nint[]{1, 2}.slice()}.slice();
+    fmt.Println(typeOfIntLen1TypeOfIntˢ, AreEqual(reflect.TypeOf(s1), reflect.TypeOf(s2)));
+    var h1 = new map<@string, slice<@string>>{["k"u8] = new @string[]{"x"u8, "y"u8}.slice(), ["j"u8] = new @string[]{"z"u8}.slice()};
+    var h2 = new map<@string, slice<@string>>{["j"u8] = new @string[]{"z"u8}.slice(), ["k"u8] = new @string[]{"x"u8, "y"u8}.slice()};
+    fmt.Println(deepEqualSameMapˢ, reflect.DeepEqual(h1, h2));
 }
 
 } // end main_package

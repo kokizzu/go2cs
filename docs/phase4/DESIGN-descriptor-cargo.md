@@ -652,3 +652,13 @@ OUTPUT battery. Names are the symptom; identity is the gate.
 > by elimination (plain locals still mangle; `Println` with the same text converts); the chan guard
 > prints that row with `Println`. **Three converter defects found by
 > guards written to measure reflect; none is B's, all three have their own item.**
+
+> **§12 amended, B.1 (2026-09-03): a slice element contributes no dims.** B's `elemArrayDims` handed a
+> map's first value or a slice's first element to `ArrayDimsOfValue`, which accepts any `IArray` — and
+> `ISlice : IArray` — so a `[]string` value's runtime LENGTH became an array dimension on the container's
+> descriptor. `TypeOf(map[string][]string)` then depended on the first enumerated entry's length, and
+> `DeepEqual` of one map inserted in two orders read false — `net/http`'s `http.Header` failure at the
+> train-20 head, predicted from the code and confirmed by rows 10–12 before the fix. The guard's nine
+> rows all had ARRAY elements: they tested the axis B changed, not the axis its predicate could reach.
+> Fix: `elemArrayDims` returns null for an `ISlice`; `ArrayDimsOfValue` refuses one at its door — the
+> same `ISlice : IArray` predicate trap the array-range `Clone` defect hit in `array.cs` this week.

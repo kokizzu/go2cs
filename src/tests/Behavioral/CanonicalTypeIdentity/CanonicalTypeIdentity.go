@@ -40,4 +40,18 @@ func main() {
 	fmt.Println("8 TypeOf([]*[4]byte).Elem().Elem().Len() == 4:    ", reflect.TypeOf(ptrs).Elem().Elem().Len() == 4)
 
 	fmt.Println("9 DeepEqual([][6]uint8, [][8]uint8) == false:     ", !reflect.DeepEqual(sixes, eights))
+	// Rows 10-12 (2026-09-03): a SLICE element contributes NO array dims. Two same-typed maps whose
+	// first-enumerated values have different LENGTHS are the same reflect.Type; so are two slices of
+	// slices with different inner lengths; and DeepEqual of one map inserted in two orders is true.
+	// The guard's first nine rows all had ARRAY elements -- they tested the axis B changed and not the
+	// axis its predicate could reach; row 12 is http.Header's exact shape (net/http, train 20).
+	m1 := map[string][]string{"a": {"x"}}
+	m2 := map[string][]string{"b": {"x", "y"}}
+	fmt.Println("10 TypeOf(map[string][]string{len1}) == TypeOf(map[string][]string{len2}):", reflect.TypeOf(m1) == reflect.TypeOf(m2))
+	s1 := [][]int{{1}}
+	s2 := [][]int{{1, 2}}
+	fmt.Println("11 TypeOf([][]int{len1}) == TypeOf([][]int{len2}):", reflect.TypeOf(s1) == reflect.TypeOf(s2))
+	h1 := map[string][]string{"k": {"x", "y"}, "j": {"z"}}
+	h2 := map[string][]string{"j": {"z"}, "k": {"x", "y"}}
+	fmt.Println("12 DeepEqual(same map, different insertion order):", reflect.DeepEqual(h1, h2))
 }
