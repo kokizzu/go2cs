@@ -21656,4 +21656,35 @@ and is **two** (`bits.Mul` → `Mul64`, `bits.Add` → `Add64`, each materialisi
 ValueTuple), so the attribute went on all four levels; on the outer pair alone it would have measured
 the wrong thing. Both consoles reference golib and `math/bits` by ABSOLUTE path, so the
 per-configuration `$(go2csPath)` Release trap cannot reach them. Neither is proposed for banking.
+
+---
+
+## 2026-09-02 -- `net/http`'s h2 deadline pair survives a clean golib A/B, and the row needs MORE than 30m on the i7 at Debug (lane `claude/sub-os-row`)
+
+Two measurements, taken as canary work for the `NetShareAdd` retention and worth keeping on their
+own account.
+
+**1. The h2 pair is not moved by a golib pointer change -- measured, not assumed.** `net/http` is the
+second-largest reflect importer on the derived canary set, and it FAILED on the change's arm with
+exactly four divergent rows: `TestWriteDeadlineEnforcedPerStream`, its `/h2`,
+`TestWriteDeadlineExtendedOnNewRequest`, its `/h2`. The A/B was run rather than the failure excused
+by the known-artifact note: with the change REVERTED to the parent commit, the SAME four rows fail,
+identically. Two legs of the three-run standard (fail-with, fail-without); the re-restored third leg
+was not run, and this entry does not claim it. This is an independent confirmation of the
+build-CONFIGURATION reading CLAUDE.md records for that pair (Debug publish + default tiering) from a
+direction that lane did not take -- a corpus-wide golib change moves it zero rows.
+
+**2. `net/http` is UNDER-BUDGETED at 30m on this machine class, and the two arms bracket it.** The
+change's arm completed in **1,836 s**; the clean arm took **2,171 s** and its results tail states
+`package timeout after 00:30:00` outright. The deadline kill's signature is the documented one and is
+worth restating because it nearly reads as a regression: the killed arm showed **18 extra empty
+verdicts** on top of the four real failures -- a contiguous alphabetical tail
+(`TestWriteHeader*`, `TestWriteResponse`, `TestWriteSetCookies`, `TestZeroLengthPostAndResponse*`)
+plus the parked parallel batch interleaved among it, which reads *scattered* and is not. Two arms of
+the same package, 335 s apart, one side of the budget each: that is the whole margin. `net/http` is
+not in `run-validated-sweep.ps1`'s `$longTimeouts`, and on this host at Debug it wants a floor the
+way `net` (40m) and `crypto/tls` (30m) already have one. Not added here -- a floor is a change to the
+shared sweep and belongs to whoever owns the Release-config flip that is about to re-time every row
+anyway -- but the number is recorded so the next lane meets the measurement instead of the surprise.
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
