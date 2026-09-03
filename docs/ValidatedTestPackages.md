@@ -132,19 +132,19 @@ Each disclosure is pinned by exact failure signature in a hand-owned, committed
 [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
-> ### Phase 4 progress: **201 / 215 testable packages validated — 93.5%**
+> ### Phase 4 progress: **202 / 215 testable packages validated — 94.0%**
 >
-> **27,734 matching test verdicts · 154 disclosed** *(updated 2026-09-01 — maintained as part of the
+> **27,735 matching test verdicts · 154 disclosed** *(updated 2026-09-02 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 6 excluded = 209): 201 / 209 — 96.2%.** Both numbers are
+> **Against the implementable set (215 − 6 excluded = 209): 202 / 209 — 96.7%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
 > six, each with its class, mechanism and evidence, are in
 > [Excluded packages](#excluded-packages) below.
 >
-> **Linux: 195 of 199 applicable rows validated at their Linux counts** — 22,583 matching verdicts · 159 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves.)
+> **Linux: 195 of 200 applicable rows validated at their Linux counts** — 22,583 matching verdicts · 159 disclosed · 2 rows platform-exclusive (`linux: n/a`). (`internal/syscall/windows` joins its own child `internal/syscall/windows/registry` in that second class on this bank: Windows-exclusive by its own name, every source file `*_windows.go`, and its layout-L3 csproj compiles nothing at all under `GoTargetOS=linux`. It is permanently inapplicable rather than not-yet-measured, so neither the numerator nor the applicable denominator moves. The applicable denominator DOES move here, 199 → 200: `crypto/internal/boring/bcache` banked on 2026-09-02 measured on windows/amd64 only, and its Go sources carry no build constraint, so it is applicable on Linux and simply unmeasured there — it grows the denominator without the numerator, which is the honest direction and what an unannotated row is for.)
 
 A verdict count is a fact about a package *and* an operating system. Go itself runs a different test
 set per `GOOS` — build-tagged tests, `GOOS`-keyed skips, capability gates — so `crypto/rand` offers
@@ -222,6 +222,7 @@ exactly as the line above it is summed from the columns.
 | [`crypto/internal/alias`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/alias) | 1 | | The buffer-overlap predicate every cipher mode's in-place guard is built on, over the full offset matrix. · linux: 1 · [proof](validation/current/crypto.internal.alias.md) |
 | [`crypto/internal/bigmod`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/bigmod) | 14 | | Constant-time modular arithmetic on big naturals — Montgomery domain round-trips, `Exp`, modular add/sub identities, limb expansion and `SetBytes` bounds, all on the `purego` word-at-a-time path. · linux: 14 · [proof](validation/current/crypto.internal.bigmod.md) |
 | [`crypto/internal/boring`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/boring) | 3 |  | The not-BoringCrypto build's own contract — `Enabled` false, and the `Unreachable`/`UnreachableExceptTests` guards that a BoringCrypto-only path must never execute staying quiet under it. · linux: 3 · [proof](validation/current/crypto.internal.boring.md) |
+| [`crypto/internal/boring/bcache`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/boring/bcache) | 1 |  | The GC-cleared BoringCrypto shadow cache, whose single test is four suites in one: a 10,000-entry `Put`/`Get` sweep with a random 20% overwritten in place, the `Clear` contract, the REGISTERED cache emptying across a `runtime.GC()`, and a 100-goroutine barrier that fills `cacheSize` entries per goroutine and then reads every one back. It is the measured consumer of the package's one hand-own, and the reason that hand-own could not be a literal conversion: Go's `Register` gives the runtime the ADDRESS of the cache's `ptable` word and `clearpools` nils it with `atomicstorep`, but that word is an `atomic.Pointer[cacheTable[K,V]]` whose managed slot holds a `ж<T>` REFERENCE — storage containing references is not pinnable, so the `uintptr` would name nothing recoverable, and pinning it to force the issue would defeat the one thing the package exists to do, which is let the collector reclaim what it caches. A registration is therefore a clear DELEGATE — the currency `clearpools`' other two arms already use — and the delegate is the package's own `Clear`, which Go's doc comment names as precisely what the collector performs here; `golib.BoringCaches` drives it from a resurrecting finalizable sentinel filtered to gen2 per the Go-cycle-is-a-gen2-collection identity, and `runtime.GC()` clears the registry directly before returning, exactly as it already invokes `poolcleanup` directly. · [proof](validation/current/crypto.internal.boring.bcache.md) |
 | [`crypto/internal/edwards25519`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/edwards25519) | 54 | 1 | The edwards25519 group law behind Ed25519 and X25519 — generator/identity arithmetic against Dalek-derived vectors, `ScalarBaseMult`/`ScalarMult`/`VarTimeDoubleScalarBaseMult` cross-checked against each other and against `crypto/elliptic`-independent references, scalar field arithmetic with `SetUniformBytes`' 64-byte wide reduction, aliasing-safety sweeps over every receiver/argument overlap, and the lookup-table selectors. The one disclosure is the nistec shape at small scale: `TestAllocations` wants zero over a point addition plus encode round-trips, where Go stack-allocates every temporary and the managed model's 98 golib boxes per run are structural. · linux: 54 + 1 · [proof](validation/current/crypto.internal.edwards25519.md) |
 | [`crypto/internal/edwards25519/field`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/edwards25519/field) | 16 |  | The Ed25519 base field mod 2²⁵⁵−19 — the 51-bit limb representation's carry propagation and 64×64→128 multiply, `Multiply`/`Square`/`Invert`/`SqrtRatio`, constant-time `Select`/`Swap`, canonical `SetBytes`/`Bytes` round-trips at the edge cases, and `TestBytesBigEquivalence`, which cross-checks the whole encoding against `math/big` over randomized inputs — the row the `array<T>` unshaped-instance class held. `TestAliasing` additionally drives every method with its receiver aliasing an argument. · linux: 16 · [proof](validation/current/crypto.internal.edwards25519.field.md) |
 | [`crypto/internal/hpke`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/crypto/internal/hpke) | 19 |  | Hybrid public-key encryption against the RFC 9180 vector set — DHKEM(X25519, HKDF-SHA256) base-mode setup over both AEADs, the exporter secret, and `Seal`/`Open` at every sequence number in the vectors including the 255→256 nonce-width boundary; the P-256/P-521 suites reach Go's own `SupportedKEMs` guard and skip identically on both sides. The whole vector set is `encoding/json`-decoded into a slice of a converter-**lifted anonymous struct** — the shape that held this package until the lift's element Kind reached `Unmarshal`. · linux: 19 · [proof](validation/current/crypto.internal.hpke.md) |
@@ -455,16 +456,18 @@ recorded on that same board.
 | `runtime/race` | 0 | E1 | Race-detector runtime support is only testable under the `-race` instrumented build; outside it Go declares no eligible tests, and the converted corpus has no such build at all. | [ruling][exclusion-ruling] |
 | `internal/unsafeheader` | 6 | E3 | The suite's entire subject is the raw `{Data, Len, Cap}` slice/string header: it fabricates a live slice or string by writing those fields and reinterpreting the struct, and Go's memory model lets the result alias the original storage. A managed slice is not that triple and cannot be aliased into existence — all 6 verdicts fail identically, structurally rather than by defect. | [ruling][exclusion-ruling] |
 
-Candidates that are *not* yet ruled are deliberately absent — `crypto/internal/boring/bcache`
-awaits an individual ruling on its own measurement, and until one lands it stays inside the naive
-denominator rather than being counted out of it in advance. Two others left this list the same way,
-by validating rather than by being ruled out, both on 2026-08-30: `internal/concurrent` at 20/20,
-when the census that was to feed its ruling found the whitebox half honorable and the dead-code half
-merely a compile wall; and `internal/weak` at 4/4, once the per-row execution config gave it the
-configuration its liveness assertions need. Neither needed an exclusion — which is what the naive
-denominator is for.
+Candidates that are *not* yet ruled are deliberately absent, and the list is currently **empty**:
+`crypto/internal/boring/bcache` was the last name on it, and it left the same way the two before it
+did — by validating rather than by being ruled out. Three now, in a row: `internal/concurrent` at
+20/20 on 2026-08-30, when the census that was to feed its ruling found the whitebox half honorable
+and the dead-code half merely a compile wall; `internal/weak` at 4/4 the same day, once the per-row
+execution config gave it the configuration its liveness assertions need; and `bcache` at 1/1 on
+2026-09-02, once the hand-owned clear-delegate that replaced its `registerCache` address store was
+re-measured at the Release + tiering-off default. None of the three needed an exclusion — which is
+what the naive denominator is for, and it is worth noticing that every candidate that has actually
+reached a measurement has come back implementable.
 
-### The 215, derived — and the fourteen rows that are not yet banked
+### The 215, derived — and the thirteen rows that are not yet banked
 
 The naive denominator was a number the ledger asserted and no reader could reproduce. It is derived
 here instead, so the subtraction above has something to subtract *from*. Re-derived 2026-09-02 on
@@ -485,30 +488,33 @@ own build stamp, not the root it resolves, so the pin is stated rather than assu
   `.go` files, so no production package is converted and there is nothing for a host to reference:
   `embed/internal/embedtest`, `internal/coverage/test`, `net/internal/cgotest`,
   `runtime/internal/wasitest`. Only `embedtest` carries a ruling today (board, 2026-08-11).
-- **201** banked · **14** remaining. The fourteen, by disposition:
+- **202** banked · **13** remaining. The thirteen, by disposition:
   - **5 are the ledger rows above** that are inside the 215 — `internal/syscall/unix`,
     `net/internal/socktest`, `log/syslog`, `runtime/race`, `internal/unsafeheader`.
   - **3 are lane-owned** — `reflect`, `runtime`, `unique`.
-  - **6 have no lane named in any dated record** — `os` (682/686), `testing` (Option 1 ruled,
-    sequenced), `runtime/pprof` (capability frontier), `net/http/pprof` (5 of 15), `runtime/trace`
-    (0 of 2), `crypto/internal/boring/bcache` (0 of 1, unruled).
+  - **5 have no lane named in any dated record** — `os` (682/686), `testing` (Option 1 ruled,
+    sequenced), `runtime/pprof` (capability frontier), `net/http/pprof` (5 of 15), and
+    `runtime/trace` (0 of 2, re-measured 2026-09-02: both verdicts now have named roots and the
+    `getg` stub is no longer the whole story — the execution-tracer family's disposition is with
+    the owner). `crypto/internal/boring/bcache` left this list by banking on the same date.
 
-  `201 + 5 + 3 + 6 = 215`, and the nine non-ledger rows are the implementable remainder.
+  `202 + 5 + 3 + 5 = 215`, and the eight non-ledger rows are the implementable remainder.
 
-**`net/http/pprof` is one of those nine and had appeared in no accounting at all** — no roster row,
+**`net/http/pprof` is one of those eight and had appeared in no accounting at all** — no roster row,
 no ledger row, and absent from the coordinator tracker's list of remaining rows, which named eight.
 It is converted (`src/core/net/http/pprof`), declares four `func Test`, and was measured **5 of 15**
 on 2026-08-14 (board, *Scout batch 2*): `TestHandlers` fails with seven subtests
 infrastructure-erroring, `TestDeltaProfile` skips where Go passes, and profile collection has no
-managed body — the same capability frontier `runtime/pprof` and `runtime/trace` sit behind. It is
-named here so the remainder is nine rather than eight.
+managed body — the same capability frontier `runtime/pprof` and `runtime/trace` sit behind. Naming
+it here is what made the implementable remainder nine on 2026-09-02 rather than the eight the
+tracker carried; `bcache` banking the same day brought it back to eight, by the other route.
 
 **⚠ One ledger row sits OUTSIDE the naive denominator, and the subtraction above therefore carries
 it wrongly.** `internal/runtime/syscall` is **not in `go list std` on windows/amd64 at all** — Go's
 build constraints exclude every file, which is what its own E1 mechanism says — so it cannot be a
 member of a set derived from that listing, and `215 − 6` subtracts one non-member. Strictly, five of
 the six exclusions are inside the 215 and the Windows-axis implementable set is **210**, giving
-201 / 210 — 95.7%. The header is left as it stands, and the row is left in the ledger, deliberately:
+202 / 210 — 96.2%. The header is left as it stands, and the row is left in the ledger, deliberately:
 
 - The 215 is reachable by two live memberships that differ by exactly one swap, and both land on
   215. The board's recorded derivation (2026-08-17) counted **`src/core` directories** whose GOROOT
