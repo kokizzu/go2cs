@@ -64,4 +64,42 @@ public static class MonotonicClock
 
         return seconds * 1_000_000_000L + remainder * 1_000_000_000L / frequency;
     }
+
+    /// <summary>
+    /// Gets a monotonic reading in <see cref="TicksPerSecond"/>-denominated ticks &#8212; the clock
+    /// behind Go's <c>runtime.cputicks</c>. The epoch is <see cref="Nanoseconds"/>'s epoch, and that
+    /// sharing is load-bearing; see the remarks.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Why the shared epoch is load-bearing.</b> Go derives the tick rate rather than declaring
+    /// it: <c>runtime.ticksPerSecond</c> computes
+    /// <c>(nowTicks - startTicks) * 1e9 / (nowTime - startTime)</c> from a pair written down by
+    /// <c>ticks.init</c>. That initializer is called from <c>schedinit</c>, which this corpus never
+    /// reaches, so <c>startTicks</c> and <c>startTime</c> are both zero and the expression collapses
+    /// to <c>Ticks() * 1e9 / Nanoseconds()</c>. Because both readings come from the same
+    /// <see cref="Stopwatch"/> origin, that quotient is exactly <see cref="TicksPerSecond"/> &#8212;
+    /// the clock's true rate. Two independently-originated clocks would make it an arbitrary number,
+    /// and every duration Go converts through that rate would be wrong by the ratio of the epochs.
+    /// </para>
+    /// <para>
+    /// It is also right if <c>ticks.init</c> ever DOES run: a real paired sample gives the same
+    /// ratio, because the two clocks advance together by construction.
+    /// </para>
+    /// <para>
+    /// Unlike <see cref="Nanoseconds"/> this needs no scaling, so it cannot overflow and is the
+    /// cheaper reading; Go's own <c>cputicks</c> is likewise a raw counter (the TSC on x86) whose
+    /// rate is discovered rather than assumed. Go's comment on it warns that it "is not guaranteed
+    /// to be monotonic" across CPUs; <see cref="Stopwatch"/> gives us a stronger guarantee than the
+    /// contract asks for, which is a safe direction to be wrong in.
+    /// </para>
+    /// </remarks>
+    public static long Ticks() => Stopwatch.GetTimestamp();
+
+    /// <summary>
+    /// Gets the number of <see cref="Ticks"/> per second &#8212; the value
+    /// <c>runtime.ticksPerSecond</c> derives, stated here so a guard can compare the derivation
+    /// against the source of truth rather than against itself.
+    /// </summary>
+    public static long TicksPerSecond => Stopwatch.Frequency;
 }
