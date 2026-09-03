@@ -724,6 +724,65 @@ partial class syscall_package
     // lines through recvmsgRaw and SendmsgN, and a second copy would be a second thing to keep
     // right. The two callers below are re-proven by that guard after the factoring.
 
+    // writev's iovec ARRAY -- the SAME managed-reference defect as Msghdr.Iov, one syscall over, and
+    // the first instance measured on the plain (non-msghdr) path. The converted `Iovec` is
+    //
+    //     [GoType] partial struct Iovec { public ж<byte> Base; public uint64 Len; }
+    //
+    // so `Base` is an OBJECT REFERENCE. A struct holding a reference gets AUTO layout from the CLR
+    // and is non-blittable, so handing the kernel `&iovecs[0]` makes it read 16 bytes per element
+    // that are neither `{void*; size_t}` nor even in that field order. The symptom is diagnostic
+    // and is what identified this: writev with ten one-byte iovecs carrying 0x00..0x09 delivered
+    // ten 0x38s -- the RIGHT COUNT of iovecs with GARBAGE contents, which is what an auto-laid-out
+    // mirror produces and what a short write never does. Measured by G on the net row
+    // (TestBuffers_WriteTo x9); rooted here 2026-09-02.
+    //
+    // The mirror is NativeIovec, already declared in this file for the msghdr family, and the
+    // conversion PINS rather than marshals: `(uintptr)` on a p-box is not a bare address read --
+    // its managed arm calls EnsureStableAddress() (a DURABLE pin, deliberately not `fixed`, whose
+    // own comment reads "fixed pins only for its own statement, and the address outlives that
+    // statement by definition") and then registers the pin with ManagedPointerTokens. So the bytes
+    // the kernel writes are the CALLER'S bytes at a stable address for the call -- the audit rule
+    // this class is held to: no copy in, no copy out, nothing to miss on the way back.
+    //
+    // ONE syscall per call, with the EINTR retry left where Go has it (internal/poll's writev): the
+    // caller owns the loop, this owns the layout. Go caps the vector at IOV_MAX/1024, so the native
+    // image is a stack buffer for the ordinary handful and a heap one only past the threshold.
+    public static unsafe (uintptr wrote, Errno errno) GoWritevNative(nint fd, slice<Iovec> iovecs) {
+        nint count = len(iovecs);
+
+        if (count == 0) {
+            return (0, 0);
+        }
+
+        NativeIovec* native;
+        NativeIovec* heap = null;
+        NativeIovec* stack = stackalloc NativeIovec[(int)(count <= 32 ? count : 0)];
+
+        if (count <= 32) {
+            native = stack;
+        } else {
+            heap = (NativeIovec*)System.Runtime.InteropServices.NativeMemory.Alloc(
+                (nuint)count, (nuint)sizeof(NativeIovec));
+            native = heap;
+        }
+
+        try {
+            for (nint i = 0; i < count; i++) {
+                // (uintptr) on the box is the pin AND the address -- see above.
+                native[i].Base = (byte*)(nint)(uintptr)iovecs[i].Base;
+                native[i].Len = (nuint)iovecs[i].Len;
+            }
+
+            var (r, _, e) = Syscall(SYS_WRITEV, (uintptr)fd, (uintptr)(nint)native, (uintptr)count);
+            return (r, e);
+        } finally {
+            if (heap != null) {
+                System.Runtime.InteropServices.NativeMemory.Free(heap);
+            }
+        }
+    }
+
     // nameBuf receives the sender's address image; nameLen is the buffer's capacity going in.
     // Returns the kernel's n / control length / flags, exactly as recvmsgRaw reports them.
     public static unsafe (nint n, nint oobn, nint recvflags, error err) GoRecvmsgNative(nint fd, slice<byte> p, slice<byte> oob, nint flags, byte* nameBuf, ref uint32 nameLen) {
