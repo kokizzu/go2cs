@@ -23,6 +23,8 @@
     <None Include="$(MSBuildThisFileDirectory)syscallKeepAliveAnalysis.go" />
     <None Include="$(MSBuildThisFileDirectory)syscallFunnelSet_test.go" />
     <None Include="$(MSBuildThisFileDirectory)captureModeOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)cgoDynamicImports.go" />
+    <None Include="$(MSBuildThisFileDirectory)cgoDynamicImports_test.go" />
     <None Include="$(MSBuildThisFileDirectory)chainedCallScaling_test.go" />
     <None Include="$(MSBuildThisFileDirectory)chanDirectionCargo.go" />
     <None Include="$(MSBuildThisFileDirectory)childEnvGo2CSPath_test.go" />

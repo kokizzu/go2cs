@@ -18610,6 +18610,84 @@ platform-blindness that hid `syscall.runtime_envs` and `runtime.fcntl`. Guarded 
 the routing, the honorable disposition, and — exercising `packageFuncAccess` rather than the index it reads —
 the publicization that makes the cross-assembly call compile.
 
+### A `//go:cgo_import_dynamic` trampoline gets a RECORD, so its address can be resolved rather than invented
+
+`abi.FuncPCABI0(f)` asks for the program-counter of `f`, and the darwin syscall layer asks it of a
+**trampoline**: a bodyless `func libc_getgroups_trampoline()` whose real body is one assembly
+instruction jumping to a dynamically-imported C symbol. Converted literally the declaration is a
+bodyless `partial` the [`PartialStubGenerator`](#source-generators) fills with a throw, and
+`FuncPCABI0` itself answered `return default` — a zero that is *plausible*, unique and stable, and
+fatal the moment `rawSyscall` jumps to it.
+
+The two halves of `FuncPCABI0` want opposite things, and that is the whole design. A PC read BACK —
+`runtime.Callers`, pprof, `textAddr` — wants a synthetic token that symbolizes and is never
+dereferenced. A trampoline wants a REAL, callable address. So the converter publishes a
+discriminator: one assembly attribute per pragma it can bind, in a `<CgoDynamicImports>` section of
+`package_info.cs`.
+
+```go
+// crypto/x509/internal/macos/corefoundation.go
+func x509_CFDataCreate_trampoline()
+
+//go:cgo_import_dynamic x509_CFDataCreate CFDataCreate "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation"
+```
+
+```csharp
+// crypto/x509/internal/macos/darwin/package_info.cs
+[assembly: go.GoCgoImportDynamic("x509_CFDataCreate_trampoline", "CFDataCreate", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+```
+
+`golib`'s `GoCgoDynamicImports` reaches the record from the ARGUMENT — the delegate's method, its
+declaring type, that type's assembly — so no package publishes a registry, no initialization order
+matters, and a package that declares no trampolines contributes nothing. A stub **with** a record is
+class B and resolves through `NativeLibrary`; the same stub **without** one is class C — Go's own
+assembly (`goexit`, `asyncPreempt`, `sigtramp`) — and stays a loud throw. A record that exists but
+fails to resolve throws too, naming the symbol and library: "there is no record" and "the record is
+wrong" are different answers, and collapsing them would let a typo read as class C.
+
+**Three properties are measurements, not preferences** (Go 1.23.12, all 1650 `//go:cgo_import_dynamic`
+records outside `cmd/` and `vendor/`):
+
+* **The gate is that the library argument is an ABSOLUTE PATH.** Every darwin record names one
+  (`/usr/lib/libSystem.B.dylib`, `/usr/lib/libresolv.9.dylib`, and the two
+  `/System/Library/Frameworks/…` frameworks `crypto/x509/internal/macos` imports); every other
+  platform names a BARE library — windows' 51 `kernel32.dll`, openbsd and solaris' `libc.so`, aix's
+  `libc.a/shr_64.o` — or names none at all, as `runtime/race`'s 196 darwin records do. Selecting on
+  the leading slash and selecting on "`.dylib` or a framework path" are two independent derivations
+  of the same **345** records and they agree on every one, which is what makes the shape safe to read
+  instead of a list a later Go release could add to. A `.dylib`-SUFFIX gate would be wrong in a way
+  that is easy to miss: it drops exactly the 28 framework records.
+* **The binding rule is `trampoline == local + "_trampoline"`, and its boundary is a package.** It
+  holds for **297 of 297** declarations outside `runtime` and **0 of 43** inside it, where 37 bind on
+  the SYMBOL instead (`pthread_attr_init_trampoline` ← `libc_pthread_attr_init pthread_attr_init`)
+  and 6 — `osinit_hack`, `exit`, `nanotime`, `walltime`, `sigprocmask`, `raiseproc` — carry no darwin
+  pragma at all. Those 6 are Go's own assembly and are correctly class C. The other 37 mint nothing:
+  their correspondence lives in the `.s` file the converter does not read, and a rule that stripped
+  `_trampoline`, then optionally stripped `libc_`, then matched the symbol would cover 334 of 340 and
+  guess at the rest.
+* **The `libc_<sym>` naming is a MAJORITY, not a rule.** `local == "libc_" + symbol` holds in **312**
+  of the 345; the other 33 are 28 `x509_<sym>` (`crypto/x509/internal/macos`), 3 `libresolv_<sym>`,
+  one `libc<sym>` with no underscore, and one genuine outlier — `libc_error` / `__error` — which is
+  the single record in all 345 where the local does not even END with the symbol. That last row is
+  why a name-derived cross-check between the pragma and the trampoline is not worth having: it would
+  be correct 344 times and silently wrong once.
+
+The emission is therefore **173 records per darwin target** — 126 `syscall`, 28
+`crypto/x509/internal/macos`, 19 `internal/syscall/unix` — and the section is created **only when a
+package has records**, which is the one deliberate departure from the
+`<GoSourcePositionMaps>` section's "always emitted, so absence never has to be told apart from
+emptiness". That reasoning holds where every package converts source files; here the population is
+four packages of the corpus and darwin-only, so an unconditional section would put marker lines into
+every `package_info.cs` of every platform flavor to record a property absent from ~99% of them — and
+it makes the windows and linux emissions byte-identical **by construction** rather than by a diff
+that happens to come back empty (both measured at 0 differing paths).
+
+Both conversion drivers run the pre-pass. A `-tests` conversion recompiles the production sources
+into the test assembly, so that assembly declares the same trampolines and needs the same records;
+and because the section is rewritten from what the current run bound, a driver that never binds would
+not merely skip the records — it would EMPTY a section the `-stdlib` emission had populated.
+`TestBothDriversCollectCgoDynamicImports` pins that.
+
 ### `internal/concurrent.HashTrieMap` — a managed map where Go seeds itself from `MapType().Hasher`
 
 `internal/concurrent` is the whole of `unique`'s storage, and `unique` is `net/netip`'s address interner —

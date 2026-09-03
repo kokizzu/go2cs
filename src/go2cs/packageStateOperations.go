@@ -41,6 +41,7 @@ func resetPackageState(pkg *packages.Package) {
 	packageNamespace = ""
 	projectImports = NewHashSet([]string{})
 	linknameHandles = NewHashSet([]string{})
+	cgoDynamicImports = nil
 	currentPackagePath = pkg.PkgPath
 	exportedTypeAliases = make(map[string]string)
 	importedTypeAliases = make(map[string]string)
