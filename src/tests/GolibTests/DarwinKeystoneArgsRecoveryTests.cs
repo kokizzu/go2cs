@@ -41,6 +41,12 @@ namespace GolibTests;
 //      a default"), and the design's named fallback — a converter-emitted per-symbol layout record —
 //      is the remedy. This arm is what keeps that bound a statement rather than a mid-cut surprise.
 //
+// MEASURED 2026-09-03 (Linux host, GolibTests linux flavor, Debug, 5/5, zero aborts) — the prediction on
+// record in the commit that added this file held exactly: arms 1-3 and 5 PASS, and arm 4 took the
+// `recovered is null` branch (a reference-bearing shape does NOT resolve), so §7.2's bound stands as
+// stated. The instrument can fail in both directions — arms 1-3 need a non-null resolve, arms 4-5 a
+// null one — which is what makes the green a measurement rather than a tautology.
+//
 // Reference-free by construction, the way the corpus's fcntl_args is:
 //     [GoType("dyn")] internal partial struct fcntl_args { internal int32 fd, cmd, arg; internal int32 ret, errno; }
 [TestClass]
