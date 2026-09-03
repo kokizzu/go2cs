@@ -22691,4 +22691,115 @@ directory the tail-reading rules name. The rules still apply; the path does not.
 
 -- C1
 
+
+## 2026-09-02 · `crypto/internal/boring/bcache` BANKS at 1 of 1 — the board's `registerCache` root was two days stale, and the flake that withheld the bank did not reproduce in 30 runs at the Release + tiering-off default (coordinator sub-agent; coordinator ruling same day)
+
+**The row banked. The defect behind its flake did NOT, and is recorded here as open rather than
+closed.**
+
+### What this board said, and why it was wrong
+
+The row's standing entry — *Scout batch 2*, 2026-08-14, restated in the 2026-09-02 remainder table —
+read: *"0 of 1. `NotImplementedException: registerCache` … a `PartialStubGenerator` stub reached
+from `Register[K,V]`"*, and *"Still unruled, so the roster keeps it inside the naive denominator."*
+
+That root was closed on **2026-08-30 by `378951155`** — *"bcache: wire registerCache truthfully — a
+clear DELEGATE, not an address"* — and no board row records it. Go's `Register` hands the runtime
+the ADDRESS of the cache's `ptable` word for `clearpools` to nil with `atomicstorep`; that word is
+an `atomic.Pointer[cacheTable[K,V]]` whose managed slot holds a `ж<T>` REFERENCE, so the storage is
+not pinnable, the provenance record can never satisfy `IsPinnedAt`, and `ManagedPointerTokens`
+answers MISS for the number by design. The commit replaced the address with a clear DELEGATE — the
+currency `clearpools`' other two arms already use — bound to the package's own `Clear`, which Go's
+doc comment names as exactly what the collector performs here.
+
+**That commit measured 1/1 and deliberately did not bank**, in its own words: *"NOT BANKED, and the
+roster row + proof page are deliberately not carried: the suite is FLAKY at ~70% under the default
+config, from a defect this change neither introduces nor touches."*
+
+### The re-measure, 2026-09-02, at master `01a7fdefe`
+
+Pipeline, windows/amd64, `-tests -test-action all -test-timeout 10m` with `-go2cspath` pinned to the
+worktree; converter built from the same tree, `go version <exe>` = go1.23.12. The comparison record
+reads back `configuration: "Release"`, `tiered: false`, `oracleGoVersion: "go version go1.23.12
+windows/amd64"` — the configuration of RECORD since the 2026-09-02 default flip, and the axis the
+prior measurement did not have.
+
+| Test | `go test` | go2cs |
+|:--|:--:|:--:|
+| `TestCache` | pass | pass |
+
+`status: validated`, `matched: true`, `disclosed: []`, `errors: []`. The results-file TAIL was read
+FIRST and carries no `timeout` event in either the plain or the escaped form; it ends on the
+package's own `"action":"pass"`.
+
+### The flake, sampled rather than assumed — 30 consecutive runs, zero failures
+
+`378951155` measured the failure rate under the then-default **Debug** configuration: **7/10** at
+the default, **4/10** with `DOTNET_TieredCompilation=0`, 3/10 with the sentinel disarmed, and
+**10/10** under `DOTNET_GCgen0size=1GB` — GC-correlated, not a tiering artifact and not the
+sentinel's.
+
+At the new default this lane ran **30 consecutive comparisons: 30 validated, 0 failures** (runs 1–9
+records preserved individually; runs 10–30 sampled with failure-record preservation armed, which
+never fired). Repeat runs used `-test-action compare` against the existing digest-validated
+artifacts, so each is a fresh publish-and-run of the same emission rather than a re-conversion.
+
+**The reading, stated as a bound and not as a cure.** Against the prior 30% failure rate,
+P(30 consecutive passes) ≈ 2.3 × 10⁻⁵; the 95% one-sided upper bound on the failure rate implied by
+30/30 is **≈9.5%**. So the Release configuration has moved this row's behaviour by a wide margin —
+most plausibly because Release's allocation and optimization profile closes the window the race
+needs — but **9.5% is not zero, and nothing in this lane fixed anything.** No golib, converter or
+corpus line changed; the only variable is the published configuration.
+
+### OPEN — the element-aliasing lost write under concurrent CAS plus collection
+
+`378951155` rooted the flake and the root is **untouched**: every failure it saw was confined to the
+test's final section, which uses an **UNREGISTERED** cache and loses entries under concurrent `Put`,
+while the registered-cache/`runtime.GC()` assertion that the commit owns passed in every one of 40+
+runs. Its own placement: *"the single-threaded 10,000-entry section never failed, which places it in
+golib's element-aliasing machinery under concurrent CAS plus collection, not in bcache."*
+
+That is where it stays. Banking this row does **not** close it, and the row is not evidence that it
+is closed — it is evidence that the configuration of record does not currently reach it at a rate
+30 runs can see. If a future sweep reds this row, this entry is the first thing to read: the
+suspect is the aliasing defect, not whatever change is in flight.
+
+### What banked
+
+Four test artifacts (`cache_test.cs`, `package_test_info.cs`, `go2cs_test_host.cs`,
+`crypto.internal.boring.bcache.tests.csproj`), the generated proof page, its `docs/validation/index.md`
+row, and the roster row. Two properties worth recording because the package is one of the four
+**hand-owned-by-consequence** members (every non-test Go file hand-owned, so the driver `continue`s
+before `writeProjectFile` and its `.csproj`/`package_info.cs`/`README.md` are never re-emitted):
+
+- **The production `.csproj` did not change** — it already carries
+  `<Compile Remove="*_test.cs;package_test_info.cs;go2cs_test_host.cs" />`, so the bank needed no
+  production edit at all, and `package_info.cs` and `cache.cs` are untouched.
+- **`cache.cs.auto` was deliberately NOT carried.** The `-tests` run re-emits that review sibling
+  with the `initᴛᴛimportꓸsyncꓸatomic` forced-init hook REMOVED — the standing init-hook relocation,
+  which moves the hook into `package_info.cs`. For this package that relocation can never land,
+  because `package_info.cs` is never re-emitted; the committed hand-owned `cache.cs` carries the
+  hook and is self-consistent. Carrying the `.cs.auto` line would have put an unbanked relocation
+  into the tree for no gain. Restored, per the standing `.cs.auto` class.
+
+The roster row carries **no** `execution:` segment (it validated at the default) and **no** `linux:`
+segment (measured on windows/amd64 only). The absent Linux annotation is load-bearing rather than an
+omission: an unannotated row makes no Linux claim and reports *comparison-validated-at-count* there,
+so it grows the Linux **applicable denominator** 199 → 200 without touching the numerator. bcache's
+Go sources carry no build constraint, so it is genuinely applicable on Linux and genuinely
+unmeasured — the honest direction, and the header records it.
+
+*Instruments: the `-tests` pipeline (1 conversion + 30 comparisons) and `check-roster-format.ps1`.
+The roster guard is the calculator and was run before and after: before, `550 checks pass (201 rows,
+195 with a linux annotation, 4 with an execution config, 6 excluded)`; with the row inserted and the
+header untouched it FAILED 6 of 551, naming every derived number it disagreed with (package count
+202 vs 201, verdicts 27735 vs 27734, 94.0 vs 93.5, honest numerator 202 vs 201, 96.7 vs 96.2, linux
+applicable denominator 200 vs 199) — so the header was recomputed FROM the guard rather than
+incremented by hand, and after, `551 checks pass (202 rows, 195 with a linux annotation, 4 with an
+execution config, 6 excluded)`, exit 0. That mid-state failure is this entry's positive control on
+the guard: it can go red, and it named the right six assertions. Both comparison records and both
+results files were preserved to distinct paths before the tree was restored.*
+
+-- coordinator sub-agent
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
