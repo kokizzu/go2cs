@@ -134,6 +134,24 @@ internal static ref uint32 traceShutdownSema => ref ᏑtraceShutdownSema.Value;
 
 // go2cs generated this placeholder — func StartTrace is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+// go2cs generated this placeholder — func StopTrace is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string traceNonEmptyFullTraceˢ = "trace: non-empty full trace buffer for done generation"u8;
+internal static readonly @string traceNonEmptyFullTraceˢ2 = "trace: non-empty full trace buffer for next generation"u8;
+internal static readonly @string traceReadingAfterˢ = "trace: reading after shutdown"u8;
+
+// Collect all the untraced Gs.
+[GoType("dyn")] internal partial struct traceAdvance_untracedG {
+    internal ж<g> gp;
+    internal uint64 goid;
+    internal int64 mid;
+    internal uint64 stackID;
+    internal uint32 status;
+    internal waitReason waitreason;
+    internal bool inMarkAssist;
+}
+
 // Block until cleanup of the last trace is done.
 // Hold traceAdvanceSema across trace start, since we'll want it on
 // the other side of tracing being enabled globally.
@@ -225,28 +243,6 @@ internal static ref uint32 traceShutdownSema => ref ᏑtraceShutdownSema.Value;
 // Dump a snapshot of memory, if enabled.
 // Record the heap goal so we have it at the very beginning of the trace.
 // Make sure a ProcStatus is emitted for every P, while we're here.
-
-// StopTrace stops tracing, if it was previously enabled.
-// StopTrace only returns after all the reads for the trace have completed.
-public static void StopTrace() {
-    traceAdvance(true);
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string traceNonEmptyFullTraceˢ = "trace: non-empty full trace buffer for done generation"u8;
-internal static readonly @string traceNonEmptyFullTraceˢ2 = "trace: non-empty full trace buffer for next generation"u8;
-internal static readonly @string traceReadingAfterˢ = "trace: reading after shutdown"u8;
-
-// Collect all the untraced Gs.
-[GoType("dyn")] internal partial struct traceAdvance_untracedG {
-    internal ж<g> gp;
-    internal uint64 goid;
-    internal int64 mid;
-    internal uint64 stackID;
-    internal uint32 status;
-    internal waitReason waitreason;
-    internal bool inMarkAssist;
-}
 
 // traceAdvance moves tracing to the next generation, and cleans up the current generation,
 // ensuring that it's flushed out before returning. If stopTrace is true, it disables tracing
