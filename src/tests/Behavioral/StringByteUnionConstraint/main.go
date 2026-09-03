@@ -44,6 +44,7 @@ func main() {
 	fmt.Println("head:", headSum("x98:76"), headSum([]byte("y10:23")))
 	fmt.Println("appendRun(string):", string(appendRun(nil, "abcde")))
 	fmt.Println("appendRun([]byte):", string(appendRun([]byte("<"), []byte("abcde"))))
+	fmt.Println("whole(string):", string(wholeSpan(str)), "whole([]byte):", string(wholeSpan(bs)))
 }
 
 // lastByte uses the REVERSED union order - `[]byte | string` (time/format.go appendNano):
@@ -85,13 +86,21 @@ func lastByte[T []byte | string](s T) byte {
 	return s[len(s)-1]
 }
 
+// wholeSpan takes the FULL-RANGE sub-slice `s[:]` - the fourth bound shape of the union
+// sub-slice branch (both bounds omitted), which no other position here reaches. Go types the
+// result as the type parameter again, exactly as the bounded forms do, so it is returned as T
+// and converted by the caller.
+func wholeSpan[T []byte | string](s T) T {
+	return s[:]
+}
+
 // appendRun mirrors encoding/json's appendString: a function generic over the union constraint
 // `[]byte | string` that SPREADS sub-slices of the constrained value into a variadic append
 // (`append(dst, src[lo:hi]...)` and the open-ended `append(dst, src[lo:]...)`). Each sub-slice is
 // typed as the union type parameter again, so the spread must reach the IByteSeq<byte> spread
-// member through the constraint. The converter emits `((Bytes)(src[lo..hi])).ꓸꓸꓸ`, and a bare
+// member through the constraint. The converter emits `src[lo..hi].ꓸꓸꓸ`, and a bare
 // type-parameter value has no spread member of its own, so the `ꓸꓸꓸ` must be declared on the
-// constraint interface (golib IByteSeq<T>) for the cast-through to bind (CS1061 otherwise).
+// constraint interface (golib IByteSeq<T>) for that member access to bind (CS1061 otherwise).
 func appendRun[Bytes []byte | string](dst []byte, src Bytes) []byte {
 	dst = append(dst, '[')
 	if len(src) > 1 {

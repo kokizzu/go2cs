@@ -1600,11 +1600,12 @@ func (v *Visitor) generateParametersSignature(signature *types.Signature, addRec
 			// A FUNC-LITERAL parameter typed as a `string | []byte`-union TYPE PARAMETER
 			// renders as the type parameter itself (`(T part) => ...`): the enclosing
 			// method's type parameter is in scope inside a lambda, and every union-typed
-			// argument renders T-typed too (sub-slices cast back to the type param in
-			// convSliceExpr), so the inferred delegate binds exactly and the emission
-			// matches the Go. (A historical IByteSeq<byte> widening here worked around
-			// the interface-typed sub-slice arguments - obsolete once the sub-slice cast
-			// landed, and it hid the type identity: user-flagged.)
+			// argument renders T-typed too (a sub-slice IS the type parameter — golib's
+			// self-referential IByteSeq<TSelf, T> Range indexer, see convSliceExpr), so the
+			// inferred delegate binds exactly and the emission matches the Go. (A historical
+			// IByteSeq<byte> widening here worked around interface-typed sub-slice arguments -
+			// obsolete once the indexer returned TSelf, and it hid the type identity:
+			// user-flagged.)
 			result.WriteString(paramTypeName)
 			result.WriteRune(' ')
 

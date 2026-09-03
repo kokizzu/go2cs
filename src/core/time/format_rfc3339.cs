@@ -109,16 +109,16 @@ internal static (Time, bool) parseRFC3339<bytes>(bytes s, ж<ΔLocation> Ꮡloca
     if (len(s) < len("2006-01-02T15:04:05")) {
         return (new Time(nil), false);
     }
-    nint year = parseUint(((bytes)(s[0..4])), 0, 9999); // e.g., 2006
-    nint month = parseUint(((bytes)(s[5..7])), 1, 12); // e.g., 01
-    nint day = parseUint(((bytes)(s[8..10])), 1, daysIn(((ΔMonth)month), year)); // e.g., 02
-    nint hour = parseUint(((bytes)(s[11..13])), 0, 23); // e.g., 15
-    nint min = parseUint(((bytes)(s[14..16])), 0, 59); // e.g., 04
-    nint sec = parseUint(((bytes)(s[17..19])), 0, 59); // e.g., 05
+    nint year = parseUint(s[0..4], 0, 9999); // e.g., 2006
+    nint month = parseUint(s[5..7], 1, 12); // e.g., 01
+    nint day = parseUint(s[8..10], 1, daysIn(((ΔMonth)month), year)); // e.g., 02
+    nint hour = parseUint(s[11..13], 0, 23); // e.g., 15
+    nint min = parseUint(s[14..16], 0, 59); // e.g., 04
+    nint sec = parseUint(s[17..19], 0, 59); // e.g., 05
     if (!ok || !(s[4] == (rune)'-' && s[7] == (rune)'-' && s[10] == (rune)'T' && s[13] == (rune)':' && s[16] == (rune)':')) {
         return (new Time(nil), false);
     }
-    s = ((bytes)(s[19..]));
+    s = s[19..];
     // Parse the fractional second.
     nint nsec = default!;
     if (len(s) >= 2 && s[0] == (rune)'.' && isDigit(s, 1)) {
@@ -126,7 +126,7 @@ internal static (Time, bool) parseRFC3339<bytes>(bytes s, ж<ΔLocation> Ꮡloca
         for (; n < len(s) && isDigit(s, n); n++) {
         }
         (nsec, _, _) = parseNanoseconds(s, n);
-        s = ((bytes)(s[(int)(n)..]));
+        s = s[(int)(n)..];
     }
     // Parse the time zone.
     var t = Date(year, ((ΔMonth)month), day, hour, min, sec, nsec, ΔUTC);
@@ -134,8 +134,8 @@ internal static (Time, bool) parseRFC3339<bytes>(bytes s, ж<ΔLocation> Ꮡloca
         if (len(s) != len("-07:00")) {
             return (new Time(nil), false);
         }
-        nint hr = parseUint(((bytes)(s[1..3])), 0, 23); // e.g., 07
-        nint mm = parseUint(((bytes)(s[4..6])), 0, 59); // e.g., 00
+        nint hr = parseUint(s[1..3], 0, 23); // e.g., 07
+        nint mm = parseUint(s[4..6], 0, 59); // e.g., 00
         if (!ok || !((s[0] == (rune)'-' || s[0] == (rune)'+') && s[3] == (rune)':')) {
             return (new Time(nil), false);
         }

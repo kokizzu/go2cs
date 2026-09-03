@@ -8860,7 +8860,7 @@ The interface was originally single-parameter (`IByteSeq<T>`) with an `IByteSeq<
 
 A `parseRFC3339`-shaped body (seven sub-slices, eight `len` calls, six `[]byte(s)` conversions per parse) measured **720 B/parse** on the `slice<byte>` instantiation and **776 B/parse** on `@string` — for Go code that allocates nothing. The remedy is one idea applied four times: *never name the sequence type as an interface in a signature a generic body reaches*.
 
-- **Sub-slicing** moves to the self-referential `TSelf this[Range]`. Both implementers' public range indexers already return their own type, so this is satisfied implicitly, and the call becomes a `constrained.` direct dispatch on the value type. The converter's `((bytes)(…))` cast survives as a no-op identity conversion.
+- **Sub-slicing** moves to the self-referential `TSelf this[Range]`. Both implementers' public range indexers already return their own type, so this is satisfied implicitly, and the call becomes a `constrained.` direct dispatch on the value type. The result IS the type parameter, so the converter emits the range expression bare (above).
 - **`len`** takes the constrained type parameter (`len<TSeq>(TSeq) where TSeq : IByteSeq`) instead of the interface.
 - **`[]byte(s)` / `string(s)`** become the `ToSlice`/`ToGoString` **extension methods** rather than constructors. C# has no generic constructor, so a constructor can only accept the interface; and a static factory cannot even be *named* here, because converted code carries `using static go.builtin`, which shadows the `slice` and `@string` type names with the builtin conversion methods (`slice<byte>.From(s)` is CS0119 — "is a method, which is not valid in the given context"). An extension call is member access on the receiver, so it sidesteps both problems. Each folds `typeof(TSeq) == typeof(…)` to a per-instantiation constant, so the sharing case reduces to a field copy.
 
@@ -8931,21 +8931,27 @@ The golib `uintptr` struct declares the full generic-math interface set the lift
 
 > **Latent gap ([banked](Glossary.md#banked)):** generated `[GoType("num:*")]` wrapper structs do NOT yet declare the generic-math interfaces -- a NAMED numeric wrapper used as a union-generic type argument would CS0315. No corpus site hits this yet.
 
-### Union-constrained sub-slices cast back to the type parameter
-A sub-slice of a `string | []byte` union-constrained value is typed by Go as the type parameter again, so it assigns back to, passes as, and returns as the parameter (time format_rfc3339, CS0266/CS0310/CS0029 before the cast landed). The emission wraps the range forms in an explicit conversion to the type parameter:
+### Union-constrained sub-slices ARE the type parameter
+A sub-slice of a `string | []byte` union-constrained value is typed by Go as the type parameter again, so it assigns back to, passes as, and returns as the parameter (time format_rfc3339). The emission is the bare C# range expression:
 ```csharp
-return parse(((T)(s[0..2]))) + parse(((T)(s[3..5])));
+return parse(s[0..2]) + parse(s[3..5]);
 ```
+```csharp
+s = s[19..];                        // Go: s = s[19:]
+```
+Nothing converts it, because nothing needs to: the constraint is the **self-referential** `IByteSeq<T, byte>` (above), whose `TSelf this[Range]` indexer returns `T` itself, so the range expression already has the type parameter's type. All four bound shapes take this route — `s[..hi]`, `s[lo..hi]`, `s[lo..]` and `s[..]` — and a three-index slice cannot occur on a string-including union (Go forbids it on strings), so `Slice3` never reaches it. Downstream members bind through the constraint on the resulting value directly: `s[i..j].ToGoString()` for Go's `string(s[i:j])` (bytealg's Rabin-Karp), `src[lo..hi].ꓸꓸꓸ` for the variadic spread (below).
+
 Func-literal parameters typed as the union type parameter render as the parameter itself (the enclosing method's type parameter is in scope inside a lambda), matching the Go:
 ```csharp
 var parse = (T part) => {
 ```
-Since the constraint became self-referential (`IByteSeq<T, byte>`, above), the Range indexer returns `T` directly, so this cast is an **identity conversion that emits no IL** — it was a runtime-checked unbox of a boxed struct when the indexer returned the interface. The emission is kept because it names the type Go gives the expression; it no longer costs anything.
 
-Guarded by `StringByteUnionConstraint` (`trimHead`/`headSum`; `digitSum`).
+> **History.** When `IByteSeq` was single-parameter, its Range indexer returned the **interface**, and the emission wrapped every sub-slice in `((T)(…))` to recover the type Go gives the expression (CS0266/CS0310/CS0029 without it — a runtime-checked unbox of a struct the indexer had just boxed). The self-referential constraint retired the box and left the cast an identity conversion emitting no IL; the cast was then retired in turn, so the rendering matches the Go instead of narrating a conversion that no longer happens.
+
+Guarded by `StringByteUnionConstraint` — `trimHead`/`headSum` (assigned back, passed on, returned), `digitSum` (both bounds, through a func-literal parameter), `prefixMatch` (low omitted) and `wholeSpan` (both omitted). Its golden is the A/B: the cast's removal moves those lines and nothing else, while the stdout comparison against `go run` stays byte-identical.
 
 ### Spreading a union-constrained value
-A union-constrained value may also be **spread** into a variadic — encoding/json's `appendString[Bytes []byte | string]` does `append(dst, src[lo:hi]...)` (and the open-ended `append(dst, src[lo:]...)`). The sub-slice is typed as the type parameter again, so the cast-back above wraps it, and the spread renders as `((Bytes)(src[lo..hi])).ꓸꓸꓸ`. A bare type-parameter value has no members of its own, so the spread `ꓸꓸꓸ` (which yields the `Span<byte>` the `append<T>(slice<T>, params Span<T>)` overload binds) must be declared on the **constraint interface** — a member access on a constrained type-parameter value resolves through its constraint. `IByteSeq<T>` therefore exposes `Span<T> ꓸꓸꓸ { get; }`; both implementers already satisfy it (`slice<T>` as `Span<T>`, `@string` as `Span<byte>`), so the interface member is implicit and adds no cast (CS1061 otherwise — the type parameter `Bytes` had no `ꓸꓸꓸ`). (Guarded by the `StringByteUnionConstraint` extension `appendRun` — a bounded and an open-ended sub-slice of the union value spread into `append`, both instantiations value-compared vs Go.)
+A union-constrained value may also be **spread** into a variadic — encoding/json's `appendString[Bytes []byte | string]` does `append(dst, src[lo:hi]...)` (and the open-ended `append(dst, src[lo:]...)`). The sub-slice is typed as the type parameter again (above), so the spread renders as `src[lo..hi].ꓸꓸꓸ`. A bare type-parameter value has no members of its own, so the spread `ꓸꓸꓸ` (which yields the `Span<byte>` the `append<T>(slice<T>, params Span<T>)` overload binds) must be declared on the **constraint interface** — a member access on a constrained type-parameter value resolves through its constraint. `IByteSeq<T>` therefore exposes `Span<T> ꓸꓸꓸ { get; }`; both implementers already satisfy it (`slice<T>` as `Span<T>`, `@string` as `Span<byte>`), so the interface member is implicit and adds no cast (CS1061 otherwise — the type parameter `Bytes` had no `ꓸꓸꓸ`). (Guarded by the `StringByteUnionConstraint` extension `appendRun` — a bounded and an open-ended sub-slice of the union value spread into `append`, both instantiations value-compared vs Go.)
 
 ## Type Aliasing
 Go supports two kinds of [type aliasing](https://go101.org/article/type-system-overview.html#type-definition): a "type definition" and a "type alias declaration".
@@ -14736,7 +14742,7 @@ nint /*x*/ parseUint(bytes sΔ1, nint minΔ1, nint max) {
     …
     return x;
 }
-nint year = parseUint(((bytes)(s[0..4])), 0, 9999);
+nint year = parseUint(s[0..4], 0, 9999);
 ```
 Roslyn compiles a local function that is never converted to a delegate with a **by-ref struct closure**: the captured variables move into a struct that lives in the enclosing frame and is passed as a hidden `ref` parameter. There is still exactly one storage location per captured variable — the enclosing method's own uses are rewritten to the same field — so sharing, write-visibility and the capture-snapshot machinery are all unchanged. Only the heap objects are gone. The result type is rendered by the same helper `visitFuncDecl` uses, so a named Go result keeps its `/*x*/` comment and a local function reads exactly like a declared one; a single-return literal keeps the expression-bodied collapse (`byte num2(slice<byte> bΔ1) => …;`).
 
