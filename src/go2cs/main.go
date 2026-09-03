@@ -212,6 +212,7 @@ func main() {
 	csprojFileCmd := commandLine.String("csproj", "", "Path to custom .csproj template file")
 	debugModeCmd := commandLine.Bool("debug", false, "Enable debug mode")
 	dualRecvCmd := commandLine.Bool("dual-recv", false, "B′ S0: eligible pointer-receiver methods emit the ref-receiver PRIMARY beside the ж twin (flag-gated; scratch-root regens only until S2's rebank ride)")
+	dualRecvParamsCmd := commandLine.Bool("dual-recv-params", false, "B′ S1 (requires -dual-recv): primaries lower their pointer params, the call-site selection table lands, and the X3 method-call veto relaxes for directly-selectable methods (kept separate so -dual-recv alone still emits the S0 floor)")
 
 	var positionals []string
 	positionals, err = parseArgsInterspersed(commandLine, os.Args[1:])
@@ -428,11 +429,21 @@ Examples:
 		showParseTree:       *showParseTreeCmd,
 		debugMode:           *debugModeCmd,
 		dualRecv:            *dualRecvCmd,
+		dualRecvParams:      *dualRecvParamsCmd,
+	}
+
+	// -dual-recv-params (S1) is a refinement of -dual-recv (S0), never standalone: the parameter
+	// half emits into the ref-return primaries S0 declares, and the X3 relaxation only pays off
+	// once those primaries exist. Rejecting the lone form keeps the S0-floor state (`-dual-recv`
+	// alone) unambiguous — the measurability condition the flag split exists for.
+	if options.dualRecvParams && !options.dualRecv {
+		log.Fatalln("-dual-recv-params (B′ S1) requires -dual-recv (B′ S0): the parameter half emits into S0's primaries")
 	}
 
 	// The capture-mode pass runs across four drivers with no options in reach; the flag mirrors
 	// into its package global once, here (see selectRefReturnPrimaries).
 	dualRecvEnabled = options.dualRecv
+	dualRecvParamsEnabled = options.dualRecvParams
 
 	if options.convertTests {
 		// -tests and -recurse compose badly today (the recursive module walk has its own

@@ -406,6 +406,11 @@ type captureCandidate struct {
 // reach across its four drivers. Set once in main; read only by selectRefReturnPrimaries.
 var dualRecvEnabled bool
 
+// dualRecvParamsEnabled mirrors options.dualRecvParams (B′ S1). Read by the ref-lowering analysis
+// (the §4.3 X3 relaxation) and the primary emission (lowered parameters). Separate from
+// dualRecvEnabled so `-dual-recv` alone re-emits the S0 floor after S1 lands.
+var dualRecvParamsEnabled bool
+
 // packageRefReturnPrimaryMethods is B′-S0's arm-(a) selection (the 2026-09-02 R3 ruling): fluent
 // pointer-receiver methods whose ONLY box need is `return v`, emitted as `[GoRecv] this ref T`
 // primaries returning `ref T` (the receiver itself) with RecvGenerator's twin returning its own
