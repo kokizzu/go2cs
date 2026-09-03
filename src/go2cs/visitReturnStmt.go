@@ -148,6 +148,7 @@ func (v *Visitor) lambdaFuncLitReturnCastType(targetType types.Type, expr ast.Ex
 
 func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 	recvIndex := -1
+	refReturnForwardIndex := -1
 	var capturedRecvName string
 
 	// Check if receiver is directly returned (object identity — a shadowing local returned
@@ -174,6 +175,26 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 
 					break
 				}
+			}
+		}
+	}
+
+	// B′-S1 forwarding-return specialization: a ref-return primary whose single return is
+	// `v.M(…)` — a call on the bare receiver to another ref-return primary — returns the ref
+	// M yields, so it renders `return ref v.M(…)`. The receiver un-boxing (v, not Ꮡv, so the
+	// call binds the primary rather than its ж twin) is the general call-site seam; this adds
+	// only the `ref` prefix. The cascade's selection guarantees every return in such a method
+	// is either this shape or the bare-receiver arm (a) above.
+	if refReturnForwardIndex == -1 && v.currentRefReturnPrimary && v.currentFuncSignature != nil && v.currentFuncSignature.Recv() != nil {
+		recvObj := v.currentFuncSignature.Recv()
+		isRefReturnPrimary := func(fn *types.Func) bool {
+			return packageRefReturnPrimaryMethods != nil && packageRefReturnPrimaryMethods[fn.Origin()]
+		}
+
+		for i, result := range returnStmt.Results {
+			if returnForwardsReceiverThroughPrimary(result, recvObj, v.info, isRefReturnPrimary) {
+				refReturnForwardIndex = i
+				break
 			}
 		}
 	}
@@ -624,6 +645,12 @@ func (v *Visitor) visitReturnStmt(returnStmt *ast.ReturnStmt) {
 						// already-cast RHS — so a bare ident / call / already-narrowed return is untouched.
 						elem.WriteString("(" + narrowCast + ")(" + resultExpr + ")")
 					} else {
+						// B′-S1: forwarding a bare-receiver call to a ref-return primary — return
+						// the ref it yields (`return ref v.M(…)`). See refReturnForwardIndex above.
+						if i == refReturnForwardIndex {
+							elem.WriteString("ref ")
+						}
+
 						elem.WriteString(resultExpr)
 					}
 				}
