@@ -10,6 +10,13 @@ public class TestFormatIntegerVerbsTests
 {
     // WHY THIS EXISTS, and why it is a GolibTests file.
     //
+    // STATUS 2026-09-03: TestFormat no longer carries its own formatter -- the host formats
+    // through the converted fmt, as Go's own testing does. These tests were kept and still pass
+    // unchanged, which is the useful part: seven of the eight behaviours pinned here survived
+    // the delegation byte for byte, and the eighth was a recorded GAP that the delegation closed
+    // (see the last test). The history below is why the formatter existed and what it got wrong;
+    // it is kept because the two defects it names are the reason this file guards the host at all.
+    //
     // TestFormat is the Phase-4 test host's deliberately fmt-free formatter: it renders every
     // t.Log/t.Error/t.Errorf message for EVERY converted suite. Nothing gated it. Behavioral tests
     // never reach the host, and the differential oracle compares VERDICTS, not log text
@@ -115,23 +122,23 @@ public class TestFormatIntegerVerbsTests
     }
 
     [TestMethod]
-    public void KnownGap_OctalAndBinaryOfAByteSliceDiscloseRatherThanRenderElementWise()
+    public void OctalAndBinaryOfAByteSliceRenderElementWiseAsGoDoes()
     {
-        // PINNED DIVERGENCE, measured on go1.23.12: Go renders `%o` of []byte{0xde,0xad} as
-        // "[336 255]" and `%b` as "[11011110 10101101]", element-wise. This shim discloses a bad
-        // verb instead. That is a deliberate gap, not an oversight -- element-wise rendering applies
-        // to every slice, not just bytes, and belongs with the shim's other unimplemented breadth
-        // rather than being smuggled in behind the integer bases.
+        // THE GAP THIS TEST RECORDED IS CLOSED (2026-09-03). It used to assert that the shim
+        // DISCLOSED a bad verb here while Go rendered element-wise, and it said in as many words
+        // that whoever implemented element-wise rendering should be the one to fail it and update
+        // it to Go's strings. Delegating the host's formatting to the converted fmt did exactly
+        // that -- not by implementing the breadth, but by ceasing to carry a second implementation
+        // that had to have breadth at all. This test failed on that cut and is updated here.
         //
-        // The assertion is here so the gap is RECORDED and a future change to it is a deliberate
-        // decision rather than a surprise. If someone implements element-wise rendering, this test
-        // is the one that should fail and be updated to Go's strings above.
+        // The three strings are Go's own, re-measured on go1.23.12 at the time of the change
+        // rather than copied from the comment they replace.
         slice<byte> bytes = new byte[] { 0xde, 0xad }.slice();
 
-        StringAssert.StartsWith(TestFormat.Sprintf("%o", new object[] { bytes }), "%!o(");
-        StringAssert.StartsWith(TestFormat.Sprintf("%b", new object[] { bytes }), "%!b(");
+        Assert.AreEqual("[336 255]", TestFormat.Sprintf("%o", new object[] { bytes }));
+        Assert.AreEqual("[11011110 10101101]", TestFormat.Sprintf("%b", new object[] { bytes }));
 
-        // A STRING under %o is not a gap: Go bad-verbs it too (`%!o(string=hi)`).
-        StringAssert.StartsWith(TestFormat.Sprintf("%o", new object[] { (@string)"hi" }), "%!o(");
+        // A STRING under %o is still a bad verb -- Go bad-verbs it too, so this half never moved.
+        Assert.AreEqual("%!o(string=hi)", TestFormat.Sprintf("%o", new object[] { (@string)"hi" }));
     }
 }
