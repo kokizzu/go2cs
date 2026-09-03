@@ -487,17 +487,11 @@ public static error /*err*/ SetsockoptInet4Addr(nint fd, nint level, nint opt, [
     return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue.at<byte>(0)), 4);
 }
 
-public static error /*err*/ SetsockoptIPMreq(nint fd, nint level, nint opt, ж<IPMreq> Ꮡmreq) {
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡmreq), SizeofIPMreq);
-}
+// go2cs generated this placeholder — func SetsockoptIPMreq is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error /*err*/ SetsockoptIPv6Mreq(nint fd, nint level, nint opt, ж<IPv6Mreq> Ꮡmreq) {
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡmreq), SizeofIPv6Mreq);
-}
+// go2cs generated this placeholder — func SetsockoptIPv6Mreq is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error SetsockoptICMPv6Filter(nint fd, nint level, nint opt, ж<ICMPv6Filter> Ꮡfilter) {
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡfilter), SizeofICMPv6Filter);
-}
+// go2cs generated this placeholder — func SetsockoptICMPv6Filter is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ SetsockoptLinger(nint fd, nint level, nint opt, ж<Linger> Ꮡl) {
     return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡl), SizeofLinger);

@@ -522,4 +522,165 @@ partial class syscall_package
         for (int i = 0; i < length; i++)
             destination[i] = source[i];
     }
+
+    // ── the MULTICAST / ICMPv6 socket-option family ────────────────────────────────────────────
+    //
+    // Eight members over four structs, and the class's SAME defect on a boundary that was already
+    // closed on the other platform. `SetsockoptIPMreq` has been hand-owned for WINDOWS since the
+    // sockaddr arc, whose registration says it exactly: ip_mreq is two INLINE in_addr, converted
+    // IPMreq holds both as golib `array<byte>` MANAGED REFERENCES, and the wrapper hands the kernel
+    // eight bytes that are two OBJECT REFERENCES. Only the goos SCOPE was left at windows, so the
+    // Linux flavour kept the generated body and the same defect.
+    //
+    // MEASURED on Linux before this change: net's TestIPv4MulticastListener fails with
+    // `listen udp 224.0.0.254:12345: setsockopt: cannot assign requested address` -- EADDRNOTAVAIL
+    // on IP_ADD_MEMBERSHIP, which is the Linux errno spelling of the WSAEINVAL the Windows entry
+    // records for the identical call. The managed struct measures 32 bytes (array<byte> is 16 --
+    // a T[] reference plus two ints -- and IPMreq holds two) against the 8 that SizeofIPMreq
+    // promises the kernel, and the first eight bytes handed over are m_array, a heap pointer.
+    //
+    // THE GET SIDE IS THE DANGEROUS HALF and none of it was registered anywhere. Getsockopt*
+    // allocate a HEAP box of the managed struct and hand the kernel `Ꮡvalue`, so the kernel writes
+    // its bytes over `array<>` references inside a GC-tracked object -- this file's own corruption
+    // sub-class, for which the header already ruled that "no roster row reached it" is a statement
+    // about coverage and not about execution. They are closed here on the mechanism.
+    //
+    // ICMPv6Filter is the fourth struct and was surfaced by the census rather than by the ruling
+    // that commissioned this work; it is the same shape (one `array<uint32>` of 8) at the same
+    // boundary, in both directions.
+    //
+    // The remedy is the Windows body's, which for this family is simpler than a mirror struct: the
+    // layouts are inline arrays plus at most one scalar, so a stack buffer with an explicit
+    // element copy IS the native image. A nil pointer reaches the kernel as a zeroed option in Go's
+    // own wrappers too, so the zeroed buffer is the faithful image rather than a special case.
+
+
+    // The two boundary calls, spelled as this file spells its others: straight to Syscall6 with
+    // uintptr arguments, so no managed image and no golib pointer wrapper stands between the stack
+    // buffer and the kernel.
+    private static unsafe error nativeSetsockopt(nint fd, nint level, nint opt, byte* val, int vallen) {
+        var (_, _, e1) = Syscall6(SYS_SETSOCKOPT, (uintptr)fd, (uintptr)level, (uintptr)opt, (uintptr)(nint)val, (uintptr)vallen, 0);
+        return e1 != 0 ? errnoErr(e1) : default!;
+    }
+
+    private static unsafe error nativeGetsockopt(nint fd, nint level, nint opt, byte* val, _Socklen* vallen) {
+        var (_, _, e1) = Syscall6(SYS_GETSOCKOPT, (uintptr)fd, (uintptr)level, (uintptr)opt, (uintptr)(nint)val, (uintptr)(nint)vallen, 0);
+        return e1 != 0 ? errnoErr(e1) : default!;
+    }
+
+    private const int nativeIPMreqLen = 8;          // struct ip_mreq:      2 x in_addr
+    private const int nativeIPMreqnLen = 12;        // struct ip_mreqn:     2 x in_addr + int
+    private const int nativeIPv6MreqLen = 20;       // struct ipv6_mreq:    in6_addr + unsigned int
+    private const int nativeICMPv6FilterLen = 32;   // struct icmp6_filter: 8 x uint32
+
+    public static unsafe error /*err*/ SetsockoptIPMreq(nint fd, nint level, nint opt, ж<IPMreq> Ꮡmreq) {
+        byte* buffer = stackalloc byte[nativeIPMreqLen];
+
+        if (Ꮡmreq is not null && !Ꮡmreq.IsNilPointer) {
+            ref var mreq = ref Ꮡmreq.Value;
+
+            for (nint i = 0; i < 4; i++) {
+                buffer[i] = mreq.Multiaddr[i];
+                buffer[4 + i] = mreq.Interface[i];
+            }
+        }
+        return nativeSetsockopt(fd, level, opt, buffer, nativeIPMreqLen);
+    }
+
+    public static unsafe error /*err*/ SetsockoptIPMreqn(nint fd, nint level, nint opt, ж<IPMreqn> Ꮡmreq) {
+        byte* buffer = stackalloc byte[nativeIPMreqnLen];
+
+        if (Ꮡmreq is not null && !Ꮡmreq.IsNilPointer) {
+            ref var mreq = ref Ꮡmreq.Value;
+
+            for (nint i = 0; i < 4; i++) {
+                buffer[i] = mreq.Multiaddr[i];
+                buffer[4 + i] = mreq.Address[i];
+            }
+            *(int32*)(buffer + 8) = mreq.Ifindex;
+        }
+        return nativeSetsockopt(fd, level, opt, buffer, nativeIPMreqnLen);
+    }
+
+    public static unsafe error /*err*/ SetsockoptIPv6Mreq(nint fd, nint level, nint opt, ж<IPv6Mreq> Ꮡmreq) {
+        byte* buffer = stackalloc byte[nativeIPv6MreqLen];
+
+        if (Ꮡmreq is not null && !Ꮡmreq.IsNilPointer) {
+            ref var mreq = ref Ꮡmreq.Value;
+
+            for (nint i = 0; i < 16; i++)
+                buffer[i] = mreq.Multiaddr[i];
+
+            *(uint32*)(buffer + 16) = mreq.Interface;
+        }
+        return nativeSetsockopt(fd, level, opt, buffer, nativeIPv6MreqLen);
+    }
+
+    public static unsafe error SetsockoptICMPv6Filter(nint fd, nint level, nint opt, ж<ICMPv6Filter> Ꮡfilter) {
+        byte* buffer = stackalloc byte[nativeICMPv6FilterLen];
+
+        if (Ꮡfilter is not null && !Ꮡfilter.IsNilPointer) {
+            ref var filter = ref Ꮡfilter.Value;
+
+            for (nint i = 0; i < 8; i++)
+                ((uint32*)buffer)[i] = filter.Data[i];
+        }
+        return nativeSetsockopt(fd, level, opt, buffer, nativeICMPv6FilterLen);
+    }
+
+    public static unsafe (ж<IPMreq>, error) GetsockoptIPMreq(nint fd, nint level, nint opt) {
+        byte* buffer = stackalloc byte[nativeIPMreqLen];
+        _Socklen vallen = (_Socklen)nativeIPMreqLen;
+
+        var err = nativeGetsockopt(fd, level, opt, buffer, &vallen);
+        ref var value = ref heap(new IPMreq(), out var Ꮡvalue);
+
+        for (nint i = 0; i < 4; i++) {
+            value.Multiaddr[i] = buffer[i];
+            value.Interface[i] = buffer[4 + i];
+        }
+        return (Ꮡvalue, err);
+    }
+
+    public static unsafe (ж<IPMreqn>, error) GetsockoptIPMreqn(nint fd, nint level, nint opt) {
+        byte* buffer = stackalloc byte[nativeIPMreqnLen];
+        _Socklen vallen = (_Socklen)nativeIPMreqnLen;
+
+        var err = nativeGetsockopt(fd, level, opt, buffer, &vallen);
+        ref var value = ref heap(new IPMreqn(), out var Ꮡvalue);
+
+        for (nint i = 0; i < 4; i++) {
+            value.Multiaddr[i] = buffer[i];
+            value.Address[i] = buffer[4 + i];
+        }
+        value.Ifindex = *(int32*)(buffer + 8);
+        return (Ꮡvalue, err);
+    }
+
+    public static unsafe (ж<IPv6Mreq>, error) GetsockoptIPv6Mreq(nint fd, nint level, nint opt) {
+        byte* buffer = stackalloc byte[nativeIPv6MreqLen];
+        _Socklen vallen = (_Socklen)nativeIPv6MreqLen;
+
+        var err = nativeGetsockopt(fd, level, opt, buffer, &vallen);
+        ref var value = ref heap(new IPv6Mreq(), out var Ꮡvalue);
+
+        for (nint i = 0; i < 16; i++)
+            value.Multiaddr[i] = buffer[i];
+
+        value.Interface = *(uint32*)(buffer + 16);
+        return (Ꮡvalue, err);
+    }
+
+    public static unsafe (ж<ICMPv6Filter>, error) GetsockoptICMPv6Filter(nint fd, nint level, nint opt) {
+        byte* buffer = stackalloc byte[nativeICMPv6FilterLen];
+        _Socklen vallen = (_Socklen)nativeICMPv6FilterLen;
+
+        var err = nativeGetsockopt(fd, level, opt, buffer, &vallen);
+        ref var value = ref heap(new ICMPv6Filter(), out var Ꮡvalue);
+
+        for (nint i = 0; i < 8; i++)
+            value.Data[i] = ((uint32*)buffer)[i];
+
+        return (Ꮡvalue, err);
+    }
 }

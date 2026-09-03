@@ -988,6 +988,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckMultiValueReturnOrder() => CheckTarget("MultiValueReturnOrder");
 
     [TestMethod]
+    public void CheckMulticastGroupJoin() => CheckTarget("MulticastGroupJoin");
+
+    [TestMethod]
     public void CheckNamedAnySliceType() => CheckTarget("NamedAnySliceType");
 
     [TestMethod]

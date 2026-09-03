@@ -938,6 +938,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckMultiValueReturnOrder() => CheckTarget("MultiValueReturnOrder");
 
     [TestMethod]
+    public void CheckMulticastGroupJoin() => CheckTarget("MulticastGroupJoin");
+
+    [TestMethod]
     public void CheckNamedAnySliceType() => CheckTarget("NamedAnySliceType");
 
     [TestMethod]

@@ -985,6 +985,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckMultiValueReturnOrder() => CheckTarget("MultiValueReturnOrder");
 
     [TestMethod]
+    public void CheckMulticastGroupJoin() => CheckTarget("MulticastGroupJoin");
+
+    [TestMethod]
     public void CheckNamedAnySliceType() => CheckTarget("NamedAnySliceType");
 
     [TestMethod]

@@ -1289,11 +1289,36 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// `setsockopt: The requested address is not valid in its context` on IP_ADD_MEMBERSHIP.
 		// SetsockoptIPv6Mreq is NOT registered: Go returns EWINDOWS there, so there is nothing to
 		// preserve and a hand-own would invent behaviour.
-		"SetsockoptIPMreq": goosWindows,
-		"Getsockname":      goosWindowsLinux,
-		"Getpeername":      goosWindowsLinux,
-		"Accept4":          goosLinux,
-		"anyToSockaddr":    goosLinux,
+		// LINUX joins the same registration 2026-09-03, and the scope is the whole of what changed:
+		// the defect above is the CONVERTED STRUCT's, not the platform's, so leaving this at
+		// goosWindows left the Linux flavour on the generated body with the identical fault.
+		// Measured: net's TestIPv4MulticastListener fails on Linux with `setsockopt: cannot assign
+		// requested address` -- EADDRNOTAVAIL on IP_ADD_MEMBERSHIP, the Linux errno spelling of the
+		// WSAEINVAL recorded above for the same call -- and the managed IPMreq measures 32 bytes
+		// (array<byte> is 16: a T[] reference plus two ints) against the 8 SizeofIPMreq promises.
+		//
+		// The census that found it found SEVEN more members of the same family at the same boundary,
+		// where the ruling had named three, and they are registered together because this file's own
+		// doctrine forbids deferring the write-back half: the Getsockopt* wrappers allocate a HEAP
+		// box of the managed struct and hand the kernel its address, so the kernel writes over
+		// `array<>` references inside a GC-tracked object -- the corruption sub-class, not the
+		// wrong-answer one. ICMPv6Filter is the fourth struct, surfaced by the census rather than by
+		// the ruling. Bodies for all eight in syscall/linux/structclass_linux_impl.cs.
+		//
+		// SetsockoptIPv6Mreq stays UNREGISTERED on windows for the reason given above (Go returns
+		// EWINDOWS there, so a hand-own would invent behaviour); on linux it is a real option.
+		"SetsockoptIPMreq":       goosWindowsLinux,
+		"SetsockoptIPMreqn":      goosLinux,
+		"SetsockoptIPv6Mreq":     goosLinux,
+		"SetsockoptICMPv6Filter": goosLinux,
+		"GetsockoptIPMreq":       goosLinux,
+		"GetsockoptIPMreqn":      goosLinux,
+		"GetsockoptIPv6Mreq":     goosLinux,
+		"GetsockoptICMPv6Filter": goosLinux,
+		"Getsockname":            goosWindowsLinux,
+		"Getpeername":            goosWindowsLinux,
+		"Accept4":                goosLinux,
+		"anyToSockaddr":          goosLinux,
 		// Recvfrom hands the kernel a MANAGED RawSockaddrAny by address in its generated form, which
 		// the kernel overwrites -- the fifth instance of the kernel-writes-over-managed-array class,
 		// and the first that kills the process (net.Interfaces() -> NetlinkRIB -> AccessViolation).

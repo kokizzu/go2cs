@@ -631,29 +631,11 @@ public static (array<byte> value, error err) GetsockoptInet4Addr(nint fd, nint l
     return (value.Clone(), err);
 }
 
-public static (ж<IPMreq>, error) GetsockoptIPMreq(nint fd, nint level, nint opt) {
-    ref var value = ref heap(new IPMreq(), out var Ꮡvalue);
-    ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
-    vallen = ((_Socklen)SizeofIPMreq);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
-    return (Ꮡvalue, err);
-}
+// go2cs generated this placeholder — func GetsockoptIPMreq is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static (ж<IPMreqn>, error) GetsockoptIPMreqn(nint fd, nint level, nint opt) {
-    ref var value = ref heap(new IPMreqn(), out var Ꮡvalue);
-    ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
-    vallen = ((_Socklen)SizeofIPMreqn);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
-    return (Ꮡvalue, err);
-}
+// go2cs generated this placeholder — func GetsockoptIPMreqn is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static (ж<IPv6Mreq>, error) GetsockoptIPv6Mreq(nint fd, nint level, nint opt) {
-    ref var value = ref heap(new IPv6Mreq(), out var Ꮡvalue);
-    ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
-    vallen = ((_Socklen)SizeofIPv6Mreq);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
-    return (Ꮡvalue, err);
-}
+// go2cs generated this placeholder — func GetsockoptIPv6Mreq is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static (ж<IPv6MTUInfo>, error) GetsockoptIPv6MTUInfo(nint fd, nint level, nint opt) {
     ref var value = ref heap(new IPv6MTUInfo(), out var Ꮡvalue);
@@ -663,13 +645,7 @@ public static (ж<IPv6MTUInfo>, error) GetsockoptIPv6MTUInfo(nint fd, nint level
     return (Ꮡvalue, err);
 }
 
-public static (ж<ICMPv6Filter>, error) GetsockoptICMPv6Filter(nint fd, nint level, nint opt) {
-    ref var value = ref heap(new ICMPv6Filter(), out var Ꮡvalue);
-    ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
-    vallen = ((_Socklen)SizeofICMPv6Filter);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
-    return (Ꮡvalue, err);
-}
+// go2cs generated this placeholder — func GetsockoptICMPv6Filter is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static (ж<Ucred>, error) GetsockoptUcred(nint fd, nint level, nint opt) {
     ref var value = ref heap(new Ucred(), out var Ꮡvalue);
@@ -679,11 +655,7 @@ public static (ж<Ucred>, error) GetsockoptUcred(nint fd, nint level, nint opt) 
     return (Ꮡvalue, err);
 }
 
-public static error /*err*/ SetsockoptIPMreqn(nint fd, nint level, nint opt, ж<IPMreqn> Ꮡmreq) {
-    ref var mreq = ref Ꮡmreq.DerefOrNull();
-
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡmreq), /* unsafe.Sizeof(*mreq) */ (uintptr)12);
-}
+// go2cs generated this placeholder — func SetsockoptIPMreqn is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func recvmsgRaw is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
