@@ -44,6 +44,7 @@
   <ItemGroup Condition="'$(GoTargetOS)' != 'linux'">
     <Compile Remove="LinuxSpawnSeamTests.cs" />
     <Compile Remove="LinuxSyscallClockTests.cs" />
+    <Compile Remove="LibcCallDispatchTests.cs" />
   </ItemGroup>
 
   <!-- The netapi32 ptrout gate is the mirror image: it drives windows-flavor-only syscall surface

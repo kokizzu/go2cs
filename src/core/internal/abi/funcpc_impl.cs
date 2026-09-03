@@ -84,6 +84,18 @@ partial class abi_package
         // there. So this is not "what Go does" — it is the honest report of a limit Go never has.
         //
         // The message names the function, because it is the signature a disclosure matches on.
+        // Class B slots in AHEAD of the refusal, exactly where the header says it would: a darwin dylib
+        // trampoline IS an external stub (no managed body), so the discriminator is not the marker
+        // but the `//go:cgo_import_dynamic` record the class-B pass emitted for it. When one exists
+        // the answer is the exported symbol's REAL address — dereferenced by design, since the
+        // keystone jumps to it — and a token here would be the `return default` defect at the first
+        // call. No record means class C, and the refusal below is the honest answer. A record whose
+        // library or symbol does not resolve throws from TryResolve, naming both: never a zero.
+        if (GoCgoDynamicImports.TryResolve(method, out nint exportAddress))
+        {
+            return (nuint)exportAddress;
+        }
+
         if (method.IsDefined(typeof(GoExternalStubAttribute), inherit: false))
         {
             throw panic(

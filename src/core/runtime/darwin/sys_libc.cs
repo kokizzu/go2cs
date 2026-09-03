@@ -8,49 +8,6 @@ using @unsafe = unsafe_package;
 
 partial class runtime_package {
 
-// Call fn with arg as its argument. Return what fn returns.
-// fn is the raw pc value of the entry point of the desired function.
-// Switches to the system stack, if not already there.
-// Preserves the calling point as the location where a profiler traceback will begin.
-//
-//go:nosplit
-internal static int32 libcCall(@unsafe.Pointer fn, @unsafe.Pointer arg) {
-    // Leave caller's PC/SP/G around for traceback.
-    var gp = getg();
-    ж<m> mp = default!;
-    if (gp != nil) {
-        mp = gp.Value.m;
-    }
-    if (mp != nil && (~mp).libcallsp == 0){
-        mp.of(m.Ꮡlibcallg).set(gp);
-        mp.Value.libcallpc = getcallerpc();
-        // sp must be the last, because once async cpu profiler finds
-        // all three values to be non-zero, it will use them
-        mp.Value.libcallsp = getcallersp();
-    } else {
-        // Make sure we don't reset libcallsp. This makes
-        // libcCall reentrant; We remember the g/pc/sp for the
-        // first call on an M, until that libcCall instance
-        // returns.  Reentrance only matters for signals, as
-        // libc never calls back into Go.  The tricky case is
-        // where we call libcX from an M and record g/pc/sp.
-        // Before that call returns, a signal arrives on the
-        // same M and the signal handling code calls another
-        // libc function.  We don't want that second libcCall
-        // from within the handler to be recorded, and we
-        // don't want that call's completion to zero
-        // libcallsp.
-        // We don't need to set libcall* while we're in a sighandler
-        // (even if we're not currently in libc) because we block all
-        // signals while we're handling a signal. That includes the
-        // profile signal, which is the one that uses the libcall* info.
-        mp = default!;
-    }
-    var res = asmcgocall(fn, arg);
-    if (mp != nil) {
-        mp.Value.libcallsp = 0;
-    }
-    return res;
-}
+// go2cs generated this placeholder — func libcCall is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 } // end runtime_package
