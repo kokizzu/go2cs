@@ -114,7 +114,7 @@ public static types.Importer ForCompiler(ж<token.FileSet> Ꮡfset, @string comp
         if (lookup != default!) {
             throw panic("source importer for custom import path lookup not supported (issue #13847).");
         }
-        return new srcimporter.ImporterжImporter(srcimporter.New(Ꮡ(Δbuild.Default), Ꮡfset, new map<@string, ж<types.Package>>()));
+        return new srcimporter.ImporterжImporter(srcimporter.New(Δbuild.ᏑDefault, Ꮡfset, new map<@string, ж<types.Package>>()));
     }
 
     // compiler not supported

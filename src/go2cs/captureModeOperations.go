@@ -50,6 +50,10 @@ var packageDirectBoxReceiverMethods map[*types.Func]bool
 // is capture-mode. `LoadAllSyntax` makes dependency ASTs + type info available; the *types.Func
 // objects are interned, so call-site lookups match.
 func collectCaptureModeMethods(pkg *packages.Package) {
+	// The loaded package graph is what importedGlobalIsBoxed (globalAddressOperations.go) reads an
+	// IMPORTED package's syntax from; record the root here, where every driver already hands it in.
+	currentLoadedPackage = pkg
+	importedAddressedGlobals = map[*types.Package]map[types.Object]bool{}
 	visited := map[*packages.Package]bool{}
 	captureModeCandidates = nil
 
