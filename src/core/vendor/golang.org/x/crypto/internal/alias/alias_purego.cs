@@ -18,11 +18,7 @@ partial class alias_package {
     builtin.initPackage(typeof(reflect_package));
 }
 
-// AnyOverlap reports whether x and y share memory at any (not necessarily
-// corresponding) index. The memory beyond the slice length is ignored.
-public static bool AnyOverlap(slice<byte> x, slice<byte> y) {
-    return len(x) > 0 && len(y) > 0 && reflect.ValueOf(Ꮡ(x, 0)).Pointer() <= reflect.ValueOf(Ꮡ(y, len(y) - 1)).Pointer() && reflect.ValueOf(Ꮡ(y, 0)).Pointer() <= reflect.ValueOf(Ꮡ(x, len(x) - 1)).Pointer();
-}
+// go2cs generated this placeholder — func AnyOverlap is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // InexactOverlap reports whether x and y share memory at any non-corresponding
 // index. The memory beyond the slice length is ignored. Note that x and y can

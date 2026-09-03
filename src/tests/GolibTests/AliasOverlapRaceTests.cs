@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime;
@@ -7,6 +8,7 @@ using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
 using alias = go.crypto.@internal.alias_package;
+using valias = go.vendor.golang.org.x.crypto.@internal.alias_package;
 using aes = go.crypto.aes_package;
 using cipher = go.crypto.cipher_package;
 
@@ -286,6 +288,84 @@ public class AliasOverlapRaceTests
             "fresh arrays — crypto/aes's alias.InexactOverlap guard tore between its address takes");
     }
 
+    [TestMethod]
+    public void VendoredAnyOverlapAnswersByStorageAndIndexRange()
+    {
+        // The vendored purego twin — vendor/golang.org/x/crypto/internal/alias, the guard chacha20 and
+        // chacha20poly1305 call through InexactOverlap on every XORKeyStream / Seal / Open — carries the
+        // crypto/internal twin's contract: storage identity and index range decide, no address is read.
+        byte[] a = new byte[32];
+        byte[] b = new byte[32];
+        Assert.IsFalse(valias.AnyOverlap(a.slice(), b.slice()), "two distinct backing arrays share no memory");
+        Assert.IsFalse(valias.AnyOverlap(a.slice(0, 16), a.slice(16, 32)), "adjacent-but-disjoint windows of one array share no element");
+        Assert.IsTrue(valias.AnyOverlap(a.slice(0, 20), a.slice(10, 32)), "windows [0,20) and [10,32) of one array share elements 10..19");
+        Assert.IsTrue(valias.AnyOverlap(a.slice(10, 32), a.slice(0, 20)), "AnyOverlap is symmetric");
+        Assert.IsTrue(valias.AnyOverlap(a.slice(), a.slice(0, 8)), "the whole window overlaps its own prefix");
+        Assert.IsFalse(valias.AnyOverlap(a.slice(4, 4), a.slice()), "a zero-length window names no memory");
+        Assert.IsFalse(valias.AnyOverlap(default(slice<byte>), a.slice()), "the nil slice names no memory");
+        Assert.IsFalse(valias.InexactOverlap(a.slice(), a.slice()), "exact aliasing is not INEXACT overlap — chacha20's in-place XORKeyStream(dst, dst)");
+        Assert.IsTrue(valias.InexactOverlap(a.slice(0, 20), a.slice(1, 21)), "a one-element shift is inexact overlap");
+        Assert.IsFalse(valias.InexactOverlap(a.slice(), b.slice()), "distinct arrays: no inexact overlap");
+    }
+
+    [TestMethod]
+    public void VendoredAnyOverlapDoesNotConfuseArraysWithCollidingIdentityHashes()
+    {
+        // The vendored purego twin orders `reflect.ValueOf(Ꮡ(x, 0)).Pointer()` values, and the reflect bridge
+        // answers Pointer() for an element reference with ElemRefBox.PointerOrderToken — the backing's
+        // RuntimeHelpers.GetHashCode shifted 32 bits plus the element index. That token is GC-stable, so the
+        // four-take TEAR the crypto/internal twin measured cannot happen here (the 16-thread stress guard read
+        // GREEN against this body for 30 s, measured 2026-09-03), but an identity hash is not an identity: two
+        // DISTINCT live arrays can share one, and then their token ranges coincide and the order form reads
+        // them as overlapping. chacha20poly1305's Seal/Open and chacha20's XORKeyStream guard with
+        // InexactOverlap, so such a pair panics `invalid buffer overlap` on buffers that share no byte. The
+        // search below allocates until two arrays collide (a 32-bit identity hash makes that a birthday
+        // problem, not a rarity), keeping every candidate alive so no hash is recycled. RED on the token form,
+        // GREEN on alias_purego_impl.cs over slice<T>.Overlaps, INCONCLUSIVE only if no collision surfaces
+        // within the allocation budget.
+        var keepAlive = new List<byte[]>(1 << 16);
+        var byHash = new Dictionary<int, byte[]>(1 << 16);
+        byte[]? first = null, second = null;
+        int allocations = 0;
+
+        while (first is null && allocations < (1 << 23))
+        {
+            byte[] candidate = new byte[64];
+            keepAlive.Add(candidate);
+            allocations++;
+            int hash = RuntimeHelpers.GetHashCode(candidate);
+
+            if (byHash.TryGetValue(hash, out byte[]? earlier))
+            {
+                first = earlier;
+                second = candidate;
+            }
+            else
+            {
+                byHash[hash] = candidate;
+            }
+        }
+
+        if (first is null || second is null)
+        {
+            Assert.Inconclusive($"no two of {allocations:N0} live arrays shared an identity hash within the budget; the collision arm is unmeasured here");
+            return;
+        }
+
+        Assert.AreNotSame(first, second, "the search returned one array twice");
+        Assert.AreEqual(RuntimeHelpers.GetHashCode(first), RuntimeHelpers.GetHashCode(second), "the pair does not actually collide");
+
+        slice<byte> x = first.slice(), y = second.slice();
+
+        Assert.IsFalse(valias.AnyOverlap(x, y),
+            $"the vendored alias.AnyOverlap reported two DISTINCT arrays as overlapping because they share identity hash " +
+            $"{RuntimeHelpers.GetHashCode(first):X} (found after {allocations:N0} allocations) — a hash-derived order token is not " +
+            "storage identity; overlap must be answered by storage identity and index range");
+        Assert.IsFalse(valias.InexactOverlap(x, y), "…and InexactOverlap, chacha20poly1305's Seal/Open guard, must agree");
+        Assert.IsFalse(valias.AnyOverlap(y, x), "…in either argument position");
+
+        GC.KeepAlive(keepAlive);
+    }
     // Runs `body` on StressThreads oversubscribed workers plus two allocation-churn threads for
     // StressSeconds, stopping at the first false; returns the number of workers that reported false.
     private static int RunStress(Func<bool> body)

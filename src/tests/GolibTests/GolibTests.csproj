@@ -147,6 +147,9 @@
          the REAL converted predicate rather than a model of it — the same
          MSTest-tier-binds-a-converted-package precedent as sha3/math.big/flag above. -->
     <ProjectReference Include="..\..\core\crypto\internal\alias\crypto.internal.alias.csproj" />
+    <!-- AliasOverlapRaceTests (vendored twin): vendor/golang.org/x/crypto/internal/alias is the purego copy
+         of the same predicate, reached by chacha20 and chacha20poly1305 through InexactOverlap. -->
+    <ProjectReference Include="..\..\core\vendor\golang.org\x\crypto\internal\alias\vendor.golang.org.x.crypto.internal.alias.csproj" />
     <!-- AliasOverlapRaceTests: the GCM Open shape that killed net/http, driven through the REAL converted
          crypto/aes + crypto/cipher (counterCrypt -> aes Encrypt -> alias.InexactOverlap). -->
     <ProjectReference Include="..\..\core\crypto\aes\crypto.aes.csproj" />
