@@ -58,4 +58,41 @@ public class PartialStubGeneratorTests
         Assert.IsFalse(generated.Contains(PackageTestInitHookMethod),
             "the -tests package-init hook must never be stubbed — an unimplemented hook is erased by design");
     }
+
+    /// <summary>
+    /// The stub carries [go.GoExternalStub], which is the ONLY runtime evidence that nothing in the
+    /// compilation implements a method.
+    /// </summary>
+    /// <remarks>
+    /// internal/abi's FuncPCABI0/FuncPCABIInternal are handed a method group and must answer either
+    /// a synthetic PC or a loud refusal, and neither available proxy decides that: a bodyless partial
+    /// DECLARATION covers Go assembly routines and darwin's dylib trampolines alike, and
+    /// [GeneratedCode] is minted once per generator in this analyzer, so RecvGenerator's ж-overloads
+    /// carry it too — runtime/time.cs passes exactly one of those, (*timers).run, a real function
+    /// with a real body. This generator is the exact oracle because of the two skips above it: a
+    /// partial another generator implements, and one a hand-written *_impl.cs supplies, are never
+    /// stubbed. See docs/phase4/DESIGN-synthetic-pc-registry.md.
+    /// </remarks>
+    [TestMethod]
+    public void TheStubCarriesTheExternalStubMarker()
+    {
+        string source = $$"""
+            namespace go;
+
+            partial class demo_package
+            {
+                static partial void {{PackageTestInitHookMethod}}();
+
+                internal static partial void realAsmFunc();
+            }
+            """;
+
+        string generated = string.Join("\n", RunGenerator(source).GeneratedTrees
+            .Select(tree => tree.ToString())
+            .Where(text => text.Contains("realAsmFunc")));
+
+        StringAssert.Contains(generated, "[global::go.GoExternalStub]",
+            "the stub must be marked, or FuncPCABI0 cannot tell an assembly function from a converted one");
+        Assert.AreNotEqual("", generated, "the asm partial must have produced a stub at all");
+    }
 }
