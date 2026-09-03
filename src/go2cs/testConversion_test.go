@@ -507,6 +507,99 @@ func TestStdLibConversionSkipsHandOwnedAndToolchainPackages(t *testing.T) {
 	}
 }
 
+// The -tests HALF of the invariant above, which was missing until 2026-09-03. The skip list gates
+// the -stdlib QUEUE only; nothing on the -tests path consulted it, so the canonical two-argument
+// command — the shape every other roster row is converted with — converted Go's production testing
+// sources straight into src/core/testing and overwrote the hand-owned host (measured: testing.cs
+// +2622/-560, then CS0117/CS1929 in the host's own files; with the file marker in place instead, 56
+// errors led by 25 CS0111 duplicate members, i.e. the F15b collision). This pins the refusal, the
+// per-package reason text, and the deliberate override that keeps the census runnable.
+func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
+	goRoot := filepath.Join(t.TempDir(), "sdk", "go1.23.12")
+	pkgDir := func(importPath string) string {
+		return filepath.Join(goRoot, "src", filepath.FromSlash(importPath))
+	}
+
+	// The refusal must name the package AND say why, or the next reader reaches for the override
+	// without knowing what it overrides.
+	refused := []struct {
+		importPath string
+		reason     string
+	}{
+		{"testing", "HAND-OWNED"},
+		{"unsafe", "compiler intrinsic"},
+		{"builtin", "compiler intrinsic"},
+		{"cmd", "Go toolchain"},
+		{"cmd/compile", "Go toolchain"},
+		{"cmd/go/internal/work", "Go toolchain"},
+	}
+
+	for _, refusal := range refused {
+		importPath, want := refusal.importPath, refusal.reason
+		err := requireConvertibleTestTarget(pkgDir(importPath), Options{goRoot: goRoot})
+
+		if err == nil {
+			t.Errorf("-tests on %q must be refused", importPath)
+			continue
+		}
+
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("-tests refusal for %q = %q, want it to mention %q", importPath, err, want)
+		}
+
+		if !strings.Contains(err.Error(), "-test-allow-handown") {
+			t.Errorf("-tests refusal for %q must name the override flag, got %q", importPath, err)
+		}
+	}
+
+	// A GOROOT spelled with the non-native separator is a spelling `go` itself accepts, and a
+	// textual prefix test would answer "not stdlib" and wave the refusal through — the silent
+	// direction, and the same trap checkGoRootSpelling exists for on the emission side.
+	if err := requireConvertibleTestTarget(pkgDir("testing"), Options{goRoot: filepath.ToSlash(goRoot)}); err == nil {
+		t.Error("-tests on testing must be refused through a forward-slash GOROOT spelling too")
+	}
+
+	// The override is what keeps the measurement that produced this guard repeatable.
+	if err := requireConvertibleTestTarget(pkgDir("testing"), Options{goRoot: goRoot, testAllowHandOwn: true}); err != nil {
+		t.Errorf("-test-allow-handown must permit the deliberate census run, got %v", err)
+	}
+
+	// Ordinary packages — including every testing SUBpackage — must be untouched by the guard. A
+	// prefix test instead of the skip list's exact match would refuse all five of them.
+	for _, importPath := range []string{
+		"bytes", "testing/quick", "testing/fstest", "testing/iotest", "testing/slogtest",
+		"testing/internal/testdeps", "internal/testenv",
+	} {
+		if err := requireConvertibleTestTarget(pkgDir(importPath), Options{goRoot: goRoot}); err != nil {
+			t.Errorf("-tests on %q must be allowed, got %v", importPath, err)
+		}
+	}
+
+	// A package OUTSIDE GOROOT never resolves to a stdlib import path, so an end-user directory
+	// that merely happens to be called "testing" is not the corpus's hand-own and is not refused.
+	outside := filepath.Join(t.TempDir(), "myproject", "testing")
+
+	if err := requireConvertibleTestTarget(outside, Options{goRoot: goRoot}); err != nil {
+		t.Errorf("-tests on a non-GOROOT directory must be allowed, got %v", err)
+	}
+
+	if got := stdLibImportPathOf(outside, goRoot); got != "" {
+		t.Errorf("stdLibImportPathOf(non-GOROOT) = %q, want empty", got)
+	}
+
+	// GOROOT/src itself denotes no package; answering "." would make the predicate ask a question
+	// the skip list cannot answer.
+	if got := stdLibImportPathOf(filepath.Join(goRoot, "src"), goRoot); got != "" {
+		t.Errorf("stdLibImportPathOf(GOROOT/src) = %q, want empty", got)
+	}
+
+	// Import paths are Go-spelled wherever the run happens, because that is what the skip list and
+	// every other import-path predicate compare against.
+	if got := stdLibImportPathOf(pkgDir("testing/quick"), goRoot); got != "testing/quick" {
+		t.Errorf("stdLibImportPathOf = %q, want testing/quick", got)
+	}
+}
+
 // Every converted test project carries the shared runtime and the hand-owned testing package as
 // fixed references, both rooted in the one converted-standard-library tree — and, since F5, spelled
 // with FORWARD slashes like every other emitted reference, so one corpus form serves every host.
