@@ -789,6 +789,32 @@ jobs:
 
               Write-Host "==> ${p}: exit $code; stderr $($err.Count) lines; stdout $($out.Count) lines"
 
+              # A stdout MISMATCH is the Output phase's other verdict, and the runner's log carries no
+              # text for it. Run Go's own program the way that phase does (`go run .`, cwd = the
+              # project, the pinned toolchain) and, when the row exits 0 with a differing stdout,
+              # annotate the DIFF -- `<=` lines are the C# side, `=>` lines are Go's -- so the reading
+              # is one job-log read (ReflectArrayOf on darwin, 2026-09-03: the only signal was the
+              # word "mismatch").
+              if ($code -eq 0) {
+                  Push-Location $proj
+                  $goOut = @(& go run . 2>$null)
+                  Pop-Location
+                  Set-Content -LiteralPath (Join-Path $art "stderr-$p-$goos-$rid.go-stdout.txt") -Value $goOut
+
+                  if (($out -join "`n") -ne ($goOut -join "`n")) {
+                      $diff = @(Compare-Object -ReferenceObject @($out + '') -DifferenceObject @($goOut + '') -SyncWindow 0 |
+                          ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" })
+                      $dl = @(
+                          "## stdout diff $p -- GOOS=$goos ($rid) -- C# (<=) vs go run (=>): $($out.Count) vs $($goOut.Count) lines"
+                          ''
+                          '```'
+                      ) + @($diff | Select-Object -First 120) + @('```')
+
+                      Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $dl
+                      & ./.github/annotate-summary.ps1 -Title "stdout diff $p $goos/$rid" -Lines $dl
+                  }
+              }
+
               $lines = @(
                   "## stderr $p -- GOOS=$goos ($rid) -- exit $code"
                   ''
