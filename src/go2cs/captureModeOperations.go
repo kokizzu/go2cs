@@ -182,6 +182,7 @@ func selectRefReturnPrimaries(pkg *packages.Package) {
 		}
 
 		if bodyTakesReceiverFieldAddress(candidate.body, candidate.recvName, recvObj, candidate.info) ||
+			bodyTakesImplicitReceiverFieldAddress(candidate.body, candidate.recvName, recvObj, candidate.info) ||
 			bodyReassignsReceiver(candidate.body, candidate.recvName, signature.Recv(), candidate.info) ||
 			bodyUsesReceiverAsPointerValue(candidate.body, candidate.recvName, candidate.info) ||
 			bodyCapturesReceiverInClosure(candidate.body, candidate.recvName, signature.Recv(), candidate.info) ||
@@ -1356,6 +1357,116 @@ func bodyTakesReceiverFieldAddress(body *ast.BlockStmt, recvName string, recvObj
 				found = true
 				return false
 			}
+		}
+
+		return true
+	})
+
+	return found
+}
+
+// exprIsReceiverValueFieldChain reports whether expr is a VALUE-struct field chain rooted at the
+// receiver (`v.f`, `v.f.g`, every hop a value struct) — the same walk bodyTakesReceiverFieldAddress
+// uses under its `&`, factored out so the IMPLICIT-address form below can share it. A bare receiver
+// ident (`v`, depth 0) is NOT a field chain and returns false; a hop through a POINTER field stops
+// the walk (that address is the pointee's, reached through a box that already exists — conservative,
+// matching the sibling's own note). Matched by OBJECT beyond one hop so a shadowing local cannot
+// spuriously qualify.
+func exprIsReceiverValueFieldChain(expr ast.Expr, recvName string, recvObj types.Object, info *types.Info) bool {
+	if _, ok := expr.(*ast.SelectorExpr); !ok {
+		return false
+	}
+
+	base := expr
+	depth := 0
+
+	for {
+		inner, ok := base.(*ast.SelectorExpr)
+
+		if !ok {
+			break
+		}
+
+		selection, ok := info.Selections[inner]
+
+		if !ok || selection.Kind() != types.FieldVal {
+			return false
+		}
+
+		innerType := info.TypeOf(inner)
+
+		if innerType == nil {
+			return false
+		}
+
+		if _, isStruct := innerType.Underlying().(*types.Struct); !isStruct {
+			return false
+		}
+
+		base = inner.X
+		depth++
+	}
+
+	ident, ok := base.(*ast.Ident)
+
+	if !ok || ident.Name != recvName || depth == 0 {
+		return false
+	}
+
+	if depth > 1 && recvObj != nil && info.ObjectOf(ident) != recvObj {
+		return false
+	}
+
+	return true
+}
+
+// bodyTakesImplicitReceiverFieldAddress reports whether the body calls a POINTER-receiver method on
+// a VALUE-struct field of the receiver — `v.field.M(…)` where field is a value struct and M has a
+// pointer receiver. Go implicitly takes `&v.field` to make that call, so it is a receiver-field
+// address exactly like the explicit `&v.field` bodyTakesReceiverFieldAddress catches, and it forces
+// the receiver BOX for the same reason: only `Ꮡv.of(field)` yields an ALIASING field pointer, while
+// a ref-receiver primary has no `Ꮡv` and `Ꮡ(v.field)` would box a COPY and drop M's writes. Such a
+// method therefore cannot be a ref-return primary. Measured on edwards25519's projP2.Zero —
+// `v.X.Zero()` (X a field.Element, Zero a pointer method) was promoted to `this ref projP2 v` yet
+// its body still emitted `Ꮡv.of(projP2.ᏑX).Zero()`, 99 CS0103 across the package (the explicit-only
+// predicate never saw the implicit address). Flag-gated by the dual-recv selection it feeds.
+func bodyTakesImplicitReceiverFieldAddress(body *ast.BlockStmt, recvName string, recvObj types.Object, info *types.Info) bool {
+	found := false
+
+	ast.Inspect(body, func(node ast.Node) bool {
+		call, ok := node.(*ast.CallExpr)
+
+		if !ok {
+			return true
+		}
+
+		sel, ok := call.Fun.(*ast.SelectorExpr)
+
+		if !ok {
+			return true
+		}
+
+		funcObj, ok := info.ObjectOf(sel.Sel).(*types.Func)
+
+		if !ok || funcObj == nil {
+			return true
+		}
+
+		signature, ok := funcObj.Type().(*types.Signature)
+
+		if !ok || signature.Recv() == nil {
+			return true
+		}
+
+		// A value-receiver method takes no address of its argument; only a pointer receiver forces
+		// Go to address `v.field`.
+		if _, isPtr := signature.Recv().Type().(*types.Pointer); !isPtr {
+			return true
+		}
+
+		if exprIsReceiverValueFieldChain(sel.X, recvName, recvObj, info) {
+			found = true
+			return false
 		}
 
 		return true
