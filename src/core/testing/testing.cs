@@ -10,6 +10,21 @@ using go.testing_runtime;
 using any = System.Object;
 using ꓸꓸꓸany = System.Span<System.Object>;
 
+// go2cs HAND-OWNED (whole file). This is the Phase-4 test host's public `testing` shim — the
+// structural replacement stdLibConverter.go's skip list names, not a conversion of Go's testing.go.
+// Of the ten hand-owned files in this directory this is the ONLY one whose path a converted
+// testing.go would land on, so the marker here resolves a real collision: containsManualConversionMarker
+// drops a marked file from the convert set and emits a testing.cs.auto review sibling beside it.
+//
+// Measured 2026-09-03, before the marker existed: a `-tests` run pointed at this package replaced
+// this file's 685 lines with Go's converted testing.go (+2622/-560), after which the host's own
+// TestHost.cs and TestExecution.cs failed CS0117/CS1929 on M.Runner, M.Run and T.Execution — the
+// hand-owned members Go's testing.go does not declare. The marker is necessary but NOT sufficient:
+// it saves this file while Go's benchmark.go/match.go/allocs.go/... still emit beside it into the
+// same testing_package. The guard that actually holds is requireConvertibleTestTarget in
+// testConversion.go, which refuses `-tests` on this package outright.
+[module: go.GoManualConversion]
+
 namespace go;
 
 /// <summary>

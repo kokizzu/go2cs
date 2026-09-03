@@ -65,6 +65,7 @@ type Options struct {
 	testMetadataAnchorName string        // C# class that owns test-generated adapters under reference models
 	testConfig             string        // -test-config Debug|Release: publish/run configuration for the converted test host (default Debug -- unchanged pipeline behavior); Release also publishes with an explicit -p:go2csPath, replacing the Debug-conditional csproj-template default. See docs/phase4 tiering census
 	testTiered             bool          // -test-tiered: explicit opt-back-IN to the CLR's default tiered JIT when testConfig is Release (Release's own default is DOTNET_TieredCompilation=0, for deterministic timing-bounded verdicts -- see the tiering census); meaningless when testConfig is Debug
+	testAllowHandOwn       bool          // -test-allow-handown: deliberately convert a package the -stdlib queue skips (testing, unsafe, ...) into a SCRATCH root; refused by default because the default output path IS the hand-owned tree -- see requireConvertibleTestTarget
 	testProductionPath     string        // original package path retained after reference-mode self-binding is cleared
 	testProductionName     string        // original package name retained for white-box object routing
 	testExternalVariant    bool          // current variant is the external <name>_test package

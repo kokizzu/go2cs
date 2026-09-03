@@ -196,6 +196,7 @@ func main() {
 	testFilterCmd := commandLine.String("test-filter", "", "Regex handed VERBATIM to BOTH sides of a -test-action compare (go test -run and the converted host --run), so the two runs filter identically. Intended for the block-gated census: exclude a test that BLOCKS the suite by passing an anchored alternation of the parents to keep. A gated census is DIAGNOSTIC ONLY and must never bank a row -- the row banks from an ungated run, after the block is rooted or the divergence disclosed")
 	testConfigCmd := commandLine.String("test-config", "Release", "Publish/run configuration for the converted test host: Release (default since 2026-09-02 -- the validation configuration of RECORD, with an explicit -p:go2csPath replacing the Debug-conditional csproj-template default, and the CLR's tiered JIT disabled by default, see -test-tiered) or Debug (the pre-2026-09-02 default, still fully supported by flag). Recorded on every proof page and in the comparison record so a verdict carries the level it was measured at. The default moved on the deployment owner's ruling, gated on the Release census (docs/phase4/CENSUS-release-tc0-delta.md), not on this flag's own authority")
 	testTieredCmd := commandLine.Bool("test-tiered", false, "With -test-config Release, opt back IN to the CLR's default tiered JIT (Release's own default is DOTNET_TieredCompilation=0, since a verdict that depends on JIT promotion timing is not reproducible run to run). Meaningless with -test-config Debug. It changes what the C# host's JIT does, not what the converter emits")
+	testAllowHandOwnCmd := commandLine.Bool("test-allow-handown", false, "Convert a package the -stdlib queue deliberately skips (testing, unsafe, builtin, cmd/...) as a -tests target anyway. Refused by default: `testing` IS the hand-owned Phase-4 test host, and the pipeline's natural output path is the very directory the host lives in, so a mistyped command overwrites it (measured 2026-09-03 -- the run replaced src/core/testing/testing.cs with Go's converted testing.go). Pass this ONLY with a SCRATCH output root, for a deliberate measurement whose emission is thrown away; it is not a route to banking such a package, which would still hit the F15b 'ONE testing package, period' collision")
 	var recurseVal recurseMode
 	commandLine.Var(&recurseVal, "recurse", "Recursively convert an end-user module and its third-party dependencies (references the pre-converted standard library); use -recurse=module to convert only the module's own packages, leaving the third-party closure referenced but unconverted, and -recurse=nuget to reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local project references (values combine: -recurse=module,nuget)")
 	targetPlatformCmd := commandLine.String("platforms", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), "Target platform(s) for conversion, format: os/arch; comma-separated for a list (windows/amd64,linux/amd64,darwin/amd64), which with -stdlib emits the multi-platform (layout L3) corpus — one GOOS per target")
@@ -410,6 +411,7 @@ Examples:
 		testFilter:          strings.TrimSpace(*testFilterCmd),
 		testConfig:          canonicalTestConfig(*testConfigCmd),
 		testTiered:          *testTieredCmd,
+		testAllowHandOwn:    *testAllowHandOwnCmd,
 		recurse:             recurseVal.enabled,
 		moduleOnly:          recurseVal.moduleOnly,
 		nugetRefs:           recurseVal.nuget,
@@ -647,6 +649,14 @@ Examples:
 			// legitimate, and only the corpus-defining modes carry the pin.
 			if options.convertTests {
 				if err := checkCorpusToolchainPin("-tests", convertingRelease(options.goRoot), corpusPinnedRelease(options.go2csPath)); err != nil {
+					log.Fatalf("%v\n", err)
+				}
+
+				// The hand-own guard, checked BEFORE processConversion writes anything: the
+				// -stdlib queue's skip list has no -tests counterpart, so until this existed a
+				// -tests run pointed at `testing` converted Go's production sources straight
+				// over the hand-owned host they would then have to compile against.
+				if err := requireConvertibleTestTarget(inputFilePath, options); err != nil {
 					log.Fatalf("%v\n", err)
 				}
 			}
