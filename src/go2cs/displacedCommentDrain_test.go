@@ -6,21 +6,29 @@
 
 // Guards the comment sink across a DISPLACED declaration in `-comments` output.
 //
-// A function registered in manualConversionFuncs emits a one-line placeholder and returns, which
-// skips both of the places a converted declaration drains the free-floating-comment sink: the
-// writeDoc that flushes the comments standing ahead of the declaration, and the body visit that
-// flushes the ones inside it. The sink's drain is POSITIONAL, so nothing was lost — everything the
-// displaced declaration failed to claim was flushed by the NEXT declaration's own writeDoc, which
-// takes every comment positioned before it. The corpus carried both halves of the resulting
-// misplacement: syscall_linux's recvmsgRaw body comment (`// receive at least one normal byte`)
-// emitted immediately above `sendmsgN`, reading as its doc comment, and runtime mbitmap's
-// getgcmask — the last declaration of its file, so its 32 body-comment lines were flushed by the
-// end-of-file drain and landed after the class's closing brace.
+// A function registered in manualConversionFuncs — or a TYPE registered in manualConversionTypes —
+// emits a one-line placeholder and returns, which skips both of the places a converted declaration
+// drains the free-floating-comment sink: the writeDoc that flushes the comments standing ahead of
+// the declaration, and the visit of its own span, which flushes the ones inside it. The sink's
+// drain is POSITIONAL, so nothing was lost — everything the displaced declaration failed to claim
+// was flushed by the NEXT declaration's own writeDoc, which takes every comment positioned before
+// it. The corpus carried both halves of the resulting misplacement: syscall_linux's recvmsgRaw body
+// comment (`// receive at least one normal byte`) emitted immediately above `sendmsgN`, reading as
+// its doc comment, and runtime mbitmap's getgcmask — the last declaration of its file, so its 32
+// body-comment lines were flushed by the end-of-file drain and landed after the class's closing
+// brace. The TYPE site's witness is runtime2.cs.auto, where the free-floating block preceding
+// `type guintptr` ("The guintptr, muintptr, and puintptr are all used to bypass write barriers…")
+// read as `gobuf`'s doc comment.
 //
 // The invariant pinned here is the one that survives an emission change: a declaration FOLLOWING a
-// displaced one carries its own doc comment and nothing else, the displaced body's commentary
-// appears nowhere, and a comment that stood ahead of the displaced declaration stays ahead of its
-// placeholder.
+// displaced one carries its own doc comment and nothing else, the displaced declaration's own
+// commentary appears nowhere, and a comment that stood ahead of the displaced declaration stays
+// ahead of its placeholder.
+//
+// What the placeholder does NOT gain is the displaced declaration's attached DOC group. That is not
+// a sink question at all: visitFile removes an attached group from the sink, so it travels with its
+// node and a node that is never visited emits none. Both placeholder sites answer that identically,
+// and changing it would be a ruling about placeholders rather than a fix to the drain.
 
 package main
 
@@ -54,6 +62,33 @@ func displacedFixture(t *testing.T, pkgPath string, funcNames ...string) {
 		}
 
 		delete(manualConversionFuncs, pkgPath)
+	})
+}
+
+// displacedTypeFixture is the manualConversionTypes twin of displacedFixture: it registers displaced
+// TYPE names for the fixture module's package path for the duration of one test, and restores the
+// registry afterwards. Kept separate rather than folded into one variadic helper because the two
+// registries carry different value shapes (a goosScope per func, a plain bool per type) and a test
+// that registers the wrong one would silently exercise the converted path instead of the placeholder.
+func displacedTypeFixture(t *testing.T, pkgPath string, typeNames ...string) {
+	t.Helper()
+
+	previous, existed := manualConversionTypes[pkgPath]
+	entry := map[string]bool{}
+
+	for _, name := range typeNames {
+		entry[name] = true
+	}
+
+	manualConversionTypes[pkgPath] = entry
+
+	t.Cleanup(func() {
+		if existed {
+			manualConversionTypes[pkgPath] = previous
+			return
+		}
+
+		delete(manualConversionTypes, pkgPath)
 	})
 }
 
@@ -179,6 +214,83 @@ func displacedTail(n int) int {
 		"third stranded line",
 	} {
 		requireAbsent(t, lines, stranded)
+	}
+}
+
+// TestDisplacedTypeDoesNotStealTheNextDeclarationsComments is the runtime2 shape, and the TYPE twin
+// of the function test above: visitTypeSpec's manualConversionTypes placeholder returns before the
+// sink is served, so the free-floating block standing ahead of `type guintptr` was flushed by a
+// later declaration's writeDoc instead — first as `gobuf`'s doc comment, then (once the function
+// site was fixed) as the doc of the first FOLLOWING func placeholder.
+//
+// One test, not two: the end-of-file half is the same drain and the same discard call, already
+// pinned by TestDisplacedFuncAtEndOfFileDoesNotLeakPastTheClass. What is distinct here is the
+// declaration KIND reaching the sink at all, which is what this exercises.
+func TestDisplacedTypeDoesNotStealTheNextDeclarationsComments(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads the fixture package via go/packages")
+	}
+
+	displacedTypeFixture(t, "example.com/app", "displacedKind")
+
+	lines := convertWithComments(t, `package main
+
+// A standing note about the displaced type, left free-floating by the blank line below.
+
+// displacedKind names a hand-converted type; the placeholder stands in for this declaration.
+type displacedKind struct {
+	count int
+
+	// stranded inside the displaced type declaration
+}
+
+func undocumentedNext(n int) int {
+	return n + 1
+}
+
+// documentedLast keeps its own doc comment.
+func documentedLast(n int) int {
+	return n + 2
+}
+
+func main() {
+	_ = documentedLast(undocumentedNext(1))
+}
+`)
+
+	placeholder := findCommentLine(t, lines, "type displacedKind is hand-converted")
+
+	// Commentary positioned INSIDE the displaced declaration documents a declaration this file does
+	// not contain — the hand-own that does carries its own.
+	requireAbsent(t, lines, "stranded inside the displaced type declaration")
+
+	// A comment that stood AHEAD of the displaced type belongs ahead of its placeholder, and
+	// IMMEDIATELY ahead: the drain writes it at the point the declaration's own writeDoc would have,
+	// which is the line before the placeholder. Adjacency is the assertion the witness needs — an
+	// ordering-only check passes on an emission that merely moves the block somewhere earlier.
+	standing := findCommentLine(t, lines, "A standing note about the displaced type")
+
+	if placeholder != standing+1 {
+		t.Errorf("the comment preceding the displaced type is not immediately above its placeholder (comment line %d, placeholder line %d)", standing+1, placeholder+1)
+	}
+
+	// The DISCRIMINATING assertion, the same one the function twin turns on: a declaration Go left
+	// undocumented must be emitted undocumented. On the pre-change converter the standing note and
+	// the stranded in-span line were both flushed here, directly above this signature.
+	undocumented := findDeclarationLine(t, lines, "undocumentedNext(")
+
+	if preceding := strings.TrimSpace(lines[undocumented-1]); strings.HasPrefix(preceding, "//") {
+		t.Errorf("an undocumented declaration following a displaced type acquired a doc comment — the line above %q is %q", strings.TrimSpace(lines[undocumented]), preceding)
+	}
+
+	// The control, not a witness: a documented declaration still carries its OWN doc comment. The
+	// drain runs ahead of the doc, so a stranded comment stacked above this one rather than
+	// displacing it — this passes on the defective converter too.
+	documented := findDeclarationLine(t, lines, "documentedLast(")
+	preceding := strings.TrimSpace(lines[documented-1])
+
+	if !strings.Contains(preceding, "documentedLast keeps its own doc comment") {
+		t.Errorf("the declaration following a displaced type lost its own doc comment — the line above %q is %q", strings.TrimSpace(lines[documented]), preceding)
 	}
 }
 
