@@ -203,7 +203,14 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 	// as a C# comment. Applied again after the pointer unwrap (the pointee may itself alias).
 	rangeType := types.Unalias(v.getExprType(rangeStmt.X))
 
+	// Ranging THROUGH a pointer shares the pointee — Go copies nothing there — so the array-value
+	// snapshot below must not fire for it. Recorded here because the unwrap immediately makes
+	// `isArray` true for a `*[N]T` operand, and ptrDeref cannot stand in for the test (it is cleared
+	// again for a pointer PARAMETER, which the implicit-deref local has already dereferenced).
+	rangedThroughPointer := false
+
 	if ptrType, ok := rangeType.(*types.Pointer); ok {
+		rangedThroughPointer = true
 		rangeType = types.Unalias(ptrType.Elem())
 		ptrDeref = ".Value"
 
@@ -412,6 +419,25 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 
 	if valIsArrayValue {
 		valCloneSuffix = valueCloneSuffix(v.getExprType(rangeStmt.Value))
+	}
+
+	// Go evaluates the range EXPRESSION once before the loop, so ranging an array VALUE iterates a
+	// COPY: a write to the container inside the body is invisible to every later iteration. The
+	// emitted `array<T>` (and the generated named-array wrapper) is a struct over a shared T[]
+	// backing, so the plain operand aliases the container and the loop reads the writes — the same
+	// aliasing every other Go by-value array transfer answers with an explicit `.Clone()`, and the
+	// range expression is simply the copy site nobody had emitted yet.
+	//
+	// Scoped exactly as gc's own rule is (cmd/compile/internal/walk/order.go's rangeStmt): the copy
+	// is taken only when a VALUE iteration variable is present and not blank — with at most one
+	// iteration variable and a constant length, Go does not evaluate the range expression at all, so
+	// `for i := range a` reads the LIVE array through the index and must stay uncopied. Ranging a
+	// POINTER to an array shares the pointee in Go too, and a slice's copy is its header, which the
+	// struct assignment already is. exprReadsValueNeedingClone narrows the rest: only a read out of
+	// EXISTING storage (ident, selector, index, deref) can alias — a composite literal, call result
+	// or conversion is freshly constructed and reachable by no other name.
+	if isArray && !rangedThroughPointer && rangeStmt.Value != nil && len(valExpr) > 0 && valExpr != "_" && v.exprReadsValueNeedingClone(rangeStmt.X) {
+		rangeExpr = appendValueClone(rangeExpr, v.getExprType(rangeStmt.X))
 	}
 
 	// A newly-DEFINED range var that is reassigned in the body — or that receives a pointer-

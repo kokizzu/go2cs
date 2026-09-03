@@ -106,6 +106,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckArrayPointerElementAlias() => CheckTarget("ArrayPointerElementAlias");
 
     [TestMethod]
+    public void CheckArrayRangeSnapshot() => CheckTarget("ArrayRangeSnapshot");
+
+    [TestMethod]
     public void CheckArrayValueCopySites() => CheckTarget("ArrayValueCopySites");
 
     [TestMethod]
