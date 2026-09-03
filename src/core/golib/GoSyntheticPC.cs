@@ -55,12 +55,18 @@ public static class GoSyntheticPC
 
     private static readonly nuint s_stride = (nuint)1 << StrideShift;
 
-    // The canonical high half — unmapped in user mode. On a 32-bit runtime there is no canonical
-    // split, so the top 256 MiB is used instead: still never a valid managed code address, and the
-    // capacity check below turns exhaustion into a loud failure rather than a wrapped token.
-    private static readonly nuint s_base = IntPtr.Size == 8
-        ? unchecked((nuint)0xFFFF_8000_0000_0000UL)
-        : unchecked((nuint)0xF000_0000U);
+    // The canonical high half — unmapped in user mode on x86-64 (kernel half) and arm64 (TTBR1).
+    //
+    // 64-BIT ONLY, AND THE 32-BIT ARM THROWS RATHER THAN NARROWING. An earlier draft used the top
+    // 256 MiB (0xF000_0000) on a 32-bit runtime. That is WRONG and the census of the corpus's token
+    // spaces found it: ManagedPointerTokens mints `(nuint)(uint)RuntimeHelpers.GetHashCode(o)`
+    // (ж.Contracts.cs), an unconstrained 32-bit value that can and does exceed 0xF000_0000, so on a
+    // 32-bit runtime the two spaces OVERLAP and a resolver consulting both would answer a pointer
+    // token as a function. The corpus is 64-bit, so the collision is unreachable — which is exactly
+    // why it is refused loudly at the mint instead of left latent for whoever first builds 32-bit.
+    // A range-independent discriminator was the alternative and was declined: machinery for a
+    // platform nobody builds (COORD ruling, 2026-09-03). See DESIGN-pc-readback.md §2.1.
+    private static readonly nuint s_base = unchecked((nuint)0xFFFF_8000_0000_0000UL);
 
     private static readonly nuint s_capacity = (nuint.MaxValue - s_base) >> StrideShift;
 
@@ -86,6 +92,14 @@ public static class GoSyntheticPC
     public static nuint Of(MethodBase method)
     {
         ArgumentNullException.ThrowIfNull(method);
+
+        if (IntPtr.Size != 8)
+        {
+            throw new PlatformNotSupportedException(
+                "go2cs: synthetic program counters require a 64-bit runtime — on 32 bits the token " +
+                "range overlaps ManagedPointerTokens and a resolver could answer a pointer token as " +
+                "a function");
+        }
 
         RuntimeMethodHandle handle = method.MethodHandle;
 
