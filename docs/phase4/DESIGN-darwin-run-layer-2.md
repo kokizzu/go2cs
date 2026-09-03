@@ -296,3 +296,113 @@ Outcome 4 is the one to expect, and it is worth saying so before the run: a floo
 means the first dispatch after the keystone lands should move the death, not remove it. A dispatch
 that jumps straight to outcome 5 would mean the floor derivation missed that the later links are
 already satisfied — which would be a finding about §3, not a bonus.
+
+---
+
+## 7. ADDENDUM 2026-09-03 (C2, after COORD's ruling) — where the dispatcher learns each symbol's argument layout
+
+Appended rather than folded in, because §§0–6 were seated as written and a record that is edited after
+its ruling is worth less than one that is added to. COORD ruled increment 2 as ONE increment (option 2
+over five registry displacements, the class-B consumer line inside it) and made one thing a
+precondition of the cut: **the class-B records carry `trampoline`, `symbol` and `library` — not a
+SIGNATURE** — and Go's darwin trampolines unpack a per-call-site args struct in assembly. So: where
+does the managed dispatcher learn each symbol's argument layout, how does a symbol with no entry fail,
+and what proves the table complete before `Main`.
+
+### 7.1 There are two bottoms and they need different answers — one of them needs nothing
+
+**The `syscall` bottom needs no table at all.** Its twelve declarations (§2.1) take the arguments as
+ordinary `uintptr` parameters — `rawSyscall(uintptr fn, uintptr a1, uintptr a2, uintptr a3)`,
+`syscall6(… a1..a6)`, `Syscall9(… a1..a9)` — so **the C# signature IS the layout**. This is the
+sizing record §2's *"the struct-pointer marshalling is an artifact of Go's assembly ABI and does not
+survive into the managed form at all"*, and it is why that half collapses to three axes (arity,
+result width, raw-vs-cooked) over one parameterized helper. Nothing to derive, nothing to store.
+
+**The `runtime` bottom is where the question bites.** `libcCall(@unsafe.Pointer fn,
+@unsafe.Pointer arg)` receives a pointer and no type: the layout lives in the *caller's* lifted args
+struct, e.g.
+
+```csharp
+[GoType("dyn")] internal partial struct fcntl_args { … }                 // sys_darwin.cs:641
+args = new fcntl_args(fd, cmd, arg, 0, 0);                               // :650
+libcCall((@unsafe.Pointer)abi.FuncPCABI0(fcntl_trampoline), new @unsafe.Pointer(Ꮡargs));  // :651
+```
+
+The struct's field order and widths **are** the argument list the trampoline's assembly unpacks by
+offset, and the converter has already lifted it as a real C# type. The question is only whether the
+dispatcher can get back to that type.
+
+### 7.2 It can, through machinery that already exists — read from the source, not yet run
+
+Tracing the call site's own conversions:
+
+1. `new @unsafe.Pointer(Ꮡargs)` has three constructors to choose from — `(uintptr)`, `(NilType)` and a
+   private `(uintptr, object?)` (`unsafe/unsafe.cs:214/218/235`) — so it binds the `(uintptr)` one
+   through `ж<T>`'s implicit `uintptr` operator (`golib/ж.cs:624`). **`Pointer.FromBox`'s retention is
+   therefore NOT what carries the type here** — `m_retainedSource` stays null. That was my first
+   reading and it is wrong, which is why the next step matters.
+2. That operator's value-type path **registers the box**: `EnsureStableAddress()`, then
+   `fixed (void* ptr = &value.Value) { ManagedPointerTokens.RegisterPinned((nuint)ptr, value); … }`
+   (`golib/ж.cs:662–669`) — the ratified pointer-provenance record, the same one the syscall keystone
+   tether leans on.
+3. `ManagedPointerTokens.Resolve(nuint)` is **`public static` in namespace `go`**
+   (`golib/ж.PointerTokens.cs:304`), so a `runtime` hand-own in another assembly can call it directly.
+
+So the displaced `libcCall` recovers `ж<fcntl_args>` from its own `arg`, and `typeof(fcntl_args)`'s
+fields give the layout by reflection. **No per-symbol signature table, no new converter emission, and
+nothing added to the class-B record set** — which is what makes option 2 cheaper than the five
+displacements it was chosen over.
+
+⚠ **This is a code read, not a measurement, and the difference is the point.** `Resolve` is
+validate-on-read by design (*"so a stale entry never answers"*), and a native-address pointer or an
+unregistered mint resolves to nothing. So the cut's **first acceptance step is a host-neutral probe in
+`GolibTests`**, not a darwin run: perform the call site's exact sequence — `heap<T>(out var Ꮡargs)` →
+`new unsafe.Pointer(Ꮡargs)` → `ManagedPointerTokens.Resolve` — and require the original box back. It
+runs on every fleet host, on the Windows and Linux lanes alike, and it is Tier A in design-1 §4's
+sense: a property of the managed machinery, not of darwin. **If it fails, the fallback is COORD's
+first option** — a converter-emitted per-symbol layout record attached to the `libc_*_trampoline`
+declaration (the converter knows the args-struct type at the `FuncPCABI0` call site; the class-B pass
+is the same shape and would extend by one field), read back through C1's PC→method registry. Naming
+the fallback now is what keeps a failed probe from becoming a redesign.
+
+### 7.3 How a symbol with no entry fails: loudly, by name, never `default`
+
+Three distinct misses, three loud failures, and none of them a plausible-looking value:
+
+| miss | today | under the keystone |
+|:--|:--|:--|
+| no `GoCgoImportDynamic` record for the trampoline | `TryResolve` returns **false** — the class-C reading, "this is Go's own assembly" | the throwing `PartialStubGenerator` stub stays; the program dies naming the function, as it does now |
+| a record exists but the symbol does not resolve in the library | `Resolve` throws `EntryPointNotFoundException` naming symbol and library | unchanged — it is already the right shape |
+| the args-struct type cannot be recovered for a `libcCall` | *does not exist yet* | **throw naming the trampoline**, never a `default` return |
+
+The third row is the one COORD's *"never a `default`"* names, and the reason is on the record already:
+`internal/abi/funcpc_impl.cs`'s `return default;` is the sizing record §2's *"the half nobody would
+notice was missing — it compiles, it returns a plausible value, and it is wrong."* A dispatcher that
+cannot learn a call's layout must not guess one; a wrong layout hands libc garbage in registers, which
+is worse than not calling it at all. This is the same judgment as the fail-stale-wards rule in the
+converter's own staleness predicate, one layer down.
+
+### 7.4 The completeness control before `Main` is §3's floor of five
+
+§3's derivation doubles as the positive control COORD asked for: **`getrlimit`, `sysctl`, `setrlimit`,
+`fcntl`, `getcwd`** must every one resolve — record present, symbol resolvable, layout recoverable —
+before a darwin program can reach `Main`. As a gate it is cheap and host-neutral for two of its three
+legs (record present, layout recoverable) and mac-only for the third (symbol resolvable in
+libSystem), so the fleet can assert the first two and the dispatch confirms the third. And it is a
+FLOOR, not a set: passing it means the keystone clears the two initializers §3 walked, not that it
+clears every one. Which is exactly why §6's expected outcome is that the first dispatch **moves** the
+death rather than removing it.
+
+### 7.5 One load-bearing assumption that stays unmeasurable, recorded as such
+
+Displacing `libcCall` drops Go's g0 stack switch and the `libcall*` profiler/traceback bookkeeping, on
+the argument `syscall_linux_impl.cs` made one platform over for `entersyscall`/`exitsyscall`: the
+managed host discharges by another mechanism what the bookkeeping exists to discharge. **That argument
+is weaker here than it was there, and the difference is worth stating rather than glossing.** On linux
+the claim was confirmed by a flavour that runs — the pair has had empty bodies through the whole
+validated roster. Darwin has no running flavour, so nothing confirms that calling libc from an
+ordinary managed thread, without Go's stack switch and signal-mask discipline, behaves as Go's own
+path does. It is an **assumption, recorded, not a measurement** — the same posture the fleet takes for
+the setxid-twin question on linux, where a library's thread-broadcast behaviour turned out not to be
+derivable from the syscall it wraps. The first mac dispatch is what can move it from assumed to
+measured, and until then no claim in this record depends on it being true.
