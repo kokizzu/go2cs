@@ -591,6 +591,9 @@ boundaries rather than working around them:
 
 - **An EMPTY slice or map of unnamed arrays still collapses** (`[][6]uint8{}` with no element has
   nothing to measure). Recorded here; closed by increment C = arm (a) with its cost stated.
+- **The number increment C must justify: +8 B on every slice header in the corpus** (the golib
+  instance-state rule's exact shape), against two boundaries no measured consumer reaches. Ratified
+  2026-09-03 (COORD): C inherits that measured cost, not a premise.
 - **A channel VALUE's element length cannot be measured** (its buffer is not peekable), so `chan [3]int`
   by value stays `chan []int` until C carries it on the channel the way direction already rides
   (`channel<T>.m_direction`, stamped by the converter's `chanDirectionCargo` seam). The `ChanElemDims`
@@ -600,7 +603,10 @@ boundaries rather than working around them:
 
 1. golib `GoReflect`: `SliceElemArrayDims(value)` — first element's dims through `ArrayDimsOfValue` /
    `PointeeArrayDims`; `MapKeyArrayDims(value)` / `MapElemArrayDims(value)` — first entry's key/value
-   dims; all `null` when empty or nil. `IMap` gains a first-entry accessor for the non-generic path.
+   dims; all `null` when empty or nil. The map's first entry is reached through its non-generic
+   enumerator and one reflection read of the boxed pair — `IMap` has more than one implementer, and a
+   path only `TypeOf` of a map-of-arrays value takes does not justify widening the interface
+   (amended at the cut, 2026-09-03; the design above said "gains a first-entry accessor").
 2. `abi.TypeOf(any)`: the switch gains the Slice and Map arms and calls the five-argument `synthType`
    with `keyDims`.
 3. reflect constructors: `SliceOf`, `ChanOf`, `PointerTo` pass the element's `arrayDims`/`chanDir`/
@@ -623,3 +629,24 @@ canary against damage), the five importer canaries derived at gate time, the `ni
 same-host A/B (golib on the boxing path), a two-seeded reconvert diff (expected: ZERO corpus footprint —
 B changes no emission), union CNR, and the standard converter-suite / stdlib / GolibTests / behavioral
 OUTPUT battery. Names are the symptom; identity is the gate.
+
+> **§12.4 amended at the first guard run, 2026-09-03 — one prediction WRONG, and instructively.**
+> The `ChanElemDims` "constructed row green" prediction asserted `ChanOf(BothDir, ArrayOf(3,int)) ==
+> TypeOf(chan [3]int)`. It cannot be green in B: `ChanOf` now carries the element's dims while the
+> VALUE side is the stated boundary, so the two descriptors differ *because* the constructed one is
+> right. **An identity row against a boundary side is a boundary row.** The constructed route's own
+> property — `String()` `chan [3]int`, `Elem().Len()` 3 — is what B asserts; the identity is C's row.
+> Also at that run: two guards failed to COMPILE on `[]*[4]byte{{}}`, Go's elided-`&` literal for a
+> pointer-to-array element, which the converter emits as an uninstantiable type (CS0144) — a
+> converter gap outside B, routed as its own item; the guards use the explicit `&[4]byte{}` form.
+
+> **§12.4 amended again at the second and third guard runs, 2026-09-03.** Two of the name guard's red
+> rows were MINE, not B's: `map[[2]int][]int{}` and the `Elem()` line's `[][6]uint8{}` were written
+> with EMPTY literals — the very boundary §12.2 states — so they measured the boundary, not the fix;
+> both now use a present entry/element. The nested `[][2][3]int{{}}` row read `[2][0]` because the
+> converter emits a ZERO nested-array element with inner arrays of length 0 (runtime truth of a wrong
+> value, `new array<nint>[]{}.array(2)`); the rows use populated inner arrays and the emission gap is
+> routed with its sibling, the elided-`&` pointer element. A third detour, also routed: a `Printf` whose
+> FIRST variadic argument is a `.String()` call is emitted with its format literal split and a stray
+> cast (CS1003/CS1010); the chan guard binds two locals first. **Three converter defects found by
+> guards written to measure reflect; none is B's, all three have their own item.**
