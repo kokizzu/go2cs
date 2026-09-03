@@ -211,6 +211,7 @@ func main() {
 	showParseTreeCmd := commandLine.Bool("tree", false, "Show parse tree")
 	csprojFileCmd := commandLine.String("csproj", "", "Path to custom .csproj template file")
 	debugModeCmd := commandLine.Bool("debug", false, "Enable debug mode")
+	allowStaleConverterCmd := commandLine.Bool("allow-stale-converter", false, "Proceed with a -stdlib or -tests run even when this binary is OLDER than the converter sources beside it. Those two drivers otherwise refuse, because their output is banked or measured and a stale run emits the previous converter's C# while exiting 0. Pass this for the one deliberate case: an A/B against a PRESERVED binary, where the pinned binary IS the measurement (see converterStaleness.go)")
 	dualRecvCmd := commandLine.Bool("dual-recv", false, "B′ S0: eligible pointer-receiver methods emit the ref-receiver PRIMARY beside the ж twin (flag-gated; scratch-root regens only until S2's rebank ride)")
 
 	var positionals []string
@@ -287,6 +288,8 @@ Examples:
   go2cs -recurse=module module_dir        # Convert only the module's own packages (deps referenced, not converted)
   go2cs -recurse=nuget module_dir         # Same, but reference the go2cs stdlib from NuGet (go.*, no deploy-core)
   go2cs -recurse=module,nuget module_dir  # Values combine: module-only scope with NuGet references
+  go2cs -stdlib -allow-stale-converter    # Proceed on a DELIBERATELY pinned binary (an A/B against a preserved go2cs);
+                                          # without it, -stdlib and -tests refuse to run a binary older than their sources
   go2cs -stdlib -comments -tags purego    # Explicit form of the default: the portable Go crypto over the assembly ones
   go2cs -stdlib -tags=                    # Opt OUT of the purego default (reproduce the asm-backed default build)
   go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 -platform-census out
@@ -316,10 +319,13 @@ Examples:
 
 	// Is this binary itself current? Every harness that runs the converter already asks, but the
 	// paths that consult NOTHING are the hand-invoked ones — and their caller is a person at a
-	// shell, so the only place the question can be asked for them is here. Advisory and never
-	// fatal, on the -go2cspath precedent; silent when no source tree sits beside the executable.
-	// See converterStaleness.go.
-	warnIfConverterStale()
+	// shell, so the only place the question can be asked for them is here. It ENUMERATES what is
+	// newer rather than naming one file (a lane reasoned from a single named entry to a wrong
+	// conclusion on 2026-09-03), and it is FATAL for the two drivers whose output is banked or
+	// measured — -stdlib and -tests — escapable only by the named -allow-stale-converter. Every
+	// other shape is the scratch probe, and keeps the advisory. Silent when no source tree sits
+	// beside the executable. See converterStaleness.go.
+	checkConverterStaleness(convertStdLib || *convertTestsCmd, *allowStaleConverterCmd)
 
 	// Normalize the RESOLVED GOROOT once, here, rather than at each of the dozen sites that compare a
 	// path against it. filepath.Clean folds the spelling variants of one directory that this host can
