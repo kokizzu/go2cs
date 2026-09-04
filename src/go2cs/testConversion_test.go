@@ -8,6 +8,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"go/ast"
 	"go/build"
 	"go/token"
@@ -2801,24 +2802,80 @@ func TestUnsupportedRuntimeCapabilityGatesTheDeclarationItself(t *testing.T) {
 // failing count, and nothing anywhere names the cause. So the shape is pinned for every entry that
 // names a test, and the one standing entry is pinned by exact key.
 func TestDeclarationKeyedCapabilityEntries(t *testing.T) {
-	const standing = "os_test.TestRemoveAllWithExecutedProcess"
-
-	if capability := unsupportedRuntimeCapabilities[standing]; capability != "relocatable single-file test executable" {
-		t.Fatalf("standing declaration entry %q names capability %q", standing, capability)
+	// Every declaration-keyed entry is PINNED here by exact key, together with the package clause
+	// the GOROOT test file actually declares — because the correct spelling of the key depends on
+	// it. An EXTERNAL test (`package os_test`) has types.Package path os/exec_test → the key carries
+	// the _test suffix; an INTERNAL test (`package pprof` in a _test.go) has path runtime/pprof → the
+	// key is the bare import path. The first version of this guard required the suffix for every
+	// test-named key, on the premise that every gated test lives in an external package; the first
+	// internal-test entry (runtime/pprof.TestFakeMapping, 2026-09-04) falsified that premise, and a
+	// guard that merely accepted BOTH spellings would have lost the very protection it exists for —
+	// a mis-keyed gate never fires and never says so. So the rule is now per entry: the spelling
+	// must match the declared kind, and an unpinned test-named key fails outright.
+	pinned := map[string]struct {
+		capability string
+		internal   bool // the test file declares `package <pkg>`, not `package <pkg>_test`
+	}{
+		// os/os_windows_test.go: `package os_test` → external → os_test.<Name>.
+		"os_test.TestRemoveAllWithExecutedProcess": {capability: "relocatable single-file test executable", internal: false},
+		// runtime/pprof/proto_test.go: `package pprof` → internal → runtime/pprof.<Name>.
+		"runtime/pprof.TestFakeMapping": {capability: "runtime-capability: the memory profiler records no samples on the converted runtime, so the test's mapping/symbolization loop runs over an empty location set (vacuous pass); lifts when an increment returns real memory-profile records", internal: true},
 	}
 
-	for key := range unsupportedRuntimeCapabilities {
+	for key, want := range pinned {
+		if capability := unsupportedRuntimeCapabilities[key]; capability != want.capability {
+			t.Fatalf("pinned declaration entry %q names capability %q, want %q", key, capability, want.capability)
+		}
+	}
+
+	check := func(key string) error {
 		packagePath, name, split := strings.Cut(key, ".")
 
 		// Only entries naming a Test DECLARATION are in scope. The rest key on a symbol a test
 		// calls (syscall.CommandLineToArgv), where no such convention applies.
 		if !split || !isGoTestName(name, "Test") {
-			continue
+			return nil
 		}
 
-		if !strings.HasSuffix(packagePath, "_test") {
-			t.Fatalf("entry %q names a test but is not keyed on an external test package path "+
-				"(want <import path>_test.%s) — a mis-keyed gate never fires and never says so", key, name)
+		want, known := pinned[key]
+
+		if !known {
+			return fmt.Errorf("entry %q names a test but is not pinned in TestDeclarationKeyedCapabilityEntries "+
+				"with the package clause its GOROOT file declares — pin it, because that clause decides whether "+
+				"the key is <import path>.%s (internal test) or <import path>_test.%s (external test), and the "+
+				"wrong spelling is SILENT: the gate never fires and nothing names the cause", key, name, name)
+		}
+
+		if want.internal && strings.HasSuffix(packagePath, "_test") {
+			return fmt.Errorf("entry %q names an INTERNAL test but is keyed on the external test package path "+
+				"(want %s.%s) — a mis-keyed gate never fires and never says so",
+				key, strings.TrimSuffix(packagePath, "_test"), name)
+		}
+
+		if !want.internal && !strings.HasSuffix(packagePath, "_test") {
+			return fmt.Errorf("entry %q names an EXTERNAL test but is not keyed on the external test package path "+
+				"(want %s_test.%s) — a mis-keyed gate never fires and never says so", key, packagePath, name)
+		}
+
+		return nil
+	}
+
+	for key := range unsupportedRuntimeCapabilities {
+		if err := check(key); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Negative controls, one per arm, so the guard is known to be able to FAIL: the internal-test
+	// entry spelled with the external suffix, the external-test entry spelled bare, and a test-named
+	// key nobody pinned. Each is the exact silent mis-key the guard exists to catch.
+	for _, misKeyed := range []string{
+		"runtime/pprof_test.TestFakeMapping",
+		"os.TestRemoveAllWithExecutedProcess",
+		"example_test.TestNobodyPinnedThis",
+	} {
+		if check(misKeyed) == nil {
+			t.Fatalf("negative control: the guard accepted mis-keyed entry %q", misKeyed)
 		}
 	}
 }
