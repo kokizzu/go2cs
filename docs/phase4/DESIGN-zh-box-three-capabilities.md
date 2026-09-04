@@ -413,3 +413,76 @@ sized against this measured population next; neither is built here.
 The order this record recommended in §5 changes with it: the contract (C0) first as it always was,
 then **I3** — cross-package receiver aliasing, whose measured reach on `os` is the `FD.Ꮡl` pair,
 2 boxes / 128 B — and the boundary sized beside it rather than deferred behind the rest.
+
+## 9. AMENDMENT 2026-09-04 — three increments measured, capability 4's boundary observed from three directions, and §3.4's reach corrected
+
+> Written after (b′), I3 and I1 all landed and were measured (mailbox `31d0b5fba`). Nothing above is
+> deleted. What changes is that capability 4's boundary is now an OBSERVATION rather than a
+> prediction, its reach on `os` is smaller than §3.4 implies, and the instrument that would price it
+> is known to be structurally blind to the thing it costs.
+
+### 9.1 The count ladder, and what actually happened to §4's arithmetic
+
+Measured on the `os` alloc row (`TestWriteStringAlloc`, Release + tiering off, the count being a
+CONSTANT across 40 draws in every arm — zero variation, so it is not a floor but a value):
+
+| tree | count |
+|:--|--:|
+| master `26ff0c45b` | **17** |
+| after (b′) `ad0ed9a2a` | **11** |
+| after I3 `6a7688c88` | **10** |
+| after I1 `0571e71cb` | **8** |
+
+Bytes are NOT stated from this lane's instrument: a 40-rep minimum read 789.8 at I1 against 785.0 at
+I3 — HIGHER on strictly FEWER objects, which a true floor cannot do. The converged byte ladder is
+Q5's segmented instrument's (1,320 → 808 → 744.25) and I1's endpoint is queued there as Q32.
+
+### 9.2 Capability 4's boundary, observed three times
+
+§3.4 predicted the mechanism. It has now been met from three directions, each time for the same
+structural reason and each time by a cut that was not looking for it:
+
+1. **(b′)** displaced three `fdMutex` bodies to hand-owns; every `defer(Ꮡmu.of(fdMutex.Ꮡ…).Unlock, …)`
+   stayed boxed, because the displaced body's own `ref` receiver cannot be a method group.
+2. **I3** split the `os` seam's `FD.Ꮡl` PAIR: `Lock` bound the plain chain, the deferred `Unlock` did
+   not. One field, two call sites, two different capabilities — which is the sharpest statement of
+   the boundary the arc has produced.
+3. **I1** left it again, and the corpus-wide A/B showed the same shape across 39 files: deferred
+   method groups stay boxed everywhere, without exception.
+
+So the boundary is not a property of `fdMutex` or of `os`; it is a property of `defer`.
+
+### 9.3 §3.4's reach on `os`, CORRECTED
+
+§3.4 states capability 4 reaches "`FD.Ꮡl` deferred — 1 box / 64 B on the seam". That is right, and
+the arc has since attributed the box that §3.4's neighbours implied would follow it:
+
+**`file.Ꮡpfd` does NOT follow from capability 4 alone.** It is behind `FD.Write`'s promotability, and
+`FD.Write` becomes promotable only when its body forms NO receiver-field address. After capability 4
+it still forms one — `Ꮡfd.of(FD.Ꮡwop)`, the overlapped-I/O operation field — which is neither
+capability 1's, 3's nor 4's, and which **no capability in this record currently claims**. It is
+named here as the first open site of a fifth shape rather than left to be discovered by the next
+increment that predicts across it.
+
+So on the `os` row: capability 4 is **1 box certainly, 2 only if `Ꮡwop` is addressed with it**.
+
+### 9.4 The pricing statement, sharpened — the instrument is blind BY CONSTRUCTION
+
+§3.4 called the defer frame's own cost "UNPRICED … pricing it needs the byte probe inside converted
+frames". That is now sharper and worse. golib's counter counts **golib allocation sites only**; a C#
+delegate over a boxed receiver is emitted by the C# compiler, not by golib, so **the delegate every
+deferred receiver-bound call allocates is not among the counted allocations at all.**
+
+The consequence for this capability specifically: **its principal cost is invisible to the instrument
+that measures every other capability in this record.** A count-based acceptance for capability 4
+would read 1 and miss the delegate per deferred site corpus-wide. Its acceptance must therefore come
+from a segmented byte window (Q5's), not from the allocation count — the only capability here of
+which that is true, and the reason it is sized last rather than first.
+
+### 9.5 What the eight remaining allocations are — NOT known, and named as such
+
+At I1's tip the row stands at 8. Two are attributable by a static read of the measured path — the
+deferred `FD.Ꮡl` `Unlock`, and `file.Ꮡpfd` behind it. **The other six are not identified.** They are
+not enumerable statically for the reason in §9.4 (the counter's population is not the emission's
+visible box mints), and the honest disposition is that they await Q32's segmentation rather than a
+plausible list. This record does not guess them.
