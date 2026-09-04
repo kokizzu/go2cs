@@ -77,6 +77,10 @@ public sealed class Goroutine
     private static long s_nextId;
     private static int s_count;
 
+    // How many of s_count are SYSTEM goroutines (IsSystem) -- Go's sched.ngsys, the term gcount
+    // subtracts so that runtime.NumGoroutine reports user goroutines only.
+    private static int s_systemCount;
+
     // The MAIN goroutine -- the entry RegisterMainGoroutine minted on the thread that first touched
     // golib. Held by reference so a host can run its "main" on a thread other than that one
     // (EnterAsMain): the identity is the registry entry, not the thread, and it is minted exactly
@@ -102,6 +106,7 @@ public sealed class Goroutine
         IsMain = isMain;
         Creator = creator;
         ParentId = parentId;
+        IsSystem = !isMain && IsSystemCreator(creator);
     }
 
     // Why this goroutine is parked, or WaitReason.Zero when it is not — Go's gp.waitreason, and the
@@ -140,6 +145,36 @@ public sealed class Goroutine
 
     internal long ParentId { get; }
 
+    // Go's isSystemGoroutine (runtime/traceback.go): a goroutine whose start function lives in the
+    // runtime package -- less runtime.main, which has no creator here and is never system. Decided
+    // from the CREATOR's package rather than the entry closure's: the runtime starts its own
+    // goroutines from its own functions (the unique map-cleanup goroutine, mgc.go, is started
+    // inside the runtime precisely "so it's counted as a system goroutine"), so the two agree by
+    // construction for every `go` the runtime executes. What it decides: runtime.Stack(all) omits
+    // these unless GOTRACEBACK asks for them, and NumGoroutine does not count them -- both exactly
+    // as Go, where a leak filter over a traceback never has to name the runtime's own goroutines.
+    // The finalizer-goroutine nuance (runfinq counts as user while it runs a finalizer) is not
+    // modelled: the finalizer runner is a plain thread here, not a registered goroutine.
+    internal bool IsSystem { get; }
+
+    internal static bool IsSystemCreator(System.Reflection.MethodBase? creator)
+    {
+        Type? type = creator?.DeclaringType;
+
+        if (type is null)
+            return false;
+
+        // A closure's display class is nested in its package class; the package is the outermost type.
+        while (type.DeclaringType is Type outer)
+            type = outer;
+
+        string name = type.FullName ?? type.Name;
+        int packageSuffix = name.LastIndexOf("_package", StringComparison.Ordinal);
+
+        // The same derivation runtime's goFrameName uses: `go.runtime_package` -> `runtime`.
+        return name.StartsWith("go.", StringComparison.Ordinal) && packageSuffix > 3 && name[3..packageSuffix] == "runtime";
+    }
+
     // Running until a park-accounting scope says otherwise — DERIVED, never stored, so it cannot
     // disagree with the reason (see m_waitReason). This is the gopark/goready accounting contract of
     // DESIGN-cooperative-scheduler.md §5.3, which wraps the existing wait primitives rather than
@@ -165,6 +200,17 @@ public sealed class Goroutine
     /// The number of goroutines that currently exist, including the main goroutine.
     /// </summary>
     public static int Count => Volatile.Read(ref s_count);
+
+    /// <summary>
+    /// The number of USER goroutines -- <see cref="Count"/> less the runtime's own (<see cref="IsSystem"/>),
+    /// which is what Go's <c>gcount</c> reports as <c>runtime.NumGoroutine</c>.
+    /// </summary>
+    /// <remarks>
+    /// Two independent reads, so the difference can be transiently off by one while a goroutine is
+    /// being registered -- Go's own caveat ("all these variables can be changed concurrently"), and
+    /// the reason Go's body floors the result; the runtime package applies that floor, not this one.
+    /// </remarks>
+    public static int UserCount => Volatile.Read(ref s_count) - Volatile.Read(ref s_systemCount);
 
     /// <summary>
     /// Indicates whether the calling thread is running a goroutine body rather than the main
@@ -361,7 +407,17 @@ public sealed class Goroutine
     {
         // Captured HERE, on the thread executing the `go` statement -- the new thread's first frame
         // is Run, which knows nothing about who asked for it.
-        System.Reflection.MethodBase? creator = CreatorFrame();
+        StartWithCreator(body, CreatorFrame());
+    }
+
+    /// <summary>
+    /// The guard seam for <see cref="Start"/>: the same launch with the creator SUPPLIED, so a test can
+    /// register a goroutine as the runtime's own without a runtime function to execute the `go`.
+    /// </summary>
+    internal static void StartForGuard(Action body, System.Reflection.MethodBase? creator) => StartWithCreator(body, creator);
+
+    private static void StartWithCreator(Action body, System.Reflection.MethodBase? creator)
+    {
         long parentId = t_current?.Id ?? 0;
 
         Thread thread = new(() => Run(body, creator, parentId), s_stackReserve)
@@ -473,13 +529,21 @@ public sealed class Goroutine
         s_live[goroutine.Id] = goroutine;
         Interlocked.Increment(ref s_count);
 
+        if (goroutine.IsSystem)
+            Interlocked.Increment(ref s_systemCount);
+
         return goroutine;
     }
 
     private static void Unregister(Goroutine goroutine)
     {
         if (s_live.TryRemove(goroutine.Id, out _))
+        {
             Interlocked.Decrement(ref s_count);
+
+            if (goroutine.IsSystem)
+                Interlocked.Decrement(ref s_systemCount);
+        }
     }
 
     private static int ResolveStackReserve()

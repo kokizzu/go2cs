@@ -317,9 +317,16 @@ partial class runtime_package
     // created or may exit between the read and the caller's use of it. What does NOT carry over is
     // gcount's floor: the registry cannot report less than the caller's own goroutine, so there is
     // no nonsense to clamp.
+    //
+    // USER goroutines only, as Go's gcount subtracts sched.ngsys: the runtime's own goroutines (the
+    // unique map-cleanup goroutine is the measured one) are registered like any other but are not
+    // what a program means by "goroutines that currently exist". Go's floor returns with the
+    // subtraction -- two reads that can be transiently inconsistent, exactly Go's caveat.
     public static nint NumGoroutine()
     {
-        return Goroutine.Count;
+        nint n = Goroutine.UserCount;
+
+        return n < 1 ? 1 : n;
     }
 
     // gcount is the body NumGoroutine above used to call, and the one THREE other consumers still
@@ -338,7 +345,9 @@ partial class runtime_package
     // one climbing, late to decay — is in this file's Honest-divergences ledger.
     internal static int32 gcount()
     {
-        return (int32)Goroutine.Count;
+        int n = Goroutine.UserCount;
+
+        return n < 1 ? 1 : n;
     }
 
     // totalMutexWaitTimeNanos sums the mutex wait time observed by the runtime. Go's body loads
@@ -458,6 +467,11 @@ partial class runtime_package
         throw new GoexitException();
     }
 
+    // GOTRACEBACK's system/crash levels, read once as Go's setTraceback reads the variable at
+    // startup: at level 2 and above the runtime's own goroutines join the traceback.
+    private static readonly bool s_tracebackShowsSystem =
+        Environment.GetEnvironmentVariable("GOTRACEBACK") is "system" or "crash";
+
     // The one line go2cs prints where Go prints another goroutine's frames.
     //
     // Deliberately NOT a frame: no tab-indented position line beneath it, nothing that could be
@@ -531,6 +545,14 @@ partial class runtime_package
             foreach (Goroutine goroutine in Goroutine.Snapshot())
             {
                 if (ReferenceEquals(goroutine, current))
+                    continue;
+
+                // Go's tracebackothers skips isSystemGoroutine(gp, false) unless the traceback level
+                // is at least 2 (GOTRACEBACK=system or crash): the runtime's own goroutines are not
+                // part of a program's traceback, which is why no leak filter over runtime.Stack ever
+                // has to name them -- net/http's counted the unique map-cleanup goroutine as a leak
+                // for as long as this runtime rendered it (2026-09-04).
+                if (goroutine.IsSystem && !s_tracebackShowsSystem)
                     continue;
 
                 trace.Append('\n');
