@@ -413,3 +413,101 @@ sized against this measured population next; neither is built here.
 The order this record recommended in §5 changes with it: the contract (C0) first as it always was,
 then **I3** — cross-package receiver aliasing, whose measured reach on `os` is the `FD.Ꮡl` pair,
 2 boxes / 128 B — and the boundary sized beside it rather than deferred behind the rest.
+
+## AMENDED 2026-09-04 (SUB-Q5's per-frame byte probe; coordinator dispositions `a8f4525f4`) — the row has a FLOOR of 1,320.00 B/run, golib's share is 1,032 not 920, the three unplaced objects are located, and §1's configuration-axis sentence is withdrawn
+
+**Nothing above is rewritten.** Every figure in §1–§7 stands as what it measured — a golib-SITE
+instrument reading a lower bound, sampled at 100 runs. What follows is what a byte probe inside the
+CONVERTED `os`/`syscall` frames (the instrument §1 said did not yet exist) measured at
+`26ff0c45b`, Release + `DOTNET_TieredCompilation=0`, **1,000,000 runs**, with segment sums closing
+exactly in both units, `probe_own_bytes` = 0, a positive control that moved one segment alone, and a
+non-perturbation arm identical to the un-instrumented tree. Prediction posted before the run
+(`00e8128cd`), measurement `2f77a03d0`, full decomposition and the four-cell table on the BOARD under
+*2026-09-04 — the `os` want-zero row has a FLOOR*.
+
+**1. The floor, and §1's parenthetical is withdrawn.** §1 closes with "*(The board's 1,320 B/run is
+the same row at Debug/tiered; the two differ on the configuration axis, not on any cut.)*" That
+reading is **wrong, and the correction is the more useful fact**: at the floor (40 reps of 100 runs
+per cell, minimum taken) Release/TC0, Debug/tiered and Debug/TC0 are **all 1,320.00 B/run at 17.00
+objects**. The row never moved on the configuration axis. This record's **1,457.8**, and the 1,510.8
+carried elsewhere, are 100-run draws ABOVE that floor — the same slop the probe saw in its own first
+three samples (1,470.96 / 1,479.60 / 1,489.20). **A 100-run `AllocsPerRun` sample cannot resolve a
+change under ~150 B/run**; quote the floor or a high-`runs` figure, and say which. The one cell that
+genuinely differs is Release/**tiered** at 1,256.00 — see point 4.
+
+**2. golib's share is 1,032 B, not 920.** §1's golib rows sum to 920 (704 + 88 + 128). Measured in
+isolation, each **element**-box site costs **120 B / 2 objects**, not 64 B / 1 — so §1's
+"element box | 2.00 | 128.0" row is **240.00 B across the two sites**, and the golib-attributable
+total is **1,032.00 B / 17.00 objects**. Consequently the NONE bucket is **288.00 B/run (21.8 %)**,
+not the 537.8 B / 37 % §1 and §4 carry.
+
+**3. The three unplaced objects are LOCATED.** §1's "non-box golib (incl. pinnable slots; an UPPER
+bound) | by subtraction | 3.00 | —" row no longer needs subtraction: they are **one pinnable slot at
+`heap(new uint32())`** (segment 14, which is 88.00 B / 2 objects in total — matching this record's
+88.0) **plus one companion object at each of the two element-box sites** (segments 1 and 32). Nothing
+on this row is unattributed. The eleven `of()` field boxes measure **704.00 B exactly**, reproducing
+§1.1's 704.0 **to the byte from an independent instrument** — the second derivation that makes both
+readings believable, and the reason the coordinator did not require a third (`a8f4525f4`).
+
+**4. The `of()` box unit at the floor is 64 B, and the COUNT is charged at the `new`.** The 89.7 B/box
+rate realised by (b′) and banked in doctrine is corrected to **64 B/box** at the floor; the (b′) delta
+is **6 × 64 = 384 B** (§1.1's segments 6 and 23 decompose to exactly 4 `of()` boxes each). Release +
+**tiered** is 64 B cheaper for a mechanical reason the probe localizes: `of(FD.Ꮡl)` #1 — the box
+feeding the **direct** `Lock()` — falls to 0.28 B/run because tier-1 escape analysis stack-allocates
+it, while its twin feeding the **deferred** `Unlock` stays at 64.00 because the `defer` delegate
+captures it. That is an independent, mechanical confirmation of §3.1/§3.4's coupling at exactly the
+box pair §1.1 names — and it means **capability 1's byte payoff on this row is 4 boxes / 256 B at
+Release+TC0 but 3 / 192 B at Release+tiered**, so §3.1 must not be credited twice. Critically,
+`AllocationCounter` reported **1.00 object for the box that cost 0.28 B**: the count is charged at the
+`new`, so **no JIT improvement can reach ruling #1's bank condition** (§4's bar) — only not
+constructing the boxes, which is what capabilities 1/3/4 do. Every reduction claim on this family
+therefore names its UNIT and its CONFIGURATION.
+
+**5. §5's I5 row gets its measured number, and one item §4 does not carry at all.** I5's prediction
+reads "−1 / −64 B on the seam; **the NONE share reported, unpredicted**" — that share is now measured:
+the two instance-bound `Action` method-group conversions are **128.00 B/run**, and `GoFrame` itself,
+its four inline slots, `frame.Run()`'s dispatch and the whole try/catch/finally are **0.00**. I5's
+full value on this row is **192 B** (its 128 plus the coupled segment-10 box). Two further NONE-bucket
+readings bear on §4's "the rest of the row": the dead-`unsafe.Pointer` peephole is **0.00 B/run here**
+(every site is behind a false `race`/`msan`/`asan` guard and the branch folds — its value is IL and
+code size, and it must not be sized against this row's byte bill), and the P/Invoke boundary is
+**0.00** (the `params ...uintptr` collection materializes no heap array). What replaces them is an
+item no section of this record anticipated: the **address-take PIN, 160.00 B/run (12.1 %)** —
+`(uintptr)box` → `EnsureStableAddress()` → `PinnedBuffer.PinOnly(storage)` mints a fresh
+`PinnedBuffer` per box per syscall (56 B element, 104 B owning, 0 for the nil `Overlapped`). It is
+larger than I5's direct share, and it was given an owner the same day as a sizing after the syscall
+buffer-pin cut lands.
+
+**6. §4's arithmetic restated at the floor**, replacing nothing above:
+
+| step | B/run | removed |
+|:--|--:|:--|
+| the floor, today | **1,320** | — |
+| after (b′) | **936** | 6 `of()` boxes in the `rwlock`/`rwunlock` segments (384 B) |
+| after I3 | **680** | `FD.Ꮡfdmu` ×2, `file.Ꮡpfd`, `FD.Ꮡl` direct (256 B) |
+| after capability 4 / I5 | **488** | the two `Action` delegates (128 B) + the coupled `FD.Ꮡl` deferred box (64 B) |
+| after the address-take PIN | **328** | the two `PinnedBuffer`s (160 B) |
+| the arc's end | **0** | the element boxes (240 B) and the owning box (88 B) at the syscall seam |
+
+**Two readings of that ladder against §5 and §6, both DERIVED from the segment decomposition rather
+than separately measured, so they are stated with their arithmetic shown.** First, the ladder's "I3"
+row is the coordinator's bundle and is **§5's I1 remainder plus §5's I3**: (b′) lands before either,
+so I1's `FD.Ꮡfdmu` ×2 (§5: −2 / −128 B) is still outstanding when I3 runs, and 128 + 128 = the 256 B
+above. §5's per-increment predictions are unchanged; only their ORDER against (b′) makes them read as
+one step. Second, segments 6 and 23 are 8 `of()` boxes / 512 B, and §1.1 accounts for exactly those
+eight as `FD.Ꮡfdmu` ×2 (128) + `fdMutex.Ꮡstate` ×4 (256) + `fdMutex.Ꮡwsema` ×2 (128) — so (b′)
+removing 6 of the 8 and leaving `FD.Ꮡfdmu` ×2 means the six it removes are `state` ×4 **and `wsema`
+×2**. That is §6's identity-keyed boundary: those two boxes are **not removable by capabilities 1–4**,
+which stands, and (b′) is a different mechanism (the dual receiver emission, which stops reaching the
+call rather than re-keying it). §6 is therefore not contradicted, but the row's path to zero no longer
+runs through it — worth stating so a future lane does not re-open the address-keyed-semaphore question
+believing 128 B still hangs on it. Both readings are arithmetic over two records; a lane that needs
+either as a load-bearing fact measures it.
+
+**OPEN, and not settled by this amendment:** the post-(b′) BASELINE. 936 is floor-derived
+(1,320 − 384); G's (b′) acceptance run measured **972.4 B/run at 11 allocations** on a 100-run draw
+and reads the excess as a real non-per-box component (the semaphore side table's `SemaBucket`/`Queue`
+no longer materialising per `fdMutex`) rather than as slop. Both sides agree on the COUNT (11 → 7) and
+name the same four boxes; I3's own run settles the byte unit, with G's prediction on record at
+972.4 → 716.4 and its falsifier stated (fewer than four boxes moving, or any box that is not one of
+the four).
