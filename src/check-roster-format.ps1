@@ -117,6 +117,7 @@ $fixtureRows = @(
     "| [``cond/pkg``](https://x/cond) | 61 |  | Path algebra $dot host-conditional (privilege $dash colon-free): ``TestA/one``, ``TestB/two`` $dot linux: 54 $dot [proof](p.md) |"
     "| [``ann/pkg``](https://x/ann) | 298 |  | Random ints. $dot linux: 302 $dot [proof](p.md) |"
     "| [``annd/pkg``](https://x/annd) | 17 | 1 | Mime tables. $dot linux: 18 + 1 $dot [proof](p.md) |"
+    "| [``hcd/pkg``](https://x/hcd) | 88 | 1 | Processes. $dot host-conditional-disclosure (published-host descriptor count): ``TestExtraFiles`` $dot linux: 87 + 1 $dot [proof](p.md) |"
     "| [``dar/pkg``](https://x/dar) | 5 |  | Mac things. $dot darwin: 7 $dot [proof](p.md) |"
     "| [``prose/pkg``](https://x/prose) | 9 |  | Behavior on linux: 5 subtests skip. $dot [proof](p.md) |"
     "| [``segment/pkg``](https://x/segment) | 9 |  | Counted here $dot linux: 5 subtests skip $dot [proof](p.md) |"
@@ -132,7 +133,7 @@ $fixture = Read-FixtureRoster $fixtureRows
 $byName = @{}
 foreach ($row in $fixture) { $byName[$row.Package] = $row }
 
-Assert-Equal 'fixture: every row parses' 14 $fixture.Count
+Assert-Equal 'fixture: every row parses' 15 $fixture.Count
 
 Assert-Equal 'columns: matched count' 12 $byName['plain/pkg'].Expected
 Assert-Equal 'columns: blank disclosed reads 0' 0 $byName['plain/pkg'].Disclosed
@@ -143,6 +144,15 @@ Assert-Equal 'columns: a plain row carries no annotation' 0 $byName['plain/pkg']
 # its capture stops at the last backticked name, and the per-OS segment starts after that.
 Assert-Equal 'host-conditional: names still parse beside an OS annotation' 'TestA/one,TestB/two' ($byName['cond/pkg'].Conditional -join ',')
 Assert-Equal 'host-conditional: the row also carries its OS annotation' 54 $byName['cond/pkg'].OS['linux'].Expected
+
+# The host-conditional DISCLOSURE annotation (Q31) parses into its own list, and the two annotations
+# never cross-match: `host-conditional-disclosure` is not a `host-conditional` surplus list and a
+# surplus list is not a disclosure list.
+Assert-Equal 'host-conditional-disclosure: names parse' 'TestExtraFiles' ($byName['hcd/pkg'].ConditionalDisclosures -join ',')
+Assert-Equal 'host-conditional-disclosure: does not read as a surplus annotation' 0 @($byName['hcd/pkg'].Conditional).Count
+Assert-Equal 'host-conditional-disclosure: the surplus row carries no disclosure list' 0 @($byName['cond/pkg'].ConditionalDisclosures).Count
+Assert-Equal 'host-conditional-disclosure: the OS annotation beside it still parses (floor)' 87 $byName['hcd/pkg'].OS['linux'].Expected
+Assert-Equal 'host-conditional-disclosure: the OS annotation beside it still parses (disclosed)' 1 $byName['hcd/pkg'].OS['linux'].Disclosed
 
 Assert-Equal 'annotation: N alone' 302 $byName['ann/pkg'].OS['linux'].Expected
 Assert-Equal 'annotation: N alone means zero disclosed' 0 $byName['ann/pkg'].OS['linux'].Disclosed
@@ -278,6 +288,13 @@ Assert-Equal 'linux: an annotated row whose disclosures moved is named as that' 
     (Get-SweepRowClassification -Expectation $linAnnotated -Got 18 -GotDisclosed 0 -TargetGoos 'linux')
 Assert-Equal 'linux: a moved disclosure is never absorbed as host-conditional' 'disclosed-moved' `
     (Get-SweepRowClassification -Expectation $linAnnotated -Got 19 -GotDisclosed 0 -TargetGoos 'linux' -HostConditionalAccepted)
+$linHcd = Get-RosterRowExpectation -Row $byName['hcd/pkg'] -Goos 'linux'          # annotation 87 / 1
+Assert-Equal 'linux: the host-conditional-disclosure row passes at its banking-host reading' 'pass' `
+    (Get-SweepRowClassification -Expectation $linHcd -Got 87 -GotDisclosed 1 -TargetGoos 'linux')
+Assert-Equal 'linux: the fired reading is disclosed-moved until PROVEN' 'disclosed-moved' `
+    (Get-SweepRowClassification -Expectation $linHcd -Got 86 -GotDisclosed 2 -TargetGoos 'linux')
+Assert-Equal 'linux: the PROVEN fired reading is its own class' 'host-conditional-disclosure' `
+    (Get-SweepRowClassification -Expectation $linHcd -Got 86 -GotDisclosed 2 -TargetGoos 'linux' -HostConditionalDisclosureAccepted)
 Assert-Equal 'linux: an unannotated row still passes at the windows count' 'pass' `
     (Get-SweepRowClassification -Expectation $linPlain -Got 12 -GotDisclosed 0 -TargetGoos 'linux')
 Assert-Equal 'linux: an unannotated row off the windows count is comparison-validated-at-count' 'unbanked-count' `
@@ -422,6 +439,43 @@ Assert-Equal 'capability-absent: an unaccounted extra live verdict is refused' $
         go = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
         csharp = New-VerdictMap @{ TestOther = 'pass'; TestFakeSuite = 'skip'; TestRogue = 'pass' }
     }) -BankedNames $fullBankedNames).Accepted
+
+# ---- 1b2b. the host-conditional DISCLOSURE arm (Q31), exercised end to end ------------------------
+# Test-HostConditionalDisclosureDelta reads the live record alone. The fixture is os/exec's measured
+# shape: banked 87 + 1 on the Linux bank host (TestExtraFiles runs there, Go=pass / C#=pass), and
+# 86 + 2 on a container whose single-file published host holds 97 descriptors in 3..100, where the
+# platform-skip entry fires (Go=pass / C#=skip) -- one verdict changing column, nothing else.
+$hcdNames = @('TestExtraFiles')
+$hcdFired = [PSCustomObject]@{
+    go = New-VerdictMap @{ TestOther = 'pass'; TestExtraFiles = 'pass'; TestCredentialNoSetGroups = 'pass' }
+    csharp = New-VerdictMap @{ TestOther = 'pass'; TestExtraFiles = 'skip'; TestCredentialNoSetGroups = 'fail' }
+    disclosed = @('TestCredentialNoSetGroups (host-limit): the seam names the field', 'TestExtraFiles (platform-skip): source-defined platform skip')
+}
+$hcdResult = Test-HostConditionalDisclosureDelta -Expected 87 -Disclosed 1 -Names $hcdNames -Got 86 -GotDisclosed 2 -Comparison $hcdFired
+Assert-Equal 'host-conditional-disclosure: the fired reading is accepted' $true $hcdResult.Accepted
+Assert-Equal 'host-conditional-disclosure: the accepted result names what fired' 'TestExtraFiles' ($hcdResult.Fired -join ',')
+Assert-Equal 'host-conditional-disclosure: the banking-host reading has nothing to absorb' $false `
+    (Test-HostConditionalDisclosureDelta -Expected 87 -Disclosed 1 -Names $hcdNames -Got 87 -GotDisclosed 1 -Comparison $hcdFired).Accepted
+Assert-Equal 'host-conditional-disclosure: a lost verdict beside the fired one is refused (85 + 2)' $false `
+    (Test-HostConditionalDisclosureDelta -Expected 87 -Disclosed 1 -Names $hcdNames -Got 85 -GotDisclosed 2 -Comparison $hcdFired).Accepted
+Assert-Equal 'host-conditional-disclosure: a second, unnamed disclosure is refused (86 + 3)' $false `
+    (Test-HostConditionalDisclosureDelta -Expected 87 -Disclosed 1 -Names $hcdNames -Got 86 -GotDisclosed 3 -Comparison $hcdFired).Accepted
+Assert-Equal 'host-conditional-disclosure: the moved verdict being some OTHER name is refused' $false `
+    (Test-HostConditionalDisclosureDelta -Expected 87 -Disclosed 1 -Names $hcdNames -Got 86 -GotDisclosed 2 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestExtraFiles = 'pass'; TestSomethingElse = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestExtraFiles = 'pass'; TestSomethingElse = 'skip' }
+        disclosed = @('TestCredentialNoSetGroups (host-limit): the seam names the field', 'TestSomethingElse (platform-skip): unrelated')
+    })).Accepted
+Assert-Equal 'host-conditional-disclosure: the named entry firing in any other shape is refused (Go=pass / C#=fail)' $false `
+    (Test-HostConditionalDisclosureDelta -Expected 87 -Disclosed 1 -Names $hcdNames -Got 86 -GotDisclosed 2 -Comparison ([PSCustomObject]@{
+        go = New-VerdictMap @{ TestOther = 'pass'; TestExtraFiles = 'pass' }
+        csharp = New-VerdictMap @{ TestOther = 'pass'; TestExtraFiles = 'fail' }
+        disclosed = @('TestCredentialNoSetGroups (host-limit): the seam names the field', 'TestExtraFiles (platform-skip): source-defined platform skip')
+    })).Accepted
+Assert-Equal 'host-conditional-disclosure: a row naming nothing absorbs nothing' $false `
+    (Test-HostConditionalDisclosureDelta -Expected 87 -Disclosed 1 -Names @() -Got 86 -GotDisclosed 2 -Comparison $hcdFired).Accepted
+Assert-Equal 'host-conditional-disclosure: a record without verdict maps is refused' $false `
+    (Test-HostConditionalDisclosureDelta -Expected 87 -Disclosed 1 -Names $hcdNames -Got 86 -GotDisclosed 2 -Comparison ([PSCustomObject]@{ disclosed = @('TestExtraFiles (platform-skip): x') })).Accepted
 
 # ---- 1b2a. the host-limited mirror -- the THIRD host state, exercised end to end ------------------
 # The shape the capability-absent rule refuses on its LAST check, and must go on refusing: the

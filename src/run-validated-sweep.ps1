@@ -359,6 +359,7 @@ $cvac = 0; $cvacRows = @()
 # count as passes -- nothing regressed -- but a full sweep must not report their banked verdicts as
 # re-validated when they were not, so they are named here as well as on their own verdict line.
 $hostLimited = @()
+$hostConditionalDisclosed = @()   # rows absorbed by the host-conditional-disclosure arm (Q31), summarized at the end
 # The ORACLE-side three-run standard (coordinator ruling 2026-09-02; the rule is
 # Test-OracleOnlyFailure in _roster.ps1). Two buckets, and they are opposites:
 #   $oracleFlakedRows  rows whose FIRST run diverged only on the oracle side and whose SECOND run
@@ -591,6 +592,33 @@ function Get-HostConditionalVerdict {
     # exceeding an annotation is reported, never waved through.
     return Test-HostConditionalDelta -Expected $Row.Effective.Expected -Disclosed $Row.Effective.Disclosed -Conditional $Row.Conditional `
         -Got $Got -Comparison $comparison -BankedNames $bankedNames.ToArray()
+}
+
+# The FOURTH absorption's reader (Q31): a row naming host-conditional DISCLOSURES -- entries whose
+# firing is a property of the host, so the same verdict sits in the matched column on one host and
+# the disclosed column on another (os/exec's TestExtraFiles) -- gets one chance to prove that its
+# moved disclosed count is exactly those entries firing here. The rule is Test-HostConditionalDisclosureDelta
+# in _roster.ps1; this reads the run's own comparison record and hands it over. NO proof page: the
+# evidence for a verdict changing column is the live record alone (the rule's comment says why the
+# surplus arm's page cross-check must not be inherited). Every unreadable input is a rejection with
+# its reason, never an acceptance.
+function Get-HostConditionalDisclosureVerdict {
+    param([PSCustomObject] $Row, [int] $Got, [int] $GotDisclosed, [string] $OutDir)
+
+    $comparisonPath = Join-Path $OutDir 'go2cs_test_comparison.json'
+    if (-not (Test-Path $comparisonPath)) {
+        return [PSCustomObject]@{ Accepted = $false; Fired = @(); Reason = "no comparison record at $comparisonPath" }
+    }
+
+    $comparison = $null
+    $comparisonError = $null
+    try { $comparison = ConvertFrom-ComparisonRecord -Path $comparisonPath } catch { $comparisonError = $_.Exception.Message }
+    if ($null -eq $comparison) {
+        return [PSCustomObject]@{ Accepted = $false; Fired = @(); Reason = "unreadable comparison record at ${comparisonPath}: $comparisonError" }
+    }
+
+    return Test-HostConditionalDisclosureDelta -Expected $Row.Effective.Expected -Disclosed $Row.Effective.Disclosed `
+        -Names $Row.ConditionalDisclosures -Got $Got -GotDisclosed $GotDisclosed -Comparison $comparison
 }
 
 # ---- capability-conditional verdicts (the MIRROR of the surplus mechanism above) -----------------
@@ -1113,6 +1141,20 @@ foreach ($row in $rows) {
             }
         }
 
+        # The FOURTH absorption (Q31): a row naming host-conditional DISCLOSURES gets one chance to
+        # prove that its moved disclosed count is exactly those entries firing on this host with the
+        # same verdicts leaving the matched column -- consulted only on the disclosed-moved answer,
+        # from the live record alone. Anything unprovable falls through with its reason attached.
+        $hostConditionalDisclosure = $null
+        if ($class -eq 'disclosed-moved' -and $row.ConditionalDisclosures.Count -gt 0) {
+            $hostConditionalDisclosure = Get-HostConditionalDisclosureVerdict -Row $row -Got $got -GotDisclosed $gotDisclosed -OutDir $outDir
+
+            if ($hostConditionalDisclosure.Accepted) {
+                $class = Get-SweepRowClassification -Expectation $row.Effective -Got $got -GotDisclosed $gotDisclosed `
+                    -TargetGoos $targetGoos -HostConditionalDisclosureAccepted
+            }
+        }
+
         # The mirror check: a package registered in $capabilityConditionalBlocks whose shortfall
         # matches its block exactly gets the same one chance to PROVE the shape, via evidence alone
         # -- no host probe, the comparison record and proof page either show the collapse or they
@@ -1151,6 +1193,14 @@ foreach ($row in $rows) {
                 $pass++
                 Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked + $($hostConditional.Extras.Count) host-conditional [${rowSecs}s]" -ForegroundColor Green
             }
+            'host-conditional-disclosure' {
+                # A pass, and NOT a silent one: the line names the entry that fired and that its
+                # verdict changed COLUMN on this host; summarized again at the end for a full sweep.
+                $pass++
+                $firedList = ($hostConditionalDisclosure.Fired -join ', ')
+                $hostConditionalDisclosed += "$pkg ($got matched + $gotDisclosed disclosed, banked $($row.Effective.Expected) + $($row.Effective.Disclosed); $firedList fired on this host)"
+                Write-Host "  PASS  $label $got = $($row.Effective.Expected) banked - $($hostConditionalDisclosure.Fired.Count) host-conditional disclosure ($firedList fired on this host)$osSuffix [${rowSecs}s]" -ForegroundColor Green
+            }
             'capability-absent' {
                 $pass++
                 $block = $capabilityConditionalBlocks[$pkg]
@@ -1181,6 +1231,9 @@ foreach ($row in $rows) {
                 $fail++
                 $failed += "$pkg (disclosed $gotDisclosed, $($row.Effective.Source) expectation $($row.Effective.Disclosed))"
                 Write-Host "  DISC  $label $got, disclosed $gotDisclosed vs the $($row.Effective.Source) expectation $($row.Effective.Disclosed) [${rowSecs}s]" -ForegroundColor Yellow
+                if ($null -ne $hostConditionalDisclosure -and $hostConditionalDisclosure.Reason) {
+                    Write-Host "        host-conditional-disclosure check: $($hostConditionalDisclosure.Reason)" -ForegroundColor Yellow
+                }
             }
             default {
                 # Validated, but NOT at the expectation in force -- normally a silent change in what
@@ -1240,6 +1293,7 @@ Write-Host ''
 # Windows is never, so the summary line is byte-for-byte the line it has always printed there.
 $summary = "sweep: $pass pass"
 if ($hostLimited.Count) { $summary += " ($($hostLimited.Count) host-limited)" }
+if ($hostConditionalDisclosed.Count) { $summary += " ($($hostConditionalDisclosed.Count) host-conditional disclosure fired)" }
 if ($oracleFlakedRows.Count) { $summary += " ($($oracleFlakedRows.Count) after an oracle re-run)" }
 $summary += " / $fail fail"
 if ($unstable) { $summary += " / $unstable oracle-unstable" }
@@ -1437,6 +1491,12 @@ if ($hostLimited.Count) {
     Write-Host 'host-limited -- validated, at a count a committed host-limit disclosure accounts for on THIS host:' -ForegroundColor DarkYellow
     $hostLimited | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
     Write-Host '  (the banked count stands; it is what a host that can produce the block scores -- see the manifest entry for the retirement condition)' -ForegroundColor DarkGray
+}
+if ($hostConditionalDisclosed.Count) {
+    Write-Host ''
+    Write-Host 'host-conditional disclosure fired -- validated, with a named entry moving its verdict from the matched column to the disclosed column on THIS host:' -ForegroundColor DarkYellow
+    $hostConditionalDisclosed | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkYellow }
+    Write-Host '  (the banked counts stand; they are what the banking host scores -- the roster annotation names the condition, the manifest entry the mechanism)' -ForegroundColor DarkGray
 }
 
 if ($oracleFlakedRows.Count) {
