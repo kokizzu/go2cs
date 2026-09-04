@@ -20,12 +20,12 @@ internal static readonly @string socketˢ = "socket"u8;
 // descriptor as nonblocking and close-on-exec.
 internal static (nint, error) sysSocket(nint family, nint sotype, nint proto) {
     // See ../syscall/exec_unix.go for description of ForkLock.
-    Ꮡ(syscall.ForkLock).RLock();
+    syscall.ᏑForkLock.RLock();
     var (s, err) = socketFunc(family, sotype, proto);
     if (err == default!) {
         syscall.CloseOnExec(s);
     }
-    Ꮡ(syscall.ForkLock).RUnlock();
+    syscall.ᏑForkLock.RUnlock();
     if (err != default!) {
         return (-1, os.NewSyscallError(socketˢ, err));
     }

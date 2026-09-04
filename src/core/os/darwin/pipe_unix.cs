@@ -16,15 +16,15 @@ internal static readonly @string pipeˢ = "pipe"u8;
 public static (ж<File> r, ж<File> w, error err) Pipe() {
     array<nint> p = new(2);
     // See ../syscall/exec.go for description of lock.
-    Ꮡ(syscall.ForkLock).RLock();
+    syscall.ᏑForkLock.RLock();
     var e = syscall.Pipe(p[0..]);
     if (e != default!) {
-        Ꮡ(syscall.ForkLock).RUnlock();
+        syscall.ᏑForkLock.RUnlock();
         return (default!, default!, NewSyscallError(pipeˢ, e));
     }
     syscall.CloseOnExec(p[0]);
     syscall.CloseOnExec(p[1]);
-    Ꮡ(syscall.ForkLock).RUnlock();
+    syscall.ᏑForkLock.RUnlock();
     return (newFile(p[0], "|0"u8, kindPipe, false), newFile(p[1], "|1"u8, kindPipe, false), default!);
 }
 

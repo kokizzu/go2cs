@@ -33,8 +33,8 @@ internal static readonly @string dupˢ = "dup"u8;
 internal static (nint, @string, error) dupCloseOnExecOld(nint fd) {
     GoFrame ᒐ = default;
     try {
-        Ꮡ(Δsyscall.ForkLock).RLock();
-        defer(Ꮡ(Δsyscall.ForkLock).RUnlock, ref ᒐ);
+        Δsyscall.ᏑForkLock.RLock();
+        defer(Δsyscall.ᏑForkLock.RUnlock, ref ᒐ);
         var (newfd, err) = Δsyscall.Dup(fd);
         if (err != default!) {
             return (-1, dupˢ, err);
