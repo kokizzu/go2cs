@@ -1795,6 +1795,84 @@ func markHandOwnHostExcludedTestFiles(internal, external *packages.Package, excl
 
 	_, byPath := classifyTestFiles(internal, external)
 
+	// The DECLARED set is collected here rather than reused from classifyTestFileForExclusion,
+	// because that one is Phase-4D-shaped and cannot serve this rule. It records TYPE declarations,
+	// Example/Benchmark funcs and methods — and a top-level VAR does not merely go unrecorded there,
+	// it sets `qualifies = false` and is skipped, which is exactly right for a predicate whose whole
+	// question is "does this file declare only deferred functions".
+	//
+	// MEASURED, and it is why this exists rather than a one-line reuse: `testing`'s export_test.go
+	// declares `var PrettyPrint = prettyPrint` — a VAR — and benchmark_test.go (external) reads
+	// `testing.PrettyPrint`. With the Phase-4D declared set the propagation could not see that edge
+	// at all, and a convert-only probe emitted benchmark_test.cs against a symbol the host does not
+	// have. Two of the three names export_test.go publishes are vars and only HighPrecisionTime is
+	// a type, so a type-shaped view of that file misses most of what it exports.
+	//
+	// The USED set is reused, because it is already complete: classifyTestFileForExclusion walks
+	// every ident through TypesInfo.Uses with no kind filter at all.
+	declaredByPath := map[string][]types.Object{}
+
+	collectDeclared := func(variant *packages.Package) {
+		if variant == nil {
+			return
+		}
+
+		for i, file := range variant.Syntax {
+			if i >= len(variant.CompiledGoFiles) {
+				break
+			}
+
+			path := filepath.Clean(variant.CompiledGoFiles[i])
+
+			if !strings.HasSuffix(strings.ToLower(filepath.Base(path)), "_test.go") {
+				continue
+			}
+
+			if _, seen := declaredByPath[path]; seen {
+				continue
+			}
+
+			objects := make([]types.Object, 0)
+
+			declare := func(name *ast.Ident) {
+				if name == nil {
+					return
+				}
+
+				if object := variant.TypesInfo.Defs[name]; object != nil {
+					objects = append(objects, object)
+				}
+			}
+
+			for _, decl := range file.Decls {
+				switch typed := decl.(type) {
+				case *ast.GenDecl:
+					if typed.Tok == token.IMPORT {
+						continue
+					}
+
+					for _, spec := range typed.Specs {
+						switch valueOrType := spec.(type) {
+						case *ast.TypeSpec:
+							declare(valueOrType.Name)
+						case *ast.ValueSpec:
+							for _, name := range valueOrType.Names {
+								declare(name)
+							}
+						}
+					}
+				case *ast.FuncDecl:
+					declare(typed.Name)
+				}
+			}
+
+			declaredByPath[path] = objects
+		}
+	}
+
+	collectDeclared(internal)
+	collectDeclared(external)
+
 	for _, path := range internal.CompiledGoFiles {
 		if !strings.HasSuffix(strings.ToLower(filepath.Base(path)), "_test.go") {
 			continue
@@ -1815,11 +1893,7 @@ func markHandOwnHostExcludedTestFiles(internal, external *packages.Package, excl
 		// by the previous pass contributes its own declarations to the next.
 		gone := make(map[types.Object]bool)
 		for path := range excluded {
-			info, ok := byPath[path]
-			if !ok {
-				continue
-			}
-			for _, object := range info.declared {
+			for _, object := range declaredByPath[path] {
 				gone[object] = true
 			}
 		}
