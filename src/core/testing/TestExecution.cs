@@ -1068,13 +1068,79 @@ public sealed class TestExecution
     /// true, and harmless -- cleanup only ever removes its own leaf) and never the leaf.
     /// </para>
     /// </remarks>
-    private static string TempDirName(string value)
+    /// <summary>
+    /// The characters Go's <c>TempDir</c> mapper admits beyond ASCII alphanumerics -- its
+    /// <c>allowed</c> constant, verbatim from <c>testing.go</c> at the pinned go1.23.12. The
+    /// trailing SPACE is Go's and is deliberate.
+    /// </summary>
+    private const string TempDirAllowedAscii = "!#$%&()+,-.=@^_{}~ ";
+
+    /// <summary>
+    /// Go's <c>TempDir</c> name mapper: everything the filesystem or a glob cannot carry is
+    /// DROPPED, not escaped.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is <c>strings.Map(mapper, c.Name())</c> from <c>(*common).TempDir</c>, and Go's own
+    /// comment says why it exists: <i>"Drop unusual characters (such as path separators or
+    /// characters interacting with globs) from the directory name to avoid surprising
+    /// os.MkdirTemp behavior."</i> An ASCII rune survives only if it is alphanumeric or appears in
+    /// <see cref="TempDirAllowedAscii"/>; a non-ASCII rune survives only if it is a letter or a
+    /// number. Everything else disappears, <c>/</c> included, so a subtest's temp directory is
+    /// FLAT exactly as Go's is.
+    /// </para>
+    /// <para>
+    /// The host used <see cref="SanitizeName"/> here, which is Go's <c>testing.rewrite</c> -- the
+    /// mapper for a test NAME, which ESCAPES a non-printable rather than dropping it and leaves
+    /// <c>:</c>, <c>*</c>, <c>[</c> and <c>]</c> untouched because a name may legitimately carry
+    /// them. Two mappers for two jobs, and using the name one for a PATH is what broke four of
+    /// Go's own <c>TestTempDir</c> leaves (measured 2026-09-04): <c>test*</c> and
+    /// <c>test:subtest</c> could not be created on Windows at all, and <c>test[]</c> was created
+    /// fine and then failed the test's own <c>filepath.Glob</c> with "syntax error in pattern",
+    /// because the surviving brackets read as a character class in the DIRECTORY part of the
+    /// pattern.
+    /// </para>
+    /// </remarks>
+    internal static string GoTempDirPattern(string value)
     {
-        // A rewritten name can contain BACKSLASHES (`\x1a` is what Go calls U+001A), and a backslash
-        // is a directory separator here — left in, the component would silently split and a
-        // Cleanup() would delete a tree it does not own. `/` stays a separator by design (a subtest
-        // name nests); every other backslash folds.
-        return $"{SanitizeName(value).Replace('\\', '_')}-{Fnv1a32(value):x8}";
+        StringBuilder builder = new(value.Length);
+
+        foreach (Rune rune in value.EnumerateRunes())
+        {
+            int codePoint = rune.Value;
+
+            if (codePoint < 0x80)
+            {
+                if (codePoint is >= '0' and <= '9' or >= 'a' and <= 'z' or >= 'A' and <= 'Z' ||
+                    TempDirAllowedAscii.Contains((char)codePoint))
+                {
+                    builder.Append(rune);
+                }
+
+                continue;
+            }
+
+            if (Rune.IsLetter(rune) || Rune.IsNumber(rune))
+                builder.Append(rune);
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// Go's mapped pattern plus a deterministic hash of the ORIGINAL name.
+    /// </summary>
+    /// <remarks>
+    /// The hash is this host's, not Go's, and it does the job Go gets from <c>os.MkdirTemp</c>'s
+    /// random suffix. The mapper is LOSSY, so two different subtest names can map to one pattern
+    /// (<c>test/..</c> and <c>test..</c> both give <c>TestTempDirtest..</c>) and without the hash
+    /// they would share a directory; it is taken over the ORIGINAL value for that reason. A
+    /// backslash needs no special handling any more -- the mapper drops it, along with every other
+    /// separator.
+    /// </remarks>
+    internal static string TempDirName(string value)
+    {
+        return $"{GoTempDirPattern(value)}-{Fnv1a32(value):x8}";
     }
 
     /// <summary>
