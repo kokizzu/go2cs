@@ -523,3 +523,32 @@ lifetime. Owes GolibTests + `go2cs.slnx` + the String/Unsafe behavioral filters 
 comparable only against a figure taken at the same suite scope — `AllocsPerRun`'s single warmup
 does not cover one-time costs a full run has already paid, so a filtered census must never compare
 its bytes against a full-run record.
+
+## AMENDED 2026-09-04 — the SECOND instrument law, beside the first: a 100-run `AllocsPerRun` sample cannot resolve a change under ~150 B/run, so quote the FLOOR or a high-`runs` figure and name the unit AND the configuration
+
+Nothing above is rewritten. The law above governs **which two figures may be compared** (same suite
+scope). This one governs **whether a single figure is a measurement at all**, and it was paid for by
+this very row: §3.3's `TestWriteStringAlloc` has been quoted at 1,184.6, 1,320.64, 1,457.8 and 1,510.8
+B/run across four records, and the movement between three of those was attributed to the
+Debug/Release × tiered/TC0 configuration axis. It was not. Measured at `26ff0c45b` by a per-frame byte
+probe (Release + `DOTNET_TieredCompilation=0`, 1,000,000 runs; 40 reps of 100 runs per cell for the
+A/B, **minimum taken**; mailbox `2f77a03d0`, coordinator dispositions `a8f4525f4`; full decomposition
+on the BOARD under *2026-09-04 — the `os` want-zero row has a FLOOR*):
+
+**Sampling law.** `AllocsPerRun`'s byte reading carries allocation-accounting slop with a **fixed
+per-window term that does not scale with `runs`** — on this row it ranges 0–800 B/run at 100 runs and
+is under 1.5 B/run at 1,000,000, concentrating in whichever segment pins a freshly allocated object
+every run. So **a single 100-run sample cannot resolve a change smaller than about 150 B/run.** Quote
+the **FLOOR** — the minimum over repetitions, the slop-free draw — or a high-`runs` figure, and SAY
+which, because a floor-derived figure and a draw-derived figure are not comparable in either
+direction. A reduction claim that compares one against the other is measuring the sampler, not the
+cut. (This row's floor is **1,320.00 B/run at 17.00 objects**, identical in Release/TC0, Debug/tiered
+and Debug/TC0; only Release/tiered differs, at 1,256.00, and by exactly one box that tier-1 escape
+analysis stack-allocates.)
+
+**Unit-and-configuration law, its companion.** golib's `AllocationCounter` charges the object at the
+`new`, so on a tiered runtime the COUNT and the BYTES **diverge**: the same box reported 1.00 object
+and 0.28 B/run once tier-1 stack-allocated it. Every allocation claim on this family therefore names
+its **UNIT** (count or bytes) and its **CONFIGURATION**. This is not bookkeeping — `AllocsPerRun`
+reports the COUNT on a want-zero row, so no JIT improvement can satisfy such an assert; only not
+constructing the object can.

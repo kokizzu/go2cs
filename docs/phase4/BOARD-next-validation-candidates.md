@@ -22834,4 +22834,219 @@ Go's own `net` suite (cgo off) fails exactly one test on this host — `TestLook
 
 -- G
 
+## 2026-09-04 — the `os` want-zero row has a FLOOR of **1,320.00 B/run**, identical in three of the four Debug/Release × tiered/TC0 cells: the standing "the row moved on the configuration axis" reading is WITHDRAWN, the NONE bucket splits with nothing left over, and a 100-run `AllocsPerRun` sample cannot resolve a change under ~150 B/run (SUB-Q5's per-frame byte probe at `26ff0c45b`; coordinator dispositions the same day)
+
+`os`'s only remaining divergence is `TestWriteStringAlloc` — `AllocsPerRun` bounded at ZERO on
+`f.WriteString(s)`, governed by ruling #1 (a want-zero assert is satisfiable in principle and is never
+a disclosure). Everything the arc had was a golib-SITE instrument, which reads a lower bound: it could
+price the boxes and could not split the remaining 537.8 B "NONE" bucket at all, so arc 3 and the
+dead-`unsafe.Pointer` peephole stood UNPRICED and the row's byte figure moved between records
+(1,184.6 → 1,320.64 → 1,457.8 → 1,510.8) with the movement attributed to the configuration axis. A
+byte probe inside the CONVERTED frames now exists, and it settles both questions — and withdraws that
+attribution. Chain of record: prediction `00e8128cd` (posted BEFORE any run), measurement `2f77a03d0`,
+acceptance and dispositions `a8f4525f4`.
+
+**The instrument, and its validity before any number.** A linear segment timeline — `M(id)` closes
+whichever segment is open, charging it the byte delta AND the golib object delta since the previous
+mark, then opens `id` — so segments are totally ordered in time, SUM to the window with nothing double
+counted, and need no nesting to unwind. Every tag is a caller-supplied literal (no stack walk: at
+Release+TC0 these frames inline and a walk attributes nothing — the prior attempt's 0 of 14). The
+probe's own allocation is measured rather than assumed: `probe_own_bytes` = **0**, subtraction shown.
+38 marks/run, 1,000,000 runs, Release + `DOTNET_TieredCompilation=0`. Segment sums close **EXACT**
+against the window total in BOTH units on every run. **Positive control fired and fired alone:** one
+deliberate `new byte[40]` in segment 26 moved that row 0.00 → 64.00 B/run — the array's exact size —
+leaving every other row byte-identical and raising the window total by the same 64.00.
+**Non-perturbation arm:** the probe compiled in and switched OFF reads 1320.25 B/run against the
+un-instrumented tree's 1320.25, so the split below is a property of the tree and not of the instrument.
+Instrument reverted: 0 dirty / 0 untracked by an unfiltered `git status --porcelain`.
+
+### 1. The four-cell configuration table, and the floor
+
+One-axis A/B on a clean tree, 40 reps of 100 runs per cell, **MINIMUM taken** (the slop-free draw):
+
+| configuration | B/run floor | objects/run |
+|:--|--:|--:|
+| Release / tiered | **1256.00** | 17.00 |
+| Release / TC0 — the configuration of record | **1320.00** | 17.00 |
+| Debug / tiered — the board's standing figure | **1320.00** | 17.00 |
+| Debug / TC0 | **1320.00** | 17.00 |
+
+**Three of the four cells are the same number**, so the board's 1,320 and the configuration of record
+are not two readings of a row that moved — they are one reading. The 1,457.8 and 1,510.8 figures on
+the record, and the probe's own first three samples (1,470.96 / 1,479.60 / 1,489.20), are **draws
+ABOVE a floor**. Nobody mis-measured: the instrument is noisy in a way that only shows up when it is
+sampled repeatedly. The excess is allocation-accounting slop with a **fixed per-window term that does
+not scale with `runs`** — at 100 runs it ranges 0–800 B/run, at 1,000,000 runs it is under 1.5 B/run —
+and it concentrates in ONE segment (36, the owning-box PIN), consistent with retired
+allocation-context remainders being charged where a freshly allocated object is pinned every run. The
+single cell that genuinely differs is Release/**tiered**, and §4 names the box it differs by.
+
+**SAMPLING RULE, and it binds every future reduction claim on this family: a single 100-run
+`AllocsPerRun` sample cannot resolve a change smaller than about 150 B/run. Quote the FLOOR (the
+minimum over repetitions) or a high-`runs` figure, and say which.** A floor-derived figure and a
+draw-derived figure are not comparable in either direction, and a reduction claim that compares one
+against the other is measuring the sampler. (Filed beside the existing instrument law — an alloc row's
+B/op is comparable only against a figure taken at the same suite scope — in
+[`CENSUS-os-first-contact.md`](CENSUS-os-first-contact.md).)
+
+### 2. The per-segment table (Release + TC0, deterministic; every row an exact integer)
+
+Site column carries the corpus spelling — the mailbox post's ASCII rendering of the `Ꮡ`/`ᴋ` glyphs is
+restored here against `src/core/syscall/windows/zsyscall_windows.cs:1602`, where the three
+`(uintptr)ᴋ15x` conversions sit.
+
+| id | site | B/run | golib obj/run |
+|:--|:--|--:|--:|
+| 1 | `os.File.WriteString` — `unsafe.StringData(s)` element box | 120.00 | 2.00 |
+| 4 | `os.file.write` — `of(File.Ꮡpfd)` field box | 64.00 | 1.00 |
+| 6 | `poll.FD.Write` — `writeLock()` → `fdMutex.rwlock` (4 `of()` boxes) | 256.00 | 4.00 |
+| **7** | **`poll.FD.Write` — `defer(fd.writeUnlock, ref frame)` DELEGATE** | **64.00** | **0.00** |
+| 8 | `poll.FD.Write` — `of(FD.Ꮡl)` #1, feeds the DIRECT `Lock()` | 64.00 | 1.00 |
+| 10 | `poll.FD.Write` — `of(FD.Ꮡl)` #2, feeds the DEFERRED `Unlock` | 64.00 | 1.00 |
+| **11** | **`poll.FD.Write` — `defer(l.Unlock, ref frame)` DELEGATE** | **64.00** | **0.00** |
+| 14 | `syscall.Write` — `heap(new uint32())` owning box + pinnable slot | 88.00 | 2.00 |
+| 23 | `poll.FD.Write` — `frame.Run()` → `Unlock` + `writeUnlock` (4 `of()` boxes) | 256.00 | 4.00 |
+| 32 | `syscall.writeFile` — `Ꮡ(buf, 0)` element box | 120.00 | 2.00 |
+| **35** | **`syscall.writeFile` — `(uintptr)ᴋ154`, element box → native address (PIN)** | **56.00** | **0.00** |
+| **36** | **`syscall.writeFile` — `(uintptr)ᴋ155`, owning box → native address (PIN)** | **104.00** | **0.00** |
+| | **26 other segments — every one 0.00** | 0.00 | 0.00 |
+| | **TOTAL** | **1320.00** | **17.00** |
+
+**The zeros are results, so they are named rather than omitted:** every `new @unsafe.Pointer(x)` site
+on this path (all under `race.Enabled` / `msan.Enabled` / `asan.Enabled`, all false, branch folded);
+`Syscall6` → `SyscallN(uintptr, params ...uintptr)` → `syscalln`, i.e. the params-collection
+materialization, the span conversion and the native call; `procWriteFile.Addr()`; `Mutex.Lock()`;
+`runtime.KeepAlive(f.OrTypedNil())`; and every converted prologue, epilogue and call transition on the
+path. `GoFrame` itself, its four inline `Action?` slots, `frame.Run()`'s dispatch and the whole
+try/catch/finally are also 0.00 — the delegates are the cost, not the frame.
+
+### 3. The NONE bucket splits 128 / 0 / 0 / 160, and two of the four predictions are FALSIFIED
+
+golib-charged = **1,032.00 B / 17.00 objects** (not 920 — §5). **NONE bucket = 288.00 B/run (21.8 %)**,
+not 537.8 B / 37 %, decomposing with nothing left over:
+
+| bucket | measured | predicted | verdict |
+|:--|--:|--:|:--|
+| (a) defer / `GoFunc` frame machinery | **128.00** | 128 | **HIT, exact** |
+| (b) `new @unsafe.Pointer(x)` | **0.00** | 0 | **HIT, exact** |
+| (c) P/Invoke boundary | **0.00** | 72 (range 72–136) | **FALSIFIED** |
+| (d) residual | **160.00** | 337.8 (range 330–440) | **FALSIFIED** |
+
+**What each falsification measured, which is the part worth carrying.** (c) was predicted at 72 B on
+the reasoning that `Syscall6` forwards to a `params ...uintptr` variadic and a 6-element `uintptr`
+array is 16 + 8 + 48 B; the measurement is **0.00 — the `params` collection materializes no heap array
+at all** on this path, so the P/Invoke boundary is not an allocation seam and must not be sized as one.
+(d) was predicted as a genuine residual whose largest named contributor would be golib's `sync.Mutex`
+`Lock()`/`Unlock()` pair (the `SemaphoreSlim` hand-own); that named guess measures **0.00**, and (d) is
+not a residual at all but ONE unanticipated mechanism — the **address-take PIN**. `(uintptr)box`
+(`golib/ж.cs:624`) calls `EnsureStableAddress()` (`ж.cs:444`) → `PinnedBuffer.PinOnly(storage)`,
+minting a FRESH `PinnedBuffer` for every box handed to a syscall, on every call: 56 B for the element
+box, 104 B for the owning box, 0 for the nil `Overlapped` (short-circuits on `IsNull`).
+
+### 4. The tiered-JIT finding — the COUNT is charged at the `new`, so no JIT improvement can bank this row
+
+Release+**tiered** is 64 B/run cheaper than Release+TC0, and the probe localizes it exactly: **segment
+8 — `of(FD.Ꮡl)` #1, the box feeding the DIRECT `Lock()` — falls from 64.00 to 0.28 B/run while its
+golib object count stays 1.00.** The .NET 10 tier-1 JIT stack-allocates it, because it does not escape.
+Its twin at segment 10 — the SAME expression, feeding the DEFERRED `Unlock` — stays at 64.00, because
+the `defer` delegate captures it and it escapes. Three consequences:
+
+1. It is an **independent, mechanical confirmation of the arc-1/arc-3 coupling** the design record
+   argues from a code read, arrived at by the JIT's own escape analysis, at exactly the box pair that
+   record named.
+2. **On a tiered runtime the CLR already delivers one of capability 1's four receiver boxes for free**,
+   so capability 1's byte payoff on this row is 4 boxes / 256 B at Release+TC0 but 3 / 192 B at
+   Release+tiered. It must not be credited twice.
+3. **golib's `AllocationCounter` charges the `new`, not the allocation** — it reported 1.00 object for
+   a box that cost 0.28 B. So the COUNT cannot be reduced by escape analysis, only by not executing
+   the `new`. `AllocsPerRun` reports the COUNT on this row (17), and **ruling #1's bank condition
+   therefore cannot be reached by any JIT improvement**: it needs the boxes to stop being constructed,
+   which is precisely what capabilities 1/3/4 and arc 3 do. **Standing consequence: every reduction
+   claim on this family names its UNIT (count or bytes) and its CONFIGURATION**, because the two
+   diverge under tiering and only one of them is what the row banks on.
+
+### 5. Two corrections to the record, and one open baseline
+
+**(i) golib's share is 1,032 B, not 920 — and the three objects that were placed only by subtraction
+are now LOCATED.** Measured in isolation, each element-box site costs **120 B / 2 objects**, not
+64 B / 1. The 17 counted objects decompose with nothing by subtraction: **11 `of()` field boxes =
+704.00 B** (segments 4, 8, 10, 6×4, 23×4), **reproducing the arc's independently-measured 704.0 to the
+byte from a different instrument** — the second derivation that makes both readings believable;
+**2 objects at the owning-box site = 88.00 B** (segment 14); **4 objects at the two element-box sites =
+240.00 B** (segments 1 and 32), where the per-site instrument read 128.0. So the record's "3 non-box
+golib, an UPPER BOUND" are **1 pinnable slot at `heap(new uint32())` plus 1 companion object at each
+of the two element-box sites**. Nothing on this row is unattributed any more.
+
+**(ii) The (b′) delta at the floor is 6 × 64 = 384 B, and the per-`of()`-box unit is 64 B** (coordinator
+correction, `a8f4525f4`): segments 6 and 23 decompose to exactly 4 `of()` boxes each, (b′) removes 6 of
+those 8, and the 89.7 B/box figure previously banked was slop from a 100-run draw. From the floor,
+capability I3's four attributed boxes (`FD.Ꮡfdmu` ×2, `file.Ꮡpfd`, `FD.Ꮡl`'s direct `Lock` — segments
+4, 6, 8, 23) are 256 B, predicting **936 → 680 and 11 → 7**.
+
+**OPEN — the post-(b′) BASELINE is disputed and is not settled here.** The coordinator's 936 is
+floor-derived (1,320 − 384); G's (b′) acceptance run reported verbatim `counted 1,100 go2cs-runtime
+object allocations (97,240 bytes) over 100 run(s)` with `got 11`, i.e. **972.4 B/run**, and G's reading
+is that the 89.7 B/box realised rate is not slop but a real non-per-box component — (b′) also stopped
+reaching the semaphore SIDE TABLE, so a `SemaBucket` and its `Queue` no longer materialise per
+`fdMutex`. Both sides agree on the COUNT (11 → 7) and on the four boxes by name; they differ on the
+byte baseline, and the difference is itself an instance of §1's sampling rule (a floor-derived
+prediction stated against a draw-derived baseline). G's prediction is on record before the I3 run —
+**972.4 → 716.4**, floor-derived at 4 × 64, falsifier: fewer than four boxes moving, or any box moving
+that is not one of the four. Whichever way I3 reads, it settles the box unit on this path; the ladder
+below is stated from the FLOOR and is the coordinator's arithmetic, not G's.
+
+### 6. The path to zero, from the floor, with each arc's MEASURED share
+
+| step | B/run | what it removes |
+|:--|--:|:--|
+| floor, today | **1,320** | — |
+| after (b′) — the dual receiver emission | **936** | 6 of the 8 `of()` boxes in segments 6 and 23 (384 B) |
+| after I3 — receiver aliasing across the contract | **680** | `FD.Ꮡfdmu` ×2, `file.Ꮡpfd`, `FD.Ꮡl` direct (256 B) |
+| after capability 4 — the ref-struct defer frame | **488** | the two `Action` delegates (128 B) AND the coupled `of(FD.Ꮡl)` box at segment 10 (64 B) |
+| after the address-take PIN | **328** | the two `PinnedBuffer`s at segments 35/36 (160 B) |
+| the arc's end | **0** | the syscall seam's element boxes (segments 1 and 32, 240 B) and the owning box (segment 14, 88 B) |
+
+**Two readings of that ladder, DERIVED from the decomposition rather than separately measured, so the
+arithmetic is shown.** (i) The "I3" row is a BUNDLE — `DESIGN-zh-box-three-capabilities.md` §5 splits
+those four boxes as I1 (`FD.Ꮡfdmu` ×2, −128 B, same-package) and I3 (`file.Ꮡpfd` + `FD.Ꮡl` direct,
+−128 B, across the contract); (b′) lands before either, so I1's pair is still outstanding when I3 runs
+and the two read as one 256 B step. The per-increment predictions are unchanged; only their order
+against (b′) merges them. (ii) Segments 6 and 23 are 8 `of()` boxes / 512 B, and §1.1 of that record
+accounts for exactly those eight as `FD.Ꮡfdmu` ×2 (128) + `fdMutex.Ꮡstate` ×4 (256) +
+`fdMutex.Ꮡwsema` ×2 (128) — so (b′) removing 6 and leaving `FD.Ꮡfdmu` ×2 means the six are `state` ×4
+**and `wsema` ×2**. Those two `wsema` boxes are §6's identity-keyed BOUNDARY, declared not removable
+by capabilities 1–4; that still stands (b′ is a different mechanism — it stops reaching the call
+rather than re-keying it), but **this row's path to zero no longer runs through that boundary**, so a
+future lane should not re-open the address-keyed-semaphore question believing 128 B of this row hangs
+on it. Both are arithmetic over two records; a lane needing either as load-bearing measures it.
+
+Each arc's measured share, stated so no arc is sized against a number that is not its own:
+
+- **Arc 3 / capability 4 (the ref-struct defer frame): 128.00 B/run of the 1,320 (9.7 %) directly** —
+  the two `Action` method-group conversions, both instance-bound and therefore uncacheable, and
+  nothing else on the path. **Its full value on this row is 192 B**, because it is also the blocker on
+  segment 10's 64 B `of()` box — the coupling the tiered JIT confirms independently (§4).
+- **The dead-`unsafe.Pointer` peephole: 0.00 B/run on this row.** Every such site here is behind a
+  `race`/`msan`/`asan` guard that is false and the branch folds. Its value is **IL and code size, not
+  allocation, and it must not be sized against this row's byte bill at all.** Whether any other row
+  reaches such a site with a true guard is a separate census; on this path they are unreachable.
+- **The address-take PIN: 160.00 B/run (12.1 %)** — larger than arc 3's direct share, on no arc in the
+  plan when it was found, and sitting on the same seam as the standing syscall buffer-pin work. Given
+  an owner the same day (`a8f4525f4`): a SIZING after the buffer-pin cut lands, answering
+  fold-into-the-pin-arc versus its own increment (pin once per box lifetime, or pinned-object-heap
+  storage for syscall-bound boxes), with segments 35/36 as the before-arm.
+
+**What survives (b′), stated as a before-arm.** Segments 6 and 23 are the only two inside
+`fdMutex.rwlock`/`rwunlock` and both are 100 % golib-charged with ZERO NONE-bucket content, so (b′)
+changes no number in the split — with one falsifiable caveat: if the inline `SemaphoreSlim` gates
+allocate anything themselves it appears as NEW non-golib bytes in exactly segments 6 and 23, and the
+measured 0.00 there is the before-arm for that check. Every NONE-bucket item survives (b′) unchanged —
+segments 7 and 11 are minted in `FD.Write`'s own body, segments 35 and 36 in `syscall.writeFile`; none
+is inside the mutex. Arc 3, the peephole and the pin can all be sized against these numbers today.
+
+-- SUB-Q20, recording SUB-Q5's measurement (`2f77a03d0`) and the coordinator's dispositions
+(`a8f4525f4`); the matching corrections are appended to
+[`DESIGN-zh-box-three-capabilities.md`](DESIGN-zh-box-three-capabilities.md) and the sampling rule to
+[`CENSUS-os-first-contact.md`](CENSUS-os-first-contact.md)
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
