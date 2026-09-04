@@ -881,7 +881,7 @@ func TestRecordsRequireProductionAnchorGatesReferenceModel(t *testing.T) {
 	resetPackageState(&packages.Package{})
 	packageNamespace = "go"
 
-	if recordsRequireProductionAnchor("value_package", "value") {
+	if recordsRequireProductionAnchor("value_package", "value", false) {
 		t.Fatal("an empty record set must not require a production anchor")
 	}
 
@@ -891,7 +891,7 @@ func TestRecordsRequireProductionAnchorGatesReferenceModel(t *testing.T) {
 	adapterClassImplementations.Add("io_package.Writer|strings_package.Builder")
 	interfaceImplementations["io_package.Writer"].Add("strings_package.Builder")
 
-	if recordsRequireProductionAnchor("value_package", "value") {
+	if recordsRequireProductionAnchor("value_package", "value", false) {
 		t.Fatal("test-anchored records (bare impl, adapter-class pair) must not require a production anchor")
 	}
 
@@ -899,8 +899,29 @@ func TestRecordsRequireProductionAnchorGatesReferenceModel(t *testing.T) {
 	// class — reference model impossible, fallback required.
 	interfaceImplementations["io_package.Writer"].Add(PointerPrefix + "<value_package.Buffer>")
 
-	if !recordsRequireProductionAnchor("value_package", "value") {
+	if !recordsRequireProductionAnchor("value_package", "value", false) {
 		t.Fatal("a production-qualified pointer implementer must require the production anchor")
+	}
+
+	// HAND-OWNED HOST (option B, owner-ruled 2026-09-04): the SAME record relocates. The production
+	// class is a hand-written host in a separate assembly, so a partial on it is impossible under
+	// every model -- and go2cs-gen emits an adapter CLASS in the test anchor for this record shape
+	// anyway, which is what recordsRequireProductionMutation already states one predicate below.
+	// This arm and the one above are the same record set read under the two flag values, so a
+	// relocation that leaked into the ordinary path would fail the assertion above, not this one.
+	if recordsRequireProductionAnchor("value_package", "value", true) {
+		t.Fatal("under a hand-owned host a production-qualified POINTER implementer must relocate to the test anchor")
+	}
+
+	// ...and the relocation is scoped to the POINTER form. A bare production-qualified VALUE
+	// implementer still generates a partial on the production class, which no flag can make
+	// possible across an assembly boundary, so the host flag must NOT rescue it.
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+	interfaceImplementations["io_package.Writer"] = NewHashSet([]string{"value_package.Buffer"})
+
+	if !recordsRequireProductionAnchor("value_package", "value", true) {
+		t.Fatal("a production-qualified VALUE implementer must require the production anchor even under a hand-owned host")
 	}
 
 	// A record rendering a production type through its imported ꓸ alias form hides the
@@ -909,7 +930,7 @@ func TestRecordsRequireProductionAnchorGatesReferenceModel(t *testing.T) {
 	packageNamespace = "go"
 	implicitConversions["value"+TypeAliasDot+"Kind"] = NewHashSet([]string{"@string"})
 
-	if !recordsRequireProductionAnchor("value_package", "value") {
+	if !recordsRequireProductionAnchor("value_package", "value", false) {
 		t.Fatal("a ꓸ-alias-form production type reference must require the production anchor")
 	}
 }
@@ -3247,7 +3268,7 @@ func TestExternalVariantRecordPartitionAnchors(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		if got := isTestAnchoredImplementRecord(testCase.iface, testCase.impl, "value_package"); got != testCase.want {
+		if got := isTestAnchoredImplementRecord(testCase.iface, testCase.impl, "value_package", false); got != testCase.want {
 			t.Errorf("isTestAnchoredImplementRecord(%q, %q) = %v, want %v", testCase.iface, testCase.impl, got, testCase.want)
 		}
 	}
@@ -3307,7 +3328,7 @@ func TestWriteExternalVariantMetadataSplitsAnchors(t *testing.T) {
 	})
 	importedTypeAliases["alpha"] = "go.alpha_package.Alpha"
 
-	unitName, err := writeExternalVariantMetadata(testInfoPath, dir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"))
+	unitName, err := writeExternalVariantMetadata(testInfoPath, dir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3367,7 +3388,7 @@ func TestWriteExternalVariantMetadataSplitsAnchors(t *testing.T) {
 	packageNamespace = "go"
 	interfaceImplementations["value_package.Interface"] = NewHashSet([]string{"value_package.IntSlice"})
 
-	unitName, err = writeExternalVariantMetadata(secondInfoPath, unitOnlyDir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"))
+	unitName, err = writeExternalVariantMetadata(secondInfoPath, unitOnlyDir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"), false)
 	if err != nil {
 		t.Fatal(err)
 	}

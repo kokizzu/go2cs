@@ -372,8 +372,8 @@ var errProductionAnchoredRecords = errors.New("test variant records production-a
 // through its imported ꓸ type-alias form (`<pkg>ꓸ<Type>`, TypeAliasDot) is likewise treated as
 // production-anchored — conservatively, since the partition predicates cannot see the production
 // qualifier inside the alias identifier.
-func recordsRequireProductionAnchor(productionClassName, productionPackageName string) bool {
-	_, productionAnchored := splitExternalVariantRecords(productionClassName)
+func recordsRequireProductionAnchor(productionClassName, productionPackageName string, handOwnHost bool) bool {
+	_, productionAnchored := splitExternalVariantRecords(productionClassName, handOwnHost)
 
 	if !productionAnchored.isEmpty() {
 		return true
@@ -1164,7 +1164,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			}
 		} else if variant == external {
 			if model.referencesProduction() {
-				if model == testProjectReference && recordsRequireProductionAnchor(getSanitizedImport(production.Name+PackageSuffix), production.Name) {
+				if model == testProjectReference && recordsRequireProductionAnchor(getSanitizedImport(production.Name+PackageSuffix), production.Name, options.testHandOwnHost) {
 					return result, errProductionAnchoredRecords
 				}
 
@@ -1174,7 +1174,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 				metadataAnchorLocalTypes = true
 				writePackageInfoFile(testInfoPath, true)
 			} else {
-				unitName, err := writeExternalVariantMetadata(testInfoPath, outputPath, production.Name, productionAnchor, testAnchor)
+				unitName, err := writeExternalVariantMetadata(testInfoPath, outputPath, production.Name, productionAnchor, testAnchor, options.testHandOwnHost)
 				if err != nil {
 					return result, err
 				}
@@ -2750,7 +2750,7 @@ func (r conversionRecordSet) isEmpty() bool {
 //     namespace-relative form `math.rand_package.Rand`) generates a partial/adapter on the
 //     production class — it stays with the production-anchored package_test_info.cs, whose first
 //     class is the production class.
-func isTestAnchoredImplementRecord(ifaceName, implName, productionClassName string) bool {
+func isTestAnchoredImplementRecord(ifaceName, implName, productionClassName string, handOwnHost bool) bool {
 	if adapterClassImplementations.Contains(ifaceName + "|" + implName) {
 		return true
 	}
@@ -2768,6 +2768,34 @@ func isTestAnchoredImplementRecord(ifaceName, implName, productionClassName stri
 	}
 
 	if pointerForm {
+		// HAND-OWNED HOST (option B, owner-ruled 2026-09-04): a pointer-form implement record is
+		// RELOCATABLE. The production class here is the hand-written host itself, so the last
+		// bullet above -- "generates a partial/adapter on the production class" -- would put
+		// generated code inside a hand-owned type in a SEPARATE assembly, which is not something
+		// any model can do; and it is not what the generator does under a reference model anyway.
+		// recordsRequireProductionMutation, the white-box predicate below, states the mechanism
+		// for exactly this record class: "qualified production structs are foreign to the test
+		// compilation, so go2cs-gen emits value or pointer adapter classes in the test anchor
+		// instead of partial production structs."
+		//
+		// MEASURED, one record, by a convert-only probe of `testing` (2026-09-04):
+		// GoImplement<ж<testing_package.T>, testing_package.TB> -- *testing.T implements
+		// testing.TB, reached through helperfuncs_test.go's `func testHelper(t testing.TB)`.
+		// Every OTHER row in the corpus carries the same record with `testing_package.` foreign to
+		// its own production class, so it already anchors test-side; `testing` is the first
+		// package where the package under test SUPPLIES the interface, and therefore the first to
+		// reach the production-qualified branch below at all.
+		//
+		// DELIBERATELY NARROW. Whether this is the right answer for EVERY reference-model row --
+		// i.e. whether the white-box predicate's reasoning should govern here generally -- is a
+		// real question with a blast radius this gate cannot see: rows that silently took the
+		// recompile fallback for this reason would stop taking it, changing their emission and
+		// their assembly identity. That is sized separately (Q25) with a two-seeded reference-model
+		// census as its precondition, and must NOT be widened here on the strength of one row.
+		if handOwnHost {
+			return true
+		}
+
 		inner = strings.TrimPrefix(inner, "global::")
 
 		if strings.HasPrefix(inner, productionClassName+".") ||
@@ -2809,7 +2837,7 @@ func isTestAnchoredConversionRecord(sourceType, targetType string) bool {
 
 // splitExternalVariantRecords partitions the LIVE record globals (the external variant's
 // collected records) into the test-anchored and production-anchored sets (B4/B5).
-func splitExternalVariantRecords(productionClassName string) (testAnchored, productionAnchored conversionRecordSet) {
+func splitExternalVariantRecords(productionClassName string, handOwnHost bool) (testAnchored, productionAnchored conversionRecordSet) {
 	testAnchored = newConversionRecordSet()
 	productionAnchored = newConversionRecordSet()
 
@@ -2818,7 +2846,7 @@ func splitExternalVariantRecords(productionClassName string) (testAnchored, prod
 			for implementation := range implementations {
 				target := production
 
-				if isTestAnchoredImplementRecord(ifaceName, implementation, productionClassName) {
+				if isTestAnchoredImplementRecord(ifaceName, implementation, productionClassName, handOwnHost) {
 					target = test
 				}
 
@@ -3158,9 +3186,9 @@ func externalTestPackageInfoSeed(projectNamespace, productionClassName, testClas
 // package_test_info.cs as before. Returns the unit's file name when it was written (the caller
 // adds it to the test project's compile items), or "" when the variant introduced no
 // test-anchored records — utf8-class packages keep their single-file shape byte-identical.
-func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageName, productionAnchor, testAnchor string) (string, error) {
+func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageName, productionAnchor, testAnchor string, handOwnHost bool) (string, error) {
 	productionClassName := getSanitizedImport(productionPackageName + PackageSuffix)
-	testAnchored, productionAnchored := splitExternalVariantRecords(productionClassName)
+	testAnchored, productionAnchored := splitExternalVariantRecords(productionClassName, handOwnHost)
 
 	// RECOMPILE-model anchored writes: the production class is compiled into this assembly, so
 	// the historical production-local type qualification stays in force (see writePackageInfoFile).
@@ -3849,6 +3877,24 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 	references := HashSet[string]{}
 
 	for _, fixed := range testProjectFixedReferences {
+		// A fixed reference that IS the package under test duplicates the production reference
+		// below by a SECOND SPELLING, and a HashSet of strings cannot see that
+		// `$(go2csPath)core/testing/testing.csproj` and the colocated `testing.csproj` name one
+		// file. Only a hand-owned HOST row can reach this — the fixed set is golib and testing —
+		// and `testing` does: measured by a convert-only probe (2026-09-04), which emitted BOTH
+		// spellings into testing.tests.csproj.
+		//
+		// The colocated form is the one kept, deliberately: the -tests contract colocates the test
+		// project with the production csproj, so that spelling is layout-independent and involves
+		// no $(go2csPath) tree mapping — which is the reason the reference model emits it at all.
+		//
+		// isSelfProjectReference is the predicate the DEPENDENCY loop below already applies for
+		// exactly this reason. The fixed set never consulted it because, until a hand-owned host
+		// became a test TARGET, no fixed reference could name the package under test.
+		if isSelfProjectReference(fixed, projectName) {
+			continue
+		}
+
 		references.Add(fixed)
 	}
 
