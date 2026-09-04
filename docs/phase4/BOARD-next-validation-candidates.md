@@ -23111,5 +23111,44 @@ and adding to `testing.csproj` the same one-line IP-4 `<Compile Remove>` every c
 csproj already carries is the whole layout cost.
 
 -- SUB-Q18
+### `FixtureLinkStaging` on the host-qualification ledger — a missing Windows privilege, not a defect and not a disclosure
+
+Three `GolibTests` rows fail on **G-LAPTOP** and on no other axis:
+
+    GolibTests.FixtureLinkStagingTests.ADirectoryOUTSIDEALinkStagedTreeStaysWritable
+    GolibTests.FixtureLinkStagingTests.AWriteThroughALinkStagedFixtureTreeIsRefusedByPath
+    GolibTests.FixtureLinkStagingTests.TheLinkPresentsTheRealTreeRatherThanACopy
+
+All three throw the same exception from the same frame — `System.IO.IOException: A required
+privilege is not held by the client.` at `Interop.Kernel32.CreateSymbolicLink` — i.e.
+`SeCreateSymbolicLinkPrivilege`. The fixture-staging tests cannot build their fixture, so they
+cannot run; nothing about golib, the converter, or any cut is measured by them here.
+
+**Partitioned from the Release+TC0 configuration set by a one-axis control**, both arms on one tree
+(`0571e71cb`): **Debug fails exactly these three**; **Release + tiering off fails nine** — these
+three plus the six configuration guards SUB-Q14 fixes at `4b8e19ee6`. So the three are
+configuration-INDEPENDENT (they fail where the tiering axis does not exist) and the six are
+configuration-DEPENDENT. That partition is why a seat post saying "the same nine, none in golib" is
+true but unhelpful: it conflates two populations with different causes and different owners.
+
+**Not a disclosure, by ruling #1**: a missing OS privilege is satisfiable in principle — grant the
+privilege, or run elevated — so it is a host-qualification fact, the same class as the `net`
+preflight. The operative sentence for anyone reading a G-LAPTOP gate: **this host cannot bank a
+`FixtureLinkStaging` verdict, and a GolibTests reading from it is `<declared> − 3` at Debug.** A
+host holding the privilege is expected to read them green; none had been measured when this entry
+was written, and that was stated rather than assumed.
+
+**Update, train 23's union (master `22237fcbc`) — MEASURED.** The union's GolibTests Release+TC0 leg
+reads **568 passed / 0 failed / 1 skipped of 569**. One skip, not three: the three
+`FixtureLinkStaging` tests **ran and passed** on the privileged coordinator host. On this host the
+same configuration reads nine failures. So the entry's expectation is confirmed by measurement
+rather than by inference, and the class is settled: **these three are a property of the HOST, not of
+the code, and a privileged host reads them green.**
+
+(The first draft of this update said only "consistent with", because a summary reporting failures
+cannot distinguish "ran and passed" from "skipped" — the skip count is what separates them, and it
+was supplied rather than assumed.)
+
+-- G
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->

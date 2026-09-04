@@ -408,7 +408,7 @@ internal static error destroy(this ж<FD> Ꮡfd) {
 public static error Close(this ж<FD> Ꮡfd) {
     ref var fd = ref Ꮡfd.DerefOrNull();
 
-    if (!Ꮡfd.of(FD.Ꮡfdmu).increfAndClose()) {
+    if (!fd.fdmu.increfAndClose()) {
         return errClosing(fd.isFile);
     }
     if (fd.kind == kindPipe) {

@@ -128,7 +128,7 @@ public static (any value, bool ok) Load(this ж<Map> Ꮡm, any key) {
     var read = Ꮡm.loadReadOnly();
     (var e, ok) = read.m[key, ꟷ];
     if (!ok && read.amended) {
-        Ꮡm.of(Map.Ꮡmu).Lock();
+        m.mu.Lock();
         // Avoid reporting a spurious miss if m.dirty got promoted while we were
         // blocked on m.mu. (If further loads of the same key will not miss, it's
         // not worth copying the dirty map for this key.)
@@ -141,7 +141,7 @@ public static (any value, bool ok) Load(this ж<Map> Ꮡm, any key) {
             // map.
             Ꮡm.missLocked();
         }
-        Ꮡm.of(Map.Ꮡmu).Unlock();
+        m.mu.Unlock();
     }
     if (!ok) {
         return (default!, false);
@@ -173,7 +173,7 @@ public static void Clear(this ж<Map> Ꮡm) {
             // Avoid allocating a new readOnly when the map is already clear.
             return;
         }
-        Ꮡm.of(Map.Ꮡmu).Lock();
+        m.mu.Lock();
         defer(Ꮡm.of(Map.Ꮡmu).Unlock, ref ᒐ);
         read = Ꮡm.loadReadOnly();
         if (len(read.m) > 0 || read.amended) {
@@ -247,7 +247,7 @@ public static (any actual, bool loaded) LoadOrStore(this ж<Map> Ꮡm, any key, 
             }
         }
     }
-    Ꮡm.of(Map.Ꮡmu).Lock();
+    m.mu.Lock();
     read = Ꮡm.loadReadOnly();
     {
         var (e, ok) = read.m[key, ꟷ]; if (ok){
@@ -272,7 +272,7 @@ public static (any actual, bool loaded) LoadOrStore(this ж<Map> Ꮡm, any key, 
             }
         }
     }
-    Ꮡm.of(Map.Ꮡmu).Unlock();
+    m.mu.Unlock();
     return (actual, loaded);
 }
 
@@ -316,7 +316,7 @@ public static (any value, bool loaded) LoadAndDelete(this ж<Map> Ꮡm, any key)
     var read = Ꮡm.loadReadOnly();
     var (e, ok) = read.m[key, ꟷ];
     if (!ok && read.amended) {
-        Ꮡm.of(Map.Ꮡmu).Lock();
+        m.mu.Lock();
         read = Ꮡm.loadReadOnly();
         (e, ok) = read.m[key, ꟷ];
         if (!ok && read.amended) {
@@ -327,7 +327,7 @@ public static (any value, bool loaded) LoadAndDelete(this ж<Map> Ꮡm, any key)
             // map.
             Ꮡm.missLocked();
         }
-        Ꮡm.of(Map.Ꮡmu).Unlock();
+        m.mu.Unlock();
     }
     if (ok) {
         return e.delete();
@@ -389,7 +389,7 @@ public static (any previous, bool loaded) Swap(this ж<Map> Ꮡm, any key, any v
             }
         }
     }
-    Ꮡm.of(Map.Ꮡmu).Lock();
+    m.mu.Lock();
     read = Ꮡm.loadReadOnly();
     {
         var (e, ok) = read.m[key, ꟷ]; if (ok){
@@ -424,7 +424,7 @@ public static (any previous, bool loaded) Swap(this ж<Map> Ꮡm, any key, any v
             }
         }
     }
-    Ꮡm.of(Map.Ꮡmu).Unlock();
+    m.mu.Unlock();
     return (previous, loaded);
 }
 
@@ -446,7 +446,7 @@ public static bool /*swapped*/ CompareAndSwap(this ж<Map> Ꮡm, any key, any ol
                 swapped = false; goto ᒐdone; // No existing value for key.
             }
         }
-        Ꮡm.of(Map.Ꮡmu).Lock();
+        m.mu.Lock();
         defer(Ꮡm.of(Map.Ꮡmu).Unlock, ref ᒐ);
         read = Ꮡm.loadReadOnly();
         swapped = false;
@@ -484,7 +484,7 @@ public static bool /*deleted*/ CompareAndDelete(this ж<Map> Ꮡm, any key, any 
     var read = Ꮡm.loadReadOnly();
     var (e, ok) = read.m[key, ꟷ];
     if (!ok && read.amended) {
-        Ꮡm.of(Map.Ꮡmu).Lock();
+        m.mu.Lock();
         read = Ꮡm.loadReadOnly();
         (e, ok) = read.m[key, ꟷ];
         if (!ok && read.amended) {
@@ -498,7 +498,7 @@ public static bool /*deleted*/ CompareAndDelete(this ж<Map> Ꮡm, any key, any 
             // map.
             Ꮡm.missLocked();
         }
-        Ꮡm.of(Map.Ꮡmu).Unlock();
+        m.mu.Unlock();
     }
     while (ok) {
         var p = e.of(entry.Ꮡp).Load();
@@ -536,7 +536,7 @@ public static void Range(this ж<Map> Ꮡm, Func<any, any, bool> f) {
         // (assuming the caller does not break out early), so a call to Range
         // amortizes an entire copy of the map: we can promote the dirty copy
         // immediately!
-        Ꮡm.of(Map.Ꮡmu).Lock();
+        m.mu.Lock();
         read = Ꮡm.loadReadOnly();
         if (read.amended) {
             read = new readOnly(m: m.dirty);
@@ -546,7 +546,7 @@ public static void Range(this ж<Map> Ꮡm, Func<any, any, bool> f) {
             m.dirty = default!;
             m.misses = 0;
         }
-        Ꮡm.of(Map.Ꮡmu).Unlock();
+        m.mu.Unlock();
     }
     foreach (var (k, e) in read.m) {
         var (v, ok) = e.load();
