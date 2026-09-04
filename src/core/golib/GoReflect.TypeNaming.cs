@@ -448,6 +448,11 @@ public static partial class GoReflect
         if (methods.Count == 0)
             return "interface {}";
 
+        // Sorted by the BARE name, and the package qualification below is applied afterwards, as a
+        // rendering step only. That order is measured, not assumed: Go prints
+        // `interface { zlib.aaa(); main.zzz() }` for an interface embedding an unexported `aaa` from
+        // one package beside an unexported `zzz` from another — bare order (aaa, zzz), not qualified
+        // order (main.zzz, zlib.aaa). Sorting the qualified strings would reverse that pair.
         methods.Sort(static (a, b) => string.CompareOrdinal(a.Name, b.Name));
 
         StringBuilder builder = new("interface { ");
@@ -460,7 +465,7 @@ public static partial class GoReflect
             System.Reflection.MethodInfo method = methods[i];
             System.Reflection.ParameterInfo[] parameters = method.GetParameters();
 
-            builder.Append(method.Name).Append('(');
+            builder.Append(goInterfaceMethodName(method, t)).Append('(');
 
             for (int j = 0; j < parameters.Length; j++)
             {
@@ -590,6 +595,39 @@ public static partial class GoReflect
     // type prefers its stamped original Go name ([GoLocalName] — `binary.Person`, never the
     // lifted `TestNoFixedSize_Person`). A Δ-collision rename (ΔHandle) strips the marker; a type
     // with no `_package` declaring class falls back to its bare name.
+    // Go QUALIFIES an interface's UNEXPORTED method names with their package in the type string --
+    // `interface { B(); main.a(int) string }` -- and never qualifies an exported one. The package is
+    // part of an unexported method's identity, because only its own package can satisfy it.
+    //
+    // The package taken is the METHOD's, not the interface's, which is what makes an embedded
+    // interface from another package render as its own: `interface { zlib.aaa(); main.zzz() }`.
+    private static string goInterfaceMethodName(System.Reflection.MethodInfo method, Type owner)
+    {
+        string name = method.Name;
+
+        if (isExportedGoName(name))
+            return name;
+
+        Type? declaringPackage = method.DeclaringType?.DeclaringType ?? owner.DeclaringType;
+
+        return goPackageNameOf(declaringPackage) is { Length: > 0 } packageName
+            ? packageName + "." + name
+            : name;
+    }
+
+    // Go's own rule, and it is about a RUNE: a name is exported iff its first rune is an upper-case
+    // letter (`unicode.IsUpper`). Decoding a whole rune rather than reading `name[0]` is what keeps a
+    // surrogate pair from being judged by its high half, and it answers the underscore-initial case
+    // -- unexported in Go -- correctly for free.
+    private static bool isExportedGoName(string name)
+    {
+        if (name.Length == 0)
+            return false;
+
+        return Rune.DecodeFromUtf16(name, out Rune first, out _) == System.Buffers.OperationStatus.Done &&
+               Rune.IsUpper(first);
+    }
+
     private static string GoQualifiedName(Type t)
     {
         string name = goBareTypeName(t);

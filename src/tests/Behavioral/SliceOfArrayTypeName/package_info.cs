@@ -32,6 +32,8 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b416c706861287820696e74293b207a65746128297d", "main_mixedExportedness")]
+[assembly: GoDynamicTypeLift("696e746572666163657b6128696e742920737472696e677d", "main_unexportedOnly")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -54,7 +56,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("SliceOfArrayTypeName.go", "SliceOfArrayTypeName.cs", "AAkmggAMBoKCgoKCgoKChg==")]
+[assembly: go.GoPositionMap("SliceOfArrayTypeName.go", "SliceOfArrayTypeName.cs", "AAkmggAYBoKCgoKCgoKCAAAWgoiCgoY=")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -70,6 +72,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface main_mixedExportedness {}
+    internal partial interface main_unexportedOnly {}
     public partial struct Grid {}
     // </TypeAccessibility>
 
