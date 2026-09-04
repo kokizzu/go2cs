@@ -119,12 +119,12 @@ internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) {
         ref var client = ref Ꮡclient.DerefOrNull();
         ref var call = ref Ꮡcall.DerefOrNull();
 
-        Ꮡclient.of(Client.ᏑreqMutex).Lock();
+        client.reqMutex.Lock();
         defer(Ꮡclient.of(Client.ᏑreqMutex).Unlock, ref ᒐ);
         // Register this call.
-        Ꮡclient.of(Client.Ꮡmutex).Lock();
+        client.mutex.Lock();
         if (client.shutdown || client.closing) {
-            Ꮡclient.of(Client.Ꮡmutex).Unlock();
+            client.mutex.Unlock();
             call.Error = ErrShutdown;
             Ꮡcall.done();
             return;
@@ -132,16 +132,16 @@ internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) {
         var seq = client.seq;
         client.seq++;
         client.pending[seq] = Ꮡcall;
-        Ꮡclient.of(Client.Ꮡmutex).Unlock();
+        client.mutex.Unlock();
         // Encode and send the request.
         client.request.Seq = seq;
         client.request.ServiceMethod = call.ServiceMethod;
         var err = client.codec.WriteRequest(Ꮡclient.of(Client.Ꮡrequest), call.Args);
         if (err != default!) {
-            Ꮡclient.of(Client.Ꮡmutex).Lock();
+            client.mutex.Lock();
             Ꮡcall = client.pending[seq]; call = ref Ꮡcall.DerefOrNull();
             delete(client.pending, seq);
-            Ꮡclient.of(Client.Ꮡmutex).Unlock();
+            client.mutex.Unlock();
             if (Ꮡcall != nil) {
                 call.Error = err;
                 Ꮡcall.done();
@@ -167,10 +167,10 @@ internal static void input(this ж<Client> Ꮡclient) {
             break;
         }
         var seq = response.Seq;
-        Ꮡclient.of(Client.Ꮡmutex).Lock();
+        client.mutex.Lock();
         var call = client.pending[seq];
         delete(client.pending, seq);
-        Ꮡclient.of(Client.Ꮡmutex).Unlock();
+        client.mutex.Unlock();
         switch (ᐧ) {
         case {} when call == nil: {
             err = client.codec.ReadResponseBody(default!);
@@ -207,8 +207,8 @@ internal static void input(this ж<Client> Ꮡclient) {
 
     }
     // Terminate pending calls.
-    Ꮡclient.of(Client.ᏑreqMutex).Lock();
-    Ꮡclient.of(Client.Ꮡmutex).Lock();
+    client.reqMutex.Lock();
+    client.mutex.Lock();
     client.shutdown = true;
     var closing = client.closing;
     if (AreEqual(err, io.EOF)) {
@@ -222,8 +222,8 @@ internal static void input(this ж<Client> Ꮡclient) {
         call.Value.Error = err;
         call.done();
     }
-    Ꮡclient.of(Client.Ꮡmutex).Unlock();
-    Ꮡclient.of(Client.ᏑreqMutex).Unlock();
+    client.mutex.Unlock();
+    client.reqMutex.Unlock();
     if (debugLog && !AreEqual(err, io.EOF) && !closing) {
         log.Println(rpcClientProtocolErrorˢ, err);
     }
@@ -359,13 +359,13 @@ public static (ж<Client>, error) Dial(@string network, @string address) {
 public static error Close(this ж<Client> Ꮡclient) {
     ref var client = ref Ꮡclient.DerefOrNull();
 
-    Ꮡclient.of(Client.Ꮡmutex).Lock();
+    client.mutex.Lock();
     if (client.closing) {
-        Ꮡclient.of(Client.Ꮡmutex).Unlock();
+        client.mutex.Unlock();
         return ErrShutdown;
     }
     client.closing = true;
-    Ꮡclient.of(Client.Ꮡmutex).Unlock();
+    client.mutex.Unlock();
     return client.codec.Close();
 }
 

@@ -44,8 +44,13 @@ internal static void fatal(@string s) => throw new global::System.InvalidOperati
 //
 // A Mutex must not be copied after first use.
 [GoType] partial struct Mutex {
-    // Lazily-created binary semaphore backing this mutex. A Mutex is always used through a pointer
-    // (ж<Mutex>), never copied after first use, so the box holds the single shared gate.
+    // Lazily-created binary semaphore backing this mutex. The gate is a FIELD of the mutex, so what
+    // makes it shared is Go's own rule that a Mutex must not be copied after first use — every
+    // reference to the same mutex reaches the same field. The box is NOT what holds it: this file's
+    // earlier wording said "the box holds the single shared gate", which read as though the identity
+    // lived in the ж<Mutex>, and it never did. That mattered once the methods below became `ref
+    // Mutex` primaries and there is no box in the picture at all; the gate is reached the same way
+    // and is the same gate.
     internal SemaphoreSlim? gate;
 }
 
@@ -56,9 +61,11 @@ internal static void fatal(@string s) => throw new global::System.InvalidOperati
 }
 
 // gateOf returns the mutex's backing semaphore, creating it once on first use (race-safe).
-private static SemaphoreSlim gateOf(ж<Mutex> Ꮡm) {
-    ref var m = ref Ꮡm.Value;
-
+//
+// Takes the mutex BY REF rather than by box. Every use below was already `ref m` — the box existed
+// only to produce that ref — so this is the same code reached one indirection earlier, and it is
+// what lets the three methods that call it be `ref Mutex` primaries.
+private static SemaphoreSlim gateOf(ref Mutex m) {
     SemaphoreSlim? g = Volatile.Read(ref m.gate);
 
     if (g is not null) {
@@ -85,22 +92,22 @@ private static SemaphoreSlim gateOf(ж<Mutex> Ꮡm) {
 // is a protocol change — a newcomer barging ahead of the queue — where this cut is required to
 // change no protocol at all. The cost is therefore two volatile stores on every Lock, contended or
 // not, measured by the cost canary named in this arc's commit.
-public static void Lock(this ж<Mutex> Ꮡm) {
+[GoRecv] public static void Lock(this ref Mutex m) {
     using (Goroutine.Park(WaitReason.SyncMutexLock)) {
-        gateOf(Ꮡm).Wait();
+        gateOf(ref m).Wait();
     }
 }
 
 // TryLock tries to lock m and reports whether it succeeded.
-public static bool TryLock(this ж<Mutex> Ꮡm) => gateOf(Ꮡm).Wait(0);
+[GoRecv] public static bool TryLock(this ref Mutex m) => gateOf(ref m).Wait(0);
 
 // Unlock unlocks m.
 // It is a run-time error if m is not locked on entry to Unlock.
 // A locked Mutex is not associated with a particular goroutine; one goroutine may lock a Mutex and
 // then arrange for another goroutine to unlock it.
-public static void Unlock(this ж<Mutex> Ꮡm) {
+[GoRecv] public static void Unlock(this ref Mutex m) {
     try {
-        gateOf(Ꮡm).Release();
+        gateOf(ref m).Release();
     } catch (SemaphoreFullException) {
         fatal("sync: unlock of unlocked mutex"u8);
     }

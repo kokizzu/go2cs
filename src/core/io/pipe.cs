@@ -108,7 +108,7 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
             (n, err) = (0, Ꮡp.writeCloseError()); goto ᒐdone;
         }
         default: {
-            Ꮡp.of(pipe.ᏑwrMu).Lock();
+            p.wrMu.Lock();
             defer(Ꮡp.of(pipe.ᏑwrMu).Unlock, ref ᒐ);
             break;
         }}

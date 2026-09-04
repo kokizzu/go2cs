@@ -74,7 +74,7 @@ public static (net.Conn, ж<bufio.Reader>) Hijack(this ж<ServerConn> Ꮡsc) {
     try {
         ref var sc = ref Ꮡsc.DerefOrNull();
 
-        Ꮡsc.of(ServerConn.Ꮡmu).Lock();
+        sc.mu.Lock();
         defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
         var c = sc.c;
         var r = sc.r;
@@ -116,12 +116,12 @@ public static (ж<http.Request>, error) Read(this ж<ServerConn> Ꮡsc) {
                 Ꮡsc.of(ServerConn.Ꮡpipe).EndResponse(id);
             } else {
                 // Remember the pipeline id of this request
-                Ꮡsc.of(ServerConn.Ꮡmu).Lock();
+                Ꮡsc.Value.mu.Lock();
                 Ꮡsc.Value.pipereq[Ꮡreq.ValueSlot] = id;
-                Ꮡsc.of(ServerConn.Ꮡmu).Unlock();
+                Ꮡsc.Value.mu.Unlock();
             }
         }, ref ᒐ);
-        Ꮡsc.of(ServerConn.Ꮡmu).Lock();
+        sc.mu.Lock();
         if (sc.we != default!) {
             // no point receiving if write-side broken or closed
             defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
@@ -139,7 +139,7 @@ public static (ж<http.Request>, error) Read(this ж<ServerConn> Ꮡsc) {
         var r = sc.r;
         var lastbody = sc.lastbody;
         sc.lastbody = default!;
-        Ꮡsc.of(ServerConn.Ꮡmu).Unlock();
+        sc.mu.Unlock();
         // Make sure body is fully consumed, even if user does not call body.Close
         if (lastbody != default!) {
             // body.Close is assumed to be idempotent and multiple calls to
@@ -147,14 +147,14 @@ public static (ж<http.Request>, error) Read(this ж<ServerConn> Ꮡsc) {
             // returned.
             err = lastbody.Close();
             if (err != default!) {
-                Ꮡsc.of(ServerConn.Ꮡmu).Lock();
+                sc.mu.Lock();
                 defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
                 sc.re = err;
                 return (default!, err);
             }
         }
         (req, err) = http.ReadRequest(r);
-        Ꮡsc.of(ServerConn.Ꮡmu).Lock();
+        sc.mu.Lock();
         defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
         if (err != default!) {
             if (AreEqual(err, io.ErrUnexpectedEOF)){
@@ -187,7 +187,7 @@ public static nint Pending(this ж<ServerConn> Ꮡsc) {
     try {
         ref var sc = ref Ꮡsc.DerefOrNull();
 
-        Ꮡsc.of(ServerConn.Ꮡmu).Lock();
+        sc.mu.Lock();
         defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
         return sc.nread - sc.nwritten;
     }
@@ -208,18 +208,18 @@ public static error Write(this ж<ServerConn> Ꮡsc, ж<http.Request> Ꮡreq, ж
         ref var resp = ref Ꮡresp.DerefOrNull();
 
         // Retrieve the pipeline ID of this request/response pair
-        Ꮡsc.of(ServerConn.Ꮡmu).Lock();
+        sc.mu.Lock();
         var (id, ok) = sc.pipereq[Ꮡreq, ꟷ];
         delete(sc.pipereq, Ꮡreq);
         if (!ok) {
-            Ꮡsc.of(ServerConn.Ꮡmu).Unlock();
+            sc.mu.Unlock();
             return new http.ProtocolErrorжerror(ErrPipeline);
         }
-        Ꮡsc.of(ServerConn.Ꮡmu).Unlock();
+        sc.mu.Unlock();
         // Ensure pipeline order
         Ꮡsc.of(ServerConn.Ꮡpipe).StartResponse(id);
         defer(Ꮡsc.of(ServerConn.Ꮡpipe).EndResponse, id, ref ᒐ);
-        Ꮡsc.of(ServerConn.Ꮡmu).Lock();
+        sc.mu.Lock();
         if (sc.we != default!) {
             defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
             return sc.we;
@@ -240,9 +240,9 @@ public static error Write(this ж<ServerConn> Ꮡsc, ж<http.Request> Ꮡreq, ж
             // before signaling.
             sc.re = new http.ProtocolErrorжerror(ErrPersistEOF);
         }
-        Ꮡsc.of(ServerConn.Ꮡmu).Unlock();
+        sc.mu.Unlock();
         var err = resp.Write(new net_ConnᴠWriter(c));
-        Ꮡsc.of(ServerConn.Ꮡmu).Lock();
+        sc.mu.Lock();
         defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
         if (err != default!) {
             sc.we = err;
@@ -313,7 +313,7 @@ public static (net.Conn c, ж<bufio.Reader> r) Hijack(this ж<ClientConn> Ꮡcc)
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
         c = cc.c;
         r = cc.r;
@@ -356,12 +356,12 @@ public static error Write(this ж<ClientConn> Ꮡcc, ж<http.Request> Ꮡreq) {
                 Ꮡcc.of(ClientConn.Ꮡpipe).EndResponse(id);
             } else {
                 // Remember the pipeline id of this request
-                Ꮡcc.of(ClientConn.Ꮡmu).Lock();
+                Ꮡcc.Value.mu.Lock();
                 Ꮡcc.Value.pipereq[Ꮡreq] = id;
-                Ꮡcc.of(ClientConn.Ꮡmu).Unlock();
+                Ꮡcc.Value.mu.Unlock();
             }
         }, ref ᒐ);
-        Ꮡcc.of(ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         if (cc.re != default!) {
             // no point sending if read-side closed or broken
             defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
@@ -382,9 +382,9 @@ public static error Write(this ж<ClientConn> Ꮡcc, ж<http.Request> Ꮡreq) {
             // still might be some pipelined reads
             cc.we = new http.ProtocolErrorжerror(ErrPersistEOF);
         }
-        Ꮡcc.of(ClientConn.Ꮡmu).Unlock();
+        cc.mu.Unlock();
         err = cc.writeReq(Ꮡreq, new net_ConnᴠWriter(c));
-        Ꮡcc.of(ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
         if (err != default!) {
             cc.we = err;
@@ -404,7 +404,7 @@ public static nint Pending(this ж<ClientConn> Ꮡcc) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
         return cc.nwritten - cc.nread;
     }
@@ -424,18 +424,18 @@ public static (ж<http.Response> resp, error err) Read(this ж<ClientConn> Ꮡcc
         ref var cc = ref Ꮡcc.DerefOrNull();
 
         // Retrieve the pipeline ID of this request/response pair
-        Ꮡcc.of(ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         var (id, ok) = cc.pipereq[Ꮡreq, ꟷ];
         delete(cc.pipereq, Ꮡreq);
         if (!ok) {
-            Ꮡcc.of(ClientConn.Ꮡmu).Unlock();
+            cc.mu.Unlock();
             (resp, err) = (default!, new http.ProtocolErrorжerror(ErrPipeline)); goto ᒐdone;
         }
-        Ꮡcc.of(ClientConn.Ꮡmu).Unlock();
+        cc.mu.Unlock();
         // Ensure pipeline order
         Ꮡcc.of(ClientConn.Ꮡpipe).StartResponse(id);
         defer(Ꮡcc.of(ClientConn.Ꮡpipe).EndResponse, id, ref ᒐ);
-        Ꮡcc.of(ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         if (cc.re != default!) {
             defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
             (resp, err) = (default!, cc.re); goto ᒐdone;
@@ -448,7 +448,7 @@ public static (ж<http.Response> resp, error err) Read(this ж<ClientConn> Ꮡcc
         var r = cc.r;
         var lastbody = cc.lastbody;
         cc.lastbody = default!;
-        Ꮡcc.of(ClientConn.Ꮡmu).Unlock();
+        cc.mu.Unlock();
         // Make sure body is fully consumed, even if user does not call body.Close
         if (lastbody != default!) {
             // body.Close is assumed to be idempotent and multiple calls to
@@ -456,14 +456,14 @@ public static (ж<http.Response> resp, error err) Read(this ж<ClientConn> Ꮡcc
             // returned.
             err = lastbody.Close();
             if (err != default!) {
-                Ꮡcc.of(ClientConn.Ꮡmu).Lock();
+                cc.mu.Lock();
                 defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
                 cc.re = err;
                 (resp, err) = (default!, err); goto ᒐdone;
             }
         }
         (resp, err) = http.ReadResponse(r, Ꮡreq);
-        Ꮡcc.of(ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
         if (err != default!) {
             cc.re = err;

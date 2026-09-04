@@ -161,7 +161,7 @@ internal static ж<Named> resolve(this ж<Named> Ꮡn) {
         }
         // TODO(rfindley): if n.check is non-nil we can avoid locking here, since
         // type-checking is not concurrent. Evaluate if this is worth doing.
-        Ꮡn.of(Named.Ꮡmu).Lock();
+        n.mu.Lock();
         defer(Ꮡn.of(Named.Ꮡmu).Unlock, ref ᒐ);
         if (Ꮡn.state() >= resolved) {
             return Ꮡn;
@@ -363,7 +363,7 @@ public static ж<Func> Method(this ж<Named> Ꮡt, nint i) {
         }
         assert(t.inst != nil); // only instances should have incomplete methods
         var orig = t.inst.Value.orig;
-        Ꮡt.of(Named.Ꮡmu).Lock();
+        t.mu.Lock();
         defer(Ꮡt.of(Named.Ꮡmu).Unlock, ref ᒐ);
         if (len(t.methods) != len((~orig).methods)) {
             assert(len(t.methods) == 0);

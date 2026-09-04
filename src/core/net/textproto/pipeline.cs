@@ -41,10 +41,10 @@ partial class textproto_package {
 public static nuint Next(this ж<Pipeline> Ꮡp) {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(Pipeline.Ꮡmu).Lock();
+    p.mu.Lock();
     nuint id = p.id;
     p.id++;
-    Ꮡp.of(Pipeline.Ꮡmu).Unlock();
+    p.mu.Unlock();
     return id;
 }
 
@@ -88,9 +88,9 @@ public static void EndResponse(this ж<Pipeline> Ꮡp, nuint id) {
 internal static void Start(this ж<sequencer> Ꮡs, nuint id) {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡs.of(sequencer.Ꮡmu).Lock();
+    s.mu.Lock();
     if (s.id == id) {
-        Ꮡs.of(sequencer.Ꮡmu).Unlock();
+        s.mu.Unlock();
         return;
     }
     var c = new channel<EmptyStruct>(0);
@@ -98,7 +98,7 @@ internal static void Start(this ж<sequencer> Ꮡs, nuint id) {
         s.wait = new map<nuint, channel<EmptyStruct>>();
     }
     s.wait[id] = c;
-    Ꮡs.of(sequencer.Ꮡmu).Unlock();
+    s.mu.Unlock();
     ᐸꟷ(c);
 }
 
@@ -108,9 +108,9 @@ internal static void Start(this ж<sequencer> Ꮡs, nuint id) {
 internal static void End(this ж<sequencer> Ꮡs, nuint id) {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡs.of(sequencer.Ꮡmu).Lock();
+    s.mu.Lock();
     if (s.id != id) {
-        Ꮡs.of(sequencer.Ꮡmu).Unlock();
+        s.mu.Unlock();
         throw panic("out of sync");
     }
     id++;
@@ -122,7 +122,7 @@ internal static void End(this ж<sequencer> Ꮡs, nuint id) {
     if (ok) {
         delete(s.wait, id);
     }
-    Ꮡs.of(sequencer.Ꮡmu).Unlock();
+    s.mu.Unlock();
     if (ok) {
         close(c);
     }

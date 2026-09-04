@@ -838,13 +838,13 @@ internal static uint64 fnvUint32(uint64 h, uint32 x) {
 internal static bool seen(this ж<dedup> Ꮡd, uint64 h) {
     ref var d = ref Ꮡd.DerefOrNull();
 
-    Ꮡd.of(dedup.Ꮡmu).Lock();
+    d.mu.Lock();
     if (d.m == default!) {
         d.m = new map<uint64, bool>();
     }
     var seen = d.m[h];
     d.m[h] = true;
-    Ꮡd.of(dedup.Ꮡmu).Unlock();
+    d.mu.Unlock();
     return seen;
 }
 

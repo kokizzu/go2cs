@@ -260,7 +260,7 @@ public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) {
             }
         }
         // Make sure we're single-threaded through here.
-        Ꮡdec.of(Decoder.Ꮡmutex).Lock();
+        dec.mutex.Lock();
         defer(Ꮡdec.of(Decoder.Ꮡmutex).Unlock, ref ᒐ);
         dec.buf.Reset(); // In case data lingers from previous invocation.
         dec.err = default!;

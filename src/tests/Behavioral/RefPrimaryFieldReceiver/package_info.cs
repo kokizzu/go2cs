@@ -10,11 +10,10 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using runtimeꓸError = go.runtime_package.ΔError;
 // </ImportedTypeAliases>
 
 using go;
-using static go.sync_package;
+using static go.main_package;
 
 // For encountered type alias declarations, e.g., `type Table = map[string]int`,
 // go2cs code converter will generate a `global using` statement for the alias in
@@ -37,20 +36,7 @@ using static go.sync_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<Mutex, Locker>(Pointer = true)]
-[assembly: GoImplement<RWMutex, Locker>(Pointer = true)]
-[assembly: GoImplement<rlocker, Locker>(Pointer = true)]
 // </InterfaceImplementations>
-
-// An exported pointer-receiver method that carries a `ref`-receiver primary beside its
-// pointer-box twin is recorded here as a `GoRefPrimary` attribute, so a package in another
-// assembly can bind the primary at a ref-addressable call site instead of allocating a box.
-// Both names are the Go spellings. The section exists only while there is a record to hold.
-// <RefVerdicts>
-[assembly: GoRefPrimary("Mutex", "Lock")]
-[assembly: GoRefPrimary("Mutex", "TryLock")]
-[assembly: GoRefPrimary("Mutex", "Unlock")]
-// </RefVerdicts>
 
 // <ImplicitConversions>
 // </ImplicitConversions>
@@ -63,15 +49,14 @@ using static go.sync_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("sync/cond.go", "cond.cs", "ADJgkgACJAARAoKCgoIAAhTygq7CggAVOLI=")]
-[assembly: go.GoPositionMap("sync/map.go", "map.cs", "AGfWAaKCgqaCgIKkrOKCgoK4goKCuJSUgpSmgoKClKiSqNKClJaChIKClpQABRLigoLMkoKClIKCAAQSwqyyrAAIBIKAgoKCuIKCgIKClKKCgpSmgpSCtIQAAhDSgoKUgsySgoKUgoKUgs7CgoKCgoKCgoK4lJSClKiSpoKCgoKUggAEEsKCgoKUgs7ygoCCgIKClMiCgoCCppSAgoLEgoCCgramgpS0gqwACAKCgIKkpoKCgoKAgqKC7rQABRDygoKCgoKCggAHEJSUgoKClIKmAAIcABEKgsqCgoKCkoKClJaCgoKUgsqigoKUgoKmooKWgoKCgsqCgoKClJQ=")]
-[assembly: go.GoPositionMap("sync/runtime.go", "runtime.cs", "AAkcAAYUAAkCkgABEgAIBqampqaigoKqtqQ=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AAxQooKCgrjCgoIABRDCgpSCgt6CooKCgoL+ooKCgpSCAAoGgpqCgoKCsoLWgoKUgoaGgoKigpSCgoKGgoKCgoKGgg==", "73-80:1;105-108:1;123-126:2")]
 // </GoSourcePositionMaps>
 
 namespace go;
 
-[GoPackage("sync")]
-public static partial class sync_package
+[GoPackage("main")]
+[GoTestMatchingConsoleOutput]
+public static partial class main_package
 {
     // C# nested types declared with no access modifier are always private, and the
     // `[GoType]` declarations in this package's converted sources are deliberately
@@ -80,12 +65,17 @@ public static partial class sync_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct copyChecker {}
-    internal partial struct entry {}
-    internal partial struct noCopy {}
-    internal partial struct notifyList {}
-    internal partial struct readOnly {}
-    public partial struct Cond {}
-    public partial struct Map {}
+    internal partial struct counter {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

@@ -780,7 +780,7 @@ internal static (nint n, error err) Write(this ж<maxLatencyWriter> Ꮡm, slice<
     try {
         ref var m = ref Ꮡm.DerefOrNull();
 
-        Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
+        m.mu.Lock();
         defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
         (n, err) = m.dst.Write(p);
         if (m.latency < 0) {
@@ -807,7 +807,7 @@ internal static void delayedFlush(this ж<maxLatencyWriter> Ꮡm) {
     try {
         ref var m = ref Ꮡm.DerefOrNull();
 
-        Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
+        m.mu.Lock();
         defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
         if (!m.flushPending) {
             // if stop was called but AfterFunc already started this goroutine
@@ -825,7 +825,7 @@ internal static void stop(this ж<maxLatencyWriter> Ꮡm) {
     try {
         ref var m = ref Ꮡm.DerefOrNull();
 
-        Ꮡm.of(maxLatencyWriter.Ꮡmu).Lock();
+        m.mu.Lock();
         defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
         m.flushPending = false;
         if (m.t != nil) {

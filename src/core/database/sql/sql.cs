@@ -859,7 +859,7 @@ internal static void addDep(this ж<DB> Ꮡdb, finalCloser x, any dep) {
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
-        Ꮡdb.of(DB.Ꮡmu).Lock();
+        db.mu.Lock();
         defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
         db.addDepLocked(x, dep);
     }
@@ -886,9 +886,9 @@ internal static void addDep(this ж<DB> Ꮡdb, finalCloser x, any dep) {
 internal static error removeDep(this ж<DB> Ꮡdb, finalCloser x, any dep) {
     ref var db = ref Ꮡdb.DerefOrNull();
 
-    Ꮡdb.of(DB.Ꮡmu).Lock();
+    db.mu.Lock();
     var fn = db.removeDepLocked(x, dep);
-    Ꮡdb.of(DB.Ꮡmu).Unlock();
+    db.mu.Unlock();
     return fn();
 }
 
@@ -1054,10 +1054,10 @@ public static error Ping(this ж<DB> Ꮡdb) {
 public static error Close(this ж<DB> Ꮡdb) {
     ref var db = ref Ꮡdb.DerefOrNull();
 
-    Ꮡdb.of(DB.Ꮡmu).Lock();
+    db.mu.Lock();
     if (db.closed) {
         // Make DB.Close idempotent
-        Ꮡdb.of(DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         return default!;
     }
     if (db.cleanerCh != default!) {
@@ -1071,7 +1071,7 @@ public static error Close(this ж<DB> Ꮡdb) {
     db.freeConn = default!;
     db.closed = true;
     db.connRequests.CloseAndRemoveAll();
-    Ꮡdb.of(DB.Ꮡmu).Unlock();
+    db.mu.Unlock();
     foreach (var (_, fn) in fns) {
         var err1 = fn();
         if (err1 != default!) {
@@ -1131,7 +1131,7 @@ internal static UntypedInt defaultMaxIdleConns => 2;
 public static void SetMaxIdleConns(this ж<DB> Ꮡdb, nint n) {
     ref var db = ref Ꮡdb.DerefOrNull();
 
-    Ꮡdb.of(DB.Ꮡmu).Lock();
+    db.mu.Lock();
     if (n > 0){
         db.maxIdleCount = n;
     } else {
@@ -1150,7 +1150,7 @@ public static void SetMaxIdleConns(this ж<DB> Ꮡdb, nint n) {
         db.freeConn = db.freeConn[..(int)(maxIdle)];
     }
     db.maxIdleClosed += (int64)len(closing);
-    Ꮡdb.of(DB.Ꮡmu).Unlock();
+    db.mu.Unlock();
     foreach (var (_, c) in closing) {
         c.Close();
     }
@@ -1167,13 +1167,13 @@ public static void SetMaxIdleConns(this ж<DB> Ꮡdb, nint n) {
 public static void SetMaxOpenConns(this ж<DB> Ꮡdb, nint n) {
     ref var db = ref Ꮡdb.DerefOrNull();
 
-    Ꮡdb.of(DB.Ꮡmu).Lock();
+    db.mu.Lock();
     db.maxOpen = n;
     if (n < 0) {
         db.maxOpen = 0;
     }
     var syncMaxIdle = db.maxOpen > 0 && db.maxIdleConnsLocked() > db.maxOpen;
-    Ꮡdb.of(DB.Ꮡmu).Unlock();
+    db.mu.Unlock();
     if (syncMaxIdle) {
         Ꮡdb.SetMaxIdleConns(n);
     }
@@ -1190,7 +1190,7 @@ public static void SetConnMaxLifetime(this ж<DB> Ꮡdb, time.Duration d) {
     if (d < 0) {
         d = 0;
     }
-    Ꮡdb.of(DB.Ꮡmu).Lock();
+    db.mu.Lock();
     // Wake cleaner up when lifetime is shortened.
     if (d > 0 && d < db.maxLifetime && db.cleanerCh != default!) {
         var selᴛ7 = db.cleanerCh.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
@@ -1204,7 +1204,7 @@ public static void SetConnMaxLifetime(this ж<DB> Ꮡdb, time.Duration d) {
     }
     db.maxLifetime = d;
     Ꮡdb.startCleanerLocked();
-    Ꮡdb.of(DB.Ꮡmu).Unlock();
+    db.mu.Unlock();
 }
 
 // SetConnMaxIdleTime sets the maximum amount of time a connection may be idle.
@@ -1220,7 +1220,7 @@ public static void SetConnMaxIdleTime(this ж<DB> Ꮡdb, time.Duration d) {
         if (d < 0) {
             d = 0;
         }
-        Ꮡdb.of(DB.Ꮡmu).Lock();
+        db.mu.Lock();
         defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
         // Wake cleaner up when idle time is shortened.
         if (d > 0 && d < db.maxIdleTime && db.cleanerCh != default!) {
@@ -1269,15 +1269,15 @@ internal static void connectionCleaner(this ж<DB> Ꮡdb, time.Duration d) {
             break;
         }}
         // maxLifetime was changed or db was closed.
-        Ꮡdb.of(DB.Ꮡmu).Lock();
+        db.mu.Lock();
         d = db.shortestIdleTimeLocked();
         if (db.closed || db.numOpen == 0 || d <= 0) {
             db.cleanerCh = default!;
-            Ꮡdb.of(DB.Ꮡmu).Unlock();
+            db.mu.Unlock();
             return;
         }
         var (dΔ1, closing) = db.connectionCleanerRunLocked(d);
-        Ꮡdb.of(DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         foreach (var (_, c) in closing) {
             c.Close();
         }
@@ -1380,7 +1380,7 @@ public static DBStats Stats(this ж<DB> Ꮡdb) {
         ref var db = ref Ꮡdb.DerefOrNull();
 
         var wait = Ꮡdb.of(DB.ᏑwaitDuration).Load();
-        Ꮡdb.of(DB.Ꮡmu).Lock();
+        db.mu.Lock();
         defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
         var stats = new DBStats(
             MaxOpenConnections: db.maxOpen,
@@ -1448,7 +1448,7 @@ internal static void openNewConnection(this ж<DB> Ꮡdb, context.Context ctx) {
         // on db.openerCh. This function must execute db.numOpen-- if the
         // connection fails or is closed before returning.
         var (ci, err) = db.connector.Connect(ctx);
-        Ꮡdb.of(DB.Ꮡmu).Lock();
+        db.mu.Lock();
         defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
         if (db.closed) {
             if (err == default!) {
@@ -1494,16 +1494,16 @@ internal static error errDBClosed = errors.New("sql: database is closed"u8);
 internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context ctx, connReuseStrategy strategy) {
     ref var db = ref Ꮡdb.DerefOrNull();
 
-    Ꮡdb.of(DB.Ꮡmu).Lock();
+    db.mu.Lock();
     if (db.closed) {
-        Ꮡdb.of(DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         return (default!, errDBClosed);
     }
     // Check if the context is expired.
     var selᴛ14 = ctx.Done();
     switch (trySelect(ᐸꟷ(selᴛ14, ꓸꓸꓸ))) {
     case 0 when selᴛ14.ꟷᐳ(out _): {
-        Ꮡdb.of(DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         return (default!, ctx.Err());
     }
     default: {
@@ -1520,11 +1520,11 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
         conn.Value.inUse = true;
         if (conn.expired(lifetime)) {
             db.maxLifetimeClosed++;
-            Ꮡdb.of(DB.Ꮡmu).Unlock();
+            db.mu.Unlock();
             conn.Close();
             return (default!, driver.ErrBadConn);
         }
-        Ꮡdb.of(DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         // Reset the session if required.
         {
             var errΔ1 = conn.resetSession(ctx); if (errors.Is(errΔ1, driver.ErrBadConn)) {
@@ -1542,16 +1542,16 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
         var req = new channel<connRequest>(1);
         var delHandle = db.connRequests.Add(req);
         db.waitCount++;
-        Ꮡdb.of(DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         var waitStart = nowFunc();
         // Timeout the connection request with the context.
         var selᴛ15 = ctx.Done();
         var selᴛ16 = req;
         switch (select(ᐸꟷ(selᴛ15, ꓸꓸꓸ), ᐸꟷ(selᴛ16, ꓸꓸꓸ))) {
         case 0 when selᴛ15.ꟷᐳ(out _): {
-            Ꮡdb.of(DB.Ꮡmu).Lock();
+            db.mu.Lock();
             var deleted = db.connRequests.Delete(delHandle);
-            Ꮡdb.of(DB.Ꮡmu).Unlock();
+            db.mu.Unlock();
             Ꮡdb.of(DB.ᏑwaitDuration).Add((int64)time.Since(waitStart));
             if (!deleted) {
                 // Remove the connection request and ensure no value has been sent
@@ -1590,9 +1590,9 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
                 // back into the connection pool.
                 // This prioritizes giving a valid connection to a client over the exact connection
                 // lifetime, which could expire exactly after this point anyway.
-                Ꮡdb.of(DB.Ꮡmu).Lock();
+                db.mu.Lock();
                 db.maxLifetimeClosed++;
-                Ꮡdb.of(DB.Ꮡmu).Unlock();
+                db.mu.Unlock();
                 ret.conn.Close();
                 return (default!, driver.ErrBadConn);
             }
@@ -1611,16 +1611,16 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
         return default!;
     }
     db.numOpen++; // optimistically
-    Ꮡdb.of(DB.Ꮡmu).Unlock();
+    db.mu.Unlock();
     var (ci, err) = db.connector.Connect(ctx);
     if (err != default!) {
-        Ꮡdb.of(DB.Ꮡmu).Lock();
+        db.mu.Lock();
         db.numOpen--; // correct for earlier optimism
         db.maybeOpenNewConnections();
-        Ꮡdb.of(DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         return (default!, err);
     }
-    Ꮡdb.of(DB.Ꮡmu).Lock();
+    db.mu.Lock();
     var dc = Ꮡ(new driverConn(
         db: Ꮡdb,
         createdAt: nowFunc(),
@@ -1629,7 +1629,7 @@ internal static (ж<driverConn>, error) conn(this ж<DB> Ꮡdb, context.Context 
         inUse: true
     ));
     db.addDepLocked(new driverConnжfinalCloser(dc), dc.OrTypedNil());
-    Ꮡdb.of(DB.Ꮡmu).Unlock();
+    db.mu.Unlock();
     return (dc, default!);
 }
 
@@ -1642,9 +1642,10 @@ internal static Action<ж<DB>, ж<driverConn>> putConnHook;
 internal static void noteUnusedDriverStatement(this ж<DB> Ꮡdb, ж<driverConn> Ꮡc, ж<driverStmt> Ꮡds) {
     GoFrame ᒐ = default;
     try {
+        ref var db = ref Ꮡdb.DerefOrNull();
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡdb.of(DB.Ꮡmu).Lock();
+        db.mu.Lock();
         defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
         if (c.inUse){
             c.onPut = append(c.onPut, () => {
@@ -1678,9 +1679,9 @@ internal static void putConn(this ж<DB> Ꮡdb, ж<driverConn> Ꮡdc, error err,
             err = driver.ErrBadConn;
         }
     }
-    Ꮡdb.of(DB.Ꮡmu).Lock();
+    db.mu.Lock();
     if (!dc.inUse) {
-        Ꮡdb.of(DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         if (debugGetPut) {
             fmt.Printf("putConn(%v) DUPLICATE was: %s\n\nPREVIOUS was: %s"u8, Ꮡdc.OrTypedNil(), stack(), db.lastPut[Ꮡdc]);
         }
@@ -1705,7 +1706,7 @@ internal static void putConn(this ж<DB> Ꮡdb, ж<driverConn> Ꮡdc, error err,
         // as closed. Don't decrement the open count here, finalClose will
         // take care of that.
         db.maybeOpenNewConnections();
-        Ꮡdb.of(DB.Ꮡmu).Unlock();
+        db.mu.Unlock();
         Ꮡdc.Close();
         return;
     }
@@ -1713,7 +1714,7 @@ internal static void putConn(this ж<DB> Ꮡdb, ж<driverConn> Ꮡdc, error err,
         putConnHook(Ꮡdb, Ꮡdc);
     }
     var added = Ꮡdb.putConnDBLocked(Ꮡdc, default!);
-    Ꮡdb.of(DB.Ꮡmu).Unlock();
+    db.mu.Unlock();
     if (!added) {
         Ꮡdc.Close();
         return;
@@ -2703,7 +2704,7 @@ public static ж<ΔStmt> StmtContext(this ж<Tx> Ꮡtx, context.Context ctx, ж<
         }
         ref var si = ref heap<driver.Stmt>(out var Ꮡsi);
         ж<ΔStmt> parentStmt = default!;
-        Ꮡstmt.of(sql_package.ΔStmt.Ꮡmu).Lock();
+        stmt.mu.Lock();
         if (stmt.closed || stmt.cg != default!){
             // If the statement has been closed or already belongs to a
             // transaction, we can't reuse it in this connection.
@@ -2711,7 +2712,7 @@ public static ж<ΔStmt> StmtContext(this ж<Tx> Ꮡtx, context.Context ctx, ж<
             // Stmt already belonging to tx, we ignore this edge case and
             // re-prepare the statement in this case. No need to add
             // code-complexity for this.
-            Ꮡstmt.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+            stmt.mu.Unlock();
             var dcʗ1 = dc;
             withLock(new driverConnжLocker(dc), () => {
                 (Ꮡsi.ValueSlot, Ꮡerr.ValueSlot) = ctxDriverPrepare(ctx, (~dcʗ1).ci, Ꮡstmt.Value.query);
@@ -2729,7 +2730,7 @@ public static ж<ΔStmt> StmtContext(this ж<Tx> Ꮡtx, context.Context ctx, ж<
                     break;
                 }
             }
-            Ꮡstmt.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+            stmt.mu.Unlock();
             if (si == default!) {
                 ref var ds = ref heap<ж<driverStmt>>(out var Ꮡds);
                 var dcʗ2 = dc;
@@ -3026,16 +3027,16 @@ internal static (ж<driverConn> dc, Action<error> ΔreleaseConn, ж<driverStmt> 
             return (dc, ΔreleaseConn, ds, err);
         }
     }
-    Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Lock();
+    s.mu.Lock();
     if (s.closed) {
-        Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+        s.mu.Unlock();
         err = errors.New(sqlStatementIsClosedˢ);
         return (dc, ΔreleaseConn, ds, err);
     }
     // In a transaction or connection, we always use the connection that the
     // stmt was created on.
     if (s.cg != default!) {
-        Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+        s.mu.Unlock();
         (dc, ΔreleaseConn, err) = s.cg.grabConn(ctx); // blocks, waiting for the connection.
         if (err != default!) {
             return (dc, ΔreleaseConn, ds, err);
@@ -3043,19 +3044,19 @@ internal static (ж<driverConn> dc, Action<error> ΔreleaseConn, ж<driverStmt> 
         return (dc, ΔreleaseConn, s.cgds, default!);
     }
     s.removeClosedStmtLocked();
-    Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+    s.mu.Unlock();
     (dc, err) = s.db.conn(ctx, strategy);
     if (err != default!) {
         return (default!, default!, default!, err);
     }
-    Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Lock();
+    s.mu.Lock();
     foreach (var (_, v) in s.css) {
         if (v.dc == dc) {
-            Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+            s.mu.Unlock();
             return (dc, dc.releaseConn, v.ds, default!);
         }
     }
-    Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+    s.mu.Unlock();
     // No luck; we need to prepare the statement on this connection
     withLock(new driverConnжLocker(dc), () => {
         (ds, err) = Ꮡs.prepareOnConnLocked(ctx, dc);
@@ -3077,9 +3078,9 @@ internal static (ж<driverStmt>, error) prepareOnConnLocked(this ж<ΔStmt> Ꮡs
         return (default!, err);
     }
     var cs = new ΔconnStmt(Ꮡdc, si);
-    Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Lock();
+    s.mu.Lock();
     s.css = append(s.css, cs);
-    Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+    s.mu.Unlock();
     return (cs.ds, default!);
 }
 
@@ -3212,15 +3213,15 @@ public static error Close(this ж<ΔStmt> Ꮡs) {
         if (s.stickyErr != default!) {
             return s.stickyErr;
         }
-        Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Lock();
+        s.mu.Lock();
         if (s.closed) {
-            Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+            s.mu.Unlock();
             return default!;
         }
         s.closed = true;
         var txds = s.cgds;
         s.cgds = default!;
-        Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock();
+        s.mu.Unlock();
         if (s.cg == default!) {
             return s.db.removeDep(new ΔStmtжfinalCloser(Ꮡs), Ꮡs.OrTypedNil());
         }
@@ -3240,7 +3241,7 @@ internal static error finalClose(this ж<ΔStmt> Ꮡs) {
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Lock();
+        s.mu.Lock();
         defer(Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock, ref ᒐ);
         if (s.css != default!) {
             foreach (var (_, v) in s.css) {

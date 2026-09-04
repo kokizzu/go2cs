@@ -598,7 +598,7 @@ internal static (ж<http2ClientConn>, error) getClientConn(this ж<http2clientCo
         return (cc, default!);
     }
     while (ᐧ) {
-        Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
+        p.mu.Lock();
         foreach (var (_, ccΔ1) in p.conns[addr]) {
             if (ccΔ1.ReserveNewRequest()) {
                 // When a connection is presented to us by the net/http package,
@@ -608,17 +608,17 @@ internal static (ж<http2ClientConn>, error) getClientConn(this ж<http2clientCo
                     http2traceGetConn(Ꮡreq, addr);
                 }
                 ccΔ1.Value.getConnCalled = false;
-                Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock();
+                p.mu.Unlock();
                 return (ccΔ1, default!);
             }
         }
         if (!dialOnMiss) {
-            Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock();
+            p.mu.Unlock();
             return (default!, http2ErrNoCachedConn);
         }
         http2traceGetConn(Ꮡreq, addr);
         var call = Ꮡp.getStartDialLocked(req.Context(), addr);
-        Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock();
+        p.mu.Unlock();
         ᐸꟷ((~call).done);
         if (http2shouldRetryDial(ref (call).DerefOrNull(), Ꮡreq)) {
             continue;
@@ -689,10 +689,10 @@ internal static ж<http2dialCall> getStartDialLocked(this ж<http2clientConnPool
 internal static (bool used, error err) addConnIfNeeded(this ж<http2clientConnPool> Ꮡp, @string key, ж<http2Transport> Ꮡt, ж<tls.Conn> Ꮡc) {
     ref var p = ref Ꮡp.DerefOrNull();
 
-    Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
+    p.mu.Lock();
     foreach (var (_, cc) in p.conns[key]) {
         if (cc.CanTakeNewRequest()) {
-            Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock();
+            p.mu.Unlock();
             return (false, default!);
         }
     }
@@ -709,7 +709,7 @@ internal static (bool used, error err) addConnIfNeeded(this ж<http2clientConnPo
         var callʗ1 = call;
         goǃ(callʗ1.run, Ꮡt, key, Ꮡc);
     }
-    Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock();
+    p.mu.Unlock();
     ᐸꟷ((~call).done);
     if ((~call).err != default!) {
         return (false, (~call).err);
@@ -761,7 +761,7 @@ internal static void MarkDead(this ж<http2clientConnPool> Ꮡp, ж<http2ClientC
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock, ref ᒐ);
         foreach (var (_, key) in p.keys[Ꮡcc]) {
             var (vv, ok) = p.conns[key, ꟷ];
@@ -786,7 +786,7 @@ internal static void closeIdleConnections(this ж<http2clientConnPool> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(http2clientConnPool.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock, ref ᒐ);
         // TODO: don't close a cc if it was just added to the pool
         // milliseconds ago and has never been used. There's currently
@@ -3717,7 +3717,7 @@ internal static void setBuffer(this ж<http2pipe> Ꮡp, http2pipeBuffer b) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.err != default! || p.breakErr != default!) {
             return;
@@ -3733,7 +3733,7 @@ internal static nint Len(this ж<http2pipe> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.b == default!) {
             return p.unread;
@@ -3753,7 +3753,7 @@ internal static (nint n, error err) Read(this ж<http2pipe> Ꮡp, slice<byte> d)
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.c.L == default!) {
             p.c.L = new sync.MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
@@ -3793,7 +3793,7 @@ internal static (nint n, error err) Write(this ж<http2pipe> Ꮡp, slice<byte> d
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.c.L == default!) {
             p.c.L = new sync.MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
@@ -3846,7 +3846,7 @@ internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, e
         if (err == default!) {
             throw panic("err must be non-nil");
         }
-        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.c.L == default!) {
             p.c.L = new sync.MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
@@ -3894,7 +3894,7 @@ internal static error Err(this ж<http2pipe> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.breakErr != default!) {
             return p.breakErr;
@@ -3912,7 +3912,7 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<http2pipe> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(http2pipe.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
         if (p.donec == default!) {
             p.donec = new channel<EmptyStruct>(0);
@@ -4121,9 +4121,9 @@ internal static void registerConn(this ж<http2serverInternalState> Ꮡs, ж<htt
     if (Ꮡs == nil) {
         return; // if the Server was used without calling ConfigureServer
     }
-    Ꮡs.of(http2serverInternalState.Ꮡmu).Lock();
+    s.mu.Lock();
     s.activeConns[Ꮡsc] = new EmptyStruct();
-    Ꮡs.of(http2serverInternalState.Ꮡmu).Unlock();
+    s.mu.Unlock();
 }
 
 internal static void unregisterConn(this ж<http2serverInternalState> Ꮡs, ж<http2serverConn> Ꮡsc) {
@@ -4132,9 +4132,9 @@ internal static void unregisterConn(this ж<http2serverInternalState> Ꮡs, ж<h
     if (Ꮡs == nil) {
         return; // if the Server was used without calling ConfigureServer
     }
-    Ꮡs.of(http2serverInternalState.Ꮡmu).Lock();
+    s.mu.Lock();
     delete(s.activeConns, Ꮡsc);
-    Ꮡs.of(http2serverInternalState.Ꮡmu).Unlock();
+    s.mu.Unlock();
 }
 
 internal static void startGracefulShutdown(this ж<http2serverInternalState> Ꮡs) {
@@ -4143,11 +4143,11 @@ internal static void startGracefulShutdown(this ж<http2serverInternalState> Ꮡ
     if (Ꮡs == nil) {
         return; // if the Server was used without calling ConfigureServer
     }
-    Ꮡs.of(http2serverInternalState.Ꮡmu).Lock();
+    s.mu.Lock();
     foreach (var (sc, _) in s.activeConns) {
         sc.startGracefulShutdown();
     }
-    Ꮡs.of(http2serverInternalState.Ꮡmu).Unlock();
+    s.mu.Unlock();
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -8555,7 +8555,7 @@ public static void SetDoNotReuse(this ж<http2ClientConn> Ꮡcc) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
         cc.doNotReuse = true;
     }
@@ -8569,7 +8569,7 @@ internal static void setGoAway(this ж<http2ClientConn> Ꮡcc, ж<http2GoAwayFra
         ref var cc = ref Ꮡcc.DerefOrNull();
         ref var f = ref Ꮡf.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
         var old = cc.goAway;
         cc.goAway = Ꮡf;
@@ -8614,7 +8614,7 @@ public static bool CanTakeNewRequest(this ж<http2ClientConn> Ꮡcc) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
         return cc.canTakeNewRequestLocked();
     }
@@ -8630,7 +8630,7 @@ public static bool ReserveNewRequest(this ж<http2ClientConn> Ꮡcc) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
         {
             var st = cc.idleStateLocked(); if (!st.canTakeNewRequest) {
@@ -8677,13 +8677,13 @@ public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
+        cc.wmu.Lock();
         var maxConcurrent = cc.maxConcurrentStreams;
         if (!cc.seenSettings) {
             maxConcurrent = 0;
         }
-        Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock();
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.wmu.Unlock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
         return new http2ClientConnState(
             Closed: cc.closed,
@@ -8710,7 +8710,7 @@ internal static http2clientConnIdleState idleState(this ж<http2ClientConn> Ꮡc
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
         return cc.idleStateLocked();
     }
@@ -8794,15 +8794,15 @@ internal static void closeConn(this ж<http2ClientConn> Ꮡcc) {
 internal static void closeIfIdle(this ж<http2ClientConn> Ꮡcc) {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+    cc.mu.Lock();
     if (builtin.len(cc.streams) > 0 || cc.streamsReserved > 0) {
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+        cc.mu.Unlock();
         return;
     }
     cc.closed = true;
     var nextID = cc.nextStreamID;
     // TODO: do clients send GOAWAY too? maybe? Just Close:
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+    cc.mu.Unlock();
     if (http2VerboseLogs) {
         cc.vlogf("http2: Transport closing idle conn %p (forSingleUse=%v, maxStream=%v)"u8, Ꮡcc.OrTypedNil(), cc.singleUse, nextID - 2);
     }
@@ -8814,7 +8814,7 @@ internal static bool isDoNotReuseAndIdle(this ж<http2ClientConn> Ꮡcc) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
         return cc.doNotReuse && builtin.len(cc.streams) == 0;
     }
@@ -8842,7 +8842,7 @@ public static error Shutdown(this ж<http2ClientConn> Ꮡcc, context.Context ctx
         GoFrame ᒐ = default;
         try {
             Ꮡcc.Value.t.markNewGoroutine();
-            Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+            Ꮡcc.Value.mu.Lock();
             defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
             while (ᐧ) {
                 if (builtin.len(Ꮡcc.Value.streams) == 0 || Ꮡcc.Value.closed) {
@@ -8868,10 +8868,10 @@ public static error Shutdown(this ж<http2ClientConn> Ꮡcc, context.Context ctx
         return default!;
     }
     case 1 when selᴛ40.ꟷᐳ(out _): {
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         cancelled = true;
         cc.cond.Broadcast();
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+        cc.mu.Unlock();
         return ctx.Err();
     }}
     return default!;
@@ -8883,16 +8883,16 @@ internal static error sendGoAway(this ж<http2ClientConn> Ꮡcc) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         var closing = cc.closing;
         cc.closing = true;
         var maxStreamID = cc.nextStreamID;
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+        cc.mu.Unlock();
         if (closing) {
             // GOAWAY sent already
             return default!;
         }
-        Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
+        cc.wmu.Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
         // Send a graceful shutdown frame to server
         {
@@ -8917,13 +8917,13 @@ internal static error sendGoAway(this ж<http2ClientConn> Ꮡcc) {
 internal static void closeForError(this ж<http2ClientConn> Ꮡcc, error err) {
     ref var cc = ref Ꮡcc.DerefOrNull();
 
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+    cc.mu.Lock();
     cc.closed = true;
     foreach (var (_, cs) in cc.streams) {
         cs.abortStreamLocked(err);
     }
     cc.cond.Broadcast();
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+    cc.mu.Unlock();
     Ꮡcc.closeConn();
 }
 
@@ -9036,7 +9036,7 @@ internal static void decrStreamReservations(this ж<http2ClientConn> Ꮡcc) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
         cc.decrStreamReservationsLocked();
     }
@@ -10119,7 +10119,7 @@ internal static void forgetStreamID(this ж<http2ClientConn> Ꮡcc, uint32 id) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         nint slen = builtin.len(cc.streams);
         delete(cc.streams, id);
         if (builtin.len(cc.streams) != slen - 1) {
@@ -10141,7 +10141,7 @@ internal static void forgetStreamID(this ж<http2ClientConn> Ꮡcc, uint32 id) {
             cc.closed = true;
             defer(Ꮡcc.closeConn, ref ᒐ);
         }
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+        cc.mu.Unlock();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }
@@ -10166,9 +10166,9 @@ internal static void readLoop(this ж<http2ClientConn> Ꮡcc) {
         cc.readerErr = rl.run();
         {
             var (ce, ok) = cc.readerErr._<http2ConnectionError>(ᐧ); if (ok) {
-                Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
+                cc.wmu.Lock();
                 cc.fr.WriteGoAway(0, ((http2ErrCode)(uint32)ce), default!);
-                Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock();
+                cc.wmu.Unlock();
             }
         }
     }
@@ -11092,16 +11092,16 @@ public static error Ping(this ж<http2ClientConn> Ꮡcc, context.Context ctx) {
                 return err;
             }
         }
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+        cc.mu.Lock();
         // check for dup before insert
         {
             var (_, found) = cc.pings[p, ꟷ]; if (!found) {
                 cc.pings[p] = c;
-                Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+                cc.mu.Unlock();
                 break;
             }
         }
-        Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+        cc.mu.Unlock();
     }
     ref var pingError = ref heap<error>(out var ᏑpingError);
     var errc = new channel<EmptyStruct>(0);
@@ -11111,7 +11111,7 @@ public static error Ping(this ж<http2ClientConn> Ꮡcc, context.Context ctx) {
         GoFrame ᒐ = default;
         try {
             Ꮡcc.Value.t.markNewGoroutine();
-            Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
+            Ꮡcc.Value.wmu.Lock();
             defer(Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
             {
                 ᏑpingError.ValueSlot = Ꮡcc.Value.fr.WritePing(false, pʗ1); if (ᏑpingError.ValueSlot != default!) {
@@ -11203,10 +11203,10 @@ internal static void writeStreamReset(this ж<http2ClientConn> Ꮡcc, uint32 str
     // HTTP community comes up with some. But currently for
     // RST_STREAM there's no equivalent to GOAWAY frame's debug
     // data, and the error codes are all pretty vague ("cancel").
-    Ꮡcc.of(http2ClientConn.Ꮡwmu).Lock();
+    cc.wmu.Lock();
     cc.fr.WriteRSTStream(streamID, code);
     cc.bw.Flush();
-    Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock();
+    cc.wmu.Unlock();
 }
 
 internal static error http2errResponseHeaderListSize = errors.New("http2: response header list larger than advertised limit"u8);
@@ -11402,12 +11402,12 @@ internal static void http2traceGotConn(ж<Request> Ꮡreq, ж<http2ClientConn> �
     }
     var ci = new httptrace.GotConnInfo(Conn: cc.tconn);
     ci.Reused = reused;
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Lock();
+    cc.mu.Lock();
     ci.WasIdle = builtin.len(cc.streams) == 0 && reused;
     if (ci.WasIdle && !cc.lastActive.IsZero()) {
         ci.IdleTime = time.Since(cc.lastActive);
     }
-    Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock();
+    cc.mu.Unlock();
     (~trace).GotConn(ci);
 }
 

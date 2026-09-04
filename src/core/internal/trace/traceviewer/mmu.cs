@@ -114,13 +114,13 @@ internal static trace.UtilFlags requestUtilFlags(ж<http.Request> Ꮡr) {
 internal static (slice<slice<trace.MutatorUtil>>, ж<trace.MMUCurve>, error) get(this ж<mmu> Ꮡm, trace.UtilFlags flags) {
     ref var m = ref Ꮡm.DerefOrNull();
 
-    Ꮡm.of(mmu.Ꮡmu).Lock();
+    m.mu.Lock();
     var entry = m.cache[flags];
     if (entry == nil) {
         entry = @new<mmuCacheEntry>();
         m.cache[flags] = entry;
     }
-    Ꮡm.of(mmu.Ꮡmu).Unlock();
+    m.mu.Unlock();
     var entryʗ1 = entry;
     entry.of(mmuCacheEntry.Ꮡinit).Do(() => {
         var (util, err) = Ꮡm.Value.f(flags);

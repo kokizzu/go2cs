@@ -1385,7 +1385,7 @@ internal static error handleRenegotiation(this ж<Conn> Ꮡc) {
         }
 
         // Ok.
-        Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
+        c.handshakeMutex.Lock();
         defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
         Ꮡc.of(Conn.ᏑisHandshakeComplete).Store(false);
         {
@@ -1703,7 +1703,7 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
             });
         }
         // Close the connection, discarding the error
-        Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
+        c.handshakeMutex.Lock();
         defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
         {
             var err = c.handshakeErr; if (err != default!) {
@@ -1763,7 +1763,9 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
 public static ΔConnectionState ConnectionState(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
     try {
-        Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
+        ref var c = ref Ꮡc.DerefOrNull();
+
+        c.handshakeMutex.Lock();
         defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
         return Ꮡc.connectionStateLocked();
     }
@@ -1823,7 +1825,7 @@ public static slice<byte> OCSPResponse(this ж<Conn> Ꮡc) {
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
+        c.handshakeMutex.Lock();
         defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
         return c.ocspResponse;
     }
@@ -1844,7 +1846,7 @@ public static error VerifyHostname(this ж<Conn> Ꮡc, @string host) {
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(Conn.ᏑhandshakeMutex).Lock();
+        c.handshakeMutex.Lock();
         defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
         if (!c.isClient) {
             return errors.New(tlsVerifyHostnameCalledˢ);

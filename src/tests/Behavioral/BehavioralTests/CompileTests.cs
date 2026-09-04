@@ -1498,6 +1498,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckRefLoweredParams() => CheckTarget("RefLoweredParams");
 
     [TestMethod]
+    public void CheckRefPrimaryFieldReceiver() => CheckTarget("RefPrimaryFieldReceiver");
+
+    [TestMethod]
     public void CheckReflectArrayOf() => CheckTarget("ReflectArrayOf");
 
     [TestMethod]

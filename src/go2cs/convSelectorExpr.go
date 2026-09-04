@@ -1858,6 +1858,31 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// ж overload needs a `ж<FieldType>` aliasing the real field; emit it as `(&b.u).Load()`, which
 	// the `&recv.field` machinery in convUnaryExpr renders as `Ꮡb.of(Bool.Ꮡu)`. The enclosing
 	// method was marked direct-ж (so `Ꮡb` is in scope) by bodyCallsCaptureModeMethodOnReceiverField.
+	// I3 — the CONSUMER half of the cross-package lowering contract (refVerdictPublication.go).
+	// A method an IMPORTED package published a `ref` primary for, called on a value FIELD of a base
+	// the caller ALREADY holds as a ref, binds the plain member chain instead of minting a
+	// field-address box for the receiver: `fd.l.Lock()`, not `Ꮡfd.of(FD.Ꮡl).Lock()`.
+	//
+	// This is the same mechanism the promoted-embed arm above already uses, and for the same reason:
+	// every hop accessor is an `[UnscopedRef] ref` property, so the member chain is a genuine ref
+	// into the base's own storage and binds the `[GoRecv] ref` overload with faithful write-through.
+	// What the published record adds is the EXISTENCE PROOF that the overload is there to bind —
+	// without it the box must stay, because an unpublished primary may simply not exist in the other
+	// assembly and the call would be CS1929.
+	//
+	// The BASE test is deliberately narrower than exprIsCaptureModeFieldBase's. That predicate also
+	// admits a bare pointer IDENT, whose rendering is the BOX (`e`), and `e.field` does not compile
+	// on a ж<T> — the field is reached through `.Value`, which this spelling does not produce. Only
+	// a base that renders as a ref LVALUE qualifies: the current method's deref-aliased receiver, or
+	// a deref-aliased pointer parameter. Anything else falls through to the box arm below unchanged.
+	if context.isCallExpr && v.calleePublishesRefPrimary(selectorExpr) && v.exprIsCaptureModeFieldBase(selectorExpr.X) {
+		if baseSel, baseIsSel := selectorExpr.X.(*ast.SelectorExpr); baseIsSel &&
+			(v.exprIsCurrentDirectBoxReceiver(baseSel.X) || v.exprIsDerefAliasedPointer(baseSel.X)) {
+			return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", v.convExpr(selectorExpr.X, nil),
+				v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))
+		}
+	}
+
 	if context.isCallExpr && v.isCaptureModeMethod(selectorExpr) && v.exprIsCaptureModeFieldBase(selectorExpr.X) {
 		fieldAddr := v.convUnaryExpr(&ast.UnaryExpr{Op: token.AND, X: selectorExpr.X}, DefaultUnaryExprContext())
 		return v.aliasResolvedSelector(selectorExpr, fmt.Sprintf("%s.%s", fieldAddr, v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr))))

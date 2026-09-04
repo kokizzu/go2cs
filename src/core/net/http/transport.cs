@@ -475,11 +475,11 @@ public static Func<ж<Request>, (ж<url.URL>, error)> ProxyURL(ж<url.URL> Ꮡfi
 internal static void setError(this ж<transportRequest> Ꮡtr, error err) {
     ref var tr = ref Ꮡtr.DerefOrNull();
 
-    Ꮡtr.of(transportRequest.Ꮡmu).Lock();
+    tr.mu.Lock();
     if (tr.err == default!) {
         tr.err = err;
     }
-    Ꮡtr.of(transportRequest.Ꮡmu).Unlock();
+    tr.mu.Unlock();
 }
 
 // useRegisteredProtocol reports whether an alternate protocol (as registered
@@ -856,7 +856,9 @@ public static error ErrSkipAltProtocol = errors.New("net/http: skip alternate pr
 public static void RegisterProtocol(this ж<Transport> Ꮡt, @string scheme, RoundTripper rt) {
     GoFrame ᒐ = default;
     try {
-        Ꮡt.of(Transport.ᏑaltMu).Lock();
+        ref var t = ref Ꮡt.DerefOrNull();
+
+        t.altMu.Lock();
         defer(Ꮡt.of(Transport.ᏑaltMu).Unlock, ref ᒐ);
         var (oldMap, _) = Ꮡt.of(Transport.ᏑaltProto).Load()._<map<@string, RoundTripper>>(ᐧ);
         {
@@ -883,24 +885,24 @@ public static void CloseIdleConnections(this ж<Transport> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     Ꮡt.of(Transport.ᏑnextProtoOnce).Do(Ꮡt.onceSetNextProtoDefaults);
-    Ꮡt.of(Transport.ᏑidleMu).Lock();
+    t.idleMu.Lock();
     var m = t.idleConn;
     t.idleConn = default!;
     t.closeIdle = true; // close newly idle connections
     t.idleLRU = new connLRU(nil);
-    Ꮡt.of(Transport.ᏑidleMu).Unlock();
+    t.idleMu.Unlock();
     foreach (var (_, conns) in m) {
         foreach (var (_, pconn) in conns) {
             pconn.close(errCloseIdleConns);
         }
     }
-    Ꮡt.of(Transport.ᏑconnsPerHostMu).Lock();
+    t.connsPerHostMu.Lock();
     t.dialsInProgress.all((ж<wantConn> w) => {
         if ((~w).cancelCtx != default! && !w.waiting()) {
             (~w).cancelCtx();
         }
     });
-    Ꮡt.of(Transport.ᏑconnsPerHostMu).Unlock();
+    t.connsPerHostMu.Unlock();
     {
         var t2 = t.h2transport; if (t2 != default!) {
             t2.CloseIdleConnections();
@@ -920,16 +922,16 @@ internal static Action<error> prepareTransportCancel(this ж<Transport> Ꮡt, ж
     // concurrency guarantees.
     var cancel = (error err) => {
         origCancel(err);
-        Ꮡt.of(Transport.ᏑreqMu).Lock();
+        Ꮡt.Value.reqMu.Lock();
         delete(Ꮡt.Value.reqCanceler, Ꮡreq);
-        Ꮡt.of(Transport.ᏑreqMu).Unlock();
+        Ꮡt.Value.reqMu.Unlock();
     };
-    Ꮡt.of(Transport.ᏑreqMu).Lock();
+    t.reqMu.Lock();
     if (t.reqCanceler == default!) {
         t.reqCanceler = new map<ж<Request>, Action<error>>();
     }
     t.reqCanceler[Ꮡreq] = cancel;
-    Ꮡt.of(Transport.ᏑreqMu).Unlock();
+    t.reqMu.Unlock();
     return cancel;
 }
 
@@ -942,9 +944,9 @@ internal static Action<error> prepareTransportCancel(this ж<Transport> Ꮡt, ж
 public static void CancelRequest(this ж<Transport> Ꮡt, ж<Request> Ꮡreq) {
     ref var t = ref Ꮡt.DerefOrNull();
 
-    Ꮡt.of(Transport.ᏑreqMu).Lock();
+    t.reqMu.Lock();
     var cancel = t.reqCanceler[Ꮡreq];
-    Ꮡt.of(Transport.ᏑreqMu).Unlock();
+    t.reqMu.Unlock();
     if (cancel != default!) {
         cancel(errRequestCanceled);
     }
@@ -1076,7 +1078,7 @@ internal static error tryPutIdleConn(this ж<Transport> Ꮡt, ж<persistConn> �
             return errConnBroken;
         }
         Ꮡpconn.markReused();
-        Ꮡt.of(Transport.ᏑidleMu).Lock();
+        t.idleMu.Lock();
         defer(Ꮡt.of(Transport.ᏑidleMu).Unlock, ref ᒐ);
         // HTTP/2 (pconn.alt != nil) connections do not come out of the idle list,
         // because multiple goroutines can use them simultaneously.
@@ -1174,7 +1176,7 @@ internal static bool /*delivered*/ queueForIdleConn(this ж<Transport> Ꮡt, ж<
         if (t.DisableKeepAlives) {
             delivered = false; goto ᒐdone;
         }
-        Ꮡt.of(Transport.ᏑidleMu).Lock();
+        t.idleMu.Lock();
         defer(Ꮡt.of(Transport.ᏑidleMu).Unlock, ref ᒐ);
         // Stop closing connections that become idle - we might want one.
         // (That is, undo the effect of t.CloseIdleConnections.)
@@ -1262,7 +1264,7 @@ internal static bool removeIdleConn(this ж<Transport> Ꮡt, ж<persistConn> Ꮡ
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
-        Ꮡt.of(Transport.ᏑidleMu).Lock();
+        t.idleMu.Lock();
         defer(Ꮡt.of(Transport.ᏑidleMu).Unlock, ref ᒐ);
         return t.removeIdleConnLocked(Ꮡpconn);
     }
@@ -1369,7 +1371,7 @@ internal static bool waiting(this ж<wantConn> Ꮡw) {
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
-        Ꮡw.of(wantConn.Ꮡmu).Lock();
+        w.mu.Lock();
         defer(Ꮡw.of(wantConn.Ꮡmu).Unlock, ref ᒐ);
         return !w.done;
     }
@@ -1383,7 +1385,7 @@ internal static context.Context getCtxForDial(this ж<wantConn> Ꮡw) {
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
-        Ꮡw.of(wantConn.Ꮡmu).Lock();
+        w.mu.Lock();
         defer(Ꮡw.of(wantConn.Ꮡmu).Unlock, ref ᒐ);
         return w.ctx;
     }
@@ -1397,7 +1399,7 @@ internal static bool tryDeliver(this ж<wantConn> Ꮡw, ж<persistConn> Ꮡpc, e
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
-        Ꮡw.of(wantConn.Ꮡmu).Lock();
+        w.mu.Lock();
         defer(Ꮡw.of(wantConn.Ꮡmu).Unlock, ref ᒐ);
         if (w.done) {
             return false;
@@ -1420,7 +1422,7 @@ internal static bool tryDeliver(this ж<wantConn> Ꮡw, ж<persistConn> Ꮡpc, e
 internal static void cancel(this ж<wantConn> Ꮡw, ж<Transport> Ꮡt, error err) {
     ref var w = ref Ꮡw.DerefOrNull();
 
-    Ꮡw.of(wantConn.Ꮡmu).Lock();
+    w.mu.Lock();
     ж<persistConn> pc = default!;
     if (w.done){
         {
@@ -1433,7 +1435,7 @@ internal static void cancel(this ж<wantConn> Ꮡw, ж<Transport> Ꮡt, error er
     }
     w.ctx = default!;
     w.done = true;
-    Ꮡw.of(wantConn.Ꮡmu).Unlock();
+    w.mu.Unlock();
     if (pc != nil) {
         Ꮡt.putOrCloseIdleConn(pc);
     }
@@ -1651,7 +1653,7 @@ internal static void queueForDial(this ж<Transport> Ꮡt, ж<wantConn> Ꮡw) {
         ref var w = ref Ꮡw.DerefOrNull();
 
         w.beforeDial();
-        Ꮡt.of(Transport.ᏑconnsPerHostMu).Lock();
+        t.connsPerHostMu.Lock();
         defer(Ꮡt.of(Transport.ᏑconnsPerHostMu).Unlock, ref ᒐ);
         if (t.MaxConnsPerHost <= 0) {
             Ꮡt.startDialConnForLocked(Ꮡw);
@@ -1690,7 +1692,7 @@ internal static void startDialConnForLocked(this ж<Transport> Ꮡt, ж<wantConn
         GoFrame ᒐ = default;
         try {
             Ꮡt.dialConnFor(Ꮡw);
-            Ꮡt.of(Transport.ᏑconnsPerHostMu).Lock();
+            Ꮡt.Value.connsPerHostMu.Lock();
             defer(Ꮡt.of(Transport.ᏑconnsPerHostMu).Unlock, ref ᒐ);
             Ꮡw.Value.cancelCtx = default!;
         }
@@ -1739,7 +1741,7 @@ internal static void decConnsPerHost(this ж<Transport> Ꮡt, connectMethodKey k
         if (t.MaxConnsPerHost <= 0) {
             return;
         }
-        Ꮡt.of(Transport.ᏑconnsPerHostMu).Lock();
+        t.connsPerHostMu.Lock();
         defer(Ꮡt.of(Transport.ᏑconnsPerHostMu).Unlock, ref ᒐ);
         nint n = t.connsPerHost[key];
         if (n == 0) {
@@ -2293,9 +2295,9 @@ internal static @string String(this connectMethodKey k) {
 internal static bool isBroken(this ж<persistConn> Ꮡpc) {
     ref var pc = ref Ꮡpc.DerefOrNull();
 
-    Ꮡpc.of(persistConn.Ꮡmu).Lock();
+    pc.mu.Lock();
     var b = pc.closed != default!;
-    Ꮡpc.of(persistConn.Ꮡmu).Unlock();
+    pc.mu.Unlock();
     return b;
 }
 
@@ -2306,7 +2308,7 @@ internal static error canceled(this ж<persistConn> Ꮡpc) {
     try {
         ref var pc = ref Ꮡpc.DerefOrNull();
 
-        Ꮡpc.of(persistConn.Ꮡmu).Lock();
+        pc.mu.Lock();
         defer(Ꮡpc.of(persistConn.Ꮡmu).Unlock, ref ᒐ);
         return pc.canceledErr;
     }
@@ -2318,9 +2320,9 @@ internal static error canceled(this ж<persistConn> Ꮡpc) {
 internal static bool isReused(this ж<persistConn> Ꮡpc) {
     ref var pc = ref Ꮡpc.DerefOrNull();
 
-    Ꮡpc.of(persistConn.Ꮡmu).Lock();
+    pc.mu.Lock();
     var r = pc.reused;
-    Ꮡpc.of(persistConn.Ꮡmu).Unlock();
+    pc.mu.Unlock();
     return r;
 }
 
@@ -2329,7 +2331,7 @@ internal static void cancelRequest(this ж<persistConn> Ꮡpc, error err) {
     try {
         ref var pc = ref Ꮡpc.DerefOrNull();
 
-        Ꮡpc.of(persistConn.Ꮡmu).Lock();
+        pc.mu.Lock();
         defer(Ꮡpc.of(persistConn.Ꮡmu).Unlock, ref ᒐ);
         pc.canceledErr = err;
         pc.closeLocked(errRequestCanceled);
@@ -2395,9 +2397,9 @@ internal static error mapRoundTripError(this ж<persistConn> Ꮡpc, ж<transport
         }
     }
     // See if an error was set explicitly.
-    Ꮡreq.of(transportRequest.Ꮡmu).Lock();
+    req.mu.Lock();
     var reqErr = req.err;
-    Ꮡreq.of(transportRequest.Ꮡmu).Unlock();
+    req.mu.Unlock();
     if (reqErr != default!) {
         return reqErr;
     }
@@ -2468,13 +2470,13 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) {
         while (alive) {
             pc.readLimit = pc.maxHeaderResponseSize();
             var (_, err) = pc.br.Peek(1);
-            Ꮡpc.of(persistConn.Ꮡmu).Lock();
+            pc.mu.Lock();
             if (pc.numExpectedResponses == 0) {
                 pc.readLoopPeekFailLocked(err);
-                Ꮡpc.of(persistConn.Ꮡmu).Unlock();
+                pc.mu.Unlock();
                 return;
             }
-            Ꮡpc.of(persistConn.Ꮡmu).Unlock();
+            pc.mu.Unlock();
             var rc = ᐸꟷ(pc.reqch);
             var trace = rc.treq.Value.trace;
             ж<Response> resp = default!;
@@ -2500,9 +2502,9 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) {
                 return;
             }
             pc.readLimit = maxInt64; // effectively no limit for response bodies
-            Ꮡpc.of(persistConn.Ꮡmu).Lock();
+            pc.mu.Lock();
             pc.numExpectedResponses--;
-            Ꮡpc.of(persistConn.Ꮡmu).Unlock();
+            pc.mu.Unlock();
             var bodyWritable = resp.bodyIsWritable();
             var hasBody = (~(~rc.treq).Request).Method != "HEAD"u8 && (~resp).ContentLength != 0;
             if ((~resp).Close || (~(~rc.treq).Request).Close || (~resp).StatusCode <= 199 || bodyWritable) {
@@ -3028,10 +3030,10 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
         ref var req = ref Ꮡreq.DerefOrNull();
 
         testHookEnterRoundTrip();
-        Ꮡpc.of(persistConn.Ꮡmu).Lock();
+        pc.mu.Lock();
         pc.numExpectedResponses++;
         var headerFn = pc.mutateHeaderFunc;
-        Ꮡpc.of(persistConn.Ꮡmu).Unlock();
+        pc.mu.Unlock();
         if (headerFn != default!) {
             headerFn(req.extraHeaders());
         }
@@ -3194,9 +3196,9 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
 internal static void markReused(this ж<persistConn> Ꮡpc) {
     ref var pc = ref Ꮡpc.DerefOrNull();
 
-    Ꮡpc.of(persistConn.Ꮡmu).Lock();
+    pc.mu.Lock();
     pc.reused = true;
-    Ꮡpc.of(persistConn.Ꮡmu).Unlock();
+    pc.mu.Unlock();
 }
 
 // close closes the underlying TCP connection and closes
@@ -3209,7 +3211,7 @@ internal static void close(this ж<persistConn> Ꮡpc, error err) {
     try {
         ref var pc = ref Ꮡpc.DerefOrNull();
 
-        Ꮡpc.of(persistConn.Ꮡmu).Lock();
+        pc.mu.Lock();
         defer(Ꮡpc.of(persistConn.Ꮡmu).Unlock, ref ᒐ);
         pc.closeLocked(err);
     }
@@ -3296,9 +3298,9 @@ internal static (nint n, error err) Read(this ж<bodyEOFSignal> Ꮡes, slice<byt
     try {
         ref var es = ref Ꮡes.DerefOrNull();
 
-        Ꮡes.of(bodyEOFSignal.Ꮡmu).Lock();
+        es.mu.Lock();
         var (closed, rerr) = (es.closed, es.rerr);
-        Ꮡes.of(bodyEOFSignal.Ꮡmu).Unlock();
+        es.mu.Unlock();
         if (closed) {
             (n, err) = (0, errReadOnClosedResBody); goto ᒐdone;
         }
@@ -3307,7 +3309,7 @@ internal static (nint n, error err) Read(this ж<bodyEOFSignal> Ꮡes, slice<byt
         }
         (n, err) = es.body.Read(p);
         if (err != default!) {
-            Ꮡes.of(bodyEOFSignal.Ꮡmu).Lock();
+            es.mu.Lock();
             defer(Ꮡes.of(bodyEOFSignal.Ꮡmu).Unlock, ref ᒐ);
             if (es.rerr == default!) {
                 es.rerr = err;
@@ -3325,7 +3327,7 @@ internal static error Close(this ж<bodyEOFSignal> Ꮡes) {
     try {
         ref var es = ref Ꮡes.DerefOrNull();
 
-        Ꮡes.of(bodyEOFSignal.Ꮡmu).Lock();
+        es.mu.Lock();
         defer(Ꮡes.of(bodyEOFSignal.Ꮡmu).Unlock, ref ᒐ);
         if (es.closed) {
             return default!;

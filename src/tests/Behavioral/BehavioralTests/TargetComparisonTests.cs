@@ -1501,6 +1501,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckRefLoweredParams() => CheckTarget("RefLoweredParams");
 
     [TestMethod]
+    public void CheckRefPrimaryFieldReceiver() => CheckTarget("RefPrimaryFieldReceiver");
+
+    [TestMethod]
     public void CheckReflectArrayOf() => CheckTarget("ReflectArrayOf");
 
     [TestMethod]

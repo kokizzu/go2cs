@@ -1058,7 +1058,7 @@ internal static error Close(this ж<workerClient> Ꮡwc) {
     try {
         ref var wc = ref Ꮡwc.DerefOrNull();
 
-        Ꮡwc.of(workerClient.Ꮡmu).Lock();
+        wc.mu.Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);
         // Close fuzzIn. This signals to the server that there are no more calls,
         // and it should exit.
@@ -1103,7 +1103,7 @@ internal static (CorpusEntry entryOut, minimizeResponse resp, error retErr) mini
 
         ref var args = ref heap(argsʗp, out var Ꮡargs);
         ref var resp = ref Ꮡresp.Value;
-        Ꮡwc.of(workerClient.Ꮡmu).Lock();
+        wc.mu.Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);
         ref var mem = ref heap<ж<sharedMem>>(out var Ꮡmem);
         (mem, var ok) = ᐸꟷ(wc.memMu, ꟷ);
@@ -1209,7 +1209,7 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
 
         ref var args = ref heap(argsʗp, out var Ꮡargs);
         ref var resp = ref Ꮡresp.Value;
-        Ꮡwc.of(workerClient.Ꮡmu).Lock();
+        wc.mu.Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);
         var (mem, ok) = ᐸꟷ(wc.memMu, ꟷ);
         if (!ok) {
@@ -1282,7 +1282,7 @@ internal static error ping(this ж<workerClient> Ꮡwc, context.Context ctx) {
     try {
         ref var wc = ref Ꮡwc.DerefOrNull();
 
-        Ꮡwc.of(workerClient.Ꮡmu).Lock();
+        wc.mu.Lock();
         defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);
         var c = new call(Ping: Ꮡ(new pingArgs(nil)));
         ref var resp = ref heap(new pingResponse(), out var Ꮡresp);

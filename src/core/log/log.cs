@@ -131,7 +131,7 @@ public static void SetOutput(this ж<Logger> Ꮡl, Δio.Writer w) {
     try {
         ref var l = ref Ꮡl.DerefOrNull();
 
-        Ꮡl.of(Logger.ᏑoutMu).Lock();
+        l.outMu.Lock();
         defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);
         l.@out = w;
         Ꮡl.of(Logger.ᏑisDiscard).Store(AreEqual(w, Δio.Discard));
@@ -298,7 +298,7 @@ internal static error output(this ж<Logger> Ꮡl, uintptr pc, nint calldepth, F
         if (len(buf.ValueSlot) == 0 || (buf.ValueSlot)[len(buf.ValueSlot) - 1] != (rune)'\n') {
             buf.ValueSlot = append(buf.ValueSlot, (byte)((rune)'\n'));
         }
-        Ꮡl.of(Logger.ᏑoutMu).Lock();
+        l.outMu.Lock();
         defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);
         var (_, err) = l.@out.Write(buf.ValueSlot);
         return err;
@@ -427,7 +427,7 @@ public static Δio.Writer Writer(this ж<Logger> Ꮡl) {
     try {
         ref var l = ref Ꮡl.DerefOrNull();
 
-        Ꮡl.of(Logger.ᏑoutMu).Lock();
+        l.outMu.Lock();
         defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);
         return l.@out;
     }

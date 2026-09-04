@@ -74,9 +74,9 @@ internal static void tryUpdate(this ж<nsswitchConfig> Ꮡconf) {
             return;
         }
         var nssConf = parseNSSConfFile(nssConfigPath);
-        Ꮡconf.of(nsswitchConfig.Ꮡmu).Lock();
+        conf.mu.Lock();
         conf.nssConf = nssConf;
-        Ꮡconf.of(nsswitchConfig.Ꮡmu).Unlock();
+        conf.mu.Unlock();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
     finally { ᒐ.Run(); }

@@ -196,7 +196,7 @@ internal static void add(this ж<testLog> Ꮡl, @string op, @string name) {
         if (strings.Contains(name, "\n"u8) || name == ""u8) {
             return;
         }
-        Ꮡl.of(testLog.Ꮡmu).Lock();
+        l.mu.Lock();
         defer(Ꮡl.of(testLog.Ꮡmu).Unlock, ref ᒐ);
         if (l.w == nil) {
             return;

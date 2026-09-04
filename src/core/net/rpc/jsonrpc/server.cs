@@ -86,12 +86,12 @@ internal static error ReadRequestHeader(this ж<serverCodec> Ꮡc, ж<rpc.Reques
     // JSON request id can be any JSON value;
     // RPC package expects uint64.  Translate to
     // internal uint64 and save JSON on the side.
-    Ꮡc.of(serverCodec.Ꮡmutex).Lock();
+    c.mutex.Lock();
     c.seq++;
     c.pending[c.seq] = c.req.Id;
     c.req.Id = default!;
     r.Seq = c.seq;
-    Ꮡc.of(serverCodec.Ꮡmutex).Unlock();
+    c.mutex.Unlock();
     return default!;
 }
 
@@ -121,14 +121,14 @@ internal static error WriteResponse(this ж<serverCodec> Ꮡc, ж<rpc.Response> 
     ref var c = ref Ꮡc.DerefOrNull();
     ref var r = ref Ꮡr.DerefOrNull();
 
-    Ꮡc.of(serverCodec.Ꮡmutex).Lock();
+    c.mutex.Lock();
     var (b, ok) = c.pending[r.Seq, ꟷ];
     if (!ok) {
-        Ꮡc.of(serverCodec.Ꮡmutex).Unlock();
+        c.mutex.Unlock();
         return errors.New(invalidSequenceNumberInˢ);
     }
     delete(c.pending, r.Seq);
-    Ꮡc.of(serverCodec.Ꮡmutex).Unlock();
+    c.mutex.Unlock();
     if (b == nil) {
         // Invalid request so no id. Use JSON null.
         b = Ꮡnull;

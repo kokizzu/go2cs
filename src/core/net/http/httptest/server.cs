@@ -261,7 +261,7 @@ public static void Close(this ж<Server> Ꮡs) {
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡs.of(Server.Ꮡmu).Lock();
+        s.mu.Lock();
         if (!s.closed) {
             s.closed = true;
             s.Listener.Close();
@@ -294,7 +294,7 @@ public static void Close(this ж<Server> Ꮡs) {
             var tʗ1 = t;
             defer(() => tʗ1.Stop(), ref ᒐ);
         }
-        Ꮡs.of(Server.Ꮡmu).Unlock();
+        s.mu.Unlock();
         // Not part of httptest.Server's correctness, but assume most
         // users of httptest.Server will be using the standard
         // transport, so help them out and close any idle connections for them.
@@ -325,7 +325,7 @@ internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) {
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡs.of(Server.Ꮡmu).Lock();
+        s.mu.Lock();
         defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
         ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
         Ꮡbuf.WriteString(httptestServerBlockedInˢ);
@@ -344,13 +344,13 @@ public static void CloseClientConnections(this ж<Server> Ꮡs) {
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡs.of(Server.Ꮡmu).Lock();
+        s.mu.Lock();
         nint nconn = len(s.conns);
         var ch = new channel<EmptyStruct>(nconn);
         foreach (var (c, _) in s.conns) {
             goǃ(Ꮡs.closeConnChan, c, ch);
         }
-        Ꮡs.of(Server.Ꮡmu).Unlock();
+        s.mu.Unlock();
         // Wait for outstanding closes to finish.
         //
         // Out of paranoia for making a late change in Go 1.6, we
@@ -415,7 +415,7 @@ internal static void wrap(this ж<Server> Ꮡs) {
     s.Config.Value.ConnState = (net.Conn c, http.ConnState cs) => {
         GoFrame ᒐ = default;
         try {
-            Ꮡs.of(Server.Ꮡmu).Lock();
+            Ꮡs.Value.mu.Lock();
             defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
             var exprᴛ1 = cs;
             if (exprᴛ1 == http.StateNew) {

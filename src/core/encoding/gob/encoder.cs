@@ -274,7 +274,7 @@ public static error EncodeValue(this ж<Encoder> Ꮡenc, reflectꓸValue value) 
         }
         // Make sure we're single-threaded through here, so multiple
         // goroutines can share an encoder.
-        Ꮡenc.of(Encoder.Ꮡmutex).Lock();
+        enc.mutex.Lock();
         defer(Ꮡenc.of(Encoder.Ꮡmutex).Unlock, ref ᒐ);
         // Remove any nested writers remaining due to previous errors.
         enc.w = enc.w[0..1];

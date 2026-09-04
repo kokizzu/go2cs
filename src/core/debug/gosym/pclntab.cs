@@ -230,7 +230,7 @@ internal static void parsePclnTab(this ж<LineTable> Ꮡt) {
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
-        Ꮡt.of(LineTable.Ꮡmu).Lock();
+        t.mu.Lock();
         defer(Ꮡt.of(LineTable.Ꮡmu).Unlock, ref ᒐ);
         if (t.version != verUnknown) {
             return;
@@ -779,7 +779,7 @@ internal static void initFileMap(this ж<LineTable> Ꮡt) {
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
-        Ꮡt.of(LineTable.Ꮡmu).Lock();
+        t.mu.Lock();
         defer(Ꮡt.of(LineTable.Ꮡmu).Unlock, ref ᒐ);
         if (t.fileMap != default!) {
             return;

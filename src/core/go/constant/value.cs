@@ -217,14 +217,14 @@ internal static @string String(this ж<stringVal> Ꮡx) {
 internal static @string @string(this ж<stringVal> Ꮡx) {
     ref var x = ref Ꮡx.DerefOrNull();
 
-    Ꮡx.of(stringVal.Ꮡmu).Lock();
+    x.mu.Lock();
     if (x.l != nil) {
         x.s = strings.Join(reverse(Ꮡx.appendReverse(default!)), ""u8);
         x.l = default!;
         x.r = default!;
     }
     @string s = x.s;
-    Ꮡx.of(stringVal.Ꮡmu).Unlock();
+    x.mu.Unlock();
     return s;
 }
 
