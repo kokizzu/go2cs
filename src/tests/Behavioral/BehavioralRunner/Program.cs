@@ -27,7 +27,15 @@ namespace BehavioralRunner
     // summary -- a FALSE RED, the mirror of the false-green routes CLAUDE.md catalogs. It is
     // reported as NOT MEASURED, the same word check-no-regression.ps1 uses for the same situation,
     // and it still fails the run: an unmeasured project must never read as a pass.
-    internal enum Status { Pass, Fail, Skip, Timeout }
+    //
+    // BestEffort is Timeout's sibling and joined it for the same reason: the converter EXITS ZERO on a
+    // package it could not fully type-check, so a best-effort emission -- output the run did not really
+    // regenerate -- was reported as a Transpile PASS and handed on to Compile, Target and Output, where
+    // it reads as a downstream break billed to the wrong layer. Both are NOT MEASURED and both fail the
+    // run; they are separate members because the REMEDIES are opposite (raise a budget vs. convert on a
+    // host that can type-check the package), and a report that cannot tell them apart sends the reader
+    // to the wrong one. See src/tests/BestEffortConversion.cs for the classification itself.
+    internal enum Status { Pass, Fail, Skip, Timeout, BestEffort }
 
     internal sealed class ProjectResult
     {
@@ -42,6 +50,13 @@ namespace BehavioralRunner
         // distinction removes. Callers state which one they mean.
         public bool HasFail => Phases.Values.Any(s => s == Status.Fail);
         public bool HasTimeout => Phases.Values.Any(s => s == Status.Timeout);
+        public bool HasBestEffort => Phases.Values.Any(s => s == Status.BestEffort);
+
+        // The two unmeasured statuses under one question, for the callers that only need "did this run
+        // learn anything about the project". Spelled once here rather than as `HasTimeout ||
+        // HasBestEffort` at each site: the next status of this kind must reach every such caller by
+        // being added here, not by being remembered at four call sites.
+        public bool HasUnmeasured => HasTimeout || HasBestEffort;
     }
 
     internal static class Runner
@@ -421,7 +436,7 @@ namespace BehavioralRunner
         private static void RunTranspile(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results)
         {
             Console.Write($"[Transpile] {projects.Count} project(s)... ");
-            int failed = 0, timedOut = 0;
+            int failed = 0, timedOut = 0, bestEffort = 0;
 
             foreach (string p in projects)
             {
@@ -433,14 +448,35 @@ namespace BehavioralRunner
                     continue;
                 }
 
-                bool ok = true, hitTimeout = false;
+                bool ok = true, hitTimeout = false, hitBestEffort = false;
 
                 foreach (string pkgPath in GoPackageDirs(projPath))
                 {
                     ProcResult r = Exec(s_go2csExe, $"-go2cspath \"{s_srcRoot}\" \"{pkgPath}\"", pkgPath, s_transpileTimeoutMs);
 
                     if (r.ExitCode == 0)
+                    {
+                        // EXIT ZERO IS NOT ENOUGH. The converter reports a package it could not fully
+                        // type-check (or a source file whose emission it had to skip) on stderr and then
+                        // exits 0 with a best-effort emission on disk. Asking the exit code alone made
+                        // this phase print PASS over output the run never really regenerated -- and every
+                        // phase below then measured that output as though it were this converter's, which
+                        // is the false-green shape the rest of this runner is built to refuse.
+                        //
+                        // Not a `break`: the emission is written either way, and the remaining packages
+                        // of a multi-package project must still be converted or the tree is left half
+                        // regenerated (a nested sub-library's package_info.cs is an INPUT to its parent's
+                        // transpile). The verdict is already decided; the work still has to finish.
+                        if (BestEffortConversion.NotFullyRegenerated(r.StdErr, out string[] degraded))
+                        {
+                            hitBestEffort = true;
+
+                            foreach (string line in degraded)
+                                results[p].Messages.Add($"transpile NOT MEASURED in {Path.GetFileName(pkgPath)}: {Truncate(line)}");
+                        }
+
                         continue;
+                    }
 
                     hitTimeout = TimedOut(r);
 
@@ -452,25 +488,37 @@ namespace BehavioralRunner
                     break;
                 }
 
-                if (ok)
+                // Precedence, loudest first: a converter that FAILED outright is a more specific fact
+                // than the degradation it may have printed on the way down, and an expired budget says
+                // nothing at all about the emission. Only a run that completed AND said it was degraded
+                // lands on BestEffort.
+                if (!ok)
                 {
-                    results[p].Phases[Phase.Transpile] = Status.Pass;
+                    if (hitTimeout)
+                    {
+                        results[p].Phases[Phase.Transpile] = Status.Timeout;
+                        timedOut++;
+                    }
+                    else
+                    {
+                        results[p].Phases[Phase.Transpile] = Status.Fail;
+                        failed++;
+                    }
                 }
-                else if (hitTimeout)
+                else if (hitBestEffort)
                 {
-                    results[p].Phases[Phase.Transpile] = Status.Timeout;
-                    timedOut++;
+                    results[p].Phases[Phase.Transpile] = Status.BestEffort;
+                    bestEffort++;
                 }
                 else
                 {
-                    results[p].Phases[Phase.Transpile] = Status.Fail;
-                    failed++;
+                    results[p].Phases[Phase.Transpile] = Status.Pass;
                 }
             }
 
-            Console.WriteLine(failed == 0 && timedOut == 0
+            Console.WriteLine(failed == 0 && timedOut == 0 && bestEffort == 0
                 ? "ok"
-                : $"{failed} failed{(timedOut > 0 ? $", {timedOut} timed out" : "")}");
+                : $"{failed} failed{(timedOut > 0 ? $", {timedOut} timed out" : "")}{(bestEffort > 0 ? $", {bestEffort} NOT MEASURED (best-effort conversion)" : "")}");
         }
 
         // A project is up to date when every .cs is newer than BOTH its matching .go source and the
@@ -594,8 +642,12 @@ namespace BehavioralRunner
             {
                 // A timed-out transpile is skipped for the same reason a failed one is: there is no
                 // trustworthy .cs to compare, and comparing the PREVIOUS run's leftover output against
-                // its own golden would report a pass that proves nothing.
-                if (results[p].Phases.TryGetValue(Phase.Transpile, out Status t) && t is Status.Fail or Status.Timeout)
+                // its own golden would report a pass that proves nothing. A BEST-EFFORT transpile is the
+                // sharpest case of all: it leaves a .cs on disk that is DIFFERENT from the emission the
+                // golden records, so comparing it does not merely prove nothing -- on a package whose
+                // degraded emission happens to match, it manufactures a byte-identical pass over output
+                // this host cannot produce correctly.
+                if (results[p].Phases.TryGetValue(Phase.Transpile, out Status t) && t is Status.Fail or Status.Timeout or Status.BestEffort)
                 {
                     results[p].Phases[Phase.Target] = Status.Skip;
                     continue;
@@ -1327,7 +1379,7 @@ namespace BehavioralRunner
             // Reported separately from the failures, and only when a project has NO real failure --
             // a project that genuinely broke somewhere belongs under "failing", where the break is the
             // actionable fact, not under "not measured".
-            List<ProjectResult> notMeasured = all.Where(r => !r.HasFail && r.HasTimeout).ToList();
+            List<ProjectResult> notMeasured = all.Where(r => !r.HasFail && r.HasUnmeasured).ToList();
 
             int Count(Phase ph, Status st) => all.Count(r => r.Phases.TryGetValue(ph, out Status s) && s == st);
 
@@ -1337,10 +1389,16 @@ namespace BehavioralRunner
             {
                 int pass = Count(ph, Status.Pass), fail = Count(ph, Status.Fail);
                 int skip = Count(ph, Status.Skip), timeout = Count(ph, Status.Timeout);
+                int bestEffort = Count(ph, Status.BestEffort);
 
-                if (pass + fail + skip + timeout == 0) continue;
+                if (pass + fail + skip + timeout + bestEffort == 0) continue;
 
-                Console.WriteLine($"  {ph,-9}  pass {pass,4}   fail {fail,4}   skip {skip,4}   timeout {timeout,4}");
+                // The best-effort column is appended only when it is non-zero, unlike the other four.
+                // Only Transpile can ever produce it, so a permanent fifth column would print a
+                // structural zero on three of the four rows -- noise that reads like a measurement.
+                string degraded = bestEffort > 0 ? $"   best-effort {bestEffort,4}" : "";
+
+                Console.WriteLine($"  {ph,-9}  pass {pass,4}   fail {fail,4}   skip {skip,4}   timeout {timeout,4}{degraded}");
             }
 
             if (failures.Count > 0)
@@ -1359,18 +1417,40 @@ namespace BehavioralRunner
             if (notMeasured.Count > 0)
             {
                 Console.WriteLine();
-                Console.WriteLine($"---- {notMeasured.Count} project(s) NOT MEASURED (a timeout budget expired) ----");
-                Console.WriteLine("  These are NOT failures: no tool reported them broken, the runner stopped waiting. This run");
-                Console.WriteLine("  proves nothing about them either way, so it is reported as FAIL rather than silently passed.");
-                Console.WriteLine("  Raise the budget and re-run -- see --build-timeout / --build-one-timeout / --run-timeout,");
-                Console.WriteLine("  or the GO2CS_BUILD_TIMEOUT / GO2CS_BUILD_ONE_TIMEOUT / GO2CS_RUN_TIMEOUT variables.");
+                Console.WriteLine($"---- {notMeasured.Count} project(s) NOT MEASURED ----");
+                Console.WriteLine("  These are NOT failures: no tool reported them broken. This run proves nothing about them");
+                Console.WriteLine("  either way, so it is reported as FAIL rather than silently passed. Two causes, opposite");
+                Console.WriteLine("  remedies -- each project below is tagged with the one that applies:");
+                Console.WriteLine("   * timeout      -- a budget expired and the runner stopped waiting. Raise it and re-run:");
+                Console.WriteLine("                     --build-timeout / --build-one-timeout / --transpile-timeout / --run-timeout,");
+                Console.WriteLine("                     or GO2CS_BUILD_TIMEOUT / GO2CS_BUILD_ONE_TIMEOUT / GO2CS_RUN_TIMEOUT.");
+                Console.WriteLine("   * best-effort  -- the converter could not fully type-check the package (or had to skip a");
+                Console.WriteLine("                     source file) and emitted degraded output, exiting 0. A bigger budget");
+                Console.WriteLine("                     cannot help: convert on a host that can type-check it, or -- when the");
+                Console.WriteLine("                     package is native to another platform -- mark it [GoPlatformExclusive]");
+                Console.WriteLine("                     so it is skipped BY NAME before transpile instead (F8).");
 
                 // Cap the roster: the pathological case is the whole corpus timing out, and 555 identical
                 // lines bury the diagnosis above them rather than adding to it.
                 foreach (ProjectResult r in notMeasured.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase).Take(20))
                 {
-                    string phs = string.Join(",", r.Phases.Where(kv => kv.Value == Status.Timeout).Select(kv => kv.Key));
+                    // The phase is tagged with WHICH of the two it was. Printing a bare phase name would
+                    // put the reader back where the merged heading left them: knowing the project was not
+                    // measured and not which of the two opposite remedies to reach for.
+                    string phs = string.Join(",", r.Phases
+                        .Where(kv => kv.Value is Status.Timeout or Status.BestEffort)
+                        .Select(kv => $"{kv.Key}:{(kv.Value == Status.Timeout ? "timeout" : "best-effort")}"));
+
                     Console.WriteLine($"  {r.Name} [{phs}]");
+
+                    // The converter's own words, for the best-effort rows only: the roster is capped and
+                    // the failure roster above already prints its messages, but a best-effort project has
+                    // no other account anywhere of WHAT did not type-check.
+                    if (r.HasBestEffort)
+                    {
+                        foreach (string m in r.Messages.Where(m => m.Contains("NOT MEASURED", StringComparison.Ordinal)))
+                            Console.WriteLine($"      {m}");
+                    }
                 }
 
                 if (notMeasured.Count > 20)

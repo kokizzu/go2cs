@@ -10,11 +10,13 @@
 //#define USE_PUBLISH_PROFILES
 
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 // Don't enable for timing tests:
@@ -111,6 +113,12 @@ public abstract class BehavioralTestBase
         Path.Combine(GetGoExePath(projPath, targetProject), $"{targetProject}{s_exeSuffix}");
 
     private static readonly ConcurrentDictionary<string, object> s_projectLocks = new(StringComparer.OrdinalIgnoreCase);
+
+    // Projects whose transpile this process found BEST-EFFORT, with the converter lines that said so.
+    // Written once by TranspileProject and read by every later call for the same project -- see the
+    // memo note there for why the up-to-date check alone would otherwise let the three phases below
+    // Transpile pass on output the converter itself calls degraded.
+    private static readonly ConcurrentDictionary<string, string[]> s_degradedProjects = new(StringComparer.OrdinalIgnoreCase);
 
     [MethodImpl(MethodImplOptions.Synchronized)]
     protected static void Init(TestContext context)
@@ -265,6 +273,24 @@ public abstract class BehavioralTestBase
 
         lock (projectLock)
         {
+            // A project already found degraded IN THIS PROCESS stays degraded for every later caller.
+            // Four test classes call this method for the same project, and the up-to-date check below
+            // is satisfied by the very .cs a best-effort run just wrote -- so without this memo the
+            // Transpile test would report NOT MEASURED and the Compile, Target and Output tests would
+            // then skip straight past it and PASS on that same degraded output, which is the hole this
+            // whole change closes, reopened one test class over.
+            //
+            // ⚠ RESIDUAL, stated rather than papered over: the memo is per-process, so a WARM tree whose
+            // .cs were left behind by an earlier degraded run still satisfies the up-to-date check on
+            // the first call and reads as a pass. BehavioralRunner's UpToDate has the identical
+            // property. Both are bounded by the converter-mtime half of that check (any converter
+            // rebuild invalidates the whole corpus), and check-no-regression.ps1 -- which re-transpiles
+            // UNCONDITIONALLY and classifies the same two stderr classes -- is the instrument that
+            // cannot be fooled by a warm tree. Closing it here would mean persisting a degraded verdict
+            // on disk between runs, which is machinery for a case the unconditional gate already covers.
+            if (s_degradedProjects.TryGetValue(targetProject, out string[] previouslyDegraded))
+                AssertNotMeasured(targetProject, previouslyDegraded);
+
             if (!forceBuild && File.Exists(csproj))
             {
                 // If all .cs files are newer than associated .go files AND newer than the converter that
@@ -297,9 +323,70 @@ public abstract class BehavioralTestBase
 
             int exitCode;
 
+            // Collected across every package of the project, then judged once below. The converter
+            // EXITS ZERO on a package it could not fully type-check (or a source file whose emission it
+            // had to skip): it says so on stderr and writes a degraded .cs. Asserting the exit code
+            // alone made this method report a clean transpile over output the run never really
+            // regenerated, and the Compile, Target and Output tests that follow then measured that
+            // output as though it were this converter's -- BehavioralRunner had the identical hole, and
+            // both are closed through the same linked predicate so the two harnesses cannot drift apart
+            // on what a measured transpile is. Nothing is collected on the FAILING path: a non-zero exit is
+            // asserted immediately, because a converter that failed outright is a louder and more
+            // specific fact than the degradation it may have printed on the way down.
+            List<string> degraded = new();
+
             foreach (string pkgPath in GoPackageDirs(projPath))
-                Assert.AreEqual(0, exitCode = Exec(go2cs, $"-go2cspath \"{Go2csRoot}\" \"{pkgPath}\""), $"go2cs transpile for \"{targetProject}\" package \"{Path.GetFileName(pkgPath)}\" failed with exit code {exitCode:N0}");
+            {
+                StringBuilder stdErr = new();
+
+                // The dedicated errorHandler suppresses the base Exec's stdout echo for this call, so
+                // the converter's own stdout is re-attached explicitly: losing it would make a
+                // transpile the least readable step in the log precisely when it goes wrong.
+                exitCode = Exec(go2cs, $"-go2cspath \"{Go2csRoot}\" \"{pkgPath}\"", null,
+                    (_, e) => { if (!string.IsNullOrEmpty(e.Data)) TestContext?.WriteLine(e.Data); },
+                    DefaultExecTimeoutMs,
+                    (_, e) =>
+                    {
+                        if (string.IsNullOrEmpty(e.Data))
+                            return;
+
+                        stdErr.AppendLine(e.Data);
+                        TestContext?.WriteLine($"[ErrOut]: {e.Data}");
+                    });
+
+                Assert.AreEqual(0, exitCode, $"go2cs transpile for \"{targetProject}\" package \"{Path.GetFileName(pkgPath)}\" failed with exit code {exitCode:N0}");
+
+                foreach (string line in BestEffortConversion.NotFullyRegeneratedLines(stdErr.ToString()))
+                    degraded.Add($"{Path.GetFileName(pkgPath)}: {line}");
+            }
+
+            if (degraded.Count > 0)
+            {
+                s_degradedProjects[targetProject] = degraded.ToArray();
+                AssertNotMeasured(targetProject, degraded.ToArray());
+            }
         }
+    }
+
+    /// <summary>
+    /// Reports a best-effort conversion as NOT MEASURED. Never returns.
+    /// </summary>
+    /// <remarks>
+    /// Inconclusive for the same reason <see cref="SkipIfPlatformExclusive"/> is, and reached from the
+    /// other direction: an UNMARKED package this host cannot fully type-check. A Pass would be a
+    /// vacuous green over output the converter itself calls degraded; a Fail would be indistinguishable
+    /// by name from a real conversion regression, which is how one hides among expected lines. NOT
+    /// MEASURED is the honest verdict, and it is the word BehavioralRunner and check-no-regression.ps1
+    /// both already use for it.
+    /// </remarks>
+    private static void AssertNotMeasured(string targetProject, string[] degraded)
+    {
+        Assert.Inconclusive(
+            $"NOT MEASURED (best-effort conversion): go2cs could not fully regenerate \"{targetProject}\" on " +
+            $"this {PlatformExclusive.HostGoos} host, so every phase below this one would measure output it did " +
+            $"not produce. A package native to another platform belongs behind [GoPlatformExclusive] (F8); " +
+            $"otherwise this is a real conversion defect. Converter said:{Environment.NewLine}  " +
+            string.Join($"{Environment.NewLine}  ", degraded));
     }
 
     // A production transpile converts the package's PRODUCTION sources only -- go/packages excludes

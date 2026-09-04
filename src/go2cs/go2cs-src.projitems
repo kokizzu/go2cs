@@ -18,6 +18,7 @@
     <None Include="$(MSBuildThisFileDirectory)assemblyScopedAlias_test.go" />
     <None Include="$(MSBuildThisFileDirectory)astTypeSyntax.go" />
     <None Include="$(MSBuildThisFileDirectory)autoSiblingOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)bestEffortTranspile_test.go" />
     <None Include="$(MSBuildThisFileDirectory)buildConstraints_test.go" />
     <None Include="$(MSBuildThisFileDirectory)callerInliningAnalysis.go" />
     <None Include="$(MSBuildThisFileDirectory)syscallKeepAliveAnalysis.go" />
