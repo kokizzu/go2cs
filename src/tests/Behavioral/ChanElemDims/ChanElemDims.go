@@ -28,7 +28,5 @@ func main() {
 	ct := reflect.ChanOf(reflect.BothDir, reflect.ArrayOf(3, reflect.TypeOf(0)))
 	name := ct.String()
 	n := ct.Elem().Len()
-	// Println, not Printf: a Printf FORMAT containing a comma inside parentheses is mangled by the converter
-	// (the trigger the routed item names); Println with the same text converts.
-	fmt.Println("constructed row: ChanOf(BothDir, ArrayOf(3,int)) String()="+name+" Elem().Len()=", n)
+	fmt.Printf("constructed row: ChanOf(BothDir, ArrayOf(3,int)) String()=%s Elem().Len()=%d\n", name, n)
 }
