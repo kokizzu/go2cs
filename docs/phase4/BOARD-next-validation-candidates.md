@@ -22861,12 +22861,16 @@ preflight. The operative sentence for anyone reading a G-LAPTOP gate: **this hos
 host holding the privilege is expected to read them green; none had been measured when this entry
 was written, and that was stated rather than assumed.
 
-**Update, train 23's union (master `22237fcbc`):** the union battery reports **GolibTests
-Release+TC0 0 failed**. On this host the same configuration reads nine. That is consistent with a
-privileged host running all three green, and it is the first reading from a host other than this
-one — but the summary reports failures, not the pass/skip split, so it does **not** by itself
-distinguish "ran and passed" from "skipped". Recorded as consistent-with, not as confirmation; the
-distinguishing read is the union host's own skip count, which nobody has been asked for.
+**Update, train 23's union (master `22237fcbc`) — MEASURED.** The union's GolibTests Release+TC0 leg
+reads **568 passed / 0 failed / 1 skipped of 569**. One skip, not three: the three
+`FixtureLinkStaging` tests **ran and passed** on the privileged coordinator host. On this host the
+same configuration reads nine failures. So the entry's expectation is confirmed by measurement
+rather than by inference, and the class is settled: **these three are a property of the HOST, not of
+the code, and a privileged host reads them green.**
+
+(The first draft of this update said only "consistent with", because a summary reporting failures
+cannot distinguish "ran and passed" from "skipped" — the skip count is what separates them, and it
+was supplied rather than assumed.)
 
 -- G
 
