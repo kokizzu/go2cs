@@ -1072,6 +1072,26 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			result.requiredCapabilities.UnionWith(foundMain.RequiredCapabilities)
 		}
 
+		// HAND-OWNED HOST: the internal variant is DISCOVERED and never EMITTED. Everything above
+		// this line has already run for it — its files are in includedSources, its declarations are
+		// in the manifest with the capability statuses their own analysis assigned — and everything
+		// below is emission and the metadata merge that serves emission.
+		//
+		// Stated as a skip rather than left to fall out of an empty emitEntries list, which the
+		// exclusion pass does produce. The two are not equivalent: convertTestVariant does more than
+		// walk its entry list, and at least one of those things WRITES. A variant whose analysis
+		// records relocated package-var initializers emits `package_init_internal_test.cs` after the
+		// convert loop regardless of how many files it converted, and for a host row that lands in
+		// the hand-owned directory — the one outcome this whole mode exists to make impossible. An
+		// empty list would also leave the variant's collected metadata globals to merge into a
+		// project that compiles none of it.
+		//
+		// So the rule is the accurate one: for a host target there is no internal EMISSION at all,
+		// and the code says that instead of arranging for it to happen to produce nothing.
+		if options.testHandOwnHost && variant == internal {
+			continue
+		}
+
 		// The seed is the INTERNAL variant's under the RECOMPILE model alone — that is exactly the
 		// case where the production `.cs` are compile items of this assembly and share the emitted
 		// class. Under the reference model production is a separate assembly; the external variant
