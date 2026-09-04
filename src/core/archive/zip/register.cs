@@ -63,11 +63,12 @@ internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice
 
 internal static error Close(this ж<pooledFlateWriter> Ꮡw) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
         w.mu.Lock();
-        defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         error err = default!;
         if (w.fw != nil) {
             err = w.fw.Close();
@@ -77,7 +78,7 @@ internal static error Close(this ж<pooledFlateWriter> Ꮡw) {
         return err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡw.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static ж<sync.Pool> ᏑflateReaderPool = new StandardBox<sync.Pool>(default(sync.Pool));
@@ -122,11 +123,12 @@ internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<
 
 internal static error Close(this ж<pooledFlateReader> Ꮡr) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var r = ref Ꮡr.DerefOrNull();
 
         r.mu.Lock();
-        defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         error err = default!;
         if (r.fr != default!) {
             err = r.fr.Close();
@@ -136,7 +138,7 @@ internal static error Close(this ж<pooledFlateReader> Ꮡr) {
         return err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡr.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static ж<sync.Map> Ꮡcompressors = new StandardBox<sync.Map>(default(sync.Map));

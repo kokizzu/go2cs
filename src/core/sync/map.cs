@@ -165,6 +165,7 @@ public static void Store(this ж<Map> Ꮡm, any key, any value) {
 // Clear deletes all the entries, resulting in an empty Map.
 public static void Clear(this ж<Map> Ꮡm) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var m = ref Ꮡm.DerefOrNull();
 
@@ -174,7 +175,7 @@ public static void Clear(this ж<Map> Ꮡm) {
             return;
         }
         m.mu.Lock();
-        defer(Ꮡm.of(Map.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         read = Ꮡm.loadReadOnly();
         if (len(read.m) > 0 || read.amended) {
             Ꮡm.of(Map.Ꮡread).Store(Ꮡ(new readOnly(nil)));
@@ -184,7 +185,7 @@ public static void Clear(this ж<Map> Ꮡm) {
         m.misses = 0;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡm.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // tryCompareAndSwap compare the entry with the given old value and swaps

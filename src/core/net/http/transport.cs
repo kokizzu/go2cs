@@ -855,11 +855,12 @@ public static error ErrSkipAltProtocol = errors.New("net/http: skip alternate pr
 // protocol were not registered.
 public static void RegisterProtocol(this ж<Transport> Ꮡt, @string scheme, RoundTripper rt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
         t.altMu.Lock();
-        defer(Ꮡt.of(Transport.ᏑaltMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var (oldMap, _) = Ꮡt.of(Transport.ᏑaltProto).Load()._<map<@string, RoundTripper>>(ᐧ);
         {
             var (_, exists) = oldMap[scheme, ꟷ]; if (exists) {
@@ -874,7 +875,7 @@ public static void RegisterProtocol(this ж<Transport> Ꮡt, @string scheme, Rou
         Ꮡt.of(Transport.ᏑaltProto).Store(newMap);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().altMu.Unlock(); ᒐ.Run(); }
 }
 
 // CloseIdleConnections closes any connections which were previously
@@ -1067,6 +1068,7 @@ internal static void putOrCloseIdleConn(this ж<Transport> Ꮡt, ж<persistConn>
 // tryPutIdleConn does not close pconn. Use putOrCloseIdleConn instead for that.
 internal static error tryPutIdleConn(this ж<Transport> Ꮡt, ж<persistConn> Ꮡpconn) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
         ref var pconn = ref Ꮡpconn.DerefOrNull();
@@ -1079,7 +1081,7 @@ internal static error tryPutIdleConn(this ж<Transport> Ꮡt, ж<persistConn> �
         }
         Ꮡpconn.markReused();
         t.idleMu.Lock();
-        defer(Ꮡt.of(Transport.ᏑidleMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         // HTTP/2 (pconn.alt != nil) connections do not come out of the idle list,
         // because multiple goroutines can use them simultaneously.
         // If this is an HTTP/2 connection being “returned,” we're done.
@@ -1160,7 +1162,7 @@ internal static error tryPutIdleConn(this ж<Transport> Ꮡt, ж<persistConn> �
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().idleMu.Unlock(); ᒐ.Run(); }
 }
 
 // queueForIdleConn queues w to receive the next idle connection for w.cm.
@@ -1261,15 +1263,16 @@ internal static bool /*delivered*/ queueForIdleConn(this ж<Transport> Ꮡt, ж<
 // removeIdleConn marks pconn as dead.
 internal static bool removeIdleConn(this ж<Transport> Ꮡt, ж<persistConn> Ꮡpconn) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
         t.idleMu.Lock();
-        defer(Ꮡt.of(Transport.ᏑidleMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return t.removeIdleConnLocked(Ꮡpconn);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().idleMu.Unlock(); ᒐ.Run(); }
 }
 
 // t.idleMu must be held.
@@ -1368,39 +1371,42 @@ internal static readonly @string netHttpTransportDialHookˢ = "net/http: Transpo
 // waiting reports whether w is still waiting for an answer (connection or error).
 internal static bool waiting(this ж<wantConn> Ꮡw) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
         w.mu.Lock();
-        defer(Ꮡw.of(wantConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return !w.done;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡw.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // getCtxForDial returns context for dial or nil if connection was delivered or canceled.
 internal static context.Context getCtxForDial(this ж<wantConn> Ꮡw) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
         w.mu.Lock();
-        defer(Ꮡw.of(wantConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return w.ctx;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡw.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // tryDeliver attempts to deliver pc, err to w and reports whether it succeeded.
 internal static bool tryDeliver(this ж<wantConn> Ꮡw, ж<persistConn> Ꮡpc, error err, time.Time idleAt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
         w.mu.Lock();
-        defer(Ꮡw.of(wantConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (w.done) {
             return false;
         }
@@ -1414,7 +1420,7 @@ internal static bool tryDeliver(this ж<wantConn> Ꮡw, ж<persistConn> Ꮡpc, e
         return true;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡw.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // cancel marks w as no longer wanting a result (for example, due to cancellation).
@@ -1648,13 +1654,14 @@ internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж
 // Once w receives permission to dial, it will do so in a separate goroutine.
 internal static void queueForDial(this ж<Transport> Ꮡt, ж<wantConn> Ꮡw) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
         ref var w = ref Ꮡw.DerefOrNull();
 
         w.beforeDial();
         t.connsPerHostMu.Lock();
-        defer(Ꮡt.of(Transport.ᏑconnsPerHostMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (t.MaxConnsPerHost <= 0) {
             Ꮡt.startDialConnForLocked(Ꮡw);
             return;
@@ -1678,7 +1685,7 @@ internal static void queueForDial(this ж<Transport> Ꮡt, ж<wantConn> Ꮡw) {
         t.connsPerHostWait[w.key] = q;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().connsPerHostMu.Unlock(); ᒐ.Run(); }
 }
 
 // startDialConnFor calls dialConn in a new goroutine.
@@ -1735,6 +1742,7 @@ internal static void dialConnFor(this ж<Transport> Ꮡt, ж<wantConn> Ꮡw) {
 // which may in turn give a different waiting goroutine permission to dial.
 internal static void decConnsPerHost(this ж<Transport> Ꮡt, connectMethodKey key) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
@@ -1742,7 +1750,7 @@ internal static void decConnsPerHost(this ж<Transport> Ꮡt, connectMethodKey k
             return;
         }
         t.connsPerHostMu.Lock();
-        defer(Ꮡt.of(Transport.ᏑconnsPerHostMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         nint n = t.connsPerHost[key];
         if (n == 0) {
             // Shouldn't happen, but if it does, the counting is buggy and could
@@ -1786,7 +1794,7 @@ internal static void decConnsPerHost(this ж<Transport> Ꮡt, connectMethodKey k
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().connsPerHostMu.Unlock(); ᒐ.Run(); }
 }
 
 // Add TLS to a persistent connection, i.e. negotiate a TLS session. If pconn is already a TLS
@@ -2305,15 +2313,16 @@ internal static bool isBroken(this ж<persistConn> Ꮡpc) {
 // CancelRequest or due to context cancellation.
 internal static error canceled(this ж<persistConn> Ꮡpc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var pc = ref Ꮡpc.DerefOrNull();
 
         pc.mu.Lock();
-        defer(Ꮡpc.of(persistConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return pc.canceledErr;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡpc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // isReused reports whether this connection has been used before.
@@ -2328,16 +2337,17 @@ internal static bool isReused(this ж<persistConn> Ꮡpc) {
 
 internal static void cancelRequest(this ж<persistConn> Ꮡpc, error err) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var pc = ref Ꮡpc.DerefOrNull();
 
         pc.mu.Lock();
-        defer(Ꮡpc.of(persistConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         pc.canceledErr = err;
         pc.closeLocked(errRequestCanceled);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡpc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // closeConnIfStillIdle closes the connection if it's still sitting idle.
@@ -3208,15 +3218,16 @@ internal static void markReused(this ж<persistConn> Ꮡpc) {
 // circumstances it should never be seen by users.
 internal static void close(this ж<persistConn> Ꮡpc, error err) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var pc = ref Ꮡpc.DerefOrNull();
 
         pc.mu.Lock();
-        defer(Ꮡpc.of(persistConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         pc.closeLocked(err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡpc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static void closeLocked(this ref persistConn pc, error err) {
@@ -3324,11 +3335,12 @@ internal static (nint n, error err) Read(this ж<bodyEOFSignal> Ꮡes, slice<byt
 
 internal static error Close(this ж<bodyEOFSignal> Ꮡes) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var es = ref Ꮡes.DerefOrNull();
 
         es.mu.Lock();
-        defer(Ꮡes.of(bodyEOFSignal.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (es.closed) {
             return default!;
         }
@@ -3340,7 +3352,7 @@ internal static error Close(this ж<bodyEOFSignal> Ꮡes) {
         return es.condfn(err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡes.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // caller must hold es.mu.

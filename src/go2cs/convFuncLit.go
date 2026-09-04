@@ -348,6 +348,22 @@ func (v *Visitor) convFuncLit(funcLit *ast.FuncLit, context LambdaContext) strin
 		v.funcSignatureIsLiteralSeed = true
 	}
 
+	// A literal that defers or recovers gets a FRAME OF ITS OWN, and a frame's tail emits the
+	// defer→finally lowered calls (deferFinallyLowering.go). Those calls belong to the ENCLOSING
+	// function, so the literal's frame must not re-emit them — the flag is an ordinary local a
+	// lambda can capture, so a leaked emission COMPILES and runs the call twice, once at the
+	// literal's exit and once at the function's. The enclosing plan cannot rule the case out on its
+	// own: funcBodyDeferRecover deliberately stops at a FuncLit, so a literal that only RECOVERS
+	// leaves the enclosing hasRecover false while still earning a frame. Cleared for the literal's
+	// whole emission and restored afterwards; a literal's own defers are never lowered, because
+	// all-or-nothing already refuses any function whose defers are not its body's direct children.
+	savedLoweredDefers, savedLoweredDeferIndex := v.loweredDefers, v.loweredDeferIndex
+	v.loweredDefers, v.loweredDeferIndex = nil, nil
+
+	defer func() {
+		v.loweredDefers, v.loweredDeferIndex = savedLoweredDefers, savedLoweredDeferIndex
+	}()
+
 	litSig, _ := v.info.TypeOf(funcLit).(*types.Signature)
 
 	// visitReturnStmt derives a bare `return`'s emitted RESULTS from the return signature. A nested

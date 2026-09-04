@@ -472,13 +472,14 @@ internal static (slice<byte>, error) quicGetTransportParameters(this ж<Conn> �
 // or for the user to provide transport parameters.
 internal static error quicWaitForSignal(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         // Drop the handshake mutex while blocked to allow the user
         // to call ConnectionState before the handshake completes.
         c.handshakeMutex.Unlock();
-        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Lock, ref ᒐ);
+        ᒐd1 = true;
         // Send on blockedc to notify the QUICConn that the handshake is blocked.
         // Exported methods of QUICConn wait for the handshake to become blocked
         // before returning to the user.
@@ -508,7 +509,7 @@ internal static error quicWaitForSignal(this ж<Conn> Ꮡc) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().handshakeMutex.Lock(); ᒐ.Run(); }
 }
 
 } // end tls_package

@@ -97,11 +97,12 @@ internal static @string instanceHash(this ж<Context> Ꮡctxt, ΔType orig, slic
 // Otherwise, it returns nil.
 internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
         ctxt.mu.Lock();
-        defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         foreach (var (_, e) in ctxt.typeMap[h]) {
             if (identicalInstance(orig, targs, e.orig, e.targs)) {
                 return e.instance;
@@ -114,7 +115,7 @@ internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡctxt.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // update de-duplicates n against previously seen types with the hash h.  If an
@@ -123,12 +124,13 @@ internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
 // h.
 internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs, ΔType inst) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
         assert(inst != default!);
         ctxt.mu.Lock();
-        defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         foreach (var (_, e) in ctxt.typeMap[h]) {
             if (inst == default! || Identical(inst, e.instance)) {
                 return e.instance;
@@ -146,17 +148,18 @@ internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
         return inst;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡctxt.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // getID returns a unique ID for the type t.
 internal static nint getID(this ж<Context> Ꮡctxt, ΔType t) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
         ctxt.mu.Lock();
-        defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var (id, ok) = ctxt.originIDs[t, ꟷ];
         if (!ok) {
             id = ctxt.nextID;
@@ -166,7 +169,7 @@ internal static nint getID(this ж<Context> Ꮡctxt, ΔType t) {
         return id;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡctxt.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 } // end types_package

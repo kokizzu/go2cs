@@ -258,15 +258,16 @@ public static ж<contextKey> LocalAddrContextKey = Ꮡ(new contextKey("local-add
 
 internal static bool hijacked(this ж<conn> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         c.mu.Lock();
-        defer(Ꮡc.of(conn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return c.hijackedv;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // c.mu must be held.
@@ -2832,11 +2833,12 @@ internal static bool exactMatch(ж<routingNode> Ꮡn, @string path) {
 // matchingMethods return a sorted list of all methods that would match with the given host and path.
 internal static slice<@string> matchingMethods(this ж<ServeMux> Ꮡmux, @string host, @string path) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         // Hold the read lock for the entire method so that the two matches are done
         // on the same set of registered patterns.
         Ꮡmux.of(ServeMux.Ꮡmu).RLock();
-        defer(Ꮡmux.of(ServeMux.Ꮡmu).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         var ms = new map<@string, bool>{};
         Ꮡmux.of(ServeMux.Ꮡtree).matchingMethods(host, path, ms);
         // matchOrRedirect will try appending a trailing slash if there is no match.
@@ -2846,7 +2848,7 @@ internal static slice<@string> matchingMethods(this ж<ServeMux> Ꮡmux, @string
         return slices.Sorted(maps.Keys<map<@string, bool>, @string, bool>(ms));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡmux.of(ServeMux.Ꮡmu).RUnlock(); ᒐ.Run(); }
 }
 
 // ServeHTTP dispatches the request to the handler whose
@@ -2930,6 +2932,7 @@ internal static readonly @string unknownLocationˢ = "unknown location"u8;
 
 internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHandler handler) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var mux = ref Ꮡmux.DerefOrNull();
 
@@ -2957,7 +2960,7 @@ internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHa
             pat.Value.loc = fmt.Sprintf("%s:%d"u8, @file, line);
         }
         Ꮡmux.of(ServeMux.Ꮡmu).Lock();
-        defer(Ꮡmux.of(ServeMux.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         // Check for conflict.
         {
             var patʗ1 = pat;
@@ -2978,7 +2981,7 @@ internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHa
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡmux.of(ServeMux.Ꮡmu).Unlock(); ᒐ.Run(); }
 }
 
 // Serve accepts incoming HTTP connections on the listener l,
@@ -3120,12 +3123,13 @@ public static error ServeTLS(net.Listener l, ΔHandler handler, @string certFile
 // underlying Listener(s).
 public static error Close(this ж<Server> Ꮡsrv) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var srv = ref Ꮡsrv.DerefOrNull();
 
         Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
         srv.mu.Lock();
-        defer(Ꮡsrv.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var err = srv.closeListenersLocked();
         // Unlock srv.mu while waiting for listenerGroup.
         // The group Add and Done calls are made with srv.mu held,
@@ -3141,7 +3145,7 @@ public static error Close(this ж<Server> Ꮡsrv) {
         return err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡsrv.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // shutdownPollIntervalMax is the max polling interval when checking
@@ -3238,11 +3242,12 @@ public static void RegisterOnShutdown(this ж<Server> Ꮡsrv, Action f) {
 // server is quiescent.
 internal static bool closeIdleConns(this ж<Server> Ꮡs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
         s.mu.Lock();
-        defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var quiescent = true;
         foreach (var (c, _) in s.activeConn) {
             var (st, unixSec) = c.getState();
@@ -3264,7 +3269,7 @@ internal static bool closeIdleConns(this ж<Server> Ꮡs) {
         return quiescent;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static error closeListenersLocked(this ref Server s) {
@@ -3549,11 +3554,12 @@ public static error ServeTLS(this ж<Server> Ꮡsrv, net.Listener l, @string cer
 // It reports whether the server is still up (not Shutdown or Closed).
 internal static bool trackListener(this ж<Server> Ꮡs, ж<net.Listener> Ꮡln, bool add) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
         s.mu.Lock();
-        defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (s.listeners == default!) {
             s.listeners = new map<ж<net.Listener>, EmptyStruct>();
         }
@@ -3570,16 +3576,17 @@ internal static bool trackListener(this ж<Server> Ꮡs, ж<net.Listener> Ꮡln,
         return true;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static void trackConn(this ж<Server> Ꮡs, ж<conn> Ꮡc, bool add) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
         s.mu.Lock();
-        defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (s.activeConn == default!) {
             s.activeConn = new map<ж<conn>, EmptyStruct>();
         }
@@ -3590,7 +3597,7 @@ internal static void trackConn(this ж<Server> Ꮡs, ж<conn> Ꮡc, bool add) {
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static time.Duration idleTimeout(this ref Server s) {
@@ -3935,11 +3942,12 @@ internal static Pusher _ᴛ10ʗ = new timeoutWriterжPusher(((ж<timeoutWriter>)
 
 internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var tw = ref Ꮡtw.DerefOrNull();
 
         tw.mu.Lock();
-        defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (tw.err != default!) {
             return (0, tw.err);
         }
@@ -3949,7 +3957,7 @@ internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p)
         return tw.wbuf.Write(p);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡtw.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static void writeHeaderLocked(this ref timeoutWriter tw, nint code) {
@@ -3975,15 +3983,16 @@ internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p)
 
 internal static void WriteHeader(this ж<timeoutWriter> Ꮡtw, nint code) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var tw = ref Ꮡtw.DerefOrNull();
 
         tw.mu.Lock();
-        defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         tw.writeHeaderLocked(code);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡtw.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // onceCloseListener wraps a net.Listener, protecting it from

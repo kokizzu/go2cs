@@ -398,6 +398,16 @@ type Visitor struct {
 	// form's early exit (§4.4). The label is emitted only when something targets it, so a function
 	// whose body simply falls off the end carries no unreferenced label.
 	goFrameNamedExit bool
+	// loweredDefers holds the current function's defer→finally lowered sites in SOURCE order, and
+	// loweredDeferIndex maps each admitted DeferStmt to its position in that slice so
+	// visitDeferStmt can find its own entry. Both are empty for every function that does not
+	// qualify, which is the overwhelming majority — see deferFinallyLowering.go for the gates.
+	loweredDefers     []*loweredDefer
+	loweredDeferIndex map[*ast.DeferStmt]int
+	// entryAliasBoxPaths maps a parameter's entry deref ALIAS to the box expression it was declared
+	// from (`c` → `Ꮡc.DerefOrNull()`). The alias is declared INSIDE the frame's try, so the finally
+	// cannot name it and a lowered defer's call is re-rooted on the box instead.
+	entryAliasBoxPaths map[string]string
 	// blankResultNames interns the generated slot name for each BLANK (`_`) result of a
 	// namedReturnDefer signature — Go allows mixing blank and named results
 	// (`func parse(…) (_ *Regexp, err error)`), and the blank slot still needs a C# local so

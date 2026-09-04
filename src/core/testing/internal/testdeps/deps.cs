@@ -190,6 +190,7 @@ internal static void Chdir(this ж<testLog> Ꮡl, @string name) {
 // add adds the (op, name) pair to the test log.
 internal static void add(this ж<testLog> Ꮡl, @string op, @string name) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var l = ref Ꮡl.DerefOrNull();
 
@@ -197,7 +198,7 @@ internal static void add(this ж<testLog> Ꮡl, @string op, @string name) {
             return;
         }
         l.mu.Lock();
-        defer(Ꮡl.of(testLog.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (l.w == nil) {
             return;
         }
@@ -207,7 +208,7 @@ internal static void add(this ж<testLog> Ꮡl, @string op, @string name) {
         l.w.WriteByte((rune)'\n');
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡl.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static ж<testLog> Ꮡlog = new StandardBox<testLog>(default(testLog));

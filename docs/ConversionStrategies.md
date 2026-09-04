@@ -1231,6 +1231,17 @@ internal static void withLock(sync.Locker lk, Action fn) {   // database/sql/sql
 }
 ```
 
+One shape skips the registration entirely. A deferred call on a **field of the receiver** with no
+arguments — `defer c.mu.Unlock()` — would have to box that field to hold it (`Ꮡc.of(counter.Ꮡmu)`),
+and the call already runs on exactly the paths a `finally` runs on, so it is emitted straight into the
+`finally` behind a `bool` set at the defer's own position, in reverse source order (Go's LIFO), ahead
+of `ᒐ.Run()`. Nothing is allocated. It applies only where Go's registration-time semantics are
+provably unobservable — the receiver is never reassigned, the defer is unconditional, and something
+ahead of it already dereferences the same path — and it is all-or-nothing per function, so a function
+that mixes shapes keeps registration throughout. 166 of the 220 receiver-field defer sites in Go
+1.23.12's standard library qualify; see
+[the reference](ConversionStrategies-Reference.md#a-deferred-receiver-field-call-with-no-arguments-is-lowered-into-the-frames-finally).
+
 A function with **named results** that deferred code mutates declares them ahead of the `try` and
 returns them after the `finally`, because Go runs the deferred calls after the results are assigned
 and before the caller sees them — which a `finally` cannot do to a value a `return` has already

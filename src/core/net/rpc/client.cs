@@ -115,12 +115,13 @@ public static error ErrShutdown = errors.New("connection is shut down"u8);
 
 internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var client = ref Ꮡclient.DerefOrNull();
         ref var call = ref Ꮡcall.DerefOrNull();
 
         client.reqMutex.Lock();
-        defer(Ꮡclient.of(Client.ᏑreqMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         // Register this call.
         client.mutex.Lock();
         if (client.shutdown || client.closing) {
@@ -149,7 +150,7 @@ internal static void send(this ж<Client> Ꮡclient, ж<ΔCall> Ꮡcall) {
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡclient.DerefOrNull().reqMutex.Unlock(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

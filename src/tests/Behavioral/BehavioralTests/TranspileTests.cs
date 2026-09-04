@@ -358,6 +358,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckDeferEvalParamFunc() => CheckTarget("DeferEvalParamFunc");
 
     [TestMethod]
+    public void CheckDeferFinallyLowering() => CheckTarget("DeferFinallyLowering");
+
+    [TestMethod]
     public void CheckDeferFrameScopes() => CheckTarget("DeferFrameScopes");
 
     [TestMethod]

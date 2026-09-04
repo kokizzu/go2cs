@@ -804,11 +804,12 @@ internal static (nint n, error err) Write(this ж<maxLatencyWriter> Ꮡm, slice<
 
 internal static void delayedFlush(this ж<maxLatencyWriter> Ꮡm) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var m = ref Ꮡm.DerefOrNull();
 
         m.mu.Lock();
-        defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (!m.flushPending) {
             // if stop was called but AfterFunc already started this goroutine
             return;
@@ -817,23 +818,24 @@ internal static void delayedFlush(this ж<maxLatencyWriter> Ꮡm) {
         m.flushPending = false;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡm.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static void stop(this ж<maxLatencyWriter> Ꮡm) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var m = ref Ꮡm.DerefOrNull();
 
         m.mu.Lock();
-        defer(Ꮡm.of(maxLatencyWriter.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         m.flushPending = false;
         if (m.t != nil) {
             m.t.Stop();
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡm.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static @string upgradeType(httpꓸHeader h) {

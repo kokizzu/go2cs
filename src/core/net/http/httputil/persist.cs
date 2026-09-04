@@ -71,11 +71,12 @@ public static ж<ServerConn> NewServerConn(net.Conn c, ж<bufio.Reader> Ꮡr) {
 // should not call Hijack while [ServerConn.Read] or [ServerConn.Write] is in progress.
 public static (net.Conn, ж<bufio.Reader>) Hijack(this ж<ServerConn> Ꮡsc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var sc = ref Ꮡsc.DerefOrNull();
 
         sc.mu.Lock();
-        defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var c = sc.c;
         var r = sc.r;
         sc.c = default!;
@@ -83,7 +84,7 @@ public static (net.Conn, ж<bufio.Reader>) Hijack(this ж<ServerConn> Ꮡsc) {
         return (c, r);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡsc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Close calls [ServerConn.Hijack] and then also closes the underlying connection.
@@ -184,15 +185,16 @@ public static (ж<http.Request>, error) Read(this ж<ServerConn> Ꮡsc) {
 // that have been received on the connection.
 public static nint Pending(this ж<ServerConn> Ꮡsc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var sc = ref Ꮡsc.DerefOrNull();
 
         sc.mu.Lock();
-        defer(Ꮡsc.of(ServerConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return sc.nread - sc.nwritten;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡsc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -401,15 +403,16 @@ public static error Write(this ж<ClientConn> Ꮡcc, ж<http.Request> Ꮡreq) {
 // that have been sent on the connection.
 public static nint Pending(this ж<ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
         cc.mu.Lock();
-        defer(Ꮡcc.of(ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return cc.nwritten - cc.nread;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Read reads the next response from the wire. A valid response might be

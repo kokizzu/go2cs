@@ -49,7 +49,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "AAxQooKCgrjSgoIABRDSgpSCgt6CooKCgoL+ooKCgpSCAAoGgpqCgoKCsoLWgoKUgoaGgoKigpSCgoKGgoKCgoKGgg==", "73-80:1;105-108:1;123-126:2")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AA0qgtaCAAoU4oKCgoLc0oKCAAkK0oSCgpaCAAgKwoKChIKWAAgOwoKCAAkY0oKEooCC6IIACBDChIKWggAIDMKCgoIACAaChISygoCCuMaCgoKCgoSC", "104-108:1;145-153:1;146-150:1.1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -65,7 +65,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct counter {}
+    internal partial struct box {}
+    internal partial struct tracer {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import
@@ -76,6 +77,5 @@ public static partial class main_package
 
     // <ImportInitializers>
     [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
-    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
     // </ImportInitializers>
 }

@@ -776,11 +776,12 @@ internal static uint64 /*pc*/ go12LineToPC(this ж<LineTable> Ꮡt, @string @fil
 // initFileMap initializes the map from file name to file number.
 internal static void initFileMap(this ж<LineTable> Ꮡt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
         t.mu.Lock();
-        defer(Ꮡt.of(LineTable.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (t.fileMap != default!) {
             return;
         }
@@ -801,7 +802,7 @@ internal static void initFileMap(this ж<LineTable> Ꮡt) {
         t.fileMap = m;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // go12MapFiles adds to m a key for every file in the Go 1.2 LineTable.

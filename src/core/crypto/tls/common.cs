@@ -814,6 +814,7 @@ internal static time.Duration maxSessionTicketLifetime => /* 7 * 24 * time.Hour 
 // being used concurrently by a TLS client or server.
 public static ж<Config> Clone(this ж<Config> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
@@ -821,7 +822,7 @@ public static ж<Config> Clone(this ж<Config> Ꮡc) {
             return default!;
         }
         Ꮡc.of(Config.Ꮡmutex).RLock();
-        defer(Ꮡc.of(Config.Ꮡmutex).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         return Ꮡ(new Config(
             Rand: c.Rand,
             Time: c.Time,
@@ -858,7 +859,7 @@ public static ж<Config> Clone(this ж<Config> Ꮡc) {
         ));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(Config.Ꮡmutex).RUnlock(); ᒐ.Run(); }
 }
 
 // deprecatedSessionTicketKey is set as the prefix of SessionTicketKey if it was
@@ -869,6 +870,8 @@ internal static slice<byte> deprecatedSessionTicketKey = slice<byte>("DEPRECATED
 // randomized if empty, and that sessionTicketKeys is populated from it otherwise.
 internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
@@ -879,9 +882,9 @@ internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) {
         }
         // We need to write some data, so get an exclusive lock and re-check any conditions.
         Ꮡc.of(Config.Ꮡmutex).RUnlock();
-        defer(Ꮡc.of(Config.Ꮡmutex).RLock, ref ᒐ);
+        ᒐd1 = true;
         Ꮡc.of(Config.Ꮡmutex).Lock();
-        defer(Ꮡc.of(Config.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd2 = true;
         if (c.SessionTicketKey == new byte[]{}.array(32)){
             {
                 var (_, err) = io.ReadFull(c.rand(), c.SessionTicketKey[..]); if (err != default!) {
@@ -899,7 +902,7 @@ internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) {
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd2) Ꮡc.of(Config.Ꮡmutex).Unlock(); if (ᒐd1) Ꮡc.of(Config.Ꮡmutex).RLock(); ᒐ.Run(); }
 }
 
 // ticketKeys returns the ticketKeys for this connection.
@@ -913,6 +916,9 @@ internal static void initLegacySessionTicketKeyRLocked(this ж<Config> Ꮡc) {
 // created and prepended to c.sessionTicketKeys.
 internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> ᏑconfigForClient) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
+    bool ᒐd3 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
         ref var configForClient = ref ᏑconfigForClient.DerefOrNull();
@@ -933,7 +939,7 @@ internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> Ꮡ
             ᏑconfigForClient.of(Config.Ꮡmutex).RUnlock();
         }
         Ꮡc.of(Config.Ꮡmutex).RLock();
-        defer(Ꮡc.of(Config.Ꮡmutex).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (c.SessionTicketsDisabled) {
             return default!;
         }
@@ -947,9 +953,9 @@ internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> Ꮡ
         }
         // autoSessionTicketKeys are managed by auto-rotation.
         Ꮡc.of(Config.Ꮡmutex).RUnlock();
-        defer(Ꮡc.of(Config.Ꮡmutex).RLock, ref ᒐ);
+        ᒐd2 = true;
         Ꮡc.of(Config.Ꮡmutex).Lock();
-        defer(Ꮡc.of(Config.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd3 = true;
         // Re-check the condition in case it changed since obtaining the new lock.
         if (len(c.autoSessionTicketKeys) == 0 || c.time().Sub(c.autoSessionTicketKeys[0].created) >= ticketKeyRotation) {
             array<byte> newKey = new(32);
@@ -973,7 +979,7 @@ internal static slice<ticketKey> ticketKeys(this ж<Config> Ꮡc, ж<Config> Ꮡ
         return c.autoSessionTicketKeys;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd3) Ꮡc.of(Config.Ꮡmutex).Unlock(); if (ᒐd2) Ꮡc.of(Config.Ꮡmutex).RLock(); if (ᒐd1) Ꮡc.of(Config.Ꮡmutex).RUnlock(); ᒐ.Run(); }
 }
 
 // SetSessionTicketKeys updates the session ticket keys for a server.
