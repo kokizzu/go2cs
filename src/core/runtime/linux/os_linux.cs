@@ -63,12 +63,12 @@ internal static void futexsleep(ж<uint32> Ꮡaddr, uint32 val, int64 ns) {
     // here, and so can we: as it says a few lines up,
     // spurious wakeups are allowed.
     if (ns < 0) {
-        futex(new @unsafe.Pointer(Ꮡaddr), _FUTEX_WAIT_PRIVATE, val, nil, nil, 0);
+        futex(@unsafe.Pointer.FromPinnedBox(Ꮡaddr), _FUTEX_WAIT_PRIVATE, val, nil, nil, 0);
         return;
     }
     ref var ts = ref heap(new timespec(), out var Ꮡts);
     ts.setNsec(ns);
-    futex(new @unsafe.Pointer(Ꮡaddr), _FUTEX_WAIT_PRIVATE, val, new @unsafe.Pointer(Ꮡts), nil, 0);
+    futex(@unsafe.Pointer.FromPinnedBox(Ꮡaddr), _FUTEX_WAIT_PRIVATE, val, @unsafe.Pointer.FromPinnedBox(Ꮡts), nil, 0);
 }
 
 // If any procs are sleeping on addr, wake up at most cnt.
@@ -77,7 +77,7 @@ internal static void futexsleep(ж<uint32> Ꮡaddr, uint32 val, int64 ns) {
 internal static void futexwakeup(ж<uint32> Ꮡaddr, uint32 cnt) {
     ref var addr = ref Ꮡaddr.DerefOrNull();
 
-    var ret = futex(new @unsafe.Pointer(Ꮡaddr), _FUTEX_WAKE_PRIVATE, cnt, nil, nil, 0);
+    var ret = futex(@unsafe.Pointer.FromPinnedBox(Ꮡaddr), _FUTEX_WAKE_PRIVATE, cnt, nil, nil, 0);
     if (ret >= 0) {
         return;
     }
@@ -198,7 +198,7 @@ internal static void newosproc(ж<m> Ꮡmp) {
     ref var oset = ref heap(new sigset(), out var Ꮡoset);
     sigprocmask(_SIG_SETMASK, Ꮡsigset_all, Ꮡoset);
     var ret = retryOnEAGAIN(() => {
-        var r = clone(cloneFlags, stk, new @unsafe.Pointer(Ꮡmp), new @unsafe.Pointer(Ꮡmp.Value.g0), (@unsafe.Pointer)abi.FuncPCABI0(mstart));
+        var r = clone(cloneFlags, stk, @unsafe.Pointer.FromPinnedBox(Ꮡmp), @unsafe.Pointer.FromPinnedBox(Ꮡmp.Value.g0), (@unsafe.Pointer)abi.FuncPCABI0(mstart));
         // clone returns positive TID, negative errno.
         // We don't care about the TID.
         if (r >= 0) {
@@ -262,7 +262,7 @@ internal static void sysargs(int32 argc, ж<ж<byte>> Ꮡargv) {
     // skip NULL separator
     n++;
     // now argv+n is auxv
-    var auxvp = (ж<array<uintptr>>)(uintptr)(add(new @unsafe.Pointer(Ꮡargv), (uintptr)n * (uintptr)goarch.PtrSize));
+    var auxvp = (ж<array<uintptr>>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(Ꮡargv), (uintptr)n * (uintptr)goarch.PtrSize));
     {
         nint pairsΔ1 = sysauxv((~auxvp)[..]); if (pairsΔ1 != 0) {
             auxv = (~auxvp).slice(-1, pairsΔ1 * 2, pairsΔ1 * 2);
@@ -345,7 +345,7 @@ internal static uintptr getHugePageSize() {
     if (fd < 0) {
         return 0;
     }
-    @unsafe.Pointer ptr = (uintptr)noescape(new @unsafe.Pointer(Ꮡnumbuf.at<byte>(0)));
+    @unsafe.Pointer ptr = (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡnumbuf.at<byte>(0)));
     var n = read(fd, ptr, (int32)len(numbuf));
     closefd(fd);
     if (n <= 0) {
@@ -375,7 +375,7 @@ internal static ref slice<byte> urandom_dev => ref Ꮡurandom_dev.ValueSlot;
 internal static nint readRandom(slice<byte> r) {
     var fd = open(Ꮡ(urandom_dev, 0), 0, /* O_RDONLY */
  0);
-    var n = read(fd, new @unsafe.Pointer(Ꮡ(r, 0)), (int32)len(r));
+    var n = read(fd, @unsafe.Pointer.FromPinnedBox(Ꮡ(r, 0)), (int32)len(r));
     closefd(fd);
     return (nint)n;
 }
@@ -921,7 +921,9 @@ internal static UntypedInt _SYS_SECCOMP => 1;
 
 //go:nosplit
 internal static (int32 ret, int32 errno) mprotect(@unsafe.Pointer addr, uintptr n, int32 prot) {
-    var (r, _, err) = syscall.Syscall6(syscall.SYS_MPROTECT, (uintptr)addr, n, (uintptr)prot, 0, 0, 0);
+    var ᴋ0 = addr;
+        var (r, _, err) = syscall.Syscall6(syscall.SYS_MPROTECT, (uintptr)ᴋ0, n, (uintptr)prot, 0, 0, 0);
+    System.GC.KeepAlive(ᴋ0);
     return ((int32)r, (int32)err);
 }
 

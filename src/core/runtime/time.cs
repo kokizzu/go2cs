@@ -325,7 +325,7 @@ internal static ж<timeTimer> newTimer(int64 when, int64 period, Action<any, uin
     t.of(timeTimer.Ꮡtimer).init(default!, default!);
     t.of(timeTimer.Ꮡtimer).trace(newˢ);
     if (raceenabled) {
-        racerelease(new @unsafe.Pointer(t.of(timeTimer.Ꮡtimer)));
+        racerelease(@unsafe.Pointer.FromPinnedBox(t.of(timeTimer.Ꮡtimer)));
     }
     if (Ꮡc != nil) {
         lockInit(ref (t.of(timeTimer.ᏑsendLock)).DerefOrNull(), lockRankTimerSend);
@@ -355,7 +355,7 @@ internal static bool stopTimer(ж<timeTimer> Ꮡt) {
 //go:linkname resetTimer time.resetTimer
 internal static bool resetTimer(ж<timeTimer> Ꮡt, int64 when, int64 period) {
     if (raceenabled) {
-        racerelease(new @unsafe.Pointer(Ꮡt.of(timeTimer.Ꮡtimer)));
+        racerelease(@unsafe.Pointer.FromPinnedBox(Ꮡt.of(timeTimer.Ꮡtimer)));
     }
     return Ꮡt.of(timeTimer.Ꮡtimer).reset(when, period);
 }

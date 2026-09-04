@@ -75,7 +75,7 @@ internal static ΔValue makeMethodValue(@string op, ΔValue v) {
     // The panic would still happen during the call if we omit this,
     // but we want Interface() and other operations to fail early.
     methodReceiver(op, (~fv).rcvr, (~fv).method);
-    return new ΔValue(ftyp.of(funcType.ᏑType).Common(), new @unsafe.Pointer(fv), (flag)((flag)(v.flag & flagRO) | ((flag)(uintptr)(nuint)Func)));
+    return new ΔValue(ftyp.of(funcType.ᏑType).Common(), @unsafe.Pointer.FromPinnedBox(fv), (flag)((flag)(v.flag & flagRO) | ((flag)(uintptr)(nuint)Func)));
 }
 
 internal static uintptr methodValueCallCodePtr() {

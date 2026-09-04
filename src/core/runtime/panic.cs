@@ -465,7 +465,7 @@ internal static readonly @string deferAfterRangeFuncˢ = "defer after range func
 internal static void deferprocat(Action fn, any frame) {
     var head = frame._<ж<atomic.Pointer<_defer>>>();
     if (raceenabled) {
-        racewritepc(new @unsafe.Pointer(head), getcallerpc(), abi.FuncPCABIInternal(deferprocat));
+        racewritepc(@unsafe.Pointer.FromPinnedBox(head), getcallerpc(), abi.FuncPCABIInternal(deferprocat));
     }
     var d1 = newdefer();
     d1.Value.fn = fn;
@@ -490,7 +490,7 @@ internal static void deferconvert(ж<_defer> Ꮡd0) {
 
     var head = d0.head;
     if (raceenabled) {
-        racereadpc(new @unsafe.Pointer(head), getcallerpc(), abi.FuncPCABIInternal(deferconvert));
+        racereadpc(@unsafe.Pointer.FromPinnedBox(head), getcallerpc(), abi.FuncPCABIInternal(deferconvert));
     }
     var tail = d0.link;
     d0.rangefunc = false;
@@ -1189,7 +1189,7 @@ internal static void recovery(ж<g> Ꮡgp) {
         // If we're returning to deferreturn and there are more open-coded
         // defers for it to call, save enough state for it to be able to
         // pick up where p0 left off.
-        gp.param = new @unsafe.Pointer(Ꮡ(new savedOpenDeferState(
+        gp.param = @unsafe.Pointer.FromPinnedBox(Ꮡ(new savedOpenDeferState(
             retpc: (~p0).retpc, // We need to save deferBitsPtr and slotsPtr too, but those are
  // stack pointers. To avoid issues around heap objects pointing
  // to the stack, save them as offsets from SP.

@@ -79,7 +79,7 @@ public static Pointer<T> Make<T>(ж<T> Ꮡptr) {
     Ꮡptr = abi.Escape(Ꮡptr); ptr = ref Ꮡptr.DerefOrNull();
     @unsafe.Pointer u = default!;
     if (Ꮡptr != nil) {
-        u = (uintptr)runtime_registerWeakPointer(new @unsafe.Pointer(Ꮡptr));
+        u = (uintptr)runtime_registerWeakPointer(@unsafe.Pointer.FromPinnedBox(Ꮡptr));
     }
     Δruntime.KeepAlive(Ꮡptr.OrTypedNil());
     return new Pointer<T>(u.Value);

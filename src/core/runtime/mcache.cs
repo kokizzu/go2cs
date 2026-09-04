@@ -108,7 +108,7 @@ internal static void freemcache(ж<mcache> Ꮡc) {
         // a race where the workbuf is double-freed.
         // gcworkbuffree(c.gcworkbuf)
         @lock(Ꮡmheap_.of(mheap.Ꮡlock));
-        Ꮡmheap_.of(mheap.Ꮡcachealloc).free(new @unsafe.Pointer(Ꮡc));
+        Ꮡmheap_.of(mheap.Ꮡcachealloc).free(@unsafe.Pointer.FromPinnedBox(Ꮡc));
         unlock(Ꮡmheap_.of(mheap.Ꮡlock));
     });
 }

@@ -122,7 +122,7 @@ public static abiꓸKind Struct => /* abi.Struct */ 25;
 }
 
 internal static ж<byte> data(this Δname n, nint off, @string whySafe) {
-    return (ж<byte>)(uintptr)(add(new @unsafe.Pointer(n.bytes), (uintptr)off, whySafe));
+    return (ж<byte>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(n.bytes), (uintptr)off, whySafe));
 }
 
 internal static bool isExported(this Δname n) {
@@ -190,8 +190,8 @@ internal static @string pkgPath(abiꓸName n) {
     ref var nameOff = ref heap(new int32(), out var ᏑnameOff);
     // Note that this field may not be aligned in memory,
     // so we cannot use a direct int32 assignment here.
-    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~array<byte>.AliasPointer(n.DataChecked(off, nameOffsetFieldˢ), 4))[..]);
-    var pkgPathName = new Δname((ж<byte>)(uintptr)(resolveTypeOff(new @unsafe.Pointer(n.Bytes), nameOff)));
+    copy((~(ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(ᏑnameOff)))[..], (~array<byte>.AliasPointer(n.DataChecked(off, nameOffsetFieldˢ), 4))[..]);
+    var pkgPathName = new Δname((ж<byte>)(uintptr)(resolveTypeOff(@unsafe.Pointer.FromPinnedBox(n.Bytes), nameOff)));
     return pkgPathName.name();
 }
 
@@ -215,11 +215,11 @@ internal static partial @unsafe.Pointer resolveNameOff(@unsafe.Pointer ptrInModu
 internal static partial @unsafe.Pointer resolveTypeOff(@unsafe.Pointer rtype, int32 off);
 
 internal static abiꓸName nameOff(this rtype t, nameOff off) {
-    return new abiꓸName(Bytes: (ж<byte>)(uintptr)(resolveNameOff(new @unsafe.Pointer(t.Type), (int32)off)));
+    return new abiꓸName(Bytes: (ж<byte>)(uintptr)(resolveNameOff(@unsafe.Pointer.FromPinnedBox(t.Type), (int32)off)));
 }
 
 internal static ж<abi.Type> typeOff(this rtype t, typeOff off) {
-    return (ж<abi.Type>)(uintptr)(resolveTypeOff(new @unsafe.Pointer(t.Type), (int32)off));
+    return (ж<abi.Type>)(uintptr)(resolveTypeOff(@unsafe.Pointer.FromPinnedBox(t.Type), (int32)off));
 }
 
 internal static ж<uncommonType> uncommon(this rtype t) {

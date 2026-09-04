@@ -318,7 +318,7 @@ internal static ж<dlogger> s(this ж<dlogger> Ꮡl, @string x) {
         // in this (potentially) nowritebarrier context.
         ref var b = ref heap<slice<byte>>(out var Ꮡb);
         var bb = Ꮡb.Reinterpret<slice<byte>, Δsliceᴛ>();
-        bb.Value.Δarray = new @unsafe.Pointer(strData);
+        bb.Value.Δarray = @unsafe.Pointer.FromPinnedBox(strData);
         (bb.Value.len, bb.Value.cap) = (len(x), len(x));
         if (len(b) > debugLogStringLimit) {
             b = b[..(int)(debugLogStringLimit)];

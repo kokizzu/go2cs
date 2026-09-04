@@ -54,7 +54,7 @@ internal static bool netpollIsPollDescriptor(uintptr fd) {
 internal static uintptr netpollopen(uintptr fd, ж<pollDesc> Ꮡpd) {
     ref var ev = ref heap(new syscall.EpollEvent(), out var Ꮡev);
     ev.Events = (uint32)((UntypedInt)((UntypedInt)(syscall.EPOLLIN | syscall.EPOLLOUT) | syscall.EPOLLRDHUP) | (uint32)syscall.EPOLLET);
-    var tp = taggedPointerPack(new @unsafe.Pointer(Ꮡpd), Ꮡpd.of(pollDesc.Ꮡfdseq).Load());
+    var tp = taggedPointerPack(@unsafe.Pointer.FromPinnedBox(Ꮡpd), Ꮡpd.of(pollDesc.Ꮡfdseq).Load());
     (Ꮡev.of(syscall.EpollEvent.ᏑData).Reinterpret<array<byte>, taggedPointer>()).Value = tp;
     return syscall.EpollCtl(epfd, syscall.EPOLL_CTL_ADD, (int32)fd, Ꮡev);
 }
@@ -84,7 +84,7 @@ internal static void netpollBreak() {
     one = 1;
     var oneSize = (int32)/* unsafe.Sizeof(one) */ (uintptr)8;
     while (ᐧ) {
-        var n = write(netpollEventFd, (uintptr)noescape(new @unsafe.Pointer(Ꮡone)), oneSize);
+        var n = write(netpollEventFd, (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡone)), oneSize);
         if (n == oneSize) {
             break;
         }
@@ -164,7 +164,7 @@ retry:
                 // Since EFD_SEMAPHORE was not specified,
                 // the eventfd counter will be reset to 0.
                 ref var one = ref heap(new uint64(), out var Ꮡone);
-                read((int32)netpollEventFd, (uintptr)noescape(new @unsafe.Pointer(Ꮡone)), (int32)/* unsafe.Sizeof(one) */ (uintptr)8);
+                read((int32)netpollEventFd, (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡone)), (int32)/* unsafe.Sizeof(one) */ (uintptr)8);
                 ᏑnetpollWakeSig.Store(0);
             }
             continue;

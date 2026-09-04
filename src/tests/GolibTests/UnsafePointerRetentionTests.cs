@@ -26,6 +26,13 @@ public class UnsafePointerRetentionTests
 
     // The mint the converter emits for `unsafe.Pointer(&x)` — one place, so the guard tracks the
     // emission form the corpus actually uses.
+    //
+    // The corpus has a SECOND door for the same Go construct, and this helper takes the one whose
+    // property is under test here: FromBox retains its box (which is what StoreThrough/LoadThrough
+    // recover through, the whole subject of this file) and takes its address inside a `fixed`, so the
+    // number is transient. Where the operand reaches the emission as a bare box the converter mints
+    // through `FromPinnedBox` instead, which retains AND takes the address from the pinning
+    // conversion — see PointerMintRetentionTests, whose subject is the pin rather than the recovery.
     private static @unsafe.Pointer Mint<T>(ж<T> box)
     {
         return @unsafe.Pointer.FromBox(box);

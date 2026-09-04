@@ -1232,7 +1232,7 @@ internal static void gcBgMarkWorker(channel<EmptyStruct> ready) {
             // Note that at this point, the G may immediately be
             // rescheduled and may be running.
             return true;
-        }, new @unsafe.Pointer(node), waitReasonGCWorkerIdle, traceBlockSystemGoroutine, 0);
+        }, @unsafe.Pointer.FromPinnedBox(node), waitReasonGCWorkerIdle, traceBlockSystemGoroutine, 0);
         // Preemption must not occur here, or another G might see
         // p.gcMarkWorkerMode.
         // Disable preemption so we can use the gcw. If the
@@ -1725,7 +1725,7 @@ internal static uint64 /*mask*/ gcTestIsReachable(params ꓸꓸꓸunsafeꓸPoint
             mask |= (uint64)(((uint64)1).Lsh((uint64)(i)));
         }
         @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
-        Ꮡmheap_.of(mheap.ᏑspecialReachableAlloc).free(new @unsafe.Pointer(s));
+        Ꮡmheap_.of(mheap.ᏑspecialReachableAlloc).free(@unsafe.Pointer.FromPinnedBox(s));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
     return mask;

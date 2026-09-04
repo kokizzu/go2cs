@@ -146,7 +146,7 @@ internal static void sigNoteSetup(ж<note> _) {
 // sigNoteWakeup wakes up a thread sleeping on a note created by sigNoteSetup.
 internal static void sigNoteWakeup(ж<note> _) {
     ref var b = ref heap(new byte(), out var Ꮡb);
-    write((uintptr)sigNoteWrite, new @unsafe.Pointer(Ꮡb), 1);
+    write((uintptr)sigNoteWrite, @unsafe.Pointer.FromPinnedBox(Ꮡb), 1);
 }
 
 // sigNoteSleep waits for a note created by sigNoteSetup to be woken.
@@ -154,7 +154,7 @@ internal static void sigNoteSleep(ж<note> _) {
     while (ᐧ) {
         ref var b = ref heap(new byte(), out var Ꮡb);
         entersyscallblock();
-        var n = read(sigNoteRead, new @unsafe.Pointer(Ꮡb), 1);
+        var n = read(sigNoteRead, @unsafe.Pointer.FromPinnedBox(Ꮡb), 1);
         exitsyscall();
         if (n != (int32)(-_EINTR)) {
             return;
@@ -226,7 +226,7 @@ internal static ref slice<byte> urandom_dev => ref Ꮡurandom_dev.ValueSlot;
 internal static nint readRandom(slice<byte> r) {
     var fd = open(Ꮡ(urandom_dev, 0), 0, /* O_RDONLY */
  0);
-    var n = read(fd, new @unsafe.Pointer(Ꮡ(r, 0)), (int32)len(r));
+    var n = read(fd, @unsafe.Pointer.FromPinnedBox(Ꮡ(r, 0)), (int32)len(r));
     closefd(fd);
     return (nint)n;
 }
@@ -269,7 +269,7 @@ internal static void newosproc(ж<m> Ꮡmp) {
     // setup and then calls mstart.
     ref var oset = ref heap(new sigset(), out var Ꮡoset);
     sigprocmask(_SIG_SETMASK, Ꮡsigset_all, Ꮡoset);
-    err = retryOnEAGAIN(() => pthread_create(Ꮡattr, abi.FuncPCABI0(mstart_stub), new @unsafe.Pointer(Ꮡmp)));
+    err = retryOnEAGAIN(() => pthread_create(Ꮡattr, abi.FuncPCABI0(mstart_stub), @unsafe.Pointer.FromPinnedBox(Ꮡmp)));
     sigprocmask(_SIG_SETMASK, Ꮡoset, nil);
     if (err != 0) {
         writeErrStr(failthreadcreate);

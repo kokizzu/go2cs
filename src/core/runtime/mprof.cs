@@ -294,7 +294,7 @@ internal static ж<bucket> stkbucket(bucketType typ, uintptr size, slice<uintptr
             if (bh == nil) {
                 @throw(runtimeCannotAllocateˢ);
             }
-            Ꮡbuckhash.StoreNoWB(new @unsafe.Pointer(bh));
+            Ꮡbuckhash.StoreNoWB(@unsafe.Pointer.FromPinnedBox(bh));
         }
         unlock(ᏑprofInsertLock);
     }
@@ -346,8 +346,8 @@ internal static ж<bucket> stkbucket(bucketType typ, uintptr size, slice<uintptr
     }
     b.Value.next = (ж<bucket>)(uintptr)(bh.at<atomic.UnsafePointer>(i).Load());
     b.Value.allnext = (ж<bucket>)(uintptr)(allnext.Load());
-    bh.at<atomic.UnsafePointer>(i).StoreNoWB(new @unsafe.Pointer(b));
-    allnext.StoreNoWB(new @unsafe.Pointer(b));
+    bh.at<atomic.UnsafePointer>(i).StoreNoWB(@unsafe.Pointer.FromPinnedBox(b));
+    allnext.StoreNoWB(@unsafe.Pointer.FromPinnedBox(b));
     unlock(ᏑprofInsertLock);
     return b;
 }

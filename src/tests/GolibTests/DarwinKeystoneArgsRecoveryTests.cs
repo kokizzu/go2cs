@@ -18,11 +18,11 @@ namespace GolibTests;
 // Go's darwin libc trampolines are called as `libcCall(FuncPCABI0(x_trampoline), unsafe.Pointer(&args))`
 // where `args` is a per-call-site struct the trampoline's assembly unpacks BY OFFSET. The converted
 // corpus lifts that struct as a real C# type (runtime/darwin/sys_darwin.cs: fcntl_args, nanotime1_r,
-// the syscall_*_args family) and passes it as `new @unsafe.Pointer(Ꮡargs)` — a NUMBER, with the type
+// the syscall_*_args family) and passes it as `@unsafe.Pointer.FromPinnedBox(Ꮡargs)` — a NUMBER, with the type
 // erased. A displaced managed libcCall therefore has to get back from that number to the lifted type
 // to know the call's argument layout.
 //
-// §7.2 says it can, through machinery that already exists: `new @unsafe.Pointer(Ꮡargs)` binds the
+// §7.2 says it can, through machinery that already exists: the mint binds the
 // (uintptr) constructor through ж<T>'s implicit uintptr operator, whose value-type path pins the box
 // and REGISTERS it (ManagedPointerTokens.RegisterPinned inside the fixed, ж.cs:662-669), and
 // ManagedPointerTokens.Resolve is public. That was written as a CODE READ with this probe named as
@@ -30,7 +30,7 @@ namespace GolibTests;
 // (NativeAddressStabilityTests.PinnedConversionRegistersItsProvenance, PointerProvenanceTests
 // .StructSlotAddressResolvesToItsBox); what those do not cover, and this file does, is
 //
-//   1. the EXACT emission form — the box travels through `new @unsafe.Pointer(Ꮡargs)`, and the
+//   1. the EXACT emission form — the box travels through `@unsafe.Pointer.FromPinnedBox(Ꮡargs)`, and the
 //      dispatcher sees only the Pointer;
 //   2. the step after recovery — the layout read off the recovered type by reflection, which is
 //      what the dispatcher hands to the native call;
@@ -49,6 +49,14 @@ namespace GolibTests;
 //
 // Reference-free by construction, the way the corpus's fcntl_args is:
 //     [GoType("dyn")] internal partial struct fcntl_args { internal int32 fd, cmd, arg; internal int32 ret, errno; }
+// ⚠ The emission form this file mirrors CHANGED on 2026-09-04 and the prose above is updated with it.
+// It was `new @unsafe.Pointer(Ꮡargs)`, which binds the implicit ж→uintptr conversion into
+// Pointer(uintptr): that conversion pins the box and registers the provenance record — which is what
+// recovery reads — but the resulting Pointer retained NOTHING, so the pinned box was collectible the
+// instant the mint returned and the weak provenance entry could be emptied under a live call. The
+// converter now mints through `@unsafe.Pointer.FromPinnedBox`, which takes the address from the same
+// conversion (so every arm below is unchanged in what it measures) and retains the box, which makes
+// this recovery strictly more robust: the entry cannot be collected while the Pointer is reachable.
 [TestClass]
 public class DarwinKeystoneArgsRecoveryTests
 {
@@ -81,10 +89,10 @@ public class DarwinKeystoneArgsRecoveryTests
 
     // The emission form, in one place so the guard tracks what the corpus actually does:
     //     ref var args = ref heap<fcntl_args>(out var Ꮡargs);
-    //     libcCall(…, new @unsafe.Pointer(Ꮡargs));
+    //     libcCall(…, @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     private static @unsafe.Pointer EmitLibcCallArg<T>(ж<T> Ꮡargs)
     {
-        return new @unsafe.Pointer(Ꮡargs);
+        return @unsafe.Pointer.FromPinnedBox(Ꮡargs);
     }
 
     // What the displaced libcCall does with the Pointer it is handed: the number, resolved.

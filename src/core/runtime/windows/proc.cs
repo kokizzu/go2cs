@@ -417,7 +417,7 @@ internal static void gopark(Func<ж<g>, @unsafe.Pointer, bool> unlockf, @unsafe.
 // Puts the current goroutine into a waiting state and unlocks the lock.
 // The goroutine can be made runnable again by calling goready(gp).
 internal static void goparkunlock(ж<mutex> Ꮡlock, waitReason reason, traceBlockReason traceReason, nint traceskip) {
-    gopark(parkunlock_c, new @unsafe.Pointer(Ꮡlock), reason, traceReason, traceskip);
+    gopark(parkunlock_c, @unsafe.Pointer.FromPinnedBox(Ꮡlock), reason, traceReason, traceskip);
 }
 
 // goready should be an internal detail,
@@ -697,7 +697,7 @@ internal static (ж<ж<g>>, uintptr) atomicAllG() {
 
 // atomicAllGIndex returns ptr[i] with the allgptr returned from atomicAllG.
 internal static ж<g> atomicAllGIndex(ж<ж<g>> Ꮡptr, uintptr i) {
-    return ~(ж<ж<g>>)(uintptr)(add(new @unsafe.Pointer(Ꮡptr), i * (uintptr)goarch.PtrSize));
+    return ~(ж<ж<g>>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(Ꮡptr), i * (uintptr)goarch.PtrSize));
 }
 
 // forEachG calls fn on every G from allgs.
@@ -955,7 +955,7 @@ internal static void mcommoninit(ж<m> Ꮡmp, int64 id) {
     mp.alllink = allm;
     // NumCgoCall() and others iterate over allm w/o schedlock,
     // so we need to publish it safely.
-    atomicstorep(@unsafe.Pointer.FromBox(Ꮡallm), new @unsafe.Pointer(Ꮡmp));
+    atomicstorep(@unsafe.Pointer.FromBox(Ꮡallm), @unsafe.Pointer.FromPinnedBox(Ꮡmp));
     unlock(Ꮡsched.of(schedt.Ꮡlock));
     // Allocate memory to hold a cgo traceback if the cgo call crashes.
     if (iscgo || GOOS == "solaris"u8 || GOOS == "illumos"u8 || GOOS == "windows"u8) {
@@ -2622,7 +2622,7 @@ internal static void cgoBindM() {
         fatal(theCurrentGIsNotG0ˢ);
     }
     if (_cgo_bindm != nil) {
-        asmcgocall(_cgo_bindm, new @unsafe.Pointer(g));
+        asmcgocall(_cgo_bindm, @unsafe.Pointer.FromPinnedBox(g));
     }
 }
 
@@ -2831,13 +2831,13 @@ internal static void newm1(ж<m> Ꮡmp) {
         ts.tls = Ꮡmp.at(m.Ꮡtls, 0).Reinterpret<uintptr, uint64>();
         ts.fn = (@unsafe.Pointer)abi.FuncPCABI0(mstart);
         if (msanenabled) {
-            msanwrite(new @unsafe.Pointer(Ꮡts), /* unsafe.Sizeof(ts) */ (uintptr)24);
+            msanwrite(@unsafe.Pointer.FromPinnedBox(Ꮡts), /* unsafe.Sizeof(ts) */ (uintptr)24);
         }
         if (asanenabled) {
-            asanwrite(new @unsafe.Pointer(Ꮡts), /* unsafe.Sizeof(ts) */ (uintptr)24);
+            asanwrite(@unsafe.Pointer.FromPinnedBox(Ꮡts), /* unsafe.Sizeof(ts) */ (uintptr)24);
         }
         ᏑexecLock.rlock(); // Prevent process clone.
-        asmcgocall(_cgo_thread_start, new @unsafe.Pointer(Ꮡts));
+        asmcgocall(_cgo_thread_start, @unsafe.Pointer.FromPinnedBox(Ꮡts));
         ᏑexecLock.runlock();
         return;
     }
@@ -5075,7 +5075,7 @@ internal static ж<g> newproc1(ж<funcval> Ꮡfn, ж<g> Ꮡcallergp, uintptr cal
         // caller's FP
         ((ж<uintptr>)(uintptr)((@unsafe.Pointer)(sp - (uintptr)goarch.PtrSize))).Value = 0;
     }
-    memclrNoHeapPointers(new @unsafe.Pointer(newg.of(g.Ꮡsched)), /* unsafe.Sizeof(newg.sched) */ (uintptr)56);
+    memclrNoHeapPointers(@unsafe.Pointer.FromPinnedBox(newg.of(g.Ꮡsched)), /* unsafe.Sizeof(newg.sched) */ (uintptr)56);
     newg.Value.sched.sp = sp;
     newg.Value.stktopsp = sp;
     newg.Value.sched.pc = abi.FuncPCABI0(goexit) + (uintptr)sys.PCQuantum; // +PCQuantum so that previous instruction is in same function
@@ -5643,7 +5643,7 @@ internal static void destroy(this ж<Δp> Ꮡpp) {
     systemstack(() => {
         for (nint i = 0; i < Ꮡpp.Value.mspancache.len; i++) {
             // Safe to call since the world is stopped.
-            Ꮡmheap_.of(mheap.Ꮡspanalloc).free(new @unsafe.Pointer(Ꮡpp.Value.mspancache.buf[i]));
+            Ꮡmheap_.of(mheap.Ꮡspanalloc).free(@unsafe.Pointer.FromPinnedBox(Ꮡpp.Value.mspancache.buf[i]));
         }
         Ꮡpp.Value.mspancache.len = 0;
         @lock(Ꮡmheap_.of(mheap.Ꮡlock));
@@ -5739,7 +5739,7 @@ internal static ж<Δp> procresize(int32 nprocs) {
             pp = @new<Δp>();
         }
         pp.init(i);
-        atomicstorep(@unsafe.Pointer.FromBox(Ꮡ(allp, i)), new @unsafe.Pointer(pp));
+        atomicstorep(@unsafe.Pointer.FromBox(Ꮡ(allp, i)), @unsafe.Pointer.FromPinnedBox(pp));
     }
     var gp = getg();
     if ((~(~gp).m).p != 0 && (~(~(~gp).m).p.ptr()).id < nprocs){
@@ -7322,7 +7322,7 @@ internal static void doInit1(ж<initTask> Ꮡt) {
             @throw(inittaskWithNoFunctionsˢ);
         }
         ref var firstFunc = ref heap<@unsafe.Pointer>(out var ᏑfirstFunc);
-        firstFunc = (uintptr)add(new @unsafe.Pointer(Ꮡt), 8);
+        firstFunc = (uintptr)add(@unsafe.Pointer.FromPinnedBox(Ꮡt), 8);
         for (var i = (uint32)0; i < t.nfns; i++) {
             ref var Δp = ref heap<@unsafe.Pointer>(out var Ꮡp);
             Δp = (uintptr)add(firstFunc, (uintptr)i * (uintptr)goarch.PtrSize);

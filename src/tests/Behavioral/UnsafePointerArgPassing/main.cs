@@ -20,7 +20,7 @@ internal static @unsafe.Pointer add(@unsafe.Pointer p, uintptr x) {
 internal static void Main() {
     ref var @base = ref heap(new int64(), out var Ꮡbase);
     @base = 100;
-    @unsafe.Pointer p = new @unsafe.Pointer(Ꮡbase);
+    @unsafe.Pointer p = @unsafe.Pointer.FromPinnedBox(Ꮡbase);
     @unsafe.Pointer q = (uintptr)add(p, 16);
     @unsafe.Pointer r = (uintptr)add(p, 0);
     fmt.Println((uintptr)q - (uintptr)p == 16);

@@ -34,7 +34,7 @@ internal static void cgoCheckPtrWrite(ж<@unsafe.Pointer> Ꮡdst, @unsafe.Pointe
     if (!cgoIsGoPointer(src)) {
         return;
     }
-    if (cgoIsGoPointer(new @unsafe.Pointer(Ꮡdst))) {
+    if (cgoIsGoPointer(@unsafe.Pointer.FromPinnedBox(Ꮡdst))) {
         return;
     }
     // If we are running on the system stack then dst might be an

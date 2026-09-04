@@ -35,7 +35,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscall(uintptr fn
     ref var args = ref heap<syscall_syscall_args>(out var Ꮡargs);
     args = new syscall_syscall_args(fn, a1, a2, a3, r1, r2, err);
     entersyscall();
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     exitsyscall();
     return (args.r1, args.r2, args.err);
 }
@@ -56,7 +56,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscallX(uintptr f
     ref var args = ref heap<syscall_syscallX_args>(out var Ꮡargs);
     args = new syscall_syscallX_args(fn, a1, a2, a3, r1, r2, err);
     entersyscall();
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscallX), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscallX), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     exitsyscall();
     return (args.r1, args.r2, args.err);
 }
@@ -88,7 +88,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscall6(uintptr f
     ref var args = ref heap<syscall_syscall6_args>(out var Ꮡargs);
     args = new syscall_syscall6_args(fn, a1, a2, a3, a4, a5, a6, r1, r2, err);
     entersyscall();
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall6), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall6), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     exitsyscall();
     return (args.r1, args.r2, args.err);
 }
@@ -130,7 +130,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscall6X(uintptr 
     ref var args = ref heap<syscall_syscall6X_args>(out var Ꮡargs);
     args = new syscall_syscall6X_args(fn, a1, a2, a3, a4, a5, a6, r1, r2, err);
     entersyscall();
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall6X), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall6X), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     exitsyscall();
     return (args.r1, args.r2, args.err);
 }
@@ -155,7 +155,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscallPtr(uintptr
     ref var args = ref heap<syscall_syscallPtr_args>(out var Ꮡargs);
     args = new syscall_syscallPtr_args(fn, a1, a2, a3, r1, r2, err);
     entersyscall();
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscallPtr), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscallPtr), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     exitsyscall();
     return (args.r1, args.r2, args.err);
 }
@@ -179,7 +179,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_rawSyscall(uintptr
 
     ref var args = ref heap<syscall_rawSyscall_args>(out var Ꮡargs);
     args = new syscall_rawSyscall_args(fn, a1, a2, a3, r1, r2, err);
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     return (args.r1, args.r2, args.err);
 }
 
@@ -200,7 +200,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_rawSyscall6(uintpt
 
     ref var args = ref heap<syscall_rawSyscall6_args>(out var Ꮡargs);
     args = new syscall_rawSyscall6_args(fn, a1, a2, a3, a4, a5, a6, r1, r2, err);
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall6), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall6), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     return (args.r1, args.r2, args.err);
 }
 
@@ -220,7 +220,7 @@ internal static uintptr /*r1*/ crypto_x509_syscall(uintptr fn, uintptr a1, uintp
     ref var args = ref heap<crypto_x509_syscall_args>(out var Ꮡargs);
     args = new crypto_x509_syscall_args(fn, a1, a2, a3, a4, a5, f1, r1);
     entersyscall();
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall_x509), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(syscall_x509), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     exitsyscall();
     return args.r1;
 }
@@ -285,7 +285,7 @@ internal static partial void pthread_create_trampoline();
 internal static void raise(uint32 sigʗp) {
     ref var sig = ref heap(sigʗp, out var Ꮡsig);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(raise_trampoline), new @unsafe.Pointer(Ꮡsig));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(raise_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡsig));
 }
 
 internal static partial void raise_trampoline();
@@ -372,7 +372,7 @@ internal static partial void osinit_hack_trampoline();
 internal static (@unsafe.Pointer, nint) mmap(@unsafe.Pointer addr, uintptr n, int32 prot, int32 flags, int32 fd, uint32 off) {
     ref var args = ref heap<mmap_args>(out var Ꮡargs);
     args = new mmap_args(addr.Value, n, prot, flags, fd, off, nil, 0);
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(mmap_trampoline), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(mmap_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     return (args.ret1, args.ret2);
 }
 
@@ -416,7 +416,7 @@ internal static partial void mlock_trampoline();
 internal static int32 read(int32 fdʗp, @unsafe.Pointer Δp, int32 n) {
     ref var fd = ref heap(fdʗp, out var Ꮡfd);
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(read_trampoline), new @unsafe.Pointer(Ꮡfd));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(read_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡfd));
     KeepAlive(Δp);
     return ret;
 }
@@ -427,7 +427,7 @@ internal static (int32 r, int32 w, int32 errno) pipe() {
     int32 errno = default!;
 
     ref var Δp = ref heap(new array<int32>(2), out var Ꮡp);
-    errno = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pipe_trampoline), (uintptr)noescape(new @unsafe.Pointer(Ꮡp)));
+    errno = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pipe_trampoline), (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡp)));
     return (Δp[0], Δp[1], errno);
 }
 
@@ -438,7 +438,7 @@ internal static partial void pipe_trampoline();
 internal static int32 closefd(int32 fdʗp) {
     ref var fd = ref heap(fdʗp, out var Ꮡfd);
 
-    return libcCall((@unsafe.Pointer)abi.FuncPCABI0(close_trampoline), new @unsafe.Pointer(Ꮡfd));
+    return libcCall((@unsafe.Pointer)abi.FuncPCABI0(close_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡfd));
 }
 
 internal static partial void close_trampoline();
@@ -451,7 +451,7 @@ internal static partial void close_trampoline();
 internal static void exit(int32 codeʗp) {
     ref var code = ref heap(codeʗp, out var Ꮡcode);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(exit_trampoline), new @unsafe.Pointer(Ꮡcode));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(exit_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡcode));
 }
 
 internal static partial void exit_trampoline();
@@ -461,7 +461,7 @@ internal static partial void exit_trampoline();
 internal static void usleep(uint32 usecʗp) {
     ref var usec = ref heap(usecʗp, out var Ꮡusec);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(usleep_trampoline), new @unsafe.Pointer(Ꮡusec));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(usleep_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡusec));
 }
 
 internal static partial void usleep_trampoline();
@@ -471,7 +471,7 @@ internal static partial void usleep_trampoline();
 internal static void usleep_no_g(uint32 usecʗp) {
     ref var usec = ref heap(usecʗp, out var Ꮡusec);
 
-    asmcgocall_no_g((@unsafe.Pointer)abi.FuncPCABI0(usleep_trampoline), new @unsafe.Pointer(Ꮡusec));
+    asmcgocall_no_g((@unsafe.Pointer)abi.FuncPCABI0(usleep_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡusec));
 }
 
 //go:nosplit
@@ -516,7 +516,7 @@ internal static partial void nanotime_trampoline();
 //go:cgo_unsafe_args
 internal static (int64, int32) walltime() {
     ref var t = ref heap(new timespec(), out var Ꮡt);
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(walltime_trampoline), new @unsafe.Pointer(Ꮡt));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(walltime_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡt));
     return (t.tv_sec, (int32)t.tv_nsec);
 }
 
@@ -527,7 +527,7 @@ internal static partial void walltime_trampoline();
 internal static void sigaction(uint32 sigʗp, ж<usigactiont> Ꮡnew, ж<usigactiont> Ꮡold) {
     ref var sig = ref heap(sigʗp, out var Ꮡsig);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(sigaction_trampoline), new @unsafe.Pointer(Ꮡsig));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(sigaction_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡsig));
     KeepAlive(Ꮡnew.OrTypedNil());
     KeepAlive(Ꮡold.OrTypedNil());
 }
@@ -539,7 +539,7 @@ internal static partial void sigaction_trampoline();
 internal static void sigprocmask(uint32 howʗp, ж<sigset> Ꮡnew, ж<sigset> Ꮡold) {
     ref var how = ref heap(howʗp, out var Ꮡhow);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(sigprocmask_trampoline), new @unsafe.Pointer(Ꮡhow));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(sigprocmask_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡhow));
     KeepAlive(Ꮡnew.OrTypedNil());
     KeepAlive(Ꮡold.OrTypedNil());
 }
@@ -570,7 +570,7 @@ internal static partial void sigaltstack_trampoline();
 internal static void raiseproc(uint32 sigʗp) {
     ref var sig = ref heap(sigʗp, out var Ꮡsig);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(raiseproc_trampoline), new @unsafe.Pointer(Ꮡsig));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(raiseproc_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡsig));
 }
 
 internal static partial void raiseproc_trampoline();
@@ -580,7 +580,7 @@ internal static partial void raiseproc_trampoline();
 internal static void setitimer(int32 modeʗp, ж<itimerval> Ꮡnew, ж<itimerval> Ꮡold) {
     ref var mode = ref heap(modeʗp, out var Ꮡmode);
 
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(setitimer_trampoline), new @unsafe.Pointer(Ꮡmode));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(setitimer_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡmode));
     KeepAlive(Ꮡnew.OrTypedNil());
     KeepAlive(Ꮡold.OrTypedNil());
 }
@@ -627,7 +627,7 @@ internal static partial void sysctlbyname_trampoline();
 public static (int32 ret, int32 errno) fcntl(int32 fd, int32 cmd, int32 arg) {
     ref var args = ref heap<fcntl_args>(out var Ꮡargs);
     args = new fcntl_args(fd, cmd, arg, 0, 0);
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(fcntl_trampoline), new @unsafe.Pointer(Ꮡargs));
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(fcntl_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
     return (args.ret, args.errno);
 }
 
@@ -647,7 +647,7 @@ internal static partial void kqueue_trampoline();
 internal static int32 kevent(int32 kqʗp, ж<keventt> Ꮡch, int32 nch, ж<keventt> Ꮡev, int32 nev, ж<timespec> Ꮡts) {
     ref var kq = ref heap(kqʗp, out var Ꮡkq);
 
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(kevent_trampoline), new @unsafe.Pointer(Ꮡkq));
+    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(kevent_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡkq));
     KeepAlive(Ꮡch.OrTypedNil());
     KeepAlive(Ꮡev.OrTypedNil());
     KeepAlive(Ꮡts.OrTypedNil());
@@ -804,7 +804,7 @@ internal static int32 mach_vm_region(ж<uint64> Ꮡaddress, ж<uint64> Ꮡregion
         count: Ꮡcount,
         object_name: Ꮡobject_name
     );
-    return libcCall((@unsafe.Pointer)abi.FuncPCABI0(mach_vm_region_trampoline), new @unsafe.Pointer(Ꮡargs));
+    return libcCall((@unsafe.Pointer)abi.FuncPCABI0(mach_vm_region_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
 }
 
 internal static partial void mach_vm_region_trampoline();
@@ -825,7 +825,7 @@ internal static int32 proc_regionfilename(nint pid, uint64 address, ж<byte> Ꮡ
         buf: Ꮡbuf,
         bufSize: buflen
     );
-    return libcCall((@unsafe.Pointer)abi.FuncPCABI0(proc_regionfilename_trampoline), new @unsafe.Pointer(Ꮡargs));
+    return libcCall((@unsafe.Pointer)abi.FuncPCABI0(proc_regionfilename_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
 }
 
 internal static partial void proc_regionfilename_trampoline();

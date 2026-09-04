@@ -31,23 +31,23 @@ private static readonly object c6UintptrOfParenPointerˢ = (@string)"C6 uintptr 
 }
 
 internal static void Main() {
-    @unsafe.Pointer p = new @unsafe.Pointer(@new<nint>());
+    @unsafe.Pointer p = @unsafe.Pointer.FromPinnedBox(@new<nint>());
     fmt.Println(a1ParenFreshAllocationˢ, p != nil);
     var n = @new<nint>();
     n.Value = 42;
-    @unsafe.Pointer q = new @unsafe.Pointer(n);
+    @unsafe.Pointer q = @unsafe.Pointer.FromPinnedBox(n);
     fmt.Println(a2ParenExistingPointerˢ, q != nil);
     fmt.Println(a3RoundTripsToTheSameˢ, ~(ж<nint>)(uintptr)(q));
     var table = new main_table[]{
-        new(new @unsafe.Pointer(@new<nint>()), false),
+        new(@unsafe.Pointer.FromPinnedBox(@new<nint>()), false),
         new((@unsafe.Pointer)default!, true)
     }.slice();
     foreach (var (i, row) in table) {
         fmt.Println(a4Rowˢ, i, isNilˢ, AreEqual(row.v, ((any)(@unsafe.Pointer)default!)), wantˢ, row.want);
     }
-    @unsafe.Pointer r = new @unsafe.Pointer(@new<nint>());
+    @unsafe.Pointer r = @unsafe.Pointer.FromPinnedBox(@new<nint>());
     fmt.Println(b1BareFreshAllocationNonˢ, r != nil);
-    @unsafe.Pointer s = new @unsafe.Pointer(n);
+    @unsafe.Pointer s = @unsafe.Pointer.FromPinnedBox(n);
     fmt.Println(b2BareExistingPointerˢ, ~(ж<nint>)(uintptr)(s));
     var c1 = ((Celsius)36.6D);
     var c2 = ((Celsius)36.6D);

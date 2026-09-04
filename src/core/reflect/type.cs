@@ -388,8 +388,8 @@ internal static @string pkgPath(abiꓸName n) {
     ref var nameOff = ref heap(new int32(), out var ᏑnameOff);
     // Note that this field may not be aligned in memory,
     // so we cannot use a direct int32 assignment here.
-    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~array<byte>.AliasPointer(n.DataChecked(off, nameOffsetFieldˢ), 4))[..]);
-    var pkgPathName = new abiꓸName(Bytes: (ж<byte>)(uintptr)(resolveTypeOff(new @unsafe.Pointer(n.Bytes), nameOff)));
+    copy((~(ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(ᏑnameOff)))[..], (~array<byte>.AliasPointer(n.DataChecked(off, nameOffsetFieldˢ), 4))[..]);
+    var pkgPathName = new abiꓸName(Bytes: (ж<byte>)(uintptr)(resolveTypeOff(@unsafe.Pointer.FromPinnedBox(n.Bytes), nameOff)));
     return pkgPathName.Name();
 }
 
@@ -508,13 +508,13 @@ internal static int32 addReflectOff(@unsafe.Pointer ptr) {
 // resolveReflectName adds a name to the reflection lookup map in the runtime.
 // It returns a new nameOff that can be used to refer to the pointer.
 internal static aNameOff resolveReflectName(abiꓸName n) {
-    return ((aNameOff)addReflectOff(new @unsafe.Pointer(n.Bytes)));
+    return ((aNameOff)addReflectOff(@unsafe.Pointer.FromPinnedBox(n.Bytes)));
 }
 
 // resolveReflectType adds a *rtype to the reflection lookup map in the runtime.
 // It returns a new typeOff that can be used to refer to the pointer.
 internal static aTypeOff resolveReflectType(ж<abi.Type> Ꮡt) {
-    return ((aTypeOff)addReflectOff(new @unsafe.Pointer(Ꮡt)));
+    return ((aTypeOff)addReflectOff(@unsafe.Pointer.FromPinnedBox(Ꮡt)));
 }
 
 // resolveReflectText adds a function pointer to the reflection lookup map in

@@ -123,7 +123,7 @@ public static unsafe (@string val, uint32 valtype, error err) GetStringValue(thi
     if (len(data) == 0) {
         return ("", typ, default!);
     }
-    var u = new slice<uint16>(new ReadOnlySpan<uint16>((uint16*)(uintptr)(new @unsafe.Pointer(Ꮡ(data, 0))), (int)(len(data) / 2)));
+    var u = new slice<uint16>(new ReadOnlySpan<uint16>((uint16*)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡ(data, 0))), (int)(len(data) / 2)));
     return (syscall.UTF16ToString(u), typ, default!);
 }
 
@@ -214,7 +214,7 @@ public static unsafe (slice<@string> val, uint32 valtype, error err) GetStringsV
     if (len(data) == 0) {
         return (default!, typ, default!);
     }
-    var p = new slice<uint16>(new ReadOnlySpan<uint16>((uint16*)(uintptr)(new @unsafe.Pointer(Ꮡ(data, 0))), (int)(len(data) / 2)));
+    var p = new slice<uint16>(new ReadOnlySpan<uint16>((uint16*)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡ(data, 0))), (int)(len(data) / 2)));
     if (len(p) == 0) {
         return (default!, typ, default!);
     }
@@ -293,7 +293,7 @@ internal static error setValue(this Key k, @string name, uint32 valtype, slice<b
 public static error SetDWordValue(this Key k, @string name, uint32 valueʗp) {
     ref var value = ref heap(valueʗp, out var Ꮡvalue);
 
-    return k.setValue(name, DWORD, (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡvalue)))[..]);
+    return k.setValue(name, DWORD, (~(ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡvalue)))[..]);
 }
 
 // SetQWordValue sets the data and type of a name value
@@ -301,7 +301,7 @@ public static error SetDWordValue(this Key k, @string name, uint32 valueʗp) {
 public static error SetQWordValue(this Key k, @string name, uint64 valueʗp) {
     ref var value = ref heap(valueʗp, out var Ꮡvalue);
 
-    return k.setValue(name, QWORD, (~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡvalue)))[..]);
+    return k.setValue(name, QWORD, (~(ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡvalue)))[..]);
 }
 
 internal static unsafe error setStringValue(this Key k, @string name, uint32 valtype, @string value) {
@@ -309,7 +309,7 @@ internal static unsafe error setStringValue(this Key k, @string name, uint32 val
     if (err != default!) {
         return err;
     }
-    var buf = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(Ꮡ(v, 0))), (int)(len(v) * 2)));
+    var buf = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡ(v, 0))), (int)(len(v) * 2)));
     return k.setValue(name, valtype, buf);
 }
 
@@ -339,7 +339,7 @@ public static unsafe error SetStringsValue(this Key k, @string name, slice<@stri
         ss += s + "\x00"u8;
     }
     var v = utf16.Encode(slice<rune>(ss + "\x00"));
-    var buf = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(new @unsafe.Pointer(Ꮡ(v, 0))), (int)(len(v) * 2)));
+    var buf = new slice<byte>(new ReadOnlySpan<byte>((byte*)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡ(v, 0))), (int)(len(v) * 2)));
     return k.setValue(name, MULTI_SZ, buf);
 }
 

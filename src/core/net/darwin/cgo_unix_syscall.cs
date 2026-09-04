@@ -49,7 +49,7 @@ internal static @unsafe.Pointer _C_malloc(uintptr n) {
     if (n <= 0) {
         n = 1;
     }
-    return new @unsafe.Pointer(Ꮡ(new slice<byte>((nint)(n)), 0));
+    return @unsafe.Pointer.FromPinnedBox(Ꮡ(new slice<byte>((nint)(n)), 0));
 }
 
 internal static ж<ж<_C_struct_sockaddr>> _C_ai_addr(ж<_C_struct_addrinfo> Ꮡai) {

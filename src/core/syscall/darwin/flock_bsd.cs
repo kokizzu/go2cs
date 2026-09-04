@@ -10,7 +10,7 @@ partial class syscall_package {
 
 // FcntlFlock performs a fcntl syscall for the [F_GETLK], [F_SETLK] or [F_SETLKW] command.
 public static error FcntlFlock(uintptr fd, nint cmd, ж<Flock_t> Ꮡlk) {
-    var (_, err) = fcntlPtr((nint)fd, cmd, new @unsafe.Pointer(Ꮡlk));
+    var (_, err) = fcntlPtr((nint)fd, cmd, @unsafe.Pointer.FromPinnedBox(Ꮡlk));
     return err;
 }
 

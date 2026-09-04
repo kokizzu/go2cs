@@ -44,9 +44,9 @@ internal static void Main() {
     a = 1;
     ref var b = ref heap<nint>(out var Ꮡb);
     b = 2;
-    @unsafe.Pointer pa = new @unsafe.Pointer(Ꮡa);
-    @unsafe.Pointer pb = new @unsafe.Pointer(Ꮡb);
-    @unsafe.Pointer px = new @unsafe.Pointer(Ꮡx);
+    @unsafe.Pointer pa = @unsafe.Pointer.FromPinnedBox(Ꮡa);
+    @unsafe.Pointer pb = @unsafe.Pointer.FromPinnedBox(Ꮡb);
+    @unsafe.Pointer px = @unsafe.Pointer.FromPinnedBox(Ꮡx);
     fmt.Println(sameAs(pa, pa));
     fmt.Println(sameAs(pa, pb));
     fmt.Println(notNil(pa));

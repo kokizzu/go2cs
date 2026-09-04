@@ -1058,7 +1058,7 @@ internal static void freeMSpanLocked(this ж<mheap> Ꮡh, ж<mspan> Ꮡs) {
     }
     // Failing that (or if we don't have a p), just free it to
     // the heap.
-    h.spanalloc.free(new @unsafe.Pointer(Ꮡs));
+    h.spanalloc.free(@unsafe.Pointer.FromPinnedBox(Ꮡs));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1927,7 +1927,7 @@ internal static bool addfinalizer(@unsafe.Pointer Δp, ж<funcval> Ꮡf, uintptr
     }
     // There was an old finalizer
     @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
-    Ꮡmheap_.of(mheap.Ꮡspecialfinalizeralloc).free(new @unsafe.Pointer(s));
+    Ꮡmheap_.of(mheap.Ꮡspecialfinalizeralloc).free(@unsafe.Pointer.FromPinnedBox(s));
     unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     return false;
 }
@@ -1939,7 +1939,7 @@ internal static void removefinalizer(@unsafe.Pointer Δp) {
         return; // there wasn't a finalizer to remove
     }
     @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
-    Ꮡmheap_.of(mheap.Ꮡspecialfinalizeralloc).free(new @unsafe.Pointer(s));
+    Ꮡmheap_.of(mheap.Ꮡspecialfinalizeralloc).free(@unsafe.Pointer.FromPinnedBox(s));
     unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
 }
 
@@ -1977,7 +1977,7 @@ internal static void removefinalizer(@unsafe.Pointer Δp) {
 
 //go:linkname internal_weak_runtime_registerWeakPointer internal/weak.runtime_registerWeakPointer
 internal static @unsafe.Pointer internal_weak_runtime_registerWeakPointer(@unsafe.Pointer Δp) {
-    return new @unsafe.Pointer(getOrAddWeakHandle((@unsafe.Pointer)Δp));
+    return @unsafe.Pointer.FromPinnedBox(getOrAddWeakHandle((@unsafe.Pointer)Δp));
 }
 
 //go:linkname internal_weak_runtime_makeStrongFromWeak internal/weak.runtime_makeStrongFromWeak
@@ -2114,7 +2114,7 @@ internal static ж<atomic.Uintptr> getOrAddWeakHandle(@unsafe.Pointer Δp) {
     // only fail in the event of a race, and p will still be
     // be valid no matter how much time we spend here.
     @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
-    Ꮡmheap_.of(mheap.ᏑspecialWeakHandleAlloc).free(new @unsafe.Pointer(s));
+    Ꮡmheap_.of(mheap.ᏑspecialWeakHandleAlloc).free(@unsafe.Pointer.FromPinnedBox(s));
     unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     handle = getWeakHandle(Δp);
     if (handle == nil) {
@@ -2239,21 +2239,21 @@ internal static void freeSpecial(ж<special> Ꮡs, @unsafe.Pointer Δp, uintptr 
         var sf = Ꮡs.Reinterpret<special, specialfinalizer>();
         queuefinalizer(Δp, (~sf).fn, (~sf).nret, (~sf).fint, (~sf).ot);
         @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
-        Ꮡmheap_.of(mheap.Ꮡspecialfinalizeralloc).free(new @unsafe.Pointer(sf));
+        Ꮡmheap_.of(mheap.Ꮡspecialfinalizeralloc).free(@unsafe.Pointer.FromPinnedBox(sf));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
     else if (exprᴛ1 == _KindSpecialWeakHandle) {
         var sw = Ꮡs.Reinterpret<special, specialWeakHandle>();
         (~sw).handle.Store(0);
         @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
-        Ꮡmheap_.of(mheap.ᏑspecialWeakHandleAlloc).free(new @unsafe.Pointer(Ꮡs));
+        Ꮡmheap_.of(mheap.ᏑspecialWeakHandleAlloc).free(@unsafe.Pointer.FromPinnedBox(Ꮡs));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
     else if (exprᴛ1 == _KindSpecialProfile) {
         var sp = Ꮡs.Reinterpret<special, specialprofile>();
         mProf_Free((~sp).b, size);
         @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
-        Ꮡmheap_.of(mheap.Ꮡspecialprofilealloc).free(new @unsafe.Pointer(sp));
+        Ꮡmheap_.of(mheap.Ꮡspecialprofilealloc).free(@unsafe.Pointer.FromPinnedBox(sp));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
     else if (exprᴛ1 == _KindSpecialReachable) {
@@ -2262,7 +2262,7 @@ internal static void freeSpecial(ж<special> Ꮡs, @unsafe.Pointer Δp, uintptr 
     }
     else if (exprᴛ1 == _KindSpecialPinCounter) {
         @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
-        Ꮡmheap_.of(mheap.ᏑspecialPinCounterAlloc).free(new @unsafe.Pointer(Ꮡs));
+        Ꮡmheap_.of(mheap.ᏑspecialPinCounterAlloc).free(@unsafe.Pointer.FromPinnedBox(Ꮡs));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
     }
     else { /* default: */
@@ -2387,7 +2387,7 @@ internal static ж<gcBits> newMarkBits(uintptr nelems) {
     }
     // Add the fresh arena to the "next" list.
     fresh.Value.next = gcBitsArenas.next;
-    atomic.StorepNoWB(@unsafe.Pointer.FromBox(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext)), new @unsafe.Pointer(fresh));
+    atomic.StorepNoWB(@unsafe.Pointer.FromBox(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡnext)), @unsafe.Pointer.FromPinnedBox(fresh));
     unlock(ᏑgcBitsArenas.of(gcBitsArenasᴛ1.Ꮡlock));
     return Δp;
 }
@@ -2450,7 +2450,7 @@ internal static ж<gcBitsArena> newArenaMayUnlock() {
     } else {
         result = gcBitsArenas.free;
         gcBitsArenas.free = gcBitsArenas.free.Value.next;
-        memclrNoHeapPointers(new @unsafe.Pointer(result), gcBitsChunkBytes);
+        memclrNoHeapPointers(@unsafe.Pointer.FromPinnedBox(result), gcBitsChunkBytes);
     }
     result.Value.next = default!;
     // If result.bits is not 8 byte aligned adjust index so

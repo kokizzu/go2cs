@@ -943,7 +943,7 @@ internal static uintptr stdcall_no_g(stdFunction fn, nint n, uintptr args) {
         n: (uintptr)n,
         args: args
     );
-    asmstdcall_trampoline((uintptr)noescape(new @unsafe.Pointer(Ꮡlibcall)));
+    asmstdcall_trampoline((uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡlibcall)));
     return libcall.r1;
 }
 
@@ -966,7 +966,7 @@ internal static uintptr stdcall(stdFunction fn) {
         mp.Value.libcallsp = getcallersp();
         resetLibcall = true; // See comment in sys_darwin.go:libcCall
     }
-    asmcgocall(asmstdcallAddr, new @unsafe.Pointer(mp.of(m.Ꮡlibcall)));
+    asmcgocall(asmstdcallAddr, @unsafe.Pointer.FromPinnedBox(mp.of(m.Ꮡlibcall)));
     if (resetLibcall) {
         mp.Value.libcallsp = 0;
     }

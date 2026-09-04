@@ -29,7 +29,7 @@ public static @string UTF16PtrToString(ж<uint16> Ꮡp) {
     if (Ꮡp == nil) {
         return ""u8;
     }
-    @unsafe.Pointer end = new @unsafe.Pointer(Ꮡp);
+    @unsafe.Pointer end = @unsafe.Pointer.FromPinnedBox(Ꮡp);
     nint n = 0;
     while (~(ж<uint16>)(uintptr)(end) != 0) {
         end = (@unsafe.Pointer)((uintptr)end + /* unsafe.Sizeof(*p) */ (uintptr)2);

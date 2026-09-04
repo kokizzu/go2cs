@@ -8,7 +8,7 @@ partial class main_package {
 internal static void Main() {
     ref var a = ref heap<array<nint>>(out var Ꮡa);
     a = new nint[]{10, 20, 30}.array();
-    @unsafe.Pointer p = new @unsafe.Pointer(Ꮡa);
+    @unsafe.Pointer p = @unsafe.Pointer.FromPinnedBox(Ꮡa);
     nint sum = 0;
     foreach (var (i, x) in ((ж<array<nint>>)(uintptr)(p)).Value) {
         sum += i + x;

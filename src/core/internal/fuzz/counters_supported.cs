@@ -13,7 +13,7 @@ partial class fuzz_package {
 // `-d=libfuzzer` is set at build time. This can be used to understand the code
 // coverage of a test execution.
 internal static slice<byte> coverage() {
-    @unsafe.Pointer addr = new @unsafe.Pointer(Ꮡ_counters);
+    @unsafe.Pointer addr = @unsafe.Pointer.FromPinnedBox(Ꮡ_counters);
     var size = (uintptr)Ꮡ_ecounters - (uintptr)addr;
     return @unsafe.Slice((ж<byte>)(uintptr)(addr), (nint)size);
 }

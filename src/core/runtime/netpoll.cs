@@ -591,7 +591,7 @@ internal static bool netpollblock(ж<pollDesc> Ꮡpd, int32 mode, bool waitio) {
     // this is necessary because runtime_pollUnblock/runtime_pollSetDeadline/deadlineimpl
     // do the opposite: store to closing/rd/wd, publishInfo, load of rg/wg
     if (waitio || netpollcheckerr(Ꮡpd, mode) == pollNoError) {
-        gopark(netpollblockcommit, new @unsafe.Pointer(gpp), waitReasonIOWait, traceBlockNet, 5);
+        gopark(netpollblockcommit, @unsafe.Pointer.FromPinnedBox(gpp), waitReasonIOWait, traceBlockNet, 5);
     }
     // be careful to not lose concurrent pdReady notification
     var old = gpp.Swap(pdNil);

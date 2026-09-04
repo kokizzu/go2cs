@@ -752,7 +752,7 @@ internal static metricKind metricKindFloat64Histogram => 3;
     } else {
         v.kind = metricKindFloat64Histogram;
         hist = @new<metricFloat64Histogram>();
-        v.pointer = new @unsafe.Pointer(hist);
+        v.pointer = @unsafe.Pointer.FromPinnedBox(hist);
     }
     hist.Value.buckets = buckets;
     if (len((~hist).counts) != len((~hist).buckets) - 1) {

@@ -94,7 +94,7 @@ internal static bool debugPinnerKeepUnpin = false;
 // expressions involving multiple call injections.
 internal static ж<Pinner> debugPinnerV1() {
     var Δp = @new<Pinner>();
-    Δp.Pin(new @unsafe.Pointer(Δp));
+    Δp.Pin(@unsafe.Pointer.FromPinnedBox(Δp));
     if (debugPinnerKeepUnpin) {
         // Make Unpin reachable.
         Δp.Unpin();

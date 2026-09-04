@@ -540,14 +540,14 @@ public static ж<T> Load<T>(this ж<Pointer<T>> Ꮡp) {
 //
 //go:nosplit
 public static void StoreNoWB<T>(this ж<Pointer<T>> Ꮡp, ж<T> Ꮡvalue) {
-    Ꮡp.of(Pointer<T>.Ꮡu).StoreNoWB(new @unsafe.Pointer(Ꮡvalue));
+    Ꮡp.of(Pointer<T>.Ꮡu).StoreNoWB(@unsafe.Pointer.FromPinnedBox(Ꮡvalue));
 }
 
 // Store updates the value atomically.
 //
 //go:nosplit
 public static void Store<T>(this ж<Pointer<T>> Ꮡp, ж<T> Ꮡvalue) {
-    Ꮡp.of(Pointer<T>.Ꮡu).Store(new @unsafe.Pointer(Ꮡvalue));
+    Ꮡp.of(Pointer<T>.Ꮡu).Store(@unsafe.Pointer.FromPinnedBox(Ꮡvalue));
 }
 
 // CompareAndSwapNoWB atomically (with respect to other methods)
@@ -563,7 +563,7 @@ public static void Store<T>(this ж<Pointer<T>> Ꮡp, ж<T> Ꮡvalue) {
 //
 //go:nosplit
 public static bool CompareAndSwapNoWB<T>(this ж<Pointer<T>> Ꮡp, ж<T> Ꮡold, ж<T> Ꮡnew) {
-    return Ꮡp.of(Pointer<T>.Ꮡu).CompareAndSwapNoWB(new @unsafe.Pointer(Ꮡold), new @unsafe.Pointer(Ꮡnew));
+    return Ꮡp.of(Pointer<T>.Ꮡu).CompareAndSwapNoWB(@unsafe.Pointer.FromPinnedBox(Ꮡold), @unsafe.Pointer.FromPinnedBox(Ꮡnew));
 }
 
 // CompareAndSwap atomically (with respect to other methods)
@@ -571,7 +571,7 @@ public static bool CompareAndSwapNoWB<T>(this ж<Pointer<T>> Ꮡp, ж<T> Ꮡold,
 // swaps u's value with new.
 // It reports whether the swap ran.
 public static bool CompareAndSwap<T>(this ж<Pointer<T>> Ꮡp, ж<T> Ꮡold, ж<T> Ꮡnew) {
-    return Ꮡp.of(Pointer<T>.Ꮡu).CompareAndSwap(new @unsafe.Pointer(Ꮡold), new @unsafe.Pointer(Ꮡnew));
+    return Ꮡp.of(Pointer<T>.Ꮡu).CompareAndSwap(@unsafe.Pointer.FromPinnedBox(Ꮡold), @unsafe.Pointer.FromPinnedBox(Ꮡnew));
 }
 
 // noCopy may be embedded into structs which must not be copied

@@ -807,7 +807,7 @@ internal static void doubleCheckHeapPointers(uintptr x, uintptr dataSize, ж<_ty
     }
     print((@string)"runtime: hasHeader="u8, Ꮡheader != nil, (@string)" typ.Size_="u8, typ.Size_, (@string)" hasGCProg="u8, (abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0, (@string)"\n"u8);
     print((@string)"runtime: x="u8, ((Δhex)(uint64)x), (@string)" dataSize="u8, dataSize, (@string)" elemsize="u8, span.elemsize, (@string)"\n"u8);
-    print((@string)"runtime: typ="u8, new @unsafe.Pointer(Ꮡtyp), (@string)" typ.PtrBytes="u8, typ.PtrBytes, (@string)"\n"u8);
+    print((@string)"runtime: typ="u8, @unsafe.Pointer.FromPinnedBox(Ꮡtyp), (@string)" typ.PtrBytes="u8, typ.PtrBytes, (@string)"\n"u8);
     print((@string)"runtime: limit="u8, ((Δhex)(uint64)(x + span.elemsize)), (@string)"\n"u8);
     tp = span.typePointersOfUnchecked(x);
     dumpTypePointers(tp);
@@ -963,7 +963,7 @@ internal static void doubleCheckTypePointersOfType(ж<mspan> Ꮡs, ж<_type> Ꮡ
 }
 
 internal static void dumpTypePointers(typePointers tp) {
-    print((@string)"runtime: tp.elem="u8, ((Δhex)(uint64)tp.elem), (@string)" tp.typ="u8, new @unsafe.Pointer(tp.typ), (@string)"\n"u8);
+    print((@string)"runtime: tp.elem="u8, ((Δhex)(uint64)tp.elem), (@string)" tp.typ="u8, @unsafe.Pointer.FromPinnedBox(tp.typ), (@string)"\n"u8);
     print((@string)"runtime: tp.addr="u8, ((Δhex)(uint64)tp.addr), (@string)" tp.mask="u8);
     for (var i = (uintptr)0; i < ptrBits; i++) {
         if ((uintptr)(tp.mask & (((uintptr)1).Lsh((uint64)(i)))) != 0){

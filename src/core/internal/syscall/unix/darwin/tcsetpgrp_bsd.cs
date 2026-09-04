@@ -17,7 +17,7 @@ internal static partial error /*err*/ ioctlPtr(nint fd, nuint req, @unsafe.Point
 public static error /*err*/ Tcsetpgrp(nint fd, int32 pgidʗp) {
     ref var pgid = ref heap(pgidʗp, out var Ꮡpgid);
 
-    return ioctlPtr(fd, syscall.TIOCSPGRP, new @unsafe.Pointer(Ꮡpgid));
+    return ioctlPtr(fd, syscall.TIOCSPGRP, @unsafe.Pointer.FromPinnedBox(Ꮡpgid));
 }
 
 } // end unix_package

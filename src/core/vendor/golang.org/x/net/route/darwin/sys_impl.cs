@@ -15,8 +15,10 @@
 //
 // That is the raw-metal fork golib documents at array<T>.AliasPointer — an array<T> "can neither
 // view native memory nor be fabricated from a scalar's bytes". The conversion spells the probe
-// `(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡi))`: the uintptr conversion pins the scalar's
-// slot and registers it, the pointer conversion finds no ж<array<byte>> to alias and mints a
+// `(ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡi))` — it read `new @unsafe.Pointer(Ꮡi)`
+// until the syscall-pin cut gave the mint a box-retaining door, which changes WHO KEEPS THE BOX ALIVE
+// and nothing else here: the uintptr conversion pins the scalar's slot and registers it either way,
+// the pointer conversion finds no ж<array<byte>> to alias and mints a
 // NativeBox<array<byte>> over the four bytes, and reading its Value interprets a 16-byte
 // REFERENCE-bearing struct (T[] m_array; int m_low; int m_length) out of a uint32 and whatever
 // follows it in the box. The first full darwin behavioral census (run 33787891520) measured the

@@ -58,7 +58,7 @@ internal static partial void registerCache(@unsafe.Pointer _);
 // so that c.ptable can be cleared at the start of each GC.
 // Register must be called during package initialization.
 public static void Register<K, V>(this ж<Cache<K, V>> Ꮡc) {
-    registerCache(new @unsafe.Pointer(Ꮡc.of(Cache<K, V>.Ꮡptable)));
+    registerCache(@unsafe.Pointer.FromPinnedBox(Ꮡc.of(Cache<K, V>.Ꮡptable)));
 }
 
 // cacheSize is the number of entries in the hash table.

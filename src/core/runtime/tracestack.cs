@@ -59,7 +59,7 @@ internal static uint64 traceStack(nint skip, ж<g> Ꮡgp, uintptr gen) {
                 } while (false);
             }
             if (fallthrough || !matchᴛ1) { /* default: */
-                print((@string)"runtime: gp="u8, new @unsafe.Pointer(Ꮡgp), (@string)" gp.goid="u8, gp.goid, (@string)" status="u8, gStatusStrings[(nint)(status)], (@string)"\n"u8);
+                print((@string)"runtime: gp="u8, @unsafe.Pointer.FromPinnedBox(Ꮡgp), (@string)" gp.goid="u8, gp.goid, (@string)" status="u8, gStatusStrings[(nint)(status)], (@string)"\n"u8);
                 @throw(attemptedToTraceStackOfAˢ);
             }
 

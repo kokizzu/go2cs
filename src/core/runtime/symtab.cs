@@ -412,7 +412,7 @@ internal static void modulesinit() {
             break;
         }
     }
-    atomicstorep(@unsafe.Pointer.FromBox(ᏑmodulesSlice), new @unsafe.Pointer(modules));
+    atomicstorep(@unsafe.Pointer.FromBox(ᏑmodulesSlice), @unsafe.Pointer.FromPinnedBox(modules));
 }
 
 [GoType] partial struct functab {
@@ -982,7 +982,7 @@ internal static int32 funcMaxSPDelta(ΔfuncInfo f) {
 }
 
 internal static uint32 pcdatastart(ΔfuncInfo f, uint32 table) {
-    return ~(ж<uint32>)(uintptr)(add(new @unsafe.Pointer(Ꮡ(f).of(runtime_package.ΔfuncInfo.Ꮡnfuncdata)), /* unsafe.Sizeof(f.nfuncdata) */ (uintptr)1 + (uintptr)table * 4));
+    return ~(ж<uint32>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(Ꮡ(f).of(runtime_package.ΔfuncInfo.Ꮡnfuncdata)), /* unsafe.Sizeof(f.nfuncdata) */ (uintptr)1 + (uintptr)table * 4));
 }
 
 internal static int32 pcdatavalue(ΔfuncInfo f, uint32 table, uintptr targetpc) {

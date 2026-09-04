@@ -534,7 +534,7 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrUnix
         // Don't count trailing NUL for abstract address.
         sl--;
     }
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrUnix.Ꮡraw)), sl, default!);
+    return (@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrUnix.Ꮡraw)), sl, default!);
 }
 
 [GoType] partial struct SockaddrLinklayer {
@@ -560,7 +560,7 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrLink
     sa.raw.Pkttype = sa.Pkttype;
     sa.raw.Halen = sa.Halen;
     sa.raw.Addr = sa.Addr.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrLinklayer.Ꮡraw)), SizeofSockaddrLinklayer, default!);
+    return (@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrLinklayer.Ꮡraw)), SizeofSockaddrLinklayer, default!);
 }
 
 [GoType] partial struct SockaddrNetlink {
@@ -578,7 +578,7 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrNetl
     sa.raw.Pad = sa.Pad;
     sa.raw.Pid = sa.Pid;
     sa.raw.Groups = sa.Groups;
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrNetlink.Ꮡraw)), SizeofSockaddrNetlink, default!);
+    return (@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrNetlink.Ꮡraw)), SizeofSockaddrNetlink, default!);
 }
 
 // go2cs generated this placeholder — func anyToSockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -593,7 +593,7 @@ public static (array<byte> value, error err) GetsockoptInet4Addr(nint fd, nint l
 
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)4);
-    err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue.at<byte>(0)), Ꮡvallen);
+    err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue.at<byte>(0)), Ꮡvallen);
     return (value.Clone(), err);
 }
 
@@ -607,7 +607,7 @@ public static (ж<IPv6MTUInfo>, error) GetsockoptIPv6MTUInfo(nint fd, nint level
     ref var value = ref heap(new IPv6MTUInfo(), out var Ꮡvalue);
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)SizeofIPv6MTUInfo);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
+    var err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue), Ꮡvallen);
     return (Ꮡvalue, err);
 }
 
@@ -617,7 +617,7 @@ public static (ж<Ucred>, error) GetsockoptUcred(nint fd, nint level, nint opt) 
     ref var value = ref heap(new Ucred(), out var Ꮡvalue);
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)SizeofUcred);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
+    var err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue), Ꮡvallen);
     return (Ꮡvalue, err);
 }
 
@@ -689,7 +689,7 @@ internal static (nint count, error err) ptracePeek(nint req, nint pid, uintptr a
     // boundary.
     nint n = 0;
     if (addr % (uintptr)sizeofPtr != 0) {
-        err = ptracePtr(req, pid, addr - addr % (uintptr)sizeofPtr, new @unsafe.Pointer(Ꮡbuf.at<byte>(0)));
+        err = ptracePtr(req, pid, addr - addr % (uintptr)sizeofPtr, @unsafe.Pointer.FromPinnedBox(Ꮡbuf.at<byte>(0)));
         if (err != default!) {
             return (0, err);
         }
@@ -700,7 +700,7 @@ internal static (nint count, error err) ptracePeek(nint req, nint pid, uintptr a
     while (len(@out) > 0) {
         // We use an internal buffer to guarantee alignment.
         // It's not documented if this is necessary, but we're paranoid.
-        err = ptracePtr(req, pid, addr + (uintptr)n, new @unsafe.Pointer(Ꮡbuf.at<byte>(0)));
+        err = ptracePtr(req, pid, addr + (uintptr)n, @unsafe.Pointer.FromPinnedBox(Ꮡbuf.at<byte>(0)));
         if (err != default!) {
             return (n, err);
         }
@@ -728,7 +728,7 @@ internal static (nint count, error err) ptracePoke(nint pokeReq, nint peekReq, n
     nint n = 0;
     if (addr % (uintptr)sizeofPtr != 0) {
         ref var buf = ref heap(new array<byte>(8), out var Ꮡbuf);
-        err = ptracePtr(peekReq, pid, addr - addr % (uintptr)sizeofPtr, new @unsafe.Pointer(Ꮡbuf.at<byte>(0)));
+        err = ptracePtr(peekReq, pid, addr - addr % (uintptr)sizeofPtr, @unsafe.Pointer.FromPinnedBox(Ꮡbuf.at<byte>(0)));
         if (err != default!) {
             return (0, err);
         }
@@ -753,7 +753,7 @@ internal static (nint count, error err) ptracePoke(nint pokeReq, nint peekReq, n
     // Trailing edge.
     if (len(data) > 0) {
         ref var buf = ref heap(new array<byte>(8), out var Ꮡbuf);
-        err = ptracePtr(peekReq, pid, addr + (uintptr)n, new @unsafe.Pointer(Ꮡbuf.at<byte>(0)));
+        err = ptracePtr(peekReq, pid, addr + (uintptr)n, @unsafe.Pointer.FromPinnedBox(Ꮡbuf.at<byte>(0)));
         if (err != default!) {
             return (n, err);
         }
@@ -784,7 +784,7 @@ public static error /*err*/ PtraceGetRegs(nint pid, ж<PtraceRegs> Ꮡregsout) {
     ref var iov = ref heap(new Iovec(), out var Ꮡiov);
     iov.Base = Ꮡregsout.Reinterpret<PtraceRegs, byte>();
     iov.SetLen((nint)/* unsafe.Sizeof(*regsout) */ (uintptr)216);
-    return ptracePtr(PTRACE_GETREGSET, pid, (uintptr)_NT_PRSTATUS, new @unsafe.Pointer(Ꮡiov));
+    return ptracePtr(PTRACE_GETREGSET, pid, (uintptr)_NT_PRSTATUS, @unsafe.Pointer.FromPinnedBox(Ꮡiov));
 }
 
 public static error /*err*/ PtraceSetRegs(nint pid, ж<PtraceRegs> Ꮡregs) {
@@ -793,7 +793,7 @@ public static error /*err*/ PtraceSetRegs(nint pid, ж<PtraceRegs> Ꮡregs) {
     ref var iov = ref heap(new Iovec(), out var Ꮡiov);
     iov.Base = Ꮡregs.Reinterpret<PtraceRegs, byte>();
     iov.SetLen((nint)/* unsafe.Sizeof(*regs) */ (uintptr)216);
-    return ptracePtr(PTRACE_SETREGSET, pid, (uintptr)_NT_PRSTATUS, new @unsafe.Pointer(Ꮡiov));
+    return ptracePtr(PTRACE_SETREGSET, pid, (uintptr)_NT_PRSTATUS, @unsafe.Pointer.FromPinnedBox(Ꮡiov));
 }
 
 public static error /*err*/ PtraceSetOptions(nint pid, nint options) {
@@ -805,7 +805,7 @@ public static (nuint msg, error err) PtraceGetEventMsg(nint pid) {
     error err = default!;
 
     ref var data = ref heap(new _C_long(), out var Ꮡdata);
-    err = ptracePtr(PTRACE_GETEVENTMSG, pid, 0, new @unsafe.Pointer(Ꮡdata));
+    err = ptracePtr(PTRACE_GETEVENTMSG, pid, 0, @unsafe.Pointer.FromPinnedBox(Ꮡdata));
     msg = (nuint)(int64)data;
     return (msg, err);
 }

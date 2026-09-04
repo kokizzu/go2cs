@@ -27,7 +27,7 @@ public static (nint, error) LsfSocket(nint ifindex, nint proto) {
     if (e != default!) {
         return (0, e);
     }
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡlsall.of(SockaddrLinklayer.ᏑProtocol)));
+    var p = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡlsall.of(SockaddrLinklayer.ᏑProtocol)));
     p.Value[0] = (byte)((proto >> (int)(8)));
     p.Value[1] = (byte)proto;
     lsall.Ifindex = ifindex;
@@ -83,13 +83,13 @@ public static error AttachLsf(nint fd, slice<SockFilter> i) {
     ref var p = ref heap(new SockFprog(), out var Ꮡp);
     p.Len = (uint16)len(i);
     p.Filter = Ꮡ(i, 0);
-    return setsockopt(fd, SOL_SOCKET, SO_ATTACH_FILTER, new @unsafe.Pointer(Ꮡp), /* unsafe.Sizeof(p) */ (uintptr)16);
+    return setsockopt(fd, SOL_SOCKET, SO_ATTACH_FILTER, @unsafe.Pointer.FromPinnedBox(Ꮡp), /* unsafe.Sizeof(p) */ (uintptr)16);
 }
 
 // Deprecated: Use golang.org/x/net/bpf instead.
 public static error DetachLsf(nint fd) {
     ref var dummy = ref heap(new nint(), out var Ꮡdummy);
-    return setsockopt(fd, SOL_SOCKET, SO_DETACH_FILTER, new @unsafe.Pointer(Ꮡdummy), /* unsafe.Sizeof(dummy) */ (uintptr)8);
+    return setsockopt(fd, SOL_SOCKET, SO_DETACH_FILTER, @unsafe.Pointer.FromPinnedBox(Ꮡdummy), /* unsafe.Sizeof(dummy) */ (uintptr)8);
 }
 
 } // end syscall_package

@@ -80,7 +80,7 @@ internal static unsafe void dwrite(@unsafe.Pointer data, uintptr len) {
         nbuf += len;
         return;
     }
-    write(dumpfd, new @unsafe.Pointer(Ꮡbuf), (int32)nbuf);
+    write(dumpfd, @unsafe.Pointer.FromPinnedBox(Ꮡbuf), (int32)nbuf);
     if (len >= bufSize){
         write(dumpfd, data, (int32)len);
         nbuf = 0;
@@ -93,11 +93,11 @@ internal static unsafe void dwrite(@unsafe.Pointer data, uintptr len) {
 internal static void dwritebyte(byte bʗp) {
     ref var b = ref heap(bʗp, out var Ꮡb);
 
-    dwrite(new @unsafe.Pointer(Ꮡb), 1);
+    dwrite(@unsafe.Pointer.FromPinnedBox(Ꮡb), 1);
 }
 
 internal static void flush() {
-    write(dumpfd, new @unsafe.Pointer(Ꮡbuf), (int32)nbuf);
+    write(dumpfd, @unsafe.Pointer.FromPinnedBox(Ꮡbuf), (int32)nbuf);
     nbuf = 0;
 }
 
@@ -129,7 +129,7 @@ internal static void dumpint(uint64 v) {
     }
     buf[n] = (byte)v;
     n++;
-    dwrite(new @unsafe.Pointer(Ꮡbuf), (uintptr)n);
+    dwrite(@unsafe.Pointer.FromPinnedBox(Ꮡbuf), (uintptr)n);
 }
 
 internal static void dumpbool(bool b) {
@@ -149,12 +149,12 @@ internal static void dumpmemrange(@unsafe.Pointer data, uintptr len) {
 internal static void dumpslice(slice<byte> b) {
     dumpint((uint64)len(b));
     if (len(b) > 0) {
-        dwrite(new @unsafe.Pointer(Ꮡ(b, 0)), (uintptr)len(b));
+        dwrite(@unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0)), (uintptr)len(b));
     }
 }
 
 internal static void dumpstr(@string s) {
-    dumpmemrange(new @unsafe.Pointer(@unsafe.StringData(s)), (uintptr)len(s));
+    dumpmemrange(@unsafe.Pointer.FromPinnedBox(@unsafe.StringData(s)), (uintptr)len(s));
 }
 
 // dump information for a type.
@@ -198,9 +198,9 @@ internal static void dumptype(ж<_type> Ꮡt) {
             @string pkgpath = rt.nameOff((~x).PkgPath).Name();
             @string name = rt.name();
             dumpint((uint64)((uintptr)len(pkgpath) + 1 + (uintptr)len(name)));
-            dwrite(new @unsafe.Pointer(@unsafe.StringData(pkgpath)), (uintptr)len(pkgpath));
+            dwrite(@unsafe.Pointer.FromPinnedBox(@unsafe.StringData(pkgpath)), (uintptr)len(pkgpath));
             dwritebyte((rune)'.');
-            dwrite(new @unsafe.Pointer(@unsafe.StringData(name)), (uintptr)len(name));
+            dwrite(@unsafe.Pointer.FromPinnedBox(@unsafe.StringData(name)), (uintptr)len(name));
         }
     }
     dumpbool((abiꓸKind)(t.Kind_ & abi.KindDirectIface) == 0 || t.PtrBytes != 0);
@@ -685,8 +685,8 @@ internal static void mdump(ref MemStats m) {
             s.ensureSwept();
         }
     }
-    memclrNoHeapPointers(new @unsafe.Pointer(Ꮡtypecache), /* unsafe.Sizeof(typecache) */ (uintptr)8192);
-    dwrite(new @unsafe.Pointer(Ꮡ(dumphdr, 0)), (uintptr)len(dumphdr));
+    memclrNoHeapPointers(@unsafe.Pointer.FromPinnedBox(Ꮡtypecache), /* unsafe.Sizeof(typecache) */ (uintptr)8192);
+    dwrite(@unsafe.Pointer.FromPinnedBox(Ꮡ(dumphdr, 0)), (uintptr)len(dumphdr));
     dumpparams();
     dumpitabs();
     dumpobjs();
@@ -710,7 +710,7 @@ internal static void writeheapdump_m(uintptr fd, ref MemStats m) {
     // Reset dump file.
     dumpfd = 0;
     if (tmpbuf != default!) {
-        sysFree(new @unsafe.Pointer(Ꮡ(tmpbuf, 0)), (uintptr)len(tmpbuf), Ꮡmemstats.of(mstats.Ꮡother_sys));
+        sysFree(@unsafe.Pointer.FromPinnedBox(Ꮡ(tmpbuf, 0)), (uintptr)len(tmpbuf), Ꮡmemstats.of(mstats.Ꮡother_sys));
         tmpbuf = default!;
     }
     casgstatus((~(~gp).m).curg, _Gwaiting, _Grunning);
@@ -732,7 +732,7 @@ internal static unsafe bitvector makeheapobjbv(uintptr Δp, uintptr size) {
     var nptr = size / (uintptr)goarch.PtrSize;
     if ((uintptr)len(tmpbuf) < nptr / 8 + 1) {
         if (tmpbuf != default!) {
-            sysFree(new @unsafe.Pointer(Ꮡ(tmpbuf, 0)), (uintptr)len(tmpbuf), Ꮡmemstats.of(mstats.Ꮡother_sys));
+            sysFree(@unsafe.Pointer.FromPinnedBox(Ꮡ(tmpbuf, 0)), (uintptr)len(tmpbuf), Ꮡmemstats.of(mstats.Ꮡother_sys));
         }
         var n = nptr / 8 + 1;
         @unsafe.Pointer pΔ1 = (uintptr)sysAlloc(n, Ꮡmemstats.of(mstats.Ꮡother_sys));

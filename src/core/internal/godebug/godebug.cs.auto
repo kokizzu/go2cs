@@ -354,7 +354,7 @@ internal static ref runtimeStderr stderr => ref Ꮡstderr.Value;
 
 [GoRecv] internal static (nint, error) Write(this ref runtimeStderr _, slice<byte> b) {
     if (len(b) > 0) {
-        write(2, new @unsafe.Pointer(Ꮡ(b, 0)), (int32)len(b));
+        write(2, @unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0)), (int32)len(b));
     }
     return (len(b), default!);
 }

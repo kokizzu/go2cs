@@ -522,7 +522,7 @@ internal static (@unsafe.Pointer v, uintptr size) sysAlloc(this ж<mheap> Ꮡh, 
             sysFreeOS(v, n);
         }
         hintList = hint.Value.next;
-        h.arenaHintAlloc.free(new @unsafe.Pointer(hint));
+        h.arenaHintAlloc.free(@unsafe.Pointer.FromPinnedBox(hint));
     }
     if (size == 0) {
         if (raceenabled) {
@@ -588,11 +588,11 @@ mapped:
                 @throw(outOfMemoryAllocatingˢ);
             }
             if (h.arenasHugePages){
-                sysHugePage(new @unsafe.Pointer(l2), /* unsafe.Sizeof(*l2) */ (uintptr)33554432);
+                sysHugePage(@unsafe.Pointer.FromPinnedBox(l2), /* unsafe.Sizeof(*l2) */ (uintptr)33554432);
             } else {
-                sysNoHugePage(new @unsafe.Pointer(l2), /* unsafe.Sizeof(*l2) */ (uintptr)33554432);
+                sysNoHugePage(@unsafe.Pointer.FromPinnedBox(l2), /* unsafe.Sizeof(*l2) */ (uintptr)33554432);
             }
-            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Ꮡ(h.arenas, (int)(ri.l1()))), new @unsafe.Pointer(l2));
+            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Ꮡ(h.arenas, (int)(ri.l1()))), @unsafe.Pointer.FromPinnedBox(l2));
         }
         if (l2.Value[ri.l2()] != nil) {
             @throw(arenaAlreadyInitializedˢ);
@@ -631,7 +631,7 @@ mapped:
         // new heap arena becomes visible before the heap lock
         // is released (which shouldn't happen, but there's
         // little downside to this).
-        atomic.StorepNoWB(@unsafe.Pointer.FromBox(l2.at<ж<heapArena>>((nint)(ri.l2()))), new @unsafe.Pointer(r));
+        atomic.StorepNoWB(@unsafe.Pointer.FromBox(l2.at<ж<heapArena>>((nint)(ri.l2()))), @unsafe.Pointer.FromPinnedBox(r));
 continue_mapped:;
     }
 break_mapped:;
@@ -733,7 +733,7 @@ internal static void enableMetadataHugePages(this ж<mheap> Ꮡh) {
         if (l2 == nil) {
             continue;
         }
-        sysHugePage(new @unsafe.Pointer(l2), /* unsafe.Sizeof(*l2) */ (uintptr)33554432);
+        sysHugePage(@unsafe.Pointer.FromPinnedBox(l2), /* unsafe.Sizeof(*l2) */ (uintptr)33554432);
     }
 }
 
@@ -1416,7 +1416,7 @@ internal static @unsafe.Pointer persistentalloc(uintptr size, uintptr align, ж<
     systemstack(() => {
         Ꮡp.ValueSlot = persistentalloc1(size, align, ᏑsysStat);
     });
-    return new @unsafe.Pointer(Δp);
+    return @unsafe.Pointer.FromPinnedBox(Δp);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

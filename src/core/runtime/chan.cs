@@ -103,7 +103,7 @@ internal static ж<Δhchan> makechan(ref chantype t, nint size) {
  // Elements do not contain pointers.
  // Allocate hchan and buf in one call.
  nil, true));
-        c.Value.buf = (uintptr)add(new @unsafe.Pointer(c), hchanSize);
+        c.Value.buf = (uintptr)add(@unsafe.Pointer.FromPinnedBox(c), hchanSize);
         break;
     }
     default: {
@@ -275,7 +275,7 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
     // changes and when we set gp.activeStackChans is not safe for
     // stack shrinking.
     gp.of(g.ᏑparkingOnChan).Store(true);
-    gopark(chanparkcommit, new @unsafe.Pointer(Ꮡc.of(runtime_package.Δhchan.Ꮡlock)), waitReasonChanSend, traceBlockChanSend, 2);
+    gopark(chanparkcommit, @unsafe.Pointer.FromPinnedBox(Ꮡc.of(runtime_package.Δhchan.Ꮡlock)), waitReasonChanSend, traceBlockChanSend, 2);
     // Ensure the value being sent is kept alive until the
     // receiver copies it out. The sudog has a pointer to the
     // stack object, but sudogs aren't considered as roots of the
@@ -335,7 +335,7 @@ internal static void send(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep,
     }
     var gp = sg.g;
     unlockf();
-    gp.Value.param = new @unsafe.Pointer(Ꮡsg);
+    gp.Value.param = @unsafe.Pointer.FromPinnedBox(Ꮡsg);
     sg.success = true;
     if (sg.releasetime != 0) {
         sg.releasetime = cputicks();
@@ -444,7 +444,7 @@ internal static void closechan(ж<Δhchan> Ꮡc) {
             sg.Value.releasetime = cputicks();
         }
         var gp = sg.Value.g;
-        gp.Value.param = new @unsafe.Pointer(sg);
+        gp.Value.param = @unsafe.Pointer.FromPinnedBox(sg);
         sg.Value.success = false;
         if (raceenabled) {
             raceacquireg(ref (gp).DerefOrNull(), (uintptr)Ꮡc.raceaddr());
@@ -462,7 +462,7 @@ internal static void closechan(ж<Δhchan> Ꮡc) {
             sg.Value.releasetime = cputicks();
         }
         var gp = sg.Value.g;
-        gp.Value.param = new @unsafe.Pointer(sg);
+        gp.Value.param = @unsafe.Pointer.FromPinnedBox(sg);
         sg.Value.success = false;
         if (raceenabled) {
             raceacquireg(ref (gp).DerefOrNull(), (uintptr)Ꮡc.raceaddr());
@@ -649,7 +649,7 @@ internal static (bool selected, bool received) chanrecv(ж<Δhchan> Ꮡc, @unsaf
     // changes and when we set gp.activeStackChans is not safe for
     // stack shrinking.
     gp.of(g.ᏑparkingOnChan).Store(true);
-    gopark(chanparkcommit, new @unsafe.Pointer(Ꮡc.of(runtime_package.Δhchan.Ꮡlock)), waitReasonChanReceive, traceBlockChanRecv, 2);
+    gopark(chanparkcommit, @unsafe.Pointer.FromPinnedBox(Ꮡc.of(runtime_package.Δhchan.Ꮡlock)), waitReasonChanReceive, traceBlockChanRecv, 2);
     // someone woke us up
     if (mysg != (~gp).waiting) {
         @throw(gWaitingListIsCorruptedˢ);
@@ -720,7 +720,7 @@ internal static void recv(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep,
     sg.elem = default!;
     var gp = sg.g;
     unlockf();
-    gp.Value.param = new @unsafe.Pointer(Ꮡsg);
+    gp.Value.param = @unsafe.Pointer.FromPinnedBox(Ꮡsg);
     sg.success = true;
     if (sg.releasetime != 0) {
         sg.releasetime = cputicks();

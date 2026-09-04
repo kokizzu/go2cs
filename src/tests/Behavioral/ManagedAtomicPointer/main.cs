@@ -26,12 +26,12 @@ internal static bool find(this ж<lazyProc> Ꮡl) {
 internal static void identity() {
     ref var a = ref heap(new int32(), out var Ꮡa);
     ref var b = ref heap(new int32(), out var Ꮡb);
-    @unsafe.Pointer pa = new @unsafe.Pointer(Ꮡa);
-    @unsafe.Pointer pb = new @unsafe.Pointer(Ꮡb);
+    @unsafe.Pointer pa = @unsafe.Pointer.FromPinnedBox(Ꮡa);
+    @unsafe.Pointer pb = @unsafe.Pointer.FromPinnedBox(Ꮡb);
     @unsafe.Pointer pn = default!;
     fmt.Println(pa == pa, pa == pb, pa != pb);
     fmt.Println(pn == pn, pn == pa, pa != pn);
-    fmt.Println(new @unsafe.Pointer(Ꮡa) == pa);
+    fmt.Println(@unsafe.Pointer.FromPinnedBox(Ꮡa) == pa);
     var table = new @unsafe.Pointer[]{default!, pa, pb}.slice();
     nint same = 0;
     nint diff = 0;

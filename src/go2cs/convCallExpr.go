@@ -5953,6 +5953,24 @@ func (v *Visitor) markDeadUnsafePointerBox(callExpr *ast.CallExpr, arg ast.Expr)
 // than a cast (`unsafe.Pointer(uintptr(p) + off)`) is wrapped so the cast still applies to all of it.
 func (v *Visitor) unsafePointerBoxEmission(callExpr *ast.CallExpr, arg ast.Expr, operandExpr string) string {
 	if !v.deadUnsafePointerBoxes[callExpr] {
+		// A POINTER operand renders as the managed box `ж<T>`, and `new @unsafe.Pointer(box)` binds
+		// the implicit `ж<T> → uintptr` conversion into `Pointer(uintptr)` — which PINS the storage (the
+		// conversion is the pin moment: EnsureStableAddress stores a GCHandle in the box's own field)
+		// and then retains NOTHING, so the box carrying that pin is unreachable garbage the instant the
+		// mint returns, and its finalizer frees the pin while the address is still in flight. Go has no
+		// equivalent hazard here: its heap does not move, so a live pointer is a stable address.
+		//
+		// Mint through the RETAINING door instead (`@unsafe.Pointer.FromPinnedBox`, golib unsafe.cs),
+		// which takes the same address from the same conversion and keeps the box. Measured 2026-09-04:
+		// sixteen concurrent TLS connections over the converted stack died SIGSEGV in five seconds, 3/3,
+		// and stopped crashing once the box was held across the call.
+		//
+		// Only a genuine POINTER operand takes this door: a `uintptr` or `unsafe.Pointer` operand is a
+		// number rather than a box, and `Pointer(uintptr)` is the right and only mint for it.
+		if _, isPtr := types.Unalias(v.info.TypeOf(arg)).(*types.Pointer); isPtr {
+			return fmt.Sprintf("@unsafe.Pointer.FromPinnedBox(%s)", operandExpr)
+		}
+
 		return fmt.Sprintf("new @unsafe.Pointer(%s)", operandExpr)
 	}
 

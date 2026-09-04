@@ -232,7 +232,7 @@ internal static @unsafe.Pointer keys(this ж<bmap> Ꮡb) {
         ovf = h.extra.Value.nextOverflow;
         if (ovf.overflow(Ꮡt) == nil){
             // We're not at the end of the preallocated overflow buckets. Bump the pointer.
-            h.extra.Value.nextOverflow = (ж<bmap>)(uintptr)(add(new @unsafe.Pointer(ovf), (uintptr)t.BucketSize));
+            h.extra.Value.nextOverflow = (ж<bmap>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(ovf), (uintptr)t.BucketSize));
         } else {
             // This is the last preallocated overflow bucket.
             // Reset the overflow pointer on this bucket,
@@ -405,7 +405,7 @@ internal static @unsafe.Pointer mapaccess1(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @uns
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
         var pc = abi.FuncPCABIInternal(mapaccess1);
-        racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, pc);
+        racereadpc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, pc);
         raceReadObjectPC(ref (t.Key).DerefOrNull(), key, callerpc, pc);
     }
     if (msanenabled && Ꮡh != nil) {
@@ -420,7 +420,7 @@ internal static @unsafe.Pointer mapaccess1(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @uns
                 throw panic(err); // see issue 23734
             }
         }
-        return new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
+        return @unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapReadAndMapˢ);
@@ -450,12 +450,12 @@ bucketloop:
                 }
                 continue;
             }
-            @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(b), dataOffset + i * (uintptr)t.KeySize);
+            @unsafe.Pointer k = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + i * (uintptr)t.KeySize);
             if (t.IndirectKey()) {
                 k = ((ж<@unsafe.Pointer>)(uintptr)(k)).Value;
             }
             if ((~t.Key).Equal(key, k)) {
-                @unsafe.Pointer e = (uintptr)add(new @unsafe.Pointer(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
+                @unsafe.Pointer e = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
                 if (t.IndirectElem()) {
                     e = ((ж<@unsafe.Pointer>)(uintptr)(e)).Value;
                 }
@@ -465,7 +465,7 @@ bucketloop:
 continue_bucketloop:;
     }
 break_bucketloop:;
-    return new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
+    return @unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0));
 }
 
 // mapaccess2 should be an internal detail,
@@ -484,7 +484,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2(ж<maptype> Ꮡt, ж<hmap> �
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
         var pc = abi.FuncPCABIInternal(mapaccess2);
-        racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, pc);
+        racereadpc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, pc);
         raceReadObjectPC(ref (t.Key).DerefOrNull(), key, callerpc, pc);
     }
     if (msanenabled && Ꮡh != nil) {
@@ -499,7 +499,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2(ж<maptype> Ꮡt, ж<hmap> �
                 throw panic(err); // see issue 23734
             }
         }
-        return (new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)), false);
+        return (@unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0)), false);
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapReadAndMapˢ);
@@ -529,12 +529,12 @@ bucketloop:
                 }
                 continue;
             }
-            @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(b), dataOffset + i * (uintptr)t.KeySize);
+            @unsafe.Pointer k = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + i * (uintptr)t.KeySize);
             if (t.IndirectKey()) {
                 k = ((ж<@unsafe.Pointer>)(uintptr)(k)).Value;
             }
             if ((~t.Key).Equal(key, k)) {
-                @unsafe.Pointer e = (uintptr)add(new @unsafe.Pointer(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
+                @unsafe.Pointer e = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
                 if (t.IndirectElem()) {
                     e = ((ж<@unsafe.Pointer>)(uintptr)(e)).Value;
                 }
@@ -544,7 +544,7 @@ bucketloop:
 continue_bucketloop:;
     }
 break_bucketloop:;
-    return (new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)), false);
+    return (@unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0)), false);
 }
 
 // returns both key and elem. Used by map iterator.
@@ -580,12 +580,12 @@ bucketloop:
                 }
                 continue;
             }
-            @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(b), dataOffset + i * (uintptr)t.KeySize);
+            @unsafe.Pointer k = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + i * (uintptr)t.KeySize);
             if (t.IndirectKey()) {
                 k = ((ж<@unsafe.Pointer>)(uintptr)(k)).Value;
             }
             if ((~t.Key).Equal(key, k)) {
-                @unsafe.Pointer e = (uintptr)add(new @unsafe.Pointer(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
+                @unsafe.Pointer e = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
                 if (t.IndirectElem()) {
                     e = ((ж<@unsafe.Pointer>)(uintptr)(e)).Value;
                 }
@@ -600,7 +600,7 @@ break_bucketloop:;
 
 internal static @unsafe.Pointer mapaccess1_fat(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key, @unsafe.Pointer zero) {
     @unsafe.Pointer e = (uintptr)mapaccess1(Ꮡt, Ꮡh, key);
-    if (e == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
+    if (e == @unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0))) {
         return zero;
     }
     return e;
@@ -608,7 +608,7 @@ internal static @unsafe.Pointer mapaccess1_fat(ж<maptype> Ꮡt, ж<hmap> Ꮡh, 
 
 internal static (@unsafe.Pointer, bool) mapaccess2_fat(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer key, @unsafe.Pointer zero) {
     @unsafe.Pointer e = (uintptr)mapaccess1(Ꮡt, Ꮡh, key);
-    if (e == new @unsafe.Pointer(ᏑzeroVal.at<byte>(0))) {
+    if (e == @unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0))) {
         return (zero, false);
     }
     return (e, true);
@@ -643,7 +643,7 @@ internal static @unsafe.Pointer mapassign(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsa
     if (raceenabled) {
         var callerpc = getcallerpc();
         var pc = abi.FuncPCABIInternal(mapassign);
-        racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, pc);
+        racewritepc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, pc);
         raceReadObjectPC(ref (t.Key).DerefOrNull(), key, callerpc, pc);
     }
     if (msanenabled) {
@@ -678,15 +678,15 @@ bucketloop:
             if ((~b).tophash[(nint)(i)] != top) {
                 if (isEmpty((~b).tophash[(nint)(i)]) && inserti == nil) {
                     inserti = b.at(bmap.Ꮡtophash, (nint)(i));
-                    insertk = (uintptr)add(new @unsafe.Pointer(b), dataOffset + i * (uintptr)t.KeySize);
-                    elem = (uintptr)add(new @unsafe.Pointer(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
+                    insertk = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + i * (uintptr)t.KeySize);
+                    elem = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
                 }
                 if ((~b).tophash[(nint)(i)] == emptyRest) {
                     goto break_bucketloop;
                 }
                 continue;
             }
-            @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(b), dataOffset + i * (uintptr)t.KeySize);
+            @unsafe.Pointer k = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + i * (uintptr)t.KeySize);
             if (t.IndirectKey()) {
                 k = ((ж<@unsafe.Pointer>)(uintptr)(k)).Value;
             }
@@ -697,7 +697,7 @@ bucketloop:
             if (t.NeedKeyUpdate()) {
                 typedmemmove(t.Key, k, key);
             }
-            elem = (uintptr)add(new @unsafe.Pointer(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
+            elem = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
             goto done;
         }
         var ovf = b.overflow(Ꮡt);
@@ -719,7 +719,7 @@ break_bucketloop:;
         // The current bucket and all the overflow buckets connected to it are full, allocate a new one.
         var newb = h.newoverflow(Ꮡt, b);
         inserti = newb.at(bmap.Ꮡtophash, 0);
-        insertk = (uintptr)add(new @unsafe.Pointer(newb), dataOffset);
+        insertk = (uintptr)add(@unsafe.Pointer.FromPinnedBox(newb), dataOffset);
         elem = (uintptr)add(insertk, (uintptr)abi.MapBucketCount * (uintptr)t.KeySize);
     }
     // store new key/elem at insert position
@@ -762,7 +762,7 @@ internal static void mapdelete(ж<maptype> Ꮡt, ж<hmap> Ꮡh, @unsafe.Pointer 
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
         var pc = abi.FuncPCABIInternal(mapdelete);
-        racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, pc);
+        racewritepc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, pc);
         raceReadObjectPC(ref (t.Key).DerefOrNull(), key, callerpc, pc);
     }
     if (msanenabled && Ꮡh != nil) {
@@ -802,7 +802,7 @@ search:
                 }
                 continue;
             }
-            @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(b), dataOffset + i * (uintptr)t.KeySize);
+            @unsafe.Pointer k = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + i * (uintptr)t.KeySize);
             @unsafe.Pointer k2 = k;
             if (t.IndirectKey()) {
                 k2 = ((ж<@unsafe.Pointer>)(uintptr)(k2)).Value;
@@ -817,7 +817,7 @@ search:
             if (t.Key.Pointers()) {
                 memclrHasPointers(k, (~t.Key).Size_);
             }
-            @unsafe.Pointer e = (uintptr)add(new @unsafe.Pointer(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
+            @unsafe.Pointer e = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + i * (uintptr)t.ValueSize);
             if (t.IndirectElem()){
                 ((ж<@unsafe.Pointer>)(uintptr)(e)).Value = default!;
             } else 
@@ -906,7 +906,7 @@ internal static void mapiterinit(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<hiter> Ꮡi
 
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
-        racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapiterinit));
+        racereadpc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, abi.FuncPCABIInternal(mapiterinit));
     }
     it.t = Ꮡt;
     if (Ꮡh == nil || h.count == 0) {
@@ -967,7 +967,7 @@ internal static void mapiternext(ж<hiter> Ꮡit) {
     var h = it.h;
     if (raceenabled) {
         var callerpc = getcallerpc();
-        racereadpc(new @unsafe.Pointer(h), callerpc, abi.FuncPCABIInternal(mapiternext));
+        racereadpc(@unsafe.Pointer.FromPinnedBox(h), callerpc, abi.FuncPCABIInternal(mapiternext));
     }
     if ((uint8)((~h).flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapIterationˢ);
@@ -1016,11 +1016,11 @@ next:
             // in the middle of a bucket. It's feasible, just tricky.
             continue;
         }
-        @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(b), dataOffset + (uintptr)offi * (uintptr)(~t).KeySize);
+        @unsafe.Pointer k = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + (uintptr)offi * (uintptr)(~t).KeySize);
         if (t.IndirectKey()) {
             k = ((ж<@unsafe.Pointer>)(uintptr)(k)).Value;
         }
-        @unsafe.Pointer e = (uintptr)add(new @unsafe.Pointer(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)(~t).KeySize + (uintptr)offi * (uintptr)(~t).ValueSize);
+        @unsafe.Pointer e = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)(~t).KeySize + (uintptr)offi * (uintptr)(~t).ValueSize);
         if (checkBucket != noCheck && !h.sameSizeGrow()) {
             // Special case: iterator was started during a grow to a larger size
             // and the grow is not done yet. We're working on a bucket whose
@@ -1106,7 +1106,7 @@ internal static void mapclear(ж<maptype> Ꮡt, ж<hmap> Ꮡh) {
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
         var pc = abi.FuncPCABIInternal(mapclear);
-        racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, pc);
+        racewritepc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, pc);
     }
     if (Ꮡh == nil || h.count == 0) {
         return;
@@ -1296,18 +1296,18 @@ internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket
         ref var xy = ref heap(new array<evacDst>(2), out var Ꮡxy);
         var x = Ꮡxy.at<evacDst>(0);
         x.Value.b = (ж<bmap>)(uintptr)(add(h.buckets, oldbucket * (uintptr)t.BucketSize));
-        x.Value.k = (uintptr)add(new @unsafe.Pointer((~x).b), dataOffset);
+        x.Value.k = (uintptr)add(@unsafe.Pointer.FromPinnedBox((~x).b), dataOffset);
         x.Value.e = (uintptr)add((~x).k, (uintptr)abi.MapBucketCount * (uintptr)t.KeySize);
         if (!h.sameSizeGrow()) {
             // Only calculate y pointers if we're growing bigger.
             // Otherwise GC can see bad pointers.
             var y = Ꮡxy.at<evacDst>(1);
             y.Value.b = (ж<bmap>)(uintptr)(add(h.buckets, (oldbucket + newbit) * (uintptr)t.BucketSize));
-            y.Value.k = (uintptr)add(new @unsafe.Pointer((~y).b), dataOffset);
+            y.Value.k = (uintptr)add(@unsafe.Pointer.FromPinnedBox((~y).b), dataOffset);
             y.Value.e = (uintptr)add((~y).k, (uintptr)abi.MapBucketCount * (uintptr)t.KeySize);
         }
         for (; b != nil; b = b.overflow(Ꮡt)) {
-            @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(b), dataOffset);
+            @unsafe.Pointer k = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset);
             @unsafe.Pointer e = (uintptr)add(k, (uintptr)abi.MapBucketCount * (uintptr)t.KeySize);
             for (nint i = 0; i < abi.MapBucketCount; (i, k, e) = (i + 1, (uintptr)add(k, (uintptr)t.KeySize), (uintptr)add(e, (uintptr)t.ValueSize))) {
                 var top = (~b).tophash[i];
@@ -1355,7 +1355,7 @@ internal static void evacuate(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr oldbucket
                 if ((~dst).i == abi.MapBucketCount) {
                     dst.Value.b = h.newoverflow(Ꮡt, (~dst).b);
                     dst.Value.i = 0;
-                    dst.Value.k = (uintptr)add(new @unsafe.Pointer((~dst).b), dataOffset);
+                    dst.Value.k = (uintptr)add(@unsafe.Pointer.FromPinnedBox((~dst).b), dataOffset);
                     dst.Value.e = (uintptr)add((~dst).k, (uintptr)abi.MapBucketCount * (uintptr)t.KeySize);
                 }
                 dst.Value.b.Value.tophash[(nint)((~dst).i & (nint)(abi.MapBucketCount - 1))] = top; // mask dst.i as an optimization, to avoid a bounds check
@@ -1626,7 +1626,7 @@ internal static nint reflect_maplen(ж<hmap> Ꮡh) {
     }
     if (raceenabled) {
         var callerpc = getcallerpc();
-        racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(reflect_maplen));
+        racereadpc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, abi.FuncPCABIInternal(reflect_maplen));
     }
     return h.count;
 }
@@ -1645,7 +1645,7 @@ internal static nint reflectlite_maplen(ж<hmap> Ꮡh) {
     }
     if (raceenabled) {
         var callerpc = getcallerpc();
-        racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(reflect_maplen));
+        racereadpc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, abi.FuncPCABIInternal(reflect_maplen));
     }
     return h.count;
 }
@@ -1664,7 +1664,7 @@ internal static any mapclone(any mʗp) {
     ref var m = ref heap(mʗp, out var Ꮡm);
 
     var e = efaceOf(Ꮡm);
-    e.Value.data = new @unsafe.Pointer(mapclone2((~e)._type.Reinterpret<_type, maptype>(), (ж<hmap>)(uintptr)((~e).data)));
+    e.Value.data = @unsafe.Pointer.FromPinnedBox(mapclone2((~e)._type.Reinterpret<_type, maptype>(), (ж<hmap>)(uintptr)((~e).data)));
     return m;
 }
 
@@ -1689,10 +1689,10 @@ internal static (ж<bmap>, nint) moveToBmap(ж<maptype> Ꮡt, ж<hmap> Ꮡh, ж<
             Ꮡdst = h.newoverflow(Ꮡt, Ꮡdst); dst = ref Ꮡdst.DerefOrNull();
             pos = 0;
         }
-        @unsafe.Pointer srcK = (uintptr)add(new @unsafe.Pointer(Ꮡsrc), dataOffset + (uintptr)i * (uintptr)t.KeySize);
-        @unsafe.Pointer srcEle = (uintptr)add(new @unsafe.Pointer(Ꮡsrc), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + (uintptr)i * (uintptr)t.ValueSize);
-        @unsafe.Pointer dstK = (uintptr)add(new @unsafe.Pointer(Ꮡdst), dataOffset + (uintptr)pos * (uintptr)t.KeySize);
-        @unsafe.Pointer dstEle = (uintptr)add(new @unsafe.Pointer(Ꮡdst), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + (uintptr)pos * (uintptr)t.ValueSize);
+        @unsafe.Pointer srcK = (uintptr)add(@unsafe.Pointer.FromPinnedBox(Ꮡsrc), dataOffset + (uintptr)i * (uintptr)t.KeySize);
+        @unsafe.Pointer srcEle = (uintptr)add(@unsafe.Pointer.FromPinnedBox(Ꮡsrc), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + (uintptr)i * (uintptr)t.ValueSize);
+        @unsafe.Pointer dstK = (uintptr)add(@unsafe.Pointer.FromPinnedBox(Ꮡdst), dataOffset + (uintptr)pos * (uintptr)t.KeySize);
+        @unsafe.Pointer dstEle = (uintptr)add(@unsafe.Pointer.FromPinnedBox(Ꮡdst), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + (uintptr)pos * (uintptr)t.ValueSize);
         dst.tophash[pos] = src.tophash[i];
         if (t.IndirectKey()){
             srcK = ~(ж<@unsafe.Pointer>)(uintptr)(srcK);
@@ -1809,11 +1809,11 @@ internal static ж<hmap> mapclone2(ж<maptype> Ꮡt, ж<hmap> Ꮡsrc) {
                 if ((uint8)(src.flags & (uint8)hashWriting) != 0) {
                     fatal(concurrentMapCloneAndMapˢ);
                 }
-                @unsafe.Pointer srcK = (uintptr)add(new @unsafe.Pointer(srcBmap), dataOffset + iΔ1 * (uintptr)t.KeySize);
+                @unsafe.Pointer srcK = (uintptr)add(@unsafe.Pointer.FromPinnedBox(srcBmap), dataOffset + iΔ1 * (uintptr)t.KeySize);
                 if (t.IndirectKey()) {
                     srcK = ((ж<@unsafe.Pointer>)(uintptr)(srcK)).Value;
                 }
-                @unsafe.Pointer srcEle = (uintptr)add(new @unsafe.Pointer(srcBmap), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + iΔ1 * (uintptr)t.ValueSize);
+                @unsafe.Pointer srcEle = (uintptr)add(@unsafe.Pointer.FromPinnedBox(srcBmap), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + iΔ1 * (uintptr)t.ValueSize);
                 if (t.IndirectElem()) {
                     srcEle = ((ж<@unsafe.Pointer>)(uintptr)(srcEle)).Value;
                 }
@@ -1879,7 +1879,7 @@ internal static void copyKeys(ж<maptype> Ꮡt, ref hmap h, ж<bmap> Ꮡb, ref �
             if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
                 fatal(concurrentMapReadAndMapˢ);
             }
-            @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(Ꮡb), dataOffset + offi * (uintptr)t.KeySize);
+            @unsafe.Pointer k = (uintptr)add(@unsafe.Pointer.FromPinnedBox(Ꮡb), dataOffset + offi * (uintptr)t.KeySize);
             if (t.IndirectKey()) {
                 k = ((ж<@unsafe.Pointer>)(uintptr)(k)).Value;
             }
@@ -1946,7 +1946,7 @@ internal static void copyValues(ж<maptype> Ꮡt, ref hmap h, ж<bmap> Ꮡb, ref
             if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
                 fatal(concurrentMapReadAndMapˢ);
             }
-            @unsafe.Pointer ele = (uintptr)add(new @unsafe.Pointer(Ꮡb), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + offi * (uintptr)t.ValueSize);
+            @unsafe.Pointer ele = (uintptr)add(@unsafe.Pointer.FromPinnedBox(Ꮡb), dataOffset + (uintptr)abi.MapBucketCount * (uintptr)t.KeySize + offi * (uintptr)t.ValueSize);
             if (t.IndirectElem()) {
                 ele = ((ж<@unsafe.Pointer>)(uintptr)(ele)).Value;
             }

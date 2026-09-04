@@ -379,6 +379,31 @@ public class Pointer : StandardBox<uintptr>, IUnsafePointer {
             return new Pointer((uintptr)ptr, box);
     }
 
+    // The converter's mint for `unsafe.Pointer(&x)` — an address TAKEN, as opposed to FromBox's
+    // pointer VALUE carried across. The difference is the pin, and it is the whole reason this door
+    // exists beside FromBox: `fixed` holds storage still for its own statement, while an address
+    // handed to a native callee outlives that statement by definition — a blocking `read(2)` is the
+    // extreme case, microseconds to seconds wide with the kernel writing the whole time.
+    //
+    // So the address comes from the box's own uintptr conversion, which is the PIN MOMENT
+    // (`ж<T>.EnsureStableAddress` stores a GCHandle in the box's own field, and the conversion
+    // registers the provenance record every resolve leans on) — and the box is RETAINED, because a
+    // pin whose holder is unreachable is a pin the finalizer releases while the address is still in
+    // flight. That was the defect this door was cut for (2026-09-04): `new Pointer(box)` binds the
+    // implicit ж→uintptr conversion into `Pointer(uintptr)`, which pins and then retains nothing, so
+    // the buffer of every converted `read`/`write` was relocatable under the kernel's own write —
+    // SIGSEGV in five seconds under sixteen concurrent TLS connections, gone when the box is held.
+    //
+    // Nil, native aliases and fixed-array data addresses are all the conversion's own answers rather
+    // than a second policy here; that is the point of routing through it.
+    public static Pointer FromPinnedBox<T>(ж<T> box)
+    {
+        if (box is null)
+            return new Pointer(nil);
+
+        return new Pointer((uintptr)box, box);
+    }
+
     // ---- the bare-unsafe.Pointer primitives' recovery and through-ops (I5) ----
 
     // The referent this pointer can store/load through: the retained box first; else whatever the

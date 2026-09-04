@@ -183,14 +183,14 @@ internal static void IncNonDefault(this ж<godebugInc> Ꮡg) {
         inc = @new<Action>();
         inc.ValueSlot = newInc.ValueSlot(g.name);
         if (raceenabled) {
-            racereleasemerge(new @unsafe.Pointer(Ꮡg.of(godebugInc.Ꮡinc)));
+            racereleasemerge(@unsafe.Pointer.FromPinnedBox(Ꮡg.of(godebugInc.Ꮡinc)));
         }
         if (!Ꮡg.of(godebugInc.Ꮡinc).CompareAndSwap(nil, inc)) {
             inc = Ꮡg.of(godebugInc.Ꮡinc).Load();
         }
     }
     if (raceenabled) {
-        raceacquire(new @unsafe.Pointer(Ꮡg.of(godebugInc.Ꮡinc)));
+        raceacquire(@unsafe.Pointer.FromPinnedBox(Ꮡg.of(godebugInc.Ꮡinc)));
     }
     inc.ValueSlot();
 }
@@ -243,13 +243,13 @@ internal static void writeErrStr(@string s) {
 //
 //go:nosplit
 internal static void writeErrData(ж<byte> Ꮡdata, int32 n) {
-    write(2, new @unsafe.Pointer(Ꮡdata), n);
+    write(2, @unsafe.Pointer.FromPinnedBox(Ꮡdata), n);
     // If crashing, print a copy to the SetCrashOutput fd.
     var gp = getg();
     if (gp != nil && (~(~gp).m).dying > 0 || gp == nil && Ꮡpanicking.Load() > 0) {
         {
             var fd = ᏑcrashFD.Load(); if (fd != ~(uintptr)0) {
-                write(fd, new @unsafe.Pointer(Ꮡdata), n);
+                write(fd, @unsafe.Pointer.FromPinnedBox(Ꮡdata), n);
             }
         }
     }

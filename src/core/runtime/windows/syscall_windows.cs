@@ -29,13 +29,13 @@ internal static void cbsLock() {
     // safe prior to scheduler initialization. Thus avoid instrumentation
     // until then.
     if (raceenabled && mainStarted) {
-        raceacquire(new @unsafe.Pointer(Ꮡcbs.of(cbsᴛ1.Ꮡlock)));
+        raceacquire(@unsafe.Pointer.FromPinnedBox(Ꮡcbs.of(cbsᴛ1.Ꮡlock)));
     }
 }
 
 internal static void cbsUnlock() {
     if (raceenabled && mainStarted) {
-        racerelease(new @unsafe.Pointer(Ꮡcbs.of(cbsᴛ1.Ꮡlock)));
+        racerelease(@unsafe.Pointer.FromPinnedBox(Ꮡcbs.of(cbsᴛ1.Ꮡlock)));
     }
     unlock(Ꮡcbs.of(cbsᴛ1.Ꮡlock));
 }
@@ -378,7 +378,7 @@ internal static void callbackWrap(ref callbackArgs a) {
     // Convert from C to Go ABI.
     ref var regs = ref heap(new abi.RegArgs(), out var Ꮡregs);
     ref var frame = ref heap(new array<byte>(512), out var Ꮡframe);
-    @unsafe.Pointer goArgs = new @unsafe.Pointer(Ꮡframe);
+    @unsafe.Pointer goArgs = @unsafe.Pointer.FromPinnedBox(Ꮡframe);
     foreach (var (_, part) in c.abiMap.parts) {
         var exprᴛ1 = part.kind;
         if (exprᴛ1 == abiPartStack) {
@@ -399,7 +399,7 @@ internal static void callbackWrap(ref callbackArgs a) {
     frameSize += c.abiMap.dstSpill;
     // Even though this is copying back results, we can pass a nil
     // type because those results must not require write barriers.
-    reflectcall(nil, new @unsafe.Pointer(c.fn), (uintptr)noescape(goArgs), (uint32)c.abiMap.dstStackSize, (uint32)c.abiMap.retOffset, (uint32)frameSize, Ꮡregs);
+    reflectcall(nil, @unsafe.Pointer.FromPinnedBox(c.fn), (uintptr)noescape(goArgs), (uint32)c.abiMap.dstStackSize, (uint32)c.abiMap.retOffset, (uint32)frameSize, Ꮡregs);
     // Extract the result.
     //
     // There's always exactly one return value, one pointer in size.
@@ -535,7 +535,7 @@ internal static (uintptr r1, uintptr r2, uintptr err) syscall_syscalln(uintptr f
     if ((~c).n != 0) {
         c.Value.args = (uintptr)(uintptr)noescape(@unsafe.Pointer.FromBox(Ꮡ(args, 0)));
     }
-    cgocall(asmstdcallAddr, new @unsafe.Pointer(c));
+    cgocall(asmstdcallAddr, @unsafe.Pointer.FromPinnedBox(c));
     // cgocall may reschedule us on to a different M,
     // but it copies the return values into the new M's
     // so we can read them from there.

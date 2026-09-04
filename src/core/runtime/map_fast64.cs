@@ -17,10 +17,10 @@ internal static @unsafe.Pointer mapaccess1_fast64(ж<maptype> Ꮡt, ж<hmap> Ꮡ
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
-        racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapaccess1_fast64));
+        racereadpc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, abi.FuncPCABIInternal(mapaccess1_fast64));
     }
     if (Ꮡh == nil || h.count == 0) {
-        return new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
+        return @unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapReadAndMapˢ);
@@ -30,7 +30,7 @@ internal static @unsafe.Pointer mapaccess1_fast64(ж<maptype> Ꮡt, ж<hmap> Ꮡ
         // One-bucket table. No need to hash.
         b = (ж<bmap>)(uintptr)(h.buckets);
     } else {
-        var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡkey)), (uintptr)h.hash0);
+        var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), (uintptr)h.hash0);
         var m = bucketMask(h.B);
         b = (ж<bmap>)(uintptr)(add(h.buckets, ((uintptr)(hash & m)) * (uintptr)t.BucketSize));
         {
@@ -49,11 +49,11 @@ internal static @unsafe.Pointer mapaccess1_fast64(ж<maptype> Ꮡt, ж<hmap> Ꮡ
     for (; b != nil; b = b.overflow(Ꮡt)) {
         for ((var i, @unsafe.Pointer k) = ((uintptr)0, (uintptr)b.keys()); i < abi.MapBucketCount; (i, k) = (i + 1, (uintptr)add(k, 8))) {
             if (~(ж<uint64>)(uintptr)(k) == key && !isEmpty((~b).tophash[(nint)(i)])) {
-                return (uintptr)add(new @unsafe.Pointer(b), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + i * (uintptr)t.ValueSize);
+                return (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + i * (uintptr)t.ValueSize);
             }
         }
     }
-    return new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
+    return @unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0));
 }
 
 // mapaccess2_fast64 should be an internal detail,
@@ -72,10 +72,10 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fast64(ж<maptype> Ꮡt, ж<h
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
-        racereadpc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapaccess2_fast64));
+        racereadpc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, abi.FuncPCABIInternal(mapaccess2_fast64));
     }
     if (Ꮡh == nil || h.count == 0) {
-        return (new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)), false);
+        return (@unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0)), false);
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapReadAndMapˢ);
@@ -85,7 +85,7 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fast64(ж<maptype> Ꮡt, ж<h
         // One-bucket table. No need to hash.
         b = (ж<bmap>)(uintptr)(h.buckets);
     } else {
-        var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡkey)), (uintptr)h.hash0);
+        var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), (uintptr)h.hash0);
         var m = bucketMask(h.B);
         b = (ж<bmap>)(uintptr)(add(h.buckets, ((uintptr)(hash & m)) * (uintptr)t.BucketSize));
         {
@@ -104,11 +104,11 @@ internal static (@unsafe.Pointer, bool) mapaccess2_fast64(ж<maptype> Ꮡt, ж<h
     for (; b != nil; b = b.overflow(Ꮡt)) {
         for ((var i, @unsafe.Pointer k) = ((uintptr)0, (uintptr)b.keys()); i < abi.MapBucketCount; (i, k) = (i + 1, (uintptr)add(k, 8))) {
             if (~(ж<uint64>)(uintptr)(k) == key && !isEmpty((~b).tophash[(nint)(i)])) {
-                return ((uintptr)add(new @unsafe.Pointer(b), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + i * (uintptr)t.ValueSize), true);
+                return ((uintptr)add(@unsafe.Pointer.FromPinnedBox(b), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + i * (uintptr)t.ValueSize), true);
             }
         }
     }
-    return (new @unsafe.Pointer(ᏑzeroVal.at<byte>(0)), false);
+    return (@unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0)), false);
 }
 
 // mapassign_fast64 should be an internal detail,
@@ -132,12 +132,12 @@ internal static @unsafe.Pointer mapassign_fast64(ж<maptype> Ꮡt, ж<hmap> Ꮡh
     }
     if (raceenabled) {
         var callerpc = getcallerpc();
-        racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapassign_fast64));
+        racewritepc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, abi.FuncPCABIInternal(mapassign_fast64));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapWritesˢ);
     }
-    var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡkey)), (uintptr)h.hash0);
+    var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapassign.
     h.flags ^= (uint8)(hashWriting);
     if (h.buckets == nil) {
@@ -165,7 +165,7 @@ bucketloop:
                 }
                 continue;
             }
-            var k = ((ж<uint64>)(uintptr)(add(new @unsafe.Pointer(b), dataOffset + i * 8))).Value;
+            var k = ((ж<uint64>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + i * 8))).Value;
             if (k != key) {
                 continue;
             }
@@ -194,12 +194,12 @@ break_bucketloop:;
         inserti = 0; // not necessary, but avoids needlessly spilling inserti
     }
     insertb.Value.tophash[(nint)((uintptr)(inserti & (uintptr)(abi.MapBucketCount - 1)))] = tophash(hash); // mask inserti to avoid bounds checks
-    insertk = (uintptr)add(new @unsafe.Pointer(insertb), dataOffset + inserti * 8);
+    insertk = (uintptr)add(@unsafe.Pointer.FromPinnedBox(insertb), dataOffset + inserti * 8);
     // store new key at insert position
     ((ж<uint64>)(uintptr)(insertk)).Value = key;
     h.count++;
 done:
-    @unsafe.Pointer elem = (uintptr)add(new @unsafe.Pointer(insertb), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + inserti * (uintptr)t.ValueSize);
+    @unsafe.Pointer elem = (uintptr)add(@unsafe.Pointer.FromPinnedBox(insertb), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + inserti * (uintptr)t.ValueSize);
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
@@ -228,7 +228,7 @@ internal static @unsafe.Pointer mapassign_fast64ptr(ж<maptype> Ꮡt, ж<hmap> �
     }
     if (raceenabled) {
         var callerpc = getcallerpc();
-        racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapassign_fast64));
+        racewritepc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, abi.FuncPCABIInternal(mapassign_fast64));
     }
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapWritesˢ);
@@ -261,7 +261,7 @@ bucketloop:
                 }
                 continue;
             }
-            @unsafe.Pointer k = ((ж<@unsafe.Pointer>)(uintptr)((uintptr)add(new @unsafe.Pointer(b), dataOffset + i * 8))).Value;
+            @unsafe.Pointer k = ((ж<@unsafe.Pointer>)(uintptr)((uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset + i * 8))).Value;
             if (k != key) {
                 continue;
             }
@@ -290,12 +290,12 @@ break_bucketloop:;
         inserti = 0; // not necessary, but avoids needlessly spilling inserti
     }
     insertb.Value.tophash[(nint)((uintptr)(inserti & (uintptr)(abi.MapBucketCount - 1)))] = tophash(hash); // mask inserti to avoid bounds checks
-    insertk = (uintptr)add(new @unsafe.Pointer(insertb), dataOffset + inserti * 8);
+    insertk = (uintptr)add(@unsafe.Pointer.FromPinnedBox(insertb), dataOffset + inserti * 8);
     // store new key at insert position
     ((ж<@unsafe.Pointer>)(uintptr)(insertk)).Value = key;
     h.count++;
 done:
-    @unsafe.Pointer elem = (uintptr)add(new @unsafe.Pointer(insertb), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + inserti * (uintptr)t.ValueSize);
+    @unsafe.Pointer elem = (uintptr)add(@unsafe.Pointer.FromPinnedBox(insertb), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + inserti * (uintptr)t.ValueSize);
     if ((uint8)(h.flags & (uint8)hashWriting) == 0) {
         fatal(concurrentMapWritesˢ);
     }
@@ -310,7 +310,7 @@ internal static void mapdelete_fast64(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint64 ke
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     if (raceenabled && Ꮡh != nil) {
         var callerpc = getcallerpc();
-        racewritepc(new @unsafe.Pointer(Ꮡh), callerpc, abi.FuncPCABIInternal(mapdelete_fast64));
+        racewritepc(@unsafe.Pointer.FromPinnedBox(Ꮡh), callerpc, abi.FuncPCABIInternal(mapdelete_fast64));
     }
     if (Ꮡh == nil || h.count == 0) {
         return;
@@ -318,7 +318,7 @@ internal static void mapdelete_fast64(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uint64 ke
     if ((uint8)(h.flags & (uint8)hashWriting) != 0) {
         fatal(concurrentMapWritesˢ);
     }
-    var hash = t.Hasher((uintptr)noescape(new @unsafe.Pointer(Ꮡkey)), (uintptr)h.hash0);
+    var hash = t.Hasher((uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), (uintptr)h.hash0);
     // Set hashWriting after calling t.hasher for consistency with mapdelete
     h.flags ^= (uint8)(hashWriting);
     var bucket = (uintptr)(hash & bucketMask(h.B));
@@ -343,7 +343,7 @@ search:
                     memclrHasPointers(k, 8);
                 }
             }
-            @unsafe.Pointer e = (uintptr)add(new @unsafe.Pointer(b), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + i * (uintptr)t.ValueSize);
+            @unsafe.Pointer e = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), (uintptr)(dataOffset + (uintptr)(abi.MapBucketCount * 8)) + i * (uintptr)t.ValueSize);
             if (t.Elem.Pointers()){
                 memclrHasPointers(e, (~t.Elem).Size_);
             } else {
@@ -422,18 +422,18 @@ internal static void evacuate_fast64(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr ol
         ref var xy = ref heap(new array<evacDst>(2), out var Ꮡxy);
         var x = Ꮡxy.at<evacDst>(0);
         x.Value.b = (ж<bmap>)(uintptr)(add(h.buckets, oldbucket * (uintptr)t.BucketSize));
-        x.Value.k = (uintptr)add(new @unsafe.Pointer((~x).b), dataOffset);
+        x.Value.k = (uintptr)add(@unsafe.Pointer.FromPinnedBox((~x).b), dataOffset);
         x.Value.e = (uintptr)add((~x).k, abi.MapBucketCount * 8);
         if (!h.sameSizeGrow()) {
             // Only calculate y pointers if we're growing bigger.
             // Otherwise GC can see bad pointers.
             var y = Ꮡxy.at<evacDst>(1);
             y.Value.b = (ж<bmap>)(uintptr)(add(h.buckets, (oldbucket + newbit) * (uintptr)t.BucketSize));
-            y.Value.k = (uintptr)add(new @unsafe.Pointer((~y).b), dataOffset);
+            y.Value.k = (uintptr)add(@unsafe.Pointer.FromPinnedBox((~y).b), dataOffset);
             y.Value.e = (uintptr)add((~y).k, abi.MapBucketCount * 8);
         }
         for (; b != nil; b = b.overflow(Ꮡt)) {
-            @unsafe.Pointer k = (uintptr)add(new @unsafe.Pointer(b), dataOffset);
+            @unsafe.Pointer k = (uintptr)add(@unsafe.Pointer.FromPinnedBox(b), dataOffset);
             @unsafe.Pointer e = (uintptr)add(k, abi.MapBucketCount * 8);
             for (nint i = 0; i < abi.MapBucketCount; (i, k, e) = (i + 1, (uintptr)add(k, 8), (uintptr)add(e, (uintptr)t.ValueSize))) {
                 var top = (~b).tophash[i];
@@ -458,7 +458,7 @@ internal static void evacuate_fast64(ж<maptype> Ꮡt, ж<hmap> Ꮡh, uintptr ol
                 if ((~dst).i == abi.MapBucketCount) {
                     dst.Value.b = h.newoverflow(Ꮡt, (~dst).b);
                     dst.Value.i = 0;
-                    dst.Value.k = (uintptr)add(new @unsafe.Pointer((~dst).b), dataOffset);
+                    dst.Value.k = (uintptr)add(@unsafe.Pointer.FromPinnedBox((~dst).b), dataOffset);
                     dst.Value.e = (uintptr)add((~dst).k, abi.MapBucketCount * 8);
                 }
                 dst.Value.b.Value.tophash[(nint)((~dst).i & (nint)(abi.MapBucketCount - 1))] = top; // mask dst.i as an optimization, to avoid a bounds check

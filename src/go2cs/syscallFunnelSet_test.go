@@ -54,10 +54,26 @@ import (
 )
 
 var (
-	trapRaw6  uintptr
-	trapRaw   uintptr
-	trapPlain uintptr
+	trapRaw6   uintptr
+	trapRaw    uintptr
+	trapPlain  uintptr
+	trapTwoStep uintptr
+	_zero      uintptr
 )
+
+// twoStepPointerArg is mksyscall's shape for a []byte argument — the pointer reaches the funnel
+// through an unsafe.Pointer VARIABLE, which is what zsyscall_linux_amd64.go's read/write/pread/
+// pwrite/recvfrom/sendto do (16 calls there, 13 in the darwin twin).
+func twoStepPointerArg(fd uintptr, buf []byte) uintptr {
+	var _p0 unsafe.Pointer
+	if len(buf) > 0 {
+		_p0 = unsafe.Pointer(&buf[0])
+	} else {
+		_p0 = unsafe.Pointer(&_zero)
+	}
+	r1, _, _ := syscall.Syscall(trapTwoStep, fd, uintptr(_p0), uintptr(len(buf)))
+	return r1
+}
 
 // POSITIVE - RawSyscall6 with a pointer-derived argument. Go marks RawSyscall6
 // //go:uintptrkeepalive; the CLR heap moves, so the box that pins the buffer must be held across
@@ -83,7 +99,7 @@ func rawNoPointer(fd uintptr) uintptr {
 
 func main() {
 	buf := make([]byte, 8)
-	fmt.Println(raw6PointerArg(buf), rawPointerArg(&buf[0]), rawNoPointer(0))
+	fmt.Println(raw6PointerArg(buf), rawPointerArg(&buf[0]), rawNoPointer(0), twoStepPointerArg(0, buf))
 }
 `
 
@@ -206,5 +222,48 @@ func TestRawSyscallFunnelLeavesIntegerArgumentsAlone(t *testing.T) {
 
 	if strings.Contains(line, "ᴋ") {
 		t.Errorf("an all-integer RawSyscall call captured a temp — the interception widened past pointer-derived arguments:\n    %s", line)
+	}
+}
+
+// The TWO-STEP shape, added 2026-09-04 with the pin-lifetime cut. Go's own generated wrappers hand a
+// []byte to the funnel through an `unsafe.Pointer` VARIABLE, never inline — and this file's
+// predicate matched only the inline form, on a reading of unsafe.Pointer's rule (4) that took "the
+// conversion must appear in the argument list" to exclude an intermediate variable. The GO COMPILER
+// disagrees, and it is the authority: escape.rewriteArgument (cmd/compile/internal/escape/call.go)
+// keeps any argument alive that is an OCONVNOP whose OPERAND TYPE is unsafe.Pointer and whose own
+// type is uintptr — a test on the type, not on the syntax below it.
+//
+// What the gap cost, measured before the fix: every converted read and write handed the kernel a
+// managed buffer address with nothing holding the box that pins it, and sixteen concurrent TLS
+// connections over the converted stack died SIGSEGV in five seconds, 3/3, recovering when the box
+// was held. Nothing in the standing ladder could see it — the emission compiles, is byte-identical
+// in shape to a correct one, and only a collection landing INSIDE the kernel's window is wrong.
+func TestTwoStepPointerArgumentIsKeptAliveAcrossTheFunnel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: runs the real converter over a module fixture")
+	}
+
+	mainCs := convertRawSyscallFunnelFixture(t)
+	assertKeepAlivePair(t, mainCs, "Syscall(trapTwoStep")
+}
+
+// The other half of the same cut: keeping the unsafe.Pointer VALUE alive is worth nothing unless the
+// value carries the box that holds the pin. `new @unsafe.Pointer(box)` binds the implicit
+// ж→uintptr conversion into Pointer(uintptr), which pins and retains nothing; the mint must be the
+// retaining door instead. Asserted on the emission rather than on golib so the two halves cannot
+// drift apart silently — a fixed golib with an unchanged emission is still the defect.
+func TestPointerMintFromABoxTakesTheRetainingDoor(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: runs the real converter over a module fixture")
+	}
+
+	mainCs := convertRawSyscallFunnelFixture(t)
+
+	if !strings.Contains(mainCs, "@unsafe.Pointer.FromPinnedBox(") {
+		t.Errorf("no `unsafe.Pointer(&x)` mint took the retaining door — the pointer carries no pin holder:\n%s", mainCs)
+	}
+
+	if bare := regexp.MustCompile(`new @unsafe\.Pointer\(Ꮡ`).FindAllString(mainCs, -1); len(bare) > 0 {
+		t.Errorf("%d mint(s) still construct a Pointer directly from a box (%v) — the box carrying the pin is unreachable the instant the mint returns", len(bare), bare)
 	}
 }

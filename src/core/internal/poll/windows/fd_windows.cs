@@ -470,7 +470,7 @@ public static (nint, error) Read(this ж<FD> Ꮡfd, slice<byte> buf) {
             o.InitBuf(buf);
             (n, err) = execIO(o, (ж<operation> oΔ1) => Δsyscall.WSARecv((~(~oΔ1).fd).Sysfd, oΔ1.of(operation.Ꮡbuf), 1, oΔ1.of(operation.Ꮡqty), oΔ1.of(operation.Ꮡflags), oΔ1.of(operation.Ꮡo), nil));
             if (race.Enabled) {
-                race.Acquire(new @unsafe.Pointer(ᏑioSync));
+                race.Acquire(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
             }
         }
         if (len(buf) != 0) {
@@ -762,7 +762,7 @@ public static (nint, error) Write(this ж<FD> Ꮡfd, slice<byte> buf) {
                 }
             } else {
                 if (race.Enabled) {
-                    race.ReleaseMerge(new @unsafe.Pointer(ᏑioSync));
+                    race.ReleaseMerge(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
                 }
                 var o = Ꮡfd.of(FD.Ꮡwop);
                 o.InitBuf(b);
@@ -890,7 +890,7 @@ public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> �
         }
         defer(Ꮡfd.writeUnlock, ref ᒐ);
         if (race.Enabled) {
-            race.ReleaseMerge(new @unsafe.Pointer(ᏑioSync));
+            race.ReleaseMerge(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
         }
         var o = Ꮡfd.of(FD.Ꮡwop);
         o.InitBufs(Ꮡbuf);
@@ -1162,7 +1162,7 @@ public static error Fchmod(this ж<FD> Ꮡfd, uint32 mode) {
         }
         ref var du = ref heap(new windows.FILE_BASIC_INFO(), out var Ꮡdu);
         du.FileAttributes = attrs;
-        return windows.SetFileInformationByHandle(fd.Sysfd, windows.FileBasicInfo, new @unsafe.Pointer(Ꮡdu), (uint32)/* unsafe.Sizeof(du) */ (uintptr)40);
+        return windows.SetFileInformationByHandle(fd.Sysfd, windows.FileBasicInfo, @unsafe.Pointer.FromPinnedBox(Ꮡdu), (uint32)/* unsafe.Sizeof(du) */ (uintptr)40);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }

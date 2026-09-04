@@ -219,12 +219,12 @@ internal static (nint port, error err) cgoLookupServicePort(ж<_C_struct_addrinf
             var exprᴛ2 = _C_ai_family(r).Value;
             if (exprᴛ2 == _C_AF_INET) {
                 var sa = _C_ai_addr(r).ValueSlot.Reinterpret<_C_struct_sockaddr, syscall.RawSockaddrInet4>();
-                var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(sa.of(syscall.RawSockaddrInet4.ᏑPort)));
+                var p = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(sa.of(syscall.RawSockaddrInet4.ᏑPort)));
                 (port, err) = ((nint)(((nint)p.Value[0] << (int)(8)) | (nint)p.Value[1]), default!); goto ᒐdone;
             }
             if (exprᴛ2 == _C_AF_INET6) {
                 var sa = _C_ai_addr(r).ValueSlot.Reinterpret<_C_struct_sockaddr, syscall.RawSockaddrInet6>();
-                var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(sa.of(syscall.RawSockaddrInet6.ᏑPort)));
+                var p = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(sa.of(syscall.RawSockaddrInet6.ᏑPort)));
                 (port, err) = ((nint)(((nint)p.Value[0] << (int)(8)) | (nint)p.Value[1]), default!); goto ᒐdone;
             }
 
@@ -445,7 +445,7 @@ internal static (slice<dnsmessage.Resource>, error) cgoResSearch(@string hostnam
         // useful in the response, even though there *is* a response.
         nint bufSize = maxDNSPacketSize;
         var buf = (ж<_C_uchar>)(uintptr)(_C_malloc((uintptr)bufSize));
-        defer(_C_free, new @unsafe.Pointer(buf), ref ᒐ);
+        defer(_C_free, @unsafe.Pointer.FromPinnedBox(buf), ref ᒐ);
         var (s, err) = syscall.BytePtrFromString(hostname);
         if (err != default!) {
             return (default!, err);
@@ -460,7 +460,7 @@ internal static (slice<dnsmessage.Resource>, error) cgoResSearch(@string hostnam
                 break;
             }
             // Allocate a bigger buffer to fit the entire msg.
-            _C_free(new @unsafe.Pointer(buf));
+            _C_free(@unsafe.Pointer.FromPinnedBox(buf));
             bufSize = sizeΔ1;
             buf = (ж<_C_uchar>)(uintptr)(_C_malloc((uintptr)bufSize));
         }

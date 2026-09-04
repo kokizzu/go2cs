@@ -237,7 +237,7 @@ internal static ж<pinnerBits> getPinnerBits(this ж<mspan> Ꮡs) {
 }
 
 internal static void setPinnerBits(this ж<mspan> Ꮡs, ж<pinnerBits> Ꮡp) {
-    atomicstorep(@unsafe.Pointer.FromBox(Ꮡs.of(mspan.ᏑpinnerBits)), new @unsafe.Pointer(Ꮡp));
+    atomicstorep(@unsafe.Pointer.FromBox(Ꮡs.of(mspan.ᏑpinnerBits)), @unsafe.Pointer.FromPinnedBox(Ꮡp));
 }
 
 // refreshPinnerBits replaces pinnerBits with a fresh copy in the arenas for the
@@ -264,7 +264,7 @@ internal static void refreshPinnerBits(this ж<mspan> Ꮡs) {
     }
     if (hasPins){
         var newPinnerBits = s.newPinnerBits();
-        memmove(new @unsafe.Pointer(newPinnerBits.of(pinnerBits.Ꮡx)), new @unsafe.Pointer(Δp.of(pinnerBits.Ꮡx)), bytes);
+        memmove(@unsafe.Pointer.FromPinnedBox(newPinnerBits.of(pinnerBits.Ꮡx)), @unsafe.Pointer.FromPinnedBox(Δp.of(pinnerBits.Ꮡx)), bytes);
         Ꮡs.setPinnerBits(newPinnerBits);
     } else {
         Ꮡs.setPinnerBits(nil);
@@ -312,7 +312,7 @@ internal static bool decPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
             spanHasNoSpecials(Ꮡspan);
         }
         @lock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
-        Ꮡmheap_.of(mheap.ᏑspecialPinCounterAlloc).free(new @unsafe.Pointer(counter));
+        Ꮡmheap_.of(mheap.ᏑspecialPinCounterAlloc).free(@unsafe.Pointer.FromPinnedBox(counter));
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
         return false;
     }

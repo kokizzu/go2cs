@@ -58,7 +58,7 @@ internal static void atomicstorep(@unsafe.Pointer ptr, @unsafe.Pointer @new) {
 //go:nosplit
 //go:linkname atomic_storePointer internal/runtime/atomic.storePointer
 internal static void atomic_storePointer(ж<@unsafe.Pointer> Ꮡptr, @unsafe.Pointer @new) {
-    atomicstorep(new @unsafe.Pointer(Ꮡptr), @new);
+    atomicstorep(@unsafe.Pointer.FromPinnedBox(Ꮡptr), @new);
 }
 
 // atomic_casPointer is the implementation of runtime/internal/UnsafePointer.CompareAndSwap
