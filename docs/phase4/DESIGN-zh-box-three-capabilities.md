@@ -344,3 +344,72 @@ capabilities starts from a per-box table with the boundary each box crosses and 
 callee, a measured null for the one increment that looked independent and was not, a contract whose
 stale check is placed on the side where it can be loud, an arithmetic that names what the record can
 and cannot reach, and predictions on record for every increment — not a headline.
+
+## 8. AMENDMENT 2026-09-04 — I1 RETIRED on measurement, §4's arithmetic corrected 9/2 → 6/5, and the boundary's case has arrived
+
+> Added, not rewritten (the doc-type rule). Every reading below was measured on G-LAPTOP at master
+> `d188e89ed` on 2026-09-04, before any cut existed; ruled by the coordinator the same night
+> (mailbox `d55ec8f9e`). Nothing in §1–§7 above is deleted: what changes is which increment goes
+> first, and what §4 says is reachable.
+
+### 8.1 The capability step this record silently assumed
+
+§3.1 spoke of "receiver aliasing" as though a method taking a receiver-field address only needed
+the eligibility filter relaxed. It needs one more thing first, and the stdlib-wide `-ref-census`
+(analysis only, 13 s, corpus verifiably unchanged) is what showed it: **`fdMutex.rwlock` carries NO
+declaration-level veto at all** — none of B′ §4.1's XM-1..XM-5 fires on it. Its exclusion happens at
+the SELECTION stage, where arm (a) admits only methods that RETURN their receiver (the R3 ruling,
+`DESIGN-zh-box-b-prime.md` §10), and `rwlock` returns `bool`. So before any field-address relaxation
+can matter, primaries must extend beyond the fluent arm to non-fluent methods. That step was never
+named here, and naming it is half of why I1 read as cheaper than it is.
+
+### 8.2 Why I1 — "same-package receiver aliasing" — has no reachable case
+
+Three readings, each independently sufficient:
+
+1. **The `os` chain is pinned by the IDENTITY boundary, not by the package boundary.** `readLock`
+   emits `Ꮡfd.of(FD.Ꮡfdmu).rwlock(true)` while already holding `ref var fd`, so the box exists only
+   to satisfy `rwlock`'s `ж<fdMutex>` receiver — and `rwlock` forms three receiver-field addresses:
+   `&mu.state` (cross-package atomics, capability 3) and `&mu.rsema` / `&mu.wsema`, which feed
+   `runtime_Semacquire`/`Semrelease`. A `ref` receiver has no object to anchor a `ж<uint32>` on, and
+   `FieldRefBox` requires one by construction (`object m_source`; its own comment: "a field in a heap
+   allocated struct"). So `rwlock` cannot take a `ref` receiver at all while the semaphore keys on
+   the box.
+2. **The selection fixpoint cascades that upward, by its own demotion rule** (a selected method that
+   calls a direct-ж method on its receiver which is not itself selected is demoted): `FD.Write` calls
+   `Ꮡfd.writeLock()`, `writeLock` calls `rwlock`, `rwlock` is never selected — so `FD.Write` is never
+   selected, and `os`'s `Ꮡf.of(File.Ꮡpfd).Write(b)` box sits behind the same wall.
+3. **The acceptance case is cross-package too.** `edwards25519`'s point-level methods take their
+   aliasing field addresses to the field ops in `crypto/internal/edwards25519/field` — a different
+   package (`using field = go.crypto.@internal.edwards25519.field_package` at the head of the
+   emission), so a same-package increment cannot move that chain either.
+
+**Prediction left on record rather than erased:** I1 as scoped removes ZERO boxes on `os` and ZERO on
+`edwards25519`. Its falsifier is any box removed on either row, which would mean one of the three
+readings is wrong. I1 is RETIRED as a scoping — not because it is hard, but because it has no
+measured case; it re-enters only if I3's or the boundary's own measurements surface one.
+
+### 8.3 §4's arithmetic, corrected
+
+| | boxes | bytes | why |
+|:--|--:|--:|:--|
+| reachable by capabilities 1 + 3 + 4 WITH the contract | **6** | **384** | `fdMutex.Ꮡstate` ×4 (capability 3, plus the caller-side entry alias `incref` lacks) and `FD.Ꮡl` ×2 (capability 1 through `sync`'s hand-declared `ref` primary — these need only the caller's existing `ref var fd` entry alias, NOT `FD.Write`'s own promotion, so they are inside the wall) |
+| behind the IDENTITY boundary | **5** | **320** | `fdMutex.Ꮡwsema` ×2 (the boundary itself), `FD.Ꮡfdmu` ×2 (callee `rwlock`/`rwunlock` unpromotable), `file.Ꮡpfd` ×1 (cascaded through `FD.Write` → `writeLock` → `rwlock`) |
+
+§4 read 9 reachable / 2 at the boundary; measured, it is **6 / 5**. The three rows that moved are
+`FD.Ꮡfdmu` ×2 and `file.Ꮡpfd`, and they moved for the same reason: their callees cannot be promoted
+while the semaphore keys on a box.
+
+### 8.4 The boundary's case is the row itself
+
+§6 filed the identity-keyed leaves as "a boundary awaiting a case". The case has arrived and it is
+`os`'s own bank condition: ruling #1 makes the want-zero assert satisfiable in principle and
+therefore never a disclosure, so `os` banks at ZERO bytes or not at all — and 5 of the seam's 11
+boxes are now behind this boundary. **`os` cannot bank until the identity-keyed semaphore is
+redesigned**, which promotes §6 from a stated boundary to the arc's objective-critical item. The two
+candidate redesigns §6 names (a stable per-field token; an inline slot in the converted struct) are
+sized against this measured population next; neither is built here.
+
+The order this record recommended in §5 changes with it: the contract (C0) first as it always was,
+then **I3** — cross-package receiver aliasing, whose measured reach on `os` is the `FD.Ꮡl` pair,
+2 boxes / 128 B — and the boundary sized beside it rather than deferred behind the rest.
