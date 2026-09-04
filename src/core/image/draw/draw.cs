@@ -1050,7 +1050,7 @@ internal static void drawPaletted(Image dst, image.Rectangle r, image.Image src,
     nint stride = 0;
     {
         var (p, ok) = dst._<ж<image.Paletted>>(ᐧ); if (ok) {
-            palette = new slice<array<int32>>(len((~p).Palette), () => new(4));
+            palette = GoReflect.WithElemDims(new slice<array<int32>>(len((~p).Palette), () => new(4)), 4);
             foreach (var (i, col) in (~p).Palette) {
                 var (rΔ1, g, b, a) = col.RGBA();
                 palette[i][0] = (int32)rΔ1;
@@ -1067,8 +1067,8 @@ internal static void drawPaletted(Image dst, image.Rectangle r, image.Image src,
     slice<array<int32>> quantErrorCurr = default!;
     slice<array<int32>> quantErrorNext = default!;
     if (floydSteinberg) {
-        quantErrorCurr = new slice<array<int32>>(r.Dx() + 2, () => new(4));
-        quantErrorNext = new slice<array<int32>>(r.Dx() + 2, () => new(4));
+        quantErrorCurr = GoReflect.WithElemDims(new slice<array<int32>>(r.Dx() + 2, () => new(4)), 4);
+        quantErrorNext = GoReflect.WithElemDims(new slice<array<int32>>(r.Dx() + 2, () => new(4)), 4);
     }
     var pxRGBA = (nint x, nint y) => {
         return src.At(x, y).RGBA();

@@ -71,7 +71,7 @@ internal static void rangeValues() {
         row[0] = 99;
     }
     fmt.Println(rangeValuesˢ, m);
-    var s = new array<nint>[]{new nint[]{7, 8, 9}.array()}.slice();
+    var s = GoReflect.WithElemDims(new array<nint>[]{new nint[]{7, 8, 9}.array()}.slice(), 3);
     foreach (var (_, vᴛ2) in s) {
         var row = vᴛ2.Clone();
 
@@ -91,7 +91,7 @@ internal static void rangeValues() {
 private static readonly object rangeNamedˢ = (@string)"rangeNamed:"u8;
 
 internal static void rangeNamed() {
-    var rows = new Row[]{new nint[]{1, 2, 3}.array(), new nint[]{4, 5, 6}.array()}.slice();
+    var rows = GoReflect.WithElemDims(new Row[]{new nint[]{1, 2, 3}.array(), new nint[]{4, 5, 6}.array()}.slice(), 3);
     foreach (var (_, vᴛ1) in rows) {
         var r = vᴛ1.Clone();
 
@@ -154,7 +154,7 @@ internal static void compositeElements() {
     var m = new array<nint>[]{a.Clone(), b.Clone()}.array();
     m[0][0] = 99;
     fmt.Println(compositeArrayˢ, a, m[0]);
-    var s = new array<nint>[]{a.Clone(), b.Clone()}.slice();
+    var s = GoReflect.WithElemDims(new array<nint>[]{a.Clone(), b.Clone()}.slice(), 3);
     s[1][0] = 99;
     fmt.Println(compositeSliceˢ, b, s[1]);
 }

@@ -227,7 +227,7 @@ internal static ж<DecapsulationKey> kemKeyGen(ж<DecapsulationKey> Ꮡdk, [GoAr
         s.Value[i] = ntt(samplePolyCBD(σ, N));
         N++;
     }
-    var e = new slice<nttElement>(k);
+    var e = GoReflect.WithElemDims(new slice<nttElement>(k), 256);
     foreach (var (i, _) in e) {
         e[i] = ntt(samplePolyCBD(σ, N));
         N++;
@@ -356,7 +356,7 @@ internal static slice<byte> pkeEncrypt([GoArrayDims(1088)] ж<array<byte>> Ꮡcc
     ref var cc = ref Ꮡcc.DerefOrNull();
 
     byte N = default!;
-    var (r, e1) = (new slice<nttElement>(k), new slice<ringElement>(k));
+    var (r, e1) = (GoReflect.WithElemDims(new slice<nttElement>(k), 256), GoReflect.WithElemDims(new slice<ringElement>(k), 256));
     foreach (var (i, _) in r) {
         r[i] = ntt(samplePolyCBD(rnd, N));
         N++;
@@ -366,7 +366,7 @@ internal static slice<byte> pkeEncrypt([GoArrayDims(1088)] ж<array<byte>> Ꮡcc
         N++;
     }
     var e2 = samplePolyCBD(rnd, N);
-    var u = new slice<ringElement>(k); // NTT⁻¹(AT ◦ r) + e1
+    var u = GoReflect.WithElemDims(new slice<ringElement>(k), 256); // NTT⁻¹(AT ◦ r) + e1
     foreach (var (i, _) in u) {
         u[i] = e1[i].Clone();
         foreach (var (j, _) in r) {
@@ -459,7 +459,7 @@ internal static error parseDK(ref decryptionKey dx, slice<byte> dkPKE) {
 internal static slice<byte> pkeDecrypt(ref decryptionKey dx, [GoArrayDims(1088)] ж<array<byte>> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var u = new slice<ringElement>(k);
+    var u = GoReflect.WithElemDims(new slice<ringElement>(k), 256);
     foreach (var (i, _) in u) {
         var bΔ1 = Ꮡ(array<byte>.Alias(c[(int)((nint)encodingSize10 * i)..(int)((nint)encodingSize10 * (i + 1))], 320));
         u[i] = ringDecodeAndDecompress10(bΔ1);

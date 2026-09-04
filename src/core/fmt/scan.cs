@@ -318,7 +318,7 @@ internal static (slice<byte> tok, error err) Token(this ж<ss> Ꮡs, bool skipSp
 
 // space is a copy of the unicode.White_Space ranges,
 // to avoid depending on package unicode.
-internal static slice<array<uint16>> space = new array<uint16>[]{
+internal static slice<array<uint16>> space = GoReflect.WithElemDims(new array<uint16>[]{
     new uint16[]{0x0009, 0x000d}.array(),
     new uint16[]{0x0020, 0x0020}.array(),
     new uint16[]{0x0085, 0x0085}.array(),
@@ -329,7 +329,7 @@ internal static slice<array<uint16>> space = new array<uint16>[]{
     new uint16[]{0x202f, 0x202f}.array(),
     new uint16[]{0x205f, 0x205f}.array(),
     new uint16[]{0x3000, 0x3000}.array()
-}.slice();
+}.slice(), 2);
 
 internal static bool isSpace(rune r) {
     if (r >= (rune)(1 << (int)(16))) {

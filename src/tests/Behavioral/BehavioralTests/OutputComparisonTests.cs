@@ -1454,6 +1454,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectConvertAssignable() => CheckTarget("ReflectConvertAssignable");
 
     [TestMethod]
+    public void CheckReflectEmptyContainerIdentity() => CheckTarget("ReflectEmptyContainerIdentity");
+
+    [TestMethod]
     public void CheckReflectFieldAddrWrite() => CheckTarget("ReflectFieldAddrWrite");
 
     [TestMethod]

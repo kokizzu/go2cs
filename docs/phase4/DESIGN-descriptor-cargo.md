@@ -762,3 +762,68 @@ TestImplicitMapConversion is `MapIndex` / `SetMapIndex`, not `MapOf`). Nothing h
 dead seven are latent (they compile, and un-hand-owning `MapOf` / `StructOf` / `Len` / `Bytes` would make
 them silently wrong — `isReflexive` on empty `Fields` answers `true`, `typeptrdata` answers 0), and this
 table is their record, because a comment in an emitted file would not survive a regen. The last row is the shape the census did not cover, named as a row so the next lane meets it as a measured boundary.
+
+## 15. Increment C — the length is carried from where it is known, not recovered from where it is not (2026-09-04)
+
+**The defect this closes.** `reflect.SliceOf(reflect.ArrayOf(3, byteT))` was not identity-equal to
+`reflect.TypeOf([][3]uint8{})`. The declared side is an EMPTY literal: increment B measures a
+container's element cargo off a PRESENT element (§12.2), an empty slice has none, so the value route
+interned under key `""` while the constructed route interned under `"3"` — two descriptors, two boxes,
+and `reflect.Type` identity is box identity. Increment B made the OBSERVED case right and left the
+unobservable one wrong; that is a trade, not a break, and `ReflectArrayOf` is where it surfaced.
+
+**Why no runtime-only fix exists.** `[3]uint8` and `[4]uint8` are ONE managed type, `array<uint8>` —
+an array's length is a CONSTRUCTOR ARGUMENT here, not a type parameter. A container with no elements
+therefore holds no observation of its element's length, and every restructuring of the interning key
+(keying on the element DESCRIPTOR, on structural equality, on the element's managed type alone)
+reduces to the same missing observation. Identity cannot be made tolerant of "unobserved" either: it
+is `ж<T>` box equality, so tolerance would change POINTER equality corpus-wide and would not even be
+transitive. **The fact is not lost, it is DROPPED** — the converter knows the length statically at
+every site that creates such a slice, and `[][3]uint8{}` was emitted as `new array<uint8>[]{}.slice()`
+with the 3 nowhere in it.
+
+**The cut.** `GoReflect.WithElemDims` records the element dims against the slice's BACKING ARRAY in a
+`ConditionalWeakTable`; `SliceElemArrayDims` consults the record first and keeps observation as the
+fallback, so nothing already right becomes wrong. The converter wraps the three creation kinds —
+composite literal, `make`, and slice expression. The backing array is the identity the dims belong to:
+a reslice shares it and inherits the record without being wrapped. `ISliceBacking` answers that
+backing without knowing the element type, because `IArray.Source` materializes a DETACHED COPY and
+would have made every write land on a throwaway object and every read miss — a fix that silently does
+nothing.
+
+**Why the side table and not the +8 B field, measured.** A type-aware census over `std` (840 packages,
+positive control 27,143) found **130** slice-of-array creation sites — 87 composite literals, 38
+`make`, 5 slice expressions, 0 involving a generic type parameter — against **27,143** plain-slice
+creation sites. `slice<T>` is 40 bytes on x64, so a dims field is +20% on every slice VALUE in the
+corpus, paid by ~209 sites for every 1 it serves. The field buys exactly ONE row class over the side
+table (the nil slice) and no case reaches it. Ruled: zero bytes; the cost is one lookup on the
+`TypeOf` path and no slice operation touches it.
+
+**`Array.Empty<T>()` is the one rule.** It is a SINGLETON shared by every length, so recording against
+it would make `[][3]uint8` and `[][4]uint8` collide on one key. The write path SUBSTITUTES a fresh
+zero-length backing rather than refusing — `make([][3]uint8, 0)` is a legal Go program and must not
+throw. Measured on this runtime: `new T[0]` allocates a distinct object per call and is not folded to
+the singleton, and a table keyed on two fresh empties keeps them apart.
+
+**KNOWN BOUNDARIES, recorded rather than remembered.** (a) A **nil slice** has no backing object to key
+on; (b) a slice whose backing a **reallocating `append`** replaced loses the record (observation covers
+it whenever elements exist); (c) **map- and pointer-of-array** containers have no creation-site record
+at all. All three keep the observation-only answer, and no case in the corpus or on the roster reaches
+any of them. The remedy for (a) and (b) is the +8 B field above, measured and declined; for (c) it is
+the same treatment applied to those creation sites the day a case appears. `GolibTests.SliceElemDimsTests`
+asserts the nil case at TODAY's answer, so a remedy cannot land without that assertion being updated
+deliberately, and the behavioral guard carries all three in a documented non-printing block — a
+behavioral project is a stdout comparison, so a row whose C# answer differs would red the project.
+
+**The `[][N]byte` ambiguity, for the record beside §12's bar.** A per-assembly dims REGISTRY was
+proposed and withdrawn on measurement: across the stdlib 11 of 15 element types carry exactly one array
+length, but `uintptr` carries three, `uint16` and `string` two each, and `byte`/`uint8` — the busiest —
+carries **three at creation sites (4096, 32, 6)**. A registry would have been right by luck on the shape
+most likely to be asked. The side table is right by construction on all 130.
+
+**Guards.** Six `GolibTests` rows (the record, the two-lengths case, the `Array.Empty` substitution
+positive-controlled by removing it, observation still answering a populated slice, a window inheriting
+through the array's own backing, and the nil boundary at today's answer) plus the behavioral project
+`ReflectEmptyContainerIdentity`, 10 rows against Go's own output: the observed rows that must stay
+right, the empty-literal assertion, and an ambiguous package where `[][3]` and `[][4]` both answer
+correctly and remain distinct types.

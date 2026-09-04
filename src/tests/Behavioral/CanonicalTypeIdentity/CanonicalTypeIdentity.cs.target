@@ -20,8 +20,8 @@ private static readonly object typeOfIntLen1TypeOfIntˢ = (@string)"11 TypeOf([]
 private static readonly object deepEqualSameMapˢ = (@string)"12 DeepEqual(same map, different insertion order):"u8;
 
 internal static void Main() {
-    var sixes = new array<uint8>[]{new uint8[]{}.array(6)}.slice();
-    var eights = new array<uint8>[]{new uint8[]{}.array(8)}.slice();
+    var sixes = GoReflect.WithElemDims(new array<uint8>[]{new uint8[]{}.array(6)}.slice(), 6);
+    var eights = GoReflect.WithElemDims(new array<uint8>[]{new uint8[]{}.array(8)}.slice(), 8);
     var t6 = reflect.TypeOf(sixes);
     fmt.Println(sliceOfArrayOf6Uint8ˢ, AreEqual(reflect.SliceOf(reflect.ArrayOf(6, reflect.TypeOf((uint8)0))), t6));
     fmt.Println(typeOf6Uint8TypeOf8Uint8ˢ, !AreEqual(t6, reflect.TypeOf(eights)));
@@ -31,7 +31,7 @@ internal static void Main() {
     fmt.Println(typeOfMap2IntIntKeyLen2ˢ, reflect.TypeOf(m).Key().Len() == 2);
     var me = new map<@string, array<nint>>{[""u8] = new nint[]{}.array(3)};
     fmt.Println(mapOfStringArrayOf3Intˢ, AreEqual(reflect.MapOf(reflect.TypeOf((@string)""u8), reflect.ArrayOf(3, reflect.TypeOf((nint)(0)))), reflect.TypeOf(me)));
-    var nested = new array<array<nint>>[]{new array<nint>[]{new nint[]{1, 2, 3}.array(), new nint[]{4, 5, 6}.array()}.array()}.slice();
+    var nested = GoReflect.WithElemDims(new array<array<nint>>[]{new array<nint>[]{new nint[]{1, 2, 3}.array(), new nint[]{4, 5, 6}.array()}.array()}.slice(), 2, 3);
     fmt.Println(typeOf23IntElemElemLen3ˢ, reflect.TypeOf(nested).Elem().Elem().Len() == 3);
     var ptrs = new ж<array<byte>>[]{Ꮡ(new byte[]{}.array(4))}.slice();
     fmt.Println(typeOf4ByteElemElemLen4ˢ, reflect.TypeOf(ptrs).Elem().Elem().Len() == 4);

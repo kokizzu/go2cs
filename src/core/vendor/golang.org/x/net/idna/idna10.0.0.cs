@@ -736,7 +736,7 @@ internal static joinState stateAfter => 4;
 internal static joinState stateFAIL => 5;
 
 // no-op as we can't accept joiners here
-internal static slice<array<joinState>> joinStates = new golib.SparseArray<array<joinState>>{
+internal static slice<array<joinState>> joinStates = GoReflect.WithElemDims(new golib.SparseArray<array<joinState>>{
     [stateStart] = new golib.SparseArray<joinState>{
         [joiningL] = stateBefore,
         [joiningD] = stateBefore,
@@ -774,7 +774,7 @@ internal static slice<array<joinState>> joinStates = new golib.SparseArray<array
         [joinZWNJ] = stateFAIL,
         [joinZWJ] = stateFAIL,
         [joinVirama] = stateFAIL}.array(8)
-}.slice();
+}.slice(), 8);
 
 // validateLabel validates the criteria from Section 4.1. Item 1, 4, and 6 are
 // already implicitly satisfied by the overall implementation.
