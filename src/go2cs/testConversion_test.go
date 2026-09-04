@@ -4967,6 +4967,8 @@ func TestTestEnvironmentRecordRoundTrips(t *testing.T) {
 			// trip below actually exercises the field, matching how production code assembles the
 			// full record before marshaling it.
 			record.OracleGoVersion = "go version go1.23.12 " + runtime.GOOS + "/" + runtime.GOARCH
+			// Terminal is the same kind of field: a driver observation, never derived from options.
+			record.Terminal = driverTerminalPresent
 
 			// The round trip: what a proof-page regeneration reads back is exactly what this
 			// comparison run recorded, byte for byte through JSON — not just equal Go values.
@@ -4993,8 +4995,51 @@ func TestTestEnvironmentRecordRoundTrips(t *testing.T) {
 			if strings.Contains(string(data), "oracleGoVersion") {
 				t.Errorf("OracleGoVersion is empty but still appeared in the record: %s", data)
 			}
+
+			// Same for Terminal: a Windows run (not probed) must not write a "terminal" key at all,
+			// or every Windows proof page would carry a clause that describes nothing.
+			record.Terminal = ""
+			data, err = json.Marshal(record)
+			if err != nil {
+				t.Fatalf("marshal (empty Terminal): %v", err)
+			}
+			if strings.Contains(string(data), "terminal") {
+				t.Errorf("Terminal is empty but still appeared in the record: %s", data)
+			}
 		})
 	}
+}
+
+// TestDriverTerminalUsesGoTestsOwnPredicate pins driverTerminal to the predicate Go's
+// terminal-gated tests decide with (syscall's TestForeground: os.OpenFile("/dev/tty", O_RDWR)),
+// so the record can never say "tty" for a run in which those tests skipped, or "none" for one in
+// which they ran. The observed value is logged so a run under a pty and a detached run can each be
+// read for the state they were in — the probe is positive-controlled by running this test both
+// ways, not by asserting one answer.
+func TestDriverTerminalUsesGoTestsOwnPredicate(t *testing.T) {
+	got := driverTerminal()
+
+	if runtime.GOOS == "windows" {
+		if got != "" {
+			t.Fatalf("driverTerminal() = %q on windows, want the empty (not probed) value", got)
+		}
+		return
+	}
+
+	want := driverTerminalAbsent
+	if tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0); err == nil {
+		tty.Close()
+		want = driverTerminalPresent
+	}
+
+	if got != want {
+		t.Fatalf("driverTerminal() = %q, but /dev/tty says %q", got, want)
+	}
+	if got != driverTerminalPresent && got != driverTerminalAbsent {
+		t.Fatalf("driverTerminal() = %q, outside the record's vocabulary", got)
+	}
+
+	t.Logf("driver terminal context observed: %s", got)
 }
 
 // TestHandOwnHostTestTargetOpensTestsOnlyMode pins BOTH directions of the hand-owned-host target

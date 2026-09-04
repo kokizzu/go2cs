@@ -343,3 +343,51 @@ func TestFilteredRunPublishesNoRosterArtifacts(t *testing.T) {
 		t.Error("a non-validated status must never publish, filtered or not")
 	}
 }
+
+// TestValidationProofPageStatesTheTerminalContext: the "Measured at" sentence carries the driver's
+// terminal context when the record observed one, in the same sentence as the configuration and
+// the oracle, and nothing at all when the record carries no observation — so a page from a
+// Windows run, or one regenerated from a record written before the field existed, is unchanged.
+// The fixture record predates the field, which is exactly the third case.
+func TestValidationProofPageStatesTheTerminalContext(t *testing.T) {
+	comparison, disclosures := loadProofFixture(t)
+
+	cases := []struct {
+		name     string
+		config   string
+		tiered   bool
+		oracle   string
+		terminal string
+		want     string
+	}{
+		{name: "not probed (the fixture as committed)", want: "Measured at `Debug`."},
+		{name: "controlling terminal present", terminal: driverTerminalPresent, want: "Measured at `Debug`, under a controlling terminal."},
+		{name: "controlling terminal absent", terminal: driverTerminalAbsent, want: "Measured at `Debug`, with no controlling terminal."},
+		{name: "release, oracle and terminal in one sentence", config: "Release", oracle: "go version go1.23.12 linux/amd64", terminal: driverTerminalPresent,
+			want: "Measured at `Release` (tiered JIT off), oracle `go version go1.23.12 linux/amd64`, under a controlling terminal."},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			variant := comparison
+			variant.Environment.Configuration = c.config
+			variant.Environment.Tiered = c.tiered
+			variant.Environment.OracleGoVersion = c.oracle
+			variant.Environment.Terminal = c.terminal
+
+			page := renderValidationProofPage(fixtureProvenance(), variant, disclosures, nil)
+			lines := strings.Split(page, "\n")
+			found := ""
+			for _, line := range lines {
+				if strings.HasPrefix(line, "Measured at ") {
+					found = line
+					break
+				}
+			}
+
+			if found != c.want {
+				t.Fatalf("measurement sentence = %q, want %q", found, c.want)
+			}
+		})
+	}
+}

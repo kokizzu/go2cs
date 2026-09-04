@@ -419,9 +419,6 @@ internal static @string unsupportedSysProcAttrField(ref SysProcAttr sys) {
     if (sys.Noctty) {
         return "posix_spawn seam: SysProcAttr.Noctty is not supported"u8;
     }
-    if (sys.Foreground) {
-        return "posix_spawn seam: SysProcAttr.Foreground is not supported"u8;
-    }
     if (sys.Pdeathsig != 0) {
         return "posix_spawn seam: SysProcAttr.Pdeathsig is not supported"u8;
     }
@@ -558,7 +555,7 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
         if (rc != 0) {
             return (0, (Errno)(uintptr)rc);
         }
-        if (sys.Setpgid) {
+        if (sys.Setpgid || sys.Foreground) {
             flags |= POSIX_SPAWN_SETPGROUP;
             rc = posix_spawnattr_setpgroup(spawnAttr, (int)sys.Pgid);
             if (rc != 0) {
@@ -602,6 +599,50 @@ internal static (nint pid, error err) posixSpawnForkExec(@string argv0, slice<@s
         // internal/syscall/unix/linux/siginfo_linux.cs, now a blittable hand-own). With that
         // mirror fixed the fill is correct AND race-free: the child cannot be reaped before this
         // process's own first wait, which is the only reaper.
+        // Foreground: place the child's process group in the terminal's foreground, from the PARENT.
+        // Go's child performs ioctl(Ctty, TIOCSPGRP, &pgrp) between fork and exec with every signal
+        // blocked (exec_linux.go: "Restore the signal mask. We do this after TIOCSPGRP to avoid having
+        // the kernel send a SIGTTOU"); posix_spawn has no such action, so the design's section 3.3
+        // mapping is SETPGROUP above plus this call after the spawn returns. The residual window --
+        // the exec'd image can run before the transfer lands -- is stated rather than hidden; the
+        // transfer itself is exact: the group is the child's own pid when Pgid is 0, as in Go.
+        // SIGTTOU is blocked on THIS thread for the call: the kernel refuses tcsetpgrp from a
+        // background caller with SIGTTOU deliverable (it stops the caller), and blocks it otherwise.
+        if (sys.Foreground) {
+            int pgrp = sys.Pgid != 0 ? (int)sys.Pgid : childPid;
+            IntPtr pgrpBuf = System.Runtime.InteropServices.Marshal.AllocHGlobal(sizeof(int));
+            IntPtr blockSet = System.Runtime.InteropServices.Marshal.AllocHGlobal(128);
+            IntPtr savedSet = System.Runtime.InteropServices.Marshal.AllocHGlobal(128);
+            try {
+                System.Runtime.InteropServices.Marshal.WriteInt32(pgrpBuf, pgrp);
+                sigemptyset(blockSet);
+                sigaddset(blockSet, SIGTTOU_NUMBER);
+                pthread_sigmask(SIG_BLOCK, blockSet, savedSet);
+                int rcIoctl, errnoIoctl = 0;
+                try {
+                    rcIoctl = ioctl((int)sys.Ctty, TIOCSPGRP_REQUEST, pgrpBuf);
+                    if (rcIoctl < 0) {
+                        errnoIoctl = System.Runtime.InteropServices.Marshal.GetLastPInvokeError();
+                    }
+                }
+                finally {
+                    pthread_sigmask(SIG_SETMASK, savedSet, IntPtr.Zero);
+                }
+                if (rcIoctl < 0) {
+                    // Go's child reports the ioctl failure as the spawn's error (childerror); the child
+                    // here already exists, so it is killed before the error is returned, as Go's
+                    // parent reaps a child whose setup failed.
+                    syscallʟ(SYS_kill, childPid, SIGKILL_NUMBER, 0);
+                    return (0, (Errno)(uintptr)errnoIoctl);
+                }
+            }
+            finally {
+                System.Runtime.InteropServices.Marshal.FreeHGlobal(pgrpBuf);
+                System.Runtime.InteropServices.Marshal.FreeHGlobal(blockSet);
+                System.Runtime.InteropServices.Marshal.FreeHGlobal(savedSet);
+            }
+        }
+
         if (sys.PidFD != nil) {
             long fdOrErr = syscallʟ(SYS_pidfd_open, childPid, 0, 0);
             sys.PidFD.Value = fdOrErr >= 0 ? ((nint)fdOrErr) : -1;
@@ -709,6 +750,25 @@ internal static extern int posix_spawnattr_setsigmask(IntPtr attrp, IntPtr sigma
 
 [System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
 internal static extern int sigemptyset(IntPtr set);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int sigaddset(IntPtr set, int signum);
+
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = false)]
+internal static extern int pthread_sigmask(int how, IntPtr set, IntPtr oldset);
+
+// ioctl(2) itself rather than the raw syscall(2) wrapper: that wrapper returns -1 and SETS errno, it
+// never returns -errno, so the errno must be read back through SetLastError.
+[System.Runtime.InteropServices.DllImport("libc", SetLastError = true)]
+internal static extern int ioctl(int fd, ulong request, IntPtr arg);
+
+// Foreground's native vocabulary (linux/amd64; the seam already asserts the architecture elsewhere).
+internal const int SIG_BLOCK = 0;
+internal const int SIG_SETMASK = 2;
+internal const int SIGTTOU_NUMBER = 22;
+internal const int SIGKILL_NUMBER = 9;
+internal const long SYS_kill = 62;
+internal const ulong TIOCSPGRP_REQUEST = 0x5410;
 
 [System.Runtime.InteropServices.DllImport("libc", EntryPoint = "syscall", SetLastError = false)]
 internal static extern long syscallʟ(long number, long a1, long a2, long a3);
