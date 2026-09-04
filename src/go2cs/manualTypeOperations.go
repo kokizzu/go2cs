@@ -1206,6 +1206,29 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"rawToSockaddrInet6": goosWindows,
 		"sockaddrInet4ToRaw": goosWindows,
 		"sockaddrInet6ToRaw": goosWindows,
+		// fdMutex's read/write lock pair. Go hands the ADDRESSES of two semaphore WORDS
+		// (`&mu.rsema`, `&mu.wsema`) to the runtime primitives, and the converted port keys its
+		// waiter table by the address box -- so these two methods minted a ж<uint32> per wait and,
+		// because only a box can carry that identity, could never take a `ref fdMutex` receiver.
+		// That pinned everything above them (FD.readLock/writeLock, FD.Write, os.File's pfd).
+		// The identity was a property of the port, not of Go: the words are dead storage (Go's
+		// internal/poll never reads or writes either as a VALUE -- only the two declarations and
+		// four address-takes exist in 1.23.12), and the count lives in the side table. So the gate
+		// moves INLINE into the struct, as hand-owned sync/mutex.cs already does for sync.Mutex,
+		// and the pair becomes genuine `ref fdMutex` primaries. goosAny: fd_mutex.go carries no
+		// build constraint, so every target's emission needs the same displacement.
+		// internal/poll/fd_mutex_impl.cs holds the bodies and declares the two gate fields.
+		// NOT registered, deliberately: FD.csema is the same family and a different access shape
+		// (a free-function argument from converted Close/destroy, which never hold the containing
+		// struct), so it keeps the side table and is untouched here.
+		// increfAndClose joins them because the protocol, not the box census, decides the set: it is
+		// the function that WAKES the waiters rwlock parks (Go's TestMutexCloseUnblock pins exactly
+		// that -- "IncrefAndClose() // Must unblock the readers"). Left auto-converted it releases
+		// through the side table while rwlock waits on the inline gate, so every close-time wakeup is
+		// lost; measured as that test failing at its own 10 s deadline against a passing Go oracle.
+		"fdMutex.increfAndClose": goosAny,
+		"fdMutex.rwlock":         goosAny,
+		"fdMutex.rwunlock":       goosAny,
 	},
 	// debug/pe's COFF symbol reader pair. Go re-VIEWS one 18-byte symbol record as two struct
 	// shapes — `(*COFFSymbolAuxFormat5)(unsafe.Pointer(&sym))` — a free re-typing of the same
