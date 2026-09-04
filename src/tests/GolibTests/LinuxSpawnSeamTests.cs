@@ -154,4 +154,162 @@ public class LinuxSpawnSeamTests
         StringAssert.Contains(err.Error().ToString(), "Cloneflags",
             "the refusal must still name the field it could not express");
     }
+
+    // ---- SysProcAttr.Foreground through the seam (Q15 half 2, 2026-09-04) ----
+    // Go's child performs setpgid + ioctl(Ctty, TIOCSPGRP) between fork and exec with every signal
+    // blocked; posix_spawn has no such action, so the seam maps it to SETPGROUP plus a parent-side
+    // TIOCSPGRP after the spawn returns, SIGTTOU blocked on the calling thread (DESIGN-linux-exec.md
+    // section 3.3 as ruled). Two arms: the ioctl is REACHED with the caller's Ctty -- a pipe answers
+    // ENOTTY from the ioctl, where the old wall answered ENOTSUP before any spawn -- and, where this
+    // process has a controlling terminal, the transfer itself: the child's group is its own pid and
+    // the terminal's foreground group. The second arm is measured under a pty (util-linux `script`,
+    // which makes the child a session leader with a controlling terminal); without one it is
+    // Inconclusive BY NAME, never green by vacuity. Both were skip/skip on every fleet sweep because
+    // the detached driver has no terminal -- Go skips them too -- which is why the divergence was
+    // invisible until a run under a pty (Go: pass/pass; converted: fail / infrastructure-error).
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int ioctl(int fd, ulong request, ref int arg);
+
+    [DllImport("libc")] private static extern int sigemptyset(IntPtr set);
+    [DllImport("libc")] private static extern int sigaddset(IntPtr set, int signum);
+    [DllImport("libc")] private static extern int pthread_sigmask(int how, IntPtr set, IntPtr oldset);
+
+    private const ulong TIOCGPGRP = 0x540f;
+    private const ulong TIOCSPGRP = 0x5410;
+
+    private static int Tcgetpgrp(int fd)
+    {
+        int pgrp = 0;
+        return ioctl(fd, TIOCGPGRP, ref pgrp) == 0 ? pgrp : -1;
+    }
+
+    // tcsetpgrp from a process that may no longer be the foreground group: SIGTTOU blocked on this
+    // thread for the call, as Go's TestForeground ignores it for the restore.
+    private static void TcsetpgrpBlockingTtou(int fd, int pgrp)
+    {
+        IntPtr set = Marshal.AllocHGlobal(128), old = Marshal.AllocHGlobal(128);
+        try
+        {
+            sigemptyset(set);
+            sigaddset(set, 22 /* SIGTTOU */);
+            pthread_sigmask(0 /* SIG_BLOCK */, set, old);
+            int arg = pgrp;
+            ioctl(fd, TIOCSPGRP, ref arg);
+            pthread_sigmask(2 /* SIG_SETMASK */, old, IntPtr.Zero);
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(set);
+            Marshal.FreeHGlobal(old);
+        }
+    }
+
+    [TestMethod]
+    public void ForegroundReachesTheTerminalIoctl()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            Assert.Inconclusive("the posix_spawn seam is the linux flavor");
+            return;
+        }
+
+        // A pipe is not a terminal: TIOCSPGRP on it is ENOTTY, and only a seam that reached the
+        // ioctl can answer that -- the old wall refused Foreground as ENOTSUP before any spawn.
+        // O_CLOEXEC on every descriptor the guard opens: raw syscall.Pipe is Pipe2(p, 0) in Go too, and a
+        // child that inherits the write end of its own stdin pipe never sees EOF (measured: the first
+        // form of the terminal arm hung in Wait4 behind a `cat` holding both pipe ends and /dev/tty).
+        var fds = new slice<nint>(new nint[2]);
+        error perr = syscall.Pipe2(fds, (nint)syscall.O_CLOEXEC);
+        Assert.IsNull(perr, $"pipe: {perr}");
+
+        try
+        {
+            var sys = new go.syscall_package.SysProcAttr { Foreground = true, Ctty = fds[0] };
+            var attr = new go.syscall_package.ProcAttr
+            {
+                Files = new slice<uintptr>(new uintptr[] { 0, 1, 2 }),
+                Sys = new StandardBox<go.syscall_package.SysProcAttr>(sys),
+            };
+
+            var (pid, _, err) = syscall.StartProcess(
+                "/bin/true"u8,
+                new slice<@string>(new @string[] { "/bin/true"u8 }),
+                new StandardBox<go.syscall_package.ProcAttr>(attr));
+
+            Assert.AreEqual((nint)0, pid, "a spawn whose foreground transfer failed must not report a pid -- the seam reaps the child it had already spawned");
+            Assert.IsNotNull(err, "TIOCSPGRP on a pipe must fail");
+            Assert.IsTrue(errors.Is(err, syscall.ENOTTY),
+                $"the seam must reach TIOCSPGRP on the given Ctty and surface ITS errno (ENOTTY for a pipe); got: {err.Error()}");
+            Assert.IsFalse(errors.Is(err, errors.ErrUnsupported), "Foreground must no longer be refused as unsupported");
+        }
+        finally
+        {
+            syscall.Close(fds[0]);
+            syscall.Close(fds[1]);
+        }
+    }
+
+    [TestMethod]
+    public void ForegroundPlacesTheChildsGroupInTheTerminalsForeground()
+    {
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        {
+            Assert.Inconclusive("the posix_spawn seam is the linux flavor");
+            return;
+        }
+
+        var (tty, oerr) = syscall.Open("/dev/tty"u8, (nint)(syscall.O_RDWR | syscall.O_CLOEXEC), 0);
+
+        if (oerr != null)
+        {
+            Assert.Inconclusive("no controlling terminal: run under a pty (util-linux `script -qfc`) to measure the transfer");
+            return;
+        }
+
+        int fpgrp = Tcgetpgrp((int)tty);
+        Assert.IsTrue(fpgrp > 0, "TIOCGPGRP reported no foreground group on the controlling terminal");
+
+        var stdin = new slice<nint>(new nint[2]);
+        Assert.IsNull(syscall.Pipe2(stdin, (nint)syscall.O_CLOEXEC), "pipe");
+
+        nint pid = 0;
+
+        try
+        {
+            var sys = new go.syscall_package.SysProcAttr { Foreground = true, Ctty = tty };
+            var attr = new go.syscall_package.ProcAttr
+            {
+                Files = new slice<uintptr>(new uintptr[] { (uintptr)stdin[0], 1, 2 }),
+                Sys = new StandardBox<go.syscall_package.SysProcAttr>(sys),
+            };
+
+            error err;
+            (pid, _, err) = syscall.StartProcess(
+                "/bin/cat"u8,
+                new slice<@string>(new @string[] { "/bin/cat"u8 }),
+                new StandardBox<go.syscall_package.ProcAttr>(attr));
+
+            Assert.IsNull(err, $"spawn with Foreground under a controlling terminal failed: {err}");
+
+            var (cpgrp, gerr) = syscall.Getpgid(pid);
+            Assert.IsNull(gerr, $"Getpgid: {gerr}");
+            Assert.AreEqual(pid, cpgrp, "the child's process group must be the child's own pid (Pgid 0)");
+            Assert.AreEqual((int)pid, Tcgetpgrp((int)tty), "the child's group must be the terminal's foreground group after the transfer");
+        }
+        finally
+        {
+            syscall.Close(stdin[1]); // EOF: cat exits
+
+            if (pid != 0)
+            {
+                ref var status = ref heap(new go.syscall_package.WaitStatus(), out var Ꮡstatus);
+                syscall.Wait4(pid, Ꮡstatus, 0, nil);
+            }
+
+            TcsetpgrpBlockingTtou((int)tty, fpgrp); // restore the foreground group, as Go's test does
+            syscall.Close(stdin[0]);
+            syscall.Close(tty);
+        }
+    }
 }
