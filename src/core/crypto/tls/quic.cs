@@ -477,7 +477,7 @@ internal static error quicWaitForSignal(this ж<Conn> Ꮡc) {
 
         // Drop the handshake mutex while blocked to allow the user
         // to call ConnectionState before the handshake completes.
-        Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock();
+        c.handshakeMutex.Unlock();
         defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Lock, ref ᒐ);
         // Send on blockedc to notify the QUICConn that the handshake is blocked.
         // Exported methods of QUICConn wait for the handshake to become blocked

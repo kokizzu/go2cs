@@ -551,7 +551,7 @@ public static error ServeRequest(this ж<Server> Ꮡserver, ServerCodec codec) {
 internal static ж<Request> getRequest(this ж<Server> Ꮡserver) {
     ref var server = ref Ꮡserver.DerefOrNull();
 
-    Ꮡserver.of(Server.ᏑreqLock).Lock();
+    server.reqLock.Lock();
     var req = server.freeReq;
     if (req == nil){
         req = @new<Request>();
@@ -559,7 +559,7 @@ internal static ж<Request> getRequest(this ж<Server> Ꮡserver) {
         server.freeReq = req.Value.next;
         req.Value = new Request(nil);
     }
-    Ꮡserver.of(Server.ᏑreqLock).Unlock();
+    server.reqLock.Unlock();
     return req;
 }
 
@@ -567,16 +567,16 @@ internal static void freeRequest(this ж<Server> Ꮡserver, ж<Request> Ꮡreq) 
     ref var server = ref Ꮡserver.DerefOrNull();
     ref var req = ref Ꮡreq.DerefOrNull();
 
-    Ꮡserver.of(Server.ᏑreqLock).Lock();
+    server.reqLock.Lock();
     req.next = server.freeReq;
     server.freeReq = Ꮡreq;
-    Ꮡserver.of(Server.ᏑreqLock).Unlock();
+    server.reqLock.Unlock();
 }
 
 internal static ж<Response> getResponse(this ж<Server> Ꮡserver) {
     ref var server = ref Ꮡserver.DerefOrNull();
 
-    Ꮡserver.of(Server.ᏑrespLock).Lock();
+    server.respLock.Lock();
     var resp = server.freeResp;
     if (resp == nil){
         resp = @new<Response>();
@@ -584,7 +584,7 @@ internal static ж<Response> getResponse(this ж<Server> Ꮡserver) {
         server.freeResp = resp.Value.next;
         resp.Value = new Response(nil);
     }
-    Ꮡserver.of(Server.ᏑrespLock).Unlock();
+    server.respLock.Unlock();
     return resp;
 }
 
@@ -592,10 +592,10 @@ internal static void freeResponse(this ж<Server> Ꮡserver, ж<Response> Ꮡres
     ref var server = ref Ꮡserver.DerefOrNull();
     ref var resp = ref Ꮡresp.DerefOrNull();
 
-    Ꮡserver.of(Server.ᏑrespLock).Lock();
+    server.respLock.Lock();
     resp.next = server.freeResp;
     server.freeResp = Ꮡresp;
-    Ꮡserver.of(Server.ᏑrespLock).Unlock();
+    server.respLock.Unlock();
 }
 
 internal static (ж<service> service, ж<methodType> mtype, ж<Request> req, reflectꓸValue argv, reflectꓸValue replyv, bool keepReading, error err) readRequest(this ж<Server> Ꮡserver, ServerCodec codec) {

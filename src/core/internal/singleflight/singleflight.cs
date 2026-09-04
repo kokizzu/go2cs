@@ -53,14 +53,14 @@ partial class singleflight_package {
 public static (any v, error err, bool shared) Do(this ж<Group> Ꮡg, @string key, Func<(any, error)> fn) {
     ref var g = ref Ꮡg.DerefOrNull();
 
-    Ꮡg.of(Group.Ꮡmu).Lock();
+    g.mu.Lock();
     if (g.m == default!) {
         g.m = new map<@string, ж<call>>();
     }
     {
         var (cΔ1, ok) = g.m[key, ꟷ]; if (ok) {
             cΔ1.Value.dups++;
-            Ꮡg.of(Group.Ꮡmu).Unlock();
+            g.mu.Unlock();
             cΔ1.of(call.Ꮡwg).Wait();
             return ((~cΔ1).val, (~cΔ1).err, true);
         }
@@ -68,7 +68,7 @@ public static (any v, error err, bool shared) Do(this ж<Group> Ꮡg, @string ke
     var c = @new<call>();
     c.of(call.Ꮡwg).Add(1);
     g.m[key] = c;
-    Ꮡg.of(Group.Ꮡmu).Unlock();
+    g.mu.Unlock();
     Ꮡg.doCall(c, key, fn);
     return ((~c).val, (~c).err, (~c).dups > 0);
 }
@@ -79,7 +79,7 @@ public static /*<-*/channel<Result> DoChan(this ж<Group> Ꮡg, @string key, Fun
     ref var g = ref Ꮡg.DerefOrNull();
 
     var ch = new channel<Result>(1);
-    Ꮡg.of(Group.Ꮡmu).Lock();
+    g.mu.Lock();
     if (g.m == default!) {
         g.m = new map<@string, ж<call>>();
     }
@@ -87,14 +87,14 @@ public static /*<-*/channel<Result> DoChan(this ж<Group> Ꮡg, @string key, Fun
         var (cΔ1, ok) = g.m[key, ꟷ]; if (ok) {
             cΔ1.Value.dups++;
             cΔ1.Value.chans = append((~cΔ1).chans, ch);
-            Ꮡg.of(Group.Ꮡmu).Unlock();
+            g.mu.Unlock();
             return ch;
         }
     }
     var c = Ꮡ(new call(chans: new channel/*<-*/<Result>[]{ch}.slice()));
     c.of(call.Ꮡwg).Add(1);
     g.m[key] = c;
-    Ꮡg.of(Group.Ꮡmu).Unlock();
+    g.mu.Unlock();
     goǃ(Ꮡg.doCall, c, key, fn);
     return ch;
 }
@@ -105,7 +105,7 @@ internal static void doCall(this ж<Group> Ꮡg, ж<call> Ꮡc, @string key, Fun
     ref var c = ref Ꮡc.DerefOrNull();
 
     (c.val, c.err) = fn();
-    Ꮡg.of(Group.Ꮡmu).Lock();
+    g.mu.Lock();
     Ꮡc.of(call.Ꮡwg).Done();
     if (g.m[key] == Ꮡc) {
         delete(g.m, key);
@@ -113,7 +113,7 @@ internal static void doCall(this ж<Group> Ꮡg, ж<call> Ꮡc, @string key, Fun
     foreach (var (_, ch) in c.chans) {
         ch.ᐸꟷ(new Result(c.val, c.err, c.dups > 0));
     }
-    Ꮡg.of(Group.Ꮡmu).Unlock();
+    g.mu.Unlock();
 }
 
 // ForgetUnshared tells the singleflight to forget about a key if it is not
@@ -126,7 +126,7 @@ public static bool ForgetUnshared(this ж<Group> Ꮡg, @string key) {
     try {
         ref var g = ref Ꮡg.DerefOrNull();
 
-        Ꮡg.of(Group.Ꮡmu).Lock();
+        g.mu.Lock();
         defer(Ꮡg.of(Group.Ꮡmu).Unlock, ref ᒐ);
         var (c, ok) = g.m[key, ꟷ];
         if (!ok) {

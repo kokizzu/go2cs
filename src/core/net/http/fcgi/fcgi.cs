@@ -135,7 +135,7 @@ internal static error Close(this ж<conn> Ꮡc) {
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(conn.Ꮡmutex).Lock();
+        c.mutex.Lock();
         defer(Ꮡc.of(conn.Ꮡmutex).Unlock, ref ᒐ);
         if (!c.closed) {
             c.closeErr = c.rwc.Close();
@@ -186,7 +186,7 @@ internal static error writeRecord(this ж<conn> Ꮡc, recType recType, uint16 re
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(conn.Ꮡmutex).Lock();
+        c.mutex.Lock();
         defer(Ꮡc.of(conn.Ꮡmutex).Unlock, ref ᒐ);
         c.buf.Reset();
         c.h.init(recType, reqId, len(b));

@@ -2412,6 +2412,9 @@
 [assembly: GoImplement<Mutex, Locker>(Pointer = true)]
 [assembly: GoImplement<RWMutex, Locker>(Pointer = true)]
 [assembly: GoImplement<rlocker, Locker>(Pointer = true)]
+[assembly: GoRefPrimary("Mutex", "Lock")]
+[assembly: GoRefPrimary("Mutex", "TryLock")]
+[assembly: GoRefPrimary("Mutex", "Unlock")]
 
 ##sync.atomic
 // <ExportedTypeAliases>

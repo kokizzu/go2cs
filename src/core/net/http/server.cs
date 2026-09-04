@@ -261,7 +261,7 @@ internal static bool hijacked(this ж<conn> Ꮡc) {
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(conn.Ꮡmu).Lock();
+        c.mu.Lock();
         defer(Ꮡc.of(conn.Ꮡmu).Unlock, ref ᒐ);
         return c.hijackedv;
     }
@@ -521,9 +521,11 @@ public static readonly @string TrailerPrefix = "Trailer:"u8;
 // disableWriteContinue stops Request.Body.Read from sending an automatic 100-Continue.
 // If a 100-Continue is being written, it waits for it to complete before continuing.
 internal static void disableWriteContinue(this ж<response> Ꮡw) {
-    Ꮡw.of(response.ᏑwriteContinueMu).Lock();
+    ref var w = ref Ꮡw.DerefOrNull();
+
+    w.writeContinueMu.Lock();
     Ꮡw.of(response.ᏑcanWriteContinue).Store(false);
-    Ꮡw.of(response.ᏑwriteContinueMu).Unlock();
+    w.writeContinueMu.Unlock();
 }
 
 // writerOnly hides an io.Writer value's optional ReadFrom method
@@ -624,14 +626,16 @@ internal static ж<conn> newConn(this ж<Server> Ꮡsrv, net.Conn rwc) {
 internal static void @lock(this ж<connReader> Ꮡcr) {
     ref var cr = ref Ꮡcr.DerefOrNull();
 
-    Ꮡcr.of(connReader.Ꮡmu).Lock();
+    cr.mu.Lock();
     if (cr.cond == nil) {
         cr.cond = sync.NewCond(new sync.MutexжLocker(Ꮡcr.of(connReader.Ꮡmu)));
     }
 }
 
 internal static void unlock(this ж<connReader> Ꮡcr) {
-    Ꮡcr.of(connReader.Ꮡmu).Unlock();
+    ref var cr = ref Ꮡcr.DerefOrNull();
+
+    cr.mu.Unlock();
 }
 
 internal static void startBackgroundRead(this ж<connReader> Ꮡcr) {
@@ -3120,16 +3124,16 @@ public static error Close(this ж<Server> Ꮡsrv) {
         ref var srv = ref Ꮡsrv.DerefOrNull();
 
         Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
-        Ꮡsrv.of(Server.Ꮡmu).Lock();
+        srv.mu.Lock();
         defer(Ꮡsrv.of(Server.Ꮡmu).Unlock, ref ᒐ);
         var err = srv.closeListenersLocked();
         // Unlock srv.mu while waiting for listenerGroup.
         // The group Add and Done calls are made with srv.mu held,
         // to avoid adding a new listener in the window between
         // us setting inShutdown above and waiting here.
-        Ꮡsrv.of(Server.Ꮡmu).Unlock();
+        srv.mu.Unlock();
         Ꮡsrv.of(Server.ᏑlistenerGroup).Wait();
-        Ꮡsrv.of(Server.Ꮡmu).Lock();
+        srv.mu.Lock();
         foreach (var (c, _) in srv.activeConn) {
             (~c).rwc.Close();
             delete(srv.activeConn, c);
@@ -3175,13 +3179,13 @@ public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) {
         ref var srv = ref Ꮡsrv.DerefOrNull();
 
         Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
-        Ꮡsrv.of(Server.Ꮡmu).Lock();
+        srv.mu.Lock();
         var lnerr = srv.closeListenersLocked();
         foreach (var (_, f) in srv.onShutdown) {
             var fʗ1 = f;
             goǃ(fʗ1);
         }
-        Ꮡsrv.of(Server.Ꮡmu).Unlock();
+        srv.mu.Unlock();
         Ꮡsrv.of(Server.ᏑlistenerGroup).Wait();
         var pollIntervalBase = time.Millisecond;
         time.Duration nextPollInterval() {
@@ -3225,9 +3229,9 @@ public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) {
 public static void RegisterOnShutdown(this ж<Server> Ꮡsrv, Action f) {
     ref var srv = ref Ꮡsrv.DerefOrNull();
 
-    Ꮡsrv.of(Server.Ꮡmu).Lock();
+    srv.mu.Lock();
     srv.onShutdown = append(srv.onShutdown, f);
-    Ꮡsrv.of(Server.Ꮡmu).Unlock();
+    srv.mu.Unlock();
 }
 
 // closeIdleConns closes all idle connections and reports whether the
@@ -3237,7 +3241,7 @@ internal static bool closeIdleConns(this ж<Server> Ꮡs) {
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡs.of(Server.Ꮡmu).Lock();
+        s.mu.Lock();
         defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
         var quiescent = true;
         foreach (var (c, _) in s.activeConn) {
@@ -3548,7 +3552,7 @@ internal static bool trackListener(this ж<Server> Ꮡs, ж<net.Listener> Ꮡln,
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡs.of(Server.Ꮡmu).Lock();
+        s.mu.Lock();
         defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
         if (s.listeners == default!) {
             s.listeners = new map<ж<net.Listener>, EmptyStruct>();
@@ -3574,7 +3578,7 @@ internal static void trackConn(this ж<Server> Ꮡs, ж<conn> Ꮡc, bool add) {
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡs.of(Server.Ꮡmu).Lock();
+        s.mu.Lock();
         defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
         if (s.activeConn == default!) {
             s.activeConn = new map<ж<conn>, EmptyStruct>();
@@ -3934,7 +3938,7 @@ internal static (nint, error) Write(this ж<timeoutWriter> Ꮡtw, slice<byte> p)
     try {
         ref var tw = ref Ꮡtw.DerefOrNull();
 
-        Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
+        tw.mu.Lock();
         defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
         if (tw.err != default!) {
             return (0, tw.err);
@@ -3974,7 +3978,7 @@ internal static void WriteHeader(this ж<timeoutWriter> Ꮡtw, nint code) {
     try {
         ref var tw = ref Ꮡtw.DerefOrNull();
 
-        Ꮡtw.of(timeoutWriter.Ꮡmu).Lock();
+        tw.mu.Lock();
         defer(Ꮡtw.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
         tw.writeHeaderLocked(code);
     }

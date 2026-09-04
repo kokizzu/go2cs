@@ -234,7 +234,7 @@ internal static slice<ж<httpꓸCookie>> /*cookies*/ cookies(this ж<Jar> Ꮡj, 
             goto ᒐdone;
         }
         @string key = jarKey(host, j.psList);
-        Ꮡj.of(Jar.Ꮡmu).Lock();
+        j.mu.Lock();
         defer(Ꮡj.of(Jar.Ꮡmu).Unlock, ref ᒐ);
         var submap = j.entries[key];
         if (submap == default!) {
@@ -320,7 +320,7 @@ internal static void setCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<ht
         }
         @string key = jarKey(host, j.psList);
         @string defPath = defaultPath(u.Path);
-        Ꮡj.of(Jar.Ꮡmu).Lock();
+        j.mu.Lock();
         defer(Ꮡj.of(Jar.Ꮡmu).Unlock, ref ᒐ);
         var submap = j.entries[key];
         var modified = false;

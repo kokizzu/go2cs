@@ -137,9 +137,9 @@ public static bool IsValid(this ΔPos p) {
 public static nint LineCount(this ж<ΔFile> Ꮡf) {
     ref var f = ref Ꮡf.DerefOrNull();
 
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+    f.mutex.Lock();
     nint n = len(f.lines);
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock();
+    f.mutex.Unlock();
     return n;
 }
 
@@ -149,13 +149,13 @@ public static nint LineCount(this ж<ΔFile> Ꮡf) {
 public static void AddLine(this ж<ΔFile> Ꮡf, nint offset) {
     ref var f = ref Ꮡf.DerefOrNull();
 
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+    f.mutex.Lock();
     {
         nint i = len(f.lines); if ((i == 0 || f.lines[i - 1] < offset) && offset < f.size) {
             f.lines = append(f.lines, offset);
         }
     }
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock();
+    f.mutex.Unlock();
 }
 
 // MergeLine merges a line with the following line. It is akin to replacing
@@ -170,7 +170,7 @@ public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) {
         if (line < 1) {
             throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
         }
-        Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+        f.mutex.Lock();
         defer(Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock, ref ᒐ);
         if (line >= len(f.lines)) {
             throw panic(fmt.Sprintf("invalid line number %d (should be < %d)"u8, line, len(f.lines)));
@@ -192,9 +192,9 @@ public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) {
 public static slice<nint> Lines(this ж<ΔFile> Ꮡf) {
     ref var f = ref Ꮡf.DerefOrNull();
 
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+    f.mutex.Lock();
     var lines = f.lines;
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock();
+    f.mutex.Unlock();
     return lines;
 }
 
@@ -217,9 +217,9 @@ public static bool SetLines(this ж<ΔFile> Ꮡf, slice<nint> lines) {
         }
     }
     // set lines table
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+    f.mutex.Lock();
     f.lines = lines;
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock();
+    f.mutex.Unlock();
     return true;
 }
 
@@ -240,9 +240,9 @@ public static void SetLinesForContent(this ж<ΔFile> Ꮡf, slice<byte> content)
         }
     }
     // set lines table
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+    f.mutex.Lock();
     f.lines = lines;
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock();
+    f.mutex.Unlock();
 }
 
 // LineStart returns the [Pos] value of the start of the specified line.
@@ -256,7 +256,7 @@ public static ΔPos LineStart(this ж<ΔFile> Ꮡf, nint line) {
         if (line < 1) {
             throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
         }
-        Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+        f.mutex.Lock();
         defer(Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock, ref ᒐ);
         if (line > len(f.lines)) {
             throw panic(fmt.Sprintf("invalid line number %d (should be < %d)"u8, line, len(f.lines)));
@@ -294,13 +294,13 @@ public static void AddLineInfo(this ж<ΔFile> Ꮡf, nint offset, @string filena
 public static void AddLineColumnInfo(this ж<ΔFile> Ꮡf, nint offset, @string filename, nint line, nint column) {
     ref var f = ref Ꮡf.DerefOrNull();
 
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+    f.mutex.Lock();
     {
         nint i = len(f.infos); if ((i == 0 || f.infos[i - 1].Offset < offset) && offset < f.size) {
             f.infos = append(f.infos, new lineInfo(offset, filename, line, column));
         }
     }
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock();
+    f.mutex.Unlock();
 }
 
 // fixOffset fixes an out-of-bounds offset such that 0 <= offset <= f.size.
@@ -383,7 +383,7 @@ internal static (@string filename, nint line, nint column) unpack(this ж<ΔFile
     nint column = default!;
 
     ref var f = ref Ꮡf.DerefOrNull();
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Lock();
+    f.mutex.Lock();
     filename = f.name;
     {
         nint i = searchInts(f.lines, offset); if (i >= 0) {
@@ -420,7 +420,7 @@ internal static (@string filename, nint line, nint column) unpack(this ж<ΔFile
     }
     // TODO(mvdan): move Unlock back under Lock with a defer statement once
     // https://go.dev/issue/38471 is fixed to remove the performance penalty.
-    Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock();
+    f.mutex.Unlock();
     return (filename, line, column);
 }
 

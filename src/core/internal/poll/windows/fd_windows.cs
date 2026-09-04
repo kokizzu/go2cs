@@ -446,7 +446,7 @@ public static (nint, error) Read(this ж<FD> Ꮡfd, slice<byte> buf) {
         nint n = default!;
         error err = default!;
         if (fd.isFile){
-            Ꮡfd.of(FD.Ꮡl).Lock();
+            fd.l.Lock();
             defer(Ꮡfd.of(FD.Ꮡl).Unlock, ref ᒐ);
             var exprᴛ1 = fd.kind;
             if (exprᴛ1 == kindConsole) {
@@ -575,7 +575,7 @@ public static (nint, error) Pread(this ж<FD> Ꮡfd, slice<byte> b, int64 off) {
         if (len(b) > maxRW) {
             b = b[..(int)(maxRW)];
         }
-        Ꮡfd.of(FD.Ꮡl).Lock();
+        fd.l.Lock();
         defer(Ꮡfd.of(FD.Ꮡl).Unlock, ref ᒐ);
         var (curoffset, e) = Δsyscall.Seek(fd.Sysfd, 0, io.SeekCurrent);
         if (e != default!) {
@@ -731,7 +731,7 @@ public static (nint, error) Write(this ж<FD> Ꮡfd, slice<byte> buf) {
         }
         defer(Ꮡfd.writeUnlock, ref ᒐ);
         if (fd.isFile) {
-            Ꮡfd.of(FD.Ꮡl).Lock();
+            fd.l.Lock();
             defer(Ꮡfd.of(FD.Ꮡl).Unlock, ref ᒐ);
         }
         nint ntotal = 0;
@@ -840,7 +840,7 @@ public static (nint, error) Pwrite(this ж<FD> Ꮡfd, slice<byte> buf, int64 off
             }
         }
         defer(() => Ꮡfd.decref(), ref ᒐ);
-        Ꮡfd.of(FD.Ꮡl).Lock();
+        fd.l.Lock();
         defer(Ꮡfd.of(FD.Ꮡl).Unlock, ref ᒐ);
         var (curoffset, e) = Δsyscall.Seek(fd.Sysfd, 0, io.SeekCurrent);
         if (e != default!) {
@@ -1125,7 +1125,7 @@ public static (int64, error) Seek(this ж<FD> Ꮡfd, int64 offset, nint whence) 
             }
         }
         defer(() => Ꮡfd.decref(), ref ᒐ);
-        Ꮡfd.of(FD.Ꮡl).Lock();
+        fd.l.Lock();
         defer(Ꮡfd.of(FD.Ꮡl).Unlock, ref ᒐ);
         return Δsyscall.Seek(fd.Sysfd, offset, whence);
     }

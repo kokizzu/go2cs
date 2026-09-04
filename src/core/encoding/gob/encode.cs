@@ -719,11 +719,13 @@ internal static ж<encEngine> getEncEngine(ref userTypeInfo ut, map<ж<typeInfo>
 internal static ж<encEngine> buildEncEngine(ж<typeInfo> Ꮡinfo, ref userTypeInfo ut, map<ж<typeInfo>, bool> building) {
     GoFrame ᒐ = default;
     try {
+        ref var info = ref Ꮡinfo.DerefOrNull();
+
         // Check for recursive types.
         if (building != default! && building[Ꮡinfo]) {
             return default!;
         }
-        Ꮡinfo.of(typeInfo.ᏑencInit).Lock();
+        info.encInit.Lock();
         defer(Ꮡinfo.of(typeInfo.ᏑencInit).Unlock, ref ᒐ);
         var enc = Ꮡinfo.of(typeInfo.Ꮡencoder).Load();
         if (enc == nil) {

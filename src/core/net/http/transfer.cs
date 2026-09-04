@@ -914,7 +914,7 @@ internal static (nint n, error err) Read(this ж<body> Ꮡb, slice<byte> p) {
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
-        Ꮡb.of(body.Ꮡmu).Lock();
+        b.mu.Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
         if (b.closed) {
             (n, err) = (0, ErrBodyReadAfterClose); goto ᒐdone;
@@ -1075,7 +1075,7 @@ internal static error Close(this ж<body> Ꮡb) {
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
-        Ꮡb.of(body.Ꮡmu).Lock();
+        b.mu.Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
         if (b.closed) {
             return default!;
@@ -1133,7 +1133,7 @@ internal static bool didEarlyClose(this ж<body> Ꮡb) {
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
-        Ꮡb.of(body.Ꮡmu).Lock();
+        b.mu.Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
         return b.earlyClose;
     }
@@ -1148,7 +1148,7 @@ internal static bool bodyRemains(this ж<body> Ꮡb) {
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
-        Ꮡb.of(body.Ꮡmu).Lock();
+        b.mu.Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
         return !b.sawEOF;
     }
@@ -1161,7 +1161,7 @@ internal static void registerOnHitEOF(this ж<body> Ꮡb, Action fn) {
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
-        Ꮡb.of(body.Ꮡmu).Lock();
+        b.mu.Lock();
         defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
         b.onHitEOF = fn;
     }

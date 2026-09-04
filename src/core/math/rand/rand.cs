@@ -408,9 +408,10 @@ internal static (nint n, error err) read(this ж<runtimeSource> Ꮡfs, slice<byt
     nint n = default!;
     error err = default!;
 
-    Ꮡfs.of(runtimeSource.Ꮡmu).Lock();
+    ref var fs = ref Ꮡfs.DerefOrNull();
+    fs.mu.Lock();
     (n, err) = read(p, new runtimeSourceжSource(Ꮡfs), ref (ᏑreadVal).DerefOrNull(), ref (ᏑreadPos).DerefOrNull());
-    Ꮡfs.of(runtimeSource.Ꮡmu).Unlock();
+    fs.mu.Unlock();
     return (n, err);
 }
 
@@ -572,9 +573,9 @@ internal static int64 /*n*/ Int63(this ж<lockedSource> Ꮡr) {
     int64 n = default!;
 
     ref var r = ref Ꮡr.DerefOrNull();
-    Ꮡr.of(lockedSource.Ꮡlk).Lock();
+    r.lk.Lock();
     n = r.s.Int63();
-    Ꮡr.of(lockedSource.Ꮡlk).Unlock();
+    r.lk.Unlock();
     return n;
 }
 
@@ -582,18 +583,18 @@ internal static uint64 /*n*/ Uint64(this ж<lockedSource> Ꮡr) {
     uint64 n = default!;
 
     ref var r = ref Ꮡr.DerefOrNull();
-    Ꮡr.of(lockedSource.Ꮡlk).Lock();
+    r.lk.Lock();
     n = r.s.Uint64();
-    Ꮡr.of(lockedSource.Ꮡlk).Unlock();
+    r.lk.Unlock();
     return n;
 }
 
 internal static void Seed(this ж<lockedSource> Ꮡr, int64 seed) {
     ref var r = ref Ꮡr.DerefOrNull();
 
-    Ꮡr.of(lockedSource.Ꮡlk).Lock();
+    r.lk.Lock();
     r.seed(seed);
-    Ꮡr.of(lockedSource.Ꮡlk).Unlock();
+    r.lk.Unlock();
 }
 
 // seedPos implements Seed for a lockedSource without a race condition.
@@ -601,10 +602,10 @@ internal static void seedPos(this ж<lockedSource> Ꮡr, int64 seed, ж<int8> �
     ref var r = ref Ꮡr.DerefOrNull();
     ref var readPos = ref ᏑreadPos.DerefOrNull();
 
-    Ꮡr.of(lockedSource.Ꮡlk).Lock();
+    r.lk.Lock();
     r.seed(seed);
     readPos = 0;
-    Ꮡr.of(lockedSource.Ꮡlk).Unlock();
+    r.lk.Unlock();
 }
 
 // seed seeds the underlying source.
@@ -623,9 +624,9 @@ internal static (nint n, error err) read(this ж<lockedSource> Ꮡr, slice<byte>
     error err = default!;
 
     ref var r = ref Ꮡr.DerefOrNull();
-    Ꮡr.of(lockedSource.Ꮡlk).Lock();
+    r.lk.Lock();
     (n, err) = read(p, new rngSourceжSource(r.s), ref (ᏑreadVal).DerefOrNull(), ref (ᏑreadPos).DerefOrNull());
-    Ꮡr.of(lockedSource.Ꮡlk).Unlock();
+    r.lk.Unlock();
     return (n, err);
 }
 

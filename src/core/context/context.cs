@@ -505,11 +505,13 @@ internal static any Value(this ж<cancelCtx> Ꮡc, any key) {
 internal static /*<-*/channel<EmptyStruct> Done(this ж<cancelCtx> Ꮡc) {
     GoFrame ᒐ = default;
     try {
+        ref var c = ref Ꮡc.DerefOrNull();
+
         var d = Ꮡc.of(cancelCtx.Ꮡdone).Load();
         if (d != default!) {
             return d._<channel<EmptyStruct>>();
         }
-        Ꮡc.of(cancelCtx.Ꮡmu).Lock();
+        c.mu.Lock();
         defer(Ꮡc.of(cancelCtx.Ꮡmu).Unlock, ref ᒐ);
         d = Ꮡc.of(cancelCtx.Ꮡdone).Load();
         if (d == default!) {
@@ -525,9 +527,9 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<cancelCtx> Ꮡc) {
 internal static error Err(this ж<cancelCtx> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    Ꮡc.of(cancelCtx.Ꮡmu).Lock();
+    c.mu.Lock();
     var err = c.err;
-    Ꮡc.of(cancelCtx.Ꮡmu).Unlock();
+    c.mu.Unlock();
     return err;
 }
 
@@ -571,7 +573,7 @@ internal static void propagateCancel(this ж<cancelCtx> Ꮡc, Context parent, ca
     {
         var (a, ok) = parent._<afterFuncer>(ᐧ); if (ok) {
             // parent implements an AfterFunc method.
-            Ꮡc.of(cancelCtx.Ꮡmu).Lock();
+            c.mu.Lock();
             var stop = a.AfterFunc(() => {
                 child.cancel(false, parent.Err(), Cause(parent));
             });
@@ -579,7 +581,7 @@ internal static void propagateCancel(this ж<cancelCtx> Ꮡc, Context parent, ca
                 Context: parent,
                 stop: stop
             );
-            Ꮡc.of(cancelCtx.Ꮡmu).Unlock();
+            c.mu.Unlock();
             return;
         }
     }
@@ -627,9 +629,9 @@ internal static void cancel(this ж<cancelCtx> Ꮡc, bool removeFromParent, erro
     if (cause == default!) {
         cause = err;
     }
-    Ꮡc.of(cancelCtx.Ꮡmu).Lock();
+    c.mu.Lock();
     if (c.err != default!) {
-        Ꮡc.of(cancelCtx.Ꮡmu).Unlock();
+        c.mu.Unlock();
         return; // already canceled
     }
     c.err = err;
@@ -645,7 +647,7 @@ internal static void cancel(this ж<cancelCtx> Ꮡc, bool removeFromParent, erro
         child.cancel(false, err, cause);
     }
     c.children = default!;
-    Ꮡc.of(cancelCtx.Ꮡmu).Unlock();
+    c.mu.Unlock();
     if (removeFromParent) {
         removeChild(c.Context, new cancelCtxжcanceler(Ꮡc));
     }
@@ -771,12 +773,12 @@ internal static void cancel(this ж<timerCtx> Ꮡc, bool removeFromParent, error
         // Remove this timerCtx from its parent cancelCtx's children.
         removeChild(c.cancelCtx.Context, new timerCtxжcanceler(Ꮡc));
     }
-    Ꮡc.of(timerCtx.Ꮡmu).Lock();
+    c.mu.Lock();
     if (c.timer != nil) {
         c.timer.Stop();
         c.timer = default!;
     }
-    Ꮡc.of(timerCtx.Ꮡmu).Unlock();
+    c.mu.Unlock();
 }
 
 // WithTimeout returns WithDeadline(parent, time.Now().Add(timeout)).

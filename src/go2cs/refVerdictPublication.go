@@ -38,6 +38,7 @@ package main
 
 import (
 	"fmt"
+	"go/ast"
 	"go/types"
 	"os"
 	"path/filepath"
@@ -90,7 +91,22 @@ var importedRefPrimaries HashSet[string]
 // design: registering the `ref` forms hand-owns already declare (sync/atomic, sync.Pool, …) would
 // let a consumer bind them and REMOVE boxes, which is a reduction, and C0 is scored at zero. Each
 // later increment registers what it needs and names the registration as part of its footprint.
-var refPrimaryHandOwns = map[string]bool{}
+var refPrimaryHandOwns = map[string]bool{
+	// I3's registrations, and the registry's FIRST consumers. sync/mutex.cs is a whole-file
+	// hand-own whose three public methods do nothing but reach `gateOf`, which itself only ever
+	// used its box to produce a `ref Mutex` — so declaring them `[GoRecv] … this ref Mutex` was a
+	// signature change, not a rewrite, and go2cs-gen supplies the ж overload that every existing
+	// call site keeps binding unchanged (measured: sync and internal/poll both build 0 errors with
+	// the box form still in the emission).
+	//
+	// Publishing them is what lets a CONSUMER bind `fd.l.Lock()` — a ref-addressable field of a ref
+	// lvalue the caller already holds — instead of minting `Ꮡfd.of(FD.Ꮡl)` for the receiver.
+	// sync.Mutex is the corpus's most-used lock, so this registration is what gives I3 its measured
+	// 667-site reach; the call-site rule that consumes it is the increment's other half.
+	"sync.Mutex.Lock":    true,
+	"sync.Mutex.TryLock": true,
+	"sync.Mutex.Unlock":  true,
+}
 
 // refPrimaryRecordKey composes the ONE spelling of a published primary that both sides of the
 // lookup compute — the LOAD side reading a dependency's records, and the USE side (I3) asking
@@ -434,4 +450,56 @@ func loadRefPrimaryLines(lines []string, rootPackageName string) {
 	}
 
 	packageLock.Unlock()
+}
+
+// calleePublishesRefPrimary reports whether the method a selector calls is one an IMPORTED package
+// published a `ref` primary for — the CONSUMER half of the contract C0 left deliberately unbuilt.
+//
+// This is I3's whole gate on the callee side. A published record is an existence proof that the
+// foreign assembly declares `M(this ref T …)`, so a caller holding a ref-addressable receiver may
+// bind the plain member chain (`fd.l.Lock()`) instead of minting a field-address box for the
+// receiver (`Ꮡfd.of(FD.Ꮡl).Lock()`). Without the record the box stays: an unpublished primary may
+// simply not exist in the other assembly, and binding it would be CS1929 at the call site.
+//
+// The key is composed exactly as the LOAD side composes it (refPrimaryRecordKey over the declaring
+// package's NAME), so the two cannot drift apart — the same single-spelling discipline the record
+// key was introduced for.
+func (v *Visitor) calleePublishesRefPrimary(selectorExpr *ast.SelectorExpr) bool {
+	funcObj, ok := v.info.ObjectOf(selectorExpr.Sel).(*types.Func)
+
+	if !ok || funcObj.Pkg() == nil {
+		return false
+	}
+
+	// Same-package calls are Phase-A's population and are decided by the converter's own
+	// selection, not by a published record; the contract exists for the cross-package case.
+	if v.pkg != nil && funcObj.Pkg() == v.pkg {
+		return false
+	}
+
+	signature, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || signature.Recv() == nil || types.IsInterface(signature.Recv().Type()) {
+		return false
+	}
+
+	pointer, isPointer := types.Unalias(signature.Recv().Type()).(*types.Pointer)
+
+	if !isPointer {
+		return false // a primary is a pointer-receiver method by construction
+	}
+
+	named, isNamed := types.Unalias(pointer.Elem()).(*types.Named)
+
+	if !isNamed || named.Obj() == nil {
+		return false
+	}
+
+	key := refPrimaryRecordKey(funcObj.Pkg().Name(), named.Obj().Name(), funcObj.Name())
+
+	packageLock.Lock()
+	published := importedRefPrimaries.Contains(key)
+	packageLock.Unlock()
+
+	return published
 }

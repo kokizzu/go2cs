@@ -100,7 +100,7 @@ internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
     try {
         ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
-        Ꮡctxt.of(Context.Ꮡmu).Lock();
+        ctxt.mu.Lock();
         defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
         foreach (var (_, e) in ctxt.typeMap[h]) {
             if (identicalInstance(orig, targs, e.orig, e.targs)) {
@@ -127,7 +127,7 @@ internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
         ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
         assert(inst != default!);
-        Ꮡctxt.of(Context.Ꮡmu).Lock();
+        ctxt.mu.Lock();
         defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
         foreach (var (_, e) in ctxt.typeMap[h]) {
             if (inst == default! || Identical(inst, e.instance)) {
@@ -155,7 +155,7 @@ internal static nint getID(this ж<Context> Ꮡctxt, ΔType t) {
     try {
         ref var ctxt = ref Ꮡctxt.DerefOrNull();
 
-        Ꮡctxt.of(Context.Ꮡmu).Lock();
+        ctxt.mu.Lock();
         defer(Ꮡctxt.of(Context.Ꮡmu).Unlock, ref ᒐ);
         var (id, ok) = ctxt.originIDs[t, ꟷ];
         if (!ok) {

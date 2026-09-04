@@ -92,9 +92,9 @@ internal static error WriteRequest(this ж<clientCodec> Ꮡc, ж<rpc.Request> �
     ref var c = ref Ꮡc.DerefOrNull();
     ref var r = ref Ꮡr.DerefOrNull();
 
-    Ꮡc.of(clientCodec.Ꮡmutex).Lock();
+    c.mutex.Lock();
     c.pending[r.Seq] = r.ServiceMethod;
-    Ꮡc.of(clientCodec.Ꮡmutex).Unlock();
+    c.mutex.Unlock();
     c.req.Method = r.ServiceMethod;
     c.req.Params[0] = param;
     c.req.Id = r.Seq;
@@ -129,10 +129,10 @@ internal static error ReadResponseHeader(this ж<clientCodec> Ꮡc, ж<rpc.Respo
             return err;
         }
     }
-    Ꮡc.of(clientCodec.Ꮡmutex).Lock();
+    c.mutex.Lock();
     r.ServiceMethod = c.pending[c.resp.Id];
     delete(c.pending, c.resp.Id);
-    Ꮡc.of(clientCodec.Ꮡmutex).Unlock();
+    c.mutex.Unlock();
     r.Error = ""u8;
     r.Seq = c.resp.Id;
     if (c.resp.Error != default! || c.resp.Result == nil) {

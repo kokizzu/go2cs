@@ -49,7 +49,7 @@ internal static (nint n, error err) Write(this ж<pooledFlateWriter> Ꮡw, slice
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
-        Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
+        w.mu.Lock();
         defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock, ref ᒐ);
         if (w.fw == nil) {
             (n, err) = (0, errors.New(writeAfterCloseˢ)); goto ᒐdone;
@@ -66,7 +66,7 @@ internal static error Close(this ж<pooledFlateWriter> Ꮡw) {
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
-        Ꮡw.of(pooledFlateWriter.Ꮡmu).Lock();
+        w.mu.Lock();
         defer(Ꮡw.of(pooledFlateWriter.Ꮡmu).Unlock, ref ᒐ);
         error err = default!;
         if (w.fw != nil) {
@@ -108,7 +108,7 @@ internal static (nint n, error err) Read(this ж<pooledFlateReader> Ꮡr, slice<
     try {
         ref var r = ref Ꮡr.DerefOrNull();
 
-        Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
+        r.mu.Lock();
         defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock, ref ᒐ);
         if (r.fr == default!) {
             (n, err) = (0, errors.New(readAfterCloseˢ)); goto ᒐdone;
@@ -125,7 +125,7 @@ internal static error Close(this ж<pooledFlateReader> Ꮡr) {
     try {
         ref var r = ref Ꮡr.DerefOrNull();
 
-        Ꮡr.of(pooledFlateReader.Ꮡmu).Lock();
+        r.mu.Lock();
         defer(Ꮡr.of(pooledFlateReader.Ꮡmu).Unlock, ref ᒐ);
         error err = default!;
         if (r.fr != default!) {

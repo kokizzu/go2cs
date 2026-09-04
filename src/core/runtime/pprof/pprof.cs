@@ -369,7 +369,7 @@ public static nint Count(this ж<Profile> Ꮡp) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(Profile.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
         if (p.count != default!) {
             return p.count();
@@ -415,7 +415,7 @@ public static void Add(this ж<Profile> Ꮡp, any value, nint skip) {
             // The value for skip is too large, and there's no stack trace to record.
             stk = new uintptr[]{abi.FuncPCABIInternal(lostProfileEvent)}.slice();
         }
-        Ꮡp.of(Profile.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
         if (p.m[value] != default!) {
             throw panic("pprof: Profile.Add of duplicate value");
@@ -433,7 +433,7 @@ public static void Remove(this ж<Profile> Ꮡp, any value) {
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
-        Ꮡp.of(Profile.Ꮡmu).Lock();
+        p.mu.Lock();
         defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
         delete(p.m, value);
     }
@@ -466,12 +466,12 @@ public static error WriteTo(this ж<Profile> Ꮡp, io.Writer w, nint debug) {
         return p.write(w, debug);
     }
     // Obtain consistent snapshot under lock; then process without lock.
-    Ꮡp.of(Profile.Ꮡmu).Lock();
+    p.mu.Lock();
     var all = new slice<slice<uintptr>>(0, len(p.m));
     foreach (var (_, stk) in p.m) {
         all = append(all, stk);
     }
-    Ꮡp.of(Profile.Ꮡmu).Unlock();
+    p.mu.Unlock();
     // Map order is non-deterministic; make output deterministic.
     slices.SortFunc<slice<slice<uintptr>>, slice<uintptr>>(all, slices.Compare<slice<uintptr>, uintptr>);
     return printCountProfile(w, debug, p.name, ((stackProfile)all));
