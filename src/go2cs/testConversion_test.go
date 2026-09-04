@@ -5036,3 +5036,77 @@ func TestHandOwnHostTestTargetOpensTestsOnlyMode(t *testing.T) {
 		t.Errorf("kind under -test-allow-handown = %v, want testTargetConvertible (the census converts production too)", kind)
 	}
 }
+
+// TestHostRowReferencesTheHostExactlyOnce pins the rule the duplicate-reference defect earns: the
+// emitted test project must reference the package under test ONCE.
+//
+// Only a hand-owned HOST row can break it. testProjectFixedReferences carries golib and testing
+// because every converted test project needs them; when the package under test IS one of those, the
+// fixed entry and the reference model's colocated entry name the SAME project by two different
+// strings, and `references` is a HashSet[string] that cannot see it. Measured on `testing`
+// (2026-09-04): the emitted csproj carried both `$(go2csPath)core/testing/testing.csproj` and
+// `testing.csproj`.
+//
+// Asserted through isSelfProjectReference — the predicate the dependency loop already applies and
+// which the fixed loop now applies too — rather than by emitting a project and parsing it, because
+// the property is about the PREDICATE and a parse would also drag in a full conversion.
+func TestHostRowReferencesTheHostExactlyOnce(t *testing.T) {
+	// The fixed set must be recognized as self-referential for exactly the packages it names, so a
+	// host row skips its own entry and every other row keeps both of its own.
+	for _, testCase := range []struct {
+		fixed       string
+		projectName string
+		want        bool
+	}{
+		{`$(go2csPath)core/testing/testing.csproj`, "testing", true},
+		{`$(go2csPath)core/golib/golib.csproj`, "golib", true},
+		{`$(go2csPath)core/testing/testing.csproj`, "errors", false},
+		{`$(go2csPath)core/golib/golib.csproj`, "testing", false},
+		{`$(go2csPath)core/testing/testing.csproj`, "testing/quick", false},
+	} {
+		if got := isSelfProjectReference(testCase.fixed, testCase.projectName); got != testCase.want {
+			t.Errorf("isSelfProjectReference(%q, %q) = %v, want %v", testCase.fixed, testCase.projectName, got, testCase.want)
+		}
+	}
+
+	// The counted property, measured through the REAL emitter. An earlier cut of this guard counted
+	// over a LOCAL copy of the skip loop, and its positive control did not fire -- neutering
+	// writeTestProject left the guard green, because the guard was not calling it. A control that
+	// does not use the caller's path is not a control for the caller.
+	emitted := func(projectName string) string {
+		directory := t.TempDir()
+		projectFile := filepath.Join(directory, projectFileBaseName(projectName)+".tests.csproj")
+
+		if err := writeTestProject(projectFile, projectName, "go", testProjectReference,
+			nil, []string{"x_test.cs"}, nil, nil, Options{go2csPath: directory}); err != nil {
+			t.Fatalf("writeTestProject(%q): %v", projectName, err)
+		}
+
+		content, err := os.ReadFile(projectFile)
+		if err != nil {
+			t.Fatalf("read emitted project for %q: %v", projectName, err)
+		}
+
+		return string(content)
+	}
+
+	countHostRefs := func(projectName string) int {
+		count := 0
+
+		for _, line := range strings.Split(emitted(projectName), "\n") {
+			if strings.Contains(line, "<ProjectReference") && strings.Contains(strings.ReplaceAll(line, `\`, "/"), "testing.csproj") {
+				count++
+			}
+		}
+
+		return count
+	}
+
+	if got := countHostRefs("testing"); got != 1 {
+		t.Errorf("a hand-owned host row must reference testing.csproj exactly once, got %d", got)
+	}
+
+	if got := countHostRefs("errors"); got != 1 {
+		t.Errorf("an ordinary row must reference testing.csproj exactly once (the fixed entry), got %d", got)
+	}
+}

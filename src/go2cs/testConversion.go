@@ -714,6 +714,44 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	// name go test runs (see flavorExcludedTestDeclarations).
 	declarations = append(declarations, flavorExcludedTestDeclarations(inputPath, options, declarations)...)
 
+	// A declaration whose SOURCE FILE was dropped from the compile set cannot be `included`: the
+	// generated host REGISTERS every included test by name, and a name in a file nobody compiled is
+	// a CS0117 against the test package class. Statused here rather than at discovery because
+	// discovery deliberately runs over every file (that is what keeps an excluded file's
+	// declarations in the manifest at all) and the compile set is not final until the exclusion
+	// passes above have run.
+	//
+	// The case could not arise before the hand-owned-host mode: Phase-4D only ever drops files whose
+	// runnable declarations are Example/Benchmark, and those are already `unsupported` by KIND, so
+	// the host skipped them for a different reason and the gap never showed. The host rule drops a
+	// file for what it REFERENCES, so a perfectly ordinary `test` declaration can now live in an
+	// uncompiled file -- measured: `testing`'s TestPrettyPrint, in benchmark_test.go, which the
+	// export_test.go edge excludes, and which the pipeline admitted because its only testing.* touch
+	// is the package-level VAR testing.PrettyPrint that the capability analysis does not key on.
+	//
+	// Written as a general rule rather than a host-mode one: the invariant "the host may name only
+	// what the compilation contains" is true of every model, and a future Phase-4D widening that
+	// drops a file holding a Test would meet it the same way.
+	for i := range declarations {
+		if declarations[i].Status != "included" {
+			continue
+		}
+
+		sourcePath := filepath.Clean(filepath.Join(inputPath, declarations[i].Source))
+
+		if !compileExcluded[sourcePath] {
+			continue
+		}
+
+		declarations[i].Status = "unsupported"
+
+		if handOwnHostExcluded[sourcePath] {
+			declarations[i].Reason = handOwnHostExcludedSourceReason
+		} else {
+			declarations[i].Reason = compileExcludedSourceReason
+		}
+	}
+
 	sort.Slice(declarations, func(i, j int) bool {
 		if declarations[i].Name == declarations[j].Name {
 			return declarations[i].PackageName < declarations[j].PackageName
@@ -3413,6 +3451,14 @@ func supportedTestCapabilities() []string {
 		"TB.Fatal", "TB.Fatalf", "TB.Helper", "TB.Log", "TB.Logf", "TB.Name", "TB.Setenv",
 		"TB.Skip", "TB.SkipNow", "TB.Skipf", "TB.Skipped", "TB.TempDir",
 		"testing.AllocsPerRun", "testing.CoverMode", "testing.Short", "testing.Verbose",
+		// testing.Testing reports whether the binary is a test binary. The host has implemented it
+		// since the one-tree consolidation (core/testing/testing.cs) and the capability list simply
+		// never named it -- an omission train 18 recorded in the same breath as the admission census
+		// ("the host implements testing.Testing at testing.cs:672, but the capability list omits the
+		// name"). Roster impact measured before widening, per the charter: a GOROOT-wide scan of
+		// every *_test.go for `testing.Testing()` returns exactly ONE file, testing's own
+		// testing_test.go, so no validated package gains or loses a test by this.
+		"testing.Testing",
 		// In-process benchmarking driven from a Test function: testing.Benchmark runs a
 		// func(*B) closure and returns a BenchmarkResult, setting B.N and exposing NsPerOp
 		// (unicode's TestCalibrate uses this to pick a linear-vs-binary search cutoff). The
