@@ -72,7 +72,7 @@ internal static void Main() {
             nint n = 0;
             var first = (uint16)0;
             while (n < 256) {
-                var c = ~(ж<uint16>)(uintptr)(@unsafe.Add(new @unsafe.Pointer(name), 2 * n));
+                var c = ~(ж<uint16>)(uintptr)(@unsafe.Add(@unsafe.Pointer.FromPinnedBox(name), 2 * n));
                 if (c == 0) {
                     break;
                 }
