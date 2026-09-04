@@ -1402,6 +1402,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckPointerValueToInterfaceArg() => CheckTarget("PointerValueToInterfaceArg");
 
     [TestMethod]
+    public void CheckPrintfFormatCommaParen() => CheckTarget("PrintfFormatCommaParen");
+
+    [TestMethod]
     public void CheckPrintfWidthFlags() => CheckTarget("PrintfWidthFlags");
 
     [TestMethod]
