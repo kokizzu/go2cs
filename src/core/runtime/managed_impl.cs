@@ -536,6 +536,7 @@ partial class runtime_package
                 trace.Append('\n');
                 appendGoroutineHeader(trace, goroutine);
                 trace.Append(ForeignStackPlaceholder);
+                appendCreatedBy(trace, goroutine);
             }
         }
 
@@ -546,6 +547,27 @@ partial class runtime_package
             buf[i] = encoded[i];
 
         return count;
+    }
+
+    // Go's printcreatedby1 (runtime/traceback.go): `created by <func> in goroutine <parentGoid>` --
+    // the one line of a foreign goroutine's block this runtime CAN state truthfully, because the
+    // registry records the creator at launch (Goroutine.Creator). It is what a leak filter reads:
+    // net/http's interestingGoroutines drops blocks by `created by testing.RunTests`, `created by
+    // runtime.gc`, and an operator reading a dump learns which `go` statement left the goroutine
+    // behind. Go's position line beneath it is deliberately omitted: it would cost a file-info
+    // capture on every `go` statement, and nothing matches on it. Absent for the main goroutine
+    // and for a host-entered thread, exactly as Go prints none for goroutine 1.
+    private static void appendCreatedBy(StringBuilder trace, Goroutine goroutine)
+    {
+        if (goroutine.Creator is not System.Reflection.MethodBase creator)
+            return;
+
+        trace.Append("created by ").Append(goFrameName(creator, null));
+
+        if (goroutine.ParentId != 0)
+            trace.Append(" in goroutine ").Append(goroutine.ParentId);
+
+        trace.Append('\n');
     }
 
     // Go's goroutineheader (runtime/traceback.go): `goroutine <goid> [<status>]:`, where the status

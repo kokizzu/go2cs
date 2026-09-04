@@ -96,10 +96,12 @@ public sealed class Goroutine
     // The panic observer, when a HOST installed one. Read once per escaping panic and never cleared.
     private static Action<PanicException>? s_panicObserver;
 
-    private Goroutine(long id, bool isMain)
+    private Goroutine(long id, bool isMain, System.Reflection.MethodBase? creator, long parentId)
     {
         Id = id;
         IsMain = isMain;
+        Creator = creator;
+        ParentId = parentId;
     }
 
     // Why this goroutine is parked, or WaitReason.Zero when it is not — Go's gp.waitreason, and the
@@ -126,6 +128,17 @@ public sealed class Goroutine
     // what a deadlock detector must see — but it is NOT "a goroutine" for the one contract that
     // distinguishes them: runtime.Goexit means something different there (see OnGoroutine).
     internal bool IsMain { get; }
+
+    // The function that executed the `go` statement -- Go's gp.gopc, resolved to its function -- and
+    // the goroutine it ran on (gp.parentGoid). Captured on the CREATING thread at Start, by an
+    // identity-located walk past golib's own launcher frames, WITHOUT file info (a per-launch PDB
+    // read would price every `go` statement; the traceback consumers that matter -- net/http's
+    // goroutine-leak filter among them -- match the `created by <func>` text, never its position).
+    // Null for the main goroutine and for a thread a host entered directly: Go prints no creator
+    // for goroutine 1 either.
+    internal System.Reflection.MethodBase? Creator { get; }
+
+    internal long ParentId { get; }
 
     // Running until a park-accounting scope says otherwise — DERIVED, never stored, so it cannot
     // disagree with the reason (see m_waitReason). This is the gopark/goready accounting contract of
@@ -204,12 +217,14 @@ public sealed class Goroutine
     /// an inert scope, so nesting can neither mint a second goroutine for one thread nor retire the
     /// outer one early.
     /// </remarks>
-    public static Scope Enter()
+    public static Scope Enter() => Enter(creator: null, parentId: 0);
+
+    private static Scope Enter(System.Reflection.MethodBase? creator, long parentId)
     {
         if (t_current is not null)
             return default;
 
-        Goroutine goroutine = Register(isMain: false);
+        Goroutine goroutine = Register(isMain: false, creator, parentId);
         t_current = goroutine;
 
         // Named for the debugger and for a thread dump, which is where a leaked or wedged goroutine
@@ -344,7 +359,12 @@ public sealed class Goroutine
     /// </remarks>
     public static void Start(Action body)
     {
-        Thread thread = new(() => Run(body), s_stackReserve)
+        // Captured HERE, on the thread executing the `go` statement -- the new thread's first frame
+        // is Run, which knows nothing about who asked for it.
+        System.Reflection.MethodBase? creator = CreatorFrame();
+        long parentId = t_current?.Id ?? 0;
+
+        Thread thread = new(() => Run(body, creator, parentId), s_stackReserve)
         {
             IsBackground = true
         };
@@ -418,12 +438,37 @@ public sealed class Goroutine
         if (t_current is not null)
             return;
 
-        t_current = s_main = Register(isMain: true);
+        t_current = s_main = Register(isMain: true, creator: null, parentId: 0);
     }
 
-    private static Goroutine Register(bool isMain)
+    // The first frame above golib's own launch machinery -- the `goǃ` rungs live on `builtin`, Start
+    // and this walk on Goroutine -- located by IDENTITY rather than by a skip count, so a rung the
+    // JIT inlines (they are one-line bodies, exactly the shape it inlines eagerly) cannot shift the
+    // answer onto the wrong function. No file info: see Creator.
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static System.Reflection.MethodBase? CreatorFrame()
     {
-        Goroutine goroutine = new(Interlocked.Increment(ref s_nextId), isMain);
+        foreach (System.Diagnostics.StackFrame frame in new System.Diagnostics.StackTrace(fNeedFileInfo: false).GetFrames())
+        {
+            System.Reflection.MethodBase? method = frame.GetMethod();
+
+            if (method is null)
+                continue;
+
+            Type? declaring = method.DeclaringType;
+
+            if (declaring == typeof(Goroutine) || declaring == typeof(builtin))
+                continue;
+
+            return method;
+        }
+
+        return null;
+    }
+
+    private static Goroutine Register(bool isMain, System.Reflection.MethodBase? creator, long parentId)
+    {
+        Goroutine goroutine = new(Interlocked.Increment(ref s_nextId), isMain, creator, parentId);
 
         s_live[goroutine.Id] = goroutine;
         Interlocked.Increment(ref s_count);
@@ -509,9 +554,11 @@ public sealed class Goroutine
     // The goroutine ROOT itself, on the CALLING thread. Start queues it; GolibTests calls it directly,
     // because the root's policy can only be observed from a thread whose exception the caller can
     // still catch — the real path ends in an unhandled exception and a dead process by design.
-    internal static void Run(Action body)
+    internal static void Run(Action body) => Run(body, creator: null, parentId: 0);
+
+    internal static void Run(Action body, System.Reflection.MethodBase? creator, long parentId)
     {
-        using Scope scope = Enter();
+        using Scope scope = Enter(creator, parentId);
 
         try
         {
