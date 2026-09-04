@@ -2113,7 +2113,25 @@ to verify. The other src PowerShell utilities `clean-bin.ps1` (remove bin/obj/Ge
 `set-version.ps1` each also have a `.bat` launcher.
 ⚠ Purge with that instrument, or with an explicitly depth-UNLIMITED walk: an ad-hoc
 `find … -maxdepth 3` purge missed 274 of 388 output directories and drove a lane's disk into the
-harness's own free-space floor (2026-09-02).
+harness's own free-space floor (2026-09-02). **Non-interactively — a background task, a harness
+tool call, any `-NonInteractive` host — pass `-Force`**, and invoke it as `clean-bin.bat -Force` or
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\clean-bin.ps1 -Force`: the script is
+unsigned, so on any host whose execution policy requires signing a bare `powershell -NoProfile
+-File` dies "is not digitally signed" (observed 2026-09-03; it does NOT reproduce on a box whose
+LocalMachine policy is already `Bypass`, which is exactly why the bypass belongs in the invocation
+rather than in an assumption about the host — the `.bat` already carries it and forwards arguments). `-Confirm:$false` is equivalent in-process but
+does NOT bind through `powershell -File` on 5.1, which literalizes the argument and rejects it
+before the script runs — `-Force` is the contract. **Its exit code is load-bearing before any build
+that follows a purge** (0 = everything found is gone; 1 = declined; 2 = the host could not prompt
+and `-Force` was absent; 3 = `-WhatIf`; 4 = something survived): a found-but-not-deleted run never
+exits 0, and a wrapper that captured a non-zero clean and carried on ran a target-switch build
+without the purge it reported attempting (2026-09-03) — the same day the other half of that hole
+was met, where `Read-Host` on EOF printed "Found 2866 folders to delete. Operation canceled." and
+exited **0** having deleted nothing. Read the code through `-File`/the `.bat`, which propagate it
+exactly; `-Command "& …"` collapses every non-zero code to 1. And the purge is only the BELT: after
+a `$(GoTargetOS)` switch the braces are the per-target compile item-set read
+(`dotnet msbuild -getItem:Compile` — e.g. 39 windows / 0 linux under one `GoTargetOS` and 0 / 75
+under the other), and only that second reading answers the question the purge exists for.
 **⚠ Its default target is MACHINE-GLOBAL** — `%GOPATH%\src\go2cs`, shared with every sibling worktree —
 so never run it bare as a gate. It supports **`-WhatIf`** (a real dry run: the three non-cmdlet writes
 are explicitly `ShouldProcess`-gated, and the solution enumeration reads the SOURCE so the projected
