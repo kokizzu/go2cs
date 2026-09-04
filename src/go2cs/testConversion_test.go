@@ -2846,6 +2846,19 @@ func TestDeclarationKeyedCapabilityEntries(t *testing.T) {
 		"os_test.TestRemoveAllWithExecutedProcess": {capability: "relocatable single-file test executable", internal: false},
 		// runtime/pprof/proto_test.go: `package pprof` → internal → runtime/pprof.<Name>.
 		"runtime/pprof.TestFakeMapping": {capability: "runtime-capability: the memory profiler records no samples on the converted runtime, so the test's mapping/symbolization loop runs over an empty location set (vacuous pass); lifts when an increment returns real memory-profile records", internal: true},
+		// testing/*_test.go: `package testing_test` -> external -> testing_test.<Name> (SUB-Q18's twelve, pinned at the train-24 union under this per-entry rule).
+		"testing_test.TestRaceReports":                        {capability: "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child, a literal the host's reporter never writes", internal: false},
+		"testing_test.TestRaceName":                           {capability: "race-detector-instrumented build: asserts the verbose-run marker \"=== NAME\" is absent from a re-exec'd child, a literal the host's reporter never writes", internal: false},
+		"testing_test.TestRaceSubReports":                     {capability: "race-detector-instrumented build: asserts counts of \"race detected during execution of test\" and \"--- FAIL:\" in a re-exec'd child, literals the host's reporter never writes", internal: false},
+		"testing_test.TestRaceInCleanup":                      {capability: "race-detector-instrumented build: asserts counts of \"race detected during execution of test\" and \"--- FAIL:\" in a re-exec'd child, literals the host's reporter never writes", internal: false},
+		"testing_test.TestDeepSubtestRace":                    {capability: "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child, a literal the host's reporter never writes", internal: false},
+		"testing_test.TestRaceDuringParallelFailsAllSubtests": {capability: "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child, a literal the host's reporter never writes", internal: false},
+		"testing_test.TestRaceBeforeParallel":                 {capability: "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child, a literal the host's reporter never writes", internal: false},
+		"testing_test.TestRaceBeforeTests":                    {capability: "race-detector-instrumented build: asserts a count of \"race detected\" in a child run with GO_WANT_RACE_BEFORE_TESTS=1, a literal the host's reporter never writes", internal: false},
+		"testing_test.TestBenchmarkRace":                      {capability: "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child running a benchmark, a literal the host's reporter never writes", internal: false},
+		"testing_test.TestBenchmarkSubRace":                   {capability: "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child running a benchmark, a literal the host's reporter never writes", internal: false},
+		"testing_test.TestRunningTests":                       {capability: "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail", internal: false},
+		"testing_test.TestRunningTestsInCleanup":              {capability: "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail", internal: false},
 	}
 
 	for key, want := range pinned {
