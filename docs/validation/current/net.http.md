@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `net/http` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-30 · converter `03748eee1`*
+*Validated 2026-09-04 · converter `8f82b3f63`*
 
-**1343 matched · 2 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**1345 matched · 0 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/net/http`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/http).
+
+Measured at `Release` (tiered JIT on), oracle `go version go1.23.12 windows/amd64`.
 
 Both runtimes skip 19 of the matched tests identically.
 
@@ -1345,9 +1347,9 @@ Both runtimes skip 19 of the matched tests identically.
 | `TestWriteDeadlineEnforcedPerStream` | pass | pass |
 | `TestWriteDeadlineEnforcedPerStream/h1` | pass | pass |
 | `TestWriteDeadlineEnforcedPerStream/h2` | pass | pass |
-| `TestWriteDeadlineExtendedOnNewRequest` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestWriteDeadlineExtendedOnNewRequest` | pass | pass |
 | `TestWriteDeadlineExtendedOnNewRequest/h1` | pass | pass |
-| `TestWriteDeadlineExtendedOnNewRequest/h2` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestWriteDeadlineExtendedOnNewRequest/h2` | pass | pass |
 | `TestWriteHeader0` | pass | pass |
 | `TestWriteHeader0/h1` | pass | pass |
 | `TestWriteHeader0/h2` | pass | pass |
@@ -1362,18 +1364,6 @@ Both runtimes skip 19 of the matched tests identically.
 | `TestZeroLengthPostAndResponse` | pass | pass |
 | `TestZeroLengthPostAndResponse/h1` | pass | pass |
 | `TestZeroLengthPostAndResponse/h2` | pass | pass |
-
-## Disclosed divergences
-
-A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
-a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
-hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/net/http/go2cs_test_disclosures.json);
-a disclosed test that fails any *other* way is still a hard mismatch.
-
-| Test | Class | Pinned reason |
-|:--|:--|:--|
-| `TestWriteDeadlineExtendedOnNewRequest` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
-| `TestWriteDeadlineExtendedOnNewRequest/h2` | `performance-margin` | The test's h2 mode runs over TLS, and the fixed WriteTimeout it sets (250ms, with NO retry) bounds the TLS handshake itself, not just post-handshake response writes: Go's conn.serve() arms the server's write deadline before calling Handshake, so a slow handshake write times out server-side and the client sees the connection close mid-handshake -- the FIRST request, not a later one. Bracketed directly by the sibling test TestWriteDeadlineEnforcedPerStream/h2, whose own tryTimeouts retry ladder (Go's own authoring, not a go2cs addition) sets WriteTimeout to 250ms, then 500ms, then 1s on successive attempts (Go 1.23.12, net/http/serve_test.go:980): measured twice, solo, quiet machine, byte-identical both times -- 250ms fails with this exact signature, 500ms passes on the i9. That directly brackets the managed handshake's real completion time to (250ms, 500ms] on that host: a ~2x margin over this test's fixed 250ms constant, not an order-of-magnitude wall -- doubling the deadline clears it. Same family as crypto/tls's TestBogoSuite entry, whose managed-shim-vs-native measurement on this same host class is 2.2x over its own 600s wall (down from ~20x pre-ReadyToRun) -- both are the managed runtime being measurably, boundedly slower than native Go at TLS-adjacent work, not behaviorally wrong. Notable asymmetry, upstream Go's own: EnforcedPerStream was authored with a 3-tier retry ladder precisely because a fixed near-threshold deadline is fragile to host speed, while ExtendedOnNewRequest was authored with a bare fixed 250ms and no retry -- an inconsistency in Go's own test suite, not introduced by conversion. h1 mode (no TLS handshake in the deadline's path) passes without incident on both tests, which is the h1/h2 split's own confirmation that the handshake, not the WriteTimeout mechanism generally, is what the fixed constant cannot clear. Measured 2026-08-29, i9. |
 
 ## Excluded declarations
 

@@ -32,18 +32,6 @@ using static global::go.net.http_internal_test_package;
 
 partial class http_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string httpWwwGoogleComSearchQˢ = "http://www.google.com/search?q=foo&q=bar"u8;
 
@@ -1142,7 +1130,7 @@ public static void TestMaxBytesReaderStickyError(ж<testing.T> Ꮡt) {
         [1] = new(100, 100),
         [2] = new(101, 100)
     };
-    foreach (var (i, tt) in tests) {
+    foreach (var (i, tt) in tests.ΔRangeSnapshot()) {
         var rc = MaxBytesReader(default!, io.NopCloser(new http_test_package.bytes_ReaderжReader(bytes.NewReader(new slice<byte>(tt.readable)))), tt.limit);
         {
             var err = isSticky(rc); if (err != default!) {
@@ -1235,7 +1223,7 @@ public static void TestMaxBytesReaderDifferentLimits(ж<testing.T> Ꮡt) {
             wantErr: false
         )
     };
-    foreach (var (i, tt) in tests) {
+    foreach (var (i, tt) in tests.ΔRangeSnapshot()) {
         var rc = MaxBytesReader(default!, io.NopCloser(new http_test_package.strings_ReaderжReader(strings.NewReader(testStr))), tt.limit);
         var (n, err) = rc.Read(new slice<byte>(tt.lenP));
         if (n != tt.wantN) {

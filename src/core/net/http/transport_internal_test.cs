@@ -13,24 +13,13 @@ using net = net_package;
 using testcert = global::go.net.http.@internal.testcert_package;
 using strings = strings_package;
 using testing = testing_package;
+using System.Runtime.CompilerServices;
 using crypto;
 using global::go.net.http.@internal;
 using static global::go.net.http_package;
 using time = time_package;
 
 partial class http_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸtls() {
-    builtin.initPackage(typeof(crypto.tls_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸtestcert() {
-    builtin.initPackage(typeof(global::go.net.http.@internal.testcert_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string testOverˢ = "test over"u8;
@@ -237,7 +226,7 @@ public static void TestTransportShouldRetryRequest(ж<testing.T> Ꮡt) {
 
 internal delegate (ж<global::go.net.http_package.Response>, error) roundTripFunc(ж<global::go.net.http_package.Request> r);
 
-internal static (ж<global::go.net.http_package.Response>, error) RoundTrip(this roundTripFunc f, ж<global::go.net.http_package.Request> Ꮡr) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (ж<global::go.net.http_package.Response>, error) RoundTrip(this roundTripFunc f, ж<global::go.net.http_package.Request> Ꮡr) {
     return f(Ꮡr);
 }
 

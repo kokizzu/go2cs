@@ -15,24 +15,6 @@ using static global::go.net.http_package;
 
 partial class http_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(global::go.path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸfstest() {
-    builtin.initPackage(typeof(global::go.testing.fstest_package));
-}
-
 internal static Action<@string, error> checker(ж<testing.T> Ꮡt) {
     return (@string call, error err) => {
         if (err == default!) {
