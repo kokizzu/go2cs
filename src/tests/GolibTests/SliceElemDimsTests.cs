@@ -78,6 +78,28 @@ public class SliceElemDimsTests
     }
 
     /// <summary>
+    /// Slicing an ARRAY is the third creation kind, and <c>arr[:0]</c> is its shape with nothing to
+    /// observe. The record goes on the ARRAY'S OWN backing store — <c>array&lt;T&gt;.slice</c> hands
+    /// out a window over <c>m_array</c> rather than a copy — so every later window over the same
+    /// array inherits it without being wrapped itself.
+    /// </summary>
+    [TestMethod]
+    public void SlicingAnArrayRecordsAgainstTheArraysOwnBackingSoEveryWindowInheritsIt()
+    {
+        array<array<byte>> source = new array<array<byte>>(5);
+
+        slice<array<byte>> emptyWindow = GoReflect.WithElemDims(source.slice(0, 0), 3);
+
+        Assert.AreEqual(0, (int)emptyWindow.Length, "arr[:0] is the window with nothing to observe");
+        CollectionAssert.AreEqual(new nint[] { 3 }, GoReflect.SliceElemArrayDims(emptyWindow));
+
+        slice<array<byte>> unwrappedWindow = source.slice(2, 2);
+
+        CollectionAssert.AreEqual(new nint[] { 3 }, GoReflect.SliceElemArrayDims(unwrappedWindow),
+            "a window over the same array shares its backing store and must inherit the record");
+    }
+
+    /// <summary>
     /// RECORDED BOUNDARY, asserted at TODAY's answer so the remedy cannot land silently: a NIL slice
     /// has no backing object to key on, so its element length stays unrecoverable and
     /// <c>reflect.TypeOf(x)</c> answers a dimensionless descriptor where Go answers

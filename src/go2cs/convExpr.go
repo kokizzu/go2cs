@@ -585,7 +585,11 @@ func (v *Visitor) convExpr(expr ast.Expr, contexts []ExprContext) string {
 
 		return rendered
 	case *ast.SliceExpr:
-		return v.convSliceExpr(exprType)
+		// Slicing an ARRAY creates a slice, and `arr[:0]` creates one with nothing to observe: the
+		// record goes on the array's own backing store, which every later reslice shares and so
+		// inherits. Slicing a SLICE re-records the same dims against the same backing, which is a
+		// no-op — the wrapper is answered unchanged for every type that is not a slice-of-array.
+		return v.withSliceElemDims(v.convSliceExpr(exprType), v.getType(exprType, false))
 	case *ast.StarExpr:
 		context := getExprContext[StarExprContext](contexts)
 		return v.convStarExpr(exprType, context)
