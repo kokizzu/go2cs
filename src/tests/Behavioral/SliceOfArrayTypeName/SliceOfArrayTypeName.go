@@ -26,9 +26,27 @@ func main() {
 	show("[][3]int", [][3]int{{}})
 	show("[2][3]int", [2][3]int{})
 	show("[][2][3]int", [][2][3]int{{{1, 2, 3}, {4, 5, 6}}}) // populated: the zero nested element is a routed emission gap
-	show("map[[2]int][]int", map[[2]int][]int{{}: nil}) // present entry: an EMPTY map is increment B's stated boundary
+	show("map[[2]int][]int", map[[2]int][]int{{}: nil})      // present entry: an EMPTY map is increment B's stated boundary
 	show("[]Grid", []Grid{{}})
 	show("[]*[4]byte", []*[4]byte{&[4]byte{}}) // explicit &: the elided form trips a converter gap, routed
+
+	// Section 4.2 -- Go QUALIFIES an interface's UNEXPORTED method names with their package in the
+	// type string, and never qualifies an exported one. Both rows are here because a fix that
+	// qualified EVERY method would pass the first and fail the second, and one that qualified none
+	// does the reverse; only the exportedness test passes both.
+	//
+	// Sorting stays on the BARE name and this guard does not exercise that: Go prints
+	// `interface { zlib.aaa(); main.zzz() }` for unexported methods from two packages, which is bare
+	// order, not qualified order. That row needs a sibling package; it is recorded here so the sort
+	// is not "fixed" into qualified order by someone reading only the rows below.
+	var unexportedOnly interface{ a(int) string }
+	var mixedExportedness interface {
+		zeta()
+		Alpha(x int)
+	}
+	fmt.Println("iface unexported:", reflect.TypeOf(&unexportedOnly).Elem().String())
+	fmt.Println("iface mixed     :", reflect.TypeOf(&mixedExportedness).Elem().String())
+	fmt.Println("iface empty     :", reflect.TypeOf(new(any)).Elem().String())
 
 	// Elem() is the type-side question the value-side fix cannot answer on its own.
 	fmt.Printf("slice-of-array Elem().String()=%s Len()=%d\n",

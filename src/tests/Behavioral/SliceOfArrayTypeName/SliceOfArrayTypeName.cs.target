@@ -20,6 +20,18 @@ private static readonly @string intˢ3 = "[][2][3]int"u8;
 private static readonly @string map2IntIntˢ = "map[[2]int][]int"u8;
 private static readonly @string gridˢ = "[]Grid"u8;
 private static readonly @string byteˢ = "[]*[4]byte"u8;
+private static readonly object ifaceUnexportedˢ = (@string)"iface unexported:"u8;
+private static readonly object ifaceMixedˢ = (@string)"iface mixed     :"u8;
+private static readonly object ifaceEmptyˢ = (@string)"iface empty     :"u8;
+
+[GoType("dyn")] internal partial interface main_unexportedOnly {
+    @string a(nint _);
+}
+
+[GoType("dyn")] internal partial interface main_mixedExportedness {
+    void zeta();
+    void Alpha(nint x);
+}
 
 internal static void Main() {
     show(uint8ˢ, new uint8[]{}.array(6));
@@ -30,6 +42,11 @@ internal static void Main() {
     show(map2IntIntˢ, new map<array<nint>, slice<nint>>{[new nint[]{}.array(2)] = default!});
     show(gridˢ, GoReflect.WithElemDims(new Grid[]{new nint[]{}.array(3)}.slice(), 3));
     show(byteˢ, new ж<array<byte>>[]{Ꮡ(new byte[]{}.array(4))}.slice());
+    ref var unexportedOnly = ref heap<main_unexportedOnly>(out var ᏑunexportedOnly);
+    ref var mixedExportedness = ref heap<main_mixedExportedness>(out var ᏑmixedExportedness);
+    fmt.Println(ifaceUnexportedˢ, reflect.TypeOf(ᏑunexportedOnly).Elem().String());
+    fmt.Println(ifaceMixedˢ, reflect.TypeOf(ᏑmixedExportedness).Elem().String());
+    fmt.Println(ifaceEmptyˢ, reflect.TypeOf(@new<any>()).Elem().String());
     fmt.Printf("slice-of-array Elem().String()=%s Len()=%d\n"u8,
         reflect.TypeOf(GoReflect.WithElemDims(new array<uint8>[]{new uint8[]{}.array(6)}.slice(), 6)).Elem().String(),
         reflect.TypeOf(GoReflect.WithElemDims(new array<uint8>[]{new uint8[]{}.array(6)}.slice(), 6)).Elem().Len());

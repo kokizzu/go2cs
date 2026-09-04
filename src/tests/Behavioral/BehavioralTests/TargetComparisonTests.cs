@@ -199,6 +199,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckCastNegativeNamedType() => CheckTarget("CastNegativeNamedType");
 
     [TestMethod]
+    public void CheckChanDirectionChain() => CheckTarget("ChanDirectionChain");
+
+    [TestMethod]
     public void CheckChanElemDims() => CheckTarget("ChanElemDims");
 
     [TestMethod]

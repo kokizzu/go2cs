@@ -196,6 +196,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckCastNegativeNamedType() => CheckTarget("CastNegativeNamedType");
 
     [TestMethod]
+    public void CheckChanDirectionChain() => CheckTarget("ChanDirectionChain");
+
+    [TestMethod]
     public void CheckChanElemDims() => CheckTarget("ChanElemDims");
 
     [TestMethod]
