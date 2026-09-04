@@ -89,6 +89,30 @@ namespace GolibTests;
 // CONSTRUCTED for a reference-bearing box, (2) there is no `m_slot` to be re-allocated, (3) the
 // address is a stale copy the collector was never asked to hold still. The measured result lands as
 // a FOLLOW-UP commit rather than by editing this block.
+//
+// THE RESULT, MEASURED 2026-09-04 on the i7 coordinator class (net10.0, windows flavour), and it
+// held exactly. Under `GO2CS_PIN_STALENESS_STRICT=1`, filtered to this class: **5 of 5 at Debug and
+// 5 of 5 at Release with `DOTNET_TieredCompilation=0`** — `Failed: 2, Passed: 3, Skipped: 0,
+// Total: 5` on all ten runs, the SAME two arms (3 and 4) every time, zero aborts. Skipped: 0 is
+// load-bearing: no arm reported "the control array did not move", so every reading is a measurement
+// rather than a vacuous pass. Ungated, both configurations: `Failed: 0, Passed: 3, Skipped: 2,
+// Total: 5`, exit 0. Full GolibTests, ungated, both configurations: **598 of 598 declared**
+// (593 at master + these 5, derived from the COMPILE set — the three linux-flavour files the csproj
+// removes under the default `$(GoTargetOS)` are subtracted), 0 failures, 0 aborts, exit 0; the only
+// new skips are arms 3 and 4, the other four (Debug) / one (Release) being pre-existing and
+// documented.
+//
+// So the configuration prediction held: the gated arms' assertion is STRUCTURAL and reads the same
+// at Debug and at Release, unlike AliasOverlapRaceTests' four-take race, which a non-optimizing
+// frame masks. And the mechanism prediction held on every step — arm 1 passes each of its six
+// assertions, which is the bisect: `PinnableStorage` null, `m_pin` null BOTH before and after the
+// address take (so no PinnedBuffer is ever constructed and there is nothing for a finalizer to
+// release), `IsPinnedAt` false, `Resolve` null, and the recovery `IsNative`.
+//
+// ⚠ One claim in this header was written as intended and MEASURED to be narrower, corrected here
+// rather than left: at `dotnet test`'s DEFAULT console verbosity a skip prints its NAME and not its
+// reason, so the disclosure text reaches `--logger "console;verbosity=detailed"` and the .trx, not
+// the summary line.
 [TestClass]
 public class PinnedBoxStalenessWitnessTests
 {
