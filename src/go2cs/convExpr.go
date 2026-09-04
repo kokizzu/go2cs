@@ -536,7 +536,9 @@ func (v *Visitor) convExpr(expr ast.Expr, contexts []ExprContext) string {
 			}
 		}
 
-		return v.convCompositeLit(exprType, context)
+		// A slice-of-array literal records its element length HERE: this is a creation site, and the
+		// length is statically known here and nowhere downstream once the literal is empty.
+		return v.withSliceElemDims(v.convCompositeLit(exprType, context), v.getType(exprType, false))
 	case *ast.FuncLit:
 		context := getExprContext[LambdaContext](contexts)
 		return v.convFuncLit(exprType, context)

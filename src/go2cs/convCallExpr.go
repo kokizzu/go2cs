@@ -2360,7 +2360,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 
 				if isTypeParam {
-					return fmt.Sprintf("make<%s>(%s)", typeName, remainingArgs)
+					return v.withSliceElemDims(fmt.Sprintf("make<%s>(%s)", typeName, remainingArgs), typeParam)
 				}
 
 				// `make(chan<- T[, n])` is where a DIRECTIONAL channel value is born, and the one
@@ -2372,11 +2372,13 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					remainingArgs += ", " + dir
 				}
 
+				// `make([][3]uint8, n)` is a slice CREATION site: the element array's length is
+				// statically known here and, once the made slice is empty, nowhere else.
 				if v.options.preferVarDecl {
-					return fmt.Sprintf("new %s(%s)", typeName, remainingArgs)
+					return v.withSliceElemDims(fmt.Sprintf("new %s(%s)", typeName, remainingArgs), typeParam)
 				}
 
-				return fmt.Sprintf("new(%s)", remainingArgs)
+				return v.withSliceElemDims(fmt.Sprintf("new(%s)", remainingArgs), typeParam)
 			}
 
 			v.showWarning("@convCallExpr - unexpected call to 'make' method for type '%s'", typeName)

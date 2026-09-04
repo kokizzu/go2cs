@@ -209,6 +209,62 @@ func (v *Visitor) convSliceExpr(sliceExpr *ast.SliceExpr) string {
 	return fmt.Sprintf("/* %s */", expr)
 }
 
+// sliceElemArrayDims answers the element ARRAY dimensions of a slice type, outermost first, or nil
+// when the type is not a slice whose element is an array.
+//
+// This is the static fact the emission used to drop. Go's `[][3]uint8` and `[][4]uint8` are one
+// managed type, `slice<array<byte>>` -- an array's length is a constructor argument in the runtime,
+// not a type parameter -- so the length survives only where a value can be OBSERVED to carry it. An
+// empty slice carries nothing, which is why `reflect.TypeOf([][3]uint8{})` could not answer its own
+// element length. Here the length is still known, and withSliceElemDims below records it.
+func sliceElemArrayDims(t types.Type) []int64 {
+	if t == nil {
+		return nil
+	}
+
+	slice, ok := t.Underlying().(*types.Slice)
+
+	if !ok {
+		return nil
+	}
+
+	var dims []int64
+
+	for elem := slice.Elem(); ; {
+		array, ok := elem.Underlying().(*types.Array)
+
+		if !ok {
+			break
+		}
+
+		dims = append(dims, array.Len())
+		elem = array.Elem()
+	}
+
+	return dims
+}
+
+// withSliceElemDims wraps a slice CREATION expression so its element array dimensions are recorded
+// against the new slice's backing store, and answers the expression unchanged for every other type.
+//
+// Only creation sites are wrapped: a reslice shares its source's backing and inherits the record for
+// free, so nothing needs to travel through slicing, ranging or assignment.
+func (v *Visitor) withSliceElemDims(exprResult string, t types.Type) string {
+	dims := sliceElemArrayDims(t)
+
+	if len(dims) == 0 {
+		return exprResult
+	}
+
+	values := make([]string, len(dims))
+
+	for i, dim := range dims {
+		values[i] = fmt.Sprintf("%d", dim)
+	}
+
+	return fmt.Sprintf("GoReflect.WithElemDims(%s, %s)", exprResult, strings.Join(values, ", "))
+}
+
 func (v *Visitor) getRangeIndexer(expr ast.Expr) string {
 	if isIntegerLiteral(expr) {
 		return v.convExpr(expr, nil)
