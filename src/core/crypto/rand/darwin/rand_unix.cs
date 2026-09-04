@@ -105,17 +105,17 @@ internal static (nint n, error err) Read(this ж<reader> Ꮡr, slice<byte> b) {
             (n, err) = (len(b), default!); goto ᒐdone;
         }
         if (Ꮡr.of(reader.Ꮡused).Load() != 2) {
-            Ꮡr.of(reader.Ꮡmu).Lock();
+            r.mu.Lock();
             if (Ꮡr.of(reader.Ꮡused).Load() != 2) {
                 var (f, errΔ1) = os.Open(urandomDevice);
                 if (errΔ1 != default!) {
-                    Ꮡr.of(reader.Ꮡmu).Unlock();
+                    r.mu.Unlock();
                     (n, err) = (0, errΔ1); goto ᒐdone;
                 }
                 r.f = new hideAgainReader(new os_FileжReader(f));
                 Ꮡr.of(reader.Ꮡused).Store(2);
             }
-            Ꮡr.of(reader.Ꮡmu).Unlock();
+            r.mu.Unlock();
         }
         (n, err) = io.ReadFull(r.f, b);
     }
