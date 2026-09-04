@@ -739,13 +739,26 @@ returns, channel sends, `append` elements, and function parameters (cloned in th
 Named array types clone the same way through their generated wrapper's own `Clone()`, and the copy
 is **deep** for nested arrays (`[2][3]int` copies its inner arrays too, matching Go):
 
+The range **expression** is one of those sites: Go evaluates it once, so `for i, v := range a` over an
+array value iterates a COPY and a write to `a` inside the body is invisible to later iterations. It
+gets its own member rather than `.Clone()`, because a snapshot cannot outlive its loop — that makes it
+Go's inline, stack-resident copy, which costs zero allocations, so golib takes it from a pooled buffer
+released when the loop ends. A range with no value variable (`for i := range a`), over a pointer to an
+array, or over a slice copies nothing in Go, and neither does the emission.
+
 ```go
 data := ints                          // an independent copy — writes to data never reach ints
 for _, row := range m { row[0] = 9 }  // row is a per-iteration copy — m is never written
+for i, v := range a {                 // v is read from a SNAPSHOT taken before the loop
+    if i == 0 { a[1] = 91 }           // …so this write is invisible to the next iteration
+}
 ```
 ```csharp
 var data = ints.Clone();
-foreach (var (_, vᴛ1) in m) { var row = vᴛ1.Clone(); row[0] = 9; }
+foreach (var (_, vᴛ1) in m.ΔRangeSnapshot()) { var row = vᴛ1.Clone(); row[0] = 9; }
+foreach (var (i, v) in a.ΔRangeSnapshot()) {
+    if (i == 0) { a[1] = 91; }
+}
 ```
 
 A **struct** whose field is a fixed-size array carries the same shared `T[]` into a plain struct copy,

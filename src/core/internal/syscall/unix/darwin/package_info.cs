@@ -72,6 +72,35 @@ using static go.@internal.syscall.unix_package;
 [assembly: go.GoPositionMap("internal/syscall/unix/user_darwin.go", "user_darwin.cs", "AAwcpIKmgpQAGTqktO6opLTuqKS07qiktO6opIKUgpQ=")]
 // </GoSourcePositionMaps>
 
+// Dynamically imported C entry points are recorded here, one `GoCgoImportDynamic` attribute
+// per `//go:cgo_import_dynamic` pragma this package binds to a trampoline declaration, so
+// that `abi.FuncPCABI0` of that trampoline resolves to the REAL address of the exported
+// symbol rather than to a token. The value is dereferenced by design - the trampoline's
+// caller jumps to it - which is why a stub carrying no record here is left a loud throw
+// instead: an address that is merely plausible is fatal at the first call.
+
+// <CgoDynamicImports>
+[assembly: go.GoCgoImportDynamic("libc_arc4random_buf_trampoline", "arc4random_buf", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_faccessat_trampoline", "faccessat", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_freeaddrinfo_trampoline", "freeaddrinfo", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_gai_strerror_trampoline", "gai_strerror", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_getaddrinfo_trampoline", "getaddrinfo", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_getgrgid_r_trampoline", "getgrgid_r", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_getgrnam_r_trampoline", "getgrnam_r", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_getgrouplist_trampoline", "getgrouplist", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_getnameinfo_trampoline", "getnameinfo", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_getpwnam_r_trampoline", "getpwnam_r", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_getpwuid_r_trampoline", "getpwuid_r", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_grantpt_trampoline", "grantpt", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_posix_openpt_trampoline", "posix_openpt", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_ptsname_r_trampoline", "ptsname_r", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_sysconf_trampoline", "sysconf", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libc_unlockpt_trampoline", "unlockpt", "/usr/lib/libSystem.B.dylib")]
+[assembly: go.GoCgoImportDynamic("libresolv_res_9_nclose_trampoline", "res_9_nclose", "/usr/lib/libresolv.9.dylib")]
+[assembly: go.GoCgoImportDynamic("libresolv_res_9_ninit_trampoline", "res_9_ninit", "/usr/lib/libresolv.9.dylib")]
+[assembly: go.GoCgoImportDynamic("libresolv_res_9_nsearch_trampoline", "res_9_nsearch", "/usr/lib/libresolv.9.dylib")]
+// </CgoDynamicImports>
+
 namespace go.@internal.syscall;
 
 [GoPackage("unix")]

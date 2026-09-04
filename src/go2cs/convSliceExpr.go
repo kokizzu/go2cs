@@ -59,15 +59,17 @@ func (v *Visitor) convSliceExpr(sliceExpr *ast.SliceExpr) string {
 			return fmt.Sprintf("subslice<%s, %s>(%s, %s, %s)", getSanitizedIdentifier(tp.Obj().Name()), elemType, ident, low, high)
 		}
 
-		// A sub-slice of a `string | []byte` UNION-constrained value goes through the
-		// IByteSeq<byte> Range indexer, which returns the INTERFACE — but Go types the result
-		// as the type parameter again, so it assigns back to / passes as / returns as `bytes`
-		// (time format_rfc3339, CS0266/CS0310/CS0029 ×6). C# permits the explicit interface →
-		// type-parameter conversion (a runtime-checked unbox to @string / slice<byte>; the
-		// slice case shares backing, matching Go). A 3-index slice cannot occur on a
-		// string-including union (Go forbids it on strings), so only the range forms cast.
+		// A sub-slice of a `string | []byte` UNION-constrained value goes through the Range
+		// indexer of golib's self-referential IByteSeq<TSelf, T>, which is what getGenericDefinition
+		// emits as this parameter's constraint (`where bytes : IByteSeq<bytes, byte>`,
+		// constraintOperations). That indexer returns TSelf — the type parameter ITSELF — which is
+		// exactly how Go types the expression, so the value already assigns back to / passes as /
+		// returns as `bytes` (time format_rfc3339) and spreads or converts through the constraint's
+		// own members (encoding/json's `src[lo:hi]...`, bytealg's `string(s[i:j])`). No conversion
+		// is emitted: the range expression IS the type parameter, and `s = s[19..]` reads as the Go
+		// does. A 3-index slice cannot occur on a string-including union (Go forbids it on strings),
+		// so only the range forms take this route.
 		if typeParamIsStringByteUnion(tp) && !sliceExpr.Slice3 {
-			name := getSanitizedIdentifier(tp.Obj().Name())
 			var inner string
 
 			switch {
@@ -81,7 +83,7 @@ func (v *Visitor) convSliceExpr(sliceExpr *ast.SliceExpr) string {
 				inner = ident + "[" + v.getRangeIndexer(sliceExpr.Low) + ".." + v.getRangeIndexer(sliceExpr.High) + "]"
 			}
 
-			return fmt.Sprintf("((%s)(%s))", name, inner)
+			return inner
 		}
 	}
 

@@ -6,6 +6,13 @@
 
 using System;
 
+// go2cs HAND-OWNED (whole file) — part of the Phase-4 test host, a structural replacement for Go's
+// testing package rather than a conversion of it (the rationale and the measured clobber are in
+// testing.cs). No converted source emits at this path, so this marker declares ownership rather than
+// resolving a collision; the mechanical guards are the -stdlib skip list (isNonConvertedStdLibPackage)
+// and testConversion.go's -tests refusal (requireConvertibleTestTarget).
+[module: go.GoManualConversion]
+
 namespace go.testing_runtime;
 
 /// <summary>

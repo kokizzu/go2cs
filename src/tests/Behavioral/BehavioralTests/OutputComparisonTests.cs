@@ -110,6 +110,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckArrayPointerElementAlias() => CheckTarget("ArrayPointerElementAlias");
 
     [TestMethod]
+    public void CheckArrayRangeSnapshot() => CheckTarget("ArrayRangeSnapshot");
+
+    [TestMethod]
     public void CheckArrayValueCopySites() => CheckTarget("ArrayValueCopySites");
 
     [TestMethod]
@@ -168,6 +171,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckByteTableStringVar() => CheckTarget("ByteTableStringVar");
+
+    [TestMethod]
+    public void CheckCanonicalTypeIdentity() => CheckTarget("CanonicalTypeIdentity");
 
     [TestMethod]
     public void CheckCaptureHoistThroughConversion() => CheckTarget("CaptureHoistThroughConversion");
@@ -279,6 +285,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckCrossPackageArrayZeroValue() => CheckTarget("CrossPackageArrayZeroValue");
+
+    [TestMethod]
+    public void CheckCrossPackagePointerReceiverVar() => CheckTarget("CrossPackagePointerReceiverVar");
 
     [TestMethod]
     public void CheckCrossPkgLiteralNestedField() => CheckTarget("CrossPkgLiteralNestedField");
@@ -678,6 +687,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckGoroutineParkStorm() => CheckTarget("GoroutineParkStorm");
+
+    [TestMethod]
+    public void CheckGoroutineWaitState() => CheckTarget("GoroutineWaitState");
 
     [TestMethod]
     public void CheckGuardedNilPointerParamDeref() => CheckTarget("GuardedNilPointerParamDeref");
@@ -1617,6 +1629,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckSliceNilVsEmpty() => CheckTarget("SliceNilVsEmpty");
+
+    [TestMethod]
+    public void CheckSliceOfArrayTypeName() => CheckTarget("SliceOfArrayTypeName");
 
     [TestMethod]
     public void CheckSlicePointerIdentity() => CheckTarget("SlicePointerIdentity");

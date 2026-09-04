@@ -6,10 +6,12 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `sync` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-08-25 · converter `a338d351d`*
+*Validated 2026-09-03 · converter `93a131a3f`*
 
-**44 matched · 7 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**47 matched · 4 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/sync`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/sync).
+
+Measured at `Release` (tiered JIT off), oracle `go version go1.23.12 windows/amd64`.
 
 ## Verdicts
 
@@ -24,11 +26,11 @@ comparison — it is the evidence behind the `sync` row in
 | `TestCondSignalGenerations` | pass | pass |
 | `TestCondSignalStealing` | pass | pass |
 | `TestIssue40999` | pass | pass |
-| `TestMapClearNoAllocations` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestMapClearNoAllocations` | pass | pass |
 | `TestMapMatchesDeepCopy` | pass | pass |
 | `TestMapMatchesRWMutex` | pass | pass |
 | `TestMapRangeNestedCall` | pass | pass |
-| `TestMapRangeNoAllocations` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestMapRangeNoAllocations` | pass | pass |
 | `TestMutex` | pass | pass |
 | `TestMutexFairness` | pass | pass |
 | `TestMutexMisuse` | pass | pass |
@@ -54,7 +56,7 @@ comparison — it is the evidence behind the `sync` row in
 | `TestPool` | pass | pass |
 | `TestPoolChain` | pass | pass |
 | `TestPoolDequeue` | pass | pass |
-| `TestPoolGC` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestPoolGC` | pass | pass |
 | `TestPoolNew` | pass | pass |
 | `TestPoolRelease` | pass | pass |
 | `TestPoolStress` | pass | pass |
@@ -76,13 +78,10 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 
 | Test | Class | Pinned reason |
 |:--|:--|:--|
-| `TestMapClearNoAllocations` | `alloc-profile` | want-zero AllocsPerRun assert: Map.Clear walks the read/dirty maps through the golib map enumerator, and every enumeration step materializes a managed entry object where Go's bucket walk is allocation-free; a malloc-counting shim would fail the same assert |
-| `TestMapRangeNoAllocations` | `alloc-profile` | want-zero AllocsPerRun assert: Range boxes each key and value into `any` for the visitor callback — a CLR heap allocation per entry that Go's non-escaping eface avoids |
 | `TestOnceXGC` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
 | `TestOnceXGC/OnceFunc` | `codegen-liveness` | The test asserts its own frame's `buf` is collectible while the frame is still running. sync.OnceFunc DOES drop the wrapped function (measured: the backing array is released after the first call), but the test's own `f := fn(buf)` passes the 32-byte slice header BY VALUE, so the x64 ABI makes the caller materialize an address-exposed stack temp; an address-exposed slot is not lifetime-tracked and the CLR reports it live for the whole method, pinning the array until the subtest RETURNS. Go's per-safepoint liveness maps release the caller's copy at its last use. Not satisfiable at any layer go2cs owns — it is the CLR's GC-info conservatism, and it holds in fully optimized code, not just under the non-optimizing JIT. |
 | `TestOnceXGC/OnceValue` | `codegen-liveness` | Same as TestOnceXGC/OnceFunc: the by-value slice argument in the test's own body is reported live for the whole frame by the CLR's GC info, so the finalizer cannot become due while the test is looking |
 | `TestOnceXGC/OnceValues` | `codegen-liveness` | Same as TestOnceXGC/OnceFunc: the by-value slice argument in the test's own body is reported live for the whole frame by the CLR's GC info, so the finalizer cannot become due while the test is looking |
-| `TestPoolGC` | `codegen-liveness` | Go's own assert tolerates exactly one straggler (`fin1 >= N-1`, commented "1 pointer can remain on stack or elsewhere"); the managed run leaves TWO. The extra one is the discarded `p.Get()` result: Go drops the value immediately, while the CLR keeps the call's result temp in the test frame's GC-reported live set for the frame's whole lifetime — the same frame-liveness conservatism as TestOnceXGC, here one object wide. The Pool itself releases everything it cached (98 of 100 finalize on the FIRST try, deterministically across 9 measured runs); the count is pinned exactly so any real Pool retention regression fails loud instead of hiding behind this disclosure. |
 
 ## Excluded declarations
 

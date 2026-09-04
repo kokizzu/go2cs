@@ -906,8 +906,17 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 	// so it takes the receiver BOX (`this ж<g>`). A deref-aliased pointer receiver (`ref var gp
 	// = ref Ꮡgp.Value`) renders as the value alias, which binds neither the box form nor identity;
 	// emit the box itself — `Ꮡgp.guintptr()`.
+	//
+	// The box must actually EXIST, which is why the gate is exprHasReceiverBoxInScope and not the
+	// broader exprIsDerefAliasedPointer it reads like. A registration displaces a BODY; it does not
+	// decide the declaration's receiver FORM, and a hand-own of a `[GoRecv] this ref T` method is
+	// called exactly as the converted one was. Gating on "is deref-aliased" spelled `Ꮡrecv` inside
+	// `[GoRecv] this ref T` bodies, where nothing declares it — reflect's `addArg` emitted
+	// `Ꮡa.regAssign(Ꮡt, 0)` (CS0103) the moment `abiSeq.regAssign` was registered. Where the box is
+	// genuinely in scope both forms bind (RecvGenerator mints the ж twin beside a `ref` primary),
+	// so keeping the box route there is what makes this narrowing corpus-inert.
 	if sel, ok := v.info.Selections[selectorExpr]; ok && sel.Kind() == types.MethodVal {
-		if obj := sel.Obj(); obj != nil && v.isManualBoxReceiverMethod(obj) && v.exprIsDerefAliasedPointer(selectorExpr.X) {
+		if obj := sel.Obj(); obj != nil && v.isManualBoxReceiverMethod(obj) && v.exprHasReceiverBoxInScope(selectorExpr.X) {
 			if ident, ok := selectorExpr.X.(*ast.Ident); ok {
 				return fmt.Sprintf("%s%s.%s", AddressPrefix, v.getIdentName(ident), v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
 			}
@@ -916,11 +925,15 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 		// B′-S0 arm (a), OQ-7's row at the caller: a RESULT-USED call of a ref-return primary
 		// (`return v.carryPropagateGeneric()` in a ж-form sibling) must bind the TWIN — the
 		// primary returns `ref T`, which cannot satisfy the ж-typed consumer, and the twin
-		// returns its own box, which IS Go's value here. A deref-aliased pointer receiver
-		// carries its box in scope, so route through it. A DISCARDED call keeps the plain alias
-		// and binds the primary — the mint-free direct form the selection exists for.
+		// returns its own box, which IS Go's value here. The box must actually EXIST in scope,
+		// so this gates on exprHasReceiverBoxInScope — the sub-agent's narrowing of the sibling
+		// arm above, for the same reason (a `[GoRecv] this ref T` body declares no `Ꮡv`). B′-S1:
+		// inside a ref-return-primary body the cascade promotes, there is no box, so the arm
+		// falls through and the call binds the PRIMARY on the bare `ref` receiver — which
+		// visitReturnStmt's forwarding-return prefix then returns as `return ref v.M(…)`. A
+		// DISCARDED call keeps the plain alias and binds the primary — the mint-free direct form.
 		if obj := sel.Obj(); obj != nil {
-			if fn, isFunc := obj.(*types.Func); isFunc && packageRefReturnPrimaryMethods[fn.Origin()] && v.exprIsDerefAliasedPointer(selectorExpr.X) {
+			if fn, isFunc := obj.(*types.Func); isFunc && packageRefReturnPrimaryMethods[fn.Origin()] && v.exprHasReceiverBoxInScope(selectorExpr.X) {
 				resultUsed := true
 
 				if discarded, isCall := v.resultDiscardedExpr.(*ast.CallExpr); isCall && discarded.Fun == selectorExpr {

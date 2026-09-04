@@ -499,28 +499,7 @@ internal static int32 /*ret*/ open(ж<byte> Ꮡname, int32 mode, int32 perm) {
 
 internal static partial void open_trampoline();
 
-[GoType("dyn")] internal partial struct nanotime1_r {
-    internal int64 t;  // raw timer
-    internal uint32 numer, denom; // conversion factors. nanoseconds = t * numer / denom.
-}
-
-//go:nosplit
-//go:cgo_unsafe_args
-internal static int64 nanotime1() {
-    ref var r = ref heap(new nanotime1_r(), out var Ꮡr);
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(nanotime_trampoline), new @unsafe.Pointer(Ꮡr));
-    // Note: Apple seems unconcerned about overflow here. See
-    // https://developer.apple.com/library/content/qa/qa1398/_index.html
-    // Note also, numer == denom == 1 is common.
-    var t = r.t;
-    if (r.numer != 1) {
-        t *= (int64)r.numer;
-    }
-    if (r.denom != 1) {
-        t /= (int64)r.denom;
-    }
-    return t;
-}
+// go2cs generated this placeholder — func nanotime1 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static partial void nanotime_trampoline();
 

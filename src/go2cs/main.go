@@ -190,12 +190,14 @@ func main() {
 	goPathCmd := commandLine.String("gopath", goPath, "Path to Go path directory")
 	go2csPathCmd := commandLine.String("go2cspath", go2csPath, "Path to C# converted code")
 	convertStdLibCmd := commandLine.Bool("stdlib", false, "Convert Go standard library (implies -tags purego by default; pass an explicit -tags to override)")
+	convertTimeoutCmd := commandLine.Duration("convert-timeout", defaultConvertTimeout, "Per-package cap the -stdlib driver applies to ONE package's conversion; Go duration syntax, must be greater than zero. It is a safety net against a hung conversion, never a performance assumption -- a slow host under concurrent load can legitimately need far more than the default, and a package killed early is reported as a failed package")
 	convertTestsCmd := commandLine.Bool("tests", false, "Convert eligible Go package tests and emit a runnable test host project")
 	testActionCmd := commandLine.String("test-action", "convert", "Converted-test action: convert, build, run, compare, or all")
 	testTimeoutCmd := commandLine.Duration("test-timeout", 2*time.Minute, "Timeout for each converted-test child process (build/run/compare)")
 	testFilterCmd := commandLine.String("test-filter", "", "Regex handed VERBATIM to BOTH sides of a -test-action compare (go test -run and the converted host --run), so the two runs filter identically. Intended for the block-gated census: exclude a test that BLOCKS the suite by passing an anchored alternation of the parents to keep. A gated census is DIAGNOSTIC ONLY and must never bank a row -- the row banks from an ungated run, after the block is rooted or the divergence disclosed")
 	testConfigCmd := commandLine.String("test-config", "Release", "Publish/run configuration for the converted test host: Release (default since 2026-09-02 -- the validation configuration of RECORD, with an explicit -p:go2csPath replacing the Debug-conditional csproj-template default, and the CLR's tiered JIT disabled by default, see -test-tiered) or Debug (the pre-2026-09-02 default, still fully supported by flag). Recorded on every proof page and in the comparison record so a verdict carries the level it was measured at. The default moved on the deployment owner's ruling, gated on the Release census (docs/phase4/CENSUS-release-tc0-delta.md), not on this flag's own authority")
 	testTieredCmd := commandLine.Bool("test-tiered", false, "With -test-config Release, opt back IN to the CLR's default tiered JIT (Release's own default is DOTNET_TieredCompilation=0, since a verdict that depends on JIT promotion timing is not reproducible run to run). Meaningless with -test-config Debug. It changes what the C# host's JIT does, not what the converter emits")
+	testAllowHandOwnCmd := commandLine.Bool("test-allow-handown", false, "Convert a package the -stdlib queue deliberately skips (testing, unsafe, builtin, cmd/...) as a -tests target anyway. Refused by default: `testing` IS the hand-owned Phase-4 test host, and the pipeline's natural output path is the very directory the host lives in, so a mistyped command overwrites it (measured 2026-09-03 -- the run replaced src/core/testing/testing.cs with Go's converted testing.go). Pass this ONLY with a SCRATCH output root, for a deliberate measurement whose emission is thrown away; it is not a route to banking such a package, which would still hit the F15b 'ONE testing package, period' collision")
 	var recurseVal recurseMode
 	commandLine.Var(&recurseVal, "recurse", "Recursively convert an end-user module and its third-party dependencies (references the pre-converted standard library); use -recurse=module to convert only the module's own packages, leaving the third-party closure referenced but unconverted, and -recurse=nuget to reference the published go2cs NuGet packages (go.<pkg>/go.lib/go.gen) instead of local project references (values combine: -recurse=module,nuget)")
 	targetPlatformCmd := commandLine.String("platforms", fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), "Target platform(s) for conversion, format: os/arch; comma-separated for a list (windows/amd64,linux/amd64,darwin/amd64), which with -stdlib emits the multi-platform (layout L3) corpus — one GOOS per target")
@@ -211,7 +213,9 @@ func main() {
 	showParseTreeCmd := commandLine.Bool("tree", false, "Show parse tree")
 	csprojFileCmd := commandLine.String("csproj", "", "Path to custom .csproj template file")
 	debugModeCmd := commandLine.Bool("debug", false, "Enable debug mode")
+	allowStaleConverterCmd := commandLine.Bool("allow-stale-converter", false, "Proceed with a -stdlib or -tests run even when this binary is OLDER than the converter sources beside it. Those two drivers otherwise refuse, because their output is banked or measured and a stale run emits the previous converter's C# while exiting 0. Pass this for the one deliberate case: an A/B against a PRESERVED binary, where the pinned binary IS the measurement (see converterStaleness.go)")
 	dualRecvCmd := commandLine.Bool("dual-recv", false, "B′ S0: eligible pointer-receiver methods emit the ref-receiver PRIMARY beside the ж twin (flag-gated; scratch-root regens only until S2's rebank ride)")
+	dualRecvParamsCmd := commandLine.Bool("dual-recv-params", false, "B′ S1 (requires -dual-recv): primaries lower their pointer params, the call-site selection table lands, and the X3 method-call veto relaxes for directly-selectable methods (kept separate so -dual-recv alone still emits the S0 floor)")
 
 	var positionals []string
 	positionals, err = parseArgsInterspersed(commandLine, os.Args[1:])
@@ -287,6 +291,8 @@ Examples:
   go2cs -recurse=module module_dir        # Convert only the module's own packages (deps referenced, not converted)
   go2cs -recurse=nuget module_dir         # Same, but reference the go2cs stdlib from NuGet (go.*, no deploy-core)
   go2cs -recurse=module,nuget module_dir  # Values combine: module-only scope with NuGet references
+  go2cs -stdlib -allow-stale-converter    # Proceed on a DELIBERATELY pinned binary (an A/B against a preserved go2cs);
+                                          # without it, -stdlib and -tests refuse to run a binary older than their sources
   go2cs -stdlib -comments -tags purego    # Explicit form of the default: the portable Go crypto over the assembly ones
   go2cs -stdlib -tags=                    # Opt OUT of the purego default (reproduce the asm-backed default build)
   go2cs -stdlib -comments -platforms windows/amd64,linux/amd64,darwin/amd64 -platform-census out
@@ -316,10 +322,13 @@ Examples:
 
 	// Is this binary itself current? Every harness that runs the converter already asks, but the
 	// paths that consult NOTHING are the hand-invoked ones — and their caller is a person at a
-	// shell, so the only place the question can be asked for them is here. Advisory and never
-	// fatal, on the -go2cspath precedent; silent when no source tree sits beside the executable.
-	// See converterStaleness.go.
-	warnIfConverterStale()
+	// shell, so the only place the question can be asked for them is here. It ENUMERATES what is
+	// newer rather than naming one file (a lane reasoned from a single named entry to a wrong
+	// conclusion on 2026-09-03), and it is FATAL for the two drivers whose output is banked or
+	// measured — -stdlib and -tests — escapable only by the named -allow-stale-converter. Every
+	// other shape is the scratch probe, and keeps the advisory. Silent when no source tree sits
+	// beside the executable. See converterStaleness.go.
+	checkConverterStaleness(convertStdLib || *convertTestsCmd, *allowStaleConverterCmd)
 
 	// Normalize the RESOLVED GOROOT once, here, rather than at each of the dozen sites that compare a
 	// path against it. filepath.Clean folds the spelling variants of one directory that this host can
@@ -404,12 +413,14 @@ Examples:
 		goPath:              *goPathCmd,
 		go2csPath:           *go2csPathCmd,
 		convertStdLib:       convertStdLib,
+		convertTimeout:      *convertTimeoutCmd,
 		convertTests:        *convertTestsCmd,
 		testAction:          strings.ToLower(strings.TrimSpace(*testActionCmd)),
 		testTimeout:         *testTimeoutCmd,
 		testFilter:          strings.TrimSpace(*testFilterCmd),
 		testConfig:          canonicalTestConfig(*testConfigCmd),
 		testTiered:          *testTieredCmd,
+		testAllowHandOwn:    *testAllowHandOwnCmd,
 		recurse:             recurseVal.enabled,
 		moduleOnly:          recurseVal.moduleOnly,
 		nugetRefs:           recurseVal.nuget,
@@ -428,11 +439,28 @@ Examples:
 		showParseTree:       *showParseTreeCmd,
 		debugMode:           *debugModeCmd,
 		dualRecv:            *dualRecvCmd,
+		dualRecvParams:      *dualRecvParamsCmd,
+	}
+
+	// -dual-recv-params (S1) is a refinement of -dual-recv (S0), never standalone: the parameter
+	// half emits into the ref-return primaries S0 declares, and the X3 relaxation only pays off
+	// once those primaries exist. Rejecting the lone form keeps the S0-floor state (`-dual-recv`
+	// alone) unambiguous — the measurability condition the flag split exists for.
+	if options.dualRecvParams && !options.dualRecv {
+		log.Fatalln("-dual-recv-params (B′ S1) requires -dual-recv (B′ S0): the parameter half emits into S0's primaries")
 	}
 
 	// The capture-mode pass runs across four drivers with no options in reach; the flag mirrors
 	// into its package global once, here (see selectRefReturnPrimaries).
 	dualRecvEnabled = options.dualRecv
+	dualRecvParamsEnabled = options.dualRecvParams
+
+	// Validated unconditionally rather than under -stdlib (the only mode that reads it today):
+	// a non-positive cap is never meaningful in any mode, and the value the user typed is worth
+	// rejecting where they typed it. Same fail-fast posture as -test-timeout below.
+	if err := validateConvertTimeout(options.convertTimeout); err != nil {
+		log.Fatalln(err)
+	}
 
 	if options.convertTests {
 		// -tests and -recurse compose badly today (the recursive module walk has its own
@@ -647,6 +675,14 @@ Examples:
 			// legitimate, and only the corpus-defining modes carry the pin.
 			if options.convertTests {
 				if err := checkCorpusToolchainPin("-tests", convertingRelease(options.goRoot), corpusPinnedRelease(options.go2csPath)); err != nil {
+					log.Fatalf("%v\n", err)
+				}
+
+				// The hand-own guard, checked BEFORE processConversion writes anything: the
+				// -stdlib queue's skip list has no -tests counterpart, so until this existed a
+				// -tests run pointed at `testing` converted Go's production sources straight
+				// over the hand-owned host they would then have to compile against.
+				if err := requireConvertibleTestTarget(inputFilePath, options); err != nil {
 					log.Fatalf("%v\n", err)
 				}
 			}

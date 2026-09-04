@@ -131,6 +131,84 @@ Bodyless `partial` declarations in the darwin flavor of `fmt`'s closure, by pack
 Not all need bodies (many are unreachable for a `fmt`-only program), but the syscall entry points and
 the trampoline mechanism are on the path of *every* converted program.
 
+### AMENDMENT 2026-09-03 (C2) — the class-C reachability read: which of runtime's deferred trampolines are genuinely dormant, and the ONE that is not
+
+The class-B emission arc (`claude/c2-darwin-classb`) deliberately deferred **43** runtime trampolines
+rather than reaching them with a name normalizer: 37 bind on the pragma's SYMBOL rather than its local
+name, and 6 carry no darwin pragma at all. This is the reachability read on that set, taken statically
+against the corpus — darwin has no run layer, so nothing here is observed throwing.
+
+**The population closes exactly.** All 43 have a `FuncPCABI0` call site (zero unmapped) and **41**
+appear in the converted darwin runtime; the two absent, `pthread_key_create_trampoline` and
+`pthread_setspecific_trampoline`, are `sys_darwin_arm64.go` and so are correctly outside an amd64
+corpus (the set difference in the other direction is empty). All 41 sit in ONE emitted file,
+`runtime/darwin/sys_darwin.cs`, and none is in a hand-owned file. By subsystem: pthread 13,
+bootstrap/misc 7, signals 6, file/fd 6, memory 4, netpoll 2, time 2, exit 1.
+
+**The pthread cond/mutex subset is genuinely dormant, and the tree had already decided it.** Those
+seven are driven by `semacreate` / `semasleep` / `semawakeup` in `os_darwin.cs`, which are reached only
+through the lock/note protocol — and that protocol is hand-owned FLAT at `goosAny`:
+`runtime/lock_managed_impl.cs` supplies `lock2`, `unlock2`, `notesleep`, `notewakeup`, `notetsleepg`,
+`noteSleepDeadline` and `mutexContended`, and `manualConversionFuncs` displaces them for every GOOS.
+So they stay throwing correctly, matching the posture `manualTypeOperations.go` already states for the
+sibling case — *"has no reachable caller, so it stays auto and stays throwing rather than being
+hand-owned speculatively."* Note that `lock_sema_impl.cs`, one of the two companions §3 counts,
+hand-owns exactly ONE function (`notetsleep_internal`) and does not displace the sema trio.
+
+**The exception is TIME, and it sharpens §3's count into a named gap.** `nanotime_trampoline` and
+`walltime_trampoline` are reached from `nanotime1` / `walltime`, and linux's own hand-own states the
+stake: *"That throw is NOT a dormant edge: nanotime is read by cpuprof, metrics, mgc, mgcmark,
+mgcpacer, mprof, netpoll and debuglog."* **Both `linux` and `windows` carry
+`runtime/<goos>/nanotime_impl.cs`; `darwin` does not.** So §3's "darwin: 2 companions" has a first
+concrete missing member whose remedy has already shipped twice.
+
+**And it is priced differently from those two, which is the part an estimate from the precedent gets
+wrong.** On linux and windows `nanotime1` is a **bodyless partial** in `stubs3.cs`, displaced simply by
+writing a body — no registry entry, no converter change. On darwin it is a **BODIED** converted
+function in `sys_darwin.cs` calling `libcCall(FuncPCABI0(nanotime_trampoline), …)`, so displacing it
+requires a `manualConversionFuncs` entry: a converter change carrying a two-seeded emission diff and a
+hunk-only corpus footprint. Same fix by name, the two different displacement mechanisms CLAUDE.md
+separates.
+
+**Deliberately not cut here.** With no run layer there is nothing to control such a hand-own against —
+it could not be made to fail — which is the warm-design trap. This is recorded so the next darwin
+increment starts from a measured population instead of re-deriving it.
+
+#### CORRECTION 2026-09-03 (C2, same day) — two MECHANISMS above are wrong; both conclusions stand
+
+Left in place rather than rewritten, because this is a dated record and the wrong reasoning is worth
+seeing beside the right one. Ruled by COORD on the run-layer design's §0.
+
+**(a) The pthread cond/mutex subset is dormant, but not for the reason given above.** The paragraph
+says the seven are unreachable because the lock/note protocol is hand-owned flat at `goosAny`. The
+displacement is real — `lock_managed_impl.cs` supplies `lock2`, `unlock2`, `notesleep`, `notewakeup`,
+`notetsleepg`, `noteSleepDeadline`, `mutexContended`, and `runtime/darwin/lock_sema.cs` carries a
+generated placeholder for each — but **`notetsleep` is NOT among them.** It keeps its converted body,
+and that body is the trio's only caller (`semacreate`, `lock_sema.cs:68`).
+
+The real argument is empirical and stronger. Measured: `semasleep` and `semawakeup` have **no caller
+at all**; `semacreate` has exactly one, `notetsleep`; and `notetsleep`'s three callers are **identical
+on all three flavours** — `proc.cs:1669` (stop-the-world), `proc.cs:2157` (safepoint), `proc.cs:6101`
+(sysmon). **Linux and windows run real workloads against that exact call graph and their semaphore
+trio never fires**, because the managed model does not enter those scheduler paths — the same measured
+fact (`schedinit` never runs) that makes `internal/cpu`'s `doinit` unreachable. Below `notetsleep`,
+darwin's graph is not merely similar to theirs; it is the same file.
+
+**(b) Darwin's missing `nanotime_impl.cs` is deliberate and documented, not an unnoticed gap.** The
+paragraph above frames it as a first concrete missing member that the other two flavours had already
+filled. The linux file's own header says otherwise, and said it first: *"Per-GOOS rather than flat
+because darwin already has a real body (sys_darwin.cs's nanotime1 over its own `$INTERNAL` trap), and a
+flat implementation would collide with it."*
+
+What survives — and what that header independently confirms — is the **sizing**, which is the half this
+record was useful for: darwin's `nanotime1` is a BODIED function, so displacing it needs a
+`manualConversionFuncs` entry (a converter change, with a two-seeded diff and a hunk-only footprint),
+where linux and windows were bodyless partials displaced by writing a body. The novelty claim does not.
+
+Both corrections were self-caught while designing the increment this record was written to inform, and
+both came from the same failure: citing a file without reading what it already said.
+
+
 ## 4. What would have to be built
 
 The Linux keystone was one entry point over libc's `syscall(2)`. Darwin's is structurally larger,
@@ -204,3 +282,171 @@ budget on three `TypeInitializationException`s and truncated the one exception t
 with the intervening depth as a count — where the program died, and why. A Go panic report still
 reduces to its first line, unchanged, and an empty stderr stays empty so the "neither side wrote to
 stderr" branch still fires.
+
+## 7. Amendment 2026-09-03 — the run layer exists: the first converted programs run on macOS
+
+**What changed since §4.** The keystone this finding sized (§4, option 2 — one `FuncPCABI0` over an
+already-emitted symbol map plus a small dispatch family) landed on master with train 19 as
+`88f01638c`: `runtime.libcCall` displaced through `manualConversionFuncs` to
+`runtime/darwin/libccall_impl.cs`, golib `GoLibcCall` (arity 0–9 over unmanaged Cdecl function
+pointers, `__error` as the errno reader), `GoCgoDynamicImports.SymbolOf` so a refusal names its
+symbol, `syscall/darwin`'s twelve bodyless entry points over one helper, and the converter's second
+pragma spelling (`libc_<stem>` → `<stem>_trampoline`) binding 36 runtime records. Its acceptance was
+stated MEASURABLE-NOT-GATED: a mac-runner dispatch that MOVES the death past `getrlimit` — to
+`sysctl`, `setrlimit` or `fcntl` per the floor — with the prediction posted before the run.
+
+**The first acceptance read (dispatched at master `93a131a3f`, prediction posted first as mailbox
+`f8cd28677`, result as `fc1ab7d97`).** The death did not move. It vanished for the set measured.
+
+| run | leg | result, quoted from the step's own tail |
+|:--|:--|:--|
+| behavioral-smoke [33783959515](https://github.com/ritchiecarroll/go2cs/actions/runs/33783959515) (filter `Defer`, 24 projects) | osx-arm64 (macos-15) | `Transpile pass 24 · Compile pass 24 · Target pass 24 · Output pass 24, fail 0` — `[Output] running C# vs Go, comparing exit code + stdout... 24 compared, 0 failed` — `PASS (24 projects, 202.4s)` |
+| | osx-x64 (macos-15-intel) | identical summary — `PASS (24 projects, 554.7s)` |
+| census [33783950663](https://github.com/ritchiecarroll/go2cs/actions/runs/33783950663) (`dotnet build src/go2cs-stdlib.slnx -c Debug -m --no-incremental -p:GoTargetOS=darwin`) | osx-arm64 | 306 projects / **306 assemblies** / 0 with no assembly / 0 error lines / exit 0 / 510 s |
+| | osx-x64 | 306 / **306** / 0 / 0 / exit 0 / 1245 s |
+
+Before the keystone the same smoke stage failed every project at Output with `exit code mismatch:
+C# 2 vs Go 0` — the module-initializer death this finding convicted in §2 (`syscall.init() →
+Getrlimit → rawSyscall`, both architectures, runs 32852477992 / 32863205314). After it, no program
+on either architecture died at all: `getrlimit` dispatched, and so did everything else the twenty-four
+programs' init, `fmt` and defer/panic/recover paths reach, and the stdout + exit-code comparison
+against `go run` passed 24 of 24. **Scoring the prediction honestly:** it said the death would MOVE
+to one of three named symbols; none of the three was reached as a death because each resolved and
+dispatched like the rest. The prediction was conservative, not wrong in direction, and it is recorded
+as such. Read as a census, never as a wall: the smoke set is `Defer`-filtered (24 of ~700), so what is
+measured is the init path, `fmt`, and defer/panic/recover — not the corpus. The full-enumeration
+census (`behavioral-full`, four index slices with a purge between, both architectures) is the next
+increment's measurement; its per-class prediction is posted before its dispatch and its reading
+belongs in a later dated block here, not in this one.
+
+**Two facts for the record.** (1) The committed darwin flavour is amd64-only (§5's "second,
+independent darwin debt"), and osx-arm64 passed identically — so the arm64 tables debt is not on
+this path; the keystone commit's recorded arm64 debt is narrower (variadic libc callees called
+register-style, correct for amd64) and is exactly what a file-creating program would meet first.
+(2) Both legs ran the pinned toolchain (`go1.23.12` from the runner's hostedtoolcache) with
+`GoTargetOS: darwin` bound in the job env — the mechanism §5 had already proved reaches MSBuild.
+
+**§5, re-read against this.** *"Whether anything past the census can run at all"* — settled the other
+way now: **yes**, for every program on the smoke set's symbol reach. *"Which platform the behavioral
+transpile targets"* and the arm64 goldens question — the Target phase passed 24 of 24 on both
+architectures again, and now with a run behind it, so the Windows-captured goldens hold on darwin
+for that set at the run level too.
+
+**NEWS candidate for the owner's surfaces** (the owner decides where, if anywhere, it publishes):
+
+> **2026-09-03 — go2cs programs run on macOS.** The darwin run layer's keystone landed with train 19:
+> Go's libc trampolines, which the converter had emitted as throwing stubs since the first darwin
+> execution on 2026-08-25, now resolve by symbol against `libSystem` and dispatch through one managed
+> keystone (`runtime.libcCall` over golib's `GoLibcCall`). The first acceptance dispatch on GitHub's
+> macOS runners ran the behavioral `Defer` smoke set — 24 converted programs — to Go-identical output
+> on both Apple silicon and Intel, with the whole 306-package darwin corpus compiling clean on both.
+> Windows and Linux remain the validated platforms; darwin is measured by the run layer's next
+> increments, one census at a time.
+
+## 8. Amendment 2026-09-03 — the full census: 659 projects on both architectures, fourteen deaths each, all of them three absences in the darwin flavour
+
+**Dispatch.** `behavioral-full` at master `93a131a3f`, run
+[33787891520](https://github.com/ritchiecarroll/go2cs/actions/runs/33787891520), the per-class
+prediction posted first as mailbox `1dd63de00`. Four index slices per leg with a depth-unlimited purge
+between them; each leg asserted its own partition — `165 + 165 + 165 + 164 = 659 of 659 measurable`
+on both — and F8 skipped exactly 14 by name on every slice (8 `windows`, 6 `linux`). Runner budgets
+were build-all 5400 s, build-one 1800 s, transpile 300 s, run 120 s; none fired. Both legs ran the
+pinned `go1.23.12` with `GoTargetOS: darwin` bound in the job env, as §7's runs did.
+
+| leg | Transpile | Compile | Target | Output compared / pass / fail / skip | wall, four slices |
+|:--|:--|:--|:--|:--|:--|
+| osx-arm64 (`macos-15`) | 659 / 659 | 658 / 659 | 658 / 659 | 632 / **618** / 14 / 27 | 581.5 + 380.8 + 396.8 + 498.4 s = 1,857.5 s (step 31 min 45 s) |
+| osx-x64 (`macos-15-intel`) | 659 / 659 | 659 / 659 | 659 / 659 | 633 / **619** / 14 / 26 | 1,199.5 + 943.3 + 750.3 + 862.1 s = 3,755.2 s (step 64 min 18 s) |
+
+The 26 Output skips are the library-style projects with no `package main`; arm64's 27th is
+`StdLibInternalAbi`, unmeasured at Output because its Compile failed (below). Slice 1 — 165 projects —
+passed every phase on both legs with `154 compared, 0 failed`.
+
+**The fourteen Output deaths, the SAME fourteen names on both architectures, by symbol** (the
+runner's `C# stderr` summary quotes one line per death, so the symbol is what this census measures;
+no stack was captured):
+
+| C# stderr, as quoted | projects | leg |
+|:--|:--|:--|
+| `panic: runtime error: index out of range [0] with length 0` (exit 2) | `IpAdapterAddresses`, `LookupServicePort`, `NetDeadlineMatrix`, `NetListenSmoke`, `ResolveErrIdentity`, `TcpLoopbackRoundTrip`, `UdpLoopbackRoundTrip`, `UdpWriteMsgAddrPort` — every measurable `net` importer (11 import it; `MulticastGroupJoin`, `UnixAbstractAddrName`, `WritevIovecSeam` are F8-skipped) | both |
+| `System.NotImplementedException: runtime_pollServerInit: external (assembly or cgo) function is not implemented` | `StatLayoutTruth` (both); `LinuxSpawnBasics` (x64) | |
+| `System.InvalidOperationException: fatal error: sync: RUnlock of unlocked RWMutex` | `PipeCloseUnblocksRead`, `StdoutCloseEofBarrier` (both); `LinuxSpawnBasics` (arm64) | |
+| `System.InvalidOperationException: go2cs: libcCall(pipe): field 'm_array' of array`1 is a Int32[], which this dispatcher cannot place in an integer register (a managed reference, a float, or an unknown width) — the per-symbol layout record is the remedy` | `SignalPrimitives` | x64 |
+| `exit code mismatch: C# 138 vs Go 0 (neither side wrote to stderr)` — 138 is SIGBUS on darwin | `SignalPrimitives` | arm64 |
+| `stdout mismatch C# vs Go` | `LongPathRoundTrip` | both |
+
+And one arm64-only failure outside Output: `StdLibInternalAbi [Target,Compile]` — `target mismatch:
+goarch.cs`, then `goarch.cs(23,22): error CS0145: A const field requires a value to be provided` and
+`(23,27): error CS1002: ; expected`.
+
+**What the sources at `93a131a3f` say about each symbol** — read, not run; a stack is the
+measurement each of these still owes:
+
+1. **`runtime_pollServerInit` is the throwing partial stub on darwin.**
+   `src/core/internal/poll/darwin/fd_poll_runtime.cs:32` declares
+   `internal static partial void runtime_pollServerInit();` and the darwin folder holds NO
+   `runtime_netpoll_impl.cs` — `internal/poll/linux` and `internal/poll/windows` each carry one (the
+   netpoll push). So every pollable fd on darwin — `os.Pipe`, sockets, FIFOs, character devices —
+   dies at `serverInit.Do(runtime_pollServerInit)`, one door BEFORE `netpollinit`'s `kqueue()`
+   (`runtime/darwin/netpoll_kqueue.cs:24`). That is why the predicted `kevent` symbol appeared
+   nowhere: netpoll on darwin was never reached, and the kevent question §7 carried forward is still
+   UNMEASURED, not answered.
+2. **`libcCall(pipe)` is the recorded by-name refusal, reached through signals.**
+   `runtime/darwin/sys_darwin.cs:426-430` — `pipe()` hands `libcCall(pipe_trampoline, …)` the
+   address of a `[2]int32` (`array<int32>`), whose args value carries the managed `m_array`
+   reference; the keystone refuses it by name, exactly as its refusal text says. The path is
+   `signal.Notify → signal_enable → sigNoteSetup` (`runtime/darwin/os_darwin.cs:127`), darwin's
+   pipe-backed signal note. On arm64 the same project died as a silent SIGBUS instead of the
+   message — which dispatch differs by architecture is unmeasured.
+3. **The index panic and the RUnlock fatal — site UNMEASURED, bounded by two facts.** (a) Two of
+   the eight create no socket at all (`LookupServicePort` → `net.LookupPort`, `ResolveErrIdentity` →
+   `net.ResolveIPAddr`), so the site sits on a path every `net` user crosses, upstream of socket
+   creation. (b) The darwin `syscall` flavour carries ONE hand-own, `syscall_darwin_impl.cs`, where
+   the linux flavour carries SIX — `sockaddr_linux_impl.cs`, `structclass_linux_impl.cs`,
+   `syscall_linux_impl.cs`, `syscall_linux_amd64_impl.cs`, `zsyscall_linux_amd64_impl.cs`,
+   `cgocaller_linux_impl.cs` — the by-address struct seams the linux bank needed (the
+   CLR-auto-layout class, measured 2026-09-02: the kernel reads and writes a managed struct at the
+   wrong offsets). None of them has a darwin twin, and a kernel-written length arriving as zero is
+   the shape that panics at `[0]` on an empty slice. That is a candidate, not an attribution: the
+   stack settles it, and the runner prints only `StdErrSummary`'s first line.
+4. **`StdLibInternalAbi` is GOARCH-exclusive, and F8 has no GOARCH axis.** Its `abi_amd64.go`,
+   `goarch_amd64.go` and `zgoarch_amd64.go` (`//go:build amd64`) are excluded by the converter's own
+   `go/packages` load on the arm64 runner, so `_ArchFamily`, `_DefaultPhysPageSize`, `_PCQuantum`
+   and the `IsAmd64` family are undefined, the package no longer type-checks, and the best-effort
+   emission carries a valueless const. Two consequences. The behavioral corpus now holds a package
+   native to an ARCHITECTURE, and `[GoPlatformExclusive("<goos>")]` cannot express it. And the
+   runner's Transpile phase reported `ok` over that best-effort conversion — CNR fails such a package
+   by name as NOT MEASURED, the runner has no equivalent, and Compile caught it one phase later only
+   because the hole happened to be a syntax error. Route #2's shape, one phase earlier.
+
+**Scoring the prediction (mailbox `1dd63de00`), row by row.**
+
+| row | predicted | measured | score |
+|:--|:--|:--|:--|
+| pure computation, `fmt`, `reflect`, `unsafe`, generics, defer, containers | PASS, ≤ 3 deaths | 0 — all fourteen sit in the named families; slice 1's 165 projects, 0 failed | HIT |
+| `time` (23) | 0–2 | 0 time-only deaths | HIT |
+| `os` file I/O, `path/filepath`, `io/fs` | 0–2, spelled as errno text | 3 of the 3 measurable (`LongPathRoundTrip`, `PipeCloseUnblocksRead`, `StatLayoutTruth`), none an errno text: a stdout mismatch, a lock fatal, the poll stub | OUTSIDE-BAND — pipes and non-regular fds were not in the model |
+| `net` (11; 8 measurable) | 6–11 die, at `kevent`/`kqueue` | 8 of 8 die, ONE symbol, upstream of netpoll | HIT on class and count; OUTSIDE-BAND on symbol; kevent UNMEASURED |
+| `os/exec` (2) | 2 of 2 die, `fork`/`execve` or a run timeout | 2 of 2 die — at `os.Pipe`, before any spawn | HIT on count; OUTSIDE-BAND on symbol |
+| `os/signal` (1) | 0–1: `sigprocmask` NotImplemented, or a vacuous pass | 1 of 1: the `pipe` refusal on x64, SIGBUS on arm64 | HIT on count; OUTSIDE-BAND on symbol; the arm64 fault was predicted nowhere |
+| `syscall` raw seams | 0–4 | 0 measurable — all 10 importers are F8-marked | HIT, vacuously |
+| `runtime`, `sync`, `crypto/rand` | 0–1 | 0 | HIT |
+| F8 platform-exclusive | exactly 14 | 14, every slice, both legs | HIT |
+| Transpile / Compile / Target | 100 %; Target drift ≤ 2, in the accepted `Δ`-alias class | x64 100 %; arm64 Compile 658/659 and Target 658/659, the GOARCH class | x64 HIT; arm64 FALSIFIED on Compile, OUTSIDE-BAND on the Target class |
+| arm64 additional family | 0–6 variadic-debt deaths in file-creating programs, errno text | none of that shape; instead a GOARCH golden-and-compile break, a SIGBUS, and one symbol swap (`LinuxSpawnBasics`) | FALSIFIED on shape |
+| totals | x64 8–20 deaths, arm64 8–28, ≥ 640 passing of ~694 | 14 and 14 (+1 compile); N was 659, not ~694; 619 of 633 compared pass on x64, 618 of 632 on arm64 | HIT on the death bands; the N estimate was 35 high |
+
+The four falsifiers posted with the prediction: a death in the pure class — none; a `kevent` refusal
+in a non-`net` project — none, `kevent` appeared nowhere; more than three
+`FuncPCABI0 did not resolve the trampoline` deaths — zero appeared, so class B held across 659
+projects; a `net` project passing — none did, and for the wrong reason.
+
+**Reading.** The keystone's dispatch is not what died. No death names a libc symbol except `pipe`,
+and that one is the by-name refusal the keystone commit recorded as its own class. The fourteen trace
+to three ABSENCES in the darwin flavour — no netpoll push, no seam for `runtime.pipe`'s `[2]int32`,
+and none of the six `syscall` struct seams the linux flavour carries — plus one axis the harness
+lacks. The linux flavour is the template for all three, which is what sizes the next increments;
+none of them is a wall. The x64 leg costs 2.0× the arm64 leg in wall for the same 659 projects, and
+a full darwin census is about an hour of hosted-runner time per dispatch. §7's NEWS candidate reads
+against this as: 619 of 633 compared programs match Go on Intel and 618 of 632 on Apple silicon,
+and what does not is `net`, pipes and signals — measured, named, and owed.

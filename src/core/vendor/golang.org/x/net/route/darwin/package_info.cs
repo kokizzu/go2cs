@@ -56,8 +56,6 @@ using static go.vendor.golang.org.x.net.route_package;
 [assembly: GoImplement<LinkAddr, Addr>(Pointer = true)]
 [assembly: GoImplement<RouteMessage, Message>(Pointer = true)]
 [assembly: GoImplement<RouteMetrics, ΔSys>(Pointer = true)]
-[assembly: GoImplement<binaryBigEndian, binaryByteOrder>]
-[assembly: GoImplement<binaryLittleEndian, binaryByteOrder>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -79,7 +77,7 @@ using static go.vendor.golang.org.x.net.route_package;
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/message.go", "message.cs", "ABpCooKUgpKCgoKClIKUgoKUgIKUgoKUgpS2poKU")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/route.go", "route.cs", "AF2uAZIACioACgKCgoKCkoCCpIKUgoCIsoKUpA==")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/route_classic.go", "route_classic.cs", "AAscgoKClIKmlIKCgpSUgoKCgoKCgpSClKaCgpSCgpQACRSCgpSCgoKU")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/sys.go", "sys.cs", "ABAqgpKCgpSmgqaCgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/sys.go", "sys.cs", "ABJEgoKU")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/sys_darwin.go", "sys_darwin.cs", "AAkSgpSkAAkUkKaSAAsckKaSAAYQgoKSgpKCkoKSgpKCkoKk")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/syscall.go", "syscall.cs", "AAoY")]
 // </GoSourcePositionMaps>

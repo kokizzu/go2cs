@@ -1022,6 +1022,25 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 			}
 		}
 
+		// A package-QUALIFIED selector naming ANOTHER package's package-level VALUE var — `&pkg.V`,
+		// written or synthesized for a pointer-receiver call (`syscall.ForkLock.RLock()`). The copy
+		// wrap below (`Ꮡ(pkg.V)`, golib's Ꮡ<T>(in T) = new StandardBox<T>(target)) boxes a COPY, so a
+		// lock taken through one fresh box is released through another: measured on darwin as
+		// os.Pipe's `fatal error: sync: RUnlock of unlocked RWMutex` (2026-09-03), and hidden on
+		// every other platform by the hand-owned mutex's lazily shared state — a copy taken AFTER the
+		// real var's first use shares it. Bind the OWNER's box when the owner's emission declares one
+		// (importedGlobalIsBoxed: the owner's own predicate over the owner's own syntax), exactly as
+		// the same-package path binds `ᏑForkLock`. A var the owner leaves unboxed keeps the render
+		// below; the owner arm (markExportedBoxOnlyGlobals) makes that a var whose methods all have
+		// a `ref T` primary, for which the box-free call is the in-place one.
+		if selectorExpr, ok := unaryExpr.X.(*ast.SelectorExpr); ok && v.selectorBasePackageObj(selectorExpr) != nil {
+			if varObj, ok := v.info.ObjectOf(selectorExpr.Sel).(*types.Var); ok && varObj.Pkg() != nil && varObj.Parent() == varObj.Pkg().Scope() {
+				if _, isPtr := types.Unalias(varObj.Type()).(*types.Pointer); !isPtr && importedGlobalIsBoxed(varObj) {
+					return fmt.Sprintf("%s.%s%s", v.convExpr(selectorExpr.X, nil), AddressPrefix, strings.TrimPrefix(getSanitizedIdentifier(varObj.Name()), "@"))
+				}
+			}
+		}
+
 		// Check if unary target is not a variable or a field
 		if _, ok := unaryExpr.X.(*ast.Ident); !ok {
 			// Thread the enclosing statement's hoist target into the operand — a

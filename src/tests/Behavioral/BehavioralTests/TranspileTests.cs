@@ -106,6 +106,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckArrayPointerElementAlias() => CheckTarget("ArrayPointerElementAlias");
 
     [TestMethod]
+    public void CheckArrayRangeSnapshot() => CheckTarget("ArrayRangeSnapshot");
+
+    [TestMethod]
     public void CheckArrayValueCopySites() => CheckTarget("ArrayValueCopySites");
 
     [TestMethod]
@@ -166,6 +169,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckByteTableStringVar() => CheckTarget("ByteTableStringVar");
 
     [TestMethod]
+    public void CheckCanonicalTypeIdentity() => CheckTarget("CanonicalTypeIdentity");
+
+    [TestMethod]
     public void CheckCaptureHoistThroughConversion() => CheckTarget("CaptureHoistThroughConversion");
 
     [TestMethod]
@@ -188,6 +194,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckCastNegativeNamedType() => CheckTarget("CastNegativeNamedType");
+
+    [TestMethod]
+    public void CheckChanElemDims() => CheckTarget("ChanElemDims");
 
     [TestMethod]
     public void CheckChannelCapLen() => CheckTarget("ChannelCapLen");
@@ -290,6 +299,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckCrossPackageArrayZeroValue() => CheckTarget("CrossPackageArrayZeroValue");
+
+    [TestMethod]
+    public void CheckCrossPackagePointerReceiverVar() => CheckTarget("CrossPackagePointerReceiverVar");
 
     [TestMethod]
     public void CheckCrossPkgBox() => CheckTarget("CrossPkgBox");
@@ -713,6 +725,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckGoroutineParkStorm() => CheckTarget("GoroutineParkStorm");
+
+    [TestMethod]
+    public void CheckGoroutineWaitState() => CheckTarget("GoroutineWaitState");
 
     [TestMethod]
     public void CheckGuardedNilPointerParamDeref() => CheckTarget("GuardedNilPointerParamDeref");
@@ -1682,6 +1697,9 @@ public class A1_TranspileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckSliceNilVsEmpty() => CheckTarget("SliceNilVsEmpty");
+
+    [TestMethod]
+    public void CheckSliceOfArrayTypeName() => CheckTarget("SliceOfArrayTypeName");
 
     [TestMethod]
     public void CheckSlicePointerIdentity() => CheckTarget("SlicePointerIdentity");

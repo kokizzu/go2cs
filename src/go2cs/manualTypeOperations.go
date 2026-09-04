@@ -74,6 +74,15 @@ var goosWindows = goosScope{"windows"}
 // nothing to link against — the exact os.(*File).readdir lesson, one package down.
 var goosLinux = goosScope{"linux"}
 
+// goosDarwin scopes an entry to the darwin flavor alone. Its first member is runtime's nanotime1:
+// linux and windows declare it BODYLESS (stubs3.cs) and are displaced simply by writing a body, so
+// they need no registry entry at all, while darwin's sys_darwin.cs carries a real converted body over
+// its own libc trampoline — a bodied function is displaced only through this registry. Scoping it
+// darwin-only is therefore not a preference but the shape of the difference: an unscoped entry would
+// turn the other two flavors' bodyless partials into placeholders that their own *_impl.cs already
+// implements, which is CS0111 rather than a displacement.
+var goosDarwin = goosScope{"darwin"}
+
 // goosWindowsLinux scopes an entry to the two flavors that each hand-own the SAME declaration in
 // their own per-GOOS file — the sockaddr family: Windows in syscall/windows/syscall_windows_impl.cs
 // (L10), Linux in syscall/linux/sockaddr_linux_impl.cs (the 2026-08-22 mirror). darwin declares the
@@ -103,7 +112,63 @@ func (scope goosScope) includes(goos string) bool {
 // Free functions ("funcName") and methods on other types ("recvTypeName.funcName") owned by the
 // same manual files — declarations whose bodies are inseparable from the manual types' semantics.
 var manualConversionFuncs = map[string]map[string]goosScope{
+	"crypto/internal/alias": {
+		// AnyOverlap orders element ADDRESSES — four `(uintptr)Ꮡ(…)` takes, each pinning its backing only
+		// until the box that took it is finalized, so a collection landing between two takes relocates one
+		// operand and the ordering compares two heap layouts. Measured 2026-09-03 (Release, tiering off):
+		// the converted predicate answered TRUE for two distinct fresh arrays 9 s into a 16-thread stress,
+		// and the converted GCM Open raised `crypto/aes: invalid buffer overlap` 27 s in — the panic that
+		// killed the banked net/http row on two host classes. Displaced onto golib slice<T>.Overlaps
+		// (canonical backing identity + absolute index range: the managed-referent arm of the S1/CS0030
+		// fork). InexactOverlap stays auto — its `Ꮡ(x, 0) == Ꮡ(y, 0)` early-out is already structural.
+		// Registered here rather than marked: the package has exactly one non-test Go file, and a whole-file
+		// marker would hand-own it BY CONSEQUENCE (the internal/godebug class) and freeze its csproj,
+		// package_info and README. crypto/internal/alias/alias_impl.cs holds the body.
+		"AnyOverlap": goosAny,
+	},
+	"vendor/golang.org/x/crypto/internal/alias": {
+		// The vendored purego twin of crypto/internal/alias.AnyOverlap: the same four-take address ordering,
+		// one reflect call deeper (`reflect.ValueOf(Ꮡ(x, 0)).Pointer()`), reached by chacha20 and
+		// chacha20poly1305 through InexactOverlap — the CHACHA20 cipher suites crypto/tls negotiates. Same
+		// structural body on golib slice<T>.Overlaps, same reason, same registration shape (one non-test Go
+		// file, so a whole-file marker would hand-own the package by consequence). InexactOverlap stays auto.
+		// vendor/golang.org/x/crypto/internal/alias/alias_purego_impl.cs holds the body.
+		"AnyOverlap": goosAny,
+	},
+	"vendor/golang.org/x/net/route": {
+		// route.init probes the byte order through `(*[4]byte)(unsafe.Pointer(&i))` on a uint32 local —
+		// the raw-metal fork golib names at array<T>.AliasPointer (an array<T> cannot be fabricated from a
+		// scalar's bytes), measured by the first darwin behavioral census as an index panic inside the
+		// module initializer of every net importer (net imports x/net/route on BSDs only). The companion
+		// vendor/golang.org/x/net/route/darwin/sys_impl.cs answers the question with
+		// BitConverter.IsLittleEndian and keeps the rest of init verbatim. Darwin-scoped: sys.go is BSD-only,
+		// so the converted init never existed in the linux or windows emission. A displaced init emits only
+		// the placeholder, so the companion carries the [GoInit] module initializer itself.
+		"init": goosDarwin,
+	},
+	"slices": {
+		// overlaps has AnyOverlap's four-take shape and its race; its callers Insert/Replace take the
+		// hard-case rotation on TRUE, where startIdx panics `needle not found` for a source that does not
+		// alias — the same death one panic text over. Same structural body, same reason; slices/slices_impl.cs.
+		"overlaps": goosAny,
+	},
 	"runtime": {
+		// runtime.nanotime1 — darwin's monotonic clock. The other two flavors reach the same golib
+		// clock (MonotonicClock.Nanoseconds()) by writing a body into a bodyless partial and need no
+		// entry here; darwin's converted body calls libcCall(FuncPCABI0(nanotime_trampoline), …) into a
+		// throwing external stub, and a BODIED function is displaced only through this registry. The
+		// throw is not a dormant edge: nanotime is read by cpuprof, metrics, mgc, mgcmark, mgcpacer,
+		// mprof, netpoll and debuglog, so the first call into any of them dies. See
+		// docs/phase4/DESIGN-darwin-run-layer-1.md.
+		"nanotime1": goosDarwin,
+		// runtime.libcCall — darwin's dispatch bottom: every libc trampoline in sys_darwin.cs is reached
+		// through libcCall(FuncPCABI0(x_trampoline), &args). Its converted body opens with getg() and
+		// ends in asmcgocall, four bodyless intrinsics with no implementing part anywhere (the
+		// generator stubs all four), so a real function pointer handed to it dies one line in. The
+		// hand-own (runtime/darwin/libccall_impl.cs) drops the g0 switch and the libcall* profiler
+		// bookkeeping the managed host has no counterpart for and dispatches the call itself. Bodied,
+		// so displaced here. See docs/phase4/DESIGN-darwin-run-layer-2.md §2.2 and §7.
+		"libcCall": goosDarwin,
 		// getgcmask answers a TYPE's GC pointer bitmap, and Go answers it by reading the GC's own
 		// heap metadata: findObject, the span's typePointersOfUnchecked iterator, activeModules'
 		// data/bss bitmaps, the stack's locals map. None of those exist in a managed runtime, so the
@@ -742,8 +807,45 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// Bridged element-wise over the same golib container interfaces every other container
 		// method uses, so a window slice writes the backing store it shares with its parent.
 		"Copy": goosAny,
-		// valueMethodName is runtime.Callers-based (getcallersp) — managed stack walk instead.
-		"valueMethodName":  goosAny,
+		// regAssign is displaced for ONE arm. Its Struct arm iterates the descriptor's field list and
+		// returns TRUE when that list is empty -- "every field went to a register", zero steps -- so a
+		// synthesized struct descriptor (which carries no Fields) is silently reported as fully
+		// register-assigned and funcLayout answers size/argsize/retOffset 0 with empty bitmaps. Measured
+		// as reflect's TestFuncLayout: `reflect_test.S` arrives Size=32, Fields.Length=0.
+		//
+		// The hand-own throws on that shape and ONLY that shape. "Empty means cannot see" is FALSE as a
+		// general rule -- `struct{}` is legal and ubiquitous, and legitimately has no fields -- so the
+		// predicate is `Fields.Length == 0 && Size() > 0`: a 32-byte struct with no fields is
+		// definitionally unseeable, while `struct{}` (0 fields, 0 size) passes through untouched. The
+		// ARRAY arm deliberately does NOT join it; see the comment at the arm for the measurement.
+		// See docs/phase4/DESIGN-descriptor-cargo.md.
+		"abiSeq.regAssign": goosAny,
+		// addTypeBits is the SAME defect one call over: its Array and Struct arms raw-reinterpret the
+		// descriptor as arrayType/structType, which on a synthesized descriptor reads Len 0 / no Fields,
+		// so funcLayout's stack and GC bitmaps stay empty (TestFuncLayout/func(reflect_test.S): stack=[] and
+		// gc=[] want [0 0 1 1] after R1 fixed the sizes). The companion reads through the abi accessors.
+		"addTypeBits": goosAny,
+		// valueMethodName is runtime.Callers-based (getcallersp) — managed stack walk instead. The walk
+		// is RETIRED: Release inlines an exported Value method into its caller, so the frame the walk
+		// climbs for is not there and every mustBe* panic degraded to Go's "unknown method" fallback
+		// (measured: reflect's own TestValuePanic, Go="pass" C#="fail" at -test-config Release, the
+		// stack showing `mustBe` called straight from TestValuePanic's closure with no Recv frame).
+		// It is a name COMPOSER now, fed by [CallerMemberName] — a compile-time constant no JIT can
+		// remove — which is why the five mustBe* members below join it: the attribute has to sit on
+		// THEIR parameters, and they are emitted into value.cs, which every -tests run regenerates.
+		"valueMethodName":           goosAny,
+		"flag.mustBe":               goosAny,
+		"flag.mustBeExported":       goosAny,
+		"flag.mustBeExportedSlow":   goosAny,
+		"flag.mustBeAssignable":     goosAny,
+		"flag.mustBeAssignableSlow": goosAny,
+		// Append/AppendSlice are package-level FUNCTIONS in Go, so Go's own climb sees a `reflect.X`
+		// frame, never `reflect.Value.X`, and prints "unknown method" — measured against go1.23.12.
+		// The emission gives them a ΔValue first parameter, which is exactly what made the retired
+		// walk match them and MANUFACTURE "reflect.Value.Append": a name Go never prints, on two
+		// public entry points, tested by nothing. They are hand-owned to thread the sentinel.
+		"Append":           goosAny,
+		"AppendSlice":      goosAny,
 		"rtype.Key":        goosAny,
 		"rtype.Len":        goosAny,
 		"rtype.NumIn":      goosAny,
@@ -1709,6 +1811,41 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// submission was never made, because the once-guarded lookup ahead of it had failed. Both
 		// directions need it, so fixing it here is what a future WSARecvMsg hand-own inherits.
 		"loadWSASendRecvMsg": goosWindows,
+		// The MODULE-ENUMERATION member of the struct-passing class, and the one this package's own
+		// hand-own header named and left for the suite that would reach it. runtime/pprof's suite
+		// reached it: newProfileBuilder calls readMapping on EVERY profile it builds, so the two
+		// tests that feed profileBuilder nothing but SYNTHETIC []uint64 records — proto_test.go's
+		// TestConvertCPUProfileNoSamples and TestEmptyStack, which touch no profiler at all — die
+		// before their first assertion, and so does every other test that builds a profile.
+		//
+		// The defect is the class's textbook shape, one record bigger than Process32First's.
+		// MODULEENTRY32W is 1080 bytes ending in szModule[256] and szExePath[260] INLINE; the
+		// converted ModuleEntry32 holds both as golib `array<uint16>` MANAGED REFERENCES, so the
+		// CLR auto-layouts the record at roughly 64 bytes with the two references grouped. The
+		// generated wrapper hands kernel32 `(uintptr)ᏑmoduleEntry` and the caller has already set
+		// `module.Size = SizeofModuleEntry32` — which the converter folds from Go's `unsafe.Sizeof`
+		// to the NATIVE 1080 — so Module32FirstW writes a full 1080-byte native record over that
+		// ~64-byte managed object. About a kilobyte of GC heap past the box is overwritten, and the
+		// ExePath field now holds module-path characters where an object reference belongs.
+		//
+		// It announces itself rather than lying: readMapping's very next statement is
+		// `syscall.UTF16ToString(module.ExePath[:])`, and the measured death is an
+		// ACCESS_VIOLATION inside `slice<ushort>..ctor` reached from `array<ushort>.get_Item(Range)`
+		// — the same manifestation findFirstFile1 produced one package over, for the same reason.
+		// (When the fabricated reference happens to resolve, the corruption instead surfaces
+		// downstream: the census's ungated run died in `internal/testlog`'s class constructor,
+		// reached from peBuildID two statements later, which reads as a defect in a package that
+		// has nothing to do with it.)
+		//
+		// Remedy: the ordinary blittable mirror this class has taken four times already
+		// (GetTimeZoneInformation, findFirstFile1, Process32First, adjustTokenPrivileges) — a
+		// `fixed`-buffer native image on the stack, the SAME LazyProc call, and a field-for-field
+		// copy back into the converted struct. It applies here where it could not apply to
+		// NetShareAdd because both wrappers receive the record as a TYPED `*ModuleEntry32`, exactly
+		// as this package's zsyscall_windows_impl.cs header predicted. Bodies in
+		// zsyscall_windows_module_impl.cs.
+		"Module32First": goosWindows,
+		"Module32Next":  goosWindows,
 	},
 	// The three WORD-SIZE leaves of math/bits, and only those three. math/big calls Mul and Add from
 	// the innermost loop of Montgomery multiplication -- every RSA private-key operation -- and the
@@ -1751,10 +1888,16 @@ func (v *Visitor) isManualType(goTypeName string) bool {
 }
 
 // isManualBoxReceiverMethod reports whether obj is a listed foreign-receiver manual method
-// (a manualConversionFuncs "recvTypeName.funcName" entry). Such a method captures the
-// receiver's IDENTITY (e.g. g.guintptr wraps the *g itself), so its manual implementation
-// takes the receiver BOX (`this ж<T>`) — a deref-aliased call site must pass the box, not
-// the value alias (see convSelectorExpr).
+// (a manualConversionFuncs "recvTypeName.funcName" entry). The motivating members capture the
+// receiver's IDENTITY (e.g. g.guintptr wraps the *g itself), so their manual implementation takes
+// the receiver BOX (`this ж<T>`) and a deref-aliased call site must pass the box rather than the
+// value alias (see convSelectorExpr).
+//
+// It answers MEMBERSHIP only. A registration displaces a BODY; it decides nothing about the
+// declaration's receiver FORM, and the registry holds `[GoRecv] this ref T` members too — so the
+// call site pairs this with exprHasReceiverBoxInScope, which asks whether a box exists to pass.
+// Reading membership alone as "takes the box" put `Ꮡa.regAssign(Ꮡt, 0)` into reflect's addArg,
+// a `this ref abiSeq a` body with no such box (CS0103, measured 2026-09-03).
 func (v *Visitor) isManualBoxReceiverMethod(obj types.Object) bool {
 	fn, ok := obj.(*types.Func)
 
@@ -1762,7 +1905,7 @@ func (v *Visitor) isManualBoxReceiverMethod(obj types.Object) bool {
 		return false
 	}
 
-	funcScopes, ok := manualConversionFuncs[fn.Pkg().Path()]
+	funcScopes, ok := manualConversionFuncs[resolveGorootVendoredPath(fn.Pkg().Path())]
 
 	if !ok {
 		return false
@@ -1806,11 +1949,20 @@ func (v *Visitor) isManualFuncDecl(funcDecl *ast.FuncDecl) bool {
 // `goos` is the conversion's TARGET operating system, which decides whether a scoped entry applies
 // here at all — see goosScope. The analysis passes must pass the same value emission will, or a
 // declaration would be hoisted-into and then emitted as a placeholder (or the reverse).
+// The registry is keyed by the package's ON-DISK path — for a GOROOT-vendored package the `vendor/`-
+// prefixed one, the key the dependency graph, the corpus directory and the ledger guards all use. The
+// type-checker spells that package WITHOUT the prefix (`golang.org/x/crypto/internal/alias`, because
+// conversionDriver loads a package by its directory and `go list` reports a vendored dir's ImportPath
+// unprefixed — measured 2026-09-03), so every lookup canonicalizes through resolveGorootVendoredPath
+// first; a registration under the on-disk key was otherwise never consulted (a two-seeded three-target
+// diff of the first vendored registration read ZERO paths). Idempotent for an already-prefixed key and
+// a no-op for every plain stdlib path.
 func isManualFuncDeclInPackage(pkgPath string, goos string, funcDecl *ast.FuncDecl) bool {
 	if funcDecl == nil || funcDecl.Name == nil {
 		return false
 	}
 
+	pkgPath = resolveGorootVendoredPath(pkgPath)
 	funcName := funcDecl.Name.Name
 	recvName := ""
 

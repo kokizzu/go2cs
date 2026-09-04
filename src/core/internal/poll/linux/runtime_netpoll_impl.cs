@@ -61,8 +61,8 @@
 //
 // SCOPE. Linux amd64: the struct epoll_event image below is amd64's PACKED 12 bytes (uint32 events
 // at 0, uint64 data at 4), and pollServerInit refuses any other architecture rather than misread
-// (arm64's record is 16 bytes unpacked). darwin keeps the pre-poller fallback as its remedy when that
-// corpus builds -- kqueue is a separate design. Windows keeps its own poller in
+// (arm64's record is 16 bytes unpacked). darwin has its own poller in darwin/runtime_netpoll_impl.cs
+// -- this file's twin over kqueue, cut as a copy of it. Windows keeps its own poller in
 // windows/runtime_netpoll_impl.cs, untouched: the desc machinery here is a COPY of it (OQ-7, the
 // lock_sema/lock_futex per-GOOS-authority precedent) and the two files cite each other so they
 // cannot drift silently; a hoist into a flat shared companion is a later leveling once both are
@@ -72,6 +72,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Threading;
+// Aliased rather than imported wholesale: this file needs exactly two golib types, and a blanket
+// `using go.golib` would also pull that namespace's extension methods into a hand-owned file sitting
+// beside converted code.
+using Goroutine = go.golib.Goroutine;
+using WaitReason = go.golib.WaitReason;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 // Hand-owned (no runtime_netpoll_impl.go exists, so a reconvert never regenerates this file);
@@ -477,7 +482,13 @@ partial class poll_package
                 // superseded the one that woke us -- Go's comment for the same retry: "Can happen if
                 // timeout has fired and unblocked us, but before we had a chance to run, timeout has
                 // been reset. Pretend it has not happened and retry."
-                Monitor.Wait(desc.Gate);
+                //
+                // Park accounting only -- Go's netpollblock parks with waitReasonIOWait, which is
+                // what a traceback prints as [IO wait] for a goroutine blocked in the poller. §6
+                // row 9 of DESIGN-cooperative-scheduler.md left this adoption to the netpoll arc's
+                // option; taken here because the reason has a real park site and a real reader.
+                using (Goroutine.Park(WaitReason.IOWait))
+                    Monitor.Wait(desc.Gate);
             }
         }
     }

@@ -21,7 +21,11 @@
     <None Include="$(MSBuildThisFileDirectory)buildConstraints_test.go" />
     <None Include="$(MSBuildThisFileDirectory)callerInliningAnalysis.go" />
     <None Include="$(MSBuildThisFileDirectory)syscallKeepAliveAnalysis.go" />
+    <None Include="$(MSBuildThisFileDirectory)syscallFunnelSet_test.go" />
     <None Include="$(MSBuildThisFileDirectory)captureModeOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)cgoConfigurationClass_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)cgoDynamicImports.go" />
+    <None Include="$(MSBuildThisFileDirectory)cgoDynamicImports_test.go" />
     <None Include="$(MSBuildThisFileDirectory)chainedCallScaling_test.go" />
     <None Include="$(MSBuildThisFileDirectory)chanDirectionCargo.go" />
     <None Include="$(MSBuildThisFileDirectory)childEnvGo2CSPath_test.go" />
@@ -39,6 +43,7 @@
     <None Include="$(MSBuildThisFileDirectory)conversionDriver_test.go" />
     <None Include="$(MSBuildThisFileDirectory)converterStaleness.go" />
     <None Include="$(MSBuildThisFileDirectory)converterStaleness_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)convertTimeout_test.go" />
     <None Include="$(MSBuildThisFileDirectory)convExpr.go" />
     <None Include="$(MSBuildThisFileDirectory)convExprList.go" />
     <None Include="$(MSBuildThisFileDirectory)convFuncLit.go" />
@@ -71,6 +76,7 @@
     <None Include="$(MSBuildThisFileDirectory)directiveOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)disclosedParentAggregation_test.go" />
     <None Include="$(MSBuildThisFileDirectory)displacedCommentDrain_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)displacedRefReceiverCall_test.go" />
     <None Include="$(MSBuildThisFileDirectory)dynamicStructOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)dynamicTypeGate_test.go" />
     <None Include="$(MSBuildThisFileDirectory)dynamicTypeOperations.go" />
@@ -177,6 +183,8 @@
     <None Include="$(MSBuildThisFileDirectory)refLoweringCensus.go" />
     <None Include="$(MSBuildThisFileDirectory)refLoweringEmissionOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)refReceiverEligibility.go" />
+    <None Include="$(MSBuildThisFileDirectory)refVerdictPublication.go" />
+    <None Include="$(MSBuildThisFileDirectory)refVerdictPublication_test.go" />
     <None Include="$(MSBuildThisFileDirectory)requiresUnsafeMarker_test.go" />
     <None Include="$(MSBuildThisFileDirectory)resolveBuildTags_test.go" />
     <None Include="$(MSBuildThisFileDirectory)resolveGo2CSPath_test.go" />

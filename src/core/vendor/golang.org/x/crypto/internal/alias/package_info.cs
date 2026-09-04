@@ -54,7 +54,7 @@ using static go.vendor.golang.org.x.crypto.@internal.alias_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/alias/alias_purego.go", "alias_purego.cs", "ABQiogACFuKClA==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/alias/alias_purego.go", "alias_purego.cs", "ABA64oKU")]
 // </GoSourcePositionMaps>
 
 namespace go.vendor.golang.org.x.crypto.@internal;

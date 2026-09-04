@@ -1081,7 +1081,7 @@ internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool
                     i++;
                     continue;
                 }
-                dst = append(dst, ((Bytes)(src[(int)(start)..(int)(i)])).ꓸꓸꓸ);
+                dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
                 switch (b) {
                 case (rune)'\\' or (rune)'"': {
                     dst = append(dst, (byte)((rune)'\\'), b);
@@ -1130,9 +1130,9 @@ internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool
         if (n > utf8.UTFMax) {
             n = utf8.UTFMax;
         }
-        var (c, size) = utf8.DecodeRuneInString(((Bytes)(src[(int)(i)..(int)(i + n)])).ToGoString());
+        var (c, size) = utf8.DecodeRuneInString(src[(int)(i)..(int)(i + n)].ToGoString());
         if (c == utf8.RuneError && size == 1) {
-            dst = append(dst, ((Bytes)(src[(int)(start)..(int)(i)])).ꓸꓸꓸ);
+            dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
             dst = append(dst, ((@string)@"\ufffd"u8).ꓸꓸꓸ);
             i += size;
             start = i;
@@ -1146,7 +1146,7 @@ internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool
         // escape them, so we do so unconditionally.
         // See https://en.wikipedia.org/wiki/JSON#Safety.
         if (c == (rune)'\u2028' || c == (rune)'\u2029') {
-            dst = append(dst, ((Bytes)(src[(int)(start)..(int)(i)])).ꓸꓸꓸ);
+            dst = append(dst, src[(int)(start)..(int)(i)].ꓸꓸꓸ);
             dst = append(dst, (byte)((rune)'\\'), (byte)((rune)'u'), (byte)((rune)'2'), (byte)((rune)'0'), (byte)((rune)'2'), hex[(rune)(c & 0xF)]);
             i += size;
             start = i;
@@ -1154,7 +1154,7 @@ internal static slice<byte> appendString<Bytes>(slice<byte> dst, Bytes src, bool
         }
         i += size;
     }
-    dst = append(dst, ((Bytes)(src[(int)(start)..])).ꓸꓸꓸ);
+    dst = append(dst, src[(int)(start)..].ꓸꓸꓸ);
     dst = append(dst, (byte)((rune)'"'));
     return dst;
 }

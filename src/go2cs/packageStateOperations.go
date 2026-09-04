@@ -41,6 +41,7 @@ func resetPackageState(pkg *packages.Package) {
 	packageNamespace = ""
 	projectImports = NewHashSet([]string{})
 	linknameHandles = NewHashSet([]string{})
+	cgoDynamicImports = nil
 	currentPackagePath = pkg.PkgPath
 	exportedTypeAliases = make(map[string]string)
 	importedTypeAliases = make(map[string]string)
@@ -48,6 +49,8 @@ func resetPackageState(pkg *packages.Package) {
 	packageInlineFuncTypeNames = make(map[string]bool)
 	importedPointerImplements = HashSet[string]{}
 	importedValueImplements = HashSet[string]{}
+	importedRefPrimaries = HashSet[string]{}
+	packageRefPrimaryRecords = nil
 	constImportedTypeAliases = NewHashSet([]string{})
 	derivedTypeAliases = NewHashSet([]string{})
 	usedDerivedTypeAliases = NewHashSet([]string{})

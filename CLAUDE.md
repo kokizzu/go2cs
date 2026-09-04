@@ -308,6 +308,16 @@ ONE stdlib in a build; there is now only one on disk.
     believing any post-fix count, verify the build the record claims actually succeeded and the
     record is newer than the edit; for the registry case, checking the placeholder was actually
     emitted is the cheap tell. The record is only the verdict when the run that wrote it completed.
+  - `-convert-timeout <dur>` — the `-stdlib` driver's cap on ONE package's conversion; Go duration
+    syntax, default **10m**, must be > 0 (`log.Fatal` otherwise). It is a **safety net against a hung
+    conversion, never a performance assumption**: the value has to clear the slowest legitimate
+    package on the slowest legitimate host, because a killed-but-healthy conversion is reported as a
+    FAILED package — named in the log, counted in the summary, listed in `failed_packages.txt` — and
+    reads exactly like a converter defect. It was hard-coded at 10m until 2026-09-02, when concurrent
+    lane load on the i7 class pushed one package past it mid two-seeded A/B, which would have banked a
+    whole package as a spurious emission difference. The fired message names the package, the elapsed
+    budget and this flag, so raise it there (`-convert-timeout 90m`) rather than editing a constant —
+    and pass the SAME value to both binaries of an A/B, since the cap is part of what a run measures.
   - `-go2cspath <dir>` — runtime/stdlib root and default output root for converted code (default `~/go2cs`;
     env `GO2CSPATH`). `go2cs -recurse <input> <output>` keeps generated code under the explicit output root
     while `$(go2csPath)` references continue to resolve against this runtime root. **It is also the root the
@@ -398,6 +408,18 @@ ONE stdlib in a build; there is now only one on disk.
   `go build` whenever any converter `*.go` is newer than the binary, then re-transpiles. So after a
   converter change, running the suite regenerates the behavioral `.cs` from current source (and may show
   them as modified in git — that's expected).
+- **A hand-invoked `-stdlib` or `-tests` run REFUSES a stale binary — route #1 closed from inside the
+  converter, where those two paths have no caller to instrument.** `go2cs` compares its own executable's
+  mtime against every build input in the source tree beside it (`converterStaleness.go`, over the set
+  `ConverterBuildInputs.cs` defines) and, when any is newer, ENUMERATES the extent: the count, the ten
+  newest paths (all of them at ten or fewer), and which are emission-affecting — everything except a
+  `_test.go`, which `go build` excludes from the binary. For those two drivers, whose output is banked
+  or measured, it then exits non-zero; **`-allow-stale-converter`** proceeds deliberately and is what an
+  A/B against a PRESERVED binary passes, so a stale run says so in its own command line. Every other
+  shape — a single file or package, `-recurse` — keeps the warning and runs, because that is the
+  scratch-probe loop and a pinned binary there is ordinary. Two limits to know: it is silent when no
+  converter source tree sits beside the executable (a deployed binary), and it is blind to a TOOLCHAIN
+  hop, which stays route #4's embedded-stamp comparison in the harness predicate.
 - **FALSE-GREEN route #2 — stale OUTPUT (fixed 2026-07-20).** Distinct from the stale-`go2cs.exe` trap
   (route #1, where an un-rebuilt binary runs old logic): here the exe IS current but the runners *skip
   transpiling* and validate the **previous** converter's `.cs`. All three of `BehavioralRunner.UpToDate`,

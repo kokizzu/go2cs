@@ -570,6 +570,11 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		log.Fatalf("Failed to find '<InterfaceImplementations>...</InterfaceImplementations>' section for inserting interface implementations into package info file \"%s\"\n", packageInfoFileName)
 	}
 
+	// Publish the cross-package lowering contract's records (refVerdictPublication.go): the
+	// section is inserted only when there is a record to hold and removed when there is none, so
+	// a package with nothing to publish is byte-identical to one written before the contract.
+	packageInfoLines = applyRefVerdictSection(packageInfoLines, packageRefPrimaryRecords, mergeExisting)
+
 	// Handle implicit conversions
 	startLineIndex = -1
 	endLineIndex = -1
@@ -797,6 +802,7 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 	// not re-emit -- which is the only route production records have into a recompile-model test
 	// assembly, whose compile set excludes package_info.cs in favor of the seeded test-info file.
 	packageInfoLines = applyGoSourcePositionMaps(packageInfoLines, packageInfoFileName, mergeExisting)
+	packageInfoLines = applyCgoDynamicImports(packageInfoLines, packageInfoFileName, mergeExisting)
 
 	// Remove trailing empty lines
 	for i := len(packageInfoLines) - 1; i >= 0; i-- {

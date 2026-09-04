@@ -8906,7 +8906,7 @@ The interface was originally single-parameter (`IByteSeq<T>`) with an `IByteSeq<
 
 A `parseRFC3339`-shaped body (seven sub-slices, eight `len` calls, six `[]byte(s)` conversions per parse) measured **720 B/parse** on the `slice<byte>` instantiation and **776 B/parse** on `@string` — for Go code that allocates nothing. The remedy is one idea applied four times: *never name the sequence type as an interface in a signature a generic body reaches*.
 
-- **Sub-slicing** moves to the self-referential `TSelf this[Range]`. Both implementers' public range indexers already return their own type, so this is satisfied implicitly, and the call becomes a `constrained.` direct dispatch on the value type. The converter's `((bytes)(…))` cast survives as a no-op identity conversion.
+- **Sub-slicing** moves to the self-referential `TSelf this[Range]`. Both implementers' public range indexers already return their own type, so this is satisfied implicitly, and the call becomes a `constrained.` direct dispatch on the value type. The result IS the type parameter, so the converter emits the range expression bare (above).
 - **`len`** takes the constrained type parameter (`len<TSeq>(TSeq) where TSeq : IByteSeq`) instead of the interface.
 - **`[]byte(s)` / `string(s)`** become the `ToSlice`/`ToGoString` **extension methods** rather than constructors. C# has no generic constructor, so a constructor can only accept the interface; and a static factory cannot even be *named* here, because converted code carries `using static go.builtin`, which shadows the `slice` and `@string` type names with the builtin conversion methods (`slice<byte>.From(s)` is CS0119 — "is a method, which is not valid in the given context"). An extension call is member access on the receiver, so it sidesteps both problems. Each folds `typeof(TSeq) == typeof(…)` to a per-instantiation constant, so the sharing case reduces to a field copy.
 
@@ -8977,21 +8977,27 @@ The golib `uintptr` struct declares the full generic-math interface set the lift
 
 > **Latent gap ([banked](Glossary.md#banked)):** generated `[GoType("num:*")]` wrapper structs do NOT yet declare the generic-math interfaces -- a NAMED numeric wrapper used as a union-generic type argument would CS0315. No corpus site hits this yet.
 
-### Union-constrained sub-slices cast back to the type parameter
-A sub-slice of a `string | []byte` union-constrained value is typed by Go as the type parameter again, so it assigns back to, passes as, and returns as the parameter (time format_rfc3339, CS0266/CS0310/CS0029 before the cast landed). The emission wraps the range forms in an explicit conversion to the type parameter:
+### Union-constrained sub-slices ARE the type parameter
+A sub-slice of a `string | []byte` union-constrained value is typed by Go as the type parameter again, so it assigns back to, passes as, and returns as the parameter (time format_rfc3339). The emission is the bare C# range expression:
 ```csharp
-return parse(((T)(s[0..2]))) + parse(((T)(s[3..5])));
+return parse(s[0..2]) + parse(s[3..5]);
 ```
+```csharp
+s = s[19..];                        // Go: s = s[19:]
+```
+Nothing converts it, because nothing needs to: the constraint is the **self-referential** `IByteSeq<T, byte>` (above), whose `TSelf this[Range]` indexer returns `T` itself, so the range expression already has the type parameter's type. All four bound shapes take this route — `s[..hi]`, `s[lo..hi]`, `s[lo..]` and `s[..]` — and a three-index slice cannot occur on a string-including union (Go forbids it on strings), so `Slice3` never reaches it. Downstream members bind through the constraint on the resulting value directly: `s[i..j].ToGoString()` for Go's `string(s[i:j])` (bytealg's Rabin-Karp), `src[lo..hi].ꓸꓸꓸ` for the variadic spread (below).
+
 Func-literal parameters typed as the union type parameter render as the parameter itself (the enclosing method's type parameter is in scope inside a lambda), matching the Go:
 ```csharp
 var parse = (T part) => {
 ```
-Since the constraint became self-referential (`IByteSeq<T, byte>`, above), the Range indexer returns `T` directly, so this cast is an **identity conversion that emits no IL** — it was a runtime-checked unbox of a boxed struct when the indexer returned the interface. The emission is kept because it names the type Go gives the expression; it no longer costs anything.
 
-Guarded by `StringByteUnionConstraint` (`trimHead`/`headSum`; `digitSum`).
+> **History.** When `IByteSeq` was single-parameter, its Range indexer returned the **interface**, and the emission wrapped every sub-slice in `((T)(…))` to recover the type Go gives the expression (CS0266/CS0310/CS0029 without it — a runtime-checked unbox of a struct the indexer had just boxed). The self-referential constraint retired the box and left the cast an identity conversion emitting no IL; the cast was then retired in turn, so the rendering matches the Go instead of narrating a conversion that no longer happens.
+
+Guarded by `StringByteUnionConstraint` — `trimHead`/`headSum` (assigned back, passed on, returned), `digitSum` (both bounds, through a func-literal parameter), `prefixMatch` (low omitted) and `wholeSpan` (both omitted). Its golden is the A/B: the cast's removal moves those lines and nothing else, while the stdout comparison against `go run` stays byte-identical.
 
 ### Spreading a union-constrained value
-A union-constrained value may also be **spread** into a variadic — encoding/json's `appendString[Bytes []byte | string]` does `append(dst, src[lo:hi]...)` (and the open-ended `append(dst, src[lo:]...)`). The sub-slice is typed as the type parameter again, so the cast-back above wraps it, and the spread renders as `((Bytes)(src[lo..hi])).ꓸꓸꓸ`. A bare type-parameter value has no members of its own, so the spread `ꓸꓸꓸ` (which yields the `Span<byte>` the `append<T>(slice<T>, params Span<T>)` overload binds) must be declared on the **constraint interface** — a member access on a constrained type-parameter value resolves through its constraint. `IByteSeq<T>` therefore exposes `Span<T> ꓸꓸꓸ { get; }`; both implementers already satisfy it (`slice<T>` as `Span<T>`, `@string` as `Span<byte>`), so the interface member is implicit and adds no cast (CS1061 otherwise — the type parameter `Bytes` had no `ꓸꓸꓸ`). (Guarded by the `StringByteUnionConstraint` extension `appendRun` — a bounded and an open-ended sub-slice of the union value spread into `append`, both instantiations value-compared vs Go.)
+A union-constrained value may also be **spread** into a variadic — encoding/json's `appendString[Bytes []byte | string]` does `append(dst, src[lo:hi]...)` (and the open-ended `append(dst, src[lo:]...)`). The sub-slice is typed as the type parameter again (above), so the spread renders as `src[lo..hi].ꓸꓸꓸ`. A bare type-parameter value has no members of its own, so the spread `ꓸꓸꓸ` (which yields the `Span<byte>` the `append<T>(slice<T>, params Span<T>)` overload binds) must be declared on the **constraint interface** — a member access on a constrained type-parameter value resolves through its constraint. `IByteSeq<T>` therefore exposes `Span<T> ꓸꓸꓸ { get; }`; both implementers already satisfy it (`slice<T>` as `Span<T>`, `@string` as `Span<byte>`), so the interface member is implicit and adds no cast (CS1061 otherwise — the type parameter `Bytes` had no `ꓸꓸꓸ`). (Guarded by the `StringByteUnionConstraint` extension `appendRun` — a bounded and an open-ended sub-slice of the union value spread into `append`, both instantiations value-compared vs Go.)
 
 ## Type Aliasing
 Go supports two kinds of [type aliasing](https://go101.org/article/type-system-overview.html#type-definition): a "type definition" and a "type alias declaration".
@@ -14840,7 +14846,7 @@ nint /*x*/ parseUint(bytes sΔ1, nint minΔ1, nint max) {
     …
     return x;
 }
-nint year = parseUint(((bytes)(s[0..4])), 0, 9999);
+nint year = parseUint(s[0..4], 0, 9999);
 ```
 Roslyn compiles a local function that is never converted to a delegate with a **by-ref struct closure**: the captured variables move into a struct that lives in the enclosing frame and is passed as a hidden `ref` parameter. There is still exactly one storage location per captured variable — the enclosing method's own uses are rewritten to the same field — so sharing, write-visibility and the capture-snapshot machinery are all unchanged. Only the heap objects are gone. The result type is rendered by the same helper `visitFuncDecl` uses, so a named Go result keeps its `/*x*/` comment and a local function reads exactly like a declared one; a single-return literal keeps the expression-bodied collapse (`byte num2(slice<byte> bΔ1) => …;`).
 
@@ -16874,9 +16880,71 @@ The return type is now the concrete nested `slice<T>.Enumerator` struct (the sha
 * `slice<T>` reaches `IEnumerable<(nint, T)>` through `ISlice<T>` → `IArray<T>`, which the old public method satisfied implicitly. The interface member is now an **explicit** implementation returning the same struct boxed — so LINQ, an interface-typed local, and anything holding the slice as `IEnumerable<(nint, T)>` behave exactly as before, at exactly the cost they already paid. Only the pattern path is free.
 * go2cs-gen's `ISliceTypeTemplate` (every `type S []E` named-slice wrapper) forwarded the interface. It now forwards `global::go.slice<E>.Enumerator` and carries the same explicit interface member, so a named slice type ranges as cheaply as the `slice<E>` it wraps — otherwise every `for range` over a named slice would have kept the box.
 
-`array<T>.GetEnumerator()` is the identical shape and is deliberately **not** changed here: Go's `range` over an array value ranges a COPY, so the eager-vs-lazy capture point is a semantic question there rather than a purely mechanical one, and it wants its own measured change.
+`array<T>.GetEnumerator()` was the identical shape and was deliberately left alone here, because the copy Go's array range takes had to be placed first; it is settled in the section below.
 
 Guarded by `SliceRangeAllocationTests` in `GolibTests`, which asserts **zero** bytes via `GC.GetAllocatedBytesForCurrentThread` across 1,000 loops (whole slice, sub-window with window-relative indices, and the nil slice), plus the interface-path equivalence. It is a measured guard on purpose: restoring the interface return type still compiles and still produces correct output — it just allocates again — so only bytes can catch the regression. Neutering to the interface return reports 48 B/loop; restoring the original iterator body reports exactly 136 B/loop.
+
+### `range` over an ARRAY VALUE iterates a COPY — the snapshot is the range EXPRESSION's `.Clone()`
+
+Go evaluates a range expression **once** before the loop, so `for i, v := range a` over an array VALUE iterates a copy: a write to the container inside the body is invisible to every later iteration. The emitted `array<T>` (and the generated named-array wrapper) is a struct over a shared `T[]` backing, so the plain operand ALIASES the container — the emission read the writes back, diverging from `go run` on every such loop:
+
+```go
+a := [4]int{1, 2, 3, 4}
+for i, v := range a {
+    if i == 0 { a[1], a[2], a[3] = 91, 92, 93 }
+    fmt.Println(i, v)                 // Go: 1 2 3 4        emitted (before): 1 91 92 93
+}
+```
+
+The range expression is simply the array value-copy site nobody had emitted (see *Array VALUE-COPY at every transfer site* above — `range` was listed there for the iteration VARIABLE, never for the operand). It now takes a copy of its own:
+
+```csharp
+foreach (var (i, v) in a.ΔRangeSnapshot()) { … }        // array value  — snapshot, Go's copy
+foreach (var (i, v) in h.arr.ΔRangeSnapshot()) { … }    // struct field — likewise a value
+foreach (var (i, v) in r.ΔRangeSnapshot()) { … }        // named array  — the wrapper forwards it
+```
+
+**Why it is not the `.Clone()` every other transfer site takes, and this is the load-bearing part.**
+Semantically it could be, and it was first. But a Go array copy lives INLINE — on the stack when the
+destination is a local — so Go charges it **zero mallocs and zero `TotalAlloc`**, and a range snapshot
+is the one array copy that provably cannot outlive its statement. `Clone()` mints a counted managed
+array through `AllocationCounter`, which is right for a copy that DOES outlive the statement (an
+assignment, a return, a field, a channel send) and wrong for one that cannot: golib's counter is
+documented as the structural mirror of `runtime.MemStats.Mallocs`, so charging what Go does not
+makes the mirror wrong by construction, and every `testing.AllocsPerRun` assertion around a range
+over an array value would disagree with Go's own number. The byte meter is stricter still —
+`runtime.ReadMemStats`'s `TotalAlloc` maps to `GC.GetTotalAllocatedBytes`, which no counter can hide
+from — so the copy has to genuinely not allocate. `array<T>.ΔRangeSnapshot()` returns a `RangeSnapshot`
+struct whose enumerator rents from `ArrayPool<T>.Shared` and returns the buffer in `Dispose`, which
+C#'s `foreach` calls in a `finally`; steady state is zero managed allocations on both meters. Three
+residuals are named rather than hidden: the first rent of a size class allocates once per process, an
+array beyond the pool's largest bucket allocates per rent (as it would in Go, which also moves an
+array that size off the stack), and an element type needing a DEEP copy still allocates per element,
+because a nested `array<T>`'s backing is a heap object in this model.
+
+**A SLICE element is never re-copied, and getting that wrong was a real crash.** `array<T>.Clone()`
+re-clones elements that are themselves array wrappers, and `ISlice<T>` derives from `IArray<T>` — so a
+named-slice element passed that test, while the generated wrapper's `Clone()` forwards to the
+underlying `slice<T>`'s `ICloneable.Clone()`, which hands back a boxed `slice<T>`: the element cast is
+then `slice<int>` → `ΔBits` and throws `InvalidCastException`. Latent until something first cloned an
+array whose element is a slice; the range snapshot was that first caller, and math/big's
+`bitsList` (`[...]Bits`, `type Bits []int`) is the corpus site — `TestFloatAdd` and `TestFloatMul` died
+on it. Semantically the exclusion is required anyway: Go's array-of-slices copy copies HEADERS and
+shares every backing store, which the shallow element copy already did. The `ArrayRangeSnapshot`
+guard pins both halves — replacing a whole element through the original is invisible to the loop
+(a fresh header), while a write THROUGH a shared backing is visible.
+
+Scoped exactly as gc's own rule is (`cmd/compile/internal/walk/order.go`'s `rangeStmt`), so three shapes stay UNCOPIED because Go copies nothing there either — and each is a control in the guard:
+
+* **No value iteration variable.** With at most one iteration variable and a constant length, Go does not evaluate the range expression at all, so `for i := range a` reads the LIVE array through the index. A blank value (`for i, _ := range a`) is the same case.
+* **A POINTER to an array.** `for i, v := range p` shares the pointee; the emission keeps the bare `p.Value`.
+* **A slice.** Its copy is the header, which the struct assignment already is.
+
+`exprReadsValueNeedingClone` narrows the rest: only a read out of EXISTING storage (ident, selector, index, deref) can alias — a composite literal, call result, or conversion is freshly constructed and reachable by no other name, and a return already clones on its own way out.
+
+With the operand snapshotted, `array<T>`'s enumerator reads LIVE storage and needs no capture point of its own, which is what finally let it shed the iterator method: `GetEnumerator()` returns the nested `array<T>.Enumerator` STRUCT, and go2cs-gen's `IArrayTypeTemplate` / `IArrayViewTypeTemplate` forward that struct (with the explicit `IEnumerable<(nint, T)>` member beside it) so named array types range as cheaply. Measured with `GC.GetAllocatedBytesForCurrentThread` over 1,000 loops: **72 B/loop → 0 B/loop** on the pattern path, and 103 → 79 B/loop on the boxing interface path, which now boxes a struct instead of driving a state machine. Snapshotting inside the enumerator instead would have been wrong in both directions — it would allocate on every loop AND copy for the two shapes above where Go shares.
+
+Guarded two ways: `ArrayRangeSnapshot` (behavioral, output-compared against `go run`) mutates the container mid-loop across the array value, named-array, struct-field, nested-array, array-of-named-slices, `=`-form, mutable-range-var and aliased-element shapes, with the pointer, slice and index-only arms as controls that must NOT copy; `ArrayRangeAllocationTests` (`GolibTests`) asserts the enumerator's zero bytes with the boxing interface path as its nonzero control, the snapshot's zero on BOTH meters (object count and CLR bytes) with `Clone()` as the counted control that makes those zeros mean something, and the array-of-slices copy that must share its backing rather than throw.
 
 ## The `go.golib` support namespace
 
@@ -18603,6 +18671,84 @@ platform-blindness that hid `syscall.runtime_envs` and `runtime.fcntl`. Guarded 
 `TestLinknamePushRoutesNetNewUnixFile`, which re-derives both halves of the pair from GOROOT and then asserts
 the routing, the honorable disposition, and — exercising `packageFuncAccess` rather than the index it reads —
 the publicization that makes the cross-assembly call compile.
+
+### A `//go:cgo_import_dynamic` trampoline gets a RECORD, so its address can be resolved rather than invented
+
+`abi.FuncPCABI0(f)` asks for the program-counter of `f`, and the darwin syscall layer asks it of a
+**trampoline**: a bodyless `func libc_getgroups_trampoline()` whose real body is one assembly
+instruction jumping to a dynamically-imported C symbol. Converted literally the declaration is a
+bodyless `partial` the [`PartialStubGenerator`](#source-generators) fills with a throw, and
+`FuncPCABI0` itself answered `return default` — a zero that is *plausible*, unique and stable, and
+fatal the moment `rawSyscall` jumps to it.
+
+The two halves of `FuncPCABI0` want opposite things, and that is the whole design. A PC read BACK —
+`runtime.Callers`, pprof, `textAddr` — wants a synthetic token that symbolizes and is never
+dereferenced. A trampoline wants a REAL, callable address. So the converter publishes a
+discriminator: one assembly attribute per pragma it can bind, in a `<CgoDynamicImports>` section of
+`package_info.cs`.
+
+```go
+// crypto/x509/internal/macos/corefoundation.go
+func x509_CFDataCreate_trampoline()
+
+//go:cgo_import_dynamic x509_CFDataCreate CFDataCreate "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation"
+```
+
+```csharp
+// crypto/x509/internal/macos/darwin/package_info.cs
+[assembly: go.GoCgoImportDynamic("x509_CFDataCreate_trampoline", "CFDataCreate", "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation")]
+```
+
+`golib`'s `GoCgoDynamicImports` reaches the record from the ARGUMENT — the delegate's method, its
+declaring type, that type's assembly — so no package publishes a registry, no initialization order
+matters, and a package that declares no trampolines contributes nothing. A stub **with** a record is
+class B and resolves through `NativeLibrary`; the same stub **without** one is class C — Go's own
+assembly (`goexit`, `asyncPreempt`, `sigtramp`) — and stays a loud throw. A record that exists but
+fails to resolve throws too, naming the symbol and library: "there is no record" and "the record is
+wrong" are different answers, and collapsing them would let a typo read as class C.
+
+**Three properties are measurements, not preferences** (Go 1.23.12, all 1650 `//go:cgo_import_dynamic`
+records outside `cmd/` and `vendor/`):
+
+* **The gate is that the library argument is an ABSOLUTE PATH.** Every darwin record names one
+  (`/usr/lib/libSystem.B.dylib`, `/usr/lib/libresolv.9.dylib`, and the two
+  `/System/Library/Frameworks/…` frameworks `crypto/x509/internal/macos` imports); every other
+  platform names a BARE library — windows' 51 `kernel32.dll`, openbsd and solaris' `libc.so`, aix's
+  `libc.a/shr_64.o` — or names none at all, as `runtime/race`'s 196 darwin records do. Selecting on
+  the leading slash and selecting on "`.dylib` or a framework path" are two independent derivations
+  of the same **345** records and they agree on every one, which is what makes the shape safe to read
+  instead of a list a later Go release could add to. A `.dylib`-SUFFIX gate would be wrong in a way
+  that is easy to miss: it drops exactly the 28 framework records.
+* **The binding rule is `trampoline == local + "_trampoline"`, and its boundary is a package.** It
+  holds for **297 of 297** declarations outside `runtime` and **0 of 43** inside it, where 37 bind on
+  the SYMBOL instead (`pthread_attr_init_trampoline` ← `libc_pthread_attr_init pthread_attr_init`)
+  and 6 — `osinit_hack`, `exit`, `nanotime`, `walltime`, `sigprocmask`, `raiseproc` — carry no darwin
+  pragma at all. Those 6 are Go's own assembly and are correctly class C. The other 37 mint nothing:
+  their correspondence lives in the `.s` file the converter does not read, and a rule that stripped
+  `_trampoline`, then optionally stripped `libc_`, then matched the symbol would cover 334 of 340 and
+  guess at the rest.
+* **The `libc_<sym>` naming is a MAJORITY, not a rule.** `local == "libc_" + symbol` holds in **312**
+  of the 345; the other 33 are 28 `x509_<sym>` (`crypto/x509/internal/macos`), 3 `libresolv_<sym>`,
+  one `libc<sym>` with no underscore, and one genuine outlier — `libc_error` / `__error` — which is
+  the single record in all 345 where the local does not even END with the symbol. That last row is
+  why a name-derived cross-check between the pragma and the trampoline is not worth having: it would
+  be correct 344 times and silently wrong once.
+
+The emission is therefore **173 records per darwin target** — 126 `syscall`, 28
+`crypto/x509/internal/macos`, 19 `internal/syscall/unix` — and the section is created **only when a
+package has records**, which is the one deliberate departure from the
+`<GoSourcePositionMaps>` section's "always emitted, so absence never has to be told apart from
+emptiness". That reasoning holds where every package converts source files; here the population is
+four packages of the corpus and darwin-only, so an unconditional section would put marker lines into
+every `package_info.cs` of every platform flavor to record a property absent from ~99% of them — and
+it makes the windows and linux emissions byte-identical **by construction** rather than by a diff
+that happens to come back empty (both measured at 0 differing paths).
+
+Both conversion drivers run the pre-pass. A `-tests` conversion recompiles the production sources
+into the test assembly, so that assembly declares the same trampolines and needs the same records;
+and because the section is rewritten from what the current run bound, a driver that never binds would
+not merely skip the records — it would EMPTY a section the `-stdlib` emission had populated.
+`TestBothDriversCollectCgoDynamicImports` pins that.
 
 ### `internal/concurrent.HashTrieMap` — a managed map where Go seeds itself from `MapType().Hasher`
 
@@ -20440,6 +20586,74 @@ is what stops the value from ever going stale. `Stack` appends those frames *bel
 which is where Go's traceback puts them too, since the deferred call runs on top of `gopanic`. Cost on
 the non-panicking path is zero: the CLR fills the trace at throw time anyway, and nothing is
 snapshotted unless a panic is actually caught.
+
+### `runtime.Stack(all: true)` enumerates every goroutine, and each one names the wait it is parked on
+
+The `all` flag was **read and ignored**: the header was a literal `goroutine 1 [running]:` and the dump
+carried the calling thread alone. Both halves were untrue for any program with more than one
+goroutine, and the second was a *contract* violation rather than a cosmetic one — the bracketed word
+in a header is Go's **wait reason**, the runtime publishes it at every `gopark`, and Go's own tests
+grep it (`runtime/pprof`'s `awaitBlockedGoroutine` builds a regex around
+`^goroutine \d+ \[sync\.Mutex\.Lock\]:`; `runtime`'s `TestNumGoroutine` counts headers and requires the
+total to equal `NumGoroutine()`).
+
+**Park accounting** is what makes the word answerable. golib's `Goroutine` carries ONE field — a
+`WaitReason`, whose `Zero` value *is* "running", so the state and the reason cannot disagree — and
+every blocking primitive names its wait around the wait it already performs
+(`docs/phase4/DESIGN-cooperative-scheduler.md` §5.3):
+
+```csharp
+using (Goroutine.Park(WaitReason.ChanReceive))
+    parked.Park.Wait();                       // the EXISTING primitive, untouched
+```
+
+The scope is **accounting only**. It relocates no wait, re-opens no park/claim protocol, and adds no
+`goready` side: the waker already signals the primitive and the woken thread un-marks itself when the
+scope disposes. Cost is one volatile store to park and one to unpark, no allocation (`ParkScope` is a
+`readonly struct`), and nothing per-`ж` or per-object — so there is no corpus-wide byte cost. A thread
+with no goroutine identity (a BCL callback, `time`'s timer service thread, the finalizer) gets an
+inert scope and writes nothing; a nested park restores the enclosing reason rather than clearing it.
+
+The reasons are Go's own strings, copied verbatim from `runtime2.go`'s `waitReasonStrings`, and the
+enum carries only the ones a go2cs park site actually sets — a reason nothing can set is a word no
+dump can print. Adopted sites and the reason each names:
+
+| Wait | Reason | Go's counterpart |
+|---|---|---|
+| channel send / receive | `chan send`, `chan receive` | `gopark(chanparkcommit)` |
+| blocked `select` | `select` | `gopark(selparkcommit)` |
+| nil-channel op, `select{}` | `chan send (nil chan)`, `chan receive (nil chan)`, `select (no cases)` | same reasons |
+| `sync.Mutex.Lock` | `sync.Mutex.Lock` | `sync_runtime_SemacquireMutex` |
+| `sync.RWMutex.RLock` / `.Lock` | `sync.RWMutex.RLock`, `sync.RWMutex.Lock` | `sync_runtime_SemacquireRWMutexR` / `RWMutex` |
+| `sync.WaitGroup.Wait` | `semacquire` | `sync_runtime_Semacquire` — Go has no `sync.WaitGroup.Wait` reason |
+| `sync.Cond.Wait` | `sync.Cond.Wait` | `notifyListWait` → `goparkunlock` |
+| `internal/poll` fdMutex | `semacquire` | `poll_runtime_Semacquire` |
+| `internal/poll` netpoller | `IO wait` | `netpollblock` |
+| `time.Sleep` | `sleep` | `gopark(resetForSleep)` |
+
+**What the dump renders.** The calling goroutine first, with real frames, exactly as before; then one
+blank-line-separated block per other live goroutine, in goid order, each with a truthful header — the
+id golib's registry minted and the reason its park recorded. Where Go prints the other goroutine's
+frames, go2cs prints ONE line, `[stack unavailable: go2cs does not capture another goroutine's
+frames]`, deliberately shaped so nothing could mistake it for a frame (no tab-indented position line,
+no package-qualified name). **The CLR has no supported cross-thread stack walk** — `Thread.Suspend` is
+gone, and ClrMD or EventPipe would mean a process snapshot per call inside what is typically a spin
+loop — so the honest answer is a sentence, and fabricating plausible frames for a stack that was never
+walked is the one thing a traceback must never do. Capturing a goroutine's OWN stack at park time is
+Stage B of the scheduler design, held behind the synthetic-PC registry that would symbolize it.
+
+Three further limits are stated rather than approximated: `running` covers Go's `_Grunnable` as well
+as `_Grunning` (there is no P and no run queue, so a thread waiting for a core is indistinguishable
+from one on it); Go's ` (scan)`, `, N minutes` and `, locked to thread` header decorations are omitted
+(no GC of ours, no park timestamp, and `LockOSThread` is a no-op here because every goroutine already
+owns its thread); and `NumGoroutine()` and the enumeration are two reads of one registry, so they agree
+at rest and can differ while a goroutine is registering or retiring — the same direction as the count's
+already-documented early-climb/late-decay. (Guarded by the `GoroutineWaitState` behavioral test — four
+goroutines parked on a mutex, a channel receive, a select and a WaitGroup, read back through a
+*normalized* reading compared against `go run`, with a negative arm for a reason no goroutine has and a
+release arm proving every reason clears; plus `GolibTests`'
+`GoroutineParkAccountingTests` for the strings, the nesting, the inert host-thread park, and the
+header-count-versus-`NumGoroutine` agreement.)
 
 ### EVERY reader of a panic's trace gets the origin — not just `runtime.Stack`
 

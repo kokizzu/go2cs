@@ -36,8 +36,18 @@
 //     panic's origin is appended below the live frames — where Go's traceback also shows them,
 //     since a deferred call runs on top of gopanic. Frames that are not converted Go code (golib,
 //     the BCL, the test host) keep their .NET names rather than being given invented Go ones, and
-//     Go's `+0x<offset>` PC deltas are omitted. all=true reports only the calling thread — the CLR
-//     has no supported way to walk another thread's stack.
+//     Go's `+0x<offset>` PC deltas are omitted.
+//   - Stack(all=true) enumerates EVERY live goroutine — golib's registry, in goid order, as Go
+//     dumps them — with a truthful header per goroutine: the id the registry minted, and the wait
+//     reason the park accounting recorded (Go's own waitReasonStrings; see golib's WaitReason).
+//     The CALLING goroutine's block carries real frames; every other goroutine's carries ONE line
+//     saying its stack is unavailable, because the CLR has no supported cross-thread stack walk and
+//     inventing frames for an unwalked stack is the one thing a traceback must not do. Capturing a
+//     goroutine's own stack AT PARK TIME is Stage B of docs/phase4/DESIGN-cooperative-scheduler.md,
+//     held behind the synthetic-PC registry that would symbolize it. Two further honest limits:
+//     `running` covers Go's _Grunnable as well as _Grunning (no P, no run queue, nothing to ask),
+//     and Go's ` (scan)` / `, N minutes` / `, locked to thread` header decorations are omitted
+//     rather than invented.
 //   - ReadMemStats fills the fields the CLR genuinely measures and leaves the allocator-internal
 //     ones (Mallocs/Frees/HeapObjects/BySize) zero rather than inventing numbers. The per-GC pause
 //     history, LastGC, PauseTotalNs and NumGC come from golib's GcPauseRecorder (one gen2 recorder,
@@ -448,15 +458,30 @@ partial class runtime_package
         throw new GoexitException();
     }
 
+    // The one line go2cs prints where Go prints another goroutine's frames.
+    //
+    // Deliberately NOT a frame: no tab-indented position line beneath it, nothing that could be
+    // mistaken for `<pkg>.<Func>()` by a program grepping a traceback, and no package-qualified name
+    // anywhere in it. Fabricating frames for a goroutine whose stack was never walked would be the
+    // one thing a traceback must never do — the whole surface exists to be read literally.
+    //
+    // Stage B of docs/phase4/DESIGN-cooperative-scheduler.md replaces it with the parking
+    // goroutine's OWN stack, captured at park time and symbolized through the synthetic-PC registry;
+    // until that registry exists, the honest answer is this sentence.
+    private const string ForeignStackPlaceholder =
+        "[stack unavailable: go2cs does not capture another goroutine's frames]\n";
+
     // Stack formats a stack trace of the calling goroutine into buf and returns the number of
     // bytes written to buf.
     public static nint Stack(slice<byte> buf, bool all)
     {
-        // `all` would mean "every goroutine": the CLR has no supported cross-thread stack walk, so
-        // the calling thread's trace is what can honestly be produced (see the header).
         StringBuilder trace = new();
 
-        trace.Append("goroutine 1 [running]:\n");
+        // The CALLING goroutine, always first and always with real frames — Go dumps the current
+        // goroutine ahead of the rest, and this is the one stack the CLR can walk.
+        Goroutine? current = Goroutine.Current;
+
+        appendGoroutineHeader(trace, current);
         appendGoFrames(trace, new StackTrace(skipFrames: 1, fNeedFileInfo: true));
 
         // Go keeps a panicking goroutine's frames on the stack until the panic completes, so a
@@ -475,6 +500,27 @@ partial class runtime_package
             appendGoFrames(trace, panicSite);
         }
 
+        if (all)
+        {
+            // Every OTHER live goroutine, in goid order, as Go dumps them: one blank-line-separated
+            // block each, carrying a real header — the id the registry minted and the wait reason
+            // the park accounting recorded — and the honest placeholder in place of frames.
+            //
+            // The HEADER is the half this runtime can now answer truthfully, and it is the half Go's
+            // own consumers read: `runtime/pprof`'s awaitBlockedGoroutine matches on the bracketed
+            // word, and `runtime`'s TestNumGoroutine counts "goroutine " occurrences against
+            // NumGoroutine(). Both were unanswerable while this printed one literal header.
+            foreach (Goroutine goroutine in Goroutine.Snapshot())
+            {
+                if (ReferenceEquals(goroutine, current))
+                    continue;
+
+                trace.Append('\n');
+                appendGoroutineHeader(trace, goroutine);
+                trace.Append(ForeignStackPlaceholder);
+            }
+        }
+
         byte[] encoded = Encoding.UTF8.GetBytes(trace.ToString());
         nint count = Math.Min((nint)encoded.Length, len(buf));
 
@@ -482,6 +528,33 @@ partial class runtime_package
             buf[i] = encoded[i];
 
         return count;
+    }
+
+    // Go's goroutineheader (runtime/traceback.go): `goroutine <goid> [<status>]:`, where the status
+    // word is the g's status EXCEPT while it is _Gwaiting, when Go substitutes gp.waitreason.String().
+    // That substitution is the whole shape here — a parked goroutine prints its reason, everything
+    // else prints `running`.
+    //
+    // Three of Go's header decorations are omitted rather than invented: ` (scan)` (no GC of ours to
+    // be scanned by), `, N minutes` (nothing records when a park began), and `, locked to thread`
+    // (LockOSThread is a no-op here because every goroutine already owns its thread, so the note
+    // would be true of every goroutine and therefore say nothing).
+    //
+    // A goroutine with no identity — Stack called on a host thread that never ran Go code — has no
+    // goid to print, and Go has no such state at all. It reports id 0, which is not a goid Go's
+    // monotonic allocator ever mints, rather than borrowing another goroutine's number.
+    private static void appendGoroutineHeader(StringBuilder trace, Goroutine? goroutine)
+    {
+        long id = goroutine is null ? 0 : goroutine.Id;
+
+        // "running" covers Go's _Grunnable too, and cannot be split from it: Go distinguishes a
+        // goroutine QUEUED on a P from one executing, and under the CLR a thread waiting for a core
+        // is indistinguishable from one running on it. Stated rather than approximated.
+        string status = goroutine is { State: GoroutineState.Parked }
+            ? WaitReasons.Text(goroutine.Reason)
+            : "running";
+
+        trace.Append("goroutine ").Append(id).Append(" [").Append(status).Append("]:\n");
     }
 
     // Renders frames the way Go's traceback does — `<pkg>.<Func>()` on one line, a tab-indented
@@ -1384,10 +1457,64 @@ partial class runtime_package
 
         lock (s_callerTableLock)
         {
-            if (value == 0 || value > (nuint)s_callerRecords.Count)
-                return null;
+            if (value != 0 && value <= (nuint)s_callerRecords.Count)
+                return s_callerRecords[(int)(value - 1)];
+        }
 
-            return s_callerRecords[(int)(value - 1)];
+        // SECOND SOURCE, ONE RENDERER. A pc outside the caller table is not necessarily foreign: it
+        // may be a SYNTHETIC PC minted by internal/abi's FuncPCABI0/FuncPCABIInternal for a function
+        // whose address Go takes without calling it (runtime/pprof's lostProfileEvent is the first
+        // consumer — its frame printed as `0x0` until this arm existed, because Frames.Next skips a
+        // pc this returns null for). The two spaces are disjoint BY CONSTRUCTION and it is asserted
+        // rather than assumed: caller tokens are `s_callerRecords.Count`, small integers; synthetic
+        // PCs sit in the canonical high half, above 2^32 (GolibTests.SyntheticPCRegistryTests). So
+        // the caller table always answers first and this arm can never shadow it.
+        return syntheticFrameRecord(value);
+    }
+
+    private static readonly object s_syntheticFrameLock = new();
+    private static readonly Dictionary<RuntimeMethodHandle, CallerFrameRecord> s_syntheticFrames = new();
+
+    // A synthetic PC resolved to the frame a traceback can print.
+    //
+    // FILE AND LINE ARE DELIBERATELY EMPTY, and this is the registry's own promise held to rather
+    // than papered over: a token knows WHICH FUNCTION, never which instruction. Every route into the
+    // [GoPositionMap] records starts from a live StackFrame's PDB file name (goFramePosition and
+    // goFuncLiteralSuffix are goSourcePath's only two callers), and the records are keyed by C# FILE
+    // while a converted package is one partial class spread across every file in it — so a token,
+    // having no frame, has no derivable file either. Inventing one from reflection would be a guess
+    // wearing a number. Reading the portable PDB would supply file AND line together, and was
+    // rejected: a published single-file host carrying no PDB would leave the frames quietly unnamed,
+    // which looks exactly like a resolver that never fired. The honest fix, when a consumer measures
+    // the need, is a per-method file record emitted by the converter — its own increment.
+    //
+    // The visible gap against Go, named rather than hidden: Go's `debug=1` textual profile prints
+    // `name file:line` per frame and this prints the name alone. See DESIGN-pc-readback.md §3.1.
+    //
+    // Keyed on the method rather than the pc because callers do arithmetic on a PC — runtime writes
+    // `FuncPCABI0(goexit) + sys.PCQuantum`, pprof writes `+ 1` — so an unbounded set of pcs resolves
+    // to one bounded set of functions, and moreCallerFrames re-resolves every remaining pc per frame.
+    private static CallerFrameRecord? syntheticFrameRecord(nuint pc)
+    {
+        if (GoSyntheticPC.Resolve(pc) is not System.Reflection.MethodBase method)
+            return null;
+
+        RuntimeMethodHandle handle = method.MethodHandle;
+
+        lock (s_syntheticFrameLock)
+        {
+            if (s_syntheticFrames.TryGetValue(handle, out CallerFrameRecord? cached))
+                return cached;
+
+            CallerFrameRecord record = new()
+            {
+                Function = GoSyntheticPC.GoNameOf(method),
+                File = string.Empty,
+                Line = 0
+            };
+
+            s_syntheticFrames[handle] = record;
+            return record;
         }
     }
 

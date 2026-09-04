@@ -144,6 +144,22 @@ if ($freeGB -lt 25) {
 # reads to decide which OS's expectation this run is measuring against.
 . (Join-Path $PSScriptRoot '_roster.ps1')
 
+# ---- cgo pin, WHOLE RUN, every platform (coordinator ruling 2026-09-03, mailbox a29200e47) -------
+# Both comparison sides share ONE cgo state and the converted side can only be the corpus's, which
+# is emitted CGO_ENABLED=0 (CLAUDE.md's emission-state rule). The state matters TWICE: it selects
+# which Go FILES convert (os/user, net, plugin, reflect -- the rows the retired per-package table
+# below first pinned), and it selects which BRANCH the ORACLE'S OWN TESTS take (`testenv.HasCGO()`
+# adds cgo-built variants in debug/buildinfo, cgo-only subtests in debug/pe and go/internal/gcimporter,
+# ENOTSUP skips in syscall), so a row's verdict COUNT carries the cgo state it was taken under. The
+# Windows bank host has no C compiler and always ran cgo-off; the Linux bank host's default was
+# cgo-ON, and the Linux annotations banked under it read HIGH by exactly the oracle's cgo-gated tests
+# (measured on the oracle alone at 22d2bd9dc: buildinfo 200 vs 193 PASS, gcimporter 568 vs 567, pe
+# three extra windows-only skip/skip subtests). cgo OFF is the state of record on every platform;
+# pinning it here, once, is what makes every row's number comparable across hosts and OSes.
+$priorSweepCgo = $env:CGO_ENABLED
+$env:CGO_ENABLED = '0'
+Write-Host "  CGO_ENABLED=0 pinned for the whole run (was '$priorSweepCgo') -- the corpus emission state and the annotations' state of record on every platform" -ForegroundColor DarkGray
+
 $src = $SrcRoot
 $repo = $RepoRoot
 $table = Join-Path $repo 'docs/ValidatedTestPackages.md'
@@ -794,29 +810,12 @@ function Invoke-SweepRow {
         [Parameter(Mandatory)][string] $GoDir,
         [Parameter(Mandatory)][string] $OutDir,
         [Parameter(Mandatory)][string] $PkgTimeout,
-        [string[]] $ExecArgs = @(),
-        [switch] $CgoOff
+        [string[]] $ExecArgs = @()
     )
 
-    # The row's cgo state, restored unconditionally so one pinned package cannot leak into the next.
-    $priorCgo = $env:CGO_ENABLED
-
-    if ($CgoOff) {
-        Write-Host "  pinning CGO_ENABLED=0 for $Package -- its Go file selection is cgo-conditional and the corpus is emitted cgo-off" -ForegroundColor DarkGray
-        $env:CGO_ENABLED = '0'
-    }
-
-    try {
-        $captured = & $exe -tests -test-action all -test-timeout $PkgTimeout @ExecArgs -go2cspath $src $GoDir $OutDir 2>&1
-    }
-    finally {
-        if ($CgoOff) {
-            if ($null -eq $priorCgo) { Remove-Item Env:\CGO_ENABLED -ErrorAction SilentlyContinue }
-            else { $env:CGO_ENABLED = $priorCgo }
-        }
-    }
-
-    return $captured
+    # The cgo state is pinned ONCE for the whole run (see the pin above the row loop); the per-row
+    # -CgoOff switch this function carried until 2026-09-03 retired with the per-package table.
+    return & $exe -tests -test-action all -test-timeout $PkgTimeout @ExecArgs -go2cspath $src $GoDir $OutDir 2>&1
 }
 
 # Packages whose C# suite legitimately exceeds the default package deadline. hash/maphash's
@@ -891,7 +890,12 @@ function Invoke-SweepRow {
 # that hammer storage (zip streams 4 GiB; parser walks hundreds of thousands of converted frames),
 # so their floors are sized to the LOADED case: 60m and 90m clear the observed loaded shortfalls
 # with ~2x headroom.
-$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '60m'; 'net' = '40m'; 'net/http' = '60m' }
+# sync/atomic's floor rose 60m -> 90m on 2026-09-03 (coordinator ruling, mailbox 82ec6654c): the
+# Linux leveling re-sweep read the row NOT MEASURED at 60m on the G-LAPTOP WSL host -- the results
+# tail stating `package timeout after 01:00:00` and the comparison truncated at 108 Go rows against
+# 89 C# -- which is a host BUDGET question, never a verdict, so the row's `linux: 108` annotation
+# stands and the floor is what moves. A floor, not an override: a larger -TestTimeout still wins.
+$longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto/dsa' = '120m'; 'archive/zip' = '60m'; 'go/parser' = '90m'; 'crypto/internal/mlkem768' = '30m'; 'time' = '40m'; 'crypto/tls' = '30m'; 'sync/atomic' = '90m'; 'net' = '40m'; 'net/http' = '60m' }
 # 'net' joined 2026-09-02: at the 10m default the C# host dies an EXPLICIT results-tail deadline kill on
 # the i7 class (the mass-empty shape), and at 40m the same tree validates 472/472 in ~1,480 s -- deadline
 # sizing, not divergence (measured twice: the MakeFunc canary gate 2026-08-29 and the A2a gate 2026-09-02).
@@ -980,7 +984,13 @@ $longTimeouts = @{ 'hash/maphash' = '60m'; 'index/suffixarray' = '120m'; 'crypto
 # Pinned cgo-OFF the three read go=pass / cs=skip, which is the honest shape: a disclosed HOST LIMIT
 # (minted separately), never a match. The doctrine already decided it -- both comparison sides share
 # ONE cgo state and the converted side can only be the corpus's.
-$cgoOffPackages = @{ 'os/user' = $true; 'net' = $true; 'plugin' = $true; 'reflect' = $true; 'syscall' = $true }
+# RETIRED 2026-09-03 (coordinator ruling a29200e47): the per-package table
+#   @{ 'os/user'; 'net'; 'plugin'; 'reflect'; 'syscall' }
+# became a WHOLE-RUN pin (see the cgo-pin block above the row loop). The measurements above are
+# kept as the record of WHY those five rows needed it first -- each was a one-variable A/B on one
+# host -- and of the fourth predicate that widened the rule to the oracle's own branches, which is
+# the predicate the whole-run pin now applies to every row rather than to the five that had been
+# measured by hand.
 
 foreach ($row in $rows) {
     $pkg = $row.Package
@@ -1028,10 +1038,8 @@ foreach ($row in $rows) {
         $execSuffix = if ($row.Execution) { " [$($row.Execution)]" } else { '' }
     }
 
-    $cgoPinned = $cgoOffPackages.ContainsKey($pkg)
-
     $rowStarted = Get-Date
-    $out = Invoke-SweepRow -Package $pkg -GoDir $goDir -OutDir $outDir -PkgTimeout $pkgTimeout -ExecArgs $execArgs -CgoOff:$cgoPinned
+    $out = Invoke-SweepRow -Package $pkg -GoDir $goDir -OutDir $outDir -PkgTimeout $pkgTimeout -ExecArgs $execArgs
     # Per-row wall time, printed on every verdict line. This is the SWEEP's wall clock for the row
     # (convert + build + both test hosts + compare), which is the number shard planning needs --
     # the go test -json stream's own "Time" fields measure only the Go side and invert exactly the
@@ -1067,7 +1075,7 @@ foreach ($row in $rows) {
             Write-Host "        run 1 evidence preserved at $preserved" -ForegroundColor DarkGray
 
             $rowStarted = Get-Date
-            $out = Invoke-SweepRow -Package $pkg -GoDir $goDir -OutDir $outDir -PkgTimeout $pkgTimeout -ExecArgs $execArgs -CgoOff:$cgoPinned
+            $out = Invoke-SweepRow -Package $pkg -GoDir $goDir -OutDir $outDir -PkgTimeout $pkgTimeout -ExecArgs $execArgs
             $rowSecs = [int]((Get-Date) - $rowStarted).TotalSeconds
             $verdict = ($out | Select-String 'Validated (\d+) tests against go test' | Select-Object -First 1)
 
