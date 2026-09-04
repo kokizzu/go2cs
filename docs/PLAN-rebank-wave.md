@@ -76,6 +76,12 @@ some may have leveled silently; my 2026-08-31 curated emission saw six, not seve
   measurement)
 - the IVT grant line in every csproj (from A3)
 - the init-hook relocation (from A2)
+- **ref-primary arc, linux/darwin residue** — Q35 applied the per-GOOS footprint I3 (`6a7688c88`) and
+  I1 (`0571e71cb`) each measured single-target and never emitted: ten files, +22 −22, hunks at full
+  context, nothing routed. What REMAINS for the wave is the other arcs' staleness in six of those
+  files (22–52 lines each against the arc's 4–6) plus B's own four routed files
+  (`log/syslog/{linux,darwin}/syslog.cs`, `net/{linux,darwin}/pipe.cs`), whose `defer`→`finally`
+  hunks would not land at any context because those files carry the chan-direction arc as well.
 - runtime production two-arcs-stale regen; go/doc/comment files; five-package test-info
   staleness; `lookup_windows.cs.auto` and the whole `.cs.auto` set re-measured per CleanupBacklog 18
 - **six frozen READMEs**: decision INSIDE the wave — option (a) emit README/csproj/package_info
