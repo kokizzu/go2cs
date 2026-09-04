@@ -104,11 +104,10 @@ internal static partial (nint n, bool ok) pprof_memProfileInternal(slice<profile
 // own concurrent collection: "New goroutines may not be in this list, but we didn't want to know
 // about them anyway."
 internal static partial (nint n, bool ok) pprof_goroutineProfileWithLabels(slice<profilerecord.StackRecord> p, slice<@unsafe.Pointer> labels) {
-    // Go's own guard, at the top of goroutineProfileWithLabels: a labels slice that does not match
-    // p is not usable, and is dropped rather than being an error.
-    if (labels != default! && len(labels) != len(p)) {
-        labels = default!;
-    }
+    // `labels` is deliberately never written; the block beneath this function records the
+    // measurement that decided it, and Go's own guard here -- drop a labels slice that does not
+    // match p -- is therefore already satisfied by leaving it untouched.
+    _ = labels;
 
     var snapshot = global::go.golib.Goroutine.ProfileSnapshot();
     nint n = ((nint)snapshot.Length);
@@ -134,12 +133,47 @@ internal static partial (nint n, bool ok) pprof_goroutineProfileWithLabels(slice
                 ? default!
                 : new uintptr[]{ ((uintptr)global::go.GoSyntheticPC.Of(entry.Function)) }.slice());
 
-        if (labels != default!) {
-            labels[i] = (entry.Labels as @unsafe.Pointer)!;
-        }
+        // No label is written for this entry -- see the block beneath this function.
     }
 
     return (n, true);
 }
+
+// WHY THE LABELS ARE WITHHELD, AND WHAT WAS MEASURED TO PUT THEM THERE (2026-09-04)
+//
+// The registry HAS every goroutine's labels and hands them to this function; what it cannot do
+// today is get them ACROSS this seam safely. The consumer reads a label the way
+// runtimeProfile.Label does -- through the NUMBER: `(*labelMap)(p.labels[i])`, i.e.
+// `(ж<labelMap>)(uintptr)`. `SetGoroutineLabels` produces that number with
+// `unsafe.Pointer.FromPinnedBox(ctxLabels)`, and the reverse conversion recovers a box that ALIASES
+// the raw address (ж.cs). So the label survives the round trip exactly as long as the labelMap the
+// address points at does not move.
+//
+// It moved. Instrumented on BOTH sides of the seam in one run of TestGoroutineCounts: 192 entries,
+// 101 unlabelled, 91 labelled. For 90 of the 91 the address still pointed at the right map when the
+// profile read it (`len == 1`). For ONE -- the FINALIZER goroutine's, set from inside the finalizer
+// body by pprof.Do -- the SAME number read `len == 1` at the instant runtime_setProfLabel stored it
+// and `len == 1885431144` when the profile read it back, with two runtime.GC() calls in between.
+// printCountProfile asks that map for its length to size a slice, so the process dies with
+// OutOfMemoryException inside labelMap.String, and the row is classified `infrastructure-error` --
+// a HOST DEFECT, not a verdict at all. This file's own header argues that making a row unmeasurable
+// is the worse outcome, and that judgement decides this: the profile reports the half it can
+// guarantee and withholds the half it cannot.
+//
+// A REFUTED FIRST ATTEMPT, kept because it is the reason the above is stated so narrowly. The first
+// version of this file tried to hand back only labels whose pointer still "resolved to managed
+// storage", testing the recovered box's IsNative. That test rests on a false premise -- IsNative is
+// the NORMAL state for a pointer minted by FromPinnedBox, not evidence of a stale one -- and it
+// dropped ALL 91 labels rather than the one bad one. The tell was the guard's own warning count:
+// 182 drops (91 labelled goroutines across the two profile calls) where at most one was expected.
+// So there is no cheap consumer-side test that separates a live address from a dead one; that is
+// the whole difficulty, and it is why nothing is filtered here.
+//
+// NOT FIXED HERE, AND NOT THIS FILE'S TO FIX. The address going stale under GC belongs to the
+// pointer-provenance and pin-lifetime machinery, which is a live arc elsewhere. Reported to the
+// fleet with the witness above. When a label pointer is stable across a collection, filling
+// `labels[i]` from `entry.Labels` is a one-line change here and the label half of
+// TestGoroutineCounts becomes reachable; until then, filling it trades a measurable wrong answer
+// for an unmeasurable one.
 
 } // end pprof_package
