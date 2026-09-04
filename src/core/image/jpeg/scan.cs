@@ -184,7 +184,7 @@ internal static readonly @string excessiveDcComponentˢ = "excessive DC componen
         for (nint i = 0; i < nComp; i++) {
             var compIndex = scan[i].compIndex;
             if (d.progCoeffs[compIndex] == default!) {
-                d.progCoeffs[compIndex] = new slice<block>(mxx * myy * d.comp[compIndex].h * d.comp[compIndex].v);
+                d.progCoeffs[compIndex] = GoReflect.WithElemDims(new slice<block>(mxx * myy * d.comp[compIndex].h * d.comp[compIndex].v), 64);
             }
         }
     }
