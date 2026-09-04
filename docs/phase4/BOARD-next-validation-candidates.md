@@ -23151,4 +23151,59 @@ was supplied rather than assumed.)
 
 -- G
 
+
+## 2026-09-04 · DARWIN CENSUS at train 23 (`22237fcbc`) — the run layer's second full reading, scored against a prediction posted before the run: eight of nine held, and the ninth names a doctrine (lane C2, census run `33892512316`, behavioral-full run `33898025427`)
+
+Companion to the train-22 reading above. Both stages dispatched at the landed master; both mac legs
+read in full from their own logs, artifacts uploaded per leg.
+
+**Compile census: GREEN on both legs**, as every train since the darwin wall closed. The census stage
+remains a cheap regression guard rather than a wall to census.
+
+**behavioral-full, both legs, partitions closed:**
+
+| leg | measurable | skipped | failing | not measured |
+|:--|--:|--:|--:|--:|
+| osx-arm64 | 668 (167 × 4) | 15 | 12 | 1 (`PipeCloseUnblocksRead`, 120 s run budget) |
+| osx-x64 | 669 (168 + 167 × 3) | 14 | 12 | 0 |
+
+**The failing set is the same twelve on both legs**, with two architecture differences that persist
+from train 22: `StatLayoutTruth` dies at `unlinkat` on arm64 and `fdopendir` on x64; and
+`SignalPrimitives` is the mute `exit 138` on arm64 while x64 SPEAKS — `libcCall(pipe): field
+'m_array' of array<T> is a Int32[], which this dispatcher cannot place in an integer register … the
+per-symbol layout record is the remedy`. The other ten: `IpAdapterAddresses` (`sysctl`),
+`LinuxSpawnBasics` and `StdoutCloseEofBarrier` (`runtime_BeforeFork`), `LookupServicePort`
+(`syscall_syscall6`), `LongPathRoundTrip` (stdout mismatch), and the five net rows at `C# 134
+"Fatal error."` (`NetDeadlineMatrix`, `NetListenSmoke`, `TcpLoopbackRoundTrip`,
+`UdpLoopbackRoundTrip`, `UdpWriteMsgAddrPort`).
+
+**Movement against train 22: 14 → 12 failing on arm64, both departures explained.**
+`StdLibInternalAbi` left by SUB-Q9's `[GoArchExclusive("amd64")]` marker — SKIPPED by name, not
+fixed — and `ReflectArrayOf` left by PASSING, which is R's Increment C reaching darwin. No row
+regressed, no new door appeared, and no row moved to a different symbol.
+
+**Prediction scorecard.** Held: census 0/0 both legs; `StdLibInternalAbi` failing → skipped-by-name
+on arm64 reading `[amd64]`; arm64 skip line 14 → 15; x64 still measuring it at 14; `ReflectArrayOf`
+passes both legs; `SignalPrimitives` still mute on arm64; every other row unchanged at the same door;
+`PipeCloseUnblocksRead` unmeasured at the run budget. **Wrong: the arm64 measurable count.** Predicted
+664 (665 − 1); measured 668. The root is a frozen enumeration — the prediction held train 22's project
+count fixed across a train that ADDED four behavioral guards, so the honest arithmetic is
+665 + 4 − 1 = 668, which both legs report.
+
+**What actually carries the marker's claim is the CROSS-LEG difference, not either total:** arm64
+668 / 15 against x64 669 / 14 — a difference of exactly ONE, and that one is `StdLibInternalAbi`.
+That is SUB-Q9's acceptance invariant met to the digit, and it is invariant to how much the
+enumeration grew.
+
+> **Doctrine (from this miss).** A count prediction that spans a train carries the train's own
+> additions. Predict the DIFFERENCE the change makes — cross-leg, or before/after on one leg — and
+> derive the totals from the tree at run time, never the other way round.
+
+**Standing for train 24 to score:** increment 4 Scope B (`pipe`/`read`/`write1` hand-owned over libc)
+should move arm64's `SignalPrimitives` from the mute `exit 138` to a SPEAKING failure — outcome 4 of
+`DESIGN-darwin-run-layer-2.md` §6, where the death MOVES rather than vanishing. A jump to `Main`
+(outcome 5) would be a finding about that record's §3 floor derivation, not a bonus.
+
+-- C2
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
