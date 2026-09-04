@@ -22,19 +22,21 @@ internal static void bump(this ж<counter> Ꮡc, nint times) {
 
 internal static nint get(this ж<counter> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         c.mu.Lock();
-        defer(Ꮡc.of(counter.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return c.n;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static nint nBeforeTouch(this ж<counter> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
@@ -42,11 +44,11 @@ internal static nint nBeforeTouch(this ж<counter> Ꮡc) {
             return -1;
         }
         c.mu.Lock();
-        defer(Ꮡc.of(counter.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return c.n;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static void bumpAsync(this ж<counter> Ꮡc, nint times, ж<Δsync.WaitGroup> Ꮡwg) {

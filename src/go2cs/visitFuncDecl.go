@@ -481,6 +481,18 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 	v.goFrameNamedExit = false
 	v.openGoFrames = 0
 
+	// Which of this function's defers are emitted into the frame's finally rather than registered
+	// (capability 4). Decided HERE for the same reason the frame form is: visitDeferStmt reads the
+	// plan to know whether to emit a registration or a reached-flag, and both the flag declarations
+	// and the finally's calls are composed from it after the body has rendered.
+	v.loweredDefers = nil
+	v.loweredDeferIndex = nil
+	v.entryAliasBoxPaths = nil
+
+	if useGoFrame {
+		v.planDeferFinallyLowering(funcDecl)
+	}
+
 	if useGoFrame {
 		v.openGoFrames = 1
 	}
@@ -914,6 +926,16 @@ func (v *Visitor) visitFuncDecl(funcDecl *ast.FuncDecl) {
 				// where nothing can know whether the body dereferences — that the nil-policy accessor
 				// is the honest one. See *The THREE deref accessors of ж<T>*.
 				derefAccessor := NilDeferringDerefAccessor
+
+				// Record the alias's own source expression. The alias is declared INSIDE the
+				// frame's try, so anything emitted into the frame's FINALLY — a defer→finally
+				// lowered call — cannot name it and must go through the box instead. Captured
+				// here rather than reconstructed later so the two spellings cannot drift.
+				if v.entryAliasBoxPaths == nil {
+					v.entryAliasBoxPaths = map[string]string{}
+				}
+
+				v.entryAliasBoxPaths[getSanitizedIdentifier(analyzedName)] = fmt.Sprintf("%s%s.%s", AddressPrefix, param.Name(), derefAccessor)
 
 				if v.options.preferVarDecl {
 					v.writeString(implicitPointers, "%s%sref var %s = ref %s%s.%s;", v.newline, v.indent(v.indentLevel+1), getSanitizedIdentifier(analyzedName), AddressPrefix, param.Name(), derefAccessor)

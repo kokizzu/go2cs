@@ -15,6 +15,23 @@ import (
 )
 
 func (v *Visitor) visitDeferStmt(deferStmt *ast.DeferStmt) {
+	// Capability 4 — this defer is emitted into the frame's FINALLY rather than registered
+	// (deferFinallyLowering.go decided that before the body was visited). The statement position
+	// carries only the reached-flag; the call is rendered here as an ORDINARY call — no lambda
+	// conversion, because nothing is stored and so nothing is captured — and composed into the
+	// finally once the body has rendered. This arm runs before the capture machinery below for
+	// exactly that reason.
+	if index, lowered := v.loweredDeferIndex[deferStmt]; lowered {
+		v.loweredDefers[index].call = strings.TrimSpace(v.convCallExpr(deferStmt.Call, DefaultLambdaContext()))
+		v.loweredDefers[index].aliasName = v.loweredCallAliasName(deferStmt.Call)
+
+		v.outputBuilder.WriteString(v.newline)
+		v.outputBuilder.WriteString(v.indent(v.indentLevel))
+		v.outputBuilder.WriteString(fmt.Sprintf("%s = true;", v.loweredDefers[index].flagName))
+
+		return
+	}
+
 	// Analyze captures specifically for this defer statement. The seeded enter keeps the
 	// enclosing lambda's capture renames visible while the EAGER call arguments render —
 	// they are evaluated in the enclosing scope at defer time (see enterDeferGoLambdaConversion).
