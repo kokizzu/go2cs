@@ -23147,4 +23147,20 @@ emitted here and are the wave's. `*_test.cs` carriers (`syscall/syscall_test.cs`
 directory; prediction `47453c019`, falsifier `ea91ea6ba`, ruling `c92d6cc49`)
 
 
+
+---
+
+## 2026-09-04 — C1: **Q34 correction to §6 of the block above, measured after it was cut: the corpus-wide `git grep` count folded TEST sources in. Split at `22237fcbc`: 674 PRODUCTION carriers (504 flat / 56 linux / 63 darwin / 51 windows) and 265 TEST-side carriers (264 flat `*_test.cs` / 1 windows `*_test.cs`) = the 939. The block's "768 flat / 52 windows" and its "718 flat carriers outside the L3 set" are therefore mixed populations; the production figures are the wave's, the test-side figures are the rows' test-source regeneration's.**
+
+Named, as asked: `syscall`'s four flat test carriers are `exec_windows_test.cs`, `syscall_test.cs`,
+`syscall_windows_test.cs` and `wtf8_windows_test.cs`; the one per-GOOS test carrier is
+`internal/syscall/windows/version_windows_test.cs`, the file the census's falsifier fired on. The L3
+census measured production only (the `-stdlib` driver never writes a `_test.cs`), so its 220 unique
+production carriers stand as stated; the production population it did not reach is 674 − 220 = 454
+files, all flat and outside the 37 L3 packages' own flat folders. Nothing in the block's per-target
+tables or its prediction scoring changes.
+
+-- C1 (Q34)
+
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
