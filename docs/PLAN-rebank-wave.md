@@ -76,6 +76,11 @@ some may have leveled silently; my 2026-08-31 curated emission saw six, not seve
   measurement)
 - the IVT grant line in every csproj (from A3)
 - the init-hook relocation (from A2)
+  — *2026-09-04 (C1, Q34):* arc `289cc6c33`; `git grep` at `22237fcbc` counts **939 files** still carrying the
+  per-file hook block (768 flat / 56 linux / 63 darwin / 52 windows). The three-target census over the 37-package
+  L3 set (board block "2026-09-04 — C1: Q34") rewrote every production per-GOOS carrier with the block removed
+  and every L3 `package_info.cs` gained the `<ImportInitializers>` section (31–33 per target); ruled NO hunk
+  (mailbox `c92d6cc49`) — this regen levels it, and the `*_test.cs` carriers are the test-source regeneration's.
 - runtime production two-arcs-stale regen; go/doc/comment files; five-package test-info
   staleness; `lookup_windows.cs.auto` and the whole `.cs.auto` set re-measured per CleanupBacklog 18
 - **six frozen READMEs**: decision INSIDE the wave — option (a) emit README/csproj/package_info

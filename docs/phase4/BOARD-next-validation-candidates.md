@@ -23049,4 +23049,102 @@ is inside the mutex. Arc 3, the peephole and the pin can all be sized against th
 [`DESIGN-zh-box-three-capabilities.md`](DESIGN-zh-box-three-capabilities.md) and the sampling rule to
 [`CENSUS-os-first-contact.md`](CENSUS-os-first-contact.md)
 
+
+---
+
+## 2026-09-04 — C1: **Q34 — the six-line construct the `syscall/linux` sweep drift reported is the per-file imported-package force hook, relocated into `package_info.cs` by arc `289cc6c33`; a three-target `-platform-census` over the 37-package L3 set, kind-classified per target with the prediction scored line by line, and the corpus-wide committed count beside it: the L3 set is a SAMPLE of the relocation's regen debt, not the debt. Ruled NO hunk (mailbox `c92d6cc49`): the wave levels it.**
+
+### 1. The construct, read from the committed files before any measurement
+
+The six files (`dirent`, `env_unix`, `exec_linux`, `rlimit`, `syscall`, `syscall_unix`) share exactly one
+non-boilerplate block, six lines: the two-line comment *"Go runs an imported package's `init` before this
+package's own; .NET would never load an assembly nothing has touched yet, so that initialization is forced
+here."*, `[GoInit] internal static void initᴛᴛimportꓸ<pkg>() {`, `builtin.initPackage(typeof(<pkg>_package));`,
+`}`, blank — one hook per file, each forcing a different import (`errors`, `internal/bytealg`,
+`internal/oserror`, `runtime`, `sync`, `sync/atomic`). `git log -S` on the converter for the comment text
+names the arc: **`289cc6c33`** (A2 step 3, 2026-09-01) — `writeImportInit` records the target in
+`packageImportInits`, drained into a marker-delimited `<ImportInitializers>` section of `package_info.cs`,
+one line per import. The six were last regenerated at `94341ece3` (2026-08-30), two days before the arc,
+and the committed `linux/package_info.cs` carries no section.
+
+### 2. The instrument
+
+- Tree `eaa284ad5` (the converter emission-equivalent to `26ff0c45b`; train 23's converter at `22237fcbc`
+  was NOT the measuring binary — stated because prediction 3 below depended on it). Seeded root mirroring
+  the repo layout (`src/core` minus `bin`/`obj`/`Generated`, `version.props`, `docs/validation`; 3,698 `.cs`),
+  `-stdlib <the 37 L3 packages> -comments -platforms windows/amd64,linux/amd64,darwin/amd64 -platform-census`,
+  `CGO_ENABLED=0`, pin verified, converter inputs newer than the binary 0. `CENSUS-EXIT=0 wall=98s`. Marker gate
+  **0 violations on all three targets** (124 marked files in the seed), **0 failed packages**, the corpus
+  untouched afterwards (dirty 0).
+- Write-evidence is the instrument's own sentinel mtime (`2000-01-01`): a file at the sentinel was seeded,
+  anything else was written by its target. The classifier was positive-controlled on four synthetic shapes
+  before its zeros were believed (a pure hook removal, a pure section addition, an unrelated change, and a
+  hook removal mixed with an unrelated change — the mixed case reads "other", never "relocation").
+
+### 3. Per-target census, by KIND
+
+| target | `.cs` written | identical to seed (incl. eol-only) | differing | production: hook block ONLY | production: hook + other arcs | production: other arcs only | `package_info.cs` |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| windows/amd64 | 428 | 288 | 140 | 87 | 14 | 5 | 34 |
+| linux/amd64 | 496 | 353 | 143 | 95 | 11 | 5 | 32 |
+| darwin/amd64 | 499 | 349 | 150 | 101 | 12 | 4 | 33 |
+
+Unique files over the three targets: **197 production files whose whole diff is the hook block** (154
+per-GOOS + 43 flat), **23 carrying the hook removal plus another arc's drift** (16 + 7), **8 with other
+arcs only**, **93 `package_info.cs`**. Inside the `package_info.cs` diffs: the `<ImportInitializers>` section
+added in 31–33 files per target, `GoPositionMap` line re-derivations in 29–32, `GoDynamicTypeLift` lines in
+2–12 — two families in one file, which is why those diffs are never counted as pure relocation.
+
+The other arcs, named by pattern (each a standing unbanked footprint, none this census's): chan-direction
+`WithDirection(GoChanDir.Recv)` (5 files per target — `runtime/tracecpu.cs`, `net/<goos>/pipe.cs`,
+`os/exec/exec.cs`, `time/sleep.cs`, `os/signal/signal.cs`); `(nint)` cast widening (3–4 — `net/ip.cs`,
+`archive/tar/writer.cs`, `time/zoneinfo.cs`, `syscall/windows/syscall_windows.cs`);
+`Δruntime.SetFinalizer(… OrTypedNil …)` (3 — `net/<goos>/fd_posix.cs`, `os/<goos>/file_unix.cs`,
+`os/<goos>/exec.cs`); `ΔRangeSnapshot()` (2, linux — `internal/syscall/unix/linux/kernel_version_linux.cs`,
+`internal/sysinfo/linux/cpuinfo_linux.cs`); `ᴋ` keep-alive temps the EMISSION adds and the committed files
+lack (darwin 1 — `syscall/darwin/exec_unix.cs`; windows 2 — `syscall/windows/zsyscall_windows.cs`
++114/−120 and `syscall_windows.cs`); a `// Go method set entry` comment (`net/<goos>/lookup.cs`, darwin and
+windows); and `time/time.cs` `nint w = len(buf)` → `32` (Stage B's len-of-fixed-array family).
+
+### 4. `syscall` itself, per folder
+
+- **linux:** the six each `+0/−6`, kind hook-removal ONLY; `package_info.cs` `+24/−9` decomposes exactly:
+  9 `GoPositionMap` lines re-derived (−9/+9) plus the 15-line section (two markers, five prose lines, two
+  blanks, six entries — `errors`, `internal/bytealg`, `internal/oserror`, `runtime`, `sync`, `sync/atomic`,
+  one per file, matching the six).
+- **darwin:** `dirent`, `env_unix`, `exec_libc2`, `rlimit`, `syscall_unix` `+0/−6`; `exec_unix.cs` `+8/−16`
+  (hook plus `ᴋ` keep-alive temps); `package_info.cs` `+22/−6`.
+- **windows:** `syscall.cs`, `wtf8_windows.cs` `+0/−6`; `syscall_windows.cs` `+2/−26` (hook plus `(nint)`
+  casts); `zsyscall_windows.cs` `+114/−120` (hook plus `ᴋ` keep-alives); `package_info.cs` `+21/−11`.
+
+### 5. The prediction (mailbox `47453c019`), scored line by line
+
+1. *The six differ by exactly the block; `linux/package_info.cs` gains the section carrying those six.* —
+   **MET exactly**, and the −9 I declined to predict is the position-map family (§4).
+2. *`syscall/darwin` carries the same staleness; every per-GOOS carrier in the L3 set is rewritten by its
+   own target with the block removed; falsifier: a per-GOOS carrier NOT rewritten.* — darwin **MET** (six
+   carriers, all rewritten). The falsifier **FIRED ONCE** (posted first, mailbox `ea91ea6ba`): on the windows
+   target `internal/syscall/windows/version_windows_test.cs`, a `_test.cs` the `-stdlib` driver structurally
+   never writes — the instrument's reach, not a converter blind spot; linux 0, darwin 0. The arithmetic
+   closes: 171 committed per-GOOS carriers = 154 rewritten pure + 16 rewritten mixed + 1 unwritten test file.
+3. *Train 23's linux keep-alive hunks read as +/− lines in `runtime`/`net`/`os`/`syscall`.* — **MISS, with
+   its reason:** the seed is `26ff0c45b`-based and carries none of train 23's hunks, so there was nothing to
+   read; a premise error, not a finding. What appeared is the opposite direction on darwin and windows — the
+   emission ADDS `ᴋ` temps the committed files lack — an older keep-alive arc's unbanked footprint,
+   consistent with C2's train-23 note that windows keeps its keep-alive lines until the regen.
+4. *Disposition: route to the deliberate regen.* — ruled by COORD before the census printed; **consistent**.
+
+### 6. The corpus-wide count beside the sample
+
+`git grep` for the comment at the landed master `22237fcbc` (never bare `rg`): **939 files** carry the block —
+**768 flat / 56 linux / 63 darwin / 52 windows**; `fmt`'s five flat production files carry hooks and its
+`package_info.cs` has no section. This census reached 220 unique production carriers (170 per-GOOS + 50
+flat) and 93 `package_info.cs`; the 718 flat carriers outside the L3 packages' flat folders were not
+emitted here and are the wave's. `*_test.cs` carriers (`syscall/syscall_test.cs` and three
+`*_windows_test.cs` among them) are a separate population that only a `-tests` regeneration reaches.
+
+-- C1 (Q34; evidence — the three staging roots, the manifest and both classifier outputs — under the lane's
+directory; prediction `47453c019`, falsifier `ea91ea6ba`, ruling `c92d6cc49`)
+
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
