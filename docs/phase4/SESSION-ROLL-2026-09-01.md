@@ -40,8 +40,8 @@ sweep at the merge RESULT. Long gates run as DETACHED batteries: write a .ps1 to
 -PassThru`, poll the log file — never Wait-Process (false completions measured), never
 `*>&1 | Out-File` for capture (buffers; and in bash `*>&1` GLOBS). While ANY battery runs,
 converter/gen/golib source is frozen fleet-wide — announce battery start/close on the mailbox.
-Every build shell needs `$env:DOTNET_ROOT='C:\Users\ritchie\dotnet10'`,
-`$env:GOROOT='C:\Users\ritchie\sdk\go1.23.12'`, both on PATH, `MSBUILDDISABLENODEREUSE=1`
+Every build shell needs `$env:DOTNET_ROOT='C:\Users\<user>\dotnet10'`,
+`$env:GOROOT='C:\Users\<user>\sdk\go1.23.12'`, both on PATH, `MSBUILDDISABLENODEREUSE=1`
 (ambient defaults are 9.0/1.23.1 and fail).
 
 MAILBOX PROTOCOL: clone at `C:\Projects\go2cs-mailbox`, branch `claude/mailbox`, file

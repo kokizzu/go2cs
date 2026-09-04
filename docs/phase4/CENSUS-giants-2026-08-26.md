@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-26 · **Base:** `4e1a2006b` (master, B2 I1+I2 merge) · **Lane:** `claude/giants-census`
 **Host:** coordinator i7-5820K (6C/12T, Windows 11), three sibling lanes active — all four pipelines run **sequentially**
-**Toolchain:** go1.23.12 (`C:\Users\ritchie\sdk\go1.23.12`), .NET 10 (`C:\Users\ritchie\dotnet10`), `MSBUILDDISABLENODEREUSE=1`
+**Toolchain:** go1.23.12 (`C:\Users\<user>\sdk\go1.23.12`), .NET 10 (`C:\Users\<user>\dotnet10`), `MSBUILDDISABLENODEREUSE=1`
 
 > **This is a RECORD, not a plan and not a bank.** MEASUREMENT ONLY — no converter change, no golib change, no
 > corpus bank. Every tracked file the pipelines touched was classified and restored; the worktree was verified
@@ -39,7 +39,7 @@ Per package, one detached run (turn-boundary reaping defeats an inline child):
 
 ```
 go2cs -tests -test-action all -test-timeout 20m -go2cspath <worktree>\src \
-      C:\Users\ritchie\sdk\go1.23.12\src\<pkg>  <worktree>\src\core\<pkg>
+      C:\Users\<user>\sdk\go1.23.12\src\<pkg>  <worktree>\src\core\<pkg>
 ```
 
 GOROOT passed in the **backslash** spelling `go env GOROOT` returns (the forward-slash form silently misroutes
@@ -496,14 +496,14 @@ should still be fixed opportunistically**, since both are single-site and neithe
 ## 8. Reproduction
 
 ```powershell
-$env:DOTNET_ROOT='C:\Users\ritchie\dotnet10'
-$env:PATH="C:\Users\ritchie\dotnet10;C:\Users\ritchie\sdk\go1.23.12\bin;$env:PATH"
-$env:GOROOT='C:\Users\ritchie\sdk\go1.23.12'      # backslash spelling is load-bearing
+$env:DOTNET_ROOT='C:\Users\<user>\dotnet10'
+$env:PATH="C:\Users\<user>\dotnet10;C:\Users\<user>\sdk\go1.23.12\bin;$env:PATH"
+$env:GOROOT='C:\Users\<user>\sdk\go1.23.12'      # backslash spelling is load-bearing
 $env:MSBUILDDISABLENODEREUSE='1'
 
 # per giant (run SEQUENTIALLY; detach so a turn boundary cannot reap the child)
 go2cs -tests -test-action all -test-timeout 20m -go2cspath <worktree>\src `
-      C:\Users\ritchie\sdk\go1.23.12\src\<pkg>  <worktree>\src\core\<pkg>
+      C:\Users\<user>\sdk\go1.23.12\src\<pkg>  <worktree>\src\core\<pkg>
 
 # counts derived from, per package:
 #   <worktree>\src\core\<pkg>\go2cs_test_comparison.json   (keys: go, csharp)

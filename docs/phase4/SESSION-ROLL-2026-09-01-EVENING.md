@@ -81,8 +81,8 @@ from CreationDate against Get-Date, never an assumed clock (the coordinator kill
 3-minute-old run believing it hours old); read OUTPUT, never exit codes (`$LASTEXITCODE` can be
 stale over a CommandNotFound). Long gates: backgrounded harness tasks; announce battery
 start/close on the mailbox; converter/gen/golib source frozen fleet-wide while any battery runs.
-Every build shell: `$env:DOTNET_ROOT='C:\Users\ritchie\dotnet10'`,
-`$env:GOROOT='C:\Users\ritchie\sdk\go1.23.12'` (backslash spelling verbatim), both on PATH,
+Every build shell: `$env:DOTNET_ROOT='C:\Users\<user>\dotnet10'`,
+`$env:GOROOT='C:\Users\<user>\sdk\go1.23.12'` (backslash spelling verbatim), both on PATH,
 `MSBUILDDISABLENODEREUSE=1`.
 
 MAILBOX PROTOCOL: clone at `C:\Projects\go2cs-mailbox` (recreate single-branch from origin if

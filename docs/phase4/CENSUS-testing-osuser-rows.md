@@ -7,8 +7,8 @@ clean at the end (`git status` empty, build output purged).
 |:--|:--|
 | Host | i7-5820K (6C/12T, 32 GB), Windows 11 Enterprise 10.0.26100 |
 | Tree | isolated worktree, detached at `648cd743c` (= `origin/master` tip at fetch) |
-| Go | `go1.23.12 windows/amd64`, `GOROOT=C:\Users\ritchie\sdk\go1.23.12` |
-| .NET | SDK `10.0.400`, `DOTNET_ROOT=C:\Users\ritchie\dotnet10` |
+| Go | `go1.23.12 windows/amd64`, `GOROOT=C:\Users\<user>\sdk\go1.23.12` |
+| .NET | SDK `10.0.400`, `DOTNET_ROOT=C:\Users\<user>\dotnet10` |
 | Converter | built this session from the worktree; `go version go2cs.exe` → `go1.23.12` |
 | Roster at measurement | **200 / 215 testable packages — 93.0%** |
 
@@ -73,7 +73,7 @@ of them fired here, which is what a clean Windows oracle looks like.
 
 ```
 go2cs.exe -tests -test-action all -test-timeout 15m -go2cspath <wt>\src \
-          C:\Users\ritchie\sdk\go1.23.12\src\os\user  <wt>\src\core\os\user
+          C:\Users\<user>\sdk\go1.23.12\src\os\user  <wt>\src\core\os\user
 ```
 
 Elapsed **126.9 s**, exit **1**. `go2cs_test_comparison.json`:

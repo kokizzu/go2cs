@@ -48,7 +48,7 @@ user-local per §2(1).
 
 | | value |
 |:--|:--|
-| Side-by-side root | `C:\Users\rcarroll\dotnet10` |
+| Side-by-side root | `C:\Users\<user>\dotnet10` |
 | SDK installed | **10.0.400** |
 | Host it carries | 10.0.11 x64 |
 | Machine default AFTER (untouched, §2(1)) | `dotnet --version` → **9.0.317** |
@@ -83,7 +83,7 @@ neither of R's two invocation traps applied here).
 
 | | value |
 |:--|:--|
-| Side-by-side root | `C:\Users\rcarroll\dotnet10` |
+| Side-by-side root | `C:\Users\<user>\dotnet10` |
 | SDK installed | **10.0.400** |
 | Host it carries | 10.0.11 x64 (NETCore.App + AspNetCore.App + WindowsDesktop.App 10.0.11) |
 | Machine default AFTER (untouched, §2(1)) | `dotnet --version` → **9.0.317** |
@@ -112,7 +112,7 @@ Provisioned 2026-08-24. Commands per *The commands* above, PowerShell native.
 
 | | value |
 |:--|:--|
-| Side-by-side root | `C:\Users\ritchie\dotnet10` (account `ritchie` — the root is derived from `$env:USERPROFILE`, not copied from a sibling row) |
+| Side-by-side root | `C:\Users\<user>\dotnet10` (account `<user>` — the root is derived from `$env:USERPROFILE`, not copied from a sibling row) |
 | SDK installed | **10.0.400** |
 | Host it carries | 10.0.11 x64 (NETCore.App + AspNetCore.App + WindowsDesktop.App 10.0.11) |
 | Machine default AFTER (untouched, §2(1)) | `dotnet --version` → **9.0.317** |
@@ -199,7 +199,7 @@ H1 step 1 says *"confirm `GOROOT/VERSION` reads the exact target."* On R's Windo
 obeys a `GOTOOLCHAIN` pin ahead of whatever binary you invoke:
 
 ```
-C:\Users\rcarroll\AppData\Roaming\go\env  contains  GOTOOLCHAIN=go1.23.1
+C:\Users\<user>\AppData\Roaming\go\env  contains  GOTOOLCHAIN=go1.23.1
 
 sdk\go1.23.12\VERSION              -> go1.23.12      (the file H1 asks about: CORRECT)
 sdk\go1.23.12\bin\go.exe version   -> go1.23.1       (what actually runs: THE OLD TOOLCHAIN)
@@ -227,10 +227,10 @@ installed" insufficient as provisioning evidence, in opposite directions.
 
 | | value |
 |:--|:--|
-| Side-by-side root | `C:\Users\rcarroll\sdk\go1.23.12` (via `golang.org/dl/go1.23.12`, user-local `GOBIN` shim) |
+| Side-by-side root | `C:\Users\<user>\sdk\go1.23.12` (via `golang.org/dl/go1.23.12`, user-local `GOBIN` shim) |
 | `VERSION` file | `go1.23.12` |
 | **Actually runs** | `go1.23.1` **unless `GOTOOLCHAIN` is set** — see above; with `GOTOOLCHAIN=go1.23.12`, `go version` → `go1.23.12` |
-| Machine default AFTER (untouched) | `go version` → **go1.23.1**, `GOROOT` → `C:\Users\rcarroll\sdk\go1.23.1` |
+| Machine default AFTER (untouched) | `go version` → **go1.23.1**, `GOROOT` → `C:\Users\<user>\sdk\go1.23.1` |
 | Pre-existing SDKs (before) | `sdk\go1.23.1` only |
 | `GOTOOLCHAIN` | `go1.23.1`, pinned in `%APPDATA%\go\env` — **left in place** |
 
