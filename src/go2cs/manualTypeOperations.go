@@ -161,6 +161,18 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// mprof, netpoll and debuglog, so the first call into any of them dies. See
 		// docs/phase4/DESIGN-darwin-run-layer-1.md.
 		"nanotime1": goosDarwin,
+		// The darwin signal-note primitives (increment 4 of the darwin run layer, 2026-09-03): the
+		// converted pipe hands the keystone the address of a managed [2]int32 (refused by name --
+		// `field m_array of array`1 is a Int32[]`), and the converted read/write1 hand it the address
+		// of `fd` ALONE (Go's ABI0 frame trick: the three args are contiguous stack slots), so the
+		// dispatcher's pointee walk places ONE register and libc receives junk for the buffer and
+		// the length -- which also mutes every darwin runtime throw, since writeErr writes through
+		// write1. runtime/darwin/sys_darwin_signote_impl.cs realizes the three over DllImport("libc")
+		// with a native fd pair for pipe and the pinned buffer address for read/write; sized so the
+		// keystone's per-symbol layout record can replace them later with the same placeholders.
+		"pipe":   goosDarwin,
+		"read":   goosDarwin,
+		"write1": goosDarwin,
 		// runtime.libcCall — darwin's dispatch bottom: every libc trampoline in sys_darwin.cs is reached
 		// through libcCall(FuncPCABI0(x_trampoline), &args). Its converted body opens with getg() and
 		// ends in asmcgocall, four bodyless intrinsics with no implementing part anywhere (the

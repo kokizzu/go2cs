@@ -411,25 +411,11 @@ internal static void mlock(@unsafe.Pointer addrʗp, uintptr n) {
 
 internal static partial void mlock_trampoline();
 
-//go:nosplit
-//go:cgo_unsafe_args
-internal static int32 read(int32 fdʗp, @unsafe.Pointer Δp, int32 n) {
-    ref var fd = ref heap(fdʗp, out var Ꮡfd);
-
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(read_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡfd));
-    KeepAlive(Δp);
-    return ret;
-}
+// go2cs generated this placeholder — func read is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static partial void read_trampoline();
 
-internal static (int32 r, int32 w, int32 errno) pipe() {
-    int32 errno = default!;
-
-    ref var Δp = ref heap(new array<int32>(2), out var Ꮡp);
-    errno = libcCall((@unsafe.Pointer)abi.FuncPCABI0(pipe_trampoline), (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡp)));
-    return (Δp[0], Δp[1], errno);
-}
+// go2cs generated this placeholder — func pipe is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static partial void pipe_trampoline();
 
@@ -474,15 +460,7 @@ internal static void usleep_no_g(uint32 usecʗp) {
     asmcgocall_no_g((@unsafe.Pointer)abi.FuncPCABI0(usleep_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡusec));
 }
 
-//go:nosplit
-//go:cgo_unsafe_args
-internal static int32 write1(uintptr fdʗp, @unsafe.Pointer Δp, int32 n) {
-    ref var fd = ref heap(fdʗp, out var Ꮡfd);
-
-    var ret = libcCall((@unsafe.Pointer)abi.FuncPCABI0(write_trampoline), @unsafe.Pointer.FromBox(Ꮡfd));
-    KeepAlive(Δp);
-    return ret;
-}
+// go2cs generated this placeholder — func write1 is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static partial void write_trampoline();
 
