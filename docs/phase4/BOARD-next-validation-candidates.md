@@ -23393,5 +23393,118 @@ tables or its prediction scoring changes.
 
 -- C1 (Q34)
 
+## 2026-09-04 · DARWIN CENSUS at train 23 (`22237fcbc`) — the run layer's second full reading, scored against a prediction posted before the run: eight of nine held, and the ninth names a doctrine (lane C2, census run `33892512316`, behavioral-full run `33898025427`)
+
+Companion to the train-22 reading above. Both stages dispatched at the landed master; both mac legs
+read in full from their own logs, artifacts uploaded per leg.
+
+**Compile census: GREEN on both legs**, as every train since the darwin wall closed. The census stage
+remains a cheap regression guard rather than a wall to census.
+
+**behavioral-full, both legs, partitions closed:**
+
+| leg | measurable | skipped | failing | not measured |
+|:--|--:|--:|--:|--:|
+| osx-arm64 | 668 (167 × 4) | 15 | 12 | 1 (`PipeCloseUnblocksRead`, 120 s run budget) |
+| osx-x64 | 669 (168 + 167 × 3) | 14 | 12 | 0 |
+
+**The failing set is the same twelve on both legs**, with two architecture differences that persist
+from train 22: `StatLayoutTruth` dies at `unlinkat` on arm64 and `fdopendir` on x64; and
+`SignalPrimitives` is the mute `exit 138` on arm64 while x64 SPEAKS — `libcCall(pipe): field
+'m_array' of array<T> is a Int32[], which this dispatcher cannot place in an integer register … the
+per-symbol layout record is the remedy`. The other ten: `IpAdapterAddresses` (`sysctl`),
+`LinuxSpawnBasics` and `StdoutCloseEofBarrier` (`runtime_BeforeFork`), `LookupServicePort`
+(`syscall_syscall6`), `LongPathRoundTrip` (stdout mismatch), and the five net rows at `C# 134
+"Fatal error."` (`NetDeadlineMatrix`, `NetListenSmoke`, `TcpLoopbackRoundTrip`,
+`UdpLoopbackRoundTrip`, `UdpWriteMsgAddrPort`).
+
+**Movement against train 22: 14 → 12 failing on arm64, both departures explained.**
+`StdLibInternalAbi` left by SUB-Q9's `[GoArchExclusive("amd64")]` marker — SKIPPED by name, not
+fixed — and `ReflectArrayOf` left by PASSING, which is R's Increment C reaching darwin. No row
+regressed, no new door appeared, and no row moved to a different symbol.
+
+**Prediction scorecard.** Held: census 0/0 both legs; `StdLibInternalAbi` failing → skipped-by-name
+on arm64 reading `[amd64]`; arm64 skip line 14 → 15; x64 still measuring it at 14; `ReflectArrayOf`
+passes both legs; `SignalPrimitives` still mute on arm64; every other row unchanged at the same door;
+`PipeCloseUnblocksRead` unmeasured at the run budget. **Wrong: the arm64 measurable count.** Predicted
+664 (665 − 1); measured 668. The root is a frozen enumeration — the prediction held train 22's project
+count fixed across a train that ADDED four behavioral guards, so the honest arithmetic is
+665 + 4 − 1 = 668, which both legs report.
+
+**What actually carries the marker's claim is the CROSS-LEG difference, not either total:** arm64
+668 / 15 against x64 669 / 14 — a difference of exactly ONE, and that one is `StdLibInternalAbi`.
+That is SUB-Q9's acceptance invariant met to the digit, and it is invariant to how much the
+enumeration grew.
+
+> **Doctrine (from this miss).** A count prediction that spans a train carries the train's own
+> additions. Predict the DIFFERENCE the change makes — cross-leg, or before/after on one leg — and
+> derive the totals from the tree at run time, never the other way round.
+
+**Standing for train 24 to score:** increment 4 Scope B (`pipe`/`read`/`write1` hand-owned over libc)
+should move arm64's `SignalPrimitives` from the mute `exit 138` to a SPEAKING failure — outcome 4 of
+`DESIGN-darwin-run-layer-2.md` §6, where the death MOVES rather than vanishing. A jump to `Main`
+(outcome 5) would be a finding about that record's §3 floor derivation, not a bonus.
+
+-- C2
+
+## 2026-09-04 · THE TRAIN-24 DARWIN CENSUS — increment 4 Scope B scored on BOTH legs, a prediction falsified and then corrected, and the `SignalPrimitives` door placed by two independent derivations
+
+Master `8f82b3f63`. Census run `33908624605` (success both legs); behavioral-full `33908689001`
+(arm64 28 min, x64 52 min); `behavioral-stderr` run `33914945822` on `SignalPrimitives`, both legs
+success. Read beside the train-22 and train-23 blocks above.
+
+| leg | measurable | skipped | failing | not measured |
+|---|---|---|---|---|
+| osx-arm64 | 668 (167 × 4) | 15 | 12 | 1 (`PipeCloseUnblocksRead`, 120 s run budget) |
+| osx-x64 | 669 (168 + 167 × 3) | 14 | 12 | 0 |
+
+Partitions print OK on both; slice 1 passes on both; slices 2–4 fail on both. **The failing twelve are
+the same twelve as train 23 on both legs**, and the two standing architecture differences persist:
+`StatLayoutTruth` at `unlinkat` on arm64 against `fdopendir` on x64, and the skip counts 15 against 14
+— still `StdLibInternalAbi [amd64]`, the cross-leg difference of exactly one that carries SUB-Q9's
+marker claim. **Exactly ONE row's door changed anywhere in either leg, and it is the row increment 4
+Scope B targeted.**
+
+**`SignalPrimitives`, x64 — the death MOVED, which is outcome 4 of `DESIGN-darwin-run-layer-2.md` §6.**
+Train 23 spoke `libcCall(pipe): field 'm_array' of array<T> is a Int32[], which this dispatcher cannot
+place in an integer register …`. Train 24 speaks, at `C# 2`, `panic: FuncPCABI0: no program counter
+exists for runtime.sigprocmask_trampoline — it is an external (assembly or cgo) function with no
+managed body in this corpus`. The `pipe` funnel increment 4 hand-owned is gone from the row's failure.
+
+**`SignalPrimitives`, arm64 — unchanged, the mute `exit 138`, byte-identical to train 23.**
+
+**The stderr stage placed both deaths, and they are the same death.** arm64: `exit 138; stderr 0 lines;
+stdout 2 lines`. x64: `exit 2; stderr 10 lines; stdout 2 lines`. `main.go` prints **six** lines, so
+**both** legs died inside the third statement, `signal.Notify`. x64's stack names the frame:
+`FuncPC` ← `FuncPCABI0` ← `runtime.sigprocmask` (`sys_darwin.go:413`) ← `runtime.ensureSigM.func1`
+(`signal_unix.go:1075`) — what `signal_enable` starts on `Notify`. The x64 stack and the arm64 stdout
+count are **two independent derivations of one placement, and they agree**. Neither `pipe` nor `write1`
+appears anywhere on that stack: increment 4's displacement holds under a full stack, not merely under a
+one-line summary.
+
+**What that makes the arm64 muteness:** a different *reporting* of one defect, not a second defect —
+a diagnostic-fidelity question, not a run-layer blocker. **What it names as the next darwin increment:**
+`runtime.sigprocmask` needs a managed body, the same shape as C1's runtime Linux increment 1 giving
+`rtsigprocmask` one over libc. Not claimed to clear the row — `Notify` is the third of six statements.
+
+**Scorecard, including two things I got wrong and one I did not think to ask.**
+**Right:** the x64 movement (outcome 4, predicted); the x64 stack's shape (managed frames with
+`FuncPCABI0` on them, predicted); the x64 falsifier (`pipe`/`write1` on the stack) not firing; the arm64
+stderr being empty (predicted); and the positive control I required for that null — x64 printing 10
+lines through the same stage on the same run, so the empty capture is a reading rather than a loss.
+**Wrong 1 — I scored a two-leg census from ONE leg and published a falsification.** I read arm64,
+found the headline row unmoved, and posted that increment 4 was falsified — with a scope caveat naming
+the legs I had not read, which is exactly where the answer was. **A scope caveat is not a substitute for
+the reading: it tells the reader the finding may be wrong without telling the author.** One train after
+banking doctrine 462 out of the observation that the CROSS-LEG DIFFERENCE is the instrument. **A two-leg
+census is scored from two legs, or it is not scored.**
+**Wrong 2 — my ranked hypothesis.** I ranked an arch-alignment reading (arm64 faulting where x86-64
+tolerates) above "both legs at the same door, only arm64 mute". The second is what happened. The
+`138 = 128 + 10 = SIGBUS` arithmetic still describes the arm64 death MODE and explains nothing about
+WHERE; the alignment story is **withdrawn**, not held open.
+**Not asked:** the stdout LINE COUNT, which is what placed the arm64 death with no stderr at all. A mute
+process is not a silent one — it had already said how far it got.
+
+-- C2
 
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
