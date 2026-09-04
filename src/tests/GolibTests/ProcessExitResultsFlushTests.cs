@@ -133,4 +133,36 @@ public class ProcessExitResultsFlushTests
         Assert.AreEqual(completionHash, Hash(resultFile), "the exit flush overwrote a record the completion path had already written");
         Assert.AreEqual(0, reporter.Events.Count, "the exit flush reported an event after a completed run");
     }
+
+    // The flush writes NOTHING to the console, in either reporter mode. Go's binary prints nothing on
+    // os.Exit, and a helper process re-executed by os/exec's tests has its stdout read back by the test
+    // that spawned it: the first form of this flush printed a `PASS ... exit status 0` line there and
+    // failed twenty of os/exec's verdicts on a control run (2026-09-04). Positive control: the flush
+    // reporting through the printing path -> RED.
+    [TestMethod]
+    public void TheFlushWritesNothingToTheConsole()
+    {
+        foreach (bool json in new[] { false, true })
+        {
+            (_, TestRegistry registry, TestOptions options, _, _) = NewHost();
+            TestReporter reporter = new("guard", json: json, verbose: false);
+            TextWriter original = Console.Out;
+            using StringWriter captured = new();
+
+            Console.SetOut(captured);
+
+            try
+            {
+                TestHost.ResetResultsLatchForGuard();
+                TestHost.FlushResultsOnProcessExitForGuard(reporter, registry, options, 3);
+            }
+            finally
+            {
+                Console.SetOut(original);
+            }
+
+            Assert.AreEqual("", captured.ToString(), $"the exit flush wrote to stdout (json={json}) -- a re-executed helper's output is read back by the test that spawned it");
+            Assert.AreEqual(1, reporter.Events.Count, "the exit's terminal event must still be RECORDED");
+        }
+    }
 }

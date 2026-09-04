@@ -1151,7 +1151,14 @@ public static class TestHost
 
         try
         {
-            reporter.ReportPackage(code == 0 ? "pass" : "fail", output: $"exit status {code}: the process ended before the host completed (os.Exit)");
+            // RECORDED, never printed: the binary's stdout must stay what the converted program left
+            // there. A helper process re-executed by os/exec's tests has its stdout read back by the
+            // test that spawned it, and the first form of this flush -- ReportPackage, which prints --
+            // appended `PASS ... exit status 0 ...` to every helper's output and failed twenty of
+            // os/exec's verdicts on a control run (2026-09-04). Go's binary prints nothing on os.Exit;
+            // the `fail` action a non-zero status implies is `go test`'s to append, and here the
+            // comparison derives it from the exit status exactly as `go test` does.
+            reporter.RecordPackage(code == 0 ? "pass" : "fail", output: $"exit status {code}: the process ended before the host completed (os.Exit)");
             WriteResults(options.ResultFile, registry.Package, options, reporter.Events);
             WriteJUnit(options.JUnitFile, registry.Package, reporter.Events);
         }
