@@ -350,6 +350,7 @@
     <Project Path="tests/Behavioral/ComplexImaginaryShadow/ComplexImaginaryShadow.csproj" />
     <Project Path="tests/Behavioral/CombinedStructFields/CombinedStructFields.csproj" />
     <Project Path="tests/Behavioral/CompositeElementStringConcat/CompositeElementStringConcat.csproj" />
+    <Project Path="tests/Behavioral/CompositeLiteralElements/CompositeLiteralElements.csproj" />
     <Project Path="tests/Behavioral/ConstShadowsParam/ConstShadowsParam.csproj" />
     <Project Path="tests/Behavioral/ConstSubexprOverflow/ConstSubexprOverflow.csproj" />
     <Project Path="tests/Behavioral/ConstrainedSliceParamInPlace/ConstrainedSliceParamInPlace.csproj" />

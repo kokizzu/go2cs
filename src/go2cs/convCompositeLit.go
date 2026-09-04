@@ -137,6 +137,33 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 		// element-list ctor — `new slice<lockRank>(a, b, …)` is CS1729. Emit the element-array
 		// projection (`new lockRank[]{…}.slice()` / `.array()`) for those, matching the typed path.
 		if inferred := v.info.TypeOf(compositeLit); inferred != nil {
+			// Go lets a composite literal elide the `&T` of an element (or map value) whose type is
+			// `*T` — `[]*[4]byte{{}}` IS `[]*[4]byte{&[4]byte{}}` — so an elided literal can arrive
+			// here with a POINTER inferred type. The `*types.Pointer` arm below renders the STRUCT
+			// pointee, whose generated constructor takes the field values; an ARRAY, SLICE or MAP
+			// pointee has no such constructor, matched no arm, and fell out of the switch onto the
+			// struct-ctor fallback below — emitting a bare `new()` against the ABSTRACT `ж<T>`
+			// (golib's box), i.e. CS0144, for a literal the explicit `&[4]byte{}` spelling converts
+			// and compiles. Render the POINTEE through the arm that already renders that shape and
+			// take its address, which is what the struct arm does one level up.
+			//
+			// A NAMED pointee is deliberately excluded: its construction goes through the generated
+			// wrapper type, not the structural `array<T>`/`slice<T>`/`map<K,V>` projection these arms
+			// emit, so wrapping that projection would hand a `ж<array<byte>>` to a `ж<row>` slot. The
+			// EXPLICIT `&row{}` spelling reaches the same emission through the typed path, so the two
+			// spellings agree — the named case is one shape for both, not an elision defect.
+			addrOf := func(expr string) string { return expr }
+
+			if ptr, isPtr := inferred.Underlying().(*types.Pointer); isPtr {
+				if _, isNamed := types.Unalias(ptr.Elem()).(*types.Named); !isNamed {
+					switch ptr.Elem().Underlying().(type) {
+					case *types.Array, *types.Slice, *types.Map:
+						inferred = ptr.Elem()
+						addrOf = func(expr string) string { return fmt.Sprintf("%s(%s)", AddressPrefix, expr) }
+					}
+				}
+			}
+
 			switch u := inferred.Underlying().(type) {
 			case *types.Slice:
 				csElem := convertToCSTypeName(v.getAliasQualifiedTypeName(u.Elem(), false))
@@ -145,19 +172,32 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 				// initializer below cannot take the Go `key: value` keyed syntax (CS1003 cascade).
 				// Mirrors the typed slice sparse-array path (see keyValueSource==ArraySource below).
 				if compositeLitIsKeyed(compositeLit.Elts) {
-					return fmt.Sprintf("new golib.SparseArray<%s>{%s}.slice()", csElem, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, sparseArrayCompositeContext(inferred, compositeLit.Elts)))
+					return addrOf(fmt.Sprintf("new golib.SparseArray<%s>{%s}.slice()", csElem, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, sparseArrayCompositeContext(inferred, compositeLit.Elts))))
 				}
-				return fmt.Sprintf("new %s[]{%s}.slice()", csElem, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, v.withValueCloneArgs(compositeLit.Elts, v.elidedPointerElemContext(u.Elem(), compositeLit.Elts))))
+				return addrOf(fmt.Sprintf("new %s[]{%s}.slice()", csElem, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, v.withValueCloneArgs(compositeLit.Elts, v.elidedPointerElemContext(u.Elem(), compositeLit.Elts)))))
 			case *types.Array:
 				csElem := convertToCSTypeName(v.getAliasQualifiedTypeName(u.Elem(), false))
 				// An ELIDED array literal is still `[N]T` long, so its projection carries the
 				// declared length whenever the literal writes fewer elements — the same zero-fill
 				// rule the typed path applies below (see the padding comment there). A KEYED
 				// elided literal always needs it: SparseArray's own extent is `max index + 1`.
-				elidedArrayLen := ""
+				//
+				// The length ALONE is not enough, for the same reason the typed path below spells
+				// out: when the element's own zero value must be CONSTRUCTED — another unnamed
+				// fixed array (`[][2][3]int{{}}`, whose inner length lives only in the Go type and
+				// never in `array<T>`) or a struct whose fixed-array field initializer runs only
+				// inside a declared constructor — padding with `default(T)` sizes the OUTER
+				// dimension and leaves every zero-filled element unusable storage: `len(x[0][0])`
+				// reported 0 where Go says 3, and reflect measured `[2][0]`. This arm was the one
+				// renderer of the four `arrayLengthArgs` documents that never carried the factory,
+				// so the ELIDED and TYPED spellings of one Go type disagreed — exactly the split
+				// that fix closed between the literal and the declaration. Reuse that ladder rather
+				// than a second copy of the rule; the factory is empty for every element whose
+				// `default(T)` is already the Go zero value, so every existing golden is unchanged.
+				elidedArrayArgs := ""
 
 				if int64(len(compositeLit.Elts)) < u.Len() {
-					elidedArrayLen = strconv.FormatInt(u.Len(), 10)
+					elidedArrayArgs = arrayLengthArgs(strconv.FormatInt(u.Len(), 10), v.arrayElemFactory(u.Elem()))
 				}
 
 				// A KEYED elided ARRAY literal — the inner `{joiningL: stateBefore, …}` of a
@@ -165,9 +205,9 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 				// Same SparseArray treatment as the slice case; `.array()` materializes the dense
 				// fixed-length backing, matching the typed array sparse path.
 				if compositeLitIsKeyed(compositeLit.Elts) {
-					return fmt.Sprintf("new golib.SparseArray<%s>{%s}.array(%s)", csElem, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, sparseArrayCompositeContext(inferred, compositeLit.Elts)), strconv.FormatInt(u.Len(), 10))
+					return addrOf(fmt.Sprintf("new golib.SparseArray<%s>{%s}.array(%s)", csElem, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, sparseArrayCompositeContext(inferred, compositeLit.Elts)), arrayLengthArgs(strconv.FormatInt(u.Len(), 10), v.arrayElemFactory(u.Elem()))))
 				}
-				return fmt.Sprintf("new %s[]{%s}.array(%s)", csElem, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, v.withValueCloneArgs(compositeLit.Elts, v.elidedPointerElemContext(u.Elem(), compositeLit.Elts))), elidedArrayLen)
+				return addrOf(fmt.Sprintf("new %s[]{%s}.array(%s)", csElem, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, v.withValueCloneArgs(compositeLit.Elts, v.elidedPointerElemContext(u.Elem(), compositeLit.Elts))), elidedArrayArgs))
 			case *types.Pointer:
 				// An untyped composite whose inferred type is `*Struct` — the `[]*T{ {…} }` shorthand
 				// for `&T{…}` (e.g. runtime's `dbgvars = []*dbgVar{ {name, &debug.x}, … }`). Emit the
@@ -225,7 +265,7 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 				keyCS := convertToCSTypeName(v.getAliasQualifiedTypeName(u.Key(), false))
 				valCS := convertToCSTypeName(v.getAliasQualifiedTypeName(u.Elem(), false))
 
-				return fmt.Sprintf("new map<%s, %s>{%s}", keyCS, valCS, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, mapContext))
+				return addrOf(fmt.Sprintf("new map<%s, %s>{%s}", keyCS, valCS, v.convExprList(compositeLit.Elts, compositeLit.Lbrace, mapContext)))
 			}
 		}
 

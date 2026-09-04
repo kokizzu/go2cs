@@ -283,6 +283,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckCompositeElementStringConcat() => CheckTarget("CompositeElementStringConcat");
 
     [TestMethod]
+    public void CheckCompositeLiteralElements() => CheckTarget("CompositeLiteralElements");
+
+    [TestMethod]
     public void CheckConstShadowsParam() => CheckTarget("ConstShadowsParam");
 
     [TestMethod]
