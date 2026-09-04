@@ -80,36 +80,7 @@ internal static bool incref(this ж<fdMutex> Ꮡmu) {
     }
 }
 
-// increfAndClose sets the state of mu to closed.
-// It returns false if the file was already closed.
-internal static bool increfAndClose(this ж<fdMutex> Ꮡmu) {
-    while (ᐧ) {
-        var old = atomic.LoadUint64(Ꮡmu.of(fdMutex.Ꮡstate));
-        if ((uint64)(old & (uint64)mutexClosed) != 0) {
-            return false;
-        }
-        // Mark as closed and acquire a reference.
-        var @new = ((uint64)(old | (uint64)mutexClosed)) + (uint64)mutexRef;
-        if ((uint64)(@new & (uint64)mutexRefMask) == 0) {
-            throw panic(overflowMsg);
-        }
-        // Remove all read and write waiters.
-        @new &= unchecked((uint64)~(uint64)((uint64)((uint64)mutexRMask | (uint64)mutexWMask)));
-        if (atomic.CompareAndSwapUint64(Ꮡmu.of(fdMutex.Ꮡstate), old, @new)) {
-            // Wake all read and write waiters,
-            // they will observe closed flag after wakeup.
-            while ((uint64)(old & (uint64)mutexRMask) != 0) {
-                old -= mutexRWait;
-                runtime_Semrelease(Ꮡmu.of(fdMutex.Ꮡrsema));
-            }
-            while ((uint64)(old & (uint64)mutexWMask) != 0) {
-                old -= mutexWWait;
-                runtime_Semrelease(Ꮡmu.of(fdMutex.Ꮡwsema));
-            }
-            return true;
-        }
-    }
-}
+// go2cs generated this placeholder — func increfAndClose is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // decref removes a reference from mu.
 // It reports whether there is no remaining reference.
@@ -126,90 +97,9 @@ internal static bool decref(this ж<fdMutex> Ꮡmu) {
     }
 }
 
-// lock adds a reference to mu and locks mu.
-// It reports whether mu is available for reading or writing.
-internal static bool rwlock(this ж<fdMutex> Ꮡmu, bool read) {
-    uint64 mutexBit = default!;
-    uint64 mutexWait = default!;
-    uint64 mutexMask = default!;
-    ж<uint32> mutexSema = default!;
-    if (read){
-        mutexBit = mutexRLock;
-        mutexWait = mutexRWait;
-        mutexMask = mutexRMask;
-        mutexSema = Ꮡmu.of(fdMutex.Ꮡrsema);
-    } else {
-        mutexBit = mutexWLock;
-        mutexWait = mutexWWait;
-        mutexMask = mutexWMask;
-        mutexSema = Ꮡmu.of(fdMutex.Ꮡwsema);
-    }
-    while (ᐧ) {
-        var old = atomic.LoadUint64(Ꮡmu.of(fdMutex.Ꮡstate));
-        if ((uint64)(old & (uint64)mutexClosed) != 0) {
-            return false;
-        }
-        uint64 @new = default!;
-        if ((uint64)(old & mutexBit) == 0){
-            // Lock is free, acquire it.
-            @new = ((uint64)(old | mutexBit)) + (uint64)mutexRef;
-            if ((uint64)(@new & (uint64)mutexRefMask) == 0) {
-                throw panic(overflowMsg);
-            }
-        } else {
-            // Wait for lock.
-            @new = old + mutexWait;
-            if ((uint64)(@new & mutexMask) == 0) {
-                throw panic(overflowMsg);
-            }
-        }
-        if (atomic.CompareAndSwapUint64(Ꮡmu.of(fdMutex.Ꮡstate), old, @new)) {
-            if ((uint64)(old & mutexBit) == 0) {
-                return true;
-            }
-            runtime_Semacquire(mutexSema);
-        }
-    }
-}
+// go2cs generated this placeholder — func rwlock is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// The signaller has subtracted mutexWait.
-
-// unlock removes a reference from mu and unlocks mu.
-// It reports whether there is no remaining reference.
-internal static bool rwunlock(this ж<fdMutex> Ꮡmu, bool read) {
-    uint64 mutexBit = default!;
-    uint64 mutexWait = default!;
-    uint64 mutexMask = default!;
-    ж<uint32> mutexSema = default!;
-    if (read){
-        mutexBit = mutexRLock;
-        mutexWait = mutexRWait;
-        mutexMask = mutexRMask;
-        mutexSema = Ꮡmu.of(fdMutex.Ꮡrsema);
-    } else {
-        mutexBit = mutexWLock;
-        mutexWait = mutexWWait;
-        mutexMask = mutexWMask;
-        mutexSema = Ꮡmu.of(fdMutex.Ꮡwsema);
-    }
-    while (ᐧ) {
-        var old = atomic.LoadUint64(Ꮡmu.of(fdMutex.Ꮡstate));
-        if ((uint64)(old & mutexBit) == 0 || (uint64)(old & (uint64)mutexRefMask) == 0) {
-            throw panic("inconsistent poll.fdMutex");
-        }
-        // Drop lock, drop reference and wake read waiter if present.
-        var @new = ((uint64)(old & ~mutexBit)) - (uint64)mutexRef;
-        if ((uint64)(old & mutexMask) != 0) {
-            @new -= mutexWait;
-        }
-        if (atomic.CompareAndSwapUint64(Ꮡmu.of(fdMutex.Ꮡstate), old, @new)) {
-            if ((uint64)(old & mutexMask) != 0) {
-                runtime_Semrelease(mutexSema);
-            }
-            return (uint64)(@new & ((uint64)((uint64)mutexClosed | (uint64)mutexRefMask))) == mutexClosed;
-        }
-    }
-}
+// go2cs generated this placeholder — func rwunlock is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Implemented in runtime package.
 internal static partial void runtime_Semacquire(ж<uint32> sema);
