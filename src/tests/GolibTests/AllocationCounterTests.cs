@@ -278,20 +278,31 @@ public class AllocationCounterTests
         // the one direction that could turn a passing assert into a failing one.
         const long MinimumObjectBytes = 24L;
 
+        // Every shape hands its result to AllocationProbe.Escape rather than discarding it, and at
+        // the configuration validation runs under that is what keeps this a measurement rather than
+        // a false alarm. Release with tiering OFF is fully optimized from the first call, so .NET's
+        // escape analysis removes an allocation whose object never leaves the lambda — and the
+        // BYTES side of this invariant is the side that then under-reports while golib's CHARGE
+        // stays exactly what it was. Measured at TC0 before the escapes: `ж<long>` charged its two
+        // objects (box + eager pinnable slot) against only 32 B reaching the heap — the slot array
+        // alone, the box elided — and this assertion reported an over-charge that does not exist.
+        // The direction matters: a stack-allocated object can only ever make `objects * 24 > bytes`
+        // MORE likely, so an unescaped table produces phantom violations, never hides real ones.
+        // See AllocationProbe for the isolated measurement (0 B vs 56 B on one build).
         (string what, Action action)[] shapes =
         [
-            ("@string(string)",   () => { @string _ = new("a literal reaching @string"); }),
-            ("@string(char[])",   () => { @string _ = new(new[] { 'g', 'o' }); }),
-            ("s + t",             () => { @string _ = new @string("left") + new @string("right"); }),
-            ("[]byte(s)",         () => { slice<byte> _ = new @string("convert me"); }),
-            ("string(b)",         () => { @string _ = new(new slice<byte>(4)); }),
-            ("ToString()",        () => { string _ = new @string("materialize").ToString(); }),
-            ("ToRunes()",         () => { rune[] _ = new @string("räng").ToRunes(); }),
-            ("for range s",       () => { foreach ((nint _, rune _) in new @string("räng")) { } }),
-            ("ж<long>",           () => { ж<long> _ = new StandardBox<long>(42L); }),
-            ("make([]byte, n)",   () => { slice<byte> _ = new(s_sliceLength); }),
-            ("make(map)",         () => { map<@string, nint> _ = new(); }),
-            ("make(chan, 4)",     () => { channel<nint> _ = new(4); })
+            ("@string(string)",   () => { @string v = new("a literal reaching @string"); AllocationProbe.Escape(v); }),
+            ("@string(char[])",   () => { @string v = new(new[] { 'g', 'o' }); AllocationProbe.Escape(v); }),
+            ("s + t",             () => { @string v = new @string("left") + new @string("right"); AllocationProbe.Escape(v); }),
+            ("[]byte(s)",         () => { slice<byte> v = new @string("convert me"); AllocationProbe.Escape(v); }),
+            ("string(b)",         () => { @string v = new(new slice<byte>(4)); AllocationProbe.Escape(v); }),
+            ("ToString()",        () => { string v = new @string("materialize").ToString(); AllocationProbe.Escape(v); }),
+            ("ToRunes()",         () => { rune[] v = new @string("räng").ToRunes(); AllocationProbe.Escape(v); }),
+            ("for range s",       () => { @string v = new("räng"); foreach ((nint _, rune _) in v) { } AllocationProbe.Escape(v); }),
+            ("ж<long>",           () => { ж<long> v = new StandardBox<long>(42L); AllocationProbe.Escape(v); }),
+            ("make([]byte, n)",   () => { slice<byte> v = new(s_sliceLength); AllocationProbe.Escape(v); }),
+            ("make(map)",         () => { map<@string, nint> v = new(); AllocationProbe.Escape(v); }),
+            ("make(chan, 4)",     () => { channel<nint> v = new(4); AllocationProbe.Escape(v); })
         ];
 
         List<string> violations = [];

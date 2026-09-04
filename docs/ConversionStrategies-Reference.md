@@ -20763,6 +20763,38 @@ which pins all THREE emitted shapes — production, internal-test, external-test
 neither rule can be "fixed" into the other; measured failing-first, the guard reports exactly the
 internal-test shape and leaves the other two green.)
 
+**A frame set read at Release + `DOTNET_TieredCompilation=0` is the set of frames the JIT chose to
+KEEP — literal-frame naming is inlining-dependent, and at the validation configuration of record the
+frame can simply be gone (2026-09-04).** `Frame.Function` can only name a function literal while
+that literal's own frame is on the stack, and the CLR's `StackTrace` does not report inlined frames
+— the same fact `captureCallers`'s `[MethodImpl(MethodImplOptions.NoInlining)]` pins one layer down.
+Tiering is what had been hiding it: a test method runs ONCE, so under default tiering it is jitted at
+tier 0, where nothing is inlined and the literal frame is always there. The validation configuration
+of record is **Release with tiering off**, i.e. full optimization from the first call — and there a
+one-expression lambda is inlined into its enclosing method, leaving the `.funcN` suffix nothing to
+attach to. Measured on `CallerFrameTestVariantNamingTests`, one build, both configurations: all
+three literal shapes answered the ENCLOSING frame at TC0
+(`litguard/probe.recordedOuterLiteralFrame` for a guard wanting `…recordedOuterLiteralFrame.func2`)
+and were green under default tiering. The guard now carries
+`[MethodImpl(MethodImplOptions.NoInlining)]` on the **lambdas** as well as on the enclosing methods
+— an attribute on a lambda expression reaches its synthesized backing method (verified in an
+isolated probe: `implFlags=NoInlining`) — so what it measures is the naming rule rather than an
+inlining budget.
+
+The naming rule itself is unchanged; what is recorded here is the **reading**. Anything that
+consults a frame set at Release+TC0 — a relative-depth assert, a count of host frames, a traceback
+grepped for a literal's name — is reading an inlining decision unless every frame it depends on is
+pinned, and a frame inlined away is indistinguishable from one the Go-frame filter above declined to
+report. Same family as reflect's `valueMethodName`, whose faithfully transcribed stack climb was
+correct in Debug and could not work in Release, and which was retired for a `[CallerMemberName]`
+thread precisely because a compile-time constant is the one answer no tiering or inlining decision
+can move ([`DESIGN-reflection-bridge.md`](phase4/DESIGN-reflection-bridge.md)); and the sibling of
+the tier-0 liveness rule recorded further down this section, where the same "test methods run once,
+so they are jitted at tier 0" fact makes a GC-lifetime local look permanently live. (The literal's
+COUNTER is recorded rather than derived —
+[`DESIGN-position-map.md`](phase4/DESIGN-position-map.md) §8 — which is orthogonal to whether the
+frame exists to be named at all.)
+
 **`runtime.Caller` works by severing the FUNNEL, not by hand-owning another public API
 (2026-08-07).** The 2026-07-31 landing above hand-owned the exported `Callers`, which left
 `runtime.Caller` — the far more widely used of the pair — still dead: its auto body calls the

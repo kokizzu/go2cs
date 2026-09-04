@@ -175,10 +175,19 @@ public class PointerDereferenceAllocationTests
         // wrapper from the accessor-keyed cache, not mint a display class plus delegate (~88 B)
         // per call. So the control is the same field-ref box minted with the wrapper already in
         // hand — any difference is exactly the per-call wrapper cost, and it must be zero.
+        //
+        // Both arms hand their box to AllocationProbe.Escape, which is load-bearing for the CONTROL
+        // arm at the configuration validation runs under: Release with tiering OFF is fully
+        // optimized from the first call, and a field-ref box that is constructed and discarded does
+        // not escape its lambda, so .NET's escape analysis stack-allocates it and `direct` measures
+        // ZERO — the control then reports that it could not price the thing it exists to price. The
+        // measured arm escapes anyway (TakeNamePointer is NoInlining and RETURNS the box), so the
+        // escape is applied to both sides to keep the two figures taken on the same terms rather
+        // than only to the arm that needs it. See AllocationProbe.
         ж<Record> p = new StandardBox<Record>(new Record { Name = "n", Count = 5 });
 
-        long direct = Measure(() => { ж<string?> _ = new FieldRefBox<string?>(p, s_untypedNameOf); });
-        long typedOf = Measure(() => TakeNamePointer(p));
+        long direct = Measure(() => AllocationProbe.Escape(new FieldRefBox<string?>(p, s_untypedNameOf)));
+        long typedOf = Measure(() => AllocationProbe.Escape(TakeNamePointer(p)));
 
         Assert.IsTrue(direct > 0, "control did not measure the cost of allocating one field-ref box");
         Assert.IsTrue(typedOf <= direct,

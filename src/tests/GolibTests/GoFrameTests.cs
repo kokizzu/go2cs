@@ -506,7 +506,16 @@ public class GoFrameTests
     {
         // The neutered control for the assertion above: the same instrument, pointed at a body
         // that provably allocates, must report it. Without this a broken probe reads as a win.
-        long bytes = Allocated(static () => { _ = new object[4]; });
+        //
+        // The array is handed to AllocationProbe.Escape rather than discarded, and that is
+        // load-bearing at the configuration validation runs under: Release with tiering OFF is
+        // fully optimized from the first call, and .NET's escape analysis stack-allocates a
+        // discarded `new object[4]` outright — 0 B/run measured at TC0 against 56 B/run under
+        // default tiering. A control that measures zero because the allocation was elided reads as
+        // "the probe is blind", and every want-zero assertion resting on this probe would pass
+        // vacuously beside it. See AllocationProbe for the measurement and why an escape rather
+        // than a skip or a tiering pin.
+        long bytes = Allocated(static () => AllocationProbe.Escape(new object[4]));
         Assert.IsTrue(bytes > 0, "the allocation probe reported zero for a body that allocates");
     }
 
