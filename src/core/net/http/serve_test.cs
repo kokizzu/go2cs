@@ -38,6 +38,7 @@ using atomic = global::go.sync.atomic_package;
 using syscall = syscall_package;
 using testing = testing_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using compress;
 using crypto;
 using encoding;
@@ -57,36 +58,6 @@ using Δhttp = global::go.net.http_package;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class http_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcompressꓸzlib() {
-    builtin.initPackage(typeof(compress.zlib_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(global::go.math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternal() {
-    builtin.initPackage(typeof(global::go.net.http.internal_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸtestcert() {
-    builtin.initPackage(typeof(global::go.net.http.@internal.testcert_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
 
 [GoType("@string")] partial struct dummyAddr;
 
@@ -196,7 +167,7 @@ internal static (nint, error) Read(this ж<testConn> Ꮡc, slice<byte> b) {
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(testConn.ᏑreadMu).Lock();
+        c.readMu.Lock();
         defer(Ꮡc.of(testConn.ᏑreadMu).Unlock, ref ᒐ);
         return c.readBuf.Read(b);
     }
@@ -662,7 +633,7 @@ internal static void testServeWithSlashRedirectKeepsQueryString(ж<testing.T> �
         [8] = new("/testOne/foo/..?foo"u8, "GET"u8, "foo"u8, true),
         [9] = new("/testOne/foo/..?foo"u8, "CONNECT"u8, "404 page not found\n"u8, false)
     };
-    foreach (var (i, tt) in tests) {
+    foreach (var (i, tt) in tests.ΔRangeSnapshot()) {
         var (req, _) = NewRequest(tt.method, (~ts).URL + tt.path, default!);
         var (res, err) = ts.Client().Do(req);
         if (err != default!) {
@@ -1765,6 +1736,14 @@ internal static void testSetsRemoteAddr(ж<testing.T> Ꮡt, testMode mode) {
     internal channel/*<-*/<net.Conn> conns = channel/*<-*/<net.Conn>.SendOnly;
 }
 
+// Go method set entry for the promoted 'Listener.Addr()' - provided ONLY by the embedded
+// interface field in *blockingRemoteAddrListener's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr Addr(this blockingRemoteAddrListener recvᴛ) => recvᴛ.Listener.Addr();
+
+// Go method set entry for the promoted 'Listener.Close()' - provided ONLY by the embedded
+// interface field in *blockingRemoteAddrListener's method set; see the pointer-only satisfaction record.
+internal static error Close(this blockingRemoteAddrListener recvᴛ) => recvᴛ.Listener.Close();
+
 [GoRecv] internal static (net.Conn, error) Accept(this ref blockingRemoteAddrListener l) {
     var (c, err) = l.Listener.Accept();
     if (err != default!) {
@@ -1782,6 +1761,34 @@ internal static void testSetsRemoteAddr(ж<testing.T> Ꮡt, testMode mode) {
     public net_package.Conn Conn;
     internal channel<netꓸAddr> addrs;
 }
+
+// Go method set entry for the promoted 'Conn.Close()' - provided ONLY by the embedded
+// interface field in *blockingRemoteAddrConn's method set; see the pointer-only satisfaction record.
+internal static error Close(this blockingRemoteAddrConn recvᴛ) => recvᴛ.Conn.Close();
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *blockingRemoteAddrConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this blockingRemoteAddrConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *blockingRemoteAddrConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this blockingRemoteAddrConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *blockingRemoteAddrConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this blockingRemoteAddrConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *blockingRemoteAddrConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this blockingRemoteAddrConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *blockingRemoteAddrConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this blockingRemoteAddrConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
+
+// Go method set entry for the promoted 'Conn.Write()' - provided ONLY by the embedded
+// interface field in *blockingRemoteAddrConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Write(this blockingRemoteAddrConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Write(b);
 
 [GoRecv] internal static netꓸAddr RemoteAddr(this ref blockingRemoteAddrConn c) {
     return ᐸꟷ(c.addrs);
@@ -1837,13 +1844,13 @@ internal static void testServerAllowsBlockingRemoteAddr(ж<testing.T> Ꮡt, test
     // Start a request. The server will block on getting conn.RemoteAddr.
     var response1c = new channel<@string>(1);
     var fetchʗ1 = fetch;
-    goǃ(fetchʗ1, (nint)(1), response1c);
+    goǃ(fetchʗ1, (nint)(1), response1c.WithDirection(GoChanDir.Send));
     // Wait for the server to accept it; grab the connection.
     var conn1 = ᐸꟷ(conns);
     // Start another request and grab its connection
     var response2c = new channel<@string>(1);
     var fetchʗ2 = fetch;
-    goǃ(fetchʗ2, (nint)(2), response2c);
+    goǃ(fetchʗ2, (nint)(2), response2c.WithDirection(GoChanDir.Send));
     var conn2 = ᐸꟷ(conns);
     // Send a response on connection 2.
     (~conn2._<ж<blockingRemoteAddrConn>>()).addrs.ᐸꟷ(new net.TCPAddrжΔAddr(Ꮡ(new net.TCPAddr(
@@ -2660,7 +2667,7 @@ public static void TestHandlerBodyClose(ж<testing.T> Ꮡt) {
     if (testing.Short() && testenv.Builder() == ""u8) {
         Ꮡt.Skip(skippingInShortModeˢ2);
     }
-    foreach (var (i, tt) in handlerBodyCloseTests) {
+    foreach (var (i, tt) in handlerBodyCloseTests.ΔRangeSnapshot()) {
         testHandlerBodyClose(Ꮡt, i, tt);
     }
 }
@@ -2834,7 +2841,7 @@ internal static error SetReadDeadline(this ж<slowTestConn> Ꮡc, time.Time t) {
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(slowTestConn.Ꮡmu).Lock();
+        c.mu.Lock();
         defer(Ꮡc.of(slowTestConn.Ꮡmu).Unlock, ref ᒐ);
         c.rd = t;
         return default!;
@@ -2848,7 +2855,7 @@ internal static error SetWriteDeadline(this ж<slowTestConn> Ꮡc, time.Time t) 
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(slowTestConn.Ꮡmu).Lock();
+        c.mu.Lock();
         defer(Ꮡc.of(slowTestConn.Ꮡmu).Unlock, ref ᒐ);
         c.wd = t;
         return default!;
@@ -2864,7 +2871,7 @@ internal static (nint n, error err) Read(this ж<slowTestConn> Ꮡc, slice<byte>
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(slowTestConn.Ꮡmu).Lock();
+        c.mu.Lock();
         defer(Ꮡc.of(slowTestConn.Ꮡmu).Unlock, ref ᒐ);
 restart:
         if (!c.rd.IsZero() && time.Now().After(c.rd)) {
@@ -3816,7 +3823,7 @@ internal static void testRequestLimit(ж<testing.T> Ꮡt, testMode mode) {
 
         var cst = newClientServerTest(new http_test_package.testing_TжTB(Ꮡt), mode, new http_test_package.http_HandlerFuncᴠΔHandler(new Δhttp.HandlerFunc((Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
             Ꮡt.Fatalf("didn't expect to get request in Handler"u8);
-        })), optQuietLog);
+        })), (optQuietLog).OrTypedNilFunc());
         var (req, _) = NewRequest(getˢ2, (~(~cst).ts).URL, default!);
         nint bytesPerHeader = len("header12345: val12345\r\n");
         for (nint i = 0; i < ((nint)(DefaultMaxHeaderBytes + 4096) / bytesPerHeader) + 1; i++) {
@@ -3877,7 +3884,7 @@ internal static (nint, error) Read(this ж<bodyLimitReader> Ꮡr, slice<byte> p)
     try {
         ref var r = ref Ꮡr.DerefOrNull();
 
-        Ꮡr.of(bodyLimitReader.Ꮡmu).Lock();
+        r.mu.Lock();
         defer(Ꮡr.of(bodyLimitReader.Ꮡmu).Unlock, ref ᒐ);
         var selᴛ28 = r.closed;
         switch (trySelect(ᐸꟷ(selᴛ28, ꓸꓸꓸ))) {
@@ -3905,7 +3912,7 @@ internal static error Close(this ж<bodyLimitReader> Ꮡr) {
     try {
         ref var r = ref Ꮡr.DerefOrNull();
 
-        Ꮡr.of(bodyLimitReader.Ꮡmu).Lock();
+        r.mu.Lock();
         defer(Ꮡr.of(bodyLimitReader.Ꮡmu).Unlock, ref ᒐ);
         builtin.close(r.closed);
         return default!;
@@ -3960,7 +3967,7 @@ internal static void testRequestBodyLimit(ж<testing.T> Ꮡt, testMode mode) {
     // Wait for the Transport to finish writing the request body.
     // It will close the body when done.
     ᐸꟷ((~body).closed);
-    if ((~body).count > limit * 100) {
+    if ((~body).count > (nint)(limit * 100)) {
         Ꮡt.Errorf("handler restricted the request body to %d bytes, but client managed to write %d"u8,
             (nint)(limit), (~body).count);
     }
@@ -5124,7 +5131,7 @@ internal static void testTransportAndServerSharedBodyRace(ж<testing.T> Ꮡt, te
                 var (req2, _) = NewRequest(postˢ, (~(~backendʗ2).ts).URL, (~reqΔ2).Body);
                 req2.Value.ContentLength = bodySize;
                 var cancel = new channel<EmptyStruct>(0);
-                req2.Value.Cancel = cancel;
+                req2.Value.Cancel = cancel.WithDirection(GoChanDir.Recv);
                 var (bresp, errΔ2) = (~Ꮡproxy.ValueSlot).c.Do(req2);
                 if (errΔ2 != default!) {
                     tΔ1.Errorf("Proxy outbound request: %v"u8, errΔ2);
@@ -5513,7 +5520,7 @@ internal static void testServerEmptyBodyRace(ж<testing.T> Ꮡt, testMode mode) 
     ref var n = ref heap(new int32(), out var Ꮡn);
     var cst = newClientServerTest(new http_test_package.testing_TжTB(Ꮡt), mode, new http_test_package.http_HandlerFuncᴠΔHandler(new Δhttp.HandlerFunc((Δhttp.ResponseWriter rw, ж<Δhttp.Request> req) => {
         atomic.AddInt32(Ꮡn, 1);
-    })), optQuietLog);
+    })), (optQuietLog).OrTypedNilFunc());
     ref var wg = ref heap(new sync.WaitGroup(), out var Ꮡwg);
     UntypedInt reqs = 20;
     for (nint i = 0; i < reqs; i++) {
@@ -7657,6 +7664,14 @@ public static void TestServerListenNotComparableListener(ж<testing.T> Ꮡt) {
     internal int32 closes; // atomic
 }
 
+// Go method set entry for the promoted 'Listener.Accept()' - provided ONLY by the embedded
+// interface field in *countCloseListener's method set; see the pointer-only satisfaction record.
+internal static (net.Conn, error) Accept(this countCloseListener recvᴛ) => recvᴛ.Listener.Accept();
+
+// Go method set entry for the promoted 'Listener.Addr()' - provided ONLY by the embedded
+// interface field in *countCloseListener's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr Addr(this countCloseListener recvᴛ) => recvᴛ.Listener.Addr();
+
 internal static error Close(this ж<countCloseListener> Ꮡp) {
     ref var p = ref Ꮡp.DerefOrNull();
 
@@ -7989,7 +8004,7 @@ internal static readonly @string timedOutHereˢ = "timed out here!"u8;
     internal @string wantResp;
 }
 
-internal static void testTimeoutHandlerSuperfluousLogs(ж<testing.T> Ꮡt, testMode mode) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void testTimeoutHandlerSuperfluousLogs(ж<testing.T> Ꮡt, testMode mode) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     if (testing.Short()) {
@@ -8023,7 +8038,7 @@ internal static void testTimeoutHandlerSuperfluousLogs(ж<testing.T> Ꮡt, testM
                 var lastLine = new channel<nint>(1);
                 var exitHandlerʗ1 = exitHandler;
                 var lastLineʗ1 = lastLine;
-                var sh = new Δhttp.HandlerFunc((Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
+                var sh = new Δhttp.HandlerFunc([MethodImpl(MethodImplOptions.NoInlining)] (Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
                     w.WriteHeader(404);
                     w.WriteHeader(404);
                     w.WriteHeader(404);
@@ -8044,7 +8059,7 @@ internal static void testTimeoutHandlerSuperfluousLogs(ж<testing.T> Ꮡt, testM
                     dur = (time.Duration)(10000000000L);
                 }
                 var th = TimeoutHandler(new http_test_package.http_HandlerFuncᴠΔHandler(sh), dur, timeoutMsg);
-                var cst = newClientServerTest(new http_test_package.testing_TжTB(tΔ1), mode, th, optWithServerLog(srvLog));
+                var cst = newClientServerTest(new http_test_package.testing_TжTB(tΔ1), mode, th, (optWithServerLog(srvLog)).OrTypedNilFunc());
                 var cstʗ1 = cst;
                 defer(cstʗ1.close, ref ᒐ);
                 var (res, err) = (~cst).c.Get((~(~cst).ts).URL);

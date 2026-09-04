@@ -41,6 +41,7 @@ using testing = testing_package;
 using iotest = global::go.testing.iotest_package;
 using time = time_package;
 using httpguts = vendor.golang.org.x.net.http.httpguts_package;
+using System.Runtime.CompilerServices;
 using compress;
 using crypto;
 using encoding;
@@ -58,30 +59,6 @@ using ꓸꓸꓸany = Span<any>;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class http_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() {
-    builtin.initPackage(typeof(global::go.testing.iotest_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸhttpꓸhttpguts() {
-    builtin.initPackage(typeof(vendor.golang.org.x.net.http.httpguts_package));
-}
 
 // TODO: test 5 pipelined requests with responses: 1) OK, 2) OK, Connection: Close
 // and then verify that the final 2 responses get errors back.
@@ -107,6 +84,34 @@ internal static Δhttp.HandlerFunc hostPortHandler = new Δhttp.HandlerFunc((Δh
     internal ж<testConnSet> set;
 }
 
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *testCloseConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this testCloseConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *testCloseConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this testCloseConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *testCloseConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this testCloseConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *testCloseConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this testCloseConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *testCloseConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this testCloseConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *testCloseConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this testCloseConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
+
+// Go method set entry for the promoted 'Conn.Write()' - provided ONLY by the embedded
+// interface field in *testCloseConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Write(this testCloseConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Write(b);
+
 internal static error Close(this ж<testCloseConn> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 
@@ -128,7 +133,7 @@ internal static void insert(this ж<testConnSet> Ꮡtcs, net.Conn c) {
     try {
         ref var tcs = ref Ꮡtcs.DerefOrNull();
 
-        Ꮡtcs.of(testConnSet.Ꮡmu).Lock();
+        tcs.mu.Lock();
         defer(Ꮡtcs.of(testConnSet.Ꮡmu).Unlock, ref ᒐ);
         tcs.closed[c] = false;
         tcs.list = append(tcs.list, c);
@@ -142,7 +147,7 @@ internal static void remove(this ж<testConnSet> Ꮡtcs, net.Conn c) {
     try {
         ref var tcs = ref Ꮡtcs.DerefOrNull();
 
-        Ꮡtcs.of(testConnSet.Ꮡmu).Lock();
+        tcs.mu.Lock();
         defer(Ꮡtcs.of(testConnSet.Ꮡmu).Unlock, ref ᒐ);
         tcs.closed[c] = true;
     }
@@ -174,7 +179,7 @@ internal static void check(this ж<testConnSet> Ꮡtcs, ж<testing.T> Ꮡt) {
     try {
         ref var tcs = ref Ꮡtcs.DerefOrNull();
 
-        Ꮡtcs.of(testConnSet.Ꮡmu).Lock();
+        tcs.mu.Lock();
         defer(Ꮡtcs.of(testConnSet.Ꮡmu).Unlock, ref ᒐ);
         for (nint i = 4; i >= 0; i--) {
             foreach (var (iΔ1, c) in tcs.list) {
@@ -184,9 +189,9 @@ internal static void check(this ж<testConnSet> Ꮡtcs, ж<testing.T> Ꮡt) {
                 if (iΔ1 != 0) {
                     // TODO(bcmills): What is the Sleep here doing, and why is this
                     // Unlock/Sleep/Lock cycle needed at all?
-                    Ꮡtcs.of(testConnSet.Ꮡmu).Unlock();
+                    tcs.mu.Unlock();
                     time.Sleep(50 * time.Millisecond);
-                    Ꮡtcs.of(testConnSet.Ꮡmu).Lock();
+                    tcs.mu.Lock();
                     continue;
                 }
                 Ꮡt.Errorf("TCP connection #%d, %p (of %d total) was not closed"u8, iΔ1 + 1, c, len(tcs.list));
@@ -2423,7 +2428,7 @@ internal static (net.Conn, error) DialContext(this ж<countingDialer> Ꮡd, cont
         }
         var counted = @new<countedConn>();
         counted.Value.Conn = conn;
-        Ꮡd.of(countingDialer.Ꮡmu).Lock();
+        d.mu.Lock();
         defer(Ꮡd.of(countingDialer.Ꮡmu).Unlock, ref ᒐ);
         d.total++;
         d.live++;
@@ -2439,7 +2444,7 @@ internal static void decrement(this ж<countingDialer> Ꮡd, ж<countedConn> _) 
     try {
         ref var d = ref Ꮡd.DerefOrNull();
 
-        Ꮡd.of(countingDialer.Ꮡmu).Lock();
+        d.mu.Lock();
         defer(Ꮡd.of(countingDialer.Ꮡmu).Unlock, ref ᒐ);
         d.live--;
     }
@@ -2454,7 +2459,7 @@ internal static (int64 total, int64 live) Read(this ж<countingDialer> Ꮡd) {
     try {
         ref var d = ref Ꮡd.DerefOrNull();
 
-        Ꮡd.of(countingDialer.Ꮡmu).Lock();
+        d.mu.Lock();
         defer(Ꮡd.of(countingDialer.Ꮡmu).Unlock, ref ᒐ);
         (total, live) = (d.total, d.live);
     }
@@ -2520,7 +2525,7 @@ internal static context.Context Track(this ж<contextCounter> Ꮡcc, context.Con
 
         var counted = @new<countedContext>();
         counted.Value.Context = ctx;
-        Ꮡcc.of(contextCounter.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(contextCounter.Ꮡmu).Unlock, ref ᒐ);
         cc.live++;
         runtime.SetFinalizer(counted.OrTypedNil(), Ꮡcc.decrement);
@@ -2535,7 +2540,7 @@ internal static void decrement(this ж<contextCounter> Ꮡcc, ж<countedContext>
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(contextCounter.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(contextCounter.Ꮡmu).Unlock, ref ᒐ);
         cc.live--;
     }
@@ -2549,7 +2554,7 @@ internal static int64 /*live*/ Read(this ж<contextCounter> Ꮡcc) {
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
-        Ꮡcc.of(contextCounter.Ꮡmu).Lock();
+        cc.mu.Lock();
         defer(Ꮡcc.of(contextCounter.Ꮡmu).Unlock, ref ᒐ);
         live = cc.live;
     }
@@ -2689,7 +2694,7 @@ internal static void testIssue3644(ж<testing.T> Ꮡt, testMode mode) {
         if (err != default!) {
             Ꮡt.Fatal(err);
         }
-        if (len(bs) != (nint)numFoos * len("foo ")) {
+        if (len(bs) != (nint)((nint)numFoos * len("foo "))) {
             Ꮡt.Errorf("unexpected response length"u8);
         }
     }
@@ -3110,7 +3115,7 @@ internal static void runCancelTestChannel(ж<testing.T> Ꮡt, testMode mode, Act
     f(Ꮡt, new cancelTest(
         mode: mode,
         newReq: (ж<Δhttp.Request> req) => {
-            req.Value.Cancel = cancelcʗ1;
+            req.Value.Cancel = cancelcʗ1.WithDirection(GoChanDir.Recv);
             return req;
         },
         cancel: (ж<Δhttp.Transport> tr, ж<Δhttp.Request> req) => {
@@ -4525,7 +4530,7 @@ internal static void testTransportIssue10457(ж<testing.T> Ꮡt, testMode mode) 
 
 internal delegate error closerFunc();
 
-internal static error Close(this closerFunc f) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static error Close(this closerFunc f) {
     return f();
 }
 
@@ -5069,7 +5074,7 @@ internal static void testTransportRemovesH2ConnsAfterIdle(ж<testing.T> Ꮡt, te
             tr.Value.IdleConnTimeout = timeout;
         };
         var cst = newClientServerTest(new http_test_package.testing_TжTB(Ꮡt), mode, new http_test_package.http_HandlerFuncᴠΔHandler(new Δhttp.HandlerFunc((Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
-        })), trFunc);
+        })), (trFunc).OrTypedNilFunc());
         retry = false;
         var cstʗ1 = cst;
         bool tooShort(error err) {
@@ -5267,6 +5272,26 @@ internal static void testConnClosedBeforeRequestIsWritten(ж<testing.T> Ꮡt, te
     internal slice<@string> writes;
 }
 
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *logWritesConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this logWritesConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *logWritesConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this logWritesConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *logWritesConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this logWritesConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *logWritesConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this logWritesConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *logWritesConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this logWritesConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
+
 internal static (nint n, error err) Write(this ж<logWritesConn> Ꮡc, slice<byte> p) {
     nint n = default!;
     error err = default!;
@@ -5274,7 +5299,7 @@ internal static (nint n, error err) Write(this ж<logWritesConn> Ꮡc, slice<byt
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
-        Ꮡc.of(logWritesConn.Ꮡmu).Lock();
+        c.mu.Lock();
         defer(Ꮡc.of(logWritesConn.Ꮡmu).Unlock, ref ᒐ);
         c.writes = append(c.writes, ((@string)p));
         (n, err) = c.w.Write(p);
@@ -5666,7 +5691,7 @@ public static void TestNoCrashReturningTransportAltConn(ж<testing.T> Ꮡt) {
         @string addr = ln.Addr().String();
         var (req, _) = NewRequest(getˢ2, httpsFakeTldˢ, default!);
         var cancel = new channel<EmptyStruct>(0);
-        req.Value.Cancel = cancel;
+        req.Value.Cancel = cancel.WithDirection(GoChanDir.Recv);
         var doReturned = new channel<bool>(1);
         var madeRoundTripper = new channel<bool>(1);
                 var madeRoundTripperʗ1 = madeRoundTripper;
@@ -7043,7 +7068,7 @@ internal static void testNoBodyOnChunked304Response(ж<testing.T> Ꮡt, testMode
 
 internal delegate (nint, error) funcWriter(slice<byte> _Δp0);
 
-internal static (nint, error) Write(this funcWriter f, slice<byte> p) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (nint, error) Write(this funcWriter f, slice<byte> p) {
     return f(p);
 }
 
@@ -7055,7 +7080,7 @@ internal static (nint, error) Write(this funcWriter f, slice<byte> p) {
 internal static /*<-*/channel<EmptyStruct> Done(this doneContext _) {
     var c = new channel<EmptyStruct>(0);
     builtin.close(c);
-    return c;
+    return c.WithDirection(GoChanDir.Recv);
 }
 
 internal static error Err(this doneContext d) {
@@ -7224,7 +7249,7 @@ internal static void testClientTimeoutKillsConn_AfterHeaders(ж<testing.T> Ꮡt,
     cst.Value.c.Value.Timeout = (time.Duration)(86400000000000L); // just to be non-zero, not to hit it.
     var (req, _) = NewRequest(getˢ2, (~(~cst).ts).URL, default!);
     var cancelReq = new channel<EmptyStruct>(0);
-    req.Value.Cancel = cancelReq;
+    req.Value.Cancel = cancelReq.WithDirection(GoChanDir.Recv);
     var (res, err) = (~cst).c.Do(req);
     if (err != default!) {
         builtin.close(cancelHandler);
@@ -7588,7 +7613,7 @@ internal static void testTransportRequestWriteRoundTrip(ж<testing.T> Ꮡt, test
                         (~rΔ1).Body.Close();
                         w.WriteHeader(200);
                     })),
-                    trFunc);
+                    (trFunc).OrTypedNilFunc());
                 (var req, err) = NewRequest(putˢ, (~(~cst).ts).URL, r);
                 if (err != default!) {
                     tΔ1.Fatal(err);
@@ -7934,6 +7959,34 @@ internal static void testTransportClosesBodyOnInvalidRequests(ж<testing.T> Ꮡt
     internal partial ref ж<brokenState> brokenState { get; }
 }
 
+// Go method set entry for the promoted 'Conn.Close()' - provided ONLY by the embedded
+// interface field in *breakableConn's method set; see the pointer-only satisfaction record.
+internal static error Close(this breakableConn recvᴛ) => recvᴛ.Conn.Close();
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *breakableConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this breakableConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *breakableConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this breakableConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *breakableConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this breakableConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *breakableConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this breakableConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *breakableConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this breakableConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *breakableConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this breakableConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
+
 [GoType] partial struct brokenState {
     public partial ref sync_package.Mutex Mutex { get; }
     internal bool broken;
@@ -7968,7 +8021,7 @@ public static void TestDontCacheBrokenHTTP2Conn(ж<testing.T> Ꮡt) {
 
 internal static void testDontCacheBrokenHTTP2Conn(ж<testing.T> Ꮡt, testMode mode) {
     var cst = newClientServerTest(new http_test_package.testing_TжTB(Ꮡt), mode, new http_test_package.http_HandlerFuncᴠΔHandler(new Δhttp.HandlerFunc((Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
-    })), optQuietLog);
+    })), (optQuietLog).OrTypedNilFunc());
     ref var brokenState = ref heap(new brokenState(), out var ᏑbrokenState);
     const nint numReqs = 5;
     ref var numDials = ref heap(new uint32(), out var ᏑnumDials);                // atomic
@@ -8138,7 +8191,7 @@ internal static (ж<Δhttp.Response>, error) RoundTrip(this cancelProto _, ж<Δ
 
 internal delegate (ж<Δhttp.Response>, error) roundTripFunc(ж<Δhttp.Request> r);
 
-internal static (ж<Δhttp.Response>, error) RoundTrip(this roundTripFunc f, ж<Δhttp.Request> Ꮡr) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (ж<Δhttp.Response>, error) RoundTrip(this roundTripFunc f, ж<Δhttp.Request> Ꮡr) {
     return f(Ꮡr);
 }
 

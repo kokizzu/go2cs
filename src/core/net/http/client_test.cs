@@ -26,6 +26,7 @@ using sync = sync_package;
 using atomic = global::go.sync.atomic_package;
 using testing = testing_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using crypto;
 using encoding;
 using global::go.@internal;
@@ -37,90 +38,6 @@ using Δhttp = global::go.net.http_package;
 using ꓸꓸꓸany = Span<any>;
 
 partial class http_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(encoding.base64_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(global::go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸcookiejar() {
-    builtin.initPackage(typeof(global::go.net.http.cookiejar_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸurl() {
-    builtin.initPackage(typeof(global::go.net.url_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(global::go.sync.atomic_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 internal static Δhttp.HandlerFunc robotsTxtHandler = new Δhttp.HandlerFunc((Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
     w.Header().Set("Last-Modified"u8, "sometime"u8);
@@ -445,7 +362,7 @@ internal static void testClientRedirects(ж<testing.T> Ꮡt, testMode mode) {
     // Test that Request.Cancel is propagated between requests (Issue 14053)
     var (creq, _) = NewRequest(headˢ, (~ts).URL, default!);
     var cancel = new channel<EmptyStruct>(0);
-    creq.Value.Cancel = cancel;
+    creq.Value.Cancel = cancel.WithDirection(GoChanDir.Recv);
     {
         var (_, errΔ1) = c.Do(creq); if (errΔ1 != default!) {
             Ꮡt.Fatal(errΔ1);
@@ -883,7 +800,7 @@ public static void SetCookies(this ж<TestJar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<
         ref var j = ref Ꮡj.DerefOrNull();
         ref var u = ref Ꮡu.DerefOrNull();
 
-        Ꮡj.of(TestJar.Ꮡm).Lock();
+        j.m.Lock();
         defer(Ꮡj.of(TestJar.Ꮡm).Unlock, ref ᒐ);
         if (j.perURL == default!) {
             j.perURL = new map<@string, slice<ж<httpꓸCookie>>>();
@@ -900,7 +817,7 @@ public static slice<ж<httpꓸCookie>> Cookies(this ж<TestJar> Ꮡj, ж<url.URL
         ref var j = ref Ꮡj.DerefOrNull();
         ref var u = ref Ꮡu.DerefOrNull();
 
-        Ꮡj.of(TestJar.Ꮡm).Lock();
+        j.m.Lock();
         defer(Ꮡj.of(TestJar.Ꮡm).Unlock, ref ᒐ);
         return j.perURL[u.Host];
     }
@@ -1017,7 +934,8 @@ internal static void logf(this ж<RecordingJar> Ꮡj, @string format, params ꓸ
     try {
         var args = argsʗp.slice();
 
-        Ꮡj.of(RecordingJar.Ꮡmu).Lock();
+        ref var j = ref Ꮡj.DerefOrNull();
+        j.mu.Lock();
         defer(Ꮡj.of(RecordingJar.Ꮡmu).Unlock, ref ᒐ);
         fmt.Fprintf(new http_test_package.bytes_BufferжWriter(Ꮡj.of(RecordingJar.Ꮡlog)), format, args.ꓸꓸꓸ);
     }
@@ -1070,6 +988,34 @@ internal static void testStreamingGet(ж<testing.T> Ꮡt, testMode mode) {
     public net_package.Conn Conn;
     internal ж<nint> count;
 }
+
+// Go method set entry for the promoted 'Conn.Close()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static error Close(this writeCountingConn recvᴛ) => recvᴛ.Conn.Close();
+
+// Go method set entry for the promoted 'Conn.LocalAddr()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr LocalAddr(this writeCountingConn recvᴛ) => recvᴛ.Conn.LocalAddr();
+
+// Go method set entry for the promoted 'Conn.Read()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static (nint, error) Read(this writeCountingConn recvᴛ, slice<byte> b) => recvᴛ.Conn.Read(b);
+
+// Go method set entry for the promoted 'Conn.RemoteAddr()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static netꓸAddr RemoteAddr(this writeCountingConn recvᴛ) => recvᴛ.Conn.RemoteAddr();
+
+// Go method set entry for the promoted 'Conn.SetDeadline()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static error SetDeadline(this writeCountingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetReadDeadline()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static error SetReadDeadline(this writeCountingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetReadDeadline(t);
+
+// Go method set entry for the promoted 'Conn.SetWriteDeadline()' - provided ONLY by the embedded
+// interface field in *writeCountingConn's method set; see the pointer-only satisfaction record.
+internal static error SetWriteDeadline(this writeCountingConn recvᴛ, time.Time t) => recvᴛ.Conn.SetWriteDeadline(t);
 
 [GoRecv] internal static (nint, error) Write(this ref writeCountingConn c, slice<byte> p) {
     c.count.Value++;
@@ -1675,7 +1621,7 @@ internal static void testClientTimeout_Headers(ж<testing.T> Ꮡt, testMode mode
         var donecʗ1 = donec;
         var cst = newClientServerTest(new http_test_package.testing_TжTB(Ꮡt), mode, new http_test_package.http_HandlerFuncᴠΔHandler(new Δhttp.HandlerFunc((Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
             ᐸꟷ(donecʗ1);
-        })), optQuietLog);
+        })), (optQuietLog).OrTypedNilFunc());
         // Note that we use a channel send here and not a close.
         // The race detector doesn't know that we're waiting for a timeout
         // and thinks that the waitgroup inside httptest.Server is added to concurrently
@@ -2374,7 +2320,7 @@ internal static void testClientRedirectTypes(ж<testing.T> Ꮡt, testMode mode) 
         h(rw, req);
     }))).Value.ts;
     var c = ts.Client();
-    foreach (var (i, vᴛ1) in tests) {
+    foreach (var (i, vᴛ1) in tests.ΔRangeSnapshot()) {
         ref var tt = ref heap(new testClientRedirectTypes_tests(), out var Ꮡtt);
         tt = vᴛ1;
 
@@ -2501,7 +2447,7 @@ internal static (ж<Δhttp.Response>, error) RoundTrip(this roundTripperWithClos
     throw panic("unused");
 }
 
-internal static void CloseIdleConnections(this roundTripperWithCloseIdle f) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void CloseIdleConnections(this roundTripperWithCloseIdle f) {
     f();
 }
 
@@ -2526,7 +2472,7 @@ public static void TestClientCloseIdleConnections(ж<testing.T> Ꮡt) {
 
 internal delegate (ж<Δhttp.Response>, error) testRoundTripper(ж<Δhttp.Request> _);
 
-internal static (ж<Δhttp.Response>, error) RoundTrip(this testRoundTripper t, ж<Δhttp.Request> Ꮡreq) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (ж<Δhttp.Response>, error) RoundTrip(this testRoundTripper t, ж<Δhttp.Request> Ꮡreq) {
     return t(Ꮡreq);
 }
 

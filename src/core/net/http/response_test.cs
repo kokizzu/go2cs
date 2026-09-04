@@ -26,30 +26,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class http_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcompressꓸgzip() {
-    builtin.initPackage(typeof(compress.gzip_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternal() {
-    builtin.initPackage(typeof(global::go.net.http.internal_package));
-}
-
 [GoType] internal partial struct respTest {
     public @string Raw;
     public global::go.net.http_package.Response Resp;

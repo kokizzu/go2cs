@@ -19,36 +19,6 @@ using static global::go.net.http_package;
 
 partial class http_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸurl() {
-    builtin.initPackage(typeof(global::go.net.url_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 public static @string DefaultUserAgent;
 internal static void initᴛDefaultUserAgent() { DefaultUserAgent = defaultUserAgent; }
 public static Func<@string, net.Conn, net.Conn> NewLoggingConn;
@@ -56,9 +26,9 @@ internal static void initᴛNewLoggingConn() { NewLoggingConn = newLoggingConn; 
 public static Func<slice<byte>, time.Time, slice<byte>> ExportAppendTime = appendTime;
 public static Func<ж<url.URL>, ж<url.URL>, @string, @string> ExportRefererForURL = (ж<url.URL> ᴛ0, ж<url.URL> ᴛ1, @string ᴛ2) => refererForURL(ᴛ0, ref ᴛ1.DerefOrNull(), ᴛ2);
 internal static Func<ж<global::go.net.http_package.Server>, net.Conn, ж<global::go.net.http_package.conn>> ExportServerNewConn;
-internal static void initᴛExportServerNewConn() { ExportServerNewConn = (Func<ж<global::go.net.http_package.Server>, net.Conn, ж<global::go.net.http_package.conn>>)(global::go.net.http_package.newConn); }
+internal static void initᴛExportServerNewConn() { ExportServerNewConn = ((Func<ж<global::go.net.http_package.Server>, net.Conn, ж<global::go.net.http_package.conn>>)(global::go.net.http_package.newConn)); }
 internal static Action<ж<global::go.net.http_package.conn>> ExportCloseWriteAndWait;
-internal static void initᴛExportCloseWriteAndWait() { ExportCloseWriteAndWait = (Action<ж<global::go.net.http_package.conn>>)(global::go.net.http_package.closeWriteAndWait); }
+internal static void initᴛExportCloseWriteAndWait() { ExportCloseWriteAndWait = ((Action<ж<global::go.net.http_package.conn>>)(global::go.net.http_package.closeWriteAndWait)); }
 public static error ExportErrRequestCanceled;
 internal static void initᴛExportErrRequestCanceled() { ExportErrRequestCanceled = errRequestCanceled; }
 public static error ExportErrRequestCanceledConn;
@@ -162,7 +132,7 @@ internal static nint NumPendingRequestsForTesting(this ж<global::go.net.http_pa
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑreqMu).Lock();
+        t.reqMu.Lock();
         defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑreqMu).Unlock, ref ᒐ);
         return builtin.len(t.reqCanceler);
     }
@@ -177,7 +147,7 @@ internal static slice<@string> /*keys*/ IdleConnKeysForTesting(this ж<global::g
         ref var t = ref Ꮡt.DerefOrNull();
 
         keys = new slice<@string>(0);
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Lock();
+        t.idleMu.Lock();
         defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
         foreach (var (key, _) in t.idleConn) {
             keys = append(keys, key.String());
@@ -194,7 +164,7 @@ internal static nint IdleConnKeyCountForTesting(this ж<global::go.net.http_pack
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Lock();
+        t.idleMu.Lock();
         defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
         return builtin.len(t.idleConn);
     }
@@ -208,7 +178,7 @@ internal static slice<@string> IdleConnStrsForTesting(this ж<global::go.net.htt
         ref var t = ref Ꮡt.DerefOrNull();
 
         slice<@string> ret = default!;
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Lock();
+        t.idleMu.Lock();
         defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
         foreach (var (_, conns) in t.idleConn) {
             foreach (var (_, pc) in conns) {
@@ -252,7 +222,7 @@ internal static nint IdleConnCountForTesting(this ж<global::go.net.http_package
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Lock();
+        t.idleMu.Lock();
         defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
         var key = new connectMethodKey(""u8, scheme, addr, false);
         @string cacheKey = key.String();
@@ -272,7 +242,7 @@ internal static nint IdleConnWaitMapSizeForTesting(this ж<global::go.net.http_p
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Lock();
+        t.idleMu.Lock();
         defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
         return builtin.len(t.idleConnWait);
     }
@@ -285,7 +255,7 @@ internal static bool IsIdleForTesting(this ж<global::go.net.http_package.Transp
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Lock();
+        t.idleMu.Lock();
         defer(Ꮡt.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock, ref ᒐ);
         return t.closeIdle;
     }
@@ -309,12 +279,12 @@ internal static bool PutIdleTestConn(this ж<global::go.net.http_package.Transpo
         // Transport is tracking conns-per-host.
         // Increment connection count to account
         // for new persistConn created below.
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑconnsPerHostMu).Lock();
+        t.connsPerHostMu.Lock();
         if (t.connsPerHost == default!) {
             t.connsPerHost = new map<global::go.net.http_package.connectMethodKey, nint>();
         }
         t.connsPerHost[key]++;
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑconnsPerHostMu).Unlock();
+        t.connsPerHostMu.Unlock();
     }
     return Ꮡt.tryPutIdleConn(Ꮡ(new persistConn(
         t: Ꮡt,
@@ -337,12 +307,12 @@ internal static bool PutIdleTestConnH2(this ж<global::go.net.http_package.Trans
         // Transport is tracking conns-per-host.
         // Increment connection count to account
         // for new persistConn created below.
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑconnsPerHostMu).Lock();
+        t.connsPerHostMu.Lock();
         if (t.connsPerHost == default!) {
             t.connsPerHost = new map<global::go.net.http_package.connectMethodKey, nint>();
         }
         t.connsPerHost[key]++;
-        Ꮡt.of(global::go.net.http_package.Transport.ᏑconnsPerHostMu).Unlock();
+        t.connsPerHostMu.Unlock();
     }
     return Ꮡt.tryPutIdleConn(Ꮡ(new persistConn(
         t: Ꮡt,
@@ -385,7 +355,7 @@ internal static bool ExportAllConnsIdle(this ж<global::go.net.http_package.Serv
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡs.of(global::go.net.http_package.Server.Ꮡmu).Lock();
+        s.mu.Lock();
         defer(Ꮡs.of(global::go.net.http_package.Server.Ꮡmu).Unlock, ref ᒐ);
         foreach (var (c, _) in s.activeConn) {
             var (st, unixSec) = c.getState();
@@ -405,7 +375,7 @@ internal static map<global::go.net.http_package.ConnState, nint> ExportAllConnsB
         ref var s = ref Ꮡs.DerefOrNull();
 
         var states = new map<global::go.net.http_package.ConnState, nint>{};
-        Ꮡs.of(global::go.net.http_package.Server.Ꮡmu).Lock();
+        s.mu.Lock();
         defer(Ꮡs.of(global::go.net.http_package.Server.Ꮡmu).Unlock, ref ᒐ);
         foreach (var (c, _) in s.activeConn) {
             var (st, _) = c.getState();
@@ -441,13 +411,13 @@ public static Action /*restore*/ ExportSetH2GoawayTimeout(time.Duration d) {
 public static void ExportCloseTransportConnsAbruptly(ж<global::go.net.http_package.Transport> Ꮡtr) {
     ref var tr = ref Ꮡtr.DerefOrNull();
 
-    Ꮡtr.of(global::go.net.http_package.Transport.ᏑidleMu).Lock();
+    tr.idleMu.Lock();
     foreach (var (_, pcs) in tr.idleConn) {
         foreach (var (_, pc) in pcs) {
             (~pc).conn.Close();
         }
     }
-    Ꮡtr.of(global::go.net.http_package.Transport.ᏑidleMu).Unlock();
+    tr.idleMu.Unlock();
 }
 
 // ResponseWriterConnForTesting returns w's underlying connection, if w
