@@ -13,7 +13,11 @@
     Forwarded verbatim to BehavioralRunner. Examples:
       --filter <substr>     only matching projects
       --phase <list>        transpile,compile,target,output,all
-      --update-targets      regenerate .cs.target goldens, then stop
+      --update-targets      re-transpile UNCONDITIONALLY (no up-to-date skip), regenerate the
+                            .cs.target goldens, then stop. A project whose transpile failed, timed
+                            out, or exited 0 having converted best-effort is refused BY NAME, its
+                            golden left alone, and the run exits non-zero -- a golden is the record
+                            of what the converter emits, so it is never minted from an mtime.
       --list                list matched projects
 
     Timeout budgets, in SECONDS (flag > environment variable > default). Build defaults are sized

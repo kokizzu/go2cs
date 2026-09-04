@@ -125,11 +125,11 @@ namespace BehavioralRunner
         // than a silent skip -- so a future way of losing a binary cannot reproduce that vacuous green.
         private static readonly string s_exeSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
 
-        // A path fragment matching a build-output directory at any depth, built from the host's own
-        // separator. The literal @"\bin\" this replaced does not ERROR off Windows -- it simply never
-        // matches, so bin/ and obj/ enumerate as behavioral packages and get transpiled.
-        private static readonly string s_binFragment = $"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}";
-        private static readonly string s_objFragment = $"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}";
+        // The bin/obj path fragments that used to live here moved to the shared
+        // src/tests/BehavioralPackages.cs with the package walk that is their only consumer. They are
+        // NOT re-declared here: a second copy would be free to drift from the walk it exists for, and
+        // the reason they exist at all (a literal @"\bin\" never MATCHES off Windows, so build output
+        // enumerates as behavioral packages instead of erroring) is a property of the walk.
 
         private static string s_repoRoot = null!;
         private static string s_srcRoot = null!;
@@ -153,6 +153,18 @@ namespace BehavioralRunner
         // the pre-build. A target assembly older than this predates its own dependencies, so it cannot be
         // treated as evidence that the target still compiles -- see SuspectProjects.
         private static DateTime s_sharedDepStamp = DateTime.MinValue;
+
+        // Set by --update-targets, and consulted by RunTranspile alone. A golden is the AUTHORITATIVE
+        // record of what the converter emits, so the one thing that must never precede minting it is
+        // an up-to-date SKIP. UpToDate answers on MTIMES, and nothing about "newer than its .go and
+        // than go2cs.exe" says the .cs came from THIS converter: a `git checkout HEAD -- <file>.cs`,
+        // a Copy-Item, an editor save, or any restore of the .cs alone leaves precisely that relation
+        // over content from some other converter. The skip then reports Pass, the copy writes those
+        // bytes into the golden, and afterwards .cs, .cs.target and UpToDate all agree by
+        // construction, so no later run can see it (false-green route #2, turned on the goldens
+        // themselves). Ordinary runs KEEP the skip: there it is a real optimisation whose worst case
+        // is a stale COMPARISON, and only a stale RECORD is unrecoverable.
+        private static bool s_forceTranspile;
 
         public static int Main(string[] args)
         {
@@ -201,6 +213,10 @@ namespace BehavioralRunner
                         break;
                     case "--update-targets":
                         updateTargets = true;
+                        // A re-baseline transpiles unconditionally. Set here rather than read from
+                        // `updateTargets` inside RunTranspile so the rule is visible at the flag it
+                        // belongs to and RunTranspile keeps one reason to consult one field.
+                        s_forceTranspile = true;
                         break;
                     case "--list":
                         listOnly = true;
@@ -357,14 +373,16 @@ namespace BehavioralRunner
                     if (refused.Count == 0)
                         return 0;
 
-                    // Never re-baseline from a transpile that did not complete. A killed converter
-                    // leaves either the PREVIOUS converter's .cs or a truncated partial write, and
-                    // copying that over the golden writes the unmeasured state into the authoritative
-                    // record -- worse than a false green, because UpToDate then sees a .cs newer than
-                    // both its .go and go2cs.exe and skips re-transpiling it on every later run, hiding
-                    // the drift permanently. Exit non-zero so a wrapper cannot read this as success.
+                    // Never re-baseline from a transpile that did not complete OR that completed
+                    // best-effort. A killed converter leaves either the PREVIOUS converter's .cs or a
+                    // truncated partial write; a degraded one exits 0 having written a .cs for a
+                    // package it could not fully type-check. Copying either over the golden writes the
+                    // unmeasured state into the authoritative record -- worse than a false green,
+                    // because UpToDate then sees a .cs newer than both its .go and go2cs.exe and skips
+                    // re-transpiling it on every later run, hiding the drift permanently. Exit
+                    // non-zero so a wrapper cannot read this as success.
                     Console.Error.WriteLine();
-                    Console.Error.WriteLine($"REFUSED to re-baseline {refused.Count} project(s) whose transpile did not complete:");
+                    Console.Error.WriteLine($"REFUSED to re-baseline {refused.Count} project(s) whose transpile was not measured:");
 
                     foreach (string p in refused.Take(20))
                         Console.Error.WriteLine($"  {p}");
@@ -372,7 +390,11 @@ namespace BehavioralRunner
                     if (refused.Count > 20)
                         Console.Error.WriteLine($"  ... and {refused.Count - 20} more.");
 
-                    Console.Error.WriteLine("Their goldens are UNCHANGED. Fix the transpile (or raise --transpile-timeout) and re-run.");
+                    // The remedies are DIFFERENT and naming only one sends the reader to the wrong
+                    // place: a timeout wants a bigger budget, a best-effort conversion wants a host
+                    // that can type-check the package (or an F8 marker saying this one cannot).
+                    Console.Error.WriteLine("Their goldens are UNCHANGED. A timeout wants a larger --transpile-timeout;");
+                    Console.Error.WriteLine("a best-effort conversion wants a host that can type-check the package.");
                     return 1;
                 }
             }
@@ -442,7 +464,7 @@ namespace BehavioralRunner
             {
                 string projPath = Path.Combine(s_behavioralDir, p);
 
-                if (UpToDate(projPath))
+                if (!s_forceTranspile && UpToDate(projPath))
                 {
                     results[p].Phases[Phase.Transpile] = Status.Pass;
                     continue;
@@ -526,24 +548,18 @@ namespace BehavioralRunner
         // work is the normal case where the .go files DON'T change, so a .go-only check leaves every
         // project "up to date", skips transpilation entirely, and lets the Target/Output phases validate
         // the PREVIOUS converter's output against goldens that same converter generated -- a false green
-        // that guards nothing. (check-no-regression.ps1 re-transpiles unconditionally and is immune.)
-        // A production transpile converts the package's PRODUCTION sources only -- go/packages excludes
-        // `_test.go` -- so an in-package test file has no `.cs` and no golden, by design. It is still a
-        // real input: the converter scans the sibling test half for declarator names and for globals whose
-        // address it takes (SiblingTestAddressedGlobal guards the latter), which is why such a file exists
-        // in this corpus at all. Every per-.go loop here therefore walks production sources.
+        // that guards nothing. (check-no-regression.ps1 re-transpiles unconditionally and is immune,
+        // and so is --update-targets since 2026-09-04: see s_forceTranspile. A stale COMPARISON is
+        // recoverable; a stale RECORD is not, which is why only one of the two keeps the skip.)
+        //
+        // The two walks below FORWARD to the shared definition in src/tests/BehavioralPackages.cs,
+        // linked into this project. Both encode invariants that three separate instruments have to
+        // agree on -- production-sources-only, and DEEPEST-FIRST -- and route #3 is what disagreeing
+        // about the second one cost. Kept as named forwarders rather than rewritten call sites so
+        // this file's eight uses read exactly as they did.
         private static string[] ProductionGoFiles(string projPath) =>
-            Directory.GetFiles(projPath, "*.go")
-                .Where(go => !go.EndsWith("_test.go", StringComparison.OrdinalIgnoreCase))
-                .ToArray();
+            BehavioralPackages.ProductionGoFiles(projPath);
 
-        // Every Go package directory a project owns, DEEPEST-FIRST. Most projects are a single package,
-        // but 22 carry nested sub-libraries (IoLike\FsLike, VersionedImport\vlib, …) that the converter
-        // must be invoked on separately -- and BEFORE their parent, because a sub-library's generated
-        // package_info.cs is an input to the parent's transpile (the parent reads its sibling's
-        // [assembly: GoImplement] records when deciding whether to mint a local value adapter). Walking
-        // top-level only left those sub-libraries permanently un-regenerated, which both froze them at an
-        // old converter and made the parent's golden unable to fail on a regression in that area.
         /// <summary>
         /// Parses <c>--slice i/n</c>: the i-th of n contiguous, disjoint pieces of the enumeration,
         /// 1-based.
@@ -599,14 +615,7 @@ namespace BehavioralRunner
         }
 
         private static string[] GoPackageDirs(string projPath) =>
-            new[] { projPath }
-                .Concat(Directory.GetDirectories(projPath, "*", SearchOption.AllDirectories)
-                    .Where(d => !d.Contains(s_binFragment, StringComparison.OrdinalIgnoreCase) &&
-                                !d.Contains(s_objFragment, StringComparison.OrdinalIgnoreCase))
-                    .Where(d => ProductionGoFiles(d).Length > 0))
-                .OrderByDescending(d => d.Count(c => c == Path.DirectorySeparatorChar))
-                .ThenBy(d => d, StringComparer.OrdinalIgnoreCase)
-                .ToArray();
+            BehavioralPackages.GoPackageDirs(projPath);
 
         private static bool UpToDate(string projPath)
         {
@@ -1160,6 +1169,12 @@ namespace BehavioralRunner
         // transpile PASSED are touched; the rest are reported through `refused` so the caller can fail
         // the run rather than silently baking unmeasured output into the goldens. `results` used to be
         // an unread parameter here, which is precisely how that hole stayed open.
+        //
+        // The transpile this reads was FORCED (s_forceTranspile is set by --update-targets), so
+        // "Pass" here means the converter ran this second on this project -- not that its .cs happened
+        // to be newer than its .go. Both refusals below therefore describe THIS run: a non-Pass status
+        // is a transpile that failed or was killed, and a best-effort marker is a transpile that
+        // exited 0 having degraded, which is the one an exit code cannot see.
         private static int UpdateTargets(IReadOnlyList<string> projects, Dictionary<string, ProjectResult> results, out List<string> refused)
         {
             refused = new List<string>();
@@ -1167,9 +1182,21 @@ namespace BehavioralRunner
 
             foreach (string p in projects)
             {
+                // ONE question, asked of ONE representation. Transpile is Pass only when the converter
+                // ran to completion on every package of this project AND did not say the emission was
+                // degraded -- RunTranspile's BestEffort status carries that second half, so there is no
+                // second best-effort test here to drift away from it. The status also NAMES the cause,
+                // which matters because the three remedies differ: a bigger budget, a fixed converter,
+                // or a host that can type-check the package.
                 if (!results[p].Phases.TryGetValue(Phase.Transpile, out Status t) || t != Status.Pass)
                 {
-                    refused.Add(p);
+                    refused.Add($"{p} -- transpile {t switch
+                    {
+                        Status.Timeout    => "TIMED OUT",
+                        Status.BestEffort => "was NOT MEASURED (best-effort conversion; the converter could not fully type-check it)",
+                        _                 => "did not complete"
+                    }}");
+
                     continue;
                 }
 
@@ -1541,7 +1568,11 @@ namespace BehavioralRunner
                                         measurable total. Prints "SLICE i/n: k of m measurable
                                         projects" for the caller to sum and assert.
                   --phase <list>        Comma list of: transpile,compile,target,output,all (default all).
-                  --update-targets      Transpile, then copy each .cs to its .cs.target golden, and stop.
+                  --update-targets      Re-transpile UNCONDITIONALLY (no up-to-date skip), then copy
+                                        each .cs to its .cs.target golden, and stop. A project whose
+                                        transpile failed, timed out, or exited 0 having converted
+                                        best-effort is REFUSED by name and its golden left alone; the
+                                        run then exits non-zero.
                   --list                List matched projects and exit.
                   -h, --help            Show this help.
 
