@@ -827,3 +827,60 @@ through the array's own backing, and the nil boundary at today's answer) plus th
 `ReflectEmptyContainerIdentity`, 10 rows against Go's own output: the observed rows that must stay
 right, the empty-literal assertion, and an ambiguous package where `[][3]` and `[][4]` both answer
 correctly and remain distinct types.
+
+## 16. §12.4's THIRD detour WITHDRAWN — the `Printf` mangling is not a converter defect (2026-09-04, SUB-Q2)
+
+> Appended as a dated block rather than edited into §12.4, which stands as written: Increment C is
+> code-complete on a branch that touches that section, and an in-section hunk is the adjacent-edit
+> merge trap this file should not pay for a correction.
+
+§12.4's amendment of 2026-09-03 counts **three** converter defects found by guards written to measure
+reflect. The third — "a `Printf` whose FORMAT STRING holds a comma inside parentheses (`ArrayOf(3,int)`)
+is emitted with its literal split and a stray cast (CS1003/CS1010)" — **does not reproduce, and the
+count is two.**
+
+**Measured at two converters, not one.** Master `26ff0c45b`, and a converter built from `src/go2cs` at
+**`2211c1d8e`** — the parent of `c70293a20`, i.e. the exact binary the guard runs behind that amendment
+were raised against. Three inputs: `ChanElemDims.go` verbatim with the `Println` sidestep replaced by the
+`Printf` it names; a twenty-row format-text matrix; a seven-row argument-shape matrix. **Six conversions,
+all exit 0, and the base and master emissions are byte-identical on all three (`diff` empty ×3).** The
+reported line emits as one verbatim literal at BOTH binaries, with no split and no stray cast:
+
+    fmt.Printf("constructed row: ChanOf(BothDir, ArrayOf(3,int)) String()=%s Elem().Len()=%d\n"u8, name, n);
+
+**Both stated triggers fall, each refuted by rows written for it.** The surviving diagnosis (a comma
+inside parentheses in the format) is refuted by `(a,b)`, `(a, b)`, nested `f(g(1,2))`, empty `()`, a verb
+straight after `)`, the escaped-quote form, `100%%` beside parens, one/none/three arguments, and single-
+and multi-line call forms. The FIRST diagnosis it replaced — a `.String()` method call as the first
+variadic argument — is refuted by its own three rows plus the Stringer-value and second-position
+controls. **Two rows an elimination inside one file could not have reached also convert clean, and they
+are the ones that would fail if the mechanism were what was proposed: UNBALANCED `open(` and `close)`,
+which is precisely what a paren-depth scan over a literal's CONTENTS would desynchronize on.**
+
+**The standing corpus says the same and cost one grep.** `src/core` carries thousands of emitted formats
+of this shape compiling 307/307 — `bufio_test.cs`'s `"first ReadSlice(,) = %q, %v"u8` (a comma ALONE
+inside parentheses), `archive/tar/strconv_test.cs`'s `"formatPAXTime(%ds, %dns): got %q, want %q"u8` in
+the multi-line call form, `bytes/buffer_test.cs`'s nested `"%s: buf.Len() == %d, len(buf.Bytes()) == %d"u8`.
+A trigger that real could not leave that population green.
+
+**What the reporting tree saw is not reconstructible from here and no mechanism is invented for it.**
+One reading is worth carrying, because it generalizes: **`CS1010 "Newline in constant"` beside `CS1003`
+is the signature of a TEXT-CORRUPTED `.cs`, never of an emission decision.** The converter emits a Go
+source newline escape as the TWO-CHARACTER C# escape at both binaries, and a raw newline inside a C#
+literal is not a form any path here produces. That is the r41 overlapping-conversion family — whose
+documented signature is ONE
+corrupted file, syntax errors, reading exactly like a converter regression — or a stale binary; both are
+live while a lane runs behavioral gates over its own tree.
+
+**Two lessons this block banks.** An elimination performed inside ONE file is a hypothesis, not a pin —
+the second diagnosis was reached by varying two rows of one guard, and the corpus refutes it in one
+grep. And **the negative result banks in CODE at the gate, not only in prose**:
+`src/tests/Behavioral/PrintfFormatCommaParen` carries all twenty-four rows with
+`[GoTestMatchingConsoleOutput]` and a golden pinning the emitted `"…"u8` form, so the next report of
+this shape is a filtered behavioral run rather than an investigation. **No fix was written**, deliberately:
+machinery that cannot be made to fail under its own control is a false-green seed.
+
+**Owed elsewhere, ruled by COORD and recorded here so it is not lost:** `ChanElemDims.go` still carries a
+comment asserting this defect, and the honest correction there is not a comment edit but RESTORING the
+`Printf` line the sidestep replaced — which moves that guard's golden and belongs to its owner, after
+Increment C lands, with this guard's matching row as the reference.

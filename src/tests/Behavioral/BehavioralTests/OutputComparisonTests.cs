@@ -1355,6 +1355,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckPointerValueToInterfaceArg() => CheckTarget("PointerValueToInterfaceArg");
 
     [TestMethod]
+    public void CheckPrintfFormatCommaParen() => CheckTarget("PrintfFormatCommaParen");
+
+    [TestMethod]
     public void CheckPrintfWidthFlags() => CheckTarget("PrintfWidthFlags");
 
     [TestMethod]
