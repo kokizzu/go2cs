@@ -22834,4 +22834,68 @@ Go's own `net` suite (cgo off) fails exactly one test on this host — `TestLook
 
 -- G
 
+
+## 2026-09-04 — `testing`: the row's denominator MEASURED (59 names / **156 verdicts**), Finding 4's cross-check, and bucket B's five kinds
+
+Supersedes the tracker row *"| `testing` | 59 | Option 1 ruled, sequenced post-wave |"* — appended
+rather than edited, per this board's own append-only rule. Full working: the 2026-09-04 amendment
+block at the end of [`CENSUS-testing-osuser-rows.md`](CENSUS-testing-osuser-rows.md).
+
+**The denominator is 59 names and 156 verdicts, and only the second figure sizes the row.** Measured,
+not carried: `go test -json -count=1 testing` at the pinned go1.23.12 on windows/amd64 emits **59
+top-level terminal verdicts, all `pass`, plus 97 subtest verdicts**, wall 3.65 s. `FuzzNaming` is one
+of the 59 (Go runs a fuzz target against its seed corpus as an ordinary test; it contributes 25 of the
+97 subtests). `TestMain` is not — no terminal event carries its name. Every prior record for this row,
+this board included, counts NAMES; the roster counts verdicts, and the two had never been reconciled.
+
+**The cross-check Finding 4 was owed and never had.** Finding 4 records what Option 1 is and where it
+was ruled, and takes the census's four buckets on their own authority. They now have an independent
+second derivation: the `-tests` capability gate's own measured admission (train-18 `70981ac59`, *"Of
+Go's 58 Tests it admits 31 and marks 27 unsupported"*) reproduces them exactly —
+
+- admitted **31** = bucket **B** (21) + bucket **D** (10)
+- unsupported **27** = bucket **A**'s 19 `Test` functions + bucket **C**'s 8 (`FuzzNaming` is gated by
+  declaration KIND, so it sits outside the 27)
+
+A hand classification of assertion subjects and the converter's transitive capability walk, built from
+different evidence, agreeing to the name. The practical consequence is that §2.4's *"a mechanism to
+admit only bucket D"* is already built for A and C, and **only bucket B was ever open to a ruling**.
+
+**Bucket B is five kinds, and the largest is unfalsifiable.** The host's reporter
+(`core/testing/TestReporter.cs`) writes `"{ACTION,-20} {Test} — {Output}"` and emits no `--- FAIL:`,
+`=== RUN`, `=== NAME` or indented `file.go:NN:` layout anywhere. Each of the ten race tests asserts
+`count(<one of those literals>) == 0`, so all ten pass however the child behaves — including if the
+child never starts. Three more (`TestPanicHelper`, `TestCallRunInCleanupHelper`,
+`TestGoexitInCleanupAfterPanicHelper`) open with an env guard and assert nothing on either side. Four
+assert a POSITIVE match of Go's layout and fail deterministically. Two (`TestRunningTests`,
+`TestRunningTestsInCleanup`) have **no failure path at all** — the parent doubles its timeout and
+retries until the child prints Go's `-test.timeout` dump, which the host never emits, so they hang.
+
+**Owner ruling, 2026-09-04, and the distinction it turns on.** Race ten and hang two are EXCLUDED by
+twelve declaration-keyed `unsupportedRuntimeCapabilities` entries; the four structural failures are RUN
+and DISCLOSED under the standing host-identity class; the three parent-process no-ops stay ADMITTED as
+agreeing passes; `TestTesting` and `TestFlag` are admitted. The line worth carrying past this row:
+
+> the anti-laundering clause reaches **a pass the HOST cannot fail** — a real check on Go's side, an
+> unwritable literal on ours — **not a pass neither side was meant to make.** An agreeing no-op is
+> Go's row.
+
+**Predicted row: 52 verdicts (37 matching + 15 disclosed), 104 excluded** (A 84, C 8, race 10, hangs 2).
+`104 + 52 = 156`. The 15 disclosed are the four structural tests' 14 verdicts plus `TestAllocsPerRun`,
+whose CLR alloc regime is the standing class this package is itself the subject of.
+
+**And §2.4's "real cost" was priced against a false premise.** It costs Option 1 at *"days, not hours"*
+for *"a landing place for converted `testing` test sources that does not collide with the host"*. There
+is nothing to move: every banked row already writes its test emission INTO the production package's
+directory (`src/core/path/` holds `path.csproj` and `path.tests.csproj` side by side), the
+two-projects-one-directory problem is already solved in the emitted test csproj
+(`MSBuildProjectExtensionsPath=obj/tests/`), the reference model already emits a bare colocated
+`<ProjectReference Include="<pkg>.csproj" />` — which for this row IS the hand-owned host — and none of
+the emitted artifact names collides with any of the host's ten files. What collides is the PRODUCTION
+conversion, a separate half of the run. Suppressing that half, forcing the external-only project model,
+and adding to `testing.csproj` the same one-line IP-4 `<Compile Remove>` every converted production
+csproj already carries is the whole layout cost.
+
+-- SUB-Q18
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
