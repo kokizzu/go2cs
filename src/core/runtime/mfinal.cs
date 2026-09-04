@@ -545,6 +545,14 @@ private sealed class GoFinalizerSentinel
 // time in FIFO order. The CLR finalizer thread is never blocked by user code, and a Go finalizer
 // that parks parks only this thread — exactly as it would park `fing`.
 //
+// MEASURED AFTER THE FIX, so the next reader need not re-run it: TestGoroutineCounts through the
+// -tests pipeline (Release, tiered off, oracle go1.23.12) completes in 10.41 s where it used to
+// reach the 25-minute package deadline, and now dies one line PAST the finalizer — at
+// pprof_goroutineProfileWithLabels, an unimplemented external stub, which is a different wall and
+// somebody else's item. The 10.41 s is the design working rather than a cost: the first
+// runtime.GC() pays the drain budget once because that body really is parked, the second pays
+// nothing because WaitForIdle recognizes it, and the row proceeds.
+//
 // WHAT THE CALLER STILL GETS. runtime.GC() and blockUntilEmptyFinalizerQueue wait for this queue
 // to go idle, BOUNDED. Well-behaved finalizers complete in microseconds, so those callers keep the
 // stronger-than-Go guarantee the corpus already relies on (sync's pool/oncefunc rows, unique's
