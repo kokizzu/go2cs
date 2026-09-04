@@ -50,6 +50,26 @@ $HostGoos =
     elseif ($IsLinux)   { 'linux' }
     else                { $null }
 
+# The GOARCH this host measures as, in Go's spelling -- ONE derivation for the same reason as above.
+# Added 2026-09-04 with the GOARCH exclusivity axis: a behavioral package can be native to every GOOS
+# and exclusive to one GOARCH (StdLibInternalAbi, whose Go source does not build on arm64 -- Go's own
+# filename rule drops abi_amd64.go/goarch_amd64.go/zgoarch_amd64.go), and the three instruments that
+# enumerate behavioral packages must agree on which packages a host may measure.
+#
+# ProcessArchitecture rather than OSArchitecture: what matters is the arch the CONVERTER defaults its
+# `-platforms` to, and go2cs is built and run by the same toolchain as this host process. There is no
+# GoTargetArch override to honor -- none exists anywhere in the tree, and inventing one no instrument
+# sets would be a branch nothing can exercise. An unrecognized architecture answers its own lowercase
+# .NET name rather than a guess, matching $HostGoos's refusal to invent a flavor.
+$HostGoarch =
+    switch ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture) {
+        'X64'   { 'amd64' }
+        'Arm64' { 'arm64' }
+        'X86'   { '386' }
+        'Arm'   { 'arm' }
+        default { "$_".ToLowerInvariant() }
+    }
+
 # The corpus flavor a NON-Windows host binds by default. Every L3 csproj defaults `GoTargetOS` to
 # `windows` when the property is EMPTY (the corpus reference target), which is right on Windows and
 # wrong everywhere else: a linux host then builds the windows flavor, whose `os_package` module

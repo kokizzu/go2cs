@@ -318,24 +318,28 @@ public abstract class BehavioralTestBase
     // top-level only left those sub-libraries permanently un-regenerated, which both froze them at an
     // old converter and made the parent's golden unable to fail on a regression in that area.
     /// <summary>
-    /// F8 -- a behavioral package whose Go source only type-checks on some platforms is INCONCLUSIVE
-    /// on any other host, with the platform named.
+    /// F8 -- a behavioral package whose Go source only type-checks on some platforms, or on some
+    /// architectures, is INCONCLUSIVE on any other host, with what it is native to named.
     /// </summary>
     /// <remarks>
     /// Inconclusive rather than Pass or Fail, and the distinction is the whole point. A Pass would be
     /// a vacuous green over a package the converter could not type-check; a Fail would be indis-
     /// tinguishable by name from a real conversion regression, which is how one could hide among
     /// expected lines. Inconclusive says exactly what happened and does not pretend to a verdict.
+    ///
+    /// Both axes since 2026-09-04: ShouldSkip answers for GOOS and GOARCH alike, so a package that is
+    /// native to every GOOS but exclusive to one GOARCH (StdLibInternalAbi, whose Go source does not
+    /// build on arm64) is covered by the same call with no second predicate here.
     /// </remarks>
     protected static void SkipIfPlatformExclusive(string targetProject)
     {
         string projPath = Path.GetFullPath($"{TestRootPath}{targetProject}");
 
-        if (PlatformExclusive.ShouldSkip(projPath, out string platforms))
+        if (PlatformExclusive.ShouldSkip(projPath, out string nativeTo))
         {
             Assert.Inconclusive(
-                $"SKIPPED (platform-exclusive): {targetProject} is native to [{platforms}]; " +
-                $"this host measures as {PlatformExclusive.HostGoos}, where it cannot be measured.");
+                $"SKIPPED (platform-exclusive): {targetProject} is native to [{nativeTo}]; " +
+                $"this host measures as {PlatformExclusive.HostTarget}, where it cannot be measured.");
         }
     }
 

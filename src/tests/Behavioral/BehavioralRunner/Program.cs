@@ -237,6 +237,12 @@ namespace BehavioralRunner
             // reports a failure that is really a host mismatch. Skipping SILENTLY would be worse than
             // the failure, so the names and their platforms are printed and counted separately, and
             // they never enter the pass/fail denominators.
+            //
+            // TWO AXES since 2026-09-04: GOOS and GOARCH. StdLibInternalAbi is native to every GOOS
+            // and exclusive to amd64 -- its Go source does not build on arm64 at all, Go's own
+            // filename rule dropping abi_amd64.go/goarch_amd64.go/zgoarch_amd64.go -- which is the
+            // arm64 half of the darwin census reading `goarch.cs(23,22): error CS0145`. ShouldSkip
+            // answers for both axes; nothing here needs to know which one fired.
             List<string> platformExclusive = projects
                 .Where(n => PlatformExclusive.ShouldSkip(Path.Combine(s_behavioralDir, n), out _))
                 .ToList();
@@ -245,12 +251,12 @@ namespace BehavioralRunner
             {
                 projects = projects.Except(platformExclusive).ToList();
 
-                Console.WriteLine($"SKIPPED (platform-exclusive, {platformExclusive.Count}): native to another platform, so this {PlatformExclusive.HostGoos} host cannot measure them:");
+                Console.WriteLine($"SKIPPED (platform-exclusive, {platformExclusive.Count}): native to another platform or architecture, so this {PlatformExclusive.HostTarget} host cannot measure them:");
 
                 foreach (string n in platformExclusive)
                 {
-                    PlatformExclusive.ShouldSkip(Path.Combine(s_behavioralDir, n), out string platforms);
-                    Console.WriteLine($"    {n} [{platforms}]");
+                    PlatformExclusive.ShouldSkip(Path.Combine(s_behavioralDir, n), out string nativeTo);
+                    Console.WriteLine($"    {n} [{nativeTo}]");
                 }
 
                 Console.WriteLine();
