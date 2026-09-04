@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 
@@ -100,12 +101,13 @@ public sealed class Goroutine
     // The panic observer, when a HOST installed one. Read once per escaping panic and never cleared.
     private static Action<PanicException>? s_panicObserver;
 
-    private Goroutine(long id, bool isMain, System.Reflection.MethodBase? creator, long parentId)
+    private Goroutine(long id, bool isMain, System.Reflection.MethodBase? creator, long parentId, System.Reflection.MethodBase? entry)
     {
         Id = id;
         IsMain = isMain;
         Creator = creator;
         ParentId = parentId;
+        Entry = entry;
         IsSystem = !isMain && IsSystemCreator(creator);
     }
 
@@ -123,6 +125,31 @@ public sealed class Goroutine
     // goroutineheader prints the status word and OVERRIDES it with gp.waitreason.String() whenever
     // the status is _Gwaiting (runtime/traceback.go).
     private int m_waitReason;
+
+    // Go's gp.labels, MIRRORED onto the registry entry so a profiler can read it. The authoritative
+    // per-goroutine storage is s_profileLabels below, an AsyncLocal, because Go INHERITS labels at
+    // goroutine creation (proc.go: `newg.labels = mp.curg.labels`) and ExecutionContext capture at
+    // thread start is that rule exactly. An AsyncLocal is readable only from the thread whose
+    // context holds it, and a goroutine profile reads EVERY goroutine's labels from ONE thread — so
+    // the value is mirrored here as well, seeded at Enter from the flowed AsyncLocal and rewritten
+    // whenever the goroutine sets its own. Volatile on both sides: written by this goroutine's own
+    // thread, read by whichever thread is taking the profile.
+    //
+    // Deliberately `object?`. The payload is runtime/pprof's *labelMap and golib does not interpret
+    // it — knowing that type here would be a layering inversion for no gain, since the profile hands
+    // the very same reference straight back.
+    private object? m_profileLabels;
+
+    // Nonzero while a SYSTEM goroutine is doing user work — Go's fingStatus&fingRunningFinalizer,
+    // which is the one bit isSystemGoroutine consults to answer false for `runfinq` while it is
+    // running a finalizer body. Nothing else in this runtime has that shape today; it exists here
+    // rather than in the finalizer queue because the population being classified is this registry's.
+    private int m_userWork;
+
+    // The inheritance mechanism itself; see m_profileLabels for why there are two storages and why
+    // this one is authoritative for the CURRENT goroutine. Its flow through golib's real spawn
+    // primitive is measured by GolibTests/GoroutineExecutionContextFlowTests.
+    private static readonly AsyncLocal<object?> s_profileLabels = new();
 
     // Monotonic, and deliberately INTERNAL: Go hides goroutine ids from programs precisely so that
     // nothing builds goroutine-local storage on them, and a converted program must inherit that
@@ -144,6 +171,22 @@ public sealed class Goroutine
     internal System.Reflection.MethodBase? Creator { get; }
 
     internal long ParentId { get; }
+
+    // Go's gp.startpc -- the function this goroutine's body BEGINS in, as distinct from Creator
+    // (gp.gopc, the function that executed the `go`). Go keeps both and they answer different
+    // questions: a traceback's `created by` line reads the creator, while a goroutine profile groups
+    // by the stack whose bottom Go frame is the start function. Captured at the launch site, where
+    // the user's delegate is still in hand -- `builtin.goǃ`'s arity rungs hand Start a CLOSURE, so
+    // the closure's own Method would name the launcher's lambda rather than the goroutine's body.
+    //
+    // Null for the main goroutine and for a thread a host entered directly, which is Go's shape too:
+    // goroutine 1 is not started by a `go` statement and has no startpc of this kind.
+    internal System.Reflection.MethodBase? Entry { get; }
+
+    // Whether a profile that reports USER goroutines should include this one -- Go's
+    // `!isSystemGoroutine(gp, false)`. A system goroutine counts as user exactly while it is doing
+    // user work, which in Go is the finalizer goroutine running a finalizer body and nothing else.
+    internal bool CountsAsUser => !IsSystem || Volatile.Read(ref m_userWork) != 0;
 
     // Go's isSystemGoroutine (runtime/traceback.go): a goroutine whose start function lives in the
     // runtime package -- less runtime.main, which has no creator here and is never system. Decided
@@ -268,15 +311,34 @@ public sealed class Goroutine
     /// an inert scope, so nesting can neither mint a second goroutine for one thread nor retire the
     /// outer one early.
     /// </remarks>
-    public static Scope Enter() => Enter(creator: null, parentId: 0);
+    public static Scope Enter() => Enter(creator: null, parentId: 0, entry: null);
 
-    private static Scope Enter(System.Reflection.MethodBase? creator, long parentId)
+    /// <summary>
+    /// Marks the calling thread as running one of the RUNTIME's own goroutines — a system goroutine,
+    /// in Go's terms — started by <paramref name="starter"/>.
+    /// </summary>
+    /// <remarks>
+    /// For a thread the runtime creates directly rather than through <see cref="Start"/>, where the
+    /// creator cannot be located by walking the stack because the `go` statement it stands in for is
+    /// not on it. The finalizer runner is the first: Go's `createfing` executes `go runfinq()`, so
+    /// both its creator and its start function are runtime functions and <see cref="IsSystem"/> is
+    /// true — which is what keeps it out of <see cref="UserCount"/> and out of a traceback.
+    /// </remarks>
+    internal static Scope EnterSystem(System.Reflection.MethodBase starter) => Enter(starter, parentId: 0, entry: starter);
+
+    private static Scope Enter(System.Reflection.MethodBase? creator, long parentId, System.Reflection.MethodBase? entry)
     {
         if (t_current is not null)
             return default;
 
-        Goroutine goroutine = Register(isMain: false, creator, parentId);
+        Goroutine goroutine = Register(isMain: false, creator, parentId, entry);
         t_current = goroutine;
+
+        // Go's `newg.labels = mp.curg.labels`, arriving through the ExecutionContext the creating
+        // thread captured at Thread.Start. Seeding the mirror HERE rather than at the set site is
+        // what makes an inherited label visible to a profile: the child never calls setProfLabel,
+        // so nothing else would ever write its entry.
+        goroutine.m_profileLabels = s_profileLabels.Value;
 
         // Named for the debugger and for a thread dump, which is where a leaked or wedged goroutine
         // is diagnosed. A host that named the thread itself keeps its own name.
@@ -380,6 +442,91 @@ public sealed class Goroutine
     }
 
     /// <summary>
+    /// Sets the calling goroutine's profile labels — Go's <c>getg().labels = labels</c>.
+    /// </summary>
+    /// <remarks>
+    /// Writes BOTH storages: the <c>AsyncLocal</c> that goroutines spawned from here will inherit,
+    /// and this goroutine's registry mirror that a profile reads. The payload is opaque; see
+    /// <c>m_profileLabels</c>. A thread with no goroutine identity still sets the AsyncLocal, so a
+    /// label set on a host thread flows to the goroutines it starts, exactly as before this mirror
+    /// existed.
+    /// </remarks>
+    public static void SetProfileLabels(object? labels)
+    {
+        s_profileLabels.Value = labels;
+
+        if (t_current is { } goroutine)
+            Volatile.Write(ref goroutine.m_profileLabels, labels);
+    }
+
+    /// <summary>
+    /// The calling goroutine's profile labels — Go's <c>getg().labels</c>, or <c>null</c> when it
+    /// has never been labelled.
+    /// </summary>
+    public static object? GetProfileLabels() => s_profileLabels.Value;
+
+    /// <summary>
+    /// Accounts for a SYSTEM goroutine doing user work for the lifetime of the returned scope, so a
+    /// profile of user goroutines includes it.
+    /// </summary>
+    /// <remarks>
+    /// Go's <c>fingStatus &amp; fingRunningFinalizer</c>, and the only shape that carries it:
+    /// <c>isSystemGoroutine</c> answers false for <c>runfinq</c> precisely while a finalizer body is
+    /// running, because that body is the user's code. Inert on a thread with no identity. Nesting is
+    /// counted rather than flagged, so an inner scope cannot end an outer one early.
+    /// </remarks>
+    public static UserWorkScope EnterUserWork()
+    {
+        if (t_current is not { } goroutine)
+            return default;
+
+        Interlocked.Increment(ref goroutine.m_userWork);
+
+        return new UserWorkScope(goroutine);
+    }
+
+    /// <summary>
+    /// A point-in-time view of the goroutines a USER-goroutine profile reports — Go's
+    /// <c>gcount()</c> population, plus the finalizer goroutine while it runs a finalizer body.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The ONE snapshot primitive the profile and the tracer share, rather than a second registry
+    /// walk beside <see cref="Snapshot"/>. It is public because its first consumer —
+    /// <c>runtime/pprof</c>'s <c>pprof_goroutineProfileWithLabels</c> — is a different assembly from
+    /// the hand-owned <c>runtime</c> package that golib's <c>InternalsVisibleTo</c> reaches, and no
+    /// forwarder can exist between them (a <c>runtime → runtime/pprof</c> project reference closes
+    /// the W1 cycle).
+    /// </para>
+    /// <para>
+    /// It exposes the two facts a profile records and NOTHING ELSE — deliberately no goroutine id,
+    /// which stays internal for the reason <see cref="Current"/> gives. Go's own goroutine profile
+    /// records exactly a stack and a label set per goroutine, so this is complete for its purpose
+    /// rather than trimmed for it.
+    /// </para>
+    /// <para>
+    /// Not atomic, and Go's is not either once the world restarts: a goroutine created after the
+    /// walk is simply absent, which is the tolerance Go documents for its own concurrent collection
+    /// ("New goroutines may not be in this list, but we didn't want to know about them anyway").
+    /// </para>
+    /// </remarks>
+    public static GoroutineProfileEntry[] ProfileSnapshot()
+    {
+        Goroutine[] live = Snapshot();
+        List<GoroutineProfileEntry> entries = new(live.Length);
+
+        foreach (Goroutine goroutine in live)
+        {
+            if (!goroutine.CountsAsUser)
+                continue;
+
+            entries.Add(new GoroutineProfileEntry(goroutine.Entry, Volatile.Read(ref goroutine.m_profileLabels)));
+        }
+
+        return [.. entries];
+    }
+
+    /// <summary>
     /// Every live goroutine, ordered by the sequence in which they were created.
     /// </summary>
     /// <remarks>
@@ -411,21 +558,38 @@ public sealed class Goroutine
     public static void Start(Action body)
     {
         // Captured HERE, on the thread executing the `go` statement -- the new thread's first frame
-        // is Run, which knows nothing about who asked for it.
-        StartWithCreator(body, CreatorFrame());
+        // is Run, which knows nothing about who asked for it. `body` IS the goroutine's start
+        // function on this overload: nothing wrapped it, so its Method names the Go function.
+        StartWithCreator(body, CreatorFrame(), body.Method);
+    }
+
+    /// <summary>
+    /// Starts <paramref name="body"/> as a goroutine whose START FUNCTION is <paramref name="entry"/>.
+    /// </summary>
+    /// <remarks>
+    /// The `goǃ` arity rungs evaluate Go's argument-at-the-`go`-statement rule by handing this a
+    /// CLOSURE (<c>() => action(arg)</c>), whose own Method is the launcher's compiler-generated
+    /// lambda rather than the Go function the goroutine runs. Passing the user's delegate alongside
+    /// it is what lets <see cref="Entry"/> answer Go's <c>gp.startpc</c> — the fact a goroutine
+    /// profile groups by. Two delegates over one method answer one function, so a method group and a
+    /// closure are interchangeable here.
+    /// </remarks>
+    public static void Start(Action body, Delegate entry)
+    {
+        StartWithCreator(body, CreatorFrame(), entry.Method);
     }
 
     /// <summary>
     /// The guard seam for <see cref="Start"/>: the same launch with the creator SUPPLIED, so a test can
     /// register a goroutine as the runtime's own without a runtime function to execute the `go`.
     /// </summary>
-    internal static void StartForGuard(Action body, System.Reflection.MethodBase? creator) => StartWithCreator(body, creator);
+    internal static void StartForGuard(Action body, System.Reflection.MethodBase? creator) => StartWithCreator(body, creator, body.Method);
 
-    private static void StartWithCreator(Action body, System.Reflection.MethodBase? creator)
+    private static void StartWithCreator(Action body, System.Reflection.MethodBase? creator, System.Reflection.MethodBase? entry)
     {
         long parentId = t_current?.Id ?? 0;
 
-        Thread thread = new(() => Run(body, creator, parentId), s_stackReserve)
+        Thread thread = new(() => Run(body, creator, parentId, entry), s_stackReserve)
         {
             IsBackground = true
         };
@@ -499,7 +663,7 @@ public sealed class Goroutine
         if (t_current is not null)
             return;
 
-        t_current = s_main = Register(isMain: true, creator: null, parentId: 0);
+        t_current = s_main = Register(isMain: true, creator: null, parentId: 0, entry: null);
     }
 
     // The first frame above golib's own launch machinery -- the `goǃ` rungs live on `builtin`, Start
@@ -527,9 +691,9 @@ public sealed class Goroutine
         return null;
     }
 
-    private static Goroutine Register(bool isMain, System.Reflection.MethodBase? creator, long parentId)
+    private static Goroutine Register(bool isMain, System.Reflection.MethodBase? creator, long parentId, System.Reflection.MethodBase? entry)
     {
-        Goroutine goroutine = new(Interlocked.Increment(ref s_nextId), isMain, creator, parentId);
+        Goroutine goroutine = new(Interlocked.Increment(ref s_nextId), isMain, creator, parentId, entry);
 
         s_live[goroutine.Id] = goroutine;
         Interlocked.Increment(ref s_count);
@@ -623,11 +787,11 @@ public sealed class Goroutine
     // The goroutine ROOT itself, on the CALLING thread. Start queues it; GolibTests calls it directly,
     // because the root's policy can only be observed from a thread whose exception the caller can
     // still catch — the real path ends in an unhandled exception and a dead process by design.
-    internal static void Run(Action body) => Run(body, creator: null, parentId: 0);
+    internal static void Run(Action body) => Run(body, creator: null, parentId: 0, entry: body.Method);
 
-    internal static void Run(Action body, System.Reflection.MethodBase? creator, long parentId)
+    internal static void Run(Action body, System.Reflection.MethodBase? creator, long parentId, System.Reflection.MethodBase? entry)
     {
-        using Scope scope = Enter(creator, parentId);
+        using Scope scope = Enter(creator, parentId, entry);
 
         try
         {
@@ -718,6 +882,29 @@ public sealed class Goroutine
     }
 
     /// <summary>
+    /// Ends the user-work window a matching <see cref="EnterUserWork"/> opened.
+    /// </summary>
+    public readonly struct UserWorkScope : IDisposable
+    {
+        private readonly Goroutine? m_goroutine;
+
+        internal UserWorkScope(Goroutine goroutine)
+        {
+            m_goroutine = goroutine;
+        }
+
+        public void Dispose()
+        {
+            // Inert when EnterUserWork found no identity: a thread that is not a goroutine is not
+            // in any profile's population to begin with.
+            if (m_goroutine is null)
+                return;
+
+            Interlocked.Decrement(ref m_goroutine.m_userWork);
+        }
+    }
+
+    /// <summary>
     /// Retires the goroutine identity a matching <see cref="Enter"/> minted.
     /// </summary>
     public readonly struct Scope : IDisposable
@@ -763,4 +950,34 @@ internal enum GoroutineState
     /// Blocked on a Go-semantic wait (a channel operation, a semaphore, a sleep).
     /// </summary>
     Parked
+}
+
+/// <summary>
+/// One goroutine, as a profile records it: the function it started in, and the profile labels it
+/// carries.
+/// </summary>
+/// <remarks>
+/// The unit of <see cref="Goroutine.ProfileSnapshot"/>. <see cref="Function"/> is Go's
+/// <c>gp.startpc</c> and is <c>null</c> for a goroutine that no <c>go</c> statement started — the
+/// main goroutine, and a thread a host entered directly — which a caller renders as an EMPTY stack
+/// rather than inventing a frame for. <see cref="Labels"/> is Go's <c>gp.labels</c> and is opaque
+/// here by design; the caller that set it is the caller that understands it.
+/// </remarks>
+public readonly struct GoroutineProfileEntry
+{
+    internal GoroutineProfileEntry(System.Reflection.MethodBase? function, object? labels)
+    {
+        Function = function;
+        Labels = labels;
+    }
+
+    /// <summary>
+    /// The function the goroutine's body begins in — Go's <c>gp.startpc</c> — or <c>null</c>.
+    /// </summary>
+    public System.Reflection.MethodBase? Function { get; }
+
+    /// <summary>
+    /// The goroutine's profile labels — Go's <c>gp.labels</c> — or <c>null</c>.
+    /// </summary>
+    public object? Labels { get; }
 }

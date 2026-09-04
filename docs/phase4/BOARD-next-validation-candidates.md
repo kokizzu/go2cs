@@ -23151,4 +23151,178 @@ was supplied rather than assumed.)
 
 -- G
 
+## 2026-09-04 — DESIGN: the goroutine profile over the managed goroutine registry (Q27)
+
+Written BEFORE the cut, as the item requires. Sizes `pprof_goroutineProfileWithLabels` against what
+the managed runtime can state truthfully, and puts the acceptance prediction on record ahead of the
+run.
+
+### 0. The wall, re-measured at master rather than inherited
+
+The item was minted against an `infrastructure-error` (a throwing `PartialStubGenerator` stub). C1's
+zero-reader (`3aa69f6e8`, train 23) landed underneath it, so the wall has MOVED, and the fresh
+gated record at master `8f82b3f63` is the baseline this design is cut against — Release, tiering
+off, oracle `go1.23.12`, 171 s, no `timeout` event in the results tail:
+
+    TestGoroutineCounts: Go="pass" C#="fail"
+
+with three assertions failing and the C# side reporting `goroutine profile: total 0` twice. Two
+facts fall out of that record that the design depends on and that nobody had measured before:
+
+1. **The proto half already works.** `profile.Parse` and `CheckValid` both succeed on the emitted
+   protobuf; only `containsCountsLabels` fails. So the profile ENCODER, the location table and the
+   mapping table are not walls — the sample set is simply empty.
+2. **SUB-Q23's finalizer fix holds through this row.** The test reaches its assertions, which means
+   `runtime.GC()` returned, the finalizer body ran, `close(fingReady)` happened and `<-fingReady`
+   completed. The finalizer is PARKED on `<-c` at profile time, which is exactly the state the
+   profile has to report.
+
+### 1. What the row actually asserts — a correction to the item's framing
+
+The item says `TestGoroutineCounts` "asserts COUNTS by label and by state, not addresses". Read
+against the 1.23.12 source, that is half right and the missing half is the whole difficulty.
+`printCountProfile` groups samples by `key(stack, labels)` — the PC list AND the label set. The
+asserted groups are
+
+    50 (no label)  44 (label)   — func3
+    40 (no label)  36 (label)   — func2
+    10 (no label)   9 (label)   — func1
+     1 self-label   1 fing-label
+
+so the profile must **distinguish the three body functions from one another**. Counts alone are not
+enough: with one undifferentiated stack all 189 goroutines collapse into two groups (labelled and
+not) and every one of the six counts is absent. State is not asserted at all. Addresses are not
+asserted either — only that the three groups' keys DIFFER — which is what makes this implementable.
+
+`containsCountsLabels` is the stricter of the two: `m[count]` may go negative (extra unlabelled
+groups are harmless) but `n[{count,key,val}]` must land on exactly zero, so **exactly one** sample
+may carry each asserted (count, label) pair and **no sample may carry an unasserted label at all**.
+
+### 2. What a `StackRecord` can hold honestly
+
+Go's `saveg` records the goroutine's full traceback. The managed runtime cannot walk a foreign
+thread's stack — that is the same limit `runtime.Stack(all)` already states with its
+`ForeignStackPlaceholder`. What it CAN state is the goroutine's **entry function**, Go's
+`gp.startpc`: the bottom Go frame of the very traceback `saveg` would record. A one-PC stack holding
+it is a **true subset** of Go's answer, not a fabrication — the distinction this corpus draws
+between an incomplete answer and an invented one.
+
+The PC is not invented either. `GoSyntheticPC.Of(MethodBase)` already mints stable, process-lifetime
+PCs in the canonical high half for exactly this case (a function whose address is taken without
+calling it), and `managed_impl.cs`'s `syntheticFrameRecord` already resolves them back through
+`CallersFrames` to an import-path-qualified Go name. So the profile reuses the corpus's existing PC
+space rather than proposing one, and both the debug renderer (`printStackRecord`) and the proto
+encoder (`locForPC`) symbolize the result with no further work. **This is the reason the design is
+small.**
+
+The entry function has to be CAPTURED, though, and today it is not: `builtin.goǃ`'s arity rungs hand
+`Goroutine.Start` a closure (`() => action(arg)`), whose `Method` is the launcher's own lambda, not
+the user's function. The rungs therefore pass the user delegate alongside the closure. 34 rungs, one
+argument each, mechanical — and it makes `Goroutine` carry `gp.startpc` beside the `gp.gopc` it
+already records as `Creator`, which is the pair Go itself keeps.
+
+### 3. State, and the inclusion rule
+
+Go's profile counts `gcount()` — USER goroutines — plus one special case:
+
+    n = gcount(); if fingStatus.Load()&fingRunningFinalizer != 0 { n++ }
+
+and `isSystemGoroutine` returns false for `runfinq` precisely while a finalizer is executing. The
+registry already answers both halves: `IsSystem` is Go's own rule over the creator's package, and
+`GoFinalizerQueue` already knows when a body is executing (it tracks `s_runningSince` for the drain
+budget). So the inclusion rule is Go's, expressed in facts that exist:
+
+> include a live goroutine when it is not a system goroutine, plus the finalizer goroutine while it
+> is running a finalizer body.
+
+This requires the finalizer runner to BE a registered goroutine, which it is not today (Goroutine.cs
+says so explicitly). It is registered as a SYSTEM goroutine — which is both Go's classification and
+the choice that keeps `runtime.NumGoroutine` and `runtime.Stack(all)` byte-identical for every
+banked row, since `UserCount` subtracts system goroutines and `tracebackothers` skips them. **That
+non-movement is an acceptance condition, not an assumption**; see §6.
+
+`GoroutineState` (Running/Parked) is available and is what a later `debug >= 2` increment would need,
+but this row asserts nothing on it, so nothing is emitted from it here.
+
+### 4. Labels — the one place the existing machinery cannot be reused as-is
+
+`proflabel_impl.cs` stores labels in an `AsyncLocal`, and that choice is right for the reason its
+header gives (ExecutionContext capture at thread start IS Go's `newg.labels = mp.curg.labels`, and
+it is measured by `GoroutineExecutionContextFlowTests`). But an `AsyncLocal` is readable only from
+the thread whose context holds it, and a goroutine profile reads EVERY goroutine's labels from ONE
+thread. So the storage moves down into `golib`, where the inheritance mechanism is kept unchanged
+and a per-goroutine MIRROR is added beside it: `Goroutine.Enter` seeds the new goroutine's mirror
+from the flowed `AsyncLocal`, and a set writes both. `runtime_setProfLabel`/`getProfLabel` become
+two-line forwarders onto it and keep their existing contract, so the flow guard still guards the
+same property.
+
+Deliberately opaque: golib stores the label payload as `object?` and never interprets it. The
+`labelMap` type belongs to `runtime/pprof`, and golib knowing about it would be a layering
+inversion for no gain — the profile hands the same pointer straight back.
+
+### 5. The sizing protocol
+
+Go's contract, reproduced exactly: `fetch(nil, nil)` answers `(n, false)` because a zero-length
+slice cannot hold `n` records; `fetch(p, labels)` with `len(p) >= n` fills and answers `(n, true)`;
+`len(p) < n` writes NOTHING and answers `(n, false)`. `writeRuntimeProfile` loops on that. The
+managed side has no stop-the-world, so `n` is read from a snapshot and the fill re-reads it — a
+goroutine created between the two calls is simply not in the profile, which is the same tolerance
+Go documents for its own concurrent collection ("New goroutines may not be in this list, but we
+didn't want to know about them anyway").
+
+### 6. Acceptance — the prediction, on record BEFORE the run
+
+Gated (`-test-filter TestGoroutineCounts`, Release, tiering off):
+
+- **Predicted: `TestGoroutineCounts` moves `fail` → `pass`.** Stated as the expected outcome rather
+  than the hoped one, because every input it needs is now enumerable: three distinct entry PCs, the
+  label mirror, the finalizer goroutine, and a proto encoder already measured working.
+- **The named risk, and it is the likeliest single failure**: an unasserted label reaching any
+  sample makes `containsCountsLabels` fail on the `n != 0` arm. The test host runs each test on its
+  own goroutine and `SetGoroutineLabels` is process-global in `AsyncLocal` terms; if any host thread
+  inherits `self-label` the assertion fails while the counts are all correct. That is a distinguishable
+  signature (the debug half passes, the proto half fails) and it is what the run is being read for.
+- **Second risk**: a count off by a small integer if a test-host goroutine parks unlabelled inside
+  one of the six asserted groups. This cannot happen through the stack key (host threads have no Go
+  entry function, so they group under the empty stack), which is stated here so the run can confirm
+  it rather than discover it.
+
+Ungated: the rest of the package is UNMEASURED behind this row (it was the first executed once
+`TestFakeMapping` was gated, so its former hang erased everything after it). **No prediction is
+offered for the other rows** beyond the structural one: each new wall is recorded by its first
+frame and classified per §7, not chased.
+
+Non-movement conditions, each a gate rather than a hope:
+
+- `runtime.NumGoroutine` and `runtime.Stack(all)` unchanged by the finalizer goroutine's
+  registration (it is system; `UserCount` subtracts it, `tracebackothers` skips it).
+- Zero corpus emission change — this is hand-own and golib only, so **CNR is not owed**; that claim
+  is checked by `git status`, not asserted.
+- A behavioral COMPILE phase IS owed: golib is compiled into every project, and the cut removes no
+  generated stub but does change a launcher signature surface (route #7's neighbourhood).
+
+### 7. Classification, for `net/http/pprof` behind it
+
+Per COORD's frontier note, the ungated run classifies each remaining test as **implementable**
+(the managed runtime holds the facts, as the goroutine profile does), **disclosed** (a real
+divergence to sign), or **untestable-by-capability with the reason**. The CPU-profile class
+(`TestCPUProfile*`) is expected in the third bucket — SIGPROF-driven sampling has no managed
+analogue and is the tracer's neighbour, not this row's — but it is classified from the RECORD, not
+from this sentence.
+
+### 8. What this deliberately does not do
+
+- No `debug >= 2` goroutine-stack dump (`writeGoroutineStacks` takes a different path and already
+  has `runtime.Stack`'s honest placeholder behind it).
+- No block/mutex/threadcreate profile: those are the same shape and remain C1's honest zero-readers,
+  named in `pprof_impl.cs`'s own scope header.
+- No full traceback per goroutine. The one-frame entry stack is what the runtime can state; a
+  deeper stack would have to be invented, and an invented stack is exactly what the zero-reader was
+  written to avoid becoming.
+- No new snapshot type for Q28's tracer to fight with: the profile consumes `Goroutine.Snapshot()`
+  and the two fields this cut adds to the registry entry, which is the shared surface R's
+  `DESIGN-managed-execution-tracer.md` asked for.
+
+-- SUB-Q27
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
