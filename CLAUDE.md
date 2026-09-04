@@ -766,10 +766,21 @@ ONE stdlib in a build; there is now only one on disk.
   byte-for-byte compare until 2026-07-07. Content diffs are still caught exactly; a pure line-ending
   difference is ignored (it can only come from autocrlf, never from the deterministic converter). To
   re-baseline goldens after an *intended* output change, run the **`UpdateTestTargets`** project with
-  **`--createTargetFiles`** — it copies each project's current on-disk transpiled `.cs` over its
-  `.cs.target` (it does **NOT** re-run the converter — re-transpile first, e.g. via
-  `check-no-regression.ps1` or a runner pass, or the copy silently re-baselines stale output) —
-  don't hand-edit goldens.
+  **`--createTargetFiles`**, or `run-behavioral.ps1 --update-targets` — don't hand-edit goldens.
+  ⚠ **Both re-baseline paths RE-TRANSPILE each project they are about to re-baseline, unconditionally,
+  immediately before the copy, and REFUSE (exit non-zero, by name) when that transpile fails, times
+  out, or exits 0 having converted best-effort (2026-09-04).** Until then neither did: the utility ran
+  the converter *not at all* and this file carried the prerequisite as a sentence ("re-transpile
+  first … or the copy silently re-baselines stale output"), while the runner ran it only when its
+  **mtime** predicate said the project was out of date. Both are the same hole and it is FALSE-GREEN
+  ROUTE #2 turned on the goldens: `UpToDate` answers on mtimes, and a `.cs`-only restore, a
+  `Copy-Item` or an editor save all leave a `.cs` newer than both its `.go` and `go2cs.exe` while its
+  CONTENT came from some other converter — after which the copy makes `.cs`, `.cs.target` and
+  `UpToDate` agree by construction and no later run can see it. There is deliberately **no**
+  up-to-date predicate on either path now, for the reason CNR has never had one: a stale COMPARISON
+  is recoverable, a stale RECORD is not. The utility's `--only <Name>[,<Name>…]` narrows one
+  invocation's transpile-and-copy (the four `<TestMethods>` blocks stay a function of the whole
+  project set) — it exists so the refusal branch is not a ~25-minute control nobody runs.
 - **autocrlf gotcha (`core.autocrlf=true`) — two SEPARATE concerns:** the converter emits CRLF for C# line
   endings but preserves the Go source's LF inside multi-line string literals, so those `.cs`/`.cs.target`
   contain mixed CRLF/LF, and autocrlf rewrites the in-string LFs to CRLF on checkout.
@@ -1556,10 +1567,14 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
    to the generated `package_info.cs` class (a hand-added attribute the converter preserves).
 5. **Generate tests + goldens:** run the **`UpdateTestTargets`** utility **with `--createTargetFiles`** (from
    its `bin/Debug/net10.0`). It scans every `tests/Behavioral/*` folder, rewrites the `// <TestMethods>`
-   blocks in all four `*Tests.cs` classes (adding `Check<Name>()`), and copies each transpiled `.cs` to a
-   `.cs.target` golden. It only emits an `OutputComparison` test for projects whose `package_info.cs` has
+   blocks in all four `*Tests.cs` classes (adding `Check<Name>()`), then **re-transpiles every project it
+   is about to re-baseline** and copies each freshly transpiled `.cs` to a `.cs.target` golden. It only
+   emits an `OutputComparison` test for projects whose `package_info.cs` has
    `[GoTestMatchingConsoleOutput]`. Afterward, `git status` should show only your new project + four
-   `+3`-line test-class diffs (no other `.target` churn).
+   `+3`-line test-class diffs (no other `.target` churn). The transpile is what makes step 4 above a
+   convenience rather than a prerequisite — and because it walks the whole corpus, a whole-tree run is
+   CNR-length; add **`--only <Name>`** to re-baseline one project (and to exercise the refusal branch,
+   which exits non-zero naming any project whose transpile failed, timed out, or degraded).
    ⚠ **ONE WORKTREE PER CUT — `UpdateTestTargets` enumerates the DIRECTORY, not your change**
    (measured 2026-09-02): a stray untracked project left by ANOTHER cut was enumerated into this
    cut's four test classes, and the ASYMMETRY is the tell — one new project gives `3/3/3/3`, that run

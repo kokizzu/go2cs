@@ -30,6 +30,8 @@
   <ItemGroup>
     <Compile Include="../../ConverterBuildInputs.cs" Link="ConverterBuildInputs.cs" />
     <Compile Include="../../PlatformExclusive.cs" Link="PlatformExclusive.cs" />
+    <Compile Include="../../BehavioralPackages.cs" Link="BehavioralPackages.cs" />
+    <Compile Include="../../BestEffortConversion.cs" Link="BestEffortConversion.cs" />
   </ItemGroup>
 
 </Project>

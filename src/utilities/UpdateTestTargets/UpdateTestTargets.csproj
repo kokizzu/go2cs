@@ -8,13 +8,21 @@
   </PropertyGroup>
 
   <!--
-    F8's "is this behavioral package native to this host" predicate, shared with BehavioralRunner and
-    BehavioralTestBase. LINKED by path for the same reason they link it: this utility takes no
-    assembly dependency on either runner, and a re-derived marker parse here is a fourth chance for
-    the harnesses to disagree about which packages a host may write goldens for.
+    The four predicates this utility shares with BehavioralRunner and BehavioralTestBase. LINKED by
+    path for the same reason they link them: this utility takes no assembly dependency on either
+    runner, so a shared assembly is not available, and a re-derived copy here is one more chance for
+    the instruments to disagree about the record they all write.
+
+      PlatformExclusive     : F8, is this behavioral package native to this host.
+      ConverterBuildInputs  : is go2cs.exe stale (route #5, templates and internal/ count too).
+      BehavioralPackages    : which Go packages a project owns, DEEPEST-FIRST (route #3).
+      BestEffortConversion  : did the converter degrade and exit 0 anyway.
   -->
   <ItemGroup>
     <Compile Include="../../tests/PlatformExclusive.cs" Link="PlatformExclusive.cs" />
+    <Compile Include="../../tests/ConverterBuildInputs.cs" Link="ConverterBuildInputs.cs" />
+    <Compile Include="../../tests/BehavioralPackages.cs" Link="BehavioralPackages.cs" />
+    <Compile Include="../../tests/BestEffortConversion.cs" Link="BestEffortConversion.cs" />
   </ItemGroup>
 
 </Project>
