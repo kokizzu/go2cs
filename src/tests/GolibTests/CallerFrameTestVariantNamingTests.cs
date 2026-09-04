@@ -172,10 +172,14 @@ namespace go.slcguard
 
         // The unrecorded-literal shape: this file has no GoPositionMap record, so the lambda's
         // frame reports the real source file, finds nothing, and takes the derived fallback.
+        //
+        // The LAMBDA carries NoInlining as well as the method, for the reason spelled out over the
+        // recorded shapes below: at Release with tiering off the backing method is inlined into this
+        // one and there is no literal frame left to name.
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string fallbackLiteralFrame()
         {
-            Func<string> literal = () => GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
+            Func<string> literal = [MethodImpl(MethodImplOptions.NoInlining)] () => GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
 
             return literal();
         }
@@ -202,6 +206,23 @@ namespace go.slcguard
 // outer literal's span alone), the second's at 110 (inside BOTH spans, where innermost must win).
 // Everything else about the shapes matches the classes above: namespace `go.<dir>`, a
 // `<pkg>_package` class, which is all isConvertedGoFrame asks.
+//
+// EVERY LAMBDA BELOW CARRIES `[MethodImpl(MethodImplOptions.NoInlining)]`, and that is what makes
+// these three guards measure the naming RULE instead of the JIT's inlining budget. A literal frame
+// can only be named while it is ON the stack, and the CLR's StackTrace does not report inlined
+// frames — the same fact runtime's own `captureCallers` pins one layer down. At the configuration
+// validation runs under (Release with DOTNET_TieredCompilation=0, so full optimization from the
+// first call) these one-expression lambdas are inlined into their enclosing method and the `.funcN`
+// suffix has nothing to attach to: measured on this file before the attributes, all three answered
+// the ENCLOSING frame — `litguard/probe.recordedOuterLiteralFrame` where the guard wants
+// `…recordedOuterLiteralFrame.func2` — while the same build under default tiering was green. An
+// attribute on a lambda expression reaches its synthesized backing method (verified in an isolated
+// probe: `implFlags=NoInlining`), so pinning the frame costs one attribute and no shape change.
+//
+// The attributes are deliberately INLINE on the lambdas' own lines and this note sits OUTSIDE the
+// `#line` regions: the mapped line of each lambda is what the recorded spans 100-120 and 110-120
+// are read against, so a line added between `#line 100` and a lambda would move the very position
+// the guard is checking.
 namespace go.litguard
 {
     public static class probe_package
@@ -210,7 +231,7 @@ namespace go.litguard
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string recordedOuterLiteralFrame()
         {
-            Func<string> literal = () => GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
+            Func<string> literal = [MethodImpl(MethodImplOptions.NoInlining)] () => GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
 
             return literal();
         }
@@ -218,7 +239,7 @@ namespace go.litguard
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static string recordedNestedLiteralFrame()
         {
-            Func<string> literal = () => GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
+            Func<string> literal = [MethodImpl(MethodImplOptions.NoInlining)] () => GolibTests.CallerFrameTestVariantNamingTests.CallerFunctionName();
 
             return literal();
         }
