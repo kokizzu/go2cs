@@ -342,7 +342,7 @@ your branch (subjects start "L3:"), push often, signal per stage.
 | Role | Machine | CPU | Cores | RAM | Notes |
 |:--|:--|:--|:--|:--|:--|
 | Coordinator | desktop (C: clone) | i7-5820K (2014 Haswell-E) | 6C/12T | 32 GB | slowest fleet box; budget tables key off it |
-| Sweeper / CPU worker | ritchie-desk2 | i9-13900K | -- | -- | fastest; random ~daily reboots pending RMA; Sonnet worker loop |
+| Sweeper / CPU worker | i9 | i9-13900K | -- | -- | fastest; random ~daily reboots pending RMA; Sonnet worker loop |
 | Lane R | R-LAPTOP | Ryzen 7 PRO 6850U | 8C/16T | 31 GB | ⚠ probed at 34 GB free -- below the 60 GB preflight |
 | Lane G | G-LAPTOP | Ryzen 5 PRO 6650U | 6C/12T | 31 GB | 210 GB free |
 

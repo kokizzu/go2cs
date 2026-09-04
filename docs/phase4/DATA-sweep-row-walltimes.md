@@ -8,7 +8,7 @@
 > and were derived as described per section. Add a section per new (OS, SHA, machine)
 > measurement at each hop recon; do not overwrite old sections — supersede them.
 
-## windows · corpus `18770d083` · i9-13900K (ritchie-desk2) · 2026-08-23 (JOB-007)
+## windows · corpus `18770d083` · i9-13900K (i9) · 2026-08-23 (JOB-007)
 
 162 rows, all PASS, 18,569 verdicts, aggregate 7,697 s. Derivation: artifact-mtime deltas in
 roster order (run-start from the log file's creation time); self-check: the 162 deltas sum to

@@ -851,7 +851,7 @@ that predates it rather than argued from the diff.**
    Full `go test ./...` is **`ok`, exit 0** — the container's 7 "failures" were Linux-path artifacts, as
    it predicted. *Additionally measured*, because the committed guard pins `goModCache` directly and so
    never exercises the real Windows resolution: `goModCacheDir()` resolves through `go env` to
-   `C:\Users\rcarroll\go\pkg\mod` (the `GOMODCACHE` env var is unset here, so the second fallback is the
+   `C:\Users\<user>\go\pkg\mod` (the `GOMODCACHE` env var is unset here, so the second fallback is the
    live path), and `isPathUnder` classifies correctly against a real cache path — case-insensitive in
    both directions, separator-agnostic, root-inclusive, and **not** fooled by the sibling-prefix trap
    `…\pkg\mod-notthecache`. The gate fires on Windows.
@@ -18129,7 +18129,7 @@ the same shape on Windows, where the defect is unreproducible in vivo. Neuter pr
 | Neuter | Result |
 |---|---|
 | `childEnvWithGo2CSPath` → plain `append` (the pre-fix shape) | **3 FAIL** — `child environment carries 4 go2csPath spellings, want exactly 1: [GO2CSPATH=/root/go2cs go2csPath=/stale/tree/ Go2CsPath=/another/tree go2csPath=\repo\src\]` |
-| `resolveGo2CSPathDefault` → re-add the `os.Setenv` | **1 FAIL** — `converter exported its derived root as GO2CSPATH="C:\Users\ritchie\go2cs"` |
+| `resolveGo2CSPathDefault` → re-add the `os.Setenv` | **1 FAIL** — `converter exported its derived root as GO2CSPATH="C:\Users\<user>\go2cs"` |
 
 **Gates** (converter change class, this machine, solo):
 
@@ -19384,7 +19384,7 @@ files that moved afterwards are the change and nothing else.
 
 ⚠ **Provisioning note for anyone gating on the coordinator i7:** the box's default `dotnet` is SDK
 **9.0.317**, which cannot target `net10.0` at all (`NETSDK1045`); the 10.0.400 SDK is a side-by-side
-install at `C:\Users\ritchie\dotnet10`. The default `go` is **1.23.1** out of `C:\Program Files\Go`
+install at `C:\Users\<user>\dotnet10`. The default `go` is **1.23.1** out of `C:\Program Files\Go`
 and a machine-level `GOROOT` names that same 1.23.1 tree, while the corpus and `version.props` are
 **1.23.12** (at `%USERPROFILE%\sdk\go1.23.12`) — the exact both-pins-needed shape
 `GoCorpusMigration.md` §1 records. Both pins must be set in the SAME invocation as every gate.

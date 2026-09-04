@@ -115,7 +115,7 @@ confirmed mechanically rather than argued: `isw → runtime` was already there.
 
 `go2cs -tests` rewrites two production files. Both come from one Go directive.
 
-`C:\Users\ritchie\sdk\go1.23.12\src\runtime\os_windows.go:447`
+`C:\Users\<user>\sdk\go1.23.12\src\runtime\os_windows.go:447`
 ```go
 //go:linkname canUseLongPaths internal/syscall/windows.CanUseLongPaths
 var canUseLongPaths bool

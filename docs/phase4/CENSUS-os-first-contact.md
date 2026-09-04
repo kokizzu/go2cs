@@ -6,7 +6,7 @@ detached at the RC SHA; every artifact named below lives in that worktree.
 | | |
 |---|---|
 | Corpus | `773afa2c2` (release freeze, 189-row / 90.9% roster) |
-| Toolchain | Go **1.23.12** (`C:\Users\ritchie\sdk\go1.23.12`), .NET **10.0.400**, `net10.0` |
+| Toolchain | Go **1.23.12** (`C:\Users\<user>\sdk\go1.23.12`), .NET **10.0.400**, `net10.0` |
 | Host | i7-5820K (6C/12T Haswell-E), Windows 11, `windows/amd64` |
 | Command | `go2cs -tests -test-action all -test-timeout 20m -go2cspath <wt>\src <GOROOT>\src\os <wt>\src\core\os` |
 | Wall time | **~3 min** (15:40:08 → 15:43:05) — convert 1 s, build ~2 min, run ~10 s, compare |
@@ -116,7 +116,7 @@ adjust. Go, in the same pipeline run, same user, same session, same elevation, *
 
 **Candidate root — structurally measured, behaviourally unproven.** `TOKEN_PRIVILEGES` is the exact shape
 the blittable-mirror class is defined by. Go
-(`C:\Users\ritchie\sdk\go1.23.12\src\internal\syscall\windows\security_windows.go`):
+(`C:\Users\<user>\sdk\go1.23.12\src\internal\syscall\windows\security_windows.go`):
 
 ```go
 type LUID struct { LowPart uint32; HighPart int32 }

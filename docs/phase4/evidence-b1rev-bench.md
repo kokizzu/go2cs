@@ -1,7 +1,7 @@
 # lane-b1rev — reproduced B1 microbench cells (coordinator i7-5820K)
 
 Machine: i7-5820K (Haswell-E, 6C/12T), Windows 11, CoreCLR/NativeAOT **10.0.11**, SDK 10.0.400
-(`C:\Users\ritchie\dotnet10` — the box has **no** net10 SDK on PATH; `dotnet --version` reports 9.0.317).
+(`C:\Users\<user>\dotnet10` — the box has **no** net10 SDK on PATH; `dotnet --version` reports 9.0.317).
 Probe copied verbatim from `docs/phase4/probes/b1-box-dispatch/` at `6815eba00`; source unmodified.
 Isolated processes, 12 interleaved rounds each (the probe's own N=12), JIT and AOT interleaved
 pass-by-pass so drift hits both arms equally.

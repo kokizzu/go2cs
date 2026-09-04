@@ -508,7 +508,7 @@ this rule.
 ## 5. Measurements
 
 ⚠ **AM-5 — the draft's "this box has no .NET 10 SDK" claim is STRUCK. It was false**: SDK **10.0.400**
-is installed side-by-side at `C:\Users\ritchie\dotnet10` (the default `dotnet` on `PATH` resolves to
+is installed side-by-side at `C:\Users\<user>\dotnet10` (the default `dotnet` on `PATH` resolves to
 9.0.317, which is what the draft mistook for the whole picture). Both TFMs are measurable here, the
 review lane measured both, and §5.1 is replaced with its matrix. The draft's 582 µs figure is
 **superseded** — it was an unstamped mint, i.e. not a shippable configuration.
