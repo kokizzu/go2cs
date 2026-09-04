@@ -134,7 +134,7 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 
 > ### Phase 4 progress: **203 / 215 testable packages validated — 94.4%**
 >
-> **27,774 matching test verdicts · 167 disclosed** *(updated 2026-09-04 — maintained as part of the
+> **27,776 matching test verdicts · 165 disclosed** *(updated 2026-09-04 — maintained as part of the
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
