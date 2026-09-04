@@ -1055,11 +1055,12 @@ internal static ж<workerClient> newWorkerClient(workerComm comm, ж<mutator> �
 // and closes it after the worker process closes the other end.
 internal static error Close(this ж<workerClient> Ꮡwc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var wc = ref Ꮡwc.DerefOrNull();
 
         wc.mu.Lock();
-        defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         // Close fuzzIn. This signals to the server that there are no more calls,
         // and it should exit.
         {
@@ -1079,7 +1080,7 @@ internal static error Close(this ж<workerClient> Ꮡwc) {
         return wc.fuzzOut.Close();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡwc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // errSharedMemClosed is returned by workerClient methods that cannot access
@@ -1279,17 +1280,18 @@ internal static (CorpusEntry entryOut, fuzzResponse resp, bool isInternalError, 
 // ping tells the worker to call the ping method. See workerServer.ping.
 internal static error ping(this ж<workerClient> Ꮡwc, context.Context ctx) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var wc = ref Ꮡwc.DerefOrNull();
 
         wc.mu.Lock();
-        defer(Ꮡwc.of(workerClient.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var c = new call(Ping: Ꮡ(new pingArgs(nil)));
         ref var resp = ref heap(new pingResponse(), out var Ꮡresp);
         return wc.callLocked(ctx, c, Ꮡresp);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡwc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // callLocked sends an RPC from the coordinator to the worker process and waits

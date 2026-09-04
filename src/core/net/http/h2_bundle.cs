@@ -758,11 +758,12 @@ internal static (bool used, error err) addConnIfNeeded(this ж<http2clientConnPo
 
 internal static void MarkDead(this ж<http2clientConnPool> Ꮡp, ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
         p.mu.Lock();
-        defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         foreach (var (_, key) in p.keys[Ꮡcc]) {
             var (vv, ok) = p.conns[key, ꟷ];
             if (!ok) {
@@ -778,16 +779,17 @@ internal static void MarkDead(this ж<http2clientConnPool> Ꮡp, ж<http2ClientC
         delete(p.keys, Ꮡcc);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static void closeIdleConnections(this ж<http2clientConnPool> Ꮡp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
         p.mu.Lock();
-        defer(Ꮡp.of(http2clientConnPool.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         // TODO: don't close a cc if it was just added to the pool
         // milliseconds ago and has never been used. There's currently
         // a small race window with the HTTP/1 Transport's integration
@@ -801,7 +803,7 @@ internal static void closeIdleConnections(this ж<http2clientConnPool> Ꮡp) {
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static slice<ж<http2ClientConn>> http2filterOutClientConn(slice<ж<http2ClientConn>> @in, ж<http2ClientConn> Ꮡexclude) {
@@ -3714,34 +3716,36 @@ internal static bool http2validPseudoPath(@string v) {
 // It has no effect if the pipe is already closed.
 internal static void setBuffer(this ж<http2pipe> Ꮡp, http2pipeBuffer b) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
         p.mu.Lock();
-        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (p.err != default! || p.breakErr != default!) {
             return;
         }
         p.b = b;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static nint Len(this ж<http2pipe> Ꮡp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
         p.mu.Lock();
-        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (p.b == default!) {
             return p.unread;
         }
         return p.b.Len();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Read waits until data is available and copies bytes
@@ -3891,29 +3895,31 @@ internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, e
 // Err returns the error (if any) first set by BreakWithError or CloseWithError.
 internal static error Err(this ж<http2pipe> Ꮡp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
         p.mu.Lock();
-        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (p.breakErr != default!) {
             return p.breakErr;
         }
         return p.err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Done returns a channel which is closed if and when this pipe is closed
 // with CloseWithError.
 internal static /*<-*/channel<EmptyStruct> Done(this ж<http2pipe> Ꮡp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
         p.mu.Lock();
-        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (p.donec == default!) {
             p.donec = new channel<EmptyStruct>(0);
             if (p.err != default! || p.breakErr != default!) {
@@ -3924,7 +3930,7 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<http2pipe> Ꮡp) {
         return p.donec;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static time.Duration http2prefaceTimeout => /* 10 * time.Second */ 10000000000;
@@ -8552,25 +8558,27 @@ internal static void healthCheck(this ж<http2ClientConn> Ꮡcc) {
 // SetDoNotReuse marks cc as not reusable for future HTTP requests.
 public static void SetDoNotReuse(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
         cc.mu.Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         cc.doNotReuse = true;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static void setGoAway(this ж<http2ClientConn> Ꮡcc, ж<http2GoAwayFrame> Ꮡf) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
         ref var f = ref Ꮡf.DerefOrNull();
 
         cc.mu.Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var old = cc.goAway;
         cc.goAway = Ꮡf;
         // Merge the previous and current GoAway error frames.
@@ -8601,7 +8609,7 @@ internal static void setGoAway(this ж<http2ClientConn> Ꮡcc, ж<http2GoAwayFra
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // CanTakeNewRequest reports whether the connection can take a new request,
@@ -8611,15 +8619,16 @@ internal static void setGoAway(this ж<http2ClientConn> Ꮡcc, ж<http2GoAwayFra
 // connection, use ReserveNewRequest instead.
 public static bool CanTakeNewRequest(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
         cc.mu.Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return cc.canTakeNewRequestLocked();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // ReserveNewRequest is like CanTakeNewRequest but also reserves a
@@ -8627,11 +8636,12 @@ public static bool CanTakeNewRequest(this ж<http2ClientConn> Ꮡcc) {
 // next call to RoundTrip.
 public static bool ReserveNewRequest(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
         cc.mu.Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         {
             var st = cc.idleStateLocked(); if (!st.canTakeNewRequest) {
                 return false;
@@ -8641,7 +8651,7 @@ public static bool ReserveNewRequest(this ж<http2ClientConn> Ꮡcc) {
         return true;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // ClientConnState describes the state of a ClientConn.
@@ -8674,6 +8684,7 @@ public static bool ReserveNewRequest(this ж<http2ClientConn> Ꮡcc) {
 // State returns a snapshot of cc's state.
 public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
@@ -8684,7 +8695,7 @@ public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) {
         }
         cc.wmu.Unlock();
         cc.mu.Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return new http2ClientConnState(
             Closed: cc.closed,
             Closing: cc.closing || cc.singleUse || cc.doNotReuse || cc.goAway != nil,
@@ -8696,7 +8707,7 @@ public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) {
         );
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // clientConnIdleState describes the suitability of a client
@@ -8707,15 +8718,16 @@ public static http2ClientConnState State(this ж<http2ClientConn> Ꮡcc) {
 
 internal static http2clientConnIdleState idleState(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
         cc.mu.Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return cc.idleStateLocked();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static http2clientConnIdleState /*st*/ idleStateLocked(this ref http2ClientConn cc) {
@@ -8811,15 +8823,16 @@ internal static void closeIfIdle(this ж<http2ClientConn> Ꮡcc) {
 
 internal static bool isDoNotReuseAndIdle(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
         cc.mu.Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return cc.doNotReuse && builtin.len(cc.streams) == 0;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static Action http2shutdownEnterWaitStateHook = () => {
@@ -8880,6 +8893,7 @@ public static error Shutdown(this ж<http2ClientConn> Ꮡcc, context.Context ctx
 // Free the goroutine above
 internal static error sendGoAway(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
@@ -8893,7 +8907,7 @@ internal static error sendGoAway(this ж<http2ClientConn> Ꮡcc) {
             return default!;
         }
         cc.wmu.Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡwmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         // Send a graceful shutdown frame to server
         {
             var err = cc.fr.WriteGoAway(maxStreamID, http2ErrCodeNo, default!); if (err != default!) {
@@ -8909,7 +8923,7 @@ internal static error sendGoAway(this ж<http2ClientConn> Ꮡcc) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().wmu.Unlock(); ᒐ.Run(); }
 }
 
 // closes the client connection immediately. In-flight requests are interrupted.
@@ -9033,15 +9047,16 @@ internal static int64 http2actualContentLength(ref Request req) {
 
 internal static void decrStreamReservations(this ж<http2ClientConn> Ꮡcc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
         cc.mu.Lock();
-        defer(Ꮡcc.of(http2ClientConn.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         cc.decrStreamReservationsLocked();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static void decrStreamReservationsLocked(this ref http2ClientConn cc) {

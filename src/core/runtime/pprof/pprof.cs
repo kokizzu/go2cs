@@ -366,18 +366,19 @@ public static slice<ж<Profile>> Profiles() {
 // Count returns the number of execution stacks currently in the profile.
 public static nint Count(this ж<Profile> Ꮡp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
         p.mu.Lock();
-        defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (p.count != default!) {
             return p.count();
         }
         return len(p.m);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Add adds the current execution stack to the profile, associated with value.
@@ -399,6 +400,7 @@ public static nint Count(this ж<Profile> Ꮡp) {
 // Passing skip=1 begins the stack trace at the call to NewClient inside mypkg.Run.
 public static void Add(this ж<Profile> Ꮡp, any value, nint skip) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
@@ -416,29 +418,30 @@ public static void Add(this ж<Profile> Ꮡp, any value, nint skip) {
             stk = new uintptr[]{abi.FuncPCABIInternal(lostProfileEvent)}.slice();
         }
         p.mu.Lock();
-        defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (p.m[value] != default!) {
             throw panic("pprof: Profile.Add of duplicate value");
         }
         p.m[value] = stk;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Remove removes the execution stack associated with value from the profile.
 // It is a no-op if the value is not in the profile.
 public static void Remove(this ж<Profile> Ꮡp, any value) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
         p.mu.Lock();
-        defer(Ꮡp.of(Profile.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         delete(p.m, value);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // WriteTo writes a pprof-formatted snapshot of the profile to w.

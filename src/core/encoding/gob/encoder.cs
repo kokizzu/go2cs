@@ -263,6 +263,7 @@ internal static readonly @string gobCannotEncodeNilValueˢ = "gob: cannot encode
 // Passing a nil pointer to EncodeValue will panic, as they cannot be transmitted by gob.
 public static error EncodeValue(this ж<Encoder> Ꮡenc, reflectꓸValue value) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var enc = ref Ꮡenc.DerefOrNull();
 
@@ -275,7 +276,7 @@ public static error EncodeValue(this ж<Encoder> Ꮡenc, reflectꓸValue value) 
         // Make sure we're single-threaded through here, so multiple
         // goroutines can share an encoder.
         enc.mutex.Lock();
-        defer(Ꮡenc.of(Encoder.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         // Remove any nested writers remaining due to previous errors.
         enc.w = enc.w[0..1];
         var (ut, err) = validUserType(value.Type());
@@ -300,7 +301,7 @@ public static error EncodeValue(this ж<Encoder> Ꮡenc, reflectꓸValue value) 
         return enc.err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡenc.DerefOrNull().mutex.Unlock(); ᒐ.Run(); }
 }
 
 } // end gob_package

@@ -132,11 +132,12 @@ internal static ж<conn> newConn(io.ReadWriteCloser rwc) {
 // Close closes the conn if it is not already closed.
 internal static error Close(this ж<conn> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         c.mutex.Lock();
-        defer(Ꮡc.of(conn.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (!c.closed) {
             c.closeErr = c.rwc.Close();
             c.closed = true;
@@ -144,7 +145,7 @@ internal static error Close(this ж<conn> Ꮡc) {
         return c.closeErr;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mutex.Unlock(); ᒐ.Run(); }
 }
 
 [GoType] partial struct record {
@@ -183,11 +184,12 @@ internal static error /*err*/ read(this ж<record> Ꮡrec, io.Reader r) {
 // writeRecord writes and sends a single record.
 internal static error writeRecord(this ж<conn> Ꮡc, recType recType, uint16 reqId, slice<byte> b) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         c.mutex.Lock();
-        defer(Ꮡc.of(conn.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         c.buf.Reset();
         c.h.init(recType, reqId, len(b));
         {
@@ -209,7 +211,7 @@ internal static error writeRecord(this ж<conn> Ꮡc, recType recType, uint16 re
         return err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mutex.Unlock(); ᒐ.Run(); }
 }
 
 internal static error writeEndRequest(this ж<conn> Ꮡc, uint16 reqId, nint appStatus, uint8 protocolStatus) {

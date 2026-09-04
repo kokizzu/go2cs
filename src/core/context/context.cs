@@ -504,6 +504,7 @@ internal static any Value(this ж<cancelCtx> Ꮡc, any key) {
 
 internal static /*<-*/channel<EmptyStruct> Done(this ж<cancelCtx> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
@@ -512,7 +513,7 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<cancelCtx> Ꮡc) {
             return d._<channel<EmptyStruct>>();
         }
         c.mu.Lock();
-        defer(Ꮡc.of(cancelCtx.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         d = Ꮡc.of(cancelCtx.Ꮡdone).Load();
         if (d == default!) {
             d = new channel<EmptyStruct>(0);
@@ -521,7 +522,7 @@ internal static /*<-*/channel<EmptyStruct> Done(this ж<cancelCtx> Ꮡc) {
         return d._<channel<EmptyStruct>>();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static error Err(this ж<cancelCtx> Ꮡc) {

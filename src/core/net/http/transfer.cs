@@ -1072,11 +1072,12 @@ internal static void mergeSetHeader(ref ΔHeader dst, ΔHeader src) {
 
 internal static error Close(this ж<body> Ꮡb) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
         b.mu.Lock();
-        defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (b.closed) {
             return default!;
         }
@@ -1125,48 +1126,51 @@ internal static error Close(this ж<body> Ꮡb) {
         return err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static bool didEarlyClose(this ж<body> Ꮡb) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
         b.mu.Lock();
-        defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return b.earlyClose;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // bodyRemains reports whether future Read calls might
 // yield data.
 internal static bool bodyRemains(this ж<body> Ꮡb) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
         b.mu.Lock();
-        defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return !b.sawEOF;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static void registerOnHitEOF(this ж<body> Ꮡb, Action fn) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
         b.mu.Lock();
-        defer(Ꮡb.of(body.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         b.onHitEOF = fn;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // bodyLocked is an io.Reader reading from a *body when its mutex is

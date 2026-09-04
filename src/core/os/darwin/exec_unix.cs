@@ -117,6 +117,7 @@ internal static readonly @string osProcessNotInitializedˢ = "os: process not in
 // Regular PID
 internal static error pidSignal(this ж<Process> Ꮡp, syscallꓸSignal s) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
@@ -127,7 +128,7 @@ internal static error pidSignal(this ж<Process> Ꮡp, syscallꓸSignal s) {
             return errors.New(osProcessNotInitializedˢ);
         }
         Ꮡp.of(Process.ᏑsigMu).RLock();
-        defer(Ꮡp.of(Process.ᏑsigMu).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         var exprᴛ1 = Ꮡp.pidStatus();
         if (exprᴛ1 == statusDone) {
             return ErrProcessDone;
@@ -139,7 +140,7 @@ internal static error pidSignal(this ж<Process> Ꮡp, syscallꓸSignal s) {
         return convertESRCH(syscall.Kill(p.Pid, s));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.of(Process.ᏑsigMu).RUnlock(); ᒐ.Run(); }
 }
 
 internal static error convertESRCH(error err) {

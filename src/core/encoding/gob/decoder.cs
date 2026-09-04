@@ -248,6 +248,7 @@ internal static readonly @string gobDecodeValueOfˢ = "gob: DecodeValue of unass
 // does not modify v.
 public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var dec = ref Ꮡdec.DerefOrNull();
 
@@ -261,7 +262,7 @@ public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) {
         }
         // Make sure we're single-threaded through here.
         dec.mutex.Lock();
-        defer(Ꮡdec.of(Decoder.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         dec.buf.Reset(); // In case data lingers from previous invocation.
         dec.err = default!;
         var id = Ꮡdec.decodeTypeSequence(false);
@@ -271,7 +272,7 @@ public static error DecodeValue(this ж<Decoder> Ꮡdec, reflectꓸValue v) {
         return dec.err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdec.DerefOrNull().mutex.Unlock(); ᒐ.Run(); }
 }
 
 // If debug.go is compiled into the program, debugFunc prints a human-readable

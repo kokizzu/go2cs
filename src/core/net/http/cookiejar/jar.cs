@@ -304,6 +304,7 @@ public static void SetCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<http
 // setCookies is like SetCookies but takes the current time as parameter.
 internal static void setCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<httpꓸCookie>> cookies, time.Time now) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var j = ref Ꮡj.DerefOrNull();
         ref var u = ref Ꮡu.DerefOrNull();
@@ -321,7 +322,7 @@ internal static void setCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<ht
         @string key = jarKey(host, j.psList);
         @string defPath = defaultPath(u.Path);
         j.mu.Lock();
-        defer(Ꮡj.of(Jar.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var submap = j.entries[key];
         var modified = false;
         foreach (var (_, cookie) in cookies) {
@@ -367,7 +368,7 @@ internal static void setCookies(this ж<Jar> Ꮡj, ж<url.URL> Ꮡu, slice<ж<ht
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡj.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // canonicalHost strips port from host if present and returns the canonicalized

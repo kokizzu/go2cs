@@ -29,11 +29,12 @@ internal static pipeDeadline makePipeDeadline() {
 // A zero value for t prevents timeout.
 internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var d = ref Ꮡd.DerefOrNull();
 
         d.mu.Lock();
-        defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (d.timer != nil && !d.timer.Stop()) {
             ᐸꟷ(d.cancel); // Wait for the timer callback to finish and close cancel
         }
@@ -64,21 +65,22 @@ internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) {
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡd.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // wait returns a channel that is closed when the deadline is exceeded.
 internal static channel<EmptyStruct> wait(this ж<pipeDeadline> Ꮡd) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var d = ref Ꮡd.DerefOrNull();
 
         d.mu.Lock();
-        defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return d.cancel;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡd.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 internal static bool isClosedChan(/*<-*/channel<EmptyStruct> c) {
