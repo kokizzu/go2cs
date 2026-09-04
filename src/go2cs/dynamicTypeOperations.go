@@ -211,12 +211,21 @@ func lookupDynamicTypeName(signature string) string {
 	return name
 }
 
-// lookupProductionDynamicTypeName is lookupDynamicTypeName's `-tests` INTERNAL-variant sibling:
-// the name PRODUCTION already lifted a purely-anonymous struct/interface under, for a signature
-// this run's own packageDynamicTypeNames has no entry for at all (production's registrations
-// live in a map resetPackageState already replaced for this pass — see productionDynamicTypeNames).
-// "" when unset (a production conversion, the external variant, or simply no match), the same
-// not-yet-resolved contract lookupDynamicTypeName's own callers already handle.
+// lookupProductionDynamicTypeName is lookupDynamicTypeName's `-tests` sibling: the name PRODUCTION
+// already lifted a purely-anonymous struct/interface under, for a signature this run's own
+// packageDynamicTypeNames has no entry for at all (production's registrations live in a map
+// resetPackageState already replaced for this pass — see productionDynamicTypeNames). "" when unset
+// (a production conversion, or simply no match), the same not-yet-resolved contract
+// lookupDynamicTypeName's own callers already handle.
+//
+// It answers for BOTH test variants, and this comment said INTERNAL-variant-only until 2026-09-04,
+// when an instrumented `-tests` convert of runtime read the external variant resolving `ifaceHash_i`
+// through it on both targets. Two sources fill the map and only the first is internal-only:
+// convertTestVariant seeds productionSeed.dynamicTypeNames (zero for an external variant, by that
+// type's own documented contract), and then seedProductionDynamicTypeLifts REPOPULATES it from the
+// production package_info.cs's published GoDynamicTypeLift records for EVERY variant whose model
+// names a production half. Whether a hit may be ADOPTED is a separate question with a separate
+// answer — productionLiftReuseReachable, which is where the variant/assembly distinction lives.
 func lookupProductionDynamicTypeName(signature string) string {
 	packageLock.Lock()
 	name := productionDynamicTypeNames[signature]

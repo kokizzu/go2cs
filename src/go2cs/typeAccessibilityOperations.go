@@ -277,21 +277,36 @@ func liftNameNeedsPublicType(name string) bool {
 // rule: a cross-assembly reuse is admissible only if the reused declaration can be named from the
 // assembly doing the reusing.
 //
-//   - The INTERNAL variant is always reachable: whether production is recompiled into the test
-//     assembly (testProjectRecompile) or referenced with the `InternalsVisibleTo $(AssemblyName).tests`
-//     grant a package with internal test files always emits (testProjectWhiteboxReference), the test
-//     files compile with package-private sight of production. testExternalVariant is the existing
-//     per-variant fact convertTestVariants already sets (testVariantOptions); nothing new is recorded.
-//   - The EXTERNAL variant may only adopt a PUBLIC candidate. It is `<pkg>_test`, a separate Go
-//     package that reaches production by IMPORT, and the grant it would need is exactly the one
-//     `errors` does not have. Refusing an internal candidate is unconditionally safe: the caller
-//     falls through to minting its own lift, which is what the emission did before 5442b402e and
-//     what a package with no production lift of that shape does anyway.
+//   - Production's internals are IN SIGHT: whether production is recompiled into the test assembly
+//     (testProjectRecompile) or referenced with the `InternalsVisibleTo $(AssemblyName).tests` grant
+//     a package with internal test files always emits (testProjectWhiteboxReference), the test files
+//     compile with package-private sight of production and any candidate is reachable.
+//   - Otherwise only a PUBLIC candidate may be adopted. Refusing an internal one is unconditionally
+//     safe: the caller falls through to minting its own lift, which is what the emission did before
+//     5442b402e and what a package with no production lift of that shape does anyway.
 //
-// Deliberately NOT keyed on whether the production csproj happens to carry the IVT grant: that is a
-// property of a file this run may not have written, read at a moment the emission cannot check, and
-// getting it wrong fails the build. Public-or-internal-variant is decidable from state this
-// conversion already holds and errs toward a fresh mint.
+// The AXIS is the test ASSEMBLY, not the Go VARIANT — corrected 2026-09-04, measured. Keying this on
+// testExternalVariant alone was right for `errors` and wrong for every package that HAS an internal
+// test file, because there both variants emit into the ONE `.tests` project whose grant the model's
+// own selection guarantees (see testProductionInternalsVisible, testVariantOptions). runtime paid it:
+// hash_test.go's `IfaceKey.i interface{ F() }` is the very pair this dedup exists for, and it calls
+// production `ifaceHash` through the export_test.go bridge, so refusing the reuse minted a second
+// `IfaceKey_i` and the call could not bind —
+//
+//	hash_test.cs(540,52): error CS1503: cannot convert from
+//	'go.runtime_test_package.IfaceKey_i' to 'go.runtime_package.ifaceHash_i'
+//
+// — on the windows AND the linux target, byte-identically (instrumented `-tests` converts at
+// 8f82b3f63: key `interface{F()}`, same-pass registry MISS, production registry HIT `ifaceHash_i`,
+// liftNameNeedsPublicType("IfaceKey_i") FALSE, this function FALSE, branch MINT). liftNameNeedsPublicType
+// directly above already documents that same reuse as one hash_test.go "needs to compile at all": the
+// two rules were written by two arcs, and the second re-refused what the first was fixed to allow.
+//
+// Still deliberately NOT keyed on reading the production csproj back: that is a property of a file
+// this run may not have written, read at a moment the emission cannot check. The MODEL is state this
+// conversion already holds, the grant is a CONSEQUENCE of the model, and the whitebox model already
+// depends on that grant one layer earlier — its internal bridge names production's internal lifts
+// outright — so a missing grant fails the build before any dedup decision is reached.
 //
 // The callers (visitInterfaceType, visitStructType) conjoin this with liftNameNeedsPublicType rather
 // than replacing it — the two rules answer different questions and a reuse must satisfy both.
@@ -300,7 +315,7 @@ func productionLiftReuseReachable(existing string, options Options) bool {
 		return false
 	}
 
-	if !options.testExternalVariant {
+	if options.testProductionInternalsVisible {
 		return true
 	}
 
