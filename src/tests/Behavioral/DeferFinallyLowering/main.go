@@ -127,6 +127,43 @@ func (x *box) condPrefix(f bool) {
 	fmt.Println("body condPrefix")
 }
 
+// BEHAVIOR — B2's SECOND widening: a method on the RECEIVER ITSELF. Its registration allocates a
+// delegate rather than a FieldRefBox (the receiver's box is the method's own parameter), which is
+// why B refused it — and refusing it is what made all-or-nothing reject every function pairing one
+// with a receiver-field defer.
+func (x *box) finish() {
+	fmt.Println("finish", x.a.id)
+}
+
+func (x *box) methodShape() {
+	x.a.touch()
+	defer x.finish()
+	fmt.Println("body methodShape")
+}
+
+// BEHAVIOR — `FD.Write`'s exact shape, the row B2 exists to reach: a receiver-METHOD defer whose
+// witness lives in an `if` INIT (which always executes), paired with a CONDITIONAL receiver-FIELD
+// defer whose witness is its sibling inside that branch. Under B neither lowered, because the two
+// failed different gates and all-or-nothing then refused the function outright.
+//
+// LIFO across the mixed pair is the assertion: Go registers `finish` then, if the branch is taken,
+// `b.done` — so it prints `done b` before `finish`. Reverse SOURCE order gives the same, and the
+// flag makes the untaken branch a no-op.
+func (x *box) writeShape(isFile bool) {
+	if id := x.a.id; id == "" {
+		return
+	}
+
+	defer x.finish()
+
+	if isFile {
+		x.b.touch()
+		defer x.b.done()
+	}
+
+	fmt.Println("body writeShape", isFile)
+}
+
 // REFUSAL — the receiver is REASSIGNED after the defer. Go binds the deferred call's receiver at
 // registration, so this must report the ORIGINAL receiver's id; a lowered finally would bind at
 // unwind and report the other one. Both refused and behavioral: the printed id is the assertion.
@@ -157,6 +194,9 @@ func main() {
 	x.mixed(true)
 	x.unguarded()
 	x.condPrefix(false)
+	x.methodShape()
+	x.writeShape(true)
+	x.writeShape(false)
 	x.withLit()
 
 	other := &box{a: tracer{id: "other-a"}, b: tracer{id: "other-b"}}

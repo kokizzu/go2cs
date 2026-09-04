@@ -29,14 +29,31 @@ import (
 //     unobservable, and each one was measured over the corpus rather than assumed.
 //   - A defer that was never REACHED never runs. A finally runs whenever its try was entered. The
 //     per-site flag closes that: the finally calls only what the body actually reached.
-//   - Go's defers are LIFO. The finally emits them in REVERSE source order, which is the same
-//     thing for the top-level-only population this admits.
+//   - Go's defers are LIFO. The finally emits them in REVERSE source order.
 //
-// The gates (population measured at 220 sites in Go 1.23.12's std; 166 qualify, 75.5%):
+// THE LIFO ARGUMENT, since the population is no longer top-level-only. Go runs deferred calls in
+// reverse REGISTRATION order, and registration happens when control reaches the `defer`. With no
+// loops, no backward jumps and no defers inside function literals, the CFG is a DAG whose every
+// path visits structured statements in source order — an `if`, `switch` or `select` body is entered
+// and left before the statement that follows it. So if `defer A` precedes `defer B` in source and
+// both are reached, A registers first. Registration order is therefore source order RESTRICTED TO
+// THE REACHED DEFERS, and the per-site flag makes an unreached defer a no-op. Emitting every site
+// in reverse source order behind its flag yields exactly the reached ones, in reverse source order.
 //
-//	shape         the call is `<recv>.<field>.<Method>()` — capability 4's boxing shape
-//	top-level     the defer is a direct child of the body (so it is unconditional and unlooped,
-//	              and its source order IS its registration order)
+// The argument never assumes the defers are unconditional — only that control flows forward. That
+// is why the conditional widening is admissible, and why B's `top-level` gate was stricter than
+// correctness required.
+//
+// The gates (population measured over Go 1.23.12's std: 332 sites of this shape, 225 qualify):
+//
+//	shape         `<recv>.<field>.<Method>()` — the boxing shape, whose registration allocates a
+//	              FieldRefBox — OR `<recv>.<Method>()`, whose registration allocates a delegate.
+//	              Refusing the second is what made all-or-nothing reject `FD.Write`, `Pread`,
+//	              `Pwrite`, `Seek` and log/slog's `handle`, each pairing one with the other.
+//	lowerable     not inside a loop (which registers one site N times, beyond one flag's reach),
+//	              not inside a function literal (whose defers belong to its own frame), and the
+//	              function has no goto or label (a backward jump is the loop hazard renamed;
+//	              measured at ZERO sites, so the exclusion the argument needs is free)
 //	no arguments  arguments are evaluated at registration; storing them is the box again
 //	no recover    the frame's catch/recover protocol is untouched by this cut
 //	no named result   a named-result exit reads results AFTER the finally; not in this increment
@@ -44,7 +61,7 @@ import (
 //	receiver stable   neither the receiver nor any prefix of the path is reassigned or addressed
 //	                  — `defer c.mu.Unlock(); c = other` unlocks the ORIGINAL c's mutex in Go and
 //	                  would unlock the NEW one here, silently
-//	prefix dereferenced first   some UNCONDITIONAL statement ahead of the defer already dereferences
+//	prefix dereferenced first   some node PROVABLY EXECUTED before the defer already dereferences
 //	                  the same prefix, so a nil receiver panics there in BOTH forms and the moved
 //	                  evaluation can never be the first panic. Measured at THREE sites with no
 //	                  earlier dereference at all — a gate predicted empty and measured non-zero —
@@ -53,8 +70,9 @@ import (
 //	all-or-nothing    every defer in the function qualifies, or none is lowered. A function that
 //	                  mixes registered and lowered defers would have to interleave two LIFO orders.
 //
-// A defer inside a func literal is not a direct child of the outer body, so any such function
-// fails all-or-nothing and is left entirely alone. That is deliberate and conservative.
+// The prefix gate walks OUT through enclosing blocks and counts an `if`/`switch` INIT and CONDITION
+// (which always run when the statement is reached) while refusing their bodies — two corrections a
+// written-down falsifier forced, each a gate stricter than correctness required.
 
 // loweredDefer is one admitted site: the flag that records the body reached it, and the call
 // rendered as an ordinary expression (filled in when visitDeferStmt reaches the statement).
@@ -103,20 +121,26 @@ func (v *Visitor) planDeferFinallyLowering(funcDecl *ast.FuncDecl) {
 		return
 	}
 
-	// Collect the TOP-LEVEL defers in source order, and require that they are ALL of the function's
-	// defers. A defer nested in a block, a loop, a conditional or a func literal fails this.
-	var topLevel []*ast.DeferStmt
-
-	for _, stmt := range funcDecl.Body.List {
-		if deferStmt, ok := stmt.(*ast.DeferStmt); ok {
-			topLevel = append(topLevel, deferStmt)
-		}
-	}
-
-	if len(topLevel) == 0 {
+	// A backward jump can re-reach a defer and register it twice, which a single flag cannot
+	// express — the loop hazard without the loop syntax. Measured at ZERO sites in the qualifying
+	// population, so this exclusion is free; it is here because the LIFO argument needs it, not
+	// because the corpus does.
+	if functionHasJump(funcDecl.Body) {
 		return
 	}
 
+	// Collect the LOWERABLE defers in SOURCE order — every defer that is not inside a loop and not
+	// inside a function literal, at any nesting depth. B admitted only the body's direct children;
+	// that was a SIZING proxy carried into the emission, and the reached-flag makes a conditional
+	// defer correct by construction (B2's first widening).
+	lowerable := collectLowerableDefers(funcDecl.Body)
+
+	if len(lowerable) == 0 {
+		return
+	}
+
+	// All-or-nothing still: every defer the function has must be one of these. A defer in a loop or
+	// in a literal is counted here and disqualifies the function, exactly as before.
 	total := 0
 
 	ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
@@ -127,13 +151,16 @@ func (v *Visitor) planDeferFinallyLowering(funcDecl *ast.FuncDecl) {
 		return true
 	})
 
-	if total != len(topLevel) {
+	if total != len(lowerable) {
 		return
 	}
 
-	// Every site must carry the shape and pass its own gates — all-or-nothing.
-	for _, deferStmt := range topLevel {
-		if !isReceiverFieldMethodCall(deferStmt.Call, recvName) {
+	// Every site must carry a lowerable SHAPE and pass its own gates — all-or-nothing.
+	for _, deferStmt := range lowerable {
+		field := isReceiverFieldMethodCall(deferStmt.Call, recvName)
+		method := isReceiverMethodCall(deferStmt.Call, recvName)
+
+		if !field && !method {
 			return
 		}
 
@@ -141,15 +168,17 @@ func (v *Visitor) planDeferFinallyLowering(funcDecl *ast.FuncDecl) {
 			return
 		}
 
-		if !prefixDereferencedBefore(deferStmt, funcDecl.Body) {
+		if !prefixDereferencedBefore(deferStmt, funcDecl.Body, !field) {
 			return
 		}
 	}
 
-	v.loweredDefers = make([]*loweredDefer, 0, len(topLevel))
-	v.loweredDeferIndex = make(map[*ast.DeferStmt]int, len(topLevel))
 
-	for i, deferStmt := range topLevel {
+
+	v.loweredDefers = make([]*loweredDefer, 0, len(lowerable))
+	v.loweredDeferIndex = make(map[*ast.DeferStmt]int, len(lowerable))
+
+	for i, deferStmt := range lowerable {
 		v.loweredDeferIndex[deferStmt] = i
 		v.loweredDefers = append(v.loweredDefers, &loweredDefer{
 			flagName: GoFrameVar + "d" + strconv.Itoa(i+1),
@@ -171,6 +200,97 @@ func funcDeclReceiverName(funcDecl *ast.FuncDecl) string {
 	}
 
 	return name
+}
+
+// collectLowerableDefers returns, in SOURCE order, every defer that is not inside a loop and not
+// inside a function literal — at any nesting depth.
+//
+// B collected only the body's direct children. That was a proxy for "unconditional", written for
+// the CENSUS where over-admitting only mis-sizes a population, and carried into the EMISSION
+// unexamined. It is stricter than correctness requires: the per-site reached-flag makes a
+// CONDITIONAL defer correct by construction, because the flag is set at the defer's own position
+// and the finally calls only what the body reached.
+//
+// A loop still cannot be admitted — it reaches one defer statement N times and registers it N
+// times, which one boolean cannot express — and a literal's defers belong to the literal's own
+// frame.
+func collectLowerableDefers(body *ast.BlockStmt) []*ast.DeferStmt {
+	var out []*ast.DeferStmt
+
+	var walk func(node ast.Node)
+	walk = func(node ast.Node) {
+		switch n := node.(type) {
+		case *ast.ForStmt, *ast.RangeStmt, *ast.FuncLit:
+			return
+		case *ast.DeferStmt:
+			out = append(out, n)
+			return
+		}
+
+		// Descend through everything else — blocks, conditionals, switches, selects — so a defer
+		// nested in a branch is collected in the source order the LIFO argument relies on.
+		var children []ast.Node
+
+		ast.Inspect(node, func(c ast.Node) bool {
+			if c == node || c == nil {
+				return true
+			}
+
+			children = append(children, c)
+
+			return false
+		})
+
+		for _, c := range children {
+			walk(c)
+		}
+	}
+
+	for _, stmt := range body.List {
+		walk(stmt)
+	}
+
+	return out
+}
+
+// functionHasJump reports a goto or a label anywhere in the body. Reverse SOURCE order equals
+// reverse REGISTRATION order only while control flows forward; a backward jump breaks that the way
+// a loop does. Measured at zero sites in the qualifying population.
+func functionHasJump(body *ast.BlockStmt) bool {
+	found := false
+
+	ast.Inspect(body, func(node ast.Node) bool {
+		switch s := node.(type) {
+		case *ast.LabeledStmt:
+			found = true
+		case *ast.BranchStmt:
+			if s.Tok == token.GOTO {
+				found = true
+			}
+		}
+
+		return !found
+	})
+
+	return found
+}
+
+// isReceiverMethodCall reports B2's second shape: `<recv>.<Method>()`, a method on the RECEIVER
+// ITSELF. Its registration allocates a DELEGATE rather than a FieldRefBox — the receiver's box is
+// the method's own parameter and already exists — which is why B refused it as carrying no box to
+// remove. It is worth lowering anyway (the delegate is a real allocation), and refusing it is what
+// made all-or-nothing reject `FD.Write`, `Pread`, `Pwrite`, `Seek` and log/slog's `handle`, each of
+// which pairs one with a receiver-FIELD defer.
+func isReceiverMethodCall(call *ast.CallExpr, recvName string) bool {
+	selectorExpr, ok := call.Fun.(*ast.SelectorExpr)
+
+	if !ok {
+		return false
+	}
+
+	base, ok := selectorExpr.X.(*ast.Ident) // exactly ONE level: recv.Method, not recv.field.Method
+
+	return ok && base.Name == recvName
 }
 
 // isReceiverFieldMethodCall reports capability 4's shape: `<recv>.<field>.<Method>()`, a method
@@ -274,50 +394,65 @@ func bodyReachesNonReturning(body *ast.BlockStmt) bool {
 //
 // Measured: THREE sites in Go 1.23.12's std have no earlier dereference at all — a gate predicted
 // empty, measured non-zero, and those three would have been mis-lowered without it.
-func prefixDereferencedBefore(deferStmt *ast.DeferStmt, body *ast.BlockStmt) bool {
+// recvOnly selects the RECEIVER-METHOD form of the question — is the receiver itself dereferenced —
+// rather than the receiver-FIELD form, which asks about `<recv>.<field>`.
+func prefixDereferencedBefore(deferStmt *ast.DeferStmt, body *ast.BlockStmt, recvOnly bool) bool {
 	outer, ok := deferStmt.Call.Fun.(*ast.SelectorExpr)
 
 	if !ok {
 		return false
 	}
 
-	prefix, ok := outer.X.(*ast.SelectorExpr)
+	var want string
 
-	if !ok {
-		return false
-	}
+	if recvOnly {
+		base, ok := outer.X.(*ast.Ident)
 
-	base, ok := prefix.X.(*ast.Ident)
-
-	if !ok {
-		return false
-	}
-
-	want := base.Name + "." + prefix.Sel.Name
-	found := false
-
-	for _, stmt := range body.List {
-		if stmt.Pos() >= deferStmt.Pos() {
-			break
+		if !ok {
+			return false
 		}
 
-		// Only statements that unconditionally execute can witness the dereference.
-		switch stmt.(type) {
-		case *ast.IfStmt, *ast.SwitchStmt, *ast.TypeSwitchStmt, *ast.SelectStmt,
-			*ast.ForStmt, *ast.RangeStmt, *ast.LabeledStmt:
-			continue
+		want = base.Name
+	} else {
+		prefix, ok := outer.X.(*ast.SelectorExpr)
+
+		if !ok {
+			return false
 		}
 
-		ast.Inspect(stmt, func(node ast.Node) bool {
-			// A func literal's body may never run either.
-			if _, isLit := node.(*ast.FuncLit); isLit {
-				return false
+		base, ok := prefix.X.(*ast.Ident)
+
+		if !ok {
+			return false
+		}
+
+		want = base.Name + "." + prefix.Sel.Name
+	}
+
+	matches := func(sel *ast.SelectorExpr) bool {
+		base, ok := sel.X.(*ast.Ident)
+
+		if !ok {
+			return false
+		}
+
+		if recvOnly {
+			return base.Name == want
+		}
+
+		return base.Name+"."+sel.Sel.Name == want
+	}
+
+	for _, node := range provablyBefore(body.List, deferStmt) {
+		found := false
+
+		ast.Inspect(node, func(n ast.Node) bool {
+			if _, isLit := n.(*ast.FuncLit); isLit {
+				return false // a literal's body may never run either
 			}
 
-			if sel, ok := node.(*ast.SelectorExpr); ok {
-				if b, ok := sel.X.(*ast.Ident); ok && b.Name+"."+sel.Sel.Name == want {
-					found = true
-				}
+			if sel, ok := n.(*ast.SelectorExpr); ok && matches(sel) {
+				found = true
 			}
 
 			return !found
@@ -330,6 +465,130 @@ func prefixDereferencedBefore(deferStmt *ast.DeferStmt, body *ast.BlockStmt) boo
 
 	return false
 }
+
+// provablyBefore returns every node that is GUARANTEED to have executed by the time control reaches
+// the defer, walking OUT through the enclosing blocks as well as along the defer's own.
+//
+// Two corrections live here, and each was a gate stricter than correctness required:
+//
+//   - The defer's own block is not enough. `x.b.touch(); if f { defer x.b.done() }` has its witness
+//     at the OUTER level, before the `if`, and an outer statement that precedes the enclosing
+//     construct runs before the inner block is entered.
+//   - A control statement's BODY may not execute, but its INIT and CONDITION always do when the
+//     statement is reached. `if err := fd.writeLock(); err != nil { … }` is the dominant Go idiom
+//     for exactly the dereference this gate looks for, and skipping the whole IfStmt refused
+//     `FD.Write` — the row this widening exists to reach.
+//
+// Loops, `select` and labels contribute nothing: nothing inside them is guaranteed to precede a
+// defer that sits outside, and a defer inside them is excluded from the population anyway.
+func provablyBefore(list []ast.Stmt, deferStmt *ast.DeferStmt) []ast.Node {
+	var out []ast.Node
+
+	for _, stmt := range list {
+		if stmt == ast.Stmt(deferStmt) {
+			break
+		}
+
+		// The defer is somewhere inside this statement: its unconditional parts run first, then
+		// recurse into the branch that holds it. Nothing after it in this list can precede it.
+		if stmt.Pos() <= deferStmt.Pos() && deferStmt.End() <= stmt.End() {
+			switch s := stmt.(type) {
+			case *ast.IfStmt:
+				if s.Init != nil {
+					out = append(out, s.Init)
+				}
+
+				if s.Cond != nil {
+					out = append(out, s.Cond)
+				}
+
+				if s.Body != nil {
+					out = append(out, provablyBefore(s.Body.List, deferStmt)...)
+				}
+
+				if s.Else != nil {
+					if elseBlock, ok := s.Else.(*ast.BlockStmt); ok {
+						out = append(out, provablyBefore(elseBlock.List, deferStmt)...)
+					} else if elseIf, ok := s.Else.(*ast.IfStmt); ok {
+						out = append(out, provablyBefore([]ast.Stmt{elseIf}, deferStmt)...)
+					}
+				}
+			case *ast.BlockStmt:
+				out = append(out, provablyBefore(s.List, deferStmt)...)
+			case *ast.SwitchStmt:
+				if s.Init != nil {
+					out = append(out, s.Init)
+				}
+
+				if s.Tag != nil {
+					out = append(out, s.Tag)
+				}
+
+				out = append(out, provablyBeforeInCases(s.Body, deferStmt)...)
+			case *ast.TypeSwitchStmt:
+				if s.Init != nil {
+					out = append(out, s.Init)
+				}
+
+				out = append(out, provablyBeforeInCases(s.Body, deferStmt)...)
+			}
+
+			break
+		}
+
+		// A statement entirely ahead of the defer. Its unconditional parts count; its conditional
+		// bodies do not.
+		switch s := stmt.(type) {
+		case *ast.IfStmt:
+			if s.Init != nil {
+				out = append(out, s.Init)
+			}
+
+			if s.Cond != nil {
+				out = append(out, s.Cond)
+			}
+		case *ast.SwitchStmt:
+			if s.Init != nil {
+				out = append(out, s.Init)
+			}
+
+			if s.Tag != nil {
+				out = append(out, s.Tag)
+			}
+		case *ast.TypeSwitchStmt:
+			if s.Init != nil {
+				out = append(out, s.Init)
+			}
+		case *ast.SelectStmt, *ast.ForStmt, *ast.RangeStmt, *ast.LabeledStmt:
+			// nothing guaranteed
+		default:
+			out = append(out, stmt)
+		}
+	}
+
+	return out
+}
+
+// provablyBeforeInCases descends into the ONE case clause holding the defer; sibling clauses do not
+// execute.
+func provablyBeforeInCases(body *ast.BlockStmt, deferStmt *ast.DeferStmt) []ast.Node {
+	if body == nil {
+		return nil
+	}
+
+	for _, clause := range body.List {
+		caseClause, ok := clause.(*ast.CaseClause)
+
+		if !ok || caseClause.Pos() > deferStmt.Pos() || deferStmt.End() > caseClause.End() {
+			continue
+		}
+
+		return provablyBefore(caseClause.Body, deferStmt)
+	}
+
+	return nil
+}
+
 
 // reRootOnEntryBox re-roots a lowered call on the receiver's BOX when the receiver is reached
 // through an entry deref alias.
@@ -363,6 +622,8 @@ func (v *Visitor) reRootOnEntryBox(lowered *loweredDefer) string {
 
 // loweredCallAliasName is the name the lowered call's receiver base rendered as — the key the
 // finally's re-rooting looks up in entryAliasBoxPaths.
+// Both shapes are handled: `<recv>.<field>.<Method>()` roots at the base of the inner selector, and
+// `<recv>.<Method>()` roots at the base of the outer one.
 func (v *Visitor) loweredCallAliasName(call *ast.CallExpr) string {
 	outer, ok := call.Fun.(*ast.SelectorExpr)
 
@@ -370,16 +631,20 @@ func (v *Visitor) loweredCallAliasName(call *ast.CallExpr) string {
 		return ""
 	}
 
-	inner, ok := outer.X.(*ast.SelectorExpr)
+	base, ok := outer.X.(*ast.Ident)
 
 	if !ok {
-		return ""
-	}
+		inner, isSel := outer.X.(*ast.SelectorExpr)
 
-	base, ok := inner.X.(*ast.Ident)
+		if !isSel {
+			return ""
+		}
 
-	if !ok {
-		return ""
+		base, ok = inner.X.(*ast.Ident)
+
+		if !ok {
+			return ""
+		}
 	}
 
 	return v.convIdent(base, DefaultIdentContext())

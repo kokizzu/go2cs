@@ -88,19 +88,21 @@ private static readonly object bodyMixedˢ = (@string)"body mixed"u8;
 
 internal static void mixed(this ж<box> Ꮡx, bool f) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
     try {
         ref var x = ref Ꮡx.DerefOrNull();
 
         x.a.touch();
         x.b.touch();
-        defer(Ꮡx.of(box.Ꮡa).done, ref ᒐ);
+        ᒐd1 = true;
         if (f) {
-            defer(Ꮡx.of(box.Ꮡb).done, ref ᒐ);
+            ᒐd2 = true;
         }
         fmt.Println(bodyMixedˢ);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd2) Ꮡx.DerefOrNull().b.done(); if (ᒐd1) Ꮡx.DerefOrNull().a.done(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -170,6 +172,56 @@ internal static void condPrefix(this ж<box> Ꮡx, bool f) {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object finishˢ = (@string)"finish"u8;
+
+[GoRecv] internal static void finish(this ref box x) {
+    fmt.Println(finishˢ, x.a.id);
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object bodyMethodShapeˢ = (@string)"body methodShape"u8;
+
+internal static void methodShape(this ж<box> Ꮡx) {
+    GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    try {
+        ref var x = ref Ꮡx.DerefOrNull();
+
+        x.a.touch();
+        ᒐd1 = true;
+        fmt.Println(bodyMethodShapeˢ);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { if (ᒐd1) Ꮡx.DerefOrNull().finish(); ᒐ.Run(); }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly object bodyWriteShapeˢ = (@string)"body writeShape"u8;
+
+internal static void writeShape(this ж<box> Ꮡx, bool isFile) {
+    GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
+    try {
+        ref var x = ref Ꮡx.DerefOrNull();
+
+        {
+            @string id = x.a.id; if (id == ""u8) {
+                return;
+            }
+        }
+        ᒐd1 = true;
+        if (isFile) {
+            x.b.touch();
+            ᒐd2 = true;
+        }
+        fmt.Println(bodyWriteShapeˢ, isFile);
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { if (ᒐd2) Ꮡx.DerefOrNull().b.done(); if (ᒐd1) Ꮡx.DerefOrNull().finish(); ᒐ.Run(); }
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object bodyReboundˢ = (@string)"body rebound"u8;
 
 internal static void rebound(this ж<box> Ꮡx, ж<box> Ꮡother) {
@@ -213,6 +265,9 @@ internal static void Main() {
     x.mixed(true);
     x.unguarded();
     x.condPrefix(false);
+    x.methodShape();
+    x.writeShape(true);
+    x.writeShape(false);
     x.withLit();
     var other = Ꮡ(new box(a: new tracer(id: "other-a"u8), b: new tracer(id: "other-b"u8)));
     x.rebound(other);
