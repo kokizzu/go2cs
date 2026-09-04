@@ -55,7 +55,7 @@ partial struct Type {
     [GoReflectCompanion] public System.Type? sysType;
     [GoReflectCompanion] public nint[]? arrayDims;
     [GoReflectCompanion] public nint[]?[]? funcParamDims;
-    [GoReflectCompanion] public GoChanDir chanDir;
+    [GoReflectCompanion] public GoChanDir[]? chanDirChain;
     [GoReflectCompanion] public nint[]? keyDims;
 }
 
@@ -87,24 +87,50 @@ public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? 
     return synthType(st, arrayDims, funcParamDims, chanDir, null);
 }
 
+// The SCALAR form is every pre-2b caller's entry and stays exactly as wide as it was: one stamped
+// direction describes one channel. It lifts to the one-element chain, which normalization then
+// renders to the identical key the scalar era produced — that equality is the whole backward-
+// compatibility claim, and it is measured by the guard rows rather than asserted here.
 public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir, nint[]? keyDims) {
+    return synthType(st, arrayDims, funcParamDims, chanDir == GoChanDir.Unstamped ? null : new[] { chanDir }, keyDims);
+}
+
+// normalizeChanDirChain is the ONE authority for a direction chain's canonical spelling, and it
+// GENERALIZES the Both → Unstamped fold rather than replacing it. The rule, in three clauses:
+//
+//   - TRAILING "nothing narrowed" entries are trimmed. Both and Unstamped are the same claim (a
+//     channel nothing narrowed IS bidirectional), so a chain ending in either says nothing its
+//     absence would not say. This is the clause that keeps `chan<- chan T` — [Send, Both] — keyed
+//     exactly as the scalar era's [Send], so no existing descriptor re-interns.
+//   - INTERIOR entries are KEPT even when Both, because there they are load-bearing: `chan (<-chan
+//     T)` is [Both, Recv], and dropping the head would spell `<-chan chan T`, a different Go type.
+//     A chain is positional; only its tail is free.
+//   - An ALL-Both chain normalizes to ABSENT, which is the scalar fold verbatim: it is what makes
+//     reflect.ChanOf(BothDir, T) and a value-derived `chan T` land on ONE descriptor.
+//
+// That last clause is not hypothetical. ChanOf(BothDir, T) and MakeChan both stamped Both while
+// every value-derived bidirectional channel read Unstamped, so checkSameType(ChanOf(BothDir, T1),
+// (chan T1)(nil)) failed on descriptor identity before any direction semantics were in play
+// (TestChanOf's first assertion). Normalizing at the stamp SITES instead would re-open the split
+// with every new site — the token-class lesson: one authority, and this is it.
+private static GoChanDir[]? normalizeChanDirChain(GoChanDir[]? chain) {
+    if (chain is null) {
+        return null;
+    }
+    int end = chain.Length;
+    while (end > 0 && (chain[end - 1] == GoChanDir.Both || chain[end - 1] == GoChanDir.Unstamped)) {
+        end--;
+    }
+    return end == 0 ? null : end == chain.Length ? chain : chain[..end];
+}
+
+public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir[]? chanDirChain, nint[]? keyDims) {
     if (st is null) {
         return default!;
     }
-    // Unstamped IS the bidirectional channel's canonical spelling (GoChanDir's own doc: a channel
-    // nothing narrowed answers Both), so an explicit Both must fold into it HERE, at the one entry
-    // every descriptor passes through — or the same Go type gets TWO descriptors keyed "@3" and ""
-    // and type identity silently splits. That is not hypothetical: reflect.ChanOf(BothDir, T) and
-    // MakeChan both stamped Both while every value-derived bidirectional channel reads Unstamped,
-    // so checkSameType(ChanOf(BothDir, T1), (chan T1)(nil)) failed on descriptor identity before
-    // any direction semantics were even in play (TestChanOf's first assertion). Normalizing at the
-    // stamp SITES instead would re-open the split with every new site — the token-class lesson:
-    // one authority, and this is it.
-    if (chanDir == GoChanDir.Both) {
-        chanDir = GoChanDir.Unstamped;
-    }
-    string dimsKey = descriptorDimsKey(arrayDims, funcParamDims, chanDir, keyDims);
-    return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims, funcParamDims, chanDir, keyDims));
+    chanDirChain = normalizeChanDirChain(chanDirChain);
+    string dimsKey = descriptorDimsKey(arrayDims, funcParamDims, chanDirChain, keyDims);
+    return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims, funcParamDims, chanDirChain, keyDims));
 }
 
 // descriptorDimsKey renders the descriptor's dims cargo as the interning key's second component —
@@ -125,9 +151,27 @@ public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDi
 // `map[[2]string]V` and `map[[3]string]V` are DISTINCT Go types over ONE managed map<array<@string>,
 // V>, so interning them together would let whichever arrived first answer Key().Len() for both.
 public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir, nint[]? keyDims) {
+    return descriptorDimsKey(arrayDims, funcParamDims,
+        chanDir == GoChanDir.Unstamped ? null : new[] { chanDir }, keyDims);
+}
+
+// The chain renders "@" followed by its entries comma-joined, which makes a ONE-element chain
+// spell exactly what the scalar spelled — "@2" for Send — so every descriptor the corpus already
+// interned keys to the same string and nothing re-interns. A nested chain extends rightward
+// ("@3,2" is `chan (<-chan T)`), and normalization guarantees the last entry is never a bare Both,
+// so no two spellings of one Go type can reach this function.
+public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir[]? chanDirChain, nint[]? keyDims) {
+    // Normalized HERE as well as in synthType, and the distinction matters: the RULE has one
+    // definition (normalizeChanDirChain) and is applied at both entry points, which is not the
+    // per-site normalization the token-class lesson forbids. synthType must normalize what it
+    // STORES, because Elem() and ChanDir() read the stored chain; this function is PUBLIC and is
+    // called directly by reflect's canonType, so a caller holding a raw chain would otherwise
+    // render a key that splits one Go type across two descriptors. Idempotent, and free for the
+    // null chain every non-channel descriptor carries.
+    chanDirChain = normalizeChanDirChain(chanDirChain);
     string key = arrayDims is null ? "" : string.Join(',', arrayDims);
-    if (chanDir != GoChanDir.Unstamped) {
-        key += "@" + ((byte)chanDir).ToString();
+    if (chanDirChain is { Length: > 0 }) {
+        key += "@" + string.Join(',', System.Array.ConvertAll(chanDirChain, static d => ((byte)d).ToString()));
     }
     if (keyDims is not null) {
         key += "#" + string.Join(',', keyDims);
@@ -147,7 +191,7 @@ public static string descriptorDimsKey(nint[]? arrayDims, nint[]?[]? funcParamDi
 
 // The single builder — synthType is its only caller, and it always has every cargo slot in hand.
 // (The shorter private forwarders this replaced went dead when keyDims joined the chain.)
-private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir chanDir, nint[]? keyDims) {
+private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, nint[]?[]? funcParamDims, GoChanDir[]? chanDirChain, nint[]? keyDims) {
     ref var t = ref heap<Type>(out var Ꮡt);
     t.Kind_ = (ΔKind)((uint8)GoReflect.KindOf(st));
     // TFlagNamed — the descriptor bit that says "this is a DEFINED type", carried because three
@@ -176,7 +220,7 @@ private static ж<Type> synthesizeDescriptor(System.Type st, nint[]? arrayDims, 
     t.sysType = st;
     t.arrayDims = arrayDims;
     t.funcParamDims = funcParamDims;
-    t.chanDir = chanDir;
+    t.chanDirChain = chanDirChain;
     t.keyDims = keyDims;
     // Derivability is the question, not the sign: a Go size of 2^63 and up came back -1 from
     // the signed form and left Size_ UNSTAMPED on a type whose size was known exactly.
@@ -489,9 +533,12 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
     // this is the hop `new(chan<- string)` takes to reach `Elem().String()`. A CHANNEL's own
     // direction describes the channel, never its element, so it stops. The map KEY dims descend the
     // same one hop, for the same reason: `*map[[2]string]V` holds its pointee's whole type.
-    GoChanDir elemChanDir = kind == Pointer ? Ꮡt.Value.chanDir : GoChanDir.Unstamped;
+    GoChanDir[]? chain = Ꮡt.Value.chanDirChain;
+    GoChanDir[]? elemChanDirChain = kind == Pointer ? chain
+                                  : kind == Chan && chain is { Length: > 1 } ? chain[1..]
+                                  : null;
     nint[]? elemKeyDims = kind == Pointer ? Ꮡt.Value.keyDims : null;
-    return synthType(elem, elemDims, null, elemChanDir, elemKeyDims);
+    return synthType(elem, elemDims, null, elemChanDirChain, elemKeyDims);
 }
 
 // ChanDir returns the direction of t if t is a channel type, otherwise InvalidDir.
@@ -533,7 +580,8 @@ public static ΔChanDir ChanDir(this ж<Type> Ꮡt) {
     if (Ꮡt == nil || Ꮡt.Value.Kind() != Chan) {
         return InvalidDir;
     }
-    GoChanDir carried = Ꮡt.Value.chanDir;
+    GoChanDir[]? chain = Ꮡt.Value.chanDirChain;
+    GoChanDir carried = chain is { Length: > 0 } ? chain[0] : GoChanDir.Unstamped;
     return carried == GoChanDir.Unstamped ? BothDir : (ΔChanDir)(nint)(byte)carried;
 }
 

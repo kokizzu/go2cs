@@ -1957,10 +1957,19 @@ private static nint[]? arrayDimsOfReflectType(ΔType typ) {
     return ok && rt != nil ? rt.Value.t.arrayDims : null;
 }
 
+// chanDirChainOfReflectType recovers the whole carried chain, which is what a CONSTRUCTOR needs:
+// ChanOf prepends its own direction to the element's chain, so ChanOf(BothDir, <-chan T) describes
+// `chan (<-chan T)` rather than collapsing to `chan chan T`.
+private static GoChanDir[]? chanDirChainOfReflectType(ΔType typ) {
+    var (rt, ok) = typ._<ж<rtype>>(ᐧ);
+    return ok && rt != nil ? rt.Value.t.chanDirChain : null;
+}
+
 // chanDirOfReflectType recovers the descriptor's carried channel direction (non-identity cargo).
+// The chain's HEAD is this channel's own direction; its tail belongs to the element.
 private static GoChanDir chanDirOfReflectType(ΔType typ) {
     var (rt, ok) = typ._<ж<rtype>>(ᐧ);
-    return ok && rt != nil ? rt.Value.t.chanDir : GoChanDir.Unstamped;
+    return ok && rt != nil && rt.Value.t.chanDirChain is { Length: > 0 } chain ? chain[0] : GoChanDir.Unstamped;
 }
 
 // keyDimsOfReflectType recovers the descriptor's carried map-KEY dims (non-identity cargo) — the
@@ -2277,7 +2286,7 @@ internal static ΔType canonType(ж<abi.Type> Ꮡt) {
     // type's per-parameter dims, without which `func([32]byte) bool` and `func([64]byte) bool`
     // (ONE managed delegate type, no arrayDims of their own) would share a wrapper and the first to
     // intern would answer In(0).Len() for both.
-    string dimsKey = abi.descriptorDimsKey(Ꮡt.Value.arrayDims, Ꮡt.Value.funcParamDims, Ꮡt.Value.chanDir, Ꮡt.Value.keyDims);
+    string dimsKey = abi.descriptorDimsKey(Ꮡt.Value.arrayDims, Ꮡt.Value.funcParamDims, Ꮡt.Value.chanDirChain, Ꮡt.Value.keyDims);
     return s_canonTypeCache.GetOrAdd((st, dimsKey), _ => new rtypeжΔType(toRType(Ꮡt)));
 }
 
@@ -2308,7 +2317,7 @@ internal static ΔType toType(ж<abi.Type> Ꮡt) {
 
 // String returns the Go source type string (`main.Point`, `[]int`, `*T`) — the value of %T.
 internal static @string String(this ж<rtype> Ꮡt) {
-    return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType, Ꮡt.Value.t.arrayDims, Ꮡt.Value.t.chanDir, Ꮡt.Value.t.keyDims);
+    return (@string)GoReflect.GoTypeName(Ꮡt.Value.t.sysType, Ꮡt.Value.t.arrayDims, Ꮡt.Value.t.chanDirChain, Ꮡt.Value.t.keyDims);
 }
 
 // Name returns the type's name within its package (empty for an unnamed composite). The gate is
@@ -2367,9 +2376,15 @@ internal static ΔType Elem(this ж<rtype> Ꮡt) {
     // `new(chan<- string)` takes to reach Elem().String(). A channel's own direction describes the
     // channel and stops here. A map's KEY dims describe the key, so they stop at a map and descend
     // only through a pointer, whose cargo is its pointee's whole type.
-    GoChanDir elemChanDir = throughPointer ? Ꮡt.Value.t.chanDir : GoChanDir.Unstamped;
+    // A CHANNEL now hands its element the chain's TAIL rather than stopping: that is the whole of
+    // increment 2b, and it is what lets `chan (<-chan T)`.Elem() answer `<-chan T` instead of
+    // `chan T`. The head was consumed by this frame exactly as an array consumes its dims head.
+    GoChanDir[]? chain = Ꮡt.Value.t.chanDirChain;
+    GoChanDir[]? elemChanDirChain = throughPointer ? chain
+                                 : kind == GoReflect.Chan && chain is { Length: > 1 } ? chain[1..]
+                                 : null;
     nint[]? elemKeyDims = throughPointer ? Ꮡt.Value.t.keyDims : null;
-    return toType(abi.synthType(GoReflect.ElementType(st), elemDims, null, elemChanDir, elemKeyDims));
+    return toType(abi.synthType(GoReflect.ElementType(st), elemDims, null, elemChanDirChain, elemKeyDims));
 }
 
 // Key returns a map type's key type — dimensioned from the descriptor's keyDims cargo, the one
@@ -3292,8 +3307,14 @@ public static ΔType ChanOf(ΔChanDir dir, ΔType t) {
         throw panic("reflect: ChanOf of non-synthesized type");
     }
     // The direction rides the descriptor as cargo — GoChanDir maps onto abi's ChanDir with no
-    // translation (Recv 1, Send 2, Both 3) — which is what rtype.ChanDir reads back out.
-    return toType(abi.synthType(typeof(channel<>).MakeGenericType(st), arrayDimsOfReflectType(t), null, ((GoChanDir)(byte)(nint)dir), keyDimsOfReflectType(t)));
+    // translation (Recv 1, Send 2, Both 3) — which is what rtype.ChanDir reads back out. Increment
+    // 2b makes it a CHAIN: this direction is the head and the ELEMENT's own chain is the tail, so a
+    // nested construction keeps every level's arrow. synthType normalizes (trailing Both trimmed,
+    // all-Both absent), which is what keeps ChanOf(BothDir, T) keyed exactly as it was before 2b.
+    GoChanDir head = (GoChanDir)(byte)(nint)dir;
+    GoChanDir[]? elemChain = chanDirChainOfReflectType(t);
+    GoChanDir[] chain = elemChain is { Length: > 0 } ? [head, .. elemChain] : [head];
+    return toType(abi.synthType(typeof(channel<>).MakeGenericType(st), arrayDimsOfReflectType(t), null, chain, keyDimsOfReflectType(t)));
 }
 
 // MapOf returns the map type with the given key and element types.
