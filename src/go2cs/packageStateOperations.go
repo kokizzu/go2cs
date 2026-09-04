@@ -49,6 +49,8 @@ func resetPackageState(pkg *packages.Package) {
 	packageInlineFuncTypeNames = make(map[string]bool)
 	importedPointerImplements = HashSet[string]{}
 	importedValueImplements = HashSet[string]{}
+	importedRefPrimaries = HashSet[string]{}
+	packageRefPrimaryRecords = nil
 	constImportedTypeAliases = NewHashSet([]string{})
 	derivedTypeAliases = NewHashSet([]string{})
 	usedDerivedTypeAliases = NewHashSet([]string{})

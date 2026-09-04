@@ -482,6 +482,14 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 			log.Fatalf("Error while writing project file \"%s\": %s\n", projectFileName, err)
 		}
 
+		// The cross-package lowering contract: compute the `ref`-primary records this package
+		// publishes (its selected exported primaries plus any registered hand-own declaration,
+		// which must be on disk) before the info file is written. A registered hand-own primary
+		// the output does not declare is a hard error, never a silent record.
+		if err := collectPublishedRefVerdicts(pkg, packageOutputPath); err != nil {
+			return err
+		}
+
 		packageInfoFileName := packageInfoPath(packageOutputPath, isDir, options)
 
 		writePackageInfoFile(packageInfoFileName, !isDir)

@@ -1066,6 +1066,11 @@ func loadPackageImplementLines(lines []string, rootPackageName string) {
 
 		packageLock.Unlock()
 	}
+
+	// Record the package's published `ref`-receiver primaries (the cross-package lowering
+	// contract, refVerdictPublication.go) — read from the same line set, so a NuGet-referenced
+	// dependency's embedded metadata seeds them exactly as an on-disk package_info.cs does.
+	loadRefPrimaryLines(lines, rootPackageName)
 }
 
 // preloadImportedTypeAliases loads the exported type aliases of EVERY package imported by ANY file in

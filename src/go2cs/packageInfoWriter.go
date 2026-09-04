@@ -570,6 +570,11 @@ func writePackageInfoFile(packageInfoFileName string, mergeExisting bool) {
 		log.Fatalf("Failed to find '<InterfaceImplementations>...</InterfaceImplementations>' section for inserting interface implementations into package info file \"%s\"\n", packageInfoFileName)
 	}
 
+	// Publish the cross-package lowering contract's records (refVerdictPublication.go): the
+	// section is inserted only when there is a record to hold and removed when there is none, so
+	// a package with nothing to publish is byte-identical to one written before the contract.
+	packageInfoLines = applyRefVerdictSection(packageInfoLines, packageRefPrimaryRecords, mergeExisting)
+
 	// Handle implicit conversions
 	startLineIndex = -1
 	endLineIndex = -1
