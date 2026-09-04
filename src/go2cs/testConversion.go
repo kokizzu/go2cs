@@ -5821,6 +5821,34 @@ type capabilityGatedDeclaration struct {
 // TestGCMAsm (board: "TestGCMAsm closes as a source-defined platform skip").
 const platformSkipClass = "platform-skip"
 
+// cgoConfigurationClass names a verdict whose divergence is the residue of the corpus and the
+// oracle being pinned to DIFFERENT cgo configurations for one seam: the converted side is
+// behaviourally a cgo-LINKED build there (runtime_doAllThreadsSyscall answers ENOTSUP, which is
+// precisely the answer a cgo-linked Go build gives), the oracle is pinned cgo-OFF -- the state of
+// record on every platform since 2026-09-03 -- and Go's OWN test source turns that difference
+// into a skip whose message the entry pins. Its shape is therefore Go=pass / C#=skip, exactly
+// platformSkipClass's, and it is admitted for that shape and NO other (see classAdmitsSkipShape).
+//
+// It was minted 2026-08-27 into three syscall entries for exactly this shape, and could never
+// fire: the skip shape was unlocked for platformSkipClass ALONE, so the class fell to the generic
+// arm below, which requires C#=fail. A guard that cannot go green, one layer down -- and it
+// stayed invisible for as long as the Linux bank ran cgo ON, where Go skips those tests too (the
+// ENOTSUP coincidence) and they matched skip/skip. The cgo-OFF ruling made the class live, and
+// the 2026-09-03 Linux leveling re-sweep is what read it: four unabsorbed verdicts on a banked
+// row. Admitting the class is the remedy rather than re-labelling the entries to platform-skip,
+// because the class name carries WHY -- the cgo axis -- and re-labelling would throw that away
+// (coordinator ruling, mailbox 82ec6654c).
+const cgoConfigurationClass = "cgo-configuration"
+
+// classAdmitsSkipShape reports whether a disclosure class may absorb a Go=pass / C#=skip pair.
+// ONE predicate, read by BOTH arms below -- the skip arm's admission and the generic arm's
+// exclusion -- so the two can never drift apart again. Drift is exactly what let cgo-configuration
+// be admitted by neither: the shape was named in one arm by a bare class comparison and excluded
+// in the other by a second, and a class that matched neither list simply fell through.
+func classAdmitsSkipShape(class string) bool {
+	return class == platformSkipClass || class == cgoConfigurationClass
+}
+
 // hostFatalClass names a test the converted host cannot RUN AT ALL -- not one whose verdict
 // diverges, but one whose execution takes the whole process down, so every test after it in its
 // phase is lost too. runtime/debug's TestPanicOnFault is the first member: it mmaps a PROT_READ
@@ -6246,7 +6274,11 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 			// harness-injected or conversion-added skip cannot be laundered through here. A
 			// platform-skip row whose C# side skips for some OTHER reason has MOVED, and moving
 			// is exactly what the pin exists to catch.
-			if disclosure, ok := disclosures[name]; ok && disclosure.Class == platformSkipClass &&
+			// The classes that unlock this shape are exactly the ones classAdmitsSkipShape names
+			// (platform-skip and cgo-configuration); the signature requirement below is identical
+			// for both, so admitting a second class widens WHICH manifests may absorb a skip and
+			// nothing about WHAT is absorbed.
+			if disclosure, ok := disclosures[name]; ok && classAdmitsSkipShape(disclosure.Class) &&
 				goOK && csOK && goStatus == "pass" && csStatus == "skip" {
 				if strings.Contains(csOutputs[name], disclosure.Signature) {
 					disclosed = append(disclosed, name)
@@ -6260,11 +6292,13 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 				continue
 			}
 
-			// platformSkipClass is EXCLUDED here on purpose: it admits exactly one shape (the skip
-			// arm above), so a platform-skip row whose C# side FAILS has moved and must read as a
-			// mismatch even if the failure text happens to contain the pinned skip message.
-			// Without this the class would be a second way to disclose a failure, which is the
-			// laundering the ruling forbids.
+			// The SKIP-SHAPE classes (classAdmitsSkipShape: platform-skip and cgo-configuration)
+			// are EXCLUDED here on purpose: each admits exactly one shape, the skip arm above, so
+			// a row of theirs whose C# side FAILS has moved and must read as a mismatch even if
+			// the failure text happens to contain the pinned skip message. Without this either
+			// class would be a second way to disclose a failure, which is the laundering the
+			// ruling forbids -- and reading the SAME predicate both arms read is what keeps the
+			// admission and the exclusion in step whenever the set gains a member.
 			//
 			// hostFatalClass is excluded for a DIFFERENT reason and it is worth stating separately:
 			// that class withdraws its test from both command lines, so it produces no verdict on
@@ -6272,7 +6306,7 @@ func matchTerminalStatuses(names []string, goResults, csResults map[string]strin
 			// this arm the exclusion did not take -- the test RAN -- and reading it as disclosed
 			// would hide exactly that. It must fall through to a mismatch and be seen.
 			if disclosure, ok := disclosures[name]; ok &&
-				disclosure.Class != platformSkipClass && disclosure.Class != hostFatalClass &&
+				!classAdmitsSkipShape(disclosure.Class) && disclosure.Class != hostFatalClass &&
 				goStatus == "pass" && csStatus == "fail" {
 				if strings.Contains(csOutputs[name], disclosure.Signature) {
 					disclosed = append(disclosed, name)
