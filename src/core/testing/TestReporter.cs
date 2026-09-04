@@ -103,6 +103,24 @@ internal sealed class TestReporter(string package, bool json, bool verbose)
     public void ReportPackage(string action, double elapsed = 0.0D, string? output = null) =>
         Report(new TestEvent(package, "", action, elapsed, output));
 
+    /// <summary>
+    /// Retains a package-level event WITHOUT writing it to the console -- for the host's own record
+    /// of an exit the process is already taking.
+    /// </summary>
+    /// <remarks>
+    /// Go's test binary prints nothing on os.Exit: the PASS line was M.Run's, and the `fail` action a
+    /// non-zero status implies is appended by `go test` (the parent), never by the binary. The host's
+    /// results FILE is where that fact belongs, and stdout must stay exactly what the converted
+    /// program left there -- a helper process re-executed by os/exec's tests has its stdout read back
+    /// by the test that spawned it, and one printed line broke twenty of them (measured 2026-09-04:
+    /// `echo: want "foo bar baz\n", got "foo bar baz\nPASS ... exit status 0 ..."`).
+    /// </remarks>
+    public void RecordPackage(string action, double elapsed = 0.0D, string? output = null)
+    {
+        lock (m_syncRoot)
+            m_events.Add(new TestEvent(package, "", action, elapsed, output));
+    }
+
     public static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase

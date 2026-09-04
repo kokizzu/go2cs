@@ -77,6 +77,16 @@ public sealed class Goroutine
     private static long s_nextId;
     private static int s_count;
 
+    // How many of s_count are SYSTEM goroutines (IsSystem) -- Go's sched.ngsys, the term gcount
+    // subtracts so that runtime.NumGoroutine reports user goroutines only.
+    private static int s_systemCount;
+
+    // The MAIN goroutine -- the entry RegisterMainGoroutine minted on the thread that first touched
+    // golib. Held by reference so a host can run its "main" on a thread other than that one
+    // (EnterAsMain): the identity is the registry entry, not the thread, and it is minted exactly
+    // once per process.
+    private static Goroutine? s_main;
+
     // The identity of the goroutine running on this thread — getg(), in Go's terms — or null on a
     // thread that is not running Go code at all (BCL callbacks, the timer service thread, the
     // finalizer). Goroutine state is thread-affine everywhere in golib, so this is the natural root.
@@ -90,10 +100,13 @@ public sealed class Goroutine
     // The panic observer, when a HOST installed one. Read once per escaping panic and never cleared.
     private static Action<PanicException>? s_panicObserver;
 
-    private Goroutine(long id, bool isMain)
+    private Goroutine(long id, bool isMain, System.Reflection.MethodBase? creator, long parentId)
     {
         Id = id;
         IsMain = isMain;
+        Creator = creator;
+        ParentId = parentId;
+        IsSystem = !isMain && IsSystemCreator(creator);
     }
 
     // Why this goroutine is parked, or WaitReason.Zero when it is not — Go's gp.waitreason, and the
@@ -121,6 +134,52 @@ public sealed class Goroutine
     // distinguishes them: runtime.Goexit means something different there (see OnGoroutine).
     internal bool IsMain { get; }
 
+    // The function that executed the `go` statement -- Go's gp.gopc, resolved to its function -- and
+    // the goroutine it ran on (gp.parentGoid). Captured on the CREATING thread at Start, by an
+    // identity-located walk past golib's own launcher frames, WITHOUT file info (a per-launch PDB
+    // read would price every `go` statement; the traceback consumers that matter -- net/http's
+    // goroutine-leak filter among them -- match the `created by <func>` text, never its position).
+    // Null for the main goroutine and for a thread a host entered directly: Go prints no creator
+    // for goroutine 1 either.
+    internal System.Reflection.MethodBase? Creator { get; }
+
+    internal long ParentId { get; }
+
+    // Go's isSystemGoroutine (runtime/traceback.go): a goroutine whose start function lives in the
+    // runtime package -- less runtime.main, which has no creator here and is never system. Decided
+    // from the CREATOR's package rather than the entry closure's: the runtime starts its own
+    // goroutines from its own functions (the unique map-cleanup goroutine, mgc.go, is started
+    // inside the runtime precisely "so it's counted as a system goroutine"), so the two agree by
+    // construction for every `go` the runtime executes. What it decides: runtime.Stack(all) omits
+    // these unless GOTRACEBACK asks for them, and NumGoroutine does not count them -- both exactly
+    // as Go, where a leak filter over a traceback never has to name the runtime's own goroutines.
+    // The finalizer-goroutine nuance (runfinq counts as user while it runs a finalizer) is not
+    // modelled: the finalizer runner is a plain thread here, not a registered goroutine.
+    // Two edges, stated so the next reader does not "fix" them: the main goroutine and a thread a
+    // host entered directly carry no creator and are USER goroutines (Go's runtime.main exclusion);
+    // and a hand-own that launches a goroutine from a golib type rather than from runtime_package
+    // reads as USER too -- correct by Go's rule, since Go would not have started it in the runtime
+    // either. Only a `go` executed by runtime's own converted or hand-owned functions is system.
+    internal bool IsSystem { get; }
+
+    internal static bool IsSystemCreator(System.Reflection.MethodBase? creator)
+    {
+        Type? type = creator?.DeclaringType;
+
+        if (type is null)
+            return false;
+
+        // A closure's display class is nested in its package class; the package is the outermost type.
+        while (type.DeclaringType is Type outer)
+            type = outer;
+
+        string name = type.FullName ?? type.Name;
+        int packageSuffix = name.LastIndexOf("_package", StringComparison.Ordinal);
+
+        // The same derivation runtime's goFrameName uses: `go.runtime_package` -> `runtime`.
+        return name.StartsWith("go.", StringComparison.Ordinal) && packageSuffix > 3 && name[3..packageSuffix] == "runtime";
+    }
+
     // Running until a park-accounting scope says otherwise — DERIVED, never stored, so it cannot
     // disagree with the reason (see m_waitReason). This is the gopark/goready accounting contract of
     // DESIGN-cooperative-scheduler.md §5.3, which wraps the existing wait primitives rather than
@@ -146,6 +205,17 @@ public sealed class Goroutine
     /// The number of goroutines that currently exist, including the main goroutine.
     /// </summary>
     public static int Count => Volatile.Read(ref s_count);
+
+    /// <summary>
+    /// The number of USER goroutines -- <see cref="Count"/> less the runtime's own (<see cref="IsSystem"/>),
+    /// which is what Go's <c>gcount</c> reports as <c>runtime.NumGoroutine</c>.
+    /// </summary>
+    /// <remarks>
+    /// Two independent reads, so the difference can be transiently off by one while a goroutine is
+    /// being registered -- Go's own caveat ("all these variables can be changed concurrently"), and
+    /// the reason Go's body floors the result; the runtime package applies that floor, not this one.
+    /// </remarks>
+    public static int UserCount => Volatile.Read(ref s_count) - Volatile.Read(ref s_systemCount);
 
     /// <summary>
     /// Indicates whether the calling thread is running a goroutine body rather than the main
@@ -198,19 +268,65 @@ public sealed class Goroutine
     /// an inert scope, so nesting can neither mint a second goroutine for one thread nor retire the
     /// outer one early.
     /// </remarks>
-    public static Scope Enter()
+    public static Scope Enter() => Enter(creator: null, parentId: 0);
+
+    private static Scope Enter(System.Reflection.MethodBase? creator, long parentId)
     {
         if (t_current is not null)
             return default;
 
-        Goroutine goroutine = Register(isMain: false);
+        Goroutine goroutine = Register(isMain: false, creator, parentId);
         t_current = goroutine;
 
         // Named for the debugger and for a thread dump, which is where a leaked or wedged goroutine
         // is diagnosed. A host that named the thread itself keeps its own name.
         Thread.CurrentThread.Name ??= $"goroutine-{goroutine.Id.ToString(CultureInfo.InvariantCulture)}";
 
-        return new Scope(goroutine);
+        return new Scope(goroutine, owned: true);
+    }
+
+    /// <summary>
+    /// Marks the calling thread as running the MAIN goroutine for the lifetime of the returned scope.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The main goroutine is minted exactly once per process, by <see cref="RegisterMainGoroutine"/>
+    /// on the thread that first touched golib. A host whose "main" runs on some OTHER thread -- the
+    /// converted-test host hands the whole run to a pool thread and parks its own main thread on the
+    /// package deadline -- would otherwise run Go's <c>TestMain</c> on a thread with no identity at
+    /// all (a traceback headed <c>goroutine 0</c>, an id Go never mints) while the registered main
+    /// goroutine sat in the registry as a goroutine that runs no Go code: a frameless block in every
+    /// <c>runtime.Stack(all)</c> dump that no program's filter can drop, which is exactly how
+    /// <c>net/http</c>'s goroutine-leak check counted the host itself as a leak (2026-09-04). Go's
+    /// own shape is that <c>testing.(*M).Run</c> executes ON the main goroutine and the package
+    /// deadline is a timer, not a second goroutine waiting on the first.
+    /// </para>
+    /// <para>
+    /// Adoption moves nothing in the registry: the identity IS the registry entry, held once, so the
+    /// adopting thread becomes goroutine 1 and no new goroutine exists (<see cref="Count"/> is
+    /// unchanged). The registering thread's own reference to the entry is left in place -- it cannot
+    /// be cleared from another thread and it does not need to be, since that thread runs no Go code
+    /// while the run it handed off is in flight; a host that adopts the main identity on one thread
+    /// must not run Go code on the registering thread concurrently, or both would answer as
+    /// goroutine 1. A thread that already carries an identity keeps it and gets an inert scope,
+    /// exactly as <see cref="Enter"/> does, so nesting cannot re-label a goroutine as main.
+    /// Disposing the scope clears the thread's identity and retires nothing: the main goroutine's
+    /// life is the process's.
+    /// </para>
+    /// </remarks>
+    public static Scope EnterAsMain()
+    {
+        if (t_current is not null)
+            return default;
+
+        // Minted by the module initializer before any code that could reach here ran; a null is a
+        // broken initialization order, never a state to paper over by minting a second main.
+        Goroutine main = Volatile.Read(ref s_main)
+            ?? throw new InvalidOperationException("the main goroutine has not been registered; golib's module initializer registers it before any goroutine can be entered");
+
+        t_current = main;
+
+        return new Scope(main, owned: false);
     }
 
     /// <summary>
@@ -294,7 +410,22 @@ public sealed class Goroutine
     /// </remarks>
     public static void Start(Action body)
     {
-        Thread thread = new(() => Run(body), s_stackReserve)
+        // Captured HERE, on the thread executing the `go` statement -- the new thread's first frame
+        // is Run, which knows nothing about who asked for it.
+        StartWithCreator(body, CreatorFrame());
+    }
+
+    /// <summary>
+    /// The guard seam for <see cref="Start"/>: the same launch with the creator SUPPLIED, so a test can
+    /// register a goroutine as the runtime's own without a runtime function to execute the `go`.
+    /// </summary>
+    internal static void StartForGuard(Action body, System.Reflection.MethodBase? creator) => StartWithCreator(body, creator);
+
+    private static void StartWithCreator(Action body, System.Reflection.MethodBase? creator)
+    {
+        long parentId = t_current?.Id ?? 0;
+
+        Thread thread = new(() => Run(body, creator, parentId), s_stackReserve)
         {
             IsBackground = true
         };
@@ -368,15 +499,43 @@ public sealed class Goroutine
         if (t_current is not null)
             return;
 
-        t_current = Register(isMain: true);
+        t_current = s_main = Register(isMain: true, creator: null, parentId: 0);
     }
 
-    private static Goroutine Register(bool isMain)
+    // The first frame above golib's own launch machinery -- the `goǃ` rungs live on `builtin`, Start
+    // and this walk on Goroutine -- located by IDENTITY rather than by a skip count, so a rung the
+    // JIT inlines (they are one-line bodies, exactly the shape it inlines eagerly) cannot shift the
+    // answer onto the wrong function. No file info: see Creator.
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static System.Reflection.MethodBase? CreatorFrame()
     {
-        Goroutine goroutine = new(Interlocked.Increment(ref s_nextId), isMain);
+        foreach (System.Diagnostics.StackFrame frame in new System.Diagnostics.StackTrace(fNeedFileInfo: false).GetFrames())
+        {
+            System.Reflection.MethodBase? method = frame.GetMethod();
+
+            if (method is null)
+                continue;
+
+            Type? declaring = method.DeclaringType;
+
+            if (declaring == typeof(Goroutine) || declaring == typeof(builtin))
+                continue;
+
+            return method;
+        }
+
+        return null;
+    }
+
+    private static Goroutine Register(bool isMain, System.Reflection.MethodBase? creator, long parentId)
+    {
+        Goroutine goroutine = new(Interlocked.Increment(ref s_nextId), isMain, creator, parentId);
 
         s_live[goroutine.Id] = goroutine;
         Interlocked.Increment(ref s_count);
+
+        if (goroutine.IsSystem)
+            Interlocked.Increment(ref s_systemCount);
 
         return goroutine;
     }
@@ -384,7 +543,12 @@ public sealed class Goroutine
     private static void Unregister(Goroutine goroutine)
     {
         if (s_live.TryRemove(goroutine.Id, out _))
+        {
             Interlocked.Decrement(ref s_count);
+
+            if (goroutine.IsSystem)
+                Interlocked.Decrement(ref s_systemCount);
+        }
     }
 
     private static int ResolveStackReserve()
@@ -459,9 +623,11 @@ public sealed class Goroutine
     // The goroutine ROOT itself, on the CALLING thread. Start queues it; GolibTests calls it directly,
     // because the root's policy can only be observed from a thread whose exception the caller can
     // still catch — the real path ends in an unhandled exception and a dead process by design.
-    internal static void Run(Action body)
+    internal static void Run(Action body) => Run(body, creator: null, parentId: 0);
+
+    internal static void Run(Action body, System.Reflection.MethodBase? creator, long parentId)
     {
-        using Scope scope = Enter();
+        using Scope scope = Enter(creator, parentId);
 
         try
         {
@@ -558,9 +724,14 @@ public sealed class Goroutine
     {
         private readonly Goroutine? m_goroutine;
 
-        internal Scope(Goroutine goroutine)
+        // Whether disposing retires the goroutine from the registry. Enter() minted its goroutine
+        // and owns it; EnterAsMain() only lent this thread an identity that outlives the scope.
+        private readonly bool m_owned;
+
+        internal Scope(Goroutine goroutine, bool owned)
         {
             m_goroutine = goroutine;
+            m_owned = owned;
         }
 
         public void Dispose()
@@ -571,7 +742,9 @@ public sealed class Goroutine
                 return;
 
             t_current = null;
-            Unregister(m_goroutine);
+
+            if (m_owned)
+                Unregister(m_goroutine);
         }
     }
 }

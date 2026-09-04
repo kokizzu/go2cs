@@ -163,6 +163,11 @@ public static class TestHost
 
         options.ResolveOutputPaths(previousDirectory);
 
+        // The results-flush latch is PER RUN: the in-process guard tier runs many hosts in one process,
+        // and a latch left true by the previous run would silence this run's exit flush.
+        s_resultsWritten = false;
+        EventHandler? flushOnProcessExit = null;
+
         try
         {
             if (!helperReExec)
@@ -262,6 +267,23 @@ public static class TestHost
             TestReporter reporter = new(registry.Package, options.Json, options.Verbose);
             TestRunner runner = new(registry, options, reporter, workingDirectory, runRoot);
 
+            // TEST-HOST-ONLY: the results file is written on EVERY way out of the process, a converted
+            // os.Exit included. Go's TestMain convention ends in os.Exit(m.Run()) -- net/http's does on
+            // every path (main_test.go:24-29) -- and os.Exit is syscall.Exit is Environment.Exit, which
+            // never returns to the completion path below: the verdicts reached stdout (the comparison
+            // reads that stream) but the host's own results file was never written, so a row ending
+            // in os.Exit had no results tail for the sweep to read (measured 2026-09-04, net/http:
+            // both arms of the goroutine-leak pair preserved a comparison record and no results file).
+            // Environment.Exit runs AppDomain.ProcessExit on the shutdown thread with
+            // Environment.ExitCode set to the code it was given (measured on net10.0), so the flush
+            // hangs there. It is a NO-OP on every path that already wrote -- the latch inside
+            // WriteResults -- which covers completion, the package timeout, and both fatal-goroutine
+            // paths (whose own Environment.Exit(2) would otherwise reach this handler and double-write).
+            // Unsubscribed in the finally, so a later run in the same process (the guard tier) cannot
+            // flush THIS run's reporter.
+            flushOnProcessExit = (_, _) => FlushResultsOnProcessExit(reporter, registry, options);
+            AppDomain.CurrentDomain.ProcessExit += flushOnProcessExit;
+
             // TEST-HOST-ONLY: an unhandled exception escaping a goroutine is attributed to the test
             // that started it, the run's evidence is flushed, and the process then DIES — Go's own
             // semantics, which golib already keeps for a converted program and which the host must
@@ -343,6 +365,9 @@ public static class TestHost
         }
         finally
         {
+            if (flushOnProcessExit is not null)
+                AppDomain.CurrentDomain.ProcessExit -= flushOnProcessExit;
+
             Environment.CurrentDirectory = previousDirectory;
             CultureInfo.CurrentCulture = previousCulture;
             CultureInfo.CurrentUICulture = previousUICulture;
@@ -421,6 +446,19 @@ public static class TestHost
 
     private static nint RunTests(TestRegistry registry, TestRunner runner)
     {
+        // This thread IS the main goroutine for the run. Go's testing.(*M).Run -- and the TestMain
+        // that calls it -- execute on the main goroutine, and the package deadline is a timer
+        // (testing.go's startAlarm). Run above inverts the threads: it parks the process's main
+        // thread on the deadline and hands the run to this one. Without adopting the identity here
+        // TestMain ran as `goroutine 0` (a thread with no identity; an id Go never mints) while the
+        // REAL goroutine 1 -- registered by golib's module initializer on the parked host thread,
+        // which runs no Go code -- was rendered by every runtime.Stack(all) as a frameless foreign
+        // block that no leak filter can drop by its text. That is how net/http's TestMain counted
+        // the host itself as a leaked goroutine and exited 1 over a 1,345/1,345 record (measured
+        // 2026-09-04, Release + tiered, Linux). The deadline path is untouched: the identity is the
+        // property, not which thread waits.
+        using Goroutine.Scope main = Goroutine.EnterAsMain();
+
         testing_package.M m = new() { Runner = runner };
 
         // No TestMain: Go's generated main is `os.Exit(m.Run())`, so this goes through M.Run for
@@ -1087,6 +1125,61 @@ public static class TestHost
     internal static void ReportFatalGoroutineExceptionForGuard(TestRunner runner, TestReporter reporter, TestRegistry registry, TestOptions options, Exception failure, Action<int> exit) =>
         ReportFatalGoroutineException(runner, reporter, registry, options, failure, exit);
 
+    // Set by WriteResults the moment the results file is written, reset by Run at its start. Read
+    // by the ProcessExit flush, which must never write over a file a completing, timing-out or
+    // dying run has already written -- those paths are the record; the flush is only for an exit
+    // that bypassed them (a converted os.Exit).
+    private static volatile bool s_resultsWritten;
+
+    /// <summary>
+    /// Writes the run's evidence on a process exit that reached none of the host's own write paths
+    /// -- a converted <c>os.Exit</c> -- stating the exit in the record.
+    /// </summary>
+    /// <remarks>
+    /// The terminal event is Go's own shape for this exit: <c>go test -json</c> carries the PASS line
+    /// <c>testing.M.Run</c> printed AND the <c>fail</c> action <c>go test</c> appends when the binary's
+    /// status is non-zero, so a package that reported <c>pass</c> and then exited 1 carries both, in
+    /// that order. Best-effort throughout: the process is already ending, and a failure to write
+    /// must not become the thing that is reported about it.
+    /// </remarks>
+    private static void FlushResultsOnProcessExit(TestReporter reporter, TestRegistry registry, TestOptions options, int? exitCode = null)
+    {
+        if (s_resultsWritten)
+            return;
+
+        int code = exitCode ?? Environment.ExitCode;
+
+        try
+        {
+            // RECORDED, never printed: the binary's stdout must stay what the converted program left
+            // there. A helper process re-executed by os/exec's tests has its stdout read back by the
+            // test that spawned it, and the first form of this flush -- ReportPackage, which prints --
+            // appended `PASS ... exit status 0 ...` to every helper's output and failed twenty of
+            // os/exec's verdicts on a control run (2026-09-04). Go's binary prints nothing on os.Exit;
+            // the `fail` action a non-zero status implies is `go test`'s to append, and here the
+            // comparison derives it from the exit status exactly as `go test` does.
+            reporter.RecordPackage(code == 0 ? "pass" : "fail", output: $"exit status {code}: the process ended before the host completed (os.Exit)");
+            WriteResults(options.ResultFile, registry.Package, options, reporter.Events);
+            WriteJUnit(options.JUnitFile, registry.Package, reporter.Events);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"go2cs test host: could not write the results on process exit: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// The guard seam for <see cref="FlushResultsOnProcessExit"/>: the same path with the exit
+    /// status handed in, since a guard cannot end its own process to observe the real one.
+    /// </summary>
+    internal static void FlushResultsOnProcessExitForGuard(TestReporter reporter, TestRegistry registry, TestOptions options, int exitCode) =>
+        FlushResultsOnProcessExit(reporter, registry, options, exitCode);
+
+    /// <summary>
+    /// Resets the per-run results latch for a guard that drives the flush without a Run of its own.
+    /// </summary>
+    internal static void ResetResultsLatchForGuard() => s_resultsWritten = false;
+
     private static void WriteResults(string? path, string package, TestOptions options, IReadOnlyList<TestEvent> events)
     {
         if (!string.IsNullOrWhiteSpace(path))
@@ -1119,6 +1212,7 @@ public static class TestHost
             };
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
             File.WriteAllText(path, JsonSerializer.Serialize(result, TestReporter.JsonOptions));
+            s_resultsWritten = true;
         }
     }
 
