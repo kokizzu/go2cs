@@ -50,6 +50,35 @@ $HostGoos =
     elseif ($IsLinux)   { 'linux' }
     else                { $null }
 
+# The GOARCH this host measures as, in Go's spelling -- ONE derivation for the same reason as above.
+# Added 2026-09-04 with the GOARCH exclusivity axis: a behavioral package can be native to every GOOS
+# and exclusive to one GOARCH (StdLibInternalAbi, whose Go source does not build on arm64 -- Go's own
+# filename rule drops abi_amd64.go/goarch_amd64.go/zgoarch_amd64.go), and the three instruments that
+# enumerate behavioral packages must agree on which packages a host may measure.
+#
+# ProcessArchitecture rather than OSArchitecture: what matters is the arch the CONVERTER defaults its
+# `-platforms` to, and go2cs is built and run by the same toolchain as this host process. There is no
+# GoTargetArch override to honor -- none exists anywhere in the tree, and inventing one no instrument
+# sets would be a branch nothing can exercise. An unrecognized architecture answers its own lowercase
+# .NET name rather than a guess, matching $HostGoos's refusal to invent a flavor.
+#
+# THE BOTH-EDITIONS DEBT, stated so the next reader does not have to find it. A shared .ps1 change owes
+# 5.1 on a Windows lane AND 7 on a Linux lane, because the trap this file is most exposed to is a
+# Desktop-only API: `RuntimeInformation` is .NET Framework 4.7.1+, the same shape as the
+# System.Web.Extensions dependency that silently disarmed the sweep's absorption arms on every Linux
+# host. At the seat this was exercised on the REAL path -- CNR with a decoy [GoArchExclusive("arm64")]
+# marker -- under BOTH 5.1 Desktop and pwsh 7.4.6 Core, identical skip lines, measured rather than
+# parsed. Both were Windows hosts, so the LOCAL form of the rule is satisfied and the Core half's
+# honest closer is still a LINUX CNR: the first one after this lands pays it.
+$HostGoarch =
+    switch ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture) {
+        'X64'   { 'amd64' }
+        'Arm64' { 'arm64' }
+        'X86'   { '386' }
+        'Arm'   { 'arm' }
+        default { "$_".ToLowerInvariant() }
+    }
+
 # The corpus flavor a NON-Windows host binds by default. Every L3 csproj defaults `GoTargetOS` to
 # `windows` when the property is EMPTY (the corpus reference target), which is right on Windows and
 # wrong everywhere else: a linux host then builds the windows flavor, whose `os_package` module

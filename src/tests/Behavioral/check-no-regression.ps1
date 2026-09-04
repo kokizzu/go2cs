@@ -175,6 +175,28 @@ function Get-PlatformExclusivePlatforms {
     return @([regex]::Matches($line, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
 }
 
+# The GOARCH twin, added 2026-09-04. A package can be native to every GOOS and exclusive to one
+# GOARCH: StdLibInternalAbi copies internal/abi and internal/goarch into a package main carrying
+# abi_amd64.go, goarch_amd64.go and zgoarch_amd64.go, and Go's own filename rule means
+# `GOARCH=arm64 go build` fails there with `undefined: IntArgRegs` / `undefined: _ArchFamily` where
+# amd64 builds clean. The three instruments that enumerate behavioral packages -- this gate,
+# BehavioralRunner and MSTest -- must agree on which packages a host may measure, which is the whole
+# reason the C# side is ONE shared predicate; this is that predicate's PowerShell half.
+function Get-ArchExclusiveArches {
+    param([string] $PackageDir)
+
+    $infoFile = Join-Path $PackageDir 'package_info.cs'
+
+    if (-not (Test-Path $infoFile)) { return @() }
+
+    $line = @(Get-Content -LiteralPath $infoFile | Where-Object { $_ -match '^\s*\[GoArchExclusive\(' }) |
+        Select-Object -First 1
+
+    if (-not $line) { return @() }
+
+    return @([regex]::Matches($line, '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
+}
+
 # The flavor this run MEASURES. An explicit GoTargetOS wins, because that is a deliberate
 # cross-flavor build and the skip set must follow it; with none set the answer is the host's own
 # native flavor, which src\_paths.ps1 derives ONCE as $HostGoos (and pins into GoTargetOS itself on
@@ -183,16 +205,26 @@ function Get-PlatformExclusivePlatforms {
 # its own child builds, and the local name would have to be $HostGoos-with-different-capitalization,
 # i.e. the SAME variable, not a shadow of it.
 $measuredGoos = if ($env:GoTargetOS) { $env:GoTargetOS } else { $HostGoos }
+
+# The GOARCH this run measures as. NO env override, deliberately, where $measuredGoos honors
+# GoTargetOS: no GoTargetArch exists anywhere in the tree, the corpus layout has no arch dimension,
+# and no instrument passes the converter's -platforms -- so the arch measured is the one go2cs
+# defaults to, which src\_paths.ps1 derives ONCE as $HostGoarch.
+$measuredGoarch = $HostGoarch
 $skippedExclusive = @()
 $measurable = @()
 
 foreach ($proj in $projects) {
     $platforms = Get-PlatformExclusivePlatforms $proj.FullName
+    $arches = Get-ArchExclusiveArches $proj.FullName
 
-    if ($platforms.Count -gt 0 -and $platforms -notcontains $measuredGoos) {
+    $wrongPlatform = $platforms.Count -gt 0 -and $platforms -notcontains $measuredGoos
+    $wrongArch = $arches.Count -gt 0 -and $arches -notcontains $measuredGoarch
+
+    if ($wrongPlatform -or $wrongArch) {
         $skippedExclusive += [pscustomobject]@{
             Name      = Get-RelativeDisplayPath $proj.FullName $behavioral
-            Platforms = ($platforms -join ', ')
+            Platforms = ((@($platforms) + @($arches)) -join ', ')
         }
     }
     else {
@@ -201,7 +233,7 @@ foreach ($proj in $projects) {
 }
 
 if ($skippedExclusive.Count -gt 0) {
-    Write-Host "==> SKIPPED (platform-exclusive, $($skippedExclusive.Count)): native to another platform, so this $measuredGoos host cannot measure them:" -ForegroundColor DarkCyan
+    Write-Host "==> SKIPPED (platform-exclusive, $($skippedExclusive.Count)): native to another platform or architecture, so this $measuredGoos/$measuredGoarch host cannot measure them:" -ForegroundColor DarkCyan
     $skippedExclusive | ForEach-Object { Write-Host "    $($_.Name) [$($_.Platforms)]" -ForegroundColor DarkCyan }
 }
 
