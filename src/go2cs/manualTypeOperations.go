@@ -796,6 +796,24 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// Bridged element-wise over the same golib container interfaces every other container
 		// method uses, so a window slice writes the backing store it shares with its parent.
 		"Copy": goosAny,
+		// regAssign is displaced for ONE arm. Its Struct arm iterates the descriptor's field list and
+		// returns TRUE when that list is empty -- "every field went to a register", zero steps -- so a
+		// synthesized struct descriptor (which carries no Fields) is silently reported as fully
+		// register-assigned and funcLayout answers size/argsize/retOffset 0 with empty bitmaps. Measured
+		// as reflect's TestFuncLayout: `reflect_test.S` arrives Size=32, Fields.Length=0.
+		//
+		// The hand-own throws on that shape and ONLY that shape. "Empty means cannot see" is FALSE as a
+		// general rule -- `struct{}` is legal and ubiquitous, and legitimately has no fields -- so the
+		// predicate is `Fields.Length == 0 && Size() > 0`: a 32-byte struct with no fields is
+		// definitionally unseeable, while `struct{}` (0 fields, 0 size) passes through untouched. The
+		// ARRAY arm deliberately does NOT join it; see the comment at the arm for the measurement.
+		// See docs/phase4/DESIGN-descriptor-cargo.md.
+		"abiSeq.regAssign": goosAny,
+		// addTypeBits is the SAME defect one call over: its Array and Struct arms raw-reinterpret the
+		// descriptor as arrayType/structType, which on a synthesized descriptor reads Len 0 / no Fields,
+		// so funcLayout's stack and GC bitmaps stay empty (TestFuncLayout/func(reflect_test.S): stack=[] and
+		// gc=[] want [0 0 1 1] after R1 fixed the sizes). The companion reads through the abi accessors.
+		"addTypeBits": goosAny,
 		// valueMethodName is runtime.Callers-based (getcallersp) — managed stack walk instead. The walk
 		// is RETIRED: Release inlines an exported Value method into its caller, so the frame the walk
 		// climbs for is not there and every mustBe* panic degraded to Go's "unknown method" fallback
