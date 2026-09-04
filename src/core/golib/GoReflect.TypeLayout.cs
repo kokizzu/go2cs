@@ -638,9 +638,72 @@ public static partial class GoReflect
     // already uses one kind over (ArrayDimsOfValue reads a nested array through its first element).
     // null when the container is nil or empty: an empty [][6]uint8 has nothing to measure, and that
     // is increment B's stated boundary (DESIGN-descriptor-cargo.md section 12.2), not a value to invent.
+    // Increment C lifts that boundary for slices by RECORDING the length at the creation site instead
+    // of measuring it here; observation below remains the fallback.
+
+    // ==== the element-dimension side table (descriptor cargo, increment C) ==========================
+    //
+    // A Go [][3]uint8 and a [][4]uint8 are ONE managed type, slice<array<uint8>>: an array's LENGTH is
+    // a constructor argument here, not a type parameter. The length is therefore recovered by
+    // OBSERVING an element -- and a slice with no elements has none to observe, so
+    // reflect.TypeOf([][3]uint8{}) could not tell its own element length and stopped being
+    // identity-equal to reflect.SliceOf(reflect.ArrayOf(3, byteT)) (the ReflectArrayOf regression,
+    // 2026-09-03). The fact is not lost, it is DROPPED: the converter knows the length statically at
+    // every site that creates such a slice. This table carries it from there to here.
+    //
+    // Keyed on the BACKING ARRAY, which is the identity the dims belong to: a reslice shares it and so
+    // inherits the dims for free. Weak, so recording a length never keeps a backing store alive. The
+    // cost falls on the TypeOf path only -- no slice operation touches it, and no slice grows by a
+    // byte (the +8 B-per-slice-header alternative was measured and declined: 130 creation sites in the
+    // stdlib would need it, 27,143 would pay for it).
+    //
+    // KNOWN BOUNDARY, recorded rather than papered over: a NIL slice has no backing object to key on,
+    // and neither does a slice whose backing was replaced by a reallocating append. Both keep the
+    // observation-only answer. No case in the corpus or the roster reaches either; the remedy the day
+    // one does is the +8 B field on the slice header.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<object, nint[]> s_sliceElemDims = new();
+
+    // Records the element array dims of a freshly created slice-of-array, and answers the slice they
+    // were recorded ON -- usually the one passed in.
+    //
+    // The one substitution: Array.Empty<T>() is a SINGLETON shared by every length, so recording
+    // against it would make [][3]uint8 and [][4]uint8 collide on one key and answer each other's
+    // length. A fresh zero-length backing is substituted instead of refusing -- make([][3]uint8, 0) is
+    // a legal Go program and must not throw. Measured on this runtime: new T[0] allocates a distinct
+    // object per call and is NOT folded to the singleton, so two empty slices key apart.
+    public static slice<T> WithElemDims<T>(slice<T> s, params nint[] dims)
+    {
+        if (dims is null || dims.Length == 0)
+            return s;
+
+        T[]? backing = s.m_array;
+
+        // A nil slice has no backing to key on -- the recorded boundary above. Substituting one here
+        // would make it non-nil, so `x == nil` would answer differently: leave it exactly as it is.
+        if (backing is null)
+            return s;
+
+        if (s.Length == 0 && ReferenceEquals(backing, System.Array.Empty<T>()))
+        {
+            s = new slice<T>(new T[0]);
+            backing = s.m_array;
+        }
+
+        if (backing is not null)
+            s_sliceElemDims.AddOrUpdate(backing, dims);
+
+        return s;
+    }
+
     public static nint[]? SliceElemArrayDims(object? value)
     {
         object? box = unwrapAdapters(value);
+
+        // The recorded length first, observation as the fallback: a slice that HAS an element still
+        // answers from it, so nothing that was already right becomes wrong.
+        if (box is ISliceBacking { Backing: { } backing } && s_sliceElemDims.TryGetValue(backing, out nint[]? recorded))
+            return recorded;
+
         return box is ISlice { Length: > 0 } s ? elemArrayDims(((IArray)s)[0]) : null;
     }
 

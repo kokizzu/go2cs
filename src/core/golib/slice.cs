@@ -19,6 +19,19 @@ using go.golib;
 
 namespace go;
 
+// The BACKING STORE of a slice, reachable without knowing its element type.
+//
+// `IArray.Source` cannot serve this purpose: it materializes a DETACHED COPY (see slice<T>.Source),
+// so it answers a fresh object on every read and is useless as an identity. This interface answers
+// the real array — the identity two slices share when one is a reslice of the other — and exists
+// for exactly one consumer: GoReflect's element-dimension side table, which records an element
+// array's LENGTH at the site that still knows it statically, because a slice with no elements
+// cannot be asked for it afterwards. It is internal: nothing outside golib may take the backing.
+internal interface ISliceBacking
+{
+    Array? Backing { get; }
+}
+
 public interface ISlice : IArray
 {
     nint Low { get; }
@@ -53,8 +66,13 @@ public interface ISlice<T> : IArray<T>, ISlice
 // option in the future, at least for slices that are private and used with internal package functions only.
 
 [Serializable]
-public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquatable<ISlice>, IEquatable<IArray>, ISupportMake<slice<T>>, ISliceWrap<slice<T>, T>, IByteSeq<slice<T>, T>
+public readonly struct slice<T> : ISlice<T>, IList<T>, IReadOnlyList<T>, IEquatable<ISlice>, IEquatable<IArray>, ISupportMake<slice<T>>, ISliceWrap<slice<T>, T>, IByteSeq<slice<T>, T>, ISliceBacking
 {
+    // The real backing store, answered WITHOUT copying — `Source` materializes a detached copy and
+    // so cannot serve as an identity. Explicitly implemented and internal: this adds no public
+    // surface, and its only consumer is GoReflect's element-dimension side table.
+    Array? ISliceBacking.Backing => m_array;
+
     internal readonly T[] m_array;
     private readonly nint m_low;
     private readonly nint m_length;
