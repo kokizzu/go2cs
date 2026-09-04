@@ -108,7 +108,7 @@ public sealed class TestRunner
             foreach (RegisteredTest test in tests)
             {
                 TestExecution execution = Start(test.Name, test.Action, null, test.Source, test.Line);
-                WaitForSerialBoundary(execution, parallel);
+                WaitForSerialBoundary(execution, parallel.Add);
             }
 
             foreach (TestExecution execution in parallel)
@@ -128,7 +128,7 @@ public sealed class TestRunner
         if (!m_options.ShouldRun(name))
             return true;
         TestExecution child = Start(name, action, parent, parent.Source, parent.Line);
-        WaitForSerialBoundary(child, parent.ParallelChildren);
+        WaitForSerialBoundary(child, parent.AddParallelChild);
         return !child.Failed;
     }
 
@@ -139,11 +139,16 @@ public sealed class TestRunner
         return execution;
     }
 
-    private static void WaitForSerialBoundary(TestExecution execution, List<TestExecution> parallel)
+    // The parallel sink is a CALLBACK because the two callers have different concurrency stories,
+    // and passing a bare List to both hid that. The top-level loop owns a local list and runs on
+    // one thread, so a plain Add is correct there. RunChild can be entered CONCURRENTLY on one
+    // parent (Go permits t.Run from any goroutine -- go.dev/issue/64402), so its sink must be the
+    // parent's lock-guarded writer.
+    private static void WaitForSerialBoundary(TestExecution execution, Action<TestExecution> onParallel)
     {
         Task completed = Task.WhenAny(execution.Completion, execution.ParallelReached).GetAwaiter().GetResult();
         if (completed == execution.ParallelReached && !execution.Completion.IsCompleted)
-            parallel.Add(execution);
+            onParallel(execution);
         else
             execution.Wait();
     }

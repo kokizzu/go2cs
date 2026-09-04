@@ -535,9 +535,14 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 		{"cmd/go/internal/work", "Go toolchain"},
 	}
 
+	// An output path with NO C# counterpart at all — the scratch-root shape. Every refusal below
+	// must stand through it, which is what keeps `-tests <pkg> <scratch>` refused now that a
+	// counterpart-bearing output path opens the tests-only host mode instead.
+	noCounterpart := t.TempDir()
+
 	for _, refusal := range refused {
 		importPath, want := refusal.importPath, refusal.reason
-		err := requireConvertibleTestTarget(pkgDir(importPath), Options{goRoot: goRoot})
+		_, err := requireConvertibleTestTarget(pkgDir(importPath), noCounterpart, Options{goRoot: goRoot})
 
 		if err == nil {
 			t.Errorf("-tests on %q must be refused", importPath)
@@ -556,12 +561,12 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 	// A GOROOT spelled with the non-native separator is a spelling `go` itself accepts, and a
 	// textual prefix test would answer "not stdlib" and wave the refusal through — the silent
 	// direction, and the same trap checkGoRootSpelling exists for on the emission side.
-	if err := requireConvertibleTestTarget(pkgDir("testing"), Options{goRoot: filepath.ToSlash(goRoot)}); err == nil {
+	if _, err := requireConvertibleTestTarget(pkgDir("testing"), noCounterpart, Options{goRoot: filepath.ToSlash(goRoot)}); err == nil {
 		t.Error("-tests on testing must be refused through a forward-slash GOROOT spelling too")
 	}
 
 	// The override is what keeps the measurement that produced this guard repeatable.
-	if err := requireConvertibleTestTarget(pkgDir("testing"), Options{goRoot: goRoot, testAllowHandOwn: true}); err != nil {
+	if _, err := requireConvertibleTestTarget(pkgDir("testing"), noCounterpart, Options{goRoot: goRoot, testAllowHandOwn: true}); err != nil {
 		t.Errorf("-test-allow-handown must permit the deliberate census run, got %v", err)
 	}
 
@@ -571,7 +576,7 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 		"bytes", "testing/quick", "testing/fstest", "testing/iotest", "testing/slogtest",
 		"testing/internal/testdeps", "internal/testenv",
 	} {
-		if err := requireConvertibleTestTarget(pkgDir(importPath), Options{goRoot: goRoot}); err != nil {
+		if _, err := requireConvertibleTestTarget(pkgDir(importPath), noCounterpart, Options{goRoot: goRoot}); err != nil {
 			t.Errorf("-tests on %q must be allowed, got %v", importPath, err)
 		}
 	}
@@ -580,7 +585,7 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 	// that merely happens to be called "testing" is not the corpus's hand-own and is not refused.
 	outside := filepath.Join(t.TempDir(), "myproject", "testing")
 
-	if err := requireConvertibleTestTarget(outside, Options{goRoot: goRoot}); err != nil {
+	if _, err := requireConvertibleTestTarget(outside, noCounterpart, Options{goRoot: goRoot}); err != nil {
 		t.Errorf("-tests on a non-GOROOT directory must be allowed, got %v", err)
 	}
 
@@ -877,7 +882,7 @@ func TestRecordsRequireProductionAnchorGatesReferenceModel(t *testing.T) {
 	resetPackageState(&packages.Package{})
 	packageNamespace = "go"
 
-	if recordsRequireProductionAnchor("value_package", "value") {
+	if recordsRequireProductionAnchor("value_package", "value", false) {
 		t.Fatal("an empty record set must not require a production anchor")
 	}
 
@@ -887,7 +892,7 @@ func TestRecordsRequireProductionAnchorGatesReferenceModel(t *testing.T) {
 	adapterClassImplementations.Add("io_package.Writer|strings_package.Builder")
 	interfaceImplementations["io_package.Writer"].Add("strings_package.Builder")
 
-	if recordsRequireProductionAnchor("value_package", "value") {
+	if recordsRequireProductionAnchor("value_package", "value", false) {
 		t.Fatal("test-anchored records (bare impl, adapter-class pair) must not require a production anchor")
 	}
 
@@ -895,8 +900,29 @@ func TestRecordsRequireProductionAnchorGatesReferenceModel(t *testing.T) {
 	// class — reference model impossible, fallback required.
 	interfaceImplementations["io_package.Writer"].Add(PointerPrefix + "<value_package.Buffer>")
 
-	if !recordsRequireProductionAnchor("value_package", "value") {
+	if !recordsRequireProductionAnchor("value_package", "value", false) {
 		t.Fatal("a production-qualified pointer implementer must require the production anchor")
+	}
+
+	// HAND-OWNED HOST (option B, owner-ruled 2026-09-04): the SAME record relocates. The production
+	// class is a hand-written host in a separate assembly, so a partial on it is impossible under
+	// every model -- and go2cs-gen emits an adapter CLASS in the test anchor for this record shape
+	// anyway, which is what recordsRequireProductionMutation already states one predicate below.
+	// This arm and the one above are the same record set read under the two flag values, so a
+	// relocation that leaked into the ordinary path would fail the assertion above, not this one.
+	if recordsRequireProductionAnchor("value_package", "value", true) {
+		t.Fatal("under a hand-owned host a production-qualified POINTER implementer must relocate to the test anchor")
+	}
+
+	// ...and the relocation is scoped to the POINTER form. A bare production-qualified VALUE
+	// implementer still generates a partial on the production class, which no flag can make
+	// possible across an assembly boundary, so the host flag must NOT rescue it.
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+	interfaceImplementations["io_package.Writer"] = NewHashSet([]string{"value_package.Buffer"})
+
+	if !recordsRequireProductionAnchor("value_package", "value", true) {
+		t.Fatal("a production-qualified VALUE implementer must require the production anchor even under a hand-owned host")
 	}
 
 	// A record rendering a production type through its imported ꓸ alias form hides the
@@ -905,7 +931,7 @@ func TestRecordsRequireProductionAnchorGatesReferenceModel(t *testing.T) {
 	packageNamespace = "go"
 	implicitConversions["value"+TypeAliasDot+"Kind"] = NewHashSet([]string{"@string"})
 
-	if !recordsRequireProductionAnchor("value_package", "value") {
+	if !recordsRequireProductionAnchor("value_package", "value", false) {
 		t.Fatal("a ꓸ-alias-form production type reference must require the production anchor")
 	}
 }
@@ -3299,7 +3325,7 @@ func TestExternalVariantRecordPartitionAnchors(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		if got := isTestAnchoredImplementRecord(testCase.iface, testCase.impl, "value_package"); got != testCase.want {
+		if got := isTestAnchoredImplementRecord(testCase.iface, testCase.impl, "value_package", false); got != testCase.want {
 			t.Errorf("isTestAnchoredImplementRecord(%q, %q) = %v, want %v", testCase.iface, testCase.impl, got, testCase.want)
 		}
 	}
@@ -3359,7 +3385,7 @@ func TestWriteExternalVariantMetadataSplitsAnchors(t *testing.T) {
 	})
 	importedTypeAliases["alpha"] = "go.alpha_package.Alpha"
 
-	unitName, err := writeExternalVariantMetadata(testInfoPath, dir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"))
+	unitName, err := writeExternalVariantMetadata(testInfoPath, dir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -3419,7 +3445,7 @@ func TestWriteExternalVariantMetadataSplitsAnchors(t *testing.T) {
 	packageNamespace = "go"
 	interfaceImplementations["value_package.Interface"] = NewHashSet([]string{"value_package.IntSlice"})
 
-	unitName, err = writeExternalVariantMetadata(secondInfoPath, unitOnlyDir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"))
+	unitName, err = writeExternalVariantMetadata(secondInfoPath, unitOnlyDir, "value", metadataClassPrefix("go", "value"), metadataClassPrefix("go", "value_test"), false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -4968,5 +4994,176 @@ func TestTestEnvironmentRecordRoundTrips(t *testing.T) {
 				t.Errorf("OracleGoVersion is empty but still appeared in the record: %s", data)
 			}
 		})
+	}
+}
+
+// TestHandOwnHostTestTargetOpensTestsOnlyMode pins BOTH directions of the hand-owned-host target
+// kind, because a predicate that can only answer "yes" is not a guard.
+//
+// The mode exists for exactly one shape today: a package the -stdlib queue skips BECAUSE a
+// hand-written C# counterpart already stands in for it (`testing`, the Phase-4 test host), whose Go
+// package nevertheless ships a test suite worth running against that counterpart. The four negative
+// arms are the ones that keep it from widening by accident — each removes ONE clause of
+// handOwnHostTestTarget's evidence and requires the refusal back.
+func TestHandOwnHostTestTargetOpensTestsOnlyMode(t *testing.T) {
+	goRoot := filepath.Join(t.TempDir(), "sdk", "go1.23.12")
+	pkgDir := filepath.Join(goRoot, "src", "testing")
+
+	if err := os.MkdirAll(pkgDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeFile := func(dir, name, content string) {
+		t.Helper()
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	writeFile(pkgDir, "testing.go", "package testing\n")
+	writeFile(pkgDir, "sub_test.go", "package testing\n")
+
+	// A counterpart directory shaped like src/core/testing: a project file plus a hand-owned source.
+	// The marker sits BELOW a license block on purpose — a head-window scan misses markers placed
+	// like this, which is the corpus census's own recorded trap.
+	handOwn := t.TempDir()
+	writeFile(handOwn, "testing.csproj", "<Project />\n")
+	writeFile(handOwn, "testing.cs", "// Copyright\n// license\n\nusing go.golib;\n\n[module: go.GoManualConversion]\n\nnamespace go;\n")
+
+	options := Options{goRoot: goRoot}
+
+	kind, err := requireConvertibleTestTarget(pkgDir, handOwn, options)
+	if err != nil {
+		t.Fatalf("a hand-owned host with a Go test suite must be admitted tests-only, got %v", err)
+	}
+	if kind != testTargetHandOwnHost {
+		t.Fatalf("kind = %v, want testTargetHandOwnHost", kind)
+	}
+
+	// NEGATIVE 1 — no *_test.go in the Go package. This is `unsafe`/`builtin`: a hand-owned
+	// counterpart with nothing to test. Without this clause the mode would open for them and write
+	// a no-tests manifest into a hand-owned directory instead of refusing.
+	noSuite := filepath.Join(goRoot, "src", "unsafe")
+	writeFile(noSuite, "unsafe.go", "package unsafe\n")
+
+	if _, err := requireConvertibleTestTarget(noSuite, handOwn, options); err == nil {
+		t.Error("a hand-owned package with no _test.go must still be refused")
+	}
+
+	// NEGATIVE 2 — a counterpart that is NOT hand-owned. A directory of converted output carries a
+	// csproj and .cs files too; only the marker distinguishes it, and converting tests against a
+	// stale converted copy is not what this mode is for.
+	converted := t.TempDir()
+	writeFile(converted, "testing.csproj", "<Project />\n")
+	writeFile(converted, "testing.cs", "namespace go;\n")
+
+	if _, err := requireConvertibleTestTarget(pkgDir, converted, options); err == nil {
+		t.Error("an output path whose C# is not hand-owned must be refused")
+	}
+
+	// NEGATIVE 3 — the marker MENTIONED rather than declared. `reflect` and `internal/reflectlite`
+	// name it inside placeholder comments; an unanchored match counts those as hand-owns and would
+	// open the mode on a package that has none.
+	mentioned := t.TempDir()
+	writeFile(mentioned, "testing.csproj", "<Project />\n")
+	writeFile(mentioned, "testing.cs", "// a bodyless partial; the body is [module: GoManualConversion] elsewhere\nnamespace go;\n")
+
+	if _, err := requireConvertibleTestTarget(pkgDir, mentioned, options); err == nil {
+		t.Error("a marker MENTIONED in a comment must not open the hand-owned-host mode")
+	}
+
+	// NEGATIVE 4 — a SCRATCH root: marker-bearing sources cannot be there because nothing is there.
+	// This is what keeps `-tests <handown-pkg> <scratch>` on the refusal path it has had since the
+	// guard was written, and it is the arm that would fail if the csproj clause were dropped.
+	if _, err := requireConvertibleTestTarget(pkgDir, t.TempDir(), options); err == nil {
+		t.Error("a scratch output root must still be refused")
+	}
+
+	// The documented census override is unchanged AND still wins over the new mode: it is checked
+	// first, so every behavior -test-allow-handown had before this change it still has, including
+	// the destructive one whose measurement produced the guard.
+	kind, err = requireConvertibleTestTarget(pkgDir, handOwn, Options{goRoot: goRoot, testAllowHandOwn: true})
+	if err != nil {
+		t.Fatalf("-test-allow-handown must still permit the deliberate census run, got %v", err)
+	}
+	if kind != testTargetConvertible {
+		t.Errorf("kind under -test-allow-handown = %v, want testTargetConvertible (the census converts production too)", kind)
+	}
+}
+
+// TestHostRowReferencesTheHostExactlyOnce pins the rule the duplicate-reference defect earns: the
+// emitted test project must reference the package under test ONCE.
+//
+// Only a hand-owned HOST row can break it. testProjectFixedReferences carries golib and testing
+// because every converted test project needs them; when the package under test IS one of those, the
+// fixed entry and the reference model's colocated entry name the SAME project by two different
+// strings, and `references` is a HashSet[string] that cannot see it. Measured on `testing`
+// (2026-09-04): the emitted csproj carried both `$(go2csPath)core/testing/testing.csproj` and
+// `testing.csproj`.
+//
+// Asserted through isSelfProjectReference — the predicate the dependency loop already applies and
+// which the fixed loop now applies too — rather than by emitting a project and parsing it, because
+// the property is about the PREDICATE and a parse would also drag in a full conversion.
+func TestHostRowReferencesTheHostExactlyOnce(t *testing.T) {
+	// The fixed set must be recognized as self-referential for exactly the packages it names, so a
+	// host row skips its own entry and every other row keeps both of its own.
+	for _, testCase := range []struct {
+		fixed       string
+		projectName string
+		want        bool
+	}{
+		{`$(go2csPath)core/testing/testing.csproj`, "testing", true},
+		{`$(go2csPath)core/golib/golib.csproj`, "golib", true},
+		{`$(go2csPath)core/testing/testing.csproj`, "errors", false},
+		{`$(go2csPath)core/golib/golib.csproj`, "testing", false},
+		{`$(go2csPath)core/testing/testing.csproj`, "testing/quick", false},
+	} {
+		if got := isSelfProjectReference(testCase.fixed, testCase.projectName); got != testCase.want {
+			t.Errorf("isSelfProjectReference(%q, %q) = %v, want %v", testCase.fixed, testCase.projectName, got, testCase.want)
+		}
+	}
+
+	// The counted property, measured through the REAL emitter. An earlier cut of this guard counted
+	// over a LOCAL copy of the skip loop, and its positive control did not fire -- neutering
+	// writeTestProject left the guard green, because the guard was not calling it. A control that
+	// does not use the caller's path is not a control for the caller.
+	emitted := func(projectName string) string {
+		directory := t.TempDir()
+		projectFile := filepath.Join(directory, projectFileBaseName(projectName)+".tests.csproj")
+
+		if err := writeTestProject(projectFile, projectName, "go", testProjectReference,
+			nil, []string{"x_test.cs"}, nil, nil, Options{go2csPath: directory}); err != nil {
+			t.Fatalf("writeTestProject(%q): %v", projectName, err)
+		}
+
+		content, err := os.ReadFile(projectFile)
+		if err != nil {
+			t.Fatalf("read emitted project for %q: %v", projectName, err)
+		}
+
+		return string(content)
+	}
+
+	countHostRefs := func(projectName string) int {
+		count := 0
+
+		for _, line := range strings.Split(emitted(projectName), "\n") {
+			if strings.Contains(line, "<ProjectReference") && strings.Contains(strings.ReplaceAll(line, `\`, "/"), "testing.csproj") {
+				count++
+			}
+		}
+
+		return count
+	}
+
+	if got := countHostRefs("testing"); got != 1 {
+		t.Errorf("a hand-owned host row must reference testing.csproj exactly once, got %d", got)
+	}
+
+	if got := countHostRefs("errors"); got != 1 {
+		t.Errorf("an ordinary row must reference testing.csproj exactly once (the fixed entry), got %d", got)
 	}
 }

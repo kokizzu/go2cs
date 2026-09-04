@@ -693,3 +693,132 @@ this and still stands on §1.2's oracle.
   turning every future instance of this whole fork from a fabricated reference into a loud failure
   at the reinterpret rather than an AV two frames later — is a real hardening question and a
   separate one.
+
+---
+
+# Amendment — 2026-09-04: the denominator is **59 names / 156 verdicts**, MEASURED; the bucket table re-costed; bucket B split by what a verdict would MEAN
+
+Appended, not rewritten, per the records doctrine. §2.3's bucket table stands as a NAME set — all four
+buckets are correct and disjoint. What follows corrects the denominator, adds the verdict costing the
+original census never had (it counts names, and the roster counts verdicts), and refines bucket B on a
+measurement rather than an estimate.
+
+## B1 — the oracle, measured
+
+`go test -json -count=1 testing` at the pinned go1.23.12, windows/amd64, one run, **wall 3.65 s**:
+
+| | count |
+|:--|--:|
+| top-level terminal verdicts | **59** — every one `pass` |
+| subtest terminal verdicts | **97** |
+| **row total** | **156** |
+
+`FuzzNaming` IS one of the 59 — Go runs a fuzz target against its seed corpus as an ordinary test, and
+it contributes 25 subtest verdicts of its own. `TestMain` is NOT: no `pass`/`fail`/`skip` event carries
+its name. So the two readings of "59" that have been in circulation resolve to one — **58 `Test*` plus
+`FuzzNaming`** — and a claim that the denominator is 58 is off by one in the direction that drops a
+verdict `go test` really produces.
+
+## B2 — the buckets in VERDICTS
+
+| Bucket | names | + subtests | **verdicts** |
+|:--|--:|--:|--:|
+| **A** — whitebox `package testing` | 20 | 64 | **84** |
+| **B** — subprocess re-exec | 21 | 13 | **34** |
+| **C** — benchmark machinery | 8 | 0 | **8** |
+| **D** — public-API, in-process | 10 | 20 | **30** |
+| | **59** | **97** | **156** |
+
+Two things this changes about how the census reads. Bucket **A** is the LARGEST part of the row (54%),
+not the smallest — `FuzzNaming`'s 25 subtests and `TestTRun`'s 20 are 45 verdicts between them. And
+bucket **D**, the honest subset, is **30 verdicts**, three times the "10 verdicts" §2.4's Option 1
+quotes, because §2.4 counts declarations.
+
+## B3 — the independent cross-check the bucket table never had
+
+The `-tests` pipeline's capability gate performs per-declaration admission ALREADY, and its measured
+answer (train-18 commit `70981ac59`: *"Of Go's 58 Tests it admits 31 and marks 27 unsupported"*)
+reproduces this census's buckets exactly:
+
+- admitted **31** = bucket **B** (21) + bucket **D** (10)
+- unsupported **27** = bucket **A**'s 19 `Test` functions + bucket **C**'s 8
+  (`FuzzNaming` is gated by declaration KIND, not by capability, so it is outside the 27)
+
+Two derivations built from different evidence — a hand classification of assertion subjects, and the
+converter's own transitive capability walk — agreeing to the name. §2.4's *"a mechanism to admit only
+bucket D"* is therefore already built for A and C; only bucket B was ever open to a ruling.
+
+## B4 — bucket B, measured: five kinds, not one
+
+The host's reporter (`src/core/testing/TestReporter.cs`, `Report`) writes
+`"{ACTION,-20} {Test} — {Output}"` for a non-JSON run — the form a re-exec'd child takes, since the
+child is spawned with `-test.run=…` and never `--json`. It emits **no `--- FAIL:`, no `=== RUN`, no
+`=== NAME`, no `=== PAUSE`/`=== CONT`, and no indented `file.go:NN: msg` log layout**, anywhere in the
+ten hand-owned files. Read against that, bucket B is not one class:
+
+| kind | names | verdicts | |
+|:--|--:|--:|:--|
+| **vacuous pass** | 10 | 10 | the race family: each asserts `count(<a Go literal the host never writes>) == 0`, so it passes however the child behaves — including if the child never starts |
+| **parent-process no-op** | 3 | 3 | `TestPanicHelper`, `TestCallRunInCleanupHelper`, `TestGoexitInCleanupAfterPanicHelper` — each opens `if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" { return }` and asserts nothing on EITHER side |
+| **structural failure** | 4 | 14 | `TestTBHelper`, `TestTBHelperParallel`, `TestPanic` (+10 sub), `TestMorePanic` — assert a POSITIVE match of Go's output layout, down to `helperfuncs_test.go:15: 0` |
+| **hang** | 2 | 2 | `TestRunningTests`, `TestRunningTestsInCleanup` — `parseRunningTests` scrapes Go's `-test.timeout` dump and, on no match, the parent DOUBLES the timeout and loops, with no failure path |
+| **with work** | 2 | 5 | `TestTesting` (needs the Go toolchain at run time), `TestFlag` (+3 sub; needs `test.v` as a tri-state flag `Value`) |
+| | **21** | **34** | |
+
+A second mechanism makes the vacuity independent of the reporter: `runTest` passes
+`-test.bench` ahead of `-test.v`, and `TestOptions.Parse` stops at the first name it does not own and
+never writes back — so the child is non-verbose whatever the `-test.v` behind it says.
+
+**The ten race tests were previously predicted "passing" and that prediction is right and misleading.**
+They cannot fail. Ten matching verdicts no host defect could ever move is the exclusion ledger's
+anti-laundering concern arriving from the unusual direction: not excluding something implementable,
+but banking something unfalsifiable.
+
+## B5 — the owner ruling of 2026-09-04, and the distinction it turns on
+
+Bucket B is SPLIT, by what a verdict would mean:
+
+- **the 10 race tests and the 2 hang tests are EXCLUDED**, by twelve declaration-keyed
+  `unsupportedRuntimeCapabilities` entries. The race ten name the capability `runtime/race` is already
+  ruled E1 for — there is no race-instrumented build of the converted corpus — and the two hangs take
+  the same fork `net/http_test.testTransportGCRequest` draws: a hang has no captured failure signature,
+  so the disclosure manifest cannot express it.
+- **the 4 structural failures are RUN and DISCLOSED** under the standing host-identity class, not
+  excluded. They fail for a reason the project chose — the host must not impersonate Go's
+  testing-package identity and source positions — and a disclosure is exactly the instrument for a
+  divergence that is real, captured and ruled.
+- **the 3 parent-process no-ops stay ADMITTED as agreeing passes.** Go's own parent returns early
+  exactly as ours does; both sides do the same nothing by design, and their real assertions run inside
+  `TestPanic`/`TestMorePanic`'s child, where they are disclosed. *An agreeing no-op is Go's row, not a
+  false green.* The anti-laundering clause reaches **a pass the HOST cannot fail** — a real check on
+  Go's side, an unwritable literal on ours — **not a pass neither side was meant to make.**
+- **`TestTesting` and `TestFlag` are admitted.**
+
+## B6 — the row this produces
+
+| | verdicts |
+|:--|--:|
+| A (84) + C (8) + race (10) + hangs (2) | **104 excluded** |
+| D (30) + structural (14) + admitted B (5 + 3) | **52 row** |
+| of the 52: disclosed (4 structural = 14, `TestAllocsPerRun` = 1) | **15** |
+| of the 52: predicted matching | **37** |
+
+`104 + 52 = 156`. The row is a partially-validating one on a ruled subset of its own suite — §2.4's
+Option 1 as ruled, with its arithmetic re-derived from the measured stream rather than from names.
+
+## B7 — the placement question §2.4 called "the real cost" is smaller than it priced
+
+§2.4 costs Option 1 as *"a landing place for converted `testing` test sources that does not collide
+with the host (the F15b problem) — the real cost, and it is a converter/layout change"*, estimated at
+*"days, not hours"*. The landing place needs no change at all, and the reason is visible in any banked
+row: `src/core/path/` holds `path.csproj` and `path.tests.csproj` **side by side**, the two-projects-one-
+directory problem is already solved in the emitted test csproj (`MSBuildProjectExtensionsPath=obj/tests/`),
+and the reference model already emits a bare colocated `<ProjectReference Include="<pkg>.csproj" />` —
+which for this row IS the hand-owned host. None of the emitted test-artifact names
+(`*_test.cs`, `package_test_info.cs`, `go2cs_test_host.cs`, `testing.tests.csproj`) collides with any of
+the host's ten files.
+
+What collides is the **production conversion** — Go's `testing.go`, `benchmark.go`, `match.go` and
+their siblings written into the host's directory — which is a separate half of the run. Suppressing
+that half, forcing the external-only project model, and adding to `testing.csproj` the same one-line
+IP-4 `<Compile Remove>` every converted production csproj already carries is the whole layout cost.

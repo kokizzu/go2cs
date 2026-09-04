@@ -148,7 +148,28 @@ public sealed class TestExecution
 
     internal Task ParallelReached => ParallelSource.Task;
 
-    internal List<TestExecution> ParallelChildren { get; } = [];
+    // Go keeps a parent's sub-test bookkeeping under t.mu because t.Run is callable from ANY
+    // goroutine (go.dev/issue/64402, whose regression tests are TestConcurrentRun and TestParentRun).
+    // This list is that bookkeeping, and it was the ONE member of the per-parent set that was not
+    // already guarded: NextSubtestName locks m_syncRoot for the naming counter, TestExecution's own
+    // failed/finished accounting locks it, and the child objects are per-child. A bare List<T> whose
+    // Add runs on the CALLING goroutine while the parent's wait enumerates it is a torn read on one
+    // side and a lost child on the other, so both ends move under the lock the rest of the state
+    // already uses. AddParallelChild is the only writer; the wait takes a SNAPSHOT rather than
+    // holding the lock across child.Wait(), which would serialise exactly what this exists to allow.
+    private readonly List<TestExecution> m_parallelChildren = [];
+
+    internal void AddParallelChild(TestExecution child)
+    {
+        lock (m_syncRoot)
+            m_parallelChildren.Add(child);
+    }
+
+    internal TestExecution[] ParallelChildrenSnapshot()
+    {
+        lock (m_syncRoot)
+            return m_parallelChildren.ToArray();
+    }
 
     internal void Start(Action<ж<testing_package.T>> action)
     {
@@ -319,10 +340,40 @@ public sealed class TestExecution
         }
     }
 
+    /// <summary>
+    /// Go's <c>T.Run</c>. Callable from ANY goroutine, deliberately.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>There is no owner-goroutine check here, and its absence is the contract.</b> Go's
+    /// <c>testing</c> restricts <c>FailNow</c> and <c>Fatal</c> to the test's own goroutine — a
+    /// restriction this host keeps, because those unwind the frame — but it places NO such
+    /// restriction on <c>Run</c>. Two of Go's own tests pin that, both regression tests for
+    /// go.dev/issue/64402: <c>TestConcurrentRun</c> starts two goroutines that each call
+    /// <c>t.Run</c> on the SAME parent, and <c>TestParentRun</c> calls <c>t1.Run</c> from inside
+    /// <c>t2</c>'s body.
+    /// </para>
+    /// <para>
+    /// This host refused both until 2026-09-04, and the two refusals failed differently, which is
+    /// why only one of them was visible: <c>TestParentRun</c> merely reported an infrastructure
+    /// error and lost its inner subtest, while <c>TestConcurrentRun</c> DEADLOCKED — the refused
+    /// <c>Run</c> never runs the body, so the body's <c>ready.Done()</c> never happens and the
+    /// parent's <c>ready.Wait()</c> blocks until the package deadline kills the whole run. One
+    /// defect, one row unmeasurable.
+    /// </para>
+    /// <para>
+    /// What made the check safe to remove is not the reading but the audit behind it: Go keeps a
+    /// parent's sub-test bookkeeping under <c>t.mu</c>, and every member of this host's equivalent
+    /// set was already guarded except one. <see cref="NextSubtestName"/> locks for the naming
+    /// counter, the failed/finished accounting locks, the child objects are per-child — and the
+    /// parallel-children list was a bare <c>List&lt;T&gt;</c> written by the calling goroutine and
+    /// enumerated by the parent's wait. That list now moves under the same lock
+    /// (<see cref="AddParallelChild"/> / <see cref="ParallelChildrenSnapshot"/>); removing the check
+    /// without it would have traded a deadlock for a race.
+    /// </para>
+    /// </remarks>
     public bool Run(string name, Action<ж<testing_package.T>> action)
     {
-        if (!TryEnsureOwner(nameof(Run)))
-            return false;
         return m_runner.RunChild(this, name, action);
     }
 
@@ -765,9 +816,13 @@ public sealed class TestExecution
                 m_runner.ReleaseParallelSlot();
             }
 
-            foreach (TestExecution child in ParallelChildren)
+            // ONE snapshot for both passes: a child added between them would be released and
+            // never waited for, which is the lost-child half of the race above.
+            TestExecution[] parallelChildren = ParallelChildrenSnapshot();
+
+            foreach (TestExecution child in parallelChildren)
                 child.ReleaseParallel();
-            foreach (TestExecution child in ParallelChildren)
+            foreach (TestExecution child in parallelChildren)
                 child.Wait();
 
             RunCleanups();
@@ -1013,13 +1068,79 @@ public sealed class TestExecution
     /// true, and harmless -- cleanup only ever removes its own leaf) and never the leaf.
     /// </para>
     /// </remarks>
-    private static string TempDirName(string value)
+    /// <summary>
+    /// The characters Go's <c>TempDir</c> mapper admits beyond ASCII alphanumerics -- its
+    /// <c>allowed</c> constant, verbatim from <c>testing.go</c> at the pinned go1.23.12. The
+    /// trailing SPACE is Go's and is deliberate.
+    /// </summary>
+    private const string TempDirAllowedAscii = "!#$%&()+,-.=@^_{}~ ";
+
+    /// <summary>
+    /// Go's <c>TempDir</c> name mapper: everything the filesystem or a glob cannot carry is
+    /// DROPPED, not escaped.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is <c>strings.Map(mapper, c.Name())</c> from <c>(*common).TempDir</c>, and Go's own
+    /// comment says why it exists: <i>"Drop unusual characters (such as path separators or
+    /// characters interacting with globs) from the directory name to avoid surprising
+    /// os.MkdirTemp behavior."</i> An ASCII rune survives only if it is alphanumeric or appears in
+    /// <see cref="TempDirAllowedAscii"/>; a non-ASCII rune survives only if it is a letter or a
+    /// number. Everything else disappears, <c>/</c> included, so a subtest's temp directory is
+    /// FLAT exactly as Go's is.
+    /// </para>
+    /// <para>
+    /// The host used <see cref="SanitizeName"/> here, which is Go's <c>testing.rewrite</c> -- the
+    /// mapper for a test NAME, which ESCAPES a non-printable rather than dropping it and leaves
+    /// <c>:</c>, <c>*</c>, <c>[</c> and <c>]</c> untouched because a name may legitimately carry
+    /// them. Two mappers for two jobs, and using the name one for a PATH is what broke four of
+    /// Go's own <c>TestTempDir</c> leaves (measured 2026-09-04): <c>test*</c> and
+    /// <c>test:subtest</c> could not be created on Windows at all, and <c>test[]</c> was created
+    /// fine and then failed the test's own <c>filepath.Glob</c> with "syntax error in pattern",
+    /// because the surviving brackets read as a character class in the DIRECTORY part of the
+    /// pattern.
+    /// </para>
+    /// </remarks>
+    internal static string GoTempDirPattern(string value)
     {
-        // A rewritten name can contain BACKSLASHES (`\x1a` is what Go calls U+001A), and a backslash
-        // is a directory separator here — left in, the component would silently split and a
-        // Cleanup() would delete a tree it does not own. `/` stays a separator by design (a subtest
-        // name nests); every other backslash folds.
-        return $"{SanitizeName(value).Replace('\\', '_')}-{Fnv1a32(value):x8}";
+        StringBuilder builder = new(value.Length);
+
+        foreach (Rune rune in value.EnumerateRunes())
+        {
+            int codePoint = rune.Value;
+
+            if (codePoint < 0x80)
+            {
+                if (codePoint is >= '0' and <= '9' or >= 'a' and <= 'z' or >= 'A' and <= 'Z' ||
+                    TempDirAllowedAscii.Contains((char)codePoint))
+                {
+                    builder.Append(rune);
+                }
+
+                continue;
+            }
+
+            if (Rune.IsLetter(rune) || Rune.IsNumber(rune))
+                builder.Append(rune);
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// Go's mapped pattern plus a deterministic hash of the ORIGINAL name.
+    /// </summary>
+    /// <remarks>
+    /// The hash is this host's, not Go's, and it does the job Go gets from <c>os.MkdirTemp</c>'s
+    /// random suffix. The mapper is LOSSY, so two different subtest names can map to one pattern
+    /// (<c>test/..</c> and <c>test..</c> both give <c>TestTempDirtest..</c>) and without the hash
+    /// they would share a directory; it is taken over the ORIGINAL value for that reason. A
+    /// backslash needs no special handling any more -- the mapper drops it, along with every other
+    /// separator.
+    /// </remarks>
+    internal static string TempDirName(string value)
+    {
+        return $"{GoTempDirPattern(value)}-{Fnv1a32(value):x8}";
     }
 
     /// <summary>

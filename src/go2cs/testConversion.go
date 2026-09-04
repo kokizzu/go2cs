@@ -137,15 +137,23 @@ func stdLibImportPathOf(dir string, goRoot string) string {
 // out instead. What the flag does NOT do is make such a run bankable: the collision above is
 // structural, so the emission is only ever something to read and throw away, and the caller is told
 // to point it at a scratch root.
-func requireConvertibleTestTarget(inputPath string, options Options) error {
+func requireConvertibleTestTarget(inputPath, outputPath string, options Options) (testTargetKind, error) {
 	importPath := stdLibImportPathOf(inputPath, options.goRoot)
 
 	if importPath == "" || !isNonConvertedStdLibPackage(importPath) {
-		return nil
+		return testTargetConvertible, nil
 	}
 
+	// The sanctioned census, unchanged: -test-allow-handown means "show me what the conversion
+	// WOULD produce", and it produces it — production sources and all — wherever it is pointed.
+	// It is checked BEFORE the host mode deliberately, so every behavior this flag had on
+	// 2026-09-03 it still has, including the destructive one the train-18 control measures.
 	if options.testAllowHandOwn {
-		return nil
+		return testTargetConvertible, nil
+	}
+
+	if handOwnHostTestTarget(inputPath, outputPath) {
+		return testTargetHandOwnHost, nil
 	}
 
 	reason := fmt.Sprintf("%q is deliberately kept out of the conversion queue", importPath)
@@ -167,16 +175,90 @@ func requireConvertibleTestTarget(inputPath string, options Options) error {
 		damage = "the corpus has no counterpart for it, so the emission would have nothing to compile against"
 	}
 
-	return fmt.Errorf(
+	return testTargetConvertible, fmt.Errorf(
 		"-tests refuses %s: %s, and %s. "+
 			"The -stdlib queue has skipped it since isNonConvertedStdLibPackage was written; this guard is the "+
 			"-tests half of that same decision, which was missing until 2026-09-03. "+
 			"If you are deliberately measuring what the conversion WOULD produce, pass -test-allow-handown and "+
 			"give the run a SCRATCH output root (a second positional argument) so the emission lands somewhere "+
 			"you can throw away -- it is a census, never a row: the collision above is structural and no such "+
-			"run can bank",
+			"run can bank. "+
+			"(A hand-owned host whose C# counterpart ALREADY EXISTS at the output path, and whose Go package "+
+			"has a _test.go suite, is converted TESTS-ONLY instead of refused -- see handOwnHostTestTarget. "+
+			"Reaching this message for such a package means the output path is not that counterpart's directory.)",
 		importPath, reason, damage)
 }
+
+// testTargetKind is what requireConvertibleTestTarget decided about a -tests target: an ordinary
+// package whose production sources convert ahead of its tests, or a hand-owned HOST whose C#
+// counterpart is already on disk and must not be re-emitted over.
+type testTargetKind int
+
+const (
+	// testTargetConvertible is every ordinary package: convert production, then its tests.
+	testTargetConvertible testTargetKind = iota
+
+	// testTargetHandOwnHost is a package the -stdlib queue skips BECAUSE a hand-written C#
+	// counterpart already stands in for it, whose Go package nevertheless has a test suite worth
+	// running against that counterpart. The run converts the EXTERNAL test variant only and emits
+	// no production file at all — see processTestConversion's handling and DESIGN notes in
+	// docs/phase4/CENSUS-testing-osuser-rows.md §2.4 (Option 1, owner-ruled 2026-08-30).
+	testTargetHandOwnHost
+)
+
+// handOwnHostTestTarget reports whether inputPath's package is a hand-owned host that the -tests
+// pipeline can measure by converting its TESTS ONLY into outputPath.
+//
+// EVIDENCE-BASED, not a name list, and each clause is load-bearing:
+//
+//   - a project file at outputPath — the counterpart exists as a real compilable project, so the
+//     converted tests have something to take a ProjectReference on. A scratch root has none, which
+//     is what keeps `-test-allow-handown <scratch>` on its documented census path.
+//   - at least one [module: GoManualConversion] file there — the counterpart is HAND-OWNED rather
+//     than a stale converted copy. The scan is line-anchored and reads whole files: reflect and
+//     internal/reflectlite MENTION the marker inside placeholder comments, and a head-window scan
+//     misses markers that sit below long license blocks (both traps are in CLAUDE.md).
+//   - a *_test.go in the Go package — `unsafe` and `builtin` are compiler intrinsics with a
+//     hand-owned counterpart and NO suite, so this clause is what keeps them refused rather than
+//     silently writing a no-tests manifest into their hand-owned directories.
+func handOwnHostTestTarget(inputPath, outputPath string) bool {
+	if outputPath == "" {
+		return false
+	}
+
+	projects, err := filepath.Glob(filepath.Join(outputPath, "*.csproj"))
+	if err != nil || len(projects) == 0 {
+		return false
+	}
+
+	tests, err := filepath.Glob(filepath.Join(inputPath, "*_test.go"))
+	if err != nil || len(tests) == 0 {
+		return false
+	}
+
+	sources, err := filepath.Glob(filepath.Join(outputPath, "*.cs"))
+	if err != nil {
+		return false
+	}
+
+	for _, source := range sources {
+		content, err := os.ReadFile(source)
+		if err != nil {
+			continue
+		}
+
+		if manualConversionMarker.Match(content) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// manualConversionMarker matches a [module: GoManualConversion] attribute on its own line, with or
+// without the `go.` qualifier. LINE-ANCHORED on purpose: an unanchored search reports every file
+// that merely names the marker in a comment (63 against a real 40, corpus-wide, CLAUDE.md).
+var manualConversionMarker = regexp.MustCompile(`(?m)^\s*\[module:\s*(go\.)?GoManualConversion\]`)
 
 // Markers substituted into test-csproj-template.xml by writeTestProject (embedded-resource
 // template, following the csproj-template.xml precedent — never a hardcoded csproj string).
@@ -290,8 +372,8 @@ var errProductionAnchoredRecords = errors.New("test variant records production-a
 // through its imported ꓸ type-alias form (`<pkg>ꓸ<Type>`, TypeAliasDot) is likewise treated as
 // production-anchored — conservatively, since the partition predicates cannot see the production
 // qualifier inside the alias identifier.
-func recordsRequireProductionAnchor(productionClassName, productionPackageName string) bool {
-	_, productionAnchored := splitExternalVariantRecords(productionClassName)
+func recordsRequireProductionAnchor(productionClassName, productionPackageName string, handOwnHost bool) bool {
+	_, productionAnchored := splitExternalVariantRecords(productionClassName, handOwnHost)
 
 	if !productionAnchored.isEmpty() {
 		return true
@@ -570,9 +652,44 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	testInfoPath := filepath.Join(outputPath, testPackageInfoFileName)
 
 	model := selectTestProjectModel(internal, external)
+
+	// A HAND-OWNED HOST row is external-only by construction, and both halves of that are stated
+	// here rather than left to fall out of selectTestProjectModel's nil check.
+	//
+	// The MODEL is forced rather than derived because `internal` is non-nil and must stay so:
+	// discovery walks it, which is what puts its declarations in the manifest with their own
+	// capability statuses instead of leaving 20 names the oracle produces unaccounted. Only its
+	// EMISSION is suppressed, by the exclusion pass below.
+	//
+	// testProjectReference is then the correct model on its own terms: the production package is a
+	// separate assembly the test project takes a colocated ProjectReference on — which for a host
+	// row is the hand-written counterpart itself. There is no white-box bridge to build, because
+	// there are no internal test files to put in one.
+	handOwnHostExcluded := map[string]bool{}
+
+	if options.testHandOwnHost {
+		model = testProjectReference
+		handOwnHostExcluded = markHandOwnHostExcludedTestFiles(internal, external, compileExcluded)
+	}
 	conversion, err := convertTestVariants(model, production, internal, external, compileExcluded, inputPath, outputPath, projectNamespace, supported, options)
 
 	if errors.Is(err, errProductionAnchoredRecords) {
+		// A HAND-OWNED HOST has no recompile to fall back to, and falling through silently would be
+		// the worst available outcome: the recompile model makes the production .cs COMPILE ITEMS of
+		// the test assembly, and for a host row those are the hand-written host sources — a second
+		// copy of every host type in a second assembly, which is the F15b collision arriving by the
+		// back door after the front one was locked. There is no correct automatic remedy (the
+		// records need a production type this run must not mutate), so this is a loud stop naming
+		// the package and what would have happened.
+		if options.testHandOwnHost {
+			return fmt.Errorf(
+				"-tests on the hand-owned host %q collected metadata that must anchor to the production class, "+
+					"which only the recompile model can host -- and recompiling would make the HAND-WRITTEN host "+
+					"sources compile items of the test assembly, producing a second copy of every host type. "+
+					"Refusing rather than falling back: %w",
+				production.PkgPath, err)
+		}
+
 		// The suite records metadata that must mutate a production type — only a same-assembly
 		// recompile can host it. Reconvert under the recompile model: conversion is deterministic
 		// and the expensive go/packages load above is reused, so fallback costs one emission pass.
@@ -596,6 +713,44 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	// differential oracle. Declare them disclosed-unsupported so the F6 census accounts for every
 	// name go test runs (see flavorExcludedTestDeclarations).
 	declarations = append(declarations, flavorExcludedTestDeclarations(inputPath, options, declarations)...)
+
+	// A declaration whose SOURCE FILE was dropped from the compile set cannot be `included`: the
+	// generated host REGISTERS every included test by name, and a name in a file nobody compiled is
+	// a CS0117 against the test package class. Statused here rather than at discovery because
+	// discovery deliberately runs over every file (that is what keeps an excluded file's
+	// declarations in the manifest at all) and the compile set is not final until the exclusion
+	// passes above have run.
+	//
+	// The case could not arise before the hand-owned-host mode: Phase-4D only ever drops files whose
+	// runnable declarations are Example/Benchmark, and those are already `unsupported` by KIND, so
+	// the host skipped them for a different reason and the gap never showed. The host rule drops a
+	// file for what it REFERENCES, so a perfectly ordinary `test` declaration can now live in an
+	// uncompiled file -- measured: `testing`'s TestPrettyPrint, in benchmark_test.go, which the
+	// export_test.go edge excludes, and which the pipeline admitted because its only testing.* touch
+	// is the package-level VAR testing.PrettyPrint that the capability analysis does not key on.
+	//
+	// Written as a general rule rather than a host-mode one: the invariant "the host may name only
+	// what the compilation contains" is true of every model, and a future Phase-4D widening that
+	// drops a file holding a Test would meet it the same way.
+	for i := range declarations {
+		if declarations[i].Status != "included" {
+			continue
+		}
+
+		sourcePath := filepath.Clean(filepath.Join(inputPath, declarations[i].Source))
+
+		if !compileExcluded[sourcePath] {
+			continue
+		}
+
+		declarations[i].Status = "unsupported"
+
+		if handOwnHostExcluded[sourcePath] {
+			declarations[i].Reason = handOwnHostExcludedSourceReason
+		} else {
+			declarations[i].Reason = compileExcludedSourceReason
+		}
+	}
 
 	sort.Slice(declarations, func(i, j int) bool {
 		if declarations[i].Name == declarations[j].Name {
@@ -676,7 +831,7 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 		return err
 	}
 
-	sources, err := classifyTestSources(inputPath, includedSources, compileExcluded, external)
+	sources, err := classifyTestSources(inputPath, includedSources, compileExcluded, handOwnHostExcluded, external)
 	if err != nil {
 		return err
 	}
@@ -955,6 +1110,26 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			result.requiredCapabilities.UnionWith(foundMain.RequiredCapabilities)
 		}
 
+		// HAND-OWNED HOST: the internal variant is DISCOVERED and never EMITTED. Everything above
+		// this line has already run for it — its files are in includedSources, its declarations are
+		// in the manifest with the capability statuses their own analysis assigned — and everything
+		// below is emission and the metadata merge that serves emission.
+		//
+		// Stated as a skip rather than left to fall out of an empty emitEntries list, which the
+		// exclusion pass does produce. The two are not equivalent: convertTestVariant does more than
+		// walk its entry list, and at least one of those things WRITES. A variant whose analysis
+		// records relocated package-var initializers emits `package_init_internal_test.cs` after the
+		// convert loop regardless of how many files it converted, and for a host row that lands in
+		// the hand-owned directory — the one outcome this whole mode exists to make impossible. An
+		// empty list would also leave the variant's collected metadata globals to merge into a
+		// project that compiles none of it.
+		//
+		// So the rule is the accurate one: for a host target there is no internal EMISSION at all,
+		// and the code says that instead of arranging for it to happen to produce nothing.
+		if options.testHandOwnHost && variant == internal {
+			continue
+		}
+
 		// The seed is the INTERNAL variant's under the RECOMPILE model alone — that is exactly the
 		// case where the production `.cs` are compile items of this assembly and share the emitted
 		// class. Under the reference model production is a separate assembly; the external variant
@@ -1027,7 +1202,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 			}
 		} else if variant == external {
 			if model.referencesProduction() {
-				if model == testProjectReference && recordsRequireProductionAnchor(getSanitizedImport(production.Name+PackageSuffix), production.Name) {
+				if model == testProjectReference && recordsRequireProductionAnchor(getSanitizedImport(production.Name+PackageSuffix), production.Name, options.testHandOwnHost) {
 					return result, errProductionAnchoredRecords
 				}
 
@@ -1037,7 +1212,7 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 				metadataAnchorLocalTypes = true
 				writePackageInfoFile(testInfoPath, true)
 			} else {
-				unitName, err := writeExternalVariantMetadata(testInfoPath, outputPath, production.Name, productionAnchor, testAnchor)
+				unitName, err := writeExternalVariantMetadata(testInfoPath, outputPath, production.Name, productionAnchor, testAnchor, options.testHandOwnHost)
 				if err != nil {
 					return result, err
 				}
@@ -1543,7 +1718,11 @@ func classifyTestFileForExclusion(file *ast.File, info *types.Info, path string)
 // under their existing disclosed-unsupported status — the F6 census gate stays truthful and every
 // already-filtered Example/Benchmark stays filtered. Only the file's EMISSION and csproj
 // compile-membership are dropped. Returns the set of cleaned file paths to exclude.
-func selectCompileExcludedTestFiles(variants ...*packages.Package) map[string]bool {
+// classifyTestFiles evaluates every variant's _test.go files once, returning them in walk order and
+// keyed by cleaned path. Shared by the Phase-4D exclusion below and by the hand-owned-host exclusion
+// beside it so the two rules read the SAME classification — two independent walks of the same files
+// is the shape that drifts apart without a conflict.
+func classifyTestFiles(variants ...*packages.Package) ([]*testFileExclusionInfo, map[string]*testFileExclusionInfo) {
 	infos := make([]*testFileExclusionInfo, 0)
 	byPath := make(map[string]*testFileExclusionInfo)
 
@@ -1572,6 +1751,12 @@ func selectCompileExcludedTestFiles(variants ...*packages.Package) map[string]bo
 			byPath[cleaned] = info
 		}
 	}
+
+	return infos, byPath
+}
+
+func selectCompileExcludedTestFiles(variants ...*packages.Package) map[string]bool {
+	infos, byPath := classifyTestFiles(variants...)
 
 	// Seed the excluded set with every condition-(1) qualifier, then relax it: a qualifier a
 	// RETAINED file references must stay compiled (condition 2). Promotion is a fixpoint — a
@@ -1609,6 +1794,165 @@ func selectCompileExcludedTestFiles(variants ...*packages.Package) map[string]bo
 	}
 
 	return excluded
+}
+
+// The manifest TestSources status/reason for a _test.go file dropped from the compile set because
+// the package under test is a HAND-OWNED HOST. Distinct from the Phase-4D status beside it: nothing
+// about these declarations is deferred — their subject is a representation the host structurally
+// replaced, so there is no C# symbol for the assertion to name and never will be.
+const (
+	handOwnHostExcludedSourceStatus = "hand-own-host-internal"
+	handOwnHostExcludedSourceReason = "the package under test is a hand-owned host, so its INTERNAL test variant asserts against Go's own unexported state machine (common, matcher, chattyPrinter, tRunner) — a representation the host replaces rather than implements, leaving no symbol for the assertion to name"
+)
+
+// markHandOwnHostExcludedTestFiles adds to excluded every _test.go a hand-owned-host row cannot
+// compile, and it propagates in the OPPOSITE DIRECTION from the Phase-4D rule above.
+//
+// Phase-4D relaxes: a deferred file that a RETAINED file references is pulled back into the compile
+// set, because the referencing file is the one that matters. Here the internal variant can never be
+// compiled — its universe is the replaced representation — so the exclusion is unconditional and it
+// is the REFERENCING file that must go instead. `testing`'s own suite is the worked example:
+// export_test.go (internal) publishes `PrettyPrint`/`HighPrecisionTime` as aliases of unexported
+// symbols the host does not have, and benchmark_test.go (EXTERNAL) reads `testing.PrettyPrint` — so
+// excluding the internal variant alone leaves the external half unable to compile, which is exactly
+// the state a prior census measured and read as "bucket D cannot compile at all".
+//
+// The propagation is a fixpoint over a set that only ever GROWS: a newly excluded external file's
+// own declarations may in turn be referenced by another external file. It terminates because each
+// pass either adds a file or stops, and the file set is finite.
+//
+// Every excluded file's DECLARATIONS still reach the manifest — discovery runs over the full entry
+// list and only emission is filtered (convertTestVariants) — so the F6 census still accounts for
+// every name `go test` produces, each with the capability status its own analysis assigned.
+func markHandOwnHostExcludedTestFiles(internal, external *packages.Package, excluded map[string]bool) map[string]bool {
+	added := map[string]bool{}
+
+	if internal == nil {
+		return added
+	}
+
+	_, byPath := classifyTestFiles(internal, external)
+
+	// The DECLARED set is collected here rather than reused from classifyTestFileForExclusion,
+	// because that one is Phase-4D-shaped and cannot serve this rule. It records TYPE declarations,
+	// Example/Benchmark funcs and methods — and a top-level VAR does not merely go unrecorded there,
+	// it sets `qualifies = false` and is skipped, which is exactly right for a predicate whose whole
+	// question is "does this file declare only deferred functions".
+	//
+	// MEASURED, and it is why this exists rather than a one-line reuse: `testing`'s export_test.go
+	// declares `var PrettyPrint = prettyPrint` — a VAR — and benchmark_test.go (external) reads
+	// `testing.PrettyPrint`. With the Phase-4D declared set the propagation could not see that edge
+	// at all, and a convert-only probe emitted benchmark_test.cs against a symbol the host does not
+	// have. Two of the three names export_test.go publishes are vars and only HighPrecisionTime is
+	// a type, so a type-shaped view of that file misses most of what it exports.
+	//
+	// The USED set is reused, because it is already complete: classifyTestFileForExclusion walks
+	// every ident through TypesInfo.Uses with no kind filter at all.
+	declaredByPath := map[string][]types.Object{}
+
+	collectDeclared := func(variant *packages.Package) {
+		if variant == nil {
+			return
+		}
+
+		for i, file := range variant.Syntax {
+			if i >= len(variant.CompiledGoFiles) {
+				break
+			}
+
+			path := filepath.Clean(variant.CompiledGoFiles[i])
+
+			if !strings.HasSuffix(strings.ToLower(filepath.Base(path)), "_test.go") {
+				continue
+			}
+
+			if _, seen := declaredByPath[path]; seen {
+				continue
+			}
+
+			objects := make([]types.Object, 0)
+
+			declare := func(name *ast.Ident) {
+				if name == nil {
+					return
+				}
+
+				if object := variant.TypesInfo.Defs[name]; object != nil {
+					objects = append(objects, object)
+				}
+			}
+
+			for _, decl := range file.Decls {
+				switch typed := decl.(type) {
+				case *ast.GenDecl:
+					if typed.Tok == token.IMPORT {
+						continue
+					}
+
+					for _, spec := range typed.Specs {
+						switch valueOrType := spec.(type) {
+						case *ast.TypeSpec:
+							declare(valueOrType.Name)
+						case *ast.ValueSpec:
+							for _, name := range valueOrType.Names {
+								declare(name)
+							}
+						}
+					}
+				case *ast.FuncDecl:
+					declare(typed.Name)
+				}
+			}
+
+			declaredByPath[path] = objects
+		}
+	}
+
+	collectDeclared(internal)
+	collectDeclared(external)
+
+	for _, path := range internal.CompiledGoFiles {
+		if !strings.HasSuffix(strings.ToLower(filepath.Base(path)), "_test.go") {
+			continue
+		}
+
+		excluded[filepath.Clean(path)] = true
+		added[filepath.Clean(path)] = true
+	}
+
+	if external == nil {
+		return added
+	}
+
+	for changed := true; changed; {
+		changed = false
+
+		// Objects declared by anything already excluded. Recomputed each pass so a file excluded
+		// by the previous pass contributes its own declarations to the next.
+		gone := make(map[types.Object]bool)
+		for path := range excluded {
+			for _, object := range declaredByPath[path] {
+				gone[object] = true
+			}
+		}
+
+		for path, info := range byPath {
+			if excluded[path] {
+				continue
+			}
+
+			for object := range info.used {
+				if gone[object] {
+					excluded[path] = true
+					added[path] = true
+					changed = true
+					break
+				}
+			}
+		}
+	}
+
+	return added
 }
 
 // seedProductionAliasLifts makes the production conversion's package-scope ALIAS LIFTS reachable
@@ -2444,7 +2788,7 @@ func (r conversionRecordSet) isEmpty() bool {
 //     namespace-relative form `math.rand_package.Rand`) generates a partial/adapter on the
 //     production class — it stays with the production-anchored package_test_info.cs, whose first
 //     class is the production class.
-func isTestAnchoredImplementRecord(ifaceName, implName, productionClassName string) bool {
+func isTestAnchoredImplementRecord(ifaceName, implName, productionClassName string, handOwnHost bool) bool {
 	if adapterClassImplementations.Contains(ifaceName + "|" + implName) {
 		return true
 	}
@@ -2462,6 +2806,34 @@ func isTestAnchoredImplementRecord(ifaceName, implName, productionClassName stri
 	}
 
 	if pointerForm {
+		// HAND-OWNED HOST (option B, owner-ruled 2026-09-04): a pointer-form implement record is
+		// RELOCATABLE. The production class here is the hand-written host itself, so the last
+		// bullet above -- "generates a partial/adapter on the production class" -- would put
+		// generated code inside a hand-owned type in a SEPARATE assembly, which is not something
+		// any model can do; and it is not what the generator does under a reference model anyway.
+		// recordsRequireProductionMutation, the white-box predicate below, states the mechanism
+		// for exactly this record class: "qualified production structs are foreign to the test
+		// compilation, so go2cs-gen emits value or pointer adapter classes in the test anchor
+		// instead of partial production structs."
+		//
+		// MEASURED, one record, by a convert-only probe of `testing` (2026-09-04):
+		// GoImplement<ж<testing_package.T>, testing_package.TB> -- *testing.T implements
+		// testing.TB, reached through helperfuncs_test.go's `func testHelper(t testing.TB)`.
+		// Every OTHER row in the corpus carries the same record with `testing_package.` foreign to
+		// its own production class, so it already anchors test-side; `testing` is the first
+		// package where the package under test SUPPLIES the interface, and therefore the first to
+		// reach the production-qualified branch below at all.
+		//
+		// DELIBERATELY NARROW. Whether this is the right answer for EVERY reference-model row --
+		// i.e. whether the white-box predicate's reasoning should govern here generally -- is a
+		// real question with a blast radius this gate cannot see: rows that silently took the
+		// recompile fallback for this reason would stop taking it, changing their emission and
+		// their assembly identity. That is sized separately (Q25) with a two-seeded reference-model
+		// census as its precondition, and must NOT be widened here on the strength of one row.
+		if handOwnHost {
+			return true
+		}
+
 		inner = strings.TrimPrefix(inner, "global::")
 
 		if strings.HasPrefix(inner, productionClassName+".") ||
@@ -2503,7 +2875,7 @@ func isTestAnchoredConversionRecord(sourceType, targetType string) bool {
 
 // splitExternalVariantRecords partitions the LIVE record globals (the external variant's
 // collected records) into the test-anchored and production-anchored sets (B4/B5).
-func splitExternalVariantRecords(productionClassName string) (testAnchored, productionAnchored conversionRecordSet) {
+func splitExternalVariantRecords(productionClassName string, handOwnHost bool) (testAnchored, productionAnchored conversionRecordSet) {
 	testAnchored = newConversionRecordSet()
 	productionAnchored = newConversionRecordSet()
 
@@ -2512,7 +2884,7 @@ func splitExternalVariantRecords(productionClassName string) (testAnchored, prod
 			for implementation := range implementations {
 				target := production
 
-				if isTestAnchoredImplementRecord(ifaceName, implementation, productionClassName) {
+				if isTestAnchoredImplementRecord(ifaceName, implementation, productionClassName, handOwnHost) {
 					target = test
 				}
 
@@ -2852,9 +3224,9 @@ func externalTestPackageInfoSeed(projectNamespace, productionClassName, testClas
 // package_test_info.cs as before. Returns the unit's file name when it was written (the caller
 // adds it to the test project's compile items), or "" when the variant introduced no
 // test-anchored records — utf8-class packages keep their single-file shape byte-identical.
-func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageName, productionAnchor, testAnchor string) (string, error) {
+func writeExternalVariantMetadata(testInfoPath, outputPath, productionPackageName, productionAnchor, testAnchor string, handOwnHost bool) (string, error) {
 	productionClassName := getSanitizedImport(productionPackageName + PackageSuffix)
-	testAnchored, productionAnchored := splitExternalVariantRecords(productionClassName)
+	testAnchored, productionAnchored := splitExternalVariantRecords(productionClassName, handOwnHost)
 
 	// RECOMPILE-model anchored writes: the production class is compiled into this assembly, so
 	// the historical production-local type qualification stays in force (see writePackageInfoFile).
@@ -3079,6 +3451,14 @@ func supportedTestCapabilities() []string {
 		"TB.Fatal", "TB.Fatalf", "TB.Helper", "TB.Log", "TB.Logf", "TB.Name", "TB.Setenv",
 		"TB.Skip", "TB.SkipNow", "TB.Skipf", "TB.Skipped", "TB.TempDir",
 		"testing.AllocsPerRun", "testing.CoverMode", "testing.Short", "testing.Verbose",
+		// testing.Testing reports whether the binary is a test binary. The host has implemented it
+		// since the one-tree consolidation (core/testing/testing.cs) and the capability list simply
+		// never named it -- an omission train 18 recorded in the same breath as the admission census
+		// ("the host implements testing.Testing at testing.cs:672, but the capability list omits the
+		// name"). Roster impact measured before widening, per the charter: a GOROOT-wide scan of
+		// every *_test.go for `testing.Testing()` returns exactly ONE file, testing's own
+		// testing_test.go, so no validated package gains or loses a test by this.
+		"testing.Testing",
 		// In-process benchmarking driven from a Test function: testing.Benchmark runs a
 		// func(*B) closure and returns a BenchmarkResult, setting B.N and exposing NsPerOp
 		// (unicode's TestCalibrate uses this to pick a linear-vs-binary search cutoff). The
@@ -3294,6 +3674,59 @@ var unsupportedRuntimeCapabilities = map[string]string{
 	// records — the same test then regains its teeth without anyone remembering, and the entry is
 	// deleted in the same commit as that increment.
 	"runtime/pprof.TestFakeMapping": "runtime-capability: the memory profiler records no samples on the converted runtime, so the test's mapping/symbolization loop runs over an empty location set (vacuous pass); lifts when an increment returns real memory-profile records",
+	// ─── `testing`'s own suite ───────────────────────────────────────────────────────────────────
+	//
+	// Go's `testing` package is measured against the HAND-OWNED Phase-4 host (Option 1, owner-ruled
+	// 2026-08-30; docs/phase4/CENSUS-testing-osuser-rows.md §2.4). Its external suite re-executes the
+	// test binary and reads the child's TERMINAL TEXT back, and two families of that shape can produce
+	// nothing a differential comparison should count. Both are gated rather than disclosed for the
+	// reason this map's own fork draws: a disclosure PINS A FAILURE'S captured signature, and neither
+	// family produces a failure to pin.
+	//
+	// FAMILY 1 — the race tests (ten). Each spawns a child and asserts `count(<literal>) == 0` where
+	// the literal is Go's own race-report or verbose-run vocabulary ("race detected", "--- FAIL:",
+	// "=== NAME"). With `race.Enabled == false` Go's own run wants zero too, so the shape LOOKS like
+	// an agreeing pass — but the host's reporter (core/testing/TestReporter.cs, Report) writes
+	// `"{ACTION,-20} {Test} — {Output}"` and emits none of those literals anywhere, so the count is
+	// zero however the child behaves, INCLUDING when it never starts. A second mechanism guarantees
+	// it independently: runTest passes `-test.bench` ahead of `-test.v`, TestOptions.Parse stops at
+	// the first name it does not own and never writes back, so the child is non-verbose regardless.
+	//
+	// The distinction that puts these here while TestPanicHelper, TestCallRunInCleanupHelper and
+	// TestGoexitInCleanupAfterPanicHelper stay ADMITTED (owner ruling, 2026-09-04): those three open
+	// with `if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" { return }` and do the same nothing on both
+	// sides by design — an agreeing no-op is Go's row, not a false green, and their real assertions
+	// run inside TestPanic/TestMorePanic's child where they are disclosed. The anti-laundering
+	// clause reaches a pass THE HOST CANNOT FAIL — a real check on Go's side, an unwritable literal
+	// on ours — not a pass neither side was meant to make.
+	//
+	// The unavailable capability is the one `runtime/race` is already ruled E1 for: there is no
+	// race-instrumented build of the converted corpus, so the instrument these ten read is absent
+	// rather than unimplemented.
+	//
+	// FAMILY 2 — the two running-tests tests. `parseRunningTests` scrapes Go's -test.timeout dump
+	// ("running tests:\n\tTestX (Nms)") out of the child; on no match the parent DOUBLES the timeout
+	// and loops, with no failure path anywhere in it. The host emits no such dump, so the loop never
+	// terminates — the same "it doesn't fail, it HANGS, with no output to pin" fork the net/http
+	// entry above draws, and a package deadline swallowing the rest of the row is what a gate here
+	// prevents.
+	//
+	// CHECKED, as the note above requires before any declaration-keyed entry: `testing`'s own
+	// TestMain (testing_test.go:27) is `if os.Getenv("GO_WANT_RACE_BEFORE_TESTS") == "1" { doRace() }`
+	// then a bare `m.Run()` — it censuses nothing about which tests ran and does not even propagate
+	// an exit code, so a gate cannot make it mis-answer the way os/exec's helper census does.
+	"testing_test.TestRaceReports":                        "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child, a literal the host's reporter never writes",
+	"testing_test.TestRaceName":                           "race-detector-instrumented build: asserts the verbose-run marker \"=== NAME\" is absent from a re-exec'd child, a literal the host's reporter never writes",
+	"testing_test.TestRaceSubReports":                     "race-detector-instrumented build: asserts counts of \"race detected during execution of test\" and \"--- FAIL:\" in a re-exec'd child, literals the host's reporter never writes",
+	"testing_test.TestRaceInCleanup":                      "race-detector-instrumented build: asserts counts of \"race detected during execution of test\" and \"--- FAIL:\" in a re-exec'd child, literals the host's reporter never writes",
+	"testing_test.TestDeepSubtestRace":                    "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child, a literal the host's reporter never writes",
+	"testing_test.TestRaceDuringParallelFailsAllSubtests": "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child, a literal the host's reporter never writes",
+	"testing_test.TestRaceBeforeParallel":                 "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child, a literal the host's reporter never writes",
+	"testing_test.TestRaceBeforeTests":                    "race-detector-instrumented build: asserts a count of \"race detected\" in a child run with GO_WANT_RACE_BEFORE_TESTS=1, a literal the host's reporter never writes",
+	"testing_test.TestBenchmarkRace":                      "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child running a benchmark, a literal the host's reporter never writes",
+	"testing_test.TestBenchmarkSubRace":                   "race-detector-instrumented build: asserts a count of \"race detected\" in a re-exec'd child running a benchmark, a literal the host's reporter never writes",
+	"testing_test.TestRunningTests":                       "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail",
+	"testing_test.TestRunningTestsInCleanup":              "Go's -test.timeout running-tests dump: the parent retries with a doubled timeout until the child prints it and has no failure path, so a host that does not emit the dump makes the test loop forever rather than fail",
 }
 
 // unsupportedRuntimeCapability reports whether fn requires a listed unsupported runtime capability,
@@ -3525,6 +3958,24 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 	references := HashSet[string]{}
 
 	for _, fixed := range testProjectFixedReferences {
+		// A fixed reference that IS the package under test duplicates the production reference
+		// below by a SECOND SPELLING, and a HashSet of strings cannot see that
+		// `$(go2csPath)core/testing/testing.csproj` and the colocated `testing.csproj` name one
+		// file. Only a hand-owned HOST row can reach this — the fixed set is golib and testing —
+		// and `testing` does: measured by a convert-only probe (2026-09-04), which emitted BOTH
+		// spellings into testing.tests.csproj.
+		//
+		// The colocated form is the one kept, deliberately: the -tests contract colocates the test
+		// project with the production csproj, so that spelling is layout-independent and involves
+		// no $(go2csPath) tree mapping — which is the reason the reference model emits it at all.
+		//
+		// isSelfProjectReference is the predicate the DEPENDENCY loop below already applies for
+		// exactly this reason. The fixed set never consulted it because, until a hand-owned host
+		// became a test TARGET, no fixed reference could name the package under test.
+		if isSelfProjectReference(fixed, projectName) {
+			continue
+		}
+
 		references.Add(fixed)
 	}
 
@@ -5248,7 +5699,7 @@ func copyTestFixtures(inputPath, outputPath string) (copied []string, linkStaged
 	return copied, linkStaged, nil
 }
 
-func classifyTestSources(inputPath string, included HashSet[string], compileExcluded map[string]bool, external *packages.Package) ([]testSource, error) {
+func classifyTestSources(inputPath string, included HashSet[string], compileExcluded, handOwnHostExcluded map[string]bool, external *packages.Package) ([]testSource, error) {
 	matches, err := filepath.Glob(filepath.Join(inputPath, "*_test.go"))
 	if err != nil {
 		return nil, err
@@ -5269,6 +5720,11 @@ func classifyTestSources(inputPath string, included HashSet[string], compileExcl
 		// its distinct status keeps the manifest truthful about why.
 		status, reason := "included", ""
 		switch {
+		case handOwnHostExcluded[filepath.Clean(path)]:
+			// Checked ahead of the Phase-4D status: a host row's internal file may satisfy both
+			// predicates, and "the host replaces this representation" is the accurate reason where
+			// "deferred to Phase 4D" would promise a later run that is never coming.
+			status, reason = handOwnHostExcludedSourceStatus, handOwnHostExcludedSourceReason
 		case compileExcluded[filepath.Clean(path)]:
 			status, reason = compileExcludedSourceStatus, compileExcludedSourceReason
 		case !included.Contains(filepath.Clean(path)):

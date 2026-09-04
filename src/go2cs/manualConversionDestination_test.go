@@ -137,10 +137,12 @@ func handOwnedDefinitions(t *testing.T, packageDir string) map[string]bool {
 	return defined
 }
 
-// The whole-file hand-own marker, line-anchored for the reason the corpus census records: `reflect`
-// and `internal/reflectlite` MENTION the marker inside bodyless-partial placeholder comments, and an
-// unanchored match counts those as hand-owns.
-var manualConversionMarker = regexp.MustCompile(`(?m)^\s*\[module:\s*(go\.)?GoManualConversion\]`)
+// manualConversionMarker moved to testConversion.go (2026-09-04), where handOwnHostTestTarget needs
+// the same predicate in PRODUCTION code: that function asks "is the C# counterpart at this output
+// path hand-owned?" and this guard asks "does a hand-own declare what it displaces?" — one question
+// about one marker, so one regexp. A second copy here would be the silent-duplication shape (two
+// definitions of one fact, merging without a conflict); it is caught by the compiler today only
+// because both copies carry the same name, which is luck rather than a guard.
 
 // A line that DECLARES something: an access modifier at the start, after any attributes. Selecting
 // the line first and harvesting names second is what makes TUPLE RETURN TYPES work —
