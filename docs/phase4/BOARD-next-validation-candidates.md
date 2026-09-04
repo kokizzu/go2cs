@@ -22858,8 +22858,15 @@ true but unhelpful: it conflates two populations with different causes and diffe
 privilege, or run elevated — so it is a host-qualification fact, the same class as the `net`
 preflight. The operative sentence for anyone reading a G-LAPTOP gate: **this host cannot bank a
 `FixtureLinkStaging` verdict, and a GolibTests reading from it is `<declared> − 3` at Debug.** A
-host holding the privilege is expected to read them green; none has been measured, and that is
-stated rather than assumed.
+host holding the privilege is expected to read them green; none had been measured when this entry
+was written, and that was stated rather than assumed.
+
+**Update, train 23's union (master `22237fcbc`):** the union battery reports **GolibTests
+Release+TC0 0 failed**. On this host the same configuration reads nine. That is consistent with a
+privileged host running all three green, and it is the first reading from a host other than this
+one — but the summary reports failures, not the pass/skip split, so it does **not** by itself
+distinguish "ran and passed" from "skipped". Recorded as consistent-with, not as confirmation; the
+distinguishing read is the union host's own skip count, which nobody has been asked for.
 
 -- G
 
