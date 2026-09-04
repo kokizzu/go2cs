@@ -236,14 +236,27 @@ func renderValidationProofPage(provenance proofPageProvenance, comparison testCo
 		oracleClause = fmt.Sprintf(", oracle `%s`", comparison.Environment.OracleGoVersion)
 	}
 
+	// The driver's terminal context, in the same sentence for the same reason: a row whose tests
+	// gate on /dev/tty (syscall's foreground pair) skips them on both sides without a controlling
+	// terminal and runs them on both with one, so two pages with equal counts can have measured
+	// different things, and a reader must be able to tell which. Omitted when the record carries
+	// no observation (a Windows run, or a record written before the field existed).
+	terminalClause := ""
+	switch comparison.Environment.Terminal {
+	case driverTerminalPresent:
+		terminalClause = ", under a controlling terminal"
+	case driverTerminalAbsent:
+		terminalClause = ", with no controlling terminal"
+	}
+
 	if configuration == "Release" {
 		tiering := "off"
 		if comparison.Environment.Tiered {
 			tiering = "on"
 		}
-		fmt.Fprintf(&page, "\nMeasured at `Release` (tiered JIT %s)%s.\n", tiering, oracleClause)
+		fmt.Fprintf(&page, "\nMeasured at `Release` (tiered JIT %s)%s%s.\n", tiering, oracleClause, terminalClause)
 	} else {
-		fmt.Fprintf(&page, "\nMeasured at `%s`%s.\n", configuration, oracleClause)
+		fmt.Fprintf(&page, "\nMeasured at `%s`%s%s.\n", configuration, oracleClause, terminalClause)
 	}
 
 	if skipped > 0 {

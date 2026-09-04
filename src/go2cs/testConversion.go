@@ -5617,6 +5617,17 @@ type testEnvironmentRecord struct {
 	// empty-stringed, when the probe itself could not run — a comparison that already completed
 	// must not be invalidated by a version probe failing after the fact.
 	OracleGoVersion string `json:"oracleGoVersion,omitempty"`
+
+	// Terminal records whether the comparison's DRIVER had a controlling terminal when it ran the
+	// two sides — "tty" or "none" — observed by the same primitive Go's own tests decide with
+	// (os.OpenFile("/dev/tty", O_RDWR), see driverTerminal below). A driver-context axis every
+	// detached sweep is blind to (Q15, 2026-09-04): syscall's TestForeground/TestForegroundSignal
+	// skip on BOTH sides without one and RUN on both with one, so a row's count can depend on the
+	// terminal the driver happened to have, and a proof page that does not say which context it
+	// was taken in cannot be reproduced. Both children inherit the driver's session (nothing in
+	// the pipeline calls setsid), so the driver's answer is theirs. Omitted on Windows, where the
+	// probe can only ever fail and would say nothing about the row.
+	Terminal string `json:"terminal,omitempty"`
 }
 
 // testEnvironmentFromOptions derives the record from the same two options testHostRunEnv reads, so
@@ -5646,6 +5657,36 @@ func oracleGoVersion(inputPath string, options Options) string {
 	}
 
 	return strings.TrimSpace(output)
+}
+
+// Terminal vocabulary for testEnvironmentRecord.Terminal — the two observed states, and the empty
+// string for "not probed" (Windows), which omitempty drops from the record.
+const (
+	driverTerminalPresent = "tty"
+	driverTerminalAbsent  = "none"
+)
+
+// driverTerminal observes whether THIS process — the pipeline driver, whose session both the
+// oracle `go test` child and the converted host inherit — has a controlling terminal, using the
+// exact predicate Go's terminal-gated tests use: os.OpenFile("/dev/tty", O_RDWR). Success means a
+// controlling terminal exists (the kernel resolves /dev/tty to it, or fails with ENXIO without
+// one); the descriptor is closed at once, nothing about the terminal is changed. Windows has no
+// /dev/tty and no job control, so the probe is not run there and the field is omitted rather than
+// recorded as a meaningless "none".
+func driverTerminal() string {
+	if runtime.GOOS == "windows" {
+		return ""
+	}
+
+	tty, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+
+	if err != nil {
+		return driverTerminalAbsent
+	}
+
+	tty.Close()
+
+	return driverTerminalPresent
 }
 
 // publishedTestHostPath is the single-file executable publishTestHost produces: the test project's
@@ -6637,6 +6678,10 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	// oracleGoVersion's own doc comment for why this is not `go env GOROOT`.
 	oracleVersion := oracleGoVersion(inputPath, options)
 
+	// The driver's terminal context, observed beside the oracle run it applies to — see
+	// testEnvironmentRecord.Terminal for why a count without it cannot be reproduced.
+	terminal := driverTerminal()
+
 	// The converted side runs the PUBLISHED single-file host (the host-limit retirement) — the
 	// same relocatable artifact an os/exec-style test copies and re-execs, so what the comparison
 	// measures is the deployment shape the verdicts claim.
@@ -6699,6 +6744,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	}
 	environment := testEnvironmentFromOptions(options)
 	environment.OracleGoVersion = oracleVersion
+	environment.Terminal = terminal
 	result := testComparison{
 		Package: filepath.Base(inputPath), Status: status, Go: goResults, CSharp: csResults,
 		Matched: true, Skipped: []string{}, Disclosed: []string{}, Excluded: excludedDeclarations(manifest), Errors: []string{},
