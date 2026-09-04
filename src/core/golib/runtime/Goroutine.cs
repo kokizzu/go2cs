@@ -77,6 +77,12 @@ public sealed class Goroutine
     private static long s_nextId;
     private static int s_count;
 
+    // The MAIN goroutine -- the entry RegisterMainGoroutine minted on the thread that first touched
+    // golib. Held by reference so a host can run its "main" on a thread other than that one
+    // (EnterAsMain): the identity is the registry entry, not the thread, and it is minted exactly
+    // once per process.
+    private static Goroutine? s_main;
+
     // The identity of the goroutine running on this thread — getg(), in Go's terms — or null on a
     // thread that is not running Go code at all (BCL callbacks, the timer service thread, the
     // finalizer). Goroutine state is thread-affine everywhere in golib, so this is the natural root.
@@ -210,7 +216,51 @@ public sealed class Goroutine
         // is diagnosed. A host that named the thread itself keeps its own name.
         Thread.CurrentThread.Name ??= $"goroutine-{goroutine.Id.ToString(CultureInfo.InvariantCulture)}";
 
-        return new Scope(goroutine);
+        return new Scope(goroutine, owned: true);
+    }
+
+    /// <summary>
+    /// Marks the calling thread as running the MAIN goroutine for the lifetime of the returned scope.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The main goroutine is minted exactly once per process, by <see cref="RegisterMainGoroutine"/>
+    /// on the thread that first touched golib. A host whose "main" runs on some OTHER thread -- the
+    /// converted-test host hands the whole run to a pool thread and parks its own main thread on the
+    /// package deadline -- would otherwise run Go's <c>TestMain</c> on a thread with no identity at
+    /// all (a traceback headed <c>goroutine 0</c>, an id Go never mints) while the registered main
+    /// goroutine sat in the registry as a goroutine that runs no Go code: a frameless block in every
+    /// <c>runtime.Stack(all)</c> dump that no program's filter can drop, which is exactly how
+    /// <c>net/http</c>'s goroutine-leak check counted the host itself as a leak (2026-09-04). Go's
+    /// own shape is that <c>testing.(*M).Run</c> executes ON the main goroutine and the package
+    /// deadline is a timer, not a second goroutine waiting on the first.
+    /// </para>
+    /// <para>
+    /// Adoption moves nothing in the registry: the identity IS the registry entry, held once, so the
+    /// adopting thread becomes goroutine 1 and no new goroutine exists (<see cref="Count"/> is
+    /// unchanged). The registering thread's own reference to the entry is left in place -- it cannot
+    /// be cleared from another thread and it does not need to be, since that thread runs no Go code
+    /// while the run it handed off is in flight; a host that adopts the main identity on one thread
+    /// must not run Go code on the registering thread concurrently, or both would answer as
+    /// goroutine 1. A thread that already carries an identity keeps it and gets an inert scope,
+    /// exactly as <see cref="Enter"/> does, so nesting cannot re-label a goroutine as main.
+    /// Disposing the scope clears the thread's identity and retires nothing: the main goroutine's
+    /// life is the process's.
+    /// </para>
+    /// </remarks>
+    public static Scope EnterAsMain()
+    {
+        if (t_current is not null)
+            return default;
+
+        // Minted by the module initializer before any code that could reach here ran; a null is a
+        // broken initialization order, never a state to paper over by minting a second main.
+        Goroutine main = Volatile.Read(ref s_main)
+            ?? throw new InvalidOperationException("the main goroutine has not been registered; golib's module initializer registers it before any goroutine can be entered");
+
+        t_current = main;
+
+        return new Scope(main, owned: false);
     }
 
     /// <summary>
@@ -368,7 +418,7 @@ public sealed class Goroutine
         if (t_current is not null)
             return;
 
-        t_current = Register(isMain: true);
+        t_current = s_main = Register(isMain: true);
     }
 
     private static Goroutine Register(bool isMain)
@@ -558,9 +608,14 @@ public sealed class Goroutine
     {
         private readonly Goroutine? m_goroutine;
 
-        internal Scope(Goroutine goroutine)
+        // Whether disposing retires the goroutine from the registry. Enter() minted its goroutine
+        // and owns it; EnterAsMain() only lent this thread an identity that outlives the scope.
+        private readonly bool m_owned;
+
+        internal Scope(Goroutine goroutine, bool owned)
         {
             m_goroutine = goroutine;
+            m_owned = owned;
         }
 
         public void Dispose()
@@ -571,7 +626,9 @@ public sealed class Goroutine
                 return;
 
             t_current = null;
-            Unregister(m_goroutine);
+
+            if (m_owned)
+                Unregister(m_goroutine);
         }
     }
 }

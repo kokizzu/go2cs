@@ -421,6 +421,19 @@ public static class TestHost
 
     private static nint RunTests(TestRegistry registry, TestRunner runner)
     {
+        // This thread IS the main goroutine for the run. Go's testing.(*M).Run -- and the TestMain
+        // that calls it -- execute on the main goroutine, and the package deadline is a timer
+        // (testing.go's startAlarm). Run above inverts the threads: it parks the process's main
+        // thread on the deadline and hands the run to this one. Without adopting the identity here
+        // TestMain ran as `goroutine 0` (a thread with no identity; an id Go never mints) while the
+        // REAL goroutine 1 -- registered by golib's module initializer on the parked host thread,
+        // which runs no Go code -- was rendered by every runtime.Stack(all) as a frameless foreign
+        // block that no leak filter can drop by its text. That is how net/http's TestMain counted
+        // the host itself as a leaked goroutine and exited 1 over a 1,345/1,345 record (measured
+        // 2026-09-04, Release + tiered, Linux). The deadline path is untouched: the identity is the
+        // property, not which thread waits.
+        using Goroutine.Scope main = Goroutine.EnterAsMain();
+
         testing_package.M m = new() { Runner = runner };
 
         // No TestMain: Go's generated main is `os.Exit(m.Run())`, so this goes through M.Run for
