@@ -132,7 +132,7 @@ internal static error decref(this ж<FD> Ꮡfd) {
 internal static error readLock(this ж<FD> Ꮡfd) {
     ref var fd = ref Ꮡfd.DerefOrNull();
 
-    if (!Ꮡfd.of(FD.Ꮡfdmu).rwlock(true)) {
+    if (!fd.fdmu.rwlock(true)) {
         return errClosing(fd.isFile);
     }
     return default!;
@@ -142,7 +142,9 @@ internal static error readLock(this ж<FD> Ꮡfd) {
 // It also closes fd when the state of fd is set to closed and there
 // is no remaining reference.
 internal static void readUnlock(this ж<FD> Ꮡfd) {
-    if (Ꮡfd.of(FD.Ꮡfdmu).rwunlock(true)) {
+    ref var fd = ref Ꮡfd.DerefOrNull();
+
+    if (fd.fdmu.rwunlock(true)) {
         Ꮡfd.destroy();
     }
 }
@@ -152,7 +154,7 @@ internal static void readUnlock(this ж<FD> Ꮡfd) {
 internal static error writeLock(this ж<FD> Ꮡfd) {
     ref var fd = ref Ꮡfd.DerefOrNull();
 
-    if (!Ꮡfd.of(FD.Ꮡfdmu).rwlock(false)) {
+    if (!fd.fdmu.rwlock(false)) {
         return errClosing(fd.isFile);
     }
     return default!;
@@ -162,7 +164,9 @@ internal static error writeLock(this ж<FD> Ꮡfd) {
 // It also closes fd when the state of fd is set to closed and there
 // is no remaining reference.
 internal static void writeUnlock(this ж<FD> Ꮡfd) {
-    if (Ꮡfd.of(FD.Ꮡfdmu).rwunlock(false)) {
+    ref var fd = ref Ꮡfd.DerefOrNull();
+
+    if (fd.fdmu.rwunlock(false)) {
         Ꮡfd.destroy();
     }
 }

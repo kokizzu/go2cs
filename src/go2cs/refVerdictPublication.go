@@ -39,6 +39,7 @@ package main
 import (
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 	"os"
 	"path/filepath"
@@ -106,6 +107,22 @@ var refPrimaryHandOwns = map[string]bool{
 	"sync.Mutex.Lock":    true,
 	"sync.Mutex.TryLock": true,
 	"sync.Mutex.Unlock":  true,
+
+	// I1's registrations — SAME-PACKAGE, and the reason the registry serves both cases. These
+	// three are (b′)'s hand-owns; they already declare `this ref fdMutex` and C0's declaring-side
+	// guard already verifies them. Nothing is PUBLISHED for them and nothing should be:
+	// `fdMutex` is unexported, so no foreign assembly could bind it — and registeredHandOwnPrimaries
+	// now enforces that on the publication side, which it did NOT before this increment (I1's own
+	// A/B caught three stray records here). What the entries buy is the caller inside internal/poll
+	// binding
+	// `fd.fdmu.rwlock(true)` instead of minting `Ꮡfd.of(FD.Ꮡfdmu)` for the receiver.
+	//
+	// `incref`/`decref` are deliberately NOT here: they are still auto-converted and their bodies
+	// form `Ꮡmu.of(fdMutex.Ꮡstate)`, so they carry no `ref` primary to bind. Registering a key the
+	// assembly does not declare is exactly what C0's guard refuses, and rightly.
+	"internal/poll.fdMutex.increfAndClose": true,
+	"internal/poll.fdMutex.rwlock":         true,
+	"internal/poll.fdMutex.rwunlock":       true,
 }
 
 // refPrimaryRecordKey composes the ONE spelling of a published primary that both sides of the
@@ -218,6 +235,20 @@ func registeredHandOwnPrimaries(pkgPath string) [][2]string {
 		typeName, methodName, found := strings.Cut(rest, ".")
 
 		if !found || typeName == "" || methodName == "" || strings.Contains(methodName, ".") {
+			continue
+		}
+
+		// PUBLISH only what a FOREIGN assembly could bind — the same bar publishableRefPrimaries
+		// applies to the converter's own selections, and for the same reason: a record is an
+		// existence proof offered to other packages, and an unexported type or method is invisible
+		// to every one of them. Without this, I1's same-package registrations (internal/poll's
+		// `fdMutex`, unexported) emitted three records into package_info.cs and from there into
+		// stdlib-metadata.txt that no consumer could ever key on — inert, but a promise made to
+		// nobody. The registry serves BOTH roles now (same-package binding, cross-package
+		// publication) and only the second one is gated: registering an unexported primary is
+		// correct and useful, publishing it is not. Measured by I1's own two-seeded A/B, which is
+		// where the three stray records surfaced.
+		if !token.IsExported(typeName) || !token.IsExported(methodName) {
 			continue
 		}
 
@@ -471,12 +502,6 @@ func (v *Visitor) calleePublishesRefPrimary(selectorExpr *ast.SelectorExpr) bool
 		return false
 	}
 
-	// Same-package calls are Phase-A's population and are decided by the converter's own
-	// selection, not by a published record; the contract exists for the cross-package case.
-	if v.pkg != nil && funcObj.Pkg() == v.pkg {
-		return false
-	}
-
 	signature, ok := funcObj.Type().(*types.Signature)
 
 	if !ok || signature.Recv() == nil || types.IsInterface(signature.Recv().Type()) {
@@ -493,6 +518,22 @@ func (v *Visitor) calleePublishesRefPrimary(selectorExpr *ast.SelectorExpr) bool
 
 	if !isNamed || named.Obj() == nil {
 		return false
+	}
+
+	// SAME-PACKAGE (I1) — ask the hand-own REGISTRY, not the published records. A published
+	// record is an existence proof about ANOTHER assembly; within one assembly the declaration is
+	// right here, so nothing needs publishing and nothing is minted. That is also why
+	// publishableRefPrimaries refuses these: `fdMutex.rwlock` is unexported, and an unexported
+	// method has no cross-package caller to inform. Registry only — the converter's own Phase-A
+	// selection is a separate population and is not consulted here.
+	if v.pkg != nil && funcObj.Pkg() == v.pkg {
+		handOwnKey := refPrimaryHandOwnKey(funcObj.Pkg().Path(), named.Obj().Name(), funcObj.Name())
+
+		packageLock.Lock()
+		declared := refPrimaryHandOwns[handOwnKey]
+		packageLock.Unlock()
+
+		return declared
 	}
 
 	key := refPrimaryRecordKey(funcObj.Pkg().Name(), named.Obj().Name(), funcObj.Name())
