@@ -326,15 +326,22 @@ internal static bool isGoPointerWithoutSpan(@unsafe.Pointer Δp) {
 public static bool blockUntilEmptyFinalizerQueue(int64 timeout) {
     // go2cs NATIVE REPLACEMENT (second one in this file — see the module header). The converted
     // body waits on the finalizer GOROUTINE's state (finq / fing / readgstatus): there is no
-    // finalizer g here, `fing` is nil, and the first readgstatus derefs it. The managed finalizer
-    // bridge this file installs for SetFinalizer runs on the CLR's own finalizer thread, and
-    // WaitForPendingFinalizers is precisely "block until the finalizer queue has drained and the
-    // finalizers have executed" — the contract this function documents. The timeout has no
-    // managed expression (WaitForPendingFinalizers is unbounded), so it is honored by returning
-    // true only when the wait completes, which it always does; a hung finalizer would hang here
-    // where Go would time out and return false.
+    // finalizer g here, `fing` is nil, and the first readgstatus derefs it.
+    //
+    // Two waits, because there are two queues. WaitForPendingFinalizers drains the CLR's own
+    // finalizer queue, which is what runs each GoFinalizerSentinel's `~` — and that only ENQUEUES
+    // onto the Go finalizer queue below. Draining THAT queue is what "the finalizers have
+    // executed" means here, so both waits are owed; the CLR wait alone would report an empty
+    // queue while every Go finalizer was still pending.
+    //
+    // The timeout DOES have a managed expression now (it did not before the runner existed, and
+    // this comment used to say so): the drain is bounded, so a finalizer that blocks on its caller
+    // makes this return false exactly where Go's would. Go's `timeout` is nanoseconds.
     System.GC.WaitForPendingFinalizers();
-    return true;
+    int budgetMs = timeout <= 0
+        ? 0
+        : (int)global::System.Math.Min(timeout / 1_000_000, global::System.Int32.MaxValue);
+    return GoFinalizerQueue.WaitForIdle(budgetMs);
 }
 
 // SetFinalizer sets the finalizer associated with obj to the provided
@@ -459,6 +466,9 @@ public static void SetFinalizer(any obj, any finalizer) {
     if (s_finalizerRegistry.TryGetValue(referent, out GoFinalizerSentinel? _)) {
         @throw("runtime.SetFinalizer: finalizer already set"u8);
     }
+    // Bring the finalizer runner into existence, exactly where Go's createfing does it — the
+    // registration is what makes a finalizer goroutine necessary. See GoFinalizerQueue.
+    GoFinalizerQueue.EnsureRunner();
     // The sentinel keeps the ORIGINAL box, because that is the argument the Go finalizer must be
     // invoked with (its parameter is the pointer type, not the storage).
     s_finalizerRegistry.Add(referent, new GoFinalizerSentinel(obj, (Delegate)finalizer));
@@ -501,15 +511,174 @@ private sealed class GoFinalizerSentinel
         if (m_cancelled)
             return;
 
-        try
+        // HAND OFF, never invoke here. Running the Go finalizer inline on the CLR finalizer thread
+        // is what deadlocked runtime/pprof's TestGoroutineCounts — see GoFinalizerQueue below.
+        GoFinalizerQueue.Enqueue(m_finalizer, m_target);
+    }
+}
+
+// The `fing` analogue: the single background thread that RUNS Go finalizers, sequentially.
+//
+// WHY IT EXISTS (measured 2026-09-04, Q23, guarded by GolibTests' FinalizerDispatchTests).
+// GoFinalizerSentinel used to invoke the Go finalizer INLINE from its `~`, i.e. on the CLR's own
+// finalizer thread, and runtime.GC() (managed_impl.cs) calls System.GC.WaitForPendingFinalizers().
+// Those two facts together make a caller and its own finalizer deadlock whenever the finalizer
+// waits on the caller — and Go's runtime/pprof/pprof_test.go does exactly that on purpose:
+//
+//     runtime.SetFinalizer(garbage, func(v **int) { close(fingReady); <-c })
+//     garbage = nil
+//     for i := 0; i < 2; i++ { runtime.GC() }
+//     <-fingReady                       // c is closed only at the END of the test
+//
+// The first runtime.GC() collected `garbage`, the sentinel's `~` ran the body, the body blocked on
+// `<-c`, WaitForPendingFinalizers could never return, and TestGoroutineCounts sat there to the
+// 25-minute package deadline — at Release+TC0 AND at Debug, which is what ruled out every
+// liveness story and pointed at dispatch instead.
+//
+// Go has no such deadlock because its model is the one this file's own SetFinalizer doc comment
+// states: "A single goroutine runs all finalizers for a program, sequentially." A goroutine can
+// park indefinitely without stopping anything else, and Go's runtime.GC() does not wait for
+// finalizer BODIES at all — it completes a GC cycle and returns while `fing` runs them
+// concurrently. That is precisely what lets the test reach `<-fingReady`.
+//
+// So this is Go's shape, not a workaround: one dedicated thread, one queue, bodies run one at a
+// time in FIFO order. The CLR finalizer thread is never blocked by user code, and a Go finalizer
+// that parks parks only this thread — exactly as it would park `fing`.
+//
+// MEASURED AFTER THE FIX, so the next reader need not re-run it: TestGoroutineCounts through the
+// -tests pipeline (Release, tiered off, oracle go1.23.12) completes in 10.41 s where it used to
+// reach the 25-minute package deadline, and now dies one line PAST the finalizer — at
+// pprof_goroutineProfileWithLabels, an unimplemented external stub, which is a different wall and
+// somebody else's item. The 10.41 s is the design working rather than a cost: the first
+// runtime.GC() pays the drain budget once because that body really is parked, the second pays
+// nothing because WaitForIdle recognizes it, and the row proceeds.
+//
+// WHAT THE CALLER STILL GETS. runtime.GC() and blockUntilEmptyFinalizerQueue wait for this queue
+// to go idle, BOUNDED. Well-behaved finalizers complete in microseconds, so those callers keep the
+// stronger-than-Go guarantee the corpus already relies on (sync's pool/oncefunc rows, unique's
+// drainMaps, internal/weak, io's multi_test); a finalizer that waits on its caller degrades to
+// Go's actual contract — GC() returns, the finalizer runs on — instead of hanging the process.
+private static class GoFinalizerQueue
+{
+    /// <summary>
+    /// How long runtime.GC() waits for the Go finalizer queue to go idle before carrying on.
+    /// </summary>
+    /// <remarks>
+    /// A safety net, not a performance assumption: legitimate finalizers (an os.File close, a netFD
+    /// close, crypto/tls's cache decrement) complete in microseconds, so this is only ever reached
+    /// by a finalizer that is deliberately waiting on its caller — where Go's own runtime.GC()
+    /// would not have waited at all. Sized well above the slowest legitimate host and well below
+    /// any package deadline, and paid ONCE per parked body rather than per collection.
+    /// </remarks>
+    internal const int DrainBudgetMs = 10_000;
+
+    private static readonly global::System.Collections.Concurrent.ConcurrentQueue<(Delegate Fn, object Target)> s_queue = new();
+    private static readonly global::System.Threading.SemaphoreSlim s_pending = new(0);
+
+    // Set exactly when nothing is queued AND nothing is executing.
+    private static readonly global::System.Threading.ManualResetEventSlim s_idle = new(true);
+
+    // Guards the (s_outstanding, s_idle) PAIR. Two threads touch it — the CLR finalizer thread
+    // enqueuing and the runner completing — and without the pair moving together they can
+    // interleave so the runner's Set lands AFTER an enqueuer's Reset, leaving the queue reported
+    // idle with work outstanding. That would silently weaken exactly the stronger-than-Go
+    // guarantee the drain exists to keep, so the two transitions are made atomic. Contention is
+    // nil: finalizer registrations are rare, and neither critical section does any work.
+    private static readonly object s_countGate = new();
+
+    private static int s_outstanding;
+
+    // Environment.TickCount64 (never 0) while a body is executing; 0 when idle. Read by WaitForIdle
+    // to recognize a PARKED body — see there.
+    private static long s_runningSince;
+
+    private static int s_started;
+
+    // Started from SetFinalizer rather than from the first `~`, mirroring Go's createfing: the
+    // registration is what brings the finalizer runner into existence, and doing it here keeps
+    // thread creation off the CLR finalizer thread.
+    internal static void EnsureRunner()
+    {
+        if (global::System.Threading.Volatile.Read(ref s_started) != 0 ||
+            global::System.Threading.Interlocked.CompareExchange(ref s_started, 1, 0) != 0)
         {
-            m_finalizer.DynamicInvoke(m_target);
+            return;
         }
-        catch
+
+        global::System.Threading.Thread runner = new(Run)
         {
-            // A throwing Go finalizer must not take down the .NET finalizer thread; Go's own
-            // finalizer goroutine would crash the program, but the converted world prefers to
-            // drop it (finalizers are best-effort by specification).
+            // Go's fing does not keep a program alive either.
+            IsBackground = true,
+            Name = "go2cs finalizer goroutine"
+        };
+
+        runner.Start();
+    }
+
+    internal static void Enqueue(Delegate fn, object target)
+    {
+        lock (s_countGate)
+        {
+            s_outstanding++;
+            s_idle.Reset();
+        }
+
+        s_queue.Enqueue((fn, target));
+        s_pending.Release();
+    }
+
+    /// <summary>
+    /// Blocks until every queued Go finalizer has run, or <paramref name="timeoutMs"/> elapses.
+    /// Returns whether the queue actually went idle.
+    /// </summary>
+    internal static bool WaitForIdle(int timeoutMs)
+    {
+        if (s_idle.IsSet)
+            return true;
+
+        // A body that has ALREADY been running longer than the whole budget is parked — Go's fing
+        // blocked in a finalizer waiting on its caller. Waiting again cannot help, and without this
+        // every later collection would pay the full budget over again. Answer immediately.
+        long since = global::System.Threading.Volatile.Read(ref s_runningSince);
+
+        if (since != 0 && global::System.Environment.TickCount64 - since >= timeoutMs)
+            return false;
+
+        return s_idle.Wait(timeoutMs);
+    }
+
+    private static void Run()
+    {
+        while (true)
+        {
+            s_pending.Wait();
+
+            if (!s_queue.TryDequeue(out (Delegate Fn, object Target) item))
+                continue;
+
+            // |1 so a body starting exactly on a zero tick is not mistaken for "idle".
+            global::System.Threading.Volatile.Write(ref s_runningSince, global::System.Environment.TickCount64 | 1L);
+
+            try
+            {
+                item.Fn.DynamicInvoke(item.Target);
+            }
+            catch
+            {
+                // A throwing Go finalizer must not take down this thread; Go's own finalizer
+                // goroutine would crash the program, but the converted world prefers to drop it
+                // (finalizers are best-effort by specification).
+            }
+            finally
+            {
+                global::System.Threading.Volatile.Write(ref s_runningSince, 0L);
+
+                lock (s_countGate)
+                {
+                    if (--s_outstanding == 0)
+                        s_idle.Set();
+                }
+            }
         }
     }
 }
