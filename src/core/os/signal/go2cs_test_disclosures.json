@@ -2,6 +2,12 @@
   "schemaVersion": 1,
   "disclosures": [
     {
+      "name": "TestAllThreadsSyscallSignals",
+      "class": "cgo-configuration",
+      "signature": "AllThreadsSyscall disabled with cgo",
+      "reason": "CLASS NOTE (coordinator ruling 2026-09-03, mailbox 82ec6654c): this entry carries `cgo-configuration`, the class syscall's three sibling entries carry, and it DOES NOT FIRE YET -- measured before it was minted: matchTerminalStatuses unlocks a Go=pass / C#=skip pair for `platform-skip` alone (its own comment says no other class unlocks the shape) and sends every other class to the generic arm, which requires C#=fail, so the class could never fire. The ruling is to make the PIPELINE admit the class rather than re-label the entries, because the class name carries WHY (the cgo axis, ruled the state of record the same day) and re-labelling would throw that away; the admitting arm, its positive control and syscall's missing TestUseCgroupFD entry land in their own converter seat, and this row validates at its re-annotated `linux: 28 + 2` only once that seat lands. Both are train 22, so the landed master carries them together. The rest: the converted corpus is behaviourally a cgo-LINKED Go build for this seam, and the oracle is pinned cgo-OFF (the state of record on every platform since 2026-09-03), so this verdict is the residue of that mismatch, not a capability gap. Measured at the pinned state (go1.23.12 linux/amd64, Release, tiering off, the 2026-09-03 Linux leveling re-sweep at 22d2bd9dc): Go=pass, C#=skip. Go passes because at CGO_ENABLED=0 its runtime really does stop the world and replay the syscall on every thread; the converted side skips because runtime_doAllThreadsSyscall answers ENOTSUP -- the answer a cgo-linked Go build gives, which is why this very test opens by skipping on it with the message pinned as this entry's signature. The row's Linux line was banked (29 + 2) under the Linux host's default cgo-ON, where Go skipped too and the pair matched by a coincidence of errno; under the pinned state the honest shape is this disclosure, never a match."
+    },
+    {
       "name": "TestSignalTrace",
       "class": "runtime-capability",
       "signature": "the go2cs managed runtime has no execution tracer",

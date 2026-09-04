@@ -767,6 +767,29 @@ foreach ($row in $linuxRows) {
     Assert-Equal "annotation is a real count: $($row.Package)" $true ($row.OS['linux'].Expected -gt 0)
 }
 
+# ---- 2b. a disclosed count is backed by a COMMITTED manifest ----------------------------------------
+# A row that banks `+ D` on any platform is making a claim about a file: the sweep can only absorb a
+# pinned divergence through the package's go2cs_test_disclosures.json, read from the tree at run
+# time. The hole this closes was measured 2026-09-03: debug/gosym banked `linux: 9 + 1` on 2026-08-29
+# with its signature captured from the run and NO manifest committed beside the package (the bank
+# commit changed this table alone), so the +1 could not reproduce on any host -- the Linux leveling
+# re-sweep at 22d2bd9dc read the row 9 matched + 1 unabsorbed. Guard-as-calculator: the roster
+# declares the count, the tree must hold the artifact the count rests on, and this line is where the
+# two are compared. The Windows Disclosed column and every applicable per-OS `+ D` are checked alike,
+# because the manifest is per package, not per platform.
+foreach ($row in $rows) {
+    $needsManifest = ($row.Disclosed -gt 0)
+
+    foreach ($key in $row.OS.Keys) {
+        if ($row.OS[$key].Applicable -and $row.OS[$key].Disclosed -gt 0) { $needsManifest = $true }
+    }
+
+    if (-not $needsManifest) { continue }
+
+    $manifest = Join-Path (Join-Path $PSScriptRoot 'core') ($row.Package + '/go2cs_test_disclosures.json')
+    Assert-Equal "disclosed count is backed by a committed go2cs_test_disclosures.json: $($row.Package)" $true (Test-Path -LiteralPath $manifest)
+}
+
 # ---- 3. the RENDERED table's column integrity -----------------------------------------------------
 # Everything above guards what the roster MEANS to the parser. This guards what it LOOKS LIKE to a
 # reader, which nothing else does -- and the two can disagree silently.
