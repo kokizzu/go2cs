@@ -570,6 +570,14 @@ private static class GoFinalizerQueue
     // Set exactly when nothing is queued AND nothing is executing.
     private static readonly global::System.Threading.ManualResetEventSlim s_idle = new(true);
 
+    // Guards the (s_outstanding, s_idle) PAIR. Two threads touch it — the CLR finalizer thread
+    // enqueuing and the runner completing — and without the pair moving together they can
+    // interleave so the runner's Set lands AFTER an enqueuer's Reset, leaving the queue reported
+    // idle with work outstanding. That would silently weaken exactly the stronger-than-Go
+    // guarantee the drain exists to keep, so the two transitions are made atomic. Contention is
+    // nil: finalizer registrations are rare, and neither critical section does any work.
+    private static readonly object s_countGate = new();
+
     private static int s_outstanding;
 
     // Environment.TickCount64 (never 0) while a body is executing; 0 when idle. Read by WaitForIdle
@@ -601,8 +609,12 @@ private static class GoFinalizerQueue
 
     internal static void Enqueue(Delegate fn, object target)
     {
-        global::System.Threading.Interlocked.Increment(ref s_outstanding);
-        s_idle.Reset();
+        lock (s_countGate)
+        {
+            s_outstanding++;
+            s_idle.Reset();
+        }
+
         s_queue.Enqueue((fn, target));
         s_pending.Release();
     }
@@ -653,8 +665,11 @@ private static class GoFinalizerQueue
             {
                 global::System.Threading.Volatile.Write(ref s_runningSince, 0L);
 
-                if (global::System.Threading.Interlocked.Decrement(ref s_outstanding) == 0)
-                    s_idle.Set();
+                lock (s_countGate)
+                {
+                    if (--s_outstanding == 0)
+                        s_idle.Set();
+                }
             }
         }
     }
