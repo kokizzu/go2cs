@@ -682,9 +682,17 @@ Examples:
 				// -stdlib queue's skip list has no -tests counterpart, so until this existed a
 				// -tests run pointed at `testing` converted Go's production sources straight
 				// over the hand-owned host they would then have to compile against.
-				if err := requireConvertibleTestTarget(inputFilePath, options); err != nil {
+				kind, err := requireConvertibleTestTarget(inputFilePath, outputFilePath, options)
+				if err != nil {
 					log.Fatalf("%v\n", err)
 				}
+
+				// A hand-owned HOST is admitted for its TESTS ONLY: its C# counterpart already
+				// stands at the output path, so there is nothing to convert on the production
+				// side and everything to lose by trying. The flag routes past processConversion
+				// entirely below — the production emission is not suppressed file-by-file, it
+				// never runs.
+				options.testHandOwnHost = kind == testTargetHandOwnHost
 			}
 
 			// -tests: convert-and-hook runs for the convert/all actions (processConversion ends
@@ -698,11 +706,26 @@ Examples:
 					collectSiblingTestClosure(inputFilePath, options)
 				}
 
-				// A single-package conversion has nothing to continue with, so the load failure
-				// processConversion returns — for a batch driver to record and skip — is fatal
-				// here, the behavior this call site always had.
-				if err := processConversion(inputFilePath, isDir, outputFilePath, options); err != nil {
-					log.Fatalf("Conversion failed: %v\n", err)
+				switch {
+				case options.testHandOwnHost:
+					// TESTS ONLY. processConversion is what emits the production .cs, the
+					// package_init.cs hook and the production csproj; for a hand-owned host all
+					// three would overwrite hand-written files, so the whole call is skipped and
+					// the test conversion — which processConversion would otherwise have ended by
+					// calling — is entered directly. This is the ONE structural difference between
+					// a host row and every other row, and it is why the F15b collision cannot be
+					// reached from the default command line at all.
+					if err := processTestConversion(inputFilePath, outputFilePath, options); err != nil {
+						log.Fatalf("Failed to convert package tests in %q: %v\n", inputFilePath, err)
+					}
+
+				default:
+					// A single-package conversion has nothing to continue with, so the load failure
+					// processConversion returns — for a batch driver to record and skip — is fatal
+					// here, the behavior this call site always had.
+					if err := processConversion(inputFilePath, isDir, outputFilePath, options); err != nil {
+						log.Fatalf("Conversion failed: %v\n", err)
+					}
 				}
 			}
 

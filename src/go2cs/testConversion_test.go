@@ -534,9 +534,14 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 		{"cmd/go/internal/work", "Go toolchain"},
 	}
 
+	// An output path with NO C# counterpart at all — the scratch-root shape. Every refusal below
+	// must stand through it, which is what keeps `-tests <pkg> <scratch>` refused now that a
+	// counterpart-bearing output path opens the tests-only host mode instead.
+	noCounterpart := t.TempDir()
+
 	for _, refusal := range refused {
 		importPath, want := refusal.importPath, refusal.reason
-		err := requireConvertibleTestTarget(pkgDir(importPath), Options{goRoot: goRoot})
+		_, err := requireConvertibleTestTarget(pkgDir(importPath), noCounterpart, Options{goRoot: goRoot})
 
 		if err == nil {
 			t.Errorf("-tests on %q must be refused", importPath)
@@ -555,12 +560,12 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 	// A GOROOT spelled with the non-native separator is a spelling `go` itself accepts, and a
 	// textual prefix test would answer "not stdlib" and wave the refusal through — the silent
 	// direction, and the same trap checkGoRootSpelling exists for on the emission side.
-	if err := requireConvertibleTestTarget(pkgDir("testing"), Options{goRoot: filepath.ToSlash(goRoot)}); err == nil {
+	if _, err := requireConvertibleTestTarget(pkgDir("testing"), noCounterpart, Options{goRoot: filepath.ToSlash(goRoot)}); err == nil {
 		t.Error("-tests on testing must be refused through a forward-slash GOROOT spelling too")
 	}
 
 	// The override is what keeps the measurement that produced this guard repeatable.
-	if err := requireConvertibleTestTarget(pkgDir("testing"), Options{goRoot: goRoot, testAllowHandOwn: true}); err != nil {
+	if _, err := requireConvertibleTestTarget(pkgDir("testing"), noCounterpart, Options{goRoot: goRoot, testAllowHandOwn: true}); err != nil {
 		t.Errorf("-test-allow-handown must permit the deliberate census run, got %v", err)
 	}
 
@@ -570,7 +575,7 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 		"bytes", "testing/quick", "testing/fstest", "testing/iotest", "testing/slogtest",
 		"testing/internal/testdeps", "internal/testenv",
 	} {
-		if err := requireConvertibleTestTarget(pkgDir(importPath), Options{goRoot: goRoot}); err != nil {
+		if _, err := requireConvertibleTestTarget(pkgDir(importPath), noCounterpart, Options{goRoot: goRoot}); err != nil {
 			t.Errorf("-tests on %q must be allowed, got %v", importPath, err)
 		}
 	}
@@ -579,7 +584,7 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 	// that merely happens to be called "testing" is not the corpus's hand-own and is not refused.
 	outside := filepath.Join(t.TempDir(), "myproject", "testing")
 
-	if err := requireConvertibleTestTarget(outside, Options{goRoot: goRoot}); err != nil {
+	if _, err := requireConvertibleTestTarget(outside, noCounterpart, Options{goRoot: goRoot}); err != nil {
 		t.Errorf("-tests on a non-GOROOT directory must be allowed, got %v", err)
 	}
 
@@ -4911,5 +4916,102 @@ func TestTestEnvironmentRecordRoundTrips(t *testing.T) {
 				t.Errorf("OracleGoVersion is empty but still appeared in the record: %s", data)
 			}
 		})
+	}
+}
+
+// TestHandOwnHostTestTargetOpensTestsOnlyMode pins BOTH directions of the hand-owned-host target
+// kind, because a predicate that can only answer "yes" is not a guard.
+//
+// The mode exists for exactly one shape today: a package the -stdlib queue skips BECAUSE a
+// hand-written C# counterpart already stands in for it (`testing`, the Phase-4 test host), whose Go
+// package nevertheless ships a test suite worth running against that counterpart. The four negative
+// arms are the ones that keep it from widening by accident — each removes ONE clause of
+// handOwnHostTestTarget's evidence and requires the refusal back.
+func TestHandOwnHostTestTargetOpensTestsOnlyMode(t *testing.T) {
+	goRoot := filepath.Join(t.TempDir(), "sdk", "go1.23.12")
+	pkgDir := filepath.Join(goRoot, "src", "testing")
+
+	if err := os.MkdirAll(pkgDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	writeFile := func(dir, name, content string) {
+		t.Helper()
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	writeFile(pkgDir, "testing.go", "package testing\n")
+	writeFile(pkgDir, "sub_test.go", "package testing\n")
+
+	// A counterpart directory shaped like src/core/testing: a project file plus a hand-owned source.
+	// The marker sits BELOW a license block on purpose — a head-window scan misses markers placed
+	// like this, which is the corpus census's own recorded trap.
+	handOwn := t.TempDir()
+	writeFile(handOwn, "testing.csproj", "<Project />\n")
+	writeFile(handOwn, "testing.cs", "// Copyright\n// license\n\nusing go.golib;\n\n[module: go.GoManualConversion]\n\nnamespace go;\n")
+
+	options := Options{goRoot: goRoot}
+
+	kind, err := requireConvertibleTestTarget(pkgDir, handOwn, options)
+	if err != nil {
+		t.Fatalf("a hand-owned host with a Go test suite must be admitted tests-only, got %v", err)
+	}
+	if kind != testTargetHandOwnHost {
+		t.Fatalf("kind = %v, want testTargetHandOwnHost", kind)
+	}
+
+	// NEGATIVE 1 — no *_test.go in the Go package. This is `unsafe`/`builtin`: a hand-owned
+	// counterpart with nothing to test. Without this clause the mode would open for them and write
+	// a no-tests manifest into a hand-owned directory instead of refusing.
+	noSuite := filepath.Join(goRoot, "src", "unsafe")
+	writeFile(noSuite, "unsafe.go", "package unsafe\n")
+
+	if _, err := requireConvertibleTestTarget(noSuite, handOwn, options); err == nil {
+		t.Error("a hand-owned package with no _test.go must still be refused")
+	}
+
+	// NEGATIVE 2 — a counterpart that is NOT hand-owned. A directory of converted output carries a
+	// csproj and .cs files too; only the marker distinguishes it, and converting tests against a
+	// stale converted copy is not what this mode is for.
+	converted := t.TempDir()
+	writeFile(converted, "testing.csproj", "<Project />\n")
+	writeFile(converted, "testing.cs", "namespace go;\n")
+
+	if _, err := requireConvertibleTestTarget(pkgDir, converted, options); err == nil {
+		t.Error("an output path whose C# is not hand-owned must be refused")
+	}
+
+	// NEGATIVE 3 — the marker MENTIONED rather than declared. `reflect` and `internal/reflectlite`
+	// name it inside placeholder comments; an unanchored match counts those as hand-owns and would
+	// open the mode on a package that has none.
+	mentioned := t.TempDir()
+	writeFile(mentioned, "testing.csproj", "<Project />\n")
+	writeFile(mentioned, "testing.cs", "// a bodyless partial; the body is [module: GoManualConversion] elsewhere\nnamespace go;\n")
+
+	if _, err := requireConvertibleTestTarget(pkgDir, mentioned, options); err == nil {
+		t.Error("a marker MENTIONED in a comment must not open the hand-owned-host mode")
+	}
+
+	// NEGATIVE 4 — a SCRATCH root: marker-bearing sources cannot be there because nothing is there.
+	// This is what keeps `-tests <handown-pkg> <scratch>` on the refusal path it has had since the
+	// guard was written, and it is the arm that would fail if the csproj clause were dropped.
+	if _, err := requireConvertibleTestTarget(pkgDir, t.TempDir(), options); err == nil {
+		t.Error("a scratch output root must still be refused")
+	}
+
+	// The documented census override is unchanged AND still wins over the new mode: it is checked
+	// first, so every behavior -test-allow-handown had before this change it still has, including
+	// the destructive one whose measurement produced the guard.
+	kind, err = requireConvertibleTestTarget(pkgDir, handOwn, Options{goRoot: goRoot, testAllowHandOwn: true})
+	if err != nil {
+		t.Fatalf("-test-allow-handown must still permit the deliberate census run, got %v", err)
+	}
+	if kind != testTargetConvertible {
+		t.Errorf("kind under -test-allow-handown = %v, want testTargetConvertible (the census converts production too)", kind)
 	}
 }

@@ -58,6 +58,12 @@
          otherwise swallow them. -->
     <Compile Remove="**/*.cs" />
     <Compile Include="*.cs" />
+    <!-- Converted test artifacts share this folder but belong to the colocated testing.tests.csproj,
+         which compiles them. IDENTICAL in shape and purpose to the IP-4 exclusion the converter emits
+         into every converted production csproj — it is here by hand only because this project is
+         hand-owned and no emission maintains it. It must follow the Include above, which would
+         otherwise re-add the very files the sibling project owns. -->
+    <Compile Remove="*_test.cs;package_test_info.cs;go2cs_test_host.cs" />
     <None Remove="*/**/*" />
   </ItemGroup>
 
