@@ -24,6 +24,15 @@
 // false-green shape this corpus treats as worse than the throw. getg() stays a stub; the labels
 // get their own storage.
 //
+// WHERE THE STORAGE LIVES, AND WHY IT MOVED (2026-09-04, Q27). It was an AsyncLocal on this class.
+// The mechanism is unchanged and the reasoning below still holds in full -- it simply lives in
+// golib now (`Goroutine.SetProfileLabels`/`GetProfileLabels`), because a GOROUTINE PROFILE reads
+// every goroutine's labels from ONE thread and an AsyncLocal is readable only from the thread whose
+// ExecutionContext holds it. golib keeps the same AsyncLocal as the authoritative per-goroutine
+// storage AND mirrors the value onto the registry entry, seeded at Goroutine.Enter from the flowed
+// context. These two functions became forwarders; their contract, and the guard that measures it,
+// did not move.
+//
 // WHY AsyncLocal AND NOT [ThreadStatic]. golib gives every goroutine its own dedicated thread, so
 // [ThreadStatic] looks exact here. It is wrong, and Go's own scheduler says why:
 //
@@ -57,14 +66,9 @@
 
 namespace go.runtime;
 
-using System.Threading;
 using @unsafe = unsafe_package;
 
 partial class pprof_package {
-
-// The per-goroutine label slot. AsyncLocal's ExecutionContext capture at thread start IS Go's
-// inheritance at goroutine creation; see the file header for the measurement that establishes it.
-private static readonly AsyncLocal<@unsafe.Pointer?> s_profLabels = new();
 
 // runtime_setProfLabel: `getg().labels = labels`, on managed storage.
 //
@@ -73,8 +77,13 @@ private static readonly AsyncLocal<@unsafe.Pointer?> s_profLabels = new();
 // this corpus and the converted runtime's raceenabled is constant false, so the edge has nothing to
 // carry and is deliberately not modeled — the same reasoning syscall_linux_impl.cs's
 // entersyscall/exitsyscall pair records.
+//
+// `unsafe.Pointer` is a CLASS in this corpus, so golib's `object?` slot holds it by reference: null
+// is nil, nothing is boxed, and the reference keeps the pinned labelMap alive for as long as the
+// goroutine is labelled — which is what `FromPinnedBox` needs and what a raw address could not
+// promise.
 internal static partial void runtime_setProfLabel(@unsafe.Pointer labels) {
-    s_profLabels.Value = labels;
+    global::go.golib.Goroutine.SetProfileLabels(labels);
 }
 
 // runtime_getProfLabel: `return getg().labels`.
@@ -83,7 +92,7 @@ internal static partial void runtime_setProfLabel(@unsafe.Pointer labels) {
 // unsafe.Pointer(nil) for a goroutine that has never been labelled, and pprof's read-back
 // (`(*labelMap)(runtime_getProfLabel())`) is a nil-tolerant conversion on both sides.
 internal static partial @unsafe.Pointer runtime_getProfLabel() {
-    return s_profLabels.Value!;
+    return (global::go.golib.Goroutine.GetProfileLabels() as @unsafe.Pointer)!;
 }
 
 } // end pprof_package
