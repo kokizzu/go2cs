@@ -771,6 +771,9 @@ jobs:
               # the same 120 s budget -- so what this prints is what the Output phase saw, whole.
               $outFile = Join-Path $art "stderr-$p-$goos-$rid.stdout.txt"
               $errFile = Join-Path $art "stderr-$p-$goos-$rid.stderr.txt"
+              # Stamped BEFORE the launch: a crash report is claimed only if it was written
+              # after this moment, so a stale .ips from an earlier row cannot be read as this one's.
+              $launched = Get-Date
               $proc = Start-Process -FilePath $exe -WorkingDirectory $behavioral -NoNewWindow -PassThru `
                   -RedirectStandardOutput $outFile -RedirectStandardError $errFile
 
@@ -788,6 +791,77 @@ jobs:
               $out = @(Get-Content -LiteralPath $outFile -ErrorAction SilentlyContinue)
 
               Write-Host "==> ${p}: exit $code; stderr $($err.Count) lines; stdout $($out.Count) lines"
+              # A SIGNAL death writes NOTHING to stderr -- the process is gone before any managed
+              # writer runs -- so the exit code is all this stage could quote (SignalPrimitives on
+              # osx-arm64 at train 24: exit 138, stderr 0 lines, stdout 2 lines). macOS records the
+              # rest: ReportCrash writes a .ips naming the exception type, the signal, the faulting
+              # address and every thread`s backtrace. Nothing in this repository collected them, so a
+              # mute darwin death could only be read as ARITHMETIC (138 = 128 + 10 = SIGBUS) rather
+              # than as evidence -- which is exactly what Q41 asks for.
+              #
+              # Scope: this diagnostic stage alone. behavioral-full runs hundreds of projects and is
+              # a census, not a reading; a mute row found there is brought HERE by name.
+              #
+              # Best-effort and never fatal, deliberately: a stage whose own diagnostics can fail the
+              # run is worse than one that reports less. And the NULL is REPORTED -- whether GitHub`s
+              # macOS images run ReportCrash at all is not something this repository has ever
+              # measured, so "no report" is a finding about the runner, not a silent empty artifact.
+              $signalish = ($code -eq 'TIMEOUT') -or (($code -is [int]) -and (($code -gt 128) -or (($code -ne 0) -and ($err.Count -eq 0))))
+
+              if ($IsMacOS -and $signalish) {
+                  $reportDir = Join-Path $HOME 'Library/Logs/DiagnosticReports'
+                  $ips = @()
+
+                  # ReportCrash runs AFTER the process dies, so poll rather than assume it has
+                  # finished; ~20 s is the whole budget and it is only spent on a death.
+                  foreach ($attempt in 1..10) {
+                      $ips = @(Get-ChildItem -LiteralPath $reportDir -Filter '*.ips' -ErrorAction SilentlyContinue |
+                          Where-Object { $_.LastWriteTime -ge $launched })
+                      if ($ips.Count -gt 0) { break }
+                      Start-Sleep -Seconds 2
+                  }
+
+                  # Prefer a report whose name carries this project`s process name; fall back to any
+                  # fresh one and SAY which arm answered, so the reading is never ambiguous.
+                  $named = @($ips | Where-Object { $_.Name -like "$p*" })
+                  $picked = if ($named.Count -gt 0) { $named } else { $ips }
+                  $arm = if ($named.Count -gt 0) { 'name-matched' } else { 'fresh-but-unnamed' }
+
+                  if ($picked.Count -eq 0) {
+                      Write-Host "==> ${p}: exit $code looks like a signal death and NO crash report was written to $reportDir within 20s -- either this runner image does not run ReportCrash, or the death did not produce one"
+                  }
+                  else {
+                      Write-Host "==> ${p}: $($picked.Count) crash report(s) collected ($arm)"
+
+                      foreach ($rep in $picked) {
+                          $dest = Join-Path $art "crash-$p-$goos-$rid-$($rep.Name)"
+                          Copy-Item -LiteralPath $rep.FullName -Destination $dest -ErrorAction SilentlyContinue
+
+                          # The .ips body is JSON on one line; quote the fields that name the death
+                          # rather than parsing a format this repository has never read before.
+                          $raw = Get-Content -LiteralPath $rep.FullName -Raw -ErrorAction SilentlyContinue
+                          $facts = @()
+
+                          foreach ($pat in @('"exception":\{[^}]*\}', '"termination":\{[^}]*\}', '"faultingThread":[0-9]+', '"signal":"[^"]*"', '"type":"[^"]*"', '"subtype":"[^"]*"')) {
+                              foreach ($m in [regex]::Matches($raw, $pat)) {
+                                  if ($facts -notcontains $m.Value) { $facts += $m.Value }
+                              }
+                          }
+
+                          $lines = @("## crash $p -- GOOS=$goos ($rid) -- exit $code -- $($rep.Name) ($arm)", '', '```') +
+                              @($facts | Select-Object -First 40) + @('```')
+
+                          if ($facts.Count -eq 0) {
+                              $lines = @("## crash $p -- GOOS=$goos ($rid) -- exit $code -- $($rep.Name) ($arm)", '',
+                                  'The report was collected but none of the expected fields matched; read the artifact.')
+                          }
+
+                          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $lines
+                          & ./.github/annotate-summary.ps1 -Title "crash $p $goos/$rid" -Lines $lines
+                      }
+                  }
+              }
+
 
               # A stdout MISMATCH is the Output phase's other verdict, and the runner's log carries no
               # text for it. Run Go's own program the way that phase does (`go run .`, cwd = the
