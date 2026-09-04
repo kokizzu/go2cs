@@ -286,6 +286,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckCompositeElementStringConcat() => CheckTarget("CompositeElementStringConcat");
 
     [TestMethod]
+    public void CheckCompositeLiteralElements() => CheckTarget("CompositeLiteralElements");
+
+    [TestMethod]
     public void CheckConstShadowsParam() => CheckTarget("ConstShadowsParam");
 
     [TestMethod]

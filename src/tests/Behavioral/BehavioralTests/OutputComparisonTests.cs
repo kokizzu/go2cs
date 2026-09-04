@@ -272,6 +272,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckCompositeElementStringConcat() => CheckTarget("CompositeElementStringConcat");
 
     [TestMethod]
+    public void CheckCompositeLiteralElements() => CheckTarget("CompositeLiteralElements");
+
+    [TestMethod]
     public void CheckConstShadowsParam() => CheckTarget("ConstShadowsParam");
 
     [TestMethod]

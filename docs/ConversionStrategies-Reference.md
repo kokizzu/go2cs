@@ -5905,6 +5905,81 @@ nested, three-deep, a needy-struct element, a named-element counter-case, packag
 indexed forms; failing-first measured as `nested empty 2 0 0` against Go's `2 3 3`, followed by the
 panic, and `keyed nested 4 0 3 0 3` against Go's `4 3 3 3 3`.)
 
+### An ELIDED element carries the same construction as the spelling it elides
+
+Go lets a composite literal **elide** its element's own type, and in two directions: the element's
+literal type (`[][2][3]int{{}}` is `[][2][3]int{[2][3]int{}}`) and, when the element type is a
+pointer, the `&T` as well (`[]*[4]byte{{}}` is `[]*[4]byte{&[4]byte{}}`). Elision is pure surface
+syntax — the two spellings are the same value — so the emission for the elided form must be the
+emission for the written one. It was not, in two places, and each failed in a different way
+(closed 2026-09-04).
+
+**An elided `&T` whose pointee is not a struct.** The elided path rendered the STRUCT pointee
+through the boxed constructor `Ꮡ(new T(…))`; an ARRAY, SLICE or MAP pointee matched nothing and
+fell to the generic struct-constructor fallback, which emits a target-typed `new(…)` — against
+golib's `ж<T>`, which is `abstract`. That is `CS0144`, so the shape did not compile at all, while
+the explicit `&[4]byte{}` spelling of the same value converted and compiled. Each pointee now
+renders through the arm that already renders its shape, with the address taken around it:
+
+```go
+pa  := []*[4]byte{{}}                  // == []*[4]byte{&[4]byte{}}
+psl := []*[]int{{}}
+pm  := []*map[string]int{{}}
+mp  := map[string]*[2]int{"a": {}}     // map VALUE, same elision
+```
+
+```csharp
+var pa  = new ж<array<byte>>[]{Ꮡ(new byte[]{}.array(4))}.slice();
+var psl = new ж<slice<nint>>[]{Ꮡ(new nint[]{}.slice())}.slice();
+var pm  = new ж<map<@string, nint>>[]{Ꮡ(new map<@string, nint>{})}.slice();
+var mp  = new map<@string, ж<array<nint>>>{["a"u8] = Ꮡ(new nint[]{}.array(2))};
+```
+
+`pa`'s emission is now **byte-identical** to what the explicitly written `[]*[4]byte{&[4]byte{}}`
+produces, which is the property the fix is really asserting. A **struct** pointee (`[]*S{{}}`) was
+correct all along and is untouched. A **named** non-struct pointee (`type nb [4]byte; []*nb{{}}`)
+is deliberately still on the fallback: its pointee is built by the named-wrapper constructor the
+typed path renders (`Ꮡ(new nb(new byte[4].array()))`), not by the structural projection these arms
+emit, and reproducing that here would be a second copy of the named-composite renderer rather than
+a reuse of it — so the elided named pointee remains a known gap with a working spelling
+(`&nb{}`), narrower than the class this closes.
+
+**An elided fixed-array element whose own element must be constructed.** The elided array arm
+carried the declared length for a short literal but not the element factory beside it — the same
+`default(T)`-is-not-usable-storage defect the section above closes for the TYPED path, one
+spelling over. So `[][2][3]int{{}}` compiled, sized its outer dimension to 2, and left both rows
+**zero length**: `len(x[0][0])` answered 0 where Go says 3, `reflect` measured `[2][0]`, and the
+first indexed write panicked. Both elided array arms — positional and the `SparseArray` keyed one —
+now route through `arrayLengthArgs` and `arrayElemFactory`, the same single renderer the typed
+path and the zero-value ladder use:
+
+```go
+nested      := [][2][3]int{{}}
+nestedShort := [][2][3]int{{{1, 2, 3}}}
+nestedKeyed := [][2][3]int{{1: {7, 8, 9}}}
+structElem  := [][2]withArray{{}}         // withArray has a [2][3]int field
+```
+
+```csharp
+var nested      = new array<array<nint>>[]{new array<nint>[]{}.array(2, () => new(3))}.slice();
+var nestedShort = new array<array<nint>>[]{new array<nint>[]{new nint[]{1, 2, 3}.array()}.array(2, () => new(3))}.slice();
+var nestedKeyed = new array<array<nint>>[]{new golib.SparseArray<array<nint>>{[1] = new nint[]{7, 8, 9}.array()}.array(2, () => new(3))}.slice();
+var structElem  = new array<withArray>[]{new withArray[]{}.array(2, () => new())}.slice();
+```
+
+The sharpest witness is `[2][2][3]int{{}}`, where both spellings meet in ONE expression: its outer
+literal is written, so it took the typed padding `.array(2, () => new(2, () => new(3)))` and was
+correct, while its single elided element took `.array(2)` and was not — one Go value, two lengths,
+in the same line. A full literal, a slice literal, and an element whose `default(T)` is already the
+Go zero value (every scalar, and every named array element) render exactly as before.
+
+(Both guarded by the `CompositeLiteralElements` behavioral test, output-compared against `go run`
+over the elided and explicit spelling of each shape plus writes through the constructed storage.
+Failing-first measured separately, because neither defect's control subsumes the other's: the
+pointer half is nine `CS0144`s at the Compile phase, and the array half **compiles clean** and
+fails only at Output — `nested: 1 2 0 [[] []]` against Go's `1 2 3 [[0 0 0] [0 0 0]]`, then
+`panic: runtime error: index out of range [2] with length 0` on the write.)
+
 ### An array or slice literal may MIX positional and keyed elements
 
 Go's "all elements keyed, or none" rule is a **struct**-literal rule. An array or slice literal may
