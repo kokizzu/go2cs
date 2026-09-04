@@ -112,7 +112,7 @@ internal static void Main() {
     describeSlice(sliceOfUint8ˢ, sl);
     fmt.Println(sliceIdenticalˢ, AreEqual(sl, reflect.TypeOf(new uint8[]{}.slice())), elemIdenticalˢ, AreEqual(sl.Elem(), byteT));
     var slArr = reflect.SliceOf(reflect.ArrayOf(3, byteT));
-    fmt.Println(sliceOfArrayIdenticalToˢ, AreEqual(slArr, reflect.TypeOf(new array<uint8>[]{}.slice())));
+    fmt.Println(sliceOfArrayIdenticalToˢ, AreEqual(slArr, reflect.TypeOf(GoReflect.WithElemDims(new array<uint8>[]{}.slice(), 3))));
     fmt.Println(arrayOfSliceˢ, reflect.ArrayOf(2, sl),
         identicalˢ2, AreEqual(reflect.ArrayOf(2, sl), reflect.TypeOf(new slice<uint8>[]{}.array(2))),
         sliceOfSliceˢ, AreEqual(reflect.SliceOf(sl), reflect.TypeOf(new slice<uint8>[]{}.slice())),

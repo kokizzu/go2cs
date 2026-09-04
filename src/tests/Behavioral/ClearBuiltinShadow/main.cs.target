@@ -68,7 +68,7 @@ internal static void Main() {
     header hn = default!;
     builtin.clear(hn);
     fmt.Println(len(hn));
-    var q = new slice<array<int32>>(3, () => new(4));
+    var q = GoReflect.WithElemDims(new slice<array<int32>>(3, () => new(4)), 4);
     q[1][2] = 7;
     builtin.clear(q);
     fmt.Println(len(q[1]), q[1][2]);
@@ -81,7 +81,7 @@ internal static void Main() {
     fmt.Println(len(c[0].v), c[0].v[1], c[0].m == default!);
     c[0].v[1] += 4;
     fmt.Println(c[0].v);
-    var n = new slice<array<array<int32>>>(2, () => new(2, () => new(3)));
+    var n = GoReflect.WithElemDims(new slice<array<array<int32>>>(2, () => new(2, () => new(3))), 2, 3);
     n[0][1][2] = 5;
     builtin.clear(n);
     n[0][1][2] = 8;

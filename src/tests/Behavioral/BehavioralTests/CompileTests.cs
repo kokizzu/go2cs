@@ -1516,6 +1516,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckReflectConvertAssignable() => CheckTarget("ReflectConvertAssignable");
 
     [TestMethod]
+    public void CheckReflectEmptyContainerIdentity() => CheckTarget("ReflectEmptyContainerIdentity");
+
+    [TestMethod]
     public void CheckReflectFieldAddrWrite() => CheckTarget("ReflectFieldAddrWrite");
 
     [TestMethod]

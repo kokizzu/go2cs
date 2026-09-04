@@ -16,10 +16,10 @@ internal static slice<slice<rank>> order = new golib.SparseArray<slice<rank>>{
     [(int)rC] = new rank[]{rA, rB}.slice()
 }.slice();
 
-internal static slice<array<nint>> grid = new array<nint>[]{
+internal static slice<array<nint>> grid = GoReflect.WithElemDims(new array<nint>[]{
     new nint[]{1, 2}.array(),
     new nint[]{3, 4}.array()
-}.slice();
+}.slice(), 2);
 
 [GoType] partial struct dbgVar {
     internal @string name;
@@ -42,10 +42,10 @@ internal static js j2 => 2;
 internal static js j3 => 3;
 internal static js numJS => 4;
 
-internal static slice<array<js>> jsTable = new golib.SparseArray<array<js>>{
+internal static slice<array<js>> jsTable = GoReflect.WithElemDims(new golib.SparseArray<array<js>>{
     [(int)j0] = new golib.SparseArray<js>{[(int)j1] = j2, [(int)j3] = j1}.array(4),
     [(int)j2] = new golib.SparseArray<js>{[(int)j0] = j3, [(int)j3] = j2}.array(4)
-}.slice();
+}.slice(), 4);
 
 internal static slice<slice<@string>> sparseRows = new slice<@string>[]{
     new golib.SparseArray<@string>{[2] = "two"u8, [0] = "zero"u8}.slice(),
