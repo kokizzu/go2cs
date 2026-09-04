@@ -171,11 +171,11 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrInet
     }
     sa.raw.Len = SizeofSockaddrInet4;
     sa.raw.Family = AF_INET;
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡsa.of(SockaddrInet4.Ꮡraw).of(RawSockaddrInet4.ᏑPort)));
+    var p = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrInet4.Ꮡraw).of(RawSockaddrInet4.ᏑPort)));
     p.Value[0] = (byte)((sa.Port >> (int)(8)));
     p.Value[1] = (byte)sa.Port;
     sa.raw.Addr = sa.Addr.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet4.Ꮡraw)), ((_Socklen)(uint32)sa.raw.Len), default!);
+    return (@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrInet4.Ꮡraw)), ((_Socklen)(uint32)sa.raw.Len), default!);
 }
 
 internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrInet6> Ꮡsa) {
@@ -186,12 +186,12 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrInet
     }
     sa.raw.Len = SizeofSockaddrInet6;
     sa.raw.Family = AF_INET6;
-    var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡsa.of(SockaddrInet6.Ꮡraw).of(RawSockaddrInet6.ᏑPort)));
+    var p = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrInet6.Ꮡraw).of(RawSockaddrInet6.ᏑPort)));
     p.Value[0] = (byte)((sa.Port >> (int)(8)));
     p.Value[1] = (byte)sa.Port;
     sa.raw.Scope_id = sa.ZoneId;
     sa.raw.Addr = sa.Addr.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrInet6.Ꮡraw)), ((_Socklen)(uint32)sa.raw.Len), default!);
+    return (@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrInet6.Ꮡraw)), ((_Socklen)(uint32)sa.raw.Len), default!);
 }
 
 internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrUnix> Ꮡsa) {
@@ -207,7 +207,7 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrUnix
     for (nint i = 0; i < n; i++) {
         sa.raw.Path[i] = (int8)name[i];
     }
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrUnix.Ꮡraw)), ((_Socklen)(uint32)sa.raw.Len), default!);
+    return (@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrUnix.Ꮡraw)), ((_Socklen)(uint32)sa.raw.Len), default!);
 }
 
 internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrDatalink> Ꮡsa) {
@@ -224,7 +224,7 @@ internal static (@unsafe.Pointer, _Socklen, error) sockaddr(this ж<SockaddrData
     sa.raw.Alen = sa.Alen;
     sa.raw.Slen = sa.Slen;
     sa.raw.Data = sa.Data.Clone();
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrDatalink.Ꮡraw)), SizeofSockaddrDatalink, default!);
+    return (@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrDatalink.Ꮡraw)), SizeofSockaddrDatalink, default!);
 }
 
 internal static (Sockaddr, error) anyToSockaddr(ж<RawSockaddrAny> Ꮡrsa) {
@@ -269,7 +269,7 @@ internal static (Sockaddr, error) anyToSockaddr(ж<RawSockaddrAny> Ꮡrsa) {
     if (exprᴛ1 == AF_INET) {
         var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet4>();
         var sa = @new<SockaddrInet4>();
-        var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet4.ᏑPort)));
+        var p = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(pp.of(RawSockaddrInet4.ᏑPort)));
         sa.Value.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
         sa.Value.Addr = pp.Value.Addr.Clone();
         return (new SockaddrInet4жSockaddr(sa), default!);
@@ -277,7 +277,7 @@ internal static (Sockaddr, error) anyToSockaddr(ж<RawSockaddrAny> Ꮡrsa) {
     if (exprᴛ1 == AF_INET6) {
         var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet6>();
         var sa = @new<SockaddrInet6>();
-        var p = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet6.ᏑPort)));
+        var p = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(pp.of(RawSockaddrInet6.ᏑPort)));
         sa.Value.Port = ((nint)p.Value[0] << (int)(8)) + (nint)p.Value[1];
         sa.Value.ZoneId = pp.Value.Scope_id;
         sa.Value.Addr = pp.Value.Addr.Clone();
@@ -343,7 +343,7 @@ public static (byte value, error err) GetsockoptByte(nint fd, nint level, nint o
     ref var n = ref heap(new byte(), out var Ꮡn);
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)1);
-    err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡn), Ꮡvallen);
+    err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡn), Ꮡvallen);
     return (n, err);
 }
 
@@ -353,7 +353,7 @@ public static (array<byte> value, error err) GetsockoptInet4Addr(nint fd, nint l
 
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)4);
-    err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue.at<byte>(0)), Ꮡvallen);
+    err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue.at<byte>(0)), Ꮡvallen);
     return (value.Clone(), err);
 }
 
@@ -361,7 +361,7 @@ public static (ж<IPMreq>, error) GetsockoptIPMreq(nint fd, nint level, nint opt
     ref var value = ref heap(new IPMreq(), out var Ꮡvalue);
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)SizeofIPMreq);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
+    var err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue), Ꮡvallen);
     return (Ꮡvalue, err);
 }
 
@@ -369,7 +369,7 @@ public static (ж<IPv6Mreq>, error) GetsockoptIPv6Mreq(nint fd, nint level, nint
     ref var value = ref heap(new IPv6Mreq(), out var Ꮡvalue);
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)SizeofIPv6Mreq);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
+    var err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue), Ꮡvallen);
     return (Ꮡvalue, err);
 }
 
@@ -377,7 +377,7 @@ public static (ж<IPv6MTUInfo>, error) GetsockoptIPv6MTUInfo(nint fd, nint level
     ref var value = ref heap(new IPv6MTUInfo(), out var Ꮡvalue);
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)SizeofIPv6MTUInfo);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
+    var err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue), Ꮡvallen);
     return (Ꮡvalue, err);
 }
 
@@ -385,7 +385,7 @@ public static (ж<ICMPv6Filter>, error) GetsockoptICMPv6Filter(nint fd, nint lev
     ref var value = ref heap(new ICMPv6Filter(), out var Ꮡvalue);
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)SizeofICMPv6Filter);
-    var err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), Ꮡvallen);
+    var err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue), Ꮡvallen);
     return (Ꮡvalue, err);
 }
 
@@ -469,10 +469,10 @@ public static (nint n, error err) Kevent(nint kq, slice<Kevent_t> changes, slice
     @unsafe.Pointer change = default!;
     @unsafe.Pointer @event = default!;
     if (len(changes) > 0) {
-        change = new @unsafe.Pointer(Ꮡ(changes, 0));
+        change = @unsafe.Pointer.FromPinnedBox(Ꮡ(changes, 0));
     }
     if (len(events) > 0) {
-        @event = new @unsafe.Pointer(Ꮡ(events, 0));
+        @event = @unsafe.Pointer.FromPinnedBox(Ꮡ(events, 0));
     }
     return kevent(kq, change, len(changes), @event, len(events), Ꮡtimeout);
 }

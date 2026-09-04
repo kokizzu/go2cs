@@ -149,13 +149,15 @@ internal static (nint n, error err) readlinkat(nint dirfd, @string path, slice<b
     }
     @unsafe.Pointer _p1 = default!;
     if (len(buf) > 0){
-        _p1 = new @unsafe.Pointer(Ꮡ(buf, 0));
+        _p1 = @unsafe.Pointer.FromPinnedBox(Ꮡ(buf, 0));
     } else {
         _p1 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
     var ᴋ8 = _p0;
-        var (r0, _, e1) = Syscall6(SYS_READLINKAT, (uintptr)dirfd, (uintptr)ᴋ8, (uintptr)_p1, (uintptr)len(buf), 0, 0);
+    var ᴋ9 = _p1;
+        var (r0, _, e1) = Syscall6(SYS_READLINKAT, (uintptr)dirfd, (uintptr)ᴋ8, (uintptr)ᴋ9, (uintptr)len(buf), 0, 0);
     System.GC.KeepAlive(ᴋ8);
+    System.GC.KeepAlive(ᴋ9);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -177,11 +179,11 @@ internal static error /*err*/ symlinkat(@string oldpath, nint newdirfd, @string 
     if (err != default!) {
         return err;
     }
-    var ᴋ9 = _p0;
-    var ᴋ10 = _p1;
-        var (_, _, e1) = Syscall(SYS_SYMLINKAT, (uintptr)ᴋ9, (uintptr)newdirfd, (uintptr)ᴋ10);
-    System.GC.KeepAlive(ᴋ9);
+    var ᴋ10 = _p0;
+    var ᴋ11 = _p1;
+        var (_, _, e1) = Syscall(SYS_SYMLINKAT, (uintptr)ᴋ10, (uintptr)newdirfd, (uintptr)ᴋ11);
     System.GC.KeepAlive(ᴋ10);
+    System.GC.KeepAlive(ᴋ11);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -197,9 +199,9 @@ internal static error /*err*/ unlinkat(nint dirfd, @string path, nint flags) {
     if (err != default!) {
         return err;
     }
-    var ᴋ11 = _p0;
-        var (_, _, e1) = Syscall(SYS_UNLINKAT, (uintptr)dirfd, (uintptr)ᴋ11, (uintptr)flags);
-    System.GC.KeepAlive(ᴋ11);
+    var ᴋ12 = _p0;
+        var (_, _, e1) = Syscall(SYS_UNLINKAT, (uintptr)dirfd, (uintptr)ᴋ12, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ12);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -215,11 +217,11 @@ internal static error /*err*/ utimensat(nint dirfd, @string path, [GoArrayDims(2
     if (err != default!) {
         return err;
     }
-    var ᴋ12 = _p0;
-    var ᴋ13 = Ꮡtimes;
-        var (_, _, e1) = Syscall6(SYS_UTIMENSAT, (uintptr)dirfd, (uintptr)ᴋ12, (uintptr)ᴋ13, (uintptr)flag, 0, 0);
-    System.GC.KeepAlive(ᴋ12);
+    var ᴋ13 = _p0;
+    var ᴋ14 = Ꮡtimes;
+        var (_, _, e1) = Syscall6(SYS_UTIMENSAT, (uintptr)dirfd, (uintptr)ᴋ13, (uintptr)ᴋ14, (uintptr)flag, 0, 0);
     System.GC.KeepAlive(ᴋ13);
+    System.GC.KeepAlive(ᴋ14);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -233,11 +235,13 @@ public static (nint n, error err) Getcwd(slice<byte> buf) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(buf) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(buf, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall(SYS_GETCWD, (uintptr)_p0, (uintptr)len(buf), 0);
+    var ᴋ15 = _p0;
+        var (r0, _, e1) = Syscall(SYS_GETCWD, (uintptr)ᴋ15, (uintptr)len(buf), 0);
+    System.GC.KeepAlive(ᴋ15);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -263,7 +267,9 @@ internal static error /*err*/ ptrace(nint request, nint pid, uintptr addr, uintp
 internal static error /*err*/ ptracePtr(nint request, nint pid, uintptr addr, @unsafe.Pointer data) {
     error err = default!;
 
-    var (_, _, e1) = Syscall6(SYS_PTRACE, (uintptr)request, (uintptr)pid, (uintptr)addr, (uintptr)data, 0, 0);
+    var ᴋ16 = data;
+        var (_, _, e1) = Syscall6(SYS_PTRACE, (uintptr)request, (uintptr)pid, (uintptr)addr, (uintptr)ᴋ16, 0, 0);
+    System.GC.KeepAlive(ᴋ16);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -279,9 +285,9 @@ internal static error /*err*/ reboot(nuint magic1, nuint magic2, nint cmd, @stri
     if (err != default!) {
         return err;
     }
-    var ᴋ14 = _p0;
-        var (_, _, e1) = Syscall6(SYS_REBOOT, (uintptr)magic1, (uintptr)magic2, (uintptr)cmd, (uintptr)ᴋ14, 0, 0);
-    System.GC.KeepAlive(ᴋ14);
+    var ᴋ17 = _p0;
+        var (_, _, e1) = Syscall6(SYS_REBOOT, (uintptr)magic1, (uintptr)magic2, (uintptr)cmd, (uintptr)ᴋ17, 0, 0);
+    System.GC.KeepAlive(ᴋ17);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -307,15 +313,15 @@ internal static error /*err*/ mount(@string source, @string target, @string fsty
     if (err != default!) {
         return err;
     }
-    var ᴋ15 = _p0;
-    var ᴋ16 = _p1;
-    var ᴋ17 = _p2;
-    var ᴋ18 = Ꮡdata;
-        var (_, _, e1) = Syscall6(SYS_MOUNT, (uintptr)ᴋ15, (uintptr)ᴋ16, (uintptr)ᴋ17, (uintptr)flags, (uintptr)ᴋ18, 0);
-    System.GC.KeepAlive(ᴋ15);
-    System.GC.KeepAlive(ᴋ16);
-    System.GC.KeepAlive(ᴋ17);
+    var ᴋ18 = _p0;
+    var ᴋ19 = _p1;
+    var ᴋ20 = _p2;
+    var ᴋ21 = Ꮡdata;
+        var (_, _, e1) = Syscall6(SYS_MOUNT, (uintptr)ᴋ18, (uintptr)ᴋ19, (uintptr)ᴋ20, (uintptr)flags, (uintptr)ᴋ21, 0);
     System.GC.KeepAlive(ᴋ18);
+    System.GC.KeepAlive(ᴋ19);
+    System.GC.KeepAlive(ᴋ20);
+    System.GC.KeepAlive(ᴋ21);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -331,9 +337,9 @@ public static error /*err*/ Acct(@string path) {
     if (err != default!) {
         return err;
     }
-    var ᴋ19 = _p0;
-        var (_, _, e1) = Syscall(SYS_ACCT, (uintptr)ᴋ19, 0, 0);
-    System.GC.KeepAlive(ᴋ19);
+    var ᴋ22 = _p0;
+        var (_, _, e1) = Syscall(SYS_ACCT, (uintptr)ᴋ22, 0, 0);
+    System.GC.KeepAlive(ᴋ22);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -352,9 +358,9 @@ public static error /*err*/ Chdir(@string path) {
     if (err != default!) {
         return err;
     }
-    var ᴋ20 = _p0;
-        var (_, _, e1) = Syscall(SYS_CHDIR, (uintptr)ᴋ20, 0, 0);
-    System.GC.KeepAlive(ᴋ20);
+    var ᴋ23 = _p0;
+        var (_, _, e1) = Syscall(SYS_CHDIR, (uintptr)ᴋ23, 0, 0);
+    System.GC.KeepAlive(ᴋ23);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -370,9 +376,9 @@ public static error /*err*/ Chroot(@string path) {
     if (err != default!) {
         return err;
     }
-    var ᴋ21 = _p0;
-        var (_, _, e1) = Syscall(SYS_CHROOT, (uintptr)ᴋ21, 0, 0);
-    System.GC.KeepAlive(ᴋ21);
+    var ᴋ24 = _p0;
+        var (_, _, e1) = Syscall(SYS_CHROOT, (uintptr)ᴋ24, 0, 0);
+    System.GC.KeepAlive(ᴋ24);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -431,9 +437,9 @@ public static (nint fd, error err) EpollCreate1(nint flag) {
 public static error /*err*/ EpollCtl(nint epfd, nint op, nint fd, ж<EpollEvent> Ꮡevent) {
     error err = default!;
 
-    var ᴋ22 = Ꮡevent;
-        var (_, _, e1) = RawSyscall6(SYS_EPOLL_CTL, (uintptr)epfd, (uintptr)op, (uintptr)fd, (uintptr)ᴋ22, 0, 0);
-    System.GC.KeepAlive(ᴋ22);
+    var ᴋ25 = Ꮡevent;
+        var (_, _, e1) = RawSyscall6(SYS_EPOLL_CTL, (uintptr)epfd, (uintptr)op, (uintptr)fd, (uintptr)ᴋ25, 0, 0);
+    System.GC.KeepAlive(ᴋ25);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -482,9 +488,9 @@ public static error /*err*/ Fchownat(nint dirfd, @string path, nint uid, nint gi
     if (err != default!) {
         return err;
     }
-    var ᴋ23 = _p0;
-        var (_, _, e1) = Syscall6(SYS_FCHOWNAT, (uintptr)dirfd, (uintptr)ᴋ23, (uintptr)uid, (uintptr)gid, (uintptr)flags, 0);
-    System.GC.KeepAlive(ᴋ23);
+    var ᴋ26 = _p0;
+        var (_, _, e1) = Syscall6(SYS_FCHOWNAT, (uintptr)dirfd, (uintptr)ᴋ26, (uintptr)uid, (uintptr)gid, (uintptr)flags, 0);
+    System.GC.KeepAlive(ᴋ26);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -544,11 +550,13 @@ public static (nint n, error err) Getdents(nint fd, slice<byte> buf) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(buf) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(buf, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall(SYS_GETDENTS64, (uintptr)fd, (uintptr)_p0, (uintptr)len(buf));
+    var ᴋ27 = _p0;
+        var (r0, _, e1) = Syscall(SYS_GETDENTS64, (uintptr)fd, (uintptr)ᴋ27, (uintptr)len(buf));
+    System.GC.KeepAlive(ᴋ27);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -604,9 +612,9 @@ public static (nint prio, error err) Getpriority(nint which, nint who) {
 public static error /*err*/ Getrusage(nint who, ж<Rusage> Ꮡrusage) {
     error err = default!;
 
-    var ᴋ24 = Ꮡrusage;
-        var (_, _, e1) = RawSyscall(SYS_GETRUSAGE, (uintptr)who, (uintptr)ᴋ24, 0);
-    System.GC.KeepAlive(ᴋ24);
+    var ᴋ28 = Ꮡrusage;
+        var (_, _, e1) = RawSyscall(SYS_GETRUSAGE, (uintptr)who, (uintptr)ᴋ28, 0);
+    System.GC.KeepAlive(ᴋ28);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -639,15 +647,17 @@ public static (nint sz, error err) Getxattr(@string path, @string attr, slice<by
     }
     @unsafe.Pointer _p2 = default!;
     if (len(dest) > 0){
-        _p2 = new @unsafe.Pointer(Ꮡ(dest, 0));
+        _p2 = @unsafe.Pointer.FromPinnedBox(Ꮡ(dest, 0));
     } else {
         _p2 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ25 = _p0;
-    var ᴋ26 = _p1;
-        var (r0, _, e1) = Syscall6(SYS_GETXATTR, (uintptr)ᴋ25, (uintptr)ᴋ26, (uintptr)_p2, (uintptr)len(dest), 0, 0);
-    System.GC.KeepAlive(ᴋ25);
-    System.GC.KeepAlive(ᴋ26);
+    var ᴋ29 = _p0;
+    var ᴋ30 = _p1;
+    var ᴋ31 = _p2;
+        var (r0, _, e1) = Syscall6(SYS_GETXATTR, (uintptr)ᴋ29, (uintptr)ᴋ30, (uintptr)ᴋ31, (uintptr)len(dest), 0, 0);
+    System.GC.KeepAlive(ᴋ29);
+    System.GC.KeepAlive(ᴋ30);
+    System.GC.KeepAlive(ᴋ31);
     sz = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -665,9 +675,9 @@ public static (nint watchdesc, error err) InotifyAddWatch(nint fd, @string pathn
     if (err != default!) {
         return (watchdesc, err);
     }
-    var ᴋ27 = _p0;
-        var (r0, _, e1) = Syscall(SYS_INOTIFY_ADD_WATCH, (uintptr)fd, (uintptr)ᴋ27, (uintptr)mask);
-    System.GC.KeepAlive(ᴋ27);
+    var ᴋ32 = _p0;
+        var (r0, _, e1) = Syscall(SYS_INOTIFY_ADD_WATCH, (uintptr)fd, (uintptr)ᴋ32, (uintptr)mask);
+    System.GC.KeepAlive(ᴋ32);
     watchdesc = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -719,11 +729,13 @@ public static (nint n, error err) Klogctl(nint typ, slice<byte> buf) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(buf) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(buf, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall(SYS_SYSLOG, (uintptr)typ, (uintptr)_p0, (uintptr)len(buf));
+    var ᴋ33 = _p0;
+        var (r0, _, e1) = Syscall(SYS_SYSLOG, (uintptr)typ, (uintptr)ᴋ33, (uintptr)len(buf));
+    System.GC.KeepAlive(ᴋ33);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -743,13 +755,15 @@ public static (nint sz, error err) Listxattr(@string path, slice<byte> dest) {
     }
     @unsafe.Pointer _p1 = default!;
     if (len(dest) > 0){
-        _p1 = new @unsafe.Pointer(Ꮡ(dest, 0));
+        _p1 = @unsafe.Pointer.FromPinnedBox(Ꮡ(dest, 0));
     } else {
         _p1 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ28 = _p0;
-        var (r0, _, e1) = Syscall(SYS_LISTXATTR, (uintptr)ᴋ28, (uintptr)_p1, (uintptr)len(dest));
-    System.GC.KeepAlive(ᴋ28);
+    var ᴋ34 = _p0;
+    var ᴋ35 = _p1;
+        var (r0, _, e1) = Syscall(SYS_LISTXATTR, (uintptr)ᴋ34, (uintptr)ᴋ35, (uintptr)len(dest));
+    System.GC.KeepAlive(ᴋ34);
+    System.GC.KeepAlive(ᴋ35);
     sz = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -766,9 +780,9 @@ public static error /*err*/ Mkdirat(nint dirfd, @string path, uint32 mode) {
     if (err != default!) {
         return err;
     }
-    var ᴋ29 = _p0;
-        var (_, _, e1) = Syscall(SYS_MKDIRAT, (uintptr)dirfd, (uintptr)ᴋ29, (uintptr)mode);
-    System.GC.KeepAlive(ᴋ29);
+    var ᴋ36 = _p0;
+        var (_, _, e1) = Syscall(SYS_MKDIRAT, (uintptr)dirfd, (uintptr)ᴋ36, (uintptr)mode);
+    System.GC.KeepAlive(ᴋ36);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -784,9 +798,9 @@ public static error /*err*/ Mknodat(nint dirfd, @string path, uint32 mode, nint 
     if (err != default!) {
         return err;
     }
-    var ᴋ30 = _p0;
-        var (_, _, e1) = Syscall6(SYS_MKNODAT, (uintptr)dirfd, (uintptr)ᴋ30, (uintptr)mode, (uintptr)dev, 0, 0);
-    System.GC.KeepAlive(ᴋ30);
+    var ᴋ37 = _p0;
+        var (_, _, e1) = Syscall6(SYS_MKNODAT, (uintptr)dirfd, (uintptr)ᴋ37, (uintptr)mode, (uintptr)dev, 0, 0);
+    System.GC.KeepAlive(ᴋ37);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -797,11 +811,11 @@ public static error /*err*/ Mknodat(nint dirfd, @string path, uint32 mode, nint 
 public static error /*err*/ Nanosleep(ж<Timespec> Ꮡtime, ж<Timespec> Ꮡleftover) {
     error err = default!;
 
-    var ᴋ31 = Ꮡtime;
-    var ᴋ32 = Ꮡleftover;
-        var (_, _, e1) = Syscall(SYS_NANOSLEEP, (uintptr)ᴋ31, (uintptr)ᴋ32, 0);
-    System.GC.KeepAlive(ᴋ31);
-    System.GC.KeepAlive(ᴋ32);
+    var ᴋ38 = Ꮡtime;
+    var ᴋ39 = Ꮡleftover;
+        var (_, _, e1) = Syscall(SYS_NANOSLEEP, (uintptr)ᴋ38, (uintptr)ᴋ39, 0);
+    System.GC.KeepAlive(ᴋ38);
+    System.GC.KeepAlive(ᴋ39);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -822,11 +836,11 @@ public static error /*err*/ PivotRoot(@string newroot, @string putold) {
     if (err != default!) {
         return err;
     }
-    var ᴋ33 = _p0;
-    var ᴋ34 = _p1;
-        var (_, _, e1) = Syscall(SYS_PIVOT_ROOT, (uintptr)ᴋ33, (uintptr)ᴋ34, 0);
-    System.GC.KeepAlive(ᴋ33);
-    System.GC.KeepAlive(ᴋ34);
+    var ᴋ40 = _p0;
+    var ᴋ41 = _p1;
+        var (_, _, e1) = Syscall(SYS_PIVOT_ROOT, (uintptr)ᴋ40, (uintptr)ᴋ41, 0);
+    System.GC.KeepAlive(ᴋ40);
+    System.GC.KeepAlive(ᴋ41);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -837,11 +851,11 @@ public static error /*err*/ PivotRoot(@string newroot, @string putold) {
 internal static error /*err*/ prlimit1(nint pid, nint resource, ж<Rlimit> Ꮡnewlimit, ж<Rlimit> Ꮡold) {
     error err = default!;
 
-    var ᴋ35 = Ꮡnewlimit;
-    var ᴋ36 = Ꮡold;
-        var (_, _, e1) = RawSyscall6(SYS_PRLIMIT64, (uintptr)pid, (uintptr)resource, (uintptr)ᴋ35, (uintptr)ᴋ36, 0, 0);
-    System.GC.KeepAlive(ᴋ35);
-    System.GC.KeepAlive(ᴋ36);
+    var ᴋ42 = Ꮡnewlimit;
+    var ᴋ43 = Ꮡold;
+        var (_, _, e1) = RawSyscall6(SYS_PRLIMIT64, (uintptr)pid, (uintptr)resource, (uintptr)ᴋ42, (uintptr)ᴋ43, 0, 0);
+    System.GC.KeepAlive(ᴋ42);
+    System.GC.KeepAlive(ᴋ43);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -855,11 +869,13 @@ internal static (nint n, error err) read(nint fd, slice<byte> p) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall(SYS_READ, (uintptr)fd, (uintptr)_p0, (uintptr)len(p));
+    var ᴋ44 = _p0;
+        var (r0, _, e1) = Syscall(SYS_READ, (uintptr)fd, (uintptr)ᴋ44, (uintptr)len(p));
+    System.GC.KeepAlive(ᴋ44);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -881,11 +897,11 @@ public static error /*err*/ Removexattr(@string path, @string attr) {
     if (err != default!) {
         return err;
     }
-    var ᴋ37 = _p0;
-    var ᴋ38 = _p1;
-        var (_, _, e1) = Syscall(SYS_REMOVEXATTR, (uintptr)ᴋ37, (uintptr)ᴋ38, 0);
-    System.GC.KeepAlive(ᴋ37);
-    System.GC.KeepAlive(ᴋ38);
+    var ᴋ45 = _p0;
+    var ᴋ46 = _p1;
+        var (_, _, e1) = Syscall(SYS_REMOVEXATTR, (uintptr)ᴋ45, (uintptr)ᴋ46, 0);
+    System.GC.KeepAlive(ᴋ45);
+    System.GC.KeepAlive(ᴋ46);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -898,11 +914,13 @@ public static error /*err*/ Setdomainname(slice<byte> p) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (_, _, e1) = Syscall(SYS_SETDOMAINNAME, (uintptr)_p0, (uintptr)len(p), 0);
+    var ᴋ47 = _p0;
+        var (_, _, e1) = Syscall(SYS_SETDOMAINNAME, (uintptr)ᴋ47, (uintptr)len(p), 0);
+    System.GC.KeepAlive(ᴋ47);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -915,11 +933,13 @@ public static error /*err*/ Sethostname(slice<byte> p) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (_, _, e1) = Syscall(SYS_SETHOSTNAME, (uintptr)_p0, (uintptr)len(p), 0);
+    var ᴋ48 = _p0;
+        var (_, _, e1) = Syscall(SYS_SETHOSTNAME, (uintptr)ᴋ48, (uintptr)len(p), 0);
+    System.GC.KeepAlive(ᴋ48);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -954,9 +974,9 @@ public static (nint pid, error err) Setsid() {
 public static error /*err*/ Settimeofday(ж<Timeval> Ꮡtv) {
     error err = default!;
 
-    var ᴋ39 = Ꮡtv;
-        var (_, _, e1) = RawSyscall(SYS_SETTIMEOFDAY, (uintptr)ᴋ39, 0, 0);
-    System.GC.KeepAlive(ᴋ39);
+    var ᴋ49 = Ꮡtv;
+        var (_, _, e1) = RawSyscall(SYS_SETTIMEOFDAY, (uintptr)ᴋ49, 0, 0);
+    System.GC.KeepAlive(ᴋ49);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -990,15 +1010,17 @@ public static error /*err*/ Setxattr(@string path, @string attr, slice<byte> dat
     }
     @unsafe.Pointer _p2 = default!;
     if (len(data) > 0){
-        _p2 = new @unsafe.Pointer(Ꮡ(data, 0));
+        _p2 = @unsafe.Pointer.FromPinnedBox(Ꮡ(data, 0));
     } else {
         _p2 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ40 = _p0;
-    var ᴋ41 = _p1;
-        var (_, _, e1) = Syscall6(SYS_SETXATTR, (uintptr)ᴋ40, (uintptr)ᴋ41, (uintptr)_p2, (uintptr)len(data), (uintptr)flags, 0);
-    System.GC.KeepAlive(ᴋ40);
-    System.GC.KeepAlive(ᴋ41);
+    var ᴋ50 = _p0;
+    var ᴋ51 = _p1;
+    var ᴋ52 = _p2;
+        var (_, _, e1) = Syscall6(SYS_SETXATTR, (uintptr)ᴋ50, (uintptr)ᴋ51, (uintptr)ᴋ52, (uintptr)len(data), (uintptr)flags, 0);
+    System.GC.KeepAlive(ᴋ50);
+    System.GC.KeepAlive(ᴋ51);
+    System.GC.KeepAlive(ᴋ52);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1043,9 +1065,9 @@ public static (uintptr ticks, error err) Times(ж<Tms> Ꮡtms) {
     uintptr ticks = default!;
     error err = default!;
 
-    var ᴋ42 = Ꮡtms;
-        var (r0, _, e1) = RawSyscall(SYS_TIMES, (uintptr)ᴋ42, 0, 0);
-    System.GC.KeepAlive(ᴋ42);
+    var ᴋ53 = Ꮡtms;
+        var (r0, _, e1) = RawSyscall(SYS_TIMES, (uintptr)ᴋ53, 0, 0);
+    System.GC.KeepAlive(ᴋ53);
     ticks = (uintptr)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1074,9 +1096,9 @@ public static error /*err*/ Unmount(@string target, nint flags) {
     if (err != default!) {
         return err;
     }
-    var ᴋ43 = _p0;
-        var (_, _, e1) = Syscall(SYS_UMOUNT2, (uintptr)ᴋ43, (uintptr)flags, 0);
-    System.GC.KeepAlive(ᴋ43);
+    var ᴋ54 = _p0;
+        var (_, _, e1) = Syscall(SYS_UMOUNT2, (uintptr)ᴋ54, (uintptr)flags, 0);
+    System.GC.KeepAlive(ᴋ54);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1101,11 +1123,13 @@ internal static (nint n, error err) write(nint fd, slice<byte> p) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall(SYS_WRITE, (uintptr)fd, (uintptr)_p0, (uintptr)len(p));
+    var ᴋ55 = _p0;
+        var (r0, _, e1) = Syscall(SYS_WRITE, (uintptr)fd, (uintptr)ᴋ55, (uintptr)len(p));
+    System.GC.KeepAlive(ᴋ55);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1129,9 +1153,9 @@ internal static (nint n, error err) readlen(nint fd, ж<byte> Ꮡp, nint np) {
     nint n = default!;
     error err = default!;
 
-    var ᴋ44 = Ꮡp;
-        var (r0, _, e1) = Syscall(SYS_READ, (uintptr)fd, (uintptr)ᴋ44, (uintptr)np);
-    System.GC.KeepAlive(ᴋ44);
+    var ᴋ56 = Ꮡp;
+        var (r0, _, e1) = Syscall(SYS_READ, (uintptr)fd, (uintptr)ᴋ56, (uintptr)np);
+    System.GC.KeepAlive(ᴋ56);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1156,11 +1180,13 @@ public static error /*err*/ Madvise(slice<byte> b, nint advice) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(b) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (_, _, e1) = Syscall(SYS_MADVISE, (uintptr)_p0, (uintptr)len(b), (uintptr)advice);
+    var ᴋ57 = _p0;
+        var (_, _, e1) = Syscall(SYS_MADVISE, (uintptr)ᴋ57, (uintptr)len(b), (uintptr)advice);
+    System.GC.KeepAlive(ᴋ57);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1173,11 +1199,13 @@ public static error /*err*/ Mprotect(slice<byte> b, nint prot) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(b) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (_, _, e1) = Syscall(SYS_MPROTECT, (uintptr)_p0, (uintptr)len(b), (uintptr)prot);
+    var ᴋ58 = _p0;
+        var (_, _, e1) = Syscall(SYS_MPROTECT, (uintptr)ᴋ58, (uintptr)len(b), (uintptr)prot);
+    System.GC.KeepAlive(ᴋ58);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1190,11 +1218,13 @@ public static error /*err*/ Mlock(slice<byte> b) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(b) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (_, _, e1) = Syscall(SYS_MLOCK, (uintptr)_p0, (uintptr)len(b), 0);
+    var ᴋ59 = _p0;
+        var (_, _, e1) = Syscall(SYS_MLOCK, (uintptr)ᴋ59, (uintptr)len(b), 0);
+    System.GC.KeepAlive(ᴋ59);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1207,11 +1237,13 @@ public static error /*err*/ Munlock(slice<byte> b) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(b) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (_, _, e1) = Syscall(SYS_MUNLOCK, (uintptr)_p0, (uintptr)len(b), 0);
+    var ᴋ60 = _p0;
+        var (_, _, e1) = Syscall(SYS_MUNLOCK, (uintptr)ᴋ60, (uintptr)len(b), 0);
+    System.GC.KeepAlive(ᴋ60);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1310,9 +1342,9 @@ public static nint /*gid*/ Getgid() {
 public static error /*err*/ Getrlimit(nint resource, ж<Rlimit> Ꮡrlim) {
     error err = default!;
 
-    var ᴋ45 = Ꮡrlim;
-        var (_, _, e1) = RawSyscall(SYS_GETRLIMIT, (uintptr)resource, (uintptr)ᴋ45, 0);
-    System.GC.KeepAlive(ᴋ45);
+    var ᴋ61 = Ꮡrlim;
+        var (_, _, e1) = RawSyscall(SYS_GETRLIMIT, (uintptr)resource, (uintptr)ᴋ61, 0);
+    System.GC.KeepAlive(ᴋ61);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1392,11 +1424,13 @@ internal static (nint n, error err) pread(nint fd, slice<byte> p, int64 offset) 
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall6(SYS_PREAD64, (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)offset, 0, 0);
+    var ᴋ62 = _p0;
+        var (r0, _, e1) = Syscall6(SYS_PREAD64, (uintptr)fd, (uintptr)ᴋ62, (uintptr)len(p), (uintptr)offset, 0, 0);
+    System.GC.KeepAlive(ᴋ62);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1411,11 +1445,13 @@ internal static (nint n, error err) pwrite(nint fd, slice<byte> p, int64 offset)
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall6(SYS_PWRITE64, (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)offset, 0, 0);
+    var ᴋ63 = _p0;
+        var (r0, _, e1) = Syscall6(SYS_PWRITE64, (uintptr)fd, (uintptr)ᴋ63, (uintptr)len(p), (uintptr)offset, 0, 0);
+    System.GC.KeepAlive(ᴋ63);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1437,11 +1473,11 @@ public static error /*err*/ Renameat(nint olddirfd, @string oldpath, nint newdir
     if (err != default!) {
         return err;
     }
-    var ᴋ46 = _p0;
-    var ᴋ47 = _p1;
-        var (_, _, e1) = Syscall6(SYS_RENAMEAT, (uintptr)olddirfd, (uintptr)ᴋ46, (uintptr)newdirfd, (uintptr)ᴋ47, 0, 0);
-    System.GC.KeepAlive(ᴋ46);
-    System.GC.KeepAlive(ᴋ47);
+    var ᴋ64 = _p0;
+    var ᴋ65 = _p1;
+        var (_, _, e1) = Syscall6(SYS_RENAMEAT, (uintptr)olddirfd, (uintptr)ᴋ64, (uintptr)newdirfd, (uintptr)ᴋ65, 0, 0);
+    System.GC.KeepAlive(ᴋ64);
+    System.GC.KeepAlive(ᴋ65);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1469,9 +1505,9 @@ internal static (nint written, error err) sendfile(nint outfd, nint infd, ж<int
     nint written = default!;
     error err = default!;
 
-    var ᴋ48 = Ꮡoffset;
-        var (r0, _, e1) = Syscall6(SYS_SENDFILE, (uintptr)outfd, (uintptr)infd, (uintptr)ᴋ48, (uintptr)count, 0, 0);
-    System.GC.KeepAlive(ᴋ48);
+    var ᴋ66 = Ꮡoffset;
+        var (r0, _, e1) = Syscall6(SYS_SENDFILE, (uintptr)outfd, (uintptr)infd, (uintptr)ᴋ66, (uintptr)count, 0, 0);
+    System.GC.KeepAlive(ᴋ66);
     written = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1505,9 +1541,9 @@ public static error /*err*/ Setfsuid(nint uid) {
 internal static error /*err*/ setrlimit(nint resource, ж<Rlimit> Ꮡrlim) {
     error err = default!;
 
-    var ᴋ49 = Ꮡrlim;
-        var (_, _, e1) = RawSyscall(SYS_SETRLIMIT, (uintptr)resource, (uintptr)ᴋ49, 0);
-    System.GC.KeepAlive(ᴋ49);
+    var ᴋ67 = Ꮡrlim;
+        var (_, _, e1) = RawSyscall(SYS_SETRLIMIT, (uintptr)resource, (uintptr)ᴋ67, 0);
+    System.GC.KeepAlive(ᴋ67);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1530,11 +1566,11 @@ public static (int64 n, error err) Splice(nint rfd, ж<int64> Ꮡroff, nint wfd,
     int64 n = default!;
     error err = default!;
 
-    var ᴋ50 = Ꮡroff;
-    var ᴋ51 = Ꮡwoff;
-        var (r0, _, e1) = Syscall6(SYS_SPLICE, (uintptr)rfd, (uintptr)ᴋ50, (uintptr)wfd, (uintptr)ᴋ51, (uintptr)len, (uintptr)flags);
-    System.GC.KeepAlive(ᴋ50);
-    System.GC.KeepAlive(ᴋ51);
+    var ᴋ68 = Ꮡroff;
+    var ᴋ69 = Ꮡwoff;
+        var (r0, _, e1) = Syscall6(SYS_SPLICE, (uintptr)rfd, (uintptr)ᴋ68, (uintptr)wfd, (uintptr)ᴋ69, (uintptr)len, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ68);
+    System.GC.KeepAlive(ᴋ69);
     n = (int64)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1565,9 +1601,9 @@ public static error /*err*/ Truncate(@string path, int64 length) {
     if (err != default!) {
         return err;
     }
-    var ᴋ52 = _p0;
-        var (_, _, e1) = Syscall(SYS_TRUNCATE, (uintptr)ᴋ52, (uintptr)length, 0);
-    System.GC.KeepAlive(ᴋ52);
+    var ᴋ70 = _p0;
+        var (_, _, e1) = Syscall(SYS_TRUNCATE, (uintptr)ᴋ70, (uintptr)length, 0);
+    System.GC.KeepAlive(ᴋ70);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1578,9 +1614,9 @@ public static error /*err*/ Truncate(@string path, int64 length) {
 public static error /*err*/ Ustat(nint dev, ж<Ustat_t> Ꮡubuf) {
     error err = default!;
 
-    var ᴋ53 = Ꮡubuf;
-        var (_, _, e1) = Syscall(SYS_USTAT, (uintptr)dev, (uintptr)ᴋ53, 0);
-    System.GC.KeepAlive(ᴋ53);
+    var ᴋ71 = Ꮡubuf;
+        var (_, _, e1) = Syscall(SYS_USTAT, (uintptr)dev, (uintptr)ᴋ71, 0);
+    System.GC.KeepAlive(ᴋ71);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1592,11 +1628,11 @@ internal static (nint fd, error err) accept4(nint s, ж<RawSockaddrAny> Ꮡrsa, 
     nint fd = default!;
     error err = default!;
 
-    var ᴋ54 = Ꮡrsa;
-    var ᴋ55 = Ꮡaddrlen;
-        var (r0, _, e1) = Syscall6(SYS_ACCEPT4, (uintptr)s, (uintptr)ᴋ54, (uintptr)ᴋ55, (uintptr)flags, 0, 0);
-    System.GC.KeepAlive(ᴋ54);
-    System.GC.KeepAlive(ᴋ55);
+    var ᴋ72 = Ꮡrsa;
+    var ᴋ73 = Ꮡaddrlen;
+        var (r0, _, e1) = Syscall6(SYS_ACCEPT4, (uintptr)s, (uintptr)ᴋ72, (uintptr)ᴋ73, (uintptr)flags, 0, 0);
+    System.GC.KeepAlive(ᴋ72);
+    System.GC.KeepAlive(ᴋ73);
     fd = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1608,7 +1644,9 @@ internal static (nint fd, error err) accept4(nint s, ж<RawSockaddrAny> Ꮡrsa, 
 internal static error /*err*/ bind(nint s, @unsafe.Pointer addr, _Socklen addrlen) {
     error err = default!;
 
-    var (_, _, e1) = Syscall(SYS_BIND, (uintptr)s, (uintptr)addr, (uintptr)(uint32)addrlen);
+    var ᴋ74 = addr;
+        var (_, _, e1) = Syscall(SYS_BIND, (uintptr)s, (uintptr)ᴋ74, (uintptr)(uint32)addrlen);
+    System.GC.KeepAlive(ᴋ74);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1619,7 +1657,9 @@ internal static error /*err*/ bind(nint s, @unsafe.Pointer addr, _Socklen addrle
 internal static error /*err*/ connect(nint s, @unsafe.Pointer addr, _Socklen addrlen) {
     error err = default!;
 
-    var (_, _, e1) = Syscall(SYS_CONNECT, (uintptr)s, (uintptr)addr, (uintptr)(uint32)addrlen);
+    var ᴋ75 = addr;
+        var (_, _, e1) = Syscall(SYS_CONNECT, (uintptr)s, (uintptr)ᴋ75, (uintptr)(uint32)addrlen);
+    System.GC.KeepAlive(ᴋ75);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1634,9 +1674,9 @@ internal static (nint nn, error err) getgroups(nint n, ж<_Gid_t> Ꮡlist) {
     nint nn = default!;
     error err = default!;
 
-    var ᴋ56 = Ꮡlist;
-        var (r0, _, e1) = RawSyscall(SYS_GETGROUPS, (uintptr)n, (uintptr)ᴋ56, 0);
-    System.GC.KeepAlive(ᴋ56);
+    var ᴋ76 = Ꮡlist;
+        var (r0, _, e1) = RawSyscall(SYS_GETGROUPS, (uintptr)n, (uintptr)ᴋ76, 0);
+    System.GC.KeepAlive(ᴋ76);
     nn = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1648,9 +1688,11 @@ internal static (nint nn, error err) getgroups(nint n, ж<_Gid_t> Ꮡlist) {
 internal static error /*err*/ getsockopt(nint s, nint level, nint name, @unsafe.Pointer val, ж<_Socklen> Ꮡvallen) {
     error err = default!;
 
-    var ᴋ57 = Ꮡvallen;
-        var (_, _, e1) = Syscall6(SYS_GETSOCKOPT, (uintptr)s, (uintptr)level, (uintptr)name, (uintptr)val, (uintptr)ᴋ57, 0);
-    System.GC.KeepAlive(ᴋ57);
+    var ᴋ77 = val;
+    var ᴋ78 = Ꮡvallen;
+        var (_, _, e1) = Syscall6(SYS_GETSOCKOPT, (uintptr)s, (uintptr)level, (uintptr)name, (uintptr)ᴋ77, (uintptr)ᴋ78, 0);
+    System.GC.KeepAlive(ᴋ77);
+    System.GC.KeepAlive(ᴋ78);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1661,7 +1703,9 @@ internal static error /*err*/ getsockopt(nint s, nint level, nint name, @unsafe.
 internal static error /*err*/ setsockopt(nint s, nint level, nint name, @unsafe.Pointer val, uintptr vallen) {
     error err = default!;
 
-    var (_, _, e1) = Syscall6(SYS_SETSOCKOPT, (uintptr)s, (uintptr)level, (uintptr)name, (uintptr)val, (uintptr)vallen, 0);
+    var ᴋ79 = val;
+        var (_, _, e1) = Syscall6(SYS_SETSOCKOPT, (uintptr)s, (uintptr)level, (uintptr)name, (uintptr)ᴋ79, (uintptr)vallen, 0);
+    System.GC.KeepAlive(ᴋ79);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1685,9 +1729,9 @@ internal static (nint fd, error err) socket(nint domain, nint typ, nint proto) {
 internal static error /*err*/ socketpair(nint domain, nint typ, nint proto, [GoArrayDims(2)] ж<array<int32>> Ꮡfd) {
     error err = default!;
 
-    var ᴋ58 = Ꮡfd;
-        var (_, _, e1) = RawSyscall6(SYS_SOCKETPAIR, (uintptr)domain, (uintptr)typ, (uintptr)proto, (uintptr)ᴋ58, 0, 0);
-    System.GC.KeepAlive(ᴋ58);
+    var ᴋ80 = Ꮡfd;
+        var (_, _, e1) = RawSyscall6(SYS_SOCKETPAIR, (uintptr)domain, (uintptr)typ, (uintptr)proto, (uintptr)ᴋ80, 0, 0);
+    System.GC.KeepAlive(ᴋ80);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1698,11 +1742,11 @@ internal static error /*err*/ socketpair(nint domain, nint typ, nint proto, [GoA
 internal static error /*err*/ getpeername(nint fd, ж<RawSockaddrAny> Ꮡrsa, ж<_Socklen> Ꮡaddrlen) {
     error err = default!;
 
-    var ᴋ59 = Ꮡrsa;
-    var ᴋ60 = Ꮡaddrlen;
-        var (_, _, e1) = RawSyscall(SYS_GETPEERNAME, (uintptr)fd, (uintptr)ᴋ59, (uintptr)ᴋ60);
-    System.GC.KeepAlive(ᴋ59);
-    System.GC.KeepAlive(ᴋ60);
+    var ᴋ81 = Ꮡrsa;
+    var ᴋ82 = Ꮡaddrlen;
+        var (_, _, e1) = RawSyscall(SYS_GETPEERNAME, (uintptr)fd, (uintptr)ᴋ81, (uintptr)ᴋ82);
+    System.GC.KeepAlive(ᴋ81);
+    System.GC.KeepAlive(ᴋ82);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1713,11 +1757,11 @@ internal static error /*err*/ getpeername(nint fd, ж<RawSockaddrAny> Ꮡrsa, ж
 internal static error /*err*/ getsockname(nint fd, ж<RawSockaddrAny> Ꮡrsa, ж<_Socklen> Ꮡaddrlen) {
     error err = default!;
 
-    var ᴋ61 = Ꮡrsa;
-    var ᴋ62 = Ꮡaddrlen;
-        var (_, _, e1) = RawSyscall(SYS_GETSOCKNAME, (uintptr)fd, (uintptr)ᴋ61, (uintptr)ᴋ62);
-    System.GC.KeepAlive(ᴋ61);
-    System.GC.KeepAlive(ᴋ62);
+    var ᴋ83 = Ꮡrsa;
+    var ᴋ84 = Ꮡaddrlen;
+        var (_, _, e1) = RawSyscall(SYS_GETSOCKNAME, (uintptr)fd, (uintptr)ᴋ83, (uintptr)ᴋ84);
+    System.GC.KeepAlive(ᴋ83);
+    System.GC.KeepAlive(ᴋ84);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1731,15 +1775,17 @@ internal static (nint n, error err) recvfrom(nint fd, slice<byte> p, nint flags,
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ63 = Ꮡfrom;
-    var ᴋ64 = Ꮡfromlen;
-        var (r0, _, e1) = Syscall6(SYS_RECVFROM, (uintptr)fd, (uintptr)_p0, (uintptr)len(p), (uintptr)flags, (uintptr)ᴋ63, (uintptr)ᴋ64);
-    System.GC.KeepAlive(ᴋ63);
-    System.GC.KeepAlive(ᴋ64);
+    var ᴋ85 = _p0;
+    var ᴋ86 = Ꮡfrom;
+    var ᴋ87 = Ꮡfromlen;
+        var (r0, _, e1) = Syscall6(SYS_RECVFROM, (uintptr)fd, (uintptr)ᴋ85, (uintptr)len(p), (uintptr)flags, (uintptr)ᴋ86, (uintptr)ᴋ87);
+    System.GC.KeepAlive(ᴋ85);
+    System.GC.KeepAlive(ᴋ86);
+    System.GC.KeepAlive(ᴋ87);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1753,11 +1799,15 @@ internal static error /*err*/ sendto(nint s, slice<byte> buf, nint flags, @unsaf
 
     @unsafe.Pointer _p0 = default!;
     if (len(buf) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(buf, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (_, _, e1) = Syscall6(SYS_SENDTO, (uintptr)s, (uintptr)_p0, (uintptr)len(buf), (uintptr)flags, (uintptr)to, (uintptr)(uint32)addrlen);
+    var ᴋ88 = _p0;
+    var ᴋ89 = to;
+        var (_, _, e1) = Syscall6(SYS_SENDTO, (uintptr)s, (uintptr)ᴋ88, (uintptr)len(buf), (uintptr)flags, (uintptr)ᴋ89, (uintptr)(uint32)addrlen);
+    System.GC.KeepAlive(ᴋ88);
+    System.GC.KeepAlive(ᴋ89);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1769,9 +1819,9 @@ internal static (nint n, error err) recvmsg(nint s, ж<Msghdr> Ꮡmsg, nint flag
     nint n = default!;
     error err = default!;
 
-    var ᴋ65 = Ꮡmsg;
-        var (r0, _, e1) = Syscall(SYS_RECVMSG, (uintptr)s, (uintptr)ᴋ65, (uintptr)flags);
-    System.GC.KeepAlive(ᴋ65);
+    var ᴋ90 = Ꮡmsg;
+        var (r0, _, e1) = Syscall(SYS_RECVMSG, (uintptr)s, (uintptr)ᴋ90, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ90);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1784,9 +1834,9 @@ internal static (nint n, error err) sendmsg(nint s, ж<Msghdr> Ꮡmsg, nint flag
     nint n = default!;
     error err = default!;
 
-    var ᴋ66 = Ꮡmsg;
-        var (r0, _, e1) = Syscall(SYS_SENDMSG, (uintptr)s, (uintptr)ᴋ66, (uintptr)flags);
-    System.GC.KeepAlive(ᴋ66);
+    var ᴋ91 = Ꮡmsg;
+        var (r0, _, e1) = Syscall(SYS_SENDMSG, (uintptr)s, (uintptr)ᴋ91, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ91);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1814,11 +1864,13 @@ public static (nint n, error err) EpollWait(nint epfd, slice<EpollEvent> events,
 
     @unsafe.Pointer _p0 = default!;
     if (len(events) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(events, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(events, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r0, _, e1) = Syscall6(SYS_EPOLL_WAIT, (uintptr)epfd, (uintptr)_p0, (uintptr)len(events), (uintptr)msec, 0, 0);
+    var ᴋ92 = _p0;
+        var (r0, _, e1) = Syscall6(SYS_EPOLL_WAIT, (uintptr)epfd, (uintptr)ᴋ92, (uintptr)len(events), (uintptr)msec, 0, 0);
+    System.GC.KeepAlive(ᴋ92);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1835,11 +1887,11 @@ internal static error /*err*/ futimesat(nint dirfd, @string path, [GoArrayDims(2
     if (err != default!) {
         return err;
     }
-    var ᴋ67 = _p0;
-    var ᴋ68 = Ꮡtimes;
-        var (_, _, e1) = Syscall(SYS_FUTIMESAT, (uintptr)dirfd, (uintptr)ᴋ67, (uintptr)ᴋ68);
-    System.GC.KeepAlive(ᴋ67);
-    System.GC.KeepAlive(ᴋ68);
+    var ᴋ93 = _p0;
+    var ᴋ94 = Ꮡtimes;
+        var (_, _, e1) = Syscall(SYS_FUTIMESAT, (uintptr)dirfd, (uintptr)ᴋ93, (uintptr)ᴋ94);
+    System.GC.KeepAlive(ᴋ93);
+    System.GC.KeepAlive(ᴋ94);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1855,11 +1907,11 @@ public static error /*err*/ Utime(@string path, ж<Utimbuf> Ꮡbuf) {
     if (err != default!) {
         return err;
     }
-    var ᴋ69 = _p0;
-    var ᴋ70 = Ꮡbuf;
-        var (_, _, e1) = Syscall(SYS_UTIME, (uintptr)ᴋ69, (uintptr)ᴋ70, 0);
-    System.GC.KeepAlive(ᴋ69);
-    System.GC.KeepAlive(ᴋ70);
+    var ᴋ95 = _p0;
+    var ᴋ96 = Ꮡbuf;
+        var (_, _, e1) = Syscall(SYS_UTIME, (uintptr)ᴋ95, (uintptr)ᴋ96, 0);
+    System.GC.KeepAlive(ᴋ95);
+    System.GC.KeepAlive(ᴋ96);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1875,11 +1927,11 @@ internal static error /*err*/ utimes(@string path, [GoArrayDims(2)] ж<array<Tim
     if (err != default!) {
         return err;
     }
-    var ᴋ71 = _p0;
-    var ᴋ72 = Ꮡtimes;
-        var (_, _, e1) = Syscall(SYS_UTIMES, (uintptr)ᴋ71, (uintptr)ᴋ72, 0);
-    System.GC.KeepAlive(ᴋ71);
-    System.GC.KeepAlive(ᴋ72);
+    var ᴋ97 = _p0;
+    var ᴋ98 = Ꮡtimes;
+        var (_, _, e1) = Syscall(SYS_UTIMES, (uintptr)ᴋ97, (uintptr)ᴋ98, 0);
+    System.GC.KeepAlive(ᴋ97);
+    System.GC.KeepAlive(ᴋ98);
     if (e1 != 0) {
         err = errnoErr(e1);
     }

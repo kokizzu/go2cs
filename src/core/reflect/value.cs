@@ -399,7 +399,7 @@ internal static slice<ΔValue> call(this ΔValue v, @string op, slice<ΔValue> @
                 storeRcvr(rcvr, @unsafe.Pointer.FromBox(ᏑregArgs.at(abi.RegArgs.ᏑInts, st.ireg)));
             }
             else if (exprᴛ1 == abiStepFloatReg) {
-                storeRcvr(rcvr, new @unsafe.Pointer(ᏑregArgs.at(abi.RegArgs.ᏑFloats, st.freg)));
+                storeRcvr(rcvr, @unsafe.Pointer.FromPinnedBox(ᏑregArgs.at(abi.RegArgs.ᏑFloats, st.freg)));
             }
             else if (!matchᴛ1) { /* default: */
                 throw panic("unknown ABI parameter kind");
@@ -914,7 +914,7 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
             storeRcvr(rcvr, @unsafe.Pointer.FromBox(ᏑmethodRegs.at(abi.RegArgs.ᏑInts, st.ireg)));
         }
         else if (exprᴛ1 == abiStepFloatReg) {
-            storeRcvr(rcvr, new @unsafe.Pointer(ᏑmethodRegs.at(abi.RegArgs.ᏑFloats, st.freg)));
+            storeRcvr(rcvr, @unsafe.Pointer.FromPinnedBox(ᏑmethodRegs.at(abi.RegArgs.ᏑFloats, st.freg)));
         }
         else if (!matchᴛ1) { /* default: */
             throw panic("unknown ABI parameter kind");

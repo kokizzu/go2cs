@@ -124,7 +124,7 @@ internal static void Main() {
     fmt.Println(deferredNamedLen(a, b, c));
     fmt.Println(capturedLen(a, b, c));
     fmt.Println(appendedLen(a, b));
-    fmt.Println(countPtrs(new @unsafe.Pointer(a), new @unsafe.Pointer(b), new @unsafe.Pointer(c)));
+    fmt.Println(countPtrs(@unsafe.Pointer.FromPinnedBox(a), @unsafe.Pointer.FromPinnedBox(b), @unsafe.Pointer.FromPinnedBox(c)));
     fmt.Println(countPtrs());
     fmt.Println(totalLens(slice<byte>("ab"u8), slice<byte>("cde"u8)));
     fmt.Println(totalLens());

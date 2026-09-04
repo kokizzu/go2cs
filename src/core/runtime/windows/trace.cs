@@ -449,7 +449,7 @@ internal static void traceAdvance(bool stopTrace) {
     // Block until the trace reader has finished processing the last generation.
     semacquire(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2)));
     if (raceenabled) {
-        raceacquire(new @unsafe.Pointer(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2))));
+        raceacquire(@unsafe.Pointer.FromPinnedBox(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2))));
     }
     // Double-check that things look as we expect after advancing and perform some
     // final cleanup if the trace has fully stopped.
@@ -469,7 +469,7 @@ internal static void traceAdvance(bool stopTrace) {
             while (Δtrace.empty != nil) {
                 var buf = Δtrace.empty;
                 Δtrace.empty = buf.Value.link;
-                sysFree(new @unsafe.Pointer(buf), /* unsafe.Sizeof(*buf) */ (uintptr)65536, Ꮡmemstats.of(mstats.Ꮡother_sys));
+                sysFree(@unsafe.Pointer.FromPinnedBox(buf), /* unsafe.Sizeof(*buf) */ (uintptr)65536, Ꮡmemstats.of(mstats.Ꮡother_sys));
             }
             // Clear trace.shutdown and other flags.
             Δtrace.headerWritten = false;
@@ -659,7 +659,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
                         // Model synchronization on trace.doneSema, which te race
                         // detector does not see. This is required to avoid false
                         // race reports on writer passed to trace.Start.
-                        racerelease(new @unsafe.Pointer(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2))));
+                        racerelease(@unsafe.Pointer.FromPinnedBox(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2))));
                     }
                     semrelease(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2)));
                     // We're shutting down, and the last generation is fully
@@ -677,7 +677,7 @@ internal static (slice<byte> buf, bool park) readTrace0() {
                 // advance until we've read it.
                 if (raceenabled) {
                     // See comment above in the shutdown case.
-                    racerelease(new @unsafe.Pointer(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2))));
+                    racerelease(@unsafe.Pointer.FromPinnedBox(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2))));
                 }
                 semrelease(ᏑΔtrace.at(runtime_package.Δtraceᴛ1.ᏑdoneSema, (nint)(gen % 2)));
                 // Reacquire the lock and go back to the top of the loop.
@@ -821,11 +821,11 @@ internal static void sleep(this ж<wakeableSleep> Ꮡs, int64 ns) {
     s.timer.reset(nanotime() + ns, 0);
     @lock(Ꮡs.of(wakeableSleep.Ꮡlock));
     if (raceenabled) {
-        raceacquire(new @unsafe.Pointer(Ꮡs.of(wakeableSleep.Ꮡlock)));
+        raceacquire(@unsafe.Pointer.FromPinnedBox(Ꮡs.of(wakeableSleep.Ꮡlock)));
     }
     var wakeup = s.wakeup;
     if (raceenabled) {
-        racerelease(new @unsafe.Pointer(Ꮡs.of(wakeableSleep.Ꮡlock)));
+        racerelease(@unsafe.Pointer.FromPinnedBox(Ꮡs.of(wakeableSleep.Ꮡlock)));
     }
     unlock(Ꮡs.of(wakeableSleep.Ꮡlock));
     ᐸꟷ(wakeup);
@@ -842,7 +842,7 @@ internal static void wake(this ж<wakeableSleep> Ꮡs) {
     // racing with close.
     @lock(Ꮡs.of(wakeableSleep.Ꮡlock));
     if (raceenabled) {
-        raceacquire(new @unsafe.Pointer(Ꮡs.of(wakeableSleep.Ꮡlock)));
+        raceacquire(@unsafe.Pointer.FromPinnedBox(Ꮡs.of(wakeableSleep.Ꮡlock)));
     }
     if (s.wakeup != default!) {
         // Non-blocking send.
@@ -860,7 +860,7 @@ internal static void wake(this ж<wakeableSleep> Ꮡs) {
         }}
     }
     if (raceenabled) {
-        racerelease(new @unsafe.Pointer(Ꮡs.of(wakeableSleep.Ꮡlock)));
+        racerelease(@unsafe.Pointer.FromPinnedBox(Ꮡs.of(wakeableSleep.Ꮡlock)));
     }
     unlock(Ꮡs.of(wakeableSleep.Ꮡlock));
 }
@@ -878,14 +878,14 @@ internal static void close(this ж<wakeableSleep> Ꮡs) {
     // Set wakeup to nil so that a late timer ends up being a no-op.
     @lock(Ꮡs.of(wakeableSleep.Ꮡlock));
     if (raceenabled) {
-        raceacquire(new @unsafe.Pointer(Ꮡs.of(wakeableSleep.Ꮡlock)));
+        raceacquire(@unsafe.Pointer.FromPinnedBox(Ꮡs.of(wakeableSleep.Ꮡlock)));
     }
     var wakeup = s.wakeup;
     s.wakeup = default!;
     // Close the channel.
     builtin.close(wakeup);
     if (raceenabled) {
-        racerelease(new @unsafe.Pointer(Ꮡs.of(wakeableSleep.Ꮡlock)));
+        racerelease(@unsafe.Pointer.FromPinnedBox(Ꮡs.of(wakeableSleep.Ꮡlock)));
     }
     unlock(Ꮡs.of(wakeableSleep.Ꮡlock));
     return;

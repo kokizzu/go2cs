@@ -90,7 +90,7 @@ internal static UntypedInt kCFStringEncodingUTF8 => 0x08000100;
 
 //go:cgo_import_dynamic x509_CFDataCreate CFDataCreate "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation"
 public static CFRef BytesToCFData(slice<byte> b) {
-    @unsafe.Pointer p = new @unsafe.Pointer(@unsafe.SliceData(b));
+    @unsafe.Pointer p = @unsafe.Pointer.FromPinnedBox(@unsafe.SliceData(b));
     var ret = syscall(abi.FuncPCABI0(x509_CFDataCreate_trampoline), kCFAllocatorDefault, (uintptr)p, (uintptr)len(b), 0, 0, 0D);
     runtime.KeepAlive(p);
     return ((CFRef)ret);
@@ -102,7 +102,7 @@ internal static partial void x509_CFDataCreate_trampoline();
 
 // StringToCFString returns a copy of the UTF-8 contents of s as a new CFString.
 public static CFString StringToCFString(@string s) {
-    @unsafe.Pointer p = new @unsafe.Pointer(@unsafe.StringData(s));
+    @unsafe.Pointer p = @unsafe.Pointer.FromPinnedBox(@unsafe.StringData(s));
     var ret = syscall(abi.FuncPCABI0(x509_CFStringCreateWithBytes_trampoline), kCFAllocatorDefault, (uintptr)p,
         (uintptr)len(s), (uintptr)kCFStringEncodingUTF8, 0, /* isExternalRepresentation */
  0D);

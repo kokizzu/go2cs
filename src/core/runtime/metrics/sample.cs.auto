@@ -55,7 +55,7 @@ internal static void runtime_readMetrics(@unsafe.Pointer _Δp0, nint _Δp1, nint
 // Sample values with names not appearing in [All] will have their Value populated
 // as KindBad to indicate that the name is unknown.
 public static void Read(slice<Sample> m) {
-    runtime_readMetrics(new @unsafe.Pointer(Ꮡ(m, 0)), len(m), cap(m));
+    runtime_readMetrics(@unsafe.Pointer.FromPinnedBox(Ꮡ(m, 0)), len(m), cap(m));
 }
 
 } // end metrics_package

@@ -67,7 +67,7 @@ internal static ж<ж<byte>> argv;
 //
 //go:nosplit
 internal static ж<byte> argv_index(ж<ж<byte>> Ꮡargv, int32 i) {
-    return ~(ж<ж<byte>>)(uintptr)(add(new @unsafe.Pointer(Ꮡargv), (uintptr)i * (uintptr)goarch.PtrSize));
+    return ~(ж<ж<byte>>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(Ꮡargv), (uintptr)i * (uintptr)goarch.PtrSize));
 }
 
 internal static void args(int32 c, ж<ж<byte>> Ꮡv) {
@@ -710,7 +710,7 @@ internal static (slice<@unsafe.Pointer>, slice<slice<int32>>) reflect_typelinks(
 //
 //go:linkname reflect_resolveNameOff reflect.resolveNameOff
 public static @unsafe.Pointer reflect_resolveNameOff(@unsafe.Pointer ptrInModule, int32 off) {
-    return new @unsafe.Pointer(resolveNameOff(ptrInModule, ((nameOff)off)).Bytes);
+    return @unsafe.Pointer.FromPinnedBox(resolveNameOff(ptrInModule, ((nameOff)off)).Bytes);
 }
 
 // reflect_resolveTypeOff resolves an *rtype offset from a base type.
@@ -728,7 +728,7 @@ public static @unsafe.Pointer reflect_resolveNameOff(@unsafe.Pointer ptrInModule
 //
 //go:linkname reflect_resolveTypeOff reflect.resolveTypeOff
 public static @unsafe.Pointer reflect_resolveTypeOff(@unsafe.Pointer Δrtype, int32 off) {
-    return new @unsafe.Pointer(toRType((ж<_type>)(uintptr)(Δrtype)).typeOff(((typeOff)off)));
+    return @unsafe.Pointer.FromPinnedBox(toRType((ж<_type>)(uintptr)(Δrtype)).typeOff(((typeOff)off)));
 }
 
 // reflect_resolveTextOff resolves a function pointer offset from a base type.
@@ -751,14 +751,14 @@ public static @unsafe.Pointer reflect_resolveTextOff(@unsafe.Pointer Δrtype, in
 //
 //go:linkname reflectlite_resolveNameOff internal/reflectlite.resolveNameOff
 internal static @unsafe.Pointer reflectlite_resolveNameOff(@unsafe.Pointer ptrInModule, int32 off) {
-    return new @unsafe.Pointer(resolveNameOff(ptrInModule, ((nameOff)off)).Bytes);
+    return @unsafe.Pointer.FromPinnedBox(resolveNameOff(ptrInModule, ((nameOff)off)).Bytes);
 }
 
 // reflectlite_resolveTypeOff resolves an *rtype offset from a base type.
 //
 //go:linkname reflectlite_resolveTypeOff internal/reflectlite.resolveTypeOff
 internal static @unsafe.Pointer reflectlite_resolveTypeOff(@unsafe.Pointer Δrtype, int32 off) {
-    return new @unsafe.Pointer(toRType((ж<_type>)(uintptr)(Δrtype)).typeOff(((typeOff)off)));
+    return @unsafe.Pointer.FromPinnedBox(toRType((ж<_type>)(uintptr)(Δrtype)).typeOff(((typeOff)off)));
 }
 
 // reflect_addReflectOff adds a pointer to the reflection offset lookup map.

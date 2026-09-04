@@ -561,14 +561,14 @@ public static unsafe slice<ж<Type>> OutSlice(this ж<ΔFuncType> Ꮡt) {
 }
 
 public static ж<byte> DataChecked(this ΔName n, nint off, @string whySafe) {
-    return (ж<byte>)(uintptr)(addChecked(new @unsafe.Pointer(n.Bytes), (uintptr)off, whySafe));
+    return (ж<byte>)(uintptr)(addChecked(@unsafe.Pointer.FromPinnedBox(n.Bytes), (uintptr)off, whySafe));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string theRuntimeDoesnTNeedToˢ = "the runtime doesn't need to give you a reason"u8;
 
 public static ж<byte> Data(this ΔName n, nint off) {
-    return (ж<byte>)(uintptr)(addChecked(new @unsafe.Pointer(n.Bytes), (uintptr)off, theRuntimeDoesnTNeedToˢ));
+    return (ж<byte>)(uintptr)(addChecked(@unsafe.Pointer.FromPinnedBox(n.Bytes), (uintptr)off, theRuntimeDoesnTNeedToˢ));
 }
 
 public static bool IsExported(this ΔName n) {

@@ -80,19 +80,38 @@ func syscallFunnelCall(info *types.Info, callExpr *ast.CallExpr) bool {
 	return ok && fn.Pkg() != nil && syscallFunnelPackagePaths[fn.Pkg().Path()] && syscallFunnelFuncNames[fn.Name()]
 }
 
-// pointerDerivedArgSource returns the innermost operand X of the `uintptr(unsafe.Pointer(X))`
-// shape — Go's own mksyscall-generated idiom for passing a pointer into the syscall funnel, and
-// the ONLY shape a real Go program can use to hand a *T to a uintptrkeepalive function while
-// staying inside the language's own rules (unsafe.Pointer's doc comment, rule (4), requires the
-// conversion to appear "in" the call's argument list — never through an intermediate variable).
-// Returns nil for anything else: a plain integer argument (`uintptr(access)`), an
-// already-computed uintptr passed through a variable (already outside Go's own guarantee, so
-// outside this fix's job to protect), or any other shape.
+// pointerDerivedArgSource returns the unsafe.Pointer-typed OPERAND of a `uintptr(...)` conversion
+// standing in a funnel call's argument list — the shape Go's own rule (4) covers, and the shape
+// whose lifetime this file extends.
 //
-// X — not the intermediate unsafe.Pointer(X) conversion — is what must be captured: the
-// converter's existing peephole (markDeadUnsafePointerBox, convCallExpr.go) already elides the
-// unsafe.Pointer wrapper for exactly this pattern and converts X directly to the box that ends up
-// cast to uintptr, so X's own converted form is the actual value whose lifetime needs extending.
+// The predicate is the GO COMPILER'S, transcribed rather than paraphrased. cmd/compile decides
+// uintptrkeepalive in escape.rewriteArgument (cmd/compile/internal/escape/call.go): an argument is
+// rewritten into a kept-alive temp when it is an OCONVNOP whose operand type `IsUnsafePtr()` and
+// whose own type `IsUintptr()` — a test on the operand's TYPE, with no requirement that the
+// operand be a literal `unsafe.Pointer(X)` conversion. So BOTH of Go's own idioms are inside the
+// guarantee:
+//
+//   - the inline form, `uintptr(unsafe.Pointer(&x))`, which mksyscall emits for a scalar argument;
+//   - the TWO-STEP form, `_p0 = unsafe.Pointer(&p[0])` … `uintptr(_p0)`, which mksyscall emits for
+//     every `[]byte` argument — 16 calls in GOROOT go1.23.12's syscall/zsyscall_linux_amd64.go and
+//     13 in zsyscall_darwin_amd64.go, `read`, `write`, `pread`, `pwrite`, `recvfrom` and `sendto`
+//     among them.
+//
+// This function matched only the first form until 2026-09-04, on a reading of rule (4) ("the
+// conversion must appear in the argument list") that took "through an intermediate variable" to
+// exclude the two-step form. What may not travel through a variable is the UINTPTR; the
+// unsafe.Pointer may, and Go's own generated wrappers do exactly that. The consequence was
+// measured rather than argued: every converted read and write handed the kernel a managed buffer
+// address with nothing holding the box that pins it, and sixteen concurrent TLS connections over
+// the converted stack died SIGSEGV in five seconds, 3/3.
+//
+// Returns nil for anything else — a plain integer argument (`uintptr(access)`), or an
+// already-computed uintptr passed through a variable, which is outside Go's guarantee too (the
+// compiler's test is on the operand being an unsafe POINTER) and so outside this fix's job.
+//
+// The returned node marks the argument as pointer-derived; convSyscallFunnelCall converts the
+// WHOLE argument through the general path and recovers the value by stripping the rendered
+// `(uintptr)` cast, so the operand is never converted in isolation here.
 func pointerDerivedArgSource(info *types.Info, arg ast.Expr) ast.Expr {
 	outer, ok := arg.(*ast.CallExpr)
 
@@ -100,13 +119,20 @@ func pointerDerivedArgSource(info *types.Info, arg ast.Expr) ast.Expr {
 		return nil
 	}
 
-	inner, ok := outer.Args[0].(*ast.CallExpr)
+	operand := outer.Args[0]
+	operandType := info.TypeOf(operand)
 
-	if !ok || len(inner.Args) != 1 || !exprNamesType(info, inner.Fun, "unsafe", "Pointer") {
+	if operandType == nil {
 		return nil
 	}
 
-	return inner.Args[0]
+	basic, ok := operandType.Underlying().(*types.Basic)
+
+	if !ok || basic.Kind() != types.UnsafePointer {
+		return nil
+	}
+
+	return operand
 }
 
 // exprNamesType reports whether expr — a bare identifier or a qualified selector — resolves to

@@ -207,7 +207,7 @@ internal static (nint n, error err) recvfrom(nint fd, slice<byte> p, nint flags,
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -228,7 +228,7 @@ internal static error /*err*/ sendto(nint s, slice<byte> buf, nint flags, @unsaf
 
     @unsafe.Pointer _p0 = default!;
     if (len(buf) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(buf, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1068,7 +1068,7 @@ public static error /*err*/ Mlock(slice<byte> b) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(b) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1102,7 +1102,7 @@ public static error /*err*/ Mprotect(slice<byte> b, nint prot) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(b) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1122,7 +1122,7 @@ internal static error /*err*/ msync(slice<byte> b, nint flags) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(b) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1142,7 +1142,7 @@ public static error /*err*/ Munlock(slice<byte> b) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(b) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(b, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1219,7 +1219,7 @@ internal static (nint n, error err) pread(nint fd, slice<byte> p, int64 offset) 
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1241,7 +1241,7 @@ internal static (nint n, error err) pwrite(nint fd, slice<byte> p, int64 offset)
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1263,7 +1263,7 @@ internal static (nint n, error err) read(nint fd, slice<byte> p) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1302,7 +1302,7 @@ public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
     }
     @unsafe.Pointer _p1 = default!;
     if (len(buf) > 0){
-        _p1 = new @unsafe.Pointer(Ꮡ(buf, 0));
+        _p1 = @unsafe.Pointer.FromPinnedBox(Ꮡ(buf, 0));
     } else {
         _p1 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1731,7 +1731,7 @@ internal static (nint n, error err) write(nint fd, slice<byte> p) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(p) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(p, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1753,7 +1753,7 @@ internal static (uintptr cnt, error err) writev(nint fd, slice<Iovec> iovecs) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(iovecs) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(iovecs, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(iovecs, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1848,7 +1848,7 @@ internal static error /*err*/ sysctl(slice<_C_int> mib, ж<byte> Ꮡold, ж<uint
 
     @unsafe.Pointer _p0 = default!;
     if (len(mib) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(mib, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(mib, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
@@ -1909,7 +1909,7 @@ internal static (nint n, error err) getcwd(slice<byte> buf) {
 
     @unsafe.Pointer _p0 = default!;
     if (len(buf) > 0){
-        _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(buf, 0));
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }

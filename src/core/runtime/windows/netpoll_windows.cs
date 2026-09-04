@@ -44,7 +44,7 @@ internal static uintptr packNetpollKey(uint8 source, ж<pollDesc> Ꮡpd) {
     if (goarch.PtrSize == 4) {
         return (uintptr)(((uintptr)Ꮡpd << (int)(sourceBits)) | (uintptr)source);
     }
-    return (uintptr)(uint64)taggedPointerPack(new @unsafe.Pointer(Ꮡpd), (uintptr)source);
+    return (uintptr)(uint64)taggedPointerPack(@unsafe.Pointer.FromPinnedBox(Ꮡpd), (uintptr)source);
 }
 
 // unpackNetpollSource returns the source packed key.

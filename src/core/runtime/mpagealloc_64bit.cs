@@ -110,7 +110,7 @@ internal static void sysGrow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr lim
     addrRange summaryRangeToSumAddrRange(nint level, nint sumIdxBase, nint sumIdxLimit) {
         var baseOffset = alignDown((uintptr)sumIdxBase * pallocSumBytes, physPageSize);
         var limitOffset = alignUp((uintptr)sumIdxLimit * pallocSumBytes, physPageSize);
-        @unsafe.Pointer baseΔ1 = new @unsafe.Pointer(Ꮡ(Ꮡp.Value.summary[level], 0));
+        @unsafe.Pointer baseΔ1 = @unsafe.Pointer.FromPinnedBox(Ꮡ(Ꮡp.Value.summary[level], 0));
         return new addrRange(
             new offAddr((uintptr)(uintptr)add(baseΔ1, baseOffset)),
             new offAddr((uintptr)(uintptr)add(baseΔ1, limitOffset))

@@ -203,7 +203,7 @@ internal static void runfinq() {
         var fb = finq;
         finq = default!;
         if (fb == nil) {
-            gopark(finalizercommit, new @unsafe.Pointer(Ꮡfinlock), waitReasonFinalizerWait, traceBlockSystemGoroutine, 1);
+            gopark(finalizercommit, @unsafe.Pointer.FromPinnedBox(Ꮡfinlock), waitReasonFinalizerWait, traceBlockSystemGoroutine, 1);
             continue;
         }
         argRegs = intArgRegs;
@@ -237,7 +237,7 @@ internal static void runfinq() {
                 }
                 @unsafe.Pointer r = frame;
                 if (argRegs > 0){
-                    r = new @unsafe.Pointer(Ꮡregs.of(abi.RegArgs.ᏑInts));
+                    r = @unsafe.Pointer.FromPinnedBox(Ꮡregs.of(abi.RegArgs.ᏑInts));
                 } else {
                     // frame is effectively uninitialized
                     // memory. That means we have to clear
@@ -266,7 +266,7 @@ internal static void runfinq() {
                 }
 
                 ᏑfingStatus.Or(fingRunningFinalizer);
-                reflectcall(nil, new @unsafe.Pointer((~f).fn), frame, (uint32)framesz, (uint32)framesz, (uint32)framesz, Ꮡregs);
+                reflectcall(nil, @unsafe.Pointer.FromPinnedBox((~f).fn), frame, (uint32)framesz, (uint32)framesz, (uint32)framesz, Ꮡregs);
                 ᏑfingStatus.And(~fingRunningFinalizer);
                 // Drop finalizer queue heap references
                 // before hiding them from markroot.

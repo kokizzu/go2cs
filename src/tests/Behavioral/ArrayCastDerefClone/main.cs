@@ -61,8 +61,8 @@ internal static void Main() {
     fmt.Println(assignedThroughˢ, src);
     ref var r = ref heap(new Row(), out var Ꮡr);
     ref var u = ref heap(new array<uintptr>(2), out var Ꮡu);
-    _ = castDerefReturn(new @unsafe.Pointer(Ꮡr));
-    _ = castDerefReturnDirect(new @unsafe.Pointer(Ꮡu));
+    _ = castDerefReturn(@unsafe.Pointer.FromPinnedBox(Ꮡr));
+    _ = castDerefReturnDirect(@unsafe.Pointer.FromPinnedBox(Ꮡu));
 }
 
 } // end main_package

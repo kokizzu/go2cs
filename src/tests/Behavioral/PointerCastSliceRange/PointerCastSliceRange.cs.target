@@ -30,10 +30,10 @@ internal static void Main() {
         if (u) {
             return (@unsafe.Pointer)(uintptr)0;
         }
-        return new @unsafe.Pointer(Ꮡip.ValueSlot);
+        return @unsafe.Pointer.FromPinnedBox(Ꮡip.ValueSlot);
     }
     _ = (uintptr)pick(true);
-    var op = ((opaque)(ж<array<nint>>)(uintptr)(new @unsafe.Pointer(ip)));
+    var op = ((opaque)(ж<array<nint>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(ip)));
     _ = op;
 }
 

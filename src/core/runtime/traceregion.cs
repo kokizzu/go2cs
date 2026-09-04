@@ -88,7 +88,7 @@ internal static ж<notInHeap> alloc(this ж<traceRegionAlloc> Ꮡa, uintptr n) {
     block.of(traceRegionAllocBlock.Ꮡoff).Store(n);
     var x = block.at(traceRegionAllocBlock.Ꮡdata, 0).Reinterpret<byte, notInHeap>();
     // Publish the new block.
-    Ꮡa.of(traceRegionAlloc.Ꮡcurrent).Store(new @unsafe.Pointer(block));
+    Ꮡa.of(traceRegionAlloc.Ꮡcurrent).Store(@unsafe.Pointer.FromPinnedBox(block));
     unlock(Ꮡa.of(traceRegionAlloc.Ꮡlock));
     return x;
 }
@@ -104,7 +104,7 @@ internal static void drop(this ж<traceRegionAlloc> Ꮡa) {
     while (a.full != nil) {
         var block = a.full;
         a.full = block.Value.next;
-        sysFree(new @unsafe.Pointer(block), /* unsafe.Sizeof(traceRegionAllocBlock{}) */ (uintptr)65536, Ꮡmemstats.of(mstats.Ꮡother_sys));
+        sysFree(@unsafe.Pointer.FromPinnedBox(block), /* unsafe.Sizeof(traceRegionAllocBlock{}) */ (uintptr)65536, Ꮡmemstats.of(mstats.Ꮡother_sys));
     }
     {
         @unsafe.Pointer current = (uintptr)Ꮡa.of(traceRegionAlloc.Ꮡcurrent).Load(); if (current != nil) {

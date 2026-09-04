@@ -35,7 +35,7 @@ public static any /*val*/ Load(this ж<Value> Ꮡv) {
 
     var vp = Ꮡv.Reinterpret<Value, efaceWords>();
     @unsafe.Pointer typ = (uintptr)LoadPointer(vp.of(efaceWords.Ꮡtyp));
-    if (typ == nil || typ == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
+    if (typ == nil || typ == @unsafe.Pointer.FromPinnedBox(ᏑfirstStoreInProgress)) {
         // First store not yet completed.
         return default!;
     }
@@ -67,7 +67,7 @@ public static void Store(this ж<Value> Ꮡv, any valʗp) {
             // Disable preemption so that other goroutines can use
             // active spin wait to wait for completion.
             runtime_procPin();
-            if (!CompareAndSwapPointer(vp.of(efaceWords.Ꮡtyp), nil, new @unsafe.Pointer(ᏑfirstStoreInProgress))) {
+            if (!CompareAndSwapPointer(vp.of(efaceWords.Ꮡtyp), nil, @unsafe.Pointer.FromPinnedBox(ᏑfirstStoreInProgress))) {
                 runtime_procUnpin();
                 continue;
             }
@@ -77,7 +77,7 @@ public static void Store(this ж<Value> Ꮡv, any valʗp) {
             runtime_procUnpin();
             return;
         }
-        if (typ == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
+        if (typ == @unsafe.Pointer.FromPinnedBox(ᏑfirstStoreInProgress)) {
             // First store in progress. Wait.
             // Since we disable preemption around the first store,
             // we can wait with active spinning.
@@ -114,7 +114,7 @@ public static any /*old*/ Swap(this ж<Value> Ꮡv, any @newʗp) {
             // active spin wait to wait for completion; and so that
             // GC does not see the fake type accidentally.
             runtime_procPin();
-            if (!CompareAndSwapPointer(vp.of(efaceWords.Ꮡtyp), nil, new @unsafe.Pointer(ᏑfirstStoreInProgress))) {
+            if (!CompareAndSwapPointer(vp.of(efaceWords.Ꮡtyp), nil, @unsafe.Pointer.FromPinnedBox(ᏑfirstStoreInProgress))) {
                 runtime_procUnpin();
                 continue;
             }
@@ -124,7 +124,7 @@ public static any /*old*/ Swap(this ж<Value> Ꮡv, any @newʗp) {
             runtime_procUnpin();
             return default!;
         }
-        if (typ == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
+        if (typ == @unsafe.Pointer.FromPinnedBox(ᏑfirstStoreInProgress)) {
             // First store in progress. Wait.
             // Since we disable preemption around the first store,
             // we can wait with active spinning.
@@ -169,7 +169,7 @@ public static bool /*swapped*/ CompareAndSwap(this ж<Value> Ꮡv, any oldʗp, a
             // active spin wait to wait for completion; and so that
             // GC does not see the fake type accidentally.
             runtime_procPin();
-            if (!CompareAndSwapPointer(vp.of(efaceWords.Ꮡtyp), nil, new @unsafe.Pointer(ᏑfirstStoreInProgress))) {
+            if (!CompareAndSwapPointer(vp.of(efaceWords.Ꮡtyp), nil, @unsafe.Pointer.FromPinnedBox(ᏑfirstStoreInProgress))) {
                 runtime_procUnpin();
                 continue;
             }
@@ -179,7 +179,7 @@ public static bool /*swapped*/ CompareAndSwap(this ж<Value> Ꮡv, any oldʗp, a
             runtime_procUnpin();
             return true;
         }
-        if (typ == new @unsafe.Pointer(ᏑfirstStoreInProgress)) {
+        if (typ == @unsafe.Pointer.FromPinnedBox(ᏑfirstStoreInProgress)) {
             // First store in progress. Wait.
             // Since we disable preemption around the first store,
             // we can wait with active spinning.

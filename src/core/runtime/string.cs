@@ -103,19 +103,19 @@ internal static @string slicebytetostring(ж<tmpBuf> Ꮡbuf, ж<byte> Ꮡptr, ni
         return ""u8;
     }
     if (raceenabled) {
-        racereadrangepc(new @unsafe.Pointer(Ꮡptr),
+        racereadrangepc(@unsafe.Pointer.FromPinnedBox(Ꮡptr),
             (uintptr)n,
             getcallerpc(),
             abi.FuncPCABIInternal(slicebytetostring));
     }
     if (msanenabled) {
-        msanread(new @unsafe.Pointer(Ꮡptr), (uintptr)n);
+        msanread(@unsafe.Pointer.FromPinnedBox(Ꮡptr), (uintptr)n);
     }
     if (asanenabled) {
-        asanread(new @unsafe.Pointer(Ꮡptr), (uintptr)n);
+        asanread(@unsafe.Pointer.FromPinnedBox(Ꮡptr), (uintptr)n);
     }
     if (n == 1) {
-        @unsafe.Pointer pΔ1 = new @unsafe.Pointer(Ꮡstaticuint64s.at<uint64>((nint)(ptr)));
+        @unsafe.Pointer pΔ1 = @unsafe.Pointer.FromPinnedBox(Ꮡstaticuint64s.at<uint64>((nint)(ptr)));
         if (goarch.BigEndian) {
             pΔ1 = (uintptr)add(pΔ1, 7);
         }
@@ -123,11 +123,11 @@ internal static @string slicebytetostring(ж<tmpBuf> Ꮡbuf, ж<byte> Ꮡptr, ni
     }
     @unsafe.Pointer Δp = default!;
     if (Ꮡbuf != nil && n <= 32){
-        Δp = new @unsafe.Pointer(Ꮡbuf);
+        Δp = @unsafe.Pointer.FromPinnedBox(Ꮡbuf);
     } else {
         Δp = (uintptr)mallocgc((uintptr)n, nil, false);
     }
-    memmove(Δp, new @unsafe.Pointer(Ꮡptr), (uintptr)n);
+    memmove(Δp, @unsafe.Pointer.FromPinnedBox(Ꮡptr), (uintptr)n);
     return @unsafe.String((ж<byte>)(uintptr)(Δp), n);
 }
 
@@ -169,16 +169,16 @@ internal static (@string s, slice<byte> b) rawstringtmp(ж<tmpBuf> Ꮡbuf, nint 
 //   - Used for string(b)=="foo" comparison where b is []byte.
 internal static @string slicebytetostringtmp(ж<byte> Ꮡptr, nint n) {
     if (raceenabled && n > 0) {
-        racereadrangepc(new @unsafe.Pointer(Ꮡptr),
+        racereadrangepc(@unsafe.Pointer.FromPinnedBox(Ꮡptr),
             (uintptr)n,
             getcallerpc(),
             abi.FuncPCABIInternal(slicebytetostringtmp));
     }
     if (msanenabled && n > 0) {
-        msanread(new @unsafe.Pointer(Ꮡptr), (uintptr)n);
+        msanread(@unsafe.Pointer.FromPinnedBox(Ꮡptr), (uintptr)n);
     }
     if (asanenabled && n > 0) {
-        asanread(new @unsafe.Pointer(Ꮡptr), (uintptr)n);
+        asanread(@unsafe.Pointer.FromPinnedBox(Ꮡptr), (uintptr)n);
     }
     return @unsafe.String(Ꮡptr, n);
 }
@@ -223,16 +223,16 @@ internal static slice<rune> stringtoslicerune([GoArrayDims(32)] ж<array<rune>> 
 
 internal static @string slicerunetostring(ж<tmpBuf> Ꮡbuf, slice<rune> a) {
     if (raceenabled && len(a) > 0) {
-        racereadrangepc(new @unsafe.Pointer(Ꮡ(a, 0)),
+        racereadrangepc(@unsafe.Pointer.FromPinnedBox(Ꮡ(a, 0)),
             (uintptr)len(a) * /* unsafe.Sizeof(a[0]) */ (uintptr)4,
             getcallerpc(),
             abi.FuncPCABIInternal(slicerunetostring));
     }
     if (msanenabled && len(a) > 0) {
-        msanread(new @unsafe.Pointer(Ꮡ(a, 0)), (uintptr)len(a) * /* unsafe.Sizeof(a[0]) */ (uintptr)4);
+        msanread(@unsafe.Pointer.FromPinnedBox(Ꮡ(a, 0)), (uintptr)len(a) * /* unsafe.Sizeof(a[0]) */ (uintptr)4);
     }
     if (asanenabled && len(a) > 0) {
-        asanread(new @unsafe.Pointer(Ꮡ(a, 0)), (uintptr)len(a) * /* unsafe.Sizeof(a[0]) */ (uintptr)4);
+        asanread(@unsafe.Pointer.FromPinnedBox(Ꮡ(a, 0)), (uintptr)len(a) * /* unsafe.Sizeof(a[0]) */ (uintptr)4);
     }
     array<byte> dum = new(4);
     nint size1 = 0;
@@ -336,7 +336,7 @@ internal static slice<byte> /*b*/ gobytes(ж<byte> Ꮡp, nint n) {
         throw panic(((errorString)(@string)gobytesLengthOutOfRangeˢ));
     }
     @unsafe.Pointer bp = (uintptr)mallocgc((uintptr)n, nil, false);
-    memmove(bp, new @unsafe.Pointer(Ꮡp), (uintptr)n);
+    memmove(bp, @unsafe.Pointer.FromPinnedBox(Ꮡp), (uintptr)n);
     (Ꮡb.Reinterpret<slice<byte>, Δsliceᴛ>()).Value = new Δsliceᴛ(bp.Value, n, n);
     return b;
 }
@@ -350,7 +350,7 @@ internal static @string gostring(ж<byte> Ꮡp) {
         return ""u8;
     }
     var (s, b) = rawstring(l);
-    memmove(new @unsafe.Pointer(Ꮡ(b, 0)), new @unsafe.Pointer(Ꮡp), (uintptr)l);
+    memmove(@unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0)), @unsafe.Pointer.FromPinnedBox(Ꮡp), (uintptr)l);
     return s;
 }
 
@@ -366,7 +366,7 @@ internal static @string gostringn(ж<byte> Ꮡp, nint l) {
         return ""u8;
     }
     var (s, b) = rawstring(l);
-    memmove(new @unsafe.Pointer(Ꮡ(b, 0)), new @unsafe.Pointer(Ꮡp), (uintptr)l);
+    memmove(@unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0)), @unsafe.Pointer.FromPinnedBox(Ꮡp), (uintptr)l);
     return s;
 }
 
@@ -559,7 +559,7 @@ internal static nint findnull(ж<byte> Ꮡs) {
     UntypedInt pageSize = 4096;
     nint offset = 0;
     ref var ptr = ref heap<@unsafe.Pointer>(out var Ꮡptr);
-    ptr = new @unsafe.Pointer(Ꮡs);
+    ptr = @unsafe.Pointer.FromPinnedBox(Ꮡs);
     // IndexByteString uses wide reads, so we need to be careful
     // with page boundaries. Call IndexByteString on
     // [ptr, endOfPage) interval.
@@ -595,7 +595,7 @@ internal static nint findnullw(ж<uint16> Ꮡs) {
 //go:nosplit
 internal static @string gostringnocopy(ж<byte> Ꮡstr) {
     ref var ss = ref heap<stringStruct>(out var Ꮡss);
-    ss = new stringStruct(str: new @unsafe.Pointer(Ꮡstr), len: findnull(Ꮡstr));
+    ss = new stringStruct(str: @unsafe.Pointer.FromPinnedBox(Ꮡstr), len: findnull(Ꮡstr));
     @string s = ~Ꮡss.Reinterpret<stringStruct, @string>();
     return s;
 }

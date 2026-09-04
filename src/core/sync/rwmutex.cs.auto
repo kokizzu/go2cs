@@ -88,7 +88,7 @@ public static void RLock(this ж<RWMutex> Ꮡrw) {
     }
     if (race.Enabled) {
         race.Enable();
-        race.Acquire(new @unsafe.Pointer(Ꮡrw.of(RWMutex.ᏑreaderSem)));
+        race.Acquire(@unsafe.Pointer.FromPinnedBox(Ꮡrw.of(RWMutex.ᏑreaderSem)));
     }
 }
 
@@ -115,7 +115,7 @@ public static bool TryRLock(this ж<RWMutex> Ꮡrw) {
         if (Ꮡrw.of(RWMutex.ᏑreaderCount).CompareAndSwap(c, c + 1)) {
             if (race.Enabled) {
                 race.Enable();
-                race.Acquire(new @unsafe.Pointer(Ꮡrw.of(RWMutex.ᏑreaderSem)));
+                race.Acquire(@unsafe.Pointer.FromPinnedBox(Ꮡrw.of(RWMutex.ᏑreaderSem)));
             }
             return true;
         }
@@ -131,7 +131,7 @@ public static void RUnlock(this ж<RWMutex> Ꮡrw) {
 
     if (race.Enabled) {
         _ = rw.w.state;
-        race.ReleaseMerge(new @unsafe.Pointer(Ꮡrw.of(RWMutex.ᏑwriterSem)));
+        race.ReleaseMerge(@unsafe.Pointer.FromPinnedBox(Ꮡrw.of(RWMutex.ᏑwriterSem)));
         race.Disable();
     }
     {
@@ -177,8 +177,8 @@ public static void Lock(this ж<RWMutex> Ꮡrw) {
     }
     if (race.Enabled) {
         race.Enable();
-        race.Acquire(new @unsafe.Pointer(Ꮡrw.of(RWMutex.ᏑreaderSem)));
-        race.Acquire(new @unsafe.Pointer(Ꮡrw.of(RWMutex.ᏑwriterSem)));
+        race.Acquire(@unsafe.Pointer.FromPinnedBox(Ꮡrw.of(RWMutex.ᏑreaderSem)));
+        race.Acquire(@unsafe.Pointer.FromPinnedBox(Ꮡrw.of(RWMutex.ᏑwriterSem)));
     }
 }
 
@@ -209,8 +209,8 @@ public static bool TryLock(this ж<RWMutex> Ꮡrw) {
     }
     if (race.Enabled) {
         race.Enable();
-        race.Acquire(new @unsafe.Pointer(Ꮡrw.of(RWMutex.ᏑreaderSem)));
-        race.Acquire(new @unsafe.Pointer(Ꮡrw.of(RWMutex.ᏑwriterSem)));
+        race.Acquire(@unsafe.Pointer.FromPinnedBox(Ꮡrw.of(RWMutex.ᏑreaderSem)));
+        race.Acquire(@unsafe.Pointer.FromPinnedBox(Ꮡrw.of(RWMutex.ᏑwriterSem)));
     }
     return true;
 }
@@ -226,7 +226,7 @@ public static void Unlock(this ж<RWMutex> Ꮡrw) {
 
     if (race.Enabled) {
         _ = rw.w.state;
-        race.Release(new @unsafe.Pointer(Ꮡrw.of(RWMutex.ᏑreaderSem)));
+        race.Release(@unsafe.Pointer.FromPinnedBox(Ꮡrw.of(RWMutex.ᏑreaderSem)));
         race.Disable();
     }
     // Announce to readers there is no active writer.

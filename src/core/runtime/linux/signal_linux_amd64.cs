@@ -127,7 +127,7 @@ partial class runtime_package {
 }
 
 [GoRecv] internal static void set_sigaddr(this ref sigctxt c, uint64 x) {
-    ((ж<uintptr>)(uintptr)((uintptr)add(new @unsafe.Pointer(c.info), 2 * goarch.PtrSize))).Value = (uintptr)x;
+    ((ж<uintptr>)(uintptr)((uintptr)add(@unsafe.Pointer.FromPinnedBox(c.info), 2 * goarch.PtrSize))).Value = (uintptr)x;
 }
 
 } // end runtime_package

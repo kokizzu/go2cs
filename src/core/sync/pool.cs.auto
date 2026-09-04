@@ -108,9 +108,9 @@ internal static ref array<uint64> poolRaceHash => ref ᏑpoolRaceHash.Value;
 internal static @unsafe.Pointer poolRaceAddr(any xʗp) {
     ref var x = ref heap(xʗp, out var Ꮡx);
 
-    var ptr = (uintptr)((ж<array<@unsafe.Pointer>>)(uintptr)(new @unsafe.Pointer(Ꮡx))).Value[1];
+    var ptr = (uintptr)((ж<array<@unsafe.Pointer>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡx))).Value[1];
     var h = (uint32)((((uint64)(uint32)ptr * 0x85ebca6bU) >> (int)(16)));
-    return new @unsafe.Pointer(ᏑpoolRaceHash.at<uint64>((nint)(h % (uint32)len(poolRaceHash))));
+    return @unsafe.Pointer.FromPinnedBox(ᏑpoolRaceHash.at<uint64>((nint)(h % (uint32)len(poolRaceHash))));
 }
 
 // Put adds x to the pool.
@@ -269,7 +269,7 @@ internal static (ж<poolLocal>, nint) pinSlow(this ж<Pool> Ꮡp) {
         // If GOMAXPROCS changes between GCs, we re-allocate the array and lose the old one.
         nint size = Δruntime.GOMAXPROCS(0);
         var local = new slice<poolLocal>(size, () => new(nil));
-        atomic.StorePointer(Ꮡp.of(Pool.Ꮡlocal), new @unsafe.Pointer(Ꮡ(local, 0))); // store-release
+        atomic.StorePointer(Ꮡp.of(Pool.Ꮡlocal), @unsafe.Pointer.FromPinnedBox(Ꮡ(local, 0))); // store-release
         runtime_StoreReluintptr(Ꮡp.of(Pool.ᏑlocalSize), (uintptr)size); // store-release
         return (Ꮡ(local, pid), pid);
     }

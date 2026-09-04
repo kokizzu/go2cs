@@ -44,7 +44,7 @@ internal static @unsafe.Pointer pop(this ж<lfstack> Ꮡhead) {
         var node = lfstackUnpack(old);
         var next = atomic.Load64(node.of(lfnode.Ꮡnext));
         if (atomic.Cas64(Ꮡhead.Reinterpret<lfstack, uint64>(), old, next)) {
-            return new @unsafe.Pointer(node);
+            return @unsafe.Pointer.FromPinnedBox(node);
         }
     }
 }
@@ -73,7 +73,7 @@ internal static void lfnodeValidate(ж<lfnode> Ꮡnode) {
 }
 
 internal static uint64 lfstackPack(ж<lfnode> Ꮡnode, uintptr cnt) {
-    return (uint64)taggedPointerPack(new @unsafe.Pointer(Ꮡnode), cnt);
+    return (uint64)taggedPointerPack(@unsafe.Pointer.FromPinnedBox(Ꮡnode), cnt);
 }
 
 internal static ж<lfnode> lfstackUnpack(uint64 val) {

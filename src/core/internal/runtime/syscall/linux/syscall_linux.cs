@@ -26,18 +26,20 @@ internal static ref uintptr _zero => ref Ꮡ_zero.Value;
 public static (int32 n, uintptr errno) EpollWait(int32 epfd, slice<EpollEvent> events, int32 maxev, int32 waitms) {
     @unsafe.Pointer ev = default!;
     if (len(events) > 0){
-        ev = new @unsafe.Pointer(Ꮡ(events, 0));
+        ev = @unsafe.Pointer.FromPinnedBox(Ꮡ(events, 0));
     } else {
         ev = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var (r1, _, e) = Syscall6(SYS_EPOLL_PWAIT, (uintptr)epfd, (uintptr)ev, (uintptr)maxev, (uintptr)waitms, 0, 0);
+    var ᴋ0 = ev;
+        var (r1, _, e) = Syscall6(SYS_EPOLL_PWAIT, (uintptr)epfd, (uintptr)ᴋ0, (uintptr)maxev, (uintptr)waitms, 0, 0);
+    System.GC.KeepAlive(ᴋ0);
     return ((int32)r1, e);
 }
 
 public static uintptr /*errno*/ EpollCtl(int32 epfd, int32 op, int32 fd, ж<EpollEvent> Ꮡevent) {
-    var ᴋ0 = Ꮡevent;
-        var (_, _, e) = Syscall6(SYS_EPOLL_CTL, (uintptr)epfd, (uintptr)op, (uintptr)fd, (uintptr)ᴋ0, 0, 0);
-    System.GC.KeepAlive(ᴋ0);
+    var ᴋ1 = Ꮡevent;
+        var (_, _, e) = Syscall6(SYS_EPOLL_CTL, (uintptr)epfd, (uintptr)op, (uintptr)fd, (uintptr)ᴋ1, 0, 0);
+    System.GC.KeepAlive(ᴋ1);
     return e;
 }
 

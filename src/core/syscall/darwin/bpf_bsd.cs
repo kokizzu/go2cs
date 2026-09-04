@@ -22,7 +22,7 @@ public static ж<BpfInsn> BpfJump(nint code, nint k, nint jt, nint jf) {
 // Deprecated: Use golang.org/x/net/bpf instead.
 public static (nint, error) BpfBuflen(nint fd) {
     ref var l = ref heap(new nint(), out var Ꮡl);
-    var err = ioctlPtr(fd, BIOCGBLEN, new @unsafe.Pointer(Ꮡl));
+    var err = ioctlPtr(fd, BIOCGBLEN, @unsafe.Pointer.FromPinnedBox(Ꮡl));
     if (err != default!) {
         return (0, err);
     }
@@ -33,7 +33,7 @@ public static (nint, error) BpfBuflen(nint fd) {
 public static (nint, error) SetBpfBuflen(nint fd, nint lʗp) {
     ref var l = ref heap(lʗp, out var Ꮡl);
 
-    var err = ioctlPtr(fd, BIOCSBLEN, new @unsafe.Pointer(Ꮡl));
+    var err = ioctlPtr(fd, BIOCSBLEN, @unsafe.Pointer.FromPinnedBox(Ꮡl));
     if (err != default!) {
         return (0, err);
     }
@@ -43,7 +43,7 @@ public static (nint, error) SetBpfBuflen(nint fd, nint lʗp) {
 // Deprecated: Use golang.org/x/net/bpf instead.
 public static (nint, error) BpfDatalink(nint fd) {
     ref var t = ref heap(new nint(), out var Ꮡt);
-    var err = ioctlPtr(fd, BIOCGDLT, new @unsafe.Pointer(Ꮡt));
+    var err = ioctlPtr(fd, BIOCGDLT, @unsafe.Pointer.FromPinnedBox(Ꮡt));
     if (err != default!) {
         return (0, err);
     }
@@ -54,7 +54,7 @@ public static (nint, error) BpfDatalink(nint fd) {
 public static (nint, error) SetBpfDatalink(nint fd, nint tʗp) {
     ref var t = ref heap(tʗp, out var Ꮡt);
 
-    var err = ioctlPtr(fd, BIOCSDLT, new @unsafe.Pointer(Ꮡt));
+    var err = ioctlPtr(fd, BIOCSDLT, @unsafe.Pointer.FromPinnedBox(Ꮡt));
     if (err != default!) {
         return (0, err);
     }
@@ -65,7 +65,7 @@ public static (nint, error) SetBpfDatalink(nint fd, nint tʗp) {
 public static error SetBpfPromisc(nint fd, nint mʗp) {
     ref var m = ref heap(mʗp, out var Ꮡm);
 
-    var err = ioctlPtr(fd, BIOCPROMISC, new @unsafe.Pointer(Ꮡm));
+    var err = ioctlPtr(fd, BIOCPROMISC, @unsafe.Pointer.FromPinnedBox(Ꮡm));
     if (err != default!) {
         return err;
     }
@@ -89,7 +89,7 @@ public static error FlushBpf(nint fd) {
 // Deprecated: Use golang.org/x/net/bpf instead.
 public static (@string, error) BpfInterface(nint fd, @string name) {
     ref var iv = ref heap(new ivalue(), out var Ꮡiv);
-    var err = ioctlPtr(fd, BIOCGETIF, new @unsafe.Pointer(Ꮡiv));
+    var err = ioctlPtr(fd, BIOCGETIF, @unsafe.Pointer.FromPinnedBox(Ꮡiv));
     if (err != default!) {
         return ("", err);
     }
@@ -100,7 +100,7 @@ public static (@string, error) BpfInterface(nint fd, @string name) {
 public static error SetBpfInterface(nint fd, @string name) {
     ref var iv = ref heap(new ivalue(), out var Ꮡiv);
     copy(iv.name[..], slice<byte>(name));
-    var err = ioctlPtr(fd, BIOCSETIF, new @unsafe.Pointer(Ꮡiv));
+    var err = ioctlPtr(fd, BIOCSETIF, @unsafe.Pointer.FromPinnedBox(Ꮡiv));
     if (err != default!) {
         return err;
     }
@@ -110,7 +110,7 @@ public static error SetBpfInterface(nint fd, @string name) {
 // Deprecated: Use golang.org/x/net/bpf instead.
 public static (ж<Timeval>, error) BpfTimeout(nint fd) {
     ref var tv = ref heap(new Timeval(), out var Ꮡtv);
-    var err = ioctlPtr(fd, BIOCGRTIMEOUT, new @unsafe.Pointer(Ꮡtv));
+    var err = ioctlPtr(fd, BIOCGRTIMEOUT, @unsafe.Pointer.FromPinnedBox(Ꮡtv));
     if (err != default!) {
         return (default!, err);
     }
@@ -119,7 +119,7 @@ public static (ж<Timeval>, error) BpfTimeout(nint fd) {
 
 // Deprecated: Use golang.org/x/net/bpf instead.
 public static error SetBpfTimeout(nint fd, ж<Timeval> Ꮡtv) {
-    var err = ioctlPtr(fd, BIOCSRTIMEOUT, new @unsafe.Pointer(Ꮡtv));
+    var err = ioctlPtr(fd, BIOCSRTIMEOUT, @unsafe.Pointer.FromPinnedBox(Ꮡtv));
     if (err != default!) {
         return err;
     }
@@ -129,7 +129,7 @@ public static error SetBpfTimeout(nint fd, ж<Timeval> Ꮡtv) {
 // Deprecated: Use golang.org/x/net/bpf instead.
 public static (ж<BpfStat>, error) BpfStats(nint fd) {
     ref var s = ref heap(new BpfStat(), out var Ꮡs);
-    var err = ioctlPtr(fd, BIOCGSTATS, new @unsafe.Pointer(Ꮡs));
+    var err = ioctlPtr(fd, BIOCGSTATS, @unsafe.Pointer.FromPinnedBox(Ꮡs));
     if (err != default!) {
         return (default!, err);
     }
@@ -140,7 +140,7 @@ public static (ж<BpfStat>, error) BpfStats(nint fd) {
 public static error SetBpfImmediate(nint fd, nint mʗp) {
     ref var m = ref heap(mʗp, out var Ꮡm);
 
-    var err = ioctlPtr(fd, BIOCIMMEDIATE, new @unsafe.Pointer(Ꮡm));
+    var err = ioctlPtr(fd, BIOCIMMEDIATE, @unsafe.Pointer.FromPinnedBox(Ꮡm));
     if (err != default!) {
         return err;
     }
@@ -152,7 +152,7 @@ public static error SetBpf(nint fd, slice<BpfInsn> i) {
     ref var p = ref heap(new BpfProgram(), out var Ꮡp);
     p.Len = (uint32)len(i);
     p.Insns = Ꮡ(i, 0);
-    var err = ioctlPtr(fd, BIOCSETF, new @unsafe.Pointer(Ꮡp));
+    var err = ioctlPtr(fd, BIOCSETF, @unsafe.Pointer.FromPinnedBox(Ꮡp));
     if (err != default!) {
         return err;
     }
@@ -162,7 +162,7 @@ public static error SetBpf(nint fd, slice<BpfInsn> i) {
 // Deprecated: Use golang.org/x/net/bpf instead.
 public static error CheckBpfVersion(nint fd) {
     ref var v = ref heap(new BpfVersion(), out var Ꮡv);
-    var err = ioctlPtr(fd, BIOCVERSION, new @unsafe.Pointer(Ꮡv));
+    var err = ioctlPtr(fd, BIOCVERSION, @unsafe.Pointer.FromPinnedBox(Ꮡv));
     if (err != default!) {
         return err;
     }
@@ -175,7 +175,7 @@ public static error CheckBpfVersion(nint fd) {
 // Deprecated: Use golang.org/x/net/bpf instead.
 public static (nint, error) BpfHeadercmpl(nint fd) {
     ref var f = ref heap(new nint(), out var Ꮡf);
-    var err = ioctlPtr(fd, BIOCGHDRCMPLT, new @unsafe.Pointer(Ꮡf));
+    var err = ioctlPtr(fd, BIOCGHDRCMPLT, @unsafe.Pointer.FromPinnedBox(Ꮡf));
     if (err != default!) {
         return (0, err);
     }
@@ -186,7 +186,7 @@ public static (nint, error) BpfHeadercmpl(nint fd) {
 public static error SetBpfHeadercmpl(nint fd, nint fʗp) {
     ref var f = ref heap(fʗp, out var Ꮡf);
 
-    var err = ioctlPtr(fd, BIOCSHDRCMPLT, new @unsafe.Pointer(Ꮡf));
+    var err = ioctlPtr(fd, BIOCSHDRCMPLT, @unsafe.Pointer.FromPinnedBox(Ꮡf));
     if (err != default!) {
         return err;
     }

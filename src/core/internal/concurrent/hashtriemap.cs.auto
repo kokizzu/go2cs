@@ -81,7 +81,7 @@ public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>() {
 [GoRecv] public static (V value, bool ok) Load<K, V>(this ref HashTrieMap<K, V> ht, K keyʗp) {
     ref var key = ref heap(keyʗp, out var Ꮡkey);
 
-    var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey)), ht.seed);
+    var hash = ht.keyHash((uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), ht.seed);
     var i = ht.root;
     nint hashShift = 8 * goarch.PtrSize;
     while (hashShift != 0) {
@@ -109,7 +109,7 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
         ref var ht = ref Ꮡht.DerefOrNull();
 
         ref var key = ref heap(keyʗp, out var Ꮡkey);
-        var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey)), ht.seed);
+        var hash = ht.keyHash((uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), ht.seed);
         ж<Δindirect<K, V>> i = default!;
         nuint hashShift = default!;
         ж<atomic.Pointer<node<K, V>>> slot = default!;
@@ -196,7 +196,7 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
     ref var parent = ref Ꮡparent.DerefOrNull();
 
     // Check for a hash collision.
-    var oldHash = ht.keyHash(new @unsafe.Pointer(ᏑoldEntry.of(concurrent_package.Δentry<K, V>.Ꮡkey)), ht.seed);
+    var oldHash = ht.keyHash(@unsafe.Pointer.FromPinnedBox(ᏑoldEntry.of(concurrent_package.Δentry<K, V>.Ꮡkey)), ht.seed);
     if (oldHash == newHash) {
         // Store the old entry in the new entry's overflow list, then store
         // the new entry.
@@ -233,7 +233,7 @@ public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V
     bool deleted = default!;
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
-    var hash = ht.keyHash((uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey)), ht.seed);
+    var hash = ht.keyHash((uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), ht.seed);
     ж<Δindirect<K, V>> i = default!;
     nuint hashShift = default!;
     ж<atomic.Pointer<node<K, V>>> slot = default!;
@@ -403,7 +403,7 @@ internal static (V, bool) lookup<K, V>(this ж<Δentry<K, V>> Ꮡe, K keyʗp, Fu
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     while (Ꮡe != nil) {
-        if (equal(new @unsafe.Pointer(Ꮡe.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey)))) {
+        if (equal(@unsafe.Pointer.FromPinnedBox(Ꮡe.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)))) {
             return (e.value, true);
         }
         Ꮡe = Ꮡe.of(concurrent_package.Δentry<K, V>.Ꮡoverflow).Load(); e = ref Ꮡe.DerefOrNull();
@@ -420,14 +420,14 @@ internal static (ж<Δentry<K, V>>, bool) compareAndDelete<K, V>(this ж<Δentry
 
     ref var key = ref heap(keyʗp, out var Ꮡkey);
     ref var value = ref heap(valueʗp, out var Ꮡvalue);
-    if (keyEqual(new @unsafe.Pointer(Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey))) && valEqual(new @unsafe.Pointer(Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡvalue)))) {
+    if (keyEqual(@unsafe.Pointer.FromPinnedBox(Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey))) && valEqual(@unsafe.Pointer.FromPinnedBox(Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡvalue)))) {
         // Drop the head of the list.
         return (Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡoverflow).Load(), true);
     }
     var i = Ꮡhead.of(concurrent_package.Δentry<K, V>.Ꮡoverflow);
     var e = i.Load();
     while (e != nil) {
-        if (keyEqual(new @unsafe.Pointer(e.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡkey))) && valEqual(new @unsafe.Pointer(e.of(concurrent_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(new @unsafe.Pointer(Ꮡvalue)))) {
+        if (keyEqual(@unsafe.Pointer.FromPinnedBox(e.of(concurrent_package.Δentry<K, V>.Ꮡkey)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey))) && valEqual(@unsafe.Pointer.FromPinnedBox(e.of(concurrent_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡvalue)))) {
             i.Store(e.of(concurrent_package.Δentry<K, V>.Ꮡoverflow).Load());
             return (Ꮡhead, true);
         }

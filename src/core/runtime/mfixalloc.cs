@@ -83,7 +83,7 @@ internal static readonly @string runtimeInternalErrorˢ = "runtime: internal err
         @throw(runtimeInternalErrorˢ);
     }
     if (f.list != nil) {
-        @unsafe.Pointer vΔ1 = new @unsafe.Pointer(f.list);
+        @unsafe.Pointer vΔ1 = @unsafe.Pointer.FromPinnedBox(f.list);
         f.list = f.list.Value.next;
         f.inuse += f.size;
         if (f.zero) {

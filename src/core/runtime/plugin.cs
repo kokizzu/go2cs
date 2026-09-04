@@ -83,8 +83,8 @@ internal static (@string path, map<@string, any> syms, slice<ж<initTask>> initT
         var symName = resolveNameOff((@unsafe.Pointer)(~md).types, ptab.name);
         var t = toRType((ж<_type>)(uintptr)((@unsafe.Pointer)(~md).types)).typeOff(ptab.typ); // TODO can this stack of conversions be simpler?
         ref var val = ref heap<any>(out var Ꮡval);
-        var valp = (ж<array<@unsafe.Pointer>>)(uintptr)(new @unsafe.Pointer(Ꮡval));
-        (valp.Value)[0] = new @unsafe.Pointer(t);
+        var valp = (ж<array<@unsafe.Pointer>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡval));
+        (valp.Value)[0] = @unsafe.Pointer.FromPinnedBox(t);
         @string name = symName.Name();
         if ((abiꓸKind)((~t).Kind_ & abi.KindMask) == abi.Func) {
             name = "."u8 + name;

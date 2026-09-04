@@ -1590,12 +1590,12 @@ internal static void callCgoSymbolizer(ж<cgoSymbolizerArg> Ꮡarg) {
         call = asmcgocall;
     }
     if (msanenabled) {
-        msanwrite(new @unsafe.Pointer(Ꮡarg), /* unsafe.Sizeof(cgoSymbolizerArg{}) */ (uintptr)56);
+        msanwrite(@unsafe.Pointer.FromPinnedBox(Ꮡarg), /* unsafe.Sizeof(cgoSymbolizerArg{}) */ (uintptr)56);
     }
     if (asanenabled) {
-        asanwrite(new @unsafe.Pointer(Ꮡarg), /* unsafe.Sizeof(cgoSymbolizerArg{}) */ (uintptr)56);
+        asanwrite(@unsafe.Pointer.FromPinnedBox(Ꮡarg), /* unsafe.Sizeof(cgoSymbolizerArg{}) */ (uintptr)56);
     }
-    call(cgoSymbolizer, (uintptr)noescape(new @unsafe.Pointer(Ꮡarg)));
+    call(cgoSymbolizer, (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡarg)));
 }
 
 // cgoContextPCs gets the PC values from a cgo traceback.
@@ -1616,12 +1616,12 @@ internal static void cgoContextPCs(uintptr ctxt, slice<uintptr> buf) {
         max: (uintptr)len(buf)
     );
     if (msanenabled) {
-        msanwrite(new @unsafe.Pointer(Ꮡarg), /* unsafe.Sizeof(arg) */ (uintptr)32);
+        msanwrite(@unsafe.Pointer.FromPinnedBox(Ꮡarg), /* unsafe.Sizeof(arg) */ (uintptr)32);
     }
     if (asanenabled) {
-        asanwrite(new @unsafe.Pointer(Ꮡarg), /* unsafe.Sizeof(arg) */ (uintptr)32);
+        asanwrite(@unsafe.Pointer.FromPinnedBox(Ꮡarg), /* unsafe.Sizeof(arg) */ (uintptr)32);
     }
-    call(cgoTraceback, (uintptr)noescape(new @unsafe.Pointer(Ꮡarg)));
+    call(cgoTraceback, (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(Ꮡarg)));
 }
 
 } // end runtime_package

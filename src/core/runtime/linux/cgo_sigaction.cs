@@ -28,10 +28,10 @@ internal static void sigaction(uint32 sigʗp, ж<sigactiont> Ꮡnew, ж<sigactio
     // Mark the input as having been written before the call
     // and the output as read after.
     if (msanenabled && Ꮡnew != nil) {
-        msanwrite(new @unsafe.Pointer(Ꮡnew), /* unsafe.Sizeof(*new) */ (uintptr)32);
+        msanwrite(@unsafe.Pointer.FromPinnedBox(Ꮡnew), /* unsafe.Sizeof(*new) */ (uintptr)32);
     }
     if (asanenabled && Ꮡnew != nil) {
-        asanwrite(new @unsafe.Pointer(Ꮡnew), /* unsafe.Sizeof(*new) */ (uintptr)32);
+        asanwrite(@unsafe.Pointer.FromPinnedBox(Ꮡnew), /* unsafe.Sizeof(*new) */ (uintptr)32);
     }
     if (_cgo_sigaction == nil || inForkedChild){
         sysSigaction(sig, Ꮡnew, Ꮡold);
@@ -84,10 +84,10 @@ internal static void sigaction(uint32 sigʗp, ж<sigactiont> Ꮡnew, ж<sigactio
         }
     }
     if (msanenabled && Ꮡold != nil) {
-        msanread(new @unsafe.Pointer(Ꮡold), /* unsafe.Sizeof(*old) */ (uintptr)32);
+        msanread(@unsafe.Pointer.FromPinnedBox(Ꮡold), /* unsafe.Sizeof(*old) */ (uintptr)32);
     }
     if (asanenabled && Ꮡold != nil) {
-        asanread(new @unsafe.Pointer(Ꮡold), /* unsafe.Sizeof(*old) */ (uintptr)32);
+        asanread(@unsafe.Pointer.FromPinnedBox(Ꮡold), /* unsafe.Sizeof(*old) */ (uintptr)32);
     }
 }
 

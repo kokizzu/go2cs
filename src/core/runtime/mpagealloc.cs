@@ -437,7 +437,7 @@ internal static void grow(this ж<pageAlloc> Ꮡp, uintptr @base, uintptr size) 
         for (nuint i = chunkIndex(r.@base.addr()).l1(); i < chunkIndex(r.limit.addr() - 1).l1(); i++) {
             // N.B. We can assume that p.chunks[i] is non-nil and in a mapped part of p.chunks
             // because it's derived from inUse, which never shrinks.
-            sysHugePage(new @unsafe.Pointer(Δp.chunks[(nint)(i)]), /* unsafe.Sizeof(*p.chunks[0]) */ (uintptr)1048576);
+            sysHugePage(@unsafe.Pointer.FromPinnedBox(Δp.chunks[(nint)(i)]), /* unsafe.Sizeof(*p.chunks[0]) */ (uintptr)1048576);
         }
     }
 }

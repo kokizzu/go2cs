@@ -112,7 +112,7 @@ public static (nint n, error err) Getfsstat(slice<Statfs_t> buf, nint flags) {
     @unsafe.Pointer _p0 = default!;
     uintptr bufsize = default!;
     if (len(buf) > 0) {
-        _p0 = new @unsafe.Pointer(Ꮡ(buf, 0));
+        _p0 = @unsafe.Pointer.FromPinnedBox(Ꮡ(buf, 0));
         bufsize = /* unsafe.Sizeof(Statfs_t{}) */ (uintptr)2168 * (uintptr)len(buf);
     }
     var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_getfsstat_trampoline), (uintptr)_p0, bufsize, (uintptr)flags);

@@ -51,7 +51,7 @@ public static (slice<@string> env, error err) Default(ж<syscall.SysProcAttr> �
         while (blockp.Value != 0) {
             // environment block ends with empty string
             // find NUL terminator
-            @unsafe.Pointer end = (uintptr)@unsafe.Add(new @unsafe.Pointer(blockp), size);
+            @unsafe.Pointer end = (uintptr)@unsafe.Add(@unsafe.Pointer.FromPinnedBox(blockp), size);
             while (~(ж<uint16>)(uintptr)(end) != 0) {
                 end = (uintptr)@unsafe.Add(end, size);
             }

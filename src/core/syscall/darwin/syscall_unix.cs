@@ -197,17 +197,17 @@ public static (nint n, error err) Read(nint fd, slice<byte> p) {
     (n, err) = read(fd, p);
     if (race.Enabled) {
         if (n > 0) {
-            race.WriteRange(new @unsafe.Pointer(Ꮡ(p, 0)), n);
+            race.WriteRange(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), n);
         }
         if (err == default!) {
-            race.Acquire(new @unsafe.Pointer(ᏑioSync));
+            race.Acquire(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
         }
     }
     if (msan.Enabled && n > 0) {
-        msan.Write(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)n);
+        msan.Write(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)n);
     }
     if (asan.Enabled && n > 0) {
-        asan.Write(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)n);
+        asan.Write(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)n);
     }
     return (n, err);
 }
@@ -217,7 +217,7 @@ public static (nint n, error err) Write(nint fd, slice<byte> p) {
     error err = default!;
 
     if (race.Enabled) {
-        race.ReleaseMerge(new @unsafe.Pointer(ᏑioSync));
+        race.ReleaseMerge(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
     }
     if (faketime && (fd == 1 || fd == 2)){
         n = faketimeWrite(fd, p);
@@ -228,13 +228,13 @@ public static (nint n, error err) Write(nint fd, slice<byte> p) {
         (n, err) = write(fd, p);
     }
     if (race.Enabled && n > 0) {
-        race.ReadRange(new @unsafe.Pointer(Ꮡ(p, 0)), n);
+        race.ReadRange(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), n);
     }
     if (msan.Enabled && n > 0) {
-        msan.Read(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)n);
+        msan.Read(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)n);
     }
     if (asan.Enabled && n > 0) {
-        asan.Read(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)n);
+        asan.Read(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)n);
     }
     return (n, err);
 }
@@ -246,17 +246,17 @@ public static (nint n, error err) Pread(nint fd, slice<byte> p, int64 offset) {
     (n, err) = pread(fd, p, offset);
     if (race.Enabled) {
         if (n > 0) {
-            race.WriteRange(new @unsafe.Pointer(Ꮡ(p, 0)), n);
+            race.WriteRange(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), n);
         }
         if (err == default!) {
-            race.Acquire(new @unsafe.Pointer(ᏑioSync));
+            race.Acquire(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
         }
     }
     if (msan.Enabled && n > 0) {
-        msan.Write(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)n);
+        msan.Write(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)n);
     }
     if (asan.Enabled && n > 0) {
-        asan.Write(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)n);
+        asan.Write(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)n);
     }
     return (n, err);
 }
@@ -266,17 +266,17 @@ public static (nint n, error err) Pwrite(nint fd, slice<byte> p, int64 offset) {
     error err = default!;
 
     if (race.Enabled) {
-        race.ReleaseMerge(new @unsafe.Pointer(ᏑioSync));
+        race.ReleaseMerge(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
     }
     (n, err) = pwrite(fd, p, offset);
     if (race.Enabled && n > 0) {
-        race.ReadRange(new @unsafe.Pointer(Ꮡ(p, 0)), n);
+        race.ReadRange(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), n);
     }
     if (msan.Enabled && n > 0) {
-        msan.Read(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)n);
+        msan.Read(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)n);
     }
     if (asan.Enabled && n > 0) {
-        asan.Read(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)n);
+        asan.Read(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)n);
     }
     return (n, err);
 }
@@ -348,7 +348,7 @@ public static (nint value, error err) GetsockoptInt(nint fd, nint level, nint op
     ref var n = ref heap(new int32(), out var Ꮡn);
     ref var vallen = ref heap<_Socklen>(out var Ꮡvallen);
     vallen = ((_Socklen)4);
-    err = getsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡn), Ꮡvallen);
+    err = getsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡn), Ꮡvallen);
     return ((nint)n, err);
 }
 
@@ -384,7 +384,7 @@ internal static (nint n, error err) recvfromInet4(nint fd, slice<byte> p, nint f
         }
     }
     var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet4>();
-    var port = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet4.ᏑPort)));
+    var port = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(pp.of(RawSockaddrInet4.ᏑPort)));
     from.Port = ((nint)port.Value[0] << (int)(8)) + (nint)port.Value[1];
     from.Addr = pp.Value.Addr.Clone();
     return (n, err);
@@ -403,7 +403,7 @@ internal static (nint n, error err) recvfromInet6(nint fd, slice<byte> p, nint f
         }
     }
     var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet6>();
-    var port = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet6.ᏑPort)));
+    var port = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(pp.of(RawSockaddrInet6.ᏑPort)));
     from.Port = ((nint)port.Value[0] << (int)(8)) + (nint)port.Value[1];
     from.ZoneId = pp.Value.Scope_id;
     from.Addr = pp.Value.Addr.Clone();
@@ -422,7 +422,7 @@ internal static (nint n, nint oobn, nint recvflags, error err) recvmsgInet4(nint
         return (n, oobn, recvflags, err);
     }
     var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet4>();
-    var port = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet4.ᏑPort)));
+    var port = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(pp.of(RawSockaddrInet4.ᏑPort)));
     from.Port = ((nint)port.Value[0] << (int)(8)) + (nint)port.Value[1];
     from.Addr = pp.Value.Addr.Clone();
     return (n, oobn, recvflags, err);
@@ -440,7 +440,7 @@ internal static (nint n, nint oobn, nint recvflags, error err) recvmsgInet6(nint
         return (n, oobn, recvflags, err);
     }
     var pp = Ꮡrsa.Reinterpret<RawSockaddrAny, RawSockaddrInet6>();
-    var port = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(pp.of(RawSockaddrInet6.ᏑPort)));
+    var port = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(pp.of(RawSockaddrInet6.ᏑPort)));
     from.Port = ((nint)port.Value[0] << (int)(8)) + (nint)port.Value[1];
     from.ZoneId = pp.Value.Scope_id;
     from.Addr = pp.Value.Addr.Clone();
@@ -541,42 +541,42 @@ public static error /*err*/ Sendto(nint fd, slice<byte> p, nint flags, Sockaddr 
 public static error /*err*/ SetsockoptByte(nint fd, nint level, nint opt, byte valueʗp) {
     ref var value = ref heap(valueʗp, out var Ꮡvalue);
 
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue), 1);
+    return setsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue), 1);
 }
 
 public static error /*err*/ SetsockoptInt(nint fd, nint level, nint opt, nint value) {
     ref var n = ref heap(new int32(), out var Ꮡn);
 
     n = (int32)value;
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡn), 4);
+    return setsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡn), 4);
 }
 
 public static error /*err*/ SetsockoptInet4Addr(nint fd, nint level, nint opt, [GoArrayDims(4)] array<byte> valueʗp) {
     ref var value = ref heap(valueʗp.Clone(), out var Ꮡvalue);
 
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡvalue.at<byte>(0)), 4);
+    return setsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡvalue.at<byte>(0)), 4);
 }
 
 public static error /*err*/ SetsockoptIPMreq(nint fd, nint level, nint opt, ж<IPMreq> Ꮡmreq) {
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡmreq), SizeofIPMreq);
+    return setsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡmreq), SizeofIPMreq);
 }
 
 public static error /*err*/ SetsockoptIPv6Mreq(nint fd, nint level, nint opt, ж<IPv6Mreq> Ꮡmreq) {
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡmreq), SizeofIPv6Mreq);
+    return setsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡmreq), SizeofIPv6Mreq);
 }
 
 public static error SetsockoptICMPv6Filter(nint fd, nint level, nint opt, ж<ICMPv6Filter> Ꮡfilter) {
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡfilter), SizeofICMPv6Filter);
+    return setsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡfilter), SizeofICMPv6Filter);
 }
 
 public static error /*err*/ SetsockoptLinger(nint fd, nint level, nint opt, ж<Linger> Ꮡl) {
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡl), SizeofLinger);
+    return setsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡl), SizeofLinger);
 }
 
 public static error /*err*/ SetsockoptString(nint fd, nint level, nint opt, @string s) {
     @unsafe.Pointer p = default!;
     if (len(s) > 0) {
-        p = new @unsafe.Pointer(Ꮡ(slice<byte>(s), 0));
+        p = @unsafe.Pointer.FromPinnedBox(Ꮡ(slice<byte>(s), 0));
     }
     return setsockopt(fd, level, opt, p, (uintptr)len(s));
 }
@@ -584,7 +584,7 @@ public static error /*err*/ SetsockoptString(nint fd, nint level, nint opt, @str
 public static error /*err*/ SetsockoptTimeval(nint fd, nint level, nint opt, ж<Timeval> Ꮡtv) {
     ref var tv = ref Ꮡtv.DerefOrNull();
 
-    return setsockopt(fd, level, opt, new @unsafe.Pointer(Ꮡtv), /* unsafe.Sizeof(*tv) */ (uintptr)16);
+    return setsockopt(fd, level, opt, @unsafe.Pointer.FromPinnedBox(Ꮡtv), /* unsafe.Sizeof(*tv) */ (uintptr)16);
 }
 
 public static (nint fd, error err) Socket(nint domain, nint typ, nint proto) {
@@ -613,7 +613,7 @@ public static (array<nint> fd, error err) Socketpair(nint domain, nint typ, nint
 
 public static (nint written, error err) Sendfile(nint outfd, nint infd, ж<int64> Ꮡoffset, nint count) {
     if (race.Enabled) {
-        race.ReleaseMerge(new @unsafe.Pointer(ᏑioSync));
+        race.ReleaseMerge(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
     }
     return sendfile(outfd, infd, ref (Ꮡoffset).DerefOrNull(), count);
 }

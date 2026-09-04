@@ -174,7 +174,7 @@ internal static int32 vdsoFindVersion(ж<vdsoInfo> Ꮡinfo, ref vdsoVersionKey v
     var def = info.verdef;
     while (ᐧ) {
         if ((uint16)((~def).vd_flags & (uint16)_VER_FLG_BASE) == 0) {
-            var aux = (ж<elfVerdaux>)(uintptr)(add(new @unsafe.Pointer(def), (uintptr)(~def).vd_aux));
+            var aux = (ж<elfVerdaux>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(def), (uintptr)(~def).vd_aux));
             if ((~def).vd_hash == ver.verHash && ver.version == gostringnocopy(info.symstrings.at<byte>((nint)((~aux).vda_name)))) {
                 return (int32)((uint16)((~def).vd_ndx & 0x7fff));
             }
@@ -182,7 +182,7 @@ internal static int32 vdsoFindVersion(ж<vdsoInfo> Ꮡinfo, ref vdsoVersionKey v
         if ((~def).vd_next == 0) {
             break;
         }
-        def = (ж<elfVerdef>)(uintptr)(add(new @unsafe.Pointer(def), (uintptr)(~def).vd_next));
+        def = (ж<elfVerdef>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(def), (uintptr)(~def).vd_next));
     }
     return -1; // cannot match any version
 }

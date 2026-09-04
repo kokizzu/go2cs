@@ -760,7 +760,7 @@ internal static void adjustdefers(ж<g> Ꮡgp, ref adjustinfo adjinfo) {
     // defer.link fields so we always work on the new stack.
     adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(Ꮡgp.of(g.Ꮡ_defer)));
     for (var d = gp._defer; d != nil; d = d.Value.link) {
-        adjustpointer(ref adjinfo, new @unsafe.Pointer(d.of(_defer.Ꮡfn)));
+        adjustpointer(ref adjinfo, @unsafe.Pointer.FromPinnedBox(d.of(_defer.Ꮡfn)));
         adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(d.of(_defer.Ꮡsp)));
         adjustpointer(ref adjinfo, @unsafe.Pointer.FromBox(d.of(_defer.Ꮡlink)));
     }
@@ -1123,7 +1123,7 @@ internal static void gostartcallfn(ref gobuf gobuf, ж<funcval> Ꮡfv) {
     } else {
         fn = (@unsafe.Pointer)abi.FuncPCABIInternal(nilfunc);
     }
-    gostartcall(ref gobuf, fn, new @unsafe.Pointer(Ꮡfv));
+    gostartcall(ref gobuf, fn, @unsafe.Pointer.FromPinnedBox(Ꮡfv));
 }
 
 // isShrinkStackSafe returns whether it's safe to attempt to shrink

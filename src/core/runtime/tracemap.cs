@@ -93,7 +93,7 @@ internal static (uint64, bool) put(this ж<traceMap> Ꮡtab, @unsafe.Pointer dat
             if (newNode == nil) {
                 newNode = Ꮡtab.newTraceMapNode(data, size, hash, Ꮡtab.of(traceMap.Ꮡseq).Add(1));
             }
-            if (m.CompareAndSwapNoWB(nil, new @unsafe.Pointer(newNode))) {
+            if (m.CompareAndSwapNoWB(nil, @unsafe.Pointer.FromPinnedBox(newNode))) {
                 return ((~newNode).id, true);
             }
             // Reload n. Because pointers are only stored once,
@@ -102,7 +102,7 @@ internal static (uint64, bool) put(this ж<traceMap> Ꮡtab, @unsafe.Pointer dat
             n = (ж<traceMapNode>)(uintptr)(m.Load());
         }
         if ((~n).hash == hash && (uintptr)len((~n).data) == size) {
-            if (memequal(new @unsafe.Pointer(Ꮡ((~n).data, 0)), data, size)) {
+            if (memequal(@unsafe.Pointer.FromPinnedBox(Ꮡ((~n).data, 0)), data, size)) {
                 return ((~n).id, false);
             }
         }
@@ -118,7 +118,7 @@ internal static ж<traceMapNode> newTraceMapNode(this ж<traceMap> Ꮡtab, @unsa
         len: (nint)size,
         cap: (nint)size
     );
-    memmove(new @unsafe.Pointer(sl.Δarray), data, size);
+    memmove(@unsafe.Pointer.FromPinnedBox(sl.Δarray), data, size);
     // Create metadata structure.
     var meta = Ꮡtab.of(traceMap.Ꮡmem).alloc(/* unsafe.Sizeof(traceMapNode{}) */ (uintptr)72).Reinterpret<notInHeap, traceMapNode>();
     (meta.of(traceMapNode.Ꮡdata).Reinterpret<slice<byte>, notInHeapSlice>()).Value = sl;

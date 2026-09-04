@@ -74,7 +74,7 @@ public static void Add(this ж<WaitGroup> Ꮡwg, nint delta) {
             // The first increment must be synchronized with Wait.
             // Need to model this as a read, because there can be
             // several concurrent wg.counter transitions from 0.
-            race.Read(new @unsafe.Pointer(Ꮡwg.of(WaitGroup.Ꮡsema)));
+            race.Read(@unsafe.Pointer.FromPinnedBox(Ꮡwg.of(WaitGroup.Ꮡsema)));
         }
         if (v < 0) {
             throw panic("sync: negative WaitGroup counter");
@@ -134,7 +134,7 @@ public static void Wait(this ж<WaitGroup> Ꮡwg) {
                 // Need to model this is as a write to race with the read in Add.
                 // As a consequence, can do the write only for the first waiter,
                 // otherwise concurrent Waits will race with each other.
-                race.Write(new @unsafe.Pointer(Ꮡwg.of(WaitGroup.Ꮡsema)));
+                race.Write(@unsafe.Pointer.FromPinnedBox(Ꮡwg.of(WaitGroup.Ꮡsema)));
             }
             runtime_Semacquire(Ꮡwg.of(WaitGroup.Ꮡsema));
             if (Ꮡwg.of(WaitGroup.Ꮡstate).Load() != 0) {

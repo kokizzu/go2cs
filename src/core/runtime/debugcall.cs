@@ -122,7 +122,7 @@ internal static void debugCallWrap(uintptr dispatch) {
             dispatch: dispatch,
             callingG: gpʗ1
         ));
-        newg.Value.param = new @unsafe.Pointer(args);
+        newg.Value.param = @unsafe.Pointer.FromPinnedBox(args);
         // Transfer locked-ness to the new goroutine.
         // Save lock state to restore later.
         var mpΔ1 = gpʗ1.Value.m;
@@ -242,7 +242,7 @@ internal static void debugCallWrap2(uintptr dispatch) {
         ref var dispatchF = ref heap<Action>(out var ᏑdispatchF);
         ref var dispatchFV = ref heap<funcval>(out var ᏑdispatchFV);
         dispatchFV = new funcval(dispatch);
-        (Ꮡ(new @unsafe.Pointer((uintptr)ᏑdispatchF))).Value = (uintptr)noescape(new @unsafe.Pointer(ᏑdispatchFV));
+        (Ꮡ(new @unsafe.Pointer((uintptr)ᏑdispatchF))).Value = (uintptr)noescape(@unsafe.Pointer.FromPinnedBox(ᏑdispatchFV));
         bool ok = default!;
         defer(() => {
             if (!ok) {

@@ -83,7 +83,7 @@ public static slice<@string> Environ() {
         while (envp.Value != 0) {
             // environment block ends with empty string
             // find NUL terminator
-            @unsafe.Pointer end = new @unsafe.Pointer(envp);
+            @unsafe.Pointer end = @unsafe.Pointer.FromPinnedBox(envp);
             while (~(ж<uint16>)(uintptr)(end) != 0) {
                 end = (uintptr)@unsafe.Add(end, size);
             }

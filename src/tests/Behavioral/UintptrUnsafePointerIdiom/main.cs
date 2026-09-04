@@ -40,7 +40,7 @@ internal static void Main() {
     var a0 = (uintptr)e0;
     var a2 = (uintptr)e2;
     fmt.Println(strideˢ, a0 != 0, a2 - a0 == 2 * /* unsafe.Sizeof(buf[0]) */ (uintptr)4);
-    @unsafe.Pointer up = new @unsafe.Pointer(e0);
+    @unsafe.Pointer up = @unsafe.Pointer.FromPinnedBox(e0);
     fmt.Println(roundTripˢ, (uintptr)up == a0);
     var shifted = (uintptr)(@unsafe.Pointer)((uintptr)e0 + 2 * /* unsafe.Sizeof(buf[0]) */ (uintptr)4);
     fmt.Println(arithmeticˢ, shifted == a2);

@@ -47,7 +47,7 @@ internal static int32 netpollopen(uintptr fd, ж<pollDesc> Ꮡpd) {
         // steal the low-order 2 bits for a tiny sequence number.
         ev[0].udata = Ꮡpd.Reinterpret<pollDesc, byte>();
     } else {
-        var tp = taggedPointerPack(new @unsafe.Pointer(Ꮡpd), Ꮡpd.of(pollDesc.Ꮡfdseq).Load());
+        var tp = taggedPointerPack(@unsafe.Pointer.FromPinnedBox(Ꮡpd), Ꮡpd.of(pollDesc.Ꮡfdseq).Load());
         ev[0].udata = (ж<byte>)(uintptr)((@unsafe.Pointer)(uintptr)(uint64)tp);
     }
     ev[1] = ev[0];

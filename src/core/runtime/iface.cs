@@ -122,7 +122,7 @@ internal static ж<itab> find(this ж<itabTableType> Ꮡt, ж<interfacetype> Ꮡ
     var mask = t.size - 1;
     var h = (uintptr)(itabHashFunc(ref (Ꮡinter).DerefOrNull(), ref (Ꮡtyp).DerefOrNull()) & mask);
     for (var i = (uintptr)1; ᐧ ; i++) {
-        var Δp = (ж<ж<itab>>)(uintptr)(add(new @unsafe.Pointer(Ꮡt.of(itabTableType.Ꮡentries)), h * (uintptr)goarch.PtrSize));
+        var Δp = (ж<ж<itab>>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(Ꮡt.of(itabTableType.Ꮡentries)), h * (uintptr)goarch.PtrSize));
         // Use atomic read here so if we see m != nil, we also see
         // the initializations of the fields of m.
         // m := *p
@@ -171,7 +171,7 @@ internal static void itabAdd(ж<itab> Ꮡm) {
             @throw(mismatchedCountDuringˢ);
         }
         // Publish new hash table. Use an atomic write: see comment in getitab.
-        atomicstorep(@unsafe.Pointer.FromBox(ᏑitabTable), new @unsafe.Pointer(t2));
+        atomicstorep(@unsafe.Pointer.FromBox(ᏑitabTable), @unsafe.Pointer.FromPinnedBox(t2));
         // Adopt the new table as our own.
         t = itabTable;
     }
@@ -190,7 +190,7 @@ internal static void add(this ж<itabTableType> Ꮡt, ж<itab> Ꮡm) {
     var mask = t.size - 1;
     var h = (uintptr)(itabHashFunc(ref (m.Inter).DerefOrNull(), ref (m.Type).DerefOrNull()) & mask);
     for (var i = (uintptr)1; ᐧ ; i++) {
-        var Δp = (ж<ж<itab>>)(uintptr)(add(new @unsafe.Pointer(Ꮡt.of(itabTableType.Ꮡentries)), h * (uintptr)goarch.PtrSize));
+        var Δp = (ж<ж<itab>>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(Ꮡt.of(itabTableType.Ꮡentries)), h * (uintptr)goarch.PtrSize));
         var m2 = Δp.ValueSlot;
         if (m2 == Ꮡm) {
             // A given itab may be used in more than one module
@@ -204,7 +204,7 @@ internal static void add(this ж<itabTableType> Ꮡt, ж<itab> Ꮡm) {
             // sees the correctly initialized fields of m.
             // NoWB is ok because m is not in heap memory.
             // *p = m
-            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Δp), new @unsafe.Pointer(Ꮡm));
+            atomic.StorepNoWB(@unsafe.Pointer.FromBox(Δp), @unsafe.Pointer.FromPinnedBox(Ꮡm));
             t.count++;
             return;
         }
@@ -231,7 +231,7 @@ internal static unsafe @string itabInit(ж<itab> Ꮡm, bool firstTime) {
     // the loop is O(ni+nt) not O(ni*nt).
     nint ni = len((~inter).Methods);
     nint nt = (nint)(~x).Mcount;
-    var xmhdr = new slice<abi.Method>(new ReadOnlySpan<abi.Method>((abi.Method*)(uintptr)(add(new @unsafe.Pointer(x), (uintptr)(~x).Moff)), (int)(nt)));
+    var xmhdr = new slice<abi.Method>(new ReadOnlySpan<abi.Method>((abi.Method*)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(x), (uintptr)(~x).Moff)), (int)(nt)));
     nint j = 0;
     var methods = new slice<@unsafe.Pointer>(new ReadOnlySpan<@unsafe.Pointer>((@unsafe.Pointer*)(uintptr)(@unsafe.Pointer.FromBox(Ꮡm.at(itab.ᏑFun, 0))), (int)(ni)));
     @unsafe.Pointer fun0 = default!;
@@ -392,7 +392,7 @@ internal static @unsafe.Pointer /*x*/ convT16(uint16 val) {
     @unsafe.Pointer x = default!;
 
     if (val < (uint16)len(staticuint64s)){
-        x = new @unsafe.Pointer(Ꮡstaticuint64s.at<uint64>((nint)(val)));
+        x = @unsafe.Pointer.FromPinnedBox(Ꮡstaticuint64s.at<uint64>((nint)(val)));
         if (goarch.BigEndian) {
             x = (uintptr)add(x, 6);
         }
@@ -407,7 +407,7 @@ internal static @unsafe.Pointer /*x*/ convT32(uint32 val) {
     @unsafe.Pointer x = default!;
 
     if (val < (uint32)len(staticuint64s)){
-        x = new @unsafe.Pointer(Ꮡstaticuint64s.at<uint64>((nint)(val)));
+        x = @unsafe.Pointer.FromPinnedBox(Ꮡstaticuint64s.at<uint64>((nint)(val)));
         if (goarch.BigEndian) {
             x = (uintptr)add(x, 4);
         }
@@ -431,7 +431,7 @@ internal static @unsafe.Pointer /*x*/ convT64(uint64 val) {
     @unsafe.Pointer x = default!;
 
     if (val < (uint64)len(staticuint64s)){
-        x = new @unsafe.Pointer(Ꮡstaticuint64s.at<uint64>((nint)(val)));
+        x = @unsafe.Pointer.FromPinnedBox(Ꮡstaticuint64s.at<uint64>((nint)(val)));
     } else {
         x = (uintptr)mallocgc(8, uint64Type, false);
         ((ж<uint64>)(uintptr)(x)).Value = val;
@@ -452,7 +452,7 @@ internal static @unsafe.Pointer /*x*/ convTstring(@string val) {
     @unsafe.Pointer x = default!;
 
     if (val == ""u8){
-        x = new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
+        x = @unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0));
     } else {
         x = (uintptr)mallocgc(/* unsafe.Sizeof(val) */ (uintptr)16, stringType, true);
         ((ж<@string>)(uintptr)(x)).Value = val;
@@ -475,7 +475,7 @@ internal static @unsafe.Pointer /*x*/ convTslice(slice<byte> valʗp) {
     ref var val = ref heap(valʗp, out var Ꮡval);
     // Note: this must work for any element type, not just byte.
     if ((Ꮡval.Reinterpret<slice<byte>, Δsliceᴛ>()).Value.Δarray == nil){
-        x = new @unsafe.Pointer(ᏑzeroVal.at<byte>(0));
+        x = @unsafe.Pointer.FromPinnedBox(ᏑzeroVal.at<byte>(0));
     } else {
         x = (uintptr)mallocgc(/* unsafe.Sizeof(val) */ (uintptr)24, sliceType, true);
         ((ж<slice<byte>>)(uintptr)(x)).ValueSlot = val;
@@ -534,7 +534,7 @@ internal static ж<itab> typeAssert(ж<abi.TypeAssert> Ꮡs, ж<_type> Ꮡt) {
     // Update cache. Use compare-and-swap so if multiple threads
     // are fighting to update the cache, at least one of their
     // updates will stick.
-    atomic_casPointer(Ꮡ(new @unsafe.Pointer((uintptr)Ꮡs.of(abi.TypeAssert.ᏑCache))), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
+    atomic_casPointer(Ꮡ(new @unsafe.Pointer((uintptr)Ꮡs.of(abi.TypeAssert.ᏑCache))), @unsafe.Pointer.FromPinnedBox(oldC), @unsafe.Pointer.FromPinnedBox(newC));
     return tab;
 }
 
@@ -630,7 +630,7 @@ internal static (nint, ж<itab>) interfaceSwitch(ж<abi.InterfaceSwitch> Ꮡs, �
     // Update cache. Use compare-and-swap so if multiple threads
     // are fighting to update the cache, at least one of their
     // updates will stick.
-    atomic_casPointer(Ꮡ(new @unsafe.Pointer((uintptr)Ꮡs.of(abi.InterfaceSwitch.ᏑCache))), new @unsafe.Pointer(oldC), new @unsafe.Pointer(newC));
+    atomic_casPointer(Ꮡ(new @unsafe.Pointer((uintptr)Ꮡs.of(abi.InterfaceSwitch.ᏑCache))), @unsafe.Pointer.FromPinnedBox(oldC), @unsafe.Pointer.FromPinnedBox(newC));
     return (case_, tab);
 }
 
@@ -709,7 +709,7 @@ internal static void iterate_itabs(Action<ж<itab>> fn) {
     // so no other locks/atomics needed.
     var t = itabTable;
     for (var i = (uintptr)0; i < (~t).size; i++) {
-        var m = ~(ж<ж<itab>>)(uintptr)(add(new @unsafe.Pointer(t.of(itabTableType.Ꮡentries)), i * (uintptr)goarch.PtrSize));
+        var m = ~(ж<ж<itab>>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(t.of(itabTableType.Ꮡentries)), i * (uintptr)goarch.PtrSize));
         if (m != nil) {
             fn(m);
         }

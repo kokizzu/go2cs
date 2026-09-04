@@ -33,7 +33,7 @@ internal static partial @unsafe.Pointer runtime_getProfLabel();
 // This is a lower-level API than [Do], which should be used instead when possible.
 public static void SetGoroutineLabels(context.Context ctx) {
     var (ctxLabels, _) = ctx.Value(new labelContextKey(nil))._<ж<labelMap>>(ᐧ);
-    runtime_setProfLabel(new @unsafe.Pointer(ctxLabels));
+    runtime_setProfLabel(@unsafe.Pointer.FromPinnedBox(ctxLabels));
 }
 
 // Do calls f with a copy of the parent context with the

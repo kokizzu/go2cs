@@ -114,13 +114,13 @@ internal static ref reflectOffsᴛ1 reflectOffs => ref ᏑreflectOffs.Value;
 internal static void reflectOffsLock() {
     @lock(ᏑreflectOffs.of(reflectOffsᴛ1.Ꮡlock));
     if (raceenabled) {
-        raceacquire(new @unsafe.Pointer(ᏑreflectOffs.of(reflectOffsᴛ1.Ꮡlock)));
+        raceacquire(@unsafe.Pointer.FromPinnedBox(ᏑreflectOffs.of(reflectOffsᴛ1.Ꮡlock)));
     }
 }
 
 internal static void reflectOffsUnlock() {
     if (raceenabled) {
-        racerelease(new @unsafe.Pointer(ᏑreflectOffs.of(reflectOffsᴛ1.Ꮡlock)));
+        racerelease(@unsafe.Pointer.FromPinnedBox(ᏑreflectOffs.of(reflectOffsᴛ1.Ꮡlock)));
     }
     unlock(ᏑreflectOffs.of(reflectOffsᴛ1.Ꮡlock));
 }
@@ -168,7 +168,7 @@ internal static abiꓸName resolveNameOff(@unsafe.Pointer ptrInModule, nameOff o
 }
 
 internal static abiꓸName nameOff(this Δrtype t, nameOff off) {
-    return resolveNameOff(new @unsafe.Pointer(t.Type), off);
+    return resolveNameOff(@unsafe.Pointer.FromPinnedBox(t.Type), off);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -225,7 +225,7 @@ internal static ж<_type> resolveTypeOff(@unsafe.Pointer ptrInModule, typeOff of
 }
 
 internal static ж<_type> typeOff(this Δrtype t, typeOff off) {
-    return resolveTypeOff(new @unsafe.Pointer(t.Type), off);
+    return resolveTypeOff(@unsafe.Pointer.FromPinnedBox(t.Type), off);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -273,8 +273,8 @@ internal static @string pkgPath(abiꓸName n) {
         off += i2 + l2;
     }
     ref var nameOff = ref heap(new nameOff(), out var ᏑnameOff);
-    copy((~(ж<array<byte>>)(uintptr)(new @unsafe.Pointer(ᏑnameOff)))[..], (~array<byte>.AliasPointer(n.Data(off), 4))[..]);
-    var pkgPathName = resolveNameOff(new @unsafe.Pointer(n.Bytes), nameOff);
+    copy((~(ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(ᏑnameOff)))[..], (~array<byte>.AliasPointer(n.Data(off), 4))[..]);
+    var pkgPathName = resolveNameOff(@unsafe.Pointer.FromPinnedBox(n.Bytes), nameOff);
     return pkgPathName.Name();
 }
 
@@ -443,16 +443,16 @@ internal static bool typesEqual(ж<_type> Ꮡt, ж<_type> Ꮡv, map<_typePair, E
             var vm = Ꮡ((~iv).Methods, i);
             // Note the mhdr array can be relocated from
             // another module. See #17724.
-            var tname = resolveNameOff(new @unsafe.Pointer(tm), (~tm).Name);
-            var vname = resolveNameOff(new @unsafe.Pointer(vm), (~vm).Name);
+            var tname = resolveNameOff(@unsafe.Pointer.FromPinnedBox(tm), (~tm).Name);
+            var vname = resolveNameOff(@unsafe.Pointer.FromPinnedBox(vm), (~vm).Name);
             if (tname.Name() != vname.Name()) {
                 return false;
             }
             if (pkgPath(tname) != pkgPath(vname)) {
                 return false;
             }
-            var tityp = resolveTypeOff(new @unsafe.Pointer(tm), (~tm).Typ);
-            var vityp = resolveTypeOff(new @unsafe.Pointer(vm), (~vm).Typ);
+            var tityp = resolveTypeOff(@unsafe.Pointer.FromPinnedBox(tm), (~tm).Typ);
+            var vityp = resolveTypeOff(@unsafe.Pointer.FromPinnedBox(vm), (~vm).Typ);
             if (!typesEqual(tityp, vityp, seen)) {
                 return false;
             }

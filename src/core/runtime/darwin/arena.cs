@@ -101,7 +101,7 @@ partial class runtime_package {
 //
 //go:linkname arena_newArena arena.runtime_arena_newArena
 internal static @unsafe.Pointer arena_newArena() {
-    return new @unsafe.Pointer(newUserArena());
+    return @unsafe.Pointer.FromPinnedBox(newUserArena());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -188,7 +188,7 @@ internal static any arena_heapify(any sʗp) {
         sl.Value = new Δsliceᴛ((uintptr)makeslicecopy(et, lenΔ2, lenΔ2, ((ж<Δsliceᴛ>)(uintptr)((~e).data)).Value.Δarray), lenΔ2, lenΔ2);
         var xe = efaceOf(Ꮡx);
         xe.Value._type = t;
-        xe.Value.data = new @unsafe.Pointer(sl);
+        xe.Value.data = @unsafe.Pointer.FromPinnedBox(sl);
     }
     else if (exprᴛ2 == abi.Pointer) {
         var et = (t.Reinterpret<_type, ptrtype>()).Value.Elem;

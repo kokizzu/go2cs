@@ -293,14 +293,14 @@ internal static void queue(this ж<semaRoot> Ꮡroot, ж<uint32> Ꮡaddr, ж<sud
     ref var s = ref Ꮡs.DerefOrNull();
 
     s.g = getg();
-    s.elem = new @unsafe.Pointer(Ꮡaddr);
+    s.elem = @unsafe.Pointer.FromPinnedBox(Ꮡaddr);
     s.next = default!;
     s.prev = default!;
     s.waiters = 0;
     ж<sudog> last = default!;
     var pt = Ꮡroot.of(semaRoot.Ꮡtreap);
     for (var t = pt.ValueSlot; t != nil; t = pt.ValueSlot) {
-        if ((~t).elem == new @unsafe.Pointer(Ꮡaddr)) {
+        if ((~t).elem == @unsafe.Pointer.FromPinnedBox(Ꮡaddr)) {
             // Already have addr in list.
             if (lifo){
                 // Substitute s in t's place in treap.
@@ -395,7 +395,7 @@ internal static (ж<sudog> found, int64 now, int64 tailtime) dequeue(this ж<sem
     var ps = Ꮡroot.of(semaRoot.Ꮡtreap);
     var s = ps.ValueSlot;
     for (; s != nil; s = ps.ValueSlot) {
-        if ((~s).elem == new @unsafe.Pointer(Ꮡaddr)) {
+        if ((~s).elem == @unsafe.Pointer.FromPinnedBox(Ꮡaddr)) {
             goto Found;
         }
         if ((uintptr)Ꮡaddr < (uintptr)(~s).elem){

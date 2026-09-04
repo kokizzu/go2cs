@@ -76,7 +76,7 @@ internal static void setenv_c(@string k, @string v) {
     }
     ref var arg = ref heap<array<@unsafe.Pointer>>(out var Ꮡarg);
     arg = new @unsafe.Pointer[]{(uintptr)cstring(k), (uintptr)cstring(v)}.array();
-    asmcgocall(_cgo_setenv, new @unsafe.Pointer(Ꮡarg));
+    asmcgocall(_cgo_setenv, @unsafe.Pointer.FromPinnedBox(Ꮡarg));
 }
 
 // Update the C environment if cgo is loaded.
@@ -86,13 +86,13 @@ internal static void unsetenv_c(@string k) {
     }
     ref var arg = ref heap<array<@unsafe.Pointer>>(out var Ꮡarg);
     arg = new @unsafe.Pointer[]{(uintptr)cstring(k)}.array();
-    asmcgocall(_cgo_unsetenv, new @unsafe.Pointer(Ꮡarg));
+    asmcgocall(_cgo_unsetenv, @unsafe.Pointer.FromPinnedBox(Ꮡarg));
 }
 
 internal static @unsafe.Pointer cstring(@string s) {
     var Δp = new slice<byte>(len(s) + 1);
     copy(Δp, s);
-    return new @unsafe.Pointer(Ꮡ(Δp, 0));
+    return @unsafe.Pointer.FromPinnedBox(Ꮡ(Δp, 0));
 }
 
 } // end runtime_package

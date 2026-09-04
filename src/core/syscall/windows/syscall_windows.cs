@@ -121,7 +121,7 @@ internal static @string utf16PtrToString(ж<uint16> Ꮡp) {
     if (Ꮡp == nil) {
         return ""u8;
     }
-    @unsafe.Pointer end = new @unsafe.Pointer(Ꮡp);
+    @unsafe.Pointer end = @unsafe.Pointer.FromPinnedBox(Ꮡp);
     nint n = 0;
     while (~(ж<uint16>)(uintptr)(end) != 0) {
         end = (@unsafe.Pointer)((uintptr)end + /* unsafe.Sizeof(*p) */ (uintptr)2);
@@ -478,15 +478,15 @@ public static error ReadFile(ΔHandle fd, slice<byte> p, ж<uint32> Ꮡdone, ж<
     var err = readFile(fd, p, Ꮡdone, Ꮡoverlapped);
     if (race.Enabled) {
         if (done > 0) {
-            race.WriteRange(new @unsafe.Pointer(Ꮡ(p, 0)), (nint)(done));
+            race.WriteRange(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (nint)(done));
         }
-        race.Acquire(new @unsafe.Pointer(ᏑioSync));
+        race.Acquire(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
     }
     if (msan.Enabled && done > 0) {
-        msan.Write(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)(done));
+        msan.Write(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)(done));
     }
     if (asan.Enabled && done > 0) {
-        asan.Write(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)(done));
+        asan.Write(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)(done));
     }
     return err;
 }
@@ -495,17 +495,17 @@ public static error WriteFile(ΔHandle fd, slice<byte> p, ж<uint32> Ꮡdone, ж
     ref var done = ref Ꮡdone.DerefOrNull();
 
     if (race.Enabled) {
-        race.ReleaseMerge(new @unsafe.Pointer(ᏑioSync));
+        race.ReleaseMerge(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
     }
     var err = writeFile(fd, p, Ꮡdone, Ꮡoverlapped);
     if (race.Enabled && done > 0) {
-        race.ReadRange(new @unsafe.Pointer(Ꮡ(p, 0)), (nint)(done));
+        race.ReadRange(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (nint)(done));
     }
     if (msan.Enabled && done > 0) {
-        msan.Read(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)(done));
+        msan.Read(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)(done));
     }
     if (asan.Enabled && done > 0) {
-        asan.Read(new @unsafe.Pointer(Ꮡ(p, 0)), (uintptr)(done));
+        asan.Read(@unsafe.Pointer.FromPinnedBox(Ꮡ(p, 0)), (uintptr)(done));
     }
     return err;
 }
@@ -950,7 +950,7 @@ internal static (@unsafe.Pointer, int32, error) sockaddr(this ж<SockaddrUnix> �
         // Don't count trailing NUL for abstract address.
         sl--;
     }
-    return (new @unsafe.Pointer(Ꮡsa.of(SockaddrUnix.Ꮡraw)), sl, default!);
+    return (@unsafe.Pointer.FromPinnedBox(Ꮡsa.of(SockaddrUnix.Ꮡraw)), sl, default!);
 }
 
 // go2cs generated this placeholder — func Sockaddr is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -1090,13 +1090,15 @@ internal static ref connectExFuncᴛ1 connectExFunc => ref ᏑconnectExFunc.Valu
 internal static error /*err*/ connectEx(ΔHandle s, @unsafe.Pointer name, int32 namelen, ж<byte> ᏑsendBuf, uint32 sendDataLen, ж<uint32> ᏑbytesSent, ж<Overlapped> Ꮡoverlapped) {
     error err = default!;
 
-    var ᴋ18 = ᏑsendBuf;
-    var ᴋ19 = ᏑbytesSent;
-    var ᴋ20 = Ꮡoverlapped;
-        var (r1, _, e1) = Syscall9(connectExFunc.addr, 7, (uintptr)s, (uintptr)name, (uintptr)namelen, (uintptr)ᴋ18, (uintptr)sendDataLen, (uintptr)ᴋ19, (uintptr)ᴋ20, 0, 0);
+    var ᴋ18 = name;
+    var ᴋ19 = ᏑsendBuf;
+    var ᴋ20 = ᏑbytesSent;
+    var ᴋ21 = Ꮡoverlapped;
+        var (r1, _, e1) = Syscall9(connectExFunc.addr, 7, (uintptr)s, (uintptr)ᴋ18, (uintptr)namelen, (uintptr)ᴋ19, (uintptr)sendDataLen, (uintptr)ᴋ20, (uintptr)ᴋ21, 0, 0);
     System.GC.KeepAlive(ᴋ18);
     System.GC.KeepAlive(ᴋ19);
     System.GC.KeepAlive(ᴋ20);
+    System.GC.KeepAlive(ᴋ21);
     if (r1 == 0) {
         if (e1 != 0){
             err = ((error)e1);

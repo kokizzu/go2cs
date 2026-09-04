@@ -547,7 +547,7 @@ public static ж<Type> Out(this ж<ΔFuncType> Ꮡt, nint i) {
 // DataChecked does pointer arithmetic on n's Bytes, and that arithmetic is asserted to
 // be safe for the reason in whySafe (which can appear in a backtrace, etc.)
 public static ж<byte> DataChecked(this ΔName n, nint off, @string whySafe) {
-    return (ж<byte>)(uintptr)(addChecked(new @unsafe.Pointer(n.Bytes), (uintptr)off, whySafe));
+    return (ж<byte>)(uintptr)(addChecked(@unsafe.Pointer.FromPinnedBox(n.Bytes), (uintptr)off, whySafe));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -556,7 +556,7 @@ internal static readonly @string theRuntimeDoesnTNeedToˢ = "the runtime doesn't
 // Data does pointer arithmetic on n's Bytes, and that arithmetic is asserted to
 // be safe because the runtime made the call (other packages use DataChecked)
 public static ж<byte> Data(this ΔName n, nint off) {
-    return (ж<byte>)(uintptr)(addChecked(new @unsafe.Pointer(n.Bytes), (uintptr)off, theRuntimeDoesnTNeedToˢ));
+    return (ж<byte>)(uintptr)(addChecked(@unsafe.Pointer.FromPinnedBox(n.Bytes), (uintptr)off, theRuntimeDoesnTNeedToˢ));
 }
 
 // IsExported returns "is n exported?"

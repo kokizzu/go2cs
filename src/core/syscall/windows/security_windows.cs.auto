@@ -324,7 +324,7 @@ internal static (@unsafe.Pointer, error) getInfo(this Token t, uint32 @class, ni
         var b = new slice<byte>((nint)(n));
         var e = GetTokenInformation(t, @class, Ꮡ(b, 0), (uint32)len(b), Ꮡn);
         if (e == default!) {
-            return (new @unsafe.Pointer(Ꮡ(b, 0)), default!);
+            return (@unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0)), default!);
         }
         if (!AreEqual(e, ERROR_INSUFFICIENT_BUFFER)) {
             return (default!, e);

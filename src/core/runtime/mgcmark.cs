@@ -249,7 +249,7 @@ internal static int64 markrootBlock(uintptr b0, uintptr n0, ж<uint8> Ꮡptrmask
         return 0;
     }
     var b = b0 + off;
-    var ptrmask = (ж<uint8>)(uintptr)(add(new @unsafe.Pointer(Ꮡptrmask0), (uintptr)shard * (uintptr)(rootBlockBytes / (8 * goarch.PtrSize))));
+    var ptrmask = (ж<uint8>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(Ꮡptrmask0), (uintptr)shard * (uintptr)(rootBlockBytes / (8 * goarch.PtrSize))));
     var n = (uintptr)rootBlockBytes;
     if (off + n > n0) {
         n = n0 - off;
@@ -643,7 +643,7 @@ internal static void gcAssistAlloc1(ж<g> Ꮡgp, int64 scanWork) {
         // gp.param to a non-nil value to indicate this. It
         // doesn't matter what we set it to (it just has to be
         // a valid pointer).
-        gp.param = new @unsafe.Pointer(Ꮡgp);
+        gp.param = @unsafe.Pointer.FromPinnedBox(Ꮡgp);
     }
     var now = nanotime();
     var duration = now - startTime;

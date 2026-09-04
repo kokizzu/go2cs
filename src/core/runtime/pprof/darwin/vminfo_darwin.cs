@@ -25,7 +25,7 @@ internal static bool machVMInfo(Action<uint64, uint64, uint64, @string, @string>
         var kr = mach_vm_region(
             Ꮡaddr,
             ᏑmemRegionSize,
-            new @unsafe.Pointer(Ꮡinfo));
+            @unsafe.Pointer.FromPinnedBox(Ꮡinfo));
         if (kr != 0) {
             if (kr == _MACH_SEND_INVALID_DEST) {
                 // No more memory regions.

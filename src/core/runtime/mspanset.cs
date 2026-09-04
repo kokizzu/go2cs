@@ -397,7 +397,7 @@ internal static ж<mspan> Load(this ж<atomicMSpanPointer> Ꮡp) {
 
 // Store stores an *mspan.
 internal static void StoreNoWB(this ж<atomicMSpanPointer> Ꮡp, ж<mspan> Ꮡs) {
-    Ꮡp.of(atomicMSpanPointer.Ꮡp).StoreNoWB(new @unsafe.Pointer(Ꮡs));
+    Ꮡp.of(atomicMSpanPointer.Ꮡp).StoreNoWB(@unsafe.Pointer.FromPinnedBox(Ꮡs));
 }
 
 } // end runtime_package

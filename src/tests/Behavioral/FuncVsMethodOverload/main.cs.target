@@ -23,7 +23,7 @@ internal static ж<nih> add(this ж<nih> Ꮡp, uintptr bytes) {
 }
 
 internal static uint32 step(ж<uint32> Ꮡv) {
-    var q = (ж<uint32>)(uintptr)(add(new @unsafe.Pointer(Ꮡv), /* unsafe.Sizeof(uint32(0)) */ (uintptr)4));
+    var q = (ж<uint32>)(uintptr)(add(@unsafe.Pointer.FromPinnedBox(Ꮡv), /* unsafe.Sizeof(uint32(0)) */ (uintptr)4));
     return q.Value;
 }
 
@@ -41,7 +41,7 @@ internal static void Main() {
     ref var vals = ref heap<array<uint32>>(out var Ꮡvals);
     vals = new uint32[]{10, 20, 30, 40}.array();
     fmt.Println(step(Ꮡvals.at<uint32>(0)));
-    @unsafe.Pointer p = new @unsafe.Pointer(Ꮡvals.at<uint32>(1));
+    @unsafe.Pointer p = @unsafe.Pointer.FromPinnedBox(Ꮡvals.at<uint32>(1));
     fmt.Println(~(ж<uint32>)(uintptr)(add(p, 8)));
     ref var n = ref heap<nih>(out var Ꮡn);
     n = new nih(a: 7, b: 9);

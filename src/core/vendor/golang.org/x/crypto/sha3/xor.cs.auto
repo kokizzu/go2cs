@@ -48,7 +48,7 @@ internal static void xorIn(ж<state> Ꮡd, slice<byte> buf) {
             buf = buf[8..];
         }
     } else {
-        var ab = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡd.of(state.Ꮡa)));
+        var ab = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡd.of(state.Ꮡa)));
         subtle.XORBytes((~ab)[..], (~ab)[..], buf);
     }
 }
@@ -63,7 +63,7 @@ internal static void copyOut(ж<state> Ꮡd, slice<byte> b) {
             b = b[8..];
         }
     } else {
-        var ab = (ж<array<byte>>)(uintptr)(new @unsafe.Pointer(Ꮡd.of(state.Ꮡa)));
+        var ab = (ж<array<byte>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡd.of(state.Ꮡa)));
         copy(b, (~ab)[..]);
     }
 }
