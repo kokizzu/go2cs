@@ -155,6 +155,11 @@ public sealed class Goroutine
     // as Go, where a leak filter over a traceback never has to name the runtime's own goroutines.
     // The finalizer-goroutine nuance (runfinq counts as user while it runs a finalizer) is not
     // modelled: the finalizer runner is a plain thread here, not a registered goroutine.
+    // Two edges, stated so the next reader does not "fix" them: the main goroutine and a thread a
+    // host entered directly carry no creator and are USER goroutines (Go's runtime.main exclusion);
+    // and a hand-own that launches a goroutine from a golib type rather than from runtime_package
+    // reads as USER too -- correct by Go's rule, since Go would not have started it in the runtime
+    // either. Only a `go` executed by runtime's own converted or hand-owned functions is system.
     internal bool IsSystem { get; }
 
     internal static bool IsSystemCreator(System.Reflection.MethodBase? creator)
