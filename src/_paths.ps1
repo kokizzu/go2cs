@@ -61,6 +61,15 @@ $HostGoos =
 # GoTargetArch override to honor -- none exists anywhere in the tree, and inventing one no instrument
 # sets would be a branch nothing can exercise. An unrecognized architecture answers its own lowercase
 # .NET name rather than a guess, matching $HostGoos's refusal to invent a flavor.
+#
+# THE BOTH-EDITIONS DEBT, stated so the next reader does not have to find it. A shared .ps1 change owes
+# 5.1 on a Windows lane AND 7 on a Linux lane, because the trap this file is most exposed to is a
+# Desktop-only API: `RuntimeInformation` is .NET Framework 4.7.1+, the same shape as the
+# System.Web.Extensions dependency that silently disarmed the sweep's absorption arms on every Linux
+# host. At the seat this was exercised on the REAL path -- CNR with a decoy [GoArchExclusive("arm64")]
+# marker -- under BOTH 5.1 Desktop and pwsh 7.4.6 Core, identical skip lines, measured rather than
+# parsed. Both were Windows hosts, so the LOCAL form of the rule is satisfied and the Core half's
+# honest closer is still a LINUX CNR: the first one after this lands pays it.
 $HostGoarch =
     switch ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture) {
         'X64'   { 'amd64' }
