@@ -90,8 +90,11 @@ public class FinalizerDispatchTests
 {
     // Bounded so a regression is a FAILURE rather than a hung suite. Generous against a loaded
     // host: every arm's expected wall is milliseconds.
-    private const int GcWatchdogMs = 30_000;
-    private const int EnterWaitMs = 30_000;
+    // Comfortably above the converted runtime.GC()'s own bounded finalizer-drain budget
+    // (GoFinalizerQueue.DrainBudgetMs, 10 s) and infinitely below "never", which is what an
+    // unbounded wait costs — the separation the arm-4 guard is measuring.
+    private const int GcWatchdogMs = 60_000;
+    private const int EnterWaitMs = 60_000;
 
     // ----------------------------------------------------------------------------------------
     // Shared mint/drop machinery. Nothing here may leak the referent into a caller's frame.
@@ -278,10 +281,13 @@ public class FinalizerDispatchTests
         }
         finally
         {
-            // Always release, or the CLR's single finalizer thread stays wedged for the rest of the
-            // process and every later runtime.GC() in this suite hangs.
+            // Always release, then hand a QUIESCED finalizer queue to the next arm: without the
+            // release a parked body would outlive this arm (before the fix it wedged the CLR's own
+            // finalizer thread for the whole process), and without the trailing collection the next
+            // arm's reading would start against a still-draining queue.
             release.Set();
             GC.WaitForPendingFinalizers();
+            Δruntime.GC();
         }
     }
 
@@ -340,8 +346,11 @@ public class FinalizerDispatchTests
         }
         finally
         {
+            // Releases the finalizer body's `<-c`, exactly as the row's own `close(c)` does at the
+            // end of TestGoroutineCounts; the collection then quiesces the queue for the next arm.
             c.Close();
             GC.WaitForPendingFinalizers();
+            Δruntime.GC();
         }
     }
 }

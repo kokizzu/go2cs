@@ -265,6 +265,21 @@ partial class runtime_package
         // leaves behind.
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
         System.GC.WaitForPendingFinalizers();
+
+        // The CLR wait above only drains the CLR's OWN finalizer queue, and a GoFinalizerSentinel's
+        // `~` does nothing there but HAND the Go finalizer to the runner thread (mfinal.cs's
+        // GoFinalizerQueue — the `fing` analogue; its header says why the body must not run inline).
+        // So this second wait is what actually makes the sentence above true.
+        //
+        // It is BOUNDED, and the bound is the point rather than a hedge: Go's runtime.GC() waits for
+        // no finalizer body at all, so a finalizer that blocks until its CALLER does something is
+        // legal Go — runtime/pprof's TestGoroutineCounts registers exactly that (`close(fingReady)`
+        // then `<-c`, with `c` closed only at the end of the test) and used to deadlock here. The
+        // budget is a safety net sized for the slowest legitimate host, never a performance
+        // assumption: a well-behaved finalizer completes in microseconds, and a PARKED one is
+        // recognized so later collections do not re-pay the budget (GoFinalizerQueue.WaitForIdle).
+        GoFinalizerQueue.WaitForIdle(GoFinalizerQueue.DrainBudgetMs);
+
         System.GC.Collect(System.GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
 
         // §3.4's mitigation. The pause recorder's sentinel is woken by the FINALIZER thread, so a
