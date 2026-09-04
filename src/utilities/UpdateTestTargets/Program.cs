@@ -275,14 +275,19 @@ if (args.Contains("--createTargetFiles"))
 
             // The refusal an exit code CANNOT make. go2cs exits 0 on a package it could not fully
             // type-check, having written a degraded emission -- so without this the golden job's only
-            // check would pass on precisely the run that must not mint a record.
-            if (BestEffortConversion.IsBestEffort(stdErr, out string marker))
+            // check would pass on precisely the run that must not mint a record. The classification
+            // is the SHARED one the two transpiling harnesses use; this utility does not re-derive it.
+            //
+            // No `break` on this arm, unlike the exit-code arm above: the emission is written either
+            // way, and the remaining packages of a multi-package project must still be converted or
+            // the tree is left half regenerated (a nested sub-library's package_info.cs is an INPUT to
+            // its parent's transpile). The verdict is already decided; the work still has to finish.
+            if (BestEffortConversion.NotFullyRegenerated(stdErr, out string[] degraded))
             {
                 // TRUNCATED on purpose: the converter's warning carries every unresolved symbol on
                 // ONE line (22 of them in the measured control), and a refusal roster that scrolls
                 // its own heading off the screen is a refusal nobody reads.
-                refused[targetTest] = $"best-effort conversion in {Path.GetFileName(pkgPath)}: {Clip(marker, 200)}";
-                break;
+                refused[targetTest] = $"best-effort conversion in {Path.GetFileName(pkgPath)}: {Clip(degraded[0], 200)}";
             }
         }
     }

@@ -1,68 +1,95 @@
-﻿// BestEffortConversion.cs - Gbtc
+// BestEffortConversion.cs - Gbtc
 // Copyright © 2026 The go2cs Authors. All rights reserved.
 //
 // Use of this source code is governed by an MIT-style license
 // that can be found in the LICENSE file.
 
-// The ONE definition of "did this converter invocation actually regenerate the package's output, or
-// did it degrade and exit 0 anyway". LINKED by path, like ConverterBuildInputs.cs and
-// PlatformExclusive.cs beside it.
+// The ONE definition of "did this converter run actually regenerate the package's output", shared by
+// the two harnesses that transpile behavioral packages: BehavioralRunner and the MSTest
+// BehavioralTestBase. LINKED into both by path, for the same reason ConverterBuildInputs.cs and
+// PlatformExclusive.cs are -- the harnesses take no assembly dependency on each other, so a shared
+// assembly is not available, and two copies of a predicate are two chances for them to disagree
+// about which runs may be believed.
 //
-// go2cs EXITS 0 on a package it could not fully type-check: conversionDriver.go prints
-// "WARNING: <pkg> did not fully type-check; converting best-effort ..." (and "visit file error" for a
-// recovered visitor panic, where one source file's emission was skipped outright), writes a degraded
-// emission, and returns success. Every instrument that asks the exit code ALONE therefore reads that
-// run as a measured transpile. check-no-regression.ps1 has classified these two stderr classes as
-// NOT MEASURED by name since 2026-08-08, for exactly this reason, and the markers below are its
-// markers -- deliberately not a re-wording, because a paraphrase that drifts from the converter's
-// actual text is a predicate that silently stops matching.
+// WHY IT EXISTS. go2cs exits ZERO on a best-effort conversion. A package that does not fully
+// type-check on this host still converts: go/types leaves every expression downstream of the load
+// error untyped, the converter says so on stderr and emits what it can. Both harnesses asked the
+// exit code alone, so that run reported the Transpile phase as PASS -- and the poisoned .cs then
+// reached Compile, Target and Output, where it reads as a downstream break attributed to the wrong
+// layer, or (worse) as a byte-identical Target pass over a file the run never regenerated.
 //
-// Every OTHER "WARNING" line is ADVISORY (unsafe.Sizeof usage, and friends): present on a healthy
-// run, counted by CNR, never fatal. A predicate that matched "WARNING" generally would refuse every
-// golden in the corpus, which is a false RED rather than a false green but is just as unusable.
+// check-no-regression.ps1 has classified the SAME two stderr classes as NOT MEASURED by name since
+// 2026-08-08, for the same reason and in the same words. This file is that classification moved into
+// the harnesses that were missing it; the wording of the markers is deliberately identical, so the
+// three instruments cannot drift into disagreeing about what a measured transpile is.
 //
-// ---------------------------------------------------------------------------------------------
-// MERGE POINT, stated here so it cannot be resolved by accident. This file is written at the path
-// SUB-Q10 announced for the same predicate, ON PURPOSE: two differently-NAMED predicates would
-// auto-merge cleanly and leave the tree with two definitions of "measurable transpile", which is the
-// silent-duplication shape CLAUDE.md's lane-integration section forbids. The same path collides as an
-// add/add CONFLICT instead, which cannot be missed. Take SUB-Q10's version at merge -- it is the
-// richer one, carrying the runner's Status.BestEffort classification as well -- and re-point the two
-// call sites here (BehavioralRunner.RunTranspile and UpdateTestTargets) at it.
-// ---------------------------------------------------------------------------------------------
+// The two classes, and why only these two:
+//   * "did not fully type-check" (conversionDriver.go) -- the package loaded WITH errors and every
+//     expression depending on one of them is emitted untyped. Best-effort by construction.
+//   * "visit file error"        (conversionDriver.go / autoSiblingOperations.go) -- a recovered
+//     visitor panic; that source file's emission was SKIPPED entirely.
+// Every other converter WARNING is advisory (unsafe.Sizeof usage and friends) -- present on a
+// perfectly healthy run, and treating one as unmeasured would make the honest verdict unreachable.
+//
+// NOT a failure and NOT a pass. Nothing was learned about the package either way, which is the same
+// shape as an expired timeout budget and takes the same word: NOT MEASURED. The two harnesses map it
+// onto their own vocabulary, and the two vocabularies are NOT equally strong -- stated here rather
+// than blurred: BehavioralRunner's Status.BestEffort joins the NOT MEASURED bucket and so fails the
+// run through its EXIT CODE, while MSTest's Assert.Inconclusive marks the test NotExecuted, which
+// `dotnet test` reports as Skipped and does not count as a failure. That is exactly the strength F8's
+// own platform-exclusive skip has in that harness, and it is the property that matters here: an
+// unmeasured project must never read as a PASS. The runner is where the verdict is carried.
 
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 internal static class BestEffortConversion
 {
-    // The converter's own words. Kept as one alternation so the live pattern is a single literal a
-    // guard can extract, rather than a list a guard would have to reassemble.
+    // Substring alternation rather than an anchored line match, deliberately, and the two spellings
+    // differ in a way that matters: the type-check line comes from log.Printf, so it arrives behind a
+    // date-and-time log prefix ("2026/09/04 02:29:29 WARNING: <pkg> did not fully type-check; ..."),
+    // while "visit file error" comes through showWarning, which writes a bare "WARNING: " and, in the
+    // visitor-scoped form, appends the source file. Anchoring on either shape would make the predicate
+    // depend on the converter's diagnostic FORMATTING rather than on what it said.
+    //
+    // The markers are ASCII on purpose. The type-check warning's full text contains an em dash, and
+    // a stderr stream decoded under any of the encodings a Windows console can hand back would put
+    // that character at risk; nothing in this pattern can be mangled by an encoding choice.
     private static readonly Regex s_marker =
         new("did not fully type-check|visit file error", RegexOptions.Compiled);
 
     /// <summary>
-    /// True when <paramref name="converterOutput"/> shows the converter degraded rather than fully
-    /// regenerating the package, with the first such line reported through
-    /// <paramref name="marker"/> so a refusal can quote the converter instead of paraphrasing it.
+    /// The converter-stderr lines saying this run did NOT fully regenerate the package's output.
+    /// Empty when it did -- including when stderr carried advisory warnings, which are normal.
     /// </summary>
-    public static bool IsBestEffort(string? converterOutput, out string marker)
+    public static string[] NotFullyRegeneratedLines(string? converterStdErr)
     {
-        marker = "";
+        if (string.IsNullOrEmpty(converterStdErr))
+            return Array.Empty<string>();
 
-        if (string.IsNullOrEmpty(converterOutput))
-            return false;
+        List<string> lines = new();
 
-        string? line = converterOutput
-            .Split('\n')
-            .Select(l => l.TrimEnd('\r'))
-            .FirstOrDefault(l => s_marker.IsMatch(l));
+        foreach (string line in converterStdErr.Split('\n'))
+        {
+            string trimmed = line.TrimEnd('\r');
 
-        if (line is null)
-            return false;
+            if (s_marker.IsMatch(trimmed))
+                lines.Add(trimmed.Trim());
+        }
 
-        marker = line.Trim();
-        return true;
+        return lines.ToArray();
+    }
+
+    /// <summary>
+    /// True when the converter's stderr says the emission is best-effort, with the offending lines.
+    /// A caller that has already seen a NON-ZERO exit code should report that instead: a converter
+    /// that failed outright is a louder and more specific fact than the degradation it printed on
+    /// the way down.
+    /// </summary>
+    public static bool NotFullyRegenerated(string? converterStdErr, out string[] lines)
+    {
+        lines = NotFullyRegeneratedLines(converterStdErr);
+        return lines.Length > 0;
     }
 }

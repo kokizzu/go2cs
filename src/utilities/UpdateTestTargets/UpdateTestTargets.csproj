@@ -16,7 +16,7 @@
       PlatformExclusive     : F8, is this behavioral package native to this host.
       ConverterBuildInputs  : is go2cs.exe stale (route #5, templates and internal/ count too).
       BehavioralPackages    : which Go packages a project owns, DEEPEST-FIRST (route #3).
-      BestEffortConversion  : did the converter degrade and exit 0 anyway.
+      BestEffortConversion  : did the converter degrade and exit 0 anyway (route #2 at the record).
   -->
   <ItemGroup>
     <Compile Include="../../tests/PlatformExclusive.cs" Link="PlatformExclusive.cs" />
