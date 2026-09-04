@@ -5,68 +5,78 @@
 // that can be found in the LICENSE file.
 
 // Hand-written implementations of internal/poll's TEN //go:linkname entry points into the Go
-// runtime's network poller (fd_poll_runtime.go) for the LINUX flavor: the READINESS poller -- one
-// epoll instance, one background drain thread, and the managed descriptor state machine the Windows
-// flavor built and gated (windows/runtime_netpoll_impl.cs), lifted verbatim. Design:
-// docs/phase4/DESIGN-linux-readiness-poller.md (RATIFIED 2026-08-22, all nine OQs as recommended);
-// its §2 contract inventory and §5 deadline story are inherited from
-// docs/phase4/DESIGN-netpoll-managed-poller.md and not re-argued here.
+// runtime's network poller (fd_poll_runtime.go) for the DARWIN flavor: the READINESS poller -- one
+// kqueue, one background drain thread, and the managed descriptor state machine the Windows flavor
+// built and gated (windows/runtime_netpoll_impl.cs) and the Linux flavor lifted verbatim
+// (linux/runtime_netpoll_impl.cs), lifted verbatim again. The linux file is the template this one
+// was cut from and the two cite each other so they cannot drift silently (the lock_sema/lock_futex
+// per-GOOS-authority precedent); everything below the kernel seam is a COPY of it, and the design it
+// inherits -- docs/phase4/DESIGN-linux-readiness-poller.md over
+// docs/phase4/DESIGN-netpoll-managed-poller.md -- is not re-argued here.
 //
-// HISTORY, KEPT BECAUSE IT IS THE MEASURED BILL. This file was first the FALLBACK poller (the
-// poll-seam lane, 2026-08-22): pollServerInit a no-op and pollOpen answering EPERM for EVERY
-// descriptor, so files, pipes and sockets all degraded to the blocking path -- Go's own regular-file
-// behavior applied to everything. That flipped 28 Linux roster rows (every file open had died in the
-// PartialStubGenerator's throwing stub before it), and it left sockets returning `operation not
-// permitted` from FD.Init once the sockaddr mirror let Bind/Connect through -- measured on
-// encoding/json's TestHTTPDecoding (`httptest: failed to listen on a port: listen tcp6 [::1]:0:
-// operation not permitted`) and on crypto/tls's TestMain listener at e7800600d. The poller below
-// makes pollOpen's EPERM arm what it is in Go: the KERNEL's answer for the descriptors epoll refuses
-// (regular files and directories -- os.newFile discards it and restores blocking mode, exactly as
-// before), and every other descriptor pollable.
+// HISTORY, KEPT BECAUSE IT IS THE MEASURED BILL. Until this file existed the darwin folder declared
+// the ten partials (fd_poll_runtime.cs) and carried no companion, so every one of them was
+// PartialStubGenerator's throwing stub -- runtime_pollServerInit first. The first full darwin
+// behavioral census (run 33787891520, 2026-09-03, both Apple silicon and Intel) measured exactly
+// that: every pollable descriptor died at `serverInit.Do(runtime_pollServerInit)` with
+// `NotImplementedException: runtime_pollServerInit: external (assembly or cgo) function is not
+// implemented`, one door BEFORE the converted runtime.netpollinit and its kqueue() -- StatLayoutTruth
+// on both architectures, LinuxSpawnBasics on Intel -- and the eight `net` importers and the pipe
+// users died at seams in front of this one (increments 4 and 5). This increment opens the door.
 //
-// WHAT THIS IS, IN ONE PARAGRAPH (design §0). Go's netpoll_epoll.go with gopark/goready replaced by
-// a monitor gate per descriptor. epoll_create1(EPOLL_CLOEXEC) once (§4.2). EPOLL_CTL_ADD with
-// EPOLLIN|EPOLLOUT|EPOLLRDHUP|EPOLLET exactly as Go arms it -- EDGE-TRIGGERED, and §4.5 is the
-// no-lost-edge argument in full: the consumer (linux/fd_unix.cs) waits only after the kernel has
-// answered EAGAIN, so the buffer is empty/full at the wait and any future readiness is a new
-// transition; prepare (pollReset) clears a stale Ready and a transition in that window is observed
-// by the syscall itself; fdMutex admits one waiter per mode. epoll_event.data carries an opaque
-// TOKEN, never a pointer and never the fd (§4.6: the kernel reissues fd numbers; a stale event's
-// token no longer resolves). ONE background drain thread blocks in epoll_wait(-1) forever, retries
-// EINTR, and per event sets Ready on the modes Go's mapping names and pulses the gate. Deadlines are
-// the Windows §5 machinery -- sticky per-mode expiry, generation-checked System.Threading.Timer,
-// "a deadline set in the past fires NOW against the current waiter", wake-without-ready for
-// unblock -- MINUS the cancel-and-harvest dimension, because a Linux timeout wakes a thread that owns
-// no in-flight kernel operation (§4.7). Every byte the kernel reads or writes is a NATIVE image
-// (Marshal over AllocHGlobal) handed through the keystone syscall(2) binding as a uintptr -- no ж<T>
-// address, no generated address-taking wrapper (§4.1; OQ-9: the safe form, so
-// internal.poll.csproj's shared <AllowUnsafeBlocks> stays false and no regen is owed). No break
-// eventfd (OQ-2): nothing needs to interrupt the drain thread -- deadlines and unblocks reach
-// waiters directly, and EPOLL_CTL_ADD/DEL take effect inside an in-progress epoll_wait (S0 measured
-// an ADD during a wait delivered 1 ms later with no break write). Regular files are refused by the
-// kernel's EPERM alone (OQ-4; S0: EPERM for a regular file and a directory, 0 for a pipe and a
-// socket). pollWaitCanceled has no Linux caller and is the shared wait loop anyway (OQ-5). A failed
-// epoll_wait other than EINTR is Go's throw("runtime: netpoll failed") -- an unhandled exception on
-// the drain thread, never catch-and-continue (OQ-3).
+// WHAT THIS IS, IN ONE PARAGRAPH. Go's netpoll_kqueue.go with gopark/goready replaced by a monitor
+// gate per descriptor. kqueue() once. Two EV_ADD | EV_CLEAR registrations per descriptor -- EVFILT_READ
+// and EVFILT_WRITE -- exactly as Go's netpollopen arms them: EDGE-TRIGGERED (EV_CLEAR is kqueue's
+// EPOLLET), so the linux file's no-lost-edge argument (design §4.5) carries over unchanged: the
+// consumer (darwin/fd_unix.cs) waits only after the kernel has answered EAGAIN, so the buffer is
+// empty/full at the wait and any future readiness is a new transition; prepare (pollReset) clears a
+// stale Ready and a transition in that window is observed by the syscall itself; fdMutex admits one
+// waiter per mode. udata carries an opaque TOKEN, never a pointer and never the fd (the kernel
+// reissues fd numbers; a stale event's token no longer resolves). ONE background drain thread blocks
+// in kevent(kq, NULL, 0, events, 64, NULL) forever, retries EINTR, and per event applies Go's own
+// mapping (netpoll_kqueue.go): EVFILT_READ -> the read mode, PLUS the write mode when EV_EOF is set
+// ("when the read end of a pipe is closed the write end will not get a _EVFILT_WRITE event, but will
+// get a _EVFILT_READ event with EV_EOF set"), EVFILT_WRITE -> the write mode; the eventErr bit is
+// `flags == EV_ERROR`; then Ready on the named modes and a pulse. Deadlines are the Windows §5
+// machinery -- sticky per-mode expiry, generation-checked System.Threading.Timer, "a deadline set in
+// the past fires NOW against the current waiter", wake-without-ready for unblock -- minus the
+// cancel-and-harvest dimension, exactly as on linux. No wakeup event (Go's EVFILT_USER
+// netpollBreak): nothing needs to interrupt the drain thread -- deadlines and unblocks reach waiters
+// directly, and a registration made from another thread is observed by an in-progress kevent. Close
+// registers no delete: "calling close() on fd will remove any kevents that reference the descriptor"
+// (netpoll_kqueue.go's netpollclose is empty for that reason), and the table entry is retired last so
+// no event can resolve a token that is gone. Regular files and FIFOs never reach pollOpen here:
+// os.newFile's S_IFREG/S_IFIFO check (darwin/file_unix.cs, Go's own) keeps them off kqueue, so unlike
+// linux there is no kernel EPERM arm to lean on and pollOpen answers 0 for whatever kqueue accepts.
 //
-// WHAT CHANGES FOR os AND net, STATED (design §5): nothing is EDITED there. Pipes, FIFOs, ttys and
-// sockets now arm (os.newFile's SetNonblock sticks because FD.Init succeeds), so a pipe Read parks on
-// the gate instead of in read(2) and Close -> evict wakes it (the PipeCloseUnblocksRead behavioral
-// program prints Go's `read unblocked: read |0: file already closed`), SetDeadline is honored on
-// them, and net.Listen/Dial stop returning EPERM. Regular files and directories behave exactly as
-// under the fallback (the same errno, now from the kernel). os/exec's child-side pipe ends stay
-// blocking through os.File.Fd() -> SetBlocking (each pipe end is its own open file description); the
-// epoll descriptor is CLOEXEC so no child inherits it; isPollServerDescriptor answers truthfully for
-// it, which os/exec's TestExtraFiles relies on when it enumerates the parent's descriptors.
+// THE KERNEL SEAM, AND WHY IT IS A DllImport. The converted runtime.netpollopen reaches kevent through
+// `libcCall(kevent_trampoline, &kq)` with a `keventt` whose `udata` is a managed reference
+// (runtime/darwin/defs_darwin_amd64.cs), which the darwin keystone (runtime/darwin/libccall_impl.cs,
+// golib GoLibcCall) refuses BY NAME as a reference-bearing args struct. This file never calls it: every
+// byte the kernel reads or writes is a NATIVE image -- the 32-byte `struct kevent` of both 64-bit
+// darwin ABIs, allocated with Marshal.AllocHGlobal and written field by field -- handed to libc's
+// kqueue(2)/kevent(2) through `DllImport("libc")`, which resolves against libSystem.B.dylib on darwin
+// (the os/darwin/dir_darwin_impl.cs readdir_r precedent). No ж<T> address, no generated
+// address-taking wrapper, no unsafe block (internal.poll.csproj's shared <AllowUnsafeBlocks> stays
+// false). kevent is not variadic, so the keystone's recorded arm64 register-style debt does not
+// apply to this route either.
 //
-// SCOPE. Linux amd64: the struct epoll_event image below is amd64's PACKED 12 bytes (uint32 events
-// at 0, uint64 data at 4), and pollServerInit refuses any other architecture rather than misread
-// (arm64's record is 16 bytes unpacked). darwin has its own poller in darwin/runtime_netpoll_impl.cs
-// -- this file's twin over kqueue, cut as a copy of it. Windows keeps its own poller in
-// windows/runtime_netpoll_impl.cs, untouched: the desc machinery here is a COPY of it (OQ-7, the
-// lock_sema/lock_futex per-GOOS-authority precedent) and the two files cite each other so they
-// cannot drift silently; a hoist into a flat shared companion is a later leveling once both are
-// measured.
+// WHAT CHANGES FOR os AND net, STATED: nothing is EDITED there. Pipes, ttys and sockets now arm
+// (os.newFile's SetNonblock sticks because FD.Init succeeds), so a pipe Read parks on the gate
+// instead of in read(2) and Close -> evict wakes it, SetDeadline is honored on them, and net's
+// listeners and dialers reach the kernel instead of the stub. What this increment does NOT do, so the
+// next census is read correctly: the seams the census measured IN FRONT of the poller -- the darwin
+// syscall flavor's by-address struct writes (increment 5) and runtime.pipe's [2]int32 (increment 4) --
+// are untouched, so a program that died at runtime_pollServerInit is expected to move to the NEXT
+// absence in its path rather than to pass.
+//
+// SCOPE. Darwin amd64 AND arm64: `struct kevent` is the same 32-byte record on both 64-bit ABIs
+// (ident uintptr @0, filter int16 @8, flags uint16 @10, fflags uint32 @12, data intptr @16, udata
+// pointer @24), naturally aligned; pollServerInit refuses any other architecture rather than misread.
+// Linux keeps its poller in linux/runtime_netpoll_impl.cs and Windows its own in
+// windows/runtime_netpoll_impl.cs, both untouched: the desc machinery here is a COPY of theirs and
+// the three files cite each other; a hoist into a flat shared companion is a later leveling once all
+// three are measured.
 
 using System;
 using System.Collections.Concurrent;
@@ -80,54 +90,52 @@ using WaitReason = go.golib.WaitReason;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 // Hand-owned (no runtime_netpoll_impl.go exists, so a reconvert never regenerates this file);
-// marked per the hand-own rules so a -stdlib run cannot emit a Go version over it.
+// the marker keeps a -stdlib reconvert from touching it, and L3 routing keeps it darwin-only.
 [module: go.GoManualConversion]
 
 namespace go.@internal;
 
 partial class poll_package
 {
-    // ---- the kernel surface: private copies of the numbers and flags this file uses (design §3) ---
-    // Kept local rather than read from the converted syscall flavor so the file's kernel contract is
-    // visible in one place; each value is Linux amd64's (syscall/linux/zsysnum_linux_amd64.cs,
-    // zerrors_linux_amd64.cs, internal/runtime/syscall/linux/defs_linux.cs).
-    private const nuint SYS_EPOLL_WAIT = 232;
-    private const nuint SYS_EPOLL_CTL = 233;
-    private const nuint SYS_EPOLL_CREATE1 = 291;
-    private const uint EPOLL_CLOEXEC = 0x80000;
-    private const nuint EPOLL_CTL_ADD = 1;
-    private const nuint EPOLL_CTL_DEL = 2;
-    private const uint EPOLLIN = 0x1;
-    private const uint EPOLLOUT = 0x4;
-    private const uint EPOLLERR = 0x8;
-    private const uint EPOLLHUP = 0x10;
-    private const uint EPOLLRDHUP = 0x2000;
-    private const uint EPOLLET = 0x80000000;
-    private const nuint EINTR = 4;
+    // ---- the kernel surface: private copies of the numbers and flags this file uses -------------
+    // Kept local rather than read from the converted runtime flavor so the file's kernel contract is
+    // visible in one place; each value is darwin's (runtime/darwin/defs_darwin_amd64.cs, and the
+    // same on arm64: sys/event.h is architecture-neutral).
+    private const short EVFILT_READ = -1;
+    private const short EVFILT_WRITE = -2;
+    private const ushort EV_ADD = 0x1;
+    private const ushort EV_CLEAR = 0x20;
+    private const ushort EV_ERROR = 0x4000;
+    private const ushort EV_EOF = 0x8000;
+    private const int EINTR = 4;
 
-    // struct epoll_event on linux/amd64: __attribute__((packed)) { uint32_t events; uint64_t data; }.
-    // 12 bytes; data is at offset 4 and UNALIGNED, which Marshal.ReadInt64/WriteInt64 are specified
-    // for (S0 measured the round trip through a 2-slot buffer).
-    private const int epollEventSize = 12;
-    private const int epollEventsOffset = 0;
-    private const int epollDataOffset = 4;
+    // struct kevent on 64-bit darwin: { uintptr_t ident; int16_t filter; uint16_t flags; uint32_t
+    // fflags; intptr_t data; void *udata; } -- 32 bytes, every field naturally aligned.
+    private const int keventSize = 32;
+    private const int keventIdentOffset = 0;
+    private const int keventFilterOffset = 8;
+    private const int keventFlagsOffset = 10;
+    private const int keventFflagsOffset = 12;
+    private const int keventDataOffset = 16;
+    private const int keventUdataOffset = 24;
 
-    // Go's batch: `var events [128]syscall.EpollEvent` (runtime/netpoll_epoll.go).
-    private const int drainBatch = 128;
+    // Go's batch: `var events [64]keventt` (runtime/netpoll_kqueue.go).
+    private const int drainBatch = 64;
 
-    // The registration Go's netpollopen makes (netpoll_epoll.go:56): read, write, peer half-close,
-    // edge-triggered. EPOLLHUP and EPOLLERR are always reported and need no registration.
-    private const uint armEvents = EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLET;
+    // The registration Go's netpollopen makes (netpoll_kqueue.go): both filters, EV_ADD | EV_CLEAR
+    // -- edge-triggered for the whole fd lifetime. EV_EOF and EV_ERROR are reported without being
+    // requested.
+    private const ushort armFlags = EV_ADD | EV_CLEAR;
 
-    // The one descriptor this poller owns (OQ-2: no break eventfd), and the drain buffer -- both
+    // The one descriptor this poller owns (no wakeup event), and the drain buffer -- both
     // process-lifetime, created once in pollServerInit. -1 until then.
-    private static int epfd = -1;
+    private static int kq = -1;
     private static nint drainBuffer;
 
     // Per-mode state. Go splits the equivalent across pd.rg/pd.wg (the waiter slot), pd.rd/pd.wd (the
     // deadline), pd.rseq/pd.wseq (the stale-timer guard) and pd.rt/pd.wt (the runtime timer); the
-    // fields below are the same five facts under one lock. COPIED from windows/runtime_netpoll_impl.cs
-    // (OQ-7); keep the two in step.
+    // fields below are the same five facts under one lock. COPIED from linux/runtime_netpoll_impl.cs
+    // (itself a copy of the Windows flavor); keep the three in step.
     private sealed class ManagedPollMode
     {
         // An edge arrived for this mode and has not been consumed yet. Go's pdReady.
@@ -160,10 +168,10 @@ partial class poll_package
         internal readonly object Gate = new();
         // pollUnblock ran. Sticky for the desc's lifetime -- a fresh desc is allocated per pollOpen.
         internal bool Closing;
-        // Go's pdEventErr info bit: the last event for this descriptor was EXACTLY EPOLLERR. Set AND
-        // cleared on every event by the drain thread (netpoll_epoll.go: pd.setEventErr(ev.events ==
-        // _EPOLLERR, tag)); consulted by netpollcheckerr for mode 'r' only -> pollErrNotPollable.
-        // Absent from the Windows flavor because netpoll_windows.go never sets it.
+        // Go's pdEventErr info bit: the last event for this descriptor carried EXACTLY EV_ERROR in its
+        // flags. Set AND cleared on every event by the drain thread (netpoll_kqueue.go:
+        // pd.setEventErr(ev.flags == _EV_ERROR, tag)); consulted by netpollcheckerr for mode 'r' only
+        // -> pollErrNotPollable.
         internal bool EventErr;
         internal readonly ManagedPollMode Read = new();
         internal readonly ManagedPollMode Write = new();
@@ -174,9 +182,9 @@ partial class poll_package
             Write.Owner = this;
         }
 
-        // The descriptor this desc was opened for -- what EPOLL_CTL_ADD/DEL name.
+        // The descriptor this desc was opened for -- what the two kevent registrations name.
         internal int Fd;
-        // The ctx internal/poll holds and the epoll_event.data the kernel carries back (§4.6).
+        // The ctx internal/poll holds and the udata the kernel carries back.
         internal uintptr Token;
     }
 
@@ -199,64 +207,79 @@ partial class poll_package
     private static ManagedPollMode modeState(ManagedPollDesc desc, nint mode) =>
         mode == pollModeWrite ? desc.Write : desc.Read;
 
-    // ---- the keystone, and the one shape every kernel call here takes --------------------------
-    // syscall.RawSyscall6 is the converted syscall flavor's public entry to the keystone
-    // [LibraryImport("libc", "syscall")] binding (internal/runtime/syscall/linux/syscall_linux_impl.cs).
-    // "Raw" because there is no scheduler to bracket with entersyscall/exitsyscall (both are no-ops
-    // on this flavor); a thread blocked inside it is in preemptive GC mode and holds no managed
-    // reference (§4.2). Every address handed through it is a native image owned by this file.
-    private static nuint rawSyscall6(nuint trap, uintptr a1, uintptr a2, uintptr a3, uintptr a4, out uintptr r1)
+    // ---- the kernel route, and the one shape every kernel call here takes ----------------------
+    // libc's kqueue(2) and kevent(2), taken directly rather than through the generated trampolines
+    // (see the header). `DllImport("libc")` resolves against libSystem.B.dylib on darwin. Every
+    // address handed through them is a native image owned by this file; SetLastError captures errno
+    // for Marshal.GetLastPInvokeError, which is the only errno reader a DllImport call has.
+    [DllImport("libc", EntryPoint = "kqueue", SetLastError = true)]
+    private static extern int kqueue_native();
+
+    [DllImport("libc", EntryPoint = "kevent", SetLastError = true)]
+    private static extern int kevent_native(int kq, nint changelist, int nchanges, nint eventlist, int nevents, nint timeout);
+
+    // Writes one struct kevent record at `record`.
+    private static void writeKevent(nint record, int fd, short filter, ushort flags, uintptr token)
     {
-        (r1, _, go.syscall_package.Errno err) = go.syscall_package.RawSyscall6(trap, a1, a2, a3, a4, 0, 0);
-        return (nuint)err;
+        Marshal.WriteInt64(record, keventIdentOffset, (long)fd);
+        Marshal.WriteInt16(record, keventFilterOffset, filter);
+        Marshal.WriteInt16(record, keventFlagsOffset, unchecked((short)flags));
+        Marshal.WriteInt32(record, keventFflagsOffset, 0);
+        Marshal.WriteInt64(record, keventDataOffset, 0);
+        Marshal.WriteInt64(record, keventUdataOffset, unchecked((long)(ulong)(nuint)token));
     }
 
-    private static uintptr fdArg(int fd) => (uintptr)(nuint)(uint)fd;
-
-    // EPOLL_CTL_ADD/DEL with a 12-byte native epoll_event image (§4.1). DEL ignores the image but a
-    // valid one is passed anyway -- Go passes &ev for both, and pre-2.6.9 kernels required it.
-    private static nuint epollCtl(nuint op, int fd, uint events, uintptr token)
+    // Go's netpollopen registration: EVFILT_READ and EVFILT_WRITE, EV_ADD | EV_CLEAR, in ONE kevent
+    // call with a two-record changelist and no eventlist -- on failure the call returns -1 and errno
+    // names the reason (Go: `n := kevent(kq, &ev[0], 2, nil, 0, nil); if n < 0 { return -n }`).
+    // Returns errno, 0 on success.
+    private static int keventArm(int fd, uintptr token)
     {
-        nint ev = Marshal.AllocHGlobal(epollEventSize);
+        nint changes = Marshal.AllocHGlobal(2 * keventSize);
 
         try
         {
-            Marshal.WriteInt32(ev, epollEventsOffset, unchecked((int)events));
-            Marshal.WriteInt64(ev, epollDataOffset, unchecked((long)(ulong)(nuint)token));
-            return rawSyscall6(SYS_EPOLL_CTL, fdArg(epfd), op, fdArg(fd), (uintptr)ev, out _);
+            writeKevent(changes, fd, EVFILT_READ, armFlags, token);
+            writeKevent(changes + keventSize, fd, EVFILT_WRITE, armFlags, token);
+
+            int n = kevent_native(kq, changes, 2, 0, 0, 0);
+
+            return n < 0 ? Marshal.GetLastPInvokeError() : 0;
         }
         finally
         {
-            Marshal.FreeHGlobal(ev);
+            Marshal.FreeHGlobal(changes);
         }
     }
 
     // ---- 1. runtime_pollServerInit ---------------------------------------------------------------
 
-    // Go's netpollinit: create the epoll instance. The caller wraps it in serverInit.Do
-    // (fd_poll_runtime.cs), so it runs once per process, on the first pollable FD.Init. A failure is
-    // what it is in Go -- throw("runtime: epollcreate failed") -- and there is deliberately no
-    // fallback to "un-armable for everyone": that would silently re-introduce the blocking
-    // degradation this file exists to remove.
+    // Go's netpollinit: create the kqueue. The caller wraps it in serverInit.Do (fd_poll_runtime.cs),
+    // so it runs once per process, on the first pollable FD.Init. A failure is what it is in Go --
+    // throw("runtime: netpollinit failed") -- and there is deliberately no fallback to "un-armable for
+    // everyone": that would silently re-introduce the blocking degradation this file exists to
+    // remove. Go also marks the kqueue close-on-exec; kqueue descriptors are not inherited across
+    // fork/exec on darwin at all ("The queue is not inherited by a child created with fork(2)"), so
+    // there is no closeonexec step to reproduce.
     internal static partial void runtime_pollServerInit()
     {
-        if (RuntimeInformation.ProcessArchitecture != Architecture.X64)
+        if (RuntimeInformation.ProcessArchitecture != Architecture.X64 && RuntimeInformation.ProcessArchitecture != Architecture.Arm64)
         {
             throw new PlatformNotSupportedException(
-                "runtime: netpoll (linux flavor) mirrors linux/amd64's packed 12-byte struct epoll_event; " +
+                "runtime: netpoll (darwin flavor) mirrors the 64-bit darwin ABIs' 32-byte struct kevent; " +
                 RuntimeInformation.ProcessArchitecture + " is not supported by this hand-own");
         }
 
-        nuint errno = rawSyscall6(SYS_EPOLL_CREATE1, EPOLL_CLOEXEC, 0, 0, 0, out uintptr r1);
+        int fd = kqueue_native();
 
-        if (errno != 0)
-            throw new InvalidOperationException("runtime: epollcreate failed (errno " + errno + ")");
+        if (fd < 0)
+            throw new InvalidOperationException("runtime: netpollinit failed (kqueue errno " + Marshal.GetLastPInvokeError() + ")");
 
-        epfd = (int)(nuint)r1;
-        drainBuffer = Marshal.AllocHGlobal(drainBatch * epollEventSize);
+        kq = fd;
+        drainBuffer = Marshal.AllocHGlobal(drainBatch * keventSize);
 
-        // Background: the process does not wait for it at exit, and it needs no shutdown signal
-        // (OQ-2). Started AFTER epfd and the buffer exist, BEFORE pollServerInitialized is published.
+        // Background: the process does not wait for it at exit, and it needs no shutdown signal.
+        // Started AFTER kq and the buffer exist, BEFORE pollServerInitialized is published.
         Thread drain = new(drainLoop)
         {
             IsBackground = true,
@@ -269,56 +292,72 @@ partial class poll_package
 
     private static bool pollServerInitialized;
 
-    // Go's netpoll(delta) with delta = -1 forever and no scheduler to hand the ready list to
-    // (design §4.2). The per-event body: Go's mode mapping (netpoll_epoll.go:173-177), the eventErr
-    // bit, Ready on the named modes, and a pulse -- netpollready -> netpollunblock(ioready) -> goready
-    // collapsed to a Monitor.PulseAll under the desc's gate.
+    // Go's netpoll(delta) with delta = -1 forever and no scheduler to hand the ready list to. The
+    // per-event body: Go's mode mapping (netpoll_kqueue.go), the eventErr bit, Ready on the named
+    // modes, and a pulse -- netpollready -> netpollunblock(ioready) -> goready collapsed to a
+    // Monitor.PulseAll under the desc's gate.
     private static void drainLoop()
     {
-        // msec = -1: the kernel reads an int from the register, so all-ones is the value Go passes.
-        uintptr forever = unchecked((nuint)(nint)(-1));
-
         while (true)
         {
-            nuint errno = rawSyscall6(SYS_EPOLL_WAIT, fdArg(epfd), (uintptr)drainBuffer, (uintptr)(nuint)drainBatch, forever, out uintptr r1);
+            // timeout NULL: block until at least one event is pending.
+            int n = kevent_native(kq, 0, 0, drainBuffer, drainBatch, 0);
 
-            // epoll_wait is NEVER restarted after a signal handler, SA_RESTART or not (signal(7)), so
-            // EINTR is retried unconditionally -- Go: `if errno == _EINTR { goto retry }`. S0 measured
-            // it RARE under the CLR (0 in 20 s of slices while the process spawned 22,819 children and
-            // ran 7,758 gen0 GCs -- the runtime routes signals away from arbitrary threads), but a
-            // never-restarted syscall is owed the retry regardless.
-            if (errno == EINTR)
-                continue;
+            if (n < 0)
+            {
+                int errno = Marshal.GetLastPInvokeError();
 
-            // OQ-3: any other errno on a valid epfd is a process-level invariant failure (EBADF: someone
-            // closed the poller's descriptor; EINVAL: epfd is not an epoll fd; EFAULT: the buffer
-            // moved -- it cannot, it is native). Go throws "runtime: netpoll failed"; here an unhandled
-            // exception on this background thread terminates the process through the crash-report
-            // path. Catch-and-continue would be strictly worse: every future waiter would park forever
-            // on a gate nobody pulses.
-            if (errno != 0)
-                throw new InvalidOperationException("runtime: netpoll failed (epoll_wait errno " + errno + ")");
+                // kevent is not restarted after a signal handler, so EINTR is retried
+                // unconditionally -- Go: `if errno == _EINTR { goto retry }`.
+                if (errno == EINTR)
+                    continue;
 
-            int n = (int)(nuint)r1;
+                // Any other errno on a valid kq is a process-level invariant failure (EBADF: someone
+                // closed the poller's descriptor; EFAULT: the buffer moved -- it cannot, it is
+                // native). Go throws "runtime: netpoll failed"; here an unhandled exception on this
+                // background thread terminates the process through the crash-report path.
+                // Catch-and-continue would be strictly worse: every future waiter would park forever
+                // on a gate nobody pulses.
+                throw new InvalidOperationException("runtime: netpoll failed (kevent errno " + errno + ")");
+            }
 
             for (int i = 0; i < n; i++)
             {
-                uint events = unchecked((uint)Marshal.ReadInt32(drainBuffer, i * epollEventSize + epollEventsOffset));
-                uintptr token = (uintptr)unchecked((ulong)Marshal.ReadInt64(drainBuffer, i * epollEventSize + epollDataOffset));
+                nint record = drainBuffer + i * keventSize;
+                short filter = Marshal.ReadInt16(record, keventFilterOffset);
+                ushort flags = unchecked((ushort)Marshal.ReadInt16(record, keventFlagsOffset));
+                uintptr token = (uintptr)unchecked((ulong)Marshal.ReadInt64(record, keventUdataOffset));
 
                 // A token that no longer resolves is an event for a descriptor closed under us
-                // (pollClose removed it); under ET it is not repeated and needs nothing (§4.6).
+                // (pollClose retired it); under EV_CLEAR it is not repeated and needs nothing.
                 ManagedPollDesc? desc = descFor(token);
 
                 if (desc is null)
                     continue;
 
-                bool readable = (events & (EPOLLIN | EPOLLRDHUP | EPOLLHUP | EPOLLERR)) != 0;
-                bool writable = (events & (EPOLLOUT | EPOLLHUP | EPOLLERR)) != 0;
+                bool readable = false, writable = false;
+
+                if (filter == EVFILT_READ)
+                {
+                    readable = true;
+
+                    // Go: "On some systems when the read end of a pipe is closed the write end will not
+                    // get a _EVFILT_WRITE event, but will get a _EVFILT_READ event with EV_EOF set."
+                    // Waking the writer is harmless: it retries and gets EPIPE/EAGAIN/success.
+                    if ((flags & EV_EOF) != 0)
+                        writable = true;
+                }
+                else if (filter == EVFILT_WRITE)
+                {
+                    writable = true;
+                }
+
+                if (!readable && !writable)
+                    continue;
 
                 lock (desc.Gate)
                 {
-                    desc.EventErr = events == EPOLLERR;
+                    desc.EventErr = flags == EV_ERROR;
 
                     if (readable)
                         desc.Read.Ready = true;
@@ -326,8 +365,7 @@ partial class poll_package
                     if (writable)
                         desc.Write.Ready = true;
 
-                    if (readable || writable)
-                        Monitor.PulseAll(desc.Gate);
+                    Monitor.PulseAll(desc.Gate);
                 }
             }
         }
@@ -335,17 +373,15 @@ partial class poll_package
 
     // ---- 2. runtime_pollOpen ---------------------------------------------------------------------
 
-    // Go's netpollopen: one epoll_ctl(EPOLL_CTL_ADD) (netpoll_epoll.go:49-59). Returns (ctx, 0) or
-    // (0, errno); pollDesc.init converts a nonzero errno with errnoErr(syscall.Errno(errno))
-    // (fd_poll_runtime.cs). For a regular file or a directory the kernel answers EPERM -- the exact
-    // errno the fallback used to answer for everything -- and os.newFile discards it and restores
-    // blocking mode; for a socket, net.netFD.init propagates it, so any OTHER errno here surfaces
-    // from net.Listen/Dial as its real name.
+    // Go's netpollopen: the two EV_ADD | EV_CLEAR registrations (netpoll_kqueue.go). Returns (ctx, 0)
+    // or (0, errno); pollDesc.init converts a nonzero errno with errnoErr(syscall.Errno(errno))
+    // (fd_poll_runtime.cs), and net.netFD.init propagates it, so any errno here surfaces from
+    // net.Listen/Dial as its real name. Regular files and FIFOs do not arrive here (see the header).
     //
-    // ORDER MATTERS (§4.6): the table entry is inserted BEFORE the ADD, because a readable descriptor
-    // (an accepted connection with data already in flight) can deliver its first -- under ET, only --
-    // edge before epoll_ctl returns, and the drain thread must be able to resolve the token at that
-    // instant. On failure the entry is removed again.
+    // ORDER MATTERS: the table entry is inserted BEFORE the registration, because a readable
+    // descriptor (an accepted connection with data already in flight) can deliver its first -- under
+    // EV_CLEAR, only -- edge before kevent returns, and the drain thread must be able to resolve the
+    // token at that instant. On failure the entry is removed again.
     internal static partial (uintptr, nint) runtime_pollOpen(uintptr fd)
     {
         // internal/poll reaches pollOpen only through serverInit.Do(runtime_pollServerInit), so a
@@ -360,7 +396,7 @@ partial class poll_package
         desc.Token = ctx;
         pollTable[ctx] = desc;
 
-        nuint errno = epollCtl(EPOLL_CTL_ADD, desc.Fd, armEvents, ctx);
+        int errno = keventArm(desc.Fd, ctx);
 
         if (errno != 0)
         {
@@ -373,18 +409,13 @@ partial class poll_package
 
     // ---- 3. runtime_pollClose --------------------------------------------------------------------
 
-    // Go's netpollclose: unregister. Legal only after unblock -- Go throws "runtime: close polldesc w/o
-    // unblock" (runtime/netpoll.cs), and that assert guards internal/poll's OWN sequencing, which is
-    // unchanged converted code: FD.Close calls pd.evict() before decref -> destroy -> pd.close().
-    // Kept as an InvalidOperationException so a future sequencing regression is loud.
-    //
-    // The EPOLL_CTL_DEL is explicit and runs BEFORE close(2) by FD.destroy's own ordering ("Poller may
-    // want to unregister fd in readiness notification mechanism, so this must be executed before
-    // CloseFunc"). It is not optional: the kernel drops a closed fd from an epoll set only when its
-    // LAST reference closes, and os.File.Fd()/os/exec dup descriptors into children, so without the
-    // DEL a parent's closed socket could keep reporting edges through a child's copy. Its errno is
-    // ignored, as poll_runtime_pollClose ignores netpollclose's. The table entry is removed LAST, so
-    // no window exists in which the kernel can still deliver an event for a token that is gone.
+    // Go's netpollclose is EMPTY on kqueue: "Don't need to unregister because calling close() on fd
+    // will remove any kevents that reference the descriptor." Legal only after unblock -- Go throws
+    // "runtime: close polldesc w/o unblock" (runtime/netpoll.cs), and that assert guards
+    // internal/poll's OWN sequencing, which is unchanged converted code: FD.Close calls pd.evict()
+    // before decref -> destroy -> pd.close(). Kept as an InvalidOperationException so a future
+    // sequencing regression is loud. The table entry is removed LAST, so no window exists in which the
+    // kernel can still deliver an event for a token that is gone.
     internal static partial void runtime_pollClose(uintptr ctx)
     {
         ManagedPollDesc? desc = descFor(ctx);
@@ -406,15 +437,13 @@ partial class poll_package
             desc.Write.Deadline = null;
         }
 
-        epollCtl(EPOLL_CTL_DEL, desc.Fd, 0, ctx);
-
         pollTable.TryRemove(ctx, out _);
     }
 
     // ---- 4. runtime_pollWait ---------------------------------------------------------------------
 
     // Block until an edge arrives in mode, or return the closing/deadline/eventErr code. Called by
-    // every I/O wrapper in linux/fd_unix.cs after the kernel answered EAGAIN (design §2.1).
+    // every I/O wrapper in darwin/fd_unix.cs after the kernel answered EAGAIN (design §2.1).
     internal static partial nint runtime_pollWait(uintptr ctx, nint mode)
     {
         ManagedPollDesc? desc = descFor(ctx);
@@ -430,8 +459,8 @@ partial class poll_package
     // ---- 5. runtime_pollWaitCanceled -------------------------------------------------------------
 
     // Block until an edge arrives IGNORING deadline and closing. Windows' execIO cancel-and-harvest
-    // path is its only caller in Go; nothing in linux/fd_unix.cs reaches it. OQ-5: the shared loop
-    // rather than a throw -- it costs nothing, and it keeps the two flavors' machinery identical.
+    // path is its only caller in Go; nothing in darwin/fd_unix.cs reaches it. The shared loop rather
+    // than a throw -- it costs nothing, and it keeps the flavors' machinery identical.
     internal static partial void runtime_pollWaitCanceled(uintptr ctx, nint mode)
     {
         ManagedPollDesc? desc = descFor(ctx);
@@ -484,9 +513,7 @@ partial class poll_package
                 // been reset. Pretend it has not happened and retry."
                 //
                 // Park accounting only -- Go's netpollblock parks with waitReasonIOWait, which is
-                // what a traceback prints as [IO wait] for a goroutine blocked in the poller. §6
-                // row 9 of DESIGN-cooperative-scheduler.md left this adoption to the netpoll arc's
-                // option; taken here because the reason has a real park site and a real reader.
+                // what a traceback prints as [IO wait] for a goroutine blocked in the poller.
                 using (Goroutine.Park(WaitReason.IOWait))
                     Monitor.Wait(desc.Gate);
             }
@@ -497,7 +524,7 @@ partial class poll_package
 
     // Clear consumed readiness; fail fast if closing, expired, or (read side) in event error. Called
     // by every I/O wrapper before its syscall via prepareRead/prepareWrite (fd_poll_runtime.cs) --
-    // the "prepare clears" half of the ET argument (§4.5). Order is netpollcheckerr's.
+    // the "prepare clears" half of the edge-trigger argument. Order is netpollcheckerr's.
     internal static partial nint runtime_pollReset(uintptr ctx, nint mode)
     {
         ManagedPollDesc? desc = descFor(ctx);
@@ -532,7 +559,7 @@ partial class poll_package
     //
     // Go's single-combo-timer optimization (netpoll.cs) is NOT reproduced: two timers with the same
     // due time are observationally equivalent, and the combo machinery exists to save a RUNTIME
-    // timer -- a resource the managed side is not short of. COPIED from the Windows flavor (OQ-7).
+    // timer -- a resource the managed side is not short of. COPIED from the Windows flavor.
     internal static partial void runtime_pollSetDeadline(uintptr ctx, int64 d, nint mode)
     {
         ManagedPollDesc? desc = descFor(ctx);
@@ -556,7 +583,7 @@ partial class poll_package
 
             // A deadline set in the PAST fires NOW, against the CURRENT waiter: wake the blocked mode
             // without setting Ready, so its loop re-checks and returns pollErrTimeout. On this flavor
-            // there is nothing to harvest afterwards (§4.7) -- the consumer simply returns
+            // there is nothing to harvest afterwards -- the consumer simply returns
             // ErrDeadlineExceeded.
             if (wake)
                 Monitor.PulseAll(desc.Gate);
@@ -669,11 +696,11 @@ partial class poll_package
     // ---- 9. runtime_isPollServerDescriptor -------------------------------------------------------
 
     // Go's netpollIsPollDescriptor: true for the descriptors the poller itself owns -- here the one
-    // epoll fd (OQ-2: no break eventfd). os/exec's TestExtraFiles enumerates the parent's descriptors
-    // and skips the ones this names, which is why the answer has to be truthful rather than the
-    // fallback's constant false.
+    // kqueue (no wakeup event). os/exec's TestExtraFiles enumerates the parent's descriptors and
+    // skips the ones this names, which is why the answer has to be truthful rather than the stub's
+    // constant false.
     internal static partial bool runtime_isPollServerDescriptor(uintptr fd) =>
-        epfd >= 0 && (nuint)fd == (nuint)(uint)epfd;
+        kq >= 0 && (nuint)fd == (nuint)(uint)kq;
 
     // ---- 10. runtimeNano -------------------------------------------------------------------------
 
