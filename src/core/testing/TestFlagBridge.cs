@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using go.golib;
+using any = System.Object;
 
 // go2cs HAND-OWNED (whole file) — part of the Phase-4 test host, a structural replacement for Go's
 // testing package rather than a conversion of it (the rationale and the measured clobber are in
@@ -91,6 +92,80 @@ internal static class TestFlagBridge
     private const string FlagPackageTypeName = "go.flag_package, flag";
 
     /// <summary>
+    /// Go's <c>testing.chattyFlag</c> — the TRI-STATE value behind <c>-test.v</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>-test.v</c> is not a boolean in Go. <c>testing.go</c> declares a <c>chattyFlag</c> whose
+    /// <c>Set</c> accepts <c>true</c>, <c>false</c> AND <c>test2json</c>, whose <c>IsBoolFlag()</c>
+    /// is true (so a bare <c>-test.v</c> does not swallow the next token), and whose <c>Get()</c>
+    /// answers a <c>bool</c> for the first two and the STRING <c>"test2json"</c> for the third.
+    /// <c>testing</c>'s own <c>TestFlag</c> re-execs the binary and asserts exactly that through
+    /// <c>flag.Lookup("test.v").Value</c>, in all three arms.
+    /// </para>
+    /// <para>
+    /// The methods below are the Go ones, with Go's pointer receivers and Go's message. They are
+    /// written on the <c>ж&lt;ChattyFlag&gt;</c> box directly rather than as a <c>[GoRecv] this ref</c>
+    /// primary because the box form is the ONE the runtime binder takes
+    /// (<see cref="AdapterBinder.ResolveReceiverMethods"/> skips a by-ref receiver outright: no
+    /// delegate or reflective invoker can carry it), and because Go declares <c>chattyFlag</c>'s
+    /// method set on <c>*chattyFlag</c> alone — so the two agree by construction rather than by
+    /// the generator's twin.
+    /// </para>
+    /// </remarks>
+    internal struct ChattyFlag
+    {
+        internal bool On;   // -test.v is set in some form
+        internal bool Json; // -test.v=test2json is set
+    }
+
+    internal static bool IsBoolFlag(this ж<ChattyFlag> _) => true;
+
+    internal static error Set(this ж<ChattyFlag> Ꮡf, @string arg)
+    {
+        ref ChattyFlag f = ref Ꮡf.Value;
+
+        switch (arg.ToString())
+        {
+            case "true":
+                f.On = true;
+                f.Json = false;
+                return default!;
+            case "test2json":
+                f.On = true;
+                f.Json = true;
+                return default!;
+            case "false":
+                f.On = false;
+                f.Json = false;
+                return default!;
+            default:
+                // Go's own text, so a failed parse reports what `go test` reports.
+                return fmt_package.Errorf((@string)"invalid flag -test.v=%s", arg);
+        }
+    }
+
+    internal static @string String(this ж<ChattyFlag> Ꮡf)
+    {
+        ref ChattyFlag f = ref Ꮡf.Value;
+
+        if (f.Json)
+            return (@string)"test2json";
+
+        return (@string)(f.On ? "true" : "false");
+    }
+
+    internal static any Get(this ж<ChattyFlag> Ꮡf)
+    {
+        ref ChattyFlag f = ref Ꮡf.Value;
+
+        if (f.Json)
+            return (@string)"test2json";
+
+        return f.On;
+    }
+
+    /// <summary>
     /// Declares this run's flags on the converted <c>flag.CommandLine</c>, if the package under test
     /// brought the converted <c>flag</c> package into the compilation. A no-op when it did not.
     /// </summary>
@@ -111,7 +186,12 @@ internal static class TestFlagBridge
         registrar.Bool("test.short", options.Short, "run smaller test suite to save time");
         registrar.Bool("test.failfast", false, "do not start new tests after the first test failure");
         registrar.String("test.outputdir", "", "write profiles to `dir`");
-        registrar.Bool("test.v", options.Verbose, "verbose: print additional output");
+        // The one flag of the set that is NOT a primitive in Go — see ChattyFlag. Bool is the
+        // conservative belt (today's behaviour exactly) for a flag package whose Value interface
+        // carries no runtime shells; the guard asserts the tri-state path is the one taken, so a
+        // silent degradation goes red at the gate rather than in a row.
+        if (!registrar.Chatty("test.v", options.Verbose, "verbose: print additional output"))
+            registrar.Bool("test.v", options.Verbose, "verbose: print additional output");
         registrar.Uint("test.count", (nuint)options.Count, "run tests and benchmarks `n` times");
         registrar.String("test.coverprofile", "", "write a coverage profile to `file`");
         registrar.String("test.gocoverdir", "", "write coverage intermediate files to this directory");
@@ -328,6 +408,8 @@ internal static class TestFlagBridge
         private readonly MethodInfo m_uint;
         private readonly MethodInfo m_string;
         private readonly MethodInfo m_duration;
+        private readonly Type? m_valueType;
+        private readonly MethodInfo? m_var;
 
         public Registrar(Type flagPackage)
         {
@@ -337,9 +419,66 @@ internal static class TestFlagBridge
             m_uint = Bind(flagPackage, "Uint", typeof(@string), typeof(nuint), typeof(@string));
             m_string = Bind(flagPackage, "String", typeof(@string), typeof(@string), typeof(@string));
             m_duration = Bind(flagPackage, "Duration", typeof(@string), typeof(time_package.Duration), typeof(@string));
+
+            // Var's parameter type is the flag package's OWN Value interface, so unlike every
+            // registrar above it cannot be named here — it is a nested type of the package class.
+            // Both members are optional: a flag package that declares neither simply leaves the
+            // tri-state unavailable and Register falls back, which is why nothing here throws the
+            // way Bind does.
+            m_valueType = flagPackage.GetNestedType("Value", BindingFlags.Public);
+            m_var = m_valueType is null
+                ? null
+                : flagPackage.GetMethod("Var", BindingFlags.Public | BindingFlags.Static, binder: null,
+                    [m_valueType, typeof(@string), typeof(@string)], modifiers: null);
         }
 
         public void Bool(string name, bool value, string usage) => Define(m_bool, name, value, usage);
+
+        /// <summary>
+        /// Declares <paramref name="name"/> as Go's tri-state <c>chattyFlag</c>, returning
+        /// <c>false</c> when this flag package offers no way to build a custom <c>Value</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>How the host obtains a <c>flag.Value</c> it cannot name.</b> <c>flag.Var</c> needs an
+        /// INSTANCE of the converted <c>flag.Value</c> interface, and the host must not reference
+        /// <c>flag</c> (see the type's remarks: a compile-time reference does not deploy
+        /// <c>flag.dll</c> beside the test hosts whose own package does not import it, and costs
+        /// every test project's build a measured +33%). It does not need to: golib's
+        /// <see cref="AdapterBinder"/> builds a runtime duck-typing implementation of any converted
+        /// named interface over any Go dynamic value, from the two shells go2cs-gen already emits
+        /// beside the interface. That is the same machinery every cross-assembly structural
+        /// assertion in the corpus resolves through — <c>os.dirFS</c> reaching
+        /// <c>io/fs.ReadDirFS</c> is its forcing case — reached here through its public entry
+        /// rather than through an assertion.
+        /// </para>
+        /// <para>
+        /// So the dependency stays exactly what it was: <c>flag</c> is bound late, by name, and the
+        /// only thing this adds is a Go-shaped value for it to bind to. No assembly, no project
+        /// reference, and no dynamic code generation — the reflective shell tier golib calls
+        /// "unconditionally available" under Native AOT is the belt when the delegate tier cannot
+        /// close a generic over the element type.
+        /// </para>
+        /// </remarks>
+        public bool Chatty(string name, bool verbose, string usage)
+        {
+            if (m_valueType is null || m_var is null)
+                return false;
+
+            // A name the package under test already defined wins, exactly as in Define — and
+            // reports success, since the fallback must not redefine it either.
+            if (m_lookup.Invoke(null, [(@string)name]) is not null)
+                return true;
+
+            ж<ChattyFlag> chatty = new StandardBox<ChattyFlag>(new ChattyFlag { On = verbose });
+
+            if (!AdapterBinder.TryCreate(chatty, m_valueType, out object? value))
+                return false;
+
+            m_var.Invoke(null, [value, (@string)name, (@string)usage]);
+
+            return true;
+        }
 
         public void Int(string name, nint value, string usage) => Define(m_int, name, value, usage);
 
