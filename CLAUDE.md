@@ -2187,7 +2187,7 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
    24 of the 27 behavioral projects with a nested sub-package are bare, and the three that are not give
    the sub-library its own `go.mod`, i.e. a separate module path), and copy `go2cs.ico` + a
    `<Name>.csproj` from a sibling test (adjust
-   `AssemblyName`; keep the `golib`/`fmt` refs the program needs). Verify it with `go run .` first.
+   `AssemblyName`; keep the `golib`/`fmt` refs the program needs). Verify it with `go run .` first. ⚠ A test that imports a SIBLING sub-library names its module `<Name>` with NO `go2cs/` prefix and imports `<Name>/<sub>` (the `NamedSliceChildPkg`/`netlike` pattern): the converter references the sub-library as `<sub>/<Name>.<sub>.csproj`, the name it also emits for the sub-library's own project. Under `module go2cs/<Name>` the parent's reference becomes `go2cs.<Name>.<sub>.csproj`, a file nothing emits, and the build dies CS0246 on the sub-library's namespace inside the GENERATED shells -- pointing away from the `go.mod` (paid 2026-09-05, the ReflectFieldMetadata guard).
 2. **Make the Go↔C# output match** so `OutputComparisonTests` passes. Mind known runtime limitations — e.g.
    `Ꮡ(value)` (address of a non-boxed value) currently boxes a *copy*, so don't write through a
    `&global.field` pointer and then read the *original* global; read back through the same pointer.

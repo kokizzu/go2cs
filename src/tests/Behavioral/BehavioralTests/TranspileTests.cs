@@ -1537,6 +1537,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckReflectFieldAddrWrite() => CheckTarget("ReflectFieldAddrWrite");
 
     [TestMethod]
+    public void CheckReflectFieldMetadata() => CheckTarget("ReflectFieldMetadata");
+
+    [TestMethod]
     public void CheckReflectFuncArrayParamDims() => CheckTarget("ReflectFuncArrayParamDims");
 
     [TestMethod]

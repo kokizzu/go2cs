@@ -1537,6 +1537,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckReflectFieldAddrWrite() => CheckTarget("ReflectFieldAddrWrite");
 
     [TestMethod]
+    public void CheckReflectFieldMetadata() => CheckTarget("ReflectFieldMetadata");
+
+    [TestMethod]
     public void CheckReflectFuncArrayParamDims() => CheckTarget("ReflectFuncArrayParamDims");
 
     [TestMethod]

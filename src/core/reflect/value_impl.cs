@@ -376,7 +376,7 @@ public static ΔValue Index(this ΔValue v, nint i) {
     ΔKind k = v.kind();
     System.Type? st = v.typ_ == nil ? null : v.typ_.Value.sysType;
     System.Type? elemType = GoReflect.ElementType(st);
-    flag ro = (flag)(v.flag & flagRO);
+    flag ro = v.flag.ro();
     if (k == ΔSlice && elemType is not null) {
         object? liveSlice = v.live;
         if (liveSlice is not IArray sliceArr || (nuint)i >= (nuint)sliceArr.Length) {
@@ -518,7 +518,7 @@ public static ΔValue Slice(this ΔValue v, nint i, nint j) {
         if (st is not null && st != typeof(@string) && GoReflect.TryConvertTo(sub, st, out object? named)) {
             boxedWindow = named;
         }
-        return makeTypedValue(boxedWindow, st ?? typeof(@string), null, (flag)(v.flag & flagRO));
+        return makeTypedValue(boxedWindow, st ?? typeof(@string), null, v.flag.ro());
     }
     if (elemType is null || (k != Array && k != ΔSlice)) {
         throw panic(Ꮡ(new ValueError("reflect.Value.Slice", v.kind())));
@@ -531,7 +531,7 @@ public static ΔValue Slice(this ΔValue v, nint i, nint j) {
         throw panic("reflect.Value.Slice: slice of nil container");
     }
     object window = GoReflect.SliceWindow(liveContainer, elemType, i, j);
-    return makeTypedValue(window, typeof(slice<>).MakeGenericType(elemType), null, (flag)(v.flag & flagRO));
+    return makeTypedValue(window, typeof(slice<>).MakeGenericType(elemType), null, v.flag.ro());
 }
 
 // Slice3 is the 3-index form of the slice operation — v[i:j:k] — where k bounds the result's
@@ -571,7 +571,7 @@ public static ΔValue Slice3(this ΔValue v, nint i, nint j, nint k) {
         throw panic("reflect.Value.Slice3: slice index out of bounds");
     }
     object window = GoReflect.SliceWindow(liveContainer, elemType, i, j, k);
-    return makeTypedValue(window, typeof(slice<>).MakeGenericType(elemType), null, (flag)(v.flag & flagRO));
+    return makeTypedValue(window, typeof(slice<>).MakeGenericType(elemType), null, v.flag.ro());
 }
 
 // Cap returns v's capacity (v must be an Array, Chan, or Slice) through the golib container
@@ -1888,7 +1888,7 @@ public static ΔValue Method(this ΔValue v, nint i) {
         throw panic("reflect: Method on nil interface value");
     }
     var bound = GoReflect.GoMethodValue(st, (int)i, recv);
-    return makeTypedValue(bound, bound.GetType(), null, (flag)(v.flag & flagRO));
+    return makeTypedValue(bound, bound.GetType(), null, v.flag.ro());
 }
 
 // CallSlice is unimplemented on the bridge, and its named next consumer is RETIRED as measured
@@ -2610,7 +2610,11 @@ private static StructField structFieldOf(System.Type st, GoReflect.GoFieldInfo f
         // for an UNNAMED struct both Type.Name() and Type.PkgPath() are "", yet its unexported
         // field's StructField.PkgPath is still the declaring package (e.g. "main"). Routing
         // through the defined-type gate would silently blank exactly the case this exists for.
-        PkgPath: f.Exported ? "" : (@string)GoReflect.GoPackagePath(st),
+        // The DECLARING type, not the owner: a defined type over a foreign struct is a [GoType] wrapper
+        // whose projection already descends to the underlying struct's fields, and Go answers the
+        // package that DECLARED the field (TestFieldPkgPath's localOtherPkgFields row: "reflect", not
+        // the defined type's "reflect_test"). Identical to the owner for every non-wrapper struct.
+        PkgPath: f.Exported ? "" : (@string)GoReflect.GoPackagePath(f.DeclaringType ?? st),
         Type: toType(structFieldDescriptor(f)),
         Tag: ((StructTag)(@string)f.Tag),
         Offset: offsets is not null && (nuint)at < (nuint)offsets.Length ? (uintptr)(nuint)offsets[at] : 0,
@@ -3585,7 +3589,7 @@ public static ΔValue Convert(this ΔValue v, ΔType t) {
         throw panic("reflect.Value.Convert: value of type " + GoReflect.GoTypeName(src is null ? null : GoReflect.GoDynamicTypeOf(src)) +
                     " cannot be converted to type " + t.String());
     }
-    return makeTypedValue(converted, dstType, arrayDimsOfReflectType(t), (flag)(v.flag & flagRO));
+    return makeTypedValue(converted, dstType, arrayDimsOfReflectType(t), v.flag.ro());
 }
 
 // tryConvertOnlyShape answers the conversions Go allows that ASSIGNMENT does not (see Convert's
@@ -3709,7 +3713,7 @@ private static ΔValue sliceToArrayCopy(ΔValue v, ΔType t, System.Type dstType
         }
     }
 
-    return makeTypedValue(box, dstType, dims, (flag)(v.flag & flagRO));
+    return makeTypedValue(box, dstType, dims, v.flag.ro());
 }
 
 // FieldByName returns the struct field with the given name over the SAME projected Go field
@@ -3760,46 +3764,62 @@ internal static (StructField, bool) FieldByName(this ж<rtype> Ꮡt, @string nam
 // An embedded POINTER is followed through its pointee, as Go does; a visited set keeps a cyclic
 // embed graph finite (`type Loop struct { Loop1 int; *Loop }` — encoding/json's own fixture).
 private static (StructField, bool) promotedFieldByName(ж<rtype> Ꮡt, System.Type st, @string name) {
+    // Go's structType.FieldByNameFunc in shape: breadth first, one depth at a time. There must be a
+    // UNIQUE instance of the match at a given depth; two annihilate and inhibit any deeper match.
+    // MULTIPLICITY is the clause this body lacked: an embedded type reached more than once at the
+    // same depth (S3 reaches S1 through S1x and *S1y; S10 reaches S6 through S11 and S12; S14 reaches
+    // S11 through S15 and S16) annihilates ITSELF, so its fields count for nothing at the next level
+    // -- Go's nextCount. A visited set alone dedups the type and lets its field count ONCE, which is
+    // how `S3.B`, `S10.X` and `S14.X` were found where Go reports them absent (TestFieldByName).
     var current = new System.Collections.Generic.List<(System.Type owner, nint[] index)> { (st, []) };
-    var visited = new System.Collections.Generic.HashSet<System.Type> { st };
-
+    var visited = new System.Collections.Generic.HashSet<System.Type>();
+    System.Collections.Generic.Dictionary<System.Type, int>? nextCount = null;
     while (current.Count > 0) {
+        var count = nextCount;
+        nextCount = null;
         var next = new System.Collections.Generic.List<(System.Type owner, nint[] index)>();
         nint[]? found = null;
         System.Type? foundOwner = null;
-        int matches = 0;
-
+        bool ok = false;
         foreach ((System.Type owner, nint[] index) in current) {
+            if (!visited.Add(owner)) {
+                continue;
+            }
             GoReflect.GoFieldInfo[] fields = GoReflect.GoFields(owner);
-
             for (int i = 0; i < fields.Length; i++) {
                 GoReflect.GoFieldInfo f = fields[i];
                 nint[] path = [.. index, (nint)i];
-
                 if ((@string)f.Name == name) {
-                    matches++;
+                    // A match on an owner reached more than once at this depth, or a second match at
+                    // this depth, is ambiguous: Go reports absent, and nothing deeper can rescue it.
+                    if ((count is not null && count.TryGetValue(owner, out int c) && c > 1) || ok) {
+                        return (default!, false);
+                    }
                     found = path;
                     foundOwner = owner;
+                    ok = true;
                     continue;
                 }
-                if (!f.Embedded) {
+                if (ok || !f.Embedded) {
                     continue;
                 }
-                // An embedded pointer promotes its POINTEE's fields.
                 System.Type embedded = GoReflect.KindOf(f.Type) == GoReflect.Pointer
                     ? GoReflect.ElementType(f.Type)!
                     : f.Type;
-                if (embedded is not null && GoReflect.KindOf(embedded) == GoReflect.Struct && visited.Add(embedded)) {
-                    next.Add((embedded, path));
+                if (embedded is null || GoReflect.KindOf(embedded) != GoReflect.Struct) {
+                    continue;
                 }
+                nextCount ??= new System.Collections.Generic.Dictionary<System.Type, int>();
+                if (nextCount.TryGetValue(embedded, out int seen) && seen > 0) {
+                    nextCount[embedded] = 2;   // reached again at this depth: annihilated, not re-queued
+                    continue;
+                }
+                nextCount[embedded] = count is not null && count.TryGetValue(owner, out int oc) && oc > 1 ? 2 : 1;
+                next.Add((embedded, path));
             }
         }
-        // Exactly one match at this depth wins; two or more annihilate (Go reports absent).
-        if (matches == 1) {
+        if (ok) {
             return (structFieldOf(foundOwner!, GoReflect.GoFields(foundOwner!)[(int)found![^1]], found), true);
-        }
-        if (matches > 1) {
-            return (default!, false);
         }
         current = next;
     }
