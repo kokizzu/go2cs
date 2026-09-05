@@ -229,7 +229,7 @@ public static error Close(this ж<Writer> Ꮡw) {
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
-        Ꮡw.of(Writer.Ꮡmu).Lock();
+        w.mu.Lock();
         defer(Ꮡw.of(Writer.Ꮡmu).Unlock, ref ᒐ);
         if (w.conn != default!) {
             var err = w.conn.close();
@@ -304,7 +304,7 @@ internal static (nint, error) writeAndRetry(this ж<Writer> Ꮡw, Priority p, @s
         ref var w = ref Ꮡw.DerefOrNull();
 
         Priority pr = (Priority)(((Priority)(w.priority & (nint)facilityMask)) | ((Priority)(p & (nint)severityMask)));
-        Ꮡw.of(Writer.Ꮡmu).Lock();
+        w.mu.Lock();
         defer(Ꮡw.of(Writer.Ꮡmu).Unlock, ref ᒐ);
         if (w.conn != default!) {
             {

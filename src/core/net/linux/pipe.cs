@@ -32,7 +32,7 @@ internal static void set(this ж<pipeDeadline> Ꮡd, time.Time t) {
     try {
         ref var d = ref Ꮡd.DerefOrNull();
 
-        Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
+        d.mu.Lock();
         defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock, ref ᒐ);
         if (d.timer != nil && !d.timer.Stop()) {
             ᐸꟷ(d.cancel); // Wait for the timer callback to finish and close cancel
@@ -73,7 +73,7 @@ internal static channel<EmptyStruct> wait(this ж<pipeDeadline> Ꮡd) {
     try {
         ref var d = ref Ꮡd.DerefOrNull();
 
-        Ꮡd.of(pipeDeadline.Ꮡmu).Lock();
+        d.mu.Lock();
         defer(Ꮡd.of(pipeDeadline.Ꮡmu).Unlock, ref ᒐ);
         return d.cancel;
     }
@@ -230,7 +230,7 @@ internal static (nint n, error err) write(this ж<pipe> Ꮡp, slice<byte> b) {
             (n, err) = (0, os.ErrDeadlineExceeded); goto ᒐdone;
         }}
 
-        Ꮡp.of(pipe.ᏑwrMu).Lock(); // Ensure entirety of b is written together
+        p.wrMu.Lock(); // Ensure entirety of b is written together
         defer(Ꮡp.of(pipe.ᏑwrMu).Unlock, ref ᒐ);
         for (var once = true; once || len(b) > 0; once = false) {
             var selᴛ24 = p.wrTx.ᐸꟷ(b, ꓸꓸꓸ);
