@@ -17,18 +17,19 @@ partial class main_package {
 
 internal static (nint, error) Write(this ж<conn> Ꮡc, slice<byte> b) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         c.state.of(state.ᏑMutex).Lock();
-        defer(Ꮡc.Value.state.of(state.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (c.broken) {
             return (0, fmt.Errorf("%s is broken"u8, c.name));
         }
         return (len(b), default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().state.of(state.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 internal static void Main() {
