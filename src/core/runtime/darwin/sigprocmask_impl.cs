@@ -45,7 +45,8 @@
 // SCOPE -- exactly one declaration. This file bodies `sigprocmask` and nothing else. The other
 // bodyless trampolines reached from the same file (sigaction, sigaltstack, sigtramp, raise,
 // pthread_kill, kqueue, …) are NOT it and keep their generated stubs; in particular
-// runtime.sigaction is the install side and a separate item, and clearing this door does not clear
+// runtime.sigaction is the install side and a separate item -- bodied by increment 6
+// (sigaction_impl.cs, 2026-09-05) -- and clearing this door does not clear
 // the SignalPrimitives row -- signal.Notify is the third of SIX statements and three calls sit
 // behind it.
 //

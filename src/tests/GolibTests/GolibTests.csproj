@@ -47,6 +47,7 @@
     <Compile Remove="LinuxSyscallClockTests.cs" />
     <Compile Remove="LibcCallDispatchTests.cs" />
     <Compile Remove="DarwinSigmaskContractTests.cs" />
+    <Compile Remove="DarwinSigactionContractTests.cs" />
   </ItemGroup>
 
   <!-- The netapi32 ptrout gate is the mirror image: it drives windows-flavor-only syscall surface
