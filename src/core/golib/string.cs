@@ -118,10 +118,35 @@ public readonly struct @string :
     /// copying conversion. Internal so no hand-written consumer can reach the raw factory — the
     /// documented public surface is <see cref="builtin.tmpstring"/>, which carries the contract.
     /// </remarks>
-    internal static @string TransientAliasOf(in slice<byte> value)
+    internal static @string TransientAliasOf(in slice<byte> value) => AliasOf(value);
+
+    /// <summary>
+    /// Creates an @string that ALIASES <paramref name="value"/>'s backing bytes at its own window,
+    /// without copying — the Go string HEADER over storage the caller already owns.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The factory behind both aliasing contracts golib holds, which share this body and differ
+    /// only in what the caller promises: <see cref="TransientAliasOf"/> is the converter's
+    /// map-index temporary (consumed immediately, never stored), and <c>unsafe.String</c> is Go's
+    /// own <c>unsafe.String(ptr, len)</c>, whose returned value is long-lived and whose contract is
+    /// the mirror prohibition — the bytes must not be modified while the string exists. Both are
+    /// sound for the same reason: @string does not COPY on construction here, so the string simply
+    /// IS the Go header (backing + offset + length) over the caller's storage, at no per-string
+    /// byte cost.
+    /// </para>
+    /// <para>
+    /// Internal, and deliberately so: a caller handing in a backing array it can still write
+    /// through breaks the immutability every other @string path depends on, and privacy makes
+    /// reaching it a compile error outside golib's two <c>InternalsVisibleTo</c> grants.
+    /// </para>
+    /// </remarks>
+    internal static @string AliasOf(in slice<byte> value)
     {
         // A native-backed window has no managed array — the string conversion COPIES by Go's own
-        // contract either way, so the span path serves both backings byte-exactly.
+        // contract either way, so the span path serves both backings byte-exactly. (unsafe.String
+        // never reaches this branch: its native pointers are answered by their own arm upstream,
+        // and an element window is managed by construction.)
         if (value.IsNativeBacked)
             return new @string(value.ToSpan());
 

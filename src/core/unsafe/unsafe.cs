@@ -931,9 +931,45 @@ public static @string String<TLen>(ж<byte> ptr, TLen len) where TLen : System.N
         throw panic("ptr is nil and len is not zero");
 
     // A pointer that ALIASES a native address reads its n bytes from that address (see Slice above).
+    // @string has no native-backed representation — its header is (byte[], offset, length) — so this
+    // arm COPIES and is the family's one remaining snapshot. It is reachable only from a NativeBox:
+    // ж<T>.NativeAddress is virtual returning 0 and ElemRefBox does not override it, so an element
+    // reference is never IsNative and can never be answered here.
     if (ptr.IsNative)
         return new @string(new ReadOnlySpan<byte>((void*)ptr.NativeAddress, n));
 
+    // A pointer INTO managed byte storage (`unsafe.String(&b[i], n)`) yields a string that ALIASES
+    // that storage, exactly as Go's unsafe.String does: the string's bytes ARE the pointed-to
+    // memory, so a write through the pointer is visible in the string. Go states the property as a
+    // prohibition — "the bytes passed to String must not be modified as long as the returned string
+    // value exists" — and a prohibition is only meaningful because the aliasing is OBSERVABLE.
+    //
+    // This is the exact mirror of Slice's element-window arm above (same TryGetElementWindow, same
+    // absolute-index bounds), and until it existed unsafe.String was the ONE member of the family
+    // that snapshotted: Slice, SliceData and StringData all alias, and SliceData's own note already
+    // claimed "the round trip through unsafe.String/unsafe.Slice now ALIASES instead of
+    // snapshotting" — true of Slice, false here. What the copy cost, concretely:
+    //
+    //   * runtime.rawstring is DEFINED to return a string and a byte slice "referring to the same
+    //     storage" so the caller can fill the slice and the string see it; over a copy the string
+    //     is whatever the storage held before the caller wrote anything.
+    //   * runtime.slicebytetostringtmp IS Go's aliasing temporary (golib's own builtin.tmpstring
+    //     models the same optimization and always aliased); the converted body did not.
+    //   * runtime's TestPinnerCgoCheckString pins &b[0] and then requires the string built from it
+    //     to name that same pinned object — a copy names a fresh, unpinned allocation
+    //     (DESIGN-runtime-pinner.md §6.2, which named and priced this defect).
+    //
+    // The window is minted through @string's own aliasing factory, which shares its body with the
+    // map-index temporary: @string's instance state stays exactly the Go header (backing, offset,
+    // length), so aliasing costs +0 B per string. Guarded by GolibTests' UnsafeStringAliasingTests
+    // — four aliasing arms and four invariance arms, the latter pinning that the zero-length
+    // early-out above still precedes any dereference and that the snapshot arm below survives.
+    if (ptr.TryGetElementWindow(n, out slice<byte> window))
+        return @string.AliasOf(window);
+
+    // No aliasable managed storage — a heap box, a struct field, or a REINTERPRETING pointer over a
+    // differently-typed array. Reading the n bytes through the pinned referent is still exact;
+    // writes through the source do not reach the result. Same documented snapshot arm as Slice's.
     fixed (byte* pointer = &ptr.Value)
         return new @string(new ReadOnlySpan<byte>(pointer, n));
 }
