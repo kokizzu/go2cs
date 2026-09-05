@@ -119,6 +119,24 @@ func (v *Visitor) recordStructFieldInterfaceCasts(compositeLit *ast.CompositeLit
 }
 
 func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyValueContext) string {
+	return v.convCompositeLitAs(compositeLit, nil, context)
+}
+
+// convCompositeLitAs renders a composite literal, optionally against a type the CALLER resolved
+// rather than the one the literal's own TYPE SYNTAX names.
+//
+// Everything below the elided block reads the literal's type from `compositeLit.Type`, which an
+// ELIDED literal does not have — that is the whole reason the elided block exists as a separate,
+// smaller renderer. But the two are not equal in reach: the typed path carries the named-composite
+// machinery (empty vs keyed vs positional, array vs slice vs map, alias vs named, the wrapper ctor),
+// and elision is pure surface syntax, so a shape the typed path renders correctly must render
+// identically when spelled elided. `elidedType` is how a caller that has RESOLVED the type reaches
+// that one renderer instead of growing a second copy of it beside the first — see the NAMED
+// non-struct pointee routing in the `*types.Pointer` arm below, which is its only caller today.
+//
+// Passing nil is the ordinary path and leaves every existing caller byte-identical: the elided block
+// still runs, and the typed path still reads its type from the AST exactly as before.
+func (v *Visitor) convCompositeLitAs(compositeLit *ast.CompositeLit, elidedType types.Type, context KeyValueContext) string {
 	result := &strings.Builder{}
 
 	// Go's all-or-nothing keying rule is a STRUCT-literal rule. An ARRAY or SLICE literal may MIX
@@ -130,7 +148,10 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 	// existing sparse-array machinery renders it and nothing else here needs a mixed-literal case.
 	v.normalizeMixedKeyedComposite(compositeLit)
 
-	if compositeLit.Type == nil {
+	// A caller-supplied type means this literal has already been resolved and is being rendered
+	// THROUGH the typed path on purpose; the elided block would re-answer the same question with
+	// the smaller renderer and defeat the delegation.
+	if compositeLit.Type == nil && elidedType == nil {
 		// An untyped (type-inferred) composite literal — e.g. the inner `{lockRankSysmon, …}` of a
 		// `[][]lockRank{ key: {…} }`. The target-typed `new(…)` ctor form below is correct for a STRUCT
 		// element type (the struct ctor takes the field values), but a SLICE/ARRAY element type has no
@@ -147,11 +168,14 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 			// and compiles. Render the POINTEE through the arm that already renders that shape and
 			// take its address, which is what the struct arm does one level up.
 			//
-			// A NAMED pointee is deliberately excluded: its construction goes through the generated
-			// wrapper type, not the structural `array<T>`/`slice<T>`/`map<K,V>` projection these arms
-			// emit, so wrapping that projection would hand a `ж<array<byte>>` to a `ж<row>` slot. The
-			// EXPLICIT `&row{}` spelling reaches the same emission through the typed path, so the two
-			// spellings agree — the named case is one shape for both, not an elision defect.
+			// A NAMED pointee is NOT rendered here, and the reason is a measurement rather than a
+			// preference: `[]nb{{}}` (the same pointee, no `&`) emits the structural projection
+			// `new nb[]{new byte[]{}.array(4)}`, which binds the named slot through the generated
+			// implicit conversion — and that conversion is between VALUES, not between BOXES, so the
+			// same projection with the address taken is a `ж<array<byte>>` and cannot bind a `ж<nb>`
+			// slot. A named pointee is built by the wrapper ctor (`Ꮡ(new nb(new byte[4].array()))`),
+			// which lives in the typed path's named-composite machinery, so it is ROUTED to that
+			// renderer in the `*types.Pointer` arm below rather than copied into one here.
 			addrOf := func(expr string) string { return expr }
 
 			if ptr, isPtr := inferred.Underlying().(*types.Pointer); isPtr {
@@ -213,6 +237,27 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 				// for `&T{…}` (e.g. runtime's `dbgvars = []*dbgVar{ {name, &debug.x}, … }`). Emit the
 				// boxed struct constructor `Ꮡ(new T(field: val, …))`; a bare `new(…)` targets the box
 				// `ж<T>`, whose constructor has no such field params (CS1739).
+				//
+				// A NAMED non-struct pointee (`type nb [4]byte; []*nb{{}}`) is the same shorthand one
+				// type-kind over, and it is the one pointee this switch cannot render itself: its
+				// value is built by the generated WRAPPER ctor, which is the typed path's
+				// named-composite machinery (empty vs keyed vs positional, array vs slice vs map,
+				// alias vs named), not the structural projection the arms above emit. Left here it
+				// matched nothing, fell out of the switch onto the struct-ctor fallback and emitted a
+				// bare `new()` against the abstract `ж<T>` — CS0144, for a value whose explicit
+				// `&nb{}` spelling has always converted and compiled. Route it THROUGH that renderer
+				// with the pointee supplied as the resolved type, so the two spellings reach one
+				// renderer and cannot drift; the address is taken here exactly as the struct arm
+				// below takes it. A named STRUCT pointee is excluded because the arm below already
+				// renders it, and a named pointee whose underlying is a basic/pointer/chan type has
+				// no composite literal to render at all.
+				if named, isNamed := types.Unalias(u.Elem()).(*types.Named); isNamed {
+					switch named.Underlying().(type) {
+					case *types.Array, *types.Slice, *types.Map:
+						return fmt.Sprintf("%s(%s)", AddressPrefix, v.convCompositeLitAs(compositeLit, u.Elem(), context))
+					}
+				}
+
 				if _, ok := u.Elem().Underlying().(*types.Struct); ok {
 					structName := v.getCSharpTypeName(u.Elem())
 
@@ -343,7 +388,16 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 		v.indentLevel -= indentOffset
 	}
 
-	exprType := v.getExprType(compositeLit.Type)
+	// The literal's type comes from its TYPE SYNTAX, except when a caller resolved it for us (an
+	// elided literal routed here — see convCompositeLitAs). `extractStructType`/`extractInterfaceType`
+	// above are already nil-safe on the missing syntax node (typeSyntaxOf falls through and
+	// firstAnonymousTypeLiteral returns on nil), and a routed literal names a type that exists, so
+	// neither has an anonymous struct or interface to lift.
+	exprType := elidedType
+
+	if exprType == nil {
+		exprType = v.getExprType(compositeLit.Type)
+	}
 
 	arrayTypeContext := DefaultArrayTypeContext()
 	callContext := DefaultCallExprContext()
@@ -974,7 +1028,16 @@ func (v *Visitor) convCompositeLit(compositeLit *ast.CompositeLit, context KeyVa
 
 	contexts := []ExprContext{arrayTypeContext, identContext}
 
-	typeRender := v.convExpr(compositeLit.Type, contexts)
+	// A routed literal has no type syntax to render, so its name comes from the RESOLVED type — the
+	// same spelling the constraint-proxy override a few lines below already uses, so no second way of
+	// naming a type enters this file.
+	var typeRender string
+
+	if compositeLit.Type != nil {
+		typeRender = v.convExpr(compositeLit.Type, contexts)
+	} else {
+		typeRender = convertToCSTypeName(v.getAliasQualifiedTypeName(exprType, false))
+	}
 
 	// A generic type instantiated with a self-referential constraint-proxy pointer argument
 	// (`nistCurve[*P224Point]`) must render its type arguments through the PROXY

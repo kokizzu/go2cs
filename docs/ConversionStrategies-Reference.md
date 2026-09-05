@@ -5937,12 +5937,47 @@ var mp  = new map<@string, ж<array<nint>>>{["a"u8] = Ꮡ(new nint[]{}.array(2))
 
 `pa`'s emission is now **byte-identical** to what the explicitly written `[]*[4]byte{&[4]byte{}}`
 produces, which is the property the fix is really asserting. A **struct** pointee (`[]*S{{}}`) was
-correct all along and is untouched. A **named** non-struct pointee (`type nb [4]byte; []*nb{{}}`)
-is deliberately still on the fallback: its pointee is built by the named-wrapper constructor the
-typed path renders (`Ꮡ(new nb(new byte[4].array()))`), not by the structural projection these arms
-emit, and reproducing that here would be a second copy of the named-composite renderer rather than
-a reuse of it — so the elided named pointee remains a known gap with a working spelling
-(`&nb{}`), narrower than the class this closes.
+correct all along and is untouched.
+
+A **named** non-struct pointee (`type nb [4]byte; []*nb{{}}`) is the one shape these arms cannot
+render themselves, and it is **closed by routing rather than by copying**. Its value is built by the
+generated wrapper constructor, which lives in the TYPED path's named-composite machinery (empty vs
+keyed vs positional, array vs slice vs map, alias vs named) — so the elided literal is handed to
+that renderer with its pointee supplied as the resolved type, and the address is taken around the
+result exactly as the struct arm takes it:
+
+```go
+pna  := []*nb{{}}                 // type nb [4]byte
+pnsl := []*nsl{{}}                // type nsl []int
+pnmp := []*nmp{{}}                // type nmp map[string]int
+```
+
+```csharp
+var pna  = new ж<nb>[]{Ꮡ(new nb(new byte[4].array()))}.slice();
+var pnsl = new ж<nsl>[]{Ꮡ(new nsl(new nint[]{}.slice()))}.slice();
+var pnmp = new ж<nmp>[]{Ꮡ(new nmp(new map<@string, nint>{}))}.slice();
+```
+
+Each is byte-identical to the explicit `&nb{}` / `&nsl{}` / `&nmp{}` spelling beside it in the
+guard, which is the assertion — elision is surface syntax, so one Go value may not have two
+emissions. Before the routing every one of these emitted a bare `new()` against the abstract
+`ж<T>` (CS0144), so the shape did not compile at all.
+
+The **wrap** that suggests itself here is measured wrong, and that measurement is why the routing
+exists: the same pointee *without* the `&` (`[]nb{{}}`) already emits the structural projection
+`new nb[]{new byte[]{}.array(4)}`, which binds the named slot through the generated implicit
+conversion — but that conversion is between **values**, not between **boxes**, so
+`Ꮡ(new byte[]{}.array(4))` is a `ж<array<byte>>` and cannot bind a `ж<nb>` slot.
+
+One neighbouring shape is **not** closed by this, and is recorded here so it is not mistaken for
+it: a named type over a *nested* fixed array (`type nn [2][3]int`) is wrong in **all three**
+spellings — elided, explicit `&nn{}`, and the plain declared `nn{}` all print `2 0 [[] []]` against
+Go's `2 3 [[0 0 0] [0 0 0]]` — because the named-array wrapper's empty-literal shortcut emits
+`new nn(new array<nint>[2].array())` with no element factory. That is the
+`default(T)`-is-not-usable-storage family inside the wrapper; it predates this routing, is
+independent of it, and the routing's own property still holds over it (the elided spelling agrees
+with the explicit one exactly). It is tracked separately rather than pinned in the guard, which
+would bake a known-wrong golden.
 
 **An elided fixed-array element whose own element must be constructed.** The elided array arm
 carried the declared length for a short literal but not the element factory beside it — the same
