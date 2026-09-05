@@ -7,6 +7,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -27,6 +28,7 @@ import (
 	"runtime/debug"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -7614,7 +7616,50 @@ func runCommandWithTimeoutEnv(timeout time.Duration, workingDir string, options 
 	// the starting value is pinned, which is what TestHost.Run was already trying to do.
 	cmd.Env = append(cmd.Env, "TZ=UTC")
 
-	output, err := cmd.CombinedOutput()
+	// The child is spawned into its OWN killable unit — a process group on unix, a job object on
+	// Windows — so the deadline kill below can name that unit instead of the single process. What
+	// it fixes: the converted host RE-EXECS ITSELF for the subprocess-style rows Go's suites carry,
+	// and when a test goroutine is blocked before its deferred cmd.Process.Kill() the package
+	// deadline kills the host from outside and the re-exec'd child is ORPHANED — measured at six
+	// alive at once on one row. The child answers signals normally; there is simply nobody left to
+	// send one, which is why the remedy is at the launcher. Both mechanisms and their residuals are
+	// documented in processGroupUnix.go / processGroupWindows.go.
+	//
+	// Why it goes HERE, in the ONE shared helper, rather than at the converted host's two call
+	// sites: `go test` orphans its own test binary under an external kill exactly as the host
+	// orphans its re-exec, so the defect belongs to the launcher on BOTH sides of a comparison —
+	// and treating one side only would trade an orphan for a cross-SIDE difference in how the two
+	// runs are torn down, the worse trade. Same reasoning that put the TZ pin in this shared path
+	// instead of in the host's own environment.
+	group, groupErr := newProcessGroup(cmd)
+	defer group.close()
+	if groupErr != nil {
+		warnProcessGroupDegradedOnce(groupErr)
+	}
+
+	// cmd.Cancel is what os/exec runs when ctx expires; CommandContext defaults it to
+	// Process.Kill — the host ALONE, which is the defect. The group kill replaces that default and
+	// keeps the single-process kill behind it as its own fallback, so the safety net is never
+	// removed, only preceded.
+	cmd.Cancel = func() error { return group.kill(cmd) }
+
+	// Start/attach/Wait rather than CombinedOutput: the Windows half needs a hook BETWEEN the spawn
+	// and the wait to put the started process in the job, and CombinedOutput offers none. The bytes
+	// captured and the error returned are the ones CombinedOutput would have produced — one buffer
+	// shared by stdout and stderr, and a Start failure surfaced with empty output.
+	var combined bytes.Buffer
+	cmd.Stdout = &combined
+	cmd.Stderr = &combined
+
+	err := cmd.Start()
+	if err == nil {
+		if attachErr := group.attach(cmd); attachErr != nil {
+			warnProcessGroupDegradedOnce(attachErr)
+		}
+		err = cmd.Wait()
+	}
+	output := combined.Bytes()
+
 	if ctx.Err() == context.DeadlineExceeded {
 		return string(output), fmt.Errorf("%s timed out after %s", name, timeout)
 	}
@@ -7622,6 +7667,23 @@ func runCommandWithTimeoutEnv(timeout time.Duration, workingDir string, options 
 		return string(output), fmt.Errorf("%s %s failed: %w\n%s", name, strings.Join(args, " "), err, strings.TrimSpace(string(output)))
 	}
 	return string(output), nil
+}
+
+// processGroupWarnOnce keeps the degrade notice below to one line per run.
+var processGroupWarnOnce sync.Once
+
+// warnProcessGroupDegradedOnce says, exactly once per run, that a pipeline child could not be
+// placed in its own killable unit — so a deadline kill for that child is the single-process form
+// and a descendant it spawns can be orphaned, which is precisely the condition the group exists to
+// remove. ONCE, because the cause is a property of the HOST (a job object refused, a kernel that
+// would not place the child) rather than of any one child, so repeating it per spawn would bury the
+// pipeline's own output under a fact that does not change. Advisory rather than fatal: an orphan is
+// a hygiene defect, and refusing to run the pipeline over one would be worse than the defect.
+func warnProcessGroupDegradedOnce(err error) {
+	processGroupWarnOnce.Do(func() {
+		fmt.Fprintf(os.Stderr, "WARNING: test child could not be placed in its own process group (%v); "+
+			"a deadline kill will reach the child but not its descendants\n", err)
+	})
 }
 
 // childEnvWithGo2CSPath builds a pipeline child's environment carrying EXACTLY ONE spelling of the
