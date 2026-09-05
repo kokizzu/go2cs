@@ -128,16 +128,17 @@ public static ж<Logger> New(Δio.Writer @out, @string prefix, nint flag) {
 // SetOutput sets the output destination for the logger.
 public static void SetOutput(this ж<Logger> Ꮡl, Δio.Writer w) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var l = ref Ꮡl.DerefOrNull();
 
         l.outMu.Lock();
-        defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         l.@out = w;
         Ꮡl.of(Logger.ᏑisDiscard).Store(AreEqual(w, Δio.Discard));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡl.DerefOrNull().outMu.Unlock(); ᒐ.Run(); }
 }
 
 internal static ж<Logger> std = New(new os.FileжWriter(os.Stderr), ""u8, LstdFlags);
@@ -424,15 +425,16 @@ public static void SetPrefix(this ж<Logger> Ꮡl, @string prefixʗp) {
 // Writer returns the output destination for the logger.
 public static Δio.Writer Writer(this ж<Logger> Ꮡl) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var l = ref Ꮡl.DerefOrNull();
 
         l.outMu.Lock();
-        defer(Ꮡl.of(Logger.ᏑoutMu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return l.@out;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡl.DerefOrNull().outMu.Unlock(); ᒐ.Run(); }
 }
 
 // SetOutput sets the output destination for the standard logger.

@@ -197,6 +197,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckCastNegativeNamedType() => CheckTarget("CastNegativeNamedType");
 
     [TestMethod]
+    public void CheckChanDirectionChain() => CheckTarget("ChanDirectionChain");
+
+    [TestMethod]
     public void CheckChannelCapLen() => CheckTarget("ChannelCapLen");
 
     [TestMethod]
@@ -327,6 +330,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckDeferEvalParamFunc() => CheckTarget("DeferEvalParamFunc");
+
+    [TestMethod]
+    public void CheckDeferFinallyLowering() => CheckTarget("DeferFinallyLowering");
 
     [TestMethod]
     public void CheckDeferFrameScopes() => CheckTarget("DeferFrameScopes");

@@ -50,11 +50,12 @@ internal static bool use121;
 // Formerly ServeMux.Handle.
 internal static void handle(this ж<serveMux121> Ꮡmux, @string pattern, ΔHandler handler) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var mux = ref Ꮡmux.DerefOrNull();
 
         Ꮡmux.of(serveMux121.Ꮡmu).Lock();
-        defer(Ꮡmux.of(serveMux121.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (pattern == ""u8) {
             throw panic("http: invalid pattern");
         }
@@ -79,7 +80,7 @@ internal static void handle(this ж<serveMux121> Ꮡmux, @string pattern, ΔHand
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡmux.of(serveMux121.Ꮡmu).Unlock(); ᒐ.Run(); }
 }
 
 internal static slice<muxEntry> appendSorted(slice<muxEntry> es, muxEntry e) {

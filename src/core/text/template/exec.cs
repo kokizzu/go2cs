@@ -311,6 +311,7 @@ internal static readonly @string definedTemplatesAreˢ = "; defined templates ar
 // and in [html/template].
 public static @string DefinedTemplates(this ж<Template> Ꮡt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
@@ -319,7 +320,7 @@ public static @string DefinedTemplates(this ж<Template> Ꮡt) {
         }
         ref var b = ref heap(new strings.Builder(), out var Ꮡb);
         Ꮡt.of(Template.ᏑmuTmpl).RLock();
-        defer(Ꮡt.of(Template.ᏑmuTmpl).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         foreach (var (name, tmpl) in t.tmpl) {
             if ((~tmpl).Tree == nil || (~tmpl).Root == nil) {
                 continue;
@@ -334,7 +335,7 @@ public static @string DefinedTemplates(this ж<Template> Ꮡt) {
         return b.String();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.of(Template.ᏑmuTmpl).RUnlock(); ᒐ.Run(); }
 }
 
 // Sentinel errors for use with panic to signal early exits from range loops.

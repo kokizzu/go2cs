@@ -6,9 +6,9 @@ library, run under the Go-semantics test host, and compared verdict for verdict 
 comparison — it is the evidence behind the `testing` row in
 [Validated Test Packages](../../ValidatedTestPackages.md).
 
-*Validated 2026-09-04 · converter `8f1211a67`*
+*Validated 2026-09-04 · converter `69e6cebb7`*
 
-**35 matched · 17 disclosed** — Go 1.23.12, `windows/amd64`, converted package
+**37 matched · 15 disclosed** — Go 1.23.12, `windows/amd64`, converted package
 [`src/core/testing`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/testing).
 
 Measured at `Release` (tiered JIT off), oracle `go version go1.23.12 windows/amd64`.
@@ -22,10 +22,10 @@ Measured at `Release` (tiered JIT off), oracle `go version go1.23.12 windows/amd
 | `TestConcurrentRun` | pass | pass |
 | `TestConcurrentRun/#00` | pass | pass |
 | `TestConcurrentRun/#01` | pass | pass |
-| `TestFlag` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestFlag` | pass | pass |
 | `TestFlag/#00` | pass | pass |
 | `TestFlag/-test.v` | pass | pass |
-| `TestFlag/-test.v=test2json` | pass | fail ([disclosed](#disclosed-divergences)) |
+| `TestFlag/-test.v=test2json` | pass | pass |
 | `TestGoexitInCleanupAfterPanicHelper` | pass | pass |
 | `TestMorePanic` | pass | fail ([disclosed](#disclosed-divergences)) |
 | `TestPanic` | pass | fail ([disclosed](#disclosed-divergences)) |
@@ -80,8 +80,6 @@ a disclosed test that fails any *other* way is still a hard mismatch.
 | Test | Class | Pinned reason |
 |:--|:--|:--|
 | `TestAllocsPerRun` | `alloc-count-semantics` | exact-count AllocsPerRun asserts (want 1 for each of five `new(T)` closures). The managed shim is deliberately byte-derived - the CLR has no malloc counter - so it reports go2cs-runtime object allocations and returns 2 where Go returns 1. This package is the SUBJECT of the standing alloc-count-semantics class rather than another instance of it. Retires if the CLR ever exposes a per-allocation counter the shim can key on. |
-| `TestFlag` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
-| `TestFlag/-test.v=test2json` | `host-limit` | Go registers -test.v as a tri-state chattyFlag whose Set accepts true/false/test2json and whose Get returns the STRING "test2json"; the host's flag bridge registers it as a plain Bool, so the child rejects the value. The bridge CANNOT register a custom value today: flag.Var needs an instance of the converted flag.Value interface, and the host deliberately does not reference `flag` - it binds the package by Type.GetType at runtime, because a compile-time reference costs a measured +33% on every test project's build for a reference 124 of 141 cannot use. RETIREMENT PATH: item Q29 - size a runtime-emitted implementer against the generator's GoImplement recognition, or a lazily-loaded satellite carrying the flag reference off every host's build; measured, not argued. |
 | `TestMorePanic` | `host-identity` | re-execs the binary and matches the child's panic/Goexit report against Go's text. The host classifies a runtime.Goexit escaping a cleanup after a panic as an INFRASTRUCTURE-ERROR row in its own vocabulary, where Go prints its panic layout. Same channel, same ruling. Retires only if the host is made to impersonate Go's testing-package terminal output, which the standing host-identity ruling (2026-08-26) forecloses: the host never claims testing/testing.go. |
 | `TestPanic` | `aggregate` | no failure text of its own — the roll-up of this test's disclosed subtests |
 | `TestPanic/parallel_subtest_panics_with_cleanup` | `host-identity` | re-execs the test binary and regexes the CHILD's terminal text against Go's verbose layout (`--- FAIL: <name>` with indented `file.go:NN: msg` lines). The hand-owned Phase-4 host is a structural replacement for Go's testing package, not a conversion of it, and its reporter writes `"{ACTION,-20} {Test} - {Output}"` - it emits no `--- FAIL:`, no `=== RUN` and no indented file:line log block anywhere. The divergence is the ONE-testing-package design being observed through its own output channel. Retires only if the host is made to impersonate Go's testing-package terminal output, which the standing host-identity ruling (2026-08-26) forecloses: the host never claims testing/testing.go. |

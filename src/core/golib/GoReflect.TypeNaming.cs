@@ -106,16 +106,39 @@ public static partial class GoReflect
     /// </summary>
     public static string GoTypeName(Type? t, nint[]? arrayDims, GoChanDir chanDir, nint[]? keyDims)
     {
+        return GoTypeName(t, arrayDims, chanDir == GoChanDir.Unstamped ? null : new[] { chanDir }, keyDims);
+    }
+
+    /// <summary>
+    /// The Go source type string with the channel direction threaded as a PER-LEVEL CHAIN rather
+    /// than one scalar. A scalar could only describe the outermost channel, so every nested
+    /// direction was dropped on the way in and `chan (&lt;-chan int)` rendered `chan chan int` —
+    /// the same shape of loss the array dims had before they became a chain, and fixed the same way:
+    /// this frame consumes the head and hands the TAIL to the element.
+    /// </summary>
+    public static string GoTypeName(Type? t, nint[]? arrayDims, GoChanDir[]? chanDirChain, nint[]? keyDims)
+    {
         if (t is null) return "<nil>";
 
-        if (chanDir is GoChanDir.Recv or GoChanDir.Send && t.IsGenericType &&
-            t.GetGenericTypeDefinition() == typeof(channel<>))
+        if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(channel<>))
         {
-            // The DIRECTION belongs to this channel and stops here; the DIMS are the element's and
-            // pass unshifted, exactly as the bidirectional arm below hands them on. `chan<- [3]int`
-            // needs both — the arrow from this frame, the length from the element's.
-            string elem = GoTypeName(t.GetGenericArguments()[0], arrayDims);
-            return chanDir == GoChanDir.Recv ? "<-chan " + elem : "chan<- " + elem;
+            // ONE arm for all three directions now. The DIMS are the element's and pass unshifted;
+            // the direction chain's HEAD belongs to this channel and its TAIL to the element, which
+            // is what carries `chan<- (<-chan T)` all the way down.
+            GoChanDir head = chanDirChain is { Length: > 0 } ? chanDirChain[0] : GoChanDir.Unstamped;
+            GoChanDir[]? tail = chanDirChain is { Length: > 1 } ? chanDirChain[1..] : null;
+            string elem = GoTypeName(t.GetGenericArguments()[0], arrayDims, tail, null);
+            // Go parenthesises the element ONLY when its rendering begins with '<', i.e. a RECEIVE
+            // element, because `chan <-chan int` would re-parse as `chan<- chan int`. A SEND element
+            // is unambiguous and Go prints `chan chan<- int` bare — measured against go1.23.12, and
+            // the reason a parenthesise-any rule is wrong rather than merely noisy.
+            if (elem.Length > 0 && elem[0] == '<') elem = "(" + elem + ")";
+            return head switch
+            {
+                GoChanDir.Recv => "<-chan " + elem,
+                GoChanDir.Send => "chan<- " + elem,
+                _ => "chan " + elem
+            };
         }
 
         if (arrayDims is { Length: > 0 } && t.IsGenericType && t.GetGenericTypeDefinition() == typeof(array<>))
@@ -157,17 +180,15 @@ public static partial class GoReflect
             // Rendered with the cargo-less overload, `[][6]uint8` printed `[][]uint8`: the element's
             // length was applied at the position that owned it and dropped on the way in.
             // See docs/phase4/DESIGN-descriptor-cargo.md.
-            if (gd == typeof(slice<>)) return "[]" + GoTypeName(a[0], arrayDims, chanDir, keyDims);
+            if (gd == typeof(slice<>)) return "[]" + GoTypeName(a[0], arrayDims, chanDirChain, keyDims);
             if (gd == typeof(array<>)) return "[]" + GoTypeName(a[0]);   // length is not carried on the managed type
             // A MAP descriptor's positional dims are its ELEMENT's and its key dims are its KEY's —
             // the two accessors, each fed from the slot that reaches it, so
             // `map[[2]string][2]*float64` renders both lengths instead of neither.
             if (gd == typeof(map<,>)) return "map[" + GoTypeName(a[0], keyDims) + "]" + GoTypeName(a[1], arrayDims);
-            // A CHANNEL's are its element's too, for the same reason a slice's are: no length of its
-            // own to consume. The direction has already been applied by the arm at the top of this
-            // method (which handles Recv/Send); reaching here means bidirectional, so the element
-            // takes the dims and its own direction, never this channel's.
-            if (gd == typeof(channel<>)) return "chan " + GoTypeName(a[0], arrayDims);
+            // (The bidirectional channel case that used to sit here is gone: the unified arm at the
+            //  top of this method now handles every direction, so reaching here with a channel was
+            //  no longer possible and a dead arm is a false-green seed.)
         }
 
         // A pointer descriptor's dims are the POINTEE's, unshifted (the same rule Elem() hands the
@@ -175,7 +196,7 @@ public static partial class GoReflect
         // the map key dims ride down the same way, so `*chan<- string` keeps its arrow and
         // `*map[[2]string]V` keeps its key length. Resolved by the base-chain walk (fix W) so a
         // per-kind subclass instance names the same `*T` its declared type does.
-        if (TryBoxPointee(t, out Type? pointee)) return "*" + GoTypeName(pointee, arrayDims, chanDir, keyDims);
+        if (TryBoxPointee(t, out Type? pointee)) return "*" + GoTypeName(pointee, arrayDims, chanDirChain, keyDims);
 
         // An UNNAMED func type renders STRUCTURALLY, exactly as an unnamed struct does — `func()`,
         // `func(*testing.T)`, `func(int, ...string) (bool, error)`. A Go DEFINED func type keeps its
@@ -448,6 +469,11 @@ public static partial class GoReflect
         if (methods.Count == 0)
             return "interface {}";
 
+        // Sorted by the BARE name, and the package qualification below is applied afterwards, as a
+        // rendering step only. That order is measured, not assumed: Go prints
+        // `interface { zlib.aaa(); main.zzz() }` for an interface embedding an unexported `aaa` from
+        // one package beside an unexported `zzz` from another — bare order (aaa, zzz), not qualified
+        // order (main.zzz, zlib.aaa). Sorting the qualified strings would reverse that pair.
         methods.Sort(static (a, b) => string.CompareOrdinal(a.Name, b.Name));
 
         StringBuilder builder = new("interface { ");
@@ -460,7 +486,7 @@ public static partial class GoReflect
             System.Reflection.MethodInfo method = methods[i];
             System.Reflection.ParameterInfo[] parameters = method.GetParameters();
 
-            builder.Append(method.Name).Append('(');
+            builder.Append(goInterfaceMethodName(method, t)).Append('(');
 
             for (int j = 0; j < parameters.Length; j++)
             {
@@ -590,6 +616,39 @@ public static partial class GoReflect
     // type prefers its stamped original Go name ([GoLocalName] — `binary.Person`, never the
     // lifted `TestNoFixedSize_Person`). A Δ-collision rename (ΔHandle) strips the marker; a type
     // with no `_package` declaring class falls back to its bare name.
+    // Go QUALIFIES an interface's UNEXPORTED method names with their package in the type string --
+    // `interface { B(); main.a(int) string }` -- and never qualifies an exported one. The package is
+    // part of an unexported method's identity, because only its own package can satisfy it.
+    //
+    // The package taken is the METHOD's, not the interface's, which is what makes an embedded
+    // interface from another package render as its own: `interface { zlib.aaa(); main.zzz() }`.
+    private static string goInterfaceMethodName(System.Reflection.MethodInfo method, Type owner)
+    {
+        string name = method.Name;
+
+        if (isExportedGoName(name))
+            return name;
+
+        Type? declaringPackage = method.DeclaringType?.DeclaringType ?? owner.DeclaringType;
+
+        return goPackageNameOf(declaringPackage) is { Length: > 0 } packageName
+            ? packageName + "." + name
+            : name;
+    }
+
+    // Go's own rule, and it is about a RUNE: a name is exported iff its first rune is an upper-case
+    // letter (`unicode.IsUpper`). Decoding a whole rune rather than reading `name[0]` is what keeps a
+    // surrogate pair from being judged by its high half, and it answers the underscore-initial case
+    // -- unexported in Go -- correctly for free.
+    private static bool isExportedGoName(string name)
+    {
+        if (name.Length == 0)
+            return false;
+
+        return Rune.DecodeFromUtf16(name, out Rune first, out _) == System.Buffers.OperationStatus.Done &&
+               Rune.IsUpper(first);
+    }
+
     private static string GoQualifiedName(Type t)
     {
         string name = goBareTypeName(t);

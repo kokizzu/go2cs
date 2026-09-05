@@ -322,11 +322,12 @@ internal static readonly @string httptestServerBlockedInˢ = "httptest.Server bl
 
 internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
         s.mu.Lock();
-        defer(Ꮡs.of(Server.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         ref var buf = ref heap(new strings.Builder(), out var Ꮡbuf);
         Ꮡbuf.WriteString(httptestServerBlockedInˢ);
         foreach (var (c, st) in s.conns) {
@@ -335,7 +336,7 @@ internal static void logCloseHangDebugInfo(this ж<Server> Ꮡs) {
         log.Print(buf.String());
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // CloseClientConnections closes any open HTTP connections to the test Server.

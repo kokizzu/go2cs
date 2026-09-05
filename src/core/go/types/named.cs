@@ -152,6 +152,7 @@ public static ж<Named> NewNamed(ж<TypeName> Ꮡobj, ΔType underlying, slice<�
 // unexpanded.
 internal static ж<Named> resolve(this ж<Named> Ꮡn) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var n = ref Ꮡn.DerefOrNull();
 
@@ -162,7 +163,7 @@ internal static ж<Named> resolve(this ж<Named> Ꮡn) {
         // TODO(rfindley): if n.check is non-nil we can avoid locking here, since
         // type-checking is not concurrent. Evaluate if this is worth doing.
         n.mu.Lock();
-        defer(Ꮡn.of(Named.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (Ꮡn.state() >= resolved) {
             return Ꮡn;
         }
@@ -204,7 +205,7 @@ internal static ж<Named> resolve(this ж<Named> Ꮡn) {
         return Ꮡn;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡn.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // state atomically accesses the current state of the receiver.
@@ -354,6 +355,7 @@ public static nint NumMethods(this ж<Named> Ꮡt) {
 // change in the future.
 public static ж<Func> Method(this ж<Named> Ꮡt, nint i) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
@@ -364,7 +366,7 @@ public static ж<Func> Method(this ж<Named> Ꮡt, nint i) {
         assert(t.inst != nil); // only instances should have incomplete methods
         var orig = t.inst.Value.orig;
         t.mu.Lock();
-        defer(Ꮡt.of(Named.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (len(t.methods) != len((~orig).methods)) {
             assert(len(t.methods) == 0);
             t.methods = new slice<ж<Func>>(len((~orig).methods));
@@ -383,7 +385,7 @@ public static ж<Func> Method(this ж<Named> Ꮡt, nint i) {
         return t.methods[i];
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // expandMethod substitutes type arguments in the i'th method for an

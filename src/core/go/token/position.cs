@@ -164,6 +164,7 @@ public static void AddLine(this ж<ΔFile> Ꮡf, nint offset) {
 // MergeLine will panic if given an invalid line number.
 public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var f = ref Ꮡf.DerefOrNull();
 
@@ -171,7 +172,7 @@ public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) {
             throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
         }
         f.mutex.Lock();
-        defer(Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (line >= len(f.lines)) {
             throw panic(fmt.Sprintf("invalid line number %d (should be < %d)"u8, line, len(f.lines)));
         }
@@ -184,7 +185,7 @@ public static void MergeLine(this ж<ΔFile> Ꮡf, nint line) {
         f.lines = f.lines[..(int)(len(f.lines) - 1)];
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡf.DerefOrNull().mutex.Unlock(); ᒐ.Run(); }
 }
 
 // Lines returns the effective line offset table of the form described by [File.SetLines].
@@ -250,6 +251,7 @@ public static void SetLinesForContent(this ж<ΔFile> Ꮡf, slice<byte> content)
 // LineStart panics if the 1-based line number is invalid.
 public static ΔPos LineStart(this ж<ΔFile> Ꮡf, nint line) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var f = ref Ꮡf.DerefOrNull();
 
@@ -257,14 +259,14 @@ public static ΔPos LineStart(this ж<ΔFile> Ꮡf, nint line) {
             throw panic(fmt.Sprintf("invalid line number %d (should be >= 1)"u8, line));
         }
         f.mutex.Lock();
-        defer(Ꮡf.of(token_package.ΔFile.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (line > len(f.lines)) {
             throw panic(fmt.Sprintf("invalid line number %d (should be < %d)"u8, line, len(f.lines)));
         }
         return ((ΔPos)(f.@base + f.lines[line - 1]));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡf.DerefOrNull().mutex.Unlock(); ᒐ.Run(); }
 }
 
 // A lineInfo object describes alternative file, line, and column
@@ -524,13 +526,14 @@ public static nint Base(this ж<FileSet> Ꮡs) {
 // values from a file offset.
 public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @base, nint size) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
         // Allocate f outside the critical section.
         var f = Ꮡ(new ΔFile(name: filename, size: size, lines: new nint[]{0}.slice()));
         Ꮡs.of(FileSet.Ꮡmutex).Lock();
-        defer(Ꮡs.of(FileSet.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (@base < 0) {
             @base = s.@base;
         }
@@ -553,7 +556,7 @@ public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @
         return f;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.of(FileSet.Ꮡmutex).Unlock(); ᒐ.Run(); }
 }
 
 // RemoveFile removes a file from the [FileSet] so that subsequent
@@ -564,13 +567,14 @@ public static ж<ΔFile> AddFile(this ж<FileSet> Ꮡs, @string filename, nint @
 // Removing a file that does not belong to the set has no effect.
 public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
         ref var @file = ref Ꮡfile.DerefOrNull();
 
         Ꮡs.of(FileSet.Ꮡlast).CompareAndSwap(Ꮡfile, nil); // clear last file cache
         Ꮡs.of(FileSet.Ꮡmutex).Lock();
-        defer(Ꮡs.of(FileSet.Ꮡmutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         {
             nint i = searchFiles(s.files, @file.@base); if (i >= 0 && s.files[i] == Ꮡfile) {
                 var last = Ꮡ(s.files, len(s.files) - 1);
@@ -580,7 +584,7 @@ public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) {
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.of(FileSet.Ꮡmutex).Unlock(); ᒐ.Run(); }
 }
 
 // Iterate calls f for the files in the file set in the order they were added
@@ -613,6 +617,7 @@ internal static nint searchFiles(slice<ж<ΔFile>> a, nint x) {
 
 internal static ж<ΔFile> @file(this ж<FileSet> Ꮡs, ΔPos p) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
@@ -623,7 +628,7 @@ internal static ж<ΔFile> @file(this ж<FileSet> Ꮡs, ΔPos p) {
             }
         }
         Ꮡs.of(FileSet.Ꮡmutex).RLock();
-        defer(Ꮡs.of(FileSet.Ꮡmutex).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         // p is not in last file - search all files
         {
             nint i = searchFiles(s.files, (nint)p); if (i >= 0) {
@@ -640,7 +645,7 @@ internal static ж<ΔFile> @file(this ж<FileSet> Ꮡs, ΔPos p) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.of(FileSet.Ꮡmutex).RUnlock(); ᒐ.Run(); }
 }
 
 // File returns the file that contains the position p.

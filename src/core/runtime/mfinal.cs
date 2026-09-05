@@ -572,6 +572,15 @@ private static class GoFinalizerQueue
     /// </remarks>
     internal const int DrainBudgetMs = 10_000;
 
+    // This goroutine's START FUNCTION, as an identity and never as something to call. Go's fing is
+    // `go runfinq()` (createfing), and `isSystemGoroutine` keys on exactly that start function
+    // (`f.funcID == abi.FuncID_runfinq`) to decide both that fing is a system goroutine and that it
+    // counts as a USER one while a finalizer body is running. Naming runfinq here reproduces that
+    // classification with the fact Go uses. The converted runfinq body would die in gopark if it
+    // were ever invoked; a method group is a compile-checked way to take its identity without
+    // reflection and without invoking it.
+    private static readonly global::System.Reflection.MethodBase s_runfinq = ((global::System.Action)runfinq).Method;
+
     private static readonly global::System.Collections.Concurrent.ConcurrentQueue<(Delegate Fn, object Target)> s_queue = new();
     private static readonly global::System.Threading.SemaphoreSlim s_pending = new(0);
 
@@ -649,6 +658,14 @@ private static class GoFinalizerQueue
 
     private static void Run()
     {
+        // This thread IS a goroutine in Go's model -- fing -- and until it was registered as one it
+        // was invisible to everything that reads the registry: runtime.NumGoroutine, a traceback,
+        // and the goroutine profile. Registering it as a SYSTEM goroutine is Go's own classification
+        // and is what keeps the first two unchanged (UserCount subtracts system goroutines and
+        // tracebackothers skips them); the profile sees it only through the user-work window below,
+        // which is Go's fingStatus&fingRunningFinalizer rule.
+        using global::go.golib.Goroutine.Scope goroutine = global::go.golib.Goroutine.EnterSystem(s_runfinq);
+
         while (true)
         {
             s_pending.Wait();
@@ -661,6 +678,13 @@ private static class GoFinalizerQueue
 
             try
             {
+                // The body is the USER's code, so for its duration this system goroutine counts as
+                // a user one -- Go sets fingRunningFinalizer across exactly this span, and
+                // isSystemGoroutine answers false while it is set. It is what puts a finalizer that
+                // parks (runtime/pprof's TestGoroutineCounts parks one deliberately) into the
+                // goroutine profile, carrying whatever labels the body set.
+                using global::go.golib.Goroutine.UserWorkScope userWork = global::go.golib.Goroutine.EnterUserWork();
+
                 item.Fn.DynamicInvoke(item.Target);
             }
             catch

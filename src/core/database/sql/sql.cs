@@ -856,15 +856,16 @@ internal static error Close(this ж<driverStmt> Ꮡds) {
 // called until all of x's dependencies are removed with removeDep.
 internal static void addDep(this ж<DB> Ꮡdb, finalCloser x, any dep) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
         db.mu.Lock();
-        defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         db.addDepLocked(x, dep);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static void addDepLocked(this ref DB db, finalCloser x, any dep) {
@@ -1214,6 +1215,7 @@ public static void SetConnMaxLifetime(this ж<DB> Ꮡdb, time.Duration d) {
 // If d <= 0, connections are not closed due to a connection's idle time.
 public static void SetConnMaxIdleTime(this ж<DB> Ꮡdb, time.Duration d) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
@@ -1221,7 +1223,7 @@ public static void SetConnMaxIdleTime(this ж<DB> Ꮡdb, time.Duration d) {
             d = 0;
         }
         db.mu.Lock();
-        defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         // Wake cleaner up when idle time is shortened.
         if (d > 0 && d < db.maxIdleTime && db.cleanerCh != default!) {
             var selᴛ8 = db.cleanerCh.ᐸꟷ(new EmptyStruct(), ꓸꓸꓸ);
@@ -1237,7 +1239,7 @@ public static void SetConnMaxIdleTime(this ж<DB> Ꮡdb, time.Duration d) {
         Ꮡdb.startCleanerLocked();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // startCleanerLocked starts connectionCleaner if needed.
@@ -1376,12 +1378,13 @@ internal static void connectionCleaner(this ж<DB> Ꮡdb, time.Duration d) {
 // Stats returns database statistics.
 public static DBStats Stats(this ж<DB> Ꮡdb) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
         var wait = Ꮡdb.of(DB.ᏑwaitDuration).Load();
         db.mu.Lock();
-        defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var stats = new DBStats(
             MaxOpenConnections: db.maxOpen,
             Idle: len(db.freeConn),
@@ -1396,7 +1399,7 @@ public static DBStats Stats(this ж<DB> Ꮡdb) {
         return stats;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Assumes db.mu is locked.
@@ -1441,6 +1444,7 @@ internal static void connectionOpener(this ж<DB> Ꮡdb, context.Context ctx) {
 // Open one new connection
 internal static void openNewConnection(this ж<DB> Ꮡdb, context.Context ctx) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
 
@@ -1449,7 +1453,7 @@ internal static void openNewConnection(this ж<DB> Ꮡdb, context.Context ctx) {
         // connection fails or is closed before returning.
         var (ci, err) = db.connector.Connect(ctx);
         db.mu.Lock();
-        defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (db.closed) {
             if (err == default!) {
                 ci.Close();
@@ -1477,7 +1481,7 @@ internal static void openNewConnection(this ж<DB> Ꮡdb, context.Context ctx) {
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // connRequest represents one request for a new connection
@@ -1641,12 +1645,13 @@ internal static Action<ж<DB>, ж<driverConn>> putConnHook;
 // already closed.
 internal static void noteUnusedDriverStatement(this ж<DB> Ꮡdb, ж<driverConn> Ꮡc, ж<driverStmt> Ꮡds) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var db = ref Ꮡdb.DerefOrNull();
         ref var c = ref Ꮡc.DerefOrNull();
 
         db.mu.Lock();
-        defer(Ꮡdb.of(DB.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (c.inUse){
             c.onPut = append(c.onPut, () => {
                 Ꮡds.Close();
@@ -1661,7 +1666,7 @@ internal static void noteUnusedDriverStatement(this ж<DB> Ꮡdb, ж<driverConn>
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdb.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // debugGetPut determines whether getConn & putConn calls' stack traces
@@ -2384,6 +2389,7 @@ internal static void closemuRUnlockCondReleaseConn(this ж<ΔConn> Ꮡc, error e
 
 internal static error close(this ж<ΔConn> Ꮡc, error err) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
@@ -2393,14 +2399,14 @@ internal static error close(this ж<ΔConn> Ꮡc, error err) {
         // Lock around releasing the driver connection
         // to ensure all queries have been stopped before doing so.
         Ꮡc.of(sql_package.ΔConn.Ꮡclosemu).Lock();
-        defer(Ꮡc.of(sql_package.ΔConn.Ꮡclosemu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         c.dc.releaseConn(err);
         c.dc = default!;
         c.db = default!;
         return err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(sql_package.ΔConn.Ꮡclosemu).Unlock(); ᒐ.Run(); }
 }
 
 // Close returns the connection to the connection pool.
@@ -2536,17 +2542,18 @@ internal static void closemuRUnlockRelease(this ж<Tx> Ꮡtx, error _) {
 // Closes all Stmts prepared for this transaction.
 internal static void closePrepared(this ж<Tx> Ꮡtx) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var tx = ref Ꮡtx.DerefOrNull();
 
         Ꮡtx.of(Tx.Ꮡstmts).of(Tx_stmts.ᏑMutex).Lock();
-        defer(Ꮡtx.of(Tx.Ꮡstmts).of(Tx_stmts.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         foreach (var (_, stmt) in tx.stmts.v) {
             stmt.Close();
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡtx.of(Tx.Ꮡstmts).of(Tx_stmts.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // Commit commits the transaction.
@@ -2926,12 +2933,13 @@ internal static stmtConnGrabber _ᴛ3ʗ = new ΔConnжstmtConnGrabber(Ꮡ(new Δ
 // returns a [Result] summarizing the effect of the statement.
 public static (Result, error) ExecContext(this ж<ΔStmt> Ꮡs, context.Context ctx, params ꓸꓸꓸany argsʗp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         var args = argsʗp.slice();
 
         ref var s = ref Ꮡs.DerefOrNull();
         Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RLock();
-        defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         ref var res = ref heap<Result>(out var Ꮡres);
         var argsʗ1 = args;
         var err = s.db.retry((connReuseStrategy strategy) => {
@@ -2946,7 +2954,7 @@ public static (Result, error) ExecContext(this ж<ΔStmt> Ꮡs, context.Context 
         return (res, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock(); ᒐ.Run(); }
 }
 
 // Exec executes a prepared statement with the given arguments and
@@ -3088,12 +3096,13 @@ internal static (ж<driverStmt>, error) prepareOnConnLocked(this ж<ΔStmt> Ꮡs
 // and returns the query results as a [*Rows].
 public static (ж<Rows>, error) QueryContext(this ж<ΔStmt> Ꮡs, context.Context ctx, params ꓸꓸꓸany argsʗp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         var args = argsʗp.slice();
 
         ref var s = ref Ꮡs.DerefOrNull();
         Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RLock();
-        defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         ref var rowsi = ref heap<driver.Rows>(out var Ꮡrowsi);
         ref var rows = ref heap<ж<Rows>>(out var Ꮡrows);
         var argsʗ1 = args;
@@ -3134,7 +3143,7 @@ public static (ж<Rows>, error) QueryContext(this ж<ΔStmt> Ꮡs, context.Conte
         return (rows, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).RUnlock(); ᒐ.Run(); }
 }
 
 // Query executes a prepared query statement with the given arguments
@@ -3205,11 +3214,12 @@ public static ж<Row> QueryRow(this ж<ΔStmt> Ꮡs, params ꓸꓸꓸany argsʗp
 // Close closes the statement.
 public static error Close(this ж<ΔStmt> Ꮡs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
         Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).Lock();
-        defer(Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (s.stickyErr != default!) {
             return s.stickyErr;
         }
@@ -3233,16 +3243,17 @@ public static error Close(this ж<ΔStmt> Ꮡs) {
         return txds.Close();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.of(sql_package.ΔStmt.Ꮡclosemu).Unlock(); ᒐ.Run(); }
 }
 
 internal static error finalClose(this ж<ΔStmt> Ꮡs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
         s.mu.Lock();
-        defer(Ꮡs.of(sql_package.ΔStmt.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (s.css != default!) {
             foreach (var (_, v) in s.css) {
                 s.db.noteUnusedDriverStatement(v.dc, v.ds);
@@ -3253,7 +3264,7 @@ internal static error finalClose(this ж<ΔStmt> Ꮡs) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Rows is the result of a query. Its cursor starts before the first row
@@ -3485,6 +3496,7 @@ public static bool NextResultSet(this ж<Rows> Ꮡrs) {
 // Err may be called after an explicit or implicit [Rows.Close].
 public static error Err(this ж<Rows> Ꮡrs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var rs = ref Ꮡrs.DerefOrNull();
 
@@ -3500,11 +3512,11 @@ public static error Err(this ж<Rows> Ꮡrs) {
             }
         }
         Ꮡrs.of(Rows.Ꮡclosemu).RLock();
-        defer(Ꮡrs.of(Rows.Ꮡclosemu).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         return rs.lasterrOrErrLocked(default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡrs.of(Rows.Ꮡclosemu).RUnlock(); ᒐ.Run(); }
 }
 
 // rawbuf returns the buffer to append RawBytes values to.
@@ -3545,11 +3557,13 @@ internal static error errNoRows = errors.New("sql: no Rows available"u8);
 // Columns returns an error if the rows are closed.
 public static (slice<@string>, error) Columns(this ж<Rows> Ꮡrs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
     try {
         ref var rs = ref Ꮡrs.DerefOrNull();
 
         Ꮡrs.of(Rows.Ꮡclosemu).RLock();
-        defer(Ꮡrs.of(Rows.Ꮡclosemu).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (rs.closed) {
             return (default!, rs.lasterrOrErrLocked(errRowsClosed));
         }
@@ -3557,22 +3571,24 @@ public static (slice<@string>, error) Columns(this ж<Rows> Ꮡrs) {
             return (default!, rs.lasterrOrErrLocked(errNoRows));
         }
         rs.dc.of(driverConn.ᏑMutex).Lock();
-        defer(Ꮡrs.Value.dc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd2 = true;
         return (rs.rowsi.Columns(), default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd2) Ꮡrs.DerefOrNull().dc.of(driverConn.ᏑMutex).Unlock(); if (ᒐd1) Ꮡrs.of(Rows.Ꮡclosemu).RUnlock(); ᒐ.Run(); }
 }
 
 // ColumnTypes returns column information such as column type, length,
 // and nullable. Some information may not be available from some drivers.
 public static (slice<ж<ColumnType>>, error) ColumnTypes(this ж<Rows> Ꮡrs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
     try {
         ref var rs = ref Ꮡrs.DerefOrNull();
 
         Ꮡrs.of(Rows.Ꮡclosemu).RLock();
-        defer(Ꮡrs.of(Rows.Ꮡclosemu).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (rs.closed) {
             return (default!, rs.lasterrOrErrLocked(errRowsClosed));
         }
@@ -3580,11 +3596,11 @@ public static (slice<ж<ColumnType>>, error) ColumnTypes(this ж<Rows> Ꮡrs) {
             return (default!, rs.lasterrOrErrLocked(errNoRows));
         }
         rs.dc.of(driverConn.ᏑMutex).Lock();
-        defer(Ꮡrs.Value.dc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd2 = true;
         return (rowsColumnInfoSetupConnLocked(rs.rowsi), default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd2) Ꮡrs.DerefOrNull().dc.of(driverConn.ᏑMutex).Unlock(); if (ᒐd1) Ꮡrs.of(Rows.Ꮡclosemu).RUnlock(); ᒐ.Run(); }
 }
 
 // ColumnType contains the name and type of a column.
@@ -3831,12 +3847,13 @@ public static error Close(this ж<Rows> Ꮡrs) {
 
 internal static error close(this ж<Rows> Ꮡrs, error errʗp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var rs = ref Ꮡrs.DerefOrNull();
 
         ref var err = ref heap(errʗp, out var Ꮡerr);
         Ꮡrs.of(Rows.Ꮡclosemu).Lock();
-        defer(Ꮡrs.of(Rows.Ꮡclosemu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (rs.closed) {
             return default!;
         }
@@ -3863,7 +3880,7 @@ internal static error close(this ж<Rows> Ꮡrs, error errʗp) {
         return err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡrs.of(Rows.Ꮡclosemu).Unlock(); ᒐ.Run(); }
 }
 
 // Row is the result of calling [DB.QueryRow] to select a single row.

@@ -894,13 +894,14 @@ internal static error sendAlertLocked(this ж<Conn> Ꮡc, alert err) {
 // sendAlert sends a TLS alert message.
 internal static error sendAlert(this ж<Conn> Ꮡc, alert err) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return Ꮡc.sendAlertLocked(err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 internal static UntypedInt tcpMSSEstimate => 1208;
@@ -1093,9 +1094,10 @@ internal static (nint, error) writeRecordLocked(this ж<Conn> Ꮡc, recordType t
 // written to it.
 internal static (nint, error) writeHandshakeRecord(this ж<Conn> Ꮡc, handshakeMessage msg, transcriptHash transcript) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var (data, err) = msg.marshal();
         if (err != default!) {
             return (0, err);
@@ -1106,21 +1108,22 @@ internal static (nint, error) writeHandshakeRecord(this ж<Conn> Ꮡc, handshake
         return Ꮡc.writeRecordLocked(recordTypeHandshake, data);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // writeChangeCipherRecord writes a ChangeCipherSpec message to the connection and
 // updates the record layer state.
 internal static error writeChangeCipherRecord(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var (_, err) = Ꮡc.writeRecordLocked(recordTypeChangeCipherSpec, new byte[]{1}.slice());
         return err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // readHandshakeBytes reads handshake data until c.hand contains at least n bytes.
@@ -1350,6 +1353,7 @@ internal static readonly @string tlsUnknownRenegotiationˢ = "tls: unknown Reneg
 // handleRenegotiation processes a HelloRequest handshake message.
 internal static error handleRenegotiation(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
@@ -1386,7 +1390,7 @@ internal static error handleRenegotiation(this ж<Conn> Ꮡc) {
 
         // Ok.
         c.handshakeMutex.Lock();
-        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         Ꮡc.of(Conn.ᏑisHandshakeComplete).Store(false);
         {
             c.handshakeErr = Ꮡc.clientHandshake(context.Background()); if (c.handshakeErr == default!) {
@@ -1396,7 +1400,7 @@ internal static error handleRenegotiation(this ж<Conn> Ꮡc) {
         return c.handshakeErr;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().handshakeMutex.Unlock(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1484,6 +1488,7 @@ internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> Ꮡke
 // [Conn.SetWriteDeadline].
 public static (nint, error) Read(this ж<Conn> Ꮡc, slice<byte> b) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
@@ -1498,7 +1503,7 @@ public static (nint, error) Read(this ж<Conn> Ꮡc, slice<byte> b) {
             return (0, default!);
         }
         Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Lock();
-        defer(Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         while (c.input.Len() == 0) {
             {
                 var err = Ꮡc.readRecord(); if (err != default!) {
@@ -1531,7 +1536,7 @@ public static (nint, error) Read(this ж<Conn> Ꮡc, slice<byte> b) {
         return (n, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(Conn.Ꮡin).of(halfConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // Close closes the connection.
@@ -1588,11 +1593,12 @@ public static error CloseWrite(this ж<Conn> Ꮡc) {
 
 internal static error closeNotify(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-        defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (!c.closeNotifySent) {
             // Set a Write Deadline to prevent possibly blocking forever.
             c.SetWriteDeadline(time_package.Now().Add((time.Duration)(5000000000L)));
@@ -1604,7 +1610,7 @@ internal static error closeNotify(this ж<Conn> Ꮡc) {
         return c.closeNotifyErr;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // Handshake runs the client or server handshake
@@ -1762,15 +1768,16 @@ internal static error /*ret*/ handshakeContext(this ж<Conn> Ꮡc, context.Conte
 // ConnectionState returns basic TLS details about the connection.
 public static ΔConnectionState ConnectionState(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         c.handshakeMutex.Lock();
-        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return Ꮡc.connectionStateLocked();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().handshakeMutex.Unlock(); ᒐ.Run(); }
 }
 
 internal static ж<godebug.Setting> tlsunsafeekm = godebug.New("tlsunsafeekm"u8);
@@ -1822,15 +1829,16 @@ internal static ΔConnectionState connectionStateLocked(this ж<Conn> Ꮡc) {
 // any. (Only valid for client connections.)
 public static slice<byte> OCSPResponse(this ж<Conn> Ꮡc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         c.handshakeMutex.Lock();
-        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return c.ocspResponse;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().handshakeMutex.Unlock(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1843,11 +1851,12 @@ internal static readonly @string tlsHandshakeDidNotVerifyˢ = "tls: handshake di
 // describing the problem.
 public static error VerifyHostname(this ж<Conn> Ꮡc, @string host) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         c.handshakeMutex.Lock();
-        defer(Ꮡc.of(Conn.ᏑhandshakeMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (!c.isClient) {
             return errors.New(tlsVerifyHostnameCalledˢ);
         }
@@ -1860,7 +1869,7 @@ public static error VerifyHostname(this ж<Conn> Ꮡc, @string host) {
         return c.peerCertificates[0].VerifyHostname(host);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.DerefOrNull().handshakeMutex.Unlock(); ᒐ.Run(); }
 }
 
 } // end tls_package

@@ -9612,6 +9612,69 @@ siblings carry a `ǃ` (U+01C3, a legal C# identifier character where `!` is not)
 own: `goǃ` cannot be `go`, which is the root namespace every converted file sits in, and `makeǃ`
 cannot be `make`, which is a predeclared Go identifier a package may shadow.
 
+### A deferred RECEIVER-FIELD call with no arguments is lowered INTO the frame's `finally`
+
+A deferred call on a field of the receiver — `defer c.mu.Unlock()` — costs a ж-box per call under the
+registration form above, because the registration has to hold the receiver and holding `c.mu` means
+boxing it (`Ꮡc.of(counter.Ꮡmu)`, a `FieldRefBox<T>`). The call already runs on every exit path, and a
+C# `finally` already runs on every exit path, so where the two provably coincide the call is emitted
+directly into the frame's `finally` and nothing is allocated at all:
+
+```csharp
+//  Go:  func (x *box) two() { x.a.touch(); x.b.touch(); defer x.a.done(); defer x.b.done(); … }
+internal static void two(this ж<box> Ꮡx) {
+    GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
+    try {
+        ref var x = ref Ꮡx.DerefOrNull();
+        x.a.touch();
+        x.b.touch();
+        ᒐd1 = true;
+        ᒐd2 = true;
+        …
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { if (ᒐd2) Ꮡx.DerefOrNull().b.done(); if (ᒐd1) Ꮡx.DerefOrNull().a.done(); ᒐ.Run(); }
+}
+```
+
+Three properties of Go's `defer` are what the shape has to preserve, and each one is a gate rather
+than an argument:
+
+- **Go binds the receiver at REGISTRATION; a `finally` binds it at unwind.** So the receiver name must
+  not be reassigned or addressed anywhere in the body. `defer c.mu.Unlock(); c = other` unlocks the
+  ORIGINAL `c`'s mutex in Go and would unlock the NEW one here — no compile error, no panic, just the
+  wrong object. Arguments are excluded for the same reason: capturing one is the box again.
+- **A defer that was never REACHED never runs.** Each site carries a `bool` set at the defer's own
+  source position, so the `finally` calls only what the body actually reached. The flag is emitted even
+  for a defer that is the body's first statement, because the function preamble sits inside the `try`.
+- **Go's defers are LIFO**, which for unconditional top-level defers is reverse source order — the
+  order the `finally` emits them in, ahead of `ᒐ.Run()`, since `Run()` re-throws an unrecovered panic
+  and would otherwise leave them unexecuted.
+
+The receiver is re-rooted on its box (`Ꮡx.DerefOrNull()`) rather than on the entry deref alias `x`,
+which is declared inside the `try` and is not in scope in the `finally`. That allocates nothing: the box
+is the method's own receiver parameter.
+
+A fourth gate has no counterpart in the emission and exists purely because the measurement found it:
+**some UNCONDITIONAL statement ahead of the defer must already dereference the same prefix.** Go
+evaluates `c.mu` AT the defer, so a nil `c` panics there and registers nothing; a lowered `finally`
+evaluates it at exit, so the body would run to completion first and the panic would surface late with
+the body's effects already committed. The dominant `c.mu.Lock(); defer c.mu.Unlock()` idiom satisfies
+it trivially — but **three** sites in Go 1.23.12's standard library have no earlier dereference at all,
+and **four** more have one only inside an `if`, a loop or a func literal, which witnesses nothing
+because that branch may not have run. Both are refused. The conditional half is the sharper of the two:
+the first form of this gate scanned preceding statements without asking whether they execute, and
+accepted all four.
+
+Everything else keeps the registration form, including any function that mixes a qualifying defer with
+a non-qualifying one: the lowering is all-or-nothing per function, because interleaving a lowered LIFO
+order with a registered one is not expressible. Of 220 receiver-field defer sites in Go 1.23.12's
+standard library, 166 qualify. Guarded by `tests/Behavioral/DeferFinallyLowering`, whose refusal rows
+are asserted by the golden (a refusal is invisible in stdout) and whose `rebound` row fails loudly if
+the receiver-stability gate is removed.
+
 ### A VARIADIC deferred/spawned func literal is cast to its golib family delegate
 
 A deferred func LITERAL is normally handed to the arity rung directly — `defer((nint cnt) => { … },

@@ -173,6 +173,20 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"pipe":   goosDarwin,
 		"read":   goosDarwin,
 		"write1": goosDarwin,
+		// runtime.sigprocmask -- the darwin signal-mask primitive (increment 5, 2026-09-04). The
+		// train-24 behavioral-stderr stage placed SignalPrimitives on BOTH mac legs at the same
+		// statement, signal.Notify, by two independent derivations: x64's stack (FuncPC <-
+		// FuncPCABI0 <- runtime.sigprocmask <- runtime.ensureSigM.func1) and arm64's stdout count
+		// (2 of 6 lines, zero stderr). The death is in COMPUTING the trampoline address, not in
+		// dispatching through it -- sigprocmask_trampoline is a bodyless partial the generator
+		// fills with a throw, so abi.FuncPCABI0 has no PC to answer with. Bodied (it calls
+		// libcCall), so displaced here rather than by writing into a bodyless partial the way
+		// C1's linux rtsigprocmask could be. runtime/darwin/sigprocmask_impl.cs realizes it over
+		// libc's PTHREAD_sigmask -- what Go's own trampoline calls on both darwin arches -- with a
+		// 32-bit set (darwin's sigset is uint32, not Linux's [2]uint32), darwin's own how numbering
+		// (1/2/3, not 0/1/2) and the errno read from the RETURN value, since pthread_sigmask does
+		// not set errno. Four clauses, four ways a borrowed linux body would have been wrong.
+		"sigprocmask": goosDarwin,
 		// runtime.libcCall — darwin's dispatch bottom: every libc trampoline in sys_darwin.cs is reached
 		// through libcCall(FuncPCABI0(x_trampoline), &args). Its converted body opens with getg() and
 		// ends in asmcgocall, four bodyless intrinsics with no implementing part anywhere (the

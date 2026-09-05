@@ -123,11 +123,12 @@ internal static void doCall(this ж<Group> Ꮡg, ж<call> Ꮡc, @string key, Fun
 // other goroutines are waiting for the result.
 public static bool ForgetUnshared(this ж<Group> Ꮡg, @string key) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var g = ref Ꮡg.DerefOrNull();
 
         g.mu.Lock();
-        defer(Ꮡg.of(Group.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         var (c, ok) = g.m[key, ꟷ];
         if (!ok) {
             return true;
@@ -139,7 +140,7 @@ public static bool ForgetUnshared(this ж<Group> Ꮡg, @string key) {
         return false;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡg.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 } // end singleflight_package

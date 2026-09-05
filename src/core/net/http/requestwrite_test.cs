@@ -14,17 +14,12 @@ using strings = strings_package;
 using testing = testing_package;
 using iotest = global::go.testing.iotest_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using global::go.net;
 using global::go.testing;
 using static global::go.net.http_package;
 
 partial class http_internal_test_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtestingꓸiotest() {
-    builtin.initPackage(typeof(global::go.testing.iotest_package));
-}
 
 [GoType] internal partial struct reqWriteTest {
     public global::go.net.http_package.Request Req;
@@ -704,7 +699,7 @@ internal static ж<url.URL> mustParseURL(@string s) {
 
 internal delegate (nint, error) writerFunc(slice<byte> _);
 
-internal static (nint, error) Write(this writerFunc f, slice<byte> p) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static (nint, error) Write(this writerFunc f, slice<byte> p) {
     return f(p);
 }
 
@@ -741,7 +736,7 @@ public static void TestRequestWriteError(ж<testing.T> Ꮡt) {
     var (req, _) = NewRequest(getˢ, httpExampleComˢ, default!);
     UntypedInt writeCalls = 4; // number of Write calls in current implementation
     var sawGood = false;
-    for (nint n = 0; n <= writeCalls + 2; n++) {
+    for (nint n = 0; n <= (nint)(writeCalls + 2); n++) {
         failAfter = n;
         writeCount = 0;
         var err = req.Write(w);

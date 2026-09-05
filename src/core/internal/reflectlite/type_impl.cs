@@ -34,8 +34,8 @@ partial class reflectlite_package
         System.Type? st = self == nil ? null : self.Value.sysType;
         // A POINTER hands its pointee's channel direction down unshifted, the hop `new(chan<- T)`
         // takes to reach Elem().String(); nothing else carries the cargo through.
-        GoChanDir elemChanDir = st is not null && GoReflect.KindOf(st) == GoReflect.Pointer ? self.Value.chanDir : GoChanDir.Unstamped;
-        return toType(abi_package.synthType(GoReflect.ElementType(st), null, null, elemChanDir));
+        GoChanDir[]? elemChanDirChain = st is not null && GoReflect.KindOf(st) == GoReflect.Pointer ? self.Value.chanDirChain : null;
+        return toType(abi_package.synthType(GoReflect.ElementType(st), null, null, elemChanDirChain, null));
     }
 
     // Implements reports whether the type implements the interface type u (Go method-set rules:
@@ -275,7 +275,7 @@ partial class reflectlite_package
         if (t.Type == nil)
             return (@string)GoReflect.GoTypeName(null);
 
-        return (@string)GoReflect.GoTypeName(t.Type.Value.sysType, t.Type.Value.arrayDims, t.Type.Value.chanDir);
+        return (@string)GoReflect.GoTypeName(t.Type.Value.sysType, t.Type.Value.arrayDims, t.Type.Value.chanDirChain, null);
     }
 
     // sysTypeOfLiteType recovers the managed System.Type a reflectlite Type wrapper describes

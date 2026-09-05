@@ -196,6 +196,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckCastNegativeNamedType() => CheckTarget("CastNegativeNamedType");
 
     [TestMethod]
+    public void CheckChanDirectionChain() => CheckTarget("ChanDirectionChain");
+
+    [TestMethod]
     public void CheckChanElemDims() => CheckTarget("ChanElemDims");
 
     [TestMethod]
@@ -353,6 +356,9 @@ public class B2_CompileTests : BehavioralTestBase
 
     [TestMethod]
     public void CheckDeferEvalParamFunc() => CheckTarget("DeferEvalParamFunc");
+
+    [TestMethod]
+    public void CheckDeferFinallyLowering() => CheckTarget("DeferFinallyLowering");
 
     [TestMethod]
     public void CheckDeferFrameScopes() => CheckTarget("DeferFrameScopes");

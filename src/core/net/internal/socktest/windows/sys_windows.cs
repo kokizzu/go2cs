@@ -212,6 +212,7 @@ public static error /*err*/ Listen(this ж<Switch> Ꮡsw, syscallꓸHandle s, ni
 // AcceptEx wraps [syscall.AcceptEx].
 public static error AcceptEx(this ж<Switch> Ꮡsw, syscallꓸHandle ls, syscallꓸHandle @as, ж<byte> Ꮡb, uint32 rxdatalen, uint32 laddrlen, uint32 raddrlen, ж<uint32> Ꮡrcvd, ж<syscall.Overlapped> Ꮡoverlapped) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var sw = ref Ꮡsw.DerefOrNull();
 
@@ -233,7 +234,7 @@ public static error AcceptEx(this ж<Switch> Ꮡsw, syscallꓸHandle ls, syscall
             }
         }
         Ꮡsw.of(Switch.Ꮡsmu).Lock();
-        defer(Ꮡsw.of(Switch.Ꮡsmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if ((~so).Err != default!) {
             sw.stats.getLocked((~so).Cookie).Value.AcceptFailed++;
             return (~so).Err;
@@ -243,7 +244,7 @@ public static error AcceptEx(this ж<Switch> Ꮡsw, syscallꓸHandle ls, syscall
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡsw.of(Switch.Ꮡsmu).Unlock(); ᒐ.Run(); }
 }
 
 } // end socktest_package

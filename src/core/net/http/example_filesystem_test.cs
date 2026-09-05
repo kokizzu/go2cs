@@ -13,12 +13,6 @@ using static global::go.net.http_internal_test_package;
 
 partial class http_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(global::go.io.fs_package));
-}
-
 // containsDotFile reports whether name contains a path element starting with a period.
 // The name is assumed to be a delimited by forward slashes, as guaranteed
 // by the http.FileSystem interface.

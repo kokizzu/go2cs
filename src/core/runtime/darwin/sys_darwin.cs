@@ -512,15 +512,7 @@ internal static void sigaction(uint32 sigʗp, ж<usigactiont> Ꮡnew, ж<usigact
 
 internal static partial void sigaction_trampoline();
 
-//go:nosplit
-//go:cgo_unsafe_args
-internal static void sigprocmask(uint32 howʗp, ж<sigset> Ꮡnew, ж<sigset> Ꮡold) {
-    ref var how = ref heap(howʗp, out var Ꮡhow);
-
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(sigprocmask_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡhow));
-    KeepAlive(Ꮡnew.OrTypedNil());
-    KeepAlive(Ꮡold.OrTypedNil());
-}
+// go2cs generated this placeholder — func sigprocmask is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static partial void sigprocmask_trampoline();
 

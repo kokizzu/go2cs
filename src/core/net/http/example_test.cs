@@ -18,12 +18,6 @@ using static global::go.net.http_internal_test_package;
 
 partial class http_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸosꓸsignal() {
-    builtin.initPackage(typeof(global::go.os.signal_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string hijackˢ = "/hijack"u8;
 internal static readonly @string webserverDoesnTSupportˢ = "webserver doesn't support hijacking"u8;
@@ -167,7 +161,7 @@ public static void ExampleServer_Shutdown() {
     var idleConnsClosedʗ1 = idleConnsClosed;
     goǃ(() => {
         var sigint = new channel<osꓸSignal>(1);
-        signal.Notify(sigint, os.Interrupt);
+        signal.Notify(sigint.WithDirection(GoChanDir.Send), os.Interrupt);
         ᐸꟷ(sigint);
         // We received an interrupt signal, shut down.
         {

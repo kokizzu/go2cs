@@ -22,24 +22,6 @@ using static global::go.net.http_package;
 
 partial class http_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtestenv() {
-    builtin.initPackage(typeof(global::go.@internal.testenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(global::go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸregexp() {
-    builtin.initPackage(typeof(regexp_package));
-}
-
 [GoType("dyn")] internal partial struct TestForeachHeaderElement_tests {
     internal @string @in;
     internal slice<@string> want;

@@ -15,12 +15,6 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class http_internal_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmaps() {
-    builtin.initPackage(typeof(maps_package));
-}
-
 [GoType("dyn")] internal partial struct TestRoutingFirstSegment_type {
     internal @string @in;
     internal slice<@string> want;

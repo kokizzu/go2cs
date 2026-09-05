@@ -319,6 +319,7 @@
     <Project Path="tests/Behavioral/CaptureModeValueParamLib/CaptureModeValueParamLib.csproj" />
     <Project Path="tests/Behavioral/CaptureModeValueParamUser/CaptureModeValueParamUser.csproj" />
     <Project Path="tests/Behavioral/CastNegativeNamedType/CastNegativeNamedType.csproj" />
+    <Project Path="tests/Behavioral/ChanDirectionChain/ChanDirectionChain.csproj" />
     <Project Path="tests/Behavioral/ChanElemDims/ChanElemDims.csproj" />
     <Project Path="tests/Behavioral/ChannelCapLen/ChannelCapLen.csproj" />
     <Project Path="tests/Behavioral/ChannelReceiveFromClosed/ChannelReceiveFromClosed.csproj" />
@@ -377,6 +378,7 @@
     <Project Path="tests/Behavioral/DeferDiscardedMultiValue/DeferDiscardedMultiValue.csproj" />
     <Project Path="tests/Behavioral/DeferEvalParam/DeferEvalParam.csproj" />
     <Project Path="tests/Behavioral/DeferEvalParamFunc/DeferEvalParamFunc.csproj" />
+    <Project Path="tests/Behavioral/DeferFinallyLowering/DeferFinallyLowering.csproj" />
     <Project Path="tests/Behavioral/DeferFrameScopes/DeferFrameScopes.csproj" />
     <Project Path="tests/Behavioral/DeferHeapFieldPtrMethod/DeferHeapFieldPtrMethod.csproj" />
     <Project Path="tests/Behavioral/DescriptorCarrierFieldName/DescriptorCarrierFieldName.csproj" />

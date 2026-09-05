@@ -42,60 +42,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class http_test_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcompressꓸgzip() {
-    builtin.initPackage(typeof(compress.gzip_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha1() {
-    builtin.initPackage(typeof(crypto.sha1_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptrace() {
-    builtin.initPackage(typeof(global::go.net.http.httptrace_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttputil() {
-    builtin.initPackage(typeof(global::go.net.http.httputil_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() {
-    builtin.initPackage(typeof(global::go.net.textproto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
 [GoType("@string")] partial struct testMode;
 
 internal static readonly testMode http1Mode = "h1"u8; // HTTP/1.1
@@ -422,7 +368,7 @@ internal static void testChunkedResponseHeaders(ж<testing.T> Ꮡt, testMode mod
 
 internal static Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)> reqFunc(this h12Compare tt) {
     if (tt.ReqFunc == default!) {
-        return (Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Get);
+        return ((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Get));
     }
     return tt.ReqFunc;
 }
@@ -533,7 +479,7 @@ internal static void normalizeRes(this h12Compare tt, ж<testing.T> Ꮡt, ж<Δh
 // Issue 13532
 public static void TestH12_HeadContentLengthNoBody(ж<testing.T> Ꮡt) {
     new h12Compare(
-        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head)),
+        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>(((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head))),
         Handler: (Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
         }
     ).run(Ꮡt);
@@ -544,7 +490,7 @@ internal static readonly @string smallˢ = "small"u8;
 
 public static void TestH12_HeadContentLengthSmallBody(ж<testing.T> Ꮡt) {
     new h12Compare(
-        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head)),
+        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>(((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head))),
         Handler: (Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
             io.WriteString(new http_test_package.http_ResponseWriterᴠWriter(w), smallˢ);
         }
@@ -553,7 +499,7 @@ public static void TestH12_HeadContentLengthSmallBody(ж<testing.T> Ꮡt) {
 
 public static void TestH12_HeadContentLengthLargeBody(ж<testing.T> Ꮡt) {
     new h12Compare(
-        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head)),
+        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>(((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head))),
         Handler: (Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
             @string chunk = strings.Repeat("x"u8, (512 << (int)(10)));
             for (nint i = 0; i < 10; i++) {
@@ -624,7 +570,7 @@ public static void TestH12_FlushMidBody(ж<testing.T> Ꮡt) {
 
 public static void TestH12_Head_ExplicitLen(ж<testing.T> Ꮡt) {
     new h12Compare(
-        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head)),
+        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>(((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head))),
         Handler: (Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
             if ((~r).Method != "HEAD"u8) {
                 Ꮡt.Errorf("unexpected method %q"u8, (~r).Method);
@@ -636,7 +582,7 @@ public static void TestH12_Head_ExplicitLen(ж<testing.T> Ꮡt) {
 
 public static void TestH12_Head_ImplicitLen(ж<testing.T> Ꮡt) {
     new h12Compare(
-        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head)),
+        ReqFunc: new Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>(((Func<ж<Δhttp.Client>, @string, (ж<Δhttp.Response>, error)>)(Δhttp.Head))),
         Handler: (Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
             if ((~r).Method != "HEAD"u8) {
                 Ꮡt.Errorf("unexpected method %q"u8, (~r).Method);
@@ -875,7 +821,7 @@ internal static void testCancelRequestMidBody(ж<testing.T> Ꮡt, testMode mode)
         defer(ᴛ1 => builtin.close(ᴛ1), unblock, ref ᒐ);
         var (req, _) = NewRequest(getˢ2, (~(~cst).ts).URL, default!);
         var cancel = new channel<EmptyStruct>(0);
-        req.Value.Cancel = cancel;
+        req.Value.Cancel = cancel.WithDirection(GoChanDir.Recv);
         var (res, err) = (~cst).c.Do(req);
         if (err != default!) {
             Ꮡt.Fatal(err);
@@ -1549,7 +1495,7 @@ public static void TestTransportRejectsInvalidHeaders(ж<testing.T> Ꮡt) {
 internal static void testTransportRejectsInvalidHeaders(ж<testing.T> Ꮡt, testMode mode) {
     var cst = newClientServerTest(new http_test_package.testing_TжTB(Ꮡt), mode, new http_test_package.http_HandlerFuncᴠΔHandler(new Δhttp.HandlerFunc((Δhttp.ResponseWriter w, ж<Δhttp.Request> r) => {
         fmt.Fprintf(new http_test_package.http_ResponseWriterᴠWriter(w), "Handler saw headers: %q"u8, (~r).Header);
-    })), optQuietLog);
+    })), (optQuietLog).OrTypedNilFunc());
     cst.Value.tr.Value.DisableKeepAlives = true;
     var tests = new testTransportRejectsInvalidHeaders_tests[]{
         new("Foo"u8, "capital-key"u8, true), // verify h2 allows capital keys

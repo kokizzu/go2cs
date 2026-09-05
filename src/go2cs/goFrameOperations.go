@@ -141,9 +141,12 @@ func (v *Visitor) reindentGoFrameBlock(block string) string {
 // empty for the unnamed-result form: those results are declared BEFORE the try because deferred
 // code mutates them and the exit after the finally reads them back.
 func (v *Visitor) goFrameHead(indentLevel int, namedResultDecls string) string {
-	return fmt.Sprintf(" {%s%s%sGoFrame %s = default;%s%stry",
+	// Any defer→finally lowered site's reached-flag is declared alongside the frame, before the
+	// try: the finally reads it, and a local declared inside a try is not in scope there.
+	return fmt.Sprintf(" {%s%s%sGoFrame %s = default;%s%s%stry",
 		namedResultDecls,
 		v.newline, v.indent(indentLevel+1), v.goFrameName(),
+		v.goFrameLoweredFlagDecls(indentLevel+1),
 		v.newline, v.indent(indentLevel+1))
 }
 
@@ -157,8 +160,10 @@ func (v *Visitor) goFrameTail(indentLevel int, catchReturn string) string {
 		catchReturn = " " + catchReturn
 	}
 
-	return fmt.Sprintf("%s%scatch (Exception %s) when (GoFrame.IsPanic(%s, out PanicException? %s)) { GoFrame.Capture(%s);%s }%s%sfinally { %s.Run(); }",
+	// Lowered defers run BEFORE Run(): Run() re-throws an unrecovered panic, which would leave
+	// anything after it in the finally unexecuted. They are already in Go's LIFO order.
+	return fmt.Sprintf("%s%scatch (Exception %s) when (GoFrame.IsPanic(%s, out PanicException? %s)) { GoFrame.Capture(%s);%s }%s%sfinally { %s%s.Run(); }",
 		v.newline, v.indent(indentLevel+1),
 		v.goFrameExceptionName(), v.goFrameExceptionName(), v.goFramePanicName(), v.goFramePanicName(), catchReturn,
-		v.newline, v.indent(indentLevel+1), v.goFrameName())
+		v.newline, v.indent(indentLevel+1), v.goFrameLoweredFinallyCalls(), v.goFrameName())
 }

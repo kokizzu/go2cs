@@ -84,12 +84,6 @@
       "class": "alloc-count-semantics",
       "signature": "go2cs: testing.AllocsPerRun counted",
       "reason": "exact-count AllocsPerRun asserts (want 1 for each of five `new(T)` closures). The managed shim is deliberately byte-derived - the CLR has no malloc counter - so it reports go2cs-runtime object allocations and returns 2 where Go returns 1. This package is the SUBJECT of the standing alloc-count-semantics class rather than another instance of it. Retires if the CLR ever exposes a per-allocation counter the shim can key on."
-    },
-    {
-      "name": "TestFlag/-test.v=test2json",
-      "class": "host-limit",
-      "signature": "for -test.v: parse error",
-      "reason": "Go registers -test.v as a tri-state chattyFlag whose Set accepts true/false/test2json and whose Get returns the STRING \"test2json\"; the host's flag bridge registers it as a plain Bool, so the child rejects the value. The bridge CANNOT register a custom value today: flag.Var needs an instance of the converted flag.Value interface, and the host deliberately does not reference `flag` - it binds the package by Type.GetType at runtime, because a compile-time reference costs a measured +33% on every test project's build for a reference 124 of 141 cannot use. RETIREMENT PATH: item Q29 - size a runtime-emitted implementer against the generator's GoImplement recognition, or a lazily-loaded satellite carrying the flag reference off every host's build; measured, not argued."
     }
   ]
 }

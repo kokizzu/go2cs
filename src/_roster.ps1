@@ -70,6 +70,15 @@ $RosterRowPattern = '^\|\s*\[`([^`]+)`\]\([^)]*\)\s*\|\s*(\d+)\s*\|\s*(\d*)\s*\|
 # comma-separated names right after the colon, stopping at the first text that is not one.
 $RosterConditionalPattern = 'host-conditional\s*(?:\([^)]*\))?\s*:\s*((?:`[^`]+`\s*,\s*)*`[^`]+`)'
 
+# The host-conditional DISCLOSURE annotation (Q31, 2026-09-04): the names of disclosure-manifest
+# entries whose FIRING is a property of the host, so the same verdict honestly sits in the matched
+# column on one host and in the disclosed column on another (os/exec's TestExtraFiles: fires where the
+# published test host holds a descriptor in 3..100 at exec_test.go's init() scan, 97 on a single-file
+# container host, none on the fleet's Linux bank host). Same backticked-list grammar as the surplus
+# annotation above; the pattern above cannot match this one -- its `host-conditional` must be followed
+# by an optional paren group and a colon, and `-disclosure` is neither (asserted by fixture).
+$RosterConditionalDisclosurePattern = 'host-conditional-disclosure\s*(?:\([^)]*\))?\s*:\s*((?:`[^`]+`\s*,\s*)*`[^`]+`)'
+
 # The per-OS expectation annotation. Anchored on the cell separator at BOTH ends (the closing
 # lookahead also admits the row's terminating pipe) so it can only match a segment of its own --
 # prose that happens to say "on linux: five of them" is not an annotation and must not read as one.
@@ -190,6 +199,11 @@ function Get-ValidatedRosterRows {
             $rowConditional = @([regex]::Matches($Matches[1], '`([^`]+)`') | ForEach-Object { $_.Groups[1].Value })
         }
 
+        $rowConditionalDisclosures = @()
+        if ($line -match $RosterConditionalDisclosurePattern) {
+            $rowConditionalDisclosures = @([regex]::Matches($Matches[1], '`([^`]+)`') | ForEach-Object { $_.Groups[1].Value })
+        }
+
         $rowOs = @{}
         foreach ($match in [regex]::Matches($line, $RosterOsPattern)) {
             $key = $match.Groups[1].Value
@@ -273,6 +287,7 @@ function Get-ValidatedRosterRows {
             Expected    = $rowExpected
             Disclosed   = $rowDisclosed
             Conditional = $rowConditional
+            ConditionalDisclosures = $rowConditionalDisclosures
             OS          = $rowOs
             Execution   = $rowExecution
         })
@@ -406,6 +421,12 @@ function Get-RosterExecutionArgs {
                         produce on this host, absorbed by the block root's own COMMITTED host-limit
                         disclosure. The third host state (Test-HostLimitDelta); same evidence
                         discipline as the two above -- this takes its answer
+      host-conditional-disclosure
+                        a named disclosure entry FIRED on this host and not on the banking host, so
+                        exactly that verdict moved from the matched column to the disclosed column
+                        -- PROVEN from the live record by Test-HostConditionalDisclosureDelta (the
+                        sweep reads the evidence; this takes its answer). Checked before
+                        disclosed-moved below, since here the disclosed count legitimately moved
       disclosed-moved   an annotated row's matching count agreed and its DISCLOSED count did not --
                         roster maintenance, never host capability, and never absorbed
       unbanked-count    comparison-validated-at-count: a validated run on an OS this row has no
@@ -433,7 +454,8 @@ function Get-SweepRowClassification {
         [Parameter(Mandatory)][string] $TargetGoos,
         [switch] $HostConditionalAccepted,
         [switch] $CapabilityAbsentAccepted,
-        [switch] $HostLimitAccepted
+        [switch] $HostLimitAccepted,
+        [switch] $HostConditionalDisclosureAccepted
     )
 
     # Before any count math: an inapplicable expectation has null counts, and comparing against
@@ -442,6 +464,9 @@ function Get-SweepRowClassification {
 
     $disclosedAgrees = ($Expectation.Source -eq 'columns') -or ($GotDisclosed -eq $Expectation.Disclosed)
 
+    # The one absorption whose shape IS a moved disclosed count, so it is honoured before the
+    # disclosed-moved answer below -- and only on the caller's proof (Test-HostConditionalDisclosureDelta).
+    if ($HostConditionalDisclosureAccepted) { return 'host-conditional-disclosure' }
     if (-not $disclosedAgrees) { return 'disclosed-moved' }
     if ($HostConditionalAccepted) { return 'host-conditional' }
     if ($CapabilityAbsentAccepted) { return 'capability-absent' }
@@ -609,6 +634,87 @@ function Test-CapabilityAbsentDelta {
     }
 
     return New-CapabilityAbsentResult $true $null
+}
+
+# ---- host-conditional DISCLOSURES (the FOURTH absorption: one verdict changes COLUMN) ------------
+# The three rules above absorb a count that MOVED -- a surplus the host's capabilities add, a
+# block an absent capability collapses, a block a present-but-limited host cannot finish. This one
+# absorbs a count that did not move at all: the SAME verdict sits in the matched column on the
+# banking host and in the disclosed column on another, because the disclosure entry that names it
+# fires on a property of the HOST. os/exec's TestExtraFiles is the first member (Q31, 2026-09-04):
+# exec_test.go's init() scans descriptors 3..100 and the test t.Skips outright if any is open; the
+# single-file published host on a container holds 97 of them (Go=pass / C#=skip, the platform-skip
+# entry fires, the row reads 86 + 2), the fleet's Linux bank host holds none (Go=pass / C#=pass,
+# matched, the row reads 87 + 1 -- 438728de0). Neither reading is wrong, and before this rule the
+# sweep called the container's `disclosed-moved` because Get-SweepRowClassification answers that
+# before any absorption is consulted. The roster names the members and the CONDITION
+# (`host-conditional-disclosure (<condition>): `TestExtraFiles``) beside the floor it keeps.
+#
+# What it accepts, and only that: the matched count SHORT of the floor by k >= 1, the disclosed
+# count OVER its expectation by exactly the same k, exactly k of the annotation's names present
+# among the live record's disclosures, and each of those reading Go=pass / C#=skip in the verdict
+# maps -- the platform-skip shape this member was measured in. A lost verdict beside a fired one
+# (85 + 2), a second disclosure the annotation does not name (86 + 3, or 86 + 2 with another name),
+# and a fired name in any other shape (Go=pass / C#=fail) are all refused by name. Evidence is the
+# live comparison record ALONE: the surplus rule's committed-proof-page cross-check rejects
+# OS-annotated rows by design (the page is the banking host's, Windows-shaped), and this rule must
+# not inherit a rejection that has nothing to do with its own question. Pure, proven directly by
+# check-roster-format.ps1's fixtures; run-validated-sweep.ps1's Get-HostConditionalDisclosureVerdict
+# reads the evidence and calls it.
+function Test-HostConditionalDisclosureDelta {
+    param(
+        [int] $Expected,           # banked matching-verdict count in force (the floor)
+        [int] $Disclosed,          # banked disclosed count in force
+        [string[]] $Names,         # the roster's host-conditional-disclosure names
+        [int] $Got,                # the live run's validated count
+        [int] $GotDisclosed,       # the live run's disclosed count
+        $Comparison                # the run's go2cs_test_comparison.json via ConvertFrom-ComparisonRecord
+    )
+
+    function New-HostConditionalDisclosureResult([bool] $accepted, [string[]] $fired, [string] $reason) {
+        return [PSCustomObject]@{ Accepted = $accepted; Fired = $fired; Reason = $reason }
+    }
+
+    if ($null -eq $Names -or @($Names).Count -eq 0) {
+        return New-HostConditionalDisclosureResult $false @() 'the row names no host-conditional disclosures'
+    }
+
+    $k = $Expected - $Got
+    if ($k -lt 1) {
+        return New-HostConditionalDisclosureResult $false @() "count $Got is not below the floor $Expected -- nothing moved into the disclosed column"
+    }
+    if (($GotDisclosed - $Disclosed) -ne $k) {
+        return New-HostConditionalDisclosureResult $false @() "matched fell by $k but disclosed moved by $($GotDisclosed - $Disclosed) ($GotDisclosed live vs $Disclosed banked) -- not one verdict changing column"
+    }
+    if ($null -eq $Comparison -or $null -eq $Comparison.go -or $null -eq $Comparison.csharp) {
+        return New-HostConditionalDisclosureResult $false @() 'comparison record carries no per-test verdict maps'
+    }
+
+    # The live disclosures, by name: each entry is "Name (class): reason" as the converter writes it.
+    $liveDisclosedNames = @()
+    if ($null -ne $Comparison.disclosed) {
+        $liveDisclosedNames = @(@($Comparison.disclosed) | ForEach-Object {
+            if ("$_" -match '^(\S+)\s+\(') { $Matches[1] } else { "$_" }
+        })
+    }
+
+    $fired = @($liveDisclosedNames | Where-Object { $Names -contains $_ })
+    if ($fired.Count -ne $k) {
+        return New-HostConditionalDisclosureResult $false @() "$($fired.Count) of the named host-conditional disclosures fired ($($fired -join ', ')) but the columns moved by $k -- the difference is some OTHER verdict"
+    }
+
+    $goMap = $Comparison.go
+    $csMap = $Comparison.csharp
+    foreach ($name in $fired) {
+        if (-not $goMap.ContainsKey($name) -or -not $csMap.ContainsKey($name)) {
+            return New-HostConditionalDisclosureResult $false @() "$name is disclosed but absent from the verdict maps"
+        }
+        if ($goMap[$name] -ne 'pass' -or $csMap[$name] -ne 'skip') {
+            return New-HostConditionalDisclosureResult $false @() "$name fired in the shape Go=$($goMap[$name]) / C#=$($csMap[$name]); the host-conditional disclosure shape is Go=pass / C#=skip and nothing else is absorbed"
+        }
+    }
+
+    return New-HostConditionalDisclosureResult $true $fired $null
 }
 
 # ---- host-limited verdicts (the THIRD host state, and the SECOND shortfall shape) -----------------

@@ -11,11 +11,12 @@ partial class socktest_package {
 
 internal static ж<Status> sockso(this ж<Switch> Ꮡsw, syscallꓸHandle s) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var sw = ref Ꮡsw.DerefOrNull();
 
         Ꮡsw.of(Switch.Ꮡsmu).RLock();
-        defer(Ꮡsw.of(Switch.Ꮡsmu).RUnlock, ref ᒐ);
+        ᒐd1 = true;
         ref var so = ref heap<Status>(out var Ꮡso);
         (so, var ok) = sw.sotab[s, ꟷ];
         if (!ok) {
@@ -24,7 +25,7 @@ internal static ж<Status> sockso(this ж<Switch> Ꮡsw, syscallꓸHandle s) {
         return Ꮡso;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡsw.of(Switch.Ꮡsmu).RUnlock(); ᒐ.Run(); }
 }
 
 // addLocked returns a new Status without locking.
