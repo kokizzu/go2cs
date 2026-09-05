@@ -37,6 +37,37 @@ private static readonly @string setLen6Capˢ = "SetLen(6)>cap"u8;
 private static readonly @string arraySetLenˢ = "array SetLen"u8;
 private static readonly @string arraySetCapˢ = "array SetCap"u8;
 private static readonly object writeThroughTheReCappedˢ = (@string)"write through the re-capped window seen by the original:"u8;
+private static readonly @string bytesOnIntˢ = "Bytes on int"u8;
+private static readonly @string onIntValueˢ = "on int Value"u8;
+private static readonly @string bytesStringˢ = "Bytes []string"u8;
+private static readonly @string ofNonByteSliceˢ = "of non-byte slice"u8;
+private static readonly object sBytesˢ = (@string)"S bytes:"u8;
+private static readonly object aliasesXˢ = (@string)"aliases x:"u8;
+private static readonly @string bytes4ByteValueˢ = "Bytes [4]byte value"u8;
+private static readonly @string unaddressableˢ = "unaddressable"u8;
+private static readonly @string bytes4Byteˢ = "Bytes *[4]byte"u8;
+private static readonly @string onPtrValueˢ = "on ptr Value"u8;
+private static readonly object aBytesˢ = (@string)"A bytes:"u8;
+private static readonly object aliasesAˢ = (@string)"aliases a:"u8;
+private static readonly object bBytesˢ = (@string)"[]B   bytes:"u8;
+private static readonly object bBytesˢ2 = (@string)"*[4]B bytes:"u8;
+private static readonly object sbBytesˢ = (@string)"SB    bytes:"u8;
+private static readonly object abBytesˢ = (@string)"*AB   bytes:"u8;
+private static readonly @string bytesAbValueˢ = "Bytes AB value"u8;
+private static readonly object abBytesˢ2 = (@string)"AB bytes:"u8;
+private static readonly object aliasesAbˢ = (@string)"aliases ab:"u8;
+private static readonly @string bytes4Intˢ = "Bytes [4]int"u8;
+private static readonly @string ofNonByteArrayˢ = "of non-byte array"u8;
+
+[GoLocalName("S")] [GoType("[]byte")] internal partial struct main_S;
+
+[GoLocalName("A")] [GoType("[4]byte")] internal partial struct main_A;
+
+[GoLocalName("B")] [GoType("num:byte")] internal partial struct main_B;
+
+[GoLocalName("SB")] [GoType("[]main_B")] internal partial struct main_SB;
+
+[GoLocalName("AB")] [GoType("[4]main_B")] internal partial struct main_AB;
 
 internal static void Main() {
     ref var xs = ref heap<slice<nint>>(out var Ꮡxs);
@@ -92,6 +123,42 @@ internal static void Main() {
     var backing = xs[..(int)(cap(xs))];
     backing[0] = 99;
     fmt.Println(writeThroughTheReCappedˢ, xs[0] == 99);
+    expectPanic(bytesOnIntˢ, onIntValueˢ, () => {
+        reflect.ValueOf((nint)(0)).Bytes();
+    });
+    expectPanic(bytesStringˢ, ofNonByteSliceˢ, () => {
+        reflect.ValueOf(new @string[]{}.slice()).Bytes();
+    });
+    var x = new main_S(new byte[]{1, 2, 3, 4}.slice());
+    var y = reflect.ValueOf(x).Bytes();
+    y[0] = 42;
+    fmt.Println(sBytesˢ, y, aliasesXˢ, x[0] == 42);
+    ref var a = ref heap<main_A>(out var Ꮡa);
+    a = new main_A(new byte[]{1, 2, 3, 4}.array());
+    expectPanic(bytes4ByteValueˢ, unaddressableˢ, () => {
+        reflect.ValueOf(Ꮡa.Value).Bytes();
+    });
+    expectPanic(bytes4Byteˢ, onPtrValueˢ, () => {
+        reflect.ValueOf(Ꮡa).Bytes();
+    });
+    var b = reflect.ValueOf(Ꮡa).Elem().Bytes();
+    b[1] = 43;
+    fmt.Println(aBytesˢ, b, aliasesAˢ, a[1] == 43);
+    fmt.Println(bBytesˢ, reflect.ValueOf(new main_B[]{1, 2, 3, 4}.slice()).Bytes());
+    fmt.Println(bBytesˢ2, reflect.ValueOf(Ꮡ(new array<main_B>(4))).Elem().Bytes());
+    fmt.Println(sbBytesˢ, reflect.ValueOf(new main_SB(new main_B[]{1, 2, 3, 4}.slice())).Bytes());
+    fmt.Println(abBytesˢ, reflect.ValueOf(@new<main_AB>()).Elem().Bytes());
+    ref var ab = ref heap<main_AB>(out var Ꮡab);
+    ab = new main_AB(new main_B[]{5, 6, 7, 8}.array());
+    expectPanic(bytesAbValueˢ, unaddressableˢ, () => {
+        reflect.ValueOf(Ꮡab.Value).Bytes();
+    });
+    var c = reflect.ValueOf(Ꮡab).Elem().Bytes();
+    c[2] = 44;
+    fmt.Println(abBytesˢ2, c, aliasesAbˢ, ab[2] == 44);
+    expectPanic(bytes4Intˢ, ofNonByteArrayˢ, () => {
+        reflect.ValueOf(Ꮡ(new nint[]{}.array(4))).Elem().Bytes();
+    });
 }
 
 } // end main_package

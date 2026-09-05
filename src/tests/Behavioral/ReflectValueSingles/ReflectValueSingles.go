@@ -1,9 +1,11 @@
 // The reflect `Value` singles (increment E3 of the reflect tail): one root per commit, each row
 // pinned against `go run` beside the reflect suite's own verdict.
 //
-//   1. SetCap -- the fifth raw-slice-header member, hand-owned beside SetLen: Go's bound check
-//      (len <= n <= cap) and its panic text, and the three-index window s[:len:n] written back
-//      through the addressable slot (TestSetLenCap).
+//  1. SetCap -- the fifth raw-slice-header member, hand-owned beside SetLen: Go's bound check
+//     (len <= n <= cap) and its panic text, and the three-index window s[:len:n] written back
+//     through the addressable slot (TestSetLenCap).
+//  2. Bytes -- the Array arm decided by element KIND, in Go's order: non-byte element, then
+//     addressability, then an ALIAS of the array's own backing (TestBytes).
 package main
 
 import (
@@ -48,4 +50,34 @@ func main() {
 	backing := xs[:cap(xs)]
 	backing[0] = 99
 	fmt.Println("write through the re-capped window seen by the original:", xs[0] == 99)
+	// --- root 2: Bytes ---
+	expectPanic("Bytes on int", "on int Value", func() { reflect.ValueOf(0).Bytes() })
+	expectPanic("Bytes []string", "of non-byte slice", func() { reflect.ValueOf([]string{}).Bytes() })
+	type S []byte
+	x := S{1, 2, 3, 4}
+	y := reflect.ValueOf(x).Bytes()
+	y[0] = 42
+	fmt.Println("S bytes:", y, "aliases x:", x[0] == 42)
+	type A [4]byte
+	a := A{1, 2, 3, 4}
+	expectPanic("Bytes [4]byte value", "unaddressable", func() { reflect.ValueOf(a).Bytes() })
+	expectPanic("Bytes *[4]byte", "on ptr Value", func() { reflect.ValueOf(&a).Bytes() })
+	b := reflect.ValueOf(&a).Elem().Bytes()
+	b[1] = 43
+	fmt.Println("A bytes:", b, "aliases a:", a[1] == 43)
+	// issue #24746: byte-KIND elements qualify even where the language conversion would not
+	type B byte
+	type SB []B
+	type AB [4]B
+	fmt.Println("[]B   bytes:", reflect.ValueOf([]B{1, 2, 3, 4}).Bytes())
+	fmt.Println("*[4]B bytes:", reflect.ValueOf(new([4]B)).Elem().Bytes())
+	fmt.Println("SB    bytes:", reflect.ValueOf(SB{1, 2, 3, 4}).Bytes())
+	fmt.Println("*AB   bytes:", reflect.ValueOf(new(AB)).Elem().Bytes())
+	ab := AB{5, 6, 7, 8}
+	expectPanic("Bytes AB value", "unaddressable", func() { reflect.ValueOf(ab).Bytes() })
+	c := reflect.ValueOf(&ab).Elem().Bytes()
+	c[2] = 44
+	fmt.Println("AB bytes:", c, "aliases ab:", ab[2] == 44)
+	expectPanic("Bytes [4]int", "of non-byte array", func() { reflect.ValueOf(&[4]int{}).Elem().Bytes() })
+
 }

@@ -920,14 +920,38 @@ public static ΔValue Addr(this ΔValue v) {
 // is still visible in the array — the semantics Go's callers may rely on.
 public static slice<byte> Bytes(this ΔValue v) {
     v.mustBeKind("reflect.Value.Bytes"u8, ΔSlice, Array);
-    if (v.live is array<byte> arr) {
-        // Go panics on an unaddressable byte array rather than silently copying; fmt takes its own
-        // element-by-element path for that case and never calls Bytes(). Both messages, and the
-        // non-byte-element ones below, are Go's own text.
+    object? live = v.live;
+    if (live is not null && GoReflect.KindOf(live.GetType()) == GoReflect.Array) {
+        // Go's bytesSlow, Array arm, in Go's ORDER: the element KIND decides (a defined `type B byte`
+        // element qualifies -- issue 24746), then addressability, then an ALIAS of the array's own
+        // backing (Go's unsafe.Slice(p, n)), never a copy, so a write through the result is visible
+        // in the array. This arm used to key on the TYPE `array<byte>`, so `[4]B` missed it, fell to
+        // the slice relation and panicked *of non-byte slice* where Go panics *unaddressable* or
+        // aliases (TestBytes). Every message is Go's own text; fmt takes its own element-by-element
+        // path for the unaddressable case and never calls Bytes().
+        // A DEFINED array type (`type A [4]byte`) is a generated wrapper holding its array<T> in a
+        // holder installed on first use (a zero `new(AB)` starts with none). Touching Length installs
+        // it, and the unwrap then hands back the very array<T> the wrapper holds, so the window below
+        // shares its storage: a write through the result reaches every copy sharing the holder.
+        System.Type liveType = live.GetType();
+        if (live is IArray wrapped && !(liveType.IsGenericType && liveType.GetGenericTypeDefinition() == typeof(array<>))) {
+            _ = wrapped.Length;
+            if (GoReflect.TryUnwrapWrapperValue(live, out object? underlying)) {
+                live = underlying;
+            }
+        }
+        System.Type? elem = GoReflect.ElementType(live.GetType());
+        if (elem is null || GoReflect.KindOf(elem) != GoReflect.Uint8) {
+            throw panic("reflect.Value.Bytes of non-byte array");
+        }
         if (!v.CanAddr()) {
             throw panic("reflect.Value.Bytes of unaddressable byte array");
         }
-        return arr.Slice(0, (int)arr.Length);
+        object window = GoReflect.SliceWindow(live, elem, 0, ((IArray)live).Length);
+        if (GoReflect.TryByteSliceView(window, out slice<byte> arrayView)) {
+            return arrayView;
+        }
+        throw panic("reflect.Value.Bytes of non-byte array");
     }
     // Go decides on the element KIND, not the element TYPE — `[]renamedByte` and
     // `type S []Uint8` qualify exactly as `[]byte` does — and it ALIASES. GoReflect.TryByteSliceView
