@@ -6,6 +6,8 @@
 //     through the addressable slot (TestSetLenCap).
 //  2. Bytes -- the Array arm decided by element KIND, in Go's order: non-byte element, then
 //     addressability, then an ALIAS of the array's own backing (TestBytes).
+//  3. Name of an instantiated generic type keeps its type arguments: the package qualifier ends
+//     before the first '[', not at the last '.' of the whole spelling (TestIssue50208).
 package main
 
 import (
@@ -24,6 +26,9 @@ func expectPanic(label, want string, f func()) {
 	}()
 	f()
 }
+
+type gA struct{}
+type gB[T any] struct{}
 
 func main() {
 	// --- root 1: SetLen / SetCap ---
@@ -79,5 +84,11 @@ func main() {
 	c[2] = 44
 	fmt.Println("AB bytes:", c, "aliases ab:", ab[2] == 44)
 	expectPanic("Bytes [4]int", "of non-byte array", func() { reflect.ValueOf(&[4]int{}).Elem().Bytes() })
+
+	// --- root 3: Name of an instantiated generic ---
+	fmt.Println("Name gB[gA]:", reflect.TypeOf(new(gB[gA])).Elem().Name())
+	fmt.Println("Name gB[gB[gA]]:", reflect.TypeOf(new(gB[gB[gA]])).Elem().Name())
+	fmt.Println("String gB[gA]:", reflect.TypeOf(gB[gA]{}).String())
+	fmt.Println("Name plain gA:", reflect.TypeOf(gA{}).Name())
 
 }

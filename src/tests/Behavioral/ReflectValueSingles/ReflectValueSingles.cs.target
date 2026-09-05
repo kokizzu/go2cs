@@ -20,6 +20,12 @@ internal static void expectPanic(@string label, @string want, Action f) {
     finally { ᒐ.Run(); }
 }
 
+[GoType] partial struct gA {
+}
+
+[GoType] partial struct gB<T> {
+}
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string setLen10ˢ = "SetLen(10)"u8;
 private static readonly @string setLenˢ = "SetLen"u8;
@@ -58,6 +64,10 @@ private static readonly object abBytesˢ2 = (@string)"AB bytes:"u8;
 private static readonly object aliasesAbˢ = (@string)"aliases ab:"u8;
 private static readonly @string bytes4Intˢ = "Bytes [4]int"u8;
 private static readonly @string ofNonByteArrayˢ = "of non-byte array"u8;
+private static readonly object nameGBGAˢ = (@string)"Name gB[gA]:"u8;
+private static readonly object nameGBGBGAˢ = (@string)"Name gB[gB[gA]]:"u8;
+private static readonly object stringGBGAˢ = (@string)"String gB[gA]:"u8;
+private static readonly object namePlainGAˢ = (@string)"Name plain gA:"u8;
 
 [GoLocalName("S")] [GoType("[]byte")] internal partial struct main_S;
 
@@ -159,6 +169,10 @@ internal static void Main() {
     expectPanic(bytes4Intˢ, ofNonByteArrayˢ, () => {
         reflect.ValueOf(Ꮡ(new nint[]{}.array(4))).Elem().Bytes();
     });
+    fmt.Println(nameGBGAˢ, reflect.TypeOf(@new<gB<gA>>()).Elem().Name());
+    fmt.Println(nameGBGBGAˢ, reflect.TypeOf(@new<gB<gB<gA>>>()).Elem().Name());
+    fmt.Println(stringGBGAˢ, reflect.TypeOf(new gB<gA>(nil)).String());
+    fmt.Println(namePlainGAˢ, reflect.TypeOf(new gA(nil)).Name());
 }
 
 } // end main_package

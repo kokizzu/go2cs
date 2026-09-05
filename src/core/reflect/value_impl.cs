@@ -2388,7 +2388,12 @@ internal static @string Name(this ж<rtype> Ꮡt) {
         return "";
     }
     string full = GoReflect.GoTypeName(st);
-    int dot = full.LastIndexOf('.');
+    // The name is what follows the package qualifier, and for an INSTANTIATED generic the qualifier
+    // ends before the first '[': the type arguments keep their own qualifiers inside the brackets
+    // (`B[reflect_test.A]`, `B[reflect_test.B[reflect_test.A]]`), so cutting at the last '.' of the
+    // whole spelling answered `A]` (TestIssue50208).
+    int bracket = full.IndexOf('[');
+    int dot = (bracket >= 0 ? full[..bracket] : full).LastIndexOf('.');
     return (@string)(dot >= 0 ? full[(dot + 1)..] : full);
 }
 

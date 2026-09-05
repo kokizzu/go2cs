@@ -54,7 +54,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("ReflectValueSingles.go", "ReflectValueSingles.cs", "AAgmooKCgpQANgaEkpKSkJKQkpCSkJKQkoKCgoKCgpCSkJKSkJKQlIKChICSgJKEgoKClICSgJKCgoSIgoKCkoCSgoKCgA==", "20-24:1;33-33:1;34-34:2;35-35:3;36-36:4;37-37:5;44-44:6;45-45:7;47-47:8;48-48:9;54-54:10;55-55:11;63-63:12;64-64:13;77-77:14;81-81:15")]
+[assembly: go.GoPositionMap("ReflectValueSingles.go", "ReflectValueSingles.cs", "AAgqooKCgpQAQAyEkpKSkJKQkpCSkJKQkoKCgoKCgpCSkJKSkJKQlIKChICSgJKEgoKClICSgJKCgoSIgoKCkoCSgoKCgJaCgoI=", "22-26:1;38-38:1;39-39:2;40-40:3;41-41:4;42-42:5;49-49:6;50-50:7;52-52:8;53-53:9;59-59:10;60-60:11;68-68:12;69-69:13;82-82:14;86-86:15")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -70,6 +70,8 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct gA {}
+    internal partial struct gB<T> {}
     internal partial struct main_A {}
     internal partial struct main_AB {}
     internal partial struct main_B {}
