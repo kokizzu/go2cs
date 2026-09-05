@@ -23815,4 +23815,51 @@ Door totals over the 32: stub **17** (`getg` 12, `memmove`, `getfp`, `testSPWrit
 
 -- C1
 
+## 2026-09-04 · The struct-passing seam's POPULATION, censused by type at the mint: twenty `FromPinnedBox` sites across ten shapes hand the kernel the address of a reference-bearing struct — the explicit-layout mirror arc's worklist, `Pad_cgo_0` members included (lane C2, cloud Linux; Q44's falsifier, recorded here as COORD ruled at `c2d2636ca`)
+
+Q44's design (`DESIGN-managed-pointer-token.md`, seated `C2Q44D`) asked its own falsifier — *a reader
+that hands a reference-bearing box's number to NATIVE code expecting an address; there should be none* —
+and the census answered **twenty**. Every `unsafe.Pointer.FromPinnedBox(Ꮡx)` in the syscall family at
+`8f82b3f63` was resolved to its pointee type from the enclosing declaration and classified against a
+**brace-bounded** field index (a `-A12` grep bled across struct boundaries and over-reported — the bounded
+index is the number): **61 sites, 40 reference-free, 20 reference-bearing, 1 unclassified** (`internal/poll/windows/fd_windows.cs:1165`,
+`FILE_BASIC_INFO`: four `int64` and a `uint32` by its Go definition — reference-free, unconfirmed only because
+its declaration sits in a file the index did not walk).
+
+**Every one of the twenty is in the class the 2026-09-02 block above restated** — the CLR gives AUTO layout
+to any struct holding a reference and reorders it, so the kernel reads the wrong field — and the class has
+a member nobody had counted: **a `Pad_cgo_0 [N]byte` is enough**, since it converts to an `array<byte>`, which
+carries a managed reference. That is what puts darwin's `Timeval` and `Flock_t` on this list beside the
+obvious `ж<>`-bearing shapes.
+
+| shape | why reference-bearing | sites |
+|:--|:--|:--|
+| `BpfProgram` | `ж<BpfInsn> Insns` + `Pad_cgo_0` | `syscall/darwin/bpf_bsd.cs:155` |
+| `Flock_t` | `Pad_cgo_0` | `syscall/darwin/flock_bsd.cs:13` |
+| `ICMPv6Filter` | `array<uint32>` Filt | `syscall/darwin/syscall_bsd.cs:388`, `syscall/darwin/syscall_unix.cs:569` |
+| `IPMreq` | `array<byte>` ×2 | `syscall/darwin/syscall_bsd.cs:364`, `syscall/darwin/syscall_unix.cs:561` |
+| `IPv6MTUInfo` | a `RawSockaddrInet6` (itself array-bearing) | `syscall/darwin/syscall_bsd.cs:380`, `syscall/linux/syscall_linux.cs:610` |
+| `IPv6Mreq` | `array<byte>` Multiaddr | `syscall/darwin/syscall_bsd.cs:372`, `syscall/darwin/syscall_unix.cs:565` |
+| `Iovec` | `ж<byte> Base` | `syscall/linux/syscall_linux.cs:787`, `syscall/linux/syscall_linux.cs:796` |
+| `SockFprog` | `ж<SockFilter> Filter` + `Pad_cgo_0` | `syscall/linux/lsf_linux.cs:86` |
+| `Timeval` | `Pad_cgo_0 [4]byte` → `array<byte>` (darwin) | `syscall/darwin/bpf_bsd.cs:113`, `syscall/darwin/bpf_bsd.cs:122`, `syscall/darwin/syscall_unix.cs:587`, `syscall/linux/syscall_unix.cs:511` |
+| `ivalue` | `array<byte>` name (IFNAMSIZ) | `syscall/darwin/bpf_bsd.cs:103`, `syscall/darwin/bpf_bsd.cs:92` |
+| `machVMRegionBasicInfoData` | `Pad_cgo_0` | `runtime/pprof/darwin/vminfo_darwin.cs:28` |
+
+**Disposition, as ruled.** Under Q44's token these twenty hand the kernel a 4 GiB-aligned non-address and
+get **EFAULT** (or the syscall's own EINVAL) instead of reading reordered, moving memory — an improved
+failure mode, **not a fix**, and the Q44 cut's commit says the failure mode moves. Their remedy is the
+explicit-layout native mirror this class already names (`writeNativeSockaddr`'s shape), one shape at a time,
+with the row that reaches each site as its acceptance; this table is that arc's worklist. The raw-syscall
+keystone passes the number straight to `libc_syscall` (the resolve tether retired 2026-08-30 on a 68% miss),
+so there is no seam at which a token could be refused before the kernel without re-introducing what was
+measured out — the errno is the signal.
+
+**Not in this table, deliberately:** the darwin keystone's three reference-bearing args structs
+(`mmap_args`, `mach_vm_region_args`, `proc_regionfilename_args`) are CONSUMERS of the token, not victims —
+`libcCall`'s hand-own resolves the box and reads the layout by reflection (design-2 §7.2/§7.6), so under
+Q44 the §7.6 "resolves to nothing" bound becomes a hit. They belong to the keystone's record, not here.
+
+-- C2
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
