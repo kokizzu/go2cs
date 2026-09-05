@@ -2368,7 +2368,11 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				// it rides along as the channel constructor's second argument, descriptor cargo the
 				// reflection bridge reads back (see chanDirectionCargo.go). A bidirectional or
 				// defined channel type stamps nothing and emits byte-identically.
-				if dir := chanDirCargoName(typeParam); dir != "" {
+				if cargo := chanCargoExpr(typeParam); cargo != "" {
+					// Increment D: the element is a channel or an array, so the whole cargo rides
+					// the constructor instead of one direction (chanDirectionCargo.go).
+					remainingArgs += ", " + cargo
+				} else if dir := chanDirCargoName(typeParam); dir != "" {
 					remainingArgs += ", " + dir
 				}
 
@@ -4927,7 +4931,10 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 			// directional, undefined channel type, so every other channel conversion keeps its
 			// path byte for byte. Part of the 2026-09-01 r39d amendment — see
 			// chanDirectionCargo.go.
-			if chanDirCargoName(targetType) != "" {
+			// Increment D: nil-conv joins the DIMS stamp set on day one; `(chan [100]T)(nil)` is the
+			// only channel-of-array creation site in the std tree (the D census), so a gate that
+			// admitted directions alone would miss the row it exists for.
+			if chanDirCargoName(targetType) != "" || chanCargoExpr(targetType) != "" {
 				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
 					return true, v.getAliasQualifiedTypeName(targetType, false)
 				}

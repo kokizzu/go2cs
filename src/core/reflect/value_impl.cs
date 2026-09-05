@@ -64,7 +64,13 @@ internal static ΔValue makeReflectValue(object? boxed) {
 // slot is a VALID nil Value of the slot's kind (never the invalid zero Value). inheritRO carries
 // the parent's read-only bits (Go's flagRO stickiness).
 internal static ΔValue makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO, GoChanDir chanDir = GoChanDir.Unstamped, nint[]? keyDims = null) {
-    var t = abi.synthType(staticType, arrayDims, null, chanDir, keyDims);
+    return makeTypedValue(boxed, staticType, arrayDims, inheritRO, chanDir == GoChanDir.Unstamped ? null : new[] { chanDir }, keyDims);
+}
+
+// Increment D: the chain form. A channel FIELD's nested directions and element dims arrive here
+// from the field's cargo; the scalar form above is every pre-D caller's entry and lifts to it.
+internal static ΔValue makeTypedValue(object? boxed, System.Type staticType, nint[]? arrayDims, flag inheritRO, GoChanDir[]? chanDirChain, nint[]? keyDims) {
+    var t = abi.synthType(staticType, arrayDims, null, chanDirChain, keyDims);
     var v = new ΔValue(t, default!, ((flag)(uintptr)(uint8)GoReflect.KindOf(staticType)) | ((flag)(inheritRO & flagRO)));
     v.boxed = boxed;
     return v;
@@ -1046,7 +1052,7 @@ public static ΔValue Field(this ΔValue v, nint i) {
     // indistinguishable through this projection.
     flag ro = (flag)((flag)(v.flag & flagStickyRO) | (f.Exported ? default : f.Embedded ? flagEmbedRO : flagStickyRO));
     if (v.addrBox is not null) {
-        var elem = makeTypedValue(null, f.Type, f.ArrayDims, ro, f.ChanDir, f.KeyDims);
+        var elem = makeTypedValue(null, f.Type, f.ArrayDims ?? f.ChanCargo?.ElemDims, ro, f.ChanCargo?.DirChain, f.KeyDims);
         elem.flag |= flagAddr | flagIndir;
         elem.addrBox = GoReflect.FieldAliasBox(v.addrBox, f);
         return elem;
@@ -1055,7 +1061,7 @@ public static ΔValue Field(this ΔValue v, nint i) {
     if (cur is null) {
         throw panic(Ꮡ(new ValueError("reflect.Value.Field", v.kind())));
     }
-    return makeTypedValue(f.Read(cur), f.Type, f.ArrayDims, ro, f.ChanDir, f.KeyDims);
+    return makeTypedValue(f.Read(cur), f.Type, f.ArrayDims ?? f.ChanCargo?.ElemDims, ro, f.ChanCargo?.DirChain, f.KeyDims);
 }
 
 // UnsafePointer returns v's value as an unsafe.Pointer (v must be a Chan, Func, Map, Pointer, or
@@ -3077,7 +3083,13 @@ private static ж<abi.Type> structFieldDescriptor(GoReflect.GoFieldInfo f) {
     nint[]? keyDims = kind == GoReflect.Map || kind == GoReflect.Pointer ? f.KeyDims : null;
     // A channel field carries its DIRECTION the same way an array field carries its length: off
     // the initializer the converter emitted, read from the declaring struct's zero instance.
-    GoChanDir fieldDir = kind == GoReflect.Chan ? f.ChanDir : GoChanDir.Unstamped;
+    // Increment D: the cargo's CHAIN, not the scalar head, or a nested field type's inner
+    // direction is lost exactly here: `struct{ x chan<- <-chan int }` rendered `chan<- chan int`
+    // through this line while the converter had emitted the full chain into the initializer.
+    GoChanDir[]? fieldChain = kind == GoReflect.Chan ? f.ChanCargo?.DirChain : null;
+    if (kind == GoReflect.Chan) {
+        dims ??= f.ChanCargo?.ElemDims;
+    }
     // The DESCRIPTOR CARRIER, when the converter stamped one: this field's Go type is a DEFINED
     // type over a named interface, which the emission erased to a `using` alias, so f.Type is the
     // bare object/target interface and carries no Go name. Substituting the carrier changes only
@@ -3087,7 +3099,7 @@ private static ж<abi.Type> structFieldDescriptor(GoReflect.GoFieldInfo f) {
     // function's own header gives: the identity walk and the abi.StructType a caller reads are
     // built from ONE rule, and a carrier applied to only one of them would make two descriptors
     // for one field disagree about its name.
-    return abi.synthType(f.DescriptorSelf ?? f.Type, dims, null, fieldDir, keyDims);
+    return abi.synthType(f.DescriptorSelf ?? f.Type, dims, null, fieldChain, keyDims);
 }
 
 // PointerTo returns the pointer type with element t — the managed ж<T> pointer form,

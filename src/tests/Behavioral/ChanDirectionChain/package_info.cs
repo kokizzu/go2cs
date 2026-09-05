@@ -32,6 +32,7 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b78206368616e3c2d203c2d6368616e20696e747d", "main_i")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -54,7 +55,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("ChanDirectionChain.go", "ChanDirectionChain.cs", "ABIkgoaCgoaCgoKChoKIgpqC")]
+[assembly: go.GoPositionMap("ChanDirectionChain.go", "ChanDirectionChain.cs", "ACYkgoaCgoaCgoKCjIKGgoiCmoIAARCCgoKCgoKCgoKCgoKIgoKCgoIAABSCgoI=")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -70,6 +71,7 @@ public static partial class main_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct main_i {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import

@@ -285,7 +285,7 @@ private static readonly object channelSendˢ = (@string)"channelSend:"u8;
 
 internal static void channelSend() {
     var a = new nint[]{1, 2, 3}.array();
-    var ch = new channel<array<nint>>(1);
+    var ch = new channel<array<nint>>(1, ChanCargo.Of(null, new nint[] { 3 }));
     ch.ᐸꟷ(a.Clone());
     a[0] = 99;
     var got = ᐸꟷ(ch);

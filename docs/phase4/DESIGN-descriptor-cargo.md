@@ -884,3 +884,131 @@ machinery that cannot be made to fail under its own control is a false-green see
 comment asserting this defect, and the honest correction there is not a comment edit but RESTORING the
 `Printf` line the sidestep replaced — which moves that guard's golden and belongs to its owner, after
 Increment C lands, with this guard's matching row as the reference.
+## 17. Increment D — the channel VALUE carries both cargos on one field, because its element cannot be measured (2026-09-04)
+
+> Numbered 16 in the increment’s own commits and posts; landed as 17 because SUB-Q2’s §12.4 withdrawal block took §16 on train 25 (coordinator merge resolution, train 27). References to §16 inside this section mean this section.
+
+**The defect this closes, in two halves that turned out to be one.** A channel's element is not a
+present value — its buffer is not peekable — so nothing can be measured off a channel value: not the
+element's array length (the `ChanElemDims` row, red since increment B, and left red by increment C,
+which landed scoped to slices after its side table was ruled), and not a NESTED channel's direction
+(increment 2b's value half — `TestChanOf`'s `var right chan (<-chan T)` and the `typeTests` field
+rows, both VALUE positions). Increment C's remedy cannot transfer: a side table keyed on the object
+cannot key a NIL channel, and two of the three stamp positions (a field's initializer-borne zero, a
+zero var) produce exactly that. So both facts ride the value, from the position that knew them
+statically, on ONE field change — two changes on one struct in two increments would pay the layout
+cost and walk the stamp sites twice (the coordinator's unification ruling).
+
+**The representation.** `channel<T>`'s one-byte `GoChanDir m_direction` becomes `ChanCargo? m_cargo`
+— a sealed, immutable class carrying `GoChanDir[]? DirChain` (outermost first, never empty on a live
+instance) and `nint[]? ElemDims`. `null` is the unstamped channel, so `Unstamped` and `Both` keep the
+canonical spelling they had; the two scalar directions are interned, so a directional nil channel
+allocates nothing and the cargo costs one allocation only where a chain or dims are actually
+stamped. `Direction` reads the chain's head; `Cargo` exposes the whole thing to the bridge through
+`IChannel`.
+
+**The cost fork, MEASURED rather than argued (all solo).** `Unsafe.SizeOf<channel<int>>()`: BEFORE
+**16** (one core reference, one byte enum, seven bytes of padding); CONTROL — one extra `object?`
+field, nothing else — **24**, with the `TheChannelValueDoesNotGrow` row RED as it must be; restore
+byte-identical; AFTER, the cargo field in place — **16**. The reference rides in the padding. The
+control is what makes the AFTER green an assertion: before it the row was a baseline that passed
+either way. A layout read, decided by the field set at JIT time, so load cannot move it — the
+loaded-vs-solo rule for alloc rows does not apply, and it was run solo anyway. The pre-ruled fork
+read (a): the header carries it and the question closes on correctness at no cost.
+
+**The creation-site census, prediction first, and the prediction was wrong by the whole band.**
+`go/types` over every stamp position the converter owns (make, zero var, field, array element, new,
+nil-conv, named result) for a channel whose element is a channel or an array: production std **0**
+(predicted 16, band 6–45; the falsifier written for "0 in production" fired and was confirmed by an
+independent text census — 0 nested spellings, the one regex hit being `go/types`'s own comment that
+`chan (<-chan T)` requires parentheses, and 0 `chan [N]T`); with tests **9**, seven in `reflect`'s
+own suite and two `make(chan chan struct{})` helpers in `net/http_test` that nothing reflects over.
+The plain-channel control read 225 against a floor of 1,000 set from feel, and resolved the OTHER
+way: the instrument's `make` arm (129) sits under a build-tag-blind text bound (162) and both guard
+controls read 1/1/1, so the count stood and the floor was the error — a control's floor is derived
+from a text bound before it is committed to. The consequence for the design: D's converter half has
+NO production consumer, its measuring gate is the TEST emission of `reflect`, and the `-stdlib` diff
+is a negative arm whose zero needs a mechanism.
+
+**The emission rule — the mechanism.** The cargo form (`Type.Nil(ChanCargo.Of(chain, dims))` at a
+zero form; `ChanCargo.Of(…)` as `make`'s constructor argument) is emitted ONLY when the NORMALIZED
+chain has more than one entry or the element carries dims. A scalar direction with no dims keeps
+`.SendOnly` / `.RecvOnly` / `GoChanDir.Send` byte for byte; a bare bidirectional channel still emits
+nothing. Normalization in the converter (`chanDirChain`) is the same rule as `abi.normalizeChanDirChain`
+— trailing bidirectional entries trim, interior ones stay, all-bidirectional is absent — and the
+walk stops at a DEFINED channel type at any level, which is a go2cs-gen wrapper with no field to
+carry cargo. nil-conv joined the dims stamp set on day one: `(chan [100]T)(nil)` is the only
+channel-of-array creation site in the whole std tree.
+
+**The measuring gate, predicted before it ran and held exactly.** Working the seven `reflect` sites
+through the rule moved the prediction from seven lines to FIVE — `chan<- chan string` (`:87`) and
+`chan<- chan T` (`:6153`) normalize to a scalar chain and stay on the pre-D path — and the two-seeded
+test-emission census read **5 removed / 5 added in `all_test.cs`**, exactly `:88`, `:89`, `:90`,
+`:6154`, `:7265`, 0 position-map lines, 0 other files; `net/http` 0 differing files. PRE was rebuilt
+from the seated tip's own sources and asserted not byte-identical to CUT before either arm ran.
+
+**Two defects the guard found, fixed here, disclosed.** (1) With the value-route rows added, one of
+22 diverged: `struct{ x chan<- <-chan int }` rendered `chan<- chan int`. The emitted `.cs` carried
+the full `[Send, Recv]` chain in the initializer; the loss was `reflect`'s own hand-owned field paths
+— `StructField`'s descriptor and both `Value.Field` arms — still built from the scalar `f.ChanDir`.
+They read the cargo now, through a chain form of `makeTypedValue` with the scalar form forwarding.
+(2) After that fix the row rendered `chan<- (<-chan int)`; Go prints it bare. Increment 2b's
+parenthesisation rule keyed on the ELEMENT alone ("wrap when its rendering begins with `<`"),
+derived from five oracle rows that never put a directional head over a receive element. Go's rule
+(`go/types` `typestring.go`: only the `SendRecv` arm sets parens) wraps ONLY under the bare
+bidirectional `chan`, because only `chan <-chan T` re-parses; under `chan<-` or `<-chan` the arrow is
+already bound. The seated 2b therefore carries a latent constructed-route defect for `chan<- <-chan T`
+and `<-chan <-chan T` — `typeTests` lines 88 and 89 — that none of its rows exercised and no banked
+production row can reach; rows 6 and 7 pin both spellings from both routes now. Also on the way:
+`abi.Elem()` named pointer and map alone as the unshifted-dims kinds, so a slice's or a channel's
+element dims were shifted off there — moved to the `KindCarriesElementCargo` predicate `reflect`'s
+own `Elem()` already applied.
+
+**Guards.** `ChanDirectionChain`: 22 rows byte-identical to `go run` — Go's seven spellings,
+`Elem()`'s tail, two identity rows, and the value route through zero-var, `make`, nil-conv, struct
+field and `new`'s pointee, plus dims on three shapes — with 2b's two control arms re-firing
+unchanged. `ChanElemDims`: `[GoTestMatchingConsoleOutput]` turned ON and its value row GREEN
+(`chan [3]int` / `Elem().Len()=3`), the header corrected in the previous commit now true; before D
+its Target arm compared emitted text and could not see the dimension the guard is named for.
+`ChanCargoTests` (five golib facts: interning, the head, dims on the same cargo, the boxed read and
+its null, equality ignoring cargo) and `ChanDirChainTests` (the 16 B row now a before/after
+assertion). The `Chan*` family: Output 12 compared / 0 failed.
+
+**Gates.** The bank battery's readings are appended as a dated block when it prints: the `-stdlib`
+negative arm (predicted 0 files) with its flipped-gate positive control, `reflect -tests all` for the
+acceptance rows (`TestTypes`, `TestChanOf`), the converter suite, CNR, GolibTests, `go2cs.slnx`
+(owed: golib gained public API), the stdlib solution, the full behavioral suite, the five re-derived
+canaries, and `nistec` as the cost canary — `channel<T>`'s field moved for every channel value in
+the corpus.
+
+**Gates, read 2026-09-04 (the bank battery at `c3d8bb388`, its sequel at the same code tree).** Least-evidence
+legs first, every verdict grepped from its own full log.
+
+| leg | reading |
+|:--|:--|
+| the `-stdlib` NEGATIVE arm (two seeded roots, PRE = the seated tip's converter rebuilt from its sources) | **0 files, 0 lines** — zero production movement, as the emission rule predicts by construction |
+| its POSITIVE control (the cargo gate flipped: cargo form for every directional channel) | **12 files / 44 lines**, cargo in 13 files; each of the three arms emitted 1,656 files this run |
+| `reflect -tests all` (the acceptance row, explicit runtime root) | **`TestChanOf` pass / pass — both assertions; `TestTypes` pass / pass** — the five `typeTests` spellings; `TestChanOfDir`, `TestAll`, `TestTypeOf`, `TestFuncLayout` pass; 315 of 388 rows agreeing; 73 rows in 29 parent tests disagreeing — the standing unbanked set (`TestDeepEqualAllocs`, `TestGCBits`, `TestStructOf`, `TestSlice`, the alloc and map-iterator rows, …), which the union set-diff is the instrument for |
+| converter suite `-count=1` | `ok` 284.8 s |
+| CNR | **`CHANGED`: exactly one file**, `ArrayValueCopySites.cs` — `make(chan [3]int, 1)` at its `.go:238`, a channel-of-array `make`; the std census could not see the behavioral corpus, and CNR censused it: one site, one line, golden re-baselined, all four phases green |
+| GolibTests | 561 / 3 — the three FixtureLinkStaging host-privilege reds on the ledger; +5 = `ChanCargoTests` |
+| `go2cs.slnx` (owed: golib gained public API) | **0 errors** |
+| stdlib solution | **0 errors** |
+| FULL behavioral | 675 / 675 / 674 + 1 / **649 pass · 0 fail · 26 skip** — the +1 in Output is `ChanElemDims` compared for the first time; the one Target red is the `ArrayValueCopySites` golden above, since re-baselined |
+| canaries, re-derived at gate time | `crypto/tls` PASS 400 (host-limit disclosed) · `net/http` 0 of 1,345 rows disagreeing, FAIL on the process-level leak check only · `go/types` PASS 557 · `encoding/json` PASS 491 · `net` PASS 472 |
+| `nistec` COST canary | PASS 2,195; **wall 84 s against 85 s** on this box before D — no spread |
+
+**The `abi.Elem()` row, measured after the battery.** `assignable chan [3]int -> chan [4]int` false, `-> chan [3]int`
+true, `convertible -> chan [4]int` false — against Go, 25 rows identical. Its control, the fix reverted: **both**
+`[3]->[4]` rows flip to true (assignable AND convertible — `ConvertibleTo` walks the same channel arm of
+`haveIdenticalUnderlyingType`), the `[3]->[3]` row does not move, restore byte-identical, green again. The first
+prediction named one row; the control was sharper than the prediction, by the one path it did not count.
+
+**Instrument errors on the way, each caught by its own guard and re-run.** The negative arm's first run built its
+control converter to a POSIX-spelled `-o` path with path conversion off — the binary landed under `C:\c\`, the arm
+invoked a path that did not exist, and the emitted-vs-seeded count is what said so; the script was also edited
+while bash was executing it, which garbled the run. The acceptance leg's first run published against the
+machine-global deploy root (present, stale, fifteen projects) because no explicit `-go2cspath` was passed and
+self-location correctly declines a root that has `core/golib`. The sequel's exe diff first ran a stale Debug
+build matched by a glob ahead of the runner's Release build. A one-hour clock step landed inside the full
+behavioral leg; that leg's 4,381 s is the runner's own stopwatch, and no wall reading spans the step.
