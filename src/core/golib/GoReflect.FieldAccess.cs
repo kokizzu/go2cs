@@ -292,6 +292,12 @@ public static partial class GoReflect
         // The C# access path from the declaring struct: each step is an instance field; a step
         // whose IsBoxHop flag is set holds a ж<T> promoted-embed box the path derefs through.
         internal readonly FieldInfo[] Path;
+
+        /// <summary>The managed type that DECLARES this Go field -- the last hop of its accessor path -- which is
+        /// the field's package of origin: a defined type over a foreign struct is a wrapper whose projection
+        /// descends to the underlying struct's fields, and Go's <c>StructField.PkgPath</c> answers the
+        /// declaring package, not the defined type's (increment E2).</summary>
+        public Type? DeclaringType => Path is { Length: > 0 } ? Path[^1].DeclaringType : null;
         internal readonly bool[] BoxHop;
 
         internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false, GoChanDir chanDir = GoChanDir.Unstamped, nint[]? keyDims = null, Type? descriptorSelf = null, ChanCargo? chanCargo = null)
