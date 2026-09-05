@@ -135,6 +135,7 @@ internal static readonly @string pointerOrInterfaceTypeˢ = "pointer or interfac
 // funcType type-checks a function or method type.
 internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig, ж<ast.FieldList> ᏑrecvPar, ж<ast.FuncType> Ꮡftyp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var check = ref Ꮡcheck.DerefOrNull();
         ref var sig = ref Ꮡsig.DerefOrNull();
@@ -145,7 +146,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
         check.scope.Value.isFunc = true;
         check.recordScope(new ast.FuncTypeжNode(Ꮡftyp), check.scope);
         sig.scope = check.scope;
-        defer(Ꮡcheck.closeScope, ref ᒐ);
+        ᒐd1 = true;
         if (ᏑrecvPar != nil && len(recvPar.List) > 0) {
             // collect generic receiver type parameters, if any
             // - a receiver type parameter is like any other type parameter, except that it is declared implicitly
@@ -325,7 +326,7 @@ internal static void funcType(this ж<Checker> Ꮡcheck, ж<ΔSignature> Ꮡsig,
         sig.variadic = variadic;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcheck.DerefOrNull().closeScope(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

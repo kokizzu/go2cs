@@ -11,17 +11,18 @@ partial class poll_package {
 // Fsync wraps syscall.Fsync.
 public static error Fsync(this ж<FD> Ꮡfd) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         {
             var err = Ꮡfd.incref(); if (err != default!) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return ignoringEINTR(() => Δsyscall.Fsync(Ꮡfd.Value.Sysfd));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 } // end poll_package

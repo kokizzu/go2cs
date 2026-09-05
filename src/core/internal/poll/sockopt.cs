@@ -11,6 +11,7 @@ partial class poll_package {
 // SetsockoptInt wraps the setsockopt network call with an int argument.
 public static error SetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name, nint arg) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -19,16 +20,17 @@ public static error SetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name, nint
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.SetsockoptInt(fd.Sysfd, level, name, arg);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // SetsockoptInet4Addr wraps the setsockopt network call with an IPv4 address.
 public static error SetsockoptInet4Addr(this ж<FD> Ꮡfd, nint level, nint name, [GoArrayDims(4)] array<byte> arg) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         arg = arg.Clone();
 
@@ -38,16 +40,17 @@ public static error SetsockoptInet4Addr(this ж<FD> Ꮡfd, nint level, nint name
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.SetsockoptInet4Addr(fd.Sysfd, level, name, arg);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // SetsockoptLinger wraps the setsockopt network call with a Linger argument.
 public static error SetsockoptLinger(this ж<FD> Ꮡfd, nint level, nint name, ж<Δsyscall.Linger> Ꮡl) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -56,16 +59,17 @@ public static error SetsockoptLinger(this ж<FD> Ꮡfd, nint level, nint name, �
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.SetsockoptLinger(fd.Sysfd, level, name, Ꮡl);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // GetsockoptInt wraps the getsockopt network call with an int argument.
 public static (nint, error) GetsockoptInt(this ж<FD> Ꮡfd, nint level, nint name) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -74,11 +78,11 @@ public static (nint, error) GetsockoptInt(this ж<FD> Ꮡfd, nint level, nint na
                 return (-1, err);
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.GetsockoptInt(fd.Sysfd, level, name);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 } // end poll_package

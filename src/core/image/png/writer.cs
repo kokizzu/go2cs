@@ -322,6 +322,7 @@ internal static nint filter(ref array<slice<byte>> cr, slice<byte> pr, nint bpp)
 
 internal static error writeImage(this ж<encoder> Ꮡe, io.Writer w, image.Image m, nint cb, nint level) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var e = ref Ꮡe.DerefOrNull();
 
@@ -335,7 +336,7 @@ internal static error writeImage(this ж<encoder> Ꮡe, io.Writer w, image.Image
         } else {
             e.zw.Reset(w);
         }
-        defer(() => Ꮡe.Value.zw.Close(), ref ᒐ);
+        ᒐd1 = true;
         nint bitsPerPixel = 0;
         var exprᴛ1 = cb;
         if (exprᴛ1 == cbG8) {
@@ -585,7 +586,7 @@ internal static error writeImage(this ж<encoder> Ꮡe, io.Writer w, image.Image
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡe.DerefOrNull().zw.Close(); ᒐ.Run(); }
 }
 
 // Write the actual image data to one or more IDAT chunks.

@@ -9670,10 +9670,39 @@ accepted all four.
 
 Everything else keeps the registration form, including any function that mixes a qualifying defer with
 a non-qualifying one: the lowering is all-or-nothing per function, because interleaving a lowered LIFO
-order with a registered one is not expressible. Of 220 receiver-field defer sites in Go 1.23.12's
-standard library, 166 qualify. Guarded by `tests/Behavioral/DeferFinallyLowering`, whose refusal rows
-are asserted by the golden (a refusal is invisible in stdout) and whose `rebound` row fails loudly if
-the receiver-stability gate is removed.
+order with a registered one is not expressible.
+
+**Two widenings (B2), each a gate that was stricter than correctness required.** The first cut admitted
+only defers that were direct children of the body, and only calls on a receiver *field*. Both were
+sizing proxies carried into the emission unexamined, and together they refused the very function the
+capability exists to reach — `internal/poll`'s `FD.Write`, whose `defer fd.writeUnlock()` is a method on
+the receiver itself and whose `defer fd.l.Unlock()` sits inside `if fd.isFile`, each failing a
+different gate so that all-or-nothing rejected the pair.
+
+- A **conditional** defer — nested in an `if`, a `switch` or a block, but not a loop and not a function
+  literal — lowers behind the same flag, set at its own source position. The LIFO argument never
+  needed the defers to be unconditional, only control to flow *forward*: with no loops and no backward
+  jumps (`goto`/labels, measured at zero sites) the CFG is a DAG that visits structured statements in
+  source order, so registration order is source order restricted to the reached defers, and the flag
+  makes an unreached one a no-op. The prefix gate then asks about the defer's **own** scope, walking
+  out through enclosing blocks and counting an `if`/`switch` INIT and CONDITION — which always execute
+  when the statement is reached — while refusing their bodies; `if err := fd.writeLock(); err != nil`
+  is the dominant Go spelling of exactly the dereference the gate looks for.
+- A method on the **receiver itself** (`defer fd.writeUnlock()`) lowers too. Its registration allocates
+  a delegate rather than a `FieldRefBox` — the receiver's box is the method's own parameter — so the
+  saving is smaller, but refusing the shape is what disqualified every function pairing one with a
+  field defer. One sub-class the census cannot see is an emission property: a *promoted* method on an
+  embedded field (`onceError` embedding `sync.Mutex`, `defer a.Unlock()`) is reached through
+  `Ꮡa.of(onceError.ᏑMutex)`, so lowering moves that box into the `finally` rather than removing it and
+  saves only the delegate. Correct, and measured at ten of sixty-five lowered calls on the windows
+  corpus; removing the box there is Phase C's aliasing field pointer, a different capability.
+
+Of 332 such sites in Go 1.23.12's standard library, 225 qualify (10 conditional, 60 receiver-method).
+The census runs the converter's own `provablyBefore` verbatim, so the two predicates cannot drift.
+Guarded by `tests/Behavioral/DeferFinallyLowering`, whose refusal rows are asserted by the golden (a
+refusal is invisible in stdout), whose `rebound` row fails loudly if the receiver-stability gate is
+removed, and whose `writeShape` row — `FD.Write`'s exact shape — prints a spurious `done b` for the
+untaken branch if the reached-flag is removed.
 
 ### A VARIADIC deferred/spawned func literal is cast to its golib family delegate
 

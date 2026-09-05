@@ -670,6 +670,8 @@ internal static readonly @string cannotUseATypeParameterˢ = "cannot use a type 
 
 internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж<ast.TypeSpec> Ꮡtdecl, ж<TypeName> Ꮡdef) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
     try {
         ref var check = ref Ꮡcheck.DerefOrNull();
         ref var obj = ref Ꮡobj.DerefOrNull();
@@ -722,7 +724,7 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
                         versionErr = true;
                     }
                     check.openScope(new ast.TypeSpecжNode(Ꮡtdecl), typeParametersˢ);
-                    defer(Ꮡcheck.closeScope, ref ᒐ);
+                    ᒐd1 = true;
                     Ꮡcheck.collectTypeParams(alias.of(Alias.Ꮡtparams), tdecl.TypeParams);
                 }
                 rhs = Ꮡcheck.definedType(tdecl.Type, Ꮡobj);
@@ -754,7 +756,7 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
         setDefType(Ꮡdef, new NamedжΔType(named));
         if (tdecl.TypeParams != nil) {
             check.openScope(new ast.TypeSpecжNode(Ꮡtdecl), typeParametersˢ);
-            defer(Ꮡcheck.closeScope, ref ᒐ);
+            ᒐd2 = true;
             Ꮡcheck.collectTypeParams(named.of(Named.Ꮡtparams), tdecl.TypeParams);
         }
         // determine underlying type of named
@@ -777,7 +779,7 @@ internal static void typeDecl(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj, ж
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd2) Ꮡcheck.DerefOrNull().closeScope(); if (ᒐd1) Ꮡcheck.DerefOrNull().closeScope(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

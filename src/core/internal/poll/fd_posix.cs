@@ -27,6 +27,7 @@ partial class poll_package {
 // Shutdown wraps syscall.Shutdown.
 public static error Shutdown(this ж<FD> Ꮡfd, nint how) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -35,49 +36,52 @@ public static error Shutdown(this ж<FD> Ꮡfd, nint how) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.Shutdown(fd.Sysfd, how);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // Fchown wraps syscall.Fchown.
 public static error Fchown(this ж<FD> Ꮡfd, nint uid, nint gid) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         {
             var err = Ꮡfd.incref(); if (err != default!) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return ignoringEINTR(() => Δsyscall.Fchown(Ꮡfd.Value.Sysfd, uid, gid));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // Ftruncate wraps syscall.Ftruncate.
 public static error Ftruncate(this ж<FD> Ꮡfd, int64 size) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         {
             var err = Ꮡfd.incref(); if (err != default!) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return ignoringEINTR(() => Δsyscall.Ftruncate(Ꮡfd.Value.Sysfd, size));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // RawControl invokes the user-defined function f for a non-IO
 // operation.
 public static error RawControl(this ж<FD> Ꮡfd, Action<uintptr> f) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -86,12 +90,12 @@ public static error RawControl(this ж<FD> Ꮡfd, Action<uintptr> f) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         f((uintptr)fd.Sysfd);
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // ignoringEINTR makes a function call and repeats it if it returns

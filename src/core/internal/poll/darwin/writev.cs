@@ -19,6 +19,7 @@ partial class poll_package {
 // Writev wraps the writev system call.
 public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> Ꮡv) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
         ref var v = ref Ꮡv.DerefOrNull();
@@ -28,7 +29,7 @@ public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> �
                 return (0, errΔ1);
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         {
             var errΔ2 = fd.pd.prepareWrite(fd.isFile); if (errΔ2 != default!) {
                 return (0, errΔ2);
@@ -101,7 +102,7 @@ public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> �
         return (n, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 } // end poll_package

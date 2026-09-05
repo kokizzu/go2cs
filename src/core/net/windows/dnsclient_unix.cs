@@ -435,6 +435,7 @@ internal static void init(this ж<resolverConfig> Ꮡconf) {
 // "/etc/resolv.conf".
 internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var conf = ref Ꮡconf.DerefOrNull();
 
@@ -446,7 +447,7 @@ internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) {
         if (!conf.tryAcquireSema()) {
             return;
         }
-        defer(Ꮡconf.releaseSema, ref ᒐ);
+        ᒐd1 = true;
         var now = time.Now();
         if (conf.lastChecked.After(now.Add((time.Duration)(-5000000000L)))) {
             return;
@@ -476,7 +477,7 @@ internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) {
         Ꮡconf.of(resolverConfig.ᏑdnsConfig).Store(dnsConf);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡconf.DerefOrNull().releaseSema(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static bool tryAcquireSema(this ref resolverConfig conf) {

@@ -641,11 +641,12 @@ internal static void unlock(this ж<connReader> Ꮡcr) {
 
 internal static void startBackgroundRead(this ж<connReader> Ꮡcr) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cr = ref Ꮡcr.DerefOrNull();
 
         Ꮡcr.@lock();
-        defer(Ꮡcr.unlock, ref ᒐ);
+        ᒐd1 = true;
         if (cr.inRead) {
             throw panic("invalid concurrent Body.Read call");
         }
@@ -657,7 +658,7 @@ internal static void startBackgroundRead(this ж<connReader> Ꮡcr) {
         goǃ(Ꮡcr.backgroundRead);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcr.unlock(); ᒐ.Run(); }
 }
 
 internal static void backgroundRead(this ж<connReader> Ꮡcr) {
@@ -707,11 +708,12 @@ internal static void backgroundRead(this ж<connReader> Ꮡcr) {
 
 internal static void abortPendingRead(this ж<connReader> Ꮡcr) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cr = ref Ꮡcr.DerefOrNull();
 
         Ꮡcr.@lock();
-        defer(Ꮡcr.unlock, ref ᒐ);
+        ᒐd1 = true;
         if (!cr.inRead) {
             return;
         }
@@ -723,7 +725,7 @@ internal static void abortPendingRead(this ж<connReader> Ꮡcr) {
         (~cr.conn).rwc.SetReadDeadline(new time.Time(nil));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcr.unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static void setReadLimit(this ref connReader cr, int64 remain) {

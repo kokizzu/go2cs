@@ -18,31 +18,33 @@ partial class io_package {
 
 internal static void Store(this ж<onceError> Ꮡa, error err) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var a = ref Ꮡa.DerefOrNull();
 
         Ꮡa.of(onceError.ᏑMutex).Lock();
-        defer(Ꮡa.of(onceError.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (a.err != default!) {
             return;
         }
         a.err = err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡa.of(onceError.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 internal static error Load(this ж<onceError> Ꮡa) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var a = ref Ꮡa.DerefOrNull();
 
         Ꮡa.of(onceError.ᏑMutex).Lock();
-        defer(Ꮡa.of(onceError.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         return a.err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡa.of(onceError.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // ErrClosedPipe is the error used for read or write operations on a closed pipe.

@@ -458,6 +458,7 @@ internal static readonly @string inputˢ = "input"u8;
 //	text | comment | action
 internal static Node textOrAction(this ж<Tree> Ꮡt) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var t = ref Ꮡt.DerefOrNull();
 
@@ -469,7 +470,7 @@ internal static Node textOrAction(this ж<Tree> Ꮡt) {
             }
             if (exprᴛ1 == itemLeftDelim) {
                 t.actionLine = token.line;
-                defer(Ꮡt.clearActionLine, ref ᒐ);
+                ᒐd1 = true;
                 return Ꮡt.action();
             }
             if (exprᴛ1 == itemComment) {
@@ -483,7 +484,7 @@ internal static Node textOrAction(this ж<Tree> Ꮡt) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡt.DerefOrNull().clearActionLine(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static void clearActionLine(this ref Tree t) {

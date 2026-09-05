@@ -3843,6 +3843,8 @@ internal static void closeWithErrorAndCode(this ж<http2pipe> Ꮡp, error err, A
 
 internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, error err, Action fn) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
         ref var dst = ref Ꮡdst.DerefOrNull();
@@ -3851,11 +3853,11 @@ internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, e
             throw panic("err must be non-nil");
         }
         p.mu.Lock();
-        defer(Ꮡp.of(http2pipe.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (p.c.L == default!) {
             p.c.L = new sync.MutexжLocker(Ꮡp.of(http2pipe.Ꮡmu));
         }
-        defer(Ꮡp.of(http2pipe.Ꮡc).Signal, ref ᒐ);
+        ᒐd2 = true;
         if (dst != default!) {
             // Already been done.
             return;
@@ -3871,7 +3873,7 @@ internal static void closeWithError(this ж<http2pipe> Ꮡp, ж<error> Ꮡdst, e
         p.closeDoneLocked();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd2) Ꮡp.of(http2pipe.Ꮡc).Signal(); if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // requires p.mu be held.
@@ -10131,6 +10133,7 @@ internal static void addStreamLocked(this ж<http2ClientConn> Ꮡcc, ж<http2cli
 
 internal static void forgetStreamID(this ж<http2ClientConn> Ꮡcc, uint32 id) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var cc = ref Ꮡcc.DerefOrNull();
 
@@ -10154,12 +10157,12 @@ internal static void forgetStreamID(this ж<http2ClientConn> Ꮡcc, uint32 id) {
                 cc.vlogf("http2: Transport closing idle conn %p (forSingleUse=%v, maxStream=%v)"u8, Ꮡcc.OrTypedNil(), cc.singleUse, cc.nextStreamID - 2);
             }
             cc.closed = true;
-            defer(Ꮡcc.closeConn, ref ᒐ);
+            ᒐd1 = true;
         }
         cc.mu.Unlock();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcc.closeConn(); ᒐ.Run(); }
 }
 
 // clientConnReadLoop is the state owned by the clientConn's frame-reading readLoop.

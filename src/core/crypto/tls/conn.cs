@@ -1443,6 +1443,7 @@ internal static readonly @string tlsReceivedUnexpectedKeyˢ = "tls: received une
 
 internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> ᏑkeyUpdate) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
         ref var keyUpdate = ref ᏑkeyUpdate.DerefOrNull();
@@ -1459,7 +1460,7 @@ internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> Ꮡke
         c.@in.setTrafficSecret(cipherSuite, QUICEncryptionLevelInitial, newSecret);
         if (keyUpdate.updateRequested) {
             Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Lock();
-            defer(Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock, ref ᒐ);
+            ᒐd1 = true;
             var msg = Ꮡ(new keyUpdateMsg(nil));
             var (msgBytes, err) = msg.marshal();
             if (err != default!) {
@@ -1477,7 +1478,7 @@ internal static error handleKeyUpdate(this ж<Conn> Ꮡc, ж<keyUpdateMsg> Ꮡke
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(Conn.Ꮡout).of(halfConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // Read reads data from the connection.

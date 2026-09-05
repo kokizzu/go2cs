@@ -654,15 +654,16 @@ internal static void releaseConn(this ж<driverConn> Ꮡdc, error err) {
 
 internal static void removeOpenStmt(this ж<driverConn> Ꮡdc, ж<driverStmt> Ꮡds) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var dc = ref Ꮡdc.DerefOrNull();
 
         Ꮡdc.of(driverConn.ᏑMutex).Lock();
-        defer(Ꮡdc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         delete(dc.openStmt, Ꮡds);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdc.of(driverConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 [GoRecv] internal static bool expired(this ref driverConn dc, time.Duration timeout) {
@@ -676,11 +677,12 @@ internal static void removeOpenStmt(this ж<driverConn> Ꮡdc, ж<driverStmt> �
 // session to be reset and if required, resets it.
 internal static error resetSession(this ж<driverConn> Ꮡdc, context.Context ctx) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var dc = ref Ꮡdc.DerefOrNull();
 
         Ꮡdc.of(driverConn.ᏑMutex).Lock();
-        defer(Ꮡdc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (!dc.needReset) {
             return default!;
         }
@@ -692,18 +694,19 @@ internal static error resetSession(this ж<driverConn> Ꮡdc, context.Context ct
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdc.of(driverConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // validateConnection checks if the connection is valid and can
 // still be used. It also marks the session for reset if required.
 internal static bool validateConnection(this ж<driverConn> Ꮡdc, bool needsReset) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var dc = ref Ꮡdc.DerefOrNull();
 
         Ꮡdc.of(driverConn.ᏑMutex).Lock();
-        defer(Ꮡdc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (needsReset) {
             dc.needReset = true;
         }
@@ -715,7 +718,7 @@ internal static bool validateConnection(this ж<driverConn> Ꮡdc, bool needsRes
         return true;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdc.of(driverConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // prepareLocked prepares the query on dc. When cg == nil the dc must keep track of
@@ -749,11 +752,12 @@ internal static readonly @string sqlDuplicateDriverConnˢ = "sql: duplicate driv
 // the dc.db's Mutex is held.
 internal static Func<error> closeDBLocked(this ж<driverConn> Ꮡdc) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var dc = ref Ꮡdc.DerefOrNull();
 
         Ꮡdc.of(driverConn.ᏑMutex).Lock();
-        defer(Ꮡdc.of(driverConn.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (dc.closed) {
             return () => errors.New(sqlDuplicateDriverConnˢ);
         }
@@ -761,7 +765,7 @@ internal static Func<error> closeDBLocked(this ж<driverConn> Ꮡdc) {
         return dc.db.removeDepLocked(new driverConnжfinalCloser(Ꮡdc), Ꮡdc.OrTypedNil());
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡdc.of(driverConn.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 internal static error Close(this ж<driverConn> Ꮡdc) {
@@ -826,11 +830,12 @@ internal static error finalClose(this ж<driverConn> Ꮡdc) {
 // result.
 internal static error Close(this ж<driverStmt> Ꮡds) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var ds = ref Ꮡds.DerefOrNull();
 
         ds.Locker.Lock();
-        defer(Ꮡds.Value.Locker.Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (ds.closed) {
             return ds.closeErr;
         }
@@ -839,7 +844,7 @@ internal static error Close(this ж<driverStmt> Ꮡds) {
         return ds.closeErr;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡds.DerefOrNull().Locker.Unlock(); ᒐ.Run(); }
 }
 
 [GoType("map[any, bool]")] partial struct depSet;
@@ -3972,26 +3977,26 @@ public static error Scan(this ж<Row> Ꮡr, params ꓸꓸꓸany destʗp) {
 
 internal static (int64, error) LastInsertId(this driverResult dr) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         dr.Locker.Lock();
-        var drʗ1 = dr;
-        defer(drʗ1.Locker.Unlock, ref ᒐ);
+        ᒐd1 = true;
         return dr.resi.LastInsertId();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) dr.Locker.Unlock(); ᒐ.Run(); }
 }
 
 internal static (int64, error) RowsAffected(this driverResult dr) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         dr.Locker.Lock();
-        var drʗ1 = dr;
-        defer(drʗ1.Locker.Unlock, ref ᒐ);
+        ᒐd1 = true;
         return dr.resi.RowsAffected();
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) dr.Locker.Unlock(); ᒐ.Run(); }
 }
 
 internal static @string stack() {
