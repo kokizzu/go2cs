@@ -49,6 +49,7 @@ internal static (nint, @string, error) dupCloseOnExecOld(nint fd) {
 // Fchdir wraps syscall.Fchdir.
 public static error Fchdir(this ж<FD> Ꮡfd) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -57,11 +58,11 @@ public static error Fchdir(this ж<FD> Ꮡfd) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.Fchdir(fd.Sysfd);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // ReadDirent wraps syscall.ReadDirent.
@@ -69,6 +70,7 @@ public static error Fchdir(this ж<FD> Ꮡfd) {
 // that tries to fill the buffer.
 public static (nint, error) ReadDirent(this ж<FD> Ꮡfd, slice<byte> buf) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -77,7 +79,7 @@ public static (nint, error) ReadDirent(this ж<FD> Ꮡfd, slice<byte> buf) {
                 return (0, err);
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         while (ᐧ) {
             var (n, err) = ignoringEINTRIO(Δsyscall.ReadDirent, fd.Sysfd, buf);
             if (err != default!) {
@@ -95,12 +97,13 @@ public static (nint, error) ReadDirent(this ж<FD> Ꮡfd, slice<byte> buf) {
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // Seek wraps syscall.Seek.
 public static (int64, error) Seek(this ж<FD> Ꮡfd, int64 offset, nint whence) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -109,11 +112,11 @@ public static (int64, error) Seek(this ж<FD> Ꮡfd, int64 offset, nint whence) 
                 return (0, err);
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.Seek(fd.Sysfd, offset, whence);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 } // end poll_package

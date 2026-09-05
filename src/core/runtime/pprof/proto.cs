@@ -596,13 +596,14 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
 // It resets the deck.
 internal static uint64 emitLocation(this ж<profileBuilder> Ꮡb) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var b = ref Ꮡb.DerefOrNull();
 
         if (len(b.deck.pcs) == 0) {
             return 0;
         }
-        defer(Ꮡb.of(profileBuilder.Ꮡdeck).reset, ref ᒐ);
+        ᒐd1 = true;
         var addr = b.deck.pcs[0];
         var firstFrame = b.deck.frames[0];
         var newFuncs = new slice<emitLocation_newFunc>(0, 8);
@@ -659,7 +660,7 @@ internal static uint64 emitLocation(this ж<profileBuilder> Ꮡb) {
         return id;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡb.DerefOrNull().deck.reset(); ᒐ.Run(); }
 }
 
 internal static slice<byte> space = slice<byte>(" "u8);

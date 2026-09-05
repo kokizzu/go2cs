@@ -11,6 +11,7 @@ partial class poll_package {
 // SetsockoptByte wraps the setsockopt network call with a byte argument.
 public static error SetsockoptByte(this ж<FD> Ꮡfd, nint level, nint name, byte arg) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -19,11 +20,11 @@ public static error SetsockoptByte(this ж<FD> Ꮡfd, nint level, nint name, byt
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.SetsockoptByte(fd.Sysfd, level, name, arg);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 } // end poll_package

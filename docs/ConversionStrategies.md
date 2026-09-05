@@ -1235,11 +1235,13 @@ One shape skips the registration entirely. A deferred call on a **field of the r
 arguments — `defer c.mu.Unlock()` — would have to box that field to hold it (`Ꮡc.of(counter.Ꮡmu)`),
 and the call already runs on exactly the paths a `finally` runs on, so it is emitted straight into the
 `finally` behind a `bool` set at the defer's own position, in reverse source order (Go's LIFO), ahead
-of `ᒐ.Run()`. Nothing is allocated. It applies only where Go's registration-time semantics are
-provably unobservable — the receiver is never reassigned, the defer is unconditional, and something
-ahead of it already dereferences the same path — and it is all-or-nothing per function, so a function
-that mixes shapes keeps registration throughout. 166 of the 220 receiver-field defer sites in Go
-1.23.12's standard library qualify; see
+of `ᒐ.Run()`. Nothing is allocated. A method on the receiver itself (`defer fd.writeUnlock()`) lowers
+the same way, saving its delegate. It applies only where Go's registration-time semantics are
+provably unobservable — the receiver is never reassigned, the defer is not inside a loop or a function
+literal (a conditional one lowers behind its flag, since the LIFO argument needs only forward control
+flow), and something that provably executed before it already dereferences the same path — and it is
+all-or-nothing per function, so a function that mixes shapes keeps registration throughout. 225 of
+the 332 such sites in Go 1.23.12's standard library qualify; see
 [the reference](ConversionStrategies-Reference.md#a-deferred-receiver-field-call-with-no-arguments-is-lowered-into-the-frames-finally).
 
 A function with **named results** that deferred code mutates declares them ahead of the `try` and

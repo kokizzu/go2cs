@@ -1562,11 +1562,12 @@ public static ClientSessionCache NewLRUClientSessionCache(nint capacity) {
 // corresponding to sessionKey is removed from the cache instead.
 internal static void Put(this ж<lruSessionCache> Ꮡc, @string sessionKey, ж<ClientSessionState> Ꮡcs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
-        defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         {
             var (elemΔ1, ok) = c.m[sessionKey, ꟷ]; if (ok) {
                 if (Ꮡcs == nil){
@@ -1594,18 +1595,19 @@ internal static void Put(this ж<lruSessionCache> Ꮡc, @string sessionKey, ж<C
         c.m[sessionKey] = elem;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(lruSessionCache.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 // Get returns the [ClientSessionState] value associated with a given key. It
 // returns (nil, false) if no value is found.
 internal static (ж<ClientSessionState>, bool) Get(this ж<lruSessionCache> Ꮡc, @string sessionKey) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var c = ref Ꮡc.DerefOrNull();
 
         Ꮡc.of(lruSessionCache.ᏑMutex).Lock();
-        defer(Ꮡc.of(lruSessionCache.ᏑMutex).Unlock, ref ᒐ);
+        ᒐd1 = true;
         {
             var (elem, ok) = c.m[sessionKey, ꟷ]; if (ok) {
                 c.q.MoveToFront(elem);
@@ -1615,7 +1617,7 @@ internal static (ж<ClientSessionState>, bool) Get(this ж<lruSessionCache> Ꮡc
         return (default!, false);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡc.of(lruSessionCache.ᏑMutex).Unlock(); ᒐ.Run(); }
 }
 
 internal static ж<Config> ᏑemptyConfig = new StandardBox<Config>(new Config());

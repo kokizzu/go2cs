@@ -21,13 +21,14 @@ partial class poll_package {
 // See Issue #26650 as well as the man page for fsync on OS X.
 public static error Fsync(this ж<FD> Ꮡfd) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         {
             var err = Ꮡfd.incref(); if (err != default!) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return ignoringEINTR(() => {
             var (_, err) = unix.Fcntl(Ꮡfd.Value.Sysfd, Δsyscall.F_FULLFSYNC, 0);
             // There are scenarios such as SMB mounts where fcntl will fail
@@ -40,7 +41,7 @@ public static error Fsync(this ж<FD> Ꮡfd) {
         });
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 } // end poll_package

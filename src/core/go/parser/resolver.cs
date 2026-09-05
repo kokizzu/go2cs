@@ -711,6 +711,7 @@ internal static void walkTParams(this ж<resolver> Ꮡr, ж<ast.FieldList> Ꮡli
 
 internal static void walkBody(this ж<resolver> Ꮡr, ж<ast.BlockStmt> Ꮡbody) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var r = ref Ꮡr.DerefOrNull();
         ref var body = ref Ꮡbody.DerefOrNull();
@@ -719,11 +720,11 @@ internal static void walkBody(this ж<resolver> Ꮡr, ж<ast.BlockStmt> Ꮡbody)
             return;
         }
         r.openLabelScope();
-        defer(Ꮡr.closeLabelScope, ref ᒐ);
+        ᒐd1 = true;
         Ꮡr.walkStmts(body.List);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡr.DerefOrNull().closeLabelScope(); ᒐ.Run(); }
 }
 
 } // end parser_package

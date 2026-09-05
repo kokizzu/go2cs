@@ -431,6 +431,8 @@ internal static UntypedInt maxRW => /* 1 << 30 */ 1073741824; // 1GB is large en
 // Read implements io.Reader.
 public static (nint, error) Read(this ж<FD> Ꮡfd, slice<byte> buf) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -439,7 +441,7 @@ public static (nint, error) Read(this ж<FD> Ꮡfd, slice<byte> buf) {
                 return (0, errΔ1);
             }
         }
-        defer(Ꮡfd.readUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (len(buf) > maxRW) {
             buf = buf[..(int)(maxRW)];
         }
@@ -447,7 +449,7 @@ public static (nint, error) Read(this ж<FD> Ꮡfd, slice<byte> buf) {
         error err = default!;
         if (fd.isFile){
             fd.l.Lock();
-            defer(Ꮡfd.of(FD.Ꮡl).Unlock, ref ᒐ);
+            ᒐd2 = true;
             var exprᴛ1 = fd.kind;
             if (exprᴛ1 == kindConsole) {
                 (n, err) = fd.readConsole(buf);
@@ -479,7 +481,7 @@ public static (nint, error) Read(this ж<FD> Ꮡfd, slice<byte> buf) {
         return (n, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd2) Ꮡfd.DerefOrNull().l.Unlock(); if (ᒐd1) Ꮡfd.readUnlock(); ᒐ.Run(); }
 }
 
 public static Func<syscallꓸHandle, ж<uint16>, uint32, ж<uint32>, ж<byte>, error> ReadConsole = Δsyscall.ReadConsole;                                                         // changed for testing
@@ -607,6 +609,7 @@ public static (nint, error) Pread(this ж<FD> Ꮡfd, slice<byte> b, int64 off) {
 // ReadFrom wraps the recvfrom network call.
 public static (nint, syscallꓸSockaddr, error) ReadFrom(this ж<FD> Ꮡfd, slice<byte> buf) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -621,7 +624,7 @@ public static (nint, syscallꓸSockaddr, error) ReadFrom(this ж<FD> Ꮡfd, slic
                 return (0, default!, errΔ1);
             }
         }
-        defer(Ꮡfd.readUnlock, ref ᒐ);
+        ᒐd1 = true;
         var o = Ꮡfd.of(FD.Ꮡrop);
         o.InitBuf(buf);
         var (n, err) = execIO(o, (ж<operation> oΔ1) => {
@@ -639,12 +642,13 @@ public static (nint, syscallꓸSockaddr, error) ReadFrom(this ж<FD> Ꮡfd, slic
         return (n, sa, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.readUnlock(); ᒐ.Run(); }
 }
 
 // ReadFromInet4 wraps the recvfrom network call for IPv4.
 public static (nint, error) ReadFromInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж<Δsyscall.SockaddrInet4> Ꮡsa4) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -659,7 +663,7 @@ public static (nint, error) ReadFromInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж
                 return (0, errΔ1);
             }
         }
-        defer(Ꮡfd.readUnlock, ref ᒐ);
+        ᒐd1 = true;
         var o = Ꮡfd.of(FD.Ꮡrop);
         o.InitBuf(buf);
         var (n, err) = execIO(o, (ж<operation> oΔ1) => {
@@ -677,12 +681,13 @@ public static (nint, error) ReadFromInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж
         return (n, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.readUnlock(); ᒐ.Run(); }
 }
 
 // ReadFromInet6 wraps the recvfrom network call for IPv6.
 public static (nint, error) ReadFromInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж<Δsyscall.SockaddrInet6> Ꮡsa6) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -697,7 +702,7 @@ public static (nint, error) ReadFromInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж
                 return (0, errΔ1);
             }
         }
-        defer(Ꮡfd.readUnlock, ref ᒐ);
+        ᒐd1 = true;
         var o = Ꮡfd.of(FD.Ꮡrop);
         o.InitBuf(buf);
         var (n, err) = execIO(o, (ж<operation> oΔ1) => {
@@ -715,12 +720,14 @@ public static (nint, error) ReadFromInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж
         return (n, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.readUnlock(); ᒐ.Run(); }
 }
 
 // Write implements io.Writer.
 public static (nint, error) Write(this ж<FD> Ꮡfd, slice<byte> buf) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -729,10 +736,10 @@ public static (nint, error) Write(this ж<FD> Ꮡfd, slice<byte> buf) {
                 return (0, err);
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (fd.isFile) {
             fd.l.Lock();
-            defer(Ꮡfd.of(FD.Ꮡl).Unlock, ref ᒐ);
+            ᒐd2 = true;
         }
         nint ntotal = 0;
         while (len(buf) > 0) {
@@ -777,7 +784,7 @@ public static (nint, error) Write(this ж<FD> Ꮡfd, slice<byte> buf) {
         return (ntotal, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd2) Ꮡfd.DerefOrNull().l.Unlock(); if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 // writeConsole writes len(b) bytes to the console File.
@@ -876,6 +883,7 @@ public static (nint, error) Pwrite(this ж<FD> Ꮡfd, slice<byte> buf, int64 off
 // Writev emulates the Unix writev system call.
 public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> Ꮡbuf) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
         ref var buf = ref Ꮡbuf.DerefOrNull();
@@ -888,7 +896,7 @@ public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> �
                 return (0, errΔ1);
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (race.Enabled) {
             race.ReleaseMerge(@unsafe.Pointer.FromPinnedBox(ᏑioSync));
         }
@@ -901,12 +909,13 @@ public static (int64, error) Writev(this ж<FD> Ꮡfd, ж<slice<slice<byte>>> �
         return ((int64)n, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 // WriteTo wraps the sendto network call.
 public static (nint, error) WriteTo(this ж<FD> Ꮡfd, slice<byte> buf, syscallꓸSockaddr sa) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -915,7 +924,7 @@ public static (nint, error) WriteTo(this ж<FD> Ꮡfd, slice<byte> buf, syscall�
                 return (0, err);
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (len(buf) == 0) {
             // handle zero-byte payload
             var o = Ꮡfd.of(FD.Ꮡwop);
@@ -943,12 +952,13 @@ public static (nint, error) WriteTo(this ж<FD> Ꮡfd, slice<byte> buf, syscall�
         return (ntotal, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 // WriteToInet4 is WriteTo, specialized for syscall.SockaddrInet4.
 public static (nint, error) WriteToInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж<Δsyscall.SockaddrInet4> Ꮡsa4) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -957,7 +967,7 @@ public static (nint, error) WriteToInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж<
                 return (0, err);
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (len(buf) == 0) {
             // handle zero-byte payload
             var o = Ꮡfd.of(FD.Ꮡwop);
@@ -983,12 +993,13 @@ public static (nint, error) WriteToInet4(this ж<FD> Ꮡfd, slice<byte> buf, ж<
         return (ntotal, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 // WriteToInet6 is WriteTo, specialized for syscall.SockaddrInet6.
 public static (nint, error) WriteToInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж<Δsyscall.SockaddrInet6> Ꮡsa6) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -997,7 +1008,7 @@ public static (nint, error) WriteToInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж<
                 return (0, err);
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (len(buf) == 0) {
             // handle zero-byte payload
             var o = Ꮡfd.of(FD.Ꮡwop);
@@ -1023,7 +1034,7 @@ public static (nint, error) WriteToInet6(this ж<FD> Ꮡfd, slice<byte> buf, ж<
         return (ntotal, default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 // Call ConnectEx. This doesn't need any locking, since it is only
@@ -1068,13 +1079,14 @@ internal static (@string, error) acceptOne(this ж<FD> Ꮡfd, syscallꓸHandle s
 // to allocate the net socket.
 public static (syscallꓸHandle, slice<Δsyscall.RawSockaddrAny>, uint32, @string, error) Accept(this ж<FD> Ꮡfd, Func<(syscallꓸHandle, error)> sysSocket) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         {
             var err = Ꮡfd.readLock(); if (err != default!) {
                 return (Δsyscall.InvalidHandle, default!, 0, "", err);
             }
         }
-        defer(Ꮡfd.readUnlock, ref ᒐ);
+        ᒐd1 = true;
         var o = Ꮡfd.of(FD.Ꮡrop);
         array<Δsyscall.RawSockaddrAny> rawsa = new(2, () => new());
         while (ᐧ) {
@@ -1105,7 +1117,7 @@ public static (syscallꓸHandle, slice<Δsyscall.RawSockaddrAny>, uint32, @strin
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.readUnlock(); ᒐ.Run(); }
 }
 
 // ignore these and try again
@@ -1113,6 +1125,8 @@ public static (syscallꓸHandle, slice<Δsyscall.RawSockaddrAny>, uint32, @strin
 // Seek wraps syscall.Seek.
 public static (int64, error) Seek(this ж<FD> Ꮡfd, int64 offset, nint whence) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
+    bool ᒐd2 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1124,18 +1138,19 @@ public static (int64, error) Seek(this ж<FD> Ꮡfd, int64 offset, nint whence) 
                 return (0, err);
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         fd.l.Lock();
-        defer(Ꮡfd.of(FD.Ꮡl).Unlock, ref ᒐ);
+        ᒐd2 = true;
         return Δsyscall.Seek(fd.Sysfd, offset, whence);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd2) Ꮡfd.DerefOrNull().l.Unlock(); if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // Fchmod updates syscall.ByHandleFileInformation.Fileattributes when needed.
 public static error Fchmod(this ж<FD> Ꮡfd, uint32 mode) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1144,7 +1159,7 @@ public static error Fchmod(this ж<FD> Ꮡfd, uint32 mode) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         ref var d = ref heap(new Δsyscall.ByHandleFileInformation(), out var Ꮡd);
         {
             var err = Δsyscall.GetFileInformationByHandle(fd.Sysfd, Ꮡd); if (err != default!) {
@@ -1165,12 +1180,13 @@ public static error Fchmod(this ж<FD> Ꮡfd, uint32 mode) {
         return windows.SetFileInformationByHandle(fd.Sysfd, windows.FileBasicInfo, @unsafe.Pointer.FromPinnedBox(Ꮡdu), (uint32)/* unsafe.Sizeof(du) */ (uintptr)40);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // Fchdir wraps syscall.Fchdir.
 public static error Fchdir(this ж<FD> Ꮡfd) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1179,16 +1195,17 @@ public static error Fchdir(this ж<FD> Ꮡfd) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.Fchdir(fd.Sysfd);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // GetFileType wraps syscall.GetFileType.
 public static (uint32, error) GetFileType(this ж<FD> Ꮡfd) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1197,16 +1214,17 @@ public static (uint32, error) GetFileType(this ж<FD> Ꮡfd) {
                 return (0, err);
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.GetFileType(fd.Sysfd);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // GetFileInformationByHandle wraps GetFileInformationByHandle.
 public static error GetFileInformationByHandle(this ж<FD> Ꮡfd, ж<Δsyscall.ByHandleFileInformation> Ꮡdata) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1215,16 +1233,17 @@ public static error GetFileInformationByHandle(this ж<FD> Ꮡfd, ж<Δsyscall.B
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.GetFileInformationByHandle(fd.Sysfd, Ꮡdata);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // RawRead invokes the user-defined function f for a read operation.
 public static error RawRead(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1233,7 +1252,7 @@ public static error RawRead(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
                 return err;
             }
         }
-        defer(Ꮡfd.readUnlock, ref ᒐ);
+        ᒐd1 = true;
         while (ᐧ) {
             if (f((uintptr)fd.Sysfd)) {
                 return default!;
@@ -1255,12 +1274,13 @@ public static error RawRead(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
         }
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.readUnlock(); ᒐ.Run(); }
 }
 
 // RawWrite invokes the user-defined function f for a write operation.
 public static error RawWrite(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1269,7 +1289,7 @@ public static error RawWrite(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
                 return err;
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (f((uintptr)fd.Sysfd)) {
             return default!;
         }
@@ -1277,7 +1297,7 @@ public static error RawWrite(this ж<FD> Ꮡfd, Func<uintptr, bool> f) {
         return Δsyscall.EWINDOWS;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 // go2cs generated this placeholder — func sockaddrInet4ToRaw is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -1307,6 +1327,7 @@ internal static (int32, error) sockaddrToRaw(ж<Δsyscall.RawSockaddrAny> Ꮡrsa
 // ReadMsg wraps the WSARecvMsg network call.
 public static (nint, nint, nint, syscallꓸSockaddr, error) ReadMsg(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, nint flags) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1315,7 +1336,7 @@ public static (nint, nint, nint, syscallꓸSockaddr, error) ReadMsg(this ж<FD> 
                 return (0, 0, 0, default!, errΔ1);
             }
         }
-        defer(Ꮡfd.readUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (len(p) > maxRW) {
             p = p[..(int)(maxRW)];
         }
@@ -1336,12 +1357,13 @@ public static (nint, nint, nint, syscallꓸSockaddr, error) ReadMsg(this ж<FD> 
         return (n, (nint)(~o).msg.Control.Len, (nint)(~o).msg.Flags, sa, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.readUnlock(); ᒐ.Run(); }
 }
 
 // ReadMsgInet4 is ReadMsg, but specialized to return a syscall.SockaddrInet4.
 public static (nint, nint, nint, error) ReadMsgInet4(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, nint flags, ж<Δsyscall.SockaddrInet4> Ꮡsa4) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1350,7 +1372,7 @@ public static (nint, nint, nint, error) ReadMsgInet4(this ж<FD> Ꮡfd, slice<by
                 return (0, 0, 0, errΔ1);
             }
         }
-        defer(Ꮡfd.readUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (len(p) > maxRW) {
             p = p[..(int)(maxRW)];
         }
@@ -1370,12 +1392,13 @@ public static (nint, nint, nint, error) ReadMsgInet4(this ж<FD> Ꮡfd, slice<by
         return (n, (nint)(~o).msg.Control.Len, (nint)(~o).msg.Flags, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.readUnlock(); ᒐ.Run(); }
 }
 
 // ReadMsgInet6 is ReadMsg, but specialized to return a syscall.SockaddrInet6.
 public static (nint, nint, nint, error) ReadMsgInet6(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, nint flags, ж<Δsyscall.SockaddrInet6> Ꮡsa6) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1384,7 +1407,7 @@ public static (nint, nint, nint, error) ReadMsgInet6(this ж<FD> Ꮡfd, slice<by
                 return (0, 0, 0, errΔ1);
             }
         }
-        defer(Ꮡfd.readUnlock, ref ᒐ);
+        ᒐd1 = true;
         if (len(p) > maxRW) {
             p = p[..(int)(maxRW)];
         }
@@ -1404,7 +1427,7 @@ public static (nint, nint, nint, error) ReadMsgInet6(this ж<FD> Ꮡfd, slice<by
         return (n, (nint)(~o).msg.Control.Len, (nint)(~o).msg.Flags, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.readUnlock(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1413,6 +1436,7 @@ internal static readonly @string packetIsTooLargeOnly1gbˢ = "packet is too larg
 // WriteMsg wraps the WSASendMsg network call.
 public static (nint, nint, error) WriteMsg(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, syscallꓸSockaddr sa) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1424,7 +1448,7 @@ public static (nint, nint, error) WriteMsg(this ж<FD> Ꮡfd, slice<byte> p, sli
                 return (0, 0, errΔ1);
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         var o = Ꮡfd.of(FD.Ꮡwop);
         o.InitMsg(p, oob);
         if (sa != default!) {
@@ -1442,12 +1466,13 @@ public static (nint, nint, error) WriteMsg(this ж<FD> Ꮡfd, slice<byte> p, sli
         return (n, (nint)(~o).msg.Control.Len, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 // WriteMsgInet4 is WriteMsg specialized for syscall.SockaddrInet4.
 public static (nint, nint, error) WriteMsgInet4(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, ж<Δsyscall.SockaddrInet4> Ꮡsa) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1459,7 +1484,7 @@ public static (nint, nint, error) WriteMsgInet4(this ж<FD> Ꮡfd, slice<byte> p
                 return (0, 0, errΔ1);
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         var o = Ꮡfd.of(FD.Ꮡwop);
         o.InitMsg(p, oob);
         if ((~o).rsa == nil) {
@@ -1472,12 +1497,13 @@ public static (nint, nint, error) WriteMsgInet4(this ж<FD> Ꮡfd, slice<byte> p
         return (n, (nint)(~o).msg.Control.Len, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 // WriteMsgInet6 is WriteMsg specialized for syscall.SockaddrInet6.
 public static (nint, nint, error) WriteMsgInet6(this ж<FD> Ꮡfd, slice<byte> p, slice<byte> oob, ж<Δsyscall.SockaddrInet6> Ꮡsa) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -1489,7 +1515,7 @@ public static (nint, nint, error) WriteMsgInet6(this ж<FD> Ꮡfd, slice<byte> p
                 return (0, 0, errΔ1);
             }
         }
-        defer(Ꮡfd.writeUnlock, ref ᒐ);
+        ᒐd1 = true;
         var o = Ꮡfd.of(FD.Ꮡwop);
         o.InitMsg(p, oob);
         if ((~o).rsa == nil) {
@@ -1502,7 +1528,7 @@ public static (nint, nint, error) WriteMsgInet6(this ж<FD> Ꮡfd, slice<byte> p
         return (n, (nint)(~o).msg.Control.Len, err);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.writeUnlock(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

@@ -10,6 +10,7 @@ partial class poll_package {
 // Fsync wraps syscall.Fsync.
 public static error Fsync(this ж<FD> Ꮡfd) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -18,11 +19,11 @@ public static error Fsync(this ж<FD> Ꮡfd) {
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.Fsync(fd.Sysfd);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 } // end poll_package

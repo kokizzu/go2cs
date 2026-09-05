@@ -11,6 +11,7 @@ partial class poll_package {
 // SetsockoptIPMreq wraps the setsockopt network call with an IPMreq argument.
 public static error SetsockoptIPMreq(this ж<FD> Ꮡfd, nint level, nint name, ж<Δsyscall.IPMreq> Ꮡmreq) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -19,16 +20,17 @@ public static error SetsockoptIPMreq(this ж<FD> Ꮡfd, nint level, nint name, �
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.SetsockoptIPMreq(fd.Sysfd, level, name, Ꮡmreq);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 // SetsockoptIPv6Mreq wraps the setsockopt network call with an IPv6Mreq argument.
 public static error SetsockoptIPv6Mreq(this ж<FD> Ꮡfd, nint level, nint name, ж<Δsyscall.IPv6Mreq> Ꮡmreq) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var fd = ref Ꮡfd.DerefOrNull();
 
@@ -37,11 +39,11 @@ public static error SetsockoptIPv6Mreq(this ж<FD> Ꮡfd, nint level, nint name,
                 return err;
             }
         }
-        defer(() => Ꮡfd.decref(), ref ᒐ);
+        ᒐd1 = true;
         return Δsyscall.SetsockoptIPv6Mreq(fd.Sysfd, level, name, Ꮡmreq);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡfd.decref(); ᒐ.Run(); }
 }
 
 } // end poll_package

@@ -974,6 +974,7 @@ internal static readonly @string noNewVariablesOnLeftSideˢ = "no new variables 
 
 internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<ast.RangeStmt> Ꮡs) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var check = ref Ꮡcheck.DerefOrNull();
         ref var s = ref Ꮡs.DerefOrNull();
@@ -1021,7 +1022,7 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
         // Open the for-statement block scope now, after the range clause.
         // Iteration variables declared with := need to go in this scope (was go.dev/issue/51437).
         check.openScope(new ast.RangeStmtжNode(Ꮡs), rangeˢ);
-        defer(Ꮡcheck.closeScope, ref ᒐ);
+        ᒐd1 = true;
         // check assignment to/declaration of iteration variables
         // (irregular assignment, cannot easily map to existing assignment checks)
         // lhs expressions and initialization value (rhs) types
@@ -1126,7 +1127,7 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
         Ꮡcheck.stmt(inner, new ast.BlockStmtжStmt(s.Body));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡcheck.DerefOrNull().closeScope(); ᒐ.Run(); }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

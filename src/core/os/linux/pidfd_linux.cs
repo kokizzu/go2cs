@@ -83,6 +83,7 @@ internal static readonly @string waitidˢ = "waitid"u8;
 
 internal static (ж<ProcessState>, error) pidfdWait(this ж<Process> Ꮡp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         // When pidfd is used, there is no wait/kill race (described in CL 23967)
         // because the PID recycle issue doesn't exist (IOW, pidfd, unlike PID,
@@ -103,7 +104,7 @@ internal static (ж<ProcessState>, error) pidfdWait(this ж<Process> Ꮡp) {
             return (default!, syscall.EINVAL);
         }
 
-        defer(Ꮡp.handleTransientRelease, ref ᒐ);
+        ᒐd1 = true;
         ref var info = ref heap(new unix.SiginfoChild(), out var Ꮡinfo);
         ref var rusage = ref heap(new syscall.Rusage(), out var Ꮡrusage);
         syscall.Errno e = default!;
@@ -130,11 +131,12 @@ internal static (ж<ProcessState>, error) pidfdWait(this ж<Process> Ꮡp) {
         )), default!);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.handleTransientRelease(); ᒐ.Run(); }
 }
 
 internal static error pidfdSendSignal(this ж<Process> Ꮡp, syscallꓸSignal s) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         var (handle, status) = Ꮡp.handleTransientAcquire();
         var exprᴛ1 = status;
@@ -145,11 +147,11 @@ internal static error pidfdSendSignal(this ж<Process> Ꮡp, syscallꓸSignal s)
             return errors.New(osProcessAlreadyReleasedˢ);
         }
 
-        defer(Ꮡp.handleTransientRelease, ref ᒐ);
+        ᒐd1 = true;
         return convertESRCH(unix.PidFDSendSignal(handle, s));
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.handleTransientRelease(); ᒐ.Run(); }
 }
 
 internal static bool pidfdWorks() {
