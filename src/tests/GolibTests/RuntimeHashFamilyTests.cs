@@ -34,6 +34,13 @@ public class RuntimeHashFamilyTests
         public nint cap;
     }
 
+    // The runtime's own string header (runtime.stringStruct: str unsafe.Pointer; len int).
+    private struct StringHeaderShape
+    {
+        public @unsafe.Pointer str;
+        public nint len;
+    }
+
     private static byte[] RandomBytes(int length, int seed)
     {
         Random random = new(seed);
@@ -138,6 +145,14 @@ public class RuntimeHashFamilyTests
         ref @string s = ref heap(str, out ж<@string> Ꮡs);
         Assert.AreEqual(GoMemhash("hello, world"u8, seed), GoStrhashPointer(@unsafe.Pointer.FromPinnedBox(Ꮡs), seed), "string content");
 
+        // (f) The emitted bytesHash shape end to end — `(*slice)(unsafe.Pointer(&b))` over a SUBSLICE, its
+        //     `array` word handed to memhash with its `len`: served by SliceHeaderBox since increment 3 (the
+        //     pointer retains the subslice's element-0 box), so the hash is the span form's.
+        slice<byte> sub = new slice<byte>(backing)[16..24];
+        ref slice<byte> sbox = ref heap(sub, out ж<slice<byte>> Ꮡsub);
+        ж<SliceHeaderShape> header = Ꮡsub.Reinterpret<slice<byte>, SliceHeaderShape>();
+        Assert.AreEqual(GoMemhash(backing.AsSpan(16, 8), seed), GoMemhashPointer((~header).array, seed, (ulong)(~header).len), "the bytesHash route through the slice header");
+
         // (e) The empty case: memhash(nil, seed, 0) is seed ^ hashkey[0], as Go's s == 0 arm says.
         Assert.AreEqual(GoMemhash(ReadOnlySpan<byte>.Empty, seed), GoMemhashPointer(new @unsafe.Pointer(nil), seed, 0), "nil pointer, zero size");
     }
@@ -155,19 +170,25 @@ public class RuntimeHashFamilyTests
         PanicException past = Assert.ThrowsException<PanicException>(() => GoMemhashPointer(@unsafe.Pointer.FromPinnedBox(Ꮡ(b, 36)), 0, 8));
         StringAssert.Contains(past.Message, "past its end");
 
-        // The HEADER class, reproduced exactly as the emitted bytesHash mints it: Reinterpret of a
-        // slice<byte> box onto the runtime's slice-header shape yields a NativeBox over the pinned
-        // managed struct, whose `array` field is the backing array's reference read as a Pointer.
-        // Measured 2026-09-04: its runtime type is System.Byte[], and a field read through it is a
-        // native SIGSEGV. The body must refuse it by name without touching a field.
-        ref slice<byte> sb = ref heap(b, out ж<slice<byte>> Ꮡb);
-        ж<SliceHeaderShape> header = Ꮡb.Reinterpret<slice<byte>, SliceHeaderShape>();
-        @unsafe.Pointer confused = (~header).array;
-        Assert.AreEqual(typeof(byte[]), ((object)confused).GetType(), "the premise: the header's array field is a type-confused reference");
+        // The HEADER class as rule (0) meets it TODAY: the STRING header. (The SLICE header was this
+        // witness until increment 3's SliceHeaderBox began serving it — its case now lives in the recovery
+        // arm above as a positive property.) Reinterpret of a @string box onto the runtime's stringStruct
+        // shape still takes the address route: a NativeBox over the pinned managed string whose `str`
+        // field is the byte[] reference read as a Pointer. Measured 2026-09-04: its runtime type is
+        // System.Byte[], and a field read through it is a native SIGSEGV. The body must refuse it by name
+        // without touching a field. EXPECTED TODAY: this witness moves again when the string half of the
+        // seam is admitted (Q44 first).
+        @string text = "hello, header"u8;
+        ref @string sv = ref heap(text, out ж<@string> Ꮡtext);
+        ж<StringHeaderShape> stringHeader = Ꮡtext.Reinterpret<@string, StringHeaderShape>();
+        @unsafe.Pointer confused = (~stringHeader).str;
+        Assert.AreEqual(typeof(byte[]), ((object)confused).GetType(), "the premise: the string header's str field is a type-confused reference (expected today)");
 
         PanicException headerPanic = Assert.ThrowsException<PanicException>(() => GoMemhashPointer(confused, 0, 8));
         StringAssert.Contains(headerPanic.Message, "not an unsafe.Pointer");
         StringAssert.Contains(headerPanic.Message, "System.Byte[]");
+
+        ref slice<byte> sb = ref heap(b, out ж<slice<byte>> Ꮡb);
 
         // A slice HEADER box itself (unsafe.Pointer(&b) of a slice): refused, not hashed as garbage.
         PanicException headerBox = Assert.ThrowsException<PanicException>(() => GoMemhashPointer(@unsafe.Pointer.FromPinnedBox(Ꮡb), 0, 8));
