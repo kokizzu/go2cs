@@ -16,13 +16,17 @@
 // — died there. The runtime-side definitions in runtime/proflabel.cs are faithful conversions and
 // die one level deeper, in `getg()`.
 //
-// WHY THIS DOES NOT IMPLEMENT getg(). getg() is the honest floor for both bodies, and giving it a
-// managed body to reach two functions would be the wrong trade by a wide margin: it is referenced
-// at 574 sites across 92 files (runtime/{windows,linux,darwin}/proc.cs 75 each, os_windows.cs 20,
-// panic.cs 15, the signal/GC/time/stack paths 8-13 each). A body there converts 574 LOUD THROWS
-// into quiet partial behaviour over a `g` that models a fraction of what Go's carries — the
-// false-green shape this corpus treats as worse than the throw. getg() stays a stub; the labels
-// get their own storage.
+// WHY THIS DID NOT IMPLEMENT getg() — AND WHERE getg() LIVES NOW (2026-09-05, Q47). This file once
+// argued that giving getg() a managed body to reach two functions would be the wrong trade: 574
+// referencing sites, a `g` modelling a fraction of what Go's carries, quiet partial behaviour in
+// place of loud throws. The Linux runtime row's bill (2026-09-04) and Q40's reader census answered
+// it on the numbers — the 574 is a token count over three per-GOOS folders (266 emitted call sites
+// per flavour, 280 readers in Go), 202 of those 280 read `gp.m` FIRST so a bare `g` is loud and
+// anonymous rather than quiet, and 47 of the row's 378 rows died on the stub — so getg() has a body
+// since Q47: a `g` AND the `m` that is its thread, thread-static-cached, in runtime/stubs_impl.cs
+// (DESIGN-managed-getg.md §6). The decision THIS file made is unchanged: the labels' storage stays
+// here and in golib's mirror, and the managed `g.labels` READS the mirror on every call — it is the
+// one H field programs mutate, and the mirror remains the source of truth.
 //
 // WHERE THE STORAGE LIVES, AND WHY IT MOVED (2026-09-04, Q27). It was an AsyncLocal on this class.
 // The mechanism is unchanged and the reasoning below still holds in full -- it simply lives in
