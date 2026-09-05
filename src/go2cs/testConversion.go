@@ -346,6 +346,27 @@ func selectTestProjectModel(internal, external *packages.Package) testProjectMod
 func testVariantOptions(base Options, model testProjectModel, isExternal bool, internalBridgeName string) Options {
 	base.testExternalVariant = isExternal
 
+	// Whether this variant's emission may NAME production's internal declarations — the question
+	// productionLiftReuseReachable asks, and the one the variant flag above cannot answer, because
+	// accessibility is decided by the ASSEMBLY the C# lands in and not by the Go package the source
+	// came from. Model by model:
+	//
+	//   - RECOMPILE: the production `.cs` are compile items of the test assembly, so every
+	//     production declaration is same-assembly for BOTH variants.
+	//   - WHITEBOX REFERENCE: chosen exactly when an internal `_test.go` exists
+	//     (selectTestProjectModel), which is the SAME fact that makes the production conversion emit
+	//     `InternalsVisibleTo $(AssemblyName).tests` (hasSiblingInternalTestFiles ->
+	//     insertFriendAssemblyAccess, projectFileWriter.go). Both variants emit into that one
+	//     `.tests` project, so the external half has package-private sight of production too — and
+	//     it already relies on it: the internal bridge names production's internal lifts directly
+	//     (runtime's export_test.cs `Func<ifaceHash_i, …>`), so a MISSING grant would fail the build
+	//     before any dedup decision was reached. The grant is a CONSEQUENCE of the model, never an
+	//     input to it, which is why this is decidable here without reading the csproj back.
+	//   - REFERENCE: chosen only when there is NO internal test file, so the production csproj
+	//     carries no grant at all and the external suite compiles into a plain referencing assembly.
+	//     `errors` is that package (all four of its test files are `package errors_test`).
+	base.testProductionInternalsVisible = !isExternal || model != testProjectReference
+
 	if model == testProjectWhiteboxReference && !isExternal {
 		base.testClassNameOverride = internalBridgeName
 		base.testInlineTypeAccess = true

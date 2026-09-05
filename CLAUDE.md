@@ -818,13 +818,30 @@ ONE stdlib in a build; there is now only one on disk.
   accessibility guard reasons within ONE assembly (`v.inFunction` short-circuits) bound the EXTERNAL
   test variant's function-local lift to the production assembly's INTERNAL lift (CS0122), bisected to
   `5442b402e`, whose own blast-radius census was a `-stdlib` two-seed diff and therefore structurally
-  blind to test emission. Rules: a cross-assembly reuse is admissible only if REACHABLE (an internal
-  variant, or a PUBLIC candidate); a documented invariant that a later seeding violates is a bug the
-  doc cannot catch; **a lift/dedup change owes a `-tests` convert-then-build of a row with an EXTERNAL
-  test variant — `errors`, the cheapest — beside `reflect`**; and a delta table carries build failures
-  as their own REGRESSION column, distinct from movers. (A bisect converging on adjacent commits with
-  BOTH controls valid is an attribution; the named suspects were exonerated by measurement, not by
-  argument.)
+  blind to test emission. Rules: a cross-assembly reuse is admissible only if REACHABLE — an internal
+  variant, a PUBLIC candidate, **or an EXTERNAL variant whose test-project MODEL puts production's
+  internals in sight** (whitebox-reference or recompile; only the plain reference model, chosen exactly
+  when the package has NO internal test file and therefore gets no `InternalsVisibleTo` grant, cannot
+  see them). ⚠ **The axis is the test ASSEMBLY, not the Go VARIANT — corrected 2026-09-04 by
+  measurement, after this line's first form said "an internal variant, or a PUBLIC candidate" and the
+  converter's predicate agreed with it.** `f38c2ae01` keyed reachability on `testExternalVariant`,
+  which is right for `errors` (external-only suite, no grant) and wrong for every package that HAS an
+  internal test file: there BOTH variants emit into the ONE `.tests` project, and the same fact that
+  selects the whitebox model (`selectTestProjectModel`) is what makes the production csproj emit
+  `InternalsVisibleTo $(AssemblyName).tests` (`insertFriendAssemblyAccess`) — so the grant is a
+  CONSEQUENCE of the model and decidable without reading the csproj back. runtime paid it on EVERY
+  target: `hash_test.go`'s `IfaceKey.i interface{ F() }` calls production `ifaceHash` through the
+  `export_test.go` bridge, so the refusal minted a second `IfaceKey_i` and the call could not bind
+  (`hash_test.cs(540,52) CS1503`), byte-identically on windows and linux. The two rules had been
+  written by two arcs: `liftNameNeedsPublicType`, directly above the refusal, documents that same
+  reuse as one hash_test.go "needs to compile at all". A documented invariant that a later seeding
+  violates is a bug the doc cannot catch; **a lift/dedup change owes a `-tests` convert-then-build
+  of a row with an EXTERNAL test variant — `errors`, the cheapest — beside `reflect`**; and a delta
+  table carries build failures as their own REGRESSION column, distinct from movers. (A bisect
+  converging on adjacent commits with BOTH controls valid is an attribution; the named suspects were
+  exonerated by measurement, not by argument. And a bisect is not always OWED: where the green-to-red
+  window holds exactly ONE commit touching the predicate, an instrumented reading names the SEAM as
+  well as the commit for the price of one convert — 2026-09-04, the CS1503 above.)
   ⚠ **The `-tests` driver MIRRORS `processConversion`'s analysis sequence BY HAND** (measured
   2026-09-03), so a new converter pass wired into the `-stdlib` driver binds NOTHING under `-tests`
   until it is wired there too — self-caught by a darwin conversion emitting 0 records where 28 were
