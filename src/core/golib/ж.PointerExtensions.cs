@@ -154,6 +154,16 @@ public static class PointerExtensions
             return new FieldRefBox<TDst>(box, ж<T>.ReinterpretRef<TDst>);
         }
 
+        // A Go slice HEADER read over a golib slice<X> — `(*slice)(unsafe.Pointer(&b))`, emitted as
+        // Reinterpret<slice<X>, Δsliceᴛ>(). Not an aliasing pair (five fields and a T[] against a pointer
+        // and two integers) and not pinnable, so the address route below minted a NativeBox over the
+        // PINNED managed struct whose first field read back the backing array's reference AS a pointer
+        // (measured 2026-09-04: a type-confused System.Byte[], a native SIGSEGV on the first dereference).
+        // The header box materializes Go's (array, len, cap) from the live slice instead; see its remarks
+        // for the write limit and the string half it deliberately leaves to Q44.
+        if (SliceHeaderBox<T, TDst>.Applies)
+            return SliceHeaderBox<T, TDst>.Mint(box);
+
         // Not representable as an alias, so the derived pointer has to name the source's storage by
         // ADDRESS — which is only a pointer at all while that storage is held still. Pin it for the
         // derived box's lifetime where it can be pinned (see TryPinnedReinterpret, which also says why
