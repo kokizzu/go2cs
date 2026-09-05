@@ -313,12 +313,25 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// mime's registry reader reach it through startTemplateThread); it takes the same body.
 		"lockOSThread":   goosAny,
 		"unlockOSThread": goosAny,
-		// Pinner: the "address is stable while pinned" contract already holds for managed ж<T>
-		// boxes (the GC tracks them through moves), so the pin set is a no-op by construction —
-		// the auto bodies walk the scheduler (acquirem) and span table (setPinned → findObject).
-		// internal/fmtsort's test init is the demonstrated consumer.
-		"Pinner.Pin":   goosAny,
-		"Pinner.Unpin": goosAny,
+		// Pinner (Q45, docs/phase4/DESIGN-runtime-pinner.md). Address stability is the address-take's
+		// own contract for a managed ж<T> box (EnsureStableAddress at the pin moment, held for the
+		// box's life), so Pin takes no CLR pin — but the two OBSERVABLES Go's suite measures are real
+		// state: the pin BIT (isPinned, read by the cgo argument check) and the lifetime HOLD until
+		// Unpin. runtime/pinner_impl.cs keeps a pin COUNT keyed by the pointer's ReferentObject (Go's
+		// per-object span index, one level down: pinning &sl[0] pins the whole backing) and holds the
+		// referents until Unpin (Go's refs). The auto bodies walk the scheduler (acquirem → getg) and
+		// the span table (setPinned → findObject → mheap_.arenas, never allocated here): isPinned
+		// nil-derefs in spanOf on its first read, pinnerGetPinCounter walks the same table, and
+		// cgoCheckPointer returns at `debug.cgocheck == 0` because parsedebugvars sits on the schedinit
+		// path the managed host never runs. All three are BODIED, so the registry displaces them;
+		// setPinned, unpin, pinnerGetPtr, cgoCheckArg and cgoCheckUnknownPointer stay converted and
+		// dead behind them. Consumers: runtime's own pinner_test.go (21 rows) and internal/fmtsort's
+		// test init, whose emitted `(uintptr)` argument Pin tolerates (Q49's bridge class).
+		"Pinner.Pin":          goosAny,
+		"Pinner.Unpin":        goosAny,
+		"isPinned":            goosAny,
+		"pinnerGetPinCounter": goosAny,
+		"cgoCheckPointer":     goosAny,
 		// The traceback surface (managed_impl.cs). Callers' auto body enters the raw-metal
 		// unwinder on its first step (callers → getcallersp, an assembly stub), and Frames.Next
 		// reads linker funcInfo tables (findfunc) that have no managed form. Both API contracts —

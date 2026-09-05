@@ -68,29 +68,7 @@ internal static @unsafe.Pointer pinnerGetPtr(ж<any> Ꮡi) {
     return (~e).data;
 }
 
-// isPinned checks if a Go pointer is pinned.
-// nosplit, because it's called from nosplit code in cgocheck.
-//
-//go:nosplit
-internal static bool isPinned(@unsafe.Pointer ptr) {
-    var span = spanOfHeap((uintptr)ptr);
-    if (span == nil) {
-        // this code is only called for Go pointer, so this must be a
-        // linker-allocated global object.
-        return true;
-    }
-    var pinnerBits = span.getPinnerBits();
-    // these pinnerBits might get unlinked by a concurrently running sweep, but
-    // that's OK because gcBits don't get cleared until the following GC cycle
-    // (nextMarkBitArenaEpoch)
-    if (pinnerBits == nil) {
-        return false;
-    }
-    var objIndex = span.objIndex((uintptr)ptr);
-    var pinState = pinnerBits.ofObject(objIndex);
-    KeepAlive(ptr); // make sure ptr is alive until we are done so the span can't be freed
-    return pinState.isPinned();
-}
+// go2cs generated this placeholder — func isPinned is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string triedToUnpinNonGoPointerˢ = "tried to unpin non-Go pointer"u8;
@@ -319,17 +297,7 @@ internal static bool decPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
     return true;
 }
 
-// only for tests
-internal static ж<uintptr> pinnerGetPinCounter(@unsafe.Pointer addr) {
-    var (_, span, objIndex) = findObject((uintptr)addr, 0, 0);
-    var offset = objIndex * (~span).elemsize;
-    var (t, exists) = span.specialFindSplicePoint(offset, _KindSpecialPinCounter);
-    if (!exists) {
-        return default!;
-    }
-    var counter = t.ValueSlot.Reinterpret<special, specialPinCounter>();
-    return counter.of(specialPinCounter.Ꮡcounter);
-}
+// go2cs generated this placeholder — func pinnerGetPinCounter is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // to be able to test that the GC panics when a pinned pointer is leaking, this
 // panic function is a variable, that can be overwritten by a test.
