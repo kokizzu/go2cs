@@ -23755,4 +23755,64 @@ the wrong way and only write evidence settled it.
 across linux, darwin and windows. No behaviour change; CNR unaffected, behavioral goldens being windows.
 
 -- G
+## 2026-09-04 — `runtime` on Linux: the 378-row bill behind position 57 is MEASURED (C1) — 33 skip-list iterations, 32 exclusions by first frame, the host reaches the parallel phase; doors sum to 436; the parallel-phase attributions CORRECTED from the artifact
+
+**Instrument.** The published Release+TC0 `runtime` test host at `44b5089b2` (Increment 1's `rtsigprocmask` body in, the Q39 two-line external-lift probe in, probe 2 out) driven DIRECTLY with an accumulating top-level `--skip "^(A|B|…)$"`, a unique `--result` per iteration, the two recorded doors (`TestCrashWhileTracing`, `TestDebugCall`) excluded from the start; attribution from the host's own tail (`goroutine started by X`) else the last STARTED unfinished top-level row; per-iteration deadline 40 m for iterations 1–6 and **8 m from iteration 7** (iteration 6 sat 27 min with zero stream growth). Oracle: Go 1.23.12 on the same container, 0 fail / 421 pass / 17 skip over 438 top-level names (436 `Test*`). 33 iterations, 8,856 s of host wall. Evidence: the lane's per-iteration `results.json` / `stream.jsonl` / `junit.xml` / `stderr`, a `deaths.txt` ledger and a re-runnable census script over any iteration's results file against the oracle stream (C1-local; attachable).
+
+**Deaths ledger — 32 exclusions beyond the two recorded doors, in order (exit / door / first frame / wall).**
+
+| # | row | exit | door | first frame | wall |
+|---|---|---|---|---|---|
+| 1–5 | `TestDebugCallGC`, `…GrowStack`, `…Large`, `…Panic`, `…UnsafePoint` | 2 | stub | `getg` on the debug-call worker goroutine | 13–14 s each |
+| 6 | `TestEmptySlice` | HANG | finalizer / liveness | `<-fin` waits for a finalizer the CLR never runs (the zero-length slice keeps `y` reachable — the `TestOnceXGC` class); 9 parallel rows parked | killed at 27 min of no stream growth |
+| 7, 8 | `TestEmptyString`, `TestFinalizerType` | 1 | finalizer / liveness (deadline) | same class | 482 s |
+| 9 | `TestLockOSThreadNesting` | 2 | stub | `getg` via `LockOSCounts` | 74 s |
+| 10, 11 | `TestMapBuckets`, `TestMapTombstones` | 139 | NATIVE SIGSEGV, EMPTY stderr | map_test reads bucket counts through export_test's `hmap` reinterpretation; results file never written, attributed from the stream | 76 / 68 s |
+| 12 | `TestMemmoveAtomicity` | 2 | stub | `memmove` — a FLAT bodyless partial in `stubs.cs`, OUTSIDE the 42 `runtime/linux` stubs | 74 s |
+| 13, 14 | `TestMutexWaitTimeMetric`, `TestParallelRWMutexReaders` | 2 | stub | `getg` | 78 / 107 s |
+| 15 | `TestPreemptionAfterSyscall` | 2 | stub | `getfp` | 116 s |
+| 16 | `TestProfBuf` | 139 | NATIVE SIGSEGV, empty stderr | — | 120 s |
+| 17 | `TestRWMutex` | 2 | stub | `getg` | 116 s |
+| 18 | `TestSPWrite` | 2 | stub | `testSPWrite` | 121 s |
+| 19 | `TestScavenger` | 2 | stub | `getg` | 131 s |
+| 20, 21, 23 | `TestSemaHandoff`, `…1`, `…2` | 2 | stub | `getg` | 131–152 s |
+| 22 | `TestSchedLocalQueueEmpty` | 1 | deadline (serial) | — | 483 s |
+| 24 | `TestSetPanicOnFault` | 134 | `AccessViolationException` in `ж<byte>` | the test faults on purpose; the CLR's fault is not Go's SIGSEGV-to-panic | 136 s |
+| 25 | `TestTraceMapConcurrent` | 2 | stub | `memhash` (flat) | 219 s |
+| 26 | `TestVDSO` | 1 | deadline (serial) | — | 483 s |
+| 27–33 | `TestSpuriousWakeupsNeverHangSemasleep`, `TestUsingVDSO`, `TestStackGrowthCallback`, `TestSmhasherZeros`, `TestSmhasherWindowed`, `TestSmhasherTwoNonzero`, `TestSmhasherText` | 1 | **parallel-phase budget expiry — NOT measured hangs (see the correction below)** | — | 482–483 s each |
+
+Door totals over the 32: stub **17** (`getg` 12, `memmove`, `getfp`, `testSPWrite`, `memhash`, + `getg` under `LockOSCounts`), finalizer/liveness **3**, serial deadline **2**, native fault **4** (SIGSEGV 3, AV 1), parallel-phase budget expiry **7** (recorded as deaths by the instrument; corrected below). The `hmap`-reinterpretation faults and the deliberate-fault AV are E3-shaped (the subject IS the replaced representation) and are recorded as such, not as findings. One ARTIFACT, not a death: iteration 13's first attempt named the SUBTEST `TestMemmoveAtomicity/24-backward`, and a slash inside a top-level `-skip` alternation is split per level by Go-syntax regexes — the host rejected it in 2 s; the parser was clamped to top-level names and the parent excluded.
+
+**Correction, from the artifact (2026-09-04, after the census post).** The serial phase runs one row at a time, so "the last STARTED unfinished row" is a sound attribution there (deaths 1–26). The parallel phase is not: every parallel row carries a `run` event when the batch opens, the host emits no pause/continue events, and at most a few rows execute at once — so "last started" names a PARKED row, not the running one. The in-flight set at the deadline was compared across iterations 26–33: it does NOT shrink by the one excluded name; it fluctuates (35 → 12 → 33 → 29 → 22 → 20 → 29 → 25), with rows leaving AND joining it on every iteration (e.g. `TestSmhasherZeros` parked with zero output in iterations 27–30 and terminal in 31), because which parallel rows reach a slot inside 8 minutes is scheduling. So: deaths 27–33 are budget expiries of the parallel batch, their named rows are arbitrary, and the four `TestSmhasher*` "deadline" rows are predicted to be `memhash`/`strhash` stub rows once run (their siblings that did execute all died there). The parallel batch's true hang(s), if any, are found only by running each member SOLO under its own deadline (a `--run` per name); the bill did not do that, and says so.
+
+**Census by door at iteration 33** (skip list = 34 names; re-derived from `iter33.results.json` against the oracle stream; the host's `infrastructure-error` action IS terminal — 52 top-level rows carry it — which is what closes the arithmetic):
+
+| door | rows | note |
+|---|---|---|
+| `Test*` rows | 436 | oracle 438 names incl. `ExampleFrames`, `FuzzPIController` |
+| excluded by the skip list | 34 | 2 recorded doors + 32 exclusions |
+| started | 402 | = 436 − 34 |
+| terminal | 377 | pass 215 / fail 95 / infrastructure-error 52 / skip 15 |
+| matched-pass | 215 | |
+| matched-skip | 15 | the other two Go skips (`TestMemHash32/64Equality`) hit a stub first |
+| stub | 62 | RULE: any output line carrying a `NotImplementedException` — 50 infrastructure-error + 12 fail; only 2 carry it below their first line |
+| divergence | 85 | Go pass, C# fail (83) or non-stub infrastructure-error (2) |
+| in flight at the 8 m deadline | 25 | the parallel batch, tail `package timeout after 00:08:00` |
+| **sum** | **436** | 34 + 215 + 15 + 62 + 85 + 25 |
+
+**Stub symbols (62):** `getg` **35**, `memhash` 8, `sysMmap` 3, `pipe2` 2, `strhash` 2, one each `open`, `getfp`, `heapObjectsCanMove`, `fastrand`, `memhash32`, `memhash64`, `memclrNoHeapPointers`, `mincore`, `usleep`, `pprof_mutexProfileInternal`, `AsmFunc`, `getcallerpc`. With the ledger's 12 `getg` deaths that one symbol accounts for **47 rows** of the 378 (the whole `TestPageAlloc*`/`TestPageCache*`/`TestPageAccounting` allocator suite through `mheap` locking, `TestGCTest*`, `TestGoroutineProfile*`, `TestLFStack*`, `TestReadMemStats`/`TestReadMetrics`, `TestUserArena*`, `TestSignalM`, `TestStringW`, `TestTraceMap`, `TestTracebackParentChildGoroutines`, `TestTracebackSystemstack`, `TestWeakToStrongMarkTermination`) — Q40's measured blast radius on this row. `fastrand` is NOT a runtime stub: `runtime.fastrand` exists only as the push-renamed `legacy_fastrand` (rand.go), and the external test's own pull `//go:linkname fastrand runtime.fastrand` lands as a throwing stub in the TEST assembly; behind any forwarder it reaches `rand()` → `getg().m.chacha8` — Q40's wall again.
+
+**Divergence families (85), by MECHANISM from the first output line:** PC / frame / line attribution **24** (`TestCallers*` 11, `TestCaller`, `TestTraceback{Args,Elision,Generic,Inlined,RuntimeMethod,System}`, `TestStackWrapperStack{Panic,InlinePanic}`, `TestStartLine`, `TestLineNumber`, `TestInlineUnwinder`, `TestFunctionAlignmentTraceback` — the `reflect`/`log/slog` stack-walk class at runtime scale); `runtime.Pinner` **19** (`cgoCheckPointer() did not panic` 9, nil deref inside `Pin` 8, keep-alive/leak 2 — one unimplemented type over the CLR heap); GC / memstats / metrics accounting **12** (`TestMemStats` TotalAlloc overflow, `TestPeriodicGC`, `TestReadMetricsConsistency`, `TestGCCPULimiter`, `TestGCInfo`, `TestGcDeepNesting`, `TestTinyAlloc`, `TestCPUStats`, `TestCPUMetricsSleep`, `TestTimeHistogram`, `TestArenaCollision`, `TestFinalizerRegisterABI`); `testing.AllocsPerRun` **11** (the disclosed alloc-count class; two siblings PASS: `TestStructHash`, `TestStringConcatenationAllocs`); map semantics **6** (`TestMapIterOrder`/`TestMapSparseIterOrder` — iteration order is CONSTANT where Go randomizes; `TestBigItems`, `TestGrowWithNegativeZero`, `TestEmptyMapWithInterfaceKey`, `TestIgnoreBogusMapHint` — a negative hint reaches the BCL constructor as `ArgumentOutOfRangeException`); panic / recover semantics **6** (`TestPanicNil`, `TestRecoverMatching`, `TestRuntimePanic`, `TestRuntimePanicWithRuntimeError` — the recovered value is a `string`, not a `runtime.Error` — `TestIssue43920/43921`); float sign **4** (`TestFloat64`, `TestMaxFloat`, `TestMinFloat`, `TestNegativeZero`); toolchain-driven **3** (`TestLockRankGenerated` — `go run mklockrank.go` exits 1 from the converted host's cwd; `TestUnsafePoint` — `objdump`; `TestMemHashGlobalSeed` — `No AES`, `useAeshash` never set because `alginit` never runs).
+
+**In flight at the final deadline (25):** `TestChanSendBarrier`, `TestChanSendSelectBarrier`, `TestCheckPtr`, `TestConcurrentReadsAfterGrowth`(+`Reflect`), `TestFakeTime`, `TestGCTestPointerClass`, `TestGcPacer`, `TestGdb{Backtrace,Const,CoreSignalBacktrace,Panic,Python}`, `TestMemmove`, `TestMemmoveAlias`, `TestMemmoveOverflow`, `TestMemmoveOverlapLarge0x120000`, `TestNetpollDeadlock`, `TestNetpollWaiters`, `TestPanicSystemstack`, `TestPanicTraceback`, `TestRecoverBeforePanicAfterGoexit`(+`2`), `TestSmhasherAvalanche`, `TestSmhasherText` — the parallel batch at one 8 m budget, read per the correction above: unmeasured, not 25 findings.
+
+**Orphan finding (standing on this host).** `TestPanicSystemstack` re-execs the host as its own child (`testPanicSystemstackInternal`); the child HANGS and is orphaned (ppid 1) on every iteration that reaches the parallel phase — six were alive when the bill was stopped, killed by pid. Any Linux `runtime` `-tests` run leaves one behind per run until the row is skipped or fixed (queued as Q46: host hygiene — a child must not outlive its parent — plus the semantic half). Instrument note: `ps | grep | head -1` returned the OLDEST orphan and nearly cost a healthy 470 s iteration, read as a 2,032 s overrun.
+
+**Prediction (mailbox `5745f8e87`) scored.** Deaths 4–10 → 32: MISS (the ceiling quoted, 42 stubs, was the wrong population — hangs and faults are not stubs); `getg` first among first frames: MET; the signal family: MISS at 0; stub 15–40 → 62: MISS above; divergence 60–120 → 85: MET, families as named except the hash suites placed under divergence instead of stub; deadline 0–5 → 12 recorded + 25 in flight: MISS by an order (and 7 of the 12 were budget expiries, per the correction); matched 200–280 → 230: MET; top three matched > divergence > stub: MET. The SHAPE held and the COUNTS failed wherever a hang was possible: the prediction priced the row as if every failure terminates.
+
+**Follow-ups, as queued by the coordinator the same day:** Increment 2 = the flat hash-stub family (`memhash`, `memhash32`, `memhash64`, `strhash`) over golib's hashing (C1); Q45 `runtime.Pinner`; Q46 the re-exec orphan; the `getg` design (SUB-Q40, seated train 26) with Q47 as its cut.
+
+-- C1
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
