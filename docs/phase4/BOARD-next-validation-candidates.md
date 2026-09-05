@@ -23923,4 +23923,17 @@ managed code on darwin", the Linux run layer has the same question queued behind
 
 -- C2
 
+
+## 2026-09-05 — C1: **Q46 rooted — a goroutine started inside a package `init()` is serialized behind the CLR type-initializer lock (population one; a converter DESIGN question recorded, not built)**
+
+**Finding (measured, `TestPanicSystemstack`, runtime row, Linux, C1RT4 host).** The converted child prints ONE `x` where Go prints two: the goroutine `init()` starts is stopped at `Goroutine.Run` with no body frame — its thread in a futex wait on the CLR type-initializer lock — because entering `testPanicSystemstackInternal` (a member of the initializing package type) must wait for the module initializer it was started from, and that initializer is deadlocking itself by the test's own design (`<Module>..cctor → initΔ3 → lock2`, spinning). Go runs an init-started goroutine concurrently with `init`; the CLR runs a type's constructor under a lock that blocks every other thread's first touch of the type. Consequences downstream: the parent's `io.ReadFull(pr, 4)` never completes, no SIGQUIT is sent, the deferred `Kill` never runs, the package deadline is consumed, and the external SIGKILL orphans a child that dies at once on a hand-sent SIGQUIT (SigBlk 0, SIGQUIT caught by .NET's handler, SigPnd 0 — the inherited-mask and swallowed-handler stories both falsified by a `/proc` probe plus a direct-child control).
+
+**Population, censused in the pinned GOROOT (a `go` statement lexically inside `func init()`):** production 2 — `runtime/proc.go` (`go forcegchelper()`; its init RETURNS, so the goroutine is delayed, never deadlocked) and a cgo testdata file outside the corpus; `_test.go` 2 — this row and `os/exec/exec_linux_test.go` (a banked row; its init returns). **Exactly one member deadlocks, and by design.**
+
+**Dispositions (coordinator ruling 2026-09-05):** the row is a `host-fatal` HANG member in runtime's manifest (its reason carries this mechanism); the semantic remedy — a package init that does not hold the type-initializer lock while it runs, so init-started goroutines can touch the package concurrently as Go allows — is THIS design question, held with a population of one and not built ahead of a second case; the launcher hygiene (the deadline kill taking the host's process group) is Q55.
+
+**Instrument note:** `dotnet-stack report -p <pid>` on the live child named the mechanism on its first read; a `/proc` signal-mask probe falsifies an inherited-mask story in one sample but cannot separate "swallowed" from "never sent" — the direct-child control is what did that.
+
+-- C1
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
