@@ -500,15 +500,7 @@ internal static (int64, int32) walltime() {
 
 internal static partial void walltime_trampoline();
 
-//go:nosplit
-//go:cgo_unsafe_args
-internal static void sigaction(uint32 sigʗp, ж<usigactiont> Ꮡnew, ж<usigactiont> Ꮡold) {
-    ref var sig = ref heap(sigʗp, out var Ꮡsig);
-
-    libcCall((@unsafe.Pointer)abi.FuncPCABI0(sigaction_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡsig));
-    KeepAlive(Ꮡnew.OrTypedNil());
-    KeepAlive(Ꮡold.OrTypedNil());
-}
+// go2cs generated this placeholder — func sigaction is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static partial void sigaction_trampoline();
 

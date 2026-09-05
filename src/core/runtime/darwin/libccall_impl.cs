@@ -30,6 +30,22 @@
 // outputs. GoLibcCall.DispatchArgsStruct performs exactly that and writes the outcome back through
 // the box, so the converted caller reads `args.ret` as it always did.
 //
+// MEASURED CORRECTION (increment 6, 2026-09-05, Q41). The lifted per-call-site struct above is the
+// shape of 12 of sys_darwin.go's 50 libcCall sites at the pinned go1.23.12; 35 pass
+// `&<first parameter>` under //go:cgo_unsafe_args, where Go's trampoline reads the WHOLE parameter
+// block from consecutive stack slots (sigaction_trampoline: 8(DI) new, 16(DI) old, 0(DI) sig).
+// The converted form boxes the first parameter ALONE, so DispatchArgsStruct places one register and
+// every parameter behind it travels as whatever the caller-saved registers held. Three shapes:
+// SILENT for a plain-integer first parameter with more behind it (sigaction, setitimer, kevent,
+// pthread_kill, syscall_syscall9 at master; read, write1 and sigprocmask already displaced);
+// SILENT for a first parameter whose trampoline writes the RESULT through the pointer (walltime,
+// pthread_self -- dispatched, never written back); LOUD by type for a pointer first parameter
+// (the pthread_*/mmap/madvise/mlock/open/sigaltstack/sysctl family, refused above as a non-struct
+// pointee). Q41's arm64 death was the sigaction member: libc wrote a 16-byte read-back through a
+// stale third register into the managed stack, and the CLR's next stack walk died on it.
+// sigaction_impl.cs is the first remedy (the seam marshals both pointers natively); the class is
+// a separate ruling, recorded on the board.
+//
 // WHAT IS REFUSED, LOUDLY AND BY NAME, NEVER WITH A DEFAULT. An argument whose number resolves to
 // no box (a reference-bearing args struct — mmap_args, mach_vm_region_args, proc_regionfilename_args
 // carry managed pointers and have no pinnable storage, so they never register), a field the

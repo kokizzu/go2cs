@@ -187,6 +187,20 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// (1/2/3, not 0/1/2) and the errno read from the RETURN value, since pthread_sigmask does
 		// not set errno. Four clauses, four ways a borrowed linux body would have been wrong.
 		"sigprocmask": goosDarwin,
+		// runtime.sigaction -- the darwin signal INSTALL/QUERY primitive (increment 6, 2026-09-05, Q41).
+		// The train-26 crash report on osx-arm64 placed the SignalPrimitives death inside the CLR's
+		// own stack walk, reading a Frame link of 0x0000004200000000 = {sa_mask 0, sa_flags
+		// SA_SIGINFO|SA_RESTART}: a sigaction(2) read-back. Read from the code rather than guessed:
+		// the converted sigaction dispatches libcCall(fn, FromPinnedBox(Ꮡsig)) -- the box of its
+		// FIRST parameter only, Go's cgo_unsafe_args `&sig` being the head of a contiguous
+		// (sig, new, old) block that exists only on a Go stack -- so GoLibcCall places ONE register
+		// and libc reads `new` from and writes `old` through whatever the second and third registers
+		// held. Bodied (it calls libcCall), so displaced here, increment 5's door.
+		// runtime/darwin/sigaction_impl.cs realizes it over libc's sigaction(2) with `new` ENCODED
+		// into a native 16-byte struct sigaction and `old` DECODED back into the managed usigactiont,
+		// whose [8]byte union converts to an array<byte> and so can never be passed by address (the
+		// struct-passing class; the mirror arc's writeNativeSockaddr shape).
+		"sigaction": goosDarwin,
 		// runtime.libcCall — darwin's dispatch bottom: every libc trampoline in sys_darwin.cs is reached
 		// through libcCall(FuncPCABI0(x_trampoline), &args). Its converted body opens with getg() and
 		// ends in asmcgocall, four bodyless intrinsics with no implementing part anywhere (the
