@@ -1343,22 +1343,9 @@ partial class runtime_package
     {
     }
 
-    // Pinner.Pin pins a Go object so its address is stable for the duration of the pin. The
-    // guarantee it exists to provide — "the object will not be moved or freed while pinned" —
-    // is about handing addresses to non-GC-aware code; a golib pointer is a managed ж<T> box
-    // the GC tracks through every move, so the contract already holds unconditionally and the
-    // pin set is a no-op BY CONSTRUCTION (the same class as LockOSThread above). The auto body
-    // walks the scheduler (acquirem → getg) and the span table (setPinned → findObject) —
-    // machinery that does not exist here. internal/fmtsort's test init (runtime.Pinner over
-    // channel addresses, issue #49431's address-ordering guard) is the demonstrated consumer.
-    [GoRecv] public static void Pin(this ref Pinner Δp, any pointer)
-    {
-    }
-
-    // Pinner.Unpin unpins all pinned objects of the Pinner (no-op: nothing was pinned).
-    [GoRecv] public static void Unpin(this ref Pinner Δp)
-    {
-    }
+    // Pinner.Pin / Pinner.Unpin live in pinner_impl.cs (Q45). The "address is stable" half of
+    // their contract IS a no-op here, exactly as the LockOSThread class above — but the pin BIT
+    // and the lifetime HOLD Go's suite measures are real state, and that file owns the whole seam.
 
     // ------- The traceback surface: Callers / callers (Caller's funnel) / Frames.Next -------
 

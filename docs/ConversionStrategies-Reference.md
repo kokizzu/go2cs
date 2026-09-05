@@ -21346,6 +21346,56 @@ asserts identity and deliberately does not print the name. go2cs renders a dims-
 reflection constructor in sight. One root: a slice type has no dims slot, so nothing survives the
 `Elem()` hop. Widening the cargo there is an arc of its own.
 
+### `runtime.Pinner` — a pin BIT keyed by the referent allocation, and Go's two-level cgo walk over managed values
+
+**What the seam is.** Go's `Pinner` makes one promise with two observables. The promise — an object
+is "not moved or freed until `Unpin`" — exists so an address can be handed to non-GC-aware code, and
+the ADDRESS half is already unconditional in golib: an address is only ever minted by the `ж<T>`
+`uintptr`/`void*` conversions, which pin the storage for the box's whole life, and a reachable box is
+never freed. So the first hand-own made `Pin`/`Unpin` no-ops — right about the half no test measures
+and wrong about the two halves every test does: the **pin bit** (`isPinned`, read by the cgo argument
+check) and the **lifetime hold** (a pinned object stays alive until `Unpin`). Meanwhile the converted
+`isPinned` nil-dereferenced in `spanOf` (`mheap_.arenas` is never allocated) and the converted
+`cgoCheckPointer` returned silently at `debug.cgocheck == 0` — Go's default of 1 is set by
+`parsedebugvars` on the `schedinit` path the managed host never runs, the same silently-unreached
+init as `internal/cpu`'s feature flags.
+
+**The emitted form.** Five bodies are displaced through `manualConversionFuncs["runtime"]` —
+`Pinner.Pin`, `Pinner.Unpin`, `isPinned`, `pinnerGetPinCounter`, `cgoCheckPointer` — into one flat
+marked companion, `core/runtime/pinner_impl.cs`; `setPinned`, `unpin`, `pinnerGetPtr`,
+`cgoCheckArg` and `cgoCheckUnknownPointer` stay converted and dead behind them (the `mfinal.cs`
+"vestigial machinery" precedent). The pin is a COUNT in a `ConditionalWeakTable` keyed by the
+pointer's `INilPointer.ReferentObject` — a standard box is its own referent, an element reference's
+is its canonical backing, a field reference's is its source allocation — which is Go's per-object
+span index one level down: pinning `&sl[0]` pins the whole backing, so `isPinned(&sl[1])` and the
+slice header's array word both read pinned, and pinning an interface CELL does not pin the pointer it
+holds. The table is weak; the hold is the pinner's own list of referents (Go's `refs`, one level
+down), a partial-part field on the converted `pinner` struct so it rides with the box through
+resurrection into the leak finalizer, which goes through the hand-owned `SetFinalizer` bridge and
+calls the converted `pinnerLeakPanic` variable so a test's swap is observed. No CLR pin is taken, no
+byte lands on `ж<T>` (a GolibTests arm asserts the box's field set), and nothing is written into
+`ManagedPointerTokens` — that record is weak, per-projection and about the address-take, and
+`TestPinnerSimple` takes `unsafe.Pointer(p)` (which registers) BEFORE asserting `!IsPinned`; the
+record is only READ, through `Resolve`, for a bare number.
+
+**The cgo check.** `cgoCheckPointer(ptr, arg)` is Go's rule verbatim: every Go pointer word at
+level 1 must be pinned, every Go pointer word at level 2 must be pinned, level 3 is not inspected
+(`cgoCheckArg` walks the argument's pointee by its `GoType` structure; `cgoCheckUnknownPointer`
+reads a pointee's words without descending). A `NativeBox`, a native-backed slice and a number
+nothing resolves are not Go pointers; a channel, a map and a closure are Go pointers to unpinnable
+heap objects and always fail; a string literal's bytes are a heap `byte[]` here where Go's are
+RODATA — the one divergence the runtime suite reaches, disclosed as `runtime-capability` on
+`TestPinnerConstStringData`'s exact signature. `GODEBUG=cgocheck=0` disables the check, read once.
+
+**One converter shape tolerated.** `internal/fmtsort`'s test init passes
+`reflect.ValueOf(ch).UnsafePointer()` to `Pin`, and the converter wraps that `unsafe.Pointer`-typed
+call result in `(uintptr)` on its way into the `any` parameter — so `Pin` accepts a `uintptr` as the
+projected form of a pointer, resolving it through the record and no-op'ing on a miss. Routed to the
+Q49 bridge class; the accommodation retires with the converter fix. Design, per-row classification
+and the prediction on record: `docs/phase4/DESIGN-runtime-pinner.md`; guards: GolibTests
+`RuntimePinnerTests` (every "passes" arm followed by the same check with the pin removed, which must
+go red), and runtime's own `pinner_test.go` through the `-tests` pipeline.
+
 ## Comments
 
 Comment conversion is opt-in (`-comments`, default **off**) and two consumers require it: the

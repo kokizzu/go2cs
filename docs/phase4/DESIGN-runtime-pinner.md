@@ -422,3 +422,111 @@ emission change beyond the three placeholders).
   its price are in §6.2. It is the only thing between `TestPinnerCgoCheckString` and PASS.
 
 -- SUB-Q45
+
+---
+
+## 10. The cut, MEASURED (SUB-Q45, 2026-09-04/05) — appended; the sections above are unchanged
+
+Rulings taken at the design's acceptance: S2 became **Q50** (`unsafe.String` aliasing, a separate
+item — `TestPinnerCgoCheckString` stays the named REMAINS row, deliberately NOT given a disclosure
+class: an implementable defect is not a disclosure by the class bar); S1 folded into C2's **Q49**
+bridge class (the `uintptr` accommodation stays, stated in `pinner_impl.cs` with the Q49 reference);
+row 21 disclosed as designed; the three registry additions land with their footprint in ONE commit;
+the +0 B claim is a GolibTests arm. The cut is the second commit on `claude/sub-q45`.
+
+### 10.1 The footprint, read against §8 gate 2
+
+The two-seeded three-target diff could not be read at the merged seeds: the L3 MERGE refuses at
+master `db9e95841` on the pre-existing `runtime/{windows,linux}/trace_impl.cs` divergence (G's Q48,
+train 27, is the fix) — master's condition, not the cut's (the cut touches neither file). So the
+comparison was taken one step earlier, at the per-target STAGING roots, write-evidence-classified
+(only files newer than the seeding sentinel on both arms), CR-stripped:
+
+| target | `pinner.cs` | `<goos>/cgocall.cs` | `<goos>/package_info.cs` | other files |
+|:--|:--|:--|:--|:--|
+| windows/amd64 | −34 +2 | −57 +4 | −2 +2, 4 of 4 `GoPositionMap` | none |
+| linux/amd64 | −34 +2 | −57 +4 | −2 +2, 4 of 4 `GoPositionMap` | none |
+| darwin/amd64 | −34 +2 | −57 +4 | −2 +2, 4 of 4 `GoPositionMap` | none |
+
+Against the prediction: the two `pinner.cs` placeholders **as predicted**; `cgocall.cs` is the
+body-to-placeholder hunk (−53 +1) PLUS the `canTHappenˢ` hoist relocating to its next first user,
+`cgoCheckArg` (−4 +3) — the "possibly relocating" clause **held**; the position-map lines
+**as predicted**, left to the regen; zero other lines **as predicted**. Control: the OLD arm's
+emission is byte-identical (CR-stripped) to master's committed `pinner.cs` and each `cgocall.cs`, so
+the NEW emission is the committed file plus this change's hunks and nothing foreign — which is why
+the three `cgocall.cs` were taken from the NEW emission's bytes once the hand application was found
+short by exactly the hoist relocation; all four hand-applied files then read IDENTICAL to the
+emission. Seeds: 3,714 `.cs` each, both carrying the companion and the placeholders; the OLD run
+895 s, the NEW 964 s, `-convert-timeout 90m`, three targets each.
+
+### 10.2 Gates read before the battery's `CHAIN DONE` (allowed by the ruling)
+
+- Converter suite: `ok go2cs 799.119s`, rc 0 — both ledger sides, the companions guard (the flat
+  companion declares all five displaced members), metadata in sync.
+- `runtime.csproj` on windows, linux and darwin: 0 strict errors each (`--no-incremental` on the
+  target switches). `check-solution-integrity.ps1` ×3: 0 cycles across 307 projects, 717
+  behavioral projects registered.
+- GolibTests, `go2csPath` pinned, count-matched against the compile set (638 declared − 20 in the
+  five linux-only files = 618): **Debug 614 passed / 4 skipped / 0 failed of 618; Release+TC0 617 /
+  1 / 0 of 618**, both `Test Run Successful`, no abort. The new `RuntimePinnerTests` (10 arms)
+  green at both, every "passes" arm followed by the same check with the pin removed going red.
+- **Cost, measured by the guard** (`GC.GetAllocatedBytesForCurrentThread`, warm list and table):
+  first pin on a fresh Pinner **328 B** (pinner box + list + finalizer registration); a DISTINCT
+  pinned object **24 B** (one `PinRecord`; the table entry and list slot amortize); a REPEAT pin
+  **0 B**. The first reading was 24 B per repeat pin — one boxed `nuint` from a reflection read of
+  `NativeAddress` — replaced by a generic-definition type test (`NativeBox<>` is golib's only
+  override), which is what the arm asserting `repeatPin == 0` exists to catch. The +0 B claim is
+  `TheBoxGainsNoInstanceState`: `ж<>`'s instance fields are exactly `{m_isNull, m_pin,
+  m_publishedArrayBacking}` and `StandardBox<>`'s `{m_slot, m_val}`.
+
+### 10.3 Gates read after `CHAIN DONE`
+
+- **The gated `^TestPinner` re-read, Windows flavour, Release+TC0 — the §7 prediction HELD to the
+  row, read TWICE.** First at the design's base `db9e95841` (with the diagnostic patch described
+  under the finding below), then on the tree rebased onto train 26's master `dde657009` with NO
+  patch, the runtime test assembly building clean (0 strict errors). Both readings identical,
+  verdicts from the comparison record (preserved to scratch before each restore; the gated records
+  then deleted): Go 21 pass; C# **19 pass**, `TestPinnerCgoCheckString` **fail** with
+  `panic: runtime error: cgo argument has Go pointer to unpinned Go pointer` at its SECOND check
+  (the §6.2 REMAINS row, signature as predicted — on a train carrying SUB-Q50's cut `e8fcb6703`,
+  seated train 28, it is predicted to move to PASS: the design's own "if §6.2's sibling rides"
+  line), `TestPinnerConstStringData` **fail** with `not marked as pinned` at `pinner_test.go:527` —
+  its FIRST assertion, before `Pin` is called, as §6.1 predicted — **absorbed by the manifest
+  entry** (`disclosed: 1`). The results tail carries no timeout event; the two finalizer rows
+  passed at 10.06 s each (the finalizer's blocking send parks the runner for `runtime.GC()`'s 10 s
+  drain budget — the §6.3 mechanism, observed). N = 17 moved, M = 1 disclosed, K = 1 remains: the
+  prediction table's numbers and names, exactly.
+- **FINDING outside the prediction, measured and then CLOSED by train 26: at `db9e95841` runtime's
+  `-tests` assembly did not compile on this flavour** — `hash_test.cs(540,52): error CS1503: cannot
+  convert from 'go.runtime_test_package.IfaceKey_i' to 'go.runtime_package.ifaceHash_i'`, the
+  external test's lift of `interface{ F() }` failing to bind to `alg.cs`'s `internal` `ifaceHash_i`
+  (the cross-assembly lift-REACHABILITY class). Attributed by two controls before anything was
+  claimed: the master converter and the cut's emit a byte-identical `hash_test.cs` (and identical
+  `*_test.cs` throughout), so it was not the cut's; and C1's bill tree `44b5089b2` emits the same
+  file, so it predated that converter too. The first reading was taken with a DIAGNOSTIC patch on
+  the UNTRACKED pipeline output (`IfaceKey.hash()`'s body → `return 0`, a function no `TestPinner*`
+  row reaches), stated as such and removed with the emission. Train 26 then landed SUB-Q39's
+  lift-dedup fix ("the external test variant adopts production lifts on every target"), and the
+  second reading above — no patch, 0 strict errors — is the measurement that it closes this.
+- **`internal/fmtsort` filtered sweep (the §3.4 canary): `PASS internal/fmtsort 3 [110s]`**, Release,
+  3 of 3 expected verdicts — the banked row is UNCHANGED under the `uintptr` accommodation, as
+  predicted. The sweep left the standing re-emission dirt under the package (eight files: the test
+  csproj, `package_test_info.cs`, the init-hook and `GoPositionMap` forms, `sort.cs` −12) plus its
+  rewritten proof page — the documented classify-and-restore class, none of it the cut's (the cut
+  touches nothing in that package); restored by filename, records deleted, emission cleaned.
+
+- **CNR (rebased tree): NO REGRESSION — generated C# and .csproj byte-identical across all 715 behavioral packages, 6 platform-exclusives skipped by name, 0 NOT MEASURED, 2 advisory converter warnings, 1,481 s** — as predicted, no emission change beyond the three placeholders (which live in src/core, outside CNR's behavioral scope).
+- **`go2cs.slnx` Debug `--no-incremental`: exit 0 / 0 strict errors / 2201s on the rebased tree (the behavioral COMPILE gate; GolibTests is a member)**.
+- The Linux flavour re-read is C1's host and is posted as OWED, not read here.
+
+### 10.4 Rebased onto train 26 (`dde657009`); the final gates re-read there
+
+Train 26 touched none of the cut's files (both commits rebased clean; the placeholders and the three
+registry entries verified intact) but changed the converter's lift dedup, so every gate that reads
+the converter or the assembly was re-run on the rebased tree: converter suite `ok go2cs 412.392s`;
+`runtime.csproj` windows/linux/darwin 0 strict errors; GolibTests count-matched at **630** (train
+26's 620 + the ten new arms): Debug 624 passed / 6 skipped / 0 failed, Release+TC0 627 / 3 / 0; and
+the §10.3 re-read without the diagnostic patch. The design commit's posted SHA `49ccad282` is
+superseded by the rebase (`2e7113fdb`); the form is announce-then-push with `--force-with-lease`.
+
+-- SUB-Q45

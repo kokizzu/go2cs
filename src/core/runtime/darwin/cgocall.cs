@@ -466,9 +466,6 @@ internal static void cgounimpl() {
 internal static ж<uint64> Ꮡracecgosync = new StandardBox<uint64>(default(uint64));
 internal static ref uint64 racecgosync => ref Ꮡracecgosync.Value; // represents possible synchronization in C code
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string canTHappenˢ = "can't happen"u8;
-
 // Pointer checking for cgo code.
 // We want to detect all cases where a program that does not use
 // unsafe makes a cgo call passing a Go pointer to memory that
@@ -494,64 +491,14 @@ internal static readonly @string canTHappenˢ = "can't happen"u8;
 // call.  (This is necessary but not sufficient; the cgo program will
 // also have to change to pin Go pointers that cannot point to Go
 // pointers.)
-
-// cgoCheckPointer checks if the argument contains a Go pointer that
-// points to an unpinned Go pointer, and panics if it does.
-internal static void cgoCheckPointer(any ptrʗp, any argʗp) {
-    ref var ptr = ref heap(ptrʗp, out var Ꮡptr);
-    ref var arg = ref heap(argʗp, out var Ꮡarg);
-
-    if (!goexperiment.CgoCheck2 && debug.cgocheck == 0) {
-        return;
-    }
-    var ep = efaceOf(Ꮡptr);
-    var t = ep.Value._type;
-    var top = true;
-    if (arg != default! && ((abiꓸKind)((~t).Kind_ & abi.KindMask) == abi.Pointer || (abiꓸKind)((~t).Kind_ & abi.KindMask) == abi.UnsafePointer)) {
-        @unsafe.Pointer Δp = ep.Value.data;
-        if ((abiꓸKind)((~t).Kind_ & abi.KindDirectIface) == 0) {
-            Δp = ~(ж<@unsafe.Pointer>)(uintptr)(Δp);
-        }
-        if (Δp == nil || !cgoIsGoPointer(Δp)) {
-            return;
-        }
-        var aep = efaceOf(Ꮡarg);
-        var exprᴛ1 = (abiꓸKind)((~(~aep)._type).Kind_ & abi.KindMask);
-        if (exprᴛ1 == abi.Bool) {
-            do {
-                if ((abiꓸKind)((~t).Kind_ & abi.KindMask) == abi.UnsafePointer) {
-                    // We don't know the type of the element.
-                    break;
-                }
-                var pt = t.Reinterpret<_type, ptrtype>();
-                cgoCheckArg((~pt).Elem, Δp, true, false, cgoCheckPointerFail);
-                return;
-            } while (false);
-        }
-        else if (exprᴛ1 == abi.Slice) {
-            ep = aep;
-            t = ep.Value._type;
-        }
-        else if (exprᴛ1 == abi.Array) {
-            ep = aep;
-            t = ep.Value._type;
-            top = false;
-        }
-        else { /* default: */
-            @throw(canTHappenˢ);
-        }
-
-    }
-    // Check the slice rather than the pointer.
-    // Check the array rather than the pointer.
-    // Pass top as false since we have a pointer
-    // to the array.
-    cgoCheckArg(t, (~ep).data, (abiꓸKind)((~t).Kind_ & abi.KindDirectIface) == 0, top, cgoCheckPointerFail);
-}
+// go2cs generated this placeholder — func cgoCheckPointer is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static readonly @string cgoCheckPointerFail = "cgo argument has Go pointer to unpinned Go pointer"u8;
 
 internal static readonly @string cgoResultFail = "cgo result is unpinned Go pointer or points to unpinned Go pointer"u8;
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string canTHappenˢ = "can't happen"u8;
 
 // cgoCheckArg is the real work of cgoCheckPointer. The argument p
 // is either a pointer to the value (of type t), or the value itself,
