@@ -301,10 +301,14 @@ public static ж<Type> TypeOf(any a) {
     nint[]?[]? paramDims = kind == GoReflect.Func ? GoReflect.FuncParamDims(a) : null;
     // A CHANNEL value carries the direction of the type it was made with, and a POINTER carries its
     // pointee's unshifted — the same two positions the array dims occupy, for the same reason.
-    GoChanDir chanDir = kind == GoReflect.Chan ? GoReflect.ChanDirOfValue(a)
-                      : kind == GoReflect.Pointer ? GoReflect.PointeeChanDir(a)
-                      : GoChanDir.Unstamped;
-    return synthType(dyn, dims, paramDims, chanDir, keyDims);
+    // Increment D: the VALUE route reads the unified cargo off the channel (or the channel behind a
+    // pointer): the direction CHAIN rather than the scalar head, and the element's array dims, which
+    // a channel has no present element to measure and so can only carry.
+    ChanCargo? chanCargo = kind == GoReflect.Chan ? GoReflect.ChanCargoOfValue(a)
+                         : kind == GoReflect.Pointer ? GoReflect.PointeeChanCargo(a)
+                         : null;
+    dims ??= chanCargo?.ElemDims;
+    return synthType(dyn, dims, paramDims, chanCargo?.DirChain, keyDims);
 }
 
 // ==== the descriptor SPECIALIZATIONS: StructType() / ArrayType() ====
@@ -368,7 +372,12 @@ private static ж<ΔStructType> synthesizeStructType(ж<Type> Ꮡt) {
         // measure a nil pointee or an absent map entry.
         nint[]? dims = fieldKind == GoReflect.Array || fieldKind == GoReflect.Pointer || fieldKind == GoReflect.Map ? info.ArrayDims : null;
         nint[]? fieldKeyDims = fieldKind == GoReflect.Map || fieldKind == GoReflect.Pointer ? info.KeyDims : null;
-        GoChanDir fieldDir = fieldKind == GoReflect.Chan ? info.ChanDir : GoChanDir.Unstamped;
+        // Increment D: a channel field's cargo carries its chain and its element dims; the scalar
+        // direction is that chain's head and stays for every reader that asks for it.
+        GoChanDir[]? fieldChain = fieldKind == GoReflect.Chan ? info.ChanCargo?.DirChain : null;
+        if (fieldKind == GoReflect.Chan && dims is null) {
+            dims = info.ChanCargo?.ElemDims;
+        }
         // The DESCRIPTOR CARRIER, when the converter stamped one: this field's Go type is a
         // DEFINED type over a named interface, which the emission erased to a `using` alias, so
         // info.Type is the bare `object`/target interface and carries no Go name. Substituting the
@@ -378,7 +387,7 @@ private static ж<ΔStructType> synthesizeStructType(ж<Type> Ꮡt) {
         System.Type fieldDescriptorType = info.DescriptorSelf ?? info.Type;
         fields[i] = new StructField(
             Name: default!,
-            Typ: synthType(fieldDescriptorType, dims, null, fieldDir, fieldKeyDims),
+            Typ: synthType(fieldDescriptorType, dims, null, fieldChain, fieldKeyDims),
             Offset: (uintptr)(nuint)offsets[i]
         );
     }
@@ -528,7 +537,11 @@ public static ж<Type> Elem(this ж<Type> Ꮡt) {
     // and a MAP's dims are the pointee's / the element's already and pass through UNSHIFTED, neither
     // having a length of its own. The same rule rtype.Elem applies to the same cargo one layer up.
     nint[]? dims = Ꮡt.Value.arrayDims;
-    nint[]? elemDims = kind == Pointer || kind == Map ? dims : dims is { Length: > 1 } ? dims[1..] : null;
+    // Every ELEMENT-CARGO kind hands its dims down UNSHIFTED (pointer, map, slice, channel: none has a
+    // length of its own); only an ARRAY consumes its head. This is the predicate reflect's own Elem()
+    // already applies; this site named pointer and map alone, so a slice's or a channel's element
+    // dims were shifted off here and lost, invisible until D put dims on a channel.
+    nint[]? elemDims = GoReflect.KindCarriesElementCargo((int)kind) ? dims : dims is { Length: > 1 } ? dims[1..] : null;
     // A POINTER's channel-direction cargo is its POINTEE's, so it descends here and nowhere else —
     // this is the hop `new(chan<- string)` takes to reach `Elem().String()`. A CHANNEL's own
     // direction describes the channel, never its element, so it stops. The map KEY dims descend the

@@ -42,6 +42,12 @@ public interface IChannel : IEnumerable
     /// </summary>
     GoChanDir Direction => GoChanDir.Unstamped;
 
+    /// <summary>
+    /// The unified channel-value cargo (increment D), direction chain and element dims, or
+    /// <c>null</c> when unstamped. <see cref="Direction"/> is its head; this is the whole of it.
+    /// </summary>
+    ChanCargo? Cargo => null;
+
     void Send(object value);
 
     object Receive();
@@ -1056,7 +1062,7 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     // core, and the NIL channel of a directional type has no core at all yet still has a direction.
     // Deliberately OUTSIDE equality — Go compares channels by identity, so ==, Equals and the hash
     // all read the core alone (see the operators at the end of this type).
-    private readonly GoChanDir m_direction;
+    private readonly ChanCargo? m_cargo;   // increment D: chain + elem dims in the byte enum's old slot
 
     /// <summary>
     /// Creates a new channel.
@@ -1089,7 +1095,7 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     {
         ArgumentOutOfRangeException.ThrowIfNegative(size);
         m_core = new ChanCore<T>(size);
-        m_direction = direction;
+        m_cargo = ChanCargo.Of(direction);
     }
 
     // The NIL channel of a directional type: the zero VALUE of `chan<- T` / `<-chan T`, which is
@@ -1098,7 +1104,7 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     private channel(GoChanDir direction, NilType _)
     {
         m_core = null;
-        m_direction = direction;
+        m_cargo = ChanCargo.Of(direction);
     }
 
     /// <summary>
@@ -1123,7 +1129,7 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     private channel(ChanCore<T>? core, GoChanDir direction)
     {
         m_core = core;
-        m_direction = direction;
+        m_cargo = ChanCargo.Of(direction);
     }
 
     /// <summary>
@@ -1139,7 +1145,33 @@ public struct channel<T> : IChannel<T>, IEnumerable<T>, ISupportMake<channel<T>>
     /// Gets the Go direction of this value's channel type, or <see cref="GoChanDir.Unstamped"/>
     /// when no source stamped one — which the reflection bridge reports as bidirectional.
     /// </summary>
-    public GoChanDir Direction => m_direction;
+    public GoChanDir Direction => m_cargo?.Head ?? GoChanDir.Unstamped;
+
+    /// <summary>The unified channel-value cargo (increment D), or <c>null</c> when unstamped.</summary>
+    public ChanCargo? Cargo => m_cargo;
+
+    private channel(ChanCore<T>? core, ChanCargo? cargo)
+    {
+        m_core = core;
+        m_cargo = cargo;
+    }
+
+    /// <summary>
+    /// Creates a channel carrying the unified cargo, the <c>make</c> position of a channel whose
+    /// element is itself a channel or an array (increment D). A scalar direction still takes the
+    /// <see cref="GoChanDir"/> constructor, byte for byte as before.
+    /// </summary>
+    public channel(nint size, ChanCargo? cargo)
+    {
+        m_core = new ChanCore<T>(size);
+        m_cargo = cargo;
+    }
+
+    /// <summary>The NIL channel of a Go channel type carrying the unified cargo: a zero var, a field zero, a nil conversion.</summary>
+    public static channel<T> Nil(ChanCargo? cargo) => new((ChanCore<T>?)null, cargo);
+
+    /// <summary>The same core with a different cargo, the live-copy narrowing carrier, cargo-wide.</summary>
+    public channel<T> WithCargo(ChanCargo? cargo) => new(m_core, cargo);
 
     /// <summary>
     /// Gets the capacity of the channel (0 for an unbuffered or nil channel) — Go's <c>cap()</c>.

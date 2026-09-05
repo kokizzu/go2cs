@@ -271,6 +271,9 @@ public static partial class GoReflect
         /// </summary>
         public readonly GoChanDir ChanDir;
 
+        /// <summary>The unified channel-value cargo of a channel-typed field (increment D), or <c>null</c>.</summary>
+        public readonly ChanCargo? ChanCargo;
+
         /// <summary>
         /// The DESCRIPTOR CARRIER for this field's own Go type — the uninhabited interface holding
         /// the Go name of a defined-over-interface type the emission erased to a `using` alias, from
@@ -291,7 +294,7 @@ public static partial class GoReflect
         internal readonly FieldInfo[] Path;
         internal readonly bool[] BoxHop;
 
-        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false, GoChanDir chanDir = GoChanDir.Unstamped, nint[]? keyDims = null, Type? descriptorSelf = null)
+        internal GoFieldInfo(string name, Type type, nint[]? arrayDims, FieldInfo[] path, bool[] boxHop, string tag = "", bool embedded = false, GoChanDir chanDir = GoChanDir.Unstamped, nint[]? keyDims = null, Type? descriptorSelf = null, ChanCargo? chanCargo = null)
         {
             Name = name;
             Type = type;
@@ -300,6 +303,7 @@ public static partial class GoReflect
             ArrayDims = arrayDims;
             KeyDims = keyDims;
             ChanDir = chanDir;
+            ChanCargo = chanCargo;
             Tag = tag;
             Embedded = embedded;
             Path = path;
@@ -384,7 +388,8 @@ public static partial class GoReflect
                 string goName = name[CapturedVarMarker.Length..];
                 nint[]? embedDims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : FieldStampedDims(field);
                 GoChanDir embedDir = KindOf(field.FieldType) == Chan ? FieldChanDir(t, field) : GoChanDir.Unstamped;
-                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], embedTagOf(t, field, goName), embedded: true, chanDir: embedDir, keyDims: FieldMapKeyDims(field), descriptorSelf: FieldDescriptorType(field)));
+                ChanCargo? embedCargo = KindOf(field.FieldType) == Chan ? FieldChanCargo(t, field) : null;
+                result.Add(new GoFieldInfo(goName, field.FieldType, embedDims, [.. prefixPath, field], [.. prefixHops, false], embedTagOf(t, field, goName), embedded: true, chanDir: embedDir, keyDims: FieldMapKeyDims(field), descriptorSelf: FieldDescriptorType(field), chanCargo: embedCargo));
                 continue;
             }
 
@@ -402,7 +407,8 @@ public static partial class GoReflect
             // through a pointer or a map element — the two hops no zero instance can measure.
             nint[]? dims = KindOf(field.FieldType) == Array ? FieldArrayDims(t, field) : FieldStampedDims(field);
             GoChanDir fieldDir = KindOf(field.FieldType) == Chan ? FieldChanDir(t, field) : GoChanDir.Unstamped;
-            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field), chanDir: fieldDir, keyDims: FieldMapKeyDims(field), descriptorSelf: FieldDescriptorType(field)));
+            ChanCargo? fieldCargo = KindOf(field.FieldType) == Chan ? FieldChanCargo(t, field) : null;
+            result.Add(new GoFieldInfo(projected, field.FieldType, dims, [.. prefixPath, field], [.. prefixHops, false], goTagOf(field), chanDir: fieldDir, keyDims: FieldMapKeyDims(field), descriptorSelf: FieldDescriptorType(field), chanCargo: fieldCargo));
         }
 
         reorderToGoDeclarationOrder(t, result, first);

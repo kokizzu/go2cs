@@ -128,11 +128,16 @@ public static partial class GoReflect
             GoChanDir head = chanDirChain is { Length: > 0 } ? chanDirChain[0] : GoChanDir.Unstamped;
             GoChanDir[]? tail = chanDirChain is { Length: > 1 } ? chanDirChain[1..] : null;
             string elem = GoTypeName(t.GetGenericArguments()[0], arrayDims, tail, null);
-            // Go parenthesises the element ONLY when its rendering begins with '<', i.e. a RECEIVE
-            // element, because `chan <-chan int` would re-parse as `chan<- chan int`. A SEND element
-            // is unambiguous and Go prints `chan chan<- int` bare — measured against go1.23.12, and
-            // the reason a parenthesise-any rule is wrong rather than merely noisy.
-            if (elem.Length > 0 && elem[0] == '<') elem = "(" + elem + ")";
+            // Go parenthesises the element ONLY when THIS channel is the bare bidirectional `chan` AND
+            // the element is receive-only: `chan <-chan int` would re-parse as `chan<- chan int`, so
+            // Go writes `chan (<-chan int)`. Under a directional head the arrow is already bound and
+            // nothing wraps: `chan<- <-chan int` and `<-chan <-chan int` print bare, as does a send
+            // element under any head (`chan chan<- int`). This is go/types' own rule (typestring.go,
+            // the SendRecv arm alone sets parens). The first cut of this rule keyed on the element
+            // alone and was found wrong by the `chan<- <-chan int` field row — five oracle rows had
+            // never put a directional head over a receive element.
+            if (head is GoChanDir.Both or GoChanDir.Unstamped && elem.StartsWith("<-chan", StringComparison.Ordinal))
+                elem = "(" + elem + ")";
             return head switch
             {
                 GoChanDir.Recv => "<-chan " + elem,

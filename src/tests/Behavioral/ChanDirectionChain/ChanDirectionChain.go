@@ -29,6 +29,13 @@ func main() {
 	fmt.Println("3 chan (<-chan int):", reflect.ChanOf(reflect.BothDir, recv).String())
 	fmt.Println("4 chan chan<- int  :", reflect.ChanOf(reflect.BothDir, send).String())
 	fmt.Println("5 <-chan chan int  :", reflect.ChanOf(reflect.RecvDir, both).String())
+	// Rows 6 and 7 are reflect's own typeTests spellings that a DIRECTIONAL head puts over a receive
+	// element. They exist because the parenthesisation rule's first cut keyed on the element alone
+	// (wrap when it begins with `<`) and passed rows 1-5, then rendered `chan<- (<-chan int)` for a
+	// struct field. Go wraps ONLY under the bare bidirectional `chan`; under `chan<-` or `<-chan` the
+	// arrow is already bound and the element prints bare. Both routes now pin it.
+	fmt.Println("6 chan<- <-chan int:", reflect.ChanOf(reflect.SendDir, recv).String())
+	fmt.Println("7 <-chan <-chan int:", reflect.ChanOf(reflect.RecvDir, recv).String())
 
 	// Elem() must hand the TAIL down, or a nested direction is unreachable from the type side.
 	fmt.Println("elem of chan (<-chan int):", reflect.ChanOf(reflect.BothDir, recv).Elem().String())
@@ -45,4 +52,32 @@ func main() {
 	var nilNested chan chan int
 	fmt.Println("identity ChanOf(Both,chan int) == TypeOf((chan chan int)(nil)):",
 		reflect.ChanOf(reflect.BothDir, both) == reflect.TypeOf(nilNested))
+
+	// VALUE route (increment D). A nested direction is not measurable from a channel value (its
+	// element is not a present value), so the chain rides the VALUE from the position that knows it
+	// statically: a zero var, a make, a nil conversion, a struct field, the pointee of new. These are
+	// reflect's own consumers -- TestChanOf's arrow-association rows and typeTests' field rows -- and
+	// the identity rows are the point: the value-derived type must BE the constructed one.
+	var vLeft chan<- chan int
+	var vRight chan (<-chan int)
+	fmt.Println("value zero-var chan<- chan int   :", reflect.TypeOf(vLeft).String())
+	fmt.Println("value zero-var chan (<-chan int) :", reflect.TypeOf(vRight).String())
+	fmt.Println("value == constructed, left       :", reflect.TypeOf(vLeft) == reflect.ChanOf(reflect.SendDir, both))
+	fmt.Println("value == constructed, right      :", reflect.TypeOf(vRight) == reflect.ChanOf(reflect.BothDir, recv))
+	mk := make(chan chan<- int)
+	fmt.Println("value make chan chan<- int       :", reflect.TypeOf(mk).String())
+	nc := (chan (<-chan int))(nil)
+	fmt.Println("value nil-conv chan (<-chan int) :", reflect.TypeOf(nc).String())
+	fmt.Println("value field chan<- <-chan int    :", reflect.TypeOf(struct{ x chan<- <-chan int }{}).Field(0).Type.String())
+	p := new(chan (<-chan int))
+	fmt.Println("value new(chan (<-chan int)).Elem:", reflect.TypeOf(p).Elem().String())
+
+	// The other half of the same cargo: a channel's ELEMENT ARRAY LENGTH, the ChanElemDims row, on the
+	// value route -- and both halves at once on one value.
+	ca := make(chan [3]int)
+	fmt.Println("value make chan [3]int           :", reflect.TypeOf(ca).String(), reflect.TypeOf(ca).Elem().Len())
+	var cb chan<- [2][4]byte
+	fmt.Println("value zero-var chan<- [2][4]byte :", reflect.TypeOf(cb).String(), reflect.TypeOf(cb).Elem().Len(), reflect.TypeOf(cb).Elem().Elem().Len())
+	na := (chan [5]int)(nil)
+	fmt.Println("value nil-conv chan [5]int       :", reflect.TypeOf(na).String(), reflect.TypeOf(na).Elem().Len())
 }

@@ -1145,6 +1145,47 @@ public static partial class GoReflect
         return zero is null ? GoChanDir.Unstamped : ChanDirOfValue(field.GetValue(zero));
     }
 
+    /// <summary>The unified channel-value cargo of a LIVE channel value (increment D), or <c>null</c>.</summary>
+    public static ChanCargo? ChanCargoOfValue(object? value)
+    {
+        object? box = value;
+
+        while (box is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            box = interfaceAdapter.Value;
+
+        return box is IChannel channel ? channel.Cargo : null;
+    }
+
+    /// <summary>The cargo of the channel BEHIND a live pointer, the <c>new(chan (&lt;-chan T))</c> position, or <c>null</c>.</summary>
+    public static ChanCargo? PointeeChanCargo(object? value)
+    {
+        object? box = value;
+
+        while (box is IInterfaceAdapter { Value: not null } interfaceAdapter)
+            box = interfaceAdapter.Value;
+
+        if (box is IжAdapter { Box: not null } pointerAdapter)
+            box = pointerAdapter.Box;
+
+        if (box is null || box is INilPointer { IsNilPointer: true } ||
+            !TryPointerBoxElement(box.GetType(), out Type? pointee) || KindOf(pointee) != Chan)
+        {
+            return null;
+        }
+
+        return ChanCargoOfValue(ReadPointerSlot(box));
+    }
+
+    /// <summary>The cargo of a channel-typed STRUCT FIELD, off the declaring struct's cached zero instance: the <c>typeTests</c> position.</summary>
+    public static ChanCargo? FieldChanCargo(Type declaringType, FieldInfo field)
+    {
+        if (!declaringType.IsValueType)
+            return null;
+
+        object? zero = s_zeroInstances.GetOrAdd(declaringType, static t => Activator.CreateInstance(t));
+        return zero is null ? null : ChanCargoOfValue(field.GetValue(zero));
+    }
+
     // -------- func shape (rtype.NumIn/In/NumOut/Out/IsVariadic; Value.Call) --------
 
     /// <summary>

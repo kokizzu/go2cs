@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"go/types"
+	"strings"
 )
 
 // A Go channel's DIRECTION is part of its type, and it is the one part the managed emission cannot
@@ -81,11 +82,147 @@ func chanDirCargoName(t types.Type) string {
 	return ""
 }
 
+// Increment D: a channel whose ELEMENT is itself a channel or an array carries a per-level direction
+// CHAIN and the element's array dims on the value, as ONE cargo (golib ChanCargo). The emission rule
+// that keeps every existing site byte-identical: the cargo form is emitted ONLY when the NORMALIZED
+// chain has more than one entry or the element carries dims; a scalar direction with no dims keeps
+// the pre-D forms (.SendOnly / .RecvOnly / the GoChanDir constructor argument) exactly as they were,
+// and a bare bidirectional channel still emits nothing. Production std has ZERO such sites (the D
+// census, 2026-09-04), so the two-seeded -stdlib diff is predicted EMPTY by this construction and the
+// footprint lives in reflect's test emission, where its seven consumers are.
+
+// chanDirChain walks the nested channel levels of an undefined channel type, outermost first, and
+// NORMALIZES the chain exactly as abi.normalizeChanDirChain does: trailing bidirectional entries are
+// trimmed (they say nothing their absence would not), interior ones are kept (they are positional:
+// `chan (<-chan T)` is [Both, Recv]), and an all-bidirectional chain is nil. The walk stops at a
+// DEFINED channel type at any level, which is a go2cs-gen wrapper with no field to carry cargo.
+func chanDirChain(t types.Type) []types.ChanDir {
+	var chain []types.ChanDir
+
+	for cur := t; cur != nil; {
+		resolved := types.Unalias(cur)
+
+		if _, isNamed := resolved.(*types.Named); isNamed {
+			break
+		}
+
+		chanType, isChan := resolved.Underlying().(*types.Chan)
+
+		if !isChan {
+			break
+		}
+
+		chain = append(chain, chanType.Dir())
+		cur = chanType.Elem()
+	}
+
+	end := len(chain)
+
+	for end > 0 && chain[end-1] == types.SendRecv {
+		end--
+	}
+
+	if end == 0 {
+		return nil
+	}
+
+	return chain[:end]
+}
+
+// chanElemArrayDims is the channel sibling of sliceElemArrayDims: the array length(s) of an undefined
+// channel type's element, outermost first, or nil when the element is not a fixed-size array.
+func chanElemArrayDims(t types.Type) []int64 {
+	if t == nil {
+		return nil
+	}
+
+	resolved := types.Unalias(t)
+
+	if _, isNamed := resolved.(*types.Named); isNamed {
+		return nil
+	}
+
+	chanType, isChan := resolved.Underlying().(*types.Chan)
+
+	if !isChan {
+		return nil
+	}
+
+	var dims []int64
+
+	for elem := chanType.Elem(); ; {
+		array, ok := elem.Underlying().(*types.Array)
+
+		if !ok {
+			break
+		}
+
+		dims = append(dims, array.Len())
+		elem = array.Elem()
+	}
+
+	return dims
+}
+
+func goChanDirMember(dir types.ChanDir) string {
+	switch dir {
+	case types.SendOnly:
+		return "GoChanDir.Send"
+	case types.RecvOnly:
+		return "GoChanDir.Recv"
+	}
+
+	return "GoChanDir.Both"
+}
+
+// chanCargoExpr renders the golib ChanCargo.Of(chain, dims) expression for a channel type that needs
+// the unified cargo, or "" for every type the pre-D forms already describe (see the rule above).
+func chanCargoExpr(t types.Type) string {
+	chain := chanDirChain(t)
+	dims := chanElemArrayDims(t)
+
+	if len(dims) == 0 && len(chain) <= 1 {
+		return ""
+	}
+
+	chainExpr := "null"
+
+	if len(chain) > 0 {
+		members := make([]string, len(chain))
+
+		for i, dir := range chain {
+			members[i] = goChanDirMember(dir)
+		}
+
+		chainExpr = "new GoChanDir[] { " + strings.Join(members, ", ") + " }"
+	}
+
+	dimsExpr := "null"
+
+	if len(dims) > 0 {
+		values := make([]string, len(dims))
+
+		for i, dim := range dims {
+			values[i] = fmt.Sprintf("%d", dim)
+		}
+
+		dimsExpr = "new nint[] { " + strings.Join(values, ", ") + " }"
+	}
+
+	return fmt.Sprintf("ChanCargo.Of(%s, %s)", chainExpr, dimsExpr)
+}
+
 // chanDirNilValue renders the NIL channel of a directional type — the zero VALUE of `chan<- T` /
 // `<-chan T`, which is still a value whose Go type has a direction — as golib's SendOnly/RecvOnly
 // factory on the emitted channel type. Returns "" for any type with no direction to carry, which
 // leaves every existing zero-value emission byte-identical.
 func (v *Visitor) chanDirNilValue(t types.Type) string {
+	// Increment D: a channel of channels or of arrays takes the cargo-bearing nil factory; every
+	// other directional type keeps the pre-D member below, byte for byte.
+	if cargo := chanCargoExpr(t); cargo != "" {
+		return v.getCSharpTypeName(t) + ".Nil(" + cargo + ")"
+	}
+
 	var member string
 
 	switch chanDirCargoName(t) {
