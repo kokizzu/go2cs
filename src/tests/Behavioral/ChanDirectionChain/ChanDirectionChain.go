@@ -80,4 +80,17 @@ func main() {
 	fmt.Println("value zero-var chan<- [2][4]byte :", reflect.TypeOf(cb).String(), reflect.TypeOf(cb).Elem().Len(), reflect.TypeOf(cb).Elem().Elem().Len())
 	na := (chan [5]int)(nil)
 	fmt.Println("value nil-conv chan [5]int       :", reflect.TypeOf(na).String(), reflect.TypeOf(na).Elem().Len())
+
+	// abi.Elem() rows -- the measured defect behind moving abi.Elem to KindCarriesElementCargo.
+	// reflect's AssignableTo/ConvertibleTo walk haveIdenticalUnderlyingType, whose channel arm compares
+	// abi.Elem(T) against abi.Elem(V); abi.Elem named pointer and map alone as the kinds whose dims pass
+	// unshifted, so a CHANNEL's element dims were shifted off there and `chan [3]int` and `chan [4]int`
+	// compared their elements as two dimension-less arrays: identical, hence assignable. Go says false.
+	// The positive control is the fix reverted: BOTH [3]->[4] rows flip to true -- assignable AND
+	// convertible, because ConvertibleTo walks the same channel arm -- and the [3]->[3] row does not
+	// move. (The first prediction named one row; the control was sharper than the prediction.)
+	c3 := reflect.TypeOf(make(chan [3]int))
+	fmt.Println("assignable chan [3]int -> chan [4]int:", c3.AssignableTo(reflect.ChanOf(reflect.BothDir, reflect.ArrayOf(4, intT))))
+	fmt.Println("assignable chan [3]int -> chan [3]int:", c3.AssignableTo(reflect.ChanOf(reflect.BothDir, reflect.ArrayOf(3, intT))))
+	fmt.Println("convertible chan [3]int -> chan [4]int:", c3.ConvertibleTo(reflect.ChanOf(reflect.BothDir, reflect.ArrayOf(4, intT))))
 }

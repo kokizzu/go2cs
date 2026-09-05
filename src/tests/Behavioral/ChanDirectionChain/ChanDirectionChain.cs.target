@@ -28,6 +28,9 @@ private static readonly object valueNewChanChanIntElemˢ = (@string)"value new(c
 private static readonly object valueMakeChan3Intˢ = (@string)"value make chan [3]int           :"u8;
 private static readonly object valueZeroVarChan24Byteˢ = (@string)"value zero-var chan<- [2][4]byte :"u8;
 private static readonly object valueNilConvChan5Intˢ = (@string)"value nil-conv chan [5]int       :"u8;
+private static readonly object assignableChan3IntChan4ˢ = (@string)"assignable chan [3]int -> chan [4]int:"u8;
+private static readonly object assignableChan3IntChan3ˢ = (@string)"assignable chan [3]int -> chan [3]int:"u8;
+private static readonly object convertibleChan3IntChan4ˢ = (@string)"convertible chan [3]int -> chan [4]int:"u8;
 
 [GoType("dyn")] internal partial struct main_i {
     internal channel/*<-*/</*<-*/channel<nint>> x = channel/*<-*/</*<-*/channel<nint>>.Nil(ChanCargo.Of(new GoChanDir[] { GoChanDir.Send, GoChanDir.Recv }, null));
@@ -72,6 +75,10 @@ internal static void Main() {
     fmt.Println(valueZeroVarChan24Byteˢ, reflect.TypeOf(cb).String(), reflect.TypeOf(cb).Elem().Len(), reflect.TypeOf(cb).Elem().Elem().Len());
     var na = channel<array<nint>>.Nil(ChanCargo.Of(null, new nint[] { 5 }));
     fmt.Println(valueNilConvChan5Intˢ, reflect.TypeOf(na).String(), reflect.TypeOf(na).Elem().Len());
+    var c3 = reflect.TypeOf(new channel<array<nint>>(0, ChanCargo.Of(null, new nint[] { 3 })));
+    fmt.Println(assignableChan3IntChan4ˢ, c3.AssignableTo(reflect.ChanOf(reflect.BothDir, reflect.ArrayOf(4, intT))));
+    fmt.Println(assignableChan3IntChan3ˢ, c3.AssignableTo(reflect.ChanOf(reflect.BothDir, reflect.ArrayOf(3, intT))));
+    fmt.Println(convertibleChan3IntChan4ˢ, c3.ConvertibleTo(reflect.ChanOf(reflect.BothDir, reflect.ArrayOf(4, intT))));
 }
 
 } // end main_package

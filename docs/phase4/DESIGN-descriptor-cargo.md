@@ -922,3 +922,35 @@ acceptance rows (`TestTypes`, `TestChanOf`), the converter suite, CNR, GolibTest
 (owed: golib gained public API), the stdlib solution, the full behavioral suite, the five re-derived
 canaries, and `nistec` as the cost canary — `channel<T>`'s field moved for every channel value in
 the corpus.
+
+**Gates, read 2026-09-04 (the bank battery at `c3d8bb388`, its sequel at the same code tree).** Least-evidence
+legs first, every verdict grepped from its own full log.
+
+| leg | reading |
+|:--|:--|
+| the `-stdlib` NEGATIVE arm (two seeded roots, PRE = the seated tip's converter rebuilt from its sources) | **0 files, 0 lines** — zero production movement, as the emission rule predicts by construction |
+| its POSITIVE control (the cargo gate flipped: cargo form for every directional channel) | **12 files / 44 lines**, cargo in 13 files; each of the three arms emitted 1,656 files this run |
+| `reflect -tests all` (the acceptance row, explicit runtime root) | **`TestChanOf` pass / pass — both assertions; `TestTypes` pass / pass** — the five `typeTests` spellings; `TestChanOfDir`, `TestAll`, `TestTypeOf`, `TestFuncLayout` pass; 315 of 388 rows agreeing; 73 rows in 29 parent tests disagreeing — the standing unbanked set (`TestDeepEqualAllocs`, `TestGCBits`, `TestStructOf`, `TestSlice`, the alloc and map-iterator rows, …), which the union set-diff is the instrument for |
+| converter suite `-count=1` | `ok` 284.8 s |
+| CNR | **`CHANGED`: exactly one file**, `ArrayValueCopySites.cs` — `make(chan [3]int, 1)` at its `.go:238`, a channel-of-array `make`; the std census could not see the behavioral corpus, and CNR censused it: one site, one line, golden re-baselined, all four phases green |
+| GolibTests | 561 / 3 — the three FixtureLinkStaging host-privilege reds on the ledger; +5 = `ChanCargoTests` |
+| `go2cs.slnx` (owed: golib gained public API) | **0 errors** |
+| stdlib solution | **0 errors** |
+| FULL behavioral | 675 / 675 / 674 + 1 / **649 pass · 0 fail · 26 skip** — the +1 in Output is `ChanElemDims` compared for the first time; the one Target red is the `ArrayValueCopySites` golden above, since re-baselined |
+| canaries, re-derived at gate time | `crypto/tls` PASS 400 (host-limit disclosed) · `net/http` 0 of 1,345 rows disagreeing, FAIL on the process-level leak check only · `go/types` PASS 557 · `encoding/json` PASS 491 · `net` PASS 472 |
+| `nistec` COST canary | PASS 2,195; **wall 84 s against 85 s** on this box before D — no spread |
+
+**The `abi.Elem()` row, measured after the battery.** `assignable chan [3]int -> chan [4]int` false, `-> chan [3]int`
+true, `convertible -> chan [4]int` false — against Go, 25 rows identical. Its control, the fix reverted: **both**
+`[3]->[4]` rows flip to true (assignable AND convertible — `ConvertibleTo` walks the same channel arm of
+`haveIdenticalUnderlyingType`), the `[3]->[3]` row does not move, restore byte-identical, green again. The first
+prediction named one row; the control was sharper than the prediction, by the one path it did not count.
+
+**Instrument errors on the way, each caught by its own guard and re-run.** The negative arm's first run built its
+control converter to a POSIX-spelled `-o` path with path conversion off — the binary landed under `C:\c\`, the arm
+invoked a path that did not exist, and the emitted-vs-seeded count is what said so; the script was also edited
+while bash was executing it, which garbled the run. The acceptance leg's first run published against the
+machine-global deploy root (present, stale, fifteen projects) because no explicit `-go2cspath` was passed and
+self-location correctly declines a root that has `core/golib`. The sequel's exe diff first ran a stale Debug
+build matched by a glob ahead of the runner's Release build. A one-hour clock step landed inside the full
+behavioral leg; that leg's 4,381 s is the runner's own stopwatch, and no wall reading spans the step.
