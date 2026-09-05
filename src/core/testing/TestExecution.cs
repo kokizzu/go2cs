@@ -638,8 +638,19 @@ public sealed class TestExecution
 
     internal static TestExecution? Current => s_current.Value;
 
+    // Q54: a test body, or a goroutine it started, that dies while holding a converted runtime lock
+    // would leave that lock's key orphaned — the next locker would poll forever and the package
+    // deadline would be consumed (measured eight times on the runtime row). The protocol poisons
+    // every lock the dying THREAD holds so the next locker dies by name instead
+    // (runtime/lock_managed_impl.cs); each seam below runs on the dying goroutine's own thread.
+    private static void AbandonRuntimeLocks(Exception ex)
+    {
+        global::go.runtime_package.GoAbandonRuntimeLocksHeldByCurrentThread($"{ex.GetType().Name}: {ex.Message}");
+    }
+
     internal void RecordGoroutineFailure(Exception ex)
     {
+        AbandonRuntimeLocks(ex);
         string message = $"unhandled exception on a goroutine started by {Name}: {ex}";
         bool completed;
 
@@ -791,16 +802,19 @@ public sealed class TestExecution
         }
         catch (PanicException ex)
         {
+            AbandonRuntimeLocks(ex);
             Log($"panic: {ex.Message}\n{ex.StackTrace}");
             Fail();
         }
         catch (Exception ex) when (RuntimeErrorPanic.TryAsPanic(ex, out PanicException? panic))
         {
+            AbandonRuntimeLocks(panic!);
             Log($"panic: {panic!.Message}\n{panic.StackTrace}");
             Fail();
         }
         catch (Exception ex)
         {
+            AbandonRuntimeLocks(ex);
             InfrastructureFailed = true;
             Log(ex.ToString());
             FailFromInfrastructure();
