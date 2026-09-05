@@ -855,26 +855,30 @@ jobs:
                           # frames against usedImages, and its register state -- pc/lr/sp, and on arm64 far/esr,
                           # which say whether the fault was an instruction fetch AT the address or a data access
                           # to it. Best-effort like the rest: a body that does not parse prints its raw head.
+                          # -AsHashtable is load-bearing, not style: a real report carries BOTH `vmRegionInfo`
+                          # and `vmregioninfo`, and pwsh's case-insensitive object reader refuses keys that
+                          # differ only by case -- the first collection (run 33946376666) fell back for exactly
+                          # that reason. Hashtables are case-sensitive and keep both.
                           $frameLines = @()
                           try {
                               $bodyText = ($raw -split "`n", 2)[1]
-                              $body = $bodyText | ConvertFrom-Json -Depth 64
-                              $ft = [int]$body.faultingThread
-                              $thread = $body.threads[$ft]
-                              $images = @($body.usedImages)
-                              $frameLines += "faulting thread $ft" + $(if ($thread.name) { " ($($thread.name))" } elseif ($thread.queue) { " ($($thread.queue))" } else { '' })
+                              $body = $bodyText | ConvertFrom-Json -Depth 64 -AsHashtable
+                              $ft = [int]$body['faultingThread']
+                              $thread = $body['threads'][$ft]
+                              $images = @($body['usedImages'])
+                              $frameLines += "faulting thread $ft" + $(if ($thread['name']) { " ($($thread['name']))" } elseif ($thread['queue']) { " ($($thread['queue']))" } else { '' })
                               $i = 0
-                              foreach ($f in @($thread.frames | Select-Object -First 40)) {
-                                  $img = if ($null -ne $f.imageIndex -and $f.imageIndex -lt $images.Count) { $images[$f.imageIndex].name } else { '?' }
-                                  $sym = if ($f.symbol) { " $($f.symbol)+$($f.symbolLocation)" } else { '' }
-                                  $frameLines += ('#{0,-3} {1} + 0x{2:x}{3}' -f $i, $img, [int64]$f.imageOffset, $sym)
+                              foreach ($f in @($thread['frames'] | Select-Object -First 40)) {
+                                  $img = if ($null -ne $f['imageIndex'] -and $f['imageIndex'] -lt $images.Count) { $images[$f['imageIndex']]['name'] } else { '?' }
+                                  $sym = if ($f['symbol']) { " $($f['symbol'])+$($f['symbolLocation'])" } else { '' }
+                                  $frameLines += ('#{0,-3} {1} + 0x{2:x}{3}' -f $i, $img, [int64]$f['imageOffset'], $sym)
                                   $i++
                               }
-                              $ts = $thread.threadState
+                              $ts = $thread['threadState']
                               if ($ts) {
                                   $regs = @()
-                                  foreach ($r in 'pc','lr','sp','far','esr') { if ($ts.$r) { $regs += ('{0}=0x{1:x}' -f $r, [int64]$ts.$r.value) } }
-                                  if ($ts.esr -and $ts.esr.description) { $regs += "esr:'$($ts.esr.description)'" }
+                                  foreach ($r in 'pc','lr','sp','far','esr') { if ($ts[$r]) { $regs += ('{0}=0x{1:x}' -f $r, [int64]$ts[$r]['value']) } }
+                                  if ($ts['esr'] -and $ts['esr']['description']) { $regs += "esr:'$($ts['esr']['description'])'" }
                                   if ($regs.Count -gt 0) { $frameLines += ('threadState ' + ($regs -join ' ')) }
                               }
                           }
