@@ -1496,6 +1496,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectUnexportedFieldFlags() => CheckTarget("ReflectUnexportedFieldFlags");
 
     [TestMethod]
+    public void CheckReflectValueSingles() => CheckTarget("ReflectValueSingles");
+
+    [TestMethod]
     public void CheckReflectVariadicCall() => CheckTarget("ReflectVariadicCall");
 
     [TestMethod]

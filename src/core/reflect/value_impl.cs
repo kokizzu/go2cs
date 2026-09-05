@@ -640,6 +640,31 @@ public static void SetLen(this ΔValue v, nint n) {
     GoReflect.WritePointerSlot(v.addrBox, converted);
 }
 
+// SetCap sets v's capacity to n (v must be an addressable Slice; len <= n <= cap, Go's panic).
+// The fifth member of the raw-slice-header family -- Slice, Slice3, Grow, extendSlice and SetLen
+// preceded it: the auto form re-capped through `(ж<unsafeheader.Slice>)(uintptr)(v.ptr)`, the
+// never-populated header, and died inside `~` on every call (TestSetLenCap). Go's s[:len:n] is a
+// three-index window over the same backing, written back through the aliased box exactly as
+// SetLen writes its two-index one.
+public static void SetCap(this ΔValue v, nint n) {
+    v.flag.mustBeAssignable();
+    v.flag.mustBe(ΔSlice);
+    System.Type? slotType = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elemType = GoReflect.ElementType(slotType);
+    object? live = v.live;
+    if (slotType is null || elemType is null || v.addrBox is null || live is null) {
+        throw panic("reflect: SetCap using unaddressable value");
+    }
+    if (live is not ISlice s || n < s.Length || n > s.Capacity) {
+        throw panic("reflect: slice capacity out of range in SetCap");
+    }
+    object window = GoReflect.SliceWindow(live, elemType, 0, s.Length, n);
+    if (!GoReflect.TryConvertTo(window, slotType, out object? converted)) {
+        throw panic("reflect: SetCap window is not assignable to the slice slot");
+    }
+    GoReflect.WritePointerSlot(v.addrBox, converted);
+}
+
 // Grow increases v's capacity, if necessary, to guarantee space for another n elements (v must
 // be an addressable Slice). The LENGTH is unchanged and the contents are preserved — Go's
 // growslice contract, which encoding/gob's decUint8Slice and decodeArrayHelper lean on to
