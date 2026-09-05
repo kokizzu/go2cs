@@ -6389,6 +6389,12 @@ func classAdmitsSkipShape(class string) bool {
 // recoverable panic; Go installs a SIGSEGV handler, the CLR on Linux has no SEH equivalent, and
 // the process dies -- costing that row NINE verdicts rather than one.
 //
+// WIDENED (coordinator ruling, 2026-09-05): the class admits a CRASH or a deadline-consuming HANG,
+// because the charter is "every test after it in its phase is lost too" and a test that never
+// returns costs exactly that -- runtime/pprof's TestGoroutineProfileLabelRace is the first hang
+// member, spinning forever in a /reset subtest whose exit condition is a pprof label the converted
+// goroutine profile withholds (measured alone: zero verdicts, the whole package deadline consumed).
+//
 // It is the one class that CHANGES WHAT RUNS rather than labelling what a run produced. The
 // named test is withdrawn from BOTH sides by name (`go test -skip` and the host's own `--skip`,
 // one string handed to each) so the comparison stays symmetric, and it is counted in DISCLOSED
