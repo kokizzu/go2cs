@@ -1573,18 +1573,7 @@ public static void Send(this ΔValue v, ΔValue x) {
 
 // go2cs generated this placeholder — func SetLen is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// SetCap sets v's capacity to n.
-// It panics if v's Kind is not [Slice] or if n is smaller than the length or
-// greater than the capacity of the slice.
-public static void SetCap(this ΔValue v, nint n) {
-    v.mustBeAssignable();
-    v.mustBe(ΔSlice);
-    var s = (ж<unsafeheader.Slice>)(uintptr)(v.ptr);
-    if (n < (~s).Len || n > (~s).Cap) {
-        throw panic("reflect: slice capacity out of range in SetCap");
-    }
-    s.Value.Cap = n;
-}
+// go2cs generated this placeholder — func SetCap is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func SetMapIndex is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 

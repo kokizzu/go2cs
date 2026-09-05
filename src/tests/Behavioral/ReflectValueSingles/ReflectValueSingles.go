@@ -1,0 +1,94 @@
+// The reflect `Value` singles (increment E3 of the reflect tail): one root per commit, each row
+// pinned against `go run` beside the reflect suite's own verdict.
+//
+//  1. SetCap -- the fifth raw-slice-header member, hand-owned beside SetLen: Go's bound check
+//     (len <= n <= cap) and its panic text, and the three-index window s[:len:n] written back
+//     through the addressable slot (TestSetLenCap).
+//  2. Bytes -- the Array arm decided by element KIND, in Go's order: non-byte element, then
+//     addressability, then an ALIAS of the array's own backing (TestBytes).
+//  3. Name of an instantiated generic type keeps its type arguments: the package qualifier ends
+//     before the first '[', not at the last '.' of the whole spelling (TestIssue50208).
+package main
+
+import (
+	"fmt"
+	"reflect"
+	"strings"
+)
+
+// expectPanic runs f and reports whether it panicked and whether the panic text mentions want --
+// TestSetLenCap's shouldPanic, printed rather than asserted.
+func expectPanic(label, want string, f func()) {
+	defer func() {
+		r := recover()
+		msg := fmt.Sprint(r)
+		fmt.Printf("%-16s panicked: %v  mentions %q: %v  text: %s\n", label, r != nil, want, strings.Contains(msg, want), msg)
+	}()
+	f()
+}
+
+type gA struct{}
+type gB[T any] struct{}
+
+func main() {
+	// --- root 1: SetLen / SetCap ---
+	xs := []int{1, 2, 3, 4, 5, 6, 7, 8}
+	xa := [8]int{10, 20, 30, 40, 50, 60, 70, 80}
+	vs := reflect.ValueOf(&xs).Elem()
+	expectPanic("SetLen(10)", "SetLen", func() { vs.SetLen(10) })
+	expectPanic("SetCap(10)", "SetCap", func() { vs.SetCap(10) })
+	expectPanic("SetLen(-1)", "SetLen", func() { vs.SetLen(-1) })
+	expectPanic("SetCap(-1)", "SetCap", func() { vs.SetCap(-1) })
+	expectPanic("SetCap(6)<len", "SetCap", func() { vs.SetCap(6) }) // smaller than len
+	vs.SetLen(5)
+	fmt.Println("after SetLen(5): len, cap =", len(xs), cap(xs))
+	vs.SetCap(6)
+	fmt.Println("after SetCap(6): len, cap =", len(xs), cap(xs))
+	vs.SetCap(5)
+	fmt.Println("after SetCap(5): len, cap =", len(xs), cap(xs), "contents", xs)
+	expectPanic("SetCap(4)<len", "SetCap", func() { vs.SetCap(4) })
+	expectPanic("SetLen(6)>cap", "SetLen", func() { vs.SetLen(6) })
+	va := reflect.ValueOf(&xa).Elem()
+	expectPanic("array SetLen", "SetLen", func() { va.SetLen(8) })
+	expectPanic("array SetCap", "SetCap", func() { va.SetCap(8) })
+	// the re-capped slice still aliases the original backing: a write through it lands in the array
+	backing := xs[:cap(xs)]
+	backing[0] = 99
+	fmt.Println("write through the re-capped window seen by the original:", xs[0] == 99)
+	// --- root 2: Bytes ---
+	expectPanic("Bytes on int", "on int Value", func() { reflect.ValueOf(0).Bytes() })
+	expectPanic("Bytes []string", "of non-byte slice", func() { reflect.ValueOf([]string{}).Bytes() })
+	type S []byte
+	x := S{1, 2, 3, 4}
+	y := reflect.ValueOf(x).Bytes()
+	y[0] = 42
+	fmt.Println("S bytes:", y, "aliases x:", x[0] == 42)
+	type A [4]byte
+	a := A{1, 2, 3, 4}
+	expectPanic("Bytes [4]byte value", "unaddressable", func() { reflect.ValueOf(a).Bytes() })
+	expectPanic("Bytes *[4]byte", "on ptr Value", func() { reflect.ValueOf(&a).Bytes() })
+	b := reflect.ValueOf(&a).Elem().Bytes()
+	b[1] = 43
+	fmt.Println("A bytes:", b, "aliases a:", a[1] == 43)
+	// issue #24746: byte-KIND elements qualify even where the language conversion would not
+	type B byte
+	type SB []B
+	type AB [4]B
+	fmt.Println("[]B   bytes:", reflect.ValueOf([]B{1, 2, 3, 4}).Bytes())
+	fmt.Println("*[4]B bytes:", reflect.ValueOf(new([4]B)).Elem().Bytes())
+	fmt.Println("SB    bytes:", reflect.ValueOf(SB{1, 2, 3, 4}).Bytes())
+	fmt.Println("*AB   bytes:", reflect.ValueOf(new(AB)).Elem().Bytes())
+	ab := AB{5, 6, 7, 8}
+	expectPanic("Bytes AB value", "unaddressable", func() { reflect.ValueOf(ab).Bytes() })
+	c := reflect.ValueOf(&ab).Elem().Bytes()
+	c[2] = 44
+	fmt.Println("AB bytes:", c, "aliases ab:", ab[2] == 44)
+	expectPanic("Bytes [4]int", "of non-byte array", func() { reflect.ValueOf(&[4]int{}).Elem().Bytes() })
+
+	// --- root 3: Name of an instantiated generic ---
+	fmt.Println("Name gB[gA]:", reflect.TypeOf(new(gB[gA])).Elem().Name())
+	fmt.Println("Name gB[gB[gA]]:", reflect.TypeOf(new(gB[gB[gA]])).Elem().Name())
+	fmt.Println("String gB[gA]:", reflect.TypeOf(gB[gA]{}).String())
+	fmt.Println("Name plain gA:", reflect.TypeOf(gA{}).Name())
+
+}

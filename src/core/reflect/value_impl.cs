@@ -640,6 +640,31 @@ public static void SetLen(this ΔValue v, nint n) {
     GoReflect.WritePointerSlot(v.addrBox, converted);
 }
 
+// SetCap sets v's capacity to n (v must be an addressable Slice; len <= n <= cap, Go's panic).
+// The fifth member of the raw-slice-header family -- Slice, Slice3, Grow, extendSlice and SetLen
+// preceded it: the auto form re-capped through `(ж<unsafeheader.Slice>)(uintptr)(v.ptr)`, the
+// never-populated header, and died inside `~` on every call (TestSetLenCap). Go's s[:len:n] is a
+// three-index window over the same backing, written back through the aliased box exactly as
+// SetLen writes its two-index one.
+public static void SetCap(this ΔValue v, nint n) {
+    v.flag.mustBeAssignable();
+    v.flag.mustBe(ΔSlice);
+    System.Type? slotType = v.typ_ == nil ? null : v.typ_.Value.sysType;
+    System.Type? elemType = GoReflect.ElementType(slotType);
+    object? live = v.live;
+    if (slotType is null || elemType is null || v.addrBox is null || live is null) {
+        throw panic("reflect: SetCap using unaddressable value");
+    }
+    if (live is not ISlice s || n < s.Length || n > s.Capacity) {
+        throw panic("reflect: slice capacity out of range in SetCap");
+    }
+    object window = GoReflect.SliceWindow(live, elemType, 0, s.Length, n);
+    if (!GoReflect.TryConvertTo(window, slotType, out object? converted)) {
+        throw panic("reflect: SetCap window is not assignable to the slice slot");
+    }
+    GoReflect.WritePointerSlot(v.addrBox, converted);
+}
+
 // Grow increases v's capacity, if necessary, to guarantee space for another n elements (v must
 // be an addressable Slice). The LENGTH is unchanged and the contents are preserved — Go's
 // growslice contract, which encoding/gob's decUint8Slice and decodeArrayHelper lean on to
@@ -895,14 +920,38 @@ public static ΔValue Addr(this ΔValue v) {
 // is still visible in the array — the semantics Go's callers may rely on.
 public static slice<byte> Bytes(this ΔValue v) {
     v.mustBeKind("reflect.Value.Bytes"u8, ΔSlice, Array);
-    if (v.live is array<byte> arr) {
-        // Go panics on an unaddressable byte array rather than silently copying; fmt takes its own
-        // element-by-element path for that case and never calls Bytes(). Both messages, and the
-        // non-byte-element ones below, are Go's own text.
+    object? live = v.live;
+    if (live is not null && GoReflect.KindOf(live.GetType()) == GoReflect.Array) {
+        // Go's bytesSlow, Array arm, in Go's ORDER: the element KIND decides (a defined `type B byte`
+        // element qualifies -- issue 24746), then addressability, then an ALIAS of the array's own
+        // backing (Go's unsafe.Slice(p, n)), never a copy, so a write through the result is visible
+        // in the array. This arm used to key on the TYPE `array<byte>`, so `[4]B` missed it, fell to
+        // the slice relation and panicked *of non-byte slice* where Go panics *unaddressable* or
+        // aliases (TestBytes). Every message is Go's own text; fmt takes its own element-by-element
+        // path for the unaddressable case and never calls Bytes().
+        // A DEFINED array type (`type A [4]byte`) is a generated wrapper holding its array<T> in a
+        // holder installed on first use (a zero `new(AB)` starts with none). Touching Length installs
+        // it, and the unwrap then hands back the very array<T> the wrapper holds, so the window below
+        // shares its storage: a write through the result reaches every copy sharing the holder.
+        System.Type liveType = live.GetType();
+        if (live is IArray wrapped && !(liveType.IsGenericType && liveType.GetGenericTypeDefinition() == typeof(array<>))) {
+            _ = wrapped.Length;
+            if (GoReflect.TryUnwrapWrapperValue(live, out object? underlying)) {
+                live = underlying;
+            }
+        }
+        System.Type? elem = GoReflect.ElementType(live.GetType());
+        if (elem is null || GoReflect.KindOf(elem) != GoReflect.Uint8) {
+            throw panic("reflect.Value.Bytes of non-byte array");
+        }
         if (!v.CanAddr()) {
             throw panic("reflect.Value.Bytes of unaddressable byte array");
         }
-        return arr.Slice(0, (int)arr.Length);
+        object window = GoReflect.SliceWindow(live, elem, 0, ((IArray)live).Length);
+        if (GoReflect.TryByteSliceView(window, out slice<byte> arrayView)) {
+            return arrayView;
+        }
+        throw panic("reflect.Value.Bytes of non-byte array");
     }
     // Go decides on the element KIND, not the element TYPE — `[]renamedByte` and
     // `type S []Uint8` qualify exactly as `[]byte` does — and it ALIASES. GoReflect.TryByteSliceView
@@ -2339,7 +2388,12 @@ internal static @string Name(this ж<rtype> Ꮡt) {
         return "";
     }
     string full = GoReflect.GoTypeName(st);
-    int dot = full.LastIndexOf('.');
+    // The name is what follows the package qualifier, and for an INSTANTIATED generic the qualifier
+    // ends before the first '[': the type arguments keep their own qualifiers inside the brackets
+    // (`B[reflect_test.A]`, `B[reflect_test.B[reflect_test.A]]`), so cutting at the last '.' of the
+    // whole spelling answered `A]` (TestIssue50208).
+    int bracket = full.IndexOf('[');
+    int dot = (bracket >= 0 ? full[..bracket] : full).LastIndexOf('.');
     return (@string)(dot >= 0 ? full[(dot + 1)..] : full);
 }
 

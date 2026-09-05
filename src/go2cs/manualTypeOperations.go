@@ -1023,6 +1023,12 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// Go's s[:n]) and writes it back through the aliased box.
 		"Value.Cap":    goosAny,
 		"Value.SetLen": goosAny,
+		// Value.SetCap is the FIFTH member of that family: the auto form re-caps through
+		// `(ж<unsafeheader.Slice>)(uintptr)(v.ptr)` -- the same never-populated header, the same
+		// nil dereference inside `~` (TestSetLenCap). Bridged beside SetLen: Go's own bound check
+		// (len <= n <= cap) and text, then the three-index window s[:len:n] over the live slice,
+		// converted back into the slot's own type and written through the aliased box.
+		"Value.SetCap": goosAny,
 		// Value.Grow reads a *unsafeheader.Slice off the same never-populated v.ptr, so it
 		// nil-deref'd for every caller (gob's decUint8Slice / decodeArrayHelper Grow(1) in a
 		// loop past internal/saferio's 10 MiB chunk). Bridged as an ordinary managed
