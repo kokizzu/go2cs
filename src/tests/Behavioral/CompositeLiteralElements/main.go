@@ -18,6 +18,11 @@ type withArray struct {
 // wrapper, not through the structural array projection.
 type nb [4]byte
 
+// nsl and nmp are the NAMED SLICE and NAMED MAP flavours of the same shape. Each lowers to a
+// different generated wrapper ctor, so each pins its own arm of the named-composite renderer.
+type nsl []int
+type nmp map[string]int
+
 func main() {
 	// --- Defect 1 family: an ELIDED `&T` element whose element type is a pointer.
 	// Go permits `[]*T{{}}` as shorthand for `[]*T{&T{}}` for any composite T.
@@ -40,13 +45,54 @@ func main() {
 	paShort := []*[4]byte{{1, 2}}
 	fmt.Println("paShort:", len(*paShort[0]), *paShort[0])
 
-	// A pointer-to-NAMED-ARRAY pointee is deliberately NOT in this guard: its pointee is
-	// built by the named-wrapper ctor the TYPED path renders (`Ꮡ(new nb(new byte[4].array()))`),
-	// not by the structural projection the elided arms emit, so it is a separate emission
-	// and reproducing it here would duplicate that renderer. The explicit spelling below is
-	// the shape that works today, kept as the boundary marker.
+	// A pointer-to-NAMED non-struct pointee. Its value is built by the generated WRAPPER ctor,
+	// which lives in the TYPED path's named-composite machinery rather than in the structural
+	// projection the elided arms emit — so the elided spelling is ROUTED to that renderer rather
+	// than a second copy being grown beside it. Each elided row is paired with the explicit
+	// spelling it elides and the pair must emit BYTE-IDENTICALLY: elision is surface syntax, so
+	// one Go value may not have two emissions. Every elided row here was CS0144 before the
+	// routing (`new()` against the abstract `ж<T>`), which is what makes this block the
+	// compile-failure control as well as the behavioral one.
+	pna := []*nb{{}}
 	pnaExplicit := []*nb{&nb{}}
+	fmt.Println("pna:", len(*pna[0]), *pna[0])
 	fmt.Println("pnaExplicit:", len(*pnaExplicit[0]), *pnaExplicit[0])
+	pna[0][2] = 7
+	fmt.Printf("pna written: %v\n", *pna[0])
+
+	// The NAMED SLICE and NAMED MAP flavours: a different wrapper ctor each, so each pins its own
+	// arm of the renderer instead of re-pinning the array one.
+	pnsl := []*nsl{{}}
+	pnslExplicit := []*nsl{&nsl{}}
+	fmt.Println("pnsl:", len(*pnsl[0]), *pnsl[0] == nil, *pnsl[0])
+	fmt.Println("pnslExplicit:", len(*pnslExplicit[0]), *pnslExplicit[0])
+
+	pnmp := []*nmp{{}}
+	pnmpExplicit := []*nmp{&nmp{}}
+	fmt.Println("pnmp:", len(*pnmp[0]), *pnmp[0] == nil, *pnmp[0])
+	fmt.Println("pnmpExplicit:", len(*pnmpExplicit[0]), *pnmpExplicit[0])
+
+	// A POPULATED elided named-array element, so the routing is pinned for a non-empty literal
+	// too — the wrapper's element-list ctor rather than its empty shortcut.
+	pnaPop := []*nb{{1, 2, 3, 4}}
+	fmt.Println("pnaPop:", len(*pnaPop[0]), *pnaPop[0])
+
+	// A named pointee over a NESTED fixed array (`type nn [2][3]int; []*nn{{}}`) is deliberately
+	// NOT pinned here, and the reason is measured rather than assumed: all THREE spellings —
+	// elided, explicit `&nn{}`, and the plain declared `nn{}` — print `2 0 [[] []]` against Go's
+	// `2 3 [[0 0 0] [0 0 0]]`, i.e. the named-array WRAPPER's empty-literal shortcut emits
+	// `new nn(new array<nint>[2].array())` with no element factory, so every row is `default(T)`
+	// and length 0. That is the defect-2 family (a `default(T)` that is not usable storage) inside
+	// the named wrapper, it is PRE-EXISTING and independent of this routing, and the routing's own
+	// property still holds over it: the elided spelling agrees with the explicit one exactly.
+	// Pinning it here would bake a known-wrong golden; it is reported separately instead.
+
+	// The named pointee in the MAP-VALUE and fixed-ARRAY container slots, which reach the arm by
+	// a different route than the slice-element rows above.
+	mpn := map[string]*nb{"a": {}}
+	fmt.Println("mpn:", len(mpn), len(*mpn["a"]), *mpn["a"])
+	apn := [2]*nb{{}, {}}
+	fmt.Println("apn:", len(apn), len(*apn[0]), *apn[0], *apn[1])
 
 	// pointer-to-nested-ARRAY pointee: the inner length must survive too.
 	pnest := []*[2][3]int{{}}

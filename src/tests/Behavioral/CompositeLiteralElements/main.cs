@@ -15,11 +15,23 @@ partial class main_package {
 
 [GoType("[4]byte")] partial struct nb;
 
+[GoType("[]nint")] partial struct nsl;
+
+[GoType("map[@string, nint]")] partial struct nmp;
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly object paExplicitˢ = (@string)"paExplicit:"u8;
 private static readonly object paPopˢ = (@string)"paPop:"u8;
 private static readonly object paShortˢ = (@string)"paShort:"u8;
+private static readonly object pnaˢ = (@string)"pna:"u8;
 private static readonly object pnaExplicitˢ = (@string)"pnaExplicit:"u8;
+private static readonly object pnslˢ = (@string)"pnsl:"u8;
+private static readonly object pnslExplicitˢ = (@string)"pnslExplicit:"u8;
+private static readonly object pnmpˢ = (@string)"pnmp:"u8;
+private static readonly object pnmpExplicitˢ = (@string)"pnmpExplicit:"u8;
+private static readonly object pnaPopˢ = (@string)"pnaPop:"u8;
+private static readonly object mpnˢ = (@string)"mpn:"u8;
+private static readonly object apnˢ = (@string)"apn:"u8;
 private static readonly object pnestˢ = (@string)"pnest:"u8;
 private static readonly object ps2ˢ = (@string)"ps2:"u8;
 private static readonly object pslˢ = (@string)"psl:"u8;
@@ -49,8 +61,26 @@ internal static void Main() {
     fmt.Println(paPopˢ, len(paPop[0].Value), paPop[0].Value);
     var paShort = new ж<array<byte>>[]{Ꮡ(new byte[]{1, 2}.array(4))}.slice();
     fmt.Println(paShortˢ, len(paShort[0].Value), paShort[0].Value);
+    var pna = new ж<nb>[]{Ꮡ(new nb(new byte[4].array()))}.slice();
     var pnaExplicit = new ж<nb>[]{Ꮡ(new nb(new byte[4].array()))}.slice();
+    fmt.Println(pnaˢ, len(pna[0].Value), pna[0].Value);
     fmt.Println(pnaExplicitˢ, len(pnaExplicit[0].Value), pnaExplicit[0].Value);
+    pna[0].Value[2] = 7;
+    fmt.Printf("pna written: %v\n"u8, pna[0].Value);
+    var pnsl = new ж<nsl>[]{Ꮡ(new nsl(new nint[]{}.slice()))}.slice();
+    var pnslExplicit = new ж<nsl>[]{Ꮡ(new nsl(new nint[]{}.slice()))}.slice();
+    fmt.Println(pnslˢ, len(pnsl[0].ValueSlot), pnsl[0].ValueSlot == default!, pnsl[0].ValueSlot);
+    fmt.Println(pnslExplicitˢ, len(pnslExplicit[0].ValueSlot), pnslExplicit[0].ValueSlot);
+    var pnmp = new ж<nmp>[]{Ꮡ(new nmp(new map<@string, nint>{}))}.slice();
+    var pnmpExplicit = new ж<nmp>[]{Ꮡ(new nmp(new map<@string, nint>{}))}.slice();
+    fmt.Println(pnmpˢ, len(pnmp[0].ValueSlot), pnmp[0].ValueSlot == default!, pnmp[0].ValueSlot);
+    fmt.Println(pnmpExplicitˢ, len(pnmpExplicit[0].ValueSlot), pnmpExplicit[0].ValueSlot);
+    var pnaPop = new ж<nb>[]{Ꮡ(new nb(new byte[]{1, 2, 3, 4}.array()))}.slice();
+    fmt.Println(pnaPopˢ, len(pnaPop[0].Value), pnaPop[0].Value);
+    var mpn = new map<@string, ж<nb>>{["a"u8] = Ꮡ(new nb(new byte[4].array()))};
+    fmt.Println(mpnˢ, len(mpn), len(mpn["a"u8].Value), mpn["a"u8].Value);
+    var apn = new ж<nb>[]{Ꮡ(new nb(new byte[4].array())), Ꮡ(new nb(new byte[4].array()))}.array();
+    fmt.Println(apnˢ, len(apn), len(apn[0].Value), apn[0].Value, apn[1].Value);
     var pnest = new ж<array<array<nint>>>[]{Ꮡ(new array<nint>[]{}.array(2, () => new(3)))}.slice();
     fmt.Println(pnestˢ, len(pnest[0].Value), len(pnest[0].Value[0]), pnest[0].Value);
     var ps = new ж<S>[]{Ꮡ(new S())}.slice();
