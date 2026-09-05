@@ -848,12 +848,47 @@ jobs:
                               }
                           }
 
+                          # The FRAMES are what PLACE a death; the fields above only name it (Q41 at train 26:
+                          # SIGBUS / EXC_BAD_ACCESS / KERN_PROTECTION_FAILURE at 0x4200000000, and the artifact
+                          # unreadable from a proxied lane). A .ips is a one-line JSON header followed by the
+                          # report body (pretty JSON on macOS 13+): parse the body, print the faulting thread's
+                          # frames against usedImages, and its register state -- pc/lr/sp, and on arm64 far/esr,
+                          # which say whether the fault was an instruction fetch AT the address or a data access
+                          # to it. Best-effort like the rest: a body that does not parse prints its raw head.
+                          $frameLines = @()
+                          try {
+                              $bodyText = ($raw -split "`n", 2)[1]
+                              $body = $bodyText | ConvertFrom-Json -Depth 64
+                              $ft = [int]$body.faultingThread
+                              $thread = $body.threads[$ft]
+                              $images = @($body.usedImages)
+                              $frameLines += "faulting thread $ft" + $(if ($thread.name) { " ($($thread.name))" } elseif ($thread.queue) { " ($($thread.queue))" } else { '' })
+                              $i = 0
+                              foreach ($f in @($thread.frames | Select-Object -First 40)) {
+                                  $img = if ($null -ne $f.imageIndex -and $f.imageIndex -lt $images.Count) { $images[$f.imageIndex].name } else { '?' }
+                                  $sym = if ($f.symbol) { " $($f.symbol)+$($f.symbolLocation)" } else { '' }
+                                  $frameLines += ('#{0,-3} {1} + 0x{2:x}{3}' -f $i, $img, [int64]$f.imageOffset, $sym)
+                                  $i++
+                              }
+                              $ts = $thread.threadState
+                              if ($ts) {
+                                  $regs = @()
+                                  foreach ($r in 'pc','lr','sp','far','esr') { if ($ts.$r) { $regs += ('{0}=0x{1:x}' -f $r, [int64]$ts.$r.value) } }
+                                  if ($ts.esr -and $ts.esr.description) { $regs += "esr:'$($ts.esr.description)'" }
+                                  if ($regs.Count -gt 0) { $frameLines += ('threadState ' + ($regs -join ' ')) }
+                              }
+                          }
+                          catch {
+                              $frameLines += "frames: the report body did not parse ($($_.Exception.Message)); raw head follows"
+                              $frameLines += @(($raw -split "`n") | Select-Object -First 60)
+                          }
+
                           $lines = @("## crash $p -- GOOS=$goos ($rid) -- exit $code -- $($rep.Name) ($arm)", '', '```') +
-                              @($facts | Select-Object -First 40) + @('```')
+                              @($facts | Select-Object -First 40) + $frameLines + @('```')
 
                           if ($facts.Count -eq 0) {
                               $lines = @("## crash $p -- GOOS=$goos ($rid) -- exit $code -- $($rep.Name) ($arm)", '',
-                                  'The report was collected but none of the expected fields matched; read the artifact.')
+                                  'The report was collected but none of the expected fields matched; the frames follow if the body parsed.', '```') + $frameLines + @('```')
                           }
 
                           Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $lines
