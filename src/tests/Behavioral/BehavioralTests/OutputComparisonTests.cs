@@ -1478,6 +1478,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckReflectFieldAddrWrite() => CheckTarget("ReflectFieldAddrWrite");
 
     [TestMethod]
+    public void CheckReflectFieldMetadata() => CheckTarget("ReflectFieldMetadata");
+
+    [TestMethod]
     public void CheckReflectFuncArrayParamDims() => CheckTarget("ReflectFuncArrayParamDims");
 
     [TestMethod]
