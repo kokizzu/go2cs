@@ -355,3 +355,125 @@ carries the corrected finding: 37 and 3 predate the §3 join correction and 38 i
 (see §6). The finding is 41 + 4 over the 45 candidates, reconstructed in §3. Those artifacts
 live in a per-machine scratch directory and are **not** durable; §2 and §3 are written so the
 census can be reproduced from the repository alone.
+
+---
+
+## 10. AMENDMENT 2026-09-06 — THIS RECORD'S NUMBERS EXPIRE WITH THE TREE, AND THE TREE HAS MOVED
+
+Added after the coordinator's aggregate-expiry census **failed its own positive control on this
+very record**. Their scan asked *"does a gate line quote a suite total"* — this record's gate line
+does not, so it came back clean. The operative question, in the coordinator's corrected phrasing
+and R's sharpening of it, is: **ask what the seat CLAIMS, then ask what that claim is a property
+of.** For a census seat **the aggregate is not in a gate line at all — it is the payload.**
+`232`, `45`, `187`, `93`, `41/52` are counts over a corpus, and a corpus moves.
+
+**WHAT "MASTER" MEANS IN THIS DOCUMENT.** §1 stamps it — `69136ef1a`, windows, G-LAPTOP — but §3,
+§7 and §8 say "at master" in running prose, and a reader landing there reads *today's* master.
+**Every "at master" in this record means `69136ef1a` and nothing later.** The original text is left
+standing rather than rewritten, per the point-in-time-record rule; this paragraph is the correction.
+
+**THE MEASURED MOVEMENT SINCE, bounded without a rebuild.** Train 31 landed on master as
+`fd09034f5`. Comparing the converter's push registry at both trees with **one extraction method on
+both sides**:
+
+```
+69136ef1a    linknamePushTargets   20 entries   0 pprof
+fd09034f5    linknamePushTargets   21 entries   1 pprof
+                                                └── runtime/pprof.pprof_cyclesPerSecond
+```
+
+**Exactly one push-registry entry was added, and it is `pprof_cyclesPerSecond`** — the symbol §3a
+records i9 correcting this census on, bodied at `cpuprof.cs:204` with a **rendezvous label** as its
+destination, which places it in the **52-member PULL half**, not the 41 push-wired.
+
+Against the census artifacts: **7 of the 232 stubs were `runtime/pprof`**, and **exactly 1 of the 45
+candidates was** — `readProfile`, in the has-body half — **and it is not the symbol that moved.**
+
+**So SHRINKAGE is bounded — and the bound is SIX, not one; see the correction below, which supersedes
+the "at most 1" this paragraph carried for twenty minutes.**
+
+⚠ **BUT THAT BOUND IS ONE-DIRECTIONAL, AND THE FIRST VERSION OF THIS SECTION STOPPED THERE — WHICH
+WAS WRONG.** C2, auditing their own darwin bucket-3 census against the same ruling within the hour,
+named the direction this missed: **the population can also GROW.** A new bodyless `partial` plus a
+push, anywhere in the corpus that moved, ADDS a member — and no artifact I hold can see one that does
+not exist yet. **Train 31 changed 26 `src/core` `.cs` files, 16 of them windows-relevant**, which is
+the growth surface for this windows census, and it changed `manualTypeOperations.go`, which bears on
+what is hand-owned rather than stubbed. **Only the build settles growth**, and the headline at
+`fd09034f5` is UNKNOWN in both directions — see this section's closing correction; the `87` this
+paragraph first carried was a floor that assumed only `runtime/pprof` lost members.
+
+**WHAT DOES NARROW IT, and this is C2's check rather than mine:** `git diff --name-only 69136ef1a
+fd09034f5 -- src/gen/` is **EMPTY — zero files.** `PartialStubGenerator` is what decides the
+population at all (`IsPartialDefinition && PartialImplementationPart is null`, §2), and it is
+byte-identical across the two trees. **So the population's DEFINITION did not move; only its inputs
+did.** That is worth more than the shrink bound: a changed generator would have invalidated the
+funnel's every step, and it did not.
+
+⚠ **WHAT I HAVE NOT DONE.** The 232 are generated `*.stub.g.cs` files **on disk after a full corpus
+build**. Re-deriving `232 / 45 / 187` **requires that build and I have not run it.** No number in
+§1–§9 has been changed by this amendment.
+
+✅ **BUT THE SHRINK HALF WAS SETTLED THE SAME HOUR — by i9, not by me.** They read the stub output at
+`fd09034f5` directly: **`runtime/pprof` stub files went 7 → 1, survivor `readProfile`.** That is
+exactly this census's seven, and exactly its ONE candidate — `readProfile`, has-body half — so the six
+that vanished include `pprof_cyclesPerSecond`, whose stub the new registry entry displaced.
+**Two independent derivations agreeing: my artifacts at `69136ef1a` and their build output at
+`fd09034f5`, taken for unrelated reasons.**
+
+So the shrink endpoint is **MEASURED rather than derived — and it is 87, not the 92 this section first
+said.** ⚠ **THE "AT MOST 1" WAS WRONG AND THE RIGHT NUMBER WAS TWO SECTIONS UP IN THIS DOCUMENT.** I
+reasoned from `pprof_cyclesPerSecond` — the one symbol I had been discussing with i9 — and treated it
+as the pull half's only `runtime/pprof` member. **§3a's own package table says `runtime/pprof` 6**, and
+§3a's worked reconciliation spells the split out in a sentence: **"1 push-wired (`readProfile`) + 6
+pull-wired-with-body, one of them the RENDEZVOUS (`cyclesPerSecond`) = 7."** So of the seven stubs i9
+watched go to one, **the six that vanished are all pull-wired members of the 93**:
+
+```
+41 push-wired   readProfile SURVIVES        ->  41  unchanged
+52 pull-wired   loses all 6 runtime/pprof   ->  46
+                                                ---
+                                                 87
+```
+
+**The `232` loses six in this family.** The GROWTH question is untouched by that datum — it is
+`pprof`-specific, and the other fifteen windows-relevant changed files are unmeasured — **so
+**87 is NOT A FLOOR, and this is the THIRD time this section has been corrected in the same
+direction.** ⚠ The `87` above subtracts the six `runtime/pprof` departures i9 measured **and silently
+assumes every other package lost nothing.** That assumption is false on its face: §3a's own table puts
+**`reflect` 32 and `runtime` 7** in the pull half, and train 31 changed windows-relevant `.cs` in
+**`runtime` (5 files), `syscall/windows` (3), `runtime/windows` (1), `runtime/pprof` (1) and `reflect`
+(1)** — and C2's §11 establishes there are **THREE** displacement mechanisms, not two (registry entry,
+bodyless-partial completion, whole-file `GoManualConversion` replacement), any of which removes a
+member without touching the push registry I measured.
+
+**So the honest statement is: 93 at `69136ef1a`; SIX departures known and measured; `reflect`,
+`runtime`, `syscall/windows` and `runtime/windows` unmeasured in both directions; the headline at
+`fd09034f5` is UNKNOWN.** Only the build settles it, and it has not been run here.
+
+⚠ **THE PATTERN IS THE FINDING, and it is mine.** Three corrections to this section in one evening —
+`at most 1` → `92` → `87` → unknown — and **every one fixed the direction that had just been pointed
+out to me while assuming the unmeasured directions were zero.** C2 named growth and I bounded growth;
+i9 measured pprof and I subtracted pprof; neither told me to check `reflect`, so I did not, and I
+published a floor three times. **A bound is only as good as the enumeration of ways the quantity can
+move**, and the corrective is C2's: *enumerate from the artifact that DEFINES the class* — here, the
+converter's own three mechanisms and §3a's own package table — **rather than from whichever direction
+the last correspondent happened to name.**
+
+**The mechanism of the error is this record's own subject matter**: I asserted a property of an
+artifact without reading the artifact, and the artifact was **mine**, in the section written to
+prevent exactly this. C2's delta post is what sent me back to check.
+
+**AND THE MOVEMENT IS ON-THESIS, which is the point worth keeping.** This record argues bucket 3 is
+a **wiring defect and not a capability frontier**. A landing that wires one push and thereby removes
+a member is the thesis behaving as predicted — **the record going stale in the direction it
+forecast.** The independent confirmation arrived the same day from the other side: i9 measured
+`net/http/pprof` moving 0 → 15 verdicts once the host stopped dying, and the coordinator attributed
+it to the converter's own comment at `visitFuncDecl.go:2030` rather than to a before/after with a
+53-commit confound in it. **`asmcgocall`, meanwhile, was ruled a GENUINE frontier — and it sits in
+the 187 residue** (0 of 260 push-map entries, 0 of 45 candidates), which is this record's partition
+agreeing with a measurement taken for an unrelated reason.
+
+**ONE DISCREPANCY, FLAGGED AND NOT RESOLVED.** The coordinator described *"the linkname push of five
+`runtime.pprof_*` symbols"*; the registry moved by **one**. Those reconcile if a single wiring
+unblocked the rest — which is what i9's seven recovered subtests look like — **but five wired symbols
+and one registry entry are different claims, and only the second is visible from here.**
