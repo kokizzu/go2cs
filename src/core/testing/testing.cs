@@ -460,17 +460,28 @@ public static partial class testing_package
     /// <item>returning <c>false</c> unconditionally runs the body ZERO times and hands back a
     /// timing for work that never happened, which is worse than an error because it is silent.</item>
     /// </list>
-    /// So Loop rides the same <c>N</c> the driver sets: true exactly N times, then false, resetting
-    /// for the next round. Go's own Loop manages its ramp internally rather than reading a
-    /// pre-set N; here the ramp already exists in <see cref="Benchmark"/> (Go's predictNextN, the
-    /// 100ms budget and the 1e9 ceiling), so honouring N reproduces what the driver expects while
-    /// leaving a never-driven benchmark at N=0 — one evaluation, false, no iterations, no hang.
+    /// So Loop rides the same <c>N</c> the driver sets: true exactly N times, then false. Go's own
+    /// Loop instead ramps INTERNALLY against a time budget and explicitly sets <c>b.N = 0</c> to
+    /// avoid confusion (benchmark.go loopSlowPath); here the ramp already exists one level up in
+    /// <see cref="Benchmark"/> — Go's predictNextN, the 100 ms budget and the 1e9 ceiling — and it
+    /// mints a fresh B per round, so riding N ramps ACROSS closure calls where Go ramps within one.
+    /// Different mechanism, same observable: a BenchmarkResult whose N is the iteration count. A
+    /// never-driven benchmark sits at N=0 — one evaluation, false, no iterations, no hang.
+    /// <para>
+    /// ⚠ <b>There is deliberately NO cursor reset, and an earlier version of this method had one.</b>
+    /// It was written so that a second <c>for b.Loop()</c> range in the same body would run, which
+    /// seemed obviously right and is <b>a behaviour Go forbids</b>: measured against the go1.24.13
+    /// oracle (arm12_loop, outside the repo), Go FATALS on the second range with
+    /// <c>"B.Loop called with timer stopped"</c> — loopSlowPath's first consistency check, because
+    /// the completed first range called StopTimer. Resetting would have made the converted side
+    /// silently execute a loop body Go never runs. Without the reset the cursor stays at N, the
+    /// second range answers false immediately, and neither side does that work. The host has no
+    /// meaningful Fatal on a B whose members are compile-only no-ops, so matching Go's REFUSAL
+    /// exactly is not available; not doing the work is the part that matters.
+    /// </para>
     /// </remarks>
     [GoRecv] public static bool Loop(this ref B b) {
         if (b.LoopIteration >= b.N) {
-            // Reset so a second `for b.Loop()` in the same body -- or the driver's next, larger
-            // round reusing this B -- starts from zero rather than falling straight through.
-            b.LoopIteration = 0;
             return false;
         }
         b.LoopIteration++;
