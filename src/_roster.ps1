@@ -134,7 +134,22 @@ $ExclusionLedgerRowPattern = '^\|\s*`([^`]+)`\s*\|\s*([^|]*?)\s*\|\s*([^|]*?)\s*
 
 # The ruled exclusion classes (owner ruling 2026-08-25): E1 no eligible tests on the target
 # platform, E2 broken oracle, E3 the test's subject is the replaced representation.
-$ExclusionLedgerClasses = @('E1', 'E2', 'E3')
+#
+# E4 joined by owner ruling 2026-09-07, and it is a THIRD LIMB rather than a relaxation of the
+# first two. E1/E2/E3 all sit on the bar's "provably meaningless" limb -- no test to run, no
+# trustworthy oracle, or a pass that would be fabrication -- i.e. the comparison cannot produce
+# information. E4 names the case where the comparison IS sound and produces information, and
+# yields no VALIDATION: it ran, it was host-qualified, and every verdict says the capability is
+# absent. `runtime/trace` is the founding member (0 matched / 2 diverged, measured, not argued).
+#
+# The distinction from E3 is the reason a pass is unavailable, and it is a judgment like E2's and
+# E3's: an E3 pass would be FABRICATION (the subject is the replaced representation), an E4 pass
+# would be LEGITIMATE IMPLEMENTATION nobody has written. `matched == 0` is the guardrail that
+# keeps the class from drifting -- it is NECESSARY, not sufficient, since E3's own
+# `internal/unsafeheader` is matched-0 too -- and the moment effort produces one matching verdict
+# the row leaves E4 by arithmetic rather than by anyone's judgment. E4 members are therefore the
+# rows most likely to exercise the standing rejoin clause, and each carries its revisit condition.
+$ExclusionLedgerClasses = @('E1', 'E2', 'E3', 'E4')
 
 <#
 .SYNOPSIS

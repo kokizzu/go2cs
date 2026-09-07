@@ -138,11 +138,17 @@ Any other failure is still a hard mismatch, and packages without a manifest comp
 > Phase-4 validation campaign and grows as packages validate. Denominator: the 215 of 302 converted
 > standard-library packages whose Go 1.23.12 sources define `Test` functions.)*
 >
-> **Against the implementable set (215 − 5 excluded = 210): 204 / 210 — 97.1%.** Both numbers are
+> **Against the implementable set (215 − 6 excluded = 209): 204 / 209 — 97.6%.** Both numbers are
 > always reported. The line above measures against every package that defines a `Test` function;
 > this one against the packages a faithful managed conversion can honestly validate at all. The
-> five, each with its class, mechanism and evidence, are in
-> [Excluded packages](#excluded-packages) below. The denominator moved 209 → 210 by owner ruling on
+> six, each with its class, mechanism and evidence, are in
+> [Excluded packages](#excluded-packages) below. **The denominator moved 210 → 209 by owner ruling on
+> 2026-09-07**, excluding `runtime/trace` under the newly ruled **E4** class: it was measured at this
+> master (0 matched / 2 diverged, host-qualified) and every verdict reports the same absent
+> capability, so the comparison is sound and validates nothing. Note the direction — the numerator
+> does **not** move. Banking it instead would have lifted the numerator to **205** against a
+> denominator still standing at **210** — an identical percentage, bought with a row contributing
+> zero matching verdicts. The denominator moved 209 → 210 by owner ruling on
 > 2026-09-02: `internal/runtime/syscall` was a phantom inside it — not a member of `go list std` on
 > windows/amd64 at all, so a set derived from that listing could never subtract it — and
 > `net/http/pprof`, converted and testable and in no accounting at all, is named in the remainder
@@ -412,15 +418,17 @@ leveling re-sweep re-annotated the rows it moved.
 ## Excluded packages
 
 The naive denominator above — 215 — counts every converted package whose Go 1.23.12 sources define
-a `Test` function. Five of those cannot be validated *at all*, and not because the work is
-unfinished: each is blocked by a property of the target that no amount of converter effort changes.
-The campaign's real goal is 100% of what remains, so both denominators are always reported and
-nothing disappears quietly — every exclusion is carried here with its class, its mechanism and the
-measurement that put it there, exactly as every disclosure is pinned by exact failure signature.
+a `Test` function. Six of those cannot be validated *at all* — five because the work is not the
+thing standing in the way: each is blocked by a property of the target that no amount of converter
+effort changes. The campaign's real goal is 100% of what remains, so both denominators are always
+reported and nothing disappears quietly — every exclusion is carried here with its class, its
+mechanism and the measurement that put it there, exactly as every disclosure is pinned by exact
+failure signature.
 
 **The admission bar is the disclosure bar's sibling, and it is strict**: a package is excluded only
 when validation is **provably meaningless or impossible — never merely hard**, unimplemented, or
-expensive. Each exclusion is ruled individually, on measurement. Three classes are in evidence:
+expensive. Each exclusion is ruled individually, on measurement. Four classes are in evidence, and
+the fourth is a different limb of the bar rather than a relaxation of it — read E4's own note:
 
 - **E1 — no eligible tests on the target platform.** Go's own build constraints leave the eligible
   test set empty on windows/amd64. There is nothing to validate; the comparison is vacuous by Go's
@@ -434,6 +442,23 @@ expensive. Each exclusion is ruled individually, on measurement. Three classes a
 - **E3 — the test's subject *is* the replaced representation.** The suite measures the raw memory
   model a safe managed runtime deliberately does not have, so any pass would be fabrication rather
   than implementation.
+- **E4 — the comparison is sound and validates nothing** (owner ruling, 2026-09-07). The suite runs,
+  the host is qualified, the oracle is clean, and **every** verdict reports the same absent
+  capability: the differential produces information and produces no *validation*. ⚠ **This is a
+  THIRD LIMB of the bar, not a relaxation of the first two, and the difference is worth stating
+  because it is easy to misread.** E1, E2 and E3 all sit on the *provably meaningless* limb — no
+  test to run, no trustworthy baseline, or a pass that would be fabrication — i.e. the comparison
+  **cannot produce information**. E4's comparison works perfectly and tells the truth; what it
+  cannot produce is a pass. **The boundary against E3 is the reason a pass is unavailable, and it
+  is a judgment exactly as E2's and E3's are**: an E3 pass would be *fabrication* (the subject is
+  the replaced representation), an E4 pass would be *legitimate implementation nobody has written*.
+  **`matched == 0` is the guardrail, and it is NECESSARY rather than sufficient** — E3's own
+  `internal/unsafeheader` is matched-0 too — but it is what keeps the class from drifting into a
+  parking lot for unfinished work: the moment effort yields one matching verdict the row leaves E4
+  by arithmetic rather than by anyone's judgment. E4 members are therefore the rows most likely to
+  exercise the rejoin clause below, and **each carries its revisit condition explicitly**. They are
+  also the only exclusions admitted on a *measured* comparison rather than on an argument about why
+  one cannot happen — the Verdicts column below is hypothetical for E1/E2/E3 and measured for E4.
 
 The **rejoin clause** is binding and works exactly like the disclosure classes' anti-laundering
 rule: an exclusion whose mechanism is later implemented — or whose oracle is fixed upstream, or
@@ -466,6 +491,7 @@ recorded on that same board.
 | `log/syslog` | 0 | E1 | There is no syslog on Windows; Go's own constraints exclude the entire suite on this target. | [ruling][exclusion-ruling] |
 | `runtime/race` | 0 | E1 | Race-detector runtime support is only testable under the `-race` instrumented build; outside it Go declares no eligible tests, and the converted corpus has no such build at all. | [ruling][exclusion-ruling] |
 | `internal/unsafeheader` | 6 | E3 | The suite's entire subject is the raw `{Data, Len, Cap}` slice/string header: it fabricates a live slice or string by writing those fields and reinterpreting the struct, and Go's memory model lets the result alias the original storage. A managed slice is not that triple and cannot be aliased into existence — all 6 verdicts fail identically, structurally rather than by defect. | [ruling][exclusion-ruling] |
+| `runtime/trace` | 2 | E4 | The execution tracer. `runtime.StartTrace()` is hand-owned at `runtime/windows/trace_impl.cs:59` and returns `tracing is not supported: the go2cs managed runtime has no execution tracer`; `trace.cs:128` early-returns on it before the reader goroutine spawns, so BOTH verdicts carry that one deliberate statement. MEASURED at `fd09034f5`, host-qualified (`go test -count=1 runtime/trace` -> `ok 0.394s`, exit 0), Release + tiering off: **0 matched / 2 diverged / 0 empty** — the comparison is sound and validates nothing, which is the E4 shape. It is mechanically ADMISSIBLE as 2 disclosed under the `runtime-capability` signature `os/signal``s `TestSignalTrace` already pins (trial manifest exits 0; a negative control with a wrong signature exits 1 naming that row alone) — and banking it would have contributed ZERO matching verdicts, which is why it is excluded instead. ⚠ **REVISIT CONDITION**: the two `runtime-capability` rows are re-examined for retirement potential at a later date; if they are not retirable, the row is out for good. | [ruling][exclusion-ruling] |
 
 **`internal/runtime/syscall` was struck from this ledger on 2026-09-02, by owner ruling, because it
 was never inside the denominator it was being subtracted from.** It is not a member of
@@ -473,7 +499,9 @@ was never inside the denominator it was being subtracted from.** It is not a mem
 which is exactly what its own E1 mechanism said (*build constraints exclude all Go files*: the
 converter refuses it, so on this target there is not even a package to convert) — and a phantom
 cannot be subtracted from a set derived from that listing. `215 − 6` therefore took one too many;
-the strict Windows-axis implementable set is `215 − 5 = 210`. Nothing else moves: no banked row
+the strict Windows-axis implementable set is `215 − 5 = 210` **as of 2026-09-02** (`215 − 6 = 209`
+since `runtime/trace` was excluded under E4 on 2026-09-07; this paragraph records the 09-02 ruling and
+is not the live figure). Nothing else moves: no banked row
 changes, and the header's numbers are CHECKED by
 [`src/check-roster-format.ps1`](../src/check-roster-format.ps1), which derives them from the table
 above and fails when the two disagree. The header itself is hand-written; the guard is what makes
@@ -553,7 +581,8 @@ tracker carried; `bcache` banking the same day brought it back to eight, by the 
 it.** `internal/runtime/syscall` is **not in `go list std` on windows/amd64 at all** — Go's build
 constraints exclude every file, which is what its own E1 mechanism said — so it could not be a
 member of a set derived from that listing, and `215 − 6` subtracted one non-member. Five exclusions
-are inside the 215, the strict Windows-axis implementable set is **210**, and the header above
+are inside the 215, the strict Windows-axis implementable set was **210 as of 2026-09-02** (**209**
+since the E4 exclusion of 2026-09-07), and the header above
 reported 202 / 210 — 96.2% as of 2026-09-02, from the corrected ledger. That ratio is this
 derivation's own record of its day and is NOT the live figure: read the header itself, which the
 guard checks against the table and fails on disagreement. The struck row's Linux-axis
