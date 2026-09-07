@@ -25,7 +25,8 @@ any one of them rejoins the count the day its evidence changes. A package appear
 The push past 90% landed **`net` itself — 472 verdicts, the roster's largest networking row** —
 alongside `reflect` compiling and executing for the first time, and `net/netip`, `net/http/cookiejar`,
 `debug/pe` and more joining the roster in a single day. Published to NuGet as **1.23.12.2**, with
-this release's proof pages frozen at [validation/1.23.12.2](validation/1.23.12.2/index.md).
+this release's proof pages frozen at `validation/1.23.12.2` — see the
+[validation proofs index](validation/index.md).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 

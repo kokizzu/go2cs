@@ -248,6 +248,23 @@ The 1.23 → 1.23.12 rehearsal hop has **zero** language delta. That is the poin
 > that record supports holding the hop until 100% on 1.23.12: the delta changes the hop's CONTENT,
 > not its SCHEDULE.
 
+> **AMENDED 2026-09-07 — the SCHEDULE clause above is reversed by owner ruling; the CONTENT clause
+> stands.** The corpus hops to **go1.24.13** without first driving 1.23.12 to 100%. The block above
+> is left as written because it was true when written and its content analysis is unaffected — what
+> changed is the premise it rested on, not its facts. Three measurements moved it. (1) The 204/209
+> figure is **package-based, not content-based**: a row is all-or-nothing, so a package matching 326
+> of 385 verdicts scores zero, and **four of the five remaining rows are already fully measured**,
+> unbanked over classification questions rather than blindness. (2) The one genuinely blind row,
+> `runtime` at 84 of 883 verdicts, is **not closable by banking** — it needs a capability build — and
+> §7's rebank bill **cannot see it anyway**, because §7 enumerates ROWS and neither `runtime` nor
+> `reflect` is one. (3) The economics do **not** favour closing first: doing so re-banks 5 rows
+> inside a campaign that re-banks 204 regardless (~2.4% by row, ~4.9% by verdict), while the hop
+> writes off 10 already-banked rows and 2,321 verdicts whose Go package ceases to exist — a larger
+> loss than the saving. **So this is a SCHEDULE decision and is recorded as one**: three of five rows
+> sit behind two unsized capability frontiers, so "the objective is days away" stopped being true.
+> The 1.23.12 record freezes at 204/209 and is published as that release's anchor — the one genuine
+> forfeit, named rather than discovered.
+
 ### 1.4 The toolchain question — what go2cs itself must build with
 
 This is the section with the most load-bearing finding on the page.

@@ -420,10 +420,18 @@ leveling re-sweep re-annotated the rows it moved.
 The naive denominator above — 215 — counts every converted package whose Go 1.23.12 sources define
 a `Test` function. Six of those cannot be validated *at all* — five because the work is not the
 thing standing in the way: each is blocked by a property of the target that no amount of converter
-effort changes. The campaign's real goal is 100% of what remains, so both denominators are always
-reported and nothing disappears quietly — every exclusion is carried here with its class, its
-mechanism and the measurement that put it there, exactly as every disclosure is pinned by exact
-failure signature.
+effort changes. Both denominators are always reported and nothing disappears quietly — every
+exclusion is carried here with its class, its mechanism and the measurement that put it there,
+exactly as every disclosure is pinned by exact failure signature.
+
+> **This release's record is closed.** By owner ruling of 2026-09-07 the corpus moves to the next Go
+> release rather than driving this one to 100%, so the figures above are the **Go 1.23.12 anchor** —
+> a frozen record of what this release reached, not a running total. The reasoning changes what the
+> percentage *means*, so it is worth stating: the metric is **package-based, not content-based**, and
+> a row is all-or-nothing — a package matching 326 of its 385 verdicts scores **zero**. Four of the
+> five packages left here are already **fully measured**, unbanked over classification questions
+> rather than because anything is unseen. All five re-validate against the next release, where a hop
+> re-derives every row from scratch in any case.
 
 **The admission bar is the disclosure bar's sibling, and it is strict**: a package is excluded only
 when validation is **provably meaningless or impossible — never merely hard**, unimplemented, or
@@ -576,6 +584,19 @@ infrastructure-erroring, `TestDeltaProfile` skips where Go passes, and profile c
 managed body — the same capability frontier `runtime/pprof` and `runtime/trace` sit behind. Naming
 it here is what made the implementable remainder nine on 2026-09-02 rather than the eight the
 tracker carried; `bcache` banking the same day brought it back to eight, by the other route.
+
+**⚠ That 2026-08-14 characterisation is superseded, and the row carries an owner ruling this file
+did not record until 2026-09-07.** Re-measured twice on two hosts on 2026-09-06, the row reads
+**15 go / 15 csharp / 11 agreeing / 4 differing** — the four collapsing to three independent roots,
+of which `asmcgocall` is a genuine assembly frontier and the parent is derived rather than
+independent. **`TestDeltaProfile` was ruled NOT ADMITTED as a disclosure on 2026-09-07**: it is
+Go=pass / C#=skip on Go's *own* upstream skip text, but the skip is a **capability self-check**
+(`t.Skipf("mutex profile is not working: %v", p)` behind a `seen(...)` guard), not a platform
+condition — the `platform-skip` class at line 158 of the same file is
+`strings.HasPrefix(runtime.GOARCH, "arm")`, which is what a platform condition looks like. **The
+precedent, which generalises beyond this row: `platform-skip` requires a PLATFORM condition in Go's
+own source; a capability self-check is not one, however exactly the skip text matches.** So the test
+stays a real divergence, and the row stays *in* the denominator, unbanked, at four divergences.
 
 **⚠ One ledger row sat OUTSIDE the naive denominator, and the owner ruling of 2026-09-02 struck
 it.** `internal/runtime/syscall` is **not in `go list std` on windows/amd64 at all** — Go's build
