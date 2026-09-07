@@ -67,6 +67,31 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
         }
     }
     if (kind == Array) {
+        // The BYTE-ARRAY fast path, the Array arm's counterpart to the []byte one the Slice arm
+        // below already has. Until this existed the Array arm had NO fast path at all, which is why
+        // [6]byte cost 32 golib objects for six bytes while []byte cost 4: TryByteSliceView is gated
+        // on KindOf(ct) == Slice and never accepts an array<byte>, so every array walked elementwise
+        // through Index(), paying an ElemRefBox and an element boxing per element per side.
+        //
+        // array<T> implements IArray<T>, which declares ToSpan(), so a boxed array<byte> compares as
+        // a span with no Index(), no box and no boxing. Both sides are the SAME Go type by the
+        // AreEqual check above, so one view test settles both -- the same soundness argument the
+        // []byte arm makes.
+        //
+        // ⚠ RESTRICTED TO BYTE, and that is load-bearing rather than caution. Byte equality IS Go's
+        // ==, but a span compare over float/double dispatches to Double.Equals, which reports
+        // [NaN] == [NaN] TRUE where Go's == says false -- measured on both sides. Widening this to
+        // floats would invert a real answer, and NONE of TestDeepEqualAllocs' 39 subtests could
+        // catch it, because deepEqualPerfTests uses 1.414 and never NaN. A float path needs an
+        // elementwise == loop, which is still allocation-free; it is not written here.
+        //
+        // Measured, [][6]uint8: 52 golib objects / 9,216.55 B/op -> 9 / 2,152.04. The residue is the
+        // OUTER one-element slice walk, which still pays two Index() calls; a slice of scalars is
+        // untouched by this arm, which reaches Array kind only. Guarded by the differ-first,
+        // differ-last, nested and non-byte rows of the arm-4 correctness arbiter.
+        if (live1 is IArray<byte> byteArr1 && live2 is IArray<byte> byteArr2) {
+            return byteArr1.ToSpan().SequenceEqual(byteArr2.ToSpan());
+        }
         for (nint i = 0; i < v1.Len(); i++) {
             if (!deepValueEqualBoxed(v1.Index(i), v2.Index(i), visited)) {
                 return false;

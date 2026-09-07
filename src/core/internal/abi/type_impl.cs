@@ -152,7 +152,18 @@ public static ж<Type> synthType(System.Type? st, nint[]? arrayDims, nint[]?[]? 
     }
     chanDirChain = normalizeChanDirChain(chanDirChain);
     string dimsKey = descriptorDimsKey(arrayDims, funcParamDims, chanDirChain, keyDims);
-    return s_descriptors.GetOrAdd((st, dimsKey), _ => synthesizeDescriptor(st, arrayDims, funcParamDims, chanDirChain, keyDims));
+    // The factory is STATIC and the captured state travels as GetOrAdd's TArg. A lambda that closes
+    // over locals cannot be cached by Roslyn, so the display class and its delegate were constructed
+    // on EVERY call -- and because GetOrAdd's factory argument is built BEFORE the lookup, a cache
+    // HIT paid for them too. synthType runs once per makeTypedValue, i.e. once per reflect.Value.Index,
+    // i.e. per element per side of a DeepEqual walk, so the interning was working while the approach
+    // to it allocated. Measured: TypeOf(preboxed int) 208.00 -> 0.00 B/op (a pure cache hit is now
+    // free), and the golib object count did not move on ANY row -- a compiler-emitted closure is
+    // outside golib's allocation counter and inside the CLR's, which is the meter AllocsPerRun reads.
+    // This is the idiom the other ~28 GetOrAdd sites in reflect/golib/internal-abi already use.
+    return s_descriptors.GetOrAdd((st, dimsKey),
+        static (_, a) => synthesizeDescriptor(a.st, a.arrayDims, a.funcParamDims, a.chanDirChain, a.keyDims),
+        (st, arrayDims, funcParamDims, chanDirChain, keyDims));
 }
 
 // descriptorDimsKey renders the descriptor's dims cargo as the interning key's second component —
