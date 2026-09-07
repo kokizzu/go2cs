@@ -136,6 +136,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core/bufio/bufio.csproj" />
+    <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
     <ProjectReference Include="$(go2csPath)core/encoding/base64/encoding.base64.csproj" />
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />

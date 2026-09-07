@@ -3474,6 +3474,32 @@ func supportedTestCapabilities() []string {
 		"TB.Cleanup", "TB.Error", "TB.Errorf", "TB.Fail", "TB.FailNow", "TB.Failed",
 		"TB.Fatal", "TB.Fatalf", "TB.Helper", "TB.Log", "TB.Logf", "TB.Name", "TB.Setenv",
 		"TB.Skip", "TB.SkipNow", "TB.Skipf", "TB.Skipped", "TB.TempDir",
+		// Go 1.24's three additions to the testing surface, in every receiver spelling that reaches
+		// them. Chdir and Context are declared on `common`, so they arrive on T, B and F alike and
+		// on the TB interface; Loop is B-only. The host implements all three (core/testing:
+		// TestExecution.Chdir / TestExecution.Context / testing.cs B.Loop).
+		//
+		// ROSTER IMPACT, measured before widening per charter §9, on BOTH trees, by enumerating
+		// EVERY receiver spelling that precedes these method names anywhere in the roster's test
+		// sources rather than by matching a name:
+		//
+		//   go1.23.12 (master today)  ZERO rows. The members do not exist, so nothing calls them and
+		//                             this widening is INERT until the pin moves.
+		//   go1.24.13 (the target)    8 rows / 2,425 verdicts admitted that would otherwise be gated
+		//                             out silently: Chdir 53 sites over os, path/filepath, os/exec,
+		//                             syscall, testing, io/fs; Context 5 over net/http and testing;
+		//                             Loop 15 over testing and archive/zip.
+		//
+		// The census had to be receiver-TYPED, not name-keyed: `Chdir` and `Context` are ordinary
+		// English method names, and a loose scan matched os.Chdir, *http.Request.Context and TLS
+		// handshake structs, over-counting 2.6x and billing crypto/tls -- which calls neither.
+		//
+		// Widening BEFORE the hop rather than after is deliberate. An omission here does not fail a
+		// row, it SHRINKS one: the tests are converted and never registered, so the package reports
+		// a smaller denominator and reads as healthy. That is how T.Deadline hid six of context's
+		// cancellation tests and the TB.* spellings hid 26 of os/exec's -- both found by audit, not
+		// by a red gate.
+		"T.Chdir", "T.Context", "TB.Chdir", "TB.Context", "B.Loop",
 		"testing.AllocsPerRun", "testing.CoverMode", "testing.Short", "testing.Verbose",
 		// testing.Testing reports whether the binary is a test binary. The host has implemented it
 		// since the one-tree consolidation (core/testing/testing.cs) and the capability list simply
@@ -3976,6 +4002,30 @@ func writeTestHost(outputPath, namespace, importPath string, declarations []test
 var testProjectFixedReferences = []string{
 	`$(go2csPath)core/golib/golib.csproj`,
 	`$(go2csPath)core/testing/testing.csproj`,
+	// `context` joins the fixed set for Go 1.24, and it is NOT derivable from imports.
+	//
+	// 1.24 adds Chdir and Context to `common`, so both land on the testing.TB INTERFACE. go2cs-gen
+	// mints each `[assembly: GoImplement<T|B, TB>]` adapter's forwarders from that member set at
+	// COMPILE TIME, in the CONSUMING assembly — so every adapter body names
+	// `go.context_package.Context` whether or not the package under test ever mentions context.
+	// Go's own test sources do not import context merely to call `t.Context()`, so the
+	// import-derived set can never produce this reference; it has to be fixed, exactly as `testing`
+	// is fixed for exactly the same reason (every test compilation calls a method on a *testing.T).
+	//
+	// It cannot arrive transitively either: the emitted test projects set
+	// DisableTransitiveProjectReferences=true deliberately, so that a production project pulled into
+	// a test build graph cannot read the TEST project's project.assets.json and appear to reference
+	// itself (MSB4006). Adding it to testing.csproj alone therefore leaves every consumer red —
+	// measured on archive/zip, which adapts both B->TB and T->TB: CS0234 on the namespace, CS0012 on
+	// the assembly, CS9334 on the forwarder's return type. Route #7's shape: the host compiles
+	// green and only a cross-assembly consumer build can see it.
+	//
+	// Fixed for EVERY test project rather than only the 57 that carry an adapter today: which
+	// packages funnel through a TB-typed helper is a property of their test sources and changes with
+	// every release, so a conditional reference would be a silent break waiting for the next suite
+	// that adds one. Test projects are graph leaves, so the added edge introduces no cycle (a
+	// `sync.tests -> context -> sync` path is three distinct projects, not a loop).
+	`$(go2csPath)core/context/context.csproj`,
 }
 
 func writeTestProject(projectFile, projectName, namespace string, model testProjectModel, productionFiles, testFiles, fixtures, dependencies []string, options Options) error {

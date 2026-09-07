@@ -79,6 +79,9 @@
     <ProjectReference Include="../golib/golib.csproj" />
     <ProjectReference Include="../time/time.csproj" />
     <ProjectReference Include="../fmt/fmt.csproj" />
+    <!-- Go 1.24: TB.Context() returns context.Context. Go's own testing.go imports context
+         (testing.go:402), so this edge exists in Go's package graph too and adds no cycle. -->
+    <ProjectReference Include="../context/context.csproj" />
     <ProjectReference Include="../../gen/go2cs-gen/go2cs-gen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 

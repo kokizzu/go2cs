@@ -80,11 +80,18 @@ public static partial class testing_package
         void Logf(@string format, params ꓸꓸꓸany args);
         @string Name();
         void Setenv(@string key, @string value);
+        // Go 1.24 additions. Both are declared on `common`, so T, B and F all acquire them and all
+        // three must be spelled below or nothing satisfies this interface -- and the 57 committed
+        // `[assembly: GoImplement<…, TB>]` registrations across the banked rows all mint their
+        // forwarders from THIS member set at compile time, so an omission is a corpus-wide break
+        // rather than a local one. Placed in Go's own declaration order.
+        void Chdir(@string dir);
         void Skip(params ꓸꓸꓸany args);
         void SkipNow();
         void Skipf(@string format, params ꓸꓸꓸany args);
         bool Skipped();
         @string TempDir();
+        context_package.Context Context();
     }
 
     /// <summary>
@@ -103,6 +110,12 @@ public static partial class testing_package
     public struct B
     {
         public nint N;
+
+        // Go 1.24's b.Loop() cursor. Internal, not part of Go's B: Go's Loop keeps its state in
+        // unexported fields of the same struct, and this is that state under a name the converted
+        // corpus cannot collide with. Benchmark() mints a fresh B per round, so it starts at zero
+        // for each one without the driver having to reset it.
+        internal nint LoopIteration;
     }
 
     /// <summary>
@@ -324,6 +337,13 @@ public static partial class testing_package
     [GoRecv] public static void Setenv(this ref T t, @string key, @string value) =>
         t.RequiredExecution.Setenv(key.ToString(), value.ToString());
 
+    // Go 1.24: both are real on T, backed by the same TestExecution every other T member uses.
+    [GoRecv] public static void Chdir(this ref T t, @string dir) =>
+        t.RequiredExecution.Chdir(dir.ToString());
+
+    [GoRecv] public static context_package.Context Context(this ref T t) =>
+        t.RequiredExecution.Context();
+
     [GoRecv] public static void Parallel(this ref T t) => t.RequiredExecution.Parallel();
 
     // RecvGenerator intentionally handles ordinary receiver signatures. C# params
@@ -417,6 +437,57 @@ public static partial class testing_package
 
     [GoRecv] public static @string TempDir(this ref B b) => ""u8;
 
+    // Go 1.24 TB additions, on the same compile-only footing as the members above.
+    [GoRecv] public static void Chdir(this ref B b, @string dir) { }
+
+    // Background() rather than default!: a benchmark body that reaches this and passes the result
+    // to anything expecting a usable context gets one that is merely never canceled, instead of a
+    // nil dereference. The "nothing went wrong" value for a context is a live one.
+    [GoRecv] public static context_package.Context Context(this ref B b) => context_package.Background();
+
+    /// <summary>
+    /// Go 1.24's <c>B.Loop</c> — <c>for b.Loop() { … }</c>, the replacement for <c>for i := 0; i &lt; b.N; i++</c>.
+    /// </summary>
+    /// <remarks>
+    /// <b>This one is NOT a no-op, and it is the one member of this block where a no-op would be
+    /// wrong in both directions.</b> The block above is sound because benchmarks are never
+    /// registered or run — with <c>N</c> as the standing exception, since <see cref="Benchmark"/>
+    /// DOES drive a closure in process (unicode's TestCalibrate is a converted Test that calls it),
+    /// so a <c>b.N</c> loop inside such a closure iterates a real count. <c>Loop</c> is reached the
+    /// same way and therefore inherits the same exception:
+    /// <list type="bullet">
+    /// <item>returning <c>true</c> unconditionally HANGS the driver — an unbounded loop;</item>
+    /// <item>returning <c>false</c> unconditionally runs the body ZERO times and hands back a
+    /// timing for work that never happened, which is worse than an error because it is silent.</item>
+    /// </list>
+    /// So Loop rides the same <c>N</c> the driver sets: true exactly N times, then false. Go's own
+    /// Loop instead ramps INTERNALLY against a time budget and explicitly sets <c>b.N = 0</c> to
+    /// avoid confusion (benchmark.go loopSlowPath); here the ramp already exists one level up in
+    /// <see cref="Benchmark"/> — Go's predictNextN, the 100 ms budget and the 1e9 ceiling — and it
+    /// mints a fresh B per round, so riding N ramps ACROSS closure calls where Go ramps within one.
+    /// Different mechanism, same observable: a BenchmarkResult whose N is the iteration count. A
+    /// never-driven benchmark sits at N=0 — one evaluation, false, no iterations, no hang.
+    /// <para>
+    /// ⚠ <b>There is deliberately NO cursor reset, and an earlier version of this method had one.</b>
+    /// It was written so that a second <c>for b.Loop()</c> range in the same body would run, which
+    /// seemed obviously right and is <b>a behaviour Go forbids</b>: measured against the go1.24.13
+    /// oracle (arm12_loop, outside the repo), Go FATALS on the second range with
+    /// <c>"B.Loop called with timer stopped"</c> — loopSlowPath's first consistency check, because
+    /// the completed first range called StopTimer. Resetting would have made the converted side
+    /// silently execute a loop body Go never runs. Without the reset the cursor stays at N, the
+    /// second range answers false immediately, and neither side does that work. The host has no
+    /// meaningful Fatal on a B whose members are compile-only no-ops, so matching Go's REFUSAL
+    /// exactly is not available; not doing the work is the part that matters.
+    /// </para>
+    /// </remarks>
+    [GoRecv] public static bool Loop(this ref B b) {
+        if (b.LoopIteration >= b.N) {
+            return false;
+        }
+        b.LoopIteration++;
+        return true;
+    }
+
     // Params-taking B members need the same explicit ж<B> overloads as T's above (params
     // collections are ref-like Spans the RecvGenerator does not synthesize overloads for).
     // Failure reporting is a no-op: benchmark bodies never execute, so there is no run to fail.
@@ -479,6 +550,15 @@ public static partial class testing_package
     [GoRecv] public static void Setenv(this ref F f, @string key, @string value) { }
 
     [GoRecv] public static @string TempDir(this ref F f) => ""u8;
+
+    // Go 1.24 TB additions, same compile-only footing as F's other members. Note Go's own Chdir and
+    // Context both begin with checkFuzzFn, which PANICS when called from inside a fuzz target's
+    // function -- so on the F path Go's answer is a panic, not a value. A no-op is the deliberate
+    // choice here rather than a reproduction of that: fuzz targets are not run at all, so the panic
+    // would only ever fire from a declaration that compiled and never executed.
+    [GoRecv] public static void Chdir(this ref F f, @string dir) { }
+
+    [GoRecv] public static context_package.Context Context(this ref F f) => context_package.Background();
 
     // Params-taking F members need the same explicit ж<F> overloads as T's and B's above (params
     // collections are ref-like Spans the RecvGenerator does not synthesize overloads for).

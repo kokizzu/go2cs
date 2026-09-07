@@ -86,6 +86,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core/bytes/bytes.csproj" />
+    <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/md5/crypto.md5.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/sha1/crypto.sha1.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/sha256/crypto.sha256.csproj" />

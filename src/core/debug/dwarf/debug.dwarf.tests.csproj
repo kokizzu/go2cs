@@ -131,6 +131,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(go2csPath)core/context/context.csproj" />
     <ProjectReference Include="$(go2csPath)core/debug/elf/debug.elf.csproj" />
     <ProjectReference Include="$(go2csPath)core/debug/macho/debug.macho.csproj" />
     <ProjectReference Include="$(go2csPath)core/debug/pe/debug.pe.csproj" />

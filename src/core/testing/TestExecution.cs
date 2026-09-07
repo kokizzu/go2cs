@@ -113,6 +113,17 @@ public sealed class TestExecution
     private int m_logsDropped;
     private int m_ownerThread;
     private int m_tempDirSequence;
+
+    // Go 1.24's common.ctx / common.cancelCtx (testing.go:666-667), created there eagerly per test.
+    // Here it is created on FIRST Context() call instead: the only way to observe the context is to
+    // ask for it, and the overwhelming majority of tests never do — an eager context.WithCancel per
+    // test would allocate a cancelCtx and a closure for every one of the corpus's thousands of
+    // registrations to serve a handful of call sites. m_ctxCanceled preserves the one observable
+    // difference laziness could introduce: a Context() asked for DURING the cleanup phase must come
+    // back already canceled, exactly as Go's would, rather than freshly live.
+    private go.context_package.Context? m_ctx;
+    private Action? m_cancelCtx;
+    private bool m_ctxCanceled;
     private bool m_parallel;
     private bool m_envSet;
     private bool m_holdsParallelSlot;
@@ -739,6 +750,180 @@ public sealed class TestExecution
         });
     }
 
+    /// <summary>
+    /// Go 1.24's <c>common.Chdir</c> (testing.go:1351) — change the process working directory for
+    /// the duration of the test, restoring it on cleanup.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <b>Two deliberate fidelities, and one unavoidable divergence.</b>
+    /// </para>
+    /// <para>
+    /// FIDELITY 1 — <b>Windows sets no PWD, and therefore takes no parallel refusal.</b> Go's switch
+    /// skips the <c>c.Setenv("PWD", …)</c> call on windows and plan9 because those platforms do not
+    /// use the variable. That has a second, unstated consequence worth naming: <c>Setenv</c> is what
+    /// enforces "cannot be used in parallel tests", so on Windows Go performs NO parallel check here
+    /// at all. Refusing a parallel Chdir on Windows would be STRICTER than Go and would fail a test
+    /// Go passes, so this does not add one — the constraint is inherited exactly where Go inherits
+    /// it and absent exactly where Go leaves it absent.
+    /// </para>
+    /// <para>
+    /// FIDELITY 2 — the relative-path case resolves through <c>GetCurrentDirectory</c> AFTER the
+    /// change, as Go's <c>os.Getwd</c> does, so PWD records an absolute path rather than the
+    /// relative spelling the caller passed.
+    /// </para>
+    /// <para>
+    /// ⚠ DIVERGENCE 1, and it is a HOST DECISION rather than Go fidelity — say so plainly, because
+    /// the rest of this comment is fidelity and the two must not be read as the same thing.
+    /// <c>TryEnsureOwner</c> below refuses (and FAILS the test on) a call from a goroutine other
+    /// than the test's. <b>Go performs no such check in Chdir.</b> It is kept for three reasons:
+    /// the working directory is process-global state, which is the class this host already guards
+    /// in <see cref="Setenv"/>; Chdir CALLS Setenv on non-Windows, so a non-owner call already
+    /// fails there and dropping the check would make the windows and linux flavors disagree; and
+    /// Go's own doc declares Chdir unusable in parallel tests, so a cross-goroutine call is outside
+    /// its supported envelope either way. It is still STRICTER than Go, which is the thing to
+    /// notice if a converted test ever fails here and passes under `go test`.
+    /// (<see cref="Context"/> had the same guard copied into it, where none of those reasons hold;
+    /// it was removed. See the remark there.)
+    /// </para>
+    /// <para>
+    /// DIVERGENCE 2 — Go holds a <b>directory handle</b> (<c>os.Open(".")</c>) and restores with
+    /// <c>oldwd.Chdir()</c>, so the restore survives the original directory being RENAMED under the
+    /// test. .NET exposes no managed equivalent, so this captures the old directory's PATH. The
+    /// difference is observable only for a test that renames an ancestor of its own starting
+    /// directory and then relies on the restore; nothing in the roster does, and the alternative is
+    /// a P/Invoke per Chdir call on every flavor. Stated rather than silently accepted.
+    /// </para>
+    /// </remarks>
+    public void Chdir(string dir)
+    {
+        if (!TryEnsureOwner(nameof(Chdir)))
+            return;
+
+        string previous;
+
+        try
+        {
+            previous = Directory.GetCurrentDirectory();
+        }
+        catch (Exception ex)
+        {
+            Log($"testing: Chdir: {ex.Message}");
+            FailNow();
+            return;
+        }
+
+        try
+        {
+            Directory.SetCurrentDirectory(dir);
+        }
+        catch (Exception ex)
+        {
+            // Go's `c.Fatal(err)`: log, then end the test.
+            Log($"testing: Chdir: {ex.Message}");
+            FailNow();
+            return;
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            string pwd = dir;
+
+            if (!Path.IsPathRooted(pwd))
+            {
+                try
+                {
+                    pwd = Directory.GetCurrentDirectory();
+                }
+                catch (Exception ex)
+                {
+                    Log($"testing: Chdir: {ex.Message}");
+                    FailNow();
+                    return;
+                }
+            }
+
+            // Routed through the host's own Setenv so BOTH env stores are written and restored --
+            // the two-store split documented on Setenv above applies to PWD like any other name.
+            Setenv("PWD", pwd);
+        }
+
+        Cleanup(() =>
+        {
+            // Go panics if the restore fails, and the reasoning carries over unchanged: every later
+            // test in this process inherits the working directory, so continuing after a failed
+            // restore silently corrupts tests that have nothing to do with this one.
+            try
+            {
+                Directory.SetCurrentDirectory(previous);
+            }
+            catch (Exception ex)
+            {
+                throw builtin.panic($"testing.Chdir: {ex.Message}");
+            }
+        });
+    }
+
+    /// <summary>
+    /// Go 1.24's <c>common.Context</c> (testing.go:1392) — a context canceled just before this
+    /// test's Cleanup-registered functions run, so a cleanup can wait on resources that shut down
+    /// on <c>Context.Done</c>.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ <b>There is deliberately NO owner-goroutine check here, and an earlier version had one.</b>
+    /// It was copied from <see cref="Setenv"/> because that is the neighbouring method, without
+    /// asking whether Go imposes the same restriction. <b>Go's Context is
+    /// <c>checkFuzzFn; return c.ctx</c> — no goroutine restriction of any kind</b>, and calling
+    /// <c>t.Context()</c> from a spawned goroutine is most of what a test context is FOR. Worse,
+    /// <see cref="TryEnsureOwner"/> does not merely return false: it sets InfrastructureFailed and
+    /// FAILS the test, so the guard would have turned an ordinary Go pattern into an infrastructure
+    /// failure — and the fallback returned <c>Background()</c>, a DIFFERENT context that never
+    /// cancels, which is the quieter half of the same defect. Found by re-reading this file after
+    /// the b.Loop reset turned out to be invented rather than read; one such error is a reason to
+    /// look for the next.
+    /// </remarks>
+    public go.context_package.Context Context()
+    {
+        lock (m_syncRoot)
+        {
+            if (m_ctx is null)
+            {
+                var (ctx, cancel) = go.context_package.WithCancel(go.context_package.Background());
+                m_ctx = ctx;
+                m_cancelCtx = cancel;
+
+                // Asked for at or after the cancellation point (a cleanup calling Context()): Go
+                // would hand back the context it already canceled, so this one is canceled too.
+                // Without this, laziness would be observable as a live context where Go has a dead
+                // one -- and a cleanup selecting on Done() would block forever instead of proceeding.
+                if (m_ctxCanceled)
+                    cancel();
+            }
+
+            return m_ctx;
+        }
+    }
+
+    /// <summary>
+    /// Cancels this test's context, if one was ever asked for. Called immediately before the
+    /// cleanup phase, which is the point Go's own <c>cancelCtx</c> call sits at (testing.go:1429).
+    /// </summary>
+    private void CancelContext()
+    {
+        Action? cancel;
+
+        lock (m_syncRoot)
+        {
+            m_ctxCanceled = true;
+            cancel = m_cancelCtx;
+        }
+
+        // Invoked OUTSIDE the lock: cancellation runs the context's own registered work, and holding
+        // m_syncRoot across it would invite a lock-order inversion against anything that cancellation
+        // touches which itself calls back into this execution.
+        cancel?.Invoke();
+    }
+
     internal string NextSubtestName(string requested)
     {
         string baseName = SanitizeName(requested);
@@ -960,6 +1145,12 @@ public sealed class TestExecution
                 child.ReleaseParallel();
             foreach (TestExecution child in parallelChildren)
                 child.Wait();
+
+            // Go cancels the test's context immediately before the cleanup phase (testing.go:1429),
+            // and the ORDER is the contract, not an implementation detail: Context()'s documented
+            // purpose is to let a cleanup wait on resources that shut down on Done(). Cancel after
+            // RunCleanups and every such cleanup blocks until its own deadline.
+            CancelContext();
 
             RunCleanups();
             timer.Stop();

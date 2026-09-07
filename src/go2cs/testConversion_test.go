@@ -737,8 +737,21 @@ func TestConvertTestsRefusesHandOwnedAndToolchainPackages(t *testing.T) {
 // Every converted test project carries the shared runtime and the hand-owned testing package as
 // fixed references, both rooted in the one converted-standard-library tree — and, since F5, spelled
 // with FORWARD slashes like every other emitted reference, so one corpus form serves every host.
+//
+// `context` joined the set for Go 1.24 and is the first member that is NOT there for the package
+// under test's benefit: 1.24 puts Chdir and Context on testing.TB, and go2cs-gen mints each
+// GoImplement adapter's forwarders in the CONSUMING assembly, so every adapter body names
+// go.context_package.Context whether or not the suite mentions context. It cannot be import-derived
+// (Go's sources do not import context to call t.Context()) and it cannot arrive transitively
+// (DisableTransitiveProjectReferences is pinned by the sibling guard below), so fixed is the only
+// place it can live. This assertion is exact rather than a subset check on purpose: the set is the
+// reference every test project pays for, and growing it should require saying so here.
 func TestTestProjectFixedReferencesRootedInCore(t *testing.T) {
-	want := []string{`$(go2csPath)core/golib/golib.csproj`, `$(go2csPath)core/testing/testing.csproj`}
+	want := []string{
+		`$(go2csPath)core/golib/golib.csproj`,
+		`$(go2csPath)core/testing/testing.csproj`,
+		`$(go2csPath)core/context/context.csproj`,
+	}
 
 	if !reflect.DeepEqual(testProjectFixedReferences, want) {
 		t.Fatalf("test project fixed references = %v, want %v", testProjectFixedReferences, want)
