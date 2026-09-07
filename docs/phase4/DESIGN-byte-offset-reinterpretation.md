@@ -174,3 +174,31 @@ corpus toolchain pinned to `go1.23.12` (the box's bare `go` is a different relea
 mismatch). Converter and golib lines read at that tree. The READ failure was measured on both mac legs
 through the increment-12 acceptance A/B; the WRITE failure and its reference-kind control are R's,
 cited at `76849193a6` and not re-run here. Every count in §2 is re-derivable by the §2 predicate alone.
+
+## 8. AMENDMENT 2026-09-07 — the WRITE direction's refusal is already designed, in the token record
+
+§5 offers as a hypothesis that the write direction's remedy space *"reaches only blittable targets
+and the rest is a documented refusal"*, and marks it unmeasured. **That refusal exists as a design
+already** — `docs/phase4/DESIGN-managed-pointer-token.md` §10 (the Q44 narrowing, appended the same
+day this section was), whose **arm 3** is this class stated from the token side:
+
+> `n` is inside a live token's block but is not the token (offset ≠ 0) → **a Go-layout byte offset
+> into CLR-laid-out storage, which has no meaning.** Refuse by name, catchably.
+
+**Two things it contributes that this record did not have.** First, the write direction is **not**
+one row: §10.1 carries an eight-field-kind, two-platform table for `setField`
+(`reflect/all_test.go:1399-1400`), and **Go 1.23.12 and master both write correctly 8/8** — so the
+class's write half is a defect only where the offset lands on a reference, which is exactly what §1
+predicts and §4 lists as unmeasured. Second, **arm 3's blast radius on `reflect` is measured at
+ZERO** on Linux: seat `388 / 0 empty / 67 differing`, seat+refusal `388 / 0 / 67`, differing sets
+identical name for name.
+
+**What it does not settle**, and §10 says so itself: arm 2 — the offset-0 prefix pun the write's
+correct cases take — is the new work, its population is unmeasured, and the census that would size
+it is dynamic at the registry rather than a grep. **So §5's question is still open; what has moved
+is that one of its two branches now has a designed answer with a measured cost.**
+
+**Neither record cited a measurement the other made until now.** They were written a day apart from
+opposite ends of the same defect and agree; this section and §10.6 are the reciprocal pointers.
+
+-- C2
