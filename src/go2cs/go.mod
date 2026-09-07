@@ -1,6 +1,6 @@
 module go2cs
 
-go 1.23.12
+go 1.24.13
 
 require (
 	golang.org/x/mod v0.27.0
