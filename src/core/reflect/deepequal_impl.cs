@@ -216,6 +216,20 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
             // by the AreEqual check above, so one view test settling both is sound).
             return b1.ToSpan().SequenceEqual(b2.ToSpan());
         }
+        // The []byte arm above generalised to every element kind whose BITWISE equality IS Go's `==`.
+        // Same argument, same soundness: both sides are the SAME Go type by the AreEqual check, the
+        // nil/length/same-backing cases are already settled, so all that remains is content -- and for
+        // these kinds a span compare answers it without materialising a Value per element.
+        //
+        // ⚠ The admitted set is DELIBERATELY NARROW and float/complex are NOT in it. SequenceEqual
+        // dispatches to IEquatable<T>.Equals, and Double.Equals(NaN, NaN) is TRUE where Go's `==` is
+        // false -- measured on both sides. A []float64{NaN} pair would compare EQUAL here and NOT equal
+        // in Go, and NONE of TestDeepEqualAllocs' 39 subtests could catch it because deepEqualPerfTests
+        // uses 1.414. Those kinds keep the elementwise walk. Guarded by arm5's NaN rows, which go RED
+        // when float32/float64 are added to the admitted set (measured: exactly 3 rows invert).
+        if (tryBitwiseSliceEqual(live1, live2, elementTypeOf(v1), out bool bitwiseEqual)) {
+            return bitwiseEqual;
+        }
         for (nint i = 0; i < v1.Len(); i++) {
             if (!deepValueEqualBoxed(v1.Index(i), v2.Index(i), visited)) {
                 return false;
@@ -342,6 +356,61 @@ private static bool deepValueEqualBoxed(ΔValue v1, ΔValue v2, HashSet<visitPai
 // dynamic typing it had before, which is right for every entry that physically holds a value.
 private static System.Type? elementTypeOf(ΔValue v) {
     return v.typ_ == nil ? null : GoReflect.ElementType(v.typ_.Value.sysType);
+}
+
+// The element kinds whose BITWISE equality is exactly Go's `==`, so a span compare answers DeepEqual
+// for a slice of them. Integers and bool only.
+//
+// ⚠ float32/float64 are ABSENT ON PURPOSE and the omission is load-bearing: Go compares floats with
+// `==`, under which NaN != NaN, while Double.Equals(NaN, NaN) -- which SequenceEqual dispatches to --
+// is TRUE. Admitting them inverts a real answer on a shape the alloc suite cannot see (arm5 control B:
+// exactly 3 NaN rows red). complex64/128 are absent for the same reason one level in, and a DEFINED
+// ELEMENT type (`type MyInt int`) is absent because it arrives as its own wrapper System.Type and falls
+// through to the elementwise walk -- correct, merely unaccelerated. A defined SLICE type over a plain
+// element DOES take this path, through the shared-backing view ctor, exactly as the []byte arm does.
+// Aliases are golib's: int8 = SByte, uint8 = Byte, int/uint = nint/nuint (golib.csproj).
+private static bool isGoBitwiseEqualElement(System.Type t) =>
+    t == typeof(bool) ||
+    t == typeof(sbyte) || t == typeof(byte) ||
+    t == typeof(short) || t == typeof(ushort) ||
+    t == typeof(int) || t == typeof(uint) ||
+    t == typeof(long) || t == typeof(ulong) ||
+    t == typeof(nint) || t == typeof(nuint) ||
+    // golib's uintptr is a STRUCT, not a BCL primitive, so it needs naming separately -- and it is
+    // admitted on a READ rather than an assumption: `Equals(uintptr other) => Value == other.Value`
+    // (uintptr.cs:65) is an integer comparison of the nuint backing, and its float operators are
+    // explicit CONVERSIONS, not equality, so none of the NaN asymmetry that bars float32/float64
+    // reaches it. It is the only golib scalar struct, so no sibling is left inconsistent.
+    t == typeof(uintptr);
+
+// One cached delegate per element type; a null memoises a REFUSAL so an inadmissible kind is rejected
+// without re-deciding. The factory is STATIC -- the key IS the state -- so a cache hit allocates no
+// display-class closure, which is the cost the descriptor caches were carrying until train 33.
+private static readonly ConcurrentDictionary<System.Type, Func<object, object, bool>?> s_bitwiseSliceEq = new();
+
+private static bool tryBitwiseSliceEqual(object? a, object? b, System.Type? elemType, out bool equal) {
+    equal = false;
+    if (a is null || b is null || elemType is null) {
+        return false;
+    }
+    Func<object, object, bool>? cmp = s_bitwiseSliceEq.GetOrAdd(elemType, static et =>
+        isGoBitwiseEqualElement(et)
+            ? typeof(reflect_package).GetMethod(nameof(bitwiseSliceEqualOf), BindingFlags.NonPublic | BindingFlags.Static)!
+                  .MakeGenericMethod(et).CreateDelegate<Func<object, object, bool>>()
+            : null);
+    if (cmp is null) {
+        return false;
+    }
+    equal = cmp(a, b);
+    return true;
+}
+
+// A raw slice<E> unboxes; a DEFINED slice type over E reaches its window through the same shared
+// backing view ctor GoReflect.byteSliceViewOf uses, so both shapes alias rather than copy.
+private static bool bitwiseSliceEqualOf<E>(object a, object b) where E : IEquatable<E> {
+    slice<E> x = a is slice<E> rawA ? rawA : new slice<E>((ISlice<E>)a);
+    slice<E> y = b is slice<E> rawB ? rawB : new slice<E>((ISlice<E>)b);
+    return x.ToSpan().SequenceEqual(y.ToSpan());
 }
 
 // mapElemValue builds the Value for one map entry, typed by the map's declared element type — the
