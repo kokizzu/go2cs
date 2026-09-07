@@ -332,7 +332,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						heapTypeDecl := v.convertToHeapTypeDecl(ident, true)
 
 						if len(heapTypeDecl) > 0 {
-							v.writeOutput(heapTypeDecl)
+							v.writeOutput("%s", heapTypeDecl)
 						} else {
 							if arrayType, ok := valueSpecType.(*ast.ArrayType); ok && arrayType.Len != nil {
 								// Handle array type
@@ -596,7 +596,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 						heapTypeDecl := v.convertToHeapTypeDecl(ident, true)
 
 						if len(heapTypeDecl) > 0 {
-							v.writeOutputLn(heapTypeDecl)
+							v.writeOutputLn("%s", heapTypeDecl)
 							v.outputBuilder.WriteString(v.newline)
 							v.writeOutput("%s = %s;", csIDName, valExpr)
 						} else {
@@ -727,7 +727,7 @@ func (v *Visitor) visitValueSpec(valueSpec *ast.ValueSpec, doc *ast.CommentGroup
 				headTypeDecl := v.convertToHeapTypeDecl(ident, true)
 
 				if len(headTypeDecl) > 0 {
-					v.writeOutput(headTypeDecl)
+					v.writeOutput("%s", headTypeDecl)
 
 					if len(csValue) > 0 {
 						v.outputBuilder.WriteString(v.newline)

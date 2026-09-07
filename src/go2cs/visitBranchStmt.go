@@ -42,7 +42,7 @@ func (v *Visitor) visitBranchStmt(branchStmt *ast.BranchStmt) {
 			if len(v.loopCopyBackStack) > 0 {
 				for _, copyBack := range v.loopCopyBackStack[len(v.loopCopyBackStack)-1] {
 					v.outputBuilder.WriteString(v.newline)
-					v.writeOutput(copyBack)
+					v.writeOutput("%s", copyBack)
 				}
 			}
 

@@ -11,5 +11,5 @@ import (
 )
 
 func (v *Visitor) visitCommClause(commClause *ast.CommClause) {
-	v.writeOutputLn("/* visitCommClause: " + v.getPrintedNode(commClause) + " */")
+	v.writeOutputLn("%s", "/* visitCommClause: " + v.getPrintedNode(commClause) + " */")
 }

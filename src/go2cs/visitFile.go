@@ -110,7 +110,7 @@ func (v *Visitor) visitFile(file *ast.File) {
 		v.outputBuilder.WriteString(v.newline)
 
 		if postCodeComments.Len() > 0 {
-			v.writeOutputLn(postCodeComments.String())
+			v.writeOutputLn("%s", postCodeComments.String())
 		} else {
 			if v.needsNewLine(v.outputBuilder.String()) {
 				v.outputBuilder.WriteString(v.newline)

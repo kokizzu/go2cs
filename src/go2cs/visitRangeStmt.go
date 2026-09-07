@@ -359,7 +359,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 					if deferRangeVarBox {
 						keyHeapDecl = heapTypeDecl
 					} else {
-						v.writeOutput(heapTypeDecl)
+						v.writeOutput("%s", heapTypeDecl)
 						v.outputBuilder.WriteString(v.newline)
 						wroteHeapTypeDecl = true
 					}
@@ -378,7 +378,7 @@ func (v *Visitor) visitRangeStmt(rangeStmt *ast.RangeStmt, target LabeledStmtCon
 					if deferRangeVarBox {
 						valHeapDecl = heapTypeDecl
 					} else {
-						v.writeOutput(heapTypeDecl)
+						v.writeOutput("%s", heapTypeDecl)
 						v.outputBuilder.WriteString(v.newline)
 						wroteHeapTypeDecl = true
 					}

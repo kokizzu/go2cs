@@ -2351,7 +2351,7 @@ func (v *Visitor) writeLinknameForwarder(signature *types.Signature, alias strin
 	body.WriteString(closeIndent)
 	body.WriteString("}")
 
-	v.writeOutputLn(body.String())
+	v.writeOutputLn("%s", body.String())
 	v.indentLevel = savedIndent
 }
 
