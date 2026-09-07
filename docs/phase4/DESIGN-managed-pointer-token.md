@@ -309,3 +309,111 @@ mirror the struct-passing ruling names, already proven by the timezone hand-own 
 `rtlGetVersion` is being cut assembly-side by COORD, not by this lane.
 
 -- C2
+
+## 10. AMENDMENT 2026-09-07 — the NARROWING: two measurements that point opposite ways, and the four-arm candidate that serves both
+
+Drafted 2026-09-06 after COORD took the train-30 drop (`44b42314cb`) and ruled that the token seat
+and its repairs re-enter as an increment with their own gates, under `a5f9b959ea`: *the token cut
+must not change the behaviour of a path that was already correct; mint a token only where there is
+no honest address, keep the master mechanism where the pin works.* Appended, not rewritten — §1
+through §9 stand as written. **Read at master `67df171d7f`. Nothing is cut by this section, nothing
+is committed, and the census §10.5 asks for has NOT been run.**
+
+### 10.1 The two measurements, both real, pointing opposite ways
+
+**The write needs the address.** Go's own `setField` — `*(*V)(unsafe.Add(unsafe.Pointer(&in),
+offset)) = value`, `reflect/all_test.go:1399-1400`, reached from `TestIsZero` — over eight field
+kinds, one process per kind:
+
+| tree | Windows (R, Release/TC0) | Linux (C2, Debug) |
+|---|---|---|
+| Go 1.23.12 | 8/8 wrote correctly | 8/8 `f0correct` and `f1zero` |
+| master `b916849915` | 8/8 wrote correctly | 8/8 `f0correct` and `f1zero` |
+| the token seat | seven produce NO LINE (the write itself dies) | seven CAUGHT-PANIC, no readback |
+| seat + `StorageKind: None → Unpinnable` | — | 8/8 `f0correct` and `f1zero` |
+
+**Not one of the surviving writes lands on the wrong field. The token seat does not make a latent
+wrong answer loud; it breaks writes that were right.**
+
+**The escape needs the token.** From the seat's own commit, SUB-Q42's witness, **5 of 5 RED**: a
+`ж<T>` over a reference-bearing `T` handed out the address of its own `m_val` field — *an address
+nothing held still*; `(ж<T>)(uintptr)` could not recover the box, because `Resolve` validates on
+read and refuses an unpinned number; the consumer got a native box over a **stale copy**; and
+`runtime/pprof`'s label round trip read a labelMap length of **1,885,431,144** through it and killed
+the host.
+
+**Both are measured. The operator sees the same call in both cases and cannot tell them apart from
+its inputs. That is the whole increment.**
+
+### 10.2 Why pinning cannot unify them — a CLR property, not a policy
+
+The obvious reconciliation — hand out a real address and hold it still — is unavailable. A
+`StandardBox<T>` keeps its value in the pinnable `m_slot` only when `T` is reference-free, and
+`GC.AllocateArray(pinned: true)` and `GCHandle.Alloc(…, Pinned)` both **refuse a type carrying
+references**. So for exactly the class in question there is no pinnable storage to be had.
+"Unpinnable" is a fact about the runtime, not a choice this design made.
+
+### 10.3 The candidate: keep the token OUTBOUND, answer the write INBOUND
+
+Keep Q44's token as the outbound value — so every escape resolves and SUB-Q42 stays closed — and
+make the inbound conversion decide by arm:
+
+1. `Resolve(n)` yields a box of the **same** pointee type → return it. *(Today's arm; pprof's case.)*
+2. `Resolve(n)` yields a box of a **different** pointee type, and `n` is that box's own **order
+   token** (offset 0) → Go's `(*V)(unsafe.Pointer(&s))`, which at offset 0 names the first field and
+   nothing else. Return a box **aliasing** that storage. *(The write's case.)*
+3. `n` is inside a live token's block but is **not** the token (offset ≠ 0) → **a Go-layout byte
+   offset into CLR-laid-out storage, which has no meaning.** Refuse by name, catchably.
+4. Otherwise → a real address, unchanged.
+
+**Arm 3 already exists and is already measured to fire only where it should. Arm 2 is the new work**,
+and it is where this could fail: `ReinterpretAliasesStorage<T, TDst>`'s predicate deliberately
+excludes the prefix pun (2 fields → 1 field fails its length test), so the alias would have to be
+admitted on a **narrower, offset-0-only** rule — and admitting it wrongly is `Unsafe.As` over
+mismatched GC layout, which is **memory corruption, not a wrong value**.
+
+### 10.4 Falsifiers, on record before any code
+
+- **(a)** a population where arm 2's alias is not expressible AND the write is correct at master —
+  then refusing there is a regression and the candidate is incomplete;
+- **(b)** any offset-0 site where `V` is NOT the type at the pointee's offset 0 — then the alias is
+  not a prefix pun and admitting it is unsound;
+- **(c)** `Reinterpret`'s own fall-back needing arm 2 — it is `reflect`'s hot prefix downcast
+  (`abi.Type → structType` ×5, `→ arrayType` ×5, three more pairs ×2 each) and it must keep the
+  route it has, which is why the withdrawn refusal carved it out explicitly.
+
+### 10.5 The census this needs, and it is NOT a grep
+
+The operators are reached through IMPLICIT conversions — every `unsafe.Pointer(&x)` in the corpus —
+so **a call-site grep cannot find them and a stack walk cannot attribute them** (frames inline; the
+tree's own rule is that attribution rides on a caller-supplied tag). The honest instrument is
+**dynamic and at the REGISTRY**: count tokens minted against tokens later resolved, and per resolve
+record whether the pointee type matched. That yields the three populations arms 1, 2 and 3 serve,
+measured rather than argued, and it answers falsifier (a) directly.
+
+### 10.6 Arm 3 IS the byte-offset reinterpretation class, and that has its own record now
+
+`docs/phase4/DESIGN-byte-offset-reinterpretation.md` (lane C2, **unlanded** as this is written)
+records the same defect from the READ side — `(*[N]T)(unsafe.Pointer(&x))` where `x` is not a `T`,
+53 production sites at `fd09034f53` — and reaches arm 3's conclusion independently: **a byte offset
+computed against C's layout does not name the same storage in a managed object, and for a
+reference-holding struct no abstraction fixes it.** Its §5 states as a hypothesis that the write
+direction's remedy space *"reaches only blittable targets and the rest is a documented refusal"*;
+**arm 3 is that documented refusal, already designed here, with its blast radius on `reflect`
+measured at ZERO on Linux** — seat `388 / 0 empty / 67 differing`, seat+refusal `388 / 0 / 67`,
+differing sets identical name for name.
+
+**The two records were written a day apart from opposite ends and agree.** Neither cites a
+measurement the other made until now, which is why this cross-reference is here rather than left for
+a reader to notice.
+
+### 10.7 What is in hand, and what is deliberately NOT committed
+
+The one-line narrowing, its measurement, the refusal and its complete guard ledger — **green →
+neutered RED naming exactly one assertion → restore byte-identical → green** — are all preserved.
+**None of it is committed, and none of it should be until §10.5's census says which arm the corpus
+actually needs.** The eight-field-kind table above is the argument for that order: the seat as
+drafted breaks eight writes that master gets right, and no amount of design settles whether arm 2's
+population is empty.
+
+-- C2
