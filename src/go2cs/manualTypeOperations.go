@@ -1927,16 +1927,34 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// on them. So the out-cell alone would hand buildUser an empty record -- the NetUserGetInfo
 	// lesson one package over. Bodies in internal/syscall/unix/darwin/user_darwin_impl.cs.
 	//
-	// Getaddrinfo is this package's FIFTH member of the class and is deliberately NOT here: its
-	// pointee is a LINKED NATIVE CHAIN libc allocates and freeaddrinfo releases, so it wants the
-	// whole-chain transcription zsyscall_windows_addrinfo_impl.cs carries for ADDRINFOW, its
-	// consumer is `net` rather than os/user, and it lands as its own increment. The hand-own's
-	// header records that exclusion, and readdir_r's prior answer, by name.
+	// Getaddrinfo is this package's FIFTH member of the class and was deliberately deferred OUT
+	// of increment 11 rather than excluded from the class: its pointee is a LINKED NATIVE CHAIN
+	// libc allocates and freeaddrinfo releases, so it wanted the whole-chain transcription
+	// zsyscall_windows_addrinfo_impl.cs carries for ADDRINFOW, and its consumer is `net` rather
+	// than os/user. It LANDED as increment 12 and is registered below beside Freeaddrinfo. The
+	// paragraph is corrected rather than deleted because the reason for the split is still the
+	// reason the pair has to be taken together. Checked at the same time and deliberately NOT
+	// edited: user_darwin_impl.cs's own "what is deliberately not done" header says Getaddrinfo
+	// is not taken in THAT file, which is still true -- a forward reference whose increment has
+	// arrived, not a claim that has become false.
 	"internal/syscall/unix": {
 		"Getpwnam": goosDarwin,
 		"Getpwuid": goosDarwin,
 		"Getgrnam": goosDarwin,
 		"Getgrgid": goosDarwin,
+		// Increment 12 (2026-09-06), the class's FIFTH member here and the one increment 11's
+		// header deferred by name. Getaddrinfo carries both halves at once -- a managed `Addrinfo`
+		// hints record under CLR AUTO layout AND the `**Addrinfo` out-parameter -- and its output is
+		// a LINKED NATIVE CHAIN, so the pair is taken together: Freeaddrinfo must release the memory
+		// the transcribed records still alias, which is the one place this differs from the windows
+		// twin (there every record is a complete managed copy, so FreeAddrInfoW is a no-op). Why the
+		// copy cannot be complete here is measured rather than preferred: net's darwin consumer
+		// reinterprets `ж<RawSockaddr>` to the LARGER RawSockaddrInet6, which golib's
+		// ReinterpretAliasesStorage refuses on field count, so `Addr` has to be a native-backed box
+		// and the native chain has to outlive the call. Bodies in
+		// internal/syscall/unix/darwin/net_darwin_impl.cs.
+		"Getaddrinfo":  goosDarwin,
+		"Freeaddrinfo": goosDarwin,
 	},
 	"internal/syscall/windows": {
 		"NetShareAdd": goosWindows,
