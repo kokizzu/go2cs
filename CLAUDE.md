@@ -277,7 +277,6 @@ ONE stdlib in a build; there is now only one on disk.
     still-running `TestSmhasherAvalanche` as an empty verdict that reads like a real failure. A suite
     whose C# run legitimately exceeds 10 min needs an explicit value (maphash: `-test-timeout 30m`,
     ~15 min in C# vs 7.6 s in Go — a performance gap, not a correctness one).
-    "`build`/`run`/`compare` act on EXISTING digest-validated artifacts without reconverting"
     ⚠ **A REBUILT CONVERTER makes `-test-action build` exit 1 with ZERO compile errors** (measured
     2026-09-06) — a false red that reads exactly like the route-#7 gate it was being run as. The tail
     states it outright (`test manifest is stale: input digest changed (run -tests -test-action convert)`)
@@ -1522,8 +1521,6 @@ ONE stdlib in a build; there is now only one on disk.
   A concurrent partial build racing a suite can tear an assembly and make a passing project fail; it
   cannot make a failing project pass. **So a green taken under known contamination still holds, and
   only a RED needs the clean re-run** — state the asymmetry rather than discarding the run.
-  "the reliable defence is to be **unmatchable by name** — copy the apphost to a unique name in the same bin dir and run that"
-  …and its neighbour "Relaunching a chain while its predecessor's TAIL leg is still alive puts two runs in one worktree — … census live processes … before relaunching anything into a worktree."
   ⚠ **THOSE TWO RULES COLLIDE, AND THE COLLISION IS SILENT** (measured 2026-09-06). The rename that
   makes a runner unmatchable by a sibling's `Get-Process <name> | Stop-Process` also makes it invisible
   to the by-name census the overlap rule asks for: `Get-Process BehavioralRunner` read **0** while
@@ -3870,14 +3867,14 @@ construct; otherwise add a new one (example: `tests/Behavioral/GlobalStructField
     found `fleetIdentifierCensus_test.go` already existed and was better — **the silent-duplication class
     pointed at TOOLING rather than at code, and cheaper to catch, because one grep answers it before
     anything is built.**
-    "⚠ **Two displacement mechanisms, priced differently (2026-09-02) — and read the NEIGHBOURING rulings before sizing one.** A BODYLESS `public static partial` … is displaced simply by WRITING a body … A BODIED converted function is displaced ONLY through that registry …"
     ⚠ **There are THREE, and a displacement guard that enumerates two reports the third as a defect
     (measured 2026-09-06, three reds, zero real).** Beside the registry entry (a BODIED converted
     function) and the body written into a bodyless `partial` (self-displacing by construction) sits the
     **whole-file `[module: GoManualConversion]` marker** — where the converter never emits the file at
     all, so there is no competing body and **no registration is owed**.
-    `TestManualConversionRegistrationsHaveBodies` exempts the second and not the third, so it reports
-    every whole-file hand-own on a platform outside a registration's `goosScope` as a CS0111 defect.
+    `TestManualConversionRegistrationsHaveBodies` EXEMPTED only the first two until train 31;
+    `perGOOSReplaced` (`manualConversionDestination_test.go:206`) added the third, so the three reds
+    it produced on 2026-09-06 are history and the count — THREE mechanisms — is what stands.
     ⚠ **And a guard's RED is a claim like any other, falsifiable by the very thing it claims**: "the
     package fails CS0111 on that platform" is directly testable — the windows arm was already disproven
     by a 307-project solution build at 0 errors, the linux arm by a `--no-incremental
