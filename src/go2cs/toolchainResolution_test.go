@@ -506,3 +506,49 @@ func TestConvertingReleaseFollowsGorootNotTheLabel(t *testing.T) {
 		t.Errorf("convertingRelease(<no VERSION>) = %q, want the reported %q", actual, goVersion())
 	}
 }
+
+// TestModuleToolchainRequestReadsGo124Grammar guards the H4 re-check: a go.mod written by Go 1.24
+// must still yield its toolchain request through this converter's readers.
+//
+// WHY THE UNKNOWN-DIRECTIVE TEST ABOVE DOES NOT COVER IT. That one plants a single fabricated line
+// (`somefuturedirective foo bar`), which parses to a *modfile.Line. Go 1.24's `tool` directive has a
+// BLOCK form, and a block parses to a *modfile.LineBlock — a different statement type, which
+// toolchainDirective's walk skips rather than descends. So "unknown directives are tolerated" was
+// proven for LINES and merely assumed for BLOCKS, and the toolchain line's visibility past a block
+// was never exercised at all.
+//
+// MEASURED BEFORE THIS GUARD WAS WRITTEN, on the pinned x/mod (v0.27.0): every case below already
+// passes and NO converter change is needed. The guard is the deliverable precisely because the
+// re-check found nothing — H1.3 bumps x/mod as its own commit, and this is the property that bump
+// could silently break. A negative result banked in code at the gate.
+func TestModuleToolchainRequestReadsGo124Grammar(t *testing.T) {
+	const (
+		goLine    = "module m\n\ngo 1.24.0\n"
+		toolOne   = "module m\n\ngo 1.24.0\n\ntool m/cmd/x\n"
+		toolBlock = "module m\n\ngo 1.24.0\n\ntool (\n\tm/cmd/x\n\tm/cmd/y\n)\n"
+		goDebug   = "module m\n\ngo 1.24.0\n\ngodebug default=go1.23\n"
+		blockThen = "module m\n\ngo 1.21\n\ntool (\n\tm/cmd/x\n)\n\ntoolchain go1.24.13\n"
+		thenBlock = "module m\n\ngo 1.21\n\ntoolchain go1.24.13\n\ntool (\n\tm/cmd/x\n)\n"
+	)
+
+	tests := []struct {
+		name     string
+		body     string
+		expected string
+	}{
+		{"1.24 go line alone", goLine, "go1.24.0"},
+		{"tool directive, single-line form", toolOne, "go1.24.0"},
+		{"tool directive, BLOCK form - a LineBlock, not a Line", toolBlock, "go1.24.0"},
+		{"godebug directive", goDebug, "go1.24.0"},
+		{"tool BLOCK ahead of the toolchain line", blockThen, "go1.24.13"},
+		{"toolchain ahead of a tool BLOCK", thenBlock, "go1.24.13"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if actual := moduleToolchainRequest(writeModuleDir(t, test.body)); actual != test.expected {
+				t.Errorf("moduleToolchainRequest() = %q, want %q", actual, test.expected)
+			}
+		})
+	}
+}
