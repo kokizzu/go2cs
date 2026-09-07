@@ -815,3 +815,83 @@ panel itself refuted are recorded as sound, because they are load-bearing negati
   invariance argument. The generality headline: Mechanism A is a sound general rule whose measured
   prize is *concentrated* where the bill is (static census: 1,822 `heap(` / 7,839 `of(` sites
   corpus-wide, single-digit density outside crypto) — the design claims exactly that and no more.
+
+---
+
+## 12. Phase 4D — `reflect.DeepEqual`'s ENTRY path (added 2026-09-07, lane R)
+
+Recorded so the `TestDeepEqualAllocs` deferral's plan reference points at something
+executable. Everything below is measured on this machine class at master `6c861d366`,
+Release with `DOTNET_TieredCompilation=0`, both arms on one tree.
+
+### 12.1 Why the walk is finished and the entry is not
+
+`claude/laneR-deepequal-alloc` (`1d3b166db`) took the WALK from **53 golib objects /
+12,296.74 B** to **10 / 2,112.04 B** on `DeepEqual([][6]byte)` — the worst shape in
+`deepEqualPerfTests` — by two cuts: static `GetOrAdd` factories at `abi.synthType` and
+`reflect.canonType`, and a byte-array span path in `deepValueEqual`'s Array arm.
+
+**No further element-walk work will move this row.** `TestDeepEqualAllocs` contains bare
+scalar subtests (`int8(99)`, `int(999999)`, `bool`, `string`), and a scalar comparison
+never enters the Slice or Array arm at all. Its cost is the ENTRY:
+
+```
+  DeepEqual(int,int)      600.00 B / 3 obj     two boxed ints, no slice, no array, no walk
+    TypeOf(preboxed int)    0.00 B             already zero at the seat
+    ValueOf(preboxed int)   0.00 B             already zero at the seat
+```
+
+The 600 B is not type or value construction — the seat already zeroed both.
+
+### 12.2 The four entry-path items
+
+1. **The never-read `visited` map.** `deepequal.cs:91` mints `new map<visit, bool>()` and
+   hands it to the hand-owned `deepValueEqual`, whose own comment states the argument is
+   *"unusable in the managed model (no data words)"*; it carries a `HashSet<visitPair>`
+   instead and never reads the map. Measured worth: **exactly 88 B and exactly ONE golib
+   object, flat on every row.** ⚠ **BLOCKED as a source edit:** `deepequal.cs` is
+   GENERATED from Go's `make(map[visit]bool)`, so the edit returns on the next reconvert.
+   Executable form: a hand-own of `DeepEqual`, or a converter change.
+2. **The eagerly-minted `HashSet<visitPair>`** (`deepequal_impl.cs:37`), allocated on every
+   top-level call including scalars that cannot head a cycle. Lazy form is 10 sites,
+   threaded as `ref HashSet<visitPair>?`, created on first real `Add`. ⚠ **Sized and
+   declined for the WALK**: `identityRoot` has a `case ISlice:` arm, so every slice-headed
+   row allocates it anyway — its value is on the SCALAR rows only.
+3. **The two argument boxes** at the `any` seam — the ratified FLOOR, and not removable.
+4. **`AreEqual(v1.Type(), v2.Type())`** — unmeasured.
+
+### 12.3 The floor arithmetic — item 1 is the one that reaches it
+
+The deferral's floor is **2 boxes at the `any` seam**, and it is denominated in OBJECTS,
+not bytes. Across every arm measured 2026-09-06/07:
+
+```
+                         DeepEqual(int,int)   scalar DeepEqual leaf
+  without the map cut         3.000 obj            3.000 obj
+  WITH the map cut            2.000 obj            2.000 obj      <- the floor
+```
+
+**Item 1 alone takes the scalar rows from 3 objects to 2.** It was originally dropped from
+the seat as "88 B, 0.7%, not worth a hand-own" — a judgement made on the BYTE meter, which
+is correct for *does this move the assert* (the assert reads bytes) and wrong for *does
+this reach the floor* (retirement reads objects). **Two questions, two meters.**
+
+⚠ **No retirement COUNT is claimed here.** Two probe rows read 2 objects; which of the 39
+subtests reach the floor is a per-row reading not yet taken, and the run record shows the
+real subtests spanning 1, 3, 4, 10, 12 and 13 objects. The scalar family is the candidate
+set; the slice and array rows sit well above the floor and stay deferred.
+
+### 12.4 What a phase-4D increment owes
+
+The seat's own gate set is the template: converter `go test`, GolibTests at both
+configurations, a behavioural COMPILE, the reflect row at both configurations, the
+`nistec` COST canary (descriptor synthesis runs on every interface boxing), and the
+reflect-importer canaries **re-derived at gate time**. Two traps this arc paid for:
+
+- **A float fast path inverts Go's NaN answer.** `SequenceEqual<double>` dispatches to
+  `Double.Equals`, which reports `[NaN] == [NaN]` TRUE where Go's `==` says false —
+  measured on both sides. **None of the 39 alloc subtests can catch it**, because
+  `deepEqualPerfTests` uses `1.414`. A float path needs an elementwise `==` loop.
+- **A sweep A/B's raw wall time is position, not cost.** The first arm runs ~85 s and the
+  second ~180–193 s whichever side carries the change; report only order-reversed or
+  position-matched pairs.
