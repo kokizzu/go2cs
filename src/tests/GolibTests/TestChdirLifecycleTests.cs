@@ -121,6 +121,64 @@ public class TestChdirLifecycleTests
         }
     }
 
+    // Go 1.24's Chdir sets PWD on POSIX and DELIBERATELY DOES NOT on windows/plan9 -- its switch
+    // says so in a comment ("Windows and Plan 9 do not use the PWD variable"), and that omission has
+    // a second consequence I was careful about when writing the host: Setenv is what enforces
+    // "cannot be used in parallel tests", so on Windows Go performs NO parallel check in Chdir at
+    // all. That care was reasoning, not a test, until this arm.
+    //
+    // ⚠ IT ASSERTS SOMETHING REAL ON BOTH PLATFORMS RATHER THAN SKIPPING ON ONE. A guard that
+    // skipped on Windows would be inert on the only host that runs it today, and the Windows half is
+    // the half that encodes a DECISION: PWD must come back untouched. The POSIX half is written to
+    // be meaningful the moment a linux leg runs it -- which is exactly the coverage class C1 and i9
+    // are measuring on train 37 right now, arriving here as a runtime branch rather than a per-GOOS
+    // file.
+    [TestMethod]
+    public void ChdirTouchesPwdOnPosixAndLeavesItAloneOnWindows()
+    {
+        string original = Directory.GetCurrentDirectory();
+        string? pwdBefore = Environment.GetEnvironmentVariable("PWD");
+        string target = NewTargetDirectory();
+
+        try
+        {
+            TestExecution parent = NewExecution("TestChdirPwd");
+            string? pwdDuring = null;
+            bool bodyRan = false;
+
+            parent.Run("child", t =>
+            {
+                bodyRan = true;
+                t.Value.Execution.Chdir(target);
+                pwdDuring = Environment.GetEnvironmentVariable("PWD");
+            });
+
+            Assert.IsTrue(bodyRan, "the test body must have run, or nothing below means anything");
+
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.AreEqual(pwdBefore, pwdDuring,
+                    "Go does NOT set PWD on windows -- Chdir must leave it exactly as it found it");
+            }
+            else
+            {
+                Assert.IsNotNull(pwdDuring, "Go sets PWD on POSIX, so Chdir must have published one");
+                Assert.AreEqual(new DirectoryInfo(target).FullName, new DirectoryInfo(pwdDuring!).FullName,
+                    "PWD must name the directory Chdir entered, resolved rather than string-compared");
+            }
+
+            // Both flavors agree here: whatever Chdir did to PWD, the cleanup must undo.
+            Assert.AreEqual(pwdBefore, Environment.GetEnvironmentVariable("PWD"),
+                "the cleanup must restore PWD to its pre-test value on every platform");
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(original);
+            Environment.SetEnvironmentVariable("PWD", pwdBefore);
+            TryDelete(target);
+        }
+    }
+
     private static void TryDelete(string directory)
     {
         try
