@@ -181,6 +181,7 @@ rewritten, so the proof link for a published package stays the proof as of that 
 | `net/smtp` | [`net.smtp.md`](current/net.smtp.md) | [`src/core/net/smtp`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/smtp) |
 | `net/textproto` | [`net.textproto.md`](current/net.textproto.md) | [`src/core/net/textproto`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/textproto) |
 | `net/url` | [`net.url.md`](current/net.url.md) | [`src/core/net/url`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/net/url) |
+| `os` | [`os.md`](current/os.md) | [`src/core/os`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os) |
 | `os/exec` | [`os.exec.md`](current/os.exec.md) | [`src/core/os/exec`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec) |
 | `os/exec/internal/fdtest` | [`os.exec.internal.fdtest.md`](current/os.exec.internal.fdtest.md) | [`src/core/os/exec/internal/fdtest`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/exec/internal/fdtest) |
 | `os/signal` | [`os.signal.md`](current/os.signal.md) | [`src/core/os/signal`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/os/signal) |
