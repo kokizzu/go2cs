@@ -874,3 +874,40 @@ converter never processes (`crypto/internal/fips140/check/checktest`, `crypto/in
 `go/ast/internal/tests`, `internal/copyright`), so `346 − 4 = 342`. **The convertible set is this
 record's unit and it is unchanged**; G said so plainly and the note is here only so a reader meeting
 the 346 elsewhere does not go looking for an error in §2 that is not there.
+
+### D. CONFIRMED — 2026-09-07, later the same day, by G
+
+**§A's unestablished hypothesis is measured and it holds.** G ran exactly the measurement §A named
+as settling it — what `name` holds on entry at each site — and the converter names the mechanism in
+its own variables (`visitValueSpec.go:188-189`):
+
+```go
+goIDName := v.getIdentName(ident)             // the GO name         -> params
+csIDName := getSanitizedIdentifier(goIDName)  // the C# ESCAPED form -> @params
+```
+
+The calls into the lift split on that: `visitValueSpec.go:290`, `:501` and `:515` pass **`csIDName`**
+(escaped); `:545` passes `goIDName`. **So the difference is the CALLER'S INPUT, not the site**, and
+`visitTypeSpec` is correct only because the AST type name it receives was never sanitized.
+
+⚠ **Two things this changes in §A, both in the direction of a SMALLER fix.**
+
+1. **§A's remedy scope — "applied at all four" — is superseded.** The four compositions are
+   structurally identical and individually blameless; the fault is composing a lift name from an
+   ALREADY-SANITIZED component. The fix belongs at a composition helper that strips-then-re-sanitizes
+   whatever it receives, which covers all four sites and any future caller. **`getUniqueLiftedTypeName`
+   is one character of scope away from already doing it** — it strips only a LEADING marker, while
+   the `@` here sits mid-string after composition — and it already sits on the path all four sites
+   traverse. **One helper, not two sites and not four.**
+2. **§A's warning is confirmed WITH a mechanism**: the two "correct" sites are one caller-change away,
+   because their correctness is an accident of input rather than a property of the code.
+
+⚠ **And a near-miss worth recording, because it would have been the third wrong mechanism in this
+thread**: the lone `goIDName` call at `:545` is **not** a deliberate fix for this class — it is the
+blank-identifier branch, whose comment describes a `_ᴛ1ʗ` type/field collision (CS0102). **Right
+form, unrelated reason.** Reading it as the correct pattern to copy would have mis-sized the fix a
+third time.
+
+**Ownership: Rung 2 is G's** (COORD `c474b66a5c`, after the course correction made it hop-blocking).
+This record still proposes no cut; the sizing above is recorded so whoever cuts it does not re-walk
+the three mechanisms this thread eliminated.
