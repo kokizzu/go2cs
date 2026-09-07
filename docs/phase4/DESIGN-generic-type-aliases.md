@@ -123,3 +123,42 @@ tree in question. **The census is the trigger, not a feature-list review.**
   convert that from an argument into a measurement, and that is the cheapest possible follow-up.
 - It does not size the `-recurse` exposure, which depends on third-party module adoption nobody has
   measured.
+
+---
+
+## 2026-09-07 — RULED: option (a), unalias at the type level (COORD, `6daa32385`)
+
+Appended, not rewritten: §1–§7 above are the record as posted for ruling, and this block is the
+ruling on it.
+
+**The ruling is option (a)** — emit the target and drop the alias name — resting on the three
+measured facts in §1–§3 rather than on the preference in §6: the population is **zero** in both std
+trees under a `go/ast` census that separates the three surface-identical shapes and was
+positive-controlled 3/3 on a fixture; the feature is **live** at go1.24.13 under the default
+`GOEXPERIMENT`, so a `-recurse` end-user module can carry one on day one even though std carries
+none; and **C# rejects the open alias form** (CS1002/CS1525) while the closed form compiles, which is
+a language fact with its own control.
+
+⚠ **The reads-like-Go cost is the FLOOR, not a choice.** Against the end-user goal, a Go alias *is*
+its target — identity, method set, assignability — so (a) is **exact** on "runs like Go". The cost
+falls entirely on "reads like Go": the alias NAME disappears at use sites. **No C# construct can
+carry that name**, so this is not a trade the design gets to make differently; §4(b) and §4(c) do not
+buy the name back, they only pay more for the same loss or break the semantics to fake it.
+
+**(c) is refused with the reason on record** — a wrapper is a *different type*, so `reflect`
+identity, assignability and interface satisfaction all diverge. It is written down here so it is not
+re-proposed by someone reading only the feature list.
+
+### The guard is QUEUED, and the reason it cannot be written yet is the point
+
+§7 says this design is **unexercised, not proven**: nothing in either corpus reaches the path. The
+remedy named there — **one behavioural test carrying a generic alias** — is **queued to H4 behind
+the H1+H2 pair**, because such a test **cannot build on the outgoing toolchain**: go1.23.12 rejects
+the syntax, so the test would fail to compile for a reason unrelated to what it guards.
+
+It converts "unexercised" into a measurement **the day the converter is built by go1.24**, and not
+before. Until then the honest status of option (a) is: *semantically exact by argument, already the
+converter's behaviour by inspection (`types.Unalias`, 52 files), and unmeasured end to end.*
+
+**Re-running the census is the trigger for reopening**, per §6 — `arm13_genalias`, the `go/ast` walk
+with its fixture control, against whatever tree is in question. Not a feature-list review.
