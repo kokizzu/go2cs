@@ -35,13 +35,31 @@
     Skip the pre-push confirmation. For an operator who has read the census and wants the
     ritual to run through the PIN prompt and out the other side without a second keystroke.
 
+.PARAMETER VerifyOnly
+    Forward to push-nuget.ps1 -VerifyOnly and exit with its code: verify every green badge's
+    arithmetic against its proof page, every package README's C# Source badge, and the four-number
+    release census. Nothing is bumped, tagged, frozen, packed, signed or pushed.
+
+    It runs BEFORE this script's own Phase 0 gates and deliberately skips them. Those gates guard a
+    PUBLICATION -- a clean tree, an API key, a card in the reader -- and none of them bears on
+    whether the tree's badges agree with its proof pages. Requiring them would make the check
+    unrunnable on any machine but release morning's, which is the opposite of the point: this is
+    what to run after the last roster-moving sweep, days ahead, so the release never discovers a
+    stale badge with a signed tag already minted.
+
 .PARAMETER WhatIf
     Census only: verify the certificate is reachable and report what would be packed. Nothing
-    is bumped, packed, signed, tagged or pushed.
+    is bumped, packed, signed, tagged or pushed. NOTE it stops at the end of Phase 0 and is NOT
+    forwarded to the children, so it does not exercise push-nuget.ps1 at all -- -VerifyOnly is the
+    switch that checks the tree.
 
 .EXAMPLE
     .\release-nuget.ps1 -WhatIf
     What would happen, including whether the signing certificate is reachable.
+
+.EXAMPLE
+    .\release-nuget.ps1 -VerifyOnly
+    Is the tree releasable? Seconds, no card, no network, nothing written.
 
 .EXAMPLE
     .\release-nuget.ps1
@@ -52,6 +70,7 @@
 param(
     [switch] $OfflineSigning,
     [switch] $Yes,
+    [switch] $VerifyOnly,
     [string] $OutDir
 )
 
@@ -81,6 +100,20 @@ function Invoke-Sibling {
     $code = $LASTEXITCODE
     if ($Passthru) { $out | ForEach-Object { Write-Host $_ } }
     [pscustomobject]@{ Output = $out; ExitCode = $code }
+}
+
+# ---- -VerifyOnly: the tree check, ahead of every publication gate ----------------------------
+# Placed BEFORE Phase 0 on purpose. Phase 0's gates -- a clean tree, NUGET_API_KEY, a signing card
+# in the reader -- are preconditions of PUBLISHING, and none of them bears on whether the badges
+# agree with the proof pages. Gating this behind them would confine the cheapest check in the
+# release to the one machine and the one morning that need it least.
+if ($VerifyOnly) {
+    Write-Phase 'Verify only: badges, proof pages and the release census'
+    $verify = Invoke-Sibling -Script $push -Arguments @('-VerifyOnly') -Passthru
+    if ($verify.ExitCode -ne 0) { Die "Verification FAILED ($($verify.ExitCode)). Nothing was bumped, tagged, frozen, packed or pushed." }
+    Write-Host ''
+    Write-Host '  Tree is releasable.' -ForegroundColor Green
+    exit 0
 }
 
 # ---- Phase 0: the preconditions, all of them, before anything moves --------------------------

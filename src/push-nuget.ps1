@@ -65,9 +65,21 @@
 .PARAMETER Push
     Actually push the packed .nupkg to the feed. Without this switch the script only packs.
 
+.PARAMETER VerifyOnly
+    Run the pre-flight verification and the release census, print the result, and exit -- 0 when
+    clean, non-zero naming every mismatch. Nothing is bumped, tagged, frozen, built, packed or
+    pushed, and the Go toolchain is not required. This is the cheap check to run after the last
+    roster-moving sweep, so a release morning cannot discover a stale badge with a signed tag and a
+    write-once snapshot already on disk. Mutually exclusive with -Push and -BumpBuild.
+
 .EXAMPLE
     .\push-nuget.ps1
     Pack every package to src\artifacts\nupkg (no push, no bump). Inspect the output, then push.
+
+.EXAMPLE
+    .\push-nuget.ps1 -VerifyOnly
+    Verify the tree is releasable -- every green badge's arithmetic against its proof page, every
+    package README's C# Source badge, and the four-number census -- in seconds, changing nothing.
 
 .EXAMPLE
     .\push-nuget.ps1 -Push
@@ -88,7 +100,8 @@ param(
     [string]$OutDir,
     [switch]$SkipBuild,
     [switch]$BumpBuild,
-    [switch]$Push
+    [switch]$Push,
+    [switch]$VerifyOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -104,6 +117,257 @@ function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 
 if (-not (Test-Path $slnx)) { throw "Solution not found: $slnx" }
 if (-not (Test-Path $versionProps)) { throw "version.props not found: $versionProps" }
+
+$repoRoot = Split-Path $src -Parent
+
+if ($VerifyOnly -and ($Push -or $BumpBuild)) {
+    throw ("-VerifyOnly is mutually exclusive with -Push and -BumpBuild: it checks the tree and exits " +
+           "before anything is bumped, tagged, frozen, packed or published.")
+}
+
+# --- PRE-FLIGHT VERIFICATION: EVERY CHECKABLE THING, BEFORE ANY IRREVERSIBLE ONE ------------------
+# THE ORDER DEFECT THIS FIXES (measured 2026-09-07). The run's order used to be
+#
+#     bump version.props -> mint the SIGNED tag -> freeze docs\validation\<version>\ -> VERIFY
+#
+# so all three irreversible acts preceded the only check that can stop a release. Each is awkward to
+# undo -- a bumped counter, a signed tag, and a write-once proof snapshot the NEXT release's own
+# precondition check refuses to overwrite -- and the verifier at the end of that chain throws on a
+# green badge whose arithmetic disagrees with its proof page, which is a state the tree reaches
+# NORMALLY: retiring a disclosure moves a package's matched/disclosed split, and the README keeps
+# claiming the old one until a reconvert re-emits the badge. The tree was in exactly that state on
+# three packages when this was written, so a release run would have minted a signed tag and frozen a
+# snapshot and THEN died, leaving both behind for a release that never happened.
+#
+# WHAT MOVED, AND WHAT CANNOT. Everything below is the version-INDEPENDENT half of the two verifiers
+# that used to run at the end, asked here against docs\validation\current -- which is precisely the
+# set the freeze is about to copy, so it is the same question asked earlier (the same argument the
+# dry-run snapshot below already rests on). What cannot move is the half comparing a badge's pinned
+# version against $fullVersion: before the retarget every README legitimately still names the
+# PREVIOUS release, so checking it here would fail every run. Those pins stay where they are and are
+# verified against the FROZEN snapshot after the retarget -- but through the same two functions, so
+# there is ONE predicate rather than two that can drift apart.
+#
+# BEHAVIOUR DELTA ON THE RELEASE PATH. The late calls are the same checks in the same order against
+# the same inputs, with one difference: a problem is COLLECTED and the caller throws, where the
+# inline loops threw on the first. Fatality is identical -- any problem still stops the run -- and a
+# release that is going to stop now names every package instead of the alphabetically first.
+. (Join-Path $PSScriptRoot '_roster.ps1')
+
+# The green Tests badge, verified against a directory of proof pages. An empty $PinnedVersion means
+# "do not check the badge's link version", which is what makes this callable before the retarget.
+function Get-GoGreenBadgeVerification {
+    param(
+        [Parameter(Mandatory)][string]$CoreDir,
+        [Parameter(Mandatory)][string]$ProofRoot,
+        [string]$PinnedVersion = ''
+    )
+
+    $problems = New-Object System.Collections.Generic.List[string]
+    $verified = 0
+
+    foreach ($readme in Get-ChildItem $CoreDir -Filter 'README.md' -Recurse -File) {
+        $text = [System.IO.File]::ReadAllText($readme.FullName)
+        if ($text -notmatch 'badge/Tests-(\d+)%2F(\d+)_validated-brightgreen') { continue }
+
+        $badgeMatched = [int]$Matches[1]
+        $badgeTotal = [int]$Matches[2]
+
+        # The dot-id itself contains dots (path.filepath), so its capture excludes only "/" and ")".
+        if ($text -notmatch 'https://go2cs\.net/validation/([^/]+)/([^)/]+)\.html') {
+            $problems.Add("Green badge without a proof link in $($readme.FullName)")
+            continue
+        }
+
+        $linkVersion = $Matches[1]
+        $dotId = $Matches[2]
+
+        if ($PinnedVersion -and $linkVersion -ne $PinnedVersion) {
+            $problems.Add("Green badge in $($readme.FullName) still links $linkVersion, not $PinnedVersion")
+            continue
+        }
+
+        $proofPage = Join-Path $ProofRoot "$dotId.md"
+        if (-not (Test-Path $proofPage)) {
+            $problems.Add("Green badge in $($readme.FullName) links a proof page missing from $ProofRoot -- $proofPage")
+            continue
+        }
+
+        $proofText = [System.IO.File]::ReadAllText($proofPage)
+        if ($proofText -notmatch '\*\*(\d+) matched \S+ (\d+) disclosed\*\*') {
+            $problems.Add("No totals line in $proofPage")
+            continue
+        }
+
+        if ($badgeMatched -ne [int]$Matches[1] -or $badgeTotal -ne ([int]$Matches[1] + [int]$Matches[2])) {
+            $problems.Add("Badge in $($readme.FullName) claims $badgeMatched/$badgeTotal but $proofPage records $($Matches[1]) matched + $($Matches[2]) disclosed")
+            continue
+        }
+
+        $verified++
+    }
+
+    return [pscustomobject]@{ Verified = $verified; Problems = $problems.ToArray() }
+}
+
+# The C# Source badge. Its two version pins are checked only when $PinnedVersion is given; the
+# STRUCTURAL half -- that every package README carries the badge and its release-tag link at all --
+# runs on both calls, because that is the check whose absence let the 1.23.1.5 run ship a badge whose
+# form had drifted (a retarget that silently no-opped past a verifier that skipped what it could not
+# match).
+function Get-GoSourceBadgeVerification {
+    param(
+        [Parameter(Mandatory)][string]$CoreDir,
+        [string]$PinnedVersion = ''
+    )
+
+    $problems = New-Object System.Collections.Generic.List[string]
+    $verified = 0
+
+    foreach ($readme in Get-ChildItem $CoreDir -Filter 'README.md' -Recurse -File) {
+        $text = [System.IO.File]::ReadAllText($readme.FullName)
+        # Non-package READMEs legitimately carry no badges: the root attribution file, golib's
+        # hand-written runtime README, and testdata corpora (plus anything under build output).
+        # The separator class admits '/' as well as '\' so the exclusion still holds when this runs
+        # on a non-Windows host, which -VerifyOnly makes reachable; on Windows Get-ChildItem yields
+        # '\' and the added alternative can never match, so the release path is unmoved.
+        if ($readme.Directory.FullName -eq $CoreDir) { continue }
+        if ($readme.FullName -match '[\\/](testdata|bin|obj)[\\/]' -or $readme.Directory.Name -eq 'golib') { continue }
+        if ($text -notmatch 'badge/Source-@([^-\s)]+)-512BD4') {
+            $problems.Add("README without a C# Source badge: $($readme.FullName) -- every package README carries one; a no-match here means the badge form drifted and this retarget is no-opping (the vacuous pass that shipped on the 1.23.1.5 run)")
+            continue
+        }
+
+        if ($PinnedVersion -and $Matches[1] -ne $PinnedVersion) {
+            $problems.Add("C# Source badge in $($readme.FullName) states version $($Matches[1]), not $PinnedVersion")
+            continue
+        }
+
+        if ($text -notmatch 'https://github\.com/ritchiecarroll/go2cs/tree/nuget-([^/\s)]+)/src/core/') {
+            $problems.Add("C# Source badge without a release-tag link in $($readme.FullName)")
+            continue
+        }
+
+        if ($PinnedVersion -and $Matches[1] -ne $PinnedVersion) {
+            $problems.Add("C# Source badge in $($readme.FullName) links tag nuget-$($Matches[1]), not nuget-$PinnedVersion")
+            continue
+        }
+
+        $verified++
+    }
+
+    return [pscustomobject]@{ Verified = $verified; Problems = $problems.ToArray() }
+}
+
+# THE FOUR-NUMBER GUARD. The freeze below has STATED this invariant in a comment since the snapshot
+# was introduced -- "it must equal the roster's row count, which must equal the number of green-badge
+# READMEs" -- and nothing has ever compared them. These are four independent derivations of ONE set,
+# the banked packages:
+#
+#   green badges    src\core\**\README.md carrying a green Tests badge
+#   proof pages     docs\validation\current\*.md
+#   roster rows     the DATA ROWS of docs\ValidatedTestPackages.md's table, parsed by _roster.ps1 --
+#                   the sweep's own reader, never the document's prose, which is a dated derivation
+#                   that goes stale independently of the table beside it
+#   test projects   src\core\**\*.tests.csproj
+#
+# A disagreement means a package banked without its README being re-emitted (or the reverse), and it
+# is a release defect either way: the green badge is what a package advertises on nuget.org, and the
+# proof snapshot is what it packs as VALIDATION.md. Reported by NAME as well as by count, because
+# "200 against 204" sends the reader on a hunt that four set differences answer outright.
+function Get-GoReleaseCensus {
+    param(
+        [Parameter(Mandatory)][string]$CoreDir,
+        [Parameter(Mandatory)][string]$CurrentProofs,
+        [Parameter(Mandatory)][string]$RosterPath
+    )
+
+    $greenIds = New-Object System.Collections.Generic.List[string]
+    foreach ($readme in Get-ChildItem $CoreDir -Filter 'README.md' -Recurse -File) {
+        if ($readme.Directory.FullName -eq $CoreDir) { continue }
+        if ($readme.FullName -match '[\\/](testdata|bin|obj)[\\/]') { continue }
+        $text = [System.IO.File]::ReadAllText($readme.FullName)
+        if ($text -notmatch 'badge/Tests-\d+%2F\d+_validated-brightgreen') { continue }
+        $greenIds.Add(($readme.Directory.FullName.Substring($CoreDir.Length).TrimStart('\', '/') -replace '[\\/]', '.'))
+    }
+
+    $pageIds = New-Object System.Collections.Generic.List[string]
+    if (Test-Path $CurrentProofs) {
+        foreach ($page in Get-ChildItem $CurrentProofs -Filter '*.md' -File) { $pageIds.Add($page.BaseName) }
+    }
+
+    # The roster's import paths ('net/http') and every other derivation's dot-id ('net.http') are the
+    # same identifier in two spellings; the proof page's own file name is what fixes the mapping.
+    $rosterIds = New-Object System.Collections.Generic.List[string]
+    foreach ($row in Get-ValidatedRosterRows -Path $RosterPath) { $rosterIds.Add(($row.Package -replace '/', '.')) }
+
+    $testIds = New-Object System.Collections.Generic.List[string]
+    foreach ($proj in Get-ChildItem $CoreDir -Filter '*.tests.csproj' -Recurse -File) {
+        $testIds.Add(($proj.Directory.FullName.Substring($CoreDir.Length).TrimStart('\', '/') -replace '[\\/]', '.'))
+    }
+
+    return [pscustomobject]@{
+        GreenIds = $greenIds.ToArray(); PageIds = $pageIds.ToArray()
+        RosterIds = $rosterIds.ToArray(); TestIds = $testIds.ToArray()
+    }
+}
+
+$coreReadmeRoot = Join-Path $src 'core'
+$preflightProofs = Join-Path $repoRoot 'docs\validation\current'
+$rosterPath = Join-Path $repoRoot 'docs\ValidatedTestPackages.md'
+
+Write-Step "Pre-flight: verifying badges and the release census BEFORE anything is bumped, tagged or frozen"
+
+$census = Get-GoReleaseCensus -CoreDir $coreReadmeRoot -CurrentProofs $preflightProofs -RosterPath $rosterPath
+
+# Printed UNCONDITIONALLY, pass or fail: the four numbers are the cheapest statement of where the
+# campaign stands, and a reader who only ever sees them when they disagree cannot tell a healthy run
+# from one whose census never executed.
+Write-Step ("Release census: {0} green badge(s) / {1} proof page(s) / {2} roster row(s) / {3} .tests.csproj" -f `
+            $census.GreenIds.Count, $census.PageIds.Count, $census.RosterIds.Count, $census.TestIds.Count)
+
+$censusProblems = New-Object System.Collections.Generic.List[string]
+$allCensusIds = @($census.GreenIds + $census.PageIds + $census.RosterIds + $census.TestIds | Sort-Object -Unique)
+
+foreach ($censusId in $allCensusIds) {
+    $absent = @()
+    if ($census.GreenIds -notcontains $censusId) { $absent += 'green badge' }
+    if ($census.PageIds -notcontains $censusId) { $absent += 'proof page' }
+    if ($census.RosterIds -notcontains $censusId) { $absent += 'roster row' }
+    if ($census.TestIds -notcontains $censusId) { $absent += '.tests.csproj' }
+    if ($absent.Count) { $censusProblems.Add("$censusId has no $($absent -join ', no ')") }
+}
+
+# NOT $green/$source. PowerShell resolves variable names case-INSENSITIVELY, so `$source = <object>`
+# binds the script's own [string]$Source PARAMETER -- which keeps its type constraint and COERCES the
+# result to "@{Verified=305; Problems=System.String[]}". Both members then read $null (so the count
+# printed blank and @($null) contributed one nameless "problem"), and -- the damage that matters --
+# $Source is the nuget PUSH URL, so a release run would have pushed at a garbage source. Measured and
+# fixed here; the names below cannot collide with any parameter of this script.
+$greenBadge = Get-GoGreenBadgeVerification -CoreDir $coreReadmeRoot -ProofRoot $preflightProofs
+$sourceBadge = Get-GoSourceBadgeVerification -CoreDir $coreReadmeRoot
+
+Write-Step "Pre-flight verified $($greenBadge.Verified) green badge(s) against docs\validation\current and $($sourceBadge.Verified) C# Source badge(s) structurally"
+
+$preflightProblems = @($greenBadge.Problems) + @($sourceBadge.Problems) + @($censusProblems.ToArray())
+
+if ($preflightProblems.Count) {
+    Write-Host ''
+    Write-Host "PRE-FLIGHT FAILED -- $($preflightProblems.Count) problem(s). Nothing was bumped, tagged or frozen." -ForegroundColor Red
+    foreach ($problem in $preflightProblems) { Write-Host "    $problem" -ForegroundColor Red }
+    Write-Host ''
+    throw ("Release pre-flight found $($preflightProblems.Count) problem(s) -- census was " +
+           "$($census.GreenIds.Count) green badge(s) / $($census.PageIds.Count) proof page(s) / " +
+           "$($census.RosterIds.Count) roster row(s) / $($census.TestIds.Count) .tests.csproj. " +
+           "A badge whose arithmetic disagrees with its proof page is fixed by RECONVERTING the " +
+           "package (the badge is generated from the proof page's totals line by " +
+           "src\go2cs\readmeValidationBadge.go), never by hand-editing the README.")
+}
+
+if ($VerifyOnly) {
+    Write-Step "Pre-flight clean. -VerifyOnly: nothing was bumped, tagged, frozen, packed or pushed."
+    exit 0
+}
 
 # --- Embedded stdlib-metadata staleness gate ------------------------------------------------------
 # go2cs/stdlib-metadata.txt is the converter's embedded record of what every converted stdlib package
@@ -217,7 +481,7 @@ if ($doBump) { $wouldBeVersion = $null } else { $wouldBeVersion = "$baseVersion.
 # behaviour, output or side effects moves.
 $dryRun = (-not $Push) -and (-not $doBump)
 
-$repoRoot = Split-Path $src -Parent
+# ($repoRoot is computed with the pre-flight block above, which needs it.)
 
 # --- Release tag ----------------------------------------------------------------------------------
 # The tag is minted HERE, before anything is packed, because every package's README BAKES A LINK TO
@@ -390,35 +654,13 @@ if (-not (Test-Path $currentProofs)) {
     # is composed from exactly two inputs -- the published version and the proof page's totals line --
     # so re-deriving it here from the FROZEN snapshot and comparing byte for byte is that re-emission,
     # without needing the Go toolchain or a 4-minute reconvert mid-release.
-    $verified = 0
-
-    foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -Recurse -File) {
-        $text = [System.IO.File]::ReadAllText($readme.FullName)
-        if ($text -notmatch 'badge/Tests-(\d+)%2F(\d+)_validated-brightgreen') { continue }
-
-        $badgeMatched = [int]$Matches[1]
-        $badgeTotal = [int]$Matches[2]
-
-        # The dot-id itself contains dots (path.filepath), so its capture excludes only "/" and ")".
-        if ($text -notmatch 'https://go2cs\.net/validation/([^/]+)/([^)/]+)\.html') { throw "Green badge without a proof link in $($readme.FullName)" }
-
-        $linkVersion = $Matches[1]
-        $dotId = $Matches[2]
-
-        if ($linkVersion -ne $fullVersion) { throw "Green badge in $($readme.FullName) still links $linkVersion, not $fullVersion" }
-
-        $proofPage = Join-Path $versionProofs "$dotId.md"
-        if (-not (Test-Path $proofPage)) { throw "Green badge in $($readme.FullName) links a proof page that was not snapshotted: $proofPage" }
-
-        $proofText = [System.IO.File]::ReadAllText($proofPage)
-        if ($proofText -notmatch '\*\*(\d+) matched \S+ (\d+) disclosed\*\*') { throw "No totals line in $proofPage" }
-
-        if ($badgeMatched -ne [int]$Matches[1] -or $badgeTotal -ne ([int]$Matches[1] + [int]$Matches[2])) {
-            throw "Badge in $($readme.FullName) claims $badgeMatched/$badgeTotal but $proofPage records $($Matches[1]) matched + $($Matches[2]) disclosed"
-        }
-
-        $verified++
-    }
+    #
+    # This is the arm the pre-flight above CANNOT replace, and it is kept for exactly that reason: it
+    # reads the FROZEN snapshot rather than docs\validation\current, and it is the only place the
+    # badge's version PIN is checkable, because the retarget that sets it runs a few lines up.
+    $greenVerify = Get-GoGreenBadgeVerification -CoreDir (Join-Path $src 'core') -ProofRoot $versionProofs -PinnedVersion $fullVersion
+    $verified = $greenVerify.Verified
+    if ($greenVerify.Problems.Count) { throw ("Frozen-snapshot verification failed with $($greenVerify.Problems.Count) problem(s):`n    " + ($greenVerify.Problems -join "`n    ")) }
 
     if ($dryRun) {
         Write-Step "Verified $verified green badge(s) against the would-be $wouldBeVersion proof pages"
@@ -484,24 +726,13 @@ Write-Step "Retargeted $sourceRetargeted C# Source badge(s) to $fullVersion (com
 # Same consistency-by-construction check the green badges get: the badge is composed from
 # version.props and nothing else, so re-deriving it here IS the converter re-emission, and both of
 # its pins must name the version being published.
-$sourceVerified = 0
-
-foreach ($readme in Get-ChildItem (Join-Path $src 'core') -Filter 'README.md' -Recurse -File) {
-    $text = [System.IO.File]::ReadAllText($readme.FullName)
-    # Non-package READMEs legitimately carry no badges: the root attribution file, golib's
-    # hand-written runtime README, and testdata corpora (plus anything under build output).
-    if ($readme.Directory.FullName -eq (Join-Path $src 'core')) { continue }
-    if ($readme.FullName -match '\\(testdata|bin|obj)\\' -or $readme.Directory.Name -eq 'golib') { continue }
-    if ($text -notmatch 'badge/Source-@([^-\s)]+)-512BD4') { throw "README without a C# Source badge: $($readme.FullName) -- every package README carries one; a no-match here means the badge form drifted and this retarget is no-opping (the vacuous pass that shipped on the 1.23.1.5 run)" }
-
-    if ($Matches[1] -ne $fullVersion) { throw "C# Source badge in $($readme.FullName) states version $($Matches[1]), not $fullVersion" }
-
-    if ($text -notmatch 'https://github\.com/ritchiecarroll/go2cs/tree/nuget-([^/\s)]+)/src/core/') { throw "C# Source badge without a release-tag link in $($readme.FullName)" }
-
-    if ($Matches[1] -ne $fullVersion) { throw "C# Source badge in $($readme.FullName) links tag nuget-$($Matches[1]), not nuget-$fullVersion" }
-
-    $sourceVerified++
-}
+#
+# Deliberately still OUTSIDE the proof-snapshot branch above, for the reason stated there: this badge
+# is on EVERY package README, validated or not. The pre-flight ran this function's STRUCTURAL half;
+# only the two version pins are new here, and they are only checkable after the retarget above.
+$sourceVerify = Get-GoSourceBadgeVerification -CoreDir (Join-Path $src 'core') -PinnedVersion $fullVersion
+$sourceVerified = $sourceVerify.Verified
+if ($sourceVerify.Problems.Count) { throw ("C# Source badge verification failed with $($sourceVerify.Problems.Count) problem(s):`n    " + ($sourceVerify.Problems -join "`n    ")) }
 
 Write-Step "Verified $sourceVerified C# Source badge(s) pin $fullVersion and its release tag"
 
