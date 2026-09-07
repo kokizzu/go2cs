@@ -8,6 +8,66 @@ their full text.
 
 ---
 
+## September 7, 2026 — The Go 1.23.12 record closes at its anchor; the corpus hops to Go 1.24
+
+**The Go 1.23.12 validation record is closed.** It stands at **204 of the 215 testable
+standard-library packages** — **28,459 matching verdicts** against `go test -json`, with **167**
+divergences disclosed by exact failure signature — and, measured against the 209 packages a faithful
+managed conversion can honestly validate at all, **97.6%**. On Linux, 198 of the 202 applicable rows
+validate at their own Linux counts, at 23,199 matching verdicts. Those figures are an **anchor**
+rather than a running total: the corpus now moves to **Go 1.24.13** instead of driving this release
+to 100% first.
+
+Five packages remain unbanked here — `reflect`, `runtime`, `unique`, `runtime/pprof` and
+`net/http/pprof` — and none of them is written off. A version hop re-derives **every** roster row from
+the new release's own test sources — numerator, denominator and disclosure set alike — so all five
+re-validate against Go 1.24 on exactly the footing of the 204 that banked. What holds each back
+differs: `reflect` is measured and under active converter and runtime work; `runtime` is measured
+only as far as a host-killing crash — `TestCrashWhileTracing`, at index 104 of its 883 verdicts —
+which leaves everything after it unread; `unique` is measured at 19 of its 20 verdicts under the
+configuration of record and waits on a ruled runtime-model arc; and `runtime/pprof` and
+`net/http/pprof` are each measured on two hosts and held by a capability or classification ruling.
+
+The reordering is deliberate, and it is worth saying why, because the percentage means something
+narrower than it looks. **The metric is package-based, not content-based**: a row is all-or-nothing,
+so a package matching most of its verdicts still scores zero, exactly as one matching none of them
+does — which is what keeps the roster honest, and what makes the headline a count of finished
+packages rather than of passing tests. What is left is therefore a long tail of
+runtime-model work — Go's own heap layout, its type descriptors, its profiling internals — that does
+not stand between a user and a converted program. The project is measured against a trustable platform
+that migrates packages and applications from Go to C#, and a more recent Go standard library unlocks
+more of that than the tail does. This is not a compromise but a reordering: the hop that unlocks user
+capabilities happens first, and the remaining guardrails are handled after it.
+
+The 1.23.12 corpus ships one final NuGet release as that anchor before the pin moves — the release
+that freezes its roster, its proof pages and every package README at the record above. It has to come
+first: the pin bump resets the build counter, so once the corpus names Go 1.24 there is no longer any
+version left in which the 1.23.12 record could ship.
+
+## August 29, 2026 — Over 90% of the standard library's test suites pass in C#
+
+**189 of the 215 testable standard-library packages validate their own Go 1.23.12 test suites in
+C#** — **26,043 matching verdicts** against a clean `go test -json` baseline, with **148** divergences
+disclosed by exact failure signature and nothing else waived. Seven of the 215 cannot be validated at
+all — no eligible tests on this platform, a broken upstream oracle, or a suite whose whole subject is
+the raw memory layout a managed runtime deliberately does not have — so against the implementable set
+of 208 the roster reads **90.9%**. On Linux, 178 of the 188 applicable rows validate at their own Linux
+counts, at 21,807 matching verdicts.
+
+The push past 90% landed **`net` itself — 472 verdicts, the roster's largest networking row** — banked
+the day two phantom DNS servers and a router forwarder stopped impersonating an oracle. A host whose
+*own* `go test net` fails is disqualified as a reference, because the two sides of a differential would
+then be running different oracles; qualifying one was the work. `reflect` compiled and executed for the
+first time alongside it, and `net/netip`, `net/http/cookiejar` and `debug/pe` joined the roster in a
+single day.
+
+The converted standard library publishes as **NuGet 1.23.12.2** — 307 packages, author-signed — with
+this release's 189 proof pages frozen at `validation/1.23.12.2` for the badges the packed READMEs link,
+and the exact shipped tree browsable at the `nuget-1.23.12.2` tag.
+
+*Added to the archive on September 7, 2026; the announcement itself ran on the project's front page
+from August 29. Release freeze and announcement: `773afa2c2` · published: `d2da277f5`*
+
 ## August 25, 2026 — Both runtime pins move: .NET 10, Go 1.23.12 — and the whole roster re-proves itself
 
 **go2cs now targets .NET 10 and converts Go 1.23.12**, and the validated roster crossed the hop the

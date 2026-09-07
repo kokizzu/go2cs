@@ -418,9 +418,9 @@ leveling re-sweep re-annotated the rows it moved.
 ## Excluded packages
 
 The naive denominator above — 215 — counts every converted package whose Go 1.23.12 sources define
-a `Test` function. Six of those cannot be validated *at all* — five because the work is not the
-thing standing in the way: each is blocked by a property of the target that no amount of converter
-effort changes. Both denominators are always reported and nothing disappears quietly — every
+a `Test` function. Six of those cannot be validated *at all* — five because a property of the target
+stands in the way that no amount of converter effort changes, and one (E4) because its comparison runs
+cleanly and validates nothing. Both denominators are always reported and nothing disappears quietly — every
 exclusion is carried here with its class, its mechanism and the measurement that put it there,
 exactly as every disclosure is pinned by exact failure signature.
 
@@ -428,10 +428,15 @@ exactly as every disclosure is pinned by exact failure signature.
 > release rather than driving this one to 100%, so the figures above are the **Go 1.23.12 anchor** —
 > a frozen record of what this release reached, not a running total. The reasoning changes what the
 > percentage *means*, so it is worth stating: the metric is **package-based, not content-based**, and
-> a row is all-or-nothing — a package matching 326 of its 385 verdicts scores **zero**. Four of the
-> five packages left here are already **fully measured**, unbanked over classification questions
-> rather than because anything is unseen. All five re-validate against the next release, where a hop
-> re-derives every row from scratch in any case.
+> a row is all-or-nothing — a package matching most of its verdicts still scores **zero**, exactly as
+> one matching none of them does. What holds each of the five packages left here back differs, and
+> there is no single reason to state: `reflect` is measured and under active converter and runtime
+> work; `runtime` is measured only as far as a host-killing crash — `TestCrashWhileTracing`, at index
+> 104 of its 883 verdicts — which leaves everything after it unread; `unique` is measured at 19 of its
+> 20 verdicts under the configuration of record and waits on a ruled runtime-model arc; and
+> `runtime/pprof` and `net/http/pprof` are each measured on two hosts and held by a capability or
+> classification ruling. All five re-validate against the next release, where a hop re-derives every
+> row from scratch in any case.
 
 **The admission bar is the disclosure bar's sibling, and it is strict**: a package is excluded only
 when validation is **provably meaningless or impossible — never merely hard**, unimplemented, or

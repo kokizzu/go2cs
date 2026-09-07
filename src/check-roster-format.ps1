@@ -3,7 +3,7 @@
     Guards the validated-package roster's machine-parsed format and its arithmetic.
 
 .DESCRIPTION
-    Two things this checks, both cheap enough to run at any time (pure text, no build, no gate):
+    Three things this checks, all cheap enough to run at any time (pure text, no build, no gate):
 
       1. THE PARSER'S CONTRACT, against fixture rows -- the columns, the host-conditional
          annotation, and the per-OS annotation ruled on 2026-08-22, including the shapes that must
@@ -18,6 +18,11 @@
          of the ruled ones). Nothing is hand-listed here: a hand-maintained roster
          mirror is the exact debt the sweep's own drift section records going unpaid twice, so
          every number this asserts is computed from the table it is asserting about.
+
+      3. THE FRONT PAGE AGREES WITH THE ROSTER -- docs/README.md's featured NEWS block restates
+         five of the header's figures in prose, and until 2026-09-07 nothing compared them, so it
+         sat stale across at least three banks. Section 2e asserts each against the header, which
+         stays the authority; the roster is never re-derived from the README.
 
         ./check-roster-format.ps1            # the guard
         ./check-roster-format.ps1 -List      # also print every per-OS annotation the roster carries
@@ -1010,6 +1015,88 @@ Assert-Equal 'every prose ratio is either the live figure or carries `as of YYYY
 # for. The header states BOTH denominators, on two separate lines, so two live hits is the floor: if
 # this ever reads under two, the check above proved nothing regardless of what it printed.
 Assert-Equal 'ratio scan reached the header (vacuity control: both live figures found)' $true ($liveRatioLines -ge 2)
+
+# ---- 2e. the README's featured NEWS block against the roster header ------------------------------
+# 2d's rule stops a STALE figure inside this file. The same figures also live on the front page, in
+# docs/README.md's featured NEWS block, and nothing compared the two: that block sat at 201/215,
+# 27,734 matching and 154 disclosed across at least three banks, because it is hand-written prose in
+# a file no arithmetic guard read. It is the first thing a visitor sees, so it is the worst place in
+# the project for a stale number, and it is exactly the class 2d was minted for -- one document over.
+#
+# The roster header is the authority and this arm never re-derives it: every roster-side value below
+# is the one section 2 already computed from the table (row count, column sums, the implementable
+# subtraction, the Linux annotation sums) or parsed from the header ($testable, which the table
+# cannot know). Section 2 has already asserted the header equals those, so a wrong header fails
+# there, by its own name, rather than being propagated into this comparison.
+#
+# WHY THE BLOCK IS JOINED BEFORE IT IS PARSED, and it is the whole reason a per-line scan was not
+# written: the block is hard-wrapped, and the wraps fall INSIDE the figures. At this tree "28,459"
+# ends one line while "matching verdicts" begins the next, and "167 divergences" is split from
+# "disclosed" the same way -- so a line-anchored pattern reads a well-formed ZERO on a file that
+# plainly contains both. The lines are joined and their whitespace collapsed first; the patterns
+# then match prose, not layout, and survive a re-wrap.
+$readmeLines = [System.IO.File]::ReadAllLines((Join-Path $repo 'docs/README.md'))
+
+$newsStart = -1
+$newsEnd = -1
+for ($i = 0; $i -lt $readmeLines.Count; $i++) {
+    if ($newsStart -lt 0) {
+        if ($readmeLines[$i] -match '^##\s' -and $readmeLines[$i] -match 'NEWS') { $newsStart = $i }
+        continue
+    }
+    if ($readmeLines[$i] -match 'All announcements can be found') { $newsEnd = $i; break }
+}
+
+# Vacuity control, same shape as 2d's and for the same reason: if the heading is renamed or the
+# archive line moves, every figure below reads '(not found)' and fails by name -- but this states it
+# in one line, so the report names the CAUSE rather than five symptoms of it.
+Assert-Equal 'README featured NEWS block located (vacuity control: heading through archive line)' $true `
+    (($newsStart -ge 0) -and ($newsEnd -gt $newsStart))
+
+$newsText = ''
+if ($newsStart -ge 0 -and $newsEnd -gt $newsStart) {
+    $newsText = (($readmeLines[$newsStart..$newsEnd]) -join ' ') -replace '\s+', ' '
+}
+
+function Get-NewsFigure {
+    param([string] $Text, [string] $Pattern, [int] $Group = 1)
+
+    # A miss returns a token that can never equal a roster figure, so it fails loudly rather than
+    # colliding with a real value the way a numeric sentinel would.
+    if ($Text -match $Pattern) { return (($Matches[$Group]) -replace ',', '') }
+    return '(not found)'
+}
+
+$bankedPattern = '(\d+)\s+of\s+the\s+(\d+)\s+testable'
+$linuxPattern = '(\d+)\s+of\s+the\s+(\d+)\s+applicable\s+rows'
+
+$newsFigures = @(
+    @{ Name = 'banked / testable packages'
+       Readme = ((Get-NewsFigure $newsText $bankedPattern) + '/' + (Get-NewsFigure $newsText $bankedPattern 2))
+       Roster = "$($rows.Count)/$testable" }
+    @{ Name = 'matching verdicts'
+       Readme = (Get-NewsFigure $newsText '([\d,]+)\s+matching\s+verdicts')
+       Roster = "$columnTotal" }
+    @{ Name = 'disclosed divergences'
+       Readme = (Get-NewsFigure $newsText '([\d,]+)\s+divergences\s+disclosed')
+       Roster = "$columnDisclosed" }
+    @{ Name = 'implementable denominator / pct'
+       Readme = ((Get-NewsFigure $newsText 'denominator\s+is\s+\*{0,2}(\d+)\b') + '/' +
+                 (Get-NewsFigure $newsText 'roster\s+at\s+\*{0,2}([\d.]+)\s*%'))
+       Roster = "$implementable/$honestLivePct" }
+    @{ Name = 'linux rows'
+       Readme = ((Get-NewsFigure $newsText $linuxPattern) + '/' + (Get-NewsFigure $newsText $linuxPattern 2))
+       Roster = "$($linuxRows.Count)/$($rows.Count - $linuxNaRows.Count)" }
+)
+
+# Printed UNCONDITIONALLY, pass or fail. A comparison whose inputs are never shown is one nobody can
+# tell apart from a comparison that did not happen.
+Write-Host ''
+Write-Host 'README featured NEWS block vs the roster header:' -ForegroundColor Cyan
+foreach ($figure in $newsFigures) {
+    Write-Host ('  {0,-32} README {1,-14} roster {2}' -f $figure.Name, $figure.Readme, $figure.Roster)
+    Assert-Equal "README featured NEWS block: $($figure.Name) matches the roster header" $figure.Roster $figure.Readme
+}
 
 # ---- 3. the RENDERED table's column integrity -----------------------------------------------------
 # Everything above guards what the roster MEANS to the parser. This guards what it LOOKS LIKE to a

@@ -120,6 +120,36 @@ the next; steps marked ⟲ are re-measured at every migration and never carried 
 
 Everything else may be reordered by the executing lane.
 
+> **AMENDED 2026-09-07 — a FOURTH ordering, and it runs ahead of the H1↔H2 pair: the OUTGOING
+> corpus's final NuGet release ships FIRST.** The mechanism is one line of the pin instrument.
+> [`src/migrate-gorelease.ps1`](../src/migrate-gorelease.ps1) **resets `<GoBuildNumber>` to 0** at the
+> pin stage — line 895, inside the `src/version.props` arm that `-KeepBuildNumber` guards — enacting
+> H2's own ruling that the build number resets per release. So the moment H2 lands, the outgoing
+> release has no build counter left to advance: the next publish is `<new-release>.1`, a version of a
+> corpus the outgoing record never measured, and **the outgoing corpus can never again be published at
+> its own release**. Whatever it had shipped when H2 landed is what it shipped, permanently.
+>
+> **The step:** ahead of H1/H2, publish the outgoing corpus's final release with
+> [`src/release-nuget.ps1`](../src/release-nuget.ps1), running H12's release ritual in full — the
+> announcement text on the branch, the pre-pack signed tag, the write-once proof snapshot, both badge
+> retargets, the recomputed re-verification pass. **That release is what freezes the outgoing roster,
+> its proof pages and every package README** at the record they reached; it is the outgoing corpus's
+> anchor, and it is the last moment one can be minted. It sits ahead of H1 rather than merely ahead of
+> H2 because the first ordering above already binds H1 and H2 into one reviewable pair.
+>
+> H11 and H12 below are written for the **incoming** corpus and are unchanged; this step is their
+> outgoing-side twin, and the two are the same ritual pointed at the two ends of the hop.
+> `-KeepBuildNumber` is not a substitute: it holds a counter across the boundary that counter is
+> defined to reset at, which is a different and unruled thing.
+>
+> **Worked instance — the 1.23 → 1.24 hop.** It proceeds with the outgoing record **closed at its
+> anchor** rather than driven to 100% (owner ruling, 2026-09-07; the reasoning is recorded in
+> [`ValidatedTestPackages.md`](ValidatedTestPackages.md)'s *Excluded packages* block and in
+> [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) §1.3's dated amendment). The rows still unbanked
+> at the anchor are neither carried forward nor owed anything special: **H10 re-derives every row from
+> scratch at the new release regardless**, so they re-bank there on exactly the footing of the rows
+> that did bank.
+
 ### H0 — Baseline capture ⟲
 
 Capture, on the **outgoing** toolchain and the **new** converter build, everything the migration will

@@ -26,6 +26,12 @@ the full conversion.
 > [`GoCorpusMigration.md`](GoCorpusMigration.md) for a Go corpus migration and
 > [`DotNetMigration.md`](DotNetMigration.md) for a .NET one. What each document type may be used for,
 > and which one wins when two disagree: [`Glossary.md`](Glossary.md), *Document types*.
+>
+> **⚠ AMENDED 2026-09-07 — the hop era does not wait for Phase 4 to reach 100%.** By owner ruling the
+> corpus moves to **Go 1.24.13** with Phase 4's Go 1.23.12 record **closed at its anchor** rather than
+> driven to completion, and the rows still unbanked there re-validate under the new release — a hop
+> re-derives every roster row from scratch regardless (`GoCorpusMigration.md` H10). Read "after
+> Phase 4" above as the order these phases were written in, not as a gate on the hop.
 
 *Phase 2's 57-package `fmt` closure, considered and rejected as a bootstrap in 2026-06, is now simply
 what the behavioral suite builds: cold ~48 s, warm ~4 s.*
