@@ -141,9 +141,29 @@ partial class runtime_package
     // here (coreclr pal/src/exception/signal.cpp: INJECT_ACTIVATION_SIGNAL is SIGRTMIN where defined
     // and SIGUSR1 where not, and darwin defines no SIGRTMIN; installed at PAL init, accepting the
     // process's own activations) — a kernel SIG_IGN there would discard the runtime's GC-suspension
-    // activations. Everything else mapped — HUP/INT/QUIT/TERM (the PAL's console and exit handlers),
-    // CHLD (reaping), CONT/WINCH (terminal), INFO (default-ignore, so the swallow is exact) and
-    // USR1 — keeps the swallow model, with the residual stated in the header.
+    // activations. Everything else mapped — HUP/INT/QUIT/TERM, CHLD (reaping), CONT/WINCH
+    // (terminal), INFO (default-ignore, so the swallow is exact) and USR1 — keeps the swallow
+    // model, with the residual stated in the header.
+    //
+    // THE FOUR CLASSIC SIGNALS ARE NOT ONE CLASS. This comment used to gloss HUP/INT/QUIT/TERM as
+    // "the PAL's console and exit handlers"; that grouping is measured WRONG on linux (.NET
+    // 10.0.11, /proc/self/status SigCgt — the kernel's own caught-signal mask, read directly and
+    // hand-decoded rather than inferred). The caught set is built in STAGES, so reading it once
+    // cannot tell "the CLR does not own this signal" from "the CLR has not installed it yet":
+    //
+    //     before any managed Console use    INT QUIT TERM (+ the synchronous faults)
+    //     after Console initialisation      + CONT   — the terminal reinit named above
+    //     after the first Process reap      + CHLD   — the reaping named above
+    //
+    // The reaping and terminal reasons above are therefore CONFIRMED, each by the stage that
+    // installs it. HUP is caught at NO stage the probe reached: INT/QUIT/TERM are PAL-init
+    // handlers and HUP is not one of them, so on linux it keeps the swallow model with no measured
+    // CLR owner at all. It stays OUT of the CLR-free class regardless, because "not observed
+    // caught" is not "measured CLR-free" — widening the class is a measurement, and on the linux
+    // flavour it is C1's Q64 call, not an inference drawn here. WINCH is likewise unobserved, but
+    // that probe ran with no controlling terminal and so cannot speak to it. Darwin's own caught
+    // set is UNMEASURED (no mac leg): the linux reading is recorded beside the darwin claim rather
+    // than used to correct darwin by analogy.
     private static bool sigIsKernelIgnorable(uint32 sig)
     {
         switch ((int)sig)
