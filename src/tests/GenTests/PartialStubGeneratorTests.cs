@@ -95,4 +95,44 @@ public class PartialStubGeneratorTests
             "the stub must be marked, or FuncPCABI0 cannot tell an assembly function from a converted one");
         Assert.AreNotEqual("", generated, "the asm partial must have produced a stub at all");
     }
+
+    /// <summary>
+    /// The stub's message states only what the generator ESTABLISHED -- that nothing in this
+    /// compilation implements the method -- and never asserts WHY.
+    /// </summary>
+    /// <remarks>
+    /// Until 2026-09-06 the message read "external (assembly or cgo) function is not implemented",
+    /// asserting a cause the generator never determines: it sees ONE compilation, so whether a body
+    /// exists elsewhere in the corpus is not a question available to it. Two symbols with real managed
+    /// bodies one package over carried text asserting they were assembly -- runtime/pprof's
+    /// pprof_mutexProfileInternal (bodied in runtime/mprof.cs) and readProfile (provided by
+    /// runtime/cpuprof.cs through a linkname) -- and net/http/pprof's blocker was misclassified three
+    /// times by readers taking that sentence at face value. The NEGATIVE assertion is the load-bearing
+    /// half: the message may list candidate causes, but must never state one as fact.
+    /// </remarks>
+    [TestMethod]
+    public void TheStubMessageClaimsOnlyWhatTheGeneratorKnows()
+    {
+        string source = $$"""
+            namespace go;
+
+            partial class demo_package
+            {
+                internal static partial void realAsmFunc();
+            }
+            """;
+
+        string generated = string.Join("\n", RunGenerator(source).GeneratedTrees
+            .Select(tree => tree.ToString())
+            .Where(text => text.Contains("realAsmFunc")));
+
+        Assert.AreNotEqual("", generated, "the asm partial must have produced a stub at all");
+
+        StringAssert.Contains(generated, "no implementation reached this compilation",
+            "the message must state the fact the generator established");
+
+        Assert.IsFalse(generated.Contains("external (assembly or cgo) function is not implemented"),
+            "the message must not assert a CAUSE the generator never determined -- it sees one " +
+            "compilation and cannot know whether a body exists elsewhere in the corpus");
+    }
 }

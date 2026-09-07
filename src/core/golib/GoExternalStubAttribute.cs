@@ -10,8 +10,10 @@ namespace go;
 
 /// <summary>
 /// Marks a method body that <c>go2cs-gen</c>'s <c>PartialStubGenerator</c> supplied for a bodyless
-/// <c>partial</c> declaration — a Go function implemented in assembly or cgo, which this corpus has
-/// no managed body for.
+/// <c>partial</c> declaration — a Go function that NOTHING IN THAT COMPILATION implements. It may be
+/// assembly or cgo, a darwin dylib trampoline, or a linkname whose push did not arrive; this
+/// marker does not distinguish them, and the generator cannot -- it sees one compilation. What it
+/// records is the equivalence below, not a cause.
 /// </summary>
 /// <remarks>
 /// <para>

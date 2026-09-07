@@ -108,7 +108,7 @@ public class PartialStubGenerator : ISourceGenerator
                 .WithBody(null)
                 .WithExpressionBody(SyntaxFactory.ArrowExpressionClause(
                     SyntaxFactory.ParseExpression(
-                        $"throw new global::System.NotImplementedException(\"{identifier}: external (assembly or cgo) function is not implemented\")")))
+                        $"throw new global::System.NotImplementedException(\"{identifier}: no implementation reached this compilation (assembly, cgo, or a linkname whose push did not arrive)\")")))
                 .WithSemicolonToken(SyntaxFactory.Token(SyntaxKind.SemicolonToken))
                 .WithLeadingTrivia()
                 .WithTrailingTrivia()
@@ -126,8 +126,9 @@ public class PartialStubGenerator : ISourceGenerator
             // The [go.GoExternalStub] marker records what only this generator knows: that NOTHING
             // in the compilation implements this method. The two checks above are what make that
             // exact — a partial another generator is obliged to implement is skipped, and so is one
-            // a hand-written *_impl.cs companion supplies — so the marker holds precisely when the
-            // Go function is assembly or cgo with no managed body anywhere.
+            // a hand-written *_impl.cs companion supplies. That is ALL it records: nothing here implements
+            // it. It may be assembly, cgo, a dylib trampoline or an unarrived linkname -- the generator sees
+            // ONE compilation and cannot tell which, so neither the marker nor the message says.
             //
             // internal/abi's FuncPCABI0/FuncPCABIInternal are the consumer: handed a method group,
             // they must answer either a synthetic PC (the function exists and can be symbolized) or
