@@ -171,3 +171,153 @@ which ones need a human to look.
 - It does not resolve the 50 package-resolved principals to files.
 - It does not verify that a REMOVED package's replacement is what I have guessed it to be
   (`internal/sync` for the hash-trie map is from COORD's recon, not from my measurement).
+
+---
+
+## 2026-09-07 — FOLLOW-UP: the diffs READ, the member sets NAMED (appended, §1–§5 unchanged)
+
+COORD's follow-up (`29ec04cd8`): read the Go diffs, one classified line per PRESENT-CHANGED row,
+name the member set each package-resolved row displaces, and extend the registry check by symbol.
+**Proposals stay proposals; no ruling implied.**
+
+Instrument: `arm14_h6diff`, a `go/ast` classifier — signatures and bodies compared with comments
+excluded via `go/printer`, so a reflowed comment cannot read as a changed signature. **Precedence,
+because a file can be several classes at once and the spec wants exactly one:**
+`BUILD-CONSTRAINT > MEMBERS-REMOVED > MEMBERS-ADDED > SIGNATURE > BODY-ONLY > COMMENT-ONLY`.
+
+⚠ **CONTROL — the classifier was made to emit EVERY class before any row was believed**, on six
+fixtures differing from one base by exactly one property:
+
+```
+  base vs comment     -> COMMENT-ONLY
+  base vs body        -> BODY-ONLY 1 decl(s)
+  base vs sig         -> SIGNATURE func Alpha
+  base vs added       -> MEMBERS-ADDED func Beta
+  base vs removed     -> MEMBERS-REMOVED func Alpha
+  base vs constraint  -> BUILD-CONSTRAINT //go:build linux -> //go:build linux && amd64
+```
+
+## 6. THE 48 PRESENT-CHANGED ROWS, CLASSIFIED
+
+### 6a. File-level class — what the principal file itself did
+
+```
+  MEMBERS-REMOVED    20      SIGNATURE           2
+  BODY-ONLY          11      BUILD-CONSTRAINT    0   <- EMPTY
+  MEMBERS-ADDED       8      PARSE-ERROR         0   <- every principal parsed
+  COMMENT-ONLY        7                         ---
+                                                 48
+```
+
+**BUILD-CONSTRAINT is EMPTY, and the diff that would have populated it is the control fixture above**
+(`//go:build linux` → `//go:build linux && amd64`), which the classifier emits correctly. No
+hand-own's principal changed its build constraint between the releases.
+
+### ⚠ 6b. SCOPE-CORRECTED class — and it moves 11 of the 28 member-set rows
+
+A file-level comparison cannot tell *removed from the package* from *relocated to a sibling file*,
+and Go does the latter constantly. Every `MEMBERS-REMOVED`/`MEMBERS-ADDED` name was therefore
+re-checked against **the whole package** in the other tree:
+
+```
+  BODY-ONLY                            11
+  MEMBERS-REMOVED                       9   truly gone from the package
+  MOVED-WITHIN-PACKAGE                  8   the file lost it; the package still has it
+  COMMENT-ONLY                          7
+  MEMBERS-ADDED                         6
+  MIXED (some gone, some relocated)     5
+  SIGNATURE                             2
+                                       ---
+                                        48
+```
+
+⚠ **The scope check was itself wrong the first time, and the error was mine in the instrument.** The
+classifier truncated its name list at four with `(+N more)`, so the first scope pass compared a
+SAMPLE and returned `MEMBERS-REMOVED 13 / MOVED 7 / MIXED 2`. With truncation removed it returns
+**9 / 8 / 5** — four rows moved class. `sync/atomic/doc.go` reading "MEMBERS-REMOVED `AddInt64`" is
+what exposed it: Go 1.24 did not delete `atomic.AddInt64`, so the instrument was answering a
+narrower question than the one asked of it.
+
+**THE NUMBER H6 IS SIZED ON:**
+
+```
+  MECHANICAL (re-derive without judgement)   COMMENT-ONLY + BODY-ONLY + MOVED-WITHIN-PACKAGE  = 26
+  NEEDS A HUMAN                              MEMBERS-REMOVED + ADDED + MIXED + SIGNATURE      = 22
+```
+
+### 6c. The rows that need a human, named
+
+**SIGNATURE (2)** — `runtime/os_linux.go` `type mOS`; `sync/once.go` `type Once`. Both are types a
+hand-own mirrors structurally, so a changed shape is exactly the case that cannot re-derive
+mechanically.
+
+**MEMBERS-REMOVED (9)** include `internal/abi/type.go` (`KindGCProg`, `TFlagUnrolledBitmap`,
+`MapType.HashMightPanic`, `MapType.IndirectElem`, +4), `runtime/mbitmap.go` (`heapSetType`,
+`getgcmask`, `materializeGCProg`, `dematerializeGCProg`), `runtime/stubs.go` (`getcallerpc`,
+`getcallersp`, `getclosureptr`), `runtime/lock_futex.go` and both `lock_sema.go` flavors (the
+`active_spin`/`mutex_*` constant family), `sync/mutex.go`, `sync/runtime.go`
+(`runtime_SemacquireMutex`, `runtime_canSpin`, `runtime_doSpin`, `runtime_nanotime`),
+`testing/testing.go` (`testContext` and its methods), `time/time.go`.
+
+**MIXED (5)** — `reflect/value.go` and `sync/atomic/doc.go` are the two large ones: part of the
+named set survives in the package, part is gone. These need the per-member read, not a file verdict.
+
+## 7. THE 50 PACKAGE-RESOLVED ROWS — MEMBER SETS, CHECKED BY NAME
+
+```
+  ALL-MEMBERS-PRESENT     36   every member the hand-own supplies still exists in the 1.24.13 package
+  NO-NAME-MATCH           13   the C# names are go2cs-minted or host-only; no Go name to check
+  PKG-REMOVED              1   internal/concurrent/hashtriemap_whitebox.cs
+  SOME-MEMBERS-REMOVED     0
+                          ---
+                           50
+```
+
+⚠ **`SOME-MEMBERS-REMOVED` is ZERO: the package-resolved half is far LESS exposed than the
+file-resolved half.** 36 of 50 need no member-level work at all.
+
+**The 13 NO-NAME-MATCH rows split into two groups, and the distinction matters for H6:**
+
+- **Host infrastructure, displacing no Go member at all (4):** `testing/PackageAncestry.cs`,
+  `TestRunner.cs`, `TestFormat.cs`, `TestReporter.cs`. These are the hand-owned Phase-4 test host's
+  own machinery — there is no Go principal by design, and arguably they do not belong in a
+  *hand-own re-audit* population at all. **Proposal: reclassify out of the H6 population** rather
+  than dispose of them per-row.
+- **go2cs-minted shells over real Go members (9):** `runtime/goargs_impl.cs`, `goenvs_impl.cs`,
+  `hostofrecord_impl.cs`, `panicvalues_impl.cs`, the `zsyscall_windows_*` splits,
+  `internal/syscall/unix/linux/net_linux_impl.cs`. These displace Go members under C# names the
+  matcher cannot follow; **H6 reads these by hand — the census can only say that it cannot.**
+
+**METHOD LIMIT, stated rather than discovered later:** members are matched **by name** across the
+package. An unexported helper Go renamed reads as removed; a C# name go2cs minted reads as
+NO-NAME-MATCH. **This is a triage that tells H6 where to look, not a proof of what is there.**
+
+## 8. THE REGISTRY, EVERY KEY CHECKED BY `<package>.<symbol>`
+
+```
+  linknamePushTargets, 22 rows
+    SYMBOL-PRESENT    19      the symbol still exists at 1.24.13
+    PKG-REMOVED        2      internal/weak.runtime_registerWeakPointer
+                              internal/weak.runtime_makeStrongFromWeak
+    PKG-NOT-STD        1      runtime/metrics_test.runtime_readMetricNames (a test package)
+    SYMBOL-REMOVED     0
+```
+
+⚠ **`SYMBOL-REMOVED` is ZERO.** Beyond the `internal/weak` pair — G's two, reproduced here as the
+positive control — **no registry key has lost its symbol at 1.24.13.** The registry's exposure to
+this hop is exactly two rows in one removed package.
+
+The key shape is the method, and it is the lesson this lane paid for twice: a grep for the quoted
+package path `"internal/weak"` returns **zero**, because keys are `"<package>.<symbol>"` and the
+path never stands alone.
+
+## 9. PROPOSALS, UPDATED — still proposals
+
+| # | rows | proposal |
+|---|---|---|
+| 10 | the 26 MECHANICAL (COMMENT-ONLY, BODY-ONLY, MOVED-WITHIN-PACKAGE) | **re-derive mechanically, no per-row ruling** — the principal's member set and signatures are intact |
+| 11 | the 22 needing a human | **per-row ruling at H6**, prioritised SIGNATURE (2) → MIXED (5) → MEMBERS-REMOVED (9) → MEMBERS-ADDED (6) |
+| 12 | the 36 ALL-MEMBERS-PRESENT package-resolved rows | **keep**; member sets intact |
+| 13 | the 4 host-infrastructure rows | **reclassify OUT of the H6 population** — they displace no Go principal |
+| 14 | the 9 go2cs-minted shells | **name by hand at H6**; the census cannot follow the name mapping |
+| 15 | the registry | **only the 2 `internal/weak` rows are exposed**; the other 20 need no H6 action |
