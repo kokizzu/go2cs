@@ -773,7 +773,21 @@ public sealed class TestExecution
     /// relative spelling the caller passed.
     /// </para>
     /// <para>
-    /// DIVERGENCE — Go holds a <b>directory handle</b> (<c>os.Open(".")</c>) and restores with
+    /// ⚠ DIVERGENCE 1, and it is a HOST DECISION rather than Go fidelity — say so plainly, because
+    /// the rest of this comment is fidelity and the two must not be read as the same thing.
+    /// <c>TryEnsureOwner</c> below refuses (and FAILS the test on) a call from a goroutine other
+    /// than the test's. <b>Go performs no such check in Chdir.</b> It is kept for three reasons:
+    /// the working directory is process-global state, which is the class this host already guards
+    /// in <see cref="Setenv"/>; Chdir CALLS Setenv on non-Windows, so a non-owner call already
+    /// fails there and dropping the check would make the windows and linux flavors disagree; and
+    /// Go's own doc declares Chdir unusable in parallel tests, so a cross-goroutine call is outside
+    /// its supported envelope either way. It is still STRICTER than Go, which is the thing to
+    /// notice if a converted test ever fails here and passes under `go test`.
+    /// (<see cref="Context"/> had the same guard copied into it, where none of those reasons hold;
+    /// it was removed. See the remark there.)
+    /// </para>
+    /// <para>
+    /// DIVERGENCE 2 — Go holds a <b>directory handle</b> (<c>os.Open(".")</c>) and restores with
     /// <c>oldwd.Chdir()</c>, so the restore survives the original directory being RENAMED under the
     /// test. .NET exposes no managed equivalent, so this captures the old directory's PATH. The
     /// difference is observable only for a test that renames an ancestor of its own starting
@@ -855,11 +869,21 @@ public sealed class TestExecution
     /// test's Cleanup-registered functions run, so a cleanup can wait on resources that shut down
     /// on <c>Context.Done</c>.
     /// </summary>
+    /// <remarks>
+    /// ⚠ <b>There is deliberately NO owner-goroutine check here, and an earlier version had one.</b>
+    /// It was copied from <see cref="Setenv"/> because that is the neighbouring method, without
+    /// asking whether Go imposes the same restriction. <b>Go's Context is
+    /// <c>checkFuzzFn; return c.ctx</c> — no goroutine restriction of any kind</b>, and calling
+    /// <c>t.Context()</c> from a spawned goroutine is most of what a test context is FOR. Worse,
+    /// <see cref="TryEnsureOwner"/> does not merely return false: it sets InfrastructureFailed and
+    /// FAILS the test, so the guard would have turned an ordinary Go pattern into an infrastructure
+    /// failure — and the fallback returned <c>Background()</c>, a DIFFERENT context that never
+    /// cancels, which is the quieter half of the same defect. Found by re-reading this file after
+    /// the b.Loop reset turned out to be invented rather than read; one such error is a reason to
+    /// look for the next.
+    /// </remarks>
     public go.context_package.Context Context()
     {
-        if (!TryEnsureOwner(nameof(Context)))
-            return go.context_package.Background();
-
         lock (m_syncRoot)
         {
             if (m_ctx is null)
