@@ -793,3 +793,141 @@ one command that settles B1, B2 and the `map*.cs` deletion question together is 
 stated; whether the four `runtime/map*.cs` are inside §5's truncated 28-member gone list; and
 anything operational, which is where the roster bill is actually paid and none of which was
 exercised here or above.
+
+---
+
+## AMENDMENT — 2026-09-07, by this record's author, on measurements posted by lane G
+
+> **Two items above are corrected here rather than rewritten**, per the point-in-time-record rule.
+> Neither correction was found by me: G measured both (mailbox `8413dd8870`, `06bf8ae779`). What is
+> mine is the verification below, taken by a DIFFERENT derivation than G's before either correction
+> was written down — G measured dynamically, by converting probe shapes; I read the converter.
+
+### A. §5 Rung 2 — the CENSUS stands, the INFERENCE from it does not
+
+§5 concludes: *"A single-root, single-site defect."* **The occurrence counts are right and the
+conclusion drawn from them is wrong, in two ways.**
+
+1. **It is not hop-triggered.** G reproduced it with today's converter on **1.23.12**, from a
+   three-line hand-written Go shape, with no 1.24 SDK. It is a STANDING converter defect that 1.24's
+   `runtime/vgetrandom_linux.go` happens to trigger. §5's corpus control (**zero** `_@` across
+   `src/core`) is reproduced and still true — but an end-user module reaching `-recurse` today with a
+   function-local anonymous struct or interface named for a C# keyword (`params`, `ref`, `out`,
+   `fixed`, `event`, `lock` are ordinary Go identifiers) emits uncompilable C#. **Its priority
+   therefore does not depend on the hop decision.**
+2. **It is not single-site.** G probed four sites and found `visitStructType.go:213` and
+   `visitInterfaceType.go:191` both defective, `visitTypeSpec.go:414` correct, `visitIdent.go:45`
+   unmeasured for want of a routing shape.
+
+⚠ **This is the "a census can be exactly right about what EXISTS and exactly wrong about what it
+MEANS" shape, and I wrote it.** The census counted occurrences in ONE emission and I read the count
+as a property of the CONVERTER. Three occurrences of one identifier is a fact about 1.24's stdlib;
+"single-site defect" is a claim about the code, and nothing in the census reaches it.
+
+**What I verified statically, and it sharpens the remedy.** All four sites carry a BYTE-IDENTICAL
+composition — `if !strings.HasPrefix(name, v.currentFuncName+"_") { name = fmt.Sprintf("%s_%s", …) }`
+— so the class is structurally four, not two. The existing remedy `stripSanitizationMarkers`
+(`identifierNaming.go:243`) **already documents this exact failure mode in its own comment**
+(*"`@` is only legal at the START of a C# identifier token, so a marker mid-composition lexes as two
+tokens"*), and it predates this record. **Every one of its call sites is in `adapterNameCollisions.go`
+or `interfaceConversion.go` — a different family of composed names entirely; NONE of the four
+composition sites calls it, and neither does
+`liftedTypeNames.go`** — which is where the correct site's one extra call, `getUniqueLiftedTypeName`,
+lives.
+
+⚠ **So `visitTypeSpec`'s correctness does NOT come from the remedy G's fix pattern points at.** It
+composes the same way and calls no stripper. The likeliest reading is that it receives an
+already-UNESCAPED name while the struct and interface paths receive the escaped variable name, i.e.
+the difference is the CALLER's input, not the site — but I did not measure that and it is
+**unestablished here**. If it holds, `visitTypeSpec` and `visitIdent` are not correct code; they are
+the same code one input-change away from the same defect, and a fix applied only to the two
+demonstrated sites would leave the class open. **The remedy is at the composition — strip, compose,
+re-sanitize the whole identifier, keep the Go name in `[GoLocalName]` as `visitTypeSpec` already
+does — applied at all four.** Sizing and cutting it is a converter increment and is not proposed
+here, as §5 already says of the original.
+
+### B. §6 — a FIFTH vanished principal, and it landed the day after this record
+
+§6's table lists four hand-owns whose Go principal ceases to exist in 1.24. G's refresh reproduces
+those four exactly and adds one:
+
+| hand-own | vanished principal |
+|:--|:--|
+| `src/core/crypto/internal/alias/alias_impl.cs` | `crypto/internal/alias` — GONE in 1.24, moved to `crypto/internal/fips140/alias` |
+
+**First committed `8a8e229a8`, 2026-09-03 — one day AFTER this record was written**, and its commit
+closed the address-ordering race that killed the banked `net/http` row, so it is not incidental.
+G confirmed it three independent ways (git add-date, a direct directory check on both pinned trees,
+and its appearance in an independent package-census removed set).
+
+**This is the hazard §6 names, arriving in §6's own subject area while the record aged**, which is
+the argument for the refresh existing at all rather than a defect in the original count: the four
+were correct on the day, and five days of hand-own work added a fifth in the subsystem 1.24
+reorganises most. **The count in §6 is therefore a floor that moves with the tree, not a total** —
+re-derive it at the hop rather than quoting it.
+
+### C. What is NOT corrected
+
+§2's package figure **342 stands.** G predicted 342, measured a raw `go list std` of **346**, and
+scored it a miss against this record — then found the four extra are non-shipping packages the
+converter never processes (`crypto/internal/fips140/check/checktest`, `crypto/internal/fips140test`,
+`go/ast/internal/tests`, `internal/copyright`), so `346 − 4 = 342`. **The convertible set is this
+record's unit and it is unchanged**; G said so plainly and the note is here only so a reader meeting
+the 346 elsewhere does not go looking for an error in §2 that is not there.
+
+### D. CONFIRMED — 2026-09-07, later the same day, by G
+
+**§A's unestablished hypothesis is measured and it holds.** G ran exactly the measurement §A named
+as settling it — what `name` holds on entry at each site — and the converter names the mechanism in
+its own variables (`visitValueSpec.go:188-189`):
+
+```go
+goIDName := v.getIdentName(ident)             // the GO name         -> params
+csIDName := getSanitizedIdentifier(goIDName)  // the C# ESCAPED form -> @params
+```
+
+The calls into the lift split on that: `visitValueSpec.go:290`, `:501` and `:515` pass **`csIDName`**
+(escaped); `:545` passes `goIDName`. **So the difference is the CALLER'S INPUT, not the site**, and
+`visitTypeSpec` is correct only because the AST type name it receives was never sanitized.
+
+⚠ **Two things this changes in §A, both in the direction of a SMALLER fix.**
+
+1. **§A's remedy scope — "applied at all four" — is superseded.** The four compositions are
+   structurally identical and individually blameless; the fault is composing a lift name from an
+   ALREADY-SANITIZED component. The fix belongs at a composition helper that strips-then-re-sanitizes
+   whatever it receives, which covers all four sites and any future caller. **`getUniqueLiftedTypeName`
+   is one character of scope away from already doing it** — it strips only a LEADING marker, while
+   the `@` here sits mid-string after composition — and it already sits on the path all four sites
+   traverse. **One helper, not two sites and not four.**
+2. **§A's warning is confirmed WITH a mechanism**: the two "correct" sites are one caller-change away,
+   because their correctness is an accident of input rather than a property of the code.
+
+⚠ **And a near-miss worth recording, because it would have been the third wrong mechanism in this
+thread**: the lone `goIDName` call at `:545` is **not** a deliberate fix for this class — it is the
+blank-identifier branch, whose comment describes a `_ᴛ1ʗ` type/field collision (CS0102). **Right
+form, unrelated reason.** Reading it as the correct pattern to copy would have mis-sized the fix a
+third time.
+
+**Ownership: Rung 2 is G's** (COORD `c474b66a5c`, after the course correction made it hop-blocking).
+This record still proposes no cut; the sizing above is recorded so whoever cuts it does not re-walk
+the three mechanisms this thread eliminated.
+
+### E. CLOSED — 2026-09-07, cut by G as `claude/g-rung2-liftname da5c0b53a`
+
+**The fix landed at the helper, and the population was FIVE.** `getUniqueLiftedTypeName` now strips
+every marker and re-sanitizes the composed identifier whole, restoring the escape only when the
+COMPOSED name is itself a keyword. G's gates: reproducer `_@` **4 → 0** with the control unmoved,
+legal escapes preserved (`@fixed` ×7, `@lock` ×3, `@short` ×3 — the arm proving a keyword ESCAPE
+survives rather than every `@` being stripped), converter `go test -count=1` exit 0, behavioral guard
+4/4, **CNR byte-identical 722/722**, and a three-target footprint of **zero** `.cs`/`.csproj`/`.md`.
+
+⚠ **THE COUNT WAS WRONG AT EVERY ITERATION, AND THAT IS THIS ENTRY'S POINT.** §5 said one site; §A
+said four; G's cut found a **fifth** lift caller (`cgoUnsafeArgsLift.go:352`) that none of the three
+sizings had. **The fix that worked is the one whose correctness did not depend on the count** — it
+sits at the choke point all callers funnel through, so the fifth needed no finding. A site-enumerated
+remedy would have shipped covering four of five and read as complete.
+
+**So the durable lesson is not "the class was bigger than we thought" but "we were counting the wrong
+thing."** Every sizing in this thread — including both of mine — enumerated SITES, when the fault was
+a property of what a site is HANDED. The measurement that settled it (§D) is also the one that made
+the count irrelevant.
