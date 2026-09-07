@@ -2392,7 +2392,11 @@ internal static ΔType canonType(ж<abi.Type> Ꮡt) {
     // (ONE managed delegate type, no arrayDims of their own) would share a wrapper and the first to
     // intern would answer In(0).Len() for both.
     string dimsKey = abi.descriptorDimsKey(Ꮡt.Value.arrayDims, Ꮡt.Value.funcParamDims, Ꮡt.Value.chanDirChain, Ꮡt.Value.keyDims);
-    return s_canonTypeCache.GetOrAdd((st, dimsKey), _ => new rtypeжΔType(toRType(Ꮡt)));
+    // STATIC factory, captured state as GetOrAdd's TArg -- the twin of the descriptor cache at
+    // abi/type_impl.cs and for the same reason: a capturing lambda allocates a display class and a
+    // delegate on every call, cache HITS included. TypeOf crosses BOTH sites in sequence, which is
+    // why its cache-hit cost measured 208 B rather than half that.
+    return s_canonTypeCache.GetOrAdd((st, dimsKey), static (_, box) => new rtypeжΔType(toRType(box)), Ꮡt);
 }
 
 // Type returns v's type. Hand-owned so the common (non-method) fast path returns the CANONICAL Type
