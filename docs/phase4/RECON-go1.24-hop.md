@@ -911,3 +911,23 @@ third time.
 **Ownership: Rung 2 is G's** (COORD `c474b66a5c`, after the course correction made it hop-blocking).
 This record still proposes no cut; the sizing above is recorded so whoever cuts it does not re-walk
 the three mechanisms this thread eliminated.
+
+### E. CLOSED — 2026-09-07, cut by G as `claude/g-rung2-liftname da5c0b53a`
+
+**The fix landed at the helper, and the population was FIVE.** `getUniqueLiftedTypeName` now strips
+every marker and re-sanitizes the composed identifier whole, restoring the escape only when the
+COMPOSED name is itself a keyword. G's gates: reproducer `_@` **4 → 0** with the control unmoved,
+legal escapes preserved (`@fixed` ×7, `@lock` ×3, `@short` ×3 — the arm proving a keyword ESCAPE
+survives rather than every `@` being stripped), converter `go test -count=1` exit 0, behavioral guard
+4/4, **CNR byte-identical 722/722**, and a three-target footprint of **zero** `.cs`/`.csproj`/`.md`.
+
+⚠ **THE COUNT WAS WRONG AT EVERY ITERATION, AND THAT IS THIS ENTRY'S POINT.** §5 said one site; §A
+said four; G's cut found a **fifth** lift caller (`cgoUnsafeArgsLift.go:352`) that none of the three
+sizings had. **The fix that worked is the one whose correctness did not depend on the count** — it
+sits at the choke point all callers funnel through, so the fifth needed no finding. A site-enumerated
+remedy would have shipped covering four of five and read as complete.
+
+**So the durable lesson is not "the class was bigger than we thought" but "we were counting the wrong
+thing."** Every sizing in this thread — including both of mine — enumerated SITES, when the fault was
+a property of what a site is HANDED. The measurement that settled it (§D) is also the one that made
+the count irrelevant.
