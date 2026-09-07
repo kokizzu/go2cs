@@ -36,6 +36,26 @@ the validation campaign reaches 100% of the implementable set. Interim conversio
 `rcarroll` org (as HashSet does) and yield to any official conversion an original code owner later
 publishes on their own org, per the canonicality rules in §2.
 
+> **AMENDED 2026-09-07 — the gate above is DEFERRED to the next corpus, not retargeted.**
+> **OWNER RULING, 2026-09-07:** the Go 1.23.12 validation record **closes at its anchor** rather than
+> being driven to 100%, and the corpus hops to **Go 1.24.13**. That ruling reaches this plan twice,
+> and the two halves point in opposite directions.
+>
+> **The final 1.23.12 NuGet release STANDS, and it ships ahead of the hop's pin stage.** Nothing in
+> the release ladder is deferred by the ruling — the release is what freezes the outgoing roster, its
+> proof pages and every package README at the record they reached, and it is the last moment such a
+> release can be minted at all: the pin stage resets the build counter, so once the corpus names Go
+> 1.24 there is no version left in which the 1.23.12 record could ship. The mechanism, and the
+> ordering it forces, are in [`GoCorpusMigration.md`](GoCorpusMigration.md)'s 2026-09-07 amendment.
+>
+> **The SEED PROGRAM is deferred.** The gate above is a gate on a *roster*, and the roster it names
+> is the one now being closed: the 1.23.12 anchor stops short of 100% of its implementable set by
+> ruling, so the condition cannot be met on this corpus at all. It is **deferred to the next corpus,
+> not retargeted at a lower number** — the bar stays 100% of the implementable set — and it re-opens
+> once the **Go 1.24 roster exists**, a hop re-deriving every row, denominator and disclosure set
+> from the new release's own sources (`GoCorpusMigration.md` H10). HashSet and the Target Atlas
+> survey are untouched; what waits is the first real operational conversions the gate guards.
+
 ---
 
 ## 1. The registry — the file is the database

@@ -21,12 +21,18 @@ to 100% first.
 Five packages remain unbanked here — `reflect`, `runtime`, `unique`, `runtime/pprof` and
 `net/http/pprof` — and none of them is written off. A version hop re-derives **every** roster row from
 the new release's own test sources — numerator, denominator and disclosure set alike — so all five
-re-validate against Go 1.24 on exactly the footing of the 204 that banked. Four are already fully
-measured; what holds them back is a classification question, not blindness.
+re-validate against Go 1.24 on exactly the footing of the 204 that banked. What holds each back
+differs: `reflect` is measured and under active converter and runtime work; `runtime` is measured
+only as far as a host-killing crash — `TestCrashWhileTracing`, at index 104 of its 883 verdicts —
+which leaves everything after it unread; `unique` is measured at 19 of its 20 verdicts under the
+configuration of record and waits on a ruled runtime-model arc; and `runtime/pprof` and
+`net/http/pprof` are each measured on two hosts and held by a capability or classification ruling.
 
 The reordering is deliberate, and it is worth saying why, because the percentage means something
 narrower than it looks. **The metric is package-based, not content-based**: a row is all-or-nothing,
-so a package matching 326 of its 385 verdicts scores zero. What is left is therefore a long tail of
+so a package matching most of its verdicts still scores zero, exactly as one matching none of them
+does — which is what keeps the roster honest, and what makes the headline a count of finished
+packages rather than of passing tests. What is left is therefore a long tail of
 runtime-model work — Go's own heap layout, its type descriptors, its profiling internals — that does
 not stand between a user and a converted program. The project is measured against a trustable platform
 that migrates packages and applications from Go to C#, and a more recent Go standard library unlocks

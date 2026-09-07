@@ -9,24 +9,27 @@ Browse all: [Go Standard Library NuGet packages](https://www.nuget.org/packages?
 
 ---
 
-## 📰 NEWS — Over 90% of the standard-library test suites pass in C#, on .NET 10 and Go 1.23.12
+## 📰 NEWS — The Go 1.23.12 record closes at 97.6% of the implementable set; the corpus hops to Go 1.24
 
-**201 of the 215 testable standard-library packages pass their own Go test suites in C#** — 27,734
-matching verdicts against `go test -json`, compared verdict for verdict, with 154 divergences
-disclosed by exact failure signature and nothing else waived. Five of those 215 cannot be validated
-at all — no eligible tests on this platform, a broken upstream oracle, or a suite whose whole
-subject is the raw memory layout a managed runtime deliberately does not have — so the honest
-denominator is **210, putting the roster at 95.7%**. Each of the five is listed with its class,
-mechanism and evidence in the [exclusion ledger](ValidatedTestPackages.md#excluded-packages), and
-any one of them rejoins the count the day its evidence changes. A package appears on the
-[roster](ValidatedTestPackages.md) only when *every* eligible test agrees, and every row links a
-[proof page](validation/index.md) listing Go's verdict beside go2cs's, test by test.
+**204 of the 215 testable standard-library packages pass their own Go test suites in C#** — 28,459
+matching verdicts against `go test -json`, compared verdict for verdict, with 167 divergences
+disclosed by exact failure signature and nothing else waived. Six of those 215 cannot be validated
+at all — no eligible tests on this platform, a broken upstream oracle, a suite whose whole subject
+is the raw memory layout a managed runtime deliberately does not have, or a comparison that runs
+cleanly and validates nothing — so the honest denominator is **209, putting the roster at 97.6%**.
+Each of the six is listed with its class, mechanism and evidence in the
+[exclusion ledger](ValidatedTestPackages.md#excluded-packages), and any one of them rejoins the
+count the day its evidence changes. On Linux, 198 of the 202 applicable rows validate at their own
+Linux counts. A package appears on the [roster](ValidatedTestPackages.md) only when *every* eligible
+test agrees, and every row links a [proof page](validation/index.md) listing Go's verdict beside
+go2cs's, test by test.
 
-The push past 90% landed **`net` itself — 472 verdicts, the roster's largest networking row** —
-alongside `reflect` compiling and executing for the first time, and `net/netip`, `net/http/cookiejar`,
-`debug/pe` and more joining the roster in a single day. Published to NuGet as **1.23.12.2**, with
-this release's proof pages frozen at `validation/1.23.12.2` — see the
-[validation proofs index](validation/index.md).
+Those figures are the **Go 1.23.12 anchor** — a closed record rather than a running total. The
+corpus now moves to **Go 1.24.13**, and a version hop re-derives every roster row from the new
+release's own test sources, so the five packages still unbanked here re-validate there on exactly
+the footing of the 204 that banked. The 1.23.12 corpus ships one final NuGet release first, freezing
+its roster, its proof pages and every package README at the record above — see
+[the announcement](NEWS.md#september-7-2026--the-go-12312-record-closes-at-its-anchor-the-corpus-hops-to-go-124).
 
 **➡ All announcements can be found in the [go2cs News Archive](NEWS.md).**
 
