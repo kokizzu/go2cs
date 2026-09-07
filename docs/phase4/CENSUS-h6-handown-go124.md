@@ -321,3 +321,740 @@ path never stands alone.
 | 13 | the 4 host-infrastructure rows | **reclassify OUT of the H6 population** — they displace no Go principal |
 | 14 | the 9 go2cs-minted shells | **name by hand at H6**; the census cannot follow the name mapping |
 | 15 | the registry | **only the 2 `internal/weak` rows are exposed**; the other 20 need no H6 action |
+
+---
+
+## 2026-09-07 — RULING RECORDED + THE H6 DOSSIER (appended; §1–§9 unchanged)
+
+### The ruling (COORD, `cb24ac747`)
+
+**The four test-host infrastructure files leave the H6 population** — `PackageAncestry.cs`,
+`TestRunner.cs`, `TestFormat.cs`, `TestReporter.cs`. They displace no Go member by design:
+`src/core/testing` is the hand-owned Phase-4 host, skip-listed from conversion, and its API surface
+follows Go's `testing` through H4's named work item rather than through a principal diff.
+
+```
+  population        153 -> 149
+  no-name-match      13 -> 9
+```
+
+### Method, and its limits — stated before the evidence rather than after
+
+Instrument: `arm14_h6diff`, a `go/ast` classifier; signatures rendered through `go/printer`.
+**Every class was made to fire on its own fixture before any row was believed** (§6's control).
+
+⚠ **THE "COMMENTS ARE EXCLUDED" CLAIM IS HALF TRUE, AND I TESTED IT RATHER THAN REPEATING IT.**
+Measured on purpose-built fixtures:
+
+```
+  a FUNC whose only change is its DOC comment      -> COMMENT-ONLY   correct
+  a STRUCT whose only change is a FIELD comment    -> SIGNATURE      FALSE POSITIVE
+```
+
+`go/printer` carries field comments inside a struct node, so a comment-only struct edit can read as
+SIGNATURE. **Both SIGNATURE rows below were therefore verified BY HAND against the raw diff and both
+are genuine field additions** (`mOS` gains `vgetrandomState` and `waitsema`; `Once` gains
+`_ noCopy`). No row in this dossier rests on that false positive — but a future re-run must re-check
+any new SIGNATURE row the same way.
+
+⚠ **FOUR CORRECTIONS TO MY OWN INSTRUMENTS, each of which moved numbers already reported:**
+
+1. **Truncation at four names** made the scope check compare a SAMPLE: `13/7/2` became **`9/8/5`**.
+   Caught because `sync/atomic/doc.go` read "MEMBERS-REMOVED `AddInt64`", which cannot be true.
+2. **`.strip()` on the tool's output** ate the trailing empty field of every REMOVED record, so
+   4-field lines parsed as 3 and were skipped — **three rows reported 0 members** while the tool had
+   emitted them correctly.
+3. **Multi-line struct signatures** spanned the tab-separated record, so the "before" signature bled
+   into the "after" field — garbling precisely the two SIGNATURE rows. Signatures are now flattened
+   at the source.
+4. **Truncating both sides from character 0** rendered `type mOS` as two IDENTICAL prefixes, because
+   its change sits past the cutoff. Signatures are now shown **from the point they diverge**.
+
+None was caught by a gate. Each was caught by a rendered result that could not be true.
+
+### How the disposition is derived
+
+From the evidence, **not from the class name**: a row whose hand-own references *none* of the changed
+members is RE-DERIVE whatever its class; a row that references a *removed* member is RE-WRITE and the
+lines are cited. `does not reference it` is a real answer and it is the majority.
+
+```
+  RE-DERIVE  15        RE-WRITE  7        (the 22 needs-a-human rows)
+  RE-DERIVE   7        RE-WRITE  1        ASK 1        (the 9 minted shells)
+```
+
+## 10. THE H6 DOSSIER — one section per NEEDS-A-HUMAN row
+
+Evidence per row: the members that changed **with their signatures on both sides**, what the
+hand-own does with each (read from the hand-own's own text, line cited), and a proposed
+disposition **derived from that evidence rather than from the class name**. Proposals only.
+
+### SIGNATURE — 2 row(s)
+
+#### `runtime/linux/os_linux_impl.cs`
+
+principal `runtime/os_linux.go` · 1 changed member(s) · hand-own references 0
+
+```
+  ~ type mOS
+      1.23.12  …yscall atomic.Uint8 }
+      1.24.13  …yscall atomic.Uint8 // This is a pointer to a chunk of memory allocated with a special // mmap invocation in vgetrandomGetState().…
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 1 changed member(s); the change is outside what it touches.
+
+#### `sync/once.cs`
+
+principal `sync/once.go` · 1 changed member(s) · hand-own references 1
+
+```
+  ~ type Once
+      1.23.12  type Once struct { // done indicates whether the action has been performed. // It is first in the struct because it is used in the…
+      1.24.13  type Once struct { _ noCopy // done indicates whether the action has been performed. // It is first in the struct because it is us…
+      hand-own L7: // deviation from the auto conversion is Do's fast path: the emitted `Ꮡo.of(Once.Ꮡdone).Lo …
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references 1 changed member(s) but none was removed.
+
+### MIXED — 5 row(s)
+
+#### `reflect/value_impl.cs`
+
+principal `reflect/value.go` · 20 changed member(s) · hand-own references 15
+
+```
+  - func (*MapIter)Key
+      1.23.12  func (*MapIter)Keyfunc() Value
+      hand-own L1406: keys[i] = iter.Key();
+  - func (*MapIter)Next
+      1.23.12  func (*MapIter)Nextfunc() bool
+      hand-own L1355: // `iter.m.IsValid()` (is a map associated at all), `iter.hiter.initialized()` (has Next r …
+  - func (*MapIter)Reset
+      1.23.12  func (*MapIter)Resetfunc(v Value)
+      hand-own L1373: // The one place an iterator is bound to a map Value — shared by MapRange and Reset so the …
+  - func (*MapIter)Value
+      1.23.12  func (*MapIter)Valuefunc() Value
+      hand-own L15: // Hand-finished conversion (the reflection bridge — Phase 4, value side). Go's reflect.Va …
+  - func (*hiter)initialized
+      1.23.12  func (*hiter)initializedfunc() bool
+      hand-own L88: // ValueOf returns a new Value initialized to the concrete value stored in the interface i …
+  - func (Value)MapIndex
+      1.23.12  func (Value)MapIndexfunc(key Value) Value
+      hand-own L109: // from its own internals — Field/MapIndex walks that legitimately read read-only values — …
+  - func (Value)MapKeys
+      1.23.12  func (Value)MapKeysfunc() []Value
+      hand-own L1387: // MapKeys returns a slice containing all the keys present in the map, in unspecified orde …
+  - func (Value)MapRange
+      1.23.12  func (Value)MapRangefunc() *MapIter
+      hand-own L25: // INCREMENT 1: scalars, slices, arrays, pointers. Struct Field/NumField + map MapRange la …
+  … 12 further member(s) of the same kind
+```
+
+**PROPOSED: RE-WRITE** — the hand-own references 15 removed member(s): Key@L1406, Next@L1355, Reset@L1373, Value@L15, initialized@L88.
+
+#### `runtime/darwin/lock_sema_impl.cs`
+
+principal `runtime/lock_sema.go` · 8 changed member(s) · hand-own references 0
+
+```
+  - const active_spin
+      1.23.12  const active_spin
+      hand-own: not referenced
+  - const active_spin_cnt
+      1.23.12  const active_spin_cnt
+      hand-own: not referenced
+  - const passive_spin
+      1.23.12  const passive_spin
+      hand-own: not referenced
+  - func lock
+      1.23.12  func lockfunc(l *mutex)
+      hand-own: not referenced
+  - func lock2
+      1.23.12  func lock2func(l *mutex)
+      hand-own: not referenced
+  - func mutexContended
+      1.23.12  func mutexContendedfunc(l *mutex) bool
+      hand-own: not referenced
+  - func unlock
+      1.23.12  func unlockfunc(l *mutex)
+      hand-own: not referenced
+  - func unlock2
+      1.23.12  func unlock2func(l *mutex)
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 8 changed member(s); the change is outside what it touches.
+
+#### `runtime/linux/lock_futex_impl.cs`
+
+principal `runtime/lock_futex.go` · 14 changed member(s) · hand-own references 4
+
+```
+  - const active_spin
+      1.23.12  const active_spin
+      hand-own: not referenced
+  - const active_spin_cnt
+      1.23.12  const active_spin_cnt
+      hand-own: not referenced
+  - const mutex_locked
+      1.23.12  const mutex_locked
+      hand-own: not referenced
+  - const mutex_sleeping
+      1.23.12  const mutex_sleeping
+      hand-own: not referenced
+  - const mutex_unlocked
+      1.23.12  const mutex_unlocked
+      hand-own: not referenced
+  - const passive_spin
+      1.23.12  const passive_spin
+      hand-own: not referenced
+  - func lock
+      1.23.12  func lockfunc(l *mutex)
+      hand-own: not referenced
+  - func lock2
+      1.23.12  func lock2func(l *mutex)
+      hand-own L18: // 27 call sites unresolved (CS0103 on notewakeup/notesleep/notetsleep_internal/lock2/unlo …
+  … 6 further member(s) of the same kind
+```
+
+**PROPOSED: RE-WRITE** — the hand-own references 2 removed member(s): func lock2@L18, func unlock2@L18.
+
+#### `runtime/windows/lock_sema_impl.cs`
+
+principal `runtime/lock_sema.go` · 8 changed member(s) · hand-own references 0
+
+```
+  - const active_spin
+      1.23.12  const active_spin
+      hand-own: not referenced
+  - const active_spin_cnt
+      1.23.12  const active_spin_cnt
+      hand-own: not referenced
+  - const passive_spin
+      1.23.12  const passive_spin
+      hand-own: not referenced
+  - func lock
+      1.23.12  func lockfunc(l *mutex)
+      hand-own: not referenced
+  - func lock2
+      1.23.12  func lock2func(l *mutex)
+      hand-own: not referenced
+  - func mutexContended
+      1.23.12  func mutexContendedfunc(l *mutex) bool
+      hand-own: not referenced
+  - func unlock
+      1.23.12  func unlockfunc(l *mutex)
+      hand-own: not referenced
+  - func unlock2
+      1.23.12  func unlock2func(l *mutex)
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 8 changed member(s); the change is outside what it touches.
+
+#### `sync/mutex.cs`
+
+principal `sync/mutex.go` · 10 changed member(s) · hand-own references 3
+
+```
+  - const mutexLocked
+      1.23.12  const mutexLocked
+      hand-own: not referenced
+  - const mutexStarving
+      1.23.12  const mutexStarving
+      hand-own: not referenced
+  - const mutexWaiterShift
+      1.23.12  const mutexWaiterShift
+      hand-own: not referenced
+  - const mutexWoken
+      1.23.12  const mutexWoken
+      hand-own: not referenced
+  - const starvationThresholdNs
+      1.23.12  const starvationThresholdNs
+      hand-own: not referenced
+  - func (*Mutex)lockSlow
+      1.23.12  func (*Mutex)lockSlowfunc()
+      hand-own: not referenced
+  - func (*Mutex)unlockSlow
+      1.23.12  func (*Mutex)unlockSlowfunc(new int32)
+      hand-own: not referenced
+  - func fatal
+      1.23.12  func fatalfunc(string)
+      hand-own L37: // recover() cannot swallow them and the program terminates loudly, as Go's runtime.throw/ …
+  … 2 further member(s) of the same kind
+```
+
+**PROPOSED: RE-WRITE** — the hand-own references 2 removed member(s): func fatal@L37, func throw@L37.
+
+### MEMBERS-REMOVED — 9 row(s)
+
+#### `internal/abi/type_impl.cs`
+
+principal `internal/abi/type.go` · 11 changed member(s) · hand-own references 2
+
+```
+  - const KindGCProg
+      1.23.12  const KindGCProg Kind
+      hand-own: not referenced
+  - const TFlagUnrolledBitmap
+      1.23.12  const TFlagUnrolledBitmap TFlag
+      hand-own L248: // first byte is a '*' to strip; TFlagRegularMemory/TFlagUnrolledBitmap describe a GC bitm …
+  - func (*MapType)HashMightPanic
+      1.23.12  func (*MapType)HashMightPanicfunc() bool
+      hand-own: not referenced
+  - func (*MapType)IndirectElem
+      1.23.12  func (*MapType)IndirectElemfunc() bool
+      hand-own: not referenced
+  - func (*MapType)IndirectKey
+      1.23.12  func (*MapType)IndirectKeyfunc() bool
+      hand-own: not referenced
+  - func (*MapType)NeedKeyUpdate
+      1.23.12  func (*MapType)NeedKeyUpdatefunc() bool
+      hand-own: not referenced
+  - func (*MapType)ReflexiveKey
+      1.23.12  func (*MapType)ReflexiveKeyfunc() bool
+      hand-own: not referenced
+  - type MapType
+      1.23.12  type MapType struct { Type Key *Type Elem *Type Bucket *Type // internal type representing a hash bucket // function for hashing keys (ptr to key, see …
+      hand-own: not referenced
+  … 3 further member(s) of the same kind
+```
+
+**PROPOSED: RE-WRITE** — the hand-own references 1 removed member(s): const TFlagUnrolledBitmap@L248.
+
+#### `os/linux/pidfd_linux_impl.cs`
+
+principal `os/pidfd_linux.go` · 1 changed member(s) · hand-own references 0
+
+```
+  - const _P_PIDFD
+      1.23.12  const _P_PIDFD
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 1 changed member(s); the change is outside what it touches.
+
+#### `os/windows/file_windows_impl.cs`
+
+principal `os/file_windows.go` · 3 changed member(s) · hand-own references 0
+
+```
+  - var useGetTempPath2Once
+      1.23.12  var useGetTempPath2Once sync.Once
+      hand-own: not referenced
+  + func readReparseLinkHandle
+      1.24.13  func readReparseLinkHandlefunc(h syscall.Handle) (string, error)
+      hand-own: not referenced
+  ~ var useGetTempPath2
+      1.23.12  var useGetTempPath2 bool
+      1.24.13  var useGetTempPath2
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 3 changed member(s); the change is outside what it touches.
+
+#### `runtime/mbitmap_impl.cs`
+
+principal `runtime/mbitmap.go` · 11 changed member(s) · hand-own references 1
+
+```
+  - func dematerializeGCProg
+      1.23.12  func dematerializeGCProgfunc(s *mspan)
+      hand-own: not referenced
+  - func getgcmask
+      1.23.12  func getgcmaskfunc(ep any) (mask []byte)
+      hand-own L9: // Go's getgcmask reads the collector's own metadata to answer: findObject and the span's
+  - func heapSetType
+      1.23.12  func heapSetTypefunc(x, dataSize uintptr, typ *_type, header **_type, span *mspan) (scanSize uintptr)
+      hand-own: not referenced
+  - func materializeGCProg
+      1.23.12  func materializeGCProgfunc(ptrdata uintptr, prog *byte) *mspan
+      hand-own: not referenced
+  + const doubleCheckHeapSetType
+      1.24.13  const doubleCheckHeapSetType
+      hand-own: not referenced
+  + func doubleCheckHeapType
+      1.24.13  func doubleCheckHeapTypefunc(x, dataSize uintptr, gctyp *_type, header **_type, span *mspan)
+      hand-own: not referenced
+  + func heapSetTypeLarge
+      1.24.13  func heapSetTypeLargefunc(x, dataSize uintptr, typ *_type, span *mspan) uintptr
+      hand-own: not referenced
+  + func heapSetTypeNoHeader
+      1.24.13  func heapSetTypeNoHeaderfunc(x, dataSize uintptr, typ *_type, span *mspan) uintptr
+      hand-own: not referenced
+  … 3 further member(s) of the same kind
+```
+
+**PROPOSED: RE-WRITE** — the hand-own references 1 removed member(s): func getgcmask@L9.
+
+#### `runtime/stubs_impl.cs`
+
+principal `runtime/stubs.go` · 3 changed member(s) · hand-own references 3
+
+```
+  - func getcallerpc
+      1.23.12  func getcallerpcfunc() uintptr
+      hand-own L186: // getcallerpc / getcallersp / getclosureptr / getfp — read the caller's machine registers …
+  - func getcallersp
+      1.23.12  func getcallerspfunc() uintptr
+      hand-own L186: // getcallerpc / getcallersp / getclosureptr / getfp — read the caller's machine registers …
+  - func getclosureptr
+      1.23.12  func getclosureptrfunc() uintptr
+      hand-own L186: // getcallerpc / getcallersp / getclosureptr / getfp — read the caller's machine registers …
+```
+
+**PROPOSED: RE-WRITE** — the hand-own references 3 removed member(s): func getcallerpc@L186, func getcallersp@L186, func getclosureptr@L186.
+
+#### `sync/runtime_impl.cs`
+
+principal `sync/runtime.go` · 7 changed member(s) · hand-own references 6
+
+```
+  - func runtime_SemacquireMutex
+      1.23.12  func runtime_SemacquireMutexfunc(s *uint32, lifo bool, skipframes int)
+      hand-own L130: internal static partial void runtime_SemacquireMutex(ж<uint32> s, bool lifo, nint skipfram …
+  - func runtime_canSpin
+      1.23.12  func runtime_canSpinfunc(i int) bool
+      hand-own L259: internal static partial bool runtime_canSpin(nint i) => false;
+  - func runtime_doSpin
+      1.23.12  func runtime_doSpinfunc()
+      hand-own L261: internal static partial void runtime_doSpin() => Thread.SpinWait(30);
+  - func runtime_nanotime
+      1.23.12  func runtime_nanotimefunc() int64
+      hand-own L265: internal static partial int64 runtime_nanotime() =>
+  + func fatal
+      1.24.13  func fatalfunc(string)
+      hand-own L254: // (runtime.throw / runtime.fatal are defined natively in mutex.cs — used by the still-con …
+  + func runtime_SemacquireWaitGroup
+      1.24.13  func runtime_SemacquireWaitGroupfunc(s *uint32)
+      hand-own: not referenced
+  + func throw
+      1.24.13  func throwfunc(string)
+      hand-own L254: // (runtime.throw / runtime.fatal are defined natively in mutex.cs — used by the still-con …
+```
+
+**PROPOSED: RE-WRITE** — the hand-own references 4 removed member(s): func runtime_SemacquireMutex@L130, func runtime_canSpin@L259, func runtime_doSpin@L261, func runtime_nanotime@L265.
+
+#### `syscall/linux/syscall_linux_amd64_impl.cs`
+
+principal `syscall/syscall_linux_amd64.go` · 1 changed member(s) · hand-own references 0
+
+```
+  - func rawSetrlimit
+      1.23.12  func rawSetrlimitfunc(resource int, rlim *Rlimit) Errno
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 1 changed member(s); the change is outside what it touches.
+
+#### `testing/testing.cs`
+
+principal `testing/testing.go` · 16 changed member(s) · hand-own references 3
+
+```
+  - func (*testContext)release
+      1.23.12  func (*testContext)releasefunc()
+      hand-own: not referenced
+  - func (*testContext)waitParallel
+      1.23.12  func (*testContext)waitParallelfunc()
+      hand-own: not referenced
+  - func newTestContext
+      1.23.12  func newTestContextfunc(maxParallel int, m *matcher) *testContext
+      hand-own: not referenced
+  - type testContext
+      1.23.12  type testContext struct { match *matcher deadline time.Time // isFuzzing is true in the context used when generating random inputs // for fuzz targets …
+      hand-own: not referenced
+  + const parallelConflict
+      1.24.13  const parallelConflict
+      hand-own: not referenced
+  + func (*T)Chdir
+      1.24.13  func (*T)Chdirfunc(dir string)
+      hand-own: not referenced
+  + func (*T)checkParallel
+      1.24.13  func (*T)checkParallelfunc()
+      hand-own: not referenced
+  + func (*common)Chdir
+      1.24.13  func (*common)Chdirfunc(dir string)
+      hand-own: not referenced
+  … 8 further member(s) of the same kind
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references 3 changed member(s) but none was removed.
+
+#### `time/time_impl.cs`
+
+principal `time/time.go` · 45 changed member(s) · hand-own references 3
+
+```
+  - const absoluteZeroYear
+      1.23.12  const absoluteZeroYear
+      hand-own: not referenced
+  - const daysPer100Years
+      1.23.12  const daysPer100Years
+      hand-own: not referenced
+  - const daysPer4Years
+      1.23.12  const daysPer4Years
+      hand-own: not referenced
+  - func (Time)abs
+      1.23.12  func (Time)absfunc() uint64
+      hand-own: not referenced
+  - func (Time)date
+      1.23.12  func (Time)datefunc(full bool) (year int, month Month, day int, yday int)
+      hand-own: not referenced
+  - func absClock
+      1.23.12  func absClockfunc(abs uint64) (hour, min, sec int)
+      hand-own: not referenced
+  - func absDate
+      1.23.12  func absDatefunc(abs uint64, full bool) (year int, month Month, day int, yday int)
+      hand-own: not referenced
+  - func absWeekday
+      1.23.12  func absWeekdayfunc(abs uint64) Weekday
+      hand-own: not referenced
+  … 37 further member(s) of the same kind
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references 3 changed member(s) but none was removed.
+
+### MEMBERS-ADDED — 6 row(s)
+
+#### `internal/cpu/cpu_x86_impl.cs`
+
+principal `internal/cpu/cpu_x86.go` · 1 changed member(s) · hand-own references 0
+
+```
+  + const cpuid_FSRM
+      1.24.13  const cpuid_FSRM
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 1 changed member(s); the change is outside what it touches.
+
+#### `internal/syscall/unix/darwin/net_darwin_impl.cs`
+
+principal `internal/syscall/unix/net_darwin.go` · 1 changed member(s) · hand-own references 0
+
+```
+  + const EAI_ADDRFAMILY
+      1.24.13  const EAI_ADDRFAMILY
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 1 changed member(s); the change is outside what it touches.
+
+#### `internal/syscall/windows/windows/syscall_windows_impl.cs`
+
+principal `internal/syscall/windows/syscall_windows.go` · 11 changed member(s) · hand-own references 1
+
+```
+  + const ERROR_CANT_ACCESS_FILE
+      1.24.13  const ERROR_CANT_ACCESS_FILE syscall.Errno
+      hand-own: not referenced
+  + const ERROR_NO_TOKEN
+      1.24.13  const ERROR_NO_TOKEN syscall.Errno
+      hand-own: not referenced
+  + const STATUS_CANNOT_DELETE
+      1.24.13  const STATUS_CANNOT_DELETE NTStatus
+      hand-own: not referenced
+  + const STATUS_DIRECTORY_NOT_EMPTY
+      1.24.13  const STATUS_DIRECTORY_NOT_EMPTY NTStatus
+      hand-own: not referenced
+  + const STATUS_FILE_IS_A_DIRECTORY
+      1.24.13  const STATUS_FILE_IS_A_DIRECTORY NTStatus
+      hand-own: not referenced
+  + const STATUS_NOT_A_DIRECTORY
+      1.24.13  const STATUS_NOT_A_DIRECTORY NTStatus
+      hand-own: not referenced
+  + const STATUS_REPARSE_POINT_ENCOUNTERED
+      1.24.13  const STATUS_REPARSE_POINT_ENCOUNTERED NTStatus
+      hand-own: not referenced
+  + func (NTStatus)Errno
+      1.24.13  func (NTStatus)Errnofunc() syscall.Errno
+      hand-own: not referenced
+  … 3 further member(s) of the same kind
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references 1 changed member(s) but none was removed.
+
+#### `internal/syscall/windows/windows/zsyscall_windows_impl.cs`
+
+principal `internal/syscall/windows/zsyscall_windows.go` · 26 changed member(s) · hand-own references 0
+
+```
+  + func GetModuleHandle
+      1.24.13  func GetModuleHandlefunc(modulename *uint16) (handle syscall.Handle, err error)
+      hand-own: not referenced
+  + func ImpersonateLoggedOnUser
+      1.24.13  func ImpersonateLoggedOnUserfunc(token syscall.Token) (err error)
+      hand-own: not referenced
+  + func IsValidSid
+      1.24.13  func IsValidSidfunc(sid *syscall.SID) (valid bool)
+      hand-own: not referenced
+  + func LogonUser
+      1.24.13  func LogonUserfunc(username *uint16, domain *uint16, password *uint16, logonType uint32, logonProvider uint32, token *syscall.Token) (err error)
+      hand-own: not referenced
+  + func NetUserAdd
+      1.24.13  func NetUserAddfunc(serverName *uint16, level uint32, buf *byte, parmErr *uint32) (neterr error)
+      hand-own: not referenced
+  + func NetUserDel
+      1.24.13  func NetUserDelfunc(serverName *uint16, userName *uint16) (neterr error)
+      hand-own: not referenced
+  + func NtCreateFile
+      1.24.13  func NtCreateFilefunc(handle *syscall.Handle, access uint32, oa *OBJECT_ATTRIBUTES, iosb *IO_STATUS_BLOCK, allocationSize *int64, attributes uint32, s …
+      hand-own: not referenced
+  + func NtOpenFile
+      1.24.13  func NtOpenFilefunc(handle *syscall.Handle, access uint32, oa *OBJECT_ATTRIBUTES, iosb *IO_STATUS_BLOCK, share uint32, options uint32) (ntstatus error …
+      hand-own: not referenced
+  … 18 further member(s) of the same kind
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 26 changed member(s); the change is outside what it touches.
+
+#### `math/rand/rand_impl.cs`
+
+principal `math/rand/rand.go` · 1 changed member(s) · hand-own references 0
+
+```
+  + var randseednop
+      1.24.13  var randseednop
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 1 changed member(s); the change is outside what it touches.
+
+#### `os/user/windows/lookup_windows_impl.cs`
+
+principal `os/user/lookup_windows.go` · 6 changed member(s) · hand-own references 0
+
+```
+  + func getCurrentToken
+      1.24.13  func getCurrentTokenfunc() (t syscall.Token, isProcessToken bool, err error)
+      hand-own: not referenced
+  + func isServiceAccount
+      1.24.13  func isServiceAccountfunc(sid *syscall.SID) bool
+      hand-own: not referenced
+  + func isValidGroupAccountType
+      1.24.13  func isValidGroupAccountTypefunc(sidType uint32) bool
+      hand-own: not referenced
+  + func isValidUserAccountType
+      1.24.13  func isValidUserAccountTypefunc(sid *syscall.SID, sidType uint32) bool
+      hand-own: not referenced
+  + func runAsProcessOwner
+      1.24.13  func runAsProcessOwnerfunc(f func() error) error
+      hand-own: not referenced
+  ~ func lookupUsernameAndDomain
+      1.23.12  …ame, domain string, e error)
+      1.24.13  …ame, domain string, sidType uint32, e error)
+      hand-own: not referenced
+```
+
+**PROPOSED: RE-DERIVE** — the hand-own references none of the 6 changed member(s); the change is outside what it touches.
+
+
+### The 9 go2cs-minted shells — the hand-read COORD asked for
+
+#### `internal/syscall/unix/linux/net_linux_impl.cs`
+
+package `internal/syscall/unix` · Go members this shell names: **10** · present at 1.24.13: **10** · gone: **0**
+
+```
+  wraps: Addr, RecvfromInet4, RecvfromInet6, RecvmsgInet4, RecvmsgInet6, SendmsgNInet4, SendmsgNInet6, SendtoInet4, SendtoInet6, unexported
+  GONE at 1.24.13: NONE
+```
+
+**PROPOSED: RE-DERIVE** — every Go member this shell names survives at 1.24.13.
+
+#### `internal/syscall/windows/exec_windows_test.cs`
+
+package `internal/syscall` · Go members this shell names: **0** · present at 1.24.13: **0** · gone: **0**
+
+```
+  wraps: (none resolved by name)
+  GONE at 1.24.13: NONE
+```
+
+**PROPOSED: ASK** — no Go member resolves by name from the shell text; the measurement that would decide it is a `-tests` build of this package at 1.24.13, which cannot run until H5 exists.
+
+#### `internal/syscall/windows/windows/zsyscall_windows_privilege_impl.cs`
+
+package `internal/syscall/windows` · Go members this shell names: **19** · present at 1.24.13: **19** · gone: **0**
+
+```
+  wraps: AdjustTokenPrivileges, Attributes, HighPart, LUID, LUID_AND_ATTRIBUTES, Length, LookupPrivilegeValue, LowPart, Luid, Next, PrivilegeCount, Privileges
+         … 7 more, all present at 1.24.13
+  GONE at 1.24.13: NONE
+```
+
+**PROPOSED: RE-DERIVE** — every Go member this shell names survives at 1.24.13.
+
+#### `internal/syscall/windows/windows/zsyscall_windows_ptrout_impl.cs`
+
+package `internal/syscall/windows` · Go members this shell names: **5** · present at 1.24.13: **5** · gone: **0**
+
+```
+  wraps: LocalGroupUserInfo0, NetUserGetLocalGroups, buf, once, procNetUserGetLocalGroups
+  GONE at 1.24.13: NONE
+```
+
+**PROPOSED: RE-DERIVE** — every Go member this shell names survives at 1.24.13.
+
+#### `runtime/goargs_impl.cs`
+
+package `runtime` · Go members this shell names: **67** · present at 1.24.13: **67** · gone: **0**
+
+```
+  wraps: GOOS, The, This, and, any, args, argslice, argv, argv_index, array, because, boring_runtime_arg0
+         … 55 more, all present at 1.24.13
+  GONE at 1.24.13: NONE
+```
+
+**PROPOSED: RE-DERIVE** — every Go member this shell names survives at 1.24.13.
+
+#### `runtime/goenvs_impl.cs`
+
+package `runtime` · Go members this shell names: **62** · present at 1.24.13: **61** · gone: **1**
+
+```
+  wraps: Count, GOROOT, The, This, and, any, argv, block, callers, class, code, crash
+         … 49 more, all present at 1.24.13
+  GONE at 1.24.13: getcallerpc
+```
+
+**PROPOSED: RE-WRITE** — 1 member(s) this shell names are gone at 1.24.13.
+
+#### `runtime/hostofrecord_impl.cs`
+
+package `runtime` · Go members this shell names: **41** · present at 1.24.13: **41** · gone: **0**
+
+```
+  wraps: GOOS, The, This, and, any, because, class, code, file, first, found, has
+         … 29 more, all present at 1.24.13
+  GONE at 1.24.13: NONE
+```
+
+**PROPOSED: RE-DERIVE** — every Go member this shell names survives at 1.24.13.
+
+#### `runtime/panicvalues_impl.cs`
+
+package `runtime` · Go members this shell names: **45** · present at 1.24.13: **45** · gone: **0**
+
+```
+  wraps: Error, The, This, and, bits, call, check, class, code, divideError, err, errorString
+         … 33 more, all present at 1.24.13
+  GONE at 1.24.13: NONE
+```
+
+**PROPOSED: RE-DERIVE** — every Go member this shell names survives at 1.24.13.
+
+#### `syscall/windows/zsyscall_windows_wsa_impl.cs`
+
+package `syscall` · Go members this shell names: **179** · present at 1.24.13: **179** · gone: **0**
+
+```
+  wraps: AF_INET, Accept, AcceptEx, Addr, AddressFamily, Buf, Buffer, CancelIoEx, CatalogEntryId, ChainEntries, ChainLen, CloseHandle
+         … 167 more, all present at 1.24.13
+  GONE at 1.24.13: NONE
+```
+
+**PROPOSED: RE-DERIVE** — every Go member this shell names survives at 1.24.13.
+
