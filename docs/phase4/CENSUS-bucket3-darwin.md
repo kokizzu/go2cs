@@ -381,3 +381,39 @@ It does not re-measure reachability, does not reconcile against a macOS runner, 
 Provenance for this section: master `fd09034f53`, darwin flavour, net10 SDK 10.0.111, Go toolchain
 pinned to `go1.23.12` and printed by the build script before it ran. The population, both push maps,
 the per-row source classification and the 46 are re-derivable by §3 alone, as before.
+
+## 11. AMENDMENT — 2026-09-07, same day: §10.7's own enumeration was wrong, by the mechanism §10.7 is about
+
+§10.7 corrects §6 for checking one axis of two, and closes with *"the mechanism list is exactly two
+and it is now written down"*. **There are three, and the authority was in the tree the whole time.**
+
+`manualConversionDestination_test.go` — the converter's own displacement-ledger guard, and the file
+train 31 rewrote — enumerates them in `strandedOn`:
+
+1. **a `manualConversionFuncs` registration**, which displaces a *bodied* converted function;
+2. **writing a body into a bodyless `partial`**, which displaces by construction because
+   `PartialStubGenerator`'s predicate is `IsPartialDefinition && PartialImplementationPart is null`;
+3. **a whole-file `[module: GoManualConversion]` replacement**, where
+   `containsManualConversionMarker` drops the marked file from the convert set so the converter never
+   emits the declaration at all — distinct from an `*_impl.cs` COMPANION, whose principal the
+   converter still emits.
+
+Only (1) needs a registry entry, which is why the guard exempts (2) and (3) from its reverse arm.
+
+**Mechanism 3 is live in this census's own scope.** At `fd09034f53` there are 142 marked files: 98
+`*_impl.cs` companions and **44 whole-file replacements**, nine of them in packages this census
+covers, and three of those — `runtime/mfinal.cs`, `runtime/runtime2.cs`, `runtime/metrics/sample.cs`
+— are FLAT and therefore compiled on darwin.
+
+**Whether mechanism 3 has removed a member of this census is NOT measured**, and it is named as a
+residual rather than guessed. What it does not touch is the delta: all nine departures in §10.3 and
+§10.4 are attributed to mechanism 2, zero entered, and the funnel closes in both buckets, so the
+counts stand exactly as §10.2 gives them. The wrong thing is the *enumeration*, not the arithmetic.
+
+**And the way it was found is the same error one layer down.** A first probe scanned the per-GOOS
+`darwin/` folders, found all twelve marked files there were `*_impl.cs` companions, and would have
+concluded mechanism 3 has no instance here. It has nine — every replacement in `runtime` is a FLAT
+file, invisible to a scan scoped by directory shape. §10.7 says the corrective for a missed axis is
+to enumerate a class's mechanisms and check each; the corrective for this one is narrower and
+sharper: **enumerate from the artifact that DEFINES the class — here the converter's own guard —
+rather than from a scan whose scope encodes a belief about where instances live.**
