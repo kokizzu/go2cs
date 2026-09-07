@@ -59,7 +59,22 @@ func (v *Visitor) getUniqueLiftedTypeName(typeName string) string {
 	// Recover the original Go name by stripping BOTH sanitization markers ('@' and the Δ collision
 	// rename) so the typeExists check below hits the real package scope (which holds the unsanitized
 	// name). The lift is often called with the already-sanitized name (e.g. `Δtrace`).
-	originalName := strings.TrimPrefix(removeLeadingSanitizationMarker(typeName), ShadowVarMarker)
+	//
+	// The '@' strip is stripSanitizationMarkers (EVERY marker) rather than the leading-only form,
+	// and that is load-bearing: every caller COMPOSES `<enclosing>_<name>` before arriving here, so a
+	// keyword-escaped component lands mid-identifier where '@' is illegal C# — it is legal only as an
+	// identifier's FIRST character. `visitValueSpec` hands the lift its csIDName (the ESCAPED form,
+	// `getSanitizedIdentifier(goIDName)`), so `var params struct{…}` inside `vgetrandomInit` composed
+	// `vgetrandomInit_@params` and emitted uncompilable C# (CS1513/CS1514/CS1519). Stripping only the
+	// LEADING marker could not see it. Re-sanitizing the stripped result below restores the escape
+	// when the WHOLE composed identifier is itself a keyword, which is the only case that needs one.
+	//
+	// Measured 2026-09-07: 3 occurrences in the Go 1.24.13 emission (runtime/vgetrandom_linux.go,
+	// a file absent from 1.23.12) and ZERO in the 1.23.12 corpus — this is latent here and reachable
+	// TODAY through -recurse on end-user Go, since `params`, `ref`, `out` and `fixed` are all
+	// ordinary Go identifiers. All five lift callers funnel through this one helper, so the fix sits
+	// where the class is closed rather than at the composition sites, which are individually blameless.
+	originalName := strings.TrimPrefix(stripSanitizationMarkers(typeName), ShadowVarMarker)
 	typeName = getSanitizedIdentifier(originalName)
 	uniqueTypeName := typeName
 	count := 0

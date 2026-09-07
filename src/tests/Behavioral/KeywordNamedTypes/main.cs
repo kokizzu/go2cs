@@ -36,6 +36,53 @@ internal static bool held(this @fixed f) {
     return f.n > 3;
 }
 
+[GoType("dyn")] internal partial struct keywordLocalStruct_params {
+    internal uintptr size;
+    internal uint32 flags;
+}
+
+internal static uintptr keywordLocalStruct() {
+    keywordLocalStruct_params @params = default!;
+    @params.size = 8;
+    @params.flags = 3;
+    return @params.size + (uintptr)@params.flags;
+}
+
+[GoType("dyn")] internal partial interface keywordLocalIface_params {
+    bool held();
+}
+
+internal static nint keywordLocalIface() {
+    keywordLocalIface_params @params = default!;
+    if (@params == default!) {
+        return -1;
+    }
+    if (@params.held()) {
+        return 1;
+    }
+    return 0;
+}
+
+[GoType("dyn")] internal partial struct keywordLocalRef_ref {
+    internal nint n;
+}
+
+internal static nint keywordLocalRef() {
+    keywordLocalRef_ref @ref = default!;
+    @ref.n = 7;
+    return @ref.n;
+}
+
+[GoType("dyn")] internal partial struct plainLocalStruct_sizes {
+    internal uintptr size;
+}
+
+internal static uintptr plainLocalStruct() {
+    plainLocalStruct_sizes sizes = default!;
+    sizes.size = 4;
+    return sizes.size;
+}
+
 internal static sizer std = new @fixed(n: 3);
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -58,6 +105,10 @@ internal static void Main() {
     dword d = 40000;
     var s = toShort(d);
     fmt.Println((nint)(int16)s, (nint)(uint32)((dword)(uint32)(int16)s));
+    fmt.Println(keywordLocalStruct());
+    fmt.Println(keywordLocalIface());
+    fmt.Println(keywordLocalRef());
+    fmt.Println(plainLocalStruct());
 }
 
 } // end main_package
