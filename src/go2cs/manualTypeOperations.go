@@ -828,9 +828,33 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// (v.ptr / v.pointer()) — eface addresses the bridge never populates, so the auto form NREs
 		// converting the null unsafe.Pointer slot (strings/bytes TestSplit/TestSplitAfter, R5).
 		// deepequal_impl.cs recurses over the bridge's boxed values and keys cycle detection on
-		// managed reference identity. DeepEqual itself stays auto (it only uses the bridged
-		// ValueOf/Type/AreEqual).
+		// managed reference identity.
 		"deepValueEqual": goosAny,
+		// DeepEqual joins it (2026-09-07), REVERSING the note this comment used to carry that it
+		// "stays auto (it only uses the bridged ValueOf/Type/AreEqual)". That was true of the
+		// bridged CALLS and missed the ALLOCATION: the auto body ends
+		// `deepValueEqual(v1, v2, new map<visit, bool>())`, and the displaced deepValueEqual above
+		// never reads that argument — it carries a HashSet<visitPair> instead, because Go's map is
+		// keyed on unsafe.Pointer data words the managed model has no equivalent for. So every
+		// DeepEqual call in the corpus minted a golib map that nothing could read: measured at
+		// exactly 88 B and exactly ONE golib object, flat on every row.
+		//
+		// The map is LIVE in Go (deepequal.go:82/87 read and write it, threaded through every
+		// recursion), so this is NOT a dead allocation the converter should stop emitting — the
+		// conversion is faithful and the deadness is created by OUR hand-own. That makes it ours to
+		// fix at our layer, which is this registry rather than the converter.
+		//
+		// Registered rather than marked, for the reason crypto/internal/alias.AnyOverlap states
+		// above: a whole-file [module: GoManualConversion] on deepequal.cs would hand-own every
+		// function in it to optimise one, and freeze a file the converter otherwise maintains.
+		//
+		// Why it is worth a displacement at all: reflect's TestDeepEqualAllocs rows are `deferred`
+		// with a ratified FLOOR of 2 boxes at the `any` seam, and the floor is denominated in
+		// OBJECTS. This one object is the difference between a scalar row reading 3 and reading 2 —
+		// i.e. between `deferred` and `structural`, which never re-opens. Judged on BYTES it is
+		// 0.7% and not worth doing; judged on the floor it is the whole remaining gap for that
+		// family. Two questions, two meters. Body in deepequal_impl.cs.
+		"DeepEqual": goosAny,
 		// Phase-3 write-back (the chip): Set writes through the addressable Value's aliased ж box
 		// (Go's assignTo semantics over the golib assert machinery); Zero builds valid zero Values
 		// (a pointer kind yields the canonical typed-nil box). The stack-walking member this chip also

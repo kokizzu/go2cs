@@ -17,9 +17,10 @@ using System.Runtime.CompilerServices;
 // form recurses over the SAME boxed values the bridge Value carries (value_impl.cs) and keys cycle
 // detection on managed reference identity instead: a pointer is its ж<T> box, a map is its backing
 // Dictionary, and a slice is its backing array + window offset (Go keys on &s[0] — base plus offset).
-// DeepEqual itself stays auto (it only uses the bridged ValueOf/Type/AreEqual); the converter skips
-// only deepValueEqual via the manualConversionFuncs registry (go2cs/manualTypeOperations.go); this
-// module marker also makes go2cs skip re-converting this file.
+// DeepEqual is displaced too since 2026-09-07 — not for a semantic but for the dead `map<visit, bool>`
+// its auto body minted on every call and this file never reads (88 B and one golib object, flat). Both
+// go through the manualConversionFuncs registry (go2cs/manualTypeOperations.go); this module marker
+// also makes go2cs skip re-converting this file.
 // See docs/phase4/DESIGN-reflection-bridge.md.
 
 [module: GoManualConversion]
@@ -28,11 +29,97 @@ namespace go;
 
 partial class reflect_package {
 
+// DeepEqual reports whether x and y are “deeply equal,” defined as follows.
+// Two values of identical type are deeply equal if one of the following cases applies.
+// Values of distinct types are never deeply equal.
+//
+// Array values are deeply equal when their corresponding elements are deeply equal.
+//
+// Struct values are deeply equal if their corresponding fields,
+// both exported and unexported, are deeply equal.
+//
+// Func values are deeply equal if both are nil; otherwise they are not deeply equal.
+//
+// Interface values are deeply equal if they hold deeply equal concrete values.
+//
+// Map values are deeply equal when all of the following are true:
+// they are both nil or both non-nil, they have the same length,
+// and either they are the same map object or their corresponding keys
+// (matched using Go equality) map to deeply equal values.
+//
+// Pointer values are deeply equal if they are equal using Go's == operator
+// or if they point to deeply equal values.
+//
+// Slice values are deeply equal when all of the following are true:
+// they are both nil or both non-nil, they have the same length,
+// and either they point to the same initial entry of the same underlying array
+// (that is, &x[0] == &y[0]) or their corresponding elements (up to length) are deeply equal.
+// Note that a non-nil empty slice and a nil slice (for example, []byte{} and []byte(nil))
+// are not deeply equal.
+//
+// Other values - numbers, bools, strings, and channels - are deeply equal
+// if they are equal using Go's == operator.
+//
+// In general DeepEqual is a recursive relaxation of Go's == operator.
+// However, this idea is impossible to implement without some inconsistency.
+// Specifically, it is possible for a value to be unequal to itself,
+// either because it is of func type (uncomparable in general)
+// or because it is a floating-point NaN value (not equal to itself in floating-point comparison),
+// or because it is an array, struct, or interface containing
+// such a value.
+// On the other hand, pointer values are always equal to themselves,
+// even if they point at or contain such problematic values,
+// because they compare equal using Go's == operator, and that
+// is a sufficient condition to be deeply equal, regardless of content.
+// DeepEqual has been defined so that the same short-cut applies
+// to slices and maps: if x and y are the same slice or the same map,
+// they are deeply equal regardless of content.
+//
+// As DeepEqual traverses the data values it may find a cycle. The
+// second and subsequent times that DeepEqual compares two pointer
+// values that have been compared before, it treats the values as
+// equal rather than examining the values to which they point.
+// This ensures that DeepEqual terminates.
+//
+// HAND-OWNED, and the reason is an ALLOCATION rather than a semantic. Go's body ends
+// `deepValueEqual(v1, v2, make(map[visit]bool))`, and the hand-owned deepValueEqual below never
+// reads that map — it carries a HashSet<visitPair> instead, because Go keys cycle detection on the
+// values’ internal data words (unsafe.Pointer) and the managed bridge has none. The auto conversion
+// therefore minted a golib map nothing could read, on EVERY DeepEqual call in the corpus: measured
+// at exactly 88 B and exactly ONE golib object, flat across every shape.
+//
+// That one object is load-bearing. reflect’s TestDeepEqualAllocs rows are `deferred` with a ratified
+// FLOOR of 2 boxes at the `any` seam, and the floor counts OBJECTS: dropping the map takes a scalar
+// comparison from 3 to 2, which is the floor itself. Judged in BYTES it is 0.7% of the worst row and
+// not worth a displacement; judged against the floor it is the entire remaining gap for that family.
+//
+// Go’s doc comment above is carried HERE deliberately: a displaced declaration’s attached doc group
+// is dropped by design (displacedCommentDrain_test.go states this is a placeholder ruling, not a
+// drain defect), and DeepEqual’s 52 lines are the contract for a public API. Losing them from the
+// corpus is not acceptable for a derivative work, so the hand-own carries them.
+//
+// Everything else is Go’s control flow verbatim: the nil pair short-circuits, the types must match,
+// and the walk is the same one the auto body called.
+public static bool DeepEqual(any x, any y) {
+    if (x == default! || y == default!) {
+        return AreEqual(x, y);
+    }
+    var v1 = ValueOf(x);
+    var v2 = ValueOf(y);
+    if (!AreEqual(v1.Type(), v2.Type())) {
+        return false;
+    }
+    return deepValueEqualBoxed(v1, v2, new HashSet<visitPair>());
+}
+
 // Tests for deep equality using reflected types. Mirrors Go's deepValueEqual over the bridge's boxed
 // managed values. The map argument is Go's address-keyed visited map — unusable in the managed model
 // (no data words); the managed recursion carries a reference-identity set instead, with the same
 // semantics: all checks in progress are assumed true when re-encountered, and entries persist for the
 // whole DeepEqual call.
+//
+// Retained although DeepEqual above no longer routes through it: it is the displaced form of a Go
+// function that still exists, and reflectlite's mirror and any future in-package caller reach it.
 internal static bool deepValueEqual(ΔValue v1, ΔValue v2, map<visit, bool> visited) {
     return deepValueEqualBoxed(v1, v2, new HashSet<visitPair>());
 }
