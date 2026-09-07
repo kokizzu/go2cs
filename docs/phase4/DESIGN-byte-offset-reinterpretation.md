@@ -9,10 +9,16 @@
 > does. Corpus figures were measured at master `fd09034f53`; master is `19a4693954` as this is
 > written, one roster-only commit later, which touches no corpus file.
 >
-> Adjacent records, both about ALLOCATION rather than correctness and neither covering this class:
-> `DESIGN-string-byte-window.md` (a zero-copy string→bytes view that costs objects) and
-> `DESIGN-syscall-buffer-element-address.md` (the element-take box). The vocabulary overlaps; the
-> subject does not.
+> **Adjacent records, and where to go instead.** Both are ALLOCATION records — they ask how to avoid
+> materialising a copy when handing bytes to a native boundary — and neither covers this class,
+> confirmed by their author at mailbox `4604d36092`. **If your question is why a byte view costs
+> objects, go there:** `DESIGN-string-byte-window.md` is candidate C of the `os` want-zero residue,
+> on Go's zero-copy `unsafe.Slice(unsafe.StringData(s), len(s))` idiom; and
+> `DESIGN-syscall-buffer-element-address.md` is candidate E, on the element-take box and the pin
+> behind `&buf[0]` in a `//sys` wrapper. **This record asks a different question — whether a byte
+> offset computed against C's layout names the same storage in a managed object — and it is named
+> for that DEFECT rather than for the shape**, because the shape-named records are what a reader
+> hunting this class would otherwise open first and leave believing it was already recorded.
 
 ## 0. The two sites, one from each direction
 
