@@ -418,9 +418,9 @@ leveling re-sweep re-annotated the rows it moved.
 ## Excluded packages
 
 The naive denominator above — 215 — counts every converted package whose Go 1.23.12 sources define
-a `Test` function. Six of those cannot be validated *at all* — five because the work is not the
-thing standing in the way: each is blocked by a property of the target that no amount of converter
-effort changes. Both denominators are always reported and nothing disappears quietly — every
+a `Test` function. Six of those cannot be validated *at all* — five because a property of the target
+stands in the way that no amount of converter effort changes, and one (E4) because its comparison runs
+cleanly and validates nothing. Both denominators are always reported and nothing disappears quietly — every
 exclusion is carried here with its class, its mechanism and the measurement that put it there,
 exactly as every disclosure is pinned by exact failure signature.
 
