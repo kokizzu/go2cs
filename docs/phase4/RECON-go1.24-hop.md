@@ -793,3 +793,84 @@ one command that settles B1, B2 and the `map*.cs` deletion question together is 
 stated; whether the four `runtime/map*.cs` are inside §5's truncated 28-member gone list; and
 anything operational, which is where the roster bill is actually paid and none of which was
 exercised here or above.
+
+---
+
+## AMENDMENT — 2026-09-07, by this record's author, on measurements posted by lane G
+
+> **Two items above are corrected here rather than rewritten**, per the point-in-time-record rule.
+> Neither correction was found by me: G measured both (mailbox `8413dd8870`, `06bf8ae779`). What is
+> mine is the verification below, taken by a DIFFERENT derivation than G's before either correction
+> was written down — G measured dynamically, by converting probe shapes; I read the converter.
+
+### A. §5 Rung 2 — the CENSUS stands, the INFERENCE from it does not
+
+§5 concludes: *"A single-root, single-site defect."* **The occurrence counts are right and the
+conclusion drawn from them is wrong, in two ways.**
+
+1. **It is not hop-triggered.** G reproduced it with today's converter on **1.23.12**, from a
+   three-line hand-written Go shape, with no 1.24 SDK. It is a STANDING converter defect that 1.24's
+   `runtime/vgetrandom_linux.go` happens to trigger. §5's corpus control (**zero** `_@` across
+   `src/core`) is reproduced and still true — but an end-user module reaching `-recurse` today with a
+   function-local anonymous struct or interface named for a C# keyword (`params`, `ref`, `out`,
+   `fixed`, `event`, `lock` are ordinary Go identifiers) emits uncompilable C#. **Its priority
+   therefore does not depend on the hop decision.**
+2. **It is not single-site.** G probed four sites and found `visitStructType.go:213` and
+   `visitInterfaceType.go:191` both defective, `visitTypeSpec.go:414` correct, `visitIdent.go:45`
+   unmeasured for want of a routing shape.
+
+⚠ **This is the "a census can be exactly right about what EXISTS and exactly wrong about what it
+MEANS" shape, and I wrote it.** The census counted occurrences in ONE emission and I read the count
+as a property of the CONVERTER. Three occurrences of one identifier is a fact about 1.24's stdlib;
+"single-site defect" is a claim about the code, and nothing in the census reaches it.
+
+**What I verified statically, and it sharpens the remedy.** All four sites carry a BYTE-IDENTICAL
+composition — `if !strings.HasPrefix(name, v.currentFuncName+"_") { name = fmt.Sprintf("%s_%s", …) }`
+— so the class is structurally four, not two. The existing remedy `stripSanitizationMarkers`
+(`identifierNaming.go:243`) **already documents this exact failure mode in its own comment**
+(*"`@` is only legal at the START of a C# identifier token, so a marker mid-composition lexes as two
+tokens"*), and it predates this record. **Every one of its call sites is in `adapterNameCollisions.go`
+or `interfaceConversion.go` — a different family of composed names entirely; NONE of the four
+composition sites calls it, and neither does
+`liftedTypeNames.go`** — which is where the correct site's one extra call, `getUniqueLiftedTypeName`,
+lives.
+
+⚠ **So `visitTypeSpec`'s correctness does NOT come from the remedy G's fix pattern points at.** It
+composes the same way and calls no stripper. The likeliest reading is that it receives an
+already-UNESCAPED name while the struct and interface paths receive the escaped variable name, i.e.
+the difference is the CALLER's input, not the site — but I did not measure that and it is
+**unestablished here**. If it holds, `visitTypeSpec` and `visitIdent` are not correct code; they are
+the same code one input-change away from the same defect, and a fix applied only to the two
+demonstrated sites would leave the class open. **The remedy is at the composition — strip, compose,
+re-sanitize the whole identifier, keep the Go name in `[GoLocalName]` as `visitTypeSpec` already
+does — applied at all four.** Sizing and cutting it is a converter increment and is not proposed
+here, as §5 already says of the original.
+
+### B. §6 — a FIFTH vanished principal, and it landed the day after this record
+
+§6's table lists four hand-owns whose Go principal ceases to exist in 1.24. G's refresh reproduces
+those four exactly and adds one:
+
+| hand-own | vanished principal |
+|:--|:--|
+| `src/core/crypto/internal/alias/alias_impl.cs` | `crypto/internal/alias` — GONE in 1.24, moved to `crypto/internal/fips140/alias` |
+
+**First committed `8a8e229a8`, 2026-09-03 — one day AFTER this record was written**, and its commit
+closed the address-ordering race that killed the banked `net/http` row, so it is not incidental.
+G confirmed it three independent ways (git add-date, a direct directory check on both pinned trees,
+and its appearance in an independent package-census removed set).
+
+**This is the hazard §6 names, arriving in §6's own subject area while the record aged**, which is
+the argument for the refresh existing at all rather than a defect in the original count: the four
+were correct on the day, and five days of hand-own work added a fifth in the subsystem 1.24
+reorganises most. **The count in §6 is therefore a floor that moves with the tree, not a total** —
+re-derive it at the hop rather than quoting it.
+
+### C. What is NOT corrected
+
+§2's package figure **342 stands.** G predicted 342, measured a raw `go list std` of **346**, and
+scored it a miss against this record — then found the four extra are non-shipping packages the
+converter never processes (`crypto/internal/fips140/check/checktest`, `crypto/internal/fips140test`,
+`go/ast/internal/tests`, `internal/copyright`), so `346 − 4 = 342`. **The convertible set is this
+record's unit and it is unchanged**; G said so plainly and the note is here only so a reader meeting
+the 346 elsewhere does not go looking for an error in §2 that is not there.
