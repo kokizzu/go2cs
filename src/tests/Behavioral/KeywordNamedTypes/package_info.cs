@@ -27,6 +27,7 @@ using static go.main_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("696e746572666163657b68656c64282920626f6f6c7d", "keywordLocalIface_params")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -55,7 +56,7 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "ABY4gKSCpoKmggAICoKEkoSChIKEgoSChIKC")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "ABY4gKSCpoKmggAHMIKIgoLqgoKClIKU6IKCguqCgoIACAqChJKEgoSChIKEgoSCgoSCgoI=")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -72,10 +73,14 @@ public static partial class main_package
 
     // <TypeAccessibility>
     internal partial interface @lock {}
+    internal partial interface keywordLocalIface_params {}
     internal partial interface sizer {}
     internal partial struct @fixed {}
     internal partial struct @short {}
     internal partial struct dword {}
+    internal partial struct keywordLocalRef_ref {}
+    internal partial struct keywordLocalStruct_params {}
+    internal partial struct plainLocalStruct_sizes {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import
