@@ -1497,10 +1497,10 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		//
 		// Getsockname/Getpeername are here for the same reason a level down: their generated
 		// wrappers take a typed `ж<RawSockaddrAny>` instead of an address, so the hand-owned
-		// forms call the Syscall trampoline directly. The UDP senders (WSASendto and its Inet4/
-		// Inet6 variants) are deliberately NOT listed — nothing on the TCP listen/dial/accept
-		// path reaches them, and the board's ruling is to fix a censused wrapper when a suite
-		// reaches it rather than speculatively.
+		// forms call the Syscall trampoline directly. The UDP SENDER (WSASendto) joined the
+		// OVERLAPPED block below on 2026-09-06 — it is an overlapped submit, so it belongs with
+		// that family rather than here; its Inet4/Inet6 variants stay unlisted because they are
+		// measured DEAD, which is the reason recorded at that entry.
 		// Bind/Connect/Getsockname/Getpeername are hand-owned on Linux too (2026-08-22): the Linux
 		// generated `bind`/`connect` take an address (reused with a stack mirror exactly as here),
 		// and `getsockname`/`getpeername`/`accept4` take a typed `ж<RawSockaddrAny>` that the kernel
@@ -1514,9 +1514,18 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// kernel would fill by address -- so those call the libc trampolines directly with a stack
 		// buffer and ONE native decode. Accept is Go's darwin body (syscall_bsd.go) and is darwin's
 		// alone: linux's Accept is pure Go over Accept4 and stays auto.
-		"Bind":      goosAny,
-		"Connect":   goosAny,
-		"Accept":    goosDarwin,
+		"Bind":    goosAny,
+		"Connect": goosAny,
+		"Accept":  goosDarwin,
+		// The darwin exec seam (increment 10 (b), 2026-09-05): forkExec over posix_spawn, Exec over an
+		// unmanaged execve, and the pipe both stand on -- syscall/darwin/exec_libc2_impl.cs. The auto
+		// forkExec runs managed code in a fork() child and Exec hands execve managed argv/envp (the linux
+		// hand-own's two measured walls, whole-file there; registry-displaced here so the rest of
+		// exec_unix.cs keeps reconverting), and the generated pipe wrapper hands the keystone the address
+		// of a managed [2]int32 (runtime's increment-4 shape, one package over).
+		"forkExec":  goosDarwin,
+		"Exec":      goosDarwin,
+		"pipe":      goosDarwin,
 		"ConnectEx": goosWindows,
 		// The same seam from the WRITE side, and the multicast half of net's residual.
 		// `ip_mreq` is two INLINE in_addr; converted, IPMreq holds both as golib `array<byte>`
@@ -1677,11 +1686,38 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// member that READS the overlapped -- SendFile publishes the file offset in Offset/OffsetHigh
 		// -- so the hand-own carries those onto the record's own control block.
 		"TransmitFile": goosWindows,
-		// WSASendto and its Inet4/Inet6 variants are the same machinery with more staging and remain
-		// absent for the reason WSARecvFrom and TransmitFile no longer are: nothing on the TCP
-		// listen/dial/accept/read/write path reaches them, and the board's ruling is to fix a
-		// censused wrapper when a suite REACHES it. (The Inet4/Inet6 SENDERS are hand-owned in
-		// internal/syscall/windows, where their linkname declarations live.)
+		// WSASendto joined on 2026-09-06, and it is the DATAGRAM SEND twin of WSARecvFrom above --
+		// the same machinery with the staging carved the other way. The generated body carries FOUR
+		// defects in one statement, not the two a static census sees
+		// (docs/phase4/DESIGN-windows-udp-send.md sizes them): the WSABuf descriptor, whose `Buf` is
+		// a `ж<byte>` MANAGED REFERENCE where native WSABUF wants a raw CHAR*; the address returned
+		// by `sockaddr()`, which that displaced method's OWN body says is not a native image and
+		// that "every in-package caller that actually reaches the kernel builds one with
+		// writeNativeSockaddr instead of consuming this"; and -- because this is an overlapped
+		// submit -- the bytes-sent slot and the OVERLAPPED itself, both interior field addresses
+		// inside a reference-bearing `operation` that golib cannot hold still. Three of the four
+		// fall to machinery already in zsyscall_windows_wsa_impl.cs (WSASend's record/rearm/
+		// stageBuffers plus WSARecvFrom's carve) and the fourth to writeNativeSockaddr, which is
+		// PRIVATE to `syscall` and reachable because this body lives there too -- so the public
+		// GoWriteNativeSockaddrInet4/6 seam the Linux and internal/syscall/windows halves consume is
+		// not involved at all.
+		//
+		// WHY IT JOINED WITHOUT A SUITE REACHING IT, which is a departure from the rule the note
+		// above states and is therefore stated rather than assumed: NO suite CAN reach it on
+		// Windows. Its sole consumer is internal/poll.FD.WriteTo, whose net-side callers are IPConn
+		// and UnixConn, and net's own testableNetwork returns false for unix/unixgram on windows
+		// outright and requires Getuid()==0 for ip/ip4/ip6 -- so Go's suite is structurally unable to
+		// arrive. UDPConn never reaches it either (UDPConn.writeTo switches on fd.family into
+		// writeToInet4/6, the pair hand-owned in internal/syscall/windows). The acceptance is
+		// therefore a behavioral guard, WsaSendtoRoundTrip, which drives the function directly.
+		//
+		// The Inet4/Inet6 variants are NOT registered, and that is a measurement rather than a
+		// deferral: they are DEAD in this corpus by two derivations -- no call site anywhere,
+		// production or test emission, and Go's own callers of them are the linkname PULL that this
+		// corpus answers at the DECLARATION site in internal/syscall/windows. Displacing them would
+		// cost a registration, a placeholder and a body apiece to change the behaviour of code with
+		// no caller. wsaSendtoNoCallers_test.go is the guard for the day that stops being true.
+		"WSASendto": goosWindows,
 		//
 		// LoadConnectEx is NOT overlapped at all, and is here because the netpoll design recorded the
 		// extension-pointer lookup as "synchronous and already working" and the crypto/tls census
@@ -1873,6 +1909,35 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// reference-first auto-layout of SHARE_INFO_2, holds the integer 1 — and the process DIES with
 	// 0xC0000005 partway through os's suite, turning 683 measurable verdicts into an unknown
 	// remainder. Failing BY NAME converts a whole-suite process death into ONE loud row.
+	// The DARWIN user/group lookups, and the second package to carry members of the PTROUT class (a
+	// Go `**T` OUT-PARAMETER the C library writes a raw address into). All four are BODIED --
+	// user_darwin.go converts to a real libc trampoline call -- so this registry is the only way to
+	// displace them; scoping them darwin-only is not a preference but the shape of the source set,
+	// since user_darwin.go is Go's ONLY declaration of these four names, so the scope is inert
+	// elsewhere and records WHY instead of leaving the next reader to re-derive it.
+	//
+	// Each is taken WITH its record transcription, never alone, and the measurement is what decided
+	// that rather than an argument (both mac legs, every buffer size, runs 34026852472 and
+	// 34034875069): the `**Passwd` out-parameter arrives as 0x0 -- golib's `ж<T>` -> `uintptr`
+	// value-peeks a heap-boxed null -- and darwin rejects a NULL result with ERANGE, which is what
+	// made os/user's retryWithBuffer double from 1 KB to 1 MB and give up naming the one argument
+	// that was never the problem. With an honest native cell the call SUCCEEDS and the converted
+	// Passwd STILL reads Uid=0 Name=nil, because a struct carrying six `ж<byte>` object references
+	// gets AUTO layout from the CLR and libc's 72 bytes land beside the managed fields rather than
+	// on them. So the out-cell alone would hand buildUser an empty record -- the NetUserGetInfo
+	// lesson one package over. Bodies in internal/syscall/unix/darwin/user_darwin_impl.cs.
+	//
+	// Getaddrinfo is this package's FIFTH member of the class and is deliberately NOT here: its
+	// pointee is a LINKED NATIVE CHAIN libc allocates and freeaddrinfo releases, so it wants the
+	// whole-chain transcription zsyscall_windows_addrinfo_impl.cs carries for ADDRINFOW, its
+	// consumer is `net` rather than os/user, and it lands as its own increment. The hand-own's
+	// header records that exclusion, and readdir_r's prior answer, by name.
+	"internal/syscall/unix": {
+		"Getpwnam": goosDarwin,
+		"Getpwuid": goosDarwin,
+		"Getgrnam": goosDarwin,
+		"Getgrgid": goosDarwin,
+	},
 	"internal/syscall/windows": {
 		"NetShareAdd": goosWindows,
 		// This package's member of the PTROUT class (`**byte` out-parameter), taken with its call

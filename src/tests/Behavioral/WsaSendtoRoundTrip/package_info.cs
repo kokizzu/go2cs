@@ -10,8 +10,14 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using execꓸError = go.os.exec_package.ΔError;
-global using runtimeꓸError = go.runtime_package.ΔError;
+global using netꓸAddr = go.net_package.ΔAddr;
+global using netꓸError = go.net_package.ΔError;
+global using syscallꓸHandle = go.syscall_package.ΔHandle;
+global using syscallꓸSignal = go.syscall_package.ΔSignal;
+global using syscallꓸSockaddr = go.syscall_package.ΔSockaddr;
+global using timeꓸLocation = go.time_package.ΔLocation;
+global using timeꓸMonth = go.time_package.ΔMonth;
+global using timeꓸWeekday = go.time_package.ΔWeekday;
 // </ImportedTypeAliases>
 
 using go;
@@ -51,12 +57,13 @@ using static go.main_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("main.go", "main.cs", "ACBsgoKClJaCAAAQgoKWgoKCloKWgpSCgro=")]
+[assembly: go.GoPositionMap("main.go", "main.cs", "AAxkgoKCABIKooKCgpSUgoKCloKCgpSEgoKClIKCgpaCgoKEgIKCpIKCgoKUhIKCgpqCAA8KooKCgpSUgoKCloKCgpSIgpKCgoKEgIKCpIKC2oKCgpSAgoKkqIKSgoKmgoKClIKClIKCpqKCgpSCgqY=")]
 // </GoSourcePositionMaps>
 
 namespace go;
 
 [GoPackage("main")]
+[GoPlatformExclusive("windows")]
 [GoTestMatchingConsoleOutput]
 public static partial class main_package
 {
@@ -77,10 +84,8 @@ public static partial class main_package
 
     // <ImportInitializers>
     [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
-    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(os.exec_package));
-    [GoInit] internal static void initᴛᴛimportꓸosꓸuser() => builtin.initPackage(typeof(os.user_package));
-    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
-    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
-    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
     // </ImportInitializers>
 }

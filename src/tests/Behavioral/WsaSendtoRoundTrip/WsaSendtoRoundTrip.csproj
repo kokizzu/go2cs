@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework Condition="'$(TargetFramework)'==''">net10.0</TargetFramework>
     <RootNamespace>go</RootNamespace>
-    <AssemblyName>SyscallKeystonePulls</AssemblyName>
+    <AssemblyName>WsaSendtoRoundTrip</AssemblyName>
     <Product>go2cs</Product>
     <Description>$(AssemblyName) ($(TargetFramework) - $(Configuration))</Description>
     <AssemblyTitle>$(Description)</AssemblyTitle>
@@ -145,11 +145,9 @@
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
 
     <ProjectReference Include="$(go2csPath)core/fmt/fmt.csproj" />
-    <ProjectReference Include="$(go2csPath)core/os/exec/os.exec.csproj" />
-    <ProjectReference Include="$(go2csPath)core/os/user/os.user.csproj" />
-    <ProjectReference Include="$(go2csPath)core/path/filepath/path.filepath.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
-    <ProjectReference Include="$(go2csPath)core/strings/strings.csproj" />
+    <ProjectReference Include="$(go2csPath)core/net/net.csproj" />
+    <ProjectReference Include="$(go2csPath)core/syscall/syscall.csproj" />
+    <ProjectReference Include="$(go2csPath)core/time/time.csproj" />
   </ItemGroup>
 
 </Project>
