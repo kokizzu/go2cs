@@ -247,3 +247,137 @@ Master `69136ef1ae`, darwin flavour, net10 SDK 10.0.111, Go toolchain pinned to 
 printed by the build script before it ran. Artifacts: the stub population (458), the push map before
 and after the flavour restriction, the per-row source classification with distances, and the 49 —
 all re-derivable from the repository by §3 alone, which is the point of writing it down.
+
+## 10. AMENDMENT — 2026-09-07: the census re-run at master `fd09034f53` (train 31)
+
+Sections 1–9 are left exactly as written at `69136ef1ae`. **Records are amended, never rewritten**,
+so the figures above stand as the reading at their own tree and this section carries the reading at
+the next one. The re-run was promised before it was started, with the delta to be posted whether it
+was zero or not; it is not zero.
+
+### 10.1 The re-run
+
+Same instrument, same flavour, same method as §3 — the population from the generator's own stub
+output, the push map from the corpus, the join asserted rather than eyeballed. Master
+**`fd09034f53`**, `GoTargetOS=darwin`, build **rc=0 in 1,099 s, 306 assemblies, 0 strict errors**;
+the completeness gate passed at **307 projects / 306 assemblies**, the `netstandard2.0` analyzer
+(`gen/go2cs-gen/go2cs-gen.csproj`) the only absence and the expected one.
+
+### 10.2 The funnel, both trees
+
+| stage | `69136ef1ae` | `fd09034f53` | delta |
+|---|---:|---:|---:|
+| generated stub `(pkg,name)` pairs — the population | 458 | **449** | −9 |
+| — no push entry at all | 406 | **400** | −6 |
+| — a push entry exists (candidates) | 52 | **49** | −3 |
+| ⟶ push source HAS a body — **the finding** | 49 | **46** | −3 |
+| ⟶ push source has none — a PULL, not a defect | 3 | **3** | 0 |
+
+Both partitions still close exactly (`400 + 49 = 449`, `46 + 3 = 49`), and the three PULL rows are
+the *same* three names §4 records — `runtime.memequal`, `runtime.memequal_varlen`,
+`runtime.reflectcall`. The funnel was re-derived a second time by an independently written join over
+the same two artifacts, reproducing 449 / 49 / 3 / 46 on the new tree and 458 / 52 / 3 / 49 on the
+old one, which is the cross-check §3 asks for.
+
+### 10.3 What moved: three members LEFT the finding, and ZERO entered
+
+**Zero entered** is the load-bearing half, because it is the direction no artifact taken at the old
+tree could see — a new bodyless `partial` plus a push anywhere in the 53 commits between the two
+trees would have ADDED a member, and only the build closes that.
+
+| departed member | how it left | landed by |
+|---|---|---|
+| `internal/syscall/unix.gostring` | body written into `internal/syscall/unix/darwin/net_darwin_impl.cs:264` | darwin increment 11b |
+| `syscall.runtime_BeforeExec` | body written into `syscall/darwin/exec_libc2_impl.cs:388` | darwin increment 10 (b) |
+| `syscall.runtime_AfterExec` | body written into `syscall/darwin/exec_libc2_impl.cs:391` | darwin increment 10 (b) |
+
+All three left by the **bodyless-partial** displacement mechanism — the declaration in the emitted
+file stays a bodyless `partial` (`syscall/darwin/exec_unix.cs:178,180`) and a hand-own supplies the
+implementing part, so `PartialStubGenerator`'s
+`IsPartialDefinition && PartialImplementationPart is null` no longer holds. **None of the three is a
+`manualConversionFuncs` registry entry**, which is checked rather than assumed: the registry names
+none of them.
+
+By package the finding moves `syscall` 5 → **3** and `internal/syscall/unix` 1 → **0**, everything
+else unchanged: `reflect` 33, `runtime/trace` 4, `runtime/pprof` 3, `syscall` 3, `os` 1,
+`internal/coverage/cfile` 1, `crypto/x509/internal/macos` 1 — **46**.
+
+### 10.4 The other six departures are population-only, and they never were candidates
+
+The population fell by nine, not three. The other six are `runtime/pprof`'s
+`pprof_blockProfileInternal`, `pprof_cyclesPerSecond`, `pprof_fpunwindExpand`, `pprof_makeProfStack`,
+`pprof_mutexProfileInternal` and `pprof_threadCreateInternal`, forwarded by C1's pprof seat (five by
+the linkname-pull commit, `pprof_cyclesPerSecond` by the self-symbol one). They sat in the **406
+without a push entry**, not among the 52 candidates, because the linkname on each names a
+destination in `runtime` and the pprof-side declaration is the linkname's SOURCE — a pull with no
+local body, which is exactly what giving it a forwarding body resolves. The push map records that
+flip directly: those six rows move from `nobody` to `body` between the two trees.
+
+That is why `406 → 400` and `52 → 49` are separate movements and the arithmetic of the delta closes
+in both buckets independently.
+
+### 10.5 The push side did not move in COUNT
+
+381 push rows across all flavours, 243 after the darwin restriction, 253 unique destinations
+all-flavours and 232 darwin — **identical on both trees**, as are the five raw-literal exclusions.
+What changed inside it is the six pprof rows' line numbers and their `nobody → body` classification.
+So every unit of the −9 is on the **stub** side of the join, which is the decomposition that makes
+the delta readable at all.
+
+### 10.6 A second, differently-shaped derivation agrees — once the flavour is named
+
+i9 measured the same movement from the other end and posted it independently: the generator's
+`runtime/pprof` stub-file output went **7 before train 31 to 1 after**, the survivor `readProfile`.
+This census reads `runtime/pprof` **9 before to 3 after**. The *delta agrees exactly* (−6 both ways);
+the denominators differ for a stated reason rather than a mysterious one — two of this census's nine
+are `mach_vm_region` and `proc_regionfilename`, declared in `runtime/pprof/darwin/vminfo_darwin.cs`
+and therefore compiled only under `GoTargetOS=darwin`, so a non-darwin flavour cannot see them.
+`9 − 2 = 7` and `3 − 2 = 1`.
+
+And i9's survivor is a member of this census's 46, reached from the opposite direction: **`readProfile`,
+pushed from `runtime/cpuprof.cs:224` as `runtime_pprof_readProfile`** — the same name, the same push
+symbol and the same file:line that row of §2 carries, derived by a grep off the generator's output
+rather than by a corpus-wide push map. That is the strongest cross-derivation this census has.
+
+Separately, G measured `git diff --name-only 69136ef1a fd09034f53 -- src/gen/` **empty**: the
+generator that DEFINES the population is byte-identical across both trees. The population's
+definition did not move; only its inputs did.
+
+### 10.7 CORRECTION to §6 — the prediction was checked on ONE axis
+
+§6 says `internal/syscall/unix.gostring` is *"the **only** one of the 49 that any unlanded darwin
+seat removes"*. **That is wrong, and the seat that falsified it is mine.** Increment 10 (b) removed
+two more.
+
+The error is not a missed fact but a missed **axis**. I checked `claude/c2-darwin-inc10` for
+`manualConversionFuncs` registry entries — the mechanism that displaces a *bodied* converted
+function — found `forkExec`, `Exec`, `pipe`, `Accept`, `Bind`, `Connect`, correctly reported that
+they intersect the 49 not at all, and then wrote a conclusion about the whole seat. **A seat also
+removes members by the OTHER displacement mechanism, writing a body for a bodyless `partial`, and
+that axis was never checked** — although §6's own preceding bullet names `runtime_BeforeExec` and
+`runtime_AfterExec` as members of exactly that shape. Both halves were in the record; the join was
+not made.
+
+The narrower claim survives intact: **the registry entries do intersect the 49 at zero**, and that
+is still true at `fd09034f53`.
+
+### 10.8 What §6's hazard bullet reads like now, stated without re-measuring it
+
+§6 records that empty `runtime_BeforeExec` / `runtime_AfterExec` bodies fork-bombed the `syscall`
+row on linux, and that membership in this census says nothing about whether connecting a member is
+safe. At `fd09034f53` those two darwin members **have** empty bodies. Increment 10 (b) landed them
+in the same commit as a `posix_spawn` fork path and an unmanaged-`execve` marshalling, naming the
+fork-bomb class explicitly — which is the ordering the lesson requires — **but this census does not
+measure the `syscall` row and nothing here re-settles that question.** It is named so the next
+reader does not mistake the departure for evidence about the hazard: the two are independent.
+
+### 10.9 What this amendment does not establish
+
+The re-run answers one question — did the population move, and in which direction — and it answers
+it for the darwin flavour on a Linux host at `GoTargetOS=darwin`, under §8's boundaries unchanged.
+It does not re-measure reachability, does not reconcile against a macOS runner, and does not revisit
+§5's corrections or §7's instrument failures, all of which stand as written.
+
+Provenance for this section: master `fd09034f53`, darwin flavour, net10 SDK 10.0.111, Go toolchain
+pinned to `go1.23.12` and printed by the build script before it ran. The population, both push maps,
+the per-row source classification and the 46 are re-derivable by §3 alone, as before.
