@@ -17,12 +17,6 @@ using sync;
 
 partial class sync_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(sync.atomic_package));
-}
-
 // There is a modified copy of this file in runtime/rwmutex.go.
 // If you make any changes here, see if you should make them there.
 
@@ -146,7 +140,7 @@ public static void RUnlock(this ж<RWMutex> Ꮡrw) {
 }
 
 internal static void rUnlockSlow(this ж<RWMutex> Ꮡrw, int32 r) {
-    if (r + 1 == 0 || r + 1 == -rwmutexMaxReaders) {
+    if (r + 1 == 0 || r + 1 == (int32)(-rwmutexMaxReaders)) {
         race.Enable();
         fatal("sync: RUnlock of unlocked RWMutex"u8);
     }
@@ -168,7 +162,7 @@ public static void Lock(this ж<RWMutex> Ꮡrw) {
         race.Disable();
     }
     // First, resolve competition with other writers.
-    Ꮡrw.of(RWMutex.Ꮡw).Lock();
+    rw.w.Lock();
     // Announce to readers there is a pending writer.
     var r = Ꮡrw.of(RWMutex.ᏑreaderCount).Add(-rwmutexMaxReaders) + (int32)rwmutexMaxReaders;
     // Wait for active readers.
@@ -194,14 +188,14 @@ public static bool TryLock(this ж<RWMutex> Ꮡrw) {
         _ = rw.w.state;
         race.Disable();
     }
-    if (!Ꮡrw.of(RWMutex.Ꮡw).TryLock()) {
+    if (!rw.w.TryLock()) {
         if (race.Enabled) {
             race.Enable();
         }
         return false;
     }
     if (!Ꮡrw.of(RWMutex.ᏑreaderCount).CompareAndSwap(0, -rwmutexMaxReaders)) {
-        Ꮡrw.of(RWMutex.Ꮡw).Unlock();
+        rw.w.Unlock();
         if (race.Enabled) {
             race.Enable();
         }
@@ -240,7 +234,7 @@ public static void Unlock(this ж<RWMutex> Ꮡrw) {
         runtime_Semrelease(Ꮡrw.of(RWMutex.ᏑreaderSem), false, 0);
     }
     // Allow other writers to proceed.
-    Ꮡrw.of(RWMutex.Ꮡw).Unlock();
+    rw.w.Unlock();
     if (race.Enabled) {
         race.Enable();
     }

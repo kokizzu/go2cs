@@ -19,24 +19,6 @@ using ꓸꓸꓸuintptr = Span<uintptr>;
 
 partial class syscall_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸsysdll() {
-    builtin.initPackage(typeof(@internal.syscall.windows.sysdll_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
 // DLLError describes reasons for DLL load failures.
 [GoType] partial struct DLLError {
     public error Err;
@@ -228,14 +210,15 @@ public static ж<Proc> MustFindProc(this ж<DLL> Ꮡd, @string name) {
 // Load will not try to load DLL, if it is already loaded into memory.
 public static error Load(this ж<LazyDLL> Ꮡd) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var d = ref Ꮡd.DerefOrNull();
 
         // Non-racy version of:
         // if d.dll == nil {
         if (atomic.LoadPointer(Ꮡd.of(LazyDLL.Ꮡdll)) == nil) {
-            Ꮡd.of(LazyDLL.Ꮡmu).Lock();
-            defer(Ꮡd.of(LazyDLL.Ꮡmu).Unlock, ref ᒐ);
+            d.mu.Lock();
+            ᒐd1 = true;
             if (d.dll == nil) {
                 var (dll, e) = LoadDLL(d.Name);
                 if (e != default!) {
@@ -249,7 +232,7 @@ public static error Load(this ж<LazyDLL> Ꮡd) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡd.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // mustLoad is like Load but panics if search fails.
@@ -292,14 +275,15 @@ public static ж<LazyDLL> NewLazyDLL(@string name) {
 // if it is already found and loaded into memory.
 public static error Find(this ж<LazyProc> Ꮡp) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var p = ref Ꮡp.DerefOrNull();
 
         // Non-racy version of:
         // if p.proc == nil {
         if (atomic.LoadPointer(Ꮡp.of(LazyProc.Ꮡproc)) == nil) {
-            Ꮡp.of(LazyProc.Ꮡmu).Lock();
-            defer(Ꮡp.of(LazyProc.Ꮡmu).Unlock, ref ᒐ);
+            p.mu.Lock();
+            ᒐd1 = true;
             if (p.proc == nil) {
                 var e = p.l.Load();
                 if (e != default!) {
@@ -317,7 +301,7 @@ public static error Find(this ж<LazyProc> Ꮡp) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡp.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // mustFind is like Find but panics if search fails.
