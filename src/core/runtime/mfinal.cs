@@ -475,7 +475,17 @@ public static void SetFinalizer(any obj, any finalizer) {
     // ⚠ TYPES ONLY, NO VALUE RETAINED. The bound argument is discarded here and recomputed at
     // dispatch. Keeping it would hold the referent (or an adapter shell over it) STRONGLY, and a
     // finalizer whose registration pins its own referent can never run at all.
-    if (!GoReflect.TryBindFinalizerArgument(referent, (Delegate)finalizer, out object? _, out string? rejection)) {
+    //
+    // ⚠ AND IT VALIDATES `obj`, NOT `referent` -- this said `referent` for one commit and it refused
+    // TestFinalizerType's ITERATION 0, the matching case, with `cannot pass *runtime_test.T to
+    // finalizer func(*int)`. The two are DIFFERENT OBJECTS on purpose: `referent` is the LIFETIME
+    // key (ReferentOf resolves a field ref to its containing allocation, which is what Go finalizes),
+    // while `obj` is the GO VALUE the finalizer is called with. Go validates the interface's dynamic
+    // type -- `*int` for `&new(T).v` -- so the check must see `obj`. The line twelve below already
+    // says this about the sentinel: "the ORIGINAL box, because that is the argument the Go finalizer
+    // must be invoked with (its parameter is the pointer type, not the storage)". The dispatch side
+    // was right all along; only this call was wrong, and it fires first.
+    if (!GoReflect.TryBindFinalizerArgument(obj, (Delegate)finalizer, out object? _, out string? rejection)) {
         @throw(rejection);
     }
     if (s_finalizerRegistry.TryGetValue(referent, out GoFinalizerSentinel? _)) {

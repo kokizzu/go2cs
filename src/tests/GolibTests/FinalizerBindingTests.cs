@@ -2,6 +2,7 @@ using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
 using go.golib;
+using Δruntime = go.runtime_package;
 
 namespace GolibTests;
 
@@ -230,5 +231,36 @@ public class FinalizerBindingTests
             "delegate could never be invoked, and before this predicate it was accepted at registration " +
             "and dropped in silence at dispatch.");
         Assert.IsNotNull(rejection, "ARM 6: the arity refusal carries Go's text too.");
+    }
+
+    [TestMethod]
+    public void Arm9_RegisteringAFieldReferenceBoxThroughSetFinalizerDoesNotThrow()
+    {
+        ж<Holder> container = new StandardBox<Holder>(default);
+        ж<nint> field = container.of<nint>(HolderFirstField);
+
+        // ⚠ THE ARM ARMS 7 AND 8 COULD NOT BE. They call the PREDICATE; this calls
+        // runtime.SetFinalizer, which is where the defect lived: the registration check validated
+        // `referent` -- the CONTAINING ALLOCATION a field box is rooted in, which is deliberately
+        // what keys the lifetime -- instead of `obj`, the Go value. The predicate was right and the
+        // ARGUMENT was wrong, so no predicate-level arm could ever have caught it.
+        //
+        // This is Go's TestFinalizerType iteration 0 in miniature: `&new(T).v` registered with
+        // `func(v *int)`. Go accepts it; before the fix this threw
+        // "cannot pass *Holder to finalizer func(*int)".
+        try
+        {
+            Δruntime.SetFinalizer(field, (Action<ж<nint>>)(_ => { }));
+        }
+        catch (Exception ex)
+        {
+            Assert.Fail(
+                "ARM 9: registering a FIELD-reference box with a finalizer taking the FIELD's " +
+                "pointer type must be accepted -- Go validates the interface's DYNAMIC type, which " +
+                $"is *int here, not the enclosing allocation. Threw: {ex.Message}");
+        }
+
+        // Leave the registry as we found it: a live registration would outlast this test.
+        Δruntime.SetFinalizer(field, null!);
     }
 }
