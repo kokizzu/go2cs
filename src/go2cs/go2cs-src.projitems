@@ -190,6 +190,7 @@
     <None Include="$(MSBuildThisFileDirectory)readmeDocLinks_test.go" />
     <None Include="$(MSBuildThisFileDirectory)readmeValidationBadge.go" />
     <None Include="$(MSBuildThisFileDirectory)readmeValidationBadge_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)reconvertDeletionsSkipList_test.go" />
     <None Include="$(MSBuildThisFileDirectory)refLoweringAnalysisOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)refLoweringAnalysis_test.go" />
     <None Include="$(MSBuildThisFileDirectory)refLoweringCensus.go" />

@@ -374,15 +374,19 @@ every other measurement.
 >
 > ```
 > .\reconvert-deletions.ps1 -Root <staging>\src -GoRoot <target GOROOT> `
->                           -ExpectGo go<target> -Sentinel <staging>\run.stamp
+>                           -ExpectGo go<target> -SourceGoRoot <source GOROOT> `
+>                           -Sentinel <staging>\run.stamp
 > ```
 >
 > The sentinel is a file created immediately **before** the conversion starts; its modification time is
-> the seeded/emitted boundary (`-SentinelTime <datetime>` is the same input without a file). The
-> instrument **refuses** — exit 3, before printing any table — on a missing or ambiguous sentinel, on a
-> `-Root` that resolves to the repository's own `src/core`, or when `go version` under `-GoRoot` does
-> not report `-ExpectGo`. A deletion pass aimed at the wrong release deletes the wrong files, so that
-> is a refusal and not a warning.
+> the seeded/emitted boundary (`-SentinelTime <datetime>` is the same input without a file).
+> `-SourceGoRoot` is the **outgoing** release's `GOROOT` — the one the committed corpus was converted
+> from — and it decides what is a deletion candidate at all (see *What makes a file a candidate*
+> below). Its expected release is **derived** from `<GoStdLibVersion>` in `src/version.props` unless
+> `-ExpectSourceGo` is passed. The instrument **refuses** — exit 3, before printing any table — on a
+> missing or ambiguous sentinel, on a `-Root` that resolves to the repository's own `src/core`, or
+> when `go version` under **either** `GOROOT` disagrees with its expected release. A deletion pass
+> aimed at the wrong release deletes the wrong files, so that is a refusal and not a warning.
 
 **Why the modification time alone cannot decide a deletion, and Go must be asked.** The converter's
 write path skips a write whose bytes are identical (`needToWriteFile`), so a file whose emission did not
@@ -393,21 +397,57 @@ the corpus. The timestamp answers only *"is this a candidate"*. **Go answers "sh
 `go list -f '{{.GoFiles}} {{.CgoFiles}}' <importpath>` under the target `GOROOT` with `CGO_ENABLED=0`
 (the corpus's own emission state), `GOTOOLCHAIN=local`, and the file's own `GOOS`.
 
+**What makes a file a CANDIDATE — the question the pass got wrong on its first real run, corrected
+2026-09-07.** "Does Go still select this file's principal at the target?" is only *meaningful* for a
+file the converter emits. As first landed the pass asked it of every seeded `.cs`, and lane R's first
+dry run against a three-target scratch (mailbox `1f5e8f276`, dry run, **not** applied) returned a
+**205-row delete set of which 117 rows were `src/core/golib/*.cs` (116) and `src/core/go2cs/Symbols.cs`
+(1)** — the hand-written runtime and the Symbols shared project — classified `DELETE-ABSENT` because
+*"package not in std at target"* is **true and irrelevant** for a directory that was never a Go package.
+The marker arm could not save them: `golib` correctly carries no `[module: GoManualConversion]` marker,
+because nothing converts into it and there is no generated body for a marker to displace. **The one
+directory that needs no marker is the one the marker guard does not protect.**
+
+The candidate test is therefore **positive and first**: a seeded file is a candidate only if its
+resolved import path is in **`go list std` at the SOURCE release** (`-SourceGoRoot`, per flavour) and
+is **not** skip-listed by the converter's own `isNonConvertedStdLibPackage`. Asking the *source*
+rather than the target is what keeps a **removed** package a candidate — `internal/weak` is in std at
+1.23.12 and gone at 1.24.13, which is exactly the `DELETE-ABSENT` the pass exists to find.
+
 **The classes**, each printed with its count whether or not it is zero:
 
 | class | meaning | deleted? |
 |:--|:--|:--|
-| `PROTECTED` | line-anchored `[module: GoManualConversion]`, or an `*_impl.cs` companion | **never** — a hand-own is an H6 reconciliation item, not a deletion |
+| `NOT-A-CONVERSION-TARGET` | the converter does not emit into this directory at all: a hand-written repository root (`golib/`, `go2cs/`), a std package the converter skip-lists (`unsafe`, `builtin`, `testing`, `cmd…`), an import path absent from std at the **source** release, or a `.cs` sitting directly in `core/` | **never** — tested first, ahead of the marker scan and any target lookup |
+| `PROTECTED` | line-anchored `[module: GoManualConversion]`, or an `*_impl.cs` companion, **inside** a package the converter does emit | **never** — a hand-own is an H6 reconciliation item, not a deletion |
 | `KEEP-SELECTED` | Go still selects the principal at the target for this flavour | no — the dominant class, and the pass's own negative control |
 | `DELETE-ABSENT` | the principal, or its whole package, is gone at the target (H3 removals) | yes |
 | `DELETE-DESELECTED` | the principal still exists on disk but Go does not select it for this flavour — a build-tag or GOEXPERIMENT flip | yes |
-| `UNRESOLVED` | no Go principal is derivable — generated metadata (`package_info.cs`, `package_init.cs`) and anything else whose stem maps to no `.go` name | **never** |
+| `UNRESOLVED` | no Go principal is derivable **inside a package the converter emits** — generated metadata (`package_info.cs`, `package_init.cs`) and anything else whose stem maps to no `.go` name | **never** |
 
-**`UNRESOLVED` stops the step for a human.** The pass exits **2** whenever any row lands there, and
-those rows are always listed. The class is not hypothetical and it is not automatable from a file name:
-the rehearsal's 25 contains exactly one, `crypto/ecdh/package_init.cs`, a genuinely stale generated file
-whose staleness only a reader can confirm. Deleting it on a guess and dropping it silently are both
-wrong; the pass does neither and refuses to report success until somebody has disposed of it.
+**`UNRESOLVED` stops the step for a human.** Those rows are always listed, and the class is not
+hypothetical and not automatable from a file name: the rehearsal's 25 contains exactly one,
+`crypto/ecdh/package_init.cs`, a genuinely stale generated file whose staleness only a reader can
+confirm. Deleting it on a guess and dropping it silently are both wrong; the pass does neither and
+refuses to report success until somebody has disposed of it.
+
+**Exit 2 means NOTHING WAS DELETED.** As first landed the `UNRESOLVED` check ran *after* the
+`Remove-Item` loop, so a run that exited 2 had already deleted — a report wearing a refusal's exit
+code, measured at HEAD as **7 files removed on an exit-2 run, `golib/` and `go2cs/` among them**. Every
+check that can produce exit 2 now runs first: the `UNRESOLVED` check, the delete-set decomposition
+(printed per class before the loop), and a **trespass assertion** — no delete row may sit under a
+hand-written root or a skip-listed package directory, re-derived from the **path** rather than from the
+`go list` that classified it, and re-asked per row immediately before each irreversible act. With
+`-Apply`, `UNRESOLVED` rows are a refusal rather than a footnote: dispose of them, then re-run.
+
+**The skip-list is a MIRROR and it is guarded.** `go list std` names `unsafe` and `testing` like any
+other package, so no Go question can exclude them; the converter's `isNonConvertedStdLibPackage`
+(`src/go2cs/stdLibConverter.go`) is the only authority and the script carries a copy of it.
+`reconvertDeletionsSkipList_test.go`, under the plain `go test ./...` in `src/go2cs`, extracts the
+script's literal and compares the two **sets** in both directions — an extra name in the script keeps
+stale files that should go, a missing one offers a hand-owned package's files for deletion. Because the
+`.ps1` sits outside the converter's module root, cmd/go drops it from the test's input fingerprint:
+**any change to the script owes `go test -count=1 ./...`.**
 
 Files the run emitted are not candidates at all, and neither are the `<Compile Remove>`d test-host
 artifacts (`package_test_info.cs`, `go2cs_test_host.cs`, `*_test.cs`) — a stale one cannot produce the

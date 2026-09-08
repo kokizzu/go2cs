@@ -20,6 +20,28 @@
     corpus depends on. Three GOEXPERIMENT flips default ON at 1.24.13 (aliastypeparams, swissmap,
     synchashtriemap) plus the FIPS reorganization move or deselect the other 24.
 
+    WHAT A DELETION CANDIDATE IS -- the question this instrument got WRONG on its first real run, and
+    the reason the NOT-A-CONVERSION-TARGET class exists. The pass as first landed asked exactly one
+    question of every seeded file: "does Go still select this file's principal at the target?" That
+    question is only MEANINGFUL for a file the converter EMITS. R's first dry run against a
+    three-target scratch (mailbox 1f5e8f276, dry run, NOT applied) produced a 205-row delete set of
+    which 117 rows were src\core\golib\*.cs (116) and src\core\go2cs\Symbols.cs (1) -- THE
+    HAND-WRITTEN RUNTIME AND THE SYMBOLS SHARED PROJECT -- classified DELETE-ABSENT because
+    "package not in std at target" is TRUE and IRRELEVANT for a directory that was never a Go package
+    in the first place. The marker-based PROTECTED arm cannot see them: golib correctly carries no
+    [module: GoManualConversion] marker, because nothing ever CONVERTS into golib and there is no
+    generated body for a marker to displace. THE ONE DIRECTORY THAT NEEDS NO MARKER IS THE ONE THE
+    MARKER GUARD DOES NOT PROTECT.
+
+    So the candidate test is now POSITIVE and comes FIRST: a file is a deletion candidate only if it
+    belongs to a package the converter actually emits, i.e. its resolved import path is in
+    `go list std` AT THE SOURCE RELEASE (the outgoing corpus's own release, -SourceGoRoot) and is not
+    skip-listed by the converter's own isNonConvertedStdLibPackage. Everything else under core\ --
+    golib\, go2cs\, the skip-listed hand-owned packages (unsafe, testing), and any .cs with no package
+    directory at all -- is NOT-A-CONVERSION-TARGET and can never reach a DELETE row. Asking the SOURCE
+    rather than the target is what makes a REMOVED package still a candidate: internal/weak is in std
+    at 1.23.12 and gone at 1.24.13, which is precisely the DELETE-ABSENT the pass exists to find.
+
     WHY MODIFICATION TIME ALONE CANNOT DECIDE A DELETION -- the load-bearing caveat. The converter's
     writePackageFile path goes through needToWriteFile (projectFileWriter.go), which SKIPS a write
     whose bytes are identical. So a file whose emission did not CHANGE between the two releases keeps
@@ -48,10 +70,20 @@
     whether or not it is zero (a class that prints only when non-empty cannot be told from a class
     whose predicate never fired):
 
+        NOT-A-CONVERSION-TARGET
+                            the converter does not emit into this file's directory at all, so no Go
+                            question about it is meaningful. Three disjoint reasons, each printed:
+                            a HAND-WRITTEN repository root (golib\, go2cs\); a std package the
+                            converter SKIP-LISTS (isNonConvertedStdLibPackage: unsafe, builtin,
+                            testing, cmd and cmd/...); or an import path that is not in std at the
+                            SOURCE release -- which includes a .cs sitting directly in core\ with no
+                            package directory at all. NEVER deleted. Tested FIRST, before the marker
+                            scan and before any target lookup.
         PROTECTED           carries the line-anchored [module: GoManualConversion] marker, or is an
-                            *_impl.cs companion. NEVER deleted, whatever Go says about its principal.
-                            A hand-own is the corpus's own code; it is a reconciliation item for a
-                            human (R's runtime2.cs / mfinal.cs), never a deletion.
+                            *_impl.cs companion, INSIDE a package the converter does emit. NEVER
+                            deleted, whatever Go says about its principal. A hand-own is the corpus's
+                            own code; it is a reconciliation item for a human (R's runtime2.cs /
+                            mfinal.cs), never a deletion.
         KEEP-SELECTED       Go still selects the principal at the target for this flavour. This is
                             the dominant class by construction (the needToWriteFile caveat above) and
                             it is the instrument's own negative control: a pass that cannot answer
@@ -62,19 +94,26 @@
                             for this flavour -- a build-tag or GOEXPERIMENT flip. This is the class
                             that killed R's build: exp_aliastypeparams_off.go is present at 1.24.13
                             and simply not chosen.
-        UNRESOLVED          no Go principal is derivable -- generated metadata (package_info.cs,
-                            package_init.cs) and anything else whose stem does not map to a .go file
-                            name. NEVER deleted, always listed, and the run EXITS NON-ZERO so a human
-                            reads them. R's 25 contains exactly one such row (crypto/ecdh/package_init.cs):
-                            the class is real, it is not automatable from a file name, and silently
-                            dropping it would be the silent-subtraction failure this repository has
-                            already paid for.
+        UNRESOLVED          no Go principal is derivable INSIDE a package the converter emits --
+                            generated metadata (package_info.cs, package_init.cs) and anything else
+                            whose stem does not map to a .go file name. NEVER deleted, always listed,
+                            and the run EXITS NON-ZERO so a human reads them. R's 25 contains exactly
+                            one such row (crypto/ecdh/package_init.cs): the class is real, it is not
+                            automatable from a file name, and silently dropping it would be the
+                            silent-subtraction failure this repository has already paid for.
 
     Files the conversion emitted this run are not candidates at all. Neither are the test-host
     artifacts (package_test_info.cs, go2cs_test_host.cs) or any *_test.cs / *.cs.auto / *.g.cs: the
     package csproj <Compile Remove>s them, so a stale one cannot produce the CS0102 this pass exists to
     prevent, and admitting them would bury the real rows under hundreds of UNRESOLVED lines (R
     subtracted 384 test-host artifacts from the same arithmetic). They are counted, not listed.
+
+    EVERY REFUSAL RUNS BEFORE THE DELETION LOOP. The first landing put the UNRESOLVED check AFTER the
+    Remove-Item loop, so a run that exited 2 had already deleted -- a report wearing a refusal's exit
+    code. Exit 2 now means, without exception, that NOTHING WAS REMOVED: the UNRESOLVED check, the
+    delete-set decomposition and the trespass assertion (no delete row may sit under a hand-written
+    root or a skip-listed package directory -- a PATH test, derived independently of the `go list`
+    that classified it) all run first, and the loop itself re-checks every row it is about to delete.
 
 .PARAMETER Root
     The seeded-and-reconverted scratch src root -- the directory holding core\. NOT the repository's
@@ -88,6 +127,20 @@
     The release -GoRoot must report, e.g. go1.24.13. The run REFUSES before printing any table when
     `go version` under -GoRoot says anything else. A deletion pass aimed at the wrong release deletes
     the wrong files, so this is a refusal and not a warning.
+
+.PARAMETER SourceGoRoot
+    The SOURCE release's GOROOT -- the release the OUTGOING corpus was converted from. It answers the
+    only question that makes a file a candidate at all: is this directory something the converter
+    EMITS? Mandatory, because a pass that cannot ask it offers the hand-written runtime for deletion
+    (see the NOT-A-CONVERSION-TARGET note above). Named -SourceGoRoot against -GoRoot rather than
+    renaming the pair -From/-To (handown-census.ps1's spelling) so the target parameter that already
+    ships keeps its name.
+
+.PARAMETER ExpectSourceGo
+    The release -SourceGoRoot must report. DERIVED when omitted, from <GoStdLibVersion> in
+    src\version.props -- the property of record for the release the committed corpus was converted
+    from -- so the expectation cannot go stale independently of the corpus. Pass it explicitly when
+    the pin has already moved ahead of the staging root you are classifying.
 
 .PARAMETER SentinelTime
     The reconvert's start instant. Files modified before it were seeded; files modified at or after it
@@ -112,9 +165,12 @@
 
 .OUTPUTS
     Exit 0  -- classified, no UNRESOLVED rows (and, with -Apply, the DELETE rows are gone).
-    Exit 2  -- classified, but UNRESOLVED rows exist. A human must read them.
+    Exit 2  -- classified, and something needs a human: UNRESOLVED rows, or the trespass assertion
+               fired. NOTHING WAS DELETED -- every check that can produce this code runs before the
+               deletion loop.
     Exit 3  -- refused before classifying anything (bad root, missing/ambiguous sentinel, wrong
-               release, unusable toolchain). Nothing was read, nothing was deleted.
+               release, unusable toolchain), or a deletion aborted part-way (which says so, and says
+               how many files had already been removed).
 
     Explicit exit codes rather than `throw`, because the exit CODE is the property a caller gates on
     and a throw leaves it to the host (CLAUDE.md, false-green route #6).
@@ -122,12 +178,14 @@
 .EXAMPLE
     # Dry run, the normal first invocation.
     .\reconvert-deletions.ps1 -Root D:\scratch\h5\src -GoRoot C:\sdk\go1.24.13 `
-                              -ExpectGo go1.24.13 -Sentinel D:\scratch\h5\run.stamp
+                              -ExpectGo go1.24.13 -SourceGoRoot C:\sdk\go1.23.12 `
+                              -Sentinel D:\scratch\h5\run.stamp
 
 .EXAMPLE
     # Same classification, then delete exactly the DELETE-* rows.
     .\reconvert-deletions.ps1 -Root D:\scratch\h5\src -GoRoot C:\sdk\go1.24.13 `
-                              -ExpectGo go1.24.13 -Sentinel D:\scratch\h5\run.stamp -Apply
+                              -ExpectGo go1.24.13 -SourceGoRoot C:\sdk\go1.23.12 `
+                              -Sentinel D:\scratch\h5\run.stamp -Apply
 
 .NOTES
     Requires PowerShell 5.1 (Windows) or PowerShell 7+ (any platform). Deliberately ASCII-only: a
@@ -144,6 +202,8 @@ param(
     [Parameter(Mandatory = $true)][string]   $Root,
     [Parameter(Mandatory = $true)][string]   $GoRoot,
     [Parameter(Mandatory = $true)][string]   $ExpectGo,
+    [Parameter(Mandatory = $true)][string]   $SourceGoRoot,
+    [string]                                 $ExpectSourceGo,
     [datetime]                               $SentinelTime,
     [string]                                 $Sentinel,
     [string]                                 $Goos,
@@ -168,6 +228,17 @@ function Deny {
     Write-Host "REFUSED: $Message" -ForegroundColor Red
     Write-Host 'Nothing was classified and nothing was deleted.'
     exit 3
+}
+
+# Post-classification refusal. Distinct from Deny because the two make DIFFERENT promises: Deny says
+# nothing was read, this says nothing was DELETED. Both are checked before the Remove-Item loop.
+function Stop-ForReview {
+    param([Parameter(Mandatory = $true)][string] $Message)
+
+    Write-Host ''
+    Write-Host "STOPPED: $Message" -ForegroundColor Yellow
+    Write-Host 'NOTHING WAS DELETED. Dispose of the rows above, then re-run.'
+    exit 2
 }
 
 if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
@@ -214,19 +285,32 @@ else {
     $SentinelStamp = $SentinelTime.ToUniversalTime()
 }
 
-# Toolchain. Named by path -- never a bare `go` off PATH, which resolves to whatever the ambient
-# release happens to be and would answer the file-selection question about the wrong corpus.
-$GoExe = Join-Path $GoRoot "bin/go$ExeSuffix"
+# The SOURCE release expectation, DERIVED rather than restated. <GoStdLibVersion> in version.props is
+# the property of record for the release the committed corpus was converted from, and the reconvert
+# being classified started from THAT corpus -- so deriving it here means the expectation cannot drift
+# from the tree independently. Comments are stripped first because version.props' own prose names the
+# element while explaining it (the _paths.ps1 $NetVersion precedent, same trap, same remedy). There is
+# deliberately no fallback: an instrument that cannot know the source release must say so.
+if ([string]::IsNullOrWhiteSpace($ExpectSourceGo)) {
+    $VersionProps = Join-Path $SrcRoot 'version.props'
 
-if (-not (Test-Path -LiteralPath $GoExe -PathType Leaf)) {
-    Deny "no Go toolchain at $GoExe (pass -GoRoot <the target release's GOROOT>)"
+    if (-not (Test-Path -LiteralPath $VersionProps -PathType Leaf)) {
+        Deny "cannot derive -ExpectSourceGo: the corpus release's property of record is missing at $VersionProps -- pass -ExpectSourceGo explicitly"
+    }
+
+    $stdLibVersionMatch = [regex]::Match(
+        ([System.IO.File]::ReadAllText($VersionProps) -replace '(?s)<!--.*?-->', ''),
+        '<GoStdLibVersion(?:\s[^>]*)?>\s*([^<\s]+)\s*</GoStdLibVersion>')
+
+    if (-not $stdLibVersionMatch.Success) {
+        Deny "cannot derive -ExpectSourceGo from $VersionProps -- expected a <GoStdLibVersion>...</GoStdLibVersion> element. Pass -ExpectSourceGo explicitly."
+    }
+
+    $ExpectSourceGo       = 'go' + $stdLibVersionMatch.Groups[1].Value
+    $ExpectSourceGoOrigin = "derived from <GoStdLibVersion> in $VersionProps"
 }
-
-$GoRootFull = (Resolve-Path -LiteralPath $GoRoot).Path
-$GoSrcDir   = Join-Path $GoRootFull 'src'
-
-if (-not (Test-Path -LiteralPath $GoSrcDir -PathType Container)) {
-    Deny "-GoRoot has no src\ directory: $GoSrcDir"
+else {
+    $ExpectSourceGoOrigin = 'passed as -ExpectSourceGo'
 }
 
 if ([string]::IsNullOrWhiteSpace($Goos))   { $Goos   = $HostGoos }
@@ -241,7 +325,6 @@ if ([string]::IsNullOrWhiteSpace($Goos)) {
 # the corpus's own emission state, and it CHANGES the selected file set for cgo-conditional packages;
 # GOWORK=off and an empty GOFLAGS stop an ambient workspace or flag from moving the answer.
 $GoEnvBase = @{
-    'GOROOT'       = $GoRootFull
     'GOTOOLCHAIN'  = 'local'
     'CGO_ENABLED'  = '0'
     'GOWORK'       = 'off'
@@ -249,8 +332,43 @@ $GoEnvBase = @{
     'GO111MODULE'  = ''
 }
 
+# A toolchain is a VALUE here rather than a pair of script-scope variables, because there are now two
+# of them (source and target) and every `go` child must be unambiguous about which one answered. A
+# bare `go` off PATH is never used: it resolves to whatever the ambient release happens to be and
+# would answer the file-selection question about the wrong corpus.
+function New-Toolchain {
+    param(
+        [Parameter(Mandatory = $true)][string] $GoRootPath,
+        [Parameter(Mandatory = $true)][string] $Label,
+        [Parameter(Mandatory = $true)][string] $ParameterName
+    )
+
+    if (-not (Test-Path -LiteralPath $GoRootPath -PathType Container)) {
+        Deny "$Label GOROOT does not exist or is not a directory: $GoRootPath (pass $ParameterName)"
+    }
+
+    $full = (Resolve-Path -LiteralPath $GoRootPath).Path
+    $exe  = Join-Path $full "bin/go$ExeSuffix"
+
+    if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+        Deny "no Go toolchain at $exe (pass $ParameterName <the $Label release's GOROOT>)"
+    }
+
+    $srcDir = Join-Path $full 'src'
+
+    if (-not (Test-Path -LiteralPath $srcDir -PathType Container)) {
+        Deny "$Label GOROOT has no src\ directory: $srcDir"
+    }
+
+    return [pscustomobject]@{ Label = $Label; Root = $full; Exe = $exe; SrcDir = $srcDir }
+}
+
+$TargetGo = New-Toolchain -GoRootPath $GoRoot       -Label 'target' -ParameterName '-GoRoot'
+$SourceGo = New-Toolchain -GoRootPath $SourceGoRoot -Label 'source' -ParameterName '-SourceGoRoot'
+
 function Invoke-Go {
     param(
+        [Parameter(Mandatory = $true)][object]   $Toolchain,
         [Parameter(Mandatory = $true)][string[]] $Arguments,
         [Parameter(Mandatory = $true)][string]   $ForGoos
     )
@@ -260,6 +378,7 @@ function Invoke-Go {
 
     foreach ($key in $GoEnvBase.Keys) { $vars[$key] = $GoEnvBase[$key] }
 
+    $vars['GOROOT'] = $Toolchain.Root
     $vars['GOOS']   = $ForGoos
     $vars['GOARCH'] = $Goarch
 
@@ -279,10 +398,12 @@ function Invoke-Go {
     $ErrorActionPreference = 'Continue'
 
     try {
-        # From GOROOT\src so a std import path resolves with no module context of the caller's.
-        Set-Location -LiteralPath $GoSrcDir
+        # From the toolchain's own GOROOT\src so a std import path resolves with no module context
+        # of the caller's.
+        Set-Location -LiteralPath $Toolchain.SrcDir
 
-        $output = & $GoExe @Arguments 2>&1
+        $exe    = $Toolchain.Exe
+        $output = & $exe @Arguments 2>&1
         # Captured BEFORE anything else touches $LASTEXITCODE (CLAUDE.md: a pipe reports the pipe's).
         $code   = $LASTEXITCODE
     }
@@ -302,18 +423,33 @@ function Invoke-Go {
     }
 }
 
-# The release gate. PRINTING a pin is not CHECKING it (CLAUDE.md); this compares and refuses.
-$versionProbe = Invoke-Go -Arguments @('version') -ForGoos $Goos
+# The release gates, one per toolchain. PRINTING a pin is not CHECKING it (CLAUDE.md); this compares
+# and refuses. Both are gated: a deletion pass whose SOURCE release is wrong misjudges which
+# directories the converter emits into, which is the class of error the NOT-A-CONVERSION-TARGET arm
+# exists to prevent.
+function Assert-Release {
+    param(
+        [Parameter(Mandatory = $true)][object] $Toolchain,
+        [Parameter(Mandatory = $true)][string] $Expected
+    )
 
-if ($versionProbe.ExitCode -ne 0) {
-    Deny "``go version`` under $GoRootFull failed (exit $($versionProbe.ExitCode)): $($versionProbe.Text.Trim())"
+    $probe = Invoke-Go -Toolchain $Toolchain -Arguments @('version') -ForGoos $Goos
+
+    if ($probe.ExitCode -ne 0) {
+        Deny "``go version`` under $($Toolchain.Root) failed (exit $($probe.ExitCode)): $($probe.Text.Trim())"
+    }
+
+    $text = $probe.Text.Trim()
+
+    if ($text -notmatch ('(^|\s)' + [regex]::Escape($Expected) + '(\s|$)')) {
+        Deny "$($Toolchain.Label) toolchain mismatch -- expected '$Expected' and $($Toolchain.Exe) reports '$text'"
+    }
+
+    return $text
 }
 
-$versionText = $versionProbe.Text.Trim()
-
-if ($versionText -notmatch ('(^|\s)' + [regex]::Escape($ExpectGo) + '(\s|$)')) {
-    Deny "toolchain mismatch -- -ExpectGo said '$ExpectGo' and $GoExe reports '$versionText'"
-}
+$versionText       = Assert-Release -Toolchain $TargetGo -Expected $ExpectGo
+$sourceVersionText = Assert-Release -Toolchain $SourceGo -Expected $ExpectSourceGo
 
 # ---------------------------------------------------------------------------------------------
 # Predicates.
@@ -330,6 +466,23 @@ $BuildOutputDirs = @('bin', 'obj', 'Generated')
 
 $KnownGoos = @('windows', 'linux', 'darwin')
 
+# The converter's OWN skip-list, MIRRORED. `go list std` names unsafe and testing like any other
+# package, so no Go question can exclude them -- the converter's isNonConvertedStdLibPackage
+# (src\go2cs\stdLibConverter.go) is the only authority, and this is a copy of it. A copy DRIFTS, so
+# reconvertDeletionsSkipList_test.go extracts the literal below out of this file and compares it to
+# the converter's set under the plain `go test ./...` in src\go2cs. Keep the assignment on ONE line
+# and in this spelling; the guard's regex reads it.
+$NonConvertedStdPackages = @('unsafe', 'builtin', 'testing', 'cmd')
+$NonConvertedStdPrefixes = @('cmd/')
+
+# The two roots under core\ that are the REPOSITORY's own C#, not converter output: golib (the
+# hand-written runtime) and go2cs (the Symbols shared project). These are LITERALS and cannot be
+# anything else -- they correspond to no Go import path at any release, so no `go list` at either end
+# can name them, and they carry no [module: GoManualConversion] marker because nothing ever converts
+# into them and there is no generated body for a marker to displace. That is exactly why the marker
+# guard could not see them and why R's first dry run offered all 117 of their files for deletion.
+$HandWrittenRoots = @('golib', 'go2cs')
+
 function Test-HandOwnMarker {
     param([Parameter(Mandatory = $true)][string] $Path)
 
@@ -340,8 +493,49 @@ function Test-HandOwnMarker {
     return [regex]::IsMatch($text, $HandOwnMarkerPattern)
 }
 
-# Cache: one `go list` per (importpath, goos). A full corpus is ~350 packages x 1 flavour; without
-# this it would be one process per FILE.
+# The SOURCE release's std package set, one `go list std` per flavour, cached. This is the set the
+# converter's -stdlib driver walks, so membership in it IS "the converter emits into this directory".
+# It is fetched per GOOS because std membership is flavour-dependent: crypto/x509/internal/macos is in
+# std under darwin and absent under windows, internal/runtime/syscall is in std under linux and absent
+# under windows -- and each of those has an L3 per-GOOS folder in the corpus that a windows-only set
+# would misclassify.
+$SourceStdCache = @{}
+
+function Get-SourceStdSet {
+    param([Parameter(Mandatory = $true)][string] $ForGoos)
+
+    if ($SourceStdCache.ContainsKey($ForGoos)) {
+        return $SourceStdCache[$ForGoos]
+    }
+
+    $result = Invoke-Go -Toolchain $SourceGo -Arguments @('list', 'std') -ForGoos $ForGoos
+
+    if ($result.ExitCode -ne 0) {
+        Deny "``go list std`` under the source release ($($SourceGo.Root), GOOS=$ForGoos) failed (exit $($result.ExitCode)): $($result.Text.Trim())"
+    }
+
+    $set = New-Object 'System.Collections.Generic.HashSet[string]'
+
+    foreach ($line in ($result.Text -split "`r?`n")) {
+        $trimmed = $line.Trim()
+        if ($trimmed -ne '') { $null = $set.Add($trimmed) }
+    }
+
+    # An EMPTY set would make every file NOT-A-CONVERSION-TARGET -- the safe direction for a deletion
+    # pass, and therefore exactly the way this instrument could go silently vacuous: it would delete
+    # nothing and report a clean run. A std list is ~300 packages; anything under 100 is a broken
+    # probe, not a small standard library.
+    if ($set.Count -lt 100) {
+        Deny "``go list std`` under the source release (GOOS=$ForGoos) returned only $($set.Count) package(s) -- a std list is ~300. Refusing rather than classifying every file as not-a-conversion-target."
+    }
+
+    $SourceStdCache[$ForGoos] = $set
+
+    return $set
+}
+
+# Cache: one `go list` per (importpath, goos) at the TARGET. A full corpus is ~350 packages x 1
+# flavour; without this it would be one process per FILE.
 $SelectionCache = @{}
 
 function Get-GoSelection {
@@ -356,7 +550,7 @@ function Get-GoSelection {
         return $SelectionCache[$key]
     }
 
-    $result = Invoke-Go -Arguments @('list', '-f', '{{.GoFiles}} {{.CgoFiles}}', $ImportPath) -ForGoos $ForGoos
+    $result = Invoke-Go -Toolchain $TargetGo -Arguments @('list', '-f', '{{.GoFiles}} {{.CgoFiles}}', $ImportPath) -ForGoos $ForGoos
 
     $selection = [pscustomobject]@{
         PackageExists = ($result.ExitCode -eq 0)
@@ -383,18 +577,30 @@ function Get-GoSelection {
 # own last segment happens to be a GOOS name (measured at 1.24.13: `go list internal/syscall/windows`
 # succeeds and lists twelve files, while `go list crypto/rand/windows` says "is not in std"). A
 # name-only rule gets one of those two backwards. So the rule is: ask Go about the full directory
-# first; only if Go does not know it AND the last segment is a GOOS name is it an L3 folder.
+# first; only if NEITHER release knows it AND the last segment is a GOOS name is it an L3 folder.
+#
+# The SOURCE is consulted for that second question as well as the target, because a real package that
+# was REMOVED at the target is still a real package: without it, a removed `<pkg>/<goos>` package
+# would be read as an L3 folder of its parent and reported under the parent's name. Its files are a
+# DELETE either way, so this sharpens the row's principal rather than changing its class -- but a row
+# that names the wrong package is a row a human misreads.
 function Resolve-Principal {
     param([Parameter(Mandatory = $true)][string] $RelativePath)
 
     $parts = $RelativePath -split '/'
-    $stem  = [System.IO.Path]::GetFileNameWithoutExtension($parts[-1])
-    $dirs  = @($parts[0..($parts.Count - 2)])
 
-    if ($dirs.Count -eq 0) {
-        # A .cs sitting directly in core\ belongs to no package.
+    # A .cs sitting directly in core\ belongs to no package. Tested on the PART COUNT, not on the
+    # length of a computed directory list: PowerShell's `0..($n - 2)` with $n = 1 is the range 0..-1,
+    # which counts DOWNWARDS and yields @(0, -1) -- two indices, both resolving to the file name. The
+    # landed instrument computed the list first and tested its Count, so core\GlobalUsings.cs became
+    # the two-segment import path "GlobalUsings.cs/GlobalUsings.cs", which no `go list` knows, and the
+    # file was reported for deletion.
+    if ($parts.Count -lt 2) {
         return $null
     }
+
+    $stem = [System.IO.Path]::GetFileNameWithoutExtension($parts[-1])
+    $dirs = @($parts[0..($parts.Count - 2)])
 
     $fullDir = ($dirs -join '/')
 
@@ -406,16 +612,78 @@ function Resolve-Principal {
 
     $leaf = $dirs[-1]
 
-    if ($dirs.Count -ge 2 -and ($KnownGoos -contains $leaf)) {
+    if ($dirs.Count -ge 2 -and ($KnownGoos -contains $leaf) -and
+        -not (Get-SourceStdSet -ForGoos $Goos).Contains($fullDir)) {
+
         $parentPath = ($dirs[0..($dirs.Count - 2)] -join '/')
         $selection  = Get-GoSelection -ImportPath $parentPath -ForGoos $leaf
 
         return [pscustomobject]@{ ImportPath = $parentPath; Goos = $leaf; Principal = "$stem.go"; Selection = $selection }
     }
 
-    # Neither a package Go knows nor an L3 folder: the package itself is gone at the target. Report it
-    # under its own path so the row reads honestly, with the failed lookup as its selection.
+    # Neither a package Go knows at the target nor an L3 folder: either the package is gone at the
+    # target (a DELETE row) or the directory was never converter output at all (a
+    # NOT-A-CONVERSION-TARGET row). The source-std test in Test-ConversionTarget tells those apart;
+    # this reports it under its own path so the row reads honestly either way, with the failed lookup
+    # as its selection.
     return [pscustomobject]@{ ImportPath = $fullDir; Goos = $Goos; Principal = "$stem.go"; Selection = $asPackage }
+}
+
+# Does the converter EMIT into this file's directory? Asked FIRST, of every candidate, because a
+# "does Go still select the principal" answer is meaningless where the answer here is no -- which is
+# how 116 golib files and Symbols.cs came to be classified DELETE-ABSENT on this instrument's first
+# real run. Returns a reason and a grouping key when the answer is no.
+function Test-ConversionTarget {
+    param(
+        [Parameter(Mandatory = $true)][string] $RelativePath,
+        [Parameter(Mandatory = $false)]        $Resolved
+    )
+
+    $root = ($RelativePath -split '/')[0]
+
+    # A PATH test, deliberately independent of anything `go list` says -- see the $HandWrittenRoots
+    # note. It is also the assertion the deletion loop re-checks, so the two derivations that must
+    # agree before a file is removed do not share an instrument.
+    if ($HandWrittenRoots -contains $root) {
+        return [pscustomobject]@{
+            IsTarget = $false; Group = "$root/"
+            Reason   = "hand-written repository code under $root\ -- never converter output"
+        }
+    }
+
+    if ($null -eq $Resolved) {
+        return [pscustomobject]@{
+            IsTarget = $false; Group = '<core root>'
+            Reason   = 'no package directory -- a .cs directly under core\ is not converter output'
+        }
+    }
+
+    $importPath = $Resolved.ImportPath
+
+    if ($NonConvertedStdPackages -contains $importPath) {
+        return [pscustomobject]@{
+            IsTarget = $false; Group = $importPath
+            Reason   = "std package skip-listed by the converter (isNonConvertedStdLibPackage): $importPath"
+        }
+    }
+
+    foreach ($prefix in $NonConvertedStdPrefixes) {
+        if ($importPath.StartsWith($prefix, [System.StringComparison]::Ordinal)) {
+            return [pscustomobject]@{
+                IsTarget = $false; Group = $prefix
+                Reason   = "std path skip-listed by the converter (isNonConvertedStdLibPackage): $importPath"
+            }
+        }
+    }
+
+    if (-not (Get-SourceStdSet -ForGoos $Resolved.Goos).Contains($importPath)) {
+        return [pscustomobject]@{
+            IsTarget = $false; Group = $importPath
+            Reason   = "not a std package at the source release ($ExpectSourceGo, GOOS=$($Resolved.Goos)): $importPath"
+        }
+    }
+
+    return [pscustomobject]@{ IsTarget = $true; Group = ''; Reason = '' }
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -426,7 +694,9 @@ Write-Host ''
 Write-Host '=== reconvert deletion pass ===============================================' -ForegroundColor Cyan
 Write-Host "  root              $RootFull"
 Write-Host "  target toolchain  $versionText"
-Write-Host "  target GOROOT     $GoRootFull"
+Write-Host "  target GOROOT     $($TargetGo.Root)"
+Write-Host "  source toolchain  $sourceVersionText   ($ExpectSourceGoOrigin)"
+Write-Host "  source GOROOT     $($SourceGo.Root)"
 Write-Host "  flavour asked     GOOS=$Goos GOARCH=$Goarch CGO_ENABLED=0"
 Write-Host ("  seed sentinel     {0:yyyy-MM-dd HH:mm:ss}Z  (modified before this = seeded)" -f $SentinelStamp)
 Write-Host ("  mode              {0}" -f $(if ($Apply) { 'APPLY -- deletions will be performed' } else { 'DRY RUN -- nothing will be deleted' }))
@@ -471,6 +741,20 @@ foreach ($file in $allCs) {
         continue
     }
 
+    # FIRST question, before the marker scan and before any target lookup: does the converter emit
+    # into this directory at all? Everything downstream presumes it does.
+    $resolved = Resolve-Principal -RelativePath $relative
+    $target   = Test-ConversionTarget -RelativePath $relative -Resolved $resolved
+
+    if (-not $target.IsTarget) {
+        $null = $rows.Add([pscustomobject]@{
+            Path = $relative; Principal = ''; Class = 'NOT-A-CONVERSION-TARGET'
+            Reason = $target.Reason; Group = $target.Group; Full = $file.FullName
+        })
+
+        continue
+    }
+
     $isImpl   = ($name -like '*_impl.cs')
     $isMarked = $false
 
@@ -480,7 +764,7 @@ foreach ($file in $allCs) {
         $reason = $(if ($isImpl) { '*_impl.cs companion' } else { '[module: GoManualConversion]' })
 
         $null = $rows.Add([pscustomobject]@{
-            Path = $relative; Principal = ''; Class = 'PROTECTED'; Reason = $reason; Full = $file.FullName
+            Path = $relative; Principal = ''; Class = 'PROTECTED'; Reason = $reason; Group = ''; Full = $file.FullName
         })
 
         continue
@@ -491,17 +775,8 @@ foreach ($file in $allCs) {
     # than silently dropped, and it makes the run exit non-zero.
     if ($name -eq 'package_info.cs' -or $name -eq 'package_init.cs' -or $name -eq 'package_info_internal_test.cs') {
         $null = $rows.Add([pscustomobject]@{
-            Path = $relative; Principal = ''; Class = 'UNRESOLVED'; Reason = 'generated metadata (no Go principal)'; Full = $file.FullName
-        })
-
-        continue
-    }
-
-    $resolved = Resolve-Principal -RelativePath $relative
-
-    if ($null -eq $resolved) {
-        $null = $rows.Add([pscustomobject]@{
-            Path = $relative; Principal = ''; Class = 'UNRESOLVED'; Reason = 'no package directory'; Full = $file.FullName
+            Path = $relative; Principal = ''; Class = 'UNRESOLVED'
+            Reason = 'generated metadata (no Go principal)'; Group = ''; Full = $file.FullName
         })
 
         continue
@@ -512,7 +787,7 @@ foreach ($file in $allCs) {
     if (-not $resolved.Selection.PackageExists) {
         $null = $rows.Add([pscustomobject]@{
             Path = $relative; Principal = $principalLabel; Class = 'DELETE-ABSENT'
-            Reason = "package not in std at target"; Full = $file.FullName
+            Reason = "package not in std at target"; Group = ''; Full = $file.FullName
         })
 
         continue
@@ -521,24 +796,24 @@ foreach ($file in $allCs) {
     if ($resolved.Selection.Files.Contains($resolved.Principal)) {
         $null = $rows.Add([pscustomobject]@{
             Path = $relative; Principal = $principalLabel; Class = 'KEEP-SELECTED'
-            Reason = "selected for $($resolved.Goos)"; Full = $file.FullName
+            Reason = "selected for $($resolved.Goos)"; Group = ''; Full = $file.FullName
         })
 
         continue
     }
 
-    $onDisk = Join-Path $GoSrcDir (($resolved.ImportPath -replace '/', [System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar + $resolved.Principal)
+    $onDisk = Join-Path $TargetGo.SrcDir (($resolved.ImportPath -replace '/', [System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar + $resolved.Principal)
 
     if (Test-Path -LiteralPath $onDisk -PathType Leaf) {
         $null = $rows.Add([pscustomobject]@{
             Path = $relative; Principal = $principalLabel; Class = 'DELETE-DESELECTED'
-            Reason = "present but not selected for $($resolved.Goos)"; Full = $file.FullName
+            Reason = "present but not selected for $($resolved.Goos)"; Group = ''; Full = $file.FullName
         })
     }
     else {
         $null = $rows.Add([pscustomobject]@{
             Path = $relative; Principal = $principalLabel; Class = 'DELETE-ABSENT'
-            Reason = 'principal removed at target'; Full = $file.FullName
+            Reason = 'principal removed at target'; Group = ''; Full = $file.FullName
         })
     }
 }
@@ -548,7 +823,7 @@ foreach ($file in $allCs) {
 # from a class whose predicate never fired.
 # ---------------------------------------------------------------------------------------------
 
-$classOrder = @('DELETE-ABSENT', 'DELETE-DESELECTED', 'UNRESOLVED', 'PROTECTED', 'KEEP-SELECTED')
+$classOrder = @('DELETE-ABSENT', 'DELETE-DESELECTED', 'UNRESOLVED', 'PROTECTED', 'NOT-A-CONVERSION-TARGET', 'KEEP-SELECTED')
 
 foreach ($class in $classOrder) {
     $inClass = @($rows | Where-Object { $_.Class -eq $class })
@@ -560,6 +835,18 @@ foreach ($class in $classOrder) {
         # the negative control that matters (an instrument that cannot answer "keep" deletes a corpus),
         # and -Verbose prints the rows for anyone who wants them.
         foreach ($row in $inClass) { Write-Verbose ("  {0}  <- {1}" -f $row.Path, $row.Principal) }
+        continue
+    }
+
+    if ($class -eq 'NOT-A-CONVERSION-TARGET') {
+        # Rolled up by GROUP rather than listed: golib alone is over a hundred rows and would bury
+        # every actionable line, and the group IS the finding (which directory, and why). Each group
+        # prints its count and one representative reason; -Verbose prints the rows.
+        foreach ($group in ($inClass | Group-Object Group | Sort-Object Name)) {
+            Write-Host ("  {0,-46} {1,4}  {2}" -f $group.Name, $group.Count, $group.Group[0].Reason)
+        }
+
+        foreach ($row in $inClass) { Write-Verbose ("  {0}  ({1})" -f $row.Path, $row.Reason) }
         continue
     }
 
@@ -585,11 +872,91 @@ function Write-Counts {
     Write-Host ("      seeded candidates              {0}" -f $rows.Count)
 
     foreach ($class in $classOrder) {
-        Write-Host ("        {0,-20} {1}" -f $class, @($rows | Where-Object { $_.Class -eq $class }).Count)
+        Write-Host ("        {0,-24} {1}" -f $class, @($rows | Where-Object { $_.Class -eq $class }).Count)
+    }
+
+    # The source std sets the candidate test consulted, one line per flavour actually asked. A count
+    # beside a set claim (CLAUDE.md): a set nobody counted is a set nobody checked.
+    Write-Host ''
+    Write-Host '  source std sets consulted' -ForegroundColor Cyan
+
+    foreach ($flavour in ($SourceStdCache.Keys | Sort-Object)) {
+        Write-Host ("    go list std ({0}, GOOS={1,-8}) {2} package(s)" -f $ExpectSourceGo, $flavour, $SourceStdCache[$flavour].Count)
     }
 }
 
 Write-Counts
+
+# ---------------------------------------------------------------------------------------------
+# Pre-deletion. EVERYTHING that can refuse runs here, before a single Remove-Item: the first landing
+# of this instrument put the UNRESOLVED check after the loop, so exit 2 meant "deleted, then
+# complained". Exit 2 now means zero files removed.
+# ---------------------------------------------------------------------------------------------
+
+Write-Host ''
+Write-Host '  delete set' -ForegroundColor Cyan
+
+foreach ($class in @('DELETE-ABSENT', 'DELETE-DESELECTED')) {
+    Write-Host ("    {0,-24} {1}" -f $class, @($rows | Where-Object { $_.Class -eq $class }).Count)
+}
+
+Write-Host ("    {0,-24} {1}" -f 'total', $deleteRows.Count)
+
+# The trespass assertion. By construction no NOT-A-CONVERSION-TARGET row can be in $deleteRows -- the
+# candidate test runs first and `continue`s. This re-derives the same property from the PATH alone, so
+# a future edit that reorders the classification, or a skip-list that drifts from the converter's,
+# fails LOUDLY here instead of deleting the hand-written runtime. Two derivations, one instrument each.
+function Test-ProtectedPath {
+    param([Parameter(Mandatory = $true)][string] $RelativePath)
+
+    $segments = $RelativePath -split '/'
+    $root     = $segments[0]
+
+    if ($HandWrittenRoots -contains $root) { return "under the hand-written root $root\" }
+
+    # A skip-listed PACKAGE protects its own directory, not its subtree: testing\ is hand-owned and
+    # testing\fstest\ is an ordinary converted package. Guarded on the segment count before the range
+    # is formed, for the `0..-1` reason spelled out in Resolve-Principal.
+    if ($segments.Count -gt 1) {
+        $dir = ($segments[0..($segments.Count - 2)] -join '/')
+
+        if ($NonConvertedStdPackages -contains $dir) {
+            return "in the converter-skip-listed package $dir"
+        }
+    }
+
+    foreach ($prefix in $NonConvertedStdPrefixes) {
+        if ($RelativePath.StartsWith($prefix, [System.StringComparison]::Ordinal)) {
+            return "under the converter-skip-listed path $prefix"
+        }
+    }
+
+    return $null
+}
+
+$trespassers = @()
+
+foreach ($row in $deleteRows) {
+    $why = Test-ProtectedPath -RelativePath $row.Path
+    if ($null -ne $why) { $trespassers += [pscustomobject]@{ Path = $row.Path; Why = $why } }
+}
+
+if ($trespassers.Count -gt 0) {
+    Write-Host ''
+    Write-Host ("TRESPASS ASSERTION FIRED -- {0} delete row(s) sit where the converter never emits:" -f $trespassers.Count) -ForegroundColor Red
+
+    foreach ($row in ($trespassers | Sort-Object Path)) {
+        Write-Host ("    {0}`n        {1}" -f $row.Path, $row.Why) -ForegroundColor Red
+    }
+
+    Stop-ForReview 'the classification and the path test disagree. This is an instrument defect, not a corpus finding.'
+}
+
+if ($Apply -and $unresolved.Count -gt 0) {
+    Write-Host ''
+    Write-Host ("UNRESOLVED: {0} seeded file(s) have no derivable Go principal." -f $unresolved.Count) -ForegroundColor Yellow
+    Stop-ForReview '-Apply refuses while UNRESOLVED rows stand. Dispose of each (they are listed above), then re-run with -Apply.'
+}
 
 if (-not $Apply) {
     Write-Host ''
@@ -602,6 +969,18 @@ else {
     $deleted = 0
 
     foreach ($row in ($deleteRows | Sort-Object Path)) {
+        # Belt and braces: the same path test the assertion above ran, re-asked immediately before the
+        # irreversible act. Unreachable while the assertion stands, which is the point -- if it ever
+        # fires the run stops HERE rather than continuing through the rest of the list.
+        $why = Test-ProtectedPath -RelativePath $row.Path
+
+        if ($null -ne $why) {
+            Write-Host ''
+            Write-Host ("DELETION ABORTED MID-LOOP at {0} ({1})" -f $row.Path, $why) -ForegroundColor Red
+            Write-Host ("{0} file(s) had already been removed. The tree is PART-DELETED; discard the staging root." -f $deleted) -ForegroundColor Red
+            exit 3
+        }
+
         Remove-Item -LiteralPath $row.Full -Force
         $deleted++
         Write-Host ("    deleted  {0}" -f $row.Path)
