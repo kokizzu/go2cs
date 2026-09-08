@@ -90,6 +90,13 @@ it was reported. A case-insensitive grep for a marker whose case is load-bearing
 | windows | 307 | **347** | +40 |
 | darwin | 306 | **346** | +40 |
 
+> ⚠ **These cells are taken at `CGO_ENABLED=1` and are one package high for any corpus comparison —
+> see [§F of the 2026-09-08 amendment](#f-2s-census-table-is-taken-at-a-cgo-state-the-corpus-does-not-use).**
+> The corpus emits at `CGO_ENABLED=0`, where every cell is one lower (windows **306 → 346**) and the
+> `go list std` ↔ `go2cs-stdlib.slnx` identity closes exactly. The one package is `runtime/cgo`, at
+> both releases. Pointer added 2026-09-08 because the correction sat ~900 lines below the number it
+> corrects, and `CENSUS-h10-eligibility-go124.md` cites this table.
+
 **54 added, 14 removed — but the shape matters more than the count.**
 
 **38 of the 54 additions are `crypto/internal/fips140*`**, and **7 of the 14 removals are the old
