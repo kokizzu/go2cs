@@ -1192,3 +1192,216 @@ Each produced a plausible, well-formed, wrong answer:
 
 **None was caught by a gate. Each was caught by a rendered result that could not be true** — most
 sharply the collision set that did not contain the file whose collision had already been measured.
+
+---
+
+## 2026-09-07 — ⚠ CORRECTION TO §4 OF THE BLOCK ABOVE: the member-name extraction mis-scoped METHODS
+
+**Found by re-checking my own instrument after the section was committed.** The collision finding,
+the dispositions and every control are UNAFFECTED — they come from a different instrument that never
+used this extraction. **What is wrong is one row of §4's re-classification table.**
+
+### The defect
+
+§4's scope check took each removed member's name with `awk '{print $2}'`. On a plain member
+(`type note`, `const active_spin`) that is right. On a **method** record — `func (*MapIter)Key` — it
+yields `(*MapIter)Key`, and the package grep built from it (`^func[[:space:]]+\(\*MapIter\)Key`)
+**can never match a real Go declaration**, whose form is `func (it *MapIter) Key()`. Every method
+member therefore scoped as *truly gone from the package*.
+
+```
+  member records resting on a method name        21 of 87
+  wrongly scoped "truly gone", actually RELOCATED 19
+```
+
+`reflect`'s `MapIter.Key/Next/Value/Reset`, `Value.MapIndex/MapKeys/MapRange/SetMapIndex`,
+`internal/abi`'s five `MapType` predicates and `testing`'s two `testContext` methods all exist at
+1.24.13 — they moved to `map_swiss.go`, `type.go` and `testing.go` siblings. **A reading that says
+`reflect` lost `Value.MapIndex` cannot be true**, which is the tell, and it is the same
+could-not-be-true check that caught the four errors §7 already lists.
+
+### Corrected §4 table
+
+With methods matched by `^func \([^)]*\) <name>\b`, and `testing`/`unsafe` excluded as **skip-listed
+packages that are never converted and so cannot collide with an emission**:
+
+```
+  MOVED-WITHIN-PACKAGE          5     os/linux/wait_waitid.cs, runtime/runtime2.cs,
+                                      runtime/runtime2_impl.cs,
+                                      syscall/linux/zsyscall_linux_amd64_impl.cs,
+                                      syscall/windows/zsyscall_windows_impl.cs
+  MIXED                          6     internal/abi/type_impl.cs, reflect/value_impl.cs,
+                                      runtime/{darwin,linux,windows}/lock_*_impl.cs, sync/mutex.cs
+  MEMBERS-REMOVED (truly gone)   5     os/windows/file_windows_impl.cs, runtime/mbitmap_impl.cs,
+                                      runtime/stubs_impl.cs, sync/runtime_impl.cs,
+                                      syscall/linux/syscall_linux_amd64_impl.cs
+```
+
+**One row moves: `testing/testing.cs` leaves the truly-gone list** (6 → 5). Two of its four members
+relocated rather than vanishing, so its class would be MIXED — and `testing` is hand-owned and
+skip-listed, so it has no emission to collide with and does not belong in this table at all.
+
+**MOVED-WITHIN-PACKAGE membership is unchanged**, which is why the disposition — `runtime2.cs`
+RE-WRITE, everything else mechanical — stands exactly as §5 records it. Per-file `gone`/`moved`
+counts inside MIXED move substantially (`reflect/value_impl.cs` 15/5 → 3/17; `internal/abi/type_impl.cs`
+7/1 → 3/5); those counts were never published, and are stated here so a re-run reproduces them.
+
+### Instrument correction (a fifth, for §7's list)
+
+**A member-name extractor must handle every RECORD SHAPE its own classifier emits.** The classifier
+emits `type X`, `const X`, `var X`, `func X` **and** `func (R)X`; the extractor handled four of five
+and failed silently on the fifth, in the direction that over-reports removals — the most alarming
+direction, and the one least likely to be questioned.
+
+---
+
+## 2026-09-07 — ⚠ A SECOND COLLISION, IN `sync` — the predicate was TYPE-LEVEL and the class is MEMBER-LEVEL
+
+**Found by auditing this instrument against i9's finding in `e3b3ee554`** (a guard keyed on a bare
+name across a namespace where the name is not unique). Asking "is that shape in my work?" exposed a
+different hole in the same family: **my collision predicate reads only TYPE declarations, and a
+relocated FUNCTION collides identically.**
+
+### Why a companion cannot collide, and a whole-file rewrite can
+
+Both displacement mechanisms are **file-independent**:
+
+- a **registry** entry (`manualConversionFuncs`) is keyed `<package>.<symbol>` and displaces the body
+  wherever the converter would emit it;
+- a **bodyless partial** is completed by its companion, and C# permits the definition and the
+  implementation to sit in **different files** of one assembly.
+
+So a relocation is harmless for an `_impl.cs` companion. **It is fatal only for a whole-file
+`[module: GoManualConversion]` rewrite**, which the converter does not emit at all while it *does*
+emit the file the declaration moved to. That is the sharper statement of the rule §3 gave as "member
+disjointness".
+
+### The second row, verified
+
+```
+  hand-own      src/core/sync/mutex.cs        whole-file rewrite, 1 marker line, never re-emitted
+  member        func fatal(string)            linkname-provided, bodyless in Go
+  1.23.12       declared in sync/mutex.go     == the hand-own's OWN principal -> nothing emitted  OK
+  1.24.13       declared in sync/runtime.go   SELECTED on windows, linux AND darwin
+  hand-own      mutex.cs:40  internal static void fatal(@string s) => throw new …
+  registry      "fatal" NOT registered under "sync"  (only "copyChecker.check" is)
+```
+
+At 1.24.13 the converter emits `sync/runtime.cs` carrying `fatal`, while the marker-protected
+`mutex.cs` declares it with a body — **a duplicate member in `sync_package`**. Nothing displaces it,
+because nothing is registered and there is no bodyless partial to complete.
+
+⚠ **`throw` moved in the same commit and does NOT collide** — `mutex.cs` declares `fatal` and not
+`throw` (0 declarations, checked with comments stripped). The two names travel together in Go and
+only one is re-declared here; a census that assumed the pair would have over-reported by one.
+
+⚠ **`os/linux/wait_waitid.cs :: const _P_PID` is NOT a collision.** Go declares `_P_PID` in no
+`os/*.go` at either release — it is a go2cs invention — so §4's "moved" verdict for it was an
+artifact of the same member-name extractor §4's correction already documents.
+
+### THE H6 COLLISION BILL — 2 rows
+
+```
+  1  runtime/runtime2.cs :: type note  -> note_other.go   type-level    MEASURED at H5
+  2  sync/mutex.cs       :: func fatal -> runtime.go      member-level  PREDICTED here
+```
+
+**`sync` sits under nearly the whole corpus**, so row 2 is the next blocker after row 1 is
+reconciled — H5's build never reached it, because `runtime` failed first and everything above a
+failed leaf is skipped rather than compiled. **This is a prediction, not a measurement**, and the
+three-target H5 emission is what will score it.
+
+**Disposition — `sync/mutex.cs`: RE-WRITE**, on the same grounds as `runtime2.cs`: a marker-protected
+whole-file rewrite that re-declares a member Go has relocated into a file the converter emits.
+
+### Control
+
+```
+  POSITIVE  the 1.23.12 arrangement is the negative case and reads clean: the declaring file IS
+            the hand-own's own principal, so no emission carries it and no collision exists.
+            The class appears only at the hop.                                           PASS
+  SCOPE     companions excluded with a REASON (file-independent displacement), not by count;
+            the audit ran over every whole-file rewrite, yielding 3 candidates of which 1 survives
+            verification.                                                                 PASS
+```
+
+**Sixth instrument correction for §7's list: a collision predicate must cover every DECLARATION KIND
+that can duplicate — type, function, const, var — not just the kind that motivated it.** Mine was
+built from a type-level defect (`note`) and inherited that shape; the second row was invisible to it
+until a peer's unrelated finding prompted the audit.
+
+---
+
+## 2026-09-07 — DOSSIER ADDITION: `internal/concurrent`, the hand-own-by-consequence twin of `internal/weak` (COORD routing, `e4ef6d486`)
+
+**Both packages are REMOVED at 1.24.13 *and* hand-owned-by-consequence, and that pair of properties
+puts them in a class of their own — one the deletion instrument cannot dispose of.**
+
+### The two properties, and why together they matter
+
+**Hand-owned by consequence** (CLAUDE.md's class of four): every non-test Go file in the package is
+hand-owned, so `unmarkedFileCount == 0` makes the stdlib driver `continue` before `writeProjectFile`
+— the package's `.csproj`, `package_info.cs` and `README.md` are never re-emitted at all.
+
+**Removed at 1.24.13**, verified against a PINNED toolchain:
+
+```
+  internal/concurrent            REMOVED at 1.24.13
+  internal/weak                  REMOVED at 1.24.13
+  crypto/internal/boring/bcache  LIVE
+  internal/godebug               LIVE
+```
+
+⚠ The same probe run BEFORE the GOROOT pin reported all four LIVE — the toolchain-resolution trap, in
+this record's own working. **Only the pinned reading is the measurement.**
+
+### What the deletion instrument does with them — nothing, on every path
+
+Measured on the three-target dry run (§10 of `REHEARSAL-h5-go124.md`):
+
+| file | class | why it survives |
+|:--|:--|:--|
+| `internal/concurrent/hashtriemap.cs` | **PROTECTED** | carries the hand-own marker |
+| `internal/concurrent/hashtriemap_whitebox.cs` | **PROTECTED** | carries the hand-own marker |
+| `internal/concurrent/package_info.cs` | **UNRESOLVED** | no derivable Go principal |
+| `internal/weak/pointer.cs` | **PROTECTED** | carries the hand-own marker |
+| `internal/weak/package_info.cs` | **UNRESOLVED** | no derivable Go principal |
+| both `.csproj`, `README.md`, `.ico`/`.png`, `.cs.auto` | — | not a `.cs`; the instrument does not consider them |
+| the `_test.cs` / `go2cs_test_host.cs` set | — | `<Compile Remove>`d test artifacts |
+
+```
+  corpus files surviving, internal/concurrent   13
+  corpus files surviving, internal/weak         11
+                                               ---
+  total, for packages that DO NOT EXIST at 1.24.13   24     deleted by the pass: 0
+```
+
+### ⚠ THE RULE THIS EXPOSES — the marker protects a file from the CONVERTER, not from its package's REMOVAL
+
+`PROTECTED` is exactly right for `bcache` and `godebug`: same hand-own-by-consequence class, both
+**LIVE** at 1.24.13, and the marker is doing its job — stopping a reconvert from clobbering a
+hand-written body. It is exactly **wrong** for `concurrent` and `weak`, where the package itself is
+gone and every file in it is dead weight the overlay would carry into the corpus.
+
+**The discriminator is the PACKAGE's existence at the target, not the file's marker** — and the
+instrument currently consults only the marker. This is a third interaction beside the two reported in
+`1f5e8f276` (`golib` classified `DELETE-ABSENT`; the UNRESOLVED refusal running after the deletion
+loop), and it is the mirror of the first: there the instrument deletes what it must keep, here it
+keeps what it must delete.
+
+### Disposition
+
+**`internal/concurrent` — DELETE THE DIRECTORY, as its twin `internal/weak` does.** Neither is a
+per-file question: a removed package leaves no file behind, hand-owned or otherwise. Both are already
+named in §2's REMOVED rows; what this section adds is that **their removal cannot be performed by the
+deletion instrument as written**, because every path through it declines them.
+
+**Proposed instrument rule, stated so it does not weaken the marker guard:** classify by package
+first — *if the package is absent from `go list std` at the target, every file under it is
+`DELETE-PACKAGE-GONE`, marker or no marker* — and keep the marker guard for files in packages that
+still exist. The two rules answer different questions and neither subsumes the other.
+
+⚠ **Scope, stated rather than implied:** `internal/weak` also carries a registry re-key that G owns
+(`internal/weak.runtime_* → weak.runtime_*`). That is a separate change on a separate branch and this
+section does not touch it; what is recorded here is only the deletion-disposition of the two
+directories.
