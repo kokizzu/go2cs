@@ -279,6 +279,18 @@ step — meets `ConverterBuildInputs.IsConverterStale`, comparing the binary's e
 3  assert     the comparison record's oracleGoVersion reads go1.23.12
 ```
 
+⚠ **Step 2's "under the 1.23.12 pin" is the ENVIRONMENT, not the flag.** `-goroot` selects the corpus SOURCE
+tree and does **not** isolate the converter's package loader: the ambient `GOROOT` leaks into `go/packages`'
+resolution of `internal/abi`, so a `-tests` run issued from the shell that BUILT the converter (1.24.13 still
+exported) fails the `runtime` row with ~150 errors shaped like `undefined: abi.MapBucketCount` and `use of
+internal package internal/abi not allowed` — **a wall that impersonates a corpus break at exactly the moment a
+pin moved.** Measured one-variable by i9 (`1cf3af363`): identical command line, `-goroot <sdk>/go1.23.12` in
+both runs; ambient `GOROOT` 1.24.13 → rc 1, nothing emitted; ambient 1.23.12 → rc 0, clean. G (`072c283023`)
+places it as H1 step 1's ruled mechanism — **`-stdlib` converts the tree the ENVIRONMENT names** — reaching the
+`-tests` driver, plus the half H1 does not say: **the flag does not override the environment.** So the converter
+build and the corpus run happen in SEPARATE shells, or the run re-exports `GOROOT` and `PATH` to the corpus pin
+before invoking `go2cs`; **`-goroot` alone is not the pin.**
+
 ⚠ **`-SkipBuild` is mandatory, not stylistic.** The sweep's toolchain guard does not refuse the mixed state, it
 **requires** it — throwing when the running release differs from `version.props`, so it passes under 1.23.12
 and throws under 1.24.13 — and none of its four switches touches the pin. But its line ~334 is
