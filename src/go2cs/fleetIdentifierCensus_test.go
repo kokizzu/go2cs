@@ -642,6 +642,80 @@ func TestFleetIdentifierScannerFiresAndRestores(t *testing.T) {
 // (a record renamed, a corpus file relocated by a layout change) is dead weight that reads as
 // diligence, and a cleared SEGMENT that no longer appears in its file is a clearance covering
 // nothing -- the shape that lets a guard go quietly vacuous.
+// TestSplitRefusalIsAttributableToTheToken is i9's contributed control (mailbox 5e7e71a063), and it
+// closes a gap every shape probe in this fleet shared on 2026-09-08 -- four lanes, twenty-seven shapes
+// between them, all measuring the same one thing: THAT THE PLANT FIRES. None measured WHY.
+//
+// A refusal is evidence the gate caught the TOKEN only if an identically-shaped plant carrying a
+// HARMLESS token comes back CLEAN. Without that arm, a joiner that fused text too aggressively would
+// refuse everything split across a line break, and every "it FIRES" any of us posted would still read
+// PASS. The committed control here had clean-INLINE (the baseline record) and plant-SPLIT; it never had
+// clean-SPLIT, so the failure mode that the split FIX itself introduces was the one shape untested.
+//
+// Two properties, and the second is the one a red exit code cannot give: the plants fire, and they fire
+// THE NAMED ARM and nothing else.
+func TestSplitRefusalIsAttributableToTheToken(t *testing.T) {
+	const controlToken = "zzcontrolaccount"
+	denied := fleetDeniedIndex([]fleetDeniedToken{{len(controlToken), fleetHash(controlToken), "control token"}})
+
+	// Both are token-shaped and split identically. Only one is denied.
+	const harmless = "zzharmlessword"
+	const seg = "zzexampleaccount"
+
+	cases := []struct {
+		name     string
+		content  string
+		wantKind string // "" means the arm must stay CLEAN
+	}{
+		{"denied token split across a break", "owner reads " + controlToken[:6] + "\n" + controlToken[6:] + " here\n", "denied-token-split"},
+		{"denied token split across a BLANK LINE", "owner reads " + controlToken[:6] + "\n\n" + controlToken[6:] + " here\n", "denied-token-split"},
+		{"profile path split across a break", fmt.Sprintf("root at /home/\n%s/go\n", seg), "profile-path-split"},
+
+		// ⚠ THE ARMS THAT MAKE THE ONES ABOVE MEAN SOMETHING. Same geometry, harmless content.
+		{"HARMLESS token, the same split geometry", fmt.Sprintf("a note about \n%s and things\n", harmless), ""},
+		{"HARMLESS token, blank-line geometry", fmt.Sprintf("a note about \n\n%s and things\n", harmless), ""},
+		{"PLACEHOLDER path split (must stay cleared)", "root at /home/\nuser/go\n", ""},
+		{"ordinary indented prose over three lines", "the census reads\n    every tracked file\n    and reports\n", ""},
+
+		// ⚠ THE FALSE-POSITIVE SURFACE, ASSERTED RATHER THAN ACCEPTED IN A COMMENT. Collapsing
+		// whitespace at a break also fuses the last word of one line to the first of the next, so two
+		// INNOCENT words can spell a denied token together. This arm requires that to REFUSE: the gate
+		// cannot distinguish it from a genuinely wrapped token, and refusing is the direction chosen --
+		// a false refusal costs one rewrite, a false pass costs the fleet a scrub. It is here so that
+		// nobody narrows the joiner to "fix" this and silently reopens the split hole; if this arm ever
+		// goes green, the split arms above are about to stop working.
+		{"ACCEPTED false positive: two innocent words fusing at a break", "the " + controlToken[:9] + "\n" + controlToken[9:] + " is a ledger column\n", "denied-token-split"},
+
+		// And the measurement that bounds it: the SAME pair not at a break stays clean, which is what
+		// collapsing only at the break buys over stripping all whitespace.
+		{"the same pair NOT at a break stays clean", "the " + controlToken[:9] + " " + controlToken[9:] + " is a ledger column\n", ""},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := scanFleetIdentifiers("docs/phase4/CONTROL-record.md", []byte(c.content), denied)
+
+			if c.wantKind == "" {
+				if len(got) != 0 {
+					t.Fatalf("must stay CLEAN, fired %v -- a joiner that refuses harmless split text makes every "+
+						"\"it fires\" reading in this file meaningless", got)
+				}
+				return
+			}
+
+			if len(got) == 0 {
+				t.Fatalf("planted %s was NOT detected -- this arm cannot go red", c.name)
+			}
+			for _, f := range got {
+				if f.Kind != c.wantKind {
+					t.Fatalf("fired %q, want %q -- the refusal must be attributable to the arm claimed, "+
+						"and an exit code alone cannot tell those apart", f.Kind, c.wantKind)
+				}
+			}
+		})
+	}
+}
+
 func TestFleetIdentifierClearancesAreLive(t *testing.T) {
 	root := repoRootFromPackageDir(t)
 	for key, reason := range fleetClearedSegments {
