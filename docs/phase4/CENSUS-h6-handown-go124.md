@@ -1981,3 +1981,101 @@ already ruled for the first serves both:
 two missing siblings were never emitted, never banked, or dropped by a merge is NOT measured here —
 only that they are absent, that their packages carry none, and that a header's quantitative claim
 therefore rests on nothing a reader can check.
+
+---
+
+## 2026-09-08 — ⚠ **RETRACTION: MISSING GENERATED IS WITHDRAWN AS A RESTORE CLASS AND ITS MEMBERSHIP IS EMPTY** — plus the dispatched `exec_unix.cs.auto` measurement, which closes the invalid-base clause at 3 of 30 MEASURED
+
+C1 corrected the third outcome minted above (`4617c3c14`) and ruled in `741339107`. **They are right, and
+I verified it independently before accepting it** — on a LINUX target where theirs was windows.
+
+### 1. THE CORRECTION, VERIFIED ON A DIFFERENT TARGET
+
+```
+  the converter's OWN header, src/go2cs/importInitSection.go:
+    "Until 2026-09-01 each hook was spliced into the class body of the FILE whose import spec
+     produced it ... The hooks are collected per emission unit instead (packageImportInits)"
+
+  C1's discriminator, reproduced on MY linux run:
+    sync/cond.cs        ORDINARY production file, no hand-own    committed 1  fresh 0  WRITTEN
+    sync/package_info.cs                                          committed 0  fresh 2  WRITTEN
+```
+
+**An ordinary production file shows the same zero**, so the zero is the CONVERTER's relocation and not
+a hand-own's freeze. **The frozen hand files carrying no import hooks are CORRECT AND CURRENT.**
+
+### 2. ⚠ THE ROOT OF MY ERROR — TWO LAYERS, BOTH RULES THIS DOSSIER ALREADY STATES
+
+**(a) I compared the frozen `.cs` against the committed `.cs.auto`, and those siblings PREDATE the
+2026-09-01 relocation.** That is *this document's own stale-base finding, turned on its own
+conclusion*: my freshness screen keyed on the 2026-08-24 rebank when the threshold that mattered for
+this attribute was the relocation date. **A freshness threshold is keyed to the CONVERTER CHANGE the
+question depends on, never to a generic rebank date.**
+
+**(b) My population was HAND-OWNS ONLY, so a corpus-wide converter change could only look like a
+hand-own property.** The control that breaks it is an ordinary production file — outside my
+population by construction, which is why no amount of re-running my census could have found it.
+
+### 3. THE CLASS IS EMPTY, NOT MERELY SMALLER
+
+Of the 39, **38 are import hooks** and **exactly ONE is a real `init()`** — `internal/godebug`'s, which
+IS still emitted fresh and IS absent from the hand file. It looked like the one survivor. It is not:
+
+```
+  Go declares init() at internal/godebug/godebug.go:217   -> HAS a Go principal
+                                                          -> BY DESIGN under my own ruled discriminator
+  and the hand file says so itself:
+    "The converted runtime has no Setenv notification, and the literal conversion of the
+     embedded-pointer machinery faults at runtime"
+  (it references neither setUpdate nor setNewIncNonDefault: 0 and 0)
+```
+
+**MISSING GENERATED has no members on today's corpus.** RESIDUE (12) and BY DESIGN (11) stand
+untouched, as C1 said.
+
+### 4. THE DISPATCHED MEASUREMENT — `syscall/linux/exec_unix.cs.auto` (COORD `fff04f4aa`)
+
+A seeded **linux-target** `-stdlib` at 1.23.12, converter embedding `go1.23.12` (asserted), 3,756 seeded
+`.cs`, exit 0, **1,724 files written this run**:
+
+```
+  exec_unix.cs.auto WRITTEN this run : YES        <- the write evidence C1's windows run could not get
+  differing vs the committed sibling : 36         = 28 removed + 8 added
+      24 removed   the four import-hook blocks (the relocation)
+      4 removed + 8 added   a REAL emission change: RawSyscall(SYS_EXECVE, ...) now hoists its
+                            three pointer arguments into locals and adds GC.KeepAlive for each
+```
+
+**INVALID BASE, confirmed with write evidence** — and for TWO independent reasons, only one of which is
+the relocation. **The invalid-base clause now reads 3 of 30 MEASURED** (`sync/mutex.cs` 6,
+`time/tick.cs` 2, `exec_unix.cs.auto` 36) rather than 2 measured plus 1 assumed.
+
+### 5. C1's SIX VACUOUS ROWS, RESOLVED — they are class A (RELOCATED)
+
+Both are linux files a windows target never writes; this run wrote both:
+
+```
+  syscall/linux/exec_unix.cs.auto   hooks committed 4 -> fresh 0   WRITTEN
+  os/linux/wait_waitid.cs.auto      hooks committed 2 -> fresh 0   WRITTEN
+  syscall/linux/package_info.cs     hooks committed 0 -> fresh 6   WRITTEN
+  os/linux/package_info.cs          hooks committed 0 -> fresh 16  WRITTEN
+```
+
+**The hooks landed in the per-GOOS `package_info.cs`.** So all six are RELOCATED and **must not be
+restored**, exactly as C1 ruled for their 22. C1's split closes: 22 + 11 + 6, none a re-derive item.
+
+### 6. ⚠ A NEAR-MISS WORTH RECORDING — the keep-alive grep is NOT a defect
+
+The emission change in §4 adds `GC.KeepAlive` to execve's three pointer arguments. The hand-owned
+`exec_unix.cs` has **zero** `KeepAlive` and passes `(uintptr)argv0ʋ, (uintptr)argvʋ, (uintptr)envvʋ`
+directly — which reads exactly like a frozen hand-own missing a retention fix.
+
+**It is not.** Reading the BODY rather than the grep: those are `IntPtr`s from `MarshalStringZ` /
+`MarshalStringVector` — **native memory**, freed with `FreeHGlobal`. There is no managed object to
+retain, so `KeepAlive` there would be meaningless; the hand-own already implements the STRONGER
+remedy this project documents for the class. **CLAUDE.md's own caveat — "a hand-own that allocates
+native memory needs none, where a grep says absent" — is what stopped a false finding**, and it is
+recorded here because the next reader of a freeze-residue census will meet the same shape.
+
+**Scope.** One linux target, release 1.23.12, one box. The relocation reading is corroborated by the
+converter's own source and by an ordinary-production-file control in the same run.
