@@ -500,6 +500,35 @@ the box that runs it need not infer it:
 - Reported as ns per guarded call AND as a share of that call, **with the arity stated** — the door
   runs once per argument, so per-call is per-test × arity, and the two must not be conflated.
 
+### F.2.1 The anchor, named — and made to VALIDATE ITSELF
+
+The gap §F.1(2) exposed is not that the windows anchor was the wrong call; it is that **nothing in
+the harness could tell it was the wrong call.** `GetCurrentProcessId` reads the PEB and never enters
+the kernel, and the probe divided by it anyway and printed a percentage. So the spec is not merely
+"pick a better call" — a later reader can make the same substitution again — it is that the harness
+must **refuse to divide by an anchor it has not shown to be a kernel transition.**
+
+**Proposed anchor: `GetProcessId(GetCurrentProcess())`.** It is a genuine transition
+(`NtQueryInformationProcess`), side-effect-free, constant-valued, and callable millions of times.
+Proposed rather than ruled, because this lane cannot verify it on Windows: **the harness must
+establish it, not assume it.**
+
+**The self-validation arm, which is the load-bearing half.** The harness benches the candidate anchor
+BESIDE the known user-mode read (`GetCurrentProcessId`, measured at 6–9 ns on this box) and
+**ABORTS** unless the candidate is at least an order of magnitude slower. A call that benches within
+a few ns of the PEB read is not entering the kernel, whatever its name suggests, and the run stops
+rather than producing a percentage. That check is what §F.1(2) cost, spelled as code.
+
+**Two more, so the number that comes out is comparable to anything:**
+
+- **Both sides on the SAME box, the same session, the same binary** — the door-on and door-off arms
+  differ only by the door. Per the standing rule, "reverting the source" is not an A/B when the
+  instrument rebuilds; the two arms are two builds of the same tree differing in one edit, each named.
+- **Report the per-call figure with its ARITY and its ANCHOR**, e.g. "x ns per guarded call at
+  arity n, against an anchor of y ns" — never a bare percentage. A percentage whose denominator is
+  not carried beside it is exactly the artifact §F.1(2) retracted, and it travelled into a README
+  where it outlived the run that produced it.
+
 ## F.3 The MINT-SIDE clause is UNMEASURED, and is named rather than left implied
 
 §D's prediction had a second clause: outcome B costs the mint one extra shift-and-or per token,
