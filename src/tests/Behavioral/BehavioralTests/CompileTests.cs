@@ -1738,6 +1738,9 @@ public class B2_CompileTests : BehavioralTestBase
     public void CheckSliceToArrayPointerAlias() => CheckTarget("SliceToArrayPointerAlias");
 
     [TestMethod]
+    public void CheckSliceTypeParamNil() => CheckTarget("SliceTypeParamNil");
+
+    [TestMethod]
     public void CheckSockaddrRoundTrip() => CheckTarget("SockaddrRoundTrip");
 
     [TestMethod]

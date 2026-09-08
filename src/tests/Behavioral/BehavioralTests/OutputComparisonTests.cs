@@ -1673,6 +1673,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSliceToArrayPointerAlias() => CheckTarget("SliceToArrayPointerAlias");
 
     [TestMethod]
+    public void CheckSliceTypeParamNil() => CheckTarget("SliceTypeParamNil");
+
+    [TestMethod]
     public void CheckSockaddrRoundTrip() => CheckTarget("SockaddrRoundTrip");
 
     [TestMethod]
