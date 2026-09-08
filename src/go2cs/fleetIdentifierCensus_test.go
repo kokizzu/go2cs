@@ -133,6 +133,25 @@ var fleetPlaceholderSegments = map[string]bool{
 	"administrator": true, "admin": true, "ci": true, "build": true, "dev": true,
 }
 
+// fleetNicknameHostSegments are the four fleet nicknames the owner's security order PRESCRIBES for
+// pushed surfaces. They are admitted as UNC HOST segments -- and only there.
+//
+// Measured 2026-09-08: a mailbox line whose UNC host segment was ALREADY a nickname fired as
+// [network-path], and the only way to satisfy this guard was to scrub a line that already complied
+// into a generic placeholder. That is the guard teaching the next writer to delete exactly the
+// information the order asks to be kept, so the spelling the order prescribes has to be a spelling
+// the structural pass accepts.
+//
+// Deliberately NOT folded into fleetPlaceholderSegments, which the PROFILE arm shares: a nickname
+// names a HOST, so an account segment spelled with one is still an account segment and still a hit.
+//
+// This costs the denied-token pass nothing. Admission here is STRUCTURAL only -- the denied-token
+// pass runs over every line whatever the structural pass admitted -- so a denied real host inside a
+// UNC still fires, and no nickname can ever clear a denied token.
+var fleetNicknameHostSegments = map[string]bool{
+	"r-laptop": true, "g-laptop": true, "i9": true, "i7": true,
+}
+
 // fleetClearedSegment clears one inspected, non-fleet segment in one file. Keyed by path AND
 // segment rather than by line, so an edit above it cannot silently disarm the entry. Every entry
 // below was read by eye during the 2026-09-04 census; the reason is the record of that reading.
@@ -246,12 +265,13 @@ func scanFleetIdentifiers(path string, content []byte, denied map[int]map[string
 			// network path needs a doubled backslash.
 			if fleetHasFold(line, "users") || bytes.Contains(line, []byte("/home/")) {
 				for _, m := range fleetProfileRe.FindAllSubmatch(line, -1) {
-					fleetConsiderSegment(&out, path, n, "profile-path", string(m[1]))
+					// No admit set: a nickname names a host, never an account.
+					fleetConsiderSegment(&out, path, n, "profile-path", string(m[1]), nil)
 				}
 			}
 			if bytes.Contains(line, []byte(`\\`)) {
 				for _, m := range fleetNetworkRe.FindAllSubmatch(line, -1) {
-					fleetConsiderSegment(&out, path, n, "network-path", string(m[2]))
+					fleetConsiderSegment(&out, path, n, "network-path", string(m[2]), fleetNicknameHostSegments)
 				}
 			}
 		}
@@ -265,8 +285,15 @@ func scanFleetIdentifiers(path string, content []byte, denied map[int]map[string
 	return out
 }
 
-func fleetConsiderSegment(out *[]fleetFinding, path string, line int, kind, seg string) {
+// fleetConsiderSegment records one inspected segment unless something admits it. admitted is the
+// per-ARM allow set -- the network arm passes the fleet nicknames, the profile arm passes nothing --
+// so the SCOPE of an admission is carried by the caller that knows which arm it is, rather than
+// re-derived here from the kind string, where a drifting literal could widen it silently.
+func fleetConsiderSegment(out *[]fleetFinding, path string, line int, kind, seg string, admitted map[string]bool) {
 	if fleetIsPlaceholder(seg) {
+		return
+	}
+	if admitted[strings.ToLower(seg)] {
 		return
 	}
 	if _, ok := fleetClearedSegments[path+"|"+strings.ToLower(seg)]; ok {
@@ -549,6 +576,162 @@ func TestFleetIdentifierScannerFiresAndRestores(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestFleetIdentifierNicknameHostsAreAdmitted pins the 2026-09-08 widening, and its arms are what
+// keep that widening narrow.
+//
+// The trigger was measured, not reasoned: a mailbox line whose UNC host segment was already one of
+// the four prescribed nicknames fired as [network-path], and the only way to satisfy this guard was
+// to scrub a line that already complied into a generic placeholder.
+//
+// Every arm below exists because the structural admit could otherwise buy a hole. A nickname clears
+// the NETWORK arm only: it does not clear a profile segment, it does not clear the denied-token pass
+// (which runs on every line whatever the structural pass admitted), and it is matched as a WHOLE
+// segment, so a host that merely CONTAINS a nickname is still a hit. The admitted SET is pinned too,
+// enumerated with a count, so a fifth name arriving here without the order naming it goes red.
+func TestFleetIdentifierNicknameHostsAreAdmitted(t *testing.T) {
+	// A synthetic denied token, for the reason the positive control gives: an arm that exercised a
+	// REAL row would have to spell the identifier the denylist exists to keep out of the tree.
+	const controlToken = "zzcontrolaccount"
+	denied := fleetDeniedIndex([]fleetDeniedToken{{len(controlToken), fleetHash(controlToken), "control token"}})
+
+	// Nicknames may be spelled out here: they ARE the compliant surface form, so an arm printing one
+	// into a build log puts nothing there the order does not already prescribe.
+	nicknames := []string{"R-LAPTOP", "G-LAPTOP", "i9", "i7"}
+
+	// The planted lines are ASSEMBLED at run time, for the reason the positive control gives: this
+	// file is itself tracked and scanned, so a UNC or a profile path written out as a literal here is
+	// content the guard reads. A verb leaves `%s` where the segment goes, and `%` is a substitution
+	// sigil, so the source text reads as a placeholder while the RUNTIME string carries a real path.
+	const uncFmt = "the share sits at \\\\%s\\build\\artifacts\n"
+	const profileFmt = "toolchain root at C:\\Users\\%s\\sdk\n"
+
+	// scan drives the REAL walk over a temporary tree, exactly as the positive control does, rather
+	// than a reimplementation of it -- and asserts the file was read, so no arm can pass by having
+	// measured nothing.
+	scan := func(t *testing.T, line string) []fleetFinding {
+		t.Helper()
+		dir := t.TempDir()
+		rel := "docs/phase4/CONTROL-record.md"
+		full := filepath.Join(dir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(line), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		got, read := scanFleetTree(dir, []string{rel}, denied)
+		if read != 1 {
+			t.Fatalf("the arm scanned %d files, want 1 -- it measured nothing", read)
+		}
+		return got
+	}
+	hasKind := func(got []fleetFinding, kind string) bool {
+		for _, f := range got {
+			if f.Kind == kind {
+				return true
+			}
+		}
+		return false
+	}
+
+	// (a) ADMITTED. This is the arm the widening buys, and the one that was RED before it: on the
+	// unmodified guard every spelling below fired as [network-path].
+	t.Run("a nickname host is admitted", func(t *testing.T) {
+		for _, nick := range nicknames {
+			for _, spelling := range []string{nick, strings.ToLower(nick), strings.ToUpper(nick)} {
+				if got := scan(t, fmt.Sprintf(uncFmt, spelling)); len(got) != 0 {
+					t.Errorf("a UNC whose host is the prescribed nickname %q fired: %v", spelling, got)
+				}
+			}
+		}
+	})
+
+	// (b) REFUSED, unchanged. A host that is not a nickname is still a hit, and one that is a denied
+	// token is a hit twice over -- structurally, and through the pass the widening does not touch.
+	t.Run("a denied host inside a UNC is still refused", func(t *testing.T) {
+		got := scan(t, fmt.Sprintf(uncFmt, controlToken))
+		if !hasKind(got, "network-path") {
+			t.Errorf("a UNC with a non-nickname host did not fire structurally: %v", got)
+		}
+		if !hasKind(got, "denied-token") {
+			t.Errorf("a UNC carrying a denied host did not fire the denied-token pass: %v", got)
+		}
+	})
+
+	// The property the widening must not cost: the admit is structural, so a denied token sitting on
+	// a line whose UNC host IS a nickname is still caught.
+	t.Run("a nickname host does not clear a denied token on its line", func(t *testing.T) {
+		for _, nick := range nicknames {
+			line := fmt.Sprintf("owner column reads %s and ", controlToken) + fmt.Sprintf(uncFmt, nick)
+			if got := scan(t, line); !hasKind(got, "denied-token") {
+				t.Errorf("a denied token beside nickname host %q was not caught: %v", nick, got)
+			}
+		}
+	})
+
+	// Whole segment, never substring: a glyph-substring over-match is how an admit list quietly
+	// becomes a hole, and a real host that merely embeds a nickname is exactly what would slip.
+	t.Run("a host that merely contains a nickname is still refused", func(t *testing.T) {
+		for _, nick := range nicknames {
+			for _, host := range []string{"zz" + nick, nick + "zz", "zz" + nick + "zz"} {
+				if got := scan(t, fmt.Sprintf(uncFmt, host)); !hasKind(got, "network-path") {
+					t.Errorf("host %q, which only CONTAINS a nickname, was admitted: %v", host, got)
+				}
+			}
+		}
+	})
+
+	// (c) A nickname in prose was never a hit, and stays one. The only pass that can reach a bare
+	// token is the denied-token pass, and the arm below pins that against the REAL denylist.
+	t.Run("a nickname in prose is not a hit", func(t *testing.T) {
+		for _, nick := range nicknames {
+			line := fmt.Sprintf("the roster row names the machine by its nickname %s\n", nick)
+			if got := scan(t, line); len(got) != 0 {
+				t.Errorf("nickname %q in prose fired: %v", nick, got)
+			}
+		}
+	})
+
+	// Driven with the package's OWN index, so it spells nothing: the two lists must not disagree
+	// about one string, and an admitted nickname that were also denied would be exactly that.
+	t.Run("no nickname is a denied token", func(t *testing.T) {
+		live := fleetDeniedIndex(fleetDeniedTokens)
+		for nick := range fleetNicknameHostSegments {
+			if fleetLineHasDeniedToken([]byte(nick), live) {
+				t.Errorf("nickname %q is also a denied token -- the two lists disagree about one string", nick)
+			}
+		}
+	})
+
+	// The admitted set, enumerated with a count: a claim about a set is derived from the whole
+	// construct, never from the members a reader happens to check.
+	t.Run("exactly the four prescribed nicknames are admitted", func(t *testing.T) {
+		want := map[string]bool{}
+		for _, nick := range nicknames {
+			want[strings.ToLower(nick)] = true
+		}
+		if len(fleetNicknameHostSegments) != len(want) {
+			t.Fatalf("%d host nicknames are admitted, want %d -- the order names four machines",
+				len(fleetNicknameHostSegments), len(want))
+		}
+		for nick := range fleetNicknameHostSegments {
+			if !want[nick] {
+				t.Errorf("%q is admitted as a UNC host but is not one of the prescribed nicknames", nick)
+			}
+		}
+	})
+
+	// The SCOPE of the widening. The profile arm is untouched, because a nickname names a host: an
+	// account segment spelled with one is still an account segment.
+	t.Run("a nickname is not admitted as a profile segment", func(t *testing.T) {
+		for _, nick := range nicknames {
+			if got := scan(t, fmt.Sprintf(profileFmt, nick)); !hasKind(got, "profile-path") {
+				t.Errorf("nickname %q was admitted as a profile segment: %v", nick, got)
+			}
+		}
+	})
 }
 
 // TestFleetIdentifierClearancesAreLive keeps the two allowlists honest. An entry whose file has gone
