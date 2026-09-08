@@ -373,12 +373,14 @@ function Get-ExclusionLedgerRows {
     gaining a link shape nobody anticipated shows up as something other than a dangling link on
     the published site. It is reported, never silently passed.
 
-    The roster's PACKAGE COLUMN is deliberately NOT touched here. Those links are absolute URLs
-    naming tree/master, one per row, and pinning them onto the release tag is
-    Update-FrozenRosterSourceLinks below -- a separate function because it has to be runnable ALONE
-    on an already-frozen roster, which this one cannot be: re-running it would insert a second note
-    and relocate the relocated links. The release calls both, in that order. "Two substitutions"
-    above counts this function's, not the frozen roster's.
+    The roster's ABSOLUTE links are deliberately NOT touched here, and there are two kinds. The
+    PACKAGE COLUMN is one tree/master URL per row, pinned onto the release tag by
+    Update-FrozenRosterSourceLinks below; the roster's prose also carries one blob/master pointer at a
+    package's disclosure manifest, pinned by Update-FrozenRosterDisclosureLink beside it. Both are
+    separate functions because both have to be runnable ALONE on an already-frozen roster, which this
+    one cannot be: re-running it would insert a second note and relocate the relocated links. The
+    release calls all three, in that order. "Two substitutions" above counts this function's, not the
+    frozen roster's absolute ones.
 
     The note is inserted after the H1 rather than before it: this page has no YAML front matter
     (nothing under docs\ does) and its first line is the Jekyll {% raw %} guard whose matching
@@ -697,6 +699,90 @@ function Update-FrozenRosterSourceLinks {
         SourceLinks = $sourceLinks
         Rows        = $rows
         NoteLinks   = $noteLinksAfter
+    }
+}
+
+<#
+.SYNOPSIS
+    Pin a FROZEN roster's disclosure-manifest prose pointer onto the release that roster belongs to.
+.DESCRIPTION
+    Update-FrozenRosterSourceLinks above pins the roster's PACKAGE COLUMN -- one tree/master link per
+    row, asserted against the row count. The roster carries one more link at a moving target that is
+    neither in that column nor in that count: a prose sentence pointing at a package's hand-owned
+    go2cs_test_disclosures.json, spelled blob/master rather than tree/master. The same argument reaches
+    it -- a frozen roster naming a moving branch is not frozen -- so it is pinned onto the same signed
+    tag, nuget-<version>, that the package column and the pages beside it name.
+
+    A SIBLING rather than a second phase inside Update-FrozenRosterSourceLinks, and the reason is that
+    function's own count. Its whole strength is that the number it asserts IS the roster's row count,
+    read from Get-ValidatedRosterRows, so it cannot go stale the day a package banks. This pointer is
+    prose, not a package-column link: folding it in would make the substitutions 205 against 204 rows,
+    or force a second count shape into the one function whose count describes itself. That is the
+    reasoning the residual of 339d2fdc7 gives for leaving it out -- honoured here rather than reversed.
+
+    THE COUNT IS A FIXED ONE, WHICH IS WEAKER THAN ITS SIBLING'S DERIVED COUNT -- said rather than
+    dressed up. Nothing structural in a roster equals "number of disclosure-manifest pointers": the
+    roster names one package's manifest because its prose happens to discuss one, so the expectation is
+    a census of the LIVING roster (docs\ValidatedTestPackages.md carries exactly one) and not a
+    derivation. Both directions are asserted anyway, and both say something. ZERO means either the
+    prose pointer went missing or this transform has already run -- which makes it non-idempotent BY
+    DESIGN, the property that makes the count a live check rather than a number that can only ever
+    agree. MORE THAN ONE means the roster grew a second such pointer that a fixed count does not
+    describe, and whoever added it should rule on it rather than have it pinned behind a number
+    written for one.
+
+    The after-count arm is a TRIPWIRE, not a measurement, and is inert today by construction: String's
+    Replace moves every occurrence, and 'blob/nuget-<version>/' cannot contain 'blob/master/', so the
+    count after is zero whenever the count before was one. It exists to fail the day somebody widens
+    the pattern, which is exactly the standing the sibling above gives its note-link arm.
+
+    The pattern is anchored on the REPOSITORY, spelled as both siblings spell it, so a roster that ever
+    links another project's blob/master is not silently rewritten to name a go2cs tag. Read AND write
+    through [System.IO.File] at UTF-8/no-BOM, replacing rather than splitting lines, for the reasons
+    stated at Update-FrozenProofPage: PS 5.1's Get-Content reads a BOM-less UTF-8 file as ANSI and
+    Out-File re-encodes the damage, and the roster's line endings must survive exactly as
+    ConvertTo-FrozenRosterText joined them.
+.OUTPUTS
+    PSCustomObject: DisclosureLinks (int) -- substitutions made.
+#>
+function Update-FrozenRosterDisclosureLink {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $Version
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) { throw "Update-FrozenRosterDisclosureLink: no roster at $Path." }
+    if ([string]::IsNullOrWhiteSpace($Version)) { throw 'Update-FrozenRosterDisclosureLink: the version is empty.' }
+
+    $disclosureFrom = 'github.com/ritchiecarroll/go2cs/blob/master/'
+    $disclosureTo = "github.com/ritchiecarroll/go2cs/blob/nuget-$Version/"
+
+    $text = [System.IO.File]::ReadAllText($Path)
+
+    $before = ([regex]::Matches($text, [regex]::Escape($disclosureFrom))).Count
+
+    if ($before -ne 1) {
+        throw ("Update-FrozenRosterDisclosureLink: $Path carries $before disclosure-manifest pointer(s) " +
+               "('$disclosureFrom') where a frozen roster carries exactly one. Zero means the prose pointer " +
+               "went missing, or that this transform has already run; more than one means the roster grew a " +
+               "pointer a fixed count does not describe. Reconcile the roster's prose with this transform " +
+               "rather than publishing the snapshot as it stands.")
+    }
+
+    $text = $text.Replace($disclosureFrom, $disclosureTo)
+
+    $after = ([regex]::Matches($text, [regex]::Escape($disclosureFrom))).Count
+
+    if ($after -ne 0) {
+        throw ("Update-FrozenRosterDisclosureLink: $Path still carries $after disclosure-manifest pointer(s) " +
+               "('$disclosureFrom') after the pin. Replace moves every occurrence, so a survivor means the " +
+               "target spelling now contains the source -- the pattern has been widened too far.")
+    }
+
+    [System.IO.File]::WriteAllText($Path, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+    return [pscustomobject]@{
+        DisclosureLinks = $before
     }
 }
 

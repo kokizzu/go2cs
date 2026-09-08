@@ -137,7 +137,7 @@ once its remedy lands, because the arithmetic below moves when it goes.
   the SAME host, doing nothing structurally different.
 
 Each disclosure is pinned by exact failure signature in a hand-owned, committed
-[`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/bytes/go2cs_test_disclosures.json).
+[`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/nuget-1.23.12.3/src/core/bytes/go2cs_test_disclosures.json).
 Any other failure is still a hard mismatch, and packages without a manifest compare strictly.
 
 > ### Phase 4 progress: **204 / 215 testable packages validated — 94.9%**

@@ -761,10 +761,26 @@ if (-not (Test-Path $currentProofs)) {
             $pinnedRoster = Update-FrozenRosterSourceLinks `
                 -Path (Join-Path $versionProofs $frozenRosterName) -Version $fullVersion
 
+            # --- and the roster's one PROSE pointer at a disclosure manifest -------------------------
+            # The package column is not the roster's only absolute link at a moving branch. Its prose
+            # points once at a package's hand-owned go2cs_test_disclosures.json, spelled blob/master
+            # rather than tree/master, so the substitution above cannot see it and it would publish
+            # naming a branch that keeps moving -- the same defect, one link over.
+            #
+            # A THIRD call, not a second phase inside the one above, because that function's count IS
+            # the roster's row count: a prose pointer is not a package-column link, so folding it in
+            # would make the substitutions 205 against 204 rows or force a second count shape into the
+            # one function whose count describes itself. Its own count is a FIXED one (a frozen roster
+            # carries exactly one such pointer, which is a census of the living roster rather than a
+            # derivation) and it is asserted in both directions inside Update-FrozenRosterDisclosureLink.
+            $pinnedDisclosure = Update-FrozenRosterDisclosureLink `
+                -Path (Join-Path $versionProofs $frozenRosterName) -Version $fullVersion
+
             Write-Step ("Froze the roster page at $frozenRosterName -- $($frozenRoster.ProofLinks) proof link(s) " +
                         "retargeted onto this snapshot, $($frozenRoster.Relocated.Count) link(s) relocated, " +
                         "$($pinnedRoster.SourceLinks) package-column source link(s) pinned onto tag $releaseTag " +
-                        "across $($pinnedRoster.Rows) row(s), commit $frozenCommit")
+                        "across $($pinnedRoster.Rows) row(s), $($pinnedDisclosure.DisclosureLinks) disclosure-manifest " +
+                        "pointer(s) pinned, commit $frozenCommit")
 
             # The audit arm. Empty on the roster this shipped against; a future roster that grows a
             # relative link shape neither substitution knows would otherwise dangle silently on the
