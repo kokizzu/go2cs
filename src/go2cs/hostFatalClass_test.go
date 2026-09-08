@@ -124,6 +124,87 @@ func TestHostFatalMintRefusesATestAnotherPlatformMatches(t *testing.T) {
 	}
 }
 
+// THE SCOPE OF THE RULE, and the defect it shipped with (landed 2026-09-06, measured by i9
+// 2026-09-07). The arm above builds its fixture at core/runtime/debug and writes the page as
+// runtime.debug.md -- the disclosing package's OWN page -- so it passes IDENTICALLY whether the rule
+// globs every package's page or reads one. It is a must-not-regress arm and it is NOT evidence about
+// the scoping mechanism; nothing in the suite varied the package axis, which is exactly why an
+// unscoped glob landed. i9's measurement: 19 of runtime's 444 built test names collide with some
+// other package's page, and corpus-wide the glob refuses exactly one legal entry today -- runtime's
+// TestEmptyString, refused because encoding/json's page carries a passing test of the same name.
+//
+// A test NAME is not a test. Two packages' TestEmptyString are different tests with different
+// bodies, and the evidence that encoding/json's passes says nothing whatever about runtime's. The
+// rule refuses on positive evidence of agreement FOR THE ENTRY'S OWN ROW, so its evidence base is
+// that package's page and no other.
+func TestHostFatalMintScopesToTheDisclosingPackagesOwnPage(t *testing.T) {
+	root := t.TempDir()
+	// The disclosing package is `runtime`: the manifest is read from this directory, so this
+	// directory is what "the entry's own row" means.
+	pkg := filepath.Join(root, "src", "core", "runtime")
+	if err := os.MkdirAll(pkg, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "src", "core", "golib"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "src", "core", "golib", "golib.csproj"), []byte("<Project/>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pages := filepath.Join(root, "docs", validationDocsDirName, validationCurrentDirName)
+	if err := os.MkdirAll(pages, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// A DIFFERENT package's page records the same NAME as matching. runtime has no page of its own
+	// yet, which is the real corpus state: runtime, runtime/pprof and net/http/pprof carry
+	// host-fatal entries and none of the three has a committed page.
+	foreign := "| Test | `go test` | go2cs |\n|---|---|---|\n" +
+		"| `TestEmptyString` | pass | pass |\n"
+	if err := os.WriteFile(filepath.Join(pages, "encoding.json.md"), []byte(foreign), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// MINTS. The collision is on a name, not on a row: encoding/json's page is not evidence about
+	// runtime's TestEmptyString, so there is nothing here to refuse on.
+	v, u := hostFatalMintViolations(pkg, hostFatal("TestEmptyString"))
+	if len(v) != 0 {
+		t.Fatalf("a name that matches only on ANOTHER package's page must MINT -- two packages' "+
+			"TestEmptyString are different tests and the foreign page is no evidence about this row; got %#v", v)
+	}
+	// ...and it is UNCHECKED rather than cleared: runtime has no page, so the rule decided nothing.
+	if len(u) != 1 || !strings.Contains(u[0], "TestEmptyString") {
+		t.Fatalf("an entry whose package has no committed page must be reported UNCHECKED; got %#v", u)
+	}
+	// The message must say WHICH package has no page. The unscoped text said "no committed proof
+	// pages under <dir>", which is false here and would be false in every real run: the directory
+	// holds 200-odd pages and is not empty -- THIS package simply has none.
+	if !strings.Contains(u[0], "runtime") {
+		t.Fatalf("the unchecked message must name the package that has no page; got %#v", u)
+	}
+	if strings.Contains(u[0], "no committed proof pages under") {
+		t.Fatalf("the unchecked message must not claim the directory is empty -- it holds a page for "+
+			"another package in this very fixture; got %#v", u)
+	}
+
+	// NEGATIVE ARM, and it is what keeps the fix from being a hole: the guard's whole purpose is that
+	// a host-fatal entry must not launder a test THIS package's own record says passes. Same name,
+	// same fixture, this package's own page -- still REFUSED.
+	own := "| Test | `go test` | go2cs |\n|---|---|---|\n" +
+		"| `TestEmptyString` | pass | pass |\n"
+	if err := os.WriteFile(filepath.Join(pages, "runtime.md"), []byte(own), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	v, u = hostFatalMintViolations(pkg, hostFatal("TestEmptyString"))
+	if len(v) != 1 || !strings.Contains(v[0], "TestEmptyString") {
+		t.Fatalf("a name the package's OWN page records as matching must still be refused -- that is "+
+			"the rule; got %#v", v)
+	}
+	if len(u) != 0 {
+		t.Fatalf("a name the rule DECIDED on is not unchecked; got %#v", u)
+	}
+}
+
 // The two OTHER silent returns, which carried no comment and no signal until 2026-09-06. Neither is
 // a violation -- a scratch output root and a fresh clone are both legitimate -- but both decide
 // nothing about the entry, and a reviewer must be able to tell that from a run that decided
