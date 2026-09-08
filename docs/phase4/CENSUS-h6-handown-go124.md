@@ -1638,3 +1638,118 @@ attribute; it needs no build, no toolchain and no converter. Nobody has to read 
 **Scope.** Measured at `origin/master` `c5319f640` and at `dc79526ca`, from committed blobs (one layer,
 LF on both sides of every diff). The `[GoValueClone]` split is verified per declaration; the remaining
 51 attribute absences are not. Nothing here is a build result — no `dotnet` was run.
+
+---
+
+## 2026-09-08 — AMENDMENT to the block above: **MY OWN LINE COUNTS WERE SHORT BY THE BLANK LINES (C1's catch, `89d3b0c67`, verified here on three instruments), AND THE RULED DISCRIMINATOR'S *BASE* IS INVALID ON THREE OF THE THIRTY**
+
+The block above stands on its finding and moves on two numbers. Both are recorded here rather than
+edited into it, because a measurement is not rewritten after the fact.
+
+### 1. ⚠ CORRECTION — every `+`/`-` in the table above is SHORT BY ITS BLANK LINES
+
+`grep -c '^+[^+]'` cannot see a bare `+`. **This trap is written down in this project's own rules** —
+*"drops every removed BLANK line, so an emission count and an applied count taken the same way agreed
+with each other while numstat said 82"* — and I walked into it anyway, which is the difference between
+a lesson written down and a lesson mechanised.
+
+Verified on `runtime2.cs` with three instruments before adopting C1's figures:
+
+```
+  my broken grep       +132 / -111
+  git numstat          +146 / -125     <- the reading of record
+  bare +/- minus the header lines      146 / 125
+  blank lines added 14 · removed 14    132+14 = 146 · 111+14 = 125
+```
+
+**And a correction gets a CENSUS, not a fix of the instance you were shown.** The same filter produced
+every row of the table above, so all thirty were recomputed with `git diff --numstat`:
+
+```
+FILE                                                U3    U0       +       -   drift
+crypto/internal/boring/bcache/cache.cs               4     7      46      11    0%
+crypto/subtle/xor_generic.cs                         4     7      54      29    2%
+hash/crc32/crc32_amd64.cs                            6    19     194      40    2%
+internal/concurrent/hashtriemap.cs                   2    32     323     390    1%
+internal/godebug/godebug.cs                          7    33     163     245    3%
+internal/syscall/unix/linux/siginfo_linux.cs         1     8      85      60    1%
+internal/syscall/windows/exec_windows_test.cs        4     6      61      15    0%
+internal/syscall/windows/registry/registry_test.cs   4     9     114      21    0%
+internal/syscall/windows/registry/windows/value.cs  11    16      36      32    0%
+internal/weak/pointer.cs                             4    11     190      41    3%
+os/linux/wait_waitid.cs                              3     9      32      26    3%
+runtime/metrics/sample.cs                            3     6      50      20    1%
+runtime/mfinal.cs                                   13    28     306     130    0%
+runtime/runtime2.cs                                 16    55     146     125    0%
+sync/atomic/type.cs                                  8    48     221      95    0%
+sync/atomic/value.cs                                 3    24      42     142    1%
+sync/mutex.cs                                        2    21      71     211    3%
+sync/once.cs                                         3     4      12      13    4%
+sync/oncefunc.cs                                     3    20      94      51    0%
+sync/pool.cs                                         4    33     211     242    1%
+sync/poolqueue.cs                                    8    28      74      50    4%
+sync/rwmutex.cs                                      1    38     138     210    2%
+sync/waitgroup.cs                                    1    16      64     126    4%
+syscall/linux/exec_unix.cs                           6    21     589     145    0%
+syscall/windows/dll_windows.cs                      10    40     257     131    1%
+syscall/windows/exec_windows.cs                      6    30     354     140    0%
+syscall/windows/security_windows.cs                  3     9     175      10    1%
+time/tick.cs                                         6     9      58      14    1%
+unique/clone.cs                                      2     6      55      26    2%
+vendor/golang.org/x/crypto/sha3/xor.cs               3     8      46      31    6%
+```
+
+**The HUNK count is definitional, and both readings are right:** `diff -U3` merges nearby changes and
+reads 16 on `runtime2.cs`; `diff -U0` counts change-GROUPS and reads 55. The table above now carries
+both. ⚠ **This makes section 1's point STRONGER, not weaker: 55 change-groups against 4 conflicted
+means 51 were re-applied unexamined, not 12.**
+
+The drift share was computed on the same short denominator, so it was **overstated**, not understated:
+recomputed against the correct total the worst file reads **6%**, not 7%. The conclusion —
+`.cs.auto` staleness does not dominate — is unchanged and slightly stronger.
+
+### 2. A SECOND, INDEPENDENT DERIVATION OF `.cs.auto` FRESHNESS
+
+The shape classifier and a re-run of the shape classifier are one derivation. This one shares no
+mechanism with it — the commit date on which each sibling was last written:
+
+```
+  .cs.auto last written at/after the 2026-08-24 post-merge rebank    28 of 30
+  older than that                                                     2 of 30
+      hash/crc32/crc32_amd64.cs                    2026-08-08
+      internal/syscall/unix/linux/siginfo_linux.cs 2026-08-23
+```
+
+Two instruments with nothing in common agreeing is what makes "staleness does not dominate" the
+reading of record rather than one classifier's opinion.
+
+### 3. ⚠ THE RULED DISCRIMINATOR'S **BASE** IS INVALID ON THREE OF THE THIRTY
+
+The obligation takes the committed `.cs.auto` as BASE. **On three files that sibling PREDATES the hand
+file's last commit**, so it is *not* the emission the hand file was last reconciled against, and a
+3-way rooted there measures a delta against a tree nobody has:
+
+```
+FILE                          .cs.auto     .cs (hand)   gap
+sync/mutex.cs                 2026-08-26   2026-09-04    9 days
+syscall/linux/exec_unix.cs    2026-08-28   2026-09-05    8 days
+time/tick.cs                  2026-08-23   2026-08-26    3 days
+```
+
+`sync/mutex.cs` is the one that matters: it is on this hop's critical path (it carries the two H6
+collisions, `@throw` and `fatal`), and the commit that last touched its hand file is a converter
+call-site rule its committed `.cs.auto` cannot know about.
+
+⚠ **`runtime2.cs` is NOT among them** — its `.cs.auto` is 2026-09-02 against a hand file last touched
+2026-08-26, so the sibling POST-dates the hand file. That is why C1's target-matched verification found
+only a one-attribute difference against a freshly built 1.23.12 emission, and **the ruling's obligation
+is safe on their file.**
+
+**So the obligation takes one added clause:** the committed `.cs.auto` is a valid BASE only where it
+POST-DATES the hand file's last commit; on the three above, the re-derive REGENERATES its base first,
+as C1 did for `runtime2.cs` rather than trusting the sibling. It is one `git log` per file to know
+which case you are in.
+
+**Scope.** Commit dates are a proxy for freshness, not a proof of it: a `.cs.auto` written after the
+hand file can still predate a later converter change, which is why C1's regenerate-and-compare remains
+the strong form and this is the cheap screen that says who needs it.
