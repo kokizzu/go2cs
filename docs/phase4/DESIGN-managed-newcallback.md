@@ -302,3 +302,58 @@ correctness rather than for cost, and the body must not treat it as an optimisat
 
 **Unchanged:** the author still cannot build or run any of it; the i7 compiles, runs the guard and the
 F8 registration check, and posts the readings; C1 scores them.
+
+---
+
+## 14. ADDENDUM 2026-09-08 — the TYPED FORWARD's mechanism, which §8 and §13 leave open
+
+§8 and §13 establish that the forward **must not** be `DynamicInvoke`, because the default binder does
+not invoke user-defined conversions. They do **not** say what builds a *typed* call when the target's
+signature is **not known at compile time** — `compileCallback` receives an `any`. That gap is the
+body's last unspecified decision, so it is settled here rather than silently inside the body.
+
+**The shape the two constraints force.** The shim's own signature must be **fixed and non-generic**
+(§8), so it is `nuint`-per-argument with an `nuint` result — one type per arity, §12's four to start.
+The Go delegate behind the `any` has the **converted** parameter types (`ΔHandle`, `uintptr`,
+`uint32`, a `uint8Pair`-shaped struct…). Something must bridge fixed machine words to those types **at
+run time**, performing conversions the default binder refuses.
+
+**The mechanism: `System.Linq.Expressions`.** Build, per func value, a lambda of the shim's delegate
+type whose body converts each `nuint` parameter to the target's parameter type with
+`Expression.Convert` and invokes the delegate, then `Compile()` it.
+
+    Expression.Lambda<GoCallbackShim2>(
+        Expression.Convert(
+            Expression.Invoke(Expression.Constant(d),
+                Expression.Convert(p1, t1), Expression.Convert(p2, t2)),
+            typeof(nuint)),
+        p1, p2).Compile()
+
+**Why this and not `DynamicMethod`/IL:** `Expression.Convert` **does** resolve user-defined implicit
+and explicit conversion operators — it is precisely the capability `DynamicInvoke` lacks and the one
+§8 measured missing — whereas hand-emitted IL would have to re-implement that resolution. And
+`Compile()` returns an instance of the **non-generic** shim type, which is what
+`GetFunctionPointerForDelegate` accepts.
+
+**It composes with §13.1 at no extra cost:** the compiled shim is built **once per func value** and
+held by the table, so the table already roots the shim, the Go delegate it closes over, and the
+pointer's validity — the single mechanism §13.1 identified, with the compile amortised into it.
+
+### ⚠ 14.1 The caveat, named before it is discovered
+
+**`Expression.Compile()` under Native AOT.** ILC cannot emit code at run time; `Compile()` falls back
+to an interpreter where one is available and can fail outright where it is not — and this tree has
+already been burned once by a reflection-shaped construct that was fine under the JIT and **fatal**
+under Native AOT (`d5c0c9c10`: every AOT-published perf binary died before `main`). **Do not read this
+section as clearing that risk.**
+
+What bounds it here: `syscall.NewCallback` has **zero production call sites** (§2) and its reach is
+`runtime`'s windows test suite, which is not AOT-published. So the exposure is a **test-host** one,
+not a corpus one. **The falsifier is explicit: if any AOT-published binary is ever shown to reach
+`compileCallback`, this mechanism is wrong for that path and the body needs a source-generated or
+pre-enumerated shim set instead.** That is stated now so the next reader inherits the question rather
+than the surprise.
+
+**This section is a DECISION, not a measurement** — its author still cannot compile. The i7's build of
+the body is what confirms `Expression.Convert` reaches the converted parameter types; if it does not,
+this section takes a dated amendment exactly as §8 did.
