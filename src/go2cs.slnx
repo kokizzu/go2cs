@@ -865,6 +865,7 @@
     <Project Path="tests/Behavioral/SliceOfArrayTypeName/SliceOfArrayTypeName.csproj" />
     <Project Path="tests/Behavioral/SlicePointerIdentity/SlicePointerIdentity.csproj" />
     <Project Path="tests/Behavioral/SliceToArrayPointerAlias/SliceToArrayPointerAlias.csproj" />
+    <Project Path="tests/Behavioral/SliceTypeParamNil/SliceTypeParamNil.csproj" />
     <Project Path="tests/Behavioral/SockaddrRoundTrip/SockaddrRoundTrip.csproj" />
     <Project Path="tests/Behavioral/Solitaire/Solitaire.csproj" />
     <Project Path="tests/Behavioral/SortArrayType/SortArrayType.csproj" />
