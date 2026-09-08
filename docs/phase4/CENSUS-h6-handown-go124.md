@@ -1838,3 +1838,76 @@ candidates.** The 10 unclassified rows remain candidates.
 deliberately LOOSE (a call site can look like a declaration), which biases it toward reporting RESIDUE
 — so every residue row was re-verified individually with an anchored pattern, and the by-design and
 missing-generated rows are the ones a loose matcher can only UNDER-report.
+
+---
+
+## 2026-09-08 — THE TEN CANDIDATE ROWS ARE CLOSED, AND THE THIRD OUTCOME GETS A MECHANICAL DISCRIMINATOR: **GO PRINCIPAL PRESENCE**
+
+The ruled three-way classification left ten rows undistinguished between BY DESIGN and MISSING
+GENERATED (`[GoRecv]` 3, `[GoType]` 7). They are closed here, and closing them produced the rule that
+tells the two apart without judgement.
+
+### 1. THE DISCRIMINATOR
+
+```
+  the construct HAS a Go principal        the hand file replaced Go's design with a managed
+  (Go itself declares the type or func)   one -> BY DESIGN, nothing owed
+
+  the construct has NO Go principal       converter-minted (import-init hooks, lifts, shells)
+  (the converter mints it)                that the frozen file never had -> MISSING GENERATED
+```
+
+**Measured in BOTH directions, which is what makes it a rule rather than a reading:**
+
+```
+  all 7 [GoType] names        a `type` declaration in Go's own source          -> Go principal
+      poolLocalInternal (sync/pool.go) · efaceWords (sync/atomic/value.go)
+      setting, value (internal/godebug/godebug.go)
+      entry, indirect, node (internal/concurrent/hashtriemap.go)
+  all 3 [GoRecv] names        a `func` declaration in hashtriemap.go           -> Go principal
+      empty · expand · iter
+  the 39 import-init hooks    ZERO occurrences in Go's sources                 -> converter-minted
+```
+
+⚠ **The contrast is the control.** A rule that only ever fires one way is not discriminating; these ten
+read "Go principal" and the 39 read "no Go principal" under the same probe.
+
+### 2. THE VERDICT ON THE TEN — all BY DESIGN
+
+Every one is a Go type or func the hand rewrite deliberately replaced: `sync/pool.cs` folds
+`poolLocalInternal` into its own `poolLocal` class, `sync/atomic/value.cs` does not need `efaceWords`,
+`godebug.cs` and `hashtriemap.cs` are managed reimplementations. **Nothing is owed on any of them, and
+the header of each file is where that belongs.**
+
+⚠ **Six of the ten are MOOT at this hop anyway** — they are in `internal/concurrent`, which is REMOVED
+at 1.24.13 (verified against both pinned toolchains). The four that survive the hop are
+`godebug` 2, `sync/atomic` 1, `sync/pool` 1.
+
+### 3. THE FINAL CLASSIFICATION OF THE 62 PAIRS
+
+```
+  12  RESIDUE            declaration survives, stamp absent      each anchored-re-checked
+   0  UNCLASSIFIED       (was 10)
+  11  BY DESIGN          Go principal, hand file replaced it     1 + the 10 closed here
+  39  MISSING GENERATED  no Go principal, never carried          [GoInit] import-init hooks
+  --
+  62
+```
+
+### 4. ⚠ A DATUM FOR C1's COMMIT 2, ANSWERED BEFORE IT WAS ASKED
+
+The ruling asks C1 to restore *"any import-init hooks the 1.24 emission declares for `runtime2.cs` if
+the frozen file lacks them"*. **There are none to restore:**
+
+```
+  runtime/runtime2.cs   [GoInit] in the emission 0 · in the hand file 0 · initᴛᴛimport 0 / 0
+  runtime/mfinal.cs     [GoInit] in the emission 0 · in the hand file 0 · initᴛᴛimport 0 / 0
+```
+
+**`runtime2.cs`'s MISSING GENERATED class is EMPTY**, so that element of commit 2 is a no-op and needs
+no hunt. Its residue class is the four `[GoValueClone]` stamps and nothing else.
+
+**Scope.** Committed blobs plus the two pinned toolchains; no build. The context lines my listing
+printed for three rows (`empty`, `iter`, `node`) were false matches from COMMENTS — my context-finder,
+not the pairing — so those three were classified from Go's source directly rather than from a printed
+line, and the pairing itself is unaffected.
