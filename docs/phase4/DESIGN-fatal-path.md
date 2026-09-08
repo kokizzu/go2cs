@@ -267,3 +267,18 @@ can trade a MEASURABLE row for an UNMEASURABLE one, so it is named here rather t
 sweep. The prediction: no banked row moves, because the oracle side dies on a fatal too, and the
 common case is already a dead process (the stub exception reaches golib's backstop, which exits 2);
 what changes is stderr. The gate that can falsify it is the roster sweep, owed and not run here.
+
+### 10.7 §5a is RULED — 2026-09-08, COORD `133e138`
+
+*"section 5a RULED plain goroutine header (synthetic pointer fields would be fabricated)."*
+
+So §10.5's closing sentence — *"§5a is UNCHANGED and still owed a ruling"* — was true when the body
+was cut and is now spent. It is left standing above rather than rewritten, because a record is
+amended in dated blocks: what the increment shipped is what was ruled, and the plain
+`goroutine N [status]:` header is the form of record. The `gp=/m=/mp=` fields are refused
+permanently, on the ground the record argued and the ruling adopted: we hold no `g`, `m` or `mp`
+addresses that mean anything, and three plausible hex numbers in the one artifact an operator reads
+when things have already gone wrong would be fabrication.
+
+**Consequence for §6:** the acceptance stays a SHAPE predicate rather than a byte compare, and it is
+now that by ruling rather than by the author's choice. Nothing in the body or the guard moves.
