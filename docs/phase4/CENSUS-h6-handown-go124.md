@@ -2079,3 +2079,87 @@ recorded here because the next reader of a freeze-residue census will meet the s
 
 **Scope.** One linux target, release 1.23.12, one box. The relocation reading is corroborated by the
 converter's own source and by an ordinary-production-file control in the same run.
+
+---
+
+## 2026-09-08 — ⚠ **MY OWN DATE SCREEN IS A BAD SCREEN: target-matched CONTENT measurement over all 30 finds TEN genuinely stale bases, of which the date screen catches TWO — and it flags one that is HARMLESS. Plus the distinction that makes the number meaningful: a stale base is only harmful when its staleness is NON-CONCORDANT.**
+
+COORD adopted my commit-date screen as *"the cheap screen that says who owes it"*, with content as the
+form of record. I have now run the content check over the whole population, target-matched, and **the
+screen does not do the job I offered it for.**
+
+### 1. THE INSTRUMENT, AND ITS CONTROL
+
+Two seeded 1.23.12 `-stdlib` regens from one worktree — one **windows**, one **linux** — with per-file
+write evidence, compared CR-normalised against each committed `.cs.auto`.
+
+⚠ **Target-matching is not optional here, and a linux-only run would have published a wrong number.**
+The committed siblings are WINDOWS emissions: `runtime2.cs.auto` reads **0** against a windows regen and
+**2** against a linux one, those 2 being the `sigmask` `[GoValueClone]` attribute C1 identified. A
+linux-only reading would have called it stale.
+
+**Controls — C1's three windows numbers reproduced independently:**
+
+```
+  runtime2.cs   C1 0   mine 0      sync/mutex.cs  C1 6  mine 6      time/tick.cs  C1 2  mine 2
+```
+
+### 2. ⚠ THE DISTINCTION THAT MAKES THE COUNT MEAN SOMETHING — CONCORDANT staleness is HARMLESS
+
+A base that differs from today's emission is not automatically a bad base. **What matters is whether
+OURS and THEIRS disagree where BASE differs:**
+
+```
+  BASE has the import-hook block · OURS (frozen hand file) never had it · THEIRS (1.24 emission)
+  no longer emits it  ->  BOTH sides delete  ->  clean deletion, correct outcome, NO residue
+```
+
+**Freeze residue needs BASE-has / OURS-lacks / THEIRS-HAS.** Where THEIRS also lacks it, the merge is
+concordant and the stale base costs nothing.
+
+### 3. THE POPULATION, DECOMPOSED
+
+```
+   6  VALID            base IS today's 1.23.12 emission (0 differing lines)
+  12  HOOK-ONLY        differs ONLY by relocated import hooks -> CONCORDANT, harmless
+  10  GENUINELY STALE  carries NON-hook content -> a 3-way rooted there misleads
+  --
+  28  measured of 30   (the two *_test.cs hand-owns are unmeasurable: -stdlib emits no test files)
+```
+
+**The ten, with their non-hook line counts:**
+
+```
+  syscall/windows/dll_windows 14 · internal/concurrent/hashtriemap 13 · syscall/linux/exec_unix 11
+  sync/rwmutex 10 · syscall/windows/exec_windows 7 · hash/crc32/crc32_amd64 6
+  syscall/windows/security_windows 5 · os/linux/wait_waitid 4 · sync/once 3 · time/tick 2
+```
+
+Two sampled to confirm the classifier is reading real emission changes and not noise:
+`time/tick` is `c` → `c.WithDirection(GoChanDir.Recv)`; `crc32_amd64` is added `(nint)` casts.
+
+### 4. ⚠ HOW BADLY THE DATE SCREEN PERFORMS — this is the correction
+
+My screen named three files: `sync/mutex.cs`, `syscall/linux/exec_unix.cs`, `time/tick.cs`.
+
+```
+  genuinely stale, CAUGHT by the screen  :  2 of 10   (exec_unix, time/tick)
+  genuinely stale, MISSED                :  8 of 10
+  named by the screen but HARMLESS       :  1        (sync/mutex.cs -- hook-relocation ONLY, 6/6/0)
+```
+
+**It misses eight and false-positives one.** The reason is structural: a commit date answers "was this
+sibling written before the hand file", which is not the question. **The question is whether the
+sibling's content is the emission, and only a target-matched regen answers it.**
+
+⚠ **And it refines a ruled item:** `sync/mutex.cs` was measured INVALID by C1 and ruled to need base
+regeneration. Its sibling genuinely is not the current emission — that reading is correct — but its
+whole difference is the relocated hook block, so it is **concordant and a merge rooted there produces
+the right answer anyway.** Regenerating is the strong form and costs little; it is not load-bearing.
+
+### 5. SCOPE, AND AN INSTRUMENT LIMIT OF MINE
+
+Two targets, release 1.23.12, one box, write evidence asserted per file; the five files a windows target
+never writes were measured on the linux run and vice versa. ⚠ **The hook/non-hook split is
+PATTERN-DEPENDENT at about ±1 line** — `exec_unix` reads 24/12 under one blank-line rule and 25/11 under
+another, same total 36 — so the split is sound at the class level and should not be quoted to the line.
