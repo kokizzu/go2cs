@@ -463,6 +463,31 @@ public static void SetFinalizer(any obj, any finalizer) {
     if (finalizer is not Delegate) {
         @throw("runtime.SetFinalizer: second argument is not a function"u8);
     }
+    // GO REJECTS AN UNCALLABLE PAIRING HERE, AND SO DO WE NOW. Go's own check is at
+    // runtime/mfinal.go:468-499 (1.23.12; :490-521 at 1.24.13, rule and messages byte-identical),
+    // and it runs BEFORE "finalizer already set" -- this call sits in Go's order for that reason.
+    //
+    // ⚠ ONE PREDICATE, TWO CALLERS. The finalizer runner asks the SAME question at dispatch, so
+    // registration and dispatch cannot disagree. They did: registration asked nothing beyond "is it
+    // a delegate", dispatch asked .NET's default binder -- which answers a DIFFERENT question, since
+    // it never applies a user-defined conversion -- and a pairing Go ACCEPTS was dropped in silence.
+    //
+    // ⚠ TYPES ONLY, NO VALUE RETAINED. The bound argument is discarded here and recomputed at
+    // dispatch. Keeping it would hold the referent (or an adapter shell over it) STRONGLY, and a
+    // finalizer whose registration pins its own referent can never run at all.
+    //
+    // ⚠ AND IT VALIDATES `obj`, NOT `referent` -- this said `referent` for one commit and it refused
+    // TestFinalizerType's ITERATION 0, the matching case, with `cannot pass *runtime_test.T to
+    // finalizer func(*int)`. The two are DIFFERENT OBJECTS on purpose: `referent` is the LIFETIME
+    // key (ReferentOf resolves a field ref to its containing allocation, which is what Go finalizes),
+    // while `obj` is the GO VALUE the finalizer is called with. Go validates the interface's dynamic
+    // type -- `*int` for `&new(T).v` -- so the check must see `obj`. The line twelve below already
+    // says this about the sentinel: "the ORIGINAL box, because that is the argument the Go finalizer
+    // must be invoked with (its parameter is the pointer type, not the storage)". The dispatch side
+    // was right all along; only this call was wrong, and it fires first.
+    if (!GoReflect.TryBindFinalizerArgument(obj, (Delegate)finalizer, out object? _, out string? rejection)) {
+        @throw(rejection);
+    }
     if (s_finalizerRegistry.TryGetValue(referent, out GoFinalizerSentinel? _)) {
         @throw("runtime.SetFinalizer: finalizer already set"u8);
     }
@@ -614,6 +639,13 @@ private static class GoFinalizerQueue
             return;
         }
 
+        // Go's createfing sets fingCreated on exactly this transition, and the runtime's own
+        // export_test bridge FinalizerGAsleep() reads fingStatus. Until this landed, every write to
+        // fingStatus in this file sat inside the vestigial converted queuefinalizer/createfing/
+        // runfinq machinery the header declares dead -- so the flag word was never maintained by the
+        // LIVE runner and the bridge answered false forever.
+        ᏑfingStatus.CompareAndSwap(fingUninitialized, fingCreated);
+
         global::System.Threading.Thread runner = new(Run)
         {
             // Go's fing does not keep a program alive either.
@@ -631,6 +663,9 @@ private static class GoFinalizerQueue
             s_outstanding++;
             s_idle.Reset();
         }
+
+        // This is our wakefing: Go sets fingWake before waking the parked finalizer goroutine.
+        ᏑfingStatus.Or(fingWake);
 
         s_queue.Enqueue((fn, target));
         s_pending.Release();
@@ -668,13 +703,34 @@ private static class GoFinalizerQueue
 
         while (true)
         {
+            // s_pending.Wait() IS this goroutine's gopark, so fingWait is set across exactly the
+            // span Go sets it across. Go's own ordering comment applies verbatim: the flag is set
+            // BEFORE the park rather than after, so a waker cannot see "running" for a goroutine
+            // that is about to park. Cleared on wake together with fingWake, as Go's wakefing CAS
+            // clears both.
+            ᏑfingStatus.Or(fingWait);
             s_pending.Wait();
+            ᏑfingStatus.And(~(uint32)(fingWait | fingWake));
 
             if (!s_queue.TryDequeue(out (Delegate Fn, object Target) item))
                 continue;
 
             // |1 so a body starting exactly on a zero tick is not mistaken for "idle".
             global::System.Threading.Volatile.Write(ref s_runningSince, global::System.Environment.TickCount64 | 1L);
+
+            // BIND BY GO'S RULE, AND DO IT OUT HERE -- outside the try whose catch drops a throwing
+            // body -- so the two failures are separated STRUCTURALLY rather than by sniffing an
+            // exception type. Everything DynamicInvoke throws from the body arrives wrapped in a
+            // TargetInvocationException; a binding failure is this call, and it escapes.
+            //
+            // ⚠ This should be UNREACHABLE: SetFinalizer runs the same predicate at registration and
+            // panics there, exactly as Go does. It is kept because the alternative -- what stood here
+            // before -- was a binding failure that dequeued the item, decremented the outstanding
+            // count, let the queue report idle, and NEVER RAN THE FINALIZER, with no error surface
+            // anywhere. That cost runtime's TestFinalizerType its whole package deadline and zero
+            // converted verdicts, and nothing in the system could say why.
+            if (!GoReflect.TryBindFinalizerArgument(item.Target, item.Fn, out object? finalizerArgument, out string? bindRejection))
+                throw new global::System.InvalidOperationException(bindRejection);
 
             try
             {
@@ -685,13 +741,32 @@ private static class GoFinalizerQueue
                 // goroutine profile, carrying whatever labels the body set.
                 using global::go.golib.Goroutine.UserWorkScope userWork = global::go.golib.Goroutine.EnterUserWork();
 
-                item.Fn.DynamicInvoke(item.Target);
+                // Go brackets the finalizer call with exactly this flag; isSystemGoroutine answers
+                // false while it is set, which is the rule the comment above already cites.
+                ᏑfingStatus.Or(fingRunningFinalizer);
+                try
+                {
+                    item.Fn.DynamicInvoke(finalizerArgument);
+                }
+                finally
+                {
+                    ᏑfingStatus.And(~fingRunningFinalizer);
+                }
             }
-            catch
+            catch (global::System.Reflection.TargetInvocationException)
             {
                 // A throwing Go finalizer must not take down this thread; Go's own finalizer
                 // goroutine would crash the program, but the converted world prefers to drop it
                 // (finalizers are best-effort by specification).
+                //
+                // ⚠ DIVERGENCE, STATED RATHER THAN IMPLIED: Go treats a panic in a finalizer as
+                // UNRECOVERABLE and crashes the process. We drop it. That is unchanged by this
+                // increment and is its own; what changed is the SCOPE of this catch.
+                //
+                // ⚠ AND THE SCOPE IS THE POINT. This used to be a bare `catch`, which also absorbed
+                // every failure to CALL the finalizer at all -- a different class entirely, since Go
+                // has no such failure: ours, not the program's, and invisible. Only a body throw
+                // arrives here now, because DynamicInvoke wraps exactly that and nothing else.
             }
             finally
             {

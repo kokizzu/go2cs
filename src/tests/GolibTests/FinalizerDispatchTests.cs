@@ -353,4 +353,63 @@ public class FinalizerDispatchTests
             Δruntime.GC();
         }
     }
+
+    // ----------------------------------------------------------------------------------------
+    // ARM 6 — the TYPE axis, which arms 1-5 never vary.
+    //
+    // WHY IT EXISTS. Arms 1-5 all build an Action<ж<ж<nint>>>, i.e. a delegate whose parameter
+    // type EXACTLY matches the target's runtime type, so the five of them together say nothing
+    // about what happens when it does not. Go permits three shapes here — the object's own type,
+    // a defined type over it, and an interface it implements (runtime/mfinal.go's SetFinalizer
+    // doc) — and runtime/mfinal_test.go's TestFinalizerType exists to exercise exactly those,
+    // six table entries of which three hand a target whose type differs from the parameter.
+    //
+    // WHAT MAKES IT DISCRIMINATING. The converted SetFinalizer validates nothing but `is Delegate`
+    // (mfinal.cs), the runner invokes with DynamicInvoke, and its catch swallows EVERY exception —
+    // so a pair the binder cannot match registers silently, never runs, and reports nothing. A
+    // caller then waits forever on a channel the body would have sent to, which is the shape
+    // TestFinalizerType walls in.
+    //
+    // ⚠ WHAT THIS ARM DOES *NOT* COVER, stated so its green is not read as more than it is.
+    // It models Go's `any`-parameter entry. It does NOT model the DEFINED-TYPE entry
+    // (`SetFinalizer(Tintptr(x), func(v *int))`), because that needs a converter-minted named
+    // pointer type and a hand-written mimic here would test the mimic. That case's instrument is
+    // TestFinalizerType's own iteration index: its `ch` is buffered 10 and each iteration sends
+    // exactly one value, so which iteration it dies on names the first failing shape — and
+    // iteration 1 is the matching-type case, so a hang at iteration 1 is LIVENESS, not binding.
+    //
+    // ⚠ AND WHY THE ILLEGAL PAIRING IS NOT GUARDED HERE. Go refuses a non-assignable pair with
+    // `throw("runtime.SetFinalizer: cannot pass X to finalizer Y")`, and `throw` is FATAL in Go
+    // and in our port alike (runtime/panic.cs `@throw` -> `fatalthrow` -> `crash()`/`exit(2)`).
+    // An arm asserting that refusal would kill the test host rather than fail, so it cannot be a
+    // plain GolibTests arm — it needs a subprocess, or an assertion on the DECISION rather than
+    // on the effect.
+    // ----------------------------------------------------------------------------------------
+
+    // Built in its own method for the same reason as its siblings: its display class must capture
+    // ONLY `ran`, never the box.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Action<object> LooselyTypedFinalizer(StrongBox<int> ran) =>
+        _ => Interlocked.Increment(ref ran.Value);
+
+    [TestMethod]
+    public void Arm6_AFinalizerTypedMoreLooselyThanItsTargetStillRuns()
+    {
+        StrongBox<int> ran = new(0);
+        WeakReference weak = MintOnDedicatedThread(LooselyTypedFinalizer(ran), clearAfterRegister: false);
+
+        Δruntime.GC();
+        Δruntime.GC();
+
+        Console.WriteLine($"[q23:arm6] IsAlive={weak.IsAlive} finalizerRuns={Volatile.Read(ref ran.Value)}");
+
+        Assert.IsFalse(weak.IsAlive,
+            "ARM 6: the referent is still rooted — this arm measures DISPATCH and cannot say anything " +
+            "about binding until the target is actually collected. Read arms 1/2/3 first.");
+        Assert.AreEqual(1, Volatile.Read(ref ran.Value),
+            "ARM 6: the referent WAS collected and a finalizer whose parameter is Go's `any` never ran. " +
+            "Its exactly-typed twin in ARM 1 does run, so the type axis is the only difference: the " +
+            "converted SetFinalizer accepts a pair its own DynamicInvoke cannot bind, and the runner's " +
+            "catch swallows the failure. That is TestFinalizerType's candidate (i), binding.");
+    }
 }
