@@ -53,12 +53,26 @@ Run here at **`go1.24.13`** (one of the two pins and the hop target; **`go1.23.1
 box**, so the corpus's own pin is unmeasured by me — a runner with 1.23.12 should re-take it):
 
 - **stdout:** `PROBE-MARK-1: reached main` — and nothing else
-- **stderr:** first line exactly `fatal error: runtime.SetFinalizer: first argument is nil`, then a
-  goroutine header of the shape `goroutine 1 gp=0xADDR m=0 mp=0xADDR [running]:`, then **65 lines**
-  of traceback whose leading frames are, in order:
+- **stderr:** line 1 is `PROBE-MARK-1E: reached main (fd 2)`; line 2 is exactly
+  `fatal error: runtime.SetFinalizer: first argument is nil`; then a goroutine header of the shape
+  `goroutine 1 gp=0xADDR m=0 mp=0xADDR [running]:` and the traceback — **66 stderr lines** in total,
+  whose leading frames are, in order:
   `runtime.throw` → `runtime.SetFinalizer` → `main.main` → `runtime.main` → `runtime.goexit`
 - **exit code: 2**
 - `PROBE-MARK-2` appears on **neither** stream
+
+## The TWO markers, and what each absence means (R's ask, mailbox `fa6ed34`)
+
+The probe writes a distinct marker to **fd 1 AND fd 2** before it reaches the fatal, both through
+`fmt`/`os` rather than through runtime's own print path. That makes a mute reading **falsifiable
+instead of unattributable**:
+
+| observation | reading |
+|---|---|
+| both markers, no fatal text | the capture works and runtime's **write path** is dead — the linux prediction |
+| **neither** marker | the **instrument** is broken, not the write path; nothing else in the run is readable |
+| MARK-1 but no MARK-1E | fd 2 specifically is not being captured |
+| stderr **completely** empty, marker and all | per R's `mutecrash` control a MANAGED death on linux is *not* mute (the CLR writes its own text to fd 2), so a wholly empty fd 2 means the death is a **SIGNAL** rather than managed — which separates the two candidate mechanisms with no extra run |
 
 (Paths and addresses are redacted above per the standing security order; nothing machine-identifying
 belongs in a committed artifact.)
@@ -101,9 +115,13 @@ Stated before either run, so no reading can be rationalised afterwards.
 
 | flavour | stdout | stderr | exit |
 |---|---|---|---|
-| **oracle (any)** | MARK-1 | Go's text **once** + traceback | **2** |
-| **converted windows / darwin** | MARK-1 | Go's text **once**, then a `NotImplementedException` naming **`getcallerpc`** | **NOT 2** |
-| **converted linux** | MARK-1 | **NOTHING of Go's text**; the exception names **`write1`**, not `getcallerpc` | **NOT 2** |
+| **oracle (any)** | MARK-1 | MARK-1E, then Go's text **once** + traceback | **2** |
+| **converted windows / darwin** | MARK-1 | MARK-1E, then Go's text **once**, then a `NotImplementedException` naming **`getcallerpc`** | **NOT 2** |
+| **converted linux** | MARK-1 | **MARK-1E, then NOTHING of Go's text**; the exception names **`write1`**, not `getcallerpc` | **NOT 2** |
+
+**MARK-1E is the load-bearing addition on linux.** The linux prediction is a *null* — no fatal text —
+and a null is worth nothing unless the instrument is proven live in the same run. MARK-1E on fd 2,
+written through a path that does **not** touch runtime's `write1`, is that proof.
 
 `PROBE-MARK-2` must appear on no flavour, on either stream.
 
