@@ -262,6 +262,67 @@ func scanFleetIdentifiers(path string, content []byte, denied map[int]map[string
 			out = append(out, fleetFinding{path, n, "denied-token"})
 		}
 	}
+
+	// ⚠ THE SECOND PASS, over the same content with LINE BREAKS CLOSED. Every arm above is
+	// line-based, so a token that exists on NO SINGLE LINE is invisible to all of them at once --
+	// measured on this guard: the inline shape FIRES while the same token split across a break, with
+	// an indented continuation, or with a trailing space before the break, all read zero findings.
+	// The hole was found in three independent gates on one day (a lane's post census, a second
+	// lane's pre-post census, and this one), which is why the remedy is placed HERE rather than in
+	// each arm: a per-arm patch protects today's arms and silently misses the one added tomorrow.
+	//
+	// Whitespace is collapsed only where it ABUTS the break. Stripping all whitespace would close
+	// the same shapes and fuse arbitrary adjacent words, so the short arms would start firing on
+	// ordinary prose; restricting the fusion to line boundaries keeps the false-positive surface to
+	// word pairs that a break separates. Findings carry line 0 and a "-split" kind, because a line
+	// number means nothing in joined text and a reader must not be sent to a line that reads clean.
+	if joined := fleetJoinLineBreaks(content); joined != nil {
+		if structural {
+			if fleetHasFold(joined, "users") || bytes.Contains(joined, []byte("/home/")) {
+				for _, m := range fleetProfileRe.FindAllSubmatch(joined, -1) {
+					fleetConsiderSegment(&out, path, 0, "profile-path-split", string(m[1]))
+				}
+			}
+			if bytes.Contains(joined, []byte(`\\`)) {
+				for _, m := range fleetNetworkRe.FindAllSubmatch(joined, -1) {
+					fleetConsiderSegment(&out, path, 0, "network-path-split", string(m[2]))
+				}
+			}
+		}
+		if !clearedTokens && fleetLineHasDeniedToken(joined, denied) {
+			out = append(out, fleetFinding{path, 0, "denied-token-split"})
+		}
+	}
+
+	return out
+}
+
+// fleetJoinLineBreaks returns content with every line break -- and the whitespace immediately
+// abutting it -- removed, so a token split across a break becomes contiguous for the line-based
+// arms above. It returns nil when there is nothing to join, so a single-line file costs one scan
+// and no allocation.
+func fleetJoinLineBreaks(content []byte) []byte {
+	if bytes.IndexByte(content, '\n') < 0 {
+		return nil
+	}
+
+	out := make([]byte, 0, len(content))
+	i := 0
+	for i < len(content) {
+		c := content[i]
+		if c != '\n' && c != '\r' {
+			out = append(out, c)
+			i++
+			continue
+		}
+		// Drop the break, the whitespace before it (already appended), and the whitespace after.
+		for len(out) > 0 && (out[len(out)-1] == ' ' || out[len(out)-1] == '\t') {
+			out = out[:len(out)-1]
+		}
+		for i < len(content) && (content[i] == '\n' || content[i] == '\r' || content[i] == ' ' || content[i] == '\t') {
+			i++
+		}
+	}
 	return out
 }
 
@@ -479,16 +540,29 @@ func TestFleetIdentifierScannerFiresAndRestores(t *testing.T) {
 		name string
 		line string
 		kind string
+		// split marks a plant whose token exists on NO SINGLE LINE. The joined pass reports those
+		// at line 0, because a line number means nothing in joined text.
+		split bool
 	}{
-		{"windows profile path", fmt.Sprintf("root at C:\\Users\\%s\\sdk\n", seg), "profile-path"},
-		{"posix home path", fmt.Sprintf("root at /home/%s/go\n", seg), "profile-path"},
-		{"unc host", fmt.Sprintf("share at \\\\%s\\public\\x\n", host), "network-path"},
-		{"bare denied token", "owner column reads " + controlToken + " here\n", "denied-token"},
-		{"denied token inside a machine name", "row names " + controlToken + "-desk2\n", "denied-token"},
+		{"windows profile path", fmt.Sprintf("root at C:\\Users\\%s\\sdk\n", seg), "profile-path", false},
+		{"posix home path", fmt.Sprintf("root at /home/%s/go\n", seg), "profile-path", false},
+		{"unc host", fmt.Sprintf("share at \\\\%s\\public\\x\n", host), "network-path", false},
+		{"bare denied token", "owner column reads " + controlToken + " here\n", "denied-token", false},
+		{"denied token inside a machine name", "row names " + controlToken + "-desk2\n", "denied-token", false},
 		// The arm that pays for the 2026-09-07 widening: '_' is a token character, so without it in
 		// the split set this line's whole run is one 20-character token that matches no bucket and
 		// the plant goes UNDETECTED. Remove '_' from fleetLineHasDeniedToken and this arm goes red.
-		{"denied token joined by underscores", "owner column reads x_" + controlToken + "_y\n", "denied-token"},
+		{"denied token joined by underscores", "owner column reads x_" + controlToken + "_y\n", "denied-token", false},
+
+		// ⚠ THE SPLIT ARMS. Every plant above sits on ONE line, and for a long time so did every arm
+		// of this control -- six shapes, one geometry -- which is exactly why the line-break hole
+		// survived in this guard and in two other gates until three lanes probed for it on the same
+		// day. A token that exists on no single line was invisible to every line-based arm at once.
+		// Remove the joined pass in scanFleetIdentifiers and these three go red; the six above stay
+		// green, which is the whole point of adding them.
+		{"profile path split across a line break", fmt.Sprintf("root at /home/\n%s/go\n", seg), "profile-path-split", true},
+		{"profile path split with an indented continuation", fmt.Sprintf("root at /home/\n    %s/go\n", seg), "profile-path-split", true},
+		{"denied token split across a line break", "owner column reads " + controlToken[:6] + "\n" + controlToken[6:] + " here\n", "denied-token-split", true},
 	}
 
 	for _, p := range plants {
@@ -523,6 +597,9 @@ func TestFleetIdentifierScannerFiresAndRestores(t *testing.T) {
 				t.Fatalf("planted %s was NOT detected -- this guard cannot go red", p.name)
 			}
 			wantLine := strings.Count(clean, "\n") + 1
+			if p.split {
+				wantLine = 0 // the joined pass has no meaningful line number
+			}
 			found := false
 			for _, f := range got {
 				if f.Kind == p.kind && f.Line == wantLine && f.Path == rel {
