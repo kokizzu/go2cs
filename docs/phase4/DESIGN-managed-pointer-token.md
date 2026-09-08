@@ -969,4 +969,75 @@ on i9's host, not this lane's; the ask is out. With `crypto/tls`'s verdict now k
 per-site reading is no longer a supplement to a verdict argument — **it is the whole of the evidence** for
 whether those sites are construct-and-name.
 
--- C2, 2026-09-08 (amended three times)
+
+---
+
+### 10.9.15 ⚠ THE NEUTRALITY BOUND IS CLOSED — proved on a TIERED, TIMING-SENSITIVE row, and `net/http` was never the corpus
+
+§10.9.14 recorded neutrality as **bounded to untiered rows**, because the `os` gate ran both arms at TC0.
+i9 closed that bound within the hour (`fe949e0bc3`), with a measurement rather than an argument.
+
+**The full 2×2 on `net/http`, one knob at a time:**
+
+| | census OFF | census ON |
+|:--|:--|:--|
+| **TC0 forced** (i9's runner bug) | FAIL | FAIL |
+| **tiering left correct** | **PASS 1,345** | **PASS 1,345** |
+
+**The verdict tracks the TIERING knob exactly and is INDEPENDENT of the census.** Arm C reproduced the
+FAIL with the census *compiled out* and produced the identical divergence — `TestRegisterErr//a:&http.
+handler{i:0}`, Go=pass C#=fail, the same one the census-ON run reported. Every arm carried a positive
+control on **both** knobs, so none can have passed for the wrong reason: arm C wrote 0 census blocks with
+`release-tiered` honoured, arm D wrote 1.
+
+⚠ **And arm D is the result worth more than the retraction.** It is census **ON** with the row **PASSING at
+the full 1,345** — so neutrality is now proved on **two rows: `os` (683, untiered) and `net/http` (1,345,
+tiered and timing-sensitive)**. `net/http` is the strongest available row to close that hole with, because
+it carries `execution: release-tiered` *precisely because* its verdicts are timing-sensitive — the roster's
+own reason being that the same published binary flipped verdicts run-to-run on an h2 write-deadline row.
+**A census that perturbed timing would show up there first, and it does not.** §10.9.14's framing survives
+unchanged — neutrality is a property of the rows tested, not of the instrument — and the set of rows is
+now two rather than one.
+
+`net/http`'s FAIL was i9's runner start to finish: an unconditional `DOTNET_TieredCompilation=0` on the one
+row of seven that must not have it. Not the corpus, not the census, not the resolver.
+
+**Row figure corrected**, since the posted one came from the broken run: `net/http` reads **33,447**
+conversions (arm D, PASS), not 33,685 — mints identical at 35, **every arm conclusion identical with
+arm2a = 0**, conversions differing by 0.7 %. The corpus total moves from 5,411,634 to **5,411,396**;
+**arm2a stays 1,236.**
+
+### 10.9.16 `crypto/tls`'s red, anatomised from the RECORD rather than the log line
+
+⚠ **A method correction that matters more than the numbers.** §10.9.14 said the two runs showed "exactly
+one divergence each on different subtests" — i9's phrasing and mine. That was a count of **PRINTED
+LINES**: the sweep prints the stream's last three lines plus one explanatory string naming a *single
+exemplar*, so the log cannot answer "how many diverged" and both of us asked it that question anyway. The
+preserved comparison record answers it: **FOUR, not one.**
+
+| subtest | shape | status |
+|:--|:--|:--|
+| `TestBogoSuite/CertificateSelection-Server-PreferenceOrder-TLS-TLS11` | Go=skip, C#=fail | bogo |
+| `TestBogoSuite/MinimumVersion-Client-TLS13-TLS1-TLS` | Go=fail, C#=pass | the oracle-flake shape |
+| `TestBogoSuite/VerifyPeerIfNoOBC-NoChannelID-TLS11` | Go=skip, C#=fail | bogo |
+| `TestCertCache` | Go=pass, C#=fail | **DISCLOSED and excused** |
+
+`TestCertCache` sits in the record's disclosed array with a full mechanism write-up — an address-exposed
+frame temp is not lifetime-tracked, so the CLR holds the object live until the test returns and the
+refcount cannot fall while the test is watching, measured identically in a separately built optimized
+host. **It is not part of the row's red and not a new finding**, and i9 notes nearly reporting it as one
+before reading the array.
+
+So the row's errors are **entirely `TestBogoSuite`**. The census-ON run's first error named
+`Client-Sign-RSA_PKCS1_SHA256-TLS12`, which does **not** appear in this set — **the divergent set moves
+between runs on this host**, which is the concrete form of the bogo-flakiness i9 had banked. Two of the
+three are Go=skip with C#=fail, a **skip-parity** question rather than obviously converted-code drift, and
+which cases the oracle skips is exactly what moves run to run.
+
+**Claimed**: `crypto/tls` does not reach PASS on this host, twice measured, and its red is bogo-only with
+one disclosed non-bogo divergence excused. **Not claimed**: that any of the three is corpus drift —
+establishing that needs a second full record to separate the stable members from the moving ones.
+
+**Unchanged by all of the above**: the 1,236, and every row's arm conclusions.
+
+-- C2, 2026-09-08 (amended four times)
