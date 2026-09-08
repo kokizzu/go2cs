@@ -665,3 +665,81 @@ on a name that two paths share is not a backup.
 deletions applied. **Scope:** 1.24.13 three-target merged L3 corpus, `--no-incremental` per flavour
 with a full `bin`/`obj`/`Generated` purge between targets, CS split from MSB/NETSDK. The reading is at
 `e5d87832f`; `01a5c803d` followed and touches `sync` only.
+
+---
+
+## 2026-09-08 — §14. THE LADDER'S LAST RUNG: **68 → 10, not zero — the prediction FAILED — and the residue names THREE roots, one of which is a STANDING CONVERTER DEFECT that has been latent since before this hop**
+
+§13 left `runtime/mfinal.cs` as the sole remaining root. C1 re-derived it (`4c491cb20`, with
+`runtime2.cs`, `sync/mutex.cs` and two companions). This is that tree measured.
+
+### 1. THE RUNG
+
+```
+  flavour   exit  wall   CS   MSB/NETSDK   runtime.dll   assemblies
+  windows     1   174s   10        0            0           194
+  linux       1   169s   10        0            0           188
+  darwin      1   193s   10        0            0           188
+```
+
+⚠ **Tree asserted before building** — `runtime2` note-decls 0 and `GoValueClone`-decls 4, `mfinal` 1,
+`sync` `@throw` 0 — so the reading is of C1's `4c491cb20` and not a remembered state.
+
+**⚠ THE PREDICTION FAILED.** C1 predicted 68 → **zero** and this record adopted it. It is **10**.
+Recorded as failed.
+
+### 2. ✅ BUT THE FALSIFIER RESOLVED, AND IN THE RE-DERIVE'S FAVOUR
+
+C1's condition was *"a residue still on the finblock shell would mean the stamp is not what the shell
+disagreed about"*.
+
+```
+  finblock-shell errors: 0    on all three flavours   (they were 62 of the 68)
+```
+
+**The `mfinal.cs` re-derive did exactly what it was cut to do.** A prediction can fail while the cut it
+was made about succeeds — those are two different claims, and only the falsifier separates them.
+
+### 3. THE THREE ROOTS, flavour-independent, by symbol
+
+```
+  6  runtime/{windows,linux,darwin}/lock_spinbit.cs
+       :67,:69  CS0029  cannot convert 'go.ж<go.array<byte>>' to 'go.ж<byte>'
+       :136     CS0246  'Ꮡsched' could not be found
+  2  runtime/type.cs        :134   CS9135  a constant value of type 'ж<byte>' is expected
+  2  gen/…/go.runtime_package.m.g.cs  CS1061  'runtime_package.m' has no definition for 'Δtrace'
+```
+
+⚠ **`lock_spinbit.cs` is a NEW 1.24 FILE, absent from master's corpus entirely** — `lock_spinbit.go`
+sits in §13's newly-selected set. **A different class from the frozen hand-owns:** new 1.24 source
+meeting today's converter and golib, rather than a frozen file meeting a new release. **The hop's
+remaining wall is no longer only about hand-owns.**
+
+### 4. ⚠ THE `Δtrace` ERROR IS A STANDING CONVERTER DEFECT — measured in BOTH releases
+
+It presents as a bad residue drop: the restored `[GoValueClone]` on `struct m` names `Δtrace`, and the
+struct declares `trace`. **It is not the drop.**
+
+```
+  1.24.13 emission (.cs.auto)   stamp names "Δtrace"    Δtrace; decls 0    trace; decls 3
+  1.23.12 emission (regen)      stamp names "Δtrace"    Δtrace; decls 0    trace; decls 3
+  `Δtrace` occurs ONCE in the file — inside the stamp — with NO `using` alias to justify it
+```
+
+**The converter's `[GoValueClone]` FIELD-LIST path applies collision-mangling that the DECLARATION path
+does not, in both releases.** The applier that restored it took the stamp verbatim from the emission
+and its per-line assertion held; **the emission is internally inconsistent.**
+
+⚠ **Why nothing ever saw it:** `runtime2.cs` was a frozen whole-file hand-own carrying NO stamp, so
+nothing read the field list. **Unreached is precisely why no gate could see it — and the first cut to
+restore the stamp gets billed for a wall it did not build.** The remedy is converter-side; a re-derive
+cannot fix a stamp the converter emits wrong.
+
+### 5. THE `[GoValueClone]` ASSEMBLY ARM IS **UNMEASURED**, NOT MISSED
+
+`runtime` builds on no flavour, so no `runtime.dll` exists to read. **54 → 59 stands as the
+expectation** — C1's arithmetic confirmed on the artifacts (`mfinal` carries exactly ONE code stamp, on
+`finblock`; a second grep hit is its own header comment) — with nothing yet to read it against.
+
+**Scope.** Three flavours, `--no-incremental`, full `bin`/`obj`/`Generated` purge between targets, CS
+split from MSB/NETSDK. Scratch `h5b` now carries C1's `4c491cb20` over the six deletions.
