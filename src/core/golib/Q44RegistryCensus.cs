@@ -220,9 +220,17 @@ internal static class Q44RegistryCensus
         foreach (var kv in s_arm2Pairs)
             lines.Add($"Q44CENSUS-ARM2 {kv.Value,8}  {kv.Key}");
 
-        foreach (string line in lines)
-            Console.Error.WriteLine(line);
-
+        // ⚠ NOTHING ROUTINE GOES TO stderr, and that is the whole of arm 2 (2026-09-08). These lines
+        // used to be written here as a "secondary" channel. stderr is not a spare channel: it is a
+        // stream the PROGRAM UNDER TEST owns, and the census arms in EVERY process that loads golib,
+        // including the helper CHILDREN a package's own tests spawn and whose output they compare.
+        // The environment carries the gate to those children unchanged -- childEnvWithGo2CSPath
+        // copies the whole parent environment and scrubs only go2csPath -- so a child inherits the
+        // census whether or not it was meant to be measured. MEASURED with a two-arm probe whose
+        // child does ZERO census work: census OFF, child stderr 0 bytes; census ON, child stderr 222
+        // bytes carrying "Q44CENSUS armed" at start and the whole block at exit. That is why `os`
+        // flips while go/types and encoding/json do not -- os is the row whose tests spawn helpers.
+        //
         // The file is the channel that survives a host which swallows stderr. A failure to write is
         // reported rather than swallowed: an instrument that cannot report must say so.
         try
@@ -245,6 +253,10 @@ internal static class Q44RegistryCensus
             return;
 
         AppDomain.CurrentDomain.ProcessExit += static (_, _) => Dump();
-        Console.Error.WriteLine("Q44CENSUS armed");
+
+        // ⚠ NO "armed" LINE ON stderr. It fired in every process that loaded golib with the gate
+        // set -- including a spawned helper child that does no census work at all -- and it is half
+        // of the 222 bytes the probe measured. Whether the census armed is answerable from its
+        // output file, which is where an instrument's report belongs.
     }
 }
