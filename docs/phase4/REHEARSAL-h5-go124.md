@@ -524,3 +524,53 @@ Three populations, deliberately not summed, because they overlap:
 **All three become one rule once the instrument is fixed:** *a package absent from `go list std` at
 the target takes every file under it — sources, metadata, marker-carrying hand-owns, `.csproj`,
 README — and a package that is present keeps its metadata whatever its timestamp says.*
+
+---
+
+## 2026-09-07 — §12. THE KEEP SIDE, MEASURED — completing the deletion instrument's ledger (appended; §1–§11 unchanged)
+
+§10 called the instrument "otherwise sound and its `go list` decider right". **That was an inference,
+not a measurement**: I had audited the DELETE side (found the `golib` defect) and the PROTECTED side
+(found the removed hand-own-by-consequence packages) and never the KEEP side. Every seam check carries
+both sides of the ledger, so here is the third.
+
+### Why it needed an independent derivation
+
+`KEEP-SELECTED` prints **only its count** (693) — the rows are not enumerated — so the class cannot be
+audited from the report at all. It has to be re-derived.
+
+### The derivation, and one confound caught in it
+
+For every seeded production `.cs` still on disk, excluding non-conversion-target directories, marked
+hand-owns and `*_impl.cs` companions: is its principal in Go's SELECTED set at 1.24.13?
+
+⚠ **The first pass reported ~40 FALSE KEEPS and every one was my own confound** — files in
+`runtime/linux/`, `runtime/pprof/darwin/`, `syscall/darwin/` checked against the **windows** selected
+set. A file in a per-GOOS folder must be checked against **its own flavour**. This is the same
+per-GOOS trap §10.7 records for the H6 collision census, walked into a second time in the same
+evening, which is why it is written down twice.
+
+Corrected — each file checked against the flavour of the folder it sits in:
+
+```
+  checked against Go's own selected set   692
+  FALSE KEEPS                               0
+```
+
+**The KEEP side is SOUND.** Every file the instrument keeps has a principal Go still selects on that
+file's own flavour.
+
+### What this bounds — and it is the useful part for the fix
+
+The instrument's ledger now reads, all three sides measured:
+
+| side | verdict |
+|:--|:--|
+| **DELETE** | **defective** — 117 `golib`/`go2cs` rows, files that were never Go packages |
+| **PROTECTED** | **defective in the mirror direction** — keeps files of REMOVED packages (`internal/concurrent`, `internal/weak`) |
+| **KEEP** | **SOUND** — 692 of 692 |
+
+**Both defects sit at exactly one boundary: "is this a Go package at the target".** Neither is in the
+selected-file logic, which is correct on every row measured. **So the fix is an added classification
+in front of the existing predicate, not a change to it** — which is what §10's proposed rule and
+§11's converge on, now with the KEEP side measured rather than assumed.
