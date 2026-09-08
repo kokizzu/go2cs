@@ -450,3 +450,77 @@ recording a prediction as held on source reading alone.** It scores when `runtim
 - The first seed of §1–§9 (3,769 `.cs`) was larger than this one (3,756) with the corpus `.cs`
   unchanged: that seed came from a worktree holding **untracked `reflect` test emission**. A seed
   inherits its source tree's dirt; this run seeded from a clean detached checkout.
+
+---
+
+## 2026-09-07 — §11. THE 43 UNRESOLVED ROWS, DISPOSED — and a correction to §3's own count (appended; §1–§10 unchanged)
+
+The deletion instrument classifies 43 seeded files `UNRESOLVED`, refuses to delete them, and exits
+non-zero **specifically so a human disposes of each before the overlay**. This is that disposition.
+Nobody else had run the instrument, so the human is me.
+
+### What they are
+
+All 43 are converter-generated metadata — `package_info.cs` and `package_init.cs` — which by
+construction have **no Go principal**. `go list` cannot answer for them, and the instrument is right
+to decline rather than guess.
+
+### The disposition, by the SAME discriminator the marker case needs
+
+A package's metadata belongs to its package. So the question is not "does this file have a Go
+principal" but **"does its PACKAGE exist at the target"** — the identical rule §10's dossier addition
+proposes for marker-protected files:
+
+```
+  DELETE  package absent at 1.24.13   15
+  KEEP    package live                28
+                                     ---
+                                      43
+```
+
+The 15 are **15 files across exactly 14 packages** — `crypto/internal/edwards25519` contributes both
+its `package_info.cs` and its `package_init.cs` — and those 14 are **precisely the H3 removals §2
+named**, with no residue on either side:
+
+```
+  crypto/internal/{alias,bigmod,edwards25519,edwards25519/field,mlkem768,nistec,nistec/fiat}
+  go/internal/typeparams   internal/concurrent   internal/weak
+  runtime/internal/{math,sys}   vendor/golang.org/x/crypto/{hkdf,sha3}
+```
+
+The 28 KEEP rows are live packages whose metadata simply did not change between the releases: the
+converter's `needToWriteFile` skips a write whose bytes are identical, so unchanged metadata reads as
+*seeded* and must be kept. **That is exactly the caveat the instrument's own header documents, met in
+practice.**
+
+### ⚠ CORRECTION TO §3 — my enumeration was 24, not 25
+
+`crypto/ecdh/package_init.cs` appears in §3's 25 and in the instrument's UNRESOLVED set, and it is the
+one row where the two disagreed. **The instrument is right and §3 is wrong.**
+
+§3 mapped each seeded `.cs` to a same-named `.go` and deleted it when that principal was absent at the
+target. For `package_init.cs` there is **no `package_init.go` at either release** — it is go2cs-generated
+metadata that never had a Go principal — so the rule read "principal gone" and counted it a deletion.
+`crypto/ecdh` is LIVE at 1.24.13 and its metadata stays.
+
+**§3's would-be-deletions count is therefore 24, not 25**, and the 24 are the rows the instrument's
+live-package class also carries. Everything §3 concludes from the class is unaffected; only the count
+moves. The lesson is §10.7's, one file over: **a rule that maps an artifact to a principal must first
+ask whether the artifact HAS one.**
+
+### The hop's deletion bill, stated as SETS
+
+Three populations, deliberately not summed, because they overlap:
+
+```
+  88  the safe subset applied in this rehearsal (50 removed-package .cs + 38 live-package)
+  15  UNRESOLVED metadata belonging to removed packages          <- this section
+  24  corpus files under internal/concurrent + internal/weak that every instrument path declines
+```
+
+`internal/concurrent/package_info.cs` and `internal/weak/package_info.cs` are members of **both** the
+15 and the 24. A single total would double-count them, so the record carries the sets.
+
+**All three become one rule once the instrument is fixed:** *a package absent from `go list std` at
+the target takes every file under it — sources, metadata, marker-carrying hand-owns, `.csproj`,
+README — and a package that is present keeps its metadata whatever its timestamp says.*
