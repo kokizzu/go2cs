@@ -223,14 +223,20 @@ if (args.Contains("--createTargetFiles"))
 
     // ------------------------------------------------------------------------------------------
     // TOOLCHAIN PIN -- checked BEFORE the staleness predicate, and that ordering is the whole point.
-    // IsConverterStale compares the binary's embedded release against the live `go env GOVERSION`
-    // (false-green route #4), so on a host whose bare `go` is NOT the pinned release it reports
-    // STALE and this utility rebuilds go2cs.exe with the WRONG toolchain -- then re-baselines every
-    // golden from that binary's emission. The run exits 0, prints no warning and refuses nothing;
-    // the wrong goldens simply become the new definition of correct, and every later comparison is
-    // measured against them. That is the one defect this instrument must never commit, because it
-    // rewrites the RECORD rather than a result. (Measured 2026-09-06 on a container whose bare `go`
-    // was go1.24.7 against a corpus pinned to 1.23.12: eight rows' goldens affected, no signal.)
+    // This is the EMISSION axis: the ambient release the converter will load the corpus with, against
+    // the corpus's own pin. On a host whose ambient `go` is NOT the pinned release, every golden this
+    // utility writes is minted from the wrong stdlib -- the run exits 0, prints no warning and refuses
+    // nothing, and the wrong goldens simply become the new definition of correct, with every later
+    // comparison measured against them. That is the one defect this instrument must never commit,
+    // because it rewrites the RECORD rather than a result. (Measured 2026-09-06 on a container whose
+    // bare `go` was go1.24.7 against a corpus pinned to 1.23.12: eight rows' goldens affected, no
+    // signal. Measured again 2026-09-08 as H9: eight goldens minted under a 1.24.13 environment, the
+    // `Δruntime` alias lost, and the emission no longer compiling -- CS0576.)
+    //
+    // The BUILD axis is a different question and is NOT asked here: IsConverterStale compares the
+    // binary's embedded release against the CONVERTER MODULE's own `go` directive. In the two-pin
+    // window those two axes disagree by construction, which is why conflating them refused every
+    // mint; keeping them separate is what lets this guard stay strict without blocking a ruled state.
     //
     // The pin is DERIVED from version.props -- the property of record -- not spelled here, so a
     // corpus hop moves it in one place. Printing the release is deliberately NOT enough: this repo
@@ -255,7 +261,22 @@ if (args.Contains("--createTargetFiles"))
         return 1;
     }
 
-    (int versionExit, string versionOut, _, _) = Run("go", "env GOVERSION", converterSrc, buildTimeoutMs);
+    // THE PROBE'S CWD IS THE WHOLE QUESTION (2026-09-08, COORD e0ef8639e). This ran in
+    // converterSrc, whose go.mod requires a release the corpus does NOT pin, so under
+    // GOTOOLCHAIN=auto the toolchain SWITCHES there and this compared the BUILD-side release
+    // against the corpus's EMISSION-side pin -- two different axes, equal only until H2, and
+    // guaranteed unequal in the two-pin window. It refused every mint with a mismatch that did
+    // not exist in the environment.
+    //
+    // What this guard defends is the GOLDEN, and a golden is an EMISSION: go2cs.exe is a compiled
+    // binary that shells out to `go` and so resolves GOROOT from the ENVIRONMENT at run time.
+    // Measured (i9 28b5ba6b4): the same converter binary, byte-identical, emits `Δruntime` under a
+    // 1.23.12 GOROOT and a bare `runtime` under 1.24.13. The ambient toolchain therefore IS the
+    // emission axis, and a directory with no go.mod is where it can be read without a module's
+    // `go` directive switching the answer.
+    string ambientProbeDir = Path.GetTempPath();
+
+    (int versionExit, string versionOut, _, _) = Run("go", "env GOVERSION", ambientProbeDir, buildTimeoutMs);
     string liveGo = versionOut.Trim();
 
     if (versionExit != 0 || liveGo.Length == 0)
@@ -267,9 +288,18 @@ if (args.Contains("--createTargetFiles"))
 
     if (!string.Equals(liveGo, pinnedGo, StringComparison.Ordinal))
     {
-        Console.Error.WriteLine($"TOOLCHAIN MISMATCH -- live `go` is {liveGo}, the corpus pins {pinnedGo}.");
+        // The refusal NAMES ITS AXIS on purpose (G 90511a486): this checks the EMISSION toolchain
+        // -- the ambient release the converter will load the corpus with -- against the corpus pin.
+        // It deliberately says nothing about the BUILD axis, where the converter embeds a different
+        // release by design in the two-pin window; that difference is the window's accepted premise,
+        // not a defect, and a guard that asserted equality there would refuse a ruled condition and
+        // train people to route around it.
+        Console.Error.WriteLine($"EMISSION TOOLCHAIN MISMATCH -- the ambient `go` is {liveGo}, the corpus pins {pinnedGo}.");
         Console.Error.WriteLine("No goldens were written: a golden minted by the wrong toolchain becomes the new");
         Console.Error.WriteLine("definition of correct, and every later comparison is measured against it.");
+        Console.Error.WriteLine("This is the EMISSION axis only -- the release that will load the corpus. The converter");
+        Console.Error.WriteLine("may legitimately be BUILT by a different release (its go.mod names that one); staleness");
+        Console.Error.WriteLine("checks the build axis separately against that directive.");
         Console.Error.WriteLine($"Put the pinned toolchain first on PATH (its GOROOT's bin) and re-run.");
         return 1;
     }

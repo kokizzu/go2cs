@@ -99,10 +99,25 @@ internal static class ConverterBuildInputs
         // then fails LOUDLY at `go build` -- never a silent pass on an unverified binary. The two
         // probes cost one short-lived `go` process each, once per staleness question, which every
         // harness asks once per run.
+        // TWO-PIN CORRECTION (2026-09-08, COORD e0ef8639e). This compared the embedded release
+        // against the LIVE AMBIENT toolchain, which is right only while one toolchain both builds
+        // the converter and pins the corpus. In the H2->H5 window those differ BY CONSTRUCTION:
+        // src/go2cs/go.mod requires a release the corpus does not pin, so `embedded != live` was
+        // permanently true under the pairing -- every harness reported STALE on every invocation,
+        // rebuilt the converter each run, and under GOTOOLCHAIN=local the rebuild could not even
+        // succeed (measured: `go.mod requires go >= 1.24.13 (running go 1.23.12)`), which is what
+        // blocked minting a golden at all.
+        //
+        // The question staleness actually asks is "was this binary built by the toolchain this
+        // CONVERTER is supposed to be built with", and the converter module's own `go` directive is
+        // that authority -- not whatever release happens to be first on PATH. This stays correct
+        // AFTER the window too: a toolchain hop is what MOVES the directive (H1 step 2), so the
+        // rebuild still fires exactly when it should, and the per-invocation rebuild the pairing was
+        // paying for disappears with it.
         string? embedded = EmbeddedGoRelease(converterExePath);
-        string? live = LiveGoRelease();
+        string? required = ConverterModuleGoRelease(converterSrcDir);
 
-        if (embedded is null || live is null || !string.Equals(embedded, live, StringComparison.Ordinal))
+        if (embedded is null || required is null || !string.Equals(embedded, required, StringComparison.Ordinal))
             return true;
 
         DateTime built = File.GetLastWriteTimeUtc(converterExePath);
@@ -135,14 +150,39 @@ internal static class ConverterBuildInputs
     }
 
     /// <summary>
-    /// The live toolchain's release (<c>go env GOVERSION</c>), or <c>null</c> when it cannot be
-    /// answered.
+    /// The Go release the CONVERTER MODULE declares it must be built with, parsed from the
+    /// <c>go</c> directive of <c>&lt;converterSrcDir&gt;/go.mod</c> (e.g. <c>go1.24.13</c>), or
+    /// <c>null</c> when the file or the directive cannot be read.
     /// </summary>
-    public static string? LiveGoRelease()
+    /// <remarks>
+    /// Read from the file rather than asked of the toolchain on purpose: the directive is the
+    /// converter's OWN pin and does not move when a shell re-exports GOROOT for the corpus, which
+    /// is exactly the independence the two-pin window needs. Returning null leans STALE-wards, as
+    /// the unreadable-stamp case does.
+    /// </remarks>
+    public static string? ConverterModuleGoRelease(string converterSrcDir)
     {
-        string? output = RunGo("env GOVERSION");
+        string goMod = Path.Combine(converterSrcDir, "go.mod");
 
-        return string.IsNullOrWhiteSpace(output) ? null : output.Trim();
+        if (!File.Exists(goMod))
+            return null;
+
+        foreach (string line in File.ReadLines(goMod))
+        {
+            string trimmed = line.Trim();
+
+            // The directive line is `go <release>`; `toolchain go<release>` is a different line and
+            // deliberately not consulted, since it names a download preference rather than the
+            // release this module requires.
+            if (!trimmed.StartsWith("go ", StringComparison.Ordinal))
+                continue;
+
+            string release = trimmed[3..].Trim();
+
+            return release.Length == 0 ? null : "go" + release;
+        }
+
+        return null;
     }
 
     // One `go` invocation, first stdout line, null on any failure -- the callers above treat null
