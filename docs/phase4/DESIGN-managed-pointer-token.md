@@ -458,3 +458,115 @@ drafted breaks eight writes that master gets right, and no amount of design sett
 population is empty.
 
 -- C2
+
+---
+
+## 10.8 THE §10.5 CENSUS IS RUN — and its finding is that arm 2 is 8, not 18
+
+C2, 2026-09-08, on COORD's `b1fd949c2` §3. Instrument on `claude/c2-q44-registry-census` off master
+`a2e3b51c1`. **Predictions were posted before it ran** (mailbox `fdfc59873d`) and are scored in §10.8.4.
+
+### 10.8.1 Where it attaches, and why there is no alternative
+
+§10.5 rules out the alternatives by construction — implicit conversions defeat a call-site grep,
+inlined frames defeat a stack walk — so attribution rides on the **call site classifying its own
+values**. That site is `ж.cs`'s `uintptr → ж<T>` operator, where all four arms are decided from values
+the operator already holds:
+
+```
+Resolve(n) is ж<T>                        ARM 1   same pointee type
+Resolve(n) non-null, NOT ж<T>             ARM 2   different pointee type
+     ... n == box.PointerOrderToken       ARM 2a  offset 0 -- the order-token route
+     ... n != box.PointerOrderToken       ARM 2b  resolved via the PINNED-PROVENANCE route
+Resolve(n) null, IsTokenArithmetic(n)     ARM 3   inside a live block, not the token -- refuses today
+Resolve(n) null, not token-arithmetic     ARM 4   a real address
+```
+
+**The 2a/2b split is not in §10.3 and it is the whole finding** — see §10.8.3.
+
+⚠ **One thing read out of the code before measuring, which sharpens §10.3.** `IsTokenArithmetic`
+masks the low 32 bits and requires `allocationBase != number`, so it is **FALSE when n IS the base.**
+Arm 2 therefore reaches neither arm 1's alias nor arm 3's refusal: it falls through to
+`new NativeBox<T>(n)`. §10.3 calls arm 2 "the new work"; the sharper statement is that the write case
+is **already being answered today, silently, by the arm-4 fall-through.**
+
+### 10.8.2 The controls, because a census's zero is worth nothing without them
+
+Seven control arms in `GolibTests.Q44RegistryCensusControlTests`, each asserting its counter
+**increased across the call** rather than that a total matches a guess — the only form that can tell a
+wired counter from an unwired one. With the census off they report **Inconclusive, never green**.
+
+| control | reading |
+|:--|:--|
+| all four arms + the mint driven deliberately | 7/7 fire with the census on; 7/7 Inconclusive with it off |
+| **perturbation A/B** (census on vs off, same filter) | **48 / 683 / 5 / 736 IDENTICAL** — the instrument does not disturb the suite |
+| exhaustiveness | `arms sum == conversions` printed into the artifact, holds in every run |
+| count reconciliation | 746 declared at this tree − 3 (`RuntimeAddrRangesTests`) − 7 (the control class) = **736 = reported Total** |
+
+⚠ **A defect this instrument caused, fixed, and then controlled for.** The first version dumped to
+**stderr** from a `ProcessExit` hook. Every counter fired, all arms went green, and **zero census lines
+reached any log** — the MSTest host swallows it. *A counter that moves into a channel nobody reads is
+the same defect as a counter that never moves, and harder to see, because the arms all look healthy.*
+It now reports to a **file**, a failure to write says `Q44CENSUS-UNREPORTED` rather than passing
+silently, and there is a control arm asserting the file appears. A second, smaller one followed: the
+reporting control originally deleted and rewrote the census's **own** output file, so running the
+control inside a census run destroyed the census mid-flight — it writes to its own path now, and the
+census run excludes the control class so **the instrument does not measure itself.**
+
+### 10.8.3 ⚠ THE READING, and the finding is the split
+
+`GolibTests` at master `a2e3b51c1`, control class excluded, **byte-identical at Debug and at
+Release + `DOTNET_TieredCompilation=0`**:
+
+```
+mints = 4,378        conversions = 52        (mints exceed resolves by 84x)
+arm1 = 9    arm2a = 8    arm2b = 10    arm3 = 1    arm4 = 24        sum = 52  RECONCILES
+```
+
+**Arm 2 totals 18 of 52 conversions — and only 8 of them are the defect.** The split is why:
+
+- **ARM 2a — 8 conversions — IS the defect.** `n` IS the box's own order token, the pointee type
+  differs, and the fall-through hands back `NativeBox<T>(token)`: **a native box over a number that is
+  not an address.** This is exactly the population §10.3's arm 2 targets.
+- **ARM 2b — 10 conversions — is SOUND and needs no remedy.** The resolve succeeded through the
+  **pinned-provenance** route (`IsPinnedAt`), which means `n` **is a real pinned address**. The
+  fall-through hands back `NativeBox<T>` over a real address, which is correct.
+
+**So a remedy sized against "arm 2 = 18" would change behaviour for 10 conversions that are already
+right.** §10.3's arm 2 is correctly aimed; its *size* is 8, and without the 2a/2b distinction the
+census would have overstated it by 2.25×. Arm 2b is also a population §10.3 does not describe: a
+cross-type resolve at a non-zero offset that never reaches `IsTokenArithmetic` because it resolved.
+
+Requested/resolved type pairs (all resolving to `StandardBox<T>`): `Byte` ×4 (2a) and ×2 (2b);
+`Pointer` ×5 (2b); `ThreeWords`, `StringHeaderShape`, `ж<T>`, `ReferenceBearingView` (2a each);
+`array<T>`, `Int64`, `Pointer<T>` (2b each). **Falsifier (b) — "any offset-0 site where V is NOT the
+type at the pointee's offset 0" — is answerable from that 2a list and is the next reading owed**, per
+site rather than per count.
+
+### 10.8.4 Predictions scored: 4 HIT, 2 MISSED
+
+| prediction | outcome |
+|:--|:--|
+| mints > resolves by a wide margin | **HIT** — 84× |
+| arm 1 > 0 | **HIT** — 9 |
+| **arm 2 = 0 or single digits** | **MISS** — 18 (8 after the split; still double digits as worded) |
+| arm 3 > 0, else the instrument is broken | **HIT** — 1; the instrument's own falsifier did not fire |
+| **arm 4 ≫ all others** | **MISS** — 24 of 52 is 46 %, the largest but not dominant |
+| identical at both configurations | **HIT** — byte-identical |
+
+The two misses share a cause: I expected golib's own tests barely to reach the cross-type write case,
+and they reach it in **a third of all conversions**. Predicted as a scope statement, measured as a
+population.
+
+### 10.8.5 ⚠ SCOPE — this is GolibTests, NOT the roster
+
+The population that matters is the **corpus** — `reflect`, `pprof`, the reflect-heavy roster rows —
+and this ran on a linux container where the windows corpus flavour does not execute those rows. **A
+zero or a small number here is not a corpus reading**, which is the scoped-zero-across-a-scope-boundary
+trap this tree has paid before. The corpus census is **owed to a Windows box**: the instrument is
+env-gated and free when off, so it costs a roster sweep nothing but the variable.
+
+**Falsifier (a)** — a population where arm 2's alias is not expressible AND the write is correct at
+master — **is not answered by this run.** It needs the corpus population and the per-site reading of
+§10.8.3's 2a list.
+
