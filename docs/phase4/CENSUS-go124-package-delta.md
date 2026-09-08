@@ -435,3 +435,120 @@ counts gets the same answer twice, rather than a third number.
   instrument from `go list`.
 - **It says nothing about verdicts at the new paths.** Whether the 10 relocated banked rows still
   pass under their successors is an H10 question, and the answer is owed by re-derivation.
+
+---
+
+## 13. DATED AMENDMENT — 2026-09-08: the successor derivation, corrected
+
+**Appended, not rewritten.** Everything above stands as written on 2026-09-07; this section corrects
+one derivation and adds the measurement that replaces it. Ruled by the coordinator after the finding
+was posted.
+
+### 13.1 The defect in §3
+
+⚠ **§3 derives each removed package's successor by `.go` FILE-NAME OVERLAP, and that overlap is
+computed over PRODUCTION files.** §4 then says the ten banked rows "must be re-derived at their new
+path". **A roster row is about VERDICTS, and tests do not have to travel with the code**, so the
+derivation can be right about the code and wrong about the row.
+
+**§3's table is correct for PRODUCTION and is left as it stands. Read it as: "successor by PRODUCTION
+file overlap; test destination derived separately", per §13.3.**
+
+### 13.2 The instrument of record is the TEST-FUNCTION NAME trace
+
+**For a verdict-bearing row, trace tests by TEST-FUNCTION NAME, never by file name.** Function names
+survive renames, splits and merges, and they are what verdicts are counted from. A file-name match can
+also agree with a moved file that was hollowed out.
+
+**It yields a closing arithmetic, which a file-name trace cannot** — a filename either matches or does
+not and says nothing about what fraction moved. Every row below closes to **zero residue**.
+
+⚠ **A destination is only real if it did NOT already declare that function at 1.23.12.** This is the
+discriminator, and similarity is not: `crypto/md5` declares `TestBlockGeneric` at BOTH releases, so
+`crypto/sha256`'s copy never moved there — it is boilerplate recurring across hash packages, and a
+76%-shared-lines comparison called it a move. `crypto/internal/fips140/aes` did not exist at 1.23.12,
+so a match there cannot be pre-existing.
+
+### 13.3 THREE of the ten banked rows SPLIT — production and tests land in different packages
+
+| row | production successor | test destination | note |
+|:--|:--|:--|:--|
+| `crypto/internal/nistec` | `crypto/internal/fips140/nistec` | `crypto/internal/fips140test` | **2,195 verdicts; the cost canary** |
+| `crypto/internal/alias` | `crypto/internal/fips140/alias` | `crypto/internal/fips140test` | |
+| `crypto/internal/mlkem768` | `crypto/internal/fips140/mlkem` | **fans out three ways** | 9 → `fips140/mlkem`, 6 → public `crypto/mlkem`, 1 dropped upstream |
+
+`mlkem768`'s trace closes exactly: **9 + 6 + 1 = 16**, no residue. It is the first row whose verdicts
+do not land in one place at all.
+
+**`crypto/internal/fips140test` is a NEW AGGREGATE test package** (`package fipstest`, 13 files, 26
+Test/Benchmark functions) absorbing tests from nistec, alias and edwards25519 plus new FIPS machinery.
+
+### 13.4 The other SEVEN rows — re-derived by the same trace, arithmetic printed
+
+| row | funcs | at production successor | elsewhere only | dropped | residue |
+|:--|--:|--:|--:|--:|--:|
+| `crypto/internal/edwards25519` | 33 | 32 | 1 | 0 | **0** |
+| `crypto/internal/edwards25519/field` | 21 | 21 | 0 | 0 | **0** |
+| `crypto/internal/bigmod` | 21 | 20 | 0 | 1 | **0** |
+| `internal/concurrent` | 7 | 7 | 0 | 0 | **0** |
+| `internal/weak` | 4 | 4 | 0 | 0 | **0** |
+| `runtime/internal/math` | 2 | 2 | 0 | 0 | **0** |
+| `runtime/internal/sys` | 4 | 4 | 0 | 0 | **0** |
+
+**No fan-out and no split among these seven** — every one has a single dominant destination matching
+its production successor, so §3's table is right for them on both axes.
+
+⚠ **NOT ONE moved test file is byte-identical at its destination**, for any of the ten. **No verdict
+count transfers by inspection.**
+
+### 13.5 The split class also reaches SURVIVING rows
+
+Of the **194** banked rows whose package exists at both releases, **17 lose at least one `Test*`
+function** (59 functions). Filtered by the §13.2 discriminator, **6 genuinely move, across 2 rows**:
+
+| row | tests that left | destination | evidence |
+|:--|:--|:--|:--|
+| `crypto/aes` | `TestMul` `TestPowx` `TestSboxes` `TestTd` `TestTe` | `crypto/internal/fips140/aes` | byte-identical bodies |
+| `crypto/rsa` | `TestEMSAPSS` | `crypto/internal/fips140/rsa` | 85% shared lines |
+
+**Both destinations are packages that did not exist at 1.23.12.** `crypto/aes`'s import path is
+unchanged at 1.24.13, so **nothing about the row's name flags that five of its tests left** — the
+silent case.
+
+⚠ **`sync` looks alarming and is not**: it loses 25 functions, **24 of them `Benchmark*`**, which
+produce no verdicts. Splitting `Test*` from `Benchmark*` is what turns it from a headline into a
+footnote. The remaining **45** lost functions are gone from the tree, and this instrument **cannot
+distinguish DELETED from RENAMED** — a renamed test still exists and still produces verdicts.
+
+### 13.6 Four instrument corrections, every one over-reporting
+
+Recorded because the honest number is **6** and the first four passes would have published 14 or worse.
+
+1. ⚠ **`find -name` FIRST HIT** put two rows' tests in `cmd/compile/...`. `math_test.go` exists at two
+   paths at 1.24.13 and `intrinsics_test.go` at three. **The next reader will reach for
+   `find -name | head -1` too** — enumerate every destination and mark byte-identity instead.
+2. **File-name matching** reported `mlkem768` as "absent anywhere, unresolved". False: upstream renamed
+   the file and kept the functions.
+3. **Function-NAME matching alone** gave 14 candidates, 4 of them collisions — `crypto/tls`'s
+   `TestExtract` "moved to" `cmd/pack`.
+4. ⚠ **The body comparison added to fix (3) was VACUOUS.** The extractor matched nothing, so every pair
+   compared **empty against empty** and all seven candidates reported *"IDENTICAL body → REAL MOVE"*,
+   including `TestExtract → cmd/pack`. **Two empty results compare equal.** Caught only because that
+   verdict was not credible. The fix is a non-empty guard on both sides plus a positive control on a
+   function known to exist before the comparison is trusted.
+
+### 13.7 Ruling, and what this does not answer
+
+**The 1.24 roster is keyed by 1.24 PACKAGE IDENTITY; no row "follows" production or tests, and the
+1.23.12 counts are the FROZEN ANCHOR rather than a target the 1.24 rows must reproduce.** The three
+split rows join the H10 list as "identity changes, re-derive by 1.24 package", with §13.3 as the
+derivation.
+
+**The cost canary stays at the frozen 1.23.12 anchor until H2**, then is re-baselined by running BOTH
+candidates once at 1.24.13, solo, Release + tiering off, walls recorded — the candidate whose wall
+moves when synthesis is made deliberately slower becomes the canary, and `CLAUDE.md`'s package name and
+baseline are edited THEN as a dated correction naming that measurement, never before. **Every dated
+nistec reading in a design record stays as written.**
+
+**Not answered here:** whether any verdict count reproduces at 1.24.13 — that needs a run against the
+new GOROOT and is post-hop. This remains a source-level census over two toolchain roots.
