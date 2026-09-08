@@ -17,7 +17,7 @@ internal static uintptr align(uintptr i) {
 }
 
 internal static uintptr maskAddr(uintptr i) {
-    return (uintptr)(i & (uintptr)0x00ffffffffffUL);
+    return (uintptr)(i & (uintptr)(nuint)0x00ffffffffffUL);
 }
 
 internal static uintptr alignSmall(uintptr i) {
