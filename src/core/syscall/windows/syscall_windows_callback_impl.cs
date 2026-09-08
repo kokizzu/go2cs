@@ -71,7 +71,9 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using any = System.Object;
+// NO `using any = System.Object;` HERE. The generated csproj already carries that alias
+// GLOBALLY, so declaring it again is CS1537 -- measured by the i7 on 193af90f5. The partial
+// below therefore spells the parameter `any` and binds it from the project-wide alias.
 
 [module: go.GoManualConversion]
 
@@ -251,9 +253,15 @@ partial class syscall_package
             if (s_goCallbacks.Count >= goCallbackMax)
                 throw panic("too many callback functions");
 
+            // ⚠ DoNotWrapExceptions IS LOAD-BEARING, not tidiness. The binder's own refusals --
+            // goCallbackCheckArg / goCallbackCheckResult, which raise Go's text as a panic -- run
+            // INSIDE this reflective call, and MethodInfo.Invoke wraps anything they throw in a
+            // TargetInvocationException. A wrapped panic is not a panic: `recover()` would not see
+            // it and the caller would get an infrastructure error where Go gives a fatal with its
+            // own message. Measured by the i7 on 193af90f5 as a latent defect behind refusals d2/d3.
             Delegate shim = (Delegate)open.MakeGenericType(targs)
                 .GetMethod("Bind", BindingFlags.Public | BindingFlags.Static)!
-                .Invoke(null, [d])!;
+                .Invoke(null, BindingFlags.DoNotWrapExceptions, null, [d], null)!;
 
             uintptr code = (nuint)(nint)Marshal.GetFunctionPointerForDelegate(shim);
             s_goCallbacks[d] = (shim, code);
