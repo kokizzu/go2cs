@@ -355,6 +355,74 @@ skip a step of it, so the non-negotiables are restated rather than referenced:
 **Gate:** overlay completes with the marker gate at zero violations and **every diff classified**
 (§4).
 
+#### Amendment 2026-09-07 — the DELETION PASS is a required step, and it has an instrument
+
+The bullet above states the deletion bill as a *number to report*. The 1.24.13 rehearsal
+([`docs/phase4/REHEARSAL-h5-go124.md`](phase4/REHEARSAL-h5-go124.md) §3) showed that reporting it is
+not enough: **the stale files have to be removed from the staging root before the overlay, and nothing
+in the ritual performed a deletion.** That rehearsal's *first* build died in 116 s having measured
+nothing — `internal/goexperiment/exp_aliastypeparams_off.cs` (seeded, 1.23.12) and
+`exp_aliastypeparams_on.cs` (emitted, 1.24.13) both declare `AliasTypeParams`, the package csproj globs
+`*.cs` so both compile, and the result is **CS0102 ×2 in a leaf essentially the whole corpus depends
+on**. A stale sibling is not a diff to classify at leisure; at a hop it is a compile error in front of
+every other measurement.
+
+**So H5 gains a step, between the reconvert and the overlay:**
+
+> **H5c — deletion pass.** Run **`src/reconvert-deletions.ps1`** (launcher `reconvert-deletions.bat`)
+> against the staging root, dry-run first, then with `-Apply`. Only then overlay.
+>
+> ```
+> .\reconvert-deletions.ps1 -Root <staging>\src -GoRoot <target GOROOT> `
+>                           -ExpectGo go<target> -Sentinel <staging>\run.stamp
+> ```
+>
+> The sentinel is a file created immediately **before** the conversion starts; its modification time is
+> the seeded/emitted boundary (`-SentinelTime <datetime>` is the same input without a file). The
+> instrument **refuses** — exit 3, before printing any table — on a missing or ambiguous sentinel, on a
+> `-Root` that resolves to the repository's own `src/core`, or when `go version` under `-GoRoot` does
+> not report `-ExpectGo`. A deletion pass aimed at the wrong release deletes the wrong files, so that
+> is a refusal and not a warning.
+
+**Why the modification time alone cannot decide a deletion, and Go must be asked.** The converter's
+write path skips a write whose bytes are identical (`needToWriteFile`), so a file whose emission did not
+*change* between the two releases keeps its seed timestamp and reads SEEDED exactly like a file that
+stopped being emitted. The rehearsal measured **1,292** seeded-not-rewritten production `.cs` against
+**25** real deletions — the seeded set is ~50× the deletion set, and a timestamp-only pass would destroy
+the corpus. The timestamp answers only *"is this a candidate"*. **Go answers "should it exist"**, via
+`go list -f '{{.GoFiles}} {{.CgoFiles}}' <importpath>` under the target `GOROOT` with `CGO_ENABLED=0`
+(the corpus's own emission state), `GOTOOLCHAIN=local`, and the file's own `GOOS`.
+
+**The classes**, each printed with its count whether or not it is zero:
+
+| class | meaning | deleted? |
+|:--|:--|:--|
+| `PROTECTED` | line-anchored `[module: GoManualConversion]`, or an `*_impl.cs` companion | **never** — a hand-own is an H6 reconciliation item, not a deletion |
+| `KEEP-SELECTED` | Go still selects the principal at the target for this flavour | no — the dominant class, and the pass's own negative control |
+| `DELETE-ABSENT` | the principal, or its whole package, is gone at the target (H3 removals) | yes |
+| `DELETE-DESELECTED` | the principal still exists on disk but Go does not select it for this flavour — a build-tag or GOEXPERIMENT flip | yes |
+| `UNRESOLVED` | no Go principal is derivable — generated metadata (`package_info.cs`, `package_init.cs`) and anything else whose stem maps to no `.go` name | **never** |
+
+**`UNRESOLVED` stops the step for a human.** The pass exits **2** whenever any row lands there, and
+those rows are always listed. The class is not hypothetical and it is not automatable from a file name:
+the rehearsal's 25 contains exactly one, `crypto/ecdh/package_init.cs`, a genuinely stale generated file
+whose staleness only a reader can confirm. Deleting it on a guess and dropping it silently are both
+wrong; the pass does neither and refuses to report success until somebody has disposed of it.
+
+Files the run emitted are not candidates at all, and neither are the `<Compile Remove>`d test-host
+artifacts (`package_test_info.cs`, `go2cs_test_host.cs`, `*_test.cs`) — a stale one cannot produce the
+CS0102 this pass exists to prevent, and admitting them buries the real rows (the rehearsal subtracted
+384 of them from the same arithmetic). They are counted, not listed.
+
+**Two notes on reading the bill.** The `-platforms` multi-target emission is what H5 actually runs
+(§H8's requirement, restated in the rehearsal's §8), and a **single-target** run recomputes only its own
+flavour — so a deletion pass over a single-target root answers only for that flavour, and an L3 per-GOOS
+folder is asked under **its own** `GOOS` regardless of the run's target. And this amendment does not
+revise the bullet above: that bullet's **31** is an earlier trial's reading and stands as its own dated
+measurement; the rehearsal's **25** is a different run of a different release with a different
+instrument. Neither supersedes the other, and both are point-in-time — **re-measure, never carry the
+count.**
+
 ### H6 — The hand-own re-audit ⟲ **GATE**
 
 The step that distinguishes a corpus *upgrade* from a corpus *regeneration*, and the one a migration
