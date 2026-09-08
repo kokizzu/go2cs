@@ -9,6 +9,31 @@ Pages under `current/` are living proof — regenerated only when a package's ve
 Versioned sibling directories are frozen publication snapshots: written once at release and never
 rewritten, so the proof link for a published package stays the proof as of that binary.
 
+## Frozen snapshots
+
+One directory per published release. The page counts below are exact and cannot go stale: a frozen
+directory is written once and never rewritten, so each number is a permanent statement of how many
+packages were validated when that build shipped.
+
+| Release | Snapshot | Proof pages | Roster as it stood |
+|:--|:--|--:|:--|
+| 1.23.1.2 | [`1.23.1.2/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.1.2) | 72 | — |
+| 1.23.1.3 | [`1.23.1.3/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.1.3) | 73 | — |
+| 1.23.1.4 | [`1.23.1.4/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.1.4) | 110 | — |
+| 1.23.1.5 | [`1.23.1.5/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.1.5) | 110 | — |
+| 1.23.1.6 | [`1.23.1.6/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.1.6) | 126 | — |
+| 1.23.1.7 | [`1.23.1.7/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.1.7) | 162 | — |
+| 1.23.12.1 | [`1.23.12.1/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.12.1) | 172 | — |
+| 1.23.12.2 | [`1.23.12.2/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.12.2) | 189 | — |
+| 1.23.12.3 | [`1.23.12.3/`](https://github.com/ritchiecarroll/go2cs/tree/master/docs/validation/1.23.12.3) | 204 | [`ValidatedTestPackages.md`](1.23.12.3/ValidatedTestPackages.md) |
+
+A snapshot froze the per-package proofs and not the roster PAGE around them until 1.23.12.3, so for
+every release above it the campaign's own "how things stood" view lives only in the signed git tag.
+`git show nuget-<version>` — `nuget-1.23.12.3`, `nuget-1.23.1.7` — reaches the exact source tree a
+release was built from, roster included. From 1.23.12.3 on the snapshot carries that page itself, and
+[`src/push-nuget.ps1`](https://github.com/ritchiecarroll/go2cs/blob/master/src/push-nuget.ps1) writes
+it beside the proofs on every release.
+
 | Package | Proof | Converted package |
 |:--|:--|:--|
 | `archive/tar` | [`archive.tar.md`](current/archive.tar.md) | [`src/core/archive/tar`](https://github.com/ritchiecarroll/go2cs/tree/master/src/core/archive/tar) |

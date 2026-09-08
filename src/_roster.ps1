@@ -343,6 +343,163 @@ function Get-ExclusionLedgerRows {
 
 <#
 .SYNOPSIS
+    The roster document rewritten as a release's FROZEN snapshot copy of itself.
+.DESCRIPTION
+    A release freezes docs\validation\current\ into docs\validation\<version>\ so the proof shown
+    for a published binary stays the proof as of that binary. It did NOT freeze the roster PAGE, so
+    the published site had every per-package proof from publication day and no "how things stood"
+    view of the campaign around them: the only such view was the signed tag nuget-<version>, which
+    is a git object and reaches nobody reading go2cs.net. This function is the missing half -- the
+    roster text as it stood, retargeted so the snapshot links WITHIN ITSELF.
+
+    Two substitutions, both counted and both returned, because a published document is the one
+    artifact where a silent no-op and a silent over-match cost the same and look identical:
+
+      RELOCATE   Every relative link that pointed OUT of docs\ (../src/..., README.md#..., a
+                 phase4\ reference definition) is two directories shallower than the snapshot, so
+                 it gains '../../' and resolves to exactly the file it named before. This is pure
+                 relocation compensation: the target does not move, the path to it does. Runs
+                 FIRST and excludes validation/current/ explicitly, so the proof links below are
+                 still in their original spelling when the second substitution looks for them --
+                 order is load-bearing, since a retargeted sibling link ('bytes.md') matches the
+                 relocate pattern perfectly and would be sent to '../../bytes.md'.
+
+      PROOF      validation/current/<id>.md -> <id>.md, the sibling frozen page. This is the whole
+                 point: a snapshot whose 204 proof links walk back into the LIVING directory is a
+                 snapshot of one page, not of a publication.
+
+    UNRELOCATED is the audit arm. It names every path-shaped relative target in the source that
+    NEITHER substitution consumed -- empty on today's roster, and the only way a future roster
+    gaining a link shape nobody anticipated shows up as something other than a dangling link on
+    the published site. It is reported, never silently passed.
+
+    The note is inserted after the H1 rather than before it: this page has no YAML front matter
+    (nothing under docs\ does) and its first line is the Jekyll {% raw %} guard whose matching
+    endraw must stay the file's last line, so both ends of the document are spoken for. Inside the
+    raw guard is also where the note is safe by construction -- it can never be read as Liquid.
+
+    Non-ASCII is composed from [char], never written as a literal: PS 5.1 parses a BOM-less UTF-8
+    .ps1 through the system codepage, and a mojibake'd em dash in a COMMENT is cosmetic while one
+    in this function's output ships to nuget.org and go2cs.net.
+.OUTPUTS
+    PSCustomObject: Text, ProofLinks (int), Relocated (string[]), Unrelocated (string[]).
+#>
+function ConvertTo-FrozenRosterText {
+    param(
+        [Parameter(Mandatory)][string] $RosterText,
+        [Parameter(Mandatory)][string] $Version,
+        [Parameter(Mandatory)][string] $Commit,
+        [string] $FrozenOn = (Get-Date -Format 'yyyy-MM-dd')
+    )
+
+    if ([string]::IsNullOrWhiteSpace($RosterText)) { throw 'ConvertTo-FrozenRosterText: the roster text is empty.' }
+
+    # Every link target the source carries, by both markdown forms, before anything is rewritten.
+    # Path-shaped means "contains a slash, or ends in an extension" -- which admits every real link
+    # and excludes the two placeholder targets the roster's own HTML comments carry when they
+    # describe a link shape in prose.
+    $inlineTargetPattern = '\]\(([^)\s]+)\)'
+    $refTargetPattern = '(?m)^\[[^\]]+\]:[ \t]+(\S+)'
+    $pathShaped = '^(?!https?://)(?!#)(?:[^\s)]*/[^\s)]*|[^\s)]+\.[A-Za-z0-9]{1,6}(?:#[^\s)]*)?)$'
+
+    $sourceTargets = New-Object System.Collections.Generic.List[string]
+    foreach ($pattern in @($inlineTargetPattern, $refTargetPattern)) {
+        foreach ($match in [regex]::Matches($RosterText, $pattern)) {
+            $target = $match.Groups[1].Value
+            if ($target -match $pathShaped) { $sourceTargets.Add($target) }
+        }
+    }
+
+    $handled = New-Object System.Collections.Generic.List[string]
+    $relocated = New-Object System.Collections.Generic.List[string]
+    $text = $RosterText
+
+    # RELOCATE. The extension set is derived from a census of the roster this shipped against
+    # (.md and .ps1 were its only relative non-proof targets); anything outside it is not silently
+    # passed, it lands in Unrelocated below.
+    $relocateInline = '\]\((?!https?://|#|validation/current/)((?:\.\./)*[A-Za-z0-9_][^)\s]*\.(?:md|ps1)(?:#[^)\s]*)?)\)'
+    # The trailing class admits \r as well as space and tab. .NET's multiline '$' matches BEFORE the
+    # \n of a CRLF line, so a '[ \t]*$' tail cannot reach the end of a line in this repo's CRLF
+    # working tree -- measured: the one reference definition in the roster went UNMATCHED and landed
+    # in Unrelocated, which is the audit arm doing its job rather than a link silently dangling.
+    $relocateRef = '(?m)^(\[[^\]]+\]:[ \t]+)(?!https?://|#|validation/current/)((?:\.\./)*[A-Za-z0-9_][^\s]*\.(?:md|ps1)(?:#\S*)?)[ \t\r]*$'
+
+    $text = [regex]::Replace($text, $relocateInline, {
+        param($m)
+        $relocated.Add($m.Groups[1].Value); $handled.Add($m.Groups[1].Value)
+        '](../../' + $m.Groups[1].Value + ')'
+    })
+
+    $text = [regex]::Replace($text, $relocateRef, {
+        param($m)
+        $relocated.Add($m.Groups[2].Value); $handled.Add($m.Groups[2].Value)
+        $m.Groups[1].Value + '../../' + $m.Groups[2].Value
+    })
+
+    # PROOF. Second, for the ordering reason stated above.
+    $proofPattern = '\]\(validation/current/([^)\s]+)\)'
+    $text = [regex]::Replace($text, $proofPattern, {
+        param($m)
+        $handled.Add('validation/current/' + $m.Groups[1].Value)
+        '](' + $m.Groups[1].Value + ')'
+    })
+    $proofLinks = @($handled | Where-Object { $_ -like 'validation/current/*' }).Count
+
+    $unrelocated = @($sourceTargets | Where-Object { $handled -notcontains $_ } | Sort-Object -Unique)
+
+    # The note, as a SINGLE-QUOTED here-string with placeholders rather than an array of
+    # concatenations. Two traps closed by that shape, the first of them measured here:
+    #
+    #   PRECEDENCE  PowerShell binds ',' TIGHTER than '+', so @( 'a' + $x + 'b', 'c' + $y ) is not a
+    #               two-element array of joined strings -- it is 'a' + $x + ('b','c') + $y, an array
+    #               of fragments. The first run of this function emitted an 8-line note as 22 lines,
+    #               one per fragment, with the version and the date each alone on a line of a
+    #               PUBLISHED document. A here-string has no operators to mis-bind.
+    #   BACKTICK    A double-quoted string would need every markdown code-span backtick doubled;
+    #               inside @'...'@ a backtick is a backtick.
+    #
+    # The one non-ASCII glyph is composed rather than typed (see the encoding paragraph above).
+    $emDash = [string][char]0x2014
+    $noteTemplate = @'
+
+> **Frozen snapshot {DASH} go2cs {VERSION}.** This is the roster exactly as it stood at
+> publication, copied on {DATE} from commit `{COMMIT}` {DASH} the tree the signed tag
+> `nuget-{VERSION}` names. It is written once at release and never rewritten, so the view of how
+> the campaign stood behind a published binary survives every later bank; the living roster, which
+> keeps moving, is [`docs/ValidatedTestPackages.md`](../../ValidatedTestPackages.md). Every proof
+> link below points at this snapshot's own sibling page rather than at the living
+> `validation/current/`, so the snapshot reads without leaving itself.
+'@
+
+    $noteText = $noteTemplate.Replace('{DASH}', $emDash).Replace('{VERSION}', $Version).Replace('{COMMIT}', $Commit).Replace('{DATE}', $FrozenOn)
+    $note = @($noteText -split "`r?`n")
+    if ($note -join '' -match '\{(DASH|VERSION|COMMIT|DATE)\}') { throw 'ConvertTo-FrozenRosterText: an unfilled placeholder survived into the note.' }
+
+    $newline = if ($RosterText -match "`r`n") { "`r`n" } else { "`n" }
+    $lines = @($text -split "`r?`n")
+
+    $h1 = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^#\s') { $h1 = $i; break }
+    }
+    if ($h1 -lt 0) { throw 'ConvertTo-FrozenRosterText: the roster has no H1 to place the frozen-snapshot note under.' }
+
+    $out = New-Object System.Collections.Generic.List[string]
+    for ($i = 0; $i -le $h1; $i++) { $out.Add($lines[$i]) }
+    foreach ($noteLine in $note) { $out.Add($noteLine) }
+    for ($i = $h1 + 1; $i -lt $lines.Count; $i++) { $out.Add($lines[$i]) }
+
+    return [pscustomobject]@{
+        Text        = ($out -join $newline)
+        ProofLinks  = $proofLinks
+        Relocated   = $relocated.ToArray()
+        Unrelocated = $unrelocated
+        NoteLines   = $note.Count
+    }
+}
+
+<#
+.SYNOPSIS
     The expectation a row must be validated against on a given GOOS.
 .DESCRIPTION
     A verdict count is a fact about (package, OS). Under the row's own annotation for this GOOS,
