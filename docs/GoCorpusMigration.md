@@ -246,6 +246,72 @@ readings a person makes. It also leaves the **converter tool** version alone: th
 
 **Gate:** a single-package `-stdlib` smoke conversion no longer refuses.
 
+#### Ruling 2026-09-08 — the H2→H5 window: the converter at go1.24.13, the corpus still at 1.23.12
+
+H2 bumps the **corpus** pin; H1 step 2 has already moved the **converter module's** `go` directive, so the
+tree carries two releases until H5's regen closes the window. At master `f4d2b981b` (train 43)
+`src/go2cs/go.mod` requires **go1.24.13** while `src/version.props`'s `<GoStdLibVersion>` still reads
+**1.23.12** — the converter's build toolchain hopped, the corpus release did not. ⚠ **H1 does not rule this,
+and the runbook did not state it before now** — H1 is a five-step list whose steps 2 and 3 rule the pin bump
+alone — but its step 1 warning block supplies the mechanism: a hop leg sets **both** `GOTOOLCHAIN` and
+`GOROOT` per invocation, and **`-stdlib` converts the tree the ENVIRONMENT names**, which is why the pipeline
+under a 1.23.12 `GOROOT` converts 1.23.12 sources. Ruled `014bfe84f`, corrected `84b5913098`, measured
+`e96349c54`.
+
+**Both arms, measured at `f4d2b981b`:** building `src/go2cs` under the 1.23.12 pin exits **1** with no binary
+(`go: go.mod requires go >= 1.24.13 (running go 1.23.12; GOTOOLCHAIN=local)`); the **same** build under the
+1.24.13 pin exits **0**. Arm 2 is what makes the refusal a toolchain fact rather than a broken build.
+
+**The converter suite runs under the 1.24.13 pin** — `GOROOT=<sdk>/go1.24.13`, its `bin` first on PATH,
+`GOTOOLCHAIN=local`, bare `go version` **asserted** rather than merely printed. **The behavioral suite and CNR run
+under the two-pin PAIRING — the fifth arm below — since 2026-09-08**; the sentence that stood here until then ran
+them under the 1.24.13 pin, which reads the mixed-state artifact the fourth arm names.
+
+⚠ **Two staleness guards, and the INVOCATION decides which applies.** `go2cs -tests` invoked DIRECTLY meets
+only the converter's own mtime guard (`converterStaleness.go`), so a freshly built 1.24.13 binary passes under
+either shell. Anything HARNESS-driven — `BehavioralRunner`, MSTest, `PerformanceRunner`, the sweep's own build
+step — meets `ConverterBuildInputs.IsConverterStale`, comparing the binary's embedded release against the live
+`GOVERSION`: a 1.24.13 binary reads STALE in a 1.23.12 shell, the harness rebuilds, and that rebuild REFUSES.
+
+**`-tests` rows and `run-validated-sweep.ps1` against the still-1.23.12 corpus, in order:**
+
+```
+1  build      src/go2cs under the 1.24.13 pin              exit 0, binary produced
+2  run rows   under the 1.23.12 pin, -SkipBuild MANDATORY  guard passes: 1.23.12 == version.props
+3  assert     the comparison record's oracleGoVersion reads go1.23.12
+```
+
+⚠ **Step 2's "under the 1.23.12 pin" is the ENVIRONMENT, not the flag.** `-goroot` selects the corpus SOURCE
+tree and does **not** isolate the converter's package loader: the ambient `GOROOT` leaks into `go/packages`'
+resolution of `internal/abi`, so a `-tests` run issued from the shell that BUILT the converter (1.24.13 still
+exported) fails the `runtime` row with ~150 errors shaped like `undefined: abi.MapBucketCount` and `use of
+internal package internal/abi not allowed` — **a wall that impersonates a corpus break at exactly the moment a
+pin moved.** Measured one-variable by i9 (`1cf3af363`): identical command line, `-goroot <sdk>/go1.23.12` in
+both runs; ambient `GOROOT` 1.24.13 → rc 1, nothing emitted; ambient 1.23.12 → rc 0, clean. G (`072c283023`)
+places it as H1 step 1's ruled mechanism — **`-stdlib` converts the tree the ENVIRONMENT names** — reaching the
+`-tests` driver, plus the half H1 does not say: **the flag does not override the environment.** So the converter
+build and the corpus run happen in SEPARATE shells, or the run re-exports `GOROOT` and `PATH` to the corpus pin
+before invoking `go2cs`; **`-goroot` alone is not the pin.**
+
+⚠ **`-SkipBuild` is mandatory, not stylistic.** The sweep's toolchain guard does not refuse the mixed state, it
+**requires** it — throwing when the running release differs from `version.props`, so it passes under 1.23.12
+and throws under 1.24.13 — and none of its four switches touches the pin. But its line ~334 is
+`if (-not $SkipBuild) { … }`, so a bare sweep builds the converter under the 1.23.12 pin and dies at the
+refusal above before a row starts.
+
+⚠ **A pre-hop-pinned instrument is UNBUILDABLE from master in this window**, so a reading taken with one is
+tree-locked to the pre-train-43 checkout it was built from — R's 6 VALID / 12 HOOK-ONLY / 10 GENUINELY STALE
+base classification (`daa57a1f9`) is one. Re-measuring from master necessarily uses a 1.24.13-built front end:
+**a different instrument, named with its pin on both sides, never a refutation.**
+
+**Train batteries take the same split per LEG.** Train 43's assembly pinned each leg
+(`coord-train43-assemble.sh`), with a negative control that a module declaring `go 1.24.13` must REFUSE under
+the 1.23.12 pin; a cost-canary or sweep leg here takes the two-pin shape above, or is stated **UNMEASURED**.
+
+⚠ **Fourth arm (2026-09-08, i9 `0858372b5`, three arms with the converter binary held byte-identical): under the 1.24.13 run pin the behavioral CNR and the behavioral suite read a MIXED-STATE emission on runtime-importing projects.** The `Δ` on the `runtime` PACKAGE alias is decided from the loaded closure — i.e. from the run `GOROOT` — so the same binary emits `using Δruntime = runtime_package;` under a 1.23.12 environment and the bare `using runtime = runtime_package;` under 1.24.13; the bare form does not compile against the 1.23.12 corpus (CS0576, namespace `go` holds a `runtime` definition). Exactly EIGHT behavioral goldens read CHANGED under the 1.24.13 pin (35 lines, every one the Δ-drop, nothing else), and those eight fail Target AND Compile there — a **named EXPECTED SET** for any battery leg run under that pin, any other member a finding. Under the two-pin pairing (converter built at 1.24.13, environment re-exported to 1.23.12) all eight are byte-identical to the goldens committed at `f4d2b981b`. **Consequences ruled:** goldens are re-baselined at H5 with the hopped corpus in the reference graph, never in the window — H9 as planned for the window is DEFERRED to H5 (a golden re-baselined under a run GOROOT that differs from the corpus's release records the emission for a corpus that does not exist, and Target green + Compile red is its tell); the two-pin pairing is the zero-drift instrument of record for a converter change in the window; and the closure predicate behind the stamp is named (measured on the i7 the same night, five arms, one binary): `computeImportAliasRenames` in `src/go2cs/importAliasOperations.go` records every non-final import-path prefix of the go/packages closure as a child namespace and renames a direct import whose name collides — so it reads the Go closure at the LOADER's release while the collision is decided by the C# namespace set of the corpus's transitive reference closure at the CORPUS's release; the two agree iff the releases agree. The eight collide on the ANCESTOR of `namespace go.runtime.@internal;` (declared by `runtime/internal/{math,sys}`, which the 1.23 `core/runtime.csproj` references and which Go 1.24 moved to `internal/runtime/*`). **Ruled fix (G's cut, rides the train after 44):** the child-namespace set is the UNION of the Go closure and the referenced corpus's transitive csproj closure under `-go2cspath` (exact, never directory existence), falling back to the Go closure where no corpus csproj exists; a decision-level guard over synthetic closures plus a fixture corpus tree; acceptance is CNR under the 1.24.13 pin reading 0 CHANGED on the 1.23.12 corpus. At H5 the eight drop the Δ legitimately (none imports a `runtime/<sub>` package) and re-baseline there.
+
+⚠ **Fifth arm (2026-09-08, measured on two hosts): CNR and the behavioral suite run under the two-pin PAIRING — environment re-exported to 1.23.12 (`GOROOT`, its `bin` first on PATH), `GOTOOLCHAIN` left at auto — with ZERO drift as the expectation, and the eight-member artifact set is retired from batteries.** The module graph enforces the pairing: `src/go2cs/go.mod` says `go 1.24.13` while every corpus module says `go 1.23`, so Go's toolchain rule switches ONLY the converter's build up and every behavioral or corpus package loads at 1.23.12. CNR under that shell read 722 byte-identical / 0 NOT MEASURED with the converter still go1.24.13 afterwards (i9 `ef05467a3`); the behavioral runner read all eight artifact projects green in all four phases, `Δruntime` present in every emission, goldens byte-matched, tree clean (the i7). Five mechanics ride with it. (1) The runner's staleness predicate reads `go env GOVERSION` at the RUNNER's cwd (`src/tests/Behavioral`, no module: 1.23.12) against the binary's embedded 1.24.13, so it REBUILDS the converter on every invocation — ~1.8 s, the content-addressed cache re-links only — which fails safe (never a stale binary, never a Transpile skip); CNR is immune by its unconditional `go build`. (2) The pin is ASSERTED from a directory with NO `go.mod`: inside `src/go2cs` both `go version` and `go env GOROOT` report the SWITCHED toolchain under auto while `command -v go` still resolves under the pinned root (i9 `0eef5b66c`), and the produced binary is verified with `go version <exe>`, which no cwd can switch. (3) `GOTOOLCHAIN=local` BREAKS the single-root pairing outright (the converter cannot be built under the run pin); a SPLIT pin naming `GOROOT_BUILD=<sdk>/go1.24.13` on each build and `GOROOT_CONVERT=<sdk>/go1.23.12` on each conversion needs no switch and works under either setting (G `8f73ed9a6`) — the right spelling for a hand-invoked two-arm instrument. (4) The conversion half still reaches `go` one process down — the converter's package loader shells out to it — so a module declaring ABOVE the convert pin switches SILENTLY under auto (a probe declaring `go 1.24.13` loaded the 1.24.13 stdlib with `GOROOT` naming 1.23.12; under `local` it refused verbatim; i9 `28b5ba6b4`): the corpus is held at 1.23.12 by its own `go 1.23` directives, not by the naming of roots, and an end-user `-recurse` module or a hopped corpus against a stale pin is exactly the case that moves. (5) The switch resolves through the MODULE CACHE (`golang.org/toolchain@v0.0.1-go1.24.13`), so a cold or offline box fetches at that point. The 1.24.13-pinned CNR stays as the alias defect's own instrument — the fix's acceptance is that reading dropping from eight to zero — never as a battery leg.
+
 ### H3 — Package census ⟲
 
 Diff the conversion queue's package set against the outgoing corpus: **added**, **removed**,
