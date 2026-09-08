@@ -324,13 +324,13 @@ func scanFleetIdentifiers(path string, content []byte, denied map[int]map[string
 				for _, ix := range fleetProfileRe.FindAllSubmatchIndex(joined, -1) {
 					end := ix[3]
 					if end < len(joined) && (joined[end] == '/' || joined[end] == '\\') {
-						fleetConsiderSegment(&out, path, 0, "profile-path-split", string(joined[ix[2]:ix[3]]))
+						fleetConsiderSegment(&out, path, 0, "profile-path-split", string(joined[ix[2]:ix[3]]), nil)
 					}
 				}
 			}
 			if bytes.Contains(joined, []byte(`\\`)) {
 				for _, m := range fleetNetworkRe.FindAllSubmatch(joined, -1) {
-					fleetConsiderSegment(&out, path, 0, "network-path-split", string(m[2]))
+					fleetConsiderSegment(&out, path, 0, "network-path-split", string(m[2]), fleetNicknameHostSegments)
 				}
 			}
 		}
