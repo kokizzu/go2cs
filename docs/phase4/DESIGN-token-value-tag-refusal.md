@@ -534,3 +534,93 @@ rather than producing a percentage. That check is what §F.1(2) cost, spelled as
 §D's prediction had a second clause: outcome B costs the mint one extra shift-and-or per token,
 against a path measured at 4,532 events over 629,240,995 constructor calls. **No bench in §E or §F
 touches it.** It is not "small"; it is UNMEASURED, and it is recorded as such rather than waved past.
+
+---
+
+# AMENDMENT — 2026-09-08: §G, the §F.2 TIMING ROW READ — the door is 2.3–7.2 % of a guarded call and FREE at the row
+
+The i7, solo, 0 contenders censused before every timed process. Raw data relayed by COORD
+(`496d8f979`); **this section is the reading, which is C2's to own.** The raw numbers are not
+restated except where a reading turns on one.
+
+## G.1 ⚠ THE ABORT ARM FIRED — and on something better than it was built for
+
+§F.2.1 required the harness to **refuse to divide by an anchor it has not shown to be a kernel
+transition.** It refused. But the thing it caught was not a user-mode anchor: the first harness
+benched the *reference* THROUGH the trampoline (63 ns), which adds ~55 ns of common overhead to
+**both** sides and compresses every ratio — the proposed anchor scored **4.58×** and the run stopped
+with no ratio emitted.
+
+**The anchor was fine; the measurement of it was confounded.** That is a strictly stronger catch than
+the arm was designed for, and it is the same defect §F.1(2) retracted wearing different clothes: a
+denominator that is not what it claims to be. §F.1(2)'s 6–9 ns was a DIRECT measurement, so the bar
+calibrates on the direct call — re-measured that way, `GetProcessId(GetCurrentProcess())` reads
+**67.86–87.32×** the direct PEB read, 20/20, and the anchor is established. Three alternates also
+clear the bar, two of them natural arity-0 anchors.
+
+**Had the harness merely NAMED a better call instead of refusing, the 4.58× run would have produced a
+ratio and nobody would have known it was 55 ns of trampoline.**
+
+## G.2 The negative arm was confirmed IN SITU, which no unit test could do
+
+`GetCurrentProcess()` returns the pseudo-handle `(HANDLE)-1` — bit-for-bit
+`0xFFFF_FFFF_FFFF_FFFF`, exactly the `INVALID_HANDLE_VALUE` pattern the guard's load-bearing negative
+arm pins. So **the anchor call itself drove that arm on a live syscall path**, and
+`door_fires_on_pseudo_handle=False` reads **10/10**. `TokenValueTagRefusalTests` can only assert that
+predicate over a synthetic value; this is the same claim measured through the real trampoline into
+the real kernel. Unlooked-for and worth more than the timing it came with.
+
+## G.3 The cost, and the gap §F could not have seen
+
+Door cost per guarded call: **+4.31 … +13.65 ns at TC0** (the configuration of record) and
+**+6.46 … +12.26 ns at default**, i.e. **2.27 %–7.15 %** of each row's own base, where the base is a
+real kernel transition at 151–200 ns.
+
+The agent flagged that these are LARGER than §F's per-test arithmetic projects (0.5–3.4 ns/call) and
+stated it without explaining it. **The explanation is that §F and §F.2 measure different quantities,
+and the per-ARGUMENT slope is the one they share:**
+
+| | §F per-TEST door cost | §F.2 per-ARG door slope | ratio |
+|:--|--:|--:|--:|
+| TC0 | 0.497 | 1.221 | 2.46× |
+| default | 0.702 | 0.753 | **1.07× — essentially equal** |
+
+**At default tiering the microbench and the real trampoline agree on the per-argument cost to within
+7 %.** What §F could not see is a **fixed per-call term**: §F benched the predicate as a tight loop
+over an array and never paid the trampoline's entry into `refuseManagedPointerTokens` — one call, the
+`fn` test, the span-length load and loop setup, all of which happen once per syscall regardless of
+arity. A linear fit over arities 1/3/6 at TC0 (excluding arity 0, which the agent correctly disclaims
+as not like-for-like — the anchor padded down, `rcx` undefined, an error path, ~35 ns faster) gives
+**intercept +2.13 ns, slope +1.888 ns/arg, residuals within ±0.5** — a good fit, and the intercept is
+that fixed term.
+
+⚠ **The same fit at DEFAULT tiering is poor** (residuals −1.37/+2.28/−0.91), and the reason is in the
+data rather than in the model: arity 3 and arity 6 read **+12.25 and +12.26**, indistinguishable,
+which no function of arity reproduces. That is the signature of deltas at or below the
+process-to-process spread the agent warned about — one process read **−3.14 ns** at arity 1, and a
+base row swung 152.6 → 169.1 across processes. **So the per-arity deltas individually do not carry
+information; the TC0 slope and the extremes do.**
+
+## G.4 The answer that decides materiality: the door is FREE at the row
+
+Six `os` sweeps, all **PASS 683**, six comparison records **byte-identical** under one sha256.
+Matched-warmth walls: base **61/61 s** against cut **61/62 s**. **A door costing 4–14 ns per guarded
+call is invisible in a 61-second sweep**, which is the level the corpus is actually read at.
+
+⚠ **The matched-warmth pair exists because the agent added base r2/r3 UNASKED**, having noticed the
+brief's "base ×1" would have compared a COLD base (100 s, converter + closure built) against a WARM
+cut. The arms would not have matched on the axis that dominates the wall, and the comparison would
+have reported a ~40 % "regression" that is entirely build state. Recording that as the reason the row
+is trustworthy.
+
+## G.5 What §G does NOT establish, and one cross-reading
+
+- **§F.3, the mint side, is still UNMEASURED** — the agent confirms it is untouched. It stays named.
+- **The fixed-term decomposition is a FIT, not a mechanism.** Nothing here measured the call's
+  inlining; the intercept is what the arities 1/3/6 imply at TC0 and nothing more.
+- **Cross-reading with the H10 E2 sweep, because the two look contradictory and are not:** i9's host
+  lacks `SeCreateSymbolicLinkPrivilege` and read `os` failing 161 symlink leaves; the i7 holds it and
+  read `os` passing with zero failures. **Same package, two hosts, opposite privilege, and neither is
+  a broken oracle** — which is exactly why the E2 sweep came back empty. The two readings characterise
+  the privilege axis together rather than disagreeing.
+
