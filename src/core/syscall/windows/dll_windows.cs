@@ -110,12 +110,53 @@ private static partial IntPtr win32LoadLibraryEx(string lpLibFileName, IntPtr hF
 [LibraryImport("kernel32.dll", EntryPoint = "GetProcAddress", SetLastError = true)]
 private static unsafe partial IntPtr win32GetProcAddress(IntPtr hModule, byte* lpProcName);
 
+// THE TOKEN DOOR (DESIGN-token-value-tag-refusal.md, outcome B).
+//
+// A reference-bearing pointee -- one whose converted struct holds a managed reference, so it has no
+// address to give -- answers `(uintptr)` with an order TOKEN rather than an address. Handing that
+// number to a native function writes the kernel's output somewhere that is not the caller's struct,
+// or faults inside a system DLL: `rtlGetVersion`'s access violation in ntdll was this class, and it
+// was found by a crash whose stack pointed away from the cause.
+//
+// This is the general door, so the NEXT member of the class is a caught panic naming itself instead.
+// It reads the tag `AllocationBase` mints -- bit 63 set, bit 47 clear, non-canonical on x86-64 and
+// therefore impossible for a real address, a HANDLE, a length or a flag word. `INVALID_HANDLE_VALUE`
+// (-1) has bit 63 set and bit 47 set, so it passes; the guard pins that specifically.
+//
+// WHY HERE. Every arity -- Syscall, Syscall6, Syscall9, Syscall12, Syscall15, Syscall18, SyscallN
+// and Proc.Call -- funnels through this one private helper, so one loop covers the whole surface;
+// putting it on SyscallN alone would cover one of eight entries. `fn` is checked as well as the
+// arguments: a token reaching the CALL TARGET is the same defect one step worse.
+//
+// SCOPE, stated because it bounds what this can promise: DIRECT pointer arguments only. A token
+// reached through a structure the trampoline does not decode is invisible here and stays the
+// mirror-and-transcribe remedy's business -- this door narrows the class, it does not close it.
+private static void refuseManagedPointerTokens(nuint fn, ReadOnlySpan<uintptr> a) {
+    if (ManagedPointerTokens.IsTaggedToken(fn)) {
+        throw panic("syscall: call target is a managed pointer token, not an address -- the " +
+                    "pointee is reference-bearing and has no address to call");
+    }
+
+    for (int i = 0; i < a.Length; i++) {
+        if (!ManagedPointerTokens.IsTaggedToken((nuint)a[i])) {
+            continue;
+        }
+
+        throw panic($"syscall: argument {i} is a managed pointer token, not an address -- the " +
+                    "pointee is reference-bearing, so passing it to native code would read or " +
+                    "write memory that is not the caller's. Hand-own this wrapper against a " +
+                    "blittable mirror (see zsyscall_windows_version_impl.cs)");
+    }
+}
+
 // The system-call trampoline: invoke the native function at trap with the given uintptr
 // arguments. Mirrors runtime.syscall_syscalln: r2 is only meaningful for floating-point
 // returns (always 0 here) and err is GetLastError after the call (cleared first, so a
 // succeeding API that does not touch last-error reports 0, matching Go).
 private static unsafe (uintptr r1, uintptr r2, Errno err) syscalln(nuint fn, ReadOnlySpan<uintptr> a) {
     nuint r;
+
+    refuseManagedPointerTokens(fn, a);
 
     Marshal.SetLastSystemError(0);
 

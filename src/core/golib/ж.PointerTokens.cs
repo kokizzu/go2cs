@@ -189,6 +189,51 @@ public static class ManagedPointerTokens
     /// number must DIFFER from the base (an exact token that missed Resolve is a dead box, not
     /// arithmetic — that keeps its old native-box answer).
     /// </remarks>
+    /// <summary>
+    /// The two bits <c>ж&lt;T&gt;.AllocationBase</c> forces into every minted token, and the mask
+    /// that reads them back. Declared here, together, because a door testing for a tag the mint no
+    /// longer applies is worse than no door: the packing and the predicate move together or not at
+    /// all. See DESIGN-token-value-tag-refusal.md, outcome B.
+    /// </summary>
+    internal const ulong TagBit  = 1UL << 63;
+    internal const ulong TagMask = (1UL << 63) | (1UL << 47);
+
+    /// <summary>
+    /// Answers, from the VALUE alone and with no registry lookup, whether <paramref name="number"/>
+    /// was minted as a managed pointer's order token rather than being a real address, a HANDLE, a
+    /// length or a flag word.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The soundness argument is x86-64 canonicality: a valid user-mode address has bits 63..47 ALL
+    /// EQUAL, and a token has bit 63 set with bit 47 clear, so the two sets cannot overlap. HANDLEs,
+    /// lengths and counts are small kernel-table indices and magnitudes, nowhere near 2^63.
+    /// </para>
+    /// <para>
+    /// The one family that must be checked BY NAME rather than by magnitude is the negative integer
+    /// widened to <c>uintptr</c>. <c>INVALID_HANDLE_VALUE</c> is -1, i.e.
+    /// <c>0xFFFF_FFFF_FFFF_FFFF</c>, which has bit 63 set -- and is NOT refused, because bit 47 is
+    /// set too. A guard arm pins it specifically, since it is the value a wrong predicate would
+    /// most plausibly reject.
+    /// </para>
+    /// <para>
+    /// Distinct from <see cref="IsTokenArithmetic"/>, which asks the REGISTRY whether a number was
+    /// derived from a live token. This asks only what the number's own bits say, which is what lets
+    /// the syscall trampoline use it: at that depth there is no box left to look up, and a registry
+    /// answer would be wrong anyway -- <c>RegisterPinned</c> writes REAL addresses into the same
+    /// table, so a registry-keyed door would refuse a pinned buffer on its first honest call.
+    /// </para>
+    /// <para>
+    /// PLATFORM LIMIT, stated rather than assumed: this is x86-64's rule. Windows-on-ARM64 owes its
+    /// own derivation -- address tagging and 48/52-bit VA configurations make "non-canonical" a
+    /// different predicate -- and nothing here transfers to it by assumption.
+    /// </para>
+    /// </remarks>
+    public static bool IsTaggedToken(nuint number)
+    {
+        return ((ulong)number & TagMask) == TagBit;
+    }
+
     internal static bool IsTokenArithmetic(nuint number)
     {
         if (number == 0 || s_count == 0)

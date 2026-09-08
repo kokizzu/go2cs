@@ -468,10 +468,31 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
 
     // An allocation's token base: the identity hash lifted clear of the low 32 bits, so every
     // base is 8-aligned and the whole low half is available to carry a within-allocation
-    // displacement.
+    // displacement -- and TAGGED non-canonical, so the value announces itself as a token.
+    //
+    // THE TAG (DESIGN-token-value-tag-refusal.md outcome B). x86-64 requires bits 63..47 of a
+    // valid user-mode address to be ALL EQUAL. Forcing bit 63 = 1 and bit 47 = 0 makes every
+    // token non-canonical, so no real address can be mistaken for a token and no token for an
+    // address -- by construction rather than by table, which is what lets the syscall trampoline
+    // refuse one from the VALUE alone (see ManagedPointerTokens.IsTaggedToken, which reads back
+    // exactly the two bits this sets -- they are declared there so mint and door cannot drift).
+    //
+    //     bit 63 | 62..48 hash hi | bit 47 | 46..32 hash lo | 31..0 displacement
+    //        1   |    15 bits     |    0   |    15 bits     |      32 bits
+    //
+    // The displacement stays 32 bits, so ElemRefBox's absolute index, FieldRefBox's offset and
+    // ManagedPointerTokens.IsTokenArithmetic's `& ~0xFFFFFFFF` are all untouched and the ordering
+    // contract is unchanged. What it costs is the hash, 32 -> 30 bits, and that cost was MEASURED
+    // rather than assumed: the CLR identity hash never sets bits 31..26 (OR of 10^6 hashes =
+    // 0x03FFFFFF on linux-x64 and windows-x64 alike, record C.1), so the two bits this drops were
+    // never carrying information. The collision count is unchanged on both hosts.
     private protected static nuint AllocationBase(int identityHash)
     {
-        return unchecked((nuint)((ulong)(uint)identityHash << 32));
+        ulong hash = (uint)identityHash;
+
+        return unchecked((nuint)(ManagedPointerTokens.TagBit |
+                                 ((hash >> 15 & 0x7FFF) << 48) |
+                                 ((hash & 0x7FFF) << 32)));
     }
 
     /// <inheritdoc/>
