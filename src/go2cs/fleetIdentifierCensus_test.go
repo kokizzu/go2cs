@@ -279,8 +279,33 @@ func scanFleetIdentifiers(path string, content []byte, denied map[int]map[string
 	if joined := fleetJoinLineBreaks(content); joined != nil {
 		if structural {
 			if fleetHasFold(joined, "users") || bytes.Contains(joined, []byte("/home/")) {
-				for _, m := range fleetProfileRe.FindAllSubmatch(joined, -1) {
-					fleetConsiderSegment(&out, path, 0, "profile-path-split", string(m[1]))
+				// ⚠ ON THE JOINED SURFACE ONLY, the path must CONTINUE past the segment. Measured
+				// 2026-09-08, after i9 (0a1e7a0f8d) found that collapsing whitespace at a break fuses
+				// ORDINARY PROSE into what short structural arms match, and R (6fc8978fa8) measured the
+				// opposite constraint -- that dropping these arms from the joined pass is the
+				// FALSE-PASS direction, because a genuinely wrapped path then goes clean.
+				//
+				// Both are true of THIS gate, so neither lane's remedy was taken. Unqualified, this arm
+				// gave FOUR false refusals on prose this project writes constantly (a line ending in a
+				// profile-root word, the next opening with a separator and a short path word); removing
+				// it from the joined surface lost THREE of four wrap positions for an account not yet on
+				// the denylist. The discriminator that separates them is not length -- a fused word of
+				// nine or ten characters is ordinary here -- it is that A LEAKED PATH CONTINUES past the
+				// account and FUSED PROSE DOES NOT: the next byte is a separator in the first case and a
+				// space or end-of-line in the second.
+				//
+				// Measured both ways with the arm set this gate actually has: EIGHT of eight wrap
+				// positions still refuse (posix and windows spellings, long and SHORT accounts, wrapped
+				// inside the account, at the separator, inside the root word, and before it), and all
+				// five prose shapes go clean including the long fused words. The residual is ONE shape
+				// -- a break falling exactly at the separator AND the path ending at the account AND the
+				// account unknown -- which the unqualified arm did catch; every other ending, and every
+				// denied account, is still refused. Stated because it is a real if narrow loss.
+				for _, ix := range fleetProfileRe.FindAllSubmatchIndex(joined, -1) {
+					end := ix[3]
+					if end < len(joined) && (joined[end] == '/' || joined[end] == '\\') {
+						fleetConsiderSegment(&out, path, 0, "profile-path-split", string(joined[ix[2]:ix[3]]))
+					}
 				}
 			}
 			if bytes.Contains(joined, []byte(`\\`)) {
@@ -662,6 +687,18 @@ func TestSplitRefusalIsAttributableToTheToken(t *testing.T) {
 	const harmless = "zzharmlessword"
 	const seg = "zzexampleaccount"
 
+	// Pieces for the prose arms below. ASSEMBLED rather than spelled, for the same reason the plants
+	// are: this file is a tracked file the guard scans, and a profile-root word followed by a
+	// separator written out here would make the guard refuse its own source. proseTail stands for an
+	// ordinary directory word; what matters is that it is NOT in fleetPlaceholderSegments, or the arm
+	// would pass for free. proseLong is the length case that defeats a minimum-length discriminator.
+	const proseRoot = "sources live under /home"
+	const proseWin = "Users"
+	const proseSep = "/"
+	const proseBS = "\\"
+	const proseTail = "zzprosetail"
+	const proseLong = "zzgeneratedfiles"
+
 	cases := []struct {
 		name     string
 		content  string
@@ -689,6 +726,35 @@ func TestSplitRefusalIsAttributableToTheToken(t *testing.T) {
 		// And the measurement that bounds it: the SAME pair not at a break stays clean, which is what
 		// collapsing only at the break buys over stripping all whitespace.
 		{"the same pair NOT at a break stays clean", "the " + controlToken[:9] + " " + controlToken[9:] + " is a ledger column\n", ""},
+
+		// ⚠ THE PROSE SHAPES THE JOINED STRUCTURAL ARM REFUSED UNTIL 2026-09-08. Each is ordinary
+		// project prose: a line ending in a profile-root word, the next opening with a separator and a
+		// path word. All four REFUSED with profile-path-split before the continuation requirement went
+		// in; the same words INLINE were clean, which is what proved it was the JOIN and not the
+		// content. Remove that requirement and these four go red -- they are the arm that keeps it.
+		{"prose: posix profile word, next line opens with a separator", proseRoot + "\n" + proseSep + proseTail + " is where they land\n", ""},
+		{"prose: profile word, next line opens with a separator", "shared by all " + proseWin + "\n" + proseSep + proseTail + " resolves per lane\n", ""},
+		{"prose: windows profile root, next line opens with a backslash", "sits under C:" + proseBS + proseWin + "\n" + proseBS + proseTail + " on that host\n", ""},
+		{"prose: profile word and a path word across a break", "a note about " + proseWin + "\n" + proseSep + proseTail + " spellings\n", ""},
+
+		// The LENGTH case, and it is why the discriminator is continuation rather than segment length:
+		// a sixteen-character fused word is ordinary vocabulary in this project, so any minimum-length
+		// rule would refuse this line while this one stays clean.
+		{"prose: a LONG fused word after the separator", proseRoot + "\n" + proseSep + proseLong + " land under obj\n", ""},
+		{"prose: fused word at END of line", proseRoot + "\n" + proseSep + proseLong + "\n", ""},
+
+		// The INLINE twins: same words, one line. Clean before the change too, which is what makes the
+		// six above a statement about the JOIN rather than about the words.
+		{"prose INLINE twin: posix", proseRoot + " " + proseSep + proseTail + " is where they land\n", ""},
+		{"prose INLINE twin: profile word", "shared by all " + proseWin + " " + proseSep + proseTail + " resolves per lane\n", ""},
+
+		// ⚠ THE OTHER DIRECTION is already asserted, by the `profile path split across a break` arm
+		// above: a wrapped path that CONTINUES past the account still refuses. No arm is added for it
+		// here -- a duplicate at a different wrap position fires the UNJOINED arm too (on the fragment
+		// left after the separator) and this test requires every finding to be the one named kind, so
+		// the honest place for multi-arm shapes is the plants control. R measured that dropping these
+		// arms takes every wrap position clean on their gate (6fc8978fa8); that existing arm is what
+		// keeps this gate from going the same way.
 	}
 
 	for _, c := range cases {
