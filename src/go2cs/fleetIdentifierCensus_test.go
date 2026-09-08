@@ -49,8 +49,8 @@ import (
 //
 // The denylist is stored as SALT-FREE SHA-256 of the lowercased token, never as plaintext: a guard
 // that spelled the identifiers it forbids would put them on the pushed surface itself, which is the
-// thing being prevented. Hashes are checked against whole tokens and against each dot/hyphen
-// component, so a machine name and the account name inside it both match.
+// thing being prevented. Hashes are checked against whole tokens and against each
+// dot/hyphen/underscore component, so a machine name and the account name inside it both match.
 //
 // What is deliberately NOT flagged: the owner's PUBLIC name, e-mail and GitHub handle. Those are
 // published attribution, not infrastructure, and the order names the latter. They are cleared by
@@ -79,6 +79,22 @@ func (f fleetFinding) String() string {
 // Adding a machine or an account spells nothing:
 //
 //	echo -n "<token>" | tr A-Z a-z | sha256sum
+//
+// Before adding one, check it is not already SUBSUMED. Components are hashed as well as whole runs,
+// so an entry whose own token carries a separator can fire only on a WHOLE run -- no component can
+// ever equal it, components carrying no separator by construction -- and any run that equals it
+// necessarily presents its components on the same line. A machine name that embeds an
+// already-denied account name as one of its components is therefore fully covered by that account
+// row, and adding it as its own row is a row that can never produce a hit the account row does not.
+// Measured 2026-09-07: exactly that entry was proposed for one fleet box, measured strictly
+// subsumed across four planted arms, and NOT added. Dead weight here reads as diligence.
+//
+// A new row's evidence is a ONE-TIME red-first at cut time, because the positive control below
+// drives a SYNTHETIC denied index by construction: a control that exercised a REAL row would have to
+// spell the identifier, which is the thing this list exists to keep out of the tree. The control can
+// prove the PASS is live; it cannot prove any particular row is. So plant the token in a tracked
+// file FROM THE ENVIRONMENT -- never as a literal -- run TestNoFleetIdentifiersInTrackedFiles with
+// and without the row, restore byte-identically, and record both arms in the commit.
 type fleetDeniedToken struct {
 	Len  int
 	Hash string
@@ -284,8 +300,14 @@ func fleetHasFold(hay []byte, needle string) bool {
 
 // fleetLineHasDeniedToken walks identifier-shaped runs by hand -- a regexp tokenizer over every line
 // of the corpus was the single most expensive thing this guard did -- and hashes a run only when its
-// length is one a denied token could have. Each hyphen/dot component is tested as well as the whole
-// run, so a machine name and the account name inside it both match.
+// length is one a denied token could have. Each hyphen/dot/underscore component is tested as well as
+// the whole run, so a machine name and the account name inside it both match.
+//
+// '_' joined the separators on 2026-09-07, by measurement rather than by reading: it is a token
+// CHARACTER but was not a SPLIT character, so `x_<denied>_y` passed this guard while `x-<denied>-y`
+// was caught -- a gap with no principle behind it, since an owner column, a share name, a Windows
+// account and an environment variable all join with '_' exactly as readily as with '-'. The
+// widening cost the corpus nothing: the whole-tree run is green before and after.
 func fleetLineHasDeniedToken(line []byte, denied map[int]map[string]string) bool {
 	isTok := func(c byte) bool {
 		return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c >= '0' && c <= '9' ||
@@ -305,7 +327,7 @@ func fleetLineHasDeniedToken(line []byte, denied map[int]map[string]string) bool
 			return true
 		}
 		for k, p := 0, 0; k <= len(tok); k++ {
-			if k == len(tok) || tok[k] == '-' || tok[k] == '.' {
+			if k == len(tok) || tok[k] == '-' || tok[k] == '.' || tok[k] == '_' {
 				if k > p && fleetTokenDenied(tok[p:k], denied) {
 					return true
 				}
@@ -463,6 +485,10 @@ func TestFleetIdentifierScannerFiresAndRestores(t *testing.T) {
 		{"unc host", fmt.Sprintf("share at \\\\%s\\public\\x\n", host), "network-path"},
 		{"bare denied token", "owner column reads " + controlToken + " here\n", "denied-token"},
 		{"denied token inside a machine name", "row names " + controlToken + "-desk2\n", "denied-token"},
+		// The arm that pays for the 2026-09-07 widening: '_' is a token character, so without it in
+		// the split set this line's whole run is one 20-character token that matches no bucket and
+		// the plant goes UNDETECTED. Remove '_' from fleetLineHasDeniedToken and this arm goes red.
+		{"denied token joined by underscores", "owner column reads x_" + controlToken + "_y\n", "denied-token"},
 	}
 
 	for _, p := range plants {
