@@ -513,19 +513,14 @@ public static error /*neterr*/ NetShareDel(ж<uint16> ᏑserverName, ж<uint16> 
 
 // go2cs generated this placeholder — func NetUserGetLocalGroups is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-internal static void rtlGetVersion(ж<_OSVERSIONINFOW> Ꮡinfo) {
-    var ᴋ47 = Ꮡinfo;
-        syscall.Syscall(procRtlGetVersion.Addr(), 1, (uintptr)ᴋ47, 0, 0);
-    System.GC.KeepAlive(ᴋ47);
-    return;
-}
+// go2cs generated this placeholder — func rtlGetVersion is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*err*/ GetProcessMemoryInfo(syscallꓸHandle handle, ж<PROCESS_MEMORY_COUNTERS> ᏑmemCounters, uint32 cb) {
     error err = default!;
 
-    var ᴋ48 = ᏑmemCounters;
-        var (r1, _, e1) = syscall.Syscall(procGetProcessMemoryInfo.Addr(), 3, (uintptr)handle, (uintptr)ᴋ48, (uintptr)cb);
-    System.GC.KeepAlive(ᴋ48);
+    var ᴋ47 = ᏑmemCounters;
+        var (r1, _, e1) = syscall.Syscall(procGetProcessMemoryInfo.Addr(), 3, (uintptr)handle, (uintptr)ᴋ47, (uintptr)cb);
+    System.GC.KeepAlive(ᴋ47);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -539,9 +534,9 @@ public static error /*err*/ CreateEnvironmentBlock(ж<ж<uint16>> Ꮡblock, sysc
     if (inheritExisting) {
         _p0 = 1;
     }
-    var ᴋ49 = Ꮡblock;
-        var (r1, _, e1) = syscall.Syscall(procCreateEnvironmentBlock.Addr(), 3, (uintptr)ᴋ49, (uintptr)token, (uintptr)_p0);
-    System.GC.KeepAlive(ᴋ49);
+    var ᴋ48 = Ꮡblock;
+        var (r1, _, e1) = syscall.Syscall(procCreateEnvironmentBlock.Addr(), 3, (uintptr)ᴋ48, (uintptr)token, (uintptr)_p0);
+    System.GC.KeepAlive(ᴋ48);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -551,9 +546,9 @@ public static error /*err*/ CreateEnvironmentBlock(ж<ж<uint16>> Ꮡblock, sysc
 public static error /*err*/ DestroyEnvironmentBlock(ж<uint16> Ꮡblock) {
     error err = default!;
 
-    var ᴋ50 = Ꮡblock;
-        var (r1, _, e1) = syscall.Syscall(procDestroyEnvironmentBlock.Addr(), 1, (uintptr)ᴋ50, 0, 0);
-    System.GC.KeepAlive(ᴋ50);
+    var ᴋ49 = Ꮡblock;
+        var (r1, _, e1) = syscall.Syscall(procDestroyEnvironmentBlock.Addr(), 1, (uintptr)ᴋ49, 0, 0);
+    System.GC.KeepAlive(ᴋ49);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -563,11 +558,11 @@ public static error /*err*/ DestroyEnvironmentBlock(ж<uint16> Ꮡblock) {
 public static error /*err*/ GetProfilesDirectory(ж<uint16> Ꮡdir, ж<uint32> ᏑdirLen) {
     error err = default!;
 
-    var ᴋ51 = Ꮡdir;
-    var ᴋ52 = ᏑdirLen;
-        var (r1, _, e1) = syscall.Syscall(procGetProfilesDirectoryW.Addr(), 2, (uintptr)ᴋ51, (uintptr)ᴋ52, 0);
+    var ᴋ50 = Ꮡdir;
+    var ᴋ51 = ᏑdirLen;
+        var (r1, _, e1) = syscall.Syscall(procGetProfilesDirectoryW.Addr(), 2, (uintptr)ᴋ50, (uintptr)ᴋ51, 0);
+    System.GC.KeepAlive(ᴋ50);
     System.GC.KeepAlive(ᴋ51);
-    System.GC.KeepAlive(ᴋ52);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -580,9 +575,9 @@ public static (syscallꓸHandle handle, error err) WSASocket(int32 af, int32 typ
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var ᴋ53 = Ꮡprotinfo;
-        var (r0, _, e1) = syscall.Syscall6(procWSASocketW.Addr(), 6, (uintptr)af, (uintptr)typ, (uintptr)protocol, (uintptr)ᴋ53, (uintptr)group, (uintptr)flags);
-    System.GC.KeepAlive(ᴋ53);
+    var ᴋ52 = Ꮡprotinfo;
+        var (r0, _, e1) = syscall.Syscall6(procWSASocketW.Addr(), 6, (uintptr)af, (uintptr)typ, (uintptr)protocol, (uintptr)ᴋ52, (uintptr)group, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ52);
     handle = ((syscallꓸHandle)r0);
     if (handle == syscall.InvalidHandle) {
         err = errnoErr(e1);
