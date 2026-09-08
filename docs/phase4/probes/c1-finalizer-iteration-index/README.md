@@ -51,10 +51,30 @@ building**, which wipes this patch and makes the probe read nothing while lookin
 
 ```
 go2cs -tests -test-action convert  <goroot>/src/runtime  <out>/src/core/runtime
-python3 apply.py                   <out>/src/core/runtime/mfinal_test.cs
-go2cs -tests -test-action build    ...        # then run / compare — NEVER `all`
-python3 apply.py --verify          <out>/src/core/runtime/mfinal_test.cs
+python  apply.py                   <out>/src/core/runtime/mfinal_test.cs
+go2cs -tests -test-action build    ...
+go2cs -tests -test-action run      ...        # RUN. never `compare`, never `all`
+python  apply.py --verify          <out>/src/core/runtime/mfinal_test.cs
 ```
+
+⚠ **This sequence line said "then run / compare — NEVER `all`" until 2026-09-08, and it contradicted
+the warning three lines above it.** i9 caught it before it cost a void reading, and settled it at the
+converter source rather than by reading the labels — `testConversion.go:6103-6115`, whose branch
+BODIES are the answer: `case "run"` calls `publishTestHost` and then executes the host with **no
+convert anywhere**, while `case "compare", "all"` share one path into `compareGoAndConvertedTests`,
+which is the re-converting one. **`compare` would have wiped the patch exactly as the warning above
+describes.** Verified here independently at the same lines before this correction was written.
+
+⚠ **`run` produces no comparison record, and that is correct for this probe** — its answer is the
+`println` on stderr naming the iteration, not a verdict pair.
+
+⚠ **Read `--verify` AFTER the run, not only after the build.** A re-convert can only happen at an
+action that converts, so the build is not where the patch dies.
+
+⚠ **On a Windows box `python3` can be a Store alias** that prints an install advert and exits 0
+rather than an interpreter, while `python` is real (i9, 3.12). Following `python3 apply.py`
+literally there gives no patch, no recognisable error, and then a `--verify` of 0 that looks exactly
+like the re-convert trap — **two different causes, one symptom.** Check the interpreter first.
 
 `--verify` reporting **0 markers means the reading is VOID** — the pipeline re-converted over it.
 Gate the row single-test (`-test-filter`), which makes it diagnostic by construction and never
