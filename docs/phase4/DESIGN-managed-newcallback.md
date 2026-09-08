@@ -205,3 +205,52 @@ is ordinary.
 
 **Order:** this record → the body → the guard. The body does not start until this record is seated,
 because §8 may change its shape and §5 may change its semantics.
+
+---
+
+## 12. ADDENDUM 2026-09-08 — the shim set, enumerated (COORD `eb7992e07`)
+
+COORD's ruling notes that *"the arities are bounded by the contract you transcribed … so the shim set
+is finite and enumerable in the record"*. It is, and here it is — **measured at `go1.24.13`, from
+declarations rather than from names.**
+
+⚠ **This section is CONDITIONAL on §8 holding.** If the i7's seven arms refute the generic-delegate
+restriction, the body needs no shims and this section becomes a record of what was not needed. It is
+written now because it costs nothing and it bounds the work either way.
+
+**The theoretical bound is useless.** `callbackMaxFrame = 64 * goarch.PtrSize`
+(`runtime/syscall_windows.go:256`), checked at `:310` — up to **64 words** of arguments. Nobody
+enumerates 64 shims.
+
+**The reach of the 11 consumers is what bounds it**, and it splits in two:
+
+| set | arities | source | gate |
+|---|---|---|---|
+| **ungated** | **0, 1, 2, 4** | the direct `NewCallback` call sites in the other tests | none |
+| gated | **2 … 10** | `TestStdcallAndCDeclCallbacks`'s tables | ⚠ `t.Skip("skipping test: gcc is missing")` |
+
+- `cbFuncsRegABI` (selected when `runtime.SetIntArgRegs(-1) > 0`, i.e. on amd64) holds `sum2`…`sum10`
+  — verified from their declarations as **2…10 params** — plus `sum5andPair` (**5**, all of them the
+  `uint8Pair` struct), `sum9uint8` / `sum9uint16` / `sum9int8` / `sum9andGC` (**9**) and `sum5mix`
+  (**5**). `cbFuncs`, the non-register-ABI table, spans **2…9**.
+- **Union: arities 0 through 10 — ELEVEN shims for full coverage, FOUR (0, 1, 2, 4) for everything a
+  host without gcc can reach.**
+
+**Two consequences for the body.**
+
+1. **Start at four, not eleven.** The 2…10 range lives entirely behind a gcc gate that skips on both
+   sides, so on a bank host without gcc it contributes no verdict pressure at all. Four shims reach
+   every row such a host can score; the remaining seven are a bounded, enumerated follow-on rather
+   than an open set.
+2. ⚠ **The parameters are NOT uniformly `uintptr`.** The tables use `uint32`, `uint8`, `uint16`,
+   `int8` and the `uint8Pair` **struct** — all uintptr-sized or smaller, so all inside Go's contract
+   (§7's "argument size is larger than uintptr" is what refuses the rest). The native shim's own
+   parameters are machine words either way; it is the **forward** that must produce the converted
+   parameter types. **That is a second, independent reason the forward must be TYPED rather than
+   `DynamicInvoke`** — converting a machine word to `uint8Pair` is exactly the user-defined operator
+   the default binder will not invoke (§8). The two arguments are separate and both hold.
+
+**One correction against myself, on the record:** I first read `sum5andPair` as "5 arguments plus a
+pair" from its name. Its declaration says `func sum5andPair(i1, i2, i3, i4, i5 uint8Pair) uintptr` —
+**five** parameters, every one of them the struct. The name encodes the *shape*, not the count, and
+the count came from the declaration.
