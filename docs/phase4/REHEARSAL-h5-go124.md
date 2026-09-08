@@ -300,3 +300,153 @@ Recorded because each produced a plausible, well-formed, wrong number that a gat
   `.g.cs` files "SEEDED 1.23.12".
 
 -- R
+
+---
+
+## 2026-09-07 — §10. THE THREE-TARGET REHEARSAL (ruling 3) — appended; §1–§9 unchanged
+
+**Why this section exists.** §8 of this record could not measure linux or darwin: a single-target
+conversion recomputes only its own target's per-GOOS `ProjectReference` block, so the other flavours
+carried the SEED's references to packages 1.24.13 no longer has, and the linux reading was an
+artifact. COORD ruled H5 runs the three-target emission. This is that run.
+
+```
+  converter   master b6746ab18, built BY go1.24.13, embedded stamp verified
+  preflight   3 arms ASSERTED (GOROOT EXPORTED, so arms 2 and 3 carry the weight)
+  emission    -platforms windows/amd64,linux/amd64,darwin/amd64  -platform-stage
+  seed        3,756 .cs   142 marked hand-owns   scratch version.props 1.24.13, repo untouched
+  predictions posted BEFORE the conversion (mailbox e3a4b5466)
+```
+
+### 10.1 The conversion — clean on all three targets
+
+```
+  exit 0 after 1006s
+  Failed: 0 (0.0%)   x3        did not fully type-check: 0        export-data refusals: 0
+  staging   windows 4014 .cs    linux 4020    darwin 4019
+  merged corpus 4031 .cs (seeded 3756)   emitted this run 1632   WARNING lines 147
+```
+
+**PREDICTION 1 HELD** — zero converter failures on every target, converted counts exactly as
+predicted (windows 344 of 346 `go list`, the two skip-listed packages being `unsafe` and `testing`).
+
+### 10.2 ⚠ THE DELETION INSTRUMENT WOULD HAVE DELETED `golib` — reported, not applied
+
+Ruling 2's `reconvert-deletions.ps1`, first real run, dry:
+
+```
+  DELETE-ABSENT 201   DELETE-DESELECTED 4   UNRESOLVED 43   PROTECTED 151   KEEP-SELECTED 693
+  of the 201, rows whose principal is under golib/ or go2cs/            117
+  on disk: golib/*.cs 116  +  go2cs/Symbols.cs 1                      = 117   (closes exactly)
+```
+
+`golib` is classified `DELETE-ABSENT` with reason **"package not in std at target"** — true and
+irrelevant, since `golib` was never a Go package. `PROTECTED` covers `[module: GoManualConversion]`
+markers and `*_impl.cs` companions; **`golib` carries neither, correctly, because nothing converts
+into it — so the one directory that needs no marker is the one the instrument does not protect.**
+`-Apply` does not refuse either: `Remove-Item` sits inside the apply branch while the UNRESOLVED
+`exit 2` runs AFTER the deletion loop, so a run exiting 2 has already deleted.
+
+**Escalated (mailbox `1f5e8f276`); COORD confirmed both defects and owns the fix. Nothing was
+applied.**
+
+**What was applied instead — a hand-built SAFE subset**, the instrument's own classification minus
+its defect, with the extraction proven by matching the instrument's header counts (201 and 4) exactly
+and guarded to refuse any `golib/`, `go2cs/` or marker-carrying path:
+
+```
+  union of DELETE-ABSENT + DELETE-DESELECTED     205
+    excluded golib/ + go2cs/                    -117
+  = SAFE deletion set                             88     guard violations 0, all 88 present on disk
+      files of the 14 removed Go packages         50
+      live-package per-file deletions             38     contains 24 of §3's 25
+  controls  golib 116 .cs intact   Symbols.cs intact   fmt/print.cs intact
+```
+
+**⚠ PREDICTION 2 MISSED, and the reason is the finding.** I predicted "exactly 25 on windows"; the
+instrument reads 205. It counts **whole REMOVED PACKAGES and non-Go directories**, which §3's
+population deliberately excluded by scoping to packages the converter emitted into. **Its question is
+the right one for a deletion pass; mine was the right one for a live-package census.** Two questions,
+and I predicted against the wrong one. §3's enumeration is intact inside its live-package class.
+
+**The deletion pass works**: `AliasTypeParams` errors after it — **0**. The blocker that killed §3's
+first build in 116 seconds is gone.
+
+### 10.3 The per-flavour builds — the gate is FLAVOUR-INDEPENDENT
+
+Each flavour `--no-incremental`, `bin`/`obj`/`Generated` purged between (783–786 dirs each), normal
+verbosity, strict `error (CS|MSB|NETSDK)[0-9]+` split in two:
+
+| flavour | CS lines | MSB/NETSDK | failing packages | assemblies built | wall |
+|:--|--:|--:|:--|--:|--:|
+| windows | 240 | 0 | `runtime` only | 70 | 152 s |
+| linux | 240 | 0 | `runtime` only | 67 | 176 s |
+| darwin | 240 | 0 | `runtime` only | 67 | 169 s |
+
+Identical error-code distributions on all three (CS0246 ×100, CS0111 ×28, CS0102 ×22, CS9348 ×18,
+CS0715 ×14, CS0563 ×12, CS0057 ×12, CS0708 ×8).
+
+**PREDICTION 3 HELD** — one leaf gates every flavour, and packages-compiling lands within **3** of
+itself across the three (band predicted: ±10). The `note` collision is platform-neutral because
+`note_other.go` is selected on all three targets, and the deletion pass correctly does not touch a
+marker-protected hand-own.
+
+**PREDICTION 4 HELD, decisively** — **CS0234 on `sys_package`/`maps_package`: 250 → 0.** §8's
+188-error linux reading was entirely the single-target artifact, and linux is not merely *within 3×*
+of windows but **identical to it**. §8's refusal to report that number as a measurement was correct.
+
+### 10.4 The residual behind the gate — reproducible, and unchanged from §7
+
+Unmasking arm (runtime's two hand-owns swapped for their `.cs.auto`; **a COMPILE census only** — the
+`.auto` are operationally wrong): **120 errors → 7**, of which **2 are artifacts of the swap itself**
+(`managed_impl.cs` wants `GoFinalizerQueue`, defined 6× in the hand-own and 0× in the `.auto`).
+
+```
+  runtime/windows/lock_spinbit.cs  x3   CS0246 on Ꮡsched; CS0029 x2  ж<array<byte>> -> ж<byte>
+  runtime/type.cs                  x1   CS9135  a constant of type ж<byte> is expected
+  generated m.g.cs                 x1   CS1061  m has no Δtrace
+```
+
+**Byte-for-byte the same five genuine errors §7 measured single-target**, with one difference that is
+itself a confirmation: `lock_spinbit.cs` now sits in `runtime/windows/`, the per-GOOS folder the L3
+merge correctly routed it to.
+
+### 10.5 ⚠ PREDICTION 5 IS UNSCORED — unreachable, NOT refuted
+
+I predicted `sync/mutex.cs :: fatal` (the second H6 collision) would surface in the unmasked arm.
+**It did not, and the reason is not that it is absent.** The unmasked arm still leaves 7 errors in
+`runtime`, `sync.csproj` carries a `ProjectReference` to `runtime`, and a dependent of a failed
+project is **skipped, not compiled** — `sync` produced no assembly and no errors. It cannot be built
+standalone for the same reason.
+
+**The source-level evidence stands and was re-verified in this run's own emitted corpus:**
+
+```
+  sync/mutex.cs    marker-protected (1 marker line), declares fatal
+  sync/runtime.cs  EMITTED at 1.24.13, declares fatal
+```
+
+Both files declare it; nothing displaces it. **But a build has not confirmed it, and I am not
+recording a prediction as held on source reading alone.** It scores when `runtime` compiles.
+
+### 10.6 What the hop owes — updated from §11
+
+1. **Fix `reconvert-deletions.ps1`** (COORD owns it): exclude non-conversion-target directories, and
+   move the UNRESOLVED refusal ahead of the deletion loop. Then re-run the dry pass — the scratch
+   from this rehearsal reproduces it in minutes.
+2. **Reconcile `runtime2.cs` and `mfinal.cs`** — still the whole critical path, on every flavour.
+3. **Five residual errors**, three in a file new at 1.24.13.
+4. **`sync/mutex.cs :: fatal`** — predicted, unscored, next in line once `runtime` compiles.
+5. The **43 UNRESOLVED** rows the instrument correctly refuses to delete still need a human.
+
+### 10.7 Instrument corrections in this run
+
+- Four extraction attempts on the dry-run table returned zeros from wrong section anchors and wrong
+  indent widths — including once because a *previous* command's `sed 's/^/  /'` had added the very
+  indent I then measured. **Fixed by asserting the extraction against the instrument's own header
+  counts (201, 4) before using it** — the check that should have been first.
+- A gate-host census read **1** and it was the querying shell matching its own pattern. Re-run from a
+  script that excludes its own PID and any command line carrying the pattern: **0**.
+- The first seed of §1–§9 (3,769 `.cs`) was larger than this one (3,756) with the corpus `.cs`
+  unchanged: that seed came from a worktree holding **untracked `reflect` test emission**. A seed
+  inherits its source tree's dirt; this run seeded from a clean detached checkout.
