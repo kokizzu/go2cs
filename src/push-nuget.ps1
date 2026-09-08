@@ -735,9 +735,36 @@ if (-not (Test-Path $currentProofs)) {
 
             [System.IO.File]::WriteAllText((Join-Path $versionProofs $frozenRosterName), $frozenRoster.Text, $utf8NoBomText)
 
+            # --- and that roster's package column, pinned onto the tag ------------------------------
+            # ConvertTo-FrozenRosterText retargets the roster's links as a DOCUMENT -- proof links onto
+            # the sibling pages, out-of-docs links onto the deeper path -- and leaves the PACKAGE COLUMN
+            # naming tree/master, one link per row. That is the same defect the pages beside it were
+            # retargeted out of a few lines above: a frozen roster whose package column names a moving
+            # branch is not frozen either. The target already exists here too -- $releaseTag was minted
+            # before the build -- and the rule is Update-FrozenRosterSourceLinks in _roster.ps1.
+            #
+            # A SIBLING call rather than a third substitution inside the transform above, for the reason
+            # that function's own header states: it turns a LIVING roster into a frozen one and cannot be
+            # re-run on a roster it has already transformed, while the one-off that pinned the already
+            # frozen 1.23.12.3 roster had to run this ALONE on a file -- the same shape, and the same
+            # one-definition-two-callers reason, as Update-FrozenProofPage.
+            #
+            # It runs INSIDE the branch that wrote the roster. The two arms above warn and skip when
+            # there is no roster source or no commit to name, and a snapshot that carries no roster has
+            # no package column to pin; calling it out here would throw on a path that is deliberately
+            # the pre-2026-09-07 shape rather than a defect.
+            #
+            # ONE assertion, inside the function, unlike the per-page/aggregate pair above. That pair
+            # answers two questions -- a page whose template drifted, and the set copied against the set
+            # retargeted -- and the second question does not exist for a single file: the function counts
+            # the links and the rows out of the same roster, which is the whole of what can be asked.
+            $pinnedRoster = Update-FrozenRosterSourceLinks `
+                -Path (Join-Path $versionProofs $frozenRosterName) -Version $fullVersion
+
             Write-Step ("Froze the roster page at $frozenRosterName -- $($frozenRoster.ProofLinks) proof link(s) " +
                         "retargeted onto this snapshot, $($frozenRoster.Relocated.Count) link(s) relocated, " +
-                        "commit $frozenCommit")
+                        "$($pinnedRoster.SourceLinks) package-column source link(s) pinned onto tag $releaseTag " +
+                        "across $($pinnedRoster.Rows) row(s), commit $frozenCommit")
 
             # The audit arm. Empty on the roster this shipped against; a future roster that grows a
             # relative link shape neither substitution knows would otherwise dangle silently on the

@@ -373,6 +373,13 @@ function Get-ExclusionLedgerRows {
     gaining a link shape nobody anticipated shows up as something other than a dangling link on
     the published site. It is reported, never silently passed.
 
+    The roster's PACKAGE COLUMN is deliberately NOT touched here. Those links are absolute URLs
+    naming tree/master, one per row, and pinning them onto the release tag is
+    Update-FrozenRosterSourceLinks below -- a separate function because it has to be runnable ALONE
+    on an already-frozen roster, which this one cannot be: re-running it would insert a second note
+    and relocate the relocated links. The release calls both, in that order. "Two substitutions"
+    above counts this function's, not the frozen roster's.
+
     The note is inserted after the H1 rather than before it: this page has no YAML front matter
     (nothing under docs\ does) and its first line is the Jekyll {% raw %} guard whose matching
     endraw must stay the file's last line, so both ends of the document are spoken for. Inside the
@@ -575,6 +582,121 @@ function Update-FrozenProofPage {
     return [pscustomobject]@{
         RosterLinks = $rosterLinks
         SourceLinks = $sourceLinks
+    }
+}
+
+<#
+.SYNOPSIS
+    Pin a FROZEN roster's package-column source links onto the release that roster belongs to.
+.DESCRIPTION
+    ConvertTo-FrozenRosterText above retargets the links a roster owns as a DOCUMENT -- its proof
+    links onto the sibling frozen pages, its out-of-docs links onto the deeper path. It leaves the
+    PACKAGE COLUMN alone, and that column is one link per row naming tree/master: the converted C#
+    for that package, on a branch that keeps moving. A frozen roster whose package column names
+    master is not frozen either, by exactly the argument Update-FrozenProofPage above makes for a
+    frozen proof page -- so the snapshot's roster is pinned onto the same signed tag,
+    nuget-<version>, that the pages beside it name.
+
+    A SIBLING rather than a third substitution inside ConvertTo-FrozenRosterText. That function
+    turns a LIVING roster into a frozen one and cannot be re-run on a roster it has already
+    transformed: it would insert a second note and relocate the already-relocated links. The
+    1.23.12.3 roster was frozen before this rule existed, so the one-off that pinned it needed a
+    transform it could run ALONE, on a file -- exactly as Update-FrozenProofPage is run alone. One
+    definition, two callers, so a committed snapshot cannot drift from the code that will produce
+    its successors.
+
+    THE COUNT IS THE ROSTER'S OWN ROW COUNT, and a disagreement is a throw. Every roster row is a
+    package whose first cell links its converted source, so the substitutions and the rows are the
+    same number by construction: a shortfall is rows whose link is spelled some other way, which
+    would publish still naming master, and a surplus is the pattern reaching something that is not a
+    package link. The rows are counted by Get-ValidatedRosterRows -- the roster parser of record,
+    the one check-roster-format.ps1 counts with -- rather than by a number written here, so the
+    assertion cannot go stale the day a package banks. Zero rows is its own throw: 0 -eq 0 is an
+    assertion that cannot fail, and a roster this function cannot find rows in is not one it should
+    be silently rewriting.
+
+    THE NOTE'S LINK IS NOT A PACKAGE LINK and must survive untouched. A frozen roster carries
+    exactly one '](../../ValidatedTestPackages.md)': the note's deliberate pointer at the LIVING
+    roster, written on purpose by ConvertTo-FrozenRosterText and the reason push-nuget.ps1 excludes
+    the roster from Update-FrozenProofPage. Both directions are asserted. A count that is not one is
+    template drift -- zero means the note's pointer went missing, more than one means the snapshot
+    holds a second walk back into the living tree that reads as the note's and is not. A count this
+    transform CHANGED means the source pattern was widened until it reached the note; that arm is
+    inert today by construction, the two strings having nothing in common, and it exists to fail the
+    day somebody widens the pattern rather than to measure anything now.
+
+    The pattern is anchored on the REPOSITORY, and spelled exactly as Update-FrozenProofPage spells
+    it, for the same reason: a future roster linking some other project's master must not be
+    silently rewritten to name a go2cs tag. The two spellings are deliberately duplicated rather
+    than hoisted -- hoisting would put the landed, gated body of Update-FrozenProofPage into this
+    change's diff -- so a repository move edits both, which is what the count assertions here and
+    there are for.
+
+    Read AND write through [System.IO.File] at UTF-8/no-BOM, for the reason stated at
+    Update-FrozenProofPage: PS 5.1's Get-Content reads a BOM-less UTF-8 file as ANSI and Out-File
+    re-encodes the damage, and this file ships to go2cs.net. Replace, not line splitting, so the
+    roster's line endings survive exactly as ConvertTo-FrozenRosterText joined them.
+.OUTPUTS
+    PSCustomObject: SourceLinks (int), Rows (int), NoteLinks (int).
+#>
+function Update-FrozenRosterSourceLinks {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $Version
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) { throw "Update-FrozenRosterSourceLinks: no roster at $Path." }
+    if ([string]::IsNullOrWhiteSpace($Version)) { throw 'Update-FrozenRosterSourceLinks: the version is empty.' }
+
+    $sourceFrom = 'github.com/ritchiecarroll/go2cs/tree/master/'
+    $sourceTo = "github.com/ritchiecarroll/go2cs/tree/nuget-$Version/"
+    # No trailing ')' on the note pattern: the link may legitimately carry a '#anchor' suffix, and
+    # the prefix is what is being counted.
+    $noteLink = '](../../ValidatedTestPackages.md'
+
+    $text = [System.IO.File]::ReadAllText($Path)
+
+    $rows = @(Get-ValidatedRosterRows -Path $Path).Count
+    $sourceLinks = ([regex]::Matches($text, [regex]::Escape($sourceFrom))).Count
+    $noteLinksBefore = ([regex]::Matches($text, [regex]::Escape($noteLink))).Count
+
+    if ($rows -eq 0) {
+        throw ("Update-FrozenRosterSourceLinks: $Path has no roster rows, so the count this transform is " +
+               "asserted against is zero and could only ever agree with itself. A snapshot roster with no " +
+               "rows is not one to rewrite -- reconcile the frozen page with the roster table's shape.")
+    }
+
+    if ($sourceLinks -ne $rows) {
+        throw ("Update-FrozenRosterSourceLinks: $Path carries $sourceLinks package-column source link(s) " +
+               "('$sourceFrom') across $rows roster row(s). Every row links its converted source, so the two " +
+               "must be equal: fewer links than rows would publish rows still naming a moving branch, more " +
+               "means the pattern reached something that is not a package link. Reconcile the roster's package " +
+               "column with this transform rather than publishing the snapshot as it stands.")
+    }
+
+    if ($noteLinksBefore -ne 1) {
+        throw ("Update-FrozenRosterSourceLinks: $Path carries $noteLinksBefore pointer(s) at the living roster " +
+               "('$noteLink') where the frozen-snapshot note carries exactly one. Zero means the note's " +
+               "deliberate pointer went missing; more than one means the snapshot holds another walk back into " +
+               "the living tree that reads as the note's and is not.")
+    }
+
+    $text = $text.Replace($sourceFrom, $sourceTo)
+
+    $noteLinksAfter = ([regex]::Matches($text, [regex]::Escape($noteLink))).Count
+
+    if ($noteLinksAfter -ne $noteLinksBefore) {
+        throw ("Update-FrozenRosterSourceLinks: pinning the source links changed the number of living-roster " +
+               "pointer(s) in $Path from $noteLinksBefore to $noteLinksAfter. The note's link is deliberate and " +
+               "this transform must not reach it -- the source pattern has been widened too far.")
+    }
+
+    [System.IO.File]::WriteAllText($Path, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+    return [pscustomobject]@{
+        SourceLinks = $sourceLinks
+        Rows        = $rows
+        NoteLinks   = $noteLinksAfter
     }
 }
 
