@@ -95,7 +95,17 @@ func typeNeedsValueCloneSeen(t types.Type, seen map[types.Type]bool) bool {
 
 // structValueCloneFields lists the C# member names of t's fields that a by-value copy must
 // re-clone — the `[GoValueClone(…)]` argument list. Nil when t is not a struct or needs nothing.
-func structValueCloneFields(t types.Type) []string {
+//
+// The names MUST be spelled exactly as visitStructType DECLARES them, because go2cs-gen resolves
+// each one against the emitted struct's members: a stamp naming something the type does not declare
+// is CS1061 at the generated `Clone()`. That spelling is getCoreSanitizedIdentifier plus the
+// enclosing-type disambiguation below — NOT getSanitizedIdentifier, whose collision branch
+// Δ-prefixes a name found in nameCollisions. That branch exists for a package-level TYPE colliding
+// with a METHOD; a struct field is MEMBER scope and is never renamed for it. Using it here stamped
+// runtime's `trace` fields as `Δtrace` while the declaration emitted a bare `trace`
+// (CS1061 ×2, 1.24 `runtime2.cs`) — latent for as long as that file was a frozen, unstamped
+// hand-own, and reached the moment a re-derive stamped it.
+func structValueCloneFields(t types.Type, structTypeName string) []string {
 	if t == nil {
 		return nil
 	}
@@ -116,7 +126,18 @@ func structValueCloneFields(t types.Type) []string {
 		}
 
 		if typeNeedsValueClone(field.Type()) {
-			fields = append(fields, getSanitizedIdentifier(field.Name()))
+			fieldName := getCoreSanitizedIdentifier(field.Name())
+
+			// Transcribed from visitStructType's declaration branch rather than paraphrased, and
+			// compared RAW on both sides for the same reason it is there: a field whose name equals
+			// its enclosing type is renamed (CS0542), so a stamp spelling it bare would name a
+			// member that does not exist. Untriggered in today's corpus — the mirror of the defect
+			// above, and left unfixed it would be the same booby trap facing the other way.
+			if strings.TrimPrefix(fieldName, "@") == strings.TrimPrefix(strings.TrimPrefix(structTypeName, ShadowVarMarker), "@") {
+				fieldName = typeCollidingFieldName(fieldName)
+			}
+
+			fields = append(fields, fieldName)
 		}
 	}
 

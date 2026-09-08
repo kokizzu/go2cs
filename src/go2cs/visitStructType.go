@@ -347,7 +347,7 @@ func (v *Visitor) visitStructType(structType *ast.StructType, identType types.Ty
 	// unstamped and unchanged.
 	var valueCloneAttr string
 
-	if cloneFields := structValueCloneFields(identType); len(cloneFields) > 0 {
+	if cloneFields := structValueCloneFields(identType, structTypeName); len(cloneFields) > 0 {
 		quotedFields := make([]string, len(cloneFields))
 
 		for i, fieldName := range cloneFields {
