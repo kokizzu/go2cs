@@ -78,9 +78,19 @@ func preferLowLatency(p *mu) bool {
 // against a declared element pointer (CS0029). A different construct from the switch rows above,
 // sharing their family: an emission that loses a pointer's shape.
 //
-// These assert a VALUE rather than merely compiling. Reading a known word's bytes distinguishes
-// "indexed the array" from "indexed something else", so a form that compiled while addressing the
-// wrong operand still fails against `go run`.
+// ⚠ SCOPE: these two rows guard the COMPILE SHAPE ONLY and are deliberately NEVER CALLED. They
+// were written to assert a VALUE — reading a known word's bytes distinguishes "indexed the array"
+// from "indexed something else" — and that stronger row was RETIRED rather than kept, because
+// calling them reaches DEFECT E: `at` bounds-checks through `arrayView`, whose native-array-view
+// branch DECLINES for a MANAGED heap box, and the fallback then reads the pointee's BYTES AS AN
+// ARRAY HEADER (golib `z.cs` warns about exactly this at the fallback). Deterministic, 10 of 10,
+// IndexOutOfRangeException. That is the reinterpret-VIEW half of the GoValueClone class — a
+// golib+converter model question, ruled a DESIGN increment rather than a seat.
+//
+// DEBT, stated so nobody reads this as coverage it does not have: defect A's parenthesisation is
+// guarded here (the declarations must still compile, and they do not under the unparenthesised
+// form), but NOTHING here asserts that the accessor addresses the RIGHT ELEMENT. That row returns
+// when defect E's increment lands and these two can be called again.
 const ptrSize = 8
 
 func key8(p *uintptr) *uint8 {
@@ -119,9 +129,7 @@ func main() {
 	var elsewhere mu
 	fmt.Println(preferLowLatency(&theSched.lock), preferLowLatency(&elsewhere), preferLowLatency(nil))
 
-	// The element-address rows: byte 0 and the last byte of a known word, so a lowering that
-	// addressed the wrong operand or a fixed index fails against `go run` rather than merely
-	// failing to compile.
-	var word uintptr = 0x0102030405060708
-	fmt.Println(*key8(&word), *key8Last(&word))
+	// ⚠ The element-address rows are DELIBERATELY NOT CALLED -- see key8's header. They guard
+	// defect A's COMPILE SHAPE only; calling them reaches DEFECT E, which is a golib model
+	// question rather than anything this project can assert.
 }

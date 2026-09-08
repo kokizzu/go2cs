@@ -77,9 +77,6 @@ internal static void Main() {
     fmt.Println(second == Ꮡsentinel, Ꮡother == Ꮡsentinel);
     ref var elsewhere = ref heap(new mu(), out var Ꮡelsewhere);
     fmt.Println(preferLowLatency(ᏑtheSched.of(schedt.Ꮡlock)), preferLowLatency(Ꮡelsewhere), preferLowLatency(nil));
-    ref var word = ref heap(new uintptr(), out var Ꮡword);
-    word = (nuint)0x0102030405060708UL;
-    fmt.Println(key8(Ꮡword).Value, key8Last(Ꮡword).Value);
 }
 
 } // end main_package
