@@ -1192,3 +1192,63 @@ Each produced a plausible, well-formed, wrong answer:
 
 **None was caught by a gate. Each was caught by a rendered result that could not be true** — most
 sharply the collision set that did not contain the file whose collision had already been measured.
+
+---
+
+## 2026-09-07 — ⚠ CORRECTION TO §4 OF THE BLOCK ABOVE: the member-name extraction mis-scoped METHODS
+
+**Found by re-checking my own instrument after the section was committed.** The collision finding,
+the dispositions and every control are UNAFFECTED — they come from a different instrument that never
+used this extraction. **What is wrong is one row of §4's re-classification table.**
+
+### The defect
+
+§4's scope check took each removed member's name with `awk '{print $2}'`. On a plain member
+(`type note`, `const active_spin`) that is right. On a **method** record — `func (*MapIter)Key` — it
+yields `(*MapIter)Key`, and the package grep built from it (`^func[[:space:]]+\(\*MapIter\)Key`)
+**can never match a real Go declaration**, whose form is `func (it *MapIter) Key()`. Every method
+member therefore scoped as *truly gone from the package*.
+
+```
+  member records resting on a method name        21 of 87
+  wrongly scoped "truly gone", actually RELOCATED 19
+```
+
+`reflect`'s `MapIter.Key/Next/Value/Reset`, `Value.MapIndex/MapKeys/MapRange/SetMapIndex`,
+`internal/abi`'s five `MapType` predicates and `testing`'s two `testContext` methods all exist at
+1.24.13 — they moved to `map_swiss.go`, `type.go` and `testing.go` siblings. **A reading that says
+`reflect` lost `Value.MapIndex` cannot be true**, which is the tell, and it is the same
+could-not-be-true check that caught the four errors §7 already lists.
+
+### Corrected §4 table
+
+With methods matched by `^func \([^)]*\) <name>\b`, and `testing`/`unsafe` excluded as **skip-listed
+packages that are never converted and so cannot collide with an emission**:
+
+```
+  MOVED-WITHIN-PACKAGE          5     os/linux/wait_waitid.cs, runtime/runtime2.cs,
+                                      runtime/runtime2_impl.cs,
+                                      syscall/linux/zsyscall_linux_amd64_impl.cs,
+                                      syscall/windows/zsyscall_windows_impl.cs
+  MIXED                          6     internal/abi/type_impl.cs, reflect/value_impl.cs,
+                                      runtime/{darwin,linux,windows}/lock_*_impl.cs, sync/mutex.cs
+  MEMBERS-REMOVED (truly gone)   5     os/windows/file_windows_impl.cs, runtime/mbitmap_impl.cs,
+                                      runtime/stubs_impl.cs, sync/runtime_impl.cs,
+                                      syscall/linux/syscall_linux_amd64_impl.cs
+```
+
+**One row moves: `testing/testing.cs` leaves the truly-gone list** (6 → 5). Two of its four members
+relocated rather than vanishing, so its class would be MIXED — and `testing` is hand-owned and
+skip-listed, so it has no emission to collide with and does not belong in this table at all.
+
+**MOVED-WITHIN-PACKAGE membership is unchanged**, which is why the disposition — `runtime2.cs`
+RE-WRITE, everything else mechanical — stands exactly as §5 records it. Per-file `gone`/`moved`
+counts inside MIXED move substantially (`reflect/value_impl.cs` 15/5 → 3/17; `internal/abi/type_impl.cs`
+7/1 → 3/5); those counts were never published, and are stated here so a re-run reproduces them.
+
+### Instrument correction (a fifth, for §7's list)
+
+**A member-name extractor must handle every RECORD SHAPE its own classifier emits.** The classifier
+emits `type X`, `const X`, `var X`, `func X` **and** `func (R)X`; the extractor handled four of five
+and failed silently on the fifth, in the direction that over-reports removals — the most alarming
+direction, and the one least likely to be questioned.
