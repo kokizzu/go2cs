@@ -11,27 +11,28 @@
 // converted Mutex/RWMutex/WaitGroup/Cond state-machine logic is faithful to Go; only this runtime layer
 // beneath it needs a real body.
 //
-// The sleeping semaphore is a faithful port of Go's runtime semaphore (sema.go), keyed by the address of
-// the *uint32 — here the ж<uint32> pointer, whose Equals/GetHashCode are IDENTITY-based (same &m.sema
-// slot ⇒ same bucket; distinct fields ⇒ distinct buckets). Each bucket is a counter plus a FIFO waiter
-// queue; crucially, Semrelease with handoff=true hands ownership DIRECTLY to the dequeued waiter (it
-// returns already-acquired, without re-competing) — the exact contract Go's Mutex/RWMutex starvation
-// mode relies on, and the reason a plain SemaphoreSlim (which cannot hand off to a specific waiter)
-// trips "sync: inconsistent mutex state" / "unlock of unlocked mutex" under contention. The COUNT is
-// the uint32 the pointer addresses, exactly as in Go — the bucket carries only the lock and the queue —
-// because a caller may SEED it (sync's TestSemaphore starts at 1); see SemaBucket.
+// The sleeping semaphore itself is NO LONGER HERE: it is go.golib.RuntimeSemaphore, hoisted verbatim so
+// that this companion and internal/sync's (new at Go 1.24, where sync.Mutex became a wrapper holding an
+// isync.Mutex) call ONE primitive instead of keeping two copies with two waiter tables. golib is the
+// only home both can reach: sync → internal/sync is a real import, so the primitive cannot live in sync,
+// and internal/sync may reference nothing but sync/atomic — a back-reference would be the W1 project-
+// graph cycle class. The pointer-identity keying, the handoff contract that Go's starvation mode relies
+// on, and the seeded-count rule are documented at RuntimeSemaphore.cs; this file keeps only the linkname
+// bodies that forward to it.
 //
-// Known Phase-4 limitation: bucket/notify-list entries persist for the process lifetime (a bounded leak
-// for programs that churn many short-lived locks).
+// Known Phase-4 limitation: the notify-list entries BELOW persist for the process lifetime (a bounded
+// leak for programs that churn many short-lived Conds). The semaphore's own bucket accumulation moved
+// with the machinery and is recorded, unchanged, in RuntimeSemaphore.cs.
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-// Aliased rather than imported wholesale: this file needs exactly two golib types, and a blanket
+// Aliased rather than imported wholesale: this file needs exactly three golib types, and a blanket
 // `using go.golib` would also pull that namespace's extension methods into a hand-owned file sitting
 // beside converted code.
 using Goroutine = go.golib.Goroutine;
 using WaitReason = go.golib.WaitReason;
+using RuntimeSemaphore = go.golib.RuntimeSemaphore;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
 // Hand-owned (no runtime_impl.go exists, so a reconvert never regenerates it); marked for consistency
@@ -42,98 +43,16 @@ namespace go;
 
 partial class sync_package
 {
-    // ---- Sleeping semaphore (Mutex, RWMutex, WaitGroup) -------------------------------------------
 
-    private sealed class SemaWaiter
-    {
-        internal readonly ManualResetEventSlim Signal = new(false);
-        internal bool HandedOff;
-    }
+    internal static partial void runtime_Semacquire(ж<uint32> s) => RuntimeSemaphore.Acquire(s, WaitReason.Semacquire);
 
-    // The bucket carries the LOCK and the waiter queue only. The COUNT lives where Go keeps it —
-    // in the uint32 the pointer addresses — because callers may seed it: sync's TestSemaphore does
-    // `s := new(uint32); *s = 1` and then expects the first Semacquire to succeed without parking.
-    // A bucket-private counter starting at zero parked that first acquirer forever with no one left
-    // to release it, and the test deadlocked. Mutex/RWMutex/WaitGroup seed nothing, so their `sema`
-    // field is zero and behaves exactly as before.
-    private sealed class SemaBucket
-    {
-        internal readonly Queue<SemaWaiter> Waiters = new();
-    }
+    internal static partial void runtime_SemacquireMutex(ж<uint32> s, bool lifo, nint skipframes) => RuntimeSemaphore.Acquire(s, WaitReason.SyncMutexLock);
 
-    private static readonly ConcurrentDictionary<ж<uint32>, SemaBucket> semaTable = new();
+    internal static partial void runtime_SemacquireRWMutex(ж<uint32> s, bool lifo, nint skipframes) => RuntimeSemaphore.Acquire(s, WaitReason.SyncRWMutexLock);
 
-    private static SemaBucket bucketFor(ж<uint32> s) => semaTable.GetOrAdd(s, static _ => new SemaBucket());
+    internal static partial void runtime_SemacquireRWMutexR(ж<uint32> s, bool lifo, nint skipframes) => RuntimeSemaphore.Acquire(s, WaitReason.SyncRWMutexRLock);
 
-    // `reason` is park ACCOUNTING only — it never reaches the protocol, exactly as in Go, where
-    // semacquire1's own `reason waitReason` parameter is handed straight to goparkunlock and
-    // nothing else reads it. It is a PARAMETER rather than a constant for the same reason Go makes
-    // it one: ONE semaphore serves four different Go-level waits, and a traceback has to name which
-    // (sema.go's sync_runtime_Semacquire / SemacquireMutex / SemacquireRWMutexR / SemacquireRWMutex
-    // pass waitReasonSemacquire, SyncMutexLock, SyncRWMutexRLock and SyncRWMutexLock respectively).
-    private static void semacquire(ж<uint32> s, WaitReason reason)
-    {
-        SemaBucket b = bucketFor(s);
-
-        while (true)
-        {
-            SemaWaiter w;
-
-            lock (b)
-            {
-                if (s.Value > 0)
-                {
-                    s.Value--; // acquired without parking
-                    return;
-                }
-
-                w = new SemaWaiter();
-                b.Waiters.Enqueue(w);
-            }
-
-            using (Goroutine.Park(reason))
-                w.Signal.Wait();
-
-            if (w.HandedOff)
-                return; // ownership was handed to us directly (starvation mode)
-
-            // Normal wake: we were merely readied — re-compete for the count.
-        }
-    }
-
-    private static void semrelease(ж<uint32> s, bool handoff)
-    {
-        SemaBucket b = bucketFor(s);
-        SemaWaiter? w = null;
-
-        lock (b)
-        {
-            s.Value++;
-
-            if (b.Waiters.Count > 0)
-            {
-                w = b.Waiters.Dequeue();
-
-                if (handoff)
-                {
-                    s.Value--;        // hand the just-added permit directly to w
-                    w.HandedOff = true;
-                }
-            }
-        }
-
-        w?.Signal.Set();
-    }
-
-    internal static partial void runtime_Semacquire(ж<uint32> s) => semacquire(s, WaitReason.Semacquire);
-
-    internal static partial void runtime_SemacquireMutex(ж<uint32> s, bool lifo, nint skipframes) => semacquire(s, WaitReason.SyncMutexLock);
-
-    internal static partial void runtime_SemacquireRWMutex(ж<uint32> s, bool lifo, nint skipframes) => semacquire(s, WaitReason.SyncRWMutexLock);
-
-    internal static partial void runtime_SemacquireRWMutexR(ж<uint32> s, bool lifo, nint skipframes) => semacquire(s, WaitReason.SyncRWMutexRLock);
-
-    internal static partial void runtime_Semrelease(ж<uint32> s, bool handoff, nint skipframes) => semrelease(s, handoff);
+    internal static partial void runtime_Semrelease(ж<uint32> s, bool handoff, nint skipframes) => RuntimeSemaphore.Release(s, handoff);
 
     // ---- Cond notify-list -------------------------------------------------------------------------
     //
