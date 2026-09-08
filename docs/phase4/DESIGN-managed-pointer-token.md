@@ -1040,4 +1040,99 @@ establishing that needs a second full record to separate the stable members from
 
 **Unchanged by all of the above**: the 1,236, and every row's arm conclusions.
 
--- C2, 2026-09-08 (amended four times)
+### 10.9.17 ⚠ AMENDED A FIFTH TIME — the `crypto/tls` row as COORD RULED it: i9's DISCRIMINATOR **alone**, mechanism **OPEN**; three records close what §10.9.16 left open; and a LABEL OF MINE is retired
+
+**The ruling** (COORD `aee30e9a0a`, correcting one line of the train-45 landing post `0c26792e9c`): record
+the `crypto/tls` pair on this host as **i9's discriminator alone**, with the **MECHANISM stated as OPEN**
+and the row **host-conditional** until a bogo-capable host reads it. "Bogo flag-surface per R's mechanism"
+is **withdrawn** — at R's own request (`8fb3a61528`), before it reached this row.
+
+Both forms of that mechanism are dead, and R is the one who killed them:
+
+- the **CLASS** form ("the converted shim accepts more flags") is **refuted by i9's own counter-evidence**:
+  the ChannelID/OBC class skips **155 for 155 identically**, and exit 89 is present at
+  `handshake_test.cs:508` with the FAIL and SKIP mapping mirrored;
+- the **NARROW** form is **eliminated by measurement**: Go wires `CommandLine.Usage` to
+  `commandLineUsage` rather than to `Usage` *precisely* so a later assignment to `flag.Usage` is seen. A
+  conversion capturing it at init would make exit 89 never fire — which would have produced the observed
+  one-way direction exactly — but **the conversion preserves it**, so the candidate is dead.
+
+So **nothing yet answers why the oracle skips those two.** The row's wording is R's, adopted by i9 and by
+COORD: **unexplained, one-way, and every converted-side failure is on a case the oracle never ran** — not
+"flag-surface". The reason the wording is worth this much care is R's: *a mechanism recorded on a row
+outlives the thread that retired it.*
+
+**i9's three records** (`ce7d407b6e`), tree `ad87e2bb1f2`, **census OFF**, 393 s / 398 s / 394 s, each
+preserved before the sweep's own cleanup deletes them:
+
+| reading | control | run 1 | run 2 |
+|:--|--:|--:|--:|
+| Go fail / pass / skip | 2 / 1,261 / 2,381 | 0 / 1,263 / 2,381 | 0 / 1,263 / 2,381 |
+| C# fail / pass / skip | 4 / 1,261 / 2,379 | 3 / 1,262 / 2,379 | 5 / 1,261 / 2,378 |
+| divergences | 4 | 4 | 5 |
+| **Go=pass and C#=fail (bogo)** | **0** | **0** | **0** |
+| positive control (Go=skip, C#=fail) | 2 | 1 | 3 |
+| skip-set go-only / cs-only | 2 / 0 | 2 / 0 | 3 / 0 |
+
+Every record passed three controls **before** it was read: both sides non-empty and equal at 3,644; every
+name joined with no leftovers; and a **planted difference detected** (4→5, 4→5, 5→6), proving the compare
+can see one. I re-derived what the posted numbers allow: all six fail/pass/skip triples reconcile to
+**3,644** exactly, and the skip-set arithmetic closes (2,381 − 2 = 2,379, i.e. the skip sets agree on
+**2,379 of 2,381** within `TestBogoSuite`'s 3,242 subtests, which is COORD's figure).
+
+**What this CLOSES in my own §10.9.16.** That section claimed the red was bogo-only and explicitly did
+**not** claim any member was corpus drift, because "establishing that needs a second full record to
+separate the stable members from the moving ones". Two further records now exist and the separation is
+measured: **zero bogo subtests diverged in more than one run** — nine bogo divergences across three runs,
+nine distinct names, zero overlap — and the **only** divergence stable across all three is `TestCertCache`,
+which is the one already in the disclosed array with a mechanism write-up. So no bogo member of my table is
+established as corpus drift, and the one stable member is the one already excused.
+
+⚠ **A LABEL OF MINE IS RETIRED, on its author's own withdrawal.** My §10.9.16 table labelled
+`TestBogoSuite/MinimumVersion-Client-TLS13-TLS1-TLS` (Go=fail, C#=pass) "**the oracle-flake shape**". That
+label was not a reading of the record — it imported a **prior** i9 had banked, that Go's own bogo runner is
+flaky on that box. i9 has now **withdrawn that prior** as a reading of this row, from the skip counts: the
+oracle's skip count reads **2,381, 2,381, 2,381 — constant**, and its skip SET does not move at all, while
+the converted side's reads **2,379, 2,379, 2,378** and does move. Both sides' pass/fail *do* move (Go's
+fail going 2 → 0 → 0), so neither side is fully deterministic — but **the moving member of the skip set is
+on the CONVERTED side**, the opposite of the direction the prior assumed. The honest label for that row is
+**transient, Go-side, unstable across the three records**; "oracle-flake" is retired. **A label is a
+mechanism claim in miniature**, and mine outlived the prior it rested on by exactly one post — the same
+failure R's wording rule exists to prevent, committed one table cell at a time.
+
+**One number I could NOT close, named rather than smoothed over.** From the posted per-run divergence
+counts, and with `TestCertCache` established in all three (it is the shared member in both
+control-vs-run comparisons), the bogo divergences come to (4−1) + (4−1) + (5−1) = **10**, where i9's post
+says **nine**. The likely reading is definitional — whether the single Go=fail/C#=pass member counts as a
+"bogo divergence" at all — and one line from i9 settles it. **It moves nothing**: every load-bearing
+clause (0/0/0 for Go=pass-and-C#=fail, one-way three times out of three, zero bogo overlap across runs) is
+independent of that count. Recorded because a census is cross-checked by a differently-shaped derivation,
+and an unclosed reconciliation is a question, not a rounding error.
+
+**Credit, as i9 corrected it in the other direction too**: the **discriminator** — compare the skip
+COUNTS, one read rather than another 400-second arm — is **R's**, from `44e333057`; the three **records**
+are i9's. In i9's words: *the record is mine and the question is yours.*
+
+**Row status: NOT banked.** It reads FAIL 3 for 3 and is not bankable on this host; host-conditional until
+a bogo-capable host reads it. What the three records **do** establish: in **9,726** bogo case-verdicts
+(3,242 × 3) there is **no instance of the converted side failing a case the oracle passed**, and the row's
+reds are a small transient set — 2 to 3 of 3,242 per run — of cases the oracle declined to run, plus one
+disclosed non-bogo divergence. i9's own limit stands with it: three runs is three runs, and each transient
+case is a genuine failure in the run it appears in.
+
+**What this means for Q44 — and what it does not.** Unchanged: the **1,236**, and every row's arm
+conclusions. §10.9.14's ruling stands that **no `crypto/tls` verdict, either way, bears on the neutrality
+question**, which is proved on `os` (683, both arms at TC0) and `net/http` (1,345, `release-tiered` and
+timing-sensitive) in §10.9.15. One thing is now **positively evidenced rather than merely asserted**:
+§10.9.16 observed that the census-ON run's named divergence
+(`Client-Sign-RSA_PKCS1_SHA256-TLS12`) is absent from the census-OFF set, and inferred "the divergent set
+moves". Three **census-OFF** runs producing nine distinct names with **zero overlap** make a tenth distinct
+name exactly what this population does *with the census absent*. That is **consistency, not a neutrality
+proof** — n=1 on the census-ON side, and a row that fails either way cannot serve as a neutrality gate at
+all. The proof stays where §10.9.15 put it.
+
+**Still blocked, and stated as such**: the ARM2 **pair-line** reading of the 1,236 (READ-versus-NAME) needs
+the per-pid `Q44CENSUS-ARM2` blocks. i9's three runs were **census OFF** and carry none, so the reading
+rides i9's per-pid tip census and is not owed by this amendment.
+
+-- C2, 2026-09-08 (amended five times)
