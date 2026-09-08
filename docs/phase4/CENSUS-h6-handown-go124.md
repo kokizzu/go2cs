@@ -1911,3 +1911,255 @@ no hunt. Its residue class is the four `[GoValueClone]` stamps and nothing else.
 printed for three rows (`empty`, `iter`, `node`) were false matches from COMMENTS — my context-finder,
 not the pairing — so those three were classified from Go's source directly rather than from a printed
 line, and the pairing itself is unaffected.
+
+---
+
+## 2026-09-08 — THE BASE QUESTION, CLOSED OVER ALL 44: **14 hand-owns have NO `.cs.auto` at all, so the ruled discriminator cannot run on them — and TWO of those state a precise delta against an auto-conversion that was never banked**
+
+Every block above measured the **30 checkable** hand-owns. The obligation is now fleet doctrine, so the
+other **14** are worth naming: the discriminator takes the committed `.cs.auto` as BASE, and they have
+none. They are not one class.
+
+### 1. THE 14, BY REASON
+
+```
+  11  SKIP-LISTED PACKAGE — the converter never emits it, so no .cs.auto exists BY CONSTRUCTION
+        testing/*  (10)   PackageAncestry · TestExecution · TestFlagBridge · TestFormat · TestHost
+                          TestOptions · TestRegistry · TestReporter · TestRunner · testing.cs
+        unsafe/unsafe.cs  (1)
+      -> the discriminator cannot run and DOES NOT NEED TO: these are not converter output.
+         Nine of the ten testing files have no Go principal at all — pure hand-written host.
+
+   1  REMOVED PACKAGE — internal/concurrent/hashtriemap_whitebox.cs, no Go principal
+      -> moot at this hop; internal/concurrent is REMOVED at 1.24.13.
+
+   2  ⚠ LIVE PRINCIPAL, CONVERTER-EMITTED, NO BASE BANKED
+        internal/poll/linux/fd_writev_unix.cs
+        net/windows/lookup_windows.cs
+```
+
+### 2. ⚠ THE TWO, AND WHY THEY MATTER MORE THAN THEIR COUNT
+
+Both are genuine whole-file replacements of converter output — **their own headers say so**:
+
+```
+  fd_writev_unix.cs   "whole-file replacement of the converted fd_writev_unix.go output"
+  lookup_windows.cs   "Only the SIX record payload reads differ from the auto-conversion;
+                       everything else is the converter's own emission."
+```
+
+Both Go principals exist at 1.23.12 and are selected on their own target (`fd_writev_unix.go` carries
+`//go:build … linux …`; `lookup_windows.go` is windows by filename). **So the converter emits these
+principals, the files are marked whole-file hand-owns, and yet no `.cs.auto` is tracked — and neither
+`internal/poll` nor `net` carries a single `.cs.auto` sibling anywhere.**
+
+⚠ **The MECHANISM is unestablished and this record does not assert one.** The CONSEQUENCE is not in
+doubt: **`lookup_windows.cs` states a precise, quantitative delta — "only the SIX record payload reads
+differ" — and there is no committed auto-conversion to check it against.** That is this dossier's
+subject in its sharpest form: not a stated delta that turns out larger than claimed, but a stated
+delta that **cannot be checked at all**.
+
+### 3. THE BASE PROBLEM, WHOLE
+
+Two populations need a base regenerated before the ruled discriminator can run, and the remedy COORD
+already ruled for the first serves both:
+
+```
+  3  STALE base   the committed .cs.auto PREDATES the hand file's last commit
+                    sync/mutex.cs · syscall/linux/exec_unix.cs · time/tick.cs
+  2  NO base      no .cs.auto tracked at all
+                    internal/poll/linux/fd_writev_unix.cs · net/windows/lookup_windows.cs
+  --
+  5  of 44 whole-file hand-owns need their base REGENERATED first
+ 27  of the 30 checkable have a valid committed base
+ 12  need no base at all (11 skip-listed + 1 in a removed package)
+```
+
+**27 + 5 + 12 = 44**, with no residue on either side.
+
+**Scope.** Committed blobs plus the pinned 1.23.12 toolchain; no build, no converter run. Whether the
+two missing siblings were never emitted, never banked, or dropped by a merge is NOT measured here —
+only that they are absent, that their packages carry none, and that a header's quantitative claim
+therefore rests on nothing a reader can check.
+
+---
+
+## 2026-09-08 — ⚠ **RETRACTION: MISSING GENERATED IS WITHDRAWN AS A RESTORE CLASS AND ITS MEMBERSHIP IS EMPTY** — plus the dispatched `exec_unix.cs.auto` measurement, which closes the invalid-base clause at 3 of 30 MEASURED
+
+C1 corrected the third outcome minted above (`4617c3c14`) and ruled in `741339107`. **They are right, and
+I verified it independently before accepting it** — on a LINUX target where theirs was windows.
+
+### 1. THE CORRECTION, VERIFIED ON A DIFFERENT TARGET
+
+```
+  the converter's OWN header, src/go2cs/importInitSection.go:
+    "Until 2026-09-01 each hook was spliced into the class body of the FILE whose import spec
+     produced it ... The hooks are collected per emission unit instead (packageImportInits)"
+
+  C1's discriminator, reproduced on MY linux run:
+    sync/cond.cs        ORDINARY production file, no hand-own    committed 1  fresh 0  WRITTEN
+    sync/package_info.cs                                          committed 0  fresh 2  WRITTEN
+```
+
+**An ordinary production file shows the same zero**, so the zero is the CONVERTER's relocation and not
+a hand-own's freeze. **The frozen hand files carrying no import hooks are CORRECT AND CURRENT.**
+
+### 2. ⚠ THE ROOT OF MY ERROR — TWO LAYERS, BOTH RULES THIS DOSSIER ALREADY STATES
+
+**(a) I compared the frozen `.cs` against the committed `.cs.auto`, and those siblings PREDATE the
+2026-09-01 relocation.** That is *this document's own stale-base finding, turned on its own
+conclusion*: my freshness screen keyed on the 2026-08-24 rebank when the threshold that mattered for
+this attribute was the relocation date. **A freshness threshold is keyed to the CONVERTER CHANGE the
+question depends on, never to a generic rebank date.**
+
+**(b) My population was HAND-OWNS ONLY, so a corpus-wide converter change could only look like a
+hand-own property.** The control that breaks it is an ordinary production file — outside my
+population by construction, which is why no amount of re-running my census could have found it.
+
+### 3. THE CLASS IS EMPTY, NOT MERELY SMALLER
+
+Of the 39, **38 are import hooks** and **exactly ONE is a real `init()`** — `internal/godebug`'s, which
+IS still emitted fresh and IS absent from the hand file. It looked like the one survivor. It is not:
+
+```
+  Go declares init() at internal/godebug/godebug.go:217   -> HAS a Go principal
+                                                          -> BY DESIGN under my own ruled discriminator
+  and the hand file says so itself:
+    "The converted runtime has no Setenv notification, and the literal conversion of the
+     embedded-pointer machinery faults at runtime"
+  (it references neither setUpdate nor setNewIncNonDefault: 0 and 0)
+```
+
+**MISSING GENERATED has no members on today's corpus.** RESIDUE (12) and BY DESIGN (11) stand
+untouched, as C1 said.
+
+### 4. THE DISPATCHED MEASUREMENT — `syscall/linux/exec_unix.cs.auto` (COORD `fff04f4aa`)
+
+A seeded **linux-target** `-stdlib` at 1.23.12, converter embedding `go1.23.12` (asserted), 3,756 seeded
+`.cs`, exit 0, **1,724 files written this run**:
+
+```
+  exec_unix.cs.auto WRITTEN this run : YES        <- the write evidence C1's windows run could not get
+  differing vs the committed sibling : 36         = 28 removed + 8 added
+      24 removed   the four import-hook blocks (the relocation)
+      4 removed + 8 added   a REAL emission change: RawSyscall(SYS_EXECVE, ...) now hoists its
+                            three pointer arguments into locals and adds GC.KeepAlive for each
+```
+
+**INVALID BASE, confirmed with write evidence** — and for TWO independent reasons, only one of which is
+the relocation. **The invalid-base clause now reads 3 of 30 MEASURED** (`sync/mutex.cs` 6,
+`time/tick.cs` 2, `exec_unix.cs.auto` 36) rather than 2 measured plus 1 assumed.
+
+### 5. C1's SIX VACUOUS ROWS, RESOLVED — they are class A (RELOCATED)
+
+Both are linux files a windows target never writes; this run wrote both:
+
+```
+  syscall/linux/exec_unix.cs.auto   hooks committed 4 -> fresh 0   WRITTEN
+  os/linux/wait_waitid.cs.auto      hooks committed 2 -> fresh 0   WRITTEN
+  syscall/linux/package_info.cs     hooks committed 0 -> fresh 6   WRITTEN
+  os/linux/package_info.cs          hooks committed 0 -> fresh 16  WRITTEN
+```
+
+**The hooks landed in the per-GOOS `package_info.cs`.** So all six are RELOCATED and **must not be
+restored**, exactly as C1 ruled for their 22. C1's split closes: 22 + 11 + 6, none a re-derive item.
+
+### 6. ⚠ A NEAR-MISS WORTH RECORDING — the keep-alive grep is NOT a defect
+
+The emission change in §4 adds `GC.KeepAlive` to execve's three pointer arguments. The hand-owned
+`exec_unix.cs` has **zero** `KeepAlive` and passes `(uintptr)argv0ʋ, (uintptr)argvʋ, (uintptr)envvʋ`
+directly — which reads exactly like a frozen hand-own missing a retention fix.
+
+**It is not.** Reading the BODY rather than the grep: those are `IntPtr`s from `MarshalStringZ` /
+`MarshalStringVector` — **native memory**, freed with `FreeHGlobal`. There is no managed object to
+retain, so `KeepAlive` there would be meaningless; the hand-own already implements the STRONGER
+remedy this project documents for the class. **CLAUDE.md's own caveat — "a hand-own that allocates
+native memory needs none, where a grep says absent" — is what stopped a false finding**, and it is
+recorded here because the next reader of a freeze-residue census will meet the same shape.
+
+**Scope.** One linux target, release 1.23.12, one box. The relocation reading is corroborated by the
+converter's own source and by an ordinary-production-file control in the same run.
+
+---
+
+## 2026-09-08 — ⚠ **MY OWN DATE SCREEN IS A BAD SCREEN: target-matched CONTENT measurement over all 30 finds TEN genuinely stale bases, of which the date screen catches TWO — and it flags one that is HARMLESS. Plus the distinction that makes the number meaningful: a stale base is only harmful when its staleness is NON-CONCORDANT.**
+
+COORD adopted my commit-date screen as *"the cheap screen that says who owes it"*, with content as the
+form of record. I have now run the content check over the whole population, target-matched, and **the
+screen does not do the job I offered it for.**
+
+### 1. THE INSTRUMENT, AND ITS CONTROL
+
+Two seeded 1.23.12 `-stdlib` regens from one worktree — one **windows**, one **linux** — with per-file
+write evidence, compared CR-normalised against each committed `.cs.auto`.
+
+⚠ **Target-matching is not optional here, and a linux-only run would have published a wrong number.**
+The committed siblings are WINDOWS emissions: `runtime2.cs.auto` reads **0** against a windows regen and
+**2** against a linux one, those 2 being the `sigmask` `[GoValueClone]` attribute C1 identified. A
+linux-only reading would have called it stale.
+
+**Controls — C1's three windows numbers reproduced independently:**
+
+```
+  runtime2.cs   C1 0   mine 0      sync/mutex.cs  C1 6  mine 6      time/tick.cs  C1 2  mine 2
+```
+
+### 2. ⚠ THE DISTINCTION THAT MAKES THE COUNT MEAN SOMETHING — CONCORDANT staleness is HARMLESS
+
+A base that differs from today's emission is not automatically a bad base. **What matters is whether
+OURS and THEIRS disagree where BASE differs:**
+
+```
+  BASE has the import-hook block · OURS (frozen hand file) never had it · THEIRS (1.24 emission)
+  no longer emits it  ->  BOTH sides delete  ->  clean deletion, correct outcome, NO residue
+```
+
+**Freeze residue needs BASE-has / OURS-lacks / THEIRS-HAS.** Where THEIRS also lacks it, the merge is
+concordant and the stale base costs nothing.
+
+### 3. THE POPULATION, DECOMPOSED
+
+```
+   6  VALID            base IS today's 1.23.12 emission (0 differing lines)
+  12  HOOK-ONLY        differs ONLY by relocated import hooks -> CONCORDANT, harmless
+  10  GENUINELY STALE  carries NON-hook content -> a 3-way rooted there misleads
+  --
+  28  measured of 30   (the two *_test.cs hand-owns are unmeasurable: -stdlib emits no test files)
+```
+
+**The ten, with their non-hook line counts:**
+
+```
+  syscall/windows/dll_windows 14 · internal/concurrent/hashtriemap 13 · syscall/linux/exec_unix 11
+  sync/rwmutex 10 · syscall/windows/exec_windows 7 · hash/crc32/crc32_amd64 6
+  syscall/windows/security_windows 5 · os/linux/wait_waitid 4 · sync/once 3 · time/tick 2
+```
+
+Two sampled to confirm the classifier is reading real emission changes and not noise:
+`time/tick` is `c` → `c.WithDirection(GoChanDir.Recv)`; `crc32_amd64` is added `(nint)` casts.
+
+### 4. ⚠ HOW BADLY THE DATE SCREEN PERFORMS — this is the correction
+
+My screen named three files: `sync/mutex.cs`, `syscall/linux/exec_unix.cs`, `time/tick.cs`.
+
+```
+  genuinely stale, CAUGHT by the screen  :  2 of 10   (exec_unix, time/tick)
+  genuinely stale, MISSED                :  8 of 10
+  named by the screen but HARMLESS       :  1        (sync/mutex.cs -- hook-relocation ONLY, 6/6/0)
+```
+
+**It misses eight and false-positives one.** The reason is structural: a commit date answers "was this
+sibling written before the hand file", which is not the question. **The question is whether the
+sibling's content is the emission, and only a target-matched regen answers it.**
+
+⚠ **And it refines a ruled item:** `sync/mutex.cs` was measured INVALID by C1 and ruled to need base
+regeneration. Its sibling genuinely is not the current emission — that reading is correct — but its
+whole difference is the relocated hook block, so it is **concordant and a merge rooted there produces
+the right answer anyway.** Regenerating is the strong form and costs little; it is not load-bearing.
+
+### 5. SCOPE, AND AN INSTRUMENT LIMIT OF MINE
+
+Two targets, release 1.23.12, one box, write evidence asserted per file; the five files a windows target
+never writes were measured on the linux run and vice versa. ⚠ **The hook/non-hook split is
+PATTERN-DEPENDENT at about ±1 line** — `exec_unix` reads 24/12 under one blank-line rule and 25/11 under
+another, same total 36 — so the split is sound at the class level and should not be quoted to the line.
