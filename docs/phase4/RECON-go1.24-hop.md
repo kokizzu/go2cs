@@ -931,3 +931,91 @@ remedy would have shipped covering four of five and read as complete.
 thing."** Every sizing in this thread — including both of mine — enumerated SITES, when the fault was
 a property of what a site is HANDED. The measurement that settled it (§D) is also the one that made
 the count irrelevant.
+
+
+---
+
+## AMENDMENT — 2026-09-08, by this record's author, from measurements taken for the H1.1 / arm-3 line
+
+Two corrections to this record, both to numbers it states, neither moving a wall. §F is a
+measurement-condition correction to §2; §G is an invariant in §6 that a later landing has since
+falsified. §H states what does not move, so nobody re-derives the rest.
+
+### F. §2's census table is taken at a cgo state the corpus does not use
+
+§2 reads `go list std`, **`CGO_ENABLED=1`**: linux 305 → 345, windows 307 → 347, darwin 306 → 346.
+The arm-3 readings G, i9 and I posted are taken at **`CGO_ENABLED=0`** and are exactly one lower in
+every cell: linux **304 → 344**, windows **306 → 346**, darwin **305 → 345**.
+
+The difference is one package, and it is the same package at both releases: **`runtime/cgo`** —
+measured by set-diff at each root rather than inferred from the totals (`comm` over the two sorted
+lists returns exactly that one path, at 1.23.12 and at 1.24.13 alike).
+
+Why this is a correction and not pedantry:
+
+* **The corpus's emission state is `CGO_ENABLED=0`.** That is the corpus convention, and it is
+  visible on disk: `net/linux/cgo_stub.cs` exists because Go selects `cgo_stub.go` only when cgo is
+  off. So the row a corpus-side number must be compared against is the cgo-OFF row, and this
+  record's table is one package high at every cell for that comparison.
+* At the cgo-OFF row the axis **closes exactly** instead of approximately: `go list std` for
+  windows at the pin reads **306**, and the converter's own generated `go2cs-stdlib.slnx` carries
+  **307** projects — those 306 plus the hand-written `golib`. Under the cgo-ON row that identity is
+  off by one and reads like a rounding error in the corpus rather than a cgo state in the census.
+* **A per-target count posted without its cgo state is not reproducible**: the same tree answers 345
+  on a host with a C toolchain and 344 on a host without one, and neither reading is wrong.
+
+**Every Δ in §2 is unchanged** (+40 in all three rows), because the one package is present at both
+releases. §5's rungs, §7's rebank bill and §9's sequencing are therefore untouched. The rule this
+leaves behind: **state the cgo state beside any `go list std` count.**
+
+### G. §6's "0 registrations whose package vanished" was TRUE when measured and is FALSE at master
+
+§6 records the registration table as **242 registrations across 15 packages**, positive-controlled in
+three directions, with **0 whose package vanished**. At master **`b6746ab185`** the same map holds
+**312 registrations across 21 packages** — counted MAP-scoped, anchored on the
+`manualConversionFuncs` declaration (see the scope note below).
+
+**Exactly one key added since the trial's base is a package that ceases to exist at 1.24.13:
+`crypto/internal/alias`** — the AES-GCM overlap remedy's registration, landed by train 20, months
+after §6's census was taken. Measured against the three-GOOS **union** of `go list std` at 1.24.13.
+
+The consequence is mechanical rather than speculative. The key is matched against the type-checker's
+`v.pkg.Path()`; at the hop it matches nothing, so the displacement stops, the generated `AnyOverlap`
+body returns **beside** the hand-owned one, and the package fails **CS0111** — with
+`TestManualConversionRegistrationsDisplaceSomething` going red and naming the key. The guard sees it
+before a build does, which is the good case and the reason this is a one-line hop item rather than a
+wall.
+
+* **Re-key target: `crypto/internal/fips140/alias`**, where `func AnyOverlap` is still declared at
+  1.24.13.
+* **The vendored twin does NOT move.** `vendor/golang.org/x/crypto/internal/alias` survives
+  unchanged, so exactly one half of that pair is re-keyed. The two landed together and reading them
+  as one item would re-key one too many.
+
+**The general form, which is why this is an amendment and not a footnote.** §6's zero was a correct
+measurement of a tree, controlled three ways, and it was invalidated by an ordinary landing that had
+no reason to consult it. **A record's invariant cannot police the landings that follow it.** The
+mechanical remedy is a converter-suite arm that checks the registry's package keys against
+`go list std` for the TARGET release at hop time — cheap, and recommended here rather than cut,
+because it belongs to whoever owns the hop's converter gate rather than to this record.
+
+**Two scope notes, both paid for while taking this measurement:**
+
+1. **The count must be MAP-scoped.** A file-scoped extractor over `manualTypeOperations.go` also
+   admits keys from `manualConversionTypes`, declared thirty lines above `manualConversionFuncs`,
+   and reports **22** where the map holds **21**. A PRESENCE positive-control cannot catch that: it
+   varies "does the predicate find what is there" and is silent on "does it find *only* what is
+   there". The axis the predicate reads is SCOPE, and a presence arm does not vary it.
+2. **The vanishing check must be taken at the three-GOOS UNION.** At the windows layer alone the
+   same census also reports `vendor/golang.org/x/net/route` vanishing; that package is darwin-only
+   and absent from a windows list at **both** releases. A registry key must match on *some* target,
+   so the union is the layer the registry asks about and a single-target read manufactures a phantom
+   re-key.
+
+### H. What this amendment does not change
+
+§2's Δ column, §3's language finding, §4's front-end trial, §5's three rungs, §6's other four
+categories (the four vanished principals, the 39 changed, the 38 identical, the 27 without a Go
+principal), §7's rebank bill and §9's sequencing all stand as written. §F moves each census cell by
+one in both releases and no Δ; §G adds one re-key to the hop's work and moves no wall. The 2026-09-07
+amendment's §A–§E are untouched.
