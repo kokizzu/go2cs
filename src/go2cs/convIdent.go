@@ -237,7 +237,19 @@ func (v *Visitor) convIdent(ident *ast.Ident, context IdentContext) string {
 			isRefReceiver = !isDirectBoxReceiverMethod(v.currentFuncDecl, v.info)
 		}
 
-		if !isRefReceiver {
+		// A Phase-A ref-LOWERED PARAMETER is box-less for the SAME reason and reaches the SAME
+		// render: `doInRoot(r *Root)` lowers to `ref Root r`, so `Ꮡr` names nothing and the
+		// deferred `r.root.decref()` emitted `Ꮡr.Value.root.decref` — CS0103, os 1.24's
+		// root_openat.cs:123. The comment above records this identical class for a ref RECEIVER;
+		// ref-lowering later made a pointer PARAMETER box-less the same way and this guard was
+		// never widened to it. The question the render needs is "does this ident have a box at
+		// all", not "is this a ref receiver".
+		//
+		// Read the RECORDED decision — LoweredParamVars, keyed by *types.Var identity — rather
+		// than re-deriving it, so the emitter cannot disagree with the analysis that made it.
+		identHasNoBox := isRefReceiver || v.paramIsRefLoweredObj(v.info.ObjectOf(ident))
+
+		if !identHasNoBox {
 			// For a box-of-POINTER (or other inherently-heap) local — `Ꮡm` is a `ж<ж<T>>` — reading the box
 			// is reading the HELD pointer value, not a dereference of it, so it must use `.ValueSlot` (no
 			// nil-pointer-dereference check): in Go reading `*(&p)` for a nil `*T`/slice/map yields the nil

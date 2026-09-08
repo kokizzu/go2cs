@@ -1454,6 +1454,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckRecvMapElementDeref() => CheckTarget("RecvMapElementDeref");
 
     [TestMethod]
+    public void CheckRefLoweredDeferChain() => CheckTarget("RefLoweredDeferChain");
+
+    [TestMethod]
     public void CheckRefLoweredNilTiming() => CheckTarget("RefLoweredNilTiming");
 
     [TestMethod]
