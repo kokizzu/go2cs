@@ -463,6 +463,21 @@ public static void SetFinalizer(any obj, any finalizer) {
     if (finalizer is not Delegate) {
         @throw("runtime.SetFinalizer: second argument is not a function"u8);
     }
+    // GO REJECTS AN UNCALLABLE PAIRING HERE, AND SO DO WE NOW. Go's own check is at
+    // runtime/mfinal.go:468-499 (1.23.12; :490-521 at 1.24.13, rule and messages byte-identical),
+    // and it runs BEFORE "finalizer already set" -- this call sits in Go's order for that reason.
+    //
+    // ⚠ ONE PREDICATE, TWO CALLERS. The finalizer runner asks the SAME question at dispatch, so
+    // registration and dispatch cannot disagree. They did: registration asked nothing beyond "is it
+    // a delegate", dispatch asked .NET's default binder -- which answers a DIFFERENT question, since
+    // it never applies a user-defined conversion -- and a pairing Go ACCEPTS was dropped in silence.
+    //
+    // ⚠ TYPES ONLY, NO VALUE RETAINED. The bound argument is discarded here and recomputed at
+    // dispatch. Keeping it would hold the referent (or an adapter shell over it) STRONGLY, and a
+    // finalizer whose registration pins its own referent can never run at all.
+    if (!GoReflect.TryBindFinalizerArgument(referent, (Delegate)finalizer, out object? _, out string? rejection)) {
+        @throw(rejection);
+    }
     if (s_finalizerRegistry.TryGetValue(referent, out GoFinalizerSentinel? _)) {
         @throw("runtime.SetFinalizer: finalizer already set"u8);
     }
@@ -693,6 +708,20 @@ private static class GoFinalizerQueue
             // |1 so a body starting exactly on a zero tick is not mistaken for "idle".
             global::System.Threading.Volatile.Write(ref s_runningSince, global::System.Environment.TickCount64 | 1L);
 
+            // BIND BY GO'S RULE, AND DO IT OUT HERE -- outside the try whose catch drops a throwing
+            // body -- so the two failures are separated STRUCTURALLY rather than by sniffing an
+            // exception type. Everything DynamicInvoke throws from the body arrives wrapped in a
+            // TargetInvocationException; a binding failure is this call, and it escapes.
+            //
+            // ⚠ This should be UNREACHABLE: SetFinalizer runs the same predicate at registration and
+            // panics there, exactly as Go does. It is kept because the alternative -- what stood here
+            // before -- was a binding failure that dequeued the item, decremented the outstanding
+            // count, let the queue report idle, and NEVER RAN THE FINALIZER, with no error surface
+            // anywhere. That cost runtime's TestFinalizerType its whole package deadline and zero
+            // converted verdicts, and nothing in the system could say why.
+            if (!GoReflect.TryBindFinalizerArgument(item.Target, item.Fn, out object? finalizerArgument, out string? bindRejection))
+                throw new global::System.InvalidOperationException(bindRejection);
+
             try
             {
                 // The body is the USER's code, so for its duration this system goroutine counts as
@@ -707,18 +736,27 @@ private static class GoFinalizerQueue
                 ᏑfingStatus.Or(fingRunningFinalizer);
                 try
                 {
-                    item.Fn.DynamicInvoke(item.Target);
+                    item.Fn.DynamicInvoke(finalizerArgument);
                 }
                 finally
                 {
                     ᏑfingStatus.And(~fingRunningFinalizer);
                 }
             }
-            catch
+            catch (global::System.Reflection.TargetInvocationException)
             {
                 // A throwing Go finalizer must not take down this thread; Go's own finalizer
                 // goroutine would crash the program, but the converted world prefers to drop it
                 // (finalizers are best-effort by specification).
+                //
+                // ⚠ DIVERGENCE, STATED RATHER THAN IMPLIED: Go treats a panic in a finalizer as
+                // UNRECOVERABLE and crashes the process. We drop it. That is unchanged by this
+                // increment and is its own; what changed is the SCOPE of this catch.
+                //
+                // ⚠ AND THE SCOPE IS THE POINT. This used to be a bare `catch`, which also absorbed
+                // every failure to CALL the finalizer at all -- a different class entirely, since Go
+                // has no such failure: ours, not the program's, and invisible. Only a body throw
+                // arrives here now, because DynamicInvoke wraps exactly that and nothing else.
             }
             finally
             {
