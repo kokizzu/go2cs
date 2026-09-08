@@ -6592,6 +6592,37 @@ func hostFatalSkipExpression(disclosures map[string]testDisclosure) string {
 	return "^(?:" + strings.Join(names, "|") + ")$"
 }
 
+// corpusImportPathOf reports the import path a CONVERTED package directory denotes -- the inverse of
+// the corpus layout, where core/<import path> is a package's home -- or "" when the directory is not
+// under the root's core/. It is stdLibImportPathOf's mirror on the OUTPUT side: that one maps a
+// GOROOT SOURCE directory to an import path, this one maps the emitted directory, and the two agree
+// for every stdlib package because the emission is keyed by go/packages' PkgPath.
+//
+// Case and separator spelling cannot bite here the way they do in stdLibImportPathOf, because root
+// is not supplied independently: findGo2CSRootAbove walks packageDir's OWN ancestors, so root is a
+// cleaned prefix of packageDir in packageDir's own spelling. The path-normalized comparison is kept
+// regardless, since the alternative failure -- silently answering "not in the corpus" -- would
+// silently answer "no page to check against" and wave a host-fatal entry through.
+func corpusImportPathOf(root, packageDir string) string {
+	if root == "" || packageDir == "" {
+		return ""
+	}
+
+	corpus := filepath.Join(root, "core")
+
+	if !isPathUnder(packageDir, corpus) {
+		return ""
+	}
+
+	relative, err := filepath.Rel(corpus, packageDir)
+
+	if err != nil || relative == "." {
+		return ""
+	}
+
+	return filepath.ToSlash(relative)
+}
+
 // hostFatalMintViolations enforces the class's mint rule (coordinator ruling, 2026-09-02): a
 // host-fatal entry must NOT name a test that any committed proof page records as a MATCHING
 // verdict. The rule exists because this class is the only one that changes what RUNS, and the
@@ -6602,6 +6633,29 @@ func hostFatalSkipExpression(disclosures map[string]testDisclosure) string {
 // Checked from COMMITTED DATA rather than a cross-platform run: docs/validation/current/*.md is
 // the corpus's own record of what agreed where, it is in the repository already, and one pass over
 // it costs nothing.
+//
+// ⚠ THE EVIDENCE BASE IS THE DISCLOSING PACKAGE'S OWN PAGE, AND IT WAS NOT UNTIL 2026-09-07. As
+// landed, this function GLOBBED every package's page with no scoping at all, so any name collision
+// across the corpus refused a legal entry: runtime's TestEmptyString was refused because
+// encoding/json's page carries a passing test of the same name. A test NAME is not a test — two
+// packages' TestEmptyString are different bodies, and evidence that one passes says nothing about
+// the other. i9 measured the reach (2026-09-07): 19 of runtime's 444 built test names collide with
+// some other package's page, and corpus-wide exactly one entry was refused by the glob today. The
+// three manifests carrying host-fatal entries are runtime/debug (1, its own page committed), runtime
+// (4) and runtime/pprof (7), the last two with no page of their own — so under the glob every future
+// entry in those two rows was one name collision away from an unexplainable refusal.
+//
+// The package is derived from outputPath, which is the directory the manifest itself was read from
+// (loadTestDisclosures takes the same path): "the entry's own row" is by definition the row whose
+// manifest declares it, so the two cannot disagree. The page name is validationProofDotID's, the
+// same mapping that WRITES the pages.
+//
+// ⚠ PLATFORM NOTE, so the scoping is not misread as narrowing the rule's reach: an entry naming a
+// test under a build constraint the running platform never selects — runtime's TestPanicSystemstack
+// is //go:build unix — is INERT on that platform and live where the constraint holds. The skip
+// expression names it either way; a name Go never compiled matches nothing and withdraws nothing.
+// Present-but-not-firing changes no count on either side, so such an entry needs no per-platform
+// spelling and its presence is not evidence about the platform reading the manifest.
 //
 // ⚠ SCOPE, AND IT IS NARROWER THAN THE RULE'S PURPOSE (measured 2026-09-06, G). The proof pages
 // are the WINDOWS record -- 195 of the 203 committed pages say `windows/amd64`, exactly one says
@@ -6665,45 +6719,59 @@ func hostFatalMintViolations(outputPath string, disclosures map[string]testDiscl
 		return nil, unchecked
 	}
 	dir := filepath.Join(filepath.Dir(root), "docs", validationDocsDirName, validationCurrentDirName)
-	pages, err := filepath.Glob(filepath.Join(dir, "*.md"))
-	if err != nil || len(pages) == 0 {
-		// No committed pages to check against is not a violation -- a fresh clone or a staging
-		// root legitimately has none. The rule can only refuse on POSITIVE evidence of agreement.
+
+	// Which package is disclosing. A conversion whose output is not under the root's core/ is not a
+	// corpus package and has no page to be keyed by, so the rule can decide nothing -- reported,
+	// never silently cleared, exactly like the two returns above.
+	importPath := corpusImportPathOf(root, outputPath)
+	if importPath == "" {
 		for _, name := range names {
 			unchecked = append(unchecked, fmt.Sprintf(
-				"%s: no committed proof pages under %s, so nothing was compared against", name, dir))
+				"%s: %s is not a converted package under %s, so no proof page could be identified for it",
+				name, outputPath, filepath.Join(root, "core")))
 		}
 		return nil, unchecked
 	}
+
+	page := filepath.Join(dir, validationProofDotID(importPath)+".md")
+	data, err := os.ReadFile(page)
+	if err != nil {
+		// No page for THIS package is not a violation -- an unbanked row, a fresh clone and a staging
+		// root all legitimately have none, and the rule can only refuse on POSITIVE evidence of
+		// agreement. The message names the PACKAGE rather than the directory: before the scoping the
+		// text read "no committed proof pages under <dir>", which is false in every real run, since
+		// the directory holds two hundred pages and it is this package that has none.
+		for _, name := range names {
+			unchecked = append(unchecked, fmt.Sprintf(
+				"%s: %s has no committed proof page of its own under %s, so nothing was compared against",
+				name, importPath, dir))
+		}
+		return nil, unchecked
+	}
+
 	row := regexp.MustCompile("^\\|\\s*`([^`]+)`\\s*\\|([^|]*)\\|([^|]*)\\|")
 	seen := map[string]bool{}
-	for _, page := range pages {
-		data, err := os.ReadFile(page)
-		if err != nil {
+	for _, line := range strings.Split(string(data), "\n") {
+		m := row.FindStringSubmatch(strings.TrimSpace(line))
+		if m == nil || !fatal[m[1]] {
 			continue
 		}
-		for _, line := range strings.Split(string(data), "\n") {
-			m := row.FindStringSubmatch(strings.TrimSpace(line))
-			if m == nil || !fatal[m[1]] {
-				continue
-			}
-			// The name reached the evidence base: whatever the verdict pair says, the rule has
-			// something to decide on and this entry is no longer unexamined.
-			seen[m[1]] = true
-			if strings.TrimSpace(m[2]) == strings.TrimSpace(m[3]) {
-				violations = append(violations, fmt.Sprintf(
-					"%s is disclosed %s, but %s records it as a MATCHING verdict (%s/%s): excluding it "+
-						"would withdraw a row that platform runs successfully",
-					m[1], hostFatalClass, filepath.Base(page), strings.TrimSpace(m[2]), strings.TrimSpace(m[3])))
-			}
+		// The name reached the evidence base: whatever the verdict pair says, the rule has
+		// something to decide on and this entry is no longer unexamined.
+		seen[m[1]] = true
+		if strings.TrimSpace(m[2]) == strings.TrimSpace(m[3]) {
+			violations = append(violations, fmt.Sprintf(
+				"%s is disclosed %s, but %s records it as a MATCHING verdict (%s/%s): excluding it "+
+					"would withdraw a row that platform runs successfully",
+				m[1], hostFatalClass, filepath.Base(page), strings.TrimSpace(m[2]), strings.TrimSpace(m[3])))
 		}
 	}
 	for _, name := range names {
 		if !seen[name] {
 			unchecked = append(unchecked, fmt.Sprintf(
-				"%s: named by no committed proof page, so its exclusion was NOT cleared against any "+
+				"%s: not named by %s's own proof page, so its exclusion was NOT cleared against any "+
 					"platform -- the pages are the Windows record and a unix-only test is absent from "+
-					"them by construction", name))
+					"them by construction", name, importPath))
 		}
 	}
 	sort.Strings(violations)
