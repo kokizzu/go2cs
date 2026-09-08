@@ -146,3 +146,64 @@ green:**
   file and line, and the runners supply the measurement.
 - The oracle row was taken at **go1.24.13**, not at the corpus pin **go1.23.12**, which is not
   installed here. Stated rather than extrapolated.
+
+---
+
+## RESULTS — 2026-09-08. Both arms read. ⚠ FALSIFIER (1) FIRED.
+
+**The predictions above are left standing, unedited, above the measurement that refuted them.**
+
+| flavour | predicted | MEASURED |
+|---|---|---|
+| windows (i7) | MARK-1 / MARK-1E, Go's text **once**, `NotImplementedException` naming `getcallerpc` | ✅ **confirmed exactly** — death at `getcallerpc`, text once |
+| linux (R) | MARK-1 / MARK-1E, **NOTHING of Go's text**, exception naming **`write1`** | ❌ **FALSIFIED — linux PRINTS Go's text and is IDENTICAL to windows, frame for frame.** `write1` named **zero** times, `getcallerpc` **twice** |
+| exit code | **NOT 2** on the converted side | ❌ **it IS 2** — but as golib's unhandled-exception **backstop**, not the fatal path |
+
+**So two of my predictions were wrong, in two different ways, and only one of them was harmless.**
+
+### Why the linux prediction failed — the root, measured and then re-verified here
+
+R measured it rather than inferring it, and it was confirmed independently at the code:
+
+**`print` is DISPLACED AT THE GOLIB BOUNDARY.** `runtime/panic.cs:1090`'s `@throw` calls plain
+`print(…)`, and `print` resolves to **golib's builtin** — `core/golib/builtin.cs:2270`,
+`Console.Error.Write(...)`. So does `printindented` (`runtime/error.cs:374`), which calls `print` for
+every segment. **The entire fatal text therefore goes to .NET's stderr, and runtime's own
+`gwrite` → `writeErr` → `writeErrData` → `write` → `write1` chain is NEVER ENTERED on this path.**
+
+`write1` **is** a bodyless partial on linux exactly as the sizing read it (`linux/stubs2.cs:32`). It is
+simply **UNREACHED**. ⚠ **The muteness was a property of GO's call graph, not of OURS.**
+
+### ⚠ The tell I had in my hand and recorded as a footnote
+
+The node census taken while sizing this path printed, for one row:
+
+    print              not found here
+
+I saw it, noted that Go lowers `print` as a compiler builtin — and then traced Go's
+`gwrite`/`writeErr`/`write1` chain anyway, **because that is what Go does**. The census had already
+told me the node was not in the runtime package at all.
+
+**A CONVERTED CALL GRAPH IS NOT GO'S CALL GRAPH.** A builtin displaced into golib **severs** the chain,
+and an unresolved node in a call-graph census is exactly where that severance announces itself. That
+is a different failure from "cite a call site without reading the callee" — here I read every callee
+Go has, and never asked which of them our corpus still owns.
+
+### The exit code, and why the acceptance moved
+
+Exit **2** appears on the converted side too, but it is golib's unhandled-exception backstop rather
+than Go's `exit(2)`. It therefore **cannot discriminate**, and per COORD's ruling the acceptance keys
+on the **stderr SHAPE** — a .NET stack trace with **zero** Go-shaped goroutine headers, versus Go's
+header plus traceback. Recorded and not leaned on.
+
+### Consequence for the increment
+
+**The `write1` body comes OFF the remedy, and the fatal path is ONE SHAPE on all three flavours** —
+sever `fatalthrow`, `fatalpanic` and the four-arg `traceback` onto the managed walk, with **no
+per-flavour arm**. That is a strictly smaller increment than the sizing proposed, and it is smaller
+because a prediction of mine was wrong.
+
+**On MARK-1E, in R's own words and worth repeating:** it did **not** save this finding. It was
+insurance against the *other* outcome — a null reading, where a broken capture is byte-identical to a
+mute write path. The reading came back non-null, so the control was never load-bearing here. It cost
+one line and would have been the whole difference had the text been absent.
