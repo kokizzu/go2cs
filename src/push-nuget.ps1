@@ -647,8 +647,18 @@ if (-not (Test-Path $currentProofs)) {
         # retargeting it would leave the page linking itself while calling itself the living one. The
         # roster is not in $versionProofs yet either way; the name filter says so rather than relying
         # on that ordering, which is the same reason $frozenCount above excludes it by name.
+        #
+        # The THIRD substitution rides the same pass, and this loop is unchanged for it. A page whose
+        # package discloses also points once at that package's hand-owned go2cs_test_disclosures.json,
+        # spelled blob/master rather than tree/master, so the source substitution cannot see it and it
+        # would publish naming a branch that keeps moving -- the same defect, one link over, and the
+        # one the residual of d4c88e765 measured at 36 of these 204 pages. Update-FrozenProofPage
+        # CALLS Update-FrozenProofPageDisclosureLink and returns its count in the same object, so the
+        # page is still retargeted by one call and there is no second pass. What that count is NOT
+        # folded into is either assertion below. See the third aggregate after them.
         $retargetedRoster = 0
         $retargetedSource = 0
+        $retargetedDisclosure = 0
         $unretargeted = New-Object System.Collections.Generic.List[string]
 
         foreach ($page in @(Get-ChildItem $versionProofs -Filter *.md -File |
@@ -657,6 +667,7 @@ if (-not (Test-Path $currentProofs)) {
                 $retargeted = Update-FrozenProofPage -Path $page.FullName -Version $fullVersion
                 $retargetedRoster += $retargeted.RosterLinks
                 $retargetedSource += $retargeted.SourceLinks
+                $retargetedDisclosure += $retargeted.DisclosureLinks
             }
             catch { $unretargeted.Add("$($page.Name): $($_.Exception.Message)") }
         }
@@ -665,11 +676,13 @@ if (-not (Test-Path $currentProofs)) {
         # transform because the two answer different questions: the throw in Update-FrozenProofPage
         # names a page whose template drifted, while these name a disagreement between the set that
         # was copied and the set that was retargeted -- which no per-page check can see. Every page
-        # the converter generates carries exactly one of each link, so both sums must equal the page
-        # count; anything else is published-site breakage nobody is watching for.
+        # the converter generates carries exactly one ROSTER link and one SOURCE link, so those two
+        # sums must equal the page count; anything else is published-site breakage nobody is watching
+        # for. The DISCLOSURE sum is deliberately NOT in this assertion: see below.
         if ($unretargeted.Count) {
             throw ("The $fullVersion snapshot has $($unretargeted.Count) proof page(s) whose frozen links could " +
-                   "not be retargeted -- they would publish still pointing at the living roster and tree/master:`n    " +
+                   "not be retargeted -- they would publish still pointing at the living roster, tree/master or " +
+                   "blob/master:`n    " +
                    ($unretargeted -join "`n    "))
         }
 
@@ -680,8 +693,21 @@ if (-not (Test-Path $currentProofs)) {
                    "Update-FrozenProofPage before publishing.")
         }
 
+        # The third aggregate is REPORTED, not asserted against the page count, and the reason is the
+        # count's shape rather than any weakness of nerve. A page carries a disclosure pointer only if
+        # its package has a manifest to name -- 36 of 204 at 1.23.12.3, with 168 carrying none -- so
+        # this sum is the size of a SUBSET nothing structural predicts: it moves the day a package
+        # banks a first disclosure or retires its last, with no template change to notice. Comparing
+        # it to $frozenCount would fail every release; comparing it to a number written here would go
+        # stale on exactly that day. What IS asserted lives per page in
+        # Update-FrozenProofPageDisclosureLink -- more than one throws, and no blob/master may survive
+        # the pin -- and the aggregate that matters is measurable after the fact on the snapshot
+        # itself: pages carrying blob/master before equals pages carrying blob/nuget-<version> after,
+        # and pages still carrying blob/master after is zero.
         Write-Step ("Retargeted the frozen proof pages -- $retargetedRoster roster link(s) onto this snapshot's " +
-                    "own $frozenRosterName, $retargetedSource source link(s) onto tag $releaseTag")
+                    "own $frozenRosterName, $retargetedSource source link(s) onto tag $releaseTag, " +
+                    "$retargetedDisclosure disclosure-manifest pointer(s) pinned across the pages that carry one " +
+                    "(optional per page, so this one is not the page count)")
 
         # --- the roster page, transformed into this snapshot's own copy of itself ------------------
         # Which commit the note names: the TAG's, when the tag exists and this is a real release --

@@ -34,7 +34,7 @@ comparison — it is the evidence behind the `crypto/cipher` row in
 
 A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — never
 a tolerance, and never a test skipped to make a row pass. Each one is pinned by exact signature in the package's
-hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/crypto/cipher/go2cs_test_disclosures.json);
+hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/nuget-1.23.12.3/src/core/crypto/cipher/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
 | Test | Class | Pinned reason |

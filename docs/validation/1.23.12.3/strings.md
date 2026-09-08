@@ -92,7 +92,7 @@ comparison — it is the evidence behind the `strings` row in
 
 A disclosed divergence is a specific Go assertion the managed CLR *provably cannot* satisfy — not
 a skipped test and not a tolerance. Each one is pinned by exact failure signature in the package's
-hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/master/src/core/strings/go2cs_test_disclosures.json);
+hand-owned [`go2cs_test_disclosures.json`](https://github.com/ritchiecarroll/go2cs/blob/nuget-1.23.12.3/src/core/strings/go2cs_test_disclosures.json);
 a disclosed test that fails any *other* way is still a hard mismatch.
 
 | Test | Class | Pinned reason |
