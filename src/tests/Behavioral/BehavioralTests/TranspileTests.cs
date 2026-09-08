@@ -2071,6 +2071,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckVersionedImport() => CheckTarget("VersionedImport");
 
     [TestMethod]
+    public void CheckWindowsNewCallback() => CheckTarget("WindowsNewCallback");
+
+    [TestMethod]
     public void CheckWritevIovecSeam() => CheckTarget("WritevIovecSeam");
 
     [TestMethod]
