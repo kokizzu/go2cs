@@ -1405,3 +1405,436 @@ still exist. The two rules answer different questions and neither subsumes the o
 (`internal/weak.runtime_* → weak.runtime_*`). That is a separate change on a separate branch and this
 section does not touch it; what is recorded here is only the deletion-disposition of the two
 directories.
+
+---
+
+## 2026-09-07 — THE `BOTH` CLASS, and a RETRACTION of this document's own `throw` note (COORD ruling `bd868d3fe`; C1 `661453516`)
+
+### 1. ⚠ RETRACTION — `sync/mutex.cs` declares BOTH `@throw` AND `fatal`
+
+The block above says:
+
+> ⚠ `throw` moved in the same commit and does NOT collide — `mutex.cs` declares `fatal` and not
+> `throw` (0 declarations, checked with comments stripped).
+
+**That is false.** C1 measured it and I verified on my own tree:
+
+```
+  sync/mutex.cs:38   internal static void @throw(@string s) => throw new …
+  sync/mutex.cs:40   internal static void fatal(@string s)  => throw new …
+  go1.24.13 sync/runtime.go:58,59    func throw(string)    func fatal(string)
+```
+
+**Why my check read zero: the emitted name is `@throw`.** `throw` is a C# keyword, so the converter
+escapes it with a verbatim identifier, and my pattern required WHITESPACE immediately before the
+name. **A KEYWORD ESCAPE is one more spelling a name-keyed census must enumerate**, beside the
+`Δ`/`ж`/`ᴛ` alias family CLAUDE.md already names. **`sync/mutex.cs` is TWO deletions**, per COORD's
+ruling.
+
+⚠ And the converse, which C1 measured and which must not be over-read: the file's principal also loses
+**five mutex consts**, but those are a pure DELETION from all of 1.24 `sync` and our hand-own does not
+declare them. **The seven-name diff is NOT seven collisions.**
+
+### 2. ⚠ THE INSTRUMENT LIMITATION THAT HID THE OTHER HALF — mine to record
+
+`arm14_h6diff` assigns **exactly one class per file**, by the documented precedence
+`BUILD-CONSTRAINT > MEMBERS-REMOVED > MEMBERS-ADDED > SIGNATURE > BODY-ONLY > COMMENT-ONLY`, because
+§6's spec asked for exactly one. So a file that both LOSES and GAINS members bills `MEMBERS-REMOVED`
+and **appears in the `MEMBERS-ADDED` section zero times**.
+
+**That is not an oversight in this census; it is unreportable by the instrument that produced it.**
+C1 checked the zero rather than assuming it. Stated generally, for the next reader:
+
+> **A classifier that reports ONE class per file cannot report a file's SECOND class, and the collapse
+> is silent by construction.**
+
+**The cheap remedy, and it needs no new instrument: RUN THE CLASSIFIER IN BOTH DIRECTIONS.**
+`h6diff(old, new)` reports what was REMOVED; `h6diff(new, old)` reports what was ADDED, because the
+two sets swap. Controls:
+
+```
+  runtime/runtime2.go   forward MEMBERS-REMOVED type note
+                        swapped MEMBERS-REMOVED const waitReasonSyncWaitGroupWait, …   -> BOTH
+  runtime/mfinal.go     forward BODY-ONLY        swapped BODY-ONLY                     -> neither
+```
+
+### 3. The `BOTH` class, derived independently
+
+Over all **44** whole-file hand-owns, principals resolved in both trees, both directions:
+
+```
+  BOTH           2     runtime/runtime2.cs      testing/testing.cs
+  REMOVED-only   2     sync/mutex.cs            os/linux/wait_waitid.cs
+  ADDED-only     0
+```
+
+**This reproduces C1's independent `go/parser` derivation exactly** — 44 whole-file hand-owns, BOTH 2,
+removed-only 2, added-only 0 — from a different instrument. Two derivations agreeing on the same
+PARTITION is a stronger cross-check than either alone.
+
+### 4. Dispositions under COORD's ruling `bd868d3fe`
+
+**`runtime/runtime2.cs` — RE-DERIVED, not surgically re-written.** §5 and §10 of
+`REHEARSAL-h5-go124.md` dispose it RE-WRITE, which is **right in direction and understated in scope**:
+deleting `note` is correct and NOT sufficient. The file also lacks everything 1.24 ADDED to its
+principal — `g.syncGroup`, `m.mWaitList` (replacing the removed `m.nextwaitm`, which our own
+`lock_managed_impl.cs` still references), `m.fipsIndicator`, `isIdleInSynctest`, six `waitReason`
+consts — read by fifteen emitted siblings. The ruled shape is the 1.24.13 emission as base with the
+hand-own delta re-applied by the hunk rule 3-way (base = the tracked `.cs.auto`, ours = the hand-own,
+theirs = the scratch emission), on C1's re-write branch as an H5-train seat.
+
+**The general statement, which is the reason the class matters:** *a whole-file hand-own at a release
+hop is a file FROZEN AT THE OLD RELEASE'S CONTENT, and every change the new release makes to its
+principal is silently absent* — the silent-subtraction shape at hop scale.
+
+**`testing/testing.cs` — classifies BOTH, but by a DIFFERENT mechanism, and it goes to the
+testing-host bill.** `testing` is skip-listed, so nothing is emitted and **there is no collision**.
+What BOTH means there is that the Phase-4 host is frozen against 1.24's `testContext` → `testState`
+rework — F15b territory with the TB-adapting assemblies behind it. Flagged, not touched here.
+
+**`sync/mutex.cs` — TWO deletions** (`@throw`, `fatal`), per §1 above.
+
+**`os/linux/wait_waitid.cs` — REMOVED-only**, and its removed member is `_P_PID`, which the earlier
+block already measured as a go2cs invention Go declares in no `os/*.go` at either release. **Not a
+collision.**
+
+---
+
+## 2026-09-08 — THE STATED DELTA IS NOT THE ACTUAL DELTA, AND A 3-WAY RE-DERIVE CANNOT TELL A HAND EDIT FROM FREEZE RESIDUE (from C1's datum in `2badd1c76`; measured over all 44)
+
+C1 closed `2badd1c76` with a datum addressed to this dossier: *a whole-file hand-own's stated delta and
+its actual delta can differ, and only a 3-way merge against its own `.cs.auto` surfaces that.* It is
+correct, and measuring it over the population sharpens it twice.
+
+### 1. THREE NUMBERS, THREE DIFFERENT QUESTIONS — and only one of them is the hand delta
+
+`runtime/runtime2.cs`, read at `origin/master` (its header re-derived from the file, not from C1's prose):
+
+```
+   2   what the HEADER documents      "two edits here modify REGENERATED content" —
+                                      efaceOf's body, the gomaxprocs/ncpu seed
+   4   what C1's 3-WAY SURFACED       the hunks the 1.24 release delta also touched
+  16   what the HAND DELTA IS         diff(runtime2.cs.auto, runtime2.cs) = 16 hunks, +132/-111
+```
+
+**The merge surfaces only the INTERSECTION of the hand delta with the release delta. The remaining
+twelve hunks re-apply UNEXAMINED** — not because the merge erred, but because a 3-way has no reason to
+show a region the new release did not touch. A re-derive that trusts the header checks two; one that
+trusts the conflict list checks four; the file carries sixteen.
+
+### 2. THE DELTA HOLDS **TWO** POPULATIONS WITH **OPPOSITE** OBLIGATIONS, AND THE MERGE PRESERVES BOTH
+
+```
+  HAND EDIT       a human changed regenerated content        -> MUST be re-applied
+  FREEZE RESIDUE  the CONVERTER improved after the freeze,   -> MUST be DROPPED; you want
+                  so the frozen .cs lacks emission the          the new emission
+                  .cs.auto has
+```
+
+Both appear in `diff(.cs.auto, .cs)` as a BASE->OURS change, so under the ruled merge
+(BASE = `.cs.auto`, OURS = the hand-own, THEIRS = the 1.24.13 emission) **freeze residue is preserved
+exactly as though it were an intentional hand edit** — silently, and the more faithfully the resolver
+obeys "re-applying a delta means re-applying it, not judging it", the more certainly it happens.
+
+**This is not a criticism of that rule.** The rule is right; it simply cannot see a distinction that is
+invisible in the diff. What the rule needs is a discriminator applied BEFORE it.
+
+### 3. THE DISCRIMINATOR — two queries, no build, no judgement
+
+```
+  a form present ONLY in hand-owned files            -> HAND EDIT
+  a form present in the .cs.auto AND in N corpus     -> FREEZE RESIDUE candidate
+    files but absent from this .cs
+  ...then the CONFOUND CHECK, which is not optional:
+  is the DECLARATION the form attaches to still      -> if GONE, the absence is BY DESIGN,
+    present in the hand file?                           not residue
+```
+
+Worked, at `origin/master`:
+
+```
+  static readonly UntypedInt      3 files corpus-wide — crc32_amd64.cs, runtime2.cs, poolqueue.cs —
+                                  ALL THREE whole-file hand-owns, against 371 files carrying the
+                                  emitted expression-bodied form        => HAND EDIT
+  [GoValueClone] on runtime2      0 in the .cs, 4 in its own .cs.auto, 127 corpus files carry it,
+                                  and struct m / p_mspancache / the p and schedt structs are ALL
+                                  STILL DECLARED in the hand file       => FREEZE RESIDUE
+```
+
+**The confound check earns its place immediately.** Over the five files whose emission carries a
+`[GoValueClone]` the hand file lacks — 8 absences — it splits **6 genuine residue / 2 by design**:
+
+```
+  registry/registry_test.cs  DynamicTimezoneinformation   declared in hand file  -> RESIDUE
+  runtime/mfinal.cs          finblock                     declared in hand file  -> RESIDUE
+  runtime/runtime2.cs        m, p_mspancache, p, schedt   declared in hand file  -> RESIDUE  (4)
+  internal/concurrent/hashtriemap.cs  the indirect struct  DECLARATION GONE      -> by design
+  sync/pool.cs                        poolLocal            DECLARATION GONE      -> by design
+```
+
+**Reporting the 8 as residue would have been wrong by 2.** A hand rewrite that deletes a struct
+legitimately deletes its stamp.
+
+### 4. THE POPULATION
+
+44 whole-file hand-owns at `origin/master` (anchored marker, `*_impl.cs` excluded; 142 marked files
+total, 98 of them companions — the unanchored grep reads 221, the documented over-count). **This
+reproduces this document's 44 and C1's independent `go/parser` derivation a third time.**
+
+**30 of the 44 carry a tracked `.cs.auto`**, and only those are checkable — a `.cs.auto` exists exactly
+where the converter still emits the principal. All 30 measured:
+
+```
+  delta shape          every one of the 30 is HAND-SHAPED: lines matching emission-drift
+                       shapes (using / global using / GoPositionMap / ImportedTypeAliases)
+                       are <= 7% of the delta on every file, 0% on nine of them
+  => .cs.auto staleness does NOT dominate — consistent with the 2026-08-24 rebank's 0-of-23,
+     extended here to 30
+  attribute absences   59 converter attributes present in the .cs.auto and absent from the .cs,
+                       across 23 of the 30            <- CANDIDATES, not findings
+```
+
+**The 59 are CANDIDATES.** Only `[GoValueClone]`'s 8 have had the per-declaration confound check run
+(section 3). The other 51 — mostly `[GoInit]`, with `[GoRecv]`, `[GoType]`, `[GoLocalName]` — are
+unclassified and **must not be quoted as residue**. And they are a DIFFERENT population from CLAUDE.md's
+"8 forced-init hooks missing inside the frozen class (godebug 4, concurrent 3, weak 1)": that count is
+over `package_info.cs` metadata for the hand-own-by-CONSEQUENCE packages, this one is over the
+hand-owned `.cs` files themselves. Neither figure checks the other.
+
+### 5. THE CONSEQUENCE, VERIFIED ON A LIVE BRANCH — `claude/c1-h6-rewrites` `dc79526ca`
+
+The prediction was stated before the check and it held on the artifact:
+
+```
+  master runtime2.cs.auto      [GoValueClone]  4
+  master runtime2.cs           [GoValueClone]  0
+  C1 re-derived runtime2.cs    [GoValueClone]  0   <- residue preserved, as predicted
+  C1 re-derived runtime2.cs    static readonly UntypedInt 36, waitReason members 44
+                                                   <- hand edits correctly preserved
+```
+
+**The merge did the right thing on hand edits and the wrong thing on freeze residue, because it cannot
+tell them apart.**
+
+**This is NOT a defect C1 introduced and NOT a blocker for their seat.** Master's `runtime2.cs` is
+also 0; the re-derive PRESERVES a pre-existing gap rather than creating one. What it does establish is
+that the gap **will not close by itself** — every future re-derive of this file reproduces it, because
+each one takes the previous hand file as OURS.
+
+### 6. A RECURRING UNDOCUMENTED HAND-EDIT IDIOM
+
+C1 recorded the property-to-field conversion as one undocumented edit in the waitReason block. It is
+**four hunks in `runtime2.cs` alone** — the G-status consts, the tracking-period/tls consts, the signal
+consts and the waitReason block, 36 occurrences — and it appears in **two further hand-owns**,
+`crc32_amd64.cs` and `poolqueue.cs`. Its reason is unrecorded in all three. Preserving it is right;
+**it should be recorded once rather than rediscovered per re-derive.**
+
+### 7. WHAT THIS OBLIGES, STATED AS THE CHEAPEST FORM
+
+**Every remaining whole-file re-derive at this hop runs section 3's discriminator over its own delta
+before the 3-way, and states its hand/residue split.** It is two `git grep`s and a declaration check per
+attribute; it needs no build, no toolchain and no converter. Nobody has to read a header and hope.
+
+**Scope.** Measured at `origin/master` `c5319f640` and at `dc79526ca`, from committed blobs (one layer,
+LF on both sides of every diff). The `[GoValueClone]` split is verified per declaration; the remaining
+51 attribute absences are not. Nothing here is a build result — no `dotnet` was run.
+
+---
+
+## 2026-09-08 — AMENDMENT to the block above: **MY OWN LINE COUNTS WERE SHORT BY THE BLANK LINES (C1's catch, `89d3b0c67`, verified here on three instruments), AND THE RULED DISCRIMINATOR'S *BASE* IS INVALID ON THREE OF THE THIRTY**
+
+The block above stands on its finding and moves on two numbers. Both are recorded here rather than
+edited into it, because a measurement is not rewritten after the fact.
+
+### 1. ⚠ CORRECTION — every `+`/`-` in the table above is SHORT BY ITS BLANK LINES
+
+`grep -c '^+[^+]'` cannot see a bare `+`. **This trap is written down in this project's own rules** —
+*"drops every removed BLANK line, so an emission count and an applied count taken the same way agreed
+with each other while numstat said 82"* — and I walked into it anyway, which is the difference between
+a lesson written down and a lesson mechanised.
+
+Verified on `runtime2.cs` with three instruments before adopting C1's figures:
+
+```
+  my broken grep       +132 / -111
+  git numstat          +146 / -125     <- the reading of record
+  bare +/- minus the header lines      146 / 125
+  blank lines added 14 · removed 14    132+14 = 146 · 111+14 = 125
+```
+
+**And a correction gets a CENSUS, not a fix of the instance you were shown.** The same filter produced
+every row of the table above, so all thirty were recomputed with `git diff --numstat`:
+
+```
+FILE                                                U3    U0       +       -   drift
+crypto/internal/boring/bcache/cache.cs               4     7      46      11    0%
+crypto/subtle/xor_generic.cs                         4     7      54      29    2%
+hash/crc32/crc32_amd64.cs                            6    19     194      40    2%
+internal/concurrent/hashtriemap.cs                   2    32     323     390    1%
+internal/godebug/godebug.cs                          7    33     163     245    3%
+internal/syscall/unix/linux/siginfo_linux.cs         1     8      85      60    1%
+internal/syscall/windows/exec_windows_test.cs        4     6      61      15    0%
+internal/syscall/windows/registry/registry_test.cs   4     9     114      21    0%
+internal/syscall/windows/registry/windows/value.cs  11    16      36      32    0%
+internal/weak/pointer.cs                             4    11     190      41    3%
+os/linux/wait_waitid.cs                              3     9      32      26    3%
+runtime/metrics/sample.cs                            3     6      50      20    1%
+runtime/mfinal.cs                                   13    28     306     130    0%
+runtime/runtime2.cs                                 16    55     146     125    0%
+sync/atomic/type.cs                                  8    48     221      95    0%
+sync/atomic/value.cs                                 3    24      42     142    1%
+sync/mutex.cs                                        2    21      71     211    3%
+sync/once.cs                                         3     4      12      13    4%
+sync/oncefunc.cs                                     3    20      94      51    0%
+sync/pool.cs                                         4    33     211     242    1%
+sync/poolqueue.cs                                    8    28      74      50    4%
+sync/rwmutex.cs                                      1    38     138     210    2%
+sync/waitgroup.cs                                    1    16      64     126    4%
+syscall/linux/exec_unix.cs                           6    21     589     145    0%
+syscall/windows/dll_windows.cs                      10    40     257     131    1%
+syscall/windows/exec_windows.cs                      6    30     354     140    0%
+syscall/windows/security_windows.cs                  3     9     175      10    1%
+time/tick.cs                                         6     9      58      14    1%
+unique/clone.cs                                      2     6      55      26    2%
+vendor/golang.org/x/crypto/sha3/xor.cs               3     8      46      31    6%
+```
+
+**The HUNK count is definitional, and both readings are right:** `diff -U3` merges nearby changes and
+reads 16 on `runtime2.cs`; `diff -U0` counts change-GROUPS and reads 55. The table above now carries
+both. ⚠ **This makes section 1's point STRONGER, not weaker: 55 change-groups against 4 conflicted
+means 51 were re-applied unexamined, not 12.**
+
+The drift share was computed on the same short denominator, so it was **overstated**, not understated:
+recomputed against the correct total the worst file reads **6%**, not 7%. The conclusion —
+`.cs.auto` staleness does not dominate — is unchanged and slightly stronger.
+
+### 2. A SECOND, INDEPENDENT DERIVATION OF `.cs.auto` FRESHNESS
+
+The shape classifier and a re-run of the shape classifier are one derivation. This one shares no
+mechanism with it — the commit date on which each sibling was last written:
+
+```
+  .cs.auto last written at/after the 2026-08-24 post-merge rebank    28 of 30
+  older than that                                                     2 of 30
+      hash/crc32/crc32_amd64.cs                    2026-08-08
+      internal/syscall/unix/linux/siginfo_linux.cs 2026-08-23
+```
+
+Two instruments with nothing in common agreeing is what makes "staleness does not dominate" the
+reading of record rather than one classifier's opinion.
+
+### 3. ⚠ THE RULED DISCRIMINATOR'S **BASE** IS INVALID ON THREE OF THE THIRTY
+
+The obligation takes the committed `.cs.auto` as BASE. **On three files that sibling PREDATES the hand
+file's last commit**, so it is *not* the emission the hand file was last reconciled against, and a
+3-way rooted there measures a delta against a tree nobody has:
+
+```
+FILE                          .cs.auto     .cs (hand)   gap
+sync/mutex.cs                 2026-08-26   2026-09-04    9 days
+syscall/linux/exec_unix.cs    2026-08-28   2026-09-05    8 days
+time/tick.cs                  2026-08-23   2026-08-26    3 days
+```
+
+`sync/mutex.cs` is the one that matters: it is on this hop's critical path (it carries the two H6
+collisions, `@throw` and `fatal`), and the commit that last touched its hand file is a converter
+call-site rule its committed `.cs.auto` cannot know about.
+
+⚠ **`runtime2.cs` is NOT among them** — its `.cs.auto` is 2026-09-02 against a hand file last touched
+2026-08-26, so the sibling POST-dates the hand file. That is why C1's target-matched verification found
+only a one-attribute difference against a freshly built 1.23.12 emission, and **the ruling's obligation
+is safe on their file.**
+
+**So the obligation takes one added clause:** the committed `.cs.auto` is a valid BASE only where it
+POST-DATES the hand file's last commit; on the three above, the re-derive REGENERATES its base first,
+as C1 did for `runtime2.cs` rather than trusting the sibling. It is one `git log` per file to know
+which case you are in.
+
+**Scope.** Commit dates are a proxy for freshness, not a proof of it: a `.cs.auto` written after the
+hand file can still predate a later converter change, which is why C1's regenerate-and-compare remains
+the strong form and this is the cheap screen that says who needs it.
+
+---
+
+## 2026-09-08 — ⚠ TWO CORRECTIONS TO MY OWN DISCRIMINATOR, ONE OF WHICH A RULING QUOTES: the `[GoValueClone]` split is **7/1, not 6/2**, and the two-way classification is **TOO COARSE — there is a THIRD class, and 39 rows sit in it**
+
+Running the declaration check over the remaining attribute absences — the part held as CANDIDATES —
+broke its own control, which is what a control is for. Both corrections are recorded here rather than
+edited into the blocks above.
+
+### 1. ⚠ THE SPLIT IS 7 RESIDUE / 1 BY-DESIGN
+
+The block above reports `[GoValueClone]`'s eight absences as **6 residue / 2 by-design**, and COORD's
+ruling quotes it. **It is 7 / 1.** The disputed row is `poolLocal` in `sync/pool.cs`:
+
+```
+  sync/pool.cs:81   internal sealed class poolLocal      <- the declaration IS present
+```
+
+**My hand check's pattern was `(struct|class) <name>[[:space:]{]`** — it requires a character AFTER the
+name, and that declaration ENDS ITS LINE, so the pattern false-negatived and I filed a live residue as
+a by-design deletion. The same defect is why the scripted check and the hand check disagreed at all;
+the script was right.
+
+**Consequence for the claim built on it:** "reporting the 8 as residue would have been wrong by 2" is
+really **wrong by 1**. The confound check still earns its place — it still catches `Δindirect` in
+`hashtriemap.cs`, whose construct the hand rewrite genuinely deleted — but my example overstated its
+force, and the residue population is LARGER than I published, not smaller.
+
+⚠ **An anchored pattern that requires a trailing character cannot match a declaration at end of line.**
+That is the same family as the bracket-class and blank-line traps this project already carries, and it
+is the second time in one day that a `grep` shape, not a reasoning error, moved one of my numbers.
+
+### 2. ⚠ THE TWO-WAY CLASSIFICATION IS TOO COARSE — A THIRD CLASS, AND IT IS NOT BENIGN
+
+The discriminator as ruled has two outcomes: the declaration survives (RESIDUE) or it is gone (BY
+DESIGN). Applied past `[GoValueClone]`, **50 of 62 auto-only pairs fall into "declaration gone" — and
+39 of those are `[GoInit]` import-init hooks, which is a different thing entirely.**
+
+```
+  internal/godebug/godebug.cs        [GoInit] hooks in emission 5   in hand file 0
+  internal/concurrent/hashtriemap.cs                           4                0
+  syscall/linux/exec_unix.cs                                   4                0
+      initᴛᴛimportꓸsync · initᴛᴛimportꓸsyncꓸatomic · initᴛᴛimportꓸruntime · …
+```
+
+**The frozen files carry ZERO of them.** That is not a hand rewrite deleting a construct — it is a
+construct the CONVERTER now generates that the frozen file never had. So the classification is:
+
+```
+  RESIDUE                      declaration survives, the STAMP is absent          -> drop the residue
+  MISSING GENERATED CONSTRUCT  the emission declares it, the frozen file never    -> NOT benign
+                               carried it at all
+  BY DESIGN                    the hand rewrite deleted the construct             -> nothing owed
+```
+
+⚠ **The middle class is CLAUDE.md's forced-init-hook class** — *"the hand-own FENCE leaves 8 forced-init
+hooks missing inside this frozen class"* — reached from a different direction and over a different
+artifact: that count is over `package_info.cs` for the hand-own-by-CONSEQUENCE packages, this one is
+over the hand-owned `.cs` files. **A hand-own that carries none of its import-init hooks is not forcing
+those imports' inits**, which is a behaviour question, not a stamp question.
+
+### 3. THE CORRECTED NUMBERS, WITH THEIR UNITS NAMED
+
+```
+  12  RESIDUE            all 12 re-verified with a corrected pattern, declaration present
+   1  BY DESIGN          Δindirect (hashtriemap) — construct genuinely deleted
+  39  MISSING GENERATED  [GoInit] import-init hooks, verified absent wholesale
+  10  UNCLASSIFIED       [GoRecv] 3 + [GoType] 7 — "declaration gone", but by-design vs
+                         missing-generated NOT yet distinguished
+  --
+  62  auto-only (attribute, declaration) pairs over the 30 checkable hand-owns
+```
+
+⚠ **This 62 and the "59 absences across 23 files" above are DIFFERENT UNITS and neither supersedes the
+other:** 59 counts per-attribute-KIND count differences per file; 62 counts (attribute, declaration)
+PAIRS. Both are stated so nobody reconciles them by arithmetic.
+
+**The residue population by attribute:** `GoValueClone` 7, `GoType` 3, `GoRecv` 1, `GoLocalName` 1 —
+across 6 files. Every one has had its declaration check run, so **these 12 are findings, not
+candidates.** The 10 unclassified rows remain candidates.
+
+**Scope.** Committed blobs at `origin/master`, no build. The scripted check's declaration set is
+deliberately LOOSE (a call site can look like a declaration), which biases it toward reporting RESIDUE
+— so every residue row was re-verified individually with an anchored pattern, and the by-design and
+missing-generated rows are the ones a loose matcher can only UNDER-report.
