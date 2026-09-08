@@ -529,10 +529,22 @@ Behavioral goldens are conversions of go2cs's *own* Go programs, so a corpus mig
 through §1.1's three channels — and which are live is knowable in advance. **Predict the diff's size
 before running the rebank**; a diff that materially exceeds the prediction is a finding, not a rebank.
 
-Procedure: re-transpile everything **first** (the golden-update utility copies on-disk `.cs`; it does
-**not** re-run the converter, so a copy over stale output silently re-baselines it), then update the
-goldens, then **classify every moved golden before banking**. A migration is not a licence to rebank
-unexamined diffs.
+Procedure: re-transpile everything **first**, then update the goldens, then **classify every moved
+golden before banking**. A migration is not a licence to rebank unexamined diffs.
+
+> **Dated correction, 2026-09-07 (H9 PREP).** This step used to read "re-transpile everything
+> **first** (the golden-update utility copies on-disk `.cs`; it does **not** re-run the converter,
+> so a copy over stale output silently re-baselines it)". **The parenthetical has been false since
+> 2026-09-04:** both re-baseline paths -- the `UpdateTestTargets` utility and
+> `run-behavioral.ps1 --update-targets` -- now RE-TRANSPILE each project they are about to
+> re-baseline, unconditionally, immediately before the copy, and REFUSE by name when that
+> transpile fails, times out, or exits 0 having converted best-effort. **The instruction survives;
+> its stated reason does not** -- re-transpiling first is still right because the emission should
+> be examined before it becomes a record, but a reader acting on the old reason believes a closed
+> hazard, and may believe the utility is safe to point at a stale tree, which the refusal now
+> prevents. `--only <Name>[,...]` narrows one invocation, which is what makes the refusal branch
+> cheap enough to exercise. Deliberately NO up-to-date predicate on either path: a stale
+> COMPARISON is recoverable, a stale RECORD is not.
 
 **Gate:** the full behavioral suite green across all four phases. Note the runner's **own** internal
 budgets are independent of the caller's, and a budget that expires reports `NOT MEASURED`, which fails
@@ -947,6 +959,7 @@ Test each diff against the classes **in this order**:
 |:--|:--|:--|
 | **T0 · known non-diff** | the file shows modified with an **empty** numstat | line-ending phantom. **Restore.** ⚠ the empty-numstat rule is **false for verbatim-copied paths** marked as binary-ish in `.gitattributes` — git does not normalize them, so a pure line-ending flip shows a *real* numstat. Test line-ending-stripped equality against `HEAD` directly there |
 | **T1 · upstream, attributed** | the file maps to an upstream commit touching its Go source | **Bank**, naming the upstream commit in the classification record |
+| **T1b · dependency relocation** | the golden's OWN Go source is unchanged and its emission moved because a DEPENDENCY moved -- the alias/namespace change traces to a package relocation in the upstream diff | **Bank**, naming the relocation. **Test this BEFORE T2, which is a trap here:** T2's shape list names "an import alias" and its disposition is RESTORE, but T2 is about two emissions of the SAME sources differing, while this is one emission mode reading DIFFERENT sources. The hunks are indistinguishable and the dispositions are opposite |
 | **T2 · test-closure re-emission** | one of the named shapes an `-stdlib` and a `-tests` emission differ by — an import alias, a namespace root escape, the using-block reorder an alias causes, or the test-init hook a `-tests` run adds as **real lines** an `-stdlib` run omits | **Restore.** A standing restore, not a cleanup, until the two emissions agree. ⚠ the hook shape survives a numstat filter |
 | **T3 · born-stale** | the artifact predates an emission that has since landed | **Levelled in H4a's opening bundle.** Anything still in this class afterward is a defect in the bundle |
 | **T4 · hand-own consequence** | H6's differential classified the hunk (a)/(b)/(c) | H6 owns it; H10 must not silently absorb it |
