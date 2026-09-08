@@ -29,6 +29,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckAddressOfParamWrite() => CheckTarget("AddressOfParamWrite");
 
     [TestMethod]
+    public void CheckAliasNamespaceShadow() => CheckTarget("AliasNamespaceShadow");
+
+    [TestMethod]
     public void CheckAliasStructComposite() => CheckTarget("AliasStructComposite");
 
     [TestMethod]

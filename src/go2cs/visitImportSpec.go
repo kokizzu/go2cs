@@ -743,10 +743,27 @@ func rootQualifyIfAmbiguous(ns string) string {
 	// inner-to-outer lookup binds `@internal` there (CS0234). packageChildNamespaces (the
 	// CS0576 Δ-alias machinery) already mirrors that closure; walk every enclosing-namespace
 	// prefix above the root, since any level can shadow the intended go.<firstSeg>.
+	// ...and it mis-binds the same way when the nearer thing is a CLASS rather than a namespace,
+	// which is the SINGLE-SEGMENT case the leading-segment rule above explicitly excludes. That
+	// exclusion is right about what it says — a one-segment target has no leading qualifier to
+	// shadow — and it does not cover the target CLASS ITSELF being shadowed by a nearer class of the
+	// same simple name.
+	//
+	// internal/singleflight (namespace go.@internal) emits `using sync = sync_package;` for the ROOT
+	// sync. At go1.23.12 that is the only class of that name and it binds correctly; go1.24 adds
+	// internal/sync, so `go.@internal.sync_package` enters the closure, C#'s inner-to-outer lookup
+	// finds it FIRST, and the alias silently rebinds to a class with no Once and no WaitGroup. The
+	// same shape reaches go.@internal.syscall and go.@internal.trace.
+	//
+	// packageQualifiedNamespaces is the CLASS half of the map pair packageChildNamespaces is the
+	// NAMESPACE half of — both are built from the same closure, one segment apart — so the two
+	// questions are asked together here rather than in two places that could answer differently.
+	// It fires only when a nearer class of that exact name is really in the closure, so a corpus
+	// with one class of the name (every 1.23.12 package) emits exactly as before.
 	prefix := packageNamespace
 
 	for prefix != "" && prefix != RootNamespace {
-		if packageChildNamespaces[prefix+"."+firstSeg] {
+		if packageChildNamespaces[prefix+"."+firstSeg] || packageQualifiedNamespaces[prefix+"."+firstSeg] {
 			return rootQualified(ns)
 		}
 
