@@ -536,11 +536,20 @@ func (v *Visitor) convBasicLit(basicLit *ast.BasicLit, context BasicLitContext) 
 				// passed to a uint32 parameter) must emit an unsigned C# literal — a
 				// signed (nint)…L does not convert to uint/uint32.
 				if intval >= 0 && v.isUnsignedType(basicLit) {
-					result.WriteString(value)
-
 					if intval > math.MaxUint32 {
+						// Same native-width rule as the unsigned-parse branch below, and it is
+						// called rather than restated so the two cannot disagree again — they
+						// already did, which is defect D: this branch (a value that parses SIGNED,
+						// i.e. at or below MaxInt64) emitted a bare `UL` for every unsigned context,
+						// so `var word uintptr = 0x0102030405060708` became `word = …UL`. A ulong
+						// has only an EXPLICIT operator to golib's uintptr, so it is CS0266 — while
+						// the branch below, reached only ABOVE MaxInt64, had the rule right and
+						// documented it.
+						result.WriteString(v.nativeWidthUnsignedPrefix(basicLit))
+						result.WriteString(value)
 						result.WriteString("UL")
 					} else {
+						result.WriteString(value)
 						result.WriteRune('U')
 					}
 				} else if resolved := v.intLiteralResolvedInteger(basicLit); resolved != nil && resolved.Kind() == types.Int64 {
@@ -579,12 +588,7 @@ func (v *Visitor) convBasicLit(basicLit *ast.BasicLit, context BasicLitContext) 
 				// (uint/uintptr -> C# nuint) keeps the (nuint) cast — a bare ulong literal
 				// has no implicit conversion to nuint (CS0266); the non-constant unchecked
 				// (nuint) conversion does compile.
-				basic, isBasic := v.getType(basicLit, true).(*types.Basic)
-
-				if !isBasic || basic.Kind() != types.Uint64 {
-					result.WriteString("(nuint)")
-				}
-
+				result.WriteString(v.nativeWidthUnsignedPrefix(basicLit))
 				result.WriteString(value)
 				result.WriteString("UL")
 			} else {
@@ -808,4 +812,33 @@ func (v *Visitor) convBasicLit(basicLit *ast.BasicLit, context BasicLitContext) 
 	}
 
 	return result.String()
+}
+
+// nativeWidthUnsignedPrefix returns the cast an above-MaxUint32 unsigned integer literal needs so it
+// reaches its RESOLVED type, or "" when the bare `UL` literal already does.
+//
+// A literal above MaxUint32 emits with a `UL` suffix, which makes it a C# `ulong`. Where the resolved
+// Go type is uint64, that is exactly right and a cast would be worse than redundant: golib's [GoType]
+// wrappers over uint64 convert implicitly from ulong, and a `(nuint)` there is semantically wrong for
+// a 64-bit target and TRUNCATES on a 32-bit platform — `math.Float64frombits(0xFFF0000000000000)` is
+// the row that says so.
+//
+// Where the resolved type is NATIVE-WIDTH unsigned (Go `uint`/`uintptr` -> C# `nuint`), the bare
+// ulong does NOT reach it: golib's uintptr takes nuint, uint8/16/32, char, UntypedInt and NilType
+// IMPLICITLY and uint64 only EXPLICITLY, so `word = 0x0102030405060708UL` is CS0266. The `(nuint)`
+// cast is a non-constant unchecked conversion, which compiles, and uintptr's implicit nuint operator
+// then binds.
+//
+// It exists as ONE function because the two literal branches that need it — the signed parse (at or
+// below MaxInt64) and the unsigned parse (above it) — had DRIFTED: only the second carried the rule,
+// so the defect showed up exactly in the range the first one owns. Two derivations of one predicate
+// is how that happens, so there is now one.
+func (v *Visitor) nativeWidthUnsignedPrefix(basicLit *ast.BasicLit) string {
+	basic, isBasic := v.getType(basicLit, true).(*types.Basic)
+
+	if isBasic && basic.Kind() == types.Uint64 {
+		return ""
+	}
+
+	return "(nuint)"
 }
