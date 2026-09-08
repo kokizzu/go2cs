@@ -194,8 +194,15 @@ func TestHarnessRebuildPredicatesUseTheSharedConverterBuildInputs(t *testing.T) 
 // assertion is the tripwire that stops it being quietly edited back out. A toolchain hop touches
 // no build input, so the mtime walk alone answers "up to date" while the binary still embeds the
 // OLD release's go/parser + go/types front end -- the stamp is inherent (`go version <exe>` reads
-// the buildinfo every Go binary carries), and staleness must consult it against the live
-// `go env GOVERSION` before any mtime answer is allowed to say current.
+// the buildinfo every Go binary carries), and staleness must consult it before any mtime answer is
+// allowed to say current.
+//
+// CORRECTED 2026-09-08 (COORD e0ef8639e): the comparison target is the CONVERTER MODULE's own `go`
+// directive, not the live ambient toolchain. A toolchain hop is what MOVES that directive (H1 step
+// 2), so the rebuild still fires exactly when route #4 needs it -- while in the two-pin window,
+// where the converter is built by one release and the corpus pinned to another, the old ambient
+// compare was permanently unequal and rebuilt on every invocation. The two arms below pin both
+// halves: stale iff embedded differs from the directive, and NOT stale whatever the ambient is.
 //
 // Same best-effort caveat as the sibling guard: this C# source lives outside the module root, so
 // cmd/go's test cache does not track it -- a change touching ONLY the C# owes `go test -count=1`.
@@ -212,26 +219,46 @@ func TestConverterStalenessConsultsTheToolchain(t *testing.T) {
 
 	text := string(shared)
 
-	// The two probes, by the exact command shapes they must keep: the embedded stamp is read with
-	// `go version <exe>` and the live release with `go env GOVERSION`. Renaming or re-plumbing is
-	// fine; ANSWERING THE QUESTION some other way that skips the toolchain is what this fails on.
+	// ARM 1 -- embedded != directive => STALE, WHATEVER THE AMBIENT. The two sides the predicate
+	// must read: the binary's embedded stamp (`go version <exe>`) and the CONVERTER MODULE's own
+	// `go` directive. Renaming or re-plumbing is fine; answering the question some other way that
+	// skips the toolchain is what this fails on.
 	for _, required := range []string{
 		"EmbeddedGoRelease(converterExePath)",
-		`"env GOVERSION"`,
+		"ConverterModuleGoRelease(converterSrcDir)",
 		"go version",
 	} {
 		if !strings.Contains(text, required) {
 			t.Errorf("%s no longer contains %q -- IsConverterStale must compare the binary's embedded Go release "+
-				"against the live toolchain (false-green route #4 / H1.4), or a toolchain hop leaves every "+
-				"harness validating the previous front end's emission as current", converterBuildInputsSource, required)
+				"against the CONVERTER MODULE's own `go` directive (false-green route #4 / H1.4, two-pin "+
+				"corrected 2026-09-08), or a toolchain hop leaves every harness validating the previous front "+
+				"end's emission as current", converterBuildInputsSource, required)
 		}
 	}
 
-	// Failure must lean STALE-wards: a null from either probe forces the rebuild rather than
+	// ARM 2 -- embedded == directive => NOT STALE, WHATEVER THE AMBIENT. The predicate must not
+	// consult the live/ambient toolchain at all. It did until 2026-09-08, and in the two-pin window
+	// (converter built by one release, corpus pinned to another) that made `embedded != live`
+	// PERMANENTLY true: every harness reported stale on every invocation, rebuilt each run, and
+	// under GOTOOLCHAIN=local the rebuild could not succeed -- which blocked minting a golden at all.
+	// The ambient axis belongs to the EMISSION guard in UpdateTestTargets, never to staleness.
+	for _, forbidden := range []string{
+		`"env GOVERSION"`,
+		"LiveGoRelease",
+	} {
+		if strings.Contains(text, forbidden) {
+			t.Errorf("%s contains %q -- staleness must NOT consult the ambient toolchain: the converter is "+
+				"built by the release its own go.mod names, which in the two-pin window differs from the "+
+				"corpus pin by construction, so an ambient compare reports STALE forever and forces a rebuild "+
+				"that cannot succeed", converterBuildInputsSource, forbidden)
+		}
+	}
+
+	// Failure must lean STALE-wards: a null from either side forces the rebuild rather than
 	// trusting an unverified binary. The null-propagating comparison below is that lean.
-	if !strings.Contains(text, "embedded is null || live is null") {
-		t.Errorf("%s has lost the stale-wards null handling -- an unreadable stamp or an unanswerable "+
-			"GOVERSION must force a rebuild, never a silent pass", converterBuildInputsSource)
+	if !strings.Contains(text, "embedded is null || required is null") {
+		t.Errorf("%s has lost the stale-wards null handling -- an unreadable stamp or an unreadable `go` "+
+			"directive must force a rebuild, never a silent pass", converterBuildInputsSource)
 	}
 }
 
