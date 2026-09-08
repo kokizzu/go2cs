@@ -836,4 +836,91 @@ row could be several PROCESSES. Both halves were needed. The durable fix is that
 longer be one file by accident, and that the reader prints the file COUNT beside the blocks so a
 five-process row cannot report as one.
 
--- C2, 2026-09-08 (amended)
+
+---
+
+### 10.9.11 ⚠ AMENDED AGAIN 2026-09-08 — THE ARM-2a POPULATION IS **NOT** EMPTY: 1,236 hits, all in `crypto/tls`
+
+i9 (`a12e46447c`), on the neutral instrument at `ad87e2bb1f` with per-process files and per-row sums,
+the gate re-proved at `os` 683 both ways at the head of each batch. **The first table whose numbers are
+the rows:**
+
+| row | files | conversions | mints | arm 1 | **arm 2a** | arm 4 |
+|:--|--:|--:|--:|--:|--:|--:|
+| `os` | 5 | 260,438 | 0 | 20 | 0 | 260,418 |
+| `encoding/json` | 1 | 279 | 13 | 0 | 0 | 279 |
+| `go/types` | 1 | 304,542 | 668 | 668 | 0 | 303,874 |
+| `runtime/pprof` | 1 | 3,898,831 | 10,594 | 1,302,758 | 0 | 2,596,073 |
+| `reflect` | 0 | **NO CENSUS OUTPUT** | | | | |
+| `net/http` | 1 | 33,685 | 35 | 0 | 0 | 33,685 |
+| **`crypto/tls`** | **2,241** | 913,859 | 1,239 | 1,850 | **1,236** | 910,773 |
+| **total** | | **5,411,634** | | | **1,236** | |
+
+**"The 2a population may be a GolibTests artifact" is DEAD.** §10.9.8 named that as the leading candidate
+and it is now falsified by measurement: the population is real, it is 1,236, and it is concentrated
+**entirely in one row**.
+
+⚠ **WHY IT WAS INVISIBLE, AND IT IS NOT LUCK — it is this record's own `{pid}` defect, quantified.**
+`crypto/tls` runs bogo at **2,241 processes**, of which **507 carry arm2a > 0 and 1,734 read zero**. Under
+the shared-file race exactly ONE block survives, so drawing one at random gives about a **77 % chance of
+reading arm2a = 0**. The old method would MOST LIKELY have reported `crypto/tls` at zero, and the corpus
+would have been declared arm-2-free with four million conversions behind it. Three separate fixes had to
+hold to see it: the instrument NEUTRAL (§10.9.1–2), pid SEPARATION (§10.9.10), and the row actually RUN.
+
+### 10.9.12 The prediction, scored properly at last — one half HIT, one half REFUTED
+
+§10.8 predicted **"arm 2a non-zero on `runtime/pprof` FIRST, then `reflect`."** §10.9.7 scored it refuted;
+§10.9.10 returned it to unscored when its evidence was voided. It can now be scored, and it splits:
+
+- **The EXISTENCE half — HIT.** Arm 2a is non-zero in the corpus: 1,236 sites.
+- **The ROW half — REFUTED, and firmly.** `runtime/pprof` reads **arm2a = 0 across 3,898,831
+  conversions**, which is about as strong a null as that row can give. `reflect` produced **no census
+  output at all** and is recorded as unmeasured rather than as zero. The row that carries the population
+  is `crypto/tls`, which the prediction did not name.
+
+Scored as worded, that is a **miss**: naming the mechanism's existence while naming the wrong rows is not
+a correct prediction, and the row half is what it was used for — deciding which rows to spend hours on.
+
+### 10.9.13 ⚠ What 1,236 DOES and DOES NOT settle
+
+**It does NOT resurrect §10.3's arm-2 refusal, and the reason is §10.9.3–5 unchanged.** Falsifier (a)
+fired on 8 of 8 GolibTests sites with 31 passing census-OFF tests over them, and the discriminator there
+was **read-vs-name**: at 2a the number is CONSTRUCTED AND NAMED, never dereferenced, which is why a
+refusal at the conversion site cannot separate the defect from the legal uses. **A count cannot answer
+that question.** 1,236 sites establish that the remedy has a population; they do not establish that any of
+them dereferences.
+
+**The next reading is per-site and it already exists.** The instrument records, for every arm-2 hit, the
+requested type, the resolved pointee type, whether each carries managed references, and
+`alias-expressible`. Those `Q44CENSUS-ARM2` lines are in `crypto/tls`'s 507 non-zero blocks now. Reading
+them answers what the count cannot: which shapes, and whether the alias is expressible for any of them —
+the same reading §10.8.3 did for the GolibTests eight.
+
+**Prediction on record before those lines are read**, so it can be scored:
+
+1. The 2a pairs will be **reference-bearing** on at least one side, so `alias-expressible=NO` for
+   substantially all of them — that property is what forces the token route in the first place.
+2. They will be **construct-and-name**, i.e. falsifier (a) holds on the corpus too. The argument is a
+   failure-mode one rather than a preference: a token dereferenced as an address faults at a
+   NON-CANONICAL address, loudly, and `crypto/tls`'s observed failure is `TestBogoSuite/Client`, an
+   assertion, with i9 holding attribution pending a census-OFF control. A crash is what dereferencing
+   would look like and it is not what the row shows.
+
+If (2) is wrong — if any of the 1,236 is read as an address by managed code producing a silently wrong
+VALUE rather than faulting — that is exactly the falsifier §10.9.8 named for "no change at 2a", and the
+disposition changes.
+
+**Two rows are NOT attributed and are recorded that way**: `net/http` (`TestRegisterErr`) and `crypto/tls`
+(`TestBogoSuite/Client`) both read rc=1 with the census on, and i9 is running census-OFF controls rather
+than guessing; the `os` gate proves neutrality on `os`, which is not the same as neutrality on a row that
+spawns 2,241 processes or touches the network. And `reflect` is recorded as **NO OUTPUT**, not as zeros,
+because the run happened and the census never reported — reporting zeros there would be the unrun census
+wearing a result's clothes.
+
+**i9's own over-correction, corrected**: `5de94f336b` called every earlier census number void, which was
+right ex ante and is now narrowed by measurement — only `os` lost blocks (16 → 260,438, wrong by a factor
+of sixteen thousand). `encoding/json` reads 279 both times; `go/types` 303,492 → 304,542 and
+`runtime/pprof` 3,839,386 → 3,898,831 are run variance of 0.3 % and 1.5 %. Those three stand as
+approximations.
+
+-- C2, 2026-09-08 (amended twice)
