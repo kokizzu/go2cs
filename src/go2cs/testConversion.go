@@ -6108,7 +6108,7 @@ func executeTestAction(inputPath, outputPath string, options Options) error {
 			return err
 		}
 		output, err := runCommandWithTimeoutEnv(testChildTimeout(options), outputPath, options, testHostRunEnv(options), publishedTestHostPath(outputPath, testProject),
-			"--json", "-timeout", options.testTimeout.String())
+			convertedHostArgs(options)...)
 		fmt.Print(output)
 		return err
 	case "compare", "all":
@@ -6253,6 +6253,23 @@ func driverTerminal() string {
 	tty.Close()
 
 	return driverTerminalPresent
+}
+
+// convertedHostArgs is the converted test host's argv PREFIX -- the flags every action that
+// executes the host must pass, derived in ONE place so `run` and `compare` cannot disagree.
+//
+// Until 2026-09-08 the run action built its own argv and passed NO filter, while compare
+// appended `--run` from the same options.testFilter. So `-test-action run -test-filter X` ran
+// the WHOLE package while its caller believed it was gated, and nothing in the run said so:
+// the probe runbook that asked for both a gated row and the run action got a reading of
+// NOTHING whose own validity check still read clean (i9, mailbox 4dc421f02). A flag silently
+// ignored by one action and honoured by another is the shape a shared derivation removes.
+func convertedHostArgs(options Options) []string {
+	args := []string{"--json", "-timeout", options.testTimeout.String()}
+	if options.testFilter != "" {
+		args = append(args, "--run", options.testFilter)
+	}
+	return args
 }
 
 // publishedTestHostPath is the single-file executable publishTestHost produces: the test project's
@@ -7611,10 +7628,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		return err
 	}
 
-	csArgs := []string{"--json", "-timeout", options.testTimeout.String()}
-	if options.testFilter != "" {
-		csArgs = append(csArgs, "--run", options.testFilter)
-	}
+	csArgs := convertedHostArgs(options)
 	if hostFatalSkip != "" {
 		csArgs = append(csArgs, "--skip", hostFatalSkip)
 	}

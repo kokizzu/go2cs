@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // The ZERO-MATCH GUARD. A `-test-filter` run that matches nothing compares zero verdicts, so both
@@ -211,5 +212,61 @@ func TestGatedArrayAndFilterStampCoexist(t *testing.T) {
 	}
 	if got := back["testFilter"]; got != "^TestWriteDeadline" {
 		t.Fatalf("`testFilter` must be the filter expression as a string; got %#v", got)
+	}
+}
+
+
+// THE RUN ACTION'S FILTER. `-test-filter` was honoured by `compare` and SILENTLY IGNORED by
+// `run`: the run action built its own argv of `--json -timeout` and never passed `--run`, so a
+// caller asking for a gated single-test run got the WHOLE package and no diagnostic said
+// otherwise. That is the zero-match guard's own failure shape one layer out -- a run that
+// measured something entirely different from what was asked, reading exactly like the run that
+// was asked for. It cost a real reading: a probe patched into one test's emission ran a package
+// that died before reaching that test, while the probe's own validity check still said intact.
+//
+// convertedHostArgs IS the argv -- `case "run"` passes `convertedHostArgs(options)...` verbatim
+// and compare seeds `csArgs` from it -- so asserting the function asserts the command line, not a
+// re-implementation of it. Both actions derive from this one source precisely so they cannot
+// drift apart again.
+//
+// POSITIVE CONTROL FIRST, as the guard above: a test that only asserts ABSENCE passes trivially
+// against a function that returns nothing at all.
+func TestRunActionHostArgvCarriesTheFilter(t *testing.T) {
+	args := convertedHostArgs(Options{testFilter: "^TestFinalizerType$", testTimeout: 5 * time.Minute})
+
+	idx := -1
+	for i, a := range args {
+		if a == "--run" {
+			idx = i
+		}
+	}
+	if idx < 0 {
+		t.Fatalf("a -test-filter run must hand the host --run, or the run measures the whole package while reading as gated; got %v", args)
+	}
+	if idx+1 >= len(args) || args[idx+1] != "^TestFinalizerType$" {
+		t.Fatalf("--run must be followed by the filter VERBATIM, the same string compare hands both sides; got %v", args)
+	}
+
+	// The prefix the host needs regardless of gating stays present -- a filter must ADD to the
+	// argv, never replace it.
+	if len(args) < 3 || args[0] != "--json" || args[1] != "-timeout" {
+		t.Fatalf("the host argv must still open with --json -timeout; got %v", args)
+	}
+}
+
+// ...and the ABSENCE case, which is only meaningful because the arm above proves the function can
+// emit --run at all. An ungated run must hand the host NO filter: passing an empty --run would
+// make every ungated run a filtered one with an empty regex, which matches everything on Go's
+// flag semantics today and is one library change from matching nothing.
+func TestUngatedRunActionHostArgvCarriesNoFilter(t *testing.T) {
+	args := convertedHostArgs(Options{testTimeout: 5 * time.Minute})
+
+	for _, a := range args {
+		if a == "--run" {
+			t.Fatalf("an ungated run must pass no --run at all, not an empty one; got %v", args)
+		}
+	}
+	if len(args) != 3 || args[0] != "--json" || args[1] != "-timeout" {
+		t.Fatalf("the ungated host argv is exactly --json -timeout <d>; got %v", args)
 	}
 }
