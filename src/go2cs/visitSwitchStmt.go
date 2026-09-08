@@ -1038,9 +1038,26 @@ func (v *Visitor) canUsePatternMatch(caseClauseCount int, caseClause *ast.CaseCl
 			// A uintptr-typed label — even a plain literal, which adopts the tag's type in context
 			// (`exprᴛ1 is 4` under a uintptr tag) — can never be a constant pattern: uintptr is a
 			// golib STRUCT (CS9135). Fall back to `==` (the struct's operator).
+			//
+			// A POINTER-typed label is the same case one type over, and it is NOT covered by the
+			// syntactic screen above: that switch lists Ident/Selector/Index, so an ADDRESS-OF label
+			// (`case &inProgress:` — 1.24 runtime/type.go's GC-mask sentinel) fell through it and
+			// emitted `exprᴛ1 is ᏑinProgress`, a constant pattern over a runtime value: CS9135 at the
+			// pattern operand, while the `case nil` arm ONE LINE DOWN already spelled `== default!`.
+			// The sibling screen that forces the whole switch to the if/else form (see the allConst
+			// block) does list UnaryExpr, which is why the chain existed at all and only its operator
+			// was wrong. Screening by TYPE rather than by expression kind keeps the two lists from
+			// diverging again: no pointer value is a C# compile-time constant, whatever syntax names
+			// it. `==` is also the RIGHT operator — on `ж<T>` it is pointer identity (ReferenceEquals
+			// or equal order tokens), which is exactly what Go's `p == &inProgress` compares.
 			if tv, ok := v.info.Types[expr]; ok && tv.Type != nil {
-				if basic, ok := tv.Type.Underlying().(*types.Basic); ok && basic.Kind() == types.Uintptr {
+				switch underlying := tv.Type.Underlying().(type) {
+				case *types.Pointer:
 					usePattenMatch = false
+				case *types.Basic:
+					if underlying.Kind() == types.Uintptr {
+						usePattenMatch = false
+					}
 				}
 			}
 
