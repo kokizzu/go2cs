@@ -397,8 +397,10 @@ this harness looks like `B2`: stable to ±7 %, same sign and magnitude in every 
 modes, every composition. `B − A` is none of those — its **sign flips with tiering**, its magnitude
 **moves when unrelated arms are added to the bench**, and it falls inside the noise floor in 9 of
 21 runs. The honest reading is therefore that **B's excess over A is at or below what this
-instrument resolves**, with a weak positive lean at tiering-off that is reported rather than
-explained away.
+instrument resolves ON THIS HOST**, with a weak positive lean at tiering-off that is reported rather
+than explained away. ⚠ **That sentence is NARROWED by §F below: on windows-x64 the effect is real,
+larger, and lands on the OTHER tiering setting.** The linux reading is not wrong; it is
+host-conditional, and §E wrote it as though it were not.
 
 ### E.3 The prediction of §D, scored as worded
 
@@ -409,7 +411,9 @@ for §C over §B at the trampoline"**.
 - **The reason is not confirmed.** Twelve of thirteen tiering-off readings lean positive; equal
   instruction cost is not what that looks like. The claim was stated more strongly than the
   measurement supports, and §E.2 is why it cannot be resolved either way here.
-- **The conclusion, at the falsifier's own granularity, HOLDS — the falsifier does not fire.** The
+- **The conclusion, at the falsifier's own granularity, HOLDS — the falsifier does not fire.**
+  ⚠ Narrowed by §F: the criterion is still met on the binding host, but "B does not bench worse than
+  A" is HOST-CONDITIONAL and FALSE on windows under default tiering. The
   door runs once per **argument** on `SyscallN(uintptr trap, params ꓸꓸꓸuintptr argsʗp)`, so the
   per-call cost is per-test × arity, and quoting the per-test figure as per-call would understate
   it by up to 18×. Taking the **worst** reading (+0.204 ns) at the **worst** arity (18) against the
@@ -428,3 +432,76 @@ rather than on the prediction's reasoning.
 3. **A windows-x64 reproduction** of the table above, which is what an i7 or i9 run of the same
    probe supplies; the probe carries a `-text` mark so a checkout anywhere runs byte-identical
    source, per the probes directory's own convention.
+
+---
+
+# AMENDMENT — 2026-09-08: §F, the WINDOWS-x64 reproduction, which INVERTS §E's tiering axis
+
+The i7, the binding host, quiet box, 24 timed processes, against the committed probe. Relayed by
+COORD (`cc877aed09`). **Outcome B still stands on the criterion as §D worded it** — and §E's
+supporting sentence does not transfer.
+
+| ns per test, per argument | tiering OFF (of record) | tiering ON | unset |
+|:--|:--|:--|:--|
+| door cost A | 0.480 | 0.320 | 0.320 |
+| door cost B | 0.497 | 0.702 | 0.693 |
+| **B − A** | **−0.002 … +0.054 (6/8 positive)** | **+0.372 … +0.399 (8/8)** | **+0.363 … +0.391 (8/8)** |
+| B2 − A | 0.590 | 0.560 | 0.556 |
+| noise floor μ | 0.016 | 0.017 | 0.006 |
+
+Control fired 24/24 at 6.0–11.0×; refusal sets agree A = B = B2 at 498,043 per pass; medians carry
+the same reading as best-of-7.
+
+**What this changes.** Under DEFAULT tiering B's door costs +0.377 ns/test more than A — **33× the
+noise floor, ±5 % over 16 processes, order-independent (0.376 forward / 0.378 reverse)**. That is not
+an unresolvable difference; it is a real one. At tiering OFF, the configuration of record, B − A is
+within the floor in 7 of 8 (μ +0.016 against a floor of 0.016). **§E's linux sign flip is INVERTED
+here**: linux leaned positive at tiering-off and was null at tiering-on; windows is null at
+tiering-off and clearly positive at tiering-on.
+
+**So the ruled sentence for this record is: "B does not bench worse than A" is HOST-CONDITIONAL and
+FALSE on windows under default tiering.** It is the both-tiering clause of §D's criterion — the
+configuration of record being tiering OFF — that keeps outcome B seated. Materiality holds by
+arithmetic: 0.377 × 18 arguments = **6.8 ns per guarded call** against a real Windows syscall's
+hundreds, and that arithmetic is exactly what the still-owed per-syscall row (§F.2) exists to
+replace with a measurement.
+
+**Mechanism, half-rooted and labelled so nobody invents the rest.** Under tiering every arm compiles
+as `Tier1-OSR with Synthesized PGO` (the arms are called eight times, so the 10M-iteration loop is
+promoted by on-stack replacement); ArmB's OSR body is 99 bytes against ArmA's 87. Forcing full opts
+(`DOTNET_TC_QuickJitForLoops=0`) removed OSR and HALVED the gap (0.377 → ~0.19), so OSR owns roughly
+half and **the residual ~0.19 ns is UNROOTED**. Axes not varied: alignment, Haswell-E vs Xeon,
+CoreCLR 10.0.11 vs 10.0.111. Not chased.
+
+## F.1 Two corrections the windows run forces on §E and on the probe's own README
+
+1. **The B2 ratio was overstated, and the denominator is why.** §E and
+   `probes/c2-token-door-cost/README.md` said the immediate-free spelling is "4–5× worse than either
+   door". As a **door-cost ratio** it is ~2.2–2.75× on windows and ~2.5× on the same README's own
+   linux figures. The 4–5× came from dividing B2's EXCESS by B's excess — a different denominator,
+   and neither sentence said which it meant. B2 remains stably the worst door in all 24 windows runs
+   and all 12 linux ones, so the imm64 story stays falsified in both readings; only the multiplier
+   was wrong.
+2. **The probe's WINDOWS anchor is not a syscall, and its percentages are void.**
+   `GetCurrentProcessId` is a user-mode PEB read at 6–9 ns — a ~15× weaker lower bound than linux's
+   `getppid` at 105–111 ns. So the probe's "% of the lower bound" line is an ANCHOR ARTIFACT on
+   windows and **is not quoted**, and **cross-host percentages from this probe are invalid**. §E's
+   linux percentages stand for linux only.
+
+## F.2 The per-syscall row, OWED ON WINDOWS before this increment banks its cost claim
+
+§4 item 2 asked for "one syscall-dominated roster row measured with and without". Specified here so
+the box that runs it need not infer it:
+
+- **A real kernel transition through the trampoline** — not `GetCurrentProcessId`, per F.1(2). The
+  call must actually enter the kernel, so the anchor is a lower bound worth dividing by.
+- **With and without the door**, and **under both tiering settings**, since §F shows the two
+  settings do not agree on this host.
+- Reported as ns per guarded call AND as a share of that call, **with the arity stated** — the door
+  runs once per argument, so per-call is per-test × arity, and the two must not be conflated.
+
+## F.3 The MINT-SIDE clause is UNMEASURED, and is named rather than left implied
+
+§D's prediction had a second clause: outcome B costs the mint one extra shift-and-or per token,
+against a path measured at 4,532 events over 629,240,995 constructor calls. **No bench in §E or §F
+touches it.** It is not "small"; it is UNMEASURED, and it is recorded as such rather than waved past.

@@ -55,7 +55,14 @@ this instrument can resolve**, with a weak positive lean at tiering-off.
 
 `B2` also **falsifies the mechanism this lane was about to assert** — that B costs more because
 x86-64 cannot encode its two 64-bit constants as immediates. Spelling the identical predicate to
-avoid both is **4–5× worse than either door**. The literal `B` spelling is the one to cut.
+avoid both is decisively worse, and the literal `B` spelling is the one to cut.
+
+⚠ **CORRECTED 2026-09-08 (design record §F.1): this paragraph originally said "4–5× worse than
+either door", and that multiplier used the wrong denominator.** As a **door-cost ratio** B2 is
+~2.5× on the linux figures above and ~2.2–2.75× on the windows reproduction. The 4–5× came from
+dividing B2's EXCESS over A by B's excess over A — a different quantity, which the sentence did not
+say. The falsification itself is unaffected: B2 is stably the worst door in all 12 linux and all 24
+windows runs.
 
 ## The materiality arithmetic, at the right granularity
 
@@ -65,6 +72,14 @@ the arity. The bench prints the per-call rows itself. Taking the **worst** `B �
 (+0.204 ns) at the **worst** arity (18) against the anchor's lower bound: **3.7 ns on a guarded
 call of ≥ 105 ns, i.e. ≤ 3.5 %** — and a real syscall is strictly larger than the anchor, so that
 share is an overstatement. At realistic arities it is under 1 %.
+
+⚠ **THOSE PERCENTAGES ARE LINUX-ONLY, AND THE WINDOWS ANCHOR IS NOT A SYSCALL AT ALL** (design
+record §F.1(2)). On Windows the anchor arm calls `GetCurrentProcessId`, which is a **user-mode PEB
+read at 6–9 ns**, not a kernel transition — a ~15× weaker lower bound than linux's `getppid` at
+105–111 ns. So a "% of the lower bound" figure computed from a windows run is an **anchor artifact
+and must not be quoted**, and **cross-host percentages from this probe are invalid**. The real
+per-syscall row, through a genuine kernel transition, is specified in record §F.2 and is owed on
+Windows.
 
 ## What this probe does NOT establish
 
