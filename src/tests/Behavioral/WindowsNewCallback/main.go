@@ -28,9 +28,11 @@
 //      for opposite reasons are a vacuous pass that a golden would then bank as the contract.
 //      Printing the recovered value compares the strings themselves, so the golden records whatever
 //      the pinned toolchain says and our body has to match THAT. It also means this file carries no
-//      assumption about the corpus pin's exact wording: at go1.24.13 the branch taken here is
-//      syscall_windows.go:288 (`len(ft.OutSlice()) != 1`), text "compileCallback: expected function
-//      with one uintptr-sized result" -- read, not remembered -- but nothing here depends on it.
+//      assumption about the corpus pin's exact wording. It has since been read at BOTH toolchains
+//      anyway, and they agree: the branch a zero-result func takes is syscall_windows.go:288
+//      (`len(ft.OutSlice()) != 1`) at go1.24.13 AND at go1.23.12 -- same line, same text,
+//      "compileCallback: expected function with one uintptr-sized result". The pin's reading is the
+//      one that matters, because the ORACLE runs at the pin. Nothing here depends on either.
 //   4. A CALLER-SUPPLIED lParam ROUND-TRIPS INTO THE CALLBACK. Property 1 proves the seam is entered;
 //      it does not prove the ARGUMENTS arrive. This one does, through a real native caller, and it
 //      exercises the arity-2 shim where property 1 exercises arity 1 -- the shims are per-arity, so
@@ -55,13 +57,15 @@
 // which would make "the callback ran" host-dependent, i.e. exactly the property this file exists to
 // avoid.
 //
-// Go's runtime faced the same problem and answered it: runtime/syscall_windows_test.go's `nestedCall`
-// (go1.24.13, lines 166-173, read rather than recalled) drives its callback tests through
-// EnumTimeFormatsEx on kernel32 with LOCALE_NAME_USER_DEFAULT, which always yields and needs no
-// window station. So properties 4 and 5 use Go's caller, and its callback is arity 2 -- one uintptr
-// argument, one LPARAM -- which is inside the implemented shim set. Property 1 keeps
-// EnumSystemLocalesW, also kernel32 and also always-yielding, because its callback is arity 1: two
-// callers cover two of the implemented arities where one would cover one.
+// Go's runtime faced the same problem and answered it: runtime/syscall_windows_test.go's
+// `nestedCall` drives its callback tests through EnumTimeFormatsEx on kernel32 with
+// LOCALE_NAME_USER_DEFAULT, which always yields and needs no window station. Read at BOTH
+// toolchains and byte-identical at each -- lines 166-173 at go1.24.13 and at go1.23.12, the same
+// callback, and TestCallbackPanic's recovered text "callback panic" at both -- so the citation
+// holds at the pin the oracle runs. So properties 4 and 5 use Go's caller, and its callback is
+// arity 2 -- one uintptr argument, one LPARAM -- which is inside the implemented shim set. Property
+// 1 keeps EnumSystemLocalesW, also kernel32 and also always-yielding, because its callback is arity
+// 1: two callers cover two of the implemented arities where one would cover one.
 //
 // ONE DELIBERATE DIVERGENCE FROM Go's SHAPE. Go's `nestedCall` smuggles a CLOSURE through the lParam
 // (`uintptr(*(*unsafe.Pointer)(unsafe.Pointer(&f)))`) and calls it from inside the callback. This
@@ -76,6 +80,12 @@
 // lines are booleans about the seam, one is a constant this file declares, and two are compile-time
 // constants of the pinned runtime; none of the six can move with the host. Both enumerations that
 // observe a value stop after the first callback, so not even the number of invocations is on stdout.
+//
+// GATES THIS FILE HAS PASSED, at the CORPUS PIN (go1.23.12) as well as at go1.24.13: GOOS=windows
+// vet and build on amd64 rc=0, gofmt clean, and GOOS=windows GOARCH=386 build rc=0 -- the last
+// because wantLParam claims to be representable on a 32-bit uintptr, and a width claim is checked
+// rather than argued. The negative control holds at both toolchains: GOOS=linux build rc=1, "build
+// constraints exclude all Go files".
 //
 // This package is WINDOWS-ONLY by construction -- syscall.NewCallback does not exist elsewhere -- so
 // its package_info.cs carries [GoPlatformExclusive("windows")] and every harness skips it BY NAME on
