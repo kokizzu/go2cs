@@ -21,30 +21,6 @@ using go.sync;
 
 partial class syscall_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
-    builtin.initPackage(typeof(@internal.bytealg_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 // ForkLock is used to synchronize creation of new file descriptors
 // with fork.
 //
@@ -342,11 +318,15 @@ public static error /*err*/ Exec(@string argv0, slice<@string> argv, slice<@stri
         // Similarly on OpenBSD.
         err1 = execveOpenBSD(argv0p, Ꮡ(argvp, 0), Ꮡ(envvp, 0));
     } else {
-        var (ᴛ1, ᴛ2, ᴛ3) = RawSyscall(SYS_EXECVE,
-            (uintptr)argv0p,
-            (uintptr)@unsafe.Pointer.FromBox(Ꮡ(argvp, 0)),
-            (uintptr)@unsafe.Pointer.FromBox(Ꮡ(envvp, 0)));
+        var ᴋ0 = argv0p;
+        var ᴋ1 = @unsafe.Pointer.FromBox(Ꮡ(argvp, 0));
+        var ᴋ2 = @unsafe.Pointer.FromBox(Ꮡ(envvp, 0));
+        
+        var (ᴛ1, ᴛ2, ᴛ3) = RawSyscall(SYS_EXECVE, (uintptr)ᴋ0, (uintptr)ᴋ1, (uintptr)ᴋ2);
         (_, _, err1) = (ᴛ1, ᴛ2, ᴛ3);
+        System.GC.KeepAlive(ᴋ0);
+        System.GC.KeepAlive(ᴋ1);
+        System.GC.KeepAlive(ᴋ2);
     }
     runtime_AfterExec();
     return err1;

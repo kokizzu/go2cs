@@ -148,7 +148,7 @@ internal static uint32 archUpdateCastagnoli(uint32 crc, slice<byte> p) {
     crc = ~crc;
     // If a buffer is long enough to use the optimization, process the first few
     // bytes to align the buffer to an 8 byte boundary (if necessary).
-    if (len(p) >= castagnoliK1 * 3) {
+    if (len(p) >= (nint)(castagnoliK1 * 3)) {
         nint delta = (nint)((uintptr)((uintptr)Ꮡ(p, 0) & 7));
         if (delta != 0) {
             delta = 8 - delta;
@@ -157,7 +157,7 @@ internal static uint32 archUpdateCastagnoli(uint32 crc, slice<byte> p) {
         }
     }
     // Process 3*K2 at a time.
-    while (len(p) >= castagnoliK2 * 3) {
+    while (len(p) >= (nint)(castagnoliK2 * 3)) {
         // Compute CRC(I, A), CRC(0, B), and CRC(0, C).
         var (crcA, crcB, crcC) = castagnoliSSE42Triple(
             crc, 0, 0,
@@ -170,7 +170,7 @@ internal static uint32 archUpdateCastagnoli(uint32 crc, slice<byte> p) {
         p = p[(int)(castagnoliK2 * 3)..];
     }
     // Process 3*K1 at a time.
-    while (len(p) >= castagnoliK1 * 3) {
+    while (len(p) >= (nint)(castagnoliK1 * 3)) {
         // Compute CRC(I, A), CRC(0, B), and CRC(0, C).
         var (crcA, crcB, crcC) = castagnoliSSE42Triple(
             crc, 0, 0,
