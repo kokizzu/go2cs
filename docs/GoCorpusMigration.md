@@ -246,6 +246,54 @@ readings a person makes. It also leaves the **converter tool** version alone: th
 
 **Gate:** a single-package `-stdlib` smoke conversion no longer refuses.
 
+#### Ruling 2026-09-08 — the H2→H5 window: the converter at go1.24.13, the corpus still at 1.23.12
+
+H2 bumps the **corpus** pin; H1 step 2 has already moved the **converter module's** `go` directive, so the
+tree carries two releases until H5's regen closes the window. At master `f4d2b981b` (train 43)
+`src/go2cs/go.mod` requires **go1.24.13** while `src/version.props`'s `<GoStdLibVersion>` still reads
+**1.23.12** — the converter's build toolchain hopped, the corpus release did not. ⚠ **H1 does not rule this,
+and the runbook did not state it before now** — H1 is a five-step list whose steps 2 and 3 rule the pin bump
+alone — but its step 1 warning block supplies the mechanism: a hop leg sets **both** `GOTOOLCHAIN` and
+`GOROOT` per invocation, and **`-stdlib` converts the tree the ENVIRONMENT names**, which is why the pipeline
+under a 1.23.12 `GOROOT` converts 1.23.12 sources. Ruled `014bfe84f`, corrected `84b5913098`, measured
+`e96349c54`.
+
+**Both arms, measured at `f4d2b981b`:** building `src/go2cs` under the 1.23.12 pin exits **1** with no binary
+(`go: go.mod requires go >= 1.24.13 (running go 1.23.12; GOTOOLCHAIN=local)`); the **same** build under the
+1.24.13 pin exits **0**. Arm 2 is what makes the refusal a toolchain fact rather than a broken build.
+
+**Behavioral suite, CNR and the converter suite run ENTIRELY under the 1.24.13 pin** — `GOROOT=<sdk>/go1.24.13`,
+its `bin` first on PATH, `GOTOOLCHAIN=local`, bare `go version` **asserted** rather than merely printed.
+
+⚠ **Two staleness guards, and the INVOCATION decides which applies.** `go2cs -tests` invoked DIRECTLY meets
+only the converter's own mtime guard (`converterStaleness.go`), so a freshly built 1.24.13 binary passes under
+either shell. Anything HARNESS-driven — `BehavioralRunner`, MSTest, `PerformanceRunner`, the sweep's own build
+step — meets `ConverterBuildInputs.IsConverterStale`, comparing the binary's embedded release against the live
+`GOVERSION`: a 1.24.13 binary reads STALE in a 1.23.12 shell, the harness rebuilds, and that rebuild REFUSES.
+
+**`-tests` rows and `run-validated-sweep.ps1` against the still-1.23.12 corpus, in order:**
+
+```
+1  build      src/go2cs under the 1.24.13 pin              exit 0, binary produced
+2  run rows   under the 1.23.12 pin, -SkipBuild MANDATORY  guard passes: 1.23.12 == version.props
+3  assert     the comparison record's oracleGoVersion reads go1.23.12
+```
+
+⚠ **`-SkipBuild` is mandatory, not stylistic.** The sweep's toolchain guard does not refuse the mixed state, it
+**requires** it — throwing when the running release differs from `version.props`, so it passes under 1.23.12
+and throws under 1.24.13 — and none of its four switches touches the pin. But its line ~334 is
+`if (-not $SkipBuild) { … }`, so a bare sweep builds the converter under the 1.23.12 pin and dies at the
+refusal above before a row starts.
+
+⚠ **A pre-hop-pinned instrument is UNBUILDABLE from master in this window**, so a reading taken with one is
+tree-locked to the pre-train-43 checkout it was built from — R's 6 VALID / 12 HOOK-ONLY / 10 GENUINELY STALE
+base classification (`daa57a1f9`) is one. Re-measuring from master necessarily uses a 1.24.13-built front end:
+**a different instrument, named with its pin on both sides, never a refutation.**
+
+**Train batteries take the same split per LEG.** Train 43's assembly pinned each leg
+(`coord-train43-assemble.sh`), with a negative control that a module declaring `go 1.24.13` must REFUSE under
+the 1.23.12 pin; a cost-canary or sweep leg here takes the two-pin shape above, or is stated **UNMEASURED**.
+
 ### H3 — Package census ⟲
 
 Diff the conversion queue's package set against the outgoing corpus: **added**, **removed**,
