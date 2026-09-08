@@ -254,3 +254,51 @@ enumerates 64 shims.
 pair" from its name. Its declaration says `func sum5andPair(i1, i2, i3, i4, i5 uint8Pair) uintptr` —
 **five** parameters, every one of them the struct. The name encodes the *shape*, not the count, and
 the count came from the declaration.
+
+---
+
+## 13. ADDENDUM 2026-09-08 — §8 MEASURED ON THE i7; THE RECORD SEATS (COORD `7c5cbd767`)
+
+§8 was written as the one claim its author could not execute, stated first so a cheap measurement
+could settle it. **It has been measured on the i7 across seven arms, and BOTH claims are CONFIRMED.**
+Per the standing rule this lands as a **dated block, never a rewrite** — §8 stands as written and this
+is the reading on top of it.
+
+| §8 claim | i7 reading |
+|---|---|
+| `Marshal.GetFunctionPointerForDelegate` refuses a **generic** delegate type | **CONFIRMED** |
+| `DynamicInvoke` skips **user-defined conversions** | **CONFIRMED** |
+| rooting holds the pointer valid across a forced collection (§4) | **CONFIRMED — sufficient** |
+
+**So the body is the shape §8 predicted:** a **per-arity non-generic `[UnmanagedFunctionPointer]`
+shim** forwarding by a **TYPED** call to the `Func<…>`/`Action<…>` behind the `any`, with the arities
+bounded and enumerated in §12 — **four** shims for everything a gcc-less host reaches, eleven for full
+coverage.
+
+### ⚠ 13.1 A THIRD READING THAT SHARPENS §5, and it is not a confirmation — it is new information
+
+**Pointer identity is per delegate INSTANCE.** `GetFunctionPointerForDelegate` returns a *different*
+pointer for two distinct instances even when they are `Equals`-equal. §5 reasoned about
+`Delegate.Equals` as the table's key without knowing this; the consequence is that **the table is not
+merely an optimisation and not merely the rooting — it is what MAKES the identity rule true at all.**
+
+    caching the shim per func value  ==  the rooting  ==  Go's `cbs.index` cache
+
+Those are one mechanism here, where the record had them as two (§4 rooting, §5 identity). Without the
+table, two `NewCallback` calls on one func value would yield two different pointers — which is
+**neither** Go's behaviour **nor** the safe divergence §5 described. **§5's stated divergence is
+unchanged in direction** (a static method group whose delegate instance C# caches still collapses to
+one entry, and that is still the safe side); what changes is that the table is load-bearing for
+correctness rather than for cost, and the body must not treat it as an optimisation it could skip.
+
+### 13.2 What is now owed, in COORD's order (`84efb3ac5`)
+
+1. **This block** — the record seats. ✅
+2. **The `NewCallback` body** — the seam-named companion, the four-shim first cut, the typed forward,
+   the table as rooting-and-identity, the seven refusal texts, the divergence in the companion's own
+   header per ruling 1.
+3. **The fatal-path increment** — separately, and per its own ruling: **ONE shape on all three
+   flavours**, since the `write1` arm came off (see the fatal record's own addendum).
+
+**Unchanged:** the author still cannot build or run any of it; the i7 compiles, runs the guard and the
+F8 registration check, and posts the readings; C1 scores them.
