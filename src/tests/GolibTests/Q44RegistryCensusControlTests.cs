@@ -159,50 +159,25 @@ public class Q44RegistryCensusControlTests
 
     // ---- The two guards the 2026-09-08 neutrality fix owes, each RED on the code it replaced ----
 
-    [TestMethod]
-    public void TheCensusPerformsONEResolvePerConversion_TheNeutralityPROPERTY()
-    {
-        // ⚠ THE NEUTRALITY GUARD, and its FIRST form was wrong in a way worth keeping written down.
-        // I wrote "a conversion must not change the registered count" and it failed on the FIXED
-        // code, correctly: `Resolve` evicts a dead weak entry, and the ONE resolve the operator
-        // legitimately performs does that eviction whether the census is on or off. Nor can eviction
-        // COUNTING see the defect -- two resolves of the same token cannot evict twice. The property
-        // that actually discriminates is the one COORD ruled on: with the census ON the operator must
-        // perform the SAME calls it performs with the census OFF, and off it performs exactly one
-        // Resolve per conversion, there being a single unconditional call site. So: one conversion,
-        // one Resolve. The line this replaces read `Resolve(...) is null` at arm 4 and made it TWO --
-        // and Resolve is not passive, which is how the banked `os` row flipped PASS -> FAIL with the
-        // env gate as the only variable (i9, f8213cf49).
-        nuint token = RegisterABoxAndLoseIt();
-
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-
-        long resolvesBefore = Q44RegistryCensus.ResolveCalls;
-        long arm4Before = Q44RegistryCensus.Snapshot().arm4;
-
-        var _ = (ж<OtherType>)(uintptr)token;
-
-        Assert.IsTrue(Q44RegistryCensus.Snapshot().arm4 > arm4Before,
-            "the control's premise: this conversion must actually reach arm 4 -- the arm whose classifier " +
-            "carried the extra call -- or the guard is measuring a path the defect never touched");
-        Assert.AreEqual(1L, Q44RegistryCensus.ResolveCalls - resolvesBefore,
-            "ONE conversion must enter Resolve exactly ONCE with the census on, as it does with the census off; " +
-            "two means the census is doing registry work the uninstrumented program never does");
-    }
-
-    // Kept out of the caller's frame deliberately: a local holding the box would be rooted for the
-    // method's life under a non-optimizing JIT, and the entry would never be dead to begin with --
-    // the one-arm-per-frame lesson from the GC/liveness probes.
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    private static nuint RegisterABoxAndLoseIt()
-    {
-        ж<RefBearing> box = new StandardBox<RefBearing>(new RefBearing { name = "gone" });
-        nuint token = box.PointerOrderToken;
-        ManagedPointerTokens.Register(token, box);
-        return token;
-    }
+    // ⚠ A NEUTRALITY GUARD STOOD HERE AND IS GONE (2026-09-08), with its whole measurement kept
+    // because the next person to want one will want it for the same reason.
+    //
+    // It asserted "one conversion enters Resolve exactly once", which DID discriminate: it read
+    // Expected:<1>. Actual:<2> on the classifier that flipped a banked row. Two earlier
+    // formulations did not, and both are worth knowing: "a conversion must not change the
+    // registered count" FAILS ON CORRECT CODE, because the one resolve the operator legitimately
+    // performs evicts a dead weak entry whether the census is on or off; and counting evictions
+    // cannot see a second call either, since two resolves of one token cannot evict twice.
+    //
+    // What retired it is that its instrument was a counter on the hot path of `Resolve`, taken
+    // 264,167 times in a single roster row -- so the thing built to prove the census does no extra
+    // work WAS extra work, and i9 named it as the next perturbation candidate off the very diff
+    // that removed the previous one. An instrument built out of the thing under test cannot
+    // independently measure it, and here it could not even be neutral while trying.
+    //
+    // The gate is the banked `os` row: it discriminates in about 50 seconds per direction and has
+    // now caught two successive states of this census. A unit proxy cannot beat that and can
+    // perturb what it measures, so there is deliberately no replacement.
 
     [TestMethod]
     public void The2a2bDiscriminatorUsesTheRegistrysOwnProjection_NotACopyOfIt()

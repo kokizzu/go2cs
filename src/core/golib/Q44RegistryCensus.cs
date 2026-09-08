@@ -50,7 +50,6 @@ internal static class Q44RegistryCensus
     private static long s_arm2b;
     private static long s_arm3;
     private static long s_arm4;
-    private static long s_resolveCalls;
 
     // Per-arm TYPE PAIRS, because §10.5 asks "whether the pointee type matched" and a bare count
     // cannot answer falsifier (b) -- which needs to know WHICH types met at offset 0.
@@ -85,24 +84,17 @@ internal static class Q44RegistryCensus
 
     internal static void Mint() => Interlocked.Increment(ref s_mints);
 
-    /// <summary>
-    /// How many times <c>ManagedPointerTokens.Resolve</c> has been ENTERED while the census is on.
-    /// </summary>
-    /// <remarks>
-    /// ⚠ This exists because the census's neutrality has to be a MEASURED property and the obvious
-    /// measurements do not discriminate. `Resolve` evicts a dead weak entry, so the tempting guard --
-    /// "a conversion must not change the registered count" -- fails on correct code too: the ONE
-    /// resolve the operator legitimately performs does that eviction whether the census is on or
-    /// off. And two resolves of the SAME token cannot evict twice, so counting evictions cannot see
-    /// the second call either. What distinguishes the fixed classifier from the one that flipped a
-    /// banked row is exactly how many times Resolve is ENTERED per conversion: one, or two. Counted
-    /// only when the census is on, so the census-off path carries a static bool read it already
-    /// carries and nothing else; the census-off count is one-per-conversion by construction, there
-    /// being a single unconditional call site.
-    /// </remarks>
-    internal static long ResolveCalls => Interlocked.Read(ref s_resolveCalls);
-
-    internal static void ResolveEntered() => Interlocked.Increment(ref s_resolveCalls);
+    // ⚠ A ResolveCalls COUNTER STOOD HERE AND IS GONE (2026-09-08), with its measurement kept so
+    // nobody rebuilds it. It was added to make neutrality provable in a unit test, after the two
+    // obvious formulations were shown not to discriminate: "a conversion must not change the
+    // registered count" FAILS ON CORRECT CODE, because the one resolve the operator legitimately
+    // performs evicts a dead weak entry whether the census is on or off; and counting evictions
+    // cannot see a second call either, since two resolves of one token cannot evict twice. Counting
+    // Resolve ENTRIES did discriminate -- and cost an Interlocked increment on a path taken 264,167
+    // times in a single roster row, which is precisely the kind of work that makes an instrument
+    // non-neutral. The lesson is the general one: an instrument built to prove a property of the
+    // hot path, ON the hot path, is a perturbation wearing a proof's clothes. The gate is the
+    // banked `os` row.
 
     internal static void Arm1() { Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm1); }
     internal static void Arm3() { Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm3); }
@@ -218,7 +210,7 @@ internal static class Q44RegistryCensus
             // wrong place the first time it ran.
             $"Q44CENSUS-BLOCK pid={Environment.ProcessId} " +
             $"entry={System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "?"} " +
-            $"utc={DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ} resolveCalls={ResolveCalls}",
+            $"utc={DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}",
 
             sum == c
                 ? $"Q44CENSUS-RECONCILES arms sum to {sum} == conversions {c}"

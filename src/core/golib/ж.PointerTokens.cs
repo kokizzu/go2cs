@@ -393,12 +393,15 @@ public static class ManagedPointerTokens
     /// </summary>
     public static object? Resolve(nuint token)
     {
-        // Counted at the DOOR, before the fast path, so the count is "how many times was Resolve
-        // entered" rather than "how many did work" -- an extra call that returns early on the fast
-        // path is still an extra call, and on the slow path is still an eviction. See
-        // Q44RegistryCensus.ResolveCalls for why this is the property that discriminates.
-        if (Q44RegistryCensus.Enabled)
-            Q44RegistryCensus.ResolveEntered();
+        // ⚠ A CENSUS COUNTER STOOD HERE AND IS DELIBERATELY GONE (2026-09-08). It counted Resolve
+        // ENTRIES so a unit guard could assert "one resolve per conversion" -- the property COORD
+        // ruled on. It was the wrong place to prove it: an Interlocked increment on this path runs a
+        // quarter of a million times in one roster row, so the instrument built to show the census
+        // was observation-only was ITSELF work the census-off path does not do. i9 named it as the
+        // next candidate off the diff that removed the previous one, and that is the shape to stop
+        // rather than iterate. The neutrality gate is the banked `os` row, which discriminates in
+        // about 50 seconds per direction; a production-side counter cannot beat that and can only
+        // perturb what it measures.
 
         // The fast path every non-reflect program takes: nothing was ever registered, so no token
         // can resolve and the conversion goes straight to its native-address route.
