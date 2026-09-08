@@ -3,3 +3,4 @@
 # them from line-ending normalization so a checkout anywhere reproduces the recorded hashes.
 TlsHandshakeCost/* -text
 WriteDeadlineBudget/* -text
+c2-token-door-cost/* -text

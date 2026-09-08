@@ -348,3 +348,83 @@ whichever outcome is chosen.
 
 This record still does not cut either one. §4.2's per-syscall cost measurement remains owed, and
 §C.1's entropy measurement joins it as a precondition of the default outcome.
+
+---
+
+# AMENDMENT — 2026-09-08: §4.2 IS MEASURED on linux, and the falsifier DOES NOT FIRE
+
+C2, on COORD's `642fc46b29`. Probe and outputs of record: `probes/c2-token-door-cost/`. The
+per-syscall half on the binding host is still owed (§E.4 below).
+
+## E. The bench
+
+Six arms over 10,000,000 arguments, seven reps, best-of; 21 processes across four bench
+compositions × two orders × two tiering modes, on a 4 vCPU Xeon @ 2.80 GHz linux container,
+CoreCLR 10.0.111, Release throughout. Three of the six arms exist only to make the other three
+legible:
+
+- **`A2`, a byte-identical twin of `A`** — the noise floor. Whatever two methods running one
+  predicate differ by is what this harness cannot resolve.
+- **`CONTROL`, a dictionary probe** — a deliberately expensive door. Without it "no difference
+  between A and B" is indistinguishable from "this harness cannot resolve a difference", which is
+  the vacuous-green shape. It fired **21/21 at 6.3–8.4×**.
+- **`ANCHOR`, one P/Invoke to a trivial native function** — the managed→native transition the
+  trampoline pays anyway, **104.9–111.3 ns/call**. A *lower bound* on the guarded call, never the
+  syscall's cost.
+
+`A`, `B` and the spelling variant `B2` each assert they refuse the **same set** (498,043 of
+10,000,000, `-1` not among them). They agreed in every run.
+
+### E.1 The readings
+
+| quantity | tiering OFF (the configuration of record) | tiering ON |
+|:--|:--|:--|
+| door cost over no door, `A` | 0.42–0.54 ns/test | 0.38–0.51 ns/test |
+| door cost over no door, `B` | 0.46–0.70 ns/test | 0.39–0.48 ns/test |
+| **`B − A`** | **−0.015 … +0.204, twelve of thirteen positive, mean +0.097** | **−0.034 … +0.012, five of eight NEGATIVE, mean −0.011** |
+| `B2 − A` | +0.656 … +0.763 | +0.679 … +0.732 |
+| noise floor `\|A2 − A\|` | 0.0001 … 0.042 | 0.008 … 0.091 |
+
+### E.2 What makes the `B − A` reading legible: `B2` is the calibration
+
+`B2` computes **B's exact predicate** spelled to avoid the two 64-bit immediates that x86-64 cannot
+encode inline — `(long)arg < 0 && ((arg >> 47) & 1) == 0`. It was written to *test the mechanism
+this lane was about to assert* for a B-over-A cost, and it refutes it: the immediate-free spelling
+is **4–5× worse than either door**, stably, everywhere. The literal `B` is the spelling to cut.
+
+Its value beyond that is as a **calibration of the instrument**. A genuine per-test difference in
+this harness looks like `B2`: stable to ±7 %, same sign and magnitude in every order, both tiering
+modes, every composition. `B − A` is none of those — its **sign flips with tiering**, its magnitude
+**moves when unrelated arms are added to the bench**, and it falls inside the noise floor in 9 of
+21 runs. The honest reading is therefore that **B's excess over A is at or below what this
+instrument resolves**, with a weak positive lean at tiering-off that is reported rather than
+explained away.
+
+### E.3 The prediction of §D, scored as worded
+
+§D predicted **"§C will not bench worse"**, reasoned from "its test is not two tests … the same
+shape and the same instruction count", with the falsifier **"a measured per-*syscall* regression
+for §C over §B at the trampoline"**.
+
+- **The reason is not confirmed.** Twelve of thirteen tiering-off readings lean positive; equal
+  instruction cost is not what that looks like. The claim was stated more strongly than the
+  measurement supports, and §E.2 is why it cannot be resolved either way here.
+- **The conclusion, at the falsifier's own granularity, HOLDS — the falsifier does not fire.** The
+  door runs once per **argument** on `SyscallN(uintptr trap, params ꓸꓸꓸuintptr argsʗp)`, so the
+  per-call cost is per-test × arity, and quoting the per-test figure as per-call would understate
+  it by up to 18×. Taking the **worst** reading (+0.204 ns) at the **worst** arity (18) against the
+  anchor's **lower** bound: **3.7 ns on a call of ≥ 105 ns, ≤ 3.5 %**, and a real syscall is
+  strictly larger than the anchor. At realistic arities it is under 1 %.
+
+**So COORD's criterion is not met and §C (outcome B) stands as the default**, on the measurement
+rather than on the prediction's reasoning.
+
+### E.4 What §4.2 still owes, and it is the binding host's
+
+1. **The per-syscall row.** §4 item 2 asks for "one syscall-dominated roster row measured with and
+   without". The trampoline is Windows; this reading is linux. Not transferable by assumption.
+2. **The mint side.** §D's second clause — one extra shift-and-or per token against 4,532 events —
+   is untouched by this bench.
+3. **A windows-x64 reproduction** of the table above, which is what an i7 or i9 run of the same
+   probe supplies; the probe carries a `-text` mark so a checkout anywhere runs byte-identical
+   source, per the probes directory's own convention.

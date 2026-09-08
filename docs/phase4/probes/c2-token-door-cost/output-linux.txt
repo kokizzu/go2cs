@@ -1,0 +1,91 @@
+# c2-token-door-cost -- outputs of record (linux-x64 container, 4 vCPU Xeon @2.80GHz, CoreCLR 10.0.111)
+# Release in every run. DOTNET_TieredCompilation as marked. --reverse runs the arms back-to-front.
+
+===== final.0.fwd =====
+TAGCOST n=10000000 reps=7 tagged_args=498043 tiered=0
+TAGCOST none   best=    9.25 ms  median=    9.44 ms  ns/call best= 0.925  sink=35025634
+TAGCOST A      best=   14.21 ms  median=   14.37 ms  ns/call best= 1.421  sink=3486301
+TAGCOST A2     best=   14.01 ms  median=   14.70 ms  ns/call best= 1.401  sink=3486301
+TAGCOST B      best=   16.25 ms  median=   16.51 ms  ns/call best= 1.625  sink=3486301
+TAGCOST B2     best=   21.84 ms  median=   22.20 ms  ns/call best= 2.184  sink=3486301
+TAGCOST CONTROL best=  124.97 ms  median=  125.74 ms  ns/call best=12.497  sink=1365
+TAGCOST ANCHOR  pinvoke best=  104.90 ms over 1000000 calls  ns/call=104.898  (libc getppid) -- the managed->native transition the trampoline pays anyway; a LOWER BOUND on the guarded call, NOT the syscall cost
+TAGCOST delta B2-A = 0.7632 ns/call   B2 door cost over none = 1.2596 ns/call
+TAGCOST B2 agrees with B on the refusal set -- same predicate, different spelling
+TAGCOST delta B-A = 0.2036 ns/call   door cost over none: A=0.4964  B=0.7000 ns/call
+TAGCOST arms AGREE on the refusal count (498043 per pass, 498043 tagged args) -- both doors refuse the same set
+TAGCOST-FLOOR |A2-A| = 0.0200 ns/call (identical code, two methods) vs |B-A| = 0.2036 ns/call -- B-A is ABOVE the harness noise floor, so the delta is a reading
+TAGCOST order=forward
+TAGCOST MATERIALITY door A = 0.4964 ns/call, B = 0.7000 ns/call, |B-A| = 0.2036 ns/call, against a guarded call whose LOWER BOUND on this host is 104.898 ns/call => B's excess over A is 0.194% of that lower bound (a real syscall is strictly larger, so this OVERSTATES the share)
+TAGCOST PER-CALL (door runs once per argument; Syscall/Syscall6/Syscall18 exist)
+TAGCOST   nargs= 1: A=  0.496 ns  B=  0.700 ns  B-A=  0.204 ns  =  0.194% of the 104.9 ns lower bound on the guarded call
+TAGCOST   nargs= 5: A=  2.482 ns  B=  3.500 ns  B-A=  1.018 ns  =  0.970% of the 104.9 ns lower bound on the guarded call
+TAGCOST   nargs=18: A=  8.934 ns  B= 12.599 ns  B-A=  3.665 ns  =  3.494% of the 104.9 ns lower bound on the guarded call
+TAGCOST-CONTROL OK: the expensive door benches 7.7x the cheap ones, so this harness CAN resolve a difference
+
+===== final.0.--reverse =====
+TAGCOST n=10000000 reps=7 tagged_args=498043 tiered=0
+TAGCOST none   best=    9.20 ms  median=    9.37 ms  ns/call best= 0.920  sink=35025634
+TAGCOST A      best=   14.62 ms  median=   14.77 ms  ns/call best= 1.462  sink=3486301
+TAGCOST A2     best=   14.20 ms  median=   14.81 ms  ns/call best= 1.420  sink=3486301
+TAGCOST B      best=   14.47 ms  median=   14.61 ms  ns/call best= 1.447  sink=3486301
+TAGCOST B2     best=   21.18 ms  median=   21.54 ms  ns/call best= 2.118  sink=3486301
+TAGCOST CONTROL best=  123.02 ms  median=  125.94 ms  ns/call best=12.302  sink=1365
+TAGCOST ANCHOR  pinvoke best=  111.31 ms over 1000000 calls  ns/call=111.305  (libc getppid) -- the managed->native transition the trampoline pays anyway; a LOWER BOUND on the guarded call, NOT the syscall cost
+TAGCOST delta B2-A = 0.6557 ns/call   B2 door cost over none = 1.1975 ns/call
+TAGCOST B2 agrees with B on the refusal set -- same predicate, different spelling
+TAGCOST delta B-A = -0.0153 ns/call   door cost over none: A=0.5418  B=0.5265 ns/call
+TAGCOST arms AGREE on the refusal count (498043 per pass, 498043 tagged args) -- both doors refuse the same set
+TAGCOST-FLOOR |A2-A| = 0.0424 ns/call (identical code, two methods) vs |B-A| = 0.0153 ns/call -- B-A is WITHIN the noise floor, so this harness CANNOT resolve it and the delta is NOT a reading
+TAGCOST order=reverse
+TAGCOST MATERIALITY door A = 0.5418 ns/call, B = 0.5265 ns/call, |B-A| = 0.0153 ns/call, against a guarded call whose LOWER BOUND on this host is 111.305 ns/call => B's excess over A is 0.014% of that lower bound (a real syscall is strictly larger, so this OVERSTATES the share)
+TAGCOST PER-CALL (door runs once per argument; Syscall/Syscall6/Syscall18 exist)
+TAGCOST   nargs= 1: A=  0.542 ns  B=  0.526 ns  B-A= -0.015 ns  =  0.014% of the 111.3 ns lower bound on the guarded call
+TAGCOST   nargs= 5: A=  2.709 ns  B=  2.632 ns  B-A= -0.077 ns  =  0.069% of the 111.3 ns lower bound on the guarded call
+TAGCOST   nargs=18: A=  9.752 ns  B=  9.476 ns  B-A= -0.276 ns  =  0.248% of the 111.3 ns lower bound on the guarded call
+TAGCOST-CONTROL OK: the expensive door benches 8.4x the cheap ones, so this harness CAN resolve a difference
+
+===== final.1.fwd =====
+TAGCOST n=10000000 reps=7 tagged_args=498043 tiered=1
+TAGCOST none   best=   10.03 ms  median=   10.27 ms  ns/call best= 1.003  sink=35025634
+TAGCOST A      best=   14.90 ms  median=   15.02 ms  ns/call best= 1.490  sink=3486301
+TAGCOST A2     best=   15.07 ms  median=   15.23 ms  ns/call best= 1.507  sink=3486301
+TAGCOST B      best=   14.79 ms  median=   15.03 ms  ns/call best= 1.479  sink=3486301
+TAGCOST B2     best=   21.69 ms  median=   22.20 ms  ns/call best= 2.169  sink=3486301
+TAGCOST CONTROL best=   97.15 ms  median=   98.40 ms  ns/call best= 9.715  sink=1365
+TAGCOST ANCHOR  pinvoke best=  108.97 ms over 1000000 calls  ns/call=108.972  (libc getppid) -- the managed->native transition the trampoline pays anyway; a LOWER BOUND on the guarded call, NOT the syscall cost
+TAGCOST delta B2-A = 0.6790 ns/call   B2 door cost over none = 1.1660 ns/call
+TAGCOST B2 agrees with B on the refusal set -- same predicate, different spelling
+TAGCOST delta B-A = -0.0106 ns/call   door cost over none: A=0.4870  B=0.4764 ns/call
+TAGCOST arms AGREE on the refusal count (498043 per pass, 498043 tagged args) -- both doors refuse the same set
+TAGCOST-FLOOR |A2-A| = 0.0173 ns/call (identical code, two methods) vs |B-A| = 0.0106 ns/call -- B-A is WITHIN the noise floor, so this harness CANNOT resolve it and the delta is NOT a reading
+TAGCOST order=forward
+TAGCOST MATERIALITY door A = 0.4870 ns/call, B = 0.4764 ns/call, |B-A| = 0.0106 ns/call, against a guarded call whose LOWER BOUND on this host is 108.972 ns/call => B's excess over A is 0.010% of that lower bound (a real syscall is strictly larger, so this OVERSTATES the share)
+TAGCOST PER-CALL (door runs once per argument; Syscall/Syscall6/Syscall18 exist)
+TAGCOST   nargs= 1: A=  0.487 ns  B=  0.476 ns  B-A= -0.011 ns  =  0.010% of the 109.0 ns lower bound on the guarded call
+TAGCOST   nargs= 5: A=  2.435 ns  B=  2.382 ns  B-A= -0.053 ns  =  0.049% of the 109.0 ns lower bound on the guarded call
+TAGCOST   nargs=18: A=  8.766 ns  B=  8.576 ns  B-A= -0.191 ns  =  0.175% of the 109.0 ns lower bound on the guarded call
+TAGCOST-CONTROL OK: the expensive door benches 6.5x the cheap ones, so this harness CAN resolve a difference
+
+===== final.1.--reverse =====
+TAGCOST n=10000000 reps=7 tagged_args=498043 tiered=1
+TAGCOST none   best=   10.79 ms  median=   10.88 ms  ns/call best= 1.079  sink=35025634
+TAGCOST A      best=   14.95 ms  median=   15.08 ms  ns/call best= 1.495  sink=3486301
+TAGCOST A2     best=   15.86 ms  median=   16.02 ms  ns/call best= 1.586  sink=3486301
+TAGCOST B      best=   15.02 ms  median=   15.17 ms  ns/call best= 1.502  sink=3486301
+TAGCOST B2     best=   22.03 ms  median=   22.35 ms  ns/call best= 2.203  sink=3486301
+TAGCOST CONTROL best=   97.40 ms  median=   98.44 ms  ns/call best= 9.740  sink=1365
+TAGCOST ANCHOR  pinvoke best=  108.63 ms over 1000000 calls  ns/call=108.628  (libc getppid) -- the managed->native transition the trampoline pays anyway; a LOWER BOUND on the guarded call, NOT the syscall cost
+TAGCOST delta B2-A = 0.7086 ns/call   B2 door cost over none = 1.1242 ns/call
+TAGCOST B2 agrees with B on the refusal set -- same predicate, different spelling
+TAGCOST delta B-A = 0.0072 ns/call   door cost over none: A=0.4156  B=0.4228 ns/call
+TAGCOST arms AGREE on the refusal count (498043 per pass, 498043 tagged args) -- both doors refuse the same set
+TAGCOST-FLOOR |A2-A| = 0.0912 ns/call (identical code, two methods) vs |B-A| = 0.0072 ns/call -- B-A is WITHIN the noise floor, so this harness CANNOT resolve it and the delta is NOT a reading
+TAGCOST order=reverse
+TAGCOST MATERIALITY door A = 0.4156 ns/call, B = 0.4228 ns/call, |B-A| = 0.0072 ns/call, against a guarded call whose LOWER BOUND on this host is 108.628 ns/call => B's excess over A is 0.007% of that lower bound (a real syscall is strictly larger, so this OVERSTATES the share)
+TAGCOST PER-CALL (door runs once per argument; Syscall/Syscall6/Syscall18 exist)
+TAGCOST   nargs= 1: A=  0.416 ns  B=  0.423 ns  B-A=  0.007 ns  =  0.007% of the 108.6 ns lower bound on the guarded call
+TAGCOST   nargs= 5: A=  2.078 ns  B=  2.114 ns  B-A=  0.036 ns  =  0.033% of the 108.6 ns lower bound on the guarded call
+TAGCOST   nargs=18: A=  7.481 ns  B=  7.611 ns  B-A=  0.130 ns  =  0.120% of the 108.6 ns lower bound on the guarded call
+TAGCOST-CONTROL OK: the expensive door benches 6.5x the cheap ones, so this harness CAN resolve a difference
+
