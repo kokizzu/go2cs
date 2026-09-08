@@ -212,13 +212,34 @@ func (c *StdLibConverter) copyRootAttributionFiles() error {
 // A skipped package is still recovered for the generated solution (and therefore for NuGet): its
 // converted dependents emit a `$(go2csPath)core\<pkg>` ProjectReference to it, which
 // collectConvertedProjects picks up — see solutionGenerator.go.
+//
+// The set is a package-level VALUE rather than a switch's inline literal because a SECOND reader now
+// depends on it. src\reconvert-deletions.ps1 — the H5 deletion pass — classifies a seeded file as a
+// deletion candidate only if the converter emits into its directory, and `go list std` names
+// `unsafe` and `testing` like any other package, so no Go question can exclude them: this predicate
+// is the only authority, and the script carries a mirror of it. reconvertDeletionsSkipList_test.go
+// compares the two SETS (not two spellings) under the plain `go test ./...`, so the mirror cannot
+// drift silently — a converter that stopped emitting a package while the script still believed it
+// did would offer that package's hand-owned files for deletion.
+var (
+	nonConvertedStdLibPackages = []string{"unsafe", "builtin", "testing", "cmd"}
+	nonConvertedStdLibPrefixes = []string{"cmd/"}
+)
+
 func isNonConvertedStdLibPackage(importPath string) bool {
-	switch importPath {
-	case "unsafe", "builtin", "testing", "cmd":
-		return true
+	for _, skipped := range nonConvertedStdLibPackages {
+		if importPath == skipped {
+			return true
+		}
 	}
 
-	return strings.HasPrefix(importPath, "cmd/")
+	for _, prefix := range nonConvertedStdLibPrefixes {
+		if strings.HasPrefix(importPath, prefix) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // stdLibLoadConfig builds the go/packages configuration the standard-library driver loads through:
