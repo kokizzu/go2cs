@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"unsafe"
+)
 
 // A Go tagged switch may use a POINTER case label — `case &sentinel:` — which is a runtime value,
 // not a constant. C# has no constant pattern for that: the lowered chain must compare with `==`
@@ -67,6 +70,29 @@ func preferLowLatency(p *mu) bool {
 	}
 }
 
+// ------------------------------------------------------------------------------------------------
+// The SECOND pointer-emission shape this project guards, from 1.24 runtime/lock_spinbit.go's key8:
+// the ADDRESS OF AN ELEMENT of a pointer-to-array CONVERSION. A Go conversion renders as a C# CAST,
+// and a cast binds LOOSER than member access, so the element accessor appended to it bound to the
+// conversion's OPERAND rather than its RESULT — the expression then typed as the array pointer
+// against a declared element pointer (CS0029). A different construct from the switch rows above,
+// sharing their family: an emission that loses a pointer's shape.
+//
+// These assert a VALUE rather than merely compiling. Reading a known word's bytes distinguishes
+// "indexed the array" from "indexed something else", so a form that compiled while addressing the
+// wrong operand still fails against `go run`.
+const ptrSize = 8
+
+func key8(p *uintptr) *uint8 {
+	return &(*[ptrSize]uint8)(unsafe.Pointer(p))[0]
+}
+
+// key8Last takes the LAST element, so a lowering that silently addressed index 0 whatever the index
+// would pass the row above and fail this one.
+func key8Last(p *uintptr) *uint8 {
+	return &(*[ptrSize]uint8)(unsafe.Pointer(p))[ptrSize-1]
+}
+
 func main() {
 	// The sentinel's own address takes the sentinel arm.
 	fmt.Println(classify(&sentinel))
@@ -92,4 +118,10 @@ func main() {
 	// unrelated mu. The middle value is what a lowering that matched on the wrong arm would flip.
 	var elsewhere mu
 	fmt.Println(preferLowLatency(&theSched.lock), preferLowLatency(&elsewhere), preferLowLatency(nil))
+
+	// The element-address rows: byte 0 and the last byte of a known word, so a lowering that
+	// addressed the wrong operand or a fixed index fails against `go run` rather than merely
+	// failing to compile.
+	var word uintptr = 0x0102030405060708
+	fmt.Println(*key8(&word), *key8Last(&word))
 }

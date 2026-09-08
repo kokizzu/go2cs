@@ -742,7 +742,7 @@ func (v *Visitor) convUnaryExprCore(unaryExpr *ast.UnaryExpr, context UnaryExprC
 					boxIdentContext := DefaultIdentContext()
 					boxIdentContext.isPointer = true
 
-					return fmt.Sprintf("%s.at<%s>(%s)", v.convExpr(indexExpr.X, []ExprContext{boxIdentContext}), elemCSType, v.convArrayIndex(indexExpr.Index))
+					return fmt.Sprintf("%s.at<%s>(%s)", v.parenthesizeConversionBase(indexExpr.X, v.convExpr(indexExpr.X, []ExprContext{boxIdentContext})), elemCSType, v.convArrayIndex(indexExpr.Index))
 				}
 			}
 
@@ -1264,4 +1264,32 @@ func (v *Visitor) isNamedBooleanType(expr ast.Expr) bool {
 	}
 
 	return false
+}
+
+// parenthesizeConversionBase wraps a rendered index BASE in parentheses when the Go expression it
+// came from is a CONVERSION, so a member access appended to it binds to the conversion's RESULT.
+//
+// A Go conversion renders as a C# CAST, and a cast binds LOOSER than member access. 1.24
+// runtime/lock_spinbit.go's key8 returns `&(*[goarch.PtrSize]uint8)(unsafe.Pointer(p))[0]` — the
+// address of an element of a pointer-to-array conversion — and the base rendered as
+// `(ж<array<uint8>>)(uintptr)(unsafe.Pointer.FromPinnedBox(Ꮡp))`. Appending `.at<uint8>(0)` to
+// that parses as the two casts applied to `(…).at<uint8>(0)`: `at` runs on the unsafe.Pointer
+// rather than on the array pointer, and the whole expression types as `ж<array<uint8>>` against a
+// declared `ж<uint8>` — CS0029 ×2 per flavour, which is exactly the pair the compiler names.
+//
+// The test is go/types', not the rendered text: a CallExpr is a conversion exactly when its Fun
+// denotes a TYPE. A genuine call returning `*[N]E` renders as `f(…)`, already a primary expression
+// that member access binds to correctly, so it is left alone and no existing emission moves.
+func (v *Visitor) parenthesizeConversionBase(base ast.Expr, rendered string) string {
+	callExpr, ok := base.(*ast.CallExpr)
+
+	if !ok {
+		return rendered
+	}
+
+	if tv, ok := v.info.Types[callExpr.Fun]; !ok || !tv.IsType() {
+		return rendered
+	}
+
+	return "(" + rendered + ")"
 }

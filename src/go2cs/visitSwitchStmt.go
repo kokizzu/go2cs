@@ -495,7 +495,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 
 			v.outputBuilder.WriteString(exprVarName)
 			v.outputBuilder.WriteString(" = ")
-			v.outputBuilder.WriteString(v.convExpr(tag, nil))
+			v.outputBuilder.WriteString(v.convExpr(tag, v.switchTagExprContexts(tag)))
 			v.outputBuilder.WriteString(";" + v.newline)
 		}
 
@@ -771,7 +771,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 	} else if allConst && tag != nil {
 		// Most simple scenario when all case values are constant, a common C# switch will suffice
 		v.writeOutput("switch (")
-		v.outputBuilder.WriteString(v.convExpr(tag, nil))
+		v.outputBuilder.WriteString(v.convExpr(tag, v.switchTagExprContexts(tag)))
 		v.outputBuilder.WriteString(") {")
 		v.outputBuilder.WriteString(v.newline)
 
@@ -1155,4 +1155,39 @@ func containsBitwiseOperation(expr ast.Expr) bool {
 func isBitwiseOperator(op token.Token) bool {
 	return op == token.AND || op == token.OR || op == token.XOR ||
 		op == token.SHL || op == token.SHR || op == token.AND_NOT
+}
+
+// switchTagExprContexts returns the contexts the switch TAG is converted under.
+//
+// A tag is an OPERAND OF A COMPARISON — the lowered if/else chain compares it against every case
+// label — so it takes the same pointer context convBinaryExpr gives a comparison operand, and for
+// the same reason. A pointer-typed parameter that has been ref-lowered is shadowed in its own body
+// by `ref var x = ref Ꮡx.DerefOrNull()`, so an identifier read WITHOUT the pointer context renders
+// the POINTEE. Under the nil context this used to pass, the tag of 1.24 runtime/lock_spinbit.go's
+// `switch l { case &sched.lock: }` — *mutex against *mutex in Go — emitted the dereferenced VALUE
+// and compared it against a pointer: CS0019 at the comparison.
+//
+// The quieter half is why this is not merely a compile defect. On a `case nil:` arm the same tag
+// emits `exprᴛ1 == default!`, which compares the POINTEE against its ZERO VALUE and COMPILES — a
+// nil test that silently answers "is the pointee zero". A shape that reads as a wrong answer rather
+// than as an error, and the reason the fix is not scoped to the arms that fail to build.
+//
+// The predicate is convBinaryExpr's, TRANSCRIBED rather than paraphrased so the two cannot drift:
+// pointer or erased pointer core, excluding an interface tag (which already holds the box) and
+// unsafe.Pointer (whose pointer arm renders `.Value`, the raw uintptr, and NullReferences on a nil
+// one — the sync/atomic TestLoadPointer family). A non-pointer tag gets the default context, so
+// every other switch in the corpus is untouched.
+func (v *Visitor) switchTagExprContexts(tag ast.Expr) []ExprContext {
+	identContext := DefaultIdentContext()
+	basicLitContext := DefaultBasicLitContext()
+
+	if tag != nil {
+		tagType := v.info.TypeOf(tag)
+		tagIsInterface, _ := isInterface(tagType)
+
+		identContext.isPointer = (isPointer(tagType) || v.typeIsErasedPointerCore(tagType)) &&
+			!tagIsInterface && !isUnsafePointer(tagType)
+	}
+
+	return []ExprContext{identContext, basicLitContext}
 }

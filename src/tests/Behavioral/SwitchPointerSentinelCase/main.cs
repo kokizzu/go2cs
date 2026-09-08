@@ -1,6 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
+using @unsafe = unsafe_package;
 
 partial class main_package {
 
@@ -15,7 +16,7 @@ internal static nint classify(ж<byte> Ꮡp) {
 
     nint result = 0;
     while (ᐧ) {
-        var exprᴛ1 = p;
+        var exprᴛ1 = Ꮡp;
         if (exprᴛ1 == Ꮡsentinel) {
             result = 1;
             Ꮡp = default!; p = ref Ꮡp.DerefOrNull();
@@ -47,9 +48,7 @@ internal static ж<schedt> ᏑtheSched = new StandardBox<schedt>(default(schedt)
 internal static ref schedt theSched => ref ᏑtheSched.Value;
 
 internal static bool preferLowLatency(ж<mu> Ꮡp) {
-    ref var p = ref Ꮡp.DerefOrNull();
-
-    var exprᴛ1 = p;
+    var exprᴛ1 = Ꮡp;
     if (exprᴛ1 == ᏑtheSched.of(schedt.Ꮡlock)) {
         return true;
     }
@@ -57,6 +56,16 @@ internal static bool preferLowLatency(ж<mu> Ꮡp) {
         return false;
     }
 
+}
+
+internal static UntypedInt ptrSize => 8;
+
+internal static ж<uint8> key8(ж<uintptr> Ꮡp) {
+    return ((ж<array<uint8>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡp))).at<uint8>(0);
+}
+
+internal static ж<uint8> key8Last(ж<uintptr> Ꮡp) {
+    return ((ж<array<uint8>>)(uintptr)(@unsafe.Pointer.FromPinnedBox(Ꮡp))).at<uint8>(ptrSize - 1);
 }
 
 internal static void Main() {
@@ -68,6 +77,9 @@ internal static void Main() {
     fmt.Println(second == Ꮡsentinel, Ꮡother == Ꮡsentinel);
     ref var elsewhere = ref heap(new mu(), out var Ꮡelsewhere);
     fmt.Println(preferLowLatency(ᏑtheSched.of(schedt.Ꮡlock)), preferLowLatency(Ꮡelsewhere), preferLowLatency(nil));
+    ref var word = ref heap(new uintptr(), out var Ꮡword);
+    word = 0x0102030405060708UL;
+    fmt.Println(key8(Ꮡword).Value, key8Last(Ꮡword).Value);
 }
 
 } // end main_package
