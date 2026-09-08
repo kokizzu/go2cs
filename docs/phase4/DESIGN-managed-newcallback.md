@@ -1,0 +1,207 @@
+# DESIGN — a managed `syscall.NewCallback`
+
+**Status:** design record, written before any body. **Ruled by COORD 2026-09-08**: the linkname push
+is DECLINED, the row is bucket-3 **frontier**, and the remedy is a **managed** implementation on the
+`syscall` side.
+
+⚠ **The author of this record cannot build or run any of it.** C1 is a Linux container with no C#
+toolchain of any kind — no dotnet, no mono, no csc. Every claim below is read at the code or at Go's
+sources with a file and line, or is a CLR constraint explicitly flagged as owing confirmation at the
+first build. **The i7 compiles, runs the guard and runs the F8 registration check, and posts the
+readings; C1 scores them.**
+
+## 1. The census — why the push is declined
+
+Four reasons, each measured at master `f4d2b981b`:
+
+1. **The signatures cannot meet.** The destination is `internal static partial uintptr
+   compileCallback(any fn, bool cleanstack);` (`syscall/windows/syscall_windows.cs:223`, bodyless, so
+   the `PartialStubGenerator` fills it with a throwing stub). The producer is
+   `internal static uintptr compileCallback(eface fn, bool cdecl)`
+   (`runtime/windows/syscall_windows.cs:278`) carrying `//go:linkname compileCallback
+   syscall.compileCallback`. Go linknames them because `any`'s runtime representation *is* `eface`;
+   ours are two different C# types — `object` and a `[GoType] partial struct`.
+2. **No descriptor is obtainable.** Bridging the signature would need a real `fn._type`. `efaceOf`
+   (`runtime2.cs:141`) is a hand-own that **returns an inert nil eface** — its own comment records
+   why: the reinterpret "panicked on first touch, taking the whole runtime_package type initializer
+   down with it". `compileCallback`'s first check is `fn._type == nil → panic`, so **even runtime's
+   own internal caller at `os_windows.cs:314` panics today.**
+3. **The producer's body cannot run here anyway.** It walks the func type into an `abiDesc`
+   translating Go's stack ABI to the Windows C ABI, then resolves a code address through
+   `callbackasmAddr` into `callbackasm` — and **`callbackasm` and `callbackasm1` are BOTH bodyless
+   partials** (`windows/syscall_windows.cs:236`, `windows/os_windows.cs:1143`). The producer's own
+   dependencies are assembly we have not implemented.
+4. **There is no managed substitute in the tree.** `GetFunctionPointerForDelegate` has **zero**
+   occurrences across `golib` and every `*_impl.cs`.
+
+**Classification.** Go HAS an implementation and it is assembly-backed; we have not built the
+capability. That is **frontier**, not "a push that did not arrive" — the distinction the bucket-3
+census exists to make.
+
+## 2. The reach
+
+**Zero production call sites in the converted corpus** — every `NewCallback` mention outside its
+declaring file is a comment (three, repeated per-GOOS, quoting Go's issue #6751).
+
+The consumers are **`runtime`'s own Windows test suite**. Measured at `go1.24.13`
+(`runtime/syscall_windows_test.go`) by parsing each call's enclosing function:
+
+- **6 tests call it directly** — `TestBigStackCallbackSyscall`, `TestCallbackInAnotherThread`,
+  `TestEnumWindows`, `TestRegisterClass`, `TestReturnAfterStackGrowInCallback`,
+  `TestStdcallAndCDeclCallbacks`.
+- **1 helper** calls it: `nestedCall(t, f)`, whose first line is `syscall.NewCallback(callback)`.
+- **5 more tests reach it through that one hop** — `TestCallback`, `TestCallbackGC`,
+  `TestCallbackPanic`, `TestCallbackPanicLocked`, `TestBlockingCallback`.
+
+**Total reach: 11 tests.** The row is **windows-only and test-only**. ⚠ `go1.23.12` is not installed
+on the authoring host, so this count is at `go1.24.13` and is **not** extrapolated to the corpus pin.
+
+## 3. The remedy, and where it lives
+
+Complete the **bodyless partial** at `syscall/windows/syscall_windows.cs:223`. That is the
+**partial-completion displacement**: no `manualConversionFuncs` entry, no converter change, no
+two-seeded diff. A behavioral **COMPILE** is owed, because generated stubs disappear (route #7's
+neighbourhood).
+
+**File:** a NEW `src/core/syscall/windows/syscall_windows_callback_impl.cs`, **not** an addition to
+the existing `syscall_windows_impl.cs`. The existing companion is 687 lines scoped to the
+socket-address seam, and the sibling companions in that directory are **named per seam** —
+`zsyscall_windows_addrinfo_impl.cs`, `zsyscall_windows_certchain_impl.cs`,
+`zsyscall_windows_dnsrecord_impl.cs`. This follows that convention rather than growing a file whose
+header states a different scope.
+
+`syscall` already references `runtime` (`syscall.csproj:178`), so **no reference injection is
+needed** — the `TB.Context()` class of blocker does not apply here. Noted because it was a real
+candidate blocker until measured.
+
+## 4. The delegate-lifetime rule
+
+`Marshal.GetFunctionPointerForDelegate(d)` yields a pointer valid **only while `d` is alive**. Go's
+callbacks are never freed (`cbs` is process-lifetime and its exhaustion is a fatal
+`throw("too many callback functions")`, not a reclaim). So the managed side **must root the delegate
+for the life of the process**: a static table holding both the delegate and its pointer, which roots
+the delegate by holding it as a key.
+
+This is not an optimisation. Without it the GC may collect the delegate while native code still holds
+the pointer, and the failure is an access violation at an arbitrary later time — the worst shape of
+defect this project can ship.
+
+## 5. The identity rule — the same func value must yield the same pointer
+
+Go caches, and the record must reproduce the semantics rather than approximate them.
+`runtime/syscall_windows.go:326`: `if n, ok := cbs.index[key]; ok { return callbackasmAddr(n) }`,
+keyed by
+
+    type winCallbackKey struct { fn *funcval; cdecl bool }
+
+built as `winCallbackKey{(*funcval)(fn.data), cdecl}` — i.e. **the func value's pointer**, not its
+type.
+
+**The managed analogue** is a table keyed on the delegate, with `Delegate` equality (Method + Target).
+
+⚠ **A DIVERGENCE TO STATE RATHER THAN DISCOVER.** C# `Delegate.Equals` compares *method and target*,
+where Go compares *funcval pointers*. For a closure the two agree in practice (distinct display-class
+instances are unequal on both sides). For a **static method group with no capture** C# is *more*
+aggressive: two separately-created delegates over the same static method compare equal, so we would
+return the **same** pointer where Go might mint two. That direction is the safe one — it returns a
+pointer that works — but it is a divergence, and a test asserting two distinct pointers for two
+distinct `NewCallback` calls on the same static function would see it. None of the 11 tests is known
+to assert that; **that is an unverified claim by the author and the i7's run is what settles it.**
+
+## 6. The calling-convention split
+
+`NewCallback` is stdcall, `NewCallbackCDecl` is cdecl — **and on anything but 386 the distinction does
+not exist.** `compileCallback`'s first statement is
+
+    if GOARCH != "386" { cdecl = false }   // cdecl is only meaningful on 386
+
+so on amd64/arm64 both entry points produce the **same key and the same pointer** for the same func
+value. The corpus is not built for 386. The record says so explicitly rather than leaving a reader to
+wonder why the two entry points collapse: on our targets there is **one** Windows ABI, and the managed
+side should declare its shim `[UnmanagedFunctionPointer(CallingConvention.Winapi)]` — with
+`StdCall`/`Cdecl` distinguished only if a 386 target ever exists, which it does not.
+
+## 7. The argument-marshalling boundary — refuse BY NAME
+
+Go permits only `uintptr`-sized arguments and exactly ONE `uintptr`-sized result, and it **panics**
+outside that contract. The body must refuse the same shapes with the same text, so a converted test
+asserting the panic string still matches. Go's texts, verbatim from
+`runtime/syscall_windows.go` at `go1.24.13`:
+
+| site | text |
+|---|---|
+| `:104` | `compileCallback: argument size is larger than uintptr` |
+| `:114` | `compileCallback: float arguments not supported` |
+| `:203` | `compileCallback: type <T> is currently not supported for use in system callbacks` |
+| `:273`, `:288`, `:291` | `compileCallback: expected function with one uintptr-sized result` |
+| `:297` | `compileCallback: float results not supported` |
+| `:335` (fatal, not panic) | `too many callback functions` |
+
+**A refusal is a PANIC, not a plain exception** — the host classifies a non-panic exception as an
+infrastructure error, which is unbankable and also untrue (the host is fine).
+
+## 8. ⚠ THE CONSTRAINT THAT DECIDES THE BODY'S SHAPE, and it is the one claim here I could not measure
+
+`Marshal.GetFunctionPointerForDelegate` **does not accept a generic delegate type.** The CLR cannot
+marshal a generic delegate, and the converter's emission for a Go func value is exactly that — a
+`Func<…>` / `Action<…>`, as every arm of `FinalizerBindingTests` shows (`Action<ж<nint>>`,
+`Action<object>`). So the naive body — take the `any`, cast to `Delegate`, hand it to
+`GetFunctionPointerForDelegate` — **throws for the shapes this row actually receives.**
+
+**Consequence for the body.** The seam needs a **non-generic** delegate type declared in the seam file
+per arity, attributed `[UnmanagedFunctionPointer(...)]`, whose instance forwards to the Go delegate.
+The forwarding instance is what gets marshalled and what the table roots.
+
+⚠ **AND THE FORWARD MUST NOT GO THROUGH `Delegate.DynamicInvoke`.** Measured in this same arc:
+`DynamicInvoke` binds through the **default binder** — identity, reference, boxing and primitive
+widening only — and **never invokes user-defined conversion operators**. A Go callback's parameters
+arrive as native `uintptr`-sized words that must become the converted parameter types, and several of
+those conversions are exactly the user-defined operators the default binder will not call. A
+`DynamicInvoke` forward would therefore fail at run time for a subset of shapes, silently narrower
+than the contract §7 states. The forward must be a **typed** invocation.
+
+**THIS SECTION IS THE ONE OWING CONFIRMATION.** The generic-delegate restriction is a documented CLR
+constraint the author knows but **could not execute here**. It is stated first, before the body is
+written, precisely so the i7's first compile either confirms it or refutes it cheaply — and if it is
+refuted, the body gets simpler and this section is amended with a dated block rather than rewritten.
+
+## 9. What is NOT covered
+
+- **Anything but windows.** The declaration is windows-only in Go and in our corpus.
+- **386.** Not a target; §6 says what that costs (nothing).
+- **Float arguments or results, oversized arguments, non-conforming func types.** Refused by name per
+  §7 — the same shapes Go refuses. Not covered means *deliberately refused*, not *unhandled*.
+- **Reclaim.** Callbacks are process-lifetime, as in Go. `too many callback functions` stays fatal.
+- **The runtime-internal caller.** `os_windows.cs:314` calls runtime's OWN `compileCallback` through
+  the nil-returning `efaceOf` and panics today (§1.2). This design does **not** fix that path — it is a
+  separate defect on the runtime side, and it is named here so nobody reads this record as closing it.
+
+## 10. The guard
+
+A windows-native behavioral project carrying **`[GoPlatformExclusive("windows")]`** (F8 — ⚠ **commit
+the marker before any CNR**, which destroys uncommitted ones), handing `syscall.NewCallback` to
+`EnumWindows` / `EnumThreadWindows` and printing **count-independent** lines:
+
+1. the callback **ran at least once**;
+2. the **same func value yields the same pointer twice** (§5's identity rule);
+3. a **non-conforming func type panics with Go's text** (§7).
+
+Count-independent because the number of top-level windows is a property of the machine, not of the
+code — a count would make the golden host-dependent.
+
+The golden is captured **on windows by the i7**. The project must be registered in `go2cs.slnx` and
+verified with `check-solution-integrity.ps1`; note that a `windows` marker changes registration **not
+at all** (the exemption criterion is platform-exclusive AND *not*-windows-native), so the registration
+is ordinary.
+
+## 11. Who measures what
+
+| item | who |
+|---|---|
+| this record, the body, the guard's source | C1 (cannot build) |
+| compile, guard run, golden capture | i7 (windows) |
+| `check-solution-integrity.ps1` / F8 registration | i7 |
+| scoring the readings against §5 and §8's predictions | C1 |
+
+**Order:** this record → the body → the guard. The body does not start until this record is seated,
+because §8 may change its shape and §5 may change its semantics.
