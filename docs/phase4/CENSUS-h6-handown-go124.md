@@ -1252,3 +1252,80 @@ counts inside MIXED move substantially (`reflect/value_impl.cs` 15/5 → 3/17; `
 emits `type X`, `const X`, `var X`, `func X` **and** `func (R)X`; the extractor handled four of five
 and failed silently on the fifth, in the direction that over-reports removals — the most alarming
 direction, and the one least likely to be questioned.
+
+---
+
+## 2026-09-07 — ⚠ A SECOND COLLISION, IN `sync` — the predicate was TYPE-LEVEL and the class is MEMBER-LEVEL
+
+**Found by auditing this instrument against i9's finding in `e3b3ee554`** (a guard keyed on a bare
+name across a namespace where the name is not unique). Asking "is that shape in my work?" exposed a
+different hole in the same family: **my collision predicate reads only TYPE declarations, and a
+relocated FUNCTION collides identically.**
+
+### Why a companion cannot collide, and a whole-file rewrite can
+
+Both displacement mechanisms are **file-independent**:
+
+- a **registry** entry (`manualConversionFuncs`) is keyed `<package>.<symbol>` and displaces the body
+  wherever the converter would emit it;
+- a **bodyless partial** is completed by its companion, and C# permits the definition and the
+  implementation to sit in **different files** of one assembly.
+
+So a relocation is harmless for an `_impl.cs` companion. **It is fatal only for a whole-file
+`[module: GoManualConversion]` rewrite**, which the converter does not emit at all while it *does*
+emit the file the declaration moved to. That is the sharper statement of the rule §3 gave as "member
+disjointness".
+
+### The second row, verified
+
+```
+  hand-own      src/core/sync/mutex.cs        whole-file rewrite, 1 marker line, never re-emitted
+  member        func fatal(string)            linkname-provided, bodyless in Go
+  1.23.12       declared in sync/mutex.go     == the hand-own's OWN principal -> nothing emitted  OK
+  1.24.13       declared in sync/runtime.go   SELECTED on windows, linux AND darwin
+  hand-own      mutex.cs:40  internal static void fatal(@string s) => throw new …
+  registry      "fatal" NOT registered under "sync"  (only "copyChecker.check" is)
+```
+
+At 1.24.13 the converter emits `sync/runtime.cs` carrying `fatal`, while the marker-protected
+`mutex.cs` declares it with a body — **a duplicate member in `sync_package`**. Nothing displaces it,
+because nothing is registered and there is no bodyless partial to complete.
+
+⚠ **`throw` moved in the same commit and does NOT collide** — `mutex.cs` declares `fatal` and not
+`throw` (0 declarations, checked with comments stripped). The two names travel together in Go and
+only one is re-declared here; a census that assumed the pair would have over-reported by one.
+
+⚠ **`os/linux/wait_waitid.cs :: const _P_PID` is NOT a collision.** Go declares `_P_PID` in no
+`os/*.go` at either release — it is a go2cs invention — so §4's "moved" verdict for it was an
+artifact of the same member-name extractor §4's correction already documents.
+
+### THE H6 COLLISION BILL — 2 rows
+
+```
+  1  runtime/runtime2.cs :: type note  -> note_other.go   type-level    MEASURED at H5
+  2  sync/mutex.cs       :: func fatal -> runtime.go      member-level  PREDICTED here
+```
+
+**`sync` sits under nearly the whole corpus**, so row 2 is the next blocker after row 1 is
+reconciled — H5's build never reached it, because `runtime` failed first and everything above a
+failed leaf is skipped rather than compiled. **This is a prediction, not a measurement**, and the
+three-target H5 emission is what will score it.
+
+**Disposition — `sync/mutex.cs`: RE-WRITE**, on the same grounds as `runtime2.cs`: a marker-protected
+whole-file rewrite that re-declares a member Go has relocated into a file the converter emits.
+
+### Control
+
+```
+  POSITIVE  the 1.23.12 arrangement is the negative case and reads clean: the declaring file IS
+            the hand-own's own principal, so no emission carries it and no collision exists.
+            The class appears only at the hop.                                           PASS
+  SCOPE     companions excluded with a REASON (file-independent displacement), not by count;
+            the audit ran over every whole-file rewrite, yielding 3 candidates of which 1 survives
+            verification.                                                                 PASS
+```
+
+**Sixth instrument correction for §7's list: a collision predicate must cover every DECLARATION KIND
+that can duplicate — type, function, const, var — not just the kind that motivated it.** Mine was
+built from a type-level defect (`note`) and inherited that shape; the second row was invisible to it
+until a peer's unrelated finding prompted the audit.
