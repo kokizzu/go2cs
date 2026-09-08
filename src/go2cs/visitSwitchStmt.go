@@ -495,7 +495,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 
 			v.outputBuilder.WriteString(exprVarName)
 			v.outputBuilder.WriteString(" = ")
-			v.outputBuilder.WriteString(v.convExpr(tag, nil))
+			v.outputBuilder.WriteString(v.convExpr(tag, v.switchTagExprContexts(tag)))
 			v.outputBuilder.WriteString(";" + v.newline)
 		}
 
@@ -771,7 +771,7 @@ func (v *Visitor) visitSwitchStmtCore(switchStmt *ast.SwitchStmt) {
 	} else if allConst && tag != nil {
 		// Most simple scenario when all case values are constant, a common C# switch will suffice
 		v.writeOutput("switch (")
-		v.outputBuilder.WriteString(v.convExpr(tag, nil))
+		v.outputBuilder.WriteString(v.convExpr(tag, v.switchTagExprContexts(tag)))
 		v.outputBuilder.WriteString(") {")
 		v.outputBuilder.WriteString(v.newline)
 
@@ -1038,9 +1038,26 @@ func (v *Visitor) canUsePatternMatch(caseClauseCount int, caseClause *ast.CaseCl
 			// A uintptr-typed label — even a plain literal, which adopts the tag's type in context
 			// (`exprᴛ1 is 4` under a uintptr tag) — can never be a constant pattern: uintptr is a
 			// golib STRUCT (CS9135). Fall back to `==` (the struct's operator).
+			//
+			// A POINTER-typed label is the same case one type over, and it is NOT covered by the
+			// syntactic screen above: that switch lists Ident/Selector/Index, so an ADDRESS-OF label
+			// (`case &inProgress:` — 1.24 runtime/type.go's GC-mask sentinel) fell through it and
+			// emitted `exprᴛ1 is ᏑinProgress`, a constant pattern over a runtime value: CS9135 at the
+			// pattern operand, while the `case nil` arm ONE LINE DOWN already spelled `== default!`.
+			// The sibling screen that forces the whole switch to the if/else form (see the allConst
+			// block) does list UnaryExpr, which is why the chain existed at all and only its operator
+			// was wrong. Screening by TYPE rather than by expression kind keeps the two lists from
+			// diverging again: no pointer value is a C# compile-time constant, whatever syntax names
+			// it. `==` is also the RIGHT operator — on `ж<T>` it is pointer identity (ReferenceEquals
+			// or equal order tokens), which is exactly what Go's `p == &inProgress` compares.
 			if tv, ok := v.info.Types[expr]; ok && tv.Type != nil {
-				if basic, ok := tv.Type.Underlying().(*types.Basic); ok && basic.Kind() == types.Uintptr {
+				switch underlying := tv.Type.Underlying().(type) {
+				case *types.Pointer:
 					usePattenMatch = false
+				case *types.Basic:
+					if underlying.Kind() == types.Uintptr {
+						usePattenMatch = false
+					}
 				}
 			}
 
@@ -1138,4 +1155,39 @@ func containsBitwiseOperation(expr ast.Expr) bool {
 func isBitwiseOperator(op token.Token) bool {
 	return op == token.AND || op == token.OR || op == token.XOR ||
 		op == token.SHL || op == token.SHR || op == token.AND_NOT
+}
+
+// switchTagExprContexts returns the contexts the switch TAG is converted under.
+//
+// A tag is an OPERAND OF A COMPARISON — the lowered if/else chain compares it against every case
+// label — so it takes the same pointer context convBinaryExpr gives a comparison operand, and for
+// the same reason. A pointer-typed parameter that has been ref-lowered is shadowed in its own body
+// by `ref var x = ref Ꮡx.DerefOrNull()`, so an identifier read WITHOUT the pointer context renders
+// the POINTEE. Under the nil context this used to pass, the tag of 1.24 runtime/lock_spinbit.go's
+// `switch l { case &sched.lock: }` — *mutex against *mutex in Go — emitted the dereferenced VALUE
+// and compared it against a pointer: CS0019 at the comparison.
+//
+// The quieter half is why this is not merely a compile defect. On a `case nil:` arm the same tag
+// emits `exprᴛ1 == default!`, which compares the POINTEE against its ZERO VALUE and COMPILES — a
+// nil test that silently answers "is the pointee zero". A shape that reads as a wrong answer rather
+// than as an error, and the reason the fix is not scoped to the arms that fail to build.
+//
+// The predicate is convBinaryExpr's, TRANSCRIBED rather than paraphrased so the two cannot drift:
+// pointer or erased pointer core, excluding an interface tag (which already holds the box) and
+// unsafe.Pointer (whose pointer arm renders `.Value`, the raw uintptr, and NullReferences on a nil
+// one — the sync/atomic TestLoadPointer family). A non-pointer tag gets the default context, so
+// every other switch in the corpus is untouched.
+func (v *Visitor) switchTagExprContexts(tag ast.Expr) []ExprContext {
+	identContext := DefaultIdentContext()
+	basicLitContext := DefaultBasicLitContext()
+
+	if tag != nil {
+		tagType := v.info.TypeOf(tag)
+		tagIsInterface, _ := isInterface(tagType)
+
+		identContext.isPointer = (isPointer(tagType) || v.typeIsErasedPointerCore(tagType)) &&
+			!tagIsInterface && !isUnsafePointer(tagType)
+	}
+
+	return []ExprContext{identContext, basicLitContext}
 }
