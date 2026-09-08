@@ -248,10 +248,34 @@ public class FinalizerBindingTests
         Assert.AreSame(element, argument, "ARM 8: an element-reference box passes through unchanged too.");
     }
 
-    // ⚠ THE NEUTER FOR ARMS 7 AND 8, so the red-first control needs no guesswork: in
-    // GoReflect.FinalizerBinding.cs, change case 1 from `fint.IsInstanceOfType(referent)` back to
-    // `fint == etyp`. Both arms go RED and every other arm here stays GREEN -- arms 2, 3 and 4 pass
-    // under either form, which is what makes the asymmetry the signal rather than the count.
+    // ⚠ THE NEUTER, AND IT NAMES **ARM 4** -- NOT ARMS 7 AND 8, WHICH IS WHAT THIS COMMENT SAID
+    // UNTIL THE i7 MEASURED IT. To run the red-first control: in GoReflect.FinalizerBinding.cs,
+    // change case 1 from `fint.IsInstanceOfType(referent)` back to `fint == etyp`. **Exactly one arm
+    // goes RED -- Arm4** -- and every other arm here stays GREEN.
+    //
+    // WHY, derived rather than remembered (the i7's re-gate at c1fefa431 read Arm4 RED and Arm8
+    // GREEN against this comment's predicted 7+8, and the derivation below reproduces that):
+    //
+    //   * Arms 2, 7, 8 and 9 survive the neuter through **case 4**. `TryBoxPointee` (GoReflect.cs:105)
+    //     walks the **BaseType chain**, so StandardBox<nint>, FieldRefBox<nint> and ElemRefBox<nint>
+    //     all resolve to pointee `nint`, unnamed; `finElem == etypElem` holds, the unnamed gate holds,
+    //     and TryConvertTo is the identity, so the referent passes through and AreSame still holds.
+    //   * Arm 3 binds at **case 2** (`fint == typeof(object)`), which the neuter does not touch.
+    //   * Arm 1 never used case 1 at all -- a named pointer wrapper does NOT inherit its box, so
+    //     assignability is false for it and it has always bound at case 4.
+    //   * Arms 5 and 6 are refusals already (case-4 fall-through and the arity check).
+    //   * **Arm 4 is the one that moves.** Case 3's own comment records why: an interface the
+    //     referent's type directly implements "is already handled by case 1's assignability test
+    //     above; only the duck-typed shell can reach here now". With case 1 neutered to equality,
+    //     Arm 4 falls into case 3, whose only remaining path is AdapterBinder.TryCreate -- which
+    //     either refuses outright or returns a SHELL, and a shell is not the referent, so the
+    //     AreSame assertion fails either way.
+    //
+    // ⚠ THE CONSEQUENCE, STATED PLAINLY BECAUSE IT NARROWS WHAT CASE 1 BUYS: case 1's UNIQUE
+    // contribution over the other three cases is the **directly-implemented interface**. The box-family
+    // shapes that motivated it (arms 7, 8, 9) are ALSO reachable through case 4. Case 1 is still
+    // right -- it is Go's own rule, it short-circuits before the structural gate, and Arm 4 needs it --
+    // but "the fix for the box family" overstates it, and the c1fefa431 announce said exactly that.
 
     [TestMethod]
     public void Arm6_AFinalizerTakingTwoArgumentsIsRefused()
