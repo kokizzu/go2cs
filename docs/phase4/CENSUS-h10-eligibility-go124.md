@@ -133,7 +133,32 @@ build on this target, not that their oracle is clean — see §5.
 
 ---
 
-## 5. ⚠ THE E2 HOLE, stated rather than papered over
+## 5. ⚠ THE E2 HOLE — CLOSED 2026-09-08 BY A WINDOWS SWEEP: ZERO MEMBERS, DENOMINATOR UNMOVED
+
+> **AMENDMENT, 2026-09-08.** i9 ran the sweep this section says is owed: **all 227 packages,
+> go1.24.13 windows/amd64, `CGO_ENABLED=0`, `GOTOOLCHAIN=local`, `go test -count=1 -timeout 30m
+> -json`**, with the pin re-printed *inside the process that ran the tests* rather than only in the
+> launching shell, and all 227 roster names resolved against `go list std` (346 at this release, 0
+> missing) **before** the sweep — because a package that does not exist ERRORS, which is not the same
+> as an oracle that fails.
+>
+> **Result: 225 pass, 2 fail, and NEITHER failure is E2.** `os` fails 161 leaves, every one a symlink
+> test, on `root_test.go:78` — *"A required privilege is not held by the client."* `net` fails on the
+> same host axis. **Both are properties of that HOST, not of Go's suite**, and both name sets
+> reproduced identically on a second run.
+>
+> ⚠ **The i7 read the same package the other way**, holding `SeCreateSymbolicLinkPrivilege`: `os`
+> passed with ZERO failures there. Same package, two hosts, opposite privilege, neither a broken
+> oracle — which is precisely why this sweep is empty. The roster's own E2 note ("an E2 exclusion is
+> only as durable as the HOST that measured it") is what the two readings together vindicate.
+>
+> **So the denominator stays 227 and nothing subtracts.** §6's `-?` term resolves to `-0`.
+
+The section below is the original statement of the hole, kept as written because it is what the
+sweep was run against.
+
+### 5.0 The hole as originally stated
+
 
 **E2 — broken oracle — is not decidable on this host, and no E2 verdict in this record should be
 read as measured.** Establishing E2 means Go's *own* suite failing on the reference side, which
@@ -153,10 +178,14 @@ Windows host later finds E2 moves the denominator down; nothing here can move it
    -1    internal/unsafeheader   E3, reason re-verified
    -1    runtime/trace           E4, reason re-verified
    -0    E1                      the four 1.23 E1 rows are already outside axis C (§2)
-   -?    E2                      NOT DECIDABLE ON THIS HOST -- owed to a Windows box (§5)
+   -0    E2                      SWEPT 2026-09-08 on windows/amd64: ZERO members (§5)
   ----
-  227    implementable denominator at go1.24.13, pending the E2 sweep
+  227    implementable denominator at go1.24.13 -- CONFIRMED, no longer pending
 ```
+
+**The denominator is final at 227** unless a later ruling adds a class member. When this record was
+first written the E2 term was an open `-?` that could only ever move 227 down; the sweep resolved it
+to `-0`, so the figure is unchanged and is now measured rather than pending.
 
 Beside the anchor: **204 / 209 at go1.24.13's predecessor**; the 1.24 implementable set is **227**
 before any E2 subtraction. The population grew 215 → 229 on a like-for-like axis (+14).
