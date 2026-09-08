@@ -12,6 +12,7 @@ import (
 	"go/types"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -75,7 +76,7 @@ var packageImportLeadingSegments map[string]bool
 
 // computeImportAliasRenames populates the two maps above for the package being converted.
 // packageNS is the emission namespace of the current package (e.g. "go", "go.@internal").
-func computeImportAliasRenames(files []FileEntry, pkg *types.Package, packageNS string, corpusRoot string) {
+func computeImportAliasRenames(files []FileEntry, pkg *types.Package, packageNS string, corpusRoot string, goos string) {
 	closure := make(map[string]bool)
 
 	var walk func(p *types.Package)
@@ -112,7 +113,7 @@ func computeImportAliasRenames(files []FileEntry, pkg *types.Package, packageNS 
 	// Contributes nothing when no corpus csproj exists, so a standalone or -recurse=nuget conversion
 	// is unchanged.
 	for _, imp := range pkg.Imports() {
-		for _, path := range corpusReferenceClosure(corpusRoot, imp.Path()) {
+		for _, path := range corpusReferenceClosure(corpusRoot, imp.Path(), goos) {
 			closure[path] = true
 		}
 	}
@@ -200,12 +201,81 @@ func importQualifier(name string) string {
 }
 
 // corpusCsprojDirectRefs memoizes ONE csproj's direct ProjectReference import paths, keyed by the
-// referring import path. Read once per conversion run: a -stdlib pass asks for hundreds of closures
-// and they overlap heavily, so without this the same csproj is parsed once per dependent.
+// target GOOS AND the referring import path. Read once per conversion run: a -stdlib pass asks for
+// hundreds of closures and they overlap heavily, so without this the same csproj is parsed once per
+// dependent. The GOOS is part of the key because the answer DEPENDS on it (see corpusRefsForGOOS)
+// and platformEmit converts every target in ONE process — keyed by import path alone, the second
+// target would be served the first target's references.
 var corpusCsprojDirectRefs map[string][]string
 
-// corpusReferenceClosure memoizes the full transitive answer per import path.
+// corpusReferenceClosure memoizes the full transitive answer, keyed the same way and for the same
+// reason.
 var corpusReferenceClosureCache map[string][]string
+
+// goosConditionRE captures the GOOS an <ItemGroup> gates on. The corpus's condition set is CLOSED,
+// and it was censused before this was written rather than assumed: every <ProjectReference> in every
+// production csproj sits either in an UNCONDITIONAL ItemGroup (2651 of them) or under exactly one
+// `'$(GoTargetOS)'=='<goos>'` equality (linux 56, darwin 45, windows 23). There is no `!=`, no
+// AND/OR, and no `$(OutputType)` group encloses a ProjectReference at all.
+var goosConditionRE = regexp.MustCompile(`Condition\s*=\s*"'\$\(GoTargetOS\)'\s*==\s*'([^']*)'"`)
+
+// corpusRefsForGOOS returns the ProjectReference import paths a csproj contributes WHEN BUILT FOR
+// goos. A corpus csproj carries its per-GOOS references in <ItemGroup Condition="'$(GoTargetOS)'==
+// '<goos>'"> blocks — the same conditioning that decides the COMPILE item set under layout L3 — so a
+// reader that takes every reference in the file describes an assembly no build ever produces.
+//
+// That is not a hypothetical: it is the defect this function fixes. `syscall.csproj` references
+// `internal/syscall/windows/sysdll` inside a windows-only group, so an unconditioned read put
+// `go.internal.syscall` in `internal/sysinfo`'s DARWIN closure and renamed its `syscall` alias on a
+// target where nothing declares that namespace. Measured two ways: the reference conditions read at
+// the source, and `internal.sysinfo` compiled at master under GoTargetOS=darwin — rc 0, CS0576 zero.
+//
+// Narrowing to the target's own groups does NOT weaken the never-under-approximate rule this file's
+// header states. That rule guards against PROXIES for the reference graph; this reads the same
+// property MSBuild itself evaluates, so excluding another target's references is exact rather than
+// optimistic — those assemblies are not in the build being emitted.
+//
+// The scan is line-structured because the emission is: an <ItemGroup> opens and closes on its own
+// line. A SELF-CLOSING group (`<ItemGroup Condition=… />`, 20 of them) has no body, so it must not
+// open a region — treating it as one would swallow every line up to the next `</ItemGroup>`,
+// removing UNCONDITIONAL references that sit in between. A condition outside the censused form
+// leaves its group's references INCLUDED, which is the pre-existing behaviour rather than a new hole.
+func corpusRefsForGOOS(csprojContent string, goos string) []string {
+	var admissible strings.Builder
+
+	inGroup := false
+	groupGOOS := ""
+
+	for _, line := range strings.Split(csprojContent, "\n") {
+		trimmed := strings.TrimSpace(line)
+
+		switch {
+		case strings.HasPrefix(trimmed, "<ItemGroup"):
+			if !strings.HasSuffix(trimmed, "/>") {
+				inGroup = true
+				groupGOOS = ""
+
+				if m := goosConditionRE.FindStringSubmatch(trimmed); m != nil {
+					groupGOOS = m[1]
+				}
+			}
+
+			continue
+		case strings.HasPrefix(trimmed, "</ItemGroup>"):
+			inGroup = false
+			groupGOOS = ""
+
+			continue
+		}
+
+		if !inGroup || groupGOOS == "" || groupGOOS == goos {
+			admissible.WriteString(line)
+			admissible.WriteString("\n")
+		}
+	}
+
+	return parseCoreProjectRefs(admissible.String())
+}
 
 // corpusReferenceClosure returns every Go import path reachable from importPath through the
 // CORPUS's csproj ProjectReference graph rooted at options.go2csPath. Empty when no corpus is
@@ -231,12 +301,12 @@ var corpusReferenceClosureCache map[string][]string
 //
 // Absent a corpus csproj (-recurse=nuget, a standalone conversion) this contributes NOTHING and the
 // loader closure decides alone, exactly as before.
-func corpusReferenceClosure(corpusRoot string, importPath string) []string {
+func corpusReferenceClosure(corpusRoot string, importPath string, goos string) []string {
 	if importPath == "" || corpusRoot == "" {
 		return nil
 	}
 
-	if cached, ok := corpusReferenceClosureCache[importPath]; ok {
+	if cached, ok := corpusReferenceClosureCache[goos+"|"+importPath]; ok {
 		return cached
 	}
 
@@ -252,7 +322,7 @@ func corpusReferenceClosure(corpusRoot string, importPath string) []string {
 
 		seen[path] = true
 
-		for _, ref := range corpusDirectReferences(coreRoot, path) {
+		for _, ref := range corpusDirectReferences(coreRoot, path, goos) {
 			walk(ref)
 		}
 	}
@@ -276,7 +346,7 @@ func corpusReferenceClosure(corpusRoot string, importPath string) []string {
 		corpusReferenceClosureCache = make(map[string][]string)
 	}
 
-	corpusReferenceClosureCache[importPath] = closure
+	corpusReferenceClosureCache[goos+"|"+importPath] = closure
 
 	return closure
 }
@@ -294,8 +364,8 @@ func corpusReferenceClosure(corpusRoot string, importPath string) []string {
 //
 // `core/golib` maps to the single segment `golib`, which contributes no namespace PREFIX (a path
 // with no separator has no non-final part), so the hand-written runtime needs no special case.
-func corpusDirectReferences(coreRoot string, importPath string) []string {
-	if cached, ok := corpusCsprojDirectRefs[importPath]; ok {
+func corpusDirectReferences(coreRoot string, importPath string, goos string) []string {
+	if cached, ok := corpusCsprojDirectRefs[goos+"|"+importPath]; ok {
 		return cached
 	}
 
@@ -321,7 +391,7 @@ func corpusDirectReferences(coreRoot string, importPath string) []string {
 				continue
 			}
 
-			for _, coreProject := range parseCoreProjectRefs(string(content)) {
+			for _, coreProject := range corpusRefsForGOOS(string(content), goos) {
 				if referenced := importPathOf(coreProject); referenced != "" {
 					refs = append(refs, referenced)
 				}
@@ -333,7 +403,7 @@ func corpusDirectReferences(coreRoot string, importPath string) []string {
 		corpusCsprojDirectRefs = make(map[string][]string)
 	}
 
-	corpusCsprojDirectRefs[importPath] = refs
+	corpusCsprojDirectRefs[goos+"|"+importPath] = refs
 
 	return refs
 }

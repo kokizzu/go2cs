@@ -113,7 +113,7 @@ func TestSiblingClosureContributesRootShadow(t *testing.T) {
 
 	// Production-only closure: no go/* package, so no shadow.
 	siblingClosureImportPaths = nil
-	computeImportAliasRenames(nil, production, packageNamespace, "")
+	computeImportAliasRenames(nil, production, packageNamespace, "", "")
 
 	if rootNamespaceShadowed() {
 		t.Fatal("production-only closure reported a go.go root shadow")
@@ -123,7 +123,7 @@ func TestSiblingClosureContributesRootShadow(t *testing.T) {
 	setShadowState(t, "go.math.rand", nil)
 	packageQualifiedNamespaces = map[string]bool{}
 	siblingClosureImportPaths = []string{"go/format"}
-	computeImportAliasRenames(nil, production, packageNamespace, "")
+	computeImportAliasRenames(nil, production, packageNamespace, "", "")
 
 	if !rootNamespaceShadowed() {
 		t.Fatal("sibling test closure importing go/format did not register the go.go root shadow")

@@ -77,9 +77,51 @@ func TestImportAliasRenameReadsBothClosures(t *testing.T) {
 		return root
 	}
 
+	// writeGOOSConditionedCorpus lays down a csproj whose reference sits inside a
+	// <ItemGroup Condition="'$(GoTargetOS)'=='<goos>'"> block — the shape a real corpus csproj uses
+	// for its per-GOOS references, and the one that produced the defect the arm below pins. The
+	// SELF-CLOSING empty group in front of it is deliberate: it has no body and must not open a
+	// region, or the scan would swallow the unconditional group that follows and lose a reference.
+	writeGOOSConditionedCorpus := func(t *testing.T, pkgPath string, conditionGOOS string, conditioned string, unconditional string) string {
+		t.Helper()
+
+		root := t.TempDir()
+		dir := filepath.Join(root, "core", filepath.FromSlash(pkgPath))
+
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("fixture corpus: %v", err)
+		}
+
+		ref := func(path string) string {
+			dotted := strings.ReplaceAll(path, "/", ".")
+			return "    <ProjectReference Include=\"$(go2csPath)core/" + path + "/" + dotted + ".csproj\" />\n"
+		}
+
+		content := "<Project Sdk=\"Microsoft.NET.Sdk\">\n" +
+			"  <ItemGroup Condition=\"'$(GoTargetOS)'=='" + conditionGOOS + "'\" />\n" +
+			"  <ItemGroup Condition=\"'$(GoTargetOS)'=='" + conditionGOOS + "'\">\n" + ref(conditioned) + "  </ItemGroup>\n" +
+			"  <ItemGroup>\n" + ref(unconditional) + "  </ItemGroup>\n" +
+			"</Project>\n"
+
+		if err := os.WriteFile(filepath.Join(dir, "fixture.csproj"), []byte(content), 0o644); err != nil {
+			t.Fatalf("fixture csproj: %v", err)
+		}
+
+		return root
+	}
+
+	var renameForGOOS func(*testing.T, *types.Package, string, string, string) (string, bool)
+
 	// renameFor runs the real pre-pass over synthetic state and returns the alias recorded for
-	// `qualifier`, plus whether one was recorded at all.
+	// `qualifier`, plus whether one was recorded at all. The arms that predate per-GOOS conditioning
+	// build UNCONDITIONAL fixtures, whose references every target sees, so the GOOS they run under
+	// cannot change their answer; they delegate here rather than each naming one.
 	renameFor := func(t *testing.T, pkg *types.Package, corpusRoot string, qualifier string) (string, bool) {
+		t.Helper()
+		return renameForGOOS(t, pkg, corpusRoot, qualifier, "windows")
+	}
+
+	renameForGOOS = func(t *testing.T, pkg *types.Package, corpusRoot string, qualifier string, goos string) (string, bool) {
 		t.Helper()
 
 		previousRenames, previousSegments := packageImportAliasRenames, packageImportLeadingSegments
@@ -102,7 +144,7 @@ func TestImportAliasRenameReadsBothClosures(t *testing.T) {
 
 		setShadowState(t, RootNamespace, nil)
 
-		computeImportAliasRenames(nil, pkg, RootNamespace, corpusRoot)
+		computeImportAliasRenames(nil, pkg, RootNamespace, corpusRoot, goos)
 
 		alias, renamed := packageImportAliasRenames[qualifier]
 
@@ -182,6 +224,46 @@ func TestImportAliasRenameReadsBothClosures(t *testing.T) {
 			t.Fatalf("only the .tests.csproj holds a runtime/* child: want no rename, got %q", alias)
 		}
 	})
+
+	// A GOOS-CONDITIONED reference belongs to the target it names and to no other. This is the arm
+	// the first version of this guard did not have, and the defect it now pins SHIPPED because of
+	// that: syscall.csproj references internal/syscall/windows/sysdll inside a windows-only group,
+	// an unconditioned read put `go.internal.syscall` in internal/sysinfo's DARWIN closure, and the
+	// darwin emission renamed a `syscall` alias on a target where nothing declares that namespace.
+	//
+	// BOTH DIRECTIONS, because either alone is green on a broken predicate: a fold that dropped every
+	// conditioned reference passes the darwin half, and a fold that kept every one passes the windows
+	// half. Only the pair distinguishes conditioning from either blanket answer.
+	t.Run("a GOOS-conditioned reference is visible ONLY to its own target", func(t *testing.T) {
+		// The conditioned reference contributes `go.runtime`; the unconditional one contributes
+		// `go.encoding`, and is here so the arm can tell "conditioning works" from "the fold stopped
+		// reading this csproj at all" — a distinction the rename alone cannot make.
+		corpusRoot := writeGOOSConditionedCorpus(t, "runtime", "windows", "runtime/internal/sys", "encoding/json")
+
+		pkg := packageImporting(runtimePkg())
+
+		if alias, renamed := renameForGOOS(t, pkg, corpusRoot, "runtime", "windows"); !renamed || alias != ShadowVarMarker+"runtime" {
+			t.Fatalf("windows target sees its own conditioned reference: want %q, got %q (renamed=%v)",
+				ShadowVarMarker+"runtime", alias, renamed)
+		}
+
+		if alias, renamed := renameForGOOS(t, pkg, corpusRoot, "runtime", "darwin"); renamed {
+			t.Fatalf("a windows-conditioned reference is not in the DARWIN closure: want no rename, got %q", alias)
+		}
+
+		// VACUITY CONTROL. The darwin no-rename above is only evidence of CONDITIONING if the fold
+		// still read that csproj on darwin at all — a fold that failed to open the file, or that
+		// dropped every conditioned group AND its unconditional siblings, would produce the same
+		// no-rename. The unconditional reference must therefore still land: a package importing both
+		// `runtime` and `encoding` gets `encoding` renamed on darwin, from the group with no condition.
+		bothImporter := types.NewPackage("iter", "iter")
+		bothImporter.SetImports([]*types.Package{types.NewPackage("encoding", "encoding"), runtimePkg()})
+
+		if alias, renamed := renameForGOOS(t, bothImporter, corpusRoot, "encoding", "darwin"); !renamed || alias != ShadowVarMarker+"encoding" {
+			t.Fatalf("the UNCONDITIONAL reference must still be read on darwin (else the arm above is vacuous): want %q, got %q (renamed=%v)",
+				ShadowVarMarker+"encoding", alias, renamed)
+		}
+	})
 }
 
 // The two-sided control: one package, two direct imports, and only the one whose child namespace
@@ -214,7 +296,7 @@ func TestImportAliasRenameIsTwoSided(t *testing.T) {
 	pkg.SetImports([]*types.Package{encoding, runtime})
 
 	setShadowState(t, RootNamespace, nil)
-	computeImportAliasRenames(nil, pkg, RootNamespace, "")
+	computeImportAliasRenames(nil, pkg, RootNamespace, "", "")
 
 	if got, ok := packageImportAliasRenames["encoding"]; !ok || got != ShadowVarMarker+"encoding" {
 		t.Fatalf("encoding/json contributes go.encoding: want %q, got %q (renamed=%v)",
