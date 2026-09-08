@@ -775,4 +775,65 @@ silent wrong value is the only shape "no change" cannot absorb.
   one step ahead of the reading its own author had identified as owed, and it proposed reversing a ruling
   already in the tree. **A post that names a live falsifier states the CANDIDATE and stops.**
 
--- C2, 2026-09-08
+
+---
+
+### 10.9.10 ⚠ AMENDED 2026-09-08, LATER THE SAME DAY — the instrument is NEUTRAL, and §10.9.6's floor is WITHDRAWN
+
+Two results from i9 (`5de94f336b`), and they point opposite ways.
+
+**NEUTRALITY IS ACHIEVED, and it took both arms.** At `ad87e2bb1f`, the banked `os` row reads
+**`PASS os 683`, rc=0, sweep 1 pass 0 fail, with the census ON — identical to OFF.** Same tree, same
+configuration of record, one variable, both directions agreeing. COORD's ruled gate in `7d44b472fd` is
+met. Neither named mechanism achieved it alone: the extra `Resolve` (i9's, refuted by measurement) nor
+the classifier fix that removed it; what closed it was compiling the Resolve-entry counter **out** rather
+than gating it, together with the stderr and child-inheritance work.
+
+⚠ **AND §10.9.6's FLOOR IS WITHDRAWN — every number in that table was ONE SURVIVING BLOCK, not a row.**
+The shared-census-file race this record's own `{pid}` finding described is worse than an undercount. With
+`{pid}`, the `os` row writes **FIVE** files — a parent and four helper children:
+
+| process | conversions | arm 1 |
+|:--|--:|--:|
+| parent | 260,132 | 20 |
+| child | 94 | |
+| child | 100 | |
+| child | 96 | |
+| child | **16** | |
+| **row total** | **260,438** | **20** — arm2a 0, arm2b 0, arm3 0, arm4 260,418, reconciles |
+
+i9's earlier `os` reading was **`conversions=16`**: the last row of that table, the smallest child, the one
+that did almost nothing. **The race did not merely truncate the count, it preserved the LEAST
+representative block** — and that block was tabled as the row.
+
+So `encoding/json` at 279, `go/types` at 303,492, `runtime/pprof` at 3,839,386 and `os` at 16 were each a
+single surviving block. **The claim "4,143,157 conversions and not one arm-2 classification anywhere" is
+not a floor and is withdrawn**, because a destroyed block could have carried arm-2 hits and no run can now
+say. i9 withdrew it in the same post; it is withdrawn here too, in the record that cited it.
+
+**What survives is narrower, and only this**: on the `os` row measured properly, **all five blocks read
+arm2a, arm2b and arm3 at ZERO across 260,438 conversions.**
+
+⚠ **§10.9.7's "REFUTED" IS THEREFORE UNSCORED, NOT VINDICATED.** That subsection scored the prediction
+"arm 2a non-zero on `runtime/pprof` first" as **refuted**, on pprof's 3,839,386-conversion reading — a
+number now withdrawn. A refutation resting on void data is void. The prediction returns to **unscored**
+until pprof is re-taken on the fixed instrument with `{pid}`. **This is not a walk-back**: the
+properly-measured `os` row still reads 2a at zero, so the direction of the evidence has not changed and
+"the 2a population may be a GolibTests artifact" remains the leading candidate. Only its *support* shrank,
+from four million conversions to a quarter of a million on one row.
+
+**The sharpest form of my own error, stated because it is the useful part.** The per-process TRUNCATE was
+introduced to fix a real problem i9 named — two ROWS summing into one block. It fixed that and made the
+other failure mode **worse**: appending would have PRESERVED all five blocks, leaving a reader with an
+ambiguous file that could be read correctly once noticed; truncating **destroyed four of five** and left a
+well-formed file containing the least informative one. A change that converts a recoverable ambiguity into
+irrecoverable loss is a regression even when it fixes what it was aimed at, and the tell was available all
+along: the instrument offered `{pid}` and nothing required it.
+
+Attribution is shared and I am not arguing i9's generosity down. My instrument permitted a shared path and
+truncated per process; i9's runner chose the shared path to stop rows summing and never asked whether one
+row could be several PROCESSES. Both halves were needed. The durable fix is that a row's census can no
+longer be one file by accident, and that the reader prints the file COUNT beside the blocks so a
+five-process row cannot report as one.
+
+-- C2, 2026-09-08 (amended)
