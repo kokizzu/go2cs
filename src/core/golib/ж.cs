@@ -697,8 +697,30 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         // reflect projection handed out was an order token (see ManagedPointerTokens). Recover
         // the box that token named, so the result aliases the very storage the reflect Value
         // did — instead of a native box over a number that is not an address.
-        if (ManagedPointerTokens.Resolve((nuint)value.Value) is ж<T> aliased)
+        // ONE resolve, its result classified rather than re-queried: the Q44 §10.5 census needs to
+        // distinguish "resolved to another pointee type" from "did not resolve", and calling Resolve
+        // twice could answer differently across a collection.
+        object? resolved = ManagedPointerTokens.Resolve((nuint)value.Value);
+
+        if (resolved is ж<T> aliased)
+        {
+            if (Q44RegistryCensus.Enabled)
+                Q44RegistryCensus.Arm1();
+
             return aliased;
+        }
+
+        // ARM 2 (§10.3): the token named a LIVE box whose pointee type is not T. This falls past the
+        // refusal below -- IsTokenArithmetic is false at offset 0 -- and reaches the native box at the
+        // bottom, over a number that is not an address. Counted here; not yet changed.
+        if (Q44RegistryCensus.Enabled && resolved is not null)
+        {
+            nuint order = resolved is INilPointer p ? p.PointerOrderToken
+                        : resolved is IChannel c ? c.PointerOrderToken
+                        : 0;
+
+            Q44RegistryCensus.Arm2(typeof(T), resolved, order == (nuint)value.Value);
+        }
 
         // THE REFUSAL. A number inside a LIVE token's own 4 GiB block, that is not that token, is
         // a token somebody did arithmetic on — `unsafe.Add(unsafe.Pointer(&v), offset)` over storage
@@ -710,7 +732,15 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         // question is answered: a Go-layout byte offset into CLR-auto-laid-out storage still has no
         // meaning, and now says so out loud instead of corrupting memory.
         if (ManagedPointerTokens.IsTokenArithmetic((nuint)value.Value))
+        {
+            if (Q44RegistryCensus.Enabled)
+                Q44RegistryCensus.Arm3();
+
             throw RuntimeErrorPanic.UnsafePointerArithmeticWithoutAddress();
+        }
+
+        if (Q44RegistryCensus.Enabled && ManagedPointerTokens.Resolve((nuint)value.Value) is null)
+            Q44RegistryCensus.Arm4();
 
         return new NativeBox<T>((nuint)value.Value);
     }

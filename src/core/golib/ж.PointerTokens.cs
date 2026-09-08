@@ -230,6 +230,9 @@ public static class ManagedPointerTokens
 
         s_count = s_table.Count;
 
+        if (Q44RegistryCensus.Enabled)
+            Q44RegistryCensus.Mint();
+
         if (s_count >= s_sweepAt)
             Sweep();
     }
