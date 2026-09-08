@@ -630,6 +630,85 @@ if (-not (Test-Path $currentProofs)) {
         $frozenCount = @(Get-ChildItem $versionProofs -Filter *.md -File |
                          Where-Object { $_.Name -ne $frozenRosterName }).Count
 
+        # --- each copied page, retargeted onto the release it now belongs to -----------------------
+        # The copy above is verbatim, and a verbatim copy of a LIVING page is not a frozen one: its
+        # roster link walks up to docs\ValidatedTestPackages.md and its source link names tree/master,
+        # so a page whose whole job is to say "this is the evidence for the binary we shipped" reads
+        # its row out of a roster that has banked packages since, against source from a branch that
+        # has moved on. Both replacements have a target that already exists at this point in the run:
+        # the snapshot's own roster copy is written a few lines below, and the signed tag was minted
+        # before the build. The rule and its reasoning are Update-FrozenProofPage in _roster.ps1 --
+        # one definition, shared with the one-off that retargeted the 1.23.12.3 pages already frozen,
+        # so a committed snapshot cannot drift from the code that produces its successors.
+        #
+        # ONLY the copied proof pages. The frozen ROSTER is deliberately excluded and would be
+        # CORRUPTED by this transform: its single '](../../ValidatedTestPackages.md)' is the note's
+        # pointer at the LIVING roster -- relocated on purpose by ConvertTo-FrozenRosterText -- and
+        # retargeting it would leave the page linking itself while calling itself the living one. The
+        # roster is not in $versionProofs yet either way; the name filter says so rather than relying
+        # on that ordering, which is the same reason $frozenCount above excludes it by name.
+        #
+        # The THIRD substitution rides the same pass, and this loop is unchanged for it. A page whose
+        # package discloses also points once at that package's hand-owned go2cs_test_disclosures.json,
+        # spelled blob/master rather than tree/master, so the source substitution cannot see it and it
+        # would publish naming a branch that keeps moving -- the same defect, one link over, and the
+        # one the residual of d4c88e765 measured at 36 of these 204 pages. Update-FrozenProofPage
+        # CALLS Update-FrozenProofPageDisclosureLink and returns its count in the same object, so the
+        # page is still retargeted by one call and there is no second pass. What that count is NOT
+        # folded into is either assertion below. See the third aggregate after them.
+        $retargetedRoster = 0
+        $retargetedSource = 0
+        $retargetedDisclosure = 0
+        $unretargeted = New-Object System.Collections.Generic.List[string]
+
+        foreach ($page in @(Get-ChildItem $versionProofs -Filter *.md -File |
+                            Where-Object { $_.Name -ne $frozenRosterName })) {
+            try {
+                $retargeted = Update-FrozenProofPage -Path $page.FullName -Version $fullVersion
+                $retargetedRoster += $retargeted.RosterLinks
+                $retargetedSource += $retargeted.SourceLinks
+                $retargetedDisclosure += $retargeted.DisclosureLinks
+            }
+            catch { $unretargeted.Add("$($page.Name): $($_.Exception.Message)") }
+        }
+
+        # The counts are per-PAGE invariants, and they are checked here as well as inside the
+        # transform because the two answer different questions: the throw in Update-FrozenProofPage
+        # names a page whose template drifted, while these name a disagreement between the set that
+        # was copied and the set that was retargeted -- which no per-page check can see. Every page
+        # the converter generates carries exactly one ROSTER link and one SOURCE link, so those two
+        # sums must equal the page count; anything else is published-site breakage nobody is watching
+        # for. The DISCLOSURE sum is deliberately NOT in this assertion: see below.
+        if ($unretargeted.Count) {
+            throw ("The $fullVersion snapshot has $($unretargeted.Count) proof page(s) whose frozen links could " +
+                   "not be retargeted -- they would publish still pointing at the living roster, tree/master or " +
+                   "blob/master:`n    " +
+                   ($unretargeted -join "`n    "))
+        }
+
+        if ($retargetedRoster -ne $frozenCount -or $retargetedSource -ne $frozenCount) {
+            throw ("The $fullVersion snapshot retargeted $retargetedRoster roster link(s) and $retargetedSource " +
+                   "source link(s) across $frozenCount proof page(s); each page carries exactly one of each, so " +
+                   "both counts must equal the page count. Reconcile the proof-page template with " +
+                   "Update-FrozenProofPage before publishing.")
+        }
+
+        # The third aggregate is REPORTED, not asserted against the page count, and the reason is the
+        # count's shape rather than any weakness of nerve. A page carries a disclosure pointer only if
+        # its package has a manifest to name -- 36 of 204 at 1.23.12.3, with 168 carrying none -- so
+        # this sum is the size of a SUBSET nothing structural predicts: it moves the day a package
+        # banks a first disclosure or retires its last, with no template change to notice. Comparing
+        # it to $frozenCount would fail every release; comparing it to a number written here would go
+        # stale on exactly that day. What IS asserted lives per page in
+        # Update-FrozenProofPageDisclosureLink -- more than one throws, and no blob/master may survive
+        # the pin -- and the aggregate that matters is measurable after the fact on the snapshot
+        # itself: pages carrying blob/master before equals pages carrying blob/nuget-<version> after,
+        # and pages still carrying blob/master after is zero.
+        Write-Step ("Retargeted the frozen proof pages -- $retargetedRoster roster link(s) onto this snapshot's " +
+                    "own $frozenRosterName, $retargetedSource source link(s) onto tag $releaseTag, " +
+                    "$retargetedDisclosure disclosure-manifest pointer(s) pinned across the pages that carry one " +
+                    "(optional per page, so this one is not the page count)")
+
         # --- the roster page, transformed into this snapshot's own copy of itself ------------------
         # Which commit the note names: the TAG's, when the tag exists and this is a real release --
         # the tag is the authority on the tree a release was built from, and a re-run finishing a
@@ -682,9 +761,52 @@ if (-not (Test-Path $currentProofs)) {
 
             [System.IO.File]::WriteAllText((Join-Path $versionProofs $frozenRosterName), $frozenRoster.Text, $utf8NoBomText)
 
+            # --- and that roster's package column, pinned onto the tag ------------------------------
+            # ConvertTo-FrozenRosterText retargets the roster's links as a DOCUMENT -- proof links onto
+            # the sibling pages, out-of-docs links onto the deeper path -- and leaves the PACKAGE COLUMN
+            # naming tree/master, one link per row. That is the same defect the pages beside it were
+            # retargeted out of a few lines above: a frozen roster whose package column names a moving
+            # branch is not frozen either. The target already exists here too -- $releaseTag was minted
+            # before the build -- and the rule is Update-FrozenRosterSourceLinks in _roster.ps1.
+            #
+            # A SIBLING call rather than a third substitution inside the transform above, for the reason
+            # that function's own header states: it turns a LIVING roster into a frozen one and cannot be
+            # re-run on a roster it has already transformed, while the one-off that pinned the already
+            # frozen 1.23.12.3 roster had to run this ALONE on a file -- the same shape, and the same
+            # one-definition-two-callers reason, as Update-FrozenProofPage.
+            #
+            # It runs INSIDE the branch that wrote the roster. The two arms above warn and skip when
+            # there is no roster source or no commit to name, and a snapshot that carries no roster has
+            # no package column to pin; calling it out here would throw on a path that is deliberately
+            # the pre-2026-09-07 shape rather than a defect.
+            #
+            # ONE assertion, inside the function, unlike the per-page/aggregate pair above. That pair
+            # answers two questions -- a page whose template drifted, and the set copied against the set
+            # retargeted -- and the second question does not exist for a single file: the function counts
+            # the links and the rows out of the same roster, which is the whole of what can be asked.
+            $pinnedRoster = Update-FrozenRosterSourceLinks `
+                -Path (Join-Path $versionProofs $frozenRosterName) -Version $fullVersion
+
+            # --- and the roster's one PROSE pointer at a disclosure manifest -------------------------
+            # The package column is not the roster's only absolute link at a moving branch. Its prose
+            # points once at a package's hand-owned go2cs_test_disclosures.json, spelled blob/master
+            # rather than tree/master, so the substitution above cannot see it and it would publish
+            # naming a branch that keeps moving -- the same defect, one link over.
+            #
+            # A THIRD call, not a second phase inside the one above, because that function's count IS
+            # the roster's row count: a prose pointer is not a package-column link, so folding it in
+            # would make the substitutions 205 against 204 rows or force a second count shape into the
+            # one function whose count describes itself. Its own count is a FIXED one (a frozen roster
+            # carries exactly one such pointer, which is a census of the living roster rather than a
+            # derivation) and it is asserted in both directions inside Update-FrozenRosterDisclosureLink.
+            $pinnedDisclosure = Update-FrozenRosterDisclosureLink `
+                -Path (Join-Path $versionProofs $frozenRosterName) -Version $fullVersion
+
             Write-Step ("Froze the roster page at $frozenRosterName -- $($frozenRoster.ProofLinks) proof link(s) " +
                         "retargeted onto this snapshot, $($frozenRoster.Relocated.Count) link(s) relocated, " +
-                        "commit $frozenCommit")
+                        "$($pinnedRoster.SourceLinks) package-column source link(s) pinned onto tag $releaseTag " +
+                        "across $($pinnedRoster.Rows) row(s), $($pinnedDisclosure.DisclosureLinks) disclosure-manifest " +
+                        "pointer(s) pinned, commit $frozenCommit")
 
             # The audit arm. Empty on the roster this shipped against; a future roster that grows a
             # relative link shape neither substitution knows would otherwise dangle silently on the

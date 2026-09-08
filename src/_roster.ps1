@@ -373,6 +373,15 @@ function Get-ExclusionLedgerRows {
     gaining a link shape nobody anticipated shows up as something other than a dangling link on
     the published site. It is reported, never silently passed.
 
+    The roster's ABSOLUTE links are deliberately NOT touched here, and there are two kinds. The
+    PACKAGE COLUMN is one tree/master URL per row, pinned onto the release tag by
+    Update-FrozenRosterSourceLinks below; the roster's prose also carries one blob/master pointer at a
+    package's disclosure manifest, pinned by Update-FrozenRosterDisclosureLink beside it. Both are
+    separate functions because both have to be runnable ALONE on an already-frozen roster, which this
+    one cannot be: re-running it would insert a second note and relocate the relocated links. The
+    release calls all three, in that order. "Two substitutions" above counts this function's, not the
+    frozen roster's absolute ones.
+
     The note is inserted after the H1 rather than before it: this page has no YAML front matter
     (nothing under docs\ does) and its first line is the Jekyll {% raw %} guard whose matching
     endraw must stay the file's last line, so both ends of the document are spoken for. Inside the
@@ -495,6 +504,406 @@ function ConvertTo-FrozenRosterText {
         Relocated   = $relocated.ToArray()
         Unrelocated = $unrelocated
         NoteLines   = $note.Count
+    }
+}
+
+<#
+.SYNOPSIS
+    Retarget one FROZEN proof page's MOVING links onto the release that page belongs to.
+.DESCRIPTION
+    A proof page under docs\validation\current\ is a LIVING document and its outbound links are
+    right for that: the roster link walks up to docs\ValidatedTestPackages.md, the converted
+    package's source link names tree/master, and -- on the pages whose package discloses -- a prose
+    sentence points at that package's hand-owned go2cs_test_disclosures.json, spelled blob/master.
+    Copied into docs\validation\<version>\ unchanged -- which is what the freeze did until
+    2026-09-07 -- every one of them keeps pointing at a moving target, so a page whose whole purpose
+    is to say "this is the evidence for the binary we shipped" reads its row out of a roster that
+    has banked packages since, its source out of a branch that has moved on, and the manifest that
+    licenses its disclosed rows out of that same branch. A frozen page that links the living roster,
+    tree/master and blob/master is not frozen.
+
+    Every target exists already and none has to be invented. The snapshot carries its OWN roster
+    copy beside the page (ConvertTo-FrozenRosterText above), so the roster link becomes a sibling;
+    and the release mints the signed tag nuget-<version> BEFORE the build, so both absolute links
+    have an immutable ref to name. Ordinal string replacements throughout, no line splitting, so the
+    page's line endings survive exactly as the converter emitted them.
+
+    ZERO IS A THROW FOR THE TWO UNIVERSAL LINKS, not a skip. Every page the converter generates
+    carries exactly one roster link and one source link, so a page carrying neither is template
+    drift somebody must look at -- and a silent skip would publish that page still pointing at
+    master while the count beside it read fine. It also makes those two arms non-idempotent BY
+    DESIGN: a second run over an already-retargeted page finds nothing to do and says so, which is
+    what makes the caller's count assertion a live check rather than a number that can only ever be
+    right. That non-idempotency is also why the third substitution is a callable sibling rather than
+    a third block in this body: see below.
+
+    THE DISCLOSURE POINTER IS OPTIONAL PER PAGE, which is a THIRD COUNT SHAPE rather than a third
+    instance of the one above, and it lives in Update-FrozenProofPageDisclosureLink below -- CALLED
+    from here, so the caller still retargets a page with one call and makes no second pass, and the
+    count comes back in this function's own object. It is a separate function for one reason: it has
+    to be RUNNABLE ALONE on a page this function would throw on. A snapshot frozen before that rule
+    existed carries pages whose roster and source links are pinned already, so the two arms above
+    refuse them -- deliberately -- while their disclosure pointers still name master. Its header
+    carries the count's shape, its census, and why the caller reports the sum rather than asserting
+    it against the page count.
+
+    The source-link pattern is anchored on the REPOSITORY, not on a bare '/tree/master/': a future
+    page linking some other project's master must not be silently rewritten to name a go2cs tag. A
+    page that spells this repository's URL some other way lands in the zero-substitution throw
+    above, which is the reporting arm rather than a link quietly left behind.
+
+    The encoding is built here rather than taken from the caller. Read AND write through
+    [System.IO.File] with UTF-8/no-BOM for the reason stated at push-nuget.ps1's README retarget --
+    PS 5.1's Get-Content reads BOM-less UTF-8 as ANSI and Out-File re-encodes the damage -- and a
+    shared function that reached for a caller's variable would work in one script and be undefined
+    in the next.
+.OUTPUTS
+    PSCustomObject: RosterLinks (int), SourceLinks (int), DisclosureLinks (int) -- substitutions
+    made, per link kind. The first two are 1 on every page; the third is 0 or 1, and the caller
+    sums it into an aggregate of its own rather than into either page-count assertion.
+#>
+function Update-FrozenProofPage {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $Version
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) { throw "Update-FrozenProofPage: no page at $Path." }
+    if ([string]::IsNullOrWhiteSpace($Version)) { throw 'Update-FrozenProofPage: the version is empty.' }
+
+    # No trailing ')' on the roster pattern: the link may legitimately carry a '#anchor' suffix, and
+    # the prefix is what moves.
+    $rosterFrom = '](../../ValidatedTestPackages.md'
+    $rosterTo = '](ValidatedTestPackages.md'
+    $sourceFrom = 'github.com/ritchiecarroll/go2cs/tree/master/'
+    $sourceTo = "github.com/ritchiecarroll/go2cs/tree/nuget-$Version/"
+
+    $text = [System.IO.File]::ReadAllText($Path)
+
+    $rosterLinks = ([regex]::Matches($text, [regex]::Escape($rosterFrom))).Count
+    $sourceLinks = ([regex]::Matches($text, [regex]::Escape($sourceFrom))).Count
+
+    if ($rosterLinks -eq 0) {
+        throw ("Update-FrozenProofPage: $Path carries no roster link ('$rosterFrom') to retarget. A frozen " +
+               "page that cannot be pointed at its snapshot's own roster is template drift -- reconcile the " +
+               "proof-page template with this transform rather than publishing the page as it stands.")
+    }
+
+    if ($sourceLinks -eq 0) {
+        throw ("Update-FrozenProofPage: $Path carries no converted-source link ('$sourceFrom') to pin. A frozen " +
+               "page whose source link cannot be moved off master describes a branch rather than the binary that " +
+               "was published -- reconcile the proof-page template with this transform.")
+    }
+
+    $text = $text.Replace($rosterFrom, $rosterTo).Replace($sourceFrom, $sourceTo)
+    [System.IO.File]::WriteAllText($Path, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+    # The THIRD substitution, delegated to the sibling below rather than spelled again here. One
+    # definition, two callers: this page loop, and the one-off that had to reach the 36 pages of an
+    # ALREADY-FROZEN snapshot -- which this function cannot be run on, its two arms above throwing on
+    # a page whose roster and source links are pinned already. That is the same constraint, and the
+    # same resolution, as Update-FrozenRosterSourceLinks beside ConvertTo-FrozenRosterText.
+    $disclosure = Update-FrozenProofPageDisclosureLink -Path $Path -Version $Version
+
+    return [pscustomobject]@{
+        RosterLinks = $rosterLinks
+        SourceLinks = $sourceLinks
+        DisclosureLinks = $disclosure.DisclosureLinks
+    }
+}
+
+<#
+.SYNOPSIS
+    Pin one proof page's OPTIONAL disclosure-manifest pointer onto the release that page belongs to.
+.DESCRIPTION
+    The third of Update-FrozenProofPage's substitutions, in its own function because it is the only
+    one of the three that has to be RUNNABLE ALONE. Update-FrozenProofPage throws on a page whose
+    roster and source links are already pinned -- deliberately, that is what makes its counts a live
+    check -- so it cannot be re-run over a snapshot that has already been frozen. The 1.23.12.3 pages
+    were frozen before this rule existed and 36 of them carry a pointer still naming blob/master, so
+    reaching them needed a transform that could run on a file by itself. Exactly the constraint, and
+    exactly the one-definition-two-callers resolution, that put Update-FrozenRosterSourceLinks and
+    Update-FrozenRosterDisclosureLink beside ConvertTo-FrozenRosterText rather than inside it: the
+    committed snapshot cannot drift from the code that will produce its successors.
+
+    Update-FrozenProofPage CALLS this, so the freeze step's page loop is unchanged and makes no
+    second pass -- the page is retargeted once, by one call, and the count comes back in the same
+    object as the other two.
+
+    ZERO IS ORDINARY here, which is what makes this a THIRD COUNT SHAPE rather than a third instance
+    of the arms above, and it is the whole reason the caller reports this number instead of asserting
+    it. A page carries the pointer only if its package has a disclosure manifest to name: at
+    1.23.12.3, 36 of the 204 pages carry exactly one and 168 carry none, measured on the frozen
+    snapshot and independently on the living docs\validation\current\ tree, which agree page for page
+    BY NAME. The sum is therefore the size of a SUBSET nothing structural predicts -- it moves the
+    day a package banks a first disclosure or retires its last, with no template change to notice --
+    so asserting it against the page count would fail every release, and asserting it against a
+    number written here would go stale on exactly that day.
+
+    What IS asserted is the pair a subset does support. MORE THAN ONE throws: a shape nobody has seen
+    (no page in either tree carries two), and a second pointer on one page is a template change whose
+    author should rule on it rather than have it pinned behind an arm written for one. And the after
+    arm is a TRIPWIRE, not a measurement, inert today by construction: String's Replace moves every
+    occurrence and 'blob/nuget-<version>/' cannot contain 'blob/master/', so a survivor means somebody
+    has widened the pattern until the target contains the source. It exists to fail that day, which is
+    the standing both roster siblings give their own after-arms.
+
+    The pattern is anchored on the REPOSITORY, spelled as all three siblings spell it, so a page that
+    ever links another project's blob/master is not silently rewritten to name a go2cs tag. Such a
+    page lands in the ordinary zero, which -- unlike the source link's zero one arm up -- cannot be
+    told from a page whose package simply discloses nothing. That is the price of an optional link and
+    it is stated rather than papered over.
+
+    Read AND write through [System.IO.File] at UTF-8/no-BOM, replacing rather than splitting lines,
+    for the reasons stated at Update-FrozenProofPage above: PS 5.1's Get-Content reads a BOM-less
+    UTF-8 file as ANSI and Out-File re-encodes the damage, and the page's line endings must survive
+    exactly as the converter emitted them.
+.OUTPUTS
+    PSCustomObject: DisclosureLinks (int) -- substitutions made, 0 or 1.
+#>
+function Update-FrozenProofPageDisclosureLink {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $Version
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) { throw "Update-FrozenProofPageDisclosureLink: no page at $Path." }
+    if ([string]::IsNullOrWhiteSpace($Version)) { throw 'Update-FrozenProofPageDisclosureLink: the version is empty.' }
+
+    $disclosureFrom = 'github.com/ritchiecarroll/go2cs/blob/master/'
+    $disclosureTo = "github.com/ritchiecarroll/go2cs/blob/nuget-$Version/"
+
+    $text = [System.IO.File]::ReadAllText($Path)
+
+    $before = ([regex]::Matches($text, [regex]::Escape($disclosureFrom))).Count
+
+    if ($before -gt 1) {
+        throw ("Update-FrozenProofPageDisclosureLink: $Path carries $before disclosure-manifest pointer(s) " +
+               "('$disclosureFrom') where a proof page carries at most one. A second pointer on one page is a " +
+               "template change nobody has made yet -- rule on it rather than have it pinned behind an arm " +
+               "written for one.")
+    }
+
+    # Nothing to do, and that is ORDINARY: 168 of the 204 pages at 1.23.12.3 name no manifest. The
+    # file is left untouched rather than rewritten byte-identically, so a page that discloses nothing
+    # cannot have its encoding or line endings changed by a transform that had no work to do.
+    if ($before -eq 0) {
+        return [pscustomobject]@{ DisclosureLinks = 0 }
+    }
+
+    $text = $text.Replace($disclosureFrom, $disclosureTo)
+
+    $after = ([regex]::Matches($text, [regex]::Escape($disclosureFrom))).Count
+
+    if ($after -ne 0) {
+        throw ("Update-FrozenProofPageDisclosureLink: $Path still carries $after disclosure-manifest pointer(s) " +
+               "('$disclosureFrom') after the pin. Replace moves every occurrence, so a survivor means the " +
+               "target spelling now contains the source -- the pattern has been widened too far.")
+    }
+
+    [System.IO.File]::WriteAllText($Path, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+    return [pscustomobject]@{
+        DisclosureLinks = $before
+    }
+}
+
+<#
+.SYNOPSIS
+    Pin a FROZEN roster's package-column source links onto the release that roster belongs to.
+.DESCRIPTION
+    ConvertTo-FrozenRosterText above retargets the links a roster owns as a DOCUMENT -- its proof
+    links onto the sibling frozen pages, its out-of-docs links onto the deeper path. It leaves the
+    PACKAGE COLUMN alone, and that column is one link per row naming tree/master: the converted C#
+    for that package, on a branch that keeps moving. A frozen roster whose package column names
+    master is not frozen either, by exactly the argument Update-FrozenProofPage above makes for a
+    frozen proof page -- so the snapshot's roster is pinned onto the same signed tag,
+    nuget-<version>, that the pages beside it name.
+
+    A SIBLING rather than a third substitution inside ConvertTo-FrozenRosterText. That function
+    turns a LIVING roster into a frozen one and cannot be re-run on a roster it has already
+    transformed: it would insert a second note and relocate the already-relocated links. The
+    1.23.12.3 roster was frozen before this rule existed, so the one-off that pinned it needed a
+    transform it could run ALONE, on a file -- exactly as Update-FrozenProofPage is run alone. One
+    definition, two callers, so a committed snapshot cannot drift from the code that will produce
+    its successors.
+
+    THE COUNT IS THE ROSTER'S OWN ROW COUNT, and a disagreement is a throw. Every roster row is a
+    package whose first cell links its converted source, so the substitutions and the rows are the
+    same number by construction: a shortfall is rows whose link is spelled some other way, which
+    would publish still naming master, and a surplus is the pattern reaching something that is not a
+    package link. The rows are counted by Get-ValidatedRosterRows -- the roster parser of record,
+    the one check-roster-format.ps1 counts with -- rather than by a number written here, so the
+    assertion cannot go stale the day a package banks. Zero rows is its own throw: 0 -eq 0 is an
+    assertion that cannot fail, and a roster this function cannot find rows in is not one it should
+    be silently rewriting.
+
+    THE NOTE'S LINK IS NOT A PACKAGE LINK and must survive untouched. A frozen roster carries
+    exactly one '](../../ValidatedTestPackages.md)': the note's deliberate pointer at the LIVING
+    roster, written on purpose by ConvertTo-FrozenRosterText and the reason push-nuget.ps1 excludes
+    the roster from Update-FrozenProofPage. Both directions are asserted. A count that is not one is
+    template drift -- zero means the note's pointer went missing, more than one means the snapshot
+    holds a second walk back into the living tree that reads as the note's and is not. A count this
+    transform CHANGED means the source pattern was widened until it reached the note; that arm is
+    inert today by construction, the two strings having nothing in common, and it exists to fail the
+    day somebody widens the pattern rather than to measure anything now.
+
+    The pattern is anchored on the REPOSITORY, and spelled exactly as Update-FrozenProofPage spells
+    it, for the same reason: a future roster linking some other project's master must not be
+    silently rewritten to name a go2cs tag. The two spellings are deliberately duplicated rather
+    than hoisted -- hoisting would put the landed, gated body of Update-FrozenProofPage into this
+    change's diff -- so a repository move edits both, which is what the count assertions here and
+    there are for.
+
+    Read AND write through [System.IO.File] at UTF-8/no-BOM, for the reason stated at
+    Update-FrozenProofPage: PS 5.1's Get-Content reads a BOM-less UTF-8 file as ANSI and Out-File
+    re-encodes the damage, and this file ships to go2cs.net. Replace, not line splitting, so the
+    roster's line endings survive exactly as ConvertTo-FrozenRosterText joined them.
+.OUTPUTS
+    PSCustomObject: SourceLinks (int), Rows (int), NoteLinks (int).
+#>
+function Update-FrozenRosterSourceLinks {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $Version
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) { throw "Update-FrozenRosterSourceLinks: no roster at $Path." }
+    if ([string]::IsNullOrWhiteSpace($Version)) { throw 'Update-FrozenRosterSourceLinks: the version is empty.' }
+
+    $sourceFrom = 'github.com/ritchiecarroll/go2cs/tree/master/'
+    $sourceTo = "github.com/ritchiecarroll/go2cs/tree/nuget-$Version/"
+    # No trailing ')' on the note pattern: the link may legitimately carry a '#anchor' suffix, and
+    # the prefix is what is being counted.
+    $noteLink = '](../../ValidatedTestPackages.md'
+
+    $text = [System.IO.File]::ReadAllText($Path)
+
+    $rows = @(Get-ValidatedRosterRows -Path $Path).Count
+    $sourceLinks = ([regex]::Matches($text, [regex]::Escape($sourceFrom))).Count
+    $noteLinksBefore = ([regex]::Matches($text, [regex]::Escape($noteLink))).Count
+
+    if ($rows -eq 0) {
+        throw ("Update-FrozenRosterSourceLinks: $Path has no roster rows, so the count this transform is " +
+               "asserted against is zero and could only ever agree with itself. A snapshot roster with no " +
+               "rows is not one to rewrite -- reconcile the frozen page with the roster table's shape.")
+    }
+
+    if ($sourceLinks -ne $rows) {
+        throw ("Update-FrozenRosterSourceLinks: $Path carries $sourceLinks package-column source link(s) " +
+               "('$sourceFrom') across $rows roster row(s). Every row links its converted source, so the two " +
+               "must be equal: fewer links than rows would publish rows still naming a moving branch, more " +
+               "means the pattern reached something that is not a package link. Reconcile the roster's package " +
+               "column with this transform rather than publishing the snapshot as it stands.")
+    }
+
+    if ($noteLinksBefore -ne 1) {
+        throw ("Update-FrozenRosterSourceLinks: $Path carries $noteLinksBefore pointer(s) at the living roster " +
+               "('$noteLink') where the frozen-snapshot note carries exactly one. Zero means the note's " +
+               "deliberate pointer went missing; more than one means the snapshot holds another walk back into " +
+               "the living tree that reads as the note's and is not.")
+    }
+
+    $text = $text.Replace($sourceFrom, $sourceTo)
+
+    $noteLinksAfter = ([regex]::Matches($text, [regex]::Escape($noteLink))).Count
+
+    if ($noteLinksAfter -ne $noteLinksBefore) {
+        throw ("Update-FrozenRosterSourceLinks: pinning the source links changed the number of living-roster " +
+               "pointer(s) in $Path from $noteLinksBefore to $noteLinksAfter. The note's link is deliberate and " +
+               "this transform must not reach it -- the source pattern has been widened too far.")
+    }
+
+    [System.IO.File]::WriteAllText($Path, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+    return [pscustomobject]@{
+        SourceLinks = $sourceLinks
+        Rows        = $rows
+        NoteLinks   = $noteLinksAfter
+    }
+}
+
+<#
+.SYNOPSIS
+    Pin a FROZEN roster's disclosure-manifest prose pointer onto the release that roster belongs to.
+.DESCRIPTION
+    Update-FrozenRosterSourceLinks above pins the roster's PACKAGE COLUMN -- one tree/master link per
+    row, asserted against the row count. The roster carries one more link at a moving target that is
+    neither in that column nor in that count: a prose sentence pointing at a package's hand-owned
+    go2cs_test_disclosures.json, spelled blob/master rather than tree/master. The same argument reaches
+    it -- a frozen roster naming a moving branch is not frozen -- so it is pinned onto the same signed
+    tag, nuget-<version>, that the package column and the pages beside it name.
+
+    A SIBLING rather than a second phase inside Update-FrozenRosterSourceLinks, and the reason is that
+    function's own count. Its whole strength is that the number it asserts IS the roster's row count,
+    read from Get-ValidatedRosterRows, so it cannot go stale the day a package banks. This pointer is
+    prose, not a package-column link: folding it in would make the substitutions 205 against 204 rows,
+    or force a second count shape into the one function whose count describes itself. That is the
+    reasoning the residual of 339d2fdc7 gives for leaving it out -- honoured here rather than reversed.
+
+    THE COUNT IS A FIXED ONE, WHICH IS WEAKER THAN ITS SIBLING'S DERIVED COUNT -- said rather than
+    dressed up. Nothing structural in a roster equals "number of disclosure-manifest pointers": the
+    roster names one package's manifest because its prose happens to discuss one, so the expectation is
+    a census of the LIVING roster (docs\ValidatedTestPackages.md carries exactly one) and not a
+    derivation. Both directions are asserted anyway, and both say something. ZERO means either the
+    prose pointer went missing or this transform has already run -- which makes it non-idempotent BY
+    DESIGN, the property that makes the count a live check rather than a number that can only ever
+    agree. MORE THAN ONE means the roster grew a second such pointer that a fixed count does not
+    describe, and whoever added it should rule on it rather than have it pinned behind a number
+    written for one.
+
+    The after-count arm is a TRIPWIRE, not a measurement, and is inert today by construction: String's
+    Replace moves every occurrence, and 'blob/nuget-<version>/' cannot contain 'blob/master/', so the
+    count after is zero whenever the count before was one. It exists to fail the day somebody widens
+    the pattern, which is exactly the standing the sibling above gives its note-link arm.
+
+    The pattern is anchored on the REPOSITORY, spelled as both siblings spell it, so a roster that ever
+    links another project's blob/master is not silently rewritten to name a go2cs tag. Read AND write
+    through [System.IO.File] at UTF-8/no-BOM, replacing rather than splitting lines, for the reasons
+    stated at Update-FrozenProofPage: PS 5.1's Get-Content reads a BOM-less UTF-8 file as ANSI and
+    Out-File re-encodes the damage, and the roster's line endings must survive exactly as
+    ConvertTo-FrozenRosterText joined them.
+.OUTPUTS
+    PSCustomObject: DisclosureLinks (int) -- substitutions made.
+#>
+function Update-FrozenRosterDisclosureLink {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $Version
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) { throw "Update-FrozenRosterDisclosureLink: no roster at $Path." }
+    if ([string]::IsNullOrWhiteSpace($Version)) { throw 'Update-FrozenRosterDisclosureLink: the version is empty.' }
+
+    $disclosureFrom = 'github.com/ritchiecarroll/go2cs/blob/master/'
+    $disclosureTo = "github.com/ritchiecarroll/go2cs/blob/nuget-$Version/"
+
+    $text = [System.IO.File]::ReadAllText($Path)
+
+    $before = ([regex]::Matches($text, [regex]::Escape($disclosureFrom))).Count
+
+    if ($before -ne 1) {
+        throw ("Update-FrozenRosterDisclosureLink: $Path carries $before disclosure-manifest pointer(s) " +
+               "('$disclosureFrom') where a frozen roster carries exactly one. Zero means the prose pointer " +
+               "went missing, or that this transform has already run; more than one means the roster grew a " +
+               "pointer a fixed count does not describe. Reconcile the roster's prose with this transform " +
+               "rather than publishing the snapshot as it stands.")
+    }
+
+    $text = $text.Replace($disclosureFrom, $disclosureTo)
+
+    $after = ([regex]::Matches($text, [regex]::Escape($disclosureFrom))).Count
+
+    if ($after -ne 0) {
+        throw ("Update-FrozenRosterDisclosureLink: $Path still carries $after disclosure-manifest pointer(s) " +
+               "('$disclosureFrom') after the pin. Replace moves every occurrence, so a survivor means the " +
+               "target spelling now contains the source -- the pattern has been widened too far.")
+    }
+
+    [System.IO.File]::WriteAllText($Path, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+    return [pscustomobject]@{
+        DisclosureLinks = $before
     }
 }
 
