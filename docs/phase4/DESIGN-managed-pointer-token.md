@@ -747,10 +747,23 @@ silent wrong value is the only shape "no change" cannot absorb.
 - **i9, on a qualified host**: the neutrality PROOF COORD ruled — banked `os` at **PASS 683** with the
   census ON beside the census-OFF control — then `encoding/json`, `go/types`, `runtime/pprof` re-taken on
   the fixed instrument, then `reflect`, `net/http`, `crypto/tls`.
-- ⚠ **NOT C2's to run, and stated rather than quietly skipped**: the lane host is **disqualified** for a
-  roster row — bare `go` reports 1.24.7 against a corpus pinned at 1.23.x, and there is no PowerShell.
-  Running it there would answer normally against a corpus the tree does not have, which is the quiet form
-  of the ambient-toolchain trap. The suite-scale reading below is evidence, not that proof: GolibTests at
+- ⚠ **NOT C2's to run — and the FIRST version of this bullet was wrong in both of its stated reasons,
+  which is worth more than the conclusion it happened to reach.** It said the lane host is disqualified
+  because bare `go` reports 1.24.7 and "there is no PowerShell". Both were **PATH readings reported as
+  HOST facts**: the pinned `go1.23.12` is installed and passes all three preflight arms (`env -u GOROOT
+  <pinned>/bin/go env GOROOT` = the pinned root, `VERSION` = go1.23.12, the binary = go1.23.12), and
+  pwsh 7.6.5 is installed under the dotnet global-tools directory. A probe answering "not found" describes
+  the environment it ran in, not the machine — this tree's own written lesson, paid in the direction that
+  takes work off the lane's plate, which is the direction to distrust first.
+  **The REAL disqualifier is disk, it is structural, and the sweep's own preflight is what found it**:
+  `run-validated-sweep.ps1:126` refuses below a **25 GB** floor and the host measured **10.1 GB** free.
+  No cleanup reaches it — the writable allowance is roughly 9–11 GB — so this is a property of the host
+  class, not of a full drive. `-IgnoreDiskPreflight` exists, and the script's own words for what it
+  yields are **"unmeasurable results"**: below the floor, writes fail mid-run, builds report FALSE REDS
+  and a partial write can truncate a tracked file (three such incidents, 2026-08-13). A manufactured red
+  would land on the **census-ON** arm and read exactly like "the fix failed", which is the one outcome
+  that must not be fabricated — so the flag is refused here rather than used. The conclusion is unchanged
+  and every reason for it is different. The suite-scale reading below is evidence, not that proof: GolibTests at
   Release with tiering off, `RuntimeAddrRangesTests` excluded (it hangs at master), **census OFF Failed 48
   / Passed 686 / Skipped 11 / Total 745** and **census ON Failed 48 / Passed 695 / Skipped 2 / Total 745**,
   0 aborted either way — the failure counts IDENTICAL across the env gate, the +9 being the control class
