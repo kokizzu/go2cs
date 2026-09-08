@@ -179,3 +179,91 @@ naming `getcallerpc`; a pass is that second block being replaced by a Go-shaped 
 above about the corpus is a **read at the code with file and line**, and every claim about Go is a
 **measurement at the corpus pin**. The converted-side rows in §2 are the runners' measurements, not
 mine. The body and the GolibTests arm follow as separate deliverables, in the ruled order.
+
+---
+
+## 10. AMENDMENT — 2026-09-08, written at the body, three corrections and one ruling absorbed
+
+Appended rather than rewritten: §§1–9 stand as they were when the record was announced at
+`b0c6bff33`, and everything below is what building the increment measured.
+
+### 10.1 §3's remedy SHRANK again, and the census is why
+
+§3 tabled three functions to sever — `fatalthrow`, `fatalpanic`, `traceback`. A census of the
+corpus says the cut is one frame HIGHER and covers two functions instead:
+
+| callee | callers in the whole corpus |
+|:--|:--|
+| `fatalthrow` | exactly **two** — `throw` (`panic.cs:1098`) and `fatal` (`panic.cs:1118`) |
+| `fatalpanic` | exactly **one** — `gopanic` (`panic.cs:851`), itself already dead at its own `getcallerpc()`, and a path no panic in this runtime takes (a panic is a golib `PanicException` reported by `CrashReport`) |
+
+So displacing `throw` and `fatal` leaves `fatalthrow`, `fatalpanic`, `getcallerpc` and
+`getcallersp` all **UNREACHED rather than unimplemented** — `write1`'s shape from §2, arrived at a
+second time. §3 said the remedy was "to stop the fatal path needing them"; that is what this is,
+and it is two registry entries rather than three severs.
+
+### 10.2 §4 was HALF right: the renderer exists, the ANCHOR did not
+
+§4 said "the renderer is not this increment's work — the increment is a *call*, not a new printer."
+The helpers (`appendGoroutineHeader`, `appendGoFrames`, `appendCreatedBy`) are indeed reusable. What
+§4 missed is that `callerFrames()` located its boundary by identity against **`Stack`'s own method
+handle**, hard-coded, so a SECOND entry point into the walk could not reuse it: it would have fallen
+to the count-based fallback, which is the exact failure the identity boundary replaced in 2026-09-04.
+The anchor is a parameter now, each entry point passing its own handle, and `Stack`'s body is split
+so the fatal path and the panic path render through **one** `renderStack` rather than two copies.
+
+### 10.3 COORD's ruling absorbed: the primitive lives in golib, and it has three consumers
+
+Mailbox `4e9b115` (correcting `e9447240b` after R's count correction in `33a99c6`): *"the
+internal/sync @throw/fatal pair is C1 fatal-path class with a second site at 1.24; both sites become
+one-line forwards to the managed fatal primitive C1 increment defines."*
+
+That decides the primitive's HOME, and not by preference. The shims are declared in three packages —
+`runtime`, `sync`, and at Go 1.24 the new `internal/sync` — and golib is the only assembly below all
+three. A primitive in `runtime` could not serve the other two (neither references it), and
+`internal/sync` referencing `sync` is the project-reference **cycle** `check-solution-integrity`'s
+per-GOOS assertion exists to catch. So: `go.golib.FatalReport`, shaped like `CrashReport` and
+registered from `runtime`'s own module initializer, exactly as the crash traceback and the
+divide-by-zero panic value already invert that dependency.
+
+`sync`'s two forwards land with this increment. `internal/sync`'s are R's seat B and land when the
+1.24 package exists in the corpus.
+
+### 10.4 The measured footprint, three targets
+
+Two-seeded, both arms built from the same toolchain (`go version <binary>` = go1.24.13 on each),
+all six roots seeded before any arm converted, each arm asserting it WROTE (1,660 windows /
+1,733 linux / 1,733 darwin `.cs`) and that a hand-own no converter may write was byte-unchanged:
+
+| path | delta | note |
+|:--|:--|:--|
+| `runtime/panic.cs` | −53 / +2 | two bodies out, two placeholders in; the diff is **byte-identical on all three targets** |
+| `runtime/{windows,linux,darwin}/package_info.cs` | −1 / +1 each | one re-encoded `GoPositionMap` line for `panic.go`, whose range list loses exactly the two displaced functions' ranges |
+
+Nothing else, on any target. Zero `GoImplement`/`GoInit` lines in the delta; no hoisted literal
+moved (both bodies spelled their strings inline, so there was none to carry or relocate).
+
+The map line is applied SURGICALLY rather than by three-way merge, and the reason is recorded
+because it looks like the hazard it is not: `git merge-file` **conflicted** on all three
+`package_info.cs`, and the conflict is the adjacent-insert class rather than a stale target — the
+committed `panic.go` map line is byte-identical to the base emission on every target (asserted),
+while other map lines in the same region carry the corpus's standing position-map drift. The
+residual against the emission is the IDENTICAL SET before and after the application on every file
+(0 / 64 / 72 / 60 lines).
+
+### 10.5 §5a is UNCHANGED and still owed a ruling
+
+The plain `goroutine N [status]:` header is what this increment prints; the `gp=/m=/mp=` fields Go's
+throw-level traceback carries are still refused, for §5a's reason. Nothing measured while building
+the body changed that, and the body is shaped so a ruling the other way costs one renderer, not a
+re-cut.
+
+### 10.6 The divergence a sweep must measure, named before it is measured
+
+Today a `runtime.throw` inside the Phase-4 test host raises a stub exception that `TestHost.Run`'s
+outer catch can see. After this increment the primitive calls `Environment.Exit(2)` and the host
+dies where Go's test binary dies. That is strictly more faithful — and it is exactly the shape that
+can trade a MEASURABLE row for an UNMEASURABLE one, so it is named here rather than discovered in a
+sweep. The prediction: no banked row moves, because the oracle side dies on a fatal too, and the
+common case is already a dead process (the stub exception reaches golib's backstop, which exits 2);
+what changes is stderr. The gate that can falsify it is the roster sweep, owed and not run here.
