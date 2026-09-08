@@ -55,6 +55,33 @@ internal static class Q44RegistryCensus
     // cannot answer falsifier (b) -- which needs to know WHICH types met at offset 0.
     private static readonly ConcurrentDictionary<string, long> s_arm2Pairs = new();
 
+    // Conservative and CLOSED over fields: a struct counts as reference-bearing if it, or anything it
+    // contains, is a managed reference. `RuntimeHelpers.IsReferenceOrContainsReferences<T>` answers
+    // this exactly but needs a generic parameter, and here the type is only known as a `Type` -- so
+    // the walk is explicit, and it fails REFERENCE-WARDS on anything it cannot decide, because the
+    // consequence of a wrong "blittable" is corruption rather than a wrong answer.
+    private static bool PointeeContainsReferences(Type t)
+    {
+        if (!t.IsValueType)
+            return true;
+
+        if (t.IsPrimitive || t.IsEnum || t.IsPointer)
+            return false;
+
+        foreach (var f in t.GetFields(System.Reflection.BindingFlags.Instance |
+                                     System.Reflection.BindingFlags.Public |
+                                     System.Reflection.BindingFlags.NonPublic))
+        {
+            if (f.FieldType == t)
+                continue;
+
+            if (PointeeContainsReferences(f.FieldType))
+                return true;
+        }
+
+        return false;
+    }
+
     internal static void Mint() => Interlocked.Increment(ref s_mints);
 
     internal static void Arm1() { Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm1); }
@@ -75,8 +102,27 @@ internal static class Q44RegistryCensus
         else
             Interlocked.Increment(ref s_arm2b);
 
-        // The pair is recorded by NAME rather than by Type so the dump needs no reflection at exit.
-        string pair = $"{(atOffsetZero ? "2a" : "2b")}  requested={requested.Name}  resolved={box.GetType().Name}";
+        // ⚠ THE POINTEE TYPE, not just the box's class. `box.GetType().Name` answers `StandardBox`1`
+        // for every box in the corpus -- a name that cannot distinguish one pointee from another, and
+        // the 2a remedy's soundness predicate is a question ABOUT THE POINTEE (is the storage
+        // reference-bearing? does T fit inside it?). Recording the class alone would have produced a
+        // corpus table that looks complete and cannot answer the question it was collected for.
+        string resolvedName = box.GetType() is { IsGenericType: true } g
+            ? $"{g.Name[..g.Name.IndexOf('`')]}<{string.Join(',', Array.ConvertAll(g.GetGenericArguments(), static t => t.Name))}>"
+            : box.GetType().Name;
+
+        // Whether the POINTEE storage carries a managed reference decides whether an offset-0 alias is
+        // even expressible: Unsafe.As over mismatched GC layout is memory corruption, not a wrong
+        // value. Recorded per site so the remedy can be sized against the sound and unsound halves
+        // separately rather than against arm 2a as a lump.
+        Type pointee = box.GetType() is { IsGenericType: true } gp ? gp.GetGenericArguments()[0] : box.GetType();
+        bool pointeeHasRefs = !pointee.IsValueType || PointeeContainsReferences(pointee);
+        bool requestedHasRefs = !requested.IsValueType || PointeeContainsReferences(requested);
+
+        string pair = $"{(atOffsetZero ? "2a" : "2b")}  requested={requested.Name}" +
+                      $"{(requestedHasRefs ? "(refs)" : "(blittable)")}  resolved={resolvedName}" +
+                      $"{(pointeeHasRefs ? "(refs)" : "(blittable)")}" +
+                      $"  alias-expressible={(atOffsetZero && !requestedHasRefs && !pointeeHasRefs ? "YES" : "NO")}";
         s_arm2Pairs.AddOrUpdate(pair, 1, static (_, n) => n + 1);
     }
 
