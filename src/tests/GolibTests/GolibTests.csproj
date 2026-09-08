@@ -73,6 +73,12 @@
        assumed: `-getProperty:GoTargetOS` returns "" here. -->
   <ItemGroup Condition="'$(GoTargetOS)' != '' and '$(GoTargetOS)' != 'windows'">
     <Compile Remove="WindowsNetUserInfoTests.cs" />
+
+    <!-- The token door lives in syscall/windows/dll_windows.cs, so SyscallN exists only on this
+         flavour. Its REFUSAL arms are host-independent (the door throws in managed code before the
+         native invoke); its end-to-end arm gates on the running host and reports Inconclusive.
+         Same reasoning, and same '!= \'\' and != windows' form, as the line above. -->
+    <Compile Remove="TokenDoorWiredTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
