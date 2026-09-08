@@ -50,6 +50,7 @@ internal static class Q44RegistryCensus
     private static long s_arm2b;
     private static long s_arm3;
     private static long s_arm4;
+    private static int s_flushing;
 
     // Per-arm TYPE PAIRS, because §10.5 asks "whether the pointee type matched" and a bare count
     // cannot answer falsifier (b) -- which needs to know WHICH types met at offset 0.
@@ -96,9 +97,62 @@ internal static class Q44RegistryCensus
     // hot path, ON the hot path, is a perturbation wearing a proof's clothes. The gate is the
     // banked `os` row.
 
-    internal static void Arm1() { Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm1); }
-    internal static void Arm3() { Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm3); }
-    internal static void Arm4() { Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm4); }
+    // ⚠ THE FLUSH COMES AFTER THE ARM COUNTER, and the control is what taught it. Flushing on the
+    // conversion increment alone made every partial block report Q44CENSUS-BROKEN -- "arms sum to
+    // 249999 but conversions is 250000" -- because the flushing thread had counted its conversion and
+    // not yet its arm. The census's own not-exhaustive alarm, fired by the instrument on itself.
+    internal static void Arm1() { long n = Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm1); MaybeFlush(n); }
+    internal static void Arm3() { long n = Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm3); MaybeFlush(n); }
+    internal static void Arm4() { long n = Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm4); MaybeFlush(n); }
+
+    // How often a partial block is written. Chosen large because the flush is I/O on the census-ON
+    // path and this instrument has already been non-neutral twice; at the corpus's biggest measured
+    // row (3.9 M conversions) it is sixteen writes, and at a small row it is one -- the FIRST.
+    private const long FlushEvery = 250_000;
+
+    /// <summary>
+    /// Writes a PARTIAL block at the first conversion and every <see cref="FlushEvery"/> after it, so
+    /// a host that DIES before its exit hook still leaves a reading.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ COORD ruling 3 (82c60cec4), from `reflect` reading "0 files, no census output": the census
+    /// reported only from a ProcessExit hook, so a host that dies before exit writes NOTHING, which is
+    /// INDISTINGUISHABLE from a row that performed no conversions. That is this tree's own
+    /// unrun-instrument falsifier wearing a result's clothes, and `reflect` had to be recorded
+    /// UNMEASURED rather than 0 because of it.
+    ///
+    /// ⚠ THE NEUTRALITY CONSTRAINT SHAPED THE DESIGN, because this instrument broke neutrality twice
+    /// already -- once through a second Resolve, once through a counter added to prove it did not.
+    /// So the hot path gains NO ATOMIC OPERATION: the conversion counter was ALREADY an
+    /// Interlocked.Increment, and its return value is now read instead of discarded. What is added
+    /// per conversion is one comparison against a constant. The I/O itself is off the per-conversion
+    /// path by a factor of 250,000, and one thread flushes at a time -- a second thread arriving
+    /// mid-flush skips rather than queues, because a census must never become a lock the program
+    /// under test waits on.
+    /// </remarks>
+    private static void MaybeFlush(long conversions)
+    {
+        if (conversions != 1 && conversions % FlushEvery != 0)
+            return;
+
+        // One flusher at a time; a concurrent arrival skips. Losing a partial is free -- the next
+        // one is 250,000 conversions away and the exit hook writes the final block regardless.
+        if (Interlocked.Exchange(ref s_flushing, 1) == 1)
+            return;
+
+        try
+        {
+            DumpTo(OutputPath, partial: true);
+        }
+        catch
+        {
+            // A census must not take the program down. DumpTo already reports its own write failures.
+        }
+        finally
+        {
+            Interlocked.Exchange(ref s_flushing, 0);
+        }
+    }
 
     /// <summary>
     /// Arm 2: the resolve hit a box of a DIFFERENT pointee type. <paramref name="atOffsetZero"/>
@@ -107,12 +161,14 @@ internal static class Q44RegistryCensus
     /// </summary>
     internal static void Arm2(Type requested, object box, bool atOffsetZero)
     {
-        Interlocked.Increment(ref s_conversions);
+        long conversion = Interlocked.Increment(ref s_conversions);
 
         if (atOffsetZero)
             Interlocked.Increment(ref s_arm2a);
         else
             Interlocked.Increment(ref s_arm2b);
+
+        MaybeFlush(conversion);
 
         // ⚠ THE POINTEE TYPE, not just the box's class. `box.GetType().Name` answers `StandardBox`1`
         // for every box in the corpus -- a name that cannot distinguish one pointee from another, and
@@ -181,7 +237,7 @@ internal static class Q44RegistryCensus
     /// The header line names the process and the entry assembly so a block is attributable either
     /// way.
     /// </remarks>
-    internal static void Dump() => DumpTo(OutputPath);
+    internal static void Dump() => DumpTo(OutputPath, partial: false);
 
     // Which paths this process has already written, so the FIRST write truncates and the rest append.
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> s_written = new();
@@ -190,7 +246,9 @@ internal static class Q44RegistryCensus
     /// Dumps to an explicit path, so a caller that must not disturb a live census run (the control)
     /// can report into its own file.
     /// </summary>
-    internal static void DumpTo(string path)
+    internal static void DumpTo(string path) => DumpTo(path, partial: false);
+
+    private static void DumpTo(string path, bool partial)
     {
         long c = Interlocked.Read(ref s_conversions);
         long a1 = Interlocked.Read(ref s_arm1), a2a = Interlocked.Read(ref s_arm2a);
@@ -202,7 +260,7 @@ internal static class Q44RegistryCensus
 
         var lines = new System.Collections.Generic.List<string>
         {
-            $"Q44CENSUS mints={Interlocked.Read(ref s_mints)} conversions={c} " +
+            $"{(partial ? "Q44CENSUS-PARTIAL" : "Q44CENSUS")} mints={Interlocked.Read(ref s_mints)} conversions={c} " +
             $"arm1={a1} arm2a={a2a} arm2b={a2b} arm3={a3} arm4={a4}",
 
             // Attribution, and it goes AFTER the totals rather than before: an existing control
@@ -212,9 +270,17 @@ internal static class Q44RegistryCensus
             $"entry={System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "?"} " +
             $"utc={DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}",
 
+            // ⚠ ONLY A FINAL BLOCK ASSERTS EXACT RECONCILIATION. A partial is taken while other
+            // threads are mid-arm -- each has counted its conversion and not yet its arm -- so a
+            // small shortfall there is the instrument being honest about a live count, not a broken
+            // classification. Reporting it as BROKEN would cry wolf on every partial and teach a
+            // reader to ignore the one alarm that matters. The skew is PRINTED rather than hidden,
+            // because an unexplained gap in a partial is exactly what a reader must be able to check.
             sum == c
                 ? $"Q44CENSUS-RECONCILES arms sum to {sum} == conversions {c}"
-                : $"Q44CENSUS-BROKEN arms sum to {sum} but conversions is {c} -- the classification is NOT exhaustive",
+                : partial
+                    ? $"Q44CENSUS-PARTIAL-SKEW arms sum to {sum} against conversions {c}, delta {c - sum} -- threads mid-arm at flush; a FINAL block must reconcile exactly"
+                    : $"Q44CENSUS-BROKEN arms sum to {sum} but conversions is {c} -- the classification is NOT exhaustive",
         };
 
         foreach (var kv in s_arm2Pairs)
