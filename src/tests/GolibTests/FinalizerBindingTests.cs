@@ -179,10 +179,43 @@ public class FinalizerBindingTests
     // depending on which C# version admits a ref-returning lambda.
     private static ref nint HolderFirstField(ref Holder h) => ref h.v;
 
+    // ⚠ THE TYPED `default(Holder)` IS LOAD-BEARING: a BARE `default` HERE IS THE NIL POINTER, and
+    // it dies in the ARM'S OWN CONSTRUCTION before the predicate is ever asked. `StandardBox<T>` has
+    // three constructors and two are reachable from a test: `StandardBox(in T value)` and
+    // `StandardBox(NilType _) : base(isNull: true)`. `NilType` is a CLASS, so the untyped `default`
+    // literal converts to it as null, and C#'s better-function-member tie-break prefers a by-value
+    // parameter over an `in` one -- so `new StandardBox<Holder>(default)` selects the NIL-POINTER
+    // constructor. `Holder` is a plain struct, so `IsNull` reduces to `m_isNull` alone
+    // (`s_valueCanBeNull` is false for a non-nullable value type), and the very next `.of(...)` reads
+    // `Value` and throws NilPointerDereference from inside `FieldRefWrappers.Wrap`.
+    //
+    // MEASURED, not supposed: that is exactly what the i7 re-gate at `c1fefa431` read -- a
+    // `go.PanicException` from `StandardBox.get_Value` via `FieldRefWrappers.Wrap` at this arm's
+    // construction line, with arms 0-6 and 8 green and the predicate never entered. The converted
+    // corpus never spells the bare form (395 typed sites, 0 bare, `git grep` over `src/**/*.cs`), so
+    // this is a hand-written-code trap rather than a live corpus defect -- which is precisely why it
+    // belongs in a comment where the next hand-author stands.
+    //
+    // The assertion is not decoration. This file's author could not compile when the fix was written
+    // (no C# toolchain on that host), so the mechanism above was derived by a complete case analysis
+    // over the three constructors rather than measured directly. If that derivation is WRONG, this
+    // arm must say so by name instead of dying as a nil dereference deep inside `Wrap`.
+    private static ж<Holder> NewHolderBox()
+    {
+        ж<Holder> container = new StandardBox<Holder>(default(Holder));
+
+        Assert.IsFalse(container.IsNilPointer,
+            "A `StandardBox<Holder>` built from a TYPED `default(Holder)` must be a live box, not " +
+            "the nil pointer. If this fires, the overload analysis in the comment above is wrong and " +
+            "the arms below are testing something other than what they claim.");
+
+        return container;
+    }
+
     [TestMethod]
     public void Arm7_AFieldReferenceBoxBindsToItsFieldsPointerType()
     {
-        ж<Holder> container = new StandardBox<Holder>(default);
+        ж<Holder> container = NewHolderBox();
         ж<nint> field = container.of<nint>(HolderFirstField);
         field.Value = 97531;
         Action<ж<nint>> finalizer = _ => { };
@@ -236,7 +269,7 @@ public class FinalizerBindingTests
     [TestMethod]
     public void Arm9_RegisteringAFieldReferenceBoxThroughSetFinalizerDoesNotThrow()
     {
-        ж<Holder> container = new StandardBox<Holder>(default);
+        ж<Holder> container = NewHolderBox();
         ж<nint> field = container.of<nint>(HolderFirstField);
 
         // ⚠ THE ARM ARMS 7 AND 8 COULD NOT BE. They call the PREDICATE; this calls
