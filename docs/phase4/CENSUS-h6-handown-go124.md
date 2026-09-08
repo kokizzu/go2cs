@@ -1058,3 +1058,137 @@ package `syscall` · Go members this shell names: **179** · present at 1.24.13:
 
 **PROPOSED: RE-DERIVE** — every Go member this shell names survives at 1.24.13.
 
+
+---
+
+## 2026-09-07 — ⚠ SCOPE-RULE CORRECTION: `MOVED-WITHIN-PACKAGE` IS THE MOST DANGEROUS CLASS, NOT THE SAFEST (appended; §1–§10 unchanged)
+
+**Written after the H5 rehearsal (`REHEARSAL-h5-go124.md`, `917f8bfac`) measured a corpus build that
+died in `runtime`, and after that record's own diagnosis of THIS census turned out to be wrong.**
+
+### 1. What the rehearsal record claimed, and what is actually true
+
+The rehearsal record's §6 said this census's **population derivation** had failed, because
+`runtime/runtime2.cs` and `runtime/mfinal.cs` gate the entire 1.24.13 corpus build and neither
+appears anywhere in this document. **That diagnosis is withdrawn.** Three measurements refute it:
+
+```
+  §1 population       153 = 142 marked (line-anchored) + 11 unmarked _impl companions
+                      of which 44 whole-file rewrites -- runtime2.cs and mfinal.cs are AMONG THEM
+  §2 status table     sums to 153 -- nothing was dropped from the enumeration
+  arm14_h6diff        runtime2.go -> MEMBERS-REMOVED  type note
+                      mfinal.go   -> BODY-ONLY  2 decl(s)
+```
+
+**The population held both files and the classifier named the exact member that broke the build.**
+The record reasoned from a grep of this document returning nothing — but this document does not
+enumerate its 149 rows individually, it names the rows that need a human. **Absence from the
+write-up was never evidence of absence from the population**, and checking an artifact's index
+instead of its derivation is the error.
+
+### 2. ⚠ WHAT ACTUALLY DROPPED IT — §6b's scope correction, right for Go and inverted for go2cs
+
+§6b re-checked every removed name against the whole package and filed the relocations as
+**`MOVED-WITHIN-PACKAGE` (8 rows)**, placing that class under **MECHANICAL — "re-derive without
+judgement"**, beside COMMENT-ONLY and BODY-ONLY. `note` left `runtime2.go` for a sibling file in the
+SAME package, so it landed there and was never named in §6c.
+
+**That rule answers the Go question correctly and the go2cs question backwards:**
+
+| | Go | go2cs |
+|:--|:--|:--|
+| a type relocates between files of one package | invisible; no consumer breaks | the hand-own is **marker-protected and never re-emitted**, while the converter emits the type into its **new** file — **both declare it** |
+
+**A same-package relocation is the one shape guaranteed to collide.** The class this census filed as
+mechanical is the class that stops the corpus compiling, and the H5 build measured it: `note_other.cs`
+(emitted, new at 1.24.13) and `runtime2.cs` (hand-owned, frozen at 1.23.12) both declare `note` →
+CS0102/CS0111, in a leaf almost every package depends on.
+
+### 3. The refinement that BOUNDS the class — a relocation collides only if the hand-own RE-DECLARES
+
+Not every relocation is fatal, and the discriminator is the hand-own's **kind**:
+
+- a **whole-file rewrite** reproduces Go's declaration with **Go's own members** → CS0102 on each;
+- an **`_impl.cs` companion** supplements the type with **go2cs-invented members disjoint from Go's**
+  → the two partial declarations **MERGE**, and nothing breaks.
+
+Measured over all **142** marked files × **3** targets, comments stripped, restricted to files Go
+actually SELECTS (`go list -f '{{.GoFiles}}'` at 1.24.13) and to each hand-own's own GOOS:
+
+```
+  type-level relocations, hand-own re-declares the type                    2
+
+  runtime/runtime2.cs    :: note    -> note_other.go   WHOLE-FILE   COLLIDES   (measured at H5)
+  reflect/value_impl.cs  :: MapIter -> map_swiss.go    companion    MERGES
+```
+
+`reflect/value_impl.cs` declares `partial struct MapIter { [GoReflectCompanion] internal
+IEnumerator? mapEnum; }` — a field no emission ever declares — so it survives its own relocation by
+member disjointness. **Exactly one whole-file rewrite has a relocated type at 1.24.13, and it is the
+file that gated the build.**
+
+### 4. The re-classification — every MEMBERS-REMOVED row rolled up from its members
+
+Scope: this pass re-resolves the **142 marked files**; **88** have a principal present in BOTH trees
+and are classifiable here. It is deliberately NARROWER than §2's 103 file-resolved + 50
+package-resolved rows — a relocation needs a principal on both sides — so these counts re-derive the
+collision question, they do not restate §6b's.
+
+```
+  MOVED-WITHIN-PACKAGE          5     os/linux/wait_waitid.cs, runtime/runtime2.cs,
+                                      runtime/runtime2_impl.cs,
+                                      syscall/linux/zsyscall_linux_amd64_impl.cs,
+                                      syscall/windows/zsyscall_windows_impl.cs
+  MIXED (some gone, some moved)  6     internal/abi/type_impl.cs, reflect/value_impl.cs,
+                                      runtime/{darwin,linux,windows}/lock_*_impl.cs, sync/mutex.cs
+  MEMBERS-REMOVED (truly gone)   6     os/windows/file_windows_impl.cs, runtime/mbitmap_impl.cs,
+                                      runtime/stubs_impl.cs, sync/runtime_impl.cs,
+                                      syscall/linux/syscall_linux_amd64_impl.cs, testing/testing.cs
+```
+
+**Of these, the rows whose hand-own RE-DECLARES a relocated type — and therefore need a human, not a
+mechanical re-derivation — are `runtime/runtime2.cs` (COLLIDES) and `reflect/value_impl.cs` (merges,
+carried for the record).** The other relocations are mechanical, as §6b said, for the reason §6b gave.
+
+### 5. DISPOSITIONS
+
+**`runtime/runtime2.cs` — RE-WRITE.** Its principal lost `type note` to `note_other.go`; the hand-own
+declares `note`; the converter emits `note_other.cs`. This is the H4 bill's whole critical path and it
+is measured, not predicted.
+
+**`runtime/mfinal.cs` — RE-DERIVE, and the rehearsal record's claim about it is DOWNGRADED.** It
+classifies **BODY-ONLY**; `finblock` is byte-identical between the two releases; it is **not** a
+collision. Its four errors in the masked H5 build were never separately attributed and are consistent
+with cascade from the `note` failure. **The record named it a second root; that half is unattributed.**
+
+### 6. Controls
+
+```
+  POSITIVE (COORD's required control)  runtime/runtime2.cs classifies MEMBERS-REMOVED -> RE-WRITE
+                                       on the re-run, and survives every filter          PASS
+  NEGATIVE                             three earlier "candidates" -- runtime/managed_impl.cs::name,
+                                       syscall/linux/sockaddr_linux_impl.cs::Iovec,
+                                       syscall/linux/syscall_linux_amd64_impl.cs::Timeval --
+                                       were COMMENTED-OUT CODE and vanish once comments
+                                       are stripped                                      PASS
+  NEGATIVE                             a type declared in its OWN principal is never flagged
+                                       (`finblock`, which never moved): 0 rows            PASS
+```
+
+### 7. Instrument corrections made during this pass
+
+Each produced a plausible, well-formed, wrong answer:
+
+- The classifier reported **PARSE-ERROR** on both files — a **Windows exe handed `/c/...` paths**.
+  Re-spelled `C:/...`, it classifies them correctly. A parse error that is a path error.
+- Taking the **first** file that declares a relocated type picked `note_js.go` (js-only, never
+  selected) and **dropped the measured blocker from its own collision set**. All declaring files are
+  collected now.
+- Extracting declared types without stripping comments counted **commented-out code** as
+  declarations — the mirror of the unanchored-marker over-count §1 of this census documents, walked
+  into while checking this census.
+- A per-GOOS hand-own was checked against foreign targets, flagging `syscall/linux/*` against the
+  windows file set. A hand-own in a `<goos>/` folder is only compiled on that target.
+
+**None was caught by a gate. Each was caught by a rendered result that could not be true** — most
+sharply the collision set that did not contain the file whose collision had already been measured.
