@@ -1329,3 +1329,79 @@ whole-file rewrite that re-declares a member Go has relocated into a file the co
 that can duplicate — type, function, const, var — not just the kind that motivated it.** Mine was
 built from a type-level defect (`note`) and inherited that shape; the second row was invisible to it
 until a peer's unrelated finding prompted the audit.
+
+---
+
+## 2026-09-07 — DOSSIER ADDITION: `internal/concurrent`, the hand-own-by-consequence twin of `internal/weak` (COORD routing, `e4ef6d486`)
+
+**Both packages are REMOVED at 1.24.13 *and* hand-owned-by-consequence, and that pair of properties
+puts them in a class of their own — one the deletion instrument cannot dispose of.**
+
+### The two properties, and why together they matter
+
+**Hand-owned by consequence** (CLAUDE.md's class of four): every non-test Go file in the package is
+hand-owned, so `unmarkedFileCount == 0` makes the stdlib driver `continue` before `writeProjectFile`
+— the package's `.csproj`, `package_info.cs` and `README.md` are never re-emitted at all.
+
+**Removed at 1.24.13**, verified against a PINNED toolchain:
+
+```
+  internal/concurrent            REMOVED at 1.24.13
+  internal/weak                  REMOVED at 1.24.13
+  crypto/internal/boring/bcache  LIVE
+  internal/godebug               LIVE
+```
+
+⚠ The same probe run BEFORE the GOROOT pin reported all four LIVE — the toolchain-resolution trap, in
+this record's own working. **Only the pinned reading is the measurement.**
+
+### What the deletion instrument does with them — nothing, on every path
+
+Measured on the three-target dry run (§10 of `REHEARSAL-h5-go124.md`):
+
+| file | class | why it survives |
+|:--|:--|:--|
+| `internal/concurrent/hashtriemap.cs` | **PROTECTED** | carries the hand-own marker |
+| `internal/concurrent/hashtriemap_whitebox.cs` | **PROTECTED** | carries the hand-own marker |
+| `internal/concurrent/package_info.cs` | **UNRESOLVED** | no derivable Go principal |
+| `internal/weak/pointer.cs` | **PROTECTED** | carries the hand-own marker |
+| `internal/weak/package_info.cs` | **UNRESOLVED** | no derivable Go principal |
+| both `.csproj`, `README.md`, `.ico`/`.png`, `.cs.auto` | — | not a `.cs`; the instrument does not consider them |
+| the `_test.cs` / `go2cs_test_host.cs` set | — | `<Compile Remove>`d test artifacts |
+
+```
+  corpus files surviving, internal/concurrent   13
+  corpus files surviving, internal/weak         11
+                                               ---
+  total, for packages that DO NOT EXIST at 1.24.13   24     deleted by the pass: 0
+```
+
+### ⚠ THE RULE THIS EXPOSES — the marker protects a file from the CONVERTER, not from its package's REMOVAL
+
+`PROTECTED` is exactly right for `bcache` and `godebug`: same hand-own-by-consequence class, both
+**LIVE** at 1.24.13, and the marker is doing its job — stopping a reconvert from clobbering a
+hand-written body. It is exactly **wrong** for `concurrent` and `weak`, where the package itself is
+gone and every file in it is dead weight the overlay would carry into the corpus.
+
+**The discriminator is the PACKAGE's existence at the target, not the file's marker** — and the
+instrument currently consults only the marker. This is a third interaction beside the two reported in
+`1f5e8f276` (`golib` classified `DELETE-ABSENT`; the UNRESOLVED refusal running after the deletion
+loop), and it is the mirror of the first: there the instrument deletes what it must keep, here it
+keeps what it must delete.
+
+### Disposition
+
+**`internal/concurrent` — DELETE THE DIRECTORY, as its twin `internal/weak` does.** Neither is a
+per-file question: a removed package leaves no file behind, hand-owned or otherwise. Both are already
+named in §2's REMOVED rows; what this section adds is that **their removal cannot be performed by the
+deletion instrument as written**, because every path through it declines them.
+
+**Proposed instrument rule, stated so it does not weaken the marker guard:** classify by package
+first — *if the package is absent from `go list std` at the target, every file under it is
+`DELETE-PACKAGE-GONE`, marker or no marker* — and keep the marker guard for files in packages that
+still exist. The two rules answer different questions and neither subsumes the other.
+
+⚠ **Scope, stated rather than implied:** `internal/weak` also carries a registry re-key that G owns
+(`internal/weak.runtime_* → weak.runtime_*`). That is a separate change on a separate branch and this
+section does not touch it; what is recorded here is only the deletion-disposition of the two
+directories.
