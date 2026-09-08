@@ -24189,4 +24189,87 @@ the four minutes BEFORE writing a dispatch rather than after.
 it must be run on the suspected DOWNSTREAM member as well as on the head — running only the head
 cannot tell the two apart. These runs are diagnostic only: each rewrites the package's comparison
 record, so the records were deleted and the worktree restored after every one.
+
+## 2026-09-08 — C1: **the test-capability allow-list's LIVE cost on the banked roster is 44 gated declarations and ZERO liftable ones — and a widening keyed on capability NAMES would admit eight, of which two break the build and six pass vacuously**
+
+**WHAT WAS MEASURED, AND OVER WHAT.** Every `requires unsupported testing capabilities:` line in the
+**204 committed proof pages** under `docs/validation/current/` — i.e. the banked roster, which is
+exactly the population the phrase *roster impact* names. Parsed with a per-declaration regex whose
+row count is asserted (44) rather than eyeballed, and positive-controlled on `math.big.md`, which
+must yield `TestCalibrate → B.ResetTimer` and does.
+
+**This is a SECOND DERIVATION of a number the allow-list already carries, taken from the other
+side.** `supportedTestCapabilities()`'s own comment records a GOROOT-side receiver-typed scan
+("go1.23.12 — ZERO rows"); this reads what the pipeline ACTUALLY GATED across 204 banked rows. Two
+instruments with different blind spots agreeing is the strongest cross-check this tree names — and
+the agreement is not trivial, because the comment's claim covers only the three Go 1.24 members
+while this covers **every** capability the gate has ever recorded.
+
+```
+44 gated declarations, over 4 pages:   testing.md 38 · os.md 4 · net.http.md 1 · math.big.md 1
+
+  19  UNLIFTABLE — reaches an UNEXPORTED internal of testing (common.mu, T.barrier,
+                   chattyPrinter.*, matcher.*, testContext.*, B.benchFunc, call.*, …).
+                   The host is a hand-written reimplementation; its internals are not Go's,
+                   structurally and permanently. All 19 are testing's own white-box tests.
+  17  UNLIFTABLE — a free-text capability reason, not an allow-list item at all:
+                   race-detector-instrumented builds (7 distinct reasons), Go's -test.timeout
+                   running-tests dump, reporter literals the host never writes, codegen-liveness,
+                   a native output block with caller-side LocalFree, a raw-metal struct overlay
+                   on managed bytes, a relocatable single-file test executable.
+   8  CANDIDATE  — every capability in the list is an EXPORTED member.
+```
+
+**THE EIGHT ARE THE FINDING, AND NOT ONE OF THEM WOULD PRODUCE A REAL VERDICT.** Read at the host's
+CODE rather than at its comment (`src/core/testing/testing.cs`), and at Go's sources at the **corpus
+pin**:
+
+```
+WOULD NOT COMPILE — the member is ABSENT from the host's type, not a no-op
+  testing  TestResultString      BenchmarkResult.String, .T   host's BenchmarkResult carries N and
+  testing  TestReportMetric      BenchmarkResult.String, .N   Nanoseconds; String() and T do not exist
+
+WOULD COMPILE AND PASS VACUOUSLY — the assertion cannot fail
+  testing  TestRunParallel       B.RunParallel(…) {} — the body is NEVER invoked, and
+  testing  TestRunParallelFail   PB.Next() => false, so a `for pb.Next()` loop would not turn once
+  testing  TestRunParallelFatal
+  testing  TestRunParallelSkipNow
+  testing  TestTempDirInBenchmark  B.Run(…) => true WITHOUT invoking the body, so b.TempDir() is
+                                   never reached and the t.Fatal below it is unreachable
+  math/big TestCalibrate           B.ResetTimer is a no-op — and the test returns at its first line
+                                   unless -calibrate is set, so the added verdict could never move
+```
+
+⚠ **I PREDICTED `TestTempDirInBenchmark` WOULD GO RED (an empty `TempDir()` failing a real
+assertion) AND READING GO'S SOURCE REFUTED IT** — `b.Run` returns true without invoking the body, so
+`TempDir` is never called at all. Recorded because the wrong guess is the useful half: the
+difference between *red* and *vacuously green* is exactly what a name-keyed widening cannot see.
+
+**THE TRANSFERABLE RULE, for whoever does the go1.24 widening.** The gate that decides whether a
+capability may be listed is **not** "does the host declare a member of that name" — all six
+compile-and-pass cases above satisfy that. It is **"does the host's implementation make the test's
+assertion capable of failing"**. Six of these eight declare the member, compile, and are green under
+any defect; that is the roster bar's own definition of a pass that is not a measurement. So the
+eight stay gated, correctly, and they become liftable only when benchmark EXECUTION is real
+(Phase 4D) — not by an allow-list edit.
+
+**WHAT THIS RETIRES.** A reading of the capability-allow-list doctrine that treats it as a live
+verdict leak at the current pin. It is a real class and it is correctly named "the quietest way to
+lose verdicts"; its measured exposure on today's banked roster is **44 declarations, all four pages
+surfacing every one of them by name and reason, and zero that could honestly be admitted.** The
+2,425-verdict figure in that entry is a **go1.24-hop** number, and the entry says so.
+
+**SCOPE, STATED.** This is the BANKED roster only: an unbanked package has no committed proof page,
+so a gate there is invisible to this census — and costs no roster number today, which is why the
+banked set is the right population for the question asked. One artifact of the instrument worth
+naming rather than hiding: the reason strings are comma-separated and one `net.http.md` reason
+contains a comma inside a parenthetical, so the deduplicated REASON list shows it as two fragments;
+the per-DECLARATION counts (19 / 17 / 8 = 44) are unaffected, because they classify whole rows.
+
+**INSTRUMENT AVAILABILITY.** Taken entirely from committed artifacts plus GOROOT reads — no .NET, no
+PowerShell, no build. Reproducible on any box, including a container: see the same-day mailbox note
+on reaching the corpus pin's GOROOT through `GOTOOLCHAIN`.
+
+— C1
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
