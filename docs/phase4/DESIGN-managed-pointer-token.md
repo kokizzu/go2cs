@@ -448,6 +448,17 @@ differing sets identical name for name.
 measurement the other made until now, which is why this cross-reference is here rather than left for
 a reader to notice.
 
+> **⚠ AMENDED 2026-09-08 (C2), because a later post of mine leaned on this section for a conclusion it
+> does not support.** Mailbox `fac149d059` argued that the arm-2a remedy "is arm 3's EXISTING refusal
+> extended to offset 0" and cited this section as agreement "from a third direction". That citation
+> conflates two directions that this section is careful to keep apart. What the two records agree on is
+> the **READ** side: dereferencing a byte offset computed against C's layout, where a refusal is right
+> because there is no correct answer to give. Arm 2a is the **WRITE** side, and there the number is
+> **constructed and named, never dereferenced** — so a refusal at construction breaks callers that do
+> the legal thing. §10.9 measures that: 31 passing tests at master reach all eight 2a sites, and the
+> sentence is withdrawn. This section's own conclusion is unaffected; only the extension of it to arm 2a
+> was wrong.
+
 ### 10.7 What is in hand, and what is deliberately NOT committed
 
 The one-line narrowing, its measurement, the refusal and its complete guard ledger — **green →
@@ -570,3 +581,185 @@ env-gated and free when off, so it costs a roster sweep nothing but the variable
 master — **is not answered by this run.** It needs the corpus population and the per-site reading of
 §10.8.3's 2a list.
 
+---
+
+## 10.9 AMENDMENT 2026-09-08 — the instrument was NOT observation-only, falsifier (a) FIRES, and the 2a population is EMPTY where measurable
+
+C2, on COORD's `7d44b472fd`. This is the honest write-up of state that ruling asked for, in place of a
+remedy. Four things happened in one day and they compose into one conclusion: **§10.3's arm 2 is not a
+piece of work waiting to be done; it may be a null, and the evidence now points that way from three
+independent directions.**
+
+### 10.9.1 ⚠ Every number in §10.8 is a FLOOR, because the instrument was not neutral
+
+i9 (`f8213cf49`) measured the banked `os` row flipping **PASS → FAIL** with the census env gate as the
+**only** variable, twice, in both directions, and named a sufficient mechanism in the instrument's own
+code: the arm-4 classifier read `ManagedPointerTokens.Resolve(value) is null`, so **enabling the census
+performed a SECOND `Resolve` per conversion** — and `Resolve` is not passive, `TryRemove`ing a dead weak
+entry and reassigning the count. *"Env-gated, free when off" is TRUE and is NOT the property that
+matters: the census is free when off, and it was not neutral when on.*
+
+**Fixed** (`acbfa34503`): reaching that line already means `resolved` was not a `ж<T>` and the arithmetic
+refusal did not fire, so `resolved is null` **is** arm 4 — the same verdict from a value already in hand.
+Guarded by `TheCensusPerformsONEResolvePerConversion_TheNeutralityPROPERTY`, which reads
+`Expected:<1>. Actual:<2>` on the line it replaces.
+
+⚠ **The guard's FIRST form was wrong and is worth keeping written down.** "A conversion must not change
+the registered count" **failed on the fixed code**, correctly: the ONE resolve the operator legitimately
+performs evicts the dead entry whether the census is on or off. Nor can counting evictions see the
+defect — two resolves of the same token cannot evict twice, which is also why the corpus symptom was a
+timing effect rather than a countable double-eviction. What discriminates is **how many times `Resolve`
+is ENTERED per conversion**, which is the property COORD ruled on.
+
+### 10.9.2 ⚠ A SECOND defect, and it cut against the census's own purpose
+
+Found by reading the classifier for the first defect, not looked for. The 2a/2b discriminator carried its
+**own two-arm copy** of "the token this box reports today" (`INilPointer`, `IChannel`, else `0`) while
+`ManagedPointerTokens.CurrentToken` has a **third arm** for anything else. A registered object
+implementing neither interface therefore projected to `0`, compared unequal to its own token, and was
+filed **2b — the SOUND bucket, the one §10.3 says must not move — when it is 2a, the defect bucket.**
+
+**A census that files its own target under "nothing to do here" reports the population as ABSENT**, which
+is the worst possible direction for an instrument whose entire finding is a zero. `CurrentToken` is
+`internal` now and there is one definition of the rule. Measured rather than argued: with the copy
+restored, a plain object registered at its own token is filed 2b and
+`The2a2bDiscriminatorUsesTheRegistrysOwnProjection_NotACopyOfIt` says so by name.
+
+The fix moves **nothing** on the GolibTests population — every box it registers is a `ж<T>` or a channel,
+so the third arm is latent there — which is why §10.8.3's counts remain comparable to i9's corpus floors:
+re-measured on the fixed instrument, control class excluded, the reading is **byte-identical**
+(`mints 4378, conversions 52, arm1 9, arm2a 8, arm2b 10, arm3 1, arm4 24`, reconciling, Total 736).
+
+### 10.9.3 ⚠ FALSIFIER (a) FIRES — 8 of 8, and the verdicts are census-OFF
+
+§10.4's falsifier (a) is *"a population where arm 2's alias is not expressible AND the write is correct at
+master — then refusing there is a regression and the candidate is incomplete."* §10.8.5 said this run
+could not answer it. It is answered now, and **both halves hold for every measured site.**
+
+The verdicts are taken with the census **OFF**, so §10.9.1 does not touch them; the instrument supplied
+only the attribution of which sites a filter reaches, and the perturbation direction (an extra `Resolve`)
+cannot manufacture a pass anyway.
+
+| population | census OFF | census ON | 2a sites reached |
+|:--|:--|:--|:--|
+| the four classes owning the 2a types | **28 / 28 pass** | 28 / 28 pass | 7 |
+| `PointerTokenConversionTests` | **3 / 3 pass** | 3 / 3 pass | 1 |
+
+**31 passing tests, 0 failures, 0 aborts, 8 of 8 sites reached.** Two negative results banked so nobody
+re-walks them: the 8th site's owner was guessed twice from the type name and both guesses were wrong —
+`PointerNilPredicateTests` (22/22 pass) and `FinalizerDispatchTests` both read `arm2a=0`. It was found by
+measurement.
+
+### 10.9.4 ⚠ "Correct at master" understates it — the project ALREADY RULED this, three days earlier
+
+These are not incidental passes. The 2a behaviour is **asserted by name**, in tests written for it, with
+comments explaining the choice — and the decision was already made once, in the opposite direction from
+the withdrawn sentence. `PointerTokenConversionTests`' own header records it: the Q44 chain found a
+**behavioral row red** (`PointerCastSliceRange`, 2026-09-05) whose `**(**[2]int64)(unsafe.Pointer(&ip))`
+reaches exactly this conversion, and the resolution was to **amend THE ROW, not the operator** — *"the
+row's dereference was exactly such a pun, and the row is amended to the compile-shape guard it
+documents."* Its arm is named
+`ATokenOfAnotherPointeeTypeIsANativeBoxOverTheToken_TheLoudFormTheDesignChose`.
+
+Two independent classes document the mechanism, which is the second derivation this would otherwise owe:
+
+- **`ReinterpretSourceRetentionTests`** (the boundary idiom): a reference-bearing pointee has no pinnable
+  storage, so the box hands out its **order token** rather than a movable field's address — and that
+  premise is *itself* asserted, so a future change giving such a box pinnable storage fails THAT assertion
+  first instead of quietly making the design redundant. Then `IsNative`, and the number **equal** to
+  `source.PointerOrderToken`, *"never a heap address the collector was not asked to hold still"*; *"a
+  native reader of the view faults at a non-canonical address instead of reading a stale copy, which is
+  the LOUD FAILURE THE DESIGN CHOSE"*; *"a boundary wrapper never reads it, it recovers the record"* — via
+  `ReinterpretSource`, with `Resolve` beside it as the second recovery and a comment requiring the two to
+  agree.
+- **`RuntimeHashFamilyTests`** (the string header), which states what the token **replaced**: before Q44
+  this reinterpret took the ADDRESS route — a `NativeBox` over the **pinned managed string** whose `str`
+  field read back the `byte[]` reference as a `Pointer`, measured 2026-09-04 as runtime type
+  `System.Byte[]` with a field read through it a native SIGSEGV — *"which the seam refused by name. THAT
+  ROUTE NO LONGER EXISTS TO BE REFUSED"*, because the box now hands out its token and the reinterpret is
+  *"a native box OVER THE TOKEN (the design's loud form; its fields are not touched here — **a
+  dereference is the row-level fault the design chose, never a number**)"*.
+
+**So arm 2a is not an unremedied case. It is the case Q44 already fixed, and the token-over-a-non-address
+IS the fix.** Refusing there does not add safety; it refuses to construct the safe object, and it breaks
+the recovery too — `PointerTokenConversionTests` asserts `other.NativeAddress == the token` precisely *"so
+a boundary wrapper resolving the number still recovers the source."*
+
+### 10.9.5 Where the safety lives, and why a refusal at that site cannot be the remedy
+
+Three mechanisms already sit at the **dereference**: a native read of a token **faults** (non-canonical by
+construction); the hash seam **refuses a header by name** (`GoMemhashPointer` over the string box's number
+panics `"string HEADER"` while `GoStrhashPointer` over the same number hashes the CONTENT, both asserted in
+one arm); and the **token door** at the syscall boundary refuses a token as an argument. At 2a the number
+is **constructed and named** and never dereferenced, which is why all three are silent there.
+
+⚠ **That makes a refusal at the conversion site structurally unable to be the remedy, not merely
+mis-sized.** The operator cannot know whether the number it hands back will be dereferenced — that
+information arrives later, at the use — so a predicate placed at construction cannot discriminate the
+defect from the passing uses, **whatever it tests**. Any remedy has to sit where the information is.
+
+Adjacency checked rather than assumed: that same class's third arm round-trips a token through `void*` to
+native code and back and requires it to come back **as its box**. That is arm 1, it never reaches a
+syscall, and the door at `syscalln` does not see it.
+
+### 10.9.6 The corpus floor: 4,143,157 conversions, not one arm-2 classification
+
+i9's rows, on the **unfixed** instrument and therefore floors rather than the record (`72000a1f3a`,
+`f8213cf49`, `54a15554d8`):
+
+| row | conversions | arm 1 | arm 2a | arm 2b | arm 3 | note |
+|:--|--:|--:|--:|--:|--:|:--|
+| `go/types` | 303,492 | 668 | 0 | 0 | 0 | PASS 557; mints 668 == arm1 668, every mint resolved, every resolve correct |
+| `runtime/pprof` | 3,839,386 | 1,283,101 | 0 | 0 | 0 | 50 tests, 122 pass / 23 fail; partial |
+| `encoding/json` | 279 | 0 | 0 | 0 | 0 | PASS 491 |
+| `os` | — | — | — | — | — | **VOID**, census-induced failure (i9's own word) |
+| **total** | **4,143,157** | **1,283,769** | **0** | **0** | **0** | |
+
+### 10.9.7 Predictions scored, and mine is REFUTED
+
+§10.8 predicted arm 2a non-zero on **`runtime/pprof` first**, then `reflect`. Run correctly, `runtime/pprof`
+reads **arm2a = 0 across 3,839,386 conversions** with 1,283,101 reaching the token path and resolving
+correctly as arm 1. i9 declined to score it refuted on two fair caveats (a non-neutral instrument; a
+partial row). **Those caveats are not taken here: a prediction that survives only on its measurement's
+caveats is refuted, and mine is refuted on that row.** The perturbation ADDS resolves and so cannot have
+removed an arm-2 classification, which is the direction that matters.
+
+### 10.9.8 Disposition — the candidate is "NO CHANGE at 2a", with its falsifier named
+
+§10.7 said none of the seat should be committed until the census said which arm the corpus needs. It has
+now said, from three directions: the corpus floor is **zero**, the GolibTests 2a population is entirely
+**construct-and-name** with 31 passing tests over it, and the design **already chose** the loud form there
+deliberately. **§10.3's arm 2 is incomplete as written and mis-aimed rather than under-specified**: its
+target is not "offset-0 cross-type resolves" (8 of 52) but the subset *"where the number is later READ AS
+AN ADDRESS"*, and no measured site is in that subset. Third shrink of one target: **18 → 8** by the 2a/2b
+split, **8 → no-alias-machinery** by expressibility, **8 → 0 measured** by read-vs-name.
+
+**MUST-NOT-MOVE is two rows now, not one:** arm 2b (10 conversions, sound because *n* IS a real pinned
+address) and **arm 2a construct-and-name** (8 measured, all 8 with deliberately-asserting passing tests).
+
+The surviving candidate is **no change at 2a**, and it is stated with its falsifier rather than claimed:
+**a site where the token is read as an address by MANAGED code that would silently produce a WRONG VALUE
+rather than fault.** Native reads fault, the hash seam refuses by name, boundary wrappers recover — a
+silent wrong value is the only shape "no change" cannot absorb.
+
+### 10.9.9 What is OWED, and by whom
+
+- **i9, on a qualified host**: the neutrality PROOF COORD ruled — banked `os` at **PASS 683** with the
+  census ON beside the census-OFF control — then `encoding/json`, `go/types`, `runtime/pprof` re-taken on
+  the fixed instrument, then `reflect`, `net/http`, `crypto/tls`.
+- ⚠ **NOT C2's to run, and stated rather than quietly skipped**: the lane host is **disqualified** for a
+  roster row — bare `go` reports 1.24.7 against a corpus pinned at 1.23.x, and there is no PowerShell.
+  Running it there would answer normally against a corpus the tree does not have, which is the quiet form
+  of the ambient-toolchain trap. The suite-scale reading below is evidence, not that proof: GolibTests at
+  Release with tiering off, `RuntimeAddrRangesTests` excluded (it hangs at master), **census OFF Failed 48
+  / Passed 686 / Skipped 11 / Total 745** and **census ON Failed 48 / Passed 695 / Skipped 2 / Total 745**,
+  0 aborted either way — the failure counts IDENTICAL across the env gate, the +9 being the control class
+  which is Inconclusive when the census is off.
+- **The lesson about post structure**, banked because it cost a published claim: mailbox `fac149d059`
+  stated what its finding *"CHANGES"* **and** named a live falsifier for that same change, three
+  paragraphs apart, in one post. Those are in tension by construction — if the falsifier is live, the
+  change is not yet known. The measurement in that post was sound and stands; the inference was published
+  one step ahead of the reading its own author had identified as owed, and it proposed reversing a ruling
+  already in the tree. **A post that names a live falsifier states the CANDIDATE and stops.**
+
+-- C2, 2026-09-08
