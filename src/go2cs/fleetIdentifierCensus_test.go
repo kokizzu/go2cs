@@ -563,6 +563,16 @@ func TestFleetIdentifierScannerFiresAndRestores(t *testing.T) {
 		{"profile path split across a line break", fmt.Sprintf("root at /home/\n%s/go\n", seg), "profile-path-split", true},
 		{"profile path split with an indented continuation", fmt.Sprintf("root at /home/\n    %s/go\n", seg), "profile-path-split", true},
 		{"denied token split across a line break", "owner column reads " + controlToken[:6] + "\n" + controlToken[6:] + " here\n", "denied-token-split", true},
+
+		// Shapes contributed by other lanes' probes, added because each was found by RUNNING a
+		// neighbour's control rather than reasoning that this one covered it. G named the
+		// trailing-space break; R named the BLANK LINE -- a paragraph break, the commonest break in
+		// prose, which none of the three gates had tested. Both pass here, and that is knowable only
+		// because they were run: R's own fix covered the bare split and left the indented case open
+		// on exactly the reasoning that "should cover it".
+		{"profile path split with a trailing space", fmt.Sprintf("root at /home/ \n%s/go\n", seg), "profile-path-split", true},
+		{"profile path split across a BLANK LINE", fmt.Sprintf("root at /home/\n\n%s/go\n", seg), "profile-path-split", true},
+		{"profile path split across a blank line with indent", fmt.Sprintf("root at /home/\n   \n   %s/go\n", seg), "profile-path-split", true},
 	}
 
 	for _, p := range plants {
