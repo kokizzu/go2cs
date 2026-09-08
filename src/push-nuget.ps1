@@ -25,8 +25,11 @@
     PUBLICATION ALSO FREEZES THE PROOF. Before anything is built, docs\validation\current\ is copied
     to docs\validation\<version>\ (write-once) and the version-pinned validation badge links in every
     src\core\*\README.md are retargeted at it, so a published package's green badge, its proof link
-    and the VALIDATION.md it packs all describe the exact binary being pushed. Commit the snapshot,
-    the retargeted READMEs and version.props together.
+    and the VALIDATION.md it packs all describe the exact binary being pushed. The ROSTER PAGE is
+    frozen with them (since 2026-09-07) as docs\validation\<version>\ValidatedTestPackages.md, its
+    proof links retargeted onto the snapshot's own siblings, so the snapshot is a self-contained
+    record of how the campaign stood at publication rather than 200-odd pages with no page around
+    them. Commit the snapshot, the retargeted READMEs and version.props together.
 
     IT ALSO MINTS THE RELEASE TAG, at that same pre-build moment rather than after the push. Every
     README's C# Source badge links github.com/ritchiecarroll/go2cs/tree/nuget-<version>/src/core/<pkg>,
@@ -547,10 +550,27 @@ elseif ($PSCmdlet.ShouldProcess($releaseTag, 'create signed release tag at HEAD'
 # Order matters. The snapshot is taken BEFORE the build so the .csproj Exists() guards see the files
 # they are about to pack, and the READMEs are retargeted in the same breath so the badge, the link
 # and the packed sheet are the one version being published.
+#
+# THE SNAPSHOT ALSO FREEZES THE ROSTER PAGE (added 2026-09-07). Until then it froze the per-package
+# proofs and nothing around them, so the published site had 204 proof pages from publication day and
+# no view of how the campaign stood behind them: the only "as it shipped" roster was the signed tag
+# nuget-<version>, a git object that reaches a reader on GitHub and nobody on go2cs.net. The copy is
+# a TRANSFORM, not a file copy -- ConvertTo-FrozenRosterText in _roster.ps1 retargets the roster's
+# 200-odd proof links onto this snapshot's own sibling pages and relocates the handful that pointed
+# out of docs\, so the snapshot reads without walking back into the LIVING directory. It lands
+# inside the write-once branch below, so a frozen directory that already exists is still never
+# rewritten.
 $validationDir = Join-Path $repoRoot 'docs\validation'
 $currentProofs = Join-Path $validationDir 'current'
 $versionProofs = Join-Path $validationDir $fullVersion
 $dryRunProofRoot = $null
+$frozenRosterName = 'ValidatedTestPackages.md'
+
+# Hoisted from the README retarget below, which had the only copy: the roster freeze writes a text
+# file through the same door and for the same reason, and two definitions of one encoding is the
+# thing that drifts. Its rationale is stated at the retarget, where the mojibake it prevents was
+# first paid for.
+$utf8NoBomText = New-Object System.Text.UTF8Encoding($false)
 
 # WHY A DRY RUN NEEDS ITS OWN SNAPSHOT DIRECTORY (found by the section 3.6 rehearsal, defect D1).
 #
@@ -603,7 +623,79 @@ if (-not (Test-Path $currentProofs)) {
     elseif ($dryRun -or $PSCmdlet.ShouldProcess($versionProofs, "snapshot docs\validation\current")) {
         New-Item -ItemType Directory -Force $versionProofs | Out-Null
         Copy-Item (Join-Path $currentProofs '*.md') $versionProofs -Force
-        $frozenCount = (Get-ChildItem $versionProofs -Filter *.md).Count
+        # Excludes the frozen roster by NAME rather than by counting before it is written. The
+        # phase-5 invariant this number carries is "one page per banked package"; an order-dependent
+        # count would read 205 the day somebody moves the roster freeze two lines up, and the
+        # invariant would then be wrong in a comment that still said it was right.
+        $frozenCount = @(Get-ChildItem $versionProofs -Filter *.md -File |
+                         Where-Object { $_.Name -ne $frozenRosterName }).Count
+
+        # --- the roster page, transformed into this snapshot's own copy of itself ------------------
+        # Which commit the note names: the TAG's, when the tag exists and this is a real release --
+        # the tag is the authority on the tree a release was built from, and a re-run finishing a
+        # partially-failed publish must not stamp a HEAD that has since moved. On the dry-run path
+        # $releaseTag is composed from the UN-bumped version, so it names the PREVIOUS release; HEAD
+        # is the honest answer there, being what the run that bumps would tag.
+        #
+        # ⚠ try/catch, not $LASTEXITCODE alone. This script runs at $ErrorActionPreference = 'Stop'
+        # (line 110), and under 'Stop' a native command whose stderr is REDIRECTED raises a
+        # terminating NativeCommandError -- so a bare `& git ... 2>$null` followed by an exit-code
+        # test is a fallback that can never be reached: git's "fatal: ..." kills the release before
+        # the test runs. Measured on the freeze dry run, where the first form of this block threw on
+        # a rev-parse that was SUPPOSED to fall through to the warn-and-skip path below.
+        $rosterSource = Join-Path $repoRoot 'docs\ValidatedTestPackages.md'
+        $frozenCommit = ''
+        if (Get-Command git -ErrorAction SilentlyContinue) {
+            if (-not $dryRun) {
+                try {
+                    $sha = & git -C $repoRoot rev-parse --short "$releaseTag^{commit}" 2>$null
+                    if ($LASTEXITCODE -eq 0 -and $sha) { $frozenCommit = [string]$sha }
+                }
+                catch { $frozenCommit = '' }
+            }
+            if (-not $frozenCommit) {
+                try {
+                    $sha = & git -C $repoRoot rev-parse --short HEAD 2>$null
+                    if ($LASTEXITCODE -eq 0 -and $sha) { $frozenCommit = [string]$sha }
+                }
+                catch { $frozenCommit = '' }
+            }
+        }
+
+        # Both misses WARN and skip rather than throw: freezing the proofs is what this block did
+        # before the roster joined it, and no release path that works today starts failing because
+        # the addition could not name its commit. A snapshot without the roster is the pre-2026-09-07
+        # shape, which the fifth-number check below reports rather than treats as a defect.
+        if (-not (Test-Path $rosterSource)) {
+            Write-Warning "No roster page at $rosterSource -- the $fullVersion snapshot will carry proof pages only."
+        }
+        elseif (-not $frozenCommit) {
+            Write-Warning ("Could not resolve the commit this release is built from (git unavailable or " +
+                           "rev-parse failed), so the $fullVersion snapshot will carry proof pages only. " +
+                           "The frozen roster's whole value is naming that commit; a snapshot that cannot " +
+                           "is not written.")
+        }
+        else {
+            $frozenRoster = ConvertTo-FrozenRosterText `
+                -RosterText ([System.IO.File]::ReadAllText($rosterSource)) `
+                -Version $fullVersion -Commit $frozenCommit
+
+            [System.IO.File]::WriteAllText((Join-Path $versionProofs $frozenRosterName), $frozenRoster.Text, $utf8NoBomText)
+
+            Write-Step ("Froze the roster page at $frozenRosterName -- $($frozenRoster.ProofLinks) proof link(s) " +
+                        "retargeted onto this snapshot, $($frozenRoster.Relocated.Count) link(s) relocated, " +
+                        "commit $frozenCommit")
+
+            # The audit arm. Empty on the roster this shipped against; a future roster that grows a
+            # relative link shape neither substitution knows would otherwise dangle silently on the
+            # published site, which is the one place nobody is watching for it.
+            if ($frozenRoster.Unrelocated.Count) {
+                Write-Warning ("The frozen $fullVersion roster carries $($frozenRoster.Unrelocated.Count) relative " +
+                               "link(s) that neither retarget handled -- they will resolve against " +
+                               "docs\validation\$fullVersion and are almost certainly broken there:`n    " +
+                               ($frozenRoster.Unrelocated -join "`n    "))
+            }
+        }
         # The count is the phase-5 invariant: it must equal the roster's row count, which must equal the
         # number of green-badge READMEs. A dry run names the would-be version and the temporary location
         # so the line cannot be misread as a write into the tree; the release wording is unchanged.
@@ -615,11 +707,45 @@ if (-not (Test-Path $currentProofs)) {
         }
     }
 
+    # THE FIFTH NUMBER, and the only one that is a statement about the SNAPSHOT rather than about the
+    # working tree. The four-number guard above compares four derivations of the banked set as it
+    # stands TODAY; this asks whether the thing about to be published is internally coherent -- does
+    # the roster frozen into this directory have exactly one row per proof page frozen beside it.
+    #
+    # Rows, not the prose header. The roster's own "204 / 215" line is a DATED derivation that goes
+    # stale independently of the table beside it (the same reason the four-number guard parses rows
+    # through _roster.ps1 rather than reading the document's sentences), and check-roster-format.ps1
+    # already holds header-against-rows for the living page.
+    #
+    # OUTSIDE the write-once branch on purpose: a re-run that finds its snapshot already there gets
+    # the check too, so a directory frozen by an earlier attempt is verified rather than assumed. A
+    # snapshot with no frozen roster is the pre-2026-09-07 shape and is REPORTED, not failed -- the
+    # eight published before this existed are correct as they stand and are never rewritten.
+    $frozenRosterPath = Join-Path $versionProofs $frozenRosterName
+    if (Test-Path $frozenRosterPath) {
+        $frozenPageCount = @(Get-ChildItem $versionProofs -Filter *.md -File |
+                             Where-Object { $_.Name -ne $frozenRosterName }).Count
+        $frozenRowCount = @(Get-ValidatedRosterRows -Path $frozenRosterPath).Count
+
+        if ($frozenRowCount -ne $frozenPageCount) {
+            throw ("The frozen $fullVersion snapshot is not self-consistent: its roster carries " +
+                   "$frozenRowCount row(s) against $frozenPageCount proof page(s) in the same directory. " +
+                   "A published snapshot whose roster and proofs disagree advertises rows it cannot " +
+                   "show the evidence for -- reconcile docs\ValidatedTestPackages.md with " +
+                   "docs\validation\current before publishing.")
+        }
+
+        Write-Step "Frozen snapshot self-consistent: $frozenRowCount roster row(s) / $frozenPageCount proof page(s)"
+    }
+    else {
+        Write-Step "Frozen snapshot $fullVersion carries no roster page (snapshots before 1.23.12.3 did not) -- proof pages only"
+    }
+
     # Retarget the version segment of every green badge link in the converted stdlib's READMEs. Read
     # AND write through [System.IO.File] with UTF-8/no-BOM: PS 5.1's Get-Content reads the converter's
     # BOM-less UTF-8 as ANSI and Out-File re-encodes the damage, which is what mojibake'd the corpus's
     # (c) signs once already. ReadAllText/WriteAllText round-trips the CRLF the converter emitted.
-    $utf8NoBomText = New-Object System.Text.UTF8Encoding($false)
+    # ($utf8NoBomText is created above the try, where the roster freeze needs the same encoding.)
     # The segment class excludes whitespace and ')' as well as '/': a hand-owned README's PROSE link
     # (testing's `validation/index.html) was produced...`) has no second '/', and a bare [^/]+ ate
     # everything up to the next stray slash -- collapsing four lines of prose into a broken URL on
