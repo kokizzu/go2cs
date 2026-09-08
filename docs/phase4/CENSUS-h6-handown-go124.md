@@ -1497,3 +1497,144 @@ rework — F15b territory with the TB-adapting assemblies behind it. Flagged, no
 **`os/linux/wait_waitid.cs` — REMOVED-only**, and its removed member is `_P_PID`, which the earlier
 block already measured as a go2cs invention Go declares in no `os/*.go` at either release. **Not a
 collision.**
+
+---
+
+## 2026-09-08 — THE STATED DELTA IS NOT THE ACTUAL DELTA, AND A 3-WAY RE-DERIVE CANNOT TELL A HAND EDIT FROM FREEZE RESIDUE (from C1's datum in `2badd1c76`; measured over all 44)
+
+C1 closed `2badd1c76` with a datum addressed to this dossier: *a whole-file hand-own's stated delta and
+its actual delta can differ, and only a 3-way merge against its own `.cs.auto` surfaces that.* It is
+correct, and measuring it over the population sharpens it twice.
+
+### 1. THREE NUMBERS, THREE DIFFERENT QUESTIONS — and only one of them is the hand delta
+
+`runtime/runtime2.cs`, read at `origin/master` (its header re-derived from the file, not from C1's prose):
+
+```
+   2   what the HEADER documents      "two edits here modify REGENERATED content" —
+                                      efaceOf's body, the gomaxprocs/ncpu seed
+   4   what C1's 3-WAY SURFACED       the hunks the 1.24 release delta also touched
+  16   what the HAND DELTA IS         diff(runtime2.cs.auto, runtime2.cs) = 16 hunks, +132/-111
+```
+
+**The merge surfaces only the INTERSECTION of the hand delta with the release delta. The remaining
+twelve hunks re-apply UNEXAMINED** — not because the merge erred, but because a 3-way has no reason to
+show a region the new release did not touch. A re-derive that trusts the header checks two; one that
+trusts the conflict list checks four; the file carries sixteen.
+
+### 2. THE DELTA HOLDS **TWO** POPULATIONS WITH **OPPOSITE** OBLIGATIONS, AND THE MERGE PRESERVES BOTH
+
+```
+  HAND EDIT       a human changed regenerated content        -> MUST be re-applied
+  FREEZE RESIDUE  the CONVERTER improved after the freeze,   -> MUST be DROPPED; you want
+                  so the frozen .cs lacks emission the          the new emission
+                  .cs.auto has
+```
+
+Both appear in `diff(.cs.auto, .cs)` as a BASE->OURS change, so under the ruled merge
+(BASE = `.cs.auto`, OURS = the hand-own, THEIRS = the 1.24.13 emission) **freeze residue is preserved
+exactly as though it were an intentional hand edit** — silently, and the more faithfully the resolver
+obeys "re-applying a delta means re-applying it, not judging it", the more certainly it happens.
+
+**This is not a criticism of that rule.** The rule is right; it simply cannot see a distinction that is
+invisible in the diff. What the rule needs is a discriminator applied BEFORE it.
+
+### 3. THE DISCRIMINATOR — two queries, no build, no judgement
+
+```
+  a form present ONLY in hand-owned files            -> HAND EDIT
+  a form present in the .cs.auto AND in N corpus     -> FREEZE RESIDUE candidate
+    files but absent from this .cs
+  ...then the CONFOUND CHECK, which is not optional:
+  is the DECLARATION the form attaches to still      -> if GONE, the absence is BY DESIGN,
+    present in the hand file?                           not residue
+```
+
+Worked, at `origin/master`:
+
+```
+  static readonly UntypedInt      3 files corpus-wide — crc32_amd64.cs, runtime2.cs, poolqueue.cs —
+                                  ALL THREE whole-file hand-owns, against 371 files carrying the
+                                  emitted expression-bodied form        => HAND EDIT
+  [GoValueClone] on runtime2      0 in the .cs, 4 in its own .cs.auto, 127 corpus files carry it,
+                                  and struct m / p_mspancache / the p and schedt structs are ALL
+                                  STILL DECLARED in the hand file       => FREEZE RESIDUE
+```
+
+**The confound check earns its place immediately.** Over the five files whose emission carries a
+`[GoValueClone]` the hand file lacks — 8 absences — it splits **6 genuine residue / 2 by design**:
+
+```
+  registry/registry_test.cs  DynamicTimezoneinformation   declared in hand file  -> RESIDUE
+  runtime/mfinal.cs          finblock                     declared in hand file  -> RESIDUE
+  runtime/runtime2.cs        m, p_mspancache, p, schedt   declared in hand file  -> RESIDUE  (4)
+  internal/concurrent/hashtriemap.cs  the indirect struct  DECLARATION GONE      -> by design
+  sync/pool.cs                        poolLocal            DECLARATION GONE      -> by design
+```
+
+**Reporting the 8 as residue would have been wrong by 2.** A hand rewrite that deletes a struct
+legitimately deletes its stamp.
+
+### 4. THE POPULATION
+
+44 whole-file hand-owns at `origin/master` (anchored marker, `*_impl.cs` excluded; 142 marked files
+total, 98 of them companions — the unanchored grep reads 221, the documented over-count). **This
+reproduces this document's 44 and C1's independent `go/parser` derivation a third time.**
+
+**30 of the 44 carry a tracked `.cs.auto`**, and only those are checkable — a `.cs.auto` exists exactly
+where the converter still emits the principal. All 30 measured:
+
+```
+  delta shape          every one of the 30 is HAND-SHAPED: lines matching emission-drift
+                       shapes (using / global using / GoPositionMap / ImportedTypeAliases)
+                       are <= 7% of the delta on every file, 0% on nine of them
+  => .cs.auto staleness does NOT dominate — consistent with the 2026-08-24 rebank's 0-of-23,
+     extended here to 30
+  attribute absences   59 converter attributes present in the .cs.auto and absent from the .cs,
+                       across 23 of the 30            <- CANDIDATES, not findings
+```
+
+**The 59 are CANDIDATES.** Only `[GoValueClone]`'s 8 have had the per-declaration confound check run
+(section 3). The other 51 — mostly `[GoInit]`, with `[GoRecv]`, `[GoType]`, `[GoLocalName]` — are
+unclassified and **must not be quoted as residue**. And they are a DIFFERENT population from CLAUDE.md's
+"8 forced-init hooks missing inside the frozen class (godebug 4, concurrent 3, weak 1)": that count is
+over `package_info.cs` metadata for the hand-own-by-CONSEQUENCE packages, this one is over the
+hand-owned `.cs` files themselves. Neither figure checks the other.
+
+### 5. THE CONSEQUENCE, VERIFIED ON A LIVE BRANCH — `claude/c1-h6-rewrites` `dc79526ca`
+
+The prediction was stated before the check and it held on the artifact:
+
+```
+  master runtime2.cs.auto      [GoValueClone]  4
+  master runtime2.cs           [GoValueClone]  0
+  C1 re-derived runtime2.cs    [GoValueClone]  0   <- residue preserved, as predicted
+  C1 re-derived runtime2.cs    static readonly UntypedInt 36, waitReason members 44
+                                                   <- hand edits correctly preserved
+```
+
+**The merge did the right thing on hand edits and the wrong thing on freeze residue, because it cannot
+tell them apart.**
+
+**This is NOT a defect C1 introduced and NOT a blocker for their seat.** Master's `runtime2.cs` is
+also 0; the re-derive PRESERVES a pre-existing gap rather than creating one. What it does establish is
+that the gap **will not close by itself** — every future re-derive of this file reproduces it, because
+each one takes the previous hand file as OURS.
+
+### 6. A RECURRING UNDOCUMENTED HAND-EDIT IDIOM
+
+C1 recorded the property-to-field conversion as one undocumented edit in the waitReason block. It is
+**four hunks in `runtime2.cs` alone** — the G-status consts, the tracking-period/tls consts, the signal
+consts and the waitReason block, 36 occurrences — and it appears in **two further hand-owns**,
+`crc32_amd64.cs` and `poolqueue.cs`. Its reason is unrecorded in all three. Preserving it is right;
+**it should be recorded once rather than rediscovered per re-derive.**
+
+### 7. WHAT THIS OBLIGES, STATED AS THE CHEAPEST FORM
+
+**Every remaining whole-file re-derive at this hop runs section 3's discriminator over its own delta
+before the 3-way, and states its hand/residue split.** It is two `git grep`s and a declaration check per
+attribute; it needs no build, no toolchain and no converter. Nobody has to read a header and hope.
+
+**Scope.** Measured at `origin/master` `c5319f640` and at `dc79526ca`, from committed blobs (one layer,
+LF on both sides of every diff). The `[GoValueClone]` split is verified per declaration; the remaining
+51 attribute absences are not. Nothing here is a build result — no `dotnet` was run.
