@@ -1849,6 +1849,9 @@ public class A1_TranspileTests : BehavioralTestBase
     public void CheckSwitchNonConstCaseLabel() => CheckTarget("SwitchNonConstCaseLabel");
 
     [TestMethod]
+    public void CheckSwitchPointerSentinelCase() => CheckTarget("SwitchPointerSentinelCase");
+
+    [TestMethod]
     public void CheckSyncTimerChannel() => CheckTarget("SyncTimerChannel");
 
     [TestMethod]

@@ -1781,6 +1781,9 @@ public class D4_OutputComparisonTests : BehavioralTestBase
     public void CheckSwitchNonConstCaseLabel() => CheckTarget("SwitchNonConstCaseLabel");
 
     [TestMethod]
+    public void CheckSwitchPointerSentinelCase() => CheckTarget("SwitchPointerSentinelCase");
+
+    [TestMethod]
     public void CheckSyncTimerChannel() => CheckTarget("SyncTimerChannel");
 
     [TestMethod]

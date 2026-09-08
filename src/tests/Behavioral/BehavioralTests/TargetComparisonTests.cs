@@ -1852,6 +1852,9 @@ public class C3_TargetComparisonTests : BehavioralTestBase
     public void CheckSwitchNonConstCaseLabel() => CheckTarget("SwitchNonConstCaseLabel");
 
     [TestMethod]
+    public void CheckSwitchPointerSentinelCase() => CheckTarget("SwitchPointerSentinelCase");
+
+    [TestMethod]
     public void CheckSyncTimerChannel() => CheckTarget("SyncTimerChannel");
 
     [TestMethod]
