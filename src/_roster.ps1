@@ -500,6 +500,86 @@ function ConvertTo-FrozenRosterText {
 
 <#
 .SYNOPSIS
+    Retarget one FROZEN proof page's two MOVING links onto the release that page belongs to.
+.DESCRIPTION
+    A proof page under docs\validation\current\ is a LIVING document and its two outbound links are
+    right for that: the roster link walks up to docs\ValidatedTestPackages.md, and the converted
+    package's source link names tree/master. Copied into docs\validation\<version>\ unchanged --
+    which is what the freeze did until 2026-09-07 -- both links keep pointing at moving targets, so
+    a page whose whole purpose is to say "this is the evidence for the binary we shipped" reads its
+    row out of a roster that has banked packages since and its source out of a branch that has moved
+    on. A frozen page that links the living roster and tree/master is not frozen.
+
+    Both targets exist already and neither has to be invented. The snapshot carries its OWN roster
+    copy beside the page (ConvertTo-FrozenRosterText above), so the roster link becomes a sibling;
+    and the release mints the signed tag nuget-<version> BEFORE the build, so the source link has an
+    immutable ref to name. Two ordinal string replacements, no line splitting, so the page's line
+    endings survive exactly as the converter emitted them.
+
+    ZERO IS A THROW, not a skip. Every page the converter generates carries exactly one of each
+    link, so a page carrying neither is template drift somebody must look at -- and a silent skip
+    would publish that page still pointing at master while the count beside it read fine. It also
+    makes the transform non-idempotent BY DESIGN: a second run over an already-retargeted page finds
+    nothing to do and says so, which is what makes the caller's count assertion a live check rather
+    than a number that can only ever be right.
+
+    The source-link pattern is anchored on the REPOSITORY, not on a bare '/tree/master/': a future
+    page linking some other project's master must not be silently rewritten to name a go2cs tag. A
+    page that spells this repository's URL some other way lands in the zero-substitution throw
+    above, which is the reporting arm rather than a link quietly left behind.
+
+    The encoding is built here rather than taken from the caller. Read AND write through
+    [System.IO.File] with UTF-8/no-BOM for the reason stated at push-nuget.ps1's README retarget --
+    PS 5.1's Get-Content reads BOM-less UTF-8 as ANSI and Out-File re-encodes the damage -- and a
+    shared function that reached for a caller's variable would work in one script and be undefined
+    in the next.
+.OUTPUTS
+    PSCustomObject: RosterLinks (int), SourceLinks (int) -- substitutions made, per link kind.
+#>
+function Update-FrozenProofPage {
+    param(
+        [Parameter(Mandatory)][string] $Path,
+        [Parameter(Mandatory)][string] $Version
+    )
+
+    if (-not (Test-Path -LiteralPath $Path)) { throw "Update-FrozenProofPage: no page at $Path." }
+    if ([string]::IsNullOrWhiteSpace($Version)) { throw 'Update-FrozenProofPage: the version is empty.' }
+
+    # No trailing ')' on the roster pattern: the link may legitimately carry a '#anchor' suffix, and
+    # the prefix is what moves.
+    $rosterFrom = '](../../ValidatedTestPackages.md'
+    $rosterTo = '](ValidatedTestPackages.md'
+    $sourceFrom = 'github.com/ritchiecarroll/go2cs/tree/master/'
+    $sourceTo = "github.com/ritchiecarroll/go2cs/tree/nuget-$Version/"
+
+    $text = [System.IO.File]::ReadAllText($Path)
+
+    $rosterLinks = ([regex]::Matches($text, [regex]::Escape($rosterFrom))).Count
+    $sourceLinks = ([regex]::Matches($text, [regex]::Escape($sourceFrom))).Count
+
+    if ($rosterLinks -eq 0) {
+        throw ("Update-FrozenProofPage: $Path carries no roster link ('$rosterFrom') to retarget. A frozen " +
+               "page that cannot be pointed at its snapshot's own roster is template drift -- reconcile the " +
+               "proof-page template with this transform rather than publishing the page as it stands.")
+    }
+
+    if ($sourceLinks -eq 0) {
+        throw ("Update-FrozenProofPage: $Path carries no converted-source link ('$sourceFrom') to pin. A frozen " +
+               "page whose source link cannot be moved off master describes a branch rather than the binary that " +
+               "was published -- reconcile the proof-page template with this transform.")
+    }
+
+    $text = $text.Replace($rosterFrom, $rosterTo).Replace($sourceFrom, $sourceTo)
+    [System.IO.File]::WriteAllText($Path, $text, (New-Object System.Text.UTF8Encoding($false)))
+
+    return [pscustomobject]@{
+        RosterLinks = $rosterLinks
+        SourceLinks = $sourceLinks
+    }
+}
+
+<#
+.SYNOPSIS
     The expectation a row must be validated against on a given GOOS.
 .DESCRIPTION
     A verdict count is a fact about (package, OS). Under the row's own annotation for this GOOS,

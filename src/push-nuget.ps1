@@ -630,6 +630,59 @@ if (-not (Test-Path $currentProofs)) {
         $frozenCount = @(Get-ChildItem $versionProofs -Filter *.md -File |
                          Where-Object { $_.Name -ne $frozenRosterName }).Count
 
+        # --- each copied page, retargeted onto the release it now belongs to -----------------------
+        # The copy above is verbatim, and a verbatim copy of a LIVING page is not a frozen one: its
+        # roster link walks up to docs\ValidatedTestPackages.md and its source link names tree/master,
+        # so a page whose whole job is to say "this is the evidence for the binary we shipped" reads
+        # its row out of a roster that has banked packages since, against source from a branch that
+        # has moved on. Both replacements have a target that already exists at this point in the run:
+        # the snapshot's own roster copy is written a few lines below, and the signed tag was minted
+        # before the build. The rule and its reasoning are Update-FrozenProofPage in _roster.ps1 --
+        # one definition, shared with the one-off that retargeted the 1.23.12.3 pages already frozen,
+        # so a committed snapshot cannot drift from the code that produces its successors.
+        #
+        # ONLY the copied proof pages. The frozen ROSTER is deliberately excluded and would be
+        # CORRUPTED by this transform: its single '](../../ValidatedTestPackages.md)' is the note's
+        # pointer at the LIVING roster -- relocated on purpose by ConvertTo-FrozenRosterText -- and
+        # retargeting it would leave the page linking itself while calling itself the living one. The
+        # roster is not in $versionProofs yet either way; the name filter says so rather than relying
+        # on that ordering, which is the same reason $frozenCount above excludes it by name.
+        $retargetedRoster = 0
+        $retargetedSource = 0
+        $unretargeted = New-Object System.Collections.Generic.List[string]
+
+        foreach ($page in @(Get-ChildItem $versionProofs -Filter *.md -File |
+                            Where-Object { $_.Name -ne $frozenRosterName })) {
+            try {
+                $retargeted = Update-FrozenProofPage -Path $page.FullName -Version $fullVersion
+                $retargetedRoster += $retargeted.RosterLinks
+                $retargetedSource += $retargeted.SourceLinks
+            }
+            catch { $unretargeted.Add("$($page.Name): $($_.Exception.Message)") }
+        }
+
+        # The counts are per-PAGE invariants, and they are checked here as well as inside the
+        # transform because the two answer different questions: the throw in Update-FrozenProofPage
+        # names a page whose template drifted, while these name a disagreement between the set that
+        # was copied and the set that was retargeted -- which no per-page check can see. Every page
+        # the converter generates carries exactly one of each link, so both sums must equal the page
+        # count; anything else is published-site breakage nobody is watching for.
+        if ($unretargeted.Count) {
+            throw ("The $fullVersion snapshot has $($unretargeted.Count) proof page(s) whose frozen links could " +
+                   "not be retargeted -- they would publish still pointing at the living roster and tree/master:`n    " +
+                   ($unretargeted -join "`n    "))
+        }
+
+        if ($retargetedRoster -ne $frozenCount -or $retargetedSource -ne $frozenCount) {
+            throw ("The $fullVersion snapshot retargeted $retargetedRoster roster link(s) and $retargetedSource " +
+                   "source link(s) across $frozenCount proof page(s); each page carries exactly one of each, so " +
+                   "both counts must equal the page count. Reconcile the proof-page template with " +
+                   "Update-FrozenProofPage before publishing.")
+        }
+
+        Write-Step ("Retargeted the frozen proof pages -- $retargetedRoster roster link(s) onto this snapshot's " +
+                    "own $frozenRosterName, $retargetedSource source link(s) onto tag $releaseTag")
+
         # --- the roster page, transformed into this snapshot's own copy of itself ------------------
         # Which commit the note names: the TAG's, when the tag exists and this is a real release --
         # the tag is the authority on the tree a release was built from, and a re-run finishing a
