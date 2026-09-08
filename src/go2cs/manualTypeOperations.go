@@ -2089,6 +2089,19 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// zsyscall_windows_module_impl.cs.
 		"Module32First": goosWindows,
 		"Module32Next":  goosWindows,
+		// The OS-VERSION member, and the first of this class reached from OUTSIDE this package:
+		// net's Windows TCP dial consults version() behind a sync.Once on the way to setting
+		// keep-alive options. _OSVERSIONINFOW is 276 bytes native, ending in szCSDVersion INLINE as
+		// WCHAR[128]; the converted record holds that as one `array<uint16>` reference, so it
+		// carries a managed reference and the CLR auto-layouts it. Before the pointer-storage repair
+		// the generated wrapper handed ntdll a real address and RtlGetVersion wrote 276 bytes over a
+		// much smaller managed object; after it a reference-bearing pointee answers
+		// PointerStorage.None and ntdll is handed an order token instead -- 0xC0000005 inside
+		// ntdll!RtlGetVersion. Same ordinary mirror remedy as GetTimeZoneInformation,
+		// findFirstFile1, Process32First, adjustTokenPrivileges and Module32First: the wrapper
+		// receives the record as a TYPED `*_OSVERSIONINFOW`, so it applies directly. Body in
+		// zsyscall_windows_version_impl.cs.
+		"rtlGetVersion": goosWindows,
 	},
 	// The three WORD-SIZE leaves of math/bits, and only those three. math/big calls Mul and Add from
 	// the innermost loop of Montgomery multiplication -- every RSA private-key operation -- and the
@@ -2118,6 +2131,20 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Add": goosAny,
 		"Mul": goosAny,
 		"Sub": goosAny,
+	},
+	"time": {
+		// syncTimer -- Go 1.23's `*(*unsafe.Pointer)(unsafe.Pointer(&c))`, the channel handed to the
+		// runtime's timer as a raw pointer so a synchronous timer channel can be told apart from an
+		// asynchronous one (asynctimerchan). Its ONLY reader here is the hand-owned newTimer in
+		// time/time_impl.cs, which by its own line never reads that argument (`_ = cp;` -- the channel
+		// comes from `arg`, and the sync bit is recomputed from the GODEBUG setting), so the take was
+		// a DEAD reference-bearing address take -- and the corpus's dominant one: 176 of the 283 the
+		// Q44 census read in os (one per time.NewTimer/After/Ticker), the single one in syscall. Under
+		// the managed pointer token (docs/phase4/DESIGN-managed-pointer-token.md) every such take
+		// would register a weak token nobody resolves; displaced (2026-09-05, COORD's ruling on the
+		// item-2 reading) to a one-line body returning nil, the value syncTimer itself returns under
+		// asynctimerchan=1. time/time_impl.cs holds the body beside its consumer.
+		"syncTimer": goosAny,
 	},
 }
 
