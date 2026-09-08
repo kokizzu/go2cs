@@ -1405,3 +1405,95 @@ still exist. The two rules answer different questions and neither subsumes the o
 (`internal/weak.runtime_* → weak.runtime_*`). That is a separate change on a separate branch and this
 section does not touch it; what is recorded here is only the deletion-disposition of the two
 directories.
+
+---
+
+## 2026-09-07 — THE `BOTH` CLASS, and a RETRACTION of this document's own `throw` note (COORD ruling `bd868d3fe`; C1 `661453516`)
+
+### 1. ⚠ RETRACTION — `sync/mutex.cs` declares BOTH `@throw` AND `fatal`
+
+The block above says:
+
+> ⚠ `throw` moved in the same commit and does NOT collide — `mutex.cs` declares `fatal` and not
+> `throw` (0 declarations, checked with comments stripped).
+
+**That is false.** C1 measured it and I verified on my own tree:
+
+```
+  sync/mutex.cs:38   internal static void @throw(@string s) => throw new …
+  sync/mutex.cs:40   internal static void fatal(@string s)  => throw new …
+  go1.24.13 sync/runtime.go:58,59    func throw(string)    func fatal(string)
+```
+
+**Why my check read zero: the emitted name is `@throw`.** `throw` is a C# keyword, so the converter
+escapes it with a verbatim identifier, and my pattern required WHITESPACE immediately before the
+name. **A KEYWORD ESCAPE is one more spelling a name-keyed census must enumerate**, beside the
+`Δ`/`ж`/`ᴛ` alias family CLAUDE.md already names. **`sync/mutex.cs` is TWO deletions**, per COORD's
+ruling.
+
+⚠ And the converse, which C1 measured and which must not be over-read: the file's principal also loses
+**five mutex consts**, but those are a pure DELETION from all of 1.24 `sync` and our hand-own does not
+declare them. **The seven-name diff is NOT seven collisions.**
+
+### 2. ⚠ THE INSTRUMENT LIMITATION THAT HID THE OTHER HALF — mine to record
+
+`arm14_h6diff` assigns **exactly one class per file**, by the documented precedence
+`BUILD-CONSTRAINT > MEMBERS-REMOVED > MEMBERS-ADDED > SIGNATURE > BODY-ONLY > COMMENT-ONLY`, because
+§6's spec asked for exactly one. So a file that both LOSES and GAINS members bills `MEMBERS-REMOVED`
+and **appears in the `MEMBERS-ADDED` section zero times**.
+
+**That is not an oversight in this census; it is unreportable by the instrument that produced it.**
+C1 checked the zero rather than assuming it. Stated generally, for the next reader:
+
+> **A classifier that reports ONE class per file cannot report a file's SECOND class, and the collapse
+> is silent by construction.**
+
+**The cheap remedy, and it needs no new instrument: RUN THE CLASSIFIER IN BOTH DIRECTIONS.**
+`h6diff(old, new)` reports what was REMOVED; `h6diff(new, old)` reports what was ADDED, because the
+two sets swap. Controls:
+
+```
+  runtime/runtime2.go   forward MEMBERS-REMOVED type note
+                        swapped MEMBERS-REMOVED const waitReasonSyncWaitGroupWait, …   -> BOTH
+  runtime/mfinal.go     forward BODY-ONLY        swapped BODY-ONLY                     -> neither
+```
+
+### 3. The `BOTH` class, derived independently
+
+Over all **44** whole-file hand-owns, principals resolved in both trees, both directions:
+
+```
+  BOTH           2     runtime/runtime2.cs      testing/testing.cs
+  REMOVED-only   2     sync/mutex.cs            os/linux/wait_waitid.cs
+  ADDED-only     0
+```
+
+**This reproduces C1's independent `go/parser` derivation exactly** — 44 whole-file hand-owns, BOTH 2,
+removed-only 2, added-only 0 — from a different instrument. Two derivations agreeing on the same
+PARTITION is a stronger cross-check than either alone.
+
+### 4. Dispositions under COORD's ruling `bd868d3fe`
+
+**`runtime/runtime2.cs` — RE-DERIVED, not surgically re-written.** §5 and §10 of
+`REHEARSAL-h5-go124.md` dispose it RE-WRITE, which is **right in direction and understated in scope**:
+deleting `note` is correct and NOT sufficient. The file also lacks everything 1.24 ADDED to its
+principal — `g.syncGroup`, `m.mWaitList` (replacing the removed `m.nextwaitm`, which our own
+`lock_managed_impl.cs` still references), `m.fipsIndicator`, `isIdleInSynctest`, six `waitReason`
+consts — read by fifteen emitted siblings. The ruled shape is the 1.24.13 emission as base with the
+hand-own delta re-applied by the hunk rule 3-way (base = the tracked `.cs.auto`, ours = the hand-own,
+theirs = the scratch emission), on C1's re-write branch as an H5-train seat.
+
+**The general statement, which is the reason the class matters:** *a whole-file hand-own at a release
+hop is a file FROZEN AT THE OLD RELEASE'S CONTENT, and every change the new release makes to its
+principal is silently absent* — the silent-subtraction shape at hop scale.
+
+**`testing/testing.cs` — classifies BOTH, but by a DIFFERENT mechanism, and it goes to the
+testing-host bill.** `testing` is skip-listed, so nothing is emitted and **there is no collision**.
+What BOTH means there is that the Phase-4 host is frozen against 1.24's `testContext` → `testState`
+rework — F15b territory with the TB-adapting assemblies behind it. Flagged, not touched here.
+
+**`sync/mutex.cs` — TWO deletions** (`@throw`, `fatal`), per §1 above.
+
+**`os/linux/wait_waitid.cs` — REMOVED-only**, and its removed member is `_P_PID`, which the earlier
+block already measured as a go2cs invention Go declares in no `os/*.go` at either release. **Not a
+collision.**
