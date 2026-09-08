@@ -156,4 +156,85 @@ public class Q44RegistryCensusControlTests
         Assert.AreEqual(s.conversions, s.arm1 + s.arm2a + s.arm2b + s.arm3 + s.arm4,
             "the arms must sum to the conversions -- the classification is exhaustive or the census is broken");
     }
+
+    // ---- The two guards the 2026-09-08 neutrality fix owes, each RED on the code it replaced ----
+
+    [TestMethod]
+    public void TheCensusPerformsONEResolvePerConversion_TheNeutralityPROPERTY()
+    {
+        // ⚠ THE NEUTRALITY GUARD, and its FIRST form was wrong in a way worth keeping written down.
+        // I wrote "a conversion must not change the registered count" and it failed on the FIXED
+        // code, correctly: `Resolve` evicts a dead weak entry, and the ONE resolve the operator
+        // legitimately performs does that eviction whether the census is on or off. Nor can eviction
+        // COUNTING see the defect -- two resolves of the same token cannot evict twice. The property
+        // that actually discriminates is the one COORD ruled on: with the census ON the operator must
+        // perform the SAME calls it performs with the census OFF, and off it performs exactly one
+        // Resolve per conversion, there being a single unconditional call site. So: one conversion,
+        // one Resolve. The line this replaces read `Resolve(...) is null` at arm 4 and made it TWO --
+        // and Resolve is not passive, which is how the banked `os` row flipped PASS -> FAIL with the
+        // env gate as the only variable (i9, f8213cf49).
+        nuint token = RegisterABoxAndLoseIt();
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        long resolvesBefore = Q44RegistryCensus.ResolveCalls;
+        long arm4Before = Q44RegistryCensus.Snapshot().arm4;
+
+        var _ = (ж<OtherType>)(uintptr)token;
+
+        Assert.IsTrue(Q44RegistryCensus.Snapshot().arm4 > arm4Before,
+            "the control's premise: this conversion must actually reach arm 4 -- the arm whose classifier " +
+            "carried the extra call -- or the guard is measuring a path the defect never touched");
+        Assert.AreEqual(1L, Q44RegistryCensus.ResolveCalls - resolvesBefore,
+            "ONE conversion must enter Resolve exactly ONCE with the census on, as it does with the census off; " +
+            "two means the census is doing registry work the uninstrumented program never does");
+    }
+
+    // Kept out of the caller's frame deliberately: a local holding the box would be rooted for the
+    // method's life under a non-optimizing JIT, and the entry would never be dead to begin with --
+    // the one-arm-per-frame lesson from the GC/liveness probes.
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static nuint RegisterABoxAndLoseIt()
+    {
+        ж<RefBearing> box = new StandardBox<RefBearing>(new RefBearing { name = "gone" });
+        nuint token = box.PointerOrderToken;
+        ManagedPointerTokens.Register(token, box);
+        return token;
+    }
+
+    [TestMethod]
+    public void The2a2bDiscriminatorUsesTheRegistrysOwnProjection_NotACopyOfIt()
+    {
+        // ⚠ THE CLASSIFIER GUARD. The discriminator asks "is this number the box's own token, i.e.
+        // offset 0?" -- the same question ManagedPointerTokens.CurrentToken answers when Resolve
+        // validates an entry. The census carried a TWO-ARM COPY of that rule (INilPointer, IChannel,
+        // else 0) while CurrentToken has a third arm for anything else. A registered object
+        // implementing neither interface therefore projected to 0, compared unequal to its own
+        // token, and was filed 2b -- the SOUND bucket, the one the design says must not move -- when
+        // it is 2a, the defect bucket. A census that files its target under "nothing to do here"
+        // is worse than one that misses it. This drives exactly that object and requires 2a.
+        object plain = new object();
+        nuint token = ManagedPointerTokens.CurrentToken(plain);
+
+        if (token == 0)
+            Assert.Inconclusive("NOT MEASURED: this object projected to 0, so it cannot be registered");
+
+        ManagedPointerTokens.Register(token, plain);
+        Assert.AreSame(plain, ManagedPointerTokens.Resolve(token),
+            "the control's premise: the plain object must actually resolve, or the arm is never reached");
+
+        long a2aBefore = Q44RegistryCensus.Snapshot().arm2a;
+        long a2bBefore = Q44RegistryCensus.Snapshot().arm2b;
+
+        var _ = (ж<OtherType>)(uintptr)token;
+
+        Assert.IsTrue(Q44RegistryCensus.Snapshot().arm2a > a2aBefore,
+            "a resolve at the box's OWN token is offset 0 and must be filed 2a, whatever interfaces the box implements");
+        Assert.AreEqual(a2bBefore, Q44RegistryCensus.Snapshot().arm2b,
+            "and must NOT be filed 2b -- 2b is the sound bucket, and a defect hidden there is a defect the census reports as absent");
+
+        GC.KeepAlive(plain);
+    }
 }

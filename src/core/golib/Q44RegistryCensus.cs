@@ -50,6 +50,7 @@ internal static class Q44RegistryCensus
     private static long s_arm2b;
     private static long s_arm3;
     private static long s_arm4;
+    private static long s_resolveCalls;
 
     // Per-arm TYPE PAIRS, because §10.5 asks "whether the pointee type matched" and a bare count
     // cannot answer falsifier (b) -- which needs to know WHICH types met at offset 0.
@@ -83,6 +84,25 @@ internal static class Q44RegistryCensus
     }
 
     internal static void Mint() => Interlocked.Increment(ref s_mints);
+
+    /// <summary>
+    /// How many times <c>ManagedPointerTokens.Resolve</c> has been ENTERED while the census is on.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ This exists because the census's neutrality has to be a MEASURED property and the obvious
+    /// measurements do not discriminate. `Resolve` evicts a dead weak entry, so the tempting guard --
+    /// "a conversion must not change the registered count" -- fails on correct code too: the ONE
+    /// resolve the operator legitimately performs does that eviction whether the census is on or
+    /// off. And two resolves of the SAME token cannot evict twice, so counting evictions cannot see
+    /// the second call either. What distinguishes the fixed classifier from the one that flipped a
+    /// banked row is exactly how many times Resolve is ENTERED per conversion: one, or two. Counted
+    /// only when the census is on, so the census-off path carries a static bool read it already
+    /// carries and nothing else; the census-off count is one-per-conversion by construction, there
+    /// being a single unconditional call site.
+    /// </remarks>
+    internal static long ResolveCalls => Interlocked.Read(ref s_resolveCalls);
+
+    internal static void ResolveEntered() => Interlocked.Increment(ref s_resolveCalls);
 
     internal static void Arm1() { Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm1); }
     internal static void Arm3() { Interlocked.Increment(ref s_conversions); Interlocked.Increment(ref s_arm3); }
@@ -149,16 +169,30 @@ internal static class Q44RegistryCensus
     /// </summary>
     internal static string OutputPath =>
         Environment.GetEnvironmentVariable("GO2CS_Q44_CENSUS_FILE") is { Length: > 0 } named
-            ? named
+            ? named.Replace("{pid}", Environment.ProcessId.ToString())
             : System.IO.Path.Combine(System.IO.Path.GetTempPath(),
                                      $"q44-census-{Environment.ProcessId}.txt");
 
     /// <summary>
-    /// Writes the census to <see cref="OutputPath"/> (appending, so several hosts in one run each add
-    /// a block) and to stderr as a secondary. Called from a process-exit hook AND callable directly,
-    /// because whether that hook runs under a given test host is not a safe assumption.
+    /// Writes the census to <see cref="OutputPath"/> and to stderr as a secondary. Called from a
+    /// process-exit hook AND callable directly, because whether that hook runs under a given test
+    /// host is not a safe assumption.
     /// </summary>
+    /// <remarks>
+    /// ⚠ ONE BLOCK PER PROCESS, which is one block per swept ROW. The first write in a process
+    /// TRUNCATES; later writes in that same process append. Until 2026-09-08 every write appended,
+    /// so a sweep that set one <c>GO2CS_Q44_CENSUS_FILE</c> for the host and ran several rows
+    /// through it produced a file whose blocks a reader would sum — i9's ask, and the failure it
+    /// prevents is arithmetic rather than loud. Two ways to keep rows apart, both encoded here so
+    /// the runner needs no per-row logic: put <c>{pid}</c> in the path and each host gets its own
+    /// file; or leave it out and the last row's block is what remains, cleanly, never two summed.
+    /// The header line names the process and the entry assembly so a block is attributable either
+    /// way.
+    /// </remarks>
     internal static void Dump() => DumpTo(OutputPath);
+
+    // Which paths this process has already written, so the FIRST write truncates and the rest append.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> s_written = new();
 
     /// <summary>
     /// Dumps to an explicit path, so a caller that must not disturb a live census run (the control)
@@ -179,6 +213,13 @@ internal static class Q44RegistryCensus
             $"Q44CENSUS mints={Interlocked.Read(ref s_mints)} conversions={c} " +
             $"arm1={a1} arm2a={a2a} arm2b={a2b} arm3={a3} arm4={a4}",
 
+            // Attribution, and it goes AFTER the totals rather than before: an existing control
+            // requires the totals line to be FIRST and greppable, and it caught this line in the
+            // wrong place the first time it ran.
+            $"Q44CENSUS-BLOCK pid={Environment.ProcessId} " +
+            $"entry={System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "?"} " +
+            $"utc={DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ} resolveCalls={ResolveCalls}",
+
             sum == c
                 ? $"Q44CENSUS-RECONCILES arms sum to {sum} == conversions {c}"
                 : $"Q44CENSUS-BROKEN arms sum to {sum} but conversions is {c} -- the classification is NOT exhaustive",
@@ -194,7 +235,10 @@ internal static class Q44RegistryCensus
         // reported rather than swallowed: an instrument that cannot report must say so.
         try
         {
-            System.IO.File.AppendAllLines(path, lines);
+            if (s_written.TryAdd(path, true))
+                System.IO.File.WriteAllLines(path, lines);
+            else
+                System.IO.File.AppendAllLines(path, lines);
         }
         catch (Exception e)
         {

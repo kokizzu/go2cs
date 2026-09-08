@@ -393,6 +393,13 @@ public static class ManagedPointerTokens
     /// </summary>
     public static object? Resolve(nuint token)
     {
+        // Counted at the DOOR, before the fast path, so the count is "how many times was Resolve
+        // entered" rather than "how many did work" -- an extra call that returns early on the fast
+        // path is still an extra call, and on the slow path is still an eviction. See
+        // Q44RegistryCensus.ResolveCalls for why this is the property that discriminates.
+        if (Q44RegistryCensus.Enabled)
+            Q44RegistryCensus.ResolveEntered();
+
         // The fast path every non-reflect program takes: nothing was ever registered, so no token
         // can resolve and the conversion goes straight to its native-address route.
         if (token == 0 || s_count == 0)
@@ -421,7 +428,12 @@ public static class ManagedPointerTokens
     }
 
     // The token the box would report today — the same projection reflect used to mint the entry.
-    private static nuint CurrentToken(object box)
+    // INTERNAL rather than private because the §10.5 census's 2a/2b discriminator asks the SAME
+    // question ("is this number the box's own token, i.e. offset 0?") and a second copy of the rule
+    // is a copy that can be wrong: the census carried a two-arm copy that omitted the fallback below,
+    // so a registered object implementing neither interface projected to 0 and every such site was
+    // classified 2b — the SOUND bucket — when it is 2a. One definition, one answer.
+    internal static nuint CurrentToken(object box)
     {
         return box switch
         {

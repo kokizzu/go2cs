@@ -714,13 +714,8 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         // refusal below -- IsTokenArithmetic is false at offset 0 -- and reaches the native box at the
         // bottom, over a number that is not an address. Counted here; not yet changed.
         if (Q44RegistryCensus.Enabled && resolved is not null)
-        {
-            nuint order = resolved is INilPointer p ? p.PointerOrderToken
-                        : resolved is IChannel c ? c.PointerOrderToken
-                        : 0;
-
-            Q44RegistryCensus.Arm2(typeof(T), resolved, order == (nuint)value.Value);
-        }
+            Q44RegistryCensus.Arm2(typeof(T), resolved,
+                                   ManagedPointerTokens.CurrentToken(resolved) == (nuint)value.Value);
 
         // THE REFUSAL. A number inside a LIVE token's own 4 GiB block, that is not that token, is
         // a token somebody did arithmetic on — `unsafe.Add(unsafe.Pointer(&v), offset)` over storage
@@ -739,7 +734,16 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
             throw RuntimeErrorPanic.UnsafePointerArithmeticWithoutAddress();
         }
 
-        if (Q44RegistryCensus.Enabled && ManagedPointerTokens.Resolve((nuint)value.Value) is null)
+        // ⚠ CLASSIFIED FROM THE RESOLVE ALREADY PERFORMED, never a second call. This line read
+        // `ManagedPointerTokens.Resolve(...) is null` until 2026-09-08, and that made the census
+        // NOT OBSERVATION-ONLY: `Resolve` EVICTS — a dead weak entry is TryRemove'd and the count
+        // reassigned — so enabling the census mutated the registry at moments the uninstrumented
+        // program never would. i9 measured the consequence: the banked `os` row flipped PASS -> FAIL
+        // with the env gate as the ONLY variable, twice, in both directions. Reaching this line
+        // already means `resolved` was not a `ж<T>` and the arithmetic refusal did not fire, so
+        // `resolved is null` IS arm 4 — the same verdict, from a value already in hand, with the
+        // census performing exactly the calls the census-off path performs.
+        if (Q44RegistryCensus.Enabled && resolved is null)
             Q44RegistryCensus.Arm4();
 
         return new NativeBox<T>((nuint)value.Value);
