@@ -614,6 +614,13 @@ private static class GoFinalizerQueue
             return;
         }
 
+        // Go's createfing sets fingCreated on exactly this transition, and the runtime's own
+        // export_test bridge FinalizerGAsleep() reads fingStatus. Until this landed, every write to
+        // fingStatus in this file sat inside the vestigial converted queuefinalizer/createfing/
+        // runfinq machinery the header declares dead -- so the flag word was never maintained by the
+        // LIVE runner and the bridge answered false forever.
+        ᏑfingStatus.CompareAndSwap(fingUninitialized, fingCreated);
+
         global::System.Threading.Thread runner = new(Run)
         {
             // Go's fing does not keep a program alive either.
@@ -631,6 +638,9 @@ private static class GoFinalizerQueue
             s_outstanding++;
             s_idle.Reset();
         }
+
+        // This is our wakefing: Go sets fingWake before waking the parked finalizer goroutine.
+        ᏑfingStatus.Or(fingWake);
 
         s_queue.Enqueue((fn, target));
         s_pending.Release();
@@ -668,7 +678,14 @@ private static class GoFinalizerQueue
 
         while (true)
         {
+            // s_pending.Wait() IS this goroutine's gopark, so fingWait is set across exactly the
+            // span Go sets it across. Go's own ordering comment applies verbatim: the flag is set
+            // BEFORE the park rather than after, so a waker cannot see "running" for a goroutine
+            // that is about to park. Cleared on wake together with fingWake, as Go's wakefing CAS
+            // clears both.
+            ᏑfingStatus.Or(fingWait);
             s_pending.Wait();
+            ᏑfingStatus.And(~(uint32)(fingWait | fingWake));
 
             if (!s_queue.TryDequeue(out (Delegate Fn, object Target) item))
                 continue;
@@ -685,7 +702,17 @@ private static class GoFinalizerQueue
                 // goroutine profile, carrying whatever labels the body set.
                 using global::go.golib.Goroutine.UserWorkScope userWork = global::go.golib.Goroutine.EnterUserWork();
 
-                item.Fn.DynamicInvoke(item.Target);
+                // Go brackets the finalizer call with exactly this flag; isSystemGoroutine answers
+                // false while it is set, which is the rule the comment above already cites.
+                ᏑfingStatus.Or(fingRunningFinalizer);
+                try
+                {
+                    item.Fn.DynamicInvoke(item.Target);
+                }
+                finally
+                {
+                    ᏑfingStatus.And(~fingRunningFinalizer);
+                }
             }
             catch
             {
