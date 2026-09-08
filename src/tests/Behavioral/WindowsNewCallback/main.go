@@ -4,7 +4,7 @@
 // `callbackasm`/`callbackasm1` are bodyless partials on every target here), so the linkname push was
 // DECLINED and the remedy is a managed body on the syscall side.
 //
-// WHAT IS GUARDED. Three properties, printed as four lines, each of which the seam can lose
+// WHAT IS GUARDED. Five properties, printed as six lines, each of which the seam can lose
 // independently:
 //
 //   1. A REAL NATIVE CALLER CAN CALL BACK INTO GO. This is the whole capability. It exercises the
@@ -31,18 +31,51 @@
 //      assumption about the corpus pin's exact wording: at go1.24.13 the branch taken here is
 //      syscall_windows.go:288 (`len(ft.OutSlice()) != 1`), text "compileCallback: expected function
 //      with one uintptr-sized result" -- read, not remembered -- but nothing here depends on it.
+//   4. A CALLER-SUPPLIED lParam ROUND-TRIPS INTO THE CALLBACK. Property 1 proves the seam is entered;
+//      it does not prove the ARGUMENTS arrive. This one does, through a real native caller, and it
+//      exercises the arity-2 shim where property 1 exercises arity 1 -- the shims are per-arity, so
+//      those are two code paths and not one. It prints the value it received rather than a boolean,
+//      for the reason given under (3).
+//   5. A PANIC RAISED INSIDE THE CALLBACK BODY UNWINDS THROUGH THE NATIVE FRAME TO THE GO CALLER.
+//      This is Go's own TestCallbackPanic property, in Go's own words: "make sure panic during
+//      callback unwinds properly". Our shims are plain marshalled delegates rather than
+//      [UnmanagedCallersOnly], which is the shape whose managed exceptions propagate through a
+//      native frame on Windows -- so this is expected to hold, and it has never been measured.
 //
-// ⚠ WHY EnumSystemLocalesW AND NOT EnumWindows. The dispatch suggested EnumWindows or
-// EnumThreadWindows. Both enumerate TOP-LEVEL WINDOWS, and a headless or service-session host can
-// legitimately have ZERO of them -- which would make "the callback ran" host-dependent, i.e. exactly
-// the property this file exists to avoid. EnumSystemLocalesW is kernel32, needs no window station,
-// and always yields entries, so the assertion is a property of the seam rather than of the machine.
-// Its callback is arity 1 returning BOOL, which is inside the implemented set.
+//      ⚠ THIS IS THE ONE LINE THAT MIGHT NOT MERELY GO RED. If the managed exception cannot cross
+//      kernel32's frame the process may die rather than print, in which case the C# side stops after
+//      line five and the project reds on a short stream. THAT IS THE FINDING, and it is deliberately
+//      the LAST line so the four properties above are already on stdout when it happens. If it fires,
+//      the remedy is to SPLIT this line into its own behavioral project so the finding does not hold
+//      the seam guard's seat -- never to weaken the assertion, and never to drop it.
+//
+// ⚠ THE CALLERS ARE GO'S OWN CHOICES, NOT MINE, AND WHY EnumWindows IS NOT AMONG THEM. The
+// dispatch suggested EnumWindows or EnumThreadWindows for the lParam round-trip. Both enumerate
+// TOP-LEVEL WINDOWS, and a headless or service-session host can legitimately have ZERO of them --
+// which would make "the callback ran" host-dependent, i.e. exactly the property this file exists to
+// avoid.
+//
+// Go's runtime faced the same problem and answered it: runtime/syscall_windows_test.go's `nestedCall`
+// (go1.24.13, lines 166-173, read rather than recalled) drives its callback tests through
+// EnumTimeFormatsEx on kernel32 with LOCALE_NAME_USER_DEFAULT, which always yields and needs no
+// window station. So properties 4 and 5 use Go's caller, and its callback is arity 2 -- one uintptr
+// argument, one LPARAM -- which is inside the implemented shim set. Property 1 keeps
+// EnumSystemLocalesW, also kernel32 and also always-yielding, because its callback is arity 1: two
+// callers cover two of the implemented arities where one would cover one.
+//
+// ONE DELIBERATE DIVERGENCE FROM Go's SHAPE. Go's `nestedCall` smuggles a CLOSURE through the lParam
+// (`uintptr(*(*unsafe.Pointer)(unsafe.Pointer(&f)))`) and calls it from inside the callback. This
+// file passes a plain sentinel instead. Punning a func value through unsafe.Pointer is an orthogonal
+// capability, and if it were the thing that failed here the red would be misattributed to the
+// callback seam -- which is the whole reason this project exists. The sentinel measures the property
+// Go's pun is a vehicle for, and nothing else.
 //
 // ⚠ EVERYTHING PRINTED IS COUNT-INDEPENDENT. Not one line carries how many locales exist, how many
-// windows are open, or any address: those are properties of the host, and a golden that captured
-// one would be a golden about the machine. Three lines are booleans about the seam and the fourth is
-// a compile-time constant of the pinned runtime; none of the four can move with the host.
+// time formats the user's locale has, how many windows are open, or any address: those are
+// properties of the host, and a golden that captured one would be a golden about the machine. Three
+// lines are booleans about the seam, one is a constant this file declares, and two are compile-time
+// constants of the pinned runtime; none of the six can move with the host. Both enumerations that
+// observe a value stop after the first callback, so not even the number of invocations is on stdout.
 //
 // This package is WINDOWS-ONLY by construction -- syscall.NewCallback does not exist elsewhere -- so
 // its package_info.cs carries [GoPlatformExclusive("windows")] and every harness skips it BY NAME on
@@ -78,6 +111,27 @@ func onLocaleOther(lpLocaleString uintptr) uintptr {
 // A shape Go REFUSES: no result at all -- zero results is not one uintptr-sized result.
 func nonConforming() {}
 
+// ---- properties 4 and 5: the arity-2 callback, through Go's own caller ----
+
+// EnumTimeFormatsProcEx(LPWSTR lpTimeFormatString, LPARAM lParam) -> BOOL.
+//
+// wantLParam is arbitrary and deliberately not a count of anything. It is under 2^31 so it is
+// representable on a 32-bit uintptr and carries no sign question as an LPARAM.
+const wantLParam = uintptr(0x5A5A5A5A)
+
+var seenLParam uintptr
+
+func onTimeFormat(timeFormatString uintptr, lparam uintptr) uintptr {
+	seenLParam = lparam
+	return 0 // stop enumerating: one invocation is the whole measurement
+}
+
+const callbackPanicText = "callback panic"
+
+func onTimeFormatPanics(timeFormatString uintptr, lparam uintptr) uintptr {
+	panic(callbackPanicText)
+}
+
 func main() {
 	kernel32 := syscall.NewLazyDLL("kernel32.dll")
 	enumSystemLocalesW := kernel32.NewProc("EnumSystemLocalesW")
@@ -96,9 +150,39 @@ func main() {
 	enumSystemLocalesW.Call(cb1, uintptr(0x1))
 	fmt.Println("callback-invoked:", invoked)
 
+	// (4) THE ARGUMENTS ARRIVE. LOCALE_NAME_USER_DEFAULT is NULL, and the sentinel is the lParam.
+	// Printed as the value received, so a wrong one says WHAT arrived rather than merely "false".
+	enumTimeFormatsEx := kernel32.NewProc("EnumTimeFormatsEx")
+	const localeNameUserDefault = 0
+	enumTimeFormatsEx.Call(syscall.NewCallback(onTimeFormat), localeNameUserDefault, 0, wantLParam)
+	fmt.Printf("lparam-round-trip: %#x (want %#x)\n", seenLParam, wantLParam)
+
 	// (3) THE REFUSAL. The TEXT, so the two sides compare strings rather than a boolean that can be
 	// false on both sides for different reasons.
 	fmt.Println("nonconforming-refusal:", refusalText())
+
+	// (5) THE PANIC UNWINDS. LAST, deliberately: see the header. Same text-not-boolean reasoning.
+	fmt.Println("callback-panic-unwinds:", panicUnwindText(enumTimeFormatsEx))
+}
+
+// panicUnwindText drives a panicking callback through the native enumerator and returns the value the
+// Go caller recovers on the other side of kernel32's frame. Markers as in refusalText, and for the
+// same reason: a panic that never arrived and one that arrived as a managed exception are different
+// defects, and neither may read as a text mismatch.
+func panicUnwindText(enumTimeFormatsEx *syscall.LazyProc) (out string) {
+	defer func() {
+		switch r := recover().(type) {
+		case nil:
+			out = "<no-panic>"
+		case string:
+			out = r
+		default:
+			out = fmt.Sprintf("<non-string-panic:%T>", r)
+		}
+	}()
+	const localeNameUserDefault = 0
+	enumTimeFormatsEx.Call(syscall.NewCallback(onTimeFormatPanics), localeNameUserDefault, 0, wantLParam)
+	return "<no-panic>" // not reached: the callback panics and it must reach here as a panic
 }
 
 // refusalText returns the recovered panic value of a NewCallback that must be refused. The two
