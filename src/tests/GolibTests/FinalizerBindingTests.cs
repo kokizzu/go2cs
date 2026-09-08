@@ -165,6 +165,60 @@ public class FinalizerBindingTests
             $"ARM 5: Go's text names BOTH types, object first. Got: {rejection}");
     }
 
+    // A container whose FIRST field is the one a pointer is taken to -- Go's own mfinal_test.go
+    // shape (`type T struct { v int; p unsafe.Pointer }`, then `&new(T).v`).
+    private struct Holder
+    {
+        public nint v;
+        public nint w;
+    }
+
+    // A METHOD GROUP rather than a ref-returning lambda: the delegate is
+    // `ref TElem FieldRefFunc<T, TElem>(ref T)`, and a named static method converts to it without
+    // depending on which C# version admits a ref-returning lambda.
+    private static ref nint HolderFirstField(ref Holder h) => ref h.v;
+
+    [TestMethod]
+    public void Arm7_AFieldReferenceBoxBindsToItsFieldsPointerType()
+    {
+        ж<Holder> container = new StandardBox<Holder>(default);
+        ж<nint> field = container.of<nint>(HolderFirstField);
+        field.Value = 97531;
+        Action<ж<nint>> finalizer = _ => { };
+
+        bool bound = GoReflect.TryBindFinalizerArgument(field, finalizer, out object? argument, out string? rejection);
+
+        Assert.IsTrue(bound,
+            "ARM 7 IS THE DEFECT THIS PREDICATE INTRODUCED. Go's TestFinalizerType iteration 0 is " +
+            "`&new(T).v` -- a pointer to a struct's FIRST FIELD -- passed to `func(v *int)`, and Go " +
+            "accepts it. The emission is `@new<T>().of(T.Ꮡv)`: a ж<nint> whose RUNTIME type is " +
+            "FieldRefBox<nint>. A predicate written as C# type EQUALITY sees ж<nint> != " +
+            "FieldRefBox<nint> and refuses a shape Go passes. " +
+            $"Rejection was: {rejection}");
+        Assert.AreSame(field, argument,
+            "ARM 7: the referent IS already an instance of the parameter type, so it passes THROUGH. " +
+            "A conversion here would mean the assignability test did not fire and some other arm did.");
+    }
+
+    [TestMethod]
+    public void Arm8_AnElementReferenceBoxBindsToItsElementsPointerType()
+    {
+        ж<array<nint>> backing = new StandardBox<array<nint>>(new array<nint>(4));
+        ж<nint> element = backing.at<nint>(2);
+        element.Value = 97531;
+        Action<ж<nint>> finalizer = _ => { };
+
+        Assert.IsTrue(GoReflect.TryBindFinalizerArgument(element, finalizer, out object? argument, out string? rejection),
+            "ARM 8: the ELEMENT-reference sibling of arm 7 (`&a[i]`), whose runtime type is " +
+            $"ElemRefBox<nint>. Same family, same refusal, and it deserves its own row. Rejection: {rejection}");
+        Assert.AreSame(element, argument, "ARM 8: an element-reference box passes through unchanged too.");
+    }
+
+    // ⚠ THE NEUTER FOR ARMS 7 AND 8, so the red-first control needs no guesswork: in
+    // GoReflect.FinalizerBinding.cs, change case 1 from `fint.IsInstanceOfType(referent)` back to
+    // `fint == etyp`. Both arms go RED and every other arm here stays GREEN -- arms 2, 3 and 4 pass
+    // under either form, which is what makes the asymmetry the signal rather than the count.
+
     [TestMethod]
     public void Arm6_AFinalizerTakingTwoArgumentsIsRefused()
     {

@@ -143,9 +143,21 @@ public static partial class GoReflect
 
         Type fint = parameters[0].ParameterType;
 
-        // 1. Same type. This is the ONLY case DynamicInvoke could ever bind for a defined pointer type,
-        //    and it is why shapes 1 and 2 of TestFinalizerType delivered while shape 3 did not.
-        if (fint == etyp)
+        // 1. THE REFERENT ALREADY IS ONE. Assignability, NOT type equality -- the fix for the defect
+        //    this predicate introduced at TestFinalizerType's iteration 0, where a five-minute silent
+        //    hang became a 3.5-second refusal at a shape Go accepts (i9's run, COORD 1c4b349bb).
+        //
+        //    ⚠ ONE GO POINTER TYPE IS A FAMILY OF C# TYPES. `*int` is `ж<nint>` as a PARAMETER, and at
+        //    run time the argument is whichever box kind produced it -- StandardBox, FieldRefBox,
+        //    ElemRefBox, NativeBox, each a SUBCLASS of ж<T>. Go's rule reads "fint == etyp" over GO
+        //    types, and transcribing that as C# type EQUALITY makes every box that is not the exact
+        //    parameter type fall through to the pointer arm, where it depends on a conversion it
+        //    should never have needed. `&new(T).v` emits `@new<T>().of(T.Ꮡv)` -- a ж<nint> whose
+        //    runtime type is FieldRefBox<nint> -- and Go passes it to `func(v *int)` without a murmur.
+        //
+        //    IsInstanceOfType is also exactly what the default binder would have accepted here: this
+        //    case is a reference conversion, so agreeing with it is not a widening of Go's rule.
+        if (fint.IsInstanceOfType(referent))
         {
             argument = referent;
             return true;
@@ -164,12 +176,8 @@ public static partial class GoReflect
         //    implement in the CLR sense. TryCreate is FAIL-SOFT and memoized per (value, interface) pair.
         if (fint.IsInterface)
         {
-            if (fint.IsInstanceOfType(referent))
-            {
-                argument = referent;
-                return true;
-            }
-
+            // (An interface the referent's own type implements is already handled by case 1's
+            // assignability test above; only the duck-typed shell can reach here now.)
             if (AdapterBinder.TryCreate(referent, fint, out object? shell))
             {
                 argument = shell;
