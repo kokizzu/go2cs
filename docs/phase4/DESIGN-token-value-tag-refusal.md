@@ -215,3 +215,136 @@ It does not establish that the refusal is worth its cost — §4.2 is unmeasured
 the element-index bound — §4.1 is unmeasured. It does not transfer to `linux` or `darwin`
 trampolines, or to Windows on ARM64. And it does not claim the ruled spelling is wrong: the ruled
 spelling is **sound**, and the finding is only that the mint has no sixteen spare bits to give it.
+
+
+---
+
+# AMENDMENT — 2026-09-08: §4.1 IS MEASURED, and both outcomes of the decision rule are written out
+
+§4.1 left one number owed and it is now measured. This amendment records the measurement, scores the
+prediction **as worded** including where it missed, and — to COORD's `1fa2647422` — pre-writes **both**
+outcomes of §3's decision rule as designs, so the choice between them is a ruling over two written
+things rather than a design done after the fact. §D states the criterion COORD ruled and what settles
+it.
+
+## A. The measurement — i9's fourteen rows
+
+Run by i9 against a merge of the probe branch `claude/c2-elemindex-probe` onto master; instrument,
+controls and caveats in that branch's commit. Reported at mailbox `fab03eebdf`.
+
+| | value |
+|:--|--:|
+| `max_ctor`, highest of any row (`go/types`) | **3,022,479** |
+| `max_token`, **every** measured row | **0** |
+| `ctor_calls`, all rows | 629,240,995 |
+| `token_reads`, all rows | 4,532 |
+
+**The zero is a real measurement and not a vacuous one, and `token_reads` is what makes that
+statement possible.** Tokens ARE minted — `net/http` 4,529 and `encoding/json` 3 — and **every one of
+them is at index exactly 0, 4,532 out of 4,532**. Eleven of thirteen measured rows read no tokens at
+all. Had the probe carried only maxima, a zero would have been indistinguishable from a path never
+entered; the counter that separates them is the reason the answer is usable.
+
+**`reflect` is NOT MEASURED, and the reason is a host crash rather than an absent instrument.** Its
+`ELEMPROBE-CONTROL` line FIRED — the instrument was compiled in — and the summary never printed
+because the process died with `0xC0000005` in `setField`, reached from `TestIsZero`, after 169 run /
+123 pass / 43 fail / 1 skip. By the rule this record states, that row has no numbers. Two different
+ways of reading nothing, and the control line is what tells them apart. It is also the row ranked
+FIRST as most likely to produce a deep `m_index`, so the population's most interesting member is
+precisely the one still unmeasured.
+
+**One mechanism finding that changed how the run had to be done, and it is i9's:**
+`run-validated-sweep.ps1` does **not** surface the probe — zero `ELEMPROBE` lines in the sweep log,
+its stderr, or the results file. A thirteen-row sweep plan would have completed **GREEN having
+measured nothing**. Caught by a 77-second pilot on one row, and caught *because* the control line is
+read first. Driving the published host directly surfaces both lines.
+
+### A.1 The prediction, scored as worded
+
+| clause | as predicted | outcome |
+|:--|:--|:--|
+| 1 | `max_ctor` ≥ 65,536 on ≥1 row, ~70% | **HIT** — three rows; the maximum is 46× the threshold |
+| 2 | `max_token` ≥ 65,536 on any row, ~25% | **not reached** |
+| 2 (magnitude) | "expected in the **low thousands**" | **MISSED.** It is **zero.** |
+| 3 | `token_reads` ≪ `ctor_calls` | **HIT** — about 139,000 : 1 |
+| 4 | if 1 and 2 both hold the counters disagree, and that disagreement IS the finding | **HIT**, maximally: 3,022,479 against 0 |
+
+The magnitude clause is recorded as a **miss**, not softened. It was wrong in the safe direction, and
+the true shape — *every* minted token at index exactly 0 — is a **stronger** statement than the one
+predicted, which is precisely why the wording is left as written rather than repaired.
+
+## B. OUTCOME A, as measured: the 16-bit split, and what its saturation guard actually costs
+
+`tag(16) + hash(32) + displacement(16)` — `AllocationBase` becomes
+`(1UL << 63) | ((ulong)(uint)hash << 16)`, and `IsTokenArithmetic`'s mask narrows from `~0xFFFFFFFF`
+to `~0xFFFF`. `FieldRefBox` is untroubled: struct field offsets are far inside 64 KiB.
+
+`ElemRefBox` is the problem, because its displacement is an **absolute element index** and a value at
+or above 2^16 carries **into the hash**, producing a token that resolves to a *different allocation*.
+So the split requires a guard, and **the guard's shape is the hard part.** Three candidates, with what
+each actually costs:
+
+| guard | what it does | what it costs |
+|:--|:--|:--|
+| **saturate** | clamp the displacement to `0xFFFF` | **UNSOUND.** `unsafe.Pointer` equality is token-based (`unsafe.cs:345`), so two distinct elements at index ≥ 65,535 would compare EQUAL; and `ManagedPointerTokens.Register` is keyed by token, so they would collide in the registry and `Resolve` would return the wrong box. This is a correctness break, not a precision loss. |
+| **fall back** | above the block, mint an **untagged** token | Sound, and **holes the door exactly where the biggest arrays are** — the trampoline cannot refuse what carries no tag. Honest only if the hole is counted rather than assumed. |
+| **refuse at the mint** | throw when the displacement would overflow | Turns a legal Go program into a panic at an address-take that Go performs without complaint. |
+
+**What the measurement does and does not license here.** `max_token = 0` on every measured row means
+the guard's path is never taken on those workloads — which is what makes this outcome *arguable*. It
+is not a bound: nothing static bounds the slice arm, `max_ctor` reached 3,022,479 on the very same
+run, and the row most likely to go deep is unmeasured. **A run is not a bound** — this record said so
+before the run and the run does not change it.
+
+If this outcome is taken, the **fall-back** guard is the only sound one of the three, and it ships
+with a counter so the hole's size is a measured quantity rather than an assumption.
+
+## C. OUTCOME B, pre-written: the high-bit variant
+
+`bit 63 = 1` and `bit 47 = 0`, hash in `62..48` and `46..32` (**30 bits**), displacement `31..0`
+(**32 bits, unchanged**).
+
+```
+AllocationBase(hash):  (1UL << 63) | ((hash >> 15 & 0x7FFF) << 48) | ((hash & 0x7FFF) << 32)
+trampoline test:       (arg & 0x8000_8000_0000_0000) == 0x8000_0000_0000_0000
+```
+
+* **`ElemRefBox`, `FieldRefBox` and `IsTokenArithmetic` are untouched**, the ordering contract holds,
+  and **no saturation guard exists to design** — §B's whole problem does not arise.
+* Soundness is the same argument as §2: bits 63..47 are not all equal, so every token is
+  non-canonical and can never be a valid x86-64 user-mode pointer.
+* **The cost is the hash, 32 → 30 bits, and it is a degradation of an already-weak property.**
+
+### C.1 The hash cost is OPEN, and the honest number is not 2^32
+
+The measured collision — two distinct 64-byte arrays sharing one identity hash after **4,342**
+allocations — is itself evidence that **the CLR's identity hash is far narrower in practice than its
+32-bit slot**: a uniform 32-bit hash collides around 77,000 allocations, not 4,342. Reasoning about
+this change from the nominal width would therefore be reasoning from the wrong number.
+
+**Whether dropping two bits costs anything at all depends on WHERE the entropy sits**, and the
+packing above drops the **top** two bits. If the identity hash's entropy is concentrated low — which
+the 4,342 figure is consistent with — the cost is near zero; if it is spread, the collision scale
+roughly halves to ~2,200. **This is not asserted either way.** The measurement that settles it is
+cheap and self-contained: take the identity hashes of N objects, pack them both ways, and count
+collisions at each width. It is a precondition of taking this outcome, not of writing it down.
+
+## D. The ruling criterion, and what settles the choice
+
+COORD's `74af7f4465`: *the 16-bit split is ARGUABLE with a saturation guard, and a refusal on a
+CHOICE is taken only if the high-bit variant BENCHES WORSE.* So **§C is the default and §B is taken
+only against a measured regression.**
+
+**A prediction on that bench, on record before it is run: §C will not bench worse, and the reason is
+that its test is not two tests.** Written as `(arg & 0x8000_8000_0000_0000) == 0x8000_0000_0000_0000`
+it is **one AND and one compare** — the same shape and the same instruction count as §B's
+`(arg >> 48) == 0x8000`. The mint side costs §C one extra shift-and-or per token, on a path this
+run measured at **4,532 events against 629,240,995 constructor calls**.
+
+**What would falsify it:** a measured per-syscall regression for §C over §B at the trampoline, or a
+mint-side regression large enough to show against 4,532 events. Either would be a real finding and
+would select §B *with* the fall-back guard of §B's table — never with saturation, which is unsound
+whichever outcome is chosen.
+
+This record still does not cut either one. §4.2's per-syscall cost measurement remains owed, and
+§C.1's entropy measurement joins it as a precondition of the default outcome.
