@@ -500,13 +500,31 @@ var linknamePushTargets = map[string]linknamePush{
 	// conversion into a root that does NOT already carry the hand-own emits, and that must still be
 	// the loud pair rather than a fabricated body. Keep them, with the reason naming the file the
 	// caller should be reaching for.
-	"internal/weak.runtime_registerWeakPointer": {
+	//
+	// RE-KEYED for Go 1.24 (2026-09-07). Go moved the package: `internal/weak` became the public
+	// `weak`, and runtime/mheap.go now pushes to `weak.runtime_registerWeakPointer` and
+	// `weak.runtime_makeStrongFromWeak`. NOTHING else about these rows moved, which is why this is
+	// a key rename and NOT a retirement. The consumer declarations are byte-identical at both
+	// releases -- the same one-arg `//go:linkname` handle above the same bodyless func, so the
+	// same arm of linknamePushDeclMatches -- and the runtime PUSHER function names are unchanged
+	// (Go kept `internal_weak_runtime_*`), so each `source` below is exactly what it always was.
+	//
+	// Retiring them instead would have unregistered a LIVE push, leaving the bodyless consumer
+	// indistinguishable from an ordinary assembly stub -- the `syscall.runtime_envs` shape
+	// linknamePushRegistry_test.go documents as having taken down os.init() and every Linux
+	// program that touches fmt. The failure mode of retiring a live row is SILENT: the row gone,
+	// the guard green, and the corpus fabricating a body or throwing.
+	//
+	// The reason strings name `weak/pointer.cs`, the POST-HOP location of the hand-own; relocating
+	// it from `internal/weak/pointer.cs` is H6/H9 work and these rows depend on it. This cut is
+	// RED at 1.23.12 by construction (no `weak` package there) and lands with H2.
+	"weak.runtime_registerWeakPointer": {
 		source: "runtime.internal_weak_runtime_registerWeakPointer",
-		reason: "the pushed body walks mheap_ span metadata the managed model does not populate; use the hand-owned managed weak reference in internal/weak/pointer.cs",
+		reason: "the pushed body walks mheap_ span metadata the managed model does not populate; use the hand-owned managed weak reference in weak/pointer.cs",
 	},
-	"internal/weak.runtime_makeStrongFromWeak": {
+	"weak.runtime_makeStrongFromWeak": {
 		source: "runtime.internal_weak_runtime_makeStrongFromWeak",
-		reason: "the pushed body re-derives an object pointer from a heap address, which the managed model cannot do; use the hand-owned managed weak reference in internal/weak/pointer.cs",
+		reason: "the pushed body re-derives an object pointer from a heap address, which the managed model cannot do; use the hand-owned managed weak reference in weak/pointer.cs",
 	},
 	// os/signal's SIX runtime primitives, pushed by runtime/sigqueue.go. BARE consumer shape in every
 	// case: signal_unix.go declares the five under one `// Defined by the runtime package.` comment
