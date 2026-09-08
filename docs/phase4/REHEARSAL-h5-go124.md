@@ -574,3 +574,94 @@ The instrument's ledger now reads, all three sides measured:
 selected-file logic, which is correct on every row measured. **So the fix is an added classification
 in front of the existing predicate, not a change to it** — which is what §10's proposed rule and
 §11's converge on, now with the KEEP side measured rather than assumed.
+
+---
+
+## 2026-09-08 — §13. THE H5 LADDER, MEASURED END TO END ON THREE FLAVOURS: **240 → 4 → 126 → 68, and the sole remaining root is `runtime/mfinal.cs` — the SECOND frozen hand-own §5 named**
+
+COORD dispatched the three-flavour build at C1's commit-2 SHA (`fff04f4aa`). It is measured, and
+running it to its end characterises the whole H5 wall rather than one seat.
+
+### 1. THE LADDER — every rung identical on windows, linux and darwin, MSB/NETSDK 0 throughout
+
+```
+  CS    tree                                                 failing package   runtime.dll
+  240   BASELINE: frozen runtime2.cs + frozen mfinal.cs        runtime            no
+        + 6 stale files (§2's deletion bill)
+    4   + C1's runtime2.cs re-derive (e5d87832f)               goexperiment       no
+  126   + 1 of the 6 deletions                                 runtime (map dup)  no
+   68   + ALL 6 selection-decided deletions                    runtime (mfinal)   no
+```
+
+**§10's flavour-independence holds at every rung** — 240/240/240, 4/4/4, 126/126/126, 68/68/68.
+
+⚠ **The swap was ASSERTED, not assumed**, or the gate refuses: `runtime2.cs` note-decls **1 → 0** and
+`GoValueClone` **0 → 4**. The reading is about C1's file.
+
+### 2. THE DELETION BILL, DECIDED BY SELECTION — six files, and it is §2's list
+
+`go list -f '{{.GoFiles}}'` at both pinned releases; a principal selected at 1.23.12 and NOT at
+1.24.13 takes its `.cs`:
+
+```
+  runtime                 map.go · map_fast32.go · map_fast64.go · map_faststr.go
+  sync                    map.go
+  internal/goexperiment   exp_aliastypeparams_off.go
+  controls (newly selected at 1.24.13): map_swiss.go · hashtriemap.go · exp_*_on.go
+```
+
+**Exactly the three GOEXPERIMENT flips this record named** — `aliastypeparams`, `swissmap`,
+`synchashtriemap`. The run asserts BOTH directions before building: the whole set absent AND the
+replacements present, so it is a swap and not a subtraction.
+
+### 3. ⚠ A PREDICTION OF MINE THAT FAILED, RECORDED AS FAILED
+
+I predicted that removing the ONE `goexperiment` file would take the residual 4 to **zero**. Measured:
+**4 → 126**, on all three flavours. That is the UNMASKING shape this project documents — clearing a
+blocker lets compilation reach files it could not previously reach — and the new errors named their own
+cause (`runtime/map.cs` AND `runtime/map_swiss.cs` both present, with the generated `hmap`/`hiter`
+shells following). **I applied 1 of 6 deletions.** The analysis in §2 held; the prediction did not,
+because I under-applied it.
+
+### 4. THE SOLE REMAINING ROOT IS `runtime/mfinal.cs`
+
+The 68 collapse to one file, identically on every flavour:
+
+```
+  62  gen\go2cs.TypeGenerator\go.runtime_package.finblock.g.cs
+   4  runtime/mfinal.cs
+   2  gen\go2cs.TypeGenerator\go.runtime_package.finalizer.g.cs
+  histogram: CS0102 18 · CS0715 14 · CS0057 12 · CS0246 10 · CS0708 8 · CS0501/0056/0051 2 each
+```
+
+**Three independent lines converge on it:**
+
+- it is a marker-carrying **whole-file hand-own** (one of the 44);
+- **§5 of this record named the gate as rooted in TWO frozen hand-owns — `runtime2.cs` AND
+  `mfinal.cs`.** One has been re-derived; this is the other;
+- the H6 census already flagged it as a **RESIDUE** row — `[GoValueClone]` on `finblock`, declaration
+  PRESENT and stamp ABSENT (master `.cs` 0, `.cs.auto` 1).
+
+The errors are that shape: `CS0708` on `Equals`/`GetHashCode`, `CS0102` duplicates and inconsistent
+accessibility — the generated `finblock` shell disagreeing with the frozen file's own declaration.
+
+⚠ **Its base is VALID** — `mfinal.cs.auto` and `mfinal.cs` were last committed the same day
+(2026-09-04), so it is NOT among the three stale-base files, and the ruled discriminator can run on it
+directly. **The remedy is exactly what was done for `runtime2.cs`.**
+
+### 5. THE `[GoValueClone]` ASSEMBLY ARM IS STILL BLOCKED — and by `mfinal.cs` now, not by the deletions
+
+`runtime` does not build on any flavour, so no `runtime.dll` exists to read. The reader is built and
+positive-controlled (master: **54** stamped, the four named types ABSENT; expected after the residue
+drop: **58**, all four STAMPED). **It runs the moment `runtime` compiles.**
+
+⚠ **Instrument note, mine.** The run backed the deleted files up by BASENAME, so `runtime/map.cs` and
+`sync/map.cs` both mapped to `map.cs` and the second overwrote the first — the surviving copy is
+`sync/map.cs` (0 differing lines against master). Both are recoverable from master (82,280 and 22,095
+bytes), so the scratch IS restorable — **but by git, not because the backup was sound.** A backup keyed
+on a name that two paths share is not a backup.
+
+**Scratch state, recorded so it is not misread later:** `h5b` now holds C1's `runtime2.cs` and the six
+deletions applied. **Scope:** 1.24.13 three-target merged L3 corpus, `--no-incremental` per flavour
+with a full `bin`/`obj`/`Generated` purge between targets, CS split from MSB/NETSDK. The reading is at
+`e5d87832f`; `01a5c803d` followed and touches `sync` only.
