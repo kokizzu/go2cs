@@ -1753,3 +1753,88 @@ which case you are in.
 **Scope.** Commit dates are a proxy for freshness, not a proof of it: a `.cs.auto` written after the
 hand file can still predate a later converter change, which is why C1's regenerate-and-compare remains
 the strong form and this is the cheap screen that says who needs it.
+
+---
+
+## 2026-09-08 — ⚠ TWO CORRECTIONS TO MY OWN DISCRIMINATOR, ONE OF WHICH A RULING QUOTES: the `[GoValueClone]` split is **7/1, not 6/2**, and the two-way classification is **TOO COARSE — there is a THIRD class, and 39 rows sit in it**
+
+Running the declaration check over the remaining attribute absences — the part held as CANDIDATES —
+broke its own control, which is what a control is for. Both corrections are recorded here rather than
+edited into the blocks above.
+
+### 1. ⚠ THE SPLIT IS 7 RESIDUE / 1 BY-DESIGN
+
+The block above reports `[GoValueClone]`'s eight absences as **6 residue / 2 by-design**, and COORD's
+ruling quotes it. **It is 7 / 1.** The disputed row is `poolLocal` in `sync/pool.cs`:
+
+```
+  sync/pool.cs:81   internal sealed class poolLocal      <- the declaration IS present
+```
+
+**My hand check's pattern was `(struct|class) <name>[[:space:]{]`** — it requires a character AFTER the
+name, and that declaration ENDS ITS LINE, so the pattern false-negatived and I filed a live residue as
+a by-design deletion. The same defect is why the scripted check and the hand check disagreed at all;
+the script was right.
+
+**Consequence for the claim built on it:** "reporting the 8 as residue would have been wrong by 2" is
+really **wrong by 1**. The confound check still earns its place — it still catches `Δindirect` in
+`hashtriemap.cs`, whose construct the hand rewrite genuinely deleted — but my example overstated its
+force, and the residue population is LARGER than I published, not smaller.
+
+⚠ **An anchored pattern that requires a trailing character cannot match a declaration at end of line.**
+That is the same family as the bracket-class and blank-line traps this project already carries, and it
+is the second time in one day that a `grep` shape, not a reasoning error, moved one of my numbers.
+
+### 2. ⚠ THE TWO-WAY CLASSIFICATION IS TOO COARSE — A THIRD CLASS, AND IT IS NOT BENIGN
+
+The discriminator as ruled has two outcomes: the declaration survives (RESIDUE) or it is gone (BY
+DESIGN). Applied past `[GoValueClone]`, **50 of 62 auto-only pairs fall into "declaration gone" — and
+39 of those are `[GoInit]` import-init hooks, which is a different thing entirely.**
+
+```
+  internal/godebug/godebug.cs        [GoInit] hooks in emission 5   in hand file 0
+  internal/concurrent/hashtriemap.cs                           4                0
+  syscall/linux/exec_unix.cs                                   4                0
+      initᴛᴛimportꓸsync · initᴛᴛimportꓸsyncꓸatomic · initᴛᴛimportꓸruntime · …
+```
+
+**The frozen files carry ZERO of them.** That is not a hand rewrite deleting a construct — it is a
+construct the CONVERTER now generates that the frozen file never had. So the classification is:
+
+```
+  RESIDUE                      declaration survives, the STAMP is absent          -> drop the residue
+  MISSING GENERATED CONSTRUCT  the emission declares it, the frozen file never    -> NOT benign
+                               carried it at all
+  BY DESIGN                    the hand rewrite deleted the construct             -> nothing owed
+```
+
+⚠ **The middle class is CLAUDE.md's forced-init-hook class** — *"the hand-own FENCE leaves 8 forced-init
+hooks missing inside this frozen class"* — reached from a different direction and over a different
+artifact: that count is over `package_info.cs` for the hand-own-by-CONSEQUENCE packages, this one is
+over the hand-owned `.cs` files. **A hand-own that carries none of its import-init hooks is not forcing
+those imports' inits**, which is a behaviour question, not a stamp question.
+
+### 3. THE CORRECTED NUMBERS, WITH THEIR UNITS NAMED
+
+```
+  12  RESIDUE            all 12 re-verified with a corrected pattern, declaration present
+   1  BY DESIGN          Δindirect (hashtriemap) — construct genuinely deleted
+  39  MISSING GENERATED  [GoInit] import-init hooks, verified absent wholesale
+  10  UNCLASSIFIED       [GoRecv] 3 + [GoType] 7 — "declaration gone", but by-design vs
+                         missing-generated NOT yet distinguished
+  --
+  62  auto-only (attribute, declaration) pairs over the 30 checkable hand-owns
+```
+
+⚠ **This 62 and the "59 absences across 23 files" above are DIFFERENT UNITS and neither supersedes the
+other:** 59 counts per-attribute-KIND count differences per file; 62 counts (attribute, declaration)
+PAIRS. Both are stated so nobody reconciles them by arithmetic.
+
+**The residue population by attribute:** `GoValueClone` 7, `GoType` 3, `GoRecv` 1, `GoLocalName` 1 —
+across 6 files. Every one has had its declaration check run, so **these 12 are findings, not
+candidates.** The 10 unclassified rows remain candidates.
+
+**Scope.** Committed blobs at `origin/master`, no build. The scripted check's declaration set is
+deliberately LOOSE (a call site can look like a declaration), which biases it toward reporting RESIDUE
+— so every residue row was re-verified individually with an anchored pattern, and the by-design and
+missing-generated rows are the ones a loose matcher can only UNDER-report.
