@@ -357,3 +357,50 @@ than the surprise.
 **This section is a DECISION, not a measurement** — its author still cannot compile. The i7's build of
 the body is what confirms `Expression.Convert` reaches the converted parameter types; if it does not,
 this section takes a dated amendment exactly as §8 did.
+
+---
+
+## 15. ADDENDUM 2026-09-08 — §14's MECHANISM IS **DECLINED**; the ruled one is Go's own (COORD `cc502e1c5`)
+
+**§14 above is left standing and is WRONG on its central choice.** `Expression.Convert` **has no
+user-defined operator to resolve for the struct parameters.** It resolves conversions that *exist*; it
+cannot invent one. For a plain struct parameter — `uint8Pair` — there is **no** conversion from a
+machine word at all, so the mechanism fails precisely on the case §12 had already identified as the
+awkward one.
+
+⚠ **The counter-evidence was inside my own §12, one addendum earlier.** §12.2 lists the parameter
+types and names `uint8Pair` explicitly, and I wrote that converting a machine word to a struct "is
+exactly the user-defined operator the default binder will not invoke." **That sentence is wrong.** It
+is not that the binder *will not* invoke the operator — **there is no operator to invoke.** I had the
+list in front of me, drew the correct conclusion for the scalar types, and carried it to the struct
+case where it does not hold.
+
+### The ruled mechanism — Go's own
+
+**A REINTERPRET of the native word's low `sizeof(T)` bytes, per parameter**, with a shim **per arity**
+selected **once per func value** and held in the table. That is what Go does: `compileCallback` builds
+an `abiDesc` via `assignArg` per parameter and the callback path **copies bytes** — it performs no
+conversion at any point, which is why Go's contract can be "uintptr-sized or smaller" and nothing more.
+
+What survives from §14, and it is the part §8 forced: the shim's own delegate type stays **fixed and
+non-generic**, `nuint`-per-argument, one per arity — that is what `GetFunctionPointerForDelegate`
+accepts, and §8's measurement is untouched by this declination. What changes is the **per-parameter
+node**: a byte reinterpret rather than a conversion. In C# terms the parameter is materialised from
+the word's own storage (`Unsafe.ReadUnaligned<T>` over the word's bytes, or the equivalent), never via
+a cast that asks the type system for an operator.
+
+**Two properties this buys that §14 did not have.** It is **uniform** — a struct, a `uint8`, a
+`uint32` and a `ΔHandle` are all handled by one rule instead of by whatever operators each happens to
+own; and it is **faithful**, because it is byte-for-byte what Go's ABI translation does rather than a
+managed approximation of it.
+
+**Endianness is stated rather than assumed:** "the low `sizeof(T)` bytes" is a little-endian reading,
+and every Windows target this row can reach (x64, arm64) is little-endian. It is written down because
+the rule would need re-deriving on a big-endian target, which does not exist here.
+
+**Unchanged by this amendment:** §12's arity enumeration (four shims first, eleven for full coverage);
+§13.1's finding that the table is what makes the identity rule true; §4's rooting; §7's refusal texts;
+the AOT caveat, **bounded as §14.1 stated** rather than removed — a per-func-value builder still exists,
+it simply builds a reinterpreting invoker instead of a converting one.
+
+**Next: the body.**
