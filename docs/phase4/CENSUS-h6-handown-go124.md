@@ -1911,3 +1911,73 @@ no hunt. Its residue class is the four `[GoValueClone]` stamps and nothing else.
 printed for three rows (`empty`, `iter`, `node`) were false matches from COMMENTS — my context-finder,
 not the pairing — so those three were classified from Go's source directly rather than from a printed
 line, and the pairing itself is unaffected.
+
+---
+
+## 2026-09-08 — THE BASE QUESTION, CLOSED OVER ALL 44: **14 hand-owns have NO `.cs.auto` at all, so the ruled discriminator cannot run on them — and TWO of those state a precise delta against an auto-conversion that was never banked**
+
+Every block above measured the **30 checkable** hand-owns. The obligation is now fleet doctrine, so the
+other **14** are worth naming: the discriminator takes the committed `.cs.auto` as BASE, and they have
+none. They are not one class.
+
+### 1. THE 14, BY REASON
+
+```
+  11  SKIP-LISTED PACKAGE — the converter never emits it, so no .cs.auto exists BY CONSTRUCTION
+        testing/*  (10)   PackageAncestry · TestExecution · TestFlagBridge · TestFormat · TestHost
+                          TestOptions · TestRegistry · TestReporter · TestRunner · testing.cs
+        unsafe/unsafe.cs  (1)
+      -> the discriminator cannot run and DOES NOT NEED TO: these are not converter output.
+         Nine of the ten testing files have no Go principal at all — pure hand-written host.
+
+   1  REMOVED PACKAGE — internal/concurrent/hashtriemap_whitebox.cs, no Go principal
+      -> moot at this hop; internal/concurrent is REMOVED at 1.24.13.
+
+   2  ⚠ LIVE PRINCIPAL, CONVERTER-EMITTED, NO BASE BANKED
+        internal/poll/linux/fd_writev_unix.cs
+        net/windows/lookup_windows.cs
+```
+
+### 2. ⚠ THE TWO, AND WHY THEY MATTER MORE THAN THEIR COUNT
+
+Both are genuine whole-file replacements of converter output — **their own headers say so**:
+
+```
+  fd_writev_unix.cs   "whole-file replacement of the converted fd_writev_unix.go output"
+  lookup_windows.cs   "Only the SIX record payload reads differ from the auto-conversion;
+                       everything else is the converter's own emission."
+```
+
+Both Go principals exist at 1.23.12 and are selected on their own target (`fd_writev_unix.go` carries
+`//go:build … linux …`; `lookup_windows.go` is windows by filename). **So the converter emits these
+principals, the files are marked whole-file hand-owns, and yet no `.cs.auto` is tracked — and neither
+`internal/poll` nor `net` carries a single `.cs.auto` sibling anywhere.**
+
+⚠ **The MECHANISM is unestablished and this record does not assert one.** The CONSEQUENCE is not in
+doubt: **`lookup_windows.cs` states a precise, quantitative delta — "only the SIX record payload reads
+differ" — and there is no committed auto-conversion to check it against.** That is this dossier's
+subject in its sharpest form: not a stated delta that turns out larger than claimed, but a stated
+delta that **cannot be checked at all**.
+
+### 3. THE BASE PROBLEM, WHOLE
+
+Two populations need a base regenerated before the ruled discriminator can run, and the remedy COORD
+already ruled for the first serves both:
+
+```
+  3  STALE base   the committed .cs.auto PREDATES the hand file's last commit
+                    sync/mutex.cs · syscall/linux/exec_unix.cs · time/tick.cs
+  2  NO base      no .cs.auto tracked at all
+                    internal/poll/linux/fd_writev_unix.cs · net/windows/lookup_windows.cs
+  --
+  5  of 44 whole-file hand-owns need their base REGENERATED first
+ 27  of the 30 checkable have a valid committed base
+ 12  need no base at all (11 skip-listed + 1 in a removed package)
+```
+
+**27 + 5 + 12 = 44**, with no residue on either side.
+
+**Scope.** Committed blobs plus the pinned 1.23.12 toolchain; no build, no converter run. Whether the
+two missing siblings were never emitted, never banked, or dropped by a merge is NOT measured here —
+only that they are absent, that their packages carry none, and that a header's quantitative claim
+therefore rests on nothing a reader can check.
