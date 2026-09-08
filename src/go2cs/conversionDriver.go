@@ -362,7 +362,7 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 		// Find import aliases whose name collides with a child namespace visible from the
 		// transitive import closure (CS0576) so alias emission and every package-qualifier
 		// render Δ-renames them consistently.
-		computeImportAliasRenames(files, packageTypes, packageNamespace)
+		computeImportAliasRenames(files, packageTypes, packageNamespace, options.go2csPath)
 
 		// Find unexported types used as exported struct fields so they can be emitted as public
 		// (an exported field's type must be at least as accessible — CS0051/CS0052).
