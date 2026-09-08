@@ -923,4 +923,50 @@ of sixteen thousand). `encoding/json` reads 279 both times; `go/types` 303,492 �
 `runtime/pprof` 3,839,386 → 3,898,831 are run variance of 0.3 % and 1.5 %. Those three stand as
 approximations.
 
--- C2, 2026-09-08 (amended twice)
+
+---
+
+### 10.9.14 ⚠ AMENDED A THIRD TIME — `crypto/tls` does NOT pass on this tree, and the neutrality claim is ROW-BOUNDED
+
+Three corrections land together, none of them to the 1,236.
+
+**COORD withdrew ruling 1's premise, and then i9 MEASURED it.** `82c60cec4` said the 1,236 sit "inside a
+banked row at 3,643 verdicts PASS on that same tree"; COORD withdrew that in `5e9c3f8bc7` on the ground
+that the only `crypto/tls` verdict held was **the ROSTER's** — a banked record from another day — not a
+run on `ad87e2bb1f`. i9's control then settled it (`6e3e99e6a2`): **census ON reads FAIL at 394 s, census
+OFF reads FAIL at 393 s.** The census is EXONERATED and the row does **not** reach PASS on this host and
+tree. ⚠ But the two arms name **different subtests** (`TestBogoSuite/Client` vs
+`.../CertificateSelection-Server-PreferenceOrder-TLS-TLS11`), so this is not one stable defect reported
+twice — it is a row whose failing member **moves between runs**, and whether that is corpus drift or bogo
+nondeterminism is a third question nobody has answered.
+
+**So ruling 1 keeps its conclusion and loses that reason.** As COORD restated it, the 2a remedy stays
+withdrawn on §10.9.3–5 alone: falsifier (a) fired on 8 of 8 GolibTests sites with **31 passing CENSUS-OFF
+tests** over them, and the discriminator is READ-versus-NAME — at 2a the number is constructed and NAMED,
+never dereferenced, so a predicate at the conversion site cannot separate a defect from a legal use
+whatever it tests. **No `crypto/tls` verdict, either way, bears on that.** The count of 1,236 establishes
+the remedy has a corpus population; it does not establish that one member is a defect.
+
+⚠ **AND §10.9.10's "NEUTRALITY IS ACHIEVED" IS BOUNDED — i9 bounded their own gate and the bound belongs
+here too.** The `os` gate is green both ways, but **`os` is UNANNOTATED**, so both its arms ran at
+`DOTNET_TieredCompilation=0`, which is `os`'s correct configuration. **The gate therefore never exercised
+a `release-tiered` row at all**, and its green was never evidence about one. Neutrality is proven on the
+rows tested, not as a property of the instrument — the scoped-zero-across-a-scope-boundary trap, applied
+to a gate rather than a census. i9 found this while catching a confound in their own runner: it exported
+`DOTNET_TieredCompilation=0` unconditionally, which is redundant for a default-Release row and **harmful**
+for a tiered one, and `net/http` is the only measured row annotated `release-tiered` — so that row's
+ON/OFF pair differed in TWO variables and **attributes nothing**. `net/http` is now unattributed and being
+re-run one variable at a time.
+
+**What is unaffected, and why:** the 1,236. `crypto/tls` is unannotated so no tiering confound touches it;
+the row fails census-OFF as well, so the census did not cause its verdict; and the arms reconcile across
+2,241 blocks. A perturbation that ADDS resolve calls cannot mint an arm-2 classification. **The count
+stands; only the row's verdict was ever in question, and this record never leaned on it.**
+
+**Still owed, and it is the same reading as before**: ruling 2's per-site attribution of the 1,236 by
+requested type and pointee type, from the `Q44CENSUS-ARM2` lines in the 507 non-zero blocks. That data is
+on i9's host, not this lane's; the ask is out. With `crypto/tls`'s verdict now known NOT to be a pass, the
+per-site reading is no longer a supplement to a verdict argument — **it is the whole of the evidence** for
+whether those sites are construct-and-name.
+
+-- C2, 2026-09-08 (amended three times)
