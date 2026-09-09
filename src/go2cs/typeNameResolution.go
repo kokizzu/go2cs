@@ -421,7 +421,32 @@ func (v *Visitor) getAliasQualifiedTypeName(t types.Type, isUnderlying bool) str
 			}
 
 			if pkg := obj.Pkg(); pkg != nil && pkg != v.pkg {
-				return fmt.Sprintf("%s.%s[%s]", importQualifier(pkg.Name()), obj.Name(), strings.Join(args, ", "))
+				// Prefer THIS FILE's actual import alias for the type's package over the canonical
+				// package NAME — the SAME rule the non-generic arm below already takes, against the
+				// same CS0426, and that arm's own reason names the same shape: cryptobyte's asn1.go
+				// aliases `encoding/asn1` because a subpackage took the canonical `asn1`. Only that
+				// arm ever received the rule, because until go1.24 no file reached THIS one
+				// generically. go1.24's `internal/sync` declares `package sync`, so unique/handle.go's
+				// `isync "internal/sync"` beside a plain `"sync"` rendered the qualifier from the
+				// package NAME, which importQualifier then maps to the Δ-renamed ROOT sync:
+				// `Δsync.HashTrieMap<…>` names a type that does not exist (CS0426 ×2 at
+				// unique/handle.cs:91,92, all three flavours). Reproduced at the 1.23.12 pin from a
+				// four-package synthetic module, so it is a latent defect 1.24 merely reached first
+				// rather than hop damage — and it is GENERIC-SPECIFIC: a non-generic type and a
+				// function from that same aliased import already resolve correctly through the arm
+				// below, which is why the corpus compiles today carrying six such same-name sites.
+				//
+				// Only EXPLICITLY-aliased imports populate importPathAliases, so an unaliased or
+				// Δ-renamed import is absent and keeps the importQualifier fallback byte-for-byte —
+				// the no-churn property the non-generic arm has demonstrated corpus-wide since it
+				// took this rule, and why the 1.23.12 footprint is zero rather than merely small.
+				aliasQualifier := importQualifier(pkg.Name())
+
+				if fileAlias, ok := v.importPathAliases[pkg.Path()]; ok && fileAlias != "" {
+					aliasQualifier = fileAlias
+				}
+
+				return fmt.Sprintf("%s.%s[%s]", aliasQualifier, obj.Name(), strings.Join(args, ", "))
 			}
 
 			// A SAME-PACKAGE instantiated generic must ALSO render structurally — each type ARGUMENT
