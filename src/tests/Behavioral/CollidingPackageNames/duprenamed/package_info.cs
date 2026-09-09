@@ -50,7 +50,7 @@ using static go.collidea.dup_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAoWgAAJDoA=")]
+[assembly: go.GoPositionMap("lib.go", "lib.cs", "AAoWgAAJDoAABhaA")]
 // </GoSourcePositionMaps>
 
 namespace go.collidea;
@@ -65,6 +65,7 @@ public static partial class dup_package
     // via declarations below.
 
     // <TypeAccessibility>
+    public partial struct Box<T> {}
     public partial struct Widget {}
     public partial struct ΔMarker {}
     // </TypeAccessibility>
