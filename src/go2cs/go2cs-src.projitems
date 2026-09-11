@@ -282,6 +282,10 @@
     <None Include="$(MSBuildThisFileDirectory)visitTypeSpec.go" />
     <None Include="$(MSBuildThisFileDirectory)visitTypeSwitchStmt.go" />
     <None Include="$(MSBuildThisFileDirectory)visitValueSpec.go" />
+    <None Include="$(MSBuildThisFileDirectory)licensing.go" />
+    <None Include="$(MSBuildThisFileDirectory)licensing_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" />
+    <None Include="$(MSBuildThisFileDirectory)LICENSE-EXCEPTION" />
     <None Include="$(MSBuildThisFileDirectory)writeOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)wsaSendtoNoCallers_test.go" />
     <None Include="$(MSBuildThisFileDirectory)writtenUnderlyingOperations.go" />

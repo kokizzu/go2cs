@@ -733,6 +733,18 @@ ONE stdlib in a build; there is now only one on disk.
     `.cs` — must be zero) so a failed seeding cannot be mistaken for a platform finding.
   - `-goroot` / `-gopath`, `-indent 4`, `-var` (default on),
     `-uco` (channel operators, default on), `-comments`, `-cgo`, `-tree`, `-csproj <tmpl>`, `-debug`.
+  - `-license <SPDX expression>` — overrides the emitted NuGet license METADATA
+    (`PackageLicenseExpression`) for every emitted project; it never relicenses input source.
+    Without it a library packs a local `LICENSE` when one exists, a converted stdlib package packs
+    `src/core/LICENSE` by relative path, and a `-recurse` dependency module packs its own module's
+    license file, copied verbatim to the converted module root once per module (`licensing.go`,
+    2026-09-11). `-provenance` — adds a deterministic `// Converted from Go source: "<path>"`
+    comment (GOROOT- or module-relative, default OFF, no timestamp). Recognized leading
+    copyright/license notices in a Go file are emitted even WITHOUT `-comments`, so a Go-derived
+    behavioral fixture's golden begins with the Go notice. Licensing boundaries: `LICENSING.md`;
+    the converter is AGPL-3.0-only with the output exception in `src/go2cs/LICENSE-EXCEPTION`,
+    and every converter `.go` header carries the AGPL section 7 notice line pointing at it
+    (guarded by `TestLicensingConverterHeaders`).
   - Single project/file: `go2cs package_dir` or `go2cs example.go [out.cs]`.
   - **Always pass `-comments` when converting the Go stdlib.** It defaults **off**, but the converted C#
     is a derivative work: the per-file `// Copyright … The Go Authors … BSD-style license` header **must be
