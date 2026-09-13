@@ -143,6 +143,14 @@ fleets) and `#digest a1fd9307ee95b238660028e6d11690cdfd9d9577e39c0299edbad6b1fd2
   basis, per the ruling. The two agree on 190 of 199 comparable rows.
 - **The makespan remains a LOWER BOUND** while any roster row carries no cost, and the generator prints
   it as one. One row does.
+- ⚠ **NO PLAN FROM THIS GENERATOR HAS BEEN THROUGH THE DRIVER.** §7's claim that the `#basis` header is
+  *additive* for `run-h10-dispatch.ps1` is **read from the driver's source** — it requires
+  `version/digest/rows/slice_cap_seconds/cooldown_seconds` and collects every other `#` line generically
+  — and C2 cannot execute a `.ps1`, so it is not measured. i9's 16-arm acceptance ran against a plan from
+  the *old* header (`#block`, no `#basis`), so the recon-basis plan's header is an untested input to a
+  tested driver. **One `-DryRun` arm against a recon-basis plan closes it**, and this belongs in the list
+  rather than in a reader's assumption: a "what is not measured" section that omits the thing the author
+  changed is the section doing the least work.
 
 ## 7. Generator changes this re-derivation required, and one defect it exposed
 
