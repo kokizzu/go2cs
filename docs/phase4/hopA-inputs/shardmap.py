@@ -4,7 +4,7 @@ Method: PLAN-hop-campaign.md section 4.3, generalized into GoCorpusMigration.md 
 maintained copy) -- reserved set pinned to the i9, remaining rows LPT-greedy across W bins weighted
 by provisional speed factors s_w (i9 = 1.00).
 
-⚠ WHAT THIS EMITS IS A PROJECTION, NOT A DEAL. s_w are PLACEHOLDERS pending hop-recon calibration,
+!! WHAT THIS EMITS IS A PROJECTION, NOT A DEAL. s_w are PLACEHOLDERS pending hop-recon calibration,
 and the makespan printed below is an explicit LOWER BOUND because a fifth of the roster has no
 measured cost at all (see UNSCHEDULED). Section 3.2: "a map built at placeholder factors is a
 projection, not a deal -- say which it is, and gate dispatch on it."
@@ -52,6 +52,37 @@ import re
 import statistics
 import sys
 from pathlib import Path
+
+# ---------------------------------------------------------------- stdout, before anything prints
+# ⚠ THIS GENERATOR DID NOT RUN ON THE LANE THAT DISPATCHES, and the reason was one glyph. Windows Python
+# writes stdout in the console codepage (cp1252), which has no U+26A0, so `--emit-plan` died
+# UnicodeEncodeError before writing anything and returned rc=1 (i9, measured on the i9 at 02b87b501;
+# reproduced on the cloud lane with PYTHONIOENCODING=cp1252, which is the arm that makes this fix
+# falsifiable from a box that is not Windows).
+#
+# TWO REMEDIES, both kept, because they cover different populations:
+#
+#   1. Every OUTPUT payload in this file is ASCII. That is C2's own .ps1 convention -- run-h10-dispatch.ps1
+#      is pure ASCII for exactly this reason -- applied to the .py it was not applied to. It needs no
+#      runtime support and no caller-side environment variable, which is the weakest of the three shapes
+#      because nothing asserts a convention.
+#   2. errors="replace" on stdout, for the glyphs THIS FILE CANNOT SEE. The DATA block's own heading
+#      carries a middle dot and its digest table an ellipsis: those arrive from the INPUT and are printed,
+#      so a source census of this file cannot find them (i9's census could not, and neither could mine).
+#      cp1252 happens to encode both; cp437, a real console default, encodes neither. With replace, an
+#      unencodable input glyph degrades to a substitute instead of killing a run that has already written
+#      its artifact.
+#
+# ⚠ AND THE ORDERING HAZARD IS WHY 2 IS NOT OPTIONAL: the plan is written BEFORE the summary is printed,
+# so a print that raises leaves a VALID PLAN ON DISK behind a non-zero exit -- a caller checking rc
+# discards a good plan, one not checking rc uses a plan whose generator reported failure. i9 read that
+# shape out of the source without being able to manufacture the data for it. `errors="replace"` makes the
+# print unable to raise, which closes it by construction rather than by ordering care.
+#
+# The PLAN FILE itself is unaffected either way: it is written with an explicit encoding and newline, so
+# the artifact never depended on the console.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
 
 HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "DATA-sweep-row-walltimes.md"
@@ -170,7 +201,7 @@ def parse_data_block():
             declared = (int(cells[1]), int(cells[2]), cells[3])
 
     if declared is None:
-        print(f"⚠ CONTENT UNVERIFIED: no digest declared for {BLOCK_KEY} in {DATA.name}. "
+        print(f"!! CONTENT UNVERIFIED: no digest declared for {BLOCK_KEY} in {DATA.name}. "
               f"The parse is {len(rows)} rows / {parsed_sum} s / sha256 {parsed_digest} -- "
               f"declare it in the digests section so a corrupted t_r cannot pass.")
     else:
@@ -183,7 +214,7 @@ def parse_data_block():
                 "a cardinality check cannot make: the count can be right while a time is 14x wrong."
                 .format(BLOCK_KEY, d_rows, d_sum, d_digest, len(rows), parsed_sum, parsed_digest))
         print(f"content digest VERIFIED for {BLOCK_KEY}: {len(rows)} rows, {parsed_sum} s, "
-              f"sha256 {parsed_digest[:16]}…")
+              f"sha256 {parsed_digest[:16]}...")
 
     total = parsed_sum
     verdicts = sum(v for _, v, _ in rows if v is not None)
@@ -206,7 +237,7 @@ def parse_data_block():
 def parse_timings_tsv(path):
     """The recon basis: a banked per-row TSV, read by COLUMN NAME and never by position.
 
-    ⚠ WHY A TSV AND NOT A NEW BLOCK IN DATA-sweep-row-walltimes.md. Copying 204 rows into a markdown
+    !! WHY A TSV AND NOT A NEW BLOCK IN DATA-sweep-row-walltimes.md. Copying 204 rows into a markdown
     table beside the TSV that already holds them is two sources of truth that will drift -- i9 flagged
     exactly that as a judgement call when banking the record and left the table out. Reading the banked
     file settles the call in the same direction: the rows have ONE home, and this function is how the
@@ -307,10 +338,10 @@ def parse_timings_tsv(path):
     # printed rather than left for a reader to derive from the percentiles.
     floor = times[0]
     near = sum(1 for t in times if t <= floor + 10)
-    print(f"⚠ FLOOR-DOMINATED: min {floor} s, and {near} of {len(times)} rows ({near/len(times):.0%}) "
+    print(f"!! FLOOR-DOMINATED: min {floor} s, and {near} of {len(times)} rows ({near/len(times):.0%}) "
           f"are within 10 s of it -- which is why the light bulk is balanced by ROW COUNT and not by t_r")
 
-    return rows, total, f"{path.name} (sha256 {hashlib.sha256(text.encode('utf-8')).hexdigest()[:16]}…)"
+    return rows, total, f"{path.name} (sha256 {hashlib.sha256(text.encode('utf-8')).hexdigest()[:16]}...)"
 
 
 if TIMINGS is not None:
@@ -349,7 +380,7 @@ print(f"\npopulation:       {len(roster_names)} banked roster row(s)")
 print(f"  costed          {len(costed)}  ({100*len(costed)/len(roster_names):.1f}%)")
 print(f"  UNSCHEDULED     {len(UNSCHEDULED)}  -- no measured t_r, NO COST CLAIMED for any of them")
 if orphans:
-    print(f"  ⚠ costed rows not on the roster (retired/renamed): {len(orphans)}: {', '.join(orphans)}")
+    print(f"  !! costed rows not on the roster (retired/renamed): {len(orphans)}: {', '.join(orphans)}")
 if len(costed) + len(UNSCHEDULED) != len(roster_names):
     die(f"population arithmetic does not close: {len(costed)} costed + {len(UNSCHEDULED)} "
         f"unscheduled != {len(roster_names)} roster rows")
@@ -419,7 +450,7 @@ byname = {n: (v, t) for n, v, t in rows}
 RESERVED = [r for r in RESERVED_DECLARED if r in byname]
 reserved_unscheduled = [r for r in RESERVED_DECLARED if r not in byname]
 if reserved_unscheduled:
-    print(f"  ⚠ {len(reserved_unscheduled)} declared reserved row(s) have NO measured cost and are "
+    print(f"  !! {len(reserved_unscheduled)} declared reserved row(s) have NO measured cost and are "
           f"UNSCHEDULED, not pinned: {', '.join(reserved_unscheduled)}")
     print(f"    (the reserved leg's total below therefore EXCLUDES them -- it is a lower bound on "
           f"the pin, not the pin)")
@@ -500,7 +531,7 @@ for W in sorted(FLEETS):
     names, s, load, pkgs = lpt(W)
     makespan = max(load[m] / s[m] for m in names)
     print(f"\n{'='*100}\nW = {W}   makespan >= {makespan:.0f} s local = {fmt_hm(makespan)}"
-          f"   ⚠ LOWER BOUND: {len(UNSCHEDULED)} roster row(s) carry no cost and are not in it")
+          f"   !! LOWER BOUND: {len(UNSCHEDULED)} roster row(s) carry no cost and are not in it")
     for m in names:
         local = load[m] / s[m]
         shards = max(1, -(-load[m] // (s[m] * C_TARGET)))  # ceil
@@ -578,7 +609,7 @@ for label, f in scenarios.items():
 
 print("\nlower bounds:")
 print(f"  i9 reserved-set floor (serial on i9): {reserved_total} s = {fmt_hm(reserved_total)}"
-      + (f"  ⚠ EXCLUDES {len(reserved_unscheduled)} uncosted pin(s)" if reserved_unscheduled else ""))
+      + (f"  !! EXCLUDES {len(reserved_unscheduled)} uncosted pin(s)" if reserved_unscheduled else ""))
 for W in sorted(FLEETS):
     cap = sum(MACHINES[m] for m in FLEETS[W])
     ideal = total / cap
@@ -684,7 +715,7 @@ def emit_plan(path):
     # for twice (the .gitattributes pins, and a guard defeated by universal newlines).
     Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     print(f"\n{'='*100}\nplan written: {path}")
-    print(f"  {len(body)} dispatch row(s) over W={sorted(FLEETS)}, digest {digest[:16]}…")
+    print(f"  {len(body)} dispatch row(s) over W={sorted(FLEETS)}, digest {digest[:16]}...")
     print(f"  slice cap {C_TARGET} s ({C_TARGET/60:.0f} min), cooldown {COOLDOWN_SECONDS} s "
           f"({COOLDOWN_SECONDS/60:.0f} min), {len(UNSCHEDULED)} row(s) UNSCHEDULED and absent")
 

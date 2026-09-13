@@ -167,12 +167,55 @@ fleets) and `#digest a1fd9307ee95b238660028e6d11690cdfd9d9577e39c0299edbad6b1fd2
    broken. Derived from `C_TARGET` now. **Same class as a hardcoded verdict string, in a file whose own
    repair notes say every hardcoded count is gone, and it survived a cut and a review.**
 
+6. ⚠ **AND THE GENERATOR DID NOT RUN AT ALL ON THE LANE THAT DISPATCHES — also mine, found by i9
+   (`29815a704`) on this file's first execution on Windows.** Windows Python writes stdout in the console
+   codepage, so `--emit-plan` died `UnicodeEncodeError` on a `⚠` in a `print()` **before writing
+   anything**, rc=1. `PYTHONIOENCODING=utf-8` fixes it caller-side, which is a workaround for a tool that
+   should not need one. This is C2's own `.ps1` doctrine — `run-h10-dispatch.ps1` is pure ASCII for
+   exactly this reason — applied to the `.py` it was not applied to, and my own re-derivation commit had
+   just added three more such lines.
+   - **Every output payload in this file is ASCII now**, docstrings included, since `__doc__` is printable
+     by construction even though nothing prints it today.
+   - **And `sys.stdout.reconfigure(errors="replace")`, which is the part that actually closes the
+     class.** ASCII payloads are a convention and nothing asserts a convention; `replace` makes a print
+     structurally unable to raise. It also covers the glyphs *no source census of this file can see*: the
+     DATA block's heading carries a middle dot and its digest table an ellipsis, both arriving from the
+     INPUT and printed. cp1252 encodes those two; **cp437, a real console default, encodes neither** —
+     so i9's source census could not have found them, and neither could mine.
+   - **This closes an ordering hazard i9 read out of the source without being able to manufacture data
+     for it:** the plan is written BEFORE the summary prints, so a raising print leaves a **valid plan on
+     disk behind a non-zero exit** — a caller checking rc discards a good plan, one not checking rc uses a
+     plan whose generator reported failure. A print that cannot raise removes that by construction rather
+     than by ordering care.
+   - ⚠ **A repo-wide "no non-ASCII in a `.py`" guard was considered and REFUSED**, because the rule it
+     would enforce is not the rule that matters: `hopA-inputs/rosterdelta.py` carries a middle dot inside
+     a *regex that must match* one, and `probes/c1-finalizer-iteration-index/apply.py` carries a
+     deliberately non-ASCII *generated identifier*. Both are load-bearing. The failure mode is
+     specifically **what a script writes to stdout**, and that is now closed at the stream rather than by
+     a file-level pattern that would need exceptions on the day it was written. (Noted for C1, not
+     touched: `apply.py`'s `⚠` glyphs sit in its module docstring, which `__doc__` or a `--help` would
+     print — the same one-line exposure this file just closed.)
+
 **Controls.** The DATA-basis output is **byte-identical** before and after the refactor that made the
 basis selectable (sha256 equal), with the single intended exception of the label in item 5 — which is
 the regression control that the refactor changed no behaviour. Six refusal arms on the new parser (the
 hand-stopped row renamed; a blank `sweep_s`; the `sweep_s` column renamed; a header-only file; a junk
 one-line file; an unresolvable `--timings` path), each refusing and naming its cause. One positive
 control: columns reordered, map identical.
+
+**And the encoding fix is controlled two-sided from a box that is not Windows**, by reproducing i9's
+environment with `PYTHONIOENCODING`:
+
+| arm | cp1252 | cp437 | ascii | utf-8 |
+|:--|:--|:--|:--|:--|
+| the committed version before the fix | rc=1 | rc=1 | rc=1 | rc=0 |
+| after the fix, with `--emit-plan` | **rc=0, plan written** | **rc=0, plan written** | **rc=0, plan written** | rc=0 |
+
+The emitted plan is **byte-identical across all four** (`sha256 9f872103…`), which is the separate claim
+that the artifact never depended on the console. A further arm plants a *new* `⚠` into a `print()` payload
+and runs under cp437: **rc=0**, the glyph rendered `?`. That is the arm that distinguishes "we removed the
+glyphs" from "a glyph can no longer break this", and only the second one survives someone editing the file
+next week.
 
 <!--
 Provenance, 2026-09-13 (zero-token: block comments are stripped before this file enters context).
