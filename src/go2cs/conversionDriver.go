@@ -105,7 +105,20 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 	// the loader here: it loaded host-platform files while the converter's filename
 	// filter used the requested platform, silently dropping BOTH platforms' constrained
 	// files from a cross-platform conversion.
-	cfg.Env = append(os.Environ(), fmt.Sprintf("GOOS=%s", targetParts[0]), fmt.Sprintf("GOARCH=%s", targetParts[1]))
+	//
+	// GOTOOLCHAIN=local pins the loader to the toolchain GOROOT names, and it is a REFUSAL mechanism
+	// rather than a convenience. Under the default `auto`, the go command re-execs whichever toolchain
+	// the module found by walking up from cfg.Dir asks for (getGoEnvFrom documents this) and REWRITES
+	// GOROOT in the re-exec'd process: measured 2026-09-13, an exported GOROOT of go1.23.12 with that
+	// tree's bin first on PATH came back as go1.24.7, announcing `go: downloading go1.24.7`. For a
+	// general tool, agreeing with the switch is right. For a converter of a PINNED standard library it is
+	// not: a switch means the emission came from a release nobody chose, and the pin exists to PREVENT
+	// one rather than to follow it. With `local` a go.mod asking for a newer toolchain refuses loudly and
+	// names both versions, which is the good failure; a stdlib load inside a GOROOT `src` directory
+	// carries no such line, so ordinary runs are unaffected. (COORD ruling `bc59c619d`. If a real stdlib
+	// load is ever found to need `auto`, that is a finding to post, not a reason to drop the pin quietly.)
+	cfg.Env = append(os.Environ(), fmt.Sprintf("GOOS=%s", targetParts[0]), fmt.Sprintf("GOARCH=%s", targetParts[1]),
+		"GOTOOLCHAIN=local")
 
 	// A MODULE-CACHE package is loaded from the MAIN MODULE's directory, by import path — not from
 	// its own directory, by path. The distinction is not stylistic: the go command treats the module

@@ -276,6 +276,65 @@ func corpusPinnedRelease(root string) string {
 	return firstSubmatch(goStdLibVersionPattern, string(contents))
 }
 
+// corpusPinnedReleaseOrError is corpusPinnedRelease with the SILENT NO-OP removed, for the two
+// corpus-defining call sites that must not proceed unpinned.
+//
+// ⚠ corpusPinnedRelease returns "" for two opposite situations — no root was supplied, and a root was
+// supplied that carries no version.props — and checkCorpusToolchainPin returns nil on an empty pin. So a
+// -go2cspath pointing at a tree without version.props switched the toolchain pin OFF and said nothing
+// (C1, mailbox 2026-09-13: both census arms passed the pin check that way, on the wrong release).
+//
+// ⚠ AND THE WORKFLOW THIS PROTECTS IS THE ONE THAT NEEDED IT MOST. Safety floor rule 2 has every -stdlib
+// reconvert seeded into a TEMP root from src/core — and version.props sits BESIDE core, not inside it, so
+// a hand-seeded temp root carries no pin and every such reconvert has run with the pin inert. The
+// census's own seedCensusRoot already copies version.props into each staging root (for the README badge,
+// with the pin protection as a side effect), so refusing here makes the hand workflow match what the
+// instrument has always done: copy version.props beside core when seeding.
+//
+// ⚠ NARROWED, and the narrowing is load-bearing: it refuses only where the root IS ALREADY A GO2CS TREE
+// (isGo2CSRoot — core/golib/golib.csproj under it). toolchainResolution_test.go's own helper records the
+// reason: "an unseeded root is the normal state of a first -stdlib conversion, not a fault." Refusing a
+// genuinely empty target would break bootstrapping, which nobody asked for. A SEEDED tree missing its pin
+// is the opposite case — something built that corpus and left the pin behind — and it is the one that bit:
+// -platform-census REFUSES a seed root that is not a go2cs tree, so the arms that passed the pin check on
+// the wrong release were seeded trees, and this predicate still catches them.
+//
+// A root that was never supplied is still legitimately unpinned — that is not this error's business.
+func corpusPinnedReleaseOrError(root string) (string, error) {
+	if root == "" {
+		return "", nil
+	}
+
+	propsPath := filepath.Join(root, versionPropsFileName)
+	contents, err := os.ReadFile(propsPath)
+
+	if err != nil && !isGo2CSRoot(root) {
+		// A bare target: nothing here claims to be a corpus, so there is no pin to have lost.
+		return "", nil
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("the corpus toolchain pin cannot be read: -go2cspath %q carries no readable %s (%w).\n"+
+			"       A corpus-defining run reads GOROOT's sources as its INPUT, so without the pin nothing checks\n"+
+			"       that the release being converted is the release the corpus is built from — the check silently\n"+
+			"       passes and the emission is unlabelled. If this is a seeded temp root, copy %s beside core when\n"+
+			"       you seed it (seedCensusRoot does exactly that); if it is meant to be the repository tree, point\n"+
+			"       -go2cspath at the src root that holds %s",
+			root, versionPropsFileName, err, versionPropsFileName, versionPropsFileName)
+	}
+
+	release := firstSubmatch(goStdLibVersionPattern, string(contents))
+
+	if release == "" {
+		return "", fmt.Errorf("the corpus toolchain pin cannot be read: %s declares no <GoStdLibVersion>.\n"+
+			"       The file is present and readable, so this is a malformed or truncated pin rather than a\n"+
+			"       missing one — a partial write leaves exactly this shape",
+			propsPath)
+	}
+
+	return release, nil
+}
+
 // gorootVersionFileName is Go's own record, at the root of a GOROOT, of which release that tree is.
 const gorootVersionFileName = "VERSION"
 
@@ -306,6 +365,68 @@ func gorootRelease(goRoot string) string {
 	release, _, _ := strings.Cut(string(contents), "\n")
 
 	return strings.TrimSpace(release)
+}
+
+// printToolchainProvenance states, on one line per fact, WHICH Go tree this run will read and what that
+// tree says it is — so an arm's own log is self-describing about the sources it READ rather than about
+// the flag it was PASSED.
+//
+// ⚠ Why a log line is a fix and not decoration. A two-arm census was run at two named releases, both arms
+// exited 0, and both had read the same third tree: the flag named the release, nothing printed what was
+// opened, and the emissions were distinguishable only by an internal-consistency accident (a 1.24-only
+// file present in a "1.23" emission). C1, mailbox 2026-09-13.
+//
+// Three facts, each from a different place on purpose:
+//
+//	root      options.goRoot, the value every stdlib decision keys off after main() resolved it
+//	VERSION   that root's OWN VERSION file, read IN-PROCESS right now. A toolchain switch rewrites
+//	          GOROOT inside the re-exec'd process, so a value the CALLER asserted before launching is
+//	          not evidence about what this process holds; this read is.
+//	loader    what `go env GOROOT` answers WHEN ASKED FROM THE LOADER'S OWN DIRECTORY -- the mechanism
+//	          getGoEnvFrom already documents and resolveLoaderGoRoot already uses. Asking from anywhere
+//	          else can get a different answer, which is the whole reason that helper takes a dir.
+//
+// They agree on a healthy run. When they do not, the disagreement IS the report: the conversion is about
+// to read one tree while the pin was checked against another, and that is the state nothing else prints.
+func printToolchainProvenance(options Options) {
+	root := options.goRoot
+	release := gorootRelease(root)
+
+	if release == "" {
+		release = "<no VERSION file>"
+	}
+
+	fmt.Printf("  toolchain: GOROOT %s (VERSION %s, read in-process)\n", root, release)
+
+	// The loader's own answer, from the directory it loads from. A failure here is reported rather than
+	// swallowed: "could not ask" and "agrees" must not look alike.
+	loaderDir := filepath.Join(root, "src")
+
+	if _, err := os.Stat(loaderDir); err != nil {
+		loaderDir = ""
+	}
+
+	loaderRoot, err := getGoEnvFrom(loaderDir, "GOROOT")
+
+	if err != nil {
+		fmt.Printf("  toolchain: loader root NOT ASKED -- `go env GOROOT` failed from %q: %v\n", loaderDir, err)
+		return
+	}
+
+	if sameGoRoot(loaderRoot, root) {
+		return
+	}
+
+	loaderRelease := gorootRelease(loaderRoot)
+
+	if loaderRelease == "" {
+		loaderRelease = "<no VERSION file>"
+	}
+
+	fmt.Printf("  ⚠ toolchain DISAGREEMENT: the loader's own directory answers GOROOT %s (VERSION %s),\n"+
+		"    not %s (VERSION %s). go/packages follows the loader, so THAT is the tree whose sources this\n"+
+		"    run will convert -- whatever the flag and the pin above name.\n",
+		loaderRoot, loaderRelease, root, release)
 }
 
 // convertingRelease reports the Go release a corpus-defining conversion will read its INPUT from,

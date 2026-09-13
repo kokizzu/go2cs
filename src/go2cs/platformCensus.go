@@ -251,7 +251,15 @@ func runPlatformCensus(options Options, censusDir string, packageFilter []string
 	fmt.Printf("\nMulti-platform emission census\n")
 	fmt.Printf("  seed root:  %s\n", seedRoot)
 	fmt.Printf("  census dir: %s\n", censusDir)
-	fmt.Printf("  targets:    %s\n\n", strings.Join(targets, ", "))
+	fmt.Printf("  targets:    %s\n", strings.Join(targets, ", "))
+
+	// ⚠ The arm names the tree it READ, not the flag it was passed. Two census arms once ran at two named
+	// releases, both exited 0, and both had read the same third tree -- the flag named the release and
+	// nothing printed what was opened (C1, mailbox 2026-09-13). This is that line, per invocation, above
+	// the per-target output so a census log is self-describing without its caller's shell history.
+	printToolchainProvenance(options)
+
+	fmt.Println()
 
 	// The seed is read ONCE: every staging root is a copy of it, so its content hashes and its
 	// hand-owned census are the same for every target, and both are needed BEFORE the first
