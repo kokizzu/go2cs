@@ -863,6 +863,92 @@ foreach ($class in $classOrder) {
 $deleteRows = @($rows | Where-Object { $_.Class -like 'DELETE-*' })
 $unresolved = @($rows | Where-Object { $_.Class -eq 'UNRESOLVED' })
 
+# ---------------------------------------------------------------------------------------------
+# A DELETE-ABSENT PACKAGE IS A DIRECTORY, NOT A LIST OF .cs -- and the full delete set it implies.
+#
+# Coordinator rulings `894a761f6` §1 ("the H5c amendment removes a DELETE-ABSENT package as a
+# DIRECTORY, residue asserted") and `bf2fd7da0` §3 (ONE `git rm` commit removes exactly the ruled
+# delete set, and it REFUSES unless `absent-in-stage.txt` cmp-equals "H5c's delete set at 100 rows
+# UNION the residue files of every DELETE-ABSENT package"; a divergence is a posted finding, never
+# absorbed). C1's applier hit the same thing from the other side: its precondition keyed on a
+# DIRECTORY that H5c leaves behind, so `apply` refused on a real post-H5c root (`3029f08ff1`).
+#
+# The residue is what the classification loop never looked at: a package directory holds its
+# `.csproj`, `.tests.csproj`, `README.md`, icons and test `.cs` beside the production `.cs` this
+# instrument classifies. Delete the production files only and the directory survives with a csproj
+# the solution generator will still enumerate.
+#
+# ⚠ WHY THIS REMOVES ENUMERATED FILES AND THEN AN EMPTY DIRECTORY, rather than deleting a directory
+# recursively. This instrument runs ONE flavour per invocation (`-Goos`), so "the package is absent at
+# the target" is known for THAT flavour only -- R's interim delete guards exactly this by requiring the
+# three flavours' DELETE sets to be identical before it removes anything, because a flat file under a
+# package directory can be live for a flavour this run never asked about. A recursive directory delete
+# would act on that uncertainty; enumerating the residue, removing exactly those files, and then
+# dropping the directory ONLY IF IT IS NOW EMPTY turns the uncertain case into a LOUD one: a leftover
+# is reported by name and the directory stays. Never `Remove-Item -Recurse` here.
+$absentPackageDirs = @{}
+
+foreach ($row in @($deleteRows | Where-Object { $_.Class -eq 'DELETE-ABSENT' -and $_.Reason -eq 'package not in std at target' })) {
+    $segments = $row.Path -split '/'
+
+    if ($segments.Count -lt 2) { continue }
+
+    $dir = ($segments[0..($segments.Count - 2)] -join '/')
+    $absentPackageDirs[$dir] = $true
+}
+
+$residueRows = @()
+
+foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
+    $onDisk = Join-Path $CoreDir ($dir -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+
+    if (-not (Test-Path -LiteralPath $onDisk -PathType Container)) { continue }
+
+    foreach ($file in @(Get-ChildItem -LiteralPath $onDisk -File -ErrorAction SilentlyContinue)) {
+        $relative = Get-RelativeDisplayPath -Path $file.FullName -Root $CoreDir
+
+        # Anything already carrying a DELETE row is accounted for; the residue is the remainder, and a
+        # PROTECTED file in here is NOT residue -- a hand-own is never swept by a package's removal.
+        if (@($rows | Where-Object { $_.Path -eq $relative }).Count -gt 0) { continue }
+
+        $residueRows += [pscustomobject]@{ Path = $relative; Dir = $dir; Full = $file.FullName }
+    }
+}
+
+Write-Host ''
+Write-Host '  DELETE-ABSENT packages (whole-package removals)' -ForegroundColor Cyan
+Write-Host ("    package directories            {0}" -f $absentPackageDirs.Count)
+Write-Host ("    residue files beside the rows  {0}" -f $residueRows.Count)
+
+foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
+    $mine = @($residueRows | Where-Object { $_.Dir -eq $dir })
+    Write-Host ("      {0,-52} {1} residue file(s)" -f $dir, $mine.Count)
+
+    foreach ($r in $mine) { Write-Host ("          {0}" -f $r.Path) }
+}
+
+# The FULL delete set, emitted whether or not -Apply was passed: it is the artifact the ruled `git rm`
+# step compares against, so a dry run has to be able to produce it. LF-joined and sorted with an
+# ordinal comparer so the file is byte-comparable by `cmp` across the boxes that write and read it --
+# the CR and culture-sort classes this fleet has already paid for twice.
+$deleteSetFull = @(
+    @($deleteRows | ForEach-Object { $_.Path }) + @($residueRows | ForEach-Object { $_.Path })
+) | Sort-Object -Unique -CaseSensitive
+
+$deleteSetPath = Join-Path $Root 'h5c-delete-set-full.txt'
+[System.IO.File]::WriteAllText($deleteSetPath, (($deleteSetFull -join "`n") + "`n"))
+
+Write-Host ''
+Write-Host ("  delete set written  {0}" -f $deleteSetPath)
+Write-Host ("    {0} path(s) = {1} classified row(s) + {2} residue file(s)" -f $deleteSetFull.Count, $deleteRows.Count, $residueRows.Count)
+
+# Derived, not asserted as a constant: the union can be SMALLER than the sum when a residue file also
+# carries a row, and printing the arithmetic from the same variables the file was built from is what
+# keeps a future edit from stating a total the file does not have.
+if ($deleteSetFull.Count -ne ($deleteRows.Count + $residueRows.Count)) {
+    Write-Host ("    NOTE {0} path(s) appear in both halves of the union" -f (($deleteRows.Count + $residueRows.Count) - $deleteSetFull.Count))
+}
+
 function Write-Counts {
     Write-Host ''
     Write-Host '  counts' -ForegroundColor Cyan
@@ -986,10 +1072,63 @@ else {
         Write-Host ("    deleted  {0}" -f $row.Path)
     }
 
+    # The residue, then the directory -- and the directory ONLY if removing the enumerated files
+    # emptied it. See the block where $residueRows is built for why this is never -Recurse.
+    $residueDeleted = 0
+    $dirsRemoved    = 0
+    $dirsKept       = @()
+
+    foreach ($r in ($residueRows | Sort-Object Path)) {
+        $why = Test-ProtectedPath -RelativePath $r.Path
+
+        if ($null -ne $why) {
+            Write-Host ''
+            Write-Host ("RESIDUE DELETION ABORTED at {0} ({1})" -f $r.Path, $why) -ForegroundColor Red
+            Write-Host 'The tree is PART-DELETED; discard the staging root.' -ForegroundColor Red
+            exit 3
+        }
+
+        Remove-Item -LiteralPath $r.Full -Force
+        $residueDeleted++
+        Write-Host ("    deleted  {0}  (residue)" -f $r.Path)
+    }
+
+    foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
+        $onDisk = Join-Path $CoreDir ($dir -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+
+        if (-not (Test-Path -LiteralPath $onDisk -PathType Container)) { continue }
+
+        $left = @(Get-ChildItem -LiteralPath $onDisk -Force -ErrorAction SilentlyContinue)
+
+        if ($left.Count -eq 0) {
+            Remove-Item -LiteralPath $onDisk -Force
+            $dirsRemoved++
+            Write-Host ("    removed  {0}/  (empty after its files)" -f $dir)
+        }
+        else {
+            # NOT a failure of the run, and NOT swept: a flavour this invocation never asked about can
+            # legitimately keep a file here. Named so the reader decides, which is the whole reason the
+            # removal is not recursive.
+            $dirsKept += $dir
+            Write-Host ("    KEPT     {0}/  -- {1} entr(y/ies) remain, not enumerated as residue:" -f $dir, $left.Count) -ForegroundColor Yellow
+
+            foreach ($e in $left) { Write-Host ("          {0}" -f $e.Name) -ForegroundColor Yellow }
+        }
+    }
+
     $survivors = @($deleteRows | Where-Object { Test-Path -LiteralPath $_.Full })
+    $residueSurvivors = @($residueRows | Where-Object { Test-Path -LiteralPath $_.Full })
 
     Write-Host ''
     Write-Host ("  deleted {0} of {1}; {2} survived" -f $deleted, $deleteRows.Count, $survivors.Count)
+    Write-Host ("  residue deleted {0} of {1}; {2} survived" -f $residueDeleted, $residueRows.Count, $residueSurvivors.Count)
+    Write-Host ("  package directories removed {0} of {1}; {2} kept with entries remaining" -f $dirsRemoved, $absentPackageDirs.Count, $dirsKept.Count)
+
+    if ($residueSurvivors.Count -gt 0) {
+        foreach ($r in $residueSurvivors) { Write-Host ("    SURVIVED  {0}  (residue)" -f $r.Path) -ForegroundColor Red }
+        Write-Host 'RESIDUE DELETION INCOMPLETE' -ForegroundColor Red
+        exit 3
+    }
 
     if ($survivors.Count -gt 0) {
         foreach ($row in $survivors) { Write-Host ("    SURVIVED  {0}" -f $row.Path) -ForegroundColor Red }
