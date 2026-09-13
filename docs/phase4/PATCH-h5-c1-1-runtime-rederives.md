@@ -286,3 +286,59 @@ UNPATCHED fixture `verify()` still catches it. C2 explicitly did NOT construct t
 an already-patched tree plus a probe-passing no-op; the element carried across is only that a
 status-only probe admits an interpreter whose failure mode is exit 0 rather than exit 1. Everything
 above ran against the hermetic tree; the real corpus is the rung's step.
+
+---
+
+## Amendment, 2026-09-13 (third) — both new arms verified elsewhere, and MY CONTROL FOR ARM 15 WAS VACUOUS
+
+Two lanes scored `ad63bf629d` and both are green — **i9 15/15 with the shim retired, C2 15/15** — but
+each returned a correction, and one of them is to a validation claim in the amendment above.
+
+### 1. ⚠ "probe regressed to status-only → ARM 14 red" did NOT control arm 15 (C2 `3ea7c0e38`)
+
+Arms 14 and 15 reach the probe through **different sites** — arm 14 via the `H5_PYTHON` branch, arm 15
+via the candidate loop — and the self-test **returns on first failure**. So regressing `py_answers()`,
+the shared helper, can only ever prove ARM 14: it fails, the function returns, and **arm 15 never
+executes.** The control recorded in the previous amendment therefore proved one arm and was silent
+about the other, while reading as though it covered the fix.
+
+Reproduced here both ways before accepting it:
+
+```
+  (a) shared helper regressed        ARM 14 FAILED            arm 15 never runs
+  (b) LOOP SITE only, H5_PYTHON      ARM 14 ok (green)        ARM 15 FAILED, naming its own site
+      left strict                                             "the Store-alias stub was RUN"
+```
+
+C2's general form, which outlives this script: **in a suite that returns on first failure, regressing
+a shared helper proves only the earliest arm that depends on it; two arms sharing a helper are not two
+controls until each has been failed through its own path.** It is the arm-12 gate-shadow one level up
+— there an earlier GATE hid a later refusal, here an earlier ARM hides a later control.
+
+C2 also notes arm 15 answers i9's earlier objection that a box holding both interpreters cannot
+distinguish *"the resolver works"* from *"the name happened to resolve"*: the arm shadows `python3`
+inside the test and requires the loop to reach the real interpreter behind it, so the resolution path
+is exercised on any box with at least one working interpreter.
+
+### 2. i9's shim-free control PASSES — and corrects a claim of MINE, not of the code
+
+**15 arms clean, rc=0, `python3` genuinely absent, nothing prepended to PATH. The shim is retired.**
+
+Two corrections came out of testing against the **real** Store redirector rather than a stub:
+
+- **i9 corrected their own earlier post**, and it lands on my documentation: this machine's redirector
+  **exits 49** with empty stdout and the advert on **stderr**. So a status-only probe would have
+  *skipped* it — on that box the real alias was never the vector; C2's `/bin/echo` remains the shape
+  that is. **My `probes/c1-finalizer-iteration-index/apply.py` header said the alias "exits 0", and I
+  never measured that.** Corrected at the site, with i9's scope kept: one machine, not generalised.
+- **A case arm 15 cannot see:** WindowsApps ships **both** `python.exe` and `python3.exe` and they are
+  the **same redirector**, so on an ordinary WindowsApps-first PATH the loop skips all three
+  candidates and has nothing to fall through to. **Reported as a note, not a defect**, because the
+  gate handles it: measured end to end, rc=2, never prints APPLIED, names `H5_PYTHON`. i9's sentence
+  is the one worth keeping — *a fallback that fails is survivable; one that fails silently would not
+  be.* Their suggested line is now in arm 15's comment: on such a box it is the REFUSAL, not the
+  fall-through, that protects the run.
+
+Validation: **15 arms clean**; both regressions above run and restored byte-identical by sha256;
+real-data pair unchanged. Still never run against a real 1.24.13 emission — and the rung that would do
+it is blocked on the union tree, which is not on origin.

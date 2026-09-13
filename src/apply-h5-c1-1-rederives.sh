@@ -463,6 +463,19 @@ PY2
   echo "  ok   the CRLF arm CAN go red           an LF-only copy reads CR=$ccr LF=$clf"
 
   # --------------------------------------------------------- C2 a2b892aef: the probe-passing no-op
+  #
+  # ⚠ ARMS 14 AND 15 NEED SEPARATE CONTROLS, and the obvious one does not cover both. They reach the
+  # probe through DIFFERENT SITES -- arm 14 via the H5_PYTHON branch, arm 15 via the candidate loop --
+  # and this suite RETURNS ON FIRST FAILURE. So regressing py_answers() itself, which is the natural
+  # mutation and the one this file's own record first claimed as the control, can only ever prove
+  # ARM 14: arm 14 fails, selftest returns, and arm 15 never executes. Reproduced here both ways.
+  #
+  # C2 closed it (3ea7c0e38) with a SITE-SELECTIVE regression -- loop probe only, H5_PYTHON left
+  # strict -- giving ARM 14 GREEN and ARM 15 RED naming its own site, in one run. The general form,
+  # worth more than this instance: IN A SUITE THAT RETURNS ON FIRST FAILURE, REGRESSING A SHARED
+  # HELPER PROVES ONLY THE EARLIEST ARM THAT DEPENDS ON IT. Two arms sharing a helper are not two
+  # controls until each has been failed through its own path. (This is the gate-shadow at arm 12 one
+  # level up: there an earlier GATE hid a later refusal, here an earlier ARM hides a later control.)
   # ARM 14: a program that exits 0 without doing anything is NOT an interpreter. The status-only
   # probe admitted /bin/true and /bin/echo; /bin/echo is the Windows Store-alias shape (prints an
   # advert, exits 0) that this repo's own apply.py header warns about. Arm 12's stub exits 1 and so
@@ -478,6 +491,21 @@ PY2
   # prints and exits 0 must NOT consume the loop: the probe must reject it so `continue` fires and
   # the REAL interpreter one candidate later is chosen. Before the output assertion the alias won and
   # the real python was never reached -- silently, on the one platform that needs the fallback.
+  #
+  # ⚠ AND THIS ARM'S PREMISE DOES NOT HOLD ON A REAL WindowsApps PATH -- i9's note (1b45bd075),
+  # taken as offered because it is a limit of the arm rather than of the gate. WindowsApps ships BOTH
+  # python.exe AND python3.exe and they are the SAME redirector, so the fall-through this arm
+  # demonstrates has nowhere to land: all three candidates are skipped. The arm is honest about a
+  # synthetic stub and cannot see that case. It stays because the fall-through is real wherever a
+  # genuine second candidate exists -- but on such a box IT IS THE REFUSAL, NOT THE FALL-THROUGH,
+  # THAT PROTECTS THE RUN: i9 measured it end to end at rc=2, never printing APPLIED, naming
+  # H5_PYTHON as the route. A fallback that fails is survivable; one that fails silently would not be.
+  #
+  # i9 also corrected the hazard this arm's stub is modelled on: the real redirector on their box
+  # EXITS 49 with the advert on stderr, so a status-only probe would have skipped it and the alias was
+  # never the vector there. The exit-0 shape is C2's /bin/echo. The stub below deliberately keeps the
+  # exit-0 spelling because THAT is the shape the probe must refuse; it is not a claim about any
+  # particular Windows build's redirector.
   arms=$((arms+1))
   mkdir -p "$tmp/shadowbin"
   printf '#!/bin/sh\necho "Python was not found; install it from the Microsoft Store"\nexit 0\n' > "$tmp/shadowbin/python3"
