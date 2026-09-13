@@ -793,3 +793,62 @@ should assert all three input paths present before reading the exit code.
   NOT  a repair. Nothing in the generator was changed, and the assert at line 94 is still correct
        behaviour per §5a — a change that makes it "run" by relaxing that assert is still a regression.
 ```
+
+---
+
+### AMENDED 2026-09-13 (second) — §5a is SUPERSEDED by train-48 row 18, `claude/c2-h10-map-rederivation`
+
+Coordinator ruling on `1317f6bd3`: *"row 18 is the state of record; two rows that contradict each other
+cannot both be seated; two that cite each other can."* Both rows are pinned in train 48, so this block is
+the citation. **Nothing above is rewritten** — §5a was TRUE at the tip it names and is left standing, which
+is what the falsified-claim convention in this section requires.
+
+**1. What §5a said, and where it still holds.** *"Nothing can be emitted today. The generator is dead at
+the measured tip"* — exit 1, `AssertionError: reserved row net not in dataset` at `shardmap.py:94`, 162
+rows, 7,701 i9-seconds. Re-derived and confirmed in the first amendment above at master
+`271300cea03a2f47bd7dd8d9ed392c6249dac4c4`. **That reading is correct at that tip and at every earlier
+one.**
+
+**2. What row 18 changes.** Run at `41c1d1d28ef17381453d86899192bf1905b3f464` with a complete input set:
+
+```
+  exit 0, stderr EMPTY, 133 lines of output -- the map IS emitted
+  W=3 and W=4 tables · checksum · sensitivity block
+  reserved set        11 row(s), 4,722 s (78.7 min) pinned to the i9
+  net and net/http    reported UNSCHEDULED, not fatal: "2 declared reserved row(s) have NO measured
+                      cost and are UNSCHEDULED, not pinned" and "the reserved leg's total below
+                      therefore EXCLUDES them -- it is a lower bound on the pin, not the pin"
+  checksum            162 row(s) assigned == 11 reserved + 151 bulk  [+ 42 UNSCHEDULED, not assigned]
+  every makespan      labelled "!! LOWER BOUND: 42 roster row(s) carry no cost and are not in it"
+```
+
+**Row 18 implements the three repairs §5a specified**, which is why it emits: it INTERSECTS rather than
+asserts (§5a's one-line defect), takes the population FROM THE DATA instead of the hardcoded `162`
+literal, and selects the DATA block by a labelled `(OS, SHA, machine)` key **with a content digest** (§5a's
+`~10–15 line` item). Both asserts §5a cites by line number are gone from that tip.
+
+**3. So §5a now reads:** the generator was dead at the tip this record measured, and is **repaired by row
+18**; the map is emitted, **42 roster rows carry no cost and are UNSCHEDULED**, and **every makespan in the
+emitted map is a LOWER BOUND**, not an estimate.
+
+**4. What this resolves in §11, and what it does not.** Q4 asked who holds the reserved set, noting the pin
+needs the i9 for **11–13 floor rows at 4,722 s+ continuous**. Row 18's run resolves the range from the
+data: **11 rows, 4,722 s**, the 13 being 11 plus two that cannot be costed. ⚠ **The thermal half is
+untouched** — a measured failure at 13 minutes of continuous sweep against a 4,722 s leg is hardware this
+lane cannot see, and the split-with-cooldowns question stands exactly as §11 Q4 left it. Q1, Q2, Q3, Q5,
+Q6 and Q7 are unaffected.
+
+**5. ⚠ Recorded because it is the reusable part.** The two rows share **zero paths** — this record touches
+only its own file, row 18 touches `shardmap.py` and `DATA-sweep-row-walltimes.md` — so a merge probe
+calls the pair vacuous-by-disjointness and is **correct and useless** here. *Disjointness rules out a
+TEXTUAL collision and says nothing about a SEMANTIC one: a record whose central claim another seat
+FALSIFIES has no shared path with it, and no merge probe can see that.* The only thing that surfaced it
+was running the generator at both tips. The same limitation is now recorded beside the predicate itself in
+`.claude/skills/merge-hazards/`.
+
+⚠ **And the trap the first amendment names, hit again on row 18's tip:** that generator reads a **fourth**
+input (`docs/ValidatedTestPackages.md`) the first amendment does not list, and an input set missing it
+exits **1** with `FileNotFoundError` — the predicted exit code for an unpredicted reason. The first run of
+§2 above was that, and reporting it would have said *"row 18's generator is dead too"*, the opposite of the
+truth. So the first amendment's rule needs one more word: assert the paths the script **at that tip** reads,
+never a list carried from another tip.
