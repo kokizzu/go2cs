@@ -254,11 +254,26 @@ selftest() {
 
   local out rc
 
+  # ---- ROW-ANCHORED assertions (COORD 00b5a7fae s2, on G's db6ab3484 s3(b)) -------------------
+  #
+  # "match a ROW at line start, never a phrase as a substring -- a report that states its counts in
+  # words contains every string an assertion about those findings would look for." G measured that on
+  # `0 DUPLICATE patch-id(s)`; arm 8 removed the zero counts, which fixed the INSTANCE. This fixes the
+  # CLASS: every verdict this suite asserts is printed at column 0, so the arms ask for a ROW.
+  #
+  # grep, not a `case` glob: anchoring a glob needs a newline inside the pattern, and a pattern
+  # carrying an escape is the OTHER hazard of the same evening (cbc12e499 s7). `^` costs nothing.
+  # The needles below contain no BRE metacharacter -- `>` and `-` are literal -- and that is a
+  # property of these strings, not a general licence, so a new needle gets checked before it is added.
+  row() { printf '%s\n' "$2" | grep -q "^$1"; }
+
   # ARM 1 (RED FIRST): the cherry-picked item must be FOUND across seat-lane and seat-a.
   out=$(cd "$tmp" && bash "$self" --base trunk seat-lane seat-a 2>&1); rc=$?
   arms=$((arms+1))
   if [ "$rc" -ne 1 ]; then echo "ARM 1 FAILED: wanted exit 1 on a real duplicate, got $rc"; echo "$out"; return 1; fi
-  case "$out" in *"DUPLICATE patch-id"*) ;; *) echo "ARM 1 FAILED: red exit without naming the duplicate"; echo "$out"; return 1 ;; esac
+  row "DUPLICATE patch-id" "$out" || { echo "ARM 1 FAILED: red exit without a DUPLICATE row"; echo "$out"; return 1; }
+  # NOT anchored, and deliberately: the subject is printed on an INDENTED owner line, not at column 0.
+  # It is a naming check, not a verdict check, so a substring is the right question here.
   case "$out" in *"item A"*) ;; *) echo "ARM 1 FAILED: did not NAME the duplicated commit"; echo "$out"; return 1 ;; esac
   echo "  ok   cherry-picked duplicate FOUND        names: item A, across seat-lane and seat-a"
 
@@ -272,21 +287,21 @@ selftest() {
   out=$(cd "$tmp" && bash "$self" --base trunk seat-a seat-c 2>&1); rc=$?
   arms=$((arms+1))
   if [ "$rc" -ne 0 ]; then echo "ARM 3 FAILED: wanted exit 0 on disjoint seats, got $rc"; echo "$out"; return 1; fi
-  case "$out" in *"CENSUS CLEAN"*) ;; *) echo "ARM 3 FAILED: clean exit without the verdict line"; echo "$out"; return 1 ;; esac
+  row "==> CENSUS CLEAN" "$out" || { echo "ARM 3 FAILED: clean exit without the verdict ROW"; echo "$out"; return 1; }
   echo "  ok   disjoint seats read CLEAN             (so the RED arm is discriminating, not constant)"
 
   # ARM 4: one seat must REFUSE -- a one-seat census cannot go red and must not report clean.
   out=$(cd "$tmp" && bash "$self" --base trunk seat-a 2>&1); rc=$?
   arms=$((arms+1))
   if [ "$rc" -ne 2 ]; then echo "ARM 4 FAILED: wanted exit 2 on a single seat, got $rc"; echo "$out"; return 1; fi
-  case "$out" in *"cannot go red"*) ;; *) echo "ARM 4 FAILED: refused without naming the reason"; echo "$out"; return 1 ;; esac
+  row "REFUSE: fewer than two seats" "$out" || { echo "ARM 4 FAILED: refused without the REFUSE row naming the reason"; echo "$out"; return 1; }
   echo "  ok   single-seat census REFUSES            (an instrument that cannot fire is not a control)"
 
   # ARM 5 (the false positive G found on the day this shipped): a DECLARED stack reads CLEAN.
   out=$(cd "$tmp" && bash "$self" --base trunk --stack seat-ab:seat-a seat-a seat-ab 2>&1); rc=$?
   arms=$((arms+1))
   if [ "$rc" -ne 0 ]; then echo "ARM 5 FAILED: wanted exit 0 on a DECLARED stack, got $rc"; echo "$out"; return 1; fi
-  case "$out" in *"declared-stack SHA"*) ;; *) echo "ARM 5 FAILED: exempted silently instead of reporting the exemption"; echo "$out"; return 1 ;; esac
+  row "declared-stack SHA" "$out" || { echo "ARM 5 FAILED: exempted silently instead of reporting the exemption"; echo "$out"; return 1; }
   echo "  ok   DECLARED stack reads CLEAN            and the exemption is PRINTED, never silent"
 
   # ARM 6 (the arm that keeps arm 5 honest): the SAME pair, undeclared, must still be RED. Without
@@ -294,7 +309,7 @@ selftest() {
   out=$(cd "$tmp" && bash "$self" --base trunk seat-a seat-ab 2>&1); rc=$?
   arms=$((arms+1))
   if [ "$rc" -ne 1 ]; then echo "ARM 6 FAILED: the same pair UNDECLARED must stay red, got $rc"; echo "$out"; return 1; fi
-  case "$out" in *"UNDECLARED STACK"*) ;; *) echo "ARM 6 FAILED: red, but not as a STACK -- the two findings have two remedies"; echo "$out"; return 1 ;; esac
+  row "UNDECLARED STACK" "$out" || { echo "ARM 6 FAILED: red, but not as a STACK -- the two findings have two remedies"; echo "$out"; return 1; }
   echo "  ok   the same pair UNDECLARED stays RED    named as a STACK, so the remedy is actionable"
 
   # ARM 7 (COORD c53db4e3a s1, and the arm that bounds --stack): a DECLARED CHERRY-PICK must STILL
@@ -306,9 +321,9 @@ selftest() {
   out=$(cd "$tmp" && bash "$self" --base trunk --stack seat-a:seat-lane seat-lane seat-a 2>&1); rc=$?
   arms=$((arms+1))
   if [ "$rc" -ne 1 ]; then echo "ARM 7 FAILED: a DECLARED cherry-pick must still refuse, got $rc"; echo "$out"; return 1; fi
-  case "$out" in *"DUPLICATE patch-id"*) ;; *) echo "ARM 7 FAILED: red without naming it a cherry-pick duplicate"; echo "$out"; return 1 ;; esac
+  row "DUPLICATE patch-id" "$out" || { echo "ARM 7 FAILED: red without a DUPLICATE row"; echo "$out"; return 1; }
   case "$out" in *"no declaration excuses this"*) ;; *) echo "ARM 7 FAILED: refused without saying the declaration was IGNORED, so a reader would retry it"; echo "$out"; return 1 ;; esac
-  case "$out" in *"declared-stack"*) echo "ARM 7 FAILED: the declaration exempted a cherry-pick"; echo "$out"; return 1 ;; *) ;; esac
+  row "declared-stack" "$out" && { echo "ARM 7 FAILED: the declaration exempted a cherry-pick"; echo "$out"; return 1; }
   echo "  ok   DECLARED cherry-pick STILL REFUSES    --stack narrows the census, it cannot weaken it"
 
   # ARM 8 (G, the night this shipped): THE REPORT MUST NOT SATISFY AN ARM IT CONTRADICTS. G's own tool
@@ -321,8 +336,8 @@ selftest() {
   rs=$(cd "$tmp" && bash "$self" --base trunk seat-a seat-ab 2>&1)      # stacks only, zero duplicates
   rd=$(cd "$tmp" && bash "$self" --base trunk seat-lane seat-a 2>&1)    # duplicates only, zero stacks
   arms=$((arms+1))
-  case "$rs" in *"DUPLICATE patch-id"*) echo "ARM 8 FAILED: a stacks-only report names the DUPLICATE keyword -- arms 1 and 7 are satisfiable by a report that found none"; echo "$rs"; return 1 ;; *) ;; esac
-  case "$rd" in *"UNDECLARED STACK"*) echo "ARM 8 FAILED: a duplicates-only report names the STACK keyword -- arm 6 is satisfiable by a report that found none"; echo "$rd"; return 1 ;; *) ;; esac
+  row "DUPLICATE patch-id" "$rs" && { echo "ARM 8 FAILED: a stacks-only report carries a DUPLICATE row -- arms 1 and 7 are satisfiable by a report that found none"; echo "$rs"; return 1; }
+  row "UNDECLARED STACK" "$rd" && { echo "ARM 8 FAILED: a duplicates-only report carries a STACK row -- arm 6 is satisfiable by a report that found none"; echo "$rd"; return 1; }
   # and the same in the direction case alone was covering: no zero-count of either category anywhere.
   case "$rs$rd" in *"0 cherry-pick"*|*"0 undeclared"*) echo "ARM 8 FAILED: the verdict prints a ZERO count, which is the exact string G's tool tripped on"; echo "$rs"; echo "$rd"; return 1 ;; *) ;; esac
   echo "  ok   the report never names a ZERO finding  so no arm is satisfiable by the summary alone"
