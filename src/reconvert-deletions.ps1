@@ -225,6 +225,7 @@ param(
     [string]                                 $Sentinel,
     [string]                                 $Goos,
     [string]                                 $Goarch,
+    [string[]]                               $Orphan = @(),
     [switch]                                 $Apply
 )
 
@@ -998,6 +999,88 @@ foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
     foreach ($r in $mine) { Write-Host ("          {0}" -f $r.Path) }
 }
 
+# ---------------------------------------------------------------------------------------------
+# ORPHANED-HAND-OWN: a PROTECTED file whose PACKAGE is DELETE-ABSENT at the target.
+#
+# Coordinator ruling `485d7387d` §2, on i9's measurement at `6d5696dcd`: H5c's invariant *never deletes
+# a hand-own* held (147 -> 147) and the CONSEQUENCE at a release hop is a hand-own protected into a
+# directory whose project is gone -- it survives and nothing can build it. i9 measured 5 such files
+# across 4 packages (crypto/internal/alias/alias_impl.cs, internal/concurrent/hashtriemap{,_whitebox}.cs,
+# internal/weak/pointer.cs, vendor/golang.org/x/crypto/sha3/xor.cs), 0 .csproj surviving.
+#
+# ⚠ WHY THIS IS A DERIVED CLASS AND NOT ONE THE CLASSIFIER ASSIGNS. `$classOrder` is decided per FILE by
+# the classification loop; "its package is DELETE-ABSENT" is a property of the PACKAGE and is only known
+# after `$absentPackageDirs` is built, which is after classification. Assigning it in the loop would mean
+# asking a question the loop cannot yet answer. The row's own class stays PROTECTED -- the invariant is
+# about PROTECTED and is not weakened here.
+#
+# ⚠ AND WHY THE REFUSAL ALONE FIXES THE ORPHANING, with no change to the residue rule. A package's
+# `.csproj` carries no row (it is not a `.cs`, so the classification loop never saw it), so it is residue
+# and is removed. That is correct when the package is gone and is exactly what orphans a protected file
+# when one survives. Because every refusal runs BEFORE the deletion loop, a run with an undisposed orphan
+# removes NOTHING -- so the csproj cannot be deleted out from under a hand-own. The residue rule is
+# untouched; the ordering is what makes it safe.
+#
+# ⚠ A DISPOSITION HERE IS HALF OF A TWO-PART CHANGE, and this instrument can only do its half. A hand-own
+# is a DISPLACEMENT DESTINATION: `manualTypeOperations.go` names `crypto/internal/alias/alias_impl.cs` as
+# holding the displaced `AnyOverlap` body (see its comment at the `crypto/internal/alias` entry). So a
+# `relocate` owes a re-pointed registry entry and a `delete` owes a REMOVED one, in Go, or
+# `TestManualConversionRegistrationsDisplaceSomething` goes red on a registration whose destination moved
+# or vanished -- ruling `485d7387d` §3 states it for the relocate case. This instrument moves or removes
+# the FILE and reports what it did; the registry cut is a separate seat and is not inferred from here.
+$orphanRows = @()
+
+foreach ($row in @($rows | Where-Object { $_.Class -eq 'PROTECTED' })) {
+    $segments = $row.Path -split '/'
+
+    if ($segments.Count -lt 2) { continue }
+
+    $dir = ($segments[0..($segments.Count - 2)] -join '/')
+
+    if ($absentPackageDirs.ContainsKey($dir)) {
+        $orphanRows += [pscustomobject]@{ Path = $row.Path; Dir = $dir; Full = $row.Full }
+    }
+}
+
+# Dispositions, parsed as `-Orphan <path>=relocate:<new-package>` or `-Orphan <path>=delete`. A human's
+# ruling carried by the instrument, never inferred -- the UNRESOLVED shape (ruling `485d7387d` §2).
+$orphanDisposition = @{}
+
+foreach ($entry in @($Orphan)) {
+    $split = $entry.IndexOf('=')
+
+    if ($split -lt 1) {
+        Stop-ForReview ("-Orphan entry '{0}' is not <path>=relocate:<new-package> or <path>=delete." -f $entry)
+    }
+
+    # Separator-normalised with .NET char Replace rather than a regex: a doubled backslash in a
+    # single-quoted PowerShell pattern is an escaping puzzle AND a hit for the fleet's UNC census class.
+    $oPath = $entry.Substring(0, $split).Trim().Replace([char]92, [char]47)
+    $oWhat = $entry.Substring($split + 1).Trim()
+
+    if ($oWhat -ne 'delete' -and $oWhat -notlike 'relocate:?*') {
+        Stop-ForReview ("-Orphan disposition '{0}' for {1} is neither 'delete' nor 'relocate:<new-package>'." -f $oWhat, $oPath)
+    }
+
+    if ($orphanDisposition.ContainsKey($oPath)) {
+        Stop-ForReview ("-Orphan names {0} twice. One disposition per path." -f $oPath)
+    }
+
+    $orphanDisposition[$oPath] = $oWhat
+}
+
+if ($orphanRows.Count -gt 0 -or $orphanDisposition.Count -gt 0) {
+    Write-Host ''
+    Write-Host '  ORPHANED-HAND-OWN (PROTECTED file whose package is DELETE-ABSENT)' -ForegroundColor Cyan
+    Write-Host ("    orphaned hand-owns             {0}" -f $orphanRows.Count)
+    Write-Host ("    dispositions supplied          {0}" -f $orphanDisposition.Count)
+
+    foreach ($o in ($orphanRows | Sort-Object Path)) {
+        $d = if ($orphanDisposition.ContainsKey($o.Path)) { $orphanDisposition[$o.Path] } else { 'NO DISPOSITION' }
+        Write-Host ("      {0,-58} {1}" -f $o.Path, $d)
+    }
+}
+
 # The FULL delete set, emitted whether or not -Apply was passed: it is the artifact the ruled `git rm`
 # step compares against, so a dry run has to be able to produce it. LF-joined and sorted with an
 # ordinal comparer so the file is byte-comparable by `cmp` across the boxes that write and read it --
@@ -1115,9 +1198,37 @@ if ($Apply -and $unresolved.Count -gt 0) {
     Stop-ForReview '-Apply refuses while UNRESOLVED rows stand. Dispose of each (they are listed above), then re-run with -Apply.'
 }
 
+# ⚠ BEFORE the deletion loop, with UNRESOLVED, because that ordering is what keeps a hand-own's `.csproj`
+# from being swept while the hand-own itself is protected: a refused run removes NOTHING.
+$orphanUndisposed = @($orphanRows | Where-Object { -not $orphanDisposition.ContainsKey($_.Path) })
+$orphanStale      = @($orphanDisposition.Keys | Where-Object { $p = $_; @($orphanRows | Where-Object { $_.Path -eq $p }).Count -eq 0 })
+
+if ($Apply -and $orphanUndisposed.Count -gt 0) {
+    Write-Host ''
+    Write-Host ("ORPHANED-HAND-OWN: {0} PROTECTED file(s) sit in a DELETE-ABSENT package and have no disposition:" -f $orphanUndisposed.Count) -ForegroundColor Yellow
+
+    foreach ($o in ($orphanUndisposed | Sort-Object Path)) {
+        Write-Host ("    {0}`n        package {1} is absent at the target; the file survives with no project to build it." -f $o.Path, $o.Dir) -ForegroundColor Yellow
+    }
+
+    Stop-ForReview '-Apply refuses while an orphaned hand-own has no disposition. Supply one per path: -Orphan "<path>=relocate:<new-package>" or -Orphan "<path>=delete".'
+}
+
+# A disposition naming a path that is NOT an orphan is a stale ruling, and passing it silently would let a
+# corrected package list keep an instruction nobody re-read. Same reason the delete set is compared rather
+# than absorbed.
+if ($orphanStale.Count -gt 0) {
+    Write-Host ''
+    Write-Host ("ORPHANED-HAND-OWN: {0} disposition(s) name a path that is not an orphaned hand-own in this run:" -f $orphanStale.Count) -ForegroundColor Yellow
+
+    foreach ($p in ($orphanStale | Sort-Object)) { Write-Host ("    {0}" -f $p) -ForegroundColor Yellow }
+
+    Stop-ForReview 'an -Orphan disposition does not match any orphaned hand-own here. Re-read the list above and drop or correct it.'
+}
+
 if (-not $Apply) {
     Write-Host ''
-    Write-Host ("DRY RUN -- {0} file(s) would be deleted, {1} unresolved. Re-run with -Apply to delete." -f $deleteRows.Count, $unresolved.Count) -ForegroundColor Yellow
+    Write-Host ("DRY RUN -- {0} file(s) would be deleted, {1} unresolved, {2} orphaned hand-own(s). Re-run with -Apply to delete." -f $deleteRows.Count, $unresolved.Count, $orphanRows.Count) -ForegroundColor Yellow
 }
 else {
     Write-Host ''
@@ -1148,6 +1259,8 @@ else {
     $residueDeleted = 0
     $dirsRemoved    = 0
     $dirsKept       = @()
+    $dirsRemovedList = @()
+    $slnxRemoved    = 0
 
     foreach ($r in ($residueRows | Sort-Object Path)) {
         $why = Test-ProtectedPath -RelativePath $r.Path
@@ -1164,6 +1277,69 @@ else {
         Write-Host ("    deleted  {0}  (residue)" -f $r.Path)
     }
 
+    # Orphan dispositions run HERE -- after the residue sweep, before the directory-empty test -- so a
+    # relocated or deleted orphan lets its now-empty package directory be removed in the loop below
+    # instead of being reported as KEPT. Every one was named and refused-on above; nothing is inferred.
+    $orphansRelocated = 0
+    $orphansDeleted   = 0
+
+    foreach ($o in ($orphanRows | Sort-Object Path)) {
+        $what = $orphanDisposition[$o.Path]
+
+        if ($what -eq 'delete') {
+            # ⚠ THE ONLY Remove-Item IN THIS FILE THAT DELETES A PROTECTED FILE, and it is reachable only
+            # for a path that appears in $orphanRows (so: classified PROTECTED, in a DELETE-ABSENT package)
+            # AND carries an explicit human disposition. Every other deletion loop calls Test-ProtectedPath
+            # immediately before the irreversible act; this one cannot use it as a veto, because deleting a
+            # protected file is exactly what was ruled. So it is used as a FLOOR instead: the skip-listed
+            # packages and golib are never DELETE-ABSENT, so an orphan that also matches the path guard
+            # means the ruling and the instrument's floor disagree, and that is not a thing to resolve by
+            # deleting. Ruling `485d7387d` §2 authorises the disposition, not a floor breach.
+            $floor = Test-ProtectedPath -RelativePath $o.Path
+
+            if ($null -ne $floor) {
+                Write-Host ''
+                Write-Host ("ORPHAN DELETE REFUSED: {0} is floor-protected ({1}); a ruling cannot reach it." -f $o.Path, $floor) -ForegroundColor Red
+                Write-Host ("{0} file(s) had already been removed. The tree is PART-DELETED; discard the staging root." -f ($deleted + $residueDeleted)) -ForegroundColor Red
+                exit 3
+            }
+
+            Remove-Item -LiteralPath $o.Full -Force
+            $orphansDeleted++
+            Write-Host ("    deleted  {0}  (orphaned hand-own, ruled delete)" -f $o.Path) -ForegroundColor Yellow
+            continue
+        }
+
+        $target = $what.Substring('relocate:'.Length).Trim().Replace([char]92, [char]47)
+        $targetDir = Join-Path $CoreDir ($target -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+
+        # The destination must ALREADY exist: a relocate follows a principal that lives at the target, so
+        # a missing directory means the ruling names a package this corpus does not have. Creating it
+        # would turn a wrong ruling into a plausible-looking tree.
+        if (-not (Test-Path -LiteralPath $targetDir -PathType Container)) {
+            Write-Host ''
+            Write-Host ("ORPHAN RELOCATION ABORTED: {0} -> {1}/ does not exist in this corpus." -f $o.Path, $target) -ForegroundColor Red
+            Write-Host ("{0} file(s) had already been removed. The tree is PART-DELETED; discard the staging root." -f ($deleted + $residueDeleted)) -ForegroundColor Red
+            exit 3
+        }
+
+        $destination = Join-Path $targetDir (Split-Path -Leaf $o.Full)
+
+        if (Test-Path -LiteralPath $destination) {
+            Write-Host ''
+            Write-Host ("ORPHAN RELOCATION ABORTED: {0} already exists; a relocate never overwrites." -f (Get-RelativeDisplayPath -Path $destination -Root $CoreDir)) -ForegroundColor Red
+            exit 3
+        }
+
+        Move-Item -LiteralPath $o.Full -Destination $destination
+        $orphansRelocated++
+        Write-Host ("    moved    {0}  ->  {1}/  (orphaned hand-own, ruled relocate)" -f $o.Path, $target) -ForegroundColor Yellow
+    }
+
+    if ($orphanRows.Count -gt 0) {
+        Write-Host ("  orphaned hand-owns: {0} relocated, {1} deleted, of {2}" -f $orphansRelocated, $orphansDeleted, $orphanRows.Count)
+    }
+
     foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
         $onDisk = Join-Path $CoreDir ($dir -replace '/', [System.IO.Path]::DirectorySeparatorChar)
 
@@ -1174,6 +1350,7 @@ else {
         if ($left.Count -eq 0) {
             Remove-Item -LiteralPath $onDisk -Force
             $dirsRemoved++
+            $dirsRemovedList += $dir
             Write-Host ("    removed  {0}/  (empty after its files)" -f $dir)
         }
         else {
@@ -1185,6 +1362,69 @@ else {
 
             foreach ($e in $left) { Write-Host ("          {0}" -f $e.Name) -ForegroundColor Yellow }
         }
+    }
+
+    # ---------------------------------------------------------------------------------------------
+    # THE SOLUTION ENTRY IS PART OF THE PACKAGE (coordinator ruling `485d7387d` §2).
+    #
+    # Train 47 learned "a DELETE-ABSENT package is a DIRECTORY, not a list of .cs" (`894a761f6` §1); this
+    # is that lesson one level up. i9 measured the consequence at `6d5696dcd`: the reconvert emits
+    # go2cs-stdlib.slnx listing all 358 converted packages, H5c then removes 14 of them, nothing tells
+    # the solution, and `dotnet build src/go2cs-stdlib.slnx` fails with 14 x MSB3202 in 1.01 s -- it never
+    # compiles anything. The corpus was right and the manifest was a step behind.
+    #
+    # ⚠ WHY THIS EDITS THE FILE RATHER THAN RE-RUNNING THE GENERATOR. `GenerateSolutionFile` derives its
+    # project list from `collectConvertedProjects`, and `parseCoreProjectRefs`'s own comment says a package
+    # is recovered from its DEPENDENTS' <ProjectReference> entries -- "its dependents reference it, so it
+    # surfaces here even though its own .csproj is absent from the output tree" (`unsafe` is the canonical
+    # case). So a regeneration would re-add any removed package still referenced by a survivor, putting
+    # the dangling entry back. Removing the lines H5c's own package list names cannot do that.
+    #
+    # Matched on the package path this instrument ALREADY HOLDS, after normalising the line's separators,
+    # with a trailing slash so `internal/weak/` cannot match `internal/weakmap/...`, and the file is
+    # rewritten preserving its CRLF terminators (the generator emits CR LF; this repo has paid for a
+    # line-ending flip twice).
+    $slnxPath = Join-Path $RootFull 'go2cs-stdlib.slnx'
+
+    if ($dirsRemovedList.Count -gt 0) {
+        if (-not (Test-Path -LiteralPath $slnxPath -PathType Leaf)) {
+            Write-Host ''
+            Write-Host ("SOLUTION FILE NOT FOUND at {0} -- {1} package director(y/ies) were removed and their <Project> entries cannot be." -f $slnxPath, $dirsRemovedList.Count) -ForegroundColor Red
+            Write-Host 'The corpus is correct and the solution would be left stale; that is the MSB3202 wall. Refusing to report success.' -ForegroundColor Red
+            exit 3
+        }
+
+        $slnxText  = [System.IO.File]::ReadAllText($slnxPath)
+        $slnxCrLf  = $slnxText.Contains("`r`n")
+        $slnxLines = $slnxText -split "`r?`n"
+        $keptLines = @()
+
+        foreach ($line in $slnxLines) {
+            $drop = $false
+
+            foreach ($dir in $dirsRemovedList) {
+                # The emitted attribute is solution-relative with forward slashes: core/<pkg>/<name>.csproj
+                # Both separators, for the reason `coreProjectRefRE` in solutionGenerator.go gives: a
+                # corpus emitted by a pre-F5 binary or a deployed tree can carry backslashes, and a
+                # forward-slash-only matcher would keep the entry while its directory is gone.
+                # NORMALISE THEN MATCH, rather than a both-separators character class: same coverage
+                # (solutionGenerator.go's own reason -- a pre-F5 binary or a deployed tree can emit
+                # backslashes), one spelling of the path, and no escaped backslash in the pattern.
+                $normalized = $line.Replace([char]92, [char]47)
+                $pattern    = 'Path="core/' + (($dir -split '/' | ForEach-Object { [regex]::Escape($_) }) -join '/') + '/'
+
+                if ($normalized -match $pattern) { $drop = $true; break }
+            }
+
+            if ($drop) {
+                $slnxRemoved++
+                Write-Host ("    slnx     removed entry for {0}/" -f ($line.Trim()))
+            }
+            else { $keptLines += $line }
+        }
+
+        $joiner = if ($slnxCrLf) { "`r`n" } else { "`n" }
+        [System.IO.File]::WriteAllText($slnxPath, ($keptLines -join $joiner))
     }
 
     $survivors = @($deleteRows | Where-Object { Test-Path -LiteralPath $_.Full })
@@ -1200,6 +1440,19 @@ else {
     # The after-block below subtracts this same variable, so the two can never disagree.
     Write-Host ("  residue .cs {0}   (the term the post-condition subtracts; the rest are .csproj, icons and test hosts)" -f $residueCs)
     Write-Host ("  package directories removed {0} of {1}; {2} kept with entries remaining" -f $dirsRemoved, $absentPackageDirs.Count, $dirsKept.Count)
+    Write-Host ("  slnx <Project> entries removed {0}" -f $slnxRemoved)
+
+    # ⚠ THE POST-CONDITION THE RULING ASKS FOR, derived from the two counters and never from a literal:
+    # one <Project> entry per package directory actually removed. A mismatch is the MSB3202 wall either
+    # forming (fewer removed than directories -> dangling references) or over-reaching (more removed than
+    # directories -> a live project dropped out of the solution), and both are exit 3 rather than a note,
+    # because both produce a solution that is wrong in a way `dotnet build` reports as someone else's bug.
+    if ($slnxRemoved -ne $dirsRemoved) {
+        Write-Host ''
+        Write-Host ("SLNX POST-CONDITION FAILED: {0} <Project> entr(y/ies) removed against {1} package director(y/ies) removed." -f $slnxRemoved, $dirsRemoved) -ForegroundColor Red
+        Write-Host 'The corpus and its solution manifest disagree. Discard the staging root.' -ForegroundColor Red
+        exit 3
+    }
 
     if ($residueSurvivors.Count -gt 0) {
         foreach ($r in $residueSurvivors) { Write-Host ("    SURVIVED  {0}  (residue)" -f $r.Path) -ForegroundColor Red }
