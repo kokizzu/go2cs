@@ -54,7 +54,7 @@ func TestSeatDuplicationCensusSelfTest(t *testing.T) {
 		t.Fatalf("src/seat-duplication-census.sh --self-test did not report a clean run:\n%s", text)
 	}
 
-	const wantArms = 7
+	const wantArms = 8
 	if got := strings.Count(text, "\n  ok   "); got != wantArms {
 		t.Fatalf("expected %d passing arms from src/seat-duplication-census.sh --self-test, counted %d -- an arm that quietly stops running is exactly what this count exists to catch:\n%s",
 			wantArms, got, text)
@@ -92,6 +92,14 @@ func TestSeatDuplicationCensusSelfTest(t *testing.T) {
 		// isolated control (a declaration escape added to the cherry-pick branch alone) lands on
 		// arm 7 and leaves arms 1-6 green.
 		"DECLARED cherry-pick STILL REFUSES",
+		// G, the night this shipped: their own tool's verdict line read "0 DUPLICATE patch-id(s)",
+		// which SATISFIES an arm asserting the substring "DUPLICATE patch-id" on a report that found
+		// none -- the summary handing back a green for the absence it is reporting. Every assertion
+		// in this file and in the script is a substring match, so the hazard is this suite's too, and
+		// it was live: the only thing separating arm 6's "UNDECLARED STACK" from the verdict's
+		// "undeclared stack(s)" was letter case. The report now names only NON-ZERO categories and
+		// arm 8 measures that, in both directions, rather than the property resting on case.
+		"the report never names a ZERO finding",
 	} {
 		if !strings.Contains(text, reason) {
 			t.Fatalf("src/seat-duplication-census.sh --self-test did not report the arm %q -- the arm names may survive a rewrite that loses what they assert:\n%s", reason, text)

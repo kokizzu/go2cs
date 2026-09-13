@@ -187,7 +187,16 @@ census() {
     echo "==> CENSUS CLEAN: no UNDECLARED patch-id appears on two seats ($indexed commit(s) compared, $declared declared-stack exemption(s))"
     return 0
   fi
-  echo "==> CENSUS RED: $dup cherry-pick duplicate(s) and $stacked undeclared stack(s) across these seats"
+  # NAME ONLY THE CATEGORIES THAT ARE NON-ZERO. G measured the alternative on their own tool the same
+  # night: a verdict line reading "0 DUPLICATE patch-id(s)" SATISFIES an arm asserting the substring
+  # "DUPLICATE patch-id" on a report that found none -- a false green produced by the report's own
+  # summary. Mine escaped it only on letter case (an arm greps "UNDECLARED STACK"; the line said
+  # "undeclared stack(s)"), which is one case-insensitive assertion away from the same defect. So the
+  # summary never prints a count of zero for a category, and arm 8 holds that.
+  local verdict=""
+  [ "$dup" -gt 0 ] && verdict="$dup cherry-pick duplicate(s)"
+  [ "$stacked" -gt 0 ] && verdict="${verdict:+$verdict, }$stacked undeclared stack(s)"
+  echo "==> CENSUS RED: $verdict across these seats"
   if [ "$dup" -gt 0 ]; then
     # G db6ab3484 s3, measured fleet-wide: over a whole remote almost every cherry-pick duplicate is a
     # LEGITIMATE supersession, because a clean re-cut patch-matches the branch it replaces -- so a
@@ -202,7 +211,7 @@ census() {
 }
 
 # ---------------------------------------------------------------------------- the self-test
-# Seven arms in a hermetic repo -- no network, no shallow clone, nothing outside a temp dir. Each arm
+# Eight arms in a hermetic repo -- no network, no shallow clone, nothing outside a temp dir. Each arm
 # asserts the REASON it passed or failed, never merely an exit code, and the RED arms come first so a
 # census that cannot go red is caught before any green is believed.
 selftest() {
@@ -301,6 +310,22 @@ selftest() {
   case "$out" in *"no declaration excuses this"*) ;; *) echo "ARM 7 FAILED: refused without saying the declaration was IGNORED, so a reader would retry it"; echo "$out"; return 1 ;; esac
   case "$out" in *"declared-stack"*) echo "ARM 7 FAILED: the declaration exempted a cherry-pick"; echo "$out"; return 1 ;; *) ;; esac
   echo "  ok   DECLARED cherry-pick STILL REFUSES    --stack narrows the census, it cannot weaken it"
+
+  # ARM 8 (G, the night this shipped): THE REPORT MUST NOT SATISFY AN ARM IT CONTRADICTS. G's own tool
+  # printed "0 DUPLICATE patch-id(s)" in its verdict line, which reads TRUE to an arm asserting the
+  # substring "DUPLICATE patch-id" on a report that found NONE -- the summary handing back a green for
+  # the very finding it is reporting the absence of. Every arm above is a substring match, so this is
+  # a property of THIS suite and not only of G's. Measured here rather than reasoned about: a report
+  # that found only stacks must not contain the duplicate keyword, and vice versa.
+  local rs rd
+  rs=$(cd "$tmp" && bash "$self" --base trunk seat-a seat-ab 2>&1)      # stacks only, zero duplicates
+  rd=$(cd "$tmp" && bash "$self" --base trunk seat-lane seat-a 2>&1)    # duplicates only, zero stacks
+  arms=$((arms+1))
+  case "$rs" in *"DUPLICATE patch-id"*) echo "ARM 8 FAILED: a stacks-only report names the DUPLICATE keyword -- arms 1 and 7 are satisfiable by a report that found none"; echo "$rs"; return 1 ;; *) ;; esac
+  case "$rd" in *"UNDECLARED STACK"*) echo "ARM 8 FAILED: a duplicates-only report names the STACK keyword -- arm 6 is satisfiable by a report that found none"; echo "$rd"; return 1 ;; *) ;; esac
+  # and the same in the direction case alone was covering: no zero-count of either category anywhere.
+  case "$rs$rd" in *"0 cherry-pick"*|*"0 undeclared"*) echo "ARM 8 FAILED: the verdict prints a ZERO count, which is the exact string G's tool tripped on"; echo "$rs"; echo "$rd"; return 1 ;; *) ;; esac
+  echo "  ok   the report never names a ZERO finding  so no arm is satisfiable by the summary alone"
 
   echo
   echo "SELF-TEST CLEAN -- $arms arms"
