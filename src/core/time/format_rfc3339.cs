@@ -18,7 +18,7 @@ partial class time_package {
 internal static slice<byte> appendFormatRFC3339(this Time t, slice<byte> b, bool nanos) {
     var (_, offset, abs) = t.locabs();
     // Format date.
-    var (year, month, day, _) = absDate(abs, true);
+    var (year, month, day) = abs.days().date();
     b = appendInt(b, year, 4);
     b = append(b, (byte)((rune)'-'));
     b = appendInt(b, (nint)month, 2);
@@ -26,7 +26,7 @@ internal static slice<byte> appendFormatRFC3339(this Time t, slice<byte> b, bool
     b = appendInt(b, day, 2);
     b = append(b, (byte)((rune)'T'));
     // Format time.
-    var (hour, min, sec) = absClock(abs);
+    var (hour, min, sec) = abs.clock();
     b = appendInt(b, hour, 2);
     b = append(b, (byte)((rune)':'));
     b = appendInt(b, min, 2);

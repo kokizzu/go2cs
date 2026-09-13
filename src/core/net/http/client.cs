@@ -30,96 +30,6 @@ using go.sync;
 
 partial class http_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸtls() {
-    builtin.initPackage(typeof(crypto.tls_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() {
-    builtin.initPackage(typeof(encoding.base64_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸascii() {
-    builtin.initPackage(typeof(go.net.http.@internal.ascii_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸurl() {
-    builtin.initPackage(typeof(go.net.url_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // A Client is an HTTP client. Its zero value ([DefaultClient]) is a
 // usable client that uses [DefaultTransport].
 //
@@ -491,7 +401,7 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
         (req.ctx, cancelCtx) = context_package.WithDeadline(oldCtx, deadline);
     }
     var cancel = new channel<EmptyStruct>(0);
-    req.Cancel = cancel;
+    req.Cancel = cancel.WithDirection(GoChanDir.Recv);
     var cancelʗ1 = cancel;
     void doCancel() {
         // The second way in the func comment above:
@@ -503,29 +413,24 @@ internal static (Action stopTimer, Func<bool> didTimeout) setRequestCancel(ж<Re
         }
     }
     var stopTimerCh = new channel<EmptyStruct>(0);
-    ref var once = ref heap(new sync.Once(), out var Ꮡonce);
     var cancelCtxʗ1 = cancelCtx;
     var stopTimerChʗ1 = stopTimerCh;
-    stopTimer = () => {
-        var cancelCtxʗ2 = cancelCtxʗ1;
-        var stopTimerChʗ2 = stopTimerChʗ1;
-        Ꮡonce.Do(() => {
-            builtin.close(stopTimerChʗ2);
-            if (cancelCtxʗ2 != default!) {
-                cancelCtxʗ2();
-            }
-        });
-    };
+    stopTimer = sync.OnceFunc(() => {
+        builtin.close(stopTimerChʗ1);
+        if (cancelCtxʗ1 != default!) {
+            cancelCtxʗ1();
+        }
+    });
     var timer = time.NewTimer(time.Until(deadline));
     ref var timedOut = ref heap(new atomic.Bool(), out var ᏑtimedOut);
     var doCancelʗ1 = doCancel;
     var initialReqCancelʗ1 = initialReqCancel;
-    var stopTimerChʗ3 = stopTimerCh;
+    var stopTimerChʗ2 = stopTimerCh;
     var timerʗ1 = timer;
     goǃ(() => {
         var selᴛ1 = initialReqCancelʗ1;
         var selᴛ2 = (~timerʗ1).C;
-        var selᴛ3 = stopTimerChʗ3;
+        var selᴛ3 = stopTimerChʗ2;
         switch (select(ᐸꟷ(selᴛ1, ꓸꓸꓸ), ᐸꟷ(selᴛ2, ꓸꓸꓸ), ᐸꟷ(selᴛ3, ꓸꓸꓸ))) {
         case 0 when selᴛ1.ꟷᐳ(out _): {
             doCancelʗ1();
@@ -893,9 +798,15 @@ internal static (ж<Response> retres, error reterr) @do(this ж<Client> Ꮡc, ж
                 }
             }
             bool shouldRedirect = default!;
-            (redirectMethod, shouldRedirect, includeBody) = redirectBehavior(req.Method, ref (resp).DerefOrNull(), reqs[0]);
+            bool includeBodyOnHop = default!;
+            (redirectMethod, shouldRedirect, includeBodyOnHop) = redirectBehavior(req.Method, ref (resp).DerefOrNull(), reqs[0]);
             if (!shouldRedirect) {
                 (retres, reterr) = (resp, default!); goto ᒐdone;
+            }
+            if (!includeBodyOnHop) {
+                // Once a hop drops the body, we never send it again
+                // (because we're now handling a redirect for a request with no body).
+                includeBody = false;
             }
             req.closeBody();
         }

@@ -18,15 +18,15 @@ using io = io_package;
 
 partial class types_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(global::go.unicode.utf8_package));
-}
-
-// An Object describes a named language entity such as a package,
-// constant, type, variable, function (incl. methods), or label.
-// All objects implement the Object interface.
+// An Object is a named language entity.
+// An Object may be a constant ([Const]), type name ([TypeName]),
+// variable or struct field ([Var]), function or method ([Func]),
+// imported package ([PkgName]), label ([Label]),
+// built-in function ([Builtin]),
+// or the predeclared identifier 'nil' ([Nil]).
+//
+// The environment, which is structured as a tree of Scopes,
+// maps each name to the unique Object that it denotes.
 [GoType] partial interface Object :
     fmt.Stringer
 {
@@ -34,7 +34,7 @@ partial class types_package {
     tokenꓸPos Pos(); // position of object identifier in declaration
     ж<Package> Pkg(); // package to which this object belongs; nil for labels and objects in the Universe scope
     @string Name();  // package local object name
-    ΔType Type();   // object type
+    ΔType Type();     // object type
     bool Exported(); // reports whether the name starts with a capital letter
     @string Id();    // object name if exported, qualified name if not exported (see func Id)
     // order reflects a package-level object's source order: if object
@@ -240,39 +240,47 @@ internal static Δcolor colorFor(ΔType t) {
     return samePkg(obj.pkg, Ꮡpkg);
 }
 
-// less reports whether object a is ordered before object b.
+// cmp reports whether object a is ordered before object b.
+// cmp returns:
+//
+//	-1 if a is before b
+//	 0 if a is equivalent to b
+//	+1 if a is behind b
 //
 // Objects are ordered nil before non-nil, exported before
 // non-exported, then by name, and finally (for non-exported
 // functions) by package path.
-internal static bool less(this ж<@object> Ꮡa, ж<@object> Ꮡb) {
+internal static nint cmp(this ж<@object> Ꮡa, ж<@object> Ꮡb) {
     ref var a = ref Ꮡa.DerefOrNull();
     ref var b = ref Ꮡb.DerefOrNull();
 
     if (Ꮡa == Ꮡb) {
-        return false;
+        return 0;
     }
     // Nil before non-nil.
     if (Ꮡa == nil) {
-        return true;
+        return -1;
     }
     if (Ꮡb == nil) {
-        return false;
+        return +1;
     }
     // Exported functions before non-exported.
     var ea = isExported(a.name);
     var eb = isExported(b.name);
     if (ea != eb) {
-        return ea;
+        if (ea) {
+            return -1;
+        }
+        return +1;
     }
     // Order by name and then (for non-exported names) by package.
     if (a.name != b.name) {
-        return a.name < b.name;
+        return strings.Compare(a.name, b.name);
     }
     if (!ea) {
-        return (~a.pkg).path < (~b.pkg).path;
+        return strings.Compare((~a.pkg).path, (~b.pkg).path);
     }
-    return false;
+    return 0;
 }
 
 // A PkgName represents an imported Go package.
@@ -280,13 +288,12 @@ internal static bool less(this ж<@object> Ꮡa, ж<@object> Ꮡb) {
 [GoType] partial struct PkgName {
     internal partial ref @object @object { get; }
     internal ж<Package> imported;
-    internal bool used; // set if the package was used
 }
 
 // NewPkgName returns a new PkgName object representing an imported package.
 // The remaining arguments set the attributes found with all Objects.
 public static ж<PkgName> NewPkgName(tokenꓸPos pos, ж<Package> Ꮡpkg, @string name, ж<Package> Ꮡimported) {
-    return Ꮡ(new PkgName(new @object(nil, pos, Ꮡpkg, name, new BasicжΔType(Typ[Invalid]), 0, black, nopos), Ꮡimported, false));
+    return Ꮡ(new PkgName(new @object(nil, pos, Ꮡpkg, name, new BasicжΔType(Typ[Invalid]), 0, black, nopos), Ꮡimported));
 }
 
 // Imported returns the package that was imported.
@@ -317,7 +324,11 @@ public static ж<Const> NewConst(tokenꓸPos pos, ж<Package> Ꮡpkg, @string na
 
 // a constant may be a dependency of an initialization expression
 
-// A TypeName represents a name for a (defined or alias) type.
+// A TypeName is an [Object] that represents a type with a name:
+// a defined type ([Named]),
+// an alias type ([Alias]),
+// a type parameter ([TypeParam]),
+// or a predeclared type such as int or error.
 [GoType] partial struct TypeName {
     internal partial ref @object @object { get; }
 }
@@ -380,10 +391,10 @@ public static bool IsAlias(this ж<TypeName> Ꮡobj) {
 // A Variable represents a declared variable (including function parameters and results, and struct fields).
 [GoType] partial struct Var {
     internal partial ref @object @object { get; }
+    internal ж<Var> origin; // if non-nil, the Var from which this one was instantiated
     internal bool embedded; // if set, the variable is an embedded struct field, and name is the type name
     internal bool isField; // var is struct field
-    internal bool used; // set if the variable was used
-    internal ж<Var> origin; // if non-nil, the Var from which this one was instantiated
+    internal bool isParam; // var is a param, for backport of 'used' check to go1.24 (go.dev/issue/72826)
 }
 
 // NewVar returns a new variable.
@@ -394,7 +405,7 @@ public static ж<Var> NewVar(tokenꓸPos pos, ж<Package> Ꮡpkg, @string name, 
 
 // NewParam returns a new variable representing a function parameter.
 public static ж<Var> NewParam(tokenꓸPos pos, ж<Package> Ꮡpkg, @string name, ΔType typ) {
-    return Ꮡ(new Var(@object: new @object(nil, pos, Ꮡpkg, name, typ, 0, colorFor(typ), nopos), used: true)); // parameters are always 'used'
+    return Ꮡ(new Var(@object: new @object(nil, pos, Ꮡpkg, name, typ, 0, colorFor(typ), nopos), isParam: true));
 }
 
 // NewField returns a new variable representing a struct field.
@@ -657,7 +668,7 @@ internal static void writeObject(ж<bytes.Buffer> Ꮡbuf, Object obj, Func<ж<Pa
         case ж<Basic> t: {
             return;
         }
-        case ж<Named> t: {
+        case {} Δt when Δt._<ΔgenericType>(out var t): {
             if (t.TypeParams().Len() > 0) {
                 // Don't print anything more for basic types since there's
                 // no more information.
@@ -754,6 +765,9 @@ public static @string String(this ж<Nil> Ꮡobj) {
     return ObjectString(new NilжObject(Ꮡobj), default!);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string interfaceˢ2 = "interface"u8;
+
 internal static void writeFuncName(ж<bytes.Buffer> Ꮡbuf, ref Func f, Func<ж<Package>, @string> qf) {
     ref var buf = ref Ꮡbuf.DerefOrNull();
 
@@ -768,7 +782,7 @@ internal static void writeFuncName(ж<bytes.Buffer> Ꮡbuf, ref Func f, Func<ж<
                         // named interfaces using the interface type
                         // (not the named type) as the receiver.
                         // Don't print it in full.
-                        buf.WriteString(interfaceˢ);
+                        buf.WriteString(interfaceˢ2);
                     } else {
                         WriteType(Ꮡbuf, recv.of(Var.Ꮡobject).Type(), qf);
                     }

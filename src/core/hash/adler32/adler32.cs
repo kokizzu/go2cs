@@ -20,18 +20,6 @@ using @internal;
 
 partial class adler32_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
-
 internal static UntypedInt mod => 65521;
 internal static UntypedInt nmax => 5552;
 
@@ -66,11 +54,14 @@ public static hash.Hash32 New() {
 internal static readonly @string magic = "adl\x01"u8;
 internal const nint marshaledSize = /* len(magic) + 4 */ 8;
 
-[GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
-    var b = new slice<byte>(0, marshaledSize);
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref digest d, slice<byte> b) {
     b = append(b, magic.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint32(b, (uint32)(d));
+    b = byteorder.BEAppendUint32(b, (uint32)(d));
     return (b, default!);
+}
+
+[GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
+    return d.AppendBinary(new slice<byte>(0, marshaledSize));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -84,7 +75,7 @@ internal static readonly @string hashAdler32InvalidHashˢ2 = "hash/adler32: inva
     if (len(b) != marshaledSize) {
         return errors.New(hashAdler32InvalidHashˢ2);
     }
-    d = ((digest)byteorder.BeUint32(b[(int)(len(magic))..]));
+    d = ((digest)byteorder.BEUint32(b[(int)(len(magic))..]));
     return default!;
 }
 

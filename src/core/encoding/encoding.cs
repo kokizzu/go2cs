@@ -37,6 +37,18 @@ partial class encoding_package {
     error UnmarshalBinary(slice<byte> data);
 }
 
+// BinaryAppender is the interface implemented by an object
+// that can append the binary representation of itself.
+// If a type implements both [BinaryAppender] and [BinaryMarshaler],
+// then v.MarshalBinary() must be semantically identical to v.AppendBinary(nil).
+[GoType] partial interface BinaryAppender {
+    // AppendBinary appends the binary representation of itself to the end of b
+    // (allocating a larger slice if necessary) and returns the updated slice.
+    //
+    // Implementations must not retain b, nor mutate any bytes within b[:len(b)].
+    (slice<byte>, error) AppendBinary(slice<byte> b);
+}
+
 // TextMarshaler is the interface implemented by an object that can
 // marshal itself into a textual form.
 //
@@ -53,6 +65,18 @@ partial class encoding_package {
 // after returning.
 [GoType] partial interface TextUnmarshaler {
     error UnmarshalText(slice<byte> text);
+}
+
+// TextAppender is the interface implemented by an object
+// that can append the textual representation of itself.
+// If a type implements both [TextAppender] and [TextMarshaler],
+// then v.MarshalText() must be semantically identical to v.AppendText(nil).
+[GoType] partial interface TextAppender {
+    // AppendText appends the textual representation of itself to the end of b
+    // (allocating a larger slice if necessary) and returns the updated slice.
+    //
+    // Implementations must not retain b, nor mutate any bytes within b[:len(b)].
+    (slice<byte>, error) AppendText(slice<byte> b);
 }
 
 } // end encoding_package

@@ -5,40 +5,32 @@ namespace go;
 
 partial class runtime_package {
 
-// traceExpWriter is a wrapper around trace writer that produces traceEvExperimentalBatch
-// batches. This means that the data written to the writer need not conform to the standard
-// trace format.
-[GoType] partial struct traceExpWriter {
-    internal partial ref traceWriter traceWriter { get; }
-    internal traceExperiment exp;
+// expWriter returns a traceWriter that writes into the current M's stream for
+// the given experiment.
+internal static traceWriter expWriter(this traceLocker tl, traceExperiment exp) {
+    return new traceWriter(traceLocker: tl, traceBuf: (~tl.mp).trace.buf[(nint)(tl.gen % 2)][exp], exp: exp);
 }
 
-// unsafeTraceExpWriter produces a traceExpWriter that doesn't lock the trace.
+// unsafeTraceExpWriter produces a traceWriter for experimental trace batches
+// that doesn't lock the trace. Data written to experimental batches need not
+// conform to the standard trace format.
 //
 // It should only be used in contexts where either:
 // - Another traceLocker is held.
 // - trace.gen is prevented from advancing.
 //
-// buf may be nil.
-internal static traceExpWriter unsafeTraceExpWriter(uintptr gen, ж<traceBuf> Ꮡbuf, traceExperiment exp) {
-    return new traceExpWriter(new traceWriter(traceLocker: new traceLocker(gen: gen), traceBuf: Ꮡbuf), exp);
-}
-
-// ensure makes sure that at least maxSize bytes are available to write.
+// This does not have the same stack growth restrictions as traceLocker.writer.
 //
-// Returns whether the buffer was flushed.
-internal static (traceExpWriter, bool) ensure(this traceExpWriter w, nint maxSize) {
-    var refill = w.traceBuf == nil || !w.available(maxSize);
-    if (refill) {
-        w.traceWriter = w.traceWriter.refill(w.exp);
-    }
-    return (w, refill);
+// buf may be nil.
+internal static traceWriter unsafeTraceExpWriter(uintptr gen, ж<traceBuf> Ꮡbuf, traceExperiment exp) {
+    return new traceWriter(traceLocker: new traceLocker(gen: gen), traceBuf: Ꮡbuf, exp: exp);
 }
 
 [GoType("num:uint8")] partial struct traceExperiment;
 
 internal static traceExperiment traceNoExperiment => /* iota */ 0;
 internal static traceExperiment traceExperimentAllocFree => 1;
+internal static traceExperiment traceNumExperiments => 2;
 
 // Experimental events.
 internal static traceEv _ᴛ2ʗ => /* 127 + iota */ 127;

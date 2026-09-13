@@ -7,26 +7,21 @@ namespace go.go;
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
 using runtime = runtime_package;
 using strings = strings_package;
-using errors = global::go.@internal.types.errors_package;
+using System.Runtime.CompilerServices;
+using errors = @internal.types.errors_package;
 using global::go.go;
 using io = io_package;
 using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string assertionFailedˢ = "assertion failed"u8;
 
-internal static void assert(bool p) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void assert(bool p) {
     if (!p) {
         @string msg = assertionFailedˢ;
         // Include information about the assertion location. Due to panic recovery,

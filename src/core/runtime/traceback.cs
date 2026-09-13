@@ -6,12 +6,11 @@ namespace go;
 using abi = @internal.abi_package;
 using bytealg = @internal.bytealg_package;
 using goarch = @internal.goarch_package;
+using sys = @internal.runtime.sys_package;
 using stringslite = @internal.stringslite_package;
-using sys = runtime.@internal.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -108,7 +107,7 @@ internal static void initAt(this ж<unwinder> Ꮡu, uintptr pc0, uintptr sp0, ui
             // on another stack. That could confuse callers quite a bit.
             // Instead, we require that initAt and any other function that
             // accepts an sp for the current goroutine (typically obtained by
-            // calling getcallersp) must not run on that goroutine's stack but
+            // calling GetCallerSP) must not run on that goroutine's stack but
             // instead on the g0 stack.
             @throw(cannotTraceUserGoroutineˢ);
         }
@@ -777,7 +776,7 @@ internal static void traceback(uintptr pc, uintptr sp, uintptr lr, ж<g> Ꮡgp) 
 }
 
 // tracebacktrap is like traceback but expects that the PC and SP were obtained
-// from a trap, not from gp->sched or gp->syscallpc/gp->syscallsp or getcallerpc/getcallersp.
+// from a trap, not from gp->sched or gp->syscallpc/gp->syscallsp or GetCallerPC/GetCallerSP.
 // Because they are from a trap instead of from a saved pair,
 // the initial PC must not be rewound to the previous instruction.
 // (All the saved pairs record a PC that is a return address, so we
@@ -1107,11 +1106,10 @@ internal static bool showfuncinfo(ΔsrcFunc sf, bool firstFrame, abi.FuncID call
 // It is only for runtime functions, so ASCII A-Z is fine.
 internal static bool isExportedRuntime(@string name) {
     // Check and remove package qualifier.
-    nint n = len("runtime.");
-    if (len(name) <= n || name[..(int)(n)] != "runtime.") {
+    (name, var found) = stringslite.CutPrefix(name, runtimeˢ);
+    if (!found) {
         return false;
     }
-    name = name[(int)(n)..];
     @string rcvr = ""u8;
     // Extract receiver type, if any.
     // For example, runtime.(*Func).Entry
@@ -1191,6 +1189,11 @@ internal static void goroutineheader(ж<g> Ꮡgp) {
     }
     if (gp.lockedm != 0) {
         print((@string)", locked to thread"u8);
+    }
+    {
+        var sg = gp.syncGroup; if (sg != nil) {
+            print((@string)", synctest group "u8, (~(~sg).root).goid);
+        }
     }
     print((@string)"]:\n"u8);
 }

@@ -26,6 +26,7 @@ namespace go;
 
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
+using runtime = runtime_package;
 using strconv = strconv_package;
 using Δsync = sync_package;
 using Δunicode = unicode_package;
@@ -36,30 +37,6 @@ using go.unicode;
 using ꓸꓸꓸbyte = Span<byte>;
 
 partial class reflect_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
 
 // Type is the representation of a Go type.
 //
@@ -264,7 +241,7 @@ partial class reflect_package {
 /*
  * These data structures are known to the compiler (../cmd/compile/internal/reflectdata/reflect.go).
  * A few are known to ../runtime/type.go to convey to debuggers.
- * They are also known to ../runtime/type.go.
+ * They are also known to ../internal/abi/type.go.
  */
 public static ΔKind Invalid => /* iota */ 0;
 public static ΔKind ΔBool => 1;
@@ -349,11 +326,6 @@ internal static ж<abi.Type> common(this ж<interfaceType> Ꮡt) {
 
 internal static ж<abi.UncommonType> uncommon(this ж<interfaceType> Ꮡt) {
     return Ꮡt.of(interfaceType.ᏑInterfaceType).of(abiꓸInterfaceType.ᏑType).Uncommon();
-}
-
-// mapType represents a map type.
-[GoType] partial struct mapType {
-    public partial ref @internal.abi_package.ΔMapType MapType { get; }
 }
 
 // ptrType represents a pointer type.
@@ -466,7 +438,7 @@ internal static slice<@string> kindNames = new golib.SparseArray<@string>{
 //
 //go:noescape
 internal static @unsafe.Pointer resolveNameOff(@unsafe.Pointer ptrInModule, int32 off) {
-    return go.runtime_package.reflect_resolveNameOff(ptrInModule, off);
+    return runtime.reflect_resolveNameOff(ptrInModule, off);
 }
 
 // resolveTypeOff resolves an *rtype offset from a base type.
@@ -475,7 +447,7 @@ internal static @unsafe.Pointer resolveNameOff(@unsafe.Pointer ptrInModule, int3
 //
 //go:noescape
 internal static @unsafe.Pointer resolveTypeOff(@unsafe.Pointer rtype, int32 off) {
-    return go.runtime_package.reflect_resolveTypeOff(rtype, off);
+    return runtime.reflect_resolveTypeOff(rtype, off);
 }
 
 // resolveTextOff resolves a function pointer offset from a base type.
@@ -484,7 +456,7 @@ internal static @unsafe.Pointer resolveTypeOff(@unsafe.Pointer rtype, int32 off)
 //
 //go:noescape
 internal static @unsafe.Pointer resolveTextOff(@unsafe.Pointer rtype, int32 off) {
-    return go.runtime_package.reflect_resolveTextOff(rtype, off);
+    return runtime.reflect_resolveTextOff(rtype, off);
 }
 
 // addReflectOff adds a pointer to the reflection lookup map in the runtime.
@@ -502,7 +474,7 @@ internal static @unsafe.Pointer resolveTextOff(@unsafe.Pointer rtype, int32 off)
 //go:linkname addReflectOff
 //go:noescape
 internal static int32 addReflectOff(@unsafe.Pointer ptr) {
-    return go.runtime_package.reflect_addReflectOff(ptr);
+    return runtime.reflect_addReflectOff(ptr);
 }
 
 // resolveReflectName adds a name to the reflection lookup map in the runtime.
@@ -634,8 +606,6 @@ internal static (StructField, bool) FieldByNameFunc(this ж<rtype> Ꮡt, Func<@s
     var tt = Ꮡt.Reinterpret<rtype, structType>();
     return tt.FieldByNameFunc(match);
 }
-
-// go2cs generated this placeholder — func Key is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func Len is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
@@ -975,16 +945,34 @@ public static (@string value, bool ok) Lookup(this StructTag tag, @string key) {
         }
     }
     f.Offset = p.Value.Offset;
-    // NOTE(rsc): This is the only allocation in the interface
-    // presented by a reflect.Type. It would be nice to avoid,
-    // at least in the common cases, but we need to make sure
-    // that misbehaving clients of reflect cannot affect other
-    // uses of reflect. One possibility is CL 5371098, but we
-    // postponed that ugliness until there is a demonstrated
-    // need for the performance. This is issue 2320.
-    f.Index = new nint[]{i}.slice();
+    // We can't safely use this optimization on js or wasi,
+    // which do not appear to support read-only data.
+    if (i < 256 && runtime.GOOS != "js"u8 && runtime.GOOS != "wasip1"u8){
+        var staticuint64s = getStaticuint64s();
+        @unsafe.Pointer pΔ1 = @unsafe.Pointer.FromPinnedBox(Ꮡ(staticuint64s.Value).at<uint64>(i));
+        if (/* unsafe.Sizeof(int(0)) */ (uintptr)8 == 4 && goarch.BigEndian) {
+            pΔ1 = (uintptr)@unsafe.Add(pΔ1, 4);
+        }
+        f.Index = @unsafe.Slice((ж<nint>)(uintptr)(pΔ1), 1);
+    } else {
+        // NOTE(rsc): This is the only allocation in the interface
+        // presented by a reflect.Type. It would be nice to avoid,
+        // but we need to make sure that misbehaving clients of
+        // reflect cannot affect other uses of reflect.
+        // One possibility is CL 5371098, but we postponed that
+        // ugliness until there is a demonstrated
+        // need for the performance. This is issue 2320.
+        f.Index = new nint[]{i}.slice();
+    }
     return f;
 }
+
+// getStaticuint64s returns a pointer to an array of 256 uint64 values,
+// defined in the runtime package in read-only memory.
+// staticuint64s[0] == 0, staticuint64s[1] == 1, and so forth.
+//
+//go:linkname getStaticuint64s runtime.getStaticuint64s
+internal static partial ж<array<uint64>> getStaticuint64s();
 
 // TODO(gri): Should there be an error/bool indicator if the index
 // is wrong for FieldByIndex?
@@ -1401,8 +1389,6 @@ internal static ref funcLookupCacheᴛ1 funcLookupCache => ref ᏑfuncLookupCach
 
 // go2cs generated this placeholder — func ChanOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// go2cs generated this placeholder — func MapOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
 internal static slice<ΔType> funcTypes;
 
 internal static ж<Δsync.Mutex> ᏑfuncTypesMutex = new StandardBox<Δsync.Mutex>(default(Δsync.Mutex));
@@ -1575,76 +1561,11 @@ internal static bool hashMightPanic(ж<abi.Type> Ꮡt) {
 
 }
 
-internal static ж<abi.Type> bucketOf(ж<abi.Type> Ꮡktyp, ж<abi.Type> Ꮡetyp) {
-    ref var ktyp = ref Ꮡktyp.DerefOrNull();
-    ref var etyp = ref Ꮡetyp.DerefOrNull();
-
-    if (ktyp.Size_ > abi.MapMaxKeyBytes) {
-        Ꮡktyp = ptrTo(Ꮡktyp); ktyp = ref Ꮡktyp.DerefOrNull();
-    }
-    if (etyp.Size_ > abi.MapMaxElemBytes) {
-        Ꮡetyp = ptrTo(Ꮡetyp); etyp = ref Ꮡetyp.DerefOrNull();
-    }
-    // Prepare GC data if any.
-    // A bucket is at most bucketSize*(1+maxKeySize+maxValSize)+ptrSize bytes,
-    // or 2064 bytes, or 258 pointer-size words, or 33 bytes of pointer bitmap.
-    // Note that since the key and value are known to be <= 128 bytes,
-    // they're guaranteed to have bitmaps instead of GC programs.
-    ж<byte> gcdata = default!;
-    ref var ptrdata = ref heap(new uintptr(), out var Ꮡptrdata);
-    ref var size = ref heap<uintptr>(out var Ꮡsize);
-    size = (uintptr)abi.MapBucketCount * (1 + ktyp.Size_ + etyp.Size_) + (uintptr)goarch.PtrSize;
-    if ((uintptr)(size & (uintptr)(ktyp.Align_ - 1)) != 0 || (uintptr)(size & (uintptr)(etyp.Align_ - 1)) != 0) {
-        throw panic("reflect: bad size computation in MapOf");
-    }
-    if (ktyp.Pointers() || etyp.Pointers()) {
-        var nptr = ((uintptr)abi.MapBucketCount * (1 + ktyp.Size_ + etyp.Size_) + (uintptr)goarch.PtrSize) / (uintptr)goarch.PtrSize;
-        var n = (nptr + 7) / 8;
-        // Runtime needs pointer masks to be a multiple of uintptr in size.
-        n = (uintptr)((n + (uintptr)goarch.PtrSize - 1) & ~(uintptr)(goarch.PtrSize - 1));
-        var mask = new slice<byte>((nint)(n));
-        var @base = (uintptr)(abi.MapBucketCount / goarch.PtrSize);
-        if (ktyp.Pointers()) {
-            emitGCMask(mask, @base, Ꮡktyp, abi.MapBucketCount);
-        }
-        @base += (uintptr)abi.MapBucketCount * ktyp.Size_ / (uintptr)goarch.PtrSize;
-        if (etyp.Pointers()) {
-            emitGCMask(mask, @base, Ꮡetyp, abi.MapBucketCount);
-        }
-        @base += (uintptr)abi.MapBucketCount * etyp.Size_ / (uintptr)goarch.PtrSize;
-        var word = @base;
-        mask[(nint)(word / 8)] |= (byte)((byte)(1 << (int)((word % 8))));
-        gcdata = Ꮡ(mask, 0);
-        ptrdata = (word + 1) * (uintptr)goarch.PtrSize;
-        // overflow word must be last
-        if (ptrdata != size) {
-            throw panic("reflect: bad layout computation in MapOf");
-        }
-    }
-    var b = Ꮡ(new abi.Type(
-        Align_: goarch.PtrSize,
-        Size_: size,
-        Kind_: abi.Struct,
-        PtrBytes: ptrdata,
-        GCData: gcdata
-    ));
-    @string s = "bucket("u8 + stringFor(Ꮡktyp) + ","u8 + stringFor(Ꮡetyp) + ")"u8;
-    b.Value.Str = resolveReflectName(newName(s, ""u8, false, false));
-    return b;
-}
-
-[GoRecv] internal static slice<byte> gcSlice(this ref rtype t, uintptr begin, uintptr end) {
-    return (~array<byte>.AliasPointer(t.t.GCData, 1073741824)).slice((int)(begin), (int)(end), (int)(end));
-}
-
 // emitGCMask writes the GC mask for [n]typ into out, starting at bit
 // offset base.
 internal static void emitGCMask(slice<byte> @out, uintptr @base, ж<abi.Type> Ꮡtyp, uintptr n) {
     ref var typ = ref Ꮡtyp.DerefOrNull();
 
-    if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
-        throw panic("reflect: unexpected GC program");
-    }
     var ptrs = typ.PtrBytes / (uintptr)goarch.PtrSize;
     var words = typ.Size_ / (uintptr)goarch.PtrSize;
     var mask = typ.GcSlice(0, (ptrs + 7) / 8);
@@ -1656,31 +1577,6 @@ internal static void emitGCMask(slice<byte> @out, uintptr @base, ж<abi.Type> �
             }
         }
     }
-}
-
-// appendGCProg appends the GC program for the first ptrdata bytes of
-// typ to dst and returns the extended slice.
-internal static slice<byte> appendGCProg(slice<byte> dst, ж<abi.Type> Ꮡtyp) {
-    ref var typ = ref Ꮡtyp.DerefOrNull();
-
-    if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
-        // Element has GC program; emit one element.
-        var n = (uintptr)(~typ.GCData.Reinterpret<byte, uint32>());
-        var prog = typ.GcSlice(4, 4 + n - 1);
-        return builtin.appendꓸꓸꓸ(dst, prog);
-    }
-    // Element is small with pointer mask; use as literal bits.
-    var ptrs = typ.PtrBytes / (uintptr)goarch.PtrSize;
-    var mask = typ.GcSlice(0, (ptrs + 7) / 8);
-    // Emit 120-bit chunks of full bytes (max is 127 but we avoid using partial bytes).
-    for (; ptrs > 120; ptrs -= 120) {
-        dst = builtin.append(dst, (byte)(120));
-        dst = builtin.appendꓸꓸꓸ(dst, mask[..15]);
-        mask = mask[15..];
-    }
-    dst = builtin.append(dst, (byte)ptrs);
-    dst = builtin.appendꓸꓸꓸ(dst, mask);
-    return dst;
 }
 
 // go2cs generated this placeholder — func SliceOf is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])

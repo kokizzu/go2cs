@@ -59,9 +59,9 @@ using static go.runtime.debug_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("runtime/debug/garbage.go", "garbage.cs", "ACc+AAoM0oIABxKCgoKCgoKEgpSCgpaCgriCgoKCgpQABCAACwKuwgACHgAMAgACIgAOAgACJgAQAgACGAAKFgAKbgA1Ag==")]
-[assembly: go.GoPositionMap("runtime/debug/mod.go", "mod.cs", "AB8eqrKCgpSCgoLehAA1dpKokuaCgoKUgpSCkoKCgoKCgoKUgpSUgpSClIKCgpSCgpSWAAgGwoKCgqgABhSCgpSCgoKU3oK8goKClJSCtIKCgoLGgoKCgoLGgoKUgpTKtIKClpKUpoKClIKUgIKkgraCgoKUgsiCgpSCgoLIgoLatJQ=")]
-[assembly: go.GoPositionMap("runtime/debug/stack.go", "stack.cs", "ABwikqqigoKCgpQACCYADQKCABk0goKUgpSApqSo")]
+[assembly: go.GoPositionMap("runtime/debug/garbage.go", "garbage.cs", "ABU+AAoM0oIABxKCgoKCgoKEgpSCgpaCgriCgoKCgpQABCAACwKuwgACHgAMAgACIgAOAgACJgAQAgACGAAKFgAKbgA1Ag==")]
+[assembly: go.GoPositionMap("runtime/debug/mod.go", "mod.cs", "AA0eqrKCgpSCgoLehAA2eJKokuiSgoKUgpSCkoKCgoKCgoKUgpSUgpSClIKCgpSCgpSWAAISAAoCgoKCqAAGFIKClIKCgpTegryCgoKUlIK0goKCgsaCgoKCgsaCgpSClMq0goKWkpSmgoKUgpSAgqSCtoKCgpSCyIKClIKCgsiCgtq0lA==", "116-130:1;160-164:1;176-190:2")]
+[assembly: go.GoPositionMap("runtime/debug/stack.go", "stack.cs", "ABAikqqigoKCgpQACCYADQKCABk0goKUgpSApqSo")]
 [assembly: go.GoPositionMap("runtime/debug/stubs.go", "stubs.cs", "AAkYopKSkpKS")]
 // </GoSourcePositionMaps>
 
@@ -83,4 +83,21 @@ public static partial class debug_package
     public partial struct GCStats {}
     public partial struct Module {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸpoll() => builtin.initPackage(typeof(@internal.poll_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

@@ -40,6 +40,7 @@ using static go.@internal.pkgbits_package;
 
 // <ExportedTypeAliases>
 [assembly: GoTypeAlias("Code", "ΔCode")]
+[assembly: GoTypeAlias("Version", "ΔVersion")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -73,11 +74,12 @@ using static go.@internal.pkgbits_package;
 
 // <GoSourcePositionMaps>
 [assembly: global::go.GoPositionMap("internal/pkgbits/codes.go", "codes.cs", "ABQsgKKAAA0igKKAABMugKKA")]
-[assembly: global::go.GoPositionMap("internal/pkgbits/decoder.go", "decoder.cs", "AHN+sKaQrtLehISU6JKCtoSChIKEgoSokoKClKiSqJKCgqqigoKUgpSqooSCgpSEqJKqopKCrsKSgqaigqzS3IKCgoKClqai3IKCgoKClJSCgpYADB6CgriigoKs0oKCgoKCgpSUgoKUlIKUyoKWgoKUpoKCgq7igpaCgoKCloIAECaEgoKUgpaCgoKCzKiygoKCgqiSgqiSgqiQgICAppCAgICmkICAgAACEvKCqsKCqsKCqqKCgpSqooKCgoKUpoKAqqSkpKSCgqQAAh0ABSaCgoKUpoKCggACFAAIAoKCkoKUgpSqwoKCgoKSgoKCgoKWgoSE")]
-[assembly: global::go.GoPositionMap("internal/pkgbits/encoder.go", "encoder.cs", "ADpckAACEvIABRDSgoSSloSCgpSGkoKCqIKCgoK6goKCuoKChKqigIKCpoKCgqyygoKu4oKEABIusoaSuoKUgoKCgoKCloKChKaCgriCgoKCppSCgpamgoKCgIK2loKCgqaCgp7CgoKCuoKCggADIgANAoKCgpSCgqiSgqiSgqiQgKaQppAAAhDigqiSggACEuKqooKqooKCvKKCgoKUuIK0tIK0grSCtIK0goK0gsiigoKmgoI=")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/decoder.go", "decoder.cs", "ADh+sKaQqrLOhIKChIKWgoKCloSChIKEhIKEqJKCgpSokqiSgoKqooKClIKUqqKEgoKUhKiSqqKSgq7CkoKmooKs0tyCgoKCgpamotyCgoKCgpSUgoKWAAwegoK4ooKCrNKCgoKCgoKUlIKClJSClMqCloKClKaCgoKu4oKWgoKCgpaCABAmhIKClIKWgoKCgsyosoKCgoKokoKokoKokICAgKaQgICAppCAgIAAAhLygqrCgqrCgqqigoKUqqKCgoKClKaCgKqkpKSkgoKkAAIdAAUmgoKClKaCgoIAAhQACAKCgpKClIKUqsKCgoKCkoKCgoKCloKEhKiQ")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/encoder.go", "encoder.cs", "ACZMkAACEvIABhLSgoSSloSCgoKUmJKCgqiCgoKCuoKCgrqCgoSqooCCgqaCgoKssoKCruKChAASLrKGkrqClIKCgoKCgpaCgoSmgoK4goKCgqaUgoKWpoKCgoCCtpaCgoKmgoKewoKCgrqCgoIAAyIADQKCgoKUgoKokoKokoKokICmkKaQAAIQ4oKokoIAAhLiqqKCqqKCgryigoKClLiCtLSCtIK0grSCtIKCtILIooKCpoKCqJA=", "61-63:1")]
 [assembly: global::go.GoPositionMap("internal/pkgbits/support.go", "support.cs", "AAoSgoK4og==")]
-[assembly: global::go.GoPositionMap("internal/pkgbits/sync.go", "sync.cs", "AA8cspKUhJQABBCygpaCgoKCgg==")]
-[assembly: global::go.GoPositionMap("internal/pkgbits/syncmarker_string.go", "syncmarker_string.cs", "AA0OhqKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgu6CgoKU")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/sync.go", "sync.cs", "AA8cspKUhJQABBCygpaCgoKCgg==", "16-21:1")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/syncmarker_string.go", "syncmarker_string.cs", "/oaigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoLugoKClA==")]
+[assembly: global::go.GoPositionMap("internal/pkgbits/version.go", "version.cs", "ACamAZI=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -98,11 +100,35 @@ public static partial class pkgbits_package
     public partial struct CodeVal {}
     public partial struct Decoder {}
     public partial struct Encoder {}
+    public partial struct Field {}
     public partial struct Index {}
     [GoValueClone("elemEndsEnds")] public partial struct PkgDecoder {}
     [GoValueClone("elems")] public partial struct PkgEncoder {}
     public partial struct RelocEnt {}
     public partial struct RelocKind {}
     public partial struct SyncMarker {}
+    public partial struct ΔVersion {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() => builtin.initPackage(typeof(crypto.sha256_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸconstant() => builtin.initPackage(typeof(global::go.go.constant_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

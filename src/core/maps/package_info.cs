@@ -49,7 +49,7 @@ using static go.maps_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("maps/iter.go", "iter.cs", "AA8Y0oKCggAFEtKCgoIABRLSgoKCAAUQwoK8ooKC")]
+[assembly: go.GoPositionMap("maps/iter.go", "iter.cs", "AAkY0oKCggAFEtKCgoIABRLSgoKCAAUQwoK8ooKC", "13-19:1;26-32:1;39-45:1")]
 [assembly: go.GoPositionMap("maps/maps.go", "maps.cs", "AA4i0oKUgoCCtqrSgpSCgIK2rOjUgpSu8oK6soKC")]
 // </GoSourcePositionMaps>
 
@@ -66,4 +66,14 @@ public static partial class maps_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸiter() => builtin.initPackage(typeof(iter_package));
+    // </ImportInitializers>
 }

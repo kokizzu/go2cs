@@ -3,6 +3,13 @@
 // license that can be found in the LICENSE file.
 
 // Package importer provides access to export data importers.
+//
+// These functions, which are mostly deprecated, date from before the
+// introduction of modules in release Go 1.11. They should no longer
+// be relied on except for use in test cases using small programs that
+// depend only on the standard library. For reliable module-aware
+// loading of type information, use the packages.Load function from
+// golang.org/x/tools/go/packages.
 namespace go.go;
 
 using Δbuild = global::go.go.build_package;
@@ -17,54 +24,6 @@ using global::go.go;
 using global::go.go.@internal;
 
 partial class importer_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸbuild() {
-    builtin.initPackage(typeof(global::go.go.build_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸgccgoimporter() {
-    builtin.initPackage(typeof(global::go.go.@internal.gccgoimporter_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸgcimporter() {
-    builtin.initPackage(typeof(global::go.go.@internal.gcimporter_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸsrcimporter() {
-    builtin.initPackage(typeof(global::go.go.@internal.srcimporter_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() {
-    builtin.initPackage(typeof(global::go.go.types_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
 
 // type Lookup is a methodless func type — rendered inline as its base delegate
 
@@ -131,6 +90,12 @@ public static types.Importer For(@string compiler, Func<@string, (io.ReadCloser,
 
 // Default returns an Importer for the compiler that built the running binary.
 // If available, the result implements [types.ImporterFrom].
+//
+// Default may be convenient for use in the simplest of cases, but
+// most clients should instead use [ForCompiler], which accepts a
+// [token.FileSet] from the caller; without it, all position
+// information derived from the Importer will be incorrect and
+// misleading. See also the package documentation.
 public static types.Importer Default() {
     return For(runtime.Compiler, default!);
 }

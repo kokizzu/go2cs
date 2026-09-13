@@ -13,30 +13,6 @@ using regexp;
 
 partial class regexp_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 // "One-pass" regexp execution.
 // Some regexps can be analyzed to determine that they never need
 // backtracking: they are guaranteed to run in one pass over the string
@@ -533,7 +509,15 @@ internal static ж<onePassProg> /*p*/ compileOnePass(ref syntax.Prog prog) {
     if (prog.Inst[prog.Start].Op != syntax.InstEmptyWidth || (syntax.EmptyOp)(((syntax.EmptyOp)(uint8)prog.Inst[prog.Start].Arg) & syntax.EmptyBeginText) != syntax.EmptyBeginText) {
         return default!;
     }
-    // every instruction leading to InstMatch must be EmptyEndText
+    var hasAlt = false;
+    foreach (var (_, inst) in prog.Inst) {
+        if (inst.Op == syntax.InstAlt || inst.Op == syntax.InstAltMatch) {
+            hasAlt = true;
+            break;
+        }
+    }
+    // If we have alternates, every instruction leading to InstMatch must be EmptyEndText.
+    // Also, any match on empty text must be $.
     foreach (var (_, inst) in prog.Inst) {
         var opOut = prog.Inst[(nint)(inst.Out)].Op;
         var exprᴛ1 = inst.Op;
@@ -551,7 +535,7 @@ internal static ж<onePassProg> /*p*/ compileOnePass(ref syntax.Prog prog) {
             }
         }
         else { /* default: */
-            if (opOut == syntax.InstMatch) {
+            if (opOut == syntax.InstMatch && hasAlt) {
                 return default!;
             }
         }

@@ -32,7 +32,6 @@ using static go.@internal.abi_package;
 [assembly: GoTypeAlias("FuncType", "ΔFuncType")]
 [assembly: GoTypeAlias("InterfaceType", "ΔInterfaceType")]
 [assembly: GoTypeAlias("Kind", "ΔKind")]
-[assembly: GoTypeAlias("MapType", "ΔMapType")]
 [assembly: GoTypeAlias("Name", "ΔName")]
 [assembly: GoTypeAlias("String", "const:ΔString")]
 [assembly: GoTypeAlias("StructType", "ΔStructType")]
@@ -62,8 +61,10 @@ using static go.@internal.abi_package;
 [assembly: go.GoPositionMap("internal/abi/compiletype.go", "compiletype.cs", "AAce8KaQqKCmkKaQ")]
 [assembly: go.GoPositionMap("internal/abi/escape.go", "escape.cs", "AAkmAAoCgu6SgpQ=")]
 [assembly: go.GoPositionMap("internal/abi/funcpc.go", "funcpc.cs", "AAgsAA4S")]
+[assembly: go.GoPositionMap("internal/abi/map_noswiss.go", "map_noswiss.cs", "ACBQsqSSpJKkkqSS")]
+[assembly: go.GoPositionMap("internal/abi/map_swiss.go", "map_swiss.cs", "AC9qkqSSpJKkkg==")]
 [assembly: go.GoPositionMap("internal/abi/switch.go", "switch.cs", "AB9AgoK4lKQ=")]
-[assembly: go.GoPositionMap("internal/abi/type.go", "type.cs", "AFWIApKClAAiWvKCgIKkpoCkgqiQppKokqaCABkuooKU1qKClAACFPIAEjKCAD9EsoKUlKSsrKysrKysAAhOsoKUAAYosoKUqJCmkKSAAAgQgoKClKaigoKUqJAADyKypJKkkqSSpJIAGkCCpoKmgqaCAAYyggANHIIAJVKi2qKokqiSqJLaooKCgoKCzJKClIKssoKCgoKClOqSgpSCqJKClIKCpoKClIKUgoKChIKCgpSCgpSCloKCgoKCgoKW")]
+[assembly: go.GoPositionMap("internal/abi/type.go", "type.cs", "AFyYApKClAAiWpKCgIKkpoCkgqiQppKokqaCgpQAGS6igpTWooKUAAIU8gASMoIAP0SygpSUpKysrKysrKwACE6ygpQABiiygpSokKaQpIAACBCCgoKUpqKCgpSokAAaPoKmgqaCpoIABjKCAA0cggAlUqLaoqiSqJKoktqigoKCgoLMkoKUgqyygoKCgoKU6pKClIKokoKUgoKmgoKUgpSCgoKEgoKClIKClIKWgoKCgoKCgpY=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -99,11 +100,13 @@ public static partial class abi_package
     public partial struct InterfaceSwitchCacheEntry {}
     public partial struct Method {}
     public partial struct NameOff {}
+    public partial struct OldMapType {}
     public partial struct PtrType {}
     public partial struct RF_State {}
     [GoValueClone("Ints", "Floats", "Ptrs", "ReturnIsPtr")] public partial struct RegArgs {}
     public partial struct SliceType {}
     public partial struct StructField {}
+    public partial struct SwissMapType {}
     public partial struct TFlag {}
     public partial struct TextOff {}
     public partial struct Type {}
@@ -117,8 +120,16 @@ public static partial class abi_package
     public partial struct ΔFuncType {}
     public partial struct ΔInterfaceType {}
     public partial struct ΔKind {}
-    public partial struct ΔMapType {}
     public partial struct ΔName {}
     public partial struct ΔStructType {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }

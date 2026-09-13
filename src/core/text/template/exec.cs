@@ -13,57 +13,10 @@ using strings = strings_package;
 using parse = go.text.template.parse_package;
 using @internal;
 using go.text.template;
+using iter = iter_package;
 using ꓸꓸꓸany = Span<any>;
 
 partial class template_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸfmtsort() {
-    builtin.initPackage(typeof(@internal.fmtsort_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtextꓸtemplateꓸparse() {
-    builtin.initPackage(typeof(go.text.template.parse_package));
-}
 
 // maxExecDepth specifies the maximum stack depth of templates within
 // templates. This limit is only practically reached by accidentally
@@ -542,7 +495,26 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
             finally { ᒐ.Run(); }
         }
         var exprᴛ1 = val.Kind();
-        if (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice) {
+        var matchᴛ1 = false;
+        if (exprᴛ1 == reflect.ΔInt || exprᴛ1 == reflect.Int8 || exprᴛ1 == reflect.Int16 || exprᴛ1 == reflect.Int32 || exprᴛ1 == reflect.Int64 || exprᴛ1 == reflect.ΔUint || exprᴛ1 == reflect.Uint8 || exprᴛ1 == reflect.Uint16 || exprᴛ1 == reflect.Uint32 || exprᴛ1 == reflect.Uint64 || exprᴛ1 == reflect.Uintptr) { matchᴛ1 = true;
+            do {
+                if (len((~r.Pipe).Decl) > 1) {
+                    s.errorf("can't use %v to iterate over more than one variable"u8, val);
+                    break;
+                }
+                var run = false;
+                foreach (var v in range<reflectꓸValue>(val.Seq().Invoke)) {
+                    run = true;
+                    // Pass element as second value, as we do for channels.
+                    oneIteration(new reflectꓸValue(nil), v);
+                }
+                if (!run) {
+                    break;
+                }
+                return;
+            } while (false);
+        }
+        else if (exprᴛ1 == reflect.Array || exprᴛ1 == reflect.ΔSlice) { matchᴛ1 = true;
             do {
                 if (val.Len() == 0) {
                     break;
@@ -553,7 +525,7 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
                 return;
             } while (false);
         }
-        else if (exprᴛ1 == reflect.Map) {
+        else if (exprᴛ1 == reflect.Map) { matchᴛ1 = true;
             do {
                 if (val.Len() == 0) {
                     break;
@@ -565,7 +537,7 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
                 return;
             } while (false);
         }
-        else if (exprᴛ1 == reflect.Chan) {
+        else if (exprᴛ1 == reflect.Chan) { matchᴛ1 = true;
             do {
                 if (val.IsNil()) {
                     break;
@@ -588,12 +560,52 @@ internal static void walkRange(this ж<state> Ꮡs, reflectꓸValue dot, ж<pars
                 return;
             } while (false);
         }
-        else if (exprᴛ1 == reflect.Invalid) {
+        else if (exprᴛ1 == reflect.Invalid) { matchᴛ1 = true;
             do {
                 break; // An invalid value is likely a nil map, etc. and acts like an empty map.
             } while (false);
         }
-        else { /* default: */
+        else if (exprᴛ1 == reflect.Func) { matchᴛ1 = true;
+            do {
+                if (val.Type().CanSeq()) {
+                    if (len((~r.Pipe).Decl) > 1) {
+                        s.errorf("can't use %v iterate over more than one variable"u8, val);
+                        break;
+                    }
+                    var run = false;
+                    foreach (var v in range<reflectꓸValue>(val.Seq().Invoke)) {
+                        run = true;
+                        // Pass element as second value,
+                        // as we do for channels.
+                        oneIteration(new reflectꓸValue(nil), v);
+                    }
+                    if (!run) {
+                        break;
+                    }
+                    return;
+                }
+                if (val.Type().CanSeq2()) {
+                    var run = false;
+                    foreach (var (i, v) in range<reflectꓸValue, reflectꓸValue>(val.Seq2().Invoke)) {
+                        run = true;
+                        if (len((~r.Pipe).Decl) > 1){
+                            oneIteration(i, v);
+                        } else {
+                            // If there is only one range variable,
+                            // oneIteration will use the
+                            // second value.
+                            oneIteration(new reflectꓸValue(nil), i);
+                        }
+                    }
+                    if (!run) {
+                        break;
+                    }
+                    return;
+                }
+                fallthrough = true;
+            } while (false);
+        }
+        if (fallthrough || !matchᴛ1) { /* default: */
             s.errorf("range can't iterate over %v"u8, val);
         }
 
@@ -961,7 +973,7 @@ internal static reflectꓸType reflectValueType = reflect.TypeFor<reflectꓸValu
                 return vΔ2;
             }
         }
-        if (final != missingVal) {
+        if (!final.Equal(missingVal)) {
             // The last argument to and/or is coming from
             // the pipeline. We didn't short circuit on an earlier
             // argument, so we are going to return this one.
@@ -1005,7 +1017,13 @@ internal static reflectꓸType reflectValueType = reflect.TypeFor<reflectꓸValu
     // Special case for the "call" builtin.
     // Insert the name of the callee function as the first argument.
     if (isBuiltin && name == "call"u8) {
-        @string calleeName = args[0].String();
+        @string calleeName = default!;
+        if (len(args) == 0){
+            // final must be present or we would have errored out above.
+            calleeName = final.String();
+        } else {
+            calleeName = args[0].String();
+        }
         argv = appendꓸꓸꓸ(new reflectꓸValue[]{reflect.ValueOf(calleeName)}.slice(), argv);
         fun = reflect.ValueOf(call);
     }

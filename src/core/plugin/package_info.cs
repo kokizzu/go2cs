@@ -50,8 +50,8 @@ using static go.plugin_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("plugin/plugin.go", "plugin.cs", "AE+eAbKuwg==")]
-[assembly: go.GoPositionMap("plugin/plugin_stubs.go", "plugin_stubs.cs", "ABMWgqaC")]
+[assembly: go.GoPositionMap("plugin/plugin.go", "plugin.cs", "AFOmAbKuwg==")]
+[assembly: go.GoPositionMap("plugin/plugin_stubs.go", "plugin_stubs.cs", "AA0WgqaC")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -68,4 +68,14 @@ public static partial class plugin_package
     // <TypeAccessibility>
     public partial struct Plugin {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    // </ImportInitializers>
 }

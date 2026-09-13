@@ -3,17 +3,12 @@
 // license that can be found in the LICENSE file.
 namespace go.@internal.syscall;
 
-using sync = sync_package;
+using sync = go.sync_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
+using go;
 
 partial class windows_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 // CanUseLongPaths is true when the OS supports opting into
 // proper long path handling without the need for fixups.
@@ -45,7 +40,9 @@ public static syscall.Errno ERROR_NOT_SUPPORTED => 50;
 public static syscall.Errno ERROR_CALL_NOT_IMPLEMENTED => 120;
 public static syscall.Errno ERROR_INVALID_NAME => 123;
 public static syscall.Errno ERROR_LOCK_FAILED => 167;
+public static syscall.Errno ERROR_NO_TOKEN => 1008;
 public static syscall.Errno ERROR_NO_UNICODE_TRANSLATION => 1113;
+public static syscall.Errno ERROR_CANT_ACCESS_FILE => 1920;
 
 public static UntypedInt GAA_FLAG_INCLUDE_PREFIX => 0x00000010;
 public static UntypedInt GAA_FLAG_INCLUDE_GATEWAYS => 0x0080;
@@ -419,6 +416,40 @@ public static partial int64 QueryPerformanceCounter();
 //go:linkname QueryPerformanceFrequency
 public static partial int64 QueryPerformanceFrequency();
 
+[GoType("num:uint32")] partial struct NTStatus;
+
 // Implemented in runtime package.
+//sys   GetModuleHandle(modulename *uint16) (handle syscall.Handle, err error) = kernel32.GetModuleHandleW
+public static syscall.Errno Errno(this NTStatus s) {
+    return rtlNtStatusToDosErrorNoTeb(s);
+}
+
+internal static uint32 langID(uint16 pri, uint16 sub) {
+    return (uint32)(((uint32)sub << (int)(10)) | (uint32)pri);
+}
+
+public static @string Error(this NTStatus s) {
+    return s.Errno().Error();
+}
+
+// x/sys/windows/mkerrors.bash can generate a complete list of NTStatus codes.
+//
+// At the moment, we only need a couple, so just put them here manually.
+// If this list starts getting long, we should consider generating the full set.
+public static NTStatus STATUS_FILE_IS_A_DIRECTORY => 0xC00000BA;
+
+public static NTStatus STATUS_DIRECTORY_NOT_EMPTY => 0xC0000101;
+
+public static NTStatus STATUS_NOT_A_DIRECTORY => 0xC0000103;
+
+public static NTStatus STATUS_CANNOT_DELETE => 0xC0000121;
+
+public static NTStatus STATUS_REPARSE_POINT_ENCOUNTERED => 0xC000050B;
+
+// NT Native APIs
+//sys   NtCreateFile(handle *syscall.Handle, access uint32, oa *OBJECT_ATTRIBUTES, iosb *IO_STATUS_BLOCK, allocationSize *int64, attributes uint32, share uint32, disposition uint32, options uint32, eabuffer uintptr, ealength uint32) (ntstatus error) = ntdll.NtCreateFile
+//sys   NtOpenFile(handle *syscall.Handle, access uint32, oa *OBJECT_ATTRIBUTES, iosb *IO_STATUS_BLOCK, share uint32, options uint32) (ntstatus error) = ntdll.NtOpenFile
+//sys   rtlNtStatusToDosErrorNoTeb(ntstatus NTStatus) (ret syscall.Errno) = ntdll.RtlNtStatusToDosErrorNoTeb
+//sys   NtSetInformationFile(handle syscall.Handle, iosb *IO_STATUS_BLOCK, inBuffer uintptr, inBufferLen uint32, class uint32) (ntstatus error) = ntdll.NtSetInformationFile
 
 } // end windows_package

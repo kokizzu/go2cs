@@ -52,9 +52,9 @@ using static go.go.token_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/token/position.go", "position.cs", "AD5EkAACFAAIAoKCgpSCgqaClAAKRJIAESiSqJKokqiygoKCrNKCgIKkrgAIAoKUgoKC7oLawoKCggACFgALBIKCgrqCgoKqwoKCgoKUgoK6goKs8oKUgoKClAAPHqIAAhYACgKCgIKkqJKUgsaCxriCyAACGAAJAgACGAAJAqqipoKGppSsAAgCgoKAgqSUgIKCgoCUgoLKyAAIDoKmsoKCggACEPKClKyyACJIks7igoKCAAIkABQEhIKCgpSClIKCpoKCpoKCggAFEgALAoSChICCgoL8woKCgoKUgoLKgoamlKbUgIKmgpaAgpSmgrbc0oKUruKCgIK2qqKsAAsUkoKUgpSm")]
+[assembly: global::go.GoPositionMap("go/token/position.go", "position.cs", "ACBEkAACFAAIAoKCgpSCgqaClAAKRJIAESiSqJKokqiygoKCrNKCgIKkrgAJAoKUgoKC7oLawoKCggACFgALBIKCgrqCgoKqwoKCgoKUgoK6goKsAAgCgpSCgoKUAA8eogACFgAKAoKAgqSokpSCxoLGuILIAAIYAAkCAAIYAAkCqqKmgoamlKwACAKCgoCCpJSAgoKCgJSCgsrIAAgOgqaygoKCAAIQ8oKUrLIAIkiSzuKCgoIAAiQAFQSEgoKClIKUgoKmgoKmgoKCAAUSAAwChIKEgIKCgvzCgoKCgpSCgsqChqaUpuSAgqaCloCClKaCttzSgpSu4oKAgraqoqwACxSSgpSClKY=", "326-328:1;528-530:1")]
 [assembly: global::go.GoPositionMap("go/token/serialize.go", "serialize.cs", "ABcssoKAgqaCgoKCggAHEIKChKiyhIKCgoKC7pSChA==")]
-[assembly: global::go.GoPositionMap("go/token/token.go", "token.cs", "AKcC4gPSgoKUgpQADSKylKSkpKSkyoKCgrqSgIKkrsCooqqgppKCqKSCrLKClIKCpg==")]
+[assembly: global::go.GoPositionMap("go/token/token.go", "token.cs", "AJsC4gPSgoKUgpQADSKylKSkpKSkyoKCgrqSgIKkrsCooqqgppKCqKSCrLKClIKCpg==")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -78,4 +78,20 @@ public static partial class token_package
     public partial struct ΔPos {}
     public partial struct ΔPosition {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(global::go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(global::go.unicode.utf8_package));
+    // </ImportInitializers>
 }

@@ -10,30 +10,6 @@ using math = math_package;
 
 partial class flate_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
 public static UntypedInt NoCompression => 0;
 public static UntypedInt BestSpeed => 1;
 public static UntypedInt BestCompression => 9;
@@ -114,7 +90,7 @@ internal static slice<compressionLevel> levels = new compressionLevel[]{
 }
 
 [GoRecv] internal static nint fillDeflate(this ref compressor d, slice<byte> b) {
-    if (d.index >= 2 * windowSize - (minMatchLength + maxMatchLength)) {
+    if (d.index >= (nint)(2 * windowSize - (minMatchLength + maxMatchLength))) {
         // shift the window by windowSize
         copy(d.window, d.window[(int)(windowSize)..(int)(2 * windowSize)]);
         d.index -= windowSize;
@@ -368,7 +344,7 @@ internal static nint matchLen(slice<byte> a, slice<byte> b, nint max) {
 }
 
 [GoRecv] internal static void deflate(this ref compressor d) {
-    if (d.windowEnd - d.index < minMatchLength + maxMatchLength && !d.sync) {
+    if (d.windowEnd - d.index < (nint)(minMatchLength + maxMatchLength) && !d.sync) {
         return;
     }
     d.maxInsertIndex = d.windowEnd - (nint)(minMatchLength - 1);
@@ -378,7 +354,7 @@ Loop:
             throw panic("index > windowEnd");
         }
         nint lookahead = d.windowEnd - d.index;
-        if (lookahead < minMatchLength + maxMatchLength) {
+        if (lookahead < (nint)(minMatchLength + maxMatchLength)) {
             if (!d.sync) {
                 goto break_Loop;
             }
@@ -419,7 +395,7 @@ Loop:
         if (minIndex < 0) {
             minIndex = 0;
         }
-        if (d.chainHead - d.hashOffset >= minIndex && (d.fastSkipHashing != skipNever && lookahead > minMatchLength - 1 || d.fastSkipHashing == skipNever && lookahead > prevLength && prevLength < d.lazy)) {
+        if (d.chainHead - d.hashOffset >= minIndex && (d.fastSkipHashing != skipNever && lookahead > (nint)(minMatchLength - 1) || d.fastSkipHashing == skipNever && lookahead > prevLength && prevLength < d.lazy)) {
             {
                 var (newLength, newOffset, ok) = d.findMatch(d.index, d.chainHead - d.hashOffset, minMatchLength - 1, lookahead); if (ok) {
                     d.length = newLength;
@@ -568,19 +544,19 @@ internal static error syncFlush(this ж<compressor> Ꮡd) {
     var matchᴛ1 = false;
     if (level == NoCompression) { matchᴛ1 = true;
         d.window = new slice<byte>(maxStoreBlockSize);
-        d.fill = (Func<ж<compressor>, slice<byte>, nint>)(fillStore);
-        d.step = (Action<ж<compressor>>)(store);
+        d.fill = ((Func<ж<compressor>, slice<byte>, nint>)(fillStore));
+        d.step = ((Action<ж<compressor>>)(store));
     }
     else if (level == HuffmanOnly) { matchᴛ1 = true;
         d.window = new slice<byte>(maxStoreBlockSize);
-        d.fill = (Func<ж<compressor>, slice<byte>, nint>)(fillStore);
-        d.step = (Action<ж<compressor>>)(storeHuff);
+        d.fill = ((Func<ж<compressor>, slice<byte>, nint>)(fillStore));
+        d.step = ((Action<ж<compressor>>)(storeHuff));
     }
     else if (level == BestSpeed) { matchᴛ1 = true;
         d.compressionLevel = levels[level];
         d.window = new slice<byte>(maxStoreBlockSize);
-        d.fill = (Func<ж<compressor>, slice<byte>, nint>)(fillStore);
-        d.step = (Action<ж<compressor>>)(encSpeed);
+        d.fill = ((Func<ж<compressor>, slice<byte>, nint>)(fillStore));
+        d.step = ((Action<ж<compressor>>)(encSpeed));
         d.bestSpeed = newDeflateFast();
         d.tokens = new slice<token>(maxStoreBlockSize);
     }
@@ -591,8 +567,8 @@ internal static error syncFlush(this ж<compressor> Ꮡd) {
     if (fallthrough || !matchᴛ1 && (2 <= level && level <= 9)) {
         d.compressionLevel = levels[level];
         d.initDeflate();
-        d.fill = (Func<ж<compressor>, slice<byte>, nint>)(fillDeflate);
-        d.step = (Action<ж<compressor>>)(deflate);
+        d.fill = ((Func<ж<compressor>, slice<byte>, nint>)(fillDeflate));
+        d.step = ((Action<ж<compressor>>)(deflate));
     }
     else if (!matchᴛ1) { /* default: */
         return fmt.Errorf("flate: invalid compression level %d: want value in range [-2, 9]"u8, level);
@@ -616,12 +592,8 @@ internal static error syncFlush(this ж<compressor> Ꮡd) {
     }
     else { /* default: */
         d.chainHead = -1;
-        foreach (var (i, _) in d.hashHead) {
-            d.hashHead[i] = 0;
-        }
-        foreach (var (i, _) in d.hashPrev) {
-            d.hashPrev[i] = 0;
-        }
+        clear(d.hashHead[..]);
+        clear(d.hashPrev[..]);
         d.hashOffset = 1;
         (d.index, d.windowEnd) = (0, 0);
         (d.blockStart, d.byteAvailable) = (0, false);

@@ -12,12 +12,6 @@ using math;
 
 partial class slices_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
-    builtin.initPackage(typeof(math.bits_package));
-}
-
 // Equal reports whether two slices are equal: the same length and all
 // elements equal. If the lengths are different, Equal returns false.
 // Otherwise, the elements are compared in increasing index order, and the
@@ -158,8 +152,8 @@ public static bool ContainsFunc<S, E>(S s, Func<E, bool> f)
 // returning the modified slice.
 // The elements at s[i:] are shifted up to make room.
 // In the returned slice r, r[i] == v[0],
-// and r[i+len(v)] == value originally at r[i].
-// Insert panics if i is out of range.
+// and, if i < len(s), r[i+len(v)] == value originally at r[i].
+// Insert panics if i > len(s).
 // This function is O(len(s) + len(v)).
 public static S Insert<S, E>(S s, nint i, params Span<E> vʗp)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
@@ -370,8 +364,13 @@ public static S Replace<S, E>(S s, nint i, nint j, params Span<E> vʗp)
 public static S Clone<S, E>(S s)
     where S : /* ~[]E */ ISlice<E>, ISupportMake<S>, ISliceWrap<S, E>, new()
 {
-    // The s[:0:0] preserves nil in case it matters.
-    return appendꓸꓸꓸ<S, E>(subslice3<S, E>(s, 0, 0, 0), s);
+    // Preserve nilness in case it matters.
+    if (s.IsNil) {
+        return default!;
+    }
+    // Avoid s[:0:0] as it leads to unwanted liveness when cloning a
+    // zero-length slice of a large array; see https://go.dev/issue/68488.
+    return appendꓸꓸꓸ<S, E>(new S{}, s);
 }
 
 // Compact replaces consecutive runs of equal elements with a single copy.
@@ -438,6 +437,7 @@ public static S Grow<S, E>(S s, nint n)
     }
     {
         n -= cap(s) - len(s); if (n > 0) {
+            // This expression allocates only once (see test).
             s = subslice<S, E>(appendꓸꓸꓸ<S, E>(subslice<S, E>(s, 0, cap(s)), new slice<E>(n)), 0, len(s));
         }
     }
@@ -504,6 +504,9 @@ public static S Concat<S, E>(params Span<S> slicesʗp)
             throw panic("len out of range");
         }
     }
+    // Use Grow, not make, to round up to the size class:
+    // the extra space is otherwise unused and helps
+    // callers that append a few elements to the result.
     var newslice = Grow<S, E>(default!, size);
     foreach (var (_, s) in slices) {
         newslice = appendꓸꓸꓸ<S, E>(newslice, s);
@@ -523,12 +526,11 @@ public static S Repeat<S, E>(S x, nint count)
         throw panic("cannot be negative");
     }
     nuint maxInt = /* ^uint(0) >> 1 */ unchecked((nuint)9223372036854775807);
-    {
-        var (hi, lo) = bits.Mul((nuint)len(x), (nuint)count); if (hi > 0 || lo > maxInt) {
-            throw panic("the result of (len(x) * count) overflows");
-        }
+    var (hi, lo) = bits.Mul((nuint)len(x), (nuint)count);
+    if (hi > 0 || lo > maxInt) {
+        throw panic("the result of (len(x) * count) overflows");
     }
-    var newslice = make<S>(len(x) * count);
+    var newslice = make<S>((nint)lo); // lo = len(x) * count
     nint n = copy(newslice, x);
     while (n < len(newslice)) {
         n += copy(subslice<S, E>(newslice, n), subslice<S, E>(newslice, 0, n));

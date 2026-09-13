@@ -88,74 +88,15 @@ using fmt = fmt_package;
 using Δio = io_package;
 using os = os_package;
 using reflect = reflect_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using ꓸꓸꓸany = Span<any>;
 
 partial class flag_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 // ErrHelp is the error returned if the -help or -h flag is invoked
 // but no such flag is defined.
@@ -443,7 +384,7 @@ internal static @string String(this textValue v) {
 
 internal delegate error funcValue(@string _);
 
-internal static error Set(this funcValue f, @string s) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static error Set(this funcValue f, @string s) {
     return f(s);
 }
 
@@ -453,7 +394,7 @@ internal static @string String(this funcValue f) {
 
 internal delegate error boolFuncValue(@string _);
 
-internal static error Set(this boolFuncValue f, @string s) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static error Set(this boolFuncValue f, @string s) {
     return f(s);
 }
 
@@ -607,11 +548,11 @@ public static ж<Flag> Lookup(@string name) {
 }
 
 // Set sets the value of the named flag.
-[GoRecv] public static error Set(this ref FlagSet f, @string name, @string value) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static error Set(this ref FlagSet f, @string name, @string value) {
     return f.set(name, value);
 }
 
-[GoRecv] internal static error set(this ref FlagSet f, @string name, @string value) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] internal static error set(this ref FlagSet f, @string name, @string value) {
     var (flag, ok) = f.formal[name, ꟷ];
     if (!ok) {
         // Remember that a flag that isn't defined is being set.
@@ -622,7 +563,7 @@ public static ж<Flag> Lookup(@string name) {
         // and the Set call are in init code and for whatever
         // reason the init code changes evaluation order.
         // See issue 57411.
-        var (_, @file, line, okΔ1) = Δruntime.Caller(2);
+        var (_, @file, line, okΔ1) = runtime.Caller(2);
         if (!okΔ1) {
             @file = "?"u8;
             line = 0;
@@ -645,7 +586,7 @@ public static ж<Flag> Lookup(@string name) {
 }
 
 // Set sets the value of the named command-line flag.
-public static error Set(@string name, @string value) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static error Set(@string name, @string value) {
     return CommandLine.set(name, value);
 }
 
@@ -1157,7 +1098,7 @@ public static void TextVar(encoding.TextUnmarshaler p, @string name, encoding.Te
 // Each time the flag is seen, fn is called with the value of the flag.
 // If fn returns a non-nil error, it will be treated as a flag value parsing error.
 [GoRecv] public static void Func(this ref FlagSet f, @string name, @string usage, Func<@string, error> fn) {
-    f.Var(new funcValueᴠValue(new funcValue(fn)), name, usage);
+    f.Var(new funcValueᴠValue(NilSafeDelegateConversion<funcValue, Func<@string, error>>(fn)), name, usage);
 }
 
 // Func defines a flag with the specified name and usage string.
@@ -1171,7 +1112,7 @@ public static void Func(@string name, @string usage, Func<@string, error> fn) {
 // Each time the flag is seen, fn is called with the value of the flag.
 // If fn returns a non-nil error, it will be treated as a flag value parsing error.
 [GoRecv] public static void BoolFunc(this ref FlagSet f, @string name, @string usage, Func<@string, error> fn) {
-    f.Var(new boolFuncValueᴠValue(new boolFuncValue(fn)), name, usage);
+    f.Var(new boolFuncValueᴠValue(NilSafeDelegateConversion<boolFuncValue, Func<@string, error>>(fn)), name, usage);
 }
 
 // BoolFunc defines a flag with the specified name and usage string without requiring values.
@@ -1405,9 +1346,14 @@ public static bool Parsed() {
 // The top-level functions such as [BoolVar], [Arg], and so on are wrappers for the
 // methods of CommandLine.
 public static ж<FlagSet> CommandLine;
-internal static void initᴛCommandLine() { CommandLine = NewFlagSet(os.Args[0], ExitOnError); }
 
 [GoInit] internal static void init() {
+    // It's possible for execl to hand us an empty os.Args.
+    if (len(os.Args) == 0){
+        CommandLine = NewFlagSet(""u8, ExitOnError);
+    } else {
+        CommandLine = NewFlagSet(os.Args[0], ExitOnError);
+    }
     // Override generic FlagSet default Usage with call to global Usage.
     // Note: This is not CommandLine.Usage = Usage,
     // because we want any eventual call to use any updated value of Usage,
@@ -1415,7 +1361,7 @@ internal static void initᴛCommandLine() { CommandLine = NewFlagSet(os.Args[0],
     CommandLine.Value.Usage = commandLineUsage;
 }
 
-internal static void commandLineUsage() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static void commandLineUsage() {
     Usage();
 }
 

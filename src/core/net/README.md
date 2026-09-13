@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-472%2F474_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/net.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/net@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/net) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/net)
+[![Tests](https://img.shields.io/badge/Tests-472%2F474_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.24.13.3/net.html) [![Docs](https://img.shields.io/badge/Docs-@1.24.13-00ADD8?logo=go)](https://pkg.go.dev/net@go1.24.13)\
+[![Source](https://img.shields.io/badge/Source-@1.24.13-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.24.13/src/net) [![Source](https://img.shields.io/badge/Source-@1.24.13.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.24.13.3/src/core/net)
 
 Package net provides a portable interface for network I/O, including TCP/IP, UDP, domain name resolution, and Unix domain sockets.
 
@@ -48,7 +48,7 @@ The resolver decision can be overridden by setting the netdns value of the GODEB
 	export GODEBUG=netdns=go    # force pure Go resolver
 	export GODEBUG=netdns=cgo   # force native resolver (cgo, win32)
 
-The decision can also be forced while building the Go source tree by setting the netgo or netcgo build tag.
+The decision can also be forced while building the Go source tree by setting the netgo or netcgo build tag. The netgo build tag disables entirely the use of the native (CGO) resolver, meaning the Go resolver is the only one that can be used. With the netcgo build tag the native and the pure Go resolver are compiled into the binary, but the native (CGO) resolver is preferred over the Go resolver. With netcgo, the Go resolver can still be forced at runtime with GODEBUG=netdns=go.
 
 A numeric netdns setting, as in GODEBUG=netdns=1, causes the resolver to print debugging information about its decisions. To force a particular resolver while also printing debugging information, join the two settings by a plus sign, as in GODEBUG=netdns=go+1.
 

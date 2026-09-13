@@ -22,30 +22,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class printer_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 internal static UntypedInt maxNewlines => 2; // max. number of newlines between source text
 internal const bool debug = false; // enable for debugging
 internal static UntypedInt infinity => /* 1 << 30 */ 1073741824;
@@ -66,9 +42,9 @@ internal static pmode noExtraBlank => /* 1 << iota */ 1;         // disables ext
 internal static pmode noExtraLinebreak => 2;     // disables extra line break after /*-style comment
 
 [GoType] partial struct commentInfo {
-    internal nint cindex;              // current comment index
-    internal ж<ast.CommentGroup> comment; // = printer.comments[cindex]; or nil
-    internal nint commentOffset;              // = printer.posFor(printer.comments[cindex].List[0].Pos()).Offset; or infinity
+    internal nint cindex;              // index of the next comment
+    internal ж<ast.CommentGroup> comment; // = printer.comments[cindex-1]; or nil
+    internal nint commentOffset;              // = printer.posFor(printer.comments[cindex-1].List[0].Pos()).Offset; or infinity
     internal bool commentNewline;              // true if the comment group contains newlines
 }
 

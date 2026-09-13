@@ -34,36 +34,12 @@ using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using constant = global::go.go.constant_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
-using errors = global::go.@internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸast() {
-    builtin.initPackage(typeof(global::go.go.ast_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸconstant() {
-    builtin.initPackage(typeof(global::go.go.constant_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtypesꓸerrors() {
-    builtin.initPackage(typeof(global::go.@internal.types.errors_package));
-}
 
 // An Error describes a type-checking error; it implements the error interface.
 // A "soft" error is an error that still permits a valid interpretation of a
@@ -231,11 +207,19 @@ public static void srcimporter_setUsesCgo(ж<Config> Ꮡconf) {
     //
     // The Types map does not record the type of every identifier,
     // only those that appear where an arbitrary expression is
-    // permitted. For instance, the identifier f in a selector
-    // expression x.f is found only in the Selections map, the
-    // identifier z in a variable declaration 'var z int' is found
-    // only in the Defs map, and identifiers denoting packages in
-    // qualified identifiers are collected in the Uses map.
+    // permitted. For instance:
+    // - an identifier f in a selector expression x.f is found
+    //   only in the Selections map;
+    // - an identifier z in a variable declaration 'var z int'
+    //   is found only in the Defs map;
+    // - an identifier p denoting a package in a qualified
+    //   identifier p.X is found only in the Uses map.
+    //
+    // Similarly, no type is recorded for the (synthetic) FuncType
+    // node in a FuncDecl.Type field, since there is no corresponding
+    // syntactic function type expression in the source in this case
+    // Instead, the function type is found in the Defs.map entry for
+    // the corresponding function declaration.
     public map<ast.Expr, TypeAndValue> Types;
     // Instances maps identifiers denoting generic types or functions to their
     // type arguments and instantiated type.

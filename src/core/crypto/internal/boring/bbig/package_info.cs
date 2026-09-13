@@ -51,7 +51,7 @@ using static go.crypto.@internal.boring.bbig_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/boring/bbig/big.go", "big.cs", "ABkaooKUgoKUpoKClIKUgg==")]
+[assembly: go.GoPositionMap("crypto/internal/boring/bbig/big.go", "big.cs", "AA0aooKUgoKUpoKClIKUgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal.boring;
@@ -67,4 +67,15 @@ public static partial class bbig_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() => builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(math.big_package));
+    // </ImportInitializers>
 }

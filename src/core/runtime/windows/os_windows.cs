@@ -6,6 +6,7 @@ namespace go;
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using atomic = @internal.runtime.atomic_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
@@ -903,9 +904,11 @@ internal static void unminit() {
     mp.Value.procid = 0;
 }
 
-// Called from exitm, but not from drop, to undo the effect of thread-owned
+// Called from mexit, but not from dropm, to undo the effect of thread-owned
 // resources in minit, semacreate, or elsewhere. Do not take locks after calling this.
 //
+// This always runs without a P, so //go:nowritebarrierrec is required.
+//go:nowritebarrierrec
 //go:nosplit
 internal static void mdestroy(ref m mp) {
     if (mp.highResTimer != 0) {
@@ -961,10 +964,10 @@ internal static uintptr stdcall(stdFunction fn) {
     if ((~mp).profilehz != 0 && (~mp).libcallsp == 0) {
         // leave pc/sp for cpu profiler
         mp.of(m.Ꮡlibcallg).set(gp);
-        mp.Value.libcallpc = getcallerpc();
+        mp.Value.libcallpc = sys.GetCallerPC();
         // sp must be the last, because once async cpu profiler finds
         // all three values to be non-zero, it will use them
-        mp.Value.libcallsp = getcallersp();
+        mp.Value.libcallsp = sys.GetCallerSP();
         resetLibcall = true; // See comment in sys_darwin.go:libcCall
     }
     asmcgocall(asmstdcallAddr, @unsafe.Pointer.FromPinnedBox(mp.of(m.Ꮡlibcall)));

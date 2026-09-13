@@ -7,24 +7,11 @@
 // draft-irtf-cfrg-xchacha-01.
 namespace go.vendor.golang.org.x.crypto;
 
-// import "golang.org/x/crypto/chacha20poly1305"
 using cipher = go.crypto.cipher_package;
 using errors = errors_package;
 using go.crypto;
 
 partial class chacha20poly1305_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() {
-    builtin.initPackage(typeof(go.crypto.cipher_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
 
 public static UntypedInt KeySize => 32;
 public static UntypedInt ΔNonceSize => 12;

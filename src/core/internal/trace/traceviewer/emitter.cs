@@ -16,42 +16,6 @@ using go.@internal.trace.traceviewer;
 
 partial class traceviewer_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() {
-    builtin.initPackage(typeof(encoding.json_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtrace() {
-    builtin.initPackage(typeof(go.@internal.trace_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 [GoType] partial struct TraceConsumer {
     public Action<@string> ConsumeTimeUnit;
     public Action<ж<format.Event>, bool> ConsumeViewerEvent;
@@ -657,7 +621,7 @@ public static ж<Emitter> NewEmitter(TraceConsumer c, time.Duration rangeStart, 
     return e.rangeStart <= ts && ts <= e.rangeEnd;
 }
 
-// OptionalEvent emits ev if it's within the time range of of the consumer, i.e.
+// OptionalEvent emits ev if it's within the time range of the consumer, i.e.
 // the selected trace split range.
 [GoRecv] public static void OptionalEvent(this ref Emitter e, ж<format.Event> Ꮡev) {
     e.c.ConsumeViewerEvent(Ꮡev, false);

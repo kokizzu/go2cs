@@ -68,7 +68,7 @@ using static go.net.http.pprof_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/pprof/pprof.go", "pprof.cs", "ANMBvgGCgoKUgoKCggAIDLKCgqaiAAoMooKChIL4goKCgoL8soKCgpaogoKAlJSkgtyygoKClqiCgoCUlKSCrNKCiNqEgoKUloKCgpSCgoKCzIKClKiqogAICoKCgoKClICCgqSCgpSCgpSClAAJBsKCgoKmgoKWhIKCgpSCgoKWgpS0goKklMiCgoKUgoSEgoKCloKEgoLWgoKAgqSCgoKUggAiRuKAgoKCuIKEgoIABxKC3piAggAPCIKCAAAogoKWjoKUioI=")]
+[assembly: go.GoPositionMap("net/http/pprof/pprof.go", "pprof.cs", "AGG+AYKCgpSCgoKCAAgMsoKCpqIACgyigoKEgviCgoKCgvyygoKClqiCgoCUlKSC3LKCgoKWqIKCgJSUpIKs0oKI2oSCgpSWgoKClIKCgoLMgoKUqKqiAAgKgoKCgoKUgIKCpIKClIKClIKUAAkGwoKCgqaCgpaEgoKClIKCgpaClLSCgqSUyIKCgpSChISCgoKWgoSCgtaCgoCCpIKCgpSCACNI4oCCgoK4goSCggAHEoLeiICCACoIgoIAACiCgpaOgpSKgg==", "416-418:1")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;
@@ -86,4 +86,32 @@ public static partial class pprof_package
     internal partial struct handler {}
     internal partial struct profileEntry {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhtml() => builtin.initPackage(typeof(html_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(go.@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸprofile() => builtin.initPackage(typeof(go.@internal.profile_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(go.net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸurl() => builtin.initPackage(typeof(go.net.url_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntimeꓸpprof() => builtin.initPackage(typeof(go.runtime.pprof_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntimeꓸtrace() => builtin.initPackage(typeof(go.runtime.trace_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

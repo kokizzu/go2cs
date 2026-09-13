@@ -64,8 +64,8 @@ using static go.go.constant_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/constant/kind_string.go", "kind_string.cs", "AA0OhqKCgoKCgu6CgpQ=")]
-[assembly: global::go.GoPositionMap("go/constant/value.go", "value.cs", "AJYBzgGAooCigKKAooCigKKAooDUgKKAppKCgriCgoKUlAACEPKCgoKClIKEqJKCgpQAAhLigoKCgoSCgpSClIKClKaAooCigKaSloK6gIKCppSuwqiCloKWgKqCtIL2poCkgKKAooCigKKApIKCgpSmgKSCpqKioqKioqKkgKKAooCkgKKAooCigKKAooCigKSigpSmgoKClKbKtIKUgsqmgoKUpoKAgpTKlICCyKQABhLCqqKClIKqwoKUgq7AppCmkoKU3JCmkoKUrLKClIKUAAIQ0oKWlICCpICCyICCyICCgILqgIKAguqAgsimAAIWAAgClKS0zKKUpLTOspSkpLTOspSkpLTKkpSCpIKkpIKktAAEEtKUgqSCpKSCpLQABB4ACwKUpKSkpKS0AAMeAAsClLSkpKSktL6ylIKClKSktM6ylJSkpKSkpKSktAAKIKKClLTEpoKEgqKCgoK4gpaqooSCgoKCgoCCgoKCyIKCpoKWrsK0pKSCgsbEpKyytKSkgoLGxKSsspTUpNyi5KS0zKKU5KS0AAQS0rSmgs6ygoCC3oKCloKCgIK4goKAguqAgsiqopSkgpTEpIK2qqLUpJSuwoKokoKuwpTkyJSkgIKkpKSkpIKCuIKUpLTEqrKUppSkuIKmgpiktKSkpKSkAAQQ8oC0tMSqyJSUxpSkxpSkpMbKAAIYAAkChJSmgpSk2IKCgpSClKSClKSClKSkpKSkpKSkpKaCgoKUtKSkpLSkpKSkpKSmgoKClKSkpKSkpoKCgpSkpKSkpKaCgoKSlpKmkqaSgoKCgqaSgoKCgoKCgoKCpKSmgriCpoCigKKAooCqspSmgpSUgqTYgpSClKTIpoKUpKSkpKSkrsKElKaClKTYgpSkpKSkpNimpqaCgoKUpNiCgpSkpKSkpMg=")]
+[assembly: global::go.GoPositionMap("go/constant/kind_string.go", "kind_string.cs", "/oaigoKCgoLugoKU")]
+[assembly: global::go.GoPositionMap("go/constant/value.go", "value.cs", "AGbOAYCigKKAooCigKKAooCigNSAooCmkoKCuIKCgpSUAAIQ8oKCgoKUgoSokoKClAACEuKCgoKChIKClIKUgoKUpoCigKKAppKWgrqAgoKmlK7CqIKWgpaAqoK0gvamgKSAooCigKKAooCkgoKClKaApIKmoqKioqKioqSAooCigKSAooCigKKAooCigKKApKKClKaCgoKUpsq0gpSCyqaCgpSmgoCClMqUgILIpAAGEsKqooKUgqrCgpSCrsCmkKaSgpTckKaSgpSssoKUgpQAAhDSgpaUgIKkgILIgILIgIKAguqAgoCC6oCCyKYAAhYACAKUpLTMopSktM6ylKSktM6ylKSktMqSlIKkgqSkgqS0AAQS0pSCpIKkpIKktAAEHgALApSkpKSkpLQAAx4ACwKUtKSkpKS0vrKUgoKUpKS0zrKUlKSkpKSkpKS0AAogooKUtMSmgoSCooKCgriClqqihIKCgoKCgIKCgoLIgoKmgpauwrSkpIKCxsSkrLK0pKSCgsbEpKyylNSk3KLkpLTMopTkpLQABBLStKaCzrKCgILegoKWgoKAgriCgoCC6oCCyKqilKSClMSkgraqotSklK7CgqiSgq7ClOTIlKSAgqSkpKSkgoK4gpSktMSqspSmlKS4gqaCmKS0pKSkpKQABBDygLS0xKrIlJTGlKTGlKSkxsoAAhgACQKElKaClKTYgoKClIKUpIKUpIKUpKSkpKSkpKSkpoKCgpS0pKSktKSkpKSkpKaCgoKUpKSkpKSmgoKClKSkpKSkpoKCgpKWkqaSppKCgoKCppKCgoKCgoKCgoKkpKaCuIKmgKKAooCigKqylKaClJSCpNiClIKUpMimgpSkpKSkpKSuwoSUpoKUpNiClKSkpKSk2KampoKCgpSk2IKClKSkpKSkyA==")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -91,4 +91,22 @@ public static partial class constant_package
     public partial interface Value {}
     public partial struct ΔKind {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(global::go.math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(global::go.math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

@@ -23,7 +23,7 @@ namespace go.@internal.coverage;
 //			}
 //		}
 //		myformatter.EmitPercent(os.Stdout, nil, "", true, true)
-//		myformatter.EmitTextual(somefile)
+//		myformatter.EmitTextual(nil, somefile)
 //
 // These apis are linked into tests that are built with "-cover", and
 // called at the end of test execution to produce text output or
@@ -33,56 +33,17 @@ using fmt = fmt_package;
 using coverage = go.@internal.coverage_package;
 using cmerge = go.@internal.coverage.cmerge_package;
 using io = io_package;
+using maps = maps_package;
 using slices = slices_package;
+using sort = sort_package;
 using strings = strings_package;
 using tabwriter = text.tabwriter_package;
 using go.@internal;
 using go.@internal.coverage;
+using iter = iter_package;
 using text;
 
 partial class cformat_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() {
-    builtin.initPackage(typeof(go.@internal.coverage_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸcmerge() {
-    builtin.initPackage(typeof(go.@internal.coverage.cmerge_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtextꓸtabwriter() {
-    builtin.initPackage(typeof(text.tabwriter_package));
-}
 
 [GoType] partial struct Formatter {
     // Maps import path to package state.
@@ -214,27 +175,33 @@ internal static void sortUnits(this ж<pstate> Ꮡp, slice<extcu> units) {
     });
 }
 
-// EmitTextual writes the accumulated coverage data in the legacy
-// cmd/cover text format to the writer 'w'. We sort the data items by
+// EmitTextual writes the accumulated coverage data for 'pkgs' in the legacy
+// cmd/cover text format to the writer 'w'; if pkgs is empty, text output
+// is emitted for all packages recorded.  We sort the data items by
 // importpath, source file, and line number before emitting (this sorting
 // is not explicitly mandated by the format, but seems like a good idea
 // for repeatable/deterministic dumps).
-[GoRecv] public static error EmitTextual(this ref Formatter fm, io.Writer w) {
+[GoRecv] public static error EmitTextual(this ref Formatter fm, slice<@string> pkgs, io.Writer w) {
     if (fm.cm == coverage.CtrModeInvalid) {
         throw panic("internal error, counter mode unset");
+    }
+    if (len(pkgs) == 0) {
+        pkgs = new slice<@string>(0, len(fm.pm));
+        foreach (var (importpath, _) in fm.pm) {
+            pkgs = append(pkgs, importpath);
+        }
     }
     {
         var (_, err) = fmt.Fprintf(w, "mode: %s\n"u8, fm.cm.String()); if (err != default!) {
             return err;
         }
     }
-    var pkgs = new slice<@string>(0, len(fm.pm));
-    foreach (var (importpath, _) in fm.pm) {
-        pkgs = append(pkgs, importpath);
-    }
-    slices.Sort<slice<@string>, @string>(pkgs);
+    sort.Strings(pkgs);
     foreach (var (_, importpath) in pkgs) {
         var p = fm.pm[importpath];
+        if (p == nil) {
+            continue;
+        }
         var units = new slice<extcu>(0, () => new(nil), len((~p).unitTable));
         foreach (var (u, _) in (~p).unitTable) {
             units = append(units, u);
@@ -354,13 +321,8 @@ public static error EmitFuncs(this ж<Formatter> Ꮡfm, io.Writer w) {
         defer(() => tabberʗ1.Flush(), ref ᒐ);
         var allStmts = (uint64)0;
         var covStmts = (uint64)0;
-        var pkgs = new slice<@string>(0, len(fm.pm));
-        foreach (var (importpath, _) in fm.pm) {
-            pkgs = append(pkgs, importpath);
-        }
-        slices.Sort<slice<@string>, @string>(pkgs);
         // Emit functions for each package, sorted by import path.
-        foreach (var (_, importpath) in pkgs) {
+        foreach (var (_, importpath) in slices.Sorted(maps.Keys<map<@string, ж<pstate>>, @string, ж<pstate>>(fm.pm))) {
             var p = fm.pm[importpath];
             if (len((~p).unitTable) == 0) {
                 continue;

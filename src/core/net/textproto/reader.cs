@@ -16,54 +16,6 @@ using sync = sync_package;
 
 partial class textproto_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // TODO: This should be a distinguishable error (ErrMessageTooLarge)
 // to allow mime/multipart to detect it.
 internal static error errMessageTooLarge = errors.New("message too large"u8);
@@ -340,11 +292,13 @@ internal static (nint code, bool continued, @string message, error err) parseCod
 // An expectCode <= 0 disables the check of the status code.
 [GoRecv] public static (nint code, @string message, error err) ReadResponse(this ref Reader r, nint expectCode) {
     ref var code = ref heap(new nint(), out var Ꮡcode);
-    ref var message = ref heap(new @string(), out var Ꮡmessage);
+    @string message = default!;
     error err = default!;
 
-    (code, var continued, message, err) = r.readCodeLine(expectCode);
+    (code, var continued, var first, err) = r.readCodeLine(expectCode);
     var multi = continued;
+    ref var messageBuilder = ref heap(new strings.Builder(), out var ᏑmessageBuilder);
+    ᏑmessageBuilder.WriteString(first);
     while (continued) {
         var (line, errΔ1) = r.ReadLine();
         if (errΔ1 != default!) {
@@ -354,12 +308,15 @@ internal static (nint code, bool continued, @string message, error err) parseCod
         @string moreMessage = default!;
         (code2, continued, moreMessage, errΔ1) = parseCodeLine(line, 0);
         if (errΔ1 != default! || code2 != code) {
-            message += "\n"u8 + strings.TrimRight(line, "\r\n"u8);
+            ᏑmessageBuilder.WriteByte((rune)'\n');
+            ᏑmessageBuilder.WriteString(strings.TrimRight(line, "\r\n"u8));
             continued = true;
             continue;
         }
-        message += "\n"u8 + moreMessage;
+        ᏑmessageBuilder.WriteByte((rune)'\n');
+        ᏑmessageBuilder.WriteString(moreMessage);
     }
+    message = messageBuilder.String();
     if (err != default! && multi && message != ""u8) {
         // replace one line error message with all lines (full message)
         err = new ΔErrorжerror(Ꮡ(new ΔError(code, message)));

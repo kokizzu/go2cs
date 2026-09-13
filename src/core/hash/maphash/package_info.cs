@@ -10,6 +10,11 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using reflectꓸChanDir = go.reflect_package.ΔChanDir;
+global using reflectꓸKind = go.reflect_package.ΔKind;
+global using reflectꓸMethod = go.reflect_package.ΔMethod;
+global using reflectꓸType = go.reflect_package.ΔType;
+global using reflectꓸValue = go.reflect_package.ΔValue;
 // </ImportedTypeAliases>
 
 using go;
@@ -50,8 +55,8 @@ using static go.hash.maphash_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("hash/maphash/maphash.go", "maphash.cs", "AB9MAAgCgoKWgoKCgqYAAhYACAKCgpSCgpQAJ1rSgoKCvKKClIKCqqK4goKClJSCuIKCgoK4goKqtIKCgoKClIKUgoKCgqaCgqiSggACENKClIKCqqKCgqiSgpSCggACFPKCqJKCgqaCpqyyggAKGJCmkA==")]
-[assembly: go.GoPositionMap("hash/maphash/maphash_purego.go", "maphash_purego.cs", "ABsegoKUpoKmgoKCAAocgoKCkoSCgoKCgoKCgpSUgoKmlKS0goK0poKmgqaCpoKS")]
+[assembly: go.GoPositionMap("hash/maphash/maphash.go", "maphash.cs", "ACNWAAgCgoKWgoKCgqYAAhYACAKCgpSCgpQAJ1rSgoKCvKKClIKCqqK4goKClJSCuIKCgoK4goKqtIKCgoKClIKUgoKCgqaCgqiSggACENKClIKCqqKCgqiSgpSCggACFPKCqJKCgqaCpqyyggAKGJCmkKqyggACHAALAKayyoKUpoKCgpSCgoKClIKmgoKU")]
+[assembly: go.GoPositionMap("hash/maphash/maphash_purego.go", "maphash_purego.cs", "ABUqgoK4goKUpoKmgoKCAAYQgoKCkoSCgoKCgoKCgpSUgoKmlKS0goK0poKmgqaCpoKSpoKCgoKmgoKosoKUgoKCpIKCgqSCgqaClKSCpIKCgriClKSCgoKkgqSCpIiygqSCpA==")]
 // </GoSourcePositionMaps>
 
 namespace go.hash;
@@ -69,4 +74,18 @@ public static partial class maphash_package
     [GoValueClone("buf")] public partial struct Hash {}
     public partial struct ΔSeed {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(go.math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    // </ImportInitializers>
 }

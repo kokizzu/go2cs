@@ -76,18 +76,6 @@ using regexp;
 
 partial class regexp_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
 // Regexp is the representation of a compiled regular expression.
 // A Regexp is safe for concurrent use by multiple goroutines,
 // except for configuration methods, such as [Regexp.Longest].
@@ -1317,14 +1305,22 @@ public static slice<@string> Split(this ж<Regexp> Ꮡre, @string s, nint n) {
     return strings;
 }
 
-// MarshalText implements [encoding.TextMarshaler]. The output
+// AppendText implements [encoding.TextAppender]. The output
 // matches that of calling the [Regexp.String] method.
 //
 // Note that the output is lossy in some cases: This method does not indicate
 // POSIX regular expressions (i.e. those compiled by calling [CompilePOSIX]), or
 // those for which the [Regexp.Longest] method has been called.
+[GoRecv] public static (slice<byte>, error) AppendText(this ref Regexp re, slice<byte> b) {
+    return (append(b, re.String().ꓸꓸꓸ), default!);
+}
+
+// MarshalText implements [encoding.TextMarshaler]. The output
+// matches that of calling the [Regexp.AppendText] method.
+//
+// See [Regexp.AppendText] for more information.
 [GoRecv] public static (slice<byte>, error) MarshalText(this ref Regexp re) {
-    return (slice<byte>(re.String()), default!);
+    return re.AppendText(default!);
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler] by calling

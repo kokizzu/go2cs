@@ -71,8 +71,8 @@ using static go.database.sql.driver_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("database/sql/driver/driver.go", "driver.cs", "AIoEpAiCpoIADxiC1oI=")]
-[assembly: go.GoPositionMap("database/sql/driver/types.go", "types.cs", "AFWCAYCkgpSkgoKUpIKClJaClIKClKSCgpSmAAsWgoKUgoKUpIKClKSCgpSkAAsWgqSkAAgSgoKUAAgSgoKUqJKClOSkpKqiABlIAAsCgIakpoKClpSCgpSClKimgpaSlLakpIKClKSkpIKClKSk")]
+[assembly: go.GoPositionMap("database/sql/driver/driver.go", "driver.cs", "APwDpAiCpoIADxiC1oI=")]
+[assembly: go.GoPositionMap("database/sql/driver/types.go", "types.cs", "AEOCAYCkgpSkgoKUpIKClJaClIKClKSCgpSmAAsWgoKUgoKUpIKClKSCgpSkAAsWgqSkAAgSgoKUAAgSgoKUqJKClOSkpKqiABlIAAsCgIakpoKClpSCgpSClKimgpaSlLakpIKClKSkpIKClKSk")]
 // </GoSourcePositionMaps>
 
 namespace go.database.sql;
@@ -129,4 +129,19 @@ public static partial class driver_package
     public partial struct stringType {}
     public partial struct ΔRowsAffected {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

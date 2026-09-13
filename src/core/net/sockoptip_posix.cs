@@ -4,7 +4,7 @@
 //go:build unix || windows
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @internal;
 
@@ -18,7 +18,7 @@ internal static error joinIPv4Group(ж<netFD> Ꮡfd, ж<Interface> Ꮡifi, IP ip
         }
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptIPMreq(syscall.IPPROTO_IP, syscall.IP_ADD_MEMBERSHIP, mreq);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
@@ -30,13 +30,13 @@ internal static error setIPv6MulticastInterface(ж<netFD> Ꮡfd, ж<Interface> �
         v = ifi.Index;
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_IPV6, syscall.IPV6_MULTICAST_IF, v);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
 internal static error setIPv6MulticastLoopback(ж<netFD> Ꮡfd, bool v) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_IPV6, syscall.IPV6_MULTICAST_LOOP, boolint(v));
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
@@ -49,7 +49,7 @@ internal static error joinIPv6Group(ж<netFD> Ꮡfd, ж<Interface> Ꮡifi, IP ip
         mreq.Value.Interface = (uint32)ifi.Index;
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptIPv6Mreq(syscall.IPPROTO_IPV6, syscall.IPV6_JOIN_GROUP, mreq);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 

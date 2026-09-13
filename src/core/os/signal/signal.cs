@@ -5,28 +5,11 @@ namespace go.os;
 
 using context = context_package;
 using os = os_package;
+using slices = slices_package;
 using sync = sync_package;
 using ꓸꓸꓸosꓸSignal = Span<osꓸSignal>;
 
 partial class signal_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 
 [GoType("dyn")] partial struct handlersᴛ1 {
@@ -34,7 +17,7 @@ partial class signal_package {
     // Map a channel to the signals that should be sent to it.
     internal map<channel/*<-*/<osꓸSignal>, ж<handler>> m;
     // Map a signal to the number of channels receiving it.
-    internal array<int64> @ref = new(numSig);
+    internal array<int64> @ref = new(65);
     // Map channels to signals while the channel is being stopped.
     // Not a map because entries live here only very briefly.
     // We need a separate container because we need m to correspond to ref
@@ -233,7 +216,7 @@ public static void Stop(channel/*<-*/<osꓸSignal> c) {
     Ꮡhandlers.of(handlersᴛ1.ᏑMutex).Lock();
     foreach (var (i, s) in handlers.stopping) {
         if (s.c == c) {
-            handlers.stopping = appendꓸꓸꓸ(handlers.stopping[..(int)(i)], handlers.stopping[(int)(i + 1)..]);
+            handlers.stopping = slices.Delete<slice<stopping>, stopping>(handlers.stopping, i, i + 1);
             break;
         }
     }
@@ -312,7 +295,7 @@ public static (context.Context ctx, Action stop) NotifyContext(context.Context p
         signals: signals
     ));
     c.Value.ch = new channel<osꓸSignal>(1);
-    Notify((~c).ch, (~c).signals.ꓸꓸꓸ);
+    Notify((~c).ch.WithDirection(GoChanDir.Send), (~c).signals.ꓸꓸꓸ);
     if (ctx.Err() == default!) {
         var cʗ1 = c;
         goǃ(() => {
@@ -340,7 +323,7 @@ public static (context.Context ctx, Action stop) NotifyContext(context.Context p
 
 [GoRecv] internal static void stop(this ref signalCtx c) {
     c.cancel();
-    Stop(c.ch);
+    Stop(c.ch.WithDirection(GoChanDir.Send));
 }
 
 [GoType] partial interface stringer {

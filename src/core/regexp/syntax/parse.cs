@@ -11,24 +11,6 @@ using go.unicode;
 
 partial class syntax_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsort() {
-    builtin.initPackage(typeof(sort_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
 // An Error describes a failure to parse a regular expression
 // and gives the offending expression.
 [GoType] partial struct ΔError {
@@ -623,7 +605,7 @@ internal static void cleanAlt(ж<Regexp> Ꮡre) {
             }
         }
         // Found end of a run with common leading literal string:
-        // sub[start:i] all begin with str[0:len(str)], but sub[i]
+        // sub[start:i] all begin with str[:len(str)], but sub[i]
         // does not even begin with str[0].
         //
         // Factor out common string and append factored expression to out.

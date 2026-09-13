@@ -49,7 +49,7 @@ internal static void dump(this ж<traceTypeTable> Ꮡt, uintptr gen) {
     Ꮡt.of(traceTypeTable.Ꮡtab).reset();
 }
 
-internal static traceExpWriter dumpTypesRec(ж<traceMapNode> Ꮡnode, traceExpWriter w) {
+internal static traceWriter dumpTypesRec(ж<traceMapNode> Ꮡnode, traceWriter w) {
     ref var node = ref Ꮡnode.DerefOrNull();
 
     var typ = (ж<abi.Type>)(uintptr)(~Ꮡ(new @unsafe.Pointer((uintptr)Ꮡ(node.data, 0))));

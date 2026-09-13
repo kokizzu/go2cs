@@ -20,72 +20,21 @@ namespace go.encoding;
 // everything by any means.
 using errors = errors_package;
 using fmt = fmt_package;
+using saferio = @internal.saferio_package;
 using math = math_package;
 using big = go.math.big_package;
 using reflect = reflect_package;
+using slices = slices_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using time = time_package;
 using utf16 = unicode.utf16_package;
 using utf8 = unicode.utf8_package;
+using @internal;
 using go.math;
 using unicode;
 
 partial class asn1_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
-    builtin.initPackage(typeof(go.math.big_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(unicode.utf8_package));
-}
 
 // A StructuralError suggests that the ASN.1 data is valid, but the Go type
 // which is receiving it doesn't match.
@@ -292,15 +241,7 @@ public static slice<byte> NullBytes = new byte[]{TagNull, 0}.slice();
 
 // Equal reports whether oi and other represent the same identifier.
 public static bool Equal(this ObjectIdentifier oi, ObjectIdentifier other) {
-    if (len(oi) != len(other)) {
-        return false;
-    }
-    for (nint i = 0; i < len(oi); i++) {
-        if (oi[i] != other[i]) {
-            return false;
-        }
-    }
-    return true;
+    return slices.Equal<ObjectIdentifier, nint>(oi, other);
 }
 
 public static @string String(this ObjectIdentifier oi) {
@@ -716,10 +657,17 @@ internal static (reflectꓸValue ret, error err) parseSequenceOf(slice<byte> byt
         offsetΔ1 += t.length;
         numElements++;
     }
-    ret = reflect.MakeSlice(sliceType, numElements, numElements);
+    var elemSize = (uint64)elemType.Size();
+    nint safeCap = saferio.SliceCapWithSize(elemSize, (uint64)numElements);
+    if (safeCap < 0) {
+        err = new SyntaxError(fmt.Sprintf("%s slice too big: %d elements of %d bytes"u8, elemType.Kind(), numElements, elemSize));
+        return (ret, err);
+    }
+    ret = reflect.MakeSlice(sliceType, 0, safeCap);
     var @params = new fieldParameters(nil);
     nint offset = 0;
     for (nint i = 0; i < numElements; i++) {
+        ret = reflect.Append(ret, reflect.Zero(elemType));
         (offset, err) = parseField(ret.Index(i), bytes, offset, @params);
         if (err != default!) {
             return (ret, err);
@@ -778,7 +726,10 @@ internal static (nint offset, error err) parseField(reflectꓸValue v, slice<byt
             if (!tΔ1.isCompound && tΔ1.@class == ClassUniversal) {
                 var innerBytesΔ1 = bytes[(int)(offset)..(int)(offset + tΔ1.length)];
                 var exprᴛ1 = tΔ1.tag;
-                if (exprᴛ1 == TagPrintableString) {
+                if (exprᴛ1 == TagBoolean) {
+                    (result, err) = parseBool(innerBytesΔ1);
+                }
+                else if (exprᴛ1 == TagPrintableString) {
                     (result, err) = parsePrintableString(innerBytesΔ1);
                 }
                 else if (exprᴛ1 == TagNumericString) {

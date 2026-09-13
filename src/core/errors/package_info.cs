@@ -57,9 +57,9 @@ using static go.errors_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("errors/errors.go", "errors.cs", "ADx6ogAHEII=")]
+[assembly: go.GoPositionMap("errors/errors.go", "errors.cs", "AD+AAaIABxCC")]
 [assembly: go.GoPositionMap("errors/join.go", "join.cs", "AAomAAoCgoKCpoKUpoKCpu6mgpaCgoKmpoI=")]
-[assembly: go.GoPositionMap("errors/wrap.go", "wrap.cs", "ABUi4oaClAACKAARAoKWggAKBoKCgpSAgqSUgoLGgoKmtAAELAARAoKUgpSCgoKUgoKU5oKCgoKUgIKklIKCxoKClIKmtA==")]
+[assembly: go.GoPositionMap("errors/wrap.go", "wrap.cs", "AA8i4oaClAACKAARAoKWggAKBoKCgpSAgqSUgoLGgoKmtAAELAARAoKUgpSCgoKUgoKU5oKCgoKUgIKklIKCxoKClIKmtA==")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -81,4 +81,14 @@ public static partial class errors_package
     internal partial struct errorString {}
     internal partial struct joinError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸreflectlite() => builtin.initPackage(typeof(@internal.reflectlite_package));
+    // </ImportInitializers>
 }

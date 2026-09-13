@@ -117,7 +117,7 @@ internal static float64 exp(float64 x) {
     case {} when x < Underflow: {
         return 0D;
     }
-    case {} when -NearZero < x && x < NearZero: {
+    case {} when /* -NearZero */ -3.725290298461914e-09D < x && x < NearZero: {
         return 1D + x;
     }}
 

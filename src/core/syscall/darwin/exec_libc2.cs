@@ -5,18 +5,12 @@
 namespace go;
 
 using abi = @internal.abi_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @unsafe = unsafe_package;
 using @internal;
 using go.sync;
 
 partial class syscall_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() {
-    builtin.initPackage(typeof(@internal.abi_package));
-}
 
 [GoType] partial struct SysProcAttr {
     public @string Chroot;     // Chroot.
@@ -197,7 +191,7 @@ internal static (nint pid, Errno err1) forkAndExecInChild(ж<byte> Ꮡargv0, sli
     // Pass 1: look for fd[i] < i and move those up above len(fd)
     // so that pass 2 won't stomp on an fd it needs later.
     if (pipe < nextfd) {
-        if (Δruntime.GOOS == "openbsd"u8){
+        if (runtime.GOOS == "openbsd"u8){
             (_, _, err1) = rawSyscall(dupTrampoline, (uintptr)pipe, (uintptr)nextfd, O_CLOEXEC);
         } else {
             (_, _, err1) = rawSyscall(dupTrampoline, (uintptr)pipe, (uintptr)nextfd, 0);
@@ -218,7 +212,7 @@ internal static (nint pid, Errno err1) forkAndExecInChild(ж<byte> Ꮡargv0, sli
                 // don't stomp on pipe
                 nextfd++;
             }
-            if (Δruntime.GOOS == "openbsd"u8){
+            if (runtime.GOOS == "openbsd"u8){
                 (_, _, err1) = rawSyscall(dupTrampoline, (uintptr)fd[i], (uintptr)nextfd, O_CLOEXEC);
             } else {
                 (_, _, err1) = rawSyscall(dupTrampoline, (uintptr)fd[i], (uintptr)nextfd, 0);

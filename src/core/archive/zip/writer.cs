@@ -20,12 +20,6 @@ using unicode;
 
 partial class zip_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(unicode.utf8_package));
-}
-
 internal static error errLongName = errors.New("zip: FileHeader.Name too long"u8);
 internal static error errLongExtra = errors.New("zip: FileHeader.Extra too long"u8);
 
@@ -545,14 +539,14 @@ public static error AddFS(this ж<Writer> Ꮡw, fs.FS fsys) {
             if (err != default!) {
                 return err;
             }
-            if (d.IsDir()) {
+            if (name == "."u8) {
                 return default!;
             }
             (var info, err) = d.Info();
             if (err != default!) {
                 return err;
             }
-            if (!info.Mode().IsRegular()) {
+            if (!d.IsDir() && !info.Mode().IsRegular()) {
                 return errors.New(zipCannotAddNonRegularˢ);
             }
             (var h, err) = FileInfoHeader(info);
@@ -560,10 +554,16 @@ public static error AddFS(this ж<Writer> Ꮡw, fs.FS fsys) {
                 return err;
             }
             h.Value.Name = name;
+            if (d.IsDir()) {
+                h.Value.Name += "/"u8;
+            }
             h.Value.Method = Deflate;
             (var fw, err) = Ꮡw.Value.CreateHeader(h);
             if (err != default!) {
                 return err;
+            }
+            if (d.IsDir()) {
+                return default!;
             }
             (var f, err) = fsys.Open(name);
             if (err != default!) {

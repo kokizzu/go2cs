@@ -4,21 +4,13 @@
 namespace go.go;
 
 using fmt = fmt_package;
-using ast = global::go.go.ast_package;
-using token = global::go.go.token_package;
 using version = global::go.go.version_package;
-using goversion = global::go.@internal.goversion_package;
-using global::go.@internal;
+using goversion = @internal.goversion_package;
+using @internal;
 using global::go.go;
 using ꓸꓸꓸany = Span<any>;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸversion() {
-    builtin.initPackage(typeof(global::go.go.version_package));
-}
 
 [GoType("@string")] partial struct goVersion;
 
@@ -50,60 +42,24 @@ internal static goVersion go1_22 = asGoVersion("go1.22"u8);
 internal static goVersion go1_23 = asGoVersion("go1.23"u8);
 internal static goVersion go_current = asGoVersion(fmt.Sprintf("go1.%d"u8, (nint)(goversion.Version)));
 
-// allowVersion reports whether the current package at the given position
-// is allowed to use version v. If the position is unknown, the specified
-// module version (Config.GoVersion) is used. If that version is invalid,
-// allowVersion returns true.
-internal static bool allowVersion(this ж<Checker> Ꮡcheck, positioner at, goVersion v) {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-
-    @string fileVersion = check.conf.Value.GoVersion;
-    {
-        tokenꓸPos pos = at.Pos(); if (pos.IsValid()) {
-            fileVersion = check.versions[Ꮡcheck.fileFor(pos)];
-        }
-    }
-    // We need asGoVersion (which calls version.Lang) below
-    // because fileVersion may be the (unaltered) Config.GoVersion
-    // string which may contain dot-release information.
-    goVersion version = asGoVersion(fileVersion);
-    return !version.isValid() || version.cmp(v) >= 0;
+// allowVersion reports whether the current effective Go version
+// (which may vary from one file to another) is allowed to use the
+// feature version (want).
+[GoRecv] internal static bool allowVersion(this ref Checker check, goVersion want) {
+    return !check.version.isValid() || check.version.cmp(want) >= 0;
 }
 
 // verifyVersionf is like allowVersion but also accepts a format string and arguments
-// which are used to report a version error if allowVersion returns false. It uses the
-// current package.
+// which are used to report a version error if allowVersion returns false.
 internal static bool verifyVersionf(this ж<Checker> Ꮡcheck, positioner at, goVersion v, @string format, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
-    if (!Ꮡcheck.allowVersion(at, v)) {
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    if (!check.allowVersion(v)) {
         Ꮡcheck.versionErrorf(at, v, format, args.ꓸꓸꓸ);
         return false;
     }
     return true;
-}
-
-// TODO(gri) Consider a more direct (position-independent) mechanism
-//           to identify which file we're in so that version checks
-//           work correctly in the absence of correct position info.
-
-// fileFor returns the *ast.File which contains the position pos.
-// If there are no files, the result is nil.
-// The position must be valid.
-internal static ж<ast.File> fileFor(this ж<Checker> Ꮡcheck, tokenꓸPos pos) {
-    ref var check = ref Ꮡcheck.DerefOrNull();
-
-    assert(pos.IsValid());
-    // Eval and CheckExpr tests may not have any source files.
-    if (len(check.files) == 0) {
-        return default!;
-    }
-    foreach (var (_, @file) in check.files) {
-        if ((~@file).FileStart <= pos && pos < (~@file).FileEnd) {
-            return @file;
-        }
-    }
-    throw panic(Ꮡcheck.sprintf("file not found for pos = %d (%s)"u8, (nint)pos, check.fset.Position(pos)));
 }
 
 } // end types_package

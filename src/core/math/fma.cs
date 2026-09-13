@@ -8,12 +8,6 @@ using math;
 
 partial class math_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
-    builtin.initPackage(typeof(math.bits_package));
-}
-
 internal static uint64 zero(uint64 x) {
     if (x == 0) {
         return 1;
@@ -180,7 +174,7 @@ public static float64 FMA(float64 x, float64 y, float64 z) {
         m |= (uint64)(nonzero(pm2));
     }
     // Round and break ties to even
-    if (pe > 1022 + bias || pe == 1022 + bias && ((m + ((uint64)1 << (int)(9))) >> (int)(63)) == 1) {
+    if (pe > (int32)(1022 + bias) || pe == (int32)(1022 + bias) && ((m + ((uint64)1 << (int)(9))) >> (int)(63)) == 1) {
         // rounded value overflows exponent range
         return Float64frombits((uint64)(((uint64)ps << (int)(63)) | (uint64)uvinf));
     }

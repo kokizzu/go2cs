@@ -4,10 +4,10 @@
 namespace go.runtime;
 
 using errors = errors_package;
-using windows = go.@internal.syscall.windows_package;
+using windows = @internal.syscall.windows_package;
 using os = os_package;
 using syscall = syscall_package;
-using go.@internal.syscall;
+using @internal.syscall;
 
 partial class pprof_package {
 

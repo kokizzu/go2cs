@@ -23,6 +23,7 @@ using reflect = reflect_package;
 using Δruntime = runtime_package;
 using strings = strings_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using crypto;
 using fs = global::go.io.fs_package;
 using global::go.@internal;
@@ -33,66 +34,6 @@ using ꓸꓸꓸCorpusEntry = Span<CorpusEntry>;
 using ꓸꓸꓸany = Span<any>;
 
 partial class fuzz_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha256() {
-    builtin.initPackage(typeof(crypto.sha256_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(global::go.@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 // CoordinateFuzzingOpts is a set of arguments for CoordinateFuzzing.
 // The zero value is valid for each field unless specified otherwise.
@@ -143,7 +84,7 @@ partial class fuzz_package {
 //
 // If a crash occurs, the function will return an error containing information
 // about the crash, which can be reported to the user.
-public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuzzingOpts opts) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuzzingOpts opts) {
     heap<error>(out var Ꮡerr);
     GoFrame ᒐ = default;
     try {
@@ -186,7 +127,7 @@ public static error /*err*/ CoordinateFuzzing(context.Context ctx, CoordinateFuz
         var cʗ1 = c;
         var cancelWorkersʗ2 = cancelWorkers;
         var fuzzCtxʗ1 = fuzzCtx;
-        void stop(error errΔ2) {
+        [MethodImpl(MethodImplOptions.NoInlining)] void stop(error errΔ2) {
             if (shouldPrintDebugInfo()) {
                 var (_, @file, line, ok) = Δruntime.Caller(1);
                 if (ok){

@@ -53,8 +53,8 @@ using static go.net.netip_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/netip/netip.go", "netip.cs", "AGeYAaCooKaQppCmkKayAAUS0gAIGLKClKSo1qqigoKUAAgSgoKClKaCkoKCgoKClIKCguyCpoKUgoKClKaClIKosoKCgpSoksyCgoKClKiCloKClIK6gqaCgoKCgqSklJSUlJSmlKiClJSUloKClIKClIKCqIKCloKCqIKklJaCkpSCgpLMgqiCgpSCgpS2lKyylKSkqqKqoqqiAAIQ9qywrtKUpKSokoKUrLKSgpSClIKClIKUgoKUgpSCkoKUgqassKqyqJKqoq7CgpSssoKUgoKUgqqigpSCqJKokoK6griClKiSgrqCuIKUqJKCuoK4gpSqxoKUqJKCuoK4gpQAAhgACQKUloK6gpYAAhTCgqimmqaWrsIABRDSgpSClKSClKSCtoIAAhDygoKs0oKClIKUqJKUpIKCpIKCgsyigoKUppSmqqKCgraUggAFHgAMApSkpIKUzrKUpKSClAAIEriClIKUqLiClIKUgpSokqaCgoKCpoKCgoKCgoKCpoKCgoKmgoKCgoKUAAIQAAUQ8oKCpoKCgoKClICCuIKCgoKCtpaWgoKUrLKUpoKCgoKWlqaClKyylKSCgqSCgoKUgoIABBLSgoKUgoKmgoKUpIKkgoKCgqSuwtqigpSCpIKkgqSCpAAIFqCmkKaQAAgOAAkCgoKWgoKUgpSCgpSClq7CgoKClIKClIKCgpSCpJSqooKClKqgqrKAgqTWgoKUpIKCpIKCgoKUgoKClKSCgqyylKSkgoKUlKSCgqyygrakpIKCrLKCgpSCgqyygoKqooKUgoKClIIADS4ACAKCgpTekKqwqrCkgKaQAAIUAAgCgIKkgIKkAAcQggACFPKCgpSCgqaClpaCloKClIKClIKUqqKCgpSuwoIAAhTygpSAkqQACBLKAAMS0oKUgpSClIKAkpSkgpzCgIKkgIKkrLKClIKogpSCgpSogoKssoK2pKSCgqyygoKUgoKssoKCqqKClIKCgpSC2JKClA==")]
-[assembly: go.GoPositionMap("net/netip/uint128.go", "uint128.cs", "ABkoogACENCmkqiSqJKokqiSgqiSgq7CqqKqog==")]
+[assembly: go.GoPositionMap("net/netip/netip.go", "netip.cs", "AEmYAaCooKaQppCmkKayAAUS0gAIGLKClKSo1qqigoKUAAgSgoKClKaCkoKCgoKClIKCguyCpoKUgoKClKaClIKosoKCgpSoksyCgoKClKiCloKClIK6gqaCgoKCgqSklJSUlJSmlKiClJSUloKClIKClIKCqIKCloKCqIKklJaCkpSCgpLMgqiCgpSCgpS2lKyylKSkqqKqoqqiAAIQ9qywrtKUpKSokoKUrLKSgpSClIKClIKUgoKUgpSCkoKUgqassKqyrLKqoq7CgpSssoKUgoKUgqqigpSCqJKokoK6griClKiSgrqCuIKUqJKCuoK4gpSqxoKUqJKCuoK4gpQAAhgACQKUloK6gpYAAhTCgqimmqaWrsIABRDSgpSClKSClKSCtoIAAhDygoKs0oKClIKUqJKUpIKCpIKCgsyigoKUppSmqqKCgraUggAFHgAMApSkpIKUzrKUpKSClAAIEriClIKUqLiClIKUgpSokqaCgoKCpoKCgoKCgoKCpoKCgoKmgoKCgoKUAAIQAAUQ8oKCpoKCgoKClICCuIKCgoKCtpaWgoKUrLKUpoKCgoKWlqaClKqirLKCtoK0goKClIK0AAIQ0oKClIKCqJK2pIKCpKaClKSkAAQQwtqigpSCpIKkgqSCpAAIFqCmkKaQAAgOAAkCgoKWgoKUgpSCgpSClq7CgoKClIKClIKCgpSCpJSqooKClKqgqrKAgqTWgoKUpIKCpIKCgoKUgoKClKSCgqyylKSkgoKUlKSCgqqirLKCtoKkgqSssoKClIKCrLKCgpSssqqigpSCgoKUggANLgAIAoKClN6QqrCqsKSAppAAAhQACAKAgqSAgqQABxCCAAIU8oKClIKCpoKWloKWgoKUgoKUgpSqooKClK7CggACFPKClICSpAAIEsoAAxLSgpSClIKUgoCSlKSCnMKAgqSAgqSssoKUgqiClIKClKiCgqqirLKCtoKkgqSssoKClIKCrLKCgpSsxKqigpSCgoKUgtiSgpQ=")]
+[assembly: go.GoPositionMap("net/netip/uint128.go", "uint128.cs", "ABMoogACENCmkqiSqJKokqiSgqiSgq7CqqKqog==")]
 // </GoSourcePositionMaps>
 
 namespace go.net;
@@ -77,4 +77,19 @@ public static partial class netip_package
     public partial struct ΔAddr {}
     public partial struct ΔPrefix {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() => builtin.initPackage(typeof(@internal.bytealg_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(go.math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸunique() => builtin.initPackage(typeof(unique_package));
+    // </ImportInitializers>
 }

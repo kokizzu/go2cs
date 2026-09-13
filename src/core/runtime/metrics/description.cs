@@ -3,8 +3,8 @@
 // license that can be found in the LICENSE file.
 namespace go.runtime;
 
-using godebugs = go.@internal.godebugs_package;
-using go.@internal;
+using godebugs = @internal.godebugs_package;
+using @internal;
 
 partial class metrics_package {
 

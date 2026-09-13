@@ -81,17 +81,17 @@ using static go.debug.dwarf_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/dwarf/attr_string.go", "attr_string.cs", "AA0OhqKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoIAgAGCAoKAgqQ=")]
-[assembly: go.GoPositionMap("debug/dwarf/buf.go", "buf.cs", "ADNUgqaCpoKmotaCgoKUgoKCpoKCgpSCgoKmgKSCgoKCloKCgqaCgoKUpoKCgpSClLiCgoKUpoKCgpSq0oKCgoKCgoKmqJKCqJKCgoKU2JKUpKSkpILWsoKCgqSUpoKCggAJFII=")]
+[assembly: go.GoPositionMap("debug/dwarf/attr_string.go", "attr_string.cs", "/oaigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCAIABggKCgIKk")]
+[assembly: go.GoPositionMap("debug/dwarf/buf.go", "buf.cs", "ACdUgqaCpoKmotaCgoKUgoKCpoKCgpSCgoKmgKSCgoKCloKCgqaCgoKUpoKCgpSClLiCgoKUpoKCgpSq0oKCgoKCgoKmqJKCqJKCgoKU2JKUpKSkpILWsoKCgqSUpoKCggAJFII=")]
 [assembly: go.GoPositionMap("debug/dwarf/class_string.go", "class_string.cs", "/oaigoKCgoKCgoKCgoKCgoKCgoKCgu6CgpQ=")]
 [assembly: go.GoPositionMap("debug/dwarf/const.go", "const.cs", "AIUBmgKCgIKkAHuWAoKClA==")]
-[assembly: go.GoPositionMap("debug/dwarf/entry.go", "entry.cs", "ADFOwoCCpoKClJS4gpSCgqiCgoKCgoKCgpSClJSCmJKCgoKCgoKCgqaChJSClIIANm7SnKYAAhLilAACEIDSpKampqasgLKkpqampqYAAoMBggBAqAOSAAIU8oCCpKqigoKmACES0pKCgpSCgoKUAAUUjoKCgpaCgoKClJSCgpSClIKCgoKUloKCgpSUgoKWgoKClJSCgpSClJaCgoKCgoKUgpy0kpSkpKSkpIKUgp7CgqSCloKCgoKUyqSkpKikpKSkpKSkqKqogvKklIKCpJTIpKSkpKikkoKCpJSUgpSClIKClIKClJSCgoKCxoKUpKSkpKSClIKClIKUgpSewoKkgpa2goKklL6CsqSUvKykpKi4jAAMAoKkgpYAA/EDAAL4A5SCloKUgoKCgpSkgoKCtoKCgsoAEiqigoKqoqiS6qKCgoKCgpSCgoKCloKCgpSClIKCqJKCupKCgoKu4oKUgoKUgoKCgpSCgoKClIKCppSs0oLegoKWgoKWgoKClILOoqqiAAIeAA4CgoKClIKCgoKCgoKClIKUgoKUooKmlKzihISCgoKClKSCgoLKgpaCgIKmlIKClJSCgpSCgpSmgoKUgoKUpsqCgoKClJYABRAACAKCgpSCgpSCkoKCqICCooK21rKClIKCgoSCloKUqKrSgpSCgpaCgoKClIKUpoKCgoK4goSCgpSCgpSmgoKCgpSmgoKmpoKCpoKCAAgMsoSCloKCgoKU", "438-466:1;468-495:2")]
-[assembly: go.GoPositionMap("debug/dwarf/line.go", "line.cs", "AI4BngLylKiClJSCuJaClAAHEICCuISqwpaCgoKClILclIKClIKUgoKUlIKClIKClJSUgoKWgpSClIKogoKCqIKUgoCCuJSCgoKClIKUppS6goKAgqTIgoKCgoKClJSCgoKCooKUqIQAChiSgoKCgpSo0oKCgoKUpIKClJSClIKClJSCgoK4kpS4pKSkpKSkpKSkpKS2lKSClKSk7IKWrLKSgpSClIKCgoKUlJLugoKUgqaCqqKClAADFAAIAoK6goKUgoKUggAWNNKElIKCgoKWloKChJSCgqaUtLS0tNiAkoKkgqSopoSSuqampoKmpqampqimpqrCtoSCgoKCgoKqooKCAA4gkq7CgoKCgqq0gpaWqLYADBqCAAIeAAwCAAYmAA4CgIKklIKAgqSUgrqCgoKAgoKUpIKUuIKUAAMU4oKqooLKgpSmgoKmuIKCgpSUqqKCgIK2lJSClIKCuA==")]
+[assembly: go.GoPositionMap("debug/dwarf/entry.go", "entry.cs", "ACVOwoCCpoKClJS4gpSCgqiCgoKCgoKCgpSClJSCmJKCgoKCgoKCgqaChJSClIIANm7SnKYAAhLilAACEIDSpKampqasgLKkpqampqYAAoMBggBAqAOSAAIU8oCCpKqigoKmACES0pKCgpSCgoKUAAUUjoKCgpaCgoKClJSCgpSClIKCgoKUloKCgpSUgoKWgoKClJSCgpSClJaCgoKCgoKUgpy0kpSkpKSkpIKUgp7CgqSCloKCgoKUyqSkpKikpKSkpKSkqKqogvKklIKCpJTIpKSkpKikkoKCpJSUgpSClIKClIKClJSCgoKCxoKUpKSkpKSClIKClIKUgpSewoKkgpa2goKklL6CsqSUvKykpKi4jAAMAoKkgpYAA/EDAAL4A5SCloKUgoKCgpSkgoKCtoKCgsoAEiqigoKqoqiS6qKCgoKCgpSCgoKCloKCgpSClIKCqJKCupKCgoKu4oKUgoKUgoKCgpSCgoKClIKCppSs0oLegoKWgoKWgoKClILOoqqiAAIeAA4CgoKClIKCgoKCgoKClIKUgoKUooKmlKzihISCgoKClKSCgoLKgpaCgIKmlIKClJSCgpSCgpSmgoKUgoKUpsqCgoKClJYABRAACAKCgpSCgpSCkoKCqICCooK21rKClIKCgoSCloKUqKrSgpSCgpaCgoKClIKUpoKCgoK4goSCgpSCgpSmgoKCgpSmgoKmpoKCpoKCAAgMsoSCloKCgoKU", "438-466:1;468-495:2")]
+[assembly: go.GoPositionMap("debug/dwarf/line.go", "line.cs", "AHyeAvKUqIKUlIK4loKUAAcQgIK4hKrCloKCgoKUgtyUgoKUgpSCgpSUgoKUgoKUlJSCgpaClIKUgqiCgoKogpSCgIK4lIKCgoKUgpSmlLqCgoCCpMiCgoKCgoKUlIKCgoKigpSohAAKGJKCgoKClKjSgoKCgpSkgoKUlIKUgoKUlIKCgriSlLikpKSkpKSkpKSkpLaUpIKUpKTsgpasspKClIKUgoKCgpSUku6CgpSCpoKqooKUAAMUAAgCgrqCgpSCgpSCABY00oSUgoKCgpaWgoKElIKCppS0tLS02ICSgqSCpKimhJK6pqamgqampqamqKamqsK2hIKCgoKCgqqigoIADiCSrsKCgoKCqrSClpaotgAMGoIAAh4ADAIABiYADgKAgqSUgoCCpJSCuoKCgoCCgpSkgpS4gpQAAxTigqqigsqClKaCgqa4goKClJSqooKAgraUlIKUgoK4")]
 [assembly: go.GoPositionMap("debug/dwarf/open.go", "open.cs", "ADV+AAgCAA8igpSCgoKUpoKUpIK0grSmgoKUgq7CrsKClKSkpLY=")]
 [assembly: go.GoPositionMap("debug/dwarf/tag_string.go", "tag_string.cs", "/oaigoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoIADiaClIKkpIKkpIKkgqQ=")]
 [assembly: go.GoPositionMap("debug/dwarf/type.go", "type.cs", "AB46gKSAAA8egKSCgpQAOHKApIAAChSCpoKClAAKEIAACBCAAF68AYKClKaCgpSmgoKClIKClIKCgpSCgoKCpoIAFCSCgoKUgoKClJSCAAwUgoKCgpSUgoKUAAcQgAAIEICkgAAJEoKClAAOILIABxCigpSCgriCgpSCABIQAAkCgIKkgpKClIKCAAYQgoKClJy0lpKC7oKCgoKUgoKUgoKClJSClIKUzJKCgpSAgtaAguiklgABFIKCgoAACAKkhpKmlIKUgoKkpqSCtpSWgoIAAx6CggALAoKUnKSkgriApLT4pKSkpAACOYIAAjyChoKCgoKCgoKCAAMmgoKClKSkpIKCgoKCgoKClIKAgqSYooKClIKCgsamgoKCgoKCgoKUgoSmlIKClIKClAAEEIKCgoCypJSkpAAEGIKCgoKCgoKCgoKCgoKClIIABRKCgoLCgpQAAxiCgoKAAAkCpIKCgpiAgsarAAIQAAMQgoKCgqyCgoKsgoKCggAMBoKWgoKCgprktpSEiLLWgoKCppKC", "428-430:1;442-476:2;480-497:3")]
 [assembly: go.GoPositionMap("debug/dwarf/typeunit.go", "typeunit.cs", "ABs0soKCgoKCgpSCgoKClIKClJSCgpSChIKClIKCgpSWggAMGoKmqLKCgpSClpKCgoKWggAKGJKCgoKClKiSqLKClIKUgoKClKiSAAYQkg==")]
-[assembly: go.GoPositionMap("debug/dwarf/unit.go", "unit.cs", "AB04kqaCpoLWtIKCgoKCgpSCgqaCqIKCgoKCgoKUgpSCgoKClIKCgpSCgpSUgoKClJSCgpaUpIKSlLiClIKUqtSGgpSCgpQ=", "126-128:1")]
+[assembly: go.GoPositionMap("debug/dwarf/unit.go", "unit.cs", "ABc4kqaCpoLWtIKCgoKCgpSCgqaCqIKCgoKCgoKUgpSCgoKClIKCgpSCgpSUgoKClJSCgpaUpIKSlLiClIKUqtSGgpSCgpQ=", "126-128:1")]
 // </GoSourcePositionMaps>
 
 namespace go.debug;
@@ -159,4 +159,22 @@ public static partial class dwarf_package
     public partial struct ΔLineReader {}
     public partial struct ΔReader {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

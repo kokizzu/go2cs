@@ -4,21 +4,31 @@
 namespace go.crypto;
 
 using elliptic = go.crypto.elliptic_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using errors = errors_package;
 using io = io_package;
 using big = math.big_package;
+using rand = math.rand.rand_package;
 using cryptobyte = vendor.golang.org.x.crypto.cryptobyte_package;
 using asn1 = vendor.golang.org.x.crypto.cryptobyte.asn1_package;
 using go.crypto;
+using go.crypto.@internal;
 using math;
+using math.rand;
 using vendor.golang.org.x.crypto;
 using vendor.golang.org.x.crypto.cryptobyte;
 
 partial class ecdsa_package {
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cryptoEcdsaUseOfCustomˢ = "crypto/ecdsa: use of custom curves is not allowed in FIPS 140-only mode"u8;
+
 // This file contains a math/big implementation of ECDSA that is only used for
 // deprecated custom curves.
 internal static (ж<PrivateKey>, error) generateLegacy(elliptic.Curve c, io.Reader rand) {
+    if (fips140only.Enabled) {
+        return (default!, errors.New(cryptoEcdsaUseOfCustomˢ));
+    }
     var (k, err) = randFieldElement(c, rand);
     if (err != default!) {
         return (default!, err);
@@ -78,7 +88,24 @@ public static (ж<bigꓸInt> r, ж<bigꓸInt> s, error err) Sign(io.Reader rand,
 internal static (slice<byte> sig, error err) signLegacy(ref PrivateKey priv, io.Reader csprng, slice<byte> hash) {
     error err = default!;
 
+    if (fips140only.Enabled) {
+        return (default!, errors.New(cryptoEcdsaUseOfCustomˢ));
+    }
     var c = priv.Curve;
+    // A cheap version of hedged signatures, for the deprecated path.
+    array<byte> seed = new(32);
+    {
+        var (_, errΔ1) = io.ReadFull(csprng, seed[..]); if (errΔ1 != default!) {
+            return (default!, errΔ1);
+        }
+    }
+    foreach (var (i, b) in priv.D.Bytes()) {
+        seed[i % 32] ^= (byte)(b);
+    }
+    foreach (var (i, b) in hash) {
+        seed[i % 32] ^= (byte)(b);
+    }
+    csprng = new rand_ChaCha8жReader(rand.NewChaCha8(seed));
     // SEC 1, Version 2.0, Section 4.1.3
     var N = c.Params().Value.N;
     if (N.Sign() == 0) {
@@ -134,6 +161,9 @@ public static bool Verify(ж<PublicKey> Ꮡpub, slice<byte> hash, ж<bigꓸInt> 
 }
 
 internal static bool verifyLegacy(ref PublicKey pub, slice<byte> hash, slice<byte> sig) {
+    if (fips140only.Enabled) {
+        throw panic("crypto/ecdsa: use of custom curves is not allowed in FIPS 140-only mode");
+    }
     var (rBytes, sBytes, err) = parseSignature(sig);
     if (err != default!) {
         return false;
@@ -172,9 +202,6 @@ internal static (ж<bigꓸInt> k, error err) randFieldElement(elliptic.Curve c, 
     ж<bigꓸInt> k = default!;
     error err = default!;
 
-    // See randomPoint for notes on the algorithm. This has to match, or s390x
-    // signatures will come out different from other architectures, which will
-    // break TLS recorded tests.
     while (ᐧ) {
         var N = c.Params().Value.N;
         var b = new slice<byte>((N.BitLen() + 7) / 8);

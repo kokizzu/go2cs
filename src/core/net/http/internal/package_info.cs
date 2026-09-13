@@ -52,7 +52,7 @@ using static go.net.http.internal_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/internal/chunked.go", "chunked.cs", "ADM64oKClAAOGISSgoKUgoKCgpSCggAQIoKCgpSCuIKCgoKU1qKCgriUgIKCgqaClKSUgqaUgpSClIKClIKCgoKmgqSm7uKCpoKklAAGEICCpKSEgpSmgoKUpoIABBjyuAACHAALAgAIGPaCloCCpICCpIKClICCpICCpKaCggAQGLKClKKUtLS0pIKUgpQ=")]
+[assembly: go.GoPositionMap("net/http/internal/chunked.go", "chunked.cs", "ABU64oKClAAOGISSgoKUgoKCgpSCggAQIoKCgpSCuIKCgoKU1qKCgriUgIKCgqaClKSUgqaUgpSClIKClIKCgoKmgqSm7uKCpoKklAAGEICCpKSEgpSmgoKUpoIABBjyuAACHAALAgAIGPaCloCCpICCpIKClICCpICCpKaCggAQGLKClKKUtLS0pIKUgpQ=")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;
@@ -71,4 +71,18 @@ public static partial class internal_package
     internal partial struct chunkedWriter {}
     public partial struct FlushAfterChunkWriter {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

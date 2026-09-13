@@ -20,7 +20,7 @@ internal static void addWakeupEvent(int32 kq) {
     ev = new keventt(
         ident: kqIdent,
         filter: _EVFILT_USER,
-        flags: _EV_ADD
+        flags: (uint16)((uint16)_EV_ADD | (uint16)_EV_CLEAR)
     );
     while (ᐧ) {
         var n = kevent(kq, Ꮡev, 1, nil, 0, nil);
@@ -46,7 +46,6 @@ internal static void wakeNetpoll(int32 kq) {
     ev = new keventt(
         ident: kqIdent,
         filter: _EVFILT_USER,
-        flags: _EV_ENABLE,
         fflags: _NOTE_TRIGGER
     );
     while (ᐧ) {
@@ -77,14 +76,11 @@ internal static bool isWakeup(ref keventt ev) {
     return false;
 }
 
-internal static void drainWakeupEvent(int32 kq) {
-    ref var ev = ref heap<keventt>(out var Ꮡev);
-    ev = new keventt(
-        ident: kqIdent,
-        filter: _EVFILT_USER,
-        flags: _EV_DISABLE
-    );
-    kevent(kq, Ꮡev, 1, nil, 0, nil);
+internal static void processWakeupEvent(int32 kq, bool isBlocking) {
+    if (!isBlocking) {
+        // Got a wrong thread, relay
+        wakeNetpoll(kq);
+    }
 }
 
 internal static bool netpollIsPollDescriptor(uintptr fd) {

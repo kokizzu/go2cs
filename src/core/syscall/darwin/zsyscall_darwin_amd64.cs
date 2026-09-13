@@ -5,7 +5,7 @@ namespace go;
 
 using @unsafe = unsafe_package;
 using abi = @internal.abi_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @internal;
 
 partial class syscall_package {
@@ -454,11 +454,11 @@ internal static error /*err*/ utimensat(nint dirfd, @string path, [GoArrayDims(2
     if (err != default!) {
         return err;
     }
-    var ᴋ32 = _p0;
-    var ᴋ33 = Ꮡtimes;
-        var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_utimensat_trampoline), (uintptr)dirfd, (uintptr)ᴋ32, (uintptr)ᴋ33, (uintptr)flags, 0, 0);
+    var ᴋ31 = _p0;
+    var ᴋ32 = Ꮡtimes;
+        var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_utimensat_trampoline), (uintptr)dirfd, (uintptr)ᴋ31, (uintptr)ᴋ32, (uintptr)flags, 0, 0);
+    System.GC.KeepAlive(ᴋ31);
     System.GC.KeepAlive(ᴋ32);
-    System.GC.KeepAlive(ᴋ33);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -491,9 +491,9 @@ public static error /*err*/ Access(@string path, uint32 mode) {
     if (err != default!) {
         return err;
     }
-    var ᴋ34 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_access_trampoline), (uintptr)ᴋ34, (uintptr)mode, 0);
-    System.GC.KeepAlive(ᴋ34);
+    var ᴋ33 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_access_trampoline), (uintptr)ᴋ33, (uintptr)mode, 0);
+    System.GC.KeepAlive(ᴋ33);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -507,11 +507,11 @@ internal static partial void libc_access_trampoline();
 public static error /*err*/ Adjtime(ж<Timeval> Ꮡdelta, ж<Timeval> Ꮡolddelta) {
     error err = default!;
 
-    var ᴋ35 = Ꮡdelta;
-    var ᴋ36 = Ꮡolddelta;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_adjtime_trampoline), (uintptr)ᴋ35, (uintptr)ᴋ36, 0);
+    var ᴋ34 = Ꮡdelta;
+    var ᴋ35 = Ꮡolddelta;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_adjtime_trampoline), (uintptr)ᴋ34, (uintptr)ᴋ35, 0);
+    System.GC.KeepAlive(ᴋ34);
     System.GC.KeepAlive(ᴋ35);
-    System.GC.KeepAlive(ᴋ36);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -530,9 +530,9 @@ public static error /*err*/ Chdir(@string path) {
     if (err != default!) {
         return err;
     }
-    var ᴋ37 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chdir_trampoline), (uintptr)ᴋ37, 0, 0);
-    System.GC.KeepAlive(ᴋ37);
+    var ᴋ36 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chdir_trampoline), (uintptr)ᴋ36, 0, 0);
+    System.GC.KeepAlive(ᴋ36);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -551,9 +551,9 @@ public static error /*err*/ Chflags(@string path, nint flags) {
     if (err != default!) {
         return err;
     }
-    var ᴋ38 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chflags_trampoline), (uintptr)ᴋ38, (uintptr)flags, 0);
-    System.GC.KeepAlive(ᴋ38);
+    var ᴋ37 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chflags_trampoline), (uintptr)ᴋ37, (uintptr)flags, 0);
+    System.GC.KeepAlive(ᴋ37);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -572,9 +572,9 @@ public static error /*err*/ Chmod(@string path, uint32 mode) {
     if (err != default!) {
         return err;
     }
-    var ᴋ39 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chmod_trampoline), (uintptr)ᴋ39, (uintptr)mode, 0);
-    System.GC.KeepAlive(ᴋ39);
+    var ᴋ38 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chmod_trampoline), (uintptr)ᴋ38, (uintptr)mode, 0);
+    System.GC.KeepAlive(ᴋ38);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -593,9 +593,9 @@ public static error /*err*/ Chown(@string path, nint uid, nint gid) {
     if (err != default!) {
         return err;
     }
-    var ᴋ40 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chown_trampoline), (uintptr)ᴋ40, (uintptr)uid, (uintptr)gid);
-    System.GC.KeepAlive(ᴋ40);
+    var ᴋ39 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chown_trampoline), (uintptr)ᴋ39, (uintptr)uid, (uintptr)gid);
+    System.GC.KeepAlive(ᴋ39);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -614,9 +614,9 @@ public static error /*err*/ Chroot(@string path) {
     if (err != default!) {
         return err;
     }
-    var ᴋ41 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chroot_trampoline), (uintptr)ᴋ41, 0, 0);
-    System.GC.KeepAlive(ᴋ41);
+    var ᴋ40 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_chroot_trampoline), (uintptr)ᴋ40, 0, 0);
+    System.GC.KeepAlive(ᴋ40);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -698,11 +698,11 @@ public static error /*err*/ Exchangedata(@string path1, @string path2, nint opti
     if (err != default!) {
         return err;
     }
-    var ᴋ42 = _p0;
-    var ᴋ43 = _p1;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_exchangedata_trampoline), (uintptr)ᴋ42, (uintptr)ᴋ43, (uintptr)options);
+    var ᴋ41 = _p0;
+    var ᴋ42 = _p1;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_exchangedata_trampoline), (uintptr)ᴋ41, (uintptr)ᴋ42, (uintptr)options);
+    System.GC.KeepAlive(ᴋ41);
     System.GC.KeepAlive(ᴋ42);
-    System.GC.KeepAlive(ᴋ43);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -946,9 +946,9 @@ internal static partial void libc_getpriority_trampoline();
 public static error /*err*/ Getrlimit(nint which, ж<Rlimit> Ꮡlim) {
     error err = default!;
 
-    var ᴋ44 = Ꮡlim;
-        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_getrlimit_trampoline), (uintptr)which, (uintptr)ᴋ44, 0);
-    System.GC.KeepAlive(ᴋ44);
+    var ᴋ43 = Ꮡlim;
+        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_getrlimit_trampoline), (uintptr)which, (uintptr)ᴋ43, 0);
+    System.GC.KeepAlive(ᴋ43);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -962,9 +962,9 @@ internal static partial void libc_getrlimit_trampoline();
 public static error /*err*/ Getrusage(nint who, ж<Rusage> Ꮡrusage) {
     error err = default!;
 
-    var ᴋ45 = Ꮡrusage;
-        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_getrusage_trampoline), (uintptr)who, (uintptr)ᴋ45, 0);
-    System.GC.KeepAlive(ᴋ45);
+    var ᴋ44 = Ꮡrusage;
+        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_getrusage_trampoline), (uintptr)who, (uintptr)ᴋ44, 0);
+    System.GC.KeepAlive(ᴋ44);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1039,9 +1039,9 @@ public static error /*err*/ Lchown(@string path, nint uid, nint gid) {
     if (err != default!) {
         return err;
     }
-    var ᴋ46 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_lchown_trampoline), (uintptr)ᴋ46, (uintptr)uid, (uintptr)gid);
-    System.GC.KeepAlive(ᴋ46);
+    var ᴋ45 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_lchown_trampoline), (uintptr)ᴋ45, (uintptr)uid, (uintptr)gid);
+    System.GC.KeepAlive(ᴋ45);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1065,11 +1065,11 @@ public static error /*err*/ Link(@string path, @string link) {
     if (err != default!) {
         return err;
     }
-    var ᴋ47 = _p0;
-    var ᴋ48 = _p1;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_link_trampoline), (uintptr)ᴋ47, (uintptr)ᴋ48, 0);
+    var ᴋ46 = _p0;
+    var ᴋ47 = _p1;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_link_trampoline), (uintptr)ᴋ46, (uintptr)ᴋ47, 0);
+    System.GC.KeepAlive(ᴋ46);
     System.GC.KeepAlive(ᴋ47);
-    System.GC.KeepAlive(ᴋ48);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1102,9 +1102,9 @@ public static error /*err*/ Mkdir(@string path, uint32 mode) {
     if (err != default!) {
         return err;
     }
-    var ᴋ49 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mkdir_trampoline), (uintptr)ᴋ49, (uintptr)mode, 0);
-    System.GC.KeepAlive(ᴋ49);
+    var ᴋ48 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mkdir_trampoline), (uintptr)ᴋ48, (uintptr)mode, 0);
+    System.GC.KeepAlive(ᴋ48);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1123,9 +1123,9 @@ public static error /*err*/ Mkfifo(@string path, uint32 mode) {
     if (err != default!) {
         return err;
     }
-    var ᴋ50 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mkfifo_trampoline), (uintptr)ᴋ50, (uintptr)mode, 0);
-    System.GC.KeepAlive(ᴋ50);
+    var ᴋ49 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mkfifo_trampoline), (uintptr)ᴋ49, (uintptr)mode, 0);
+    System.GC.KeepAlive(ᴋ49);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1144,9 +1144,9 @@ public static error /*err*/ Mknod(@string path, uint32 mode, nint dev) {
     if (err != default!) {
         return err;
     }
-    var ᴋ51 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mknod_trampoline), (uintptr)ᴋ51, (uintptr)mode, (uintptr)dev);
-    System.GC.KeepAlive(ᴋ51);
+    var ᴋ50 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mknod_trampoline), (uintptr)ᴋ50, (uintptr)mode, (uintptr)dev);
+    System.GC.KeepAlive(ᴋ50);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1166,9 +1166,9 @@ public static error /*err*/ Mlock(slice<byte> b) {
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ52 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mlock_trampoline), (uintptr)ᴋ52, (uintptr)len(b), 0);
-    System.GC.KeepAlive(ᴋ52);
+    var ᴋ51 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mlock_trampoline), (uintptr)ᴋ51, (uintptr)len(b), 0);
+    System.GC.KeepAlive(ᴋ51);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1202,9 +1202,9 @@ public static error /*err*/ Mprotect(slice<byte> b, nint prot) {
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ53 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mprotect_trampoline), (uintptr)ᴋ53, (uintptr)len(b), (uintptr)prot);
-    System.GC.KeepAlive(ᴋ53);
+    var ᴋ52 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_mprotect_trampoline), (uintptr)ᴋ52, (uintptr)len(b), (uintptr)prot);
+    System.GC.KeepAlive(ᴋ52);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1224,9 +1224,9 @@ internal static error /*err*/ msync(slice<byte> b, nint flags) {
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ54 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_msync_trampoline), (uintptr)ᴋ54, (uintptr)len(b), (uintptr)flags);
-    System.GC.KeepAlive(ᴋ54);
+    var ᴋ53 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_msync_trampoline), (uintptr)ᴋ53, (uintptr)len(b), (uintptr)flags);
+    System.GC.KeepAlive(ᴋ53);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1246,9 +1246,9 @@ public static error /*err*/ Munlock(slice<byte> b) {
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ55 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_munlock_trampoline), (uintptr)ᴋ55, (uintptr)len(b), 0);
-    System.GC.KeepAlive(ᴋ55);
+    var ᴋ54 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_munlock_trampoline), (uintptr)ᴋ54, (uintptr)len(b), 0);
+    System.GC.KeepAlive(ᴋ54);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1282,9 +1282,9 @@ public static (nint fd, error err) Open(@string path, nint mode, uint32 perm) {
     if (err != default!) {
         return (fd, err);
     }
-    var ᴋ56 = _p0;
-        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_open_trampoline), (uintptr)ᴋ56, (uintptr)mode, (uintptr)perm);
-    System.GC.KeepAlive(ᴋ56);
+    var ᴋ55 = _p0;
+        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_open_trampoline), (uintptr)ᴋ55, (uintptr)mode, (uintptr)perm);
+    System.GC.KeepAlive(ᴋ55);
     fd = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1305,9 +1305,9 @@ public static (nint val, error err) Pathconf(@string path, nint name) {
     if (err != default!) {
         return (val, err);
     }
-    var ᴋ57 = _p0;
-        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_pathconf_trampoline), (uintptr)ᴋ57, (uintptr)name, 0);
-    System.GC.KeepAlive(ᴋ57);
+    var ᴋ56 = _p0;
+        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_pathconf_trampoline), (uintptr)ᴋ56, (uintptr)name, 0);
+    System.GC.KeepAlive(ᴋ56);
     val = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1329,9 +1329,9 @@ internal static (nint n, error err) pread(nint fd, slice<byte> p, int64 offset) 
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ58 = _p0;
-        var (r0, _, e1) = syscall6(abi.FuncPCABI0(libc_pread_trampoline), (uintptr)fd, (uintptr)ᴋ58, (uintptr)len(p), (uintptr)offset, 0, 0);
-    System.GC.KeepAlive(ᴋ58);
+    var ᴋ57 = _p0;
+        var (r0, _, e1) = syscall6(abi.FuncPCABI0(libc_pread_trampoline), (uintptr)fd, (uintptr)ᴋ57, (uintptr)len(p), (uintptr)offset, 0, 0);
+    System.GC.KeepAlive(ᴋ57);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1353,9 +1353,9 @@ internal static (nint n, error err) pwrite(nint fd, slice<byte> p, int64 offset)
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ59 = _p0;
-        var (r0, _, e1) = syscall6(abi.FuncPCABI0(libc_pwrite_trampoline), (uintptr)fd, (uintptr)ᴋ59, (uintptr)len(p), (uintptr)offset, 0, 0);
-    System.GC.KeepAlive(ᴋ59);
+    var ᴋ58 = _p0;
+        var (r0, _, e1) = syscall6(abi.FuncPCABI0(libc_pwrite_trampoline), (uintptr)fd, (uintptr)ᴋ58, (uintptr)len(p), (uintptr)offset, 0, 0);
+    System.GC.KeepAlive(ᴋ58);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1377,9 +1377,9 @@ internal static (nint n, error err) read(nint fd, slice<byte> p) {
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ60 = _p0;
-        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_read_trampoline), (uintptr)fd, (uintptr)ᴋ60, (uintptr)len(p));
-    System.GC.KeepAlive(ᴋ60);
+    var ᴋ59 = _p0;
+        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_read_trampoline), (uintptr)fd, (uintptr)ᴋ59, (uintptr)len(p));
+    System.GC.KeepAlive(ᴋ59);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1394,11 +1394,11 @@ internal static partial void libc_read_trampoline();
 internal static Errno /*res*/ readdir_r(uintptr dir, ж<Dirent> Ꮡentry, ж<ж<Dirent>> Ꮡresult) {
     Errno res = default!;
 
-    var ᴋ61 = Ꮡentry;
-    var ᴋ62 = Ꮡresult;
-        var (r0, _, _) = syscall(abi.FuncPCABI0(libc_readdir_r_trampoline), (uintptr)dir, (uintptr)ᴋ61, (uintptr)ᴋ62);
+    var ᴋ60 = Ꮡentry;
+    var ᴋ61 = Ꮡresult;
+        var (r0, _, _) = syscall(abi.FuncPCABI0(libc_readdir_r_trampoline), (uintptr)dir, (uintptr)ᴋ60, (uintptr)ᴋ61);
+    System.GC.KeepAlive(ᴋ60);
     System.GC.KeepAlive(ᴋ61);
-    System.GC.KeepAlive(ᴋ62);
     res = ((Errno)r0);
     return res;
 }
@@ -1422,11 +1422,11 @@ public static (nint n, error err) Readlink(@string path, slice<byte> buf) {
     } else {
         _p1 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ63 = _p0;
-    var ᴋ64 = _p1;
-        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_readlink_trampoline), (uintptr)ᴋ63, (uintptr)ᴋ64, (uintptr)len(buf));
+    var ᴋ62 = _p0;
+    var ᴋ63 = _p1;
+        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_readlink_trampoline), (uintptr)ᴋ62, (uintptr)ᴋ63, (uintptr)len(buf));
+    System.GC.KeepAlive(ᴋ62);
     System.GC.KeepAlive(ᴋ63);
-    System.GC.KeepAlive(ᴋ64);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1451,11 +1451,11 @@ public static error /*err*/ Rename(@string from, @string to) {
     if (err != default!) {
         return err;
     }
-    var ᴋ65 = _p0;
-    var ᴋ66 = _p1;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_rename_trampoline), (uintptr)ᴋ65, (uintptr)ᴋ66, 0);
+    var ᴋ64 = _p0;
+    var ᴋ65 = _p1;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_rename_trampoline), (uintptr)ᴋ64, (uintptr)ᴋ65, 0);
+    System.GC.KeepAlive(ᴋ64);
     System.GC.KeepAlive(ᴋ65);
-    System.GC.KeepAlive(ᴋ66);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1474,9 +1474,9 @@ public static error /*err*/ Revoke(@string path) {
     if (err != default!) {
         return err;
     }
-    var ᴋ67 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_revoke_trampoline), (uintptr)ᴋ67, 0, 0);
-    System.GC.KeepAlive(ᴋ67);
+    var ᴋ66 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_revoke_trampoline), (uintptr)ᴋ66, 0, 0);
+    System.GC.KeepAlive(ᴋ66);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1495,9 +1495,9 @@ public static error /*err*/ Rmdir(@string path) {
     if (err != default!) {
         return err;
     }
-    var ᴋ68 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_rmdir_trampoline), (uintptr)ᴋ68, 0, 0);
-    System.GC.KeepAlive(ᴋ68);
+    var ᴋ67 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_rmdir_trampoline), (uintptr)ᴋ67, 0, 0);
+    System.GC.KeepAlive(ᴋ67);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1527,15 +1527,15 @@ internal static partial void libc_lseek_trampoline();
 public static error /*err*/ Select(nint n, ж<FdSet> Ꮡr, ж<FdSet> Ꮡw, ж<FdSet> Ꮡe, ж<Timeval> Ꮡtimeout) {
     error err = default!;
 
-    var ᴋ69 = Ꮡr;
-    var ᴋ70 = Ꮡw;
-    var ᴋ71 = Ꮡe;
-    var ᴋ72 = Ꮡtimeout;
-        var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_select_trampoline), (uintptr)n, (uintptr)ᴋ69, (uintptr)ᴋ70, (uintptr)ᴋ71, (uintptr)ᴋ72, 0);
+    var ᴋ68 = Ꮡr;
+    var ᴋ69 = Ꮡw;
+    var ᴋ70 = Ꮡe;
+    var ᴋ71 = Ꮡtimeout;
+        var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_select_trampoline), (uintptr)n, (uintptr)ᴋ68, (uintptr)ᴋ69, (uintptr)ᴋ70, (uintptr)ᴋ71, 0);
+    System.GC.KeepAlive(ᴋ68);
     System.GC.KeepAlive(ᴋ69);
     System.GC.KeepAlive(ᴋ70);
     System.GC.KeepAlive(ᴋ71);
-    System.GC.KeepAlive(ᴋ72);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1596,9 +1596,9 @@ public static error /*err*/ Setlogin(@string name) {
     if (err != default!) {
         return err;
     }
-    var ᴋ73 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_setlogin_trampoline), (uintptr)ᴋ73, 0, 0);
-    System.GC.KeepAlive(ᴋ73);
+    var ᴋ72 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_setlogin_trampoline), (uintptr)ᴋ72, 0, 0);
+    System.GC.KeepAlive(ᴋ72);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1682,9 +1682,9 @@ internal static partial void libc_setreuid_trampoline();
 internal static error /*err*/ setrlimit(nint which, ж<Rlimit> Ꮡlim) {
     error err = default!;
 
-    var ᴋ74 = Ꮡlim;
-        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_setrlimit_trampoline), (uintptr)which, (uintptr)ᴋ74, 0);
-    System.GC.KeepAlive(ᴋ74);
+    var ᴋ73 = Ꮡlim;
+        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_setrlimit_trampoline), (uintptr)which, (uintptr)ᴋ73, 0);
+    System.GC.KeepAlive(ᴋ73);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1714,9 +1714,9 @@ internal static partial void libc_setsid_trampoline();
 public static error /*err*/ Settimeofday(ж<Timeval> Ꮡtp) {
     error err = default!;
 
-    var ᴋ75 = Ꮡtp;
-        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_settimeofday_trampoline), (uintptr)ᴋ75, 0, 0);
-    System.GC.KeepAlive(ᴋ75);
+    var ᴋ74 = Ꮡtp;
+        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_settimeofday_trampoline), (uintptr)ᴋ74, 0, 0);
+    System.GC.KeepAlive(ᴋ74);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1754,11 +1754,11 @@ public static error /*err*/ Symlink(@string path, @string link) {
     if (err != default!) {
         return err;
     }
-    var ᴋ76 = _p0;
-    var ᴋ77 = _p1;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_symlink_trampoline), (uintptr)ᴋ76, (uintptr)ᴋ77, 0);
+    var ᴋ75 = _p0;
+    var ᴋ76 = _p1;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_symlink_trampoline), (uintptr)ᴋ75, (uintptr)ᴋ76, 0);
+    System.GC.KeepAlive(ᴋ75);
     System.GC.KeepAlive(ᴋ76);
-    System.GC.KeepAlive(ᴋ77);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1791,9 +1791,9 @@ public static error /*err*/ Truncate(@string path, int64 length) {
     if (err != default!) {
         return err;
     }
-    var ᴋ78 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_truncate_trampoline), (uintptr)ᴋ78, (uintptr)length, 0);
-    System.GC.KeepAlive(ᴋ78);
+    var ᴋ77 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_truncate_trampoline), (uintptr)ᴋ77, (uintptr)length, 0);
+    System.GC.KeepAlive(ᴋ77);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1824,9 +1824,9 @@ public static error /*err*/ Undelete(@string path) {
     if (err != default!) {
         return err;
     }
-    var ᴋ79 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_undelete_trampoline), (uintptr)ᴋ79, 0, 0);
-    System.GC.KeepAlive(ᴋ79);
+    var ᴋ78 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_undelete_trampoline), (uintptr)ᴋ78, 0, 0);
+    System.GC.KeepAlive(ᴋ78);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1845,9 +1845,9 @@ public static error /*err*/ Unlink(@string path) {
     if (err != default!) {
         return err;
     }
-    var ᴋ80 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_unlink_trampoline), (uintptr)ᴋ80, 0, 0);
-    System.GC.KeepAlive(ᴋ80);
+    var ᴋ79 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_unlink_trampoline), (uintptr)ᴋ79, 0, 0);
+    System.GC.KeepAlive(ᴋ79);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1866,9 +1866,9 @@ public static error /*err*/ Unmount(@string path, nint flags) {
     if (err != default!) {
         return err;
     }
-    var ᴋ81 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_unmount_trampoline), (uintptr)ᴋ81, (uintptr)flags, 0);
-    System.GC.KeepAlive(ᴋ81);
+    var ᴋ80 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_unmount_trampoline), (uintptr)ᴋ80, (uintptr)flags, 0);
+    System.GC.KeepAlive(ᴋ80);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -1889,9 +1889,9 @@ internal static (nint n, error err) write(nint fd, slice<byte> p) {
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ82 = _p0;
-        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_write_trampoline), (uintptr)fd, (uintptr)ᴋ82, (uintptr)len(p));
-    System.GC.KeepAlive(ᴋ82);
+    var ᴋ81 = _p0;
+        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_write_trampoline), (uintptr)fd, (uintptr)ᴋ81, (uintptr)len(p));
+    System.GC.KeepAlive(ᴋ81);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1913,9 +1913,9 @@ internal static (uintptr cnt, error err) writev(nint fd, slice<Iovec> iovecs) {
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ83 = _p0;
-        var (r0, _, e1) = syscallX(abi.FuncPCABI0(libc_writev_trampoline), (uintptr)fd, (uintptr)ᴋ83, (uintptr)len(iovecs));
-    System.GC.KeepAlive(ᴋ83);
+    var ᴋ82 = _p0;
+        var (r0, _, e1) = syscallX(abi.FuncPCABI0(libc_writev_trampoline), (uintptr)fd, (uintptr)ᴋ82, (uintptr)len(iovecs));
+    System.GC.KeepAlive(ᴋ82);
     cnt = (uintptr)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -1976,13 +1976,13 @@ internal static partial void libc_fork_trampoline();
 internal static error /*err*/ execve(ж<byte> Ꮡpath, ж<ж<byte>> Ꮡargv, ж<ж<byte>> Ꮡenvp) {
     error err = default!;
 
-    var ᴋ84 = Ꮡpath;
-    var ᴋ85 = Ꮡargv;
-    var ᴋ86 = Ꮡenvp;
-        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_execve_trampoline), (uintptr)ᴋ84, (uintptr)ᴋ85, (uintptr)ᴋ86);
+    var ᴋ83 = Ꮡpath;
+    var ᴋ84 = Ꮡargv;
+    var ᴋ85 = Ꮡenvp;
+        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_execve_trampoline), (uintptr)ᴋ83, (uintptr)ᴋ84, (uintptr)ᴋ85);
+    System.GC.KeepAlive(ᴋ83);
     System.GC.KeepAlive(ᴋ84);
     System.GC.KeepAlive(ᴋ85);
-    System.GC.KeepAlive(ᴋ86);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2016,15 +2016,15 @@ internal static error /*err*/ sysctl(slice<_C_int> mib, ж<byte> Ꮡold, ж<uint
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ87 = _p0;
-    var ᴋ88 = Ꮡold;
-    var ᴋ89 = Ꮡoldlen;
-    var ᴋ90 = Ꮡnew;
-        var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_sysctl_trampoline), (uintptr)ᴋ87, (uintptr)len(mib), (uintptr)ᴋ88, (uintptr)ᴋ89, (uintptr)ᴋ90, (uintptr)newlen);
+    var ᴋ86 = _p0;
+    var ᴋ87 = Ꮡold;
+    var ᴋ88 = Ꮡoldlen;
+    var ᴋ89 = Ꮡnew;
+        var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_sysctl_trampoline), (uintptr)ᴋ86, (uintptr)len(mib), (uintptr)ᴋ87, (uintptr)ᴋ88, (uintptr)ᴋ89, (uintptr)newlen);
+    System.GC.KeepAlive(ᴋ86);
     System.GC.KeepAlive(ᴋ87);
     System.GC.KeepAlive(ᴋ88);
     System.GC.KeepAlive(ᴋ89);
-    System.GC.KeepAlive(ᴋ90);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2043,9 +2043,9 @@ internal static error /*err*/ unlinkat(nint fd, @string path, nint flags) {
     if (err != default!) {
         return err;
     }
-    var ᴋ91 = _p0;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_unlinkat_trampoline), (uintptr)fd, (uintptr)ᴋ91, (uintptr)flags);
-    System.GC.KeepAlive(ᴋ91);
+    var ᴋ90 = _p0;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_unlinkat_trampoline), (uintptr)fd, (uintptr)ᴋ90, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ90);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2065,9 +2065,9 @@ internal static (nint fdret, error err) openat(nint fd, @string path, nint flags
     if (err != default!) {
         return (fdret, err);
     }
-    var ᴋ92 = _p0;
-        var (r0, _, e1) = syscall6(abi.FuncPCABI0(libc_openat_trampoline), (uintptr)fd, (uintptr)ᴋ92, (uintptr)flags, (uintptr)perm, 0, 0);
-    System.GC.KeepAlive(ᴋ92);
+    var ᴋ91 = _p0;
+        var (r0, _, e1) = syscall6(abi.FuncPCABI0(libc_openat_trampoline), (uintptr)fd, (uintptr)ᴋ91, (uintptr)flags, (uintptr)perm, 0, 0);
+    System.GC.KeepAlive(ᴋ91);
     fdret = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -2089,9 +2089,9 @@ internal static (nint n, error err) getcwd(slice<byte> buf) {
     } else {
         _p0 = @unsafe.Pointer.FromBox(Ꮡ_zero);
     }
-    var ᴋ93 = _p0;
-        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_getcwd_trampoline), (uintptr)ᴋ93, (uintptr)len(buf), 0);
-    System.GC.KeepAlive(ᴋ93);
+    var ᴋ92 = _p0;
+        var (r0, _, e1) = syscall(abi.FuncPCABI0(libc_getcwd_trampoline), (uintptr)ᴋ92, (uintptr)len(buf), 0);
+    System.GC.KeepAlive(ᴋ92);
     n = (nint)r0;
     if (e1 != 0) {
         err = errnoErr(e1);
@@ -2106,9 +2106,9 @@ internal static partial void libc_getcwd_trampoline();
 public static error /*err*/ Fstat(nint fd, ж<Stat_t> Ꮡstat) {
     error err = default!;
 
-    var ᴋ94 = Ꮡstat;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_fstat64_trampoline), (uintptr)fd, (uintptr)ᴋ94, 0);
-    System.GC.KeepAlive(ᴋ94);
+    var ᴋ93 = Ꮡstat;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_fstat64_trampoline), (uintptr)fd, (uintptr)ᴋ93, 0);
+    System.GC.KeepAlive(ᴋ93);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2122,9 +2122,9 @@ internal static partial void libc_fstat64_trampoline();
 public static error /*err*/ Fstatfs(nint fd, ж<Statfs_t> Ꮡstat) {
     error err = default!;
 
-    var ᴋ95 = Ꮡstat;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_fstatfs64_trampoline), (uintptr)fd, (uintptr)ᴋ95, 0);
-    System.GC.KeepAlive(ᴋ95);
+    var ᴋ94 = Ꮡstat;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_fstatfs64_trampoline), (uintptr)fd, (uintptr)ᴋ94, 0);
+    System.GC.KeepAlive(ᴋ94);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2138,9 +2138,9 @@ internal static partial void libc_fstatfs64_trampoline();
 public static error /*err*/ Gettimeofday(ж<Timeval> Ꮡtp) {
     error err = default!;
 
-    var ᴋ96 = Ꮡtp;
-        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_gettimeofday_trampoline), (uintptr)ᴋ96, 0, 0);
-    System.GC.KeepAlive(ᴋ96);
+    var ᴋ95 = Ꮡtp;
+        var (_, _, e1) = rawSyscall(abi.FuncPCABI0(libc_gettimeofday_trampoline), (uintptr)ᴋ95, 0, 0);
+    System.GC.KeepAlive(ᴋ95);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2159,11 +2159,11 @@ public static error /*err*/ Lstat(@string path, ж<Stat_t> Ꮡstat) {
     if (err != default!) {
         return err;
     }
-    var ᴋ97 = _p0;
-    var ᴋ98 = Ꮡstat;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_lstat64_trampoline), (uintptr)ᴋ97, (uintptr)ᴋ98, 0);
+    var ᴋ96 = _p0;
+    var ᴋ97 = Ꮡstat;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_lstat64_trampoline), (uintptr)ᴋ96, (uintptr)ᴋ97, 0);
+    System.GC.KeepAlive(ᴋ96);
     System.GC.KeepAlive(ᴋ97);
-    System.GC.KeepAlive(ᴋ98);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2182,11 +2182,11 @@ public static error /*err*/ Stat(@string path, ж<Stat_t> Ꮡstat) {
     if (err != default!) {
         return err;
     }
-    var ᴋ99 = _p0;
-    var ᴋ100 = Ꮡstat;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_stat64_trampoline), (uintptr)ᴋ99, (uintptr)ᴋ100, 0);
+    var ᴋ98 = _p0;
+    var ᴋ99 = Ꮡstat;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_stat64_trampoline), (uintptr)ᴋ98, (uintptr)ᴋ99, 0);
+    System.GC.KeepAlive(ᴋ98);
     System.GC.KeepAlive(ᴋ99);
-    System.GC.KeepAlive(ᴋ100);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2205,11 +2205,11 @@ public static error /*err*/ Statfs(@string path, ж<Statfs_t> Ꮡstat) {
     if (err != default!) {
         return err;
     }
-    var ᴋ101 = _p0;
-    var ᴋ102 = Ꮡstat;
-        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_statfs64_trampoline), (uintptr)ᴋ101, (uintptr)ᴋ102, 0);
+    var ᴋ100 = _p0;
+    var ᴋ101 = Ꮡstat;
+        var (_, _, e1) = syscall(abi.FuncPCABI0(libc_statfs64_trampoline), (uintptr)ᴋ100, (uintptr)ᴋ101, 0);
+    System.GC.KeepAlive(ᴋ100);
     System.GC.KeepAlive(ᴋ101);
-    System.GC.KeepAlive(ᴋ102);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2228,11 +2228,11 @@ internal static error /*err*/ fstatat(nint fd, @string path, ж<Stat_t> Ꮡstat,
     if (err != default!) {
         return err;
     }
-    var ᴋ103 = _p0;
-    var ᴋ104 = Ꮡstat;
-        var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_fstatat64_trampoline), (uintptr)fd, (uintptr)ᴋ103, (uintptr)ᴋ104, (uintptr)flags, 0, 0);
+    var ᴋ102 = _p0;
+    var ᴋ103 = Ꮡstat;
+        var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_fstatat64_trampoline), (uintptr)fd, (uintptr)ᴋ102, (uintptr)ᴋ103, (uintptr)flags, 0, 0);
+    System.GC.KeepAlive(ᴋ102);
     System.GC.KeepAlive(ᴋ103);
-    System.GC.KeepAlive(ᴋ104);
     if (e1 != 0) {
         err = errnoErr(e1);
     }
@@ -2248,7 +2248,7 @@ internal static partial void libc_fstatat64_trampoline();
 internal static error /*err*/ ptrace(nint request, nint pid, uintptr addr, uintptr data) {
     error err = default!;
 
-    if (Δruntime.GOOS == "ios"u8) {
+    if (runtime.GOOS == "ios"u8) {
         throw panic("unimplemented");
     }
     var (_, _, e1) = syscall6(abi.FuncPCABI0(libc_ptrace_trampoline), (uintptr)request, (uintptr)pid, (uintptr)addr, (uintptr)data, 0, 0);

@@ -54,7 +54,7 @@ using static go.@internal.coverage.decodecounter_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/decodecounter/decodecounterfile.go", "decodecounterfile.cs", "AFdOgtyAgqSClIKUgqiAgraCgIK2gIKkpqKCpqKCgIKkgIKkgpSClKrUgIKkgoK6gIKkgIK2gIKUgoKCgILYpoKCgoKUgpSSgoL2ooKCgpSClJKSgoKUlIKCgoKClIKClICCpJSAgoKClIKCgraAgqSAgqQAAhLirsKuwgAKGJKu4oKUgpSCgIK2gIKkqqIABBQACAKClIKCgoKCgoKCgpSCgoKUlLaCgoKClIKUpoKCgpSClLgAARDSgoKCgoKklIK4lIKogoKUgoKUgpSCgoKClJQ=")]
+[assembly: go.GoPositionMap("internal/coverage/decodecounter/decodecounterfile.go", "decodecounterfile.cs", "ACdOgtyAgqSClIKUgqiAgraCgIK2gIKkpqKCpqKCgIKkgIKkgpSClKrUgIKkgoK6gIKkgIK2gIKUgoKCgILYpoKCgoKUgpSSgoL2ooKCgpSClJKSgoKUlIKCgoKClIKClICCpJSAgoKClIKCgraAgqSAgqQAAhLirsKuwgAKGJKu4oKUgpSCgIK2gIKkqqIABBQACAKClIKCgoKCgoKCgpSCgoKUlLaCgoKClIKUpoKCgpSClLgAARDSgoKCgoKklIK4lIKogoKUgoKUgpSCgoKClJQ=", "157-163:1;281-297:1;300-309:2;311-320:3")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;
@@ -72,4 +72,21 @@ public static partial class decodecounter_package
     [GoValueClone("hdr", "ftr")] public partial struct CounterDataReader {}
     public partial struct FuncPayload {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() => builtin.initPackage(typeof(go.@internal.coverage_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸslicereader() => builtin.initPackage(typeof(go.@internal.coverage.slicereader_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸstringtab() => builtin.initPackage(typeof(go.@internal.coverage.stringtab_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    // </ImportInitializers>
 }

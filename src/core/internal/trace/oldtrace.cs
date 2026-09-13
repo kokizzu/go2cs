@@ -37,18 +37,6 @@ using go.@internal.trace.@internal;
 
 partial class trace_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸinternalꓸoldtrace() {
-    builtin.initPackage(typeof(go.@internal.trace.@internal.oldtrace_package));
-}
-
 [GoType] partial struct oldTraceConverter {
     internal oldtrace.Trace trace;
     internal ж<evTable> evt;
@@ -313,7 +301,7 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
                     @base: new baseEvent(
                         typ: go122.EvGoStatus,
                         time: ((ΔTime)(int64)ev.Ts),
-                        args: new timedEventArgs(new uint64[]{(uint64)(int64)gid, ~(uint64)0, (uint64)(uint8)go122.GoRunnable}.array(5))
+                        args: new timedEventArgs(new uint64[]{(uint64)(int64)gid, ~(uint64)0, (uint64)(uint8)go122.GoRunnable}.array(4))
                     )
                 ));
             }
@@ -326,11 +314,11 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
         {
             var (_, ok) = it.seenProcs[((ProcID)(int64)ev.P), ꟷ]; if (ok){
                 mappedType = go122.EvProcStart;
-                mappedArgs = new timedEventArgs(new uint64[]{(uint64)ev.P}.array(5));
+                mappedArgs = new timedEventArgs(new uint64[]{(uint64)ev.P}.array(4));
             } else {
                 it.seenProcs[((ProcID)(int64)ev.P)] = new EmptyStruct();
                 mappedType = go122.EvProcStatus;
-                mappedArgs = new timedEventArgs(new uint64[]{(uint64)ev.P, (uint64)(uint8)go122.ProcRunning}.array(5));
+                mappedArgs = new timedEventArgs(new uint64[]{(uint64)ev.P, (uint64)(uint8)go122.ProcRunning}.array(4));
             }
         }
     }
@@ -338,11 +326,11 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
         {
             var (_, ok) = it.seenProcs[((ProcID)(int64)ev.P), ꟷ]; if (ok){
                 mappedType = go122.EvProcStop;
-                mappedArgs = new timedEventArgs(new uint64[]{(uint64)ev.P}.array(5));
+                mappedArgs = new timedEventArgs(new uint64[]{(uint64)ev.P}.array(4));
             } else {
                 it.seenProcs[((ProcID)(int64)ev.P)] = new EmptyStruct();
                 mappedType = go122.EvProcStatus;
-                mappedArgs = new timedEventArgs(new uint64[]{(uint64)ev.P, (uint64)(uint8)go122.ProcIdle}.array(5));
+                mappedArgs = new timedEventArgs(new uint64[]{(uint64)ev.P, (uint64)(uint8)go122.ProcIdle}.array(4));
             }
         }
     }
@@ -356,11 +344,11 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
         var sid = it.builtinToStringID[(nint)sSTWUnknown + it.trace.STWReason(ev.Args[0])];
         it.lastStwReason = sid;
         mappedType = go122.EvSTWBegin;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)sid}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)sid}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvSTWDone) {
         mappedType = go122.EvSTWEnd;
-        mappedArgs = new timedEventArgs(new uint64[]{it.lastStwReason}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{it.lastStwReason}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGCSweepStart) {
         mappedType = go122.EvGCSweepBegin;
@@ -378,7 +366,7 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
     else if (exprᴛ1 == oldtrace.EvGoStart) {
         if (it.preInit){
             mappedType = go122.EvGoStatus;
-            mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ~(uint64)0, (uint64)(uint8)go122.GoRunning}.array(5));
+            mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ~(uint64)0, (uint64)(uint8)go122.GoRunning}.array(4));
             delete(it.createdPreInit, ((GoID)(int64)ev.Args[0]));
         } else {
             mappedType = go122.EvGoStart;
@@ -395,7 +383,7 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
             @base: new baseEvent(
                 typ: go122.EvGoLabel,
                 time: ((ΔTime)(int64)ev.Ts),
-                args: new timedEventArgs(new uint64[]{ev.Args[2]}.array(5))
+                args: new timedEventArgs(new uint64[]{ev.Args[2]}.array(4))
             )
         )
         }.slice();
@@ -418,54 +406,54 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
     }
     else if (exprᴛ1 == oldtrace.EvGoStop) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sForever], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sForever], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoSched) {
         mappedType = go122.EvGoStop;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sGosched], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sGosched], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoPreempt) {
         mappedType = go122.EvGoStop;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sPreempted], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sPreempted], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoSleep) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sSleep], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sSleep], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoBlock) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sEmpty], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sEmpty], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoUnblock) {
         mappedType = go122.EvGoUnblock;
     }
     else if (exprᴛ1 == oldtrace.EvGoBlockSend) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sChanSend], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sChanSend], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoBlockRecv) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sChanRecv], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sChanRecv], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoBlockSelect) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sSelect], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sSelect], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoBlockSync) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sSync], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sSync], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoBlockCond) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sSyncCond], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sSyncCond], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoBlockNet) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sNetwork], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sNetwork], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoBlockGC) {
         mappedType = go122.EvGoBlock;
-        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sMarkAssistWait], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{(uint64)it.builtinToStringID[sMarkAssistWait], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvGoSysCall) {
         var blocked = false;
@@ -485,7 +473,7 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
         });
         if (blocked){
             mappedType = go122.EvGoSyscallBegin;
-            mappedArgs = new timedEventArgs(new array<uint64>(5){[1] = (uint64)ev.StkID});
+            mappedArgs = new timedEventArgs(new array<uint64>(4){[1] = (uint64)ev.StkID});
         } else {
             // Convert the old instantaneous syscall event to a pair of syscall
             // begin and syscall end and give it the shortest possible duration,
@@ -500,7 +488,7 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
                 @base: new baseEvent(
                     typ: go122.EvGoSyscallBegin,
                     time: ((ΔTime)(int64)ev.Ts),
-                    args: new timedEventArgs(new array<uint64>(5){[1] = (uint64)ev.StkID})
+                    args: new timedEventArgs(new array<uint64>(4){[1] = (uint64)ev.StkID})
                 )
             );
             var out2 = new ΔEvent(
@@ -509,7 +497,7 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
                 @base: new baseEvent(
                     typ: go122.EvGoSyscallEnd,
                     time: ((ΔTime)(int64)(ev.Ts + 1)),
-                    args: new timedEventArgs(new uint64[5].array())
+                    args: new timedEventArgs(new uint64[4].array())
                 )
             );
             it.extra = append(it.extra, out2.ΔClone());
@@ -524,7 +512,7 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
     }
     else if (exprᴛ1 == oldtrace.EvGoWaiting) {
         mappedType = go122.EvGoStatus;
-        mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ~(uint64)0, (uint64)(uint8)go122.GoWaiting}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ~(uint64)0, (uint64)(uint8)go122.GoWaiting}.array(4));
         delete(it.createdPreInit, ((GoID)(int64)ev.Args[0]));
     }
     else if (exprᴛ1 == oldtrace.EvGoInSyscall) {
@@ -532,7 +520,7 @@ internal static (ΔEvent OUT, error ERR) convertEvent(this ж<oldTraceConverter>
         mappedArgs = new timedEventArgs(new uint64[]{ // In the new tracer, GoStatus with GoSyscall knows what thread the
  // syscall is on. In the old tracer, EvGoInSyscall doesn't contain that
  // information and all we can do here is specify NoThread.
-ev.Args[0], ~(uint64)0, (uint64)(uint8)go122.GoSyscall}.array(5));
+ev.Args[0], ~(uint64)0, (uint64)(uint8)go122.GoSyscall}.array(4));
         delete(it.createdPreInit, ((GoID)(int64)ev.Args[0]));
     }
     else if (exprᴛ1 == oldtrace.EvHeapAlloc) {
@@ -553,7 +541,7 @@ ev.Args[0], ~(uint64)0, (uint64)(uint8)go122.GoSyscall}.array(5));
         if (parent == 0) {
             parent = (uint64)NoTask;
         }
-        mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], parent, ev.Args[2], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], parent, ev.Args[2], (uint64)ev.StkID}.array());
         var (name, _) = it.evt.of(evTable.Ꮡstrings).get(((stringID)ev.Args[2]));
         it.tasks[((TaskID)ev.Args[0])] = new taskState(name: name, parentID: ((TaskID)ev.Args[1]));
     }
@@ -569,9 +557,9 @@ ev.Args[0], ~(uint64)0, (uint64)(uint8)go122.GoSyscall}.array(5));
                 ev.Args[1],
                 (uint64)ts.parentID,
                 (uint64)it.evt.addExtraString(ts.name)
-            }.array(5));
+            }.array());
         } else {
-            mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ev.Args[1], (uint64)NoTask, (uint64)it.evt.addExtraString(""u8)}.array(5));
+            mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ev.Args[1], (uint64)NoTask, (uint64)it.evt.addExtraString(""u8)}.array());
         }
     }
     else if (exprᴛ1 == oldtrace.EvUserRegion) {
@@ -587,11 +575,11 @@ ev.Args[0], ~(uint64)0, (uint64)(uint8)go122.GoSyscall}.array(5));
 
         mappedArgs = new timedEventArgs(new uint64[]{ // start
  // end
-ev.Args[0], ev.Args[2], (uint64)ev.StkID}.array(5));
+ev.Args[0], ev.Args[2], (uint64)ev.StkID}.array(4));
     }
     else if (exprᴛ1 == oldtrace.EvUserLog) {
         mappedType = go122.EvUserLog;
-        mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ev.Args[1], it.inlineToStringID[(nint)(ev.Args[3])], (uint64)ev.StkID}.array(5));
+        mappedArgs = new timedEventArgs(new uint64[]{ev.Args[0], ev.Args[1], it.inlineToStringID[(nint)(ev.Args[3])], (uint64)ev.StkID}.array());
     }
     else if (exprᴛ1 == oldtrace.EvCPUSample) {
         mappedType = go122.EvCPUSample;
@@ -600,7 +588,7 @@ ev.Args[0], ev.Args[2], (uint64)ev.StkID}.array(5));
  // they have the arguments stack, M, P, G.
  //
  // In Go 1.21, CPU samples did not have Ms.
-(uint64)ev.StkID, ~(uint64)0, (uint64)ev.P, ev.G}.array(5));
+(uint64)ev.StkID, ~(uint64)0, (uint64)ev.P, ev.G}.array());
     }
     else { /* default: */
         return (new ΔEvent(nil), fmt.Errorf("unexpected event type %v"u8, ev.Type));

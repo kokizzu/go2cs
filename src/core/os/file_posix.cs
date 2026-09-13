@@ -4,7 +4,7 @@
 //go:build unix || (js && wasm) || wasip1 || windows
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using time = time_package;
 using @internal;
@@ -33,7 +33,7 @@ internal static (nint n, error err) read(this ж<File> Ꮡf, slice<byte> b) {
     error err = default!;
 
     (n, err) = Ꮡf.of(File.Ꮡpfd).Read(b);
-    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
+    runtime.KeepAlive(Ꮡf.OrTypedNil());
     return (n, err);
 }
 
@@ -45,7 +45,7 @@ internal static (nint n, error err) pread(this ж<File> Ꮡf, slice<byte> b, int
     error err = default!;
 
     (n, err) = Ꮡf.of(File.Ꮡpfd).Pread(b, off);
-    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
+    runtime.KeepAlive(Ꮡf.OrTypedNil());
     return (n, err);
 }
 
@@ -56,7 +56,7 @@ internal static (nint n, error err) write(this ж<File> Ꮡf, slice<byte> b) {
     error err = default!;
 
     (n, err) = Ꮡf.of(File.Ꮡpfd).Write(b);
-    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
+    runtime.KeepAlive(Ꮡf.OrTypedNil());
     return (n, err);
 }
 
@@ -67,7 +67,7 @@ internal static (nint n, error err) pwrite(this ж<File> Ꮡf, slice<byte> b, in
     error err = default!;
 
     (n, err) = Ꮡf.of(File.Ꮡpfd).Pwrite(b, off);
-    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
+    runtime.KeepAlive(Ꮡf.OrTypedNil());
     return (n, err);
 }
 
@@ -321,6 +321,16 @@ internal static error ignoringEINTR(Func<error> fn) {
         var err = fn();
         if (!AreEqual(err, syscall.EINTR)) {
             return err;
+        }
+    }
+}
+
+// ignoringEINTR2 is ignoringEINTR, but returning an additional value.
+internal static (T, error) ignoringEINTR2<T>(Func<(T, error)> fn) {
+    while (ᐧ) {
+        var (v, err) = fn();
+        if (!AreEqual(err, syscall.EINTR)) {
+            return (v, err);
         }
     }
 }

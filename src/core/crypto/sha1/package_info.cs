@@ -55,8 +55,8 @@ using static go.crypto.sha1_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/sha1/sha1.go", "sha1.cs", "ACwmggAaPoKCgoKCgoKCgoKC5oKClIKUgoKCgoKCgoKCpoKmgqaCgoKCgoKCrLKClIKCpoCkgKTCgoKCgoKCgoKUlIKCgpSClKaClJKCpqKEkoKCgpSogoKChIKWhIKCgoKEqJKSgqaigoKCloKChIKClpaElLqEgoKCgoKWlIKClLqEgoKCgpaokoKUgoKC")]
-[assembly: go.GoPositionMap("crypto/sha1/sha1block.go", "sha1block.cs", "ABUoooSCpoKClrqCgoKClIKChIKClIKCgoKClIKCgoKClIKCgoKCloKCgoKElg==")]
+[assembly: go.GoPositionMap("crypto/sha1/sha1.go", "sha1.cs", "ABUoggAaPoKmgoKCgoKCgoKCguaCgpSClIKCgoKCgoKCgqaCpoKmgoKCgoKCgq7CgpSCgqaApIDUwoKUgoKCgoKCgoKUlIKCgpSClKaClJKCpqKCloSSgoKClKiCgoKEgpaEgoKCgoSokpKCpqKCloKCgpaCgoSCgpaWhJS6hIKCgoKClpSCgpS6hIKCgoKWqJKClIKUgoKC")]
+[assembly: go.GoPositionMap("crypto/sha1/sha1block.go", "sha1block.cs", "AA8oooSCpoKClrqCgoKClIKChIKClIKCgoKClIKCgoKClIKCgoKCloKCgoKElg==")]
 [assembly: go.GoPositionMap("crypto/sha1/sha1block_generic.go", "sha1block_generic.cs", "AAgSgg==")]
 // </GoSourcePositionMaps>
 
@@ -74,4 +74,19 @@ public static partial class sha1_package
     // <TypeAccessibility>
     [GoValueClone("h", "x")] internal partial struct digest {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() => builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    // </ImportInitializers>
 }

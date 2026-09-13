@@ -10,18 +10,6 @@ using @internal;
 
 partial class time_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() {
-    builtin.initPackage(typeof(@internal.stringslite_package));
-}
-
 // These are predefined layouts for use in [Time.Format] and [time.Parse].
 // The reference time used in these layouts is the specific time stamp:
 //
@@ -166,19 +154,19 @@ internal static UntypedInt stdWeekDay => 262;                  // "Mon"
 internal static UntypedInt stdDay => 263;                      // "2"
 internal static UntypedInt stdUnderDay => 264;                 // "_2"
 internal static UntypedInt stdZeroDay => 265;                  // "02"
-internal static UntypedInt stdUnderYearDay => 266;             // "__2"
-internal static UntypedInt stdZeroYearDay => 267;              // "002"
-internal static UntypedInt stdHour => /* iota + stdNeedClock */ 524; // "15"
-internal static UntypedInt stdHour12 => 525;                   // "3"
-internal static UntypedInt stdZeroHour12 => 526;               // "03"
-internal static UntypedInt stdMinute => 527;                   // "4"
-internal static UntypedInt stdZeroMinute => 528;               // "04"
-internal static UntypedInt stdSecond => 529;                   // "5"
-internal static UntypedInt stdZeroSecond => 530;               // "05"
+internal static UntypedInt stdUnderYearDay => /* iota + stdNeedYday */ 522; // "__2"
+internal static UntypedInt stdZeroYearDay => 523;              // "002"
+internal static UntypedInt stdHour => /* iota + stdNeedClock */ 1036; // "15"
+internal static UntypedInt stdHour12 => 1037;                   // "3"
+internal static UntypedInt stdZeroHour12 => 1038;               // "03"
+internal static UntypedInt stdMinute => 1039;                   // "4"
+internal static UntypedInt stdZeroMinute => 1040;               // "04"
+internal static UntypedInt stdSecond => 1041;                   // "5"
+internal static UntypedInt stdZeroSecond => 1042;               // "05"
 internal static UntypedInt stdLongYear => /* iota + stdNeedDate */ 275; // "2006"
 internal static UntypedInt stdYear => 276;                     // "06"
-internal static UntypedInt stdPM => /* iota + stdNeedClock */ 533; // "PM"
-internal static UntypedInt stdpm => 534;                       // "pm"
+internal static UntypedInt stdPM => /* iota + stdNeedClock */ 1045; // "PM"
+internal static UntypedInt stdpm => 1046;                       // "pm"
 internal static UntypedInt stdTZ => /* iota */ 23;   // "MST"
 internal static UntypedInt stdISO8601TZ => 24;                // "Z0700"  // prints Z for UTC
 internal static UntypedInt stdISO8601SecondsTZ => 25;         // "Z070000"
@@ -193,7 +181,8 @@ internal static UntypedInt stdNumColonSecondsTZ => 33;        // "-07:00:00"
 internal static UntypedInt stdFracSecond0 => 34;              // ".0", ".00", ... , trailing zeros included
 internal static UntypedInt stdFracSecond9 => 35;              // ".9", ".99", ..., trailing zeros omitted
 internal static UntypedInt stdNeedDate => /* 1 << 8 */ 256; // need month, day, year
-internal static UntypedInt stdNeedClock => /* 2 << 8 */ 512; // need hour, minute, second
+internal static UntypedInt stdNeedYday => /* 1 << 9 */ 512; // need yday
+internal static UntypedInt stdNeedClock => /* 1 << 10 */ 1024; // need hour, minute, second
 internal static UntypedInt stdArgShift => 16;  // extra argument in high bits, above low stdArgShift
 internal static UntypedInt stdSeparatorShift => 28;  // extra argument in high 4 bits for fractional second separators
 internal static UntypedInt stdMask => /* 1<<stdArgShift - 1 */ 65535; // mask out argument
@@ -284,7 +273,7 @@ internal static (@string prefix, nint std, @string suffix) nextStdChunk(@string 
             case (rune)'_': {
                 if (len(layout) >= i + 2 && layout[i + 1] == (rune)'2') {
                     // _2, _2006, __2
-                    //_2006 is really a literal _, followed by stdLongYear
+                    // _2006 is really a literal _, followed by stdLongYear
                     if (len(layout) >= i + 5 && layout[(int)(i + 1)..(int)(i + 5)] == "2006") {
                         return (layout[0..(int)(i + 1)], stdLongYear, layout[(int)(i + 5)..]);
                     }
@@ -452,7 +441,7 @@ internal static bool match(@string s1, @string s2) {
 
 internal static (nint, @string, error) lookup(slice<@string> tab, @string val) {
     foreach (var (i, v) in tab) {
-        if (len(val) >= len(v) && match(val[0..(int)(len(v))], v)) {
+        if (len(val) >= len(v) && match(val[..(int)(len(v))], v)) {
             return (i, val[(int)(len(v))..], default!);
         }
     }
@@ -628,9 +617,9 @@ public static @string String(this Time t) {
 // GoString implements [fmt.GoStringer] and formats t to be printed in Go source
 // code.
 public static @string GoString(this Time t) {
-    var abs = t.abs();
-    var (year, month, day, _) = absDate(abs, true);
-    var (hour, minute, second) = absClock(abs);
+    var abs = t.absSec();
+    var (year, month, day) = abs.days().date();
+    var (hour, minute, second) = abs.clock();
     var buf = new slice<byte>(0, len("time.Date(9999, time.September, 31, 23, 59, 59, 999999999, time.Local)"));
     buf = append(buf, ((@string)"time.Date("u8).ꓸꓸꓸ);
     buf = appendInt(buf, year, 0);
@@ -726,12 +715,12 @@ public static slice<byte> AppendFormat(this Time t, slice<byte> b, @string layou
 }
 
 internal static slice<byte> appendFormat(this Time t, slice<byte> b, @string layout) {
-
     var (name, offset, abs) = t.locabs();
+    var days = abs.days();
     nint year = -1;
     ΔMonth month = default!;
     nint day = default!;
-    nint yday = default!;
+    nint yday = -1;
     nint hour = -1;
     nint min = default!;
     nint sec = default!;
@@ -747,12 +736,14 @@ internal static slice<byte> appendFormat(this Time t, slice<byte> b, @string lay
         layout = suffix;
         // Compute year, month, day if needed.
         if (year < 0 && (nint)(std & (nint)stdNeedDate) != 0) {
-            (year, month, day, yday) = absDate(abs, true);
-            yday++;
+            (year, month, day) = days.date();
+        }
+        if (yday < 0 && (nint)(std & (nint)stdNeedYday) != 0) {
+            (_, yday) = days.yearYday();
         }
         // Compute hour, minute, second if needed.
         if (hour < 0 && (nint)(std & (nint)stdNeedClock) != 0) {
-            (hour, min, sec) = absClock(abs);
+            (hour, min, sec) = abs.clock();
         }
         var exprᴛ1 = (nint)(std & (nint)stdMask);
         if (exprᴛ1 == stdYear) {
@@ -779,10 +770,10 @@ internal static slice<byte> appendFormat(this Time t, slice<byte> b, @string lay
             b = appendInt(b, (nint)month, 2);
         }
         else if (exprᴛ1 == stdWeekDay) {
-            b = append(b, absWeekday(abs).String()[..3].ꓸꓸꓸ);
+            b = append(b, days.weekday().String()[..3].ꓸꓸꓸ);
         }
         else if (exprᴛ1 == stdLongWeekDay) {
-            @string s = absWeekday(abs).String();
+            @string s = days.weekday().String();
             b = append(b, s.ꓸꓸꓸ);
         }
         else if (exprᴛ1 == stdDay) {
@@ -1409,9 +1400,9 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
                 (hr, _, err) = getnum(hourΔ2, true);
                 if (err == default!) {
                     (mm, _, err) = getnum(minΔ2, true);
-                }
-                if (err == default!) {
-                    (ss, _, err) = getnum(seconds, true);
+                    if (err == default!) {
+                        (ss, _, err) = getnum(seconds, true);
+                    }
                 }
                 if (hr > 24) {
                     // The range test use > rather than >=,
@@ -1518,10 +1509,10 @@ internal static (Time, error) parse(@string layout, @string value, ж<ΔLocation
         }
         if (m == 0) {
             m = (yday - 1) / 31 + 1;
-            if ((nint)daysBefore[m] < yday) {
+            if (daysBefore(((ΔMonth)(m + 1))) < yday) {
                 m++;
             }
-            d = yday - (nint)daysBefore[m - 1];
+            d = yday - daysBefore(((ΔMonth)m));
         }
         // If month, day already seen, yday's m, d must match.
         // Otherwise, set them from m, d.

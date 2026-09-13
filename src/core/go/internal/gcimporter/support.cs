@@ -1,12 +1,11 @@
 // Copyright 2015 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-// This file implements support functionality for iimport.go.
+// This file implements support functionality for ureader.go.
 namespace go.go.@internal;
 
 using fmt = fmt_package;
 using token = global::go.go.token_package;
-using types = global::go.go.types_package;
 using pkgbits = global::go.@internal.pkgbits_package;
 using sync = sync_package;
 using global::go.@internal;
@@ -26,11 +25,6 @@ internal static void errorf(@string format, params ꓸꓸꓸany argsʗp) {
 
     throw panic(fmt.Sprintf(format, args.ꓸꓸꓸ));
 }
-
-// deltaNewFile is a magic line delta offset indicating a new file.
-// We use -64 because it is rare; see issue 20080 and CL 41619.
-// -64 is the smallest int that fits in a single byte as a varint.
-internal static UntypedInt deltaNewFile => -64;
 
 // Synthesize a token.Pos
 [GoType] partial struct fakeFileSet {
@@ -81,53 +75,6 @@ internal static UntypedInt maxlines => /* 64 * 1024 */ 65536;
 internal static slice<nint> fakeLines;
 internal static ж<sync.Once> ᏑfakeLinesOnce = new StandardBox<sync.Once>(default(sync.Once));
 internal static ref sync.Once fakeLinesOnce => ref ᏑfakeLinesOnce.Value;
-
-internal static types.ChanDir chanDir(nint d) {
-    // tag values must match the constants in cmd/compile/internal/gc/go.go
-    switch (d) {
-    case 1: {
-        return types.RecvOnly;
-    }
-    case 2: {
-        return types.SendOnly;
-    }
-    case 3: {
-        return types.SendRecv;
-    }
-    default: {
-        errorf("unexpected channel dir %d"u8, /* Crecv */
- /* Csend */
- /* Cboth */
- d);
-        return 0;
-    }}
-
-}
-
-// basic types
-// basic type aliases
-// error
-// untyped types
-// package unsafe
-// invalid type
-// only appears in packages with errors
-// used internally by gc; never used by this package or in .a files
-// not to be confused with the universe any
-// comparable
-// "any" has special handling: see usage of predeclared.
-internal static slice<typesꓸType> predeclared = new typesꓸType[]{new types.BasicжΔType(types.Typ[types.Bool]), new types.BasicжΔType(types.Typ[types.Int]), new types.BasicжΔType(types.Typ[types.Int8]), new types.BasicжΔType(types.Typ[types.Int16]), new types.BasicжΔType(types.Typ[types.Int32]), new types.BasicжΔType(types.Typ[types.Int64]), new types.BasicжΔType(types.Typ[types.Uint]), new types.BasicжΔType(types.Typ[types.Uint8]), new types.BasicжΔType(types.Typ[types.Uint16]), new types.BasicжΔType(types.Typ[types.Uint32]), new types.BasicжΔType(types.Typ[types.Uint64]), new types.BasicжΔType(types.Typ[types.Uintptr]), new types.BasicжΔType(types.Typ[types.Float32]), new types.BasicжΔType(types.Typ[types.Float64]), new types.BasicжΔType(types.Typ[types.Complex64]), new types.BasicжΔType(types.Typ[types.Complex128]), new types.BasicжΔType(types.Typ[types.ΔString]), types.Universe.Lookup("byte"u8).Type(), types.Universe.Lookup("rune"u8).Type(), types.Universe.Lookup("error"u8).Type(), new types.BasicжΔType(types.Typ[types.UntypedBool]), new types.BasicжΔType(types.Typ[types.ΔUntypedInt]), new types.BasicжΔType(types.Typ[types.UntypedRune]), new types.BasicжΔType(types.Typ[types.ΔUntypedFloat]), new types.BasicжΔType(types.Typ[types.ΔUntypedComplex]), new types.BasicжΔType(types.Typ[types.UntypedString]), new types.BasicжΔType(types.Typ[types.UntypedNil]), new types.BasicжΔType(types.Typ[types.UnsafePointer]), new types.BasicжΔType(types.Typ[types.Invalid]), new anyType(nil), types.Universe.Lookup("comparable"u8).Type()
-}.slice();
-
-[GoType] partial struct anyType {
-}
-
-internal static typesꓸType Underlying(this anyType t) {
-    return t;
-}
-
-internal static @string String(this anyType t) {
-    return anyˢ;
-}
 
 // See cmd/compile/internal/noder.derivedInfo.
 [GoType] partial struct derivedInfo {

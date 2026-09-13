@@ -53,10 +53,10 @@ using static go.vendor.golang.org.x.text.unicode.bidi_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/bidi.go", "bidi.cs", "ACyKAQALAoIADzIACQKClIKChIKCgoKClIKCgsiClIKmAAIQ8oKCAAIQ8oKCrLKssgACENKCgoKCgqamgoSChKaCgpSUgoKCgpSCpoKCgqiygpaClIKClIKCloSCqqKCgoKUgoIACx6yqJKoksoAECSSqJIAAhLiqqKssoKChIKCgqiClISssoKCgoKCgpSm")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/bracket.go", "bracket.cs", "ADpwgsyAooCigAACFAAIAtyCgpSCABxKogAEFPaWlJSWkoKWqIKigoKUlIKUpgAFfAA5ApakpAAEFgAJAoKCgoKUgpSmqqKCgILIqKS8gpaUgpQABhCmgoKEgoKClJaCgoKUupKC")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/core.go", "core.cs", "AD16soKCpgAXSPKCgIKkgIKkgIKkgIKmAAYSgqaAqMLMgqiCqAAHFKaoqKiWzAACJAAPAoKEgpaChICCgoKAgqSAgoKC2IIACRbSloKAgoKkgoLalqSkABIegKKAooCkgoKCgqaCpoKmgqiSgraElJSChpKUgoKCqIKUppaCgtyUpKS2gsqCpILeksiCgpSClKqE1qQAAxCCgoKCpoLCAA8igKSCgpSqwoKCgqiCgpSCgpaCgoKmgpaCgqaSAAkc1qiCgoLKzIKCgoCCgpTugoIADiKCgoKCgoKkzKKUgpaCgpSCgoKmgqa6goK6opSCgoKSgqaC3qaEopaClqiilIKCpoKUgoKogpTKlobakoK4goK6poSChJKUtqTIlLYABRCigoK+0oKCgoKCprSqwoKCgoKmAAUU4oKChIKClJKCppS4gpSospaCgoKohISigoKUlISCgoKUpqauwoKCgt6ClIKCAAQiABYYhLqClJaCkpTegoKCkpSmlgACJAAPAoSqooSCgoKEgpSUrLKUgsyCgoKClIKogoKUgoKCloKmuqqilKSokpSkqJKClKaCgpSCgqamgoaUpoKCgoKUlIKUpoKClIK2tqaCgpSClA==")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/prop.go", "prop.cs", "ABg4AAsCgoKUqJCooKaSABcgkoKCAAIqABICgpS0pJKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqyygpS0pJKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/bidi.go", "bidi.cs", "ACaKAQALAoIADzIACQKClIKChIKCgoKClIKCgsiClIKmAAIQ8oKCAAIQ8oKCrLKssgACENKCgoKCgqamgoSChKaCgpSUgoKCgpSCpoKCgqiygpaClIKClIKCloSCqqKCgoKUgoIACx6yqJKoksoAECSSqJIAAhLiqqKssoKChIKCgqiClISssoKCgoKCgpSm", "70-72:1")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/bracket.go", "bracket.cs", "AC5wgsyAooCigAACFAAIAtyCgpSCABxKogAEFPaWlJSWkoKWqIKigoKUlIKUpgAFfAA5ApakpAAEFgAJAoKCgoKUgpSmqqKCgILIqKS8gpaUgpQABhCmgoKEgoKClJaCgoKUupKC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/core.go", "core.cs", "ADd6soKCpgAXSPKCgIKkgIKkgIKkgIKmAAYSgqaAqMLMgqiCqAAHFKaoqKiWzAACJAAPAoKEgpaChICCgoKAgqSAgoKC2IIACRbSloKAgoKkgoLalqSkABIegKKAooCkgoKCgqaCpoKmgqiSgraElJSChpKUgoKCqIKUppaCgtyUpKS2gsqCpILeksiCgpSClKqE1qQAAxCCgoKCpoLCAA8igKSCgpSqwoKCgqiCgpSCgpaCgoKmgpaCgqaSAAkc1qiCgoLKzIKCgoCCgpTugoIADiKCgoKCgoKkzKKUgpaCgpSCgoKmgqa6goK6opSCgoKSgqaC3qaEopaClqiilIKCpoKUgoKogpTKlobakoK4goK6poSChJKUtqTIlLYABRCigoK+0oKCgoKCprSqwoKCgoKmAAUU4oKChIKClJKCppS4gpSospaCgoKohISigoKUlISCgoKUpqauwoKCgt6ClIKCAAQiABYYhLqClJaCkpTegoKCkpSmlgACJAAPAoSqooSCgoKEgpSUrLKUgsyCgoKClIKogoKUgoKCloKmuqqilKSokpSkqJKClKaCgpSCgqamgoaUpoKCgoKUlIKUpoKClIK2tqaCgpSClA==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/prop.go", "prop.cs", "ABI4AAsCgoKUqJCooKaSABcgkoKCAAIqABICgpS0pJKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqyygpS0pJKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtg==")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/bidi/tables15.0.0.go", "tables15.0.0.cs", "ABAmsoKUpKSilIKCgpSkkpSCgoKUgoKCgpSkkpSCgoKUgoKCgpSCgoKClLaqooKSlIKSlIKSlIKSlKyygpSkpKKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqqigpKUgpKUgpKUgpKU7IKokpQ=")]
 // </GoSourcePositionMaps>
 
@@ -89,4 +89,18 @@ public static partial class bidi_package
     public partial struct ΔDirection {}
     public partial struct ΔRun {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

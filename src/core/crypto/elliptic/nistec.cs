@@ -3,25 +3,13 @@
 // license that can be found in the LICENSE file.
 namespace go.crypto;
 
-using nistec = go.crypto.@internal.nistec_package;
+using nistec = go.crypto.@internal.fips140.nistec_package;
 using errors = errors_package;
 using big = math.big_package;
-using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 using math;
 
 partial class elliptic_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸnistec() {
-    builtin.initPackage(typeof(go.crypto.@internal.nistec_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
 
 internal static ж<nistCurve<P224PointжnistPoint>> p224 = Ꮡ(new nistCurve<P224PointжnistPoint>(
     newPoint: () => nistec.NewP224Point()
@@ -30,7 +18,7 @@ internal static ж<nistCurve<P224PointжnistPoint>> p224 = Ꮡ(new nistCurve<P22
 internal static void initP224() {
     p224.Value.@params = Ꮡ(new CurveParams(
         Name: "P-224"u8,
-        BitSize: 224, // FIPS 186-4, section D.1.2.2
+        BitSize: 224, // SP 800-186, Section 3.2.1.2
 
         P: bigFromDecimal("26959946667150639794667015087019630673557916260026308143510066298881"u8),
         N: bigFromDecimal("26959946667150639794667015087019625940457807714424391721682722368061"u8),
@@ -52,7 +40,7 @@ internal static ж<p256Curve> p256 = Ꮡ(new p256Curve(new nistCurve<P256Pointж
 internal static void initP256() {
     p256.Value.@params = Ꮡ(new CurveParams(
         Name: "P-256"u8,
-        BitSize: 256, // FIPS 186-4, section D.1.2.3
+        BitSize: 256, // SP 800-186, Section 3.2.1.3
 
         P: bigFromDecimal("115792089210356248762697446949407573530086143415290314195533631308867097853951"u8),
         N: bigFromDecimal("115792089210356248762697446949407573529996955224135760342422259061068512044369"u8),
@@ -69,7 +57,7 @@ internal static ж<nistCurve<P384PointжnistPoint>> p384 = Ꮡ(new nistCurve<P38
 internal static void initP384() {
     p384.Value.@params = Ꮡ(new CurveParams(
         Name: "P-384"u8,
-        BitSize: 384, // FIPS 186-4, section D.1.2.4
+        BitSize: 384, // SP 800-186, Section 3.2.1.4
 
         P: bigFromDecimal("394020061963944792122790401001436138050797392704654"u8 + "46667948293404245721771496870329047266088258938001861606973112319"u8),
         N: bigFromDecimal("394020061963944792122790401001436138050797392704654"u8 + "46667946905279627659399113263569398956308152294913554433653942643"u8),
@@ -86,7 +74,7 @@ internal static ж<nistCurve<P521PointжnistPoint>> p521 = Ꮡ(new nistCurve<P52
 internal static void initP521() {
     p521.Value.@params = Ꮡ(new CurveParams(
         Name: "P-521"u8,
-        BitSize: 521, // FIPS 186-4, section D.1.2.5
+        BitSize: 521, // SP 800-186, Section 3.2.1.5
 
         P: bigFromDecimal("68647976601306097149819007990813932172694353001433"u8 + "0540939446345918554318339765605212255964066145455497729631139148"u8 + "0858037121987999716643812574028291115057151"u8),
         N: bigFromDecimal("68647976601306097149819007990813932172694353001433"u8 + "0540939446345918554318339765539424505774633321719753296399637136"u8 + "3321113864768612440380340372808892707005449"u8),

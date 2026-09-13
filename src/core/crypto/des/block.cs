@@ -9,14 +9,8 @@ using go.@internal;
 
 partial class des_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 internal static void cryptBlock(slice<uint64> subkeys, slice<byte> dst, slice<byte> src, bool decrypt) {
-    var b = byteorder.BeUint64(src);
+    var b = byteorder.BEUint64(src);
     b = permuteInitialBlock(b);
     var (left, right) = ((uint32)((b >> (int)(32))), (uint32)b);
     left = (uint32)(((left << (int)(1))) | ((left >> (int)(31))));
@@ -34,7 +28,7 @@ internal static void cryptBlock(slice<uint64> subkeys, slice<byte> dst, slice<by
     right = (uint32)(((right << (int)(31))) | ((right >> (int)(1))));
     // switch left & right and perform final permutation
     var preOutput = (uint64)((((uint64)right << (int)(32))) | (uint64)left);
-    byteorder.BePutUint64(dst, permuteFinalBlock(preOutput));
+    byteorder.BEPutUint64(dst, permuteFinalBlock(preOutput));
 }
 
 // DES Feistel function. feistelBox must be initialized via
@@ -192,7 +186,7 @@ internal static slice<uint32> /*out*/ ksRotate(uint32 @in) {
 [GoRecv] internal static void generateSubkeys(this ref desCipher c, slice<byte> keyBytes) {
     ᏑfeistelBoxOnce.Do(initFeistelBox);
     // apply PC1 permutation to key
-    var key = byteorder.BeUint64(keyBytes);
+    var key = byteorder.BEUint64(keyBytes);
     var permutedKey = permuteBlock(key, permutedChoice1[..]);
     // rotate halves of permuted key according to the rotation schedule
     var leftRotations = ksRotate((uint32)((permutedKey >> (int)(28))));

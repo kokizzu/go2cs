@@ -1,3 +1,6 @@
+// Copyright 2024 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 namespace go.path;
 
 using os = os_package;
@@ -5,12 +8,6 @@ using strings = strings_package;
 using syscall = syscall_package;
 
 partial class filepath_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
 
 // HasPrefix exists for historical compatibility and should not be used.
 //

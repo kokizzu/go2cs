@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using time = time_package;
 using @internal;
@@ -25,7 +25,7 @@ internal static error setKeepAliveIdle(ж<netFD> Ꮡfd, time.Duration d) {
     // The kernel expects seconds so round to next highest second.
     nint secs = (nint)(int64)roundDurationUp(d, time.ΔSecond);
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_TCP, syscall.TCP_KEEPALIVE, secs);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
@@ -39,7 +39,7 @@ internal static error setKeepAliveInterval(ж<netFD> Ꮡfd, time.Duration d) {
     // The kernel expects seconds so round to next highest second.
     nint secs = (nint)(int64)roundDurationUp(d, time.ΔSecond);
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_TCP, sysTCP_KEEPINTVL, secs);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 
@@ -51,7 +51,7 @@ internal static error setKeepAliveCount(ж<netFD> Ꮡfd, nint n) {
         return default!;
     }
     var err = Ꮡfd.of(netFD.Ꮡpfd).SetsockoptInt(syscall.IPPROTO_TCP, sysTCP_KEEPCNT, n);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(setsockoptˢ, err);
 }
 

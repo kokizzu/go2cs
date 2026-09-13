@@ -31,6 +31,8 @@
   <!-- Same-package Go tests run in a separate assembly but retain package-private access. -->
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName).tests" />
+    <!-- reflect.StructOf mints synthesized structs into this fixed-name dynamic assembly; a field type that is internal here cannot be loaded from there without the grant. -->
+    <InternalsVisibleTo Include="go2cs.SynthesizedStructs" />
   </ItemGroup>
 
   <!-- Build outputs are copied to $(OutDir), so this default must also defer to an explicit
@@ -171,43 +173,16 @@
   <ItemGroup>
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
 
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/boring/crypto.internal.boring.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/fips140/crypto.internal.fips140.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/fips140/drbg/crypto.internal.fips140.drbg.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/fips140only/crypto.internal.fips140only.csproj" />
     <ProjectReference Include="$(go2csPath)core/crypto/internal/randutil/crypto.internal.randutil.csproj" />
+    <ProjectReference Include="$(go2csPath)core/crypto/internal/sysrand/crypto.internal.sysrand.csproj" />
     <ProjectReference Include="$(go2csPath)core/errors/errors.csproj" />
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
     <ProjectReference Include="$(go2csPath)core/math/big/math.big.csproj" />
+    <ProjectReference Include="$(go2csPath)core/unsafe/unsafe.csproj" />
   </ItemGroup>
 
-  <!-- Layout L3: this package's direct imports differ by GOOS, so the references that are not
-       common to every platform are selected by $(GoTargetOS)
-       (docs/phase4/DESIGN-multiplatform-corpus.md §8). A group with no items is not noise: it
-       records that the platform takes part in this package's axis and adds nothing beyond the
-       shared list above, which is what lets a single-target reconvert reproduce this file. -->
-  <ItemGroup Condition="'$(GoTargetOS)'=='darwin'">
-    <ProjectReference Include="$(go2csPath)core/crypto/internal/boring/crypto.internal.boring.csproj" />
-    <ProjectReference Include="$(go2csPath)core/internal/syscall/unix/internal.syscall.unix.csproj" />
-    <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
-    <ProjectReference Include="$(go2csPath)core/sync/atomic/sync.atomic.csproj" />
-    <ProjectReference Include="$(go2csPath)core/sync/sync.csproj" />
-    <ProjectReference Include="$(go2csPath)core/syscall/syscall.csproj" />
-    <ProjectReference Include="$(go2csPath)core/time/time.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(GoTargetOS)'=='linux'">
-    <ProjectReference Include="$(go2csPath)core/crypto/internal/boring/crypto.internal.boring.csproj" />
-    <ProjectReference Include="$(go2csPath)core/internal/syscall/unix/internal.syscall.unix.csproj" />
-    <ProjectReference Include="$(go2csPath)core/os/os.csproj" />
-    <ProjectReference Include="$(go2csPath)core/runtime/runtime.csproj" />
-    <ProjectReference Include="$(go2csPath)core/sync/atomic/sync.atomic.csproj" />
-    <ProjectReference Include="$(go2csPath)core/sync/sync.csproj" />
-    <ProjectReference Include="$(go2csPath)core/syscall/syscall.csproj" />
-    <ProjectReference Include="$(go2csPath)core/time/time.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(GoTargetOS)'=='windows'">
-    <ProjectReference Include="$(go2csPath)core/internal/syscall/windows/internal.syscall.windows.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="../../LICENSE" Pack="true" PackagePath="" Condition="!Exists('$(MSBuildProjectDirectory)/LICENSE')" />
-  </ItemGroup>
 </Project>

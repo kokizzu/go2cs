@@ -259,7 +259,7 @@ internal static void incPinCounter(this ж<mspan> Ꮡspan, uintptr offset) {
         rec = (ж<specialPinCounter>)(uintptr)(Ꮡmheap_.of(mheap.ᏑspecialPinCounterAlloc).alloc());
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
         // splice in record, fill in offset.
-        rec.Value.special.offset = (uint16)offset;
+        rec.Value.special.offset = offset;
         rec.Value.special.kind = _KindSpecialPinCounter;
         rec.Value.special.next = @ref.ValueSlot;
         @ref.ValueSlot = rec.Reinterpret<specialPinCounter, special>();

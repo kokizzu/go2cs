@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.@internal.syscall;
 
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
 
@@ -15,6 +16,8 @@ public static UntypedInt SecurityDelegation => 3;
 
 //sys	ImpersonateSelf(impersonationlevel uint32) (err error) = advapi32.ImpersonateSelf
 //sys	RevertToSelf() (err error) = advapi32.RevertToSelf
+//sys	ImpersonateLoggedOnUser(token syscall.Token) (err error) = advapi32.ImpersonateLoggedOnUser
+//sys	LogonUser(username *uint16, domain *uint16, password *uint16, logonType uint32, logonProvider uint32, token *syscall.Token) (err error) = advapi32.LogonUserW
 public static UntypedInt TOKEN_ADJUST_PRIVILEGES => 0x0020;
 public static UntypedInt SE_PRIVILEGE_ENABLED => 0x00000002;
 
@@ -80,6 +83,22 @@ public static UntypedInt MAX_PREFERRED_LENGTH => 0xFFFFFFFF;
     public ж<uint16> Name;
 }
 
+public static syscall.Errno NERR_UserNotFound => 2221;
+public static syscall.Errno NERR_UserExists => 2224;
+
+public static UntypedInt USER_PRIV_USER => 1;
+
+[GoType] partial struct UserInfo1 {
+    public ж<uint16> Name;
+    public ж<uint16> Password;
+    public uint32 PasswordAge;
+    public uint32 Priv;
+    public ж<uint16> HomeDir;
+    public ж<uint16> Comment;
+    public uint32 Flags;
+    public ж<uint16> ScriptPath;
+}
+
 [GoType] partial struct UserInfo4 {
     public ж<uint16> Name;
     public ж<uint16> Password;
@@ -112,6 +131,8 @@ public static UntypedInt MAX_PREFERRED_LENGTH => 0xFFFFFFFF;
     public uint32 PasswordExpired;
 }
 
+//sys	NetUserAdd(serverName *uint16, level uint32, buf *byte, parmErr *uint32) (neterr error) = netapi32.NetUserAdd
+//sys	NetUserDel(serverName *uint16, userName *uint16) (neterr error) = netapi32.NetUserDel
 //sys	NetUserGetLocalGroups(serverName *uint16, userName *uint16, level uint32, flags uint32, buf **byte, prefMaxLen uint32, entriesRead *uint32, totalEntries *uint32) (neterr error) = netapi32.NetUserGetLocalGroups
 
 // GetSystemDirectory retrieves the path to current location of the system
@@ -119,9 +140,125 @@ public static UntypedInt MAX_PREFERRED_LENGTH => 0xFFFFFFFF;
 //
 //go:linkname GetSystemDirectory
 public static @string GetSystemDirectory() {
-    return go.runtime_package.windows_GetSystemDirectory();
+    return runtime.windows_GetSystemDirectory();
 }
 
 // Implemented in runtime package.
+
+// GetUserName retrieves the user name of the current thread
+// in the specified format.
+public static (@string, error) GetUserName(uint32 format) {
+    ref var n = ref heap<uint32>(out var Ꮡn);
+    n = (uint32)50;
+    while (ᐧ) {
+        var b = new slice<uint16>((nint)(n));
+        var e = syscall.GetUserNameEx(format, Ꮡ(b, 0), Ꮡn);
+        if (e == default!) {
+            return (syscall.UTF16ToString(b[..(int)(n)]), default!);
+        }
+        if (!AreEqual(e, syscall.ERROR_MORE_DATA)) {
+            return ("", e);
+        }
+        if (n <= (uint32)len(b)) {
+            return ("", e);
+        }
+    }
+}
+
+// getTokenInfo retrieves a specified type of information about an access token.
+internal static (@unsafe.Pointer, error) getTokenInfo(syscall.Token t, uint32 @class, nint initSize) {
+    ref var n = ref heap<uint32>(out var Ꮡn);
+    n = (uint32)initSize;
+    while (ᐧ) {
+        var b = new slice<byte>((nint)(n));
+        var e = syscall.GetTokenInformation(t, @class, Ꮡ(b, 0), (uint32)len(b), Ꮡn);
+        if (e == default!) {
+            return (@unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0)), default!);
+        }
+        if (!AreEqual(e, syscall.ERROR_INSUFFICIENT_BUFFER)) {
+            return (default!, e);
+        }
+        if (n <= (uint32)len(b)) {
+            return (default!, e);
+        }
+    }
+}
+
+[GoType] partial struct TOKEN_GROUPS {
+    public uint32 GroupCount;
+    public array<SID_AND_ATTRIBUTES> Groups = new(1);
+}
+
+[GoRecv] public static slice<SID_AND_ATTRIBUTES> AllGroups(this ref TOKEN_GROUPS g) {
+    return (~array<SID_AND_ATTRIBUTES>.AliasPointer(Ꮡ(g.Groups, 0), 268435455)).slice(-1, (int)(g.GroupCount), (int)(g.GroupCount));
+}
+
+public static (ж<TOKEN_GROUPS>, error) GetTokenGroups(syscall.Token t) {
+    var (i, e) = getTokenInfo(t, syscall.TokenGroups, 50);
+    if (e != default!) {
+        return (default!, e);
+    }
+    return ((ж<TOKEN_GROUPS>)(uintptr)(i), default!);
+}
+
+// https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-sid_identifier_authority
+[GoType] partial struct SID_IDENTIFIER_AUTHORITY {
+    public array<byte> Value = new(6);
+}
+
+public static UntypedInt SID_REVISION => 1;
+public static UntypedInt SECURITY_LOCAL_SYSTEM_RID => 18;
+public static UntypedInt SECURITY_LOCAL_SERVICE_RID => 19;
+public static UntypedInt SECURITY_NETWORK_SERVICE_RID => 20;
+
+public static SID_IDENTIFIER_AUTHORITY SECURITY_NT_AUTHORITY = new SID_IDENTIFIER_AUTHORITY(
+    Value: new byte[]{0, 0, 0, 0, 0, 5}.array()
+);
+
+//sys	IsValidSid(sid *syscall.SID) (valid bool) = advapi32.IsValidSid
+//sys	getSidIdentifierAuthority(sid *syscall.SID) (idauth uintptr) = advapi32.GetSidIdentifierAuthority
+//sys	getSidSubAuthority(sid *syscall.SID, subAuthorityIdx uint32) (subAuth uintptr) = advapi32.GetSidSubAuthority
+//sys	getSidSubAuthorityCount(sid *syscall.SID) (count uintptr) = advapi32.GetSidSubAuthorityCount
+// The following GetSid* functions are marked as //go:nocheckptr because checkptr
+// instrumentation can't see that the pointer returned by the syscall is pointing
+// into the sid's memory, which is normally allocated on the Go heap. Therefore,
+// the checkptr instrumentation would incorrectly flag the pointer dereference
+// as pointing to an invalid allocation.
+// Also, use runtime.KeepAlive to ensure that the sid is not garbage collected
+// before the GetSid* functions return, as the Go GC is not aware that the
+// pointers returned by the syscall are pointing into the sid's memory.
+
+//go:nocheckptr
+public static SID_IDENTIFIER_AUTHORITY GetSidIdentifierAuthority(ж<syscall.SID> Ꮡsid) {
+    GoFrame ᒐ = default;
+    try {
+        defer(runtime.KeepAlive, Ꮡsid.OrTypedNil(), ref ᒐ);
+        return (~(ж<SID_IDENTIFIER_AUTHORITY>)(uintptr)((@unsafe.Pointer)getSidIdentifierAuthority(Ꮡsid))).ΔClone();
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
+
+//go:nocheckptr
+public static uint32 GetSidSubAuthority(ж<syscall.SID> Ꮡsid, uint32 subAuthorityIdx) {
+    GoFrame ᒐ = default;
+    try {
+        defer(runtime.KeepAlive, Ꮡsid.OrTypedNil(), ref ᒐ);
+        return ~(ж<uint32>)(uintptr)((@unsafe.Pointer)getSidSubAuthority(Ꮡsid, subAuthorityIdx));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
+
+//go:nocheckptr
+public static uint8 GetSidSubAuthorityCount(ж<syscall.SID> Ꮡsid) {
+    GoFrame ᒐ = default;
+    try {
+        defer(runtime.KeepAlive, Ꮡsid.OrTypedNil(), ref ᒐ);
+        return ~(ж<uint8>)(uintptr)((@unsafe.Pointer)getSidSubAuthorityCount(Ꮡsid));
+    }
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
+    finally { ᒐ.Run(); }
+}
 
 } // end windows_package

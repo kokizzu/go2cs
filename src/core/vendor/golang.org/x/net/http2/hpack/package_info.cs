@@ -51,9 +51,9 @@ using static go.vendor.golang.org.x.net.http2.hpack_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/encode.go", "encode.cs", "ACNGotyCgqzShIKCgpSCloKClIKCloKUpoKClAACFAAKAoKCloKClqyygpSClIKokgACFPKCgoK6kqqigoKCAAIU8oKCAAIU8oKCgpSUgoKqooKCggACENKCgpSCgoKUAAIQ0oKCgoKClIKUAAIQ0oKUgpQ=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/hpack.go", "hpack.cs", "ACcsgs6CAAsiwtaCgoKUqAAMGgAUOLLKgoKCAAYWwqyyAAIU8KigqqKssgAKFoKCpoKCgqiSgoKClKa4psSClIKUgsqCrgAIAoKCkJKAkoCCpICCpAAIDLKCgpSCprK4uIKUgoKWgoKM0oKUgpSCgqYADSCAooDcwoKaqgAICtra1qiSgoKClIKClIKokoKCgpaCgoKCgoKUlIKCpoKClIKCgoKmgoKmgoKUgqaCgoKmgpTotoKWgoKClIKUgoIABBoACgKClIKUgoKUgpaCgoKCgoKCgpSCkqau8oKUgoKClNyUgpSCggAHEIKClIKCgoKClIKC")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/huffman.go", "huffman.cs", "ABcq0oKCgoCCpNiygoKCgIKkAAkU0oK4ooKCgoKCgoKClIKClIKCgpS4goKClIKUgpSCgoKUppSAlKYADiaCAAYQgoKmgoKUlISChIKCgoKClJSClIKCgs6myIKCgoKCgoKCuICCqoKCtpSkpIKkgraCqqKCgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/encode.go", "encode.cs", "AB1GotyCgqzShIKCgpSCloKClIKCloKUpoKClAACFAAKAoKCloKClqyygpSClIKokgACFPKCgoK6kqqigoKCAAIU8oKCAAIU8oKCgpSUgoKqooKCggACENKCgpSCgoKUAAIQ0oKCgoKClIKUAAIQ0oKUgpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/hpack.go", "hpack.cs", "ABUsgs6CAAsiwtaCgoKUqAAMGgAUOLLKgoKCAAYWwqyyAAIU8KigqqKssgAKFoKCpoKCgqiSgoKClKa4psSClIKUgsqCrgAIAoKCkJKAkoCCpICCpAAIDLKCgpSCprK4uIKUgoKWgoKM0oKUgpSCgqYADSCAooDcwoKaqgAICtra1qiSgoKClIKClIKokoKCgpaCgoKCgoKUlIKCpoKClIKCgoKmgoKmgoKUgqaCgoKmgpTotoKWgoKClIKUgoIABBoACgKClIKUgoKUgpaCgoKCgoKCgpSCkqau8oKUgoKClNyUgpSCggAHEIKClIKCgoKClIKC", "221-221:1;222-222:2")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/huffman.go", "huffman.cs", "ABEq0oKCgoCCpNiygoKCgIKkAAkU0oK4ooKCgoKCgoKClIKClIKCgpS4goKClIKUgpSCgoKUppSAlKYADiaCAAYQgoKmgoKUlISChIKCgoKClJSClIKCgs6myIKCgoKCgoKCuICCqoKCtpSkpIKkgraCqqKCgpQ=")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/http2/hpack/tables.go", "tables.cs", "AClagoKokqiSgoKCqJKClIKCgoKUgIK2goKUgoKUAAIgAA8CgoCCtoCCpKrCgpSCgpQ=")]
 // </GoSourcePositionMaps>
 
@@ -82,4 +82,18 @@ public static partial class hpack_package
     public partial struct HeaderField {}
     public partial struct InvalidIndexError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

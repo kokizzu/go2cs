@@ -54,7 +54,7 @@ using static go.@internal.fmtsort_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/fmtsort/sort.go", "sort.cs", "ACZiABICgsqCgoKClIauwoKClJSkpKSkgoCCpKSClKSkxqSAgqSkgoCCtqSCgIK2pICCpIKClKYABBLygoKUlIKU")]
+[assembly: go.GoPositionMap("internal/fmtsort/sort.go", "sort.cs", "ABpiABICgsqCgoKClIauwoKClJSkpKSkgoCCpKSClKSkxqSAgqSkgoCCtqSCgIK2pICCpIKClKYABBLygoKUlIKU", "62-64:1")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -72,4 +72,15 @@ public static partial class fmtsort_package
     public partial struct KeyValue {}
     public partial struct SortedMap {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    // </ImportInitializers>
 }

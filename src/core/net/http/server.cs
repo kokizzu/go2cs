@@ -29,6 +29,7 @@ using atomic = go.sync.atomic_package;
 using time = time_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
 using httpguts = vendor.golang.org.x.net.http.httpguts_package;
+using System.Runtime.CompilerServices;
 using crypto;
 using go.@internal;
 using go.math;
@@ -40,12 +41,6 @@ using vendor.golang.org.x.net.http;
 using ꓸꓸꓸany = Span<any>;
 
 partial class http_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmaps() {
-    builtin.initPackage(typeof(maps_package));
-}
 
 // Errors used by the HTTP server.
 public static error ErrBodyNotAllowed = errors.New("http: request method or response status code does not allow body"u8);
@@ -568,7 +563,7 @@ internal static (int64 n, error err) ReadFrom(this ж<response> Ꮡw, io.Reader 
         w.w.Flush(); // get rid of any previous writes
         w.cw.flush(); // make sure Header is written; flush data to rwc
         // Now that cw has been flushed, its chunking field is guaranteed initialized.
-        if (!w.cw.chunking && w.bodyAllowed()) {
+        if (!w.cw.chunking && w.bodyAllowed() && (~w.req).Method != "HEAD"u8) {
             var (n0Δ2, errΔ2) = rf.ReadFrom(src);
             n += n0Δ2;
             w.written += n0Δ2;
@@ -590,9 +585,9 @@ internal const bool debugServerConnections = false;
 internal static readonly @string serverˢ = "server"u8;
 
 // Create new connection from rwc.
-internal static ж<conn> newConn(this ж<Server> Ꮡsrv, net.Conn rwc) {
+internal static ж<conn> newConn(this ж<Server> Ꮡs, net.Conn rwc) {
     var c = Ꮡ(new conn(
-        server: Ꮡsrv,
+        server: Ꮡs,
         rwc: rwc
     ));
     if (debugServerConnections) {
@@ -926,15 +921,15 @@ internal static void putBufioWriter(ж<bufio.Writer> Ꮡbw) {
 // This can be overridden by setting [Server.MaxHeaderBytes].
 public static UntypedInt DefaultMaxHeaderBytes => /* 1 << 20 */ 1048576; // 1 MB
 
-[GoRecv] internal static nint maxHeaderBytes(this ref Server srv) {
-    if (srv.MaxHeaderBytes > 0) {
-        return srv.MaxHeaderBytes;
+[GoRecv] internal static nint maxHeaderBytes(this ref Server s) {
+    if (s.MaxHeaderBytes > 0) {
+        return s.MaxHeaderBytes;
     }
     return DefaultMaxHeaderBytes;
 }
 
-[GoRecv] internal static int64 initialReadLimitSize(this ref Server srv) {
-    return (int64)srv.maxHeaderBytes() + 4096; // bufio slop
+[GoRecv] internal static int64 initialReadLimitSize(this ref Server s) {
+    return (int64)s.maxHeaderBytes() + 4096; // bufio slop
 }
 
 // tlsHandshakeTimeout returns the time limit permitted for the TLS
@@ -942,12 +937,12 @@ public static UntypedInt DefaultMaxHeaderBytes => /* 1 << 20 */ 1048576; // 1 MB
 //
 // It returns the minimum of any positive ReadHeaderTimeout,
 // ReadTimeout, or WriteTimeout.
-[GoRecv] internal static time.Duration tlsHandshakeTimeout(this ref Server srv) {
+[GoRecv] internal static time.Duration tlsHandshakeTimeout(this ref Server s) {
     time.Duration ret = default!;
     foreach (var (_, v) in new time.Duration[]{
-        srv.ReadHeaderTimeout,
-        srv.ReadTimeout,
-        srv.WriteTimeout
+        s.ReadHeaderTimeout,
+        s.ReadTimeout,
+        s.WriteTimeout
     }.array()) {
         if (v <= 0) {
             continue;
@@ -1206,7 +1201,7 @@ internal static readonly @string netHttpˢ = "net/http."u8;
 
 // relevantCaller searches the call stack for the first function outside of net/http.
 // The purpose of this function is to provide more helpful error messages.
-internal static runtime.Frame relevantCaller() {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static runtime.Frame relevantCaller() {
     var pc = new slice<uintptr>(16);
     nint n = runtime.Callers(1, pc);
     var frames = runtime.CallersFrames(pc[..(int)(n)]);
@@ -2084,6 +2079,15 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
         c.r = Ꮡ(new connReader(conn: Ꮡc));
         c.bufr = newBufioReader(new connReaderжReader(c.r));
         c.bufw = newBufioWriterSize(new checkConnErrorWriter(Ꮡc), (4 << (int)(10)));
+        var protos = c.server.protocols();
+        if (c.tlsState == nil && protos.UnencryptedHTTP2()) {
+            if (Ꮡc.maybeServeUnencryptedHTTP2(ctx)) {
+                return;
+            }
+        }
+        if (!protos.HTTP1()) {
+            return;
+        }
         while (ᐧ) {
             var (w, err) = Ꮡc.readRequest(ctx);
             if ((~c.r).remain != c.server.initialReadLimitSize()) {
@@ -2204,6 +2208,76 @@ internal static void serve(this ж<conn> Ꮡc, context.Context ctx) {
     finally { ᒐ.Run(); }
 }
 
+// unencryptedHTTP2Request is an HTTP handler that initializes
+// certain uninitialized fields in its *Request.
+//
+// It's the unencrypted version of initALPNRequest.
+[GoType] partial struct unencryptedHTTP2Request {
+    internal context.Context ctx;
+    internal net.Conn c;
+    internal serverHandler h;
+}
+
+internal static context.Context BaseContext(this unencryptedHTTP2Request h) {
+    return h.ctx;
+}
+
+internal static void ServeHTTP(this unencryptedHTTP2Request h, ResponseWriter rw, ж<Request> Ꮡreq) {
+    ref var req = ref Ꮡreq.DerefOrNull();
+
+    if (req.Body == default!) {
+        req.Body = NoBody;
+    }
+    if (req.RemoteAddr == ""u8) {
+        req.RemoteAddr = h.c.RemoteAddr().String();
+    }
+    h.h.ServeHTTP(rw, Ꮡreq);
+}
+
+// unencryptedNetConnInTLSConn is used to pass an unencrypted net.Conn to
+// functions that only accept a *tls.Conn.
+[GoType] partial struct unencryptedNetConnInTLSConn {
+    public net_package.Conn Conn; // panic on all net.Conn methods
+    internal net.Conn conn;
+}
+
+internal static net.Conn UnencryptedNetConn(this unencryptedNetConnInTLSConn c) {
+    return c.conn;
+}
+
+internal static ж<tls.Conn> unencryptedTLSConn(net.Conn c) {
+    return tls.Client(new unencryptedNetConnInTLSConn(conn: c), nil);
+}
+
+// TLSNextProto key to use for unencrypted HTTP/2 connections.
+// Not actually a TLS-negotiated protocol.
+internal static readonly @string nextProtoUnencryptedHTTP2 = "unencrypted_http2"u8;
+
+internal static bool maybeServeUnencryptedHTTP2(this ж<conn> Ꮡc, context.Context ctx) {
+    ref var c = ref Ꮡc.DerefOrNull();
+
+    var (fn, ok) = (~c.server).TLSNextProto[nextProtoUnencryptedHTTP2, ꟷ];
+    if (!ok) {
+        return false;
+    }
+    bool hasPreface(ж<conn> cΔ1, slice<byte> preface) {
+        (~cΔ1).r.setReadLimit((int64)builtin.len(preface) - (int64)(~cΔ1).bufr.Buffered());
+        var (got, err) = (~cΔ1).bufr.Peek(builtin.len(preface));
+        (~cΔ1).r.setInfiniteReadLimit();
+        return err == default! && bytes.Equal(got, preface);
+    }
+    if (!hasPreface(Ꮡc, slice<byte>("PRI * HTTP/2.0"u8))) {
+        return false;
+    }
+    if (!hasPreface(Ꮡc, slice<byte>("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"u8))) {
+        return false;
+    }
+    Ꮡc.setState(c.rwc, StateActive, skipHooks);
+    var h = new unencryptedHTTP2Request(ctx, c.rwc, new serverHandler(c.server));
+    fn(c.server, unencryptedTLSConn(c.rwc), h);
+    return true;
+}
+
 internal static void sendExpectationFailed(this ж<response> Ꮡw) {
     ref var w = ref Ꮡw.DerefOrNull();
 
@@ -2264,7 +2338,7 @@ internal static /*<-*/channel<bool> CloseNotify(this ж<response> Ꮡw) {
     if (Ꮡw.of(response.ᏑhandlerDone).Load()) {
         throw panic("net/http: CloseNotify called after ServeHTTP finished");
     }
-    return w.closeNotifyCh;
+    return w.closeNotifyCh.WithDirection(GoChanDir.Recv);
 }
 
 internal static void registerOnHitEOF(io.ReadCloser rc, Action fn) {
@@ -2307,7 +2381,7 @@ internal static bool requestBodyRemains(io.ReadCloser rc) {
 public delegate void HandlerFunc(ResponseWriter _Δp0, ж<Request> _Δp1);
 
 // ServeHTTP calls f(w, r).
-public static void ServeHTTP(this HandlerFunc f, ResponseWriter w, ж<Request> Ꮡr) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void ServeHTTP(this HandlerFunc f, ResponseWriter w, ж<Request> Ꮡr) {
     f(w, Ꮡr);
 }
 
@@ -2577,6 +2651,8 @@ public static ΔHandler RedirectHandler(@string url, nint code) {
 // ServeMux also takes care of sanitizing the URL request path and the Host
 // header, stripping the port number and redirecting any request containing . or
 // .. segments or repeated slashes to an equivalent, cleaner URL.
+// Escaped path elements such as "%2e" for "." and "%2f" for "/" are preserved
+// and aren't considered separators for request routing.
 //
 // # Compatibility
 //
@@ -2603,7 +2679,6 @@ public static ΔHandler RedirectHandler(@string url, nint code) {
     internal sync.RWMutex mu;
     internal routingNode tree;
     internal routingIndex index;
-    internal slice<ж<pattern>> patterns; // TODO(jba): remove if possible
     internal serveMux121 mux121; // used only when GODEBUG=httpmuxgo121=1
 }
 
@@ -2895,7 +2970,7 @@ public static void HandleFunc(this ж<ServeMux> Ꮡmux, @string pattern, Action<
     if (use121){
         Ꮡmux.of(ServeMux.Ꮡmux121).handleFunc(pattern, handler);
     } else {
-        Ꮡmux.register(pattern, new HandlerFuncᴠΔHandler(new HandlerFunc(handler)));
+        Ꮡmux.register(pattern, new HandlerFuncᴠΔHandler(NilSafeDelegateConversion<HandlerFunc, Action<ResponseWriter, ж<Request>>>(handler)));
     }
 }
 
@@ -2915,7 +2990,7 @@ public static void HandleFunc(@string pattern, Action<ResponseWriter, ж<Request
     if (use121){
         DefaultServeMux.of(ServeMux.Ꮡmux121).handleFunc(pattern, handler);
     } else {
-        DefaultServeMux.register(pattern, new HandlerFuncᴠΔHandler(new HandlerFunc(handler)));
+        DefaultServeMux.register(pattern, new HandlerFuncᴠΔHandler(NilSafeDelegateConversion<HandlerFunc, Action<ResponseWriter, ж<Request>>>(handler)));
     }
 }
 
@@ -2932,7 +3007,7 @@ internal static readonly @string httpInvalidPatternˢ = "http: invalid pattern"u
 internal static readonly @string httpNilHandlerˢ = "http: nil handler"u8;
 internal static readonly @string unknownLocationˢ = "unknown location"u8;
 
-internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHandler handler) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHandler handler) {
     GoFrame ᒐ = default;
     bool ᒐd1 = false;
     try {
@@ -2979,7 +3054,6 @@ internal static error registerErr(this ж<ServeMux> Ꮡmux, @string patstr, ΔHa
         }
         Ꮡmux.of(ServeMux.Ꮡtree).addPattern(pat, handler);
         mux.index.addPattern(pat);
-        mux.patterns = append(mux.patterns, pat);
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
@@ -3103,6 +3177,21 @@ public static error ServeTLS(net.Listener l, ΔHandler handler, @string certFile
     // is derived from the base context and has a ServerContextKey
     // value.
     public Func<context.Context, net.Conn, context.Context> ConnContext;
+    // HTTP2 configures HTTP/2 connections.
+    //
+    // This field does not yet have any effect.
+    // See https://go.dev/issue/67813.
+    public ж<HTTP2Config> HTTP2;
+    // Protocols is the set of protocols accepted by the server.
+    //
+    // If Protocols includes UnencryptedHTTP2, the server will accept
+    // unencrypted HTTP/2 connections. The server can serve both
+    // HTTP/1 and unencrypted HTTP/2 on the same address and port.
+    //
+    // If Protocols is nil, the default is usually HTTP/1 and HTTP/2.
+    // If TLSNextProto is non-nil and does not contain an "h2" entry,
+    // the default is HTTP/1 only.
+    public ж<Protocols> Protocols;
     internal atomic.Bool inShutdown; // true when server is in shutdown
     internal atomic.Bool disableKeepAlives;
     internal sync.Once nextProtoOnce; // guards setupHTTP2_* init
@@ -3123,31 +3212,31 @@ public static error ServeTLS(net.Listener l, ΔHandler handler, @string certFile
 //
 // Close returns any error returned from closing the [Server]'s
 // underlying Listener(s).
-public static error Close(this ж<Server> Ꮡsrv) {
+public static error Close(this ж<Server> Ꮡs) {
     GoFrame ᒐ = default;
     bool ᒐd1 = false;
     try {
-        ref var srv = ref Ꮡsrv.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
-        srv.mu.Lock();
+        Ꮡs.of(Server.ᏑinShutdown).Store(true);
+        s.mu.Lock();
         ᒐd1 = true;
-        var err = srv.closeListenersLocked();
-        // Unlock srv.mu while waiting for listenerGroup.
-        // The group Add and Done calls are made with srv.mu held,
+        var err = s.closeListenersLocked();
+        // Unlock s.mu while waiting for listenerGroup.
+        // The group Add and Done calls are made with s.mu held,
         // to avoid adding a new listener in the window between
         // us setting inShutdown above and waiting here.
-        srv.mu.Unlock();
-        Ꮡsrv.of(Server.ᏑlistenerGroup).Wait();
-        srv.mu.Lock();
-        foreach (var (c, _) in srv.activeConn) {
+        s.mu.Unlock();
+        Ꮡs.of(Server.ᏑlistenerGroup).Wait();
+        s.mu.Lock();
+        foreach (var (c, _) in s.activeConn) {
             (~c).rwc.Close();
-            delete(srv.activeConn, c);
+            delete(s.activeConn, c);
         }
         return err;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { if (ᒐd1) Ꮡsrv.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡs.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // shutdownPollIntervalMax is the max polling interval when checking
@@ -3179,20 +3268,20 @@ internal static time.Duration shutdownPollIntervalMax => /* 500 * time.Milliseco
 //
 // Once Shutdown has been called on a server, it may not be reused;
 // future calls to methods such as Serve will return ErrServerClosed.
-public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) {
+public static error Shutdown(this ж<Server> Ꮡs, context.Context ctx) {
     GoFrame ᒐ = default;
     try {
-        ref var srv = ref Ꮡsrv.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
-        Ꮡsrv.of(Server.ᏑinShutdown).Store(true);
-        srv.mu.Lock();
-        var lnerr = srv.closeListenersLocked();
-        foreach (var (_, f) in srv.onShutdown) {
+        Ꮡs.of(Server.ᏑinShutdown).Store(true);
+        s.mu.Lock();
+        var lnerr = s.closeListenersLocked();
+        foreach (var (_, f) in s.onShutdown) {
             var fʗ1 = f;
             goǃ(fʗ1);
         }
-        srv.mu.Unlock();
-        Ꮡsrv.of(Server.ᏑlistenerGroup).Wait();
+        s.mu.Unlock();
+        Ꮡs.of(Server.ᏑlistenerGroup).Wait();
         var pollIntervalBase = time.Millisecond;
         time.Duration nextPollInterval() {
             // Add 10% jitter.
@@ -3208,16 +3297,16 @@ public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) {
         var timerʗ1 = timer;
         defer(() => timerʗ1.Stop(), ref ᒐ);
         while (ᐧ) {
-            if (Ꮡsrv.closeIdleConns()) {
+            if (Ꮡs.closeIdleConns()) {
                 return lnerr;
             }
-            var selᴛ81 = ctx.Done();
-            var selᴛ82 = (~timer).C;
-            switch (select(ᐸꟷ(selᴛ81, ꓸꓸꓸ), ᐸꟷ(selᴛ82, ꓸꓸꓸ))) {
-            case 0 when selᴛ81.ꟷᐳ(out _): {
+            var selᴛ84 = ctx.Done();
+            var selᴛ85 = (~timer).C;
+            switch (select(ᐸꟷ(selᴛ84, ꓸꓸꓸ), ᐸꟷ(selᴛ85, ꓸꓸꓸ))) {
+            case 0 when selᴛ84.ꟷᐳ(out _): {
                 return ctx.Err();
             }
-            case 1 when selᴛ82.ꟷᐳ(out _): {
+            case 1 when selᴛ85.ꟷᐳ(out _): {
                 timer.Reset(nextPollInterval());
                 break;
             }}
@@ -3232,12 +3321,12 @@ public static error Shutdown(this ж<Server> Ꮡsrv, context.Context ctx) {
 // undergone ALPN protocol upgrade or that have been hijacked.
 // This function should start protocol-specific graceful shutdown,
 // but should not wait for shutdown to complete.
-public static void RegisterOnShutdown(this ж<Server> Ꮡsrv, Action f) {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+public static void RegisterOnShutdown(this ж<Server> Ꮡs, Action f) {
+    ref var s = ref Ꮡs.DerefOrNull();
 
-    srv.mu.Lock();
-    srv.onShutdown = append(srv.onShutdown, f);
-    srv.mu.Unlock();
+    s.mu.Lock();
+    s.onShutdown = append(s.onShutdown, f);
+    s.mu.Unlock();
 }
 
 // closeIdleConns closes all idle connections and reports whether the
@@ -3363,21 +3452,21 @@ public static ΔHandler AllowQuerySemicolons(ΔHandler h) {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string httpˢ3 = ":http"u8;
 
-// ListenAndServe listens on the TCP network address srv.Addr and then
+// ListenAndServe listens on the TCP network address s.Addr and then
 // calls [Serve] to handle requests on incoming connections.
 // Accepted connections are configured to enable TCP keep-alives.
 //
-// If srv.Addr is blank, ":http" is used.
+// If s.Addr is blank, ":http" is used.
 //
 // ListenAndServe always returns a non-nil error. After [Server.Shutdown] or [Server.Close],
 // the returned error is [ErrServerClosed].
-public static error ListenAndServe(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+public static error ListenAndServe(this ж<Server> Ꮡs) {
+    ref var s = ref Ꮡs.DerefOrNull();
 
-    if (Ꮡsrv.shuttingDown()) {
+    if (Ꮡs.shuttingDown()) {
         return ErrServerClosed;
     }
-    @string addr = srv.Addr;
+    @string addr = s.Addr;
     if (addr == ""u8) {
         addr = httpˢ3;
     }
@@ -3385,21 +3474,24 @@ public static error ListenAndServe(this ж<Server> Ꮡsrv) {
     if (err != default!) {
         return err;
     }
-    return Ꮡsrv.Serve(ln);
+    return Ꮡs.Serve(ln);
 }
 
 internal static Action<ж<Server>, net.Listener> testHookServerServe;                       // used if non-nil
 
 // shouldConfigureHTTP2ForServe reports whether Server.Serve should configure
-// automatic HTTP/2. (which sets up the srv.TLSNextProto map)
-[GoRecv] internal static bool shouldConfigureHTTP2ForServe(this ref Server srv) {
-    if (srv.TLSConfig == nil) {
+// automatic HTTP/2. (which sets up the s.TLSNextProto map)
+[GoRecv] internal static bool shouldConfigureHTTP2ForServe(this ref Server s) {
+    if (s.TLSConfig == nil) {
         // Compatibility with Go 1.6:
         // If there's no TLSConfig, it's possible that the user just
         // didn't set it on the http.Server, but did pass it to
         // tls.NewListener and passed that listener to Serve.
-        // So we should configure HTTP/2 (to set up srv.TLSNextProto)
+        // So we should configure HTTP/2 (to set up s.TLSNextProto)
         // in case the listener returns an "h2" *tls.Conn.
+        return true;
+    }
+    if (s.protocols().UnencryptedHTTP2()) {
         return true;
     }
     // The user specified a TLSConfig on their http.Server.
@@ -3409,7 +3501,7 @@ internal static Action<ж<Server>, net.Listener> testHookServerServe;           
     // passed this tls.Config to tls.NewListener. And if they did,
     // it's too late anyway to fix it. It would only be potentially racy.
     // See Issue 15908.
-    return slices.Contains((~srv.TLSConfig).NextProtos, http2NextProtoTLS);
+    return slices.Contains((~s.TLSConfig).NextProtos, http2NextProtoTLS);
 }
 
 // ErrServerClosed is returned by the [Server.Serve], [ServeTLS], [ListenAndServe],
@@ -3418,7 +3510,7 @@ public static error ErrServerClosed = errors.New("http: Server closed"u8);
 
 // Serve accepts incoming connections on the Listener l, creating a
 // new service goroutine for each. The service goroutines read requests and
-// then call srv.Handler to reply to them.
+// then call s.Handler to reply to them.
 //
 // HTTP/2 support is only enabled if the Listener returns [*tls.Conn]
 // connections and they were configured with "h2" in the TLS
@@ -3426,42 +3518,42 @@ public static error ErrServerClosed = errors.New("http: Server closed"u8);
 //
 // Serve always returns a non-nil error and closes l.
 // After [Server.Shutdown] or [Server.Close], the returned error is [ErrServerClosed].
-public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
+public static error Serve(this ж<Server> Ꮡs, net.Listener lʗp) {
     GoFrame ᒐ = default;
     try {
-        ref var srv = ref Ꮡsrv.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
         ref var l = ref heap(lʗp, out var Ꮡl);
         {
             var fn = testHookServerServe; if (fn != default!) {
-                fn(Ꮡsrv, l); // call hook with unwrapped listener
+                fn(Ꮡs, l); // call hook with unwrapped listener
             }
         }
         var origListener = l;
         l = new onceCloseListenerжListener(Ꮡ(new onceCloseListener(Listener: l)));
         defer(() => Ꮡl.ValueSlot.Close(), ref ᒐ);
         {
-            var err = Ꮡsrv.setupHTTP2_Serve(); if (err != default!) {
+            var err = Ꮡs.setupHTTP2_Serve(); if (err != default!) {
                 return err;
             }
         }
-        if (!Ꮡsrv.trackListener(Ꮡl, true)) {
+        if (!Ꮡs.trackListener(Ꮡl, true)) {
             return ErrServerClosed;
         }
-        defer(Ꮡsrv.trackListener, Ꮡl, (bool)false, ref ᒐ);
+        defer(Ꮡs.trackListener, Ꮡl, (bool)false, ref ᒐ);
         var baseCtx = context_package.Background();
-        if (srv.BaseContext != default!) {
-            baseCtx = srv.BaseContext(origListener);
+        if (s.BaseContext != default!) {
+            baseCtx = s.BaseContext(origListener);
             if (baseCtx == default!) {
                 throw panic("BaseContext returned a nil context");
             }
         }
         time.Duration tempDelay = default!;                   // how long to sleep on accept failure
-        var ctx = context_package.WithValue(baseCtx, ServerContextKey.OrTypedNil(), Ꮡsrv.OrTypedNil());
+        var ctx = context_package.WithValue(baseCtx, ServerContextKey.OrTypedNil(), Ꮡs.OrTypedNil());
         while (ᐧ) {
             var (rw, err) = l.Accept();
             if (err != default!) {
-                if (Ꮡsrv.shuttingDown()) {
+                if (Ꮡs.shuttingDown()) {
                     return ErrServerClosed;
                 }
                 {
@@ -3476,7 +3568,7 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
                                 tempDelay = max;
                             }
                         }
-                        srv.logf("http: Accept error: %v; retrying in %v"u8, err, tempDelay);
+                        s.logf("http: Accept error: %v; retrying in %v"u8, err, tempDelay);
                         time.Sleep(tempDelay);
                         continue;
                     }
@@ -3485,7 +3577,7 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
             }
             var connCtx = ctx;
             {
-                var cc = srv.ConnContext; if (cc != default!) {
+                var cc = s.ConnContext; if (cc != default!) {
                     connCtx = cc(connCtx, rw);
                     if (connCtx == default!) {
                         throw panic("ConnContext returned nil");
@@ -3493,7 +3585,7 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
                 }
             }
             tempDelay = 0;
-            var c = Ꮡsrv.newConn(rw);
+            var c = Ꮡs.newConn(rw);
             c.setState((~c).rwc, StateNew, runHooks); // before Serve can return
             var cʗ1 = c;
             goǃ(cʗ1.serve, connCtx);
@@ -3505,7 +3597,7 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
 
 // ServeTLS accepts incoming connections on the Listener l, creating a
 // new service goroutine for each. The service goroutines perform TLS
-// setup and then read requests, calling srv.Handler to reply to them.
+// setup and then read requests, calling s.Handler to reply to them.
 //
 // Files containing a certificate and matching private key for the
 // server must be provided if neither the [Server]'s
@@ -3517,20 +3609,18 @@ public static error Serve(this ж<Server> Ꮡsrv, net.Listener lʗp) {
 //
 // ServeTLS always returns a non-nil error. After [Server.Shutdown] or [Server.Close], the
 // returned error is [ErrServerClosed].
-public static error ServeTLS(this ж<Server> Ꮡsrv, net.Listener l, @string certFile, @string keyFile) {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+public static error ServeTLS(this ж<Server> Ꮡs, net.Listener l, @string certFile, @string keyFile) {
+    ref var s = ref Ꮡs.DerefOrNull();
 
-    // Setup HTTP/2 before srv.Serve, to initialize srv.TLSConfig
+    // Setup HTTP/2 before s.Serve, to initialize s.TLSConfig
     // before we clone it and create the TLS Listener.
     {
-        var err = Ꮡsrv.setupHTTP2_ServeTLS(); if (err != default!) {
+        var err = Ꮡs.setupHTTP2_ServeTLS(); if (err != default!) {
             return err;
         }
     }
-    var config = cloneTLSConfig(srv.TLSConfig);
-    if (!slices.Contains((~config).NextProtos, http11ˢ)) {
-        config.Value.NextProtos = append((~config).NextProtos, "http/1.1"u8);
-    }
+    var config = cloneTLSConfig(s.TLSConfig);
+    config.Value.NextProtos = adjustNextProtos((~config).NextProtos, s.protocols());
     var configHasCert = builtin.len((~config).Certificates) > 0 || (~config).GetCertificate != default! || (~config).GetConfigForClient != default!;
     if (!configHasCert || certFile != ""u8 || keyFile != ""u8) {
         error err = default!;
@@ -3541,7 +3631,66 @@ public static error ServeTLS(this ж<Server> Ꮡsrv, net.Listener l, @string cer
         }
     }
     var tlsListener = tls.NewListener(l, config);
-    return Ꮡsrv.Serve(tlsListener);
+    return Ꮡs.Serve(tlsListener);
+}
+
+[GoRecv] internal static Protocols protocols(this ref Server s) {
+    if (s.Protocols != nil) {
+        return s.Protocols.Value; // user-configured set
+    }
+    // The historic way of disabling HTTP/2 is to set TLSNextProto to
+    // a non-nil map with no "h2" entry.
+    var (_, hasH2) = s.TLSNextProto["h2"u8, ꟷ];
+    var http2Disabled = s.TLSNextProto != default! && !hasH2;
+    // If GODEBUG=http2server=0, then HTTP/2 is disabled unless
+    // the user has manually added an "h2" entry to TLSNextProto
+    // (probably by using x/net/http2 directly).
+    if (http2server.Value() == "0"u8 && !hasH2) {
+        http2Disabled = true;
+    }
+    Protocols p = default!;
+    p.SetHTTP1(true); // default always includes HTTP/1
+    if (!http2Disabled) {
+        p.SetHTTP2(true);
+    }
+    return p;
+}
+
+// adjustNextProtos adds or removes "http/1.1" and "h2" entries from
+// a tls.Config.NextProtos list, according to the set of protocols in protos.
+internal static slice<@string> adjustNextProtos(slice<@string> nextProtos, Protocols protos) {
+    // Make a copy of NextProtos since it might be shared with some other tls.Config.
+    // (tls.Config.Clone doesn't do a deep copy.)
+    //
+    // We could avoid an allocation in the common case by checking to see if the slice
+    // is already in order, but this is just one small allocation per connection.
+    nextProtos = slices.Clone<slice<@string>, @string>(nextProtos);
+    Protocols have = default!;
+    var protosʗ1 = protos;
+    nextProtos = slices.DeleteFunc(nextProtos, (@string s) => {
+        var exprᴛ1 = s;
+        if (exprᴛ1 == "http/1.1"u8) {
+            if (!protosʗ1.HTTP1()) {
+                return true;
+            }
+            have.SetHTTP1(true);
+        }
+        else if (exprᴛ1 == "h2"u8) {
+            if (!protosʗ1.HTTP2()) {
+                return true;
+            }
+            have.SetHTTP2(true);
+        }
+
+        return false;
+    });
+    if (protos.HTTP2() && !have.HTTP2()) {
+        nextProtos = append(nextProtos, "h2"u8);
+    }
+    if (protos.HTTP1() && !have.HTTP1()) {
+        nextProtos = append(nextProtos, "http/1.1"u8);
+    }
+    return nextProtos;
 }
 
 // trackListener adds or removes a net.Listener to the set of tracked
@@ -3628,14 +3777,14 @@ internal static bool shuttingDown(this ж<Server> Ꮡs) {
 // By default, keep-alives are always enabled. Only very
 // resource-constrained environments or servers in the process of
 // shutting down should disable them.
-public static void SetKeepAlivesEnabled(this ж<Server> Ꮡsrv, bool v) {
+public static void SetKeepAlivesEnabled(this ж<Server> Ꮡs, bool v) {
     if (v) {
-        Ꮡsrv.of(Server.ᏑdisableKeepAlives).Store(false);
+        Ꮡs.of(Server.ᏑdisableKeepAlives).Store(false);
         return;
     }
-    Ꮡsrv.of(Server.ᏑdisableKeepAlives).Store(true);
+    Ꮡs.of(Server.ᏑdisableKeepAlives).Store(true);
     // Close idle HTTP/1 conns:
-    Ꮡsrv.closeIdleConns();
+    Ꮡs.closeIdleConns();
 }
 
 // TODO: Issue 26303: close HTTP/2 conns as soon as they become idle.
@@ -3689,7 +3838,7 @@ public static error ListenAndServeTLS(@string addr, @string certFile, @string ke
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string httpsˢ2 = ":https"u8;
 
-// ListenAndServeTLS listens on the TCP network address srv.Addr and
+// ListenAndServeTLS listens on the TCP network address s.Addr and
 // then calls [ServeTLS] to handle requests on incoming TLS connections.
 // Accepted connections are configured to enable TCP keep-alives.
 //
@@ -3700,19 +3849,19 @@ internal static readonly @string httpsˢ2 = ":https"u8;
 // concatenation of the server's certificate, any intermediates, and
 // the CA's certificate.
 //
-// If srv.Addr is blank, ":https" is used.
+// If s.Addr is blank, ":https" is used.
 //
 // ListenAndServeTLS always returns a non-nil error. After [Server.Shutdown] or
 // [Server.Close], the returned error is [ErrServerClosed].
-public static error ListenAndServeTLS(this ж<Server> Ꮡsrv, @string certFile, @string keyFile) {
+public static error ListenAndServeTLS(this ж<Server> Ꮡs, @string certFile, @string keyFile) {
     GoFrame ᒐ = default;
     try {
-        ref var srv = ref Ꮡsrv.DerefOrNull();
+        ref var s = ref Ꮡs.DerefOrNull();
 
-        if (Ꮡsrv.shuttingDown()) {
+        if (Ꮡs.shuttingDown()) {
             return ErrServerClosed;
         }
-        @string addr = srv.Addr;
+        @string addr = s.Addr;
         if (addr == ""u8) {
             addr = httpsˢ2;
         }
@@ -3722,66 +3871,74 @@ public static error ListenAndServeTLS(this ж<Server> Ꮡsrv, @string certFile, 
         }
         var lnʗ1 = ln;
         defer(() => lnʗ1.Close(), ref ᒐ);
-        return Ꮡsrv.ServeTLS(ln, certFile, keyFile);
+        return Ꮡs.ServeTLS(ln, certFile, keyFile);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
     finally { ᒐ.Run(); }
 }
 
 // setupHTTP2_ServeTLS conditionally configures HTTP/2 on
-// srv and reports whether there was an error setting it up. If it is
+// s and reports whether there was an error setting it up. If it is
 // not configured for policy reasons, nil is returned.
-internal static error setupHTTP2_ServeTLS(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+internal static error setupHTTP2_ServeTLS(this ж<Server> Ꮡs) {
+    ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡsrv.of(Server.ᏑnextProtoOnce).Do(Ꮡsrv.onceSetNextProtoDefaults);
-    return srv.nextProtoErr;
+    Ꮡs.of(Server.ᏑnextProtoOnce).Do(Ꮡs.onceSetNextProtoDefaults);
+    return s.nextProtoErr;
 }
 
 // setupHTTP2_Serve is called from (*Server).Serve and conditionally
-// configures HTTP/2 on srv using a more conservative policy than
+// configures HTTP/2 on s using a more conservative policy than
 // setupHTTP2_ServeTLS because Serve is called after tls.Listen,
 // and may be called concurrently. See shouldConfigureHTTP2ForServe.
 //
 // The tests named TestTransportAutomaticHTTP2* and
 // TestConcurrentServerServe in server_test.go demonstrate some
 // of the supported use cases and motivations.
-internal static error setupHTTP2_Serve(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+internal static error setupHTTP2_Serve(this ж<Server> Ꮡs) {
+    ref var s = ref Ꮡs.DerefOrNull();
 
-    Ꮡsrv.of(Server.ᏑnextProtoOnce).Do(Ꮡsrv.onceSetNextProtoDefaults_Serve);
-    return srv.nextProtoErr;
+    Ꮡs.of(Server.ᏑnextProtoOnce).Do(Ꮡs.onceSetNextProtoDefaults_Serve);
+    return s.nextProtoErr;
 }
 
-internal static void onceSetNextProtoDefaults_Serve(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+internal static void onceSetNextProtoDefaults_Serve(this ж<Server> Ꮡs) {
+    ref var s = ref Ꮡs.DerefOrNull();
 
-    if (srv.shouldConfigureHTTP2ForServe()) {
-        Ꮡsrv.onceSetNextProtoDefaults();
+    if (s.shouldConfigureHTTP2ForServe()) {
+        Ꮡs.onceSetNextProtoDefaults();
     }
 }
 
 internal static ж<godebug.Setting> http2server = godebug.New("http2server"u8);
 
 // onceSetNextProtoDefaults configures HTTP/2, if the user hasn't
-// configured otherwise. (by setting srv.TLSNextProto non-nil)
-// It must only be called via srv.nextProtoOnce (use srv.setupHTTP2_*).
-internal static void onceSetNextProtoDefaults(this ж<Server> Ꮡsrv) {
-    ref var srv = ref Ꮡsrv.DerefOrNull();
+// configured otherwise. (by setting s.TLSNextProto non-nil)
+// It must only be called via s.nextProtoOnce (use s.setupHTTP2_*).
+internal static void onceSetNextProtoDefaults(this ж<Server> Ꮡs) {
+    ref var s = ref Ꮡs.DerefOrNull();
 
     if (omitBundledHTTP2) {
+        return;
+    }
+    var p = s.protocols();
+    if (!p.HTTP2() && !p.UnencryptedHTTP2()) {
         return;
     }
     if (http2server.Value() == "0"u8) {
         http2server.IncNonDefault();
         return;
     }
-    // Enable HTTP/2 by default if the user hasn't otherwise
-    // configured their TLSNextProto map.
-    if (srv.TLSNextProto == default!) {
-        var conf = Ꮡ(new http2Server(nil));
-        srv.nextProtoErr = http2ConfigureServer(Ꮡsrv, conf);
+    {
+        var (_, ok) = s.TLSNextProto["h2"u8, ꟷ]; if (ok) {
+            // TLSNextProto already contains an HTTP/2 implementation.
+            // The user probably called golang.org/x/net/http2.ConfigureServer
+            // to add it.
+            return;
+        }
     }
+    var conf = Ꮡ(new http2Server(nil));
+    s.nextProtoErr = http2ConfigureServer(Ꮡs, conf);
 }
 
 // TimeoutHandler returns a [Handler] that runs h with the given time limit.
@@ -3867,22 +4024,20 @@ internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, �
             catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
             finally { ᒐ.Run(); }
         });
-        var selᴛ83 = panicChan;
-        var selᴛ84 = done;
-        var selᴛ85 = ctx.Done();
-        switch (select(ᐸꟷ(selᴛ83, ꓸꓸꓸ), ᐸꟷ(selᴛ84, ꓸꓸꓸ), ᐸꟷ(selᴛ85, ꓸꓸꓸ))) {
-        case 0 when selᴛ83.ꟷᐳ(out var p): {
+        var selᴛ86 = panicChan;
+        var selᴛ87 = done;
+        var selᴛ88 = ctx.Done();
+        switch (select(ᐸꟷ(selᴛ86, ꓸꓸꓸ), ᐸꟷ(selᴛ87, ꓸꓸꓸ), ᐸꟷ(selᴛ88, ꓸꓸꓸ))) {
+        case 0 when selᴛ86.ꟷᐳ(out var p): {
             throw panic(p);
             break;
         }
-        case 1 when selᴛ84.ꟷᐳ(out _): {
+        case 1 when selᴛ87.ꟷᐳ(out _): {
             tw.of(timeoutWriter.Ꮡmu).Lock();
             var twʗ2 = tw;
             defer(twʗ2.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);
             var dst = w.Header();
-            foreach (var (k, vv) in (~tw).h) {
-                dst[k] = vv;
-            }
+            maps.Copy<ΔHeader, ΔHeader, @string, slice<@string>>(dst, (~tw).h);
             if (!(~tw).wroteHeader) {
                 tw.Value.code = StatusOK;
             }
@@ -3890,7 +4045,7 @@ internal static void ServeHTTP(this ж<timeoutHandler> Ꮡh, ResponseWriter w, �
             w.Write(tw.of(timeoutWriter.Ꮡwbuf).Bytes());
             break;
         }
-        case 2 when selᴛ85.ꟷᐳ(out _): {
+        case 2 when selᴛ88.ꟷᐳ(out _): {
             tw.of(timeoutWriter.Ꮡmu).Lock();
             var twʗ3 = tw;
             defer(twʗ3.of(timeoutWriter.Ꮡmu).Unlock, ref ᒐ);

@@ -53,8 +53,8 @@ using static go.@internal.syscall.windows.registry_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/syscall/windows/registry/key.go", "key.cs", "AD+KAZIAAhDSgoKUgoKClKjogoSmgoKCkoKCgpSUgoKUgpSUtAAFEPKCgpSClKiSAAwckoKmgpQ=")]
-[assembly: go.GoPositionMap("internal/syscall/windows/registry/zsyscall_windows.go", "zsyscall_windows.cs", "ABk0opSk2gAMIKIACgKClKaiooKUpqKigpSmogAMAoKUpqIACAKClKaiwoKUprLCgoKU")]
+[assembly: go.GoPositionMap("internal/syscall/windows/registry/key.go", "key.cs", "ADOKAZIAAhDSgoKUgoKClKjogoSmgoKCkoKCgpSUgoKUgpSUtAAFEPKCgpSClKiSAAwckoKmgpQ=")]
+[assembly: go.GoPositionMap("internal/syscall/windows/registry/zsyscall_windows.go", "zsyscall_windows.cs", "ABM0opSk2gAMIKIACgKClKaiooKUpqKigpSmogAMAoKUpqIACAKClKaiwoKUprLCgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.syscall.windows;
@@ -72,4 +72,17 @@ public static partial class registry_package
     public partial struct Key {}
     public partial struct KeyInfo {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸsysdll() => builtin.initPackage(typeof(go.@internal.syscall.windows.sysdll_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

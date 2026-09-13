@@ -6,11 +6,10 @@ namespace go;
 
 using abi = @internal.abi_package;
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -331,7 +330,7 @@ internal static ж<g> sigFetchG(ж<sigctxt> Ꮡc) {
             // bottom of the signal stack. Fetch from there.
             // TODO: in efence mode, stack is sysAlloc'd, so this wouldn't
             // work.
-            var sp = getcallersp();
+            var sp = sys.GetCallerSP();
             var s = spanOf(sp);
             if (s != nil && s.of(mspan.Ꮡstate).get() == mSpanManual && s.@base() < sp && sp < (~s).limit) {
                 var gp = ~(ж<ж<g>>)(uintptr)((@unsafe.Pointer)s.@base());
@@ -402,9 +401,9 @@ internal static void sigtrampgo(uint32 sig, ж<siginfo> Ꮡinfo, @unsafe.Pointer
     setg((~(~gp).m).gsignal);
     // If some non-Go code called sigaltstack, adjust.
     ref var gsignalStack = ref heap(new gsignalStack(), out var ᏑgsignalStack);
-    var setStack = adjustSignalStack(sig, ref ((~gp).m).DerefOrNull(), ᏑgsignalStack);
+    var setStack = adjustSignalStack(sig, (~gp).m, ᏑgsignalStack);
     if (setStack) {
-        gp.Value.m.Value.gsignal.Value.stktopsp = getcallersp();
+        gp.Value.m.Value.gsignal.Value.stktopsp = sys.GetCallerSP();
     }
     if ((~gp).stackguard0 == stackFork) {
         signalDuringFork(sig);
@@ -476,9 +475,10 @@ internal static void sigprofNonGoPC(uintptr pc) {
 // signal stack in *gsigstack.
 //
 //go:nosplit
-internal static bool adjustSignalStack(uint32 sigʗp, ref m mp, ж<gsignalStack> ᏑgsigStack) {
-    ref var sig = ref heap(sigʗp, out var Ꮡsig);
+internal static bool adjustSignalStack(uint32 sigʗp, ж<m> Ꮡmp, ж<gsignalStack> ᏑgsigStack) {
+    ref var mp = ref Ꮡmp.DerefOrNull();
 
+    ref var sig = ref heap(sigʗp, out var Ꮡsig);
     var sp = (uintptr)Ꮡsig;
     if (sp >= (~mp.gsignal).stack.lo && sp < (~mp.gsignal).stack.hi) {
         return false;
@@ -508,15 +508,24 @@ internal static bool adjustSignalStack(uint32 sigʗp, ref m mp, ж<gsignalStack>
         return true;
     }
     // sp is not within gsignal stack, g0 stack, or sigaltstack. Bad.
+    // Call indirectly to avoid nosplit stack overflow on OpenBSD.
+    adjustSignalStack2Indirect(sig, sp, Ꮡmp, (int32)(st.ss_flags & (int32)_SS_DISABLE) != 0);
+    return false;
+}
+
+internal static Action<uint32, uintptr, ж<m>, bool> adjustSignalStack2Indirect;
+internal static void initᴛadjustSignalStack2Indirect() { adjustSignalStack2Indirect = adjustSignalStack2; }
+
+//go:nosplit
+internal static void adjustSignalStack2(uint32 sig, uintptr sp, ж<m> Ꮡmp, bool ssDisable) {
     setg(nil);
     needm(true);
-    if ((int32)(st.ss_flags & (int32)_SS_DISABLE) != 0){
+    if (ssDisable){
         noSignalStack(sig);
     } else {
-        sigNotOnStack(sig, sp, ref mp);
+        sigNotOnStack(sig, sp, ref (Ꮡmp).DerefOrNull());
     }
     dropm();
-    return false;
 }
 
 // crashing is the number of m's we have waited for when implementing

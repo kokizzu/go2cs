@@ -16,35 +16,12 @@ namespace go.crypto;
 using errors = errors_package;
 using io = io_package;
 using big = math.big_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using randutil = go.crypto.@internal.randutil_package;
 using go.crypto.@internal;
 using math;
 
 partial class dsa_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
-    builtin.initPackage(typeof(math.big_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸrandutil() {
-    builtin.initPackage(typeof(go.crypto.@internal.randutil_package));
-}
 
 // Parameters represents the domain parameters for a key. These parameters can
 // be shared across many keys. The bit length of Q must be a multiple of 8.
@@ -82,6 +59,7 @@ public static ParameterSizes L3072N256 => 3;
 internal static UntypedInt numMRTests => 64;
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cryptoDsaUseOfDsaIsNotˢ = "crypto/dsa: use of DSA is not allowed in FIPS 140-only mode"u8;
 internal static readonly @string cryptoDsaInvalidˢ = "crypto/dsa: invalid ParameterSizes"u8;
 
 // GenerateParameters puts a random, valid set of DSA parameters into params.
@@ -89,6 +67,9 @@ internal static readonly @string cryptoDsaInvalidˢ = "crypto/dsa: invalid Param
 public static error GenerateParameters(ж<Parameters> Ꮡparams, io.Reader rand, ParameterSizes sizes) {
     ref var @params = ref Ꮡparams.DerefOrNull();
 
+    if (fips140only.Enabled) {
+        return errors.New(cryptoDsaUseOfDsaIsNotˢ);
+    }
     // This function doesn't follow FIPS 186-3 exactly in that it doesn't
     // use a verification seed to generate the primes. The verification
     // seed doesn't appear to be exported or used by other code and
@@ -185,6 +166,9 @@ internal static readonly @string cryptoDsaParametersNotˢ = "crypto/dsa: paramet
 public static error GenerateKey(ж<PrivateKey> Ꮡpriv, io.Reader rand) {
     ref var priv = ref Ꮡpriv.DerefOrNull();
 
+    if (fips140only.Enabled) {
+        return errors.New(cryptoDsaUseOfDsaIsNotˢ);
+    }
     if (priv.P == nil || priv.Q == nil || priv.G == nil) {
         return errors.New(cryptoDsaParametersNotˢ);
     }
@@ -233,6 +217,9 @@ public static (ж<bigꓸInt> r, ж<bigꓸInt> s, error err) Sign(io.Reader rand,
     error err = default!;
 
     ref var priv = ref Ꮡpriv.DerefOrNull();
+    if (fips140only.Enabled) {
+        return (default!, default!, errors.New(cryptoDsaUseOfDsaIsNotˢ));
+    }
     randutil.MaybeReadByte(rand);
     // FIPS 186-3, section 4.6
     nint n = priv.Q.BitLen();
@@ -294,6 +281,9 @@ public static bool Verify(ж<PublicKey> Ꮡpub, slice<byte> hash, ж<bigꓸInt> 
     ref var r = ref Ꮡr.DerefOrNull();
     ref var s = ref Ꮡs.DerefOrNull();
 
+    if (fips140only.Enabled) {
+        throw panic("crypto/dsa: use of DSA is not allowed in FIPS 140-only mode");
+    }
     // FIPS 186-3, section 4.7
     if (pub.P.Sign() == 0) {
         return false;

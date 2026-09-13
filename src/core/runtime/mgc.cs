@@ -175,10 +175,10 @@ internal static void gcinit() {
     ᏑgcController.init(readGOGC(), readGOMEMLIMIT());
     work.startSema = 1;
     work.markDoneSema = 1;
-    lockInit(ref work.sweepWaiters.@lock, lockRankSweepWaiters);
-    lockInit(ref work.assistQueue.@lock, lockRankAssistQueue);
-    lockInit(ref work.strongFromWeak.@lock, lockRankStrongFromWeakQueue);
-    lockInit(ref work.wbufSpans.@lock, lockRankWbufSpans);
+    lockInit(Ꮡwork.of(workType.ᏑsweepWaiters).of(workType_sweepWaiters.Ꮡlock), lockRankSweepWaiters);
+    lockInit(Ꮡwork.of(workType.ᏑassistQueue).of(workType_assistQueue.Ꮡlock), lockRankAssistQueue);
+    lockInit(Ꮡwork.of(workType.ᏑstrongFromWeak).of(workType_strongFromWeak.Ꮡlock), lockRankStrongFromWeakQueue);
+    lockInit(Ꮡwork.of(workType.ᏑwbufSpans).of(workType_wbufSpans.Ꮡlock), lockRankWbufSpans);
 }
 
 // gcenable is called after the bulk of the runtime initialization,
@@ -209,7 +209,6 @@ internal static ref uint32 gcphase => ref Ꮡgcphase.Value;
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
 //   - github.com/bytedance/sonic
-//   - github.com/cloudwego/frugal
 //
 // Do not remove or change the type signature.
 // See go.dev/issue/67401.
@@ -323,11 +322,12 @@ internal static ref workType work => ref Ꮡwork.Value;
     internal uint32 ___;
     // bytesMarked is the number of bytes marked this cycle. This
     // includes bytes blackened in scanned objects, noscan objects
-    // that go straight to black, and permagrey objects scanned by
-    // markroot during the concurrent scan phase. This is updated
-    // atomically during the cycle. Updates may be batched
-    // arbitrarily, since the value is only read at the end of the
-    // cycle.
+    // that go straight to black, objects allocated as black during
+    // the cycle, and permagrey objects scanned by markroot during
+    // the concurrent scan phase.
+    //
+    // This is updated atomically during the cycle. Updates may be batched
+    // arbitrarily, since the value is only read at the end of the cycle.
     //
     // Because of benign races during marking, this number may not
     // be the exact number of marked bytes, but it should be very
@@ -491,166 +491,185 @@ internal static readonly @string pMcacheNotFlushedˢ = "p mcache not flushed"u8;
 // This may return without performing this transition in some cases,
 // such as when called on a system stack or with locks held.
 internal static void gcStart(gcTrigger trigger) {
-    // Since this is called from malloc and malloc is called in
-    // the guts of a number of libraries that might be holding
-    // locks, don't attempt to start GC in non-preemptible or
-    // potentially unstable situations.
-    var mp = acquirem();
-    {
-        var gp = getg(); if (gp == (~mp).g0 || (~mp).locks > 1 || (~mp).preemptoff != ""u8) {
-            releasem(ref (mp).DerefOrNull());
-            return;
-        }
-    }
-    releasem(ref (mp).DerefOrNull());
-    mp = default!;
-    // Pick up the remaining unswept/not being swept spans concurrently
-    //
-    // This shouldn't happen if we're being invoked in background
-    // mode since proportional sweep should have just finished
-    // sweeping everything, but rounding errors, etc, may leave a
-    // few spans unswept. In forced mode, this is necessary since
-    // GC can be forced at any point in the sweeping cycle.
-    //
-    // We check the transition condition continuously here in case
-    // this G gets delayed in to the next GC cycle.
-    while (trigger.test() && sweepone() != ~(uintptr)0) {
-    }
-    // Perform GC initialization and the sweep termination
-    // transition.
-    semacquire(Ꮡwork.of(workType.ᏑstartSema));
-    // Re-check transition condition under transition lock.
-    if (!trigger.test()) {
-        semrelease(Ꮡwork.of(workType.ᏑstartSema));
-        return;
-    }
-    // In gcstoptheworld debug mode, upgrade the mode accordingly.
-    // We do this after re-checking the transition condition so
-    // that multiple goroutines that detect the heap trigger don't
-    // start multiple STW GCs.
-    gcMode mode = gcBackgroundMode;
-    if (debug.gcstoptheworld == 1){
-        mode = gcForceMode;
-    } else 
-    if (debug.gcstoptheworld == 2) {
-        mode = gcForceBlockMode;
-    }
-    // Ok, we're doing it! Stop everybody else
-    semacquire(Ꮡgcsema);
-    semacquire(Ꮡworldsema);
-    // For stats, check if this GC was forced by the user.
-    // Update it under gcsema to avoid gctrace getting wrong values.
-    work.userForced = trigger.kind == gcTriggerCycle;
-    var Δtrace = traceAcquire();
-    if (Δtrace.ok()) {
-        Δtrace.GCStart();
-        traceRelease(Δtrace);
-    }
-    // Check that all Ps have finished deferred mcache flushes.
-    foreach (var (_, Δp) in allp) {
+    GoFrame ᒐ = default;
+    try {
+        // Since this is called from malloc and malloc is called in
+        // the guts of a number of libraries that might be holding
+        // locks, don't attempt to start GC in non-preemptible or
+        // potentially unstable situations.
+        var mp = acquirem();
         {
-            var fg = (~Δp).mcache.of(mcache.ᏑflushGen).Load(); if (fg != mheap_.sweepgen) {
-                println((@string)"runtime: p"u8, (~Δp).id, (@string)"flushGen"u8, fg, (@string)"!= sweepgen"u8, mheap_.sweepgen);
-                @throw(pMcacheNotFlushedˢ);
+            var gp = getg(); if (gp == (~mp).g0 || (~mp).locks > 1 || (~mp).preemptoff != ""u8) {
+                releasem(ref (mp).DerefOrNull());
+                return;
             }
         }
+        releasem(ref (mp).DerefOrNull());
+        mp = default!;
+        {
+            var gp = getg(); if ((~gp).syncGroup != nil) {
+                // Disassociate the G from its synctest bubble while allocating.
+                // This is less elegant than incrementing the group's active count,
+                // but avoids any contamination between GC and synctest.
+                var sg = gp.Value.syncGroup;
+                gp.Value.syncGroup = default!;
+                var gpʗ1 = gp;
+                var sgʗ1 = sg;
+                defer(() => {
+                    gpʗ1.Value.syncGroup = sgʗ1;
+                }, ref ᒐ);
+            }
+        }
+        // Pick up the remaining unswept/not being swept spans concurrently
+        //
+        // This shouldn't happen if we're being invoked in background
+        // mode since proportional sweep should have just finished
+        // sweeping everything, but rounding errors, etc, may leave a
+        // few spans unswept. In forced mode, this is necessary since
+        // GC can be forced at any point in the sweeping cycle.
+        //
+        // We check the transition condition continuously here in case
+        // this G gets delayed in to the next GC cycle.
+        while (trigger.test() && sweepone() != ~(uintptr)0) {
+        }
+        // Perform GC initialization and the sweep termination
+        // transition.
+        semacquire(Ꮡwork.of(workType.ᏑstartSema));
+        // Re-check transition condition under transition lock.
+        if (!trigger.test()) {
+            semrelease(Ꮡwork.of(workType.ᏑstartSema));
+            return;
+        }
+        // In gcstoptheworld debug mode, upgrade the mode accordingly.
+        // We do this after re-checking the transition condition so
+        // that multiple goroutines that detect the heap trigger don't
+        // start multiple STW GCs.
+        gcMode mode = gcBackgroundMode;
+        if (debug.gcstoptheworld == 1){
+            mode = gcForceMode;
+        } else 
+        if (debug.gcstoptheworld == 2) {
+            mode = gcForceBlockMode;
+        }
+        // Ok, we're doing it! Stop everybody else
+        semacquire(Ꮡgcsema);
+        semacquire(Ꮡworldsema);
+        // For stats, check if this GC was forced by the user.
+        // Update it under gcsema to avoid gctrace getting wrong values.
+        work.userForced = trigger.kind == gcTriggerCycle;
+        var Δtrace = traceAcquire();
+        if (Δtrace.ok()) {
+            Δtrace.GCStart();
+            traceRelease(Δtrace);
+        }
+        // Check that all Ps have finished deferred mcache flushes.
+        foreach (var (_, Δp) in allp) {
+            {
+                var fg = (~Δp).mcache.of(mcache.ᏑflushGen).Load(); if (fg != mheap_.sweepgen) {
+                    println((@string)"runtime: p"u8, (~Δp).id, (@string)"flushGen"u8, fg, (@string)"!= sweepgen"u8, mheap_.sweepgen);
+                    @throw(pMcacheNotFlushedˢ);
+                }
+            }
+        }
+        gcBgMarkStartWorkers();
+        systemstack(gcResetMarkState);
+        (work.stwprocs, work.maxprocs) = (gomaxprocs, gomaxprocs);
+        if (work.stwprocs > ncpu) {
+            // This is used to compute CPU time of the STW phases,
+            // so it can't be more than ncpu, even if GOMAXPROCS is.
+            work.stwprocs = ncpu;
+        }
+        work.heap0 = ᏑgcController.of(gcControllerState.ᏑheapLive).Load();
+        work.pauseNS = 0;
+        work.mode = mode;
+        var now = nanotime();
+        work.tSweepTerm = now;
+        ref var stw = ref heap(new worldStop(), out var Ꮡstw);
+        systemstack(() => {
+            Ꮡstw.Value = stopTheWorldWithSema(stwGCSweepTerm);
+        });
+        // Accumulate fine-grained stopping time.
+        Ꮡwork.of(workType.ᏑcpuStats).accumulateGCPauseTime(stw.stoppingCPUTime, 1);
+        // Finish sweep before we start concurrent scan.
+        systemstack(() => {
+            finishsweep_m();
+        });
+        // clearpools before we start the GC. If we wait the memory will not be
+        // reclaimed until the next GC cycle.
+        clearpools();
+        Ꮡwork.of(workType.Ꮡcycles).Add(1);
+        // Assists and workers can start the moment we start
+        // the world.
+        ᏑgcController.startCycle(now, (nint)gomaxprocs, trigger);
+        // Notify the CPU limiter that assists may begin.
+        ᏑgcCPULimiter.startGCTransition(true, now);
+        // In STW mode, disable scheduling of user Gs. This may also
+        // disable scheduling of this goroutine, so it may block as
+        // soon as we start the world again.
+        if (mode != gcBackgroundMode) {
+            schedEnableUser(false);
+        }
+        // Enter concurrent mark phase and enable
+        // write barriers.
+        //
+        // Because the world is stopped, all Ps will
+        // observe that write barriers are enabled by
+        // the time we start the world and begin
+        // scanning.
+        //
+        // Write barriers must be enabled before assists are
+        // enabled because they must be enabled before
+        // any non-leaf heap objects are marked. Since
+        // allocations are blocked until assists can
+        // happen, we want to enable assists as early as
+        // possible.
+        setGCPhase(_GCmark);
+        gcBgMarkPrepare(); // Must happen before assists are enabled.
+        gcMarkRootPrepare();
+        // Mark all active tinyalloc blocks. Since we're
+        // allocating from these, they need to be black like
+        // other allocations. The alternative is to blacken
+        // the tiny block on every allocation from it, which
+        // would slow down the tiny allocator.
+        gcMarkTinyAllocs();
+        // At this point all Ps have enabled the write
+        // barrier, thus maintaining the no white to
+        // black invariant. Enable mutator assists to
+        // put back-pressure on fast allocating
+        // mutators.
+        atomic.Store(ᏑgcBlackenEnabled, 1);
+        // In STW mode, we could block the instant systemstack
+        // returns, so make sure we're not preemptible.
+        mp = acquirem();
+        // Update the CPU stats pause time.
+        //
+        // Use maxprocs instead of stwprocs here because the total time
+        // computed in the CPU stats is based on maxprocs, and we want them
+        // to be comparable.
+        Ꮡwork.of(workType.ᏑcpuStats).accumulateGCPauseTime(nanotime() - stw.finishedStopping, work.maxprocs);
+        // Concurrent mark.
+        systemstack(() => {
+            now = startTheWorldWithSema(0, Ꮡstw.Value);
+            work.pauseNS += now - Ꮡstw.Value.startedStopping;
+            work.tMark = now;
+            // Release the CPU limiter.
+            ᏑgcCPULimiter.finishGCTransition(now);
+        });
+        // Release the world sema before Gosched() in STW mode
+        // because we will need to reacquire it later but before
+        // this goroutine becomes runnable again, and we could
+        // self-deadlock otherwise.
+        semrelease(Ꮡworldsema);
+        releasem(ref (mp).DerefOrNull());
+        // Make sure we block instead of returning to user code
+        // in STW mode.
+        if (mode != gcBackgroundMode) {
+            Gosched();
+        }
+        semrelease(Ꮡwork.of(workType.ᏑstartSema));
     }
-    gcBgMarkStartWorkers();
-    systemstack(gcResetMarkState);
-    (work.stwprocs, work.maxprocs) = (gomaxprocs, gomaxprocs);
-    if (work.stwprocs > ncpu) {
-        // This is used to compute CPU time of the STW phases,
-        // so it can't be more than ncpu, even if GOMAXPROCS is.
-        work.stwprocs = ncpu;
-    }
-    work.heap0 = ᏑgcController.of(gcControllerState.ᏑheapLive).Load();
-    work.pauseNS = 0;
-    work.mode = mode;
-    var now = nanotime();
-    work.tSweepTerm = now;
-    ref var stw = ref heap(new worldStop(), out var Ꮡstw);
-    systemstack(() => {
-        Ꮡstw.Value = stopTheWorldWithSema(stwGCSweepTerm);
-    });
-    // Accumulate fine-grained stopping time.
-    Ꮡwork.of(workType.ᏑcpuStats).accumulateGCPauseTime(stw.stoppingCPUTime, 1);
-    // Finish sweep before we start concurrent scan.
-    systemstack(() => {
-        finishsweep_m();
-    });
-    // clearpools before we start the GC. If we wait the memory will not be
-    // reclaimed until the next GC cycle.
-    clearpools();
-    Ꮡwork.of(workType.Ꮡcycles).Add(1);
-    // Assists and workers can start the moment we start
-    // the world.
-    ᏑgcController.startCycle(now, (nint)gomaxprocs, trigger);
-    // Notify the CPU limiter that assists may begin.
-    ᏑgcCPULimiter.startGCTransition(true, now);
-    // In STW mode, disable scheduling of user Gs. This may also
-    // disable scheduling of this goroutine, so it may block as
-    // soon as we start the world again.
-    if (mode != gcBackgroundMode) {
-        schedEnableUser(false);
-    }
-    // Enter concurrent mark phase and enable
-    // write barriers.
-    //
-    // Because the world is stopped, all Ps will
-    // observe that write barriers are enabled by
-    // the time we start the world and begin
-    // scanning.
-    //
-    // Write barriers must be enabled before assists are
-    // enabled because they must be enabled before
-    // any non-leaf heap objects are marked. Since
-    // allocations are blocked until assists can
-    // happen, we want to enable assists as early as
-    // possible.
-    setGCPhase(_GCmark);
-    gcBgMarkPrepare(); // Must happen before assists are enabled.
-    gcMarkRootPrepare();
-    // Mark all active tinyalloc blocks. Since we're
-    // allocating from these, they need to be black like
-    // other allocations. The alternative is to blacken
-    // the tiny block on every allocation from it, which
-    // would slow down the tiny allocator.
-    gcMarkTinyAllocs();
-    // At this point all Ps have enabled the write
-    // barrier, thus maintaining the no white to
-    // black invariant. Enable mutator assists to
-    // put back-pressure on fast allocating
-    // mutators.
-    atomic.Store(ᏑgcBlackenEnabled, 1);
-    // In STW mode, we could block the instant systemstack
-    // returns, so make sure we're not preemptible.
-    mp = acquirem();
-    // Update the CPU stats pause time.
-    //
-    // Use maxprocs instead of stwprocs here because the total time
-    // computed in the CPU stats is based on maxprocs, and we want them
-    // to be comparable.
-    Ꮡwork.of(workType.ᏑcpuStats).accumulateGCPauseTime(nanotime() - stw.finishedStopping, work.maxprocs);
-    // Concurrent mark.
-    systemstack(() => {
-        now = startTheWorldWithSema(0, Ꮡstw.Value);
-        work.pauseNS += now - Ꮡstw.Value.startedStopping;
-        work.tMark = now;
-        // Release the CPU limiter.
-        ᏑgcCPULimiter.finishGCTransition(now);
-    });
-    // Release the world sema before Gosched() in STW mode
-    // because we will need to reacquire it later but before
-    // this goroutine becomes runnable again, and we could
-    // self-deadlock otherwise.
-    semrelease(Ꮡworldsema);
-    releasem(ref (mp).DerefOrNull());
-    // Make sure we block instead of returning to user code
-    // in STW mode.
-    if (mode != gcBackgroundMode) {
-        Gosched();
-    }
-    semrelease(Ꮡwork.of(workType.ᏑstartSema));
+    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
+    finally { ᒐ.Run(); }
 }
 
 // gcMarkDoneFlushed counts the number of P's with flushed work.
@@ -1564,8 +1583,12 @@ internal static void boring_registerCache(@unsafe.Pointer Δp) {
 
 //go:linkname unique_runtime_registerUniqueMapCleanup unique.runtime_registerUniqueMapCleanup
 public static void unique_runtime_registerUniqueMapCleanup(Action f) {
+    // Create the channel on the system stack so it doesn't inherit the current G's
+    // synctest bubble (if any).
+    systemstack(() => {
+        uniqueMapCleanup = new channel<EmptyStruct>(1);
+    });
     // Start the goroutine in the runtime so it's counted as a system goroutine.
-    uniqueMapCleanup = new channel<EmptyStruct>(1);
     goǃ((Action cleanup) => {
         while (ᐧ) {
             ᐸꟷ(uniqueMapCleanup);
@@ -1704,7 +1727,7 @@ internal static uint64 /*mask*/ gcTestIsReachable(params ꓸꓸꓸunsafeꓸPoint
         var s = (ж<specialReachable>)(uintptr)(Ꮡmheap_.of(mheap.ᏑspecialReachableAlloc).alloc());
         unlock(Ꮡmheap_.of(mheap.Ꮡspeciallock));
         s.Value.special.kind = _KindSpecialReachable;
-        if (!addspecial(Δp, s.of(specialReachable.Ꮡspecial))) {
+        if (!addspecial(Δp, s.of(specialReachable.Ꮡspecial), false)) {
             @throw(alreadyHaveAReachableˢ);
         }
         specials[i] = s;

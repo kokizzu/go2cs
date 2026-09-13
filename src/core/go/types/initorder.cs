@@ -5,26 +5,16 @@
 // license that can be found in the LICENSE file.
 namespace go.go;
 
+using cmp = cmp_package;
 using heap = container.heap_package;
 using fmt = fmt_package;
-using static global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
+using slices = slices_package;
 using sort = sort_package;
 using container;
-using errors = global::go.@internal.types.errors_package;
+using errors = @internal.types.errors_package;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontainerꓸheap() {
-    builtin.initPackage(typeof(container.heap_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsort() {
-    builtin.initPackage(typeof(sort_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly object objectDependencyGraphˢ = (@string)"Object dependency graph:"u8;
@@ -151,7 +141,14 @@ internal static slice<Object> findPath(map<Object, ж<declInfo>> objMap, Object 
         return default!;
     }
     seen[from] = true;
+    // sort deps for deterministic result
+    slice<Object> deps = default!;
     foreach (var (d, _) in (~objMap[from]).deps) {
+        deps = append(deps, d);
+    }
+    var depsʗ1 = deps;
+    sort.Slice(deps, (nint i, nint j) => depsʗ1[i].order() < depsʗ1[j].order());
+    foreach (var (_, d) in deps) {
         if (AreEqual(d, to)) {
             return new Object[]{d}.slice();
         }
@@ -174,13 +171,12 @@ internal static void reportCycle(this ж<Checker> Ꮡcheck, slice<Object> cycle)
     }
     var err = Ꮡcheck.newError(InvalidInitCycle);
     err.addf(new Objectᴠpositioner(obj), "initialization cycle for %s"u8, obj.Name());
-    // subtle loop: print cycle[i] for i = 0, n-1, n-2, ... 1 for len(cycle) = n
-    for (nint i = len(cycle) - 1; i >= 0; i--) {
-        err.addf(new Objectᴠpositioner(obj), "%s refers to"u8, obj.Name());
-        obj = cycle[i];
+    // "cycle[i] refers to cycle[j]" for (i,j) = (0,n-1), (n-1,n-2), ..., (1,0) for len(cycle) = n.
+    for (nint j = len(cycle) - 1; j >= 0; j--) {
+        var next = cycle[j];
+        err.addf(new Objectᴠpositioner(obj), "%s refers to %s"u8, obj.Name(), next.Name());
+        obj = next;
     }
-    // print cycle[0] again to close the cycle
-    err.addf(new Objectᴠpositioner(obj), "%s"u8, obj.Name());
     err.report();
 }
 
@@ -274,8 +270,7 @@ internal static slice<ж<graphNode>> dependencyGraph(map<Object, ж<declInfo>> o
     // throughout the function graph, the cost of removing a function at
     // position X is proportional to cost * (len(funcG)-X). Therefore, we should
     // remove high-cost functions last.
-    var funcGʗ1 = funcG;
-    sort.Slice(funcG, (nint i, nint j) => funcGʗ1[i].cost() < funcGʗ1[j].cost());
+    slices.SortFunc(funcG, (ж<graphNode> a, ж<graphNode> b) => cmp_package.Compare(a.cost(), b.cost()));
     foreach (var (_, n) in funcG) {
         // connect each predecessor p of n with each successor s
         // and drop the function node (don't collect it in G)

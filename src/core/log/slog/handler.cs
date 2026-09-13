@@ -16,54 +16,6 @@ using go.log.slog.@internal;
 
 partial class slog_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlogꓸslogꓸinternalꓸbuffer() {
-    builtin.initPackage(typeof(go.log.slog.@internal.buffer_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 // A Handler handles log records produced by a Logger.
 //
 // A typical handler may print log records to standard error,
@@ -702,6 +654,29 @@ internal static slice<byte> appendRFC3339Millis(slice<byte> b, time.Time t) {
     b = t.AppendFormat(b, time_package.RFC3339Nano);
     b = builtin.appendꓸꓸꓸ(b[..(int)(n + prefixLen)], b[(int)(n + prefixLen + 1)..]); // drop the 4th digit
     return b;
+}
+
+// DiscardHandler discards all log output.
+// DiscardHandler.Enabled returns false for all Levels.
+public static ΔHandler DiscardHandler = new discardHandler(nil);
+
+[GoType] partial struct discardHandler {
+}
+
+internal static bool Enabled(this discardHandler dh, context.Context _Δp1, ΔLevel _Δp2) {
+    return false;
+}
+
+internal static error Handle(this discardHandler dh, context.Context _Δp1, Record _Δp2) {
+    return default!;
+}
+
+internal static ΔHandler WithAttrs(this discardHandler dh, slice<Attr> attrs) {
+    return dh;
+}
+
+internal static ΔHandler WithGroup(this discardHandler dh, @string name) {
+    return dh;
 }
 
 } // end slog_package

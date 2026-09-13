@@ -17,12 +17,6 @@ using vendor.golang.org.x.net.dns;
 
 partial class net_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsingleflight() {
-    builtin.initPackage(typeof(@internal.singleflight_package));
-}
-
 // protocols contains minimal mappings between internet protocol
 // names and numbers for platforms that don't have a complete list of
 // protocol numbers.
@@ -309,6 +303,18 @@ public static (slice<netipꓸAddr>, error) LookupNetIP(this ж<Resolver> Ꮡr, c
     public context_package.Context Context;
     internal context.Context lookupValues;
 }
+
+// Go method set entry for the promoted 'Context.Deadline()' - provided ONLY by the embedded
+// interface field in *onlyValuesCtx's method set; see the pointer-only satisfaction record.
+internal static (time.Time, bool) Deadline(this onlyValuesCtx recvᴛ) => recvᴛ.Context.Deadline();
+
+// Go method set entry for the promoted 'Context.Done()' - provided ONLY by the embedded
+// interface field in *onlyValuesCtx's method set; see the pointer-only satisfaction record.
+internal static /*<-*/channel<EmptyStruct> Done(this onlyValuesCtx recvᴛ) => recvᴛ.Context.Done();
+
+// Go method set entry for the promoted 'Context.Err()' - provided ONLY by the embedded
+// interface field in *onlyValuesCtx's method set; see the pointer-only satisfaction record.
+internal static error Err(this onlyValuesCtx recvᴛ) => recvᴛ.Context.Err();
 
 internal static context.Context _ᴛ1ʗ = new onlyValuesCtxжContext(((ж<onlyValuesCtx>)nil));
 
@@ -667,6 +673,9 @@ public static (slice<ж<NS>>, error) LookupNS(this ж<Resolver> Ꮡr, context.Co
 
 // LookupTXT returns the DNS TXT records for the given domain name.
 //
+// If a DNS TXT record holds multiple strings, they are concatenated as a
+// single string.
+//
 // LookupTXT uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupTXT].
 public static (slice<@string>, error) LookupTXT(@string name) {
@@ -674,6 +683,9 @@ public static (slice<@string>, error) LookupTXT(@string name) {
 }
 
 // LookupTXT returns the DNS TXT records for the given domain name.
+//
+// If a DNS TXT record holds multiple strings, they are concatenated as a
+// single string.
 public static (slice<@string>, error) LookupTXT(this ж<Resolver> Ꮡr, context.Context ctx, @string name) {
     return Ꮡr.lookupTXT(ctx, name);
 }

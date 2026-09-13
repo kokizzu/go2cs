@@ -143,22 +143,14 @@ internal static (slice<ΔAddr>, error) interfaceAddrTable(ж<Interface> Ꮡifi) 
     if (err != default!) {
         return (default!, os.NewSyscallError(parsenetlinkmessageˢ, err));
     }
-    slice<Interface> ift = default!;
-    if (Ꮡifi == nil) {
-        error errΔ1 = default!;
-        (ift, errΔ1) = interfaceTable(0);
-        if (errΔ1 != default!) {
-            return (default!, errΔ1);
-        }
-    }
-    (var ifat, err) = addrTable(ift, Ꮡifi, msgs);
+    (var ifat, err) = addrTable(Ꮡifi, msgs);
     if (err != default!) {
         return (default!, err);
     }
     return (ifat, default!);
 }
 
-internal static (slice<ΔAddr>, error) addrTable(slice<Interface> ift, ж<Interface> Ꮡifi, slice<syscall.NetlinkMessage> msgs) {
+internal static (slice<ΔAddr>, error) addrTable(ж<Interface> Ꮡifi, slice<syscall.NetlinkMessage> msgs) {
     ref var ifi = ref Ꮡifi.DerefOrNull();
 
     slice<ΔAddr> ifat = default!;
@@ -173,14 +165,7 @@ loop:
         }
         else if (exprᴛ1 == syscall.RTM_NEWADDR) {
             var ifam = Ꮡ(m.Data, 0).Reinterpret<byte, syscall.IfAddrmsg>();
-            if (len(ift) != 0 || ifi.Index == (nint)(~ifam).Index) {
-                if (len(ift) != 0) {
-                    error errΔ1 = default!;
-                    (Ꮡifi, errΔ1) = interfaceByIndex(ift, (nint)(~ifam).Index); ifi = ref Ꮡifi.DerefOrNull();
-                    if (errΔ1 != default!) {
-                        return (default!, errΔ1);
-                    }
-                }
+            if (Ꮡifi == nil || ifi.Index == (nint)(~ifam).Index) {
                 var (attrs, err) = syscall.ParseNetlinkRouteAttr(Ꮡm);
                 if (err != default!) {
                     return (default!, os.NewSyscallError(parsenetlinkrouteattrˢ, err));

@@ -61,7 +61,7 @@ using static go.go.importer_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/importer/importer.go", "importer.cs", "AElQABEClO6CgIKk7oKWuK7CqqIACRaCtoKClAAJFoK2goKU")]
+[assembly: global::go.GoPositionMap("go/importer/importer.go", "importer.cs", "ACBeABEClO6CgIKk7oKWuK7CAAIWAAgCAAkWgraCgpQACRaCtoKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -79,4 +79,21 @@ public static partial class importer_package
     internal partial struct gccgoimports {}
     internal partial struct gcimports {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸbuild() => builtin.initPackage(typeof(global::go.go.build_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸgccgoimporter() => builtin.initPackage(typeof(global::go.go.@internal.gccgoimporter_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸgcimporter() => builtin.initPackage(typeof(global::go.go.@internal.gcimporter_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸinternalꓸsrcimporter() => builtin.initPackage(typeof(global::go.go.@internal.srcimporter_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() => builtin.initPackage(typeof(global::go.go.types_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    // </ImportInitializers>
 }

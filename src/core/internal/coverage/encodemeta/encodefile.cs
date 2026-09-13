@@ -4,26 +4,21 @@
 namespace go.@internal.coverage;
 
 using bufio = bufio_package;
-using md5 = crypto.md5_package;
 using binary = encoding.binary_package;
 using fmt = fmt_package;
+using fnv = go.hash.fnv_package;
 using coverage = go.@internal.coverage_package;
 using stringtab = go.@internal.coverage.stringtab_package;
 using io = io_package;
 using os = os_package;
 using @unsafe = unsafe_package;
-using crypto;
 using encoding;
 using go.@internal;
 using go.@internal.coverage;
+using go.hash;
+using hash = hash_package;
 
 partial class encodemeta_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
 
 // This package contains APIs and helpers for writing out a meta-data
 // file (composed of a file header, offsets/lengths, and then a series of
@@ -124,7 +119,9 @@ public static error Write(this ж<CoverageMetaFileWriter> Ꮡm, [GoArrayDims(16)
     // Now emit blobs themselves.
     foreach (var (k, blob) in blobs) {
         if (m.debug) {
-            fmt.Fprintf(new os.FileжWriter(os.Stderr), "=+= writing blob %d len %d at off=%d hash %s\n"u8, k, len(blob), off2, fmt.Sprintf("%x"u8, md5.Sum(blob)));
+            var h = fnv.New128a();
+            h.Write(blob);
+            fmt.Fprintf(new os.FileжWriter(os.Stderr), "=+= writing blob %d len %d at off=%d hash %s\n"u8, k, len(blob), off2, fmt.Sprintf("%x"u8, h.Sum(default!)));
         }
         {
             (_, err) = m.w.Write(blob); if (err != default!) {

@@ -5,6 +5,7 @@ namespace go.crypto;
 
 using crypto = crypto_package;
 using hmac = go.crypto.hmac_package;
+using tls12 = go.crypto.@internal.fips140.tls12_package;
 using md5 = go.crypto.md5_package;
 using sha1 = go.crypto.sha1_package;
 using sha256 = go.crypto.sha256_package;
@@ -13,8 +14,11 @@ using errors = errors_package;
 using fmt = fmt_package;
 using hash = hash_package;
 using go.crypto;
+using go.crypto.@internal.fips140;
 
 partial class tls_package {
+
+// type prfFunc is a methodless func type — rendered inline as its base delegate
 
 // Split a premaster secret in two as specified in RFC 4346, Section 5.
 internal static (slice<byte> s1, slice<byte> s2) splitPreMasterSecret(slice<byte> secret) {
@@ -46,7 +50,8 @@ internal static void pHash(slice<byte> result, slice<byte> secret, slice<byte> s
 }
 
 // prf10 implements the TLS 1.0 pseudo-random function, as defined in RFC 2246, Section 5.
-internal static void prf10(slice<byte> result, slice<byte> secret, slice<byte> label, slice<byte> seed) {
+internal static slice<byte> prf10(slice<byte> secret, @string label, slice<byte> seed, nint keyLen) {
+    var result = new slice<byte>(keyLen);
     var hashSHA1 = sha1.New;
     var hashMD5 = md5.New;
     var labelAndSeed = new slice<byte>(len(label) + len(seed));
@@ -59,32 +64,28 @@ internal static void prf10(slice<byte> result, slice<byte> secret, slice<byte> l
     foreach (var (i, b) in result2) {
         result[i] ^= (byte)(b);
     }
+    return result;
 }
 
 // prf12 implements the TLS 1.2 pseudo-random function, as defined in RFC 5246, Section 5.
-internal static Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>> prf12(Func<hash.Hash> hashFunc) {
-    return (slice<byte> result, slice<byte> secret, slice<byte> label, slice<byte> seed) => {
-        var labelAndSeed = new slice<byte>(len(label) + len(seed));
-        copy(labelAndSeed, label);
-        copy(labelAndSeed[(int)(len(label))..], seed);
-        pHash(result, secret, labelAndSeed, hashFunc);
-    };
+internal static Func<slice<byte>, @string, slice<byte>, nint, slice<byte>> prf12(Func<hash.Hash> hashFunc) {
+    return (slice<byte> secret, @string label, slice<byte> seed, nint keyLen) => tls12.PRF(hashFunc, secret, label, seed, keyLen);
 }
 
 internal static UntypedInt masterSecretLength => 48; // Length of a master secret in TLS 1.1.
 internal static UntypedInt finishedVerifyLength => 12; // Length of verify_data in a Finished message.
 
-internal static slice<byte> masterSecretLabel = slice<byte>("master secret"u8);
+internal static readonly @string masterSecretLabel = "master secret"u8;
 
-internal static slice<byte> extendedMasterSecretLabel = slice<byte>("extended master secret"u8);
+internal static readonly @string extendedMasterSecretLabel = "extended master secret"u8;
 
-internal static slice<byte> keyExpansionLabel = slice<byte>("key expansion"u8);
+internal static readonly @string keyExpansionLabel = "key expansion"u8;
 
-internal static slice<byte> clientFinishedLabel = slice<byte>("client finished"u8);
+internal static readonly @string clientFinishedLabel = "client finished"u8;
 
-internal static slice<byte> serverFinishedLabel = slice<byte>("server finished"u8);
+internal static readonly @string serverFinishedLabel = "server finished"u8;
 
-internal static (Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>>, crypto.Hash) prfAndHashForVersion(uint16 version, ref cipherSuite suite) {
+internal static (Func<slice<byte>, @string, slice<byte>, nint, slice<byte>>, crypto.Hash) prfAndHashForVersion(uint16 version, ref cipherSuite suite) {
     var exprᴛ1 = version;
     if (exprᴛ1 == VersionTLS10 || exprᴛ1 == VersionTLS11) {
         return (prf10, ((crypto.Hash)0));
@@ -101,7 +102,7 @@ internal static (Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>>, cry
 
 }
 
-internal static Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>> prfForVersion(uint16 version, ref cipherSuite suite) {
+internal static Func<slice<byte>, @string, slice<byte>, nint, slice<byte>> prfForVersion(uint16 version, ref cipherSuite suite) {
     var (prf, _) = prfAndHashForVersion(version, ref suite);
     return prf;
 }
@@ -112,17 +113,20 @@ internal static slice<byte> masterFromPreMasterSecret(uint16 version, ref cipher
     var seed = new slice<byte>(0, len(clientRandom) + len(serverRandom));
     seed = appendꓸꓸꓸ(seed, clientRandom);
     seed = appendꓸꓸꓸ(seed, serverRandom);
-    var masterSecret = new slice<byte>(masterSecretLength);
-    prfForVersion(version, ref suite)(masterSecret, preMasterSecret, masterSecretLabel, seed);
-    return masterSecret;
+    return prfForVersion(version, ref suite)(preMasterSecret, masterSecretLabel, seed, masterSecretLength);
 }
 
 // extMasterFromPreMasterSecret generates the extended master secret from the
 // pre-master secret. See RFC 7627.
 internal static slice<byte> extMasterFromPreMasterSecret(uint16 version, ref cipherSuite suite, slice<byte> preMasterSecret, slice<byte> transcript) {
-    var masterSecret = new slice<byte>(masterSecretLength);
-    prfForVersion(version, ref suite)(masterSecret, preMasterSecret, extendedMasterSecretLabel, transcript);
-    return masterSecret;
+    var (prf, hash) = prfAndHashForVersion(version, ref suite);
+    if (version == VersionTLS12) {
+        // Use the FIPS 140-3 module only for TLS 1.2 with EMS, which is the
+        // only TLS 1.0-1.2 approved mode per IG D.Q.
+        var hashʗ1 = hash;
+        return tls12.MasterSecret<hash.Hash>(() => hashʗ1.New(), preMasterSecret, transcript);
+    }
+    return prf(preMasterSecret, extendedMasterSecretLabel, transcript, masterSecretLength);
 }
 
 // keysFromMasterSecret generates the connection keys from the master
@@ -140,8 +144,7 @@ internal static (slice<byte> clientMAC, slice<byte> serverMAC, slice<byte> clien
     seed = appendꓸꓸꓸ(seed, serverRandom);
     seed = appendꓸꓸꓸ(seed, clientRandom);
     nint n = 2 * macLen + 2 * keyLen + 2 * ivLen;
-    var keyMaterial = new slice<byte>(n);
-    prfForVersion(version, ref suite)(keyMaterial, masterSecret, keyExpansionLabel, seed);
+    var keyMaterial = prfForVersion(version, ref suite)(masterSecret, keyExpansionLabel, seed, n);
     clientMAC = keyMaterial[..(int)(macLen)];
     keyMaterial = keyMaterial[(int)(macLen)..];
     serverMAC = keyMaterial[..(int)(macLen)];
@@ -179,7 +182,7 @@ internal static ΔfinishedHash newFinishedHash(uint16 version, ref cipherSuite c
     // In TLS 1.2, a full buffer is sadly required.
     internal slice<byte> buffer;
     internal uint16 version;
-    internal Action<slice<byte>, slice<byte>, slice<byte>, slice<byte>> prf;
+    internal Func<slice<byte>, @string, slice<byte>, nint, slice<byte>> prf;
 }
 
 [GoRecv] internal static (nint n, error err) Write(this ref ΔfinishedHash h, slice<byte> msg) {
@@ -207,17 +210,13 @@ internal static slice<byte> Sum(this ΔfinishedHash h) {
 // clientSum returns the contents of the verify_data member of a client's
 // Finished message.
 internal static slice<byte> clientSum(this ΔfinishedHash h, slice<byte> masterSecret) {
-    var @out = new slice<byte>(finishedVerifyLength);
-    h.prf(@out, masterSecret, clientFinishedLabel, h.Sum());
-    return @out;
+    return h.prf(masterSecret, clientFinishedLabel, h.Sum(), finishedVerifyLength);
 }
 
 // serverSum returns the contents of the verify_data member of a server's
 // Finished message.
 internal static slice<byte> serverSum(this ΔfinishedHash h, slice<byte> masterSecret) {
-    var @out = new slice<byte>(finishedVerifyLength);
-    h.prf(@out, masterSecret, serverFinishedLabel, h.Sum());
-    return @out;
+    return h.prf(masterSecret, serverFinishedLabel, h.Sum(), finishedVerifyLength);
 }
 
 // hashForClientCertificate returns the handshake messages so far, pre-hashed if
@@ -292,9 +291,7 @@ internal static Func<@string, slice<byte>, nint, (slice<byte>, error)> ekmFromMa
             seed = append(seed, (byte)((len(context) >> (int)(8))), (byte)len(context));
             seed = appendꓸꓸꓸ(seed, context);
         }
-        var keyMaterial = new slice<byte>(length);
-        prfForVersion(version, ref (Ꮡsuite).DerefOrNull())(keyMaterial, masterSecretʗ1, slice<byte>(label), seed);
-        return (keyMaterial, default!);
+        return (prfForVersion(version, ref (Ꮡsuite).DerefOrNull())(masterSecretʗ1, label, seed, length), default!);
     };
 }
 

@@ -5,7 +5,7 @@
 namespace go;
 
 using errors = errors_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using time = time_package;
 
@@ -66,16 +66,10 @@ internal static (ж<ProcessState>, error) pidWait(this ж<Process> Ꮡp) {
     }
     ref var status = ref heap(new syscall.WaitStatus(), out var Ꮡstatus);
     ref var rusage = ref heap(new syscall.Rusage(), out var Ꮡrusage);
-    ref var pid1 = ref heap(new nint(), out var Ꮡpid1);
-    error e = default!;
-    while (ᐧ) {
-        (pid1, e) = syscall.Wait4(p.Pid, Ꮡstatus, 0, Ꮡrusage);
-        if (!AreEqual(e, syscall.EINTR)) {
-            break;
-        }
-    }
-    if (e != default!) {
-        return (default!, NewSyscallError(waitˢ, e));
+    ref var pid1 = ref heap<nint>(out var Ꮡpid1);
+    (pid1, err) = ignoringEINTR2((nint, error) () => syscall.Wait4(Ꮡp.Value.Pid, Ꮡstatus, 0, Ꮡrusage));
+    if (err != default!) {
+        return (default!, NewSyscallError(waitˢ, err));
     }
     Ꮡp.pidDeactivate(statusDone);
     return (Ꮡ(new ProcessState(
@@ -172,7 +166,7 @@ internal static error release(this ж<Process> Ꮡp) {
     // racing with Wait, or a double Release.
     // Just mark the PID unusable.
     // no need for a finalizer anymore
-    Δruntime.SetFinalizer(Ꮡp.OrTypedNil(), default!);
+    runtime.SetFinalizer(Ꮡp.OrTypedNil(), default!);
     return default!;
 }
 

@@ -22,179 +22,41 @@ timing side-channels:
 namespace go.crypto;
 
 using boring = go.crypto.@internal.boring_package;
+using hmac = go.crypto.@internal.fips140.hmac_package;
+using fips140hash = go.crypto.@internal.fips140hash_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using subtle = go.crypto.subtle_package;
 using hash = hash_package;
 using go.crypto;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 
 partial class hmac_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() {
-    builtin.initPackage(typeof(go.crypto.@internal.boring_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
-    builtin.initPackage(typeof(go.crypto.subtle_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
-
-// FIPS 198-1:
-// https://csrc.nist.gov/publications/fips/fips198-1/FIPS-198-1_final.pdf
-// key is zero padded to the block size of the hash function
-// ipad = 0x36 byte repeated for key length
-// opad = 0x5c byte repeated for key length
-// hmac = H([key ^ opad] H([key ^ ipad] text))
-
-// marshalable is the combination of encoding.BinaryMarshaler and
-// encoding.BinaryUnmarshaler. Their method definitions are repeated here to
-// avoid a dependency on the encoding package.
-[GoType] partial interface marshalable {
-    (slice<byte>, error) MarshalBinary();
-    error UnmarshalBinary(slice<byte> _);
-}
-
-[GoType] partial struct hmac {
-    internal slice<byte> opad, ipad;
-    internal hash.Hash outer, inner;
-    // If marshaled is true, then opad and ipad do not contain a padded
-    // copy of the key, but rather the marshaled state of outer/inner after
-    // opad/ipad has been fed into it.
-    internal bool marshaled;
-}
-
-[GoRecv] internal static slice<byte> Sum(this ref hmac h, slice<byte> @in) {
-    nint origLen = len(@in);
-    @in = h.inner.Sum(@in);
-    if (h.marshaled){
-        {
-            var err = h.outer._<marshalable>().UnmarshalBinary(h.opad); if (err != default!) {
-                throw panic(err);
-            }
-        }
-    } else {
-        h.outer.Reset();
-        h.outer.Write(h.opad);
-    }
-    h.outer.Write(@in[(int)(origLen)..]);
-    return h.outer.Sum(@in[..(int)(origLen)]);
-}
-
-[GoRecv] internal static (nint n, error err) Write(this ref hmac h, slice<byte> p) {
-    return h.inner.Write(p);
-}
-
-[GoRecv] internal static nint Size(this ref hmac h) {
-    return h.outer.Size();
-}
-
-[GoRecv] internal static nint BlockSize(this ref hmac h) {
-    return h.inner.BlockSize();
-}
-
-[GoRecv] internal static void Reset(this ref hmac h) {
-    if (h.marshaled) {
-        {
-            var errΔ1 = h.inner._<marshalable>().UnmarshalBinary(h.ipad); if (errΔ1 != default!) {
-                throw panic(errΔ1);
-            }
-        }
-        return;
-    }
-    h.inner.Reset();
-    h.inner.Write(h.ipad);
-    // If the underlying hash is marshalable, we can save some time by
-    // saving a copy of the hash state now, and restoring it on future
-    // calls to Reset and Sum instead of writing ipad/opad every time.
-    //
-    // If either hash is unmarshalable for whatever reason,
-    // it's safe to bail out here.
-    var (marshalableInner, innerOK) = h.inner._<marshalable>(ᐧ);
-    if (!innerOK) {
-        return;
-    }
-    var (marshalableOuter, outerOK) = h.outer._<marshalable>(ᐧ);
-    if (!outerOK) {
-        return;
-    }
-    var (imarshal, err) = marshalableInner.MarshalBinary();
-    if (err != default!) {
-        return;
-    }
-    h.outer.Reset();
-    h.outer.Write(h.opad);
-    (var omarshal, err) = marshalableOuter.MarshalBinary();
-    if (err != default!) {
-        return;
-    }
-    // Marshaling succeeded; save the marshaled state for later
-    h.ipad = imarshal;
-    h.opad = omarshal;
-    h.marshaled = true;
-}
-
 // New returns a new HMAC hash using the given [hash.Hash] type and key.
-// New functions like sha256.New from [crypto/sha256] can be used as h.
+// New functions like [crypto/sha256.New] can be used as h.
 // h must return a new Hash every time it is called.
 // Note that unlike other hash implementations in the standard library,
 // the returned Hash does not implement [encoding.BinaryMarshaler]
 // or [encoding.BinaryUnmarshaler].
 public static hash.Hash New(Func<hash.Hash> h, slice<byte> key) {
     if (boring.Enabled) {
-        var hmΔ1 = boring.NewHMAC(h, key);
-        if (hmΔ1 != default!) {
-            return hmΔ1;
+        var hm = boring.NewHMAC(h, key);
+        if (hm != default!) {
+            return hm;
         }
     }
     // BoringCrypto did not recognize h, so fall through to standard Go code.
-    var hm = @new<hmac>();
-    hm.Value.outer = h();
-    hm.Value.inner = h();
-    var unique = true;
-    var hmʗ1 = hm;
-    ((Action)(() => {
-        GoFrame ᒐ = default;
-        try {
-            defer(() => {
-                // The comparison might panic if the underlying types are not comparable.
-                _ = recover();
-            }, ref ᒐ);
-            if (AreEqual((~hmʗ1).outer, (~hmʗ1).inner)) {
-                unique = false;
-            }
+    h = fips140hash.UnwrapNew(h);
+    if (fips140only.Enabled) {
+        if (len(key) < 112 / 8) {
+            throw panic("crypto/hmac: use of keys shorter than 112 bits is not allowed in FIPS 140-only mode");
         }
-        catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-        finally { ᒐ.Run(); }
-    }))();
-    if (!unique) {
-        throw panic("crypto/hmac: hash generation function does not produce unique values");
+        if (!fips140only.ApprovedHash(h())) {
+            throw panic("crypto/hmac: use of hash functions other than SHA-2 or SHA-3 is not allowed in FIPS 140-only mode");
+        }
     }
-    nint blocksize = (~hm).inner.BlockSize();
-    hm.Value.ipad = new slice<byte>(blocksize);
-    hm.Value.opad = new slice<byte>(blocksize);
-    if (len(key) > blocksize) {
-        // If key is too big, hash it.
-        (~hm).outer.Write(key);
-        key = (~hm).outer.Sum(default!);
-    }
-    copy((~hm).ipad, key);
-    copy((~hm).opad, key);
-    foreach (var (i, _) in (~hm).ipad) {
-        hm.Value.ipad[i] ^= (byte)(0x36);
-    }
-    foreach (var (i, _) in (~hm).opad) {
-        hm.Value.opad[i] ^= (byte)(0x5c);
-    }
-    (~hm).inner.Write((~hm).ipad);
-    return new hmacжHash(hm);
+    return new hmac_HMACжHash(hmac.New(h, key));
 }
 
 // Equal compares two MACs for equality without leaking timing information.

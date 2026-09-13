@@ -63,9 +63,9 @@ using static go.sync_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("sync/cond.go", "cond.cs", "ADJgkgACJAARAoKCgoIAAhTygq7CggAVOLI=")]
-[assembly: go.GoPositionMap("sync/map.go", "map.cs", "AGfWAaKCgqaCgIKkrOKCgoK4goKCuJSUgpSmgoKClKiSqNKClJaChIKClpQABRLigoLMkoKClIKCAAQSwqyyrAAIBIKAgoKCuIKCgIKClKKCgpSmgpSCtIQAAhDSgoKUgsySgoKUgoKUgs7CgoKCgoKCgoK4lJSClKiSpoKCgoKUggAEEsKCgoKUgs7ygoCCgIKClMiCgoCCppSAgoLEgoCCgramgpS0gqwACAKCgIKkpoKCgoKAgqKC7rQABRDygoKCgoKCggAHEJSUgoKClIKmAAIcABEKgsqCgoKCkoKClJaCgoKUgsqigoKUgoKmooKWgoKCgsqCgoKClJQ=")]
-[assembly: go.GoPositionMap("sync/runtime.go", "runtime.cs", "AAkcAAYUAAkCkgABEgAIBqampqaigoKqtqQ=")]
+[assembly: go.GoPositionMap("sync/cond.go", "cond.cs", "ACxgkgACJAARAoKCgoIAAhTygq7CggAQOLI=")]
+[assembly: go.GoPositionMap("sync/hashtriemap.go", "hashtriemap.cs", "ACxisqiSqJKssqqiqJKqoqyyAAIQ0gACHAALAg==")]
+[assembly: go.GoPositionMap("sync/runtime.go", "runtime.cs", "AAkc5gACFAAJAgABEgAIBqampqaigoKmkg==")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -81,11 +81,22 @@ public static partial class sync_package
 
     // <TypeAccessibility>
     internal partial struct copyChecker {}
-    internal partial struct entry {}
     internal partial struct noCopy {}
     internal partial struct notifyList {}
-    internal partial struct readOnly {}
     public partial struct Cond {}
     public partial struct Map {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsync() => builtin.initPackage(typeof(@internal.sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    // </ImportInitializers>
 }

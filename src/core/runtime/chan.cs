@@ -16,11 +16,11 @@ namespace go;
 //  c.qcount < c.dataqsiz implies that c.sendq is empty.
 using abi = @internal.abi_package;
 using atomic = @internal.runtime.atomic_package;
-using math = runtime.@internal.math_package;
+using math = @internal.runtime.math_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -33,6 +33,7 @@ internal const bool debugChan = false;
     internal nuint dataqsiz;          // size of the circular queue
     internal @unsafe.Pointer buf; // points to an array of dataqsiz elements
     internal uint16 elemsize;
+    internal bool synctest; // true if created in a synctest bubble
     internal uint32 closed;
     internal ж<timer> timer; // timer feeding this chan
     internal ж<_type> elemtype; // element type
@@ -116,7 +117,10 @@ internal static ж<Δhchan> makechan(ref chantype t, nint size) {
     c.Value.elemsize = (uint16)(~elem).Size_;
     c.Value.elemtype = elem;
     c.Value.dataqsiz = (nuint)size;
-    lockInit(ref (c.of(runtime_package.Δhchan.Ꮡlock)).DerefOrNull(), lockRankHchan);
+    if ((~getg()).syncGroup != nil) {
+        c.Value.synctest = true;
+    }
+    lockInit(c.of(runtime_package.Δhchan.Ꮡlock), lockRankHchan);
     if (debugChan) {
         print((@string)"makechan: chan="u8, c.OrTypedNil(), (@string)"; elemsize="u8, (~elem).Size_, (@string)"; dataqsiz="u8, size, (@string)"\n"u8);
     }
@@ -159,11 +163,12 @@ internal static bool full(ref Δhchan c) {
 //
 //go:nosplit
 internal static void chansend1(ж<Δhchan> Ꮡc, @unsafe.Pointer elem) {
-    chansend(Ꮡc, elem, true, getcallerpc());
+    chansend(Ꮡc, elem, true, sys.GetCallerPC());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string unreachableˢ = "unreachable"u8;
+internal static readonly @string sendOnSynctestChannelˢ = "send on synctest channel from outside bubble"u8;
 internal static readonly @string sendOnClosedChannelˢ = "send on closed channel"u8;
 internal static readonly @string gWaitingListIsCorruptedˢ = "G waiting list is corrupted"u8;
 internal static readonly @string chansendSpuriousWakeupˢ = "chansend: spurious wakeup"u8;
@@ -195,6 +200,9 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
     }
     if (raceenabled) {
         racereadpc((uintptr)Ꮡc.raceaddr(), callerpc, abi.FuncPCABIInternal(chansend));
+    }
+    if (c.synctest && (~getg()).syncGroup == nil) {
+        throw panic(((plainError)(@string)sendOnSynctestChannelˢ));
     }
     // Fast path: check for failed non-blocking operation without acquiring the lock.
     //
@@ -275,7 +283,11 @@ internal static bool chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer ep, bool block, 
     // changes and when we set gp.activeStackChans is not safe for
     // stack shrinking.
     gp.of(g.ᏑparkingOnChan).Store(true);
-    gopark(chanparkcommit, @unsafe.Pointer.FromPinnedBox(Ꮡc.of(runtime_package.Δhchan.Ꮡlock)), waitReasonChanSend, traceBlockChanSend, 2);
+    var reason = waitReasonChanSend;
+    if (c.synctest) {
+        reason = waitReasonSynctestChanSend;
+    }
+    gopark(chanparkcommit, @unsafe.Pointer.FromPinnedBox(Ꮡc.of(runtime_package.Δhchan.Ꮡlock)), reason, traceBlockChanSend, 2);
     // Ensure the value being sent is kept alive until the
     // receiver copies it out. The sudog has a pointer to the
     // stack object, but sudogs aren't considered as roots of the
@@ -313,6 +325,10 @@ internal static void send(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep,
     ref var c = ref Ꮡc.DerefOrNull();
     ref var sg = ref Ꮡsg.DerefOrNull();
 
+    if (c.synctest && (~sg.g).syncGroup != (~getg()).syncGroup) {
+        unlockf();
+        throw panic(((plainError)(@string)sendOnSynctestChannelˢ));
+    }
     if (raceenabled) {
         if (c.dataqsiz == 0){
             racesync(Ꮡc, ref (Ꮡsg).DerefOrNull());
@@ -424,7 +440,7 @@ internal static void closechan(ж<Δhchan> Ꮡc) {
         throw panic(((plainError)(@string)closeOfClosedChannelˢ));
     }
     if (raceenabled) {
-        var callerpc = getcallerpc();
+        var callerpc = sys.GetCallerPC();
         racewritepc((uintptr)Ꮡc.raceaddr(), callerpc, abi.FuncPCABIInternal(closechan));
         racerelease((uintptr)Ꮡc.raceaddr());
     }
@@ -512,6 +528,9 @@ internal static bool /*received*/ chanrecv2(ж<Δhchan> Ꮡc, @unsafe.Pointer el
     return received;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string receiveOnSynctestChannelˢ = "receive on synctest channel from outside bubble"u8;
+
 // chanrecv receives on channel c and writes the received data to ep.
 // ep may be nil, in which case received data is ignored.
 // If block == false and no elements are available, returns (false, false).
@@ -534,6 +553,9 @@ internal static (bool selected, bool received) chanrecv(ж<Δhchan> Ꮡc, @unsaf
         }
         gopark(default!, nil, waitReasonChanReceiveNilChan, traceBlockForever, 2);
         @throw(unreachableˢ);
+    }
+    if (c.synctest && (~getg()).syncGroup == nil) {
+        throw panic(((plainError)(@string)receiveOnSynctestChannelˢ));
     }
     if (c.timer != nil) {
         c.timer.maybeRunChan();
@@ -649,7 +671,11 @@ internal static (bool selected, bool received) chanrecv(ж<Δhchan> Ꮡc, @unsaf
     // changes and when we set gp.activeStackChans is not safe for
     // stack shrinking.
     gp.of(g.ᏑparkingOnChan).Store(true);
-    gopark(chanparkcommit, @unsafe.Pointer.FromPinnedBox(Ꮡc.of(runtime_package.Δhchan.Ꮡlock)), waitReasonChanReceive, traceBlockChanRecv, 2);
+    var reason = waitReasonChanReceive;
+    if (c.synctest) {
+        reason = waitReasonSynctestChanReceive;
+    }
+    gopark(chanparkcommit, @unsafe.Pointer.FromPinnedBox(Ꮡc.of(runtime_package.Δhchan.Ꮡlock)), reason, traceBlockChanRecv, 2);
     // someone woke us up
     if (mysg != (~gp).waiting) {
         @throw(gWaitingListIsCorruptedˢ);
@@ -687,6 +713,10 @@ internal static void recv(ж<Δhchan> Ꮡc, ж<sudog> Ꮡsg, @unsafe.Pointer ep,
     ref var c = ref Ꮡc.DerefOrNull();
     ref var sg = ref Ꮡsg.DerefOrNull();
 
+    if (c.synctest && (~sg.g).syncGroup != (~getg()).syncGroup) {
+        unlockf();
+        throw panic(((plainError)(@string)receiveOnSynctestChannelˢ));
+    }
     if (c.dataqsiz == 0){
         if (raceenabled) {
             racesync(Ꮡc, ref (Ꮡsg).DerefOrNull());
@@ -767,7 +797,7 @@ internal static bool chanparkcommit(ж<g> Ꮡgp, @unsafe.Pointer chanLock) {
 //		... bar
 //	}
 internal static bool /*selected*/ selectnbsend(ж<Δhchan> Ꮡc, @unsafe.Pointer elem) {
-    return chansend(Ꮡc, elem, false, getcallerpc());
+    return chansend(Ꮡc, elem, false, sys.GetCallerPC());
 }
 
 // compiler implements
@@ -792,7 +822,7 @@ internal static (bool selected, bool received) selectnbrecv(@unsafe.Pointer elem
 
 //go:linkname reflect_chansend reflect.chansend0
 internal static bool /*selected*/ reflect_chansend(ж<Δhchan> Ꮡc, @unsafe.Pointer elem, bool nb) {
-    return chansend(Ꮡc, elem, !nb, getcallerpc());
+    return chansend(Ꮡc, elem, !nb, sys.GetCallerPC());
 }
 
 //go:linkname reflect_chanrecv reflect.chanrecv
@@ -897,8 +927,11 @@ internal static void reflect_chanclose(ж<Δhchan> Ꮡc) {
         // We use a flag in the G struct to tell us when someone
         // else has won the race to signal this goroutine but the goroutine
         // hasn't removed itself from the queue yet.
-        if ((~sgp).isSelect && !(~sgp).g.of(g.ᏑselectDone).CompareAndSwap(0, 1)) {
-            continue;
+        if ((~sgp).isSelect) {
+            if (!(~sgp).g.of(g.ᏑselectDone).CompareAndSwap(0, 1)) {
+                // We lost the race to wake this goroutine.
+                continue;
+            }
         }
         return sgp;
     }

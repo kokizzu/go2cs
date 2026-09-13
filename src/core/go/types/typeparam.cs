@@ -23,13 +23,16 @@ internal static uint64 nextID() {
     return (uint64)ᏑlastID.Add(1);
 }
 
-// A TypeParam represents a type parameter type.
+// A TypeParam represents the type of a type parameter in a generic declaration.
+//
+// A TypeParam has a name; use the [TypeParam.Obj] method to access
+// its [TypeName] object.
 [GoType] partial struct TypeParam {
     internal ж<Checker> check; // for lazy type bound completion
     internal uint64 id;    // unique id, for debugging only
     internal ж<TypeName> obj; // corresponding type name
     internal nint index;      // type parameter index in source order, starting at 0
-    internal ΔType bound;    // any type, but underlying is eventually *Interface for correct programs (see TypeParam.iface)
+    internal ΔType bound;      // any type, but underlying is eventually *Interface for correct programs (see TypeParam.iface)
 }
 
 // NewTypeParam returns a new TypeParam. Type parameters may be set on a Named
@@ -165,15 +168,16 @@ public static @string String(this ж<TypeParam> Ꮡt) {
 // is calls f with the specific type terms of t's constraint and reports whether
 // all calls to f returned true. If there are no specific terms, is
 // returns the result of f(nil).
-[GoRecv] internal static bool @is(this ref TypeParam t, Func<ж<term>, bool> f) {
+[GoRecv] internal static bool @is(this ref TypeParam t, Func<ж<Δterm>, bool> f) {
     return t.iface().typeSet().@is(f);
 }
 
-// underIs calls f with the underlying types of the specific type terms
-// of t's constraint and reports whether all calls to f returned true.
-// If there are no specific terms, underIs returns the result of f(nil).
-[GoRecv] internal static bool underIs(this ref TypeParam t, Func<ΔType, bool> f) {
-    return t.iface().typeSet().underIs(f);
+// typeset is an iterator over the (type/underlying type) pairs of the
+// specific type terms of t's constraint.
+// If there are no specific terms, typeset calls yield with (nil, nil).
+// In any case, typeset is guaranteed to call yield at least once.
+[GoRecv] internal static void typeset(this ref TypeParam t, Func<ΔType, ΔType, bool> yield) {
+    t.iface().typeSet().typeset(yield);
 }
 
 } // end types_package

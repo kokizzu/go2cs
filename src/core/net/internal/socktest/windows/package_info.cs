@@ -53,10 +53,10 @@ using static go.net.@internal.socktest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/internal/socktest/switch.go", "switch.cs", "ACQ0goKCqLKCgoKClIKosoKCgpSCAAQQkKaQppCkggAJFIIAEyyCyoKCgoKUAA00goKUAAQYgoKUqLKCgoI=")]
-[assembly: go.GoPositionMap("net/internal/socktest/switch_posix.go", "switch_posix.cs", "ABYcgpSkpKQACgiCgpSkpKSkpICCpPaClKSkpA==")]
-[assembly: go.GoPositionMap("net/internal/socktest/switch_windows.go", "switch_windows.cs", "AAsYwoKCkoKU2sKCkoI=")]
-[assembly: go.GoPositionMap("net/internal/socktest/sys_windows.go", "sys_windows.cs", "ABEa8oSCgoKEgoKUgoCCgpSmgoKCgpSCgujigoKUgoKEgoKUgoCCpoKCgoKUgoLo4oKClIKChIKClIKAgqaCgoKClILo4oKClIKChIKClIKAgqaCgoKClILo4oKClIKChIKClIKAgqaCgoKClILo0oKClIKChIKClIKAgqaCgoKClIKC")]
+[assembly: go.GoPositionMap("net/internal/socktest/switch.go", "switch.cs", "ABg0goKCqLKCgoKClIKosoKCgpSCAAQQkKaQppCkggAJFIIAEyyCyoKCgoKUAA00goKUAAQYgoKUqLKCgoI=")]
+[assembly: go.GoPositionMap("net/internal/socktest/switch_posix.go", "switch_posix.cs", "ABAcgpSkpKQACgiCgpSkpKSkpICCpPaClKSkpA==")]
+[assembly: go.GoPositionMap("net/internal/socktest/switch_windows.go", "switch_windows.cs", "AAsY0oKCkoKU2sKCkoI=")]
+[assembly: go.GoPositionMap("net/internal/socktest/sys_windows.go", "sys_windows.cs", "AAsa8oSCgoKEgoKUgoCCgpSmgoKCgpSCgujigoKUgoKEgoKUgoCCpoKCgoKUgoLo4oKClIKChIKClIKAgqaCgoKClILo4oKClIKChIKClIKAgqaCgoKClILo4oKClIKChIKClIKAgqaCgoKClILo4oKClIKChIKClIKAgqaCgoKClIKC")]
 // </GoSourcePositionMaps>
 
 namespace go.net.@internal;
@@ -79,4 +79,17 @@ public static partial class socktest_package
     public partial struct Switch {}
     public partial struct ΔSockets {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() => builtin.initPackage(typeof(go.@internal.syscall.windows_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

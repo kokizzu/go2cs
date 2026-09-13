@@ -5,106 +5,29 @@ namespace go.crypto;
 
 using ecdh = go.crypto.ecdh_package;
 using hmac = go.crypto.hmac_package;
-using mlkem768 = go.crypto.@internal.mlkem768_package;
+using mlkem = go.crypto.@internal.fips140.mlkem_package;
+using tls13 = go.crypto.@internal.fips140.tls13_package;
 using errors = errors_package;
-using fmt = fmt_package;
 using hash = hash_package;
 using io = io_package;
-using cryptobyte = vendor.golang.org.x.crypto.cryptobyte_package;
-using hkdf = vendor.golang.org.x.crypto.hkdf_package;
-using sha3 = vendor.golang.org.x.crypto.sha3_package;
+using fips140 = go.crypto.@internal.fips140_package;
 using go.crypto;
-using go.crypto.@internal;
-using vendor.golang.org.x.crypto;
+using go.crypto.@internal.fips140;
 
 partial class tls_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸhkdf() {
-    builtin.initPackage(typeof(vendor.golang.org.x.crypto.hkdf_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸsha3() {
-    builtin.initPackage(typeof(vendor.golang.org.x.crypto.sha3_package));
-}
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string trafficUpdˢ = "traffic upd"u8;
 
 // This file contains the functions necessary to compute the TLS 1.3 key
 // schedule. See RFC 8446, Section 7.
-internal static readonly @string resumptionBinderLabel = "res binder"u8;
-internal static readonly @string clientEarlyTrafficLabel = "c e traffic"u8;
-internal static readonly @string clientHandshakeTrafficLabel = "c hs traffic"u8;
-internal static readonly @string serverHandshakeTrafficLabel = "s hs traffic"u8;
-internal static readonly @string clientApplicationTrafficLabel = "c ap traffic"u8;
-internal static readonly @string serverApplicationTrafficLabel = "s ap traffic"u8;
-internal static readonly @string exporterLabel = "exp master"u8;
-internal static readonly @string resumptionLabel = "res master"u8;
-internal static readonly @string trafficUpdateLabel = "traffic upd"u8;
-
-// expandLabel implements HKDF-Expand-Label from RFC 8446, Section 7.1.
-internal static slice<byte> expandLabel(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> secret, @string label, slice<byte> context, nint length) {
-    ref var hkdfLabel = ref heap(new cryptobyte.Builder(), out var ᏑhkdfLabel);
-    hkdfLabel.AddUint16((uint16)length);
-    ᏑhkdfLabel.AddUint8LengthPrefixed((ж<cryptobyte.Builder> b) => {
-        b.AddBytes(slice<byte>("tls13 "u8));
-        b.AddBytes(slice<byte>(label));
-    });
-    var contextʗ1 = context;
-    ᏑhkdfLabel.AddUint8LengthPrefixed((ж<cryptobyte.Builder> b) => {
-        b.AddBytes(contextʗ1);
-    });
-    var (hkdfLabelBytes, err) = hkdfLabel.Bytes();
-    if (err != default!) {
-        // Rather than calling BytesOrPanic, we explicitly handle this error, in
-        // order to provide a reasonable error message. It should be basically
-        // impossible for this to panic, and routing errors back through the
-        // tree rooted in this function is quite painful. The labels are fixed
-        // size, and the context is either a fixed-length computed hash, or
-        // parsed from a field which has the same length limitation. As such, an
-        // error here is likely to only be caused during development.
-        //
-        // NOTE: another reasonable approach here might be to return a
-        // randomized slice if we encounter an error, which would break the
-        // connection, but avoid panicking. This would perhaps be safer but
-        // significantly more confusing to users.
-        throw panic(fmt.Errorf("failed to construct HKDF label: %s"u8, err));
-    }
-    var @out = new slice<byte>(length);
-    (var n, err) = hkdf.Expand(() => Ꮡc.Value.hash.New(), secret, hkdfLabelBytes).Read(@out);
-    if (err != default! || n != length) {
-        throw panic("tls: HKDF-Expand-Label invocation failed unexpectedly");
-    }
-    return @out;
-}
-
-// deriveSecret implements Derive-Secret from RFC 8446, Section 7.1.
-internal static slice<byte> deriveSecret(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> secret, @string label, hash.Hash transcript) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
-    if (transcript == default!) {
-        transcript = c.hash.New();
-    }
-    return Ꮡc.expandLabel(secret, label, transcript.Sum(default!), c.hash.Size());
-}
-
-// extract implements HKDF-Extract with the cipher suite hash.
-internal static slice<byte> extract(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> newSecret, slice<byte> currentSecret) {
-    ref var c = ref Ꮡc.DerefOrNull();
-
-    if (newSecret == default!) {
-        newSecret = new slice<byte>(c.hash.Size());
-    }
-    return hkdf.Extract(() => Ꮡc.Value.hash.New(), newSecret, currentSecret);
-}
 
 // nextTrafficSecret generates the next traffic secret, given the current one,
 // according to RFC 8446, Section 7.2.
 internal static slice<byte> nextTrafficSecret(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> trafficSecret) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    return Ꮡc.expandLabel(trafficSecret, trafficUpdateLabel, default!, c.hash.Size());
+    return tls13.ExpandLabel<hash.Hash>(() => Ꮡc.Value.hash.New(), trafficSecret, trafficUpdˢ, default!, c.hash.Size());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -116,8 +39,8 @@ internal static (slice<byte> key, slice<byte> iv) trafficKey(this ж<cipherSuite
     slice<byte> iv = default!;
 
     ref var c = ref Ꮡc.DerefOrNull();
-    key = Ꮡc.expandLabel(trafficSecret, keyˢ, default!, c.keyLen);
-    iv = Ꮡc.expandLabel(trafficSecret, "iv"u8, default!, aeadNonceLength);
+    key = tls13.ExpandLabel<hash.Hash>(() => Ꮡc.Value.hash.New(), trafficSecret, keyˢ, default!, c.keyLen);
+    iv = tls13.ExpandLabel<hash.Hash>(() => Ꮡc.Value.hash.New(), trafficSecret, "iv"u8, default!, aeadNonceLength);
     return (key, iv);
 }
 
@@ -130,67 +53,26 @@ internal static readonly @string finishedˢ = "finished"u8;
 internal static slice<byte> finishedHash(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> baseKey, hash.Hash transcript) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var finishedKey = Ꮡc.expandLabel(baseKey, finishedˢ, default!, c.hash.Size());
+    var finishedKey = tls13.ExpandLabel<hash.Hash>(() => Ꮡc.Value.hash.New(), baseKey, finishedˢ, default!, c.hash.Size());
     var verifyData = hmac.New(() => Ꮡc.Value.hash.New(), finishedKey);
     verifyData.Write(transcript.Sum(default!));
     return verifyData.Sum(default!);
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string exporterˢ = "exporter"u8;
-
 // exportKeyingMaterial implements RFC5705 exporters for TLS 1.3 according to
 // RFC 8446, Section 7.5.
-internal static Func<@string, slice<byte>, nint, (slice<byte>, error)> exportKeyingMaterial(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> masterSecret, hash.Hash transcript) {
-    var expMasterSecret = Ꮡc.deriveSecret(masterSecret, exporterLabel, transcript);
+[GoRecv] internal static Func<@string, slice<byte>, nint, (slice<byte>, error)> exportKeyingMaterial(this ref cipherSuiteTLS13 c, ж<tls13ꓸMasterSecret> Ꮡs, hash.Hash transcript) {
+    ref var s = ref Ꮡs.DerefOrNull();
+
+    var expMasterSecret = s.ExporterMasterSecret(new hash_HashᴠHash(transcript));
     var expMasterSecretʗ1 = expMasterSecret;
-    return (@string label, slice<byte> context, nint length) => {
-        var secret = Ꮡc.deriveSecret(expMasterSecretʗ1, label, default!);
-        var h = Ꮡc.Value.hash.New();
-        h.Write(context);
-        return (Ꮡc.expandLabel(secret, exporterˢ, h.Sum(default!), length), default!);
-    };
+    return (@string label, slice<byte> context, nint length) => (expMasterSecretʗ1.Exporter(label, context, length), default!);
 }
 
 [GoType] partial struct keySharePrivateKeys {
     internal CurveID curveID;
     internal ж<ecdh.PrivateKey> ecdhe;
-    internal ж<mlkem768.DecapsulationKey> kyber;
-}
-
-// kyberDecapsulate implements decapsulation according to Kyber Round 3.
-internal static (slice<byte>, error) kyberDecapsulate(ж<mlkem768.DecapsulationKey> Ꮡdk, slice<byte> c) {
-    var (K, err) = mlkem768.Decapsulate(Ꮡdk, c);
-    if (err != default!) {
-        return (default!, err);
-    }
-    return (kyberSharedSecret(K, c), default!);
-}
-
-// kyberEncapsulate implements encapsulation according to Kyber Round 3.
-internal static (slice<byte> c, slice<byte> ss, error err) kyberEncapsulate(slice<byte> ek) {
-    slice<byte> c = default!;
-    slice<byte> ss = default!;
-    error err = default!;
-
-    (c, ss, err) = mlkem768.Encapsulate(ek);
-    if (err != default!) {
-        return (default!, default!, err);
-    }
-    return (c, kyberSharedSecret(ss, c), default!);
-}
-
-internal static slice<byte> kyberSharedSecret(slice<byte> K, slice<byte> c) {
-    // Package mlkem768 implements ML-KEM, which compared to Kyber removed a
-    // final hashing step. Compute SHAKE-256(K || SHA3-256(c), 32) to match Kyber.
-    // See https://words.filippo.io/mlkem768/#bonus-track-using-a-ml-kem-implementation-as-kyber-v3.
-    var h = sha3.NewShake256();
-    h.Write(K);
-    var ch = sha3.Sum256(c);
-    h.Write(ch[..]);
-    var @out = new slice<byte>(32);
-    h.Read(@out);
-    return @out;
+    internal ж<mlkem.DecapsulationKey768> mlkem;
 }
 
 internal static UntypedInt x25519PublicKeySize => 32;

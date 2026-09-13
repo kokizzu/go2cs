@@ -58,8 +58,8 @@ using static go.testing.iotest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("testing/iotest/logger.go", "logger.cs", "ABsisoKClJSssgAHELKCgpSUrLI=")]
-[assembly: go.GoPositionMap("testing/iotest/reader.go", "reader.cs", "ACAioOyCgpSqoOyCAAIQ0AAIENaCgoKClIKUgpQABRCg/oKCgpSoku6CAAgSgoKUgoKClIKClIIABhTygoKCqIKClIKUgoKWgJSAgsqCgoCCpICCpICCyoCCuIKClIKogIKkgIK4goKUgqiAgqSCgpSCuICCgoKUgoKUgpaCgpaClIKClIKWgpSCgoKCgpSUgsg=")]
+[assembly: go.GoPositionMap("testing/iotest/logger.go", "logger.cs", "AA8isoKClJSssgAHELKCgpSUrLI=")]
+[assembly: go.GoPositionMap("testing/iotest/reader.go", "reader.cs", "AA4ioOyCgpSqoOyCAAIQ0AAIENaCgoKClIKUgpQABRCg/oKCgpSoku6CAAgSgoKUgoKClIKClIIABhTygoKCqIKClIKUgoKWgJSAgsqCgoCCpICCpICCyoCCuIKClIKogIKkgIK4goKUgqiAgqSCgpSCuICCgoKUgoKUgpaCgpaClIKClIKWgpSCgoKCgpSUgsg=")]
 [assembly: go.GoPositionMap("testing/iotest/writer.go", "writer.cs", "AAkWogAHELKCpoKClIKCgpQ=")]
 // </GoSourcePositionMaps>
 
@@ -85,4 +85,18 @@ public static partial class iotest_package
     internal partial struct truncateWriter {}
     internal partial struct writeLogger {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    // </ImportInitializers>
 }

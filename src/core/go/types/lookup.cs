@@ -7,8 +7,6 @@
 namespace go.go;
 
 using bytes = bytes_package;
-using token = global::go.go.token_package;
-using global::go.go;
 
 partial class types_package {
 
@@ -519,6 +517,39 @@ internal static (ж<Func> method, bool wrongType) missingMethod(this ж<Checker>
     return (m, state == wrongSig || state == ptrRecv);
 }
 
+// hasAllMethods is similar to checkMissingMethod but instead reports whether all methods are present.
+// If V is not a valid type, or if it is a struct containing embedded fields with invalid types, the
+// result is true because it is not possible to say with certainty whether a method is missing or not
+// (an embedded field may have the method in question).
+// If the result is false and cause is not nil, *cause describes the error.
+// Use hasAllMethods to avoid follow-on errors due to incorrect types.
+internal static bool hasAllMethods(this ж<Checker> Ꮡcheck, ΔType V, ΔType T, bool @static, Func<ΔType, ΔType, bool> equivalent, ж<@string> Ꮡcause) {
+    if (!isValid(V)) {
+        return true; // we don't know anything about V, assume it implements T
+    }
+    var (m, _) = Ꮡcheck.missingMethod(V, T, @static, equivalent, Ꮡcause);
+    return m == nil || hasInvalidEmbeddedFields(V, default!);
+}
+
+// hasInvalidEmbeddedFields reports whether T is a struct (or a pointer to a struct) that contains
+// (directly or indirectly) embedded fields with invalid types.
+internal static bool hasInvalidEmbeddedFields(ΔType T, map<ж<Struct>, bool> seen) {
+    {
+        var (S, _) = under(derefStructPtr(T))._<ж<Struct>>(ᐧ); if (S != nil && !seen[S]) {
+            if (seen == default!) {
+                seen = new map<ж<Struct>, bool>();
+            }
+            seen[S] = true;
+            foreach (var (_, f) in (~S).fields) {
+                if ((~f).embedded && (!isValid((~f).typ) || hasInvalidEmbeddedFields((~f).typ, seen))) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 internal static bool isInterfacePtr(ΔType T) {
     var (p, _) = under(T)._<ж<Pointer>>(ᐧ);
     return p != nil && IsInterface((~p).@base);
@@ -568,8 +599,7 @@ internal static bool assertableTo(this ж<Checker> Ꮡcheck, ΔType V, ΔType T,
         return true;
     }
     // TODO(gri) fix this for generalized interfaces
-    var (m, _) = Ꮡcheck.missingMethod(T, V, false, Identical, Ꮡcause);
-    return m == nil;
+    return Ꮡcheck.hasAllMethods(T, V, false, Identical, Ꮡcause);
 }
 
 // newAssertableTo reports whether a value of type V can be asserted to have type T.
@@ -577,7 +607,7 @@ internal static bool assertableTo(this ж<Checker> Ꮡcheck, ΔType V, ΔType T,
 // in constraint position (we have not yet defined that behavior in the spec).
 // The underlying type of V must be an interface.
 // If the result is false and cause is not nil, *cause is set to the error cause.
-internal static bool newAssertableTo(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType V, ΔType T, ж<@string> Ꮡcause) {
+internal static bool newAssertableTo(this ж<Checker> Ꮡcheck, ΔType V, ΔType T, ж<@string> Ꮡcause) {
     ref var check = ref Ꮡcheck.DerefOrNull();
 
     // no static check is required if T is an interface
@@ -586,7 +616,7 @@ internal static bool newAssertableTo(this ж<Checker> Ꮡcheck, tokenꓸPos pos,
     if (IsInterface(T)) {
         return true;
     }
-    return Ꮡcheck.implements(pos, T, V, false, Ꮡcause);
+    return Ꮡcheck.implements(T, V, false, Ꮡcause);
 }
 
 // deref dereferences typ if it is a *Pointer (but not a *Named type

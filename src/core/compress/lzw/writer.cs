@@ -295,10 +295,10 @@ internal static ж<Writer> newWriter(io.Writer dst, Order order, nint litWidth) 
 [GoRecv] internal static void init(this ref Writer w, io.Writer dst, Order order, nint litWidth) {
     var exprᴛ1 = order;
     if (exprᴛ1 == LSB) {
-        w.write = (Func<ж<Writer>, uint32, error>)(writeLSB);
+        w.write = ((Func<ж<Writer>, uint32, error>)(writeLSB));
     }
     else if (exprᴛ1 == MSB) {
-        w.write = (Func<ж<Writer>, uint32, error>)(writeMSB);
+        w.write = ((Func<ж<Writer>, uint32, error>)(writeMSB));
     }
     else { /* default: */
         w.err = errors.New(lzwUnknownOrderˢ);

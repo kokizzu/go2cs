@@ -104,7 +104,7 @@ public static ж<Writer> NewWriter(io.Writer w) {
             }
             continue;
         }
-        if (w.i == lineMaxLen - 1) {
+        if (w.i == (nint)(lineMaxLen - 1)) {
             {
                 var err = w.insertSoftLineBreak(); if (err != default!) {
                     return err;

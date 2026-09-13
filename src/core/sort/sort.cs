@@ -7,6 +7,7 @@
 namespace go;
 
 using bits = math.bits_package;
+using slices = slices_package;
 using math;
 
 partial class sort_package {
@@ -61,8 +62,8 @@ internal static sortedHint decreasingHint => 2;
 
 [GoRecv] internal static uint64 Next(this ref xorshift r) {
     r ^= (xorshift)((r << (int)(13)));
-    r ^= (xorshift)((r >> (int)(17)));
-    r ^= (xorshift)((r << (int)(5)));
+    r ^= (xorshift)((r >> (int)(7)));
+    r ^= (xorshift)((r << (int)(17)));
     return (uint64)(r);
 }
 
@@ -184,7 +185,7 @@ public static void Sort(this StringSlice x) {
 //
 // Note: as of Go 1.22, this function simply calls [slices.Sort].
 public static void Ints(slice<nint> x) {
-    intsImpl(x);
+    slices.Sort<slice<nint>, nint>(x);
 }
 
 // Float64s sorts a slice of float64s in increasing order.
@@ -192,21 +193,21 @@ public static void Ints(slice<nint> x) {
 //
 // Note: as of Go 1.22, this function simply calls [slices.Sort].
 public static void Float64s(slice<float64> x) {
-    float64sImpl(x);
+    slices.Sort<slice<float64>, float64>(x);
 }
 
 // Strings sorts a slice of strings in increasing order.
 //
 // Note: as of Go 1.22, this function simply calls [slices.Sort].
 public static void Strings(slice<@string> x) {
-    stringsImpl(x);
+    slices.Sort<slice<@string>, @string>(x);
 }
 
 // IntsAreSorted reports whether the slice x is sorted in increasing order.
 //
 // Note: as of Go 1.22, this function simply calls [slices.IsSorted].
 public static bool IntsAreSorted(slice<nint> x) {
-    return intsAreSortedImpl(x);
+    return slices.IsSorted<slice<nint>, nint>(x);
 }
 
 // Float64sAreSorted reports whether the slice x is sorted in increasing order,
@@ -214,14 +215,14 @@ public static bool IntsAreSorted(slice<nint> x) {
 //
 // Note: as of Go 1.22, this function simply calls [slices.IsSorted].
 public static bool Float64sAreSorted(slice<float64> x) {
-    return float64sAreSortedImpl(x);
+    return slices.IsSorted<slice<float64>, float64>(x);
 }
 
 // StringsAreSorted reports whether the slice x is sorted in increasing order.
 //
 // Note: as of Go 1.22, this function simply calls [slices.IsSorted].
 public static bool StringsAreSorted(slice<@string> x) {
-    return stringsAreSortedImpl(x);
+    return slices.IsSorted<slice<@string>, @string>(x);
 }
 
 // Notes on stable sorting:

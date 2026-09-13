@@ -4,13 +4,14 @@
 // Random number generation
 namespace go;
 
+using byteorder = @internal.byteorder_package;
 using chacha8rand = @internal.chacha8rand_package;
 using goarch = @internal.goarch_package;
-using math = runtime.@internal.math_package;
+using math = @internal.runtime.math_package;
 using @unsafe = unsafe_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for go:linkname
 using @internal;
-using runtime.@internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -47,14 +48,14 @@ internal static void randinit() {
         fatal(randinitTwiceˢ);
     }
     var seed = ᏑglobalRand.of(globalRandᴛ1.Ꮡseed);
-    if (startupRand != default!){
+    if (len(startupRand) >= 16 && !allZero(startupRand[..8]) && !allZero(startupRand[8..16])){
+        // Check that at least the first two words of startupRand weren't
+        // cleared by any libc initialization.
         foreach (var (i, c) in startupRand) {
             seed.Value[i % 32] ^= (byte)(c);
         }
-        builtin.clear(startupRand);
-        startupRand = default!;
     } else {
-        if (readRandom((~seed)[..]) != 32) {
+        if (readRandom((~seed)[..]) != 32 || allZero((~seed)[..])) {
             // readRandom should never fail, but if it does we'd rather
             // not make Go binaries completely unusable, so make up
             // some random data based on the current time.
@@ -64,6 +65,25 @@ internal static void randinit() {
     }
     ᏑglobalRand.of(globalRandᴛ1.Ꮡstate).Init(seed.Value);
     builtin.clear((~seed)[..]);
+    if (startupRand != default!) {
+        // Overwrite startupRand instead of clearing it, in case cgo programs
+        // access it after we used it.
+        while (len(startupRand) > 0) {
+            var buf = new slice<byte>(8);
+            while (ᐧ) {
+                {
+                    var (x, ok) = ᏑglobalRand.of(globalRandᴛ1.Ꮡstate).Next(); if (ok) {
+                        byteorder.BEPutUint64(buf, x);
+                        break;
+                    }
+                }
+                ᏑglobalRand.of(globalRandᴛ1.Ꮡstate).Refill();
+            }
+            nint n = copy(startupRand, buf);
+            startupRand = startupRand[(int)(n)..];
+        }
+        startupRand = default!;
+    }
     globalRand.init = true;
     unlock(ᏑglobalRand.of(globalRandᴛ1.Ꮡlock));
 }
@@ -92,6 +112,14 @@ internal static void readTimeRandom(slice<byte> r) {
         r = r[(int)(size)..];
         v = (uint64)((v >> (int)(32)) | (v << (int)(32)));
     }
+}
+
+internal static bool allZero(slice<byte> b) {
+    byte acc = default!;
+    foreach (var (_, x) in b) {
+        acc |= (byte)(x);
+    }
+    return acc == 0;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -133,6 +161,8 @@ internal static uint32 rand32() {
 }
 
 // rand returns a random uint64 from the per-m chacha8 state.
+// This is called from compiler-generated code.
+//
 // Do not change signature: used via linkname from other packages.
 //
 //go:nosplit
@@ -157,6 +187,11 @@ internal static uint64 rand() {
         c.Refill();
         mp.Value.locks--;
     }
+}
+
+//go:linkname maps_rand internal/runtime/maps.rand
+internal static uint64 maps_rand() {
+    return rand();
 }
 
 // mrandinit initializes the random state of an m.

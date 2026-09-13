@@ -69,7 +69,7 @@ using static go.math_package;
 [assembly: go.GoPositionMap("math/expm1.go", "expm1.cs", "AAf8AQB3AoKUpoIADSSUpKaCgoKCqJKClJKqkoKSkpKCgoKUgoKmgpSUgoKUgrSUqIKCgoKCgpSCgpSkgpSkgoK0goKCgpSCgoKC")]
 [assembly: go.GoPositionMap("math/floor.go", "floor.cs", "AAcc8oKUpoKClIKCgpSUggACFPKClKaCAAIU8oKUpoKClIIAAhQAEBSCgpSCgr7CgoKUAAIUABEWgoKKwoKCtqaU")]
 [assembly: go.GoPositionMap("math/floor_asm.go", "floor_asm.cs", "AAoWuLg=")]
-[assembly: go.GoPositionMap("math/fma.go", "fma.cs", "ABASgoKUqqKClKrSgoKmsoKCrgALCpSkpKSCtIK0pqKCgpSs8oKChJSCgqaUqqKWgriCuoKCqLqCgpaCgpaCqIKohqKUgoKCuIKCgoKCqJSUgoKClIKC")]
+[assembly: go.GoPositionMap("math/fma.go", "fma.cs", "AAoSgoKUqqKClKrSgoKmsoKCrgALCpSkpKSCtIK0pqKCgpSs8oKChJSCgqaUqqKWgriCuoKCqLqCgpaCgpaCqIKohqKUgoKCuIKCgoKCqJSUgoKClIKC")]
 [assembly: go.GoPositionMap("math/frexp.go", "frexp.cs", "AAciAAoCgpSmxJSkpIKCgoKCgg==")]
 [assembly: go.GoPositionMap("math/gamma.go", "gamma.cs", "AF7IAfKClJiCgoKCkoKUlAACGgAKApSUpKSClKSCgoKCgsqCgIKkgoKClIKClIKCgoKUlKiCgoKUgoKUgpSCgpSCloKWgoKChIKClKaCgoKU")]
 [assembly: go.GoPositionMap("math/hypot.go", "hypot.cs", "AAcoAA0CgpSmgpSUpKSClIKUgg==")]
@@ -116,4 +116,14 @@ public static partial class math_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    // </ImportInitializers>
 }

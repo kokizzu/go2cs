@@ -50,7 +50,7 @@ using static go.iter_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("iter/iter.go", "iter.cs", "ABusA6YAAjAAGQIABhKigoKClIKClIKUgoKCgoKmgoCCpKSClIKCgsSyhIKUgpSCgoKWgpSUppSShIKCgoKWgpSUygACMgAZAgAHFKKCgoKUgoKUgpSCgoKCgqaCgIKkpIKUgoKCgsTChIKUgpSCgoKWgpSUppSShIKCgoKWgpSUyg==")]
+[assembly: go.GoPositionMap("iter/iter.go", "iter.cs", "AOAB0AOmAAIwABkCAAYSooKCgpSCgpSClIKCgoKCpoKAgqSkgpSCgoLEsoSClIKUgoKCloKUlKaUkoSCgoKCloKUlMoAAjIAGQIABxSigoKClIKClIKUgoKCgoKmgoCCpKSClIKCgoLEwoSClIKUgoKCloKUlKaUkoSCgoKCloKUlMo=", "269-303:1;275-288:1.1;290-298:1.2;304-328:2;329-348:3;385-420:1;391-404:1.1;406-414:1.2;421-445:2;446-465:3")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -67,4 +67,15 @@ public static partial class iter_package
     // <TypeAccessibility>
     internal partial struct coro {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    // </ImportInitializers>
 }

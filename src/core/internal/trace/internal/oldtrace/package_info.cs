@@ -55,8 +55,8 @@ using static go.@internal.trace.@internal.oldtrace_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/trace/internal/oldtrace/order.go", "order.cs", "ACRG9pSCgoKkgoKCpIKCggACEILigqiCgoKkgoKCpIKCgqSCgoKkgoKCpoLIktaCgpSCppSUtLSCyoKmsoKmooKCgoKCpqKCgoKUgriigoKCkpSCgIKkgpSClA==")]
-[assembly: go.GoPositionMap("internal/trace/internal/oldtrace/parser.go", "parser.cs", "AKEB6gGCgpSAgpSkpoKCgKaCgpSCgpSCgpaCgoKmgoKCtgACFAAJBoKClNjSggAQJoKCgoKChICCpoKCloKWlJSCgoKUgpSCuoCCpgAHEAAlTqKCgpSCgqiygoKmgoKmuKaCpoKmgqaCgpSCgoKmlKaCgoKCgoIABR4ADgyiloKClISmAAAQ9IKClIKCgoSUgoKUgoKmgqSUqIIAChiClIKCgqi2goKCppTMlpSkpKSEgIKkzIIAChiCgoKUpIKClIKClIKUtoSolJKCgoKClIKUgpaCgoKWgoKmhIKEgoKClIKClKiCgoIADR6oAAUQgoKCgpS4gsqUgoLqyMaCgpQADBqCgpaUlICCpIKClIK4goKUgpSClIKCgpSClIKUgoKUloKkgIKohIKSlIKWgoKUloKCltyCpIKCgoKCgpSmgoCC/oKCloCmpoKCgpSCgoKClLiCppSUgoKUpoKClILMgsqSgoKUgoKChISCloKCgoKCgpSClIKUgoKUqIKClIKopqKCgpSClIKUgoKUqtKCgpSCgpSUgoKUgpSUgqSCuLakgpSCgpSCgpSCgoKCgoKCgoSAgrbcooKCgoKCgpSmlIKqpAAGEoDClIKCgsimggAUFuK8AAAcgoKCgpSCgoKUgpSClJaChJSCgpSEpIKClIKUhKSClISkkpSkgoKUpIKClKSCgpSEpIKClISogqKWpIKClISkgoKUgoSkgoKUgoSkgoKAgqSAgqSmgoKClIKUgoKCgoKWgpaCpIKCgIKkgoKEkpaCpIKCgIKkgoKChIKkgoKClIKUgoKUgpSCgqaCgoCCpISkgoKAgqSCgoSCpIKClIKEpoKCgIKkgoKChIKkgoCCpKaCpoKCkrSCkoKSloKUuLi6vMySgoKUgqaigoKUpoKCgoKClKqigoKUgoKUlKSCALAB7gGSgt6CgpSCpoKCgpS2gpSm", "181-183:1;347-355:1;373-375:1;1034-1046:1")]
+[assembly: go.GoPositionMap("internal/trace/internal/oldtrace/order.go", "order.cs", "AB5G9pSCgoKkgoKCpIKCggACEILigqiCgoKkgoKCpIKCgqSCgoKkgoKCpoLIktaCgpSCppSUtLSCyoKmsoKmooKCgoKCpqKCgoKUgriigoKCkpSCgIKkgpSClA==")]
+[assembly: go.GoPositionMap("internal/trace/internal/oldtrace/parser.go", "parser.cs", "AGvqAYKClICClKSmgoKApoKClIKClIKCloKCgqaCgoK2AAIUAAkGgoKU2NKCABAmgoKCgoKEgIKmgoKWgpaUlIKCgpSClIK6gIKmAAcQACZOooKClIKCqLKCgqaCgqa4poKmgqaCpoKClIKCgqaUpoKCgoKCggAFHgAODKKWgoKUhKYAABD0goKUgoKChJSCgpSCgqaCpJSoggAKGIKUgoKCqLaCgoKmlMyWlKSkpISAgqTMggAKGIKCgpSkgoKUgoKUgpS2hKiUkoKCgoKUgpSCloKCgpaCgqaEgoSCgoKUgoKUqIKCggANHqgABRCCgoKClLiCypSCgurIxoKClAAMGoKClpSUgIKkgoKUgriCgpSClIKUgoKClIKUgpSCgpSWgqSAgqiEgpKUgpaCgpSWgoKW3IKkgoKCgoKClKaCgIL+goKWgKamgoKClIKCgoKUuIKmlJSCgpSmgoKUgsyCypKCgpSCgoKEhIKWgoKCgoKClIKUgpSCgpSogoKUgqimooKClIKUgpSCgpSq0oKClIKClJSCgpSClJSCpIK4tqSClIKClIKClIKCgoKCgoKChICCttyigoKCgoKClKaUgqqkAAYSgMKUgoKCyKaCABQW4rwAAByCgoKClIKCgpSClIKUloKElIKClISkgoKUgpSEpIKUhKSSlKSCgpSkgoKUpIKClISkgoKUhKiCopakgoKUhKSCgpSChKSCgpSChKSCgoCCpICCpKaCgoKUgpSCgoKCgpaCloKkgoKAgqSCgoSSloKkgoKAgqSCgoKEgqSCgoKUgpSCgpSClIKCpoKCgIKkhKSCgoCCpIKChIKkgoKUgoSmgoKAgqSCgoKEgqSCgIKkpoKmgoKStIKSgpKWgpS4uLq8zJKCgpSCpqKCgpSmgoKCgoKUqqKCgpSCgpSUpIIAsAHuAZKC3oKClIKmgoKClLaClKY=", "181-183:1;347-355:1;373-375:1;1034-1046:1")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.trace.@internal;
@@ -89,4 +89,23 @@ public static partial class oldtrace_package
     public partial struct Trace {}
     public partial struct ΔSTWReason {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸevent() => builtin.initPackage(typeof(go.@internal.trace.event_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸversion() => builtin.initPackage(typeof(go.@internal.trace.version_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    // </ImportInitializers>
 }

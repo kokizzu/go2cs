@@ -371,6 +371,7 @@ internal static void check() {
     internal int32 traceadvanceperiod;
     internal int32 traceCheckStackOwnership;
     internal int32 profstackdepth;
+    internal int32 dataindependenttiming;
     // debug.malloc is used as a combined debug check
     // in the malloc function and should be set
     // if any of the below debug options is != 0.
@@ -406,6 +407,7 @@ internal static slice<ж<dbgVar>> dbgvars = new ж<dbgVar>[]{
     Ꮡ(new dbgVar(name: "asynctimerchan"u8, atomic: Ꮡdebug.of(debugᴛ1.Ꮡasynctimerchan))),
     Ꮡ(new dbgVar(name: "cgocheck"u8, value: Ꮡdebug.of(debugᴛ1.Ꮡcgocheck))),
     Ꮡ(new dbgVar(name: "clobberfree"u8, value: Ꮡdebug.of(debugᴛ1.Ꮡclobberfree))),
+    Ꮡ(new dbgVar(name: "dataindependenttiming"u8, value: Ꮡdebug.of(debugᴛ1.Ꮡdataindependenttiming))),
     Ꮡ(new dbgVar(name: "disablethp"u8, value: Ꮡdebug.of(debugᴛ1.Ꮡdisablethp))),
     Ꮡ(new dbgVar(name: "dontfreezetheworld"u8, value: Ꮡdebug.of(debugᴛ1.Ꮡdontfreezetheworld))),
     Ꮡ(new dbgVar(name: "efence"u8, value: Ꮡdebug.of(debugᴛ1.Ꮡefence))),
@@ -736,7 +738,6 @@ public static @unsafe.Pointer reflect_resolveTypeOff(@unsafe.Pointer Δrtype, in
 // reflect_resolveTextOff is for package reflect,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
-//   - github.com/cloudwego/frugal
 //   - github.com/agiledragon/gomonkey/v2
 //
 // Do not remove or change the type signature.
@@ -780,6 +781,16 @@ public static int32 reflect_addReflectOff(@unsafe.Pointer ptr) {
     }
     reflectOffsUnlock();
     return id;
+}
+
+//go:linkname fips_getIndicator crypto/internal/fips140.getIndicator
+internal static uint8 fips_getIndicator() {
+    return (~getg()).fipsIndicator;
+}
+
+//go:linkname fips_setIndicator crypto/internal/fips140.setIndicator
+internal static void fips_setIndicator(uint8 indicator) {
+    getg().Value.fipsIndicator = indicator;
 }
 
 } // end runtime_package

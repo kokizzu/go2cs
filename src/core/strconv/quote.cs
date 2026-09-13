@@ -9,12 +9,6 @@ using unicode;
 
 partial class strconv_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(unicode.utf8_package));
-}
-
 internal static readonly @string lowerhex = "0123456789abcdef"u8;
 internal static readonly @string upperhex = "0123456789ABCDEF"u8;
 
@@ -448,7 +442,8 @@ public static (@string, error) QuotedPrefix(@string s) {
 // or backquoted Go string literal, returning the string value
 // that s quotes.  (If s is single-quoted, it would be a Go
 // character literal; Unquote returns the corresponding
-// one-character string.)
+// one-character string. For an empty character literal
+// Unquote returns the empty string.)
 public static (@string, error) Unquote(@string s) {
     var (@out, rem, err) = unquote(s, true);
     if (len(rem) > 0) {

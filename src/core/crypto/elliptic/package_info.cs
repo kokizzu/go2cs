@@ -39,10 +39,10 @@ using static go.crypto.elliptic_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<CurveParams, Curve>(Pointer = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P224Point, nistPoint<go.crypto.@internal.nistec_package.P224Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P256Point, nistPoint<go.crypto.@internal.nistec_package.P256Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P384Point, nistPoint<go.crypto.@internal.nistec_package.P384Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P521Point, nistPoint<go.crypto.@internal.nistec_package.P521Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P224Point, nistPoint<go.crypto.@internal.fips140.nistec_package.P224Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P256Point, nistPoint<go.crypto.@internal.fips140.nistec_package.P256Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P384Point, nistPoint<go.crypto.@internal.fips140.nistec_package.P384Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P521Point, nistPoint<go.crypto.@internal.fips140.nistec_package.P521Point>>(ConstraintProxy = true)]
 [assembly: GoImplement<nistCurve<P224PointжnistPoint>, Curve>(Pointer = true)]
 [assembly: GoImplement<nistCurve<P224PointжnistPoint>, unmarshaler>(Pointer = true)]
 [assembly: GoImplement<nistCurve<P384PointжnistPoint>, Curve>(Pointer = true)]
@@ -64,8 +64,8 @@ using static go.crypto.elliptic_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/elliptic/elliptic.go", "elliptic.cs", "AFOWAQAKAoKCgoSCgoK4ppaClpQAAhIACQKEhIKEgoSs4oKCgoKCAA4qAAkCgIKmgoKUkpSCgoKClIKUrOKAgqaCgpSSlIKCgqaCgoKUgpSClKbWgpaC7IKCgoIAAhTyggACFgAIAoIAAhTyggACFPKC")]
-[assembly: go.GoPositionMap("crypto/elliptic/nistec.go", "nistec.cs", "AB0iggAUKIIADyCCAA8qggAmXqKm9oKUguYACAaCpoKUgqaCgoKCgqbSgqaUgoKCpqKCgpSCgpSmooKClKrCgoKUgoKUgqaigoKUgoKClKaigoKClKrCgoKClIKClIKCgpSm0oKmgoLKgoKCpqKClIKClKaCgoKUpoKCgpQ=")]
+[assembly: go.GoPositionMap("crypto/elliptic/elliptic.go", "elliptic.cs", "AEGWAQAKAoKCgoSCgoK4ppaClpQAAhIACQKEhIKEgoSs4oKCgoKCAA4qAAkCgIKmgoKUkpSCgoKClIKUrOKAgqaCgpSSlIKCgqaCgoKUgpSClKbWgpaC7IKCgoIAAhTyggACFgAIAoIAAhTyggACFPKC")]
+[assembly: go.GoPositionMap("crypto/elliptic/nistec.go", "nistec.cs", "ABEiggAUKIIADyCCAA8qggAmXqKm9oKUguYACAaCpoKUgqaCgoKCgqbSgqaUgoKCpqKCgpSCgpSmooKClKrCgoKUgoKUgqaigoKUgoKClKaigoKClKrCgoKClIKClIKCgpSm0oKmgoLKgoKCpqKClIKClKaCgoKUpoKCgpQ=")]
 [assembly: go.GoPositionMap("crypto/elliptic/nistec_p256.go", "nistec_p256.cs", "AA0copSUlJSCgoKU")]
 [assembly: go.GoPositionMap("crypto/elliptic/params.go", "params.cs", "ABkwggACFgAIAoKEgoSCgoQAAhIADAaAgqaEqIKErOKCgpSq4oKWgoSCgoKCggACEgAKBoCCpIKEgoK65IKCgoKClIKCgoKWgoKChIKCgoKCgoKUgoKEgoKCgoKCgoKUgoKUgoSCgoKCgoSCgoKCgoKEgoKCgoKEAAISAAoGgIKkhIK6tIKCgoKCgpSCgoKChISCgoKCgpSEgoKCgpSCgpSEgoKClISCgoSCgpSEAAISAAoGgIKkhIKEooKCgpSoAAISAAoGgIKmpoKCgqY=")]
 // </GoSourcePositionMaps>
@@ -89,4 +89,18 @@ public static partial class elliptic_package
     public partial interface Curve {}
     public partial struct CurveParams {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸnistec() => builtin.initPackage(typeof(go.crypto.@internal.fips140.nistec_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

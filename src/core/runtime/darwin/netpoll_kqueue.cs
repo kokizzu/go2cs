@@ -85,7 +85,10 @@ internal static void netpollBreak() {
 internal static readonly @string runtimeNetpollFailedˢ = "runtime: netpoll failed"u8;
 
 // netpoll checks for ready network connections.
-// Returns list of goroutines that become runnable.
+// Returns a list of goroutines that become runnable,
+// and a delta to add to netpollWaiters.
+// This must never return an empty list with a non-zero delta.
+//
 // delay < 0: blocks indefinitely
 // delay == 0: does not block, just polls
 // delay > 0: block for up to that many nanoseconds
@@ -131,10 +134,11 @@ retry:
     for (nint i = 0; i < (nint)n; i++) {
         var ev = Ꮡevents.at<keventt>(i);
         if (isWakeup(ref (ev).DerefOrNull())) {
-            if (delay != 0) {
+            var isBlocking = delay != 0;
+            processWakeupEvent(kq, isBlocking);
+            if (isBlocking) {
                 // netpollBreak could be picked up by a nonblocking poll.
-                // Only call drainWakeupEvent and reset the netpollWakeSig if blocking.
-                drainWakeupEvent(kq);
+                // Only reset the netpollWakeSig if blocking.
                 ᏑnetpollWakeSig.Store(0);
             }
             continue;

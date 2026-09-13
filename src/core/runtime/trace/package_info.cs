@@ -51,8 +51,8 @@ using static go.runtime.trace_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("runtime/trace/annotation.go", "annotation.cs", "ACNMABYCgpKCggACLAASAoCCpAAHFLLalAAFELKCqLKmggAGIAAXIIKCggAFFgAIAoKUkoIAChiygpSssgACEOampg==")]
-[assembly: go.GoPositionMap("runtime/trace/trace.go", "trace.cs", "AIgB8gHSgoSAgqSCgoKClKaC2sKCgoQ=", "128-136:1")]
+[assembly: go.GoPositionMap("runtime/trace/annotation.go", "annotation.cs", "ABFMABYCgpKCggACLAASAoCCpAAHFLLalAAFELKCqLKmggAGIAAXIIKCggAFFgAIAoKUkoIAChiygpSssgACEOampg==")]
+[assembly: go.GoPositionMap("runtime/trace/trace.go", "trace.cs", "AHbyAdKChICCpIKCgoKUpoLawoKChA==", "128-136:1")]
 // </GoSourcePositionMaps>
 
 namespace go.runtime;
@@ -72,4 +72,19 @@ public static partial class trace_package
     public partial struct Region {}
     public partial struct Task {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    // </ImportInitializers>
 }

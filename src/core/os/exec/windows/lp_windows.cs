@@ -8,7 +8,6 @@ using fs = go.io.fs_package;
 using os = os_package;
 using filepath = path.filepath_package;
 using strings = strings_package;
-using syscall = syscall_package;
 using @internal;
 using go.io;
 using path;
@@ -177,7 +176,7 @@ internal static (@string, error) lookPath(@string @file, slice<@string> exts) {
     
     error dotErr = default!;
     {
-        var (_, found) = syscall.Getenv("NoDefaultCurrentDirectoryInExePath"u8); if (!found) {
+        var (_, found) = os.LookupEnv("NoDefaultCurrentDirectoryInExePath"u8); if (!found) {
             {
                 var (f, err) = findExecutable(filepath.Join("."u8, @file), exts); if (err == default!) {
                     if (execerrdot.Value() == "0"u8) {

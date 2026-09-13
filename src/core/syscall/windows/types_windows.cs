@@ -42,6 +42,9 @@ public static UntypedInt O_APPEND => 0x00400;
 public static UntypedInt O_SYNC => 0x01000;
 public static UntypedInt O_ASYNC => 0x02000;
 public static UntypedInt O_CLOEXEC => 0x80000;
+internal static UntypedInt o_DIRECTORY => 0x100000; // used by internal/syscall/windows
+internal static UntypedInt o_NOFOLLOW_ANY => 0x20000000; // used by internal/syscall/windows
+internal static UntypedInt o_OPEN_REPARSE => 0x40000000; // used by internal/syscall/windows
 
 public static ΔSignal SIGHUP => /* Signal(0x1) */ 1;
 public static ΔSignal SIGINT => /* Signal(0x2) */ 2;
@@ -81,6 +84,7 @@ public static UntypedInt GENERIC_EXECUTE => 0x20000000;
 public static UntypedInt GENERIC_ALL => 0x10000000;
 public static UntypedInt FILE_LIST_DIRECTORY => 0x00000001;
 public static UntypedInt FILE_APPEND_DATA => 0x00000004;
+internal static UntypedInt _FILE_WRITE_EA => 0x00000010;
 public static UntypedInt FILE_WRITE_ATTRIBUTES => 0x00000100;
 public static UntypedInt FILE_SHARE_READ => 0x00000001;
 public static UntypedInt FILE_SHARE_WRITE => 0x00000002;

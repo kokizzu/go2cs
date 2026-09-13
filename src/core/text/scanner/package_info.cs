@@ -55,7 +55,7 @@ using static go.text.scanner_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("text/scanner/scanner.go", "scanner.cs", "AEhIkNSCgoKUgpQAQHCSgIKkAD2WAdKogoKWgoKCgqiWloKCgoKE7uKUlKaCgriC3IKCgoKCgoKUgpSUgty4gpSClIKCgoLMgoKWlrSCgsYAAhIACAKCgoKClKzSlIKCpqaigoKCgpSCgpSmoqaCgpSmtIKClKaAooCigAACEAAKAoKCgoKCgqSUgqaCgoKUgqb2ooKCgpaSgoKCgoKUgrSCtIK0gsaCgoKCuoKCgpSCloKogIKUtLSCgoKUgoKCtqaCloKCgIK4AAgGgpSkpKTKkoKCloKCgoK6goKClILGtIKUxoKWpoKUpKTWgoKClIKUpoKClqS0pKSkpNaigoKCgpSClJSUpoKCgoKClOiCguiUlIKClKiCgoKClIKCgoKmAAIQ8paChISSyIKogpSCyoKogpSCgpTGgpTGpLSCgpSkgoKUpIKCtoKCgoKClIK2goKUpOqEgq7igoKWgraCtoLkqsKUlpSolLqCgg==")]
+[assembly: go.GoPositionMap("text/scanner/scanner.go", "scanner.cs", "ACRIkNSCgoKUgpQAQHCSgIKkAD2WAdKogoKWgoKCgqiWloKCgoKE7uKUlKaCgriC3IKCgoKCgoKUgpSUgty4gpSClIKCgoLMgoKWlrSCgsYAAhIACAKCgoKClKzSlIKCpqaigoKCgpSCgpSmoqaCgpSmtIKClKaAooCigAACEAAKAoKCgoKCgqSUgqaCgoKUgqb2ooKCgpaSgoKCgoKUgrSCtIK0gsaCgoKCuoKCgpSCloKogIKUtLSCgoKUgoKCtqaCloKCgIK4AAgGgpSkpKTKkoKCloKCgoK6goKClILGtIKUxoKWpoKUpKTWgoKClIKUpoKClqS0pKSkpNaigoKCgpSClJSUpoKCgoKClOiCguiUlIKClKiCgoKClIKCgoKmAAIQ8paChISSyIKogpSCyoKogpSCgpTGgpTGpLSCgpSkgoKUpIKCtoKCgoKClIK2goKUpOqEgq7igoKWgraCtoLkqsKUlpSolLqCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.text;
@@ -73,4 +73,19 @@ public static partial class scanner_package
     public partial struct Position {}
     [GoValueClone("srcBuf")] public partial struct Scanner {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

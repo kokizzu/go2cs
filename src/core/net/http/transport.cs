@@ -17,6 +17,7 @@ using fmt = fmt_package;
 using godebug = go.@internal.godebug_package;
 using io = io_package;
 using log = log_package;
+using maps = maps_package;
 using net = net_package;
 using httptrace = go.net.http.httptrace_package;
 using ascii = go.net.http.@internal.ascii_package;
@@ -42,12 +43,6 @@ using vendor.golang.org.x.net.http;
 using ꓸꓸꓸany = Span<any>;
 
 partial class http_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸhttpꓸhttpproxy() {
-    builtin.initPackage(typeof(vendor.golang.org.x.net.http.httpproxy_package));
-}
 
 // DefaultTransport is the default implementation of [Transport] and is
 // used by [DefaultClient]. It establishes network connections as needed
@@ -89,8 +84,7 @@ public static UntypedInt DefaultMaxIdleConnsPerHost => 2;
 // Transport uses HTTP/1.1 for HTTP URLs and either HTTP/1.1 or HTTP/2
 // for HTTPS URLs, depending on whether the server supports HTTP/2,
 // and how the Transport is configured. The [DefaultTransport] supports HTTP/2.
-// To explicitly enable HTTP/2 on a transport, use golang.org/x/net/http2
-// and call ConfigureTransport. See the package docs for more about HTTP/2.
+// To explicitly enable HTTP/2 on a transport, set [Transport.Protocols].
 //
 // Responses with status codes in the 1xx range are either handled
 // automatically (100 expect-continue) or ignored. The one
@@ -280,6 +274,20 @@ public static UntypedInt DefaultMaxIdleConnsPerHost => 2;
     // To use a custom dialer or TLS config and still attempt HTTP/2
     // upgrades, set this to true.
     public bool ForceAttemptHTTP2;
+    // HTTP2 configures HTTP/2 connections.
+    //
+    // This field does not yet have any effect.
+    // See https://go.dev/issue/67813.
+    public ж<HTTP2Config> HTTP2;
+    // Protocols is the set of protocols supported by the transport.
+    //
+    // If Protocols includes UnencryptedHTTP2 and does not include HTTP1,
+    // the transport will use unencrypted HTTP/2 for requests for http:// URLs.
+    //
+    // If Protocols is nil, the default is usually HTTP/1 only.
+    // If ForceAttemptHTTP2 is true, or if TLSNextProto contains an "h2" entry,
+    // the default is HTTP/1 and HTTP/2.
+    public ж<Protocols> Protocols;
 }
 
 [GoRecv] internal static nint writeBufferSize(this ref Transport t) {
@@ -327,10 +335,18 @@ public static ж<Transport> Clone(this ж<Transport> Ꮡt) {
     if (t.TLSClientConfig != nil) {
         t2.Value.TLSClientConfig = t.TLSClientConfig.Clone();
     }
+    if (t.HTTP2 != nil) {
+        t2.Value.HTTP2 = Ꮡ(new HTTP2Config(nil));
+        (~t2).HTTP2.Value = t.HTTP2.Value;
+    }
+    if (t.Protocols != nil) {
+        t2.Value.Protocols = Ꮡ(new Protocols(nil));
+        (~t2).Protocols.Value = t.Protocols.Value;
+    }
     if (!t.tlsNextProtoWasNil) {
-        var npm = new map<@string, Func<@string, ж<tls.Conn>, RoundTripper>>{};
-        foreach (var (k, v) in t.TLSNextProto) {
-            npm[k] = v;
+        var npm = maps.Clone<map<@string, Func<@string, ж<tls.Conn>, RoundTripper>>, @string, Func<@string, ж<tls.Conn>, RoundTripper>>(t.TLSNextProto);
+        if (npm == default!) {
+            npm = new map<@string, Func<@string, ж<tls.Conn>, RoundTripper>>();
         }
         t2.Value.TLSNextProto = npm;
     }
@@ -383,18 +399,14 @@ internal static void onceSetNextProtoDefaults(this ж<Transport> Ꮡt) {
             }
         }
     }
-    if (t.TLSNextProto != default!) {
-        // This is the documented way to disable http2 on a
-        // Transport.
-        return;
+    {
+        var (_, ok) = t.TLSNextProto["h2"u8, ꟷ]; if (ok) {
+            // There's an existing HTTP/2 implementation installed.
+            return;
+        }
     }
-    if (!t.ForceAttemptHTTP2 && (t.TLSClientConfig != nil || t.Dial != default! || t.DialContext != default! || t.hasCustomTLSDialer())) {
-        // Be conservative and don't automatically enable
-        // http2 if they've specified a custom TLS config or
-        // custom dialers. Let them opt-in themselves via
-        // http2.ConfigureTransport so we don't surprise them
-        // by modifying their tls.Config. Issue 14275.
-        // However, if ForceAttemptHTTP2 is true, it overrides the above checks.
+    var protocols = t.protocols();
+    if (!protocols.HTTP2() && !protocols.UnencryptedHTTP2()) {
         return;
     }
     if (omitBundledHTTP2) {
@@ -422,6 +434,47 @@ internal static void onceSetNextProtoDefaults(this ж<Transport> Ꮡt) {
             }
         }
     }
+    // Server.ServeTLS clones the tls.Config before modifying it.
+    // Transport doesn't. We may want to make the two consistent some day.
+    //
+    // http2configureTransport will have already set NextProtos, but adjust it again
+    // here to remove HTTP/1.1 if the user has disabled it.
+    t.TLSClientConfig.Value.NextProtos = adjustNextProtos((~t.TLSClientConfig).NextProtos, protocols);
+}
+
+[GoRecv] internal static Protocols protocols(this ref Transport t) {
+    if (t.Protocols != nil) {
+        return t.Protocols.Value; // user-configured set
+    }
+    Protocols p = default!;
+    p.SetHTTP1(true); // default always includes HTTP/1
+    switch (ᐧ) {
+    case {} when t.TLSNextProto != default!: {
+        if (t.TLSNextProto["h2"u8] != default!) {
+            // Setting TLSNextProto to an empty map is a documented way
+            // to disable HTTP/2 on a Transport.
+            p.SetHTTP2(true);
+        }
+        break;
+    }
+    case {} when !t.ForceAttemptHTTP2 && (t.TLSClientConfig != nil || t.Dial != default! || t.DialContext != default! || t.hasCustomTLSDialer()): {
+        break;
+    }
+    case {} when http2client.Value() == "0"u8: {
+        break;
+    }
+    default: {
+        p.SetHTTP2(true);
+        break;
+    }}
+
+    // Be conservative and don't automatically enable
+    // http2 if they've specified a custom TLS config or
+    // custom dialers. Let them opt-in themselves via
+    // Transport.Protocols.SetHTTP2(true) so we don't surprise them
+    // by modifying their tls.Config. Issue 14275.
+    // However, if ForceAttemptHTTP2 is true, it overrides the above checks.
+    return p;
 }
 
 // ProxyFromEnvironment returns the URL of the proxy to use for a
@@ -457,7 +510,7 @@ public static Func<ж<Request>, (ж<url.URL>, error)> ProxyURL(ж<url.URL> Ꮡfi
 // from roundTrip.
 [GoType] partial struct transportRequest {
     public partial ref ж<Request> Request { get; }                     // original request, not to be mutated
-    internal ΔHeader extra;               // extra headers to write, or nil
+    internal ΔHeader extra;                 // extra headers to write, or nil
     internal ж<httptrace.ClientTrace> trace; // optional
     internal context.Context ctx; // canceled when we are done with the request
     internal Action<error> cancel;
@@ -624,9 +677,9 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
             }
         }, ref ᒐ);
         while (ᐧ) {
-            var selᴛ90 = ctx.Done();
-            switch (trySelect(ᐸꟷ(selᴛ90, ꓸꓸꓸ))) {
-            case 0 when selᴛ90.ꟷᐳ(out _): {
+            var selᴛ93 = ctx.Done();
+            switch (trySelect(ᐸꟷ(selᴛ93, ꓸꓸꓸ))) {
+            case 0 when selᴛ93.ꟷᐳ(out _): {
                 req.closeBody();
                 (_ᴛ1, err) = (default!, context_package.Cause(ctx)); goto ᒐdone;
             }
@@ -711,14 +764,14 @@ internal static (ж<Response>, error err) roundTrip(this ж<Transport> Ꮡt, ж<
 }
 
 internal static void awaitLegacyCancel(context.Context ctx, Action<error> cancel, ref Request req) {
-    var selᴛ91 = req.Cancel;
-    var selᴛ92 = ctx.Done();
-    switch (select(ᐸꟷ(selᴛ91, ꓸꓸꓸ), ᐸꟷ(selᴛ92, ꓸꓸꓸ))) {
-    case 0 when selᴛ91.ꟷᐳ(out _): {
+    var selᴛ94 = req.Cancel;
+    var selᴛ95 = ctx.Done();
+    switch (select(ᐸꟷ(selᴛ94, ꓸꓸꓸ), ᐸꟷ(selᴛ95, ꓸꓸꓸ))) {
+    case 0 when selᴛ94.ꟷᐳ(out _): {
         cancel(errRequestCanceled);
         break;
     }
-    case 1 when selᴛ92.ꟷᐳ(out _): {
+    case 1 when selᴛ95.ꟷᐳ(out _): {
         break;
     }}
 }
@@ -867,9 +920,9 @@ public static void RegisterProtocol(this ж<Transport> Ꮡt, @string scheme, Rou
                 throw panic("protocol " + scheme + " already registered");
             }
         }
-        var newMap = new map<@string, RoundTripper>();
-        foreach (var (k, v) in oldMap) {
-            newMap[k] = v;
+        var newMap = maps.Clone<map<@string, RoundTripper>, @string, RoundTripper>(oldMap);
+        if (newMap == default!) {
+            newMap = new map<@string, RoundTripper>();
         }
         newMap[scheme] = rt;
         Ꮡt.of(Transport.ᏑaltProto).Store(newMap);
@@ -1427,6 +1480,7 @@ internal static bool tryDeliver(this ж<wantConn> Ꮡw, ж<persistConn> Ꮡpc, e
 // If a connection has been delivered already, cancel returns it with t.putOrCloseIdleConn.
 internal static void cancel(this ж<wantConn> Ꮡw, ж<Transport> Ꮡt, error err) {
     ref var w = ref Ꮡw.DerefOrNull();
+    ref var t = ref Ꮡt.DerefOrNull();
 
     w.mu.Lock();
     ж<persistConn> pc = default!;
@@ -1442,7 +1496,10 @@ internal static void cancel(this ж<wantConn> Ꮡw, ж<Transport> Ꮡt, error er
     w.ctx = default!;
     w.done = true;
     w.mu.Unlock();
-    if (pc != nil) {
+    // HTTP/2 connections (pc.alt != nil) aren't removed from the idle pool on use,
+    // and should not be added back here. If the pconn isn't in the idle pool,
+    // it's because we removed it due to an error.
+    if (pc != nil && (~pc).alt == default!) {
         Ꮡt.putOrCloseIdleConn(pc);
     }
 }
@@ -1600,10 +1657,10 @@ internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж
             }
         }
         // Wait for completion or cancellation.
-        var selᴛ93 = (~w).result;
-        var selᴛ94 = treq.ctx.Done();
-        switch (select(ᐸꟷ(selᴛ93, ꓸꓸꓸ), ᐸꟷ(selᴛ94, ꓸꓸꓸ))) {
-        case 0 when selᴛ93.ꟷᐳ(out var r): {
+        var selᴛ96 = (~w).result;
+        var selᴛ97 = treq.ctx.Done();
+        switch (select(ᐸꟷ(selᴛ96, ꓸꓸꓸ), ᐸꟷ(selᴛ97, ꓸꓸꓸ))) {
+        case 0 when selᴛ96.ꟷᐳ(out var r): {
             if (r.pc != nil && (~r.pc).alt == default! && trace != nil && (~trace).GotConn != default!) {
                 // Trace success but only for HTTP/1.
                 // HTTP/2 calls trace.GotConn itself.
@@ -1621,9 +1678,9 @@ internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж
                 // If the request has been canceled, that's probably
                 // what caused r.err; if so, prefer to return the
                 // cancellation error (see golang.org/issue/16049).
-                var selᴛ95 = treq.ctx.Done();
-                switch (trySelect(ᐸꟷ(selᴛ95, ꓸꓸꓸ))) {
-                case 0 when selᴛ95.ꟷᐳ(out _): {
+                var selᴛ98 = treq.ctx.Done();
+                switch (trySelect(ᐸꟷ(selᴛ98, ꓸꓸꓸ))) {
+                case 0 when selᴛ98.ꟷᐳ(out _): {
                     var errΔ1 = context_package.Cause(treq.ctx);
                     if (AreEqual(errΔ1, errRequestCanceled)) {
                         errΔ1 = errRequestCanceledConn;
@@ -1636,7 +1693,7 @@ internal static (ж<persistConn>, error err) getConn(this ж<Transport> Ꮡt, ж
             }
             (_ᴛ1, err) = (r.pc, r.err); goto ᒐdone;
         }
-        case 1 when selᴛ94.ꟷᐳ(out _): {
+        case 1 when selᴛ97.ꟷᐳ(out _): {
             var errΔ2 = context_package.Cause(treq.ctx);
             if (AreEqual(errΔ2, errRequestCanceled)) {
                 // return below
@@ -1869,6 +1926,7 @@ internal static Func<context.Context, time.Duration, (context.Context, Action)> 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string proxyAuthorizationˢ = "Proxy-Authorization"u8;
 internal static readonly @string unknownStatusCodeˢ = "unknown status code"u8;
+internal static readonly @string httpTransportDoesNotˢ = "http: Transport does not support unencrypted HTTP/2"u8;
 
 internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> Ꮡt, context.Context ctx, connectMethod cm) {
     ж<persistConn> pconn = default!;
@@ -2043,15 +2101,15 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
                 catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
                 finally { ᒐ.Run(); }
             });
-            var selᴛ96 = connectCtx.Done();
-            var selᴛ97 = didReadResponse;
-            switch (select(ᐸꟷ(selᴛ96, ꓸꓸꓸ), ᐸꟷ(selᴛ97, ꓸꓸꓸ))) {
-            case 0 when selᴛ96.ꟷᐳ(out _): {
+            var selᴛ99 = connectCtx.Done();
+            var selᴛ100 = didReadResponse;
+            switch (select(ᐸꟷ(selᴛ99, ꓸꓸꓸ), ᐸꟷ(selᴛ100, ꓸꓸꓸ))) {
+            case 0 when selᴛ99.ꟷᐳ(out _): {
                 conn.Close();
                 ᐸꟷ(didReadResponse);
                 (pconn, err) = (default!, connectCtx.Err()); goto ᒐdone;
             }
-            case 1 when selᴛ97.ꟷᐳ(out _): {
+            case 1 when selᴛ100.ꟷᐳ(out _): {
                 break;
             }}
             if (errΔ10 != default!) {
@@ -2083,6 +2141,22 @@ internal static (ж<persistConn> pconn, error err) dialConn(this ж<Transport> �
                     (pconn, err) = (default!, errΔ11); goto ᒐdone;
                 }
             }
+        }
+        // Possible unencrypted HTTP/2 with prior knowledge.
+        var unencryptedHTTP2 = (~pconn).tlsState == nil && t.Protocols != nil && (~t.Protocols).UnencryptedHTTP2() && !(~t.Protocols).HTTP1();
+        if (unencryptedHTTP2) {
+            var (next, ok) = t.TLSNextProto[nextProtoUnencryptedHTTP2, ꟷ];
+            if (!ok) {
+                (pconn, err) = (default!, errors.New(httpTransportDoesNotˢ)); goto ᒐdone;
+            }
+            var alt = next(cm.targetAddr, unencryptedTLSConn((~pconn).conn));
+            {
+                var (e, okΔ1) = alt._<erringRoundTripper>(ᐧ); if (okΔ1) {
+                    // pconn.conn was closed by next (http2configureTransports.upgradeFn).
+                    (pconn, err) = (default!, e.RoundTripErr()); goto ᒐdone;
+                }
+            }
+            (pconn, err) = (Ꮡ(new persistConn(t: Ꮡt, cacheKey: (~pconn).cacheKey, alt: alt)), default!); goto ᒐdone;
         }
         {
             var s = pconn.Value.tlsState; if (s != nil && (~s).NegotiatedProtocolIsMutual && (~s).NegotiatedProtocol != ""u8) {
@@ -2500,13 +2574,13 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) {
                 if (pc.readLimit <= 0) {
                     err = fmt.Errorf("net/http: server response headers exceeded %d bytes; aborted"u8, pc.maxHeaderResponseSize());
                 }
-                var selᴛ98 = rc.ch.ᐸꟷ(new responseAndError(err: err), ꓸꓸꓸ);
-                var selᴛ99 = rc.callerGone;
-                switch (select(selᴛ98, ᐸꟷ(selᴛ99, ꓸꓸꓸ))) {
+                var selᴛ101 = rc.ch.ᐸꟷ(new responseAndError(err: err), ꓸꓸꓸ);
+                var selᴛ102 = rc.callerGone;
+                switch (select(selᴛ101, ᐸꟷ(selᴛ102, ꓸꓸꓸ))) {
                 case 0: {
                     break;
                 }
-                case 1 when selᴛ99.ꟷᐳ(out _): {
+                case 1 when selᴛ102.ꟷᐳ(out _): {
                     return;
                 }}
                 return;
@@ -2533,13 +2607,13 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) {
                 if (bodyWritable) {
                     closeErr = errCallerOwnsConn;
                 }
-                var selᴛ100 = rc.ch.ᐸꟷ(new responseAndError(res: resp), ꓸꓸꓸ);
-                var selᴛ101 = rc.callerGone;
-                switch (select(selᴛ100, ᐸꟷ(selᴛ101, ꓸꓸꓸ))) {
+                var selᴛ103 = rc.ch.ᐸꟷ(new responseAndError(res: resp), ꓸꓸꓸ);
+                var selᴛ104 = rc.callerGone;
+                switch (select(selᴛ103, ᐸꟷ(selᴛ104, ꓸꓸꓸ))) {
                 case 0: {
                     break;
                 }
-                case 1 when selᴛ101.ꟷᐳ(out _): {
+                case 1 when selᴛ104.ꟷᐳ(out _): {
                     return;
                 }}
                 (~rc.treq).cancel(errRequestDone);
@@ -2586,35 +2660,35 @@ internal static void readLoop(this ж<persistConn> Ꮡpc) {
                 resp.Value.ContentLength = -1;
                 resp.Value.Uncompressed = true;
             }
-            var selᴛ102 = rc.ch.ᐸꟷ(new responseAndError(res: resp), ꓸꓸꓸ);
-            var selᴛ103 = rc.callerGone;
-            switch (select(selᴛ102, ᐸꟷ(selᴛ103, ꓸꓸꓸ))) {
+            var selᴛ105 = rc.ch.ᐸꟷ(new responseAndError(res: resp), ꓸꓸꓸ);
+            var selᴛ106 = rc.callerGone;
+            switch (select(selᴛ105, ᐸꟷ(selᴛ106, ꓸꓸꓸ))) {
             case 0: {
                 break;
             }
-            case 1 when selᴛ103.ꟷᐳ(out _): {
+            case 1 when selᴛ106.ꟷᐳ(out _): {
                 return;
             }}
             // Before looping back to the top of this function and peeking on
             // the bufio.Reader, wait for the caller goroutine to finish
             // reading the response body. (or for cancellation or death)
-            var selᴛ104 = waitForBodyRead;
-            var selᴛ105 = (~rc.treq).ctx.Done();
-            var selᴛ106 = pc.closech;
-            switch (select(ᐸꟷ(selᴛ104, ꓸꓸꓸ), ᐸꟷ(selᴛ105, ꓸꓸꓸ), ᐸꟷ(selᴛ106, ꓸꓸꓸ))) {
-            case 0 when selᴛ104.ꟷᐳ(out var bodyEOF): {
+            var selᴛ107 = waitForBodyRead;
+            var selᴛ108 = (~rc.treq).ctx.Done();
+            var selᴛ109 = pc.closech;
+            switch (select(ᐸꟷ(selᴛ107, ꓸꓸꓸ), ᐸꟷ(selᴛ108, ꓸꓸꓸ), ᐸꟷ(selᴛ109, ꓸꓸꓸ))) {
+            case 0 when selᴛ107.ꟷᐳ(out var bodyEOF): {
                 alive = alive && bodyEOF && !pc.sawEOF && Ꮡpc.wroteRequest() && tryPutIdleConn(rc.treq);
                 if (bodyEOF) {
                     eofc.ᐸꟷ(new EmptyStruct());
                 }
                 break;
             }
-            case 1 when selᴛ105.ꟷᐳ(out _): {
+            case 1 when selᴛ108.ꟷᐳ(out _): {
                 alive = false;
                 Ꮡpc.cancelRequest(context_package.Cause((~rc.treq).ctx));
                 break;
             }
-            case 2 when selᴛ106.ꟷᐳ(out _): {
+            case 2 when selᴛ109.ꟷᐳ(out _): {
                 alive = false;
                 break;
             }}
@@ -2662,9 +2736,6 @@ internal static bool is408Message(slice<byte> buf) {
     return ((sstring)(buf[8..12])) == " 408"u8;
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string netHttpTooMany1xxˢ = "net/http: too many 1xx informational responses"u8;
-
 // readResponse reads an HTTP response (or two, in the case of "Expect:
 // 100-continue") from the server. It returns the final non-100 one.
 // trace is optional.
@@ -2680,8 +2751,6 @@ internal static readonly @string netHttpTooMany1xxˢ = "net/http: too many 1xx i
             }
         }
     }
-    nint num1xx = 0; // number of informational 1xx headers received
-    const nint max1xxResponses = 5; // arbitrary bound on number of informational responses
     var continueCh = rc.continueCh;
     while (ᐧ) {
         (resp, err) = ReadResponse(pc.br, (~rc.treq).Request);
@@ -2700,17 +2769,20 @@ internal static readonly @string netHttpTooMany1xxˢ = "net/http: too many 1xx i
         // treat 101 as a terminal status, see issue 26161
         var is1xxNonTerminal = is1xx && resCode != StatusSwitchingProtocols;
         if (is1xxNonTerminal) {
-            num1xx++;
-            if (num1xx > max1xxResponses) {
-                return (default!, errors.New(netHttpTooMany1xxˢ));
-            }
-            pc.readLimit = pc.maxHeaderResponseSize(); // reset the limit
             if (Ꮡtrace != nil && trace.Got1xxResponse != default!) {
                 {
                     var errΔ2 = trace.Got1xxResponse(resCode, ((textproto.MIMEHeader)(map<@string, slice<@string>>)(~resp).Header)); if (errΔ2 != default!) {
                         return (default!, errΔ2);
                     }
                 }
+                // If the 1xx response was delivered to the user,
+                // then they're responsible for limiting the number of
+                // responses. Reset the header limit.
+                //
+                // If the user didn't examine the 1xx response, then we
+                // limit the size of all headers (including both 1xx
+                // and the final response) to maxHeaderResponseSize.
+                pc.readLimit = pc.maxHeaderResponseSize(); // reset the limit
             }
             continue;
         }
@@ -2756,17 +2828,17 @@ internal static Func<bool> waitForContinue(this ж<persistConn> Ꮡpc, /*<-*/cha
             var timer = time.NewTimer((~Ꮡpc.Value.t).ExpectContinueTimeout);
             var timerʗ1 = timer;
             defer(() => timerʗ1.Stop(), ref ᒐ);
-            var selᴛ107 = continueChʗ1;
-            var selᴛ108 = (~timer).C;
-            var selᴛ109 = Ꮡpc.Value.closech;
-            switch (select(ᐸꟷ(selᴛ107, ꓸꓸꓸ), ᐸꟷ(selᴛ108, ꓸꓸꓸ), ᐸꟷ(selᴛ109, ꓸꓸꓸ))) {
-            case 0 when selᴛ107.ꟷᐳ(out var _, out var ok): {
+            var selᴛ110 = continueChʗ1;
+            var selᴛ111 = (~timer).C;
+            var selᴛ112 = Ꮡpc.Value.closech;
+            switch (select(ᐸꟷ(selᴛ110, ꓸꓸꓸ), ᐸꟷ(selᴛ111, ꓸꓸꓸ), ᐸꟷ(selᴛ112, ꓸꓸꓸ))) {
+            case 0 when selᴛ110.ꟷᐳ(out var _, out var ok): {
                 return ok;
             }
-            case 1 when selᴛ108.ꟷᐳ(out _): {
+            case 1 when selᴛ111.ꟷᐳ(out _): {
                 return true;
             }
-            case 2 when selᴛ109.ꟷᐳ(out _): {
+            case 2 when selᴛ112.ꟷᐳ(out _): {
                 return false;
             }}
             return default!;
@@ -2840,10 +2912,10 @@ internal static void writeLoop(this ж<persistConn> Ꮡpc) {
 
         defer(ᴛ1 => builtin.close(ᴛ1), Ꮡpc.Value.writeLoopDone, ref ᒐ);
         while (ᐧ) {
-            var selᴛ110 = pc.writech;
-            var selᴛ111 = pc.closech;
-            switch (select(ᐸꟷ(selᴛ110, ꓸꓸꓸ), ᐸꟷ(selᴛ111, ꓸꓸꓸ))) {
-            case 0 when selᴛ110.ꟷᐳ(out var wr): {
+            var selᴛ113 = pc.writech;
+            var selᴛ114 = pc.closech;
+            switch (select(ᐸꟷ(selᴛ113, ꓸꓸꓸ), ᐸꟷ(selᴛ114, ꓸꓸꓸ))) {
+            case 0 when selᴛ113.ꟷᐳ(out var wr): {
                 var startBytesWritten = pc.nwrite;
                 var err = (~wr.req).Request.write(new bufio_WriterжWriter(pc.bw), pc.isProxy, (~wr.req).extra, Ꮡpc.waitForContinue(wr.continueCh));
                 {
@@ -2875,7 +2947,7 @@ internal static void writeLoop(this ж<persistConn> Ꮡpc) {
                 }
                 break;
             }
-            case 1 when selᴛ111.ꟷᐳ(out _): {
+            case 1 when selᴛ114.ꟷᐳ(out _): {
                 return;
             }}
         }
@@ -2900,22 +2972,22 @@ internal static bool wroteRequest(this ж<persistConn> Ꮡpc) {
     try {
         ref var pc = ref Ꮡpc.DerefOrNull();
 
-        var selᴛ112 = pc.writeErrCh;
-        switch (trySelect(ᐸꟷ(selᴛ112, ꓸꓸꓸ))) {
-        case 0 when selᴛ112.ꟷᐳ(out var err): {
+        var selᴛ115 = pc.writeErrCh;
+        switch (trySelect(ᐸꟷ(selᴛ115, ꓸꓸꓸ))) {
+        case 0 when selᴛ115.ꟷᐳ(out var err): {
             return err == default!;
         }
         default: {
             var t = time.NewTimer(maxWriteWaitBeforeConnReuse);
             var tʗ1 = t;
             defer(() => tʗ1.Stop(), ref ᒐ);
-            var selᴛ113 = pc.writeErrCh;
-            var selᴛ114 = (~t).C;
-            switch (select(ᐸꟷ(selᴛ113, ꓸꓸꓸ), ᐸꟷ(selᴛ114, ꓸꓸꓸ))) {
-            case 0 when selᴛ113.ꟷᐳ(out var errΔ1): {
+            var selᴛ116 = pc.writeErrCh;
+            var selᴛ117 = (~t).C;
+            switch (select(ᐸꟷ(selᴛ116, ꓸꓸꓸ), ᐸꟷ(selᴛ117, ꓸꓸꓸ))) {
+            case 0 when selᴛ116.ꟷᐳ(out var errΔ1): {
                 return errΔ1 == default!;
             }
-            case 1 when selᴛ114.ꟷᐳ(out _): {
+            case 1 when selᴛ117.ꟷᐳ(out _): {
                 return false;
             }}
             return default!;
@@ -3109,13 +3181,13 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
         var pcClosed = pc.closech;
         while (ᐧ) {
             testHookWaitResLoop();
-            var selᴛ115 = writeErrCh;
-            var selᴛ116 = pcClosed;
-            var selᴛ117 = respHeaderTimer;
-            var selᴛ118 = resc;
-            var selᴛ119 = ctxDoneChan;
-            switch (select(ᐸꟷ(selᴛ115, ꓸꓸꓸ), ᐸꟷ(selᴛ116, ꓸꓸꓸ), ᐸꟷ(selᴛ117, ꓸꓸꓸ), ᐸꟷ(selᴛ118, ꓸꓸꓸ), ᐸꟷ(selᴛ119, ꓸꓸꓸ))) {
-            case 0 when selᴛ115.ꟷᐳ(out var errΔ1): {
+            var selᴛ118 = writeErrCh;
+            var selᴛ119 = pcClosed;
+            var selᴛ120 = respHeaderTimer;
+            var selᴛ121 = resc;
+            var selᴛ122 = ctxDoneChan;
+            switch (select(ᐸꟷ(selᴛ118, ꓸꓸꓸ), ᐸꟷ(selᴛ119, ꓸꓸꓸ), ᐸꟷ(selᴛ120, ꓸꓸꓸ), ᐸꟷ(selᴛ121, ꓸꓸꓸ), ᐸꟷ(selᴛ122, ꓸꓸꓸ))) {
+            case 0 when selᴛ118.ꟷᐳ(out var errΔ1): {
                 if (debugRoundTrip) {
                     req.logf("writeErrCh recv: %T/%#v"u8, errΔ1, errΔ1);
                 }
@@ -3136,10 +3208,10 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
                 }
                 break;
             }
-            case 1 when selᴛ116.ꟷᐳ(out _): {
-                var selᴛ120 = resc;
-                switch (trySelect(ᐸꟷ(selᴛ120, ꓸꓸꓸ))) {
-                case 0 when selᴛ120.ꟷᐳ(out var re): {
+            case 1 when selᴛ119.ꟷᐳ(out _): {
+                var selᴛ123 = resc;
+                switch (trySelect(ᐸꟷ(selᴛ123, ꓸꓸꓸ))) {
+                case 0 when selᴛ123.ꟷᐳ(out var re): {
                     (resp, err) = handleResponse(re); goto ᒐdone;
                 }
                 default: {
@@ -3153,20 +3225,20 @@ internal static (ж<Response> resp, error err) roundTrip(this ж<persistConn> �
                 }
                 (resp, err) = (default!, Ꮡpc.mapRoundTripError(Ꮡreq, startBytesWritten, pc.closed)); goto ᒐdone;
             }
-            case 2 when selᴛ117.ꟷᐳ(out _): {
+            case 2 when selᴛ120.ꟷᐳ(out _): {
                 if (debugRoundTrip) {
                     req.logf("timeout waiting for response headers."u8);
                 }
                 Ꮡpc.close(errTimeout);
                 (resp, err) = (default!, errTimeout); goto ᒐdone;
             }
-            case 3 when selᴛ118.ꟷᐳ(out var re): {
+            case 3 when selᴛ121.ꟷᐳ(out var re): {
                 (resp, err) = handleResponse(re); goto ᒐdone;
             }
-            case 4 when selᴛ119.ꟷᐳ(out _): {
-                var selᴛ121 = resc;
-                switch (trySelect(ᐸꟷ(selᴛ121, ꓸꓸꓸ))) {
-                case 0 when selᴛ121.ꟷᐳ(out var reΔ1): {
+            case 4 when selᴛ122.ꟷᐳ(out _): {
+                var selᴛ124 = resc;
+                switch (trySelect(ᐸꟷ(selᴛ124, ꓸꓸꓸ))) {
+                case 0 when selᴛ124.ꟷᐳ(out var reΔ1): {
                     (resp, err) = handleResponse(reΔ1); goto ᒐdone;
                 }
                 default: {

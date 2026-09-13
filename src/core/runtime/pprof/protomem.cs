@@ -3,20 +3,14 @@
 // license that can be found in the LICENSE file.
 namespace go.runtime;
 
-using profilerecord = go.@internal.profilerecord_package;
+using profilerecord = @internal.profilerecord_package;
 using io = io_package;
 using math = math_package;
 using runtime = runtime_package;
 using strings = strings_package;
-using go.@internal;
+using @internal;
 
 partial class pprof_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string spaceˢ = "space"u8;
@@ -51,7 +45,7 @@ internal static error writeHeapProto(io.Writer w, slice<profilerecord.MemProfile
             if (hideRuntime) {
                 foreach (var (i, addr) in stk) {
                     {
-                        var f = runtime.FuncForPC(addr); if (f != nil && strings_package.HasPrefix(f.Name(), runtimeˢ)) {
+                        var f = runtime.FuncForPC(addr); if (f != nil && (strings_package.HasPrefix(f.Name(), runtimeˢ) || strings_package.HasPrefix(f.Name(), internalRuntimeˢ))) {
                             continue;
                         }
                     }

@@ -37,6 +37,7 @@ internal static UntypedInt cpuid_ADX => /* 1 << 19 */ 524288;
 internal static UntypedInt cpuid_SHA => /* 1 << 29 */ 536870912;
 internal static UntypedInt cpuid_AVX512BW => /* 1 << 30 */ 1073741824;
 internal static UntypedInt cpuid_AVX512VL => /* 1 << 31 */ 2147483648;
+internal static UntypedInt cpuid_FSRM => /* 1 << 4 */ 16;
 internal static UntypedInt cpuid_RDTSCP => /* 1 << 27 */ 134217728;
 
 internal static uint32 maxExtendedFunctionInformation;
@@ -46,6 +47,7 @@ internal static void doinit() {
         new(Name: "adx"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasADX)),
         new(Name: "aes"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasAES)),
         new(Name: "erms"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasERMS)),
+        new(Name: "fsrm"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasFSRM)),
         new(Name: "pclmulqdq"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasPCLMULQDQ)),
         new(Name: "rdtscp"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasRDTSCP)),
         new(Name: "sha"u8, Feature: ᏑX86.of(X86ᴛ1.ᏑHasSHA))
@@ -118,7 +120,7 @@ internal static void doinit() {
     if (maxID < 7) {
         return;
     }
-    var (_, ebx7, _, _) = cpuid(7, 0);
+    var (_, ebx7, _, edx7) = cpuid(7, 0);
     X86.HasBMI1 = isSet(ebx7, cpuid_BMI1);
     X86.HasAVX2 = isSet(ebx7, cpuid_AVX2) && osSupportsAVX;
     X86.HasBMI2 = isSet(ebx7, cpuid_BMI2);
@@ -130,6 +132,7 @@ internal static void doinit() {
         X86.HasAVX512BW = isSet(ebx7, cpuid_AVX512BW);
         X86.HasAVX512VL = isSet(ebx7, cpuid_AVX512VL);
     }
+    X86.HasFSRM = isSet(edx7, cpuid_FSRM);
     uint32 maxExtendedInformation = default!;
     (maxExtendedInformation, _, _, _) = cpuid(0x80000000U, 0);
     if (maxExtendedInformation < 0x80000001U) {

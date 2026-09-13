@@ -10,7 +10,6 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
-global using bigmodꓸNat = go.crypto.@internal.bigmod_package.ΔNat;
 global using bigꓸInt = go.math.big_package.ΔInt;
 global using bigꓸRat = go.math.big_package.ΔRat;
 global using cryptoꓸDecrypterOpts = object;
@@ -18,7 +17,9 @@ global using cryptoꓸPrivateKey = object;
 global using cryptoꓸPublicKey = object;
 global using ecdhꓸCurve = go.crypto.ecdh_package.ΔCurve;
 global using ecdhꓸPublicKey = go.crypto.ecdh_package.ΔPublicKey;
-using nistec = go.crypto.@internal.nistec_package;
+global using ecdsaꓸPublicKey = go.crypto.@internal.fips140.ecdsa_package.ΔPublicKey;
+using ecdsa = go.crypto.@internal.fips140.ecdsa_package;
+using nistec = go.crypto.@internal.fips140.nistec_package;
 // </ImportedTypeAliases>
 
 using go;
@@ -46,12 +47,7 @@ using static go.crypto.ecdsa_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<PublicKey, go.crypto.elliptic_package.Curve>(Promoted = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P224Point, nistPoint<go.crypto.@internal.nistec_package.P224Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P256Point, nistPoint<go.crypto.@internal.nistec_package.P256Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P384Point, nistPoint<go.crypto.@internal.nistec_package.P384Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.@internal.nistec_package.P521Point, nistPoint<go.crypto.@internal.nistec_package.P521Point>>(ConstraintProxy = true)]
-[assembly: GoImplement<go.crypto.cipher_package.StreamReader, io_package.Reader>(Pointer = true)]
-[assembly: GoImplement<zr, io_package.Reader>]
+[assembly: GoImplement<go.math.rand.rand_package.ChaCha8, io_package.Reader>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -67,9 +63,8 @@ using static go.crypto.ecdsa_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa.go", "ecdsa.cs", "AKsBeuKCgpSClAACENKCgpQAECKygoKUgoKUpoKUpKSkypKssoKClKrSAAIU8gACENKEgoKClJSElKSkpKTIwoKCloKCgoKClKoACAKCgoKAgu6ApoKU7oCCpoKoggAKJgAKAoSCgoKUlISCgpaAgqaUpKSkpAAICNaCgqiChIKClIKCzIKWgoSCgpSCgpaClqaCgqKClNrCgpSCgpSSgpS60oKUgoKClMyqAAgKgIKCgIKCgoKC6oKCAAMQAA8agoCCuIKCgoKogoKaogAKFpKCAAIQ8oKCgpSUhICCppSkpKSkyMKCgpaCgqqCgpSCgpaCloKWgoKmgoKmgoKWgoKW1rKCgoqUABkq8pSClIKmgoKCgoLY4oKUlIKCgvyCgqaU/IKCppT8goKmlPyCgqaUpqKCgoKCgpQ=")]
-[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_legacy.go", "ecdsa_legacy.cs", "ABIoooKCloKCgoKssoKCgpaCgoKUAAcUAAkCgoKWgoKCipSmopaCgpSygoKCgpaEgoKCqIKCgoKCgqgAAhIACQKClIKClKaCgoKUhIKEgpSCqIKEgoKChIKChIKUgs4ACAiCgoKAgqSAgqSCgg==")]
-[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_noasm.go", "ecdsa_noasm.cs", "AAoWgqaC")]
+[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa.go", "ecdsa.cs", "ADhm4oKClIKUAAIQ0oKClAAQIrKCgpSCgpSmgpSkpKTKkqyygoKUqtIAAiIADgKClAACENKEgoKClJSElKSkpKT4ooKUgoKUAAYeAAoChIKCgpSUhJSkpKSkyKKCyoKCyoKClPaCgpSCgpSUpKSkpPiigoKUkoKUgoKUpoKCooKU2sKClIKClJKClAADEvKCgoKUlISUpKSkpMiigoKUgoKUgIKk1rKCgoqUpqKCgpSmooKClKaigoKUpqKCgpTowpSClIKmgoKCgoLYwpSUgoKC", "298-301:1;315-320:1")]
+[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_legacy.go", "ecdsa_legacy.cs", "ABksooKWgoKWgoKCgqyygoKCloKCgpQABxQACQKCgpaCgoKKlKaigpaGkoCCpIKUgpSWgoKUsoKCgoKWhIKCgqiCgoKCgoKoAAISAAkCgpSCgpSmgoKWgoKUhIKEgpSCqIKEgoKChIKChIKUgs7SgoKCgIKkgIKkgoI=")]
 [assembly: go.GoPositionMap("crypto/ecdsa/notboring.go", "notboring.cs", "AAsWgqSC")]
 // </GoSourcePositionMaps>
 
@@ -85,10 +80,32 @@ public static partial class ecdsa_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface nistPoint<T> {}
-    internal partial struct nistCurve<Point> {}
-    internal partial struct zr {}
     public partial struct PrivateKey {}
     public partial struct PublicKey {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdh() => builtin.initPackage(typeof(go.crypto.ecdh_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸelliptic() => builtin.initPackage(typeof(go.crypto.elliptic_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() => builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboringꓸbbig() => builtin.initPackage(typeof(go.crypto.@internal.boring.bbig_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140hash() => builtin.initPackage(typeof(go.crypto.@internal.fips140hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸecdsa() => builtin.initPackage(typeof(go.crypto.@internal.fips140.ecdsa_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸrandutil() => builtin.initPackage(typeof(go.crypto.@internal.randutil_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha512() => builtin.initPackage(typeof(go.crypto.sha512_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() => builtin.initPackage(typeof(go.crypto.subtle_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbig() => builtin.initPackage(typeof(math.big_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrandꓸv2() => builtin.initPackage(typeof(math.rand.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸcryptobyte() => builtin.initPackage(typeof(vendor.golang.org.x.crypto.cryptobyte_package));
+    // </ImportInitializers>
 }

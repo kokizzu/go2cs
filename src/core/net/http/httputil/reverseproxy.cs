@@ -29,42 +29,6 @@ using ꓸꓸꓸany = Span<any>;
 
 partial class httputil_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmime() {
-    builtin.initPackage(typeof(mime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptrace() {
-    builtin.initPackage(typeof(go.net.http.httptrace_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸascii() {
-    builtin.initPackage(typeof(go.net.http.@internal.ascii_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸhttpꓸhttpguts() {
-    builtin.initPackage(typeof(vendor.golang.org.x.net.http.httpguts_package));
-}
-
 // A ProxyRequest contains a request to be rewritten by a [ReverseProxy].
 [GoType] partial struct ProxyRequest {
     // In is the request received by the proxy.
@@ -856,6 +820,7 @@ internal static void handleUpgradeResponse(this ж<ReverseProxy> Ꮡp, http.Resp
         if (!ascii.IsPrint(resUpType)) {
             // We know reqUpType is ASCII, it's checked by the caller.
             Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("backend tried to switch to invalid protocol %q"u8, resUpType));
+            return;
         }
         if (!ascii.EqualFold(reqUpType, resUpType)) {
             Ꮡp.getErrorHandler()(rw, Ꮡreq, fmt.Errorf("backend tried to switch protocol %q when %q was requested"u8, resUpType, reqUpType));
@@ -915,9 +880,9 @@ internal static void handleUpgradeResponse(this ж<ReverseProxy> Ꮡp, http.Resp
         ref var spc = ref heap<switchProtocolCopier>(out var Ꮡspc);
         spc = new switchProtocolCopier(user: new net_ConnᴠReadWriter(conn), backend: new io_ReadWriteCloserᴠReadWriter(backConn));
         var spcʗ1 = spc;
-        goǃ(ᴛ1 => spcʗ1.copyToBackend(ᴛ1), errc);
+        goǃ(ᴛ1 => spcʗ1.copyToBackend(ᴛ1), errc.WithDirection(GoChanDir.Send));
         var spcʗ2 = spc;
-        goǃ(ᴛ1 => spcʗ2.copyFromBackend(ᴛ1), errc);
+        goǃ(ᴛ1 => spcʗ2.copyFromBackend(ᴛ1), errc.WithDirection(GoChanDir.Send));
         ᐸꟷ(errc);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

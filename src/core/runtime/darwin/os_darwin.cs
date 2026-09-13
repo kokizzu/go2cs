@@ -4,6 +4,7 @@
 namespace go;
 
 using abi = @internal.abi_package;
+using stringslite = @internal.stringslite_package;
 using @unsafe = unsafe_package;
 using @internal;
 
@@ -219,16 +220,10 @@ internal static uintptr getPageSize() {
     return 0;
 }
 
-internal static ж<slice<byte>> Ꮡurandom_dev = new StandardBox<slice<byte>>(slice<byte>("/dev/urandom\x00"u8));
-internal static ref slice<byte> urandom_dev => ref Ꮡurandom_dev.ValueSlot;
-
 //go:nosplit
 internal static nint readRandom(slice<byte> r) {
-    var fd = open(Ꮡ(urandom_dev, 0), 0, /* O_RDONLY */
- 0);
-    var n = read(fd, @unsafe.Pointer.FromPinnedBox(Ꮡ(r, 0)), (int32)len(r));
-    closefd(fd);
-    return (nint)n;
+    arc4random_buf(@unsafe.Pointer.FromPinnedBox(Ꮡ(r, 0)), (int32)len(r));
+    return len(r);
 }
 
 internal static void goenvs() {
@@ -374,8 +369,11 @@ internal static void unminit() {
     getg().Value.m.Value.procid = 0;
 }
 
-// Called from exitm, but not from drop, to undo the effect of thread-owned
+// Called from mexit, but not from dropm, to undo the effect of thread-owned
 // resources in minit, semacreate, or elsewhere. Do not take locks after calling this.
+//
+// This always runs without a P, so //go:nowritebarrierrec is required.
+//go:nowritebarrierrec
 internal static void mdestroy(ref m mp) {
 }
 
@@ -483,6 +481,9 @@ internal static bool validSIGPROF(ref m mp, ref sigctxt c) {
 //go:linkname executablePath os.executablePath
 internal static @string executablePath;
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string executablePathˢ = "executable_path="u8;
+
 internal static void sysargs(int32 argc, ж<ж<byte>> Ꮡargv) {
     ref var argv = ref Ꮡargv.DerefOrNull();
 
@@ -493,10 +494,7 @@ internal static void sysargs(int32 argc, ж<ж<byte>> Ꮡargv) {
     }
     executablePath = gostringnocopy(argv_index(Ꮡargv, n + 1));
     // strip "executable_path=" prefix if available, it's added after OS X 10.11.
-    @string prefix = "executable_path="u8;
-    if (len(executablePath) > len(prefix) && executablePath[..(int)(len(prefix))] == prefix) {
-        executablePath = executablePath[(int)(len(prefix))..];
-    }
+    executablePath = stringslite.TrimPrefix(executablePath, executablePathˢ);
 }
 
 internal static void signalM(ref m mp, nint sig) {

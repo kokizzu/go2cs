@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go.log;
 
+using bytes = bytes_package;
 using context = context_package;
 using log = log_package;
 using loginternal = go.log.internal_package;
@@ -10,6 +11,7 @@ using @internal = go.log.slog.internal_package;
 using runtime = runtime_package;
 using atomic = go.sync.atomic_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using go.log.slog;
 using go.sync;
 using io = io_package;
@@ -17,18 +19,6 @@ using ꓸꓸꓸAttr = Span<slog_package.Attr>;
 using ꓸꓸꓸany = Span<any>;
 
 partial class slog_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
 
 internal static ж<atomic.Pointer<Logger>> ᏑdefaultLogger = new StandardBox<atomic.Pointer<Logger>>(default(atomic.Pointer<Logger>));
 internal static ref atomic.Pointer<Logger> defaultLogger => ref ᏑdefaultLogger.Value;
@@ -108,7 +98,7 @@ public static void SetDefault(ж<Logger> Ꮡl) {
     internal bool capturePC;
 }
 
-[GoRecv] internal static (nint, error) Write(this ref handlerWriter w, slice<byte> buf) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] internal static (nint, error) Write(this ref handlerWriter w, slice<byte> buf) {
     ΔLevel level = w.level.Level();
     if (!w.h.Enabled(context.Background(), level)) {
         return (0, default!);
@@ -122,9 +112,7 @@ public static void SetDefault(ж<Logger> Ꮡl) {
     }
     // Remove final newline.
     nint origLen = len(buf); // Report that the entire buf was written.
-    if (len(buf) > 0 && buf[len(buf) - 1] == (rune)'\n') {
-        buf = buf[..(int)(len(buf) - 1)];
-    }
+    buf = bytes.TrimSuffix(buf, new byte[]{(rune)'\n'}.slice());
     var r = NewRecord(time_package.Now(), level, ((@string)buf), pc);
     return (origLen, w.h.Handle(context.Background(), r));
 }
@@ -222,70 +210,70 @@ public static ж<log.Logger> NewLogLogger(ΔHandler h, ΔLevel level) {
 //     the following argument is treated as the value and the two are combined
 //     into an Attr.
 //   - Otherwise, the argument is treated as a value with key "!BADKEY".
-[GoRecv] public static void Log(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void Log(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     l.log(ctx, level, msg, args.ꓸꓸꓸ);
 }
 
 // LogAttrs is a more efficient version of [Logger.Log] that accepts only Attrs.
-[GoRecv] public static void LogAttrs(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸAttr attrsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void LogAttrs(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸAttr attrsʗp) {
     var attrs = attrsʗp.slice();
 
     l.logAttrs(ctx, level, msg, attrs.ꓸꓸꓸ);
 }
 
 // Debug logs at [LevelDebug].
-[GoRecv] public static void Debug(this ref Logger l, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void Debug(this ref Logger l, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     l.log(context.Background(), LevelDebug, msg, args.ꓸꓸꓸ);
 }
 
 // DebugContext logs at [LevelDebug] with the given context.
-[GoRecv] public static void DebugContext(this ref Logger l, context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void DebugContext(this ref Logger l, context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     l.log(ctx, LevelDebug, msg, args.ꓸꓸꓸ);
 }
 
 // Info logs at [LevelInfo].
-[GoRecv] public static void Info(this ref Logger l, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void Info(this ref Logger l, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     l.log(context.Background(), LevelInfo, msg, args.ꓸꓸꓸ);
 }
 
 // InfoContext logs at [LevelInfo] with the given context.
-[GoRecv] public static void InfoContext(this ref Logger l, context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void InfoContext(this ref Logger l, context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     l.log(ctx, LevelInfo, msg, args.ꓸꓸꓸ);
 }
 
 // Warn logs at [LevelWarn].
-[GoRecv] public static void Warn(this ref Logger l, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void Warn(this ref Logger l, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     l.log(context.Background(), LevelWarn, msg, args.ꓸꓸꓸ);
 }
 
 // WarnContext logs at [LevelWarn] with the given context.
-[GoRecv] public static void WarnContext(this ref Logger l, context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void WarnContext(this ref Logger l, context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     l.log(ctx, LevelWarn, msg, args.ꓸꓸꓸ);
 }
 
 // Error logs at [LevelError].
-[GoRecv] public static void Error(this ref Logger l, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void Error(this ref Logger l, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     l.log(context.Background(), LevelError, msg, args.ꓸꓸꓸ);
 }
 
 // ErrorContext logs at [LevelError] with the given context.
-[GoRecv] public static void ErrorContext(this ref Logger l, context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void ErrorContext(this ref Logger l, context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     l.log(ctx, LevelError, msg, args.ꓸꓸꓸ);
@@ -294,7 +282,7 @@ public static ж<log.Logger> NewLogLogger(ΔHandler h, ΔLevel level) {
 // log is the low-level logging method for methods that take ...any.
 // It must always be called directly by an exported logging method
 // or function, because it uses a fixed call depth to obtain the pc.
-[GoRecv] internal static void log(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] internal static void log(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     if (!l.Enabled(ctx, level)) {
@@ -316,7 +304,7 @@ public static ж<log.Logger> NewLogLogger(ΔHandler h, ΔLevel level) {
 }
 
 // logAttrs is like [Logger.log], but for methods that take ...Attr.
-[GoRecv] internal static void logAttrs(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸAttr attrsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] internal static void logAttrs(this ref Logger l, context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸAttr attrsʗp) {
     var attrs = attrsʗp.slice();
 
     if (!l.Enabled(ctx, level)) {
@@ -338,70 +326,70 @@ public static ж<log.Logger> NewLogLogger(ΔHandler h, ΔLevel level) {
 }
 
 // Debug calls [Logger.Debug] on the default logger.
-public static void Debug(@string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void Debug(@string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     Default().log(context.Background(), LevelDebug, msg, args.ꓸꓸꓸ);
 }
 
 // DebugContext calls [Logger.DebugContext] on the default logger.
-public static void DebugContext(context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void DebugContext(context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     Default().log(ctx, LevelDebug, msg, args.ꓸꓸꓸ);
 }
 
 // Info calls [Logger.Info] on the default logger.
-public static void Info(@string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void Info(@string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     Default().log(context.Background(), LevelInfo, msg, args.ꓸꓸꓸ);
 }
 
 // InfoContext calls [Logger.InfoContext] on the default logger.
-public static void InfoContext(context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void InfoContext(context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     Default().log(ctx, LevelInfo, msg, args.ꓸꓸꓸ);
 }
 
 // Warn calls [Logger.Warn] on the default logger.
-public static void Warn(@string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void Warn(@string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     Default().log(context.Background(), LevelWarn, msg, args.ꓸꓸꓸ);
 }
 
 // WarnContext calls [Logger.WarnContext] on the default logger.
-public static void WarnContext(context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void WarnContext(context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     Default().log(ctx, LevelWarn, msg, args.ꓸꓸꓸ);
 }
 
 // Error calls [Logger.Error] on the default logger.
-public static void Error(@string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void Error(@string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     Default().log(context.Background(), LevelError, msg, args.ꓸꓸꓸ);
 }
 
 // ErrorContext calls [Logger.ErrorContext] on the default logger.
-public static void ErrorContext(context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void ErrorContext(context.Context ctx, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     Default().log(ctx, LevelError, msg, args.ꓸꓸꓸ);
 }
 
 // Log calls [Logger.Log] on the default logger.
-public static void Log(context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸany argsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void Log(context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸany argsʗp) {
     var args = argsʗp.slice();
 
     Default().log(ctx, level, msg, args.ꓸꓸꓸ);
 }
 
 // LogAttrs calls [Logger.LogAttrs] on the default logger.
-public static void LogAttrs(context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸAttr attrsʗp) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void LogAttrs(context.Context ctx, ΔLevel level, @string msg, params ꓸꓸꓸAttr attrsʗp) {
     var attrs = attrsʗp.slice();
 
     Default().logAttrs(ctx, level, msg, attrs.ꓸꓸꓸ);

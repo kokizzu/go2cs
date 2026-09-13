@@ -3,20 +3,16 @@
 // license that can be found in the LICENSE file.
 namespace go.crypto;
 
-using field = go.crypto.@internal.edwards25519.field_package;
+using bytes = bytes_package;
+using field = go.crypto.@internal.fips140.edwards25519.field_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using randutil = go.crypto.@internal.randutil_package;
 using errors = errors_package;
 using io = io_package;
 using go.crypto.@internal;
-using go.crypto.@internal.edwards25519;
+using go.crypto.@internal.fips140.edwards25519;
 
 partial class ecdh_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸedwards25519ꓸfield() {
-    builtin.initPackage(typeof(go.crypto.@internal.edwards25519.field_package));
-}
 
 internal static nint x25519PublicKeySize = 32;
 internal static nint x25519PrivateKeySize = 32;
@@ -43,7 +39,13 @@ private static readonly @string x25519ˢ = "X25519"u8;
     return x25519ˢ;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoEcdhUseOfX25519Isˢ = "crypto/ecdh: use of X25519 is not allowed in FIPS 140-only mode"u8;
+
 internal static (ж<PrivateKey>, error) GenerateKey(this ж<x25519Curve> Ꮡc, io.Reader rand) {
+    if (fips140only.Enabled) {
+        return (default!, errors.New(cryptoEcdhUseOfX25519Isˢ));
+    }
     var key = new slice<byte>(x25519PrivateKeySize);
     randutil.MaybeReadByte(rand);
     {
@@ -54,38 +56,39 @@ internal static (ж<PrivateKey>, error) GenerateKey(this ж<x25519Curve> Ꮡc, i
     return Ꮡc.NewPrivateKey(key);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string cryptoEcdhInvalidPrivateˢ2 = "crypto/ecdh: invalid private key size"u8;
+
 internal static (ж<PrivateKey>, error) NewPrivateKey(this ж<x25519Curve> Ꮡc, slice<byte> key) {
-    if (len(key) != x25519PrivateKeySize) {
-        return (default!, errors.New(cryptoEcdhInvalidPrivateˢ));
+    if (fips140only.Enabled) {
+        return (default!, errors.New(cryptoEcdhUseOfX25519Isˢ));
     }
+    if (len(key) != x25519PrivateKeySize) {
+        return (default!, errors.New(cryptoEcdhInvalidPrivateˢ2));
+    }
+    var publicKey = new slice<byte>(x25519PublicKeySize);
+    var x25519Basepoint = new byte[]{9}.array(32);
+    x25519ScalarMult(publicKey, key, x25519Basepoint[..]);
+    // We don't check for the all-zero public key here because the scalar is
+    // never zero because of clamping, and the basepoint is not the identity in
+    // the prime-order subgroup(s).
     return (Ꮡ(new PrivateKey(
         curve: new x25519CurveжΔCurve(Ꮡc),
-        privateKey: appendꓸꓸꓸ(new byte[]{}.slice(), key)
+        privateKey: bytes.Clone(key),
+        publicKey: Ꮡ(new ΔPublicKey(curve: new x25519CurveжΔCurve(Ꮡc), publicKey: publicKey))
     )), default!);
 }
 
-internal static ж<ΔPublicKey> privateKeyToPublicKey(this ж<x25519Curve> Ꮡc, ж<PrivateKey> Ꮡkey) {
-    ref var key = ref Ꮡkey.DerefOrNull();
-
-    if (!AreEqual(key.curve, Ꮡc)) {
-        throw panic("crypto/ecdh: internal error: converting the wrong key type");
-    }
-    var k = Ꮡ(new ΔPublicKey(
-        curve: key.curve,
-        publicKey: new slice<byte>(x25519PublicKeySize)
-    ));
-    var x25519Basepoint = new byte[]{9}.array(32);
-    x25519ScalarMult((~k).publicKey, key.privateKey, x25519Basepoint[..]);
-    return k;
-}
-
 internal static (ж<ΔPublicKey>, error) NewPublicKey(this ж<x25519Curve> Ꮡc, slice<byte> key) {
+    if (fips140only.Enabled) {
+        return (default!, errors.New(cryptoEcdhUseOfX25519Isˢ));
+    }
     if (len(key) != x25519PublicKeySize) {
         return (default!, errors.New(cryptoEcdhInvalidPublicˢ));
     }
     return (Ꮡ(new ΔPublicKey(
         curve: new x25519CurveжΔCurve(Ꮡc),
-        publicKey: appendꓸꓸꓸ(new byte[]{}.slice(), key)
+        publicKey: bytes.Clone(key)
     )), default!);
 }
 
@@ -153,6 +156,15 @@ internal static void x25519ScalarMult(slice<byte> dst, slice<byte> scalar, slice
     Ꮡz2.Invert(Ꮡz2);
     Ꮡx2.Multiply(Ꮡx2, Ꮡz2);
     copy(dst[..], x2.Bytes());
+}
+
+// isZero reports whether x is all zeroes in constant time.
+internal static bool isZero(slice<byte> x) {
+    byte acc = default!;
+    foreach (var (_, b) in x) {
+        acc |= (byte)(b);
+    }
+    return acc == 0;
 }
 
 } // end ecdh_package

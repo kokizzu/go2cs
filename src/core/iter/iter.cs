@@ -28,7 +28,22 @@ or index-value pairs.
 Yield returns true if the iterator should continue with the next
 element in the sequence, false if it should stop.
 
-Iterator functions are most often called by a range loop, as in:
+For instance, [maps.Keys] returns an iterator that produces the sequence
+of keys of the map m, implemented as follows:
+
+	func Keys[Map ~map[K]V, K comparable, V any](m Map) iter.Seq[K] {
+		return func(yield func(K) bool) {
+			for k := range m {
+				if !yield(k) {
+					return
+				}
+			}
+		}
+	}
+
+Further examples can be found in [The Go Blog: Range Over Function Types].
+
+Iterator functions are most often called by a [range loop], as in:
 
 	func PrintAll[V any](seq iter.Seq[V]) {
 		for v := range seq {
@@ -187,21 +202,18 @@ And then a client could delete boring values from the tree using:
 			p.Delete()
 		}
 	}
+
+[The Go Blog: Range Over Function Types]: https://go.dev/blog/range-functions
+[range loop]: https://go.dev/ref/spec#For_range
 */
 namespace go;
 
 using race = @internal.race_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @unsafe = unsafe_package;
 using @internal;
 
 partial class iter_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
 
 public delegate void Seq<V>(Func<V, bool> yield);
 
@@ -311,7 +323,7 @@ public static (Func<(V, bool)> next, Action stop) Pull<V>(Seq<V> seq) {
         if (ᏑpanicValue.ValueSlot != default!) {
             if (AreEqual(ᏑpanicValue.ValueSlot, goexitPanicValue)){
                 // Propagate runtime.Goexit from seq.
-                Δruntime.Goexit();
+                runtime.Goexit();
             } else {
                 throw panic(ᏑpanicValue.ValueSlot);
             }
@@ -330,7 +342,7 @@ public static (Func<(V, bool)> next, Action stop) Pull<V>(Seq<V> seq) {
             if (ᏑpanicValue.ValueSlot != default!) {
                 if (AreEqual(ᏑpanicValue.ValueSlot, goexitPanicValue)){
                     // Propagate runtime.Goexit from seq.
-                    Δruntime.Goexit();
+                    runtime.Goexit();
                 } else {
                     throw panic(ᏑpanicValue.ValueSlot);
                 }
@@ -438,7 +450,7 @@ public static (Func<(K, V, bool)> next, Action stop) Pull2<K, V>(Seq2<K, V> seq)
         if (ᏑpanicValue.ValueSlot != default!) {
             if (AreEqual(ᏑpanicValue.ValueSlot, goexitPanicValue)){
                 // Propagate runtime.Goexit from seq.
-                Δruntime.Goexit();
+                runtime.Goexit();
             } else {
                 throw panic(ᏑpanicValue.ValueSlot);
             }
@@ -457,7 +469,7 @@ public static (Func<(K, V, bool)> next, Action stop) Pull2<K, V>(Seq2<K, V> seq)
             if (ᏑpanicValue.ValueSlot != default!) {
                 if (AreEqual(ᏑpanicValue.ValueSlot, goexitPanicValue)){
                     // Propagate runtime.Goexit from seq.
-                    Δruntime.Goexit();
+                    runtime.Goexit();
                 } else {
                     throw panic(ᏑpanicValue.ValueSlot);
                 }

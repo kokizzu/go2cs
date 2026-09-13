@@ -44,7 +44,10 @@
 //	        }
 //	        defer f.Close() // error handling omitted for example
 //	        runtime.GC() // get up-to-date statistics
-//	        if err := pprof.WriteHeapProfile(f); err != nil {
+//	        // Lookup("allocs") creates a profile similar to go test -memprofile.
+//	        // Alternatively, use Lookup("heap") for a profile
+//	        // that has inuse_space as the default index.
+//	        if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
 //	            log.Fatal("could not write memory profile: ", err)
 //	        }
 //	    }
@@ -75,8 +78,8 @@ namespace go.runtime;
 using bufio = bufio_package;
 using cmp = cmp_package;
 using fmt = fmt_package;
-using abi = go.@internal.abi_package;
-using profilerecord = go.@internal.profilerecord_package;
+using abi = @internal.abi_package;
+using profilerecord = @internal.profilerecord_package;
 using io = io_package;
 using runtime = runtime_package;
 using slices = slices_package;
@@ -86,58 +89,11 @@ using sync = sync_package;
 using tabwriter = text.tabwriter_package;
 using time = time_package;
 using @unsafe = unsafe_package;
-using go.@internal;
+using @internal;
+using System.Runtime.CompilerServices;
 using text;
 
 partial class pprof_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() {
-    builtin.initPackage(typeof(go.@internal.abi_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsort() {
-    builtin.initPackage(typeof(sort_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtextꓸtabwriter() {
-    builtin.initPackage(typeof(text.tabwriter_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 // BUG(rsc): Profiles are only as good as the kernel support used to generate them.
 // See https://golang.org/issue/13841 for details about known problems.
@@ -398,7 +354,7 @@ public static nint Count(this ж<Profile> Ꮡp) {
 //
 // Passing skip=0 begins the stack trace at the call to Add inside rpc.NewClient.
 // Passing skip=1 begins the stack trace at the call to NewClient inside mypkg.Run.
-public static void Add(this ж<Profile> Ꮡp, any value, nint skip) {
+[MethodImpl(MethodImplOptions.NoInlining)] public static void Add(this ж<Profile> Ꮡp, any value, nint skip) {
     GoFrame ᒐ = default;
     bool ᒐd1 = false;
     try {
@@ -615,8 +571,8 @@ internal static error printCountProfile(io.Writer w, nint debug, @string name, c
         if (p.Label(idx) != nil) {
             var bʗ1 = b;
             labels = () => {
-                foreach (var (kΔ1, v) in p.Label(idx).ValueSlot) {
-                    bʗ1.pbLabel(tagSample_Label, kΔ1, v, 0);
+                foreach (var (_, lbl) in (~p.Label(idx)).list) {
+                    bʗ1.pbLabel(tagSample_Label, lbl.key, lbl.value, 0);
                 }
             };
         }
@@ -653,6 +609,7 @@ internal static error printCountProfile(io.Writer w, nint debug, @string name, c
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string runtimeˢ = "runtime."u8;
+internal static readonly @string internalRuntimeˢ = "internal/runtime/"u8;
 
 // printStackRecord prints the function + source line information
 // for a single stack trace.
@@ -666,7 +623,7 @@ internal static void printStackRecord(io.Writer w, slice<uintptr> stk, bool allF
             show = true;
             fmt.Fprintf(w, "#\t%#x\n"u8, frame.PC);
         } else 
-        if (name != "runtime.goexit"u8 && (show || !strings_package.HasPrefix(name, runtimeˢ))) {
+        if (name != "runtime.goexit"u8 && (show || !(strings_package.HasPrefix(name, runtimeˢ) || strings_package.HasPrefix(name, internalRuntimeˢ)))) {
             // Hide runtime.goexit and any runtime functions at the beginning.
             // This is useful mainly for allocation traces.
             show = true;

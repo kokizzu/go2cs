@@ -386,7 +386,7 @@ internal static void Shift(this ж<@decimal> Ꮡa, nint k) {
         break;
     }
     case {} when k is < 0: {
-        while (k < -maxShift) {
+        while (k < (nint)(-maxShift)) {
             rightShift(ref (Ꮡa).DerefOrNull(), maxShift);
             k += maxShift;
         }

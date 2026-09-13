@@ -58,7 +58,7 @@ using static go.log_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/log.go", "log.cs", "AHKOAdKCgoKCqNKCgoL8kKaUkoKCgoKCgqaCAAIQ0oKUgoKUgoKCgoKCgpSCgoKCgoKCgoKUpoKCgoKCgqaUgoKClILsgoKCpgAIDoKUAAIS4oKu4oKWqIKEgoKCgoKCgoKmgoKCgpSogoKCgoKWgoKC1oKCAAQQwr7CvsK8soKosoKosoKosoKCqLKCgqiygoKqoqqiqJKAgqSosqjSgoLYkqqiqqKokqiSqJKu4r7CvsK8soKosoKosoKosoKCqLKCgqiygoIAAhTy")]
+[assembly: go.GoPositionMap("log/log.go", "log.cs", "AEmOAdKCgoKCqOKCgoL8kKaUkoKCgoKCgqaCAAIQ0oKUgoKUgoKCgoKCgpSCgoKCgoKCgoKUpoKCgoKCgqaUgoKClILsgoKCpgAIDoKUAAIS4oKu4oKWqIKEgoKCgoKCgoKmgoKCgpSogoKCgoKWgoKC1oKCAAQQwr7CvsK8soKosoKosoKosoKCqLKCgqiygoKqoqqiqJKAgqSosqjigoLYkqqiqqKokqiSqJKu4r7CvsK8soKosoKosoKosoKCqLKCgqiygoIAAhTy", "195-197:1;250-254:1;251-253:1.1;260-262:1;268-270:1;276-278:1;389-391:1;397-399:1;405-407:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -75,4 +75,20 @@ public static partial class log_package
     // <TypeAccessibility>
     public partial struct Logger {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

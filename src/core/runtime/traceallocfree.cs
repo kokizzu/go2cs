@@ -5,9 +5,9 @@
 namespace go;
 
 using abi = @internal.abi_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @internal;
-using runtime.@internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -89,19 +89,19 @@ internal static traceArg traceSpanTypeAndClass(ж<mspan> Ꮡs) {
 internal static void SpanExists(this traceLocker tl, ж<mspan> Ꮡs) {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvSpan, traceSpanID(Ꮡs), ((traceArg)(uint64)s.npages), traceSpanTypeAndClass(Ꮡs));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvSpan, traceSpanID(Ꮡs), ((traceArg)(uint64)s.npages), traceSpanTypeAndClass(Ꮡs));
 }
 
 // SpanAlloc records an event indicating that the span has just been allocated.
 internal static void SpanAlloc(this traceLocker tl, ж<mspan> Ꮡs) {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvSpanAlloc, traceSpanID(Ꮡs), ((traceArg)(uint64)s.npages), traceSpanTypeAndClass(Ꮡs));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvSpanAlloc, traceSpanID(Ꮡs), ((traceArg)(uint64)s.npages), traceSpanTypeAndClass(Ꮡs));
 }
 
 // SpanFree records an event indicating that the span is about to be freed.
 internal static void SpanFree(this traceLocker tl, ж<mspan> Ꮡs) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvSpanFree, traceSpanID(Ꮡs));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvSpanFree, traceSpanID(Ꮡs));
 }
 
 // traceSpanID creates a trace ID for the span s for the trace.
@@ -115,19 +115,19 @@ internal static traceArg traceSpanID(ж<mspan> Ꮡs) {
 // The type is optional, and the size of the slot occupied the object is inferred from the
 // span containing it.
 internal static void HeapObjectExists(this traceLocker tl, uintptr addr, ж<abi.Type> Ꮡtyp) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvHeapObject, traceHeapObjectID(addr), tl.rtype(Ꮡtyp));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvHeapObject, traceHeapObjectID(addr), tl.rtype(Ꮡtyp));
 }
 
 // HeapObjectAlloc records that an object was newly allocated at addr with the provided type.
 // The type is optional, and the size of the slot occupied the object is inferred from the
 // span containing it.
 internal static void HeapObjectAlloc(this traceLocker tl, uintptr addr, ж<abi.Type> Ꮡtyp) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvHeapObjectAlloc, traceHeapObjectID(addr), tl.rtype(Ꮡtyp));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvHeapObjectAlloc, traceHeapObjectID(addr), tl.rtype(Ꮡtyp));
 }
 
 // HeapObjectFree records that an object at addr is about to be freed.
 internal static void HeapObjectFree(this traceLocker tl, uintptr addr) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvHeapObjectFree, traceHeapObjectID(addr));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvHeapObjectFree, traceHeapObjectID(addr));
 }
 
 // traceHeapObjectID creates a trace ID for a heap object at address addr.
@@ -138,18 +138,18 @@ internal static traceArg traceHeapObjectID(uintptr addr) {
 // GoroutineStackExists records that a goroutine stack already exists at address base with the provided size.
 internal static void GoroutineStackExists(this traceLocker tl, uintptr @base, uintptr size) {
     var order = traceCompressStackSize(size);
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGoroutineStack, traceGoroutineStackID(@base), order);
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoroutineStack, traceGoroutineStackID(@base), order);
 }
 
 // GoroutineStackAlloc records that a goroutine stack was newly allocated at address base with the provided size..
 internal static void GoroutineStackAlloc(this traceLocker tl, uintptr @base, uintptr size) {
     var order = traceCompressStackSize(size);
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGoroutineStackAlloc, traceGoroutineStackID(@base), order);
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoroutineStackAlloc, traceGoroutineStackID(@base), order);
 }
 
 // GoroutineStackFree records that a goroutine stack at address base is about to be freed.
 internal static void GoroutineStackFree(this traceLocker tl, uintptr @base) {
-    tl.eventWriter(traceGoRunning, traceProcRunning).commit(traceEvGoroutineStackFree, traceGoroutineStackID(@base));
+    tl.eventWriter(traceGoRunning, traceProcRunning).@event(traceEvGoroutineStackFree, traceGoroutineStackID(@base));
 }
 
 // traceGoroutineStackID creates a trace ID for the goroutine stack from its base address.

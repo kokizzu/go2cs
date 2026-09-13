@@ -72,9 +72,9 @@ using static go.os.exec_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/exec/exec.go", "exec.cs", "AMgB7AGCpoAADRqCpoIAzgHkAwAYArqAgqaCgoKCgpSWgIKkloKCgoKUgoKClMqCgriUggALFoCClLYAAhgACwKClIKClq7ClKaCgoKClKrCgpTWgoKUpqKCgoKUgpaAgqaCgpaCgpKCgpSAgqSUpoKmgoKUrsKCgoKUgpaAgqaCgpaCgpKCgpSmgoIAAyIADQKAgqQADBIADAaCloKCgoSCgqiClIKClJSCgrgAASAADgKCgriClIKk2oKCgpSCgoKUgoKClIKEgoKW3IKUloKChIqCgqKEkoKUgoKUuAAHEoKCgpYABRTytMiCgoC47OyCgpaCuOiCgMqk3IKoogAEGIaCAAsC3JYAEiiCAAYoABMCgpSCloKClISCgoK4gqiAuKSChAACFAAMAoKClJaCloKClqb8lrSGgqYACg4ACAKClIKEgoKWgoKAgrbawoKUgpSCgoKCAAYS4oKUgpSCgpSCgoIABRYACAKClIKUgoKUgoKCAAUWAAgCgpSClIKClIKCggANKPKCloCCgqSWkoKCgoKCpqrCgIKCgqTmgoKUgpSCgoKCgoKCgqyyhIKCgoKoggADGoAACgKk7IKClKq0ggACENLctqKCgoKogoKWgriUgriUlIKClIKWgqiCgpbcsoKUgoKClJSmAAscopSk", "408-421:1;468-470:1;496-498:1;530-539:1;579-583:1;627-635:1;732-745:2;944-949:1")]
-[assembly: go.GoPositionMap("os/exec/exec_windows.go", "exec_windows.cs", "ABEcqLKC")]
-[assembly: go.GoPositionMap("os/exec/lp_windows.go", "lp_windows.cs", "ABQmgoKClIKUpoKCgpSmgoKUgoLKgoCCtoKUAAIaAAoCgIKmAAIYAAkCgIKmgpSCgIKClMiClIKUgpSUgoKUgtaCgoKCooKUgpSmlNiSgoKClAABGAALCICCgIKCgpTIgoKmloCCAAcQgoKCqILKgpSUlLiClA==")]
+[assembly: go.GoPositionMap("os/exec/exec.go", "exec.cs", "AHrsAYKmgAANGoKmggDeAYQEABgCuoCCpoKCgoKClJaAgqSWgoKCgpSCgoKUyoKCuJSCAAsWgIKUtgACGAALAoKUgoKWrsKUpoKCgoKUqsKClNaCgpSmooKCgpSCloCCpoKCloKCkoKClICCpJSmgqaCgpSuwoKCgpSCloCCpoKCloKCkoKClKaCggADIgANAoCCpAAMEgAMBoKWgoKChIKCqIKUgoKUlIKCuAABIAAOAoKCuIKUgqTagoKClIKCgpSCgoKUgoSCgpbcgpSWgoKEioKCooSSgpSCgpS4AAcSgoKClgAFFPK0yIKCgLjs7IKCloK46IKAyqTcgqiiAAQYhoIACwLclgASKIIABigAEwKClIKWgoKUhIKCgriCqIC4pIKEAAIUAAwCgoKUloKWgoKWpvyWtIaCpgAKEgAKAoKUgoSCgpaCgoCCttrCgpSClIKCgoIABhLigpSClIKClIKCggAFFgAIAoKUgpSCgpSCgoIABRYACAKClIKUgoKUgoKCAA0o8oKWgIKCpJaSgoKCgoKmqsKAgoKCpOaCgpSClIKCgoKCgoKCrLKEgoKCgqiCAAMagAAKAqTsgoKUqrSCAAIQ0ty2ooKCgqiCgpaCuJSCuJSUgoKUgpaCqIKCltyygpSCgoKUlKYACxyilKQ=", "424-437:1;484-486:1;512-514:1;546-555:1;595-599:1;643-651:1;748-761:2;960-965:1")]
+[assembly: go.GoPositionMap("os/exec/exec_windows.go", "exec_windows.cs", "AAscqLKC")]
+[assembly: go.GoPositionMap("os/exec/lp_windows.go", "lp_windows.cs", "ABMkgoKClIKUpoKCgpSmgoKUgoLKgoCCtoKUAAIaAAoCgIKmAAIYAAkCgIKmgpSCgIKClMiClIKUgpSUgoKUgtaCgoKCooKUgpSmlNiSgoKClAABGAALCICCgIKCgpTIgoKmloCCAAcQgoKCqILKgpSUlLiClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.os;
@@ -98,4 +98,27 @@ public static partial class exec_package
     public partial struct ExitError {}
     public partial struct ΔError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸexecenv() => builtin.initPackage(typeof(@internal.syscall.execenv_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

@@ -10,8 +10,9 @@ partial class runtime_package {
     static runtime_package() {
         initᴛitabTable();
         initᴛsigsetAllExiting();
-        initᴛvdsoSymbolKeys();
         initᴛchansendpc();
         initᴛchanrecvpc();
+        initᴛadjustSignalStack2Indirect();
+        initᴛvdsoSymbolKeys();
     }
 } // end runtime_package

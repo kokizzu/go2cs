@@ -29,6 +29,11 @@ internal static traceProcStatus traceProcSyscallAbandoned => 4;
 internal static readonly @string attemptedToTraceABadˢ = "attempted to trace a bad status for a goroutine"u8;
 
 // writeGoStatus emits a GoStatus event as well as any active ranges on the goroutine.
+//
+// nosplit because it's part of writing an event for an M, which must not
+// have any stack growth.
+//
+//go:nosplit
 internal static traceWriter writeGoStatus(this traceWriter w, uint64 goid, int64 mid, traceGoStatus status, bool markAssist, uint64 stackID) {
     // The status should never be bad. Some invariant must have been violated.
     if (status == traceGoBad) {
@@ -55,6 +60,11 @@ internal static readonly @string attemptToTraceInvalidOrˢ = "attempt to trace i
 //
 // The caller must fully own pp and it must be prevented from transitioning (e.g. this can be
 // called by a forEachP callback or from a STW).
+//
+// nosplit because it's part of writing an event for an M, which must not
+// have any stack growth.
+//
+//go:nosplit
 internal static traceWriter writeProcStatusForP(this traceWriter w, ж<Δp> Ꮡpp, bool inSTW) {
     ref var pp = ref Ꮡpp.DerefOrNull();
 
@@ -99,6 +109,11 @@ internal static readonly @string attemptedToTraceABadˢ2 = "attempted to trace a
 //
 // The caller must have taken ownership of a P's status writing, and the P must be
 // prevented from transitioning.
+//
+// nosplit because it's part of writing an event for an M, which must not
+// have any stack growth.
+//
+//go:nosplit
 internal static traceWriter writeProcStatus(this traceWriter w, uint64 pid, traceProcStatus status, bool inSweep) {
     // The status should never be bad. Some invariant must have been violated.
     if (status == traceProcBad) {
@@ -121,6 +136,11 @@ internal static readonly @string triedToTraceGoroutineˢ = "tried to trace gorou
 // goStatusToTraceGoStatus translates the internal status to tracGoStatus.
 //
 // status must not be _Gdead or any status whose name has the suffix "_unused."
+//
+// nosplit because it's part of writing an event for an M, which must not
+// have any stack growth.
+//
+//go:nosplit
 internal static traceGoStatus goStatusToTraceGoStatus(uint32 status, waitReason wr) {
     // N.B. Ignore the _Gscan bit. We don't model it in the tracer.
     traceGoStatus tgs = default!;
@@ -178,6 +198,11 @@ internal static traceGoStatus goStatusToTraceGoStatus(uint32 status, waitReason 
 }
 
 // acquireStatus acquires the right to emit a Status event for the scheduling resource.
+//
+// nosplit because it's part of writing an event for an M, which must not
+// have any stack growth.
+//
+//go:nosplit
 [GoRecv] internal static bool acquireStatus(this ref traceSchedResourceState r, uintptr gen) {
     if (!Ꮡ(r.statusTraced, (int)(gen % 3)).CompareAndSwap(0, 1)) {
         return false;

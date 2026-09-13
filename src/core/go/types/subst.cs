@@ -69,14 +69,15 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
         return smap.lookup(t);
     }}
     // general case
-    var subst = new subster(
+    ref var subst = ref heap<subster>(out var Ꮡsubst);
+    subst = new subster(
         pos: pos,
         smap: smap,
         check: Ꮡcheck,
         expanding: Ꮡexpanding,
         ctxt: Ꮡctxt
     );
-    return subst.typ(typ);
+    return Ꮡsubst.typ(typ);
 }
 
 [GoType] partial struct subster {
@@ -87,7 +88,9 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
     internal ж<Context> ctxt;
 }
 
-[GoRecv] internal static ΔType typ(this ref subster subst, ΔType typ) {
+internal static ΔType typ(this ж<subster> Ꮡsubst, ΔType typ) {
+    ref var subst = ref Ꮡsubst.DerefOrNull();
+
     switch (typ.type()) {
     case null: {
         throw panic("nil typ");
@@ -110,25 +113,26 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
             // TODO(gri) do we need this for Alias types?
             return new BasicжΔType(Typ[Invalid]); // error reported elsewhere
         }
-        var (targs, updated) = subst.typeList(t.TypeArgs().list());
-        if (updated) {
-            // already instantiated
-            // For each (existing) type argument determine if it needs
-            // to be substituted; i.e., if it is or contains a type parameter
-            // that has a type argument for it.
-            return new AliasжΔType(subst.check.newAliasInstance(subst.pos, (~t).orig, targs, subst.expanding, subst.ctxt));
+        {
+            var targs = substList<ΔType>(t.TypeArgs().list(), // already instantiated
+ // For each (existing) type argument determine if it needs
+ // to be substituted; i.e., if it is or contains a type parameter
+ // that has a type argument for it.
+ Ꮡsubst.typ); if (targs != default!) {
+                return new AliasжΔType(subst.check.newAliasInstance(subst.pos, (~t).orig, targs, subst.expanding, subst.ctxt));
+            }
         }
         break;
     }
     case ж<Array> t: {
-        var elem = subst.typOrNil((~t).elem);
+        var elem = Ꮡsubst.typOrNil((~t).elem);
         if (!AreEqual(elem, (~t).elem)) {
             return new ArrayжΔType(Ꮡ(new Array(len: (~t).len, elem: elem)));
         }
         break;
     }
     case ж<Slice> t: {
-        var elem = subst.typOrNil((~t).elem);
+        var elem = Ꮡsubst.typOrNil((~t).elem);
         if (!AreEqual(elem, (~t).elem)) {
             return new SliceжΔType(Ꮡ(new Slice(elem: elem)));
         }
@@ -136,7 +140,7 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
     }
     case ж<Struct> t: {
         {
-            var (fields, copied) = subst.varList((~t).fields); if (copied) {
+            var fields = substList<ж<Var>>((~t).fields, Ꮡsubst.var_); if (fields != default!) {
                 var s = Ꮡ(new Struct(fields: fields, tags: (~t).tags));
                 s.markComplete();
                 return new StructжΔType(s);
@@ -145,19 +149,19 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
         break;
     }
     case ж<Pointer> t: {
-        var @base = subst.typ((~t).@base);
+        var @base = Ꮡsubst.typ((~t).@base);
         if (!AreEqual(@base, (~t).@base)) {
             return new PointerжΔType(Ꮡ(new Pointer(@base: @base)));
         }
         break;
     }
     case ж<Tuple> t: {
-        return new TupleжΔType(subst.tuple(t));
+        return new TupleжΔType(Ꮡsubst.tuple(t));
     }
     case ж<ΔSignature> t: {
         var recv = t.Value.recv;
-        var @params = subst.tuple((~t).@params);
-        var results = subst.tuple((~t).results);
+        var @params = Ꮡsubst.tuple((~t).@params);
+        var results = Ꮡsubst.tuple((~t).results);
         if (@params != (~t).@params || results != (~t).results) {
             // Preserve the receiver: it is handled during *Interface and *Named type
             // substitution.
@@ -186,19 +190,26 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
         break;
     }
     case ж<Union> t: {
-        var (terms, copied) = subst.termlist((~t).terms);
-        if (copied) {
-            // term list substitution may introduce duplicate terms (unlikely but possible).
-            // This is ok; lazy type set computation will determine the actual type set
-            // in normal form.
-            return new UnionжΔType(Ꮡ(new Union(terms)));
+        {
+            var terms = substList<ж<ΔTerm>>((~t).terms, Ꮡsubst.term); if (terms != default!) {
+                // term list substitution may introduce duplicate terms (unlikely but possible).
+                // This is ok; lazy type set computation will determine the actual type set
+                // in normal form.
+                return new UnionжΔType(Ꮡ(new Union(terms)));
+            }
         }
         break;
     }
     case ж<Interface> t: {
-        var (methods, mcopied) = subst.funcList((~t).methods);
-        var (embeddeds, ecopied) = subst.typeList((~t).embeddeds);
-        if (mcopied || ecopied) {
+        var methods = substList<ж<Func>>((~t).methods, Ꮡsubst.func_);
+        var embeddeds = substList<ΔType>((~t).embeddeds, Ꮡsubst.typ);
+        if (methods != default! || embeddeds != default!) {
+            if (methods == default!) {
+                methods = t.Value.methods;
+            }
+            if (embeddeds == default!) {
+                embeddeds = t.Value.embeddeds;
+            }
             var iface = subst.check.newInterface();
             iface.Value.embeddeds = embeddeds;
             iface.Value.embedPos = t.Value.embedPos;
@@ -229,15 +240,15 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
         break;
     }
     case ж<Map> t: {
-        var key = subst.typ((~t).key);
-        var elem = subst.typ((~t).elem);
+        var key = Ꮡsubst.typ((~t).key);
+        var elem = Ꮡsubst.typ((~t).elem);
         if (!AreEqual(key, (~t).key) || !AreEqual(elem, (~t).elem)) {
             return new MapжΔType(Ꮡ(new Map(key: key, elem: elem)));
         }
         break;
     }
     case ж<Chan> t: {
-        var elem = subst.typ((~t).elem);
+        var elem = Ꮡsubst.typ((~t).elem);
         if (!AreEqual(elem, (~t).elem)) {
             return new ChanжΔType(Ꮡ(new Chan(dir: (~t).dir, elem: elem)));
         }
@@ -257,17 +268,18 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
         if (t.TypeArgs().Len() != n) {
             return new BasicжΔType(Typ[Invalid]); // error reported elsewhere
         }
-        var (targs, updated) = subst.typeList(t.TypeArgs().list());
-        if (updated) {
-            // already instantiated
-            // For each (existing) type argument determine if it needs
-            // to be substituted; i.e., if it is or contains a type parameter
-            // that has a type argument for it.
-            // Create a new instance and populate the context to avoid endless
-            // recursion. The position used here is irrelevant because validation only
-            // occurs on t (we don't call validType on named), but we use subst.pos to
-            // help with debugging.
-            return subst.check.instance(subst.pos, new NamedжΔgenericType(orig), targs, subst.expanding, subst.ctxt);
+        {
+            var targs = substList<ΔType>(t.TypeArgs().list(), // already instantiated
+ // For each (existing) type argument determine if it needs
+ // to be substituted; i.e., if it is or contains a type parameter
+ // that has a type argument for it.
+ Ꮡsubst.typ); if (targs != default!) {
+                // Create a new instance and populate the context to avoid endless
+                // recursion. The position used here is irrelevant because validation only
+                // occurs on t (we don't call validType on named), but we use subst.pos to
+                // help with debugging.
+                return subst.check.instance(subst.pos, new NamedжΔgenericType(orig), targs, subst.expanding, subst.ctxt);
+            }
         }
         break;
     }
@@ -285,27 +297,27 @@ internal static ΔType subst(this ж<Checker> Ꮡcheck, tokenꓸPos pos, ΔType 
 // typOrNil is like typ but if the argument is nil it is replaced with Typ[Invalid].
 // A nil type may appear in pathological cases such as type T[P any] []func(_ T([]_))
 // where an array/slice element is accessed before it is set up.
-[GoRecv] internal static ΔType typOrNil(this ref subster subst, ΔType typ) {
+internal static ΔType typOrNil(this ж<subster> Ꮡsubst, ΔType typ) {
     if (typ == default!) {
         return new BasicжΔType(Typ[Invalid]);
     }
-    return subst.typ(typ);
+    return Ꮡsubst.typ(typ);
 }
 
-[GoRecv] internal static ж<Var> var_(this ref subster subst, ж<Var> Ꮡv) {
+internal static ж<Var> var_(this ж<subster> Ꮡsubst, ж<Var> Ꮡv) {
     ref var v = ref Ꮡv.DerefOrNull();
 
     if (Ꮡv != nil) {
         {
-            var typ = subst.typ(v.typ); if (!AreEqual(typ, v.typ)) {
-                return substVar(Ꮡv, typ);
+            var typ = Ꮡsubst.typ(v.typ); if (!AreEqual(typ, v.typ)) {
+                return cloneVar(Ꮡv, typ);
             }
         }
     }
     return Ꮡv;
 }
 
-internal static ж<Var> substVar(ж<Var> Ꮡv, ΔType typ) {
+internal static ж<Var> cloneVar(ж<Var> Ꮡv, ΔType typ) {
     ref var v = ref Ꮡv.DerefOrNull();
 
     ref var copy = ref heap<Var>(out var Ꮡcopy);
@@ -315,12 +327,12 @@ internal static ж<Var> substVar(ж<Var> Ꮡv, ΔType typ) {
     return Ꮡcopy;
 }
 
-[GoRecv] internal static ж<Tuple> tuple(this ref subster subst, ж<Tuple> Ꮡt) {
+internal static ж<Tuple> tuple(this ж<subster> Ꮡsubst, ж<Tuple> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     if (Ꮡt != nil) {
         {
-            var (vars, copied) = subst.varList(t.vars); if (copied) {
+            var vars = substList<ж<Var>>(t.vars, Ꮡsubst.var_); if (vars != default!) {
                 return Ꮡ(new Tuple(vars: vars));
             }
         }
@@ -328,43 +340,42 @@ internal static ж<Var> substVar(ж<Var> Ꮡv, ΔType typ) {
     return Ꮡt;
 }
 
-[GoRecv] internal static (slice<ж<Var>> @out, bool copied) varList(this ref subster subst, slice<ж<Var>> @in) {
-    slice<ж<Var>> @out = default!;
-    bool copied = default!;
+// substList applies subst to each element of the incoming slice.
+// If at least one element changes, the result is a new slice with
+// all the (possibly updated) elements of the incoming slice;
+// otherwise the result it nil. The incoming slice is unchanged.
+internal static slice<T> /*out*/ substList<T>(slice<T> @in, Func<T, T> subst) {
+    slice<T> @out = default!;
 
-    @out = @in;
-    foreach (var (i, v) in @in) {
+    foreach (var (i, t) in @in) {
         {
-            var w = subst.var_(v); if (w != v) {
-                if (!copied) {
-                    // first variable that got substituted => allocate new out slice
-                    // and copy all variables
-                    var @new = new slice<ж<Var>>(len(@in));
-                    copy(@new, @out);
-                    @out = @new;
-                    copied = true;
+            var u = subst(t); if (!AreEqual(u, t)) {
+                if (@out == default!) {
+                    // lazily allocate a new slice on first substitution
+                    @out = new slice<T>(len(@in));
+                    copy(@out, @in);
                 }
-                @out[i] = w;
+                @out[i] = u;
             }
         }
     }
-    return (@out, copied);
+    return @out;
 }
 
-[GoRecv] internal static ж<Func> func_(this ref subster subst, ж<Func> Ꮡf) {
+internal static ж<Func> func_(this ж<subster> Ꮡsubst, ж<Func> Ꮡf) {
     ref var f = ref Ꮡf.DerefOrNull();
 
     if (Ꮡf != nil) {
         {
-            var typ = subst.typ(f.typ); if (!AreEqual(typ, f.typ)) {
-                return substFunc(Ꮡf, typ);
+            var typ = Ꮡsubst.typ(f.typ); if (!AreEqual(typ, f.typ)) {
+                return cloneFunc(Ꮡf, typ);
             }
         }
     }
     return Ꮡf;
 }
 
-internal static ж<Func> substFunc(ж<Func> Ꮡf, ΔType typ) {
+internal static ж<Func> cloneFunc(ж<Func> Ꮡf, ΔType typ) {
     ref var f = ref Ꮡf.DerefOrNull();
 
     ref var copy = ref heap<Func>(out var Ꮡcopy);
@@ -374,73 +385,15 @@ internal static ж<Func> substFunc(ж<Func> Ꮡf, ΔType typ) {
     return Ꮡcopy;
 }
 
-[GoRecv] internal static (slice<ж<Func>> @out, bool copied) funcList(this ref subster subst, slice<ж<Func>> @in) {
-    slice<ж<Func>> @out = default!;
-    bool copied = default!;
+internal static ж<ΔTerm> term(this ж<subster> Ꮡsubst, ж<ΔTerm> Ꮡt) {
+    ref var t = ref Ꮡt.DerefOrNull();
 
-    @out = @in;
-    foreach (var (i, f) in @in) {
-        {
-            var g = subst.func_(f); if (g != f) {
-                if (!copied) {
-                    // first function that got substituted => allocate new out slice
-                    // and copy all functions
-                    var @new = new slice<ж<Func>>(len(@in));
-                    copy(@new, @out);
-                    @out = @new;
-                    copied = true;
-                }
-                @out[i] = g;
-            }
+    {
+        var typ = Ꮡsubst.typ(t.typ); if (!AreEqual(typ, t.typ)) {
+            return NewTerm(t.tilde, typ);
         }
     }
-    return (@out, copied);
-}
-
-[GoRecv] internal static (slice<ΔType> @out, bool copied) typeList(this ref subster subst, slice<ΔType> @in) {
-    slice<ΔType> @out = default!;
-    bool copied = default!;
-
-    @out = @in;
-    foreach (var (i, t) in @in) {
-        {
-            var u = subst.typ(t); if (!AreEqual(u, t)) {
-                if (!copied) {
-                    // first function that got substituted => allocate new out slice
-                    // and copy all functions
-                    var @new = new slice<ΔType>(len(@in));
-                    copy(@new, @out);
-                    @out = @new;
-                    copied = true;
-                }
-                @out[i] = u;
-            }
-        }
-    }
-    return (@out, copied);
-}
-
-[GoRecv] internal static (slice<ж<ΔTerm>> @out, bool copied) termlist(this ref subster subst, slice<ж<ΔTerm>> @in) {
-    slice<ж<ΔTerm>> @out = default!;
-    bool copied = default!;
-
-    @out = @in;
-    foreach (var (i, t) in @in) {
-        {
-            var u = subst.typ((~t).typ); if (!AreEqual(u, (~t).typ)) {
-                if (!copied) {
-                    // first function that got substituted => allocate new out slice
-                    // and copy all functions
-                    var @new = new slice<ж<ΔTerm>>(len(@in));
-                    copy(@new, @out);
-                    @out = @new;
-                    copied = true;
-                }
-                @out[i] = NewTerm((~t).tilde, u);
-            }
-        }
-    }
-    return (@out, copied);
+    return Ꮡt;
 }
 
 // replaceRecvType updates any function receivers that have type old to have
@@ -467,8 +420,8 @@ internal static (slice<ж<Func>> @out, bool copied) replaceRecvType(slice<ж<Fun
             }
             ref var newsig = ref heap<ΔSignature>(out var Ꮡnewsig);
             newsig = sig.Value;
-            newsig.recv = substVar((~sig).recv, @new);
-            @out[i] = substFunc(method, new ΔSignatureжΔType(Ꮡnewsig));
+            newsig.recv = cloneVar((~sig).recv, @new);
+            @out[i] = cloneFunc(method, new ΔSignatureжΔType(Ꮡnewsig));
         }
     }
     return (@out, copied);

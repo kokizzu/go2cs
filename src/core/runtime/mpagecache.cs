@@ -3,9 +3,9 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
-using runtime.@internal;
+using @internal.runtime;
 
 partial class runtime_package {
 

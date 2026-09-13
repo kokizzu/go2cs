@@ -23,9 +23,10 @@ using filepath = path.filepath_package;
 using Δruntime = runtime_package;
 using strconv = strconv_package;
 using strings = strings_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using testing = testing_package;
 using fs = io.fs_package;
+using go;
 using go.@internal;
 using go.os;
 using io = io_package;
@@ -33,30 +34,6 @@ using path;
 using ꓸꓸꓸstring = Span<@string>;
 
 partial class testenv_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸflag() {
-    builtin.initPackage(typeof(flag_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸplatform() {
-    builtin.initPackage(typeof(go.@internal.platform_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
 
 // Save the original environment during init for use in checks. A test
 // binary may modify its environment before calling HasExec to change its
@@ -77,9 +54,6 @@ public static @string Builder() {
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string goGcflagsˢ = "GO_GCFLAGS"u8;
-private static readonly @string toolˢ = "tool"u8;
-private static readonly @string compileˢ = "compile"u8;
-private static readonly @string envˢ = "env"u8;
 
 // HasGoBuild reports whether the current system can build programs with “go build”
 // and then run them with os.StartProcess or exec.Command.
@@ -91,62 +65,61 @@ public static bool HasGoBuild() {
         // run go build.
         return false;
     }
-    ᏑgoBuildOnce.Do(() => {
-        // To run 'go build', we need to be able to exec a 'go' command.
-        // We somewhat arbitrarily choose to exec 'go tool -n compile' because that
-        // also confirms that cmd/go can find the compiler. (Before CL 472096,
-        // we sometimes ended up with cmd/go installed in the test environment
-        // without a cmd/compile it could use to actually build things.)
-        var cmd = exec.Command("go"u8, toolˢ, "-n", compileˢ);
-        cmd.Value.Env = origEnv;
-        var (@out, err) = cmd.Output();
-        if (err != default!) {
-            goBuildErr = fmt.Errorf("%v: %w"u8, cmd.OrTypedNil(), err);
-            return;
-        }
-        @out = bytes.TrimSpace(@out);
-        if (len(@out) == 0) {
-            goBuildErr = fmt.Errorf("%v: no tool reported"u8, cmd.OrTypedNil());
-            return;
-        }
-        {
-            var (_, errΔ1) = exec.LookPath(((@string)@out)); if (errΔ1 != default!) {
-                goBuildErr = errΔ1;
-                return;
-            }
-        }
-        if (platform.MustLinkExternal(Δruntime.GOOS, Δruntime.GOARCH, false)) {
-            // We can assume that we always have a complete Go toolchain available.
-            // However, this platform requires a C linker to build even pure Go
-            // programs, including tests. Do we have one in the test environment?
-            // (On Android, for example, the device running the test might not have a
-            // C toolchain installed.)
-            //
-            // If CC is set explicitly, assume that we do. Otherwise, use 'go env CC'
-            // to determine which toolchain it would use by default.
-            if (os.Getenv("CC"u8) == ""u8) {
-                var cmdΔ1 = exec.Command("go"u8, envˢ, "CC");
-                cmdΔ1.Value.Env = origEnv;
-                var (outΔ1, errΔ2) = cmdΔ1.Output();
-                if (errΔ2 != default!) {
-                    goBuildErr = fmt.Errorf("%v: %w"u8, cmdΔ1.OrTypedNil(), errΔ2);
-                    return;
-                }
-                outΔ1 = bytes.TrimSpace(outΔ1);
-                if (len(outΔ1) == 0) {
-                    goBuildErr = fmt.Errorf("%v: no CC reported"u8, cmdΔ1.OrTypedNil());
-                    return;
-                }
-                (_, goBuildErr) = exec.LookPath(((@string)outΔ1));
-            }
-        }
-    });
-    return goBuildErr == default!;
+    return tryGoBuild() == default!;
 }
 
-internal static ж<sync.Once> ᏑgoBuildOnce = new StandardBox<sync.Once>(default(sync.Once));
-internal static ref sync.Once goBuildOnce => ref ᏑgoBuildOnce.Value;
-internal static error goBuildErr;
+// To run 'go build', we need to be able to exec a 'go' command.
+// We somewhat arbitrarily choose to exec 'go tool -n compile' because that
+// also confirms that cmd/go can find the compiler. (Before CL 472096,
+// we sometimes ended up with cmd/go installed in the test environment
+// without a cmd/compile it could use to actually build things.)
+// We can assume that we always have a complete Go toolchain available.
+// However, this platform requires a C linker to build even pure Go
+// programs, including tests. Do we have one in the test environment?
+// (On Android, for example, the device running the test might not have a
+// C toolchain installed.)
+//
+// If CC is set explicitly, assume that we do. Otherwise, use 'go env CC'
+// to determine which toolchain it would use by default.
+internal static Func<error> tryGoBuild;
+internal static void initᴛtryGoBuild() { tryGoBuild = sync.OnceValue(error () => {
+    var (goToolΔ1, err) = goTool();
+    if (err != default!) {
+        return err;
+    }
+    var cmd = exec.Command(goToolΔ1, "tool"u8, "-n", "compile");
+    cmd.Value.Env = origEnv;
+    (var @out, err) = cmd.Output();
+    if (err != default!) {
+        return fmt.Errorf("%v: %w"u8, cmd.OrTypedNil(), err);
+    }
+    @out = bytes.TrimSpace(@out);
+    if (len(@out) == 0) {
+        return fmt.Errorf("%v: no tool reported"u8, cmd.OrTypedNil());
+    }
+    {
+        var (_, errΔ1) = exec.LookPath(((@string)@out)); if (errΔ1 != default!) {
+            return errΔ1;
+        }
+    }
+    if (platform.MustLinkExternal(Δruntime.GOOS, Δruntime.GOARCH, false)) {
+        if (os.Getenv("CC"u8) == ""u8) {
+            var cmdΔ1 = exec.Command(goToolΔ1, "env"u8, "CC");
+            cmdΔ1.Value.Env = origEnv;
+            var (outΔ1, errΔ2) = cmdΔ1.Output();
+            if (errΔ2 != default!) {
+                return fmt.Errorf("%v: %w"u8, cmdΔ1.OrTypedNil(), errΔ2);
+            }
+            outΔ1 = bytes.TrimSpace(outΔ1);
+            if (len(outΔ1) == 0) {
+                return fmt.Errorf("%v: no CC reported"u8, cmdΔ1.OrTypedNil());
+            }
+            (_, errΔ2) = exec.LookPath(((@string)outΔ1));
+            return errΔ2;
+        }
+    }
+    return default!;
+}); }
 
 // MustHaveGoBuild checks that the current system can build programs with “go build”
 // and then run them with os.StartProcess or exec.Command.
@@ -158,7 +131,7 @@ public static void MustHaveGoBuild(testing.TB t) {
     }
     if (!HasGoBuild()) {
         t.Helper();
-        t.Skipf("skipping test: 'go build' unavailable: %v"u8, goBuildErr);
+        t.Skipf("skipping test: 'go build' unavailable: %v"u8, tryGoBuild());
     }
 }
 
@@ -172,6 +145,7 @@ public static bool HasGoRun() {
 // If not, MustHaveGoRun calls t.Skip with an explanation.
 public static void MustHaveGoRun(testing.TB t) {
     if (!HasGoRun()) {
+        t.Helper();
         t.Skipf("skipping test: 'go run' not available on %s/%s"u8, Δruntime.GOOS, Δruntime.GOARCH);
     }
 }
@@ -192,6 +166,7 @@ public static bool HasParallelism() {
 // threads in parallel. If not, MustHaveParallelism calls t.Skip with an explanation.
 public static void MustHaveParallelism(testing.TB t) {
     if (!HasParallelism()) {
+        t.Helper();
         t.Skipf("skipping test: no parallelism available on %s/%s"u8, Δruntime.GOOS, Δruntime.GOARCH);
     }
 }
@@ -215,79 +190,67 @@ public static @string GoToolPath(testing.TB t) {
     return path;
 }
 
-internal static ж<sync.Once> ᏑgorootOnce = new StandardBox<sync.Once>(default(sync.Once));
-internal static ref sync.Once gorootOnce => ref ᏑgorootOnce.Value;
-internal static @string gorootPath;
-internal static error gorootErr;
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string goModˢ = "go.mod"u8;
-
-internal static (@string, error) findGOROOT() {
-    ᏑgorootOnce.Do(() => {
-        gorootPath = Δruntime.GOROOT();
-        if (gorootPath != ""u8) {
-            // If runtime.GOROOT() is non-empty, assume that it is valid.
-            //
-            // (It might not be: for example, the user may have explicitly set GOROOT
-            // to the wrong directory. But this case is
-            // rare, and if that happens the user can fix what they broke.)
-            return;
+// If runtime.GOROOT() is non-empty, assume that it is valid.
+//
+// (It might not be: for example, the user may have explicitly set GOROOT
+// to the wrong directory. But this case is
+// rare, and if that happens the user can fix what they broke.)
+// runtime.GOROOT doesn't know where GOROOT is (perhaps because the test
+// binary was built with -trimpath).
+//
+// Since this is internal/testenv, we can cheat and assume that the caller
+// is a test of some package in a subdirectory of GOROOT/src. ('go test'
+// runs the test in the directory containing the packaged under test.) That
+// means that if we start walking up the tree, we should eventually find
+// GOROOT/src/go.mod, and we can report the parent directory of that.
+//
+// Notably, this works even if we can't run 'go env GOROOT' as a
+// subprocess.
+// dir is either "." or only a volume name.
+// dir cannot be GOROOT/src if it doesn't end in "src".
+// Found "module std", which is the module declaration in GOROOT/src!
+internal static Func<(@string, error)> findGOROOT = sync.OnceValues((@string path, error err) () => {
+    error err = default!;
+    {
+        @string pathΔ1 = Δruntime.GOROOT(); if (pathΔ1 != ""u8) {
+            return (pathΔ1, default!);
         }
-        // runtime.GOROOT doesn't know where GOROOT is (perhaps because the test
-        // binary was built with -trimpath).
-        //
-        // Since this is internal/testenv, we can cheat and assume that the caller
-        // is a test of some package in a subdirectory of GOROOT/src. ('go test'
-        // runs the test in the directory containing the packaged under test.) That
-        // means that if we start walking up the tree, we should eventually find
-        // GOROOT/src/go.mod, and we can report the parent directory of that.
-        //
-        // Notably, this works even if we can't run 'go env GOROOT' as a
-        // subprocess.
-        var (cwd, err) = os.Getwd();
-        if (err != default!) {
-            gorootErr = fmt.Errorf("finding GOROOT: %w"u8, err);
-            return;
+    }
+    (var cwd, err) = os.Getwd();
+    if (err != default!) {
+        return ("", fmt.Errorf("finding GOROOT: %w"u8, err));
+    }
+    @string dir = cwd;
+    while (ᐧ) {
+        @string parent = filepath.Dir(dir);
+        if (parent == dir) {
+            return ("", fmt.Errorf("failed to locate GOROOT/src in any parent directory"u8));
         }
-        @string dir = cwd;
-        while (ᐧ) {
-            @string parent = filepath.Dir(dir);
-            if (parent == dir) {
-                // dir is either "." or only a volume name.
-                gorootErr = fmt.Errorf("failed to locate GOROOT/src in any parent directory"u8);
-                return;
-            }
-            {
-                @string @base = filepath.Base(dir); if (@base != "src"u8) {
-                    dir = parent;
-                    continue; // dir cannot be GOROOT/src if it doesn't end in "src".
-                }
-            }
-            var (b, errΔ1) = os.ReadFile(filepath.Join(dir, goModˢ));
-            if (errΔ1 != default!) {
-                if (os.IsNotExist(errΔ1)) {
-                    dir = parent;
-                    continue;
-                }
-                gorootErr = fmt.Errorf("finding GOROOT: %w"u8, errΔ1);
-                return;
-            }
-            @string goMod = ((@string)b);
-            while (goMod != ""u8) {
-                @string line = default!;
-                (line, goMod, _) = strings.Cut(goMod, "\n"u8);
-                var fields = strings.Fields(line);
-                if (len(fields) >= 2 && fields[0] == "module" && fields[1] == "std") {
-                    // Found "module std", which is the module declaration in GOROOT/src!
-                    gorootPath = parent;
-                    return;
-                }
+        {
+            @string @base = filepath.Base(dir); if (@base != "src"u8) {
+                dir = parent;
+                continue;
             }
         }
-    });
-    return (gorootPath, gorootErr);
-}
+        var (b, errΔ1) = os.ReadFile(filepath.Join(dir, "go.mod"));
+        if (errΔ1 != default!) {
+            if (os.IsNotExist(errΔ1)) {
+                dir = parent;
+                continue;
+            }
+            return ("", fmt.Errorf("finding GOROOT: %w"u8, errΔ1));
+        }
+        @string goMod = ((@string)b);
+        while (goMod != ""u8) {
+            @string line = default!;
+            (line, goMod, _) = strings.Cut(goMod, "\n"u8);
+            var fields = strings.Fields(line);
+            if (len(fields) >= 2 && fields[0] == "module" && fields[1] == "std") {
+                return (parent, default!);
+            }
+        }
+    }
+});
 
 // GOROOT reports the path to the directory containing the root of the Go
 // project source tree. This is normally equivalent to runtime.GOROOT, but
@@ -316,25 +279,20 @@ public static (@string, error) GoTool() {
     if (!HasGoBuild()) {
         return ("", errors.New(platformCannotRunGoToolˢ));
     }
-    ᏑgoToolOnce.Do(() => {
-        (goToolPath, goToolErr) = exec.LookPath("go"u8);
-    });
-    return (goToolPath, goToolErr);
+    return goTool();
 }
 
-internal static ж<sync.Once> ᏑgoToolOnce = new StandardBox<sync.Once>(default(sync.Once));
-internal static ref sync.Once goToolOnce => ref ᏑgoToolOnce.Value;
-internal static @string goToolPath;
-internal static error goToolErr;
+internal static Func<(@string, error)> goTool = sync.OnceValues((@string, error) () => exec.LookPath("go"u8));
 
-// HasSrc reports whether the entire source tree is available under GOROOT.
-public static bool HasSrc() {
+// MustHaveSource checks that the entire source tree is available under GOROOT.
+// If not, it calls t.Skip with an explanation.
+public static void MustHaveSource(testing.TB t) {
     var exprᴛ1 = Δruntime.GOOS;
     if (exprᴛ1 == "ios"u8) {
-        return false;
+        t.Helper();
+        t.Skip("skipping test: no source tree on " + Δruntime.GOOS);
     }
 
-    return true;
 }
 
 // HasExternalNetwork reports whether the current system can use
@@ -357,37 +315,33 @@ public static void MustHaveExternalNetwork(testing.TB t) {
     }
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string cgoEnabledˢ = "CGO_ENABLED"u8;
-
 // HasCGO reports whether the current system can use cgo.
 public static bool HasCGO() {
-    ᏑhasCgoOnce.Do(() => {
-        var (goTool, err) = GoTool();
-        if (err != default!) {
-            return;
-        }
-        var cmd = exec.Command(goTool, envˢ, cgoEnabledˢ);
-        cmd.Value.Env = origEnv;
-        (var @out, err) = cmd.Output();
-        if (err != default!) {
-            throw panic(fmt.Sprintf("%v: %v"u8, cmd.OrTypedNil(), @out));
-        }
-        (hasCgo, err) = strconv.ParseBool(((@string)bytes.TrimSpace(@out)));
-        if (err != default!) {
-            throw panic(fmt.Sprintf("%v: non-boolean output %q"u8, cmd.OrTypedNil(), @out));
-        }
-    });
-    return hasCgo;
+    return hasCgo();
 }
 
-internal static ж<sync.Once> ᏑhasCgoOnce = new StandardBox<sync.Once>(default(sync.Once));
-internal static ref sync.Once hasCgoOnce => ref ᏑhasCgoOnce.Value;
-internal static bool hasCgo;
+internal static Func<bool> hasCgo = sync.OnceValue(bool () => {
+    var (goToolΔ1, err) = goTool();
+    if (err != default!) {
+        return false;
+    }
+    var cmd = exec.Command(goToolΔ1, "env"u8, "CGO_ENABLED");
+    cmd.Value.Env = origEnv;
+    (var @out, err) = cmd.Output();
+    if (err != default!) {
+        throw panic(fmt.Sprintf("%v: %v"u8, cmd.OrTypedNil(), @out));
+    }
+    (var ok, err) = strconv.ParseBool(((@string)bytes.TrimSpace(@out)));
+    if (err != default!) {
+        throw panic(fmt.Sprintf("%v: non-boolean output %q"u8, cmd.OrTypedNil(), @out));
+    }
+    return ok;
+});
 
 // MustHaveCGO calls t.Skip if cgo is not available.
 public static void MustHaveCGO(testing.TB t) {
     if (!HasCGO()) {
+        t.Helper();
         t.Skipf("skipping test: no cgo"u8);
     }
 }
@@ -403,6 +357,7 @@ public static bool CanInternalLink(bool withCgo) {
 // If not, MustInternalLink calls t.Skip with an explanation.
 public static void MustInternalLink(testing.TB t, bool withCgo) {
     if (!CanInternalLink(withCgo)) {
+        t.Helper();
         if (withCgo && CanInternalLink(false)) {
             t.Skipf("skipping test: internal linking on %s/%s is not supported with cgo"u8, Δruntime.GOOS, Δruntime.GOARCH);
         }
@@ -415,6 +370,7 @@ public static void MustInternalLink(testing.TB t, bool withCgo) {
 // If not, MustInternalLinkPIE calls t.Skip with an explanation.
 public static void MustInternalLinkPIE(testing.TB t) {
     if (!platform.InternalLinkPIESupported(Δruntime.GOOS, Δruntime.GOARCH)) {
+        t.Helper();
         t.Skipf("skipping test: internal linking for buildmode=pie on %s/%s is not supported"u8, Δruntime.GOOS, Δruntime.GOARCH);
     }
 }
@@ -424,6 +380,7 @@ public static void MustInternalLinkPIE(testing.TB t) {
 // If not, MustHaveBuildMode calls t.Skip with an explanation.
 public static void MustHaveBuildMode(testing.TB t, @string buildmode) {
     if (!platform.BuildModeSupported(Δruntime.Compiler, buildmode, Δruntime.GOOS, Δruntime.GOARCH)) {
+        t.Helper();
         t.Skipf("skipping test: build mode %s on %s/%s is not supported by the %s compiler"u8, buildmode, Δruntime.GOOS, Δruntime.GOARCH, Δruntime.Compiler);
     }
 }
@@ -439,6 +396,7 @@ public static bool HasSymlink() {
 public static void MustHaveSymlink(testing.TB t) {
     var (ok, reason) = hasSymlink();
     if (!ok) {
+        t.Helper();
         t.Skipf("skipping test: cannot make symlinks on %s/%s: %s"u8, Δruntime.GOOS, Δruntime.GOARCH, reason);
     }
 }
@@ -455,6 +413,7 @@ public static bool HasLink() {
 // If not, MustHaveLink calls t.Skip with an explanation.
 public static void MustHaveLink(testing.TB t) {
     if (!HasLink()) {
+        t.Helper();
         t.Skipf("skipping test: hardlinks are not supported on %s/%s"u8, Δruntime.GOOS, Δruntime.GOARCH);
     }
 }
@@ -462,8 +421,8 @@ public static void MustHaveLink(testing.TB t) {
 internal static ж<bool> flaky = flag.Bool("flaky"u8, false, "run known-flaky tests too"u8);
 
 public static void SkipFlaky(testing.TB t, nint issue) {
-    t.Helper();
     if (!flaky.Value) {
+        t.Helper();
         t.Skipf("skipping known flaky test without the -flaky flag; see golang.org/issue/%d"u8, issue);
     }
 }
@@ -473,9 +432,9 @@ private static readonly @string goBuilderFlakyNetˢ = "GO_BUILDER_FLAKY_NET"u8;
 private static readonly object skippingTestOnBuilderˢ = (@string)"skipping test on builder known to have frequent network failures"u8;
 
 public static void SkipFlakyNet(testing.TB t) {
-    t.Helper();
     {
         var (v, _) = strconv.ParseBool(os.Getenv(goBuilderFlakyNetˢ)); if (v) {
+            t.Helper();
             t.Skip(skippingTestOnBuilderˢ);
         }
     }

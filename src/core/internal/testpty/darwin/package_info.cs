@@ -56,8 +56,8 @@ using static go.@internal.testpty_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/testpty/pty.go", "pty.cs", "ACYqgqaCpoDOsg==")]
-[assembly: go.GoPositionMap("internal/testpty/pty_darwin.go", "pty_darwin.cs", "AB8asoKClICCgqSAgoKkgoKClA==")]
+[assembly: go.GoPositionMap("internal/testpty/pty.go", "pty.cs", "ABQqgqaCpoDOsg==")]
+[assembly: go.GoPositionMap("internal/testpty/pty_darwin.go", "pty_darwin.cs", "ABMasoKClICCgqSAgoKkgoKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -74,4 +74,18 @@ public static partial class testpty_package
     // <TypeAccessibility>
     public partial struct PtyError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸunix() => builtin.initPackage(typeof(go.@internal.syscall.unix_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

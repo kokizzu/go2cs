@@ -13,18 +13,6 @@ using sync = sync_package;
 
 partial class types_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 // This file contains a definition of the type-checking context; an opaque type
 // that may be supplied by users during instantiation.
 //
@@ -55,7 +43,7 @@ partial class types_package {
     internal sync.Mutex mu;
     internal map<@string, slice<ctxtEntry>> typeMap; // type hash -> instances entries
     internal nint nextID;                   // next unique ID
-    internal map<ΔType, nint> originIDs;      // origin type -> unique ID
+    internal map<ΔType, nint> originIDs;        // origin type -> unique ID
 }
 
 [GoType] partial struct ctxtEntry {
@@ -118,10 +106,10 @@ internal static ΔType lookup(this ж<Context> Ꮡctxt, @string h, ΔType orig, 
     finally { if (ᒐd1) Ꮡctxt.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
-// update de-duplicates n against previously seen types with the hash h.  If an
-// identical type is found with the type hash h, the previously seen type is
-// returned. Otherwise, n is returned, and recorded in the Context for the hash
-// h.
+// update de-duplicates inst against previously seen types with the hash h.
+// If an identical type is found with the type hash h, the previously seen
+// type is returned. Otherwise, inst is returned, and recorded in the Context
+// for the hash h.
 internal static ΔType update(this ж<Context> Ꮡctxt, @string h, ΔType orig, slice<ΔType> targs, ΔType inst) {
     GoFrame ᒐ = default;
     bool ᒐd1 = false;

@@ -40,6 +40,8 @@ using static go.vendor.golang.org.x.net.nettest_package;
 // when referenced.
 
 // <ExportedTypeAliases>
+[assembly: GoDynamicTypeLift("7374727563747b696f2e5265616465727d", "chunkedCopy_src")]
+[assembly: GoDynamicTypeLift("7374727563747b696f2e5772697465727d", "chunkedCopy_dst")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -71,9 +73,9 @@ using static go.vendor.golang.org.x.net.nettest_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/conntest.go", "conntest.cs", "AFg80oCSgJKAkoCSgJKAkoCSgJKAkoCSgAAICqKCgoKUgpCSkpKCppIACAiSgoSCkoKAgqSAgriSgoCCpICCpJaAgszCgoSigoKCgoCCgpSmgoKClIKCloCCgraAguiCkqaAgvzChIKEgoKCooSCgoKCgoKCAAwSwoSChIKCgqKEgoKCgoKCggAMEJKEgoKCgILKkoSCgoKAgsyihISCgoKUgoKClITqwoKChIKygoKCgsSygoKClIKC1rKCgoKUgoIACg6igoSCooKCxKKCgoKUxISCgqrChIKCloKigoLEooKCgoLWooKCgoIADQ6igpSIooKCooLEooLEooLEooLEooLEooLEooLWhIKqooKAgoKClLjMooKAgqaCgoCCpICCpIK+soKCgpKClIKCgoKUgoKmgIIADBDCgoI=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest.go", "nettest.cs", "AE1KgoCCpICCgqSAgqSAgoKkgpiikoKCtsiCgqqigqqigqqigq7CgpiUxpSkotiUpMaUxpSkpKqigKaSxgACENKClIKAgraCtoK2graCgpSk7sKClIKAgraCtoK2graCgpSk6qKCgpSCgpSCgoKu4rakgpSCgpSqooKClLKCpq7CtqSCgpSygpSAgqSUpoKCgpSClICC1oCC2KaCgpSUgILGkpSAgsaAgqSAgsY=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest_unix.go", "nettest_unix.cs", "ABAWgoKCgpSClA==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/conntest.go", "conntest.cs", "ACI80oCSgJKAkoCSgJKAkoCSgJKAkoCSgAAICqKCgoKUgpCSkpKCppIACAiSgoSCkoKAgqSAgriSgoCCpICCpJaAgszCgoSigoKCgoCCgpSmgoKClIKCloCCgraAguiCkqaAgvzChIKEgoKCooSCgoKCgoKCAAwSwoSChIKCgqKEgoKCgoKCggAMEJKEgoKCgILKkoSCgoKAgsyihISCgoKUgoKClITqwoKChIKygoKCgsSygoKClIKC1rKCgoKUgoIACg6igoSCooKCxKKCgoKUxISCgqrChIKCloKigoLEooKCgoLWooKCgoIADQ6igpSIooKCooLEooLEooLEooLEooLEooLEooLWhIKqooKAgoKClLjMooKAgqaCgoCCpICCpIK+soKCgpKClIKCgoKUgoKmgIIADBDCgoI=", "31-31:1;32-32:2;33-33:3;34-34:4;35-35:5;36-36:6;37-37:7;38-38:8;39-39:9;40-40:10;41-41:11;53-53:1;54-59:2;55-58:2.1;70-78:1;80-89:2;102-132:1;155-168:1;183-196:1;254-260:1;261-271:2;272-282:3;292-296:1;297-304:2;323-327:1;328-335:2;336-343:3;359-362:1;363-366:2;367-370:3;371-374:4;375-378:5;379-382:6;383-386:7;439-442:1")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest.go", "nettest.cs", "AClKgoCCpICCgqSAgqSAgoKkgpiikoKCtsiCgqqigqqigqqigq7CgpiUxpSkotiUpMaUxpSkpKqigKaSxgACENKClIKAgraCtoK2graCgpSk7sKClIKAgraCtoK2graCgpSk6qKCgpSCgpSCgoKu4rakgpSCgpSqooKClLKCpq7CtqSCgpSygpSAgqSUpoKCgpSClICC1oCC2KaCgpSUgILGkpSAgsaAgqSAgsY=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/nettest/nettest_unix.go", "nettest_unix.cs", "AAoWgoKCgpSClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.vendor.golang.org.x.net;
@@ -91,4 +93,29 @@ public static partial class nettest_package
     internal partial struct chunkedCopy_dst {}
     internal partial struct chunkedCopy_src {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrand() => builtin.initPackage(typeof(math.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    [GoInit] internal static void initᴛᴛimportꓸtesting() => builtin.initPackage(typeof(testing_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

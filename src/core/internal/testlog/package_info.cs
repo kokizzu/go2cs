@@ -50,8 +50,8 @@ using static go.@internal.testlog_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/testlog/exit.go", "exit.cs", "ABAi8oKCABAqAAwCgoI=")]
-[assembly: go.GoPositionMap("internal/testlog/log.go", "log.cs", "AChCwoKUqqKCgpSokoCCypKAgsqSgII=")]
+[assembly: go.GoPositionMap("internal/testlog/exit.go", "exit.cs", "AAsi8oKCABAqAAwCgoI=")]
+[assembly: go.GoPositionMap("internal/testlog/log.go", "log.cs", "ACJCwoK8ooKClKiSgILKkoCCypKAgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -69,4 +69,15 @@ public static partial class testlog_package
     internal partial struct panicOnExit0ᴛ1 {}
     public partial interface Interface {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    // </ImportInitializers>
 }

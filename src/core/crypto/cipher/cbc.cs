@@ -8,24 +8,15 @@
 namespace go.crypto;
 
 using bytes = bytes_package;
-using alias = go.crypto.@internal.alias_package;
+using aes = go.crypto.@internal.fips140.aes_package;
+using alias = go.crypto.@internal.fips140.alias_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using subtle = go.crypto.subtle_package;
 using go.crypto;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 
 partial class cipher_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
-    builtin.initPackage(typeof(go.crypto.subtle_package));
-}
 
 [GoType] partial struct cbc {
     internal Block b;
@@ -46,9 +37,8 @@ internal static ж<cbc> newCBC(Block b, slice<byte> iv) {
 [GoType("cbc")] partial struct cbcEncrypter;
 
 // cbcEncAble is an interface implemented by ciphers that have a specific
-// optimized implementation of CBC encryption, like crypto/aes.
-// NewCBCEncrypter will check for this interface and return the specific
-// BlockMode if found.
+// optimized implementation of CBC encryption. crypto/aes doesn't use this
+// anymore, and we'd like to eventually remove it.
 [GoType] partial interface cbcEncAble {
     BlockMode NewCBCEncrypter(slice<byte> iv);
 }
@@ -59,6 +49,14 @@ internal static ж<cbc> newCBC(Block b, slice<byte> iv) {
 public static BlockMode NewCBCEncrypter(Block b, slice<byte> iv) {
     if (len(iv) != b.BlockSize()) {
         throw panic("cipher.NewCBCEncrypter: IV length must equal block size");
+    }
+    {
+        var (bΔ1, ok) = b._<ж<aes.Block>>(ᐧ); if (ok) {
+            return new aes_CBCEncrypterжBlockMode(aes.NewCBCEncrypter(bΔ1, new array<byte>(iv, 16)));
+        }
+    }
+    if (fips140only.Enabled) {
+        throw panic("crypto/cipher: use of CBC with non-AES ciphers is not allowed in FIPS 140-only mode");
     }
     {
         var (cbc, ok) = b._<cbcEncAble>(ᐧ); if (ok) {
@@ -93,6 +91,11 @@ internal static BlockMode newCBCGenericEncrypter(Block b, slice<byte> iv) {
     if (alias.InexactOverlap(dst[..(int)(len(src))], src)) {
         throw panic("crypto/cipher: invalid buffer overlap");
     }
+    {
+        var (_, ok) = x.b._<ж<aes.Block>>(ᐧ); if (ok) {
+            throw panic("crypto/cipher: internal error: generic CBC used with AES");
+        }
+    }
     var iv = x.iv;
     while (len(src) > 0) {
         // Write the xor to dst, then encrypt in place.
@@ -117,9 +120,8 @@ internal static BlockMode newCBCGenericEncrypter(Block b, slice<byte> iv) {
 [GoType("cbc")] partial struct cbcDecrypter;
 
 // cbcDecAble is an interface implemented by ciphers that have a specific
-// optimized implementation of CBC decryption, like crypto/aes.
-// NewCBCDecrypter will check for this interface and return the specific
-// BlockMode if found.
+// optimized implementation of CBC decryption. crypto/aes doesn't use this
+// anymore, and we'd like to eventually remove it.
 [GoType] partial interface cbcDecAble {
     BlockMode NewCBCDecrypter(slice<byte> iv);
 }
@@ -130,6 +132,14 @@ internal static BlockMode newCBCGenericEncrypter(Block b, slice<byte> iv) {
 public static BlockMode NewCBCDecrypter(Block b, slice<byte> iv) {
     if (len(iv) != b.BlockSize()) {
         throw panic("cipher.NewCBCDecrypter: IV length must equal block size");
+    }
+    {
+        var (bΔ1, ok) = b._<ж<aes.Block>>(ᐧ); if (ok) {
+            return new aes_CBCDecrypterжBlockMode(aes.NewCBCDecrypter(bΔ1, new array<byte>(iv, 16)));
+        }
+    }
+    if (fips140only.Enabled) {
+        throw panic("crypto/cipher: use of CBC with non-AES ciphers is not allowed in FIPS 140-only mode");
     }
     {
         var (cbc, ok) = b._<cbcDecAble>(ᐧ); if (ok) {
@@ -163,6 +173,11 @@ internal static BlockMode newCBCGenericDecrypter(Block b, slice<byte> iv) {
     }
     if (alias.InexactOverlap(dst[..(int)(len(src))], src)) {
         throw panic("crypto/cipher: invalid buffer overlap");
+    }
+    {
+        var (_, ok) = x.b._<ж<aes.Block>>(ᐧ); if (ok) {
+            throw panic("crypto/cipher: internal error: generic CBC used with AES");
+        }
     }
     if (len(src) == 0) {
         return;

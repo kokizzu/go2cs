@@ -21,42 +21,6 @@ using ꓸꓸꓸжastꓸFile = Span<ж<global::go.go.ast_package.File>>;
 
 partial class doc_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸlazyregexp() {
-    builtin.initPackage(typeof(@internal.lazyregexp_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpath() {
-    builtin.initPackage(typeof(path_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(global::go.unicode.utf8_package));
-}
-
 // An Example represents an example function found in a test source file.
 [GoType] partial struct Example {
     public @string Name; // name of the item being exemplified (including optional suffix)
@@ -255,12 +219,6 @@ internal static ж<ast.File> playExample(ref ast.File @file, ref ast.FuncDecl f)
     }
     // Find unresolved identifiers and uses of top-level declarations.
     var (depDecls, unresolved) = findDeclsAndUnresolved(new ast.BlockStmtжNode(body), topDecls, typMethods);
-    // Remove predeclared identifiers from unresolved list.
-    foreach (var (n, _) in unresolved) {
-        if (predeclaredTypes[n] || predeclaredConstants[n] || predeclaredFuncs[n]) {
-            delete(unresolved, n);
-        }
-    }
     // Use unresolved identifiers to determine the imports used by this
     // example. The heuristic assumes package names match base import
     // paths for imports w/o renames (should be good enough most of the time).
@@ -312,6 +270,12 @@ internal static ж<ast.File> playExample(ref ast.File @file, ref ast.FuncDecl f)
             spec.Path = ᏑpathΔ1;
             spec.Path.Value.ValuePos = groupStart(Ꮡspec);
             namedImports = append(namedImports, (ast.Spec)(new ast.ImportSpecжSpec(Ꮡspec)));
+            delete(unresolved, n);
+        }
+    }
+    // Remove predeclared identifiers from unresolved list.
+    foreach (var (n, _) in unresolved) {
+        if (predeclaredTypes[n] || predeclaredConstants[n] || predeclaredFuncs[n]) {
             delete(unresolved, n);
         }
     }

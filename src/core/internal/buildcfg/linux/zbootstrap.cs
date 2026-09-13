@@ -5,27 +5,21 @@ using Δruntime = runtime_package;
 
 partial class buildcfg_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
+public static readonly @string DefaultGO386 = @"sse2"u8;
 
-internal static readonly @string defaultGO386 = @"sse2"u8;
+public static readonly @string DefaultGOAMD64 = @"v1"u8;
 
-internal static readonly @string defaultGOAMD64 = @"v1"u8;
+public static readonly @string DefaultGOARM = @"7"u8;
 
-internal static readonly @string defaultGOARM = @"7"u8;
+public static readonly @string DefaultGOARM64 = @"v8.0"u8;
 
-internal static readonly @string defaultGOARM64 = @"v8.0"u8;
+public static readonly @string DefaultGOMIPS = @"hardfloat"u8;
 
-internal static readonly @string defaultGOMIPS = @"hardfloat"u8;
+public static readonly @string DefaultGOMIPS64 = @"hardfloat"u8;
 
-internal static readonly @string defaultGOMIPS64 = @"hardfloat"u8;
+public static readonly @string DefaultGOPPC64 = @"power8"u8;
 
-internal static readonly @string defaultGOPPC64 = @"power8"u8;
-
-internal static readonly @string defaultGORISCV64 = @"rva20u64"u8;
+public static readonly @string DefaultGORISCV64 = @"rva20u64"u8;
 
 internal static readonly @string defaultGOEXPERIMENT = @""u8;
 
@@ -33,10 +27,12 @@ internal static readonly @string defaultGO_EXTLINK_ENABLED = @""u8;
 
 internal static readonly @string defaultGO_LDSO = @""u8;
 
-internal static readonly @string version = @"go1.23.12"u8;
+internal static readonly @string version = @"go1.24.13"u8;
 
 internal static readonly @string defaultGOOS = "linux";
 
 internal static readonly @string defaultGOARCH = "amd64";
+
+public static readonly @string DefaultGOFIPS140 = @"off"u8;
 
 } // end buildcfg_package

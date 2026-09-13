@@ -49,7 +49,7 @@ public static bool IsInf(float64 f, nint sign) {
     // To avoid the floating-point hardware, could use:
     //	x := Float64bits(f);
     //	return sign >= 0 && x == uvinf || sign <= 0 && x == uvneginf;
-    return sign >= 0 && f > MaxFloat64 || sign <= 0 && f < -MaxFloat64;
+    return sign >= 0 && f > MaxFloat64 || sign <= 0 && f < /* -MaxFloat64 */ -1.7976931348623157e+308D;
 }
 
 // normalize returns a normal number y and exponent exp

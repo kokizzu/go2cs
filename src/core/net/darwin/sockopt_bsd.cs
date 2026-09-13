@@ -5,7 +5,7 @@
 namespace go;
 
 using os = os_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 
 partial class net_package {
@@ -14,7 +14,7 @@ partial class net_package {
 internal static readonly @string setsockoptˢ = "setsockopt"u8;
 
 internal static error setDefaultSockopts(nint s, nint family, nint sotype, bool ipv6only) {
-    if (Δruntime.GOOS == "dragonfly"u8 && sotype != syscall.SOCK_RAW) {
+    if (runtime.GOOS == "dragonfly"u8 && sotype != syscall.SOCK_RAW) {
         // On DragonFly BSD, we adjust the ephemeral port
         // range because unlike other BSD systems its default
         // port range doesn't conform to IANA recommendation

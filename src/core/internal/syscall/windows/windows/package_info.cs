@@ -41,6 +41,7 @@ using static go.@internal.syscall.windows_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<NTStatus, error>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -54,11 +55,14 @@ using static go.@internal.syscall.windows_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
+[assembly: go.GoPositionMap("internal/syscall/windows/at_windows.go", "at_windows.cs", "ABcygoKWkpakgqSCqNSClIKmgqaCgpSCpoSCgpSClICCpoIAARDSlIK0tLaCgpaCAAsagpaCgoKCqKiSgpSUlAACFAAIArakpoKCgIKkggALGoKUgqaigoCCpIIABhCClIQABBAACh6UpAAHEAAHEoCCpA==")]
 [assembly: go.GoPositionMap("internal/syscall/windows/reparse_windows.go", "reparse_windows.cs", "AD+EAZKCggATKpKCgg==")]
-[assembly: go.GoPositionMap("internal/syscall/windows/security_windows.go", "security_windows.cs", "ACNcsoKUppSUAA0eggAxeg==")]
-[assembly: go.GoPositionMap("internal/syscall/windows/syscall_windows.go", "syscall_windows.cs", "ABcqwoKUgoKCgpQA9AH+BIKCgpSCgpQAJ2SSADiGAbKCgoKClIKUlKzM")]
-[assembly: go.GoPositionMap("internal/syscall/windows/version_windows.go", "version_windows.cs", "ABw60pKCggALFIKEgoKCgpSCgoKUgoLaooKqooKssoL+ggAJDoaChIKCgpSCgqY=")]
-[assembly: go.GoPositionMap("internal/syscall/windows/zsyscall_windows.go", "zsyscall_windows.cs", "ABk0opSk2gA5kAGiwoKUpqKCgpSmouKClKaywoKClKayooKClKaigoKUooKUpqKigpSmooKClKaigoKUpqKCgpSigpSmosKClKaywoKClKaigoKmosKClKaigoKmsoKCgpSmoqKClKayooKClKayooKClKayooKClKaiAAoCgpSmosKClKaiooKUpqKigpSmoqKClKaiwoKUprLCgoKUpqLCgqai4oKmooKClKaiooKUpqKigpQABBaiwoKUpqIACgKClKaCoqaiooKUpqKCgpSigpSmoqKClKaiwoKUAAQesqKCgpQ=")]
+[assembly: go.GoPositionMap("internal/syscall/windows/security_windows.go", "security_windows.cs", "ACZisoKUppSUAA0eggBBpgEACwjCkoKCgoKUgpSCzJKSgoKCgpSClIIACRSCpoKCgpQAEEoAEAKC2LKC2LKC")]
+[assembly: go.GoPositionMap("internal/syscall/windows/string_windows.go", "string_windows.cs", "ABAowoKClKQ=")]
+[assembly: go.GoPositionMap("internal/syscall/windows/syscall_windows.go", "syscall_windows.cs", "ABIqwoKUgoKCgpQA9gGCBYKCgpSCgpQAJ2SSADiGAbKCgoKClIKUlKzMAAkQoqaApII=")]
+[assembly: go.GoPositionMap("internal/syscall/windows/types_windows.go", "types_windows.cs", "AHTgAZKClIKClIKClII=")]
+[assembly: go.GoPositionMap("internal/syscall/windows/version_windows.go", "version_windows.cs", "ABc60pKCggALFIKEgoKCgpSCgoKUgoLaooKqooKssoL+ggAJDoaChIKCgpSCgqY=")]
+[assembly: go.GoPositionMap("internal/syscall/windows/zsyscall_windows.go", "zsyscall_windows.cs", "ABM0opSk2gBGqgGiwoKUpqKigqaiooKmoqKCpqKCgpSmooKClKaiooKmogAIAoKUpqLigpSmssKCgpSmsqKCgpSmooKClKKClKaiooKUpqKCgpSmooKClKaigoKUooKUpqLCgpSmssKCgpSmooKCpqLCgpSmooKCprKCgoKUpqKigpSmsqKCgpSmsqKCgpSmsqKCgpSmsqKCgpSmogAKAoKUpqLCgpSmoqKClAAGJqLCgpSmssKCgpSmosKCpqLigqaiooKUpqKigpSmoqKClAAEFqLCgpSmouKClKaiwoKUAAQWogAIAoKUpqLigpSmoqKClAAEEKKCgqaiooKUpqKCgpSigpSmoqKClKaiwoKUAAQesqKCgpQ=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.syscall;
@@ -75,10 +79,15 @@ public static partial class windows_package
     // <TypeAccessibility>
     [GoValueClone("csdVersion")] internal partial struct _OSVERSIONINFOW {}
     internal partial struct sendRecvMsgFuncᴛ1 {}
+    public partial struct ACCESS_MASK {}
+    public partial struct ACL {}
     public partial struct FILE_ATTRIBUTE_TAG_INFO {}
     public partial struct FILE_BASIC_INFO {}
+    public partial struct FILE_DISPOSITION_INFORMATION {}
+    public partial struct FILE_DISPOSITION_INFORMATION_EX {}
     [GoValueClone("FileName")] public partial struct FILE_FULL_DIR_INFO {}
     [GoValueClone("ShortName", "FileName")] public partial struct FILE_ID_BOTH_DIR_INFO {}
+    public partial struct IO_STATUS_BLOCK {}
     [GoValueClone("PhysicalAddress", "ZoneIndices")] public partial struct IpAdapterAddresses {}
     public partial struct IpAdapterAnycastAddress {}
     public partial struct IpAdapterDnsServerAdapter {}
@@ -93,20 +102,43 @@ public static partial class windows_package
     public partial struct MemoryBasicInformation {}
     [GoValueClone("Module", "ExePath")] public partial struct ModuleEntry32 {}
     [GoValueClone("PathBuffer")] public partial struct MountPointReparseBuffer {}
+    public partial struct NTStatus {}
+    public partial struct NTUnicodeString {}
+    public partial struct OBJECT_ATTRIBUTES {}
     public partial struct PROCESS_MEMORY_COUNTERS {}
     public partial struct REPARSE_DATA_BUFFER {}
     public partial struct REPARSE_DATA_BUFFER_HEADER {}
+    public partial struct SECURITY_DESCRIPTOR {}
+    public partial struct SECURITY_DESCRIPTOR_CONTROL {}
+    public partial struct SECURITY_QUALITY_OF_SERVICE {}
     public partial struct SERVICE_STATUS {}
     public partial struct SHARE_INFO_2 {}
     public partial struct SID_AND_ATTRIBUTES {}
+    [GoValueClone("Value")] public partial struct SID_IDENTIFIER_AUTHORITY {}
     public partial struct SecurityAttributes {}
     public partial struct SocketAddress {}
     [GoValueClone("PathBuffer")] public partial struct SymbolicLinkReparseBuffer {}
     public partial struct TCP_INITIAL_RTO_PARAMETERS {}
+    [GoValueClone("Groups")] public partial struct TOKEN_GROUPS {}
     public partial struct TOKEN_MANDATORY_LABEL {}
     [GoValueClone("Privileges")] public partial struct TOKEN_PRIVILEGES {}
     public partial struct TokenType {}
+    public partial struct UserInfo1 {}
     public partial struct UserInfo4 {}
     public partial struct WSAMsg {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸsysdll() => builtin.initPackage(typeof(go.@internal.syscall.windows.sysdll_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

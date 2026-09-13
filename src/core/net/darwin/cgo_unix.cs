@@ -12,6 +12,7 @@ using context = context_package;
 using errors = errors_package;
 using bytealg = @internal.bytealg_package;
 using netip = net.netip_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
 using dnsmessage = vendor.golang.org.x.net.dns.dnsmessage_package;
@@ -20,36 +21,6 @@ using net;
 using vendor.golang.org.x.net.dns;
 
 partial class net_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
-    builtin.initPackage(typeof(@internal.bytealg_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸdnsꓸdnsmessage() {
-    builtin.initPackage(typeof(vendor.golang.org.x.net.dns.dnsmessage_package));
-}
 
 // cgoAvailable set to true to indicate that the cgo resolver
 // is available on this system.
@@ -263,7 +234,8 @@ internal static (slice<IPAddr> addrs, error err) cgoLookupHostIP(@string network
         (var gerrno, err) = _C_getaddrinfo(h, nil, Ꮡhints, Ꮡres);
         if (gerrno != 0) {
             var exprᴛ1 = gerrno;
-            if (exprᴛ1 == _C_EAI_SYSTEM) {
+            var matchᴛ1 = false;
+            if (exprᴛ1 == _C_EAI_SYSTEM) { matchᴛ1 = true;
                 if (err == default!) {
                     // err should not be nil, but sometimes getaddrinfo returns
                     // gerrno == _C_EAI_SYSTEM with err == nil on Linux.
@@ -276,10 +248,21 @@ internal static (slice<IPAddr> addrs, error err) cgoLookupHostIP(@string network
                 }
                 (addrs, err) = (default!, new DNSErrorжerror(newDNSError(err, name, ""u8))); goto ᒐdone;
             }
-            if (exprᴛ1 == _C_EAI_NONAME || exprᴛ1 == _C_EAI_NODATA) {
+            if (exprᴛ1 == _C_EAI_NONAME || exprᴛ1 == _C_EAI_NODATA) { matchᴛ1 = true;
                 (addrs, err) = (default!, new DNSErrorжerror(newDNSError(new notFoundErrorжerror(errNoSuchHost), name, ""u8))); goto ᒐdone;
             }
-            { /* default: */
+            if (exprᴛ1 == _C_EAI_ADDRFAMILY) { matchᴛ1 = true;
+                if (runtime.GOOS == "freebsd"u8) {
+                    // FreeBSD began returning EAI_ADDRFAMILY for valid hosts without
+                    // an A record in 13.2. We previously returned "no such host" for
+                    // this case.
+                    //
+                    // https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=273912
+                    (addrs, err) = (default!, new DNSErrorжerror(newDNSError(new notFoundErrorжerror(errNoSuchHost), name, ""u8))); goto ᒐdone;
+                }
+                fallthrough = true;
+            }
+            if (fallthrough || !matchᴛ1) { /* default: */
                 (addrs, err) = (default!, new DNSErrorжerror(newDNSError(((addrinfoErrno)gerrno), name, ""u8))); goto ᒐdone;
             }
 

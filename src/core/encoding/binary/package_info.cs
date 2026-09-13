@@ -60,7 +60,7 @@ using static go.encoding.binary_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/binary/binary.go", "binary.cs", "AGiIAYKCpoKCgqaCzIKCpoKCgoKCpoIABhCCgqiCgoKCgoKCgoKmggANGIDUgNiCgqaCgoKmgsyCgqaCgoKCgqaCAAYQgoKogoKCgoKCgoKCpoIADRiA1IDUgNSAAAIkABEEgIKCgIKmgsqCgpSCpKSCloKAgqSCrsKAgoKWgsqCgpSCpKSCloKUgoKmgpS0tLS0tLS0tLS0tJLGgsa0gsaCxoLGgsaCxoLGgsaC1pQAAhYACQSAgoKCloK4goKCloKCgoKu1ICCgpaCuIKCgpaClIKCrtSAgoKCuIKCgpaCgoKmgpSClMaClMaCgpTYtLSCxrS0tLS0gsa0tILGtLSCxrS0gsa0tILGtLSCxrS0gsa0tIIABRCyxKSClKSClKSClKSkpMSkgpSkgpSkpMSkgpSkgpSkpMSkgpSkgpSkpKSkgpSkpIKUpKSUAAUSwpSCgIKmgoKClLiCgIKkgoKmgriokpSAgsiCgoKClJSspgAMGIKCgqaCgpSUpoKCgqaCgqaCgoKmgoKmgoKCpoKCpoKCgqaCgqaApICkgKSApICkgKSApICkgpSCgriCgtyAgpTagoK4pqSkpKakpKSmpKbK7oKUgoK4goKUgIKU2oKCuKakpKSmpKSkpqSmgoKkgoLIgqaCgoKssvSkpKTkpKTkpKTkpKTExKSklKqigoI=")]
+[assembly: go.GoPositionMap("encoding/binary/binary.go", "binary.cs", "AESKAZKCqJKCgqiSzpKCqJKCgoKCqJIABhKSgqqSgoKCgoKCgoKokgANGIDUgNqSgqiSgoKoks6SgqiSgoKCgqiSAAYSkoKqkoKCgoKCgoKCqJIADRiA1IDUgNSAAAIkABEEgIKCgIKmgsqCgpSCpKSCloKAgqSCrsKAgoKWgsqCgpSCpKSCloKUgoKmgpS0tLS0tLS0tLS0tJLGgsa0gsaCxoLGgsaCxoLGgsaC1pQAAhYACQSAgoKCloK4goKCloKCgoKu1ICCgpaCuIKCgpaClIKCrtSAgoKCuIKCgpaCgoKmgpSClMaClMaCgpTYtLSCxrS0tLS0gsa0tILGtLSCxrS0gsa0tILGtLSCxrS0gsa0tIIABRCyxKSClKSClKSClKSkpMSkgpSkgpSkpMSkgpSkgpSkpMSkgpSkgpSkpKSkgpSkpIKUpKSUAAUSwpSCgIKmgoKClLiCgIKkgoKmgriokpSAgsiCgoKClJSspgAMGIKCgqaCgpSUpoKCgqaCgqaCgoKmgoKmgoKCpoKCpoKCgqaCgqaApICkgKSApICkgKSApICkgpSCgriCgtyAgpTagoK4pqSkpKakpKSmpKbK7oKUgoK4goKUgIKU2oKCuKakpKSmpKSkpqSmgoKkgoLIgqaCgoKssvSkpKTkpKTkpKTkpKTExKSklKqigoI=")]
 [assembly: go.GoPositionMap("encoding/binary/varint.go", "varint.cs", "ACRSooKClKqigoKCgpSCAAIS4oKCgqaUgoKUlIKUqqKCgpSqooKClAACEuKCgoKUAAQSwoKCgoKCgpSUgoKUlIKUrsKCgoKU")]
 // </GoSourcePositionMaps>
 
@@ -85,4 +85,19 @@ public static partial class binary_package
     public partial struct littleEndian {}
     public partial struct nativeEndian {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

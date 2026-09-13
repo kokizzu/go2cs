@@ -10,12 +10,6 @@ using @internal.syscall.windows;
 
 partial class time_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸregistry() {
-    builtin.initPackage(typeof(@internal.syscall.windows.registry_package));
-}
-
 internal static slice<@string> platformZoneSources; // none: Windows uses system calls instead
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -31,7 +25,7 @@ internal static readonly @string dltˢ = "Dlt"u8;
 // time apply to all previous and future years as well.
 
 // matchZoneKey checks if stdname and dstname match the corresponding key
-// values "MUI_Std" and MUI_Dlt" or "Std" and "Dlt" in the kname key stored
+// values "MUI_Std" and "MUI_Dlt" or "Std" and "Dlt" in the kname key stored
 // under the open registry key zones.
 internal static (bool matched, error err2) matchZoneKey(registry.Key zones, @string kname, @string stdname, @string dstname) {
     bool matched = default!;

@@ -4,26 +4,17 @@
 namespace go.crypto;
 
 using cipher = go.crypto.cipher_package;
-using alias = go.crypto.@internal.alias_package;
+using alias = go.crypto.@internal.fips140.alias_package;
+using fips140only = go.crypto.@internal.fips140only_package;
+using errors = errors_package;
 using byteorder = go.@internal.byteorder_package;
 using strconv = strconv_package;
 using go.@internal;
 using go.crypto;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 
 partial class des_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() {
-    builtin.initPackage(typeof(go.crypto.cipher_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
 
 // The DES block size in bytes.
 public static UntypedInt ΔBlockSize => 8;
@@ -39,8 +30,14 @@ public static @string Error(this KeySizeError k) {
     internal array<uint64> subkeys = new(16);
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cryptoDesUseOfDesIsNotˢ = "crypto/des: use of DES is not allowed in FIPS 140-only mode"u8;
+
 // NewCipher creates and returns a new [cipher.Block].
 public static (cipher.Block, error) NewCipher(slice<byte> key) {
+    if (fips140only.Enabled) {
+        return (default!, errors.New(cryptoDesUseOfDesIsNotˢ));
+    }
     if (len(key) != 8) {
         return (default!, ((KeySizeError)len(key)));
     }
@@ -84,8 +81,14 @@ public static (cipher.Block, error) NewCipher(slice<byte> key) {
     internal desCipher cipher1, cipher2, cipher3;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cryptoDesUseOfTripleDESˢ = "crypto/des: use of TripleDES is not allowed in FIPS 140-only mode"u8;
+
 // NewTripleDESCipher creates and returns a new [cipher.Block].
 public static (cipher.Block, error) NewTripleDESCipher(slice<byte> key) {
+    if (fips140only.Enabled) {
+        return (default!, errors.New(cryptoDesUseOfTripleDESˢ));
+    }
     if (len(key) != 24) {
         return (default!, ((KeySizeError)len(key)));
     }
@@ -110,7 +113,7 @@ public static (cipher.Block, error) NewTripleDESCipher(slice<byte> key) {
     if (alias.InexactOverlap(dst[..(int)(ΔBlockSize)], src[..(int)(ΔBlockSize)])) {
         throw panic("crypto/des: invalid buffer overlap");
     }
-    var b = byteorder.BeUint64(src);
+    var b = byteorder.BEUint64(src);
     b = permuteInitialBlock(b);
     var (left, right) = ((uint32)((b >> (int)(32))), (uint32)b);
     left = (uint32)(((left << (int)(1))) | ((left >> (int)(31))));
@@ -127,7 +130,7 @@ public static (cipher.Block, error) NewTripleDESCipher(slice<byte> key) {
     left = (uint32)(((left << (int)(31))) | ((left >> (int)(1))));
     right = (uint32)(((right << (int)(31))) | ((right >> (int)(1))));
     var preOutput = (uint64)((((uint64)right << (int)(32))) | (uint64)left);
-    byteorder.BePutUint64(dst, permuteFinalBlock(preOutput));
+    byteorder.BEPutUint64(dst, permuteFinalBlock(preOutput));
 }
 
 [GoRecv] internal static void Decrypt(this ref tripleDESCipher c, slice<byte> dst, slice<byte> src) {
@@ -140,7 +143,7 @@ public static (cipher.Block, error) NewTripleDESCipher(slice<byte> key) {
     if (alias.InexactOverlap(dst[..(int)(ΔBlockSize)], src[..(int)(ΔBlockSize)])) {
         throw panic("crypto/des: invalid buffer overlap");
     }
-    var b = byteorder.BeUint64(src);
+    var b = byteorder.BEUint64(src);
     b = permuteInitialBlock(b);
     var (left, right) = ((uint32)((b >> (int)(32))), (uint32)b);
     left = (uint32)(((left << (int)(1))) | ((left >> (int)(31))));
@@ -157,7 +160,7 @@ public static (cipher.Block, error) NewTripleDESCipher(slice<byte> key) {
     left = (uint32)(((left << (int)(31))) | ((left >> (int)(1))));
     right = (uint32)(((right << (int)(31))) | ((right >> (int)(1))));
     var preOutput = (uint64)((((uint64)right << (int)(32))) | (uint64)left);
-    byteorder.BePutUint64(dst, permuteFinalBlock(preOutput));
+    byteorder.BEPutUint64(dst, permuteFinalBlock(preOutput));
 }
 
 } // end des_package

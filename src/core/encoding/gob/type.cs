@@ -6,6 +6,7 @@ namespace go.encoding;
 using encoding = encoding_package;
 using errors = errors_package;
 using fmt = fmt_package;
+using maps = maps_package;
 using os = os_package;
 using reflect = reflect_package;
 using sync = sync_package;
@@ -17,30 +18,6 @@ using go.unicode;
 using io = io_package;
 
 partial class gob_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
 
 // userTypeInfo stores the information associated with a type the user has handed
 // to the package. It's computed once and stored in a map keyed by reflection
@@ -901,10 +878,7 @@ internal static (ж<typeInfo>, error) buildTypeInfo(ref userTypeInfo ut, reflect
         }
         // Create new map with old contents plus new entry.
         var (m, _) = ᏑtypeInfoMap.Load()._<map<reflectꓸType, ж<typeInfo>>>(ᐧ);
-        var newm = new map<reflectꓸType, ж<typeInfo>>(len(m));
-        foreach (var (k, v) in m) {
-            newm[k] = v;
-        }
+        var newm = maps.Clone<map<reflectꓸType, ж<typeInfo>>, reflectꓸType, ж<typeInfo>>(m);
         newm[rt] = info;
         ᏑtypeInfoMap.Store(newm);
         return (info, default!);

@@ -13,6 +13,7 @@ partial class runtime_package {
 //go:linkname _cgo_panic_internal
 //go:linkname cgoAlwaysFalse
 //go:linkname cgoUse
+//go:linkname cgoKeepAlive
 //go:linkname cgoCheckPointer
 //go:linkname cgoCheckResult
 //go:linkname cgoNoCallback

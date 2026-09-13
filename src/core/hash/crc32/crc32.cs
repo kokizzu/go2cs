@@ -22,30 +22,6 @@ using go.sync;
 
 partial class crc32_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
 // The size of a CRC-32 checksum in bytes.
 public static UntypedInt ΔSize => 4;
 
@@ -96,24 +72,22 @@ internal static ж<slicing8Table> castagnoliTable8;
 
 internal static Func<uint32, slice<byte>, uint32> updateCastagnoli;
 
-internal static ж<sync.Once> ᏑcastagnoliOnce = new StandardBox<sync.Once>(default(sync.Once));
-internal static ref sync.Once castagnoliOnce => ref ᏑcastagnoliOnce.Value;
-
 internal static ж<atomic.Bool> ᏑhaveCastagnoli = new StandardBox<atomic.Bool>(default(atomic.Bool));
 internal static ref atomic.Bool haveCastagnoli => ref ᏑhaveCastagnoli.Value;
 
-internal static void castagnoliInit() {
+// Initialize the slicing-by-8 table.
+internal static Action castagnoliInitOnce;
+internal static void initᴛcastagnoliInitOnce() { castagnoliInitOnce = sync.OnceFunc(() => {
     castagnoliTable = simpleMakeTable(Castagnoli);
     if (archAvailableCastagnoli()){
         archInitCastagnoli();
         updateCastagnoli = archUpdateCastagnoli;
     } else {
-        // Initialize the slicing-by-8 table.
         castagnoliTable8 = slicingMakeTable(Castagnoli);
         updateCastagnoli = (uint32 crc, slice<byte> p) => slicingUpdate(crc, castagnoliTable8, p);
     }
     ᏑhaveCastagnoli.Store(true);
-}
+}); }
 
 // IEEETable is the table for the [IEEE] polynomial.
 public static ж<Table> IEEETable = simpleMakeTable(IEEE);
@@ -123,30 +97,28 @@ internal static ж<slicing8Table> ieeeTable8;
 
 internal static Func<uint32, slice<byte>, uint32> updateIEEE;
 
-internal static ж<sync.Once> ᏑieeeOnce = new StandardBox<sync.Once>(default(sync.Once));
-internal static ref sync.Once ieeeOnce => ref ᏑieeeOnce.Value;
-
-internal static void ieeeInit() {
+// Initialize the slicing-by-8 table.
+internal static Action ieeeInitOnce;
+internal static void initᴛieeeInitOnce() { ieeeInitOnce = sync.OnceFunc(() => {
     if (archAvailableIEEE()){
         archInitIEEE();
         updateIEEE = archUpdateIEEE;
     } else {
-        // Initialize the slicing-by-8 table.
         ieeeTable8 = slicingMakeTable(IEEE);
         updateIEEE = (uint32 crc, slice<byte> p) => slicingUpdate(crc, ieeeTable8, p);
     }
-}
+}); }
 
 // MakeTable returns a [Table] constructed from the specified polynomial.
 // The contents of this [Table] must not be modified.
 public static ж<Table> MakeTable(uint32 poly) {
     var exprᴛ1 = poly;
     if (exprᴛ1 == IEEE) {
-        ᏑieeeOnce.Do(ieeeInit);
+        ieeeInitOnce();
         return IEEETable;
     }
     if (exprᴛ1 == Castagnoli) {
-        ᏑcastagnoliOnce.Do(castagnoliInit);
+        castagnoliInitOnce();
         return castagnoliTable;
     }
     { /* default: */
@@ -168,7 +140,7 @@ public static ж<Table> MakeTable(uint32 poly) {
 // marshal and unmarshal the internal state of the hash.
 public static hash.Hash32 New(ж<Table> Ꮡtab) {
     if (Ꮡtab == IEEETable) {
-        ᏑieeeOnce.Do(ieeeInit);
+        ieeeInitOnce();
     }
     return new digestжHash32(Ꮡ(new digest(0, Ꮡtab)));
 }
@@ -197,12 +169,15 @@ public static hash.Hash32 NewIEEE() {
 internal static readonly @string magic = "crc\x01"u8;
 internal const nint marshaledSize = /* len(magic) + 4 + 4 */ 12;
 
-[GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
-    var b = new slice<byte>(0, marshaledSize);
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref digest d, slice<byte> b) {
     b = append(b, magic.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint32(b, tableSum(d.tab));
-    b = byteorder.BeAppendUint32(b, d.crc);
+    b = byteorder.BEAppendUint32(b, tableSum(d.tab));
+    b = byteorder.BEAppendUint32(b, d.crc);
     return (b, default!);
+}
+
+[GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
+    return d.AppendBinary(new slice<byte>(0, marshaledSize));
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -217,10 +192,10 @@ internal static readonly @string hashCrc32TablesDoNotˢ = "hash/crc32: tables do
     if (len(b) != marshaledSize) {
         return errors.New(hashCrc32InvalidHashˢ2);
     }
-    if (tableSum(d.tab) != byteorder.BeUint32(b[4..])) {
+    if (tableSum(d.tab) != byteorder.BEUint32(b[4..])) {
         return errors.New(hashCrc32TablesDoNotˢ);
     }
-    d.crc = byteorder.BeUint32(b[8..]);
+    d.crc = byteorder.BEUint32(b[8..]);
     return default!;
 }
 
@@ -231,7 +206,7 @@ internal static uint32 update(uint32 crc, ж<Table> Ꮡtab, slice<byte> p, bool 
     }
     case {} when Ꮡtab == IEEETable: {
         if (checkInitIEEE) {
-            ᏑieeeOnce.Do(ieeeInit);
+            ieeeInitOnce();
         }
         return updateIEEE(crc, p);
     }
@@ -273,7 +248,7 @@ public static uint32 Checksum(slice<byte> data, ж<Table> Ꮡtab) {
 // ChecksumIEEE returns the CRC-32 checksum of data
 // using the [IEEE] polynomial.
 public static uint32 ChecksumIEEE(slice<byte> data) {
-    ᏑieeeOnce.Do(ieeeInit);
+    ieeeInitOnce();
     return updateIEEE(0, data);
 }
 
@@ -285,7 +260,7 @@ internal static uint32 tableSum(ж<Table> Ꮡt) {
     var b = a[..0];
     if (Ꮡt != nil) {
         foreach (var (_, x) in t) {
-            b = byteorder.BeAppendUint32(b, x);
+            b = byteorder.BEAppendUint32(b, x);
         }
     }
     return ChecksumIEEE(b);

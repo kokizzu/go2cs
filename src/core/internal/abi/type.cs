@@ -28,8 +28,16 @@ partial class abi_package {
     // (ptr to object A, ptr to object B) -> ==?
     public Func<@unsafe.Pointer, @unsafe.Pointer, bool> Equal;
     // GCData stores the GC type data for the garbage collector.
-    // If the KindGCProg bit is set in kind, GCData is a GC program.
-    // Otherwise it is a ptrmask bitmap. See mbitmap.go for details.
+    // Normally, GCData points to a bitmask that describes the
+    // ptr/nonptr fields of the type. The bitmask will have at
+    // least PtrBytes/ptrSize bits.
+    // If the TFlagGCMaskOnDemand bit is set, GCData is instead a
+    // **byte and the pointer to the bitmask is one dereference away.
+    // The runtime will build the bitmask if needed.
+    // (See runtime/type.go:getGCMask.)
+    // Note: multiple types may have the same value of GCData,
+    // including when TFlagGCMaskOnDemand is set. The types will, of course,
+    // have the same pointer layout (but not necessarily the same size).
     public ж<byte> GCData;
     public NameOff Str; // string form
     public TypeOff PtrToThis; // type for pointer to this type, may be zero
@@ -66,7 +74,6 @@ public static ΔKind Struct => 25;
 public static ΔKind UnsafePointer => 26;
 
 public static ΔKind KindDirectIface => /* 1 << 5 */ 32;
-public static ΔKind KindGCProg => /* 1 << 6 */ 64;       // Type.gc points to GC program
 public static ΔKind KindMask => /* (1 << 5) - 1 */ 31;
 
 [GoType("num:uint8")] partial struct TFlag;
@@ -75,7 +82,7 @@ public static TFlag TFlagUncommon => /* 1 << 0 */ 1;
 public static TFlag TFlagExtraStar => /* 1 << 1 */ 2;
 public static TFlag TFlagNamed => /* 1 << 2 */ 4;
 public static TFlag TFlagRegularMemory => /* 1 << 3 */ 8;
-public static TFlag TFlagUnrolledBitmap => /* 1 << 4 */ 16;
+public static TFlag TFlagGCMaskOnDemand => /* 1 << 4 */ 16;
 
 [GoType("num:int32")] partial struct NameOff;
 
@@ -158,6 +165,9 @@ public static ж<Type> TypeFor<T>() {
 }
 
 [GoRecv] public static slice<byte> GcSlice(this ref Type t, uintptr begin, uintptr end) {
+    if ((TFlag)(t.TFlag & TFlagGCMaskOnDemand) != 0) {
+        throw panic("GcSlice can't handle on-demand gcdata types");
+    }
     return @unsafe.Slice(t.GCData, (nint)end)[(int)(begin)..];
 }
 
@@ -283,7 +293,7 @@ public static ΔChanDir InvalidDir => 0;
 }
 
 [GoType("dyn")] internal partial struct Uncommon_uᴛ5 {
-    public partial ref ΔMapType MapType { get; }
+    internal partial ref mapType mapType { get; }
     internal UncommonType u;
 }
 
@@ -339,14 +349,14 @@ public static ж<UncommonType> Uncommon(this ж<Type> Ꮡt) {
 
 // go2cs generated this placeholder — func StructType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// MapType returns t cast to a *MapType, or nil if its tag does not match.
-public static ж<ΔMapType> MapType(this ж<Type> Ꮡt) {
+// MapType returns t cast to a *OldMapType or *SwissMapType, or nil if its tag does not match.
+public static ж<mapType> MapType(this ж<Type> Ꮡt) {
     ref var t = ref Ꮡt.DerefOrNull();
 
     if (t.Kind() != Map) {
         return default!;
     }
-    return Ꮡt.Reinterpret<Type, ΔMapType>();
+    return Ꮡt.Reinterpret<Type, mapType>();
 }
 
 // go2cs generated this placeholder — func ArrayType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
@@ -404,46 +414,6 @@ public static nint NumMethod(this ж<Type> Ꮡt) {
 // NumMethod returns the number of interface methods in the type's method set.
 [GoRecv] public static nint NumMethod(this ref ΔInterfaceType t) {
     return len(t.Methods);
-}
-
-[GoType] partial struct ΔMapType {
-    public partial ref Type Type { get; }
-    public ж<Type> Key;
-    public ж<Type> Elem;
-    public ж<Type> Bucket; // internal type representing a hash bucket
-    // function for hashing keys (ptr to key, seed) -> hash
-    public Func<@unsafe.Pointer, uintptr, uintptr> Hasher;
-    public uint8 KeySize;  // size of key slot
-    public uint8 ValueSize;  // size of elem slot
-    public uint16 BucketSize; // size of bucket
-    public uint32 Flags;
-}
-
-// Note: flag values must match those used in the TMAP case
-// in ../cmd/compile/internal/reflectdata/reflect.go:writeType.
-[GoRecv] public static bool IndirectKey(this ref ΔMapType mt) {
-    // store ptr to key instead of key itself
-    return (uint32)(mt.Flags & 1) != 0;
-}
-
-[GoRecv] public static bool IndirectElem(this ref ΔMapType mt) {
-    // store ptr to elem instead of elem itself
-    return (uint32)(mt.Flags & 2) != 0;
-}
-
-[GoRecv] public static bool ReflexiveKey(this ref ΔMapType mt) {
-    // true if k==k for all keys
-    return (uint32)(mt.Flags & 4) != 0;
-}
-
-[GoRecv] public static bool NeedKeyUpdate(this ref ΔMapType mt) {
-    // true if we need to update key on an overwrite
-    return (uint32)(mt.Flags & 8) != 0;
-}
-
-[GoRecv] public static bool HashMightPanic(this ref ΔMapType mt) {
-    // true if hash function might panic
-    return (uint32)(mt.Flags & 16) != 0;
 }
 
 // go2cs generated this placeholder — func Key is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])

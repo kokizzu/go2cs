@@ -70,10 +70,10 @@ using static go.mime.multipart_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("mime/multipart/formdata.go", "formdata.cs", "AEZAAAoCAA0Q4oKYgoKCpoKAgoCCgsaEkoKAgraCgoK4goKCABAkgoKUgoKClKaCgoKClIKUgpSEgoKUmrKCgqaWhJSCgpSCgpSCmJKCgoKClIKUuIKClIKCgoKmgoCCpIKWhIKUgoKCgoKAgqSmgoKClJbmooKCgoKCpgAMHJKCgoKCgoLKAA0gkoCCgqSCgoKUgpQAFSiCgpQ=")]
-[assembly: go.GoPositionMap("mime/multipart/multipart.go", "multipart.cs", "AFuYAcaClIKU3LKClIKCuNaCgoKCggADFOKCABImooKUgtaCuICCpJaCgoKCpqaCgoKCpoKUqqIACBKCgqiCgoKUgoLMgpSCgpSCgoKClAACGgAKApSClKSktoK6gIKUpKTGgt6CgpQAAh4ADAKCgpSUhIKogoKUlJSCqKaCggAZOIKAgoCCgsYAAhLiAAIQ0qaigpSClIKChNyUgpaCgoKClIKWlJaClpTegoKWvrKClIKCpu6ClIK6goKUrsKClA==")]
+[assembly: go.GoPositionMap("mime/multipart/formdata.go", "formdata.cs", "ABZAAAoCAA0Q4oKYgoKCpoKAgoCCgsaEkoKAgraCgoK4goKCABAkgoKUgoKClKaCgoKClIKUgpSEgoKUmrKCgqaWhJSCgpSCgpSCmJKCgoKClIKUuIKClIKCgoKmgoCCpIKWhIKUgoKCgoKAgqSmgoKClJbmooKCgoKCpgAMHJKCgoKCgoLKAA0gkoCCgqSCgoKUgpQAFSiCgpQ=", "62-81:1")]
+[assembly: go.GoPositionMap("mime/multipart/multipart.go", "multipart.cs", "AEyYAcaClIKU3LKClIKCuNaCgoKCggADFOKCABImooKUgtaCuICCpJaCgoKCpqaCgoKCpoKUqqIACBKCgqiCgoKUgoLMgpSCgpSCgoKClAACGgAKApSClKSktoK6gIKUpKTGgt6CgpQAAh4ADAKCgpSUhIKogoKUlJSCqKaCggAZOIKAgoCCgsYAAhLiAAIQ0qaigpSClIKChNyUgpaCgoKClIKWlJaClpTegoKWvrKClIKCpu6ClIK6goKUrsKClA==")]
 [assembly: go.GoPositionMap("mime/multipart/readmimeheader.go", "readmimeheader.cs", "AAse")]
-[assembly: go.GoPositionMap("mime/multipart/writer.go", "writer.cs", "ACU2ot6SAAcS4oKmgpSCgoKUlLSCxpSCqqKmgpSmgoKCgpSu4oKAgraCgpSWgoKUgoKCpoKCgpSmgsqC6qKCpoKqooKUqJKCgpSCqqKCgIKklIIACBKCgtaygpSCgpQ=")]
+[assembly: go.GoPositionMap("mime/multipart/writer.go", "writer.cs", "ABs4ot6SAAcS4oKmgpSCgoKUlLSCxpSCqqKmgpSmgoKCgpSu4oKAgraCgpSWgoKmgoKClKaCyoLqooKmgqqigpSokoKClIKqooKAgqSUggAIEoKC1rKClIKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.mime;
@@ -100,4 +100,30 @@ public static partial class multipart_package
     public partial struct Reader {}
     public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸmime() => builtin.initPackage(typeof(mime_package));
+    [GoInit] internal static void initᴛᴛimportꓸmimeꓸquotedprintable() => builtin.initPackage(typeof(go.mime.quotedprintable_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() => builtin.initPackage(typeof(net.textproto_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

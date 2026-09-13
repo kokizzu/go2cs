@@ -74,9 +74,9 @@ using static go.net.http.cgi_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/cgi/cgi_main.go", "cgi_main.cs", "AEYkgpSCpPqigoKWgoKWgoKCloKCgoSClpSCgpSWhIKClIKCloKCgpSCgpaCyoKClAAMCJKUlJSkgqSCpIKCgpSCgoKUgIKCpIKCgqaCgoKmgqY=")]
-[assembly: go.GoPositionMap("net/http/cgi/child.go", "child.cs", "ADs4woKClIKUpoKCgoCCtgAQCqKCgoKWgoKCgpaCgoSEgIKCgpSmgIK4goKUgIK4gpSCgoLMgIKmlIKClJSCgpS4goKClLqChK7CgoKUgpSClMqCgoCCpAALGIKmgqaCgpSClKaClIKUgq7CgpSCgoCCpIKC")]
-[assembly: go.GoPositionMap("net/http/cgi/host.go", "host.cs", "AFROlKSkpKSkpAAbPoKClAACFAAJAoKCgIKCgoKCyIKm9tKCgoKWgoSCgpSAgqYADByAgqamgIKUpoKWooKUlIKClJaClICCpoKClISCgIK4goCCuIKWhJKCgpSUgpaCgpbugpSCgoKWgoKClICCpJKUgoKCgoKCgoKCgpSClIKCgpSCgpSCgoKClIKClIKUgoKUgoKCgpS0xoKCgpaAgoKClIK4goKCloLMgoKohIKC7uiigpS4ooKCgoIAChYAChamgpSkquY=")]
+[assembly: go.GoPositionMap("net/http/cgi/cgi_main.go", "cgi_main.cs", "ABgmgpSCpPqigoKWgoKWgoKCloKCgoSClpSCgpSWhIKWgoKWgsqCgpQADAiSlJSUpIKkgqSCgoKUgoKClICCgqSCgoKmgoKCpoKm", "105-134:1")]
+[assembly: go.GoPositionMap("net/http/cgi/child.go", "child.cs", "ABc4woKClIKUpoKCgoCCtgAQCqKCgoKWgoKCgpaCgoSEgIKCgpSmgIK4goKUgIK4gpSCgoLMgIKmlIKClJSCgpS4goKClLqChK7CgoKUgpSClMqCgoCCpAALGIKmgqaCgpSClKaClIKUgq7CgpSCgoCCpIKC")]
+[assembly: go.GoPositionMap("net/http/cgi/host.go", "host.cs", "ACpOlKSkpKSkpAAbPoKClAACFAAJAoKCgIKCgoKCyIKm9tKCgoKWgoSCgpSAgqYADByAgqamgIKUpoKWooKUlIKClJaClICCpoKClISCgIK4goCCuIKWhJKCgpSUgpaCgpbugpSCgoKWgoKClICCpJKUgoKCgoKCgoKCgpSClIKCgpSCgpSCgoKClIKClIKUgoKUgoKCgpS0xoKCgpaAgoKClIK4goKCloLMgoKohIKC7uiigpS4ooKCgoIAChYAChamgpSkquY=", "221-224:1")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;
@@ -95,4 +95,35 @@ public static partial class cgi_package
     internal partial struct response {}
     public partial struct Handler {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸtls() => builtin.initPackage(typeof(crypto.tls_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(go.net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() => builtin.initPackage(typeof(go.net.textproto_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸurl() => builtin.initPackage(typeof(go.net.url_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(go.path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexp() => builtin.initPackage(typeof(regexp_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸhttpꓸhttpguts() => builtin.initPackage(typeof(vendor.golang.org.x.net.http.httpguts_package));
+    // </ImportInitializers>
 }

@@ -32,30 +32,6 @@ using go.debug;
 
 partial class macho_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcompressꓸzlib() {
-    builtin.initPackage(typeof(compress.zlib_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸdebugꓸdwarf() {
-    builtin.initPackage(typeof(go.debug.dwarf_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // A File represents an open Mach-O file.
 [GoType] partial struct File {
     public partial ref FileHeader FileHeader { get; }
@@ -687,17 +663,38 @@ internal static readonly @string strˢ = "str"u8;
 // DWARF returns the DWARF debug information for the Mach-O file.
 [GoRecv] public static (ж<dwarf.Data>, error) DWARF(this ref File f) {
     @string dwarfSuffix(ж<ΔSection> s) {
+        @string sectname = s.Value.Name;
+        nint pfx = default!;
         switch (ᐧ) {
-        case {} when strings.HasPrefix((~s).Name, debugˢ): {
-            return (~s).Name[8..];
+        case {} when strings.HasPrefix(sectname, debugˢ): {
+            pfx = 8;
+            break;
         }
-        case {} when strings.HasPrefix((~s).Name, zdebugˢ): {
-            return (~s).Name[9..];
+        case {} when strings.HasPrefix(sectname, zdebugˢ): {
+            pfx = 9;
+            break;
         }
         default: {
             return ""u8;
         }}
 
+        // Mach-O executables truncate section names to 16 characters, mangling some DWARF sections.
+        // As of DWARFv5 these are the only problematic section names (see DWARFv5 Appendix G).
+        foreach (var (_, longname) in new @string[]{
+            "__debug_str_offsets"u8,
+            "__zdebug_line_str"u8,
+            "__zdebug_loclists"u8,
+            "__zdebug_pubnames"u8,
+            "__zdebug_pubtypes"u8,
+            "__zdebug_rnglists"u8,
+            "__zdebug_str_offsets"u8
+        }.slice()) {
+            if (sectname == longname[..16]) {
+                sectname = longname;
+                break;
+            }
+        }
+        return sectname[(int)(pfx)..];
     }
     (slice<byte>, error) sectionData(ж<ΔSection> s) {
         var (b, errΔ1) = s.Data();

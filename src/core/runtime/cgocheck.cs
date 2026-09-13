@@ -5,7 +5,6 @@
 // These functions are invoked when GOEXPERIMENT=cgocheck2 is enabled.
 namespace go;
 
-using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using @unsafe = unsafe_package;
 using @internal;
@@ -147,51 +146,7 @@ internal static void cgoCheckTypedBlock(ж<_type> Ꮡtyp, @unsafe.Pointer src, u
             size = ptrdataSize;
         }
     }
-    if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) == 0) {
-        cgoCheckBits(src, typ.GCData, off, size);
-        return;
-    }
-    // The type has a GC program. Try to find GC bits somewhere else.
-    foreach (var (_, datap) in activeModules()) {
-        if (cgoInRange(src, (~datap).data, (~datap).edata)) {
-            var doff = (uintptr)src - (~datap).data;
-            cgoCheckBits((uintptr)add(src, ((uintptr)0 - doff)), (~datap).gcdatamask.bytedata, off + doff, size);
-            return;
-        }
-        if (cgoInRange(src, (~datap).bss, (~datap).ebss)) {
-            var boff = (uintptr)src - (~datap).bss;
-            cgoCheckBits((uintptr)add(src, ((uintptr)0 - boff)), (~datap).gcbssmask.bytedata, off + boff, size);
-            return;
-        }
-    }
-    var s = spanOfUnchecked((uintptr)src);
-    if (s.of(mspan.Ꮡstate).get() == mSpanManual) {
-        // There are no heap bits for value stored on the stack.
-        // For a channel receive src might be on the stack of some
-        // other goroutine, so we can't unwind the stack even if
-        // we wanted to.
-        // We can't expand the GC program without extra storage
-        // space we can't easily get.
-        // Fortunately we have the type information.
-        systemstack(() => {
-            cgoCheckUsingType(Ꮡtyp, src, off, size);
-        });
-        return;
-    }
-    // src must be in the regular heap.
-    var tp = s.typePointersOf((uintptr)src, size);
-    while (ᐧ) {
-        uintptr addr = default!;
-        {
-            (tp, addr) = tp.next((uintptr)src + size); if (addr == 0) {
-                break;
-            }
-        }
-        @unsafe.Pointer v = ~(ж<@unsafe.Pointer>)(uintptr)((@unsafe.Pointer)addr);
-        if (cgoIsGoPointer(v) && !isPinned(v)) {
-            @throw(cgoWriteBarrierFail);
-        }
-    }
+    cgoCheckBits(src, getGCMask(Ꮡtyp), off, size);
 }
 
 // cgoCheckBits checks the block of memory at src, for up to size
@@ -251,53 +206,7 @@ internal static void cgoCheckUsingType(ж<_type> Ꮡtyp, @unsafe.Pointer src, ui
             size = ptrdataSize;
         }
     }
-    if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) == 0) {
-        cgoCheckBits(src, typ.GCData, off, size);
-        return;
-    }
-    var exprᴛ1 = (abiꓸKind)(typ.Kind_ & abi.KindMask);
-    if (exprᴛ1 == abi.Array) {
-        var at = Ꮡtyp.Reinterpret<_type, arraytype>();
-        for (var i = (uintptr)0; i < (~at).Len; i++) {
-            if (off < (~(~at).Elem).Size_) {
-                cgoCheckUsingType((~at).Elem, src, off, size);
-            }
-            src.Value = (uintptr)add(src, (~(~at).Elem).Size_);
-            var skipped = off;
-            if (skipped > (~(~at).Elem).Size_) {
-                skipped = at.Value.Elem.Value.Size_;
-            }
-            var @checked = (~(~at).Elem).Size_ - skipped;
-            off -= skipped;
-            if (size <= @checked) {
-                return;
-            }
-            size -= @checked;
-        }
-    }
-    else if (exprᴛ1 == abi.Struct) {
-        var st = Ꮡtyp.Reinterpret<_type, structtype>();
-        foreach (var (_, f) in (~st).Fields) {
-            if (off < (~f.Typ).Size_) {
-                cgoCheckUsingType(f.Typ, src, off, size);
-            }
-            src.Value = (uintptr)add(src, (~f.Typ).Size_);
-            var skipped = off;
-            if (skipped > (~f.Typ).Size_) {
-                skipped = f.Typ.Value.Size_;
-            }
-            var @checked = (~f.Typ).Size_ - skipped;
-            off -= skipped;
-            if (size <= @checked) {
-                return;
-            }
-            size -= @checked;
-        }
-    }
-    else { /* default: */
-        @throw(canTHappenˢ);
-    }
-
+    cgoCheckBits(src, getGCMask(Ꮡtyp), off, size);
 }
 
 } // end runtime_package

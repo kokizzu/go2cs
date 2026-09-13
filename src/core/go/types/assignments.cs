@@ -8,20 +8,14 @@ namespace go.go;
 
 using fmt = fmt_package;
 using ast = global::go.go.ast_package;
-using static global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
 using strings = strings_package;
 using constant = global::go.go.constant_package;
-using errors = global::go.@internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 using token = global::go.go.token_package;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
 
 // assignment reports whether x can be assigned to a variable of type T,
 // if necessary by attempting to convert untyped values to the appropriate
@@ -231,7 +225,7 @@ internal static ΔType lhsVar(this ж<Checker> Ꮡcheck, ast.Expr lhs) {
                 {
                     var (w, _) = obj._<ж<Var>>(ᐧ); if (w != nil && (~w).pkg == check.pkg) {
                         v = w;
-                        v_used = v.Value.used;
+                        v_used = check.usedVars[v];
                     }
                 }
             }
@@ -240,7 +234,7 @@ internal static ΔType lhsVar(this ж<Checker> Ꮡcheck, ast.Expr lhs) {
     ref var x = ref heap(new operand(), out var Ꮡx);
     Ꮡcheck.expr(nil, Ꮡx, lhs);
     if (v != nil) {
-        v.Value.used = v_used; // restore v.used
+        check.usedVars[v] = v_used; // restore v.used
     }
     if (x.mode == invalid || !isValid(x.typ)) {
         return new BasicжΔType(Typ[Invalid]);
@@ -338,7 +332,11 @@ internal static readonly @string untypedˢ = "untyped "u8;
 // ti's are user-friendly string representations for the given types.
 // If variadic is set and the last type is a slice, its string is of
 // the form "...E" where E is the slice's element type.
-internal static @string typesSummary(this ж<Checker> Ꮡcheck, slice<ΔType> list, bool variadic) {
+// If hasDots is set, the last argument string is of the form "T..."
+// where T is the last type.
+// Only one of variadic and hasDots may be set.
+internal static @string typesSummary(this ж<Checker> Ꮡcheck, slice<ΔType> list, bool variadic, bool hasDots) {
+    assert(!(variadic && hasDots));
     slice<@string> res = default!;
     foreach (var (i, t) in list) {
         @string s = default!;
@@ -351,6 +349,7 @@ internal static @string typesSummary(this ж<Checker> Ꮡcheck, slice<ΔType> li
         }
         else if (isUntyped(t)) {
             if (isNumeric(t)){
+                // => *Basic
                 // Do not imply a specific type requirement:
                 // "have number, want float64" is better than
                 // "have untyped int, want float64" or
@@ -362,12 +361,28 @@ internal static @string typesSummary(this ж<Checker> Ꮡcheck, slice<ΔType> li
                 s = strings.Replace((~t._<ж<Basic>>()).name, untypedˢ, ""u8, -1);
             }
         }
-        else if (variadic && i == len(list) - 1) { matchᴛ1 = true;
-            s = Ꮡcheck.sprintf("...%s"u8, (~t._<ж<Slice>>()).elem);
+        else if (!matchᴛ1) { /* default: */
+            s = Ꮡcheck.sprintf("%s"u8, t);
         }
 
-        if (s == ""u8) {
-            s = Ꮡcheck.sprintf("%s"u8, t);
+        // handle ... parameters/arguments
+        if (i == len(list) - 1) {
+            switch (ᐧ) {
+            case {} when variadic: {
+                {
+                    var (tΔ2, _) = t._<ж<Slice>>(ᐧ); if (tΔ2 != nil) {
+                        // In correct code, the parameter type is a slice, but be careful.
+                        s = Ꮡcheck.sprintf("%s"u8, (~tΔ2).elem);
+                    }
+                }
+                s = "..."u8 + s;
+                break;
+            }
+            case {} when hasDots: {
+                s += "..."u8;
+                break;
+            }}
+
         }
         res = append(res, s);
     }
@@ -417,8 +432,8 @@ internal static void returnError(this ж<Checker> Ꮡcheck, positioner at, slice
     }
     var err = Ꮡcheck.newError(WrongResultCount);
     err.addf(at, "%s return values"u8, qualifier);
-    err.addf(noposn, "have %s"u8, Ꮡcheck.typesSummary(operandTypes(rhs), false));
-    err.addf(noposn, "want %s"u8, Ꮡcheck.typesSummary(varTypes(lhs), false));
+    err.addf(noposn, "have %s"u8, Ꮡcheck.typesSummary(operandTypes(rhs), false, false));
+    err.addf(noposn, "want %s"u8, Ꮡcheck.typesSummary(varTypes(lhs), false, false));
     err.report();
 }
 

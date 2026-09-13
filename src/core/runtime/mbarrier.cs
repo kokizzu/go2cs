@@ -14,8 +14,10 @@ namespace go;
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using goexperiment = @internal.goexperiment_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -89,19 +91,6 @@ partial class runtime_package {
 // Peterson/Dekker algorithms for mutual exclusion). Rather than require memory
 // barriers, which will slow down both the mutator and the GC, we always grey
 // the ptr object regardless of the slot's color.
-//
-// Another place where we intentionally omit memory barriers is when
-// accessing mheap_.arena_used to check if a pointer points into the
-// heap. On relaxed memory machines, it's possible for a mutator to
-// extend the size of the heap by updating arena_used, allocate an
-// object from this new region, and publish a pointer to that object,
-// but for tracing running on another processor to observe the pointer
-// but use the old value of arena_used. In this case, tracing will not
-// mark the object, even though it's reachable. However, the mutator
-// is guaranteed to execute a write barrier when it publishes the
-// pointer, so it will take care of marking the object. A general
-// consequence of this is that the garbage collector may cache the
-// value of mheap_.arena_used. (See issue #9984.)
 //
 //
 // Stack writes:
@@ -231,8 +220,8 @@ internal static void reflect_typedmemmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst,
     ref var typ = ref Ꮡtyp.DerefOrNull();
 
     if (raceenabled) {
-        raceWriteObjectPC(ref (Ꮡtyp).DerefOrNull(), dst, getcallerpc(), abi.FuncPCABIInternal(reflect_typedmemmove));
-        raceReadObjectPC(ref (Ꮡtyp).DerefOrNull(), src, getcallerpc(), abi.FuncPCABIInternal(reflect_typedmemmove));
+        raceWriteObjectPC(ref (Ꮡtyp).DerefOrNull(), dst, sys.GetCallerPC(), abi.FuncPCABIInternal(reflect_typedmemmove));
+        raceReadObjectPC(ref (Ꮡtyp).DerefOrNull(), src, sys.GetCallerPC(), abi.FuncPCABIInternal(reflect_typedmemmove));
     }
     if (msanenabled) {
         msanwrite(dst, typ.Size_);
@@ -248,6 +237,11 @@ internal static void reflect_typedmemmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst,
 //go:linkname reflectlite_typedmemmove internal/reflectlite.typedmemmove
 internal static void reflectlite_typedmemmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src) {
     reflect_typedmemmove(Ꮡtyp, dst, src);
+}
+
+//go:linkname maps_typedmemmove internal/runtime/maps.typedmemmove
+internal static void maps_typedmemmove(ж<_type> Ꮡtyp, @unsafe.Pointer dst, @unsafe.Pointer src) {
+    typedmemmove(Ꮡtyp, dst, src);
 }
 
 // reflectcallmove is invoked by reflectcall to copy the return values
@@ -304,7 +298,7 @@ internal static nint typedslicecopy(ж<_type> Ꮡtyp, @unsafe.Pointer dstPtr, ni
     // assignment operations, it's not instrumented in the calling
     // code and needs its own instrumentation.
     if (raceenabled) {
-        var callerpc = getcallerpc();
+        var callerpc = sys.GetCallerPC();
         var pc = abi.FuncPCABIInternal(slicecopy);
         racewriterangepc(dstPtr, (uintptr)n * typ.Size_, callerpc, pc);
         racereadrangepc(srcPtr, (uintptr)n * typ.Size_, callerpc, pc);
@@ -386,7 +380,7 @@ internal static void typedmemclr(ж<_type> Ꮡtyp, @unsafe.Pointer ptr) {
     memclrNoHeapPointers(ptr, typ.Size_);
 }
 
-// reflect_typedslicecopy is meant for package reflect,
+// reflect_typedmemclr is meant for package reflect,
 // but widely used packages access it using linkname.
 // Notable members of the hall of shame include:
 //   - github.com/ugorji/go/codec
@@ -396,6 +390,11 @@ internal static void typedmemclr(ж<_type> Ꮡtyp, @unsafe.Pointer ptr) {
 //
 //go:linkname reflect_typedmemclr reflect.typedmemclr
 internal static void reflect_typedmemclr(ж<_type> Ꮡtyp, @unsafe.Pointer ptr) {
+    typedmemclr(Ꮡtyp, ptr);
+}
+
+//go:linkname maps_typedmemclr internal/runtime/maps.typedmemclr
+internal static void maps_typedmemclr(ж<_type> Ꮡtyp, @unsafe.Pointer ptr) {
     typedmemclr(Ꮡtyp, ptr);
 }
 

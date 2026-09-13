@@ -49,7 +49,7 @@ using static go.bufio_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("bufio/bufio.go", "bufio.cs", "AEdexIKClIKCqJKokK4ACgiClIKUpoIACRakgoKCloKogoKClIKCgpSCpqaCgoIAAhTygpaChIKWgpiSgJSCgoK2AAIQAAgCgpSCloKEgoKCgoKUgpSCgoKUggAEGAAJAoKCgpSUgoKUpoKClIKClLiCgoKClIKUzIKCgoKqooKCgpSUgoKCAAIQ0oKmgqaUgoKCrOKClIKClIKClIKCgq7CgpSCgoKokAACGAANAoKUgIKCgoK4goKCgqiCgoKCloSogIKCpgACJgAUAoKUppSUgpSWgoKUlISCgoKUlAACFAALApSCgoKSlJKCqIKCloIAAhTylIKUgpSCAAIU8oSSlIKUgq7ygoSCgpaAgoKCpoCCgoKmgpaUgoKClJaClsySgoKUggARKsSCgpSClAAFErKokK4ACgiClIKUgoKokoKUgpSCgpSCgpSCgpSCqJCswqiQrOKCgqaUgoKUgpSClIKCgqiSgpSClIKCquSCgoKUlIKUgoKAgqSClKaCgq7CgoSCgoKUlLiUgoKUgpSClIKCgq7ygpSCgoKCgIK2goKCgpSCgoKClJSClIKCgqaUgpSmAAsakg==")]
+[assembly: go.GoPositionMap("bufio/bufio.go", "bufio.cs", "ACxkxIKClIKCqJKokK4ACgiClIKUpoIACRakgoKCloKogoKClIKCgpSCpqaCgoIAAhYACAKCloKEgpaCmJKAlIKCgrYAAhAACAKClIKWgoSCgoKCgpSClIKCgpSCAAQYAAkCgoKClJSCgpSmgoKUgoKUuIKCgoKUgpTMgoKCgqqigoKClJSCgoIAAhDSgqaCppSCgoKs4oKUgoKUgoKUgoKCrsKClIKCgqiQAAIYAA0CgpSAgoKCgriCgoKCqIKCgoKWhKiAgoKmAAImABQCgpSmlJSClJaCgpSUhIKCgpSUAAIUAAsClIKCgpKUkoKogoKWggACFPKUgpSClIIAAhTyhJKUgpSCrvKChIKCloCCgoKmgIKCgqaClpSCgoKUloKWzJKCgpSCABEqxIKClIKUAAUSsqiQrgAKCIKUgpSCgqiSgpSClIKClIKClIKClIKokKzCqJCs4oKCppSCgpSClIKUgoKCqJKClIKUgoKq5IKCgpSUgpSCgoCCpIKUpoKCrsKChIKCgpSUuJSCgpSClIKUgoKCrvKClIKCgoKAgraCgoKClIKCgoKUlIKUgoKCppSClKYACxqS")]
 [assembly: go.GoPositionMap("bufio/scan.go", "scan.cs", "ADiyAaIABhCSgpSssqqiAA4wAAkCgpSUuIKCgoKCuJSClIKUgoKCpoKCpsqUgoLKgoKCpoSSgoKUgoKUgoKCgoLKgoKCgpSCgoKUgoKUgoKC3pKCgpSCgpSCqJKCAAMaAAkCgpSCrsKClKyygpQABBbigqiCqIKmzJTMqJKClAACEuKClICUtoKmrLKUlKSkpoKUlKSu1IKCgoKCuIKCgoK4gqY=")]
 // </GoSourcePositionMaps>
 
@@ -70,4 +70,18 @@ public static partial class bufio_package
     public partial struct Scanner {}
     public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

@@ -8,6 +8,7 @@ using fmt = fmt_package;
 using html = html_package;
 using godebug = @internal.godebug_package;
 using io = io_package;
+using maps = maps_package;
 using regexp = regexp_package;
 using template = text.template_package;
 using parse = text.template.parse_package;
@@ -17,36 +18,6 @@ using text.template;
 using ꓸꓸꓸany = Span<any>;
 
 partial class template_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhtml() {
-    builtin.initPackage(typeof(html_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸregexp() {
-    builtin.initPackage(typeof(regexp_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtextꓸtemplate() {
-    builtin.initPackage(typeof(text.template_package));
-}
 
 // escapeTemplate rewrites the named template, which must be
 // associated with t, to guarantee that the output of any of the named
@@ -197,7 +168,7 @@ internal static readonly @string withˢ = "with"u8;
     }
     case ж<parse.ContinueNode> nΔ1: {
         c.n = new parse.ContinueNodeжNode(nΔ1);
-        e.rangeContext.Value.continues = append((~e.rangeContext).breaks, c);
+        e.rangeContext.Value.continues = append((~e.rangeContext).continues, c);
         return new context(state: stateDead);
     }
     case ж<parse.IfNode> nΔ1: {
@@ -693,22 +664,14 @@ internal static context joinRange(context c0, ref rangeContext rc) {
     e1 = makeEscaper(e.ns);
     e1.rangeContext = e.rangeContext;
     // Make type inferences available to f.
-    foreach (var (k, v) in e.output) {
-        e1.output[k] = v;
-    }
+    maps.Copy<map<@string, context>, map<@string, context>, @string, context>(e1.output, e.output);
     c = e1.escapeList(c, Ꮡn);
     var ok = filter != default! && filter(Ꮡe1, c);
     if (ok) {
         // Copy inferences and edits from e1 back into e.
-        foreach (var (k, v) in e1.output) {
-            e.output[k] = v;
-        }
-        foreach (var (k, v) in e1.derived) {
-            e.derived[k] = v;
-        }
-        foreach (var (k, v) in e1.called) {
-            e.called[k] = v;
-        }
+        maps.Copy<map<@string, context>, map<@string, context>, @string, context>(e.output, e1.output);
+        maps.Copy<map<@string, ж<template.Template>>, map<@string, ж<template.Template>>, @string, ж<template.Template>>(e.derived, e1.derived);
+        maps.Copy<map<@string, bool>, map<@string, bool>, @string, bool>(e.called, e1.called);
         foreach (var (k, v) in e1.actionNodeEdits) {
             e.editActionNode(k, v);
         }

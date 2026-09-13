@@ -9,27 +9,10 @@ using trace = go.@internal.trace_package;
 using slices = slices_package;
 using strings = strings_package;
 using go.@internal;
+using iter = iter_package;
 using ꓸꓸꓸany = Span<any>;
 
 partial class testtrace_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtrace() {
-    builtin.initPackage(typeof(go.@internal.trace_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
 
 // Validator is a type used for validating a stream of trace.Events.
 [GoType] partial struct Validator {
@@ -401,21 +384,20 @@ internal static ж<schedContext> getOrCreateThread(this ж<Validator> Ꮡv, ж<e
 }
 
 internal static void checkStack(ж<errAccumulator> Ꮡe, traceꓸStack stk) {
+    ref var e = ref Ꮡe.DerefOrNull();
+
     // Check for non-empty values, but we also check for crashes due to incorrect validation.
-    nint i = 0;
-    stk.Frames((trace.StackFrame f) => {
+    foreach (var (i, f) in slices.Collect(stk.Frames())) {
         if (i == 0) {
             // Allow for one fully zero stack.
             //
             // TODO(mknyszek): Investigate why that happens.
-            return true;
+            continue;
         }
         if (f.Func == ""u8 || f.File == ""u8 || f.PC == 0 || f.Line == 0) {
-            Ꮡe.Value.Errorf("invalid stack frame %#v: missing information"u8, f);
+            e.Errorf("invalid stack frame %#v: missing information"u8, f);
         }
-        i++;
-        return true;
-    });
+    }
 }
 
 [GoType] partial struct errAccumulator {

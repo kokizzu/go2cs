@@ -77,10 +77,10 @@ using static go.net.http.httputil_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/http/httputil/dump.go", "dump.cs", "AE8y8pSUgoCCpICCpAAIEoCigKKAooCigKKAyIKClKqigpSClOzygoKCgoKCpoKCggAGEIKCgoKCggABENKCkpKEysqUsoKmgpToyISCgoKCgpTegoCCtgANFoKCgoCCtqiSgpQADjIAEgKCgoKUgoKoAAYQgoKWloKCgoKUgqiCgpaCgpaEgoKClIKCgqiCgpQADRqAooDcsoKCgoSmgpS2lIKCpoKClIKCgpQ=")]
-[assembly: go.GoPositionMap("net/http/httputil/httputil.go", "httputil.cs", "ABQo4gACHAALAg==")]
-[assembly: go.GoPositionMap("net/http/httputil/persist.go", "persist.cs", "ADVs8oKUrgAIAoKCgoKCgtiSgoKUrgAIAoKWgoKCgoKCpoKCqIKSgpSCgpSSgpSCgoKWuIKCgoKCqIKCgoK4gpSCpoKCgoKU2uKCggAIDAAJBoKCgoKClJaChIKCgpSSgpSCgoKUuJSEgoKCgoKUhAAWNPKClAAHGtKCgq4ACgKCgoKCgoLYkoKClAACEAAKApaCgoKCgoKmgoKogpKClIKClJKClIKmlISCgoKCgpSE2uKCgt4ACwSCgoKCgpSWgoSCgoKUkoKUgoKClriCgoKCgqiCgoKCgpSEhIKClNiSgoKU")]
-[assembly: go.GoPositionMap("net/http/httputil/reverseproxy.go", "reverseproxy.cs", "AE9sAAwCggAILAATAoKCgoKUlJSCgpQAbOgBgoKClKSkprKCuIKEgoSUpKQAAi4AFAKClKaigoKCgoKUuIKCggAYLIKCpqKClKrSgpSAgoKCpAALBtKCgpaCAAIWAAoCgoKSgrK0AAgMgoKU7qSCloKCloKCgqaEgoKClN6CuoKClriCgoKWhLiClIC4goKClILKgKammLSCgqaUgoKWgtaEgoKCgoKCqIKClIKWhIKWqIKCgoKUloSCgsiCgpSUhLiWgoKWooKCAAkY8pSUpriopIKigIL+guzCqICCuIKWpsKEgsqmgoSWgoKClILaooKUgoKCgpSCgoKUgpSCpoKClMqigpQADBzigoKCgoKUgpSClJSC1sKCgpKUgtbCgoKCguiCgpSm0oKCkpSCgpaCgoKWgoKCgpaCxgAICJSEgoKUlISCgoCCgqSAgoKkgpKSkgALEoKCpoKCpoKCgpSClKSClLTGpoKUpKSk")]
+[assembly: go.GoPositionMap("net/http/httputil/dump.go", "dump.cs", "ABMy8pSUgoCCpICCpAAIEoCigKKAooCigKKAyIKClKqigpSClOzygoKCgoKCpoKCggAGEIKCgoKCggABENKCkpKEysqUsoKmgpToyISCgoKCgpTegoCCtgANFoKCgoCCtqiSgpQADjIAEgKCgoKUgoKoAAYQgoKWloKCgoKUgqiCgpaCgpaEgoKClIKCgqiCgpQADRqAooDcsoKCgoSmgpS2lIKCpoKClIKCgpQ=", "119-121:1;130-144:2")]
+[assembly: go.GoPositionMap("net/http/httputil/httputil.go", "httputil.cs", "AA4o4gACHAALAg==")]
+[assembly: go.GoPositionMap("net/http/httputil/persist.go", "persist.cs", "ACls8oKUrgAJAoKCgoKCgtiSgoKUrgAIAoKWgoKCgoKCpoKCqIKSgpSCgpSSgpSCgoKWuIKCgoKCqIKCgoK4gpSCpoKCgoKU2vKCggAIDAAJBoKCgoKClJaChIKCgpSSgpSCgoKUuJSEgoKCgoKUhAAWNPKClAAHGtKCgq4ACgKCgoKCgoLYkoKClAACEAAKApaCgoKCgoKmgoKogpKClIKClJKClIKmlISCgoKCgpSE2vKCgt4ACwSCgoKCgpSWgoSCgoKUkoKUgoKClriCgoKCgqiCgoKCgpSEhIKClNiSgoKU", "95-106:1;305-316:1")]
+[assembly: go.GoPositionMap("net/http/httputil/reverseproxy.go", "reverseproxy.cs", "ACtsAAwCggAILAATAoKCgoKUlJSCgpQAbOgBgoKClKSkprKCuIKEgoSUpKQAAi4AFAKClKaigoKCgoKUuIKCggAYLIKCpqKClKrSgpSAgoKCpAALBtKCgpaCAAIWAAoCgoKSgrK0AAgMgoKU7qSCloKCloKCgqaEgoKClN6CuoKClriCgoKWhLiClIC4goKClILKgKammLSCgqaUgoKWgtaEgoKCgoKCqIKClIKWhIKWqIKCgoKUloSCgsiCgpSUhLiWgoKWooKCAAkY8pSUpriopIKigIL+guzCqICCuIKWpsKEgsqmgoSWgoKClILaooKUgoKCgpSCgoKUgpSCpoKClMqigpQADBzigoKCgoKUgpSClJSC1tKCgpKUgtbSgoKCguiCgpSm0oKCkoKUgoKWgoKCloKCgoKWgsYACAiUhIKClJSEgoKAgoKkgIKCpIKSkpIACxKCgqaCgqaCgoKUgpSkgpS0xqaClKSkpA==", "263-265:1;355-361:1;462-477:2;763-771:1;816-819:1")]
 // </GoSourcePositionMaps>
 
 namespace go.net.http;
@@ -107,4 +107,32 @@ public static partial class httputil_package
     public partial struct ReverseProxy {}
     public partial struct ServerConn {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸmime() => builtin.initPackage(typeof(mime_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(go.net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸhttptrace() => builtin.initPackage(typeof(go.net.http.httptrace_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternal() => builtin.initPackage(typeof(go.net.http.internal_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttpꓸinternalꓸascii() => builtin.initPackage(typeof(go.net.http.@internal.ascii_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() => builtin.initPackage(typeof(go.net.textproto_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸurl() => builtin.initPackage(typeof(go.net.url_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸnetꓸhttpꓸhttpguts() => builtin.initPackage(typeof(vendor.golang.org.x.net.http.httpguts_package));
+    // </ImportInitializers>
 }

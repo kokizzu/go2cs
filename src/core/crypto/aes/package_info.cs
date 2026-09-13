@@ -27,7 +27,6 @@ using static go.crypto.aes_package;
 // when referenced.
 
 // <ExportedTypeAliases>
-[assembly: GoTypeAlias("BlockSize", "const:ΔBlockSize")]
 // </ExportedTypeAliases>
 
 // As types are cast to interfaces in Go source code, the go2cs code converter
@@ -38,7 +37,7 @@ using static go.crypto.aes_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<KeySizeError, error>]
-[assembly: GoImplement<aesCipher, go.crypto.cipher_package.Block>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.aes_package.Block, go.crypto.cipher_package.Block>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -52,9 +51,7 @@ using static go.crypto.aes_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/aes/block.go", "block.cs", "AClUkoKCgoKWgoKCqIKCsoKCgoKCgqiCgoKEgoKChIKCgoKokoKCgoKWgoKCqIKCsoKCgoKCgqiCgoKEgoKChIKCgoKokq6QqKSSgoKUgoKCpJTMgpSCgoKCgoKU")]
-[assembly: go.GoPositionMap("crypto/aes/cipher.go", "cipher.cs", "ACw0gq7CgpSktIKUqqKSgqaApIKClIKUgpSmgoKUgpSClA==")]
-[assembly: go.GoPositionMap("crypto/aes/cipher_generic.go", "cipher_generic.cs", "AAsk0qqi")]
+[assembly: go.GoPositionMap("crypto/aes/aes.go", "aes.cs", "AB44gq7CgpSktIKU")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -69,11 +66,19 @@ public static partial class aes_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface cbcDecAble {}
-    internal partial interface cbcEncAble {}
-    internal partial interface ctrAble {}
-    internal partial interface gcmAble {}
-    [GoValueClone("enc", "dec")] internal partial struct aesCipher {}
     public partial struct KeySizeError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() => builtin.initPackage(typeof(go.crypto.cipher_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() => builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸaes() => builtin.initPackage(typeof(go.crypto.@internal.fips140.aes_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    // </ImportInitializers>
 }

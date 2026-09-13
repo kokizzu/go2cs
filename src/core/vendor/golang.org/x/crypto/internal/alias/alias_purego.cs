@@ -12,12 +12,6 @@ using reflect = reflect_package;
 
 partial class alias_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
 // go2cs generated this placeholder — func AnyOverlap is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // InexactOverlap reports whether x and y share memory at any non-corresponding

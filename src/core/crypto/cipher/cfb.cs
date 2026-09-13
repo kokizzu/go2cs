@@ -4,10 +4,12 @@
 // CFB (Cipher Feedback) Mode.
 namespace go.crypto;
 
-using alias = go.crypto.@internal.alias_package;
+using alias = go.crypto.@internal.fips140.alias_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using subtle = go.crypto.subtle_package;
 using go.crypto;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 
 partial class cipher_package {
 
@@ -51,14 +53,32 @@ partial class cipher_package {
 // NewCFBEncrypter returns a [Stream] which encrypts with cipher feedback mode,
 // using the given [Block]. The iv must be the same length as the [Block]'s block
 // size.
+//
+// Deprecated: CFB mode is not authenticated, which generally enables active
+// attacks to manipulate and recover the plaintext. It is recommended that
+// applications use [AEAD] modes instead. The standard library implementation of
+// CFB is also unoptimized and not validated as part of the FIPS 140-3 module.
+// If an unauthenticated [Stream] mode is required, use [NewCTR] instead.
 public static Stream NewCFBEncrypter(Block block, slice<byte> iv) {
+    if (fips140only.Enabled) {
+        throw panic("crypto/cipher: use of CFB is not allowed in FIPS 140-only mode");
+    }
     return newCFB(block, iv, false);
 }
 
 // NewCFBDecrypter returns a [Stream] which decrypts with cipher feedback mode,
 // using the given [Block]. The iv must be the same length as the [Block]'s block
 // size.
+//
+// Deprecated: CFB mode is not authenticated, which generally enables active
+// attacks to manipulate and recover the plaintext. It is recommended that
+// applications use [AEAD] modes instead. The standard library implementation of
+// CFB is also unoptimized and not validated as part of the FIPS 140-3 module.
+// If an unauthenticated [Stream] mode is required, use [NewCTR] instead.
 public static Stream NewCFBDecrypter(Block block, slice<byte> iv) {
+    if (fips140only.Enabled) {
+        throw panic("crypto/cipher: use of CFB is not allowed in FIPS 140-only mode");
+    }
     return newCFB(block, iv, true);
 }
 

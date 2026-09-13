@@ -107,7 +107,7 @@ public static float64 J1(float64 x) {
         var ss = -sΔ1 - c;
         var cc = sΔ1 - c;
         // make sure x+x does not overflow
-        if (x < MaxFloat64 / 2D) {
+        if (x < /* MaxFloat64 / 2 */ 8.988465674311579e+307D) {
             var zΔ1 = Cos(x + x);
             if (sΔ1 * c > 0D){
                 cc = zΔ1 / ss;
@@ -187,7 +187,7 @@ public static float64 Y1(float64 x) {
         var ss = -s - c;
         var cc = s - c;
         // make sure x+x does not overflow
-        if (x < MaxFloat64 / 2D) {
+        if (x < /* MaxFloat64 / 2 */ 8.988465674311579e+307D) {
             var zΔ1 = Cos(x + x);
             if (s * c > 0D){
                 cc = zΔ1 / ss;

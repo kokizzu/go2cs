@@ -106,6 +106,8 @@ internal static bool readUint24LengthPrefixed(ж<cryptobyte.String> Ꮡs, ж<sli
     internal slice<slice<byte>> pskBinders;
     internal slice<byte> quicTransportParameters;
     internal slice<byte> encryptedClientHello;
+    // extensions are only populated on the server-side of a handshake
+    internal slice<uint16> extensions;
 }
 
 internal static (slice<byte>, error) marshalMsg(this ж<clientHelloMsg> Ꮡm, bool echInner) {
@@ -487,6 +489,7 @@ internal static bool unmarshal(this ж<clientHelloMsg> Ꮡm, slice<byte> data) {
             return false;
         }
         seenExts[extension] = true;
+        m.extensions = append(m.extensions, extension);
         switch (extension) {
         case extensionServerName: {
             // RFC 6066, Section 3
@@ -702,6 +705,12 @@ internal static bool unmarshal(this ж<clientHelloMsg> Ꮡm, slice<byte> data) {
                     return false;
                 }
                 m.pskBinders = append(m.pskBinders, binder);
+            }
+            break;
+        }
+        case extensionEncryptedClientHello: {
+            if (!extData.ReadBytes(Ꮡm.of(clientHelloMsg.ᏑencryptedClientHello), len(extData))) {
+                return false;
             }
             break;
         }

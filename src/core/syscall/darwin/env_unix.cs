@@ -5,16 +5,10 @@
 // Unix environment variables.
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 
 partial class syscall_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 internal static ж<Δsync.Once> ᏑenvOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
 internal static ref Δsync.Once envOnce => ref ᏑenvOnce.Value;
@@ -24,7 +18,7 @@ internal static map<@string, nint> env;
 internal static slice<@string> envs = runtime_envs();
 
 internal static slice<@string> runtime_envs() {
-    return Δruntime.syscall_runtime_envs();
+    return runtime.syscall_runtime_envs();
 }
 
 // in package runtime
@@ -111,7 +105,7 @@ public static error Setenv(@string key, @string value) {
             }
         }
         // On Plan 9, null is used as a separator, eg in $path.
-        if (Δruntime.GOOS != "plan9"u8) {
+        if (runtime.GOOS != "plan9"u8) {
             for (nint iΔ2 = 0; iΔ2 < len(value); iΔ2++) {
                 if (value[iΔ2] == 0) {
                     return EINVAL;
@@ -139,7 +133,7 @@ public static error Setenv(@string key, @string value) {
 public static void Clearenv() {
     GoFrame ᒐ = default;
     try {
-        ᏑenvOnce.Do(copyenv); // prevent copyenv in Getenv/Setenv
+        ᏑenvOnce.Do(copyenv);
         ᏑenvLock.Lock();
         defer(ᏑenvLock.Unlock, ref ᒐ);
         foreach (var (k, _) in env) {

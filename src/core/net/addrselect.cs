@@ -5,22 +5,10 @@
 namespace go;
 
 using netip = net.netip_package;
-using sort = sort_package;
+using slices = slices_package;
 using net;
 
 partial class net_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸnetip() {
-    builtin.initPackage(typeof(net.netip_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsort() {
-    builtin.initPackage(typeof(sort_package));
-}
 
 internal static void sortByRFC6724(slice<IPAddr> addrs) {
     if (len(addrs) < 2) {
@@ -33,19 +21,20 @@ internal static void sortByRFC6724withSrcs(slice<IPAddr> addrs, slice<netipꓸAd
     if (len(addrs) != len(srcs)) {
         throw panic("internal error");
     }
-    var addrAttr = new slice<ipAttr>(len(addrs));
-    var srcAttr = new slice<ipAttr>(len(srcs));
+    var addrInfos = new slice<byRFC6724Info>(len(addrs));
     foreach (var (i, v) in addrs) {
         var (addrAttrIP, _) = netip.AddrFromSlice(v.IP);
-        addrAttr[i] = ipAttrOf(addrAttrIP);
-        srcAttr[i] = ipAttrOf(srcs[i]);
+        addrInfos[i] = new byRFC6724Info(
+            addr: addrs[i],
+            addrAttr: ipAttrOf(addrAttrIP),
+            src: srcs[i],
+            srcAttr: ipAttrOf(srcs[i])
+        );
     }
-    sort_package.Stable(new byRFC6724жInterface(Ꮡ(new byRFC6724(
-        addrs: addrs,
-        addrAttr: addrAttr,
-        srcs: srcs,
-        srcAttr: srcAttr
-    ))));
+    slices.SortStableFunc<slice<byRFC6724Info>, byRFC6724Info>(addrInfos, compareByRFC6724);
+    foreach (var (i, _) in addrInfos) {
+        addrs[i] = addrInfos[i].addr;
+    }
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -92,45 +81,37 @@ internal static ipAttr ipAttrOf(netipꓸAddr ip) {
     );
 }
 
-[GoType] partial struct byRFC6724 {
-    internal slice<IPAddr> addrs; // addrs to sort
-    internal slice<ipAttr> addrAttr;
-    internal slice<netipꓸAddr> srcs; // or not valid addr if unreachable
-    internal slice<ipAttr> srcAttr;
+[GoType] partial struct byRFC6724Info {
+    internal IPAddr addr;
+    internal ipAttr addrAttr;
+    internal netipꓸAddr src;
+    internal ipAttr srcAttr;
 }
 
-[GoRecv] internal static nint Len(this ref byRFC6724 s) {
-    return len(s.addrs);
-}
+// compareByRFC6724 compares two byRFC6724Info records and returns an integer
+// indicating the order. It follows the algorithm and variable names from
+// RFC 6724 section 6. Returns -1 if a is preferred, 1 if b is preferred,
+// and 0 if they are equal.
+internal static nint compareByRFC6724(byRFC6724Info aʗp, byRFC6724Info bʗp) {
+    ref var a = ref heap(aʗp, out var Ꮡa);
+    ref var b = ref heap(bʗp, out var Ꮡb);
 
-[GoRecv] internal static void Swap(this ref byRFC6724 s, nint i, nint j) {
-    (s.addrs[i], s.addrs[j]) = (s.addrs[j], s.addrs[i]);
-    (s.srcs[i], s.srcs[j]) = (s.srcs[j], s.srcs[i]);
-    (s.addrAttr[i], s.addrAttr[j]) = (s.addrAttr[j], s.addrAttr[i]);
-    (s.srcAttr[i], s.srcAttr[j]) = (s.srcAttr[j], s.srcAttr[i]);
-}
-
-// Less reports whether i is a better destination address for this
-// host than j.
-//
-// The algorithm and variable names comes from RFC 6724 section 6.
-[GoRecv] internal static bool Less(this ref byRFC6724 s, nint i, nint j) {
-    var DA = s.addrs[i].IP;
-    var DB = s.addrs[j].IP;
-    var SourceDA = s.srcs[i];
-    var SourceDB = s.srcs[j];
-    var attrDA = Ꮡ(s.addrAttr, i);
-    var attrDB = Ꮡ(s.addrAttr, j);
-    var attrSourceDA = Ꮡ(s.srcAttr, i);
-    var attrSourceDB = Ꮡ(s.srcAttr, j);
-    const bool preferDA = true;
-    const bool preferDB = false;
+    var DA = a.addr.IP;
+    var DB = b.addr.IP;
+    var SourceDA = a.src;
+    var SourceDB = b.src;
+    var attrDA = Ꮡa.of(byRFC6724Info.ᏑaddrAttr);
+    var attrDB = Ꮡb.of(byRFC6724Info.ᏑaddrAttr);
+    var attrSourceDA = Ꮡa.of(byRFC6724Info.ᏑsrcAttr);
+    var attrSourceDB = Ꮡb.of(byRFC6724Info.ᏑsrcAttr);
+    const nint preferDA = -1;
+    const nint preferDB = 1;
     // Rule 1: Avoid unusable destinations.
     // If DB is known to be unreachable or if Source(DB) is undefined, then
     // prefer DA.  Similarly, if DA is known to be unreachable or if
     // Source(DA) is undefined, then prefer DB.
     if (!SourceDA.IsValid() && !SourceDB.IsValid()) {
-        return false; // "equal"
+        return 0; // "equal"
     }
     if (!SourceDB.IsValid()) {
         return preferDA;
@@ -214,7 +195,7 @@ internal static ipAttr ipAttrOf(netipꓸAddr ip) {
     // Rule 10: Otherwise, leave the order unchanged.
     // If DA preceded DB in the original list, prefer DA.
     // Otherwise, prefer DB.
-    return false; // "equal"
+    return 0; // "equal"
 }
 
 [GoType] partial struct policyTableEntry {

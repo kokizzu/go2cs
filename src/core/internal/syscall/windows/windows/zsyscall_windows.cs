@@ -8,12 +8,6 @@ using go.@internal.syscall.windows;
 
 partial class windows_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸsysdll() {
-    builtin.initPackage(typeof(go.@internal.syscall.windows.sysdll_package));
-}
-
 internal static @unsafe.Pointer _ᴛ1ʗ;
 
 // Do the interface allocations only once for common
@@ -51,7 +45,13 @@ internal static ж<syscall.LazyDLL> moduserenv = syscall.NewLazyDLL(sysdll.Add("
 internal static ж<syscall.LazyDLL> modws2_32 = syscall.NewLazyDLL(sysdll.Add("ws2_32.dll"u8));
 internal static ж<syscall.LazyProc> procAdjustTokenPrivileges = modadvapi32.NewProc("AdjustTokenPrivileges"u8);
 internal static ж<syscall.LazyProc> procDuplicateTokenEx = modadvapi32.NewProc("DuplicateTokenEx"u8);
+internal static ж<syscall.LazyProc> procGetSidIdentifierAuthority = modadvapi32.NewProc("GetSidIdentifierAuthority"u8);
+internal static ж<syscall.LazyProc> procGetSidSubAuthority = modadvapi32.NewProc("GetSidSubAuthority"u8);
+internal static ж<syscall.LazyProc> procGetSidSubAuthorityCount = modadvapi32.NewProc("GetSidSubAuthorityCount"u8);
+internal static ж<syscall.LazyProc> procImpersonateLoggedOnUser = modadvapi32.NewProc("ImpersonateLoggedOnUser"u8);
 internal static ж<syscall.LazyProc> procImpersonateSelf = modadvapi32.NewProc("ImpersonateSelf"u8);
+internal static ж<syscall.LazyProc> procIsValidSid = modadvapi32.NewProc("IsValidSid"u8);
+internal static ж<syscall.LazyProc> procLogonUserW = modadvapi32.NewProc("LogonUserW"u8);
 internal static ж<syscall.LazyProc> procLookupPrivilegeValueW = modadvapi32.NewProc("LookupPrivilegeValueW"u8);
 internal static ж<syscall.LazyProc> procOpenSCManagerW = modadvapi32.NewProc("OpenSCManagerW"u8);
 internal static ж<syscall.LazyProc> procOpenServiceW = modadvapi32.NewProc("OpenServiceW"u8);
@@ -69,6 +69,7 @@ internal static ж<syscall.LazyProc> procGetCurrentThread = modkernel32.NewProc(
 internal static ж<syscall.LazyProc> procGetFileInformationByHandleEx = modkernel32.NewProc("GetFileInformationByHandleEx"u8);
 internal static ж<syscall.LazyProc> procGetFinalPathNameByHandleW = modkernel32.NewProc("GetFinalPathNameByHandleW"u8);
 internal static ж<syscall.LazyProc> procGetModuleFileNameW = modkernel32.NewProc("GetModuleFileNameW"u8);
+internal static ж<syscall.LazyProc> procGetModuleHandleW = modkernel32.NewProc("GetModuleHandleW"u8);
 internal static ж<syscall.LazyProc> procGetTempPath2W = modkernel32.NewProc("GetTempPath2W"u8);
 internal static ж<syscall.LazyProc> procGetVolumeInformationByHandleW = modkernel32.NewProc("GetVolumeInformationByHandleW"u8);
 internal static ж<syscall.LazyProc> procGetVolumeNameForVolumeMountPointW = modkernel32.NewProc("GetVolumeNameForVolumeMountPointW"u8);
@@ -84,8 +85,14 @@ internal static ж<syscall.LazyProc> procUnlockFileEx = modkernel32.NewProc("Unl
 internal static ж<syscall.LazyProc> procVirtualQuery = modkernel32.NewProc("VirtualQuery"u8);
 internal static ж<syscall.LazyProc> procNetShareAdd = modnetapi32.NewProc("NetShareAdd"u8);
 internal static ж<syscall.LazyProc> procNetShareDel = modnetapi32.NewProc("NetShareDel"u8);
+internal static ж<syscall.LazyProc> procNetUserAdd = modnetapi32.NewProc("NetUserAdd"u8);
+internal static ж<syscall.LazyProc> procNetUserDel = modnetapi32.NewProc("NetUserDel"u8);
 internal static ж<syscall.LazyProc> procNetUserGetLocalGroups = modnetapi32.NewProc("NetUserGetLocalGroups"u8);
+internal static ж<syscall.LazyProc> procNtCreateFile = modntdll.NewProc("NtCreateFile"u8);
+internal static ж<syscall.LazyProc> procNtOpenFile = modntdll.NewProc("NtOpenFile"u8);
+internal static ж<syscall.LazyProc> procNtSetInformationFile = modntdll.NewProc("NtSetInformationFile"u8);
 internal static ж<syscall.LazyProc> procRtlGetVersion = modntdll.NewProc("RtlGetVersion"u8);
+internal static ж<syscall.LazyProc> procRtlNtStatusToDosErrorNoTeb = modntdll.NewProc("RtlNtStatusToDosErrorNoTeb"u8);
 internal static ж<syscall.LazyProc> procGetProcessMemoryInfo = modpsapi.NewProc("GetProcessMemoryInfo"u8);
 internal static ж<syscall.LazyProc> procCreateEnvironmentBlock = moduserenv.NewProc("CreateEnvironmentBlock"u8);
 internal static ж<syscall.LazyProc> procDestroyEnvironmentBlock = moduserenv.NewProc("DestroyEnvironmentBlock"u8);
@@ -109,6 +116,46 @@ public static error /*err*/ DuplicateTokenEx(syscall.Token hExistingToken, uint3
     return err;
 }
 
+internal static uintptr /*idauth*/ getSidIdentifierAuthority(ж<syscall.SID> Ꮡsid) {
+    uintptr idauth = default!;
+
+    var ᴋ2 = Ꮡsid;
+        var (r0, _, _) = syscall.Syscall(procGetSidIdentifierAuthority.Addr(), 1, (uintptr)ᴋ2, 0, 0);
+    System.GC.KeepAlive(ᴋ2);
+    idauth = (uintptr)r0;
+    return idauth;
+}
+
+internal static uintptr /*subAuth*/ getSidSubAuthority(ж<syscall.SID> Ꮡsid, uint32 subAuthorityIdx) {
+    uintptr subAuth = default!;
+
+    var ᴋ3 = Ꮡsid;
+        var (r0, _, _) = syscall.Syscall(procGetSidSubAuthority.Addr(), 2, (uintptr)ᴋ3, (uintptr)subAuthorityIdx, 0);
+    System.GC.KeepAlive(ᴋ3);
+    subAuth = (uintptr)r0;
+    return subAuth;
+}
+
+internal static uintptr /*count*/ getSidSubAuthorityCount(ж<syscall.SID> Ꮡsid) {
+    uintptr count = default!;
+
+    var ᴋ4 = Ꮡsid;
+        var (r0, _, _) = syscall.Syscall(procGetSidSubAuthorityCount.Addr(), 1, (uintptr)ᴋ4, 0, 0);
+    System.GC.KeepAlive(ᴋ4);
+    count = (uintptr)r0;
+    return count;
+}
+
+public static error /*err*/ ImpersonateLoggedOnUser(syscall.Token token) {
+    error err = default!;
+
+    var (r1, _, e1) = syscall.Syscall(procImpersonateLoggedOnUser.Addr(), 1, (uintptr)token, 0, 0);
+    if (r1 == 0) {
+        err = errnoErr(e1);
+    }
+    return err;
+}
+
 public static error /*err*/ ImpersonateSelf(uint32 impersonationlevel) {
     error err = default!;
 
@@ -119,16 +166,44 @@ public static error /*err*/ ImpersonateSelf(uint32 impersonationlevel) {
     return err;
 }
 
+public static bool /*valid*/ IsValidSid(ж<syscall.SID> Ꮡsid) {
+    bool valid = default!;
+
+    var ᴋ5 = Ꮡsid;
+        var (r0, _, _) = syscall.Syscall(procIsValidSid.Addr(), 1, (uintptr)ᴋ5, 0, 0);
+    System.GC.KeepAlive(ᴋ5);
+    valid = r0 != 0;
+    return valid;
+}
+
+public static error /*err*/ LogonUser(ж<uint16> Ꮡusername, ж<uint16> Ꮡdomain, ж<uint16> Ꮡpassword, uint32 logonType, uint32 logonProvider, ж<syscall.Token> Ꮡtoken) {
+    error err = default!;
+
+    var ᴋ6 = Ꮡusername;
+    var ᴋ7 = Ꮡdomain;
+    var ᴋ8 = Ꮡpassword;
+    var ᴋ9 = Ꮡtoken;
+        var (r1, _, e1) = syscall.Syscall6(procLogonUserW.Addr(), 6, (uintptr)ᴋ6, (uintptr)ᴋ7, (uintptr)ᴋ8, (uintptr)logonType, (uintptr)logonProvider, (uintptr)ᴋ9);
+    System.GC.KeepAlive(ᴋ6);
+    System.GC.KeepAlive(ᴋ7);
+    System.GC.KeepAlive(ᴋ8);
+    System.GC.KeepAlive(ᴋ9);
+    if (r1 == 0) {
+        err = errnoErr(e1);
+    }
+    return err;
+}
+
 public static error /*err*/ LookupPrivilegeValue(ж<uint16> Ꮡsystemname, ж<uint16> Ꮡname, ж<LUID> Ꮡluid) {
     error err = default!;
 
-    var ᴋ2 = Ꮡsystemname;
-    var ᴋ3 = Ꮡname;
-    var ᴋ4 = Ꮡluid;
-        var (r1, _, e1) = syscall.Syscall(procLookupPrivilegeValueW.Addr(), 3, (uintptr)ᴋ2, (uintptr)ᴋ3, (uintptr)ᴋ4);
-    System.GC.KeepAlive(ᴋ2);
-    System.GC.KeepAlive(ᴋ3);
-    System.GC.KeepAlive(ᴋ4);
+    var ᴋ10 = Ꮡsystemname;
+    var ᴋ11 = Ꮡname;
+    var ᴋ12 = Ꮡluid;
+        var (r1, _, e1) = syscall.Syscall(procLookupPrivilegeValueW.Addr(), 3, (uintptr)ᴋ10, (uintptr)ᴋ11, (uintptr)ᴋ12);
+    System.GC.KeepAlive(ᴋ10);
+    System.GC.KeepAlive(ᴋ11);
+    System.GC.KeepAlive(ᴋ12);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -139,11 +214,11 @@ public static (syscallꓸHandle handle, error err) OpenSCManager(ж<uint16> Ꮡm
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var ᴋ5 = ᏑmachineName;
-    var ᴋ6 = ᏑdatabaseName;
-        var (r0, _, e1) = syscall.Syscall(procOpenSCManagerW.Addr(), 3, (uintptr)ᴋ5, (uintptr)ᴋ6, (uintptr)access);
-    System.GC.KeepAlive(ᴋ5);
-    System.GC.KeepAlive(ᴋ6);
+    var ᴋ13 = ᏑmachineName;
+    var ᴋ14 = ᏑdatabaseName;
+        var (r0, _, e1) = syscall.Syscall(procOpenSCManagerW.Addr(), 3, (uintptr)ᴋ13, (uintptr)ᴋ14, (uintptr)access);
+    System.GC.KeepAlive(ᴋ13);
+    System.GC.KeepAlive(ᴋ14);
     handle = ((syscallꓸHandle)r0);
     if (handle == 0) {
         err = errnoErr(e1);
@@ -155,9 +230,9 @@ public static (syscallꓸHandle handle, error err) OpenService(syscallꓸHandle 
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var ᴋ7 = ᏑserviceName;
-        var (r0, _, e1) = syscall.Syscall(procOpenServiceW.Addr(), 3, (uintptr)mgr, (uintptr)ᴋ7, (uintptr)access);
-    System.GC.KeepAlive(ᴋ7);
+    var ᴋ15 = ᏑserviceName;
+        var (r0, _, e1) = syscall.Syscall(procOpenServiceW.Addr(), 3, (uintptr)mgr, (uintptr)ᴋ15, (uintptr)access);
+    System.GC.KeepAlive(ᴋ15);
     handle = ((syscallꓸHandle)r0);
     if (handle == 0) {
         err = errnoErr(e1);
@@ -172,9 +247,9 @@ public static error /*err*/ OpenThreadToken(syscallꓸHandle h, uint32 access, b
     if (openasself) {
         _p0 = 1;
     }
-    var ᴋ8 = Ꮡtoken;
-        var (r1, _, e1) = syscall.Syscall6(procOpenThreadToken.Addr(), 4, (uintptr)h, (uintptr)access, (uintptr)_p0, (uintptr)ᴋ8, 0, 0);
-    System.GC.KeepAlive(ᴋ8);
+    var ᴋ16 = Ꮡtoken;
+        var (r1, _, e1) = syscall.Syscall6(procOpenThreadToken.Addr(), 4, (uintptr)h, (uintptr)access, (uintptr)_p0, (uintptr)ᴋ16, 0, 0);
+    System.GC.KeepAlive(ᴋ16);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -184,9 +259,9 @@ public static error /*err*/ OpenThreadToken(syscallꓸHandle h, uint32 access, b
 public static error /*err*/ QueryServiceStatus(syscallꓸHandle hService, ж<SERVICE_STATUS> ᏑlpServiceStatus) {
     error err = default!;
 
-    var ᴋ9 = ᏑlpServiceStatus;
-        var (r1, _, e1) = syscall.Syscall(procQueryServiceStatus.Addr(), 2, (uintptr)hService, (uintptr)ᴋ9, 0);
-    System.GC.KeepAlive(ᴋ9);
+    var ᴋ17 = ᏑlpServiceStatus;
+        var (r1, _, e1) = syscall.Syscall(procQueryServiceStatus.Addr(), 2, (uintptr)hService, (uintptr)ᴋ17, 0);
+    System.GC.KeepAlive(ᴋ17);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -220,9 +295,9 @@ public static error /*err*/ ProcessPrng(slice<byte> buf) {
     if (len(buf) > 0) {
         _p0 = Ꮡ(buf, 0);
     }
-    var ᴋ10 = _p0;
-        var (r1, _, e1) = syscall.Syscall(procProcessPrng.Addr(), 2, (uintptr)ᴋ10, (uintptr)len(buf), 0);
-    System.GC.KeepAlive(ᴋ10);
+    var ᴋ18 = _p0;
+        var (r1, _, e1) = syscall.Syscall(procProcessPrng.Addr(), 2, (uintptr)ᴋ18, (uintptr)len(buf), 0);
+    System.GC.KeepAlive(ᴋ18);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -232,11 +307,11 @@ public static error /*err*/ ProcessPrng(slice<byte> buf) {
 public static error /*errcode*/ GetAdaptersAddresses(uint32 family, uint32 flags, uintptr reserved, ж<IpAdapterAddresses> ᏑadapterAddresses, ж<uint32> ᏑsizePointer) {
     error errcode = default!;
 
-    var ᴋ11 = ᏑadapterAddresses;
-    var ᴋ12 = ᏑsizePointer;
-        var (r0, _, _) = syscall.Syscall6(procGetAdaptersAddresses.Addr(), 5, (uintptr)family, (uintptr)flags, (uintptr)reserved, (uintptr)ᴋ11, (uintptr)ᴋ12, 0);
-    System.GC.KeepAlive(ᴋ11);
-    System.GC.KeepAlive(ᴋ12);
+    var ᴋ19 = ᏑadapterAddresses;
+    var ᴋ20 = ᏑsizePointer;
+        var (r0, _, _) = syscall.Syscall6(procGetAdaptersAddresses.Addr(), 5, (uintptr)family, (uintptr)flags, (uintptr)reserved, (uintptr)ᴋ19, (uintptr)ᴋ20, 0);
+    System.GC.KeepAlive(ᴋ19);
+    System.GC.KeepAlive(ᴋ20);
     if (r0 != 0) {
         errcode = ((syscall.Errno)r0);
     }
@@ -247,11 +322,11 @@ public static (syscallꓸHandle handle, error err) CreateEvent(ж<SecurityAttrib
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var ᴋ13 = ᏑeventAttrs;
-    var ᴋ14 = Ꮡname;
-        var (r0, _, e1) = syscall.Syscall6(procCreateEventW.Addr(), 4, (uintptr)ᴋ13, (uintptr)manualReset, (uintptr)initialState, (uintptr)ᴋ14, 0, 0);
-    System.GC.KeepAlive(ᴋ13);
-    System.GC.KeepAlive(ᴋ14);
+    var ᴋ21 = ᏑeventAttrs;
+    var ᴋ22 = Ꮡname;
+        var (r0, _, e1) = syscall.Syscall6(procCreateEventW.Addr(), 4, (uintptr)ᴋ21, (uintptr)manualReset, (uintptr)initialState, (uintptr)ᴋ22, 0, 0);
+    System.GC.KeepAlive(ᴋ21);
+    System.GC.KeepAlive(ᴋ22);
     handle = ((syscallꓸHandle)r0);
     if (handle == 0) {
         err = errnoErr(e1);
@@ -270,11 +345,11 @@ public static uint32 /*acp*/ GetACP() {
 public static error /*err*/ GetComputerNameEx(uint32 nameformat, ж<uint16> Ꮡbuf, ж<uint32> Ꮡn) {
     error err = default!;
 
-    var ᴋ15 = Ꮡbuf;
-    var ᴋ16 = Ꮡn;
-        var (r1, _, e1) = syscall.Syscall(procGetComputerNameExW.Addr(), 3, (uintptr)nameformat, (uintptr)ᴋ15, (uintptr)ᴋ16);
-    System.GC.KeepAlive(ᴋ15);
-    System.GC.KeepAlive(ᴋ16);
+    var ᴋ23 = Ꮡbuf;
+    var ᴋ24 = Ꮡn;
+        var (r1, _, e1) = syscall.Syscall(procGetComputerNameExW.Addr(), 3, (uintptr)nameformat, (uintptr)ᴋ23, (uintptr)ᴋ24);
+    System.GC.KeepAlive(ᴋ23);
+    System.GC.KeepAlive(ᴋ24);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -304,9 +379,9 @@ public static (syscallꓸHandle pseudoHandle, error err) GetCurrentThread() {
 public static error /*err*/ GetFileInformationByHandleEx(syscallꓸHandle handle, uint32 @class, ж<byte> Ꮡinfo, uint32 bufsize) {
     error err = default!;
 
-    var ᴋ17 = Ꮡinfo;
-        var (r1, _, e1) = syscall.Syscall6(procGetFileInformationByHandleEx.Addr(), 4, (uintptr)handle, (uintptr)@class, (uintptr)ᴋ17, (uintptr)bufsize, 0, 0);
-    System.GC.KeepAlive(ᴋ17);
+    var ᴋ25 = Ꮡinfo;
+        var (r1, _, e1) = syscall.Syscall6(procGetFileInformationByHandleEx.Addr(), 4, (uintptr)handle, (uintptr)@class, (uintptr)ᴋ25, (uintptr)bufsize, 0, 0);
+    System.GC.KeepAlive(ᴋ25);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -317,9 +392,9 @@ public static (uint32 n, error err) GetFinalPathNameByHandle(syscallꓸHandle @f
     uint32 n = default!;
     error err = default!;
 
-    var ᴋ18 = ᏑfilePath;
-        var (r0, _, e1) = syscall.Syscall6(procGetFinalPathNameByHandleW.Addr(), 4, (uintptr)@file, (uintptr)ᴋ18, (uintptr)filePathSize, (uintptr)flags, 0, 0);
-    System.GC.KeepAlive(ᴋ18);
+    var ᴋ26 = ᏑfilePath;
+        var (r0, _, e1) = syscall.Syscall6(procGetFinalPathNameByHandleW.Addr(), 4, (uintptr)@file, (uintptr)ᴋ26, (uintptr)filePathSize, (uintptr)flags, 0, 0);
+    System.GC.KeepAlive(ᴋ26);
     n = (uint32)r0;
     if (n == 0) {
         err = errnoErr(e1);
@@ -331,9 +406,9 @@ public static (uint32 n, error err) GetModuleFileName(syscallꓸHandle module, �
     uint32 n = default!;
     error err = default!;
 
-    var ᴋ19 = Ꮡfn;
-        var (r0, _, e1) = syscall.Syscall(procGetModuleFileNameW.Addr(), 3, (uintptr)module, (uintptr)ᴋ19, (uintptr)len);
-    System.GC.KeepAlive(ᴋ19);
+    var ᴋ27 = Ꮡfn;
+        var (r0, _, e1) = syscall.Syscall(procGetModuleFileNameW.Addr(), 3, (uintptr)module, (uintptr)ᴋ27, (uintptr)len);
+    System.GC.KeepAlive(ᴋ27);
     n = (uint32)r0;
     if (n == 0) {
         err = errnoErr(e1);
@@ -341,13 +416,27 @@ public static (uint32 n, error err) GetModuleFileName(syscallꓸHandle module, �
     return (n, err);
 }
 
+public static (syscallꓸHandle handle, error err) GetModuleHandle(ж<uint16> Ꮡmodulename) {
+    syscallꓸHandle handle = default!;
+    error err = default!;
+
+    var ᴋ28 = Ꮡmodulename;
+        var (r0, _, e1) = syscall.Syscall(procGetModuleHandleW.Addr(), 1, (uintptr)ᴋ28, 0, 0);
+    System.GC.KeepAlive(ᴋ28);
+    handle = ((syscallꓸHandle)r0);
+    if (handle == 0) {
+        err = errnoErr(e1);
+    }
+    return (handle, err);
+}
+
 public static (uint32 n, error err) GetTempPath2(uint32 buflen, ж<uint16> Ꮡbuf) {
     uint32 n = default!;
     error err = default!;
 
-    var ᴋ20 = Ꮡbuf;
-        var (r0, _, e1) = syscall.Syscall(procGetTempPath2W.Addr(), 2, (uintptr)buflen, (uintptr)ᴋ20, 0);
-    System.GC.KeepAlive(ᴋ20);
+    var ᴋ29 = Ꮡbuf;
+        var (r0, _, e1) = syscall.Syscall(procGetTempPath2W.Addr(), 2, (uintptr)buflen, (uintptr)ᴋ29, 0);
+    System.GC.KeepAlive(ᴋ29);
     n = (uint32)r0;
     if (n == 0) {
         err = errnoErr(e1);
@@ -358,17 +447,17 @@ public static (uint32 n, error err) GetTempPath2(uint32 buflen, ж<uint16> Ꮡbu
 public static error /*err*/ GetVolumeInformationByHandle(syscallꓸHandle @file, ж<uint16> ᏑvolumeNameBuffer, uint32 volumeNameSize, ж<uint32> ᏑvolumeNameSerialNumber, ж<uint32> ᏑmaximumComponentLength, ж<uint32> ᏑfileSystemFlags, ж<uint16> ᏑfileSystemNameBuffer, uint32 fileSystemNameSize) {
     error err = default!;
 
-    var ᴋ21 = ᏑvolumeNameBuffer;
-    var ᴋ22 = ᏑvolumeNameSerialNumber;
-    var ᴋ23 = ᏑmaximumComponentLength;
-    var ᴋ24 = ᏑfileSystemFlags;
-    var ᴋ25 = ᏑfileSystemNameBuffer;
-        var (r1, _, e1) = syscall.Syscall9(procGetVolumeInformationByHandleW.Addr(), 8, (uintptr)@file, (uintptr)ᴋ21, (uintptr)volumeNameSize, (uintptr)ᴋ22, (uintptr)ᴋ23, (uintptr)ᴋ24, (uintptr)ᴋ25, (uintptr)fileSystemNameSize, 0);
-    System.GC.KeepAlive(ᴋ21);
-    System.GC.KeepAlive(ᴋ22);
-    System.GC.KeepAlive(ᴋ23);
-    System.GC.KeepAlive(ᴋ24);
-    System.GC.KeepAlive(ᴋ25);
+    var ᴋ30 = ᏑvolumeNameBuffer;
+    var ᴋ31 = ᏑvolumeNameSerialNumber;
+    var ᴋ32 = ᏑmaximumComponentLength;
+    var ᴋ33 = ᏑfileSystemFlags;
+    var ᴋ34 = ᏑfileSystemNameBuffer;
+        var (r1, _, e1) = syscall.Syscall9(procGetVolumeInformationByHandleW.Addr(), 8, (uintptr)@file, (uintptr)ᴋ30, (uintptr)volumeNameSize, (uintptr)ᴋ31, (uintptr)ᴋ32, (uintptr)ᴋ33, (uintptr)ᴋ34, (uintptr)fileSystemNameSize, 0);
+    System.GC.KeepAlive(ᴋ30);
+    System.GC.KeepAlive(ᴋ31);
+    System.GC.KeepAlive(ᴋ32);
+    System.GC.KeepAlive(ᴋ33);
+    System.GC.KeepAlive(ᴋ34);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -378,11 +467,11 @@ public static error /*err*/ GetVolumeInformationByHandle(syscallꓸHandle @file,
 public static error /*err*/ GetVolumeNameForVolumeMountPoint(ж<uint16> ᏑvolumeMountPoint, ж<uint16> ᏑvolumeName, uint32 bufferlength) {
     error err = default!;
 
-    var ᴋ26 = ᏑvolumeMountPoint;
-    var ᴋ27 = ᏑvolumeName;
-        var (r1, _, e1) = syscall.Syscall(procGetVolumeNameForVolumeMountPointW.Addr(), 3, (uintptr)ᴋ26, (uintptr)ᴋ27, (uintptr)bufferlength);
-    System.GC.KeepAlive(ᴋ26);
-    System.GC.KeepAlive(ᴋ27);
+    var ᴋ35 = ᏑvolumeMountPoint;
+    var ᴋ36 = ᏑvolumeName;
+        var (r1, _, e1) = syscall.Syscall(procGetVolumeNameForVolumeMountPointW.Addr(), 3, (uintptr)ᴋ35, (uintptr)ᴋ36, (uintptr)bufferlength);
+    System.GC.KeepAlive(ᴋ35);
+    System.GC.KeepAlive(ᴋ36);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -392,9 +481,9 @@ public static error /*err*/ GetVolumeNameForVolumeMountPoint(ж<uint16> Ꮡvolum
 public static error /*err*/ LockFileEx(syscallꓸHandle @file, uint32 flags, uint32 reserved, uint32 bytesLow, uint32 bytesHigh, ж<syscall.Overlapped> Ꮡoverlapped) {
     error err = default!;
 
-    var ᴋ28 = Ꮡoverlapped;
-        var (r1, _, e1) = syscall.Syscall6(procLockFileEx.Addr(), 6, (uintptr)@file, (uintptr)flags, (uintptr)reserved, (uintptr)bytesLow, (uintptr)bytesHigh, (uintptr)ᴋ28);
-    System.GC.KeepAlive(ᴋ28);
+    var ᴋ37 = Ꮡoverlapped;
+        var (r1, _, e1) = syscall.Syscall6(procLockFileEx.Addr(), 6, (uintptr)@file, (uintptr)flags, (uintptr)reserved, (uintptr)bytesLow, (uintptr)bytesHigh, (uintptr)ᴋ37);
+    System.GC.KeepAlive(ᴋ37);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -408,11 +497,11 @@ public static error /*err*/ LockFileEx(syscallꓸHandle @file, uint32 flags, uin
 public static error /*err*/ MoveFileEx(ж<uint16> Ꮡfrom, ж<uint16> Ꮡto, uint32 flags) {
     error err = default!;
 
-    var ᴋ29 = Ꮡfrom;
-    var ᴋ30 = Ꮡto;
-        var (r1, _, e1) = syscall.Syscall(procMoveFileExW.Addr(), 3, (uintptr)ᴋ29, (uintptr)ᴋ30, (uintptr)flags);
-    System.GC.KeepAlive(ᴋ29);
-    System.GC.KeepAlive(ᴋ30);
+    var ᴋ38 = Ꮡfrom;
+    var ᴋ39 = Ꮡto;
+        var (r1, _, e1) = syscall.Syscall(procMoveFileExW.Addr(), 3, (uintptr)ᴋ38, (uintptr)ᴋ39, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ38);
+    System.GC.KeepAlive(ᴋ39);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -423,11 +512,11 @@ public static (int32 nwrite, error err) MultiByteToWideChar(uint32 codePage, uin
     int32 nwrite = default!;
     error err = default!;
 
-    var ᴋ31 = Ꮡstr;
-    var ᴋ32 = Ꮡwchar;
-        var (r0, _, e1) = syscall.Syscall6(procMultiByteToWideChar.Addr(), 6, (uintptr)codePage, (uintptr)dwFlags, (uintptr)ᴋ31, (uintptr)nstr, (uintptr)ᴋ32, (uintptr)nwchar);
-    System.GC.KeepAlive(ᴋ31);
-    System.GC.KeepAlive(ᴋ32);
+    var ᴋ40 = Ꮡstr;
+    var ᴋ41 = Ꮡwchar;
+        var (r0, _, e1) = syscall.Syscall6(procMultiByteToWideChar.Addr(), 6, (uintptr)codePage, (uintptr)dwFlags, (uintptr)ᴋ40, (uintptr)nstr, (uintptr)ᴋ41, (uintptr)nwchar);
+    System.GC.KeepAlive(ᴋ40);
+    System.GC.KeepAlive(ᴋ41);
     nwrite = (int32)r0;
     if (nwrite == 0) {
         err = errnoErr(e1);
@@ -438,11 +527,11 @@ public static (int32 nwrite, error err) MultiByteToWideChar(uint32 codePage, uin
 public static uintptr /*ret*/ RtlLookupFunctionEntry(uintptr pc, ж<uintptr> ᏑbaseAddress, ж<byte> Ꮡtable) {
     uintptr ret = default!;
 
-    var ᴋ33 = ᏑbaseAddress;
-    var ᴋ34 = Ꮡtable;
-        var (r0, _, _) = syscall.Syscall(procRtlLookupFunctionEntry.Addr(), 3, (uintptr)pc, (uintptr)ᴋ33, (uintptr)ᴋ34);
-    System.GC.KeepAlive(ᴋ33);
-    System.GC.KeepAlive(ᴋ34);
+    var ᴋ42 = ᏑbaseAddress;
+    var ᴋ43 = Ꮡtable;
+        var (r0, _, _) = syscall.Syscall(procRtlLookupFunctionEntry.Addr(), 3, (uintptr)pc, (uintptr)ᴋ42, (uintptr)ᴋ43);
+    System.GC.KeepAlive(ᴋ42);
+    System.GC.KeepAlive(ᴋ43);
     ret = (uintptr)r0;
     return ret;
 }
@@ -450,13 +539,13 @@ public static uintptr /*ret*/ RtlLookupFunctionEntry(uintptr pc, ж<uintptr> Ꮡ
 public static uintptr /*ret*/ RtlVirtualUnwind(uint32 handlerType, uintptr baseAddress, uintptr pc, uintptr entry, uintptr ctxt, ж<uintptr> Ꮡdata, ж<uintptr> Ꮡframe, ж<byte> Ꮡctxptrs) {
     uintptr ret = default!;
 
-    var ᴋ35 = Ꮡdata;
-    var ᴋ36 = Ꮡframe;
-    var ᴋ37 = Ꮡctxptrs;
-        var (r0, _, _) = syscall.Syscall9(procRtlVirtualUnwind.Addr(), 8, (uintptr)handlerType, (uintptr)baseAddress, (uintptr)pc, (uintptr)entry, (uintptr)ctxt, (uintptr)ᴋ35, (uintptr)ᴋ36, (uintptr)ᴋ37, 0);
-    System.GC.KeepAlive(ᴋ35);
-    System.GC.KeepAlive(ᴋ36);
-    System.GC.KeepAlive(ᴋ37);
+    var ᴋ44 = Ꮡdata;
+    var ᴋ45 = Ꮡframe;
+    var ᴋ46 = Ꮡctxptrs;
+        var (r0, _, _) = syscall.Syscall9(procRtlVirtualUnwind.Addr(), 8, (uintptr)handlerType, (uintptr)baseAddress, (uintptr)pc, (uintptr)entry, (uintptr)ctxt, (uintptr)ᴋ44, (uintptr)ᴋ45, (uintptr)ᴋ46, 0);
+    System.GC.KeepAlive(ᴋ44);
+    System.GC.KeepAlive(ᴋ45);
+    System.GC.KeepAlive(ᴋ46);
     ret = (uintptr)r0;
     return ret;
 }
@@ -464,7 +553,9 @@ public static uintptr /*ret*/ RtlVirtualUnwind(uint32 handlerType, uintptr baseA
 public static error /*err*/ SetFileInformationByHandle(syscallꓸHandle handle, uint32 fileInformationClass, @unsafe.Pointer buf, uint32 bufsize) {
     error err = default!;
 
-    var (r1, _, e1) = syscall.Syscall6(procSetFileInformationByHandle.Addr(), 4, (uintptr)handle, (uintptr)fileInformationClass, (uintptr)buf, (uintptr)bufsize, 0, 0);
+    var ᴋ47 = buf;
+        var (r1, _, e1) = syscall.Syscall6(procSetFileInformationByHandle.Addr(), 4, (uintptr)handle, (uintptr)fileInformationClass, (uintptr)ᴋ47, (uintptr)bufsize, 0, 0);
+    System.GC.KeepAlive(ᴋ47);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -474,9 +565,9 @@ public static error /*err*/ SetFileInformationByHandle(syscallꓸHandle handle, 
 public static error /*err*/ UnlockFileEx(syscallꓸHandle @file, uint32 reserved, uint32 bytesLow, uint32 bytesHigh, ж<syscall.Overlapped> Ꮡoverlapped) {
     error err = default!;
 
-    var ᴋ38 = Ꮡoverlapped;
-        var (r1, _, e1) = syscall.Syscall6(procUnlockFileEx.Addr(), 5, (uintptr)@file, (uintptr)reserved, (uintptr)bytesLow, (uintptr)bytesHigh, (uintptr)ᴋ38, 0);
-    System.GC.KeepAlive(ᴋ38);
+    var ᴋ48 = Ꮡoverlapped;
+        var (r1, _, e1) = syscall.Syscall6(procUnlockFileEx.Addr(), 5, (uintptr)@file, (uintptr)reserved, (uintptr)bytesLow, (uintptr)bytesHigh, (uintptr)ᴋ48, 0);
+    System.GC.KeepAlive(ᴋ48);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -486,9 +577,9 @@ public static error /*err*/ UnlockFileEx(syscallꓸHandle @file, uint32 reserved
 public static error /*err*/ VirtualQuery(uintptr address, ж<MemoryBasicInformation> Ꮡbuffer, uintptr length) {
     error err = default!;
 
-    var ᴋ39 = Ꮡbuffer;
-        var (r1, _, e1) = syscall.Syscall(procVirtualQuery.Addr(), 3, (uintptr)address, (uintptr)ᴋ39, (uintptr)length);
-    System.GC.KeepAlive(ᴋ39);
+    var ᴋ49 = Ꮡbuffer;
+        var (r1, _, e1) = syscall.Syscall(procVirtualQuery.Addr(), 3, (uintptr)address, (uintptr)ᴋ49, (uintptr)length);
+    System.GC.KeepAlive(ᴋ49);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -500,11 +591,41 @@ public static error /*err*/ VirtualQuery(uintptr address, ж<MemoryBasicInformat
 public static error /*neterr*/ NetShareDel(ж<uint16> ᏑserverName, ж<uint16> ᏑnetName, uint32 reserved) {
     error neterr = default!;
 
-    var ᴋ40 = ᏑserverName;
-    var ᴋ41 = ᏑnetName;
-        var (r0, _, _) = syscall.Syscall(procNetShareDel.Addr(), 3, (uintptr)ᴋ40, (uintptr)ᴋ41, (uintptr)reserved);
-    System.GC.KeepAlive(ᴋ40);
-    System.GC.KeepAlive(ᴋ41);
+    var ᴋ50 = ᏑserverName;
+    var ᴋ51 = ᏑnetName;
+        var (r0, _, _) = syscall.Syscall(procNetShareDel.Addr(), 3, (uintptr)ᴋ50, (uintptr)ᴋ51, (uintptr)reserved);
+    System.GC.KeepAlive(ᴋ50);
+    System.GC.KeepAlive(ᴋ51);
+    if (r0 != 0) {
+        neterr = ((syscall.Errno)r0);
+    }
+    return neterr;
+}
+
+public static error /*neterr*/ NetUserAdd(ж<uint16> ᏑserverName, uint32 level, ж<byte> Ꮡbuf, ж<uint32> ᏑparmErr) {
+    error neterr = default!;
+
+    var ᴋ52 = ᏑserverName;
+    var ᴋ53 = Ꮡbuf;
+    var ᴋ54 = ᏑparmErr;
+        var (r0, _, _) = syscall.Syscall6(procNetUserAdd.Addr(), 4, (uintptr)ᴋ52, (uintptr)level, (uintptr)ᴋ53, (uintptr)ᴋ54, 0, 0);
+    System.GC.KeepAlive(ᴋ52);
+    System.GC.KeepAlive(ᴋ53);
+    System.GC.KeepAlive(ᴋ54);
+    if (r0 != 0) {
+        neterr = ((syscall.Errno)r0);
+    }
+    return neterr;
+}
+
+public static error /*neterr*/ NetUserDel(ж<uint16> ᏑserverName, ж<uint16> ᏑuserName) {
+    error neterr = default!;
+
+    var ᴋ55 = ᏑserverName;
+    var ᴋ56 = ᏑuserName;
+        var (r0, _, _) = syscall.Syscall(procNetUserDel.Addr(), 2, (uintptr)ᴋ55, (uintptr)ᴋ56, 0);
+    System.GC.KeepAlive(ᴋ55);
+    System.GC.KeepAlive(ᴋ56);
     if (r0 != 0) {
         neterr = ((syscall.Errno)r0);
     }
@@ -513,14 +634,68 @@ public static error /*neterr*/ NetShareDel(ж<uint16> ᏑserverName, ж<uint16> 
 
 // go2cs generated this placeholder — func NetUserGetLocalGroups is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+public static error /*ntstatus*/ NtCreateFile(ж<syscallꓸHandle> Ꮡhandle, uint32 access, ж<OBJECT_ATTRIBUTES> Ꮡoa, ж<IO_STATUS_BLOCK> Ꮡiosb, ж<int64> ᏑallocationSize, uint32 attributes, uint32 share, uint32 disposition, uint32 options, uintptr eabuffer, uint32 ealength) {
+    error ntstatus = default!;
+
+    var ᴋ57 = Ꮡhandle;
+    var ᴋ58 = Ꮡoa;
+    var ᴋ59 = Ꮡiosb;
+    var ᴋ60 = ᏑallocationSize;
+        var (r0, _, _) = syscall.Syscall12(procNtCreateFile.Addr(), 11, (uintptr)ᴋ57, (uintptr)access, (uintptr)ᴋ58, (uintptr)ᴋ59, (uintptr)ᴋ60, (uintptr)attributes, (uintptr)share, (uintptr)disposition, (uintptr)options, (uintptr)eabuffer, (uintptr)ealength, 0);
+    System.GC.KeepAlive(ᴋ57);
+    System.GC.KeepAlive(ᴋ58);
+    System.GC.KeepAlive(ᴋ59);
+    System.GC.KeepAlive(ᴋ60);
+    if (r0 != 0) {
+        ntstatus = ((NTStatus)(uint32)r0);
+    }
+    return ntstatus;
+}
+
+public static error /*ntstatus*/ NtOpenFile(ж<syscallꓸHandle> Ꮡhandle, uint32 access, ж<OBJECT_ATTRIBUTES> Ꮡoa, ж<IO_STATUS_BLOCK> Ꮡiosb, uint32 share, uint32 options) {
+    error ntstatus = default!;
+
+    var ᴋ61 = Ꮡhandle;
+    var ᴋ62 = Ꮡoa;
+    var ᴋ63 = Ꮡiosb;
+        var (r0, _, _) = syscall.Syscall6(procNtOpenFile.Addr(), 6, (uintptr)ᴋ61, (uintptr)access, (uintptr)ᴋ62, (uintptr)ᴋ63, (uintptr)share, (uintptr)options);
+    System.GC.KeepAlive(ᴋ61);
+    System.GC.KeepAlive(ᴋ62);
+    System.GC.KeepAlive(ᴋ63);
+    if (r0 != 0) {
+        ntstatus = ((NTStatus)(uint32)r0);
+    }
+    return ntstatus;
+}
+
+public static error /*ntstatus*/ NtSetInformationFile(syscallꓸHandle handle, ж<IO_STATUS_BLOCK> Ꮡiosb, uintptr inBuffer, uint32 inBufferLen, uint32 @class) {
+    error ntstatus = default!;
+
+    var ᴋ64 = Ꮡiosb;
+        var (r0, _, _) = syscall.Syscall6(procNtSetInformationFile.Addr(), 5, (uintptr)handle, (uintptr)ᴋ64, (uintptr)inBuffer, (uintptr)inBufferLen, (uintptr)@class, 0);
+    System.GC.KeepAlive(ᴋ64);
+    if (r0 != 0) {
+        ntstatus = ((NTStatus)(uint32)r0);
+    }
+    return ntstatus;
+}
+
 // go2cs generated this placeholder — func rtlGetVersion is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
+
+internal static syscall.Errno /*ret*/ rtlNtStatusToDosErrorNoTeb(NTStatus ntstatus) {
+    syscall.Errno ret = default!;
+
+    var (r0, _, _) = syscall.Syscall(procRtlNtStatusToDosErrorNoTeb.Addr(), 1, (uintptr)(uint32)ntstatus, 0, 0);
+    ret = ((syscall.Errno)r0);
+    return ret;
+}
 
 public static error /*err*/ GetProcessMemoryInfo(syscallꓸHandle handle, ж<PROCESS_MEMORY_COUNTERS> ᏑmemCounters, uint32 cb) {
     error err = default!;
 
-    var ᴋ47 = ᏑmemCounters;
-        var (r1, _, e1) = syscall.Syscall(procGetProcessMemoryInfo.Addr(), 3, (uintptr)handle, (uintptr)ᴋ47, (uintptr)cb);
-    System.GC.KeepAlive(ᴋ47);
+    var ᴋ65 = ᏑmemCounters;
+        var (r1, _, e1) = syscall.Syscall(procGetProcessMemoryInfo.Addr(), 3, (uintptr)handle, (uintptr)ᴋ65, (uintptr)cb);
+    System.GC.KeepAlive(ᴋ65);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -534,9 +709,9 @@ public static error /*err*/ CreateEnvironmentBlock(ж<ж<uint16>> Ꮡblock, sysc
     if (inheritExisting) {
         _p0 = 1;
     }
-    var ᴋ48 = Ꮡblock;
-        var (r1, _, e1) = syscall.Syscall(procCreateEnvironmentBlock.Addr(), 3, (uintptr)ᴋ48, (uintptr)token, (uintptr)_p0);
-    System.GC.KeepAlive(ᴋ48);
+    var ᴋ66 = Ꮡblock;
+        var (r1, _, e1) = syscall.Syscall(procCreateEnvironmentBlock.Addr(), 3, (uintptr)ᴋ66, (uintptr)token, (uintptr)_p0);
+    System.GC.KeepAlive(ᴋ66);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -546,9 +721,9 @@ public static error /*err*/ CreateEnvironmentBlock(ж<ж<uint16>> Ꮡblock, sysc
 public static error /*err*/ DestroyEnvironmentBlock(ж<uint16> Ꮡblock) {
     error err = default!;
 
-    var ᴋ49 = Ꮡblock;
-        var (r1, _, e1) = syscall.Syscall(procDestroyEnvironmentBlock.Addr(), 1, (uintptr)ᴋ49, 0, 0);
-    System.GC.KeepAlive(ᴋ49);
+    var ᴋ67 = Ꮡblock;
+        var (r1, _, e1) = syscall.Syscall(procDestroyEnvironmentBlock.Addr(), 1, (uintptr)ᴋ67, 0, 0);
+    System.GC.KeepAlive(ᴋ67);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -558,11 +733,11 @@ public static error /*err*/ DestroyEnvironmentBlock(ж<uint16> Ꮡblock) {
 public static error /*err*/ GetProfilesDirectory(ж<uint16> Ꮡdir, ж<uint32> ᏑdirLen) {
     error err = default!;
 
-    var ᴋ50 = Ꮡdir;
-    var ᴋ51 = ᏑdirLen;
-        var (r1, _, e1) = syscall.Syscall(procGetProfilesDirectoryW.Addr(), 2, (uintptr)ᴋ50, (uintptr)ᴋ51, 0);
-    System.GC.KeepAlive(ᴋ50);
-    System.GC.KeepAlive(ᴋ51);
+    var ᴋ68 = Ꮡdir;
+    var ᴋ69 = ᏑdirLen;
+        var (r1, _, e1) = syscall.Syscall(procGetProfilesDirectoryW.Addr(), 2, (uintptr)ᴋ68, (uintptr)ᴋ69, 0);
+    System.GC.KeepAlive(ᴋ68);
+    System.GC.KeepAlive(ᴋ69);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -575,9 +750,9 @@ public static (syscallꓸHandle handle, error err) WSASocket(int32 af, int32 typ
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var ᴋ52 = Ꮡprotinfo;
-        var (r0, _, e1) = syscall.Syscall6(procWSASocketW.Addr(), 6, (uintptr)af, (uintptr)typ, (uintptr)protocol, (uintptr)ᴋ52, (uintptr)group, (uintptr)flags);
-    System.GC.KeepAlive(ᴋ52);
+    var ᴋ70 = Ꮡprotinfo;
+        var (r0, _, e1) = syscall.Syscall6(procWSASocketW.Addr(), 6, (uintptr)af, (uintptr)typ, (uintptr)protocol, (uintptr)ᴋ70, (uintptr)group, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ70);
     handle = ((syscallꓸHandle)r0);
     if (handle == syscall.InvalidHandle) {
         err = errnoErr(e1);

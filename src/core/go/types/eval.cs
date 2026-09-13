@@ -11,12 +11,6 @@ using global::go.go;
 
 partial class types_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸparser() {
-    builtin.initPackage(typeof(global::go.go.parser_package));
-}
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string evalˢ = "eval"u8;
 
@@ -105,7 +99,7 @@ public static error /*err*/ CheckExpr(ж<token.FileSet> Ꮡfset, ж<Package> Ꮡ
         // initialize checker
         var check = NewChecker(nil, Ꮡfset, Ꮡpkg, Ꮡinfo);
         check.Value.scope = scope;
-        check.Value.pos = pos;
+        check.Value.exprPos = pos;
         var checkʗ1 = check;
         defer(checkʗ1.handleBailout, Ꮡerr, ref ᒐ);
         // evaluate node

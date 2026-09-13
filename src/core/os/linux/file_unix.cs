@@ -7,7 +7,7 @@ namespace go;
 using poll = @internal.poll_package;
 using unix = @internal.syscall.unix_package;
 using fs = go.io.fs_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using atomic = go.sync.atomic_package;
 using syscall = syscall_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for go:linkname
@@ -17,12 +17,6 @@ using go.io;
 using go.sync;
 
 partial class os_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸunix() {
-    builtin.initPackage(typeof(@internal.syscall.unix_package));
-}
 
 internal static UntypedInt _UTIME_OMIT => /* unix.UTIME_OMIT */ 1073741822;
 
@@ -180,7 +174,7 @@ internal static ж<File> newFile(nint fd, @string name, newFileKind kind, bool n
     // we assume those callers know what they were doing, so we won't
     // perform this check and allow it to be added to the kqueue.
     if (kind == kindOpenFile) {
-        var exprᴛ1 = Δruntime.GOOS;
+        var exprᴛ1 = runtime.GOOS;
         if (exprᴛ1 == "darwin"u8 || exprᴛ1 == "ios"u8 || exprᴛ1 == "dragonfly"u8 || exprᴛ1 == "freebsd"u8 || exprᴛ1 == "netbsd"u8 || exprᴛ1 == "openbsd"u8) {
             ref var st = ref heap(new syscall.Stat_t(), out var Ꮡst);
             var err = ignoringEINTR(() => syscall.Fstat(fd, Ꮡst));
@@ -195,7 +189,7 @@ internal static ж<File> newFile(nint fd, @string name, newFileKind kind, bool n
                 // Also don't add directories to the netpoller.
                 pollable = false;
             }
-            if ((Δruntime.GOOS == "darwin"u8 || Δruntime.GOOS == "ios"u8) && typ == syscall.S_IFIFO) {
+            if ((runtime.GOOS == "darwin"u8 || runtime.GOOS == "ios"u8) && typ == syscall.S_IFIFO) {
                 // In addition to the behavior described above for regular files,
                 // on Darwin, kqueue does not work properly with fifos:
                 // closing the last writer does not cause a kqueue event
@@ -241,7 +235,7 @@ internal static ж<File> newFile(nint fd, @string name, newFileKind kind, bool n
             }
         }
     }
-    Δruntime.SetFinalizer((~f).@file.OrTypedNil(), (Func<ж<@file>, error>)(close));
+    runtime.SetFinalizer((~f).@file.OrTypedNil(), ((Func<ж<@file>, error>)(close)));
     return f;
 }
 
@@ -303,7 +297,7 @@ internal static (ж<File>, error) openDirNolog(@string name) {
     ref var s = ref heap(new poll.SysFile(), out var Ꮡs);
     ref var e = ref heap<error>(out var Ꮡe);
     ignoringEINTR(() => {
-        (r, Ꮡs.Value, Ꮡe.ValueSlot) = open(name, (nint)(O_RDONLY | (nint)syscall.O_CLOEXEC), 0);
+        (r, Ꮡs.Value, Ꮡe.ValueSlot) = open(name, (nint)((nint)(nint)(O_RDONLY | (nint)syscall.O_CLOEXEC) | (nint)syscall.O_DIRECTORY), 0);
         return Ꮡe.ValueSlot;
     });
     if (e != default!) {
@@ -338,7 +332,7 @@ internal static error close(this ж<@file> Ꮡfile) {
         }
     }
     // no need for a finalizer anymore
-    Δruntime.SetFinalizer(Ꮡfile.OrTypedNil(), default!);
+    runtime.SetFinalizer(Ꮡfile.OrTypedNil(), default!);
     return err;
 }
 
@@ -358,7 +352,7 @@ internal static (int64 ret, error err) seek(this ж<File> Ꮡf, int64 offset, ni
         }
     }
     (ret, err) = Ꮡf.of(File.Ꮡpfd).Seek(offset, whence);
-    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
+    runtime.KeepAlive(Ꮡf.OrTypedNil());
     return (ret, err);
 }
 
@@ -411,7 +405,7 @@ internal static readonly @string tmpˢ = "/tmp"u8;
 internal static @string tempDir() {
     @string dir = Getenv(tmpdirˢ);
     if (dir == ""u8) {
-        if (Δruntime.GOOS == "android"u8){
+        if (runtime.GOOS == "android"u8){
             dir = dataLocalTmpˢ;
         } else {
             dir = tmpˢ;
@@ -445,21 +439,17 @@ public static error Symlink(@string oldname, @string newname) {
 internal static (@string, error) readlink(@string name) {
     for (nint len = 128; ᐧ ; len *= 2) {
         var b = new slice<byte>(len);
-        nint n = default!;
-        error e = default!;
-        while (ᐧ) {
-            var (ᴛ1, ᴛ2) = syscall.Readlink(name, b);
-            (n, e) = fixCount(ᴛ1, ᴛ2);
-            if (!AreEqual(e, syscall.EINTR)) {
-                break;
-            }
-        }
+        var bʗ1 = b;
+        var (n, err) = ignoringEINTR2((nint, error) () => {
+            var (ᴛ1, ᴛ2) = syscall.Readlink(name, bʗ1);
+            return fixCount(ᴛ1, ᴛ2);
+        });
         // buffer too small
-        if ((Δruntime.GOOS == "aix"u8 || Δruntime.GOOS == "wasip1"u8) && AreEqual(e, syscall.ERANGE)) {
+        if ((runtime.GOOS == "aix"u8 || runtime.GOOS == "wasip1"u8) && AreEqual(err, syscall.ERANGE)) {
             continue;
         }
-        if (e != default!) {
-            return ("", new fs.PathErrorжerror(Ꮡ(new PathError(Op: "readlink"u8, Path: name, Err: e))));
+        if (err != default!) {
+            return ("", new fs.PathErrorжerror(Ꮡ(new PathError(Op: "readlink"u8, Path: name, Err: err))));
         }
         if (n < len) {
             return (((@string)(b[0..(int)(n)])), default!);

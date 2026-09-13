@@ -5,6 +5,7 @@
 namespace go.@internal;
 
 using Δsyscall = syscall_package;
+using go;
 
 partial class poll_package {
 

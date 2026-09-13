@@ -4,6 +4,7 @@
 namespace go.@internal;
 
 using fmt = fmt_package;
+using iter = iter_package;
 using math = math_package;
 using strings = strings_package;
 using time = time_package;
@@ -15,12 +16,6 @@ using go.@internal.trace.@event;
 using io = io_package;
 
 partial class trace_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 [GoType("num:uint16")] partial struct EventKind;
 
@@ -184,24 +179,26 @@ public static TaskID BackgroundTask => /* TaskID(0) */ 0;
 }
 
 // Frames is an iterator over the frames in a Stack.
-public static bool Frames(this ΔStack s, Func<StackFrame, bool> yield) {
-    if (s.id == 0) {
-        return true;
-    }
-    var stk = s.table.of(evTable.Ꮡstacks).mustGet(s.id);
-    foreach (var (_, pc) in stk.pcs) {
-        var f = (~s.table).pcs[pc];
-        var sf = new StackFrame(
-            PC: f.pc,
-            Func: s.table.of(evTable.Ꮡstrings).mustGet(f.funcID),
-            File: s.table.of(evTable.Ꮡstrings).mustGet(f.fileID),
-            Line: f.line
-        );
-        if (!yield(sf)) {
-            return false;
+public static iter.Seq<StackFrame> Frames(this ΔStack s) {
+    var sʗ1 = s;
+    return (Func<StackFrame, bool> yield) => {
+        if (sʗ1.id == 0) {
+            return;
         }
-    }
-    return true;
+        var stk = sʗ1.table.of(evTable.Ꮡstacks).mustGet(sʗ1.id);
+        foreach (var (_, pc) in stk.pcs) {
+            var f = (~sʗ1.table).pcs[pc];
+            var sf = new StackFrame(
+                PC: f.pc,
+                Func: sʗ1.table.of(evTable.Ꮡstrings).mustGet(f.funcID),
+                File: sʗ1.table.of(evTable.Ꮡstrings).mustGet(f.fileID),
+                Line: f.line
+            );
+            if (!yield(sf)) {
+                return;
+            }
+        }
+    };
 }
 
 // NoStack is a sentinel value that can be compared against any Stack value, indicating
@@ -222,7 +219,7 @@ public static ΔStack NoStack = new ΔStack(nil);
     public uint64 Line;
 }
 
-// ExperimentalEvent presents a raw view of an experimental event's arguments and thier names.
+// ExperimentalEvent presents a raw view of an experimental event's arguments and their names.
 [GoType] partial struct ExperimentalEvent {
     // Name is the name of the event.
     public @string Name;
@@ -630,8 +627,9 @@ public static ΔStateTransition StateTransition(this ΔEvent e) {
         s.Stack = e.Stack(); // This event references the resource the event happened on.
     }
     else if (exprᴛ1 == go122.EvGoStatus || exprᴛ1 == go122.EvGoStatusStack) {
-        s = goStateTransition(((GoID)(int64)e.@base.args[0]), // N.B. ordering.advance populates e.base.extra.
- ((GoState)(uint8)e.@base.extra(version.Go122)[0]), go122GoStatus2GoState[(nint)(e.@base.args[2])]);
+        var packedStatus = e.@base.args[2];
+        var (from, to) = ((packedStatus >> (int)(32)), (uint64)(packedStatus & ((uint64)((4294967296L) - 1))));
+        s = goStateTransition(((GoID)(int64)e.@base.args[0]), ((GoState)(uint8)from), go122GoStatus2GoState[(nint)(to)]);
     }
     else { /* default: */
         throw panic(fmt.Sprintf("internal error: unexpected event type for StateTransition kind: %s"u8, go122.EventString(e.@base.typ)));
@@ -798,11 +796,10 @@ public static @string String(this ΔEvent e) {
             if (s.Stack != NoStack) {
                 fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb));
                 fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), transitionStackˢ);
-                s.Stack.Frames((StackFrame f) => {
+                foreach (var f in range<StackFrame>(s.Stack.Frames().Invoke)) {
                     fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t%s @ 0x%x\n"u8, f.Func, f.PC);
                     fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t\t%s:%d\n"u8, f.File, f.Line);
-                    return true;
-                });
+                }
             }
         }
         else if (exprᴛ1 == EventExperimental) {
@@ -815,11 +812,10 @@ public static @string String(this ΔEvent e) {
         var stk = e.Stack(); if (stk != NoStack) {
             fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb));
             fmt.Fprintln(new strings_BuilderжWriter(Ꮡsb), stackˢ);
-            stk.Frames((StackFrame f) => {
+            foreach (var f in range<StackFrame>(stk.Frames().Invoke)) {
                 fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t%s @ 0x%x\n"u8, f.Func, f.PC);
                 fmt.Fprintf(new strings_BuilderжWriter(Ꮡsb), "\t\t%s:%d\n"u8, f.File, f.Line);
-                return true;
-            });
+            }
         }
     }
     return sb.String();

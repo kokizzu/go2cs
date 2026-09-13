@@ -3,16 +3,11 @@
 // license that can be found in the LICENSE file.
 namespace go.@internal;
 
-using sync = sync_package;
+using sync = go.sync_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
+using go;
 
 partial class testlog_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 // PanicOnExit0 reports whether to panic on a call to os.Exit(0).
 // This is in the testlog package because, like other definitions in

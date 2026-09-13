@@ -67,12 +67,12 @@ using static go.encoding.json_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/json/decode.go", "decode.cs", "AEDCAQBKCLKCgpaCABgygoKUAAwaggALEoKCloKUpqKCgpaCpoKClM6QppKokgAULJIABxCigoKCgpSUqqKCupKClIK2qLKigoKCgoKCgsyygoKUgrzCooKCgoKCgqiCAAIWAAoCkoKUkpS0gviSyPi0tPSClJSs0pqCgIK2lKaCgIK2lKiChJKAggAFOQACQgAFEuKagqaCpAAEEwACGgACEAAQGIK6goKUpoKCgoKCqIKWgsyCgpSClIKAgqSCgILKgoKUpqrUgoKCgpSCgoKUlrSUgoKWpJKCtLaClIKCqIKClIKolICCyICCtpaClIKUgqiCgoKmpoKUAAYQ1IKCgoKUgoKClIKWgoKClsyYuqKCgraCtqaSgqaCgoKWlIKUlIKogoKCgoKYkoSCgoKUlJSCgpSCgoKCgtyCpoKClJSUlIKUgqS6gpSClISCpICC1oCC5raAgtyCgoKCgoCCpJSUgrSCgoKClILEgoKCgpSCtLaCuoKUuIKUgpSCpqqigpSCgpQACRTklIKUgoKClIKCgoKUkpS0tIKUgoKClJSWhICosoKUlNiGwoKUAAEQpIKUAAMVgpQABhqCkoKUlKiCgpSCgoKClLSCgpSkgpQAAy0ABTiSgpSUAAIagqKClIKClMaCgoKUxoKCgpTGgoKClAAEV4aClIKUAAdMAAIQAAgCmIKkgqSvAAIUqLKClIKClpaClIKUgqaosoKUgpSUgqiCgoKCgqiClIKUlpaClIKUgqas5IKEhICkpqaCspSmkpSCgpTcooKUgqKUtLS0pJSq0oKCAAIYAAwCgpS6goKCgpSCgpSCgpSUgpaCgriCgoKUgKSCgpSUpIKCtIKCtIKCtIKCtIKCtIKCtIKCgpSCgoKAlIKCtpTqqIKCuIKCAAgG")]
-[assembly: go.GoPositionMap("encoding/json/encode.go", "encode.cs", "ADjAAgCEAQKChIKClITcsoKClIKCgpQADh6CAAkUggAMGoIADRaCgoKUrJAAFSqCgIKCgoKUgqQACRCygoCCgJKU2ILokqaClKykpoIADhyCgpSmgoCCruiCgoKUgqiCgoIABRTqgpSClIKUgpaUpKSkpKSkpKSkpKSkyIKmooKClIKCgpSCgoKCgpSCuKKCgoKUgoKCgoKClIK4ooKClIKCgpSCgpSmooKCgpSCgoKUpoKCgoKCpoKCgoKCpoKCgoKCyqKCggAGEIKCgpSCgqaClIKCgqaCAAUQooKmgpSClIKCgoKClIKClAADHgAOCoKogoKCupSmtoKC2oKCgsyCgoKCgqaCuqaCgoKUpqIADBqCgoKCloKCgoKUlJaClIKCgpSUgrSClLiCgu7CgoKUgKaCgIKkgqSG2oKAgqSUiIKClIKClILWgrqCtoKmgoKCloKCgoKCAAwQwoKClIDKmICCpIKkgtaUgoKCpoLugoKCgoKUlKaCgu7CgoKUgKaCgIKkgqSC1oKC7oKClLyigqaCgpSCzOamgoKClJQABxCCgpSAgoKUgqSUpKSmooKCgoCCgoKUgpS0tLS0tL4ACASCguyCgpSCgoKCgoIACBKCgoKCgpSUgoIAFUIADgSChraGlpSCgoSCgpSWgoKCgoKUlOyUgoKUgoKUgoKEgpSogoKcyoKCgpQABxCWgoKEgsqUqIKCzLiAgqSAgqSCgpSUAAYSgqaCgoKCgqaSgpSCgqiCiIKClIKCgpSAgrYAAhIACQiClNySgIKkgqaCgpQ=")]
+[assembly: go.GoPositionMap("encoding/json/decode.go", "decode.cs", "ABbCAQBKCLKCgpaCABUsgoKUAAwaggALEoKCloKUpqKCgpaCpoKClM6QppKokgAULJIABxCigoKCgpSUqqKCupKClIKCgpS2qLKigoKCgoKCgsyygoKUgrzCooKCgoKCgqiCAAIWAAoCkoKUkpS0gviSyPi0tPSClJSs0pqCgIK2lKaCgIK2lKiChJKAggAFOQACQgAFEuKagqaCpAAEEwACGgACEAAQGIK6goKUpoKCgoKCqIKWgsyCgpSClIKAgqSCgILKgoKUpqrUgoKCgpSCgoKUlrSUgoKWpJKCtLaClIKCqIKClIKolICCyICCtpaClIKUgqiCgoKmpoKUAAYQ1IKCgoKUgoKClIKWgoKClsyYuqKCgraCtqaSgqaCgoKWlIKUlIKogoKCgoKYkoSCgoKUlJSCgpSCgoKClIKC3IKmgoKUlJSCupSCpLqClIKUhIKkgILWgILmtoCC3IKCgoKCgIKklJSCtIKCgoKUgsSCgoKClIK0toK6gpS4gpSClIKmqqKClIKClAAJFOSUgpSCgoKUgoKCgpSSlLS0gpSCgoKUlJaEgKiygpSU2IbCgpQAARCkgpQAAxWClAAGGoKSgpSUqIKClIKCgoKUtIKClKSClAADLQAFOJKClJQAAhqCooKUgoKUxoKCgpTGgoKClMaCgoKUAARXhoKUgpQAB0wAAhAACAKYgqSCpK8AAhSosoKUgoKWloKUgpSCpqiygpSClJSCqIKCgoKCqIKUgpSWloKUgpSCpqzkgoSEgKSmpoKylKaSlIKClNyigpSCopS0tLSklKrSgoIAAhgADAKClLqCgoKClIKClIKClJSCloKCuIKCgpSApIKClJSkgoK0goK0goK0goK0goK0goK0goKClIKCgoCUgoK2lOqogoK4goIACAY=")]
+[assembly: go.GoPositionMap("encoding/json/encode.go", "encode.cs", "ACDWAgCPAQKChIKClITcsoKClIKCgpQADh6CAAkUggAMGoIADRaCgoKUrJAAFSqCgIKCgoKUgqQACRCygoCCgJKU2ILokqaClKykpoIADhyCgpSmgoCCruiCgoKUgqiCgoIABRTqgpSClIKUgpaUpKSkpKSkpKSkpKSkyIKmooKClIKCgpSCgoKCgpSCuKKCgoKUgoKCgoKClIK4ooKClIKCgpSCgpSmooKCgpSCgoKUpoKCgoKCpoKCgoKCpoKCgoKCyqKCggAGEIKCgpSCgqaClIKCgqaCAAUQooKmgpSClIKCgoKClIKClAADHgAOCoKogoKCupSmtoKC2oKCgsyCgoKCgqaCuqaCgoKUpqIADBqCgoKCloKCgoKUlJaElIKCgpSUgrSClLiCgv7CgoKUgKaCgIKkgqSG2oKAgqSUiIKClIKClILWgrqCtoK2goKCloKCgoKCAAwQwoKClIDKmICCpIKkgtaUgoKCpoL+goKCgoKUlKaCgv7CgoKUgKaCgIKkgqSC1oKC/oKClLyigraCgpSCzOamgoKClJQABxCCgpSAgoKUgqSUpKSmooKCgoCCgoKUgpS0tLS0tL4ACASCguyCgpSCgoKCgoIACBKCgoKCgpSUgoIAHlIADgSChraGlpSCgoSCgpSWgoKCgoKUlOyUgoKUgoKUgoKEgpSogoKcyoKCgpQACBKWgoKEgpSUpsqUxriClIKClNqCypSogoLMuICCpICCpIKClJQABhKCpoKCgoKCppKClIKCqIKIgoKUgoKClICCtgACEgAJCIKU3JKAgqSCpoKClA==", "300-308:1;368-371:1;774-776:1;1192-1198:1;1200-1203:2;1205-1207:3;1209-1217:4;1241-1258:5;1289-1291:6")]
 [assembly: go.GoPositionMap("encoding/json/fold.go", "fold.cs", "AAscpJKmgpSAgoKUgoK2goKUqJKCgoKU")]
 [assembly: go.GoPositionMap("encoding/json/indent.go", "indent.cs", "AAkc8oKmpoKCgoKCpoKCgqaqwoKCgoKmooKCgoKCgoKUgqaCgpSClIKCgpSClKaClIKU1oKCgoKUAAosAA0CgoKCgqaigoKCgoKCgoKClIKUgoKCuoKCqJaCxIK0tJSUgpS0xoKU")]
 [assembly: go.GoPositionMap("encoding/json/scanner.go", "scanner.cs", "ABIssoKC3NKCgoKCpoKUAAkUgAAkUoKUgoKmtIKUAC9YooKCgqrCgpSClIKClIKU2qKCgpSqooKCgoKUuIKokoKUgpTYsoKUlIKkgqSCpIKkgqSCpIKkguSSgpSosoKUgoKClNiygpSCgpT6woKUgoKUgoKUgpSCgoKUpIKCgpSCgpSkgoKUgoKUpNzSlJTYsoKClIKClIKU2LKUgqSCpNiygoKmqLKCgqaosoKCpqiygoKm2LKCgpSCgpSqwoKClKiygoKUgoKU2sKCgpSqwoKUgoKUqsKCgpTawoKClKyygpTYsoKClNiygoKU2LKCgpTYsoKClNiygoKU2LKCgpTYsoKClNiygoKU2LKCgpSosoKClKqiqJKCgqikgpSCqII=")]
-[assembly: go.GoPositionMap("encoding/json/stream.go", "stream.cs", "ACY+wqqgqrCu8oKWgIKmgqiCgpSCupaEqqKqwoSCgoa2goKCmoKq4oK2gtyCgoKUgqaCloKCtKamgoKCgpiSgoKCqIKEpoKCgqYADB6SAAISAAoCgpaChIKCAAcShIKCgoKUlICCpNyyggACFPIABBKSgpTYsoKUggAQOsiUgoKUgpSCpIKClIKUgqSmgpSkpoKUpO6CAAIcAA0CgoKClKSClIKCgqaClIKCgoKmgpSCgoKmgpSCgoKCpoKUgoKmgoKClIKCgpSmgoKCgoKCgpSClKaClIKAgqQADAqCgpSkpKSkpKSqooKmgoKCgoKClIKmgpS+sg==")]
+[assembly: go.GoPositionMap("encoding/json/stream.go", "stream.cs", "ABo+wqqgqrCu8oKWgIKmgqiCgpSCupaEqqKqwoSCgoa2goKCmoKq4oK2gtyCgoKUgqaCloKCtKamgoKCgpiSgoKCqIKEpoKCgqYADB6SAAISAAoCgpaChIKCAAcShIKCgoKUlICCpNyyggACFPIABBKSgpTYsoKUggATOsiUgoKUgpSCpIKClIKUgqSmgpSkpoKUpO6CAAIcAA0CgoKClKSClIKCgqaClIKCgoKmgpSCgoKmgpSCgoKCpoKUgoKmgoKClIKCgpSmgoKCgoKCgpSClKaClIKAgqQADAqCgpSkpKSkpKSqooKmgoKCgoKClIKmgpS+sg==")]
 [assembly: go.GoPositionMap("encoding/json/tags.go", "tags.cs", "AAsiooKssoKUgoKCgoKm")]
 // </GoSourcePositionMaps>
 
@@ -88,6 +88,7 @@ public static partial class json_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial interface isZeroer {}
     internal partial struct arrayEncoder {}
     internal partial struct condAddrEncoder {}
     internal partial struct decodeState {}
@@ -123,4 +124,26 @@ public static partial class json_package
     public partial struct UnsupportedTypeError {}
     public partial struct UnsupportedValueError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() => builtin.initPackage(typeof(go.encoding.base64_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

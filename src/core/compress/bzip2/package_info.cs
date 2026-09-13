@@ -52,9 +52,9 @@ using static go.compress.bzip2_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("compress/bzip2/bit_reader.go", "bit_reader.cs", "ACEyooKClKzSgoKClIKClIKCAA8igoKmgoKmgoKmgg==")]
+[assembly: go.GoPositionMap("compress/bzip2/bit_reader.go", "bit_reader.cs", "ABUyooKClKzSgoKClIKClIKCAA8igoKmgoKmgoKmgg==")]
 [assembly: go.GoPositionMap("compress/bzip2/bzip2.go", "bzip2.cs", "AA0mwgAVNLKCggANELKEgoKCqIKCloKCloKCgpSmwoKWgoKCgpSClJaCgoKUpu6CAAcUgoKCgoKUloKCgoSCgoKWgpSUhIKWAAgGooKCgoKogoKogpyCkrqCkpSCgpyylIKCgoKUgoKUgoKClIKUgpSAggAEXwATbsKCgoKCgoKUuoKCgoKCgoKCgsyUqIKCuoKogoKCgoKClJSClLqCgoKCgqaEgpaClIKCgoKUgpSClKaUgoKogoKUgpSCyoKWhIKCgoKUgpSCgpaChJSClIKogpSWpoKUgoKCgpSWuAAHEoKClIKCloK6goKCgoKEAAIaAAoCgoKCloKCgpYABhCCgoKCgoKUpryigoKU")]
-[assembly: go.GoPositionMap("compress/bzip2/huffman.go", "huffman.cs", "AClO0oSChIKUgsq6hIKUlqaCgpSUzgAJEoKWqIKCgpaCgIKk3oKEgoKClIKCprqIgoIAEybyloKCgoKogoQACxqCzMqWgpSWgoKElIKUloKWlIKUlg==")]
+[assembly: go.GoPositionMap("compress/bzip2/huffman.go", "huffman.cs", "ACNO0oSChIKUgsq6hIKUlqaCgpSUzgAJEoKWqIKCgpaCgIKk3oKEgoKClIKCprqIgoIAEybyloKCgoKogoQACxqCzMqWgpSWgoKElIKUloKWlIKUlg==", "106-111:1;135-137:2")]
 [assembly: go.GoPositionMap("compress/bzip2/move_to_front.go", "move_to_front.cs", "AAkkooKUqqKCloKClKbqgoKCqJI=")]
 // </GoSourcePositionMaps>
 
@@ -79,4 +79,16 @@ public static partial class bzip2_package
     [GoValueClone("c")] internal partial struct reader {}
     public partial struct StructuralError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    // </ImportInitializers>
 }

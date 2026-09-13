@@ -5,9 +5,9 @@ namespace go.go;
 
 using ast = global::go.go.ast_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
 using constant = global::go.go.constant_package;
-using errors = global::go.@internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 
 partial class types_package {
@@ -45,11 +45,11 @@ public static @string String(this ж<Union> Ꮡu) {
     return TypeString(new UnionжΔType(Ꮡu), default!);
 }
 
-[GoType("term")] partial struct ΔTerm;
+[GoType("Δterm")] partial struct ΔTerm;
 
 // NewTerm returns a new union term.
 public static ж<ΔTerm> NewTerm(bool tilde, ΔType typ) {
-    return Ꮡ(new ΔTerm(new term(tilde, typ)));
+    return Ꮡ(new ΔTerm(new Δterm(tilde, typ)));
 }
 
 [GoRecv] public static bool Tilde(this ref ΔTerm t) {
@@ -61,7 +61,7 @@ public static ж<ΔTerm> NewTerm(bool tilde, ΔType typ) {
 }
 
 public static @string String(this ж<ΔTerm> Ꮡt) {
-    return (Ꮡt.Reinterpret<ΔTerm, term>()).String();
+    return (Ꮡt.Reinterpret<ΔTerm, Δterm>()).String();
 }
 
 // ----------------------------------------------------------------------------
@@ -83,12 +83,12 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
     slice<ж<ΔTerm>> terms = default!;
     ΔType u = default!;
     foreach (var (i, x) in tlist) {
-        var term = parseTilde(Ꮡcheck, x);
-        if (len(tlist) == 1 && !(~term).tilde) {
+        var Δterm = parseTilde(Ꮡcheck, x);
+        if (len(tlist) == 1 && !(~Δterm).tilde) {
             // Single type. Ok to return early because all relevant
             // checks have been performed in parseTilde (no need to
             // run through term validity check below).
-            return (~term).typ; // typ already recorded through check.typ in parseTilde
+            return (~Δterm).typ; // typ already recorded through check.typ in parseTilde
         }
         if (len(terms) >= maxTermCount){
             if (isValid(u)) {
@@ -96,7 +96,7 @@ internal static ΔType parseUnion(ж<Checker> Ꮡcheck, ast.Expr uexpr) {
                 u = new BasicжΔType(Typ[Invalid]);
             }
         } else {
-            terms = append(terms, term);
+            terms = append(terms, Δterm);
             u = new UnionжΔType(Ꮡ(new Union(terms)));
         }
         if (i > 0) {
@@ -190,11 +190,11 @@ internal static ж<ΔTerm> parseTilde(ж<Checker> Ꮡcheck, ast.Expr tx) {
         }
         typ = new BasicжΔType(Typ[Invalid]);
     }
-    var term = NewTerm(tilde, typ);
+    var Δterm = NewTerm(tilde, typ);
     if (tilde) {
-        check.recordTypeAndValue(tx, typexpr, new UnionжΔType(Ꮡ(new Union(new ж<ΔTerm>[]{term}.slice()))), default!);
+        check.recordTypeAndValue(tx, typexpr, new UnionжΔType(Ꮡ(new Union(new ж<ΔTerm>[]{Δterm}.slice()))), default!);
     }
-    return term;
+    return Δterm;
 }
 
 // overlappingTerm reports the index of the term x in terms which is
@@ -216,7 +216,7 @@ internal static nint overlappingTerm(slice<ж<ΔTerm>> terms, ж<ΔTerm> Ꮡy) {
                 throw panic("empty or top union term");
             }
         }
-        if (!(x.Reinterpret<ΔTerm, term>()).disjoint(Ꮡy.Reinterpret<ΔTerm, term>())) {
+        if (!(x.Reinterpret<ΔTerm, Δterm>()).disjoint(Ꮡy.Reinterpret<ΔTerm, Δterm>())) {
             return i;
         }
     }

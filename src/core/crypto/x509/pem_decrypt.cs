@@ -21,42 +21,6 @@ using hash = hash_package;
 
 partial class x509_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸaes() {
-    builtin.initPackage(typeof(go.crypto.aes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() {
-    builtin.initPackage(typeof(go.crypto.cipher_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸdes() {
-    builtin.initPackage(typeof(go.crypto.des_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() {
-    builtin.initPackage(typeof(go.crypto.md5_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸhex() {
-    builtin.initPackage(typeof(encoding.hex_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
 [GoType("num:nint")] partial struct PEMCipher;
 
 // Possible values for the EncryptPEMBlock encryption algorithm.
@@ -100,19 +64,19 @@ internal static ж<slice<rfc1423Algo>> Ꮡrfc1423Algos = new StandardBox<slice<r
     name: "AES-128-CBC"u8,
     cipherFunc: aes.NewCipher,
     keySize: 16,
-    blockSize: aes.ΔBlockSize
+    blockSize: aes.BlockSize
 ), new(
     cipher: PEMCipherAES192,
     name: "AES-192-CBC"u8,
     cipherFunc: aes.NewCipher,
     keySize: 24,
-    blockSize: aes.ΔBlockSize
+    blockSize: aes.BlockSize
 ), new(
     cipher: PEMCipherAES256,
     name: "AES-256-CBC"u8,
     cipherFunc: aes.NewCipher,
     keySize: 32,
-    blockSize: aes.ΔBlockSize
+    blockSize: aes.BlockSize
 )
 }.slice());
 internal static ref slice<rfc1423Algo> rfc1423Algos => ref Ꮡrfc1423Algos.ValueSlot;

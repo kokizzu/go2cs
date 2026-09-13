@@ -88,7 +88,7 @@ partial class runtime_package {
     // in the trace.
     internal array<array<traceArg>> markWorkerLabels = new(2, () => new(4));
     internal array<array<traceArg>> goStopReasons = new(2, () => new(3));
-    internal array<array<traceArg>> goBlockReasons = new(2, () => new(16));
+    internal array<array<traceArg>> goBlockReasons = new(2, () => new(17));
     // enabled indicates whether tracing is enabled, but it is only an optimization,
     // NOT the source of truth on whether tracing is enabled. Tracing is only truly
     // enabled if gen != 0. This is used as an optimistic fast path check.
@@ -337,10 +337,11 @@ internal static void traceAdvance(bool stopTrace) {
                 // trace.lock needed for traceBufFlush, but also to synchronize
                 // with traceThreadDestroy, which flushes both buffers unconditionally.
                 @lock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
-                var bufp = mpΔ3.of(m.Ꮡtrace).at(mTraceState.Ꮡbuf, (nint)(gen % 2));
-                if (bufp.ValueSlot != nil) {
-                    traceBufFlush(bufp.ValueSlot, gen);
-                    bufp.ValueSlot = default!;
+                foreach (var (exp, buf) in (~mpΔ3).trace.buf[(nint)(gen % 2)].ΔRangeSnapshot()) {
+                    if (buf != nil) {
+                        traceBufFlush(buf, gen);
+                        (~mpΔ3).trace.buf[(nint)(gen % 2)][exp] = default!;
+                    }
                 }
                 unlock(ᏑΔtrace.of(runtime_package.Δtraceᴛ1.Ꮡlock));
                 // Remove the m from the flush list.
@@ -800,7 +801,7 @@ internal static UntypedFloat defaultTraceAdvancePeriod => 1e9; // 1 second.
 // newWakeableSleep initializes a new wakeableSleep and returns it.
 internal static ж<wakeableSleep> newWakeableSleep() {
     var s = @new<wakeableSleep>();
-    lockInit(ref (s.of(wakeableSleep.Ꮡlock)).DerefOrNull(), lockRankWakeableSleep);
+    lockInit(s.of(wakeableSleep.Ꮡlock), lockRankWakeableSleep);
     s.Value.wakeup = new channel<EmptyStruct>(1);
     s.Value.timer = @new<timer>();
     var f = (any sΔ1, uintptr _Δp1, int64 _Δp2) => {

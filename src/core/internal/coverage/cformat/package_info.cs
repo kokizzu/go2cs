@@ -50,7 +50,7 @@ using static go.@internal.coverage.cformat_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/cformat/format.go", "format.cs", "AHukAYIABRTCgpSCgoKCgoKUrLKClIKCgoKClIKCgoKCuJSuwoKCgoCCyICCpICCpICCpICCpAADEtKClICCpIKClIKCgoKClIKCgoKApsissoKCgqiCgoCUxoCCtpaCkoKCgpSClIKCgoKmgoCCpICCyIKAgrgABhQACwKClIKClJSCkoKEgoKUloKCgpSCgt6CgoKCgpKSgoKClNaCgJS2goKCgoKUgoKUlICCyIKCgqaAgraAlKQ=")]
+[assembly: go.GoPositionMap("internal/coverage/cformat/format.go", "format.cs", "AFSoAYIABRTCgpSCgoKCgoKUrLKClIKCgoKClIKCgoKCuJSuwoKCgoCCyICCpICCpICCpICCpAADFOKClIKCgqaAgqSCgoKClIKClIKCgoKApsissoKCgqiCgoCUxoCCtpaCkoKCgpSClIKCgoKmgoCCpICCyIKAgrgABhQACwKClIKClJSCkoKWgoKClIKC3oKCgoKCkpKCgoKU1oKAlLaCgoKCgpSCgpSUgILIgoKCpoCCtoCUpA==", "143-164:1;221-233:1;281-286:1;313-318:2;319-334:3")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;
@@ -70,4 +70,22 @@ public static partial class cformat_package
     internal partial struct pstate {}
     public partial struct Formatter {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() => builtin.initPackage(typeof(go.@internal.coverage_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸcmerge() => builtin.initPackage(typeof(go.@internal.coverage.cmerge_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtextꓸtabwriter() => builtin.initPackage(typeof(text.tabwriter_package));
+    // </ImportInitializers>
 }

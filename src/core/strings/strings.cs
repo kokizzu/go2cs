@@ -9,18 +9,14 @@ namespace go;
 
 using bytealg = @internal.bytealg_package;
 using stringslite = @internal.stringslite_package;
+using bits = math.bits_package;
 using Δunicode = unicode_package;
 using utf8 = go.unicode.utf8_package;
 using @internal;
 using go.unicode;
+using math;
 
 partial class strings_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
 
 internal static nint maxInt => /* int(^uint(0) >> 1) */ unchecked((nint)9223372036854775807);
 
@@ -136,6 +132,7 @@ public static nint IndexByte(@string s, byte c) {
 // If r is [utf8.RuneError], it returns the first instance of any
 // invalid UTF-8 byte sequence.
 public static nint IndexRune(@string s, rune r) {
+    const bool haveFastIndex = /* bytealg.MaxBruteForce > 0 */ true;
     switch (ᐧ) {
     case {} when 0 <= r && r < utf8.RuneSelf: {
         return IndexByte(s, (byte)r);
@@ -152,7 +149,62 @@ public static nint IndexRune(@string s, rune r) {
         return -1;
     }
     default: {
-        return Index(s, ((@string)r));
+        @string rs = ((@string)r);
+        nint last = len(rs) - 1;
+        nint i = last;
+        nint fails = 0;
+        while (i < len(s)) {
+            // Search for rune r using the last byte of its UTF-8 encoded form.
+            // The distribution of the last byte is more uniform compared to the
+            // first byte which has a 78% chance of being [240, 243, 244].
+            if (s[i] != rs[last]) {
+                nint o = IndexByte(s[(int)(i + 1)..], rs[last]);
+                if (o < 0) {
+                    return -1;
+                }
+                i += o + 1;
+            }
+            // Step backwards comparing bytes.
+            for (nint j = 1; j < len(rs); j++) {
+                if (s[i - j] != rs[last - j]) {
+                    goto next;
+                }
+            }
+            return i - last;
+next:
+            fails++;
+            i++;
+            if ((haveFastIndex && fails > bytealg.Cutover(i)) && i < len(s) || (!haveFastIndex && fails >= 4 + (i >> (int)(4)) && i < len(s))) {
+                goto fallback;
+            }
+        }
+        return -1;
+fallback:
+        if (haveFastIndex){
+            // see comment in ../bytes/bytes.go
+            {
+                nint j = bytealg.IndexString(s[(int)(i - last)..], ((@string)r)); if (j >= 0) {
+                    return i + j - last;
+                }
+            }
+        } else {
+            var c0 = rs[last];
+            var c1 = rs[last - 1];
+loop:
+            for (; i < len(s); i++) {
+                if (s[i] == c0 && s[i - 1] == c1) {
+                    for (nint k = 2; k < len(rs); k++) {
+                        if (s[i - k] != rs[last - k]) {
+                            goto continue_loop;
+                        }
+                    }
+                    return i - last;
+                }
+continue_loop:;
+            }
+break_loop:;
+        }
+        return -1;
     }}
 
 }
@@ -576,10 +628,11 @@ public static @string Repeat(@string s, nint count) {
     if (count < 0) {
         throw panic("strings: negative Repeat count");
     }
-    if (len(s) > maxInt / count) {
+    var (hi, lo) = bits.Mul((nuint)len(s), (nuint)count);
+    if (hi > 0 || lo > (nuint)maxInt) {
         throw panic("strings: Repeat output length overflow");
     }
-    nint n = len(s) * count;
+    nint n = (nint)lo; // lo = len(s) * count
     if (len(s) == 0) {
         return ""u8;
     }
@@ -628,13 +681,7 @@ public static @string Repeat(@string s, nint count) {
     Ꮡb.Grow(n);
     Ꮡb.WriteString(s);
     while (b.Len() < n) {
-        nint chunk = n - b.Len();
-        if (chunk > b.Len()) {
-            chunk = b.Len();
-        }
-        if (chunk > chunkMax) {
-            chunk = chunkMax;
-        }
+        nint chunk = min(n - b.Len(), b.Len(), chunkMax);
         Ꮡb.WriteString(b.String()[..(int)(chunk)]);
     }
     return b.String();
@@ -725,19 +772,22 @@ public static @string ToTitle(@string s) {
 // ToUpperSpecial returns a copy of the string s with all Unicode letters mapped to their
 // upper case using the case mapping specified by c.
 public static @string ToUpperSpecial(Δunicode.SpecialCase c, @string s) {
-    return Map((rune p1) => c.ToUpper(p1), s);
+    var cʗ1 = c;
+    return Map((rune p1) => cʗ1.ToUpper(p1), s);
 }
 
 // ToLowerSpecial returns a copy of the string s with all Unicode letters mapped to their
 // lower case using the case mapping specified by c.
 public static @string ToLowerSpecial(Δunicode.SpecialCase c, @string s) {
-    return Map((rune p1) => c.ToLower(p1), s);
+    var cʗ1 = c;
+    return Map((rune p1) => cʗ1.ToLower(p1), s);
 }
 
 // ToTitleSpecial returns a copy of the string s with all Unicode letters mapped to their
 // Unicode title case, giving priority to the special casing rules.
 public static @string ToTitleSpecial(Δunicode.SpecialCase c, @string s) {
-    return Map((rune p1) => c.ToTitle(p1), s);
+    var cʗ1 = c;
+    return Map((rune p1) => cʗ1.ToTitle(p1), s);
 }
 
 // ToValidUTF8 returns a copy of the string s with each run of invalid UTF-8 byte sequences

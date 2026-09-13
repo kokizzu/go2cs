@@ -2,10 +2,10 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-2%2F2_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/runtime.metrics.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/runtime/metrics@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/runtime/metrics) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/runtime/metrics)
+[![Tests](https://img.shields.io/badge/Tests-2%2F2_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.24.13.3/runtime.metrics.html) [![Docs](https://img.shields.io/badge/Docs-@1.24.13-00ADD8?logo=go)](https://pkg.go.dev/runtime/metrics@go1.24.13)\
+[![Source](https://img.shields.io/badge/Source-@1.24.13-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.24.13/src/runtime/metrics) [![Source](https://img.shields.io/badge/Source-@1.24.13.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.24.13.3/src/core/runtime/metrics)
 
-Package metrics provides a stable interface to access implementation-defined metrics exported by the Go runtime. This package is similar to existing functions like [runtime.ReadMemStats](https://pkg.go.dev/runtime@go1.23.12#ReadMemStats) and [runtime/debug.ReadGCStats](https://pkg.go.dev/runtime/debug@go1.23.12#ReadGCStats), but significantly more general.
+Package metrics provides a stable interface to access implementation-defined metrics exported by the Go runtime. This package is similar to existing functions like [runtime.ReadMemStats](https://pkg.go.dev/runtime@go1.24.13#ReadMemStats) and [runtime/debug.ReadGCStats](https://pkg.go.dev/runtime/debug@go1.24.13#ReadGCStats), but significantly more general.
 
 The set of metrics defined by this package may evolve as the runtime itself evolves, and also enables variation across Go implementations, whose relevant metric sets may not intersect.
 
@@ -231,6 +231,11 @@ Below is the full list of supported metrics, ordered lexicographically.
 		The number of non-default behaviors executed by the cmd/go
 		package due to a non-default GODEBUG=gocacheverify=... setting.
 
+	/godebug/non-default-behavior/gotestjsonbuildtext:events
+		The number of non-default behaviors executed by the cmd/go
+		package due to a non-default GODEBUG=gotestjsonbuildtext=...
+		setting.
+
 	/godebug/non-default-behavior/gotypesalias:events
 		The number of non-default behaviors executed by the go/types
 		package due to a non-default GODEBUG=gotypesalias=... setting.
@@ -242,6 +247,11 @@ Below is the full list of supported metrics, ordered lexicographically.
 	/godebug/non-default-behavior/http2server:events
 		The number of non-default behaviors executed by the net/http
 		package due to a non-default GODEBUG=http2server=... setting.
+
+	/godebug/non-default-behavior/httpcookiemaxnum:events
+		The number of non-default behaviors executed by the net/http
+		package due to a non-default GODEBUG=httpcookiemaxnum=...
+		setting.
 
 	/godebug/non-default-behavior/httplaxcontentlength:events
 		The number of non-default behaviors executed by the net/http
@@ -287,6 +297,14 @@ Below is the full list of supported metrics, ordered lexicographically.
 		The number of non-default behaviors executed by the math/rand
 		package due to a non-default GODEBUG=randautoseed=... setting.
 
+	/godebug/non-default-behavior/randseednop:events
+		The number of non-default behaviors executed by the math/rand
+		package due to a non-default GODEBUG=randseednop=... setting.
+
+	/godebug/non-default-behavior/rsa1024min:events
+		The number of non-default behaviors executed by the crypto/rsa
+		package due to a non-default GODEBUG=rsa1024min=... setting.
+
 	/godebug/non-default-behavior/tarinsecurepath:events
 		The number of non-default behaviors executed by the archive/tar
 		package due to a non-default GODEBUG=tarinsecurepath=...
@@ -312,6 +330,11 @@ Below is the full list of supported metrics, ordered lexicographically.
 		The number of non-default behaviors executed by the crypto/tls
 		package due to a non-default GODEBUG=tlsunsafeekm=... setting.
 
+	/godebug/non-default-behavior/urlmaxqueryparams:events
+		The number of non-default behaviors executed by the net/url
+		package due to a non-default GODEBUG=urlmaxqueryparams=...
+		setting.
+
 	/godebug/non-default-behavior/winreadlinkvolume:events
 		The number of non-default behaviors executed by the os package
 		due to a non-default GODEBUG=winreadlinkvolume=... setting.
@@ -330,9 +353,9 @@ Below is the full list of supported metrics, ordered lexicographically.
 		package due to a non-default GODEBUG=x509negativeserial=...
 		setting.
 
-	/godebug/non-default-behavior/x509sha1:events
+	/godebug/non-default-behavior/x509rsacrt:events
 		The number of non-default behaviors executed by the crypto/x509
-		package due to a non-default GODEBUG=x509sha1=... setting.
+		package due to a non-default GODEBUG=x509rsacrt=... setting.
 
 	/godebug/non-default-behavior/x509usefallbackroots:events
 		The number of non-default behaviors executed by the crypto/x509

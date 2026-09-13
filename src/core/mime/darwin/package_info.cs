@@ -57,11 +57,11 @@ using static go.mime_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("mime/encodedword.go", "encodedword.cs", "AElGsoKUpoKCgqaokriEgoKUlIQABx6SpoKCgpaipoSClIKCgoKmgqq0goKWkoKGooKUgpaCgpSCupKCgKS0tIKC/JKCgoKCqJKokoKC1oIADyK2gpSWgoKUgoKWgoKWgoCCpKq0goKWhIKEgoKCgpSEgoKUgoSClIKEgpSEgoKUgoSCgoKCgrqCloCCpoKWgpamgpSkpAAJCIKUtILGgoKU2IKUgoKUgILWqqKCytaokoKCgoCktIKUgoKUgrS0tJaokpKCgIKkgIKkpoKUpKa0")]
+[assembly: go.GoPositionMap("mime/encodedword.go", "encodedword.cs", "ABlGsoKUpoKCgqaokriEgoKUlIQABx6SpoKCgpaipoSClIKCgoKmgqq0goKWkoKGooKUgpaCgpSCupKCgKS0tIKC/JKCgoKCqJKokoKC1oIADyK2gpSWgoKUgoKWgoKWgoCCpKq0goKWhIKEgoKCgpSEgoKUgoSClIKEgpSEgoKUgoSCgoKCgrqCloCCpoKWgpamgpSkpAAJCIKUtILGgoKU2IKUgoKUgILWqqKCytaokoKCgoCktIKUgoKUgrS0tJaokpKCgIKkgIKkpoKUpKa0")]
 [assembly: go.GoPositionMap("mime/grammar.go", "grammar.cs", "AAkaoqrGqqKClA==")]
-[assembly: go.GoPositionMap("mime/mediatype.go", "mediatype.cs", "ABYo0oKAgoKUlIKUgoKmgoKUhIKCgoKClISClJSEgoSCgqaIgoSCgqaCloKCloKCgoKCgoKmgpQACAaCgoKUgpSClIKClIKUAAokAA4CgoSCgpaKtIKCgoKUgoKmppaCgIKClIKAgoLGgJSkgpqigoKAgoCCpKaCgoKCgIKCgqSCgoKUgoKAgraCpoKopoKCgsqCgpSUlIKClKaCrsKCgpSClAACEAAIAoKUgqiCgoKCAAsYgoKClIKUpqbCgoKWgoKCgoKWgoKUgoKCgpSCppSCgoKClIKCgoKUlJSCloKCgpSCgrSCgsamgpSkpKSmgpSkpKQ=")]
-[assembly: go.GoPositionMap("mime/type.go", "type.cs", "AB00soKChIKUgpaCgoKCgpSCgIKkAB82goCClIIABC4AEwKWgIKssoKCgoKUgoKUgpSmgoKuwoKCloKCgpSCgqyygpSC5qKCgpSCgpSEgoSCgoKAgqSCgqaC")]
-[assembly: go.GoPositionMap("mime/type_unix.go", "type_unix.cs", "ABkeggARJKKCgpSUgpSCgqSWggAJFJSAuKaUgIKk1qKCgpSUgoKCgpSCgoKUpoCC+IKCgILKgriCgoI=")]
+[assembly: go.GoPositionMap("mime/mediatype.go", "mediatype.cs", "ABIq0oKAgoKUlIKUgoKmgoKCgoKUhIKUlISChIKCpoiChIKCpoKWgoKWgoKCgoKCgqaClAAIBoKCgpSClIKUgoKUgpQACiQADgKChIKCloq0goKCgpSCgqamloKAgoKUgoCCgsaAlKSCmqKCgoCCgIKkpoKCgoKAgoKCpIKCgpSCgoCCtoKmgqimgoKCyoKClJSUgoKUpoKuwoKClIKUAAIQAAgCgpSCqIKCgoIACxiCgoKUgpSmpsKCgpaCgoKCgpaCgpSCgoKClIKmlIKCgoKUgoKCgpSUlIKWgoKClIKCtIKCxqaClKSkpKaClKSkpA==")]
+[assembly: go.GoPositionMap("mime/type.go", "type.cs", "ABc0soKChIKUgpaCgoKCgpSCgIKkAB82goCClIIABC4AEwKWgIKssoKCgoKUgoKUgpSmgoKuwoKCloKCgpSCgqyygpSC5qKCgpSCgpSEgoSCgoKAgqSCgqaC")]
+[assembly: go.GoPositionMap("mime/type_unix.go", "type_unix.cs", "AA0eggARJKKCgpSUgpSCgqSWggAJFJSAuKaUgIKk1qKCgpSUgoKCgpSCgoKUpoCC+IKCgILKgriCgoI=")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -79,4 +79,26 @@ public static partial class mime_package
     public partial struct WordDecoder {}
     public partial struct WordEncoder {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbase64() => builtin.initPackage(typeof(encoding.base64_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

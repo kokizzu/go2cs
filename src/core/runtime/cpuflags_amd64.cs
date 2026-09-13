@@ -8,13 +8,27 @@ using @internal;
 
 partial class runtime_package {
 
-internal static bool useAVXmemmove;
+internal static uint8 memmoveBits;
+
+internal static UntypedInt avxSupported => /* 1 << 0 */ 1;
+internal static UntypedInt repmovsPreferred => /* 1 << 1 */ 2;
 
 /* [GoInit] runtime bootstrap init - not run; .NET is the runtime */ internal static void initΔ1() {
-    // Let's remove stepping and reserved fields
-    var processor = (uint32)(processorVersionInfo & 0x0FFF3FF0);
-    var isIntelBridgeFamily = isIntel && processor == 0x206A0 || processor == 0x206D0 || processor == 0x306A0 || processor == 0x306E0;
-    useAVXmemmove = cpu.X86.HasAVX && !isIntelBridgeFamily;
+    // Here we assume that on modern CPUs with both FSRM and ERMS features,
+    // copying data blocks of 2KB or larger using the REP MOVSB instruction
+    // will be more efficient to avoid having to keep up with CPU generations.
+    // Therefore, we may retain a BlockList mechanism to ensure that microarchitectures
+    // that do not fit this case may appear in the future.
+    // We enable it on Intel CPUs first, and we may support more platforms
+    // in the future.
+    var isERMSNiceCPU = isIntel;
+    var useREPMOV = isERMSNiceCPU && cpu.X86.HasERMS && cpu.X86.HasFSRM;
+    if (cpu.X86.HasAVX) {
+        memmoveBits |= (uint8)(avxSupported);
+    }
+    if (useREPMOV) {
+        memmoveBits |= (uint8)(repmovsPreferred);
+    }
 }
 
 } // end runtime_package

@@ -11,31 +11,44 @@ using global::go.go;
 
 partial class types_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
 // An Alias represents an alias type.
-// Whether or not Alias types are created is controlled by the
-// gotypesalias setting with the GODEBUG environment variable.
-// For gotypesalias=1, alias declarations produce an Alias type.
-// Otherwise, the alias information is only in the type name,
-// which points directly to the actual (aliased) type.
+//
+// Alias types are created by alias declarations such as:
+//
+//	type A = int
+//
+// The type on the right-hand side of the declaration can be accessed
+// using [Alias.Rhs]. This type may itself be an alias.
+// Call [Unalias] to obtain the first non-alias type in a chain of
+// alias type declarations.
+//
+// Like a defined ([Named]) type, an alias type has a name.
+// Use the [Alias.Obj] method to access its [TypeName] object.
+//
+// Historically, Alias types were not materialized so that, in the example
+// above, A's type was represented by a Basic (int), not an Alias
+// whose [Alias.Rhs] is int. But Go 1.24 allows you to declare an
+// alias type with type parameters or arguments:
+//
+//	type Set[K comparable] = map[K]bool
+//	s := make(Set[String])
+//
+// and this requires that Alias types be materialized. Use the
+// [Alias.TypeParams] and [Alias.TypeArgs] methods to access them.
+//
+// To ease the transition, the Alias type was introduced in go1.22,
+// but the type-checker would not construct values of this type unless
+// the GODEBUG=gotypesalias=1 environment variable was provided.
+// Starting in go1.23, this variable is enabled by default.
+// This setting also causes the predeclared type "any" to be
+// represented as an Alias, not a bare [Interface].
 [GoType] partial struct Alias {
     internal ж<TypeName> obj;   // corresponding declared alias object
     internal ж<Alias> orig;      // original, uninstantiated alias
     internal ж<TypeParamList> tparams; // type parameters, or nil
     internal ж<TypeList> targs;   // type arguments, or nil
-    internal ΔType fromRHS;         // RHS of type alias declaration; may be an alias
-    internal ΔType actual;         // actual (aliased) type; never an alias
+    internal ΔType fromRHS;           // RHS of type alias declaration; may be an alias
+    internal ΔType actual;           // actual (aliased) type; never an alias
 }
 
 // NewAlias creates a new Alias type with the given type name and rhs.

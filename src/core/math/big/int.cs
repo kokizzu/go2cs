@@ -12,12 +12,6 @@ using go.math;
 
 partial class big_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(go.math.rand_package));
-}
-
 // An Int represents a signed multi-precision integer.
 // The zero value for an Int represents the value 0.
 //
@@ -335,7 +329,7 @@ public static ж<ΔInt> Rem(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy)
 //	r = x - y*q
 //
 // (See Daan Leijen, “Division and Modulus for Computer Scientists”.)
-// See [DivMod] for Euclidean division and modulus (unlike Go).
+// See [Int.DivMod] for Euclidean division and modulus (unlike Go).
 public static (ж<ΔInt>, ж<ΔInt>) QuoRem(this ж<ΔInt> Ꮡz, ж<ΔInt> Ꮡx, ж<ΔInt> Ꮡy, ж<ΔInt> Ꮡr) {
     ref var z = ref Ꮡz.DerefOrNull();
     ref var x = ref Ꮡx.DerefOrNull();
@@ -511,7 +505,7 @@ internal static uint64 low64(nat x) {
 
 // IsInt64 reports whether x can be represented as an int64.
 [GoRecv] public static bool IsInt64(this ref ΔInt x) {
-    if (len(x.abs) <= 64 / _W) {
+    if (len(x.abs) <= (nint)(64 / _W)) {
         var w = (int64)low64(x.abs);
         return w >= 0 || x.neg && w == -w;
     }
@@ -520,7 +514,7 @@ internal static uint64 low64(nat x) {
 
 // IsUint64 reports whether x can be represented as a uint64.
 [GoRecv] public static bool IsUint64(this ref ΔInt x) {
-    return !x.neg && len(x.abs) <= 64 / _W;
+    return !x.neg && len(x.abs) <= (nint)(64 / _W);
 }
 
 // Float64 returns the float64 value nearest x,

@@ -15,74 +15,19 @@
 // algorithms.
 namespace go.crypto;
 
-using bytes = bytes_package;
 using crypto = crypto_package;
-using edwards25519 = go.crypto.@internal.edwards25519_package;
+using ed25519 = go.crypto.@internal.fips140.ed25519_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using cryptorand = go.crypto.rand_package;
-using sha512 = go.crypto.sha512_package;
 using subtle = go.crypto.subtle_package;
 using errors = errors_package;
 using io = io_package;
 using strconv = strconv_package;
 using go.crypto;
 using go.crypto.@internal;
-using hash = hash_package;
+using go.crypto.@internal.fips140;
 
 partial class ed25519_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸedwards25519() {
-    builtin.initPackage(typeof(go.crypto.@internal.edwards25519_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(go.crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha512() {
-    builtin.initPackage(typeof(go.crypto.sha512_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
-    builtin.initPackage(typeof(go.crypto.subtle_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
 
 public static UntypedInt PublicKeySize => 32;
 public static UntypedInt PrivateKeySize => 64;
@@ -125,10 +70,11 @@ public static bool Equal(this PrivateKey priv, cryptoꓸPrivateKey x) {
 // interoperability with RFC 8032. RFC 8032's private keys correspond to seeds
 // in this package.
 public static slice<byte> Seed(this PrivateKey priv) {
-    return bytes.Clone(priv[..(int)(SeedSize)]);
+    return appendꓸꓸꓸ(new slice<byte>(0, SeedSize), priv[..(int)(SeedSize)]);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cryptoEd25519UseOfˢ = "crypto/ed25519: use of Ed25519ctx is not allowed in FIPS 140-only mode"u8;
 internal static readonly @string ed25519ExpectedOptsˢ = "ed25519: expected opts.HashFunc() zero (unhashed message, for standard Ed25519) or SHA-512 (for Ed25519ph)"u8;
 
 // Sign signs the given message with priv. rand is ignored and can be nil.
@@ -141,6 +87,15 @@ internal static readonly @string ed25519ExpectedOptsˢ = "ed25519: expected opts
 // A value of type [Options] can be used as opts, or crypto.Hash(0) or
 // crypto.SHA512 directly to select plain Ed25519 or Ed25519ph, respectively.
 public static (slice<byte> signature, error err) Sign(this PrivateKey priv, io.Reader rand, slice<byte> message, crypto.SignerOpts opts) {
+    error err = default!;
+
+    // NewPrivateKey is very slow in FIPS mode because it performs a
+    // Sign+Verify cycle per FIPS 140-3 IG 10.3.A. We should find a way to cache
+    // it or attach it to the PrivateKey.
+    (var k, err) = ed25519.NewPrivateKey(priv);
+    if (err != default!) {
+        return (default!, err);
+    }
     crypto.Hash hash = opts.HashFunc();
     @string context = ""u8;
     {
@@ -150,34 +105,18 @@ public static (slice<byte> signature, error err) Sign(this PrivateKey priv, io.R
     }
     switch (ᐧ) {
     case {} when hash == crypto.SHA512: {
-        {
-            nint l = len(message); if (l != sha512.ΔSize) {
-                // Ed25519ph
-                return (default!, errors.New("ed25519: bad Ed25519ph message hash length: "u8 + strconv.Itoa(l)));
-            }
-        }
-        {
-            nint l = len(context); if (l > 255) {
-                return (default!, errors.New("ed25519: bad Ed25519ph context length: "u8 + strconv.Itoa(l)));
-            }
-        }
-        var signatureΔ2 = new slice<byte>(SignatureSize);
-        sign(signatureΔ2, priv, message, domPrefixPh, context);
-        return (signatureΔ2, default!);
+        return ed25519.SignPH(k, // Ed25519ph
+ message, context);
     }
     case {} when hash == ((crypto.Hash)0) && context != ""u8: {
-        {
-            nint l = len(context); if (l > 255) {
-                // Ed25519ctx
-                return (default!, errors.New("ed25519: bad Ed25519ctx context length: "u8 + strconv.Itoa(l)));
-            }
+        if (fips140only.Enabled) {
+            // Ed25519ctx
+            return (default!, errors.New(cryptoEd25519UseOfˢ));
         }
-        var signatureΔ3 = new slice<byte>(SignatureSize);
-        sign(signatureΔ3, priv, message, domPrefixCtx, context);
-        return (signatureΔ3, default!);
+        return ed25519.SignCtx(k, message, context);
     }
     case {} when hash == ((crypto.Hash)0): {
-        return (Sign(priv, // Ed25519
+        return (ed25519.Sign(k, // Ed25519
  message), default!);
     }
     default: {
@@ -217,8 +156,7 @@ public static (PublicKey, PrivateKey, error) GenerateKey(io.Reader rand) {
         }
     }
     var privateKey = NewKeyFromSeed(seed);
-    var publicKey = new slice<byte>(PublicKeySize);
-    copy(publicKey, privateKey[32..]);
+    var publicKey = privateKey.Public()._<PublicKey>();
     return (publicKey, privateKey, default!);
 }
 
@@ -234,20 +172,12 @@ public static PrivateKey NewKeyFromSeed(slice<byte> seed) {
 }
 
 internal static void newKeyFromSeed(slice<byte> privateKey, slice<byte> seed) {
-    {
-        nint l = len(seed); if (l != SeedSize) {
-            throw panic("ed25519: bad seed length: " + strconv.Itoa(l));
-        }
-    }
-    var h = sha512.Sum512(seed);
-    var (s, err) = edwards25519.NewScalar().SetBytesWithClamping(h[..32]);
+    var (k, err) = ed25519.NewPrivateKeyFromSeed(seed);
     if (err != default!) {
-        throw panic("ed25519: internal error: setting scalar failed");
+        // NewPrivateKeyFromSeed only returns an error if the seed length is incorrect.
+        throw panic("ed25519: bad seed length: " + strconv.Itoa(len(seed)));
     }
-    var A = (Ꮡ(new edwards25519.Point(nil))).ScalarBaseMult(s);
-    var publicKey = A.Bytes();
-    copy(privateKey, seed);
-    copy(privateKey[32..], publicKey);
+    copy(privateKey, k.Bytes());
 }
 
 // Sign signs the message with privateKey and returns a signature. It will
@@ -256,64 +186,20 @@ public static slice<byte> Sign(PrivateKey privateKey, slice<byte> message) {
     // Outline the function body so that the returned signature can be
     // stack-allocated.
     var signature = new slice<byte>(SignatureSize);
-    sign(signature, privateKey, message, domPrefixPure, ""u8);
+    sign(signature, privateKey, message);
     return signature;
 }
 
-// Domain separation prefixes used to disambiguate Ed25519/Ed25519ph/Ed25519ctx.
-// See RFC 8032, Section 2 and Section 5.1.
-internal static readonly @string domPrefixPure = ""u8;
-
-internal static readonly @string domPrefixPh = "SigEd25519 no Ed25519 collisions\x01"u8;
-
-internal static readonly @string domPrefixCtx = "SigEd25519 no Ed25519 collisions\x00"u8;
-
-internal static void sign(slice<byte> signature, slice<byte> privateKey, slice<byte> message, @string domPrefix, @string context) {
-    {
-        nint l = len(privateKey); if (l != PrivateKeySize) {
-            throw panic("ed25519: bad private key length: " + strconv.Itoa(l));
-        }
-    }
-    var (seed, publicKey) = (privateKey[..(int)(SeedSize)], privateKey[(int)(SeedSize)..]);
-    var h = sha512.Sum512(seed);
-    var (s, err) = edwards25519.NewScalar().SetBytesWithClamping(h[..32]);
+internal static void sign(slice<byte> signature, PrivateKey privateKey, slice<byte> message) {
+    // NewPrivateKey is very slow in FIPS mode because it performs a
+    // Sign+Verify cycle per FIPS 140-3 IG 10.3.A. We should find a way to cache
+    // it or attach it to the PrivateKey.
+    var (k, err) = ed25519.NewPrivateKey(privateKey);
     if (err != default!) {
-        throw panic("ed25519: internal error: setting scalar failed");
+        throw panic("ed25519: bad private key: " + err.Error());
     }
-    var prefix = h[32..];
-    var mh = sha512.New();
-    if (domPrefix != domPrefixPure) {
-        mh.Write(slice<byte>(domPrefix));
-        mh.Write(new byte[]{(byte)len(context)}.slice());
-        mh.Write(slice<byte>(context));
-    }
-    mh.Write(prefix);
-    mh.Write(message);
-    var messageDigest = new slice<byte>(0, sha512.ΔSize);
-    messageDigest = mh.Sum(messageDigest);
-    (var r, err) = edwards25519.NewScalar().SetUniformBytes(messageDigest);
-    if (err != default!) {
-        throw panic("ed25519: internal error: setting scalar failed");
-    }
-    var R = (Ꮡ(new edwards25519.Point(nil))).ScalarBaseMult(r);
-    var kh = sha512.New();
-    if (domPrefix != domPrefixPure) {
-        kh.Write(slice<byte>(domPrefix));
-        kh.Write(new byte[]{(byte)len(context)}.slice());
-        kh.Write(slice<byte>(context));
-    }
-    kh.Write(R.Bytes());
-    kh.Write(publicKey);
-    kh.Write(message);
-    var hramDigest = new slice<byte>(0, sha512.ΔSize);
-    hramDigest = kh.Sum(hramDigest);
-    (var k, err) = edwards25519.NewScalar().SetUniformBytes(hramDigest);
-    if (err != default!) {
-        throw panic("ed25519: internal error: setting scalar failed");
-    }
-    var S = edwards25519.NewScalar().MultiplyAdd(k, s, r);
-    copy(signature[..32], R.Bytes());
-    copy(signature[32..], S.Bytes());
+    var sig = ed25519.Sign(k, message);
+    copy(signature, sig);
 }
 
 // Verify reports whether sig is a valid signature of message by publicKey. It
@@ -322,11 +208,10 @@ internal static void sign(slice<byte> signature, slice<byte> privateKey, slice<b
 // The inputs are not considered confidential, and may leak through timing side
 // channels, or if an attacker has control of part of the inputs.
 public static bool Verify(PublicKey publicKey, slice<byte> message, slice<byte> sig) {
-    return verify(publicKey, message, sig, domPrefixPure, ""u8);
+    return VerifyWithOptions(publicKey, message, sig, Ꮡ(new Options(Hash: ((crypto.Hash)0)))) == default!;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string ed25519InvalidSignatureˢ = "ed25519: invalid signature"u8;
 internal static readonly @string ed25519ExpectedOptsHashˢ = "ed25519: expected opts.Hash zero (unhashed message, for standard Ed25519) or SHA-512 (for Ed25519ph)"u8;
 
 // VerifyWithOptions reports whether sig is a valid signature of message by
@@ -343,85 +228,35 @@ internal static readonly @string ed25519ExpectedOptsHashˢ = "ed25519: expected 
 public static error VerifyWithOptions(PublicKey publicKey, slice<byte> message, slice<byte> sig, ж<Options> Ꮡopts) {
     ref var opts = ref Ꮡopts.DerefOrNull();
 
-    switch (ᐧ) {
-    case {} when opts.Hash == crypto.SHA512: {
-        {
-            nint l = len(message); if (l != sha512.ΔSize) {
-                // Ed25519ph
-                return errors.New("ed25519: bad Ed25519ph message hash length: "u8 + strconv.Itoa(l));
-            }
-        }
-        {
-            nint l = len(opts.Context); if (l > 255) {
-                return errors.New("ed25519: bad Ed25519ph context length: "u8 + strconv.Itoa(l));
-            }
-        }
-        if (!verify(publicKey, message, sig, domPrefixPh, opts.Context)) {
-            return errors.New(ed25519InvalidSignatureˢ);
-        }
-        return default!;
-    }
-    case {} when opts.Hash == ((crypto.Hash)0) && opts.Context != ""u8: {
-        {
-            nint l = len(opts.Context); if (l > 255) {
-                // Ed25519ctx
-                return errors.New("ed25519: bad Ed25519ctx context length: "u8 + strconv.Itoa(l));
-            }
-        }
-        if (!verify(publicKey, message, sig, domPrefixCtx, opts.Context)) {
-            return errors.New(ed25519InvalidSignatureˢ);
-        }
-        return default!;
-    }
-    case {} when opts.Hash == ((crypto.Hash)0): {
-        if (!verify(publicKey, // Ed25519
- message, sig, domPrefixPure, ""u8)) {
-            return errors.New(ed25519InvalidSignatureˢ);
-        }
-        return default!;
-    }
-    default: {
-        return errors.New(ed25519ExpectedOptsHashˢ);
-    }}
-
-}
-
-internal static bool verify(PublicKey publicKey, slice<byte> message, slice<byte> sig, @string domPrefix, @string context) {
     {
         nint l = len(publicKey); if (l != PublicKeySize) {
             throw panic("ed25519: bad public key length: " + strconv.Itoa(l));
         }
     }
-    if (len(sig) != SignatureSize || (byte)(sig[63] & 224) != 0) {
-        return false;
-    }
-    var (A, err) = (Ꮡ(new edwards25519.Point(nil))).SetBytes(publicKey);
+    var (k, err) = ed25519.NewPublicKey(publicKey);
     if (err != default!) {
-        return false;
+        return err;
     }
-    var kh = sha512.New();
-    if (domPrefix != domPrefixPure) {
-        kh.Write(slice<byte>(domPrefix));
-        kh.Write(new byte[]{(byte)len(context)}.slice());
-        kh.Write(slice<byte>(context));
+    switch (ᐧ) {
+    case {} when opts.Hash == crypto.SHA512: {
+        return ed25519.VerifyPH(k, // Ed25519ph
+ message, sig, opts.Context);
     }
-    kh.Write(sig[..32]);
-    kh.Write(publicKey);
-    kh.Write(message);
-    var hramDigest = new slice<byte>(0, sha512.ΔSize);
-    hramDigest = kh.Sum(hramDigest);
-    (var k, err) = edwards25519.NewScalar().SetUniformBytes(hramDigest);
-    if (err != default!) {
-        throw panic("ed25519: internal error: setting scalar failed");
+    case {} when opts.Hash == ((crypto.Hash)0) && opts.Context != ""u8: {
+        if (fips140only.Enabled) {
+            // Ed25519ctx
+            return errors.New(cryptoEd25519UseOfˢ);
+        }
+        return ed25519.VerifyCtx(k, message, sig, opts.Context);
     }
-    (var S, err) = edwards25519.NewScalar().SetCanonicalBytes(sig[32..]);
-    if (err != default!) {
-        return false;
+    case {} when opts.Hash == ((crypto.Hash)0): {
+        return ed25519.Verify(k, // Ed25519
+ message, sig);
     }
-    // [S]B = R + [k]A --> [k](-A) + [S]B = R
-    var minusA = (Ꮡ(new edwards25519.Point(nil))).Negate(A);
-    var R = (Ꮡ(new edwards25519.Point(nil))).VarTimeDoubleScalarBaseMult(k, minusA, S);
-    return bytes.Equal(sig[..32], R.Bytes());
+    default: {
+        return errors.New(ed25519ExpectedOptsHashˢ);
+    }}
+
 }
 
 } // end ed25519_package

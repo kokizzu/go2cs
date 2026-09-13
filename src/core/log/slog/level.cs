@@ -12,18 +12,6 @@ using go.sync;
 
 partial class slog_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
 [GoType("num:nint")] partial struct ΔLevel;
 
 // Names for common levels.
@@ -118,10 +106,16 @@ public static error UnmarshalJSON(this ж<ΔLevel> Ꮡl, slice<byte> data) {
     return Ꮡl.parse(s);
 }
 
-// MarshalText implements [encoding.TextMarshaler]
+// AppendText implements [encoding.TextAppender]
 // by calling [Level.String].
+public static (slice<byte>, error) AppendText(this ΔLevel l, slice<byte> b) {
+    return (builtin.append(b, l.String().ꓸꓸꓸ), default!);
+}
+
+// MarshalText implements [encoding.TextMarshaler]
+// by calling [Level.AppendText].
 public static (slice<byte>, error) MarshalText(this ΔLevel l) {
-    return (slice<byte>(l.String()), default!);
+    return l.AppendText(default!);
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler].
@@ -212,10 +206,16 @@ public static @string String(this ж<LevelVar> Ꮡv) {
     return fmt.Sprintf("LevelVar(%s)"u8, Ꮡv.Level());
 }
 
+// AppendText implements [encoding.TextAppender]
+// by calling [Level.AppendText].
+public static (slice<byte>, error) AppendText(this ж<LevelVar> Ꮡv, slice<byte> b) {
+    return Ꮡv.Level().AppendText(b);
+}
+
 // MarshalText implements [encoding.TextMarshaler]
-// by calling [Level.MarshalText].
+// by calling [LevelVar.AppendText].
 public static (slice<byte>, error) MarshalText(this ж<LevelVar> Ꮡv) {
-    return Ꮡv.Level().MarshalText();
+    return Ꮡv.AppendText(default!);
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]

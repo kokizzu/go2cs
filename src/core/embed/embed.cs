@@ -90,7 +90,8 @@
 // depending on whether the package wants to make the data available to other packages.
 // It can only be used with variables at package scope, not with local variables.
 //
-// Patterns must not match files outside the package's module, such as ‘.git/*’ or symbolic links.
+// Patterns must not match files outside the package's module, such as ‘.git/*’, symbolic links,
+// 'vendor/', or any directories containing go.mod (these are separate modules).
 // Patterns must not match files whose names include the special punctuation characters  " * < > ? ` ' | / \ and :.
 // Matches for empty directories are ignored. After that, each pattern in a //go:embed line
 // must match at least one file or non-empty directory.
@@ -139,42 +140,6 @@ using go.io;
 
 partial class embed_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
-    builtin.initPackage(typeof(@internal.bytealg_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() {
-    builtin.initPackage(typeof(@internal.stringslite_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // An FS is a read-only collection of files, usually initialized with a //go:embed directive.
 // When declared without a //go:embed directive, an FS is an empty file system.
 //
@@ -208,7 +173,7 @@ partial class embed_package {
     //
     //	p       # dir=.    elem=p
     //	q/      # dir=.    elem=q
-    //	w/      # dir=.    elem=w
+    //	w       # dir=.    elem=w
     //	q/r     # dir=q    elem=r
     //	q/s/    # dir=q    elem=s
     //	q/v     # dir=q    elem=v

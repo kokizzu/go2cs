@@ -11,36 +11,12 @@ using itoa = @internal.itoa_package;
 using msan = @internal.msan_package;
 using oserror = @internal.oserror_package;
 using race = @internal.race_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using @unsafe = unsafe_package;
 using @internal;
 
 partial class syscall_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸoserror() {
-    builtin.initPackage(typeof(@internal.oserror_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
 
 [GoType("num:uintptr")] partial struct ΔHandle;
 
@@ -250,7 +226,7 @@ public static uintptr NewCallbackCDecl(any fn) {
 //sys	GetVersion() (ver uint32, err error)
 //sys	formatMessage(flags uint32, msgsrc uintptr, msgid uint32, langid uint32, buf []uint16, args *byte) (n uint32, err error) = FormatMessageW
 //sys	ExitProcess(exitcode uint32)
-//sys	CreateFile(name *uint16, access uint32, mode uint32, sa *SecurityAttributes, createmode uint32, attrs uint32, templatefile int32) (handle Handle, err error) [failretval==InvalidHandle] = CreateFileW
+//sys	createFile(name *uint16, access uint32, mode uint32, sa *SecurityAttributes, createmode uint32, attrs uint32, templatefile int32) (handle Handle, err error) [failretval == InvalidHandle || e1 == ERROR_ALREADY_EXISTS ] = CreateFileW
 //sys	readFile(handle Handle, buf []byte, done *uint32, overlapped *Overlapped) (err error) = ReadFile
 //sys	writeFile(handle Handle, buf []byte, done *uint32, overlapped *Overlapped) (err error) = WriteFile
 //sys	SetFilePointer(handle Handle, lowoffset int32, highoffsetptr *int32, whence uint32) (newlowoffset uint32, err error) [failretval==0xffffffff]
@@ -338,6 +314,7 @@ public static uintptr NewCallbackCDecl(any fn) {
 //sys	Process32First(snapshot Handle, procEntry *ProcessEntry32) (err error) = kernel32.Process32FirstW
 //sys	Process32Next(snapshot Handle, procEntry *ProcessEntry32) (err error) = kernel32.Process32NextW
 //sys	DeviceIoControl(handle Handle, ioControlCode uint32, inBuffer *byte, inBufferSize uint32, outBuffer *byte, outBufferSize uint32, bytesReturned *uint32, overlapped *Overlapped) (err error)
+//sys	setFileInformationByHandle(handle Handle, fileInformationClass uint32, buf unsafe.Pointer, bufsize uint32) (err error) = kernel32.SetFileInformationByHandle
 // This function returns 1 byte BOOLEAN rather than the 4 byte BOOL.
 //sys	CreateSymbolicLink(symlinkfilename *uint16, targetfilename *uint16, flags uint32) (err error) [failretval&0xff==0] = CreateSymbolicLinkW
 //sys	CreateHardLink(filename *uint16, existingfilename *uint16, reserved uintptr) (err error) [failretval&0xff==0] = CreateHardLinkW
@@ -353,18 +330,18 @@ internal static ж<SecurityAttributes> makeInheritSa() {
     return Ꮡsa;
 }
 
-public static (ΔHandle fd, error err) Open(@string path, nint mode, uint32 perm) {
+public static (ΔHandle fd, error err) Open(@string name, nint flag, uint32 perm) {
     error err = default!;
 
-    if (len(path) == 0) {
+    if (len(name) == 0) {
         return (InvalidHandle, ERROR_FILE_NOT_FOUND);
     }
-    (var pathp, err) = UTF16PtrFromString(path);
+    (var namep, err) = UTF16PtrFromString(name);
     if (err != default!) {
         return (InvalidHandle, err);
     }
     uint32 access = default!;
-    var exprᴛ1 = (nint)(mode & (nint)((nint)((nint)(UntypedInt)(O_RDONLY | O_WRONLY) | (nint)O_RDWR)));
+    var exprᴛ1 = (nint)(flag & (nint)((nint)((nint)(UntypedInt)(O_RDONLY | O_WRONLY) | (nint)O_RDWR)));
     if (exprᴛ1 == O_RDONLY) {
         access = GENERIC_READ;
     }
@@ -375,34 +352,52 @@ public static (ΔHandle fd, error err) Open(@string path, nint mode, uint32 perm
         access = (uint32)((uint32)GENERIC_READ | (uint32)GENERIC_WRITE);
     }
 
-    if ((nint)(mode & (nint)O_CREAT) != 0) {
+    if ((nint)(flag & (nint)O_CREAT) != 0) {
         access |= (uint32)(GENERIC_WRITE);
     }
-    if ((nint)(mode & (nint)O_APPEND) != 0) {
-        access &= unchecked((uint32)~(uint32)(GENERIC_WRITE));
-        access |= (uint32)(FILE_APPEND_DATA);
+    if ((nint)(flag & (nint)O_APPEND) != 0) {
+        // Remove GENERIC_WRITE unless O_TRUNC is set, in which case we need it to truncate the file.
+        // We can't just remove FILE_WRITE_DATA because GENERIC_WRITE without FILE_WRITE_DATA
+        // starts appending at the beginning of the file rather than at the end.
+        if ((nint)(flag & (nint)O_TRUNC) == 0) {
+            access &= unchecked((uint32)~(uint32)(GENERIC_WRITE));
+        }
+        // Set all access rights granted by GENERIC_WRITE except for FILE_WRITE_DATA.
+        access |= (uint32)((uint32)((UntypedInt)((UntypedInt)((UntypedInt)(FILE_APPEND_DATA | FILE_WRITE_ATTRIBUTES) | _FILE_WRITE_EA) | STANDARD_RIGHTS_WRITE) | (uint32)SYNCHRONIZE));
     }
     var sharemode = (uint32)((uint32)((uint32)FILE_SHARE_READ | (uint32)FILE_SHARE_WRITE));
     ж<SecurityAttributes> sa = default!;
-    if ((nint)(mode & (nint)O_CLOEXEC) == 0) {
+    if ((nint)(flag & (nint)O_CLOEXEC) == 0) {
         sa = makeInheritSa();
     }
+    uint32 attrs = FILE_ATTRIBUTE_NORMAL;
+    if ((uint32)(perm & (uint32)S_IWRITE) == 0) {
+        attrs = FILE_ATTRIBUTE_READONLY;
+    }
+    if ((nint)(flag & (nint)O_WRONLY) == 0 && (nint)(flag & (nint)O_RDWR) == 0) {
+        // We might be opening or creating a directory.
+        // CreateFile requires FILE_FLAG_BACKUP_SEMANTICS
+        // to work with directories.
+        attrs |= (uint32)(FILE_FLAG_BACKUP_SEMANTICS);
+    }
+    if ((nint)(flag & (nint)O_SYNC) != 0) {
+        const uint32 _FILE_FLAG_WRITE_THROUGH = 0x80000000;
+        attrs |= (uint32)(_FILE_FLAG_WRITE_THROUGH);
+    }
+    // We don't use CREATE_ALWAYS, because when opening a file with
+    // FILE_ATTRIBUTE_READONLY these will replace an existing file
+    // with a new, read-only one. See https://go.dev/issue/38225.
+    //
+    // Instead, we ftruncate the file after opening when O_TRUNC is set.
     uint32 createmode = default!;
     switch (ᐧ) {
-    case {} when (nint)(mode & (nint)((nint)((nint)O_CREAT | (nint)O_EXCL))) == ((nint)((nint)O_CREAT | (nint)O_EXCL)): {
+    case {} when (nint)(flag & (nint)((nint)((nint)O_CREAT | (nint)O_EXCL))) == (nint)((nint)((nint)O_CREAT | (nint)O_EXCL)): {
         createmode = CREATE_NEW;
+        attrs |= (uint32)(FILE_FLAG_OPEN_REPARSE_POINT); // don't follow symlinks
         break;
     }
-    case {} when (nint)(mode & (nint)((nint)((nint)O_CREAT | (nint)O_TRUNC))) == ((nint)((nint)O_CREAT | (nint)O_TRUNC)): {
-        createmode = CREATE_ALWAYS;
-        break;
-    }
-    case {} when (nint)(mode & (nint)O_CREAT) == O_CREAT: {
+    case {} when (nint)(flag & (nint)O_CREAT) == O_CREAT: {
         createmode = OPEN_ALWAYS;
-        break;
-    }
-    case {} when (nint)(mode & (nint)O_TRUNC) == O_TRUNC: {
-        createmode = TRUNCATE_EXISTING;
         break;
     }
     default: {
@@ -410,44 +405,26 @@ public static (ΔHandle fd, error err) Open(@string path, nint mode, uint32 perm
         break;
     }}
 
-    uint32 attrs = FILE_ATTRIBUTE_NORMAL;
-    if ((uint32)(perm & (uint32)S_IWRITE) == 0) {
-        attrs = FILE_ATTRIBUTE_READONLY;
-        if (createmode == CREATE_ALWAYS) {
-            // We have been asked to create a read-only file.
-            // If the file already exists, the semantics of
-            // the Unix open system call is to preserve the
-            // existing permissions. If we pass CREATE_ALWAYS
-            // and FILE_ATTRIBUTE_READONLY to CreateFile,
-            // and the file already exists, CreateFile will
-            // change the file permissions.
-            // Avoid that to preserve the Unix semantics.
-            var (h, e) = CreateFile(pathp, access, sharemode, sa, TRUNCATE_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-            var exprᴛ2 = e;
-            if (AreEqual(exprᴛ2, ERROR_FILE_NOT_FOUND) || AreEqual(exprᴛ2, _ERROR_BAD_NETPATH) || AreEqual(exprᴛ2, ERROR_PATH_NOT_FOUND)) {
+    (var h, err) = createFile(namep, access, sharemode, sa, createmode, attrs, 0);
+    if (h == InvalidHandle) {
+        if (AreEqual(err, ERROR_ACCESS_DENIED) && ((nint)(flag & (nint)O_WRONLY) != 0 || (nint)(flag & (nint)O_RDWR) != 0)) {
+            // We should return EISDIR when we are trying to open a directory with write access.
+            var (fa, e1) = GetFileAttributes(namep);
+            if (e1 == default! && (uint32)(fa & (uint32)FILE_ATTRIBUTE_DIRECTORY) != 0) {
+                err = EISDIR;
             }
-            else { /* default: */
-                return (h, e);
-            }
-
+        }
+        return (h, err);
+    }
+    // Ignore O_TRUNC if the file has just been created.
+    if ((nint)(flag & (nint)O_TRUNC) == O_TRUNC && (createmode == OPEN_EXISTING || (createmode == OPEN_ALWAYS && AreEqual(err, ERROR_ALREADY_EXISTS)))) {
+        err = Ftruncate(h, 0);
+        if (err != default!) {
+            CloseHandle(h);
+            return (InvalidHandle, err);
         }
     }
-    // File does not exist. These are the same
-    // errors as Errno.Is checks for ErrNotExist.
-    // Carry on to create the file.
-    // Success or some different error.
-    if (createmode == CREATE_NEW) {
-        attrs |= (uint32)(FILE_FLAG_OPEN_REPARSE_POINT); // don't follow symlinks
-    }
-    if (createmode == OPEN_EXISTING && access == GENERIC_READ) {
-        // Necessary for opening directory handles.
-        attrs |= (uint32)(FILE_FLAG_BACKUP_SEMANTICS);
-    }
-    if ((nint)(mode & (nint)O_SYNC) != 0) {
-        const uint32 _FILE_FLAG_WRITE_THROUGH = 0x80000000;
-        attrs |= (uint32)(_FILE_FLAG_WRITE_THROUGH);
-    }
-    return CreateFile(pathp, access, sharemode, sa, createmode, attrs, 0);
+    return (h, default!);
 }
 
 public static (nint n, error err) Read(ΔHandle fd, slice<byte> p) {
@@ -528,7 +505,7 @@ internal static error setFilePointerEx(ΔHandle handle, int64 distToMove, ж<int
         System.GC.KeepAlive(ᴋ0);
     } else {
         // Different 32-bit systems disgaree about whether distToMove starts 8-byte aligned.
-        var exprᴛ1 = Δruntime.GOARCH;
+        var exprᴛ1 = runtime.GOARCH;
         if (exprᴛ1 == "386"u8) {
             var ᴋ1 = ᏑnewFilePointer;
                         (_, _, e1) = Syscall6(procSetFilePointerEx.Addr(), 5, (uintptr)handle, (uintptr)distToMove, (uintptr)((distToMove >> (int)(32))), (uintptr)ᴋ1, (uintptr)whence, 0);
@@ -678,28 +655,15 @@ public static (@string name, error err) ComputerName() {
     return (UTF16ToString(b[..(int)(n)]), default!);
 }
 
+[GoType("dyn")] internal partial struct Ftruncate__FILE_END_OF_FILE_INFO {
+    public int64 EndOfFile;
+}
+
 public static error /*err*/ Ftruncate(ΔHandle fd, int64 length) {
-    error err = default!;
-    GoFrame ᒐ = default;
-    try {
-        var (curoffset, e) = Seek(fd, 0, 1);
-        if (e != default!) {
-            err = e; goto ᒐdone;
-        }
-        defer(Seek, fd, curoffset, (nint)(0), ref ᒐ);
-        (_, e) = Seek(fd, length, 0);
-        if (e != default!) {
-            err = e; goto ᒐdone;
-        }
-        e = SetEndOfFile(fd);
-        if (e != default!) {
-            err = e; goto ᒐdone;
-        }
-        err = default!;
-    }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
-    ᒐdone: return err;
+    const uint32 FileEndOfFileInfo = 6;
+    ref var info = ref heap(new Ftruncate__FILE_END_OF_FILE_INFO(), out var Ꮡinfo);
+    info.EndOfFile = length;
+    return setFileInformationByHandle(fd, FileEndOfFileInfo, @unsafe.Pointer.FromPinnedBox(Ꮡinfo), (uint32)/* unsafe.Sizeof(info) */ (uintptr)8);
 }
 
 public static error /*err*/ Gettimeofday(ж<Timeval> Ꮡtv) {
@@ -1554,6 +1518,19 @@ public static error /*regerrno*/ RegEnumKeyEx(ΔHandle key, uint32 index, ж<uin
 public static error GetStartupInfo(ж<StartupInfo> ᏑstartupInfo) {
     getStartupInfo(ᏑstartupInfo);
     return default!;
+}
+
+public static (ΔHandle handle, error err) CreateFile(ж<uint16> Ꮡname, uint32 access, uint32 mode, ж<SecurityAttributes> Ꮡsa, uint32 createmode, uint32 attrs, int32 templatefile) {
+    ΔHandle handle = default!;
+    error err = default!;
+
+    (handle, err) = createFile(Ꮡname, access, mode, Ꮡsa, createmode, attrs, templatefile);
+    if (handle != InvalidHandle) {
+        // CreateFileW can return ERROR_ALREADY_EXISTS with a valid handle.
+        // We only want to return an error if the handle is invalid.
+        err = default!;
+    }
+    return (handle, err);
 }
 
 } // end syscall_package

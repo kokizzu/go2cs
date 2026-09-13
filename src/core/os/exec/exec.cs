@@ -111,84 +111,6 @@ using ꓸꓸꓸstring = Span<@string>;
 
 partial class exec_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸexecenv() {
-    builtin.initPackage(typeof(@internal.syscall.execenv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyscall() {
-    builtin.initPackage(typeof(syscall_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // Error is returned by [LookPath] when it fails to classify a file as an
 // executable.
 [GoType] partial struct ΔError {
@@ -253,10 +175,26 @@ internal static error Unwrap(this wrappedError w) {
     // value in the slice for each duplicate key is used.
     // As a special case on Windows, SYSTEMROOT is always added if
     // missing and not explicitly set to the empty string.
+    //
+    // See also the Dir field, which may set PWD in the environment.
     public slice<@string> Env;
     // Dir specifies the working directory of the command.
     // If Dir is the empty string, Run runs the command in the
     // calling process's current directory.
+    //
+    // On Unix systems, the value of Dir also determines the
+    // child process's PWD environment variable if not otherwise
+    // specified. A Unix process represents its working directory
+    // not by name but as an implicit reference to a node in the
+    // file tree. So, if the child process obtains its working
+    // directory by calling a function such as C's getcwd, which
+    // computes the canonical name by walking up the file tree, it
+    // will not recover the original value of Dir if that value
+    // was an alias involving symbolic links. However, if the
+    // child process calls Go's [os.Getwd] or GNU C's
+    // get_current_dir_name, and the value of PWD is an alias for
+    // the current directory, those functions will return the
+    // value of PWD, which matches the value of Dir.
     public @string Dir;
     // Stdin specifies the process's standard input.
     //
@@ -819,7 +757,7 @@ public static error Start(this ж<Cmd> Ꮡc) {
         // Don't allocate the goroutineErr channel unless there are goroutines to start.
         if (len(c.goroutine) > 0) {
             var goroutineErr = new channel<error>(1);
-            c.goroutineErr = goroutineErr;
+            c.goroutineErr = goroutineErr.WithDirection(GoChanDir.Recv);
             var statusc = new channel<Start_goroutineStatus>(1);
             statusc.ᐸꟷ(new Start_goroutineStatus(running: len(c.goroutine)));
             foreach (var (_, fn) in c.goroutine) {
@@ -850,8 +788,8 @@ public static error Start(this ж<Cmd> Ꮡc) {
         // be allowed to continue running after cancellation after all.)
         if ((c.Cancel != default! || c.WaitDelay != 0) && c.ctx != default! && c.ctx.Done() != default!) {
             var resultc = new channel<ctxResult>(0);
-            c.ctxResult = resultc;
-            goǃ(Ꮡc.watchCtx, resultc);
+            c.ctxResult = resultc.WithDirection(GoChanDir.Recv);
+            goǃ(Ꮡc.watchCtx, resultc.WithDirection(GoChanDir.Send));
         }
         return default!;
     }
@@ -1109,7 +1047,9 @@ internal static readonly @string execStdoutAlreadySetˢ = "exec: Stdout already 
 
 // Output runs the command and returns its standard output.
 // Any returned error will usually be of type [*ExitError].
-// If c.Stderr was nil, Output populates [ExitError.Stderr].
+// If c.Stderr was nil and the returned error is of type
+// [*ExitError], Output populates the Stderr field of the
+// returned error.
 public static (slice<byte>, error) Output(this ж<Cmd> Ꮡc) {
     ref var c = ref Ꮡc.DerefOrNull();
 

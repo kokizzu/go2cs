@@ -184,7 +184,7 @@ public static bool BuildModeSupported(@string compiler, @string buildmode, @stri
     }
     if (exprᴛ1 == "c-shared"u8) {
         var exprᴛ4 = platform;
-        if (exprᴛ4 == "linux/amd64"u8 || exprᴛ4 == "linux/arm"u8 || exprᴛ4 == "linux/arm64"u8 || exprᴛ4 == "linux/loong64"u8 || exprᴛ4 == "linux/386"u8 || exprᴛ4 == "linux/ppc64le"u8 || exprᴛ4 == "linux/riscv64"u8 || exprᴛ4 == "linux/s390x"u8 || exprᴛ4 == "android/amd64"u8 || exprᴛ4 == "android/arm"u8 || exprᴛ4 == "android/arm64"u8 || exprᴛ4 == "android/386"u8 || exprᴛ4 == "freebsd/amd64"u8 || exprᴛ4 == "darwin/amd64"u8 || exprᴛ4 == "darwin/arm64"u8 || exprᴛ4 == "windows/amd64"u8 || exprᴛ4 == "windows/386"u8 || exprᴛ4 == "windows/arm64"u8) {
+        if (exprᴛ4 == "linux/amd64"u8 || exprᴛ4 == "linux/arm"u8 || exprᴛ4 == "linux/arm64"u8 || exprᴛ4 == "linux/loong64"u8 || exprᴛ4 == "linux/386"u8 || exprᴛ4 == "linux/ppc64le"u8 || exprᴛ4 == "linux/riscv64"u8 || exprᴛ4 == "linux/s390x"u8 || exprᴛ4 == "android/amd64"u8 || exprᴛ4 == "android/arm"u8 || exprᴛ4 == "android/arm64"u8 || exprᴛ4 == "android/386"u8 || exprᴛ4 == "freebsd/amd64"u8 || exprᴛ4 == "darwin/amd64"u8 || exprᴛ4 == "darwin/arm64"u8 || exprᴛ4 == "windows/amd64"u8 || exprᴛ4 == "windows/386"u8 || exprᴛ4 == "windows/arm64"u8 || exprᴛ4 == "wasip1/wasm"u8) {
             return true;
         }
 
@@ -296,7 +296,7 @@ public static bool FirstClass(@string goos, @string goarch) {
     return distInfo[new OSArch(goos, goarch)].FirstClass;
 }
 
-// Broken reportsr whether goos/goarch is considered a broken port.
+// Broken reports whether goos/goarch is considered a broken port.
 // (See https://go.dev/wiki/PortingPolicy#broken-ports.)
 public static bool Broken(@string goos, @string goarch) {
     return distInfo[new OSArch(goos, goarch)].Broken;

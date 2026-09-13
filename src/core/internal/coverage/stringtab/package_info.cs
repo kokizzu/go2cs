@@ -49,7 +49,7 @@ using static go.@internal.coverage.stringtab_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/stringtab/stringtab.go", "stringtab.cs", "ACs2koKokqqigIKkgpSCgoKqooKCgoKCgoKClKrCgoKCgIKkpJSAgqSCgIKkgIKktq7CAAkYoqaokoKCgoK6kqiS")]
+[assembly: go.GoPositionMap("internal/coverage/stringtab/stringtab.go", "stringtab.cs", "ABk2koKokqqigIKkgpSCgoKqooKCgoKCgoKClKrCgoKCgIKkpJSAgqSCgIKkgIKktq7CAAkYoqaokoKCgoK6kqiS", "71-80:1")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;
@@ -67,4 +67,16 @@ public static partial class stringtab_package
     public partial struct Reader {}
     public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸslicereader() => builtin.initPackage(typeof(go.@internal.coverage.slicereader_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

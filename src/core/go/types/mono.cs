@@ -7,8 +7,8 @@ namespace go.go;
 
 using ast = global::go.go.ast_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
-using errors = global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 
 partial class types_package {

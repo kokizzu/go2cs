@@ -10,11 +10,11 @@ namespace go.go;
 using ast = global::go.go.ast_package;
 using constant = global::go.go.constant_package;
 using token = global::go.go.token_package;
-using buildcfg = global::go.@internal.buildcfg_package;
-using static global::go.@internal.types.errors_package;
-using sort = sort_package;
-using errors = global::go.@internal.types.errors_package;
-using global::go.@internal;
+using buildcfg = @internal.buildcfg_package;
+using static @internal.types.errors_package;
+using slices = slices_package;
+using @internal;
+using errors = @internal.types.errors_package;
 using global::go.go;
 
 partial class types_package {
@@ -22,10 +22,12 @@ partial class types_package {
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string missingReturnˢ = "missing return"u8;
 
+// decl may be nil
 internal static void funcBody(this ж<Checker> Ꮡcheck, ж<declInfo> Ꮡdecl, @string name, ж<ΔSignature> Ꮡsig, ж<ast.BlockStmt> Ꮡbody, constant.Value iota) {
     GoFrame ᒐ = default;
     try {
         ref var check = ref Ꮡcheck.DerefOrNull();
+        ref var decl = ref Ꮡdecl.DerefOrNull();
         ref var sig = ref Ꮡsig.DerefOrNull();
         ref var body = ref Ꮡbody.DerefOrNull();
 
@@ -44,6 +46,8 @@ internal static void funcBody(this ж<Checker> Ꮡcheck, ж<declInfo> Ꮡdecl, @
         check.environment = new environment(
             decl: Ꮡdecl,
             scope: sig.scope,
+            version: check.version, // TODO(adonovan): would decl.version (if decl != nil) be better?
+
             iota: iota,
             sig: Ꮡsig
         );
@@ -64,6 +68,7 @@ internal static void funcBody(this ж<Checker> Ꮡcheck, ж<declInfo> Ꮡdecl, @
 }
 
 internal static void usage(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡscope) {
+    ref var check = ref Ꮡcheck.DerefOrNull();
     ref var scope = ref Ꮡscope.DerefOrNull();
 
     slice<ж<Var>> unused = default!;
@@ -72,13 +77,12 @@ internal static void usage(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡscope) {
 
         elem = resolve(name, elem);
         {
-            var (v, _) = elem._<ж<Var>>(ᐧ); if (v != nil && !(~v).used) {
+            var (v, _) = elem._<ж<Var>>(ᐧ); if (v != nil && !(~v).isParam && !check.usedVars[v]) {
                 unused = append(unused, v);
             }
         }
     }
-    var unusedʗ1 = unused;
-    sort.Slice(unused, (nint i, nint j) => cmpPos((~unusedʗ1[i]).pos, (~unusedʗ1[j]).pos) < 0);
+    slices.SortFunc(unused, (ж<Var> a, ж<Var> b) => cmpPos((~a).pos, (~b).pos));
     foreach (var (_, v) in unused) {
         Ꮡcheck.softErrorf(new Varжpositioner(v), UnusedVar, "declared and not used: %s"u8, (~v).name);
     }
@@ -324,13 +328,30 @@ break_L:;
 
 // caseTypes typechecks the type expressions of a type case, checks for duplicate types
 // using the seen map, and verifies that each type is valid with respect to the type of
-// the operand x in the type switch clause. If the type switch expression is invalid, x
-// must be nil. The result is the type of the last type expression; it is nil if the
-// expression denotes the predeclared nil.
-internal static ΔType /*T*/ caseTypes(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, slice<ast.Expr> types, map<ΔType, ast.Expr> seen) {
-    ΔType T = default!;
-
+// the operand x corresponding to the type switch expression. If that expression is not
+// valid, x must be nil.
+//
+//	switch <x>.(type) {
+//	case <types>: ...
+//	...
+//	}
+//
+// caseTypes returns the case-specific type for a variable v introduced through a short
+// variable declaration by the type switch:
+//
+//	switch v := <x>.(type) {
+//	case <types>: // T is the type of <v> in this case
+//	...
+//	}
+//
+// If there is exactly one type expression, T is the type of that expression. If there
+// are multiple type expressions, or if predeclared nil is among the types, the result
+// is the type of x. If x is invalid (nil), the result is the invalid type.
+internal static ΔType caseTypes(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, slice<ast.Expr> types, map<ΔType, ast.Expr> seen) {
     ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+
+    ΔType T = default!;
     ref var dummy = ref heap(new operand(), out var Ꮡdummy);
 L:
     foreach (var (_, e) in types) {
@@ -367,6 +388,73 @@ L:
 continue_L:;
     }
 break_L:;
+    // spec: "In clauses with a case listing exactly one type, the variable has that type;
+    // otherwise, the variable has the type of the expression in the TypeSwitchGuard.
+    if (len(types) != 1 || T == default!) {
+        T = new BasicжΔType(Typ[Invalid]);
+        if (Ꮡx != nil) {
+            T = x.typ;
+        }
+    }
+    assert(T != default!);
+    return T;
+}
+
+// TODO(gri) Once we are certain that typeHash is correct in all situations, use this version of caseTypes instead.
+// (Currently it may be possible that different types have identical names and import paths due to ImporterFrom.)
+internal static ΔType caseTypes_currently_unused(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx, ж<Interface> Ꮡxtyp, slice<ast.Expr> types, map<@string, ast.Expr> seen) {
+    ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var x = ref Ꮡx.DerefOrNull();
+
+    ΔType T = default!;
+    ref var dummy = ref heap(new operand(), out var Ꮡdummy);
+L:
+    foreach (var (_, e) in types) {
+        // The spec allows the value nil instead of a type.
+        @string hash = default!;
+        if (check.isNil(e)){
+            Ꮡcheck.expr(nil, Ꮡdummy, e); // run e through expr so we get the usual Info recordings
+            T = default!;
+            hash = nilˢ; // avoid collision with a type named nil
+        } else {
+            T = Ꮡcheck.varType(e);
+            if (!isValid(T)) {
+                goto continue_L;
+            }
+            throw panic("enable typeHash(T, nil)");
+        }
+        // hash = typeHash(T, nil)
+        // look for duplicate types
+        {
+            var other = seen[hash]; if (other != default!) {
+                // talk about "case" rather than "type" because of nil case
+                @string Ts = nilˢ2;
+                if (T != default!) {
+                    Ts = TypeString(T, new Func<ж<Package>, @string>(Ꮡcheck.qualifier));
+                }
+                var err = Ꮡcheck.newError(DuplicateCase);
+                err.addf(new ast_Exprᴠpositioner(e), "duplicate case %s in type switch"u8, Ts);
+                err.addf(new ast_Exprᴠpositioner(other), "previous case"u8);
+                err.report();
+                goto continue_L;
+            }
+        }
+        seen[hash] = e;
+        if (T != default!) {
+            Ꮡcheck.typeAssertion(e, Ꮡx, T, true);
+        }
+continue_L:;
+    }
+break_L:;
+    // spec: "In clauses with a case listing exactly one type, the variable has that type;
+    // otherwise, the variable has the type of the expression in the TypeSwitchGuard.
+    if (len(types) != 1 || T == default!) {
+        T = new BasicжΔType(Typ[Invalid]);
+        if (Ꮡx != nil) {
+            T = x.typ;
+        }
+    }
+    assert(T != default!);
     return T;
 }
 
@@ -396,47 +484,6 @@ internal static readonly @string selectCaseMustBeSendOrˢ = "select case must be
 internal static readonly @string forˢ = "for"u8;
 internal static readonly @string nonBooleanConditionInForˢ = "non-boolean condition in for statement"u8;
 internal static readonly @string invalidStatementˢ = "invalid statement"u8;
-
-// TODO(gri) Once we are certain that typeHash is correct in all situations, use this version of caseTypes instead.
-// (Currently it may be possible that different types have identical names and import paths due to ImporterFrom.)
-//
-// func (check *Checker) caseTypes(x *operand, xtyp *Interface, types []ast.Expr, seen map[string]ast.Expr) (T Type) {
-// 	var dummy operand
-// L:
-// 	for _, e := range types {
-// 		// The spec allows the value nil instead of a type.
-// 		var hash string
-// 		if check.isNil(e) {
-// 			check.expr(nil, &dummy, e) // run e through expr so we get the usual Info recordings
-// 			T = nil
-// 			hash = "<nil>" // avoid collision with a type named nil
-// 		} else {
-// 			T = check.varType(e)
-// 			if !isValid(T) {
-// 				continue L
-// 			}
-// 			hash = typeHash(T, nil)
-// 		}
-// 		// look for duplicate types
-// 		if other := seen[hash]; other != nil {
-// 			// talk about "case" rather than "type" because of nil case
-// 			Ts := "nil"
-// 			if T != nil {
-// 				Ts = TypeString(T, check.qualifier)
-// 			}
-// 			err := check.newError(_DuplicateCase)
-// 			err.addf(e, "duplicate case %s in type switch", Ts)
-// 			err.addf(other, "previous case")
-// 			err.report()
-// 			continue L
-// 		}
-// 		seen[hash] = e
-// 		if T != nil {
-// 			check.typeAssertion(e.Pos(), x, xtyp, T)
-// 		}
-// 	}
-// 	return
-// }
 
 // stmt typechecks statement s.
 internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt s) {
@@ -833,25 +880,8 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
                 check.openScope(new ast.CaseClauseжNode(clause), caseˢ);
                 // If lhs exists, declare a corresponding variable in the case-local scope.
                 if (lhs != nil) {
-                    // spec: "The TypeSwitchGuard may include a short variable declaration.
-                    // When that form is used, the variable is declared at the beginning of
-                    // the implicit block in each clause. In clauses with a case listing
-                    // exactly one type, the variable has that type; otherwise, the variable
-                    // has the type of the expression in the TypeSwitchGuard."
-                    if (len((~clause).List) != 1 || T == default!) {
-                        T = new BasicжΔType(Typ[Invalid]);
-                        if (sx != nil) {
-                            T = sx.Value.typ;
-                        }
-                    }
                     var obj = NewVar(lhs.Pos(), check.pkg, (~lhs).Name, T);
-                    tokenꓸPos scopePos = clause.Pos() + ((tokenꓸPos)len("default")); // for default clause (len(List) == 0)
-                    {
-                        nint n = len((~clause).List); if (n > 0) {
-                            scopePos = (~clause).List[n - 1].End();
-                        }
-                    }
-                    Ꮡcheck.declare(check.scope, nil, new VarжObject(obj), scopePos);
+                    Ꮡcheck.declare(check.scope, nil, new VarжObject(obj), (~clause).Colon);
                     check.recordImplicit(new ast.CaseClauseжNode(clause), new VarжObject(obj));
                     // For the "declared and not used" error, all lhs variables act as
                     // one; i.e., if any one of them is 'used', all of them are 'used'.
@@ -863,12 +893,15 @@ internal static void stmt(this ж<Checker> Ꮡcheck, stmtContext ctxt, ast.Stmt 
             }
             if (lhs != nil) {
                 // If lhs exists, we must have at least one lhs variable that was used.
+                // (We can't use check.usage because that only looks at one scope; and
+                // we don't want to use the same variable for all scopes and change the
+                // variable type underfoot.)
                 bool used = default!;
                 foreach (var (_, v) in lhsVars) {
-                    if ((~v).used) {
+                    if (check.usedVars[v]) {
                         used = true;
                     }
-                    v.Value.used = true; // avoid usage error when checking entire function
+                    check.usedVars[v] = true; // avoid usage error when checking entire function
                 }
                 if (!used) {
                     Ꮡcheck.softErrorf(new ast_Identжpositioner(lhs), UnusedVar, "%s declared and not used"u8, (~lhs).Name);
@@ -994,7 +1027,7 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
         ΔType val = default!;
         if (x.mode != invalid) {
             // Ranging over a type parameter is permitted if it has a core type.
-            var (k, v, cause, ok) = rangeKeyVal(x.typ, (goVersion vΔ1) => Ꮡcheck.allowVersion(new ast_Exprᴠpositioner(Ꮡx.Value.expr), vΔ1));
+            var (k, v, cause, ok) = rangeKeyVal(x.typ, (goVersion vΔ1) => Ꮡcheck.Value.allowVersion(vΔ1));
             switch (ᐧ) {
             case {} when !ok && cause != ""u8: {
                 Ꮡcheck.softErrorf(new operandжpositioner(Ꮡx), InvalidRangeExpr, "cannot range over %s: %s"u8, Ꮡx, cause);
@@ -1059,7 +1092,7 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
                 if (typ == default! || AreEqual(typ, Typ[Invalid])) {
                     // typ == Typ[Invalid] can happen if allowVersion fails.
                     obj.Value.typ = new BasicжΔType(Typ[Invalid]);
-                    obj.Value.used = true; // don't complain about unused variable
+                    check.usedVars[obj] = true; // don't complain about unused variable
                     continue;
                 }
                 if (rangeOverInt){
@@ -1131,15 +1164,16 @@ internal static void rangeStmt(this ж<Checker> Ꮡcheck, stmtContext inner, ж<
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string noCoreTypeˢ = "no core type"u8;
+internal static readonly @string noCoreTypeˢ2 = "no core type"u8;
 internal static readonly @string requiresGo122OrLaterˢ = "requires go1.22 or later"u8;
 internal static readonly @string receiveFromSendOnlyˢ = "receive from send-only channel"u8;
 internal static readonly @string requiresGo123OrLaterˢ = "requires go1.23 or later"u8;
 internal static readonly @string funcMustBeFuncYieldFuncˢ = "func must be func(yield func(...) bool): wrong argument count"u8;
-internal static readonly @string funcMustBeFuncYieldFuncˢ2 = "func must be func(yield func(...) bool): argument is not func"u8;
-internal static readonly @string funcMustBeFuncYieldFuncˢ3 = "func must be func(yield func(...) bool): unexpected results"u8;
+internal static readonly @string funcMustBeFuncYieldFuncˢ2 = "func must be func(yield func(...) bool): unexpected results"u8;
+internal static readonly @string funcMustBeFuncYieldFuncˢ3 = "func must be func(yield func(...) bool): argument is not func"u8;
 internal static readonly @string funcMustBeFuncYieldFuncˢ4 = "func must be func(yield func(...) bool): yield func has too many parameters"u8;
-internal static readonly @string funcMustBeFuncYieldFuncˢ5 = "func must be func(yield func(...) bool): yield func does not return bool"u8;
+internal static readonly @string funcMustBeFuncYieldFuncˢ5 = "func must be func(yield func(...) bool): yield func returns user-defined boolean, not bool"u8;
+internal static readonly @string funcMustBeFuncYieldFuncˢ6 = "func must be func(yield func(...) bool): yield func does not return bool"u8;
 
 // rangeKeyVal returns the key and value type produced by a range clause
 // over an expression of type typ.
@@ -1153,14 +1187,10 @@ internal static (ΔType key, ΔType val, @string cause, bool ok) rangeKeyVal(ΔT
     bool ok = default!;
 
     (ΔType, ΔType, @string, bool) bad(@string causeΔ1) => (new BasicжΔType(Typ[Invalid]), new BasicжΔType(Typ[Invalid]), causeΔ1, false);
-    ж<ΔSignature> toSig(ΔType t) {
-        var (sig, _) = coreType(t)._<ж<ΔSignature>>(ᐧ);
-        return sig;
-    }
     var orig = typ;
     switch (arrayPtrDeref(coreType(typ)).type()) {
     case null: {
-        return bad(noCoreTypeˢ);
+        return bad(noCoreTypeˢ2);
     }
     case ж<Basic> typΔ1: {
         if (isString(new BasicжΔType(typΔ1))) {
@@ -1193,29 +1223,38 @@ internal static (ΔType key, ΔType val, @string cause, bool ok) rangeKeyVal(ΔT
         if (!buildcfg.Experiment.RangeFunc && allowVersion != default! && !allowVersion(go1_23)) {
             return bad(requiresGo123OrLaterˢ);
         }
-        assert(typΔ1.Recv() == nil);
         switch (ᐧ) {
         case {} when typΔ1.Params().Len() is not 1: {
             return bad(funcMustBeFuncYieldFuncˢ);
         }
-        case {} when toSig(typΔ1.Params().At(0).of(Var.Ꮡobject).Type()) == nil: {
-            return bad(funcMustBeFuncYieldFuncˢ2);
-        }
         case {} when typΔ1.Results().Len() is not 0: {
-            return bad(funcMustBeFuncYieldFuncˢ3);
+            return bad(funcMustBeFuncYieldFuncˢ2);
         }}
 
-        var cb = toSig(typΔ1.Params().At(0).of(Var.Ꮡobject).Type());
-        assert(cb.Recv() == nil);
+        assert(typΔ1.Recv() == nil);
+        var (cb, _) = coreType(typΔ1.Params().At(0).of(Var.Ꮡobject).Type())._<ж<ΔSignature>>(ᐧ);
         switch (ᐧ) {
+        case {} when cb == nil: {
+            return bad(funcMustBeFuncYieldFuncˢ3);
+        }
         case {} when cb.Params().Len() is > 2: {
             return bad(funcMustBeFuncYieldFuncˢ4);
         }
-        case {} when cb.Results().Len() != 1 || !isBoolean(cb.Results().At(0).of(Var.Ꮡobject).Type()): {
-            return bad(funcMustBeFuncYieldFuncˢ5);
+        case {} when cb.Results().Len() != 1 || !Identical(cb.Results().At(0).of(Var.Ꮡobject).Type(), // check iterator arity
+ // check iterator argument type
+ universeBool): {
+            if (cb.Results().Len() == 1 && isBoolean(cb.Results().At(0).of(Var.Ꮡobject).Type())){
+                // see go.dev/issues/71131, go.dev/issues/71164
+                return bad(funcMustBeFuncYieldFuncˢ5);
+            } else {
+                return bad(funcMustBeFuncYieldFuncˢ6);
+            }
+            break;
         }}
 
+        assert(cb.Recv() == nil);
         if (cb.Params().Len() >= 1) {
+            // determine key and value types, if any
             key = cb.Params().At(0).of(Var.Ꮡobject).Type();
         }
         if (cb.Params().Len() >= 2) {

@@ -14,24 +14,6 @@ using io = io_package;
 
 partial class ast_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
 // sortComments sorts the list of comment groups in source order.
 internal static void sortComments(slice<ж<CommentGroup>> list) {
     slices.SortFunc(list, (ж<CommentGroup> a, ж<CommentGroup> b) => cmp.Compare(a.Pos(), b.Pos()));
@@ -47,22 +29,6 @@ internal static void addComment(this CommentMap cmap, Node n, ж<CommentGroup> �
         list = append(list, Ꮡc);
     }
     cmap[n] = list;
-}
-
-[GoType("[]Node")] partial struct byInterval;
-
-internal static nint Len(this byInterval a) {
-    return len(a);
-}
-
-internal static bool Less(this byInterval a, nint i, nint j) {
-    tokenꓸPos pi = a[i].Pos();
-    tokenꓸPos pj = a[j].Pos();
-    return pi < pj || pi == pj && a[i].End() > a[j].End();
-}
-
-internal static void Swap(this byInterval a, nint i, nint j) {
-    (a[i], a[j]) = (a[j], a[i]);
 }
 
 // nodeList returns the list of nodes of the AST n in source order.

@@ -13,53 +13,80 @@ using @internal;
 
 partial class net_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 internal static time.Duration defaultTCPKeepAliveIdle => /* 15 * time.Second */ 15000000000;
 internal static time.Duration defaultTCPKeepAliveInterval => /* 15 * time.Second */ 15000000000;
 internal static UntypedInt defaultTCPKeepAliveCount => 9;
-internal const bool defaultMPTCPEnabled = false;
+internal const bool defaultMPTCPEnabledListen = true;
+internal const bool defaultMPTCPEnabledDial = false;
 
+// The type of service offered
+//
+//	0 == MPTCP disabled
+//	1 == MPTCP enabled
+//	2 == MPTCP enabled on listeners only
+//	3 == MPTCP enabled on dialers only
 internal static ж<godebug.Setting> multipathtcp = godebug.New("multipathtcp"u8);
 
-[GoType("num:uint8")] partial struct mptcpStatus;
+[GoType("num:uint8")] partial struct mptcpStatusDial;
 
-internal static mptcpStatus mptcpUseDefault => /* iota */ 0;
-internal static mptcpStatus mptcpEnabled => 1;
-internal static mptcpStatus mptcpDisabled => 2;
+internal static mptcpStatusDial mptcpUseDefaultDial => /* iota */ 0;
+internal static mptcpStatusDial mptcpEnabledDial => 1;
+internal static mptcpStatusDial mptcpDisabledDial => 2;
 
-[GoRecv] internal static bool get(this ref mptcpStatus m) {
+[GoRecv] internal static bool get(this ref mptcpStatusDial m) {
     var exprᴛ1 = m;
-    if (exprᴛ1 == mptcpEnabled) {
+    if (exprᴛ1 == mptcpEnabledDial) {
         return true;
     }
-    if (exprᴛ1 == mptcpDisabled) {
+    if (exprᴛ1 == mptcpDisabledDial) {
         return false;
     }
 
     // If MPTCP is forced via GODEBUG=multipathtcp=1
-    if (multipathtcp.Value() == "1"u8) {
+    if (multipathtcp.Value() == "1"u8 || multipathtcp.Value() == "3"u8) {
         multipathtcp.IncNonDefault();
         return true;
     }
-    return defaultMPTCPEnabled;
+    return defaultMPTCPEnabledDial;
 }
 
-[GoRecv] internal static void set(this ref mptcpStatus m, bool use) {
+[GoRecv] internal static void set(this ref mptcpStatusDial m, bool use) {
     if (use){
-        m = mptcpEnabled;
+        m = mptcpEnabledDial;
     } else {
-        m = mptcpDisabled;
+        m = mptcpDisabledDial;
+    }
+}
+
+[GoType("num:uint8")] partial struct mptcpStatusListen;
+
+internal static mptcpStatusListen mptcpUseDefaultListen => /* iota */ 0;
+internal static mptcpStatusListen mptcpEnabledListen => 1;
+internal static mptcpStatusListen mptcpDisabledListen => 2;
+
+[GoRecv] internal static bool get(this ref mptcpStatusListen m) {
+    var exprᴛ1 = m;
+    if (exprᴛ1 == mptcpEnabledListen) {
+        return true;
+    }
+    if (exprᴛ1 == mptcpDisabledListen) {
+        return false;
+    }
+
+    // If MPTCP is disabled via GODEBUG=multipathtcp=0 or only
+    // enabled on dialers, but not on listeners.
+    if (multipathtcp.Value() == "0"u8 || multipathtcp.Value() == "3"u8) {
+        multipathtcp.IncNonDefault();
+        return false;
+    }
+    return defaultMPTCPEnabledListen;
+}
+
+[GoRecv] internal static void set(this ref mptcpStatusListen m, bool use) {
+    if (use){
+        m = mptcpEnabledListen;
+    } else {
+        m = mptcpDisabledListen;
     }
 }
 
@@ -142,8 +169,10 @@ internal static mptcpStatus mptcpDisabled => 2;
     // connection but before actually dialing.
     //
     // Network and address parameters passed to Control function are not
-    // necessarily the ones passed to Dial. For example, passing "tcp" to Dial
-    // will cause the Control function to be called with "tcp4" or "tcp6".
+    // necessarily the ones passed to Dial. Calling Dial with TCP networks
+    // will cause the Control function to be called with "tcp4" or "tcp6",
+    // UDP networks become "udp4" or "udp6", IP networks become "ip4" or "ip6",
+    // and other known networks are passed as-is.
     //
     // Control is ignored if ControlContext is not nil.
     public Func<@string, @string, syscall.RawConn, error> Control;
@@ -151,15 +180,17 @@ internal static mptcpStatus mptcpDisabled => 2;
     // connection but before actually dialing.
     //
     // Network and address parameters passed to ControlContext function are not
-    // necessarily the ones passed to Dial. For example, passing "tcp" to Dial
-    // will cause the ControlContext function to be called with "tcp4" or "tcp6".
+    // necessarily the ones passed to Dial. Calling Dial with TCP networks
+    // will cause the ControlContext function to be called with "tcp4" or "tcp6",
+    // UDP networks become "udp4" or "udp6", IP networks become "ip4" or "ip6",
+    // and other known networks are passed as-is.
     //
     // If ControlContext is not nil, Control is ignored.
     public Func<context.Context, @string, @string, syscall.RawConn, error> ControlContext;
     // If mptcpStatus is set to a value allowing Multipath TCP (MPTCP) to be
     // used, any call to Dial with "tcp(4|6)" as network will use MPTCP if
     // supported by the operating system.
-    internal mptcpStatus mptcpStatus;
+    internal mptcpStatusDial mptcpStatus;
 }
 
 [GoRecv] internal static bool dualStack(this ref Dialer d) {
@@ -780,9 +811,11 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
     // If Control is not nil, it is called after creating the network
     // connection but before binding it to the operating system.
     //
-    // Network and address parameters passed to Control method are not
-    // necessarily the ones passed to Listen. For example, passing "tcp" to
-    // Listen will cause the Control function to be called with "tcp4" or "tcp6".
+    // Network and address parameters passed to Control function are not
+    // necessarily the ones passed to Listen. Calling Listen with TCP networks
+    // will cause the Control function to be called with "tcp4" or "tcp6",
+    // UDP networks become "udp4" or "udp6", IP networks become "ip4" or "ip6",
+    // and other known networks are passed as-is.
     public Func<@string, @string, syscall.RawConn, error> Control;
     // KeepAlive specifies the keep-alive period for network
     // connections accepted by this listener.
@@ -805,7 +838,7 @@ internal static (Conn c, error err) dialSingle(this ж<sysDialer> Ꮡsd, context
     // If mptcpStatus is set to a value allowing Multipath TCP (MPTCP) to be
     // used, any call to Listen with "tcp(4|6)" as network will use MPTCP if
     // supported by the operating system.
-    internal mptcpStatus mptcpStatus;
+    internal mptcpStatusListen mptcpStatus;
 }
 
 // MultipathTCP reports whether MPTCP will be used.
@@ -833,6 +866,9 @@ internal static readonly @string listenˢ = "listen"u8;
 //
 // See func Listen for a description of the network and address
 // parameters.
+//
+// The ctx argument is used while resolving the address on which to listen;
+// it does not affect the returned Listener.
 [GoRecv] public static (Listener, error) Listen(this ref ListenConfig lc, context.Context ctx, @string network, @string address) {
     var (addrs, err) = DefaultResolver.resolveAddrList(ctx, listenˢ, network, address, default!);
     if (err != default!) {
@@ -875,6 +911,9 @@ internal static readonly @string listenˢ = "listen"u8;
 //
 // See func ListenPacket for a description of the network and address
 // parameters.
+//
+// The ctx argument is used while resolving the address on which to listen;
+// it does not affect the returned Listener.
 [GoRecv] public static (PacketConn, error) ListenPacket(this ref ListenConfig lc, context.Context ctx, @string network, @string address) {
     var (addrs, err) = DefaultResolver.resolveAddrList(ctx, listenˢ, network, address, default!);
     if (err != default!) {

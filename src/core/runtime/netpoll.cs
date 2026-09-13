@@ -5,10 +5,9 @@
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -31,7 +30,7 @@ partial class runtime_package {
 //     poll without blocking. If delta > 0, block for up to delta nanoseconds.
 //     Return a list of goroutines built by calling netpollready,
 //     and a delta to add to netpollWaiters when all goroutines are ready.
-//     This will never return an empty list with a non-zero delta.
+//     This must never return an empty list with a non-zero delta.
 //
 // func netpollBreak()
 //     Wake up the network poller, assumed to be blocked in netpoll.
@@ -725,7 +724,7 @@ internal static ж<pollDesc> alloc(this ж<pollCache> Ꮡc) {
         @unsafe.Pointer mem = (uintptr)persistentalloc(n * pdSize, 0, Ꮡmemstats.of(mstats.Ꮡother_sys));
         for (var i = (uintptr)0; i < n; i++) {
             var pdΔ1 = (ж<pollDesc>)(uintptr)(add(mem, i * pdSize));
-            lockInit(ref (pdΔ1.of(pollDesc.Ꮡlock)).DerefOrNull(), lockRankPollDesc);
+            lockInit(pdΔ1.of(pollDesc.Ꮡlock), lockRankPollDesc);
             pdΔ1.of(pollDesc.Ꮡrt).init(default!, default!);
             pdΔ1.of(pollDesc.Ꮡwt).init(default!, default!);
             pdΔ1.Value.link = c.first;
@@ -741,7 +740,7 @@ internal static ж<pollDesc> alloc(this ж<pollCache> Ꮡc) {
 // makeArg converts pd to an interface{}.
 // makeArg does not do any allocation. Normally, such
 // a conversion requires an allocation because pointers to
-// types which embed runtime/internal/sys.NotInHeap (which pollDesc is)
+// types which embed internal/runtime/sys.NotInHeap (which pollDesc is)
 // must be stored in interfaces indirectly. See issue 42076.
 internal static any /*i*/ makeArg(this ж<pollDesc> Ꮡpd) {
     ref var i = ref heap<any>(out var Ꮡi);

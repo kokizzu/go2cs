@@ -49,7 +49,7 @@ using static go.vendor.golang.org.x.crypto.cryptobyte.asn1_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/asn1/asn1.go", "asn1.cs", "ABAukKaQ")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/cryptobyte/asn1/asn1.go", "asn1.cs", "AA8ukKaQ")]
 // </GoSourcePositionMaps>
 
 namespace go.vendor.golang.org.x.crypto.cryptobyte;
@@ -66,4 +66,13 @@ public static partial class asn1_package
     // <TypeAccessibility>
     public partial struct Tag {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }

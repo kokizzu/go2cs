@@ -4,13 +4,14 @@
 namespace go.@internal;
 
 using bytes = bytes_package;
-using md5 = crypto.md5_package;
+using sha256 = crypto.sha256_package;
 using binary = encoding.binary_package;
 using constant = global::go.go.constant_package;
 using io = io_package;
 using big = math.big_package;
 using Δruntime = runtime_package;
 using strings = strings_package;
+using System.Runtime.CompilerServices;
 using crypto;
 using encoding;
 using global::go.go;
@@ -19,32 +20,11 @@ using math;
 
 partial class pkgbits_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() {
-    builtin.initPackage(typeof(crypto.md5_package));
-}
-
-// currentVersion is the current version number.
-//
-//   - v0: initial prototype
-//
-//   - v1: adds the flags uint32 word
-//
-// TODO(mdempsky): For the next version bump:
-//   - remove the legacy "has init" bool from the public root
-//   - remove obj's "derived func instance" bool
-internal const uint32 currentVersion = 1;
-
 // A PkgEncoder provides methods for encoding a package's Unified IR
 // export data.
 [GoType] partial struct PkgEncoder {
+    // version of the bitstream.
+    internal ΔVersion version;
     // elems holds the bitstream for previously encoded elements.
     internal array<slice<@string>> elems = new(numRelocs);
     // stringsIdx maps previously encoded strings to their index within
@@ -68,8 +48,9 @@ internal const uint32 currentVersion = 1;
 // export data files, but can help diagnosing desync errors in
 // higher-level Unified IR reader/writer code. If syncFrames is
 // negative, then sync markers are omitted entirely.
-public static PkgEncoder NewPkgEncoder(nint syncFrames) {
+public static PkgEncoder NewPkgEncoder(ΔVersion version, nint syncFrames) {
     return new PkgEncoder(
+        version: version,
         stringsIdx: new map<@string, Index>(),
         syncFrames: syncFrames
     );
@@ -81,18 +62,20 @@ public static array<byte> /*fingerprint*/ DumpTo(this ж<PkgEncoder> Ꮡpw, io.W
     array<byte> fingerprint = new(8);
 
     ref var pw = ref Ꮡpw.DerefOrNull();
-    var h = md5.New();
+    var h = sha256.New();
     var @out = io.MultiWriter(out0, h);
     var outʗ1 = @out;
     void writeUint32(uint32 x) {
         assert(binary.Write(outʗ1, binary.LittleEndian, x) == default!);
     }
-    writeUint32(currentVersion);
-    uint32 flags = default!;
-    if (pw.SyncMarkers()) {
-        flags |= (uint32)(flagSyncMarkers);
+    writeUint32((uint32)pw.version);
+    if (pw.version.Has(Flags)) {
+        uint32 flags = default!;
+        if (pw.SyncMarkers()) {
+            flags |= (uint32)(flagSyncMarkers);
+        }
+        writeUint32(flags);
     }
-    writeUint32(flags);
     // Write elemEndsEnds.
     uint32 sum = default!;
     foreach (var (_, elems) in Ꮡpw.of(PkgEncoder.Ꮡelems).Value) {
@@ -203,7 +186,7 @@ public static Index Flush(this ж<Encoder> Ꮡw) {
 
 [GoRecv] internal static void checkErr(this ref Encoder w, error err) {
     if (err != default!) {
-        errorf("unexpected encoding error: %v"u8, err);
+        panicf("unexpected encoding error: %v"u8, err);
     }
 }
 
@@ -240,7 +223,7 @@ public static Index Flush(this ж<Encoder> Ꮡw) {
     return i;
 }
 
-[GoRecv] public static void Sync(this ref Encoder w, SyncMarker m) {
+[MethodImpl(MethodImplOptions.NoInlining)] [GoRecv] public static void Sync(this ref Encoder w, SyncMarker m) {
     if (!w.p.SyncMarkers()) {
         return;
     }
@@ -310,7 +293,7 @@ public static Index Flush(this ж<Encoder> Ꮡw) {
     w.Int64((int64)x);
 }
 
-// Len encodes and writes a uint value into the element bitstream.
+// Uint encodes and writes a uint value into the element bitstream.
 [GoRecv] public static void Uint(this ref Encoder w, nuint x) {
     w.Uint64((uint64)x);
 }
@@ -375,7 +358,7 @@ public static Index Flush(this ж<Encoder> Ꮡw) {
     switch (switchᴛ1.type()) {
     default: {
         var v = switchᴛ1;
-        errorf("unhandled %v (%v)"u8, val, val.Kind());
+        panicf("unhandled %v (%v)"u8, val, val.Kind());
         break;
     }
     case bool v: {
@@ -422,6 +405,11 @@ public static Index Flush(this ж<Encoder> Ꮡw) {
 [GoRecv] internal static void bigFloat(this ref Encoder w, ж<big.Float> Ꮡv) {
     var b = Ꮡv.Append(default!, (rune)'p', -1);
     w.String(((@string)b)); // TODO: More efficient encoding.
+}
+
+// Version reports the version of the bitstream.
+[GoRecv] public static ΔVersion Version(this ref Encoder w) {
+    return (~w.p).version;
 }
 
 } // end pkgbits_package

@@ -11,24 +11,6 @@ using strconv = strconv_package;
 
 partial class base32_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
 /*
  * Encodings
  */
@@ -400,7 +382,8 @@ public static @string Error(this CorruptInputError e) {
 
 // Decode decodes src using the encoding enc. It writes at most
 // [Encoding.DecodedLen](len(src)) bytes to dst and returns the number of bytes
-// written. If src contains invalid base32 data, it will return the
+// written. The caller must ensure that dst is large enough to hold all
+// the decoded data. If src contains invalid base32 data, it will return the
 // number of bytes successfully written and [CorruptInputError].
 // Newline characters (\r and \n) are ignored.
 [GoRecv] public static (nint n, error err) Decode(this ref Encoding enc, slice<byte> dst, slice<byte> src) {
@@ -416,6 +399,7 @@ public static @string Error(this CorruptInputError e) {
 // AppendDecode appends the base32 decoded src to dst
 // and returns the extended buffer.
 // If the input is malformed, it returns the partially decoded src and an error.
+// New line characters (\r and \n) are ignored.
 [GoRecv] public static (slice<byte>, error) AppendDecode(this ref Encoding enc, slice<byte> dst, slice<byte> src) {
     // Compute the output size without padding to avoid over allocating.
     nint n = len(src);
@@ -429,6 +413,8 @@ public static @string Error(this CorruptInputError e) {
 }
 
 // DecodeString returns the bytes represented by the base32 string s.
+// If the input is malformed, it returns the partially decoded data and
+// [CorruptInputError]. New line characters (\r and \n) are ignored.
 [GoRecv] public static (slice<byte>, error) DecodeString(this ref Encoding enc, @string s) {
     var buf = slice<byte>(s);
     nint l = stripNewlines(buf, buf);

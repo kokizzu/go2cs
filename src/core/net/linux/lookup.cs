@@ -17,12 +17,6 @@ using vendor.golang.org.x.net.dns;
 
 partial class net_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsingleflight() {
-    builtin.initPackage(typeof(@internal.singleflight_package));
-}
-
 // protocols contains minimal mappings between internet protocol
 // names and numbers for platforms that don't have a complete list of
 // protocol numbers.
@@ -679,6 +673,9 @@ public static (slice<ж<NS>>, error) LookupNS(this ж<Resolver> Ꮡr, context.Co
 
 // LookupTXT returns the DNS TXT records for the given domain name.
 //
+// If a DNS TXT record holds multiple strings, they are concatenated as a
+// single string.
+//
 // LookupTXT uses [context.Background] internally; to specify the context, use
 // [Resolver.LookupTXT].
 public static (slice<@string>, error) LookupTXT(@string name) {
@@ -686,6 +683,9 @@ public static (slice<@string>, error) LookupTXT(@string name) {
 }
 
 // LookupTXT returns the DNS TXT records for the given domain name.
+//
+// If a DNS TXT record holds multiple strings, they are concatenated as a
+// single string.
 public static (slice<@string>, error) LookupTXT(this ж<Resolver> Ꮡr, context.Context ctx, @string name) {
     return Ꮡr.lookupTXT(ctx, name);
 }

@@ -14,17 +14,10 @@ using global::go.sync;
 
 partial class fuzz_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(global::go.sync.atomic_package));
-}
-
 [GoType] partial interface mutatorRand {
     uint32 uint32();
     nint intn(nint _);
     uint32 uint32n(uint32 _);
-    nint exp2();
     bool @bool();
     void save(ж<uint64> randState, ж<uint64> randInc);
     void restore(uint64 randState, uint64 randInc);
@@ -137,11 +130,6 @@ internal static ж<pcgRand> newPcgRand() {
         }
     }
     return (uint32)((prod >> (int)(32)));
-}
-
-// exp2 generates n with probability 1/2^(n+1).
-[GoRecv] internal static nint exp2(this ref pcgRand r) {
-    return bits.TrailingZeros32(r.uint32());
 }
 
 // bool generates a random bool.

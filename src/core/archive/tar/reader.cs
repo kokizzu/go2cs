@@ -14,24 +14,6 @@ using go.path;
 
 partial class tar_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(go.path.filepath_package));
-}
-
 // Reader provides sequential access to the contents of a tar archive.
 // Reader.Next advances to the next file in the archive (including the first),
 // and then Reader can be treated as an io.Reader to access the file's data.
@@ -601,11 +583,16 @@ internal static (sparseDatas, error) readGNUSparseMap1x0(io.Reader r) {
     int64 cntNewline = default!;
     bytes.Buffer buf = default!;
     ref var blk = ref heap(new block(), out var Ꮡblk);
+    nint totalSize = default!;
     // feedTokens copies data in blocks from r into buf until there are
     // at least cnt newlines in buf. It will not read more blocks than needed.
     var blkʗ1 = blk;
     error feedTokens(int64 n) {
         while (cntNewline < n) {
+            totalSize += len(blkʗ1);
+            if (totalSize > maxSpecialFileSize) {
+                return errSparseTooLong;
+            }
             {
                 var (_, errΔ1) = mustReadFull(r, blkʗ1[..]); if (errΔ1 != default!) {
                     return errΔ1;
@@ -639,8 +626,8 @@ internal static (sparseDatas, error) readGNUSparseMap1x0(io.Reader r) {
         return (default!, ErrHeader);
     }
     // Parse for all member entries.
-    // numEntries is trusted after this since a potential attacker must have
-    // committed resources proportional to what this library used.
+    // numEntries is trusted after this since feedTokens limits the number of
+    // tokens based on maxSpecialFileSize.
     {
         var errΔ3 = feedTokens(2 * numEntries); if (errΔ3 != default!) {
             return (default!, errΔ3);

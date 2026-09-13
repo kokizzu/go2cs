@@ -5,6 +5,7 @@ namespace go;
 
 // This file contains the implementation of Go select statements.
 using abi = @internal.abi_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
@@ -27,7 +28,7 @@ internal static uintptr chanrecvpc;
 internal static void initᴛchanrecvpc() { chanrecvpc = abi.FuncPCABIInternal(chanrecv); }
 
 internal static void selectsetpc(ref uintptr pc) {
-    pc = getcallerpc();
+    pc = sys.GetCallerPC();
 }
 
 internal static void sellock(slice<scase> scases, slice<uint16> lockorder) {
@@ -105,6 +106,7 @@ internal static void block() {
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string selectOnSynctestChannelˢ = "select on synctest channel from outside bubble"u8;
 internal static readonly @string selectBrokenSortˢ = "select: broken sort"u8;
 internal static readonly @string gpWaitingNilˢ = "gp.waiting != nil"u8;
 internal static readonly @string selectgoBadWakeupˢ = "selectgo: bad wakeup"u8;
@@ -127,6 +129,7 @@ internal static readonly @string selectgoBadWakeupˢ = "selectgo: bad wakeup"u8;
 internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, ж<uintptr> Ꮡpc0, nint nsends, nint nrecvs, bool block) {
     ref var cas0 = ref Ꮡcas0.DerefOrNull();
 
+    var gp = getg();
     if (debugSelect) {
         print((@string)"select: cas0="u8, Ꮡcas0.OrTypedNil(), (@string)"\n"u8);
     }
@@ -167,12 +170,20 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     // optimizing (and needing to test).
     // generate permuted order
     nint norder = 0;
+    var allSynctest = true;
     foreach (var (i, _) in scases) {
         var casΔ1 = Ꮡ(scases, i);
         // Omit cases without channels from the poll and lock orders.
         if ((~casΔ1).c == nil) {
             casΔ1.Value.elem = default!; // allow GC
             continue;
+        }
+        if ((~(~casΔ1).c).synctest){
+            if ((~getg()).syncGroup == nil) {
+                throw panic(((plainError)(@string)selectOnSynctestChannelˢ));
+            }
+        } else {
+            allSynctest = false;
         }
         if ((~(~casΔ1).c).timer != nil) {
             (~(~casΔ1).c).timer.maybeRunChan();
@@ -184,6 +195,12 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     }
     pollorder = pollorder[..(int)(norder)];
     lockorder = lockorder[..(int)(norder)];
+    var waitReason = waitReasonSelect;
+    if ((~gp).syncGroup != nil && allSynctest) {
+        // Every channel selected on is in a synctest bubble,
+        // so this goroutine will count as idle while selecting.
+        waitReason = waitReasonSynctestSelect;
+    }
     // sort the cases by Hchan address to get the locking order.
     // simple heap sort, to guarantee n log n time and constant stack footprint.
     foreach (var (i, _) in lockorder) {
@@ -229,7 +246,6 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     }
     // lock all the channels involved in the select
     sellock(scases, lockorder);
-    ж<g> gp = default!;
     ж<sudog> sg = default!;
     ж<Δhchan> c = default!;
     ж<scase> k = default!;
@@ -280,7 +296,6 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
         goto retc;
     }
     // pass 2 - enqueue on all chans
-    gp = getg();
     if ((~gp).waiting != nil) {
         @throw(gpWaitingNilˢ);
     }
@@ -319,7 +334,7 @@ internal static (nint, bool) selectgo(ж<scase> Ꮡcas0, ж<uint16> Ꮡorder0, �
     // changes and when we set gp.activeStackChans is not safe for
     // stack shrinking.
     gp.of(g.ᏑparkingOnChan).Store(true);
-    gopark(selparkcommit, nil, waitReasonSelect, traceBlockSelect, 1);
+    gopark(selparkcommit, nil, waitReason, traceBlockSelect, 1);
     gp.Value.activeStackChans = false;
     sellock(scases, lockorder);
     gp.of(g.ᏑselectDone).Store(0);

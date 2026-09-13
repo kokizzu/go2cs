@@ -50,8 +50,8 @@ using static go.encoding.csv_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/csv/reader.go", "reader.cs", "AHSUAYKClIKUpoAADRyCAEKkAZIABR4ADAKCgpSUAAIS4oKUgqyyAAca8oKCgpSClAADEMKCgoKCgpSUgoKUgqaClICCgqSokoKUqJKCpoKCmJKCgoKCgpSCgpSUgpiSgoKSgoKCgoKCgoaCgpSClJSCgoKUpoKAgpKCtoKCgoKCgpSmgoKCgoKUgoKCgKaSgraCgpKCtpKCtsaS+IKClIKCgoKUgriCgpSCguqCuoKCgpSCgoKCqIKCAAgQlA==")]
-[assembly: go.GoPositionMap("encoding/csv/writer.go", "writer.cs", "ACtOkgAFFMKClqKCgILcgoCCpJaAgqSUgoKogIKkloKClLSCxoKUxoKCuICCtoKClJSqoqqigqqigoKCpgACHgAMAoKWgpaCgoKCuIKogg==")]
+[assembly: go.GoPositionMap("encoding/csv/reader.go", "reader.cs", "AEqUAYKClIKUpoAADRyCAEKkAZIABR4ADAKCgpSUAAIS4oKUgqyyAAca8oKCgpSClAADEMKCgoKCgpSUgoKUgqaClICCgqSokoKUqJKCpoKCmJKCgoKCgpSCgpSUgpiSgoKSgoKCgoKCgoaCgpSClJSCgoKUpoKAgpKCtoKCgoKCgpSmgoKCgoKUgoKCgKaSgraCgpKCtpKCtsaS+IKClIKCgoKUgriCgpSCguqCuoKCgpSCgoKCqIKCAAgQlA==", "333-335:1")]
+[assembly: go.GoPositionMap("encoding/csv/writer.go", "writer.cs", "ACVOkgAFFMKClqKCgILcgoCCpJaAgqSUgoKogIKkloKClLSCxoKUxoKCuICCtoKClJSqoqqigqqigoKCpgACHgAMAoKWgpaCgoKCuIKogg==")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;
@@ -71,4 +71,21 @@ public static partial class csv_package
     public partial struct Reader {}
     public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

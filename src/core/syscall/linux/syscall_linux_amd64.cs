@@ -3,8 +3,6 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using @unsafe = unsafe_package;
-
 partial class syscall_package {
 
 internal static UntypedInt _SYS_setgroups => /* SYS_SETGROUPS */ 116;
@@ -20,7 +18,6 @@ internal static UntypedInt _SYS_fchmodat2 => 452;
 //sysnb	Getegid() (egid int)
 //sysnb	Geteuid() (euid int)
 //sysnb	Getgid() (gid int)
-//sysnb	Getrlimit(resource int, rlim *Rlimit) (err error)
 //sysnb	Getuid() (uid int)
 //sysnb	InotifyInit() (fd int, err error)
 //sys	Ioperm(from int, num int, on int) (err error)
@@ -35,7 +32,6 @@ internal static UntypedInt _SYS_fchmodat2 => 452;
 //sys	sendfile(outfd int, infd int, offset *int64, count int) (written int, err error)
 //sys	Setfsgid(gid int) (err error)
 //sys	Setfsuid(uid int) (err error)
-//sysnb	setrlimit(resource int, rlim *Rlimit) (err error) = SYS_SETRLIMIT
 //sys	Shutdown(fd int, how int) (err error)
 //sys	Splice(rfd int, roff *int64, wfd int, woff *int64, len int, flags int) (n int64, err error)
 //sys	Statfs(path string, buf *Statfs_t) (err error)
@@ -100,15 +96,6 @@ public static (Time_t tt, error err) Time(ж<Time_t> Ꮡt) {
 
 //sys	Utime(path string, buf *Utimbuf) (err error)
 //sys	utimes(path string, times *[2]Timeval) (err error)
-
-//go:nosplit
-internal static Errno rawSetrlimit(nint resource, ж<Rlimit> Ꮡrlim) {
-    var ᴋ0 = Ꮡrlim;
-        var (_, _, errno) = RawSyscall(SYS_SETRLIMIT, (uintptr)resource, (uintptr)ᴋ0, 0);
-    System.GC.KeepAlive(ᴋ0);
-    return errno;
-}
-
 internal static Timespec setTimespec(int64 sec, int64 nsec) {
     return new Timespec(Sec: sec, Nsec: nsec);
 }

@@ -4,7 +4,7 @@
 //go:build darwin || dragonfly || freebsd || netbsd || openbsd
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @unsafe = unsafe_package;
 
 partial class syscall_package {
@@ -25,7 +25,7 @@ internal static nint rsaAlignOf(nint salen) {
         // access to routing facilities.
         salign = 8;
     } else 
-    if (Δruntime.GOOS == "freebsd"u8) {
+    if (runtime.GOOS == "freebsd"u8) {
         // In the case of kern.supported_archs="amd64 i386",
         // we need to know the underlying kernel's
         // architecture because the alignment for routing

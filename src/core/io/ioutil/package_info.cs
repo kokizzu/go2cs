@@ -54,7 +54,7 @@ using static go.io.ioutil_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("io/ioutil/ioutil.go", "ioutil.cs", "ADM24gACEuIAAhDSAAIuABQCgoKUgoKClIauwg==")]
+[assembly: go.GoPositionMap("io/ioutil/ioutil.go", "ioutil.cs", "ABU24gACEuIAAhDSAAIuABQCgoKUgoKClIauwg==", "80-82:1")]
 [assembly: go.GoPositionMap("io/ioutil/tempfile.go", "tempfile.cs", "AAkwAA0CAAIcAAsC")]
 // </GoSourcePositionMaps>
 
@@ -71,4 +71,18 @@ public static partial class ioutil_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(go.io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

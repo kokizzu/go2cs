@@ -11,12 +11,6 @@ using global::go.go;
 
 partial class ast_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
 // SortImports sorts runs of consecutive import lines in import blocks in f.
 // It also removes duplicate imports when it is possible to do so without data loss.
 public static void SortImports(ж<token.FileSet> Ꮡfset, ж<File> Ꮡf) {
@@ -53,6 +47,17 @@ public static void SortImports(ж<token.FileSet> Ꮡfset, ж<File> Ꮡf) {
             while (rParenLine > lastLine + 1) {
                 rParenLine--;
                 Ꮡfset.File((~dΔ1).Rparen).MergeLine(rParenLine);
+            }
+        }
+    }
+    // Make File.Imports order consistent.
+    f.Imports = f.Imports[..0];
+    foreach (var (_, decl) in f.Decls) {
+        {
+            var (declΔ1, ok) = decl._<ж<GenDecl>>(ᐧ); if (ok && (~declΔ1).Tok == token.IMPORT) {
+                foreach (var (_, spec) in (~declΔ1).Specs) {
+                    f.Imports = append(f.Imports, spec._<ж<ImportSpec>>());
+                }
             }
         }
     }

@@ -26,24 +26,6 @@ using go.sync;
 
 partial class rand_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
 // A Source represents a source of uniformly-distributed
 // pseudo-random int64 values in the range [0, 1<<63).
 //
@@ -350,6 +332,9 @@ internal static ref atomic.Pointer<Rand> globalRandGenerator => ref ᏑglobalRan
 
 internal static ж<godebug.Setting> randautoseed = godebug.New("randautoseed"u8);
 
+// randseednop controls whether the global Seed is a no-op.
+internal static ж<godebug.Setting> randseednop = godebug.New("randseednop"u8);
+
 // globalRand returns the generator to use for the top-level convenience
 // functions.
 internal static ж<Rand> globalRand() {
@@ -431,7 +416,14 @@ internal static (nint n, error err) read(this ж<runtimeSource> Ꮡfs, slice<byt
 // a random value. Programs that call Seed with a known value to get
 // a specific sequence of results should use New(NewSource(seed)) to
 // obtain a local random generator.
+//
+// As of Go 1.24 [Seed] is a no-op. To restore the previous behavior set
+// GODEBUG=randseednop=0.
 public static void Seed(int64 seed) {
+    if (randseednop.Value() != "0"u8) {
+        return;
+    }
+    randseednop.IncNonDefault();
     var orig = ᏑglobalRandGenerator.Load();
     // If we are already using a lockedSource, we can just re-seed it.
     if (orig != nil) {

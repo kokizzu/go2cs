@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 // This file implements accept for platforms that provide a fast path for
 // setting SetNonblock and CloseOnExec.
-//go:build dragonfly || freebsd || (linux && !arm) || netbsd || openbsd
+//go:build dragonfly || freebsd || linux || netbsd || openbsd
 namespace go.@internal;
 
 using Δsyscall = syscall_package;

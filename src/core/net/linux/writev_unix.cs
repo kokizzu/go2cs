@@ -4,7 +4,7 @@
 //go:build unix
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @internal;
 
@@ -31,7 +31,7 @@ internal static (int64 n, error err) writeBuffers(this ж<netFD> Ꮡfd, ж<Buffe
     error err = default!;
 
     (n, err) = Ꮡfd.of(netFD.Ꮡpfd).Writev(Ꮡv.of(Buffers.Ꮡm_value));
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, wrapSyscallError(writevˢ, err));
 }
 

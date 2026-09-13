@@ -7,7 +7,9 @@ using bytes = bytes_package;
 using context = context_package;
 using crypto = crypto_package;
 using hmac = go.crypto.hmac_package;
-using mlkem768 = go.crypto.@internal.mlkem768_package;
+using hkdf = go.crypto.@internal.fips140.hkdf_package;
+using mlkem = go.crypto.@internal.fips140.mlkem_package;
+using tls13 = go.crypto.@internal.fips140.tls13_package;
 using rsa = go.crypto.rsa_package;
 using subtle = go.crypto.subtle_package;
 using errors = errors_package;
@@ -15,8 +17,9 @@ using hash = hash_package;
 using slices = slices_package;
 using time = time_package;
 using ecdh = go.crypto.ecdh_package;
+using fips140 = go.crypto.@internal.fips140_package;
 using go.crypto;
-using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 using go.sync;
 using io = io_package;
 using Δx509 = go.crypto.x509_package;
@@ -30,23 +33,22 @@ partial class tls_package {
     internal ж<clientHelloMsg> hello;
     internal ж<keySharePrivateKeys> keyShareKeys;
     internal ж<SessionState> session;
-    internal slice<byte> earlySecret;
+    internal ж<tls13.EarlySecret> earlySecret;
     internal slice<byte> binderKey;
     internal ж<certificateRequestMsgTLS13> certReq;
     internal bool usingPSK;
     internal bool sentDummyCCS;
     internal ж<cipherSuiteTLS13> suite;
     internal hash.Hash transcript;
-    internal slice<byte> masterSecret;
+    internal ж<tls13ꓸMasterSecret> masterSecret;
     internal slice<byte> trafficSecret; // client_application_traffic_secret_0
-    internal ж<echContext> echContext;
+    internal ж<echClientContext> echContext;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string tlsInternalErrorTls13ˢ = "tls: internal error: TLS 1.3 reached in FIPS mode"u8;
 internal static readonly @string tlsServerSelectedTls13Inˢ = "tls: server selected TLS 1.3 in a renegotiation"u8;
 internal static readonly @string echAcceptConfirmationˢ = "ech accept confirmation"u8;
-internal static readonly @string tlsUnexpectedEncryptedˢ = "tls: unexpected encrypted_client_hello extension in server hello despite ECH being accepted"u8;
+internal static readonly @string tlsUnexpectedEncryptedˢ = "tls: unexpected encrypted client hello extension in server hello despite ECH being accepted"u8;
 internal static readonly @string tlsUnexpectedServerNameˢ = "tls: unexpected server_name extension in server hello"u8;
 
 // handshake requires hs.c, hs.hello, hs.serverHello, hs.keyShareKeys, and,
@@ -55,9 +57,6 @@ internal static error handshake(this ж<clientHandshakeStateTLS13> Ꮡhs) {
     ref var hs = ref Ꮡhs.DerefOrNull();
 
     var c = hs.c;
-    if (needFIPS()) {
-        return errors.New(tlsInternalErrorTls13ˢ);
-    }
     // The server must not select TLS 1.3 in a renegotiation. See RFC 8446,
     // sections 4.1.2 and 4.1.3.
     if ((~c).handshakes > 0) {
@@ -99,14 +98,13 @@ internal static error handshake(this ж<clientHandshakeStateTLS13> Ꮡhs) {
             }
         }
     }
-    slice<byte> echRetryConfigList = default!;
     if (hs.echContext != nil) {
         var confTranscript = cloneHash((~hs.echContext).innerTranscript, (~hs.suite).hash);
         confTranscript.Write((~hs.serverHello).original[..30]);
         confTranscript.Write(new slice<byte>(8));
         confTranscript.Write((~hs.serverHello).original[38..]);
-        var acceptConfirmation = hs.suite.expandLabel(
-            hs.suite.extract((~(~hs.echContext).innerHello).random, default!),
+        var acceptConfirmation = tls13.ExpandLabel<hash.Hash>(() => (~Ꮡhs.Value.suite).hash.New(),
+            hkdf.Extract<hash.Hash>(() => (~Ꮡhs.Value.suite).hash.New(), (~(~hs.echContext).innerHello).random, default!),
             echAcceptConfirmationˢ,
             confTranscript.Sum(default!),
             8);
@@ -125,9 +123,6 @@ internal static error handshake(this ж<clientHandshakeStateTLS13> Ꮡhs) {
             }
         } else {
             hs.echContext.Value.echRejected = true;
-            // If the server sent us retry configs, we'll return these to
-            // the user so they can update their Config.
-            echRetryConfigList = hs.serverHello.Value.encryptedClientHello;
         }
     }
     {
@@ -183,7 +178,7 @@ internal static error handshake(this ж<clientHandshakeStateTLS13> Ꮡhs) {
     }
     if (hs.echContext != nil && (~hs.echContext).echRejected) {
         c.sendAlert(alertECHRequired);
-        return new ECHRejectionErrorжerror(Ꮡ(new ECHRejectionError(echRetryConfigList)));
+        return new ECHRejectionErrorжerror(Ꮡ(new ECHRejectionError((~hs.echContext).retryConfigs)));
     }
     c.of(Conn.ᏑisHandshakeComplete).Store(true);
     return default!;
@@ -255,7 +250,7 @@ internal static readonly @string tlsServerChangedCipherˢ = "tls: server changed
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string tlsMalformedEncryptedˢ = "tls: malformed encrypted client hello extension"u8;
 internal static readonly @string hrrEchAcceptConfirmationˢ = "hrr ech accept confirmation"u8;
-internal static readonly @string tlsUnexpectedEchˢ = "tls: unexpected ECH extension in serverHello"u8;
+internal static readonly @string tlsUnexpectedEncryptedˢ2 = "tls: unexpected encrypted client hello extension in serverHello"u8;
 internal static readonly @string tlsServerSentAnˢ = "tls: server sent an unnecessary HelloRetryRequest message"u8;
 internal static readonly @string tlsReceivedMalformedKeyˢ = "tls: received malformed key_share extension"u8;
 internal static readonly @string tlsServerSelectedˢ3 = "tls: server selected unsupported group"u8;
@@ -294,8 +289,8 @@ internal static readonly @string tlsServerSentAnˢ2 = "tls: server sent an unnec
             copy(hrrHello, (~hs.serverHello).original);
             hrrHello = bytes.Replace(hrrHello, (~hs.serverHello).encryptedClientHello, new slice<byte>(8), 1);
             confTranscript.Write(hrrHello);
-            var acceptConfirmation = hs.suite.expandLabel(
-                hs.suite.extract((~(~hs.echContext).innerHello).random, default!),
+            var acceptConfirmation = tls13.ExpandLabel<hash.Hash>(() => (~hs.suite).hash.New(),
+                hkdf.Extract<hash.Hash>(() => (~hs.suite).hash.New(), (~(~hs.echContext).innerHello).random, default!),
                 hrrEchAcceptConfirmationˢ,
                 confTranscript.Sum(default!),
                 8);
@@ -315,7 +310,7 @@ internal static readonly @string tlsServerSentAnˢ2 = "tls: server sent an unnec
     if ((~hs.serverHello).encryptedClientHello != default!) {
         // Unsolicited ECH extension should be rejected
         c.sendAlert(alertUnsupportedExtension);
-        return errors.New(tlsUnexpectedEchˢ);
+        return errors.New(tlsUnexpectedEncryptedˢ2);
     }
     // The only HelloRetryRequest extensions we support are key_share and
     // cookie, and clients must abort the handshake if the HRR would not result
@@ -346,12 +341,11 @@ internal static readonly @string tlsServerSentAnˢ2 = "tls: server sent an unnec
                 c.sendAlert(alertIllegalParameter);
                 return errors.New(tlsServerSentAnˢ2);
             }
-            // Note: we don't support selecting X25519Kyber768Draft00 in a HRR,
-            // because we currently only support it at all when CurvePreferences is
-            // empty, which will cause us to also send a key share for it.
+            // Note: we don't support selecting X25519MLKEM768 in a HRR, because it
+            // is currently first in preference order, so if it's enabled we'll
+            // always send a key share for it.
             //
-            // This will have to change once we support selecting hybrid KEMs
-            // without sending key shares for them.
+            // This will have to change once we support multiple hybrid KEMs.
             {
                 var (_, okΔ1) = curveForCurveID(curveID); if (!okΔ1) {
                     c.sendAlert(alertInternalError);
@@ -505,19 +499,19 @@ internal static error processServerHello(this ж<clientHandshakeStateTLS13> Ꮡh
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string tlsInvalidServerˢ = "tls: invalid server X25519MLKEM768 key share"u8;
 internal static readonly @string tlsInvalidServerKeyShareˢ = "tls: invalid server key share"u8;
-internal static readonly @string tlsInvalidKyberServerKeyˢ = "tls: invalid Kyber server key share"u8;
-internal static readonly @string derivedˢ = "derived"u8;
+internal static readonly @string tlsInvalidX25519mlkem768ˢ = "tls: invalid X25519MLKEM768 server key share"u8;
 
 [GoRecv] internal static error establishHandshakeKeys(this ref clientHandshakeStateTLS13 hs) {
     var c = hs.c;
     var ecdhePeerData = hs.serverHello.Value.serverShare.data;
-    if ((~hs.serverHello).serverShare.group == x25519Kyber768Draft00) {
-        if (len(ecdhePeerData) != x25519PublicKeySize + mlkem768.CiphertextSize) {
+    if ((~hs.serverHello).serverShare.group == X25519MLKEM768) {
+        if (len(ecdhePeerData) != (nint)(mlkem.CiphertextSize768 + x25519PublicKeySize)) {
             c.sendAlert(alertIllegalParameter);
-            return errors.New(tlsInvalidServerKeyShareˢ);
+            return errors.New(tlsInvalidServerˢ);
         }
-        ecdhePeerData = (~hs.serverHello).serverShare.data[..(int)(x25519PublicKeySize)];
+        ecdhePeerData = (~hs.serverHello).serverShare.data[(int)(mlkem.CiphertextSize768)..];
     }
     var (peerKey, err) = (~hs.keyShareKeys).ecdhe.Curve().NewPublicKey(ecdhePeerData);
     if (err != default!) {
@@ -529,37 +523,39 @@ internal static readonly @string derivedˢ = "derived"u8;
         c.sendAlert(alertIllegalParameter);
         return errors.New(tlsInvalidServerKeyShareˢ);
     }
-    if ((~hs.serverHello).serverShare.group == x25519Kyber768Draft00) {
-        if ((~hs.keyShareKeys).kyber == nil) {
+    if ((~hs.serverHello).serverShare.group == X25519MLKEM768) {
+        if ((~hs.keyShareKeys).mlkem == nil) {
             return c.sendAlert(alertInternalError);
         }
-        var ciphertext = (~hs.serverHello).serverShare.data[(int)(x25519PublicKeySize)..];
-        var (kyberShared, errΔ1) = kyberDecapsulate((~hs.keyShareKeys).kyber, ciphertext);
+        var ciphertext = (~hs.serverHello).serverShare.data[..(int)(mlkem.CiphertextSize768)];
+        var (mlkemShared, errΔ1) = (~hs.keyShareKeys).mlkem.Decapsulate(ciphertext);
         if (errΔ1 != default!) {
             c.sendAlert(alertIllegalParameter);
-            return errors.New(tlsInvalidKyberServerKeyˢ);
+            return errors.New(tlsInvalidX25519mlkem768ˢ);
         }
-        sharedKey = appendꓸꓸꓸ(sharedKey, kyberShared);
+        sharedKey = appendꓸꓸꓸ(mlkemShared, sharedKey);
     }
     c.Value.curveID = hs.serverHello.Value.serverShare.group;
     var earlySecret = hs.earlySecret;
     if (!hs.usingPSK) {
-        earlySecret = hs.suite.extract(default!, default!);
+        earlySecret = tls13.NewEarlySecret<hash.Hash>(() => (~hs.suite).hash.New(), default!);
     }
-    var handshakeSecret = hs.suite.extract(sharedKey,
-        hs.suite.deriveSecret(earlySecret, derivedˢ, default!));
-    var clientSecret = hs.suite.deriveSecret(handshakeSecret,
-        clientHandshakeTrafficLabel, hs.transcript);
-    c.of(Conn.Ꮡout).setTrafficSecret(hs.suite, QUICEncryptionLevelHandshake, clientSecret);
-    var serverSecret = hs.suite.deriveSecret(handshakeSecret,
-        serverHandshakeTrafficLabel, hs.transcript);
-    c.of(Conn.Ꮡin).setTrafficSecret(hs.suite, QUICEncryptionLevelHandshake, serverSecret);
-    if ((~c).quic != nil) {
-        if (c.of(Conn.Ꮡhand).Len() != 0) {
-            c.sendAlert(alertUnexpectedMessage);
+    var handshakeSecret = earlySecret.HandshakeSecret(sharedKey);
+    var clientSecret = handshakeSecret.ClientHandshakeTrafficSecret(new hash_HashᴠHash(hs.transcript));
+    c.setWriteTrafficSecret(hs.suite, QUICEncryptionLevelHandshake, clientSecret);
+    var serverSecret = handshakeSecret.ServerHandshakeTrafficSecret(new hash_HashᴠHash(hs.transcript));
+    {
+        var errΔ2 = c.setReadTrafficSecret(hs.suite, QUICEncryptionLevelHandshake, serverSecret); if (errΔ2 != default!) {
+            return errΔ2;
         }
+    }
+    if ((~c).quic != nil) {
         c.quicSetWriteSecret(QUICEncryptionLevelHandshake, (~hs.suite).id, clientSecret);
-        c.quicSetReadSecret(QUICEncryptionLevelHandshake, (~hs.suite).id, serverSecret);
+        {
+            var errΔ3 = c.quicSetReadSecret(QUICEncryptionLevelHandshake, (~hs.suite).id, serverSecret); if (errΔ3 != default!) {
+                return errΔ3;
+            }
+        }
     }
     err = (~c).config.writeKeyLog(keyLogLabelClientHandshake, (~hs.hello).random, clientSecret);
     if (err != default!) {
@@ -571,8 +567,7 @@ internal static readonly @string derivedˢ = "derived"u8;
         c.sendAlert(alertInternalError);
         return err;
     }
-    hs.masterSecret = hs.suite.extract(default!,
-        hs.suite.deriveSecret(handshakeSecret, derivedˢ, default!));
+    hs.masterSecret = handshakeSecret.MasterSecret();
     return default!;
 }
 
@@ -582,7 +577,7 @@ internal static readonly @string tlsServerSentAnˢ3 = "tls: server sent an unexp
 internal static readonly @string tlsServerSentAnˢ4 = "tls: server sent an unexpected early_data extension"u8;
 internal static readonly @string tlsServerAccepted0Rttˢ = "tls: server accepted 0-RTT with the wrong cipher suite"u8;
 internal static readonly @string tlsServerAccepted0Rttˢ2 = "tls: server accepted 0-RTT with the wrong ALPN"u8;
-internal static readonly @string tlsServerSentEchRetryˢ = "tls: server sent ECH retry configs after accepting ECH"u8;
+internal static readonly @string tlsServerSentEncryptedˢ = "tls: server sent encrypted client hello retry configs after accepting encrypted client hello"u8;
 
 [GoRecv] internal static error readServerParameters(this ref clientHandshakeStateTLS13 hs) {
     var c = hs.c;
@@ -636,9 +631,14 @@ internal static readonly @string tlsServerSentEchRetryˢ = "tls: server sent ECH
             return errors.New(tlsServerAccepted0Rttˢ2);
         }
     }
-    if (hs.echContext != nil && !(~hs.echContext).echRejected && (~encryptedExtensions).echRetryConfigs != default!) {
-        c.sendAlert(alertUnsupportedExtension);
-        return errors.New(tlsServerSentEchRetryˢ);
+    if (hs.echContext != nil) {
+        if ((~hs.echContext).echRejected){
+            hs.echContext.Value.retryConfigs = encryptedExtensions.Value.echRetryConfigs;
+        } else 
+        if ((~encryptedExtensions).echRetryConfigs != default!) {
+            c.sendAlert(alertUnsupportedExtension);
+            return errors.New(tlsServerSentEncryptedˢ);
+        }
     }
     return default!;
 }
@@ -762,11 +762,13 @@ internal static readonly @string tlsInvalidServerFinishedˢ = "tls: invalid serv
         }
     }
     // Derive secrets that take context through the server Finished.
-    hs.trafficSecret = hs.suite.deriveSecret(hs.masterSecret,
-        clientApplicationTrafficLabel, hs.transcript);
-    var serverSecret = hs.suite.deriveSecret(hs.masterSecret,
-        serverApplicationTrafficLabel, hs.transcript);
-    c.of(Conn.Ꮡin).setTrafficSecret(hs.suite, QUICEncryptionLevelApplication, serverSecret);
+    hs.trafficSecret = hs.masterSecret.ClientApplicationTrafficSecret(new hash_HashᴠHash(hs.transcript));
+    var serverSecret = hs.masterSecret.ServerApplicationTrafficSecret(new hash_HashᴠHash(hs.transcript));
+    {
+        var errΔ2 = c.setReadTrafficSecret(hs.suite, QUICEncryptionLevelApplication, serverSecret); if (errΔ2 != default!) {
+            return errΔ2;
+        }
+    }
     err = (~c).config.writeKeyLog(keyLogLabelClientTraffic, (~hs.hello).random, hs.trafficSecret);
     if (err != default!) {
         c.sendAlert(alertInternalError);
@@ -859,15 +861,11 @@ internal static readonly @string tlsInvalidServerFinishedˢ = "tls: invalid serv
             return err;
         }
     }
-    c.of(Conn.Ꮡout).setTrafficSecret(hs.suite, QUICEncryptionLevelApplication, hs.trafficSecret);
+    c.setWriteTrafficSecret(hs.suite, QUICEncryptionLevelApplication, hs.trafficSecret);
     if (!(~(~c).config).SessionTicketsDisabled && (~(~c).config).ClientSessionCache != default!) {
-        c.Value.resumptionSecret = hs.suite.deriveSecret(hs.masterSecret,
-            resumptionLabel, hs.transcript);
+        c.Value.resumptionSecret = hs.masterSecret.ResumptionMasterSecret(new hash_HashᴠHash(hs.transcript));
     }
     if ((~c).quic != nil) {
-        if (c.of(Conn.Ꮡhand).Len() != 0) {
-            c.sendAlert(alertUnexpectedMessage);
-        }
         c.quicSetWriteSecret(QUICEncryptionLevelApplication, (~hs.suite).id, hs.trafficSecret);
     }
     return default!;
@@ -908,7 +906,7 @@ internal static error handleNewSessionTicket(this ж<Conn> Ꮡc, ж<newSessionTi
     if (cipherSuite == nil || c.resumptionSecret == default!) {
         return Ꮡc.sendAlert(alertInternalError);
     }
-    var psk = cipherSuite.expandLabel(c.resumptionSecret, resumptionˢ,
+    var psk = tls13.ExpandLabel<hash.Hash>(() => (~cipherSuite).hash.New(), c.resumptionSecret, resumptionˢ,
         msg.nonce, (~cipherSuite).hash.Size());
     var session = c.sessionState();
     session.Value.secret = psk;

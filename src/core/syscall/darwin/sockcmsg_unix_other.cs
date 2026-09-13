@@ -4,7 +4,7 @@
 //go:build aix || darwin || freebsd || linux || netbsd || openbsd || solaris
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 
 partial class syscall_package {
 
@@ -13,7 +13,7 @@ internal static nint cmsgAlignOf(nint salen) {
     nint salign = sizeofPtr;
     // dragonfly needs to check ABI version at runtime, see cmsgAlignOf in
     // sockcmsg_dragonfly.go
-    var exprᴛ1 = Δruntime.GOOS;
+    var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "aix"u8) {
         salign = 1;
     }
@@ -27,11 +27,11 @@ internal static nint cmsgAlignOf(nint salen) {
         }
     }
     else if (exprᴛ1 == "netbsd"u8 || exprᴛ1 == "openbsd"u8) {
-        if (Δruntime.GOARCH == "arm"u8) {
+        if (runtime.GOARCH == "arm"u8) {
             // NetBSD and OpenBSD armv7 require 64-bit alignment.
             salign = 8;
         }
-        if (Δruntime.GOOS == "netbsd"u8 && Δruntime.GOARCH == "arm64"u8) {
+        if (runtime.GOOS == "netbsd"u8 && runtime.GOARCH == "arm64"u8) {
             // NetBSD aarch64 requires 128-bit alignment.
             salign = 16;
         }

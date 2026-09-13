@@ -33,7 +33,7 @@ public static (slice<byte>, error) GobEncode(this ж<ΔRat> Ꮡx) {
         // this should never happen
         return (default!, errors.New(ratGobEncodeNumeratorTooˢ));
     }
-    byteorder.BePutUint32(buf[(int)(j - 4)..(int)(j)], (uint32)n);
+    byteorder.BEPutUint32(buf[(int)(j - 4)..(int)(j)], (uint32)n);
     j -= 1 + 4;
     var b = (byte)((ratGobVersion << (int)(1))); // make space for sign bit
     if (x.a.neg) {
@@ -62,8 +62,8 @@ internal static readonly @string ratGobDecodeInvalidˢ = "Rat.GobDecode: invalid
         return fmt.Errorf("Rat.GobDecode: encoding version %d not supported"u8, (b >> (int)(1)));
     }
     UntypedInt j = /* 1 + 4 */ 5;
-    var ln = byteorder.BeUint32(buf[(int)(j - 4)..(int)(j)]);
-    if ((uint64)ln > math.MaxInt - j) {
+    var ln = byteorder.BEUint32(buf[(int)(j - 4)..(int)(j)]);
+    if ((uint64)ln > (uint64)(math.MaxInt - j)) {
         return errors.New(ratGobDecodeInvalidˢ);
     }
     nint i = (nint)j + (nint)ln;
@@ -76,14 +76,19 @@ internal static readonly @string ratGobDecodeInvalidˢ = "Rat.GobDecode: invalid
     return default!;
 }
 
-// MarshalText implements the [encoding.TextMarshaler] interface.
-public static (slice<byte> text, error err) MarshalText(this ж<ΔRat> Ꮡx) {
+// AppendText implements the [encoding.TextAppender] interface.
+public static (slice<byte>, error) AppendText(this ж<ΔRat> Ꮡx, slice<byte> b) {
     ref var x = ref Ꮡx.DerefOrNull();
 
     if (x.IsInt()) {
-        return Ꮡx.of(big_package.ΔRat.Ꮡa).MarshalText();
+        return Ꮡx.of(big_package.ΔRat.Ꮡa).AppendText(b);
     }
-    return (Ꮡx.marshal(), default!);
+    return (Ꮡx.marshal(b), default!);
+}
+
+// MarshalText implements the [encoding.TextMarshaler] interface.
+public static (slice<byte> text, error err) MarshalText(this ж<ΔRat> Ꮡx) {
+    return Ꮡx.AppendText(default!);
 }
 
 // UnmarshalText implements the [encoding.TextUnmarshaler] interface.

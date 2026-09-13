@@ -50,8 +50,9 @@ using static go.crypto.subtle_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/subtle/constant_time.go", "constant_time.cs", "AAoawoKWhIKWqqCmkqiSrLKCloKCgryigoI=")]
-[assembly: go.GoPositionMap("crypto/subtle/xor.go", "xor.cs", "AAcWwoKClIKUgg==")]
+[assembly: go.GoPositionMap("crypto/subtle/constant_time.go", "constant_time.cs", "AA0ewqqiqJKokqyyqqI=")]
+[assembly: go.GoPositionMap("crypto/subtle/dit.go", "dit.cs", "AAs8ABQCgoKWgoSogoKo", "43-47:1")]
+[assembly: go.GoPositionMap("crypto/subtle/xor.go", "xor.cs", "AAoiAAgC")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -67,4 +68,16 @@ public static partial class subtle_package
 
     // <TypeAccessibility>
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸsubtle() => builtin.initPackage(typeof(go.crypto.@internal.fips140.subtle_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸruntimeꓸsys() => builtin.initPackage(typeof(go.@internal.runtime.sys_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    // </ImportInitializers>
 }

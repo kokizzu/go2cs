@@ -66,7 +66,7 @@ using static go.go.@internal.srcimporter_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/internal/srcimporter/srcimporter.go", "srcimporter.cs", "AG1OAAgCAA0akgACEgAKAoKWgJKkgoKogqiCgoKUypSWgtqCqIKChIKCmJLIgtyCppSCgoKUqIK4goKUlJSWgta0goKAtoKEgoKC0oKCgoKUgtaWgoKoAAkG0oKClISCgpSCgpSktoKCgoKCgoKUlIKCgoSCgoCCptq2poKAgqSmooCCpKg=")]
+[assembly: global::go.GoPositionMap("go/internal/srcimporter/srcimporter.go", "srcimporter.cs", "ACVOAAgCAA0akgACEgAKAoKWgJKkgoKogqiCgoKUypSWgtqCqIKChIKCmJLIgtyCppSCgoKUqIK4goKUlJSWgta0goKAtoKEgoKC0oKCgoKUgtaWgoKoAAkG0oKClISCgpSCgpSktoKCgoKCgoKUlIKCgoSCgoCCptq2poKAgqSmooCCpKg=", "98-106:1;122-126:2;169-169:1;178-187:2")]
 // </GoSourcePositionMaps>
 
 namespace go.go.@internal;
@@ -83,4 +83,25 @@ public static partial class srcimporter_package
     // <TypeAccessibility>
     public partial struct Importer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸast() => builtin.initPackage(typeof(global::go.go.ast_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸbuild() => builtin.initPackage(typeof(global::go.go.build_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸparser() => builtin.initPackage(typeof(global::go.go.parser_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtypes() => builtin.initPackage(typeof(global::go.go.types_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸosꓸexec() => builtin.initPackage(typeof(global::go.os.exec_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

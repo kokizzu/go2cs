@@ -15,18 +15,6 @@ using time = time_package;
 
 partial class httputil_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() {
-    builtin.initPackage(typeof(go.net.textproto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 public static ж<http.ProtocolError> ErrPersistEOF = Ꮡ(new http.ProtocolError(ErrorString: "persistent connection closed"u8));
 public static ж<http.ProtocolError> ErrClosed = Ꮡ(new http.ProtocolError(ErrorString: "connection closed by user"u8));
 public static ж<http.ProtocolError> ErrPipeline = Ꮡ(new http.ProtocolError(ErrorString: "pipeline error"u8));
@@ -289,7 +277,7 @@ public static ж<ClientConn> NewClientConn(net.Conn c, ж<bufio.Reader> Ꮡr) {
         c: c,
         r: Ꮡr,
         pipereq: new map<ж<http.Request>, nuint>(),
-        writeReq: (Func<ж<http.Request>, io.Writer, error>)(http.Write)
+        writeReq: ((Func<ж<http.Request>, io.Writer, error>)(http.Write))
     ));
 }
 
@@ -300,7 +288,7 @@ public static ж<ClientConn> NewClientConn(net.Conn c, ж<bufio.Reader> Ꮡr) {
 // Deprecated: Use the Client or Transport in package [net/http] instead.
 public static ж<ClientConn> NewProxyClientConn(net.Conn c, ж<bufio.Reader> Ꮡr) {
     var cc = NewClientConn(c, Ꮡr);
-    cc.Value.writeReq = (Func<ж<http.Request>, io.Writer, error>)(http.WriteProxy);
+    cc.Value.writeReq = ((Func<ж<http.Request>, io.Writer, error>)(http.WriteProxy));
     return cc;
 }
 

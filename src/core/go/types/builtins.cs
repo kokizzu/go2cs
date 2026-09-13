@@ -9,8 +9,8 @@ namespace go.go;
 using ast = global::go.go.ast_package;
 using constant = global::go.go.constant_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
-using errors = global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 using ꓸꓸꓸType = Span<types_package.ΔType>;
 
@@ -223,11 +223,11 @@ internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx
                 if (!isTypeParam(x.typ)) {
                     break;
                 }
-                if (t.typeSet().underIs((ΔType tΔ1) => {
-                    var switchᴛ2 = arrayPtrDeref(tΔ1);
+                if (underIs(x.typ, (ΔType u) => {
+                    var switchᴛ2 = arrayPtrDeref(u);
                     switch (switchᴛ2.type()) {
-                    case ж<Basic> tΔ2: {
-                        if (isString(new BasicжΔType(tΔ2)) && id == _Len) {
+                    case ж<Basic> tΔ1: {
+                        if (isString(new BasicжΔType(tΔ1)) && id == _Len) {
                             return true;
                         }
                         break;
@@ -235,10 +235,10 @@ internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx
                     case ж<Array> _:
                     case ж<Slice> _:
                     case ж<Chan> _: {
-                        var tΔ2 = switchᴛ2;
+                        var tΔ1 = switchᴛ2;
                         return true;
                     }
-                    case ж<Map> tΔ2: {
+                    case ж<Map> tΔ1: {
                         if (id == _Len) {
                             return true;
                         }
@@ -680,7 +680,7 @@ internal static bool /*_*/ Δbuiltin(this ж<Checker> Ꮡcheck, ж<operand> Ꮡx
             if (nargs > 0) {
                 @params = new slice<ΔType>(nargs);
                 foreach (var (i, a) in args) {
-                    Ꮡcheck.assignment(a, default!, "argument to built-in"u8 + predeclaredFuncs[id].name);
+                    Ꮡcheck.assignment(a, default!, "argument to built-in "u8 + predeclaredFuncs[id].name);
                     if ((~a).mode == invalid) {
                         return default!;
                     }
@@ -1014,7 +1014,7 @@ internal static ΔType applyTypeFunc(this ж<Checker> Ꮡcheck, Func<ΔType, ΔT
             // Test if t satisfies the requirements for the argument
             // type and collect possible result types at the same time.
             ref var terms = ref heap<slice<ж<ΔTerm>>>(out var Ꮡterms);
-            if (!tp.@is((ж<term> t) => {
+            if (!tp.@is((ж<Δterm> t) => {
                 if (t == nil) {
                     return false;
                 }

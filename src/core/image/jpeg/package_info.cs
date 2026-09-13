@@ -57,11 +57,11 @@ using static go.image.jpeg_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("image/jpeg/fdct.go", "fdct.cs", "AFqsAdSCgoKCgoKCgoKChIKCgoSCgoKEgoKChIKCgoKChIKCgoKCgoKCgoKCgoKEgoKCgoK4goKCgoSCgoKEgoKChIKEgoKChIKCgoKCgoKCgoKCgoKEgoKCgoI=")]
-[assembly: go.GoPositionMap("image/jpeg/huffman.go", "huffman.cs", "ADFgsoKCgoKUlIKCgpSUgqaqooKAgraCgoKCgpQACQqigoKUgIKkgoKUlIKUuoKCgoKUgpSClIKClICCuIKSgoLcgoKClIKqooKCgoKUgoKCgpSm6sKCloKAgoLKgpS2gIKCgoKmgoKCgIK2gpSCgoKUtKaCgoCCtoKCgqaCgoCCtoKCgoI=")]
+[assembly: go.GoPositionMap("image/jpeg/huffman.go", "huffman.cs", "ACtgsoKCgoKUlIKCgpSUgqaqooKAgraCgoKCgpQACQqigoKUgIKkgoKUlIKUuoKCgoKUgpSClIKClICCuIKSgoLcgoKClIKqooKCgoKUgoKCgpSm6sKCloKAgoLKgpS2gIKCgoKmgoKCgIK2gpSCgoKUtKaCgoCCtoKCgqaCgoCCtoKCgoI=")]
 [assembly: go.GoPositionMap("image/jpeg/idct.go", "idct.cs", "ADiQAQANBIKClISCgoKCgoKCgoKogoKCgoKCgpaCgoKCgpaCgoKCgoKCgpaCgoKCgpaCgoKCgoKCqLiWgoKCgoKCgpaCgoKCgpaCgoKCgoKCgpaCgoKCgpaCgoKCgoKC")]
-[assembly: go.GoPositionMap("image/jpeg/reader.go", "reader.cs", "ACYogMqAAHP+AaKCuIKCgqaCgoKUgpQAAhDSgoKCgoK80oKAgraCgoIABhDUgoKCgoKUgpSCgpaEgoKUgoKWgoKUgoKUqrSCgpSWgoKCgoKUgIK2qKSCgpSWgoKClIKCgpSAgrYACwiSgpSUpKSk1ICCtoKUgoKCloKmgoKogoKWgpKClIKUAAEaAAMUmgAWAsaSxpIABxyUAAkCxoLGgvqClOiSgoKCgoKUgoKUlKSClIKAgqSCxoKUgoCCpIL4gpTYkoKUgIKkgqaCgpSAgqSEhIKUpoKClICCpISCgpaClAAICJKWgIKkgqiCgoKUABQqgoKCpoKUlKaCgqaSlO66gIKkgoKWlIKCgoK2gpS2gpS2gpSkgpS2pKSCtJS2gqiCgIK2gpSCgqSUlAAKFPKC3sqCgoKCgqYAChiChAAFEoKCgoKClIKCgpS4poKClKaUpoKCgoKCgoKCgoKCgqaokoLaooKAgqSU7IKClOzspoI=")]
+[assembly: go.GoPositionMap("image/jpeg/reader.go", "reader.cs", "ABQogMqAAHP+AaKCuIKCgqaCgoKUgpQAAhDSgoKCgoK80oKAgraCgoIABhDUgoKCgoKUgpSCgpaEgoKUgoKWgoKUgoKUqrSCgpSWgoKCgoKUgIK2qKSCgpSWgoKClIKCgpSAgrYACwiSgpSUpKSk1ICCtoKUgoKCloKmgoKogoKWgpKClIKUAAEaAAMUmgAWAsaSxpIABxyUAAkCxoLGgvqClOiSgoKCgoKUgoKUlKSClIKAgqSCxoKUgoCCpIL4gpTYkoKUgIKkgqaCgpSAgqSEhIKUpoKClICCpISCgpaClAAICJKWgIKkgqiCgoKUABQqgoKCpoKUlKaCgqaSlO66gIKkgoKWlIKCgoK2gpS2gpS2gpSkgpS2pKSCtJS2gqiCgIK2gpSCgqSUlAAKFPKC3sqCgoKCgqYAChiChAAFEoKCgoKClIKCgpS4poKClKaUpoKCgoKCgoKCgoKCgqaokoLaooKAgqSU7IKClOzspoI=")]
 [assembly: go.GoPositionMap("image/jpeg/scan.go", "scan.cs", "AAkYkoKCgpaCgoKCgpS0tLS0tLS0goSCkoIAFgqSgpSClICCpIKClIqCgoKCgoKmgpTcgoKmloKAgqSCgILaggASKIKCgoKCgoKUgpSCupKCgoKUgoKCgrqCkgAEEoKCgoKCggAZNIKClIKCgoKCuoKUloKAgraCgpSCgpSClIKClIKWgqaCgoKClIKCgoKClIKClJSCgoKCgpSUgpTMlAAHEJSAgsiCuICCpICCxoKCppSUuurUgoKUgoKUgpSogoKCgoKCgpSChJSCgoKCgpSUxoKCgpSCxqaCgpSClILYgoKAgraqwoKCgoKUgpSCgpSClIKUpqamgoKCgpSCgoKCgoCC2trCgoKUgpKClJS0tLS0yIKCgoKCgqSUlKYABRgACQLKhIKCpAAJEriCloCC")]
-[assembly: go.GoPositionMap("image/jpeg/writer.go", "writer.cs", "ABogkoKUAI4BsgKigoKCpoKSgoKCgoKU/oKiABkygoKUpoKClKaCgpSqooKCgoKCgoKUgpSokoKqooKClIKClJSCgrqSgoKCgqiSgoKCgrqSgoKCgoKCgoKClIKUgpSCpqiSgoKUlKKUgqKCgr7SlIKUkoKCgpSCgpSCpoKUqqKCgoKCgoKCgoLMsoKCgoKCgoLMsoKCgoKCgpSCgoKClIKCgoLMsoKCgoKCgpSCgoKUgoKCgs6igoKCgoKCAB5AkpS0tAAFEIKWkoKCguiCgoKCgoKCgoKklJSUgoKC2gAOHMKCgpSCgIKUtoKCgoKkqJKClKaCgoKCgqSUuIKW1oKClJSUlJSCgoKC")]
+[assembly: go.GoPositionMap("image/jpeg/writer.go", "writer.cs", "AA4gkoKUAJYBwgKigoKCpoKSgoKCgoKU/oKiABkygoKUpoKClKaCgpSqooKCgoKCgoKUgpSokoKqooKClIKClJSCgrqSgoKCgqiSgoKCgrqSgoKCgoKCgoKClIKUgpSCpqiSgoKUlKKUgqKCgr7SlIKUkoKCgpSCgpSCpoKUqqKCgoKCgoKCgoLMsoKCgoKCgoLMsoKCgoKCgpSCgoKClIKCgoLMsoKCgoKCgpSCgoKUgoKCgs6igoKCgoKCAB5AkpS0tAAFEIKWkoKCguiCgoKCgoKCgoKklJSUgoKC2gAOHMKCgpSCgIKUtoKCgoKkqJKClKaCgoKCgqSUuIKW1oKClJSUlJSCgoKC")]
 // </GoSourcePositionMaps>
 
 namespace go.image;
@@ -95,4 +95,19 @@ public static partial class jpeg_package
     public partial struct Options {}
     public partial struct UnsupportedError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸimage() => builtin.initPackage(typeof(image_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() => builtin.initPackage(typeof(go.image.color_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸinternalꓸimageutil() => builtin.initPackage(typeof(go.image.@internal.imageutil_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

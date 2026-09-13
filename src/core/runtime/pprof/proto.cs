@@ -6,35 +6,17 @@ namespace go.runtime;
 using bytes = bytes_package;
 using gzip = compress.gzip_package;
 using fmt = fmt_package;
-using abi = go.@internal.abi_package;
+using abi = @internal.abi_package;
 using io = io_package;
 using runtime = runtime_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using time = time_package;
 using @unsafe = unsafe_package;
+using @internal;
 using compress;
-using go.@internal;
 
 partial class pprof_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcompressꓸgzip() {
-    builtin.initPackage(typeof(compress.gzip_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
 
 // lostProfileEvent is the function to which lost profiling
 // events are attributed.
@@ -360,8 +342,8 @@ internal static void build(this ж<profileBuilder> Ꮡb) {
         if ((~e).tag != nil) {
             var eʗ1 = e;
             labels = () => {
-                foreach (var (k, v) in ~(ж<labelMap>)(uintptr)((~eʗ1).tag)) {
-                    Ꮡb.Value.pbLabel(tagSample_Label, k, v, 0);
+                foreach (var (_, lbl) in ((ж<labelMap>)(uintptr)((~eʗ1).tag)).Value.list) {
+                    Ꮡb.Value.pbLabel(tagSample_Label, lbl.key, lbl.value, 0);
                 }
             };
         }
@@ -393,6 +375,7 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
 
     b.deck.reset();
     // The last frame might be truncated. Recover lost inline frames.
+    var origStk = stk;
     stk = runtime_expandFinalInlineFrame(stk);
     while (len(stk) > 0) {
         var addr = stk[0];
@@ -430,6 +413,9 @@ internal static slice<uint64> /*newLocs*/ appendLocsForStack(this ж<profileBuil
                 // Even if stk was truncated due to the stack depth
                 // limit, expandFinalInlineFrame above has already
                 // fixed the truncation, ensuring it is long enough.
+                if (len(l.pcs) > len(stk)) {
+                    throw panic(fmt.Sprintf("stack too short to match cached location; stk = %#x, l.pcs = %#x, original stk = %#x"u8, stk, l.pcs, origStk));
+                }
                 stk = stk[(int)(len(l.pcs))..];
                 continue;
             }

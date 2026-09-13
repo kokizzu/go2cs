@@ -137,7 +137,7 @@ internal static (float32 f, bool exact) quotToFloat32(nat a, nat b) {
         throw panic(fmt.Sprintf("expected exactly %d bits of result"u8, (nint)(Msize2)));
     }
     // 4. Rounding.
-    if (Emin - Msize <= exp && exp <= Emin) {
+    if ((nint)(Emin - Msize) <= exp && exp <= Emin) {
         // Denormal case; lose 'shift' bits of precision.
         nuint shift = (nuint)((nint)Emin - (exp - 1)); // [1..Esize1)
         var lostbits = (uint32)(mantissa & (((uint32)1).Lsh(shift) - 1));
@@ -151,7 +151,7 @@ internal static (float32 f, bool exact) quotToFloat32(nat a, nat b) {
         exact = false;
         if (haveRem || (uint32)(mantissa & 2) != 0) {
             {
-                mantissa++; if (mantissa >= ((uint32)1 << (int)(Msize2))) {
+                mantissa++; if (mantissa >= (uint32)(((uint32)1 << (int)(Msize2)))) {
                     // Complete rollover 11...1 => 100...0, so shift is safe
                     mantissa >>= (int)(1);
                     exp++;
@@ -231,7 +231,7 @@ internal static (float64 f, bool exact) quotToFloat64(nat a, nat b) {
         throw panic(fmt.Sprintf("expected exactly %d bits of result"u8, (nint)(Msize2)));
     }
     // 4. Rounding.
-    if (Emin - Msize <= exp && exp <= Emin) {
+    if ((nint)(Emin - Msize) <= exp && exp <= Emin) {
         // Denormal case; lose 'shift' bits of precision.
         nuint shift = (nuint)((nint)Emin - (exp - 1)); // [1..Esize1)
         var lostbits = (uint64)(mantissa & (((uint64)1).Lsh(shift) - 1));
@@ -245,7 +245,7 @@ internal static (float64 f, bool exact) quotToFloat64(nat a, nat b) {
         exact = false;
         if (haveRem || (uint64)(mantissa & 2) != 0) {
             {
-                mantissa++; if (mantissa >= ((uint64)1 << (int)(Msize2))) {
+                mantissa++; if (mantissa >= (uint64)(((uint64)1 << (int)(Msize2)))) {
                     // Complete rollover 11...1 => 100...0, so shift is safe
                     mantissa >>= (int)(1);
                     exp++;

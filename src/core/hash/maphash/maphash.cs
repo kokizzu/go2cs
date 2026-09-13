@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package maphash provides hash functions on byte sequences.
+// Package maphash provides hash functions on byte sequences and comparable values.
 // These hash functions are intended to be used to implement hash tables or
 // other data structures that need to map arbitrary strings or byte
 // sequences to a uniform distribution on unsigned 64-bit integers.
@@ -11,6 +11,10 @@
 // The hash functions are not cryptographically secure.
 // (See crypto/sha256 and crypto/sha512 for cryptographic use.)
 namespace go.hash;
+
+using byteorder = @internal.byteorder_package;
+using math = math_package;
+using @internal;
 
 partial class maphash_package {
 
@@ -97,8 +101,8 @@ public static uint64 String(ΔSeed seed, @string s) {
 // each can declare its own Hash and call SetSeed with a common Seed.
 [GoType] partial struct Hash {
     internal array<Action> _ = new(0); // not comparable
-    internal ΔSeed seed;        // initial seed used for this hash
-    internal ΔSeed state;        // current hash of all flushed bytes
+    internal ΔSeed seed;          // initial seed used for this hash
+    internal ΔSeed state;          // current hash of all flushed bytes
     internal array<byte> buf = new(bufSize); // unflushed byte buffer
     internal nint n;          // number of unflushed bytes
 }
@@ -279,6 +283,66 @@ public static ΔSeed MakeSeed() {
 // BlockSize returns h's block size.
 [GoRecv] public static nint BlockSize(this ref Hash h) {
     return len(h.buf);
+}
+
+// Comparable returns the hash of comparable value v with the given seed
+// such that Comparable(s, v1) == Comparable(s, v2) if v1 == v2.
+// If v != v, then the resulting hash is randomly distributed.
+public static uint64 Comparable<T>(ΔSeed seed, T v) {
+    escapeForHash(v);
+    return comparableHash(v, seed);
+}
+
+// escapeForHash forces v to be on the heap, if v contains a
+// non-string pointer. We cannot hash pointers to local variables,
+// as the address of the local variable might change on stack growth.
+// Strings are okay as the hash depends on only the content, not
+// the pointer.
+//
+// This is essentially
+//
+//	if hasNonStringPointers(T) { abi.Escape(v) }
+//
+// Implemented as a compiler intrinsic.
+internal static void escapeForHash<T>(T v) {
+    throw panic("intrinsic");
+}
+
+// WriteComparable adds x to the data hashed by h.
+public static void WriteComparable<T>(ж<Hash> Ꮡh, T x) {
+    ref var h = ref Ꮡh.DerefOrNull();
+
+    escapeForHash(x);
+    // writeComparable (not in purego mode) directly operates on h.state
+    // without using h.buf. Mix in the buffer length so it won't
+    // commute with a buffered write, which either changes h.n or changes
+    // h.state.
+    if (h.n != 0) {
+        writeComparable(Ꮡh, h.n);
+    }
+    writeComparable(Ꮡh, x);
+}
+
+[GoRecv] internal static void float64(this ref Hash h, float64 f) {
+    if (f == 0D) {
+        h.WriteByte(0);
+        return;
+    }
+    array<byte> buf = new(8);
+    if (f != f) {
+        byteorder.LEPutUint64(buf[..], randUint64());
+        h.Write(buf[..]);
+        return;
+    }
+    byteorder.LEPutUint64(buf[..], math.Float64bits(f));
+    h.Write(buf[..]);
+}
+
+internal static byte btoi(bool b) {
+    if (b) {
+        return 1;
+    }
+    return 0;
 }
 
 } // end maphash_package

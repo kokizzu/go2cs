@@ -53,7 +53,7 @@ using static go.encoding.base32_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/base32/base32.go", "base32.cs", "ADN68oKWgoKChLiUtLSUAAkiAAkClLS0ggACGgAKAoLKhJKCpoKEgoKCgoKCgoSCqIKCqIKkgoKCpIKCpIKCgqSCgriCgoLOooKCgqiSgoIACxiygqiCgoKClIKCgpSCgIKkqIKCgoKUgoCCpIKogoKCqrSCgoKClAACENKqooKUAAQSsq4ACASEgoSEkoSEgpSmgpSCgpSUlIKUptyClJSCgpS6pIKCpIKCpIKCpIKCpIKklAACEAAIAoKCgqzEgoKUhIKCqJKCgoIADRyygoKCpoLKgpSmxIKCgoKUloKogoKUgpiSgoKClIKWgoKClIKYkoKUlISCgoKClJSCgpaClsqWAAYSooKCgpSClKaCgoKCgoKmlKiSqqKmgoKU")]
+[assembly: go.GoPositionMap("encoding/base32/base32.go", "base32.cs", "ACF68oKWgoKChLiUtLSUAAkiAAkClLS0ggACGgAKAoLKhJKCpoKEgoKCgoKCgoSCqIKCqIKkgoKCpIKCpIKCgqSCgriCgoLOooKCgqiSgoIACxiygqiCgoKClIKCgpSCgIKkqIKCgoKUgoCCpIKogoKCqrSCgoKClAACENKqooKUAAQSsq4ACASEgoSEkoSEgpSmgpSCgpSUlIKUptyClJSCgpS6pIKCpIKCpIKCpIKCpIKklAACEgAJAoKCgq7UgoKUhIKCrLKCgoIADRyygoKCpoLKgpSmxIKCgoKUloKogoKUgpiSgoKClIKWgoKClIKYkoKUlISCgoKClJSCgpaClsqWAAYSooKCgpSClKaCgoKCgoKmlKiSqqKmgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;
@@ -74,4 +74,16 @@ public static partial class base32_package
     public partial struct CorruptInputError {}
     [GoValueClone("encode", "decodeMap")] public partial struct Encoding {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    // </ImportInitializers>
 }

@@ -7,32 +7,24 @@ using Δsync = sync_package;
 
 partial class html_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 // All entities that do not end with ';' are 6 or fewer bytes long.
 internal static UntypedInt longestEntityWithoutSemicolon => 6;
 
+// TODO(nigeltao): Handle replacements that are wider than their names.
+// "nLt;":                     {'\u226A', '\u20D2'},
+// "nGt;":                     {'\u226B', '\u20D2'},
+// entityMaps returns entity and entity2.
+//
 // entity is a map from HTML entity names to their values. The semicolon matters:
 // https://html.spec.whatwg.org/multipage/named-characters.html
 // lists both "amp" and "amp;" as two separate entries.
-//
 // Note that the HTML5 list is larger than the HTML4 list at
 // http://www.w3.org/TR/html4/sgml/entities.html
-internal static map<@string, rune> entity;
-
-// HTML entities that are two unicode codepoints.
-internal static map<@string, array<rune>> entity2;
-
-// populateMapsOnce guards calling populateMaps.
-internal static ж<Δsync.Once> ᏑpopulateMapsOnce = new StandardBox<Δsync.Once>(default(Δsync.Once));
-internal static ref Δsync.Once populateMapsOnce => ref ᏑpopulateMapsOnce.Value;
-
-// populateMaps populates entity and entity2.
-internal static void populateMaps() {
+//
+// entity2 is a map of HTML entities to two unicode codepoints.
+internal static Func<(map<@string, rune>, map<@string, array<rune>>)> entityMaps = Δsync.OnceValues((map<@string, rune> entity, map<@string, array<rune>> entity2) () => {
+    map<@string, rune> entity = default!;
+    map<@string, array<rune>> entity2 = default!;
     entity = new map<@string, rune>{
         ["AElig;"u8] = (rune)'\U000000C6',
         ["AMP;"u8] = (rune)'\U00000026',
@@ -2173,10 +2165,7 @@ internal static void populateMaps() {
         ["yen"u8] = (rune)'\U000000A5',
         ["yuml"u8] = (rune)'\U000000FF'
     };
-    entity2 = new map<@string, array<rune>>{ // TODO(nigeltao): Handle replacements that are wider than their names.
- // "nLt;":                     {'\u226A', '\u20D2'},
- // "nGt;":                     {'\u226B', '\u20D2'},
-
+    entity2 = new map<@string, array<rune>>{
         ["NotEqualTilde;"u8] = new rune[]{(rune)'\u2242', (rune)'\u0338'}.array(),
         ["NotGreaterFullEqual;"u8] = new rune[]{(rune)'\u2267', (rune)'\u0338'}.array(),
         ["NotGreaterGreater;"u8] = new rune[]{(rune)'\u226B', (rune)'\u0338'}.array(),
@@ -2269,6 +2258,7 @@ internal static void populateMaps() {
         ["vsupnE;"u8] = new rune[]{(rune)'\u2ACC', (rune)'\uFE00'}.array(),
         ["vsupne;"u8] = new rune[]{(rune)'\u228B', (rune)'\uFE00'}.array()
     };
-}
+    return (entity, entity2);
+});
 
 } // end html_package

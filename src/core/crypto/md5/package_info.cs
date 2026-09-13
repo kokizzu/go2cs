@@ -55,8 +55,8 @@ using static go.crypto.md5_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/md5/md5.go", "md5.cs", "ACUoggAVMIKCgoKCggAFEIKCgoKCgoKCgoLmgoKUgpSCgoKCgoKCgqaCpoKssoKCpoCkgKT4goKCgoKCgpSUlJSCgoKUlJSClKaUkoKm/IKCgqiCloKCgoKCqJKCgoI=")]
-[assembly: go.GoPositionMap("crypto/md5/md5block.go", "md5block.cs", "ABMclISUgpaWgoKCgoKCgoKCgoKCgoKCloKCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKCgoKCgoKWgoKCgoKCgoKCgoKCgoKCloKCgoKCgoKCgoKCgoKCgpaCgoKo")]
+[assembly: go.GoPositionMap("crypto/md5/md5.go", "md5.cs", "ABUqggAVMIKCgoKCggAFEIKmgoKCgoKCgoKC5oKClIKUgoKCgoKCgoKmgqaCrsKCgqaApIDUwoLKgoKCgoKCgpSUlJSCgoKUlJSClKaUkoKmooIABhCCgoKogpaCgoKCgqiSgoKC")]
+[assembly: go.GoPositionMap("crypto/md5/md5block.go", "md5block.cs", "AA0clISUgpaWgoKCgoKCgoKCgoKCgoKCloKCgoKCgoKCgoKCgoKCgpaCgoKCgoKCgoKCgoKCgoKWgoKCgoKCgoKCgoKCgoKCloKCgoKCgoKCgoKCgoKCgpaCgoKo")]
 [assembly: go.GoPositionMap("crypto/md5/md5block_generic.go", "md5block_generic.cs", "AAoWgg==")]
 // </GoSourcePositionMaps>
 
@@ -74,4 +74,18 @@ public static partial class md5_package
     // <TypeAccessibility>
     [GoValueClone("s", "x")] internal partial struct digest {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    // </ImportInitializers>
 }

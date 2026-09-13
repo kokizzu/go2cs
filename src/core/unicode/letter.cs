@@ -206,39 +206,55 @@ public static bool IsTitle(rune r) {
     return isExcludingLatin(ref (Title).DerefOrNull(), r);
 }
 
+// lookupCaseRange returns the CaseRange mapping for rune r or nil if no
+// mapping exists for r.
+internal static ж<CaseRange> lookupCaseRange(rune r, slice<CaseRange> caseRange) {
+    // binary search over ranges
+    nint lo = 0;
+    nint hi = len(caseRange);
+    while (lo < hi) {
+        nint m = (nint)(((nuint)(lo + hi) >> (int)(1)));
+        var cr = Ꮡ(caseRange, m);
+        if ((rune)(~cr).Lo <= r && r <= (rune)(~cr).Hi) {
+            return cr;
+        }
+        if (r < (rune)(~cr).Lo){
+            hi = m;
+        } else {
+            lo = m + 1;
+        }
+    }
+    return default!;
+}
+
+// convertCase converts r to _case using CaseRange cr.
+internal static rune convertCase(nint _case, rune r, ref CaseRange cr) {
+    var delta = cr.Delta[_case];
+    if (delta > MaxRune) {
+        // In an Upper-Lower sequence, which always starts with
+        // an UpperCase letter, the real deltas always look like:
+        //	{0, 1, 0}    UpperCase (Lower is next)
+        //	{-1, 0, -1}  LowerCase (Upper, Title are previous)
+        // The characters at even offsets from the beginning of the
+        // sequence are upper case; the ones at odd offsets are lower.
+        // The correct mapping can be done by clearing or setting the low
+        // bit in the sequence offset.
+        // The constants UpperCase and TitleCase are even while LowerCase
+        // is odd so we take the low bit from _case.
+        return (rune)cr.Lo + ((rune)((rune)((r - (rune)cr.Lo) & ~1) | (rune)((nint)(_case & 1))));
+    }
+    return r + delta;
+}
+
 // to maps the rune using the specified case mapping.
 // It additionally reports whether caseRange contained a mapping for r.
 internal static (rune mappedRune, bool foundMapping) to(nint _case, rune r, slice<CaseRange> caseRange) {
     if (_case < 0 || MaxCase <= _case) {
         return (ReplacementChar, false); // as reasonable an error as any
     }
-    // binary search over ranges
-    nint lo = 0;
-    nint hi = len(caseRange);
-    while (lo < hi) {
-        nint m = (nint)(((nuint)(lo + hi) >> (int)(1)));
-        var cr = caseRange[m].ΔClone();
-        if ((rune)cr.Lo <= r && r <= (rune)cr.Hi) {
-            var delta = cr.Delta[_case];
-            if (delta > MaxRune) {
-                // In an Upper-Lower sequence, which always starts with
-                // an UpperCase letter, the real deltas always look like:
-                //	{0, 1, 0}    UpperCase (Lower is next)
-                //	{-1, 0, -1}  LowerCase (Upper, Title are previous)
-                // The characters at even offsets from the beginning of the
-                // sequence are upper case; the ones at odd offsets are lower.
-                // The correct mapping can be done by clearing or setting the low
-                // bit in the sequence offset.
-                // The constants UpperCase and TitleCase are even while LowerCase
-                // is odd so we take the low bit from _case.
-                return ((rune)cr.Lo + ((rune)((rune)((r - (rune)cr.Lo) & ~1) | (rune)((nint)(_case & 1)))), true);
-            }
-            return (r + delta, true);
-        }
-        if (r < (rune)cr.Lo){
-            hi = m;
-        } else {
-            lo = m + 1;
+    {
+        var cr = lookupCaseRange(r, caseRange); if (cr != nil) {
+            return (convertCase(_case, r, ref (cr).DerefOrNull()), true);
         }
     }
     return (r, false);
@@ -363,11 +379,16 @@ public static rune SimpleFold(rune r) {
     // equivalence class containing rune and ToLower(rune)
     // and ToUpper(rune) if they are different from rune.
     {
-        var l = ToLower(r); if (l != r) {
-            return l;
+        var cr = lookupCaseRange(r, CaseRanges); if (cr != nil) {
+            {
+                var l = convertCase(LowerCase, r, ref (cr).DerefOrNull()); if (l != r) {
+                    return l;
+                }
+            }
+            return convertCase(UpperCase, r, ref (cr).DerefOrNull());
         }
     }
-    return ToUpper(r);
+    return r;
 }
 
 } // end unicode_package

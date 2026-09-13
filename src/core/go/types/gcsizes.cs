@@ -5,6 +5,8 @@
 // license that can be found in the LICENSE file.
 namespace go.go;
 
+using System.Runtime.CompilerServices;
+
 partial class types_package {
 
 [GoType] partial struct gcSizes {
@@ -18,13 +20,13 @@ internal static int64 /*result*/ Alignof(this ж<gcSizes> Ꮡs, ΔType T) {
     try {
         ref var s = ref Ꮡs.DerefOrNull();
 
-        defer(() => {
+        defer([MethodImpl(MethodImplOptions.NoInlining)] () => {
             assert(result >= 1);
         }, ref ᒐ);
         // For arrays and structs, alignment is defined in terms
         // of alignment of the elements and fields, respectively.
-        var switchᴛ8 = under(T);
-        switch (switchᴛ8.type()) {
+        var switchᴛ7 = under(T);
+        switch (switchᴛ7.type()) {
         case ж<Array> t: {
             result = Ꮡs.Alignof((~t).elem); goto ᒐdone;
         }
@@ -56,7 +58,7 @@ internal static int64 /*result*/ Alignof(this ж<gcSizes> Ꮡs, ΔType T) {
         }
         case ж<Slice> _:
         case ж<Interface> _: {
-            var t = switchᴛ8;
+            var t = switchᴛ7;
             assert(!isTypeParam(T));
             result = s.WordSize; goto ᒐdone;
         }
@@ -73,7 +75,7 @@ internal static int64 /*result*/ Alignof(this ж<gcSizes> Ꮡs, ΔType T) {
         }
         case ж<TypeParam> _:
         case ж<Union> _: {
-            var t = switchᴛ8;
+            var t = switchᴛ7;
             throw panic("unreachable");
             break;
         }}
@@ -123,8 +125,8 @@ internal static slice<int64> Offsetsof(this ж<gcSizes> Ꮡs, slice<ж<Var>> fie
 internal static int64 Sizeof(this ж<gcSizes> Ꮡs, ΔType T) {
     ref var s = ref Ꮡs.DerefOrNull();
 
-    var switchᴛ9 = under(T);
-    switch (switchᴛ9.type()) {
+    var switchᴛ8 = under(T);
+    switch (switchᴛ8.type()) {
     case ж<Basic> t: {
         assert(isTyped(T));
         BasicKind k = t.Value.kind;
@@ -189,7 +191,7 @@ internal static int64 Sizeof(this ж<gcSizes> Ꮡs, ΔType T) {
     }
     case ж<TypeParam> _:
     case ж<Union> _: {
-        var t = switchᴛ9;
+        var t = switchᴛ8;
         throw panic("unreachable");
         break;
     }}

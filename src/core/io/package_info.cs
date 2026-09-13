@@ -78,9 +78,9 @@ using static go.io_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("io/io.go", "io.cs", "AMwC9ASygIKkAAIWAAsCgpSCgoKUgqSUAAIU8gACEgAJAoKClJSUAAIeAAwCAAIU8oKUqvaAgraAgqSCgoCCgpS2lIKCgoKCgoKmgoKClIKCpoKClKassAALFrKClIKUgoKqooKCgriUAAwasoKUgIKkgoLsgpikpKsAAhCClIKmsoKUgoCCgoKClKSokKzCAAkYoqaygoKmgoKWgqaCmKSnrIKUggACENIABxCygoKAgrYADRqCpoLKgsiygoKCgoKCgoKUAAQSwoCCpO6A7ICkgq7CgoKCgoKClJaU")]
+[assembly: go.GoPositionMap("io/io.go", "io.cs", "AMAC9ASygIKkAAIWAAsCgpSCgoKUgqSUAAIU8gACEgAJAoKClJSUAAIeAAwCAAIU8oKUqvaAgraAgqSCgoCCgpS2lIKCgoKCgoKmgoKClIKCpoKClKassAALFrKClIKUgoKqooKCgriUAAwasoKUgIKkgoLsgpikpKsAAhCClIKmsoKUgoCCgoKClKSokKzCAAkYoqaygoKmgoKWgqaCmKSnrIKUggACENIABxCygoKAgrYADRqCpoLKgsiygoKCgoKCgoKUAAQSwoCCpO6A7ICkgq7CgoKCgoKClJaU")]
 [assembly: go.GoPositionMap("io/multi.go", "multi.cs", "AA0Sgu6ylIKAgoK2gqaClIKUlKamgqaygoKAkpSkgoKClJSCAAQS4oKC7rKCgoKUgoKmyrKCgoCClIKUpIKUgoKmAAISAAgCgoKAgpS2")]
-[assembly: go.GoPositionMap("io/pipe.go", "pipe.cs", "ABIqwoKCgpTUwoKCABMkoqTItIKCpMiCgpSCgJKm4qSkgqaCtIKCtKbmgoKUgoCSqJKCgIKkqJKCgIKkAAcW0qqiAAIQ0gAHFtKqogACEuIAAiQADwLq")]
+[assembly: go.GoPositionMap("io/pipe.go", "pipe.cs", "ABIq0oKCgpTU0oKCABMkoqTItIKCpMiCgpSCgJKm4qSkgqaCtIKCtKbmgoKUgoCSqJKCgIKkqJKCgIKkAAcW0qqiAAIQ0gAHFtKqogACEuIAAiQADwLq", "72-72:1;103-103:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -132,4 +132,15 @@ public static partial class io_package
     public partial struct PipeWriter {}
     public partial struct SectionReader {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

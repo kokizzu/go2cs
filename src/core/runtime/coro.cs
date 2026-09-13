@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal.runtime;
 
@@ -40,7 +41,7 @@ partial class runtime_package {
 internal static ж<coro> newcoro(Action<ж<coro>> f) {
     var c = @new<coro>();
     c.Value.f = f;
-    var pc = getcallerpc();
+    var pc = sys.GetCallerPC();
     ref var gp = ref heap<ж<g>>(out var Ꮡgp);
     gp = getg();
     var cʗ1 = c;
@@ -145,6 +146,15 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
     // start and end states to maintain a coherent model and avoid
     // emitting an event for every single transition.
     var Δtrace = traceAcquire();
+    var canCAS = true;
+    var sg = gp.syncGroup;
+    if (sg != nil) {
+        // If we're in a synctest group, always use casgstatus (which tracks
+        // group idleness) rather than directly CASing. Mark the group as active
+        // while we're in the process of transferring control.
+        canCAS = false;
+        sg.incActive();
+    }
     if (locked) {
         // Detach the goroutine from the thread; we'll attach to the goroutine we're
         // switching to before returning.
@@ -162,7 +172,7 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
         // If we can CAS ourselves directly from running to waiting, so do,
         // keeping the control transfer as lightweight as possible.
         gp.waitreason = waitReasonCoroutine;
-        if (!Ꮡgp.of(g.Ꮡatomicstatus).CompareAndSwap(_Grunning, _Gwaiting)) {
+        if (!canCAS || !Ꮡgp.of(g.Ꮡatomicstatus).CompareAndSwap(_Grunning, _Gwaiting)) {
             // The CAS failed: use casgstatus, which will take care of
             // coordinating with the garbage collector about the state change.
             casgstatus(Ꮡgp, _Grunning, _Gwaiting);
@@ -223,7 +233,7 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
     if (goroutineProfile.active) {
         tryRecordGoroutineProfile(gnext, default!, osyield);
     }
-    if (!gnext.of(g.Ꮡatomicstatus).CompareAndSwap(_Gwaiting, _Grunning)) {
+    if (!canCAS || !gnext.of(g.Ꮡatomicstatus).CompareAndSwap(_Gwaiting, _Grunning)) {
         // The CAS failed: use casgstatus, which will take care of
         // coordinating with the garbage collector about the state change.
         casgstatus(gnext, _Gwaiting, _Grunnable);
@@ -237,6 +247,9 @@ internal static void coroswitch_m(ж<g> Ꮡgp) {
     // Release the trace locker. We've completed all the necessary transitions..
     if (Δtrace.ok()) {
         traceRelease(Δtrace);
+    }
+    if (sg != nil) {
+        sg.decActive();
     }
     // Switch to gnext. Does not return.
     gogo(gnext.of(g.Ꮡsched));

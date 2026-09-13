@@ -30,42 +30,6 @@ using sync = sync_package;
 
 partial class binary_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 internal static error errBufferTooSmall = errors.New("buffer too small"u8);
 
 // A ByteOrder specifies how to convert byte slices into
@@ -102,28 +66,33 @@ public static bigEndian BigEndian;
 [GoType] public partial struct littleEndian {
 }
 
+// Uint16 returns the uint16 representation of b[0:2].
 public static uint16 Uint16(this littleEndian _Δp0, slice<byte> b) {
     _ = b[1]; // bounds check hint to compiler; see golang.org/issue/14808
     return (uint16)((uint16)b[0] | (uint16)((uint16)b[1] << (int)(8)));
 }
 
+// PutUint16 stores v into b[0:2].
 public static void PutUint16(this littleEndian _Δp0, slice<byte> b, uint16 v) {
     _ = b[1]; // early bounds check to guarantee safety of writes below
     b[0] = (byte)v;
     b[1] = (byte)((v >> (int)(8)));
 }
 
+// AppendUint16 appends the bytes of v to b and returns the appended slice.
 public static slice<byte> AppendUint16(this littleEndian _, slice<byte> b, uint16 v) {
     return append(b,
         (byte)v,
         (byte)((v >> (int)(8))));
 }
 
+// Uint32 returns the uint32 representation of b[0:4].
 public static uint32 Uint32(this littleEndian _Δp0, slice<byte> b) {
     _ = b[3]; // bounds check hint to compiler; see golang.org/issue/14808
     return (uint32)((uint32)((uint32)((uint32)b[0] | ((uint32)b[1] << (int)(8))) | ((uint32)b[2] << (int)(16))) | ((uint32)b[3] << (int)(24)));
 }
 
+// PutUint32 stores v into b[0:4].
 public static void PutUint32(this littleEndian _Δp0, slice<byte> b, uint32 v) {
     _ = b[3]; // early bounds check to guarantee safety of writes below
     b[0] = (byte)v;
@@ -132,6 +101,7 @@ public static void PutUint32(this littleEndian _Δp0, slice<byte> b, uint32 v) {
     b[3] = (byte)((v >> (int)(24)));
 }
 
+// AppendUint32 appends the bytes of v to b and returns the appended slice.
 public static slice<byte> AppendUint32(this littleEndian _, slice<byte> b, uint32 v) {
     return append(b,
         (byte)v,
@@ -140,11 +110,13 @@ public static slice<byte> AppendUint32(this littleEndian _, slice<byte> b, uint3
         (byte)((v >> (int)(24))));
 }
 
+// Uint64 returns the uint64 representation of b[0:8].
 public static uint64 Uint64(this littleEndian _Δp0, slice<byte> b) {
     _ = b[7]; // bounds check hint to compiler; see golang.org/issue/14808
     return (uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)b[0] | ((uint64)b[1] << (int)(8))) | ((uint64)b[2] << (int)(16))) | ((uint64)b[3] << (int)(24))) | ((uint64)b[4] << (int)(32))) | ((uint64)b[5] << (int)(40))) | ((uint64)b[6] << (int)(48))) | ((uint64)b[7] << (int)(56)));
 }
 
+// PutUint64 stores v into b[0:8].
 public static void PutUint64(this littleEndian _Δp0, slice<byte> b, uint64 v) {
     _ = b[7]; // early bounds check to guarantee safety of writes below
     b[0] = (byte)v;
@@ -157,6 +129,7 @@ public static void PutUint64(this littleEndian _Δp0, slice<byte> b, uint64 v) {
     b[7] = (byte)((v >> (int)(56)));
 }
 
+// AppendUint64 appends the bytes of v to b and returns the appended slice.
 public static slice<byte> AppendUint64(this littleEndian _, slice<byte> b, uint64 v) {
     return append(b,
         (byte)v,
@@ -186,28 +159,33 @@ public static @string GoString(this littleEndian _) {
 [GoType] public partial struct bigEndian {
 }
 
+// Uint16 returns the uint16 representation of b[0:2].
 public static uint16 Uint16(this bigEndian _Δp0, slice<byte> b) {
     _ = b[1]; // bounds check hint to compiler; see golang.org/issue/14808
     return (uint16)((uint16)b[1] | (uint16)((uint16)b[0] << (int)(8)));
 }
 
+// PutUint16 stores v into b[0:2].
 public static void PutUint16(this bigEndian _Δp0, slice<byte> b, uint16 v) {
     _ = b[1]; // early bounds check to guarantee safety of writes below
     b[0] = (byte)((v >> (int)(8)));
     b[1] = (byte)v;
 }
 
+// AppendUint16 appends the bytes of v to b and returns the appended slice.
 public static slice<byte> AppendUint16(this bigEndian _, slice<byte> b, uint16 v) {
     return append(b,
         (byte)((v >> (int)(8))),
         (byte)v);
 }
 
+// Uint32 returns the uint32 representation of b[0:4].
 public static uint32 Uint32(this bigEndian _Δp0, slice<byte> b) {
     _ = b[3]; // bounds check hint to compiler; see golang.org/issue/14808
     return (uint32)((uint32)((uint32)((uint32)b[3] | ((uint32)b[2] << (int)(8))) | ((uint32)b[1] << (int)(16))) | ((uint32)b[0] << (int)(24)));
 }
 
+// PutUint32 stores v into b[0:4].
 public static void PutUint32(this bigEndian _Δp0, slice<byte> b, uint32 v) {
     _ = b[3]; // early bounds check to guarantee safety of writes below
     b[0] = (byte)((v >> (int)(24)));
@@ -216,6 +194,7 @@ public static void PutUint32(this bigEndian _Δp0, slice<byte> b, uint32 v) {
     b[3] = (byte)v;
 }
 
+// AppendUint32 appends the bytes of v to b and returns the appended slice.
 public static slice<byte> AppendUint32(this bigEndian _, slice<byte> b, uint32 v) {
     return append(b,
         (byte)((v >> (int)(24))),
@@ -224,11 +203,13 @@ public static slice<byte> AppendUint32(this bigEndian _, slice<byte> b, uint32 v
         (byte)v);
 }
 
+// Uint64 returns the uint64 representation of b[0:8].
 public static uint64 Uint64(this bigEndian _Δp0, slice<byte> b) {
     _ = b[7]; // bounds check hint to compiler; see golang.org/issue/14808
     return (uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)((uint64)b[7] | ((uint64)b[6] << (int)(8))) | ((uint64)b[5] << (int)(16))) | ((uint64)b[4] << (int)(24))) | ((uint64)b[3] << (int)(32))) | ((uint64)b[2] << (int)(40))) | ((uint64)b[1] << (int)(48))) | ((uint64)b[0] << (int)(56)));
 }
 
+// PutUint64 stores v into b[0:8].
 public static void PutUint64(this bigEndian _Δp0, slice<byte> b, uint64 v) {
     _ = b[7]; // early bounds check to guarantee safety of writes below
     b[0] = (byte)((v >> (int)(56)));
@@ -241,6 +222,7 @@ public static void PutUint64(this bigEndian _Δp0, slice<byte> b, uint64 v) {
     b[7] = (byte)v;
 }
 
+// AppendUint64 appends the bytes of v to b and returns the appended slice.
 public static slice<byte> AppendUint64(this bigEndian _, slice<byte> b, uint64 v) {
     return append(b,
         (byte)((v >> (int)(56))),
@@ -558,7 +540,7 @@ public static (nint, error) Encode(slice<byte> buf, ByteOrder order, any data) {
 // Append appends the binary representation of data to buf.
 // buf may be nil, in which case a new buffer will be allocated.
 // See [Write] on which data are acceptable.
-// It returns the (possibily extended) buffer containing data or an error.
+// It returns the (possibly extended) buffer containing data or an error.
 public static (slice<byte>, error) Append(slice<byte> buf, ByteOrder order, any data) {
     // Fast path for basic types and slices.
     {

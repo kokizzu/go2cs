@@ -2,12 +2,12 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-52%2F52_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/text.template.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/text/template@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/text/template) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/text/template)
+[![Tests](https://img.shields.io/badge/Tests-52%2F52_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.24.13.3/text.template.html) [![Docs](https://img.shields.io/badge/Docs-@1.24.13-00ADD8?logo=go)](https://pkg.go.dev/text/template@go1.24.13)\
+[![Source](https://img.shields.io/badge/Source-@1.24.13-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.24.13/src/text/template) [![Source](https://img.shields.io/badge/Source-@1.24.13.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.24.13.3/src/core/text/template)
 
 Package template implements data-driven templates for generating textual output.
 
-To generate HTML output, see [html/template](https://pkg.go.dev/html/template@go1.23.12), which has the same interface as this package but automatically secures HTML output against certain attacks.
+To generate HTML output, see [html/template](https://pkg.go.dev/html/template@go1.24.13), which has the same interface as this package but automatically secures HTML output against certain attacks.
 
 Templates are executed by applying them to a data structure. Annotations in the template refer to elements of the data structure (typically a field of a struct or a key in a map) to control execution and derive values to be displayed. Execution of the template walks the structure and sets the cursor, represented by a period '.' and called "dot", to the value at the current location in the structure as execution proceeds.
 
@@ -78,7 +78,8 @@ Here is the list of actions. "Arguments" and "pipelines" are evaluations of data
 			{{if pipeline}} T1 {{else}}{{if pipeline}} T0 {{end}}{{end}}
 
 	{{range pipeline}} T1 {{end}}
-		The value of the pipeline must be an array, slice, map, or channel.
+		The value of the pipeline must be an array, slice, map, iter.Seq,
+		iter.Seq2, integer or channel.
 		If the value of the pipeline has length zero, nothing is output;
 		otherwise, dot is set to the successive elements of the array,
 		slice, or map and T1 is executed. If the value is a map and the
@@ -86,7 +87,8 @@ Here is the list of actions. "Arguments" and "pipelines" are evaluations of data
 		visited in sorted key order.
 
 	{{range pipeline}} T1 {{else}} T0 {{end}}
-		The value of the pipeline must be an array, slice, map, or channel.
+		The value of the pipeline must be an array, slice, map, iter.Seq,
+		iter.Seq2, integer or channel.
 		If the value of the pipeline has length zero, dot is unaffected and
 		T0 is executed; otherwise, dot is set to the successive elements
 		of the array, slice, or map and T1 is executed.
@@ -135,14 +137,70 @@ Here is the list of actions. "Arguments" and "pipelines" are evaluations of data
 An argument is a simple value, denoted by one of the following.
 
   - A boolean, string, character, integer, floating-point, imaginary or complex constant in Go syntax. These behave like Go's untyped constants. Note that, as in Go, whether a large integer constant overflows when assigned or passed to a function can depend on whether the host machine's ints are 32 or 64 bits.
+
   - The keyword nil, representing an untyped Go nil.
-  - The character '.' (period): . The result is the value of dot.
-  - A variable name, which is a (possibly empty) alphanumeric string preceded by a dollar sign, such as $piOver2 or $ The result is the value of the variable. Variables are described below.
-  - The name of a field of the data, which must be a struct, preceded by a period, such as .Field The result is the value of the field. Field invocations may be chained: .Field1.Field2 Fields can also be evaluated on variables, including chaining: $x.Field1.Field2
-  - The name of a key of the data, which must be a map, preceded by a period, such as .Key The result is the map element value indexed by the key. Key invocations may be chained and combined with fields to any depth: .Field1.Key1.Field2.Key2 Although the key must be an alphanumeric identifier, unlike with field names they do not need to start with an upper case letter. Keys can also be evaluated on variables, including chaining: $x.key1.key2
-  - The name of a niladic method of the data, preceded by a period, such as .Method The result is the value of invoking the method with dot as the receiver, dot.Method(). Such a method must have one return value (of any type) or two return values, the second of which is an error. If it has two and the returned error is non-nil, execution terminates and an error is returned to the caller as the value of Execute. Method invocations may be chained and combined with fields and keys to any depth: .Field1.Key1.Method1.Field2.Key2.Method2 Methods can also be evaluated on variables, including chaining: $x.Method1.Field
-  - The name of a niladic function, such as fun The result is the value of invoking the function, fun(). The return types and values behave as in methods. Functions and function names are described below.
-  - A parenthesized instance of one the above, for grouping. The result may be accessed by a field or map key invocation. print (.F1 arg1) (.F2 arg2) (.StructValuedMethod "arg").Field
+
+  - The character '.' (period):
+
+    .
+
+    The result is the value of dot.
+
+  - A variable name, which is a (possibly empty) alphanumeric string preceded by a dollar sign, such as
+
+    $piOver2
+
+    or
+
+    $
+
+    The result is the value of the variable. Variables are described below.
+
+  - The name of a field of the data, which must be a struct, preceded by a period, such as
+
+    .Field
+
+    The result is the value of the field. Field invocations may be chained:
+
+    .Field1.Field2
+
+    Fields can also be evaluated on variables, including chaining:
+
+    $x.Field1.Field2
+
+  - The name of a key of the data, which must be a map, preceded by a period, such as
+
+    .Key
+
+    The result is the map element value indexed by the key. Key invocations may be chained and combined with fields to any depth:
+
+    .Field1.Key1.Field2.Key2
+
+    Although the key must be an alphanumeric identifier, unlike with field names they do not need to start with an upper case letter. Keys can also be evaluated on variables, including chaining:
+
+    $x.key1.key2
+
+  - The name of a niladic method of the data, preceded by a period, such as
+
+    .Method
+
+    The result is the value of invoking the method with dot as the receiver, dot.Method(). Such a method must have one return value (of any type) or two return values, the second of which is an error. If it has two and the returned error is non-nil, execution terminates and an error is returned to the caller as the value of Execute. Method invocations may be chained and combined with fields and keys to any depth:
+
+    .Field1.Key1.Method1.Field2.Key2.Method2
+
+    Methods can also be evaluated on variables, including chaining:
+
+    $x.Method1.Field
+
+  - The name of a niladic function, such as
+
+    fun
+
+    The result is the value of invoking the function, fun(). The return types and values behave as in methods. Functions and function names are described below.
+
+  - A parenthesized instance of one the above, for grouping. The result may be accessed by a field or map key invocation.
+
+    print (.F1 arg1) (.F2 arg2) (.StructValuedMethod "arg").Field
 
 Arguments may evaluate to any type; if they are pointers the implementation automatically indirects to the base type when required. If an evaluation yields a function value, such as a function-valued field of a struct, the function is not invoked automatically, but it can be used as a truth value for an if action and the like. To invoke it, use the call function, defined below.
 

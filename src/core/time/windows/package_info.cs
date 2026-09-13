@@ -54,6 +54,10 @@ using static go.time_package;
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
+[assembly: GoImplicitConv<absJanFeb, ΔMonth>(Inverted = true, ValueType = "nint")]
+[assembly: GoImplicitConv<absMonth, ΔMonth>(Inverted = true, ValueType = "nint")]
+[assembly: GoImplicitConv<absSeconds, absDays>(Inverted = true, ValueType = "uint64")]
+[assembly: GoImplicitConv<ΔWeekday, absDays>(Inverted = true, ValueType = "nint")]
 // </ImplicitConversions>
 
 // Go source positions are recorded here, one `GoPositionMap` attribute per converted
@@ -64,15 +68,15 @@ using static go.time_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("time/format.go", "format.cs", "AMsB7AKigpSCAAIeAAwCgoCkkoKUgtqSgoKUgqaC2pKUgsiSlKaSlKakgpSUgsimpqaSyJLIkpSClIKUgpSCyJKUgpSClIKUgsiSgoKCpoKCgpSC+gA0bqKCgoKUgoKCuKaCgoKmrLKCgoKogpSkqJKClIKogqiClKiCgoKCgpSC3uKCgoKUgoKClIKUrMSClKaCpoKClKqigoKClIKCgoKUgoKUgqYABRwACwKWgoKCgoKUkpKCgoKCgoKUgoKClKqigoKEgoKCgoK4lIKCgoKCgoKCgoKCgKSkAAIiAA8CgrSCAAIS4oKCgoKClJSCqrSUpKTIggAJGoKCgpSClJaCgqiClpSCgpSkpKSCpKSkpIKkpIKUpKSCgoKmpKSmgpKUpoKSlKSkpKSkgpS2gpTKooKUgoKCgoKUlIKClIKYkoKU2IKCmIKigpSUgrS2AA0gopKSAAoWgoKCgo7igoKCppSCgoKmgpSmgqiSgpyqsoKUgqyygpSCgpSUrLKSgpSClKaCgpSqooKCgpSCgpSClIKUAAJaACsEgoCCtgACEOSCgIK2AA8GopKCgoYAFh6CgoKCgoKUgoKUlIKCgrSCgpSCgoKUkpTWgoKUgrSCpIKkgoK4tKSClKiigqaoooK2goK2goLGgoKUgoKYooKClKaClILWgoKUgpSkpOaCgpSClKSk5oKCgpTEsoKCgpSCgpSkgoKUpIKClIKClKSCgpSUgoKUlKKCgpSCnLKUgpSCloLGtPiSgoKUgoKClMqCooKUgsaUmIKilIK0gpSCpoKkqIKCgoKCgqSmgpSCgoKUuIKUgoKUlIKUgrqCloKWgoKogoKCqIKCloKmgoKCgqiCgpSCgqgAAhoADAKCpoKmgoKmgoKClpKCgpSAgraUpJLIksakrLKCgpassoKClJaClIKUpoLW4oKClIKClICCpIKCuIKClMzigoKCgpSUlIKUpqzigoKCgoKClIKUlIKUgoKClIKUAA8m5IKCloKCgoK4gpSClIKqloKmgoKClJaCgoKCgpSUqIKCgoKmgpSCgoKClJSUgqaClKaCgqaClIKU")]
-[assembly: go.GoPositionMap("time/format_rfc3339.go", "format_rfc3339.cs", "AAkkAAgCloKCgoKChJaCgoKCgoSCgpaCqIKCgpSUgoKC5oKCuoKUpIKSxqYACAqCkoKCgpSUgoKUqIKUgoKCgoKCgpSGkoKClIKogoKClIKCgpSCgpSWgIKUtqaCgoKCgsyCmKTUtJS05sY=")]
-[assembly: go.GoPositionMap("time/sleep.go", "sleep.cs", "ABEcAAUQAAgGgoIAECSuwoKUgqaUAAIUAAgGpgAQRgAVAoKUAAI0ABcCgoKCAAIwABcCgpSCqOwACSAACgKuwqaC")]
-[assembly: go.GoPositionMap("time/sys_windows.go", "sys_windows.cs", "ABAatoKClIKUlKaCpoLWgoKClICCpIKCgoKUlJQ=")]
-[assembly: go.GoPositionMap("time/time.go", "time.cs", "AKYB3gLSqJKClKiQppKCgoKCgriogoKklLqygpSCqJKCggADEMKCgoKUlAACENKClKiSgpSCgqiSgpSCgqqikoKUgoKmlKSkAAIQ0oKUABEskoKUgoIADCKSgpSCggBZ0gGiqqKUgpSCgoKUgqba4oKCpoKCgoKUlJSUgqjSgqiSgqiSgqiSgqiSqKSCrgAPFoKUgqaCgqiSAAIcAA8CgoKCgoKokqiSqJKqoqqiggAfTMaigqrUhIKCgpaGooKCgpSCpoK2hILmgsSClIKEloKWgoKCgqiCgoK6goKWrtSCgoKCgoKClJSCgpSqooKCgpSCgoKmqJCmkKaQAAIYAAoCgoKokoKCqJKCgqqigpSqogACEuKClIKCgoKUgIKklIKUgIKkqqKUpKTKkoKCgoKkgpSCgoKClJSmrsKClJSUpKTIgoKClIKUqqKUlKqilJQAAigAEQKCggAKHqIAAh4AEgSWgoLMgoKCuoKCzIKCgoSChIKWgpSWtoKC/IKCgoKClJaCggAVLIKClKyyloKCloKCloKCloKEqKoADBzCgoKCuJSmgqiSgqiSggACENKClIKokoKClKrSggACEAAIAoKCgpSCgpQAAhLiAAIQ0gACENIAAhLiAAgSkoKChIKUgoKCloKClJaCggAUIoKW+JKCgpaCgpbCgpSCloKGgoSCgoKWgoKEgqKClKYAAhDSqJKuwoKCgoKClNqigqaClIKCgq7CgoKClKqigoIAAhDSgoKCgoKCpqqiqqKokoKmgq7CgoKClIKCgpQAAioAEgKCqIKCloKCgpaWgoKoloKEzIKCpoKUloKCAAIU8oKClIIAAhYACAKCgpSCgpSs4oKCgpSCgoKCgqiWgriCggADEIKCgoKCkvKUgoKagqKUgoKClIKCgpSUgpSCgpS27oKU")]
-[assembly: go.GoPositionMap("time/zoneinfo.go", "zoneinfo.cs", "AGK2AYKClIKUqqIABxCmooKCgoKCgqaUpoLuggACFAAOAoSCgoKCgoKWgIKCgoKCgqaCgoKCgoKUlIK6goKCgoKCgoKClKaCgoKUqIKAgrgAAiQAEASCqIKCgsyCgrqqooKCpgAFEgAIArqCgpSCzISUloKCgpSCpoKWlKaClISSgoKUgoKCloSWgoKEgoK4goKCgt6CpJS8ooKUgoKUgpS2gpSUgoKmvtKClIKCpIKaooKClIKCgpSWgoKClIKCgpSWgoKClISClAARLqKCgpSCgoKCgpSCpIKCgpaCgoKUgoKClIKCgpSCgoKUgpaCgpaCgpSErNKClIKCgoKUlIKCgqaClKyygpSCgramgoKSlIKCgoKYgqKUgoKUlIKClKas8gAGEIKCgoKCzIKCgroADjQADwKClIKUppSCkpSCgoCCgIKkpLaAgqSkqJKClIKCpg==")]
+[assembly: go.GoPositionMap("time/format.go", "format.cs", "AMAB7gKigpSCAAIeAAwCgoCkkoKUgtqSgoKUgqaC2pKUgsiSlKaSlKakgpSUgsimpqaSyJLIkpSClIKUgpSCyJKUgpSClIKUgsiSgoKCpoKCgpSC+gA0bqKCgoKUgoKCuKaCgoKmrLKCgoKogpSkqJKClIKogqiClKiCgoKCgpSC3uKCgoKUgoKClIKUrMSClKaCpoKClKqigoKClIKCgoKUgoKUgqYABRwACwKWgoKCgoKUkpKCgoKCgoKUgoKClKqigoKEgoKCgoK4lIKCgoKCgoKCgoKCgKSkAAIiAA8CgrSCAAIS4oKCgoKClJSCqrSUpKTIgoKEAAcWgoKClIKUloKUgqiClpSCgpSkpKSCpKSkpIKkpIKUpKSCgoKmpKSmgpKUpoKSlKSkpKSkgpS2gpTKooKUgoKCgoKUlIKClIKYkoKU2IKCmIKigpSUgrS2AA0gopKSAAoWgoKCgo7igoKCppSCgoKmgpSmgqiSgpyqsoKUgqyygpSCgpSUrLKSgpSClKaCgpSqooKCgpSCgpSClIKUAAJaACsEgoCCtgACEOSCgIK2AA8GopKCgoYAFh6CgoKCgoKUgoKUlIKCgrSCgpSCgoKUkpTWgoKUgrSCpIKkgoK4tKSClKiigqaoooK2goK2goLGgoKUgoKYooKClKaClILWgoKUgpSkpOaCgpSClKSk5oKCgpTEsoKCgpSCgpSkgoKUpIKClIKClKSCgpSUgoKUlKKCgoKCrrKUgpSCloLGtPiSgoKUgoKClMqCooKUgsaUmIKilIK0gpSCpoKkqIKCgoKCgqSmgpSCgoKUuIKUgoKUlIKUgrqCloKWgoKogoKCqIKCloKmgoKCgqiCgpSCgqgAAhoADAKCpoKmgoKmgoKClpKCgpSAgraUpJLIksakrLKCgpassoKClJaClIKUpoLW4oKClIKClICCpIKCuIKClMzigoKCgpSUlIKUpqzigoKCgoKClIKUlIKUgoKClIKUAA8m5IKCloKCgoK4gpSClIKqloKmgoKClJaCgoKCgpSUqIKCgoKmgpSCgoKClJSUgqaClKaCgqaClIKU", "426-426:1")]
+[assembly: go.GoPositionMap("time/format_rfc3339.go", "format_rfc3339.cs", "AAkkAAgCloKCgoKChJaCgoKCgoSCgpaCqIKCgpSUgoKC5oKCuoKUpIKSxqYACAqCkoKCgpSUgoKUqIKUgoKCgoKCgpSGkoKClIKogoKClIKCgpSCgpSWgIKUtqaCgoKCgsyCmKTUtJS05sY=", "69-69:1;88-101:1;166-166:1")]
+[assembly: go.GoPositionMap("time/sleep.go", "sleep.cs", "AAscAAdMwoKUgqaUAAIUAAgGpgAQRgAVAoKUAAI0ABcCgoKCAAIwABcCgpSCqOwACSAACgKuwqaC")]
+[assembly: go.GoPositionMap("time/sys_windows.go", "sys_windows.cs", "AAoatoKClIKUlKaCpoLWgoKClICCpIKCgoKUlJQ=")]
+[assembly: go.GoPositionMap("time/time.go", "time.cs", "AKgB4ALSqJKClKiQppKCgoKCgriogoKklLqygpSCqJKCggADEMKCgoKUlAACENKClKqiqJKClIKCqJKClIKCqqKSgpSCgqaUpKQAAhDSgpQAESySgpSCggAMIpKClIKCANEByAPEgoKClIIAEiiEgoKChKiSqOSCAAgUABAkgoKCqAAPHoKopIKClKikqKSCgpSCgpSCgpSopKikqNKCgoKCgqjCgoKCgq7ClIKUgoKClIKm2uKCgqaCgoKClJSUlIKokqiSgoKokoKCqJKCgqiSqKSuAA8WgoKCqJKo0oKCgoKCqJKokqiSqqKqooIAH0zGooKq1ISCgoKWhqKCgoKUgqaCtoSC5oLEgpSChJaCloKCgoKogoKCuoKClq7UgoKCgoKCgpSUgoKUqqKCgoKUgoKCpqiQppCmkAACGAAKAoKCqJKCgqiSgoKqooKUqqIAAhLigpSCgoKClICCpJSClICCpKyylKSkypKCgoKCpIKUgoKCgpSUpq7CgpSUlKSkyIKCgpSClKqilJSqopSUAAIoABECgoKqooKCAAsapoKCgpTcAAIkABAM3AANHMKCgpSCgriUpoKokoKokoIAAhDSgpSCqJKCgpSq0oIAAhAACAKCgoKUgoKUAAIS4gACENIAAhDSAAIS4gAIEpKCgoSClIKCgpaCgpSWgoIAEyKClKiSgoKU+JKCgpaCgpbCgpSCloKGgoSCgoKWgoKEgqKClKYAAhDSqJKuwoKCgoKClNqigqaClIKCgqaCgoKU3sLewqqigoIAAhDSgoKCgoKCpqqiqqKokoKmyoKClK7CgoKClIKCgpQAAioAEgKCqIKCloKCgpYABBCCgqaClJaCggACFPKCgpSCAAIWAAgCgoKUgoKUrOKCgoKUgoKCgoKoloK4goIAAxCCgoKCgpLylIKCmoKilIKCgpSCgoKUlIKUgoKUtu6ClAACQAAdAqiSqOKCgoKC")]
+[assembly: go.GoPositionMap("time/zoneinfo.go", "zoneinfo.cs", "AFy2AYKClIKUqqIABxCmooKCgoKCgqaUpoLuggACFAAOAoSCgoKCgoKWgIKCgoKCgqaCgoKCgoKUlIK6goKCgoKCgoKClKaCgoKUqIKAgrgAAiQAEASCqIKCgsyCgrqqooKCpgAFEgAIArqCgpSCzISUloKCgpSCpoKWlKaClISSgoKUgoKCuoKChIKCuIKCgoLegqSUvKKClIKClIKUtoKUlIKCpr7SgpSCgqSCmqKCgpSCgoKUloKCgpSCgoKUloKCgpSEgpQAES6igoKUgoKCgoKUgqSCgoKWgoKClIKCgpSCgoKUgoKClIKWgoKWgoKUhKzSgpSCgoKClJSCgoKmgpSssoKUgoK2poKCkpSCgoKCmIKilIKClJSCgpSmrPIABhCCgoKCgsyCgoK6AA40AA8CgpSClKaUgpKUgoKAgoCCpKS2gIKkpKiSgpSCgqY=", "119-124:1;675-678:1")]
 [assembly: go.GoPositionMap("time/zoneinfo_goroot.go", "zoneinfo_goroot.cs", "AAgSgoKU")]
-[assembly: go.GoPositionMap("time/zoneinfo_read.go", "zoneinfo_read.cs", "AB4wwgAPIIIADyCCgoKClIKCpoKCgoKUpoKCgoKClKaCgoKClKiSgoKokoCCpAAEEsKWgIKokoKAgpSUtLS0AAQWABEQgoKCgpSClAAFEIKUAAEQgoSWgoKClIKUqIKCqJaWlpaoqISSloKCgsyCppSCgoKCgIKkgpSCgoCCpIKAgqSCppTMgoKCgoCClLaAgpS2goKUgoKUgqimqKiCgoKCgoKCyICygpSAgpQACRCopoKCgqaqooKUgpQAAhgACQKClKiSgpSqwoKClIQABBKCgIKkgoKEgoCCpgAXMIKUgoKCgoKCgoKClIIAESaCgIqkhIKAgqaWAAoYwoKUrvKCgoKAgraCpoKCgoCCtoKmgIKCgoCCtoK2gpSu4oKClIKqgoKClIKUgqY=")]
-[assembly: go.GoPositionMap("time/zoneinfo_windows.go", "zoneinfo_windows.cs", "ABoyAA0CgoKUhKSCgpSSgIKkgIK4gpSClAAJCsKCgpSEgoKUgoKCptiSgoKCpqiSgoKClIKCgoK4lKwACAyCgoKClIKAgqaCgrbWooSEgoKUhISCgpSCgoKCgoKCzISCgoKogoKCgoKCqISCgoKCgoKChIKCggAfPIKCgIKCpA==")]
+[assembly: go.GoPositionMap("time/zoneinfo_read.go", "zoneinfo_read.cs", "ABIwwgAPIIIADyCCgoKClIKCpoKCgoKUpoKCgoKClKaCgoKClKiSgoKokoCCpAAEEsKWgIKokoKAgpSUtLS0AAQWABEQgoKCgpSClAAFEIKUAAEQgoSWgoKClIKUqIKCqJaWlpaoqISSloKCgsyCppSCgoKCgIKkgpSCgoCCpIKAgqSCppTMgoKCgoCClLaAgpS2goKUgoKUgqimqKiCgoKCgoKCyICygpSAgpQACRCopoKCgqaqooKUgpQAAhgACQKClKiSgpSqwoKClIQABBKCgIKkgoKEgoCCpgAXMIKUgoKCgoKCgoKClIIAESaCgIqkhIKAgqaWAAoYwoKUrvKCgoKAgraCpoKCgoCCtoKmgIKCgoCCtoK2gpSu4oKClIKqgoKClIKUgqY=")]
+[assembly: go.GoPositionMap("time/zoneinfo_windows.go", "zoneinfo_windows.cs", "ABQyAA0CgoKUhKSCgpSSgIKkgIK4gpSClAAJCsKCgpSEgoKUgoKCptiSgoKCpqiSgoKClIKCgoK4lKwACAyCgoKClIKAgqaCgrbWooSEgoKUhISCgpSCgoKCgoKCzISCgoKogoKCgoKCqISCgoKCgoKChIKCggAfPIKCgIKCpA==")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -88,6 +92,14 @@ public static partial class time_package
 
     // <TypeAccessibility>
     internal partial struct abbr {}
+    internal partial struct absCentury {}
+    internal partial struct absCyear {}
+    internal partial struct absDays {}
+    internal partial struct absJanFeb {}
+    internal partial struct absLeap {}
+    internal partial struct absMonth {}
+    internal partial struct absSeconds {}
+    internal partial struct absYday {}
     internal partial struct dataIO {}
     internal partial struct fileSizeError {}
     internal partial struct rule {}
@@ -102,4 +114,22 @@ public static partial class time_package
     public partial struct ΔMonth {}
     public partial struct ΔWeekday {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() => builtin.initPackage(typeof(@internal.bytealg_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() => builtin.initPackage(typeof(@internal.stringslite_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸregistry() => builtin.initPackage(typeof(@internal.syscall.windows.registry_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

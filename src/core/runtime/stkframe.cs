@@ -5,10 +5,10 @@ namespace go;
 
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
-using runtime.@internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -272,7 +272,6 @@ internal static ж<array<stackObjectRecord>> ᏑmethodValueCallFrameObjs = new S
 internal static ref array<stackObjectRecord> methodValueCallFrameObjs => ref ᏑmethodValueCallFrameObjs.Value;    // initialized in stackobjectinit
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string abiRegArgsTypeNeedsGcˢ = "abiRegArgsType needs GC Prog, update methodValueCallFrameObjs"u8;
 internal static readonly @string methodValueCallFrameObjsˢ = "methodValueCallFrameObjs is not in a module"u8;
 
 internal static void stkobjinit() {
@@ -280,9 +279,6 @@ internal static void stkobjinit() {
 
     abiRegArgsEface = new abi.RegArgs(nil);
     var abiRegArgsType = efaceOf(ᏑabiRegArgsEface).Value._type;
-    if ((abiꓸKind)((~abiRegArgsType).Kind_ & abi.KindGCProg) != 0) {
-        @throw(abiRegArgsTypeNeedsGcˢ);
-    }
     // Set methodValueCallFrameObjs[0].gcdataoff so that
     // stackObjectRecord.gcdata() will work correctly with it.
     var ptr = (uintptr)ᏑmethodValueCallFrameObjs.at<stackObjectRecord>(0);
@@ -300,8 +296,8 @@ internal static void stkobjinit() {
         off: -(int32)alignUp((~abiRegArgsType).Size_, 8), // It's always the highest address local.
 
         size: (int32)(~abiRegArgsType).Size_,
-        _ptrdata: (int32)(~abiRegArgsType).PtrBytes,
-        gcdataoff: (uint32)((uintptr)(~abiRegArgsType).GCData - (~mod).rodata)
+        ptrBytes: (int32)(~abiRegArgsType).PtrBytes,
+        gcdataoff: (uint32)((uintptr)getGCMask(abiRegArgsType) - (~mod).rodata)
     );
 }
 

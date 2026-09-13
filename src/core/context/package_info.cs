@@ -67,7 +67,7 @@ using static go.context_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("context/context.go", "context.cs", "AMsB1gKAooCigPyypoKmgqaCAAkKggAJCoKuwq7CAAQe4oKQAAU0AAsCgpC2goKUgoIAAhIACAKAgoKS/gAFKgASAqaCkoKClIKUAA0cooKClIIAEzDigoKUgoKUgoKUqJKAgoKkgoKUgoKUAAwaggANHqKClKaigoKUgoKCgoKU1qKCgoKqwoSCgpamksiAlIKUlIKUlIKmgJSCgpS4gqaCgrQADBSCgIKkpoKs0oKUgpSCgoKUgoKCgpSUlJSChIK+soKU7rKmgqaCpoKmggACGAAJAqzSgpSAlKSmgoKCgpCkgpKCkqaQAA8agqaCqqKClJSCgoKUAAIaAAoCrLIAAiAADQKClIKUgpQADBqylKSklKaCqoKClKaCgpSClLSClLSmlLSClNS0")]
+[assembly: go.GoPositionMap("context/context.go", "context.cs", "ALEB3gKAooCigPyypoKmgqaCAAkKggAJCoKuwq7CAAQg8oKQAAU0AAsCgpC2goKUgoIAAhIACAKAgoKS/gAFKAARAqaCkoKClIKUAA0cooKClIIAEzDigoKUgoKUgoKUqJKAgoKkgoKUgoKUAAwaggARHqKClKbSgoKUgoKCgoKU1qKCgoKqwoSCgpamksiAlIKUlIKUlIKmgJSCgpS4gqaCgrQADBSCgIKkpoKs0oKUgpSCgoKUgoKCgpSUlJSChIIAAxDCgpTusqaCpoKmgqaCAAIYAAkCrNKClICUpKaCgoKCkKSCkoKSppAADxqCpoKqooKUlIKCgpQAAhoACgKssgACIAANAoKUgpSClAAYGrKUpKSUpoKqgoKUpoKClIKUtIKUtKaUtIKU1LQ=", "242-242:1;270-270:1;324-333:1;326-328:1.1;351-353:1;501-503:1;513-519:2;638-638:1;643-645:2;647-647:3")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -97,4 +97,18 @@ public static partial class context_package
     internal partial struct withoutCancelCtx {}
     public partial interface Context {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸreflectlite() => builtin.initPackage(typeof(@internal.reflectlite_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

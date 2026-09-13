@@ -4,7 +4,9 @@
 //go:build darwin || (openbsd && !mips64)
 namespace go;
 
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
+using @internal.runtime;
 
 partial class runtime_package {
 

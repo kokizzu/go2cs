@@ -26,6 +26,7 @@ using ecdh = go.crypto.ecdh_package;
 using ecdsa = go.crypto.ecdsa_package;
 using ed25519 = go.crypto.ed25519_package;
 using elliptic = go.crypto.elliptic_package;
+using cryptorand = go.crypto.rand_package;
 using rsa = go.crypto.rsa_package;
 using sha1 = go.crypto.sha1_package;
 using pkix = go.crypto.x509.pkix_package;
@@ -57,24 +58,6 @@ using vendor.golang.org.x.crypto;
 using vendor.golang.org.x.crypto.cryptobyte;
 
 partial class x509_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha1() {
-    builtin.initPackage(typeof(go.crypto.sha1_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsha512() {
-    builtin.initPackage(typeof(go.crypto.sha512_package));
-}
 
 // pkixPublicKey reflects a PKIX public key structure. See SubjectPublicKeyInfo
 // in RFC 3280.
@@ -836,10 +819,84 @@ internal static (asn1.ObjectIdentifier oid, bool ok) oidFromExtKeyUsage(ExtKeyUs
     // cannot be represented by asn1.ObjectIdentifier, it will not be included in
     // PolicyIdentifiers, but will be present in Policies, which contains all parsed
     // policy OIDs.
+    // See CreateCertificate for context about how this field and the Policies field
+    // interact.
     public slice<asn1.ObjectIdentifier> PolicyIdentifiers;
     // Policies contains all policy identifiers included in the certificate.
+    // See CreateCertificate for context about how this field and the PolicyIdentifiers field
+    // interact.
     // In Go 1.22, encoding/gob cannot handle and ignores this field.
     public slice<OID> Policies;
+    // InhibitAnyPolicy and InhibitAnyPolicyZero indicate the presence and value
+    // of the inhibitAnyPolicy extension.
+    //
+    // The value of InhibitAnyPolicy indicates the number of additional
+    // certificates in the path after this certificate that may use the
+    // anyPolicy policy OID to indicate a match with any other policy.
+    //
+    // When parsing a certificate, a positive non-zero InhibitAnyPolicy means
+    // that the field was specified, -1 means it was unset, and
+    // InhibitAnyPolicyZero being true mean that the field was explicitly set to
+    // zero. The case of InhibitAnyPolicy==0 with InhibitAnyPolicyZero==false
+    // should be treated equivalent to -1 (unset).
+    public nint InhibitAnyPolicy;
+    // InhibitAnyPolicyZero indicates that InhibitAnyPolicy==0 should be
+    // interpreted as an actual maximum path length of zero. Otherwise, that
+    // combination is interpreted as InhibitAnyPolicy not being set.
+    public bool InhibitAnyPolicyZero;
+    // InhibitPolicyMapping and InhibitPolicyMappingZero indicate the presence
+    // and value of the inhibitPolicyMapping field of the policyConstraints
+    // extension.
+    //
+    // The value of InhibitPolicyMapping indicates the number of additional
+    // certificates in the path after this certificate that may use policy
+    // mapping.
+    //
+    // When parsing a certificate, a positive non-zero InhibitPolicyMapping
+    // means that the field was specified, -1 means it was unset, and
+    // InhibitPolicyMappingZero being true mean that the field was explicitly
+    // set to zero. The case of InhibitPolicyMapping==0 with
+    // InhibitPolicyMappingZero==false should be treated equivalent to -1
+    // (unset).
+    public nint InhibitPolicyMapping;
+    // InhibitPolicyMappingZero indicates that InhibitPolicyMapping==0 should be
+    // interpreted as an actual maximum path length of zero. Otherwise, that
+    // combination is interpreted as InhibitAnyPolicy not being set.
+    public bool InhibitPolicyMappingZero;
+    // RequireExplicitPolicy and RequireExplicitPolicyZero indicate the presence
+    // and value of the requireExplicitPolicy field of the policyConstraints
+    // extension.
+    //
+    // The value of RequireExplicitPolicy indicates the number of additional
+    // certificates in the path after this certificate before an explicit policy
+    // is required for the rest of the path. When an explicit policy is required,
+    // each subsequent certificate in the path must contain a required policy OID,
+    // or a policy OID which has been declared as equivalent through the policy
+    // mapping extension.
+    //
+    // When parsing a certificate, a positive non-zero RequireExplicitPolicy
+    // means that the field was specified, -1 means it was unset, and
+    // RequireExplicitPolicyZero being true mean that the field was explicitly
+    // set to zero. The case of RequireExplicitPolicy==0 with
+    // RequireExplicitPolicyZero==false should be treated equivalent to -1
+    // (unset).
+    public nint RequireExplicitPolicy;
+    // RequireExplicitPolicyZero indicates that RequireExplicitPolicy==0 should be
+    // interpreted as an actual maximum path length of zero. Otherwise, that
+    // combination is interpreted as InhibitAnyPolicy not being set.
+    public bool RequireExplicitPolicyZero;
+    // PolicyMappings contains a list of policy mappings included in the certificate.
+    public slice<PolicyMapping> PolicyMappings;
+}
+
+// PolicyMapping represents a policy mapping entry in the policyMappings extension.
+[GoType] partial struct PolicyMapping {
+    // IssuerDomainPolicy contains a policy OID the issuing certificate considers
+    // equivalent to SubjectDomainPolicy in the subject certificate.
+    public OID IssuerDomainPolicy;
+    // SubjectDomainPolicy contains a OID the issuing certificate considers
+    // equivalent to IssuerDomainPolicy in the subject certificate.
+    public OID SubjectDomainPolicy;
 }
 
 // ErrUnsupportedAlgorithm results from attempting to perform an operation that
@@ -848,15 +905,8 @@ public static error ErrUnsupportedAlgorithm = errors.New("x509: cannot verify si
 
 [GoType("num:nint")] partial struct InsecureAlgorithmError;
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string temporarilyOverrideWithˢ = " (temporarily override with GODEBUG=x509sha1=1)"u8;
-
 public static @string Error(this InsecureAlgorithmError e) {
-    @string @override = default!;
-    if (((SignatureAlgorithm)(nint)e) == SHA1WithRSA || ((SignatureAlgorithm)(nint)e) == ECDSAWithSHA1) {
-        @override = temporarilyOverrideWithˢ;
-    }
-    return fmt.Sprintf("x509: cannot verify signature: insecure algorithm %v"u8, ((SignatureAlgorithm)(nint)e)) + @override;
+    return fmt.Sprintf("x509: cannot verify signature: insecure algorithm %v"u8, ((SignatureAlgorithm)(nint)e));
 }
 
 // ConstraintViolationError results when a requested usage is not permitted by
@@ -938,8 +988,6 @@ internal static error signaturePublicKeyAlgoMismatchError(PublicKeyAlgorithm exp
     return fmt.Errorf("x509: signature algorithm specifies an %s public key, but have public key of type %T"u8, expectedPubKeyAlgo.String(), pubKey);
 }
 
-internal static ж<godebug.Setting> x509sha1 = godebug.New("x509sha1"u8);
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string x509EcdsaVerificationˢ = "x509: ECDSA verification failure"u8;
 internal static readonly @string x509Ed25519Verificationˢ = "x509: Ed25519 verification failure"u8;
@@ -970,11 +1018,8 @@ internal static error /*err*/ checkSignature(SignatureAlgorithm algo, slice<byte
     }
     else if (exprᴛ1 == crypto.SHA1) { matchᴛ1 = true;
         if (!allowSHA1) {
-            // SHA-1 signatures are mostly disabled. See go.dev/issue/41682.
-            if (x509sha1.Value() != "1"u8) {
-                return ((InsecureAlgorithmError)(nint)algo);
-            }
-            x509sha1.IncNonDefault();
+            // SHA-1 signatures are only allowed for CRLs and CSRs.
+            return ((InsecureAlgorithmError)(nint)algo);
         }
         fallthrough = true;
     }
@@ -1261,7 +1306,7 @@ internal static (slice<pkix.Extension> ret, error err) buildCertExtensions(ref C
         }
         n++;
     }
-    var usePolicies = x509usepolicies.Value() == "1"u8;
+    var usePolicies = x509usepolicies.Value() != "0"u8;
     if (((!usePolicies && builtin.len(template.PolicyIdentifiers) > 0) || (usePolicies && builtin.len(template.Policies) > 0)) && !oidInExtensions(oidExtensionCertificatePolicies, template.ExtraExtensions)) {
         (ret[n], err) = marshalCertificatePolicies(template.Policies, template.PolicyIdentifiers);
         if (err != default!) {
@@ -1446,7 +1491,7 @@ internal static (pkix.Extension, error) marshalCertificatePolicies(slice<OID> po
     var policiesʗ1 = policies;
     var policyIdentifiersʗ1 = policyIdentifiers;
     b.AddASN1(cryptobyte_asn1.SEQUENCE, (ж<cryptobyte.Builder> child) => {
-        if (x509usepolicies.Value() == "1"u8){
+        if (x509usepolicies.Value() != "0"u8){
             x509usepolicies.IncNonDefault();
             foreach (var (_, vᴛ1) in policiesʗ1) {
                 ref var v = ref heap(new OID(), out var Ꮡv);
@@ -1602,7 +1647,6 @@ internal static slice<byte> emptyASN1Subject = new byte[]{0x30, 0}.slice();
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string x509CertificatePrivateˢ = "x509: certificate private key does not implement crypto.Signer"u8;
-internal static readonly @string x509NoSerialNumberGivenˢ = "x509: no SerialNumber given"u8;
 internal static readonly @string x509SerialNumberMustBeˢ = "x509: serial number must be positive"u8;
 internal static readonly @string x509OnlyCAsAreAllowedToˢ = "x509: only CAs are allowed to specify MaxPathLen"u8;
 internal static readonly @string x509InternalErrorˢ = "x509: internal error: supported public key does not implement Equal"u8;
@@ -1662,10 +1706,13 @@ internal static readonly @string x509ProvidedPrivateKeyˢ = "x509: provided Priv
 // If SubjectKeyId from template is empty and the template is a CA, SubjectKeyId
 // will be generated from the hash of the public key.
 //
-// The PolicyIdentifier and Policies fields are both used to marshal certificate
-// policy OIDs. By default, only the PolicyIdentifier is marshaled, but if the
-// GODEBUG setting "x509usepolicies" has the value "1", the Policies field will
-// be marshaled instead of the PolicyIdentifier field. The Policies field can
+// If template.SerialNumber is nil, a serial number will be generated which
+// conforms to RFC 5280, Section 4.1.2.2 using entropy from rand.
+//
+// The PolicyIdentifier and Policies fields can both be used to marshal certificate
+// policy OIDs. By default, only the Policies is marshaled, but if the
+// GODEBUG setting "x509usepolicies" has the value "0", the PolicyIdentifiers field will
+// be marshaled instead of the Policies field. This changed in Go 1.24. The Policies field can
 // be used to marshal policy OIDs which have components that are larger than 31
 // bits.
 public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certificate> Ꮡtemplate, ж<Certificate> Ꮡparent, any pub, any priv) {
@@ -1676,15 +1723,36 @@ public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certific
     if (!ok) {
         return (default!, errors.New(x509CertificatePrivateˢ));
     }
-    if (template.SerialNumber == nil) {
-        return (default!, errors.New(x509NoSerialNumberGivenˢ));
+    var serialNumber = template.SerialNumber;
+    if (serialNumber == nil) {
+        // Generate a serial number following RFC 5280 Section 4.1.2.2 if one is not provided.
+        // Requirements:
+        //   - serial number must be positive
+        //   - at most 20 octets when encoded
+        var maxSerial = big.NewInt(1).Lsh(big.NewInt(1), 20 * 8);
+        while (ᐧ) {
+            error errΔ1 = default!;
+            (serialNumber, errΔ1) = cryptorand.Int(rand, maxSerial);
+            if (errΔ1 != default!) {
+                return (default!, errΔ1);
+            }
+            // If the serial is exactly 20 octets, check if the high bit of the first byte is set.
+            // If so, generate a new serial, since it will be padded with a leading 0 byte during
+            // encoding so that the serial is not interpreted as a negative integer, making it
+            // 21 octets.
+            {
+                var serialBytes = serialNumber.Bytes(); if (builtin.len(serialBytes) > 0 && (builtin.len(serialBytes) < 20 || (byte)(serialBytes[0] & 0x80) == 0)) {
+                    break;
+                }
+            }
+        }
     }
-    // RFC 5280 Section 4.1.2.2: serial number must positive
+    // RFC 5280 Section 4.1.2.2: serial number must be positive
     //
     // We _should_ also restrict serials to <= 20 octets, but it turns out a lot of people
     // get this wrong, in part because the encoding can itself alter the length of the
     // serial. For now we accept these non-conformant serials.
-    if (template.SerialNumber.Sign() == -1) {
+    if (serialNumber.Sign() == -1) {
         return (default!, errors.New(x509SerialNumberMustBeˢ));
     }
     if (template.BasicConstraintsValid && !template.IsCA && template.MaxPathLen != -1 && (template.MaxPathLen != 0 || template.MaxPathLenZero)) {
@@ -1737,7 +1805,7 @@ public static (slice<byte>, error) CreateCertificate(io.Reader rand, ж<Certific
     var encodedPublicKey = new asn1.BitString(BitLength: builtin.len(publicKeyBytes) * 8, Bytes: publicKeyBytes);
     var c = new tbsCertificate(
         Version: 2,
-        SerialNumber: template.SerialNumber,
+        SerialNumber: serialNumber,
         SignatureAlgorithm: algorithmIdentifier,
         Issuer: new asn1.RawValue(FullBytes: asn1Issuer),
         Validity: new validity(template.NotBefore.UTC(), template.NotAfter.UTC()),

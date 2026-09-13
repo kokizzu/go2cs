@@ -78,6 +78,12 @@
   <Folder Name="/crypto/elliptic/" Id="a3b0cf4b-a563-5aef-9a33-f75bb27e0b80">
     <Project Path="core/crypto/elliptic/crypto.elliptic.csproj" />
   </Folder>
+  <Folder Name="/crypto/fips140/" Id="cad685a0-e7ac-5e3c-9cc1-97ec747d9c21">
+    <Project Path="core/crypto/fips140/crypto.fips140.csproj" />
+  </Folder>
+  <Folder Name="/crypto/hkdf/" Id="ef3ab6b4-af1f-546f-ae36-f20e06acabad">
+    <Project Path="core/crypto/hkdf/crypto.hkdf.csproj" />
+  </Folder>
   <Folder Name="/crypto/hmac/" Id="e880e2c4-ac45-55b7-90cb-0d49f1337e9d">
     <Project Path="core/crypto/hmac/crypto.hmac.csproj" />
   </Folder>
@@ -109,8 +115,113 @@
   <Folder Name="/crypto/internal/edwards25519/field/" Id="d0d846bf-8571-506c-ac2f-6e0b6e02d128">
     <Project Path="core/crypto/internal/edwards25519/field/crypto.internal.edwards25519.field.csproj" />
   </Folder>
+  <Folder Name="/crypto/internal/entropy/" Id="a0c9a0f6-84dc-5951-a8fd-cdf0d1e03a65">
+    <Project Path="core/crypto/internal/entropy/crypto.internal.entropy.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/aes/" Id="820848a2-ba3e-59ac-8fab-e54e39cc3989">
+    <Project Path="core/crypto/internal/fips140/aes/crypto.internal.fips140.aes.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/aes/gcm/" Id="9e04630a-f434-535d-b6eb-a5ee958ff069">
+    <Project Path="core/crypto/internal/fips140/aes/gcm/crypto.internal.fips140.aes.gcm.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/alias/" Id="ec44a703-0d12-5e57-bcea-3ef9c204880e">
+    <Project Path="core/crypto/internal/fips140/alias/crypto.internal.fips140.alias.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/bigmod/" Id="83b6bdf9-826a-588a-8598-32c92d583180">
+    <Project Path="core/crypto/internal/fips140/bigmod/crypto.internal.fips140.bigmod.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/check/checktest/" Id="d7f4fa31-c409-59f0-8a29-3d62e6327f13">
+    <Project Path="core/crypto/internal/fips140/check/checktest/crypto.internal.fips140.check.checktest.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/check/" Id="06a42cab-0b40-50a5-a8d5-dcd7fd50cc64">
+    <Project Path="core/crypto/internal/fips140/check/crypto.internal.fips140.check.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/" Id="7e8c941e-6664-5f8a-bb6b-920aa2d2c01d">
+    <Project Path="core/crypto/internal/fips140/crypto.internal.fips140.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/drbg/" Id="e7743a40-b551-54f2-946c-c84dde60d172">
+    <Project Path="core/crypto/internal/fips140/drbg/crypto.internal.fips140.drbg.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/ecdh/" Id="919d3f6d-d813-58ae-a034-54b52c7444b7">
+    <Project Path="core/crypto/internal/fips140/ecdh/crypto.internal.fips140.ecdh.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/ecdsa/" Id="21a9a27a-73c2-5579-866b-d9931bc7c1e4">
+    <Project Path="core/crypto/internal/fips140/ecdsa/crypto.internal.fips140.ecdsa.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/ed25519/" Id="fdc6b08c-cd84-5c76-b865-ce623b89ad81">
+    <Project Path="core/crypto/internal/fips140/ed25519/crypto.internal.fips140.ed25519.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/edwards25519/" Id="8dba1878-d475-5b38-9f33-394151c8f4b7">
+    <Project Path="core/crypto/internal/fips140/edwards25519/crypto.internal.fips140.edwards25519.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/edwards25519/field/" Id="0c8a988f-7f1c-52c1-ba25-05fc55a23874">
+    <Project Path="core/crypto/internal/fips140/edwards25519/field/crypto.internal.fips140.edwards25519.field.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/hkdf/" Id="c0996df3-2caf-551f-a8b4-96c4e56475e2">
+    <Project Path="core/crypto/internal/fips140/hkdf/crypto.internal.fips140.hkdf.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/hmac/" Id="5c1e3acd-3df0-5099-b79d-956c0f2cbc9c">
+    <Project Path="core/crypto/internal/fips140/hmac/crypto.internal.fips140.hmac.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/mlkem/" Id="e587a680-190d-543a-92b6-663dfd0afce3">
+    <Project Path="core/crypto/internal/fips140/mlkem/crypto.internal.fips140.mlkem.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/nistec/" Id="cbe5b8ac-dc6f-5ebf-8552-c5a677eaf220">
+    <Project Path="core/crypto/internal/fips140/nistec/crypto.internal.fips140.nistec.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/nistec/fiat/" Id="adccc245-8af2-5fb7-a7de-861b0cf50ef3">
+    <Project Path="core/crypto/internal/fips140/nistec/fiat/crypto.internal.fips140.nistec.fiat.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/pbkdf2/" Id="4c073385-c43d-5ed4-a54d-6e200fbdae53">
+    <Project Path="core/crypto/internal/fips140/pbkdf2/crypto.internal.fips140.pbkdf2.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/rsa/" Id="2680cb15-4334-504c-91dd-3243ece91b33">
+    <Project Path="core/crypto/internal/fips140/rsa/crypto.internal.fips140.rsa.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/sha256/" Id="2b6c0a5a-f3ab-562b-b95b-964652ca7593">
+    <Project Path="core/crypto/internal/fips140/sha256/crypto.internal.fips140.sha256.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/sha3/" Id="baaec8ac-b111-5e51-b70d-763b8e870d1d">
+    <Project Path="core/crypto/internal/fips140/sha3/crypto.internal.fips140.sha3.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/sha512/" Id="cf9ef727-3d3b-5362-b5d2-96c5ae9c8221">
+    <Project Path="core/crypto/internal/fips140/sha512/crypto.internal.fips140.sha512.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/ssh/" Id="d69a6799-033e-5954-9647-90d49cd25a6a">
+    <Project Path="core/crypto/internal/fips140/ssh/crypto.internal.fips140.ssh.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/subtle/" Id="8ce4b868-5d05-5ed3-b573-71cb1580c6b8">
+    <Project Path="core/crypto/internal/fips140/subtle/crypto.internal.fips140.subtle.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/tls12/" Id="fcf6d10e-0830-5bc3-9de3-8369ac3de9e6">
+    <Project Path="core/crypto/internal/fips140/tls12/crypto.internal.fips140.tls12.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140/tls13/" Id="2a12aaf3-c98b-5953-b177-966cbd32c3cf">
+    <Project Path="core/crypto/internal/fips140/tls13/crypto.internal.fips140.tls13.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140deps/byteorder/" Id="be1005bc-9c02-57f3-8c23-8e18f30786e4">
+    <Project Path="core/crypto/internal/fips140deps/byteorder/crypto.internal.fips140deps.byteorder.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140deps/cpu/" Id="075dcb96-a677-5b73-9d35-3af628800377">
+    <Project Path="core/crypto/internal/fips140deps/cpu/crypto.internal.fips140deps.cpu.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140deps/" Id="dccc9548-0335-5fd9-8c8e-aeabc9543049">
+    <Project Path="core/crypto/internal/fips140deps/crypto.internal.fips140deps.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140deps/godebug/" Id="7e823eb4-9474-520c-89d4-0cc9b41efe7c">
+    <Project Path="core/crypto/internal/fips140deps/godebug/crypto.internal.fips140deps.godebug.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140hash/" Id="3634f623-a263-5dd5-85a5-e78c4e97cd5b">
+    <Project Path="core/crypto/internal/fips140hash/crypto.internal.fips140hash.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/fips140only/" Id="0b347fef-6947-5a2a-a5eb-aae380d85c88">
+    <Project Path="core/crypto/internal/fips140only/crypto.internal.fips140only.csproj" />
+  </Folder>
   <Folder Name="/crypto/internal/hpke/" Id="80f6c935-7b4c-5033-9294-ef32d72e4044">
     <Project Path="core/crypto/internal/hpke/crypto.internal.hpke.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/impl/" Id="92a25083-35a7-5726-9e60-0431303eeccc">
+    <Project Path="core/crypto/internal/impl/crypto.internal.impl.csproj" />
   </Folder>
   <Folder Name="/crypto/internal/mlkem768/" Id="26cb08fe-fc9d-5c8b-a584-7637361e9947">
     <Project Path="core/crypto/internal/mlkem768/crypto.internal.mlkem768.csproj" />
@@ -124,8 +235,21 @@
   <Folder Name="/crypto/internal/randutil/" Id="eb42a633-5407-569a-bf9b-c4cd8c0a4555">
     <Project Path="core/crypto/internal/randutil/crypto.internal.randutil.csproj" />
   </Folder>
+  <Folder Name="/crypto/internal/sysrand/" Id="1b8f8cda-e1f8-5222-b1c7-fc33302b53a1">
+    <Project Path="core/crypto/internal/sysrand/crypto.internal.sysrand.csproj" />
+  </Folder>
+  <Folder Name="/crypto/internal/sysrand/internal/" />
+  <Folder Name="/crypto/internal/sysrand/internal/seccomp/" Id="2b591162-cef8-58c2-be2d-b25eba87509b">
+    <Project Path="core/crypto/internal/sysrand/internal/seccomp/crypto.internal.sysrand.internal.seccomp.csproj" />
+  </Folder>
   <Folder Name="/crypto/md5/" Id="a9abe793-b7d4-564b-a985-69d57c2d17e1">
     <Project Path="core/crypto/md5/crypto.md5.csproj" />
+  </Folder>
+  <Folder Name="/crypto/mlkem/" Id="62c9e4ef-681e-5ad5-a83c-a6be29f2e93e">
+    <Project Path="core/crypto/mlkem/crypto.mlkem.csproj" />
+  </Folder>
+  <Folder Name="/crypto/pbkdf2/" Id="662fbba5-8a1c-5db6-b3b1-f2d722bab1f2">
+    <Project Path="core/crypto/pbkdf2/crypto.pbkdf2.csproj" />
   </Folder>
   <Folder Name="/crypto/rand/" Id="2d6c68fd-6594-55a6-8186-0ff8b93d2e92">
     <Project Path="core/crypto/rand/crypto.rand.csproj" />
@@ -142,6 +266,9 @@
   <Folder Name="/crypto/sha256/" Id="806ff3a9-bb77-5b3e-8ae7-5e0cb112a78c">
     <Project Path="core/crypto/sha256/crypto.sha256.csproj" />
   </Folder>
+  <Folder Name="/crypto/sha3/" Id="87bb6f12-a6f7-5097-834b-2e34d63dab22">
+    <Project Path="core/crypto/sha3/crypto.sha3.csproj" />
+  </Folder>
   <Folder Name="/crypto/sha512/" Id="0dfd830e-6e26-5956-b126-6711270b92fb">
     <Project Path="core/crypto/sha512/crypto.sha512.csproj" />
   </Folder>
@@ -150,6 +277,10 @@
   </Folder>
   <Folder Name="/crypto/tls/" Id="5ec376be-58c6-5b90-a8db-a893d7672ea3">
     <Project Path="core/crypto/tls/crypto.tls.csproj" />
+  </Folder>
+  <Folder Name="/crypto/tls/internal/" />
+  <Folder Name="/crypto/tls/internal/fips140tls/" Id="75edb6a8-5a8f-5a5a-8501-f6efb6f3fb5b">
+    <Project Path="core/crypto/tls/internal/fips140tls/crypto.tls.internal.fips140tls.csproj" />
   </Folder>
   <Folder Name="/crypto/x509/" Id="ebf9b69e-5782-504a-85e0-3ff490508525">
     <Project Path="core/crypto/x509/crypto.x509.csproj" />
@@ -432,6 +563,9 @@
   <Folder Name="/internal/diff/" Id="b0e6f533-40db-54b5-b0ec-f601b05c45cd">
     <Project Path="core/internal/diff/internal.diff.csproj" />
   </Folder>
+  <Folder Name="/internal/exportdata/" Id="68a82e42-6023-5465-9c3c-e3ccc500fd63">
+    <Project Path="core/internal/exportdata/internal.exportdata.csproj" />
+  </Folder>
   <Folder Name="/internal/filepathlite/" Id="38fb71d2-d66f-557d-b584-12c33f831f21">
     <Project Path="core/internal/filepathlite/internal.filepathlite.csproj" />
   </Folder>
@@ -514,6 +648,15 @@
   <Folder Name="/internal/runtime/exithook/" Id="660710b4-102a-587e-92e1-842f055bc1a5">
     <Project Path="core/internal/runtime/exithook/internal.runtime.exithook.csproj" />
   </Folder>
+  <Folder Name="/internal/runtime/maps/" Id="d706fa79-494c-5d7b-8c9d-2e5fd006d4f0">
+    <Project Path="core/internal/runtime/maps/internal.runtime.maps.csproj" />
+  </Folder>
+  <Folder Name="/internal/runtime/math/" Id="36adcf5a-8c36-56f6-b28f-cbee12cafc9f">
+    <Project Path="core/internal/runtime/math/internal.runtime.math.csproj" />
+  </Folder>
+  <Folder Name="/internal/runtime/sys/" Id="438f5237-9230-5af9-afba-68d0a70cc241">
+    <Project Path="core/internal/runtime/sys/internal.runtime.sys.csproj" />
+  </Folder>
   <Folder Name="/internal/runtime/syscall/" Id="f87f468e-b61e-543e-ad50-71097d1940a6">
     <Project Path="core/internal/runtime/syscall/internal.runtime.syscall.csproj" />
   </Folder>
@@ -525,6 +668,12 @@
   </Folder>
   <Folder Name="/internal/stringslite/" Id="3a15def1-8ecc-52f5-bb77-4ad3506f2fd2">
     <Project Path="core/internal/stringslite/internal.stringslite.csproj" />
+  </Folder>
+  <Folder Name="/internal/sync/" Id="53d8e87b-241c-5b82-b222-7a001e8ff24c">
+    <Project Path="core/internal/sync/internal.sync.csproj" />
+  </Folder>
+  <Folder Name="/internal/synctest/" Id="9b513a6d-020f-545e-acf7-09b223afb28c">
+    <Project Path="core/internal/synctest/internal.synctest.csproj" />
   </Folder>
   <Folder Name="/internal/syscall/" />
   <Folder Name="/internal/syscall/execenv/" Id="ae2715d8-dedf-57c5-917b-4ed2e0218a06">
@@ -544,6 +693,9 @@
   </Folder>
   <Folder Name="/internal/sysinfo/" Id="adbea875-49b1-5ec0-ad76-3c643e28ef44">
     <Project Path="core/internal/sysinfo/internal.sysinfo.csproj" />
+  </Folder>
+  <Folder Name="/internal/syslist/" Id="daca40de-9426-536f-ad67-99a77bcb7563">
+    <Project Path="core/internal/syslist/internal.syslist.csproj" />
   </Folder>
   <Folder Name="/internal/testenv/" Id="66c95e08-7ff0-5a58-a3c8-3d89203f1e0e">
     <Project Path="core/internal/testenv/internal.testenv.csproj" />
@@ -957,5 +1109,8 @@
   </Folder>
   <Folder Name="/vendor/golang.org/x/text/unicode/norm/" Id="fc8f4254-7036-54fc-9fc9-1cab6f5a9694">
     <Project Path="core/vendor/golang.org/x/text/unicode/norm/vendor.golang.org.x.text.unicode.norm.csproj" />
+  </Folder>
+  <Folder Name="/weak/" Id="cf29b76c-1f6c-5504-97ae-963243350fd3">
+    <Project Path="core/weak/weak.csproj" />
   </Folder>
 </Solution>

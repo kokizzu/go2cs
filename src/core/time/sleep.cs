@@ -9,12 +9,6 @@ using @internal;
 
 partial class time_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(@internal.godebug_package));
-}
-
 // Sleep pauses the current goroutine for at least the duration d.
 // A negative or zero duration causes Sleep to return immediately.
 public static partial void Sleep(Duration d);
@@ -123,7 +117,7 @@ public static bool Stop(this ж<Timer> Ꮡt) {
 public static ж<Timer> NewTimer(Duration d) {
     var c = new channel<Time>(1);
     var t = newTimer(when(d), 0, sendTime, c, (uintptr)syncTimer(c));
-    t.Value.C = c;
+    t.Value.C = c.WithDirection(GoChanDir.Recv);
     return t;
 }
 
@@ -145,8 +139,8 @@ public static ж<Timer> NewTimer(Duration d) {
 // to receive a time value corresponding to the previous timer settings;
 // if the program has not received from t.C already and the timer is
 // running, Reset is guaranteed to return true.
-// Before Go 1.23, the only safe way to use Reset was to [Stop] and
-// explicitly drain the timer first.
+// Before Go 1.23, the only safe way to use Reset was to call [Timer.Stop]
+// and explicitly drain the timer first.
 // See the [NewTimer] documentation for more details.
 public static bool Reset(this ж<Timer> Ꮡt, Duration d) {
     ref var t = ref Ꮡt.DerefOrNull();
@@ -162,7 +156,7 @@ public static bool Reset(this ж<Timer> Ꮡt, Duration d) {
 internal static void sendTime(any c, uintptr seq, int64 delta) {
     // delta is how long ago the channel send was supposed to happen.
     // The current time can be arbitrarily far into the future, because the runtime
-    // can delay a sendTime call until a goroutines tries to receive from
+    // can delay a sendTime call until a goroutine tries to receive from
     // the channel. Subtract delta to go back to the old time that we
     // used to send.
     var selᴛ1 = c._<channel<Time>>().ᐸꟷ(Now().Add(((Duration)(-delta))), ꓸꓸꓸ);

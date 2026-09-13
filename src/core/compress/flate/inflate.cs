@@ -16,24 +16,6 @@ using go.math;
 
 partial class flate_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 internal static UntypedInt maxCodeLen => 16; // max length of Huffman code
 internal static UntypedInt maxNumLit => 286;
 internal static UntypedInt maxNumDist => 30;
@@ -217,7 +199,7 @@ internal static UntypedInt huffmanValueShift => 4;
             }
         } else {
             nint j = (nint)(reverse & (nint)(huffmanNumChunks - 1));
-            if (sanity && (uint32)(h.chunks[j] & (uint32)huffmanCountMask) != huffmanChunkBits + 1) {
+            if (sanity && (uint32)(h.chunks[j] & (uint32)huffmanCountMask) != (uint32)(huffmanChunkBits + 1)) {
                 // Longer codes should have been
                 // associated with a link table above.
                 throw panic("impossible: not an indirect chunk");
@@ -531,7 +513,7 @@ readLiteral:
             f.dict.writeByte((byte)v);
             if (f.dict.availWrite() == 0) {
                 f.toRead = f.dict.readFlush();
-                f.step = (Action<ж<decompressor>>)(huffmanBlock);
+                f.step = ((Action<ж<decompressor>>)(huffmanBlock));
                 f.stepState = stateInit;
                 return;
             }
@@ -663,7 +645,7 @@ copyHistory:
         f.copyLen -= cnt;
         if (f.dict.availWrite() == 0 || f.copyLen > 0) {
             f.toRead = f.dict.readFlush();
-            f.step = (Action<ж<decompressor>>)(huffmanBlock); // We need to continue this work
+            f.step = ((Action<ж<decompressor>>)(huffmanBlock)); // We need to continue this work
             f.stepState = stateDict;
             return;
         }
@@ -716,7 +698,7 @@ copyHistory:
     }
     if (f.dict.availWrite() == 0 || f.copyLen > 0) {
         f.toRead = f.dict.readFlush();
-        f.step = (Action<ж<decompressor>>)(copyData);
+        f.step = ((Action<ж<decompressor>>)(copyData));
         return;
     }
     f.finishBlock();
@@ -729,7 +711,7 @@ copyHistory:
         }
         f.err = io.EOF;
     }
-    f.step = (Action<ж<decompressor>>)(nextBlock);
+    f.step = ((Action<ж<decompressor>>)(nextBlock));
 }
 
 // noEOF returns err, unless err == io.EOF, in which case it returns io.ErrUnexpectedEOF.
@@ -841,7 +823,7 @@ internal static void fixedHuffmanDecoderInit() {
         bits: f.bits,
         codebits: f.codebits,
         dict: f.dict,
-        step: (Action<ж<decompressor>>)(nextBlock)
+        step: ((Action<ж<decompressor>>)(nextBlock))
     );
     f.makeReader(r);
     f.dict.init(maxMatchOffset, dict);
@@ -862,7 +844,7 @@ public static io.ReadCloser NewReader(io.Reader r) {
     f.makeReader(r);
     f.bits = Ꮡ(new array<nint>(316));
     f.codebits = Ꮡ(new array<nint>(19));
-    f.step = (Action<ж<decompressor>>)(nextBlock);
+    f.step = ((Action<ж<decompressor>>)(nextBlock));
     f.dict.init(maxMatchOffset, default!);
     return new decompressorжReadCloser(Ꮡf);
 }
@@ -880,7 +862,7 @@ public static io.ReadCloser NewReaderDict(io.Reader r, slice<byte> dict) {
     f.makeReader(r);
     f.bits = Ꮡ(new array<nint>(316));
     f.codebits = Ꮡ(new array<nint>(19));
-    f.step = (Action<ж<decompressor>>)(nextBlock);
+    f.step = ((Action<ж<decompressor>>)(nextBlock));
     f.dict.init(maxMatchOffset, dict);
     return new decompressorжReadCloser(Ꮡf);
 }

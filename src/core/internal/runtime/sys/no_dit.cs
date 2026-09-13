@@ -1,0 +1,22 @@
+// Copyright 2024 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+//go:build !arm64
+namespace go.@internal.runtime;
+
+partial class sys_package {
+
+public static bool DITSupported = false;
+
+public static bool EnableDIT() {
+    return false;
+}
+
+public static bool DITEnabled() {
+    return false;
+}
+
+public static void DisableDIT() {
+}
+
+} // end sys_package

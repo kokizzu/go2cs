@@ -156,7 +156,7 @@
     <ProjectReference Include="$(go2csPath)core/golib/golib.csproj" />
 
     <ProjectReference Include="$(go2csPath)core/io/io.csproj" />
-    <ProjectReference Include="$(go2csPath)core/sync/sync.csproj" />
+    <ProjectReference Include="$(go2csPath)core/math/rand/v2/math.rand.v2.csproj" />
   </ItemGroup>
 
   <ItemGroup>

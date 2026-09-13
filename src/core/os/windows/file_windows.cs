@@ -8,7 +8,7 @@ using filepathlite = @internal.filepathlite_package;
 using godebug = @internal.godebug_package;
 using poll = @internal.poll_package;
 using windows = @internal.syscall.windows_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using atomic = go.sync.atomic_package;
 using syscall = syscall_package;
@@ -20,12 +20,6 @@ using go.io;
 using go.sync;
 
 partial class os_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(@internal.godebug_package));
-}
 
 // This matches the value in syscall/syscall_windows.go.
 internal static UntypedInt _UTIME_OMIT => -1;
@@ -83,7 +77,7 @@ internal static ж<File> newFile(syscallꓸHandle h, @string name, @string kind)
         name: name
     ))
     ));
-    Δruntime.SetFinalizer((~f).@file.OrTypedNil(), (Func<ж<@file>, error>)(close));
+    runtime.SetFinalizer((~f).@file.OrTypedNil(), ((Func<ж<@file>, error>)(close)));
     // Ignore initialization errors.
     // Assume any problems will show up in later I/O.
     f.of(File.Ꮡpfd).Init(kind, false);
@@ -122,20 +116,9 @@ internal static (ж<File>, error) openFileNolog(@string name, nint flag, FileMod
         return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "open"u8, Path: name, Err: syscall.ENOENT))));
     }
     @string path = fixLongPath(name);
-    var (r, e) = syscall.Open(path, (nint)(flag | (nint)syscall.O_CLOEXEC), syscallMode(perm));
-    if (e != default!) {
-        // We should return EISDIR when we are trying to open a directory with write access.
-        if (AreEqual(e, syscall.ERROR_ACCESS_DENIED) && ((nint)(flag & O_WRONLY) != 0 || (nint)(flag & O_RDWR) != 0)) {
-            var (pathp, e1) = syscall.UTF16PtrFromString(path);
-            if (e1 == default!) {
-                ref var fa = ref heap(new syscall.Win32FileAttributeData(), out var Ꮡfa);
-                e1 = syscall.GetFileAttributesEx(pathp, syscall.GetFileExInfoStandard, Ꮡfa.Reinterpret<syscall.Win32FileAttributeData, byte>());
-                if (e1 == default! && (uint32)(fa.FileAttributes & (uint32)syscall.FILE_ATTRIBUTE_DIRECTORY) != 0) {
-                    e = syscall.EISDIR;
-                }
-            }
-        }
-        return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "open"u8, Path: name, Err: e))));
+    var (r, err) = syscall.Open(path, (nint)(flag | (nint)syscall.O_CLOEXEC), syscallMode(perm));
+    if (err != default!) {
+        return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "open"u8, Path: name, Err: err))));
     }
     return (newFile(r, name, fileˢ), default!);
 }
@@ -165,7 +148,7 @@ internal static error close(this ж<@file> Ꮡfile) {
         }
     }
     // no need for a finalizer anymore
-    Δruntime.SetFinalizer(Ꮡfile.OrTypedNil(), default!);
+    runtime.SetFinalizer(Ꮡfile.OrTypedNil(), default!);
     return err;
 }
 
@@ -185,7 +168,7 @@ internal static (int64 ret, error err) seek(this ж<File> Ꮡf, int64 offset, ni
         }
     }
     (ret, err) = Ꮡf.of(File.Ꮡpfd).Seek(offset, whence);
-    Δruntime.KeepAlive(Ꮡf.OrTypedNil());
+    runtime.KeepAlive(Ꮡf.OrTypedNil());
     return (ret, err);
 }
 
@@ -272,16 +255,11 @@ public static (ж<File> r, ж<File> w, error err) Pipe() {
     return (newFile(p[0], "|0"u8, pipeˢ), newFile(p[1], "|1"u8, pipeˢ), default!);
 }
 
-internal static ж<Δsync.Once> ᏑuseGetTempPath2Once = new StandardBox<Δsync.Once>(default(Δsync.Once));
-internal static ref Δsync.Once useGetTempPath2Once => ref ᏑuseGetTempPath2Once.Value;
-internal static bool useGetTempPath2;
+internal static Func<bool> useGetTempPath2 = Δsync.OnceValue(bool () => windows.ErrorLoadingGetTempPath2() == default!);
 
 internal static @string tempDir() {
-    ᏑuseGetTempPath2Once.Do(() => {
-        useGetTempPath2 = (windows.ErrorLoadingGetTempPath2() == default!);
-    });
     var getTempPath = syscall.GetTempPath;
-    if (useGetTempPath2) {
+    if (useGetTempPath2()) {
         getTempPath = windows.GetTempPath2;
     }
     var n = (uint32)syscall.MAX_PATH;
@@ -470,6 +448,34 @@ internal static (@string, error) normaliseLinkPath(@string path) {
 
 // go2cs generated this placeholder — func readReparseLink is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
+internal static (@string, error) readReparseLinkHandle(syscallꓸHandle h) {
+    var rdbbuf = new slice<byte>(syscall.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+    ref var bytesReturned = ref heap(new uint32(), out var ᏑbytesReturned);
+    var err = syscall.DeviceIoControl(h, syscall.FSCTL_GET_REPARSE_POINT, nil, 0, Ꮡ(rdbbuf, 0), (uint32)len(rdbbuf), ᏑbytesReturned, nil);
+    if (err != default!) {
+        return ("", err);
+    }
+    var rdb = Ꮡ(rdbbuf, 0).Reinterpret<byte, windows.REPARSE_DATA_BUFFER>();
+    var exprᴛ1 = (~rdb).ReparseTag;
+    if (exprᴛ1 == syscall.IO_REPARSE_TAG_SYMLINK) {
+        var rb = rdb.of(windows.REPARSE_DATA_BUFFER.ᏑDUMMYUNIONNAME).Reinterpret<byte, windows.SymbolicLinkReparseBuffer>();
+        @string s = rb.Path();
+        if ((uint32)((~rb).Flags & (uint32)windows.SYMLINK_FLAG_RELATIVE) != 0) {
+            return (s, default!);
+        }
+        return normaliseLinkPath(s);
+    }
+    if (exprᴛ1 == windows.IO_REPARSE_TAG_MOUNT_POINT) {
+        return normaliseLinkPath((rdb.of(windows.REPARSE_DATA_BUFFER.ᏑDUMMYUNIONNAME).Reinterpret<byte, windows.MountPointReparseBuffer>()).Path());
+    }
+    { /* default: */
+        return ("", syscall.ENOENT);
+    }
+
+}
+
+// the path is not a symlink or junction but another type of reparse
+// point
 internal static (@string, error) readlink(@string name) {
     var (s, err) = readReparseLink(fixLongPath(name));
     if (err != default!) {

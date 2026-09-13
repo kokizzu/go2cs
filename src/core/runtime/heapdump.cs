@@ -203,7 +203,7 @@ internal static void dumptype(ж<_type> Ꮡt) {
             dwrite(@unsafe.Pointer.FromPinnedBox(@unsafe.StringData(name)), (uintptr)len(name));
         }
     }
-    dumpbool((abiꓸKind)(t.Kind_ & abi.KindDirectIface) == 0 || t.PtrBytes != 0);
+    dumpbool((abiꓸKind)(t.Kind_ & abi.KindDirectIface) == 0 || t.Pointers());
 }
 
 // dump an object.

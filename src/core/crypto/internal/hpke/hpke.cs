@@ -7,80 +7,21 @@ using crypto = crypto_package;
 using aes = go.crypto.aes_package;
 using cipher = go.crypto.cipher_package;
 using ecdh = go.crypto.ecdh_package;
+using hkdf = go.crypto.@internal.fips140.hkdf_package;
 using rand = go.crypto.rand_package;
-using binary = encoding.binary_package;
 using errors = errors_package;
+using byteorder = go.@internal.byteorder_package;
 using bits = math.bits_package;
 using chacha20poly1305 = vendor.golang.org.x.crypto.chacha20poly1305_package;
-using hkdf = vendor.golang.org.x.crypto.hkdf_package;
-using encoding;
+using go.@internal;
 using go.crypto;
+using go.crypto.@internal.fips140;
 using hash = hash_package;
 using io = io_package;
 using math;
 using vendor.golang.org.x.crypto;
 
 partial class hpke_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸaes() {
-    builtin.initPackage(typeof(go.crypto.aes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() {
-    builtin.initPackage(typeof(go.crypto.cipher_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdh() {
-    builtin.initPackage(typeof(go.crypto.ecdh_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() {
-    builtin.initPackage(typeof(go.crypto.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
-    builtin.initPackage(typeof(math.bits_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸchacha20poly1305() {
-    builtin.initPackage(typeof(vendor.golang.org.x.crypto.chacha20poly1305_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸhkdf() {
-    builtin.initPackage(typeof(vendor.golang.org.x.crypto.hkdf_package));
-}
 
 // testingOnlyGenerateKey is only used during testing, to provide
 // a fixed test key to use when checking the RFC 9180 vectors.
@@ -90,28 +31,23 @@ internal static Func<(ж<ecdh.PrivateKey>, error)> testingOnlyGenerateKey;
     internal crypto.Hash hash;
 }
 
-public static slice<byte> LabeledExtract(this ж<hkdfKDF> Ꮡkdf, slice<byte> suiteID, slice<byte> salt, @string label, slice<byte> inputKey) {
-    var labeledIKM = new slice<byte>(0, 7 + len(suiteID) + len(label) + len(inputKey));
+public static slice<byte> LabeledExtract(this ж<hkdfKDF> Ꮡkdf, slice<byte> sid, slice<byte> salt, @string label, slice<byte> inputKey) {
+    var labeledIKM = new slice<byte>(0, 7 + len(sid) + len(label) + len(inputKey));
     labeledIKM = appendꓸꓸꓸ(labeledIKM, slice<byte>("HPKE-v1"u8));
-    labeledIKM = appendꓸꓸꓸ(labeledIKM, suiteID);
+    labeledIKM = appendꓸꓸꓸ(labeledIKM, sid);
     labeledIKM = append(labeledIKM, label.ꓸꓸꓸ);
     labeledIKM = appendꓸꓸꓸ(labeledIKM, inputKey);
-    return hkdf.Extract(() => Ꮡkdf.Value.hash.New(), labeledIKM, salt);
+    return hkdf.Extract<hash.Hash>(() => Ꮡkdf.Value.hash.New(), labeledIKM, salt);
 }
 
 public static slice<byte> LabeledExpand(this ж<hkdfKDF> Ꮡkdf, slice<byte> suiteID, slice<byte> randomKey, @string label, slice<byte> info, uint16 length) {
     var labeledInfo = new slice<byte>(0, 2 + 7 + len(suiteID) + len(label) + len(info));
-    labeledInfo = binary.BigEndian.AppendUint16(labeledInfo, length);
+    labeledInfo = byteorder.BEAppendUint16(labeledInfo, length);
     labeledInfo = appendꓸꓸꓸ(labeledInfo, slice<byte>("HPKE-v1"u8));
     labeledInfo = appendꓸꓸꓸ(labeledInfo, suiteID);
     labeledInfo = append(labeledInfo, label.ꓸꓸꓸ);
     labeledInfo = appendꓸꓸꓸ(labeledInfo, info);
-    var @out = new slice<byte>(length);
-    var (n, err) = hkdf.Expand(() => Ꮡkdf.Value.hash.New(), randomKey, labeledInfo).Read(@out);
-    if (err != default! || n != (nint)length) {
-        throw panic("hpke: LabeledExpand failed unexpectedly");
-    }
-    return @out;
+    return hkdf.Expand<hash.Hash>(() => Ꮡkdf.Value.hash.New(), randomKey, ((@string)labeledInfo), (nint)length);
 }
 
 // dhKEM implements the KEM specified in RFC 9180, Section 4.1.
@@ -122,6 +58,10 @@ public static slice<byte> LabeledExpand(this ж<hkdfKDF> Ꮡkdf, slice<byte> sui
     internal uint16 nSecret;
 }
 
+[GoType("num:uint16")] partial struct KemID;
+
+public static UntypedInt DHKEM_X25519_HKDF_SHA256 => 0x0020;
+
 // RFC 9180 Section 7.1
 
 [GoType("dyn")] partial struct SupportedKEMsᴛ1 {
@@ -130,7 +70,7 @@ public static slice<byte> LabeledExpand(this ж<hkdfKDF> Ꮡkdf, slice<byte> sui
     internal uint16 nSecret;
 }
 public static map<uint16, SupportedKEMsᴛ1> SupportedKEMs = new map<uint16, SupportedKEMsᴛ1>{
-    [0x0020] = new(ecdh.X25519(), crypto.SHA256, 32)
+    [DHKEM_X25519_HKDF_SHA256] = new(ecdh.X25519(), crypto.SHA256, 32)
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -144,7 +84,7 @@ internal static (ж<dhKEM>, error) newDHKem(uint16 kemID) {
     return (Ꮡ(new dhKEM(
         dh: suite.curve,
         kdf: new hkdfKDF(suite.hash),
-        suiteID: binary.BigEndian.AppendUint16(slice<byte>("KEM"u8), kemID),
+        suiteID: byteorder.BEAppendUint16(slice<byte>("KEM"u8), kemID),
         nSecret: suite.nSecret
     )), default!);
 }
@@ -184,15 +124,38 @@ internal static (slice<byte> sharedSecret, slice<byte> encapPub, error err) Enca
     return (Ꮡdh.ExtractAndExpand(dhVal, kemContext), encPubEph, default!);
 }
 
-[GoType] partial struct Sender {
+internal static (slice<byte>, error) Decap(this ж<dhKEM> Ꮡdh, slice<byte> encPubEph, ж<ecdh.PrivateKey> ᏑsecRecipient) {
+    ref var dh = ref Ꮡdh.DerefOrNull();
+    ref var secRecipient = ref ᏑsecRecipient.DerefOrNull();
+
+    var (pubEph, err) = dh.dh.NewPublicKey(encPubEph);
+    if (err != default!) {
+        return (default!, err);
+    }
+    (var dhVal, err) = ᏑsecRecipient.ECDH(pubEph);
+    if (err != default!) {
+        return (default!, err);
+    }
+    var kemContext = appendꓸꓸꓸ(encPubEph, secRecipient.PublicKey().Bytes());
+    return (Ꮡdh.ExtractAndExpand(dhVal, kemContext), default!);
+}
+
+[GoType] partial struct context {
     internal cipher.AEAD aead;
-    internal ж<dhKEM> kem;
     internal slice<byte> sharedSecret;
     internal slice<byte> suiteID;
     internal slice<byte> key;
     internal slice<byte> baseNonce;
     internal slice<byte> exporterSecret;
     internal uint128 seqNum;
+}
+
+[GoType] partial struct Sender {
+    internal partial ref ж<context> context { get; }
+}
+
+[GoType] partial struct Receipient {
+    internal partial ref ж<context> context { get; }
 }
 
 internal static Func<slice<byte>, (cipher.AEAD, error)> aesGCMNew = (slice<byte> key) => {
@@ -203,6 +166,12 @@ internal static Func<slice<byte>, (cipher.AEAD, error)> aesGCMNew = (slice<byte>
     return cipher.NewGCM(block);
 };
 
+[GoType("num:uint16")] partial struct AEADID;
+
+public static UntypedInt AEAD_AES_128_GCM => 0x0001;
+public static UntypedInt AEAD_AES_256_GCM => 0x0002;
+public static UntypedInt AEAD_ChaCha20Poly1305 => 0x0003;
+
 // RFC 9180, Section 7.3
 
 [GoType("dyn")] partial struct SupportedAEADsᴛ1 {
@@ -211,18 +180,21 @@ internal static Func<slice<byte>, (cipher.AEAD, error)> aesGCMNew = (slice<byte>
     internal Func<slice<byte>, (cipher.AEAD, error)> aead;
 }
 public static map<uint16, SupportedAEADsᴛ1> SupportedAEADs = new map<uint16, SupportedAEADsᴛ1>{
-    [0x0001] = new(keySize: 16, nonceSize: 12, aead: aesGCMNew),
-    [0x0002] = new(keySize: 32, nonceSize: 12, aead: aesGCMNew),
-    [0x0003] = new(keySize: chacha20poly1305.KeySize, nonceSize: chacha20poly1305.ΔNonceSize, aead: chacha20poly1305.New)
+    [AEAD_AES_128_GCM] = new(keySize: 16, nonceSize: 12, aead: aesGCMNew),
+    [AEAD_AES_256_GCM] = new(keySize: 32, nonceSize: 12, aead: aesGCMNew),
+    [AEAD_ChaCha20Poly1305] = new(keySize: chacha20poly1305.KeySize, nonceSize: chacha20poly1305.ΔNonceSize, aead: chacha20poly1305.New)
 };
+
+[GoType("num:uint16")] partial struct KDFID;
+
+public static UntypedInt KDF_HKDF_SHA256 => 0x0001;
 
 // RFC 9180, Section 7.2
 public static map<uint16, Func<ж<hkdfKDF>>> SupportedKDFs = new map<uint16, Func<ж<hkdfKDF>>>{
-    [0x0001] = () => Ꮡ(new hkdfKDF(crypto.SHA256))
+    [KDF_HKDF_SHA256] = () => Ꮡ(new hkdfKDF(crypto.SHA256))
 };
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string incorrectPublicKeyTypeˢ = "incorrect public key type"u8;
 internal static readonly @string unsupportedKdfIdˢ = "unsupported KDF id"u8;
 internal static readonly @string unsupportedAeadIdˢ = "unsupported AEAD id"u8;
 internal static readonly @string pskIdHashˢ = "psk_id_hash"u8;
@@ -232,80 +204,112 @@ internal static readonly @string keyˢ = "key"u8;
 internal static readonly @string baseNonceˢ = "base_nonce"u8;
 internal static readonly @string expˢ = "exp"u8;
 
-public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 kdfID, uint16 aeadID, cryptoꓸPublicKey pub, slice<byte> info) {
-    var suiteID = SuiteID(kemID, kdfID, aeadID);
-    var (kem, err) = newDHKem(kemID);
-    if (err != default!) {
-        return (default!, default!, err);
-    }
-    var (pubRecipient, ok) = pub._<ж<ecdhꓸPublicKey>>(ᐧ);
+internal static (ж<context>, error) newContext(slice<byte> sharedSecret, uint16 kemID, uint16 kdfID, uint16 aeadID, slice<byte> info) {
+    var sid = suiteID(kemID, kdfID, aeadID);
+    var (kdfInit, ok) = SupportedKDFs[kdfID, ꟷ];
     if (!ok) {
-        return (default!, default!, errors.New(incorrectPublicKeyTypeˢ));
-    }
-    (var sharedSecret, var encapsulatedKey, err) = kem.Encap(pubRecipient);
-    if (err != default!) {
-        return (default!, default!, err);
-    }
-    (var kdfInit, ok) = SupportedKDFs[kdfID, ꟷ];
-    if (!ok) {
-        return (default!, default!, errors.New(unsupportedKdfIdˢ));
+        return (default!, errors.New(unsupportedKdfIdˢ));
     }
     var kdf = kdfInit();
     (var aeadInfo, ok) = SupportedAEADs[aeadID, ꟷ];
     if (!ok) {
-        return (default!, default!, errors.New(unsupportedAeadIdˢ));
+        return (default!, errors.New(unsupportedAeadIdˢ));
     }
-    var pskIDHash = kdf.LabeledExtract(suiteID, default!, pskIdHashˢ, default!);
-    var infoHash = kdf.LabeledExtract(suiteID, default!, infoHashˢ, info);
+    var pskIDHash = kdf.LabeledExtract(sid, default!, pskIdHashˢ, default!);
+    var infoHash = kdf.LabeledExtract(sid, default!, infoHashˢ, info);
     var ksContext = appendꓸꓸꓸ(new byte[]{0}.slice(), pskIDHash);
     ksContext = appendꓸꓸꓸ(ksContext, infoHash);
-    var secret = kdf.LabeledExtract(suiteID, sharedSecret, secretˢ, default!);
-    var key = kdf.LabeledExpand(suiteID, secret, keyˢ, ksContext, (uint16)aeadInfo.keySize);
+    var secret = kdf.LabeledExtract(sid, sharedSecret, secretˢ, default!);
+    var key = kdf.LabeledExpand(sid, secret, keyˢ, ksContext, (uint16)aeadInfo.keySize);
     /* Nk - key size for AEAD */
-    var baseNonce = kdf.LabeledExpand(suiteID, secret, baseNonceˢ, ksContext, (uint16)aeadInfo.nonceSize);
+    var baseNonce = kdf.LabeledExpand(sid, secret, baseNonceˢ, ksContext, (uint16)aeadInfo.nonceSize);
     /* Nn - nonce size for AEAD */
-    var exporterSecret = kdf.LabeledExpand(suiteID, secret, expˢ, ksContext, (uint16)(~kdf).hash.Size());
+    var exporterSecret = kdf.LabeledExpand(sid, secret, expˢ, ksContext, (uint16)(~kdf).hash.Size());
     /* Nh - hash output size of the kdf*/
-    (var aead, err) = aeadInfo.aead(key);
+    var (aead, err) = aeadInfo.aead(key);
     if (err != default!) {
-        return (default!, default!, err);
+        return (default!, err);
     }
-    return (encapsulatedKey, Ꮡ(new Sender(
-        kem: kem,
+    return (Ꮡ(new context(
         aead: aead,
         sharedSecret: sharedSecret,
-        suiteID: suiteID,
+        suiteID: sid,
         key: key,
         baseNonce: baseNonce,
         exporterSecret: exporterSecret
     )), default!);
 }
 
-[GoRecv] internal static slice<byte> nextNonce(this ref Sender s) {
-    var nonce = s.seqNum.bytes()[(int)(16 - s.aead.NonceSize())..];
-    foreach (var (i, _) in s.baseNonce) {
-        nonce[i] ^= (byte)(s.baseNonce[i]);
+public static (slice<byte>, ж<Sender>, error) SetupSender(uint16 kemID, uint16 kdfID, uint16 aeadID, ж<ecdhꓸPublicKey> Ꮡpub, slice<byte> info) {
+    var (kem, err) = newDHKem(kemID);
+    if (err != default!) {
+        return (default!, default!, err);
     }
+    (var sharedSecret, var encapsulatedKey, err) = kem.Encap(Ꮡpub);
+    if (err != default!) {
+        return (default!, default!, err);
+    }
+    (var context, err) = newContext(sharedSecret, kemID, kdfID, aeadID, info);
+    if (err != default!) {
+        return (default!, default!, err);
+    }
+    return (encapsulatedKey, Ꮡ(new Sender(context)), default!);
+}
+
+public static (ж<Receipient>, error) SetupReceipient(uint16 kemID, uint16 kdfID, uint16 aeadID, ж<ecdh.PrivateKey> Ꮡpriv, slice<byte> info, slice<byte> encPubEph) {
+    var (kem, err) = newDHKem(kemID);
+    if (err != default!) {
+        return (default!, err);
+    }
+    (var sharedSecret, err) = kem.Decap(encPubEph, Ꮡpriv);
+    if (err != default!) {
+        return (default!, err);
+    }
+    (var context, err) = newContext(sharedSecret, kemID, kdfID, aeadID, info);
+    if (err != default!) {
+        return (default!, err);
+    }
+    return (Ꮡ(new Receipient(context)), default!);
+}
+
+[GoRecv] internal static slice<byte> nextNonce(this ref context ctx) {
+    var nonce = ctx.seqNum.bytes()[(int)(16 - ctx.aead.NonceSize())..];
+    foreach (var (i, _) in ctx.baseNonce) {
+        nonce[i] ^= (byte)(ctx.baseNonce[i]);
+    }
+    return nonce;
+}
+
+[GoRecv] internal static void incrementNonce(this ref context ctx) {
     // Message limit is, according to the RFC, 2^95+1, which
     // is somewhat confusing, but we do as we're told.
-    if (s.seqNum.bitLen() >= (s.aead.NonceSize() * 8) - 1) {
+    if (ctx.seqNum.bitLen() >= (ctx.aead.NonceSize() * 8) - 1) {
         throw panic("message limit reached");
     }
-    s.seqNum = s.seqNum.addOne();
-    return nonce;
+    ctx.seqNum = ctx.seqNum.addOne();
 }
 
 [GoRecv] public static (slice<byte>, error) Seal(this ref Sender s, slice<byte> aad, slice<byte> plaintext) {
     var ciphertext = s.aead.Seal(default!, s.nextNonce(), plaintext, aad);
+    s.incrementNonce();
     return (ciphertext, default!);
 }
 
-public static slice<byte> SuiteID(uint16 kemID, uint16 kdfID, uint16 aeadID) {
+[GoRecv] public static (slice<byte>, error) Open(this ref Receipient r, slice<byte> aad, slice<byte> ciphertext) {
+    var (plaintext, err) = r.aead.Open(default!, r.nextNonce(), ciphertext, aad);
+    if (err != default!) {
+        return (default!, err);
+    }
+    r.incrementNonce();
+    return (plaintext, default!);
+}
+
+internal static slice<byte> suiteID(uint16 kemID, uint16 kdfID, uint16 aeadID) {
     var suiteID = new slice<byte>(0, 4 + 2 + 2 + 2);
     suiteID = appendꓸꓸꓸ(suiteID, slice<byte>("HPKE"u8));
-    suiteID = binary.BigEndian.AppendUint16(suiteID, kemID);
-    suiteID = binary.BigEndian.AppendUint16(suiteID, kdfID);
-    suiteID = binary.BigEndian.AppendUint16(suiteID, aeadID);
+    suiteID = byteorder.BEAppendUint16(suiteID, kemID);
+    suiteID = byteorder.BEAppendUint16(suiteID, kdfID);
+    suiteID = byteorder.BEAppendUint16(suiteID, aeadID);
     return suiteID;
 }
 
@@ -318,6 +322,14 @@ public static (ж<ecdhꓸPublicKey>, error) ParseHPKEPublicKey(uint16 kemID, sli
         return (default!, errors.New(unsupportedKemIdˢ));
     }
     return kemInfo.curve.NewPublicKey(bytes);
+}
+
+public static (ж<ecdh.PrivateKey>, error) ParseHPKEPrivateKey(uint16 kemID, slice<byte> bytes) {
+    var (kemInfo, ok) = SupportedKEMs[kemID, ꟷ];
+    if (!ok) {
+        return (default!, errors.New(unsupportedKemIdˢ));
+    }
+    return kemInfo.curve.NewPrivateKey(bytes);
 }
 
 [GoType] partial struct uint128 {
@@ -335,8 +347,8 @@ internal static nint bitLen(this uint128 u) {
 
 internal static slice<byte> bytes(this uint128 u) {
     var b = new slice<byte>(16);
-    binary.BigEndian.PutUint64(b[0..], u.hi);
-    binary.BigEndian.PutUint64(b[8..], u.lo);
+    byteorder.BEPutUint64(b[0..], u.hi);
+    byteorder.BEPutUint64(b[8..], u.lo);
     return b;
 }
 

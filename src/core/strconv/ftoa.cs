@@ -31,14 +31,14 @@ internal static ref floatInfo float64info => ref Ꮡfloat64info.Value;
 // value of bitSize bits (32 for float32, 64 for float64).
 //
 // The format fmt is one of
-// 'b' (-ddddp±ddd, a binary exponent),
-// 'e' (-d.dddde±dd, a decimal exponent),
-// 'E' (-d.ddddE±dd, a decimal exponent),
-// 'f' (-ddd.dddd, no exponent),
-// 'g' ('e' for large exponents, 'f' otherwise),
-// 'G' ('E' for large exponents, 'f' otherwise),
-// 'x' (-0xd.ddddp±ddd, a hexadecimal fraction and binary exponent), or
-// 'X' (-0Xd.ddddP±ddd, a hexadecimal fraction and binary exponent).
+//   - 'b' (-ddddp±ddd, a binary exponent),
+//   - 'e' (-d.dddde±dd, a decimal exponent),
+//   - 'E' (-d.ddddE±dd, a decimal exponent),
+//   - 'f' (-ddd.dddd, no exponent),
+//   - 'g' ('e' for large exponents, 'f' otherwise),
+//   - 'G' ('E' for large exponents, 'f' otherwise),
+//   - 'x' (-0xd.ddddp±ddd, a hexadecimal fraction and binary exponent), or
+//   - 'X' (-0Xd.ddddP±ddd, a hexadecimal fraction and binary exponent).
 //
 // The precision prec controls the number of digits (excluding the exponent)
 // printed by the 'e', 'E', 'f', 'g', 'G', 'x', and 'X' formats.
@@ -47,6 +47,8 @@ internal static ref floatInfo float64info => ref Ꮡfloat64info.Value;
 // zeros are removed).
 // The special precision -1 uses the smallest number of digits
 // necessary such that ParseFloat will return f exactly.
+// The exponent is written as a decimal integer;
+// for all formats other than 'b', it will be at least two digits.
 public static @string FormatFloat(float64 f, byte fmt, nint prec, nint bitSize) {
     return ((@string)genericFtoa(new slice<byte>(0, max(prec + 4, 24)), f, fmt, prec, bitSize));
 }

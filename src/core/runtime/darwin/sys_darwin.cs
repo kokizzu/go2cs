@@ -858,6 +858,23 @@ internal static int32 pthread_cond_signal(ж<pthreadcond> Ꮡc) {
 
 internal static partial void pthread_cond_signal_trampoline();
 
+[GoType("dyn")] internal partial struct arc4random_buf_args {
+    internal uintptr Δp;
+    internal int32 n;
+}
+
+//go:nosplit
+//go:cgo_unsafe_args
+internal static void arc4random_buf(@unsafe.Pointer Δp, int32 n) {
+    ref var args = ref heap(new arc4random_buf_args((uintptr)Δp, n), out var Ꮡargs);
+
+    // arc4random_buf() never fails, per its man page, so it's safe to ignore the return value.
+    libcCall((@unsafe.Pointer)abi.FuncPCABI0(arc4random_buf_trampoline), @unsafe.Pointer.FromPinnedBox(Ꮡargs));
+    KeepAlive(Δp);
+}
+
+internal static partial void arc4random_buf_trampoline();
+
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string exitThreadˢ = "exitThread"u8;
 
@@ -988,6 +1005,7 @@ internal static partial void proc_regionfilename_trampoline();
 //go:cgo_import_dynamic libc_pthread_cond_wait pthread_cond_wait "/usr/lib/libSystem.B.dylib"
 //go:cgo_import_dynamic libc_pthread_cond_timedwait_relative_np pthread_cond_timedwait_relative_np "/usr/lib/libSystem.B.dylib"
 //go:cgo_import_dynamic libc_pthread_cond_signal pthread_cond_signal "/usr/lib/libSystem.B.dylib"
+//go:cgo_import_dynamic libc_arc4random_buf arc4random_buf "/usr/lib/libSystem.B.dylib"
 //go:cgo_import_dynamic libc_notify_is_valid_token notify_is_valid_token "/usr/lib/libSystem.B.dylib"
 //go:cgo_import_dynamic libc_xpc_date_create_from_current xpc_date_create_from_current "/usr/lib/libSystem.B.dylib"
 //go:cgo_import_dynamic libc_issetugid issetugid "/usr/lib/libSystem.B.dylib"

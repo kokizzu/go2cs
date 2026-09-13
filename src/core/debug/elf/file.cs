@@ -34,72 +34,6 @@ using go.debug;
 
 partial class elf_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcompressꓸzlib() {
-    builtin.initPackage(typeof(compress.zlib_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸdebugꓸdwarf() {
-    builtin.initPackage(typeof(go.debug.dwarf_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() {
-    builtin.initPackage(typeof(@internal.saferio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸzstd() {
-    builtin.initPackage(typeof(@internal.zstd_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // TODO: error reporting detail
 /*
  * Internal ELF representation
@@ -124,7 +58,8 @@ partial class elf_package {
     public slice<ж<ΔSection>> Sections;
     public slice<ж<Prog>> Progs;
     internal io.Closer closer;
-    internal slice<verneed> gnuNeed;
+    internal slice<DynamicVersion> dynVers;
+    internal slice<DynamicVersionNeed> dynVerNeeds;
     internal slice<byte> gnuVersym;
 }
 
@@ -279,10 +214,16 @@ public static io.ReadSeeker Open(this ж<ΔSection> Ꮡs) {
 [GoType] partial struct Symbol {
     public @string Name;
     public byte Info, Other;
+    // HasVersion reports whether the symbol has any version information.
+    // This will only be true for the dynamic symbol table.
+    public bool HasVersion;
+    // VersionIndex is the symbol's version index.
+    // Use the methods of the [VersionIndex] type to access it.
+    // This field is only meaningful if HasVersion is true.
+    public VersionIndex VersionIndex;
     public SectionIndex Section;
     public uint64 Value, Size;
-    // Version and Library are present only for the dynamic symbol
-    // table.
+    // These fields are present only for the dynamic symbol table.
     public @string Version;
     public @string Library;
 }
@@ -580,6 +521,9 @@ public static (ж<File>, error) NewFile(io.ReaderAt r) {
     nint c = saferio.SliceCap<ΔSection>((uint64)shnum);
     if (c < 0) {
         return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "too many sections"u8, shnum))));
+    }
+    if (shnum > 0 && (18446744073709551615UL) / (uint64)shnum < (uint64)shentsize) {
+        return (default!, new FormatErrorжerror(Ꮡ(new FormatError(0, "section header overflow"u8, shnum))));
     }
     f.Value.Sections = new slice<ж<ΔSection>>(0, c);
     var names = new slice<uint32>(0, c);
@@ -1517,9 +1461,13 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
     if (err != default!) {
         return (default!, err);
     }
-    if (f.gnuVersionInit(str)) {
+    (var hasVersions, err) = f.gnuVersionInit(str);
+    if (err != default!) {
+        return (default!, err);
+    }
+    if (hasVersions) {
         foreach (var (i, _) in sym) {
-            (sym[i].Library, sym[i].Version) = f.gnuVersion(i);
+            (sym[i].HasVersion, sym[i].VersionIndex, sym[i].Version, sym[i].Library) = f.gnuVersion(i);
         }
     }
     return (sym, default!);
@@ -1540,112 +1488,297 @@ public static (ж<dwarf.Data>, error) DWARF(this ж<File> Ꮡf) {
     if (err != default!) {
         return (default!, err);
     }
-    f.gnuVersionInit(str);
+    {
+        var (_, errΔ1) = f.gnuVersionInit(str); if (errΔ1 != default!) {
+            return (default!, errΔ1);
+        }
+    }
     slice<ImportedSymbol> all = default!;
     foreach (var (i, s) in sym) {
         if (ST_BIND(s.Info) == STB_GLOBAL && s.Section == SHN_UNDEF) {
             all = append(all, new ImportedSymbol(Name: s.Name));
             var symΔ1 = Ꮡ(all, len(all) - 1);
-            (symΔ1.Value.Library, symΔ1.Value.Version) = f.gnuVersion(i);
+            (_, _, symΔ1.Value.Version, symΔ1.Value.Library) = f.gnuVersion(i);
         }
     }
     return (all, default!);
 }
 
-[GoType] partial struct verneed {
-    public @string File;
-    public @string Name;
+[GoType("num:uint16")] partial struct VersionIndex;
+
+// IsHidden reports whether the symbol is hidden within the version.
+// This means that the symbol can only be seen by specifying the exact version.
+public static bool IsHidden(this VersionIndex vi) {
+    return (VersionIndex)(vi & 0x8000) != 0;
 }
 
-// gnuVersionInit parses the GNU version tables
-// for use by calls to gnuVersion.
-[GoRecv] internal static bool gnuVersionInit(this ref File f, slice<byte> str) {
-    if (f.gnuNeed != default!) {
-        // Already initialized
-        return true;
+// Index returns the version index.
+// If this is the value 0, it means that the symbol is local,
+// and is not visible externally.
+// If this is the value 1, it means that the symbol is in the base version,
+// and has no specific version; it may or may not match a
+// [DynamicVersion.Index] in the slice returned by [File.DynamicVersions].
+// Other values will match either [DynamicVersion.Index]
+// in the slice returned by [File.DynamicVersions],
+// or [DynamicVersionDep.Index] in the Needs field
+// of the elements of the slice returned by [File.DynamicVersionNeeds].
+// In general, a defined symbol will have an index referring
+// to DynamicVersions, and an undefined symbol will have an index
+// referring to some version in DynamicVersionNeeds.
+public static uint16 Index(this VersionIndex vi) {
+    return (uint16)((VersionIndex)(vi & 0x7fff));
+}
+
+// DynamicVersion is a version defined by a dynamic object.
+// This describes entries in the ELF SHT_GNU_verdef section.
+// We assume that the vd_version field is 1.
+// Note that the name of the version appears here;
+// it is not in the first Deps entry as it is in the ELF file.
+[GoType] partial struct DynamicVersion {
+    public @string Name; // Name of version defined by this index.
+    public uint16 Index; // Version index.
+    public DynamicVersionFlag Flags;
+    public slice<@string> Deps; // Names of versions that this version depends upon.
+}
+
+// DynamicVersionNeed describes a shared library needed by a dynamic object,
+// with a list of the versions needed from that shared library.
+// This describes entries in the ELF SHT_GNU_verneed section.
+// We assume that the vn_version field is 1.
+[GoType] partial struct DynamicVersionNeed {
+    public @string Name;             // Shared library name.
+    public slice<DynamicVersionDep> Needs; // Dependencies.
+}
+
+// DynamicVersionDep is a version needed from some shared library.
+[GoType] partial struct DynamicVersionDep {
+    public DynamicVersionFlag Flags;
+    public uint16 Index; // Version index.
+    public @string Dep; // Name of required version.
+}
+
+// dynamicVersions returns version information for a dynamic object.
+[GoRecv] internal static error dynamicVersions(this ref File f, slice<byte> str) {
+    if (f.dynVers != default!) {
+        // Already initialized.
+        return default!;
+    }
+    // Accumulate verdef information.
+    var vd = f.SectionByType(SHT_GNU_VERDEF);
+    if (vd == nil) {
+        return default!;
+    }
+    var (d, _) = vd.Data();
+    slice<DynamicVersion> dynVers = default!;
+    nint i = 0;
+    while (ᐧ) {
+        if (i + 20 > len(d)) {
+            break;
+        }
+        ref var version = ref heap<uint16>(out var Ꮡversion);
+        version = f.ByteOrder.Uint16(d[(int)(i)..(int)(i + 2)]);
+        if (version != 1) {
+            return new FormatErrorжerror(Ꮡ(new FormatError((int64)((~vd).Offset + (uint64)i), "unexpected dynamic version"u8, version)));
+        }
+        var flags = ((DynamicVersionFlag)f.ByteOrder.Uint16(d[(int)(i + 2)..(int)(i + 4)]));
+        var ndx = f.ByteOrder.Uint16(d[(int)(i + 4)..(int)(i + 6)]);
+        var cnt = f.ByteOrder.Uint16(d[(int)(i + 6)..(int)(i + 8)]);
+        var aux = f.ByteOrder.Uint32(d[(int)(i + 12)..(int)(i + 16)]);
+        var next = f.ByteOrder.Uint32(d[(int)(i + 16)..(int)(i + 20)]);
+        if (cnt == 0) {
+            return new FormatErrorжerror(Ꮡ(new FormatError((int64)((~vd).Offset + (uint64)i), "dynamic version has no name"u8, default!)));
+        }
+        @string name = default!;
+        @string depName = default!;
+        slice<@string> deps = default!;
+        nint j = i + (nint)aux;
+        for (nint c = 0; c < (nint)cnt; c++) {
+            if (j + 8 > len(d)) {
+                break;
+            }
+            var vname = f.ByteOrder.Uint32(d[(int)(j)..(int)(j + 4)]);
+            var vnext = f.ByteOrder.Uint32(d[(int)(j + 4)..(int)(j + 8)]);
+            (depName, _) = getString(str, (nint)vname);
+            if (c == 0){
+                name = depName;
+            } else {
+                deps = append(deps, depName);
+            }
+            j += (nint)vnext;
+        }
+        dynVers = append(dynVers, new DynamicVersion(
+            Name: name,
+            Index: ndx,
+            Flags: flags,
+            Deps: deps
+        ));
+        if (next == 0) {
+            break;
+        }
+        i += (nint)next;
+    }
+    f.dynVers = dynVers;
+    return default!;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string dynamicVersionsMissingˢ = "DynamicVersions: missing version table"u8;
+
+// DynamicVersions returns version information for a dynamic object.
+[GoRecv] public static (slice<DynamicVersion>, error) DynamicVersions(this ref File f) {
+    if (f.dynVers == default!) {
+        var (_, str, err) = f.getSymbols(SHT_DYNSYM);
+        if (err != default!) {
+            return (default!, err);
+        }
+        (var hasVersions, err) = f.gnuVersionInit(str);
+        if (err != default!) {
+            return (default!, err);
+        }
+        if (!hasVersions) {
+            return (default!, errors.New(dynamicVersionsMissingˢ));
+        }
+    }
+    return (f.dynVers, default!);
+}
+
+// dynamicVersionNeeds returns version dependencies for a dynamic object.
+[GoRecv] internal static error dynamicVersionNeeds(this ref File f, slice<byte> str) {
+    if (f.dynVerNeeds != default!) {
+        // Already initialized.
+        return default!;
     }
     // Accumulate verneed information.
     var vn = f.SectionByType(SHT_GNU_VERNEED);
     if (vn == nil) {
-        return false;
+        return default!;
     }
     var (d, _) = vn.Data();
-    slice<verneed> need = default!;
+    slice<DynamicVersionNeed> dynVerNeeds = default!;
     nint i = 0;
     while (ᐧ) {
         if (i + 16 > len(d)) {
             break;
         }
-        var vers = f.ByteOrder.Uint16(d[(int)(i)..(int)(i + 2)]);
+        ref var vers = ref heap<uint16>(out var Ꮡvers);
+        vers = f.ByteOrder.Uint16(d[(int)(i)..(int)(i + 2)]);
         if (vers != 1) {
-            break;
+            return new FormatErrorжerror(Ꮡ(new FormatError((int64)((~vn).Offset + (uint64)i), "unexpected dynamic need version"u8, vers)));
         }
         var cnt = f.ByteOrder.Uint16(d[(int)(i + 2)..(int)(i + 4)]);
         var fileoff = f.ByteOrder.Uint32(d[(int)(i + 4)..(int)(i + 8)]);
         var aux = f.ByteOrder.Uint32(d[(int)(i + 8)..(int)(i + 12)]);
         var next = f.ByteOrder.Uint32(d[(int)(i + 12)..(int)(i + 16)]);
         var (@file, _) = getString(str, (nint)fileoff);
-        @string name = default!;
+        slice<DynamicVersionDep> deps = default!;
         nint j = i + (nint)aux;
         for (nint c = 0; c < (nint)cnt; c++) {
             if (j + 16 > len(d)) {
                 break;
             }
-            // hash := f.ByteOrder.Uint32(d[j:j+4])
-            // flags := f.ByteOrder.Uint16(d[j+4:j+6])
-            var other = f.ByteOrder.Uint16(d[(int)(j + 6)..(int)(j + 8)]);
+            var flags = ((DynamicVersionFlag)f.ByteOrder.Uint16(d[(int)(j + 4)..(int)(j + 6)]));
+            var index = f.ByteOrder.Uint16(d[(int)(j + 6)..(int)(j + 8)]);
             var nameoff = f.ByteOrder.Uint32(d[(int)(j + 8)..(int)(j + 12)]);
             var nextΔ1 = f.ByteOrder.Uint32(d[(int)(j + 12)..(int)(j + 16)]);
-            (name, _) = getString(str, (nint)nameoff);
-            nint ndx = (nint)other;
-            if (ndx >= len(need)) {
-                var a = new slice<verneed>(2 * (ndx + 1));
-                copy(a, need);
-                need = a;
-            }
-            need[ndx] = new verneed(@file, name);
+            var (depName, _) = getString(str, (nint)nameoff);
+            deps = append(deps, new DynamicVersionDep(
+                Flags: flags,
+                Index: index,
+                Dep: depName
+            ));
             if (nextΔ1 == 0) {
                 break;
             }
             j += (nint)nextΔ1;
         }
+        dynVerNeeds = append(dynVerNeeds, new DynamicVersionNeed(
+            Name: @file,
+            Needs: deps
+        ));
         if (next == 0) {
             break;
         }
         i += (nint)next;
     }
+    f.dynVerNeeds = dynVerNeeds;
+    return default!;
+}
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string dynamicVersionNeedsˢ = "DynamicVersionNeeds: missing version table"u8;
+
+// DynamicVersionNeeds returns version dependencies for a dynamic object.
+[GoRecv] public static (slice<DynamicVersionNeed>, error) DynamicVersionNeeds(this ref File f) {
+    if (f.dynVerNeeds == default!) {
+        var (_, str, err) = f.getSymbols(SHT_DYNSYM);
+        if (err != default!) {
+            return (default!, err);
+        }
+        (var hasVersions, err) = f.gnuVersionInit(str);
+        if (err != default!) {
+            return (default!, err);
+        }
+        if (!hasVersions) {
+            return (default!, errors.New(dynamicVersionNeedsˢ));
+        }
+    }
+    return (f.dynVerNeeds, default!);
+}
+
+// gnuVersionInit parses the GNU version tables
+// for use by calls to gnuVersion.
+// It reports whether any version tables were found.
+[GoRecv] internal static (bool, error) gnuVersionInit(this ref File f, slice<byte> str) {
     // Versym parallels symbol table, indexing into verneed.
     var vs = f.SectionByType(SHT_GNU_VERSYM);
     if (vs == nil) {
-        return false;
+        return (false, default!);
     }
-    (d, _) = vs.Data();
-    f.gnuNeed = need;
+    var (d, _) = vs.Data();
     f.gnuVersym = d;
-    return true;
+    {
+        var err = f.dynamicVersions(str); if (err != default!) {
+            return (false, err);
+        }
+    }
+    {
+        var err = f.dynamicVersionNeeds(str); if (err != default!) {
+            return (false, err);
+        }
+    }
+    return (true, default!);
 }
 
 // gnuVersion adds Library and Version information to sym,
 // which came from offset i of the symbol table.
-[GoRecv] internal static (@string library, @string version) gnuVersion(this ref File f, nint i) {
-    @string library = default!;
-    @string version = default!;
-
+[GoRecv] internal static (bool hasVersion, VersionIndex versionIndex, @string version, @string library) gnuVersion(this ref File f, nint i) {
     // Each entry is two bytes; skip undef entry at beginning.
     i = (i + 1) * 2;
     if (i >= len(f.gnuVersym)) {
-        return (library, version);
+        return (false, 0, "", "");
     }
     var s = f.gnuVersym[(int)(i)..];
     if (len(s) < 2) {
-        return (library, version);
+        return (false, 0, "", "");
     }
-    nint j = (nint)f.ByteOrder.Uint16(s);
-    if (j < 2 || j >= len(f.gnuNeed)) {
-        return (library, version);
+    var vi = ((VersionIndex)f.ByteOrder.Uint16(s));
+    var ndx = vi.Index();
+    if (ndx == 0 || ndx == 1) {
+        return (true, vi, "", "");
     }
-    var n = Ꮡ(f.gnuNeed, j);
-    return ((~n).File, (~n).Name);
+    foreach (var (_, v) in f.dynVerNeeds) {
+        foreach (var (_, n) in v.Needs) {
+            if (ndx == n.Index) {
+                return (true, vi, n.Dep, v.Name);
+            }
+        }
+    }
+    foreach (var (_, v) in f.dynVers) {
+        if (ndx == v.Index) {
+            return (true, vi, v.Name, "");
+        }
+    }
+    return (false, 0, "", "");
 }
 
 // ImportedLibraries returns the names of all libraries

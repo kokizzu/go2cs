@@ -82,9 +82,9 @@ using static go.net.rpc_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("net/rpc/client.go", "client.cs", "AEQsggAtYNKCloKCgoKClIKCgpaCgoKCgoKCgoKCAAoKooKCgoKCgpSCgoKChJ6C0syCgrKUtIKClNiCgoKCgoKUpoKClIKCguii3LIABRwACQKCgqqiuJIACRSigIKkgIKkpoKmgqaCqqKqooKClKiCgpSClIIABxKSgoKUqsKCgoKUgoLewoKCgoKC3IKmgoKokoI=")]
-[assembly: global::go.GoPositionMap("net/rpc/debug.go", "debug.cs", "AEV4gKKAooCkgKKAooAACQ6UkoKCgoKUhoKUhoKC")]
-[assembly: global::go.GoPositionMap("net/rpc/server.go", "server.cs", "AFWIA5LekoK4AAIcAAsCqqLugoKCgoKClIKCgpSCgoKUloSCloKClJSCloCCpKqigoKSgpSCpoKClKaCgoKUpoKCgpSmgoKUpoKClKaAgoKUpJQAChCilIKCgpSCgoKClIKmsoKCgqbSgpSCgoKUlIKCgpSCAA0WgqaC5qKAgqaClKSAgqaClKSmgpSUggACEuKC3NqigoKCooKClIKmgoKUlILIgqqigoKCgqaCgpSUgqaigoKClIKUgqaygoKCpqKCgoKUgpSCprKCgoKmAAgCgoKCpoKogoKUgqaAgqSCloSUpKSmAAgEgoKCgoKUgrqEgoKClIKWgoKClIKCgpTewoKCgoKUupCoogASNOKqoqqirLAACwyygoKCgpSCgoKUgqyygqyy")]
+[assembly: global::go.GoPositionMap("net/rpc/client.go", "client.cs", "ABQsggAtYOKCloKCgoKClIKCgpaCgoKCgoKCgoKCAAoKooKCgoKCgpSCgoKChJ6C0syCgrKUtIKClNiCgoKCgoKUpoKClIKCguii3LIABRwACQKCgqqiuJIACRSigIKkgIKkpoKmgqaCqqKqooKClKiCgpSClIIABxKSgoKUqsKCgoKUgoLewoKCgoKC3IKmgoKokoI=")]
+[assembly: global::go.GoPositionMap("net/rpc/debug.go", "debug.cs", "AD94gKKAooCkgKKAooAACQ6UkoKCgoKUhoKUhoKC", "76-87:1;82-84:1.1;88-90:2")]
+[assembly: global::go.GoPositionMap("net/rpc/server.go", "server.cs", "AMIBiAOS3pKCuAACHAALAqqi7oKCgoKCgpSCgoKUgoKClJaEgpaCgpSUgpaAgqSqooKCkoKUgqaCgpSmgoKClKaCgoKUpoKClKaCgpSmgIKClKSUAAoQopSCgoKUgoKCgpSCprKCgoKm0oKUgoKClJSCgoKUggANFoKmguaigIKmgpSkgIKmgpSkpoKUlIIAAhLigtzaooKCgqKCgpSCpoKClJSCyIKqooKCgoKmgoKUlIKmooKCgpSClIKmsoKCgqaigoKClIKUgqaygoKCpgAIAoKCgqaCqIKClIKmgIKkgpaElKSkpgAIBIKCgoKClIK6hIKCgpSCloKCgpSCgoKU3sKCgoKClLqQqKIAEjTiqqKqoqywAAsMsoKCgoKUgoKClIKssoKssg==")]
 // </GoSourcePositionMaps>
 
 namespace go.net;
@@ -117,4 +117,27 @@ public static partial class rpc_package
     public partial struct service {}
     public partial struct ΔCall {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸgob() => builtin.initPackage(typeof(encoding.gob_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸhtmlꓸtemplate() => builtin.initPackage(typeof(html.template_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(global::go.net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    // </ImportInitializers>
 }

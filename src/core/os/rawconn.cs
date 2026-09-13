@@ -4,7 +4,7 @@
 //go:build !plan9
 namespace go;
 
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @internal;
 
 partial class os_package {
@@ -24,7 +24,7 @@ internal static readonly @string syscallConnControlˢ = "SyscallConn.Control"u8;
         }
     }
     var err = c.@file.of(File.Ꮡpfd).RawControl(f);
-    Δruntime.KeepAlive(c.@file.OrTypedNil());
+    runtime.KeepAlive(c.@file.OrTypedNil());
     return err;
 }
 
@@ -38,7 +38,7 @@ internal static readonly @string syscallConnReadˢ = "SyscallConn.Read"u8;
         }
     }
     var err = c.@file.of(File.Ꮡpfd).RawRead(f);
-    Δruntime.KeepAlive(c.@file.OrTypedNil());
+    runtime.KeepAlive(c.@file.OrTypedNil());
     return err;
 }
 
@@ -52,7 +52,7 @@ internal static readonly @string syscallConnWriteˢ = "SyscallConn.Write"u8;
         }
     }
     var err = c.@file.of(File.Ꮡpfd).RawWrite(f);
-    Δruntime.KeepAlive(c.@file.OrTypedNil());
+    runtime.KeepAlive(c.@file.OrTypedNil());
     return err;
 }
 

@@ -9,17 +9,17 @@ using strings = strings_package;
 
 partial class types_package {
 
-[GoType("[]ж<term>")] partial struct Δtermlist;
+[GoType("[]ж<Δterm>")] partial struct termlist;
 
 // allTermlist represents the set of all types.
 // It is in normal form.
-internal static Δtermlist allTermlist = new Δtermlist(new ж<term>[]{@new<term>()}.slice());
+internal static termlist allTermlist = new termlist(new ж<Δterm>[]{@new<Δterm>()}.slice());
 
 // termSep is the separator used between individual terms.
 internal static readonly @string termSep = " | "u8;
 
 // String prints the termlist exactly (without normalization).
-internal static @string String(this Δtermlist xl) {
+internal static @string String(this termlist xl) {
     if (len(xl) == 0) {
         return "∅"u8;
     }
@@ -34,7 +34,7 @@ internal static @string String(this Δtermlist xl) {
 }
 
 // isEmpty reports whether the termlist xl represents the empty set of types.
-internal static bool isEmpty(this Δtermlist xl) {
+internal static bool isEmpty(this termlist xl) {
     // If there's a non-nil term, the entire list is not empty.
     // If the termlist is in normal form, this requires at most
     // one iteration.
@@ -47,7 +47,7 @@ internal static bool isEmpty(this Δtermlist xl) {
 }
 
 // isAll reports whether the termlist xl represents the set of all types.
-internal static bool isAll(this Δtermlist xl) {
+internal static bool isAll(this termlist xl) {
     // If there's a 𝓤 term, the entire list is 𝓤.
     // If the termlist is in normal form, this requires at most
     // one iteration.
@@ -60,11 +60,11 @@ internal static bool isAll(this Δtermlist xl) {
 }
 
 // norm returns the normal form of xl.
-internal static Δtermlist norm(this Δtermlist xl) {
+internal static termlist norm(this termlist xl) {
     // Quadratic algorithm, but good enough for now.
     // TODO(gri) fix asymptotic performance
     var used = new slice<bool>(len(xl));
-    Δtermlist rl = default!;
+    termlist rl = default!;
     foreach (var (i, vᴛ1) in xl) {
         var xi = vᴛ1;
 
@@ -98,18 +98,18 @@ internal static Δtermlist norm(this Δtermlist xl) {
 }
 
 // union returns the union xl ∪ yl.
-internal static Δtermlist union(this Δtermlist xl, Δtermlist yl) {
+internal static termlist union(this termlist xl, termlist yl) {
     return appendꓸꓸꓸ(xl, yl).norm();
 }
 
 // intersect returns the intersection xl ∩ yl.
-internal static Δtermlist intersect(this Δtermlist xl, Δtermlist yl) {
+internal static termlist intersect(this termlist xl, termlist yl) {
     if (xl.isEmpty() || yl.isEmpty()) {
         return default!;
     }
     // Quadratic algorithm, but good enough for now.
     // TODO(gri) fix asymptotic performance
-    Δtermlist rl = default!;
+    termlist rl = default!;
     foreach (var (_, x) in xl) {
         foreach (var (_, y) in yl) {
             {
@@ -123,13 +123,13 @@ internal static Δtermlist intersect(this Δtermlist xl, Δtermlist yl) {
 }
 
 // equal reports whether xl and yl represent the same type set.
-internal static bool equal(this Δtermlist xl, Δtermlist yl) {
+internal static bool equal(this termlist xl, termlist yl) {
     // TODO(gri) this should be more efficient
     return xl.subsetOf(yl) && yl.subsetOf(xl);
 }
 
 // includes reports whether t ∈ xl.
-internal static bool includes(this Δtermlist xl, ΔType t) {
+internal static bool includes(this termlist xl, ΔType t) {
     foreach (var (_, x) in xl) {
         if (x.includes(t)) {
             return true;
@@ -139,7 +139,7 @@ internal static bool includes(this Δtermlist xl, ΔType t) {
 }
 
 // supersetOf reports whether y ⊆ xl.
-internal static bool supersetOf(this Δtermlist xl, ж<term> Ꮡy) {
+internal static bool supersetOf(this termlist xl, ж<Δterm> Ꮡy) {
     foreach (var (_, x) in xl) {
         if (Ꮡy.subsetOf(x)) {
             return true;
@@ -149,7 +149,7 @@ internal static bool supersetOf(this Δtermlist xl, ж<term> Ꮡy) {
 }
 
 // subsetOf reports whether xl ⊆ yl.
-internal static bool subsetOf(this Δtermlist xl, Δtermlist yl) {
+internal static bool subsetOf(this termlist xl, termlist yl) {
     if (yl.isEmpty()) {
         return xl.isEmpty();
     }

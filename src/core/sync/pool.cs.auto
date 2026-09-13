@@ -10,25 +10,13 @@
 namespace go;
 
 using race = @internal.race_package;
-using Δruntime = runtime_package;
-using atomic = sync.atomic_package;
+using runtime = runtime_package;
+using atomic = go.sync.atomic_package;
 using @unsafe = unsafe_package;
 using @internal;
-using sync;
+using go.sync;
 
 partial class sync_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(sync.atomic_package));
-}
 
 // A Pool is a set of temporary objects that may be individually saved and
 // retrieved.
@@ -267,7 +255,7 @@ internal static (ж<poolLocal>, nint) pinSlow(this ж<Pool> Ꮡp) {
             allPools = append(allPools, Ꮡp);
         }
         // If GOMAXPROCS changes between GCs, we re-allocate the array and lose the old one.
-        nint size = Δruntime.GOMAXPROCS(0);
+        nint size = runtime.GOMAXPROCS(0);
         var local = new slice<poolLocal>(size, () => new(nil));
         atomic.StorePointer(Ꮡp.of(Pool.Ꮡlocal), @unsafe.Pointer.FromPinnedBox(Ꮡ(local, 0))); // store-release
         runtime_StoreReluintptr(Ꮡp.of(Pool.ᏑlocalSize), (uintptr)size); // store-release

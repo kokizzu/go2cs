@@ -38,6 +38,18 @@ internal static positioner dddErrPos(ref ast.CallExpr call) {
     return ((atPos)call.Ellipsis);
 }
 
+// isdddArray reports whether atyp is of the form [...]E.
+internal static bool isdddArray(ref ast.ArrayType atyp) {
+    if (atyp.Len != default!) {
+        {
+            var (ddd, _) = atyp.Len._<ж<ast.Ellipsis>>(ᐧ); if (ddd != nil && (~ddd).Elt == default!) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // argErrPos returns positioner for reporting an invalid argument count.
 internal static positioner argErrPos(ж<ast.CallExpr> Ꮡcall) {
     ref var call = ref Ꮡcall.DerefOrNull();

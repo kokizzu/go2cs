@@ -52,8 +52,8 @@ using static go.compress.zlib_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("compress/zlib/reader.go", "reader.cs", "AFaUAfIAAhDSgoKClKaCgpaCgoKUqICCgpSCtoKCgpSssoKUgqaCgoCClLiCgoKUlIKCgpSCgoKCgpSUgoKCqIKClKaUgg==")]
-[assembly: go.GoPositionMap("compress/zlib/writer.go", "writer.cs", "ADBY0oIAAhLiAAIQ0oKUAAYUspSClIKUgoKosrjKlKSkpKSkgpSCgIKklIKAgramgoKUlKzigpSClIKUgoKClIKokoKUgpSCqqKClIKUgoKUlIKC")]
+[assembly: go.GoPositionMap("compress/zlib/reader.go", "reader.cs", "AD6UAfIAAhDSgoKClKaCgpaCgoKUqICCgpSCtoKCgpSssoKUgqaCgoCClLiCgoKUlIKCgpSCgoKCgpSUgoKCqIKClKaUgg==")]
+[assembly: go.GoPositionMap("compress/zlib/writer.go", "writer.cs", "ACpY0oIAAhLiAAIQ0oKUAAYUspSClIKUgoKosrjKlKSkpKSkgpSCgIKklIKAgramgoKUlKzigpSClIKUgoKClIKokoKUgpSCqqKClIKUgoKUlIKC")]
 // </GoSourcePositionMaps>
 
 namespace go.compress;
@@ -72,4 +72,21 @@ public static partial class zlib_package
     public partial interface Resetter {}
     [GoValueClone("scratch")] public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸflate() => builtin.initPackage(typeof(go.compress.flate_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸhashꓸadler32() => builtin.initPackage(typeof(go.hash.adler32_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

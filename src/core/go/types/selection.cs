@@ -35,7 +35,7 @@ public static SelectionKind MethodExpr => 2;  // x.f is a method expression
 //	T.m         MethodExpr    T       m      func(T)    {1, 0}    false
 [GoType] partial struct Selection {
     internal SelectionKind kind;
-    internal ΔType recv; // type of x
+    internal ΔType recv;   // type of x
     internal Object obj; // object denoted by x.f
     internal slice<nint> index; // path from x to x.f
     internal bool indirect;   // set if there was any pointer indirection on the path

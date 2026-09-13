@@ -57,7 +57,7 @@ using static go.net.mail_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/mail/message.go", "message.cs", "AGVOooIACRrShIKClgAFGgAJApaAgoKClKaCgoKogoKUloKohISCAAsYloKCgpSEgoKCgoKCAAwSkpSCgqaCqICCgpSCyoKCqKaCtoKUgoKCpgAEGOL8koKClKiSgoKUAAoYkqiSAAgWoqqi3MSCkqaUqIKCgpS4gqaClIKYhIKogqaCgqaCzIKUAAoQooKCloKWgoKUhIKUgpSCqIKUgqbmooKClIKUgpSClIKUAAgIsoKCggAHFIKCgoKCgoKoyoKGkoKCgqaEgoKCuIKCgoKCpqbKlIKClIKUhNyilIKCgpSWgpSCgpSEgpSCgpSUgqYACAjyhJKSgqqSgoKUlIKCgriClIKCloKYkoKClpSCgriCgqjowoSSgpSCgqiSgoKUgpTKgoKogpSCgpSUpoKClILYpIKEhIKChJSmqpKWgrrWtraotIIACA7ihIKCgpSmtuqClIKCgpSClIKm6KSCmJKCgpSCloKClIKWgqiCqIKW1oKClIKCqIKCgoKUgqimgoKUgqiSpoKmgqaCqJKEgoKWgIKmlqaUhIKCgpaCpKSUgpSWprKCggAHEoKCkoKClIKClJSCggAGEIKoAAkWgqqilKjEqKSClKiSgoKCgqSCpoKopKqiqqKopIKU")]
+[assembly: go.GoPositionMap("net/mail/message.go", "message.cs", "AClOooIACRrShIKClgAFGgAJApaAgoKClKaCgoKogoKUloKohISCAAsYloKCgpSEgoKCgoKCAAwSkpSCgqaCqICCgpSCyoKCqKaCtoKUgoKCpgAEGOL8koKClKiSgoKUAAoYkqiSAAgWoqqi3MSCkqaUqIKCgpS4gqaClIKYhIKogqaCgqaCzIKUAAoQooKCloKWgoKUhIKUgpSCqIKUgqbmooKClIKUgpSClIKUAAgIsoKCggAHFIKCgoKCgoKoyoKGkoKCgqaEgoKCuIKCgoKCpqbKlIKClIKUhNyilIKCgpSWgpSCgpSEgpSCgpSUgqYACAjyhJKSgqqSgoKUlIKCgriClIKCloKYkoKClpSCgriCgqjowoSSgpSCgqiSgoKUgpTKgoKogpSCgpSUpoKClILYpIKEhIKChJSmqpKWgrrWtraotIIACA7ihIKCgpSmtuqClIKCgpSClIKm6KSCqIKCgoKUgpaCgpSCloKUloKogpbWgoKUgoKogoKCgpSCqKaCgpSCqJKmgqaCpoKokoSCgpaAgqaWppSEgoKCloKkpJSClJamsoKCAAcSgoKSgoKUgoKUlIKCAAYQgqgACRaCqqKUqMSopIKUqJKCgoKCpIKmgqikqqKqoqikgpQ=", "518-522:1;774-774:1;872-882:1")]
 // </GoSourcePositionMaps>
 
 namespace go.net;
@@ -80,4 +80,25 @@ public static partial class mail_package
     public partial struct Header {}
     public partial struct Message {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸmime() => builtin.initPackage(typeof(mime_package));
+    [GoInit] internal static void initᴛᴛimportꓸnet() => builtin.initPackage(typeof(net_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸtextproto() => builtin.initPackage(typeof(go.net.textproto_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

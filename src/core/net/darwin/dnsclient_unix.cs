@@ -14,9 +14,10 @@ using errors = errors_package;
 using bytealg = @internal.bytealg_package;
 using godebug = @internal.godebug_package;
 using itoa = @internal.itoa_package;
+using stringslite = @internal.stringslite_package;
 using Δio = io_package;
 using os = os_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using atomic = go.sync.atomic_package;
 using time = time_package;
@@ -28,18 +29,6 @@ using go.sync;
 using vendor.golang.org.x.net.dns;
 
 partial class net_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
 
 internal const bool useTCPOnly = true;
 internal const bool useUDPOrTCP = false;
@@ -453,7 +442,7 @@ internal static void tryUpdate(this ж<resolverConfig> Ꮡconf, @string name) {
             return;
         }
         conf.lastChecked = now;
-        var exprᴛ1 = Δruntime.GOOS;
+        var exprᴛ1 = runtime.GOOS;
         if (exprᴛ1 == "windows"u8) {
         }
         else { /* default: */
@@ -550,9 +539,7 @@ internal static bool avoidDNS(@string name) {
     if (name == ""u8) {
         return true;
     }
-    if (name[len(name) - 1] == (rune)'.') {
-        name = name[..(int)(len(name) - 1)];
-    }
+    name = stringslite.TrimSuffix(name, "."u8);
     return stringsHasSuffixFold(name, onionˢ);
 }
 

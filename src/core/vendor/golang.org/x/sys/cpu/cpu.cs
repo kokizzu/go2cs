@@ -11,18 +11,6 @@ using strings = strings_package;
 
 partial class cpu_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // Initialized reports whether the CPU features were initialized.
 //
 // For some GOOS/GOARCH combinations initialization of the CPU features depends
@@ -123,6 +111,8 @@ public static ref X86ᴛ1 X86 => ref ᏑX86.Value;
     public bool HasSVE; // Scalable Vector Extensions
     public bool HasSVE2; // Scalable Vector Extensions 2
     public bool HasASIMDFHM; // Advanced SIMD multiplication FP16 to FP32
+    public bool HasDIT; // Data Independent Timing support
+    public bool HasI8MM; // Advanced SIMD Int8 matrix multiplication instructions
     internal CacheLinePad __;
 }
 public static ARM64ᴛ1 ARM64;
@@ -225,6 +215,27 @@ public static PPC64ᴛ1 PPC64;
     internal CacheLinePad __;
 }
 public static S390Xᴛ1 S390X;
+
+// RISCV64 contains the supported CPU features and performance characteristics for riscv64
+// platforms. The booleans in RISCV64, with the exception of HasFastMisaligned, indicate
+// the presence of RISC-V extensions.
+//
+// It is safe to assume that all the RV64G extensions are supported and so they are omitted from
+// this structure. As riscv64 Go programs require at least RV64G, the code that populates
+// this structure cannot run successfully if some of the RV64G extensions are missing.
+// The struct is padded to avoid false sharing.
+
+[GoType("dyn")] partial struct RISCV64ᴛ1 {
+    internal CacheLinePad _;
+    public bool HasFastMisaligned; // Fast misaligned accesses
+    public bool HasC; // Compressed instruction-set extension
+    public bool HasV; // Vector extension compatible with RVV 1.0
+    public bool HasZba; // Address generation instructions extension
+    public bool HasZbb; // Basic bit-manipulation extension
+    public bool HasZbs; // Single-bit instructions extension
+    internal CacheLinePad __;
+}
+public static RISCV64ᴛ1 RISCV64;
 
 [GoInit] internal static void init() {
     archInit();

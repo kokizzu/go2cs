@@ -13,12 +13,6 @@ using io = io_package;
 
 partial class big_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
 // Text converts the floating-point number x to a string according
 // to the given format and precision prec. The format is one of:
 //
@@ -96,7 +90,7 @@ public static slice<byte> Append(this ж<Float> Ꮡx, slice<byte> buf, byte fmt,
     //   2) round to desired precision
     //   3) read digits out and format
     // 1) convert Float to multiprecision decimal
-    ref var d = ref heap(new @decimal(), out var Ꮡd);               // == 0.0
+    ref var d = ref heap(new @decimal(), out var Ꮡd);                // == 0.0
     if (x.form == finite) {
         // x != 0
         Ꮡd.init(x.mant, (nint)x.exp - x.mant.bitLen());
@@ -321,7 +315,7 @@ internal static slice<byte> fmtF(slice<byte> buf, nint prec, @decimal d) {
 }
 
 // fmtB appends the string of x in the format mantissa "p" exponent
-// with a decimal mantissa and a binary exponent, or 0" if x is zero,
+// with a decimal mantissa and a binary exponent, or "0" if x is zero,
 // and returns the extended buffer.
 // The mantissa is normalized such that is uses x.Prec() bits in binary
 // representation.

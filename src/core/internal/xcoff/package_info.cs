@@ -62,8 +62,8 @@ using static go.@internal.xcoff_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/xcoff/ar.go", "ar.cs", "AGmYAaKCgpSCgoKUgqyygoKClKiShoaSgIKmgpSkpKaCgIKkgIKmgoKWlJaCgqjKgIKmgoCCpoKEgoKUloKClIKAgqSEgoKCgIK6koCCpIKWgoSClIKCqqyygoKm")]
-[assembly: go.GoPositionMap("internal/xcoff/file.go", "file.cs", "AGuyAZKCgpSCgoKUgqyygoKClK7CgoKmqqKCgqaqooKUqJKClKiShJKAgqSCloKWgIKkgoKCgoKUgoCCpIKCgoKkgoCCpIKCgoKmgqiCgIKmkoCCpIKCgpSogIKkgoKUgoKCgpSCgIKkgoKCgoKCpIKAgqSCgoKCgoKkgpKUgoKYpoCCpIKCgpKClIKAgqSCgoKCgoKClIKCgsiCgIKkgoKCgoKCgraCpoKWgpSClJbMgpSCgIKkpIKAgqTKgoCCtoKClIKAgqSCgqSCgIKkgoKkgoKCgILcgoKUgpSCgpSCgIKkgoKUgoCCpIKCgoSClIK4goCCpIKCgoKClIK4qAAICoKokoKCgpSokoKCgIKCgoKCgpS2pqaIsoKCgoKCgpSogqrUgIKkgoKClIKAgqSCgqSCgIKkgoK4gIKkgoCCppSCgoKCgoKCgoKCgoKClJSWrsKCgqaAgqSCgoKClIKAgqSCgoKkgoCCpIKCgriAgqSCgIK4goKogIKkgoKCgoKUgoCCpIKUgoKUgoKCpqSCgIKkgpSCgpSkgoKClJassoKClII=")]
+[assembly: go.GoPositionMap("internal/xcoff/ar.go", "ar.cs", "AEWYAaKCgpSCgoKUgqyygoKClKiShoaSgIKmgpSkpKaCgIKkgIKmgoKWlJaCgqjKgIKmgoCCpoKEgoKUloKClIKAgqSEgoKCgIK6koCCpIKWgoSClIKCqqyygoKm", "104-106:1")]
+[assembly: go.GoPositionMap("internal/xcoff/file.go", "file.cs", "AFmyAZKCgpSCgoKUgqyygoKClK7CgoKmqqKCgqaqooKUqJKClKiShJKAgqSCloKWgIKkgoKCgoKUgoCCpIKCgoKkgoCCpIKCgoKmgqiCgIKmkoCCpIKCgpSogIKkgoKUgoKCgpSCgIKkgoKCgoKCpIKAgqSCgoKCgoKkgpKUgoKYpoCCpIKCgpKClIKAgqSCgoKCgoKClIKCgsiCgIKkgoKCgoKCgraCpoKWgpSClJbMgpSCgIKkpIKAgqTKgoCCtoKClIKAgqSCgqSCgIKkgoKkgoKCgILcgoKUgpSCgpSCgIKkgoKUgoCCpIKCgoSClIK4goCCpIKCgoKClIK4qAAICoKokoKCgpSokoKCgIKCgoKCgpS2pqaIsoKCgoKCgpSogqrUgIKkgoKClIKAgqSCgqSCgIKkgoK4gIKkgoCCppSCgoKCgoKCgoKCgoKClJSWrsKCgqaAgqSCgoKClIKAgqSCgoKkgoCCpIKCgriAgqSCgIK4goKogIKkgoKCgoKUgoCCpIKUgoKUgoKCpqSCgIKkgpSCgpSkgoKClJassoKClII=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -113,4 +113,22 @@ public static partial class xcoff_package
     public partial struct Symbol {}
     public partial struct ΔSection {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸdwarf() => builtin.initPackage(typeof(debug.dwarf_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() => builtin.initPackage(typeof(go.@internal.saferio_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

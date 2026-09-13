@@ -5,8 +5,9 @@ namespace go.go;
 
 using ast = global::go.go.ast_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
-using errors = global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
+using slices = slices_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 
 partial class types_package {
@@ -124,16 +125,7 @@ internal static slice<ж<ast.BranchStmt>> blockBranches(this ж<Checker> Ꮡchec
         varDeclPos = pos;
         ᏑbadJumps.ValueSlot = appendꓸꓸꓸ(ᏑbadJumps.ValueSlot[..0], ᏑfwdJumps.ValueSlot); // copy fwdJumps to badJumps
     }
-    bool jumpsOverVarDecl(ж<ast.BranchStmt> jmp) {
-        if (varDeclPos.IsValid()) {
-            foreach (var (_, bad) in ᏑbadJumps.ValueSlot) {
-                if (jmp == bad) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+    bool jumpsOverVarDecl(ж<ast.BranchStmt> jmp) => varDeclPos.IsValid() && slices.Contains(ᏑbadJumps.ValueSlot, jmp);
     var bʗ1 = b;
     void blockBranches(ж<ast.LabeledStmt> lstmtΔ1, slice<ast.Stmt> listΔ1) {
         // Unresolved forward jumps inside the nested block

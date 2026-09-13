@@ -56,8 +56,8 @@ using static go.go.scanner_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: global::go.GoPositionMap("go/scanner/errors.go", "errors.cs", "AC4wkqaUAAQQkqiQppCigKSCgriClIKUgpSssqiygoKCgoKCgqbYkpSkpKqigpSssoCCgrY=")]
-[assembly: global::go.GoPositionMap("go/scanner/scanner.go", "scanner.cs", "AFR20oKCgoKUkpS2gpKkxoKUgoKClLyigpQABzQAEQSClIKCgoKEgoKCgoKEgoK4goKUpqLcxIKCgoSmgoKClKaCgpSogoKCgqSUgoKCgqiEgt6CgrqSloKWAAQQxIKUgoSCgqiUgpyykoKUgoKCgpSmloKCuoKC2oKCqKaCgoKmgqaCpoIAAhDSAAcSgpSUgu6CgoLKgoKUlIKChIKmgpSkpKaAooCigAACEAAJAoKCgoKCpJSCpoKCgpSCpvaCgoSCgoKmgoKCgpSCtIK0grSCxqiCgoKUgpaCqICClLS0goKClIKCgra4goKWgoKUgoCCuAAIBoKUpKSkqJKCgpaCgoKCuoKCgpSCxrSClMaClv7ChIKSlIKkpIKkgqSCpIKClIKmgoKCgoKClIKUgoKWgoKW5pSEgoKCgpSCgpSUgoKUgoKCzIKW1pSEgoKCgpSCgpSCqKaCgoLcgoKm1pSEgoKCgoKUgoKUgqiCgpamgoIAAxTSgoKUpoKCgpSCgpSmgoKClIKCgoKUlAACQgAiAoKmgoKWlpaCgKSClIKUtoLGgrSClIKClKqCpIKCpIKCpIKCpNaCkoKCtqSCpKSCpKSCpKSCpIKCtoKCtqSUgqaClJSUlIKmtqSkgoKUtqSkpIKClLakpraClKaCguaClg==")]
+[assembly: global::go.GoPositionMap("go/scanner/errors.go", "errors.cs", "ABYwkqaUAAQQkqiQppCigKSCgriClIKUgpSssqiygoKCgoKCgqbYkpSkpKqigpSssoCCgrY=")]
+[assembly: global::go.GoPositionMap("go/scanner/scanner.go", "scanner.cs", "ADZ20oKCgoKUkpS2gpKkxoKUgoKClLyigpQABzQAEQSClIKCgoKEgoKCgoKEgoK4goKUpqLcxIKCgoSmgoKClKaCgpSogoKCgqSUgoKCgqiEgt6CgrqSloKWAAQQxIKUgoSCgqiUgpyykoKUgoKCgpSmloKCuoKC2oKCqKaCgoKmgqaCpoIAAhDSAAcSgpSUgu6CgoLKgoKUlIKChIKmgpSkpKaAooCigAACEAAJAoKCgoKCpJSCpoKCgpSCpvaCgoSCgoKmgoKCgpSCtIK0grSCxqiCgoKUgpaCqICClLS0goKClIKCgra4goKWgoKUgoCCuAAIBoKUpKSkqJKCgpaCgoKCuoKCgpSCxrSClMaClv7ChIKSlIKkpIKkgqSCpIKClIKmgoKCgoKClIKUgoKWgoKW5pSEgoKCgpSCgpSUgoKUgoKCzIKW1pSEgoKCgpSCgpSCqKaCgoLcgoKm1pSEgoKCgoKUgoKUgqiCgpamgoIAAxTSgoKUpoKCgpSCgpSmgoKClIKCgoKUlAACQgAiAoKmgoKWlpaCgKSClIKUtoLGgrSClIKClKqCpIKCpIKCpIKCpNaCkoKCtqSCpKSCpKSCpKSCpIKCtoKCtqSUgqaClJSUlIKmtqSkgoKUtqSkpIKClLakpraClKaCguaClg==")]
 // </GoSourcePositionMaps>
 
 namespace go.go;
@@ -77,4 +77,22 @@ public static partial class scanner_package
     public partial struct Scanner {}
     public partial struct ΔError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() => builtin.initPackage(typeof(global::go.go.token_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() => builtin.initPackage(typeof(path.filepath_package));
+    [GoInit] internal static void initᴛᴛimportꓸsort() => builtin.initPackage(typeof(sort_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(global::go.unicode.utf8_package));
+    // </ImportInitializers>
 }

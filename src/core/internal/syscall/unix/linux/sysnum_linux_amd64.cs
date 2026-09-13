@@ -9,5 +9,6 @@ internal static uintptr getrandomTrap => 318;
 internal static uintptr copyFileRangeTrap => 326;
 internal static uintptr pidfdSendSignalTrap => 424;
 internal static uintptr pidfdOpenTrap => 434;
+internal static uintptr openat2Trap => 437;
 
 } // end unix_package

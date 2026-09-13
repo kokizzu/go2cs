@@ -10,6 +10,7 @@ namespace go.crypto;
 
 using crypto = crypto_package;
 using boring = go.crypto.@internal.boring_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using errors = errors_package;
 using hash = hash_package;
 using byteorder = go.@internal.byteorder_package;
@@ -17,30 +18,6 @@ using go.@internal;
 using go.crypto.@internal;
 
 partial class sha1_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() {
-    builtin.initPackage(typeof(go.crypto.@internal.boring_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
 
 [GoInit] internal static void init() {
     crypto.RegisterHash(crypto.SHA1, New);
@@ -71,16 +48,19 @@ internal static readonly @string magic = "sha\x01"u8;
 internal const nint marshaledSize = /* len(magic) + 5*4 + chunk + 8 */ 96;
 
 [GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
-    var b = new slice<byte>(0, marshaledSize);
+    return d.AppendBinary(new slice<byte>(0, marshaledSize));
+}
+
+[GoRecv] internal static (slice<byte>, error) AppendBinary(this ref digest d, slice<byte> b) {
     b = append(b, magic.ꓸꓸꓸ);
-    b = byteorder.BeAppendUint32(b, d.h[0]);
-    b = byteorder.BeAppendUint32(b, d.h[1]);
-    b = byteorder.BeAppendUint32(b, d.h[2]);
-    b = byteorder.BeAppendUint32(b, d.h[3]);
-    b = byteorder.BeAppendUint32(b, d.h[4]);
+    b = byteorder.BEAppendUint32(b, d.h[0]);
+    b = byteorder.BEAppendUint32(b, d.h[1]);
+    b = byteorder.BEAppendUint32(b, d.h[2]);
+    b = byteorder.BEAppendUint32(b, d.h[3]);
+    b = byteorder.BEAppendUint32(b, d.h[4]);
     b = appendꓸꓸꓸ(b, d.x[..(int)(d.nx)]);
-    b = b[..(int)(len(b) + len(d.x) - d.nx)]; // already zero
-    b = byteorder.BeAppendUint64(b, d.len);
+    b = appendꓸꓸꓸ(b, new slice<byte>(len(d.x) - d.nx));
+    b = byteorder.BEAppendUint64(b, d.len);
     return (b, default!);
 }
 
@@ -108,11 +88,11 @@ internal static readonly @string cryptoSha1InvalidHashˢ2 = "crypto/sha1: invali
 }
 
 internal static (slice<byte>, uint64) consumeUint64(slice<byte> b) {
-    return (b[8..], byteorder.BeUint64(b));
+    return (b[8..], byteorder.BEUint64(b));
 }
 
 internal static (slice<byte>, uint32) consumeUint32(slice<byte> b) {
-    return (b[4..], byteorder.BeUint32(b));
+    return (b[4..], byteorder.BEUint32(b));
 }
 
 [GoRecv] internal static void Reset(this ref digest d) {
@@ -125,9 +105,10 @@ internal static (slice<byte>, uint32) consumeUint32(slice<byte> b) {
     d.len = 0;
 }
 
-// New returns a new hash.Hash computing the SHA1 checksum. The Hash also
-// implements [encoding.BinaryMarshaler] and [encoding.BinaryUnmarshaler] to
-// marshal and unmarshal the internal state of the hash.
+// New returns a new [hash.Hash] computing the SHA1 checksum. The Hash
+// also implements [encoding.BinaryMarshaler], [encoding.BinaryAppender] and
+// [encoding.BinaryUnmarshaler] to marshal and unmarshal the internal
+// state of the hash.
 public static hash.Hash New() {
     if (boring.Enabled) {
         return boring.NewSHA1();
@@ -145,11 +126,17 @@ public static hash.Hash New() {
     return ΔBlockSize;
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cryptoSha1UseOfSha1IsNotˢ = "crypto/sha1: use of SHA-1 is not allowed in FIPS 140-only mode"u8;
+
 internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) {
     nint nn = default!;
     error err = default!;
 
     ref var d = ref Ꮡd.DerefOrNull();
+    if (fips140only.Enabled) {
+        return (0, errors.New(cryptoSha1UseOfSha1IsNotˢ));
+    }
     boring.Unreachable();
     nn = len(p);
     d.len += (uint64)nn;
@@ -185,6 +172,9 @@ internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) 
 internal static array<byte> checkSum(this ж<digest> Ꮡd) {
     ref var d = ref Ꮡd.DerefOrNull();
 
+    if (fips140only.Enabled) {
+        throw panic("crypto/sha1: use of SHA-1 is not allowed in FIPS 140-only mode");
+    }
     var len = d.len;
     // Padding.  Add a 1 bit and 0 bits until 56 bytes mod 64.
     array<byte> tmp = new(72); /* 64 + 8 */                   // padding + length buffer
@@ -198,17 +188,17 @@ internal static array<byte> checkSum(this ж<digest> Ꮡd) {
     // Length in bits.
     len <<= (int)(3);
     var padlen = tmp[..(int)(t + 8)];
-    byteorder.BePutUint64(padlen[(int)(t)..], len);
+    byteorder.BEPutUint64(padlen[(int)(t)..], len);
     Ꮡd.Write(padlen);
     if (d.nx != 0) {
         throw panic("d.nx != 0");
     }
     array<byte> digest = new(20); /* ΔSize */
-    byteorder.BePutUint32(digest[0..], d.h[0]);
-    byteorder.BePutUint32(digest[4..], d.h[1]);
-    byteorder.BePutUint32(digest[8..], d.h[2]);
-    byteorder.BePutUint32(digest[12..], d.h[3]);
-    byteorder.BePutUint32(digest[16..], d.h[4]);
+    byteorder.BEPutUint32(digest[0..], d.h[0]);
+    byteorder.BEPutUint32(digest[4..], d.h[1]);
+    byteorder.BEPutUint32(digest[8..], d.h[2]);
+    byteorder.BEPutUint32(digest[12..], d.h[3]);
+    byteorder.BEPutUint32(digest[16..], d.h[4]);
     return digest.Clone();
 }
 
@@ -223,6 +213,9 @@ internal static array<byte> checkSum(this ж<digest> Ꮡd) {
 internal static array<byte> constSum(this ж<digest> Ꮡd) {
     ref var d = ref Ꮡd.DerefOrNull();
 
+    if (fips140only.Enabled) {
+        throw panic("crypto/sha1: use of SHA-1 is not allowed in FIPS 140-only mode");
+    }
     array<byte> length = new(8);
     var l = (d.len << (int)(3));
     for (nuint i = (nuint)0; i < 8; i++) {
@@ -276,6 +269,9 @@ internal static array<byte> constSum(this ж<digest> Ꮡd) {
 public static array<byte> Sum(slice<byte> data) {
     if (boring.Enabled) {
         return boring.SHA1(data);
+    }
+    if (fips140only.Enabled) {
+        throw panic("crypto/sha1: use of SHA-1 is not allowed in FIPS 140-only mode");
     }
     ref var d = ref heap(new digest(), out var Ꮡd);
     d.Reset();

@@ -8,8 +8,8 @@
 // through testing/internal/testdeps.
 namespace go.@internal.coverage;
 
-using md5 = crypto.md5_package;
 using fmt = fmt_package;
+using fnv = hash.fnv_package;
 using coverage = go.@internal.coverage_package;
 using encodecounter = go.@internal.coverage.encodecounter_package;
 using encodemeta = go.@internal.coverage.encodemeta_package;
@@ -22,64 +22,16 @@ using strconv = strconv_package;
 using atomic = sync.atomic_package;
 using time = time_package;
 using @unsafe = unsafe_package;
-using crypto;
 using fs = go.io.fs_package;
 using go.@internal;
 using go.@internal.coverage;
 using go.io;
+using hash;
 using hash = hash_package;
 using path;
 using sync;
 
 partial class cfile_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸmd5() {
-    builtin.initPackage(typeof(crypto.md5_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸencodecounter() {
-    builtin.initPackage(typeof(go.@internal.coverage.encodecounter_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸencodemeta() {
-    builtin.initPackage(typeof(go.@internal.coverage.encodemeta_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸpathꓸfilepath() {
-    builtin.initPackage(typeof(path.filepath_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 // This file contains functions that support the writing of data files
 // emitted at the end of code coverage testing runs, from instrumented
@@ -242,7 +194,7 @@ internal static (slice<rtcov.CovMetaBlob>, error) prepareForMetaEmit() {
                 (uint32)from, (uint32)to);
         }
     }
-    var h = md5.New();
+    var h = fnv.New128a();
     var tlen = (uint64)/* unsafe.Sizeof(coverage.MetaFileHeader{}) */ (uintptr)56;
     foreach (var (_, vᴛ2) in ml) {
         var entry = vᴛ2.ΔClone();

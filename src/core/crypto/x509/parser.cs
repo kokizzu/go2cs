@@ -37,90 +37,6 @@ using vendor.golang.org.x.crypto.cryptobyte;
 
 partial class x509_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸdsa() {
-    builtin.initPackage(typeof(go.crypto.dsa_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdh() {
-    builtin.initPackage(typeof(go.crypto.ecdh_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdsa() {
-    builtin.initPackage(typeof(go.crypto.ecdsa_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸed25519() {
-    builtin.initPackage(typeof(go.crypto.ed25519_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸelliptic() {
-    builtin.initPackage(typeof(go.crypto.elliptic_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸrsa() {
-    builtin.initPackage(typeof(go.crypto.rsa_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸx509ꓸpkix() {
-    builtin.initPackage(typeof(go.crypto.x509.pkix_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(go.@internal.godebug_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnetꓸurl() {
-    builtin.initPackage(typeof(go.net.url_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(go.unicode.utf8_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸcryptobyte() {
-    builtin.initPackage(typeof(vendor.golang.org.x.crypto.cryptobyte_package));
-}
-
 // isPrintable reports whether the given b is in the ASN.1 PrintableString set.
 // This is a simplified version of encoding/asn1.isPrintable.
 internal static bool isPrintable(byte b) {
@@ -570,12 +486,8 @@ internal static (slice<@string> dnsNames, slice<@string> emailAddresses, slice<n
             if (errΔ8 != default!) {
                 return fmt.Errorf("x509: cannot parse URI %q: %s"u8, uriStr, errΔ8);
             }
-            if (builtin.len((~uri).Host) > 0) {
-                {
-                    var (_, ok) = domainToReverseLabels((~uri).Host); if (!ok) {
-                        return fmt.Errorf("x509: cannot parse URI %q: invalid domain"u8, uriStr);
-                    }
-                }
+            if (builtin.len((~uri).Host) > 0 && !domainNameValid((~uri).Host, false)) {
+                return fmt.Errorf("x509: cannot parse URI %q: invalid domain"u8, uriStr);
             }
             uris = append(uris, uri);
         }
@@ -653,6 +565,7 @@ internal static (slice<OID>, error) parseCertificatePoliciesExtension(cryptobyte
     ref var der = ref heap(derʗp, out var Ꮡder);
 
     slice<OID> oids = default!;
+    var seenOIDs = new map<@string, bool>{};
     if (!der.ReadASN1(Ꮡder, cryptobyte_asn1.SEQUENCE)) {
         return (default!, errors.New(x509InvalidCertificateˢ));
     }
@@ -662,6 +575,10 @@ internal static (slice<OID>, error) parseCertificatePoliciesExtension(cryptobyte
         if (!der.ReadASN1(Ꮡcp, cryptobyte_asn1.SEQUENCE) || !cp.ReadASN1(ᏑOIDBytes, cryptobyte_asn1.OBJECT_IDENTIFIER)) {
             return (default!, errors.New(x509InvalidCertificateˢ));
         }
+        if (seenOIDs[((@string)(slice<byte>)OIDBytes)]) {
+            return (default!, errors.New(x509InvalidCertificateˢ));
+        }
+        seenOIDs[((@string)(slice<byte>)OIDBytes)] = true;
         var (oid, ok) = newOIDFromDER(OIDBytes);
         if (!ok) {
             return (default!, errors.New(x509InvalidCertificateˢ));
@@ -758,18 +675,8 @@ internal static (bool unhandled, error err) parseNameConstraintsExtension(ref Ce
                         return (default!, default!, default!, default!, errors.New("x509: invalid constraint value: "u8 + errΔ5.Error()));
                     }
                 }
-                @string trimmedDomain = domain;
-                if (builtin.len(trimmedDomain) > 0 && trimmedDomain[0] == (rune)'.') {
-                    // constraints can have a leading
-                    // period to exclude the domain
-                    // itself, but that's not valid in a
-                    // normal domain name.
-                    trimmedDomain = trimmedDomain[1..];
-                }
-                {
-                    var (_, ok) = domainToReverseLabels(trimmedDomain); if (!ok) {
-                        return (default!, default!, default!, default!, fmt.Errorf("x509: failed to parse dnsName constraint %q"u8, domain));
-                    }
+                if (!domainNameValid(domain, true)) {
+                    return (default!, default!, default!, default!, fmt.Errorf("x509: failed to parse dnsName constraint %q"u8, domain));
                 }
                 dnsNames = append(dnsNames, domain);
             }
@@ -813,15 +720,8 @@ internal static (bool unhandled, error err) parseNameConstraintsExtension(ref Ce
                         }
                     }
                 } else {
-                    // Otherwise it's a domain name.
-                    @string domain = constraint;
-                    if (builtin.len(domain) > 0 && domain[0] == (rune)'.') {
-                        domain = domain[1..];
-                    }
-                    {
-                        var (_, ok) = domainToReverseLabels(domain); if (!ok) {
-                            return (default!, default!, default!, default!, fmt.Errorf("x509: failed to parse rfc822Name constraint %q"u8, constraint));
-                        }
+                    if (!domainNameValid(constraint, true)) {
+                        return (default!, default!, default!, default!, fmt.Errorf("x509: failed to parse rfc822Name constraint %q"u8, constraint));
                     }
                 }
                 emails = append(emails, constraint);
@@ -836,18 +736,8 @@ internal static (bool unhandled, error err) parseNameConstraintsExtension(ref Ce
                 if (net.ParseIP(domain) != default!) {
                     return (default!, default!, default!, default!, fmt.Errorf("x509: failed to parse URI constraint %q: cannot be IP address"u8, domain));
                 }
-                @string trimmedDomain = domain;
-                if (builtin.len(trimmedDomain) > 0 && trimmedDomain[0] == (rune)'.') {
-                    // constraints can have a leading
-                    // period to exclude the domain itself,
-                    // but that's not valid in a normal
-                    // domain name.
-                    trimmedDomain = trimmedDomain[1..];
-                }
-                {
-                    var (_, ok) = domainToReverseLabels(trimmedDomain); if (!ok) {
-                        return (default!, default!, default!, default!, fmt.Errorf("x509: failed to parse URI constraint %q"u8, domain));
-                    }
+                if (!domainNameValid(domain, true)) {
+                    return (default!, default!, default!, default!, fmt.Errorf("x509: failed to parse URI constraint %q"u8, domain));
                 }
                 uriDomains = append(uriDomains, domain);
             }
@@ -875,12 +765,19 @@ internal static (bool unhandled, error err) parseNameConstraintsExtension(ref Ce
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string x509InvalidCrlˢ = "x509: invalid CRL distribution points"u8;
 internal static readonly @string x509InvalidCrlˢ2 = "x509: invalid CRL distribution point"u8;
+internal static readonly @string x509InvalidPolicyˢ = "x509: invalid policy constraints extension"u8;
+internal static readonly @string x509PolicyConstraintsˢ = "x509: policy constraints requireExplicitPolicy field overflows int"u8;
+internal static readonly @string x509PolicyConstraintsˢ2 = "x509: policy constraints inhibitPolicyMapping field overflows int"u8;
 internal static readonly @string x509SubjectKeyIdentifierˢ = "x509: subject key identifier incorrectly marked critical"u8;
 internal static readonly @string x509InvalidSubjectKeyˢ = "x509: invalid subject key identifier"u8;
+internal static readonly @string x509InvalidPolicyˢ2 = "x509: invalid policy mappings extension"u8;
+internal static readonly @string x509InvalidInhibitAnyˢ = "x509: invalid inhibit any policy extension"u8;
 internal static readonly @string x509AuthorityInfoAccessˢ = "x509: authority info access incorrectly marked critical"u8;
 internal static readonly @string x509InvalidAuthorityInfoˢ = "x509: invalid authority info access"u8;
 
-internal static error processExtensions(ref Certificate @out) {
+internal static error processExtensions(ж<Certificate> Ꮡout) {
+    ref var @out = ref Ꮡout.DerefOrNull();
+
     error err = default!;
     foreach (var (_, e) in @out.Extensions) {
         var unhandled = false;
@@ -914,7 +811,7 @@ internal static error processExtensions(ref Certificate @out) {
                 break;
             }
             case 30: {
-                (unhandled, err) = parseNameConstraintsExtension(ref @out, e);
+                (unhandled, err) = parseNameConstraintsExtension(ref (Ꮡout).DerefOrNull(), e);
                 if (err != default!) {
                     return err;
                 }
@@ -973,6 +870,38 @@ internal static error processExtensions(ref Certificate @out) {
                 }
                 break;
             }
+            case 36: {
+                ref var val = ref heap<cryptobyte.String>(out var Ꮡval);
+                val = ((cryptobyte.String)e.Value);
+                if (!val.ReadASN1(Ꮡval, cryptobyte_asn1.SEQUENCE)) {
+                    return errors.New(x509InvalidPolicyˢ);
+                }
+                if (val.PeekASN1Tag(((cryptobyte_asn1.Tag)0).ContextSpecific())) {
+                    ref var v = ref heap(new int64(), out var Ꮡv);
+                    if (!val.ReadASN1Int64WithTag(Ꮡv, ((cryptobyte_asn1.Tag)0).ContextSpecific())) {
+                        return errors.New(x509InvalidPolicyˢ);
+                    }
+                    @out.RequireExplicitPolicy = (nint)v;
+                    // Check for overflow.
+                    if ((int64)@out.RequireExplicitPolicy != v) {
+                        return errors.New(x509PolicyConstraintsˢ);
+                    }
+                    @out.RequireExplicitPolicyZero = @out.RequireExplicitPolicy == 0;
+                }
+                if (val.PeekASN1Tag(((cryptobyte_asn1.Tag)1).ContextSpecific())) {
+                    ref var v = ref heap(new int64(), out var Ꮡv);
+                    if (!val.ReadASN1Int64WithTag(Ꮡv, ((cryptobyte_asn1.Tag)1).ContextSpecific())) {
+                        return errors.New(x509InvalidPolicyˢ);
+                    }
+                    @out.InhibitPolicyMapping = (nint)v;
+                    // Check for overflow.
+                    if ((int64)@out.InhibitPolicyMapping != v) {
+                        return errors.New(x509PolicyConstraintsˢ2);
+                    }
+                    @out.InhibitPolicyMappingZero = @out.InhibitPolicyMapping == 0;
+                }
+                break;
+            }
             case 37: {
                 (@out.ExtKeyUsage, @out.UnknownExtKeyUsage, err) = parseExtKeyUsageExtension(e.Value);
                 if (err != default!) {
@@ -1007,6 +936,31 @@ internal static error processExtensions(ref Certificate @out) {
                         }
                     }
                 }
+                break;
+            }
+            case 33: {
+                ref var val = ref heap<cryptobyte.String>(out var Ꮡval);
+                val = ((cryptobyte.String)e.Value);
+                if (!val.ReadASN1(Ꮡval, cryptobyte_asn1.SEQUENCE)) {
+                    return errors.New(x509InvalidPolicyˢ2);
+                }
+                while (!val.Empty()) {
+                    ref var s = ref heap<cryptobyte.String>(out var Ꮡs);
+                    ref var issuer = ref heap<cryptobyte.String>(out var Ꮡissuer);
+                    ref var subject = ref heap<cryptobyte.String>(out var Ꮡsubject);
+                    if (!val.ReadASN1(Ꮡs, cryptobyte_asn1.SEQUENCE) || !s.ReadASN1(Ꮡissuer, cryptobyte_asn1.OBJECT_IDENTIFIER) || !s.ReadASN1(Ꮡsubject, cryptobyte_asn1.OBJECT_IDENTIFIER)) {
+                        return errors.New(x509InvalidPolicyˢ2);
+                    }
+                    @out.PolicyMappings = append(@out.PolicyMappings, new PolicyMapping(new OID(issuer), new OID(subject)));
+                }
+                break;
+            }
+            case 54: {
+                var val = ((cryptobyte.String)e.Value);
+                if (!val.ReadASN1Integer(Ꮡout.of(Certificate.ᏑInhibitAnyPolicy))) {
+                    return errors.New(x509InvalidInhibitAnyˢ);
+                }
+                @out.InhibitAnyPolicyZero = @out.InhibitAnyPolicy == 0;
                 break;
             }
             default: {
@@ -1248,7 +1202,7 @@ internal static (ж<Certificate>, error) parseCertificate(slice<byte> der) {
                     seenExts[oidStr] = true;
                     cert.Value.Extensions = append((~cert).Extensions, ext);
                 }
-                err = processExtensions(ref (cert).DerefOrNull());
+                err = processExtensions(cert);
                 if (err != default!) {
                     return (default!, err);
                 }
@@ -1479,6 +1433,59 @@ public static (ж<RevocationList>, error) ParseRevocationList(slice<byte> der) {
         }
     }
     return (rl, default!);
+}
+
+// domainNameValid is an alloc-less version of the checks that
+// domainToReverseLabels does.
+internal static bool domainNameValid(@string s, bool constraint) {
+    // TODO(#75835): This function omits a number of checks which we
+    // really should be doing to enforce that domain names are valid names per
+    // RFC 1034. We previously enabled these checks, but this broke a
+    // significant number of certificates we previously considered valid, and we
+    // happily create via CreateCertificate (et al). We should enable these
+    // checks, but will need to gate them behind a GODEBUG.
+    //
+    // I have left the checks we previously enabled, noted with "TODO(#75835)" so
+    // that we can easily re-enable them once we unbreak everyone.
+    // TODO(#75835): this should only be true for constraints.
+    if (builtin.len(s) == 0) {
+        return true;
+    }
+    // Do not allow trailing period (FQDN format is not allowed in SANs or
+    // constraints).
+    if (s[builtin.len(s) - 1] == (rune)'.') {
+        return false;
+    }
+    // TODO(#75835): domains must have at least one label, cannot have
+    // a leading empty label, and cannot be longer than 253 characters.
+    // if len(s) == 0 || (!constraint && s[0] == '.') || len(s) > 253 {
+    // 	return false
+    // }
+    nint lastDot = -1;
+    if (constraint && s[0] == (rune)'.') {
+        s = s[1..];
+    }
+    for (nint i = 0; i <= builtin.len(s); i++) {
+        if (i < builtin.len(s) && (s[i] < 33 || s[i] > 126)) {
+            // Invalid character.
+            return false;
+        }
+        if (i == builtin.len(s) || s[i] == (rune)'.') {
+            nint labelLen = i;
+            if (lastDot >= 0) {
+                labelLen -= lastDot + 1;
+            }
+            if (labelLen == 0) {
+                return false;
+            }
+            // TODO(#75835): labels cannot be longer than 63 characters.
+            // if labelLen > 63 {
+            // 	return false
+            // }
+            lastDot = i;
+        }
+    }
+    return true;
 }
 
 } // end x509_package

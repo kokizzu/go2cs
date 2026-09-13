@@ -17,12 +17,6 @@ using @internal;
 
 partial class version_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // stripGo converts from a "go1.21-bigcorp" version to a "1.21" version.
 // If v does not start with "go", stripGo returns the empty string (a known invalid version).
 internal static @string stripGo(@string v) {

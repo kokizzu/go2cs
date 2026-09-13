@@ -21,8 +21,6 @@ partial class cryptobyte_package {
 
 [GoType("[]byte")] partial struct String;
 
-// import "golang.org/x/crypto/cryptobyte"
-
 // read advances a String by n bytes and returns them. If less than n bytes
 // remain, it returns nil.
 [GoRecv] internal static slice<byte> read(this ref String s, nint n) {

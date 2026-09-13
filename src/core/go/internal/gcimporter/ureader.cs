@@ -15,12 +15,6 @@ using global::go.go;
 
 partial class gcimporter_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() {
-    builtin.initPackage(typeof(global::go.@internal.godebug_package));
-}
-
 // A pkgReader holds the shared state for reading a unified IR package
 // description.
 [GoType] partial struct pkgReader {
@@ -69,12 +63,16 @@ internal static ж<types.Package> readUnifiedPackage(ж<token.FileSet> Ꮡfset, 
         defer(Ꮡpr.of(pkgReader.Ꮡfake).setLines, ref ᒐ);
         var r = Ꮡpr.newReader(pkgbits.RelocMeta, pkgbits.PublicRootIdx, pkgbits.SyncPublic);
         var pkg = r.pkg();
-        r.of(reader.ᏑDecoder).Bool(); // TODO(mdempsky): Remove; was "has init"
+        if (r.of(reader.ᏑDecoder).Version().Has(pkgbits.HasInit)) {
+            r.of(reader.ᏑDecoder).Bool();
+        }
         for ((nint i, nint n) = (0, r.of(reader.ᏑDecoder).Len()); i < n; i++) {
             // As if r.obj(), but avoiding the Scope.Lookup call,
             // to avoid eager loading of imports.
             r.of(reader.ᏑDecoder).Sync(pkgbits.SyncObject);
-            assert(!r.of(reader.ᏑDecoder).Bool());
+            if (r.of(reader.ᏑDecoder).Version().Has(pkgbits.DerivedFuncInstance)) {
+                assert(!r.of(reader.ᏑDecoder).Bool());
+            }
             (~r).p.objIdx(r.of(reader.ᏑDecoder).Reloc(pkgbits.RelocObj));
             assert(r.of(reader.ᏑDecoder).Len() == 0);
         }
@@ -443,7 +441,9 @@ internal static (types.Object, slice<typesꓸType>) obj(this ж<reader> Ꮡr) {
     ref var r = ref Ꮡr.DerefOrNull();
 
     Ꮡr.of(reader.ᏑDecoder).Sync(pkgbits.SyncObject);
-    assert(!Ꮡr.of(reader.ᏑDecoder).Bool());
+    if (Ꮡr.of(reader.ᏑDecoder).Version().Has(pkgbits.DerivedFuncInstance)) {
+        assert(!Ꮡr.of(reader.ᏑDecoder).Bool());
+    }
     var (pkg, name) = r.p.objIdx(Ꮡr.of(reader.ᏑDecoder).Reloc(pkgbits.RelocObj));
     var obj = pkgScope(pkg).Lookup(name);
     var targs = new slice<typesꓸType>(Ꮡr.of(reader.ᏑDecoder).Len());
@@ -487,8 +487,12 @@ internal static (ж<types.Package>, @string) objIdx(this ж<pkgReader> Ꮡpr, pk
         var exprᴛ1 = tag;
         if (exprᴛ1 == pkgbits.ObjAlias) {
             tokenꓸPos pos = r.pos();
+            slice<ж<types.TypeParam>> tparams = default!;
+            if (r.of(reader.ᏑDecoder).Version().Has(pkgbits.AliasTypeParamNames)) {
+                tparams = r.typeParamNames();
+            }
             var typ = r.typ();
-            declare(new types.TypeNameжObject(newAliasTypeName(pos, objPkg, objName, typ)));
+            declare(new types.TypeNameжObject(newAliasTypeName(pos, objPkg, objName, typ, tparams)));
         }
         else if (exprᴛ1 == pkgbits.ObjConst) {
             tokenꓸPos pos = r.pos();
@@ -566,7 +570,10 @@ internal static ж<readerDict> objDictIdx(this ж<pkgReader> Ꮡpr, pkgbits.Inde
         dict.derived = new slice<derivedInfo>(r.of(reader.ᏑDecoder).Len());
         dict.derivedTypes = new slice<typesꓸType>(len(dict.derived));
         foreach (var (i, _) in dict.derived) {
-            dict.derived[i] = new derivedInfo(r.of(reader.ᏑDecoder).Reloc(pkgbits.RelocType), r.of(reader.ᏑDecoder).Bool());
+            dict.derived[i] = new derivedInfo(idx: r.of(reader.ᏑDecoder).Reloc(pkgbits.RelocType));
+            if (r.of(reader.ᏑDecoder).Version().Has(pkgbits.DerivedInfoNeeded)) {
+                assert(!r.of(reader.ᏑDecoder).Bool());
+            }
         }
         pr.retireReader(r);
     }
@@ -665,16 +672,18 @@ internal static ж<typesꓸScope> pkgScope(ж<types.Package> Ꮡpkg) {
 private static readonly @string gotypesaliasˢ = "gotypesalias"u8;
 
 // newAliasTypeName returns a new TypeName, with a materialized *types.Alias if supported.
-internal static ж<types.TypeName> newAliasTypeName(tokenꓸPos pos, ж<types.Package> Ꮡpkg, @string name, typesꓸType rhs) {
+internal static ж<types.TypeName> newAliasTypeName(tokenꓸPos pos, ж<types.Package> Ꮡpkg, @string name, typesꓸType rhs, slice<ж<types.TypeParam>> tparams) {
     // When GODEBUG=gotypesalias=1 or unset, the Type() of the return value is a
     // *types.Alias. Copied from x/tools/internal/aliases.NewAlias.
     var exprᴛ1 = godebug.New(gotypesaliasˢ).Value();
     if (exprᴛ1 == ""u8 || exprᴛ1 == "1"u8) {
         var tname = types.NewTypeName(pos, Ꮡpkg, name, default!);
-        _ = types.NewAlias(tname, rhs); // form TypeName -> Alias cycle
+        var a = types.NewAlias(tname, rhs); // form TypeName -> Alias cycle
+        a.SetTypeParams(tparams);
         return tname;
     }
 
+    assert(len(tparams) == 0);
     return types.NewTypeName(pos, Ꮡpkg, name, rhs);
 }
 

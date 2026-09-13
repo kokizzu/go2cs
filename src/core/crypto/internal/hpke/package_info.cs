@@ -56,7 +56,7 @@ using static go.crypto.@internal.hpke_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/hpke/hpke.go", "hpke.cs", "AFw6goKCgoKCpoKCgoKCgoKCgoKUABgqgoKClAALEKKCpsKCgpSUgpSCgpSEgoQADiaCgpQAHyaChIKClIKClIKCloKClISCgpaCgoKEhJKSlIKClgAKFoKCgriClIKmhIKmgoKCgoKC1oKCgpTugoKmgqaCgoKC")]
+[assembly: go.GoPositionMap("crypto/internal/hpke/hpke.go", "hpke.cs", "ACE6goKCgoKCpoKCgoKCgoIAHDKCgoKUAAsQooKmwoKClJSClIKClISChKaygoKUgoKUhAAVNIKClAAoPoKEgoKUhIKCloKCgoSEkpKUgoKWAAkUgoKClIKCloKClqaCgoKUgoKWgoKWpoKCgpSmpoKUpoKCgqaCgoKUgqaCgoKCgoLWgoKClKaCgoKU7oKCpoKmgoKCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal;
@@ -71,11 +71,34 @@ public static partial class hpke_package
     // via declarations below.
 
     // <TypeAccessibility>
+    internal partial struct context {}
     internal partial struct dhKEM {}
     internal partial struct uint128 {}
+    public partial struct AEADID {}
+    public partial struct KDFID {}
+    public partial struct KemID {}
+    public partial struct Receipient {}
     public partial struct Sender {}
     public partial struct SupportedAEADsᴛ1 {}
     public partial struct SupportedKEMsᴛ1 {}
     public partial struct hkdfKDF {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcrypto() => builtin.initPackage(typeof(crypto_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸaes() => builtin.initPackage(typeof(go.crypto.aes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸcipher() => builtin.initPackage(typeof(go.crypto.cipher_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸecdh() => builtin.initPackage(typeof(go.crypto.ecdh_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸhkdf() => builtin.initPackage(typeof(go.crypto.@internal.fips140.hkdf_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸrand() => builtin.initPackage(typeof(go.crypto.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸcryptoꓸchacha20poly1305() => builtin.initPackage(typeof(vendor.golang.org.x.crypto.chacha20poly1305_package));
+    // </ImportInitializers>
 }

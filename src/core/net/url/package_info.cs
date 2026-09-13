@@ -10,6 +10,8 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using netipꓸAddr = go.net.netip_package.ΔAddr;
+global using netipꓸPrefix = go.net.netip_package.ΔPrefix;
 // </ImportedTypeAliases>
 
 using go;
@@ -55,7 +57,7 @@ using static go.net.url_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("net/url/url.go", "url.cs", "AEE8gKKA5IKG5oKGyoKUpKSkpoKUpKSkAA4igsqCAAIQ5IKWAAkUlLiUqpyqrqiqABsI7pTKAAIQ0gACFPKqtIKCgpSCgoKClAABEOKUAAcQgoKmtIK0gpTIgpaCgoKUgrSClMbGqqKqoqaCkoKCgoKUuoKWgoSCgpSWgoKCgqaWgoKApIK0goKCtILWACxeogACFgAIAgAMHLKClKiygpSqwoKUgoKU3LKCgsiSxoKUqNYAAhL0koKClIKUgIKkAAIQ0oKClAAIDsKChIKWgpSEgoK6gIKkhIKClJaClIKUggAHEoCUuIKCgoCCpIKC2t6AgqTWwoKClJSClIKUgoKUgoCCpJSCgIKkgIKklNqipoKClIKCAAcSgoKCgpSCgpSCgpS0goKCuIKAgqQAAioAEgKCgpSCgJSUpKgAAhYACQKCgoKmgpSsstwAChCy2KiSgoKUgoCUlKQAAhYACAKCgoKmqqKClIKUgoKmAAIwABUChIKClIKCgpSUgoKEgoKUgpSCpoKUgIKCpICCyIKClO6AgraUgoKUgoKU2sKCloKAgqQABBrCgoKUqqKqoqiSqJKCAAIaAAoCgoKmooKCgoKClIKUgoKCgpSUgoKClJSUqqKClIKCgpSCgoKCgoKUgoKmqqKCgqSClJSClpiClIKCgoKClJaUgoSCgoKUpoKUgqiCqIKClKqirLKCgpQAAhIACAKSgpS4gpSCgoKClIKCgoKmgoKCgoKmgoKCrLKCqqKCgoKCpoKmgpSuwoKssoKs4oSCgpaClqyipoKCgpSCrNKCgqaClLiClJKCAAIYAAkCgoKUgpSClJa0tqiSgoKCpqrigoKUgg==")]
+[assembly: go.GoPositionMap("net/url/url.go", "url.cs", "ACNCgKKA5IKG5oKGyoKUpKSkpoKUpKSkAA4igsqCAAIQ5IKWAAkUlLiUqpyqrqiqABsI7pTKAAIQ0gACFPKqtIKCgpSCgoKClAABEOKUAAcQgoKmtIK0gpTIgpaCgoKUgrSClMbGqqKqoqaCkoKCgoKUuoKWgoSCgpSWgoKCgqaWgoKApIK0goKCtILWACxeogACFgAIAgAMHLKClKiygpSqwoKUgoKU3LKCgsiSxoKUqNYAAhL0koKClIKUgIKkAAIQ0oKClAAIDsKChIKWgpSEgoK6gIKkhIKClJaClIKUggAHEoCUuIKCgoCCpIKC2t6AgqTWwoKClJSClIKUgoKUgoCCpJSCgIKkgIKklOqigKaCgpaCgpSCgpaC7oKCgoKUgoKUlIKCgt6CgpSClKKCgoLIgoCCpAACKgASAoKClIKAlJSkqAACFgAJAoKCgqaClKyy3AAKELLYqJKCgpSCgJSUpAACFgAIAoKCgqaqooKUgpSCgqYAAjAAFQKEgoKUgoKClJSCgoSCgpSClIKmgpSAgoKkgILIgoKU7oCCtpSCgpSCgpTawoKWgoCCpAAEGsKCgpSqoqqiqJKokoIAAhoACgKCgu6CgoKUgoKUgoKU1qKClIKCgoKClIKUgoKCgpSUgoKClJSUqqKClIKCgoKCgpSCgqaqooKCpIKUlIKWmIKUgoKCgoKUlpSChIKCgpSmgpSCqIKogoKUqqKssoKClAACEgAIApKClLiClIKCgoKUgoKCgqaCgoKCgqaCgoKssoKqooKCgoKmgqaClK7CgqyygqzihIKCloKWrKKmgqaCgoKUgqzSgoKmgpS4gpSSggACGAAJAoKClIKUgpSWtLaokoKCgqaq4oKClII=")]
 // </GoSourcePositionMaps>
 
 namespace go.net;
@@ -80,4 +82,22 @@ public static partial class url_package
     public partial struct Values {}
     public partial struct ΔError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸmaps() => builtin.initPackage(typeof(maps_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸnetip() => builtin.initPackage(typeof(go.net.netip_package));
+    [GoInit] internal static void initᴛᴛimportꓸpath() => builtin.initPackage(typeof(path_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

@@ -6,19 +6,13 @@ namespace go;
 
 using itoa = @internal.itoa_package;
 using execenv = @internal.syscall.execenv_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using @internal;
 using @internal.syscall;
 using fs = go.io.fs_package;
 
 partial class os_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸexecenv() {
-    builtin.initPackage(typeof(@internal.syscall.execenv_package));
-}
 
 // The only signal values guaranteed to be present in the os package on all
 // systems are os.Interrupt (send the process an interrupt) and os.Kill (force
@@ -66,12 +60,12 @@ internal static (ж<Process> p, error err) startProcess(@string name, slice<@str
     }
     var (pid, h, e) = syscall.StartProcess(name, argv, sysattr);
     // Make sure we don't run the finalizers of attr.Files.
-    Δruntime.KeepAlive(Ꮡattr.OrTypedNil());
+    runtime.KeepAlive(Ꮡattr.OrTypedNil());
     if (e != default!) {
         return (default!, new fs.PathErrorжerror(Ꮡ(new PathError(Op: "fork/exec"u8, Path: name, Err: e))));
     }
     // For Windows, syscall.StartProcess above already returned a process handle.
-    if (Δruntime.GOOS != "windows"u8) {
+    if (runtime.GOOS != "windows"u8) {
         bool ok = default!;
         (h, ok) = getPidfd((~sysattr).Sys, shouldDupPidfd);
         if (!ok) {
@@ -128,7 +122,7 @@ public static @string String(this ж<ProcessState> Ꮡp) {
     switch (ᐧ) {
     case {} when status.Exited(): {
         nint code = status.ExitStatus();
-        if (Δruntime.GOOS == "windows"u8 && (nuint)code >= ((nuint)1 << (int)(16))){
+        if (runtime.GOOS == "windows"u8 && (nuint)code >= ((nuint)1 << (int)(16))){
             // windows uses large hex numbers
             res = "exit status "u8 + itoa.Uitox((nuint)code);
         } else {

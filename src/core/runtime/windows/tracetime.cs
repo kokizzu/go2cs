@@ -45,7 +45,8 @@ internal static UntypedInt traceTimeDiv => /* (1-osHasLowResClockInt)*64 + osHas
 // the timestamp from is specific to tracing, and shouldn't be mixed with other
 // clock sources.
 //
-// nosplit because it's called from exitsyscall, which is nosplit.
+// nosplit because it's called from exitsyscall and various trace writing functions,
+// which are nosplit.
 //
 // traceClockNow is called by golang.org/x/exp/trace using linkname.
 //

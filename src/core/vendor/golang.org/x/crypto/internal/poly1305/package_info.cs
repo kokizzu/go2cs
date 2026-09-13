@@ -49,8 +49,8 @@ using static go.vendor.golang.org.x.crypto.@internal.poly1305_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/poly1305/poly1305.go", "poly1305.cs", "ACE40oKCqLKCggACGAAJAoKCAA4ikKzigpSqooKCgqqigoKC")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/poly1305/sum_generic.go", "sum_generic.cs", "ABo+AA8CkoKmgoKCABQwwoKCgoKClIKClICCgqSClKyygoKUAAkYsoKCggAIEoKCpoKCgoKUpoKCggACFPKChIIABxKCgoKElIKChIKChAAWMoKCgoKC3oKUgpaCgoKEgoKCAA4igpiCgoSEgoLOAAUSkAAJGNLOgoKWggAGEIKEgg==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/poly1305/poly1305.go", "poly1305.cs", "ABs40oKCqLKCggACGAAJAoKCAA4ikKzigpSqooKCgqqigoKC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/crypto/internal/poly1305/sum_generic.go", "sum_generic.cs", "AA4+AA8CkoKmgoKCABQwwoKCgoKClIKClICCgqSClKyygoKUAAkYsoKCggAIEoKCpoKCgoKUpoKCggACFPKChIIABxKCgoKElIKChIKChAAWMoKCgoKC3oKUgpaCgoKEgoKCAA4igpiCgoSEgoLOAAUSkAAJGNLOgoKWggAGEIKEgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.vendor.golang.org.x.crypto.@internal;
@@ -71,4 +71,16 @@ public static partial class poly1305_package
     internal partial struct uint128 {}
     public partial struct MAC {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() => builtin.initPackage(typeof(go.crypto.subtle_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    // </ImportInitializers>
 }

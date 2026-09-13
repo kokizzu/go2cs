@@ -49,7 +49,7 @@ using static go.@internal.coverage.cmerge_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/cmerge/merge.go", "merge.cs", "ADBEgqqigpSCgoK4gqaCgqyygoKUqqKCgoKCgpQAAhDSlIKmgriCgriCuKaCgoKmgqaC")]
+[assembly: go.GoPositionMap("internal/coverage/cmerge/merge.go", "merge.cs", "AB5EgqqigpSCgoK4gqaCgqyygoKUqqKCgoKCgpQAAhDSlIKmgriCgriCuKaCgoKmgqaC")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;
@@ -67,4 +67,16 @@ public static partial class cmerge_package
     public partial struct Merger {}
     public partial struct ModeMergePolicy {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverage() => builtin.initPackage(typeof(go.@internal.coverage_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    // </ImportInitializers>
 }

@@ -15,10 +15,10 @@ namespace go;
 
 using errors = errors_package;
 using unix = @internal.syscall.unix_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 using syscall = syscall_package;
-using @unsafe = unsafe_package;
+// blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
 using @internal.syscall;
 
 partial class os_package {
@@ -75,9 +75,6 @@ internal static (uintptr, error) pidfdFind(nint pid) {
     return (h, default!);
 }
 
-// _P_PIDFD is used as idtype argument to waitid syscall.
-internal static UntypedInt _P_PIDFD => 3;
-
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string waitidˢ = "waitid"u8;
 
@@ -107,19 +104,9 @@ internal static (ж<ProcessState>, error) pidfdWait(this ж<Process> Ꮡp) {
         ᒐd1 = true;
         ref var info = ref heap(new unix.SiginfoChild(), out var Ꮡinfo);
         ref var rusage = ref heap(new syscall.Rusage(), out var Ꮡrusage);
-        syscall.Errno e = default!;
-        while (ᐧ) {
-            var ᴋ0 = Ꮡinfo;
-            var ᴋ1 = Ꮡrusage;
-                        (_, _, e) = syscall.Syscall6(syscall.SYS_WAITID, _P_PIDFD, handle, (uintptr)ᴋ0, syscall.WEXITED, (uintptr)ᴋ1, 0);
-            System.GC.KeepAlive(ᴋ0);
-            System.GC.KeepAlive(ᴋ1);
-            if (e != syscall.EINTR) {
-                break;
-            }
-        }
-        if (e != 0) {
-            return (default!, NewSyscallError(waitidˢ, e));
+        var err = ignoringEINTR(() => unix.Waitid(unix.P_PIDFD, (nint)handle, Ꮡinfo, syscall.WEXITED, Ꮡrusage));
+        if (err != default!) {
+            return (default!, NewSyscallError(waitidˢ, err));
         }
         // Release the Process' handle reference, in addition to the reference
         // we took above.
@@ -178,7 +165,7 @@ internal static error checkPidfd() {
     try {
         // In Android version < 12, pidfd-related system calls are not allowed
         // by seccomp and trigger the SIGSYS signal. See issue #69065.
-        if (Δruntime.GOOS == "android"u8) {
+        if (runtime.GOOS == "android"u8) {
             ignoreSIGSYS();
             defer(restoreSIGSYS, ref ᒐ);
         }
@@ -190,13 +177,7 @@ internal static error checkPidfd() {
         }
         defer(syscall.Close, (nint)fd, ref ᒐ);
         // Check waitid(P_PIDFD) works.
-        while (ᐧ) {
-            var (ᴛ1, ᴛ2, ᴛ3) = syscall.Syscall6(syscall.SYS_WAITID, _P_PIDFD, fd, 0, syscall.WEXITED, 0, 0);
-            (_, _, err) = (ᴛ1, ᴛ2, ᴛ3);
-            if (!AreEqual(err, syscall.EINTR)) {
-                break;
-            }
-        }
+        err = ignoringEINTR(() => unix.Waitid(unix.P_PIDFD, (nint)fd, nil, syscall.WEXITED, nil));
         // Expect ECHILD from waitid since we're not our own parent.
         if (!AreEqual(err, syscall.ECHILD)) {
             return NewSyscallError(pidfdWaitˢ, err);

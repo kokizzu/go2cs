@@ -1,25 +1,16 @@
 // Copyright 2022 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
+// Package coverage contains APIs for writing coverage profile data at runtime
+// from long-running and/or server programs that do not terminate via [os.Exit].
 namespace go.runtime;
 
-using cfile = go.@internal.coverage.cfile_package;
+using cfile = @internal.coverage.cfile_package;
 using io = io_package;
-using go.@internal.coverage;
+using @internal.coverage;
 
 partial class coverage_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸcoverageꓸcfile() {
-    builtin.initPackage(typeof(go.@internal.coverage.cfile_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
 
 // initHook is invoked from main.init in programs built with -cover.
 // The call is emitted by the compiler.

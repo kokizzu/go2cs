@@ -69,13 +69,13 @@ using static go.vendor.golang.org.x.net.route_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/address.go", "address.cs", "ACQ4kKSCgqaCgoKUkoKUgoKClIKCgoKUgoKClKaCgpSCgpSCqgARIKKClIKUgpSCgpSCgoKCgpSCgpQABxKQpIKmgoKClIKCggAIFJCkgqaCgoKUgoKCgpSokpSClIKCpIKUgoLKgoKCpqTMABUogqaCppSCmMiUgoKkgoKUlKSCgqSCkpSUAAsYkKSCgqaCgoKUgpSCgqaCgpSCpoKCgpSCtIK0grSCtqqigoKUgoKUgrSCgpSCtIKClIK0goKUgramgoKCgoKUgpSCgpSCgoKUpIKCgpSCgoKUpIKClIKCgpTIgoKUgoKClO4=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/address.go", "address.cs", "ABg4kKSCgqaCgoKUkoKUgoKClIKCgoKUgoKClKaCgpSCgpSCqgARIKKClIKUgpSCgpSCgoKCgpSCgpQABxKQpIKmgoKClIKCggAIFJCkgqaCgoKUgoKCgpSokpiUgpSCgoKClIKkgpSCgoKUgoKUgsqCgoKmpMwAFSiCpoKmlIKYyJSCgqSCgpSUpIKCpIKSlJQACxiQpIKCpoKCgpSClIKCpoKClIKmgoKClIK0grSCtIK2qqKCgpSCgpSCtIKClIK0goKUgrSCgpSCtqaCgoKCgpSClIKClIKCgpSoooKCgpSUgoKUpIKClIKCgpTIgoKUgoKClO4=")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/binary.go", "binary.cs", "ABs8goKmgoKCpoKCpoKCgoKCpoKC3IKCpoKCgqaCgqaCgoKCgqaCgg==")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/interface.go", "interface.cs", "AB5EkAANHpAADR6Q")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/interface_classic.go", "interface_classic.cs", "AAscgoKUgoKUgoKUAAgSgoKUgoKmgoKUgoKU3IKUlIKCgpQ=")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/interface_multicast.go", "interface_multicast.cs", "AAgSgoKUgoKU7oKCgpQ=")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/message.go", "message.cs", "ABpCooKUgpKCgoKClIKUgoKUgIKUgoKUgpS2poKU")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/route.go", "route.cs", "AF2uAZIACioACgKCgoKCkoCCpIKUgoCIsoKUpA==")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/net/route/route.go", "route.cs", "AFGuAZIACioACgKCgoKCkoCCpIKUgoCIsoKUpA==")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/route_classic.go", "route_classic.cs", "AAscgoKClIKmlIKCgpSUgoKCgoKCgpSClKaCgpSCgpQACRSCgpSCgoKU")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/sys.go", "sys.cs", "ABJEgoKU")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/net/route/sys_darwin.go", "sys_darwin.cs", "AAkSgpSkAAkUkKaSAAsckKaSAAYQgoKSgpKCkoKSgpKCkoKk")]
@@ -115,4 +115,17 @@ public static partial class route_package
     public partial struct RouteMetrics {}
     public partial struct ΔSysType {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

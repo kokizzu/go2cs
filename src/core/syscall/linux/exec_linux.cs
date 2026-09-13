@@ -6,18 +6,12 @@ namespace go;
 
 using errpkg = errors_package;
 using itoa = @internal.itoa_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @unsafe = unsafe_package;
 using @internal;
 using go.sync;
 
 partial class syscall_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
 
 // Linux unshare/clone/clone2/clone3 flags, architecture-independent,
 // copied from linux/sched.h.
@@ -311,8 +305,12 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
     uintptr groups = default!;
     
     uintptr c = default!;
+    
+    ж<Rlimit> rlim = default!;
+    
+    ref var lim = ref heap(new Rlimit(), out var Ꮡlim);
     pidfd = -1;
-    var rlim = ᏑorigRlimitNofile.Load();
+    rlim = ᏑorigRlimitNofile.Load();
     if (sys.UidMappings != default!) {
         puid = slice<byte>("/proc/self/uid_map\u0000"u8);
         uidmap = formatIDMappings(sys.UidMappings);
@@ -381,7 +379,7 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
     } else {
         // N.B. Keep in sync with doCheckClonePidfd.
         flags |= (uintptr)((uintptr)(nint)SIGCHLD);
-        if (Δruntime.GOARCH == "s390x"u8){
+        if (runtime.GOARCH == "s390x"u8){
             // On Linux/s390, the first two arguments of clone(2) are swapped.
             (pid, err1) = rawVforkSyscall(SYS_CLONE, 0, flags, (uintptr)Ꮡpidfd);
         } else {
@@ -711,7 +709,24 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
     }
     // Restore original rlimit.
     if (rlim != nil) {
-        rawSetrlimit(RLIMIT_NOFILE, rlim);
+        // Some other process may have changed our rlimit by
+        // calling prlimit. We can check for that case because
+        // our current rlimit will not be the value we set when
+        // caching the rlimit in the init function in rlimit.go.
+        //
+        // Note that this test is imperfect, since it won't catch
+        // the case in which some other process used prlimit to
+        // set our rlimits to max-1/max. In that case we will fall
+        // back to the original cur/max when starting the child.
+        // We hope that setting to max-1/max is unlikely.
+        var ᴋ17 = Ꮡlim;
+                (_, _, err1) = RawSyscall6(SYS_PRLIMIT64, 0, RLIMIT_NOFILE, 0, (uintptr)ᴋ17, 0, 0);
+        System.GC.KeepAlive(ᴋ17);
+        if (err1 != 0 || (lim.Cur == (~rlim).Max - 1 && lim.Max == (~rlim).Max)) {
+            var ᴋ18 = rlim;
+                        RawSyscall6(SYS_PRLIMIT64, 0, RLIMIT_NOFILE, (uintptr)ᴋ18, 0, 0, 0);
+            System.GC.KeepAlive(ᴋ18);
+        }
     }
     // Enable tracing if requested.
     // Do this right before exec so that we don't unnecessarily trace the runtime
@@ -723,17 +738,17 @@ internal static (uintptr pid, int32 pidfd, Errno err1, array<nint> mapPipe, bool
         }
     }
     // Time to exec.
-    var ᴋ17 = Ꮡargv0;
-    var ᴋ18 = @unsafe.Pointer.FromBox(Ꮡ(argv, 0));
-    var ᴋ19 = @unsafe.Pointer.FromBox(Ꮡ(envv, 0));
-        (_, _, err1) = RawSyscall(SYS_EXECVE, (uintptr)ᴋ17, (uintptr)ᴋ18, (uintptr)ᴋ19);
-    System.GC.KeepAlive(ᴋ17);
-    System.GC.KeepAlive(ᴋ18);
+    var ᴋ19 = Ꮡargv0;
+    var ᴋ20 = @unsafe.Pointer.FromBox(Ꮡ(argv, 0));
+    var ᴋ21 = @unsafe.Pointer.FromBox(Ꮡ(envv, 0));
+        (_, _, err1) = RawSyscall(SYS_EXECVE, (uintptr)ᴋ19, (uintptr)ᴋ20, (uintptr)ᴋ21);
     System.GC.KeepAlive(ᴋ19);
-childerror:
-    var ᴋ20 = @unsafe.Pointer.FromBox(Ꮡerr1);
-        RawSyscall(SYS_WRITE, (uintptr)pipe, (uintptr)ᴋ20, /* unsafe.Sizeof(err1) */ (uintptr)8);
     System.GC.KeepAlive(ᴋ20);
+    System.GC.KeepAlive(ᴋ21);
+childerror:
+    var ᴋ22 = @unsafe.Pointer.FromBox(Ꮡerr1);
+        RawSyscall(SYS_WRITE, (uintptr)pipe, (uintptr)ᴋ22, /* unsafe.Sizeof(err1) */ (uintptr)8);
+    System.GC.KeepAlive(ᴋ22);
     // send error code on pipe
     while (ᐧ) {
         RawSyscall(SYS_EXIT, 253, 0, 0);
@@ -898,7 +913,7 @@ internal static (uintptr pid, Errno errno) doCheckClonePidfd(ж<int32> Ꮡpidfd)
     Errno errno = default!;
 
     var flags = (uintptr)((uintptr)((uintptr)(UntypedInt)(CLONE_VFORK | CLONE_VM) | (uintptr)CLONE_PIDFD));
-    if (Δruntime.GOARCH == "s390x"u8){
+    if (runtime.GOARCH == "s390x"u8){
         // On Linux/s390, the first two arguments of clone(2) are swapped.
         (pid, errno) = rawVforkSyscall(SYS_CLONE, 0, flags, (uintptr)Ꮡpidfd);
     } else {

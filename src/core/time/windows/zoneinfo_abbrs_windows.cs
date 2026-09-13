@@ -57,13 +57,13 @@ partial class time_package {
 // America/St_Johns
 // America/Tijuana
 // America/Whitehorse
-// Asia/Almaty
 // Asia/Amman
 // Asia/Baghdad
 // Asia/Baku
 // Asia/Bangkok
 // Asia/Barnaul
 // Asia/Beirut
+// Asia/Bishkek
 // Asia/Calcutta
 // Asia/Chita
 // Asia/Colombo
@@ -175,7 +175,7 @@ internal static map<@string, abbr> abbrs = new map<@string, abbr>{
     ["Central Standard Time"u8] = new("CST"u8, "CDT"u8),
     ["Central Brazilian Standard Time"u8] = new("-04"u8, "-04"u8),
     ["Mountain Standard Time"u8] = new("MST"u8, "MDT"u8),
-    ["Greenland Standard Time"u8] = new("-03"u8, "-02"u8),
+    ["Greenland Standard Time"u8] = new("-02"u8, "-01"u8),
     ["Turks And Caicos Standard Time"u8] = new("EST"u8, "EDT"u8),
     ["Central America Standard Time"u8] = new("CST"u8, "CST"u8),
     ["Atlantic Standard Time"u8] = new("AST"u8, "ADT"u8),
@@ -197,13 +197,13 @@ internal static map<@string, abbr> abbrs = new map<@string, abbr>{
     ["Newfoundland Standard Time"u8] = new("NST"u8, "NDT"u8),
     ["Pacific Standard Time (Mexico)"u8] = new("PST"u8, "PDT"u8),
     ["Yukon Standard Time"u8] = new("MST"u8, "MST"u8),
-    ["Central Asia Standard Time"u8] = new("+06"u8, "+06"u8),
     ["Jordan Standard Time"u8] = new("+03"u8, "+03"u8),
     ["Arabic Standard Time"u8] = new("+03"u8, "+03"u8),
     ["Azerbaijan Standard Time"u8] = new("+04"u8, "+04"u8),
     ["SE Asia Standard Time"u8] = new("+07"u8, "+07"u8),
     ["Altai Standard Time"u8] = new("+07"u8, "+07"u8),
     ["Middle East Standard Time"u8] = new("EET"u8, "EEST"u8),
+    ["Central Asia Standard Time"u8] = new("+06"u8, "+06"u8),
     ["India Standard Time"u8] = new("IST"u8, "IST"u8),
     ["Transbaikal Standard Time"u8] = new("+09"u8, "+09"u8),
     ["Sri Lanka Standard Time"u8] = new("+0530"u8, "+0530"u8),

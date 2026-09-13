@@ -50,14 +50,14 @@ using static go.@internal.zstd_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/zstd/bits.go", "bits.cs", "ABs0kgAGEqKCgpSCgoKUqJKCgoKokoKCupIADyDSgoKUAAcQqJKCloKCrLKCgpSCgoKClKiS")]
-[assembly: go.GoPositionMap("internal/zstd/block.go", "block.cs", "ABUi0oK4gpaAgqaCgoSCgpSEhIKClpSCloSWADFo0oKWgoKCloKCpIKUgpSClIKqgpSCgpSYgoKCloKCloKCltzSgpaCgqiilIKI/oKUgoCCpoKCqJKUhIKClISClISAgqaCgqiSlKT4xpKCloKCloKCloKCqoKCgpaCgoSCgpSEgoKUhIKClKiCgoKUgpSUtIKCtIKCgrSCgoLIgpSCgpSEgoKUhIKClKqCqIKUgoKWgoCCyoSCluiyggAGEIKCgoKCgpSCgpSClLqCgoKUgpQ=")]
+[assembly: go.GoPositionMap("internal/zstd/bits.go", "bits.cs", "ABU0kgAGEqKCgpSCgoKUqJKCgoKokoKCupIADyDSgoKUAAcQqJKCloKCrLKCgpSCgoKClKiS")]
+[assembly: go.GoPositionMap("internal/zstd/block.go", "block.cs", "AA8i0oK4gpaAgqaCgoSCgpSEhIKClpSCloSWADFo0oKWgoKCloKCpIKUgpSClIKqgpSCgpSYgoKCloKCloKCltzSgpaCgqiilIKI/oKUgoCCpoKCqJKUhIKClISClISAgqaCgqiSlKT4xpKCloKCloKCloKCqoKCgpaCgoSCgpSEgoKUhIKClKiCgoKUgpSUtIKCtIKCgrSCgoLIgpSCgpSEgoKUhIKClKqCqIKUgoKWgoCCyoSCluiyggAGEIKCgoKCgpSCgpSClLqCgoKUgpQ=")]
 [assembly: go.GoPositionMap("internal/zstd/fse.go", "fse.cs", "ABcwAAgCgoCCpoKCurqWlpaEhIKAgqa4goKCgoKAgraCgoKCgILehIKWgpaCloKClIKCpoKClIKWgoKUlIKUgoSEgoKogpaCloSAgqbssoKEhIKClIKCqIKCgoKCgoKCuIKWgoKChIKWhIKClgAuXJKCuIKClIKUgoKClJTYkoK4ggASKoKClIKUAB9EkoK4goKUgpSCgoKUlA==")]
 [assembly: go.GoPositionMap("internal/zstd/huff.go", "huff.cs", "ABQuAAsCgpaChIKClIKUgoKUhIKWgoKWgoKWgoK8goKCgpSCgoKWgoKUhIKWgoSEgoKUgoKCloKClISCloKWqIKClIKCgoK8goKCgpSCgqaCloKCloK6goKUgoKUgpSCgoSCzIKCgoKWgoKUgoKCgpSW")]
-[assembly: go.GoPositionMap("internal/zstd/literals.go", "literals.cs", "ABAc0oKogoSClAAIDKKEgpS0gpSCtIKUguyClpSClIKmgpSCgoKo6sKqlIKUgoKCgpTGgpSCgoK0gpSCgoLsgpaCgpaCqIKWgoKUhIKUgriCzoKClJaCltjWgoKWgoKEgoKWgoKCgpbq5oKUgtyCgpaCgoKEgoKUhIKChIKEgoSCqpKClpKClpKClpKCloKCgoSEhIKChIKEkoKUgpaCgpaCgpaCgpaCgoKUgoKWgoKEgoKEgoKW")]
+[assembly: go.GoPositionMap("internal/zstd/literals.go", "literals.cs", "AAoc0oKogoSClAAIDKKEgpS0gpSCtIKUguyClpSClIKmgpSCgoKo6sKqlIKUgoKCgpTGgpSCgoK0gpSCgoLsgpaCgpaCqIKWgoKUhIKUgriCzoKClJaCltjWgoKWgoKEgoKWgoKCgpbq5oKUgtyCgpaCgoKEgoKUhIKChIKEgoSCqpKClpKClpKClpKCloKCgoSEhIKChIKEkoKUgpaCgpaCgpaCgpaCgoKUgoKWgoKEgoKEgoKW", "289-295:1")]
 [assembly: go.GoPositionMap("internal/zstd/window.go", "window.cs", "ABQqkoKClIKCqJKokoKUgpaCgoKCqIKCgoKUpoKUgs6igoKEgoKClIKCloKClA==")]
 [assembly: go.GoPositionMap("internal/zstd/xxhash.go", "xxhash.cs", "ABo8opaChIKWgoSClKiShIKCgpaCgoKCgoKCloKCgoKCloKCupKCgpSIgoKCloSCgoKCgoKCgpSCgoKClIKCgoKWgoKCgoSokoKCgqiSgoKC")]
-[assembly: go.GoPositionMap("internal/zstd/zstd.go", "zstd.cs", "AFKwAZKCgqqiqIKCgoKCgoIAAiIAEQKAgqSCgqiygIKkgoKosoKAgqSUqLKCgIK2AAgIkoKWgJSClKaAgpSCgIKkgpamloCCpISEgoKWgoKUloKWgoKogoCCpoSEgIKqopSCgoKCgoKWgrqClIKCzIKCgpS0tLS0tOyCmJKCloSCgpaCgoKCgoKChKiShICCpoSCgoKWgIKmgoKUgoKUgoKogoKUgqaCgoKClICCpIKUgoKUgIKkloQACAiyloCCpoSEgoK6gqiUgoCCpIK0goCCpIKCgpS0goCCpLSmgoKUloKWgpSCpoKAgqaCgoKWlJaqooKClAAIEoKmgqaCpoKClKaCpoKClA==")]
+[assembly: go.GoPositionMap("internal/zstd/zstd.go", "zstd.cs", "AEawAZKCgqqiqIKCgoKCgoIAAiIAEQKAgqSCgqiygIKkgoKosoKAgqSUqLKCgIK2AAgIkoKWgJSClKaAgpSCgIKkgpamloCCpISEgoKWgoKUloKWgoKogoCCpoSEgIKqopSCgoKCgoKWgrqClIKCzIKCgpS0tLS0tOyCmJKCloSCgpaCgoKCgoKChKiShICCpoSCgoKWgIKmgoKUgoKUgoKogoKUgqaCgoKUggAICLKWgIKmhISCgrqCqJSCgIKkgrSCgIKkgoKClLSCgIKktKaCgpSWgpaClIKmgoCCpoKCgpaUlqqigoKUAAgSgqaCpoKmgoKUpoKmgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -84,4 +84,18 @@ public static partial class zstd_package
     internal partial struct zstdError {}
     [GoValueClone("seqTables", "seqTableBits", "seqTableBuffers", "scratch", "checksum")] public partial struct Reader {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸbits() => builtin.initPackage(typeof(math.bits_package));
+    // </ImportInitializers>
 }

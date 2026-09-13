@@ -49,7 +49,7 @@ using static go.@internal.coverage.slicereader_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/coverage/slicereader/slicereader.go", "slicereader.cs", "ACgwgsimgoKCgpSCgqaClIKUgqSCgpSCpIKClIK2poKmgoKCpoKCgoKmgoKCgqaihIKCgoKClJSmgoKCgpSmgoKU")]
+[assembly: go.GoPositionMap("internal/coverage/slicereader/slicereader.go", "slicereader.cs", "ABYwgsimgoKCgpSCgqaClIKUgqSCgpSCpIKClIK2poKmgoKCpoKCgoKmgoKCgqaihIKCgoKClJSmgoKCgpSmgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal.coverage;
@@ -66,4 +66,16 @@ public static partial class slicereader_package
     // <TypeAccessibility>
     public partial struct Reader {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    // </ImportInitializers>
 }

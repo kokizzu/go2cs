@@ -7,19 +7,14 @@ using fmt = fmt_package;
 using ast = global::go.go.ast_package;
 using constant = global::go.go.constant_package;
 using token = global::go.go.token_package;
-using buildcfg = global::go.@internal.buildcfg_package;
-using static global::go.@internal.types.errors_package;
-using errors = global::go.@internal.types.errors_package;
-using global::go.@internal;
+using buildcfg = @internal.buildcfg_package;
+using static @internal.types.errors_package;
+using slices = slices_package;
+using @internal;
+using errors = @internal.types.errors_package;
 using global::go.go;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbuildcfg() {
-    builtin.initPackage(typeof(global::go.@internal.buildcfg_package));
-}
 
 internal static void declare(this ж<Checker> Ꮡcheck, ж<ΔScope> Ꮡscope, ж<ast.Ident> Ꮡid, Object obj, tokenꓸPos pos) {
     ref var check = ref Ꮡcheck.DerefOrNull();
@@ -194,9 +189,7 @@ internal static void objDecl(this ж<Checker> Ꮡcheck, Object obj, ж<TypeName>
         defer((environment env) => {
             Ꮡcheck.Value.environment = env;
         }, Ꮡcheck.Value.environment, ref ᒐ);
-        check.environment = new environment(
-            scope: (~d).@file
-        );
+        check.environment = new environment(scope: (~d).@file, version: (~d).version);
         // Const and var declarations must not have initialization
         // cycles. We track them by remembering the current declaration
         // in check.decl. Initialization expressions depending on other
@@ -366,11 +359,10 @@ internal static void cycleError(this ж<Checker> Ꮡcheck, slice<Object> cycle, 
     // name returns the (possibly qualified) object name.
     // This is needed because with generic types, cycles
     // may refer to imported types. See go.dev/issue/50788.
-    // TODO(gri) Thus functionality is used elsewhere. Factor it out.
+    // TODO(gri) This functionality is used elsewhere. Factor it out.
     @string name(Object objΔ1) => packagePrefix(objΔ1.Pkg(), new Func<ж<Package>, @string>(Ꮡcheck.qualifier)) + objΔ1.Name();
-    var obj = cycle[start];
-    @string objName = name(obj);
     // If obj is a type alias, mark it as valid (not broken) in order to avoid follow-on errors.
+    var obj = cycle[start];
     var (tname, _) = obj._<ж<TypeName>>(ᐧ);
     if (tname != nil && tname.IsAlias()) {
         // If we use Alias nodes, it is initialized with Typ[Invalid].
@@ -382,29 +374,24 @@ internal static void cycleError(this ж<Checker> Ꮡcheck, slice<Object> cycle, 
     // report a more concise error for self references
     if (len(cycle) == 1) {
         if (tname != nil){
-            Ꮡcheck.errorf(new Objectᴠpositioner(obj), InvalidDeclCycle, "invalid recursive type: %s refers to itself"u8, objName);
+            Ꮡcheck.errorf(new Objectᴠpositioner(obj), InvalidDeclCycle, "invalid recursive type: %s refers to itself"u8, name(obj));
         } else {
-            Ꮡcheck.errorf(new Objectᴠpositioner(obj), InvalidDeclCycle, "invalid cycle in declaration: %s refers to itself"u8, objName);
+            Ꮡcheck.errorf(new Objectᴠpositioner(obj), InvalidDeclCycle, "invalid cycle in declaration: %s refers to itself"u8, name(obj));
         }
         return;
     }
     var err = Ꮡcheck.newError(InvalidDeclCycle);
     if (tname != nil){
-        err.addf(new Objectᴠpositioner(obj), "invalid recursive type %s"u8, objName);
+        err.addf(new Objectᴠpositioner(obj), "invalid recursive type %s"u8, name(obj));
     } else {
-        err.addf(new Objectᴠpositioner(obj), "invalid cycle in declaration of %s"u8, objName);
+        err.addf(new Objectᴠpositioner(obj), "invalid cycle in declaration of %s"u8, name(obj));
     }
-    nint i = start;
-    foreach ((_, _) in cycle) {
-        err.addf(new Objectᴠpositioner(obj), "%s refers to"u8, objName);
-        i++;
-        if (i >= len(cycle)) {
-            i = 0;
-        }
-        obj = cycle[i];
-        objName = name(obj);
+    // "cycle[i] refers to cycle[j]" for (i,j) = (s,s+1), (s+1,s+2), ..., (n-1,0), (0,1), ..., (s-1,s) for len(cycle) = n, s = start.
+    foreach (var (i, _) in cycle) {
+        var next = cycle[(start + i + 1) % len(cycle)];
+        err.addf(new Objectᴠpositioner(obj), "%s refers to %s"u8, name(obj), name(next));
+        obj = next;
     }
-    err.addf(new Objectᴠpositioner(obj), "%s"u8, objName);
     err.report();
 }
 
@@ -629,14 +616,7 @@ internal static void varDecl(this ж<Checker> Ꮡcheck, ж<Var> Ꮡobj, slice<ж
     }
     if (debug) {
         // obj must be one of lhs
-        var found = false;
-        foreach (var (_, lhsΔ1) in lhs) {
-            if (Ꮡobj == lhsΔ1) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
+        if (!slices.Contains(lhs, Ꮡobj)) {
             throw panic("inconsistent lhs");
         }
     }
@@ -645,8 +625,8 @@ internal static void varDecl(this ж<Checker> Ꮡcheck, ж<Var> Ꮡobj, slice<ж
     // one was specified, otherwise they assume the type of the
     // init expression values (was go.dev/issue/15755).
     if (typ != default!) {
-        foreach (var (_, lhsΔ2) in lhs) {
-            lhsΔ2.Value.typ = obj.typ;
+        foreach (var (_, lhsΔ1) in lhs) {
+            lhsΔ1.Value.typ = obj.typ;
         }
     }
     Ꮡcheck.initVars(lhs, new ast.Expr[]{init}.slice(), default!);
@@ -798,7 +778,9 @@ internal static void collectTypeParams(this ж<Checker> Ꮡcheck, ж<ж<TypePara
         // list (so we can have mutually recursive parameterized interfaces).
         tokenꓸPos scopePos = list.Pos();
         foreach (var (_, f) in list.List) {
-            tparams = Ꮡcheck.declareTypeParams(tparams, (~f).Names, scopePos);
+            foreach (var (_, name) in (~f).Names) {
+                tparams = append(tparams, Ꮡcheck.declareTypeParam(name, scopePos));
+            }
         }
         // Set the type parameters before collecting the type constraints because
         // the parameterized type may be used by the constraints (go.dev/issue/47887).
@@ -872,11 +854,9 @@ internal static ΔType bound(this ж<Checker> Ꮡcheck, ast.Expr x) {
     return Ꮡcheck.typ(x);
 }
 
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string typeParamsVˢ = "type params = %v"u8;
-
-internal static slice<ж<TypeParam>> declareTypeParams(this ж<Checker> Ꮡcheck, slice<ж<TypeParam>> tparams, slice<ж<ast.Ident>> names, tokenꓸPos scopePos) {
+internal static ж<TypeParam> declareTypeParam(this ж<Checker> Ꮡcheck, ж<ast.Ident> Ꮡname, tokenꓸPos scopePos) {
     ref var check = ref Ꮡcheck.DerefOrNull();
+    ref var name = ref Ꮡname.DerefOrNull();
 
     // Use Typ[Invalid] for the type constraint to ensure that a type
     // is present even if the actual constraint has not been assigned
@@ -884,16 +864,10 @@ internal static slice<ж<TypeParam>> declareTypeParams(this ж<Checker> Ꮡcheck
     // TODO(gri) Need to systematically review all uses of type parameter
     //           constraints to make sure we don't rely on them if they
     //           are not properly set yet.
-    foreach (var (_, name) in names) {
-        var tname = NewTypeName(name.Pos(), check.pkg, (~name).Name, default!);
-        var tpar = Ꮡcheck.newTypeParam(tname, new BasicжΔType(Typ[Invalid])); // assigns type to tpar as a side-effect
-        Ꮡcheck.declare(check.scope, name, new TypeNameжObject(tname), scopePos);
-        tparams = append(tparams, tpar);
-    }
-    if ((~check.conf)._Trace && len(names) > 0) {
-        Ꮡcheck.trace(names[0].Pos(), typeParamsVˢ, tparams[(int)(len(tparams) - len(names))..]);
-    }
-    return tparams;
+    var tname = NewTypeName(name.Pos(), check.pkg, name.Name, default!);
+    var tpar = Ꮡcheck.newTypeParam(tname, new BasicжΔType(Typ[Invalid])); // assigns type to tname as a side-effect
+    Ꮡcheck.declare(check.scope, Ꮡname, new TypeNameжObject(tname), scopePos);
+    return tpar;
 }
 
 internal static void collectMethods(this ж<Checker> Ꮡcheck, ж<TypeName> Ꮡobj) {

@@ -49,7 +49,7 @@ using static go.unicode.utf8_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("unicode/utf8/utf8.go", "utf8.cs", "AGzQAaKCgpSCgqaCgqSUqJKCgpSCgqaCgqSUAAIWAAgCgoKUgoK4gpSCgoKUgoKUkpSCgpSClIKClAACFgAIAoKClIKCuIKUgoKClIKClJKUgoKUgpSCgpQAAhYACwKCgpSCgoLKgoKUgoKmgpSCgpQAAhYACwKCgpSCgoLKgoKUgoKmgpSCgpSqopSkpKSkpKSsxICkgqSCgoKkgqSCgoKCpIKCgoKC7sSClKaUgKSkgqSk7KKCgoKCgpSClIKCgpSCgoKUgoCCxILEgsSUqLKCgoKUgpSCgoKUgoKClIKAgsSCxILElKywpsiWyoKClJSUgoKCgoKUgoKUgoKUgoCCxILEgsSUqKTKgoKUlJSCgoKCgpSCgpSCgpSCgILEgsSCxJSqopSkpA==")]
+[assembly: go.GoPositionMap("unicode/utf8/utf8.go", "utf8.cs", "AHDcAaKCgpSCgqaCgqSUqJKCgpSCgqaCgqSUAAIWAAgCgoKUgoK4gpSCgoKUgoKUkpSCgpSClIKClAACFgAIAoKClIKCuIKUgoKClIKClJKUgoKUgpSCgpQAAhYACwKCgpSCgoLKgoKUgoKmgpSCgpQAAhYACwKCgpSCgoLKgoKUgoKmgpSCgpSqopSkpKSkpKSsxIKClKaUgKSCgoKkgoKCgqSCgoKCgqSCgoKC3sSClKaUgKSkpKTcooKCgoCUtqiygpSssKbIlsqCgpSUlIKCgoKClIKClIKClIKAgsSCxILElKikyoKClJSUgoKCgoKUgoKUgoKUgoCCxILEgsSUqqKUpKQ=")]
 // </GoSourcePositionMaps>
 
 namespace go.unicode;
@@ -66,4 +66,13 @@ public static partial class utf8_package
     // <TypeAccessibility>
     internal partial struct acceptRange {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }

@@ -94,8 +94,8 @@ internal static void sync_runtime_Semrelease(ж<uint32> Ꮡaddr, bool handoff, n
     semrelease1(Ꮡaddr, handoff, skipframes);
 }
 
-//go:linkname sync_runtime_SemacquireMutex sync.runtime_SemacquireMutex
-internal static void sync_runtime_SemacquireMutex(ж<uint32> Ꮡaddr, bool lifo, nint skipframes) {
+//go:linkname internal_sync_runtime_SemacquireMutex internal/sync.runtime_SemacquireMutex
+internal static void internal_sync_runtime_SemacquireMutex(ж<uint32> Ꮡaddr, bool lifo, nint skipframes) {
     semacquire1(Ꮡaddr, lifo, (semaProfileFlags)(semaBlockProfile | semaMutexProfile), skipframes, waitReasonSyncMutexLock);
 }
 
@@ -109,9 +109,19 @@ internal static void sync_runtime_SemacquireRWMutex(ж<uint32> Ꮡaddr, bool lif
     semacquire1(Ꮡaddr, lifo, (semaProfileFlags)(semaBlockProfile | semaMutexProfile), skipframes, waitReasonSyncRWMutexLock);
 }
 
+//go:linkname sync_runtime_SemacquireWaitGroup sync.runtime_SemacquireWaitGroup
+internal static void sync_runtime_SemacquireWaitGroup(ж<uint32> Ꮡaddr) {
+    semacquire1(Ꮡaddr, false, semaBlockProfile, 0, waitReasonSyncWaitGroupWait);
+}
+
 //go:linkname poll_runtime_Semrelease internal/poll.runtime_Semrelease
 internal static void poll_runtime_Semrelease(ж<uint32> Ꮡaddr) {
     semrelease(Ꮡaddr);
+}
+
+//go:linkname internal_sync_runtime_Semrelease internal/sync.runtime_Semrelease
+internal static void internal_sync_runtime_Semrelease(ж<uint32> Ꮡaddr, bool handoff, nint skipframes) {
+    semrelease1(Ꮡaddr, handoff, skipframes);
 }
 
 internal static void readyWithTime(ref sudog s, nint traceskip) {
@@ -636,6 +646,10 @@ internal static void notifyListNotifyAll(ж<notifyList> Ꮡl) {
     while (s != nil) {
         var next = s.Value.next;
         s.Value.next = default!;
+        if ((~(~s).g).syncGroup != nil && (~getg()).syncGroup != (~(~s).g).syncGroup) {
+            println((@string)"semaphore wake of synctest goroutine"u8, (~(~s).g).goid, (@string)"from outside bubble"u8);
+            throw panic("semaphore wake of synctest goroutine from outside bubble");
+        }
         readyWithTime(ref (s).DerefOrNull(), 4);
         s = next;
     }
@@ -687,6 +701,10 @@ internal static void notifyListNotifyOne(ж<notifyList> Ꮡl) {
             }
             unlock(Ꮡl.of(notifyList.Ꮡlock));
             s.Value.next = default!;
+            if ((~(~s).g).syncGroup != nil && (~getg()).syncGroup != (~(~s).g).syncGroup) {
+                println((@string)"semaphore wake of synctest goroutine"u8, (~(~s).g).goid, (@string)"from outside bubble"u8);
+                throw panic("semaphore wake of synctest goroutine from outside bubble");
+            }
             readyWithTime(ref (s).DerefOrNull(), 4);
             return;
         }
@@ -705,8 +723,8 @@ internal static void notifyListCheck(uintptr sz) {
     }
 }
 
-//go:linkname sync_nanotime sync.runtime_nanotime
-internal static int64 sync_nanotime() {
+//go:linkname internal_sync_nanotime internal/sync.runtime_nanotime
+internal static int64 internal_sync_nanotime() {
     return nanotime();
 }
 

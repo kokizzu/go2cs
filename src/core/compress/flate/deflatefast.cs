@@ -257,9 +257,7 @@ internal static slice<token> emitLiteral(slice<token> dst, slice<byte> lit) {
 [GoRecv] internal static void shiftOffsets(this ref deflateFast e) {
     if (len(e.prev) == 0) {
         // We have no history; just clear the table.
-        foreach (var (i, _) in e.table[..]) {
-            e.table[i] = new tableEntry(nil);
-        }
+        clear(e.table[..]);
         e.cur = maxMatchOffset + 1;
         return;
     }

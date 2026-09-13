@@ -9,18 +9,12 @@ namespace go.go;
 using fmt = fmt_package;
 using token = global::go.go.token_package;
 using io = io_package;
-using sort = sort_package;
+using slices = slices_package;
 using strings = strings_package;
 using sync = sync_package;
 using global::go.go;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
 
 // A Scope maintains a set of objects and links to its containing
 // (parent) and contained (children) scopes. Objects may be inserted
@@ -68,7 +62,7 @@ public static ж<ΔScope> NewScope(ж<ΔScope> Ꮡparent, tokenꓸPos pos, token
         names[i] = name;
         i++;
     }
-    sort.Strings(names);
+    slices.Sort<slice<@string>, @string>(names);
     return names;
 }
 
@@ -100,30 +94,6 @@ public static ж<ΔScope> NewScope(ж<ΔScope> Ꮡparent, tokenꓸPos pos, token
     return obj;
 }
 
-// LookupParent follows the parent chain of scopes starting with s until
-// it finds a scope where Lookup(name) returns a non-nil object, and then
-// returns that scope and object. If a valid position pos is provided,
-// only objects that were declared at or before pos are considered.
-// If no such scope and object exists, the result is (nil, nil).
-//
-// Note that obj.Parent() may be different from the returned scope if the
-// object was inserted into the scope and already had a parent at that
-// time (see Insert). This can only happen for dot-imported objects
-// whose scope is the scope of the package that exported them.
-public static (ж<ΔScope>, Object) LookupParent(this ж<ΔScope> Ꮡs, @string name, tokenꓸPos pos) {
-    ref var s = ref Ꮡs.DerefOrNull();
-
-    for (; Ꮡs != nil; Ꮡs = s.parent) {
-        s = ref Ꮡs.DerefOrNull();
-        {
-            var obj = s.Lookup(name); if (obj != default! && (!pos.IsValid() || cmpPos(obj.scopePos(), pos) <= 0)) {
-                return (Ꮡs, obj);
-            }
-        }
-    }
-    return (default!, default!);
-}
-
 // Insert attempts to insert an object obj into scope s.
 // If s already contains an alternative object alt with
 // the same name, Insert leaves s unchanged and returns alt.
@@ -139,6 +109,11 @@ public static Object Insert(this ж<ΔScope> Ꮡs, Object obj) {
         }
     }
     s.insert(name, obj);
+    // TODO(gri) Can we always set the parent to s (or is there
+    // a need to keep the original parent or some race condition)?
+    // If we can, than we may not need environment.lookupScope
+    // which is only there so that we get the correct scope for
+    // marking "used" dot-imported packages.
     if (obj.Parent() == nil) {
         obj.setParent(Ꮡs);
     }
@@ -167,93 +142,6 @@ internal static bool _InsertLazy(this ж<ΔScope> Ꮡs, @string name, Func<Objec
         s.elems = new map<@string, Object>();
     }
     s.elems[name] = obj;
-}
-
-// Squash merges s with its parent scope p by adding all
-// objects of s to p, adding all children of s to the
-// children of p, and removing s from p's children.
-// The function f is called for each object obj in s which
-// has an object alt in p. s should be discarded after
-// having been squashed.
-internal static void squash(this ж<ΔScope> Ꮡs, Action<Object, Object> err) {
-    ref var s = ref Ꮡs.DerefOrNull();
-
-    var p = s.parent;
-    assert(p != nil);
-    foreach (var (name, vᴛ1) in s.elems) {
-        var obj = vᴛ1;
-
-        obj = resolve(name, obj);
-        obj.setParent(nil);
-        {
-            var alt = p.Insert(obj); if (alt != default!) {
-                err(obj, alt);
-            }
-        }
-    }
-    nint j = -1; // index of s in p.children
-    foreach (var (i, ch) in (~p).children) {
-        if (ch == Ꮡs) {
-            j = i;
-            break;
-        }
-    }
-    assert(j >= 0);
-    nint k = len((~p).children) - 1;
-    p.Value.children[j] = (~p).children[k];
-    p.Value.children = (~p).children[..(int)(k)];
-    p.Value.children = appendꓸꓸꓸ((~p).children, s.children);
-    s.children = default!;
-    s.elems = default!;
-}
-
-// Pos and End describe the scope's source code extent [pos, end).
-// The results are guaranteed to be valid only if the type-checked
-// AST has complete position information. The extent is undefined
-// for Universe and package scopes.
-[GoRecv] public static tokenꓸPos Pos(this ref ΔScope s) {
-    return s.pos;
-}
-
-[GoRecv] public static tokenꓸPos End(this ref ΔScope s) {
-    return s.end;
-}
-
-// Contains reports whether pos is within the scope's extent.
-// The result is guaranteed to be valid only if the type-checked
-// AST has complete position information.
-[GoRecv] public static bool Contains(this ref ΔScope s, tokenꓸPos pos) {
-    return cmpPos(s.pos, pos) <= 0 && cmpPos(pos, s.end) < 0;
-}
-
-// Innermost returns the innermost (child) scope containing
-// pos. If pos is not within any scope, the result is nil.
-// The result is also nil for the Universe scope.
-// The result is guaranteed to be valid only if the type-checked
-// AST has complete position information.
-public static ж<ΔScope> Innermost(this ж<ΔScope> Ꮡs, tokenꓸPos pos) {
-    ref var s = ref Ꮡs.DerefOrNull();
-
-    // Package scopes do not have extents since they may be
-    // discontiguous, so iterate over the package's files.
-    if (s.parent == Universe) {
-        foreach (var (_, sΔ1) in s.children) {
-            {
-                var inner = sΔ1.Innermost(pos); if (inner != nil) {
-                    return inner;
-                }
-            }
-        }
-    }
-    if (s.Contains(pos)) {
-        foreach (var (_, sΔ2) in s.children) {
-            if (sΔ2.Contains(pos)) {
-                return sΔ2.Innermost(pos);
-            }
-        }
-        return Ꮡs;
-    }
-    return default!;
 }
 
 // WriteTo writes a string representation of the scope to w,

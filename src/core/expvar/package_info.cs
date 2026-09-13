@@ -67,7 +67,7 @@ using static go.expvar_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("expvar/expvar.go", "expvar.cs", "AIYBdIKmgqaCpoKmggAHEIKmgqaCqJKCgoKCgoLMkgAPIIKmgqaCgoKCgpaCgoKCgpSCgoKUtMS2goKCqNKCgoKC2NKClIKClNaCgoKmuICCgIKCyKiSgoKCgoK6gILKkoKCgoKCuoCCytKCgoKCgu7ygoKCgoIACxKCgqqipoKmgs6CpoKCAAkS0oCCpIKCgtqiqpKCgqaCgoKmgoKCpoKCgqyy5oKCrLKmgqaCgoKmgoKUlIKokoKCgpSUtLS0tOa0xoI=")]
+[assembly: go.GoPositionMap("expvar/expvar.go", "expvar.cs", "AD50gqaCpoKmgqaCAAcQgqaCpoKokoKCgoKCgsySAA8ggqaCpoKCgoKCloKCgoKClIKCgpS0xLaCgoKo4oKCgoLY4oKUgoKU1oKCgqa4gIKAgoLIqJKCgoKCgrqAgsqSgoKCgoK6gILK4oKCgoKC7gAIAoKCgoKCAAsSgoKqoqaCpoLOgqaCggAJEtKAgqSCgoLaoqqSgoKmgoKCpoKCgqaCgoKssuaCgqyypoKmgoKCpoKClJSCqJKCgoKUlLS0tLTmtMaC", "136-136:1;139-139:2;145-160:3")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -90,4 +90,25 @@ public static partial class expvar_package
     public partial struct Map {}
     public partial struct ΔString {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸgodebug() => builtin.initPackage(typeof(@internal.godebug_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸnetꓸhttp() => builtin.initPackage(typeof(net.http_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

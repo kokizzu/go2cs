@@ -16,54 +16,6 @@ using io = io_package;
 
 partial class syslog_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlog() {
-    builtin.initPackage(typeof(log_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸnet() {
-    builtin.initPackage(typeof(net_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 [GoType("num:nint")] partial struct Priority;
 
 internal static UntypedInt severityMask => 0x07;
@@ -226,11 +178,12 @@ public static (nint, error) Write(this ж<Writer> Ꮡw, slice<byte> b) {
 // Close closes a connection to the syslog daemon.
 public static error Close(this ж<Writer> Ꮡw) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
         w.mu.Lock();
-        defer(Ꮡw.of(Writer.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (w.conn != default!) {
             var err = w.conn.close();
             w.conn = default!;
@@ -239,7 +192,7 @@ public static error Close(this ж<Writer> Ꮡw) {
         return default!;
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡw.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // Emerg logs a message with severity [LOG_EMERG], ignoring the severity
@@ -300,12 +253,13 @@ public static error Debug(this ж<Writer> Ꮡw, @string m) {
 
 internal static (nint, error) writeAndRetry(this ж<Writer> Ꮡw, Priority p, @string s) {
     GoFrame ᒐ = default;
+    bool ᒐd1 = false;
     try {
         ref var w = ref Ꮡw.DerefOrNull();
 
         Priority pr = (Priority)(((Priority)(w.priority & (nint)facilityMask)) | ((Priority)(p & (nint)severityMask)));
         w.mu.Lock();
-        defer(Ꮡw.of(Writer.Ꮡmu).Unlock, ref ᒐ);
+        ᒐd1 = true;
         if (w.conn != default!) {
             {
                 var (n, err) = w.write(pr, s); if (err == default!) {
@@ -321,7 +275,7 @@ internal static (nint, error) writeAndRetry(this ж<Writer> Ꮡw, Priority p, @s
         return w.write(pr, s);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
+    finally { if (ᒐd1) Ꮡw.DerefOrNull().mu.Unlock(); ᒐ.Run(); }
 }
 
 // write generates and writes a syslog formatted string. The

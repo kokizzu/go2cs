@@ -76,7 +76,7 @@ using static go.flag_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("flag/flag.go", "flag.cs", "AF7eAYKCgpSClIKUzKKCpoKCgpSCpoCkgKSAAAwYooKmgoKClIKmgKSAyqKCpoKCgpSCpoCkgMqigqaCgoKUgqaApIDKooKmgoKClIKmgKSAyqKCpoKCpoCkgMqigqaCgoKUgqaApIDKooKmgoKClIKmgKSA+oKCgpSCgpSClIKmgqaCpoKAgoCCxsyApIDKgKSApIAAQ4gBkoKCgoKUhqqigpSokqiSqqKqooK8oqqigryiqJKqoqiSpIKCAAgSgoKClIKUhJSCgpSClIKokqoACwiSgoKUyoKAgoKUtgAOEAAKBIKCgoKCgoKmuIKUgsa01LTUpKzSgoKCgoKCgriSuJSogIKkgJSUxsqAgoKCAAU+ABoCqLKClJQAESKCqJCmkKqygpSssqiQppCmkKaQqKKqoqqigoKqoqqiqqKqooKCqqKqoqqiqqKCgqqiqqKqoqqigoKqoqqiqqKqooKCqqKqoqqiqqKCgqqiqqKqoqqigoKqoqyyrLKssoKCrLIAAhDSAAIQ0qyyrLKssqyyAAIS9IKkqIKCgoKClJSUgIKkgpQAAhLiqLKCgqrSgoKqwoKU6rKClIKClIKCgpKCpoKCqIKCgpKCgoKCqIKCkoKUloCSgoCCtoCC2pSClIKUgILGgpSCruKCgoKCgpSClJSkgpSktqiSqrSokgAIEMqmgqyyuJKssoI=")]
+[assembly: go.GoPositionMap("flag/flag.go", "flag.cs", "AHDeAYKCgpSClIKUzKKCpoKCgpSCpoCkgKSAAAwYooKmgoKClIKmgKSAyqKCpoKCgpSCpoCkgMqigqaCgoKUgqaApIDKooKmgoKClIKmgKSAyqKCpoKCpoCkgMqigqaCgoKUgqaApIDKooKmgoKClIKmgKSA+oKCgpSCgpSClIKmgqaCpoKAgoCCxsyApIDKgKSApIAAQ4gBkoKCgoKUhqqigpSokqiSqqKqooK8oqqigryiqJKqoqiSpIKCAAgSgoKClIKUhJSCgpSClIKokqoACwiSgoKUyoKAgoKUtgAOEAAKBIKCgoKCgoKmuIKUgsa01LTUpKzSgoKCgoKCgriSuJSogIKkgJSUxsqAgoKCAAU+ABoCqLKClJQAESKCqJCmkKqygpSssqiQppCmkKaQqKKqoqqigoKqoqqiqqKqooKCqqKqoqqiqqKCgqqiqqKqoqqigoKqoqqiqqKqooKCqqKqoqqiqqKCgqqiqqKqoqqigoKqoqyyrLKssoKCrLIAAhDSAAIQ0qyyrLKssqyyAAIS9IKkqIKCgoKClJSUgIKkgpQAAhLiqLKCgqrSgoKqwoKU6rKClIKClIKCgpKCpoKCqIKCgpKCgoKCqIKCkoKUloCSgoCCtoCC2pSClIKUgILGgpSCruKCgoKCgpSClJSkgpSktqiSqrSokgAHEJSClN6mgqyyuJKssoI=", "423-425:1;552-559:1;609-641:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -107,4 +107,23 @@ public static partial class flag_package
     public partial struct FlagSet {}
     public partial struct ΔErrorHandling {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

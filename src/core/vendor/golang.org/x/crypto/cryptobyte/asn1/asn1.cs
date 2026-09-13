@@ -10,7 +10,6 @@ partial class asn1_package {
 
 [GoType("num:uint8")] partial struct Tag;
 
-// import "golang.org/x/crypto/cryptobyte/asn1"
 internal static UntypedInt classConstructed => 0x20;
 internal static UntypedInt classContextSpecific => 0x80;
 

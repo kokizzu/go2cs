@@ -13,36 +13,6 @@ using global::go.sync;
 
 partial class token_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(global::go.sync.atomic_package));
-}
-
 // If debug is set, invalid offset and position values cause a panic
 // (go.dev/issue/57490).
 internal const bool debug = false;
@@ -350,7 +320,7 @@ public static void AddLineColumnInfo(this ж<ΔFile> Ꮡf, nint offset, @string 
 // Offset returns the offset for the given file position p.
 //
 // If p is before the file's start position (or if p is NoPos),
-// the result is 0; if p is past the file's end position, the
+// the result is 0; if p is past the file's end position,
 // the result is the file size (see also go.dev/issue/57490).
 //
 // The following invariant, though not true for offset values
@@ -485,7 +455,7 @@ public static ΔPosition /*pos*/ Position(this ж<ΔFile> Ꮡf, ΔPos p) {
 [GoType] partial struct FileSet {
     internal sync.RWMutex mutex;         // protects the file set
     internal nint @base;                 // base offset for the next file
-    internal slice<ж<ΔFile>> files;    // list of files in the order added to the set
+    internal slice<ж<ΔFile>> files;      // list of files in the order added to the set
     internal atomic.Pointer<ΔFile> last; // cache of last file looked up
 }
 
@@ -578,7 +548,7 @@ public static void RemoveFile(this ж<FileSet> Ꮡs, ж<ΔFile> Ꮡfile) {
         {
             nint i = searchFiles(s.files, @file.@base); if (i >= 0 && s.files[i] == Ꮡfile) {
                 var last = Ꮡ(s.files, len(s.files) - 1);
-                s.files = appendꓸꓸꓸ(s.files[..(int)(i)], s.files[(int)(i + 1)..]);
+                s.files = slices.Delete<slice<ж<ΔFile>>, ж<ΔFile>>(s.files, i, i + 1);
                 last.ValueSlot = default!; // don't prolong lifetime when popping last element
             }
         }

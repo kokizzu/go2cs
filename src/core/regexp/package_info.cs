@@ -56,10 +56,10 @@ using static go.regexp_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("regexp/backtrack.go", "backtrack.cs", "ADpigoKClKaigqqigpSqoqzShIKUloKClIKWgpSUgpaClJSCvKKCgpSCquaCusKEgoKUgoKCAAcSgoKClISEmAACFAAJBIKClIKCupaigoKmkoKmgoKUgoKmgoKUgoKmgoKUgoKmgoKUgoKmlIKUlIKUgriCgpSCpoKqopyylICCqJKYkpgAAoECAASKAqiygpKUlJaCgpaCgpSCggAIFIKClIKCgpSWgpSUlJSCloKCgg==")]
-[assembly: go.GoPositionMap("regexp/exec.go", "exec.cs", "ADxwooKmooKmooKCgqamgqSUuIKClIKUpoKClKqigoCCgpSCpIIABBSCpoKClIKCgpSUgoKUlIKUgoKClJSCgpSUgpSClJSs0oKSlIKClIKCkoKClIKClJSCgpSUlJSUgoKUgoKmgoKUlIKCgpSmlIKCgpSUgqiygoKmAAIQ8oKCgoKClIKClIKCmoKClJSCgqaUpqSkpAACMQACNoKUgqauAAgCgoKUgIKmgoKCgoKEgrySgqSCgraCpIKCgoKUgraClJSClIIAAkUAAkoAChSCgoKUpqKCqLKCkpaCgpSWgoKWhIKSgoKUgoKUlIKUloKUgoKCgpSCgoKYgoKClKSCtoLakriSpKSkgpSkgpQAAk0AAlKClIKCgoKogoKCloKCqJKu4pSWgpaClIKWgoSCgoKWgoI=")]
-[assembly: go.GoPositionMap("regexp/onepass.go", "onepass.cs", "ADxSAAkCgoKUgoKCgqaCmJKCgpSGlK7igoKUgpSmgoKUpAAJFIKmooKCpoKCpoKClKaCgriCgpSCgqaCAA8k0oKCgpSWkpKCgoKCqIKCgpSCgoKCloKUtLS0tIKm2JKCtqSC3JLKggAGEIKagoSCooKCgqaEpJiCgoKipIKUgpqiAANLAANUAAYWAAgEgpYABRLCgoKClIKkhIKCkoKWkoKUgoKYpIKCxoKEkoKCtoKCgoKCtrSCgpSCgoKClIKCgoKClJSUgoKClMSCgpSChJKCgoKUlJSCgoKUxIKClIKCxIKClIKCgoLGloKCgoKCgoKCpoKCpq7igqaEpoKCnIK2goKUAAMXggAGIpaEgpQ=")]
-[assembly: go.GoPositionMap("regexp/regexp.go", "regexp.cs", "AHLOAZIAAhYACAKSAAIaAAoCAAIsABMCAAIS4qaCgoKUkoSCgoKUkoKUAAoWgoKUlKaCloKCgpSEAA0i0oKClIKCgoKCzIKSlIKClKiygoKCqJKYpIKCgpSmpKSkgoKUpIKCgoKCpgACPwAETrKCgpSssoKClKaCgpSokgACENIAAhTygoKCuAATKIKCgoKUlKaCpqKmoqaClIKCgriCgoKmAAcQgoKCgpSUpoKmoqaipoKUgoKCuIKCgqYACRSCgpaCgoKUgqaCpoKmgqaCrLKqoqqiqqKs0oKClKzSgoKUrNKCgpSs0oKClIassgACEsKGpqKCgoKCgpSUgpaCgoKCqIKU3oKUhpKClJSCyJS6gpSWrNKCgpSCooKUlKyyAAMSwgAGEpKmgoK+tJKCgriCloKCgoKCgpSClAACENKUlIKClKzSgoKUloKCgpaClKaUgoKClIKUgpSmlISCgs6igoKClK7CgoKUAAIQ0oKCgpSuwoKClAACENKCgpQAAhDygoKClIKCgqYAAigAEQKssqaCgoKClIKClIKClIKUgpSCgoKClLiCgoKUlMqCrAAIAoKUgoKClIKCgoKUlJSUgoKUlKiCgoKClKaCloKCAAIQ8gACEPKCgoKUgoKCpgACEPIAAhDyAAQSwoKUgpKClJSuwoKUgoKClJSuwoKUgoKClJSuwoKUgoKClJSuwoKUgpKClIKCgqaUrsKClIKCgpSUrsKClIKCgpSCgoKmlAACENKClIKCgpSUAAImABIEgpaCloKEgoKCgpaCgpSWgpYAAhLiqqKCgpSC")]
+[assembly: go.GoPositionMap("regexp/backtrack.go", "backtrack.cs", "AC5igoKClKaigqqigpSqoqzShIKUloKClIKWgpSUgpaClJSCvKKCgpSCquaCusKEgoKUgoKCAAcSgoKClISEmAACFAAJBIKClIKCupaigoKmkoKmgoKUgoKmgoKUgoKmgoKUgoKmgoKUgoKmlIKUlIKUgriCgpSCpoKqopyylICCqJKYkpgAAoECAASKAqiygpKUlJaCgpaCgpSCggAIFIKClIKCgpSWgpSUlJSCloKCgg==")]
+[assembly: go.GoPositionMap("regexp/exec.go", "exec.cs", "ADZwooKmooKmooKCgqamgqSUuIKClIKUpoKClKqigoCCgpSCpIIABBSCpoKClIKCgpSUgoKUlIKUgoKClJSCgpSUgpSClJSs0oKSlIKClIKCkoKClIKClJSCgpSUlJSUgoKUgoKmgoKUlIKCgpSmlIKCgpSUgqiygoKmAAIQ8oKCgoKClIKClIKCmoKClJSCgqaUpqSkpAACMQACNoKUgqauAAgCgoKUgIKmgoKCgoKEgrySgqSCgraCpIKCgoKUgraClJSClIIAAkUAAkoAChSCgoKUpqKCqLKCkpaCgpSWgoKWhIKSgoKUgoKUlIKUloKUgoKCgpSCgoKYgoKClKSCtoLakriSpKSkgpSkgpQAAk0AAlKClIKCgoKogoKCloKCqJKu4pSWgpaClIKWgoSCgoKWgoI=")]
+[assembly: go.GoPositionMap("regexp/onepass.go", "onepass.cs", "ACRSAAkCgoKUgoKCgqaCmJKCgpSGlK7igoKUgpSmgoKUpAAJFIKmooKCpoKCpoKClKaCgriCgpSCgqaCAA8k0oKCgpSWkpKCgoKCqIKCgpSCgoKCloKUtLS0tIKm2JKCtqSC3JLKggAGEIKagoSCooKCgqaEpJiCgoKipIKUgpqiAANLAANUAAYWAAgEgpYABRLCgoKClIKkhIKCkoKWkoKUgoKYpIKCxoKEkoKCtoKCgoKCtrSCgpSCgoKClIKCgoKClJSUgoKClMSCgpSChJKCgoKUlJSCgoKUxIKClIKCxIKClIKCgoLGloKCgoKCgoKCpoKCpq7igqaElIKCgoLKgoKcgraCgpQAAxeCAAYiloSClA==", "170-175:1;178-187:2;308-434:1")]
+[assembly: go.GoPositionMap("regexp/regexp.go", "regexp.cs", "AGbOAZIAAhYACAKSAAIaAAoCAAIsABMCAAIS4qaCgoKUkoSCgoKUkoKUAAoWgoKUlKaCloKCgpSEAA0i0oKClIKCgoKCzIKSlIKClKiygoKCqJKYpIKCgpSmpKSkgoKUpIKCgoKCpgACPwAETrKCgpSssoKClKaCgpSokgACENIAAhTygoKCuAATKIKCgoKUlKaCpqKmoqaClIKCgriCgoKmAAcQgoKCgpSUpoKmoqaipoKUgoKCuIKCgqYACRSCgpaCgoKUgqaCpoKmgqaCrLKqoqqiqqKs0oKClKzSgoKUrNKCgpSs0oKClIassgACEsKGpqKCgoKCgpSUgpaCgoKCqIKU3oKUhpKClJSCyJS6gpSWrNKCgpSCooKUlKyyAAMSwgAGEpKmgoK+tJKCgriCloKCgoKCgpSClAACENKUlIKClKzSgoKUloKCgpaClKaUgoKClIKUgpSmlISCgs6igoKClK7CgoKUAAIQ0oKCgpSuwoKClAACENKCgpQAAhDygoKClIKCgqYAAigAEQKssqaCgoKClIKClIKClIKUgpSCgoKClLiCgoKUlMqCrAAIAoKUgoKClIKCgoKUlJSUgoKUlKiCgoKClKaCloKCAAIQ8gACEPKCgoKUgoKCpgACEPIAAhDyAAQSwoKUgpKClJSuwoKUgoKClJSuwoKUgoKClJSuwoKUgoKClJSuwoKUgpKClIKCgqaUrsKClIKCgpSUrsKClIKCgpSCgoKmlAACENKClIKCgpSUAAImABIEgpaCloKEgoKCgpaCgpSWgpYAAhLirsKqooKClII=", "577-579:1;587-589:1;597-599:1;677-682:1;690-692:1;700-702:1;1082-1087:1;1100-1105:1;1118-1123:1;1136-1141:1;1154-1165:1;1178-1183:1;1196-1207:1;1221-1226:1")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -92,4 +92,22 @@ public static partial class regexp_package
     public partial struct Regexp {}
     public partial struct onePassInst {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸregexpꓸsyntax() => builtin.initPackage(typeof(regexp.syntax_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

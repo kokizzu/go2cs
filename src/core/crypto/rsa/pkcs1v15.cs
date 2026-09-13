@@ -3,53 +3,18 @@
 // license that can be found in the LICENSE file.
 namespace go.crypto;
 
-using bytes = bytes_package;
-using crypto = crypto_package;
 using boring = go.crypto.@internal.boring_package;
+using rsa = go.crypto.@internal.fips140.rsa_package;
+using fips140only = go.crypto.@internal.fips140only_package;
 using randutil = go.crypto.@internal.randutil_package;
 using subtle = go.crypto.subtle_package;
 using errors = errors_package;
 using io = io_package;
 using go.crypto;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 
 partial class rsa_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸrandutil() {
-    builtin.initPackage(typeof(go.crypto.@internal.randutil_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() {
-    builtin.initPackage(typeof(go.crypto.subtle_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
 
 // This file implements encryption and decryption using PKCS #1 v1.5 padding.
 
@@ -62,6 +27,9 @@ partial class rsa_package {
     // an error. These alternatives happen in constant time.
     public nint SessionKeyLen;
 }
+
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+internal static readonly @string cryptoRsaUseOfPkcs1V15ˢ = "crypto/rsa: use of PKCS#1 v1.5 encryption is not allowed in FIPS 140-only mode"u8;
 
 // EncryptPKCS1v15 encrypts the given message with RSA and the padding
 // scheme from PKCS #1 v1.5.  The message must be no longer than the
@@ -79,12 +47,15 @@ partial class rsa_package {
 public static (slice<byte>, error) EncryptPKCS1v15(io.Reader random, ж<PublicKey> Ꮡpub, slice<byte> msg) {
     ref var pub = ref Ꮡpub.DerefOrNull();
 
-    randutil.MaybeReadByte(random);
+    if (fips140only.Enabled) {
+        return (default!, errors.New(cryptoRsaUseOfPkcs1V15ˢ));
+    }
     {
-        var errΔ1 = checkPub(ref (Ꮡpub).DerefOrNull()); if (errΔ1 != default!) {
+        var errΔ1 = checkPublicKeySize(ref (Ꮡpub).DerefOrNull()); if (errΔ1 != default!) {
             return (default!, errΔ1);
         }
     }
+    randutil.MaybeReadByte(random);
     nint k = pub.Size();
     if (len(msg) > k - 11) {
         return (default!, ErrMessageTooLong);
@@ -115,7 +86,11 @@ public static (slice<byte>, error) EncryptPKCS1v15(io.Reader random, ж<PublicKe
         }
         return boring.EncryptRSANoPadding(bkey, em);
     }
-    return encrypt(ref (Ꮡpub).DerefOrNull(), em);
+    (var fk, err) = fipsPublicKey(ref (Ꮡpub).DerefOrNull());
+    if (err != default!) {
+        return (default!, err);
+    }
+    return rsa.Encrypt(fk, em);
 }
 
 // DecryptPKCS1v15 decrypts a plaintext using RSA and the padding scheme from PKCS #1 v1.5.
@@ -130,7 +105,7 @@ public static (slice<byte>, error) DecryptPKCS1v15(io.Reader random, ж<PrivateK
     ref var priv = ref Ꮡpriv.DerefOrNull();
 
     {
-        var errΔ1 = checkPub(ref nonnil(ref priv).PublicKey); if (errΔ1 != default!) {
+        var errΔ1 = checkPublicKeySize(ref nonnil(ref priv).PublicKey); if (errΔ1 != default!) {
             return (default!, errΔ1);
         }
     }
@@ -193,7 +168,7 @@ public static error DecryptPKCS1v15SessionKey(io.Reader random, ж<PrivateKey> �
     ref var priv = ref Ꮡpriv.DerefOrNull();
 
     {
-        var errΔ1 = checkPub(ref nonnil(ref priv).PublicKey); if (errΔ1 != default!) {
+        var errΔ1 = checkPublicKeySize(ref nonnil(ref priv).PublicKey); if (errΔ1 != default!) {
             return errΔ1;
         }
     }
@@ -227,25 +202,32 @@ internal static (nint valid, slice<byte> em, nint index, error err) decryptPKCS1
     nint index = default!;
     error err = default!;
 
+    if (fips140only.Enabled) {
+        return (0, default!, 0, errors.New(cryptoRsaUseOfPkcs1V15ˢ));
+    }
     nint k = Ꮡpriv.of(PrivateKey.ᏑPublicKey).Size();
     if (k < 11) {
         err = ErrDecryption;
-        return (valid, em, index, err);
+        return (0, default!, 0, err);
     }
     if (boring.Enabled){
         ж<boring.PrivateKeyRSA> bkey = default!;
         (bkey, err) = boringPrivateKey(Ꮡpriv);
         if (err != default!) {
-            return (valid, em, index, err);
+            return (0, default!, 0, err);
         }
         (em, err) = boring.DecryptRSANoPadding(bkey, ciphertext);
         if (err != default!) {
-            return (valid, em, index, err);
+            return (0, default!, 0, ErrDecryption);
         }
     } else {
-        (em, err) = decrypt(ref (Ꮡpriv).DerefOrNull(), ciphertext, noCheck);
-        if (err != default!) {
-            return (valid, em, index, err);
+        var (fk, errΔ1) = fipsPrivateKey(Ꮡpriv);
+        if (errΔ1 != default!) {
+            return (0, default!, 0, errΔ1);
+        }
+        (em, errΔ1) = rsa.DecryptWithoutCheck(fk, ciphertext);
+        if (errΔ1 != default!) {
+            return (0, default!, 0, ErrDecryption);
         }
     }
     nint firstByteIsZero = subtle.ConstantTimeByteEq(em[0], 0);
@@ -288,135 +270,6 @@ internal static error /*err*/ nonZeroRandomBytes(slice<byte> s, io.Reader random
         }
     }
     return err;
-}
-
-// A special TLS case which doesn't use an ASN1 prefix.
-// These are ASN1 DER structures:
-//
-//	DigestInfo ::= SEQUENCE {
-//	  digestAlgorithm AlgorithmIdentifier,
-//	  digest OCTET STRING
-//	}
-//
-// For performance, we don't use the generic ASN1 encoder. Rather, we
-// precompute a prefix of the digest value that makes a valid ASN1 DER string
-// with the correct contents.
-internal static map<crypto.Hash, slice<byte>> hashPrefixes = new map<crypto.Hash, slice<byte>>{
-    [crypto.MD5] = new byte[]{0x30, 0x20, 0x30, 0x0c, 0x06, 0x08, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x02, 0x05, 0x05, 0x00, 0x04, 0x10}.slice(),
-    [crypto.SHA1] = new byte[]{0x30, 0x21, 0x30, 0x09, 0x06, 0x05, 0x2b, 0x0e, 0x03, 0x02, 0x1a, 0x05, 0x00, 0x04, 0x14}.slice(),
-    [crypto.SHA224] = new byte[]{0x30, 0x2d, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04, 0x05, 0x00, 0x04, 0x1c}.slice(),
-    [crypto.SHA256] = new byte[]{0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20}.slice(),
-    [crypto.SHA384] = new byte[]{0x30, 0x41, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, 0x05, 0x00, 0x04, 0x30}.slice(),
-    [crypto.SHA512] = new byte[]{0x30, 0x51, 0x30, 0x0d, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, 0x05, 0x00, 0x04, 0x40}.slice(),
-    [crypto.MD5SHA1] = new byte[]{}.slice(),
-    [crypto.RIPEMD160] = new byte[]{0x30, 0x20, 0x30, 0x08, 0x06, 0x06, 0x28, 0xcf, 0x06, 0x03, 0x00, 0x31, 0x04, 0x14}.slice()
-};
-
-// SignPKCS1v15 calculates the signature of hashed using
-// RSASSA-PKCS1-V1_5-SIGN from RSA PKCS #1 v1.5.  Note that hashed must
-// be the result of hashing the input message using the given hash
-// function. If hash is zero, hashed is signed directly. This isn't
-// advisable except for interoperability.
-//
-// The random parameter is legacy and ignored, and it can be nil.
-//
-// This function is deterministic. Thus, if the set of possible
-// messages is small, an attacker may be able to build a map from
-// messages to signatures and identify the signed messages. As ever,
-// signatures provide authenticity, not confidentiality.
-public static (slice<byte>, error) SignPKCS1v15(io.Reader random, ж<PrivateKey> Ꮡpriv, crypto.Hash hash, slice<byte> hashed) {
-    // pkcs1v15ConstructEM is called before boring.SignRSAPKCS1v15 to return
-    // consistent errors, including ErrMessageTooLong.
-    var (em, err) = pkcs1v15ConstructEM(Ꮡpriv.of(PrivateKey.ᏑPublicKey), hash, hashed);
-    if (err != default!) {
-        return (default!, err);
-    }
-    if (boring.Enabled) {
-        var (bkey, errΔ1) = boringPrivateKey(Ꮡpriv);
-        if (errΔ1 != default!) {
-            return (default!, errΔ1);
-        }
-        return boring.SignRSAPKCS1v15(bkey, hash, hashed);
-    }
-    return decrypt(ref (Ꮡpriv).DerefOrNull(), em, withCheck);
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string cryptoRsaInputMustBeˢ = "crypto/rsa: input must be hashed message"u8;
-internal static readonly @string cryptoRsaUnsupportedHashˢ = "crypto/rsa: unsupported hash function"u8;
-
-internal static (slice<byte>, error) pkcs1v15ConstructEM(ж<PublicKey> Ꮡpub, crypto.Hash hash, slice<byte> hashed) {
-    ref var pub = ref Ꮡpub.DerefOrNull();
-
-    // Special case: crypto.Hash(0) is used to indicate that the data is
-    // signed directly.
-    slice<byte> prefix = default!;
-    if (hash != 0) {
-        if (len(hashed) != hash.Size()) {
-            return (default!, errors.New(cryptoRsaInputMustBeˢ));
-        }
-        bool ok = default!;
-        (prefix, ok) = hashPrefixes[hash, ꟷ];
-        if (!ok) {
-            return (default!, errors.New(cryptoRsaUnsupportedHashˢ));
-        }
-    }
-    // EM = 0x00 || 0x01 || PS || 0x00 || T
-    nint k = pub.Size();
-    if (k < len(prefix) + len(hashed) + 2 + 8 + 1) {
-        return (default!, ErrMessageTooLong);
-    }
-    var em = new slice<byte>(k);
-    em[1] = 1;
-    for (nint i = 2; i < k - len(prefix) - len(hashed) - 1; i++) {
-        em[i] = 0xff;
-    }
-    copy(em[(int)(k - len(prefix) - len(hashed))..], prefix);
-    copy(em[(int)(k - len(hashed))..], hashed);
-    return (em, default!);
-}
-
-// VerifyPKCS1v15 verifies an RSA PKCS #1 v1.5 signature.
-// hashed is the result of hashing the input message using the given hash
-// function and sig is the signature. A valid signature is indicated by
-// returning a nil error. If hash is zero then hashed is used directly. This
-// isn't advisable except for interoperability.
-//
-// The inputs are not considered confidential, and may leak through timing side
-// channels, or if an attacker has control of part of the inputs.
-public static error VerifyPKCS1v15(ж<PublicKey> Ꮡpub, crypto.Hash hash, slice<byte> hashed, slice<byte> sig) {
-    ref var pub = ref Ꮡpub.DerefOrNull();
-
-    if (boring.Enabled) {
-        var (bkey, errΔ1) = boringPublicKey(Ꮡpub);
-        if (errΔ1 != default!) {
-            return errΔ1;
-        }
-        {
-            var errΔ2 = boring.VerifyRSAPKCS1v15(bkey, hash, hashed, sig); if (errΔ2 != default!) {
-                return ErrVerification;
-            }
-        }
-        return default!;
-    }
-    // RFC 8017 Section 8.2.2: If the length of the signature S is not k
-    // octets (where k is the length in octets of the RSA modulus n), output
-    // "invalid signature" and stop.
-    if (pub.Size() != len(sig)) {
-        return ErrVerification;
-    }
-    var (em, err) = encrypt(ref (Ꮡpub).DerefOrNull(), sig);
-    if (err != default!) {
-        return ErrVerification;
-    }
-    (var expected, err) = pkcs1v15ConstructEM(Ꮡpub, hash, hashed);
-    if (err != default!) {
-        return ErrVerification;
-    }
-    if (!bytes.Equal(em, expected)) {
-        return ErrVerification;
-    }
-    return default!;
 }
 
 } // end rsa_package

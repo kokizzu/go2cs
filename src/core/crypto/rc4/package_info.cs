@@ -50,7 +50,7 @@ using static go.crypto.rc4_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/rc4/rc4.go", "rc4.cs", "AB8ygqqigoKUgoKUgoKClK7CgpSqooKUgpSCgoKCgoKCgoKU")]
+[assembly: go.GoPositionMap("crypto/rc4/rc4.go", "rc4.cs", "ABw2gtqigpSCgpSCgpSCgoKUrsKClKqigpSClIKCgoKCgoKCgpQ=")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -68,4 +68,16 @@ public static partial class rc4_package
     [GoValueClone("s")] public partial struct Cipher {}
     public partial struct KeySizeError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    // </ImportInitializers>
 }

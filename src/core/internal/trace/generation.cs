@@ -19,18 +19,6 @@ using go.@internal.trace.@event;
 
 partial class trace_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbufio() {
-    builtin.initPackage(typeof(bufio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸslices() {
-    builtin.initPackage(typeof(slices_package));
-}
-
 // generation contains all the trace data for a single
 // trace generation. It is purely data: it does not
 // track any parse state nor does it contain a cursor
@@ -38,6 +26,7 @@ partial class trace_package {
 [GoType] partial struct generation {
     internal uint64 gen;
     internal map<ThreadID, slice<batch>> batches;
+    internal slice<ThreadID> batchMs;
     internal slice<cpuSample> cpuSamples;
     internal partial ref ж<evTable> evTable { get; }
 }
@@ -205,6 +194,11 @@ internal static error processBatch(ж<generation> Ꮡg, batch b) {
         break;
     }
     default: {
+        {
+            var (_, ok) = g.batches[b.m, ꟷ]; if (!ok) {
+                g.batchMs = append(g.batchMs, b.m);
+            }
+        }
         g.batches[b.m] = append(g.batches[b.m], b);
         break;
     }}

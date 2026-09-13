@@ -12,37 +12,12 @@ namespace go.crypto;
 
 using crypto = crypto_package;
 using boring = go.crypto.@internal.boring_package;
-using errors = errors_package;
+using sha512 = go.crypto.@internal.fips140.sha512_package;
 using hash = hash_package;
-using byteorder = go.@internal.byteorder_package;
-using go.@internal;
 using go.crypto.@internal;
+using go.crypto.@internal.fips140;
 
 partial class sha512_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcrypto() {
-    builtin.initPackage(typeof(crypto_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() {
-    builtin.initPackage(typeof(go.crypto.@internal.boring_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
 
 [GoInit] internal static void init() {
     crypto.RegisterHash(crypto.SHA384, New384);
@@ -51,336 +26,48 @@ partial class sha512_package {
     crypto.RegisterHash(crypto.SHA512_256, New512_256);
 }
 
-public static UntypedInt ΔSize => 64;
+public static UntypedInt Size => 64;
 public static UntypedInt Size224 => 28;
 public static UntypedInt Size256 => 32;
 public static UntypedInt Size384 => 48;
-public static UntypedInt ΔBlockSize => 128;
+public static UntypedInt BlockSize => 128;
 
-internal static UntypedInt chunk => 128;
-internal static UntypedInt init0 => 0x6a09e667f3bcc908;
-internal static UntypedInt init1 => 0xbb67ae8584caa73b;
-internal static UntypedInt init2 => 0x3c6ef372fe94f82b;
-internal static UntypedInt init3 => 0xa54ff53a5f1d36f1;
-internal static UntypedInt init4 => 0x510e527fade682d1;
-internal static UntypedInt init5 => 0x9b05688c2b3e6c1f;
-internal static UntypedInt init6 => 0x1f83d9abfb41bd6b;
-internal static UntypedInt init7 => 0x5be0cd19137e2179;
-internal static UntypedInt init0_224 => 0x8c3d37c819544da2;
-internal static UntypedInt init1_224 => 0x73e1996689dcd4d6;
-internal static UntypedInt init2_224 => 0x1dfab7ae32ff9c82;
-internal static UntypedInt init3_224 => 0x679dd514582f9fcf;
-internal static UntypedInt init4_224 => 0x0f6d2b697bd44da8;
-internal static UntypedInt init5_224 => 0x77e36f7304c48942;
-internal static UntypedInt init6_224 => 0x3f9d85a86a1d36c8;
-internal static UntypedInt init7_224 => 0x1112e6ad91d692a1;
-internal static UntypedInt init0_256 => 0x22312194fc2bf72c;
-internal static UntypedInt init1_256 => 0x9f555fa3c84c64c2;
-internal static UntypedInt init2_256 => 0x2393b86b6f53b151;
-internal static UntypedInt init3_256 => 0x963877195940eabd;
-internal static UntypedInt init4_256 => 0x96283ee2a88effe3;
-internal static UntypedInt init5_256 => 0xbe5e1e2553863992;
-internal static UntypedInt init6_256 => 0x2b0199fc2c85b8aa;
-internal static UntypedInt init7_256 => 0x0eb72ddc81c52ca2;
-internal static UntypedInt init0_384 => 0xcbbb9d5dc1059ed8;
-internal static UntypedInt init1_384 => 0x629a292a367cd507;
-internal static UntypedInt init2_384 => 0x9159015a3070dd17;
-internal static UntypedInt init3_384 => 0x152fecd8f70e5939;
-internal static UntypedInt init4_384 => 0x67332667ffc00b31;
-internal static UntypedInt init5_384 => 0x8eb44a8768581511;
-internal static UntypedInt init6_384 => 0xdb0c2e0d64f98fa7;
-internal static UntypedInt init7_384 => 0x47b5481dbefa4fa4;
-
-// digest represents the partial evaluation of a checksum.
-[GoType] partial struct digest {
-    internal array<uint64> h = new(8);
-    internal array<byte> x = new(chunk);
-    internal nint nx;
-    internal uint64 len;
-    internal crypto.Hash function;
-}
-
-[GoRecv] internal static void Reset(this ref digest d) {
-    var exprᴛ1 = d.function;
-    if (exprᴛ1 == crypto.SHA384) {
-        d.h[0] = init0_384;
-        d.h[1] = init1_384;
-        d.h[2] = init2_384;
-        d.h[3] = init3_384;
-        d.h[4] = init4_384;
-        d.h[5] = init5_384;
-        d.h[6] = init6_384;
-        d.h[7] = init7_384;
-    }
-    else if (exprᴛ1 == crypto.SHA512_224) {
-        d.h[0] = init0_224;
-        d.h[1] = init1_224;
-        d.h[2] = init2_224;
-        d.h[3] = init3_224;
-        d.h[4] = init4_224;
-        d.h[5] = init5_224;
-        d.h[6] = init6_224;
-        d.h[7] = init7_224;
-    }
-    else if (exprᴛ1 == crypto.SHA512_256) {
-        d.h[0] = init0_256;
-        d.h[1] = init1_256;
-        d.h[2] = init2_256;
-        d.h[3] = init3_256;
-        d.h[4] = init4_256;
-        d.h[5] = init5_256;
-        d.h[6] = init6_256;
-        d.h[7] = init7_256;
-    }
-    else { /* default: */
-        d.h[0] = init0;
-        d.h[1] = init1;
-        d.h[2] = init2;
-        d.h[3] = init3;
-        d.h[4] = init4;
-        d.h[5] = init5;
-        d.h[6] = init6;
-        d.h[7] = init7;
-    }
-
-    d.nx = 0;
-    d.len = 0;
-}
-
-internal static readonly @string magic384 = "sha\x04"u8;
-internal static readonly @string magic512_224 = "sha\x05"u8;
-internal static readonly @string magic512_256 = "sha\x06"u8;
-internal static readonly @string magic512 = "sha\x07"u8;
-internal const nint marshaledSize = /* len(magic512) + 8*8 + chunk + 8 */ 204;
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string cryptoSha512InvalidHashˢ = "crypto/sha512: invalid hash function"u8;
-
-[GoRecv] internal static (slice<byte>, error) MarshalBinary(this ref digest d) {
-    var b = new slice<byte>(0, marshaledSize);
-    var exprᴛ1 = d.function;
-    if (exprᴛ1 == crypto.SHA384) {
-        b = append(b, magic384.ꓸꓸꓸ);
-    }
-    else if (exprᴛ1 == crypto.SHA512_224) {
-        b = append(b, magic512_224.ꓸꓸꓸ);
-    }
-    else if (exprᴛ1 == crypto.SHA512_256) {
-        b = append(b, magic512_256.ꓸꓸꓸ);
-    }
-    else if (exprᴛ1 == crypto.SHA512) {
-        b = append(b, magic512.ꓸꓸꓸ);
-    }
-    else { /* default: */
-        return (default!, errors.New(cryptoSha512InvalidHashˢ));
-    }
-
-    b = byteorder.BeAppendUint64(b, d.h[0]);
-    b = byteorder.BeAppendUint64(b, d.h[1]);
-    b = byteorder.BeAppendUint64(b, d.h[2]);
-    b = byteorder.BeAppendUint64(b, d.h[3]);
-    b = byteorder.BeAppendUint64(b, d.h[4]);
-    b = byteorder.BeAppendUint64(b, d.h[5]);
-    b = byteorder.BeAppendUint64(b, d.h[6]);
-    b = byteorder.BeAppendUint64(b, d.h[7]);
-    b = appendꓸꓸꓸ(b, d.x[..(int)(d.nx)]);
-    b = b[..(int)(len(b) + len(d.x) - d.nx)]; // already zero
-    b = byteorder.BeAppendUint64(b, d.len);
-    return (b, default!);
-}
-
-// Hoisted @string literals (single allocation; Go keeps these in RODATA)
-internal static readonly @string cryptoSha512InvalidHashˢ2 = "crypto/sha512: invalid hash state identifier"u8;
-internal static readonly @string cryptoSha512InvalidHashˢ3 = "crypto/sha512: invalid hash state size"u8;
-
-[GoRecv] internal static error UnmarshalBinary(this ref digest d, slice<byte> b) {
-    if (len(b) < len(magic512)) {
-        return errors.New(cryptoSha512InvalidHashˢ2);
-    }
-    switch (ᐧ) {
-    case {} when d.function == crypto.SHA384 && ((sstring)(b[..(int)(len(magic384))])) == magic384: {
-        break;
-    }
-    case {} when d.function == crypto.SHA512_224 && ((sstring)(b[..(int)(len(magic512_224))])) == magic512_224: {
-        break;
-    }
-    case {} when d.function == crypto.SHA512_256 && ((sstring)(b[..(int)(len(magic512_256))])) == magic512_256: {
-        break;
-    }
-    case {} when d.function == crypto.SHA512 && ((sstring)(b[..(int)(len(magic512))])) == magic512: {
-        break;
-    }
-    default: {
-        return errors.New(cryptoSha512InvalidHashˢ2);
-    }}
-
-    if (len(b) != marshaledSize) {
-        return errors.New(cryptoSha512InvalidHashˢ3);
-    }
-    b = b[(int)(len(magic512))..];
-    (b, d.h[0]) = consumeUint64(b);
-    (b, d.h[1]) = consumeUint64(b);
-    (b, d.h[2]) = consumeUint64(b);
-    (b, d.h[3]) = consumeUint64(b);
-    (b, d.h[4]) = consumeUint64(b);
-    (b, d.h[5]) = consumeUint64(b);
-    (b, d.h[6]) = consumeUint64(b);
-    (b, d.h[7]) = consumeUint64(b);
-    b = b[(int)(copy(d.x[..], b))..];
-    (b, d.len) = consumeUint64(b);
-    d.nx = (nint)(d.len % (uint64)chunk);
-    return default!;
-}
-
-internal static (slice<byte>, uint64) consumeUint64(slice<byte> b) {
-    return (b[8..], byteorder.BeUint64(b));
-}
-
-// New returns a new hash.Hash computing the SHA-512 checksum.
+// New returns a new [hash.Hash] computing the SHA-512 checksum. The Hash
+// also implements [encoding.BinaryMarshaler], [encoding.BinaryAppender] and
+// [encoding.BinaryUnmarshaler] to marshal and unmarshal the internal
+// state of the hash.
 public static hash.Hash New() {
     if (boring.Enabled) {
         return boring.NewSHA512();
     }
-    var d = Ꮡ(new digest(function: crypto.SHA512));
-    d.Reset();
-    return new digestжHash(d);
+    return new sha512_DigestжHash(sha512.New());
 }
 
-// New512_224 returns a new hash.Hash computing the SHA-512/224 checksum.
+// New512_224 returns a new [hash.Hash] computing the SHA-512/224 checksum. The Hash
+// also implements [encoding.BinaryMarshaler], [encoding.BinaryAppender] and
+// [encoding.BinaryUnmarshaler] to marshal and unmarshal the internal
+// state of the hash.
 public static hash.Hash New512_224() {
-    var d = Ꮡ(new digest(function: crypto.SHA512_224));
-    d.Reset();
-    return new digestжHash(d);
+    return new sha512_DigestжHash(sha512.New512_224());
 }
 
-// New512_256 returns a new hash.Hash computing the SHA-512/256 checksum.
+// New512_256 returns a new [hash.Hash] computing the SHA-512/256 checksum. The Hash
+// also implements [encoding.BinaryMarshaler], [encoding.BinaryAppender] and
+// [encoding.BinaryUnmarshaler] to marshal and unmarshal the internal
+// state of the hash.
 public static hash.Hash New512_256() {
-    var d = Ꮡ(new digest(function: crypto.SHA512_256));
-    d.Reset();
-    return new digestжHash(d);
+    return new sha512_DigestжHash(sha512.New512_256());
 }
 
-// New384 returns a new hash.Hash computing the SHA-384 checksum.
+// New384 returns a new [hash.Hash] computing the SHA-384 checksum. The Hash
+// also implements [encoding.BinaryMarshaler], [encoding.BinaryAppender] and
+// [encoding.BinaryUnmarshaler] to marshal and unmarshal the internal
+// state of the hash.
 public static hash.Hash New384() {
     if (boring.Enabled) {
         return boring.NewSHA384();
     }
-    var d = Ꮡ(new digest(function: crypto.SHA384));
-    d.Reset();
-    return new digestжHash(d);
-}
-
-[GoRecv] internal static nint Size(this ref digest d) {
-    var exprᴛ1 = d.function;
-    if (exprᴛ1 == crypto.SHA512_224) {
-        return Size224;
-    }
-    if (exprᴛ1 == crypto.SHA512_256) {
-        return Size256;
-    }
-    if (exprᴛ1 == crypto.SHA384) {
-        return Size384;
-    }
-    { /* default: */
-        return ΔSize;
-    }
-
-}
-
-[GoRecv] internal static nint BlockSize(this ref digest d) {
-    return ΔBlockSize;
-}
-
-internal static (nint nn, error err) Write(this ж<digest> Ꮡd, slice<byte> p) {
-    nint nn = default!;
-    error err = default!;
-
-    ref var d = ref Ꮡd.DerefOrNull();
-    if (d.function != crypto.SHA512_224 && d.function != crypto.SHA512_256) {
-        boring.Unreachable();
-    }
-    nn = len(p);
-    d.len += (uint64)nn;
-    if (d.nx > 0) {
-        nint n = copy(d.x[(int)(d.nx)..], p);
-        d.nx += n;
-        if (d.nx == chunk) {
-            block(ref (Ꮡd).DerefOrNull(), d.x[..]);
-            d.nx = 0;
-        }
-        p = p[(int)(n)..];
-    }
-    if (len(p) >= chunk) {
-        nint n = (nint)(len(p) & ~(nint)(chunk - 1));
-        block(ref (Ꮡd).DerefOrNull(), p[..(int)(n)]);
-        p = p[(int)(n)..];
-    }
-    if (len(p) > 0) {
-        d.nx = copy(d.x[..], p);
-    }
-    return (nn, err);
-}
-
-[GoRecv] internal static slice<byte> Sum(this ref digest d, slice<byte> @in) {
-    if (d.function != crypto.SHA512_224 && d.function != crypto.SHA512_256) {
-        boring.Unreachable();
-    }
-    // Make a copy of d so that caller can keep writing and summing.
-    var d0 = @new<digest>();
-    d0.Value = d.ΔClone();
-    var hash = d0.checkSum();
-    var exprᴛ1 = (~d0).function;
-    if (exprᴛ1 == crypto.SHA384) {
-        return appendꓸꓸꓸ(@in, hash[..(int)(Size384)]);
-    }
-    if (exprᴛ1 == crypto.SHA512_224) {
-        return appendꓸꓸꓸ(@in, hash[..(int)(Size224)]);
-    }
-    if (exprᴛ1 == crypto.SHA512_256) {
-        return appendꓸꓸꓸ(@in, hash[..(int)(Size256)]);
-    }
-    { /* default: */
-        return appendꓸꓸꓸ(@in, hash[..]);
-    }
-
-}
-
-internal static array<byte> checkSum(this ж<digest> Ꮡd) {
-    ref var d = ref Ꮡd.DerefOrNull();
-
-    // Padding. Add a 1 bit and 0 bits until 112 bytes mod 128.
-    var len = d.len;
-    array<byte> tmp = new(144); /* 128 + 16 */                      // padding + length buffer
-    tmp[0] = 0x80;
-    uint64 t = default!;
-    if (len % 128 < 112){
-        t = 112 - len % 128;
-    } else {
-        t = 128 + 112 - len % 128;
-    }
-    // Length in bits.
-    len <<= (int)(3);
-    var padlen = tmp[..(int)(t + 16)];
-    // Upper 64 bits are always zero, because len variable has type uint64,
-    // and tmp is already zeroed at that index, so we can skip updating it.
-    // byteorder.BePutUint64(padlen[t+0:], 0)
-    byteorder.BePutUint64(padlen[(int)(t + 8)..], len);
-    Ꮡd.Write(padlen);
-    if (d.nx != 0) {
-        throw panic("d.nx != 0");
-    }
-    array<byte> digest = new(64); /* ΔSize */
-    byteorder.BePutUint64(digest[0..], d.h[0]);
-    byteorder.BePutUint64(digest[8..], d.h[1]);
-    byteorder.BePutUint64(digest[16..], d.h[2]);
-    byteorder.BePutUint64(digest[24..], d.h[3]);
-    byteorder.BePutUint64(digest[32..], d.h[4]);
-    byteorder.BePutUint64(digest[40..], d.h[5]);
-    if (d.function != crypto.SHA384) {
-        byteorder.BePutUint64(digest[48..], d.h[6]);
-        byteorder.BePutUint64(digest[56..], d.h[7]);
-    }
-    return digest.Clone();
+    return new sha512_DigestжHash(sha512.New384());
 }
 
 // Sum512 returns the SHA512 checksum of the data.
@@ -388,11 +75,11 @@ public static array<byte> Sum512(slice<byte> data) {
     if (boring.Enabled) {
         return boring.SHA512(data);
     }
-    ref var d = ref heap<digest>(out var Ꮡd);
-    d = new digest(function: crypto.SHA512);
-    d.Reset();
-    Ꮡd.Write(data);
-    return Ꮡd.checkSum();
+    var h = New();
+    h.Write(data);
+    array<byte> sum = new(64); /* Size */
+    h.Sum(sum[..0]);
+    return sum.Clone();
 }
 
 // Sum384 returns the SHA384 checksum of the data.
@@ -400,35 +87,29 @@ public static array<byte> Sum384(slice<byte> data) {
     if (boring.Enabled) {
         return boring.SHA384(data);
     }
-    ref var d = ref heap<digest>(out var Ꮡd);
-    d = new digest(function: crypto.SHA384);
-    d.Reset();
-    Ꮡd.Write(data);
-    var sum = Ꮡd.checkSum();
-    var ap = Ꮡ(array<byte>.Alias(sum[..], 48));
-    return ap.Value.Clone();
+    var h = New384();
+    h.Write(data);
+    array<byte> sum = new(48); /* Size384 */
+    h.Sum(sum[..0]);
+    return sum.Clone();
 }
 
 // Sum512_224 returns the Sum512/224 checksum of the data.
 public static array<byte> Sum512_224(slice<byte> data) {
-    ref var d = ref heap<digest>(out var Ꮡd);
-    d = new digest(function: crypto.SHA512_224);
-    d.Reset();
-    Ꮡd.Write(data);
-    var sum = Ꮡd.checkSum();
-    var ap = Ꮡ(array<byte>.Alias(sum[..], 28));
-    return ap.Value.Clone();
+    var h = New512_224();
+    h.Write(data);
+    array<byte> sum = new(28); /* Size224 */
+    h.Sum(sum[..0]);
+    return sum.Clone();
 }
 
 // Sum512_256 returns the Sum512/256 checksum of the data.
 public static array<byte> Sum512_256(slice<byte> data) {
-    ref var d = ref heap<digest>(out var Ꮡd);
-    d = new digest(function: crypto.SHA512_256);
-    d.Reset();
-    Ꮡd.Write(data);
-    var sum = Ꮡd.checkSum();
-    var ap = Ꮡ(array<byte>.Alias(sum[..], 32));
-    return ap.Value.Clone();
+    var h = New512_256();
+    h.Write(data);
+    array<byte> sum = new(32); /* Size256 */
+    h.Sum(sum[..0]);
+    return sum.Clone();
 }
 
 } // end sha512_package

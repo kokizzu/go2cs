@@ -10,6 +10,7 @@
 // importing type aliases at a namespace level.
 
 // <ImportedTypeAliases>
+global using runtimeꓸError = go.runtime_package.ΔError;
 global using syscallꓸHandle = go.syscall_package.ΔHandle;
 global using syscallꓸSignal = go.syscall_package.ΔSignal;
 global using syscallꓸSockaddr = go.syscall_package.ΔSockaddr;
@@ -53,9 +54,9 @@ using static go.os.user_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "ABQq0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS", "22-22:1")]
-[assembly: go.GoPositionMap("os/user/lookup_windows.go", "lookup_windows.cs", "ACcegoKCgoKUgqaCuKKCgpSCgpSCgoKUgoLWgoKCgoKmgoLKqqKSgoKCgpSClILM0oKClIKU2NKCgpSCgoKU6JKCggAHEIKUqsSSgoKUlIKClIIACRKCgpSCgpSCgoKClIKClJTWgpKSgpTuAAUUooKClIKCgpSCgpSCgpSCgpSCgpSCgpTc5IKClIKUgoIADh6CggAHEIKClIKClIKCgpSCgtaCgoKUgoKUgoIAChaCyoKClJSmgoKClIKUpoKCgpSmgpKClKaCgoKUkoKUgpSmgoKClIKClIKCuIKCpg==")]
-[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "AEmKAYLOgs6CzoI=")]
+[assembly: go.GoPositionMap("os/user/lookup.go", "lookup.cs", "AA4q0oCSgpSSAAwYooCCpKqigIKkqqKqoqiS", "22-22:1")]
+[assembly: go.GoPositionMap("os/user/lookup_windows.go", "lookup_windows.cs", "ABEigoKCgoKUgqaCAAUugoKCgoKmgoLKqqKSgoKCgpSClILKgqYABxCElJikpoKUpKSmgpSsAAIQAAwEqOKCgpSClNjSgoKUgoKClOiSgoKUgpQABF6CkpKClO4ABRSIsqKCgpSCgoKUgoKUkoKUkoKUkoKUkoKUkqaU7sSs0oKCuIKClKaCgpSCgoCCpIKm2uKUgpSClAAEeIKCgpSCgpSCypSCggALGILKgoKUlKaCgoKUgpSmgoKClKaCkoKUpoKCgpSSgpSClKaCgoCmooKClIKCgpSCgoKUlMSCpoKClIKClIKC2oKCpg==", "256-300:1;310-320:1;330-332:2;501-519:1")]
+[assembly: go.GoPositionMap("os/user/user.go", "user.cs", "AEOKAYLOgs6CzoI=")]
 // </GoSourcePositionMaps>
 
 namespace go.os;
@@ -78,4 +79,21 @@ public static partial class user_package
     public partial struct UnknownUserIdError {}
     public partial struct User {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() => builtin.initPackage(typeof(@internal.syscall.windows_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸregistry() => builtin.initPackage(typeof(@internal.syscall.windows.registry_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyscall() => builtin.initPackage(typeof(syscall_package));
+    // </ImportInitializers>
 }

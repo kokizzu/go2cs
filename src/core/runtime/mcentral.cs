@@ -11,9 +11,8 @@
 namespace go;
 
 using atomic = @internal.runtime.atomic_package;
-using sys = runtime.@internal.sys_package;
+using sys = @internal.runtime.sys_package;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -46,10 +45,10 @@ partial class runtime_package {
 // Initialize a single central free list.
 [GoRecv] internal static void init(this ref mcentral c, spanClass spc) {
     c.spanclass = spc;
-    lockInit(ref nonnil(ref c).partial[0].spineLock, lockRankSpanSetSpine);
-    lockInit(ref nonnil(ref c).partial[1].spineLock, lockRankSpanSetSpine);
-    lockInit(ref nonnil(ref c).full[0].spineLock, lockRankSpanSetSpine);
-    lockInit(ref nonnil(ref c).full[1].spineLock, lockRankSpanSetSpine);
+    lockInit(Ꮡ(c.partial, 0).of(spanSet.ᏑspineLock), lockRankSpanSetSpine);
+    lockInit(Ꮡ(c.partial, 1).of(spanSet.ᏑspineLock), lockRankSpanSetSpine);
+    lockInit(Ꮡ(c.full, 0).of(spanSet.ᏑspineLock), lockRankSpanSetSpine);
+    lockInit(Ꮡ(c.full, 1).of(spanSet.ᏑspineLock), lockRankSpanSetSpine);
 }
 
 // partialUnswept returns the spanSet which holds partially-filled
@@ -254,7 +253,7 @@ internal static readonly @string uncachingSpanButSˢ = "uncaching span but s.all
     if (s == nil) {
         return default!;
     }
-    s.initHeapBits(false);
+    s.initHeapBits();
     return s;
 }
 

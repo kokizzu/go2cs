@@ -8,12 +8,6 @@ using encoding;
 
 partial class zstd_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
 // readLiterals reads and decompresses the literals from data at off.
 // The literals are appended to outbuf, which is returned.
 // Also returns the new input offset. RFC 3.1.1.3.1.
@@ -154,7 +148,7 @@ internal static (nint, slice<byte>, error) readHuffLiterals(this ж<Reader> Ꮡr
     if (((byte)(hdr & 3)) == 2){
         // Compressed_Literals_Block.
         // Read new huffman tree.
-        if (builtin.len(r.huffmanTable) < (1 << (int)(maxHuffmanBits))) {
+        if (builtin.len(r.huffmanTable) < (nint)((1 << (int)(maxHuffmanBits)))) {
             r.huffmanTable = new slice<uint16>((1 << (int)(maxHuffmanBits)));
         }
         var (huffmanTableBits, hoff, errΔ1) = Ꮡr.readHuff(data, off, r.huffmanTable);

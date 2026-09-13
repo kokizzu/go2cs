@@ -12,12 +12,6 @@ using go.sync;
 
 partial class testlog_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() {
-    builtin.initPackage(typeof(go.sync.atomic_package));
-}
-
 // Interface is the interface required of test loggers.
 // The os package will invoke the interface's methods to indicate that
 // it is inspecting the given environment variables or files.
@@ -30,33 +24,32 @@ partial class testlog_package {
 }
 
 // logger is the current logger Interface.
-// We use an atomic.Value in case test startup
+// We use an atomic.Pointer in case test startup
 // is racing with goroutines started during init.
 // That must not cause a race detector failure,
 // although it will still result in limited visibility
 // into exactly what those goroutines do.
-internal static ж<atomic.Value> Ꮡlogger = new StandardBox<atomic.Value>(default(atomic.Value));
-internal static ref atomic.Value logger => ref Ꮡlogger.Value;
+internal static ж<atomic.Pointer<Interface>> Ꮡlogger = new StandardBox<atomic.Pointer<Interface>>(default(atomic.Pointer<Interface>));
+internal static ref atomic.Pointer<Interface> logger => ref Ꮡlogger.Value;
 
 // SetLogger sets the test logger implementation for the current process.
 // It must be called only once, at process startup.
 public static void SetLogger(Interface implʗp) {
     ref var impl = ref heap(implʗp, out var Ꮡimpl);
 
-    if (Ꮡlogger.Load() != default!) {
+    if (!Ꮡlogger.CompareAndSwap(nil, Ꮡimpl)) {
         throw panic("testlog: SetLogger must be called only once");
     }
-    Ꮡlogger.Store(Ꮡimpl);
 }
 
 // Logger returns the current test logger implementation.
 // It returns nil if there is no logger.
 public static Interface Logger() {
     var impl = Ꮡlogger.Load();
-    if (impl == default!) {
+    if (impl == nil) {
         return default!;
     }
-    return impl._<ж<Interface>>().ValueSlot;
+    return impl.ValueSlot;
 }
 
 // Getenv calls Logger().Getenv, if a logger has been set.

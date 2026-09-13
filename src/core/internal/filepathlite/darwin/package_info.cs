@@ -49,9 +49,9 @@ using static go.@internal.filepathlite_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/filepathlite/path.go", "path.cs", "ADpAgoKUpoKCgoKUgpSCpqKCpoKClKiSgoKCgpSUlN6CgpKCgpaClra2gpaCwsiSlIKC6qKWkuyCloKokqaCgpSCgoKCgoKmgpSClKiSgpSokoKUqJKClKaCgpSCgoKmqJKCgoKUqJKCgqaokoKmgqaUgoKUgqaClKiSgoKClIKUlKiSqqI=")]
+[assembly: go.GoPositionMap("internal/filepathlite/path.go", "path.cs", "ACJAgoKUpoKCgoKUgpSCpqKCpoKClKiSgoKCgpSUlN6CgpKCgpaClra2gpaCwsiSlIKC6qKWkuyCloKokqaCgpSCgoKCgoKmgpSClKiSgpSokoKUqJKClKaCgpSCgoKmqJKCgoKUqJKCgqaokoKmgqaUgoKUgqaClKiSgoKClIKUlKiSqqI=")]
 [assembly: go.GoPositionMap("internal/filepathlite/path_nonwindows.go", "path_nonwindows.cs", "AAgS")]
-[assembly: go.GoPositionMap("internal/filepathlite/path_unix.go", "path_unix.cs", "ABUmgqaCpoKClKiSqqI=")]
+[assembly: go.GoPositionMap("internal/filepathlite/path_unix.go", "path_unix.cs", "AA8mgqaCpoKClKiSqqI=")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -68,4 +68,18 @@ public static partial class filepathlite_package
     // <TypeAccessibility>
     internal partial struct lazybuf {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() => builtin.initPackage(typeof(go.@internal.bytealg_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸstringslite() => builtin.initPackage(typeof(go.@internal.stringslite_package));
+    [GoInit] internal static void initᴛᴛimportꓸioꓸfs() => builtin.initPackage(typeof(io.fs_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    // </ImportInitializers>
 }

@@ -49,7 +49,7 @@ using static go.@internal.singleflight_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/singleflight/singleflight.go", "singleflight.cs", "AC9e8oKClICCgoKCpIKCgoSCqsKCgoKUgIKCgoKkgoKChISowoSCgoKUgpQAAhAACQKCgoKClIKClA==")]
+[assembly: go.GoPositionMap("internal/singleflight/singleflight.go", "singleflight.cs", "ACpe8oKClICCgoKCpIKCgoSCqsKCgoKUgIKCgoKkgoKChISowoSCgoKUgpQAAhAACgKCgoKClIKClA==")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -68,4 +68,14 @@ public static partial class singleflight_package
     public partial struct Group {}
     public partial struct Result {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(go.sync_package));
+    // </ImportInitializers>
 }

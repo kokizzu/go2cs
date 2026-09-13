@@ -197,7 +197,4 @@
 
   <ItemGroup Condition="'$(GoTargetOS)'=='windows'" />
 
-  <ItemGroup>
-    <None Include="../../LICENSE" Pack="true" PackagePath="" Condition="!Exists('$(MSBuildProjectDirectory)/LICENSE')" />
-  </ItemGroup>
 </Project>

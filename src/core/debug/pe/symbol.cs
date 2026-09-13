@@ -33,7 +33,12 @@ internal static (bool, uint32) isSymNameOffset([GoArrayDims(8)] array<byte> name
     name = name.Clone();
 
     if (name[0] == 0 && name[1] == 0 && name[2] == 0 && name[3] == 0) {
-        return (true, binary.LittleEndian.Uint32(name[4..]));
+        var offset = binary.LittleEndian.Uint32(name[4..]);
+        if (offset == 0) {
+            // symbol has no name
+            return (false, 0);
+        }
+        return (true, offset);
     }
     return (false, 0);
 }

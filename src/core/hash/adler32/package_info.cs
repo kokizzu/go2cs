@@ -51,7 +51,7 @@ using static go.hash.adler32_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("hash/adler32/adler32.go", "adler32.cs", "ACpMgK7SgoKmgKSA3oKCgoLmgoKUgpSCqJKCgoKClIKCgoKCgoKCgpSCgpSCgpSmgoKmgKSCgqiQ")]
+[assembly: go.GoPositionMap("hash/adler32/adler32.go", "adler32.cs", "AB5MgK7SgoKmgKSA3oKCgqaC5oKClIKUgqiSgoKCgpSCgoKCgoKCgoKUgoKUgoKUpoKCpoCkgoKokA==")]
 // </GoSourcePositionMaps>
 
 namespace go.hash;
@@ -68,4 +68,15 @@ public static partial class adler32_package
     // <TypeAccessibility>
     internal partial struct digest {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    // </ImportInitializers>
 }

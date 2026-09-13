@@ -7,28 +7,17 @@ using errors = errors_package;
 using race = go.@internal.race_package;
 using windows = go.@internal.syscall.windows_package;
 using io = io_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using Δsyscall = syscall_package;
 using utf16 = unicode.utf16_package;
 using utf8 = unicode.utf8_package;
 using @unsafe = unsafe_package;
+using go;
 using go.@internal;
 using go.@internal.syscall;
 using unicode;
 
 partial class poll_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindows() {
-    builtin.initPackage(typeof(go.@internal.syscall.windows_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(unicode.utf8_package));
-}
 
 internal static error initErr;
 internal static ж<uint64> ᏑioSync = new StandardBox<uint64>(default(uint64));

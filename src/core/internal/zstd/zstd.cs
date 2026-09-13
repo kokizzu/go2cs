@@ -14,18 +14,6 @@ using encoding;
 
 partial class zstd_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
 // fuzzing is a fuzzer hook set to true when fuzzing.
 // This is used to reject cases where we don't match zstd.
 internal static bool fuzzing = false;
@@ -338,8 +326,8 @@ retry:
 [GoRecv] internal static error skipFrame(this ref Reader r) {
     nint relativeOffset = 0;
     {
-        var (_, err) = io.ReadFull(r.r, r.scratch[..4]); if (err != default!) {
-            return r.wrapNonEOFError(relativeOffset, err);
+        var (_, errΔ1) = io.ReadFull(r.r, r.scratch[..4]); if (errΔ1 != default!) {
+            return r.wrapNonEOFError(relativeOffset, errΔ1);
         }
     }
     relativeOffset += 4;
@@ -353,51 +341,31 @@ retry:
             r.blockOffset += (int64)relativeOffset;
             // Implementations of Seeker do not always detect invalid offsets,
             // so check that the new offset is valid by comparing to the end.
-            var (prev, err) = seeker.Seek(0, io.SeekCurrent);
-            if (err != default!) {
-                return r.wrapError(0, err);
+            var (prev, errΔ2) = seeker.Seek(0, io.SeekCurrent);
+            if (errΔ2 != default!) {
+                return r.wrapError(0, errΔ2);
             }
-            (var end, err) = seeker.Seek(0, io.SeekEnd);
-            if (err != default!) {
-                return r.wrapError(0, err);
+            (var end, errΔ2) = seeker.Seek(0, io.SeekEnd);
+            if (errΔ2 != default!) {
+                return r.wrapError(0, errΔ2);
             }
             if (prev > end - (int64)size) {
                 r.blockOffset += end - prev;
                 return r.makeEOFError(0);
             }
             // The new offset is valid, so seek to it.
-            (_, err) = seeker.Seek(prev + (int64)size, io.SeekStart);
-            if (err != default!) {
-                return r.wrapError(0, err);
+            (_, errΔ2) = seeker.Seek(prev + (int64)size, io.SeekStart);
+            if (errΔ2 != default!) {
+                return r.wrapError(0, errΔ2);
             }
             r.blockOffset += (int64)size;
             return default!;
         }
     }
-    slice<byte> skip = default!;
-    UntypedInt chunk = /* 1 << 20 */ 1048576; // 1M
-    while (size >= chunk) {
-        if (builtin.len(skip) == 0) {
-            skip = new slice<byte>(chunk);
-        }
-        {
-            var (_, err) = io.ReadFull(r.r, skip); if (err != default!) {
-                return r.wrapNonEOFError(relativeOffset, err);
-            }
-        }
-        relativeOffset += chunk;
-        size -= chunk;
-    }
-    if (size > 0) {
-        if (builtin.len(skip) == 0) {
-            skip = new slice<byte>((nint)(size));
-        }
-        {
-            var (_, err) = io.ReadFull(r.r, skip); if (err != default!) {
-                return r.wrapNonEOFError(relativeOffset, err);
-            }
-        }
-        relativeOffset += (nint)size;
+    var (n, err) = io.CopyN(io.Discard, r.r, (int64)size);
+    relativeOffset += (nint)n;
+    if (err != default!) {
+        return r.wrapNonEOFError(relativeOffset, err);
     }
     r.blockOffset += (int64)relativeOffset;
     return default!;

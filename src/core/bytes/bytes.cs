@@ -7,25 +7,15 @@
 namespace go;
 
 using bytealg = @internal.bytealg_package;
+using bits = math.bits_package;
 using Δunicode = unicode_package;
 using utf8 = go.unicode.utf8_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
 using @internal;
 using go.unicode;
+using math;
 
 partial class bytes_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() {
-    builtin.initPackage(typeof(@internal.bytealg_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicode() {
-    builtin.initPackage(typeof(unicode_package));
-}
 
 // Equal reports whether a and b
 // are the same length and contain the same bytes.
@@ -154,6 +144,7 @@ public static nint LastIndexByte(slice<byte> s, byte c) {
 // If r is [utf8.RuneError], it returns the first instance of any
 // invalid UTF-8 byte sequence.
 public static nint IndexRune(slice<byte> s, rune r) {
+    const bool haveFastIndex = /* bytealg.MaxBruteForce > 0 */ true;
     switch (ᐧ) {
     case {} when 0 <= r && r < utf8.RuneSelf: {
         return IndexByte(s, (byte)r);
@@ -172,9 +163,66 @@ public static nint IndexRune(slice<byte> s, rune r) {
         return -1;
     }
     default: {
+        // Search for rune r using the last byte of its UTF-8 encoded form.
+        // The distribution of the last byte is more uniform compared to the
+        // first byte which has a 78% chance of being [240, 243, 244].
         array<byte> b = new(4); /* utf8.UTFMax */
         nint n = utf8.EncodeRune(b[..], r);
-        return Index(s, b[..(int)(n)]);
+        nint last = n - 1;
+        nint i = last;
+        nint fails = 0;
+        while (i < len(s)) {
+            if (s[i] != b[last]) {
+                nint o = IndexByte(s[(int)(i + 1)..], b[last]);
+                if (o < 0) {
+                    return -1;
+                }
+                i += o + 1;
+            }
+            // Step backwards comparing bytes.
+            for (nint j = 1; j < n; j++) {
+                if (s[i - j] != b[last - j]) {
+                    goto next;
+                }
+            }
+            return i - last;
+next:
+            fails++;
+            i++;
+            if ((haveFastIndex && fails > bytealg.Cutover(i)) && i < len(s) || (!haveFastIndex && fails >= 4 + (i >> (int)(4)) && i < len(s))) {
+                goto fallback;
+            }
+        }
+        return -1;
+fallback:
+        if (haveFastIndex){
+            // Switch to bytealg.Index, if available, or a brute force search when
+            // IndexByte returns too many false positives.
+            {
+                nint j = bytealg.Index(s[(int)(i - last)..], b[..(int)(n)]); if (j >= 0) {
+                    return i + j - last;
+                }
+            }
+        } else {
+            // If bytealg.Index is not available a brute force search is
+            // ~1.5-3x faster than Rabin-Karp since n is small.
+            var c0 = b[last];
+            var c1 = b[last - 1]; // There are at least 2 chars to match
+loop:
+            for (; i < len(s); i++) {
+                if (s[i] == c0 && s[i - 1] == c1) {
+                    for (nint k = 2; k < n; k++) {
+                        if (s[i - k] != b[last - k]) {
+                            goto continue_loop;
+                        }
+                    }
+                    return i - last;
+                }
+continue_loop:;
+            }
+break_loop:;
+        }
+        return -1;
     }}
 
 }
@@ -562,7 +610,7 @@ public static slice<byte> Join(slice<slice<byte>> s, slice<byte> sep) {
 
 // HasPrefix reports whether the byte slice s begins with prefix.
 public static bool HasPrefix(slice<byte> s, slice<byte> prefix) {
-    return len(s) >= len(prefix) && Equal(s[0..(int)(len(prefix))], prefix);
+    return len(s) >= len(prefix) && Equal(s[..(int)(len(prefix))], prefix);
 }
 
 // HasSuffix reports whether the byte slice s ends with suffix.
@@ -620,10 +668,11 @@ public static slice<byte> Repeat(slice<byte> b, nint count) {
     if (count < 0) {
         throw panic("bytes: negative Repeat count");
     }
-    if (len(b) > maxInt / count) {
+    var (hi, lo) = bits.Mul((nuint)len(b), (nuint)count);
+    if (hi > 0 || lo > (nuint)maxInt) {
         throw panic("bytes: Repeat output length overflow");
     }
-    nint n = len(b) * count;
+    nint n = (nint)lo; // lo = len(b) * count
     if (len(b) == 0) {
         return new byte[]{}.slice();
     }
@@ -648,10 +697,7 @@ public static slice<byte> Repeat(slice<byte> b, nint count) {
     var nb = bytealg.MakeNoZero(n).slice(-1, n, n);
     nint bp = copy(nb, b);
     while (bp < n) {
-        nint chunk = bp;
-        if (chunk > chunkMax) {
-            chunk = chunkMax;
-        }
+        nint chunk = min(bp, chunkMax);
         bp += copy(nb[(int)(bp)..], nb[..(int)(chunk)]);
     }
     return nb;
@@ -726,19 +772,22 @@ public static slice<byte> ToTitle(slice<byte> s) {
 // ToUpperSpecial treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their
 // upper case, giving priority to the special casing rules.
 public static slice<byte> ToUpperSpecial(Δunicode.SpecialCase c, slice<byte> s) {
-    return Map((rune p1) => c.ToUpper(p1), s);
+    var cʗ1 = c;
+    return Map((rune p1) => cʗ1.ToUpper(p1), s);
 }
 
 // ToLowerSpecial treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their
 // lower case, giving priority to the special casing rules.
 public static slice<byte> ToLowerSpecial(Δunicode.SpecialCase c, slice<byte> s) {
-    return Map((rune p1) => c.ToLower(p1), s);
+    var cʗ1 = c;
+    return Map((rune p1) => cʗ1.ToLower(p1), s);
 }
 
 // ToTitleSpecial treats s as UTF-8-encoded bytes and returns a copy with all the Unicode letters mapped to their
 // title case, giving priority to the special casing rules.
 public static slice<byte> ToTitleSpecial(Δunicode.SpecialCase c, slice<byte> s) {
-    return Map((rune p1) => c.ToTitle(p1), s);
+    var cʗ1 = c;
+    return Map((rune p1) => cʗ1.ToTitle(p1), s);
 }
 
 // ToValidUTF8 treats s as UTF-8-encoded bytes and returns a copy with each run of bytes

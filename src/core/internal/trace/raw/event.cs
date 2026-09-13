@@ -3,37 +3,15 @@
 // license that can be found in the LICENSE file.
 namespace go.@internal.trace;
 
+using binary = encoding.binary_package;
 using strconv = strconv_package;
 using strings = strings_package;
 using Δevent = go.@internal.trace.event_package;
 using version = go.@internal.trace.version_package;
+using encoding;
 using go.@internal.trace;
 
 partial class raw_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸevent() {
-    builtin.initPackage(typeof(go.@internal.trace.event_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸtraceꓸversion() {
-    builtin.initPackage(typeof(go.@internal.trace.version_package));
-}
 
 // Event is a simple representation of a trace event.
 //
@@ -82,6 +60,21 @@ private static readonly @string dataˢ = "\n\tdata="u8;
         Ꮡs.WriteString(strconv.Quote(((@string)e.Data)));
     }
     return s.String();
+}
+
+// EncodedSize returns the canonical encoded size of an event.
+[GoRecv] public static nint EncodedSize(this ref Event e) {
+    nint size = 1;
+    array<byte> buf = new(10); /* binary.MaxVarintLen64 */
+    foreach (var (_, arg) in e.Args) {
+        size += binary.PutUvarint(buf[..], arg);
+    }
+    var spec = e.Version.Specs()[e.Ev];
+    if (spec.HasData) {
+        size += binary.PutUvarint(buf[..], (uint64)len(e.Data));
+        size += len(e.Data);
+    }
+    return size;
 }
 
 } // end raw_package

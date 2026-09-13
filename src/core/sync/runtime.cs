@@ -14,6 +14,9 @@ partial class sync_package {
 // library and should not be used directly.
 internal static partial void runtime_Semacquire(ж<uint32> s);
 
+// SemacquireWaitGroup is like Semacquire, but for WaitGroup.Wait.
+internal static partial void runtime_SemacquireWaitGroup(ж<uint32> s);
+
 // Semacquire(RW)Mutex(R) is like Semacquire, but for profiling contended
 // Mutexes and RWMutexes.
 // If lifo is true, queue waiter at the head of wait queue.
@@ -22,8 +25,6 @@ internal static partial void runtime_Semacquire(ж<uint32> s);
 // The different forms of this function just tell the runtime how to present
 // the reason for waiting in a backtrace, and is used to compute some metrics.
 // Otherwise they're functionally identical.
-internal static partial void runtime_SemacquireMutex(ж<uint32> s, bool lifo, nint skipframes);
-
 internal static partial void runtime_SemacquireRWMutexR(ж<uint32> s, bool lifo, nint skipframes);
 
 internal static partial void runtime_SemacquireRWMutex(ж<uint32> s, bool lifo, nint skipframes);
@@ -57,13 +58,8 @@ internal static partial void runtime_notifyListCheck(uintptr size);
     runtime_notifyListCheck(/* unsafe.Sizeof(n) */ (uintptr)32);
 }
 
-// Active spinning runtime support.
-// runtime_canSpin reports whether spinning makes sense at the moment.
-internal static partial bool runtime_canSpin(nint i);
+internal static partial void @throw(@string _);
 
-// runtime_doSpin does active spinning.
-internal static partial void runtime_doSpin();
-
-internal static partial int64 runtime_nanotime();
+internal static partial void fatal(@string _);
 
 } // end sync_package

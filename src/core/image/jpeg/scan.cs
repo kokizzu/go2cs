@@ -348,7 +348,7 @@ internal static readonly @string excessiveDcComponentˢ = "excessive DC componen
                     }
                 }
                 expectedRST++;
-                if (expectedRST == rst7Marker + 1) {
+                if (expectedRST == (uint8)(rst7Marker + 1)) {
                     expectedRST = rst0Marker;
                 }
                 // Reset the Huffman decoder.

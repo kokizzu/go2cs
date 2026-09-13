@@ -20,9 +20,6 @@ internal static (uintptr, error) pidfdFind(nint _) {
     return (0, syscall.ENOSYS);
 }
 
-[GoRecv] internal static void pidfdRelease(this ref Process p) {
-}
-
 [GoRecv] internal static (ж<ProcessState>, error) pidfdWait(this ref Process _) {
     throw panic("unreachable");
 }

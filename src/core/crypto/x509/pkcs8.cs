@@ -41,6 +41,9 @@ internal static readonly @string x509InvalidX25519Privateˢ = "x509: invalid X25
 // in the future.
 //
 // This kind of key is commonly encoded in PEM blocks of type "PRIVATE KEY".
+//
+// Before Go 1.24, the CRT parameters of RSA keys were ignored and recomputed.
+// To restore the old behavior, use the GODEBUG=x509rsacrt=0 environment variable.
 public static (any key, error err) ParsePKCS8PrivateKey(slice<byte> der) {
     any key = default!;
     error err = default!;
@@ -133,6 +136,8 @@ internal static readonly @string x509UnknownCurveWhileˢ = "x509: unknown curve 
 // Unsupported key types result in an error.
 //
 // This kind of key is commonly encoded in PEM blocks of type "PRIVATE KEY".
+//
+// MarshalPKCS8PrivateKey runs [rsa.PrivateKey.Precompute] on RSA keys.
 public static (slice<byte>, error) MarshalPKCS8PrivateKey(any key) {
     pkcs8 privKey = default!;
     switch (key.type()) {
@@ -141,6 +146,12 @@ public static (slice<byte>, error) MarshalPKCS8PrivateKey(any key) {
             Algorithm: oidPublicKeyRSA,
             Parameters: asn1.NullRawValue
         );
+        k.Precompute();
+        {
+            var err = k.Validate(); if (err != default!) {
+                return (default!, err);
+            }
+        }
         privKey.PrivateKey = MarshalPKCS1PrivateKey(k);
         break;
     }

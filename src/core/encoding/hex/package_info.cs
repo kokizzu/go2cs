@@ -54,7 +54,7 @@ using static go.encoding.hex_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("encoding/hex/hex.go", "hex.cs", "ADBOoKzCgoKCgpSqooKCggAJFoKqoAACEvKSgoKEgoKClIKUgpSmgpSUrLKCgoKokoKCAAIS4oKCqqKClriEgoKCAAsakqaigoKCloKCgoKUAAkYoqa0gpKCgoKEgIKU3ICCpIKCgpaClKyyAAsYgoKU1rKCzIKmgoKCgoKCgoKCpoKCgpSCyIKClIKClIKCgoKCgoKCgpSmprSClIKClIKCgoKCgoKCgqSUgoKUlIKCgg==")]
+[assembly: go.GoPositionMap("encoding/hex/hex.go", "hex.cs", "ABJOoKzCgoKCgpSqooKCggAJFoKqoAACEvKSgoKEgoKClIKUgpSmgpSUrLKCgoKokoKCAAIS4oKCqqKClriEgoKCAAsakqaigoKCloKCgoKUAAkYoqa0gpKCgoKEgIKU3ICCpIKCgpaClKyyAAsYgoKU1rKCzIKmgoKCgoKCgoKCpoKCgpSCyIKClIKClIKCgoKCgoKCgpSmprSClIKClIKCgoKCgoKCgqSUgoKUlIKCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.encoding;
@@ -74,4 +74,18 @@ public static partial class hex_package
     [GoValueClone("@out")] internal partial struct encoder {}
     public partial struct InvalidByteError {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

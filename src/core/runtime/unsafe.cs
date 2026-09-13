@@ -3,9 +3,10 @@
 // license that can be found in the LICENSE file.
 namespace go;
 
-using math = runtime.@internal.math_package;
+using math = @internal.runtime.math_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
-using runtime.@internal;
+using @internal.runtime;
 
 partial class runtime_package {
 
@@ -59,19 +60,19 @@ internal static void panicunsafestringnilptr() {
 // Keep this code in sync with cmd/compile/internal/walk/builtin.go:walkUnsafeSlice
 internal static void unsafeslice(ref _type et, @unsafe.Pointer ptr, nint len) {
     if (len < 0) {
-        panicunsafeslicelen1(getcallerpc());
+        panicunsafeslicelen1(sys.GetCallerPC());
     }
     if (et.Size_ == 0) {
         if (ptr == nil && len > 0) {
-            panicunsafeslicenilptr1(getcallerpc());
+            panicunsafeslicenilptr1(sys.GetCallerPC());
         }
     }
     var (mem, overflow) = math.MulUintptr(et.Size_, (uintptr)len);
     if (overflow || mem > ((uintptr)0 - (uintptr)ptr)) {
         if (ptr == nil) {
-            panicunsafeslicenilptr1(getcallerpc());
+            panicunsafeslicenilptr1(sys.GetCallerPC());
         }
-        panicunsafeslicelen1(getcallerpc());
+        panicunsafeslicelen1(sys.GetCallerPC());
     }
 }
 
@@ -79,7 +80,7 @@ internal static void unsafeslice(ref _type et, @unsafe.Pointer ptr, nint len) {
 internal static void unsafeslice64(ref _type et, @unsafe.Pointer ptr, int64 len64) {
     nint len = (nint)len64;
     if ((int64)len != len64) {
-        panicunsafeslicelen1(getcallerpc());
+        panicunsafeslicelen1(sys.GetCallerPC());
     }
     unsafeslice(ref et, ptr, len);
 }
@@ -99,7 +100,7 @@ internal static void unsafeslicecheckptr(ref _type et, @unsafe.Pointer ptr, int6
 internal static void panicunsafeslicelen() {
     // This is called only from compiler-generated code, so we can get the
     // source of the panic.
-    panicunsafeslicelen1(getcallerpc());
+    panicunsafeslicelen1(sys.GetCallerPC());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -114,7 +115,7 @@ internal static void panicunsafeslicelen1(uintptr pc) {
 internal static void panicunsafeslicenilptr() {
     // This is called only from compiler-generated code, so we can get the
     // source of the panic.
-    panicunsafeslicenilptr1(getcallerpc());
+    panicunsafeslicenilptr1(sys.GetCallerPC());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

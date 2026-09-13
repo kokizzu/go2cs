@@ -52,13 +52,13 @@ using static go.vendor.golang.org.x.text.unicode.norm_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/composition.go", "composition.cs", "AB5MoqqigpSCgIKCAAkSgoKUrsKClIKClIKClKaCABg2goKCgqaCgoKCpoKCqJKCpqKClIKCqLKCgoKUqJKCgoKUgqqigoKClIKssoKCgpSCgpSmgoKCggAIIuKAgoKkgpSCruKAgqSUlL7SuIKCgpSClKqigqiSqJKCgoKCqJKCgqiSgoKqooIALUCCgpSCgpSClKSkpKSmgoKUgoKUgpSkpKSkqKSmgoKCqqKCgoKCgoKCgpSssoKCgoKCgryigoKCgoKClJSClIKCmMzEgtis1t6CgpSCgoKmgpTKgoKCgoKUlIKCgoK4gpQ=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/forminfo.go", "forminfo.cs", "AFe+AQAIAoLKqrQABByAooCkgKKAooCkgqaCpoKmgqq0gpSCgoKokqiSgpSqoqqipoKCgoKCgoIAAx4ACwKCgpSmgoKmgoKokoKkuJKCpLyygqTcgpSmgoKCgoKCgoKCgpSCgpSm")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/composition.go", "composition.cs", "ABhMoqqigpSCgIKCAAkSgoKUrsKClIKClIKClKaCABg2goKCgqaCgoKCpoKCqJKCpqKClIKCqLKCgoKUqJKCgoKUgqqigoKClIKssoKCgpSCgpSmgoKCggAIIuKAgoKkgpSCruKAgqSUlL7SuIKCgpSClKqigqiSqJKCgoKCqJKCgqiSgoKqooIALUCCgpSCgpSClKSkpKSmgoKUgoKUgpSkpKSkqKSmgoKCqqKCgoKCgoKCgpSssoKCgoKCgryigoKCgoKClJSClIKCmMzEgtis1t6CgpSCgoKmgpTKgoKCgoKUlIKCgoK4gpQ=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/forminfo.go", "forminfo.cs", "AFG+AQAIAoLKqrQABByAooCkgKKAooCkgqaCpoKmgqq0gpSCgoKokqiSgpSqoqqipoKCgoKCgoIAAx4ACwKCgpSmgoKmgoKokoKkuJKCpLyygqTcgpSmgoKCgoKCgoKCgpSCgpSm")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/input.go", "input.cs", "AA8cgqaCpoKCpoKCpoKClKaCgqampoKCpqamgoKUgpSmgoKUpoKClKaCgpSmooKCgpSUgpSUgpQ=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/iter.go", "iter.cs", "ACNAkoKCgoKUgoKCgoKokoKCgoKUgoKCgoKssoKUtLS0pIKUgoKUgoKCgoKuwoKUqJKmgoKokgACEPKmooKCgoKUgoKClIKCpqKCgoKClIKCgpSCgqaigoKCpIKCgpSCpoKqwoKUlIKCgoKUpoKqwoKCgoKCgoKCgpSClIKCqLKCkoKAgoKCgoKCpIKUosqCgqaC2oKCgqaCgpSCgIKClKSkgqSCgpSkgoKCgpSigoKCgoKCpIKmgoKUgsSCgpSCgoCCpIKkgqaCpJSChqKCpqKCgoCCgqSCgpSAgoLIpqKCgoKCgqiykoKCgpSCgoKUgoKUgoKCgqSCgpSCgIKkgqSCpoKEkoKCgoKCgoKClIKCprSCgIKCpIKAgqSCpJSCgqaigoK4goI=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/normalize.go", "normalize.cs", "ACBakoKCgoKUgoKSqJKCgoKClIKCkqiSgoKCgpSSgoKCgIKklKaigoKCgpSCgoKClKaokoKCgoKUkoKCgoKUgoKCgpSmlIKAgqSUrNKCgpSCgqaCgoKCgoKUgoKCgIKCpIKCpIKmooKUgoKqwqaCgpSUgoKCgpSSlJKmooKSgoCUgoKkgoKCgoKCgpSmgpSUgqaCpqKCgpSqoqqigqrSgoKClKaq0oKCgpSmruKCgoKCgIKCgoKCpIKClJS4lKSkgraCgqaCpoKUgoKUlKqigqqipoKCgpSCuIKCgpSAgqSCgoKUzqKssqyypoKCgpSUgoKCgpSUgoSCgoKClLiAgraClKqipoKCgoKUkpKUgoKSppKUgpSCgoKCgIKkgpKUpqzkgoKUgJSCtoKkgIKkgoKCgpSUgoKClJSAgqSCpICCtoKClKqigpSClKrCgoKUlIKUgoKCgoKCgqaUgoKClIKCpoSSgoKCgoI=")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/readwriter.go", "readwriter.cs", "ABUk9JSUgoKUgoKCgqiCgpSCgIKkgqaokoKCgqauwoKCAAwcsoKCgoKClJSClIKChIKCgoKUgpSCggAFEKKCgoKC")]
-[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/tables15.0.0.go", "tables15.0.0.cs", "ANUVuiuygpSkpKKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqqigpKUgpKUgpKUgpKUrLKClKSkopSCgoKUpJKUgoKClIKCgoKUpJKUgoKClIKCgoKUgoKCgpS2qqKCkpSCkpSCkpSCkpTsgqiSlKSCAPsL/BeygpSkpKKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqqigpKUgpKUgpKUgpKUrLKClKSkopSCgoKUpJKUgoKClIKCgoKUpJKUgoKClIKCgoKUgoKCgpS2qqKCkpSCkpSCkpSCkpTsgqiSlKSC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/iter.go", "iter.cs", "AB1AkoKCgoKUgoKCgoKokoKCgoKUgoKCgoKssoKUtLS0pIKUgoKUgoKCgoKuwoKUqJKmgoKokgACEPKmooKCgoKUgoKClIKCpqKCgoKClIKCgpSCgqaigoKCpIKCgpSCpoKqwoKUlIKCgoKUpoKqwoKCgoKCgoKCgpSClIKCqLKCkoKAgoKCgoKCpIKUosqCgqaC2oKCgqaCgpSCgIKClKSkgqSCgpSkgoKCgpSigoKCgoKCpIKmgoKUgsSCgpSCgoCCpIKkgqaCpJSChqKCpqKCgoCCgqSCgpSAgoLIpqKCgoKCgqiykoKCgpSCgoKUgoKUgoKCgqSCgpSCgIKkgqSCpoKEkoKCgoKCgoKClIKCprSCgIKCpIKAgqSCpJSCgqaigoK4goI=")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/normalize.go", "normalize.cs", "ABpakoKCgoKUgoKSqJKCgoKClIKCkqiSgoKCgpSSgoKCgIKklKaigoKCgpSCgoKClKaokoKCgoKUkoKCgoKUgoKCgpSmlIKAgqSUrNKCgpSCgqaCgoKCgoKUgoKCgIKCpIKCpIKmooKUgoKqwqaCgpSUgoKCgpSSlJKmooKSgoCUgoKkgoKCgoKCgpSmgpSUgqaCpqKCgpSqoqqigqrSgoKClKaq0oKCgpSmruKCgoKCgIKCgoKCpIKClJS4lKSkgraCgqaCpoKUgoKUlKqigqqipoKCgpSCuIKCgpSAgqSCgoKUzqKssqyypoKCgpSUgoKCgpSUgoSCgoKClLiAgraClKqipoKCgoKUkpKUgoKSppKUgpSCgoKCgIKkgpKUpqzkgoKUgJSCtoKkgIKkgoKCgpSUgoKClJSAgqSCpICCtoKClKqigpSClKrCgoKUlIKUgoKCgoKCgqaUgoKClIKCpoSSgoKCgoI=", "120-136:1")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/readwriter.go", "readwriter.cs", "AA8k9JSUgoKUgoKCgqiCgpSCgIKkgqaokoKCgqauwoKCAAwcsoKCgoKClJSClIKChIKCgoKUgpSCggAFEKKCgoKC")]
+[assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/tables15.0.0.go", "tables15.0.0.cs", "AM8VuiuygpSkpKKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqqigpKUgpKUgpKUgpKUrLKClKSkopSCgoKUpJKUgoKClIKCgoKUpJKUgoKClIKCgoKUgoKCgpS2qqKCkpSCkpSCkpSCkpTsgqiSlKSCAPsL/BeygpSkpKKUgoKClKSSlIKCgpSCgoKClKSSlIKCgpSCgoKClIKCgoKUtqqigpKUgpKUgpKUgpKUrLKClKSkopSCgoKUpJKUgoKClIKCgoKUpJKUgoKClIKCgoKUgoKCgpS2qqKCkpSCkpSCkpSCkpTsgqiSlKSC")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/transform.go", "transform.cs", "AAwcvAAJBIKCgIKCgqSCgoKCloKUprSClILO9JKClIKCgpSCloKCgIKCgqSCgoKCgoKU")]
 [assembly: go.GoPositionMap("vendor/golang.org/x/text/unicode/norm/trie.go", "trie.cs", "ACJIwoKCgoKCgoKClIKUpg==")]
 // </GoSourcePositionMaps>
@@ -92,4 +92,19 @@ public static partial class norm_package
     [GoValueClone("rb", "buf")] public partial struct Iter {}
     public partial struct ΔProperties {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    [GoInit] internal static void initᴛᴛimportꓸvendorꓸgolang_orgꓸxꓸtextꓸtransform() => builtin.initPackage(typeof(go.vendor.golang.org.x.text.transform_package));
+    // </ImportInitializers>
 }

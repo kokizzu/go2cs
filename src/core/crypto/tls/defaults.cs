@@ -12,14 +12,15 @@ partial class tls_package {
 
 // Defaults are collected in this file to allow distributions to more easily patch
 // them to apply local policies.
-internal static ж<godebug.Setting> tlskyber = godebug.New("tlskyber"u8);
+internal static ж<godebug.Setting> tlsmlkem = godebug.New("tlsmlkem"u8);
 
+// defaultCurvePreferences is the default set of supported key exchanges, as
+// well as the preference order.
 internal static slice<CurveID> defaultCurvePreferences() {
-    if (tlskyber.Value() == "0"u8) {
+    if (tlsmlkem.Value() == "0"u8) {
         return new CurveID[]{X25519, CurveP256, CurveP384, CurveP521}.slice();
     }
-    // For now, x25519Kyber768Draft00 must always be followed by X25519.
-    return new CurveID[]{x25519Kyber768Draft00, X25519, CurveP256, CurveP384, CurveP521}.slice();
+    return new CurveID[]{X25519MLKEM768, X25519, CurveP256, CurveP384, CurveP521}.slice();
 }
 
 // defaultSupportedSignatureAlgorithms contains the signature and hash algorithms that
@@ -86,8 +87,13 @@ public static slice<uint16> defaultCipherSuitesTLS13NoAES = new uint16[]{
     TLS_AES_256_GCM_SHA384
 }.slice();
 
+// The FIPS-only policies below match BoringSSL's
+// ssl_compliance_policy_fips_202205, which is based on NIST SP 800-52r2, with
+// minor changes per https://go.dev/issue/71757.
+// https://cs.opensource.google/boringssl/boringssl/+/master:ssl/ssl_lib.cc;l=3289;drc=ea7a88fa
 internal static slice<uint16> defaultSupportedVersionsFIPS = new uint16[]{
-    VersionTLS12
+    VersionTLS12,
+    VersionTLS13
 }.slice();
 
 // defaultCurvePreferencesFIPS are the FIPS-allowed curves,
@@ -113,9 +119,7 @@ internal static slice<uint16> defaultCipherSuitesFIPS = new uint16[]{
     TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
     TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
     TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-    TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-    TLS_RSA_WITH_AES_128_GCM_SHA256,
-    TLS_RSA_WITH_AES_256_GCM_SHA384
+    TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
 }.slice();
 
 // defaultCipherSuitesTLS13FIPS are the FIPS-allowed cipher suites for TLS 1.3.

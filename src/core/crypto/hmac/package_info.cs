@@ -36,7 +36,7 @@ using static go.crypto.hmac_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
-[assembly: GoImplement<hmac, hash_package.Hash>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.hmac_package.HMAC, hash_package.Hash>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -50,7 +50,7 @@ using static go.crypto.hmac_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/hmac/hmac.go", "hmac.cs", "ADlwgoKEgoCCtoKUgqaCpoCigKSCgoCCpJaCAAYQgoKUgoKWgoKWgoKCgqiCggACEuKCgoK4goKCgrKUlILWgpSCgoKUgpSCgoKUgpSEqMg=")]
+[assembly: go.GoPositionMap("crypto/hmac/hmac.go", "hmac.cs", "ACNO4oKCgriCgoKUgqaoyA==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;
@@ -65,7 +65,20 @@ public static partial class hmac_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial interface marshalable {}
-    internal partial struct hmac {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸboring() => builtin.initPackage(typeof(go.crypto.@internal.boring_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140hash() => builtin.initPackage(typeof(go.crypto.@internal.fips140hash_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140only() => builtin.initPackage(typeof(go.crypto.@internal.fips140only_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸinternalꓸfips140ꓸhmac() => builtin.initPackage(typeof(go.crypto.@internal.fips140.hmac_package));
+    [GoInit] internal static void initᴛᴛimportꓸcryptoꓸsubtle() => builtin.initPackage(typeof(go.crypto.subtle_package));
+    [GoInit] internal static void initᴛᴛimportꓸhash() => builtin.initPackage(typeof(hash_package));
+    // </ImportInitializers>
 }

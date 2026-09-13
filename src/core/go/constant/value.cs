@@ -26,54 +26,6 @@ using unicode;
 
 partial class constant_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbig() {
-    builtin.initPackage(typeof(global::go.math.big_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸbits() {
-    builtin.initPackage(typeof(global::go.math.bits_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() {
-    builtin.initPackage(typeof(unicode.utf8_package));
-}
-
 [GoType("num:nint")] partial struct ΔKind;
 
 //go:generate stringer -type Kind
@@ -200,7 +152,7 @@ internal static @string String(this ж<stringVal> Ꮡx) {
         // long. Remove the last 3 runes (including the closing '"') by keeping
         // only the first maxLen-3 runes; then add "...".
         nint i = 0;
-        for (nint n = 0; n < maxLen - 3; n++) {
+        for (nint n = 0; n < (nint)(maxLen - 3); n++) {
             var (_, size) = utf8.DecodeRuneInString(s[(int)(i)..]);
             i += size;
         }
@@ -523,7 +475,7 @@ internal static bool smallFloat64(float64 x) {
         return false;
     }
     var (_, e) = math.Frexp(x);
-    return -maxExp < e && e < maxExp;
+    return (nint)(-maxExp) < e && e < maxExp;
 }
 
 // smallFloat reports whether x would lead to "reasonably"-sized fraction
@@ -535,7 +487,7 @@ internal static bool smallFloat(ж<big.Float> Ꮡx) {
         return false;
     }
     nint e = Ꮡx.MantExp(nil);
-    return -maxExp < e && e < maxExp;
+    return (nint)(-maxExp) < e && e < maxExp;
 }
 
 // ----------------------------------------------------------------------------
@@ -986,7 +938,7 @@ public static Value MakeFromBytes(slice<byte> bytes) {
     foreach (var (_, b) in bytes) {
         w |= (big.Word)((((big.Word)(nuint)b) << (int)(s)));
         {
-            s += 8; if (s == wordSize * 8) {
+            s += 8; if (s == (nuint)(wordSize * 8)) {
                 words[i] = w;
                 i++;
                 w = 0;
@@ -1253,13 +1205,13 @@ public static Value ToComplex(Value x) {
 // is32bit reports whether x can be represented using 32 bits.
 internal static bool is32bit(int64 x) {
     UntypedInt s = 32;
-    return ((int64)(-1) << (int)((s - 1))) <= x && x <= 2147483648L - 1;
+    return (int64)(((int64)(-1) << (int)((s - 1)))) <= x && x <= (int64)(2147483648L - 1);
 }
 
 // is63bit reports whether x can be represented using 63 bits.
 internal static bool is63bit(int64 x) {
     UntypedInt s = 63;
-    return -4611686018427387904L <= x && x <= 4611686018427387903L;
+    return (int64)(-4611686018427387904L) <= x && x <= (int64)(4611686018427387903L);
 }
 
 // UnaryOp returns the result of the unary expression op y.

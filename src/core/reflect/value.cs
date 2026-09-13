@@ -9,30 +9,12 @@ using goarch = @internal.goarch_package;
 using itoa = @internal.itoa_package;
 using unsafeheader = @internal.unsafeheader_package;
 using Δmath = math_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using @unsafe = unsafe_package;
 using @internal;
 using Δsync = sync_package;
 
 partial class reflect_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
 
 // Value is the reflection interface to a Go value.
 //
@@ -478,13 +460,13 @@ break_stepsLoop:;
     }
     // For testing; see TestCallArgLive.
     if (callGC) {
-        Δruntime.GC();
+        runtime.GC();
     }
     // Call.
     call(frametype, fn, stackArgs, (uint32)frametype.Size(), (uint32)abid.retOffset, (uint32)frameSize, ᏑregArgs);
     // For testing; see TestCallMethodJump.
     if (callGC) {
-        Δruntime.GC();
+        runtime.GC();
     }
     slice<ΔValue> ret = default!;
     if (nout == 0){
@@ -608,7 +590,7 @@ internal static void callReflect(ж<makeFuncImpl> Ꮡctxt, @unsafe.Pointer frame
         // our caller (makeFuncStub) could have failed to place the last
         // pointer to a value in regs' pointer space, in which case it
         // won't be visible to the GC.
-        Δruntime.GC();
+        runtime.GC();
     }
     var ftyp = ctxt.ftyp;
     var f = ctxt.fn;
@@ -770,11 +752,11 @@ break_stepsLoop:;
     // the runtime knows the return values are valid. Otherwise, the
     // return values might not be scanned by anyone during a GC.
     // (out would be dead, and the return slots not yet alive.)
-    Δruntime.KeepAlive(@out);
+    runtime.KeepAlive(@out);
     // runtime.getArgInfo expects to be able to find ctxt on the
     // stack when it finds our caller, makeFuncStub. Make sure it
     // doesn't get garbage collected.
-    Δruntime.KeepAlive(Ꮡctxt.OrTypedNil());
+    runtime.KeepAlive(Ꮡctxt.OrTypedNil());
 }
 
 // methodReceiver returns information about the receiver
@@ -1073,11 +1055,11 @@ internal static void callMethod(ж<methodValue> Ꮡctxt, @unsafe.Pointer frame, 
     typedmemclr(methodFrameType, methodFrame);
     methodFramePool.Put(methodFrame);
     // See the comment in callReflect.
-    Δruntime.KeepAlive(Ꮡctxt.OrTypedNil());
+    runtime.KeepAlive(Ꮡctxt.OrTypedNil());
     // Keep valueRegs alive because it may hold live pointer results.
     // The caller (methodValueCall) has it as a stack object, which is only
     // scanned when there is a reference to it.
-    Δruntime.KeepAlive(valueRegs.OrTypedNil());
+    runtime.KeepAlive(valueRegs.OrTypedNil());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -1088,7 +1070,7 @@ internal static @string funcName(Func<slice<ΔValue>, slice<ΔValue>> fʗp) {
     ref var f = ref heap(fʗp, out var Ꮡf);
 
     var pc = ~Ꮡf.Reinterpret<Func<slice<ΔValue>, slice<ΔValue>>, uintptr>();
-    var rf = Δruntime.FuncForPC(pc);
+    var rf = runtime.FuncForPC(pc);
     if (rf != nil) {
         return rf.Name();
     }
@@ -1347,68 +1329,6 @@ internal static nint lenNonSlice(this ΔValue v) {
     throw panic(Ꮡ(new ValueError("reflect.Value.Len"u8, v.kind())));
 }
 
-internal static ж<abi.Type> stringType = rtypeOf((@string)""u8);
-
-// go2cs generated this placeholder — func MapIndex is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// go2cs generated this placeholder — func MapKeys is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// hiter's structure matches runtime.hiter's structure.
-// Having a clone here allows us to embed a map iterator
-// inside type MapIter so that MapIters can be re-used
-// without doing any allocations.
-[GoType] partial struct hiter {
-    internal @unsafe.Pointer key;
-    internal @unsafe.Pointer elem;
-    internal @unsafe.Pointer t;
-    internal @unsafe.Pointer h;
-    internal @unsafe.Pointer buckets;
-    internal @unsafe.Pointer bptr;
-    internal ж<slice<@unsafe.Pointer>> overflow;
-    internal ж<slice<@unsafe.Pointer>> oldoverflow;
-    internal uintptr startBucket;
-    internal uint8 offset;
-    internal bool wrapped;
-    public uint8 B;
-    internal uint8 i;
-    internal uintptr bucket;
-    internal uintptr checkBucket;
-}
-
-[GoRecv] internal static bool initialized(this ref hiter h) {
-    return h.t != nil;
-}
-
-// A MapIter is an iterator for ranging over a map.
-// See [Value.MapRange].
-[GoType] partial struct MapIter {
-    internal ΔValue m;
-    internal hiter hiter;
-}
-
-// go2cs generated this placeholder — func Key is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// go2cs generated this placeholder — func SetIterKey is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// go2cs generated this placeholder — func Value is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// go2cs generated this placeholder — func SetIterValue is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// go2cs generated this placeholder — func Next is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// go2cs generated this placeholder — func Reset is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// go2cs generated this placeholder — func MapRange is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
-// Force slow panicking path not inlined, so it won't add to the
-// inlining budget of the caller.
-// TODO: undo when the inliner is no longer bottom-up only.
-//
-//go:noinline
-internal static void panicNotMap(this flag f) {
-    f.mustBe(Map);
-}
-
 // copyVal returns a Value containing the map key or value at ptr,
 // allocating a new variable as needed.
 internal static ΔValue copyVal(ж<abi.Type> Ꮡtyp, flag fl, @unsafe.Pointer ptr) {
@@ -1575,12 +1495,11 @@ public static void Send(this ΔValue v, ΔValue x) {
 
 // go2cs generated this placeholder — func SetCap is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// go2cs generated this placeholder — func SetMapIndex is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
-
 // go2cs generated this placeholder — func SetUint is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // SetPointer sets the [unsafe.Pointer] value v to x.
-// It panics if v's Kind is not [UnsafePointer].
+// It panics if v's Kind is not [UnsafePointer]
+// or if [Value.CanSet] returns false.
 public static void SetPointer(this ΔValue v, @unsafe.Pointer x) {
     v.mustBeAssignable();
     v.mustBe(ΔUnsafePointer);
@@ -2505,18 +2424,6 @@ internal static partial void mapdelete(ж<abi.Type> t, @unsafe.Pointer m, @unsaf
 internal static partial void mapdelete_faststr(ж<abi.Type> t, @unsafe.Pointer m, @string key);
 
 //go:noescape
-internal static partial void mapiterinit(ж<abi.Type> t, @unsafe.Pointer m, ж<hiter> it);
-
-//go:noescape
-internal static partial @unsafe.Pointer /*key*/ mapiterkey(ж<hiter> it);
-
-//go:noescape
-internal static partial @unsafe.Pointer /*elem*/ mapiterelem(ж<hiter> it);
-
-//go:noescape
-internal static partial void mapiternext(ж<hiter> it);
-
-//go:noescape
 internal static partial nint maplen(@unsafe.Pointer m);
 
 internal static partial void mapclear(ж<abi.Type> t, @unsafe.Pointer m);
@@ -2619,16 +2526,6 @@ internal static void contentEscapes(@unsafe.Pointer x) {
     if (dummy.b) {
         escapes(~(ж<any>)(uintptr)(x)); // the dereference may not always be safe, but never executed
     }
-}
-
-// This is just a wrapper around abi.NoEscape. The inlining heuristics are
-// finnicky and for whatever reason treat the local call to noescape as much
-// lower cost with respect to the inliner budget. (That is, replacing calls to
-// noescape with abi.NoEscape will cause inlining tests to fail.)
-//
-//go:nosplit
-internal static @unsafe.Pointer noescape(@unsafe.Pointer p) {
-    return (uintptr)abi.NoEscape(p);
 }
 
 } // end reflect_package

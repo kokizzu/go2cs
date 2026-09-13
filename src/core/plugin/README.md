@@ -2,8 +2,8 @@
 
 > C# package converted from the Go standard library by [go2cs](https://github.com/ritchiecarroll/go2cs).
 
-[![Tests](https://img.shields.io/badge/Tests-1%2F1_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.23.12.3/plugin.html) [![Docs](https://img.shields.io/badge/Docs-@1.23.12-00ADD8?logo=go)](https://pkg.go.dev/plugin@go1.23.12)\
-[![Source](https://img.shields.io/badge/Source-@1.23.12-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.23.12/src/plugin) [![Source](https://img.shields.io/badge/Source-@1.23.12.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.23.12.3/src/core/plugin)
+[![Tests](https://img.shields.io/badge/Tests-1%2F1_validated-brightgreen?logo=go)](https://go2cs.net/validation/1.24.13.3/plugin.html) [![Docs](https://img.shields.io/badge/Docs-@1.24.13-00ADD8?logo=go)](https://pkg.go.dev/plugin@go1.24.13)\
+[![Source](https://img.shields.io/badge/Source-@1.24.13-00ADD8?logo=go)](https://github.com/golang/go/tree/go1.24.13/src/plugin) [![Source](https://img.shields.io/badge/Source-@1.24.13.3-512BD4?logo=dotnet)](https://github.com/ritchiecarroll/go2cs/tree/nuget-1.24.13.3/src/core/plugin)
 
 Package plugin implements loading and symbol resolution of Go plugins.
 
@@ -20,6 +20,8 @@ The ability to dynamically load parts of an application during execution, perhap
 However, the plugin mechanism has many significant drawbacks that should be considered carefully during the design. For example:
 
   - Plugins are currently supported only on Linux, FreeBSD, and macOS, making them unsuitable for applications intended to be portable.
+
+  - Plugins are poorly supported by the Go race detector. Even simple race conditions may not be automatically detected. See [https://go.dev/issue/24245](https://go.dev/issue/24245) for more information.
 
   - Applications that use plugins may require careful configuration to ensure that the various parts of the program be made available in the correct location in the file system (or container image). By contrast, deploying an application consisting of a single static executable is straightforward.
 

@@ -61,13 +61,12 @@ using static go.syscall_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("syscall/env_windows.go", "env_windows.cs", "AAoagoKClIKCgoKClILKgoKClIKClIKClIKmgoKClIKClIKmgriCgoLcooKClISCgqSCgpaCgpQ=")]
-[assembly: go.GoPositionMap("syscall/security_windows.go", "security_windows.cs", "ABpO8oKClJKCgoKClIKUggAqZsKCgoKUgoKUgtzigpSCgpSCgoKCppKSgoKCgoKClIKUgs7CgoKClILYkqiSgoKCgpSs4oKCgoKmkpKCgoKCgpSClIIAS8AB4oKClIKCgpSokqiSkoKCgoKUgpSCzJKCgpSssoKClKqikoKCgoKUgpSC")]
-[assembly: go.GoPositionMap("syscall/syscall.go", "syscall.cs", "ACZK8oKClKyygpSCggACENCqsoKClAAGEJKokqiSqJKqopai")]
-[assembly: go.GoPositionMap("syscall/syscall_windows.go", "syscall_windows.cs", "ADA+0oKClK7CggAHEIKCrLKCgoKClJS0AAMQAAoGgqrCgpSCgoKClAACEuCswoKClAAEGICswqaUgoKWkoKCgoKCuJQABxSClKisqq6mgqaCqAACEOIAAhLiAALcAQBoAoKCgqaigpSCgpSClKSkpIKUgoKUgoKClIKUtLS0tLSCgoIACBKCvgAICIKUlJSCgpSmgoKCgpSUlKaCgoKClKaigoKClJSClIKUpqKClIKClIKUgpQAChaigoLGmsjNAAYUgpSmsoKUtLS0gqaCAAkSgoLKgtyCgoKUgpS4ooKClKaigoKUpqKCgpSmooKClKaigoKUgoKUpoKSgoKClKaygoKUgoKClIKClOaigoKCpoKClJKCgpSCgqaygpSCgpSmgpSCkpKClIKUAAkMsoKUgoKUpoKUgpKSgpSClOaCpoKCgpSCgpSClJSmgqaCAGLyAaKCgoKUgpSCgqaCgpSUlJYABGIACgKClKaCkgAKSoKmgqaigoKCgoKmAAoCgoKUpqaigoKUAAoCgoKUpqaigoKUAAoCgoKUpqaCAA06ouKCgpSmABA2gKSApICkgKSApICkgKSApIAACRKApKKCgqqQooKkgKKAABs6gpKSgqaikqaiyoCkgKQAAxIACAKCgpSmooKCgpSmooKClIKCgoCCpIKClIKC+oKCgpSmgpiCgoKClIKUlKaigoKCAAoWgpSokKKApICigKKAooCkgKKAooCigKKAyKSCgoKCpqaCqNKUgpSEgoKCgpaCgpSCgoKCgoLIAAsSgoKC4s7UhOiSqLKCgoKClIKCgoKmqJLcsoKCgoKUpoKCgpQAAjYAGAKmgoI=")]
+[assembly: go.GoPositionMap("syscall/syscall.go", "syscall.cs", "ACBK8oKClKyygpSCggACENCqsoKClAAGEJKokqiSqJKqopai")]
+[assembly: go.GoPositionMap("syscall/syscall_windows.go", "syscall_windows.cs", "ABg+0oKClK7CggAHEIKCrLKCgoKClJS0AAMQAAoGgqrCgpSCgoKClAACEuCswoKClAAEGICswqaUgoKWkoKCgoKCuJQABxSClKisqq6mgqaCqAACEOIAAhLiAALeAQBpAoKCgqaigpSCgpSClKSkpIKUuIKmlIKCgpSCgpS4lIKCntKUgrS0tIKClIKCpqaEgoKCpqaCgoKClJSUpoKCgoKUpqKCgoKUlIKUgpSmooKUgoKUgpSClAAKFqKCgsaayM0ABhSClKaygpS0tLSCpoIACRKCgsqC3IKCgpSClLiigoKUpqKCgpSmooKClKaigoKUpqKCgpSCgpSmgpKCgoKU5oKIgoKmooKCgqaCgpSSgoKUgoKmsoKUgoKUpoKUgpKSgpSClAAJDLKClIKClKaClIKSkoKUgpTmgqaCgoKUgoKUgpSUpoKmggBi8gGigoKClIKUgoKmgoKUlJSWAARigoKUpoKSAApKgqaCAAQuooKClAAKAoKClKamooKClAAKAoKClKamggANOqIACAKCgpSmABA2gKSApICkgKSApICkgKSApIAACRKApKKCgqqQooKkgKKAABs6gpKSgqaikqaiyoCkgKQAAxIACAKCgpSmooKCgpSmooKClIKCgoCCpIKClIKC+oKCgpSmgpiCgoKClIKUlKaigoKCAAoWgpSokKKApICigKKAooCkgKKAooCigKKAyKSCgoKCpqaCqNKUgpSEgoKCgpaCgpSCgoKCgoLIAAsSgoKC4s7UhOiSqLKCgoKClIKCgoKmqJLcsoKCgoKUpoKCgpQAAjYAGAKmgoKmsoKmlA==")]
 [assembly: go.GoPositionMap("syscall/time_nofake.go", "time_nofake.cs", "AAoWlA==")]
-[assembly: go.GoPositionMap("syscall/types_windows.go", "types_windows.cs", "AIEC+gSCpqKCggAcPrSUlIKmtJSUgoIAHk7ygoKCgoKCgpaC")]
-[assembly: go.GoPositionMap("syscall/wtf8_windows.go", "wtf8_windows.cs", "ACpYoqaClICCgoKCtoKUqqKCgoCmuKK6grKUgsSU")]
-[assembly: go.GoPositionMap("syscall/zsyscall_windows.go", "zsyscall_windows.cs", "ABgyopSk2gClAeoCosKClKaigoKUABACgpSmouKClKaiooKUpqKCgpSmoqKCpqLCgpSmogAOAoKUpqIADgKClKaiooKUpqKCgpSmogAMAoKUpqLCgpSmogAWAoKUpqIACgKClAAEFqKCgpSmsqKCgpSmsqKCgpQACDCygoKClKayooKClAAEFqLCgqaigoKClAAGIKLCgpSmoqKClKaigoKUAAQWooKClKaiwoKUprLCgoKUprLCgoKUpqLCgpSmsoKCgpSmouKClKaigoKUABACgpSmosKClKaygoKClKaiooKUpoKipqIACAKClKaigoKUooKUpoKCpqKCgpQABiiigoKUpqKCgpSmsoKClMKCgpSmoqKClKaigoKUpqKCgqaiwoKUpqKigpSmsqKCgpSmsoKCgpSmooKCprKCgoKUprLCgoKUpqKigpSmosKClKayooKClKaiooKUprKCgoKUprKigoKUprLigoKUpqKCgpSmssKCgpSmsoKCgpSmsqKCgpSmogAIAoKUpqLigpSmssKCgpSmgqKmsoKCgpSmgqKmsqKCgpQABBiygoKClKaiwoKUprKCgoKUprKigoKUprKCgoKUprKCgoKUpqLCgpSmsoKClIKCgpSmoqKClAAGJqLigpSmooKClOKClKaigoKU4oKUpqKigpSmoqKClKaigoKUpqLCgpSmoqKClKaigoKUprKigoKUpqLigpSmooKClKaigoKUpqKCgpSmosKClKaigoKUpqKCgpSmsoKCgpSmouKClKaigoKU4oKUAAgwoqKClAAEFqLigpSmosKClKai4oKUprLCgoKUpqLCgpQABiCigoKUAAQYogAIAoKUAAg2ogAKAoKUAAQWooKClKaigoKUpqKCgpSmsoKCgpSmsqKCgpSmosKClKaygoKClKayooKClKaygoKClIKCgpSmssKCgpSmosKClKaiwoKUpqKCgpSmooKCpqKigpSmooKClKaygoKClA==")]
+[assembly: go.GoPositionMap("syscall/types_windows.go", "types_windows.cs", "AIUCggWCpqKCggAcPrSUlIKmtJSUgoIAHk7ygoKCgoKCgpaC")]
+[assembly: go.GoPositionMap("syscall/wtf8_windows.go", "wtf8_windows.cs", "ACRYoqaClICCgoKCtoKUqqKCgoCmuKK6grKUgsSU")]
+[assembly: go.GoPositionMap("syscall/zsyscall_windows.go", "zsyscall_windows.cs", "ABIyopSk2gCmAewCosKClKaigoKUABACgpSmouKClKaiooKUpqKCgpSmoqKCpqLCgpSmogAOAoKUpqIADgKClKaiooKUpqKCgpSmogAMAoKUpqLCgpSmogAWAoKUpqIACgKClAAEFqKCgpSmsqKCgpSmsqKCgpQACDCygoKClKayooKClAAEFqLCgqaigoKClAAGIKLCgpSmoqKClKaigoKUAAQWooKClKaiwoKUprLCgoKUprLCgoKUpqLCgpSmsoKCgpSmouKClKaigoKUABACgpSmosKClKaygoKClKaiooKUpoKipqIACAKClKaigoKUooKUpoKCpqKCgpQABiiigoKUpqKCgpSmsoKClMKCgpSmoqKClKaigoKUpqKCgqaiwoKUpqKigpSmsqKCgpSmsoKCgpSmooKCprKCgoKUprLCgoKUpqKigpSmosKClKayooKClKaiooKUprKCgoKUprKigoKUprLigoKUpqKCgpSmssKCgpSmsoKCgpSmsqKCgpSmogAIAoKUpqLigpSmssKCgpSmgqKmsoKCgpSmgqKmsqKCgpQABBiygoKClKaiwoKUprKCgoKUprKigoKUprKCgoKUprKCgoKUpqLCgpSmsoKClIKCgpSmoqKClAAGJqLigpSmooKClOKClKaigoKU4oKUpqKigpSmoqKClKaigoKUpqLCgpSmoqKClKaigoKUpqKigpSmsqKCgpSmouKClKaigoKUpqKCgpSmooKClKaiAAgCgpSmooKClKaigoKUprKCgoKUpqLigpSmooKClOKClAAIMKKigpQABiaiwoKUpqLigpSmssKCgpSmosKClAAGIKKCgpQABBiiAAgCgpQACDaiAAoCgpQABBaiooKUpqKCgpSmoqKClKaygoKClKayooKClKaiwoKUprKCgoKUprKigoKUprKCgoKUgoKClKaywoKClKaiwoKUpqLCgpSmooKClKaigoKmoqKClKaigoKUprKCgoKU")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -82,6 +81,7 @@ public static partial class syscall_package
     // via declarations below.
 
     // <TypeAccessibility>
+    [GoLocalName("_FILE_END_OF_FILE_INFO")] internal partial struct Ftruncate__FILE_END_OF_FILE_INFO {}
     internal partial struct _STARTUPINFOEXW {}
     internal partial struct connectExFuncᴛ1 {}
     [GoValueClone("PathBuffer")] internal partial struct mountPointReparseBuffer {}
@@ -138,8 +138,6 @@ public static partial class syscall_package
     [GoValueClone("Addr")] public partial struct RawSockaddrInet6 {}
     [GoValueClone("Path")] public partial struct RawSockaddrUnix {}
     public partial struct Rusage {}
-    public partial struct SID {}
-    public partial struct SIDAndAttributes {}
     public partial struct SSLExtraCertChainPolicyPara {}
     public partial struct SecurityAttributes {}
     public partial struct Servent {}
@@ -153,11 +151,7 @@ public static partial class syscall_package
     public partial struct Timespec {}
     public partial struct Timeval {}
     [GoValueClone("StandardName", "DaylightName")] public partial struct Timezoneinformation {}
-    public partial struct Token {}
-    public partial struct Tokenprimarygroup {}
-    public partial struct Tokenuser {}
     public partial struct TransmitFileBuffers {}
-    public partial struct UserInfo10 {}
     public partial struct WSABuf {}
     [GoValueClone("Description", "SystemStatus")] public partial struct WSAData {}
     [GoValueClone("ChainEntries")] public partial struct WSAProtocolChain {}
@@ -169,4 +163,22 @@ public static partial class syscall_package
     public partial struct ΔHandle {}
     public partial struct ΔSignal {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸbytealg() => builtin.initPackage(typeof(@internal.bytealg_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸoserror() => builtin.initPackage(typeof(@internal.oserror_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸrace() => builtin.initPackage(typeof(@internal.race_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsyscallꓸwindowsꓸsysdll() => builtin.initPackage(typeof(@internal.syscall.windows.sysdll_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(unicode.utf8_package));
+    // </ImportInitializers>
 }

@@ -78,9 +78,9 @@ using static go.debug.macho_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("debug/macho/fat.go", "fat.cs", "AElcsoKogoKoooKCgpSmlpKCgpSEgrqEuIKClIKCgoKClISCgoKogoCCpJaClIKolqqigoKUgoKClIKmgoKCgpQ=")]
-[assembly: go.GoPositionMap("debug/macho/file.go", "file.cs", "AEJqgAAfQpKokAApVpKokAA0aIKCgpSCqJKCgpSCgoKUgqyygoKClKqigoiigIKkgoKUgqSCpLiAgriSgpSCgpSCgpSCgpSClIKClIKCgoKagoKAgqSCgpSCgqaCgoCCpIKClIKCgoKCpoKCgIKkgoKUgoKUlIKClIKClIKmgoKAgqSCpMi4goKUgoCCpIKCgoKCpoKCgIKkgoKCgoKCgoKCgoKCgoKCgoCCpIKCgoKCgoKCgoKAgtqCgoCCpIKCgoKCgoKCgoKCgoKCgoKAgqSCgoKCgoKCgoKCgIIABc8CAALYAoKClIKUgqamooKCgpSCgoKCgoCCtoKAgqSCgoKClIKmgoKUAAcQgoKCAAcQooKChIKCgpSEhIKChIKAgqaSgoKCgoKUlIKCgoKCpIKCgoKCpNymgoKClKiSgoCCtqqigoKmAAsIkoKUpKS4goKCloKCgoKClICCpICCpJScsoKCgpSAgqSCgpSWgoKogoKClICUpoKCloKUlIKorLKCloKCgoKUrLKCgoCCtg==")]
-[assembly: go.GoPositionMap("debug/macho/macho.go", "macho.cs", "ADZwgKKAABYygKKAABc0gKKAANIBugOCgoKClKY=")]
+[assembly: go.GoPositionMap("debug/macho/fat.go", "fat.cs", "ACtcsoKogoKoooKCgpSmlpKCgpSEgrqEuIKClIKCgoKClISCgoKogoCCpJaClIKolqqigoKUgoKClIKmgoKCgpQ=")]
+[assembly: go.GoPositionMap("debug/macho/file.go", "file.cs", "ADRqgAAfQpKokAApVpKokAA0aIKCgpSCqJKCgpSCgoKUgqyygoKClKqigoiigIKkgoKUgqSCpLiAgriSgpSCgpSCgpSCgpSClIKClIKCgoKagoKAgqSCgpSCgqaCgoCCpIKClIKCgoKCpoKCgIKkgoKUgoKUlIKClIKClIKmgoKAgqSCpMi4goKUgoCCpIKCgoKCpoKCgIKkgoKCgoKCgoKCgoKCgoKCgoCCpIKCgoKCgoKCgoKAgtqCgoCCpIKCgoKCgoKCgoKCgoKCgoKAgqSCgoKCgoKCgoKCgIIABc8CAALYAoKClIKUgqamooKCgpSCgoKCgoCCtoKAgqSCgoKClIKmgoKUAAcQgoKCAAcQooKChIKCgpSEhIKChIKAgqaSgoKCgoKUlIKCgoKCpIKCgoKCpNymgoKClKiSgoCCtqqigoKmAAsIkoKCgpS0tMgACBKCgqaUgoKCloKCgoKClICCpICCpJScsoKCgpSAgqSCgpSWgoKogoKClICUpoKCloKUlIKorLKCloKCgoKUrLKCgoCCtg==", "612-640:1;641-663:2")]
+[assembly: go.GoPositionMap("debug/macho/macho.go", "macho.cs", "ADBwgKKAABYygKKAABc0gKKAANIBugOCgoKClKY=")]
 [assembly: go.GoPositionMap("debug/macho/reloctype.go", "reloctype.cs", "ABEogAAPIoAADyKAABAkgA==")]
 [assembly: go.GoPositionMap("debug/macho/reloctype_string.go", "reloctype_string.cs", "/oaigoKCgoLugoKUpIaigoKCgoKCgoKC7oKClKSGooKCgoKCgoKCgu6CgpSkhqKCgoKCgoKCgoKC7oKClA==")]
 // </GoSourcePositionMaps>
@@ -138,4 +138,23 @@ public static partial class macho_package
     public partial struct ΔSection {}
     public partial struct ΔSegment {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸzlib() => builtin.initPackage(typeof(compress.zlib_package));
+    [GoInit] internal static void initᴛᴛimportꓸdebugꓸdwarf() => builtin.initPackage(typeof(go.debug.dwarf_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() => builtin.initPackage(typeof(@internal.saferio_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸos() => builtin.initPackage(typeof(os_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    // </ImportInitializers>
 }

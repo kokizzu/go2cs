@@ -5,7 +5,7 @@ namespace go;
 
 using context = context_package;
 using bytealg = @internal.bytealg_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using Δsync = sync_package;
 // blank import: unsafe_package (side effects only; no using emitted — a `using _` alias hijacks C# discards) // for linkname
 using @internal;
@@ -48,7 +48,7 @@ internal static bool supportsIPv6() {
 internal static bool supportsIPv4map() {
     // Some operating systems provide no support for mapping IPv4
     // addresses to IPv6, and a runtime check is unnecessary.
-    var exprᴛ1 = Δruntime.GOOS;
+    var exprᴛ1 = runtime.GOOS;
     if (exprᴛ1 == "dragonfly"u8 || exprᴛ1 == "openbsd"u8) {
         return false;
     }

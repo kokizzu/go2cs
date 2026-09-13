@@ -56,6 +56,7 @@ using static go.log.slog_package;
 [assembly: GoImplement<TextHandler, ΔHandler>(Pointer = true)]
 [assembly: GoImplement<bytes_package.Buffer, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<defaultHandler, ΔHandler>(Pointer = true)]
+[assembly: GoImplement<discardHandler, ΔHandler>]
 [assembly: GoImplement<handlerWriter, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<strings_package.Builder, io_package.Writer>(Pointer = true)]
 [assembly: GoImplement<ΔLevel, Leveler>(Pointer = true)]
@@ -73,14 +74,14 @@ using static go.log.slog_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("log/slog/attr.go", "attr.cs", "ABYkkqiSqqKokqiSqJKqoqiSAAIUAAkCpoKYgoKUqqKokqaCqqI=")]
-[assembly: go.GoPositionMap("log/slog/handler.go", "handler.cs", "AIsBvgGC3IKsAAgCgoKCgpKCgtaCpoIAQpgBlAALHMKCgpSm5oKUlJKCgoCCgoLIgoKCpqaU1oKCgqrykoKCpoKClIKCgoKClLiCgoKClKaClIKCgoKUlIKChIKCgtbEgIKCgoKC7IKCyoKCgoKCgpSUgoKmlIKmupKClAAPIILGou6CgpSmgoKUgIKCpKaCggAGEqKCgoKUgqaCupKClKSCgryigoKCpqzSgoCCgoKmlLaCpoCCgIKClNiClMqUgpSCgpSCuIKUpoKmgoKUlJSClJSmgoKCgqaClPrCkoDcgJKCuLiCgpSUguiigpS4isKCgoKC")]
-[assembly: go.GoPositionMap("log/slog/json_handler.go", "json_handler.cs", "ADQ80oKUAAkYoqqipoIAAkIAIALYsoCmpIKCpqKUpKSqgLLGprSkgoKAgpTGpKakkoKCgIKkgoIABxDSgJKAlIKCgIKCgpSClIKUtLS0toKCxIKCpIKCgpSCgoIACBKCgpSCgoKClJSClA==")]
-[assembly: go.GoPositionMap("log/slog/level.go", "level.cs", "AEJ2AAkCgoKUlpSkpKTM2AACENKCgpSqogACENLW0oKCqIKCgIKCgoK2lKSkpKSkguqgAAsYkqiSpoKqoqqigoCCpII=")]
-[assembly: go.GoPositionMap("log/slog/logger.go", "logger.cs", "ACZWABgCgoKmgqiQrvLugIKSggAMGIKCgpSChJKCqIKClIIADBqCkqiQquKClIKCAAISAAgCgpSCgqiSgpSosqiSgpSssgACGgAMAqiyqLKosqiyqLKosqiyqLKosqzSgpSCgpSClIKCgpSosoKUgoKUgpSCgoKUqLKosqiyqLKosqiyqLKosqiyqLI=")]
+[assembly: go.GoPositionMap("log/slog/attr.go", "attr.cs", "ABAkkqiSqqKokqiSqJKqoqiSAAIUAAkCpoKYgoKUqqKokqaCqqI=")]
+[assembly: go.GoPositionMap("log/slog/handler.go", "handler.cs", "AFu+AYLcgqwACAKCgoKCkoKC1oKmggBCmAGUAAscwoKClKbmgpSUkoKCgIKCgsiCgoKmppTWgoKCqvKSgoKmgoKUgoKCgoKUuIKCgoKUpoKUgoKCgpSUgoKEgoKC1sSAgoKCgoLsgoLKgoKCgoKClJSCgqaUgqa6koKUAA8ggsai7oKClKaCgpSAgoKkpoKCAAYSooKCgpSCpoK6koKUpIKCvKKCgoKmrNKCgIKCgqaUtoKmgIKAgoKU2IKUypSClIKClIK4gpSmgqaCgpSUlIKUlKaCgoKCpoKU+sKSgNyAkoK4uIKClJSC6KKClLiKwoKCgoIACRKAooCigKKA", "341-346:1;557-572:1")]
+[assembly: go.GoPositionMap("log/slog/json_handler.go", "json_handler.cs", "ABw80oKUAAkYoqqipoIAAkIAIALYsoCmpIKCpqKUpKSqgLLGprSkgoKAgpTGpKakkoKCgIKkgoIABxDSgJKAlIKCgIKCgpSClIKUtLS0toKCxIKCpIKCgpSCgoIACBKCgpSCgoKClJSClA==", "161-161:1;162-162:2")]
+[assembly: go.GoPositionMap("log/slog/level.go", "level.cs", "ADZ2AAkCgoKUlpSkpKTM2AACENKCgpSqoqqiAAIQ0tbSgoKogoKAgoKCgraUpKSkpKSC6qAACxiSqJKmgqqiqqKqooKAgqSC", "60-65:1;123-127:1")]
+[assembly: go.GoPositionMap("log/slog/logger.go", "logger.cs", "ABxYABgCgoKmgqiQrvLugIKSggAMGIKCgpSChJKCqIKCggAMGoKSqJCq4oKUgoIAAhIACAKClIKCqJKClKiyqJKClKyyAAIaAAwCqLKosqiyqLKosqiyqLKosqiyrNKClIKClIKUgoKClKiygpSCgpSClIKCgpSosqiyqLKosqiyqLKosqiyqLKosg==")]
 [assembly: go.GoPositionMap("log/slog/record.go", "record.cs", "AC900gAHFtKCqLKqwoKCpoKCAAgOwoKCgoKUgriCgpSCpoKCgoIABBDSgoKCgpSCgpSClMySgoKCgIK2AAQW4pSClKa2ABcowoKClIKUgpSu4oKC")]
-[assembly: go.GoPositionMap("log/slog/text_handler.go", "text_handler.cs", "ACE40oKUAAkYoqqipoIAAk4AJgKmopSkpICCgoKmgqSAlIKkpKSssoCCtoKClKaCgpSCgqaClIKUgoKUlA==")]
-[assembly: go.GoPositionMap("log/slog/value.go", "value.cs", "AE+WAYKClAAEEJKUpMSkpKS0vsKokqiSqJKokqiSgoKUAAYcosqUgoKUuKiSqviAgoKCgqakqJKCgoKmAAIkAA8ClKSkpKSkpKSkpKSkpKSkpKSkpKS0vrKUgIKkpKSkpKSkpKSkpM6ygIKkgqaCqqKAkqSqooCSpKqigJKkpoKqooCSpqaCqqKAkqamgqqigJKkqJKUgpSktMyiqqKAgqSmgqyygoKClJSkpKSkpKTKkoLKqqKUpKSkpKSkpKSkAA4qAAoCgoKAgriCgpSUggAJBoKCgoKUgoKCgoKCgpSCgoKm")]
+[assembly: go.GoPositionMap("log/slog/text_handler.go", "text_handler.cs", "ABs40oKUAAkYoqqipoIAAk4AJgKmopSkpICCgoKmgqSAlIKkpKSssoCCtoKClKaCgpSCgqaClIKUgoKUlA==")]
+[assembly: go.GoPositionMap("log/slog/value.go", "value.cs", "AEqWAYKClAAEEJKUpMSkpKS0vsKokqiSqJKokqiSgoKUAAYcosqUgoKUuKiSqviAgoKCgqakqJKCgoKmAAIkAA8ClKSkpKSkpKSkpKSkpKSkpKSkpKS0vrKUgIKkpKSkpKSkpKSkpM6ygIKkgqaCqqKAkqSqooCSpKqigJKkpoKqooCSpqaCqqKAkqamgqqigJKkqJKUgpSktMyiqqKAgqSmgqyygoKClJSkpKSkpKTKkoLKqqKUpKSkpKSkpKSkAA4qAAoCgoKAgriCgpSUggAJBoKCgoKUgoKCgoKCgpSCgoKm", "502-506:1")]
 // </GoSourcePositionMaps>
 
 namespace go.log;
@@ -100,6 +101,7 @@ public static partial class slog_package
     internal partial class timeLocation {}
     internal partial struct commonHandler {}
     internal partial struct defaultHandler {}
+    internal partial struct discardHandler {}
     internal partial struct handleState {}
     internal partial struct handlerWriter {}
     internal partial struct kind {}
@@ -119,4 +121,32 @@ public static partial class slog_package
     public partial struct ΔKind {}
     public partial struct ΔLevel {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbytes() => builtin.initPackage(typeof(bytes_package));
+    [GoInit] internal static void initᴛᴛimportꓸcontext() => builtin.initPackage(typeof(context_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸjson() => builtin.initPackage(typeof(go.encoding.json_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸlog() => builtin.initPackage(typeof(log_package));
+    [GoInit] internal static void initᴛᴛimportꓸlogꓸslogꓸinternalꓸbuffer() => builtin.initPackage(typeof(go.log.slog.@internal.buffer_package));
+    [GoInit] internal static void initᴛᴛimportꓸmath() => builtin.initPackage(typeof(math_package));
+    [GoInit] internal static void initᴛᴛimportꓸreflect() => builtin.initPackage(typeof(reflect_package));
+    [GoInit] internal static void initᴛᴛimportꓸruntime() => builtin.initPackage(typeof(runtime_package));
+    [GoInit] internal static void initᴛᴛimportꓸslices() => builtin.initPackage(typeof(slices_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrconv() => builtin.initPackage(typeof(strconv_package));
+    [GoInit] internal static void initᴛᴛimportꓸstrings() => builtin.initPackage(typeof(strings_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicode() => builtin.initPackage(typeof(unicode_package));
+    [GoInit] internal static void initᴛᴛimportꓸunicodeꓸutf8() => builtin.initPackage(typeof(go.unicode.utf8_package));
+    // </ImportInitializers>
 }

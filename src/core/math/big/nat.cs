@@ -20,12 +20,6 @@ using go.math;
 
 partial class big_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸsync() {
-    builtin.initPackage(typeof(sync_package));
-}
-
 [GoType("[]Word")] partial struct nat;
 
 internal static nat natOne = new nat(new Word[]{1}.slice());
@@ -1081,7 +1075,7 @@ internal static nat expNNWindowed(this nat z, nat x, nat y, nuint logM) {
     }
     powers[0].ValueSlot = (~powers[0]).set(natOne);
     powers[1].ValueSlot = (~powers[1]).trunc(x, logM);
-    for (nint iΔ2 = 2; iΔ2 < (1 << (int)(n)); iΔ2 += 2) {
+    for (nint iΔ2 = 2; iΔ2 < (nint)((1 << (int)(n))); iΔ2 += 2) {
         var (p2, p, p1) = (powers[iΔ2 / 2], powers[iΔ2], powers[iΔ2 + 1]);
         p.ValueSlot = (~p).sqr(p2.ValueSlot);
         p.ValueSlot = (~p).trunc(p.ValueSlot, logM);
@@ -1187,7 +1181,7 @@ internal static nat expNNMontgomery(this nat z, nat x, nat y, nat m) {
     array<nat> powers = new(16); /* (1 << (int)(n)) */
     powers[0] = powers[0].montgomery(one, RR, m, k0, numWords);
     powers[1] = powers[1].montgomery(x, RR, m, k0, numWords);
-    for (nint i = 2; i < (1 << (int)(n)); i++) {
+    for (nint i = 2; i < (nint)((1 << (int)(n))); i++) {
         powers[i] = powers[i].montgomery(powers[i - 1], powers[1], m, k0, numWords);
     }
     // initialize z = 1 (Montgomery 1)
@@ -1266,9 +1260,9 @@ internal static nint /*i*/ bytes(this nat z, slice<byte> buf) {
 // bigEndianWord returns the contents of buf interpreted as a big-endian encoded Word value.
 internal static Word bigEndianWord(slice<byte> buf) {
     if (_W == 64) {
-        return ((Word)(nuint)byteorder.BeUint64(buf));
+        return ((Word)(nuint)byteorder.BEUint64(buf));
     }
-    return ((Word)(nuint)byteorder.BeUint32(buf));
+    return ((Word)(nuint)byteorder.BEUint32(buf));
 }
 
 // setBytes interprets buf as the bytes of a big-endian unsigned

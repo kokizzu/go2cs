@@ -35,90 +35,6 @@ using runtime;
 
 partial class buildinfo_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸdebugꓸelf() {
-    builtin.initPackage(typeof(go.debug.elf_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸdebugꓸmacho() {
-    builtin.initPackage(typeof(go.debug.macho_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸdebugꓸpe() {
-    builtin.initPackage(typeof(go.debug.pe_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸdebugꓸplan9obj() {
-    builtin.initPackage(typeof(go.debug.plan9obj_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() {
-    builtin.initPackage(typeof(encoding.binary_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸsaferio() {
-    builtin.initPackage(typeof(@internal.saferio_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸxcoff() {
-    builtin.initPackage(typeof(@internal.xcoff_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸioꓸfs() {
-    builtin.initPackage(typeof(go.io.fs_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸos() {
-    builtin.initPackage(typeof(os_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntimeꓸdebug() {
-    builtin.initPackage(typeof(runtime.debug_package));
-}
-
 // errUnrecognizedFormat is returned when a given executable file doesn't
 // appear to be in a known format, or it breaks the rules of that format,
 // or when there are I/O errors reading the file.
@@ -138,11 +54,13 @@ internal static error errUnrecognizedFormat = errors.New("unrecognized file form
 //go:linkname errNotGoExe
 public static error errNotGoExe = errors.New("not a Go executable"u8);
 
-// The build info blob left by the linker is identified by
-// a 16-byte header, consisting of buildInfoMagic (14 bytes),
-// the binary's pointer size (1 byte),
-// and whether the binary is big endian (1 byte).
+// The build info blob left by the linker is identified by a 32-byte header,
+// consisting of buildInfoMagic (14 bytes), followed by version-dependent
+// fields.
 internal static slice<byte> buildInfoMagic = slice<byte>(((@string)(new byte[]{0xff, 0x20, 0x47, 0x6f, 0x20, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x69, 0x6e, 0x66, 0x3a})));
+
+internal static UntypedInt buildInfoAlign => 16;
+internal static UntypedInt buildInfoHeaderSize => 32;
 
 // ReadFile returns build information embedded in a Go binary
 // file at the given path. Most information is only available for binaries built
@@ -195,12 +113,13 @@ public static (ж<BuildInfo>, error) Read(io.ReaderAt r) {
 }
 
 [GoType] partial interface exe {
-    // ReadData reads and returns up to size bytes starting at virtual address addr.
-    (slice<byte>, error) ReadData(uint64 addr, uint64 size);
     // DataStart returns the virtual address and size of the segment or section that
     // should contain build information. This is either a specially named section
     // or the first writable non-zero data segment.
     (uint64, uint64) DataStart();
+    // DataReader returns an io.ReaderAt that reads from addr until the end
+    // of segment or section that contains addr.
+    (io.ReaderAt, error) DataReader(uint64 addr);
 }
 
 // readRawBuildInfo extracts the Go toolchain version and module information
@@ -282,39 +201,67 @@ internal static (@string vers, @string mod, error err) readRawBuildInfo(io.Reade
     if (dataSize == 0) {
         return ("", "", errNotGoExe);
     }
-    (var data, err) = x.ReadData(dataAddr, dataSize);
+    (var addr, err) = searchMagic(x, dataAddr, dataSize);
     if (err != default!) {
         return ("", "", err);
     }
-    UntypedInt buildInfoAlign = 16;
-    const nint buildInfoSize = 32;
-    while (ᐧ) {
-        nint i = bytes.Index(data, buildInfoMagic);
-        if (i < 0 || len(data) - i < buildInfoSize) {
-            return ("", "", errNotGoExe);
-        }
-        if (i % (nint)buildInfoAlign == 0 && len(data) - i >= buildInfoSize) {
-            data = data[(int)(i)..];
-            break;
-        }
-        data = data[(int)((nint)((i + (nint)buildInfoAlign - 1) & ~(nint)(buildInfoAlign - 1)))..];
+    // Read in the full header first.
+    (var header, err) = readData(x, addr, buildInfoHeaderSize);
+    if (AreEqual(err, io.EOF)){
+        return ("", "", errNotGoExe);
+    } else 
+    if (err != default!) {
+        return ("", "", err);
     }
-    // Decode the blob.
-    // The first 14 bytes are buildInfoMagic.
-    // The next two bytes indicate pointer size in bytes (4 or 8) and endianness
-    // (0 for little, 1 for big).
-    // Two virtual addresses to Go strings follow that: runtime.buildVersion,
-    // and runtime.modinfo.
-    // On 32-bit platforms, the last 8 bytes are unused.
-    // If the endianness has the 2 bit set, then the pointers are zero
-    // and the 32-byte header is followed by varint-prefixed string data
-    // for the two string values we care about.
-    nint ptrSize = (nint)data[14];
-    if ((byte)(data[15] & 2) != 0){
-        (vers, data) = decodeString(data[32..]);
-        (mod, data) = decodeString(data);
+    if (len(header) < buildInfoHeaderSize) {
+        return ("", "", errNotGoExe);
+    }
+    const nint ptrSizeOffset = 14;
+    const nint flagsOffset = 15;
+    const nint versPtrOffset = 16;
+    const byte flagsEndianMask = 0x1;
+    UntypedInt flagsEndianLittle = 0x0;
+    const byte flagsEndianBig = 0x1;
+    const byte flagsVersionMask = 0x2;
+    UntypedInt flagsVersionPtr = 0x0;
+    const byte flagsVersionInl = 0x2;
+    // Decode the blob. The blob is a 32-byte header, optionally followed
+    // by 2 varint-prefixed string contents.
+    //
+    // type buildInfoHeader struct {
+    // 	magic       [14]byte
+    // 	ptrSize     uint8 // used if flagsVersionPtr
+    // 	flags       uint8
+    // 	versPtr     targetUintptr // used if flagsVersionPtr
+    // 	modPtr      targetUintptr // used if flagsVersionPtr
+    // }
+    //
+    // The version bit of the flags field determines the details of the format.
+    //
+    // Prior to 1.18, the flags version bit is flagsVersionPtr. In this
+    // case, the header includes pointers to the version and modinfo Go
+    // strings in the header. The ptrSize field indicates the size of the
+    // pointers and the endian bit of the flag indicates the pointer
+    // endianness.
+    //
+    // Since 1.18, the flags version bit is flagsVersionInl. In this case,
+    // the header is followed by the string contents inline as
+    // length-prefixed (as varint) string contents. First is the version
+    // string, followed immediately by the modinfo string.
+    var flags = header[flagsOffset];
+    if ((byte)(flags & flagsVersionMask) == flagsVersionInl){
+        (vers, addr, err) = decodeString(x, addr + (uint64)buildInfoHeaderSize);
+        if (err != default!) {
+            return ("", "", err);
+        }
+        (mod, _, err) = decodeString(x, addr);
+        if (err != default!) {
+            return ("", "", err);
+        }
     } else {
-        var bigEndian = data[15] != 0;
+        // flagsVersionPtr (<1.18)
+        nint ptrSize = (nint)header[ptrSizeOffset];
+        var bigEndian = (byte)(flags & flagsEndianMask) == flagsEndianBig;
         binary.ByteOrder bo = default!;
         if (bigEndian){
             bo = binary.BigEndian;
@@ -332,8 +279,8 @@ internal static (@string vers, @string mod, error err) readRawBuildInfo(io.Reade
         } else {
             return ("", "", errNotGoExe);
         }
-        vers = readString(x, ptrSize, readPtr, readPtr(data[16..]));
-        mod = readString(x, ptrSize, readPtr, readPtr(data[(int)(16 + ptrSize)..]));
+        vers = readString(x, ptrSize, readPtr, readPtr(header[(int)(versPtrOffset)..]));
+        mod = readString(x, ptrSize, readPtr, readPtr(header[(int)(versPtrOffset + ptrSize)..]));
     }
     if (vers == ""u8) {
         return ("", "", errNotGoExe);
@@ -360,27 +307,151 @@ internal static bool hasPlan9Magic(slice<byte> magic) {
     return false;
 }
 
-internal static (@string s, slice<byte> rest) decodeString(slice<byte> data) {
-    var (u, n) = binary.Uvarint(data);
-    if (n <= 0 || u > (uint64)(len(data) - n)) {
-        return ("", default!);
+internal static (@string, uint64, error) decodeString(exe x, uint64 addr) {
+    // varint length followed by length bytes of data.
+    // N.B. ReadData reads _up to_ size bytes from the section containing
+    // addr. So we don't need to check that size doesn't overflow the
+    // section.
+    var (b, err) = readData(x, addr, binary.MaxVarintLen64);
+    if (AreEqual(err, io.EOF)){
+        return ("", 0, errNotGoExe);
+    } else 
+    if (err != default!) {
+        return ("", 0, err);
     }
-    return (((@string)(data[(int)(n)..(int)((uint64)n + u)])), data[(int)((uint64)n + u)..]);
+    var (length, n) = binary.Uvarint(b);
+    if (n <= 0) {
+        return ("", 0, errNotGoExe);
+    }
+    addr += (uint64)n;
+    (b, err) = readData(x, addr, length);
+    if (AreEqual(err, io.EOF)){
+        return ("", 0, errNotGoExe);
+    } else 
+    if (AreEqual(err, io.ErrUnexpectedEOF)){
+        // Length too large to allocate. Clearly bogus value.
+        return ("", 0, errNotGoExe);
+    } else 
+    if (err != default!) {
+        return ("", 0, err);
+    }
+    if ((uint64)len(b) < length) {
+        // Section ended before we could read the full string.
+        return ("", 0, errNotGoExe);
+    }
+    return (((@string)b), addr + length, default!);
 }
 
 // readString returns the string at address addr in the executable x.
 internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64> readPtr, uint64 addr) {
-    var (hdr, err) = x.ReadData(addr, (uint64)(2 * ptrSize));
+    var (hdr, err) = readData(x, addr, (uint64)(2 * ptrSize));
     if (err != default! || len(hdr) < 2 * ptrSize) {
         return ""u8;
     }
     var dataAddr = readPtr(hdr);
     var dataLen = readPtr(hdr[(int)(ptrSize)..]);
-    (var data, err) = x.ReadData(dataAddr, dataLen);
+    (var data, err) = readData(x, dataAddr, dataLen);
     if (err != default! || (uint64)len(data) < dataLen) {
         return ""u8;
     }
     return ((@string)data);
+}
+
+internal static UntypedInt searchChunkSize => /* 1 << 20 */ 1048576; // 1 MB
+
+// searchMagic returns the aligned first instance of buildInfoMagic in the data
+// range [addr, addr+size). Returns false if not found.
+internal static (uint64, error) searchMagic(exe x, uint64 start, uint64 size) {
+    var end = start + size;
+    if (end < start) {
+        // Overflow.
+        return (0, errUnrecognizedFormat);
+    }
+    // Round up start; magic can't occur in the initial unaligned portion.
+    start = (uint64)((start + (uint64)buildInfoAlign - 1) & ~(uint64)((buildInfoAlign - 1)));
+    if (start >= end) {
+        return (0, errNotGoExe);
+    }
+    slice<byte> buf = default!;
+    while (start < end) {
+        // Read in chunks to avoid consuming too much memory if data is large.
+        //
+        // Normally it would be somewhat painful to handle the magic crossing a
+        // chunk boundary, but since it must be 16-byte aligned we know it will
+        // fall within a single chunk.
+        var remaining = end - start;
+        var chunkSize = (uint64)searchChunkSize;
+        if (chunkSize > remaining) {
+            chunkSize = remaining;
+        }
+        if (buf == default!){
+            buf = new slice<byte>((nint)(chunkSize));
+        } else {
+            // N.B. chunkSize can only decrease, and only on the
+            // last chunk.
+            buf = buf[..(int)(chunkSize)];
+            clear(buf);
+        }
+        var (n, err) = readDataInto(x, start, buf);
+        if (AreEqual(err, io.EOF)){
+            // EOF before finding the magic; must not be a Go executable.
+            return (0, errNotGoExe);
+        } else 
+        if (err != default!) {
+            return (0, err);
+        }
+        var data = buf[..(int)(n)];
+        while (len(data) > 0) {
+            nint i = bytes.Index(data, buildInfoMagic);
+            if (i < 0) {
+                break;
+            }
+            if (remaining - (uint64)i < buildInfoHeaderSize) {
+                // Found magic, but not enough space left for the full header.
+                return (0, errNotGoExe);
+            }
+            if (i % (nint)buildInfoAlign != 0) {
+                // Found magic, but misaligned. Keep searching.
+                nint next = (nint)((i + (nint)buildInfoAlign - 1) & ~(nint)(buildInfoAlign - 1));
+                if (next > len(data)) {
+                    // Corrupt object file: the remaining
+                    // count says there is more data,
+                    // but we didn't read it.
+                    return (0, errNotGoExe);
+                }
+                data = data[(int)(next)..];
+                continue;
+            }
+            // Good match!
+            return (start + (uint64)i, default!);
+        }
+        start += chunkSize;
+    }
+    return (0, errNotGoExe);
+}
+
+internal static (slice<byte>, error) readData(exe x, uint64 addr, uint64 size) {
+    var (r, err) = x.DataReader(addr);
+    if (err != default!) {
+        return (default!, err);
+    }
+    (var b, err) = saferio.ReadDataAt(r, size, 0);
+    if (len(b) > 0 && AreEqual(err, io.EOF)) {
+        err = default!;
+    }
+    return (b, err);
+}
+
+internal static (nint, error) readDataInto(exe x, uint64 addr, slice<byte> b) {
+    var (r, err) = x.DataReader(addr);
+    if (err != default!) {
+        return (0, err);
+    }
+    (var n, err) = r.ReadAt(b, 0);
+    if (n > 0 && AreEqual(err, io.EOF)) {
+        err = default!;
+    }
+    return (n, err);
 }
 
 // elfExe is the ELF implementation of the exe interface.
@@ -388,14 +459,11 @@ internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64
     internal ж<elf.File> f;
 }
 
-[GoRecv] internal static (slice<byte>, error) ReadData(this ref elfExe x, uint64 addr, uint64 size) {
+[GoRecv] internal static (io.ReaderAt, error) DataReader(this ref elfExe x, uint64 addr) {
     foreach (var (_, prog) in (~x.f).Progs) {
         if ((~prog).Vaddr <= addr && addr <= (~prog).Vaddr + (~prog).Filesz - 1) {
-            var n = (~prog).Vaddr + (~prog).Filesz - addr;
-            if (n > size) {
-                n = size;
-            }
-            return saferio.ReadDataAt(new elf_ProgжReaderAt(prog), n, (int64)(addr - (~prog).Vaddr));
+            var remaining = (~prog).Vaddr + (~prog).Filesz - addr;
+            return (new io.SectionReaderжReaderAt(io.NewSectionReader(new elf_ProgжReaderAt(prog), (int64)(addr - (~prog).Vaddr), (int64)remaining)), default!);
         }
     }
     return (default!, errUnrecognizedFormat);
@@ -431,15 +499,12 @@ internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64
     return 0;
 }
 
-[GoRecv] internal static (slice<byte>, error) ReadData(this ref peExe x, uint64 addr, uint64 size) {
+[GoRecv] internal static (io.ReaderAt, error) DataReader(this ref peExe x, uint64 addr) {
     addr -= x.imageBase();
     foreach (var (_, sect) in (~x.f).Sections) {
         if ((uint64)(~sect).VirtualAddress <= addr && addr <= (uint64)((~sect).VirtualAddress + (~sect).Size - 1)) {
-            var n = (uint64)((~sect).VirtualAddress + (~sect).Size) - addr;
-            if (n > size) {
-                n = size;
-            }
-            return saferio.ReadDataAt(new pe_ΔSectionжReaderAt(sect), n, (int64)(addr - (uint64)(~sect).VirtualAddress));
+            var remaining = (uint64)((~sect).VirtualAddress + (~sect).Size) - addr;
+            return (new io.SectionReaderжReaderAt(io.NewSectionReader(new pe_ΔSectionжReaderAt(sect), (int64)(addr - (uint64)(~sect).VirtualAddress), (int64)remaining)), default!);
         }
     }
     return (default!, errUnrecognizedFormat);
@@ -477,7 +542,7 @@ internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64
     internal ж<macho.File> f;
 }
 
-[GoRecv] internal static (slice<byte>, error) ReadData(this ref machoExe x, uint64 addr, uint64 size) {
+[GoRecv] internal static (io.ReaderAt, error) DataReader(this ref machoExe x, uint64 addr) {
     foreach (var (_, load) in (~x.f).Loads) {
         var (seg, ok) = load._<ж<machoꓸSegment>>(ᐧ);
         if (!ok) {
@@ -487,11 +552,8 @@ internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64
             if ((~seg).Name == "__PAGEZERO"u8) {
                 continue;
             }
-            var n = (~seg).Addr + (~seg).Filesz - addr;
-            if (n > size) {
-                n = size;
-            }
-            return saferio.ReadDataAt(new macho_ΔSegmentжReaderAt(seg), n, (int64)(addr - (~seg).Addr));
+            var remaining = (~seg).Addr + (~seg).Filesz - addr;
+            return (new io.SectionReaderжReaderAt(io.NewSectionReader(new macho_ΔSegmentжReaderAt(seg), (int64)(addr - (~seg).Addr), (int64)remaining)), default!);
         }
     }
     return (default!, errUnrecognizedFormat);
@@ -521,16 +583,13 @@ internal static @string readString(exe x, nint ptrSize, Func<slice<byte>, uint64
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string addressNotMappedˢ = "address not mapped"u8;
+internal static readonly @string addressNotMappedˢ = "address not mapped"u8;
 
-[GoRecv] internal static (slice<byte>, error) ReadData(this ref xcoffExe x, uint64 addr, uint64 size) {
+[GoRecv] internal static (io.ReaderAt, error) DataReader(this ref xcoffExe x, uint64 addr) {
     foreach (var (_, sect) in (~x.f).Sections) {
         if ((~sect).VirtualAddress <= addr && addr <= (~sect).VirtualAddress + (~sect).Size - 1) {
-            var n = (~sect).VirtualAddress + (~sect).Size - addr;
-            if (n > size) {
-                n = size;
-            }
-            return saferio.ReadDataAt(new xcoff_ΔSectionжReaderAt(sect), n, (int64)(addr - (~sect).VirtualAddress));
+            var remaining = (~sect).VirtualAddress + (~sect).Size - addr;
+            return (new io.SectionReaderжReaderAt(io.NewSectionReader(new xcoff_ΔSectionжReaderAt(sect), (int64)(addr - (~sect).VirtualAddress), (int64)remaining)), default!);
         }
     }
     return (default!, errors.New(addressNotMappedˢ));
@@ -551,7 +610,7 @@ private static readonly @string addressNotMappedˢ = "address not mapped"u8;
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
-private static readonly @string dataˢ = "data"u8;
+internal static readonly @string dataˢ = "data"u8;
 
 [GoRecv] internal static (uint64, uint64) DataStart(this ref plan9objExe x) {
     {
@@ -562,14 +621,11 @@ private static readonly @string dataˢ = "data"u8;
     return (0, 0);
 }
 
-[GoRecv] internal static (slice<byte>, error) ReadData(this ref plan9objExe x, uint64 addr, uint64 size) {
+[GoRecv] internal static (io.ReaderAt, error) DataReader(this ref plan9objExe x, uint64 addr) {
     foreach (var (_, sect) in (~x.f).Sections) {
         if ((uint64)(~sect).Offset <= addr && addr <= (uint64)((~sect).Offset + (~sect).Size - 1)) {
-            var n = (uint64)((~sect).Offset + (~sect).Size) - addr;
-            if (n > size) {
-                n = size;
-            }
-            return saferio.ReadDataAt(new plan9obj_ΔSectionжReaderAt(sect), n, (int64)(addr - (uint64)(~sect).Offset));
+            var remaining = (uint64)((~sect).Offset + (~sect).Size) - addr;
+            return (new io.SectionReaderжReaderAt(io.NewSectionReader(new plan9obj_ΔSectionжReaderAt(sect), (int64)(addr - (uint64)(~sect).Offset), (int64)remaining)), default!);
         }
     }
     return (default!, errors.New(addressNotMappedˢ));

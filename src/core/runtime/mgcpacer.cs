@@ -664,6 +664,16 @@ internal static (ж<g>, int64) findRunnableGCWorker(this ж<gcControllerState> �
         // now because it'll just return immediately.
         return (default!, now);
     }
+    if (Ꮡc.of(gcControllerState.ᏑdedicatedMarkWorkersNeeded).Load() <= 0 && c.fractionalUtilizationGoal == 0D) {
+        // No current need for dedicated workers, and no need at all for
+        // fractional workers. Check before trying to acquire a worker; when
+        // GOMAXPROCS is large, that can be expensive and is often unnecessary.
+        //
+        // When a dedicated worker stops running, the gcBgMarkWorker loop notes
+        // the need for the worker before returning it to the pool. If we don't
+        // see the need now, we wouldn't have found it in the pool anyway.
+        return (default!, now);
+    }
     // Grab a worker before we commit to running below.
     var node = (ж<gcBgMarkWorkerNode>)(uintptr)(ᏑgcBgMarkWorkerPool.pop());
     if (node == nil) {

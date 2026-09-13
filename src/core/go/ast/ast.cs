@@ -12,18 +12,6 @@ using global::go.go;
 
 partial class ast_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸgoꓸtoken() {
-    builtin.initPackage(typeof(global::go.go.token_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrings() {
-    builtin.initPackage(typeof(strings_package));
-}
-
 // ----------------------------------------------------------------------------
 // Interfaces
 //
@@ -1400,13 +1388,17 @@ public static @string String(this ж<Ident> Ꮡid) {
 }
 
 // Pos returns the position of the package declaration.
-// (Use FileStart for the start of the entire file.)
+// It may be invalid, for example in an empty file.
+//
+// (Use FileStart for the start of the entire file. It is always valid.)
 [GoRecv] public static tokenꓸPos Pos(this ref File f) {
     return f.Package;
 }
 
 // End returns the end of the last declaration in the file.
-// (Use FileEnd for the end of the entire file.)
+// It may be invalid, for example in an empty file.
+//
+// (Use FileEnd for the end of the entire file. It is always valid.)
 [GoRecv] public static tokenꓸPos End(this ref File f) {
     {
         nint n = len(f.Decls); if (n > 0) {

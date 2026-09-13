@@ -295,10 +295,11 @@ partial class runtime_package {
 
 // Caller reports file and line number information about function invocations on
 // the calling goroutine's stack. The argument skip is the number of stack frames
-// to ascend, with 0 identifying the caller of Caller.  (For historical reasons the
-// meaning of skip differs between Caller and [Callers].) The return values report the
-// program counter, file name, and line number within the file of the corresponding
-// call. The boolean ok is false if it was not possible to recover the information.
+// to ascend, with 0 identifying the caller of Caller. (For historical reasons the
+// meaning of skip differs between Caller and [Callers].) The return values report
+// the program counter, the file name (using forward slashes as path separator, even
+// on Windows), and the line number within the file of the corresponding call.
+// The boolean ok is false if it was not possible to recover the information.
 public static (uintptr pc, @string @file, nint line, bool ok) Caller(nint skip) {
     uintptr pc = default!;
     @string @file = default!;
@@ -324,6 +325,11 @@ internal static readonly @string gorootˢ = "GOROOT"u8;
 // GOROOT returns the root of the Go tree. It uses the
 // GOROOT environment variable, if set at process start,
 // or else the root used during the Go build.
+//
+// Deprecated: The root used during the Go build will not be
+// meaningful if the binary is copied to another machine.
+// Use the system path to locate the “go” binary, and use
+// “go env GOROOT” to find its GOROOT.
 public static @string GOROOT() {
     @string s = gogetenv(gorootˢ);
     if (s != ""u8) {

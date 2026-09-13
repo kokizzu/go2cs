@@ -5,18 +5,12 @@
 namespace go;
 
 using poll = @internal.poll_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using syscall = syscall_package;
 using time = time_package;
 using @internal;
 
 partial class net_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸinternalꓸpoll() {
-    builtin.initPackage(typeof(@internal.poll_package));
-}
 
 // Network file descriptor.
 [GoType] partial struct netFD {
@@ -35,11 +29,11 @@ internal static void setAddr(this ж<netFD> Ꮡfd, ΔAddr laddr, ΔAddr raddr) {
 
     fd.laddr = laddr;
     fd.raddr = raddr;
-    Δruntime.SetFinalizer(Ꮡfd.OrTypedNil(), (Func<ж<netFD>, error>)(Close));
+    runtime.SetFinalizer(Ꮡfd.OrTypedNil(), ((Func<ж<netFD>, error>)(Close)));
 }
 
 internal static error Close(this ж<netFD> Ꮡfd) {
-    Δruntime.SetFinalizer(Ꮡfd.OrTypedNil(), default!);
+    runtime.SetFinalizer(Ꮡfd.OrTypedNil(), default!);
     return Ꮡfd.of(netFD.Ꮡpfd).Close();
 }
 
@@ -48,7 +42,7 @@ internal static readonly @string shutdownˢ = "shutdown"u8;
 
 internal static error shutdown(this ж<netFD> Ꮡfd, nint how) {
     var err = Ꮡfd.of(netFD.Ꮡpfd).Shutdown(how);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return wrapSyscallError(shutdownˢ, err);
 }
 
@@ -65,7 +59,7 @@ internal static (nint n, error err) Read(this ж<netFD> Ꮡfd, slice<byte> p) {
     error err = default!;
 
     (n, err) = Ꮡfd.of(netFD.Ꮡpfd).Read(p);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, wrapSyscallError(readSyscallName, err));
 }
 
@@ -75,7 +69,7 @@ internal static (nint n, syscallꓸSockaddr sa, error err) readFrom(this ж<netF
     error err = default!;
 
     (n, sa, err) = Ꮡfd.of(netFD.Ꮡpfd).ReadFrom(p);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, sa, wrapSyscallError(readFromSyscallName, err));
 }
 
@@ -84,7 +78,7 @@ internal static (nint n, error err) readFromInet4(this ж<netFD> Ꮡfd, slice<by
     error err = default!;
 
     (n, err) = Ꮡfd.of(netFD.Ꮡpfd).ReadFromInet4(p, Ꮡfrom);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, wrapSyscallError(readFromSyscallName, err));
 }
 
@@ -93,7 +87,7 @@ internal static (nint n, error err) readFromInet6(this ж<netFD> Ꮡfd, slice<by
     error err = default!;
 
     (n, err) = Ꮡfd.of(netFD.Ꮡpfd).ReadFromInet6(p, Ꮡfrom);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, wrapSyscallError(readFromSyscallName, err));
 }
 
@@ -105,7 +99,7 @@ internal static (nint n, nint oobn, nint retflags, syscallꓸSockaddr sa, error 
     error err = default!;
 
     (n, oobn, retflags, sa, err) = Ꮡfd.of(netFD.Ꮡpfd).ReadMsg(p, oob, flags);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, oobn, retflags, sa, wrapSyscallError(readMsgSyscallName, err));
 }
 
@@ -116,7 +110,7 @@ internal static (nint n, nint oobn, nint retflags, error err) readMsgInet4(this 
     error err = default!;
 
     (n, oobn, retflags, err) = Ꮡfd.of(netFD.Ꮡpfd).ReadMsgInet4(p, oob, flags, Ꮡsa);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, oobn, retflags, wrapSyscallError(readMsgSyscallName, err));
 }
 
@@ -127,7 +121,7 @@ internal static (nint n, nint oobn, nint retflags, error err) readMsgInet6(this 
     error err = default!;
 
     (n, oobn, retflags, err) = Ꮡfd.of(netFD.Ꮡpfd).ReadMsgInet6(p, oob, flags, Ꮡsa);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, oobn, retflags, wrapSyscallError(readMsgSyscallName, err));
 }
 
@@ -136,7 +130,7 @@ internal static (nint nn, error err) Write(this ж<netFD> Ꮡfd, slice<byte> p) 
     error err = default!;
 
     (nn, err) = Ꮡfd.of(netFD.Ꮡpfd).Write(p);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (nn, wrapSyscallError(writeSyscallName, err));
 }
 
@@ -145,7 +139,7 @@ internal static (nint n, error err) writeTo(this ж<netFD> Ꮡfd, slice<byte> p,
     error err = default!;
 
     (n, err) = Ꮡfd.of(netFD.Ꮡpfd).WriteTo(p, sa);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, wrapSyscallError(writeToSyscallName, err));
 }
 
@@ -154,7 +148,7 @@ internal static (nint n, error err) writeToInet4(this ж<netFD> Ꮡfd, slice<byt
     error err = default!;
 
     (n, err) = Ꮡfd.of(netFD.Ꮡpfd).WriteToInet4(p, Ꮡsa);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, wrapSyscallError(writeToSyscallName, err));
 }
 
@@ -163,7 +157,7 @@ internal static (nint n, error err) writeToInet6(this ж<netFD> Ꮡfd, slice<byt
     error err = default!;
 
     (n, err) = Ꮡfd.of(netFD.Ꮡpfd).WriteToInet6(p, Ꮡsa);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, wrapSyscallError(writeToSyscallName, err));
 }
 
@@ -173,7 +167,7 @@ internal static (nint n, nint oobn, error err) writeMsg(this ж<netFD> Ꮡfd, sl
     error err = default!;
 
     (n, oobn, err) = Ꮡfd.of(netFD.Ꮡpfd).WriteMsg(p, oob, sa);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, oobn, wrapSyscallError(writeMsgSyscallName, err));
 }
 
@@ -183,7 +177,7 @@ internal static (nint n, nint oobn, error err) writeMsgInet4(this ж<netFD> Ꮡf
     error err = default!;
 
     (n, oobn, err) = Ꮡfd.of(netFD.Ꮡpfd).WriteMsgInet4(p, oob, Ꮡsa);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, oobn, wrapSyscallError(writeMsgSyscallName, err));
 }
 
@@ -193,7 +187,7 @@ internal static (nint n, nint oobn, error err) writeMsgInet6(this ж<netFD> Ꮡf
     error err = default!;
 
     (n, oobn, err) = Ꮡfd.of(netFD.Ꮡpfd).WriteMsgInet6(p, oob, Ꮡsa);
-    Δruntime.KeepAlive(Ꮡfd.OrTypedNil());
+    runtime.KeepAlive(Ꮡfd.OrTypedNil());
     return (n, oobn, wrapSyscallError(writeMsgSyscallName, err));
 }
 

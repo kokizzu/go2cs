@@ -55,7 +55,7 @@ using static go.image.draw_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("image/draw/draw.go", "draw.cs", "AEVuogAQIKKCgpSs4oKCgoKUgoKClIKCgoK4gqySqtKCggAIFJSCgpSCgpSUpIKkgqzCxoKkgrSClIKkgqSCqKLIgpSCgqSCgpSkgqSCxoKkgriCpIKAgoKCgoKUgoKCgpSkguiCgIKCgpTogoCCgoKU2qKigoIABxSAgoCCgoKCgoKCgoKUgoKCAAgSpIKCgoKCgoKClKbGtIKCgoLuAAsUAAoUgoKCgoKCgoKClJSmxrSCgoKCgoKClIKCgpwACwy0goKCgoKCgoKEgoKClIK4ooKCgriCgoKCgoKUgoKCgriykoKCyIKCgriCgoKClIKCgoKCgoKCloSCgoKClIK+usLcgoKClIKCgriCgoKChIKCgoKElIKCgoKEgoKCgpaEgoKCyoKCgoKEgoKCgoSUgoKCgoSCgoKCyoKCgoKEgoKCgoSCgoKCgoLKgoKCgoSCgoKChIKCgoLKwoKCgoKCgoKClJaEgoKCgpSCgrjCoqKCgoKogoKCgoKCgoKCgoKCgoKChIKCgoIABhCEgoKClLjCoqKCgoKogoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCggAGEISCgoKUuLKiooKCgqiCgoKCgoKCgoKCgoKCgoKCggAGEISCgoKUuKKiooKCgqiCgoKCgoIABhCAgoKCgoKCgoKCgoKCgoKClKaCgoKCgoKClKakgoKCgoKCgoKCgoKCgoKClKaCgoKCgoKCgpSmAAkSgoKCgpSCgoKCgoIABhCEgoKCloKCgqa6koKUgpSu+IKmAAcSooCCgoKCgoKClKzCgoKUgMiUgMSAxIDIkoKmgoKCgoKClriSooKCgoK4hIKUgoKCloKCgsqEgpSCgoKCqIKCgoKCgoKCgoKCgoKCgqiCgg==")]
+[assembly: go.GoPositionMap("image/draw/draw.go", "draw.cs", "ADNuogAQIKKCgpSs4oKCgoKUgoKClIKCgoK4gqySqtKCggAIFJSCgpSCgpSUpIKkgqzCxoKkgrSClIKkgqSCqKLIgpSCgqSCgpSkgqSCxoKkgriCpIKAgoKCgoKUgoKCgpSkguiCgIKCgpTogoCCgoKU2qKigoIABxSAgoCCgoKCgoKCgoKUgoKCAAgSpIKCgoKCgoKClKbGtIKCgoLuAAsUAAoUgoKCgoKCgoKClJSmxrSCgoKCgoKClIKCgpwACwy0goKCgoKCgoKEgoKClIK4ooKCgriCgoKCgoKUgoKCgriykoKCyIKCgriCgoKClIKCgoKCgoKCloSCgoKClIK+usLcgoKClIKCgriCgoKChIKCgoKElIKCgoKEgoKCgpaEgoKCyoKCgoKEgoKCgoSUgoKCgoSCgoKCyoKCgoKEgoKCgoSCgoKCgoLKgoKCgoSCgoKChIKCgoLKwoKCgoKCgoKClJaEgoKCgpSCgrjCoqKCgoKogoKCgoKCgoKCgoKCgoKChIKCgoIABhCEgoKClLjCoqKCgoKogoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCggAGEISCgoKUuLKiooKCgqiCgoKCgoKCgoKCgoKCgoKCggAGEISCgoKUuKKiooKCgqiCgoKCgoIABhCAgoKCgoKCgoKCgoKCgoKClKaCgoKCgoKClKakgoKCgoKCgoKCgoKCgoKClKaCgoKCgoKCgpSmAAkSgoKCgpSCgoKCgoIABhCEgoKCloKCgqa6koKUgpSu+IKmAAcSooCCgoKCgoKClKzCgoKUgMiUgMSAxIDIkoKmgoKCgoKClriSooKCgoK4hIKUgoKCloKCgsqEgpSCgoKCqIKCgoKCgoKCgoKCgoKCgqiCgg==", "986-986:1;992-992:2;994-994:3;996-996:4")]
 // </GoSourcePositionMaps>
 
 namespace go.image;
@@ -77,4 +77,16 @@ public static partial class draw_package
     public partial interface RGBA64Image {}
     public partial struct Op {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸimage() => builtin.initPackage(typeof(image_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸcolor() => builtin.initPackage(typeof(go.image.color_package));
+    [GoInit] internal static void initᴛᴛimportꓸimageꓸinternalꓸimageutil() => builtin.initPackage(typeof(go.image.@internal.imageutil_package));
+    // </ImportInitializers>
 }

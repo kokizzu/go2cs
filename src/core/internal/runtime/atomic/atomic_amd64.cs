@@ -65,6 +65,9 @@ public static partial uint64 Xadd64(ж<uint64> ptr, int64 delta);
 public static partial uintptr Xadduintptr(ж<uintptr> ptr, uintptr delta);
 
 //go:noescape
+public static partial uint8 Xchg8(ж<uint8> ptr, uint8 @new);
+
+//go:noescape
 public static partial uint32 Xchg(ж<uint32> ptr, uint32 @new);
 
 //go:noescape

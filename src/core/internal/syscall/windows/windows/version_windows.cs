@@ -4,17 +4,12 @@
 namespace go.@internal.syscall;
 
 using errors = errors_package;
-using sync = sync_package;
+using sync = go.sync_package;
 using syscall = syscall_package;
 using @unsafe = unsafe_package;
+using go;
 
 partial class windows_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
 
 // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdm/ns-wdm-_osversioninfow
 [GoType] partial struct _OSVERSIONINFOW {
@@ -29,9 +24,9 @@ partial class windows_package {
 // According to documentation, RtlGetVersion function always succeeds.
 //sys	rtlGetVersion(info *_OSVERSIONINFOW) = ntdll.RtlGetVersion
 
-// version retrieves the major, minor, and build version numbers
+// Version retrieves the major, minor, and build version numbers
 // of the current Windows OS from the RtlGetVersion API.
-internal static (uint32 major, uint32 minor, uint32 build) version() {
+public static (uint32 major, uint32 minor, uint32 build) Version() {
     ref var info = ref heap<_OSVERSIONINFOW>(out var Ꮡinfo);
     info = new _OSVERSIONINFOW(nil);
     info.osVersionInfoSize = (uint32)/* unsafe.Sizeof(info) */ (uintptr)276;
@@ -50,7 +45,7 @@ internal static void initᴛinitTCPKeepAlive() { initTCPKeepAlive = sync.OnceFun
     try {
         var (s, err) = WSASocket(syscall.AF_INET, syscall.SOCK_STREAM, syscall.IPPROTO_TCP, nil, 0, WSA_FLAG_NO_HANDLE_INHERIT);
         if (err != default!) {
-            var (major, _, build) = version();
+            var (major, _, build) = Version();
             supportTCPKeepAliveIdle = major >= 10 && build >= 16299;
             supportTCPKeepAliveInterval = major >= 10 && build >= 16299;
             supportTCPKeepAliveCount = major >= 10 && build >= 15063;
@@ -69,7 +64,7 @@ internal static void initᴛinitTCPKeepAlive() { initTCPKeepAlive = sync.OnceFun
     finally { ᒐ.Run(); }
 }); }
 
-// SupportTCPKeepAliveInterval indicates whether TCP_KEEPIDLE is supported.
+// SupportTCPKeepAliveIdle indicates whether TCP_KEEPIDLE is supported.
 // The minimal requirement is Windows 10.0.16299.
 public static bool SupportTCPKeepAliveIdle() {
     initTCPKeepAlive();
@@ -96,7 +91,7 @@ public static bool SupportTCPKeepAliveCount() {
 // The minimal requirement is Windows 10.0.16299.
 public static Func<bool> SupportTCPInitialRTONoSYNRetransmissions;
 internal static void initᴛSupportTCPInitialRTONoSYNRetransmissions() { SupportTCPInitialRTONoSYNRetransmissions = sync.OnceValue(bool () => {
-    var (major, _, build) = version();
+    var (major, _, build) = Version();
     return major >= 10 && build >= 16299;
 }); }
 

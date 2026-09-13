@@ -13,49 +13,12 @@ using math;
 
 partial class cryptotest_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸbytes() {
-    builtin.initPackage(typeof(bytes_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸhash() {
-    builtin.initPackage(typeof(hash_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸio() {
-    builtin.initPackage(typeof(io_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmathꓸrand() {
-    builtin.initPackage(typeof(math.rand_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
-
 // type MakeHash is a methodless func type — rendered inline as its base delegate
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 private static readonly @string sumAppendˢ = "SumAppend"u8;
 private static readonly @string writeWithoutErrorˢ = "WriteWithoutError"u8;
 private static readonly @string resetStateˢ = "ResetState"u8;
-private static readonly @string outOfBoundsReadˢ = "OutOfBoundsRead"u8;
 private static readonly @string statefulWriteˢ = "StatefulWrite"u8;
 
 // TestHash performs a set of tests on hash.Hash implementations, checking the
@@ -78,8 +41,8 @@ public static void TestHash(ж<testing.T> Ꮡt, Func<hash.Hash> mh) {
             h.Reset();
             var sum = getSum(tΔ1, h, prefix); // Append new digest to prefix
             // Check that Sum didn't alter the prefix
-            if (!bytes.Equal(sum[0..(int)(len(prefix))], prefix)) {
-                tΔ1.Errorf("Sum alters passed buffer instead of appending; got %x, want %x"u8, sum[0..(int)(len(prefix))], prefix);
+            if (!bytes.Equal(sum[..(int)(len(prefix))], prefix)) {
+                tΔ1.Errorf("Sum alters passed buffer instead of appending; got %x, want %x"u8, sum[..(int)(len(prefix))], prefix);
             }
             // Check that the appended sum wasn't affected by the prefix
             {

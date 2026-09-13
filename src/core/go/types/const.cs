@@ -8,19 +8,13 @@ namespace go.go;
 
 using constant = global::go.go.constant_package;
 using token = global::go.go.token_package;
-using static global::go.@internal.types.errors_package;
+using static @internal.types.errors_package;
 using math = math_package;
 using ast = global::go.go.ast_package;
-using errors = global::go.@internal.types.errors_package;
+using errors = @internal.types.errors_package;
 using global::go.go;
 
 partial class types_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸmath() {
-    builtin.initPackage(typeof(math_package));
-}
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
 internal static readonly @string constantResultIsNotˢ = "constant result is not representable"u8;
@@ -106,15 +100,15 @@ internal static bool representableConst(constant.Value x, ж<Checker> Ꮡcheck, 
                 }
                 if (exprᴛ1 == Int8) {
                     UntypedInt s = 8;
-                    return ((int64)(-1) << (int)((s - 1))) <= xΔ4 && xΔ4 <= (1 << (int)((s - 1))) - 1;
+                    return (int64)(((int64)(-1) << (int)((s - 1)))) <= xΔ4 && xΔ4 <= (int64)((1 << (int)((s - 1))) - 1);
                 }
                 if (exprᴛ1 == Int16) {
                     UntypedInt s = 16;
-                    return ((int64)(-1) << (int)((s - 1))) <= xΔ4 && xΔ4 <= (1 << (int)((s - 1))) - 1;
+                    return (int64)(((int64)(-1) << (int)((s - 1)))) <= xΔ4 && xΔ4 <= (int64)((1 << (int)((s - 1))) - 1);
                 }
                 if (exprᴛ1 == Int32) {
                     UntypedInt s = 32;
-                    return ((int64)(-1) << (int)((s - 1))) <= xΔ4 && xΔ4 <= 2147483648L - 1;
+                    return (int64)(((int64)(-1) << (int)((s - 1)))) <= xΔ4 && xΔ4 <= (int64)(2147483648L - 1);
                 }
                 if (exprᴛ1 == Int64 || exprᴛ1 == ΔUntypedInt) {
                     return true;
@@ -129,15 +123,15 @@ internal static bool representableConst(constant.Value x, ж<Checker> Ꮡcheck, 
                 }
                 if (exprᴛ1 == Uint8) {
                     UntypedInt s = 8;
-                    return 0 <= xΔ4 && xΔ4 <= (1 << (int)(s)) - 1;
+                    return 0 <= xΔ4 && xΔ4 <= (int64)((1 << (int)(s)) - 1);
                 }
                 if (exprᴛ1 == Uint16) {
                     UntypedInt s = 16;
-                    return 0 <= xΔ4 && xΔ4 <= (1 << (int)(s)) - 1;
+                    return 0 <= xΔ4 && xΔ4 <= (int64)((1 << (int)(s)) - 1);
                 }
                 if (exprᴛ1 == Uint32) {
                     UntypedInt s = 32;
-                    return 0 <= xΔ4 && xΔ4 <= 4294967295L;
+                    return 0 <= xΔ4 && xΔ4 <= (int64)(4294967295L);
                 }
                 if (exprᴛ1 == Uint64) {
                     return 0 <= xΔ4;

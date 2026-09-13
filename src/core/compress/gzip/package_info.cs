@@ -53,8 +53,8 @@ using static go.compress.gzip_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("compress/gzip/gunzip.go", "gunzip.cs", "AE1QkoKUAChg8oKAgqSssriAgpSkggACJgAQAq7CgoKCgpSCgpSClJSWgoKClJTO0oAABxCkgpSCgKa2goSCgIKkgoKAgqSCloKCgIKkloKAgqSWgoCCpIKCqIKClJSosoKWgoKCgpSogIKCpIKCgoKUloKUhICCuKyw")]
-[assembly: go.GoPositionMap("compress/gzip/gzip.go", "gzip.cs", "ADJiAAgCggACEuKClIKCpoKCgpQAChzC2JKClIKCgpSC2tSCgoKUgqaCgoKUlJSCpoKCqqKClJSCgoKClIKUgpSmlIKklIKCgpSCgoKmgoKCpoKCgqaCpoKCggACFgAIAoKUgpSCgoKmgqyygpSClIKCgoKmgoKUgoKC")]
+[assembly: go.GoPositionMap("compress/gzip/gunzip.go", "gunzip.cs", "ACNQkoKUAChg8oKAgqSssriAgpSkggACJgAQAq7CgoKCgpSCgpSClJSWgoKClJTO0oAABxCkgpSCgKa2goSCgIKkgoKAgqSCloKCgIKkloKAgqSWgoCCpIKCqIKClJSosoKWgoKCgpSogIKCpIKCgoKUloKUhICCuKyw")]
+[assembly: go.GoPositionMap("compress/gzip/gzip.go", "gzip.cs", "ACxiAAgCggACEuKClIKCpoKCgpQAChzC2JKClIKCgpSC2tSCgoKUgqaCgoKUlJSCpoKCqqKClJSCgoKClIKUgpSmlIKklIKCgpSCgoKmgoKCpoKCgqaCpoKCggACFgAIAoKUgpSCgoKmgqyygpSClIKCgoKmgoKUgoKC")]
 // </GoSourcePositionMaps>
 
 namespace go.compress;
@@ -73,4 +73,21 @@ public static partial class gzip_package
     [GoValueClone("buf")] public partial struct Reader {}
     [GoValueClone("buf")] public partial struct Writer {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸbufio() => builtin.initPackage(typeof(bufio_package));
+    [GoInit] internal static void initᴛᴛimportꓸcompressꓸflate() => builtin.initPackage(typeof(go.compress.flate_package));
+    [GoInit] internal static void initᴛᴛimportꓸencodingꓸbinary() => builtin.initPackage(typeof(encoding.binary_package));
+    [GoInit] internal static void initᴛᴛimportꓸerrors() => builtin.initPackage(typeof(errors_package));
+    [GoInit] internal static void initᴛᴛimportꓸfmt() => builtin.initPackage(typeof(fmt_package));
+    [GoInit] internal static void initᴛᴛimportꓸhashꓸcrc32() => builtin.initPackage(typeof(hash.crc32_package));
+    [GoInit] internal static void initᴛᴛimportꓸio() => builtin.initPackage(typeof(io_package));
+    [GoInit] internal static void initᴛᴛimportꓸtime() => builtin.initPackage(typeof(time_package));
+    // </ImportInitializers>
 }

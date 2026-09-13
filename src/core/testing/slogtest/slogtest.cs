@@ -13,57 +13,10 @@ using reflect = reflect_package;
 using runtime = runtime_package;
 using testing = testing_package;
 using time = time_package;
+using System.Runtime.CompilerServices;
 using log;
 
 partial class slogtest_package {
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸcontext() {
-    builtin.initPackage(typeof(context_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸerrors() {
-    builtin.initPackage(typeof(errors_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸfmt() {
-    builtin.initPackage(typeof(fmt_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸlogꓸslog() {
-    builtin.initPackage(typeof(log.slog_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸreflect() {
-    builtin.initPackage(typeof(reflect_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸruntime() {
-    builtin.initPackage(typeof(runtime_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtesting() {
-    builtin.initPackage(typeof(testing_package));
-}
-
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸtime() {
-    builtin.initPackage(typeof(time_package));
-}
 
 [GoType] partial struct testCase {
     // Subtest name.
@@ -319,7 +272,7 @@ public static error TestHandler(slogꓸHandler h, Func<slice<map<@string, any>>>
             return fmt.Errorf("got %d results, want %d"u8, g, w);
         }
     }
-    foreach (var (i, got) in results()) {
+    foreach (var (i, got) in res) {
         var c = cases[i];
         foreach (var (_, check) in c.checks) {
             {
@@ -438,7 +391,7 @@ internal static slogꓸHandler WithGroup(this wrapper recvᴛ, @string name) => 
     return h.Handler.Handle(ctx, r);
 }
 
-internal static @string withSource(@string s) {
+[MethodImpl(MethodImplOptions.NoInlining)] internal static @string withSource(@string s) {
     var (_, @file, line, ok) = runtime.Caller(1);
     if (!ok) {
         throw panic("runtime.Caller failed");

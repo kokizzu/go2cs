@@ -83,12 +83,11 @@ namespace go;
 using abi = @internal.abi_package;
 using goarch = @internal.goarch_package;
 using atomic = @internal.runtime.atomic_package;
-using math = runtime.@internal.math_package;
-using sys = runtime.@internal.sys_package;
+using math = @internal.runtime.math_package;
+using sys = @internal.runtime.sys_package;
 using @unsafe = unsafe_package;
 using @internal;
 using @internal.runtime;
-using runtime.@internal;
 
 partial class runtime_package {
 
@@ -223,7 +222,7 @@ internal static uintptr userArenaChunkMaxAllocBytes => /* userArenaChunkBytes / 
             @throw("user arena chunks size is larger than a heap arena, but not a multiple"u8);
         }
     }
-    lockInit(ref userArenaState.@lock, lockRankUserArenaState);
+    lockInit(ᏑuserArenaState.of(userArenaStateᴛ1.Ꮡlock), lockRankUserArenaState);
 }
 
 // userArenaChunkReserveBytes returns the amount of additional bytes to reserve for
@@ -519,9 +518,9 @@ internal static @unsafe.Pointer userArenaNextFree(this ж<mspan> Ꮡs, ж<_type>
     // Set up heap bitmap and do extra accounting.
     if (typ.Pointers()) {
         if (cap >= 0){
-            userArenaHeapBitsSetSliceType(ref (Ꮡtyp).DerefOrNull(), cap, ptr, Ꮡs);
+            userArenaHeapBitsSetSliceType(Ꮡtyp, cap, ptr, Ꮡs);
         } else {
-            userArenaHeapBitsSetType(ref (Ꮡtyp).DerefOrNull(), ptr, Ꮡs);
+            userArenaHeapBitsSetType(Ꮡtyp, ptr, Ꮡs);
         }
         var c = getMCache(ref (mp).DerefOrNull());
         if (c == nil) {
@@ -551,13 +550,15 @@ internal static readonly @string runtimeAllocationSizeOutˢ = "runtime: allocati
 // userArenaHeapBitsSetSliceType is the equivalent of heapBitsSetType but for
 // Go slice backing store values allocated in a user arena chunk. It sets up the
 // heap bitmap for n consecutive values with type typ allocated at address ptr.
-internal static void userArenaHeapBitsSetSliceType(ref _type typ, nint n, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
+internal static void userArenaHeapBitsSetSliceType(ж<_type> Ꮡtyp, nint n, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
+    ref var typ = ref Ꮡtyp.DerefOrNull();
+
     var (mem, overflow) = math.MulUintptr(typ.Size_, (uintptr)n);
     if (overflow || n < 0 || mem > maxAlloc) {
         throw panic(((plainError)(@string)runtimeAllocationSizeOutˢ));
     }
     for (nint i = 0; i < n; i++) {
-        userArenaHeapBitsSetType(ref typ, (uintptr)add(ptr, (uintptr)i * typ.Size_), Ꮡs);
+        userArenaHeapBitsSetType(Ꮡtyp, (uintptr)add(ptr, (uintptr)i * typ.Size_), Ꮡs);
     }
 }
 
@@ -565,18 +566,13 @@ internal static void userArenaHeapBitsSetSliceType(ref _type typ, nint n, @unsaf
 // non-slice-backing-store Go values allocated in a user arena chunk. It
 // sets up the type metadata for the value with type typ allocated at address ptr.
 // base is the base address of the arena chunk.
-internal static void userArenaHeapBitsSetType(ref _type typ, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
+internal static void userArenaHeapBitsSetType(ж<_type> Ꮡtyp, @unsafe.Pointer ptr, ж<mspan> Ꮡs) {
+    ref var typ = ref Ꮡtyp.DerefOrNull();
     ref var s = ref Ꮡs.DerefOrNull();
 
     var @base = s.@base();
     var h = s.writeUserArenaHeapBits((uintptr)ptr);
-    var Δp = typ.GCData; // start of 1-bit pointer mask (or GC program)
-    uintptr gcProgBits = default!;
-    if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
-        // Expand gc program, using the object itself for storage.
-        gcProgBits = runGCProg(addb(Δp, 4), (ж<byte>)(uintptr)(ptr));
-        Δp = (ж<byte>)(uintptr)(ptr);
-    }
+    var Δp = getGCMask(Ꮡtyp); // start of 1-bit pointer mask
     var nb = typ.PtrBytes / (uintptr)goarch.PtrSize;
     for (var i = (uintptr)0; i < nb; i += ptrBits) {
         var k = nb - i;
@@ -599,17 +595,13 @@ internal static void userArenaHeapBitsSetType(ref _type typ, @unsafe.Pointer ptr
     // are always fully cleared when reused.
     h = h.pad(Ꮡs, typ.Size_ - typ.PtrBytes);
     h.flush(Ꮡs, (uintptr)ptr, typ.Size_);
-    if ((abiꓸKind)(typ.Kind_ & abi.KindGCProg) != 0) {
-        // Zero out temporary ptrmask buffer inside object.
-        memclrNoHeapPointers(ptr, (gcProgBits + 7) / 8);
-    }
     // Update the PtrBytes value in the type information. After this
     // point, the GC will observe the new bitmap.
     s.largeType.Value.PtrBytes = (uintptr)ptr - @base + typ.PtrBytes;
     // Double-check that the bitmap was written out correctly.
     const bool doubleCheck = false;
     if (doubleCheck) {
-        doubleCheckHeapPointersInterior((uintptr)ptr, (uintptr)ptr, typ.Size_, typ.Size_, ref typ, Ꮡs.of(mspan.ᏑlargeType), Ꮡs);
+        doubleCheckHeapPointersInterior((uintptr)ptr, (uintptr)ptr, typ.Size_, typ.Size_, Ꮡtyp, Ꮡs.of(mspan.ᏑlargeType), Ꮡs);
     }
 }
 
@@ -802,11 +794,8 @@ internal static (@unsafe.Pointer, ж<mspan>) newUserArenaChunk() {
     }
     if (asanenabled) {
         // TODO(mknyszek): Track individual objects.
-        var rzSize = computeRZlog((~span).elemsize);
-        span.Value.elemsize -= rzSize;
-        span.Value.largeType.Value.Size_ = span.Value.elemsize;
+        // N.B. span.elemsize includes a redzone already.
         var rzStart = span.@base() + (~span).elemsize;
-        span.Value.userArenaChunkFree = makeAddrRange(span.@base(), rzStart);
         asanpoison((@unsafe.Pointer)rzStart, (~span).limit - rzStart);
         asanunpoison((@unsafe.Pointer)span.@base(), (~span).elemsize);
     }
@@ -817,8 +806,8 @@ internal static (@unsafe.Pointer, ж<mspan>) newUserArenaChunk() {
                 @throw(newUserArenaChunkCalledˢ2);
             }
             // Note cache c only valid while m acquired; see #47302
-            if (rate != 1 && userArenaChunkBytes < (~c).nextSample){
-                c.Value.nextSample -= userArenaChunkBytes;
+            if (rate != 1 && (int64)userArenaChunkBytes < (~c).nextSample){
+                c.Value.nextSample -= (int64)userArenaChunkBytes;
             } else {
                 profilealloc(ref (mp).DerefOrNull(), (@unsafe.Pointer)span.@base(), userArenaChunkBytes);
             }
@@ -1077,6 +1066,10 @@ internal static ж<mspan> allocUserArenaChunk(this ж<mheap> Ꮡh) {
     // limit. It will simply mark the whole chunk or just skip it
     // since we're in the mark phase anyway.
     s.Value.limit = s.@base() + (~s).elemsize;
+    // Adjust size to include redzone.
+    if (asanenabled) {
+        s.Value.elemsize -= redZoneSize((~s).elemsize);
+    }
     // Account for this new arena chunk memory.
     ᏑgcController.of(gcControllerState.ᏑheapInUse).add((int64)userArenaChunkBytes);
     ᏑgcController.of(gcControllerState.ᏑheapReleased).add(-(int64)userArenaChunkBytes);
@@ -1093,7 +1086,7 @@ internal static ж<mspan> allocUserArenaChunk(this ж<mheap> Ꮡh) {
     ᏑgcController.update((int64)(~s).elemsize, 0);
     // This must clear the entire heap bitmap so that it's safe
     // to allocate noscan data without writing anything out.
-    s.initHeapBits(true);
+    s.initHeapBits();
     // Clear the span preemptively. It's an arena chunk, so let's assume
     // everything is going to be used.
     //

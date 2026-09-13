@@ -47,12 +47,6 @@ using strconv = strconv_package;
 
 partial class elf_package {
 
-// Go runs an imported package's `init` before this package's own; .NET would never load
-// an assembly nothing has touched yet, so that initialization is forced here.
-[GoInit] internal static void initᴛᴛimportꓸstrconv() {
-    builtin.initPackage(typeof(strconv_package));
-}
-
 /*
  * Constants
  */
@@ -3591,6 +3585,12 @@ public static UntypedInt Sym64Size => 24;
     internal uint32 i;
     internal @string s;
 }
+
+[GoType("num:uint16")] partial struct DynamicVersionFlag;
+
+public static DynamicVersionFlag VER_FLG_BASE => 0x1; /* Version definition of the file. */
+public static DynamicVersionFlag VER_FLG_WEAK => 0x2; /* Weak version identifier. */
+public static DynamicVersionFlag VER_FLG_INFO => 0x4; /* Reference exists for informational purposes. */
 
 internal static @string stringName(uint32 i, slice<intName> names, bool goSyntax) {
     foreach (var (_, n) in names) {

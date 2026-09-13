@@ -20,6 +20,33 @@ internal static ΔType under(ΔType t) {
     return t.Underlying();
 }
 
+// If typ is a type parameter, underIs returns the result of typ.underIs(f).
+// Otherwise, underIs returns the result of f(under(typ)).
+internal static bool underIs(ΔType typ, Func<ΔType, bool> f) {
+    bool ok = default!;
+    typeset(typ, (ΔType _, ΔType u) => {
+        ok = f(u);
+        return ok;
+    });
+    return ok;
+}
+
+// typeset is an iterator over the (type/underlying type) pairs of the
+// specific type terms of the type set implied by t.
+// If t is a type parameter, the implied type set is the type set of t's constraint.
+// In that case, if there are no specific terms, typeset calls yield with (nil, nil).
+// If t is not a type parameter, the implied type set consists of just t.
+// In any case, typeset is guaranteed to call yield at least once.
+internal static void typeset(ΔType t, Func<ΔType, ΔType, bool> yield) {
+    {
+        var (p, _) = Unalias(t)._<ж<TypeParam>>(ᐧ); if (p != nil) {
+            p.typeset(yield);
+            return;
+        }
+    }
+    yield(t, under(t));
+}
+
 // If t is not a type parameter, coreType returns the underlying type.
 // If t is a type parameter, coreType returns the single underlying
 // type of all types in its type set if it exists, or nil otherwise. If the
@@ -27,43 +54,37 @@ internal static ΔType under(ΔType t) {
 // identical element types), the single underlying type is the restricted
 // channel type if the restrictions are always the same, or nil otherwise.
 internal static ΔType coreType(ΔType t) {
-    t = Unalias(t);
-    var (tpar, _) = t._<ж<TypeParam>>(ᐧ);
-    if (tpar == nil) {
-        return under(t);
-    }
     ref var su = ref heap<ΔType>(out var Ꮡsu);
-    if (tpar.underIs((ΔType u) => {
+    typeset(t, (ΔType _, ΔType u) => {
         if (u == default!) {
             return false;
         }
         if (Ꮡsu.ValueSlot != default!) {
             u = match(Ꮡsu.ValueSlot, u);
             if (u == default!) {
+                Ꮡsu.ValueSlot = default!;
                 return false;
             }
         }
         // su == nil || match(su, u) != nil
         Ꮡsu.ValueSlot = u;
         return true;
-    })) {
-        return su;
-    }
-    return default!;
+    });
+    return su;
 }
 
 // coreString is like coreType but also considers []byte
 // and strings as identical. In this case, if successful and we saw
 // a string, the result is of type (possibly untyped) string.
 internal static ΔType coreString(ΔType t) {
-    t = Unalias(t);
-    var (tpar, _) = t._<ж<TypeParam>>(ᐧ);
-    if (tpar == nil) {
-        return under(t); // string or untyped string
+    // This explicit case is needed because otherwise the
+    // result would be string if t is an untyped string.
+    if (!isTypeParam(t)) {
+        return under(t); // untyped string remains untyped
     }
     ref var su = ref heap<ΔType>(out var Ꮡsu);
     var hasString = false;
-    if (tpar.underIs((ΔType u) => {
+    typeset(t, (ΔType _, ΔType u) => {
         if (u == default!) {
             return false;
         }
@@ -74,19 +95,19 @@ internal static ΔType coreString(ΔType t) {
         if (Ꮡsu.ValueSlot != default!) {
             u = match(Ꮡsu.ValueSlot, u);
             if (u == default!) {
+                Ꮡsu.ValueSlot = default!;
+                hasString = false;
                 return false;
             }
         }
         // su == nil || match(su, u) != nil
         Ꮡsu.ValueSlot = u;
         return true;
-    })) {
-        if (hasString) {
-            return new BasicжΔType(Typ[ΔString]);
-        }
-        return su;
+    });
+    if (hasString) {
+        return new BasicжΔType(Typ[ΔString]);
     }
-    return default!;
+    return su;
 }
 
 // If x and y are identical, match returns x.

@@ -51,7 +51,7 @@ using static go.@internal.chacha8rand_package;
 
 // <GoSourcePositionMaps>
 [assembly: go.GoPositionMap("internal/chacha8rand/chacha8.go", "chacha8.cs", "ABMoAA8wAAkCgoKUgqiyAAcSwoKCgoKs0oIABxCCgoKClIKCgoIAAxDigoKCgoKClKYAAhDygoKCgoKUAAgKgqiygpSCgpSClIKCgoKClA==")]
-[assembly: go.GoPositionMap("internal/chacha8rand/chacha8_generic.go", "chacha8_generic.cs", "ADqWAtSCggAEnAEADAKCgoKCgoKCgoKCgoI=")]
+[assembly: go.GoPositionMap("internal/chacha8rand/chacha8_generic.go", "chacha8_generic.cs", "ADqWApSCggAEnAGSgoKCgoKCgoKCgoKC")]
 // </GoSourcePositionMaps>
 
 namespace go.@internal;
@@ -69,4 +69,13 @@ public static partial class chacha8rand_package
     internal partial struct errUnmarshalChaCha8 {}
     [GoValueClone("buf", "seed")] public partial struct State {}
     // </TypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    // </ImportInitializers>
 }
