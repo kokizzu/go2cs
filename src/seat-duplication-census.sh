@@ -19,6 +19,7 @@
 # already reports, and a different failure.
 #
 #   src/seat-duplication-census.sh --base origin/master <ref> [<ref> ...]
+#   src/seat-duplication-census.sh --base origin/master --stack <child>:<parent> <ref> ...
 #   src/seat-duplication-census.sh --self-test
 #
 # Exit 0 = no patch-id appears on two seats. Exit 1 = at least one does, each named. Exit 2 = misuse.
@@ -27,10 +28,18 @@ set -u
 BASE=""
 SELFTEST=0
 REFS=()
+STACKS=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --base) BASE=${2:-}; shift 2 || { echo "--base needs a ref" >&2; exit 2; } ;;
+    # A DECLARED STACK: <child>:<parent> means the child seat is deliberately built on the parent and
+    # the two board together. G db6ab3484 found this the day the tool shipped -- run fleet-wide it
+    # would have REFUSED R's accepted seat-7 alias block, a declared H6 docs stack, because a stack
+    # and a contamination are the same SHAPE. Ancestry cannot be the exemption either: C1's own
+    # contamination was ancestor-related (0dab47858 IS an ancestor of 21222f2e8) while a cherry-pick
+    # is not, so the discriminator has to be the DECLARATION, as G proposed. Repeatable.
+    --stack) STACKS+=("${2:-}"); shift 2 || { echo "--stack needs <child>:<parent>" >&2; exit 2; } ;;
     --self-test) SELFTEST=1; shift ;;
     -*) echo "unknown option: $1" >&2; exit 2 ;;
     *) REFS+=("$1"); shift ;;
@@ -76,7 +85,36 @@ census() {
   echo "   indexed: $indexed commit(s); $merges merge commit(s) excluded (no single diff to hash)"
   echo
 
-  local i j dup=0
+  # Is every seat carrying this patch-id inside ONE declared chain? Declarations are <child>:<parent>
+  # edges; a set is declared iff each seat but one has a declared path to another seat in the set.
+  declared_pair() {  # $1 child, $2 parent -- is there a declared edge or chain from $1 up to $2?
+    local cur=$1 hop
+    for _ in 1 2 3 4 5 6 7 8; do
+      [ "$cur" = "$2" ] && return 0
+      hop=""
+      for d in ${STACKS[@]+"${STACKS[@]}"}; do
+        [ "${d%%:*}" = "$cur" ] && hop=${d#*:}
+      done
+      [ -n "$hop" ] || return 1
+      cur=$hop
+    done
+    return 1
+  }
+  declared_set() {  # every seat in "$@" chains to one of the others
+    local a b ok
+    for a in "$@"; do
+      ok=0
+      for b in "$@"; do
+        [ "$a" = "$b" ] && continue
+        declared_pair "$a" "$b" && { ok=1; break; }
+        declared_pair "$b" "$a" && { ok=1; break; }
+      done
+      [ "$ok" -eq 1 ] || return 1
+    done
+    return 0
+  }
+
+  local i j dup=0 declared=0
   for ((i=0; i<${#pids[@]}; i++)); do
     local hits="" first=1
     for ((j=0; j<${#pids[@]}; j++)); do
@@ -87,8 +125,19 @@ census() {
     done
     [ "$first" -eq 1 ] || continue
     [ -n "$hits" ] || continue
-    dup=$((dup+1))
     subject=$(git log -1 --format=%s "${owners[$i]#*|}")
+    local -a seatset=("${owners[$i]%%|*}")
+    for h in $hits; do seatset+=("${h%%|*}"); done
+    if [ "${#STACKS[@]}" -gt 0 ] && declared_set "${seatset[@]}"; then
+      # REPORTED, never silent: an exemption nobody can see is how a census stops being one.
+      declared=$((declared+1))
+      echo "declared-stack patch-id ${pids[$i]:0:12}  (exempt: every seat carrying it is in one declared chain)"
+      echo "   ${owners[$i]}   $subject"
+      for h in $hits; do echo "   $h"; done
+      echo
+      continue
+    fi
+    dup=$((dup+1))
     echo "DUPLICATE patch-id ${pids[$i]:0:12}"
     echo "   ${owners[$i]}   $subject"
     for h in $hits; do echo "   $h"; done
@@ -96,7 +145,7 @@ census() {
   done
 
   if [ "$dup" -eq 0 ]; then
-    echo "==> CENSUS CLEAN: no patch-id appears on two seats ($indexed commit(s) compared)"
+    echo "==> CENSUS CLEAN: no UNDECLARED patch-id appears on two seats ($indexed commit(s) compared, $declared declared-stack exemption(s))"
     return 0
   fi
   echo "==> CENSUS RED: $dup patch-id(s) appear on more than one seat"
@@ -138,6 +187,11 @@ selftest() {
     [ "$(git rev-list --count trunk..seat-a)" = "1" ] || { echo "setup: seat-a did not receive the cherry-pick" >&2; exit 2; }
     git checkout -q -B seat-c trunk
     echo item-c > c.txt; git add c.txt; git commit -q -m "item C"              # disjoint
+
+    # A DECLARED STACK, which has the SAME SHAPE as the contamination above and must not be refused
+    # when declared: seat-ab is deliberately built ON seat-a and the two board together.
+    git checkout -q -B seat-ab seat-a
+    echo item-d > d.txt; git add d.txt; git commit -q -m "item D"
   ) || { echo "self-test setup failed" >&2; return 2; }
 
   local out rc
@@ -169,6 +223,20 @@ selftest() {
   if [ "$rc" -ne 2 ]; then echo "ARM 4 FAILED: wanted exit 2 on a single seat, got $rc"; echo "$out"; return 1; fi
   case "$out" in *"cannot go red"*) ;; *) echo "ARM 4 FAILED: refused without naming the reason"; echo "$out"; return 1 ;; esac
   echo "  ok   single-seat census REFUSES            (an instrument that cannot fire is not a control)"
+
+  # ARM 5 (the false positive G found on the day this shipped): a DECLARED stack reads CLEAN.
+  out=$(cd "$tmp" && bash "$self" --base trunk --stack seat-ab:seat-a seat-a seat-ab 2>&1); rc=$?
+  arms=$((arms+1))
+  if [ "$rc" -ne 0 ]; then echo "ARM 5 FAILED: wanted exit 0 on a DECLARED stack, got $rc"; echo "$out"; return 1; fi
+  case "$out" in *"declared-stack patch-id"*) ;; *) echo "ARM 5 FAILED: exempted silently instead of reporting the exemption"; echo "$out"; return 1 ;; esac
+  echo "  ok   DECLARED stack reads CLEAN            and the exemption is PRINTED, never silent"
+
+  # ARM 6 (the arm that keeps arm 5 honest): the SAME pair, undeclared, must still be RED. Without
+  # this, --stack could be weakening the tool rather than narrowing it and nothing would say so.
+  out=$(cd "$tmp" && bash "$self" --base trunk seat-a seat-ab 2>&1); rc=$?
+  arms=$((arms+1))
+  if [ "$rc" -ne 1 ]; then echo "ARM 6 FAILED: the same pair UNDECLARED must stay red, got $rc"; echo "$out"; return 1; fi
+  echo "  ok   the same pair UNDECLARED stays RED    so the declaration does the work, not a weakening"
 
   echo
   echo "SELF-TEST CLEAN -- $arms arms"

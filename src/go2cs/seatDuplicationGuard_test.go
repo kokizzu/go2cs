@@ -52,7 +52,7 @@ func TestSeatDuplicationCensusSelfTest(t *testing.T) {
 		t.Fatalf("src/seat-duplication-census.sh --self-test did not report a clean run:\n%s", text)
 	}
 
-	const wantArms = 4
+	const wantArms = 6
 	if got := strings.Count(text, "\n  ok   "); got != wantArms {
 		t.Fatalf("expected %d passing arms from src/seat-duplication-census.sh --self-test, counted %d -- an arm that quietly stops running is exactly what this count exists to catch:\n%s",
 			wantArms, got, text)
@@ -67,6 +67,14 @@ func TestSeatDuplicationCensusSelfTest(t *testing.T) {
 		"ancestry BLIND to the same duplicate",
 		"disjoint seats read CLEAN",
 		"single-seat census REFUSES",
+		// Added the day the tool shipped, on G's fleet-wide run (mailbox db6ab3484): a DECLARED
+		// stack has the same SHAPE as a contamination, and the arm as first written would have
+		// refused an accepted seat. Ancestry cannot be the exemption -- C1's own contamination was
+		// ancestor-related while a cherry-pick is not -- so the discriminator is the DECLARATION.
+		// The second of these two keeps the first honest: without it, --stack could be weakening
+		// the tool rather than narrowing it and no arm would say so.
+		"DECLARED stack reads CLEAN",
+		"the same pair UNDECLARED stays RED",
 	} {
 		if !strings.Contains(text, reason) {
 			t.Fatalf("src/seat-duplication-census.sh --self-test did not report the arm %q -- the arm names may survive a rewrite that loses what they assert:\n%s", reason, text)
