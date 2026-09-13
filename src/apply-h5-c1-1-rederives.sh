@@ -185,8 +185,34 @@ verify() {
   # re-applies the PRE-mcleanup hand-own silently returns runtime.AddCleanup to a no-op, and a clean
   # three-way merge is exactly the shape that does it. This is that hazard made decidable.
   n=$(rd "$core/$MF" | grep -c -F 'GoFinalizerQueue.EnsureRunner();' || true)
-  [ "${n:-0}" -ge 2 ] || { echo "  FAIL $MF: createfing does not forward to GoFinalizerQueue.EnsureRunner()
-       -- the mcleanup hand-own was NOT carried into this re-derive, and AddCleanup is a silent no-op"; fail=1; }
+  if [ "${n:-0}" -lt 2 ]; then
+    # ⚠ REPORT THE DISCRIMINATOR, DO NOT ASSERT A CAUSE. This message used to say flatly "the
+    # mcleanup hand-own was NOT carried into this re-derive" -- but the predicate cannot see that.
+    # It sees only that createfing does not forward. TWO different states produce it:
+    #
+    #   (a) the seat LANDED and a re-derive dropped it     <- the hazard this check exists for
+    #   (b) the seat has NOT landed on this tree at all    <- expected before train 48
+    #
+    # i9 hit (b) on the train-47 union (mailbox 0687402db): the rung ran against a tree whose
+    # mfinal.cs is simply the pre-mcleanup hand-own, and nothing had been lost. They diagnosed it
+    # correctly anyway, but the message told them the wrong story and a less-informed reader would
+    # have gone looking for a dropped carry that never happened.
+    #
+    # The discriminator is the mcleanup hand-own's own MARKER, measured: absent from master, present
+    # on claude/c1-mcleanup-handown. A file emitted by a 1.24 reconvert without the seat is a plain
+    # auto and carries no marker, so this reads "seat present" only when the hand-own really is here.
+    if [ -f "$core/runtime/mcleanup.cs" ] && grep -q -F 'GoManualConversion' "$core/runtime/mcleanup.cs" 2>/dev/null; then
+      echo "  FAIL $MF: createfing does not forward to GoFinalizerQueue.EnsureRunner(), and
+       runtime/mcleanup.cs IS present as a hand-own -- so the mcleanup seat is on this tree and the
+       carry was LOST by the re-derive. AddCleanup is a silent no-op. This is the hazard."
+    else
+      echo "  FAIL $MF: createfing does not forward to GoFinalizerQueue.EnsureRunner(), and
+       runtime/mcleanup.cs is NOT present as a hand-own here -- so the mcleanup seat has not landed on
+       this tree (it is train 48; a train-47 root reads exactly like this). Nothing was lost. Land the
+       seat, or re-run against a tree carrying it; do NOT hand-carry mfinal.cs to silence this."
+    fi
+    fail=1
+  fi
   # ⚠ CODE ONLY. mfinal.cs's own header comment NAMES goǃ(runfinq) while describing the body it
   # replaced, so a file-wide grep matches the documentation and fails a correctly-carried file. Caught
   # on real data: arm B below (the mcleanup branch, which is CORRECT) went red on its own comment.
@@ -353,7 +379,14 @@ selftest() {
   echo "  ok   re-apply is IDEMPOTENT             an H5 rerun cannot double-edit the tree"
 
   # ARM 7 (the CARRY hazard, made decidable): a re-derive that lost the mcleanup hand-own must FAIL.
+  #
+  # ⚠ THE FIXTURE NOW CARRIES A MARKED mcleanup.cs, and it did not before. This arm is NAMED for the
+  # LOST case, but with no mcleanup.cs in the tree it was exercising the seat-has-not-landed state and
+  # calling it a lost carry -- an arm keeping its name while testing the neighbouring condition. Found
+  # when i9's real train-47 run (0687402db) hit that other state for real and the message told them a
+  # carry had been lost when nothing had. Arm 16 below now covers the not-landed reading separately.
   mkpost "$tmp/carry"
+  printf '[module: go.GoManualConversion]\r\nnamespace go;\r\npartial class runtime_package { }\r\n' > "$tmp/carry/runtime/mcleanup.cs"
   "$PYBIN" - "$tmp/carry/runtime/mfinal.cs" <<'PY'
 import io, sys
 p = sys.argv[1]
@@ -519,6 +552,27 @@ PY2
     case "$out" in *"Microsoft Store"*) echo "ARM 15 FAILED: the Store-alias stub was RUN as the interpreter"; echo "$out"; return 1 ;; esac
     echo "  ok   a Store-ALIAS is skipped         the loop falls through to the real interpreter"
   fi
+
+  # ARM 16: THE OTHER READING OF THE SAME FILE STATE (i9, 0687402db). A tree with no mcleanup hand-own
+  # must be told the SEAT HAS NOT LANDED, not that a carry was lost -- the predicate cannot tell those
+  # apart from mfinal.cs alone, so the message reports the discriminator instead of asserting a cause.
+  # This is arm 7's twin and the pair is the point: same failure, two states, two messages.
+  arms=$((arms+1))
+  mkpost "$tmp/notland"
+  "$PYBIN" - "$tmp/notland/runtime/mfinal.cs" <<'PY'
+import io, sys
+p = sys.argv[1]
+t = io.open(p, encoding='utf-8', newline='').read()
+t = t.replace('internal static void createfing() {\r\n    GoFinalizerQueue.EnsureRunner();\r\n}',
+              'internal static void createfing() {\r\n    goǃ(runfinq);\r\n}')
+io.open(p, 'w', encoding='utf-8', newline='').write(t)
+PY
+  [ -f "$tmp/notland/runtime/mcleanup.cs" ] && { echo "ARM 16 FAILED: fixture must NOT carry mcleanup.cs"; return 1; }
+  out=$(bash "$self" "$tmp/notland" 2>&1); rc=$?
+  [ "$rc" -eq 1 ] || { echo "ARM 16 FAILED: expected the post-condition to fail (rc=1), got $rc"; echo "$out"; return 1; }
+  case "$out" in *"has not landed on"*) ;; *) echo "ARM 16 FAILED: did not report the SEAT-NOT-LANDED reading"; echo "$out"; return 1 ;; esac
+  case "$out" in *"carry was LOST"*) echo "ARM 16 FAILED: claimed a LOST carry on a tree that never had the seat"; echo "$out"; return 1 ;; esac
+  echo "  ok   NOT-LANDED reads as not landed   the same file state, told apart by the discriminator"
 
   echo
   echo "SELF-TEST CLEAN -- $arms arms"

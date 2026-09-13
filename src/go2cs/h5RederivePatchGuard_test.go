@@ -60,7 +60,7 @@ func TestH5RederivePatchSelfTest(t *testing.T) {
 		t.Fatalf("src/apply-h5-c1-1-rederives.sh --self-test did not report a clean run:\n%s", text)
 	}
 
-	const wantArms = 15
+	const wantArms = 16
 	if got := strings.Count(text, "\n  ok   "); got != wantArms {
 		t.Fatalf("expected %d passing arms from src/apply-h5-c1-1-rederives.sh --self-test, counted %d -- an arm that quietly stops running is exactly what this count exists to catch:\n%s",
 			wantArms, got, text)
@@ -112,6 +112,14 @@ func TestH5RederivePatchSelfTest(t *testing.T) {
 		// fall through. C2's sentence for it: a tool that exits 0 has not told you it did the work.
 		"a probe-passing NO-OP REFUSED",
 		"a Store-ALIAS is skipped",
+		// i9 ran the applier on the real train-47 union (mailbox 0687402db) and the carry post-condition
+		// fired -- correctly, but its message asserted "the hand-own was NOT carried into this
+		// re-derive" when in fact the mcleanup seat is train 48 and had simply not landed. The
+		// predicate cannot tell those apart from mfinal.cs alone, so it now reports the DISCRIMINATOR
+		// (is runtime/mcleanup.cs present as a marked hand-own?) rather than asserting a cause. Arm 7
+		// was itself mis-fixtured: named for the LOST case, it carried no mcleanup.cs and so exercised
+		// the not-landed state under the lost label. Arm 7 gained the marked fixture; arm 16 is its twin.
+		"NOT-LANDED reads as not landed",
 	} {
 		if !strings.Contains(text, reason) {
 			t.Fatalf("src/apply-h5-c1-1-rederives.sh --self-test did not report the arm %q -- the arm names may survive a rewrite that loses what they assert:\n%s", reason, text)
