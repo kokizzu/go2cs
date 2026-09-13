@@ -50,6 +50,7 @@ of one broken class. What changed, and why each mattered:
 import hashlib
 import re
 import statistics
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -305,7 +306,21 @@ FLEETS = {
         "6650U G (G-LAPTOP)"],
 }
 
-C_TARGET = 90 * 60  # ~90-minute shard target, local wall seconds
+# The SLICE CAP, ruled by the coordinator at mailbox `4327ab7e1` §2: 40 minutes, with a ten-minute
+# cooldown between slices.
+#
+# ⚠ THIS WAS 90 MINUTES AND THAT WAS STALE, not a preference (found 2026-09-13 while designing the
+# dispatch driver). The 90-minute target predates the cap ruling, and the difference is not cosmetic:
+# the i9's reserved leg is 4,722 s, so ceil(4722/5400) = 1 and ceil(4722/2400) = 2. The report printed
+# `shards@90min=1` -- i.e. RUN THE RESERVED LEG UNSLICED -- which is precisely the plan section 4 of
+# `e0d5121e2` calls "a plan the hardware refuses" on a box with a recorded thermal death. A driver
+# trusting the report's own shard column would have done the one thing the cap exists to prevent.
+#
+# The cooldown is NOT part of the cap: it is the gap BETWEEN slices and it belongs to the caller
+# (`-ShardCount`'s own comment says so, and the P5 amendment records that a sliced run is not a
+# substitute for the discipline). It is carried in the emitted plan so the driver does not re-derive it.
+C_TARGET = 40 * 60          # slice cap, local wall seconds  (ruled: 40 min)
+COOLDOWN_SECONDS = 10 * 60  # gap BETWEEN slices, the caller's to honour  (ruled: 10 min)
 
 
 def lpt(W):
@@ -414,3 +429,101 @@ heaviest = max(rows, key=lambda r: r[2])
 slowest = min(MACHINES.values())
 print(f"  single-row floor on a {slowest:.2f} box: {heaviest[0]} {heaviest[2]}/{slowest:.2f} = "
       f"{heaviest[2]/slowest:.0f} s = {fmt_hm(heaviest[2]/slowest)} (why the reserved pin matters)")
+
+
+# ---------------------------------------------------------------- the MACHINE-READABLE plan
+#
+# ⚠ EVERYTHING ABOVE IS A REPORT FOR A HUMAN AND A DRIVER MUST NOT PARSE IT. Measured 2026-09-13
+# while designing the H10 dispatch driver, three ways it defeats a parser, each silent:
+#
+#   1. the row lists WRAP at column 118, so a line is not a record;
+#   2. worker names carry SPACES and PARENTHESES ("i9-13900K (sweeper)"), so whitespace is not a
+#      delimiter;
+#   3. ⚠ THE SAME WORKER APPEARS IN EVERY `W` SECTION WITH A DIFFERENT ROW SET -- R holds 85 rows at
+#      W=3 and 60 at W=4 -- so a driver grepping for its own worker name silently takes whichever
+#      section comes first and dispatches 25 rows it was not assigned. That is the silent-subtraction
+#      class, arriving through the report's shape rather than through anyone's mistake.
+#
+# So the plan is emitted as TSV with `W` as a COLUMN: one row per line, nothing wrapped, and a driver
+# that does not state its W gets no rows at all rather than the wrong ones.
+#
+# The digest is the same principle the coordinator ruled for this script's INPUT (`e0d5121e2` section
+# 5 -- refuse when the parse does not reproduce the declared digest) applied to its OUTPUT: the driver
+# recomputes it over the rows it parsed and refuses a plan it cannot reproduce, so a truncated or
+# hand-edited plan cannot dispatch.
+#
+# ⚠ THE SLICE PACKING IS FIRST-FIT-DECREASING, NOT THE REPORT'S LISTING ORDER, and the two differ
+# visibly: the i9's reserved leg packs into 2 slices (walls 2370 / 2352 i9-s) under FFD and 3 slices
+# (1471 / 2355 / 896) packed greedily in listing order. FFD is what the ruling's own arithmetic used
+# ("two slices, one gap, +10 min over unsliced", `4327ab7e1` section 2), so FFD is what the plan must
+# emit or the plan would contradict the ruling that sized it. A reader comparing the plan's order to
+# the report's will therefore see different orders; that is intended and is why it is written here.
+def slice_rows(items, cap_i9_seconds):
+    """Pack (name, t, reserved) into slices, first-fit-decreasing, cap in i9-seconds.
+
+    A row is INDIVISIBLE -- the sweep's unit of dispatch is a package -- so a row heavier than the
+    cap gets a slice of its own rather than being split or refused. `crypto/dsa` at 1,317 s is the
+    live case: it fits 2,400 but it is why no cap below 21.95 min can exist.
+    """
+    slices = []
+    for item in sorted(items, key=lambda r: (-r[1], r[0])):
+        for s in slices:
+            if sum(x[1] for x in s) + item[1] <= cap_i9_seconds:
+                s.append(item)
+                break
+        else:
+            slices.append([item])
+    return slices
+
+
+def emit_plan(path):
+    lines = []
+    body = []
+    for W in sorted(FLEETS):
+        names, s, load, pkgs = lpt(W)
+        for worker in names:
+            cap_i9 = s[worker] * C_TARGET
+            for slice_no, sl in enumerate(slice_rows(pkgs[worker], cap_i9), start=1):
+                for seq, (name, t, reserved) in enumerate(sl, start=1):
+                    body.append((W, worker, slice_no, seq, name, t, 1 if reserved else 0))
+
+    # The digest covers exactly the fields a driver acts on, in the order it reads them, so a
+    # reordering that changes dispatch changes the digest.
+    h = hashlib.sha256()
+    for r in body:
+        h.update(("\t".join(str(x) for x in r) + "\n").encode("utf-8"))
+    digest = h.hexdigest()
+
+    lines.append("# go2cs H10 dispatch plan -- MACHINE-READABLE. Generated by shardmap.py.")
+    lines.append("# Do not hand-edit: the driver recomputes #digest over the rows and refuses a mismatch.")
+    lines.append("#version\t1")
+    lines.append(f"#block\t{BLOCK_KEY[0]}\t{BLOCK_KEY[1]}\t{BLOCK_KEY[2]}")
+    lines.append(f"#slice_cap_seconds\t{C_TARGET}")
+    lines.append(f"#cooldown_seconds\t{COOLDOWN_SECONDS}")
+    lines.append(f"#rows\t{len(body)}")
+    lines.append(f"#unscheduled\t{len(UNSCHEDULED)}")
+    # Stated in the artifact itself, not only in the report, because the driver's refusal to treat a
+    # projection as a deal is the whole point of ruling "say which it is, and gate dispatch on it".
+    lines.append("#projection\tLOWER_BOUND\t"
+                 f"{len(UNSCHEDULED)} roster row(s) carry no measured t_r and are NOT in this plan")
+    lines.append(f"#digest\t{digest}")
+    lines.append("W\tworker\tslice\tseq\tpackage\tt_r_i9_seconds\treserved")
+    for r in body:
+        lines.append("\t".join(str(x) for x in r))
+
+    # newline="\n" explicitly: this file is READ BY POWERSHELL on Windows and the digest is computed
+    # over LF-joined records. Letting the platform choose would make the same plan digest differently
+    # on the box that writes it and the box that checks it -- the CR class this lane has already paid
+    # for twice (the .gitattributes pins, and a guard defeated by universal newlines).
+    Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    print(f"\n{'='*100}\nplan written: {path}")
+    print(f"  {len(body)} dispatch row(s) over W={sorted(FLEETS)}, digest {digest[:16]}…")
+    print(f"  slice cap {C_TARGET} s ({C_TARGET/60:.0f} min), cooldown {COOLDOWN_SECONDS} s "
+          f"({COOLDOWN_SECONDS/60:.0f} min), {len(UNSCHEDULED)} row(s) UNSCHEDULED and absent")
+
+
+if "--emit-plan" in sys.argv:
+    i = sys.argv.index("--emit-plan")
+    if i + 1 >= len(sys.argv):
+        die("--emit-plan needs a path")
+    emit_plan(sys.argv[i + 1])
