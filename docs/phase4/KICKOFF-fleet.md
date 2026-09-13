@@ -94,61 +94,137 @@ design questions and lessons to COORD, and move on.
 
 ## 4. Current state
 
-**Master `ddd509c1e`** (the security landing on `bd1d26faf`). Since train 46 (`8a1b7e71c`): licensing
-`1800b04f8`; the context diet `56ff452a5`..`f34047501`; the kickoff and CENSUS-preservation landing
-`bd1d26faf`; `ddd509c1e`. CLAUDE.md is a 196-line index (`TestContextBudget` cap: 200 effective lines);
-doctrine in `.claude/rules` and `.claude/skills`; batch19 RETIRED (`86037ef2e`, tag `doctrine-batch19-preserved`).
-**Security CLOSED on all three surfaces**, each one commit on top, identifier alone, nothing rewritten:
-`claude/mailbox` `c64c289cd`, `claude/g-b1-box-design` `f632a942b` (37 lines; its base predates the 09-01
-scrub, so 35 were inherited and a naive merge would reintroduce them), master `ddd509c1e` (two probe
-READMEs). The repoguard denylist now carries the hashed Len-15 row, so the guard catches this class; the
-whole `internal/repoguard` package reads green at the landing tree, the RED-with-row control on record.
-**Train 47, base `ddd509c1e`** -- H4's closing train plus H5's inputs; it precedes the H5 series by
-construction. Merge order `1 2 3 4 9 10 7 6 8 5 11 12 13`. Seats board as ruled with the REHEARSAL as the
-judge (named conflicts, the silent-subtraction assertion, `go vet` at every merge step, the named guards);
-a rebase rewrites a posted SHA and is never done by fiat. Template: the pre-derived train-47 set with the
-four carried defects fixed before first use, thirteen rows, G4 RE-INVERTED (CLAUDE.md not in the delta).
+**Master `31fe4925d` -- TRAIN 47 LANDED (2026-09-13 17:26, run 8 of the assembly), fifteen seats, signed, announced before
+pushing and read back equal at origin.** The chain before it: `654343a5e` (the KICKOFF refresh) ->
+`45b58dc86` (H2's instrument re-anchored) -> `2e6cf71e4` (six lessons into the skills) -> `a02ac3df3`
+(three more lessons; the train's base, frozen from 04:07 to the landing). **Master is OPEN again for the
+post-train landings in this order:** doctrine batches c `06e2920fb` and d `21821509c` (verified LANDABLE),
+this KICKOFF amendment, then train 48 assembles on the result.
+<!-- Train 47's four runs on the i7 (HANDOVER-coordinator.md 2026-09-13 ~05:40 and ~06:35 blocks): run 1
+     RED at LEG C (four seat test files carrying the retired MIT header -- the guard-collision class) and
+     at LEG 2 (seat 6's union compile, seat UNSEATED to train 48); run 2 RED at G6 (a redacted placeholder
+     read as a real segment -- row 12 rewritten, the G6T template class); run 3 RED at G11(b) (a seat-number
+     premise from train 46 carried inside a justification and asserted -- derived from the OWED vector);
+     run 4 light gates clean 06:32:28, battery run 8 (14:12 -> 17:18) green on every leg: converter suite 299 s, LEG 0 dial guard, integrity x3, stdlib and go2cs solutions CS=0, LEG D six arms MET, LEG R/U restores, GolibTests 772 at both configurations, CNR 1053 s CHANGED 0 with the advisory expectation DERIVED from the tree (52 == 2 + 50) and E1' MET on the record, the full suite 664/0, seven canary rows PASS; runs 4-7 were refused by the instrument on real defects (LD1, LD2, LR1, LA1, LL1) and the landing itself found three more in the land's reader (LB1, LC1, the wrapper line), each fixed with a self-check lesson before the push. -->
 
-|#|Branch @ tip|Class|Ruling|
-|---|---|---|---|
-|1|`claude/coord-orphan-disclosure-check` `36cbef240`|converter-test|AS-IS, 2/48; owes the utf8 `-tests` arm, which COORD runs as a battery LEG at the assembled head, never as a hand run|
-|2|`claude/coord-stamp-guard` `ec1fe2745`|converter-test|AS-IS, 1/48; ARM B stamp guard, R credited in the body|
-|3|`claude/laneR-armc-guard` `bbd0afe43`|converter-test|AS-IS, 1/48; ARM C guard|
-|4|`claude/c2-sync-disclosure-retire` `4221789e7`|manifest|AS-IS, 1/48; the Windows reading is the battery's own sync leg|
-|5|`claude/c2-census-reader` `44ab61dad`|golib|AT ITS TIP (code ends `fb82482ba`; a seat is a branch tip). 12/82, read THREE-DOT at fill; boards last of the code seats|
-|6|`claude/g-unfreeze-handown-metadata` `7078dbada`|converter|PENDING RE-CUT: the rehearsal read two adjacent-insert CONFLICTS with licensing 1800b04f8 (internal.godebug.csproj, projectFileWriter.go); G re-cuts onto the base after seat 8, both-kept, acceptance = the godebug csproj re-mints byte-identical + Run A/B/C; boards at the announced SHA|
-|7|`claude/g-h6-alias-census` `898cbfefe`|docs|AS-IS, 3/48; the R and C2 blocks it owes ride later trains|
-|8|`g-generic-alias-qualifier` `ffaafeb19` (G-LAPTOP only)|converter|PENDING: boards ONLY as G's announced re-cut (one hunk at `typeNameResolution.go:423-425`; `:449-464` is the donor); else the HashTrieMap sites wait for train 48|
-|9|`claude/laneR-h5-lastrung` `826045a74`|docs|AS-IS, 1/130 (age, not conflicts); `h5-removals.txt`, the 14-package set|
-|10|`claude/coord-pprof-vacuous-audit` `5994c12b2`|docs|NEW; the rescued runtime/pprof vacuous-passes audit|
-|11|R's section-15 ladder block|docs|PENDING: boards at the announced SHA, else train 48|
-|12|`claude/coord-glossary-kickoff` `ff9d0fb47`|docs|NEW; the `Kickoff` document-type entry, the amendment section 0 proposed|
-|13|`claude/g-census-2026-09-13` `748beefbb`|docs|NEW; G-LAPTOP's preservation census record|
+**The position on the runbook's section-2 ladder MOVES ONE NOTCH: H4 CLOSES for the known sites with this
+landing.** H1 and H3 are done; **H2 has never run** -- `src/version.props` still reads 1.23.12 -- and it
+lands as the FIRST commit of the H5 series, not on its own. **H4a is a staging BASELINE regen** by the
+same binary that runs H5 (H0's fresh `.cs.auto`, H6's old side, H5's overlay comparand), never a 1.23.12
+landing. **R's FIFTH rehearsal has RUN** (on the train-47 union reproduced on the R-LAPTOP before its travel
+standby -- tree `161af6c441ae1d8fa44f10b44a9740ba2c20ecea`, the same tree this landing carries): the
+seeded three-target 1.24.13 reconvert is clean and H5c applies, and **the rung is 120/120/120 unique
+sites, every one in `runtime`, every root one of eight sites in two frozen hand-owns** (`runtime2.cs`
+:21/:25/:729 and `mfinal.cs` :20/:24, the fourth relocation `runtime/internal/sys` -> `internal/runtime/sys`;
+`runtime2.cs` :119/:123, the `note` duplicate beside the emitted `note_other.cs`). Both are C1-1's ruled
+items and both are HOP-CONDITIONAL (they cannot land on the 1.23.12 corpus without breaking it), so
+**what now gates the H5 SERIES is C1's PREPARED PATCH for those eight sites, applied by the H5 scratch
+after the reconvert and H5c** -> **H4a's baseline** -> the series itself (H2's pin, the three-target
+reconvert, H5c's fourteen removals, the overlay, `go generate`, H9, the hand-own branch). A re-derive of
+`mfinal.cs` takes the hand-own body from C1's mcleanup branch, never from the landing tree (the carry
+hazard; the guard on that branch is the post-condition). Predictions scored as WORDED: G's
+`unique/handle.cs` isync HIT at emission (compile masked); the four (C) sites PARTIAL, 2 of 4 (the
+PROTECTED hand-owns of `internal/weak` and `internal/concurrent` keep their `package_info.cs`, H6 OQ-2);
+R's 5-of-12 and G's zero NOT SCOREABLE (seat 6 unseated, masked). **The R-LAPTOP is on FLEET STANDBY from 2026-09-13
+~11:35 (owner travel; R in spurts only): i9 executes H4a and the H5 series by the runbook as R amended
+it before standby, G-LAPTOP is the linux arm, R is consulted in spurts.** The hand-own branch is C1's
+(FILES only; directory removal is H5c's instrument).
 
-**The position on the runbook's section-2 ladder** (derived and posted at mailbox `db6d9462f`): the work in
-hand is **H4**, inside the H2->H5 window. H1 and H3 are done; **H2 has NEVER run** -- `src/version.props`
-still reads 1.23.12 and the "H2 landed in train 43" shorthand is wrong -- and it is the next UNPASSED gate,
-landing as the FIRST commit on the hop's version branch. H4a is RULED a staging BASELINE regen by the same
-binary that runs H5 (H0's fresh `.cs.auto`, H6's old side, H5's overlay comparand), never a 1.23.12 landing.
-The ladder reads 12/12/12 at `8a1b7e71c` in four owned classes (4 leftover-seed -> H5c; 5 godebug cascades ->
-seat 6; 2 HashTrieMap -> seat 8; 1 `Ꮡr` scored against `ce1ee957b`). Four things gate the H5 SERIES: H4
-closing for the known sites; R's FIFTH rehearsal, run after train 47 lands; the H4a baseline; then the series
-itself (H2's pin, the three-target reconvert, H5c, the overlay, `go generate`, H9, the hand-own branch).
-**Open.** The H5 hand-own branch has no owner (R by default; `claude/c1-h6-rewrites` `c5fb9e0ed` never seats).
-G's six extra local-only branches await per-row dispositions; R's and i9's ACKs are owed in the measured form;
-seat 8's re-cut is owed. Pre-pin gate-2 readings (`7c946ab62`: reflect 326/59/3 of 388 and unique on
-`87606f3a5`; runtime/pprof on `150b0264e`; net/http/pprof 11 of 15 and blind runtime 84 of 883, mailbox and
-master prose only) still owe their provenance banked. Template defects (a)-(d) carry into the derive.
-**Rulings made tonight** (mailbox `3e5951a83`, `db6d9462f`, `90f2dc3ed`, `47f283826`): R-LAPTOP's mailbox
-worktree is FROZEN and `r-post.sh` moves to fetch plus `merge --ff-only` plus refuse-on-dirt, never a reset in
-a shared clone; H4a is a staging baseline, not a landing; the fetchable guard STANDS unweakened (a census
-names unfetchable refs in a pushed record and the post cites the record); leg 1a's control now plants a
-FOREIGN account segment (1b step 3); `cfd71b0ba` is rescued and pushed as `claude/coord-pprof-vacuous-audit`.
-**Records owed.** The H1.1 amendment and the H4a worked-instance block into `docs/GoCorpusMigration.md`; R's
-section-15 dated block on `REHEARSAL-h5-go124.md`; the H6 audit-file SKELETON, one row per marked path in the
-census instrument's own predicate (146, not a literal grep's 105); `d7bf606f0`; the Glossary entry with seat 12.
-**Owner items.** An off-box copy of the i7 archive; the H5 hand-own branch's owner; C1/C2 restarts; a
-conforming-DNS Windows host for `net`.
+**Train 47 as LANDED -- FIFTEEN seats on `a02ac3df3`.**
+
+|#|Branch @ tip|Class|
+|---|---|---|
+|1|`claude/coord-orphan-disclosure-check` `8e8c9e3b6`|converter-test+docs|
+|2|`claude/coord-stamp-guard` `fc8c8d8ac`|converter-test+docs|
+|3|`claude/laneR-armc-guard` `49c309f8b`|converter-test+docs|
+|4|`claude/c2-sync-disclosure-retire` `4221789e7`|manifest|
+|5|`claude/laneR-h5-lastrung` `826045a74`|docs-data|
+|6|`claude/coord-pprof-vacuous-audit` `5994c12b2`|docs|
+|7|`claude/g-h6-alias-census` `898cbfefe`|docs|
+|8|`claude/g-generic-alias-recut` `449ecce7a`|converter-guard-rebaseline (carries its own `allowed=` re-baseline ruling)|
+|9|`claude/c2-census-reader` `44ab61dad`|golib-converter-docs|
+|10|`claude/laneR-h5-s15-rungs` `ff40eee3a`|docs|
+|11|`claude/coord-glossary-kickoff` `ff9d0fb47`|docs|
+|12|`claude/g-census-2026-09-13` `31adad88c`|docs|
+|13|`claude/c1-crashwhiletracing-marking` `d781b0251`|manifest|
+|14|`claude/c1-getcallerpc-erratum` `3ca63093d`|docs|
+|15|`claude/c1-lockosthread-body` `dc34e4b4a`|golib-corpus-handown|
+
+<!-- Rows 1-3 moved from 36cbef240 / ec1fe2745 / bbd0afe43 by ONE header commit each (the MIT header ->
+     the AGPL pair the licensing guard requires; proven at a throwaway union with the unfixed file as the
+     firing control).  The earlier row 8 (claude/g-unfreeze-handown-recut ce2d9d082) was UNSEATED after
+     run 1's LEG 2 and rides train 48 as claude/g-handown-metadata-t48 bb13897e6 (re-based after this
+     landing); rows 9-16 became 8-15.  Row 12 moved 748beefbb -> 31adad88c (one cell, +1/-1, the
+     placeholder segment retired).  The table of record is the assemble script's SEAT_TABLE. -->
+
+**The two riders are DISCHARGED.** Row 15's accounting: i9's run at C1's clean seat `4a9ae8cbb` reads 185
+C# verdicts with the `got 0, 0` panic PRESENT -- five trees, one axis (`lockedExt++` sites 0 -> 185 with
+the panic, 1 -> 198 without it, twice), so C1-2 = 128 -> 185 (one verdict moved, `TestGCTestIsReachable`'s
+honest divergence) and seat 15 = 185 -> 198; i9's race hypothesis is REFUTED rather than unsupported,
+and the runtime row's floor of record is 185 at the base + C1-2, 198 at + seat 15. i9's first-parent
+bisect (BOARD entry `68ad83c2c`, train 48) attributes the earlier 185 -> 128 door regression to train 46's
+seat 3 fatal-path merge; the BOARD entry takes the split as a dated amendment when train 48 gives it a
+base. G's Runs A/B/C ride train 48 with seat 6.
+
+**The mailbox is ROTATED, at `5e70540f4`.** The body through `d3216183f` is
+`docs/phase4/MAILBOX-archive-2026-09-13.md` (cite it as `MAILBOX-archive-2026-09-13.md:NNNN`); the new
+`MAILBOX.md` continues at the same path and read anchors are still commits. **Fleet rule: no build clone
+tracks `claude/mailbox`** (`^refs/heads/claude/mailbox` in the fetch refspec) and **`fetch.unpackLimit=1`
+everywhere**, because a refspec governs the REF while the OBJECTS transfer regardless -- the mailbox is
+read from a dedicated single-branch clone with its own object store, never fetched into a build clone.
+**The post order, ruled 2026-09-13:** an EXISTING ref announces then pushes (floor 9 protects a reader
+from a moving ref); a ref that does not exist yet pushes then announces in ONE post carrying the remote
+read-back and the tool's explicit `--new` acknowledgement. The coordinator's own log is
+`claude/coord-handover` at **`e43146bdb5111fa7742dda38c8cc1d42bf6998c1`**, read by `git show` only, appended as dated blocks.
+
+**In flight.** C1: `mcleanup.cs` as a hand-own, then C1-3 (the `TestMapBuckets` shim), then the runtime
+row's contract-table seat. C2: the goroot-fix rules line and the shallow-skip seat (it covers C1's shallow
+clone too), then the recon leg -- ALL 204 rows under the dispatch mode at the campaign's corpus, the
+isolated-vs-in-sweep axis folded in, the shard map re-derived from that data. i9: the `archive/tar` BOARD
+entry (1 crash in 27; 25 consecutive clean; rate <= 11.3% at 95%; cause unattributed; NO roster
+condition), then the linux/Windows run arms as ruled. G: seat 6 re-based; the fleet patch-id census is
+the whole-remote instrument (a census by its header, not a gate). R: the fifth rehearsal.
+
+**Train 48's board** (read every tip at origin at the freeze; declare the H6 stack `898cbfefe` ->
+`191164e7a` -> `47592cb3f` with `stack-on=`): C2 `4140a8e55`, `191164e7a`, `0b24685bc`, `171d419f6` +
+`33c29952d`, `baf1fbe72` (`-Hop`), `a0496fb93`, `7c1d8832f` + its rules line, the shallow-skip seat; i9
+`68ad83c2c`, the `archive/tar` entry; R `d18059950`, `47592cb3f`, `becf28abc`; C1 `4a9ae8cbb`,
+`3f1612524`, `5f0564da3`, `claude/c1-seat-duplication-census` `77e41300a`; G `bb13897e6` (re-based),
+`claude/g-fleet-patchid-census` `9b78bfff6`; COORD doctrine batch e. **The assembly's derive items:** the
+patch-id arm (C1's tool over the table's tips with the declared stacks; same SHA = STACK allowed iff
+declared, different SHAs sharing a patch-id = DUPLICATE refused; a seat beside its own clean re-cut reads
+"a stale row"); no seat-number literal inside any justification or refusal string (a self-check arm);
+every assertion matches a ROW at line start, never a substring of a report that states its counts in
+words; the post tool re-fetches and re-appends after its guard, immediately before pushing.
+
+**Train 49's board, cut in one morning while the battery ran** (every one off `a02ac3df3`, read at
+origin at its freeze): C1's prepared patch for the two frozen `runtime` hand-owns
+(`claude/c1-h5-rederive-patch`, the H4a gate's instrument: the applier's precondition keys on the
+production `.cs` H5c removes, the carry hazard enforced as a post-condition); C1's token-door census
+(`claude/c1-token-door-census`: `syscall`'s bank predates the door; one reached row, six latent); G's
+repoguard liveness-and-set seat (`claude/g-repoguard-liveness-set`); G's H6 completeness gate and its
+guard (`claude/g-h6-completeness-gate`: the six assertions literal, the BOM tolerated in the census
+predicate); C2's darwin option-2 sizing (`claude/c2-darwin-option2-sizing`: a stub census is a superset,
+not a work list; eleven implementations under 215 keystone sites) and its step 1 trampoline map guard
+(`claude/c2-darwin-trampoline-map`: keyed per package); C2's H5c instrument amendment
+(`claude/c2-h5c-apply-amendment`: DELETE-ABSENT packages as directories, the full delete set emitted; the
+UNRESOLVED clause waits on a measurement); i9's `archive/tar` BOARD entry chained on its bisect entry;
+the recon DATA record when pass 2 lands. Declared stacks and the BOARD-tail insert collisions are the
+train-48 assembly's derive items, resolved in table order, never by hand.
+
+**Owner hands.** CLOSED 2026-09-13: the R-LAPTOP mailbox refspec exclusion x4 and the poisoned
+remote-tracking ref (R, owner-authorized); the 35 GOROOT strays (archived). OPEN: G-LAPTOP's stale
+`.git/index.lock` (G's harness refuses deletions inside `.git`); **one cloud-allowlist entry for
+`builds.dotnet.microsoft.com`** (fallbacks `dotnetcli.azureedge.net`, `dotnetbuilds.azureedge.net`) --
+the cloud network policy returns 403 to CONNECT, and that entry alone gives C1 and C2 a LOCAL compile;
+the untracked `src/lane-r-packrace.ps1` in the R-LAPTOP worktree `preflight-trio-de1c72` (delete; its
+content is held in a preserved local commit); which host the 2026-09-02 thermal sentence describes; and
+`claude/awesome-franklin-ba9agv` (a harness worktree name at `21222f2e8`, never a seat) on the
+branch-deletion pass. **The R-LAPTOP is on FLEET STANDBY from ~11:35** (owner travel; R in spurts; its
+local-only artifacts and durable logs are named by path in R's standby post `6f6528938`). **Archive:** the i7 archive (`C:/go2cs-archive/i7-2026-09-13`, 1.41 GB,
+manifests verified) has been copied to the R-LAPTOP share and its verification is in progress -- that
+closes the same-disk item on the reading. Still owed beyond the hands: the H5 hand-own branch's `.auto`
+side, and a conforming-DNS Windows host for `net`.
 
 ## 5. Kickoff prompts
 

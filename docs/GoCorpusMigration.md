@@ -359,6 +359,18 @@ carrying the evidence checkable against the committed tree today), and the BOARD
 counts**. A queued item recorded in none of them is one nobody will find at the regen — so
 **deferring to "the next deliberate regen" is not complete until the deferral has a ledger row**.
 
+**The hand-own census this slot always runs: for every marked hand-own, did the hop move any of its
+principal's declarations into a file the new release newly selects and the reconvert therefore emits?**
+A hand-own whose Go principal *shrank* between releases has a twin in the emission: the declaration
+the hand-own still carries is now also auto-converted from the file it moved to. The answer is a
+per-declaration body displacement (`manualConversionFuncs`), never a field or a file exclusion, and
+it is hop-conditional by construction — the registration's guard is red at the old release, so it
+lands with the hop on the version branch, never on master ahead of it.
+<!-- 2026-09-13: first instance C1-1 (the `note` type left runtime2.go for note_other.go); second C1-2b
+     (lock2/unlock2 left lock_sema.go for lock_spinbit.go under goexperiment.spinbitmutex, and m.mWaitList is
+     the waiter queue the managed lock core documents as not modelled). C1 76e4026ae, i9 fd4611ae7 + 8c0f26247,
+     C2 9a98cfa8; ruled 6cee25f56 and 8be44bbc0. -->
+
 **A corpus migration is that regen.** Schedule the bundle **before H5**, for one reason: H5's overlay
 diff is the migration's primary signal, and every un-levelled artifact is noise inside it. Levelling
 first is what makes the upstream delta readable.
@@ -389,6 +401,13 @@ skip a step of it, so the non-negotiables are restated rather than referenced:
   the per-GOOS corpus layout landed, an unseeded root also breaks layout adoption: there is no
   per-GOOS folder to route into, so every platform-varying file lands flat and the next build compiles
   two copies.
+  - **A BUILD of the staged corpus needs two more things seeded: `src/gen` and
+    `src/Directory.Build.props`.** The seed list above is what a *conversion* needs; without the generator
+    project every generated half is missing, and the failure reads exactly like a corpus defect (62
+    CS8795/CS1739/CS0029 errors in `internal/runtime/atomic` and `internal/goarch`, upstream of every site
+    the reading set out to reproduce). The tell is location, not count: *a reproduction that fails
+    somewhere other than the sites it set out to reproduce has not reproduced.*
+    <!-- 2026-09-13: i9 0687402db s2 on the H4a/H5 rung at the train-47 union; ruled f633ad759 s3. -->
 - **Never convert twice into one staging root**, and never let two conversions overlap in one. Delete
   and re-seed per run, and confirm no converter process is alive before starting. The recorded failure
   is a single corrupted file with unresolved lift markers that reads exactly like a converter

@@ -99,6 +99,17 @@ Violating one of these costs hours and is usually invisible until much later.
     that asymmetry is why it is immune to the stale-output false greens.
 11. **One worktree per cut**, and one dispatch per worktree. A precondition written in a brief is not a lock.
 12. **Preflight free disk before a battery** (the sweep floors at 25 GB) and purge build output between runs.
+    **Reclaim trees children-first**: a tree whose `--git-common-dir` equals its `--git-dir` and whose
+    `git worktree list` has more than one row is a PARENT and is never removed — it takes every child with it.
+<!-- 2026-09-13: i9 66360c817 -- a census that asked each directory 'clean and HEAD on origin?' listed two parent
+     clones (27 and 18 worktrees, every tree the lane works in, one holding uncommitted work) as reclaimable; the
+     small instance proved it (a removed parent left its child's HEAD reading empty; the re-read-at-removal gate
+     refused). C2 8013861db measured the same shape on its own box (7 of 7 worktrees' .git are FILES into one parent)
+     and supplied the two-part test, runnable from any member -- 'worktree list' alone prints every row from a
+     child too, so it refuses everything:
+       n=$(git -C "$D" worktree list | wc -l)
+       [ "$(git -C "$D" rev-parse --path-format=absolute --git-common-dir)" = "$(git -C "$D" rev-parse --path-format=absolute --git-dir)" ] && [ "$n" -gt 1 ] && REFUSE
+     Placed on item 12 (disk preflight and purge) rather than as a 17th item: the same operation, the invisible half. -->
 13. **A gate that has never been made to fail proves nothing.** Regress one site deliberately, confirm it
     names that site, then restore and verify byte-identical.
 14. **Read the results-file tail before any mass-empty analysis.** A deadline kill states itself outright.
