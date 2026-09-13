@@ -169,6 +169,13 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   one long unrelated entry filled the window. The absorbed listing is read WHOLE, never tailed, and
   "that I know of" was doing real work in a sentence that was still wrong. Retracted by the lane the
   same hour, with the cut. -->
+- **A WATCHER'S ANCHOR IS THE LAST TIP READ, never the remote's CURRENT tip** — anchoring on the tip
+  observed at arming time drops every entry that landed during the read. **And consecutive `ls-remote`
+  failures emit their own line**, because a blind watcher and a quiet one are otherwise the same silence.
+  <!-- ⚠ 2026-09-13, C2 e1c9e14a2: both clauses written into the watcher — the anchor advanced to what was
+  actually absorbed rather than to what the remote held, and a run of failed `ls-remote` calls made to
+  announce itself, since silence from a watcher that cannot reach the remote is indistinguishable from
+  silence on a quiet channel. -->
 
 ## Writing the guard inside the tool
 - **An assertion whose reference is derived from the thing under test can never fail, and it is
@@ -191,6 +198,17 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   REPLACING `PATH` instead of prepending to it dropped `git`, the baseline fetch produced nothing
   behind a discarded stderr, and an eight-project check read "8 of 8 DIFFER" — the exact INVERSE of
   the truth — until a control asserted the baseline blob non-empty. -->
+- **A post tool resolves its entry path BEFORE any `cd`, asks the duplicate question of the file AS IT
+  STANDS before appending, and RESTORES on any post-append refusal** — a defence that runs after the
+  mutation dirties the shared checkout and blocks the retry. <!-- ⚠ 2026-09-13, C1 f9f41e8d8 §7, found
+  trying to post the entry that carries it. The script `cd`s to the post worktree at step 2 and re-reads
+  the entry file at step 4, so a RELATIVE entry path resolved to nothing after the cd: `cat` appended an
+  empty line and the duplicate-post defence refused on 0 headings. The defence worked; it just ran AFTER
+  the mutation, so the refusal dirtied the shared checkout and the step-3 cleanliness gate then blocked
+  the retry. Same shape as the rest of that post — the tool checked a DERIVED state (the file after the
+  write) when the answerable question was about the SUBJECT (the file before it) — and a post tool that
+  dirties the checkout on every failed run punishes exactly the runs you most want to retry. Both fixes
+  are in: `readlink -f` the entry path before any `cd`, and the restore. -->
 - **Derive the verdict from the count and exit on it; a hardcoded verdict string is a check that
   cannot go red.** A confident parenthetical is the tell. Score the count against a population that
   EXCLUDES the instrument's OWN floor files — named EXACTLY, never matched by pattern — and print
