@@ -209,6 +209,25 @@ internal static void unlock2(ж<mutex> Ꮡl) {
     Interlocked.Exchange(ref l.key.Value, 0);
 }
 
+// go1.24's lock_spinbit.go splits the tail of unlock2 into this helper: it walks the sleeping-M stack
+// threaded through m.mWaitList, picks a waiter, and wakes it. THE MANAGED MODEL HAS NEITHER HALF —
+// no waiter list and nobody parked — for the reason unlock2 states four lines up: a spinning lock2
+// observes the released slot, so there is nothing to dequeue and nobody to wake. The body is
+// therefore EMPTY, and empty is the model's own answer rather than a stub standing in for one.
+//
+// It is displaced (manualConversionFuncs["runtime"], goosAny) rather than left auto because the auto
+// body names m.mWaitList, a field this corpus deliberately does not carry — the waiter QUEUE is in
+// this file's "NOT modeled (deliberately, documented)" list, and m.mWaitList IS that queue. Adding
+// the field to make the generated body compile beside this core would put two lock protocols in one
+// runtime and paper over which of them runs.
+//
+// UNREACHABLE TODAY, and stated rather than assumed: Go's only caller is lock_spinbit.go's own
+// unlock2 (:268), which is itself displaced by this file. If a future caller appears it will be a
+// managed one, written against this model, and it will find the no-op that model implies.
+// (C1-2b; COORD 8be44bbc0a, on C1's registry reading 76e4026ae and i9's four sites c2b26c50b.)
+internal static void unlock2Wake(ж<mutex> Ꮡl) {
+}
+
 // The rendezvous for note waiters that BLOCK instead of polling — today notetsleepg alone (see
 // below for why it is the only one). notewakeup pulses this gate after it flips the key, and a
 // blocking waiter re-tests the key while HOLDING the gate before it waits, so the

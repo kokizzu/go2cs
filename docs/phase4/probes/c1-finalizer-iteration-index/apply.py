@@ -43,11 +43,34 @@ that died at 25 s before TestFinalizerType, and `--verify` still said "patch
 intact" over a reading that measured nothing. `--ran` reads the RUN OUTPUT and
 answers "did the patched code execute".
 
-⚠ `python3` MAY NOT BE AN INTERPRETER. On Windows it can be a Store alias that
-prints an install advert and exits 0, while `python` is real. Following this
-runbook literally with `python3` there gives no patch, no recognisable error, and
-then a `--verify` of 0 that looks exactly like the re-convert trap -- two causes,
-one symptom.
+⚠ `python3` MAY NOT BE AN INTERPRETER. On Windows it can be a Store redirector
+rather than the real thing, while `python` is real. Following this runbook
+literally with `python3` there gives no patch, no recognisable error, and then a
+`--verify` of 0 that looks exactly like the re-convert trap -- two causes, one
+symptom.
+
+CORRECTED 2026-09-13 (i9, mailbox 1b45bd075): this paragraph used to say the
+alias "prints an install advert and exits 0", and the exit status half was never
+measured by its author. i9 tested the real redirector on the one box in the fleet
+that physically has it: the advert is real and goes to STDERR, but that
+redirector EXITS 49 with empty stdout. So "exits 0" should not be carried as
+measured -- and a status-only probe would have SKIPPED that instance, not been
+fooled by it. The shape that does exit 0 is an ordinary no-op like /bin/echo
+(C2, a2b892aef), which is why the right probe asserts an ANSWER rather than a
+status; see resolve_python in src/apply-h5-c1-1-rederives.sh.
+
+⚠ AND NEITHER NUMBER IS LOAD-BEARING (C2, 5786f2672): an output assertion is
+indifferent to the exit status BY CONSTRUCTION. `print(6*7)` -> `42` refuses rc=49
+with empty stdout AND rc=0 with an advert, and accepts only a real interpreter
+answering 42 -- so nobody has to survey Windows builds to know the gate is right.
+Both numbers stay here as description, with the measured one marked as measured;
+that is the whole reason an answer beat a status.
+
+⚠ AND WORSE ON A REAL WindowsApps PATH, which no synthetic stub shows (i9, same
+post): WindowsApps ships BOTH `python.exe` AND `python3.exe` and they are the
+SAME redirector, so "`python` is real" above is false there -- a candidate loop
+skips both and has nothing to fall through to. Scope, i9's own: measured on one
+machine, and not generalised to other Windows builds in either direction.
 
 WHY println AND NOT t.Logf. The failure mode being measured is a HANG killed by
 the package deadline, and the host buffers t.Logf; println goes to stderr
