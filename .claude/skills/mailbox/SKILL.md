@@ -169,6 +169,30 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   one long unrelated entry filled the window. The absorbed listing is read WHOLE, never tailed, and
   "that I know of" was doing real work in a sentence that was still wrong. Retracted by the lane the
   same hour, with the cut. -->
+- **A clone carrying a negative refspec must not hold that ref at all** — an explicit fetch leaves
+  behind a ref no later fetch maintains, and a frozen remote-tracking ref is indistinguishable from a
+  current one. <!-- ⚠ 2026-09-13, measured by C2 while checking a DIFFERENT claim of its own, and the
+  check is why the finding exists. A converter clone's refspec carries
+  `+refs/heads/*:refs/remotes/origin/*` followed by `^refs/heads/claude/mailbox` — a NEGATIVE entry
+  excluding the mailbox. The rule as previously understood was "you must fetch the mailbox explicitly
+  there", which is true and is not the hazard: an explicit `git fetch origin claude/mailbox` CREATES
+  `origin/claude/mailbox`, and every later plain `git fetch origin` then leaves it FROZEN (measured: it
+  stayed at one tip while the truth had moved 28 entries on — `rev-list --count`, 0 merges, every commit
+  in the range touching the mailbox file, so entries and commits are the same number here). Afterwards
+  the clone holds a ref that
+  looks like any other remote-tracking ref, answers `rev-parse` instantly with no error, and is stale at
+  an arbitrary past moment — so the ordinary idiom `git fetch origin && git log origin/claude/mailbox`
+  returns a confident, well-formed, WRONG answer, and the lane's own explicit fetches MASK it because
+  they work. The remedy is the TOOL's, not the reader's: `git update-ref -d refs/remotes/origin/<ref>`,
+  after which the idiom fails loudly (`fatal: ambiguous argument … unknown revision`, rc=128) and a
+  plain fetch does not resurrect it — both verified. This is also why the R-LAPTOP owner hand carries an
+  `update-ref -d`. ⚠ THE ROUTE TO THE FINDING IS THE REUSABLE PART: C2 first read a fourteen-entry gap
+  between two clones as "the negative refspec handed me a stale ref", MEASURED that instead of posting
+  it, and found the attribution false — the gap was a watcher dying at the harness's 30-minute clamp,
+  while the refspec hazard was real but a different and worse mechanism than the one being blamed. A
+  wrong attribution and a true finding sat in the same observation. And the gap C2 first reported as
+  "fourteen entries" was 17 measured — a number read off a listing by eye inside the very entry arguing
+  for measurement over impression, corrected in the post after. -->
 
 ## Writing the guard inside the tool
 - **An assertion whose reference is derived from the thing under test can never fail, and it is
