@@ -53,6 +53,41 @@ NEW_QUAL='@internal.runtime.sys_package.NotInHeap'
 
 die() { echo "REFUSE: $*" >&2; exit 2; }
 
+# ⚠ THE TOOL GATE, and it exists because the script LIED. i9 scored 3029f08ff1 on a lane carrying
+# `python` 3.12.0 with NO `python3` and no `py` (mailbox a50d4f8c1): apply() called python3 four
+# times and never read an exit status, so a MISSING INTERPRETER and a SUCCESSFUL EDIT were
+# indistinguishable to the caller -- and the run printed "APPLIED" having edited nothing.
+#
+# It failed safe there only by luck of composition: verify() is pure shell, so it correctly reported
+# both defects unfixed. ON A TREE ALREADY PARTLY PATCHED the post-condition would PASS and the run
+# would report a clean apply that never ran. That is the shape this whole script exists to prevent.
+#
+# TWO THINGS ARE NEEDED AND i9 NAMED WHY: name resolution alone still leaves the status unchecked,
+# "and it is the unchecked status that produced the word APPLIED". So this resolves an interpreter
+# AND every call site gates on its exit. The gate runs BEFORE any edit, so a refusal means nothing
+# was touched.
+#
+# H5_PYTHON is an honest seam, not a test hook: it is how the self-test's two negative controls
+# (arms 11 and 12) drive the gate, and it is also the answer for a lane whose interpreter is not on
+# PATH under the name this script would guess.
+PYBIN=""
+resolve_python() {
+  local c
+  if [ -n "${H5_PYTHON:-}" ]; then
+    "$H5_PYTHON" -c 'import sys; sys.exit(0)' >/dev/null 2>&1 \
+      || die "H5_PYTHON=$H5_PYTHON does not run -- refusing rather than reporting APPLIED over an edit that never ran"
+    PYBIN=$H5_PYTHON; return 0
+  fi
+  for c in python3 python py; do
+    command -v "$c" >/dev/null 2>&1 || continue
+    "$c" -c 'import sys; sys.exit(0)' >/dev/null 2>&1 || continue
+    PYBIN=$c; return 0
+  done
+  die "no working Python interpreter found (tried python3, python, py; set H5_PYTHON to override).
+      This script performs its edits in Python, and REFUSES here rather than reporting APPLIED over
+      an edit that never ran -- the defect i9 measured at a50d4f8c1."
+}
+
 # Is this a tree the patch BELONGS on? Refusing early is the point: applied to a pre-H5c tree these
 # edits break a green corpus, which is the whole reason the fix is not a commit.
 check_precondition() {
@@ -137,7 +172,8 @@ verify() {
 
 apply() {
   local core=$1
-  python3 - "$core/$R2" "$core/$MF" <<'PY'
+  [ -n "$PYBIN" ] || die "apply() reached with no interpreter resolved -- resolve_python must run first"
+  "$PYBIN" - "$core/$R2" "$core/$MF" <<'PY'
 import sys, io
 r2, mf = sys.argv[1], sys.argv[2]
 OLD_ALIAS = 'using sys = runtime.@internal.sys_package;'
@@ -172,10 +208,19 @@ def edit(path, drop_note):
 edit(r2, drop_note=True)
 edit(mf, drop_note=False)
 PY
+  # ⚠ THE UNCHECKED STATUS THAT PRODUCED THE WORD "APPLIED" (i9, a50d4f8c1). Captured on the very
+  # next line, before anything else can reset $? -- a `$(...)` or a test in between would lose it.
+  local rc=$?
+  [ "$rc" -eq 0 ] || die "the edit step ($PYBIN) exited $rc -- NOTHING is claimed applied. Previously
+      this status was discarded and the caller printed APPLIED over an edit that never ran."
 }
 
 # ---------------------------------------------------------------------------------- self-test
 selftest() {
+  # The self-test drives the Python edit directly for arms 7 and 8, so it needs the same gate the
+  # real path uses -- and running it here means a lane with no interpreter gets ONE named refusal
+  # rather than a run whose arms pass on empty output.
+  resolve_python
   local tmp; tmp=$(mktemp -d) || die "mktemp failed"
   # shellcheck disable=SC2064
   trap "rm -rf '$tmp'" RETURN
@@ -237,10 +282,38 @@ selftest() {
 
   # ARM 5: CRLF survives. A rewrite that normalises line endings shows as a whole-file diff.
   arms=$((arms+1))
+  # ⚠ THIS ARM WAS STRUCTURALLY DEAD ON A NATIVE-WINDOWS PYTHON and announced itself only as a
+  # traceback it ignored (i9, a50d4f8c1): the self-test printed four FileNotFoundError tracebacks and
+  # reported this arm OK in the same output. TWO causes, and BOTH were needed to kill it --
+  #
+  #   (a) the compare was `[ "$cr" = "$lf" ]`, STRING equality, so when both reads threw both
+  #       captures were the empty string and "" = "" PASSED;
+  #   (b) a native-Windows python cannot resolve an MSYS /tmp path, which i9 controlled directly:
+  #       tr reads it, python at the same string throws, python via `cygpath -w` returns the count.
+  #
+  # ARM 4 reads THE SAME PATH one line earlier and succeeds because tr is an MSYS tool -- so the two
+  # arms disagreed about whether the file exists and only one was right about its own reader.
+  #
+  # Fixed as i9 prescribed, taking the option that needs no interpreter at all: count with tr and wc
+  # exactly as arm 4 does, assert the captures are non-empty digits, and compare as INTEGERS.
+  #
+  # ⚠ THE PREDICATE ITSELF IS SOUND AND ONLY THE CAPTURE WAS BROKEN -- C2 measured that (7dc338dba)
+  # on the complement lane, where the reader works and i9's failure cannot reproduce: they planted a
+  # normalising rewrite inside apply() and this arm went RED naming its site (CR=0 LF=10), mutation
+  # asserted to have landed, file restored byte-identical. So this is a capture fix, not a redesign.
+  #
+  # Two further C2 readings kept here because they bound what the counter may become. Counting
+  # newline BYTES is the quantity this arm wants, and the trap is ONE TOOL OVER: `awk END{print NR}`
+  # and `grep -c ''` count RECORDS and report one short on a file with no final terminator, so
+  # "improving" this to either would make the arm RED on a legitimate CRLF corpus file. And the arm
+  # catches a PARTIAL normalisation too -- C2's mixed-endings fixture -- which the line below
+  # under-claimed by saying only "normalised".
   for f in runtime2 mfinal; do
-    cr=$(python3 -c "print(open('$tmp/go/runtime/$f.cs','rb').read().count(b'\r'))")
-    lf=$(python3 -c "print(open('$tmp/go/runtime/$f.cs','rb').read().count(b'\n'))")
-    [ "$cr" = "$lf" ] || { echo "ARM 5 FAILED: $f.cs CR=$cr LF=$lf -- line endings were normalised"; return 1; }
+    cr=$(tr -dc '\r' < "$tmp/go/runtime/$f.cs" | wc -c | tr -d '[:space:]')
+    lf=$(tr -dc '\n' < "$tmp/go/runtime/$f.cs" | wc -c | tr -d '[:space:]')
+    case "$cr" in ''|*[!0-9]*) echo "ARM 5 FAILED: CR count for $f.cs is not a number ('$cr') -- the reader failed, and the old STRING compare called two such failures equal"; return 1 ;; esac
+    case "$lf" in ''|*[!0-9]*) echo "ARM 5 FAILED: LF count for $f.cs is not a number ('$lf') -- the reader failed, and the old STRING compare called two such failures equal"; return 1 ;; esac
+    [ "$cr" -eq "$lf" ] || { echo "ARM 5 FAILED: $f.cs CR=$cr LF=$lf -- line endings were normalised"; return 1; }
   done
   echo "  ok   CRLF preserved byte for byte      a normalising rewrite would mask the real change"
 
@@ -254,7 +327,7 @@ selftest() {
 
   # ARM 7 (the CARRY hazard, made decidable): a re-derive that lost the mcleanup hand-own must FAIL.
   mkpost "$tmp/carry"
-  python3 - "$tmp/carry/runtime/mfinal.cs" <<'PY'
+  "$PYBIN" - "$tmp/carry/runtime/mfinal.cs" <<'PY'
 import io, sys
 p = sys.argv[1]
 t = io.open(p, encoding='utf-8', newline='').read()
@@ -273,7 +346,7 @@ PY
   # goǃ(runfinq) -- which mfinal.cs's real header does -- must still PASS. Without this the checker
   # rejects the very tree it is meant to bless, and it did.
   mkpost "$tmp/prose"
-  python3 - "$tmp/prose/runtime/mfinal.cs" <<'PY2'
+  "$PYBIN" - "$tmp/prose/runtime/mfinal.cs" <<'PY2'
 import io, sys
 p = sys.argv[1]
 t = io.open(p, encoding='utf-8', newline='').read()
@@ -313,6 +386,49 @@ PY2
   case "$out" in *"consts.cs"*) ;; *) echo "ARM 10 FAILED: refused without NAMING the offending file"; echo "$out"; return 1 ;; esac
   echo "  ok   one PRODUCTION .cs still REFUSES   named by file, so the operator knows which row"
 
+  # ------------------------------------------------------------------ i9 a50d4f8c1: the two defects
+  # Both arms below exist because the script REPORTED SUCCESS IT HAD NOT EARNED on i9's lane. Neither
+  # is about the edit logic, which i9 scored sound 10 of 10 -- they are about REACHING it, and about
+  # the run being able to tell you when it did not.
+
+  # ARM 11: NO usable interpreter -> REFUSE, and never print APPLIED. This is the gate half.
+  arms=$((arms+1))
+  cp -r "$tmp/go" "$tmp/nopy"
+  out=$(H5_PYTHON=/nonexistent/definitely-not-python bash "$self" "$tmp/nopy" 2>&1); rc=$?
+  [ "$rc" -eq 2 ] || { echo "ARM 11 FAILED: a dead interpreter did not refuse (rc=$rc)"; echo "$out"; return 1; }
+  # ⚠ MATCH THE BANNER, NOT THE WORD. The first cut of this arm tested for a bare *APPLIED* and went
+  # RED against a CORRECT refusal -- because the refusal's own text says "rather than reporting
+  # APPLIED over an edit that never ran". An assertion about the run's VERDICT reading the run's
+  # PROSE, written inside the arm that exists to catch a false verdict. The claim is the banner line.
+  case "$out" in *"==> APPLIED"*) echo "ARM 11 FAILED: claimed APPLIED with no interpreter -- the original defect is back"; echo "$out"; return 1 ;; esac
+  echo "  ok   a DEAD interpreter REFUSES        and the word APPLIED never appears"
+
+  # ARM 12: an interpreter that RESOLVES but FAILS at the edit -> REFUSE. This is the exit-status
+  # half, and it is the one name resolution alone would not have caught: the stub answers the gate's
+  # probe (-c) successfully and then exits 1 on the real work, which is exactly the shape whose
+  # status was previously discarded.
+  arms=$((arms+1))
+  printf '#!/usr/bin/env bash\ncase "${1:-}" in -c) exit 0 ;; esac\nexit 1\n' > "$tmp/stubpy"
+  chmod +x "$tmp/stubpy"
+  cp -r "$tmp/go" "$tmp/failpy"
+  out=$(H5_PYTHON="$tmp/stubpy" bash "$self" "$tmp/failpy" 2>&1); rc=$?
+  [ "$rc" -eq 2 ] || { echo "ARM 12 FAILED: an interpreter that exits 1 did not refuse (rc=$rc)"; echo "$out"; return 1; }
+  case "$out" in *"exited 1"*) ;; *) echo "ARM 12 FAILED: refused without naming the edit step's exit status"; echo "$out"; return 1 ;; esac
+  case "$out" in *"==> APPLIED"*) echo "ARM 12 FAILED: claimed APPLIED over an edit that exited 1"; echo "$out"; return 1 ;; esac
+  echo "  ok   a FAILING edit step REFUSES       the status is read, not discarded"
+
+  # ARM 13: ARM 5's OWN negative control -- floor #13, and the arm that was missing. i9 measured that
+  # arm 5 could not go red on their lane: both reads threw, both captures were empty, and a STRING
+  # compare called that equal. An arm that cannot fail proves nothing, so prove this counter CAN.
+  arms=$((arms+1))
+  tr -d '\r' < "$tmp/go/runtime/mfinal.cs" > "$tmp/lfonly.cs"
+  ccr=$(tr -dc '\r' < "$tmp/lfonly.cs" | wc -c | tr -d '[:space:]')
+  clf=$(tr -dc '\n' < "$tmp/lfonly.cs" | wc -c | tr -d '[:space:]')
+  case "$ccr$clf" in ''|*[!0-9]*) echo "ARM 13 FAILED: the control's own counts are not numbers (CR='$ccr' LF='$clf')"; return 1 ;; esac
+  [ "$clf" -gt 0 ] || { echo "ARM 13 FAILED: the LF-only fixture has no newlines at all -- the control is vacuous"; return 1; }
+  [ "$ccr" -ne "$clf" ] || { echo "ARM 13 FAILED: an LF-only file reads CR=$ccr LF=$clf as EQUAL -- arm 5 cannot go red"; return 1; }
+  echo "  ok   the CRLF arm CAN go red           an LF-only copy reads CR=$ccr LF=$clf"
+
   echo
   echo "SELF-TEST CLEAN -- $arms arms"
   return 0
@@ -328,8 +444,11 @@ case "${1:-}" in
 esac
 
 CORE=$1
+# The tool gate runs BEFORE the precondition and before any edit, so a refusal here means the tree
+# was not touched -- and, more to the point, means the run cannot reach the line that says APPLIED.
+resolve_python
 check_precondition "$CORE"
-echo "== applying the C1-1 re-derives to $CORE"
+echo "== applying the C1-1 re-derives to $CORE (edits via $PYBIN)"
 apply "$CORE"
 echo "== verifying"
 if verify "$CORE"; then echo "==> APPLIED and POST-CONDITION MET"; exit 0; fi

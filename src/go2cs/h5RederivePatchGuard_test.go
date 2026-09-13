@@ -60,7 +60,7 @@ func TestH5RederivePatchSelfTest(t *testing.T) {
 		t.Fatalf("src/apply-h5-c1-1-rederives.sh --self-test did not report a clean run:\n%s", text)
 	}
 
-	const wantArms = 10
+	const wantArms = 13
 	if got := strings.Count(text, "\n  ok   "); got != wantArms {
 		t.Fatalf("expected %d passing arms from src/apply-h5-c1-1-rederives.sh --self-test, counted %d -- an arm that quietly stops running is exactly what this count exists to catch:\n%s",
 			wantArms, got, text)
@@ -89,6 +89,19 @@ func TestH5RederivePatchSelfTest(t *testing.T) {
 		// data did, which is the argument for scoring on a real root.
 		"H5c RESIDUE is accepted",
 		"one PRODUCTION .cs still REFUSES",
+		// i9 scored the applier on their lane (mailbox a50d4f8c1) and found two defects, NEITHER in
+		// the edit logic -- which they scored sound 10 of 10 -- but in REACHING it and in the run's
+		// ability to say when it had not. The script called python3, that lane has `python` and no
+		// `python3`, and apply() never read an exit status: the run printed APPLIED having edited
+		// nothing. It failed safe only because verify() is pure shell; on a partly-patched tree the
+		// post-condition would have passed over an apply that never ran.
+		"a DEAD interpreter REFUSES",
+		"a FAILING edit step REFUSES",
+		// And arm 5 was STRUCTURALLY DEAD on a native-Windows python: both reads threw, both captures
+		// were empty, and a STRING compare called that equal -- while ARM 4 read the same path
+		// successfully one line earlier because tr is an MSYS tool. An arm that cannot fail proves
+		// nothing, so arm 13 is arm 5's own negative control.
+		"the CRLF arm CAN go red",
 	} {
 		if !strings.Contains(text, reason) {
 			t.Fatalf("src/apply-h5-c1-1-rederives.sh --self-test did not report the arm %q -- the arm names may survive a rewrite that loses what they assert:\n%s", reason, text)

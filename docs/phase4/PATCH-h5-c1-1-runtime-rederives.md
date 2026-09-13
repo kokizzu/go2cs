@@ -151,3 +151,76 @@ recurring class, both recorded so the next reader does not re-derive them:
 Scoring: R's scratch C:/go2cs-s16/h5 when R resurfaces; until then i9 reproduces R's §1–§2 on the i9
 as the H5 executor's first rung, which is what makes the reading portable off the R-LAPTOP.
 -->
+
+---
+
+## Amendment, 2026-09-13 — the applier REPORTED SUCCESS IT HAD NOT EARNED (i9 `a50d4f8c1`)
+
+i9 scored `3029f08ff1` on the i9 lane and found **two defects, neither of them in the edit logic** —
+which they scored **sound, 10 of 10 green** once their interpreter resolved. Both are about *reaching*
+that logic, and about the run being able to say when it had not. COORD ruled the re-cut at
+`c13407d7c`: interpreter gate, checked exit status, non-vacuous arm 5.
+
+### 1. `APPLIED` over an edit that never ran
+
+The script called `python3` four times. That lane carries `python` 3.12.0 and **no `python3`, no
+`py`** — and `apply()` never read an exit status, so **a missing interpreter and a successful edit
+were indistinguishable to the caller**. The banner read `APPLIED` having edited nothing.
+
+It failed safe there only by luck of composition: `verify()` is pure shell, so it correctly reported
+both defects unfixed. i9 named the case where luck runs out — *"on a tree that happened to be partly
+patched already the post-condition could pass and the run would report a clean apply that never
+ran."* **That is now reproduced rather than hypothetical**: regressing the status check in the
+hermetic self-test yields, verbatim,
+
+```
+  == applying the C1-1 re-derives to <tmp>/failpy (edits via <tmp>/stubpy)
+  ==> APPLIED and POST-CONDITION MET          <- interpreter exited 1, nothing was edited
+```
+
+Fixed as i9 prescribed, and **both halves are needed**: a tool gate (`resolve_python`, tries
+`python3`/`python`/`py`, `H5_PYTHON` overrides) runs before any edit, **and** every call site reads
+the exit status — because *"resolution still leaves the exit status unchecked and it is the unchecked
+status that produced the word APPLIED."*
+
+### 2. ARM 5 was structurally dead, and announced itself only as a traceback it ignored
+
+With an interpreter resolvable, i9's self-test printed **four `FileNotFoundError` tracebacks and
+reported the CRLF arm OK in the same output**. Two causes, both required:
+
+- the arm compared with `[ "$cr" = "$lf" ]`, **string** equality, so when both reads threw, both
+  captures were the empty string and `"" = ""` passed;
+- a **native-Windows python cannot resolve an MSYS `/tmp` path**. i9 controlled it directly: `tr`
+  reads it, python at the same string throws, python via `cygpath -w` returns the right count.
+
+**ARM 4 reads the same path one line earlier and succeeds**, because `tr` is an MSYS tool — so the two
+arms disagreed about whether the file existed and only one was right about its own reader. Arm 5 was
+dead on *any* lane whose python is native Windows.
+
+Fixed by taking i9's interpreter-free option: count with `tr`/`wc` exactly as arm 4 does, assert the
+captures are non-empty digits, compare as **integers**.
+
+### 3. Three arms added — 10 → 13
+
+| Arm | Asserts |
+|---|---|
+| 11 | a dead interpreter **REFUSES** (rc 2) and the banner never appears |
+| 12 | an interpreter that resolves but **exits 1 at the edit** refuses, naming the status |
+| 13 | arm 5's own negative control — an LF-only copy reads CR≠LF, so **arm 5 can go red** |
+
+Arm 12 is the one name resolution alone would not have caught: the stub answers the gate's `-c` probe
+successfully and fails only on the real work.
+
+⚠ **And the first cut of arm 11 went RED against a CORRECT refusal**, because it matched the bare word
+`APPLIED` and the refusal's own text says *"rather than reporting APPLIED over an edit that never
+ran"*. An assertion about the run's VERDICT reading the run's PROSE — written inside the arm that
+exists to catch a false verdict. Both arms now anchor on the banner (`==> APPLIED`).
+
+Validation: **13 arms clean**; the status check regressed → **ARM 12 red**, restore byte-identical by
+sha256; real-data pair unchanged (`mfinal` from `origin/master` rc=1 FAILS, from
+`claude/c1-mcleanup-handown` rc=0 APPLIED and POST-CONDITION MET).
+
+**NOT claimed:** still never run against a real 1.24.13 emission. i9 re-runs the self-test **without
+their shim** as the control that this re-cut actually fixes their lane; that reading is theirs, not
+mine. i9 also noted their shim was a directory that lane owns, prepended to PATH for their own
+invocations only — no host configuration was touched, and it is explicitly not proposed as the fix.
