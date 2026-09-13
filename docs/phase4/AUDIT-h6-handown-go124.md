@@ -242,76 +242,77 @@ exists on one side only.
 | 74 | `runtime/lock_managed_impl.cs` | `runtime/lock_managed.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
 | 75 | `runtime/managed_impl.cs` | `runtime/managed.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
 | 76 | `runtime/mbitmap_impl.cs` | `runtime/mbitmap.go` | touched-substantive | principal .auto — `runtime/mbitmap.cs` | §10 MEMBERS-REMOVED → RE-WRITE | — | — | — | — |
-| 77 | `runtime/mem_persistent_impl.cs` | `runtime/mem_persistent.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 78 | `runtime/metrics/sample.cs` | `runtime/metrics/sample.go` | untouched | .auto differential | — | — | — | — | — |
-| 79 | `runtime/mfinal.cs` | `runtime/mfinal.go` | touched-substantive | .auto differential | 09-07 scope-rule §5 RE-DERIVE | — | — | — | — |
-| 80 | `runtime/mranges_impl.cs` | `runtime/mranges.go` | untouched | principal .auto — `runtime/mranges.cs` | — | — | — | — | — |
-| 81 | `runtime/netpoll_impl.cs` | `runtime/netpoll.go` | touched-substantive | principal .auto — `runtime/netpoll.cs` | — | — | — | — | — |
-| 82 | `runtime/panic_impl.cs` | `runtime/panic.go` | touched-substantive | principal .auto — `runtime/panic.cs` | — | — | — | — | — |
-| 83 | `runtime/panicvalues_impl.cs` | `runtime/panicvalues.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | §10 minted shell → RE-DERIVE | — | — | — | — |
-| 84 | `runtime/pinner_impl.cs` | `runtime/pinner.go` | touched-substantive | principal .auto — `runtime/pinner.cs` | — | — | — | — | — |
-| 85 | `runtime/pprof/pprof_impl.cs` | `runtime/pprof/pprof.go` | touched-substantive | principal .auto — `runtime/pprof/pprof.cs` | — | — | — | — | — |
-| 86 | `runtime/pprof/proflabel_impl.cs` | `runtime/pprof/proflabel.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 87 | `runtime/pprof/symtab_impl.cs` | `runtime/pprof/symtab.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 88 | `runtime/runtime2.cs` | `runtime/runtime2.go` | touched-substantive | .auto differential | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE, §5 RE-WRITE; 09-07 sync-collision: collision bill row 1; 09-07 BOTH §4: RE-DERIVED (ruling bd868d3fe) | — | — | — | — |
-| 89 | `runtime/runtime2_impl.cs` | `runtime/runtime2.go` | touched-substantive | principal .auto — `runtime/runtime2.cs` | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE (mechanical) | — | — | — | — |
-| 90 | `runtime/stubs_impl.cs` | `runtime/stubs.go` | touched-substantive | principal .auto — `runtime/stubs.cs` | §10 MEMBERS-REMOVED → RE-WRITE | — | — | — | — |
-| 91 | `runtime/windows/lock_sema_impl.cs` | `runtime/lock_sema.go` | touched-substantive | principal .auto — `runtime/windows/lock_sema.cs` | §10 MIXED → RE-DERIVE | — | — | — | — |
-| 92 | `runtime/windows/nanotime_impl.cs` | `runtime/nanotime.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 93 | `runtime/windows/os_windows_impl.cs` | `runtime/os_windows.go` | touched-substantive | principal .auto — `runtime/windows/os_windows.cs` | — | — | — | — | — |
-| 94 | `runtime/windows/signal_windows_impl.cs` | `runtime/signal_windows.go` | touched-substantive | principal .auto — `runtime/windows/signal_windows.cs` | — | — | — | — | — |
-| 95 | `runtime/windows/trace_impl.cs` | `runtime/trace.go` | touched-substantive | principal .auto — `runtime/windows/trace.cs` | — | — | — | — | — |
-| 96 | `slices/slices_impl.cs` | `slices/slices.go` | touched-substantive | principal .auto — `slices/slices.cs` | — | — | — | — | — |
-| 97 | `sync/atomic/type.cs` | `sync/atomic/type.go` | touched-trivial | .auto differential | — | — | — | — | — |
-| 98 | `sync/atomic/value.cs` | `sync/atomic/value.go` | untouched | .auto differential | — | — | — | — | — |
-| 99 | `sync/cond_impl.cs` | `sync/cond.go` | untouched | principal .auto — `sync/cond.cs` | — | — | — | — | — |
-| 100 | `sync/mutex.cs` | `sync/mutex.go` | touched-substantive | .auto differential | §10 MIXED → RE-WRITE; 09-07 sync-collision: RE-WRITE (collision bill row 2); 09-07 BOTH §4: TWO deletions | — | — | — | — |
-| 101 | `sync/once.cs` | `sync/once.go` | touched-substantive | .auto differential | §10 SIGNATURE → RE-DERIVE; 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
-| 102 | `sync/oncefunc.cs` | `sync/oncefunc.go` | untouched | .auto differential | — | — | — | — | — |
-| 103 | `sync/pool.cs` | `sync/pool.go` | untouched | .auto differential | — | — | — | — | — |
-| 104 | `sync/poolqueue.cs` | `sync/poolqueue.go` | untouched | .auto differential | — | — | — | — | — |
-| 105 | `sync/runtime_impl.cs` | `sync/runtime.go` | touched-substantive | principal .auto — `sync/runtime.cs` | §10 MEMBERS-REMOVED → RE-WRITE | — | — | — | — |
-| 106 | `sync/rwmutex.cs` | `sync/rwmutex.go` | touched-substantive | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
-| 107 | `sync/waitgroup.cs` | `sync/waitgroup.go` | touched-substantive | .auto differential | — | — | — | — | — |
-| 108 | `syscall/darwin/exec_libc2_impl.cs` | `syscall/exec_libc2.go` | untouched | principal .auto — `syscall/darwin/exec_libc2.cs` | — | — | — | — | — |
-| 109 | `syscall/darwin/sockaddr_darwin_impl.cs` | `syscall/sockaddr_darwin.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 110 | `syscall/darwin/syscall_darwin_impl.cs` | `syscall/syscall_darwin.go` | untouched | principal .auto — `syscall/darwin/syscall_darwin.cs` | — | — | — | — | — |
-| 111 | `syscall/linux/cgocaller_linux_impl.cs` | `syscall/cgocaller_linux.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 112 | `syscall/linux/exec_unix.cs` | `syscall/exec_unix.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
-| 113 | `syscall/linux/sockaddr_linux_impl.cs` | `syscall/sockaddr_linux.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 114 | `syscall/linux/structclass_linux_impl.cs` | `syscall/structclass_linux.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 115 | `syscall/linux/syscall_linux_amd64_impl.cs` | `syscall/syscall_linux_amd64.go` | touched-substantive | principal .auto — `syscall/linux/syscall_linux_amd64.cs` | §10 MEMBERS-REMOVED → RE-DERIVE | — | — | — | — |
-| 116 | `syscall/linux/syscall_linux_impl.cs` | `syscall/syscall_linux.go` | touched-substantive | principal .auto — `syscall/linux/syscall_linux.cs` | — | — | — | — | — |
-| 117 | `syscall/linux/zsyscall_linux_amd64_impl.cs` | `syscall/zsyscall_linux_amd64.go` | touched-substantive | principal .auto — `syscall/linux/zsyscall_linux_amd64.cs` | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE (mechanical) | — | — | — | — |
-| 118 | `syscall/syscall_impl.cs` | `syscall/syscall.go` | untouched | principal .auto — `syscall/{windows,linux,darwin}/syscall.cs` | — | — | — | — | — |
-| 119 | `syscall/windows/dll_windows.cs` | `syscall/dll_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
-| 120 | `syscall/windows/exec_windows.cs` | `syscall/exec_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
-| 121 | `syscall/windows/security_windows.cs` | `syscall/security_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
-| 122 | `syscall/windows/syscall_windows_callback_impl.cs` | `syscall/syscall_windows_callback.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 123 | `syscall/windows/syscall_windows_impl.cs` | `syscall/syscall_windows.go` | touched-substantive | principal .auto — `syscall/windows/syscall_windows.cs` | — | — | — | — | — |
-| 124 | `syscall/windows/zsyscall_windows_addrinfo_impl.cs` | `syscall/zsyscall_windows_addrinfo.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 125 | `syscall/windows/zsyscall_windows_certchain_impl.cs` | `syscall/zsyscall_windows_certchain.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 126 | `syscall/windows/zsyscall_windows_dnsrecord_impl.cs` | `syscall/zsyscall_windows_dnsrecord.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 127 | `syscall/windows/zsyscall_windows_impl.cs` | `syscall/zsyscall_windows.go` | touched-substantive | principal .auto — `syscall/windows/zsyscall_windows.cs` | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE (mechanical) | — | — | — | — |
-| 128 | `syscall/windows/zsyscall_windows_ptrout_impl.cs` | `syscall/zsyscall_windows_ptrout.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 129 | `syscall/windows/zsyscall_windows_wsa_impl.cs` | `syscall/zsyscall_windows_wsa.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | §10 minted shell → RE-DERIVE | — | — | — | — |
-| 130 | `testing/PackageAncestry.cs` | `testing/PackageAncestry.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 · OQ-8 | §7 host infrastructure; ruling cb24ac747: OUT of the H6 population; 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 131 | `testing/TestExecution.cs` | `testing/TestExecution.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 132 | `testing/TestFlagBridge.cs` | `testing/TestFlagBridge.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 133 | `testing/TestFormat.cs` | `testing/TestFormat.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 · OQ-8 | §7 host infrastructure; ruling cb24ac747: OUT of the H6 population; 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 134 | `testing/TestHost.cs` | `testing/TestHost.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 135 | `testing/TestOptions.cs` | `testing/TestOptions.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 136 | `testing/TestRegistry.cs` | `testing/TestRegistry.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 137 | `testing/TestReporter.cs` | `testing/TestReporter.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 · OQ-8 | §7 host infrastructure; ruling cb24ac747: OUT of the H6 population; 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 138 | `testing/TestRunner.cs` | `testing/TestRunner.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 · OQ-8 | §7 host infrastructure; ruling cb24ac747: OUT of the H6 population; 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 139 | `testing/testing.cs` | `testing/testing.go` | touched-substantive | manual upstream diff · OQ-11 | §10 MEMBERS-REMOVED → RE-DERIVE; 09-07 BOTH §4: BOTH, to the testing-host bill; 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 140 | `time/sleep_impl.cs` | `time/sleep.go` | touched-trivial | principal .auto — `time/sleep.cs` | — | — | — | — | — |
-| 141 | `time/tick.cs` | `time/tick.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
-| 142 | `unique/clone.cs` | `unique/clone.go` | untouched | .auto differential | — | — | — | — | — |
-| 143 | `unsafe/unsafe.cs` | `unsafe/unsafe.go` | untouched | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
-| 144 | `vendor/golang.org/x/crypto/internal/alias/alias_purego_impl.cs` | `vendor/golang.org/x/crypto/internal/alias/alias_purego.go` | untouched | principal .auto — `vendor/golang.org/x/crypto/internal/alias/alias_purego.cs` | — | — | — | — | — |
-| 145 | `vendor/golang.org/x/crypto/sha3/xor.cs` | `vendor/golang.org/x/crypto/sha3/xor.go` (absent at go1.24.13) | touched-substantive | .auto differential · OQ-2 | §2 REMOVED; §4 #5 retire with the package | — | — | — | — |
-| 146 | `vendor/golang.org/x/net/route/darwin/sys_impl.cs` | `vendor/golang.org/x/net/route/sys.go` | untouched | principal .auto — `vendor/golang.org/x/net/route/darwin/sys.cs` | — | — | — | — | — |
+| 77 | `runtime/mcleanup.cs` | `runtime/mcleanup.go` (absent at go1.23.12) | touched-substantive | .auto differential | — | — | — | — | — |
+| 78 | `runtime/mem_persistent_impl.cs` | `runtime/mem_persistent.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 79 | `runtime/metrics/sample.cs` | `runtime/metrics/sample.go` | untouched | .auto differential | — | — | — | — | — |
+| 80 | `runtime/mfinal.cs` | `runtime/mfinal.go` | touched-substantive | .auto differential | 09-07 scope-rule §5 RE-DERIVE | — | — | — | — |
+| 81 | `runtime/mranges_impl.cs` | `runtime/mranges.go` | untouched | principal .auto — `runtime/mranges.cs` | — | — | — | — | — |
+| 82 | `runtime/netpoll_impl.cs` | `runtime/netpoll.go` | touched-substantive | principal .auto — `runtime/netpoll.cs` | — | — | — | — | — |
+| 83 | `runtime/panic_impl.cs` | `runtime/panic.go` | touched-substantive | principal .auto — `runtime/panic.cs` | — | — | — | — | — |
+| 84 | `runtime/panicvalues_impl.cs` | `runtime/panicvalues.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | §10 minted shell → RE-DERIVE | — | — | — | — |
+| 85 | `runtime/pinner_impl.cs` | `runtime/pinner.go` | touched-substantive | principal .auto — `runtime/pinner.cs` | — | — | — | — | — |
+| 86 | `runtime/pprof/pprof_impl.cs` | `runtime/pprof/pprof.go` | touched-substantive | principal .auto — `runtime/pprof/pprof.cs` | — | — | — | — | — |
+| 87 | `runtime/pprof/proflabel_impl.cs` | `runtime/pprof/proflabel.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 88 | `runtime/pprof/symtab_impl.cs` | `runtime/pprof/symtab.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 89 | `runtime/runtime2.cs` | `runtime/runtime2.go` | touched-substantive | .auto differential | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE, §5 RE-WRITE; 09-07 sync-collision: collision bill row 1; 09-07 BOTH §4: RE-DERIVED (ruling bd868d3fe) | — | — | — | — |
+| 90 | `runtime/runtime2_impl.cs` | `runtime/runtime2.go` | touched-substantive | principal .auto — `runtime/runtime2.cs` | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE (mechanical) | — | — | — | — |
+| 91 | `runtime/stubs_impl.cs` | `runtime/stubs.go` | touched-substantive | principal .auto — `runtime/stubs.cs` | §10 MEMBERS-REMOVED → RE-WRITE | — | — | — | — |
+| 92 | `runtime/windows/lock_sema_impl.cs` | `runtime/lock_sema.go` | touched-substantive | principal .auto — `runtime/windows/lock_sema.cs` | §10 MIXED → RE-DERIVE | — | — | — | — |
+| 93 | `runtime/windows/nanotime_impl.cs` | `runtime/nanotime.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 94 | `runtime/windows/os_windows_impl.cs` | `runtime/os_windows.go` | touched-substantive | principal .auto — `runtime/windows/os_windows.cs` | — | — | — | — | — |
+| 95 | `runtime/windows/signal_windows_impl.cs` | `runtime/signal_windows.go` | touched-substantive | principal .auto — `runtime/windows/signal_windows.cs` | — | — | — | — | — |
+| 96 | `runtime/windows/trace_impl.cs` | `runtime/trace.go` | touched-substantive | principal .auto — `runtime/windows/trace.cs` | — | — | — | — | — |
+| 97 | `slices/slices_impl.cs` | `slices/slices.go` | touched-substantive | principal .auto — `slices/slices.cs` | — | — | — | — | — |
+| 98 | `sync/atomic/type.cs` | `sync/atomic/type.go` | touched-trivial | .auto differential | — | — | — | — | — |
+| 99 | `sync/atomic/value.cs` | `sync/atomic/value.go` | untouched | .auto differential | — | — | — | — | — |
+| 100 | `sync/cond_impl.cs` | `sync/cond.go` | untouched | principal .auto — `sync/cond.cs` | — | — | — | — | — |
+| 101 | `sync/mutex.cs` | `sync/mutex.go` | touched-substantive | .auto differential | §10 MIXED → RE-WRITE; 09-07 sync-collision: RE-WRITE (collision bill row 2); 09-07 BOTH §4: TWO deletions | — | — | — | — |
+| 102 | `sync/once.cs` | `sync/once.go` | touched-substantive | .auto differential | §10 SIGNATURE → RE-DERIVE; 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
+| 103 | `sync/oncefunc.cs` | `sync/oncefunc.go` | untouched | .auto differential | — | — | — | — | — |
+| 104 | `sync/pool.cs` | `sync/pool.go` | untouched | .auto differential | — | — | — | — | — |
+| 105 | `sync/poolqueue.cs` | `sync/poolqueue.go` | untouched | .auto differential | — | — | — | — | — |
+| 106 | `sync/runtime_impl.cs` | `sync/runtime.go` | touched-substantive | principal .auto — `sync/runtime.cs` | §10 MEMBERS-REMOVED → RE-WRITE | — | — | — | — |
+| 107 | `sync/rwmutex.cs` | `sync/rwmutex.go` | touched-substantive | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
+| 108 | `sync/waitgroup.cs` | `sync/waitgroup.go` | touched-substantive | .auto differential | — | — | — | — | — |
+| 109 | `syscall/darwin/exec_libc2_impl.cs` | `syscall/exec_libc2.go` | untouched | principal .auto — `syscall/darwin/exec_libc2.cs` | — | — | — | — | — |
+| 110 | `syscall/darwin/sockaddr_darwin_impl.cs` | `syscall/sockaddr_darwin.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 111 | `syscall/darwin/syscall_darwin_impl.cs` | `syscall/syscall_darwin.go` | untouched | principal .auto — `syscall/darwin/syscall_darwin.cs` | — | — | — | — | — |
+| 112 | `syscall/linux/cgocaller_linux_impl.cs` | `syscall/cgocaller_linux.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 113 | `syscall/linux/exec_unix.cs` | `syscall/exec_unix.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
+| 114 | `syscall/linux/sockaddr_linux_impl.cs` | `syscall/sockaddr_linux.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 115 | `syscall/linux/structclass_linux_impl.cs` | `syscall/structclass_linux.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 116 | `syscall/linux/syscall_linux_amd64_impl.cs` | `syscall/syscall_linux_amd64.go` | touched-substantive | principal .auto — `syscall/linux/syscall_linux_amd64.cs` | §10 MEMBERS-REMOVED → RE-DERIVE | — | — | — | — |
+| 117 | `syscall/linux/syscall_linux_impl.cs` | `syscall/syscall_linux.go` | touched-substantive | principal .auto — `syscall/linux/syscall_linux.cs` | — | — | — | — | — |
+| 118 | `syscall/linux/zsyscall_linux_amd64_impl.cs` | `syscall/zsyscall_linux_amd64.go` | touched-substantive | principal .auto — `syscall/linux/zsyscall_linux_amd64.cs` | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE (mechanical) | — | — | — | — |
+| 119 | `syscall/syscall_impl.cs` | `syscall/syscall.go` | untouched | principal .auto — `syscall/{windows,linux,darwin}/syscall.cs` | — | — | — | — | — |
+| 120 | `syscall/windows/dll_windows.cs` | `syscall/dll_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
+| 121 | `syscall/windows/exec_windows.cs` | `syscall/exec_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
+| 122 | `syscall/windows/security_windows.cs` | `syscall/security_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
+| 123 | `syscall/windows/syscall_windows_callback_impl.cs` | `syscall/syscall_windows_callback.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 124 | `syscall/windows/syscall_windows_impl.cs` | `syscall/syscall_windows.go` | touched-substantive | principal .auto — `syscall/windows/syscall_windows.cs` | — | — | — | — | — |
+| 125 | `syscall/windows/zsyscall_windows_addrinfo_impl.cs` | `syscall/zsyscall_windows_addrinfo.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 126 | `syscall/windows/zsyscall_windows_certchain_impl.cs` | `syscall/zsyscall_windows_certchain.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 127 | `syscall/windows/zsyscall_windows_dnsrecord_impl.cs` | `syscall/zsyscall_windows_dnsrecord.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 128 | `syscall/windows/zsyscall_windows_impl.cs` | `syscall/zsyscall_windows.go` | touched-substantive | principal .auto — `syscall/windows/zsyscall_windows.cs` | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE (mechanical) | — | — | — | — |
+| 129 | `syscall/windows/zsyscall_windows_ptrout_impl.cs` | `syscall/zsyscall_windows_ptrout.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
+| 130 | `syscall/windows/zsyscall_windows_wsa_impl.cs` | `syscall/zsyscall_windows_wsa.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | §10 minted shell → RE-DERIVE | — | — | — | — |
+| 131 | `testing/PackageAncestry.cs` | `testing/PackageAncestry.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 · OQ-8 | §7 host infrastructure; ruling cb24ac747: OUT of the H6 population; 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 132 | `testing/TestExecution.cs` | `testing/TestExecution.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 133 | `testing/TestFlagBridge.cs` | `testing/TestFlagBridge.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 134 | `testing/TestFormat.cs` | `testing/TestFormat.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 · OQ-8 | §7 host infrastructure; ruling cb24ac747: OUT of the H6 population; 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 135 | `testing/TestHost.cs` | `testing/TestHost.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 136 | `testing/TestOptions.cs` | `testing/TestOptions.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 137 | `testing/TestRegistry.cs` | `testing/TestRegistry.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 138 | `testing/TestReporter.cs` | `testing/TestReporter.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 · OQ-8 | §7 host infrastructure; ruling cb24ac747: OUT of the H6 population; 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 139 | `testing/TestRunner.cs` | `testing/TestRunner.go` (absent at both) | no-upstream-counterpart | manual upstream diff · OQ-11 · OQ-8 | §7 host infrastructure; ruling cb24ac747: OUT of the H6 population; 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 140 | `testing/testing.cs` | `testing/testing.go` | touched-substantive | manual upstream diff · OQ-11 | §10 MEMBERS-REMOVED → RE-DERIVE; 09-07 BOTH §4: BOTH, to the testing-host bill; 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 141 | `time/sleep_impl.cs` | `time/sleep.go` | touched-trivial | principal .auto — `time/sleep.cs` | — | — | — | — | — |
+| 142 | `time/tick.cs` | `time/tick.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
+| 143 | `unique/clone.cs` | `unique/clone.go` | untouched | .auto differential | — | — | — | — | — |
+| 144 | `unsafe/unsafe.cs` | `unsafe/unsafe.go` | untouched | manual upstream diff · OQ-11 | 09-08 base §1: skip-listed, no base | — | — | — | — |
+| 145 | `vendor/golang.org/x/crypto/internal/alias/alias_purego_impl.cs` | `vendor/golang.org/x/crypto/internal/alias/alias_purego.go` | untouched | principal .auto — `vendor/golang.org/x/crypto/internal/alias/alias_purego.cs` | — | — | — | — | — |
+| 146 | `vendor/golang.org/x/crypto/sha3/xor.cs` | `vendor/golang.org/x/crypto/sha3/xor.go` (absent at go1.24.13) | touched-substantive | .auto differential · OQ-2 | §2 REMOVED; §4 #5 retire with the package | — | — | — | — |
+| 147 | `vendor/golang.org/x/net/route/darwin/sys_impl.cs` | `vendor/golang.org/x/net/route/sys.go` | untouched | principal .auto — `vendor/golang.org/x/net/route/darwin/sys.cs` | — | — | — | — | — |
 
 ## 5. What this skeleton does not claim
 
@@ -411,19 +412,62 @@ Recorded so the fill starts from them, not from the dossier alone. None of them 
            reason-expired (1.24.13's internal/sync/hashtriemap_test.go has no node[ and no dump helpers;
            export_test.go is a different surface). Measured C1 1bd493fda §2; ruled COORD 4327ab7e1 §7.
            Bears on OQ-7 and OQ-2.
-  row 79   runtime/mfinal.cs     11 .auto hunks dispositioned (C1 f9f41e8d8 §2). Ruled COORD c58b4c01d §1-2:
+  row 80   runtime/mfinal.cs     11 .auto hunks dispositioned (C1 f9f41e8d8 §2). Ruled COORD c58b4c01d §1-2:
            createfing rewired to the live runner; hunk #7 stays out of the hand-own's runfinq; a
            header sentence per bare-mint site; re-aliased for runtime/internal/{sys,math} ->
            internal/runtime/{sys,math} (§3 there).
-  row 82   runtime/panic_impl.cs  an erratum is owed in its WHY: the "exits 2 through the backstop" premise
+  row 83   runtime/panic_impl.cs  an erratum is owed in its WHY: the "exits 2 through the backstop" premise
            is false under the -tests host (i9 9f00b7059 §4; C1 d79dbb317 §1; COORD 4327ab7e1 §1). It lands
            in C1-2's branch (COORD 1ef59adad §1).
-  row 88   runtime/runtime2.cs   RE-DERIVE from the 1.24.13 .auto plus the two documented edits, not a
+  row 89   runtime/runtime2.cs   RE-DERIVE from the 1.24.13 .auto plus the two documented edits, not a
            3-way merge (C1 1bd493fda §4; ruled COORD 4327ab7e1 §7(ii)).
-  row 100  sync/mutex.cs         the relocated wrapper becomes a hand-own without LayoutKind.Explicit
+  row 101  sync/mutex.cs         the relocated wrapper becomes a hand-own without LayoutKind.Explicit
            (C1 1bd493fda §5; ruled COORD 4327ab7e1 §7(iii)).
-  new      runtime/mcleanup.cs   a 1.24 file ruled a HAND-OWN OWED (COORD c58b4c01d §1). It is not in the 146;
-           it enters the re-measured census when it is cut, and gets a row then.
+  row 77   runtime/mcleanup.cs   a 1.24 file ruled a HAND-OWN OWED (COORD c58b4c01d §1). CUT at
+           claude/c1-mcleanup-handown-clean; it has ENTERED the re-measured census (147) and has its
+           row, per COORD 817f98813 §2 -- see the 2026-09-13 amendment below.
   new      runtime/mgc_impl.cs   a managed gcTestIsReachable companion, routed as C1-2 (COORD 1ef59adad §1).
-           It is absent at a02ac3df3; like mcleanup.cs, it enters the census when it is cut.
+           It is absent at a02ac3df3. It is now CUT and carries the marker at
+           claude/c1-gctestisreachable-clean, whose tip 4a9ae8cbb is pinned as train row 12 -- so it is the
+           NEXT entrant and a both-seats tree reads 148. NO row here until COORD rules it in.
 ```
+
+## 2026-09-13 — AMENDMENT (lane G): the population moved 146 → 147 and `runtime/mcleanup.cs` has a row
+
+Per COORD `817f98813` §2. **Row 77** is `runtime/mcleanup.cs`; rows 77–146 renumbered to 78–147, and the
+four `row N` citations in the block above moved with them (79→80, 82→83, 88→89, 100→101). No row's
+content changed, and the two `row 1` / `row 2` citations inside §4 are a *collision bill's* rows, not this
+table's, so they were left alone.
+
+**Re-measured, not carried** — §1's anchored predicate, run per ref:
+
+```
+  a02ac3df3                               146     the skeleton's base; its 146 rows are EXACTLY this set
+  claude/c1-mcleanup-handown-clean        147     = 146 + src/core/runtime/mcleanup.cs, 0 removed
+  claude/version-go1.24.13 (origin tip)   146     neither entrant present there yet
+```
+
+The row's three derived cells, each measured rather than inferred:
+
+```
+  upstream mapping   runtime/mcleanup.go      the instrument's own rule (handown-census.ps1:128-139)
+  presence           ABSENT at go1.23.12, PRESENT at go1.24.13 (193 lines)
+    -> instrument class   touched-substantive  the "appeared or vanished across the range" branch
+  evidence class     .auto differential       §2 precedence rule 3 — whole-file hand-own, and its
+                                              instrument class is not no-upstream-counterpart
+  marker             mcleanup.cs:47, spelled [module: go.GoManualConversion]
+  dossier pointer    —                        the dossier names neither entrant (measured)
+```
+
+⚠ **The 146 figures in §1, §2 and §4 are MEASUREMENTS at the trees they name and are deliberately NOT
+rewritten** — this file is a record, amended rather than edited. What they no longer describe is the
+tree being adopted: §2's evidence-class tally reads `.auto differential` 31 summing to 146; at a tree
+carrying `mcleanup.cs` it is 32 summing to 147.
+
+⚠ **A SECOND ENTRANT IS ALREADY CUT, AND DELIBERATELY HAS NO ROW HERE.** The block above always named
+two. `runtime/mgc_impl.cs` carries the marker at `claude/c1-gctestisreachable-clean`, whose tip
+`4a9ae8cbb` is the SHA COORD pinned as train row 12 — so it is cut and seated, not pending. Each seat
+reads 147 **on its own** (146 plus its own single file); a tree carrying BOTH reads **148**. The ruling
+names `mcleanup.cs` and 147, so only that row is written here: at a both-seats tree the gate's assertion
+2 would fire `A2-missing` on `runtime/mgc_impl.cs`, which is the gate working. Measured and reported to
+COORD; its row goes in on a ruling, never on this measurement.
