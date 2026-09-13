@@ -1,0 +1,134 @@
+# PATCH — the C1-1 hand-own re-derives that gate H4a
+
+**Status:** a RECORD until H5 consumes it. Ruled at COORD `5123a14a2` §2 on R's fifth rehearsal
+(`4b4134242`) and C1's hop-conditional measurement (`68cf737`). Train-49 seat; the applier is
+`src/apply-h5-c1-1-rederives.sh`.
+
+## 1. Why this is a patch and not a commit
+
+Both defects exist **only in the post-H5c world**. Measured at `a02ac3df3`:
+
+| | at `a02ac3df3` | consequence |
+|---|---|---|
+| `src/core/runtime/internal/sys` | **PRESENT** (10 `.cs`) | the `sys` alias is CORRECT today |
+| `src/core/internal/runtime/sys` | **ABSENT** | re-pointing early breaks the build |
+| `src/core/runtime/note_other.cs` | **ABSENT** | `note` is the ONLY definition today |
+
+So a landed fix would break the corpus that is green today. `4327ab7e1` §7(ii) already said "when
+`note_other.cs` lands"; this is that sentence measured rather than recalled.
+
+R measured the consequence of *not* having it: the landing tree + a seeded 1.24.13 reconvert + H5c
+does **not** build `runtime` — 120/120/120 unique sites, flavour-independent, every root one of the
+sites below — so H4a's regen measures nothing past `runtime` until this is applied to the scratch.
+
+## 2. The two defects, and every replacement's derivation
+
+### (i) The fourth relocation — `runtime/internal/{sys,math}` → `internal/runtime/{sys,math}`
+
+Probed at the exact H5 pin, `go1.24.13`:
+
+```
+  runtime/internal/sys/consts.go    404   internal/runtime/sys/consts.go    200
+  runtime/internal/math/math.go     404   internal/runtime/math/math.go     200
+  runtime/internal/startlinetest/…  200   (startlinetest and wasitest REMAIN)
+```
+
+So `namespace go.runtime.@internal` still exists at 1.24.13 — it simply no longer holds `sys`. The new
+spelling is **derived from the package that was already there**: the corpus aliases
+`internal/runtime/atomic` as `@internal.runtime.atomic_package` (its files declare
+`namespace go.@internal.runtime`), so `sys` becomes `@internal.runtime.sys_package` by the same rule.
+
+⚠ **The namespace import is a DELETION, not a substitution — the one place a naive re-point goes
+wrong.** Both files ALREADY carry `using @internal.runtime;` one line above (`runtime2.cs:24`,
+`mfinal.cs:23`). Rewriting `using runtime.@internal;` to the new namespace emits a **duplicate using
+directive**. Neither file references `math_package` or `startlinetest` (grep = 0 in both), so dropping
+it loses nothing.
+
+### (ii) The `note` duplicate
+
+`note_other.cs` is a 1.24 emission carrying `partial struct note`; the frozen `runtime2.cs` hand-own
+carries its own → **CS0102** on `key` plus **CS0579**. The hand-own's copy is deleted.
+
+## 3. The edits, as they land on the real files
+
+Applied to the real `runtime2.cs` (from the landing tree) and the real `mfinal.cs` (from
+`claude/c1-mcleanup-handown`), the whole diff is:
+
+```
+  runtime2.cs :21   using sys = runtime.@internal.sys_package;  ->  @internal.runtime.sys_package;
+  runtime2.cs :25   using runtime.@internal;                    ->  DELETED
+  runtime2.cs :119  [GoType] partial struct note { … }          ->  DELETED (6 lines, comments included)
+  runtime2.cs :729  runtime.@internal.sys_package.NotInHeap     ->  @internal.runtime.sys_package.NotInHeap
+  mfinal.cs   :20   using sys = runtime.@internal.sys_package;  ->  @internal.runtime.sys_package;
+  mfinal.cs   :24   using runtime.@internal;                    ->  DELETED
+```
+
+Nothing else in either file changes; CRLF is preserved byte for byte.
+
+## 4. ⚠ THE CARRY HAZARD — which `mfinal.cs` the re-derive starts from
+
+`mfinal.cs` is a WHOLE-FILE hand-own that changed on 2026-09-13: `createfing` was rewired from
+`goǃ(runfinq)` to `GoFinalizerQueue.EnsureRunner()`, and the queue gained a cleanup ENTRY KIND
+(`claude/c1-mcleanup-handown` `23d07f742`, census 306/306). A "re-derive" regenerates from the 1.24
+auto and **re-applies the hand-own body** — and if it re-applies the pre-mcleanup body, 1.24's
+`AddCleanup`, whose first caller `createfing` is, **compiles, returns a `Cleanup`, and never runs it**:
+no throw, no diagnostic. That is `c58b4c01d`'s ruling undone by a procedure step.
+
+The alias sites (`:20`, `:24`) and the mcleanup sites (`:197`, `:683`) **do not overlap**, so a
+three-way merge is CLEAN and silent. It is a carry hazard, not a conflict.
+
+**The rule (COORD `5123a14a2`, into R's (b) verbatim):** re-deriving `runtime2.cs`/`mfinal.cs` at H5
+takes the hand-own body from `claude/c1-mcleanup-handown` (or its successor), never from the landing
+tree; `mfinal.cs`'s `createfing` must read `GoFinalizerQueue.EnsureRunner()` afterwards, and
+`src/go2cs/finalizerDoorGuard_test.go` asserts it under the plain `go test`.
+
+The applier enforces it as a post-condition, so the hazard is decidable rather than remembered.
+
+## 5. How to run it, and the decidable post-condition
+
+```
+  src/apply-h5-c1-1-rederives.sh <scratch>/core     apply, then assert     exit 0 met / 1 failed / 2 refused
+  src/apply-h5-c1-1-rederives.sh --verify <dir>     assert only
+  src/apply-h5-c1-1-rederives.sh --self-test        hermetic, red-first, touches no clone
+```
+
+It **REFUSES a pre-H5c tree** (`runtime/internal/sys` still present) — applying there is the thing
+that breaks a green corpus — and it is **idempotent**, so an H5 rerun cannot double-edit.
+
+The post-condition, checked on the tree rather than on the applier's own belief: no site names the old
+`sys` package; the old namespace import is gone; **exactly one** `using @internal.runtime;` per file;
+exactly one re-pointed alias per file; no `partial struct note` in `runtime2.cs`; and the carry check
+of §4.
+
+## 6. Validation
+
+**8 self-test arms, red-first, hermetic** — a pre-H5c tree is refused; an unpatched tree fails
+`--verify` *naming both defects*; apply-then-verify is green; no duplicate using directive; CRLF
+preserved; re-apply is idempotent; a re-derive that LOST the mcleanup hand-own fails; and a file whose
+COMMENT names `goǃ(runfinq)` still passes.
+
+**Real-data pair**, the two real files in a simulated post-H5c scratch:
+
+```
+  mfinal.cs from origin/master (carry LOST)          rc=1   FAILS the carry check, both symptoms named
+  mfinal.cs from c1-mcleanup-handown (carried)       rc=0   APPLIED and POST-CONDITION MET
+```
+
+<!--
+Two instrument defects were found by these arms rather than by reading, both this evening's
+recurring class, both recorded so the next reader does not re-derive them:
+
+ 1. The first checker used `grep -x -F` on CRLF files. A line's content ENDS WITH \r, so the pattern
+    matched nothing and the checker reported a duplicate-using failure on a correctly patched file.
+    Worse: it made the unpatched-tree arm pass for the WRONG REASON — that arm only wanted a non-zero
+    exit, and a checker broken on every input supplies one. The arm now asserts WHICH defect it saw.
+
+ 2. The `goǃ(runfinq)` check was file-wide, and mfinal.cs's own header comment NAMES goǃ(runfinq)
+    while describing the body it replaced — so the CORRECT (carried) file failed on its own
+    documentation. Caught by the real-data arm, not by the fixture. The check now strips comments,
+    and ARM 8 exists so a comment mentioning the old body can never fail a correct tree again.
+    Third instance of "an assertion about CODE read PROSE" in one session.
+
+Scoring: R's scratch C:/go2cs-s16/h5 when R resurfaces; until then i9 reproduces R's §1–§2 on the i9
+as the H5 executor's first rung, which is what makes the reading portable off the R-LAPTOP.
+-->
