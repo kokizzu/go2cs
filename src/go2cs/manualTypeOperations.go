@@ -295,6 +295,27 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"notesleep":           goosAny,
 		"notetsleep_internal": goosAny,
 		"notetsleepg":         goosAny,
+		// go1.24's lock_spinbit.go (selected once goexperiment.spinbitmutex is baseline-ON) splits the
+		// tail of unlock2 into unlock2Wake, which walks the sleeping-M stack threaded through
+		// m.mWaitList. That field is the waiter QUEUE the managed core documents as NOT modelled, so the
+		// generated body would name a member this corpus deliberately does not carry -- i9 measured it as
+		// four errors in windows/lock_spinbit.cs (c2b26c50b), the ONLY four the 1.24.13 reconvert leaves
+		// once lock2 and unlock2 are displaced. Registering it here is what makes those four vanish WITH
+		// the body, instead of being answered by adding the field -- which would put two lock protocols
+		// in one runtime. Its managed body is EMPTY and lock_managed_impl.cs says why at the site.
+		//
+		// Go's only caller is lock_spinbit.go's own unlock2 (:268), already registered above, so this
+		// displaces nothing that anything still calls.
+		//
+		// HOP-CONDITIONAL, measured rather than reasoned: at 1.23.12 there is no unlock2Wake in the
+		// runtime package, so TestManualConversionRegistrationsDisplaceSomething is RED at master until
+		// the corpus reaches 1.24.13 -- "the entry matches no Go declaration in that package". This entry
+		// lands WITH the hop and never ahead of it (COORD 8be44bbc0a).
+		//
+		// (Placed after the group rather than beside unlock2 on purpose: a comment breaks gofmt's
+		// alignment run, and inserting it mid-group re-pads three neighbouring lines that have nothing
+		// to do with this change.)
+		"unlock2Wake": goosAny,
 		// The os/signal OS-handler-INSTALL layer (linux/signal_posix_impl.cs). sigenable/sigdisable/
 		// sigignore are the three functions signal_enable/signal_disable/signal_ignore (sigqueue.go,
 		// which stay auto) call to reach the kernel: the converted bodies install Go's own sigtramp
