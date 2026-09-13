@@ -743,3 +743,253 @@ expectation** — C1's arithmetic confirmed on the artifacts (`mfinal` carries e
 
 **Scope.** Three flavours, `--no-incremental`, full `bin`/`obj`/`Generated` purge between targets, CS
 split from MSB/NETSDK. Scratch `h5b` now carries C1's `4c491cb20` over the six deletions.
+
+---
+
+## 2026-09-13 — §15. THE 2026-09-08 RUNGS AFTER §14, BANKED FROM THE MAILBOX: **10 → 8 → 6 → 24 with `runtime.dll` building on all three flavours and the `[GoValueClone]` reader exact at 58 / 67 / 73; a re-base read 120 → 7 → 5 → 2; and the rung at landed master `8a1b7e71c` read 12 / 12 / 12 in four owned classes — from a tree that is now DEGRADED, so nothing further is read from it** (appended; §1–§14 unchanged)
+
+**Why this block exists.** COORD's hop-position post (mailbox `db6d9462f`, §2 and §5) found that
+everything the ladder measured after §14 lived only on the mailbox and in the handover log, and that H10
+grants no carry-forward. **This block adds NO measurement.** Every figure below is the cited post's own,
+re-read in full from the post itself. Posts from before the 2026-09-13 rotation (`5e70540f4`) are in
+`docs/phase4/MAILBOX-archive-2026-09-13.md` on the mailbox branch and are cited by commit. The headings
+of §13 and §14 still stand above, including §14's retired "54 → 59" (corrected in §3 below, not edited).
+
+⚠ **There are TWO LADDER LINEAGES, and a figure from one is never a rung of the other.** Lineage A is
+`h5b`, the fixed-base scratch of §13–§14 (C1's `4c491cb20` over the six deletions), with each root cut
+applied as the converter's own emitted bytes. Lineage B starts at 15:21 on 2026-09-08 with a FRESH
+three-target conversion re-based on `44f858717`, and it is the lineage the 12 / 12 / 12 rung belongs to.
+
+### 1. LINEAGE A — the three §14 roots, cut one at a time on `h5b`
+
+```
+  applied on top of the previous rung                         CS w/l/d   runtime.dll   assemblies w/l/d   post
+  §14   C1 4c491cb20 over the six deletions                   10/10/10        0          194/188/188      (§14)
+  +     root 3: G a60eb2274's emitted stamp on struct m        8/8/8          0          194/188/188      787753c3c
+  +     root 2: G 13908a888 (address-of case label -> ==)      6/6/6          0          194/188/188      a6e5c17fa
+  +     root 1: G d839cb1d7 (A: cast parenthesised; C: box tag) 24/24/24      1          750/765/744      3a19410ca
+```
+
+- **Root 3** (`787753c3c`, accepted by COORD at `901caa376`): `CS1061` went from 2 to 0 per flavour; G's
+  three falsifiers all resolved in G's favour; the emission and the tree differed in ONE stamp. ⚠ **Scope,
+  corrected by its own author at `01250de6d`:** the 8 needed R to APPLY the emitted stamp to the compiled
+  `runtime2.cs`; G's cut alone moves only the `.cs.auto` review sibling. `a60eb2274` and `c1-h6-rewrites`
+  do not compose (`763197676`: C1's compiled `runtime2.cs` carries `Δtrace`, and with empty file overlap
+  they merge clean). The order was ruled at `72c0c5f4b`: G's hunk first, C1's one-line fix on top, and the
+  H5 re-derive taken from the fixed converter.
+- **Root 2** (`a6e5c17fa`): **R's prediction 8 → 4 FAILED.** Its falsifier at `07b5a25a4` read "If the rung
+  reads 8 → 6, my "one defect, two diagnostics" reading is WRONG and the CS0246 has a cause of its own".
+  The rung read 8 → 6, so **scored as worded, that falsifier FIRED.** `a6e5c17fa` then read the per-code
+  evidence as the mechanism holding (COORD `be4351887` accepted that): `CS9135` at `type.cs:134` and
+  `CS0246` at `lock_spinbit.cs:136` BOTH went 2 → 0. The surplus was a third defect unmasked at the same
+  line, `CS0019` ×2 (the pointer switch tag dereferenced into a value), named defect C.
+- **Root 1 = RUNG 5** (`3a19410ca`, accepted by COORD at `d2013ba93`): **`runtime.dll` builds on all three
+  flavours for the first time on this ladder.** `lock_spinbit.cs` and `type.cs` read 0 errors, and
+  `type.cs` moved by zero lines. **R's "A+C → 6 → 0" FAILED as a LADDER reading:** it read 24, all
+  unmasked, 12 distinct sites ×2, identical on three flavours, in files no earlier rung could reach.
+  Ladder label: `240 → 4 → 126 → 68 → 10 → 8 → 6 → 24`.
+- **The rung-5 reading TRANSFERS, measured:** D's converter `19bb74012` emits byte-identical files on
+  all three targets, scoped to the paths the conversion writes (`66cf6444b`, `d108c41dc`). It transfers
+  to `f613d5cfa` by file set (`d67f8b822`): 0 files moved under `src/go2cs` and 0 under `src/core`
+  between the tips. The build was not re-run. A local copy of the rung-5 post,
+  `2196b60a9`, never reached origin; cite `3a19410ca`.
+
+### 2. THE TWELVE AT RUNG 5, CLASSIFIED — and what became of each class
+
+```
+  site (rung 5)                             code    class at f153edc63 (07:08)             disposition since
+  crypto/internal/edwards25519/field/fe.cs  CS0117  DELETION BY SELECTION (fips140 move)   (C) leftover seed, removal list
+  sync/runtime_impl.cs                      CS0759  H6 sync re-write                        orphaned by the 1.24 sync split -> seat B
+  slices/slices.cs:368                      CS8761  converter emission (G)                  cleared by G 05353494b (bb76973e3)
+  internal/weak/package_info.cs             CS0426  swissmap flip x frozen metadata         RE-CLASSED (C) leftover seed (§7)
+```
+
+⚠ `f153edc63`'s rung-6 table lists fe −6, sync −4, slices −2, weak −2 as "these twenty-four clear". Those
+sum to 14, because fe and sync are counted in SITES while slices and weak are counted in OCCURRENCES. In
+occurrences the 24 are 12 + 8 + 2 + 2.
+
+### 3. THE `[GoValueClone]` READER: §14's "54 → 59" IS RETIRED — measured 58 / 67 / 73
+
+§14 §5 says "**54 → 59** stands as the expectation" and stays as written. It was wrong three ways,
+corrected BEFORE it was measured (`ad83d04a3`):
+
+```
+                          master (1.23.12)   h5b (1.24.13)   + runtime2.cs 4, mfinal.cs 1   predicted   MEASURED (3a19410ca)
+  windows package_info          54                53                   +5                     58            58
+  linux   package_info          62                62                   +5                     67            67
+  darwin  package_info          69                68                   +5                     73            73
+```
+
+The errors, as `ad83d04a3` named them:
+1. a per-flavour number published as universal (the flavours differ by fifteen);
+2. MASTER's baseline applied to a tree that carries 53 on windows (the release itself moved these counts:
+   windows −1, darwin −1, linux 0);
+3. so the windows expectation is 58, not 59.
+
+**The reader counts distinct stamped TYPES.** Windows carries 59 raw applications for 58 types (the extra
+hit is `mfinal.cs`'s own header comment). The retired figure would have read "−1" on windows and sent
+someone hunting a stamp that was never dropped.
+
+### 4. LINEAGE A, CONTINUED — cuts pulled onto copies of `h5b`; the error count stops measuring progress
+
+```
+  reading                                                   CS w/l/d    assemblies w/l/d     post
+  ladder copy + seat A's and C1's golib primitives + seat B 40/34/44    1869/1843/1959       6f862360c
+  + G's alias cut 4dfe1509f (17 exposed packages re-emitted) 34/34/42   2178/1960/2259       9fb841a56
+  + the missing rtlGetVersion hand-own restored (windows)    32/-/-     2294/-/-             982d0c0bd
+  + G's slices cut 05353494b                                34/34/42    2752/2286/2708       bb76973e3
+```
+
+- **Seat B** (`6f862360c`): `CS0759` 0 on all three; `runtime.dll`, `sync.dll` and `internal.sync.dll` all
+  build. **R's ladder-total prediction 24 → 20 FAILED** by unmasking. **The ladder STOPS being
+  flavour-independent here.** A new 1.24 class appears: an UNQUALIFIED package alias shadowed by the new
+  `go.@internal.sync_package`, with a 32-file exposed container under `go.@internal*`.
+- **Alias cut** (`9fb841a56`): the arithmetic closes on each flavour (40 − 16 + 10, 34 − 10 + 10,
+  44 − 12 + 10). R's prediction was right on MAGNITUDE (16 on windows) and wrong on the SET. Lesson: sort
+  by error TEXT, never by code, because `CS0426` spans two remedies.
+- **`rtlGetVersion` was a PHANTOM** (`982d0c0bd`): a hand-own that landed after the ladder's base
+  (`_impl.cs` 111 at master, 109 in the ladder). Windows read 34 → 32, as predicted. `b9db8ee1e` corrects
+  that post's second half: `time/sleep_impl.cs` bodies `syncTimer` and costs nothing; `runtimeNow` is a
+  1.24 FRONTIER stub with no body at any release.
+- **Slices cut** (`bb76973e3`): `slices.cs:368` read 0 on all three. The cleared set was predicted
+  exactly; the net moved +2 / 0 / 0. **The error count had stopped measuring progress:** 24 errors at 750
+  assemblies (rung 5) against 34 at 2752. `bcedc2505` names what the cut revealed: `sort` `CS0111` (a
+  hand-own colliding with the 1.24 forced-init relocation) and, on windows, `os` `CS0103 Ꮡr`.
+- **`crypto/internal/fips140deps/godebug`**, 10 × `CS0234` on every flavour in `9fb841a56`: on the
+  re-based ladder (lineage B, §5) it is EMITTED, and the windows build log shows zero errors for it (the
+  only log `93820a2c5` measured). The ladder conversion pins GOROOT to the TARGET release, so `go list std`
+  includes new-at-1.24 packages. It is absent at landed master.
+
+### 5. LINEAGE B — the RE-BASE onto `44f858717`: 120 → 7 → 5 → 2
+
+```
+  reading                                                              CS raw/distinct       ASM w/l/d         post
+  fresh 3-target conversion + G's alias/slices cuts as patches         240/120 on each       (not stamped)     df021e238
+  + C1's runtime2.cs verbatim, mfinal.cs by 3-way                      14/7 on each          (see note)        0106d81c4
+  + C1's three further re-derives (b1cf6a4f0)                          10/5 (windows)        869 (windows)     7f2188ab9
+  + seat B as a DELTA (four orphans dropped, internal/sync bodies)     4/2 on each           862/881/856       8360aebcc
+```
+
+- **`df021e238`'s attribution is WITHDRAWN by its author** (`d5f3e0fda`); its class description stands. The
+  16 roots in `runtime2.cs` and `mfinal.cs` were C1's re-derives, DROPPED by R's own re-base, a silent
+  subtraction. R's hand-fix would have dropped `AddCleanup` too. The independent 3-way (base 747 / ours
+  822 / theirs 797 → 872, 0 conflicts, `fingStatus` 20 = 10 + 8 + 2) was applied instead. The widened
+  MARKED preflight first read 144 / 145, a script artifact; a standalone re-derivation reads 145 / 145,
+  agreeing with G's independent 145.
+- **Assemblies at the second row:** the chain purged between flavours, so only darwin's 863 survived, and
+  `0106d81c4` declined to compare it. Per-leg stamping began at `7f2188ab9`.
+- **The third row's tree** (`b1cf6a4f0`): `runtime/lock_managed_impl.cs` and `sync/mutex.cs` VERBATIM from
+  `4c491cb20`, and `sync/runtime_impl.cs` by 3-way (base 320 / ours 239 / theirs 344 → 263, 0 conflicts,
+  seat A's 9 `RuntimeSemaphore` refs kept).
+- **`4c491cb20`'s own blob is internally inconsistent** (`2aa76b86e`): the `m` stamp names `Δtrace`, the
+  field is `trace`. It was fixed in the ladder as `trace`. Windows read 120 → 1 before that one-token fix;
+  `0106d81c4` then read 7 on all three flavours. ⚠ **The posts do not reconcile 1 → 7**, and assemblies
+  were not stamped per leg at either reading (`0106d81c4` names that instrument fault and fixes it). It
+  is NOT MEASURED whether 1 → 7 is unmasking.
+- **7 → 5** (`7f2188ab9`): COORD predicted 7 → 1 and R the same count; it MISSED. The four `CS0759` are
+  ORPHANED by the 1.24 `sync` split: their declarations moved into `internal/sync`. COORD scored its own
+  miss and routed them to seat B as a delta (`510f7160a`).
+- **5 → 2** (`8360aebcc`): **flavour-independent again**, error sets byte-identical, cascade 0.
+  R's 5 → 1 MISSED, and 2 was predictable from R's own `b1cf6a4f0`. Survivors: `internal/sync/runtime_impl.cs`
+  `CS0234 FatalReport` (ruled at `0877b8105` to land with train 46) and `internal/weak/package_info.cs`
+  `CS0426 ΔMapType`. **The ladder was PARKED at 2 until train 46 landed** (COORD `ba82aa020`).
+
+### 6. THE RUNG AT LANDED MASTER `8a1b7e71c` — 12 / 12 / 12 (`52c11b728`)
+
+**Tree:** lineage B re-based on golib and hand-owns at `8a1b7e71c` (train 46), with five golib refreshes
+kept and the `panic_impl.cs` copy reverted. ⚠ **Its `src/core` is a 1.24 emission from a converter
+PREDATING train 46's three converter seats.** It measures the rung against current golib, NOT what the
+current converter emits at 1.24.13.
+
+```
+  flavour   CS (occ)   unique   ROOT   CASCADE   ASM
+  windows      24        12       7       5      2975
+  linux        24        12       7       5      3053
+  darwin       24        12       7       5      3003
+
+  CS0426  ΔMapType not in abi_package         internal/weak, internal/concurrent package_info.cs
+  CS0426  HashTrieMap<,> not in sync_package  unique/handle.cs :91 :92
+  CS0103  initᴛidentity / initᴛgenerator      crypto/internal/edwards25519/package_init.cs :11 :12
+  CS0103  Ꮡr not in scope                     os/{windows,linux,darwin}/root_openat.cs:123
+  CASCADE godebug_package not in namespace    crypto/internal/fips140deps/godebug (x5, all generated)
+```
+
+**Scored in that post:**
+- FatalReport cleared: HIT.
+- ASM predicted at "the ~1900 order", measured ~3000: MISS, with the extra ~1,100 an unexplained residue.
+- Run 1 read CS 4 / ASM 194: MISS. It was MASKING caused by R's own `panic_impl.cs` copy (`CS0111`
+  `throw`/`fatal`), and is scored a failure.
+
+**The rule banked from run 1** (COORD `377fb80e0`): a hand-own's displacement is performed by the
+CONVERTER at emission time, so copying a newer hand-own into an older emission DUPLICATES where a
+re-convert would DISPLACE.
+
+⚠ **UNITS. The heading "40/34/44 → 12/12/12"** (also in `db6d9462f`) compares lineage A's seat-B TOTAL
+OCCURRENCES with lineage B's UNIQUE SITES. Those are two units on two trees. Lineage B's previous reading
+was 2 distinct at ASM 862 / 881 / 856. The step 2 → 12, with ASM 862 → 2975, spans more than one axis:
+the re-base onto train 46's master (FatalReport landing) plus the golib and hand-own refresh. It has the
+unmasking shape, but no post states it and it is NOT MEASURED. The ROOT column also changes unit between
+posts: raw occurrences in `df021e238`, `7f2188ab9` and `8360aebcc`; unique sites in `52c11b728`.
+
+⚠ **Two statements this block cannot reconcile, recorded as open:**
+- **Lineage.** No post names the lineage of the 22:01 tree. Its assignment to lineage B is this block's
+  inference, from `8360aebcc`'s FatalReport survivor clearing, the ladder PARKED at `ba82aa020` until
+  train 46, and the ruled re-base onto the train-46 master (`0877b8105`).
+- **Converter seats.** `df021e238` says lineage B's fresh conversion carried G's alias and slices cuts as
+  patches; `52c11b728` says the rung's emission predates train 46's three converter seats, two of which are
+  those cuts. The two agree only if the 22:01 `src/core` kept the patched emission, which lacks the third
+  seat, `ce1ee957b`: the change the `Ꮡr` site is scored against. No post states which seats the 22:01
+  emission carries.
+
+### 7. THE 22:14 AND 22:20 CORRECTIONS, AND WHERE THE TWELVE STAND
+
+- **`1d93165942`** (accepted by COORD at `210d49537`):
+  - G's facts at `81f4d760f`, re-derived: `internal/weak`, `internal/concurrent` and
+    `crypto/internal/edwards25519` are ABSENT at 1.24.13; `abi.MapType` is gone.
+  - So the 2 `ΔMapType` roots and the 2 edwards25519 hooks are the **(C) LEFTOVER-SEED** class, and the
+    corrected prediction is **"G's seat owns 5 of 12"** (the godebug cascades; the seat is
+    `g-unfreeze-handown-metadata`, train-47 seat 6 in `db6d9462f`).
+  - The removal experiment was **VOID**: a line filter produced invalid XML, 28 × `MSB4025`, zero
+    assemblies.
+  - The no-backup restore from master's 1.23 corpus **DEGRADED THE TREE**: 16 unique / 22 root (occ) /
+    10 cascade / ASM 2944. It added 6 `fe.cs` sites and removed the 2 edwards25519 hooks.
+- **`e8b2ab68e`** (accepted by COORD at `93c967d4d`): edwards25519 was never "a member nobody had named".
+  It is one of this record's §2 FOURTEEN, and the list had **NEVER BEEN APPLIED** (14 of 14 still present).
+  Its executable form is `docs/phase4/h5-removals.txt` at `826045a74`, boarded at `93c967d4d` (the
+  "tenth candidate"; seat 9 in `db6d9462f`'s table), removed BY THE SEEDED RE-CONVERT and never by hand.
+
+**The twelve, by owned class** (COORD `db6d9462f` §2; seat 8's re-cut announced by G at `4e2eda884` and
+boarded by COORD at `d3216183f`):
+
+```
+  2  CS0426 ΔMapType            (C) leftover seed                 H5c removes internal/weak, internal/concurrent
+  2  CS0103 init hooks          (C) leftover seed                 H5c removes crypto/internal/edwards25519
+  5  cascade godebug            frozen metadata                   train-47 seat 6 (G's (B) un-freeze)
+  2  CS0426 HashTrieMap<,>      generic-arm qualifier (G)         train-47 seat 8, claude/g-generic-alias-recut 449ecce7a
+  1  CS0103 Ꮡr (os/root_openat) converter emission defect         scored against ce1ee957b (landed in train 46)
+```
+
+### 8. THE DEGRADED-TREE RULING, AND THE READINGS OWED
+
+COORD `210d49537`:
+1. **The recorded rung STANDS** (12 / 12 / 12, ASM 2975 / 3053 / 3003, measured and posted before any
+   edit).
+2. **The tree is DEGRADED and no reading is taken from it** until the seeded re-convert after train 47.
+3. The falsifier stated before the restore fired, so the degradation is a known state, not a suspicion.
+4. A destructive step on a measurement tree takes a backup first.
+
+**That re-convert is the fifth rehearsal, to be recorded as §16** (`db6d9462f` §3.1 and §5). It rebuilds
+the tree and applies the fourteen through H5c's instrument, which itself owes a fresh dry reading. It then
+scores, AS WORDED, the predictions on record:
+- R: "G's seat owns 5 of 12" (`1d93165942`).
+- G: seat 6 moves ZERO ladder rows (`8345cf41`, beside R's at `377fb80e0`).
+- The four (C) sites clear only when the list is applied (`db6d9462f`).
+- G: "`unique/handle.cs:91,92` move `Δsync` → `isync`; nothing else in std" (`aab3473f6` §7).
+
+And it reads one site that carries NO prediction: `Ꮡr` at `os/{goos}/root_openat.cs:123` is scored
+against `ce1ee957b` (`db6d9462f`), meaning whether it clears. Only a surviving site becomes a cut: minimal
+repro first, announced before cutting.
+
+**Scope.** No new measurement: a record of readings taken on 2026-09-08, each at the tree its post names,
+with the two lineages kept apart. Written 2026-09-13 at master `654343a5e` from the posts themselves.
+Readings the posts do not reconcile are marked NOT MEASURED rather than smoothed.
