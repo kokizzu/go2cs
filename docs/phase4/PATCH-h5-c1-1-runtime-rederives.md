@@ -92,8 +92,27 @@ The applier enforces it as a post-condition, so the hazard is decidable rather t
   src/apply-h5-c1-1-rederives.sh --self-test        hermetic, red-first, touches no clone
 ```
 
-It **REFUSES a pre-H5c tree** (`runtime/internal/sys` still present) — applying there is the thing
-that breaks a green corpus — and it is **idempotent**, so an H5 rerun cannot double-edit.
+It **REFUSES a pre-H5c tree** — applying there is the thing that breaks a green corpus — and it is
+**idempotent**, so an H5 rerun cannot double-edit.
+
+⚠ **"H5c has run" is NOT "the directory is gone", and the first cut got this wrong.** R scored the
+applier on the real post-H5c root (`C:/go2cs-s16/h5`, mailbox `6f6528938` §6): H5c applied 101 files
+and **still left the directory** — `runtime.internal.sys{,.tests}.csproj`, `README.md`, two icons and
+three test `.cs`. In R's words, *"the instrument's population is not the directory."* The precondition
+keyed on `-d`, a shape H5c never produces, so **apply returned rc 2 on the one tree it exists for.**
+
+The predicate is now what H5c actually does: it removes the package's **production** `.cs`. A
+production `.cs` still standing means H5c has not run; the survivors above do not count. The refusal **names the files it
+found** (COORD `894a761f6` §1) and says **STOP and run H5c** — never remove the directory by hand. A
+count tells an operator the tree is wrong; a name tells them which DELETE-ABSENT row did not apply.
+
+**It works either side of the H5c amendment.** COORD has since ruled that H5c removes a DELETE-ABSENT
+package as a DIRECTORY, so the residue will stop existing — and an absent directory skips the check
+entirely, which is arm 3's tree. Residue today, no directory tomorrow, accepted both ways.
+
+Found by scoring on a real root, not by any arm in this file. The fixture could not contain the shape;
+arms 9 and 10 now do (9 is R's residue tree, 10 puts one production `.cs` back so 9 cannot have simply
+deleted the check).
 
 The post-condition, checked on the tree rather than on the applier's own belief: no site names the old
 `sys` package; the old namespace import is gone; **exactly one** `using @internal.runtime;` per file;
@@ -102,7 +121,7 @@ of §4.
 
 ## 6. Validation
 
-**8 self-test arms, red-first, hermetic** — a pre-H5c tree is refused; an unpatched tree fails
+**10 self-test arms, red-first, hermetic** — a pre-H5c tree is refused; an unpatched tree fails
 `--verify` *naming both defects*; apply-then-verify is green; no duplicate using directive; CRLF
 preserved; re-apply is idempotent; a re-derive that LOST the mcleanup hand-own fails; and a file whose
 COMMENT names `goǃ(runfinq)` still passes.

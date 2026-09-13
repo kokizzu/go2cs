@@ -59,9 +59,33 @@ check_precondition() {
   local core=$1
   [ -f "$core/$R2" ] || die "no $R2 under $core -- not a corpus root"
   [ -f "$core/$MF" ] || die "no $MF under $core -- not a corpus root"
+  # ⚠ "H5c HAS RUN" IS NOT "THE DIRECTORY IS GONE". Scored by R on the real post-H5c root
+  # (C:/go2cs-s16/h5, mailbox 6f6528938 s6): H5c applied 101 files and STILL LEFT the directory --
+  # runtime.internal.sys{,.tests}.csproj, README.md, two icons, and three test .cs. R's words:
+  # "the instrument's population is not the directory." The first cut of this precondition keyed on
+  # `-d`, a shape H5c never produces, so APPLY COULD NOT RUN ON A REAL TREE AT ALL -- rc 2 on the one
+  # root it exists for. Found by scoring on real data, not by any arm I wrote.
+  #
+  # The predicate is now what H5c actually does: it removes the PRODUCTION .cs of the package. The
+  # survivors R enumerated are project/doc/icon files and tests, so a production .cs still standing
+  # means H5c has not run here.
   if [ -d "$core/runtime/internal/sys" ]; then
-    die "runtime/internal/sys is STILL PRESENT -- H5c has not run on $core. Applying here would
-        re-point aliases at a package that does not exist yet and break a tree that builds."
+    local prod names
+    prod=$(find "$core/runtime/internal/sys" -maxdepth 1 -name '*.cs' \
+             ! -name '*_test.cs' ! -name 'go2cs_test_host.cs' ! -name 'package_test_info.cs' 2>/dev/null | wc -l)
+    if [ "${prod:-0}" -gt 0 ]; then
+      # NAME THE FILES, do not just count them (COORD 894a761f6 s1). A refusal that reports "3
+      # production .cs" tells the operator a tree is wrong; one that names consts.cs tells them WHICH
+      # H5c row did not apply, which is the difference between re-running H5c and going looking.
+      names=$(find "$core/runtime/internal/sys" -maxdepth 1 -name '*.cs' \
+                ! -name '*_test.cs' ! -name 'go2cs_test_host.cs' ! -name 'package_test_info.cs' 2>/dev/null \
+              | sed 's|.*/|          |' | sort)
+      die "H5c has NOT run on $core -- runtime/internal/sys still holds $prod production .cs file(s),
+        each of which is a DELETE-ABSENT row H5c should have removed:
+$names
+        Applying here re-points aliases at a package that does not exist yet and breaks a tree that
+        builds. STOP and run H5c; do NOT remove the directory by hand."
+    fi
   fi
   [ -d "$core/internal/runtime/sys" ] || die "internal/runtime/sys is ABSENT -- this is not a 1.24 emission"
   [ -f "$core/runtime/note_other.cs" ] || die "runtime/note_other.cs is ABSENT -- the note duplicate
@@ -171,11 +195,17 @@ selftest() {
   }
 
   # ARM 1 (RED FIRST): a PRE-H5c tree must be REFUSED, because applying there breaks a green corpus.
+  # A realistic pre-H5c tree is "reconvert done, H5c NOT done": the 1.24 files are emitted AND the
+  # seeded package's PRODUCTION .cs are still there. An empty directory is not that shape -- the first
+  # version of this fixture made one, and after the precondition was corrected it stopped being a
+  # pre-H5c tree at all, which arm 1 said immediately.
   mkpost "$tmp/pre"; mkdir -p "$tmp/pre/runtime/internal/sys"
+  : > "$tmp/pre/runtime/internal/sys/consts.cs"
+  : > "$tmp/pre/runtime/internal/sys/runtime.internal.sys.csproj"
   out=$(bash "$self" "$tmp/pre" 2>&1); rc=$?
   arms=$((arms+1))
   [ "$rc" -eq 2 ] || { echo "ARM 1 FAILED: wanted refusal (2) on a pre-H5c tree, got $rc"; echo "$out"; return 1; }
-  case "$out" in *"H5c has not run"*) ;; *) echo "ARM 1 FAILED: refused without naming H5c"; echo "$out"; return 1 ;; esac
+  case "$out" in *"H5c has NOT run"*) ;; *) echo "ARM 1 FAILED: refused without naming H5c"; echo "$out"; return 1 ;; esac
   echo "  ok   a PRE-H5c tree is REFUSED          applying there would break a tree that builds"
 
   # ARM 2 (RED): an unpatched post-H5c tree must FAIL --verify, or the post-condition proves nothing.
@@ -255,6 +285,33 @@ PY2
   arms=$((arms+1))
   [ "$rc" -eq 0 ] || { echo "ARM 8 FAILED: a CORRECT file was rejected because its COMMENT names goǃ(runfinq) (rc=$rc)"; echo "$out"; return 1; }
   echo "  ok   a COMMENT naming the old body OK   the code check does not read prose"
+
+  # ARM 9 (R 6f6528938 s6, scored on the REAL post-H5c root): H5c leaves the DIRECTORY behind. A tree
+  # carrying only the survivors R enumerated has had H5c run and MUST be accepted. The first cut
+  # refused exactly this and so could not run on the one tree it exists for -- the fixture could not
+  # contain the shape, and only real data did.
+  mkpost "$tmp/residue"
+  mkdir -p "$tmp/residue/runtime/internal/sys"
+  for leftover in runtime.internal.sys.csproj runtime.internal.sys.tests.csproj README.md go2cs.ico \
+                  go2cs.png go2cs_test_host.cs intrinsics_test.cs package_test_info.cs; do
+    : > "$tmp/residue/runtime/internal/sys/$leftover"
+  done
+  out=$(bash "$self" "$tmp/residue" 2>&1); rc=$?
+  arms=$((arms+1))
+  [ "$rc" -eq 0 ] || { echo "ARM 9 FAILED: refused a REAL post-H5c tree (H5c leaves the directory) rc=$rc"; echo "$out"; return 1; }
+  echo "  ok   H5c RESIDUE is accepted            the directory survives H5c; only its production .cs go"
+
+  # ARM 10: the same directory with ONE production .cs back must still REFUSE -- otherwise arm 9 has
+  # simply deleted the precondition instead of correcting it.
+  : > "$tmp/residue/runtime/internal/sys/consts.cs"
+  out=$(bash "$self" "$tmp/residue" 2>&1); rc=$?
+  arms=$((arms+1))
+  [ "$rc" -eq 2 ] || { echo "ARM 10 FAILED: a PRODUCTION .cs is back and apply did not refuse (rc=$rc)"; echo "$out"; return 1; }
+  case "$out" in *"H5c has NOT run"*) ;; *) echo "ARM 10 FAILED: refused without naming H5c"; echo "$out"; return 1 ;; esac
+  # COORD 894a761f6 s1: the refusal NAMES the file it looked for. A count says a tree is wrong; a name
+  # says which H5c row did not apply.
+  case "$out" in *"consts.cs"*) ;; *) echo "ARM 10 FAILED: refused without NAMING the offending file"; echo "$out"; return 1 ;; esac
+  echo "  ok   one PRODUCTION .cs still REFUSES   named by file, so the operator knows which row"
 
   echo
   echo "SELF-TEST CLEAN -- $arms arms"

@@ -60,7 +60,7 @@ func TestH5RederivePatchSelfTest(t *testing.T) {
 		t.Fatalf("src/apply-h5-c1-1-rederives.sh --self-test did not report a clean run:\n%s", text)
 	}
 
-	const wantArms = 8
+	const wantArms = 10
 	if got := strings.Count(text, "\n  ok   "); got != wantArms {
 		t.Fatalf("expected %d passing arms from src/apply-h5-c1-1-rederives.sh --self-test, counted %d -- an arm that quietly stops running is exactly what this count exists to catch:\n%s",
 			wantArms, got, text)
@@ -81,6 +81,14 @@ func TestH5RederivePatchSelfTest(t *testing.T) {
 		// returns runtime.AddCleanup to a silent no-op, and the merge that does it is CLEAN.
 		"a LOST mcleanup hand-own FAILS",
 		"a COMMENT naming the old body OK",
+		// R scored the applier on the REAL post-H5c root (mailbox 6f6528938 §6) and found the
+		// precondition keyed on a shape H5c does not produce: H5c removes FILES, not directories, so
+		// runtime/internal/sys survives with its csproj, README, icons and tests. The first cut
+		// therefore refused rc=2 on the one tree it exists for. Arm 9 is that tree; arm 10 keeps arm 9
+		// from having simply deleted the check. The fixture could not contain this shape -- only real
+		// data did, which is the argument for scoring on a real root.
+		"H5c RESIDUE is accepted",
+		"one PRODUCTION .cs still REFUSES",
 	} {
 		if !strings.Contains(text, reason) {
 			t.Fatalf("src/apply-h5-c1-1-rederives.sh --self-test did not report the arm %q -- the arm names may survive a rewrite that loses what they assert:\n%s", reason, text)
