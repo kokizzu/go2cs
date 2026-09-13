@@ -169,6 +169,13 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   one long unrelated entry filled the window. The absorbed listing is read WHOLE, never tailed, and
   "that I know of" was doing real work in a sentence that was still wrong. Retracted by the lane the
   same hour, with the cut. -->
+- **A WATCHER'S ANCHOR IS THE LAST TIP READ, never the remote's CURRENT tip** — anchoring on the tip
+  observed at arming time drops every entry that landed during the read. **And consecutive `ls-remote`
+  failures emit their own line**, because a blind watcher and a quiet one are otherwise the same silence.
+  <!-- ⚠ 2026-09-13, C2 e1c9e14a2: both clauses written into the watcher — the anchor advanced to what was
+  actually absorbed rather than to what the remote held, and a run of failed `ls-remote` calls made to
+  announce itself, since silence from a watcher that cannot reach the remote is indistinguishable from
+  silence on a quiet channel. -->
 
 ## Writing the guard inside the tool
 - **An assertion whose reference is derived from the thing under test can never fail, and it is

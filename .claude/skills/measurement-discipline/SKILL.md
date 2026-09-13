@@ -428,6 +428,17 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   a guard's rows for one defect silently deletes another defect's ONLY coverage, the silent-subtraction class
   inside a commit whose message is about something else, and the nearest-looking substitute exercises the
   OTHER band. **A census output that says "empty means no guard" is read for its RESULT, not its label.**
+- **THE CONTROL FOR A SEAT IS THE SEAT'S OWN PARENT, never the comparand sitting ready to hand** — a
+  baseline from another day carries every commit between it and the seat, so the seat is charged for
+  movement it did not cause. <!-- ⚠ 2026-09-13, i9 fffd4fd7b: a runtime-row reading nearly attributed a
+  57-verdict regression (185 -> 128 at TestGCTestIsReachable) to seat 16 by comparing against a 09-08
+  baseline; the row had moved somewhere between 44f858717 and ddd509c1e, and the parent control — the
+  seat's own parent commit, one axis — read ZERO. -->
+- **A CLASSIFIER THAT READS LOCAL REFS READS THE MEASURER'S OWN WRITES** — after a preservation batch
+  every commit reads "held", so **the classification OF RECORD is the one taken BEFORE the refs existed**,
+  and a re-run scopes to `refs/remotes/origin`. <!-- ⚠ 2026-09-13, R 34df2024c: the preservation refs the
+  measurer had just written made every commit classify as held, which is the own-writes member of the
+  derived-reference family; the scoping clause is C2 52c693041's. -->
 - **A CONTROL NAMES THE TIP OR THE LITERAL ITS EXPECTATION WAS MEASURED AT; a control that reads its
   expectation from the CURRENT TREE is not a control** — the tip moves, the expectation moves with it, and
   the arm goes on reading its documented value while measuring nothing.
@@ -1049,6 +1060,10 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   the code's own fall-through, not from the arm list. **Predict PER ARM with the SCOPE named** (a zero on one
   arm is a statement about the harness's population, not about the corpus), and **NAME the arm that carries a
   built-in positive control** — if nothing drives that arm above zero the census never ran at all.
+- **A SPARSE COLUMN IS THE ONE KIND OF EMPTINESS SAMPLING CONFIRMS** — characterise a column by COUNTING
+  IT WHOLE, never by its shape in the rows you happened to read. <!-- ⚠ 2026-09-13, C2 e1c9e14a2: the 1.24
+  skeleton's receives column read blank from its first rows; ten cells, at indices 29-41, 138-142 and 227,
+  were populated. -->
 - **`git patch-id` answers "is this EXACT PATCH on a ref", never "is this CONTENT in master"** — a re-split,
   re-ordered or merge-carried landing has a NEW patch-id with its content FULLY PRESENT. The disposition
   instrument is the per-file BLOB or ADDED-LINE test against master.
@@ -1176,6 +1191,10 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   same sign and magnitude in every order and both tiering modes — is what a REAL difference looks like, while
   a pair whose sign flips with tiering is AT OR BELOW RESOLUTION. **A per-TEST figure quoted as per-CALL
   understates by the arity.**
+- **A PREDICTION STATES ITS PREMISE, and a scorer returns NOT SCOREABLE when the premise is VOIDED BY
+  WORK OUTSIDE THE SUBJECT** — neither held nor falsified, because the run that would have scored it no
+  longer exercises the thing predicted. <!-- ⚠ 2026-09-13: C1 a4db02fe5 restated 18a34299f as PREMISE /
+  GIVEN THAT / FALSIFIER / NOT SCOREABLE after i9's run found the row no longer reached the test. -->
 
 <!-- DERIVATIONS (predictions) — Phase 1 text, verbatim:
   ⚠ **AN ARC AS A RECORD SHAPE: four predictions, each stated BEFORE its run and scored BY NAME**
@@ -1247,6 +1266,13 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   that must hand a converted package an INSTANCE of an interface it may not reference has a supported answer
   already: `golib.AdapterBinder.TryCreate`** — methods on the BOX receiver, interface type via
   `Type.GetType`; no assembly, no project reference, no dynamic codegen.
+- **A DERIVED READING NEVER STANDS IN FOR A MEASURED ONE, AND AN INSTRUMENT'S ARMING ACKNOWLEDGEMENT IS
+  READ WHOLE** — a clamp printed in the acknowledgement is the instrument stating its own budget, and a
+  duration taken from turn rhythm is not a clock. <!-- ⚠ 2026-09-13, three instances of one shape. C2
+  e1c9e14a2: the harness clamp `timeout 1800000ms` was printed in all five arming acknowledgements while
+  two deaths were published as a ~30-minute property nobody had measured. C1 5ed638bc0 read eight minutes
+  as "past budget" from turn rhythm instead of a clock. i9's `cat-file` fail-open is the same family at
+  the other end — an instrument's silence taken for a reading. -->
 
 <!-- DERIVATIONS (reading artifacts, oracles, leads and deferrals) — Phase 1 text, verbatim:
   ⚠ **A REFUSAL IS NOT RETIRED BY FINDING ITS EXPLANATION DATED — but the reason it happened may no
