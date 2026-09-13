@@ -24432,4 +24432,108 @@ converter's output — so the assembly under the probe is the one C1-2b produces
 
 — C2, on i9's measurement
 
+## 2026-09-13 — C2: **⚠ A DESIGN THAT IS SPECIFIED BUT NOT YET IMPLEMENTED WOULD SILENTLY LOSE 5 OF 11 TIMEOUT FLOORS — `DESIGN-peros-roster.md` §7's per-OS nested table defeats the shard-map generator's reserved-set extraction, non-greedily, and passes both of its guards. Cut BEFORE anyone implements §7 (coordinator ruling, `e0d5121e2` §8).**
+
+Found while deriving the H10 shard-map projection (`DATA-h10-shardmap-projection-go124.md`, §3d). This
+entry exists because the hazard is in a **design document's worked example**, so the cheapest moment to
+kill it is now, while §7 is still prose.
+
+### The mechanism, in two lines of the generator
+
+`docs/phase4/hopA-inputs/shardmap.py:83–87` derives the reserved set from the sweep script AT GENERATION
+TIME rather than copying it — which is right, and was itself a fix for a list that drifted twice:
+
+```python
+_m = _re.search(r"\$longTimeouts\s*=\s*@\{(.*?)\}", open(_sweep).read(), _re.S)
+assert _m,      "cannot derive the reserved set: no $longTimeouts table"
+_floors = _re.findall(r"'([^']+)'\s*=\s*'[^']+'", _m.group(1))
+assert _floors, "$longTimeouts parsed empty -- the pattern is stale, fix it here"
+```
+
+**`(.*?)\}` is NON-GREEDY, so the capture ends at the FIRST `}`.** A nested `@{ … }` inside the table
+closes the capture early, and everything after the nested entry is never seen. Both asserts still pass: one
+asks whether a table was found, the other whether the result is non-empty. **Neither asserts a COUNT**, so a
+truncated-but-non-empty parse is indistinguishable from a complete one.
+
+### Measured at `a02ac3df3`, by perturbing the LIVE table in place
+
+`src/run-validated-sweep.ps1:926` is a single-line table with **11** floors, in this order: `hash/maphash`,
+`index/suffixarray`, `crypto/dsa`, `archive/zip`, `go/parser`, `crypto/internal/mlkem768`, `time`,
+`crypto/tls`, `sync/atomic`, `net`, `net/http`.
+
+| Variant | Floors extracted | Guards |
+|---|--:|---|
+| the table as committed | **11 of 11** | — |
+| **§7's documented shape on its own worked example** `'time' = @{ default = '40m'; linux = '90m' }` (position 7) | **6 of 11** | ⚠ **SILENT — both pass** |
+| the same shape nested LAST (position 11) | 10 of 11 | ⚠ SILENT |
+| nested SECOND (position 2) | 1 of 11 | ⚠ SILENT |
+| nested FIRST (position 1) | 0 | **fires, loudly** |
+| CONTROL: multi-line reformat, **no** nesting | 11 of 11 | silent, and loses nothing |
+
+**Applying §7 exactly as documented loses `time`, `crypto/tls`, `sync/atomic`, `net` and `net/http`** — five
+floors, no error, exit 0. The control matters: a reformat alone is harmless, so the failure is specific to
+NESTING and not to whitespace.
+
+⚠ **The loss is POSITIONAL, and only position one is loud.** That is the worst possible shape for review: a
+reader who adds the nested entry at the end of the table sees 10 of 11 and nothing amiss, and the next
+person who alphabetises the table silently moves the loss from 1 floor to 10.
+
+⚠ **Figures previously quoted for this hazard were 9 / 2 / 0**, from an independent verifier's SYNTHETIC
+formattings of the table. The 10 / 1 / 0 above are from perturbing the live table in place. **Same
+mechanism, different input; neither reading supersedes the other**, and the invariant that holds across
+both is the one that matters: loud only when the nested entry is first, silent everywhere else, loss
+scaling with how early it sits.
+
+### Why this is worth an entry rather than a fix-in-passing
+
+**It re-creates, inside the generator built to prevent it, the exact failure `GoCorpusMigration.md` §3.2
+records**: a reserved list that drifted twice — "crypto/tls joined the table, two floors moved" — which is
+why the derivation replaced the copy in the first place. A silently-truncated derivation is *worse* than the
+copy it replaced, because it carries the authority of being derived.
+
+⚠ **The nested shape is not hypothetical and not novel to §7: a precedent already exists in the same
+file.** `$capabilityConditionalBlocks` (`run-validated-sweep.ps1`, the registration table) is nested, and
+one of its keys is `crypto/tls` — a package that is *also* in `$longTimeouts`. So a future reader has a
+working in-file model for writing exactly the shape that breaks the other table's extraction.
+
+**§7 is not wrong to want the shape.** A per-OS floor is the right design and its reasoning (size to the
+slowest legitimate host of that OS; no host-class primitive exists) is sound. The defect is entirely in the
+extraction.
+
+### The fix, and it is the same class as three other asserts in this campaign
+
+**The extraction must assert a count it derives INDEPENDENTLY — the table's own entry count, read by a
+second parser — rather than one it parses.** Brace-match the table (or count `'name' =` occurrences across
+the whole statement, nested or not) and refuse when the two disagree. A cardinality assert whose expected
+value comes from the same parse it is checking cannot fail; that is the shape, and this campaign has now
+found four instances of it in one instrument:
+
+- `assert _floors` — non-empty only, the subject of this entry;
+- `assert len(rows) == 162` — a hardcoded literal, so it guards cardinality but not CONTENT: corrupting one
+  `t_r` in place (`archive/zip` 354 s → 99999 s) passes every assert, prints `rows parsed: 162`, and
+  reports a makespan basis **14× wrong** with the instrument fully green;
+- the printed checksum's hardcoded `7 reserved` against a real 11, so a completing run prints arithmetic
+  that does not add up while the assert behind it is correct;
+- `assert r in byname` where the construction it cites says `R := reserved ∩ rows` — it asserts where the
+  plan intersects.
+
+The coordinator has ruled the generator REPAIRED with a content assert (a per-row `t_r` digest) rather than
+retired (`e0d5121e2` §5); this entry is the fourth defect's own record, and the repair should close it in
+the same cut.
+
+### Scope and limits, stated
+
+- **The hazard is LATENT: §7 is not implemented.** `$longTimeouts` carries no nested entry today, and the
+  live extraction reads 11 of 11. Nothing is currently mis-derived.
+- **No `.ps1` was executed** — `run-validated-sweep.ps1` was read as text; `shardmap.py` and its regexes
+  were run read-only against a copy of the text, never against the repository's own working tree.
+- **This does not audit the other direction**: whether any *other* consumer of `$longTimeouts` parses it,
+  and with what pattern, is NOT MEASURED here.
+- The derivation's second blind spot is recorded with it in §3d of the projection and is not this entry: the
+  extraction keys on floor NAMES only, so a floor-VALUE drift (`crypto/dsa` 120m → 121m moved nothing in the
+  output) is invisible to it — which means the *"two floors moved"* half of §3.2's recorded failure would
+  still not be caught, even after this fix.
+
+— C2
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
