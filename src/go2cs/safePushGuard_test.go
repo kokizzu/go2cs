@@ -51,6 +51,13 @@ func TestSafePushSelfTest(t *testing.T) {
 	// natively elsewhere. A host without a usable one cannot run the composition either, so there is
 	// nothing this guard could assert about it -- but the skip NAMES itself rather than passing
 	// quietly, because an unmeasured arm reported as a pass is the class this whole file is about.
+	// A SHALLOW clone cannot reach the real-push arm at all, so this guard is UNMEASURED there and says
+	// so BY NAME rather than going red for a reason that has nothing to do with the script. Checked
+	// before bash, because it needs no bash to decide and it is the more specific answer.
+	if shallow, why := safePushRepoIsShallow(); shallow {
+		t.Skip(why)
+	}
+
 	bash, unmeasured := safePushBash()
 	if bash == "" {
 		t.Skip(unmeasured)
@@ -174,4 +181,132 @@ func safePushBash() (string, string) {
 func isRegularFile(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.Mode().IsRegular()
+}
+
+// safePushRepoIsShallow reports whether the repository this test runs in is a SHALLOW clone, and the
+// reason this guard is UNMEASURED when it is.
+//
+// ⚠ THE SELF-TEST CANNOT PASS IN A SHALLOW CLONE, AND ITS RED LOOKS LIKE A BROKEN safe-push.sh
+// (measured 2026-09-13 in a cloud lane's container). The hermetic-origin arm seeds its bare repository
+// with `git push -q "$bare" "HEAD^{commit}:refs/heads/seeded"`, and git refuses to push history it does
+// not have:
+//
+//	! [remote rejected]  HEAD^{commit} -> seeded (shallow update not allowed)
+//	ABORT: self-test: cannot seed the hermetic origin
+//
+// Four of the ten arms pass first, so the failure arrives mid-suite with a plausible-looking tail, and
+// `src/safe-push.sh` is byte-identical to its base -- a lane reading this red will look for its own
+// change's fingerprints in the script that gates every fleet push. Every cloud lane clones shallow, so
+// this is not an edge case: it is the permanent state of a whole class of host, and the whole suite
+// reads red there for a reason no lane's diff can fix.
+//
+// A skip is the honest shape and a PASS would not be: the script is UNMEASURED here, not proven. The
+// arm that cannot run is precisely the real-push arm this file's own header refuses to omit, so the
+// skip NAMES that -- a reader must be able to tell "we did not test the push path" from "the push path
+// works".
+//
+// ⚠ IT FAILS TOWARD RUNNING, NOT TOWARD SKIPPING. An unanswerable query returns false, so a host whose
+// git is too old for `--is-shallow-repository`, or where the query errors for any other reason, still
+// runs the guard. A skip that fires when its own question could not be asked is a silent disarm, which
+// is the shape this entire file exists to prevent.
+func safePushRepoIsShallow() (bool, string) {
+	return safePushRepoIsShallowIn("")
+}
+
+// safePushRepoIsShallowIn is safePushRepoIsShallow's testable core: dir is the directory the query is
+// asked from, empty meaning the process working directory.
+func safePushRepoIsShallowIn(dir string) (bool, string) {
+	command := exec.Command("git", "rev-parse", "--is-shallow-repository")
+	command.Dir = dir
+
+	out, err := command.Output()
+
+	if err != nil {
+		return false, ""
+	}
+
+	if strings.TrimSpace(string(out)) != "true" {
+		return false, ""
+	}
+
+	return true, "this is a SHALLOW clone, so src/safe-push.sh --self-test cannot seed its hermetic origin -- " +
+		"`git push HEAD^{commit}:refs/heads/seeded` is refused with \"shallow update not allowed\" and the run " +
+		"aborts on \"self-test: cannot seed the hermetic origin\" four arms in. The real-push arm is therefore " +
+		"UNMEASURED on this host, not passing: nothing here proves the push path works. Run this guard in a " +
+		"full clone, or `git fetch --unshallow` first"
+}
+
+// TestSafePushShallowDetectionFiresOnAShallowCloneAndNotOnAFullOne is the positive control for the skip
+// above, and the negative half in the same test.
+//
+// A skip nobody has watched fire is the same liability as a gate nobody has watched go red: it would
+// silently swallow the whole guard the day its predicate inverted, on every host, and the suite would
+// still print ok. So the control builds a real two-commit repository and a real depth-1 clone of it,
+// and asserts the predicate reads TRUE in the clone and FALSE in the full origin -- the second half is
+// what would catch a predicate that answers "shallow" everywhere.
+//
+// Two commits, not one: a depth-1 clone of a single-commit repository need not be marked shallow at
+// all, since the whole history already fits. That would make the positive arm pass or fail on a detail
+// of git's bookkeeping rather than on the predicate.
+func TestSafePushShallowDetectionFiresOnAShallowCloneAndNotOnAFullOne(t *testing.T) {
+	git, err := exec.LookPath("git")
+
+	if err != nil {
+		t.Skip("git is not on PATH, so the shallow-clone predicate is UNMEASURED here, not passing")
+	}
+
+	root := t.TempDir()
+	origin := filepath.Join(root, "origin")
+	shallow := filepath.Join(root, "shallow")
+
+	run := func(dir string, args ...string) {
+		t.Helper()
+		// Identity on the command line, never in a global config: the test must not write to the
+		// host's git configuration, and a container often has no user identity at all.
+		full := append([]string{"-c", "user.name=go2cs test", "-c", "user.email=test@example.invalid"}, args...)
+		command := exec.Command(git, full...)
+		command.Dir = dir
+
+		if out, err := command.CombinedOutput(); err != nil {
+			t.Fatalf("git %v in %s failed: %v\n%s", args, dir, err, out)
+		}
+	}
+
+	if err := os.MkdirAll(origin, 0o755); err != nil {
+		t.Fatalf("cannot create the control origin: %v", err)
+	}
+
+	run(origin, "init", "-q", "-b", "main")
+
+	for _, name := range []string{"first", "second"} {
+		if err := os.WriteFile(filepath.Join(origin, name+".txt"), []byte(name+"\n"), 0o644); err != nil {
+			t.Fatalf("cannot write the control commit's file: %v", err)
+		}
+
+		run(origin, "add", name+".txt")
+		run(origin, "commit", "-q", "--no-gpg-sign", "-m", name)
+	}
+
+	// file:// rather than a bare path: git ignores --depth on a local-path clone, which would hand back
+	// a FULL clone and a positive arm that quietly proves nothing.
+	run(root, "clone", "-q", "--depth", "1", "file://"+filepath.ToSlash(origin), shallow)
+
+	// POSITIVE: the depth-1 clone must read shallow, with a reason naming both halves.
+	isShallow, why := safePushRepoIsShallowIn(shallow)
+
+	if !isShallow {
+		t.Fatalf("the predicate read NOT shallow in a depth-1 clone of a two-commit repository -- it cannot fire, so the skip in TestSafePushSelfTest is dead code")
+	}
+
+	for _, want := range []string{"shallow update not allowed", "cannot seed the hermetic origin", "UNMEASURED"} {
+		if !strings.Contains(why, want) {
+			t.Errorf("the skip reason no longer names %q -- a skip states what was not measured, or it reads as a pass: %s", want, why)
+		}
+	}
+
+	// NEGATIVE: the full origin must read NOT shallow, or the predicate answers "shallow" everywhere
+	// and the guard is disabled on every host.
+	if isShallow, why := safePushRepoIsShallowIn(origin); isShallow {
+		t.Fatalf("the predicate read SHALLOW in a full (non-cloned) repository -- it would skip the guard everywhere: %s", why)
+	}
 }
