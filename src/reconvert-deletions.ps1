@@ -94,13 +94,30 @@
                             for this flavour -- a build-tag or GOEXPERIMENT flip. This is the class
                             that killed R's build: exp_aliastypeparams_off.go is present at 1.24.13
                             and simply not chosen.
-        UNRESOLVED          no Go principal is derivable INSIDE a package the converter emits --
-                            generated metadata (package_info.cs, package_init.cs) and anything else
-                            whose stem does not map to a .go file name. NEVER deleted, always listed,
-                            and the run EXITS NON-ZERO so a human reads them. R's 25 contains exactly
-                            one such row (crypto/ecdh/package_init.cs): the class is real, it is not
-                            automatable from a file name, and silently dropping it would be the
-                            silent-subtraction failure this repository has already paid for.
+        UNRESOLVED          no Go principal is derivable INSIDE a package that SURVIVES at the target,
+                            and the file is not generated metadata -- a stem that does not map to a .go
+                            file name. NEVER deleted, always listed, and the run EXITS NON-ZERO so a
+                            human reads them. Silently dropping one would be the silent-subtraction
+                            failure this repository has already paid for.
+        KEEP-METADATA       generated metadata (package_info.cs, package_init.cs,
+                            package_info_internal_test.cs) in a package that SURVIVES at the target.
+                            Kept, listed BY NAME, and NOT blocking.
+
+                            THIS CLASS EXISTS BECAUSE THE ORDER WAS WRONG, not because a new
+                            question was asked. Metadata used to return UNRESOLVED before the
+                            absent-package test ran, so a package_info.cs whose PACKAGE was deleted
+                            between the releases -- the stale residue this pass exists to remove -- read
+                            as "needs a human" rather than DELETE-ABSENT. i9 measured the consequence on
+                            a real three-target tree: 42 such rows, H5c refusing, the rung stopped
+                            (mailbox 8f2eafdc8). Asking the package question FIRST splits them: gone at
+                            the target is DELETE-ABSENT, survives is this class.
+
+                            AND MEMBERSHIP DECIDES IT, NOT EMISSION. A surviving-package row that no
+                            staging root carries is a package Go has and the run did not emit; deleting
+                            it on that evidence is the mtime mistake in another coat (see the caveat
+                            above, which the withdrawn third clause violated one screen below itself).
+                            R's crypto/ecdh/package_init.cs is a genuine stale row and lands in
+                            DELETE-ABSENT by its own package's absence, which is the right reason.
 
     Files the conversion emitted this run are not candidates at all. Neither are the test-host
     artifacts (package_test_info.cs, go2cs_test_host.cs) or any *_test.cs / *.cs.auto / *.g.cs: the
@@ -770,24 +787,68 @@ foreach ($file in $allCs) {
         continue
     }
 
-    # Generated metadata has no Go principal by construction. It is NOT automatable from a file name
-    # -- R's 25 contains crypto/ecdh/package_init.cs, a genuine stale row -- so it is surfaced rather
-    # than silently dropped, and it makes the run exit non-zero.
-    if ($name -eq 'package_info.cs' -or $name -eq 'package_init.cs' -or $name -eq 'package_info_internal_test.cs') {
-        $null = $rows.Add([pscustomobject]@{
-            Path = $relative; Principal = ''; Class = 'UNRESOLVED'
-            Reason = 'generated metadata (no Go principal)'; Group = ''; Full = $file.FullName
-        })
+    # Generated metadata has no Go principal by construction -- BUT THAT IS A STATEMENT ABOUT THE
+    # PRINCIPAL, NOT ABOUT THE PACKAGE, and the package is a question Go can answer. So the metadata
+    # test no longer short-circuits here; it runs AFTER the absent-package test below.
+    #
+    # ⚠ WHY THE ORDER WAS THE WHOLE DEFECT (coordinator rulings 66e2b64d9 §2(b), 49d0b9ea1 §1; i9
+    # measured it at 8f2eafdc8). Returning UNRESOLVED here made EVERY metadata row unresolved
+    # unconditionally, whatever its package -- so a package_info.cs whose package was DELETED between
+    # the two releases, which is exactly the stale residue this pass exists to remove, read as "needs a
+    # human" instead of DELETE-ABSENT, and H5c refused on a real three-target tree with 42 such rows.
+    # $resolved was already computed above and then discarded: the answer was in hand and unused.
+    #
+    # ⚠ AND `Resolve-Principal` ALREADY STRIPS A TRAILING GOOS SEGMENT (its L3 arm: leaf in $KnownGoos
+    # and the full directory not a source-std package -> the import path is the PARENT and the leaf is
+    # the flavour). So a layout-L3 per-GOOS metadata row -- os/windows/package_info.cs and its nine
+    # siblings -- resolves to a LIVE package and falls to the KEEP arm below on its own. No derivation
+    # change is needed and none is made here: the derivation was never the defect, the ORDER was.
+    # DESIGN-multiplatform-corpus.md §8 confirms per-GOOS metadata is by design, not residue:
+    # "identical ones stay flat, varying ones land in the per-GOOS folder (27 and 4 respectively)".
+    $isMetadata = ($name -eq 'package_info.cs' -or $name -eq 'package_init.cs' -or $name -eq 'package_info_internal_test.cs')
 
-        continue
-    }
-
-    $principalLabel = "$($resolved.ImportPath)/$($resolved.Principal)"
+    # A metadata row has no `.go` principal, so naming one would print a file that never existed
+    # (internal/weak/package_info.go). The label says what the row IS.
+    $principalLabel = $(if ($isMetadata) { "$($resolved.ImportPath)/<generated metadata>" } else { "$($resolved.ImportPath)/$($resolved.Principal)" })
 
     if (-not $resolved.Selection.PackageExists) {
         $null = $rows.Add([pscustomobject]@{
             Path = $relative; Principal = $principalLabel; Class = 'DELETE-ABSENT'
             Reason = "package not in std at target"; Group = ''; Full = $file.FullName
+        })
+
+        continue
+    }
+
+    # The package SURVIVES at the target, so this metadata belongs to something Go still has. It is
+    # KEPT and reported BY NAME -- never deleted and never blocking.
+    #
+    # ⚠ WHY KEPT RATHER THAN DECIDED BY WHETHER THE RUN EMITTED IT (ruling 49d0b9ea1 §1). A row in a
+    # surviving package that no staging root carries is a package Go has and the emission did not
+    # produce -- deselected, or a converter defect -- and deleting it on that evidence is the timestamp
+    # mistake in another coat. Keeping it is safe; it is a finding, not a deletion. THE DECISION USES NO
+    # TIMESTAMP AND NO EMISSION EVIDENCE AT ALL: membership at the target decides, and membership is a
+    # property of the release pair rather than of what one run happened to rewrite.
+    #
+    # ⚠ WHY THE RULING'S FOURTH ARM IS NOT WRITTEN HERE -- stated, not silently omitted. Ruling
+    # 990f3ba1b §1 splits this case two ways: present at the target AND among the packages THIS RUN
+    # converted -> admit; present and NOT converted this run -> UNRESOLVED, a human by name. With this
+    # instrument's inputs the second is UNREACHABLE, and writing a branch that cannot be entered is the
+    # unfalsifiable-guard shape this package keeps finding. Test-ConversionTarget has already run above,
+    # so a row only reaches here with IsTarget = $true -- its package IS in `go list std` at the SOURCE
+    # release and is not skip-listed. What the script cannot know is what one particular RUN converted: it
+    # classifies a seeded tree on disk and never observes the conversion, so "converted this run" has no
+    # input to read. The ruling's own note agrees on the population: "none here".
+    #
+    # THE INPUT THAT WOULD MAKE THE ARM REAL is COORD's train-48 converter seat -- a per-file emission
+    # manifest (new / changed / reproduced-seed / line-endings-only) written beside the emission. When
+    # that exists this arm takes it as a parameter and the fourth case becomes measurable instead of
+    # assumed. Until then the honest shape is three arms, not four with one that cannot fire.
+    if ($isMetadata) {
+        $null = $rows.Add([pscustomobject]@{
+            Path = $relative; Principal = $principalLabel; Class = 'KEEP-METADATA'
+            Reason = "generated metadata in a package that survives at the target (no Go principal to select)"
+            Group = ''; Full = $file.FullName
         })
 
         continue
@@ -823,7 +884,11 @@ foreach ($file in $allCs) {
 # from a class whose predicate never fired.
 # ---------------------------------------------------------------------------------------------
 
-$classOrder = @('DELETE-ABSENT', 'DELETE-DESELECTED', 'UNRESOLVED', 'PROTECTED', 'NOT-A-CONVERSION-TARGET', 'KEEP-SELECTED')
+# KEEP-METADATA sits beside UNRESOLVED deliberately: it is the class rows MOVED to when the metadata
+# test stopped short-circuiting the absent-package test, and a reader comparing this run against a
+# pre-amendment log needs both counts adjacent to see where the 42 went. A class absent from this list
+# is counted nowhere and listed nowhere, so adding a class means adding it here.
+$classOrder = @('DELETE-ABSENT', 'DELETE-DESELECTED', 'UNRESOLVED', 'KEEP-METADATA', 'PROTECTED', 'NOT-A-CONVERSION-TARGET', 'KEEP-SELECTED')
 
 foreach ($class in $classOrder) {
     $inClass = @($rows | Where-Object { $_.Class -eq $class })
@@ -862,6 +927,98 @@ foreach ($class in $classOrder) {
 
 $deleteRows = @($rows | Where-Object { $_.Class -like 'DELETE-*' })
 $unresolved = @($rows | Where-Object { $_.Class -eq 'UNRESOLVED' })
+
+# ---------------------------------------------------------------------------------------------
+# A DELETE-ABSENT PACKAGE IS A DIRECTORY, NOT A LIST OF .cs -- and the full delete set it implies.
+#
+# Coordinator rulings `894a761f6` §1 ("the H5c amendment removes a DELETE-ABSENT package as a
+# DIRECTORY, residue asserted") and `bf2fd7da0` §3 (ONE `git rm` commit removes exactly the ruled
+# delete set, and it REFUSES unless `absent-in-stage.txt` cmp-equals "H5c's delete set at 100 rows
+# UNION the residue files of every DELETE-ABSENT package"; a divergence is a posted finding, never
+# absorbed). C1's applier hit the same thing from the other side: its precondition keyed on a
+# DIRECTORY that H5c leaves behind, so `apply` refused on a real post-H5c root (`3029f08ff1`).
+#
+# The residue is what the classification loop never looked at: a package directory holds its
+# `.csproj`, `.tests.csproj`, `README.md`, icons and test `.cs` beside the production `.cs` this
+# instrument classifies. Delete the production files only and the directory survives with a csproj
+# the solution generator will still enumerate.
+#
+# ⚠ WHY THIS REMOVES ENUMERATED FILES AND THEN AN EMPTY DIRECTORY, rather than deleting a directory
+# recursively. This instrument runs ONE flavour per invocation (`-Goos`), so "the package is absent at
+# the target" is known for THAT flavour only -- R's interim delete guards exactly this by requiring the
+# three flavours' DELETE sets to be identical before it removes anything, because a flat file under a
+# package directory can be live for a flavour this run never asked about. A recursive directory delete
+# would act on that uncertainty; enumerating the residue, removing exactly those files, and then
+# dropping the directory ONLY IF IT IS NOW EMPTY turns the uncertain case into a LOUD one: a leftover
+# is reported by name and the directory stays. Never `Remove-Item -Recurse` here.
+$absentPackageDirs = @{}
+
+foreach ($row in @($deleteRows | Where-Object { $_.Class -eq 'DELETE-ABSENT' -and $_.Reason -eq 'package not in std at target' })) {
+    $segments = $row.Path -split '/'
+
+    if ($segments.Count -lt 2) { continue }
+
+    $dir = ($segments[0..($segments.Count - 2)] -join '/')
+    $absentPackageDirs[$dir] = $true
+}
+
+$residueRows = @()
+
+foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
+    $onDisk = Join-Path $CoreDir ($dir -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+
+    if (-not (Test-Path -LiteralPath $onDisk -PathType Container)) { continue }
+
+    foreach ($file in @(Get-ChildItem -LiteralPath $onDisk -File -ErrorAction SilentlyContinue)) {
+        $relative = Get-RelativeDisplayPath -Path $file.FullName -Root $CoreDir
+
+        # Anything already carrying a DELETE row is accounted for; the residue is the remainder, and a
+        # PROTECTED file in here is NOT residue -- a hand-own is never swept by a package's removal.
+        if (@($rows | Where-Object { $_.Path -eq $relative }).Count -gt 0) { continue }
+
+        $residueRows += [pscustomobject]@{ Path = $relative; Dir = $dir; Full = $file.FullName }
+    }
+}
+
+# ONE HOME for the residue .cs term. It is printed in the deletion summary and subtracted by the
+# post-condition, and those were two copies of the same expression until this line existed -- the
+# drift shape this file keeps finding in other instruments. Computed from the rows the sweep
+# ENUMERATED, never from a listing (ruling cee96ffad §2).
+$residueCs = @($residueRows | Where-Object { $_.Path -like '*.cs' }).Count
+
+Write-Host ''
+Write-Host '  DELETE-ABSENT packages (whole-package removals)' -ForegroundColor Cyan
+Write-Host ("    package directories            {0}" -f $absentPackageDirs.Count)
+Write-Host ("    residue files beside the rows  {0}" -f $residueRows.Count)
+
+foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
+    $mine = @($residueRows | Where-Object { $_.Dir -eq $dir })
+    Write-Host ("      {0,-52} {1} residue file(s)" -f $dir, $mine.Count)
+
+    foreach ($r in $mine) { Write-Host ("          {0}" -f $r.Path) }
+}
+
+# The FULL delete set, emitted whether or not -Apply was passed: it is the artifact the ruled `git rm`
+# step compares against, so a dry run has to be able to produce it. LF-joined and sorted with an
+# ordinal comparer so the file is byte-comparable by `cmp` across the boxes that write and read it --
+# the CR and culture-sort classes this fleet has already paid for twice.
+$deleteSetFull = @(
+    @($deleteRows | ForEach-Object { $_.Path }) + @($residueRows | ForEach-Object { $_.Path })
+) | Sort-Object -Unique -CaseSensitive
+
+$deleteSetPath = Join-Path $Root 'h5c-delete-set-full.txt'
+[System.IO.File]::WriteAllText($deleteSetPath, (($deleteSetFull -join "`n") + "`n"))
+
+Write-Host ''
+Write-Host ("  delete set written  {0}" -f $deleteSetPath)
+Write-Host ("    {0} path(s) = {1} classified row(s) + {2} residue file(s)" -f $deleteSetFull.Count, $deleteRows.Count, $residueRows.Count)
+
+# Derived, not asserted as a constant: the union can be SMALLER than the sum when a residue file also
+# carries a row, and printing the arithmetic from the same variables the file was built from is what
+# keeps a future edit from stating a total the file does not have.
+if ($deleteSetFull.Count -ne ($deleteRows.Count + $residueRows.Count)) {
+    Write-Host ("    NOTE {0} path(s) appear in both halves of the union" -f (($deleteRows.Count + $residueRows.Count) - $deleteSetFull.Count))
+}
 
 function Write-Counts {
     Write-Host ''
@@ -986,10 +1143,69 @@ else {
         Write-Host ("    deleted  {0}" -f $row.Path)
     }
 
+    # The residue, then the directory -- and the directory ONLY if removing the enumerated files
+    # emptied it. See the block where $residueRows is built for why this is never -Recurse.
+    $residueDeleted = 0
+    $dirsRemoved    = 0
+    $dirsKept       = @()
+
+    foreach ($r in ($residueRows | Sort-Object Path)) {
+        $why = Test-ProtectedPath -RelativePath $r.Path
+
+        if ($null -ne $why) {
+            Write-Host ''
+            Write-Host ("RESIDUE DELETION ABORTED at {0} ({1})" -f $r.Path, $why) -ForegroundColor Red
+            Write-Host 'The tree is PART-DELETED; discard the staging root.' -ForegroundColor Red
+            exit 3
+        }
+
+        Remove-Item -LiteralPath $r.Full -Force
+        $residueDeleted++
+        Write-Host ("    deleted  {0}  (residue)" -f $r.Path)
+    }
+
+    foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
+        $onDisk = Join-Path $CoreDir ($dir -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+
+        if (-not (Test-Path -LiteralPath $onDisk -PathType Container)) { continue }
+
+        $left = @(Get-ChildItem -LiteralPath $onDisk -Force -ErrorAction SilentlyContinue)
+
+        if ($left.Count -eq 0) {
+            Remove-Item -LiteralPath $onDisk -Force
+            $dirsRemoved++
+            Write-Host ("    removed  {0}/  (empty after its files)" -f $dir)
+        }
+        else {
+            # NOT a failure of the run, and NOT swept: a flavour this invocation never asked about can
+            # legitimately keep a file here. Named so the reader decides, which is the whole reason the
+            # removal is not recursive.
+            $dirsKept += $dir
+            Write-Host ("    KEPT     {0}/  -- {1} entr(y/ies) remain, not enumerated as residue:" -f $dir, $left.Count) -ForegroundColor Yellow
+
+            foreach ($e in $left) { Write-Host ("          {0}" -f $e.Name) -ForegroundColor Yellow }
+        }
+    }
+
     $survivors = @($deleteRows | Where-Object { Test-Path -LiteralPath $_.Full })
+    $residueSurvivors = @($residueRows | Where-Object { Test-Path -LiteralPath $_.Full })
 
     Write-Host ''
     Write-Host ("  deleted {0} of {1}; {2} survived" -f $deleted, $deleteRows.Count, $survivors.Count)
+    Write-Host ("  residue deleted {0} of {1}; {2} survived" -f $residueDeleted, $residueRows.Count, $residueSurvivors.Count)
+
+    # Printed HERE, beside the two deletion counts, because this is where a reader reconciling the
+    # arithmetic looks -- and because the alternative is parsing it out of the residue listing, which is
+    # what produced 42-against-37 (ruling cee96ffad §2: "the instrument states the number it used").
+    # The after-block below subtracts this same variable, so the two can never disagree.
+    Write-Host ("  residue .cs {0}   (the term the post-condition subtracts; the rest are .csproj, icons and test hosts)" -f $residueCs)
+    Write-Host ("  package directories removed {0} of {1}; {2} kept with entries remaining" -f $dirsRemoved, $absentPackageDirs.Count, $dirsKept.Count)
+
+    if ($residueSurvivors.Count -gt 0) {
+        foreach ($r in $residueSurvivors) { Write-Host ("    SURVIVED  {0}  (residue)" -f $r.Path) -ForegroundColor Red }
+        Write-Host 'RESIDUE DELETION INCOMPLETE' -ForegroundColor Red
+        exit 3
+    }
 
     if ($survivors.Count -gt 0) {
         foreach ($row in $survivors) { Write-Host ("    SURVIVED  {0}" -f $row.Path) -ForegroundColor Red }
@@ -1010,12 +1226,38 @@ else {
             $keep
         })
 
+    # ⚠ THE EXPECTED COUNT OWES A RESIDUE TERM, and its absence was a defect of mine that only a tree
+    # with residue .cs could surface. i9 measured it at 846cbd849 running be9668d56: the classified set
+    # deleted exactly (102 of 102, 0 survived), then the residue sweep removed 108 more files of which
+    # 37 were production .cs, and this post-condition refused a count it could not reconcile -- exit 3,
+    # CORRECTLY. The residue sweep landed in 01caa02a0 and this arithmetic was not updated with it, so
+    # the check has been unsatisfiable on any tree with residue .cs ever since.
+    #
+    # DERIVED WITH THE SAME PREDICATE THE WALK USES, never a fresh glob: $remaining counts every .cs
+    # under core outside $BuildOutputDirs, so the term is the .cs among $residueRows. Two reasons that is
+    # exactly the deleted set rather than an approximation of it: the residue enumeration is
+    # NON-RECURSIVE over a package directory, so no build-output path can enter it; and residue SURVIVORS
+    # already exited 3 above, so every residue row reaching this line was removed.
+    #
+    # ⚠ WHY THE FIX IS THE ARITHMETIC AND NOT "CLASSIFY THE RESIDUE INSTEAD". A single-flavour run cannot
+    # classify a file whose principal it cannot resolve for the flavours it never asked about -- that is
+    # why the sweep exists and why the directory removal is not recursive (coordinator ruling 894a761f6
+    # §1 accepted the departure). And residue is NOT deleted unnamed: every residue file appears in
+    # h5c-delete-set-full.txt and on its own `deleted <path> (residue)` line. So the gap was bookkeeping,
+    # not disclosure.
+    #
+    # THE DECOMPOSITION IS PRINTED rather than left to be reconstructed. i9's parse of the log counted 42
+    # residue .cs against the 37 the arithmetic implies, because the KEPT-directory block below prints
+    # the names of entries that were NOT residue and a listing-parse cannot tell the two blocks apart.
+    # A number the instrument derived beats a number a reader parsed out of its prose.
+    $expectedRemaining = $totalCs - $deleted - $residueCs
+
     Write-Host ''
     Write-Host '  after (re-walked from disk)' -ForegroundColor Cyan
-    Write-Host ("    production .cs under core        {0}   (was {1}, minus {2} deleted)" -f $remaining.Count, $totalCs, $deleted)
+    Write-Host ("    production .cs under core        {0}   (was {1}, minus {2} classified, minus {3} residue .cs)" -f $remaining.Count, $totalCs, $deleted, $residueCs)
 
-    if ($remaining.Count -ne ($totalCs - $deleted)) {
-        Write-Host ("    ARITHMETIC MISMATCH -- expected {0}" -f ($totalCs - $deleted)) -ForegroundColor Red
+    if ($remaining.Count -ne $expectedRemaining) {
+        Write-Host ("    ARITHMETIC MISMATCH -- expected {0} = {1} - {2} classified - {3} residue .cs" -f $expectedRemaining, $totalCs, $deleted, $residueCs) -ForegroundColor Red
         exit 3
     }
 }
