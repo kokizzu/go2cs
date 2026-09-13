@@ -143,14 +143,23 @@ fleets) and `#digest a1fd9307ee95b238660028e6d11690cdfd9d9577e39c0299edbad6b1fd2
   basis, per the ruling. The two agree on 190 of 199 comparable rows.
 - **The makespan remains a LOWER BOUND** while any roster row carries no cost, and the generator prints
   it as one. One row does.
-- ⚠ **NO PLAN FROM THIS GENERATOR HAS BEEN THROUGH THE DRIVER.** §7's claim that the `#basis` header is
-  *additive* for `run-h10-dispatch.ps1` is **read from the driver's source** — it requires
-  `version/digest/rows/slice_cap_seconds/cooldown_seconds` and collects every other `#` line generically
-  — and C2 cannot execute a `.ps1`, so it is not measured. i9's 16-arm acceptance ran against a plan from
-  the *old* header (`#block`, no `#basis`), so the recon-basis plan's header is an untested input to a
-  tested driver. **One `-DryRun` arm against a recon-basis plan closes it**, and this belongs in the list
-  rather than in a reader's assumption: a "what is not measured" section that omits the thing the author
-  changed is the section doing the least work.
+- ~~**NO PLAN FROM THIS GENERATOR HAS BEEN THROUGH THE DRIVER.**~~ **CLOSED 2026-09-13 by i9
+  (`66360c817`), and the whole record below it is now reproduced rather than claimed.** It was listed here
+  because §7's `#basis` additivity argument was **read from the driver's source** and C2 cannot execute a
+  `.ps1`; i9's 16-arm acceptance had run a plan carrying the *old* header, leaving the recon-basis header
+  an untested input to a tested driver. i9 then ran both halves on the box in question:
+  - **the generator, on the console that defeated it** — no `PYTHONIOENCODING`, default cp1252:
+    **rc=0, plan written**, and every figure in §2–§5 of this record reproduced exactly (total 6,190 s,
+    median 16 s, mean 30.5 s, UNSCHEDULED 1, reserved leg 1,724 s, `W=3` 3,441 s, `W=4` 2,893 s).
+  - **the new plan through the driver** — 406 rows, digest `a1fd9307…` reproduced, **`#basis` read fine in
+    place of `#block`**, slice 1 packed to exactly 2,400 i9-s over 36 rows, `crypto/rsa` at its confirmed
+    27 i9-s. The additivity argument was right, and it is now measured instead of reasoned.
+
+  The bullet is struck rather than deleted: what it recorded was true when written, and the useful part is
+  that the gap existed and was closed by the lane that could close it. i9's own note on why it was worth
+  doing rather than assuming — *a plan the generator emits and a driver that refuses it would have been
+  found by whoever ran the first real dispatch* — is the argument for listing gaps instead of trusting a
+  source read.
 
 ## 7. Generator changes this re-derivation required, and one defect it exposed
 
