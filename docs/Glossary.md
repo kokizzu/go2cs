@@ -304,10 +304,11 @@ tracked), or an owed documentation/log compaction.
 
 ## Document types
 
-The repository's durable documents fall into five kinds, and which kind a document is decides who
+The repository's durable documents fall into six kinds, and which kind a document is decides who
 may edit it, what may be executed from it, and which one wins when two disagree. The ladder in one
 line: **runbooks lead on procedure; plans hold ruled strategy; records hold evidence; the board is
-the append-only findings ledger; the mailbox is transport.**
+the append-only findings ledger; the mailbox is transport; the kickoff is the rewritable restart
+document and never evidence.**
 
 <a id="runbook"></a>**Runbook.**
 A standing, **version-agnostic** procedure document that survives its instances — today the two
@@ -344,6 +345,19 @@ from a record moves to a runbook. Each carries a **state line** that moves:
 other documents resolve against those files **at the record's banking commit**
 (`git show <sha>:<path>`), not against today's tree — a record that cites by line says so in a
 pin-note.
+
+<a id="kickoff"></a>**Kickoff.**
+[`phase4/KICKOFF-fleet.md`](phase4/KICKOFF-fleet.md) — the fleet's **current, rewritable restart
+document**, and the one document kind that is **never evidence**. It holds what a session starting
+on master needs in one read: preservation steps, the roster, the current state, the rulings and
+records owed, and one kickoff prompt per session. It is **rewritten in place** as state moves (a
+record is amended, a kickoff is replaced), it is always read at **master's tip** and never at a
+cited SHA, and nothing is banked from it: a count or a SHA it carries is a pointer to where the
+measurement lives, not the measurement. It supersedes the handover log's state and prompt sections;
+the log stays the append-only decision record, read with `git show` when a ruling's history
+matters. A kickoff is not one of the RECON-/REHEARSAL-/CENSUS-/DATA-/STAGE- records: it is the
+only `phase4/` document a session executes its first steps from, which is exactly why it may hold no
+evidence.
 
 <a id="board"></a>**Board.**
 [`phase4/BOARD-next-validation-candidates.md`](phase4/BOARD-next-validation-candidates.md) — the
