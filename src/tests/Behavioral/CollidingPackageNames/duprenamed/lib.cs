@@ -23,4 +23,12 @@ public static @string Greeting() {
     return helloFromDuprenamedˢ;
 }
 
+[GoType] partial struct Box<T> {
+    public T V;
+}
+
+public static T Get<T>(this Box<T> b) {
+    return b.V;
+}
+
 } // end dup_package
