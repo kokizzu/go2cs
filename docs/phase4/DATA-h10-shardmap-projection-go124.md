@@ -741,3 +741,55 @@ was measured at>` — and never rewrite a line above it. A number that moves is 
 block stating the old value, the new value, the predicate and the tip; it is not edited in place. If a
 finding here is falsified, say so in the block and leave the falsified text standing, because the falsified
 claim is part of the record.
+
+---
+
+### AMENDED 2026-09-13 — re-derived at TRAIN 48's BASE, master `271300cea03a2f47bd7dd8d9ed392c6249dac4c4`
+
+COORD pinned train 48's base for this projection at master `271300cea` (mailbox `731d010fb`). This record
+was written against `a02ac3df346db4dc0bcfcbe040f060a8290e01cd`, so every load-bearing reading below was
+re-derived at the newer tip rather than assumed to carry. **Nothing above this line changes: §5a and the
+§7 dataset figures reproduce EXACTLY.** No number is superseded by this block; it only extends the range
+of tips over which the existing numbers are known to hold.
+
+**1. No input moved.** All twelve files under `docs/phase4/hopA-inputs/` are blob-IDENTICAL between this
+record's measured tip and `271300cea`, as is the generator's real data input
+`docs/phase4/DATA-sweep-row-walltimes.md` (blob `5ed682fa5d8895cb30e9f055e79eca24d0052935` at both).
+
+**2. The generator is still dead, in the same place, for the same reason.** Re-run at `271300cea` from a
+scratch materialisation of that tip:
+
+```
+  exit                1
+  stderr              AssertionError: reserved row net not in dataset      shardmap.py line 94
+  last stdout line    reserved set derived at generation time: 11 floor rows (…) + 2 big rows
+  rows parsed         162          total verdicts    18,569
+  total i9-seconds    7,701  (128.3 min)
+  median 10.0 s   mean 47.5 s   p75 16 s   p90 71 s   p95 226 s
+  the two hardcoded literals, unchanged at this tip:  line 25 `assert len(rows) == 162`
+                                                      line 94 `assert r in byname`
+```
+
+Every one of those matches §5a and §7 as written, including the line numbers, so the minimum mechanical
+repairs listed in §5a are still the right four and still unapplied.
+
+**3. ⚠ AN INSTRUMENT TRAP FOUND WHILE MAKING THIS MEASUREMENT, recorded because it would have FALSELY
+CONFIRMED this record.** The generator reads a THIRD input from three levels above itself —
+`src/run-validated-sweep.ps1`, at line 81 — outside `docs/phase4/` entirely. An input set missing that
+file **also exits 1**, with `FileNotFoundError`. The first run of this amendment's measurement did exactly
+that and was discarded. **So `exit 1` alone cannot confirm §5a**: a materialisation that is merely
+incomplete produces the same exit code as the defect §5a describes. The confirming evidence is the assert
+TEXT plus stdout reaching the reserved-set line, and that is what is quoted above. Any future re-derivation
+should assert all three input paths present before reading the exit code.
+
+**4. What this does NOT establish.**
+
+```
+  NOT  anything about §11. All seven questions are still COORD's and none is answered here.
+  NOT  any factor. §7's "every one of them NOT MEASURED" stands; this re-run used the same
+       placeholder factors and does not measure s_w, t_r-at-1.24, or the reserved-leg thermal question.
+  NOT  that a checkout behaves this way. The re-run was from a scratch materialisation of the tip's
+       CONTENT; it says the tip's files behave so, not that any particular working tree does.
+  NOT  a repair. Nothing in the generator was changed, and the assert at line 94 is still correct
+       behaviour per §5a — a change that makes it "run" by relaxing that assert is still a regression.
+```
