@@ -205,7 +205,7 @@ refusal is attributable to the profile arm and not to a second arm catching the 
 | `C:/Users/<foreign>/x` | **1 — refused** |
 | `/c/Users/<foreign>/x` (MSYS) | **1 — refused** |
 | `C:\Users\<local account>\x` | 0 — segment cleared as a placeholder |
-| `/home/<foreign>/x` | **1 — refused** |
+| `<foreign-home>/x` (POSIX form) | **1 — refused** |
 
 File restored byte-identical after every probe (sha256 `a80d8f67…` before and after all nine plants).
 
