@@ -70,17 +70,44 @@ die() { echo "REFUSE: $*" >&2; exit 2; }
 # H5_PYTHON is an honest seam, not a test hook: it is how the self-test's two negative controls
 # (arms 11 and 12) drive the gate, and it is also the answer for a lane whose interpreter is not on
 # PATH under the name this script would guess.
+#
+# ⚠ THE PROBE ASSERTS AN ANSWER, NOT AN EXIT STATUS, and the first cut of this gate got that wrong.
+# C2 measured it (mailbox a2b892aef): a status-only probe admits ANY program that ignores its
+# arguments and exits 0 -- /bin/true PASSES, /bin/echo PASSES. And /bin/echo is not a contrived
+# counter-example, it is the exact shape THIS AUTHOR documented in
+# docs/phase4/probes/c1-finalizer-iteration-index/apply.py: "python3 MAY NOT BE AN INTERPRETER. On
+# Windows it can be a Store alias that prints an install advert and exits 0" -- a program that prints
+# and exits 0 satisfies a status-only probe perfectly.
+#
+# WORSE, THE LOOP ORDER TURNED THAT MISS INTO A SHADOW: the loop takes the FIRST candidate that
+# passes, so on a Store-alias box the alias was accepted and the REAL `python` one line later was
+# never reached. That is the inverse of i9's lane and more dangerous, because i9's box fails loudly
+# while that one succeeds into a no-op -- and the exit-status check below cannot see it either, since
+# a probe-passing no-op exits 0. On an already-patched tree the run would then print APPLIED and
+# POST-CONDITION MET: i9's original defect through a different door.
+#
+# Asserting the ANSWER fixes both. `print(6*7)` must return "42": python3 "42" PASS, /bin/true ""
+# REFUSED, /bin/echo "-c print(6*7)" REFUSED -- and because the alias now FAILS the probe, `continue`
+# fires and the loop falls through to the real interpreter, which is what three candidates were for
+# and what it could not do on the one platform that needs it.
+#
+# Same discipline as arm 5 one screen down, and C2 put it best: a capture stopped being trusted and
+# was asserted to be a non-empty digit; a probe should likewise assert an answer rather than a status.
+# A TOOL THAT EXITS 0 HAS NOT TOLD YOU IT DID THE WORK.
 PYBIN=""
+py_answers() { [ "$("$1" -c 'print(6*7)' 2>/dev/null)" = "42" ]; }
 resolve_python() {
   local c
   if [ -n "${H5_PYTHON:-}" ]; then
-    "$H5_PYTHON" -c 'import sys; sys.exit(0)' >/dev/null 2>&1 \
-      || die "H5_PYTHON=$H5_PYTHON does not run -- refusing rather than reporting APPLIED over an edit that never ran"
+    py_answers "$H5_PYTHON" \
+      || die "H5_PYTHON=$H5_PYTHON is not a working Python -- it did not answer 'print(6*7)' with 42.
+      Refusing rather than reporting success over an edit that never ran. A program that merely exits
+      0 (a Windows Store alias, /bin/true) satisfies a status-only probe and does no work."
     PYBIN=$H5_PYTHON; return 0
   fi
   for c in python3 python py; do
     command -v "$c" >/dev/null 2>&1 || continue
-    "$c" -c 'import sys; sys.exit(0)' >/dev/null 2>&1 || continue
+    py_answers "$c" || continue
     PYBIN=$c; return 0
   done
   die "no working Python interpreter found (tried python3, python, py; set H5_PYTHON to override).
@@ -408,7 +435,13 @@ PY2
   # probe (-c) successfully and then exits 1 on the real work, which is exactly the shape whose
   # status was previously discarded.
   arms=$((arms+1))
-  printf '#!/usr/bin/env bash\ncase "${1:-}" in -c) exit 0 ;; esac\nexit 1\n' > "$tmp/stubpy"
+  # ⚠ THE STUB MUST NOW ANSWER THE PROBE, or the gate rejects it first and this arm stops testing the
+  # thing it names. When C2's output assertion landed, this stub (exit 0 on -c, no output) began
+  # failing at the GATE, and arm 12 went red having lost its meaning rather than found a defect --
+  # an earlier gate shadowing a later refusal, the shape i9 hit in their own driver. So the stub
+  # answers 42 for `-c` and fails only on the REAL invocation, which is the one whose status was
+  # discarded. Arm 14 covers the probe-passing no-op; this arm covers the checked exit.
+  printf '#!/usr/bin/env bash\ncase "${1:-}" in -c) echo 42; exit 0 ;; esac\nexit 1\n' > "$tmp/stubpy"
   chmod +x "$tmp/stubpy"
   cp -r "$tmp/go" "$tmp/failpy"
   out=$(H5_PYTHON="$tmp/stubpy" bash "$self" "$tmp/failpy" 2>&1); rc=$?
@@ -428,6 +461,36 @@ PY2
   [ "$clf" -gt 0 ] || { echo "ARM 13 FAILED: the LF-only fixture has no newlines at all -- the control is vacuous"; return 1; }
   [ "$ccr" -ne "$clf" ] || { echo "ARM 13 FAILED: an LF-only file reads CR=$ccr LF=$clf as EQUAL -- arm 5 cannot go red"; return 1; }
   echo "  ok   the CRLF arm CAN go red           an LF-only copy reads CR=$ccr LF=$clf"
+
+  # --------------------------------------------------------- C2 a2b892aef: the probe-passing no-op
+  # ARM 14: a program that exits 0 without doing anything is NOT an interpreter. The status-only
+  # probe admitted /bin/true and /bin/echo; /bin/echo is the Windows Store-alias shape (prints an
+  # advert, exits 0) that this repo's own apply.py header warns about. Arm 12's stub exits 1 and so
+  # cannot cover this: the whole danger of the no-op is that its failure mode is exit ZERO.
+  arms=$((arms+1))
+  cp -r "$tmp/go" "$tmp/noop"
+  out=$(H5_PYTHON=/bin/echo bash "$self" "$tmp/noop" 2>&1); rc=$?
+  [ "$rc" -eq 2 ] || { echo "ARM 14 FAILED: a probe-passing no-op (/bin/echo) was accepted as an interpreter (rc=$rc)"; echo "$out"; return 1; }
+  case "$out" in *"==> APPLIED"*) echo "ARM 14 FAILED: claimed APPLIED with a no-op interpreter"; echo "$out"; return 1 ;; esac
+  echo "  ok   a probe-passing NO-OP REFUSED     exit 0 is not an answer; /bin/echo does no work"
+
+  # ARM 15: THE SHADOW, which is the half a refusal alone would not repair. A fake `python3` that
+  # prints and exits 0 must NOT consume the loop: the probe must reject it so `continue` fires and
+  # the REAL interpreter one candidate later is chosen. Before the output assertion the alias won and
+  # the real python was never reached -- silently, on the one platform that needs the fallback.
+  arms=$((arms+1))
+  mkdir -p "$tmp/shadowbin"
+  printf '#!/bin/sh\necho "Python was not found; install it from the Microsoft Store"\nexit 0\n' > "$tmp/shadowbin/python3"
+  chmod +x "$tmp/shadowbin/python3"
+  realpy=$(command -v python3 || command -v python) || { echo "ARM 15 SKIPPED: no real interpreter to shadow"; arms=$((arms-1)); }
+  if [ -n "${realpy:-}" ]; then
+    ln -sf "$realpy" "$tmp/shadowbin/python"
+    cp -r "$tmp/unpatched" "$tmp/shadow" 2>/dev/null || cp -r "$tmp/go" "$tmp/shadow"
+    out=$(PATH="$tmp/shadowbin:$PATH" bash "$self" "$tmp/shadow" 2>&1); rc=$?
+    [ "$rc" -ne 2 ] || { echo "ARM 15 FAILED: the alias shadowed the real interpreter and the run refused (rc=2) -- the loop did not fall through"; echo "$out"; return 1; }
+    case "$out" in *"Microsoft Store"*) echo "ARM 15 FAILED: the Store-alias stub was RUN as the interpreter"; echo "$out"; return 1 ;; esac
+    echo "  ok   a Store-ALIAS is skipped         the loop falls through to the real interpreter"
+  fi
 
   echo
   echo "SELF-TEST CLEAN -- $arms arms"

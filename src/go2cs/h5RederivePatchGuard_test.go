@@ -60,7 +60,7 @@ func TestH5RederivePatchSelfTest(t *testing.T) {
 		t.Fatalf("src/apply-h5-c1-1-rederives.sh --self-test did not report a clean run:\n%s", text)
 	}
 
-	const wantArms = 13
+	const wantArms = 15
 	if got := strings.Count(text, "\n  ok   "); got != wantArms {
 		t.Fatalf("expected %d passing arms from src/apply-h5-c1-1-rederives.sh --self-test, counted %d -- an arm that quietly stops running is exactly what this count exists to catch:\n%s",
 			wantArms, got, text)
@@ -102,6 +102,16 @@ func TestH5RederivePatchSelfTest(t *testing.T) {
 		// successfully one line earlier because tr is an MSYS tool. An arm that cannot fail proves
 		// nothing, so arm 13 is arm 5's own negative control.
 		"the CRLF arm CAN go red",
+		// C2 scored the re-cut on the complement platform (mailbox a2b892aef) and found the GATE's
+		// own hole: it probed with an exit STATUS, so any program ignoring its arguments and exiting
+		// 0 became the interpreter -- /bin/true passes, and so does /bin/echo, which is exactly the
+		// Windows Store-alias shape this repo's own apply.py header warns about. Worse, the loop
+		// takes the first passer, so an alias SHADOWED the real python one candidate later: i9's
+		// defect through a door that exits 0 instead of 1, which the status check cannot see. The
+		// probe now asserts an ANSWER (print(6*7) == 42), which refuses the no-op and lets the loop
+		// fall through. C2's sentence for it: a tool that exits 0 has not told you it did the work.
+		"a probe-passing NO-OP REFUSED",
+		"a Store-ALIAS is skipped",
 	} {
 		if !strings.Contains(text, reason) {
 			t.Fatalf("src/apply-h5-c1-1-rederives.sh --self-test did not report the arm %q -- the arm names may survive a rewrite that loses what they assert:\n%s", reason, text)

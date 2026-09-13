@@ -224,3 +224,65 @@ sha256; real-data pair unchanged (`mfinal` from `origin/master` rc=1 FAILS, from
 their shim** as the control that this re-cut actually fixes their lane; that reading is theirs, not
 mine. i9 also noted their shim was a directory that lane owns, prepended to PATH for their own
 invocations only — no host configuration was touched, and it is explicitly not proposed as the fix.
+
+---
+
+## Amendment, 2026-09-13 (second) — the GATE's own hole: a status-only probe (C2 `a2b892aef`)
+
+C2 scored `4bfa644b52` on the complement platform — `python3` and `python` both present, POSIX paths,
+so i9's failure cannot reproduce there and the arms could be exercised on their merits. **13 arms
+clean**, i9's two defects closed. And then they found the hole in the fix.
+
+**`resolve_python` probed with an exit STATUS**, so any program that ignores its arguments and exits 0
+became the interpreter. Measured by C2 and reproduced here:
+
+```
+  status-only probe          output probe  print(6*7)
+  /bin/true    PASSES        /bin/true     REFUSED  ('')
+  /bin/echo    PASSES        /bin/echo     REFUSED  ('-c print(6*7)')
+  python3      PASSES        python3       PASSES   ('42')
+```
+
+⚠ **`/bin/echo` is not a contrived counter-example.** It is the exact shape this repo's own
+`docs/phase4/probes/c1-finalizer-iteration-index/apply.py` header warns about — *"`python3` MAY NOT BE
+AN INTERPRETER. On Windows it can be a Store alias that prints an install advert and exits 0, while
+`python` is real."* The author of that warning then wrote a status-only probe.
+
+**And the loop order turned the miss into a SHADOW.** `for c in python3 python py` takes the first
+passer, so on a Store-alias box the alias was accepted and the real `python` one candidate later was
+never reached — the inverse of i9's lane and worse, because i9's box fails loudly while that one
+succeeds into a no-op. The new exit-status check cannot see it either: arm 12's stub exits 1, which
+is what the check reads, while a probe-passing no-op exits **0**. On an already-patched tree the run
+would then print `APPLIED and POST-CONDITION MET` — i9's original defect through a different door.
+
+**Fix, C2's, measured both ways:** assert the probe's ANSWER, `print(6*7)` == `42`. It refuses the
+no-op *and* repairs the shadow, because the alias now fails the probe, `continue` fires, and the loop
+falls through to the real interpreter — which is what three candidates were for and what it could not
+do on the one platform that needs it.
+
+C2's framing, kept because it generalises past this script: the same discipline arm 5 just received —
+*there a capture stopped being trusted and was asserted to be a non-empty digit; here the probe
+trusted a status and should assert an answer.* **A tool that exits 0 has not told you it did the work.**
+
+### Arms 14 and 15, and one that had to be repaired to keep its meaning
+
+| Arm | Asserts |
+|---|---|
+| 14 | a probe-passing no-op (`/bin/echo`) is **REFUSED** and the banner never appears |
+| 15 | a Store-alias `python3` is **skipped** and the loop reaches the real interpreter |
+
+⚠ **ARM 12 went red when the stronger gate landed, and it was not a defect.** Its stub exited 0 on
+`-c` with no output, which the new probe correctly rejects — so the stub was refused at the GATE and
+the arm stopped reaching the exit-status check it is named for. An earlier gate shadowing a later
+refusal, the shape i9 hit in their own driver the same day. The stub now answers `42` for `-c` and
+fails only on the real invocation, restoring the arm's MEANING rather than deleting the arm.
+
+Validation: **15 arms clean**; probe regressed to status-only → **ARM 14 red** (`/bin/echo` accepted,
+rc=0 — the run reports success), restore byte-identical by sha256; real-data pair unchanged.
+
+**NOT claimed:** C2 measured the probe accepting `/bin/true` and `/bin/echo`, and measured the
+self-test under `H5_PYTHON=/bin/true` going red at ARM 3 — so the suite was never blind, and on an
+UNPATCHED fixture `verify()` still catches it. C2 explicitly did NOT construct the production case of
+an already-patched tree plus a probe-passing no-op; the element carried across is only that a
+status-only probe admits an interpreter whose failure mode is exit 0 rather than exit 1. Everything
+above ran against the hermetic tree; the real corpus is the rung's step.
