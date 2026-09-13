@@ -881,3 +881,196 @@ What the record should carry forward, with the corrected numbers:
 - Add the **fifth instrument defect** (alias-name character class) beside the four already documented, and
   the note that `crypto/internal/alias` → `crypto/internal/fips140/alias` needs a stated `vendor/`
   exclusion to reproduce.
+
+## 2026-09-13 — R: the emission half (ARM A withdrawn, ARM B, ARM C) and two figures reconciled
+
+Lane R's half, as its own dated block beside C2's, per COORD (`MAILBOX-archive-2026-09-13.md:161897`, the
+pre-rotation mailbox body added to `claude/mailbox` at `5e70540f4`; archive cites below are shortened to `:N`).
+**Posted** figures are quoted from the 2026-09-08 posts. **Re-measured** figures were taken on 2026-09-13 at
+master `a02ac3df3` and at this record's ref `44f858717` over `git cat-file` blob exports, and on the H5 ladder
+(the seeded go1.24.13 three-target `-stdlib` emission on R-LAPTOP). The ladder is a mutable tree, not a ref.
+Since the 2026-09-08 runs, 42 of its `.cs` files outside `bin`/`obj`/`Generated` have taken later mtimes, and
+the walked population has grown by 12 files. The instruments are off-git scripts in lane R's archived session
+scratchpads, named with a sha256 prefix. A few facts come only from lane R's archived session log; they are
+tagged *(R session log, off-git)*. No converter, build or `go test` was run for this block.
+
+### 1. What this half measures, and why a GOROOT-side census cannot see it
+
+G's half asks whether each alias still names a Go package that exists. This half is the complement: the package
+exists and nothing moved, but a frozen hand-own disagrees with a name inside the C# corpus. The two shapes, as
+R's posts state their build consequence (not built here):
+
+- a `[GoValueClone(...)]` stamp naming a member its type does not declare, which is CS1061 because `go2cs-gen`
+  emits a member access per name (`:159099-159100`);
+- a frozen hand-own declaring a field that an emitted partial of the same type also declares, which is CS0102
+  (`:160749-160750`).
+
+A GOROOT-side census resolves import paths against a Go SDK and never reads a member name, so it has no
+predicate for either shape.
+
+### 2. ARM A: built, then withdrawn
+
+The rule was that every alias target a hand-own spells must also be spelled by at least one emitted file
+(`r-h6-emission-half.sh`, sha256 `0c1d90137611…`). As posted it reported 0 findings (`:159116-159117`), and its
+own control showed that zero to be vacuous. The stale `runtime.@internal.sys_package` is spelled by 3 emitted
+files (`:159118`), because the old `runtime/internal/sys` directory survives in the ladder as leftover seed. The
+predicate cannot tell a stale spelling from a spelling used by a stale package, so it could not fire on its
+motivating case. It was withdrawn, not reported. The release-side ground is covered by G's verdicts as widened
+to 141 aliases by C2's §5.1 (139 EXISTS / 2 MOVED / 0 ABSENT).
+
+A read-only port run on the ladder today reproduces the run: 146 hand-owns, 97 file-target rows, 97 spelled,
+0 not spelled. It compared 3,817 emitted files (3,805 at the time, *R session log, off-git*), and the control
+still reads 3, all under `runtime/internal/sys`.
+
+### 3. ARM B: stamp members must exist in the type they stamp
+
+**Rule.** In every marked file, each name inside `[GoValueClone(...)]` must be declared in the stamped type. This
+is internal consistency, so no emission comparison is needed. Instrument: `r-h6-arm-b.py` (sha256 `823e35103cd9…`).
+
+| Tree | Instrument | marked | stamps | names | undeclared | Provenance |
+|---|---|---|---|---|---|---|
+| `4c491cb20:src/core/runtime/runtime2.cs` (control) | as posted | 1 | 3 | 12 | 1, `m.Δtrace` | posted `:159105`; re-measured identical |
+| same | type-name class widened | 1 | 4 | 17 | 1, `m.Δtrace` | re-measured |
+| H5 ladder | as posted | 146 | 4 | 13 | 0 | posted `:159107`; re-measured identical |
+| H5 ladder | widened | 146 | 6 | 19 | 0 | re-measured |
+| `44f858717` / `a02ac3df3` | as posted | 145 / 146 | 0 | 0 | 0 | re-measured |
+| `44f858717` / `a02ac3df3` | widened | 145 / 146 | 1 | 1 | 0 | re-measured |
+
+**Correction to the posted arm.** The script's type-name class is ASCII-only (`[A-Za-z_][A-Za-z0-9_]*`,
+`r-h6-arm-b.py:32`), so it drops every stamp on a `Δ`-prefixed type.
+
+- At both git refs the only stamp is `[GoValueClone("children")] partial struct Δindirect<K, V>`
+  (`src/core/internal/concurrent/hashtriemap_whitebox.cs:67`), so the script's 0 stamps there is vacuous.
+- A copy with that one class widened to `[^\W\d]\w*` shows what the script missed: 2 stamps carrying 6 names on
+  today's ladder, and `partial struct Δp` (5 names) on the control.
+- Neither verdict moves: the census still reads 0 undeclared, and the control still fires on `m.Δtrace`.
+- Reach control: a planted marked file carrying `[GoValueClone("children","Δmissing")] partial struct
+  Δindirect<K, V>` reads 0 stamps under the script as posted, and 1 stamp / 2 names / 1 undeclared under the
+  widened copy.
+- Negative control: `runtime2.cs` alone at `a02ac3df3` reads 0 stamps.
+- A separate label defect: the first output line, "marked files with a stamp", counts every marked file.
+
+**Where it lives.** Train 47 row 2, `claude/coord-stamp-guard` at `ec1fe2745` (parent `44f858717`), file
+`src/go2cs/valueCloneStampMembers_test.go`. Boarded at `:161861`; the row number is at `:163010`. The guard's
+type-name class admits Unicode letters (test file line 55, `[\p{L}_][\p{L}\p{N}_]*`; read, not run). Its logged
+1.23.12 population agrees with the widened reading: 145 hand-owned files, 1 stamp, 1 name (*R session log,
+off-git*; the comment at lines 47-48 says "~145 marked files", one stamp, one name). Its 1.24 comment (line 49,
+"4 stamps / 13 names") carries the ASCII script's ladder figure; the widened reading today is 6 / 19.
+
+### 4. ARM C: no field declared by two compile-compatible partials of one type
+
+**Rule.** No `(type, field)` pair may be declared twice within a package across files that compile together.
+The red case is historical: master's `runtime2.cs` `note { key }` beside 1.24's emitted `note_other.cs`
+(`:160742-160744`). Instrument: `r-armc-proto.py` (sha256 `b831445e2555…`; its header still says "VERSION 2").
+Control: `r-armc-control.py` (sha256 `0c47f9af986c…`).
+
+| Version | Change | Posted reading |
+|---|---|---|
+| v1 | brace depth over raw text, key = bare type name | 25, at both trees (`:160756`) |
+| v2 | string literals and comments blanked before brace counting | 4, all in `net/http` (`:160763`) |
+| v3 | key qualified by the enclosing type chain | 0, at both trees (`:160771-160775`) |
+
+**The control** has six arms (`:160783-160788`):
+
+- RED, the real `note.key` pair, must read 1.
+- Five arms must read 0: ADMIT (disjoint members), EMPTY (the `package_info` shape), FLAVOUR (`windows/` beside
+  `linux/`), DESYNC (a literal with a net-unbalanced closing brace) and NESTED (one name under two enclosing
+  classes).
+- `ARMC_NEUTER=1` disables literal blanking and must turn DESYNC red.
+
+Re-run today: live, PASS (rc 0); neutered, DESYNC reads 1 while every other arm holds (rc 1). The re-run copy
+differs from the archived control by one line: a print in place of temp-directory removal.
+
+| Tree | files | packages | pairs | findings | Provenance |
+|---|---|---|---|---|---|
+| "master (44f858717)", proto | 3,759 | 306 | 40,484 (type,field) | 0 | posted `:160774` |
+| the guard (Go port), as posted | 3,759 | 306 | 41,784 (type,member) | 0 | posted `:160964` |
+| H5 ladder, 2026-09-08 | 3,949 | 357 | 41,347 | 0 | posted `:160775` |
+| H5 ladder, today | 3,961 | 357 | 41,383 | 0 | re-measured |
+| `44f858717` blob export | 3,746 | 306 | 40,477 | 0 | re-measured |
+| `a02ac3df3` blob export | 3,749 | 306 | 40,477 | 0 | re-measured |
+
+- **The posted "master" arm was not run over a blob export.** It walked 13 more files and 7 more pairs than
+  today's export of `44f858717`, with the same verdict. Those 13 files are unidentified (NOT MEASURED), and the
+  guard's own posted walk read the same 3,759.
+- **Pair counts differ between the proto and its Go port**: 40,484 against 41,784 at the same file and package
+  counts. The difference is NOT MEASURED.
+- **Neutered, at either ref**, the proto reads 38,716 pairs and 4 findings: `encoding/xml`
+  `xml_internal_test_package.version` (three file pairings), and `internal/trace/traceviewer`
+  `traceviewer_package.type` (`http.cs` | `mmu.cs`). The traceviewer row was checked at source in R's post
+  (`:160757-160758`). The three `encoding/xml` rows were not inspected; they are classed as desync only by the
+  live-versus-neutered difference.
+- **Scope limits:**
+  - fields only, because methods overload legally;
+  - flavour directories never compile together;
+  - `Generated/` is excluded;
+  - files outside any `.csproj` directory are not walked (2 at `a02ac3df3`: `src/core/GlobalUsings.cs`,
+    `src/core/go2cs/Symbols.cs`).
+
+**Where it lives.** Train 47 row 3, `claude/laneR-armc-guard` (row number at `:163011`), file
+`src/go2cs/duplicatePartialMembers_test.go`. The seated tip was `bbd0afe43` (parent `44f858717`); since
+2026-09-13 it is `49c309f8b`, a commit on top that changes only the license header (+4/-2).
+
+### 5. Two figures reconciled
+
+**(a) The 145.**
+
+- **The record's sentence** ("The 145 matches lane R's independently-derived seed figure") names R's LADDER
+  count: "The ladder carries **145** marked files" (`:156447`). That count was posted before G's census, and G
+  matched it (`:156605`, `:156610`). The ladder is a mutable tree, not a ref.
+- **The ref-level agreement came after.** R's standalone re-derivation, "**145 / 145, zero differences**" between
+  master (then `44f858717`) and the ladder (`:157030-157032`), was prompted by G's number: "caught only because
+  G's number disagreed with mine" (`:157033`). *R session log, off-git:* R's saved master list is the same path
+  set as `git grep -l` of the anchored marker at `44f858717`.
+- **C2's §9 item** "Whether lane R published a 145 outside the git tree" is answered: yes, on the mailbox at the
+  two places above.
+- **An R-attributed 145 is also IN the tree**, including the tree C2 searched:
+  `a02ac3df3:.claude/skills/gate-forensics/SKILL.md:608` (`bd1d26faf:600`, inside an HTML comment, added by
+  `86037ef2e`) reads "a MARKED set of 145. R's third narrowing of one census". C2's in-tree search keyed on the
+  phrase "seed figure" and did not reach it, which is within the scope C2 declared.
+- **What therefore does not survive** is two C2 sentences, not C2's measurement:
+  - §5.5's "R's published figure is **142**, not 145". R published both: 142 at `f4ced674d`
+    (`REHEARSAL-h5-go124.md:169`) and 145 at the ladder and at `44f858717`.
+  - §10's carry-forward replacement, "the 145 supersedes R's 142 by three `*_impl.cs` companions", should not
+    be adopted as a replacement for the record's sentence. The record's sentence stands, citing `:156447` (a
+    ladder count) and `SKILL.md:608`.
+- **What stands in C2's §5.5:** 142 at `f4ced674d`, reproduced to the row; the three companions between
+  `f4ced674d` and `44f858717`; 44 whole-file rewrites as the cross-ref invariant; and C2's own statement that the
+  substantive point survives.
+- **Re-measured today:** 145 at `44f858717` and 146 at `a02ac3df3`. The path lists are byte-identical across
+  `git grep` PCRE, `git grep` ERE and grep over the blob export. The one addition is
+  `src/core/runtime/panic_impl.cs`.
+
+**(b) The alias figures, side by side.** Every predicate reads line-anchored directives over the marked files,
+except where the table says otherwise.
+
+| Figure | Predicate | `44f858717` | `a02ac3df3` | H5 ladder | Published |
+|---|---|---|---|---|---|
+| 94 | alias name plain ASCII, no `@` | 94 | 94 | not run | G, this record; per-file counts `cmp` 0 vs the Full table |
+| 141 | any alias name | 141 | 141 | not run | C2 §5.1; its 94 + 34 `@` + 13 non-ASCII split reproduced |
+| 128 | ASCII name, `@` admitted | 128 | 128 | not run | not published |
+| 97 | R's ARM A extraction: unanchored, unique target per file, `@`/`Δ` names excluded | NOT REPRODUCED (96) | NOT REPRODUCED (96) | 97 | R, `:159116` |
+
+R's "different trees" account of 94 against 97 (`:159133-159134`) is NOT REPRODUCED as the whole cause.
+
+- Two of the three extra rows come from the predicate, not the tree:
+  - `hashtriemap_whitebox.cs:37`, a `//` comment containing `using sync = sync_package;`;
+  - `runtime2.cs:4`, `global using itab = go.@internal.abi_package.ITab;`, a member alias read as a second abi
+    target.
+- Only one comes from the tree: the ladder's `runtime2.cs` adds `@internal.goexperiment_package`.
+- The `sys` re-spelling nets 0 (2 rows out, 2 in).
+- R's grep lines and a Python transcription of them give row-identical output at both refs.
+
+### 6. Limits
+
+- The ladder is not a ref. Its readings describe the tree as it is today, not the tree the 2026-09-08 runs saw.
+- NOT MEASURED:
+  - either guard's `go test` outcome at these refs (regexes read with `git show` only);
+  - the effect of ARM B's declared-member regex differing from the guard's (test file line 99);
+  - the proto-versus-guard pair-count difference in ARM C;
+  - the posted master arm's 13 extra files;
+  - ARM A's emitted-spelling half at any ref;
+  - the integrity of the archived ladder tarballs.
+- The comparison against G's table is per-file counts only; C2's §5.6 multiset check covers targets.
+- `4c491cb20` (on `claude/c1-h6-rewrites`) is a control blob only, not an ancestor of `44f858717` or `a02ac3df3`
+  (`merge-base --is-ancestor` exit 1 for both).
