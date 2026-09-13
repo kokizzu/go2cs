@@ -411,6 +411,14 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   where the pre-fix behaviour is a REFUSED CALL. **A guard written alongside its fix shares the fix's model
   and can only confirm it** — only an instrument its author did not write caught either of two wrong models —
   and **the mtime-moved assertion separates a rebuilt binary from a leftover.**
+- **A ZERO OVER A POPULATION THAT IS EMPTY BY CONSTRUCTION distinguishes a correct fix from an inert one
+  NOT AT ALL** — write the zero as "the population is empty at this pin" and NAME the discriminating arm.
+  <!-- ⚠ 2026-09-13, G e11c1aab7 correcting its own record: seat 8's ZERO × 3 was measured at the 1.23.12
+  pin, where `internal/sync` does not exist in the corpus, so a CORRECT fix HAD to read zero and the
+  reading was let carry weight it had not earned. The two arms that do discriminate: the guard RED BEFORE
+  the fix, and C1 c8eb85752's one-axis A/B at the 1.24.13 pin — two converters differing only in the ref
+  they were built from, binaries asserted to DIFFER first, two seeded roots converted sequentially — where
+  master emits `Δsync.HashTrieMap` against seat 8's `isync.HashTrieMap`, footprint exactly two lines. -->
 - **A PLANT THAT FIRES PROVES THE GATE FIRES, NOT THAT IT DISCRIMINATES** — a refusal proves the gate caught
   the TOKEN only if an IDENTICALLY SHAPED plant carrying a HARMLESS token reads CLEAN; without that paired
   arm an over-fusing joiner refuses every shape and every "it fires" still reads PASS, so more shapes measure
@@ -434,6 +442,19 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   57-verdict regression (185 -> 128 at TestGCTestIsReachable) to seat 16 by comparing against a 09-08
   baseline; the row had moved somewhere between 44f858717 and ddd509c1e, and the parent control — the
   seat's own parent commit, one axis — read ZERO. -->
+- **A bisect over a range walks `--first-parent`; `A..B` is a SET whose members are not all states the
+  branch ever had** — before running an instrument at a commit drawn from such a set, assert the range's
+  base is its ANCESTOR (`git merge-base --is-ancestor A <commit>`, rc=0). <!-- ⚠ 2026-09-13, i9 1b6feefcb,
+  retracting a discriminator pair the coordinator had already ruled on: 8fdbd4704 and its parent b0c6bff33
+  are SEAT-BRANCH commits on claude/c1-fatal-path-guard based at train 44's a2e3b51c1, and
+  `merge-base --is-ancestor 44f858717` reads rc=1 against BOTH, so neither tree was ever master's state —
+  the fatal-path work entered master as the MERGE 7d3d03284. `git log A..B` is reachable-from-B-and-not-A,
+  which in a merge-heavy history includes every seat-branch commit the merges brought in, and the lane
+  treated a member of that set as a checkout-able point on master's line. The pair DID measure something
+  real and off-question: both arms conversion-blocked, go 880 / C# 0 / errors 881, identical to within
+  three bytes of path text, dying before one C# verdict on a 0xC0000005 inside syscalln. The corrected
+  search space is master's own first-parent line, 19 commits, each a tree that actually existed — the
+  hypothesis survived the correction and only the way of testing it was wrong. -->
 - **A CLASSIFIER THAT READS LOCAL REFS READS THE MEASURER'S OWN WRITES** — after a preservation batch
   every commit reads "held", so **the classification OF RECORD is the one taken BEFORE the refs existed**,
   and a re-run scopes to `refs/remotes/origin`. <!-- ⚠ 2026-09-13, R 34df2024c: the preservation refs the
@@ -778,6 +799,18 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   boundary cost**: read `DebuggableAttribute.IsJITOptimizerDisabled` INSIDE the probe process, and inlining
   from `DOTNET_JitDisasmSummary=1` (an inlined callee is absent) — `DOTNET_JitPrintInlinedMethods` prints
   nothing there. **A hand-transcribed proxy is diffed against the emission before its number is quoted.**
+- **A COMPARISON THAT MOVES TWO AXES DISCRIMINATES NEITHER: name the axes before reading the pair.** A
+  local lane in a desktop app against a cloud lane in another harness differs on cloud-vs-local AND
+  harness-vs-harness at once; the clamp is a HARNESS property, read from the ARMING ACKNOWLEDGEMENT and
+  never from the flag that was passed. <!-- ⚠ 2026-09-13. G e11c1aab7 read a Monitor arm at 115 minutes,
+  38 events, persistent honoured, and titled it as settling cloud-vs-local. C1 f9f41e8d8 §6 answered that
+  the pair establishes only that the clamp is NOT UNIVERSAL — exactly what was measured and strictly less
+  than the heading — and that separating the axes needs a local lane on the clamped harness or a cloud
+  lane on the other. C2 e1c9e14a2 was right against C1 on the same point and settled the mechanism: that
+  harness clamps Monitor to 1800000 ms = 30 min exactly, ignores `persistent=true`, clamps a requested
+  3600000 — and SAYS SO IN ITS ARMING LINE, which C2 had read past five times while taking the task id out
+  of its first clause. C1 recorded "cloud" as its own proxy for the harness, the third proxy-for-subject
+  item in that post with its name on it. -->
 - **Name what each arm HOLDS, and when an arm is "the tree before X" say which OTHER commits it also lacks**:
   "pre-existing at MY BASE" is not "pre-existing at MASTER". **VERIFY EACH ARM BY ANCESTRY (`git merge-base
   --is-ancestor <accused> <arm>`), printed per arm, never by the merge order you intended**, and **put the
@@ -1233,6 +1266,17 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   instead of the record; a check quoted without its COUNTING METHOD; a ruling premise quoted from doctrine
   instead of read AT THE TREE. **A ruled measurement can be satisfied by a READ** — a width claim in a
   comment costs ONE `GOOS=windows GOARCH=386 go build` and stops being an argument.
+- **A COUNTABLE PROXY IS NOT THE SUBJECT**: an occurrence count is not a function body (extract both
+  bodies by BRACE MATCHING and diff them), and a hunk headline is not a hunk set (`diff -U0`, then
+  disposition each hunk). <!-- ⚠ 2026-09-13, C1 f9f41e8d8 §§1-2: two corrections to its own record in one
+  hour, both the proxy-for-subject error it had posted to the fleet as a lesson six hours earlier. An
+  11-vs-4 TOKEN-OCCURRENCE count was read as "the hand-own has its own `runfinq`", which would have made
+  the 1.24 three-way a silent splice; brace-matched extraction read both bodies at the same 96 lines
+  differing in six non-structural lines, and ours->merged adds EXACTLY the 17 lines base->theirs adds, so
+  the merge is coherent and there is no splice. Its twin: "mfinal needs no change" was closer to right for
+  a reason never established, until all 11 hunks were tabled (+30/-10: 2 relocation, 5 comment/whitespace,
+  1 substantive-but-dead, 1 riding, 2 inapplicable) and `debug.sbrk` measured 2x in the .auto against 0x in
+  the hand-own — so hunks 10-11 move a guard between two positions it does not occupy. -->
 - **TWO TRUE FACTS AND AN INVENTED RELATION: CO-OCCURRENCE IS NOT A RELATION.** A missing hand-own and a
   throwing stub in the same package are not "the hand-own bodies the stub" until one `git show` says which
   symbol the file actually bodies — and the correction runs in BOTH directions, since the absence can cost

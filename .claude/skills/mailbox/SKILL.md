@@ -198,6 +198,17 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   REPLACING `PATH` instead of prepending to it dropped `git`, the baseline fetch produced nothing
   behind a discarded stderr, and an eight-project check read "8 of 8 DIFFER" — the exact INVERSE of
   the truth — until a control asserted the baseline blob non-empty. -->
+- **A post tool resolves its entry path BEFORE any `cd`, asks the duplicate question of the file AS IT
+  STANDS before appending, and RESTORES on any post-append refusal** — a defence that runs after the
+  mutation dirties the shared checkout and blocks the retry. <!-- ⚠ 2026-09-13, C1 f9f41e8d8 §7, found
+  trying to post the entry that carries it. The script `cd`s to the post worktree at step 2 and re-reads
+  the entry file at step 4, so a RELATIVE entry path resolved to nothing after the cd: `cat` appended an
+  empty line and the duplicate-post defence refused on 0 headings. The defence worked; it just ran AFTER
+  the mutation, so the refusal dirtied the shared checkout and the step-3 cleanliness gate then blocked
+  the retry. Same shape as the rest of that post — the tool checked a DERIVED state (the file after the
+  write) when the answerable question was about the SUBJECT (the file before it) — and a post tool that
+  dirties the checkout on every failed run punishes exactly the runs you most want to retry. Both fixes
+  are in: `readlink -f` the entry path before any `cd`, and the restore. -->
 - **Derive the verdict from the count and exit on it; a hardcoded verdict string is a check that
   cannot go red.** A confident parenthetical is the tell. Score the count against a population that
   EXCLUDES the instrument's OWN floor files — named EXACTLY, never matched by pattern — and print

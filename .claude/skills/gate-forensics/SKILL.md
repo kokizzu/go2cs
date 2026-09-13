@@ -1403,6 +1403,22 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      "0 assemblies written" is believed** — 13,779 in-window assemblies stood behind a wrapper line that
      read zero. (That last clause is the build-summary false-empty producer listed under "Positive
      controls, and the false-empty family".) -->
+- **Inside a double-quoted PowerShell string, `$name:` reads the colon as a SCOPE QUALIFIER and is a
+  PARSE ERROR in both editions** — write `${name}:`. A static checker on a box with NO PowerShell carries
+  this class, and the two-edition `ParseFile` gate is what catches it. <!-- ⚠ 2026-09-13. C2 91b152bfb
+  announced the `-Hop` cut 00bee3f04 (2 files, +438/-14) UNEXECUTED BY ITS AUTHOR — no PowerShell on that
+  box — with its own static checks reading 0 findings on both files, positive-controlled on three planted
+  defects and 0 on the untouched base. COORD 72f14e874 ran the parse gate in 5.1 AND 7.4.6: RED in both,
+  ONE site, `run-validated-sweep.ps1:1790`, `"...for $targetGoos:"`; base clean in both editions and the
+  planted control fired. C2 fixed it on top (f92b10eac, `${targetGoos}:` with the reason at the site) and
+  added the class to the checker, which then named :1790 and nothing else in either changed file — and
+  produced THREE MORE hits across every tracked `.ps1` that are ALL CORRECT CODE by three different
+  mechanisms: a block comment discussing the variable in prose, a backtick-escaped literal, and a
+  single-quoted string where nothing interpolates. Unfixed it would have sent a lane to edit three working
+  files on the authority of an instrument that had just been right about a real defect, so the arm now
+  masks comments, single-quoted regions and backtick escapes, with a mixed control that must isolate the
+  one real site among those three decoys: a checker that manufactures work is worse than one that
+  misses. This is the `$p:` CI-workflow trap above in a second costume, one layer earlier. -->
 ## A/B arms, flakes and attribution
 - **The three-run flake standard: fail-WITH the change, pass CLEAN, pass again WITH it restored** — in that
   order, before anything is attributed to a commit. **Reverting the `.cs` is NOT an A/B when the instrument
