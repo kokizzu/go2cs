@@ -1135,4 +1135,559 @@ all. The proof stays where §10.9.15 put it.
 the per-pid `Q44CENSUS-ARM2` blocks. i9's three runs were **census OFF** and carry none, so the reading
 rides i9's per-pid tip census and is not owed by this amendment.
 
--- C2, 2026-09-08 (amended five times)
+### 10.9.18 ⚠ THE 9-versus-10 IS SETTLED, AND MY CHARITABLE READING WAS THE WRONG ONE
+
+§10.9.17 named a number I could not close -- i9's **nine** bogo divergences against the **ten** the
+posted per-run counts imply -- and proposed that it was probably **definitional**, turning on whether
+the single Go=fail/C#=pass member counts as a bogo divergence. **That reading is now falsified by
+its own author.** i9 settled it in one line (`39e26cd2d5`): it was a **miscount**, and it matched
+**neither** definition -- no boundary yields nine.
+
+The figures, per i9's record:
+
+| run | divergences | minus `TestCertCache` | of which the PARENT aggregate | **cases** |
+|:--|--:|--:|--:|--:|
+| control | 4 | 3 | 0 | 3 |
+| run 1 | 4 | 3 | 1 | 2 |
+| run 2 | 5 | 4 | 1 | 3 |
+| **total** | 13 | **10** | 2 | **8** |
+
+So **ten** excluding `TestCertCache` is right -- my arithmetic -- and of those ten, **two are the
+parent `TestBogoSuite` aggregate rather than a case**, which is the distinction neither of us had
+drawn. The CASE count is **eight**, the distinct case names across all three runs are **eight**, and
+therefore **zero-overlap survives at 8 of 8 unique**: the clause §10.9.17 leaned on is not weakened
+by the correction, it is sharpened.
+
+**The lesson is mine as much as i9's, and it runs the other way from the usual one.** I found a
+number that did not reconcile, said so, and then offered a benign explanation for it. i9's reply is
+the correction I should have left room for: *"your charitable reading was too charitable."* Proposing
+a mechanism for someone else's discrepancy is not neutral -- it supplies a story that makes the
+number look settled, and a reader who takes the story stops checking. **Report the discrepancy and
+let its owner explain it**; the charitable hypothesis is the one thing a stranger to the measurement
+cannot responsibly supply. i9's own half is the false-corroboration shape: "nine" was written beside
+"nine distinct names", the second derived from the first, so a bare arithmetic slip acquired the
+appearance of a second, independent witness.
+
+**Unchanged**: the row's status (NOT banked, FAIL 3 for 3, host-conditional), the one-way finding,
+the 0/0/0 for Go=pass-and-C#=fail, the 1,236, and every arm conclusion.
+
+-- C2, 2026-09-08 (amended six times)
+
+## 10.10 THE TOKEN DOOR'S FIRST OBSERVED REFUSALS — runtime's six, censused by class
+
+COORD `f70dc9a711` routed the six managed-pointer-token refusals among `runtime`'s failures as **Q44
+population data**: census them by name against the door's classes, add them to the record, **no remedy
+from a results file**. This section is that census and nothing else. It is the first population the
+token door has ever produced, so its shape matters more than its size.
+
+**Provenance, stated because the door is not at master.** The rows are i9's measurement (`848d3126f2`)
+of `runtime`'s converted suite on a tree carrying the door; the door itself — one private helper
+`refuseManagedPointerTokens(nuint fn, ReadOnlySpan<uintptr> a)`, `src/core/syscall/windows/dll_windows.cs`
+— is **held uncommitted** under COORD's suspension (§10.3's arm 3). i9 explicitly declined to judge
+whether the refusals are *correct*; that is this design's question and it is answered below. Every call
+shape here is re-derived from the pinned GOROOT source (`go1.23.12/src/runtime/syscall_windows_test.go`),
+not from the results file.
+
+### 10.10.1 The six rows, and the arithmetic that corroborates the door's own report
+
+| test | arg | Go | C# | Go call site | the uintptr is | class |
+|:--|--:|:--|:--|:--|:--|:--|
+| `Test64BitReturnStdCall` | 0 | pass | fail | `Proc("VerifyVersionInfoW").Call(&vi, …)` | `&OSVersionInfoEx` (carries `CSDVersion [128]uint16`) | 1 |
+| `TestCallback` | 3 | pass | fail | `nestedCall` → `Proc("EnumTimeFormatsEx").Call` | a `func()` value's funcval pointer | 1 |
+| `TestCallbackGC` | 3 | pass | fail | same funnel | same | 1 |
+| `TestCallbackPanic` | 3 | pass | fail | same funnel | same | 1 |
+| `TestCallbackPanicLoop` | 3 | pass | fail | same funnel (via `TestCallbackPanic`) | same | 1 |
+| `TestBlockingCallback` | 3 | pass | fail | same funnel | same | 1 |
+
+Class 1 is *reference-bearing pointee refused by name*. **All six are class 1; none is the standing
+pin-unheld hole.** The panic text is byte-identical across all six but for the index, which is what a
+single door reporting a single class looks like.
+
+Two arithmetic agreements, both cheap and both worth having because they are independent of the results
+file. **The index matches the source position:** `nestedCall` (line 167) calls
+`d.Proc("EnumTimeFormatsEx").Call(c, LOCALE_NAME_USER_DEFAULT, 0, uintptr(*(*unsafe.Pointer)(unsafe.Pointer(&f))))`,
+so the funcval argument sits at 0-based position **3** — exactly the index the door reports, over a
+0-based `ReadOnlySpan<uintptr>`. **And the shapes are five-plus-one, from the code rather than from the
+index column:** the five `Callback`-family tests are not five findings, they are five entries into ONE
+call shape, established by grepping the funnel's callers rather than inferred from their sharing an
+argument number.
+
+### 10.10.2 The completeness bound has a NAME, which is better than a caveat
+
+i9's caveat is that these six are among the **185 tests that ran**, with **695 of the oracle's 880 never
+executed**, so the count can only grow. That bound can be made concrete instead of carried as prose:
+`nestedCall` has **SIX** callers in the file — `TestCallback` (177), `TestCallbackGC` (184),
+**`TestCallbackPanicLocked` (206)**, `TestCallbackPanic` (227), `TestCallbackPanicLoop` (234, via
+`TestCallbackPanic`) and `TestBlockingCallback` (245) — and the refusal list has **five**.
+`TestCallbackPanicLocked` is absent from it while entering the identical funnel at the identical
+argument position.
+
+So the missing sixth caller is the completeness bound, stated as a falsifiable name rather than a
+fraction: either it is among the 695 that never ran, or it failed for another reason, or it passed —
+and each of those three is a different fact about the door. **A census that reports its own hole by
+name can be closed by one run; one that reports 185/880 cannot.**
+
+### 10.10.3 ⚠ THE FINDING: 6 of 6 on class, but **5 of 6 against the door's own premise**
+
+The door's message asserts a reason: *"passing it to native code would read or write memory that is not
+the caller's."* Checked per row against the Go source, that sentence is **true of one row and false of
+five**.
+
+- **`Test64BitReturnStdCall` (arg 0) — the premise HOLDS.** `VerifyVersionInfoW` genuinely dereferences
+  `&vi`; the pointee is reference-bearing because Go's inline `CSDVersion [128]uint16` converts to a
+  managed `array<uint16>` field. This is the `Timezoneinformation` class exactly, and the panic's own
+  remedy pointer (`zsyscall_windows_version_impl.cs`) names a hand-own that already mirrors the
+  identical `OSVERSIONINFOEX` shape for `RtlGetVersion`. **A correct refusal with a correct pointer.**
+- **The five callback rows (arg 3) — the premise FAILS.** The number is an **opaque pass-through
+  cookie**: kernel32 carries the lparam and hands it back to `callback`, which reinterprets it and calls
+  through it — `(*(*func())(unsafe.Pointer(&lparam)))()`, in Go code, on the way back. Native code never
+  dereferences it. It is **constructed and named, never read as an address by the callee.**
+
+That is §10.9.5's read-versus-name discriminator — the one that took arm 2 from 18 → 8 → 0 measured —
+**arriving at the token door instead of at the conversion site.** And it lands precisely on the
+adjacency §10.9.5 checked and recorded as empty:
+
+> *"that same class's third arm round-trips a token through `void*` to native code and back and requires
+> it to come back **as its box**. That is arm 1, it never reaches a syscall, and the door at `syscalln`
+> does not see it."*
+
+`runtime`'s suite is the case where it **does** reach a syscall, so the door **does** see it. The
+adjacency is no longer empty, and it was found by population rather than by argument.
+
+### 10.10.4 What is OBSERVED versus what is INFERRED, kept apart
+
+Two things are deliberately not claimed here, because neither was measured and a census that infers is
+the census that gets quoted.
+
+1. **How a token comes to be at argument 3 is not asserted.** The Go expression dereferences the address
+   of a func value; what the converted C# does with a reinterpret-read of a token box is not read in
+   this section. What is OBSERVED is only that the door fired on argument 3, so a token arrives there
+   whatever the emission's internal route. (Inferring the route from the artifact is the trap this
+   file's own §10.9.10 was written by.)
+2. **Whether the converted callback could recover the box on the way back is a SECOND question.** Arm
+   1's requirement is that a round-trip return *as its box*; the five rows would need that on the
+   inbound edge of `callback`, and no measurement here touches it. A refusal that were lifted at the
+   door without that half proven would trade a loud failure for a silent one.
+
+### 10.10.5 No remedy, and the falsifier the next reader needs
+
+Per COORD: **no remedy from a results file, and none is cut here.** The disposition is a recorded
+asymmetry, not a change: the door is right on the dereferenced row and wrong on its own stated reason
+for the pass-through rows, and the door's SCOPE note already concedes the narrower promise
+(*"DIRECT pointer arguments only … this door narrows the class, it does not close it"*).
+
+What a remedy would owe, so that nobody builds one from this table alone:
+
+- the emission route for a reinterpret-read of a token box, MEASURED, not inferred (§10.10.4 item 1);
+- the inbound half — the callback recovering its box — measured on the same row (item 2);
+- `TestCallbackPanicLocked` run, so the funnel's population is six of six rather than five of six;
+- and the falsifier for the pass-through reading itself: **a native callee that stores the cookie and
+  DEREFERENCES it** (a context pointer the OS reads, rather than one it merely carries). `EnumTimeFormatsEx`
+  does not; a door lifted for "pass-through" shapes in general would have to discriminate the two, and
+  nothing measured here shows that discrimination is available at the door — which is the same
+  structural objection §10.9.5 raised against a predicate at the conversion site, one seam along.
+
+### 10.10.6 ⚠ THE NAMED GAP IS CLOSED, AND THE ANSWER IS THE THIRD BRANCH — the sixth caller is UNMEASURED with respect to the door
+
+§10.10.2 named `TestCallbackPanicLocked` as the funnel's missing sixth caller and said the answer
+would be one of three: it never ran, it failed for another reason, or it passed. i9 answered it from
+the preserved `runtime` record (`3cf0247177`, on `44f858717`) and it is the **second** branch, with
+the reason named:
+
+```
+  TestCallbackPanicLocked   Go = pass    C# = fail
+    elapsed 0.0009983 s                            <- ONE MILLISECOND
+    source  syscall_windows_test.go:187
+    output  "runtime.LockOSThread didn't"
+```
+
+It carries **no refusal text at all** — it fails its own `LockOSThread` precondition at the test's
+line 187 and is over before any syscall wrapper is reached. So:
+
+| | |
+|:--|:--|
+| five callers | refuse at argument 3 — **the funnel** |
+| sixth caller | dies at a `LockOSThread` precondition first — **never reaches the door** |
+
+**The funnel therefore reads FIVE of six, and the sixth is UNMEASURED with respect to the door** —
+neither a counter-example to its behaviour nor a confirmation of it. That is a materially different
+answer from "six of six", and it is the reason a census names its hole instead of carrying a
+fraction: the hole turned out to hold a different defect entirely. The completeness bound on §10.10.1
+is unchanged in size and now exact in kind: **five refusals from a six-caller funnel, one caller
+unreachable, and 695 of the oracle's 880 tests still unexecuted.**
+
+⚠ **The sixth caller's own failure belongs to another root, not to Q44.** C1 rooted
+`TestLockOSThreadNesting` in the hand-owned `LockOSThread`/`UnlockOSThread` no-ops (`lockedExt` with
+zero increment sites corpus-wide); `TestCallbackPanicLocked` fails on that same primitive from a
+different test file, so the no-op root costs a SECOND test. Recorded here only so that nobody
+re-reads it as a token-door row: it is not one.
+
+## 10.11 THE CENSUS INSTRUMENT: an arm-time START block, so that a zero is a measurement
+
+The census writes a block only when work has happened — the flush at conversion 1, the flush every
+250,000, the exit hook. So a process that **armed the census and converted nothing** wrote no file at
+all, and `no file` was ambiguous across four distinct facts: the gate was never set, `golib` never
+loaded there, the host died before the exit hook, or the write failed. COORD ruling 3 (`82c60cec4`)
+closed the third from one side with the partial flush. This closes the rest from the other:
+**golib's module initializer writes a START block before any conversion.** i9 confirmed
+(`d6306f2d12`) that the pipeline keeps no process record, so the disambiguation cannot come from
+outside the artifact — which is why `reflect` was recorded NO USABLE CENSUS rather than as a zero.
+
+**The distinction is NOT "one block", and getting that wrong was the first design error.** A process
+that exits **cleanly** having converted nothing runs its exit hook and writes a final zero block —
+that case was never ambiguous. The case that left no file is the one that **died** having converted
+nothing, and there the START block is the last thing in the file. So `ARMED-ZERO` is *"the START
+block survived the fold"*, decided by whether the marker sits after the file's last totals line.
+The block carries the **PARTIAL** header deliberately: it *is* a cumulative snapshot taken before any
+conversion, so every existing reader folds it correctly with no change and cannot double-count it.
+
+**Five arms, predictions written before the run, all five hit** (probe:
+`docs/phase4/probes/c2-census-start-block`):
+
+| arm | setup | measured |
+|:--|:--|:--|
+| A1 | gate ON, 0 conversions, clean exit | file exists, 2 blocks, `final`, conv 0 — already fine before |
+| A2 | gate ON, 0 conversions, **SIGKILL** | 1 block, **`ARMED-ZERO`**, conv 0 — **the case that left no file** |
+| B | gate **OFF** | **no file**; the reader REFUSES, exit 1 — "no file" keeps its one remaining meaning |
+| C | gate ON, 5 conversions | 3 blocks, ROW TOTAL conversions **== 5 exactly** — no perturbation |
+| N | A2's file, `Q44CENSUS-START` line deleted | falls back to `PARTIAL-ONLY`, ARMED-ZERO 0 — the verdict comes from the MARKER |
+
+Arm C is the one this instrument owes above all others, because it has broken neutrality twice: the
+start block adds one file write at module init, no hot-path operation, and the fold's total is
+unchanged. Arm N is the reader's own negative control — a reader that still said `ARMED-ZERO` with the
+marker gone would be counting blocks, which is precisely the wrong rule this design started with.
+
+⚠ **Two harness lessons, both paid on the probe's FIRST run and both worth more than the feature.**
+The first run measured a binary built **before** the `hang` branch existed, so arm A2 (kill before
+exit) read **identically to arm A1** — the arm agreeing with the arm it was built to differ from is
+the tell, and it is this file's own "instrumentation that never compiled in". The harness now rebuilds
+and *asserts* the binary is newer than its source. Then the assertion itself was wrong: it looked for
+the `hang` literal with 8-bit `strings`, which reports **zero** for a .NET literal because those are
+UTF-16, and it aborted a build that was fine. It now uses `strings -el` **and positive-controls
+itself** on a literal known to be present before its verdict on the one under test is believed. **A
+staleness gate and its checker are two instruments, and the second needs a control as much as the
+first.**
+
+## 10.12 THE CALLBACK ROW'S TWO UNMEASURED HALVES, BOTH MEASURED
+
+COORD `e19723a42` ruled the door suspended and set this as the next item: **(a)** the emission route by
+which a token reaches argument 3, *read from the emission and never inferred from the artifact*, and
+**(b)** whether the converted `callback` can **recover its box** on the inbound edge (arm 1's
+round-trip-as-its-box requirement), measured on `TestCallback`. Both are below. **No remedy is cut** —
+C1 owns the `runtime` row and reads this first.
+
+**Provenance.** Converter built from **master `44f858717`**, `GOROOT` pinned to the corpus release
+**1.23.12** with a guard that ABORTS on a mismatch rather than printing one, `-platforms
+windows/amd64`, `-tests -test-action convert` (convert-only, so none of the Linux-host build hazards
+apply), into a temp root seeded from that tree with the seed count asserted exact (3,761 = 3,761).
+Predictions for both halves were written before either was read.
+
+### 10.12.1 Half (a) — the route, from the emitted C#
+
+`nestedCall`, emitted (`runtime/syscall_windows_test.cs`):
+
+```csharp
+internal static void nestedCall(ж<testing.T> Ꮡt, Action fʗp) {
+    ref var f = ref heap(fʗp, out var Ꮡf);
+    var c = syscall.NewCallback(callback);
+    var d = GetDLL(Ꮡt, kernel32Dllˢ);
+    ...
+    d.Proc(enumTimeFormatsExˢ).Call(c, LOCALE_NAME_USER_DEFAULT, 0,
+        (uintptr)(~Ꮡ(new @unsafe.Pointer((uintptr)Ꮡf))));
+}
+```
+
+Read outward from the middle: `f` is heap-boxed because its address is taken, so `Ꮡf` is a
+`ж<Action>` over a **reference-bearing** pointee; `(uintptr)Ꮡf` is therefore the operator this whole
+design is about, and it yields the box's **order token**. That token is wrapped in a fresh
+`@unsafe.Pointer` value, `Ꮡ(...)` boxes *that temporary*, `~` dereferences **the temporary's box**,
+and the outer `(uintptr)` unwraps it. **Route R1 as predicted, and the mechanism is sharper than the
+prediction:** the `*(*unsafe.Pointer)` layer of Go's expression is emitted as a box-and-immediately-
+dereference of a **different** box that merely *contains* the token. **Nothing ever dereferences the
+token**, which is exactly why the process reaches the door rather than faulting. R2 (a genuine read
+through the number, which would fault) is **absent**, as predicted.
+
+Corroborated at run time by a probe on the same shape: the outbound number reads
+`IsTaggedToken = True`.
+
+⚠ **One thing the emission settles that the panic text could not: the emitted number is not Go's
+number.** Go hands Windows the **funcval pointer** read out of `f`'s storage; the emission hands it a
+**token identifying the box**. Same position, same width, different kind — a stand-in only the token
+registry can interpret. That is what makes half (b) the load-bearing half rather than a formality.
+
+### 10.12.2 Half (b) — the inbound edge, and it does NOT recover
+
+`callback`, emitted:
+
+```csharp
+internal static uintptr callback(@unsafe.Pointer timeFormatString, uintptr lparamʗp) {
+    ref var lparam = ref heap(lparamʗp, out var Ꮡlparam);
+    (Ꮡlparam.Reinterpret<uintptr, Action>()).ValueSlot();
+    return 0; // stop enumeration
+}
+```
+
+Measured with a probe running that exact shape, **one arm per process** (a type-confused managed
+reference can take a process down, and a crash in one arm must not be read as a verdict on another):
+
+```
+  ARM token  (reference-BEARING pointee -- the real shape)
+    outbound number      = 0x86AA339000000000
+    IsTaggedToken        = True
+    Resolve -> same box  = True          <-- THE REGISTRY HOLDS THE MAPPING
+    Reinterpret<uintptr, Action>() returned  NativeBox`1
+    recovered is null    = False
+    recovered SAME as f  = False         <-- a NON-NULL, WRONG Action
+    invoking it          THREW NullReferenceException
+
+  ARM plain  (reference-FREE pointee -- THE VARIED AXIS)
+    outbound number      = 0x7FBA144108F0
+    IsTaggedToken        = False
+    Resolve -> same box  = True
+    Reinterpret<uintptr, RefFree>() returned  NativeBox`1
+    recovered a = 0x7FBA144108F0, b = 0x0    <-- a IS THE NUMBER ITSELF
+```
+
+**The answer is no, and the reason is not that the information is missing.** `Resolve(token)` returns
+the original box **on the same run** — the registry can do it. The emitted inbound edge simply never
+asks: `Reinterpret` falls through to its address route (`derived = (ж<TDst>)(uintptr)box`), minting a
+`NativeBox` over **the address of the storage holding the carried number**, and reads the destination
+type out of **those bytes**. In Go that is exactly right, because the number there *is* the funcval
+pointer. In C# the bytes are a token, so reading an `Action` out of them yields a **non-null,
+type-confused reference** and the invoke throws `NullReferenceException`.
+
+⚠ **The `plain` arm's own label was wrong, and it still did its job.** It was written expecting an
+"exact round trip" and printed `False` — but the shape never promised one: `*(*T)(unsafe.Pointer(&n))`
+reinterprets **n's bytes** as T, it does not follow n as a pointer to T. `a == the number` is the
+shape behaving correctly. What the arm actually establishes is the thing worth having: **the mechanism
+is IDENTICAL for both pointee kinds** (a `NativeBox` over the number's own storage), so the failure is
+not *"tokens break `Reinterpret`"* — it is *"a token is not a value the destination type can be read
+out of."* The arm also discriminates the one competing mechanism: were the `NativeBox` minted over the
+**number treated as an address**, the token arm would have **faulted** on a non-canonical address; it
+did not fault, and returned a garbage reference instead. Prediction scored: (b) HIT, and the control's
+expectation MISSED.
+
+### 10.12.3 What this does to the door, and what it does NOT license
+
+**§10.10.4's warning is CONFIRMED rather than argued.** Lifting the door on the five pass-through rows
+would replace a refusal that *names the defect* with a `NullReferenceException` raised inside a
+Windows callback — no mention of tokens, no mention of the argument, and arriving at a frame nowhere
+near the cause. That is strictly worse than the loud failure, which is why "the premise is wrong on
+five rows" does not by itself argue for lifting.
+
+**A remedy would have to sit on the inbound edge, and there is a named obstacle already in the tree.**
+The only place the mapping exists is the registry, so a remedy means the inbound reinterpret consulting
+it — and the natural key ("the destination is reference-bearing") is **exactly the case golib's
+`RemembersReinterpretSource` deliberately carves OUT**, in its own words: *"A reference-BEARING
+destination is Go's prefix-downcast idiom — reflect's `(*structType)(unsafe.Pointer(t))` over an
+`abi.Type` … and it neither needs nor wants this: nothing hands that pointer to native code"* — and
+that path is **HOT**. So a registry lookup keyed on the destination lands on reflect's downcast, not
+on this callback. Recorded as a constraint on the remedy space, discovered from the code; **nothing is
+cut here.**
+
+**The standing falsifier is UNMEASURED and stays open.** COORD's falsifier for the pass-through reading
+is *a native callee that STORES the cookie and DEREFERENCES it.* `EnumTimeFormatsEx` does not — it
+carries the lparam to the callback. Whether any Windows context-pointer API in the corpus's reach
+*does* is a **Windows-side census nobody has run**, and it is not answerable from a Linux host or from
+this emission. It is named here so that the pass-through reading is never quoted as though the
+falsifier had been checked.
+
+## 10.13 THE TWO-TABLE CENSUS — the door does NOT retire, and a `uintptr`-source arm would touch ONE site
+
+COORD `3d8a7ff8bc` §4: one walk, two questions. Table 1 tests COORD's lead that the remedy's key is the
+**SOURCE** rather than the destination; table 2 decides whether the suspended door has any population
+left to protect. Population: the committed corpus at landed master `44f858717` — which **is** the
+three-target emission, because a package whose emission varies by GOOS keeps the varying files in
+per-GOOS folders — plus the `runtime` row's **test** emission (guarded 1.23.12 toolchain,
+`-platforms windows/amd64`), since the callback edge lives there and `runtime` is unbanked.
+
+### 10.13.1 Table 1 — `Reinterpret<uintptr, X>` with X reference-bearing
+
+| where | sites | destinations | reference-bearing X |
+|:--|--:|:--|--:|
+| production, all three targets | **3 distinct** (5 lines: `runtime/heapdump.cs`, `runtime/{windows,linux,darwin}/proc.cs`, `runtime/linux/lock_futex.cs`) | `byte`, `uint64`, `uint32` | **0** |
+| the other pointer-width source spellings (`nuint`) | 2 (`bbig/big.cs`, `flag/flag.cs`) | `big.Word`, `uintValue` | **0** |
+| `runtime` TEST emission | **1** (`syscall_windows_test.cs:189`) | **`Action`** | **1** |
+
+`big.Word` and `uintValue` are reference-free by two derivations — the emission's own
+`[GoType("num:nuint")]` and Go's `type Word uint` / `type uintValue uint`. A sixth production *mention*
+sits in a **comment** in `zsyscall_windows_wsa_impl.cs` and is not a site.
+
+**So the entire reference-bearing-destination population is the callback edge itself** — COORD's
+positive control, which fires. A `uintptr`-source arm would touch **exactly one site in the corpus.**
+
+⚠ **COORD's lead SURVIVES its falsifier, measured.** The falsifier was reflect's prefix downcast
+appearing here with a bare-number source. It does not: every downcast in the corpus is
+`Reinterpret<_type, …>` or `Reinterpret<abi.Type, …>` — a pointer **WRAPPER** source, never a bare
+number — across destinations `arraytype chantype interfacetype maptype ptrtype slicetype structtype`
+and `arrayType interfaceType ptrType rtype sliceType structType`. **A key on the `uintptr` SOURCE
+therefore does not collide with the carve-out `RemembersReinterpretSource` makes for the hot path**,
+which is what §10.12.3 could not settle and C1 needs before sizing.
+
+⚠ **Scope kept honest:** the wider bare-scalar family is 62 source/destination pairs, but a
+`byte`-source reinterpret is the **buffer** idiom (`(*T)(unsafe.Pointer(&buf[0]))`) whose source box is
+a real pinnable buffer and never a token. Restricting to **pointer-width** integer sources
+(`uintptr`, `nuint`, `uint64`, `uint32`) the destinations are `byte uint32 uint64 uintptr int64 float64
+big.Word uintValue uint64Value atomic.Int64 atomic.Uint64 atomic.Uintptr` — **all reference-free.**
+
+### 10.13.2 Table 2 — where a token CAN reach a native argument (windows flavour)
+
+**23 funnel sites** carry an address-of into a `Proc(…).Call` / `Syscall*` argument: **16 in
+production, all of them inside hand-owned `*_impl.cs`** (certchain, ptrout, wsa,
+`syscall_windows_impl`) — the mirror-and-transcribe remedy already in place, most visibly as
+`nativeIdentityOf(…)` + `cellAddr` — and **7 in the `runtime` test emission**, classified by the API's
+documented contract for that parameter:
+
+| API | arg | pointee | reference-bearing | contract |
+|:--|:--|:--|:--:|:--|
+| `UnionRect` | 0 `Ꮡres` | RECT (4×`int32`) | no | **WRITES** |
+| `UnionRect` | 1, 2 | RECT | no | **READS** |
+| `VerifyVersionInfoW` | 0 `Ꮡvi` | `OSVersionInfoEx` (`array<uint16>`) | **YES** | **READS** |
+| `wsprintfA` | 0 | `byte` element | no | **WRITES** |
+| `EnumWindows` | 0 | callback | — | callback/cookie |
+| **`EnumTimeFormatsEx`** | **3** | **`Action` box** | **YES** | **COOKIE** ← control fires |
+| `GetExitCodeThread` | 1 `Ꮡec` | `uint32` | no | **WRITES** |
+| `RegisterClassExW` | 0 `Ꮡwc` | `Wndclassex` (2× `ж<uint16>`) | **YES** | **READS** |
+
+⚠ **THE ANSWER: the door does NOT retire.** Of the three reference-bearing pointees that reach a
+native argument in this row, **one is the pass-through cookie and TWO are pointers the API READS** —
+so the pass-through case is the *minority* even in the row that motivated it, and the READ rows are
+exactly the population a refusal still protects. `Ꮡvi` is `Test64BitReturnStdCall`, already measured as
+a refusal whose premise holds (§10.10.3).
+
+**A prediction the census produces, for i9 to check:** `Ꮡwc` (`RegisterClassExW`, a READ pointer over a
+reference-bearing struct) is **not** among the six observed refusals, so `TestRegisterClass` is either
+unexecuted or fails earlier. **If it ever runs, the door must refuse its argument 0 with the identical
+text.** A refusal there would be correct; its absence today is the 695-unexecuted bound, not evidence.
+
+### 10.13.3 The instrument, and the two ways it was wrong first
+
+A line-based grep is unusable here — the funnel calls span lines, and 33 single-line hits sat against
+133 address-of-to-`uintptr` casts on this flavour — so the walk extracts each funnel call's
+**balanced** argument list. It was wrong twice, and both are worth carrying:
+
+1. **A lookbehind excluding `.`** rejected every `Proc(…).Call(…)` — *the primary shape COORD named* —
+   while reporting a plausible 16.
+2. Removing that lookbehind let **Go's own methods named `Call`** in: `net/rpc` and `net/rpc/jsonrpc`
+   contributed **15 of 43** sites with entirely convincing address-of arguments (`Ꮡcodec`, `Ꮡargs`,
+   `Ꮡreply`) and nothing native about them. **One over-restriction traded for one over-match, and only
+   the per-package breakdown showed it.** A `Call` now counts only when its receiver chain names a
+   `Proc`.
+
+The count moved **16 → 43 → 23**, which is this file's own "when a count keeps moving, suspect the
+unit" — the unit was *what counts as a funnel*. One level of local indirection is resolved
+(`var _p0 = (uintptr)Ꮡx;` then `Syscall(proc, _p0, …)`) because that is the dominant wrapper shape;
+**1 argument remains unresolved and is reported as UNKNOWN rather than as absent.**
+
+⚠ **Owed, and named rather than claimed:** the 16 production sites are asserted hand-owned from their
+`*_impl.cs` filenames and two spot-checks (`nativeIdentityOf`/`cellAddr`); a per-site pointee
+classification there is **not** done, so "production carries no unremediated token-to-native path" is
+this census's *reading*, not its measurement.
+
+### 10.13.4 ⚠ CORRECTION to §10.10.6 — the sixth caller fails on the LINKAGE, not the counter
+
+§10.10.6 said `TestCallbackPanicLocked` "fails on that same primitive" as `TestLockOSThreadNesting`
+and named the root parenthetically as *"`lockedExt` with zero increment sites corpus-wide"*. The
+primitive is right and the parenthetical is wrong for this test: C1 verified at the corpus-pinned
+source (`2cc7eccfe0`) that `runtime.LockedOSThread` is a var alias for `lockedOSThread`
+(`proc.go:619-622`), which reads `gp.lockedm != 0 && gp.m.lockedg != 0` — **the g/m LINKAGE that
+`dolockOSThread()` sets — and never reads `lockedExt`/`lockedInt` at all.**
+
+So the two tests fail on **different halves of ONE omission**: `TestLockOSThreadNesting` on the
+COUNTER, `TestCallbackPanicLocked` on the LINKAGE, both because the hand-owned no-op skips both.
+Nothing about §10.10.6's purpose changes — the sixth caller is still **unmeasured with respect to the
+token door**, dead in one millisecond before any wrapper, and still not a Q44 row. What changes is
+that a reader of this file must not take the counter as its root: C1 notes the distinction decides the
+fix (Go's whole body, `gp.m.lockedExt++` **and** `dolockOSThread()`, not the counter alone), which is
+C1's to cut and not this design's.
+
+Recorded here rather than by editing §10.10.6, so the original claim and its correction both stand.
+
+### 10.13.5 The production reading UPGRADED to a measurement — 11 of 16 clean BY TYPE, and the other 5 reduce to one named question
+
+§10.13.3 flagged that *"production carries no unremediated token-to-native path"* was the census's
+**reading**, asserted from `*_impl.cs` filenames plus two spot-checks. It is now measured per site by
+resolving each addressed pointee's declared type.
+
+**11 of 16 are clean BY TYPE, which is stronger than clean by convention.** Their pointees are
+scalars, scalar pointers, or an empty struct — `ж<byte>` (`croutine` ×5, `sendBuf`), `ж<uint16>`
+(`serverName`, `userName`, `stringSid`, `server`), `ж<uint32>` (`entriesRead`, `totalEntries`,
+`bytesSent`, `bufType`), and `ж<SID>` where the converted `SID` is `[GoType] partial struct SID { }`,
+field-free. A box over a reference-**free** pointee has pinnable storage, so `(uintptr)Ꮡx` is a real
+pinned address and **cannot be a token whatever the file's ownership**.
+
+**The other 5 — the certchain group — address REFERENCE-BEARING pointees, measured:**
+
+```
+  CertContext        uint32 EncodingType; ж<byte> EncodedCert; uint32 Length;
+                     ж<CertInfo> CertInfo; ΔHandle Store            <- two ж<> fields
+  CertChainContext   ... ж<ж<CertSimpleChain>> Chains;
+                     ж<ж<CertChainContext>> LowerQualityChains      <- two ж<> fields
+```
+
+So those five genuinely route through the hand-own's `nativeIdentityOf`, **and that helper is
+CONDITIONAL**:
+
+```csharp
+private static uintptr nativeIdentityOf<T>(ж<T> box) {
+    if (box is not null && s_nativeIdentity.TryGetValue(box, out object? remembered))
+        return (uintptr)(nuint)remembered;
+    return (uintptr)box;                    // <- the fallback
+}
+```
+
+⚠ **The fallback is `(uintptr)box`, which for a reference-bearing pointee is exactly a token.** The
+file's author knew and wrote it down: *"A view this file built answers from the table; anything else —
+`CertCreateCertificateContext`'s native box, or a nil pointer — answers with its own address exactly as
+the generated wrapper would, which is what keeps the un-hand-owned producers working."* **Both
+enumerated cases are token-free** — a native box's `(uintptr)` IS its native address, and a nil box's
+is 0 — so the census does not contradict the hand-own.
+
+**THE RESIDUAL, now one named question instead of five unclassified sites:** can a **THIRD** box kind
+reach those sites — a **managed, non-nil** box over `CertContext`/`CertChainContext`, whose `(uintptr)`
+is neither a remembered native address nor 0 but a **token**? Nothing in the file enumerates that case,
+and with the door suspended such a number reaches crypt32 **silently**. Settling it is a call-graph
+question over the Windows x509 verifier path (which producers mint the boxes that reach
+`CertGetCertificateChain` and friends), not answerable from the pointee types alone, and it is **not
+this census's to close** — it is recorded here so the next reader has the question rather than the
+reassurance.
+
+**What changed, precisely:** the production side went from *"asserted hand-owned by filename"* to
+*"11 clean by type; 5 routed through a documented conditional whose two enumerated fallbacks are safe;
+1 unenumerated case named."* The value of closing this residual was not confirmation — it was that a
+reading which sounded settled turned out to contain a conditional nobody had priced.
+
+### 10.13.6 THE DOOR'S STATE, stated once — and §10.13.5's question is the RE-ARM's motivating case
+
+COORD `827c8d7b00` §3 states the token door's state once so that nobody carries two readings, and it
+is recorded here verbatim in substance because this file is where a reader comes for it:
+
+> **In code today the door is SUSPENDED.** Tokens flow through at the native boundary, and **the six
+> observed refusals of §10.10 are historical** — they were measured on a tree carrying the door, not
+> on master. *"The door stays"* (the `1d243ca6`-era rulings) means **C1's `runtime` seat RE-ARMS it**
+> with the **(API, argument) contract table** — today exactly `EnumTimeFormatsEx` argument 3 as
+> pass-through — **beside the source-keyed inbound recovery** whose key §10.13.1 measured clear of
+> reflect's hot path.
+
+⚠ **So every refusal count in §10.10 is a reading about a tree with the door, and §10.13.2's contract
+table is what the re-arm is built from — not a description of today's behaviour.** A reader who takes
+§10.10's six as current would be wrong in the direction of thinking the corpus is protected.
+
+**And §10.13.5's residual is ANSWERED, by the re-arm rather than by anything of mine.** COORD:
+*"a token reaching a READ argument of `CertGetCertificateChain` is then refused by name, so the third
+box kind cannot reach crypt32 silently; C2 records the question as the seat's motivating case, no cut
+of its own."*
+
+That is the right disposition and it is worth being explicit about why. The question §10.13.5 raised —
+can a **managed, non-nil** box over `CertContext`/`CertChainContext` reach `nativeIdentityOf`'s
+fallback, where its `(uintptr)` is a token? — does **not** need the call graph settled to be made
+safe. Whether such a producer exists decides whether the case is *reachable*; the re-armed door
+decides whether it is *silent*. With the door armed and `CertGetCertificateChain`'s pointer arguments
+in the contract table as READ, the answer is a refusal by name at the boundary, which is exactly the
+outcome §10.10.3 measured as the door working. **The call-graph question is therefore a
+prioritisation question, not a safety one — recorded as the seat's motivating case, and no cut is
+made here.**
+
+**Standing, so this section does not go stale silently:** if the re-arm lands with a contract table
+that does NOT carry `CertGetCertificateChain`'s pointer arguments, §10.13.5's question returns as a
+safety question and this paragraph is the reason to re-read it.

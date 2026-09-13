@@ -143,6 +143,54 @@ public class Q44RegistryCensusControlTests
         StringAssert.StartsWith(lines[0], "Q44CENSUS ", "the totals line must be first and greppable");
         Assert.IsTrue(Array.Exists(lines, l => l.StartsWith("Q44CENSUS-RECONCILES", StringComparison.Ordinal)),
             "the reconciliation must be RECORDED, not merely computed -- a census whose exhaustiveness is not in the artifact cannot be checked later");
+
+        // ⚠ THE FOLD RULE MUST BE IN THE ARTIFACT, because a reader who does not know it gets a
+        // plausible WRONG number rather than an error. The partial flush made one process write
+        // several blocks, they are CUMULATIVE SNAPSHOTS rather than increments, and i9 read a row
+        // 1.96x high by summing them (mailbox c62ca28686) -- correctly, by the method that had been
+        // right until the flush existed. Nothing in the output said the shape had changed. It says
+        // so now, and this arm is what keeps it saying so.
+        Assert.IsTrue(Array.Exists(lines, l => l.StartsWith("Q44CENSUS-FOLD", StringComparison.Ordinal)),
+            "every block must state the fold rule -- LAST block per file, summed across files; an output that " +
+            "invites the naive sum is an instrument defect, not a reader error");
+    }
+
+    [TestMethod]
+    public void ACensusPathWithoutPidIsMadePerProcess_BecauseASharedPathDESTROYSBlocks()
+    {
+        // ⚠ MEASURED, not reasoned: two processes writing ONE census path, and the second's first
+        // write truncated the first's entire census -- 19 blocks gone, no error, no report. A row
+        // that then reads like a small measured one is a DESTROYED one, which is this instrument's
+        // own falsifier. So a configured path without {pid} is made per-process rather than shared.
+        //
+        // A timestamp heuristic was tried first and DISCARDED: its verdict depends on how often the
+        // OTHER process happens to write, and three instruments in a row could not exercise the
+        // ordering that breaks it. This arm guards the STRUCTURAL property instead, which no
+        // ordering or cadence can defeat.
+        const string key = "GO2CS_Q44_CENSUS_FILE";
+        string saved = Environment.GetEnvironmentVariable(key);
+        try
+        {
+            string dir = System.IO.Path.GetTempPath();
+            string pid = Environment.ProcessId.ToString();
+
+            Environment.SetEnvironmentVariable(key, System.IO.Path.Combine(dir, "q44-noPidToken.txt"));
+            string resolved = Q44RegistryCensus.OutputPath;
+            StringAssert.Contains(resolved, pid,
+                "a path carrying no {pid} must still resolve PER PROCESS -- a shared path loses a whole " +
+                "process's census silently, which is worse than any filename surprise");
+            Assert.AreNotEqual(System.IO.Path.Combine(dir, "q44-noPidToken.txt"), resolved,
+                "the configured path must have been rewritten, not returned as given");
+
+            // And the token form is honoured EXACTLY -- the already-correct case must not move.
+            Environment.SetEnvironmentVariable(key, System.IO.Path.Combine(dir, "q44-{pid}-token.txt"));
+            Assert.AreEqual(System.IO.Path.Combine(dir, $"q44-{pid}-token.txt"), Q44RegistryCensus.OutputPath,
+                "a caller who wrote {pid} gets exactly that substitution and no second rewrite");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(key, saved);
+        }
     }
 
     [TestMethod]
@@ -211,5 +259,59 @@ public class Q44RegistryCensusControlTests
             "and must NOT be filed 2b -- 2b is the sound bucket, and a defect hidden there is a defect the census reports as absent");
 
         GC.KeepAlive(plain);
+    }
+
+    [TestMethod]
+    public void TheCensusWroteAStartBlockAtModuleInit_SoAZeroIsAMeasurement()
+    {
+        // ⚠ THE OTHER END OF COORD RULING 3 (82c60cec4). The flush closed "the host died before the
+        // exit hook"; this closes "the process did nothing". Every other block is written BECAUSE
+        // work happened -- the flush at conversion 1, the flush every 250,000, the exit hook -- so a
+        // process that armed and converted nothing left NO FILE, and "no file" read identically to
+        // the gate being unset, to golib never loading, and to a failed write. i9 confirmed the
+        // pipeline keeps no process record to disambiguate them from outside (d6306f2d12), so the
+        // disambiguation has to be IN the artifact.
+        //
+        // This asserts the mechanism in a REAL process rather than through a proxy: golib's module
+        // initializer ran before any test in this assembly, so if the start block works at all its
+        // line is already on disk and its block is the FIRST one in the file.
+        //
+        // ⚠ THE PATH IS READ FROM THE INSTRUMENT, NOT GUESSED -- and the first version of this guard
+        // guessed. It tried OutputPath and then the temp default, which is blind in one direction:
+        // OutputPath re-reads GO2CS_Q44_CENSUS_FILE at CALL time while the block was written at
+        // MODULE INIT, so with the variable set at init and unset by the time this runs, the block
+        // sits at the configured path and BOTH candidates name the temp default. Measured
+        // out-of-process: in that configuration the temp default does not exist at all, so the guard
+        // would have reported the block missing when it had been written correctly. Recording the
+        // path in golib removes the guess and the blind direction together, and makes this assertion
+        // independent of class order and of the environment.
+        string path = Q44RegistryCensus.StartBlockPath;
+
+        Assert.IsNotNull(path,
+            "golib recorded no StartBlockPath -- the arm-time block was not written, so a " +
+            "zero-conversion row is still indistinguishable from an unarmed one");
+
+        Assert.IsTrue(System.IO.File.Exists(path),
+            $"golib recorded StartBlockPath '{path}' but no file is there -- a remembered string is not " +
+            "a written census, and an unwritable directory makes the row unmeasurable rather than clean");
+
+        string[] lines = System.IO.File.ReadAllLines(path);
+
+        int start = Array.FindIndex(lines, static l => l.StartsWith("Q44CENSUS-START ", StringComparison.Ordinal));
+
+        Assert.IsTrue(start >= 0,
+            $"the file at the recorded StartBlockPath '{path}' carries no Q44CENSUS-START line");
+        int firstTotals = Array.FindIndex(lines, static l => l.StartsWith("Q44CENSUS", StringComparison.Ordinal)
+                                                          && l.Contains(" conversions=", StringComparison.Ordinal));
+
+        Assert.IsTrue(firstTotals >= 0, "the start block must carry a totals line, or no reader can fold it");
+        Assert.IsTrue(firstTotals < start,
+            "the totals line must come FIRST in the block -- an existing control requires it greppable at the head, " +
+            "and it caught exactly this ordering the first time it ran");
+
+        // The start block's own totals must be the zeros it claims. Reading them from the FIRST block
+        // rather than the last is the point: later blocks are cumulative snapshots of real work.
+        StringAssert.Contains(lines[firstTotals], "conversions=0",
+            "the arm-time block must report zero conversions -- if it reports work, it was not written at arm time");
     }
 }

@@ -215,27 +215,90 @@ internal static class Q44RegistryCensus
     /// were wired and the instrument could not report, which is the same defect as a counter that
     /// never moves and is harder to see, because the arms all looked healthy.
     /// </summary>
-    internal static string OutputPath =>
-        Environment.GetEnvironmentVariable("GO2CS_Q44_CENSUS_FILE") is { Length: > 0 } named
-            ? named.Replace("{pid}", Environment.ProcessId.ToString())
-            : System.IO.Path.Combine(System.IO.Path.GetTempPath(),
-                                     $"q44-census-{Environment.ProcessId}.txt");
+    internal static string OutputPath => ResolveOutputPath();
+
+    // Set when a caller-supplied path carried no {pid} and this process therefore writes a
+    // per-process file instead. Reported in the BLOCK rather than on stderr, because stderr belongs
+    // to the program under test and every child inherits the census -- the reason arm 2 removed all
+    // routine stderr writes in the first place. The file is the census's own channel.
+    private static string s_rewrittenFrom;
 
     /// <summary>
-    /// Writes the census to <see cref="OutputPath"/> and to stderr as a secondary. Called from a
-    /// process-exit hook AND callable directly, because whether that hook runs under a given test
-    /// host is not a safe assumption.
+    /// The path the arm-time START block was written to, or null if no start block was written.
     /// </summary>
     /// <remarks>
-    /// ⚠ ONE BLOCK PER PROCESS, which is one block per swept ROW. The first write in a process
-    /// TRUNCATES; later writes in that same process append. Until 2026-09-08 every write appended,
-    /// so a sweep that set one <c>GO2CS_Q44_CENSUS_FILE</c> for the host and ran several rows
-    /// through it produced a file whose blocks a reader would sum — i9's ask, and the failure it
-    /// prevents is arithmetic rather than loud. Two ways to keep rows apart, both encoded here so
-    /// the runner needs no per-row logic: put <c>{pid}</c> in the path and each host gets its own
-    /// file; or leave it out and the last row's block is what remains, cleanly, never two summed.
-    /// The header line names the process and the entry assembly so a block is attributable either
-    /// way.
+    /// ⚠ RECORDED RATHER THAN RE-DERIVED, and the difference was measured. A guard that wants to
+    /// find the start block cannot ask <see cref="OutputPath"/> for it: that property re-reads
+    /// GO2CS_Q44_CENSUS_FILE at CALL time, while the block was written at MODULE INIT, and anything
+    /// that changes the variable in between moves the answer. The first version of the guard
+    /// guessed two candidates (OutputPath, then the temp default) and was blind in one direction:
+    /// with the variable SET at init and UNSET by the time the guard runs, the block sits at the
+    /// configured path while BOTH candidates name the temp default -- measured, the temp default
+    /// does not even exist in that configuration. Recording the path removes the guessing and the
+    /// blind direction together, and it is the same principle as the start block itself: an
+    /// instrument says what it did instead of leaving a reader to infer it.
+    /// </remarks>
+    internal static string StartBlockPath { get; private set; }
+
+    /// <summary>
+    /// The census path, PER PROCESS BY CONSTRUCTION.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ A SHARED PATH SILENTLY DESTROYS BLOCKS, MEASURED 2026-09-08. Two processes writing one path:
+    /// the second's first write truncated the first's entire census -- 19 blocks gone, no error, no
+    /// report, and a row that reads like a small measured one when it is a destroyed one. That is this
+    /// instrument's own falsifier turned on itself, and it is what `reflect` was recorded UNMEASURED
+    /// against rather than as conversions=1.
+    ///
+    /// The fix is STRUCTURAL rather than a rule about who may truncate. A timestamp heuristic was
+    /// built and DISCARDED with its measurements: comparing the file's last-write time to this
+    /// process's start behaved correctly for two sequential rows AND for two concurrent continuous
+    /// writers, but its verdict depends on how often the OTHER process happens to write -- a first
+    /// writer that flushes once and goes quiet is still truncated by a later starter. Three
+    /// instruments in a row failed to exercise that ordering, which is the signal that the property
+    /// depended on write CADENCE; a correctness rule that does is not one to ship in an instrument
+    /// whose whole job is not to lose data quietly.
+    ///
+    /// So a path without {pid} gets the pid inserted, and no ordering or cadence can lose a block.
+    /// The reader (docs/phase4/probes/c2-census-read) already folds LAST BLOCK PER FILE summed across
+    /// FILES, which is exactly this shape.
+    /// </remarks>
+    private static string ResolveOutputPath()
+    {
+        string pid = Environment.ProcessId.ToString();
+
+        if (Environment.GetEnvironmentVariable("GO2CS_Q44_CENSUS_FILE") is not { Length: > 0 } named)
+            return System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"q44-census-{pid}.txt");
+
+        if (named.Contains("{pid}", StringComparison.Ordinal))
+            return named.Replace("{pid}", pid);
+
+        string dir = System.IO.Path.GetDirectoryName(named);
+        string stem = System.IO.Path.GetFileNameWithoutExtension(named);
+        string ext = System.IO.Path.GetExtension(named);
+        string perProcess = $"{stem}-{pid}{ext}";
+        s_rewrittenFrom = named;
+        return string.IsNullOrEmpty(dir) ? perProcess : System.IO.Path.Combine(dir, perProcess);
+    }
+
+    /// <summary>
+    /// Writes the census to <see cref="OutputPath"/>. Called from a process-exit hook AND callable
+    /// directly, because whether that hook runs under a given test host is not a safe assumption.
+    /// </summary>
+    /// <remarks>
+    /// ⚠ THIS BLOCK USED TO SAY the census also went to stderr "as a secondary", and that a path
+    /// without <c>{pid}</c> left "the last row's block, cleanly, never two summed". BOTH ARE NOW
+    /// FALSE and are corrected here rather than left to read as the design. Arm 2 removed every
+    /// routine stderr write (stderr belongs to the program under test, and children inherit the
+    /// census); and a path without <c>{pid}</c> no longer resolves to a shared file at all -- see
+    /// <see cref="ResolveOutputPath"/>, which makes it per-process, because a shared path was
+    /// MEASURED to destroy a whole process's census silently rather than to leave the last row's
+    /// block cleanly.
+    ///
+    /// What holds now: the path is per-process by construction, so the first write in a process
+    /// truncates its OWN file and later writes append to it. Rows stay apart because processes do.
+    /// The header line names the process and the entry assembly, so a block is attributable, and a
+    /// reader folds LAST BLOCK PER FILE then sums across FILES.
     /// </remarks>
     internal static void Dump() => DumpTo(OutputPath, partial: false);
 
@@ -248,7 +311,7 @@ internal static class Q44RegistryCensus
     /// </summary>
     internal static void DumpTo(string path) => DumpTo(path, partial: false);
 
-    private static void DumpTo(string path, bool partial)
+    private static void DumpTo(string path, bool partial, bool start = false)
     {
         long c = Interlocked.Read(ref s_conversions);
         long a1 = Interlocked.Read(ref s_arm1), a2a = Interlocked.Read(ref s_arm2a);
@@ -270,6 +333,42 @@ internal static class Q44RegistryCensus
             $"entry={System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? "?"} " +
             $"utc={DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ}",
 
+            // ⚠ THE FOLD RULE, STATED IN THE OUTPUT ITSELF. One process now writes SEVERAL blocks
+            // (the partial flush) and they are CUMULATIVE SNAPSHOTS of one running total, not
+            // increments -- so summing the blocks within a file DOUBLE-COUNTS it. i9 read a row 1.96x
+            // high that way (c62ca28686) and was right that nothing in the output said so: the method
+            // had been correct until the flush existed, and the flush changed the shape underneath it
+            // silently. Keying on the FINAL block is also wrong, because a process killed before it
+            // finishes leaves only a PARTIAL -- which is the case the flush exists for. The rule that
+            // handles both is LAST BLOCK PER FILE, then sum across FILES, and it is printed in every
+            // block so that a reader cannot arrive at the naive sum honestly.
+            "Q44CENSUS-FOLD cumulative-snapshot -- the LAST block in THIS file is authoritative; " +
+            "sum across FILES, never across blocks",
+        };
+
+        // ⚠ THE START BLOCK IS WHAT MAKES A ZERO A MEASUREMENT. Every other block is written
+        // because work happened -- the flush at conversion 1, the flush every 250,000, the exit
+        // hook. So a process that armed and converted NOTHING wrote no file, and "no file" read
+        // identically to "the gate was never set", to "golib never loaded" and to "the host died
+        // first". That is COORD ruling 3 (82c60cec4) from the other end: the flush closed "died
+        // before exit", and this closes "did nothing". An instrument must be able to report that
+        // it did nothing, or its zero is not a reading.
+        //
+        // It carries the PARTIAL header deliberately: it IS a cumulative snapshot, taken before
+        // any conversion, so every existing reader folds it correctly with no change (last block
+        // per file, summed across files) and a start-only file folds to a legitimate zero.
+        if (start)
+            lines.Add("Q44CENSUS-START armed at module init, before any conversion -- the zeros " +
+                      "above are a MEASURED zero. A file whose LAST block is this one armed and " +
+                      "converted nothing; NO FILE at all means the census never armed here");
+
+        // Say so IN THE ARTIFACT when the configured path was made per-process, so a reader looking
+        // for the name they set finds out why there are several files instead of wondering.
+        if (s_rewrittenFrom is { Length: > 0 } from)
+            lines.Add($"Q44CENSUS-PATH per-process: configured '{from}' carried no {{pid}}, so this " +
+                      $"process wrote '{path}'; a shared path loses blocks silently");
+
+        lines.Add(
             // ⚠ ONLY A FINAL BLOCK ASSERTS EXACT RECONCILIATION. A partial is taken while other
             // threads are mid-arm -- each has counted its conversion and not yet its arm -- so a
             // small shortfall there is the instrument being honest about a live count, not a broken
@@ -280,8 +379,7 @@ internal static class Q44RegistryCensus
                 ? $"Q44CENSUS-RECONCILES arms sum to {sum} == conversions {c}"
                 : partial
                     ? $"Q44CENSUS-PARTIAL-SKEW arms sum to {sum} against conversions {c}, delta {c - sum} -- threads mid-arm at flush; a FINAL block must reconcile exactly"
-                    : $"Q44CENSUS-BROKEN arms sum to {sum} but conversions is {c} -- the classification is NOT exhaustive",
-        };
+                    : $"Q44CENSUS-BROKEN arms sum to {sum} but conversions is {c} -- the classification is NOT exhaustive");
 
         foreach (var kv in s_arm2Pairs)
             lines.Add($"Q44CENSUS-ARM2 {kv.Value,8}  {kv.Key}");
@@ -319,6 +417,27 @@ internal static class Q44RegistryCensus
             return;
 
         AppDomain.CurrentDomain.ProcessExit += static (_, _) => Dump();
+
+        // The START block, written here and not lazily, because the whole point is to exist in a
+        // process that goes on to do nothing. A write failure IS reported (DumpTo's own path),
+        // for the same reason the exit block reports one: an unwritable census directory makes
+        // the row unmeasurable, and finding that out at arm time rather than at exit is strictly
+        // better. The catch is here so that a census can never take the program under test down.
+        try
+        {
+            string startPath = OutputPath;
+            DumpTo(startPath, partial: true, start: true);
+
+            // Recorded AFTER the write returns, so the property names a path something was
+            // actually written to rather than one that was merely attempted. DumpTo reports its
+            // own write failures and does not throw for them, so a reader still has to require
+            // the FILE -- which is right: an unwritable census directory makes the row
+            // unmeasurable and a guard should go red, not pass on a remembered string.
+            StartBlockPath = startPath;
+        }
+        catch
+        {
+        }
 
         // ⚠ NO "armed" LINE ON stderr. It fired in every process that loaded golib with the gate
         // set -- including a spawned helper child that does no census work at all -- and it is half
