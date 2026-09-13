@@ -6409,6 +6409,35 @@ type testComparison struct {
 	// disclosed tests have no subtests, which is all of them before crypto/tls's TestBogoSuite.
 	Withdrawn []string `json:"withdrawn,omitempty"`
 
+	// OrphanedDisclosures are the manifest entries this run found naming a test whose CONVERTED side
+	// records a terminal `pass` — a disclosure that no longer describes anything on this platform.
+	// See orphanedDisclosure for the predicate, why it is a terminal pass rather than "did not
+	// fail", and why increment 1 REPORTS rather than refuses (the manifest is shared across
+	// platforms). Report-only: this field never clears Matched, so a run carrying it still validates
+	// and the entry stays absorbing wherever it is still live.
+	//
+	// omitempty, so a run with no orphan writes a record byte-for-byte what it was before this field
+	// existed — which is what keeps every banked row's record stable. The key is asserted PRESENT
+	// whenever the list is non-empty by TestOrphanedDisclosureReachesTheComparisonRecord, because an
+	// omitempty field nothing tests is a report that can go silently missing.
+	OrphanedDisclosures []orphanedDisclosure `json:"orphanedDisclosures,omitempty"`
+
+	// OutOfScopeDisclosures are the manifest entries this run did not apply because they are scoped
+	// to other platforms (testDisclosure.Platforms, increment 2). They are the opposite of the field
+	// above and must never be read as a weaker version of it: an ORPHAN is a measurement (this
+	// platform ran the test and it passed), while an out-of-scope entry is the ABSENCE of one — the
+	// run never applied it and has no evidence about it either way.
+	//
+	// Published so a reader can see the entries exist without reading them as findings. Without this
+	// list a scoped manifest would be silently smaller than the file on disk, and the difference
+	// between "this package has four disclosures" and "this package applied two of its four here"
+	// would live nowhere — which is the omission §2.7 forbids, arriving through the fix for
+	// doctrine rule (1) rather than through a defect.
+	//
+	// omitempty for the same reason as the field above: no committed manifest carries a scope today,
+	// so every existing record stays byte-for-byte what it was.
+	OutOfScopeDisclosures []outOfScopeDisclosure `json:"outOfScopeDisclosures,omitempty"`
+
 	// TestFilter records the -test-filter expression a GATED run was produced under, and it exists
 	// because the record does not otherwise know how it was made. A filtered run rewrites the SAME
 	// go2cs_test_comparison.json a full run writes, with nothing distinguishing the two -- and the
@@ -6812,6 +6841,134 @@ func hostFatalNames(disclosures map[string]testDisclosure) []string {
 	return out
 }
 
+// orphanedDisclosure names ONE manifest entry whose test the CONVERTED side reports as a terminal
+// `pass` in this run — a disclosure that no longer describes anything on this platform.
+//
+// THE GAP IT CLOSES. Until this existed, no check of any class verified that a disclosure entry
+// names a test that is actually FAILING. A signature that stops matching fails SAFE (the row goes
+// honestly red, which is how two stale entries were found at all), but an entry whose test has
+// simply started passing is absorbed by nothing, reported by nothing and accepted silently
+// everywhere — a permanent claim rather than a measurement.
+//
+// THE PREDICATE, AND WHY IT IS A TERMINAL PASS RATHER THAN "DID NOT FAIL" (ruled 2026-09-06). The
+// entry is reported only when csResults carries a terminal `pass` for its name. No-verdict rows,
+// infrastructure-error rows and deadline-killed rows are therefore excluded BY CONSTRUCTION rather
+// than by an exclusion list someone has to maintain: none of them ever puts "pass" in that map. The
+// inverse predicate — "this entry names a test that did not fail" — would fire on every row behind
+// a host-killer (797 unreached rows on one package in one afternoon, 221 on another the night
+// before) and report a wall of stale disclosures on EXACTLY the entries most likely still correct
+// and merely unreachable. Positive evidence, the same clause hostFatalMintViolations draws its
+// refusal from.
+//
+// IT IS NOT A WIDENING OF hostFatalMintViolations, and the two answer different questions.
+// That rule reads COMMITTED PROOF PAGES — the Windows record — to refuse a host-fatal entry at
+// MINT, before either child runs, because that class changes what runs. This one reads THIS RUN's
+// own verdicts, for every class, after both children have reported. Pointing the proof-page
+// instrument at a within-run question was the first framing of this gap and it was wrong.
+//
+// WHY REPORT-ONLY IN INCREMENT 1, which is the whole reason this returns a list instead of an
+// error. A per-package manifest is ONE file shared by every platform (doctrine rule (1)): an entry
+// present but not firing on one platform is legitimately kept for another, and an entry retired on
+// the strength of a Windows run has already turned a Linux-annotated row red once. A hard error
+// here would refuse every such entry on the platform that does not need it — so increment 1
+// REPORTS, increment 2 is platform-scoped entries (schema plus reader), and increment 3 is the
+// refusal, gated on 2. See docs/phase4/DESIGN-orphan-disclosure-check.md.
+//
+// The host-fatal class is deliberately NOT exempted. Such a test is withdrawn from both command
+// lines and produces no verdict, so it cannot reach this predicate in the ordinary case; if one
+// ever does, the withdrawal did not take — the test RAN and PASSED — and that is precisely what a
+// reader must see, exactly as matchTerminalStatuses lets the same case fall through to a mismatch
+// rather than absorbing it.
+type orphanedDisclosure struct {
+	Name   string `json:"name"`
+	Class  string `json:"class"`
+	Go     string `json:"go"`     // the Go side's terminal status, "" when it produced none
+	CSharp string `json:"csharp"` // always "pass" — carried so the record states the predicate it met
+	GOOS   string `json:"goos"`   // the platform this run measured; an entry may be live on another
+}
+
+// orphanedDisclosures applies the predicate above to the run's FINAL verdict maps. Both shapes the
+// ruling names are included: pass/pass (the entry describes nothing anywhere) and Go-anything /
+// C#=pass (the converted side passes a test the entry says it cannot) — both are stale on THIS
+// platform, and only the second could be read as a Go-side problem, which is why the Go status is
+// carried rather than filtered on.
+//
+// A name the run re-keyed (pairAddressVariantNames) will not be found under its manifest spelling
+// and is silently not reported. That is the safe direction — under-reporting a stale entry, never
+// inventing one — and it is the same blind spot matchTerminalStatuses has for such a name.
+func orphanedDisclosures(disclosures map[string]testDisclosure, goResults, csResults map[string]string, goos string) []orphanedDisclosure {
+	if len(disclosures) == 0 {
+		return nil
+	}
+
+	var out []orphanedDisclosure
+
+	for name, disclosure := range disclosures {
+		if csResults[name] != "pass" {
+			continue
+		}
+
+		out = append(out, orphanedDisclosure{
+			Name:   name,
+			Class:  disclosure.Class,
+			Go:     goResults[name],
+			CSharp: "pass",
+			GOOS:   goos,
+		})
+	}
+
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+
+	return out
+}
+
+// disclosurePlatformTargets are the GOOS values a disclosure entry's `platforms` list may name —
+// the corpus's own three layout-L3 targets, and deliberately NARROWER than isKnownGOOS.
+//
+// Go knows a dozen more (aix, android, dragonfly, …) and the converter's build-constraint reader
+// accepts them all, correctly, because it reads Go's own directives. A DISCLOSURE is a different
+// kind of statement: it names a platform this project builds, validates and banks a row on. An
+// entry scoped to a GOOS the corpus does not target could never be in scope on any run — it would
+// be permanently inert, which is indistinguishable from a typo and is exactly what a
+// silently-tolerated one produces. Refusing the wider set is therefore not a limitation but the
+// point: the narrow list is what lets `platfroms: ["windwos"]` fail at load instead of quietly
+// disabling an absorption forever.
+//
+// If the corpus ever targets a fourth GOOS this list grows with it, and the guard that reads it
+// goes red first, which is the correct order.
+//
+// Typed goosScope so the membership test below IS the registry's `includes` rather than a third
+// hand-rolled loop over a string slice. One caveat comes with that reuse and is guarded rather than
+// remembered: an EMPTY goosScope means "every target", so an emptied list here would turn this
+// whitelist into a silent accept-anything. TestDisclosurePlatformTargetsAreTheCorpusTargets pins
+// the list non-empty and pins its members.
+var disclosurePlatformTargets = goosScope{"windows", "linux", "darwin"}
+
+// outOfScopeDisclosure names ONE manifest entry this run did not apply because the entry is scoped
+// to other platforms (see testDisclosure.Platforms).
+//
+// IT IS NOT AN ORPHAN, and keeping the two apart is the whole content of this type. An orphan is a
+// measurement — this platform ran the test and it PASSED, so the entry describes nothing here. An
+// out-of-scope entry is the absence of a measurement: the run never applied it, never asked its
+// test anything, and has no evidence about it in either direction. Increment 3 refuses orphans; it
+// must never refuse these, and a reader must never read the two lists as one.
+//
+// Published rather than silently dropped for the same reason `withdrawn` and `gated` are: a
+// manifest entry that changes nothing about a run is still a fact about the manifest, and an
+// omission a reader cannot see is the shape §2.7 forbids. It carries GOOS as orphanedDisclosure
+// does — the element is then self-describing, so an element quoted out of the record still says
+// which run's platform excluded it rather than leaving that to the reader's context.
+//
+// No stderr line is printed for these. A linux-scoped entry on a Windows run is the ordinary,
+// permanent, correct state of a cross-platform manifest, and a warning per entry per run would be
+// noise that trains a reader to ignore the orphan lines beside it.
+type outOfScopeDisclosure struct {
+	Name      string    `json:"name"`
+	Class     string    `json:"class"`
+	Platforms goosScope `json:"platforms"`
+	GOOS      string    `json:"goos"` // the platform this run measured, which the scope excludes
+}
+
 // testDisclosure pins one test-level disclosed divergence — extending the declaration-level
 // "disclosed-unsupported" vocabulary (req §2.7) to individual test outcomes. A hand-owned,
 // repo-committed manifest beside the converted package lists tests whose Go=pass/C#=fail
@@ -6908,6 +7065,40 @@ type testDisclosure struct {
 	// contradicts it exactly as a plan does.
 	Floor int    `json:"floor,omitempty"`
 	Proof string `json:"proof,omitempty"`
+
+	// Platforms scopes the entry to the targets it describes, and it is the durable fix doctrine
+	// rule (1) has named since the first Linux annotation refresh turned a Windows row red: a
+	// per-package manifest is ONE file shared by every platform, so REMOVING an entry is a
+	// cross-platform edit even when the evidence for removing it came from one platform. Until this
+	// field existed there was no way to say "this divergence is Linux's" — the only two states were
+	// present everywhere and absent everywhere, and an entry retired on a Windows run took the Linux
+	// absorption with it.
+	//
+	// ABSENT OR EMPTY MEANS EVERY PLATFORM, which is what keeps this additive: all 46 committed
+	// manifests (267 entries, measured at 44f858717) omit it, so every one of them loads and behaves
+	// byte-for-byte as it did before this field existed. That is not a coincidence of the default —
+	// it is goosScope's documented zero value, reused here rather than re-derived.
+	//
+	// THE TYPE IS goosScope ON PURPOSE. The hand-own registry (manualTypeOperations.go) already
+	// expresses exactly this concept — the set of target operating systems an entry applies to, empty
+	// meaning all — with a documented `includes` predicate. Minting a second []string plus a second
+	// membership test would have been the silent-duplication shape: two spellings of one idea that
+	// drift apart the first time one of them learns something. This is the JSON spelling of the
+	// registry's Go one.
+	//
+	// AN OUT-OF-SCOPE ENTRY IS INERT, NOT STALE, and the two states must not be confused by a reader
+	// or by a later increment. Inert means it absorbs nothing, counts nothing, withdraws nothing, and
+	// is NOT reported as an orphan — it is a claim about ANOTHER platform, which this run has said
+	// nothing about. Stale means the platform ran the test and it passed. Increment 3 refuses an
+	// orphan; it must never refuse an inert entry, which is the whole reason this increment precedes
+	// it. Out-of-scope entries are published in the comparison record's `outOfScopeDisclosures` so
+	// their existence is visible without being read as a finding.
+	//
+	// The scope is applied at LOAD (loadTestDisclosures), so an out-of-scope entry never enters the
+	// map any consumer sees. That placement is load-bearing rather than convenient: hostFatalClass
+	// entries WITHDRAW their test from both command lines before either child runs, so an entry
+	// filtered anywhere later would already have changed what the run contains.
+	Platforms goosScope `json:"platforms,omitempty"`
 }
 
 
@@ -6958,11 +7149,18 @@ type testDisclosureManifest struct {
 	Notes []string `json:"notes,omitempty"`
 }
 
-// loadTestDisclosures reads the package's hand-owned disclosure manifest. A missing file is the
-// normal case (no disclosures — strict comparison); a malformed or incomplete manifest is an
-// error, never a silent no-op, because a broken disclosure must not widen the oracle. Every
-// field is required: an empty signature would substring-match ANY failure, defeating the pin.
-func loadTestDisclosures(outputPath string) (map[string]testDisclosure, []string, error) {
+// readTestDisclosureManifest reads and VALIDATES the package's hand-owned disclosure manifest,
+// platform-agnostically. A missing file is the normal case (no disclosures — strict comparison); a
+// malformed or incomplete manifest is an error, never a silent no-op, because a broken disclosure
+// must not widen the oracle. Every field is required: an empty signature would substring-match ANY
+// failure, defeating the pin.
+//
+// It returns EVERY valid entry, including entries scoped to other platforms: validity is a property
+// of the manifest and scope is a property of the run, and conflating them would mean a manifest
+// could be well-formed on one platform and malformed on another. loadTestDisclosures applies the
+// scope on top; production reads the manifest only through that door, and this one is reached
+// directly by the arms that test parsing and refusal, where a platform would be noise.
+func readTestDisclosureManifest(outputPath string) (map[string]testDisclosure, []string, error) {
 	data, err := os.ReadFile(filepath.Join(outputPath, testDisclosureFileName))
 	if os.IsNotExist(err) {
 		return nil, nil, nil
@@ -7044,6 +7242,30 @@ func loadTestDisclosures(outputPath string) (map[string]testDisclosure, []string
 		if disclosure.Class == structuralClass && strings.TrimSpace(disclosure.Plan) != "" {
 			return nil, nil, fmt.Errorf("structural disclosure %s must not name a retirement plan: its claim is that the assertion cannot be met, so a plan to meet it belongs to the deferred class", disclosure.Name)
 		}
+		// The PLATFORM SCOPE's own contract (increment 2). Absent or empty means every platform, so
+		// there is nothing to check on the 46 manifests that omit it; a list that IS present is
+		// validated strictly, because every way of getting it wrong produces the same silent outcome
+		// — an entry that is out of scope on every run, absorbing nothing, forever. That failure is
+		// invisible by construction: the row simply goes red on some other platform months later,
+		// which is the shape doctrine rule (1) was written after.
+		//
+		// A misspelled GOOS is the likely mistake and the one worth naming loudly, so the refusal
+		// prints the offending value AND the accepted set rather than saying the entry is invalid.
+		seenPlatforms := map[string]bool{}
+		for _, platform := range disclosure.Platforms {
+			if !disclosurePlatformTargets.includes(platform) {
+				return nil, nil, fmt.Errorf("disclosure %s names platform %q, which is not one of %s: a scope naming a target this corpus does not build could never be in scope on any run, so it would disable the entry's absorption silently and forever",
+					disclosure.Name, platform, strings.Join(disclosurePlatformTargets, ", "))
+			}
+			// A duplicate changes no behaviour — membership is membership — which is exactly why it
+			// is refused rather than tolerated: it is evidence the list was edited without being
+			// read, and the next such edit may be the one that changes meaning.
+			if seenPlatforms[platform] {
+				return nil, nil, fmt.Errorf("disclosure %s names platform %q twice: a duplicate changes nothing about the scope, so it is a sign the list was edited unread", disclosure.Name, platform)
+			}
+			seenPlatforms[platform] = true
+		}
+
 		if _, exists := disclosures[disclosure.Name]; exists {
 			return nil, nil, fmt.Errorf("duplicate disclosure for %s", disclosure.Name)
 		}
@@ -7072,6 +7294,88 @@ func loadTestDisclosures(outputPath string) (map[string]testDisclosure, []string
 	}
 
 	return disclosures, manifest.Notes, nil
+}
+
+// scopeDisclosures splits a validated manifest into the entries that apply to THIS run's target and
+// the entries that do not (see testDisclosure.Platforms). Pure, so every arm of the scope rule is
+// table-testable without a manifest file, a run, or a platform.
+//
+// An out-of-scope entry is INERT: it never enters the returned map, so no consumer can apply it —
+// not matchTerminalStatuses, not the disclosed count, not the proof page, not the host-fatal
+// withdrawal, not the orphan check. That is the property, and putting the filter here rather than at
+// each consumer is what makes it one property instead of five that can drift apart.
+//
+// AN UNKNOWN PLATFORM IS REFUSED RATHER THAN GUESSED, and only when it would actually decide
+// something. A caller that passes no GOOS has asked a question the entry cannot answer, and both
+// guesses are wrong in a way nobody would see: treating the entry as in scope WIDENS the oracle (a
+// disclosure absorbing on a platform nobody vouched for), treating it as out of scope silently
+// disables an absorption and reddens the row for a reason no message names. So a scoped entry with
+// no GOOS is an error — while a manifest with NO scoped entries loads fine under any GOOS at all,
+// including "", which is what keeps every existing manifest and fixture unaffected. In production
+// the GOOS is never empty (`-platforms` defaults to the host and parsePlatformList refuses an empty
+// field), so this refusal is aimed squarely at a future caller that forgets to pass it.
+func scopeDisclosures(entries map[string]testDisclosure, goos string) (map[string]testDisclosure, []outOfScopeDisclosure, error) {
+	if len(entries) == 0 {
+		return entries, nil, nil
+	}
+
+	inScope := make(map[string]testDisclosure, len(entries))
+
+	var outOfScope []outOfScopeDisclosure
+
+	for name, entry := range entries {
+		if len(entry.Platforms) == 0 {
+			// The unscoped case, and the one every committed manifest is in: applies everywhere,
+			// exactly as it did before this field existed. Deliberately short-circuited ahead of the
+			// empty-GOOS refusal below, because an unscoped entry asks nothing of the platform.
+			inScope[name] = entry
+			continue
+		}
+
+		if goos == "" {
+			return nil, nil, fmt.Errorf("disclosure %s is scoped to %s but the run named no target platform: a scoped entry cannot be applied or skipped without one, and guessing either way changes the oracle silently",
+				name, strings.Join(entry.Platforms, ", "))
+		}
+
+		if entry.Platforms.includes(goos) {
+			inScope[name] = entry
+			continue
+		}
+
+		outOfScope = append(outOfScope, outOfScopeDisclosure{
+			Name:      name,
+			Class:     entry.Class,
+			Platforms: entry.Platforms,
+			GOOS:      goos,
+		})
+	}
+
+	// Sorted for the same reason the orphan report is: these come out of a map, and a list that
+	// reshuffles run to run is one a reader cannot diff.
+	sort.Slice(outOfScope, func(i, j int) bool { return outOfScope[i].Name < outOfScope[j].Name })
+
+	return inScope, outOfScope, nil
+}
+
+// loadTestDisclosures is the production door: read, validate, and scope to the run's target. Every
+// consumer downstream sees only the entries that apply here.
+//
+// It is deliberately the ONLY way production reaches a manifest. readTestDisclosureManifest returns
+// entries unscoped, which is right for the arms that test parsing and wrong for a run — so the two
+// have different names rather than one having an optional platform, and a caller cannot get the
+// unscoped set by omitting an argument.
+func loadTestDisclosures(outputPath string, goos string) (map[string]testDisclosure, []outOfScopeDisclosure, []string, error) {
+	entries, notes, err := readTestDisclosureManifest(outputPath)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	inScope, outOfScope, err := scopeDisclosures(entries, goos)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return inScope, outOfScope, notes, nil
 }
 
 // matchTerminalStatuses compares the two sides' terminal statuses per test. A test matches when
@@ -7582,7 +7886,13 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	// The disclosure manifest is read BEFORE either child runs, because a host-fatal entry has to
 	// withdraw its test from BOTH command lines rather than be reclassified after the fact. Every
 	// other class labels a verdict a run produced; this one decides what the run contains.
-	disclosures, disclosureNotes, disclosureErr := loadTestDisclosures(outputPath)
+	// Scoped to THIS run's target as it is read (increment 2). goosOfTarget(options.targetPlatform)
+	// is the pipeline's own source of truth for the platform a run is FOR — the same value that
+	// selects the per-GOOS source folder, the csproj's $(GoTargetOS) and the manifest's targetGOOS —
+	// and deliberately NOT runtime.GOOS, which is the platform the converter binary happens to be
+	// running on. Those differ on every cross-target run, and reading the wrong one would scope a
+	// manifest by the wrong platform without any message saying so.
+	disclosures, outOfScopeDisclosures, disclosureNotes, disclosureErr := loadTestDisclosures(outputPath, goosOfTarget(options.targetPlatform))
 	mintViolations, mintUnchecked := hostFatalMintViolations(outputPath, disclosures)
 	if len(mintViolations) > 0 {
 		// Refused BEFORE either child runs, so a bad entry cannot quietly withdraw a row that some
@@ -7737,6 +8047,29 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 		delete(goResults, name)
 	}
 	result.Withdrawn = append(result.Withdrawn, withdrawn...)
+
+	// THE ORPHANED-DISCLOSURE REPORT (increment 1, report-only). Computed from the FINAL verdict
+	// maps — after the eligibility filter, the address re-keying, the match and the withdrawal — so
+	// it describes the same rows every published count does. It deliberately does NOT clear Matched:
+	// the manifest is one file shared by every platform, so an entry idle here may be live and
+	// correct elsewhere, and refusing it on this platform's evidence is what turned a Linux-annotated
+	// row red once already. Increment 3 refuses, after increment 2 makes a per-platform retirement
+	// expressible. See orphanedDisclosure.
+	// `disclosures` is already SCOPED to this target (increment 2), so an entry belonging to another
+	// platform cannot reach the predicate at all — it is inert here, which is not the same state as
+	// stale and must never be reported as one. The entries excluded that way are published beside
+	// this list instead, so their existence stays visible without being read as a finding.
+	result.OrphanedDisclosures = orphanedDisclosures(disclosures, goResults, csResults, goosOfTarget(options.targetPlatform))
+	result.OutOfScopeDisclosures = outOfScopeDisclosures
+	for _, orphan := range result.OrphanedDisclosures {
+		// stderr beside the converter's other warnings rather than into Errors: this says something
+		// about the MANIFEST, not about the run's verdicts, and an Errors entry would fail the row.
+		// "in scope on this platform" is load-bearing wording: it tells a reader the entry was
+		// APPLIED here and still found nothing to absorb, which is what separates it from an entry
+		// this run never applied at all.
+		fmt.Fprintf(os.Stderr, "ORPHANED DISCLOSURE (%s): %s %s [%s] -- in scope on this platform, and the converted side records a terminal pass in this run\n",
+			orphan.GOOS, result.Package, orphan.Name, orphan.Class)
+	}
 
 	// Whether at least one failure is AGREED — both runtimes reporting "fail" for the same row.
 	// An agreed failure is a matched verdict, and it is the one legitimate reason a side's exit
