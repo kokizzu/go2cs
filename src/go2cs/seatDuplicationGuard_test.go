@@ -24,10 +24,12 @@ import (
 // an unrelated seat was read as evidence about the seat under test, and a race was inferred from it.
 //
 // This guard drives the script's own --self-test, which builds a hermetic repo (no network, no clone,
-// nothing outside a temp dir) and runs four arms RED-FIRST. It asserts the verdict line, the ARM COUNT
-// and each arm's REASON -- the count because an exit code cannot tell a suite that ran four arms from
+// nothing outside a temp dir) and runs its arms RED-FIRST. It asserts the verdict line, the ARM COUNT
+// and each arm's REASON -- the count because an exit code cannot tell a suite that ran every arm from
 // one that silently lost three, and the reasons because an arm that keeps its name and loses its
-// meaning is the failure this file's older sibling (safePushGuard_test.go) was written about.
+// meaning is the failure this file's older sibling (safePushGuard_test.go) was written about. That is
+// not hypothetical here: arm 6 asserted only its exit code until a negative control on arm 7 made it
+// misreport a stack as a cherry-pick while still exiting 1, which it passed.
 //
 // It reuses safePushBash() rather than re-deriving the interpreter: one definition of "which bash can
 // drive a fleet script here", so the two guards cannot disagree about a host.
@@ -52,7 +54,7 @@ func TestSeatDuplicationCensusSelfTest(t *testing.T) {
 		t.Fatalf("src/seat-duplication-census.sh --self-test did not report a clean run:\n%s", text)
 	}
 
-	const wantArms = 6
+	const wantArms = 7
 	if got := strings.Count(text, "\n  ok   "); got != wantArms {
 		t.Fatalf("expected %d passing arms from src/seat-duplication-census.sh --self-test, counted %d -- an arm that quietly stops running is exactly what this count exists to catch:\n%s",
 			wantArms, got, text)
@@ -75,6 +77,21 @@ func TestSeatDuplicationCensusSelfTest(t *testing.T) {
 		// the tool rather than narrowing it and no arm would say so.
 		"DECLARED stack reads CLEAN",
 		"the same pair UNDECLARED stays RED",
+		// COORD c53db4e3a ruled the SHA-first split: the same COMMIT on two seats is a STACK (git
+		// merges it once, so the union carries it once) and may be declared; two DIFFERENT SHAs
+		// sharing a patch-id is a cherry-pick and REFUSES ALWAYS. This last arm is the BOUND on
+		// --stack, and it is named here because arms 5 and 7 are two halves of one claim: the
+		// declaration exempts the shape git COLLAPSES and nothing else. If arm 7 ever goes green,
+		// --stack has become a way to wave content aboard twice -- the whole failure the instrument
+		// was built for, re-admitted through its own exemption.
+		//
+		// Made to fail deliberately before it was believed (floor 13), and the FIRST attempt at that
+		// control is the reason arm 6 now asserts a reason too: hoisting the declaration check above
+		// the split was caught by ARM 6, not arm 7, because arm 6's pair then misreported as a
+		// cherry-pick while still exiting 1 -- which the old rc-only arm 6 would have passed. The
+		// isolated control (a declaration escape added to the cherry-pick branch alone) lands on
+		// arm 7 and leaves arms 1-6 green.
+		"DECLARED cherry-pick STILL REFUSES",
 	} {
 		if !strings.Contains(text, reason) {
 			t.Fatalf("src/seat-duplication-census.sh --self-test did not report the arm %q -- the arm names may survive a rewrite that loses what they assert:\n%s", reason, text)

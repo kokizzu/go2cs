@@ -13,6 +13,17 @@
 # `git patch-id --stable` hashes the DIFF rather than the commit, so it is invariant across the
 # cherry-pick, the rebase and the committer -- which is exactly the axis ancestry is blind to.
 #
+# TWO SHAPES SHARE ONE PATCH-ID AND THEY ARE NOT THE SAME FINDING (COORD c53db4e3a s1):
+#
+#   SAME commit SHA on two seats  = a STACK. Git merges one commit ONCE, so the union carries the
+#                                   content once; the hazard is the RECORD, not the tree. Allowed
+#                                   IFF --stack declares it; UNDECLARED it refuses BY NAME.
+#   DIFFERENT SHAs, one patch-id  = a cherry-pick DUPLICATE. The content boards TWICE under two
+#                                   names and a merge sees two unrelated commits. REFUSES ALWAYS --
+#                                   no declaration excuses that, which arm 7 of the self-test proves.
+#
+# So --stack is a narrowing, not a weakening: it can only ever exempt the shape git already collapses.
+#
 # WHAT IT DOES NOT DO. It compares seats to EACH OTHER, not to the base: a commit already merged into
 # the base is not a duplicate, it is history, and `<base>..<seat>` excludes it by construction. It says
 # nothing about whether two different diffs touch the same file -- that is a merge conflict, which git
@@ -22,7 +33,8 @@
 #   src/seat-duplication-census.sh --base origin/master --stack <child>:<parent> <ref> ...
 #   src/seat-duplication-census.sh --self-test
 #
-# Exit 0 = no patch-id appears on two seats. Exit 1 = at least one does, each named. Exit 2 = misuse.
+# Exit 0 = nothing undeclared appears on two seats. Exit 1 = a cherry-pick duplicate or an UNDECLARED
+# stack does, each named with every seat carrying it. Exit 2 = misuse.
 set -u
 
 BASE=""
@@ -114,7 +126,10 @@ census() {
     return 0
   }
 
-  local i j dup=0 declared=0
+  # dup and stacked are counted SEPARATELY and both reported: they are two findings with two
+  # remedies (split the cherry-pick vs declare or split the stack), and one number covering both
+  # would hand a reader a count they cannot act on.
+  local i j dup=0 stacked=0 declared=0
   for ((i=0; i<${#pids[@]}; i++)); do
     local hits="" first=1
     for ((j=0; j<${#pids[@]}; j++)); do
@@ -127,33 +142,67 @@ census() {
     [ -n "$hits" ] || continue
     subject=$(git log -1 --format=%s "${owners[$i]#*|}")
     local -a seatset=("${owners[$i]%%|*}")
-    for h in $hits; do seatset+=("${h%%|*}"); done
-    if [ "${#STACKS[@]}" -gt 0 ] && declared_set "${seatset[@]}"; then
-      # REPORTED, never silent: an exemption nobody can see is how a census stops being one.
-      declared=$((declared+1))
-      echo "declared-stack patch-id ${pids[$i]:0:12}  (exempt: every seat carrying it is in one declared chain)"
+    local mysha=${owners[$i]#*|} samesha=1
+    for h in $hits; do
+      seatset+=("${h%%|*}")
+      [ "${h#*|}" = "$mysha" ] || samesha=0
+    done
+
+    # COORD c53db4e3a s1, the SHA-first split that makes G's declaration model mechanical:
+    #
+    #   SAME commit SHA on two seats  -> a STACK. Git merges one commit once, so the union carries
+    #                                    the content ONCE; the hazard is the RECORD, not the tree.
+    #                                    Allowed IFF declared; undeclared refuses BY NAME.
+    #   DIFFERENT SHAs, one patch-id  -> a cherry-pick DUPLICATE. The content would board TWICE and
+    #                                    a merge sees two unrelated commits. REFUSES ALWAYS -- no
+    #                                    declaration excuses content boarding twice under two names.
+    #
+    # Ancestry is consulted nowhere, which is G db6ab3484 s4 measured: it separates neither case.
+    if [ "$samesha" -eq 1 ]; then
+      if [ "${#STACKS[@]}" -gt 0 ] && declared_set "${seatset[@]}"; then
+        # REPORTED, never silent: an exemption nobody can see is how a census stops being one.
+        declared=$((declared+1))
+        echo "declared-stack SHA ${mysha:0:12}  (exempt: every seat carrying it is in one declared chain)"
+        echo "   ${owners[$i]}   $subject"
+        for h in $hits; do echo "   $h"; done
+        echo
+        continue
+      fi
+      stacked=$((stacked+1))
+      echo "UNDECLARED STACK: SHA ${mysha:0:12} on more than one seat -- declare it with --stack <child>:<parent> or split it"
       echo "   ${owners[$i]}   $subject"
       for h in $hits; do echo "   $h"; done
       echo
       continue
     fi
+
     dup=$((dup+1))
-    echo "DUPLICATE patch-id ${pids[$i]:0:12}"
+    echo "DUPLICATE patch-id ${pids[$i]:0:12}  (DIFFERENT SHAs -- a cherry-pick; no declaration excuses this)"
     echo "   ${owners[$i]}   $subject"
     for h in $hits; do echo "   $h"; done
     echo
   done
 
-  if [ "$dup" -eq 0 ]; then
+  if [ "$((dup + stacked))" -eq 0 ]; then
     echo "==> CENSUS CLEAN: no UNDECLARED patch-id appears on two seats ($indexed commit(s) compared, $declared declared-stack exemption(s))"
     return 0
   fi
-  echo "==> CENSUS RED: $dup patch-id(s) appear on more than one seat"
+  echo "==> CENSUS RED: $dup cherry-pick duplicate(s) and $stacked undeclared stack(s) across these seats"
+  if [ "$dup" -gt 0 ]; then
+    # G db6ab3484 s3, measured fleet-wide: over a whole remote almost every cherry-pick duplicate is a
+    # LEGITIMATE supersession, because a clean re-cut patch-matches the branch it replaces -- so a
+    # STALE ROW in the seat list produces this exact red. The tool cannot tell the two apart (nothing
+    # in the content says which cut is current) and does not guess; it names the check instead, because
+    # a red whose two readings have opposite remedies is worse unlabelled than unreported.
+    echo "    note: a SUPERSEDED seat left in the list reads exactly like this -- a clean re-cut"
+    echo "          patch-matches what it replaces. Check whether either seat is stale BEFORE"
+    echo "          reading contamination; if one is, the remedy is to drop the row, not to split it."
+  fi
   return 1
 }
 
 # ---------------------------------------------------------------------------- the self-test
-# Four arms in a hermetic repo -- no network, no shallow clone, nothing outside a temp dir. Each arm
+# Seven arms in a hermetic repo -- no network, no shallow clone, nothing outside a temp dir. Each arm
 # asserts the REASON it passed or failed, never merely an exit code, and the RED arms come first so a
 # census that cannot go red is caught before any green is believed.
 selftest() {
@@ -228,7 +277,7 @@ selftest() {
   out=$(cd "$tmp" && bash "$self" --base trunk --stack seat-ab:seat-a seat-a seat-ab 2>&1); rc=$?
   arms=$((arms+1))
   if [ "$rc" -ne 0 ]; then echo "ARM 5 FAILED: wanted exit 0 on a DECLARED stack, got $rc"; echo "$out"; return 1; fi
-  case "$out" in *"declared-stack patch-id"*) ;; *) echo "ARM 5 FAILED: exempted silently instead of reporting the exemption"; echo "$out"; return 1 ;; esac
+  case "$out" in *"declared-stack SHA"*) ;; *) echo "ARM 5 FAILED: exempted silently instead of reporting the exemption"; echo "$out"; return 1 ;; esac
   echo "  ok   DECLARED stack reads CLEAN            and the exemption is PRINTED, never silent"
 
   # ARM 6 (the arm that keeps arm 5 honest): the SAME pair, undeclared, must still be RED. Without
@@ -236,7 +285,22 @@ selftest() {
   out=$(cd "$tmp" && bash "$self" --base trunk seat-a seat-ab 2>&1); rc=$?
   arms=$((arms+1))
   if [ "$rc" -ne 1 ]; then echo "ARM 6 FAILED: the same pair UNDECLARED must stay red, got $rc"; echo "$out"; return 1; fi
-  echo "  ok   the same pair UNDECLARED stays RED    so the declaration does the work, not a weakening"
+  case "$out" in *"UNDECLARED STACK"*) ;; *) echo "ARM 6 FAILED: red, but not as a STACK -- the two findings have two remedies"; echo "$out"; return 1 ;; esac
+  echo "  ok   the same pair UNDECLARED stays RED    named as a STACK, so the remedy is actionable"
+
+  # ARM 7 (COORD c53db4e3a s1, and the arm that bounds --stack): a DECLARED CHERRY-PICK must STILL
+  # refuse. Same pair as arm 1 -- one item, two DIFFERENT SHAs -- now declared as loudly as arm 5's
+  # stack was. If this ever goes green, --stack has become a way to wave content aboard twice, which
+  # is the entire failure the instrument was built for, re-admitted through its own exemption.
+  # Arms 5 and 7 are the two halves of one claim: the declaration exempts the shape git COLLAPSES
+  # and nothing else. Without arm 7 there is no measurement anywhere saying so.
+  out=$(cd "$tmp" && bash "$self" --base trunk --stack seat-a:seat-lane seat-lane seat-a 2>&1); rc=$?
+  arms=$((arms+1))
+  if [ "$rc" -ne 1 ]; then echo "ARM 7 FAILED: a DECLARED cherry-pick must still refuse, got $rc"; echo "$out"; return 1; fi
+  case "$out" in *"DUPLICATE patch-id"*) ;; *) echo "ARM 7 FAILED: red without naming it a cherry-pick duplicate"; echo "$out"; return 1 ;; esac
+  case "$out" in *"no declaration excuses this"*) ;; *) echo "ARM 7 FAILED: refused without saying the declaration was IGNORED, so a reader would retry it"; echo "$out"; return 1 ;; esac
+  case "$out" in *"declared-stack"*) echo "ARM 7 FAILED: the declaration exempted a cherry-pick"; echo "$out"; return 1 ;; *) ;; esac
+  echo "  ok   DECLARED cherry-pick STILL REFUSES    --stack narrows the census, it cannot weaken it"
 
   echo
   echo "SELF-TEST CLEAN -- $arms arms"
