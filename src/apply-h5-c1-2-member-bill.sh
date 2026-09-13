@@ -122,6 +122,28 @@ import io, re, sys
 
 MODE, CSPATH, GOPATH = sys.argv[1], sys.argv[2], sys.argv[3]
 
+# ⚠ THE WINDOWS DEFECT i9 MEASURED (mailbox f73b56b18 §3), and only a Windows box could find it. Every
+# name this reports carries a `Δ` -- ΔisWaitingForSuspendG, ΔisIdleInSynctest -- and on a console whose
+# default codec is cp1252 the FAILING path dies mid-list:
+#
+#     UnicodeEncodeError: 'charmap' codec can't encode character 'Δ' in position 7
+#
+# i9 measured the direction, which is the whole question: rc=1 either way and the GREEN path never
+# prints a Δ, so it can never produce a false PASS -- what it does is hand a Windows reader 10 of 17
+# FAIL lines and a traceback, losing both g fields, both m omission notes, the idle-table presence check
+# and the accessor. A reader debugging a half-applied tree would have been told about the constants and
+# the strings and nothing about the fields: a diagnosis truncated exactly where it stops being about the
+# rows a build can already see.
+#
+# Fixed HERE rather than by asking the operator for PYTHONIOENCODING=utf-8, because an env var is a
+# thing to remember and this is a thing to guarantee. Guarded: reconfigure() is 3.7+, and a stream that
+# refuses is left alone rather than crashing the run over its own diagnostics.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding='utf-8', errors='backslashreplace')
+    except Exception:
+        pass
+
 def refuse(msg):
     sys.stderr.write("REFUSE: " + msg + "\n")
     raise SystemExit(2)
@@ -228,6 +250,12 @@ STR_OPEN  = 'internal static array<@string> waitReasonStrings = new golib.Sparse
 SUSP_OPEN = 'internal static array<bool> ΔisWaitingForSuspendG = new golib.SparseArray<bool>{'
 IDLE_OPEN = 'internal static array<bool> ΔisIdleInSynctest = new golib.SparseArray<bool>{'
 CLOSE     = '}.array();'
+# ⚠ THE CLOSER IS NO LONGER ONE STRING. COORD b3a32e52d/486a3926a ruled both [len(waitReasonStrings)]bool
+# tables must materialise with the DECLARED LENGTH passed explicitly, so their closers read
+# `}.array(44);` while waitReasonStrings -- which Go declares `[...]string`, where max key + 1 IS the
+# declared length -- keeps the bare form. Every close scan matches either shape and the length is read
+# back rather than assumed.
+CLOSE_RE  = re.compile(r'^\}\.array\((\d*)\);$')
 G_OPEN    = '[GoType] partial struct g {'
 M_OPEN    = '[GoType] partial struct m {'
 LOCKEDM   = '    internal muintptr lockedm;'
@@ -257,10 +285,16 @@ def find_one(text, what):
     return hits[0]
 
 def block_close(open_at, what):
+    """Index of the closer, in EITHER shape (bare or length-carrying)."""
     for i in range(open_at + 1, len(lines)):
-        if lines[i] == CLOSE:
+        if CLOSE_RE.match(lines[i]):
             return i
-    refuse("no '%s' closing the %s" % (CLOSE, what))
+    refuse("no '}.array(...);' closing the %s" % what)
+
+def block_length(close_at):
+    """The length the closer passes, or None for the bare form. Read back, never assumed."""
+    m = CLOSE_RE.match(lines[close_at])
+    return int(m.group(1)) if m.group(1) else None
 
 def struct_range(open_text, what):
     at = find_one(open_text, what)
@@ -376,8 +410,29 @@ def apply():
                  '}',
                  '',
                  '// isIdleInSynctest indicates that a goroutine is considered idle by synctest.Wait.',
-                 IDLE_OPEN] + keys + [CLOSE]
+                 IDLE_OPEN] + keys + ['}.array(%d);' % len(GO_CONSTS)]
         lines[send + 1:send + 1] = chunk
+
+    # (5b) ⚠ BOTH bool tables take Go's DECLARED length explicitly (COORD 486a3926a). Go writes
+    # `[len(waitReasonStrings)]bool` for each; the converter cannot fold a non-literal length and emits
+    # a bare `.array()`, which SparseArray sizes at max key + 1 -- so isWaitingForSuspendG materialises
+    # 36 today against Go's 38, and 37 against 44 after the renumber, and every index above its top key
+    # THROWS where Go returns false (i9 confirmed 37..43 on a built tree). isIdleInSynctest reads 44
+    # only because Go's twelfth key HAPPENS to be the last constant -- correct by coincidence of a top
+    # key, which is not a property anyone should have to re-verify after the next insertion.
+    #
+    # The number is DERIVED from Go's own constant count, never typed, and the post-condition reads it
+    # back and joins it against that count. The alternative spelling `.array(len(waitReasonStrings))`
+    # would be self-maintaining and is NOT taken: static field initializer order is guaranteed textual
+    # only WITHIN one part of a partial class, and runtime_package is spread over the whole package --
+    # it happens to be safe here because all three fields sit in this file, which is exactly the kind
+    # of coincidence this row exists to remove.
+    for opener, what in ((SUSP_OPEN, 'ΔisWaitingForSuspendG'), (IDLE_OPEN, 'ΔisIdleInSynctest')):
+        if opener not in lines:
+            refuse("%s is absent -- cannot set its declared length" % what)
+        at = find_one(opener, what + ' opener')
+        close_at = block_close(at, what)
+        lines[close_at] = '}.array(%d);' % len(GO_CONSTS)
 
     # (6) the two g fields, scoped to the g struct so the anchors cannot match a neighbour's.
     glo, ghi = struct_range(G_OPEN, 'struct g')
@@ -522,13 +577,32 @@ def verify():
                  % (len(ikeys), len(GO_IDLE),
                     sorted(set(GO_IDLE) - set(ikeys)) or "none",
                     sorted(set(ikeys) - set(GO_IDLE)) or "none"))
-        top = max([GO_INDEX[k] for k in ikeys if k in GO_INDEX] or [-1])
-        if top != len(GO_CONSTS) - 1:
-            fail("ΔisIdleInSynctest's highest key is index %d, not %d -- SparseArray sizes at max "
-                 "key + 1, so the table would materialise %d slots instead of %d"
-                 % (top, len(GO_CONSTS) - 1, top + 1, len(GO_CONSTS)))
     if 'internal static bool isIdleInSynctest(this waitReason w) {' not in lines:
         fail("the isIdleInSynctest accessor is absent")
+
+    # ⚠ THE DECLARED LENGTH, read back off BOTH bool tables and joined against Go's own count. This is
+    # the row that makes the tables right BY DECLARATION rather than by where their top key happens to
+    # land; the bare form is what truncated isWaitingForSuspendG to 36 against Go's 38, and what left
+    # isIdleInSynctest correct only because Go's twelfth key is the last constant.
+    want = len(GO_CONSTS)
+    for opener, what in ((SUSP_OPEN, 'ΔisWaitingForSuspendG'), (IDLE_OPEN, 'ΔisIdleInSynctest')):
+        if opener not in lines:
+            fail("%s is absent" % what)
+            continue
+        got = block_length(block_close(find_one(opener, what + ' opener'), what))
+        if got is None:
+            fail("%s closes with a BARE `}.array();` -- Go declares it [len(waitReasonStrings)]bool, "
+                 "so SparseArray sizes it at max key + 1 and every index above that THROWS where Go "
+                 "returns false. It must pass the declared length %d." % (what, want))
+        elif got != want:
+            fail("%s materialises %d, Go declares %d" % (what, got, want))
+    # And the three lengths must AGREE, which is the shape of Go's own declaration: both tables are
+    # [len(waitReasonStrings)]bool, so a table sized right against a strings table sized wrong is not
+    # right. (waitReasonStrings itself is Go `[...]string`, where max key + 1 IS the declared length,
+    # so its bare closer is CORRECT and is deliberately left alone -- C2 c441e195a measured the rule.)
+    if len(keyed) != want:
+        fail("len(waitReasonStrings) reads %d while the tables declare %d -- the three lengths must "
+             "agree" % (len(keyed), want))
 
     # the g fields, and they must be INSIDE struct g
     glo, ghi = struct_range(G_OPEN, 'struct g')
@@ -732,26 +806,40 @@ PY
   cp "$tmp/restore.cs" "$tmp/go/runtime/runtime2.cs"
   echo "  ok   a MISSING strings row goes RED    C2's hole: String() would say 'unknown wait reason'"
 
-  # ARM 10 (RED): the idle table's top key is what makes it materialise 44. Regress the top key and
-  # the table silently becomes 40 slots -- an index at 43 then throws.
-  arms=$((arms+1))
-  "$PYBIN" - "$tmp/go/runtime/runtime2.cs" <<'PY'
-import io, sys
+  # ARM 10 and ARM 16 (RED): the DECLARED LENGTH, one table at a time. COORD 486a3926a ruled the arm
+  # ("a regressed fixture, one table bare, going RED naming the table"), and it runs SEPARATELY per
+  # table with a restore between -- regressing both at once would prove only that the first check is
+  # reached, which is the vacuous-control shape C2 caught in the C1-1 suite (a2b892aef, arm 15 there).
+  #
+  # Note what is NO LONGER asserted: the idle table's TOP KEY. With the length passed explicitly the top
+  # key does not size the table any more, and keeping that assertion would be an arm whose name outlived
+  # its meaning -- this file's own recurring failure. The key SET is still checked one screen up.
+  for pair in 'IdleInSynctest waitReasonSynctestSelect' 'WaitingForSuspendG waitReasonFlushProcCaches'; do
+    tbl=${pair%% *}; lastkey=${pair##* }
+    arms=$((arms+1))
+    TBL=$tbl LASTKEY=$lastkey "$PYBIN" - "$tmp/go/runtime/runtime2.cs" <<'PYARM'
+import io, os, sys
 p = sys.argv[1]
+tbl, lastkey = os.environ['TBL'], os.environ['LASTKEY']
 t = io.open(p, encoding='utf-8', newline='').read()
-line = '    [waitReasonSynctestSelect] = true\r\n'
-if line not in t:
-    raise SystemExit("fixture: %r not present" % line)
-t = t.replace('    [waitReasonSynctestChanSend] = true,\r\n' + line,
-              '    [waitReasonSynctestChanSend] = true\r\n', 1)
-io.open(p, 'w', encoding='utf-8', newline='').write(t)
-PY
-  rc=$?; [ "$rc" -eq 0 ] || { echo "ARM 10 FAILED: could not regress the idle table (rc=$rc)"; return 1; }
-  out=$(bash "$self" --verify "$tmp/go" "$GOROOT_ARG" 2>&1); rc=$?
-  [ "$rc" -eq 1 ] || { echo "ARM 10 FAILED: a short idle table PASSED (rc=$rc)"; echo "$out"; return 1; }
-  case "$out" in *"highest key is index 42"*) ;; *) echo "ARM 10 FAILED: red, but did not report the materialised length"; echo "$out"; return 1 ;; esac
-  cp "$tmp/restore.cs" "$tmp/go/runtime/runtime2.cs"
-  echo "  ok   a SHORT idle table goes RED       max key + 1 is the length, and it is load-bearing"
+key = '    [%s] = true\r\n' % lastkey
+if key + '}.array(' not in t:
+    raise SystemExit("fixture: no closer directly after [%s] for %s" % (lastkey, tbl))
+i = t.index(key + '}.array(') + len(key)
+j = t.index('\r\n', i) + 2
+if not t[i:j].startswith('}.array(4'):
+    raise SystemExit("fixture: %s does not close with an explicit length (%r)" % (tbl, t[i:j]))
+io.open(p, 'w', encoding='utf-8', newline='').write(t[:i] + '}.array();\r\n' + t[j:])
+PYARM
+    rc=$?; [ "$rc" -eq 0 ] || { echo "ARM (bare $tbl) FAILED: could not regress the fixture (rc=$rc)"; return 1; }
+    out=$(bash "$self" --verify "$tmp/go" "$GOROOT_ARG" 2>&1); rc=$?
+    [ "$rc" -eq 1 ] || { echo "ARM (bare $tbl) FAILED: a BARE closer PASSED (rc=$rc)"; echo "$out"; return 1; }
+    case "$out" in *"Δis$tbl closes with a BARE"*) ;; *) echo "ARM (bare $tbl) FAILED: red, but did not name THIS table"; echo "$out"; return 1 ;; esac
+    cp "$tmp/restore.cs" "$tmp/go/runtime/runtime2.cs"
+    out=$(bash "$self" --verify "$tmp/go" "$GOROOT_ARG" 2>&1); rc=$?
+    [ "$rc" -eq 0 ] || { echo "ARM (bare $tbl) FAILED: the restore did not return the file to green"; echo "$out"; return 1; }
+    echo "  ok   a BARE Δis$tbl goes RED   the length is DECLARED, never inferred from a top key"
+  done
 
   # ARM 11 (RED): drop a g field. Unlike everything above, THIS one a build can see -- which is
   # exactly why it is worth pinning that the checker sees it too, and inside struct g.

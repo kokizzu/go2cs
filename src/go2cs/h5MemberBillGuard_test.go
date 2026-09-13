@@ -62,7 +62,7 @@ func TestH5MemberBillSelfTest(t *testing.T) {
 		t.Fatalf("src/apply-h5-c1-2-member-bill.sh --self-test did not report a clean run:\n%s", text)
 	}
 
-	const wantArms = 15
+	const wantArms = 16
 	if got := strings.Count(text, "\n  ok   "); got != wantArms {
 		t.Fatalf("expected %d passing arms from src/apply-h5-c1-2-member-bill.sh --self-test, counted %d -- an arm that quietly stops running is exactly what this count exists to catch:\n%s",
 			wantArms, got, text)
@@ -95,9 +95,16 @@ func TestH5MemberBillSelfTest(t *testing.T) {
 		// C2's hole (mailbox 2a6938f4b): a constant without its waitReasonStrings row stringifies as
 		// "unknown wait reason" and the sparse table stops materialising dense. Neither is a build error.
 		"a MISSING strings row goes RED",
-		// SparseArray sizes itself at max key + 1, so the idle table reads 44 slots only because its
-		// highest key IS the last constant. That is load-bearing rather than incidental, so it is pinned.
-		"a SHORT idle table goes RED",
+		// ⚠ The DECLARED LENGTH, one table per arm. Go writes `[len(waitReasonStrings)]bool` for both;
+		// the converter cannot fold a non-literal length and emits a bare `.array()`, which SparseArray
+		// sizes at max key + 1 — so isWaitingForSuspendG materialises 36 against Go's 38 today (37
+		// against 44 after the renumber) and THROWS where Go returns false, confirmed on a built tree by
+		// i9 at f73b56b18. isIdleInSynctest read 44 only because Go's twelfth key happens to be the last
+		// constant: correct by coincidence of a top key. COORD ruled both take the length explicitly
+		// (486a3926a). Run per table with a restore between, because regressing both at once would prove
+		// only that the first check is reached.
+		"a BARE ΔisIdleInSynctest goes RED",
+		"a BARE ΔisWaitingForSuspendG goes RED",
 		"a MISSING g field goes RED",
 		// The two omissions (m.mWaitList, m's size-class padding) are RECORDED at the site. An
 		// undocumented gap is indistinguishable from an oversight to the next reader holding a diff.

@@ -24,7 +24,11 @@ So a landed edit breaks a corpus that is green. The applier's precondition **ref
 Region-disjoint from C1-1 (which edits the usings and deletes `partial struct note` in the same file),
 so the two commute. COORD's dispatch runs C1-1 first; nothing here depends on that.
 
-## 2. The bill — 20 items, of which 14 are invisible to a build
+## 2. The bill — 22 items, of which 16 are invisible to a build
+
+*(20 as ruled at `82de2fc7c`, plus the two declared lengths ruled at `486a3926a` — see the
+amendment at the end. Sections below are as written before that ruling; the amendment is where the
+two rows are argued.)*
 
 ```
   2   g fields               syncGroup, fipsIndicator
@@ -32,6 +36,8 @@ so the two commute. COORD's dispatch runs C1-1 first; nothing here depends on th
   6   constants ADDED        SyncWaitGroupWait at 24, Synctest* at 39..43
   6   waitReasonStrings entries
   1   isIdleInSynctest       accessor + 12-keyed table, materialising dense at 44
+  2   DECLARED LENGTHS       both [len(waitReasonStrings)]bool tables close `.array(44)`  <- AMEND,
+                             COORD 486a3926a; isWaitingForSuspendG is the 7th row and it is a FIX
   0   m.mWaitList            omitted, reason recorded AT THE SITE  (see §2.3 -- the REASON
                              first given was measured on the pre-hop corpus and is wrong;
                              the omission stands and the four sites are C1-2b's)
@@ -76,8 +82,9 @@ Both were confirmed at the code before being taken: `golib`'s `SparseArray<T>` i
 
 ⚠ **The idle table reads 44 only because its highest key IS the last constant** (`SynctestSelect`, 43).
 That is a property of Go's table, not of anything enforcing a length — see §6 for the sibling where the
-same mechanism silently truncates. The applier pins it: regress the top key and the post-condition goes
-red naming the materialised length (arm 10).
+same mechanism silently truncates. **SUPERSEDED by the amendment at the end**: both tables now pass
+the declared length, so the top key no longer sizes either one, and the arm that asserted the top key
+is retired in favour of two arms that regress the LENGTH, one table each.
 
 ### 2.3 The two omissions, recorded at the site
 
@@ -226,6 +233,10 @@ The new `ΔisIdleInSynctest` is emitted `.array()` to match the converter and it
 only because Go's twelfth key happens to be the last constant. **COORD to rule** whether the converter
 fix, a `.array(44)` in the hand-own, or neither belongs in this hop.
 
+**RULED `486a3926a`: the `.array(44)` in the hand-own, on BOTH tables** — see the amendment at the end.
+The converter rule is a separate seat and a BOARD finding. C2 `c441e195a` bounded the class at exactly
+two members across all of go1.24.13 `src/runtime`, and both are these.
+
 ## 7. Validation
 
 `--self-test`, **15 arms clean**, run on linux/amd64 with `python3` and the box's own
@@ -287,3 +298,56 @@ in this repository builds C#. `go test -count=1 ./...` in `src/go2cs` is green *
 `TestSafePushSelfTest`, which fails identically on a clean tree at `2c88415716` with the change stashed:
 this container's clone is **shallow**, and that suite's hermetic origin cannot be seeded
 (`! [remote rejected] … (shallow update not allowed)`). Environmental, pre-existing, unrelated.
+
+## Amendment, 2026-09-13 — the DECLARED LENGTH, on both tables (COORD `486a3926a`)
+
+Ruled after the cut was announced at `29fc8388ee` and measured green by i9 at `f73b56b18`. **Both
+`[len(waitReasonStrings)]bool` tables now pass Go's declared length explicitly**, and the applier's
+post-condition reads it back and joins it against Go's own constant count:
+
+```
+  waitReasonStrings        Go [...]string                 }.array();      BARE, and CORRECT
+  ΔisWaitingForSuspendG    Go [len(waitReasonStrings)]     }.array(44);    was bare -> 36 slots
+  ΔisIdleInSynctest        Go [len(waitReasonStrings)]     }.array(44);    was bare -> 44 by luck
+```
+
+So the bill is **twenty-two items**, not twenty: `isWaitingForSuspendG` is a seventh row and it is a
+FIX to a pre-existing truncation rather than a hop addition. §6 below recorded it as a finding flagged
+for COORD; this is COORD's answer, and it lands in the same patch because the second table is created
+by this patch and would otherwise ship correct-by-coincidence.
+
+**The number is derived, never typed** — `len(GO_CONSTS)` from Go's own const block — and three lengths
+must now agree: both tables' declared length and `waitReasonStrings`' keyed count, all 44.
+
+⚠ **`.array(len(waitReasonStrings))` would be self-maintaining and was NOT taken.** C# guarantees static
+field initializer order only *within one part* of a partial class, and `runtime_package` is spread over
+the whole package. It happens to be safe here because all three fields sit in this file — which is
+exactly the kind of coincidence this row exists to remove. The applier re-derives from Go on every run,
+so the literal cannot drift silently.
+
+**C2 bounded the class** (`c441e195a`): across all of go1.24.13 `src/runtime/*.go` there are exactly
+**two** package-level fixed-length arrays, and both are these. The general converter rule — a declared
+length that is not a literal becomes a bare `.array()` — is a converter seat and a BOARD finding, not
+this patch.
+
+### Arms, now 16
+
+`ARM 10` (the idle table's top key) is **retired and replaced**, because with an explicit length the top
+key no longer sizes the table and the arm's name would have outlived its meaning. In its place, two
+arms — one per table — each regressing that table's closer to the bare form, asserting the failure
+**names that table**, and restoring to green before the next. Run separately on purpose: regressing both
+at once would prove only that the first check is reached.
+
+### And a portability defect i9 found in the verifier (`f73b56b18` §3)
+
+On a Windows console the FAILING path died mid-list with
+`UnicodeEncodeError: 'charmap' codec can't encode character 'Δ'` — the `Δ` in `ΔisWaitingForSuspendG` —
+printing 10 of 17 FAIL lines and a traceback. i9 measured the direction, which is the whole question:
+**it can never produce a false pass**, because the green path never prints a Δ. What it did was hand a
+Windows reader a diagnosis truncated exactly where it stops being about rows a build can already see —
+both `g` fields, both `m` omission notes, the idle-table presence check and the accessor were the seven
+lost.
+
+Fixed in the script (`sys.stdout.reconfigure(encoding='utf-8')`, guarded, both streams) rather than by
+asking the operator for `PYTHONIOENCODING=utf-8`: an env var is a thing to remember and this is a thing
+to guarantee.
