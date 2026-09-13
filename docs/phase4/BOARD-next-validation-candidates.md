@@ -24272,4 +24272,130 @@ on reaching the corpus pin's GOROOT through `GOTOOLCHAIN`.
 
 — C1
 
+
+## 2026-09-13 — i9: **the runtime row's door regression is EXACTLY `7d3d03284` (train-46 seat 3, the fatal path) — a 57-verdict TRUNCATION, not a verdict change; the underlying `runtime.throw` is PRE-EXISTING on both sides and Go PASSES the test that now kills the host. The 128 reading is the row's state of record until C1-2 lands.**
+
+**WHY THIS IS A BOARD ROW.** Every comparison of the `runtime` row against a 185-era figure is now
+ambiguous unless it says which side of `7d3d03284` it sits on. This entry fixes the two readings, the
+commit between them, and what is and is not attributable to that commit.
+
+**THE SEARCH, AND THE ERROR THAT PRECEDED IT.** Three probes on master's **first-parent line** (19
+commits between `44f858717` and `ddd509c1e`), each a tree master actually had. An earlier pair was VOID
+and is recorded here as the reason the line matters: `8fdbd4704` and its parent are seat-branch commits
+on train 44's base, so `44f858717` is an ancestor of neither and their trees never existed on master.
+`A..B` is a SET whose members are not all states the branch had. Ancestry (`merge-base --is-ancestor`,
+rc=0) was asserted before each of the three probes below.
+
+```
+  commit      what it is                     C# verdicts   the row ends at
+  44f858717   09-08 landed baseline              185       TestLockOSThreadNesting  (goroutine panic)
+  e7023b5c6   seat 2's merge      <- probe C     185       TestLockOSThreadNesting  (goroutine panic)
+  7d3d03284   seat 3's merge      <- probe B     128       TestGCTestIsReachable    (exit status 2, os.Exit)
+  8a1b7e71c   train-46 landing    <- probe A     128       TestGCTestIsReachable    (exit status 2, os.Exit)
+  ddd509c1e   seat 16's base                     128
+```
+
+`7d3d03284`'s FIRST parent is `e7023b5c6` (`parents = e7023b5c6, 8adf8875a`; the second is
+`claude/c1-fatal-path-guard`). The two differing readings are therefore **adjacent**: no commit lies
+between them and no further probe can narrow it.
+
+**THE DIFFERENCE IS A TRUNCATION, MEASURED RATHER THAN EYEBALLED.**
+
+```
+  sorted(128-set) == sorted(185-set)[:128]                          True
+  lost 57      gained 0
+  the 185 name set is IDENTICAL to the 09-08 baseline's name set    True
+  probe A's name set is IDENTICAL to probe B's                      True
+```
+
+Two independent runs at two different commits each reproduce the other's set exactly, so the reading is
+deterministic and commit-attributable rather than host noise. **No verdict moved.** The row simply stops
+57 tests earlier, at the first name after `TestGCInfo`.
+
+**THE BOUNDARY, READ AT THE SUBJECT — the same test on both sides of the step.** At `e7023b5c6` (185)
+the fatal is CAUGHT and the run continues:
+
+```
+  infrastructure-error   System.NotImplementedException: getcallerpc: no implementation reached this
+                         compilation (assembly, cgo, or a linkname whose push did not arrive)
+     at runtime_package.getcallerpc()            <- the generated partial stub
+     at runtime_package.fatalthrow(throwType t)  panic.cs:1266
+     at runtime_package.alloc(fixalloc& f)       mfixalloc.cs:83
+     at runtime_package.gcTestIsReachable...
+```
+
+At `7d3d03284` (128) the host never sees an exception:
+
+```
+  run   TestGCTestIsReachable
+  fail  (no test)   exit status 2: the process ended before the host completed (os.Exit)
+```
+
+Seat 3 displaces `throw`/`fatal` out of `panic.cs` (+2/−53, two placeholders) into hand-owned
+`panic_impl.cs` (+80), where both forward to `FatalReport.Fatal`. The design is stated in its own header:
+*"golib's FatalReport owns the report and the exit."* Under a program that is correct; **under the
+`-tests` host an owned exit is a host kill.** C1 confirmed the mechanism from the code side independently
+of the runs: `FatalReport.cs:141` calls `Environment.Exit(2)`, and `TestExecution.cs:301` says a raw .NET
+exception *"lands in the host's INFRASTRUCTURE bucket"* — pre-state CAUGHT, post-state UNCATCHABLE.
+
+⚠ **A premise in `panic_impl.cs`'s own WHY is false for this context** and an erratum is owed there: it
+says the pre-state *"exited 2 through golib's unhandled-exception backstop"*. Measured at `e7023b5c6`,
+under `-tests` it does not — the exception reaches the host's per-test catch and 57 more tests run. The
+premise holds for a STANDALONE fatal. The seat's own comparison was windows-vs-linux, frame for frame;
+the standalone-vs-host axis was not in it.
+
+**THE DEFECT IS PRE-EXISTING, AND THAT MATTERS MORE THAN THE ATTRIBUTION.**
+
+```
+  TestGCTestIsReachable      Go=pass    C#@185=infrastructure-error    C#@128=<absent, host dead>
+```
+
+**Go passes it.** A `runtime.throw` reached from `mfixalloc.alloc` is the converted runtime failing where
+Go's does not; that fault is on master at `e7023b5c6` and `44f858717` alike and was being absorbed as one
+`infrastructure-error` among seven. **Seat 3 did not create it — it stopped it being swallowed, which is
+what its design asks for, and the price is 57 verdicts.** Both are true at once, and this row is not to be
+read as "seat 3 broke the runtime row".
+
+⚠ **PRECISION CLAUSE, because the obvious generalisation is wrong.** Seat 3 did NOT make
+infrastructure-errors fatal. At 128, `TestAddrRangesAdd` and `TestFPUnwindAfterRecovery` still read
+`infrastructure-error` and the run continues past both. **Only the ones that reach `runtime.throw` now
+exit.** All seven infra-errors at 185 are Go=pass.
+
+**ROUTING, as ruled.** **(c) — a managed `gcTestIsReachable`** (`mgc_impl.cs`), answering the test's
+actual question with the CLR's own reachability, as **C1-2**, after C1-1's current increment and before
+the `mcleanup` hand-own. **(a) "initialise `specialReachableAlloc`" is REFUSED** on C1's three-layer
+reading — `schedinit` is never run in this corpus (stated in four hand-owns), so initialising the
+allocator only MOVES the throw to `IsReachable failed` or `addspecial`, same 128. **(b) a harness-only
+catch is REFUSED** as a change to the fatal path: it would mask the class the path exists to surface.
+Acceptance for C1-2: the door moves OFF `TestGCTestIsReachable` (matched or honestly diverged, never an
+infrastructure-error and never a host kill), the 128-set a prefix of the new set, and the NEXT door named
+by test and death shape. Each further door is its own sizing post, never a cumulative promise of 57.
+C1 has flagged, before building it, that the verdict at that name will be an honest FAIL rather than a
+pass — `FromPinnedBox` roots and pins its referent, so pointers minted through it cannot read unreachable
+— to be DISCLOSED as the port's pointer model once the emitted test's mint form is read.
+
+**THE ROW'S STATE OF RECORD: 128, until C1-2 lands.** Every comparison against a 185-era figure names
+which side of `7d3d03284` it sits on.
+
+**Three predictions ride the first tree that reaches `TestLockOSThreadNesting` again** (premise for all
+three: C1-2 landed): i9 — when train-47 row 16 lands, the 185 door moves OFF `TestLockOSThreadNesting`
+and the row's next stop is a DIFFERENT name; if it stops at the same name with the same text, row 16 did
+not reach this path and its acceptance is vacuous there (C1 adopted this in place of `18a34299f`). i9 —
+`TestRegisterClass` (Go=pass, C# absent at 185 AND 128, structurally unreachable because the row dies in
+the `G`/`L` range) must, when it runs, refuse its argument 0 with the identical text; any other outcome
+is a hole. Seat 16's owed accounting is scored on that same tree.
+
+**EVIDENCE.** `logs/evidence-bisect-a` (`8a1b7e71c`), `logs/evidence-bisect-b` (`7d3d03284`),
+`logs/evidence-bisect-c` (`e7023b5c6`), each holding `go2cs_test_results.json` and
+`go2cs_test_comparison.json` preserved before the tree restore; `logs/evidence-item4` holds the 09-08
+landed-master baseline, md5 `59c83a593391995943f0a2ca335206b8`, asserted unchanged before and after every
+probe. Each probe: two-pin pairing (corpus/oracle GOROOT go1.23.12, `GOTOOLCHAIN` unset so the converter
+build switches up to 1.24.13), configuration of record (Release), `DOTNET_TieredCompilation` unset.
+
+**DOCTRINE THIS ROW PRODUCED.** A bisect walks `--first-parent`; before spending a run at a commit taken
+from an `A..B` set, assert the range's base is its ancestor. And: never synthesise a full SHA from an
+abbreviation — ask the object store to expand it; a fabricated SHA with a valid shape defeats a shape
+check, and an error body on stdout is a non-empty answer.
+
+— i9
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
