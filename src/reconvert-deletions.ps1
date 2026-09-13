@@ -980,6 +980,12 @@ foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
     }
 }
 
+# ONE HOME for the residue .cs term. It is printed in the deletion summary and subtracted by the
+# post-condition, and those were two copies of the same expression until this line existed -- the
+# drift shape this file keeps finding in other instruments. Computed from the rows the sweep
+# ENUMERATED, never from a listing (ruling cee96ffad §2).
+$residueCs = @($residueRows | Where-Object { $_.Path -like '*.cs' }).Count
+
 Write-Host ''
 Write-Host '  DELETE-ABSENT packages (whole-package removals)' -ForegroundColor Cyan
 Write-Host ("    package directories            {0}" -f $absentPackageDirs.Count)
@@ -1187,6 +1193,12 @@ else {
     Write-Host ''
     Write-Host ("  deleted {0} of {1}; {2} survived" -f $deleted, $deleteRows.Count, $survivors.Count)
     Write-Host ("  residue deleted {0} of {1}; {2} survived" -f $residueDeleted, $residueRows.Count, $residueSurvivors.Count)
+
+    # Printed HERE, beside the two deletion counts, because this is where a reader reconciling the
+    # arithmetic looks -- and because the alternative is parsing it out of the residue listing, which is
+    # what produced 42-against-37 (ruling cee96ffad §2: "the instrument states the number it used").
+    # The after-block below subtracts this same variable, so the two can never disagree.
+    Write-Host ("  residue .cs {0}   (the term the post-condition subtracts; the rest are .csproj, icons and test hosts)" -f $residueCs)
     Write-Host ("  package directories removed {0} of {1}; {2} kept with entries remaining" -f $dirsRemoved, $absentPackageDirs.Count, $dirsKept.Count)
 
     if ($residueSurvivors.Count -gt 0) {
@@ -1214,12 +1226,38 @@ else {
             $keep
         })
 
+    # ⚠ THE EXPECTED COUNT OWES A RESIDUE TERM, and its absence was a defect of mine that only a tree
+    # with residue .cs could surface. i9 measured it at 846cbd849 running be9668d56: the classified set
+    # deleted exactly (102 of 102, 0 survived), then the residue sweep removed 108 more files of which
+    # 37 were production .cs, and this post-condition refused a count it could not reconcile -- exit 3,
+    # CORRECTLY. The residue sweep landed in 01caa02a0 and this arithmetic was not updated with it, so
+    # the check has been unsatisfiable on any tree with residue .cs ever since.
+    #
+    # DERIVED WITH THE SAME PREDICATE THE WALK USES, never a fresh glob: $remaining counts every .cs
+    # under core outside $BuildOutputDirs, so the term is the .cs among $residueRows. Two reasons that is
+    # exactly the deleted set rather than an approximation of it: the residue enumeration is
+    # NON-RECURSIVE over a package directory, so no build-output path can enter it; and residue SURVIVORS
+    # already exited 3 above, so every residue row reaching this line was removed.
+    #
+    # ⚠ WHY THE FIX IS THE ARITHMETIC AND NOT "CLASSIFY THE RESIDUE INSTEAD". A single-flavour run cannot
+    # classify a file whose principal it cannot resolve for the flavours it never asked about -- that is
+    # why the sweep exists and why the directory removal is not recursive (coordinator ruling 894a761f6
+    # §1 accepted the departure). And residue is NOT deleted unnamed: every residue file appears in
+    # h5c-delete-set-full.txt and on its own `deleted <path> (residue)` line. So the gap was bookkeeping,
+    # not disclosure.
+    #
+    # THE DECOMPOSITION IS PRINTED rather than left to be reconstructed. i9's parse of the log counted 42
+    # residue .cs against the 37 the arithmetic implies, because the KEPT-directory block below prints
+    # the names of entries that were NOT residue and a listing-parse cannot tell the two blocks apart.
+    # A number the instrument derived beats a number a reader parsed out of its prose.
+    $expectedRemaining = $totalCs - $deleted - $residueCs
+
     Write-Host ''
     Write-Host '  after (re-walked from disk)' -ForegroundColor Cyan
-    Write-Host ("    production .cs under core        {0}   (was {1}, minus {2} deleted)" -f $remaining.Count, $totalCs, $deleted)
+    Write-Host ("    production .cs under core        {0}   (was {1}, minus {2} classified, minus {3} residue .cs)" -f $remaining.Count, $totalCs, $deleted, $residueCs)
 
-    if ($remaining.Count -ne ($totalCs - $deleted)) {
-        Write-Host ("    ARITHMETIC MISMATCH -- expected {0}" -f ($totalCs - $deleted)) -ForegroundColor Red
+    if ($remaining.Count -ne $expectedRemaining) {
+        Write-Host ("    ARITHMETIC MISMATCH -- expected {0} = {1} - {2} classified - {3} residue .cs" -f $expectedRemaining, $totalCs, $deleted, $residueCs) -ForegroundColor Red
         exit 3
     }
 }
