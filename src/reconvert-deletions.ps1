@@ -1259,7 +1259,6 @@ else {
     $residueDeleted = 0
     $dirsRemoved    = 0
     $dirsKept       = @()
-    $dirsRemovedList = @()
     $slnxRemoved    = 0
 
     foreach ($r in ($residueRows | Sort-Object Path)) {
@@ -1350,7 +1349,6 @@ else {
         if ($left.Count -eq 0) {
             Remove-Item -LiteralPath $onDisk -Force
             $dirsRemoved++
-            $dirsRemovedList += $dir
             Write-Host ("    removed  {0}/  (empty after its files)" -f $dir)
         }
         else {
@@ -1386,10 +1384,36 @@ else {
     # line-ending flip twice).
     $slnxPath = Join-Path $RootFull 'go2cs-stdlib.slnx'
 
-    if ($dirsRemovedList.Count -gt 0) {
+    # ⚠ THE PREDICATE IS "ITS PROJECT IS GONE", NOT "ITS DIRECTORY IS GONE", and the two differ in a case
+    # this instrument already has a code path for. Ruling `485d7387d` §2 words the post-condition as
+    # `slnx entries removed == DELETE-ABSENT packages whose DIRECTORY was removed`. For the expected run
+    # the two are identical (all fourteen directories empty out, so 14 == 14 either way). They part
+    # company on a KEPT directory: a single-flavour run legitimately keeps a package directory when a file
+    # for a flavour it never asked about remains -- that is what `$dirsKept` is for -- and the package's
+    # `.csproj` has still been removed as residue. Under the ruled predicate that entry is NOT removed, so
+    # it dangles, and MSB3202 comes back while the post-condition reads clean. Keying on the project file
+    # closes that and agrees with the ruling everywhere the ruling is right. Reported to COORD as a
+    # divergence rather than applied silently.
+    $slnxDirs = @()
+
+    foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
+        $onDisk = Join-Path $CoreDir ($dir -replace '/', [System.IO.Path]::DirectorySeparatorChar)
+
+        # No directory at all, or a directory with no surviving .csproj: either way nothing can build it
+        # and its <Project> entry is dangling.
+        $csprojLeft = @()
+
+        if (Test-Path -LiteralPath $onDisk -PathType Container) {
+            $csprojLeft = @(Get-ChildItem -LiteralPath $onDisk -File -Filter '*.csproj' -ErrorAction SilentlyContinue)
+        }
+
+        if ($csprojLeft.Count -eq 0) { $slnxDirs += $dir }
+    }
+
+    if ($slnxDirs.Count -gt 0) {
         if (-not (Test-Path -LiteralPath $slnxPath -PathType Leaf)) {
             Write-Host ''
-            Write-Host ("SOLUTION FILE NOT FOUND at {0} -- {1} package director(y/ies) were removed and their <Project> entries cannot be." -f $slnxPath, $dirsRemovedList.Count) -ForegroundColor Red
+            Write-Host ("SOLUTION FILE NOT FOUND at {0} -- {1} package(s) lost their project file and their <Project> entries cannot be removed." -f $slnxPath, $slnxDirs.Count) -ForegroundColor Red
             Write-Host 'The corpus is correct and the solution would be left stale; that is the MSB3202 wall. Refusing to report success.' -ForegroundColor Red
             exit 3
         }
@@ -1402,7 +1426,7 @@ else {
         foreach ($line in $slnxLines) {
             $drop = $false
 
-            foreach ($dir in $dirsRemovedList) {
+            foreach ($dir in $slnxDirs) {
                 # The emitted attribute is solution-relative with forward slashes: core/<pkg>/<name>.csproj
                 # Both separators, for the reason `coreProjectRefRE` in solutionGenerator.go gives: a
                 # corpus emitted by a pre-F5 binary or a deployed tree can carry backslashes, and a
@@ -1440,16 +1464,21 @@ else {
     # The after-block below subtracts this same variable, so the two can never disagree.
     Write-Host ("  residue .cs {0}   (the term the post-condition subtracts; the rest are .csproj, icons and test hosts)" -f $residueCs)
     Write-Host ("  package directories removed {0} of {1}; {2} kept with entries remaining" -f $dirsRemoved, $absentPackageDirs.Count, $dirsKept.Count)
-    Write-Host ("  slnx <Project> entries removed {0}" -f $slnxRemoved)
+    Write-Host ("  slnx <Project> entries removed {0}  (packages with no project file {1}; directories removed {2})" -f $slnxRemoved, $slnxDirs.Count, $dirsRemoved)
 
-    # ⚠ THE POST-CONDITION THE RULING ASKS FOR, derived from the two counters and never from a literal:
-    # one <Project> entry per package directory actually removed. A mismatch is the MSB3202 wall either
-    # forming (fewer removed than directories -> dangling references) or over-reaching (more removed than
-    # directories -> a live project dropped out of the solution), and both are exit 3 rather than a note,
-    # because both produce a solution that is wrong in a way `dotnet build` reports as someone else's bug.
-    if ($slnxRemoved -ne $dirsRemoved) {
+    # ⚠ THE POST-CONDITION, derived from the counters and never from a literal: one <Project> entry per
+    # DELETE-ABSENT package that no longer has a project file. The ruled comparison (against directories
+    # removed) is printed beside it, so when the two differ a reader sees both rather than one.
+    #
+    # A mismatch is the MSB3202 wall either forming (fewer entries removed than projects gone -> dangling
+    # references) or over-reaching (more -> a live project dropped out of the solution). Both are exit 3
+    # rather than a note, because both produce a solution wrong in a way `dotnet build` reports as
+    # somebody else's bug. If it fires, the two things to look at are a package listed TWICE in the slnx
+    # (its own .csproj plus a reference recovered from a dependent) and an entry written under a path
+    # this matcher does not recognise; both are visible in the removed-entry lines printed above.
+    if ($slnxRemoved -ne $slnxDirs.Count) {
         Write-Host ''
-        Write-Host ("SLNX POST-CONDITION FAILED: {0} <Project> entr(y/ies) removed against {1} package director(y/ies) removed." -f $slnxRemoved, $dirsRemoved) -ForegroundColor Red
+        Write-Host ("SLNX POST-CONDITION FAILED: {0} <Project> entr(y/ies) removed against {1} package(s) with no project file ({2} director(y/ies) removed)." -f $slnxRemoved, $slnxDirs.Count, $dirsRemoved) -ForegroundColor Red
         Write-Host 'The corpus and its solution manifest disagree. Discard the staging root.' -ForegroundColor Red
         exit 3
     }
