@@ -1083,11 +1083,16 @@ foreach ($entry in @($Orphan)) {
     $orphanDisposition[$oPath] = $oWhat
 }
 
+# ⚠ PRINTED UNCONDITIONALLY, including the zero. i9 `7ae5355bb` §3: this block was guarded on a non-zero
+# count, so a clean run emitted NOTHING and i9 had to derive the zero by entailment from DELETE-ABSENT 0 --
+# correct reasoning, but an absent section is indistinguishable from a check that never ran. **A zero that
+# can only be observed as silence is not a measurement.** Ruling `d2ad84bdb` §3.
+Write-Host ''
+Write-Host '  ORPHANED-HAND-OWN (PROTECTED file whose package is DELETE-ABSENT)' -ForegroundColor Cyan
+Write-Host ("    orphaned hand-owns             {0}" -f $orphanRows.Count)
+Write-Host ("    dispositions supplied          {0}" -f $orphanDisposition.Count)
+
 if ($orphanRows.Count -gt 0 -or $orphanDisposition.Count -gt 0) {
-    Write-Host ''
-    Write-Host '  ORPHANED-HAND-OWN (PROTECTED file whose package is DELETE-ABSENT)' -ForegroundColor Cyan
-    Write-Host ("    orphaned hand-owns             {0}" -f $orphanRows.Count)
-    Write-Host ("    dispositions supplied          {0}" -f $orphanDisposition.Count)
 
     foreach ($o in ($orphanRows | Sort-Object Path)) {
         $d = if ($orphanDisposition.ContainsKey($o.Path)) { $orphanDisposition[$o.Path] } else { 'NO DISPOSITION' }
@@ -1473,9 +1478,22 @@ else {
     Write-Host ("  package directories removed {0} of {1}; {2} kept with entries remaining" -f $dirsRemoved, $absentPackageDirs.Count, $dirsKept.Count)
     Write-Host ("  slnx <Project> entries removed {0}  (packages with no project file {1}; directories removed {2})" -f $slnxRemoved, $slnxDirs.Count, $dirsRemoved)
 
-    # ⚠ THE POST-CONDITION, derived from the counters and never from a literal: one <Project> entry per
-    # DELETE-ABSENT package that no longer has a project file. The ruled comparison (against directories
-    # removed) is printed beside it, so when the two differ a reader sees both rather than one.
+    # ⚠ THIS ROW IS A GUARD ON THE GENERATED SOLUTION, NOT A REPAIR OF IT -- ruling `d2ad84bdb` §3, which
+    # supplies the mechanism my own report at `1f8da6540` did not have:
+    #
+    #   **the stdlib solution heals by regeneration, and the step-5 wall was the regenerated file not being
+    #   carried from the staging root.**
+    #
+    # So the 358-vs-344 gap i9 measured at `7ae5355bb` §2 was never stale CONTENT: the converter rewrites
+    # this file from the packages it converted, and the committed copy stayed behind because nothing carried
+    # the regenerated one over. That is why this pass removed 0 -- correctly -- and why it must stay: it is
+    # the check that the solution about to be carried has no dangling entry, not the thing that fixes one.
+    # The runbook gains the carry step (COORD, next docs commit).
+    #
+    # ⚠ AND THE POST-CONDITION OWES A POPULATION ASSERTION, which it did not have on its first real run:
+    # `0 -ne 0` is false, so it PASSED over an empty population in a file that refuses an empty file list,
+    # an empty pattern file and an empty range elsewhere. A bare equality of two zeroes is an arm that
+    # cannot go red. It now states which case it is in.
     #
     # A mismatch is the MSB3202 wall either forming (fewer entries removed than projects gone -> dangling
     # references) or over-reaching (more -> a live project dropped out of the solution). Both are exit 3
@@ -1483,11 +1501,19 @@ else {
     # somebody else's bug. If it fires, the two things to look at are a package listed TWICE in the slnx
     # (its own .csproj plus a reference recovered from a dependent) and an entry written under a path
     # this matcher does not recognise; both are visible in the removed-entry lines printed above.
-    if ($slnxRemoved -ne $slnxDirs.Count) {
+    if ($slnxDirs.Count -eq 0) {
+        # VACUOUS, and said so rather than passing quietly: no DELETE-ABSENT package lost its project file,
+        # so there was nothing for the removal to act on and the equality below would compare 0 with 0.
+        Write-Host '  slnx post-condition: VACUOUS on this run -- no DELETE-ABSENT package lost its project file, so nothing was removable. The check did not run over a population.'
+    }
+    elseif ($slnxRemoved -ne $slnxDirs.Count) {
         Write-Host ''
         Write-Host ("SLNX POST-CONDITION FAILED: {0} <Project> entr(y/ies) removed against {1} package(s) with no project file ({2} director(y/ies) removed)." -f $slnxRemoved, $slnxDirs.Count, $dirsRemoved) -ForegroundColor Red
         Write-Host 'The corpus and its solution manifest disagree. Discard the staging root.' -ForegroundColor Red
         exit 3
+    }
+    else {
+        Write-Host ("  slnx post-condition: MET over {0} package(s) with no project file -- {1} <Project> entr(y/ies) removed." -f $slnxDirs.Count, $slnxRemoved)
     }
 
     if ($residueSurvivors.Count -gt 0) {
