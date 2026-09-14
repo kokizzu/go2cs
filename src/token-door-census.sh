@@ -26,7 +26,16 @@
 #   - Timeval / Timespec  MUST NOT be flagged (plain integer fields).
 set -u
 
-CORE=${1:-/home/user/go2cs/src/core}
+# ⚠ NEVER A LITERAL PATH HERE, for two independent reasons that happen to share one line.
+# (a) CORRECTNESS: TestTokenDoorCensusControls drives this script with NO argument, so the default
+#     IS the path the guard uses. A container-specific literal made the guard refuse on every other
+#     box -- it read as a census defect and was a path defect.
+# (b) SECURITY: that literal was a home-prefix, username-style path, and it was on a pushed surface.
+#     That is the standing owner order's class, not a style preference.
+# Derived from the script's own location, so it is correct wherever the repo is checked out and
+# carries no absolute path in the file. The readability refusal below names the resolved path, so a
+# wrong derivation still fails LOUDLY rather than censusing the wrong tree.
+CORE=${1:-"$(cd "$(dirname "$0")" && pwd)/core"}
 W="$CORE/syscall/windows"
 TYPES="$W/types_windows.cs"
 ZSYS="$W/zsyscall_windows.cs"
