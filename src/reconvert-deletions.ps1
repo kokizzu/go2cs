@@ -1021,13 +1021,23 @@ foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
 # removes NOTHING -- so the csproj cannot be deleted out from under a hand-own. The residue rule is
 # untouched; the ordering is what makes it safe.
 #
-# ⚠ A DISPOSITION HERE IS HALF OF A TWO-PART CHANGE, and this instrument can only do its half. A hand-own
-# is a DISPLACEMENT DESTINATION: `manualTypeOperations.go` names `crypto/internal/alias/alias_impl.cs` as
-# holding the displaced `AnyOverlap` body (see its comment at the `crypto/internal/alias` entry). So a
-# `relocate` owes a re-pointed registry entry and a `delete` owes a REMOVED one, in Go, or
-# `TestManualConversionRegistrationsDisplaceSomething` goes red on a registration whose destination moved
-# or vanished -- ruling `485d7387d` §3 states it for the relocate case. This instrument moves or removes
-# the FILE and reports what it did; the registry cut is a separate seat and is not inferred from here.
+# ⚠ ONLY `delete` IS A DISPOSITION THIS INSTRUMENT CAN COMPLETE. Ruling `f0837eea1`, on C2's own report at
+# `cb1e4aaf6`: **a move lives in git by the file's owner and carries the file's identity; an instrument
+# names orphans and deletes what has no principal, and refuses the rest by name.**
+#
+# `relocate:` was offered here and is withdrawn, because a `Move-Item` is not the move. Ruling `43ce0c8e6`
+# §1 settled that a hand-own's C# identity is a function of its path, so the `namespace` and class lines ARE
+# part of the move -- and this file contains no C# parser and should not grow one. i9 then MEASURED the
+# failure mode at `0cfc5f33c2` §4-§5: the three mismatched files produced **zero build errors**, and
+# `internal/sync/hashtriemap.cs` compiles its moved-in file into `concurrent_package` among `sync_package`
+# siblings, which no compiler can object to. A partial move is therefore SILENT, not loud -- the worst
+# shape this instrument can produce -- and one of the three needed only the CLASS line changed and not the
+# namespace, so even a rewrite would have to be right about two lines in three different shapes.
+#
+# A `delete` is complete by construction: nothing survives to carry a wrong address. It still owes a
+# REMOVED registry entry in Go (`manualTypeOperations.go` names `crypto/internal/alias/alias_impl.cs` as
+# holding the displaced `AnyOverlap` body), or `TestManualConversionRegistrationsDisplaceSomething` goes
+# red on a registration whose destination vanished; that is a separate seat and is not inferred from here.
 $orphanRows = @()
 
 foreach ($row in @($rows | Where-Object { $_.Class -eq 'PROTECTED' })) {
@@ -1042,15 +1052,17 @@ foreach ($row in @($rows | Where-Object { $_.Class -eq 'PROTECTED' })) {
     }
 }
 
-# Dispositions, parsed as `-Orphan <path>=relocate:<new-package>` or `-Orphan <path>=delete`. A human's
-# ruling carried by the instrument, never inferred -- the UNRESOLVED shape (ruling `485d7387d` §2).
+# Dispositions. `-Orphan <path>=delete` is the only one performed; a `relocate:<new-package>` spelling is
+# still PARSED so a stale invocation is answered with the pointer rather than a syntax complaint, and is
+# then refused by name (ruling `f0837eea1`). A human's ruling carried by the instrument, never inferred --
+# the UNRESOLVED shape (ruling `485d7387d` §2).
 $orphanDisposition = @{}
 
 foreach ($entry in @($Orphan)) {
     $split = $entry.IndexOf('=')
 
     if ($split -lt 1) {
-        Stop-ForReview ("-Orphan entry '{0}' is not <path>=relocate:<new-package> or <path>=delete." -f $entry)
+        Stop-ForReview ("-Orphan entry '{0}' is not <path>=delete (the only disposition this instrument performs; relocate: is parsed and refused by name)." -f $entry)
     }
 
     # Separator-normalised with .NET char Replace rather than a regex: a doubled backslash in a
@@ -1058,8 +1070,10 @@ foreach ($entry in @($Orphan)) {
     $oPath = $entry.Substring(0, $split).Trim().Replace([char]92, [char]47)
     $oWhat = $entry.Substring($split + 1).Trim()
 
+    # `relocate:` is still PARSED, deliberately: a stale invocation carrying one should be answered with
+    # the pointer below, not with a syntax complaint that hides why the verb went away.
     if ($oWhat -ne 'delete' -and $oWhat -notlike 'relocate:?*') {
-        Stop-ForReview ("-Orphan disposition '{0}' for {1} is neither 'delete' nor 'relocate:<new-package>'." -f $oWhat, $oPath)
+        Stop-ForReview ("-Orphan disposition '{0}' for {1} is not 'delete' (and 'relocate:' is withdrawn -- see the refusal below)." -f $oWhat, $oPath)
     }
 
     if ($orphanDisposition.ContainsKey($oPath)) {
@@ -1211,7 +1225,22 @@ if ($Apply -and $orphanUndisposed.Count -gt 0) {
         Write-Host ("    {0}`n        package {1} is absent at the target; the file survives with no project to build it." -f $o.Path, $o.Dir) -ForegroundColor Yellow
     }
 
-    Stop-ForReview '-Apply refuses while an orphaned hand-own has no disposition. Supply one per path: -Orphan "<path>=relocate:<new-package>" or -Orphan "<path>=delete".'
+    Stop-ForReview '-Apply refuses while an orphaned hand-own has no disposition. For a file whose principal is GONE at the target: -Orphan "<path>=delete". For one whose principal MOVED: do the move in git (path plus the namespace and class lines, ruling 43ce0c8e6 section 1) and re-run -- it is then no longer an orphan and needs no disposition here.'
+}
+
+# ⚠ `relocate:` REFUSED BY NAME (ruling `f0837eea1`). Placed BEFORE the stale-disposition check, because a
+# relocate names a REAL orphan and would otherwise pass that check and reach the deletion loop.
+$orphanRelocates = @($orphanDisposition.Keys | Where-Object { $orphanDisposition[$_] -like 'relocate:?*' })
+
+if ($orphanRelocates.Count -gt 0) {
+    Write-Host ''
+    Write-Host ("ORPHANED-HAND-OWN: {0} disposition(s) ask for a relocate, which this instrument no longer performs:" -f $orphanRelocates.Count) -ForegroundColor Yellow
+
+    foreach ($p in ($orphanRelocates | Sort-Object)) {
+        Write-Host ("    {0}  ->  {1}" -f $p, $orphanDisposition[$p]) -ForegroundColor Yellow
+    }
+
+    Stop-ForReview ('a relocate is a git move PLUS the namespace and class lines (ruling 43ce0c8e6 section 1: a hand-own C# identity is a function of its path), and it belongs in a commit by the file owner -- not in a deletion instrument with no C# parser. A partial move is SILENT: i9 measured the three mismatched files at 0cfc5f33c2 producing ZERO build errors. Do the move in git, then re-run -- the file is no longer inside a DELETE-ABSENT package, so it is no longer an orphan and there is nothing here to dispose of. -Orphan <path>=delete is unchanged and remains complete.')
 }
 
 # A disposition naming a path that is NOT an orphan is a stale ruling, and passing it silently would let a
@@ -1277,10 +1306,9 @@ else {
     }
 
     # Orphan dispositions run HERE -- after the residue sweep, before the directory-empty test -- so a
-    # relocated or deleted orphan lets its now-empty package directory be removed in the loop below
-    # instead of being reported as KEPT. Every one was named and refused-on above; nothing is inferred.
-    $orphansRelocated = 0
-    $orphansDeleted   = 0
+    # deleted orphan lets its now-empty package directory be removed in the loop below instead of being
+    # reported as KEPT. Every one was named and refused-on above; nothing is inferred.
+    $orphansDeleted = 0
 
     foreach ($o in ($orphanRows | Sort-Object Path)) {
         $what = $orphanDisposition[$o.Path]
@@ -1309,34 +1337,13 @@ else {
             continue
         }
 
-        $target = $what.Substring('relocate:'.Length).Trim().Replace([char]92, [char]47)
-        $targetDir = Join-Path $CoreDir ($target -replace '/', [System.IO.Path]::DirectorySeparatorChar)
-
-        # The destination must ALREADY exist: a relocate follows a principal that lives at the target, so
-        # a missing directory means the ruling names a package this corpus does not have. Creating it
-        # would turn a wrong ruling into a plausible-looking tree.
-        if (-not (Test-Path -LiteralPath $targetDir -PathType Container)) {
-            Write-Host ''
-            Write-Host ("ORPHAN RELOCATION ABORTED: {0} -> {1}/ does not exist in this corpus." -f $o.Path, $target) -ForegroundColor Red
-            Write-Host ("{0} file(s) had already been removed. The tree is PART-DELETED; discard the staging root." -f ($deleted + $residueDeleted)) -ForegroundColor Red
-            exit 3
-        }
-
-        $destination = Join-Path $targetDir (Split-Path -Leaf $o.Full)
-
-        if (Test-Path -LiteralPath $destination) {
-            Write-Host ''
-            Write-Host ("ORPHAN RELOCATION ABORTED: {0} already exists; a relocate never overwrites." -f (Get-RelativeDisplayPath -Path $destination -Root $CoreDir)) -ForegroundColor Red
-            exit 3
-        }
-
-        Move-Item -LiteralPath $o.Full -Destination $destination
-        $orphansRelocated++
-        Write-Host ("    moved    {0}  ->  {1}/  (orphaned hand-own, ruled relocate)" -f $o.Path, $target) -ForegroundColor Yellow
+        # UNREACHABLE: every relocate is refused before this loop. Kept as an assertion rather than as a
+        # move, so a future edit that re-admits the verb fails loudly here instead of half-moving a file.
+        Stop-ForReview ("unreachable: disposition '{0}' for {1} is not 'delete' and should have been refused before the deletion loop. This is an instrument defect, not a corpus finding." -f $what, $o.Path)
     }
 
     if ($orphanRows.Count -gt 0) {
-        Write-Host ("  orphaned hand-owns: {0} relocated, {1} deleted, of {2}" -f $orphansRelocated, $orphansDeleted, $orphanRows.Count)
+        Write-Host ("  orphaned hand-owns: {0} deleted, of {1}  (relocate is REFUSED; a move lives in git)" -f $orphansDeleted, $orphanRows.Count)
     }
 
     foreach ($dir in @($absentPackageDirs.Keys | Sort-Object)) {
