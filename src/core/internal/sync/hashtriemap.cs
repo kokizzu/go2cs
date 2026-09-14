@@ -1,804 +1,397 @@
 // Copyright 2024 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
+
+// go2cs NATIVE IMPLEMENTATION (hand-owned; replaces the converted hashtriemap.go output). Go's
+// HashTrieMap is a lock-free hash-trie seeded entirely from one runtime descriptor read:
+// NewHashTrieMap takes `abi.TypeOf(m).MapType().Hasher` — a raw function pointer into the hashing
+// machinery the compiler emits for `map[K]V` — together with `Key.Equal` and `Elem.Equal`, its
+// matching bit-compare thunks. All three take unsafe.Pointers and mean "hash / compare the bytes AT
+// this address".
+//
+// The managed reflection bridge cannot honor that contract and must not pretend to. A managed
+// address names no value: two boxes holding equal strings sit at different addresses, and a pointee
+// containing references moves across a GC — so an address-derived hash would stop `unique.Make(x)`
+// agreeing with itself, the precise inverse of the package's purpose. Populating `Hasher` with
+// something plausible-but-fake is barred by the standing rule that a descriptor field whose read
+// cannot be honored must stay EMPTY: it would turn a loud construction failure into a map that is
+// silently wrong. So the literal conversion compiles and can never run — `NewHashTrieMap` threw
+// inside the package initializer of every `unique` consumer, taking net/netip down with it.
+//
+// The remedy is the sync.Mutex / sync.WaitGroup precedent (mutex.cs): runtime-coupled machinery gets
+// a managed-native rewrite that keeps the Go API and its concurrency contract while dropping the
+// mechanism. Semantics over mechanism — nothing below is a trie. The store is a
+// ConcurrentDictionary, whose guarantees line up member for member (see each method), and Go's
+// keyHash/keyEqual/valEqual triple becomes EqualityComparer<K>/<V>.Default, which for every key
+// shape the converted corpus interns IS Go's `==`:
+//
+//   - ж<T> — unique's own `map[*abi.Type]any` — implements IEquatable<ж<T>> as pointer IDENTITY with
+//     a matching identity hash, and abi.TypeFor<T>() interns one descriptor box per System.Type, so
+//     one Go type always presents one key.
+//   - A [GoType] struct — net/netip's `addrDetail{isV6 bool; zoneV6 string}`, the shape unique
+//     actually interns — carries a generated field-wise Equals over `==` plus a HashCode.Combine of
+//     the same fields, which is Go's struct `==` exactly. It does not implement IEquatable<T>, so
+//     EqualityComparer<T>.Default routes through the object override; that lands on the same
+//     comparison, at the cost of a box per lookup.
+//   - @string compares and hashes by CONTENT, as Go's string `==` does.
+//
+// ⚠ If a lookup here ever dies with EntryPointNotFoundException at IEquatable<T>.Equals, the key is
+// not the type it claims to be and the defect is upstream, not in this file. The known instance:
+// abi.TypeFor<T>() for an INTERFACE T returns the descriptor's `Equal` DELEGATE — Type.Elem()'s
+// PtrType reinterpretation lands on the wrong member under the managed layout — and shared generics
+// let that object into a ConcurrentDictionary<ж<abi.Type>, …> uncast-checked. Deliberately NOT
+// defended against: tolerating a type-unsafe key is the same fake-but-plausible move the empty-Hasher
+// rule forbids. The loud failure is correct; the fix belongs in internal/abi.
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Threading;
+using go.golib;
+using @unsafe = go.unsafe_package;
+
+// Hand-owned native replacement of the converted hashtriemap.go output — the converter skips
+// regenerating a file that carries this marker, so a -stdlib reconvert preserves it (see
+// containsManualConversionMarker). hashtriemap.go is this package's ONLY Go file, so marking it makes
+// the whole package hand-owned: the driver `continue`s on unmarkedFileCount == 0 and stops re-emitting
+// internal.concurrent.csproj, package_info.cs and README.md as well (the position internal/godebug is
+// in). A hashtriemap.cs.auto review sibling IS produced, since 2026-08-19: the fully-hand-owned
+// branch used to panic here, and the cause was neither this file's genericity nor its reduced set of
+// whole-package pre-passes — emitAutoConversionSiblings hand-rolled a copy of newFileVisitor that had
+// drifted, leaving `blankImportInits` nil for visitFile to dereference. It builds through the real
+// constructor now. The marker's protection is unaffected and is proven in both directions by a seeded
+// reconvert.
+[module: go.GoManualConversion]
+
 namespace go.@internal;
 
-using abi = go.@internal.abi_package;
-using goarch = go.@internal.goarch_package;
-using atomic = sync.atomic_package;
-using @unsafe = unsafe_package;
-using go.@internal;
-using sync;
-
-partial class sync_package {
+partial class concurrent_package {
 
 // HashTrieMap is an implementation of a concurrent hash-trie. The implementation
 // is designed around frequent loads, but offers decent performance for stores
-// and deletes as well, especially if the map is larger. Its primary use-case is
+// and deletes as well, especially if the map is larger. It's primary use-case is
 // the unique package, but can be used elsewhere as well.
-//
-// The zero HashTrieMap is empty and ready to use.
-// It must not be copied after first use.
-[GoType] partial struct HashTrieMap<K, V> {
-    internal atomic.Uint32 inited;
-    internal Mutex initMu;
-    internal atomic.Pointer<Δindirect<K, V>> root;
-    internal Func<@unsafe.Pointer, uintptr, uintptr> keyHash;
-    internal Func<@unsafe.Pointer, @unsafe.Pointer, bool> valEqual;
-    internal uintptr seed;
+[GoType] partial struct HashTrieMap<K, V>
+{
+    // The whole of the map's state, held behind a REFERENCE exactly as Go holds it behind the
+    // `root *indirect[K, V]` pointer: a by-value copy of a HashTrieMap shares one map, and
+    // NewHashTrieMap hands the map out as a ж<HashTrieMap<K, V>> either way.
+    internal mapStore<K, V> store;
+
+    // THE HASH HOOK. Go carries `keyHash func(unsafe.Pointer, uintptr) uintptr` as a plain field and
+    // the package's own test WRITES it: TestHashTrieMapBadHash — one of the suite's two top-level
+    // tests, and the parent of nine of its eighteen subtests — replaces it on a freshly built map
+    // with `func(unsafe.Pointer, uintptr) uintptr { return 0 }` under the comment "Stub out the good
+    // hash function with a terrible one. Everything should still work as expected." The assertion is
+    // therefore not about the hash at all: it is that the map's CONTRACT survives total collision.
+    //
+    // That contract is honored here for real, not simulated. Installing a hook rebuilds the store
+    // behind an IEqualityComparer<K> whose GetHashCode returns whatever the hook returns, leaving
+    // Equals as it was — which is exactly the split Go's test makes (only keyHash is replaced;
+    // keyEqual and valEqual stay the map's own). Every key then lands in one bucket and correctness
+    // rests entirely on equality and on the store's own concurrency guarantees, which is the state
+    // Go's badly-hashed trie is in and the state the nine subtests measure.
+    //
+    // ⚠ Only ONE of the hook's two inputs can be honored, and the other is passed as the NIL pointer
+    // rather than as a plausible substitute. `seed` is genuine — a real per-map salt (see
+    // mapStore.seed) — but the unsafe.Pointer argument means "the key's bytes are AT this address",
+    // and a managed address names no value; that is this whole file's founding premise. A hook that
+    // ignores the address — the only kind that can be honored, and the kind Go's test writes — gets
+    // its exact answer. A hook that dereferences it faults loudly, which is the correct outcome under
+    // the same rule that keeps the descriptor's Hasher empty: a loud failure beats a silent lie.
+    //
+    // Note what this does NOT claim. Because the address is unavailable, every honorable hook is a
+    // function of the seed alone, i.e. constant across keys — so honoring a hook and forcing total
+    // collision are the same act here. Nothing is lost by that: no hook this implementation could
+    // accept was ever able to distinguish two keys.
+    internal Func<@unsafe.Pointer, uintptr, uintptr> keyHash
+    {
+        get => storeOf(ref this).hashHook!;
+        set => installKeyHash(ref this, value);
+    }
+
+    // The map's hash salt. Go draws it from math/rand at construction and feeds it to keyHash as the
+    // second argument; here it serves the same one purpose and nothing else, since the store's own
+    // hashing goes through EqualityComparer<K>.Default and takes no salt of ours.
+    internal uintptr seed => storeOf(ref this).seed;
 }
 
-internal static void init<K, V>(this ж<HashTrieMap<K, V>> Ꮡht) {
-    if (Ꮡht.of(HashTrieMap<K, V>.Ꮡinited).Load() == 0) {
-        Ꮡht.initSlow();
+// The map's backing store. Named as a type of its own so that the [GoType]-generated members of
+// HashTrieMap (its field-wise constructor, its field-reference accessor) never restate
+// ConcurrentDictionary<K, V>: the converter renders Go's `comparable` constraint as `new()`, which
+// carries no C# `notnull` signal, and generated code cannot carry the suppression that vacuous
+// mismatch would need (a Go map key is never a null reference).
+#pragma warning disable CS8714
+internal sealed class mapStore<K, V> : ConcurrentDictionary<K, V>
+{
+    // THE NIL KEY. Go admits a nil interface as a map key: `HashTrieMap[K, V comparable]`
+    // instantiated at an interface K hashes and compares nil exactly like any other value, and
+    // `unique.Make[testEface](nil)` — a row of Go's own unique suite — depends on it.
+    // ConcurrentDictionary refuses it outright, and refuses it EARLY: every accessor runs its own
+    // `if (key is null) ThrowKeyNullException()` before the comparer is ever consulted, so no
+    // IEqualityComparer<K> can rescue the key. Substituting a sentinel is not available either — a
+    // sentinel has to BE a K, and no object implements an arbitrary named Go interface.
+    //
+    // So the nil key gets one dedicated slot beside the dictionary. A null holder means ABSENT and a
+    // non-null one carries the value, which puts presence in the reference itself: Interlocked over
+    // that one field gives the nil key the same publish/retract atomicity TryAdd/TryRemove give every
+    // other key, with no lock and no second dictionary. Inert for a value-type K, where null never
+    // arrives and the JIT drops the branch.
+    internal nilEntry<V>? nilKey;
+
+    // The salt Go's NewHashTrieMap draws from math/rand — genuine here too, and per store. Its only
+    // consumer is an installed hash hook's second argument (see HashTrieMap.keyHash): the dictionary
+    // itself hashes through its comparer and never sees it.
+    internal readonly uintptr seed;
+
+    // The installed whitebox hash hook, or null in the normal case, where the store hashes through
+    // EqualityComparer<K>.Default. Held so HashTrieMap.keyHash can read back what was written, and
+    // so a store rebuilt for any other reason can carry the hook across.
+    internal readonly Func<@unsafe.Pointer, uintptr, uintptr>? hashHook;
+
+    internal mapStore() : this(newSeed(), null) { }
+
+    // A hooked store is built through hookedHash; an unhooked one passes null and gets
+    // ConcurrentDictionary's default comparer, which keeps the fast path — the one unique and
+    // net/netip actually run on — free of the seam entirely.
+    internal mapStore(uintptr seed, Func<@unsafe.Pointer, uintptr, uintptr>? hook)
+        : base(hook is null ? null : new hookedHash<K>(hook, seed))
+    {
+        this.seed = seed;
+        this.hashHook = hook;
     }
 }
 
-//go:noinline
-internal static void initSlow<K, V>(this ж<HashTrieMap<K, V>> Ꮡht) {
-    GoFrame ᒐ = default;
-    bool ᒐd1 = false;
-    try {
-        ref var ht = ref Ꮡht.DerefOrNull();
+// The comparer an installed hash hook is honored through. Equality is untouched — Go's test replaces
+// keyHash alone — so membership still answers exactly as it did; only bucket placement moves, to
+// wherever the hook says.
+internal sealed class hookedHash<K> : IEqualityComparer<K>
+{
+    private readonly Func<@unsafe.Pointer, uintptr, uintptr> hook;
+    private readonly uintptr seed;
 
-        Ꮡht.of(HashTrieMap<K, V>.ᏑinitMu).Lock();
-        ᒐd1 = true;
-        if (Ꮡht.of(HashTrieMap<K, V>.Ꮡinited).Load() != 0) {
-            // Someone got to it while we were waiting.
-            return;
-        }
-        // Set up root node, derive the hash function for the key, and the
-        // equal function for the value, if any.
-        map<K, V> m = default!;
-        var mapType = abi.TypeOf(m).MapType();
-        Ꮡht.of(HashTrieMap<K, V>.Ꮡroot).Store(newIndirectNode<K, V>(nil));
-        ht.keyHash = mapType.Value.Hasher;
-        ht.valEqual = mapType.Value.Elem.Value.Equal;
-        ht.seed = (uintptr)runtime_rand();
-        Ꮡht.of(HashTrieMap<K, V>.Ꮡinited).Store(1);
+    internal hookedHash(Func<@unsafe.Pointer, uintptr, uintptr> hook, uintptr seed)
+    {
+        this.hook = hook;
+        this.seed = seed;
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { if (ᒐd1) Ꮡht.of(HashTrieMap<K, V>.ᏑinitMu).Unlock(); ᒐ.Run(); }
+
+    public bool Equals(K? x, K? y)
+    {
+        return EqualityComparer<K>.Default.Equals(x, y);
+    }
+
+    // The hook's answer IS the hash code. The width narrows — Go's uintptr is 64-bit here and a
+    // .NET hash code is 32 — which loses nothing a hash cares about: a narrowing of the hash
+    // function is still a hash function, and the collision behavior the test forces survives it
+    // exactly.
+    public int GetHashCode(K obj)
+    {
+        return unchecked((int)(uint)hook(noAddress, seed).Value);
+    }
 }
 
-// type hashFunc is a methodless func type — rendered inline as its base delegate
+// Presence-carrying holder for the nil key's value — see mapStore.nilKey. A plain field could not
+// serve: V may be a value type, so "absent" would be indistinguishable from a stored zero, and a
+// separate bool could not be published with it in one atomic step.
+internal sealed class nilEntry<V>
+{
+    internal readonly V value;
 
-// type equalFunc is a methodless func type — rendered inline as its base delegate
+    internal nilEntry(V value)
+    {
+        this.value = value;
+    }
+}
+#pragma warning restore CS8714
+
+// NewHashTrieMap creates a new HashTrieMap for the provided key and value.
+public static ж<HashTrieMap<K, V>> NewHashTrieMap<K, V>()
+{
+    return Ꮡ(new HashTrieMap<K, V>(store: new mapStore<K, V>()));
+}
 
 // Load returns the value stored in the map for a key, or nil if no
 // value is present.
 // The ok result indicates whether value was found in the map.
-public static (V value, bool ok) Load<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K keyʗp) {
-    ref var ht = ref Ꮡht.DerefOrNull();
-
-    ref var key = ref heap(keyʗp, out var Ꮡkey);
-    Ꮡht.init();
-    var hash = ht.keyHash((uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), ht.seed);
-    System.GC.KeepAlive(Ꮡkey);
-    var i = Ꮡht.of(HashTrieMap<K, V>.Ꮡroot).Load();
-    nint hashShift = 8 * goarch.PtrSize;
-    while (hashShift != 0) {
-        hashShift -= nChildrenLog2;
-        var n = i.at(sync_package.Δindirect<K, V>.Ꮡchildren, (nint)((uintptr)((hash.Rsh((uint64)(hashShift))) & (uintptr)nChildrenMask))).Load();
-        if (n == nil) {
-            return (@new<V>().ValueSlot, false);
-        }
-        if ((~n).isEntry) {
-            return n.entry().lookup(key);
-        }
-        i = n.indirect();
+[GoRecv] public static (V value, bool ok) Load<K, V>(this ref HashTrieMap<K, V> ht, K key)
+{
+    mapStore<K, V> store = storeOf(ref ht);
+    // The nil key lives beside the dictionary, never in it (see mapStore.nilKey).
+    if (key is null) {
+        nilEntry<V>? entry = Volatile.Read(ref store.nilKey);
+        return entry is null ? (@new<V>().ValueSlot, false) : (entry.value, true);
     }
-    throw panic("internal/sync.HashTrieMap: ran out of hash bits while iterating");
+    if (store.TryGetValue(key, out V? value)) {
+        return (value!, true);
+    }
+    return (@new<V>().ValueSlot, false);
 }
 
 // LoadOrStore returns the existing value for the key if present.
 // Otherwise, it stores and returns the given value.
 // The loaded result is true if the value was loaded, false if stored.
-public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K keyʗp, V value) {
-    V result = default!;
-    bool loaded = default!;
-    GoFrame ᒐ = default;
-    try {
-        ref var ht = ref Ꮡht.DerefOrNull();
-
-        ref var key = ref heap(keyʗp, out var Ꮡkey);
-        Ꮡht.init();
-        var hash = ht.keyHash((uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), ht.seed);
-        System.GC.KeepAlive(Ꮡkey);
-        ж<Δindirect<K, V>> i = default!;
-        nuint hashShift = default!;
-        ж<atomic.Pointer<node<K, V>>> slot = default!;
-        ж<node<K, V>> n = default!;
-        while (ᐧ) {
-            // Find the key or a candidate location for insertion.
-            i = Ꮡht.of(HashTrieMap<K, V>.Ꮡroot).Load();
-            hashShift = 8 * goarch.PtrSize;
-            var haveInsertPoint = false;
-            while (hashShift != 0) {
-                hashShift -= nChildrenLog2;
-                slot = i.at(sync_package.Δindirect<K, V>.Ꮡchildren, (nint)((uintptr)((hash.Rsh(hashShift)) & (uintptr)nChildrenMask)));
-                n = slot.Load();
-                if (n == nil) {
-                    // We found a nil slot which is a candidate for insertion.
-                    haveInsertPoint = true;
-                    break;
-                }
-                if ((~n).isEntry) {
-                    // We found an existing entry, which is as far as we can go.
-                    // If it stays this way, we'll have to replace it with an
-                    // indirect node.
-                    {
-                        var (v, ok) = n.entry().lookup(key); if (ok) {
-                            (result, loaded) = (v, true); goto ᒐdone;
-                        }
-                    }
-                    haveInsertPoint = true;
-                    break;
-                }
-                i = n.indirect();
-            }
-            if (!haveInsertPoint) {
-                throw panic("internal/sync.HashTrieMap: ran out of hash bits while iterating");
-            }
-            // Grab the lock and double-check what we saw.
-            i.of(sync_package.Δindirect<K, V>.Ꮡmu).Lock();
-            n = slot.Load();
-            if ((n == nil || (~n).isEntry) && !i.of(sync_package.Δindirect<K, V>.Ꮡdead).Load()) {
-                // What we saw is still true, so we can continue with the insert.
-                break;
-            }
-            // We have to start over.
-            i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-        }
-        // N.B. This lock is held from when we broke out of the outer loop above.
-        // We specifically break this out so that we can use defer here safely.
-        // One option is to break this out into a new function instead, but
-        // there's so much local iteration state used below that this turns out
-        // to be cleaner.
-        var iʗ1 = i;
-        defer(iʗ1.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock, ref ᒐ);
-        ж<Δentry<K, V>> oldEntry = default!;
-        if (n != nil) {
-            oldEntry = n.entry();
-            {
-                var (v, ok) = oldEntry.lookup(key); if (ok) {
-                    // Easy case: by loading again, it turns out exactly what we wanted is here!
-                    (result, loaded) = (v, true); goto ᒐdone;
-                }
-            }
-        }
-        var newEntry = newEntryNode(key, value);
-        if (oldEntry == nil){
-            // Easy case: create a new entry and store it.
-            slot.Store(newEntry.of(sync_package.Δentry<K, V>.Ꮡnode));
-        } else {
-            // We possibly need to expand the entry already there into one or more new nodes.
-            //
-            // Publish the node last, which will make both oldEntry and newEntry visible. We
-            // don't want readers to be able to observe that oldEntry isn't in the tree.
-            slot.Store(ht.expand(oldEntry, newEntry, hash, hashShift, i));
-        }
-        (result, loaded) = (value, false);
+//
+// Exactly one caller of a racing set observes loaded == false, which is what unique.Make relies on
+// to keep one canonical value per key: TryAdd fails for every loser, and the retry then finds the
+// winner's value. (GetOrAdd would be a single call but cannot report WHICH outcome occurred.)
+public static (V result, bool loaded) LoadOrStore<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K key, V value)
+{
+    mapStore<K, V> store = storeOf(ref Ꮡht.Value);
+    // The nil key's one-shot publish is a single CAS, and it reports the same winner/loser split the
+    // TryAdd loop below does: the thread whose exchange observed no holder stored, everyone else
+    // loaded (see mapStore.nilKey).
+    if (key is null) {
+        nilEntry<V> candidate = new(value);
+        nilEntry<V>? existingEntry = Interlocked.CompareExchange(ref store.nilKey, candidate, null);
+        return existingEntry is null ? (value, false) : (existingEntry.value, true);
     }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
-    ᒐdone: return (result, loaded);
-}
-
-// expand takes oldEntry and newEntry whose hashes conflict from bit 64 down to hashShift and
-// produces a subtree of indirect nodes to hold the two new entries.
-[GoRecv] internal static ж<node<K, V>> expand<K, V>(this ref HashTrieMap<K, V> ht, ж<Δentry<K, V>> ᏑoldEntry, ж<Δentry<K, V>> ᏑnewEntry, uintptr newHash, nuint hashShift, ж<Δindirect<K, V>> Ꮡparent) {
-    ref var parent = ref Ꮡparent.DerefOrNull();
-
-    // Check for a hash collision.
-    var oldHash = ht.keyHash(@unsafe.Pointer.FromPinnedBox(ᏑoldEntry.of(sync_package.Δentry<K, V>.Ꮡkey)), ht.seed);
-    if (oldHash == newHash) {
-        // Store the old entry in the new entry's overflow list, then store
-        // the new entry.
-        ᏑnewEntry.of(sync_package.Δentry<K, V>.Ꮡoverflow).Store(ᏑoldEntry);
-        return ᏑnewEntry.of(sync_package.Δentry<K, V>.Ꮡnode);
-    }
-    // We have to add an indirect node. Worse still, we may need to add more than one.
-    var newIndirect = newIndirectNode(Ꮡparent);
-    var top = newIndirect;
     while (ᐧ) {
-        if (hashShift == 0) {
-            throw panic("internal/sync.HashTrieMap: ran out of hash bits while inserting");
+        if (store.TryGetValue(key, out V? existing)) {
+            return (existing!, true);
         }
-        hashShift -= nChildrenLog2; // hashShift is for the level parent is at. We need to go deeper.
-        var oi = (uintptr)((oldHash.Rsh(hashShift)) & (uintptr)nChildrenMask);
-        var ni = (uintptr)((newHash.Rsh(hashShift)) & (uintptr)nChildrenMask);
-        if (oi != ni) {
-            newIndirect.at(sync_package.Δindirect<K, V>.Ꮡchildren, (nint)(oi)).Store(ᏑoldEntry.of(sync_package.Δentry<K, V>.Ꮡnode));
-            newIndirect.at(sync_package.Δindirect<K, V>.Ꮡchildren, (nint)(ni)).Store(ᏑnewEntry.of(sync_package.Δentry<K, V>.Ꮡnode));
-            break;
+        if (store.TryAdd(key, value)) {
+            return (value, false);
         }
-        var nextIndirect = newIndirectNode(newIndirect);
-        newIndirect.at(sync_package.Δindirect<K, V>.Ꮡchildren, (nint)(oi)).Store(nextIndirect.of(sync_package.Δindirect<K, V>.Ꮡnode));
-        newIndirect = nextIndirect;
     }
-    return top.of(sync_package.Δindirect<K, V>.Ꮡnode);
-}
-
-// Store sets the value for a key.
-public static void Store<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K key, V old) {
-    (_, _) = Ꮡht.Swap(key, old);
-}
-
-// Swap swaps the value for a key and returns the previous value if any.
-// The loaded result reports whether the key was present.
-public static (V previous, bool loaded) Swap<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K keyʗp, V @new) {
-    V previous = default!;
-    bool loaded = default!;
-    GoFrame ᒐ = default;
-    try {
-        ref var ht = ref Ꮡht.DerefOrNull();
-
-        ref var key = ref heap(keyʗp, out var Ꮡkey);
-        Ꮡht.init();
-        var hash = ht.keyHash((uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), ht.seed);
-        System.GC.KeepAlive(Ꮡkey);
-        ж<Δindirect<K, V>> i = default!;
-        nuint hashShift = default!;
-        ж<atomic.Pointer<node<K, V>>> slot = default!;
-        ж<node<K, V>> n = default!;
-        while (ᐧ) {
-            // Find the key or a candidate location for insertion.
-            i = Ꮡht.of(HashTrieMap<K, V>.Ꮡroot).Load();
-            hashShift = 8 * goarch.PtrSize;
-            var haveInsertPoint = false;
-            while (hashShift != 0) {
-                hashShift -= nChildrenLog2;
-                slot = i.at(sync_package.Δindirect<K, V>.Ꮡchildren, (nint)((uintptr)((hash.Rsh(hashShift)) & (uintptr)nChildrenMask)));
-                n = slot.Load();
-                if (n == nil || (~n).isEntry) {
-                    // We found a nil slot which is a candidate for insertion,
-                    // or an existing entry that we'll replace.
-                    haveInsertPoint = true;
-                    break;
-                }
-                i = n.indirect();
-            }
-            if (!haveInsertPoint) {
-                throw panic("internal/sync.HashTrieMap: ran out of hash bits while iterating");
-            }
-            // Grab the lock and double-check what we saw.
-            i.of(sync_package.Δindirect<K, V>.Ꮡmu).Lock();
-            n = slot.Load();
-            if ((n == nil || (~n).isEntry) && !i.of(sync_package.Δindirect<K, V>.Ꮡdead).Load()) {
-                // What we saw is still true, so we can continue with the insert.
-                break;
-            }
-            // We have to start over.
-            i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-        }
-        // N.B. This lock is held from when we broke out of the outer loop above.
-        // We specifically break this out so that we can use defer here safely.
-        // One option is to break this out into a new function instead, but
-        // there's so much local iteration state used below that this turns out
-        // to be cleaner.
-        var iʗ1 = i;
-        defer(iʗ1.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock, ref ᒐ);
-        V zero = default!;
-        ж<Δentry<K, V>> oldEntry = default!;
-        if (n != nil) {
-            // Swap if the keys compare.
-            oldEntry = n.entry();
-            var (newEntryΔ1, old, swapped) = oldEntry.swap(key, @new);
-            if (swapped) {
-                slot.Store(newEntryΔ1.of(sync_package.Δentry<K, V>.Ꮡnode));
-                (previous, loaded) = (old, true); goto ᒐdone;
-            }
-        }
-        // The keys didn't compare, so we're doing an insertion.
-        var newEntry = newEntryNode(key, @new);
-        if (oldEntry == nil){
-            // Easy case: create a new entry and store it.
-            slot.Store(newEntry.of(sync_package.Δentry<K, V>.Ꮡnode));
-        } else {
-            // We possibly need to expand the entry already there into one or more new nodes.
-            //
-            // Publish the node last, which will make both oldEntry and newEntry visible. We
-            // don't want readers to be able to observe that oldEntry isn't in the tree.
-            slot.Store(ht.expand(oldEntry, newEntry, hash, hashShift, i));
-        }
-        (previous, loaded) = (zero, false);
-    }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
-    ᒐdone: return (previous, loaded);
-}
-
-// CompareAndSwap swaps the old and new values for key
-// if the value stored in the map is equal to old.
-// The value type must be of a comparable type, otherwise CompareAndSwap will panic.
-public static bool /*swapped*/ CompareAndSwap<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K keyʗp, V old, V @new) {
-    bool swapped = default!;
-    GoFrame ᒐ = default;
-    try {
-        ref var ht = ref Ꮡht.DerefOrNull();
-
-        ref var key = ref heap(keyʗp, out var Ꮡkey);
-        Ꮡht.init();
-        if (ht.valEqual == default!) {
-            throw panic("called CompareAndSwap when value is not of comparable type");
-        }
-        var hash = ht.keyHash((uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), ht.seed);
-        System.GC.KeepAlive(Ꮡkey);
-        // Find a node with the key and compare with it. n != nil if we found the node.
-        var (i, _, slot, n) = Ꮡht.find(key, hash, ht.valEqual, old);
-        if (i != nil) {
-            var iʗ1 = i;
-            defer(iʗ1.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock, ref ᒐ);
-        }
-        if (n == nil) {
-            swapped = false; goto ᒐdone;
-        }
-        // Try to swap the entry.
-        (var e, swapped) = n.entry().compareAndSwap(key, old, @new, ht.valEqual);
-        if (!swapped) {
-            // Nothing was actually swapped, which means the node is no longer there.
-            swapped = false; goto ᒐdone;
-        }
-        // Store the entry back because it changed.
-        slot.Store(e.of(sync_package.Δentry<K, V>.Ꮡnode));
-        swapped = true;
-    }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }
-    finally { ᒐ.Run(); }
-    ᒐdone: return swapped;
-}
-
-// LoadAndDelete deletes the value for a key, returning the previous value if any.
-// The loaded result reports whether the key was present.
-public static (V value, bool loaded) LoadAndDelete<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K keyʗp) {
-    bool loaded = default!;
-
-    ref var ht = ref Ꮡht.DerefOrNull();
-    ref var key = ref heap(keyʗp, out var Ꮡkey);
-    Ꮡht.init();
-    var hash = ht.keyHash((uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), ht.seed);
-    System.GC.KeepAlive(Ꮡkey);
-    // Find a node with the key and compare with it. n != nil if we found the node.
-    var (i, hashShift, slot, n) = Ꮡht.find(key, hash, default!, @new<V>().ValueSlot);
-    if (n == nil) {
-        if (i != nil) {
-            i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-        }
-        return (@new<V>().ValueSlot, false);
-    }
-    // Try to delete the entry.
-    (var v, var e, loaded) = n.entry().loadAndDelete(key);
-    if (!loaded) {
-        // Nothing was actually deleted, which means the node is no longer there.
-        i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-        return (@new<V>().ValueSlot, false);
-    }
-    if (e != nil) {
-        // We didn't actually delete the whole entry, just one entry in the chain.
-        // Nothing else to do, since the parent is definitely not empty.
-        slot.Store(e.of(sync_package.Δentry<K, V>.Ꮡnode));
-        i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-        return (v, true);
-    }
-    // Delete the entry.
-    slot.Store(nil);
-    // Check if the node is now empty (and isn't the root), and delete it if able.
-    while ((~i).parent != nil && i.empty()) {
-        if (hashShift == (nuint)(8 * goarch.PtrSize)) {
-            throw panic("internal/sync.HashTrieMap: ran out of hash bits while iterating");
-        }
-        hashShift += nChildrenLog2;
-        // Delete the current node in the parent.
-        var parent = i.Value.parent;
-        parent.of(sync_package.Δindirect<K, V>.Ꮡmu).Lock();
-        i.of(sync_package.Δindirect<K, V>.Ꮡdead).Store(true);
-        parent.at(sync_package.Δindirect<K, V>.Ꮡchildren, (nint)((uintptr)((hash.Rsh(hashShift)) & (uintptr)nChildrenMask))).Store(nil);
-        i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-        i = parent;
-    }
-    i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-    return (v, true);
-}
-
-// Delete deletes the value for a key.
-public static void Delete<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K key) {
-    (_, _) = Ꮡht.LoadAndDelete(key);
 }
 
 // CompareAndDelete deletes the entry for key if its value is equal to old.
-// The value type must be comparable, otherwise this CompareAndDelete will panic.
 //
 // If there is no current value for key in the map, CompareAndDelete returns false
 // (even if the old value is the nil interface value).
-public static bool /*deleted*/ CompareAndDelete<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K keyʗp, V old) {
-    bool deleted = default!;
-
-    ref var ht = ref Ꮡht.DerefOrNull();
-    ref var key = ref heap(keyʗp, out var Ꮡkey);
-    Ꮡht.init();
-    if (ht.valEqual == default!) {
-        throw panic("called CompareAndDelete when value is not of comparable type");
-    }
-    var hash = ht.keyHash((uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡkey)), ht.seed);
-    System.GC.KeepAlive(Ꮡkey);
-    // Find a node with the key. n != nil if we found the node.
-    var (i, hashShift, slot, n) = Ꮡht.find(key, hash, default!, @new<V>().ValueSlot);
-    if (n == nil) {
-        if (i != nil) {
-            i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
+[GoRecv] public static bool /*deleted*/ CompareAndDelete<K, V>(this ref HashTrieMap<K, V> ht, K key, V old)
+{
+    mapStore<K, V> store = storeOf(ref ht);
+    // The nil key's retraction is the same compare-and-remove, spelled against its own slot: the CAS
+    // succeeds only if the holder we compared is still the published one, so a racing LoadOrStore
+    // cannot have its value deleted out from under it (see mapStore.nilKey). Key-found-first and the
+    // panic order below hold here too.
+    if (key is null) {
+        nilEntry<V>? entry = Volatile.Read(ref store.nilKey);
+        if (entry is null) {
+            return false;
         }
+        mustBeComparable(old);
+        return EqualityComparer<V>.Default.Equals(entry.value, old) &&
+               ReferenceEquals(Interlocked.CompareExchange(ref store.nilKey, null, entry), entry);
+    }
+    // Go reaches its value comparison only once the key is found, and only then can that comparison
+    // panic — mirror both the order and the panic (see mustBeComparable).
+    if (!store.ContainsKey(key)) {
         return false;
     }
-    // Try to delete the entry.
-    (var e, deleted) = n.entry().compareAndDelete(key, old, ht.valEqual);
-    if (!deleted) {
-        // Nothing was actually deleted, which means the node is no longer there.
-        i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-        return false;
-    }
-    if (e != nil) {
-        // We didn't actually delete the whole entry, just one entry in the chain.
-        // Nothing else to do, since the parent is definitely not empty.
-        slot.Store(e.of(sync_package.Δentry<K, V>.Ꮡnode));
-        i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-        return true;
-    }
-    // Delete the entry.
-    slot.Store(nil);
-    // Check if the node is now empty (and isn't the root), and delete it if able.
-    while ((~i).parent != nil && i.empty()) {
-        if (hashShift == (nuint)(8 * goarch.PtrSize)) {
-            throw panic("internal/sync.HashTrieMap: ran out of hash bits while iterating");
-        }
-        hashShift += nChildrenLog2;
-        // Delete the current node in the parent.
-        var parent = i.Value.parent;
-        parent.of(sync_package.Δindirect<K, V>.Ꮡmu).Lock();
-        i.of(sync_package.Δindirect<K, V>.Ꮡdead).Store(true);
-        parent.at(sync_package.Δindirect<K, V>.Ꮡchildren, (nint)((uintptr)((hash.Rsh(hashShift)) & (uintptr)nChildrenMask))).Store(nil);
-        i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-        i = parent;
-    }
-    i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-    return true;
+    mustBeComparable(old);
+    // Atomic compare-and-remove: the pair overload removes only if the stored value still compares
+    // equal to old under EqualityComparer<V>.Default, which is Go's valEqual for every V above.
+    return store.TryRemove(new KeyValuePair<K, V>(key, old));
 }
 
-// find searches the tree for a node that contains key (hash must be the hash of key).
-// If valEqual != nil, then it will also enforce that the values are equal as well.
+// All returns an iter.Seq2 that produces all key-value pairs in the map.
+// The enumeration does not represent any consistent snapshot of the map,
+// but is guaranteed to visit each unique key-value pair only once. It is
+// safe to operate on the tree during iteration. No particular enumeration
+// order is guaranteed.
 //
-// Returns a non-nil node, which will always be an entry, if found.
-//
-// If i != nil then i.mu is locked, and it is the caller's responsibility to unlock it.
-internal static (ж<Δindirect<K, V>> i, nuint hashShift, ж<atomic.Pointer<node<K, V>>> slot, ж<node<K, V>> n) find<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, K key, uintptr hash, Func<@unsafe.Pointer, @unsafe.Pointer, bool> valEqual, V value) {
-    ж<Δindirect<K, V>> i = default!;
-    nuint hashShift = default!;
-    ж<atomic.Pointer<node<K, V>>> slot = default!;
-    ж<node<K, V>> n = default!;
-
-    while (ᐧ) {
-        // Find the key or return if it's not there.
-        i = Ꮡht.of(HashTrieMap<K, V>.Ꮡroot).Load();
-        hashShift = 8 * goarch.PtrSize;
-        var found = false;
-        while (hashShift != 0) {
-            hashShift -= nChildrenLog2;
-            slot = i.at(sync_package.Δindirect<K, V>.Ꮡchildren, (nint)((uintptr)((hash.Rsh(hashShift)) & (uintptr)nChildrenMask)));
-            n = slot.Load();
-            if (n == nil) {
-                // Nothing to compare with. Give up.
-                i = default!;
-                return (i, hashShift, slot, n);
-            }
-            if ((~n).isEntry) {
-                // We found an entry. Check if it matches.
-                {
-                    var (_, ok) = n.entry().lookupWithValue(key, value, valEqual); if (!ok) {
-                        // No match, comparison failed.
-                        i = default!;
-                        n = default!;
-                        return (i, hashShift, slot, n);
-                    }
-                }
-                // We've got a match. Prepare to perform an operation on the key.
-                found = true;
-                break;
-            }
-            i = n.indirect();
-        }
-        if (!found) {
-            throw panic("internal/sync.HashTrieMap: ran out of hash bits while iterating");
-        }
-        // Grab the lock and double-check what we saw.
-        i.of(sync_package.Δindirect<K, V>.Ꮡmu).Lock();
-        n = slot.Load();
-        if (!i.of(sync_package.Δindirect<K, V>.Ꮡdead).Load() && (n == nil || (~n).isEntry)) {
-            // Either we've got a valid node or the node is now nil under the lock.
-            // In either case, we're done here.
-            return (i, hashShift, slot, n);
-        }
-        // We have to start over.
-        i.of(sync_package.Δindirect<K, V>.Ꮡmu).Unlock();
-    }
-}
-
-// All returns an iterator over each key and value present in the map.
-//
-// The iterator does not necessarily correspond to any consistent snapshot of the
-// HashTrieMap's contents: no key will be visited more than once, but if the value
-// for any key is stored or deleted concurrently (including by yield), the iterator
-// may reflect any mapping for that key from any point during iteration. The iterator
-// does not block other methods on the receiver; even yield itself may call any
-// method on the HashTrieMap.
-public static Action<Func<K, V, bool>> All<K, V>(this ж<HashTrieMap<K, V>> Ꮡht) {
-    Ꮡht.init();
+// ConcurrentDictionary's enumerator satisfies all three: it is weakly consistent (never throws on
+// concurrent mutation, so unique's cleanup pass can CompareAndDelete while it walks), it yields each
+// live key once, and it promises no order.
+public static Action<Func<K, V, bool>> All<K, V>(this ж<HashTrieMap<K, V>> Ꮡht)
+{
+    mapStore<K, V> store = storeOf(ref Ꮡht.Value);
     return (Func<K, V, bool> yield) => {
-        Ꮡht.Value.iter(Ꮡht.of(HashTrieMap<K, V>.Ꮡroot).Load(), yield);
+        // The nil key is not in the dictionary, so the enumeration below cannot reach it — yield it
+        // first, under the key it actually has (see mapStore.nilKey). Reading the holder once keeps
+        // the walk weakly consistent in the same way the dictionary's own enumerator is: a
+        // concurrently published nil entry may or may not be seen, and one deleted mid-walk is
+        // yielded at most once. unique's cleanup pass relies on visiting it at all — without this,
+        // a dead weak pointer under the nil key could never be reclaimed.
+        nilEntry<V>? entry = Volatile.Read(ref store.nilKey);
+        if (entry is not null && !yield(default!, entry.value)) {
+            return;
+        }
+        foreach (KeyValuePair<K, V> pair in store) {
+            if (!yield(pair.Key, pair.Value)) {
+                return;
+            }
+        }
     };
 }
 
-// Range calls f sequentially for each key and value present in the map.
-// If f returns false, range stops the iteration.
+// storeOf returns the map's backing store, creating it once on first use (race-safe). Go 1.23's
+// zero HashTrieMap is not usable — every method dereferences the nil root and keyHash that
+// NewHashTrieMap would have filled in — but nothing in the converted corpus depends on that panic,
+// and seeding lazily costs one null check while removing a whole class of null dereference from the
+// accessors. Same idiom, and same reasoning, as sync.Mutex's gateOf.
+private static mapStore<K, V> storeOf<K, V>(ref HashTrieMap<K, V> ht)
+{
+    mapStore<K, V>? store = Volatile.Read(ref ht.store);
+
+    if (store is not null) {
+        return store;
+    }
+
+    mapStore<K, V> created = new();
+
+    return Interlocked.CompareExchange(ref ht.store, created, null) ?? created;
+}
+
+// The "no address" the hash hook is handed in place of Go's `unsafe.Pointer(&key)` — the nil
+// pointer, stated once. Go passes the address of the key's bytes; there is no such address here, and
+// this file's whole argument is that inventing one would be worse than admitting there is none (see
+// HashTrieMap.keyHash).
+private static readonly @unsafe.Pointer noAddress = new(nil);
+
+// A real per-store salt. The hook's second argument is the one half of its contract that CAN be
+// honored, so it is honored with a genuine random value rather than a constant.
+private static uintptr newSeed()
+{
+    return new uintptr(unchecked((nuint)System.Random.Shared.NextInt64()));
+}
+
+// Installing a hook REBUILDS the store behind it. ConcurrentDictionary fixes its comparer at
+// construction and caches each entry's hash code in its nodes, so swapping the hash of a live
+// dictionary in place would strand every entry already in it. Go's plain field write has no such
+// constraint — its next Load simply hashes differently — so the entries are carried across here to
+// reach the same end state. TestHashTrieMapBadHash writes the hook on an empty map, where the copy
+// moves nothing; a populated map is handled anyway rather than left as a trap.
 //
-// This exists for compatibility with sync.Map; All should be preferred.
-// It provides the same guarantees as sync.Map, and All.
-public static void Range<K, V>(this ж<HashTrieMap<K, V>> Ꮡht, Func<K, V, bool> yield) {
-    ref var ht = ref Ꮡht.DerefOrNull();
+// The publish is a single reference write, so a concurrent reader sees either the whole old store or
+// the whole new one. It is NOT atomic with respect to the copy — an entry stored by another thread
+// mid-rebuild can be lost — and Go's field write is no better: both expect the hook to be installed
+// before the map is shared, which is what the test does.
+private static void installKeyHash<K, V>(ref HashTrieMap<K, V> ht, Func<@unsafe.Pointer, uintptr, uintptr> hook)
+{
+    mapStore<K, V> current = storeOf(ref ht);
+    mapStore<K, V> replacement = new(current.seed, hook);
 
-    Ꮡht.init();
-    ht.iter(Ꮡht.of(HashTrieMap<K, V>.Ꮡroot).Load(), yield);
-}
+    replacement.nilKey = Volatile.Read(ref current.nilKey);
 
-[GoRecv] internal static bool iter<K, V>(this ref HashTrieMap<K, V> ht, ж<Δindirect<K, V>> Ꮡi, Func<K, V, bool> yield) {
-    ref var i = ref Ꮡi.DerefOrNull();
-
-    foreach (var (j, _) in i.children) {
-        var n = Ꮡi.at(sync_package.Δindirect<K, V>.Ꮡchildren, j).Load();
-        if (n == nil) {
-            continue;
-        }
-        if (!(~n).isEntry) {
-            if (!ht.iter(n.indirect(), yield)) {
-                return false;
-            }
-            continue;
-        }
-        var e = n.entry();
-        while (e != nil) {
-            if (!yield((~e).key, (~e).value)) {
-                return false;
-            }
-            e = e.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load();
-        }
+    foreach (KeyValuePair<K, V> pair in current) {
+        replacement.TryAdd(pair.Key, pair.Value);
     }
-    return true;
+
+    Volatile.Write(ref ht.store, replacement);
 }
 
-// Clear deletes all the entries, resulting in an empty HashTrieMap.
-public static void Clear<K, V>(this ж<HashTrieMap<K, V>> Ꮡht) {
-    Ꮡht.init();
-    // It's sufficient to just drop the root on the floor, but the root
-    // must always be non-nil.
-    Ꮡht.of(HashTrieMap<K, V>.Ꮡroot).Store(newIndirectNode<K, V>(nil));
-}
-
-internal static UntypedInt nChildrenLog2 => 4;
-internal static UntypedInt nChildren => /* 1 << nChildrenLog2 */ 16;
-internal static UntypedInt nChildrenMask => /* nChildren - 1 */ 15;
-
-// indirect is an internal node in the hash-trie.
-[GoType] partial struct Δindirect<K, V> {
-    internal partial ref node<K, V> node { get; }
-    internal atomic.Bool dead;
-    internal Mutex mu; // Protects mutation to children and any children that are entry nodes.
-    internal ж<Δindirect<K, V>> parent;
-    internal array<atomic.Pointer<node<K, V>>> children = new(nChildren);
-}
-
-internal static ж<Δindirect<K, V>> newIndirectNode<K, V>(ж<Δindirect<K, V>> Ꮡparent) {
-    return Ꮡ(new Δindirect<K, V>(node: new node<K, V>(isEntry: false), parent: Ꮡparent));
-}
-
-[GoRecv] internal static bool empty<K, V>(this ref Δindirect<K, V> i) {
-    nint nc = 0;
-    foreach (var (j, _) in i.children) {
-        if (Ꮡ(i.children, j).Load() != nil) {
-            nc++;
-        }
+// Go compares the two values with V's own `==`, and for an INTERFACE V that comparison panics when
+// the dynamic type is not comparable: `HashTrieMap[K, V comparable]` admits `any` (Go 1.20 let
+// interfaces satisfy comparable), which moves the check to run time. Mirror the panic rather than
+// letting EqualityComparer<V>.Default answer a question Go refuses to answer. Inert for every other
+// V — the converter renders Go's `comparable` as `new()`, so the constraint carries no C# signal,
+// but a non-interface V that reached here was comparable at the Go type check.
+private static void mustBeComparable<V>(V value) {
+    if (!dynamicallyComparable<V>.applies || value is null) {
+        return;
     }
-    return nc == 0;
+    Type dynamicType = value.GetType();
+    if (!GoReflect.IsComparable(dynamicType)) {
+        throw panic((@string)$"comparing uncomparable type {GoReflect.GoTypeName(dynamicType)}");
+    }
 }
 
-// entry is a leaf node in the hash-trie.
-[GoType] partial struct Δentry<K, V> {
-    internal partial ref node<K, V> node { get; }
-    internal atomic.Pointer<Δentry<K, V>> overflow; // Overflow for hash collisions.
-    internal K key;
-    internal V value;
+// Whether V's comparability is a run-time question at all, resolved once per instantiation. Only an
+// interface-typed V is: `any` converts to object, a named Go interface to a C# interface.
+private static class dynamicallyComparable<V> {
+    internal static readonly bool applies = typeof(V).IsInterface || typeof(V) == typeof(object);
 }
 
-internal static ж<Δentry<K, V>> newEntryNode<K, V>(K key, V value) {
-    return Ꮡ(new Δentry<K, V>(
-        node: new node<K, V>(isEntry: true),
-        key: key,
-        value: value
-    ));
-}
-
-internal static (V, bool) lookup<K, V>(this ж<Δentry<K, V>> Ꮡe, K key) {
-    ref var e = ref Ꮡe.DerefOrNull();
-
-    while (Ꮡe != nil) {
-        if (AreEqual(e.key, key)) {
-            return (e.value, true);
-        }
-        Ꮡe = Ꮡe.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load(); e = ref Ꮡe.DerefOrNull();
-    }
-    return (@new<V>().ValueSlot, false);
-}
-
-internal static (V, bool) lookupWithValue<K, V>(this ж<Δentry<K, V>> Ꮡe, K key, V valueʗp, Func<@unsafe.Pointer, @unsafe.Pointer, bool> valEqual) {
-    ref var e = ref Ꮡe.DerefOrNull();
-
-    ref var value = ref heap(valueʗp, out var Ꮡvalue);
-    while (Ꮡe != nil) {
-        if (AreEqual(e.key, key) && (valEqual == default! || valEqual(@unsafe.Pointer.FromPinnedBox(Ꮡe.of(sync_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡvalue))))) {
-            System.GC.KeepAlive(Ꮡvalue);
-            return (e.value, true);
-        }
-        Ꮡe = Ꮡe.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load(); e = ref Ꮡe.DerefOrNull();
-    }
-    return (@new<V>().ValueSlot, false);
-}
-
-// swap replaces an entry in the overflow chain if keys compare equal. Returns the new entry chain,
-// the old value, and whether or not anything was swapped.
-//
-// swap must be called under the mutex of the indirect node which e is a child of.
-internal static (ж<Δentry<K, V>>, V, bool) swap<K, V>(this ж<Δentry<K, V>> Ꮡhead, K key, V @new) {
-    ref var head = ref Ꮡhead.DerefOrNull();
-
-    if (AreEqual(head.key, key)) {
-        // Return the new head of the list.
-        var eΔ1 = newEntryNode(key, @new);
-        {
-            var chain = Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load(); if (chain != nil) {
-                eΔ1.of(sync_package.Δentry<K, V>.Ꮡoverflow).Store(chain);
-            }
-        }
-        return (eΔ1, head.value, true);
-    }
-    var i = Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡoverflow);
-    var e = i.Load();
-    while (e != nil) {
-        if (AreEqual((~e).key, key)) {
-            var eNew = newEntryNode(key, @new);
-            eNew.of(sync_package.Δentry<K, V>.Ꮡoverflow).Store(e.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load());
-            i.Store(eNew);
-            return (Ꮡhead, (~e).value, true);
-        }
-        i = e.of(sync_package.Δentry<K, V>.Ꮡoverflow);
-        e = e.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load();
-    }
-    V zero = default!;
-    return (Ꮡhead, zero, false);
-}
-
-// compareAndSwap replaces an entry in the overflow chain if both the key and value compare
-// equal. Returns the new entry chain and whether or not anything was swapped.
-//
-// compareAndSwap must be called under the mutex of the indirect node which e is a child of.
-internal static (ж<Δentry<K, V>>, bool) compareAndSwap<K, V>(this ж<Δentry<K, V>> Ꮡhead, K key, V oldʗp, V @new, Func<@unsafe.Pointer, @unsafe.Pointer, bool> valEqual) {
-    ref var head = ref Ꮡhead.DerefOrNull();
-
-    ref var old = ref heap(oldʗp, out var Ꮡold);
-    if (AreEqual(head.key, key) && valEqual(@unsafe.Pointer.FromPinnedBox(Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡold)))) {
-        // Return the new head of the list.
-        var eΔ1 = newEntryNode(key, @new);
-        System.GC.KeepAlive(Ꮡold);
-        {
-            var chain = Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load(); if (chain != nil) {
-                eΔ1.of(sync_package.Δentry<K, V>.Ꮡoverflow).Store(chain);
-            }
-        }
-        return (eΔ1, true);
-    }
-    var i = Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡoverflow);
-    var e = i.Load();
-    while (e != nil) {
-        if (AreEqual((~e).key, key) && valEqual(@unsafe.Pointer.FromPinnedBox(e.of(sync_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡold)))) {
-            var eNew = newEntryNode(key, @new);
-            System.GC.KeepAlive(Ꮡold);
-            eNew.of(sync_package.Δentry<K, V>.Ꮡoverflow).Store(e.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load());
-            i.Store(eNew);
-            return (Ꮡhead, true);
-        }
-        i = e.of(sync_package.Δentry<K, V>.Ꮡoverflow);
-        e = e.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load();
-    }
-    return (Ꮡhead, false);
-}
-
-// loadAndDelete deletes an entry in the overflow chain by key. Returns the value for the key, the new
-// entry chain and whether or not anything was loaded (and deleted).
-//
-// loadAndDelete must be called under the mutex of the indirect node which e is a child of.
-internal static (V, ж<Δentry<K, V>>, bool) loadAndDelete<K, V>(this ж<Δentry<K, V>> Ꮡhead, K key) {
-    ref var head = ref Ꮡhead.DerefOrNull();
-
-    if (AreEqual(head.key, key)) {
-        // Drop the head of the list.
-        return (head.value, Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load(), true);
-    }
-    var i = Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡoverflow);
-    var e = i.Load();
-    while (e != nil) {
-        if (AreEqual((~e).key, key)) {
-            i.Store(e.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load());
-            return ((~e).value, Ꮡhead, true);
-        }
-        i = e.of(sync_package.Δentry<K, V>.Ꮡoverflow);
-        e = e.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load();
-    }
-    return (@new<V>().ValueSlot, Ꮡhead, false);
-}
-
-// compareAndDelete deletes an entry in the overflow chain if both the key and value compare
-// equal. Returns the new entry chain and whether or not anything was deleted.
-//
-// compareAndDelete must be called under the mutex of the indirect node which e is a child of.
-internal static (ж<Δentry<K, V>>, bool) compareAndDelete<K, V>(this ж<Δentry<K, V>> Ꮡhead, K key, V valueʗp, Func<@unsafe.Pointer, @unsafe.Pointer, bool> valEqual) {
-    ref var head = ref Ꮡhead.DerefOrNull();
-
-    ref var value = ref heap(valueʗp, out var Ꮡvalue);
-    if (AreEqual(head.key, key) && valEqual(@unsafe.Pointer.FromPinnedBox(Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡvalue)))) {
-        // Drop the head of the list.
-        var ᴛ1 = Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load();
-        System.GC.KeepAlive(Ꮡvalue);
-        return (ᴛ1, true);
-    }
-    var i = Ꮡhead.of(sync_package.Δentry<K, V>.Ꮡoverflow);
-    var e = i.Load();
-    while (e != nil) {
-        if (AreEqual((~e).key, key) && valEqual(@unsafe.Pointer.FromPinnedBox(e.of(sync_package.Δentry<K, V>.Ꮡvalue)), (uintptr)abi.NoEscape(@unsafe.Pointer.FromPinnedBox(Ꮡvalue)))) {
-            i.Store(e.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load());
-            System.GC.KeepAlive(Ꮡvalue);
-            return (Ꮡhead, true);
-        }
-        i = e.of(sync_package.Δentry<K, V>.Ꮡoverflow);
-        e = e.of(sync_package.Δentry<K, V>.Ꮡoverflow).Load();
-    }
-    return (Ꮡhead, false);
-}
-
-// node is the header for a node. It's polymorphic and
-// is actually either an entry or an indirect.
-[GoType] partial struct node<K, V> {
-    internal bool isEntry;
-}
-
-internal static ж<Δentry<K, V>> entry<K, V>(this ж<node<K, V>> Ꮡn) {
-    ref var n = ref Ꮡn.DerefOrNull();
-
-    if (!n.isEntry) {
-        throw panic("called entry on non-entry node");
-    }
-    return Ꮡn.Reinterpret<node<K, V>, Δentry<K, V>>();
-}
-
-internal static ж<Δindirect<K, V>> indirect<K, V>(this ж<node<K, V>> Ꮡn) {
-    ref var n = ref Ꮡn.DerefOrNull();
-
-    if (n.isEntry) {
-        throw panic("called indirect on entry node");
-    }
-    return Ꮡn.Reinterpret<node<K, V>, Δindirect<K, V>>();
-}
-
-// Pull in runtime.rand so that we don't need to take a dependency
-// on math/rand/v2.
-//
-//go:linkname runtime_rand runtime.rand
-internal static partial uint64 runtime_rand();
-
-} // end sync_package
+} // end concurrent_package

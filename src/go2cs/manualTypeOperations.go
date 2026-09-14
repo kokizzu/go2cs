@@ -122,7 +122,7 @@ func (scope goosScope) includes(goos string) bool {
 // Free functions ("funcName") and methods on other types ("recvTypeName.funcName") owned by the
 // same manual files — declarations whose bodies are inseparable from the manual types' semantics.
 var manualConversionFuncs = map[string]map[string]goosScope{
-	"crypto/internal/alias": {
+	"crypto/internal/fips140/alias": {
 		// AnyOverlap orders element ADDRESSES — four `(uintptr)Ꮡ(…)` takes, each pinning its backing only
 		// until the box that took it is finalized, so a collection landing between two takes relocates one
 		// operand and the ordering compares two heap layouts. Measured 2026-09-03 (Release, tiering off):
@@ -260,7 +260,7 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// pointer word ENDS and the mask reports WHICH words they are. GoReflect.GoGCMaskOf answers
 		// from that walk, so the hand-own reports the same truth at finer resolution rather than
 		// substituting a plausible one. runtime/mbitmap_impl.cs holds the body.
-		"getgcmask":  goosAny,
+		"pointerMask":  goosAny,
 		"g.guintptr": goosAny,
 		"setGNoWB":   goosAny,
 		"setMNoWB":   goosAny,
