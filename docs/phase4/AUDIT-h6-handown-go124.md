@@ -168,7 +168,7 @@ exists on one side only.
 |--:|:--|:--|:--|:--|:--|:--|:--|:--|:--|
 | 1 | `crypto/internal/boring/bcache/cache.cs` | `crypto/internal/boring/bcache/cache.go` | untouched | .auto differential | §1 hand-owned by consequence; §2 PRESENT-UNCHANGED (named control); §4 #7 keep | — | — | — | — |
 | 2 | `crypto/internal/fips140/alias/alias_impl.cs` | `crypto/internal/alias/alias.go` (absent at go1.24.13) | touched-substantive | principal .auto — `crypto/internal/alias/alias.cs` · OQ-2 | §2 REMOVED; §4 #3 re-route | — | — | — | — |
-| 3 | `crypto/subtle/xor_generic.cs` | `crypto/subtle/xor_generic.go` (absent at go1.24.13) | touched-substantive | .auto differential · OQ-2 | §2 MOVED-or-NEW-SHAPE; §4 #4 re-derive against the new principal | — | — | — | — |
+| 3 | `crypto/internal/fips140/subtle/xor_generic.cs` | `crypto/subtle/xor_generic.go` (absent at go1.24.13) | touched-substantive | .auto differential · OQ-2 | §2 MOVED-or-NEW-SHAPE; §4 #4 re-derive against the new principal | — | — | — | — |
 | 4 | `debug/pe/symbol_impl.cs` | `debug/pe/symbol.go` | touched-substantive | principal .auto — `debug/pe/symbol.cs` | — | — | — | — | — |
 | 5 | `hash/crc32/crc32_amd64.cs` | `hash/crc32/crc32_amd64.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
 | 6 | `internal/abi/type_impl.cs` | `internal/abi/type.go` | touched-substantive | principal .auto — `internal/abi/type.cs` | §10 MEMBERS-REMOVED → RE-WRITE | — | — | — | — |
@@ -535,3 +535,28 @@ above moved with them (77→75, 80→78, 83→81, 89→87, 101→99), and the `r
 because that row no longer exists. No row's content changed — bodies compare byte-identical after blanking
 the number column. Every "146"/"147" figure earlier in this file remains a MEASUREMENT at the tree it
 names and is deliberately not rewritten.
+
+## 2026-09-14 — AMENDMENT (lane G): row 3 follows the fourth fips140 relocation
+
+C1's `f0f8826894` (the three H6 rows, landed on the version branch) relocates `crypto/subtle/xor_generic.cs`
+to `crypto/internal/fips140/subtle/`, per COORD `9c07f494f` item 4. **Re-measured at the landed tip, not
+carried:**
+
+```
+  census at claude/version-go1.24.13 = f0f8826894      145   -- the COUNT did not move
+  set difference against this table BEFORE the edit:
+      + src/core/crypto/internal/fips140/subtle/xor_generic.cs   (census, no row)
+      - src/core/crypto/subtle/xor_generic.cs                    (row, no longer marked)
+  after the edit: row set IDENTICAL to the census, both directions empty
+```
+
+**A count that does not move is not a population that did not move** — this is the case the re-measure rule
+exists for, and the gate would have fired `A2-missing` on the new path plus one orphan row for the old one.
+
+The edit is one path on **row 3**, which sorts to the same index under C collation, so **no row was
+renumbered and no `row N` citation moved**. Nothing else in the table changed.
+
+The principal moved with it: `crypto/subtle/xor_generic.go` is absent at 1.24.13 while
+`crypto/internal/fips140/subtle/xor_generic.go` is present (64 lines). C1 measured the delta as
+**one build-tag line, four bodies byte-identical** (`8f1f7f090`), so this is a RELOCATION and not a
+re-derive — the class stays for the seat that cut it.
