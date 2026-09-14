@@ -56,7 +56,6 @@ using static go.@internal.sync_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("internal/sync/hashtriemap.go", "hashtriemap.cs", "AB48goK64oKElJqigoKCgoQACRLigpSCgoKEgoKUgpSUrAAKAoKSgoKCgpSCgoKChIKClIKUuICCpIKUlIKogoKUpu6UgoKCgJS2gpTclOrUgqaCpoKCgoKUgoKCgoKClIKClKiSqgAJAoKSgoKCgpSCgoKChIKCpoKUlIKogoKUpu6UgoKUgoKCgriClNyU7AAJAoKClKaCgqSCqIKUpoLq4oKmgoKClKiClIKUpoKCppaCgpSWgoKCgoKUgqiSAAIQAAkCgoKUpoKCgpSogpSClKaCgqaWgoKUloKCgoKClIIAAhIACwKUgoKCgoSCgpSClJSAlIKCtoKUlIKogoKmpgADGAAIAoKCAAMS8oKmooKCgpSCgpSUgoKClKaokqgADyyCpoKCgoKmAAoWgu6igoKUlKaygoKklK7ilIKAgqSUgoKCgoKCgpSClIKu8pSSgIKklIKCgoKSgoKUgpSu4pSUgoKCgoKUgpSu8pS0goKCgpKUgpQACBKigpSmooKUrg==", "483-485:1")]
 [assembly: go.GoPositionMap("internal/sync/mutex.go", "mutex.cs", "ACB65IKClKas0oKCzIKWgpTWooKCgoKCpriElIKCgpSUgpSC3IKUpoKUlIKCpoKClIKCgsqClILclIKUgpSogr7SgoKogqboooKUgoLugqaCgoKUAAcQ")]
 [assembly: go.GoPositionMap("internal/sync/runtime.go", "runtime.cs", "AAkqAA0WAAoM2sampg==")]
 // </GoSourcePositionMaps>
@@ -73,10 +72,6 @@ public static partial class sync_package
     // via declarations below.
 
     // <TypeAccessibility>
-    internal partial struct node<K, V> {}
-    internal partial struct Δentry<K, V> {}
-    [GoValueClone("children")] internal partial struct Δindirect<K, V> {}
-    public partial struct HashTrieMap<K, V> {}
     public partial struct Mutex {}
     // </TypeAccessibility>
 

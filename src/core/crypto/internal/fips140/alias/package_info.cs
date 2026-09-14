@@ -49,7 +49,7 @@ using static go.crypto.@internal.fips140.alias_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/fips140/alias/alias.go", "alias.cs", "AAwaogACFuKClA==")]
+[assembly: go.GoPositionMap("crypto/internal/fips140/alias/alias.go", "alias.cs", "AA4y4oKU")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal.fips140;

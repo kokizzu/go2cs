@@ -57,7 +57,6 @@ using static go.weak_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("weak/pointer.go", "pointer.cs", "AECEAcSEgoKUggACENKClKzm")]
 // </GoSourcePositionMaps>
 
 namespace go;
@@ -72,7 +71,6 @@ public static partial class weak_package
     // via declarations below.
 
     // <TypeAccessibility>
-    public partial struct Pointer<T> {}
     // </TypeAccessibility>
 
     // Go initializes an imported package before the importing package, for every import

@@ -10,11 +10,7 @@ using @unsafe = unsafe_package;
 
 partial class alias_package {
 
-// AnyOverlap reports whether x and y share memory at any (not necessarily
-// corresponding) index. The memory beyond the slice length is ignored.
-public static bool AnyOverlap(slice<byte> x, slice<byte> y) {
-    return len(x) > 0 && len(y) > 0 && (uintptr)Ꮡ(x, 0) <= (uintptr)Ꮡ(y, len(y) - 1) && (uintptr)Ꮡ(y, 0) <= (uintptr)Ꮡ(x, len(x) - 1);
-}
+// go2cs generated this placeholder — func AnyOverlap is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // InexactOverlap reports whether x and y share memory at any non-corresponding
 // index. The memory beyond the slice length is ignored. Note that x and y can

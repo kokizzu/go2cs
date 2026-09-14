@@ -239,4 +239,7 @@
     <ProjectReference Include="$(go2csPath)core/syscall/syscall.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="../../LICENSE" Pack="true" PackagePath="" Condition="!Exists('$(MSBuildProjectDirectory)/LICENSE')" />
+  </ItemGroup>
 </Project>
