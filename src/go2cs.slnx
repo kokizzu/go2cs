@@ -171,11 +171,11 @@
     <Project Path="core/runtime/debug/runtime.debug.csproj" />
   </Folder>
   <Folder Name="/core/runtime/internal/" />
-  <Folder Name="/core/runtime/internal/math/">
-    <Project Path="core/runtime/internal/math/runtime.internal.math.csproj" />
+  <Folder Name="/core/internal/runtime/math/">
+    <Project Path="core/internal/runtime/math/internal.runtime.math.csproj" />
   </Folder>
-  <Folder Name="/core/runtime/internal/sys/">
-    <Project Path="core/runtime/internal/sys/runtime.internal.sys.csproj" />
+  <Folder Name="/core/internal/runtime/sys/">
+    <Project Path="core/internal/runtime/sys/internal.runtime.sys.csproj" />
   </Folder>
   <Folder Name="/core/runtime/">
     <Project Path="core/runtime/runtime.csproj" />
@@ -220,9 +220,6 @@
     <Project Path="core/unsafe/unsafe.csproj" />
   </Folder>
   <Folder Name="/core/vendor/" />
-  <Folder Name="/core/vendor/golang.org/x/crypto/sha3/">
-    <Project Path="core/vendor/golang.org/x/crypto/sha3/vendor.golang.org.x.crypto.sha3.csproj" />
-  </Folder>
   <Folder Name="/core/vendor/golang.org/x/sys/cpu/">
     <Project Path="core/vendor/golang.org/x/sys/cpu/vendor.golang.org.x.sys.cpu.csproj" />
   </Folder>
