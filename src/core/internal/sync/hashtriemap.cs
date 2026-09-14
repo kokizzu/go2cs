@@ -63,7 +63,7 @@ using @unsafe = go.unsafe_package;
 
 namespace go.@internal;
 
-partial class concurrent_package {
+partial class sync_package {
 
 // HashTrieMap is an implementation of a concurrent hash-trie. The implementation
 // is designed around frequent loads, but offers decent performance for stores
@@ -394,4 +394,4 @@ private static class dynamicallyComparable<V> {
     internal static readonly bool applies = typeof(V).IsInterface || typeof(V) == typeof(object);
 }
 
-} // end concurrent_package
+} // end sync_package

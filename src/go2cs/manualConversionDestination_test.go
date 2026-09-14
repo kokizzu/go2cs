@@ -944,7 +944,7 @@ func TestManualFuncLookupReachesVendoredRegistrationFromTypeCheckerSpelling(t *t
 	}
 
 	// The canonicalization is a no-op for a plain stdlib path: crypto/internal/alias keys itself.
-	if !isManualFuncDeclInPackage("crypto/internal/alias", "linux", decls["AnyOverlap"]) {
-		t.Errorf("isManualFuncDeclInPackage(crypto/internal/alias, linux, AnyOverlap) = false; the unvendored twin's registration regressed")
+	if !isManualFuncDeclInPackage("crypto/internal/fips140/alias", "linux", decls["AnyOverlap"]) {
+		t.Errorf("isManualFuncDeclInPackage(crypto/internal/fips140/alias, linux, AnyOverlap) = false; the unvendored twin's registration regressed")
 	}
 }

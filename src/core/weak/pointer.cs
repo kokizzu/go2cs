@@ -118,7 +118,7 @@ using System.Runtime.CompilerServices;
 // reconvert.
 [module: go.GoManualConversion]
 
-namespace go.@internal;
+namespace go;
 
 partial class weak_package {
 

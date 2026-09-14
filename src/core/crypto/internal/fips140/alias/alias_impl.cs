@@ -39,7 +39,7 @@ using go;
 
 [module: go.GoManualConversion]
 
-namespace go.crypto.@internal;
+namespace go.crypto.@internal.fips140;
 
 partial class alias_package
 {
