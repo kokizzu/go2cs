@@ -135,7 +135,7 @@ partial class weak_package {
 // If a weak pointer is created from an object that becomes reachable again due
 // to a finalizer, that weak pointer will not compare equal with weak pointers
 // created before it became unreachable.
-partial struct Pointer<T> : IEquatable<Pointer<T>>
+public partial struct Pointer<T> : IEquatable<Pointer<T>>
 {
     // Go stores an unsafe.Pointer to the runtime's canonical weak HANDLE for the address — never the
     // address itself. Holding the indirection is what makes the three equality clauses in the doc
@@ -200,7 +200,7 @@ public static Pointer<T> Make<T>(ж<T> Ꮡptr) {
 // the garbage collector.
 // If a weak pointer points to an object with a finalizer, then Strong will
 // return nil as soon as the object's finalizer is queued for execution.
-public static ж<T> Strong<T>(this Pointer<T> p) {
+public static ж<T> Value<T>(this Pointer<T> p) {
     // A nil handle is the zero Pointer[T], which names no referent. Go reaches
     // `(*atomic.Uintptr)(nil).Load()` here and faults; nothing in the converted corpus calls Strong
     // on a zero Pointer, and nil is this method's own documented answer for "no referent", so it is

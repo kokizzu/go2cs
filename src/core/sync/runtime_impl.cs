@@ -47,7 +47,13 @@ partial class sync_package
 
     internal static partial void runtime_Semacquire(ж<uint32> s) => RuntimeSemaphore.Acquire(s, WaitReason.Semacquire);
 
-    internal static partial void runtime_SemacquireMutex(ж<uint32> s, bool lifo, nint skipframes) => RuntimeSemaphore.Acquire(s, WaitReason.SyncMutexLock);
+    // go1.24 SPLIT WaitGroup.Wait's acquire out of runtime_Semacquire into its own linkname --
+    // "SemacquireWaitGroup is like Semacquire, but for WaitGroup.Wait" (sync/runtime.go:16 at
+    // 1.24.13), called from waitgroup.go:118. The SEMANTICS did not change, so this forwards to
+    // the same primitive with the same reason: golib's WaitReason.Semacquire is already documented
+    // as sync.WaitGroup.Wait's reason, which is what it meant before the split too.
+    internal static partial void runtime_SemacquireWaitGroup(ж<uint32> s) => RuntimeSemaphore.Acquire(s, WaitReason.Semacquire);
+
 
     internal static partial void runtime_SemacquireRWMutex(ж<uint32> s, bool lifo, nint skipframes) => RuntimeSemaphore.Acquire(s, WaitReason.SyncRWMutexLock);
 
@@ -174,16 +180,17 @@ partial class sync_package
     // (runtime.throw / runtime.fatal are defined natively in mutex.cs — used by the still-converted
     // rwmutex/cond as well as the native types.)
 
-    // ---- Spin / timing ----------------------------------------------------------------------------
-
-    internal static partial bool runtime_canSpin(nint i) => false;
-
-    internal static partial void runtime_doSpin() => Thread.SpinWait(30);
-
-    private static readonly long nanotimeBase = Stopwatch.GetTimestamp();
-
-    internal static partial int64 runtime_nanotime() =>
-        unchecked((long)((Stopwatch.GetTimestamp() - nanotimeBase) * (1_000_000_000.0 / Stopwatch.Frequency)));
+    // ---- Spin / timing ------------------------------------------------------------------------------
+    //
+    // ⚠ EMPTY SINCE go1.24. runtime_canSpin, runtime_doSpin and runtime_nanotime were DECLARED by
+    // sync/runtime.go through 1.23.12 and this file implemented them. At 1.24 Go moved all three --
+    // and runtime_SemacquireMutex -- into internal/sync/runtime.go, together with the Mutex
+    // implementation that called them, so sync declares none of them and calls none of them. An
+    // implementing partial whose defining declaration has left the package is CS0759, which is what
+    // the H5 gate reported four times. nanotimeBase went with runtime_nanotime, its only reader.
+    //
+    // They are NOT reimplemented in internal/sync here: that package's own build is i9's reading,
+    // not mine to anticipate.
 
     internal static partial uint32 runtime_randn(uint32 n) =>
         n == 0 ? 0u : unchecked((uint32)((ulong)System.Random.Shared.NextInt64() % n));
