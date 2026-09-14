@@ -1024,6 +1024,17 @@ foreach ($file in $allCs) {
 
     # Emitted by THIS run -> not a candidate. Mirrors platformCensus's modification-time rule, as a
     # threshold rather than an equality because this instrument did not stamp the seed itself.
+    #
+    # ⚠ THIS TEST HAS A KNOWN FALSE-NEGATIVE AND IT IS NO LONGER LOAD-BEARING (G, mailbox d496727c8).
+    # needToWriteFile (projectFileWriter.go:663) skips an identical-bytes write, so a file the converter
+    # DID emit unchanged keeps its seed stamp and reads SEEDED here -- and that is the largest class in a
+    # hop, every row whose principal did not change between the releases. It is safe anyway, because a
+    # file that falls through is then CLASSIFIED rather than deleted: arm 1 saves it if the emission
+    # carries it, arm 2 saves it if the target still selects its principal, and only arm 3's two-release
+    # gate can condemn it. So this line is now an OPTIMISATION and a statistic ($emittedCount), not a
+    # correctness gate -- which is precisely what it was NOT before the selection fix, when a
+    # false SEEDED reading fed straight into a tagless deselection and deleted five live files.
+    # G's principal-existence proposal would tighten the statistic; it is not needed for safety.
     if ($file.LastWriteTimeUtc -ge $SentinelStamp) {
         $emittedCount++
         continue
@@ -1472,9 +1483,28 @@ if ($orphanRows.Count -gt 0 -or $orphanDisposition.Count -gt 0) {
 # step compares against, so a dry run has to be able to produce it. LF-joined and sorted with an
 # ordinal comparer so the file is byte-comparable by `cmp` across the boxes that write and read it --
 # the CR and culture-sort classes this fleet has already paid for twice.
-$deleteSetFull = @(
-    @($deleteRows | ForEach-Object { $_.Path }) + @($residueRows | ForEach-Object { $_.Path })
-) | Sort-Object -Unique -CaseSensitive
+# ⚠ THE WRAP GOES OUTSIDE THE PIPELINE, and the earlier spelling put it inside. This read
+#
+#     $deleteSetFull = @( @($deleteRows | ...) + @($residueRows | ...) ) | Sort-Object -Unique
+#
+# where the `@()` closes BEFORE the pipe, so it constrains the operand and not the RESULT: `Sort-Object`
+# over an empty operand emits NOTHING, the assignment lands `$null`, and `$deleteSetFull.Count` on the
+# next screen throws PropertyNotFoundException under `Set-StrictMode -Version 2.0`. The run exits 1 from
+# a REPORTING line, after classifying correctly and deleting nothing.
+#
+# ⚠ AND THE SYMMETRY IS THE CRUEL PART, which is why this comment is longer than the fix: THE EMPTY
+# DELETE SET IS THE SUCCESS CONDITION. The defect is as old as this block (present verbatim at
+# 088f8778f6) and was UNREACHABLE the whole time, because the pass never produced an empty delete set --
+# it was still wrongly deleting five live purego files. Correcting the selection is what made the empty
+# case reachable, so the crash arrived as a consequence of the instrument becoming right, and i9 met it
+# on the very run whose control (DELETE-DESELECTED 0) had just PASSED (mailbox 2337e10e8a). G found the
+# same mechanism in check-handown-audit.ps1 the same hour (cc07363b8): an arm that checks the fixture is
+# correct and crashes exactly when the fixture IS correct.
+#
+# Split into two statements rather than re-nested, because the one-line form is what hid it: the reader
+# has to notice WHICH paren the pipe is outside of, and nobody does.
+$deleteSetUnion = @($deleteRows | ForEach-Object { $_.Path }) + @($residueRows | ForEach-Object { $_.Path })
+$deleteSetFull  = @($deleteSetUnion | Sort-Object -Unique -CaseSensitive)
 
 $deleteSetPath = Join-Path $Root 'h5c-delete-set-full.txt'
 [System.IO.File]::WriteAllText($deleteSetPath, (($deleteSetFull -join "`n") + "`n"))
