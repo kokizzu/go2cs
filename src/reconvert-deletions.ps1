@@ -50,11 +50,20 @@
     deletion set, and a timestamp-only deletion pass would destroy the corpus. The timestamp answers
     only "is this file a CANDIDATE"; GO ITSELF answers "should it exist", via
 
-        go list -f '{{.GoFiles}} {{.CgoFiles}}' <importpath>
+        go list -tags <the converter's set> -f '{{.GoFiles}} {{.CgoFiles}}' <importpath>
 
     run against the TARGET GOROOT with the corpus's own emission state (CGO_ENABLED=0) and the file's
     own flavour (GOOS). A file whose Go principal is still SELECTED there is kept, whatever its
     timestamp says.
+
+    ⚠ THE -tags ARGUMENT IS LOAD-BEARING AND THIS PARAGRAPH USED TO OMIT IT. Without it the call asks
+    about a DIFFERENT corpus than the one on disk: `-stdlib` emits under `purego, math_big_pure_go` by
+    default (resolveBuildTags, commandLineOptions.go), and at go1.24.13 that disagreement moves NINETEEN
+    principals per flavour -- so every purego variant read "not selected" and five of them were deleted
+    from a live corpus. $GoEnvBase also empties GOFLAGS, so the tags cannot arrive by any other route and
+    the omission was total. See -BuildTags, -TagLine and DELETE-DESELECTED below: there is now ONE tag
+    resolution in the pipeline, it is the converter's, and a control proves it reaches `go list` before
+    any row is classified.
 
     HOW EMITTED-VS-SEEDED IS DECIDED, and how it differs from the platform census. platformCensus.go
     stamps every seeded file to a fixed sentinel instant (censusSeedSentinel, 2000-01-01Z) and then
@@ -91,9 +100,31 @@
         DELETE-ABSENT       the principal is gone at the target -- the file was removed, or its whole
                             package was (H3 removals: internal/weak, runtime/internal/sys, ...).
         DELETE-DESELECTED   the principal still EXISTS on disk at the target but Go does not select it
-                            for this flavour -- a build-tag or GOEXPERIMENT flip. This is the class
-                            that killed R's build: exp_aliastypeparams_off.go is present at 1.24.13
-                            and simply not chosen.
+                            for this flavour -- a build-tag or GOEXPERIMENT flip -- AND the SOURCE
+                            release DID select it, under the same tag set. This is the class that killed
+                            R's build: exp_aliastypeparams_off.go is present at 1.24.13 and simply not
+                            chosen.
+
+                            ⚠ THE SECOND HALF OF THAT PREDICATE IS NOT DECORATION -- it is what the class
+                            MEANS, and without it the class deleted five live files. The pass asked `go
+                            list` with NO -tags while the converter had emitted the corpus under
+                            `purego, math_big_pure_go` (its -stdlib default), so every purego variant read
+                            "not selected" and was removed: crypto/md5/md5block_generic.cs,
+                            crypto/sha1/sha1block_generic.cs, hash/maphash/maphash_purego.cs,
+                            vendor/.../alias/alias_purego.cs, vendor/.../poly1305/mac_noasm.cs. The
+                            modification-time arm did not save them because needToWriteFile skipped the
+                            write for an unchanged body, so all five kept the seed stamp (two defects in
+                            series; coordinator ruling 9c07f494f, i9's measurement bb3a1a747). Asking the
+                            SOURCE release the same question turns "not selected here" into "the release
+                            stopped selecting it", which is the only form that justifies a deletion.
+        UNEXPLAINED-        a DELETE-DESELECTED candidate that NEITHER release selects under the
+        DESELECTION         converter's tag set, while its principal is present at the target. Nothing
+                            about the release hop explains it, so it is not a deselection: NEVER deleted,
+                            always listed with all three readings, and the run EXITS NON-ZERO -- with or
+                            without -Apply, because the incoherence is in the instrument's view of the
+                            release pair and every other row in the same run shares that view. A wrong
+                            -BuildTags or a wrong -Goarch is the likely cause and is named first in the
+                            refusal; a converter defect is the third.
         UNRESOLVED          no Go principal is derivable INSIDE a package that SURVIVES at the target,
                             and the file is not generated metadata -- a stem that does not map to a .go
                             file name. NEVER deleted, always listed, and the run EXITS NON-ZERO so a
@@ -176,15 +207,46 @@
     The GOARCH to ask Go under. Defaults to this host's architecture. Stated explicitly rather than
     inherited so two runs on two boxes cannot disagree silently.
 
+.PARAMETER BuildTags
+    THE CONVERTER'S build tags, because the converter is the authority on what it selected (coordinator
+    ruling 9c07f494f §1). Defaults to the converter's own -stdlib default, purego and math_big_pure_go.
+    An empty set is REFUSED, not honoured: the corpus is emitted under those tags, and resolving its file
+    selection under none is the defect this parameter exists to close -- it deleted five live files
+    before it was here. The value is checked three ways: non-empty, equal to -TagLine's parsed set when
+    one is given, and PROVED to reach `go list` by a control that requires a known tag-sensitive
+    package's selection to differ with and without it.
+
+.PARAMETER TagLine
+    The converter's own printed tag line, verbatim, e.g.
+        Applying build tags: purego,math_big_pure_go (default; pass -tags to override)
+    Optional. When supplied, the tags parsed from it must EQUAL -BuildTags or the run refuses --
+    preferring neither, because a silent preference is how two tag resolutions got into the pipeline.
+    The runbook's H5 amendment makes this line the step's record; this is where the record is compared
+    against the instrument by a machine instead of by a reader.
+
+.PARAMETER EmissionRoot
+    The RAW per-target output the converter just wrote -- NOT the seeded scratch. Optional, and a
+    strengthening rather than a prerequisite: the deselection gate decides correctly without it. When
+    supplied, presence in it is direct evidence the converter emitted a file, which modification time
+    cannot give (needToWriteFile skips an identical-bytes write, so an emitted-unchanged file keeps its
+    seed stamp and reads SEEDED exactly like an abandoned one -- that is why the mtime arm did not save
+    the five). REFUSED if it looks seeded (golib, or any hand-own marker), because in a seeded tree every
+    committed file is present by the seed, "absent from the emission" can never be true, and
+    DELETE-DESELECTED would report a VACUOUS zero that reads exactly like the fix working.
+
 .PARAMETER Apply
     Perform the deletions. WITHOUT it this is a DRY RUN: it prints the table and the counts and
     deletes nothing.
 
 .OUTPUTS
-    Exit 0  -- classified, no UNRESOLVED rows (and, with -Apply, the DELETE rows are gone).
-    Exit 2  -- classified, and something needs a human: UNRESOLVED rows, or the trespass assertion
-               fired. NOTHING WAS DELETED -- every check that can produce this code runs before the
-               deletion loop.
+    Exit 0  -- classified, no UNRESOLVED and no UNEXPLAINED-DESELECTION rows (and, with -Apply, the
+               DELETE rows are gone).
+    Exit 2  -- classified, and something needs a human: UNRESOLVED rows, UNEXPLAINED-DESELECTION rows,
+               or the trespass assertion fired. NOTHING WAS DELETED -- every check that can produce this
+               code runs before the deletion loop. UNEXPLAINED-DESELECTION produces it WITHOUT -Apply
+               too, unlike UNRESOLVED: that class says the instrument's view of the release pair is
+               incoherent, and every other row in the run rests on the same view, so the dry run's own
+               counts are not quotable.
     Exit 3  -- refused before classifying anything (bad root, missing/ambiguous sentinel, wrong
                release, unusable toolchain), or a deletion aborted part-way (which says so, and says
                how many files had already been removed).
@@ -226,6 +288,25 @@ param(
     [string]                                 $Goos,
     [string]                                 $Goarch,
     [string[]]                               $Orphan = @(),
+    # THE CONVERTER'S tag set, because the converter is the authority on what it selected (coordinator
+    # ruling 9c07f494f §1). The default MIRRORS defaultStdLibBuildTags (commandLineOptions.go), which a
+    # mirrored constant can always drift from -- so it is not trusted on its own: -TagLine cross-checks
+    # it against what the converter PRINTED, and Assert-TagsReachedGoList refuses if the set never
+    # reached `go list` at all. An EMPTY set is refused rather than defaulted, because "no tags" is the
+    # exact defect this parameter exists to close.
+    [string[]]                               $BuildTags = @('purego', 'math_big_pure_go'),
+    # The converter's own printed line, verbatim, e.g.
+    #   "Applying build tags: purego,math_big_pure_go (default; pass -tags to override)"
+    # Optional; when given, the tags parsed out of it must EQUAL -BuildTags or the run refuses. The
+    # runbook's H5 amendment makes this line the step's record, so this is where the record is checked
+    # against the instrument instead of against a reader's memory.
+    [string]                                 $TagLine,
+    # The RAW per-target emission the converter just wrote -- NOT the seeded scratch. Optional, and a
+    # STRENGTHENING rather than a prerequisite: when supplied and proven unseeded, presence in it is
+    # direct evidence the converter emitted the file, which the modification-time arm cannot give
+    # (needToWriteFile, projectFileWriter.go:663, skips an identical-bytes write, so an
+    # emitted-unchanged file keeps its seed stamp and reads SEEDED exactly like an abandoned one).
+    [string]                                 $EmissionRoot,
     [switch]                                 $Apply
 )
 
@@ -470,6 +551,83 @@ $versionText       = Assert-Release -Toolchain $TargetGo -Expected $ExpectGo
 $sourceVersionText = Assert-Release -Toolchain $SourceGo -Expected $ExpectSourceGo
 
 # ---------------------------------------------------------------------------------------------
+# The tag set: ONE resolution, the converter's, checked three ways before it is used.
+# ---------------------------------------------------------------------------------------------
+
+$BuildTags = @($BuildTags | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | ForEach-Object { $_.Trim() })
+
+# An EMPTY set is the defect, not a default. Refused here rather than silently meaning "no tags",
+# because "no tags" is exactly what this instrument did while the converter used two.
+if ($BuildTags.Count -eq 0) {
+    Deny "-BuildTags resolved to an EMPTY set. The corpus is emitted under the converter's -stdlib default (purego, math_big_pure_go); classifying it under no tags is the defect this parameter closes. Pass the tag set the converter PRINTED."
+}
+
+$BuildTagsLabel = ($BuildTags -join ',')
+
+# CROSS-CHECK against the converter's own printed line when one was supplied. The runbook's H5 amendment
+# makes that line the step's record; this is the one place the record and the instrument are compared by
+# a machine rather than by a reader. Parsed rather than matched whole, because the line carries a
+# parenthetical whose wording is not ours to depend on.
+if (-not [string]::IsNullOrWhiteSpace($TagLine)) {
+    $tagLineMatch = [regex]::Match($TagLine, 'Applying build tags:\s*([^\s(]+)')
+
+    if (-not $tagLineMatch.Success) {
+        Deny "-TagLine does not contain a parsable ``Applying build tags: <set>`` -- pass the converter's printed line verbatim, or omit -TagLine"
+    }
+
+    $printedTags   = @($tagLineMatch.Groups[1].Value -split ',' | Where-Object { $_ -ne '' } | ForEach-Object { $_.Trim() })
+    $printedSorted = (($printedTags | Sort-Object) -join ',')
+    $passedSorted  = (($BuildTags   | Sort-Object) -join ',')
+
+    if ($printedSorted -ne $passedSorted) {
+        Deny "TAG SET DISAGREEMENT -- the converter printed [$printedSorted] and this run was given [$passedSorted]. The converter is the authority; re-run with its set. Refusing rather than preferring either, because a silent preference is how two tag resolutions got into the pipeline in the first place."
+    }
+
+    Write-Host "  build tags        [$BuildTagsLabel]   CONFIRMED against the converter's printed line"
+}
+else {
+    Write-Host "  build tags        [$BuildTagsLabel]   (no -TagLine supplied, so NOT confirmed against the converter's own output)"
+}
+
+# ⚠ THE FALSIFYING CONTROL, and the one that would have caught tonight's defect on its first run. Every
+# assertion above is about the VALUE of the tag set; none of them proves the value ever reached `go list`.
+# It did not before: the argument was simply absent, and $GoEnvBase empties GOFLAGS so the tags could not
+# have arrived by any other route either -- every reading was silently tagless while a banner would have
+# said "purego". So ask a package whose selection is KNOWN to turn on these tags, both ways, and require
+# the two answers to DIFFER. A gate that cannot go red proves nothing; this one reddens on precisely the
+# failure it exists for.
+function Assert-TagsReachedGoList {
+    # crypto/md5 rather than a purego-only leaf: its split is over a decade old, the package exists and
+    # is in `go list std` at every release in scope, so a refusal here means the tags did not arrive
+    # rather than that the canary itself moved.
+    $canaryPackage = 'crypto/md5'
+    $canaryFlavour = $(if ([string]::IsNullOrWhiteSpace($Goos)) { 'linux' } else { ($Goos -split ',')[0].Trim() })
+
+    $withTags = Invoke-Go -Toolchain $TargetGo -Arguments @('list', '-tags', $BuildTagsLabel, '-f', '{{.GoFiles}}', $canaryPackage) -ForGoos $canaryFlavour
+    $without  = Invoke-Go -Toolchain $TargetGo -Arguments @('list', '-f', '{{.GoFiles}}', $canaryPackage) -ForGoos $canaryFlavour
+
+    if ($withTags.ExitCode -ne 0 -or $without.ExitCode -ne 0) {
+        Deny "the tag control could not run: ``go list $canaryPackage`` failed at $ExpectGo (GOOS=$canaryFlavour) with exit $($withTags.ExitCode)/$($without.ExitCode). A control that did not execute is not a control."
+    }
+
+    $taggedText   = $withTags.Text.Trim()
+    $untaggedText = $without.Text.Trim()
+
+    if ([string]::IsNullOrWhiteSpace($taggedText) -or [string]::IsNullOrWhiteSpace($untaggedText)) {
+        Deny "the tag control read an EMPTY selection for $canaryPackage on one or both arms -- a comparison against nothing reports agreement for the wrong reason."
+    }
+
+    if ($taggedText -eq $untaggedText) {
+        Deny "TAG CONTROL FAILED: ``go list`` answered IDENTICALLY for $canaryPackage with tags [$BuildTagsLabel] and with none, so the tag set is NOT reaching ``go list`` and every selection below would be resolved under the wrong tags. This is the exact defect coordinator ruling 9c07f494f was cut for; refusing rather than classifying."
+    }
+
+    Write-Host "  tag control       $canaryPackage selection DIFFERS with and without [$BuildTagsLabel] -- the tags reach ``go list``"
+}
+
+Assert-TagsReachedGoList
+
+
+# ---------------------------------------------------------------------------------------------
 # Predicates.
 # ---------------------------------------------------------------------------------------------
 
@@ -509,6 +667,103 @@ function Test-HandOwnMarker {
     $text = [System.IO.File]::ReadAllText($Path)
 
     return [regex]::IsMatch($text, $HandOwnMarkerPattern)
+}
+
+# ---------------------------------------------------------------------------------------------
+# The emission index: direct evidence of what the converter SELECTED, when a raw emission root was
+# supplied. $null when it was not, and every consumer tests for $null -- the deselection gate stands on
+# its own, so this is a STRENGTHENING and never a prerequisite.
+# ---------------------------------------------------------------------------------------------
+
+$EmissionIndex = $null
+
+if (-not [string]::IsNullOrWhiteSpace($EmissionRoot)) {
+    if (-not (Test-Path -LiteralPath $EmissionRoot -PathType Container)) {
+        Deny "-EmissionRoot does not exist or is not a directory: $EmissionRoot"
+    }
+
+    $emissionFull = (Resolve-Path -LiteralPath $EmissionRoot).Path
+    $emissionCs   = @(Get-ChildItem -LiteralPath $emissionFull -Recurse -File -Filter '*.cs' -ErrorAction SilentlyContinue)
+
+    # Population first: an index built from nothing would mark every corpus file "not emitted" and hand
+    # the gate a corpus-wide candidate set.
+    if ($emissionCs.Count -lt 100) {
+        Deny "-EmissionRoot holds only $($emissionCs.Count) .cs file(s) -- a stdlib emission is thousands. Refusing rather than reading an empty or wrong root as 'the converter emitted nothing'."
+    }
+
+    # ⚠ AND THE PRECONDITION THAT MAKES THE WHOLE ARM MEAN ANYTHING: the root must be a RAW EMISSION and
+    # not a SEEDED tree. CLAUDE.md's floor 2 requires the reconvert scratch to be seeded from src\core,
+    # and in a seeded tree every committed file is present BY THE SEED -- so "absent from the emission" is
+    # false for everything, arm 1 saves every row including the abandoned ones, and DELETE-DESELECTED
+    # reports a clean ZERO because its predicate can no longer fire. That is a vacuous green of exactly
+    # the kind this package keeps finding, and it would read as the fix working.
+    #
+    # The discriminator is what a seed carries and an emission cannot: golib (hand-written, never
+    # converted into) and the [module: GoManualConversion] whole-file replacements.
+    $seedTell = @()
+
+    if (Test-Path -LiteralPath (Join-Path $emissionFull 'core/golib') -PathType Container) { $seedTell += 'core/golib' }
+    if (Test-Path -LiteralPath (Join-Path $emissionFull 'golib')      -PathType Container) { $seedTell += 'golib' }
+
+    $markedInEmission = @($emissionCs | Where-Object { Test-HandOwnMarker -Path $_.FullName } | Select-Object -First 1)
+
+    if ($markedInEmission.Count -gt 0) { $seedTell += '[module: GoManualConversion] file(s)' }
+
+    if ($seedTell.Count -gt 0) {
+        Deny ("-EmissionRoot looks SEEDED rather than raw-emitted (found: {0}). In a seeded tree every committed file is present by the seed, so 'absent from the emission' can never be true and DELETE-DESELECTED would report a VACUOUS zero. Pass the converter's own per-target output root, or omit -EmissionRoot and let the two-release selection gate decide alone." -f ($seedTell -join ', '))
+    }
+
+    # ⚠ THE BASE IS FOUND, NEVER COMPOSED -- i9's arm-3 trap, banked by the coordinator at 9c07f494f §2:
+    # a path that does not exist answers ABSENT, which is indistinguishable from a real absence and points
+    # the same way the hypothesis does. A staging root is `<stage>/<target>/src/core/...`, so composing
+    # `$EmissionRoot/core` would silently miss by one segment and make every lookup fail.
+    $coreCandidates = @(Get-ChildItem -LiteralPath $emissionFull -Recurse -Directory -Filter 'core' -ErrorAction SilentlyContinue |
+                        Where-Object { $_.Parent.Name -eq 'src' -or $_.Parent.FullName -eq $emissionFull })
+
+    if ($coreCandidates.Count -gt 1) {
+        Deny ("-EmissionRoot holds {0} directories named 'core' ({1}) and this instrument will not guess which one the corpus corresponds to. Pass the root whose immediate child is 'src' or 'core'." -f $coreCandidates.Count, (($coreCandidates | ForEach-Object { $_.FullName }) -join ', '))
+    }
+
+    $emissionBase = $(if ($coreCandidates.Count -eq 1) { $coreCandidates[0].FullName } else { $emissionFull })
+
+    # ⚠ AND THE SPELLING IS BORROWED, NOT REINVENTED. Row identity is Get-RelativeDisplayPath's output --
+    # FORWARD slashes, relative to core\ -- and an index keyed any other way makes arm 1 a DEAD ARM that
+    # reports nothing and refuses nothing. Calling the same helper is what keeps the two spellings from
+    # drifting; the first cut of this block built the keys with DirectorySeparatorChar and would have
+    # matched nothing at all on Windows, with no symptom beyond the arm quietly never firing.
+    $EmissionIndex = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+
+    foreach ($emitted in $emissionCs) {
+        if (-not $emitted.FullName.StartsWith($emissionBase, [System.StringComparison]::OrdinalIgnoreCase)) { continue }
+
+        $null = $EmissionIndex.Add((Get-RelativeDisplayPath -Path $emitted.FullName -Root $emissionBase))
+    }
+
+    # ⚠ THE ANTI-VACUITY CONTROL, and the one that catches a base or spelling mismatch AT RUNTIME rather
+    # than by reading the code. Two trees that describe the same corpus must SHARE PATHS; an overlap of
+    # zero means the join is broken, and a broken join makes arm 1 unable to save anything while looking
+    # exactly like "the converter emitted none of these". Scored against the corpus's own .cs, in the
+    # corpus's own spelling, before a single row is classified.
+    $corpusCs = @(Get-ChildItem -LiteralPath $CoreDir -Recurse -File -Filter '*.cs' -ErrorAction SilentlyContinue)
+    $overlap  = 0
+
+    foreach ($corpusFile in $corpusCs) {
+        if ($EmissionIndex.Contains((Get-RelativeDisplayPath -Path $corpusFile.FullName -Root $CoreDir))) { $overlap++ }
+    }
+
+    if ($corpusCs.Count -eq 0) {
+        Deny "the emission-overlap control found NO .cs under $CoreDir, so it could not be scored. A control that ran over an empty population is not a control."
+    }
+
+    if ($overlap -eq 0) {
+        Deny ("EMISSION JOIN BROKEN: none of the {0} corpus .cs under {1} is present in the {2}-entry emission index built from {3}. The two trees share no path, so the emission arm could never fire and every row would fall through to the selection arms unprotected. The base is almost certainly at the wrong level -- pass the root whose child is 'src' or 'core'." -f $corpusCs.Count, $CoreDir, $EmissionIndex.Count, $emissionBase)
+    }
+
+    Write-Host "  emission index    $($EmissionIndex.Count) emitted .cs, base $emissionBase (proved raw: no golib, no hand-own marker)"
+    Write-Host ("  emission join     {0} of {1} corpus .cs found in the emission index -- the arm is LIVE" -f $overlap, $corpusCs.Count)
+}
+else {
+    Write-Host '  emission index    NOT SUPPLIED -- the deselection gate decides alone (pass -EmissionRoot to add the converter''s own answer)'
 }
 
 # The SOURCE release's std package set, one `go list std` per flavour, cached. This is the set the
@@ -552,23 +807,47 @@ function Get-SourceStdSet {
     return $set
 }
 
-# Cache: one `go list` per (importpath, goos) at the TARGET. A full corpus is ~350 packages x 1
-# flavour; without this it would be one process per FILE.
+# Cache: one `go list` per (release, importpath, goos). A full corpus is ~350 packages x 1 flavour;
+# without this it would be one process per FILE. The RELEASE is part of the key because the
+# deselection gate below asks the same question at BOTH GOROOTs, and a cache keyed only on
+# (importpath, goos) would answer the second question with the first release's reading.
 $SelectionCache = @{}
 
+# ⚠ THE TAG ARGUMENT IS THE WHOLE POINT OF THIS FUNCTION'S SIGNATURE (coordinator ruling 9c07f494f,
+# i9's measurement bb3a1a747). It previously ran `go list` with NO -tags while $GoEnvBase empties
+# GOFLAGS, so the instrument resolved the corpus's file selection under the EMPTY tag set while the
+# converter had emitted it under `purego, math_big_pure_go` -- two components resolving tags twice, and
+# the deletion pass was the one that did not know. Measured at go1.24.13, that disagreement moves
+# NINETEEN principals per flavour (identical list on windows, linux and darwin), of which the corpus
+# carried seven at their exact path; five reached the deletion loop and were removed. There is now ONE
+# tag set in the instrument, it is the converter's, and it is the same set at both releases.
 function Get-GoSelection {
     param(
         [Parameter(Mandatory = $true)][string] $ImportPath,
-        [Parameter(Mandatory = $true)][string] $ForGoos
+        [Parameter(Mandatory = $true)][string] $ForGoos,
+        # Which release to ask. Defaults to the target, which is every caller except the deselection
+        # gate -- so an un-updated caller keeps its old meaning rather than silently changing release.
+        [Parameter(Mandatory = $false)][object] $Toolchain
     )
 
-    $key = "$ForGoos|$ImportPath"
+    if ($null -eq $Toolchain) { $Toolchain = $TargetGo }
+
+    $key = "$($Toolchain.Label)|$ForGoos|$ImportPath"
 
     if ($SelectionCache.ContainsKey($key)) {
         return $SelectionCache[$key]
     }
 
-    $result = Invoke-Go -Toolchain $TargetGo -Arguments @('list', '-f', '{{.GoFiles}} {{.CgoFiles}}', $ImportPath) -ForGoos $ForGoos
+    $listArgs = @('list')
+
+    # Never emit a bare `-tags` with an empty value: `-tags=` is an EXPLICIT empty set to the go tool,
+    # which is the defect wearing a different spelling. $BuildTags is asserted non-empty at startup, so
+    # this is belt-and-braces at the one place the argument is built.
+    if ($BuildTags.Count -gt 0) { $listArgs += @('-tags', ($BuildTags -join ',')) }
+
+    $listArgs += @('-f', '{{.GoFiles}} {{.CgoFiles}}', $ImportPath)
+
+    $result = Invoke-Go -Toolchain $Toolchain -Arguments $listArgs -ForGoos $ForGoos
 
     $selection = [pscustomobject]@{
         PackageExists = ($result.ExitCode -eq 0)
@@ -855,10 +1134,38 @@ foreach ($file in $allCs) {
         continue
     }
 
+    # ⚠ THE ORDER OF THE NEXT THREE ARMS IS ITSELF THE SAFETY PROPERTY: every arm that can SAVE a file
+    # runs before the one arm that can condemn it, and the condemning arm must then satisfy a gate of
+    # its own. That is what keeps coordinator ruling 9c07f494f (derive the class from the EMISSION)
+    # compatible with ruling 49d0b9ea1 §1 (absence from a staging root must not by itself delete): here
+    # emission evidence only ever KEEPS a file, and a deletion additionally needs the release to have
+    # changed its mind. Absence alone condemns nothing, so a converter that stops emitting a file by
+    # DEFECT produces a refusal rather than a deletion.
+
+    # ARM 1 -- the emission itself, when a raw emission root was supplied and PROVED unseeded. This is
+    # the only evidence that separates "emitted with identical bytes" from "no longer emitted at all":
+    # the modification-time arm at the top of this loop cannot, because needToWriteFile
+    # (projectFileWriter.go:663) returns false for an unchanged body, so nothing is written and the
+    # seed stamp survives. THAT IS THE FIRST HALF OF TONIGHT'S DEFECT -- the five live purego files were
+    # emitted UNCHANGED, kept their seed stamp, read SEEDED, and fell through to the selection arms.
+    if ($null -ne $EmissionIndex -and $EmissionIndex.Contains($relative)) {
+        $null = $rows.Add([pscustomobject]@{
+            Path = $relative; Principal = $principalLabel; Class = 'KEEP-SELECTED'
+            Reason = 'the emission carries it (the converter selected it; no re-derivation needed)'
+            Group = ''; Full = $file.FullName
+        })
+
+        continue
+    }
+
+    # ARM 2 -- the target release's own selection, under THE CONVERTER'S tag set. This is where the
+    # five read SELECTED once the tags reached `go list`, and it is the second half of the defect: the
+    # same call with no tags read DESELECTED for all five.
     if ($resolved.Selection.Files.Contains($resolved.Principal)) {
         $null = $rows.Add([pscustomobject]@{
             Path = $relative; Principal = $principalLabel; Class = 'KEEP-SELECTED'
-            Reason = "selected for $($resolved.Goos)"; Group = ''; Full = $file.FullName
+            Reason = "selected for $($resolved.Goos) at $ExpectGo under tags [$BuildTagsLabel]"
+            Group = ''; Full = $file.FullName
         })
 
         continue
@@ -866,16 +1173,61 @@ foreach ($file in $allCs) {
 
     $onDisk = Join-Path $TargetGo.SrcDir (($resolved.ImportPath -replace '/', [System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar + $resolved.Principal)
 
-    if (Test-Path -LiteralPath $onDisk -PathType Leaf) {
-        $null = $rows.Add([pscustomobject]@{
-            Path = $relative; Principal = $principalLabel; Class = 'DELETE-DESELECTED'
-            Reason = "present but not selected for $($resolved.Goos)"; Group = ''; Full = $file.FullName
-        })
-    }
-    else {
+    if (-not (Test-Path -LiteralPath $onDisk -PathType Leaf)) {
         $null = $rows.Add([pscustomobject]@{
             Path = $relative; Principal = $principalLabel; Class = 'DELETE-ABSENT'
             Reason = 'principal removed at target'; Group = ''; Full = $file.FullName
+        })
+
+        continue
+    }
+
+    # ARM 3 -- THE DESELECTION GATE, and the only arm that can condemn. The class MEANS "Go stopped
+    # selecting this file at the target", so that sentence is now asserted rather than assumed: the same
+    # question, the same tag set, asked at the SOURCE release too.
+    #
+    # ⚠ WHY NOT THE RUNBOOK AMENDMENT'S TEXT COMPARISON (dd8dd5700c §2: grep '^//go:build' at both SDK
+    # trees, same text -> refuse). Measured at the two GOROOTs, that predicate gets four of six of
+    # tonight's rows wrong, and three of them in the direction that DELETES A LIVE FILE:
+    #
+    #   crypto/md5/md5block_generic.go   1.23.12  (!amd64 && !386 && !arm && !ppc64le && !ppc64
+    #                                              && !s390x && !arm64) || purego
+    #                                    1.24.13  (!386 && !amd64 && !arm && !arm64 && !loong64
+    #                                              && !ppc64 && !ppc64le && !riscv64 && !s390x) || purego
+    #   -> the TEXT differs (Go grew the negated arch list; the `|| purego` disjunct is untouched), so a
+    #      text predicate reads "the release changed its mind" and deletes a file both releases select.
+    #      sha1block_generic.go and poly1305/mac_noasm.go differ the same way, for the same reason.
+    #
+    #   internal/goexperiment/exp_aliastypeparams_off.go  `//go:build !goexperiment.aliastypeparams`
+    #                                                     IDENTICAL at both releases
+    #   -> the TEXT is unchanged because the 1.24.13 flip is in the DEFAULT GOEXPERIMENT SET, not in the
+    #      constraint. A text predicate refuses the row this whole instrument was built to delete -- the
+    #      file the DESCRIPTION block above opens with, which killed the first build in 116 seconds.
+    #
+    # CONSTRAINT TEXT IS NOT SELECTION. Selection is that text EVALUATED against an environment, and
+    # between two releases both inputs move: the text, the architecture list, and the GOEXPERIMENT
+    # defaults. Asking `go list` asks about all three at once and read 7 of 7 correctly on the rows
+    # above. And it is still ONE tag resolution -- the converter's set, at both ends -- which is what
+    # ruling 9c07f494f forbade doing twice with two different sets.
+    $sourceSelection = Get-GoSelection -ImportPath $resolved.ImportPath -ForGoos $resolved.Goos -Toolchain $SourceGo
+    $selectedAtSource = ($sourceSelection.PackageExists -and $sourceSelection.Files.Contains($resolved.Principal))
+
+    if ($selectedAtSource) {
+        $null = $rows.Add([pscustomobject]@{
+            Path = $relative; Principal = $principalLabel; Class = 'DELETE-DESELECTED'
+            Reason = "selected at $ExpectSourceGo, NOT selected at $ExpectGo, same tags [$BuildTagsLabel] -- the release stopped selecting it"
+            Group = ''; Full = $file.FullName
+        })
+    }
+    else {
+        # Neither release selects this principal under the converter's tag set, yet the corpus carries
+        # the file and the principal is on disk at the target. NOTHING ABOUT THE RELEASE HOP EXPLAINS
+        # THAT, so it is not a deselection and it is not deleted. It is the shape a wrong tag set, a
+        # wrong GOARCH, or a converter defect makes, and all three want a human rather than a deletion.
+        $null = $rows.Add([pscustomobject]@{
+            Path = $relative; Principal = $principalLabel; Class = 'UNEXPLAINED-DESELECTION'
+            Reason = "principal present at $ExpectGo but selected at NEITHER release under tags [$BuildTagsLabel] -- no release change explains this row"
+            Group = ''; Full = $file.FullName
         })
     }
 }
@@ -889,7 +1241,11 @@ foreach ($file in $allCs) {
 # test stopped short-circuiting the absent-package test, and a reader comparing this run against a
 # pre-amendment log needs both counts adjacent to see where the 42 went. A class absent from this list
 # is counted nowhere and listed nowhere, so adding a class means adding it here.
-$classOrder = @('DELETE-ABSENT', 'DELETE-DESELECTED', 'UNRESOLVED', 'KEEP-METADATA', 'PROTECTED', 'NOT-A-CONVERSION-TARGET', 'KEEP-SELECTED')
+#
+# UNEXPLAINED-DESELECTION sits immediately after DELETE-DESELECTED because that is where a reader looks
+# for it: it is the class a would-be deselection falls to when the release hop does not explain it, and
+# the two counts only mean anything read together.
+$classOrder = @('DELETE-ABSENT', 'DELETE-DESELECTED', 'UNEXPLAINED-DESELECTION', 'UNRESOLVED', 'KEEP-METADATA', 'PROTECTED', 'NOT-A-CONVERSION-TARGET', 'KEEP-SELECTED')
 
 foreach ($class in $classOrder) {
     $inClass = @($rows | Where-Object { $_.Class -eq $class })
@@ -928,6 +1284,18 @@ foreach ($class in $classOrder) {
 
 $deleteRows = @($rows | Where-Object { $_.Class -like 'DELETE-*' })
 $unresolved = @($rows | Where-Object { $_.Class -eq 'UNRESOLVED' })
+
+# ⚠ The delete set is selected by a NAME PATTERN, so which classes are deletable is currently a property
+# of their spelling rather than of a decision. That is fine until someone adds a class -- and a class
+# named DELETE-UNEXPLAINED, or a rename of UNEXPLAINED-DESELECTION to match its siblings, would join the
+# delete set SILENTLY and without a diff anywhere near the deletion loop. So the intended set is named
+# EXACTLY, once, and disagreement is an instrument defect rather than a corpus finding.
+$deletableClasses = @('DELETE-ABSENT', 'DELETE-DESELECTED')
+$unexpectedDeletable = @($deleteRows | Where-Object { $deletableClasses -notcontains $_.Class } | ForEach-Object { $_.Class } | Sort-Object -Unique)
+
+if ($unexpectedDeletable.Count -gt 0) {
+    Deny ("the delete set contains class(es) not on the deletable list: {0}. The deletable classes are exactly [{1}]. A new class matched the DELETE-* pattern without being ruled deletable." -f ($unexpectedDeletable -join ', '), ($deletableClasses -join ', '))
+}
 
 # ---------------------------------------------------------------------------------------------
 # A DELETE-ABSENT PACKAGE IS A DIRECTORY, NOT A LIST OF .cs -- and the full delete set it implies.
@@ -1215,6 +1583,36 @@ if ($Apply -and $unresolved.Count -gt 0) {
     Write-Host ''
     Write-Host ("UNRESOLVED: {0} seeded file(s) have no derivable Go principal." -f $unresolved.Count) -ForegroundColor Yellow
     Stop-ForReview '-Apply refuses while UNRESOLVED rows stand. Dispose of each (they are listed above), then re-run with -Apply.'
+}
+
+# ⚠ THE EXPLANATION REFUSAL -- the runbook H5 amendment's line, and the one that would have stopped
+# tonight's five from being deleted (coordinator ruling 9c07f494f; the surviving runbook line is "every
+# DELETE-DESELECTED row is explained at the two GOROOTs or the run is refused").
+#
+# Unconditional rather than gated on -Apply, unlike UNRESOLVED above, and the asymmetry is deliberate: an
+# UNRESOLVED row is a question about a file, and a dry run listing questions is useful. An
+# UNEXPLAINED-DESELECTION row says the INSTRUMENT'S OWN VIEW of the release pair is incoherent -- the
+# corpus holds a file whose principal exists at the target and which neither release selects -- and every
+# reading in the same run rests on that same view. So the report is not to be trusted row by row, and
+# exiting 2 without -Apply is what stops a dry run's DELETE-DESELECTED count from being quoted as a
+# measurement. A wrong tag set is the first thing this shape means, which is why the banner prints the set
+# and its provenance.
+$unexplained = @($rows | Where-Object { $_.Class -eq 'UNEXPLAINED-DESELECTION' })
+
+if ($unexplained.Count -gt 0) {
+    Write-Host ''
+    Write-Host ("UNEXPLAINED-DESELECTION: {0} row(s) are not selected at EITHER release under tags [{1}]." -f $unexplained.Count, $BuildTagsLabel) -ForegroundColor Yellow
+    Write-Host '  Nothing about the release hop explains these, so they are not deselections and none was deleted.'
+    Write-Host '  Read in this order -- the first two are far more likely than the third:'
+    Write-Host ("    1. the tag set. It is [{0}] here; is that what the converter PRINTED for this emission?" -f $BuildTagsLabel)
+    Write-Host ("    2. -Goarch. It is '{0}'; a corpus emitted for another architecture reads exactly like this." -f $Goarch)
+    Write-Host '    3. a converter defect -- the corpus holds a file the converter should no longer be emitting.'
+
+    foreach ($row in $unexplained) {
+        Write-Host ("    {0}`n        {1}" -f $row.Path, $row.Reason) -ForegroundColor Yellow
+    }
+
+    Stop-ForReview ("{0} DELETE-DESELECTED candidate(s) have no explanation at the two GOROOTs. The class means 'Go stopped selecting this file at the target'; a row neither release selects does not say that, and deleting it deletes a live file -- which is exactly what happened to five of them before this gate existed." -f $unexplained.Count)
 }
 
 # ⚠ BEFORE the deletion loop, with UNRESOLVED, because that ordering is what keeps a hand-own's `.csproj`
