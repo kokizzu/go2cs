@@ -101,6 +101,9 @@ internal static void Main() {
     ref var cs = ref heap(new counters(), out var Ꮡcs);
     var pcs = Ꮡcs;
     fmt.Println(pcs.at<counter2>(0).bump(), pcs.at<counter2>(0).bump(), cs[0].n);
+    var pc = Ꮡcs.bumpAll();
+    fmt.Println(pc.Value[0].n, pc.Value[1].n, pc.Value[2].n, pc == Ꮡcs);
+    fmt.Println(bumpVia(Ꮡcs, 1), cs[1].n);
     slots sl = default!;
     sl.at(1).Value.v = 77;
     sl.at(2).Value.v = (~sl.at(1)).v + 1;
@@ -182,5 +185,16 @@ internal static void @double(ref mont @out, ref nonMont arg) {
 }
 
 [GoType("[3]counter2")] partial struct counters;
+
+internal static ж<counters> bumpAll(this ж<counters> Ꮡc) {
+    Ꮡc.at<counter2>(0).bump();
+    Ꮡc.at<counter2>(1).bump();
+    Ꮡc.at<counter2>(2).bump();
+    return Ꮡc;
+}
+
+internal static int32 bumpVia(ж<counters> Ꮡc, nint i) {
+    return Ꮡc.at<counter2>(i).bump();
+}
 
 } // end main_package

@@ -978,8 +978,17 @@ func (v *Visitor) convSelectorExpr(selectorExpr *ast.SelectorExpr, context Lambd
 								if arrayType, ok := named.Underlying().(*types.Array); ok {
 									elemTypeName := convertToCSTypeName(v.getScopeCheckedTypeName(arrayType.Elem()))
 
+									// The base renders in POINTER context so it yields the BOX, exactly as the
+									// `&x[i]` arm in convUnaryExpr does: a deref-aliased pointer receiver or
+									// parameter (`ref var table = ref Ꮡtable.DerefOrNull();`) otherwise renders
+									// the value alias `table`, a `ref [N]E` wrapper with no `at` — CS1061 ×3 on
+									// crypto/internal/fips140/nistec's `func (table *p256Table) Compute`, new at
+									// 1.24 (`table[0].Set(q)`). A box-valued local is spelled the same either way.
+									boxIdentContext := DefaultIdentContext()
+									boxIdentContext.isPointer = true
+
 									return fmt.Sprintf("%s.at<%s>(%s).%s",
-										v.convExpr(indexExpr.X, nil), elemTypeName,
+										v.convExpr(indexExpr.X, []ExprContext{boxIdentContext}), elemTypeName,
 										v.convExpr(indexExpr.Index, nil),
 										v.convIdent(selectorExpr.Sel, v.getSelIdentContext(selectorExpr)))
 								}

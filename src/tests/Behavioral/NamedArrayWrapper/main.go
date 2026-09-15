@@ -146,6 +146,13 @@ func main() {
 	pcs := &cs
 	fmt.Println(pcs[0].bump(), pcs[0].bump(), cs[0].n) // 1 2 2
 
+	// ...and the same call through the method's own pointer RECEIVER and through a pointer PARAMETER
+	// (nistec's p256Table.Compute shape): the element box must be reached from the BOX (`Ꮡc`), since
+	// the deref alias `c` is a bare wrapper value with no `at` (CS1061). Writes land on cs itself.
+	pc := cs.bumpAll()
+	fmt.Println(pc[0].n, pc[1].n, pc[2].n, pc == &cs) // 3 1 1 true
+	fmt.Println(bumpVia(&cs, 1), cs[1].n)             // 2 2
+
 	// ELEMENT ADDRESS through a pointer receiver on a named ARRAY type (runtime sema.go's
 	// `rootFor` shape, and the one door 47ddd5a50's family left open). A Go pointer receiver
 	// renders as `this ref T s` — no ж<> box — so `&s[i]` takes golib's BY-VALUE two-arg
@@ -238,3 +245,18 @@ type counter2 struct{ n int32 }
 func (c *counter2) bump() int32 { c.n++; return c.n }
 
 type counters [3]counter2
+
+// bumpAll calls the element's pointer-receiver method through the METHOD'S OWN pointer receiver,
+// mirroring crypto/internal/fips140/nistec's `func (table *p256Table) Compute(q) *p256Table` —
+// `table[0].Set(q)` — including its RETURN of the receiver, which makes the method capture-mode:
+// the receiver is the box `ж<counters>` with a deref alias `c`, and the element-box base must spell
+// the BOX (`Ꮡc.at<counter2>(0)`), since the alias is a bare wrapper value with no `at` (CS1061).
+func (c *counters) bumpAll() *counters {
+	c[0].bump()
+	c[1].bump()
+	c[2].bump()
+	return c
+}
+
+// bumpVia is the same call through a pointer PARAMETER rather than a receiver.
+func bumpVia(c *counters, i int) int32 { return c[i].bump() }
