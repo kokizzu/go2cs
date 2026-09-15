@@ -1820,28 +1820,16 @@ public static (ж<Hostent> h, error err) GetHostByName(@string name) {
     return _GetHostByName(_p0);
 }
 
-internal static (ж<Hostent> h, error err) _GetHostByName(ж<byte> Ꮡname) {
-    ж<Hostent> h = default!;
-    error err = default!;
-
-    var ᴋ181 = Ꮡname;
-        var (r0, _, e1) = Syscall(procgethostbyname.Addr(), 1, (uintptr)ᴋ181, 0, 0);
-    System.GC.KeepAlive(ᴋ181);
-    h = (ж<Hostent>)(uintptr)((@unsafe.Pointer)r0);
-    if (h == nil) {
-        err = errnoErr(e1);
-    }
-    return (h, err);
-}
+// go2cs generated this placeholder — func _GetHostByName is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static error /*err*/ getpeername(ΔHandle s, ж<RawSockaddrAny> Ꮡrsa, ж<int32> Ꮡaddrlen) {
     error err = default!;
 
-    var ᴋ182 = Ꮡrsa;
-    var ᴋ183 = Ꮡaddrlen;
-        var (r1, _, e1) = Syscall(procgetpeername.Addr(), 3, (uintptr)s, (uintptr)ᴋ182, (uintptr)ᴋ183);
+    var ᴋ181 = Ꮡrsa;
+    var ᴋ182 = Ꮡaddrlen;
+        var (r1, _, e1) = Syscall(procgetpeername.Addr(), 3, (uintptr)s, (uintptr)ᴋ181, (uintptr)ᴋ182);
+    System.GC.KeepAlive(ᴋ181);
     System.GC.KeepAlive(ᴋ182);
-    System.GC.KeepAlive(ᴋ183);
     if (r1 == socket_error) {
         err = errnoErr(e1);
     }
@@ -1860,19 +1848,7 @@ public static (ж<Protoent> p, error err) GetProtoByName(@string name) {
     return _GetProtoByName(_p0);
 }
 
-internal static (ж<Protoent> p, error err) _GetProtoByName(ж<byte> Ꮡname) {
-    ж<Protoent> p = default!;
-    error err = default!;
-
-    var ᴋ184 = Ꮡname;
-        var (r0, _, e1) = Syscall(procgetprotobyname.Addr(), 1, (uintptr)ᴋ184, 0, 0);
-    System.GC.KeepAlive(ᴋ184);
-    p = (ж<Protoent>)(uintptr)((@unsafe.Pointer)r0);
-    if (p == nil) {
-        err = errnoErr(e1);
-    }
-    return (p, err);
-}
+// go2cs generated this placeholder — func _GetProtoByName is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static (ж<Servent> s, error err) GetServByName(@string name, @string proto) {
     ж<Servent> s = default!;
@@ -1891,30 +1867,16 @@ public static (ж<Servent> s, error err) GetServByName(@string name, @string pro
     return _GetServByName(_p0, _p1);
 }
 
-internal static (ж<Servent> s, error err) _GetServByName(ж<byte> Ꮡname, ж<byte> Ꮡproto) {
-    ж<Servent> s = default!;
-    error err = default!;
-
-    var ᴋ185 = Ꮡname;
-    var ᴋ186 = Ꮡproto;
-        var (r0, _, e1) = Syscall(procgetservbyname.Addr(), 2, (uintptr)ᴋ185, (uintptr)ᴋ186, 0);
-    System.GC.KeepAlive(ᴋ185);
-    System.GC.KeepAlive(ᴋ186);
-    s = (ж<Servent>)(uintptr)((@unsafe.Pointer)r0);
-    if (s == nil) {
-        err = errnoErr(e1);
-    }
-    return (s, err);
-}
+// go2cs generated this placeholder — func _GetServByName is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static error /*err*/ getsockname(ΔHandle s, ж<RawSockaddrAny> Ꮡrsa, ж<int32> Ꮡaddrlen) {
     error err = default!;
 
-    var ᴋ187 = Ꮡrsa;
-    var ᴋ188 = Ꮡaddrlen;
-        var (r1, _, e1) = Syscall(procgetsockname.Addr(), 3, (uintptr)s, (uintptr)ᴋ187, (uintptr)ᴋ188);
-    System.GC.KeepAlive(ᴋ187);
-    System.GC.KeepAlive(ᴋ188);
+    var ᴋ183 = Ꮡrsa;
+    var ᴋ184 = Ꮡaddrlen;
+        var (r1, _, e1) = Syscall(procgetsockname.Addr(), 3, (uintptr)s, (uintptr)ᴋ183, (uintptr)ᴋ184);
+    System.GC.KeepAlive(ᴋ183);
+    System.GC.KeepAlive(ᴋ184);
     if (r1 == socket_error) {
         err = errnoErr(e1);
     }
@@ -1924,11 +1886,11 @@ internal static error /*err*/ getsockname(ΔHandle s, ж<RawSockaddrAny> Ꮡrsa,
 public static error /*err*/ Getsockopt(ΔHandle s, int32 level, int32 optname, ж<byte> Ꮡoptval, ж<int32> Ꮡoptlen) {
     error err = default!;
 
-    var ᴋ189 = Ꮡoptval;
-    var ᴋ190 = Ꮡoptlen;
-        var (r1, _, e1) = Syscall6(procgetsockopt.Addr(), 5, (uintptr)s, (uintptr)level, (uintptr)optname, (uintptr)ᴋ189, (uintptr)ᴋ190, 0);
-    System.GC.KeepAlive(ᴋ189);
-    System.GC.KeepAlive(ᴋ190);
+    var ᴋ185 = Ꮡoptval;
+    var ᴋ186 = Ꮡoptlen;
+        var (r1, _, e1) = Syscall6(procgetsockopt.Addr(), 5, (uintptr)s, (uintptr)level, (uintptr)optname, (uintptr)ᴋ185, (uintptr)ᴋ186, 0);
+    System.GC.KeepAlive(ᴋ185);
+    System.GC.KeepAlive(ᴋ186);
     if (r1 == socket_error) {
         err = errnoErr(e1);
     }
@@ -1956,9 +1918,9 @@ public static uint16 /*u*/ Ntohs(uint16 netshort) {
 public static error /*err*/ Setsockopt(ΔHandle s, int32 level, int32 optname, ж<byte> Ꮡoptval, int32 optlen) {
     error err = default!;
 
-    var ᴋ191 = Ꮡoptval;
-        var (r1, _, e1) = Syscall6(procsetsockopt.Addr(), 5, (uintptr)s, (uintptr)level, (uintptr)optname, (uintptr)ᴋ191, (uintptr)optlen, 0);
-    System.GC.KeepAlive(ᴋ191);
+    var ᴋ187 = Ꮡoptval;
+        var (r1, _, e1) = Syscall6(procsetsockopt.Addr(), 5, (uintptr)s, (uintptr)level, (uintptr)optname, (uintptr)ᴋ187, (uintptr)optlen, 0);
+    System.GC.KeepAlive(ᴋ187);
     if (r1 == socket_error) {
         err = errnoErr(e1);
     }
