@@ -281,3 +281,603 @@ those two files; but the directory is shared work and should be sequenced with C
 - csproj extraction covered production AND tests csproj per package with the row count asserted
   non-zero, because an empty extraction would have read as "no dangling references".
 - The relocation claims are `go list std` membership plus file-name carry-over, not a content diff.
+
+## Cross-check block -- C2, 2026-09-13
+
+Read at this record's own ref **44f858717** and at **bd1d26faf** (current master as supplied to this lane),
+with three further refs — **f4ced674d**, **fd09034f53**, **9355669f8** — used only to reconcile the
+marked-file figure against lane R's. Read layer **BLOB ONLY**: `git show <ref>:<path>`, `git grep <ref>`,
+`git ls-tree`, `git rev-parse`, `git cat-file`, `git merge-base`, `git rev-list`, `git log`,
+`git diff <refA> <refB>`. No worktree file was opened, so no CRLF-vs-LF layer entered; nothing was built,
+no converter and no `dotnet` were run (absent on this box), no file in the repo was created, edited or
+deleted, and no history-modifying git verb was issued. Ancestry asserted, not assumed:
+`git merge-base --is-ancestor 44f858717 bd1d26faf` → exit 0; `bd1d26faf` has one parent, `9355669f8`.
+
+Classifier for every EXISTS / MOVED / ABSENT verdict in this block: the **real go1.24.13 toolchain**, a
+module-cache SDK on linux fetched by `GOTOOLCHAIN=go1.24.13`, proved by its bare version line
+**`go version go1.24.13 linux/amd64`** — the pin is stated that way deliberately, since a `go env GOROOT`
+spelling is an argument and never a postable value. Its `go list std` returns **345** lines (asserted
+non-empty before any verdict). `go list std` membership is the primary predicate; the SDK `src/` directory
+test (directory exists **and** holds ≥1 `.go` file) is a recorded fallback, and every row records which
+instrument answered it.
+
+**Navigation, because this block is 591 lines against the record's 283 and that ratio deserves a warning
+rather than a surprise.** §2 is the whole claim ledger and nothing below it is new information — §3, §4 and
+§7 are its derivations. A reader who wants only what CHANGES should read **§5.1** (the denominator, the one
+finding that alters how the record's reproducibility claim reads), **§5.4** and **§5.5** (the two refutations),
+and **§10**. The length is deliberate: this box is ephemeral, so evidence not written into the record is
+evidence lost, and the repo's own rule is to move provenance rather than delete it.
+
+---
+
+### 1. Where C2's instrument differs from G's
+
+| Axis | G (this record) | C2 (this block) |
+|---|---|---|
+| Verdict predicate | GOROOT **directory** scans | `go list std` **membership**, SDK `src/` dir test as fallback |
+| Instrument location | three off-git scripts in lane G's scratchpad (`g-h6census.sh`, `g-nstogo.sh`, `g-movedto.sh`) | predicate rebuilt from scratch and stated in full below; nothing read out of G's scripts |
+| Alias extractor | unknown source; output only | independently written, deliberately placing **no** constraint on alias-name characters |
+| Population | src/core scope, one ref | re-derived by C2's own line-anchored `git grep` at five refs |
+| Read layer | blob | blob (same layer, so this is not an independence axis) |
+| Agent / box | lane G | second lane, second box, plus an adversarial second derivation of C2's own numbers |
+
+Three evidence classes, kept apart on purpose:
+
+- **CONFIRMED BY A SECOND INSTRUMENT** — the verdict half. `go list std` membership is a different
+  predicate from a GOROOT directory scan, and for the two MOVED files lane R's build is a third.
+- **RE-DERIVED BY AN INDEPENDENT PREDICATE AT THE SAME READ LAYER** — the population half (145, 225/80,
+  the alias count, the bare-using count). Both sides are blob `git grep`; C2's predicate was written
+  independently and its regex *flavour* controlled (PCRE vs ERE/POSIX gave a byte-identical 145-path
+  list, `diff` exit 0), but this is a second derivation, not a second instrument.
+- **RE-READ ONLY** — locations and wordings quoted out of other documents (`REHEARSAL-h5-go124.md:169`,
+  `:157`, `CENSUS-bucket3-darwin.md:403`, the skill citations). Where a re-read number was also re-derived
+  by running its stated instrument at its stated ref, that is said explicitly; where it was not, it is
+  marked NOT MEASURED.
+
+---
+
+### 2. Claim ledger
+
+| Record claim | Record's figure | C2 @ 44f858717 | C2 @ bd1d26faf | Verdict | Class |
+|---|---|---|---|---|---|
+| Population: marked files, anchored `^\s*\[module:\s*(go\.)?GoManualConversion\]` over `src/core/**` | 145 | **145** | **146** | CONFIRMED at ref, +1 drift | re-derived |
+| Population: same grep UNANCHORED | 225, "80 false" | **225**, gap **80** | **226**, gap **80** | CONFIRMED, gap invariant | re-derived |
+| Population: `using … _package;` aliases across them | 94 | **141** raw / **94** plain-ASCII subset | 141 / 94 | REFINED — denominator | re-derived |
+| Population: alias-bearing files | 48 | **66** | **66** | REFINED | re-derived |
+| Verdicts | EXISTS 92 / MOVED 2 / ABSENT 0 | **92 / 2 / 0** over the 94; **139 / 2 / 0** over all 141 | 92 / 2 / 0 over the 94 | MOVED & ABSENT CONFIRMED; EXISTS and denominator REFINED | second instrument |
+| MOVED set = `runtime/mfinal.cs` + `runtime/runtime2.cs`, `runtime/internal/sys` → `internal/runtime/sys` | 2 files | **2** files, **1** package | unchanged; both blobs byte-identical across the range | CONFIRMED | second instrument |
+| "the rung order after `runtime` is EMPTY: 143 of the 145" | 143 / 145 | **143 / 145** | **144 / 146** | conclusion CONFIRMED, arithmetic drifts | second instrument |
+| Limits: bare `using <ns>;` across the marked files | 403 | **403** (admission-dependent — §5.3) | **404** | CONFIRMED with a boundary refinement | re-derived |
+| Limits: "zero name a directory lost at 1.24" | zero | **zero** | **zero** | CONFIRMED | second instrument |
+| `runtime/internal` survives: keeps `startlinetest` + `wasitest`, "both still in `go list std`" | both | **both IN `go list std`**; `math` and `sys` both NOT in `go list std` and NO_DIR | — | CONFIRMED | second instrument |
+| "…and the corpus converts all four today" | four | corpus converts **three** | — | REFUTED — §5.4 | second instrument |
+| Free datum: `runtime/internal/math` moved to `internal/runtime/math`, no hand-own aliases it | 0 aliases | **0** over all **141** rows, both spellings, `grep` exit 1 | **0** over all 146 files | CONFIRMED on a larger population | second instrument |
+| "The 145 matches lane R's independently-derived seed figure." | match | R's published figure is **142** at f4ced674d; 145 at 44f858717 | — | REFUTED as worded — §5.5 | re-read **and** re-derived at R's ref |
+| The published 94-row Full table | table | multiset byte-identical (`sort`+`diff` exit 0); raw unsorted `diff` exit **1** on a 10-row within-file permutation | same | CONFIRMED as a multiset — §5.6 | re-derived |
+
+Every population was asserted non-empty before its verdict: 145/146 marked files, 80 unanchored-only
+files, 141 alias rows, 403/404 bare usings, 94 scored rows, 345 `go list std` lines.
+
+---
+
+### 3. Confirmed by a second instrument
+
+**The MOVED set is exactly two files, and the relocation is real at 1.24.13.**
+`awk -F'\t' 'NR>1 && $4=="MOVED"'` over C2's 141-row table prints two rows and only two:
+`runtime/mfinal.cs` and `runtime/runtime2.cs`, both aliasing `runtime.@internal.sys_package` →
+`runtime/internal/sys` → `internal/runtime/sys`. Both halves checked directly:
+`runtime/internal/sys` NOT in `go list std` **and** NO_DIR (both instruments agree it is gone);
+`internal/runtime/sys` IN `go list std`. Destination uniqueness proved, not assumed:
+`find $GOSDK/src -type d -name sys` printed four candidates with their `.go` counts —
+`cmd/vendor/golang.org/x/sys` (0), `cmd/internal/sys` (3), `vendor/golang.org/x/sys` (0),
+`internal/runtime/sys` (10) — so after excluding `cmd/` trees and empty dirs exactly one survives and no
+AMBIGUOUS marker was emitted. The row is invariant under both tie-break policies tested
+(`excl cmd/` and `excl cmd/ + vendor/`). Non-EXISTS rows at bd1d26faf, unfiltered: 2 rows,
+DISTINCT_NONEXISTS_FILES=2, DISTINCT_NONEXISTS_PKGS=1 (`runtime`). At bd1d26faf both files still carry the
+alias — `using sys = runtime.@internal.sys_package;` at `mfinal.cs:20` and `runtime2.cs:21` — and
+`git diff --name-only 44f858717 bd1d26faf -- <file>` prints 0 lines for each, so neither blob changed in
+the range at all.
+
+**This confirmation is over a population 50% larger than the record's.** The 47 alias rows the record's
+extractor could not see (§5.1) contain no additional MOVED or ABSENT row: the corrected denominator adds
+and removes no actionable file.
+
+**`runtime/internal` does not go empty.** `ls $GOROOT/src/runtime/internal/` prints exactly
+`startlinetest` and `wasitest`; `grep -qxF` against `go list std` puts **both** in it, so the record's
+wording "both still in `go list std`" is literally correct and the SDK-directory fallback was not needed.
+`runtime/internal/math` and `runtime/internal/sys` are both NOT in `go list std` and NO_DIR. On the corpus
+side, `startlinetest/func_amd64.cs` and `startlinetest/package_info.cs` both declare
+`namespace go.runtime.@internal;` and `partial class startlinetest_package` (lines 6/8 and 55/58), and the
+csproj includes them with `<Compile Include="*.cs" Exclude="package_info.cs" />` and **no** `Condition` on
+any `Compile` item, so the namespace is populated for every target even though the sole Go source
+(`GoFiles=[func_amd64.go]`) is arch-gated. R's CS0246 on `using runtime.@internal;` is therefore not
+emptiness — but see §5.4 for the size of that margin.
+
+**The free H3 datum holds on the full population.** `runtime/internal/math` NOT in `go list std` and
+NO_DIR; `internal/runtime/math` IN `go list std`, and it appears in `ls -1 $GOSDK/src/internal/runtime/`
+beside `atomic`, `exithook`, `maps`, `sys`, `syscall`. Aliases naming it: **zero** over all 141 rows for
+both the old and the new spelling (`grep -c` = 0, `grep` exit 1 in both directions), and zero over all 146
+marked files at bd1d26faf. The MOVED resolver reached `internal/runtime/math` while having considered the
+decoy top-level `math` (`candidates seen: ['math','internal/runtime/math']`), which is the record's own
+defect-#4 pattern firing on a different row and being handled.
+
+---
+
+### 4. Re-derived by an independent predicate at the same read layer
+
+- **145 / 146 marked files.** `git grep -P -l '^\s*\[module:\s*(go\.)?GoManualConversion\]' <ref> -- 'src/core/**'`,
+  exit captured before any pipe (RC=0 at both refs), count taken with `wc -l < file`. Extension breakdown
+  of the 145: **145 `.cs`, 0 other**. Decomposition **101 `*_impl.cs` companions + 44 whole-file
+  rewrites = 145** at 44f858717, **102 + 44 = 146** at bd1d26faf. The `*.cs` restriction R used is
+  non-load-bearing at every ref tested: the `src/core/**` and `src/core/**/*.cs` path lists are
+  byte-identical, `diff` exit 0.
+- **225 / 226 unanchored, gap 80 at both refs.** The anchored set is a proven strict subset
+  (reverse `comm` = 0 at both refs). The 80-file set is **byte-identical** across the two refs (`cmp -s`
+  exit 0): zero added, zero removed.
+- **141 alias rows over 66 files**, at both refs (unchanged by the drift). Extraction completeness proved
+  rather than assumed: **146** using-lines across the marked files mention `_package`, of which **141**
+  are alias directives; all **5** leftovers were printed in full and are legitimately outside the
+  predicate — 2 `using static` of a package class, 2 aliases to a *member* not a package
+  (`using ꓸꓸꓸValue = System.Span<go.reflect_package.ΔValue>;` and
+  `global using itab = go.@internal.abi_package.ITab;`), and 1 comment-suffixed bare using
+  (`using go.@internal.runtime;   // …`). None names a moved or absent package.
+- **The 141 is complete across both layers, not just the `.cs` layer.** No multi-line alias exists: the
+  only `=`-bearing using lines in the marked files that do not end in `;` are three C# using-*statements*
+  in method bodies (`testing/PackageAncestry.cs`, `testing/TestHost.cs` ×2), printed in full.
+  `git grep -n -E '<Using[^>]*_package' 44f858717 -- 'src/core'` returns **0** matches: the MSBuild
+  `<Using Include=… Alias=…>` mechanism is used in src/core only for primitive type aliases (509 csprojs
+  declaring `uint64`/`uint32`/`int8`/`any`/`complex128`/`GoInitAttribute` and the like) and carries zero
+  package aliases.
+- **141 and 403 are not inflated by commented-out or preprocessor-dead usings** — a check neither G nor
+  C2's first pass ran. A comment-aware state machine returns **0** hits inside a `/* */` block for both
+  populations; real inline `/* */` sites across the marked files total **149** lines (first 20 printed,
+  the remainder dropped), none spanning a using; there is exactly **one** `#if` in all 145 files
+  (`src/core/testing/TestHost.cs:1204`, `#if DEBUG`), and that file's highest bare-using hit is line 22.
+- **The record's published 94-row table reproduces as a multiset** — see §5.6 for the exit code.
+
+---
+
+### 5. Refinements
+
+#### 5.1 ⚠ The alias denominator is 141, not 94 — a fifth instrument defect, and it is the one that sets the record's denominator
+
+C2's extractor, written to place **no** constraint on alias-name characters, finds **141** alias
+directives over **66** files at 44f858717 and the same 141 / 66 at bd1d26faf. The record's table holds
+**94** rows over **48** files. The record's set is a **strict subset**: `comm` in the
+in-record-not-in-mine direction = **0** rows and **0** mapping disagreements, and **0** per-row verdict
+disagreements across all 94 shared rows. The gap is 47 rows, and the mechanism was measured, not guessed —
+classifying all 141 by alias-**name shape** gives a perfect 3×2 separation with zero exceptions either
+way:
+
+| Alias-name shape | Rows | In the record's table |
+|---|---|---|
+| plain ASCII identifier | **94** | all 94 |
+| leading `@` (C# verbatim), e.g. `using @unsafe = unsafe_package;` | **34** | none |
+| non-ASCII collision escape `Δ`, e.g. `using Δsyscall = syscall_package;` | **13** | none |
+
+34 + 13 = 47, closing the gap exactly, and the plain-ASCII bucket counted alone is 94 — an exact match to
+the record's total. The Δ tally by name: `Δruntime` ×5, `Δsync` ×3, `Δsyscall` ×2, `Δio` ×2, `Δwindows` ×1.
+A **by-target** exclusion is ruled out by command: the record's table carries the Δ rows' targets under
+plain alias names (`runtime` 2 rows, `syscall` 22, `io` 2, `internal/syscall/windows` 5), so only a
+name-shape rule can explain the Δ half; for the 34 `@unsafe` rows a by-name exclusion of `unsafe` is
+indistinguishable from the shape rule (the record's table has 0 rows mentioning `unsafe`, and `unsafe`
+never appears under a plain alias name in the 141). One rule explains all 47.
+
+Corrected verdict arithmetic, printed: `139 EXISTS / 2 MOVED / 0 ABSENT` over 141
+(`uniq -c` on the verdict column; no ABSENT row was emitted). Import-path tally of the 47 dropped rows:
+34 `unsafe`, 5 `runtime`, 3 `sync`, 2 `syscall`, 2 `io`, 1 `internal/syscall/windows` — **all EXISTS**,
+which is why MOVED=2 / ABSENT=0 and the actionable set survive the correction untouched.
+
+Two whole files vanish from the record's population because every alias in them is Δ-named:
+`src/core/internal/poll/linux/fd_writev_unix.cs` (sole using, line 31, `using Δsyscall = syscall_package;`)
+and `src/core/internal/poll/windows/fd_windows_impl.cs` (line 112, `using Δsyscall = go.syscall_package;`);
+neither appears anywhere in the record's 48-file set (`grep` exit 1). Which of the remaining 18-file gap
+(66 − 48) each route accounts for is **NOT MEASURED**.
+
+Why this is structurally dangerous rather than cosmetic: a `@`-escaped alias name occurs precisely when
+the Go package's name is a C# keyword (`unsafe`, `internal`, `string`, `base`, `fixed`, `object`, `event`,
+`lock`, …) and a `Δ` prefix occurs on a go2cs collision escape. Alias-name shape is uncorrelated with
+whether the target package moved at 1.24, so the same extractor would have been equally blind to a MOVED
+or ABSENT package whose name happens to be a C# keyword. The clean actionable set is luck, not design.
+The record's own "four defects found in it" section reads as exhaustive; this is a fifth, and the record's
+"re-running the whole census reproduces 145 / 94 / 92-2-0 exactly" is a reproducibility claim about a
+blind instrument — re-running it reproduces the blind spot. The fix is a widening of one character class.
+
+**The record's RHS mapper is not implicated.** Zero mapping disagreements and zero verdict disagreements
+over all 94 rows it did see. The defect is in the alias-name character class only.
+
+#### 5.2 The `src/core/**` scope is arithmetically load-bearing, and the record's two Population rows are scoped by different commands
+
+Anchored with **no** pathspec: **148** at 44f858717 and **149** at bd1d26faf, versus 145 / 146 scoped
+(`cut -d/ -f1-2 | sort | uniq -c` on the 148: 145 `src/core` + 2 `src/tests` + 1
+`src/reconvert-deletions.ps1`). The three out-of-core anchored hits, named exactly rather than by pattern:
+
+1. **`src/reconvert-deletions.ps1`** — one anchored match, line 32, inside the script's own PowerShell
+   block comment (opener line 1, closer line 198, located by an unfiltered grep for both delimiters over
+   the whole 1032-line file), reading
+   `    [module: GoManualConversion] marker, because nothing ever CONVERTS into golib and there is no` —
+   i.e. the marker text quoted in the instrument's own `.DESCRIPTION` help. Not C#, not a hand-own. An
+   **unanchored** grep over that one file returns **six** lines (9, 32, 82, 462, 481, 764), of which only
+   line 32 is anchored; line 462 is the instrument's `$HandOwnMarkerPattern` and 764 its reason string.
+2. **`src/tests/Behavioral/ManualConversionSiblingState/state.cs`**
+3. **`src/tests/Behavioral/ManualConversionSiblingState/state.cs.target`** — a behavioral-fixture pair
+   carrying a **genuine** anchored `[module: go.GoManualConversion]` at line 8 of each, in `namespace go` /
+   `partial class main_package`, inside a 29-line fixture (siblings: `main.go`, `state.go`, `main.cs`,
+   `main.cs.target`, `state.cs.auto`, `package_info.cs`, `go.mod`, `.csproj`, `go2cs.ico`). The two are the
+   **same git blob**, `9e5c55c82c441db3fb96da9a69df022f8fe14c89`, so the "three hits" are two distinct
+   contents. The pair is a golden (input == expected target), i.e. the behavioral suite asserts a marked
+   file is re-emitted byte-identically — the clobber property the marker exists to protect. It must not be
+   swept up as a stray marker.
+
+None of the three lies under `src/core` (`git ls-tree -r --name-only <ref> -- src/core/` grep exit 1,
+zero matches) and the scoped set is a strict subset (reverse `comm` = 0 at both refs). Scope widening is
+also provably **inert for the alias half**: all three carry **0** alias lines, so 141 either way.
+
+A trap for the next re-derivation: the record's **145** row is derived with no pathspec and then narrowed
+to src/core, while its **225** row is derived with the src/core scope. Both numbers are correct *under the
+src/core scope* — unanchored with no pathspec is **307** files at 44f858717 — but the record does not say
+its two Population rows were taken by differently scoped commands, and a re-derivation that runs the
+unanchored grep unscoped lands on 307 and reads it as a defect. (The extension breakdown printed beside
+that 307 does not sum to 307, so it is **NOT MEASURED** here; the 307 total and the 225 scoped figure are.)
+
+#### 5.3 The 403 is reproducible under three different predicates, which means 403 does not identify the predicate
+
+Three independently written bare-using predicates all land on 403 at 44f858717 by three different
+admission policies. The full candidate set is **405** lines, decomposing as:
+
+| Component | Lines @ 44f858717 | Named |
+|---|---|---|
+| bare `using <ns>;` with `;` at end of line, `using static` excluded | **401** | — |
+| `using static …;` admitted by a `[^=;]*` predicate | **2** | `internal/syscall/windows/registry/registry_test.cs:35` (`using static go.@internal.syscall.windows.registry_internal_test_package;`), `vendor/golang.org/x/net/route/darwin/sys_impl.cs:48` (`using static go.vendor.golang.org.x.net.route_package;`) |
+| comment-suffixed bare usings, dropped by an end-of-line `;` anchor | **2** | `runtime/stubs_impl.cs` (`using go.@internal.runtime;   // atomic.Uint32's Store is an extension method …`), `sync/poolqueue.cs` (`using go.sync; // atomic.Uint64/Pointer's operations are extension methods …`) |
+
+401 + 2 static = 403. 401 + 2 comment-suffixed = 403. 401 + both = 405, minus the 2 `using static` = 403.
+So the record's 403 is correct, and **the strictest reading of its own wording is 401**. Note also that
+the 2 `using static` targets are **classes**, not namespaces, so 2 of the 403 cannot be resolved against
+GOROOT at all — classify before resolving wholesale.
+
+#### 5.4 The corpus converts three of the four `runtime/internal` packages, not four: the safety margin is 1, not 2
+
+`git ls-tree --name-only 44f858717:src/core/runtime/internal/` lists `math`, `sys`, `startlinetest`,
+`wasitest`, but per-directory `.cs` counts are **math=5, sys=10, startlinetest=2, wasitest=0**.
+`git ls-tree -r --name-only 44f858717:src/core/runtime/internal/wasitest` prints exactly one entry:
+`go2cs.ico`. No `.cs`, no `package_info.cs`, no `.csproj` — hence no `wasitest_package` class and no
+contribution to the namespace. This is not a conversion gap awaiting a reconvert; the root cause is in Go:
+`go list -f '{{.GoFiles}} {{.TestGoFiles}} {{.XTestGoFiles}}' runtime/internal/wasitest` returns
+`GoFiles=[] TestGoFiles=[] XTestGoFiles=[host_test.go nonblock_test.go tcpecho_test.go]`, and
+`ls $GOSDK/src/runtime/internal/wasitest/*.go | grep -v '_test\.go$'` exits 1 — `wasitest` is
+external-test-only at 1.24.13 and there is nothing for the converter to emit.
+
+The load-bearing conclusion stands: `go.runtime.@internal` is non-empty, so R's CS0246 is not emptiness.
+What is refuted is the **redundancy**. The record names two survivors and there is one,
+`startlinetest_package` — a 2× overstatement of the margin on the exact line that tells R where the error
+does *not* come from, and the surviving member's only Go source is the arch-gated `func_amd64.go`. If
+`startlinetest` is ever dropped from the corpus or from std, emptiness becomes a live mechanism and the
+record as written reads as still having a spare.
+
+#### 5.5 "The 145 matches lane R's independently-derived seed figure" is REFUTED as worded: the 145 supersedes R's 142
+
+R's published figure is **142**, not 145. `REHEARSAL-h5-go124.md` is headed "Lane R, 2026-09-07" and at
+lines 165-172 states, explicitly "against the authoritative marked-file set at master f4ced674d (git grep
+line-anchored over src/core/**/*.cs)": `marked files 142 / *_impl.cs companions 98 / whole-file rewrites 44`
+(`:169`). Running **R's exact instrument at R's exact ref** reproduces it to the row: **142 = 98 + 44**.
+So the two instruments agree perfectly and the numbers differ only because they were taken at different
+refs. The gap is exactly three files, named by `comm`, with zero removals:
+
+- `src/core/internal/syscall/windows/windows/zsyscall_windows_version_impl.cs`
+- `src/core/syscall/windows/syscall_windows_callback_impl.cs`
+- `src/core/time/sleep_impl.cs`
+
+All three are `*_impl.cs` companions. The `*.cs` restriction is **not** the cause (non-load-bearing at
+every ref). Searched for any R-attributed 145: `git grep -n 'seed figure' bd1d26faf` exits 1 — the phrase
+does not occur in the tree — and the only R/REHEARSAL marked-file row in the tree is the 142.
+
+The record's substantive point survives: at a common ref the two derivations are identical, so two
+instruments from opposite directions do converge. Only the sentence is wrong.
+
+**The stable figure to quote is the whole-file-rewrite half, not the total.** One instrument, five refs:
+
+| Ref | Date/label | total | `*_impl.cs` | whole-file |
+|---|---|---|---|---|
+| f4ced674d | R's ref, 2026-09-07 | 142 | 98 | **44** |
+| fd09034f53 | `CENSUS-bucket3-darwin.md:403`'s ref | 142 | 98 | **44** |
+| 44f858717 | this record's ref | 145 | 101 | **44** |
+| 9355669f8 | 2026-09-12 | 146 | 102 | **44** |
+| bd1d26faf | current master | 146 | 102 | **44** |
+
+Every increment is an `*_impl.cs` companion, which lands roughly weekly; the 44 has not moved. Two lanes
+quoting 142 and 145 will read it as disagreement and spend a battery reconciling instruments that are
+identical. In-tree citations of each, re-read (not re-derived): **142** at `REHEARSAL-h5-go124.md:169`,
+`CENSUS-h6-handown-go124.md:1115/1132/1580`, `CENSUS-bucket3-darwin.md:403`,
+`.claude/skills/validation-bank/SKILL.md:352`; **145** in this record and `gate-forensics/SKILL.md:462`.
+A **third** figure is also on the record and is a different instrument again:
+`REHEARSAL-h5-go124.md:157` says the H6 census it is criticising has population **149**
+(from `CENSUS-h6-handown-go124.md`) — RE-READ ONLY, not re-derived here. So is the **PROTECTED 151** at
+`REHEARSAL-h5-go124.md:338`/§10.2, whose definition (markers **and** `*_impl.cs` companions over the
+deletion pass's own population) was read but whose number was NOT MEASURED by C2.
+
+⚠ The ref `9355669f8`, carried in lane dispatches as OLD-BASE, is **not** the older ref: it is dated
+2026-09-12, is NOT an ancestor of 44f858717 (`git merge-base --is-ancestor` exit 1), IS an ancestor of
+bd1d26faf (exit 0), and already reads 146 = 102 + 44. `panic_impl.cs` therefore landed between 44f858717
+and 9355669f8. Any monotonicity or staleness argument that treats that label as chronological is inverted.
+
+#### 5.6 The published 94-row table is identical as a multiset; the raw unsorted diff exits 1
+
+Extracted from the record's fenced block (fences at lines 93/189, `sed -n '94,188p'` = 95 lines = 1 header
++ 94 rows) and normalised to `file|target|verdict`, the record's table compared against C2's independently
+scored rows: **sorted `diff` exit 0, 0 diff lines, at both refs**. The **unsorted** `diff` exits **1** at
+both refs, on 20 hunk lines = **10 rows**, every hunk a pure displacement (the identical row deleted at one
+line and added at another). Whose order is which, settled independently:
+`git show bd1d26faf:src/core/debug/pe/symbol_impl.cs | grep -nE '^[[:space:]]*using'` prints 52 `binary`,
+53 `errors`, 54 `fmt`, 55 `io`, 56 `saferio` — source-file order — while the record's table puts `saferio`
+first. So the record's own scratchpad instrument emitted a different within-file row order. Nothing about
+the 94 rows, the 92/2/0 triple or the MOVED verdict string (`MOVED -> internal/runtime/sys`) differs.
+State it as a **multiset** identity, with the sorted exit code; a re-derivation that runs an unsorted diff
+and gets exit 1 has found a permutation, not a defect.
+
+---
+
+### 6. Drift at current master bd1d26faf
+
+Range shape, measured: **49** commits (`git rev-list --count 44f858717..bd1d26faf`), **6** merges; **12**
+touched `src/core` at all, **3** of those merges — that filter discards 37 of the 49 as not reaching
+src/core. Parent-independent cross-check: `git diff --name-only 44f858717 bd1d26faf -- src/core/` = **733**
+files, which is what the population and alias diffs were computed from.
+
+**Exactly four denominators move, each by +1, and no verdict moves:**
+
+| Figure | @ 44f858717 | @ bd1d26faf |
+|---|---|---|
+| marked files (anchored, src/core) | 145 | **146** |
+| unanchored trap figure | 225 | **226** (gap stays 80) |
+| bare `using <ns>;` | 403 | **404** |
+| clean marked files ("143 of the 145") | 143 | **144 of the 146** |
+| alias rows / plain-ASCII subset | 141 / 94 | **141 / 94** (unchanged) |
+| verdict triple over the 94 | 92 / 2 / 0 | **92 / 2 / 0** |
+| MOVED files / packages | 2 / 1 | **2 / 1** |
+
+Set difference in **both** directions, not a count comparison: `comm -23` → ONLY_OLD = **0** (unfiltered,
+nothing printed); `comm -13` → ONLY_NEW = **1**; `comm -12` → BOTH = **145**; 145 + 1 = 146 closes against
+the measured population, so no offsetting pair hides behind the count. Zero marked files disappeared and
+zero stopped being marked. Identity is by path; a re-marked rename would read as one disappearance plus one
+addition, which did not occur.
+
+The single addition is **`src/core/runtime/panic_impl.cs`**, and the +1 in the bare-using row is an
+identified row rather than a difference of totals: ADDED = `src/core/runtime/panic_impl.cs|using go.golib;`,
+REMOVED = empty.
+
+- Provenance: added (status `A`) by **8fdbd4704** "runtime+golib: the fatal path severs onto the managed
+  walk", later modified by **1800b04f8** (the license-metadata sweep). Not a rename or copy —
+  `git show --name-status -M -C --find-copies-harder 8fdbd4704` still reports `A` with no source path. Not a
+  redistribution of an existing hand-own either: `src/core/runtime/panic.cs`, whose 53 lines it displaces
+  (`--numstat` → `2 53`), is NOT marked at either ref (anchored grep exit 1 at both). It does not exist at
+  44f858717 at all (`git cat-file -e 44f858717:…` exit 128).
+- Content at bd1d26faf: its complete using/marker block is two lines — 52 `using go.golib;` and 54
+  `[module: go.GoManualConversion]`. **Zero** alias directives (alias regex exit 1); its single `_package`
+  occurrence is line 58 `partial class runtime_package`, a class declaration, read in context. The file's
+  own header states there is no `panic_impl.go`, so a `-stdlib` reconvert never regenerates it.
+- The added bare-using token is `go.golib` — a golib C# namespace, not a Go import path — so the
+  "zero name a directory lost at 1.24" half is untouched: the distinct-token set is identical at both refs.
+
+**The largest churn over the record's own population is alias-invisible.** 1800b04f8 rewrote **95** of the
+146 marked files. Across all marked files in the range, **96** changed and **482** lines changed, and
+exactly **2** of those 482 lines contain the token `using`. A 95-file sweep over the census population
+moved zero census rows. Only **3** of the 12 src/core commits touched a marked file at all, and two of
+them are the same change: 8fdbd4704 and its merge 7d3d03284 ("Merge claude/c1-fatal-path-guard, train46
+seat 3") report the identical 3 marked files (`runtime/managed_impl.cs`, `runtime/panic_impl.cs`,
+`sync/mutex.cs`) — one change landed and then merged, not two independent hits.
+
+**The second of the 2 `using` lines is a widened-predicate hazard worth naming now.**
+`src/core/sync/mutex.cs` gained `using FatalReport = go.golib.FatalReport;` (OLD=0, NEW=1). It is
+alias-form but its right-hand side is a golib **type**, not a `…_package` namespace, so it contributes 0
+rows to this census's predicate; `mutex.cs` stays marked and stays out of the alias-bearing set at both
+refs. If H6 is ever re-taken with a widened predicate (all `using X = Y;`), this row enters the population
+and must be classified as non-Go — golib is hand-written C# and in `go list std` at no release — or it will
+read as a false ABSENT, which is the record's own defect-#2/#3 family.
+
+**The 2026-09-08 amendment's class did not drift, so this block opens no second front.**
+`internal/weak`: 11 files / 1 marked. `internal/concurrent`: 13 files / 2 marked. Identical at both refs.
+Corpus-wide reference sweeps identical too: **70** files mention `runtime/internal/sys` and **60** mention
+`runtime/internal/math` at both refs, with the sys-mentioning file list diffing clean (exit 0). `ΔMapType`,
+stated **with its scope** because this repo's own defect catalogue is why an unscoped count is unsafe:
+**3 files inside the amendment's two directories** (`internal/concurrent` 2, `internal/weak` 1),
+**23 files / 33 lines / 33 matches corpus-wide over src/core**, and **0 marked files** contain it — every
+one of those figures identical at 44f858717 and bd1d26faf. Remedy C is therefore still sized as the
+amendment sized it. The amendment's per-alias 1.24.13 scoring, its CS0426, its csproj dangling references,
+its abi-alias usage counts and its orphan behaviour are **NOT MEASURED** here.
+
+---
+
+### 7. New facts for the record
+
+**N1 — the 80 unanchored-only files are not merely "false"; 78 of them are the converter's own output.**
+All **382** match lines across the 80 were extracted per file and classified: **380 PLACEHOLDER_COMMENT**
+(377 func form, 3 type form, across 78 files), **1 INSIDE_STRING**, **1 LINE_COMMENT_OTHER**, and
+**0 CANDIDATE_GENUINE** — the residual bucket printed unfiltered and empty (`grep` exit 1), which is what
+makes "not one of the 80 carries a real marker" a measurement rather than an assumption. The placeholder
+text is minted at `src/go2cs/visitFuncDecl.go:348` (`funcPlaceholderFormat`) and
+`src/go2cs/visitTypeSpec.go:218`; run unfiltered, the provenance grep returns **four** lines — those two
+minting sites plus `visitFuncDecl.go:353` (a lead constant) and
+`src/go2cs/manualConversionDestination_test.go:811` (a guard regex over the emitted text). The two
+non-placeholder rows are `src/core/go2cs/symbols.json:49` (`"goTrailing": "[module: go.GoManualConversion]
+- hand-owned file; never convert over it",` — the converter's own symbols table holding the text it emits)
+and `src/core/internal/concurrent/package_info.cs:65`. Extension split of the 80: 78 `.cs`, 1 `.json`,
+1 `.auto` — the `.auto` being `src/core/runtime/runtime2.cs.auto`, the review sibling of a file that **is**
+in the anchored 145. Shape: 33 files with 1 match line, 13 with 2, 8 with 3, 4 with 4, 1 with 5, 7 with 6,
+4 with 7, and 1 each with 8/9(×2)/10/11/12/13/27/32/77; by top-level core package: runtime 34,
+internal 16, syscall 10, reflect 6, os 4, vendor 2, and 1 each in time, sync, slices, net, math, go2cs,
+debug, crypto (= 80). Top 12 by match count printed (`reflect/value.cs` 77, `reflect/type.cs` 32,
+`syscall/windows/zsyscall_windows.cs` 27, `runtime/runtime2.cs.auto` 13, …); the remaining 68 names were
+dropped, all of them placeholder-kind. **Consequence: the trap grows with the corpus.** Every new hand-own
+adds placeholder lines to its generated sibling, so the unanchored-minus-anchored gap tracks the hand-own
+count rather than being a fixed 80 of noise, the false population can never be cleaned up (only excluded by
+the anchor), and an unanchored grep gets worse over time. Independently of G, the documentation
+cross-check holds: `.claude/skills/corpus-reconvert/SKILL.md:110` names `src/core/reflect/value.cs` and
+`src/core/internal/reflectlite/value.cs` as the placeholder false-alarm sites and both are in the 80
+(`grep -xE` exit 0) — and that line is **outside** any HTML comment, so it does load on relevance.
+
+**N2 — a naive C# block-comment state machine reads FALSE-INSIDE on this corpus.** C2's first exclusion
+pass flagged 1 alias hit and 9 bare-using hits as sitting inside a `/* */` block. Reading the sources
+falsified the instrument, not the population: each flagged file contains exactly one `/*` and no `*/`
+anywhere, and both openers are inside `//` **line** comments —
+`signal_posix_impl.cs:18` (`// is the os/exec-family wall: TestWaitInterrupt/*, TestSIGQUIT, TestSIGCHLD.`)
+and `runtime_netpoll_impl.cs:62` (`// existing <Compile Include="$(GoTargetOS)/*.cs" /> glob …`). A
+line-comment-aware machine returns 0 and 0. Converter-emitted doc comments quote Go test-name globs and
+MSBuild globs, leaving an unmatched `/*` that swallows the rest of the file; an agent using such a machine
+to exclude "commented-out" hits would silently subtract real rows.
+
+**N3 — the record's own stated control `crypto/internal/alias → crypto/internal/fips140/alias` is not
+reproducible from the rule as written.** Ranking same-leaf candidates on shared path components while
+excluding only toolchain trees leaves a genuine **tie** at 1.24.13 between
+`crypto/internal/fips140/alias` and `vendor/golang.org/x/crypto/internal/alias` (both share 3 components),
+so a faithful implementation prints `AMBIGUOUS{…}` rather than the record's answer. It resolves uniquely
+only if the `vendor/` tree is excluded too — an exclusion the record does not state, and one that is wrong
+in general, since `vendor/golang.org/x/sys/cpu` is a legitimate alias target that EXISTS. Both real MOVED
+rows are invariant under either policy, so no verdict in this block depends on it. A control is the part of
+an instrument that must be reproducible from its written description; this one is under-documented in
+exactly the way defect #4 itself was.
+
+**N4 — the record's alias predicate is now fully reconstructed and independently re-runnable**, which it
+was not before: G's scripts live only in lane G's scratchpad and are not in the repo. Two independent
+reconstructions agree on the arithmetic to the digit — 141 total, minus the 34 `@`/`unsafe` rows, minus the
+13 `Δ`-named rows, the two exclusion sets disjoint (union 47) = 94 — and the reconstructed 94-row table
+matches the record's published block as a multiset at both refs. Anyone re-taking H6 after the hop can
+rebuild the predicate from this block instead of trusting the document.
+
+**N5 — the `_package` token appears in three other syntactic roles** inside the marked files (2
+`using static` of a package class, 2 aliases to a type member, 1 `partial class runtime_package`
+declaration), any of which a looser regex sweeps in as a fake alias row. The 146-vs-141 boundary above is
+the audit trail for that.
+
+**N6 — bare usings must be classified before they are resolved.** 45 distinct bare-using namespace tokens
+across the marked files at 44f858717, identical set at bd1d26faf (zero added, zero removed), partitioning
+completely as **24 DOTNET** (`System.*` plus `Microsoft.Win32.SafeHandles`), **16 GO_DIR**,
+**2 USING_STATIC_CLASS**, **2 GOLIB_CS** (`go.golib`, `go.testing_runtime` — `testing_runtime` confirmed
+absent from the 1.24.13 src tree, so a C# namespace and not a Go dir), **1 CORPUS_ROOT** (bare `go`).
+Top-20 by count printed in full and all 45 tokens enumerated before classification; the tail of 25
+per-token counts was not printed. A second pass at bd1d26faf that strips trailing comments and excludes
+`using static` counts **43** distinct tokens, of which **17** resolve to a Go directory and **26** do not
+(the 24 DOTNET plus `go.golib` and `go.testing_runtime`); 45 − 2 `using static` targets = 43 is arithmetic
+on two measured counts, and 17 = the 16 GO_DIR plus bare `go`. The record's claim is confirmed in its
+actual form — **none of the 26 was ever a Go directory, so none names a directory Go 1.24 LOST** — but a
+statement of the form "only golib fails to resolve" is off by 26. One judgement call sits inside the
+partition: bare `go` is classified CORPUS_ROOT, yet `$GOROOT/src/go` exists as a directory (`go/ast`,
+`go/parser`, …) while `go` is not in `go list std`; it tests PRESENT under either classification, so an
+agent re-deriving the split as 17 GO_DIR / 0 CORPUS_ROOT has not disagreed about anything material. The
+hazard this guards against is concrete: feeding `go.@internal.runtime` to a **package** predicate
+manufactures a bogus `MOVED -> internal/runtime` for what is a parent namespace and no Go package — which
+is why the 403/404 were counted here and deliberately **not** run through the verdict classifier.
+`internal/syscall/windows` is the mirror case: PRESENT as a directory but **not** in `go list std` on this
+linux host, a selection fact a directory test cannot see.
+
+**N7 — the 145/94 also appears in a skill, as provenance.**
+`.claude/skills/gate-forensics/SKILL.md:462` reads
+`(145 marked files, 94 converted-package aliases: EXISTS 92 / MOVED 2 / ABSENT 0)`, and that line sits
+**inside** an HTML comment block — nearest opener 443, nearest closer 470, established by an open/close
+state machine over all 148 delimiters in the 1906-line file, reporting inside_comment=1 at 461, 462 and
+463. CLAUDE.md states block HTML comments are stripped before a file enters context but stay visible to a
+human and to `Read`. The same is true of `.claude/skills/validation-bank/SKILL.md:352`'s 142 (comment
+348-356). These are provenance to correct for a human reader, not live mis-citations — and the correction
+is both halves: 145 → 146, and 94 → 141 aliases (94 with a plain-ASCII alias name).
+
+---
+
+### 8. Controls
+
+No verdict in this block rests on an instrument that was not first made to go red.
+
+| Control | Arm | Result |
+|---|---|---|
+| negative | one character altered in the marker regex | 0 matches, `grep` exit 1 — instrument proven able to red |
+| negative | one character altered in the alias regex (`_package` → `_packages`) | 0 rows, exit 1 |
+| negative | anchor removed from the marker regex | 145 → 225, number moved |
+| negative | regex flavour swapped (PCRE `\s` → ERE `[[:space:]]` POSIX classes) | byte-identical 145-path list, `diff` exit 0 — the 145 is not a `\s` artifact |
+| negative | a line dropped from the bd1d26faf marked list | set difference went 0 → 1 and named the dropped file |
+| negative | synthetic alias rows through the classifier | `@internal.nosuchpkgxyz` → ABSENT; `runtime.@internal.math` → MOVED → internal/runtime/math (rejecting the decoy top-level `math`); `@internal.weak` → MOVED → weak; `@internal.concurrent` → ABSENT; `go.@internal.abi` → EXISTS; `crypto.@internal.alias` → AMBIGUOUS (N3) |
+| negative | MOVED-resolver decoys, printed | `runtime/internal/sys`: 4 same-leaf candidates with `.go` counts, exactly one survives |
+| positive | drop mapping step "strip leading `go.`" (the record's defect #2) | EXISTS 139 → 93, MOVED 2 → 48 |
+| positive | drop dotted-segment recovery (defect #3) | EXISTS 139 → 138, MOVED 2 → 3, `vendor/golang.org/x/sys/cpu` flipping out of EXISTS |
+| positive | wrong ref (9355669f8) | marked 148/145 → 149/146 — number moved |
+| positive | perturb one verdict in the scored table | sorted `diff` exit 0 → 1 |
+| positive | SDK sanity | `go env GOROOT` prints the pinned path exactly; `go list std` = 345 lines; `src/` = 76 entries; `runtime/internal` = exactly `startlinetest` + `wasitest` |
+| positive | 1.24 relocation controls | MISSING: `runtime/internal/sys`, `runtime/internal/math`, `internal/concurrent`, `internal/weak`, `crypto/internal/alias`, a bogus dir. PRESENT: `internal/runtime/sys`, `internal/runtime/math`, `internal/sync`, `weak`, `crypto/internal/fips140/alias` |
+
+Independence within C2: the second derivation was written from the task description without reading the
+first pass's scripts, and derived its own population, extractor, mapper and classifier end to end. Its
+`go list std` output is byte-identical to the first pass's (`cmp` exit 0) — expected, same pinned SDK —
+but every downstream number was re-derived, and the row set matched in **both** `comm` directions (0 and
+0), which is the check a count alone cannot make.
+
+---
+
+### 9. Limits — what C2 could not reach
+
+- **The EMISSION half, in its entirety. NOT MEASURED.** Nothing was built: no conversion, no
+  `-stdlib` reconvert, no `dotnet` (absent on this box). Whether any C# namespace still *resolves* after
+  the hop, and what R's CS0246 on `using runtime.@internal;` actually **is**, are untested by
+  construction — C2 measured only that emptiness is not the cause, and §5.4 narrows even that margin.
+- **What existed at the PRE-hop Go release. NOT MEASURED.** Only the pinned go1.24.13 SDK is on this box,
+  so every EXISTS/MOVED/ABSENT is a statement about 1.24.13 alone. "Lost at 1.24" is re-scored only in its
+  checkable direction (does it resolve at 1.24.13), never as a before/after comparison of two GOROOTs.
+- **Build-tag selection. NOT MEASURED.** Which files a given GOOS/GOARCH selects, and therefore which of
+  the 16 Go-derived namespaces the corpus emits per target, was not measured;
+  `internal/syscall/windows` is the case in point (PRESENT as a directory, not in `go list std` here).
+- **API-level compatibility of the relocated packages. NOT MEASURED.** `internal/runtime/sys` and
+  `internal/runtime/math` were confirmed by `go list std` membership plus leaf carry-over; no content or
+  exported-symbol diff was taken, so a rename that also changed signatures would not show up.
+- **G's instrument source. NOT MEASURED.** `g-h6census.sh`, `g-nstogo.sh` and `g-movedto.sh` are not in
+  the repository. "The extractor requires a plain-ASCII alias name" is inferred from a perfect 3×2
+  separation and a 34 + 13 = 47 closure, not read from code; whether widening one character class in those
+  scripts would yield 141 is likewise NOT MEASURED.
+- **Whether each of the 145/146 marked files is a legitimate hand-own. NOT MEASURED.** The population
+  predicate is "carries the anchored marker". No file was audited for whether its marker is warranted, and
+  the record's own amendment class of **unmarked** metadata files (`package_info.cs`, `.csproj`) is a
+  population a marker-keyed instrument cannot see; it was not enumerated.
+- **Non-alias references to moved packages. NOT MEASURED** beyond the two corpus-wide sweeps in §6. The
+  alias predicate reads `using X = <ns>_package;` lines in `.cs` blobs; csproj `<ProjectReference>` rows,
+  `using static` and type-member aliases are outside it. "No hand-own **aliases** it" is measured;
+  "nothing references it" is not.
+- **`src/core/runtime/panic_impl.cs`'s correctness. NOT MEASURED** — only that it exists, is marked,
+  carries zero package aliases and has no Go source to be regenerated from. Its behaviour and the adding
+  commit's own owed gates are untouched here.
+- **Anything at a ref newer than bd1d26faf. NOT MEASURED.** This worktree is read-only and shared, so no
+  fetch was performed; "current master" is bd1d26faf as supplied, and the safety floor's
+  measure-after-a-fetch rule is unmet for that reason.
+- **Whether lane R published a 145 outside the git tree. NOT MEASURED.** The tree at bd1d26faf was
+  searched, `docs/phase4/MAILBOX.md` included; a post at another ref or on an out-of-tree channel was not.
+- **The record's `git grep`-vs-`-l`-vs-`-o` counting modes outside the figures listed.** The path-filtered
+  commit count 12 is git's default history-simplified count; the unsimplified set was not enumerated.
+  NOT MEASURED.
+
+---
+
+### 10. Verdict
+
+**AMENDMENT BLOCK, NOT A RE-TAKE**, derived from three printed results rather than judgement:
+
+1. **The record's output is unchanged.** Its 94-row table is identical to C2's independently scored rows as
+   a multiset at both refs (sorted `diff` exit 0, 0 diff lines — see §5.6 for the unsorted exit code), and
+   the verdict triple is 92 / 2 / 0 at both refs.
+2. **The actionable set is unchanged.** 2 files, 1 package, both blobs byte-unchanged across the range
+   (`git diff --name-only` → 0 lines each), and confirmed by a second instrument over a population 50%
+   larger than the record's, which adds no MOVED and no ABSENT row.
+3. **Only denominators move.** marked 145 → 146, clean 143 → 144, bare-using 403 → 404, unanchored trap
+   225 → 226, with zero removals (ONLY_OLD = 0) and the +1 in each case an identified row.
+
+What the record should carry forward, with the corrected numbers:
+
+- "`using … _package;` aliases across them = 94" → **141 alias directives over 66 files; 94 of them have a
+  plain-ASCII alias name, which is the subset this record's extractor captured.**
+- "EXISTS 92 / MOVED 2 / ABSENT 0" → **EXISTS 139 / MOVED 2 / ABSENT 0 over 141** (92 / 2 / 0 over the 94).
+- "143 of the 145 marked files carry no moved or absent package alias" → **144 of the 146 at bd1d26faf**;
+  and the informative shape is that **64 of the 66 alias-bearing files are clean** — the other 79/80 are
+  clean by carrying no alias, not by surviving a check.
+- "both still in `go list std`, and the corpus converts all four today" → **the corpus converts three;
+  `runtime/internal/wasitest` is external-test-only at 1.24.13 and emits nothing. The margin under
+  `go.runtime.@internal` is one member, `startlinetest_package`, not two.**
+- "The 145 matches lane R's independently-derived seed figure." → **the 145 supersedes R's 142 by three
+  `*_impl.cs` companions that landed between f4ced674d and 44f858717; at a common ref the two derivations
+  are identical. The invariant to quote across refs is 44 whole-file rewrites.**
+- Add the **fifth instrument defect** (alias-name character class) beside the four already documented, and
+  the note that `crypto/internal/alias` → `crypto/internal/fips140/alias` needs a stated `vendor/`
+  exclusion to reproduce.
