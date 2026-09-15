@@ -1873,6 +1873,22 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// this file did not build.
 		"GetAddrInfoW":  goosWindows,
 		"FreeAddrInfoW": goosWindows,
+		// THE NET-DATABASE FAMILY, the three unclosed siblings of the arc above. Each generated
+		// wrapper reinterprets ws2_32's returned record address as a MANAGED BOX in one line —
+		// `h = (ж<Hostent>)(uintptr)((@unsafe.Pointer)r0)` — over records whose Name is `ж<byte>`
+		// and whose Aliases / AddrList / Proto are `ж<ж<byte>>` or `ж<byte>`, i.e. managed
+		// references where native hostent / protoent / servent carry raw char* and char**. Nothing
+		// faults at the cast; the fabrication is at the first READ, which materializes the whole
+		// record — net's getprotobyname reads `(~p).Proto`, one uint16, and fabricates Name and
+		// Aliases on the way to it, the PrimaryGroupID note from os/user in a second costume. And
+		// ws2_32 returns these from THREAD-LOCAL storage, which net's own source says at
+		// lookup_windows.go, so a box aliasing them is stale the moment the thread resolves again.
+		// The `_`-prefixed members are registered rather than the exported ones: the reinterpret is
+		// theirs, and the exported wrappers do the string conversion faithfully. Bodies in
+		// zsyscall_windows_netdb_impl.cs, transcribe-on-arrival beside the addrinfo companion.
+		"_GetHostByName":  goosWindows,
+		"_GetProtoByName": goosWindows,
+		"_GetServByName":  goosWindows,
 		// The DNS RECORD pair, the same transcription shape one class over — and the member the
 		// ptrout census deferred BY NAME ("it belongs to a `net` DNS arc"). Two defects meet here:
 		// _DnsQuery's `qrs` is a `**DNSRecord` OUT-parameter, so the generated `(uintptr)Ꮡqrs`

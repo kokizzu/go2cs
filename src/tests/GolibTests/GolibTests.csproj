@@ -88,6 +88,12 @@
          unset means the default windows corpus, so a bare "!= 'windows'" removes it on every
          ordinary run and a filtered `dotnet test` answers "No test matches" with EXIT 0. -->
     <Compile Remove="WindowsLocalGroupDecisionTests.cs" />
+
+    <!-- The net-database transcription guard drives the converted syscall package's netdb seams
+         (transcribeHostent / Protoent / Servent and the two copy cores), which its L3 windows/
+         folder declares. Same reason and same form as the three above; the syscall reference this
+         project already carries needs no change, so only the gate FILE is conditional. -->
+    <Compile Remove="WindowsNetDbTranscriptionTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
