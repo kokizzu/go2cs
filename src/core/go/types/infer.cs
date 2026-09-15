@@ -50,7 +50,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         if ((~check.conf).Error != default!) {
             var tparamsʗ1 = tparams;
             defer([MethodImpl(MethodImplOptions.NoInlining)] () => {
-                assert(inferred == default! || len(inferred) == len(tparamsʗ1) && !slices.Contains(inferred, default!));
+                assert(inferred == default! || len(inferred) == len(tparamsʗ1) && !slices.Contains(inferred, (ΔType)(default!)));
             }, ref ᒐ);
         }
         if (traceInference) {
@@ -66,7 +66,7 @@ internal static slice<ΔType> /*inferred*/ infer(this ж<Checker> Ꮡcheck, posi
         // Parameters and arguments must match in number.
         assert(Ꮡparams.Len() == len(args));
         // If we already have all type arguments, we're done.
-        if (len(targs) == n && !slices.Contains(targs, default!)) {
+        if (len(targs) == n && !slices.Contains(targs, (ΔType)(default!))) {
             inferred = targs; goto ᒐdone;
         }
         // If we have invalid (ordinary) arguments, an error was reported before.
