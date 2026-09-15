@@ -24450,4 +24450,67 @@ abbreviation — ask the object store to expand it; a fabricated SHA with a vali
 check, and an error body on stdout is a non-empty answer.
 
 — i9
+
+## 2026-09-13 — i9: **`archive/tar` — a banked 97-verdict row killed the test host ONCE in 27 isolated runs (`0xc0000409`, 0 verdicts). 25 consecutive clean runs since. Rate bounded ≤ 11.3% (95%, one-sided); cause UNATTRIBUTED. Recorded as an open question beside the row's banked figure, NOT as a condition on it.**
+
+**WHY THIS IS A BOARD ROW AND NOT A ROSTER ANNOTATION.** A figure correct on 26 of 27 runs, with the one
+failure unattributed, is a figure with an open question beside it rather than a figure with a condition
+on it. The roster is derived, never hand-set, and nothing here justifies moving a banked number. What it
+justifies is the next person who sees this row fail knowing it has failed before.
+
+**THE OBSERVATION.** During calibration probing for the H10 shard map (row chosen for a timing reading,
+not for its health), `archive/tar` was run twice in isolation on the i9. The second run died:
+
+```
+  converted tests ... archive.tar.tests.exe --json -timeout 10m0s ... failed: exit status 0xc0000409
+      (STATUS_STACK_BUFFER_OVERRUN -- a NATIVE fail-fast in the test host, not a managed exception)
+  C# verdicts produced: 0.  All ~97 rows read  Go="pass"  C#=""
+  the sweep's oracle-only check correctly REFUSED the stale results file rather than reading its tail
+```
+
+**THE CHARACTERISATION.** Five isolated runs were ruled first; five bound nothing (at the observed rate,
+five clean runs happen 47% of the time), so twenty more were run — the smallest battery that sees a 14%
+event at 95% confidence.
+
+```
+  ALL observations on the i9, 2026-09-13, tree a02ac3df3, -Filter archive/tar -Exact -SkipBuild
+    1 crash (0 verdicts)  +  26 passes (97 verdicts every time, 16-22 s, mean 16.7 s)  =  27 runs
+    consecutive clean runs since the crash                 25
+    point estimate                                          3.7%
+    one-sided 95% UPPER BOUND from 0 events in 25          <= 11.3%   (rule of three: ~12%)
+    ruled out at 95%                                        p >= 14%
+    driving the bound to 5% needs n = 59; to 2%, n = 149 -- NOT spent
+```
+
+⚠ **THE CAUSE IS NOT ATTRIBUTED, AND THAT IS THE POINT OF THE ENTRY.** `0xc0000409` is a native
+fail-fast; a transient — memory pressure, another process, a scheduler artefact — looks identical and
+would not recur. One event with 25 clean runs after it is what a one-off environmental fault looks like
+AND what a ~4% row-caused fault looks like. **Nothing measured separates them.**
+
+⚠ **The diagnostic that would separate them was not captured, by construction.** The instrument records
+"the last test name reached before the fail-fast"; the converted-test event stream only reaches the sweep
+log on a FAILING run, so that column reads `?` on all 25 clean runs. **The battery gathered none of the
+diagnostic it was built to gather, because the arm it was built for did not occur.** If this recurs, that
+column is the first thing to read.
+
+**DISPOSITION.**
+- **No condition on the roster row.** Its banked 97 stands as derived.
+- **`archive/tar` is disqualified as a calibration standard** for the H10 shard map, and that judgement
+  does not depend on the rate — a row that has crashed the host once is not a measuring stick.
+  `compress/flate` stands (4 clean reps, 64 verdicts every run, median 27 s).
+- **No further battery is spent here.** H10's recon leg measures every row with per-row repetitions under
+  the dispatch mode; it answers this across the whole roster for free, and this row's rate falls out of it.
+- **If it recurs**: read the last-test-reached column, and size the fix as a native fault in the test host
+  (a stack overrun is not a converted-code defect until something shows it is).
+
+**EVIDENCE.** `logs/evidence-tar-n5/` (the twenty runs and their per-run table; the five before them) and
+`logs/evidence-calibration/` (the original crash log, and the four `compress/flate` reps taken in the same
+session).
+
+**THE DISCIPLINE THIS ROW COST, worth more than the row.** A clean N = 5 is the single most likely
+outcome at every crash rate worth worrying about, so "5/5 green" reads like an all-clear and is not one.
+**A rate needs its runs enumerated and its statistical power stated, or it is not a reading** — the
+count-versus-set rule pointed at a rate rather than at a set.
+
+— i9
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
