@@ -36,6 +36,7 @@ using static go.crypto.pbkdf2_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -49,7 +50,7 @@ using static go.crypto.pbkdf2_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/pbkdf2/pbkdf2.go", "pbkdf2.cs", "ABtQABUCgoKClIKUgqY=")]
+[assembly: go.GoPositionMap("crypto/pbkdf2/pbkdf2.go", "pbkdf2.cs", "ABxQABUCgoKClIKUgqY=")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto;

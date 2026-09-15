@@ -15,6 +15,7 @@ using fips140hash = go.crypto.@internal.fips140hash_package;
 using fips140only = go.crypto.@internal.fips140only_package;
 using errors = errors_package;
 using hash = hash_package;
+using fips140 = go.crypto.@internal.fips140_package;
 using go.crypto.@internal;
 using go.crypto.@internal.fips140;
 
@@ -35,7 +36,7 @@ public static (slice<byte>, error) Extract<H>(Func<H> h, slice<byte> secret, sli
             return (default!, err);
         }
     }
-    return (hkdf.Extract(fh, secret, salt), default!);
+    return (hkdf.Extract(widen<hash.Hash, fips140.Hash>(fh, elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), secret, salt), default!);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -61,7 +62,7 @@ public static (slice<byte>, error) Expand<H>(Func<H> h, slice<byte> pseudorandom
     if (keyLength > limit) {
         return (default!, errors.New(hkdfRequestedKeyLengthˢ));
     }
-    return (hkdf.Expand(fh, pseudorandomKey, info, keyLength), default!);
+    return (hkdf.Expand(widen<hash.Hash, fips140.Hash>(fh, elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), pseudorandomKey, info, keyLength), default!);
 }
 
 // Key derives a key from the given hash, secret, salt and context info,
@@ -80,7 +81,7 @@ public static (slice<byte>, error) Key<Hash>(Func<Hash> h, slice<byte> secret, s
     if (keyLength > limit) {
         return (default!, errors.New(hkdfRequestedKeyLengthˢ));
     }
-    return (hkdf.Key(fh, secret, salt, info, keyLength), default!);
+    return (hkdf.Key(widen<hash.Hash, fips140.Hash>(fh, elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), secret, salt, info, keyLength), default!);
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)

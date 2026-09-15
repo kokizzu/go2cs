@@ -446,7 +446,7 @@ internal static readonly @string tlsInvalidPskBinderˢ = "tls: invalid PSK binde
                 }
             }
         }
-        hs.earlySecret = tls13.NewEarlySecret<hash.Hash>(() => (~hs.suite).hash.New(), (~sessionState).secret);
+        hs.earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~sessionState).secret);
         var binderKey = hs.earlySecret.ResumptionBinderKey();
         // Clone the transcript in case a HelloRetryRequest was recorded.
         var transcript = cloneHash(hs.transcript, (~hs.suite).hash);
@@ -617,8 +617,8 @@ internal static readonly @string tlsClientIllegallyˢ = "tls: client illegally m
                 return (default!, errΔ2);
             }
         }
-        var acceptConfirmation = tls13.ExpandLabel<hash.Hash>(() => (~hs.suite).hash.New(),
-            hkdf.Extract<hash.Hash>(() => (~hs.suite).hash.New(), (~hs.clientHello).random, default!),
+        var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
+            hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~hs.clientHello).random, default!),
             hrrEchAcceptConfirmationˢ,
             confTranscript.Sum(default!),
             8);
@@ -750,8 +750,8 @@ internal static bool illegalClientHelloChange(ref clientHelloMsg ch, ref clientH
             }
         }
         // compute the acceptance message
-        var acceptConfirmation = tls13.ExpandLabel<hash.Hash>(() => (~hs.suite).hash.New(),
-            hkdf.Extract<hash.Hash>(() => (~hs.suite).hash.New(), (~hs.clientHello).random, default!),
+        var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
+            hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~hs.clientHello).random, default!),
             echAcceptConfirmationˢ,
             echTranscript.Sum(default!),
             8);
@@ -774,7 +774,7 @@ internal static bool illegalClientHelloChange(ref clientHelloMsg ch, ref clientH
     }
     var earlySecret = hs.earlySecret;
     if (earlySecret == nil) {
-        earlySecret = tls13.NewEarlySecret<hash.Hash>(() => (~hs.suite).hash.New(), default!);
+        earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), default!);
     }
     hs.handshakeSecret = earlySecret.HandshakeSecret(hs.sharedKey);
     var serverSecret = hs.handshakeSecret.ServerHandshakeTrafficSecret(new hash_HashᴠHash(hs.transcript));
@@ -988,7 +988,7 @@ internal static error sendSessionTicket(this ж<Conn> Ꮡc, bool earlyData, slic
     }
     // ticket_nonce, which must be unique per connection, is always left at
     // zero because we only ever send one ticket per connection.
-    var psk = tls13.ExpandLabel<hash.Hash>(() => (~suite).hash.New(), c.resumptionSecret, resumptionˢ,
+    var psk = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), c.resumptionSecret, resumptionˢ,
         default!, (~suite).hash.Size());
     var m = @new<newSessionTicketMsgTLS13>();
     var state = c.sessionState();

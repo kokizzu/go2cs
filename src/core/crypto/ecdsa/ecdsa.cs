@@ -32,6 +32,7 @@ using io = io_package;
 using big = math.big_package;
 using cryptobyte = vendor.golang.org.x.crypto.cryptobyte_package;
 using asn1 = vendor.golang.org.x.crypto.cryptobyte.asn1_package;
+using fips140 = go.crypto.@internal.fips140_package;
 using go.crypto;
 using go.crypto.@internal;
 using go.crypto.@internal.boring;
@@ -285,7 +286,7 @@ internal static (slice<byte>, error) signFIPS<P>(ж<ecdsa.Curve<P>> Ꮡc, ref Pr
     // Always using SHA-512 instead of the hash that computed hash is
     // technically a violation of draft-irtf-cfrg-det-sigs-with-noise-04 but in
     // our API we don't get to know what it was, and this has no security impact.
-    (var sig, err) = ecdsa.Sign<P, hash.Hash>(Ꮡc, sha512.New, k, rand, hash);
+    (var sig, err) = ecdsa.Sign<P, fips140.Hash>(Ꮡc, widen<hash.Hash, fips140.Hash>(sha512.New, elemᴛ1 => new hash_HashᴠHash(elemᴛ1)), k, rand, hash);
     if (err != default!) {
         return (default!, err);
     }
@@ -339,7 +340,7 @@ internal static (slice<byte>, error) signFIPSDeterministic<P>(ж<ecdsa.Curve<P>>
     if (fips140only.Enabled && !fips140only.ApprovedHash(h())) {
         return (default!, errors.New(cryptoEcdsaUseOfHashˢ));
     }
-    (var sig, err) = ecdsa.SignDeterministic(Ꮡc, h, k, hash);
+    (var sig, err) = ecdsa.SignDeterministic(Ꮡc, widen<hash.Hash, fips140.Hash>(h, elemᴛ1 => new hash_HashᴠHash(elemᴛ1)), k, hash);
     if (err != default!) {
         return (default!, err);
     }

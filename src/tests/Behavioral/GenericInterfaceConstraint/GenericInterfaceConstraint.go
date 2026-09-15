@@ -85,6 +85,19 @@ func newUnitCircle() *Circle {
 	return &Circle{R: 1}
 }
 
+// Figure is a SIBLING of Shape: the same method set and no embedding edge, mirroring crypto's
+// hash.Hash beside crypto/internal/fips140.Hash. C# sees no nominal relation between the two, so a
+// func() Figure reaching makeShape's S projects through the generated INTERFACE adapter. Round,
+// which embeds Shape, derives from it nominally and needs no projection.
+type Figure interface {
+	Area() float64
+	Name() string
+}
+
+func newFigure() Figure {
+	return &Square{S: 2}
+}
+
 func main() {
 	circles := []*Circle{&Circle{R: 1}, &Circle{R: 2}} // pointer instantiation — adapter-projected
 	squares := []*Square{&Square{S: 3}}                // second pointer type — distinct adapter
@@ -106,4 +119,10 @@ func main() {
 	fmt.Println(makeShape(newUnitCircle))                                // function value — func-result projection
 	fmt.Println(makeShape(func() *Circle { shared.R++; return shared })) // one shared box: both reads see R=3
 	fmt.Println(makeShape(none))                                         // nil func stays nil
+
+	fig := Figure(&Circle{R: 2})
+
+	fmt.Println(makeShape(newFigure))                             // SIBLING interface, function value — interface adapter
+	fmt.Println(makeShape(func() Figure { return fig }))          // SIBLING interface, literal
+	fmt.Println(makeShape(func() Round { return &Circle{R: 1} })) // EMBEDS Shape — nominal, no projection
 }

@@ -43,6 +43,7 @@ using static go.crypto.@internal.hpke_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -56,7 +57,7 @@ using static go.crypto.@internal.hpke_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/internal/hpke/hpke.go", "hpke.cs", "ACE6goKCgoKCpoKCgoKCgoIAHDKCgoKUAAsQooKmwoKClJSClIKClISChKaygoKUgoKUhAAVNIKClAAoPoKEgoKUhIKCloKCgoSEkpKUgoKWAAkUgoKClIKCloKClqaCgoKUgoKWgoKWpoKCgpSmpoKUpoKCgqaCgoKUgqaCgoKCgoLWgoKClKaCgoKU7oKCpoKmgoKCgg==")]
+[assembly: go.GoPositionMap("crypto/internal/hpke/hpke.go", "hpke.cs", "ACI6goKCgoKCpoKCgoKCgoIAHDKCgoKUAAsQooKmwoKClJSClIKClISChKaygoKUgoKUhAAVNIKClAAoPoKEgoKUhIKCloKCgoSEkpKUgoKWAAkUgoKClIKCloKClqaCgoKUgoKWgoKWpoKCgpSmpoKUpoKCgqaCgoKUgqaCgoKCgoLWgoKClKaCgoKU7oKCpoKmgoKCgg==")]
 // </GoSourcePositionMaps>
 
 namespace go.crypto.@internal;
