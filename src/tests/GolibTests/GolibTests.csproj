@@ -81,8 +81,8 @@
     <Compile Remove="TokenDoorWiredTests.cs" />
 
     <!-- Row 46's owed observer drives os/user's local-group DECISION, which is declared only in that
-         package's L3 windows/ folder (lookup_windows_impl.cs). os/user is NOT windows-exclusive --
-         it has linux/ and darwin/ folders of its own -- so unlike the two files above this one would
+         package's L3 windows/ folder (lookup_windows_impl.cs). os/user is NOT windows-exclusive —
+         it has linux/ and darwin/ folders of its own — so unlike the two files above this one would
          compile against a real assembly on another flavour and fail on the missing member. Same
          '!= \'\' and != windows' form and the same reason: $(GoTargetOS) is unset in this project and
          unset means the default windows corpus, so a bare "!= 'windows'" removes it on every
