@@ -53,7 +53,7 @@ internal static readonly curveID p384 = "P-384"u8;
 internal static readonly curveID p521 = "P-521"u8;
 
 [GoType] partial struct Curve<P>
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     internal curveID curve;
     internal Func<P> newPoint;
@@ -71,10 +71,10 @@ internal static readonly curveID p521 = "P-521"u8;
     (P, error) ScalarBaseMult(slice<byte> _);
 }
 
-public static ж<Curve<ж<Δnistec.P224Point>>> P224() {
-    return Ꮡ(new Curve<ж<Δnistec.P224Point>>(
+public static ж<Curve<P224PointжPoint>> P224() {
+    return Ꮡ(new Curve<P224PointжPoint>(
         curve: p224,
-        newPoint: Δnistec.NewP224Point,
+        newPoint: () => Δnistec.NewP224Point(),
         N: p224Order
     ));
 }
@@ -86,10 +86,10 @@ internal static slice<byte> p224Order = new byte[]{
     0x5c, 0x5c, 0x2a, 0x3d
 }.slice();
 
-public static ж<Curve<ж<Δnistec.P256Point>>> P256() {
-    return Ꮡ(new Curve<ж<Δnistec.P256Point>>(
+public static ж<Curve<P256PointжPoint>> P256() {
+    return Ꮡ(new Curve<P256PointжPoint>(
         curve: p256,
-        newPoint: Δnistec.NewP256Point,
+        newPoint: () => Δnistec.NewP256Point(),
         N: p256Order
     ));
 }
@@ -101,10 +101,10 @@ internal static slice<byte> p256Order = new byte[]{
     0xf3, 0xb9, 0xca, 0xc2, 0xfc, 0x63, 0x25, 0x51
 }.slice();
 
-public static ж<Curve<ж<Δnistec.P384Point>>> P384() {
-    return Ꮡ(new Curve<ж<Δnistec.P384Point>>(
+public static ж<Curve<P384PointжPoint>> P384() {
+    return Ꮡ(new Curve<P384PointжPoint>(
         curve: p384,
-        newPoint: Δnistec.NewP384Point,
+        newPoint: () => Δnistec.NewP384Point(),
         N: p384Order
     ));
 }
@@ -118,10 +118,10 @@ internal static slice<byte> p384Order = new byte[]{
     0xec, 0xec, 0x19, 0x6a, 0xcc, 0xc5, 0x29, 0x73
 }.slice();
 
-public static ж<Curve<ж<Δnistec.P521Point>>> P521() {
-    return Ꮡ(new Curve<ж<Δnistec.P521Point>>(
+public static ж<Curve<P521PointжPoint>> P521() {
+    return Ꮡ(new Curve<P521PointжPoint>(
         curve: p521,
-        newPoint: Δnistec.NewP521Point,
+        newPoint: () => Δnistec.NewP521Point(),
         N: p521Order
     ));
 }
@@ -143,7 +143,7 @@ internal static readonly @string cryptoEcdhPublicKeyDoesˢ = "crypto/ecdh: publi
 
 // GenerateKey generates a new ECDSA private key pair for the specified curve.
 public static (ж<PrivateKey>, error) GenerateKey<P>(ж<Curve<P>> Ꮡc, io.Reader rand)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     ref var c = ref Ꮡc.DerefOrNull();
 
@@ -198,7 +198,7 @@ public static (ж<PrivateKey>, error) GenerateKey<P>(ж<Curve<P>> Ꮡc, io.Reade
 internal static readonly @string cryptoEcdhInvalidPrivateˢ = "crypto/ecdh: invalid private key"u8;
 
 public static (ж<PrivateKey>, error) NewPrivateKey<P>(ж<Curve<P>> Ꮡc, slice<byte> key)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     ref var c = ref Ꮡc.DerefOrNull();
 
@@ -229,7 +229,7 @@ public static (ж<PrivateKey>, error) NewPrivateKey<P>(ж<Curve<P>> Ꮡc, slice<
 internal static readonly @string cryptoEcdhInvalidPublicˢ = "crypto/ecdh: invalid public key"u8;
 
 public static (ж<ΔPublicKey>, error) NewPublicKey<P>(ж<Curve<P>> Ꮡc, slice<byte> key)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     ref var c = ref Ꮡc.DerefOrNull();
 
@@ -250,7 +250,7 @@ public static (ж<ΔPublicKey>, error) NewPublicKey<P>(ж<Curve<P>> Ꮡc, slice<
 }
 
 public static (slice<byte>, error) ECDH<P>(ж<Curve<P>> Ꮡc, ж<PrivateKey> Ꮡk, ж<ΔPublicKey> Ꮡpeer)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     fipsSelfTest();
     fips140.RecordApproved();
@@ -262,7 +262,7 @@ internal static readonly @string cryptoEcdhMismatchedˢ = "crypto/ecdh: mismatch
 internal static readonly @string cryptoEcdhPublicKeyIsTheˢ = "crypto/ecdh: public key is the identity element"u8;
 
 internal static (slice<byte>, error) ecdh<P>(ref Curve<P> c, ref PrivateKey k, ref ΔPublicKey peer)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     if (c.curve != k.pub.curve) {
         return (default!, errors.New(cryptoEcdhMismatchedˢ));

@@ -57,11 +57,11 @@ internal static slice<byte> testHash() {
 internal static readonly @string ecdsaPctˢ = "ECDSA PCT"u8;
 
 internal static void fipsPCT<P>(ж<Curve<P>> Ꮡc, ж<PrivateKey> Ꮡk)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     fips140.PCT(ecdsaPctˢ, () => {
         var hash = testHash();
-        var drbg = newDRBG<fips140.Hash>(widen<ж<sha512.Digest>, fips140.Hash>(sha512.New, elemᴛ0 => new sha512_DigestжHash(elemᴛ0)), Ꮡk.Value.d, bits2octets(ref (P256()).DerefOrNull(), hash), default!);
+        var drbg = newDRBG<fips140.Hash>(widen<ж<sha512.Digest>, fips140.Hash>(sha512.New, elemᴛ0 => new sha512_DigestжHash(elemᴛ0)), Ꮡk.Value.d, bits2octets<P256PointжPoint>(ref (P256()).DerefOrNull(), hash), default!);
         var (sig, err) = sign(ref (Ꮡc).DerefOrNull(), ref (Ꮡk).DerefOrNull(), drbg, hash);
         if (err != default!) {
             return err;
@@ -97,12 +97,12 @@ internal static void initᴛfipsSelfTest() { fipsSelfTest = sync.OnceFunc(() => 
         }.slice()
         ));
         var drbg = newDRBG<fips140.Hash>(widen<ж<sha512.Digest>, fips140.Hash>(sha512.New, elemᴛ0 => new sha512_DigestжHash(elemᴛ0)), Z, default!, ((plainPersonalizationString)persStr));
-        var (got, err) = sign(ref (P256()).DerefOrNull(), ref (k).DerefOrNull(), drbg, hash);
+        var (got, err) = sign<P256PointжPoint>(ref (P256()).DerefOrNull(), ref (k).DerefOrNull(), drbg, hash);
         if (err != default!) {
             return err;
         }
         {
-            var errΔ1 = verify(ref (P256()).DerefOrNull(), ref (k.of(PrivateKey.Ꮡpub)).DerefOrNull(), hash, ref (got).DerefOrNull()); if (errΔ1 != default!) {
+            var errΔ1 = verify<P256PointжPoint>(ref (P256()).DerefOrNull(), ref (k.of(PrivateKey.Ꮡpub)).DerefOrNull(), hash, ref (got).DerefOrNull()); if (errΔ1 != default!) {
                 return errΔ1;
             }
         }
@@ -131,13 +131,13 @@ internal static void initᴛfipsSelfTestDeterministic() { fipsSelfTestDeterminis
             0xb9, 0xfa, 0x0f, 0xbd, 0x3b, 0x9b, 0xc2, 0xfe
         }.slice()
         ));
-        var drbg = newDRBG<fips140.Hash>(widen<ж<sha512.Digest>, fips140.Hash>(sha512.New, elemᴛ0 => new sha512_DigestжHash(elemᴛ0)), (~k).d, bits2octets(ref (P256()).DerefOrNull(), hash), default!);
-        var (got, err) = sign(ref (P256()).DerefOrNull(), ref (k).DerefOrNull(), drbg, hash);
+        var drbg = newDRBG<fips140.Hash>(widen<ж<sha512.Digest>, fips140.Hash>(sha512.New, elemᴛ0 => new sha512_DigestжHash(elemᴛ0)), (~k).d, bits2octets<P256PointжPoint>(ref (P256()).DerefOrNull(), hash), default!);
+        var (got, err) = sign<P256PointжPoint>(ref (P256()).DerefOrNull(), ref (k).DerefOrNull(), drbg, hash);
         if (err != default!) {
             return err;
         }
         {
-            var errΔ1 = verify(ref (P256()).DerefOrNull(), ref (k.of(PrivateKey.Ꮡpub)).DerefOrNull(), hash, ref (got).DerefOrNull()); if (errΔ1 != default!) {
+            var errΔ1 = verify<P256PointжPoint>(ref (P256()).DerefOrNull(), ref (k.of(PrivateKey.Ꮡpub)).DerefOrNull(), hash, ref (got).DerefOrNull()); if (errΔ1 != default!) {
                 return errΔ1;
             }
         }

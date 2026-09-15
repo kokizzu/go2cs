@@ -194,16 +194,16 @@ public static (ж<PrivateKey>, error) GenerateKey(elliptic.Curve c, io.Reader ra
     boring.UnreachableExceptTests();
     var exprᴛ1 = c.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        return generateFIPS(c, ecdsa.P224(), rand);
+        return generateFIPS<ecdsa.P224PointжPoint>(c, ecdsa.P224(), rand);
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        return generateFIPS(c, ecdsa.P256(), rand);
+        return generateFIPS<ecdsa.P256PointжPoint>(c, ecdsa.P256(), rand);
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        return generateFIPS(c, ecdsa.P384(), rand);
+        return generateFIPS<ecdsa.P384PointжPoint>(c, ecdsa.P384(), rand);
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        return generateFIPS(c, ecdsa.P521(), rand);
+        return generateFIPS<ecdsa.P521PointжPoint>(c, ecdsa.P521(), rand);
     }
     { /* default: */
         return generateLegacy(c, rand);
@@ -215,7 +215,7 @@ public static (ж<PrivateKey>, error) GenerateKey(elliptic.Curve c, io.Reader ra
 internal static readonly @string cryptoEcdsaOnlyCryptoˢ = "crypto/ecdsa: only crypto/rand.Reader is allowed in FIPS 140-only mode"u8;
 
 internal static (ж<PrivateKey>, error) generateFIPS<P>(elliptic.Curve curve, ж<ecdsa.Curve<P>> Ꮡc, io.Reader rand)
-    where P : /* ecdsa.Point[P] */ new()
+    where P : ecdsa.Point<P>
 {
     if (fips140only.Enabled && !fips140only.ApprovedRandomReader(rand)) {
         return (default!, errors.New(cryptoEcdsaOnlyCryptoˢ));
@@ -253,16 +253,16 @@ public static (slice<byte>, error) SignASN1(io.Reader rand, ж<PrivateKey> Ꮡpr
     boring.UnreachableExceptTests();
     var exprᴛ1 = priv.Curve.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        return signFIPS(ecdsa.P224(), ref (Ꮡpriv).DerefOrNull(), rand, hash);
+        return signFIPS<ecdsa.P224PointжPoint>(ecdsa.P224(), ref (Ꮡpriv).DerefOrNull(), rand, hash);
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        return signFIPS(ecdsa.P256(), ref (Ꮡpriv).DerefOrNull(), rand, hash);
+        return signFIPS<ecdsa.P256PointжPoint>(ecdsa.P256(), ref (Ꮡpriv).DerefOrNull(), rand, hash);
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        return signFIPS(ecdsa.P384(), ref (Ꮡpriv).DerefOrNull(), rand, hash);
+        return signFIPS<ecdsa.P384PointжPoint>(ecdsa.P384(), ref (Ꮡpriv).DerefOrNull(), rand, hash);
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        return signFIPS(ecdsa.P521(), ref (Ꮡpriv).DerefOrNull(), rand, hash);
+        return signFIPS<ecdsa.P521PointжPoint>(ecdsa.P521(), ref (Ꮡpriv).DerefOrNull(), rand, hash);
     }
     { /* default: */
         return signLegacy(ref (Ꮡpriv).DerefOrNull(), rand, hash);
@@ -271,7 +271,7 @@ public static (slice<byte>, error) SignASN1(io.Reader rand, ж<PrivateKey> Ꮡpr
 }
 
 internal static (slice<byte>, error) signFIPS<P>(ж<ecdsa.Curve<P>> Ꮡc, ref PrivateKey priv, io.Reader rand, slice<byte> hash)
-    where P : /* ecdsa.Point[P] */ new()
+    where P : ecdsa.Point<P>
 {
     if (fips140only.Enabled && !fips140only.ApprovedRandomReader(rand)) {
         return (default!, errors.New(cryptoEcdsaOnlyCryptoˢ));
@@ -308,16 +308,16 @@ internal static (slice<byte>, error) signRFC6979(ref PrivateKey priv, slice<byte
     }
     var exprᴛ1 = priv.Curve.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        return signFIPSDeterministic(ecdsa.P224(), h, ref priv, hash);
+        return signFIPSDeterministic<ecdsa.P224PointжPoint>(ecdsa.P224(), h, ref priv, hash);
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        return signFIPSDeterministic(ecdsa.P256(), h, ref priv, hash);
+        return signFIPSDeterministic<ecdsa.P256PointжPoint>(ecdsa.P256(), h, ref priv, hash);
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        return signFIPSDeterministic(ecdsa.P384(), h, ref priv, hash);
+        return signFIPSDeterministic<ecdsa.P384PointжPoint>(ecdsa.P384(), h, ref priv, hash);
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        return signFIPSDeterministic(ecdsa.P521(), h, ref priv, hash);
+        return signFIPSDeterministic<ecdsa.P521PointжPoint>(ecdsa.P521(), h, ref priv, hash);
     }
     { /* default: */
         return (default!, errors.New(ecdsaCurveNotSupportedByˢ));
@@ -329,7 +329,7 @@ internal static (slice<byte>, error) signRFC6979(ref PrivateKey priv, slice<byte
 internal static readonly @string cryptoEcdsaUseOfHashˢ = "crypto/ecdsa: use of hash functions other than SHA-2 or SHA-3 is not allowed in FIPS 140-only mode"u8;
 
 internal static (slice<byte>, error) signFIPSDeterministic<P>(ж<ecdsa.Curve<P>> Ꮡc, crypto.Hash hashFunc, ref PrivateKey priv, slice<byte> hash)
-    where P : /* ecdsa.Point[P] */ new()
+    where P : ecdsa.Point<P>
 {
     var (k, err) = privateKeyToFIPS(Ꮡc, ref priv);
     if (err != default!) {
@@ -400,16 +400,16 @@ public static bool VerifyASN1(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte
     boring.UnreachableExceptTests();
     var exprᴛ1 = pub.Curve.Params();
     if (exprᴛ1 == elliptic.P224().Params()) {
-        return verifyFIPS(ecdsa.P224(), ref (Ꮡpub).DerefOrNull(), hash, sig);
+        return verifyFIPS<ecdsa.P224PointжPoint>(ecdsa.P224(), ref (Ꮡpub).DerefOrNull(), hash, sig);
     }
     if (exprᴛ1 == elliptic.P256().Params()) {
-        return verifyFIPS(ecdsa.P256(), ref (Ꮡpub).DerefOrNull(), hash, sig);
+        return verifyFIPS<ecdsa.P256PointжPoint>(ecdsa.P256(), ref (Ꮡpub).DerefOrNull(), hash, sig);
     }
     if (exprᴛ1 == elliptic.P384().Params()) {
-        return verifyFIPS(ecdsa.P384(), ref (Ꮡpub).DerefOrNull(), hash, sig);
+        return verifyFIPS<ecdsa.P384PointжPoint>(ecdsa.P384(), ref (Ꮡpub).DerefOrNull(), hash, sig);
     }
     if (exprᴛ1 == elliptic.P521().Params()) {
-        return verifyFIPS(ecdsa.P521(), ref (Ꮡpub).DerefOrNull(), hash, sig);
+        return verifyFIPS<ecdsa.P521PointжPoint>(ecdsa.P521(), ref (Ꮡpub).DerefOrNull(), hash, sig);
     }
     { /* default: */
         return verifyLegacy(ref (Ꮡpub).DerefOrNull(), hash, sig);
@@ -418,7 +418,7 @@ public static bool VerifyASN1(ж<PublicKey> Ꮡpub, slice<byte> hash, slice<byte
 }
 
 internal static bool verifyFIPS<P>(ж<ecdsa.Curve<P>> Ꮡc, ref PublicKey pub, slice<byte> hash, slice<byte> sig)
-    where P : /* ecdsa.Point[P] */ new()
+    where P : ecdsa.Point<P>
 {
     var (r, s, err) = parseSignature(sig);
     if (err != default!) {
@@ -472,7 +472,7 @@ internal static (ж<PrivateKey>, error) privateKeyFromFIPS(elliptic.Curve curve,
 }
 
 internal static (ж<ecdsaꓸPublicKey>, error) publicKeyToFIPS<P>(ж<ecdsa.Curve<P>> Ꮡc, ref PublicKey pub)
-    where P : /* ecdsa.Point[P] */ new()
+    where P : ecdsa.Point<P>
 {
     var (Q, err) = pointFromAffine(pub.Curve, pub.X, pub.Y);
     if (err != default!) {
@@ -482,7 +482,7 @@ internal static (ж<ecdsaꓸPublicKey>, error) publicKeyToFIPS<P>(ж<ecdsa.Curve
 }
 
 internal static (ж<ecdsa.PrivateKey>, error) privateKeyToFIPS<P>(ж<ecdsa.Curve<P>> Ꮡc, ref PrivateKey priv)
-    where P : /* ecdsa.Point[P] */ new()
+    where P : ecdsa.Point<P>
 {
     var (Q, err) = pointFromAffine(priv.Curve, priv.X, priv.Y);
     if (err != default!) {

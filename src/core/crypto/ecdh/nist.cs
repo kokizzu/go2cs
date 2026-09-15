@@ -180,11 +180,11 @@ public static ΔCurve P256() {
 
 internal static ж<nistCurve> p256 = Ꮡ(new nistCurve(
     name: "P-256"u8,
-    generate: (io.Reader r) => go.crypto.@internal.fips140.ecdh_package.GenerateKey(go.crypto.@internal.fips140.ecdh_package.P256(), r),
-    newPrivateKey: (slice<byte> b) => go.crypto.@internal.fips140.ecdh_package.NewPrivateKey(go.crypto.@internal.fips140.ecdh_package.P256(), b),
-    newPublicKey: (slice<byte> publicKey) => go.crypto.@internal.fips140.ecdh_package.NewPublicKey(go.crypto.@internal.fips140.ecdh_package.P256(), publicKey),
+    generate: (io.Reader r) => go.crypto.@internal.fips140.ecdh_package.GenerateKey<ecdh.P256PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P256(), r),
+    newPrivateKey: (slice<byte> b) => go.crypto.@internal.fips140.ecdh_package.NewPrivateKey<ecdh.P256PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P256(), b),
+    newPublicKey: (slice<byte> publicKey) => go.crypto.@internal.fips140.ecdh_package.NewPublicKey<ecdh.P256PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P256(), publicKey),
     sharedSecret: (ж<ecdh.PrivateKey> priv, ж<ecdhꓸPublicKey> pub) => {
-        return go.crypto.@internal.fips140.ecdh_package.ECDH(go.crypto.@internal.fips140.ecdh_package.P256(), priv, pub);
+        return go.crypto.@internal.fips140.ecdh_package.ECDH<ecdh.P256PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P256(), priv, pub);
     }
 ));
 
@@ -199,11 +199,11 @@ public static ΔCurve P384() {
 
 internal static ж<nistCurve> p384 = Ꮡ(new nistCurve(
     name: "P-384"u8,
-    generate: (io.Reader r) => go.crypto.@internal.fips140.ecdh_package.GenerateKey(go.crypto.@internal.fips140.ecdh_package.P384(), r),
-    newPrivateKey: (slice<byte> b) => go.crypto.@internal.fips140.ecdh_package.NewPrivateKey(go.crypto.@internal.fips140.ecdh_package.P384(), b),
-    newPublicKey: (slice<byte> publicKey) => go.crypto.@internal.fips140.ecdh_package.NewPublicKey(go.crypto.@internal.fips140.ecdh_package.P384(), publicKey),
+    generate: (io.Reader r) => go.crypto.@internal.fips140.ecdh_package.GenerateKey<ecdh.P384PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P384(), r),
+    newPrivateKey: (slice<byte> b) => go.crypto.@internal.fips140.ecdh_package.NewPrivateKey<ecdh.P384PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P384(), b),
+    newPublicKey: (slice<byte> publicKey) => go.crypto.@internal.fips140.ecdh_package.NewPublicKey<ecdh.P384PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P384(), publicKey),
     sharedSecret: (ж<ecdh.PrivateKey> priv, ж<ecdhꓸPublicKey> pub) => {
-        return go.crypto.@internal.fips140.ecdh_package.ECDH(go.crypto.@internal.fips140.ecdh_package.P384(), priv, pub);
+        return go.crypto.@internal.fips140.ecdh_package.ECDH<ecdh.P384PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P384(), priv, pub);
     }
 ));
 
@@ -218,11 +218,11 @@ public static ΔCurve P521() {
 
 internal static ж<nistCurve> p521 = Ꮡ(new nistCurve(
     name: "P-521"u8,
-    generate: (io.Reader r) => go.crypto.@internal.fips140.ecdh_package.GenerateKey(go.crypto.@internal.fips140.ecdh_package.P521(), r),
-    newPrivateKey: (slice<byte> b) => go.crypto.@internal.fips140.ecdh_package.NewPrivateKey(go.crypto.@internal.fips140.ecdh_package.P521(), b),
-    newPublicKey: (slice<byte> publicKey) => go.crypto.@internal.fips140.ecdh_package.NewPublicKey(go.crypto.@internal.fips140.ecdh_package.P521(), publicKey),
+    generate: (io.Reader r) => go.crypto.@internal.fips140.ecdh_package.GenerateKey<ecdh.P521PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P521(), r),
+    newPrivateKey: (slice<byte> b) => go.crypto.@internal.fips140.ecdh_package.NewPrivateKey<ecdh.P521PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P521(), b),
+    newPublicKey: (slice<byte> publicKey) => go.crypto.@internal.fips140.ecdh_package.NewPublicKey<ecdh.P521PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P521(), publicKey),
     sharedSecret: (ж<ecdh.PrivateKey> priv, ж<ecdhꓸPublicKey> pub) => {
-        return go.crypto.@internal.fips140.ecdh_package.ECDH(go.crypto.@internal.fips140.ecdh_package.P521(), priv, pub);
+        return go.crypto.@internal.fips140.ecdh_package.ECDH<ecdh.P521PointжPoint>(go.crypto.@internal.fips140.ecdh_package.P521(), priv, pub);
     }
 ));
 

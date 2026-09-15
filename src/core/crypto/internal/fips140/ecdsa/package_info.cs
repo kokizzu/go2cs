@@ -40,6 +40,10 @@ using static go.crypto.@internal.fips140.ecdsa_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<blockAlignedPersonalizationString, personalizationString>]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P224Point, Point<go.crypto.@internal.fips140.nistec_package.P224Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P256Point, Point<go.crypto.@internal.fips140.nistec_package.P256Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P384Point, Point<go.crypto.@internal.fips140.nistec_package.P384Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P521Point, Point<go.crypto.@internal.fips140.nistec_package.P521Point>>(ConstraintProxy = true)]
 [assembly: GoImplement<go.crypto.@internal.fips140.sha512_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
 [assembly: GoImplement<plainPersonalizationString, personalizationString>]
 // </InterfaceImplementations>

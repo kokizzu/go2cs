@@ -38,6 +38,10 @@ using static go.crypto.@internal.fips140.ecdh_package;
 // this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P224Point, Point<go.crypto.@internal.fips140.nistec_package.P224Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P256Point, Point<go.crypto.@internal.fips140.nistec_package.P256Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P384Point, Point<go.crypto.@internal.fips140.nistec_package.P384Point>>(ConstraintProxy = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.nistec_package.P521Point, Point<go.crypto.@internal.fips140.nistec_package.P521Point>>(ConstraintProxy = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

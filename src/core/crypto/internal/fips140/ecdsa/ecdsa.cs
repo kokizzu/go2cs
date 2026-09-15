@@ -49,7 +49,7 @@ internal static readonly curveID p384 = "P-384"u8;
 internal static readonly curveID p521 = "P-521"u8;
 
 [GoType] partial struct Curve<P>
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     internal curveID curve;
     internal Func<P> newPoint;
@@ -71,7 +71,7 @@ internal static readonly curveID p521 = "P-521"u8;
 }
 
 internal static void precomputeParams<P>(ref Curve<P> c, slice<byte> order)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     error err = default!;
     (c.N, err) = bigmod.NewModulus(order);
@@ -82,17 +82,17 @@ internal static void precomputeParams<P>(ref Curve<P> c, slice<byte> order)
     c.nMinus2 = bigmod.NewNat().ExpandFor(c.N).Sub(two, c.N).Bytes(c.N);
 }
 
-public static ж<Curve<ж<Δnistec.P224Point>>> P224() {
+public static ж<Curve<P224PointжPoint>> P224() {
     return _P224();
 }
 
-internal static Func<ж<Curve<ж<Δnistec.P224Point>>>> _P224;
-internal static void initᴛ_P224() { _P224 = sync.OnceValue(ж<Curve<ж<Δnistec.P224Point>>> () => {
-    var c = Ꮡ(new Curve<ж<Δnistec.P224Point>>(
+internal static Func<ж<Curve<P224PointжPoint>>> _P224;
+internal static void initᴛ_P224() { _P224 = sync.OnceValue(ж<Curve<P224PointжPoint>> () => {
+    var c = Ꮡ(new Curve<P224PointжPoint>(
         curve: p224,
-        newPoint: Δnistec.NewP224Point
+        newPoint: () => Δnistec.NewP224Point()
     ));
-    precomputeParams(ref (c).DerefOrNull(), p224Order);
+    precomputeParams<P224PointжPoint>(ref (c).DerefOrNull(), p224Order);
     return c;
 }); }
 
@@ -103,18 +103,18 @@ internal static slice<byte> p224Order = new byte[]{
     0x5c, 0x5c, 0x2a, 0x3d
 }.slice();
 
-public static ж<Curve<ж<Δnistec.P256Point>>> P256() {
+public static ж<Curve<P256PointжPoint>> P256() {
     return _P256();
 }
 
-internal static Func<ж<Curve<ж<Δnistec.P256Point>>>> _P256;
-internal static void initᴛ_P256() { _P256 = sync.OnceValue(ж<Curve<ж<Δnistec.P256Point>>> () => {
-    var c = Ꮡ(new Curve<ж<Δnistec.P256Point>>(
+internal static Func<ж<Curve<P256PointжPoint>>> _P256;
+internal static void initᴛ_P256() { _P256 = sync.OnceValue(ж<Curve<P256PointжPoint>> () => {
+    var c = Ꮡ(new Curve<P256PointжPoint>(
         curve: p256,
-        newPoint: Δnistec.NewP256Point,
-        ordInverse: Δnistec.P256OrdInverse
+        newPoint: () => Δnistec.NewP256Point(),
+        ordInverse: (Δp0) => Δnistec.P256OrdInverse(Δp0)
     ));
-    precomputeParams(ref (c).DerefOrNull(), p256Order);
+    precomputeParams<P256PointжPoint>(ref (c).DerefOrNull(), p256Order);
     return c;
 }); }
 
@@ -124,17 +124,17 @@ internal static slice<byte> p256Order = new byte[]{
     0xbc, 0xe6, 0xfa, 0xad, 0xa7, 0x17, 0x9e, 0x84,
     0xf3, 0xb9, 0xca, 0xc2, 0xfc, 0x63, 0x25, 0x51}.slice();
 
-public static ж<Curve<ж<Δnistec.P384Point>>> P384() {
+public static ж<Curve<P384PointжPoint>> P384() {
     return _P384();
 }
 
-internal static Func<ж<Curve<ж<Δnistec.P384Point>>>> _P384;
-internal static void initᴛ_P384() { _P384 = sync.OnceValue(ж<Curve<ж<Δnistec.P384Point>>> () => {
-    var c = Ꮡ(new Curve<ж<Δnistec.P384Point>>(
+internal static Func<ж<Curve<P384PointжPoint>>> _P384;
+internal static void initᴛ_P384() { _P384 = sync.OnceValue(ж<Curve<P384PointжPoint>> () => {
+    var c = Ꮡ(new Curve<P384PointжPoint>(
         curve: p384,
-        newPoint: Δnistec.NewP384Point
+        newPoint: () => Δnistec.NewP384Point()
     ));
-    precomputeParams(ref (c).DerefOrNull(), p384Order);
+    precomputeParams<P384PointжPoint>(ref (c).DerefOrNull(), p384Order);
     return c;
 }); }
 
@@ -146,17 +146,17 @@ internal static slice<byte> p384Order = new byte[]{
     0x58, 0x1a, 0x0d, 0xb2, 0x48, 0xb0, 0xa7, 0x7a,
     0xec, 0xec, 0x19, 0x6a, 0xcc, 0xc5, 0x29, 0x73}.slice();
 
-public static ж<Curve<ж<Δnistec.P521Point>>> P521() {
+public static ж<Curve<P521PointжPoint>> P521() {
     return _P521();
 }
 
-internal static Func<ж<Curve<ж<Δnistec.P521Point>>>> _P521;
-internal static void initᴛ_P521() { _P521 = sync.OnceValue(ж<Curve<ж<Δnistec.P521Point>>> () => {
-    var c = Ꮡ(new Curve<ж<Δnistec.P521Point>>(
+internal static Func<ж<Curve<P521PointжPoint>>> _P521;
+internal static void initᴛ_P521() { _P521 = sync.OnceValue(ж<Curve<P521PointжPoint>> () => {
+    var c = Ꮡ(new Curve<P521PointжPoint>(
         curve: p521,
-        newPoint: Δnistec.NewP521Point
+        newPoint: () => Δnistec.NewP521Point()
     ));
-    precomputeParams(ref (c).DerefOrNull(), p521Order);
+    precomputeParams<P521PointжPoint>(ref (c).DerefOrNull(), p521Order);
     return c;
 }); }
 
@@ -171,7 +171,7 @@ internal static slice<byte> p521Order = new byte[]{0x01, 0xff,
     0xbb, 0x6f, 0xb7, 0x1e, 0x91, 0x38, 0x64, 0x09}.slice();
 
 public static (ж<PrivateKey>, error) NewPrivateKey<P>(ж<Curve<P>> Ꮡc, slice<byte> D, slice<byte> Q)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     ref var c = ref Ꮡc.DerefOrNull();
 
@@ -189,7 +189,7 @@ public static (ж<PrivateKey>, error) NewPrivateKey<P>(ж<Curve<P>> Ꮡc, slice<
 }
 
 public static (ж<ΔPublicKey>, error) NewPublicKey<P>(ж<Curve<P>> Ꮡc, slice<byte> Q)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     ref var c = ref Ꮡc.DerefOrNull();
 
@@ -205,7 +205,7 @@ public static (ж<ΔPublicKey>, error) NewPublicKey<P>(ж<Curve<P>> Ꮡc, slice<
 
 // GenerateKey generates a new ECDSA private key pair for the specified curve.
 public static (ж<PrivateKey>, error) GenerateKey<P>(ж<Curve<P>> Ꮡc, io.Reader rand)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     ref var c = ref Ꮡc.DerefOrNull();
 
@@ -232,7 +232,7 @@ public static (ж<PrivateKey>, error) GenerateKey<P>(ж<Curve<P>> Ꮡc, io.Reade
 // (Per-Message Secret Number Generation for Deterministic ECDSA) followed by
 // Step 5 of Section 6.4.1.
 internal static (ж<bigmodꓸNat> k, P p, error err) randomPoint<P>(ref Curve<P> c, Func<slice<byte>, error> generate)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     while (ᐧ) {
         var b = new slice<byte>(c.N.Size());
@@ -295,7 +295,7 @@ internal static readonly @string ecdsaPrivateKeyDoesNotˢ = "ecdsa: private key 
 // the bit-length of the private key's curve order, the hash will be truncated
 // to that length.
 public static (ж<Signature>, error) Sign<P, H>(ж<Curve<P>> Ꮡc, Func<H> h, ж<PrivateKey> Ꮡpriv, io.Reader rand, slice<byte> hash)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
     where H : fips140.Hash
 {
     ref var c = ref Ꮡc.DerefOrNull();
@@ -332,7 +332,7 @@ public static (ж<Signature>, error) Sign<P, H>(ж<Curve<P>> Ꮡc, Func<H> h, ж
 // will be truncated to that length. This applies Deterministic ECDSA as
 // specified in FIPS 186-5 and RFC 6979.
 public static (ж<Signature>, error) SignDeterministic<P, H>(ж<Curve<P>> Ꮡc, Func<H> h, ж<PrivateKey> Ꮡpriv, slice<byte> hash)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
     where H : fips140.Hash
 {
     ref var c = ref Ꮡc.DerefOrNull();
@@ -350,7 +350,7 @@ public static (ж<Signature>, error) SignDeterministic<P, H>(ж<Curve<P>> Ꮡc, 
 // bits2octets as specified in FIPS 186-5, Appendix B.2.4 or RFC 6979,
 // Section 2.3.4. See RFC 6979, Section 3.5 for the rationale.
 internal static slice<byte> bits2octets<P>(ref Curve<P> c, slice<byte> hash)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     var e = bigmod.NewNat();
     hashToNat(ref c, e, hash);
@@ -362,7 +362,7 @@ internal static readonly @string ecdsaInternalErrorRIsˢ = "ecdsa: internal erro
 internal static readonly @string ecdsaInternalErrorSIsˢ = "ecdsa: internal error: s is zero"u8;
 
 internal static (ж<Signature>, error) signGeneric<P>(ref Curve<P> c, ref PrivateKey priv, ж<hmacDRBG> Ꮡdrbg, slice<byte> hash)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     // FIPS 186-5, Section 6.4.1
     var (k, R, err) = randomPoint(ref c, (slice<byte> b) => {
@@ -407,7 +407,7 @@ internal static (ж<Signature>, error) signGeneric<P>(ref Curve<P> c, ref Privat
 
 // inverse sets kInv to the inverse of k modulo the order of the curve.
 internal static void inverse<P>(ref Curve<P> c, ж<bigmodꓸNat> ᏑkInv, ж<bigmodꓸNat> Ꮡk)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     ref var k = ref Ꮡk.DerefOrNull();
 
@@ -430,7 +430,7 @@ internal static void inverse<P>(ref Curve<P> c, ж<bigmodꓸNat> ᏑkInv, ж<big
 // hashToNat sets e to the left-most bits of hash, according to
 // FIPS 186-5, Section 6.4.1, point 2 and Section 6.4.2, point 3.
 internal static void hashToNat<P>(ref Curve<P> c, ж<bigmodꓸNat> Ꮡe, slice<byte> hash)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     // ECDSA asks us to take the left-most log2(N) bits of hash, and use them as
     // an integer modulo N. This is the absolute worst of all worlds: we still
@@ -482,7 +482,7 @@ internal static readonly @string ecdsaPublicKeyDoesNotˢ = "ecdsa: public key do
 // The inputs are not considered confidential, and may leak through timing side
 // channels, or if an attacker has control of part of the inputs.
 public static error Verify<P>(ж<Curve<P>> Ꮡc, ж<ΔPublicKey> Ꮡpub, slice<byte> hash, ж<Signature> Ꮡsig)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     ref var c = ref Ꮡc.DerefOrNull();
     ref var pub = ref Ꮡpub.DerefOrNull();
@@ -501,7 +501,7 @@ internal static readonly @string ecdsaInvalidSignatureSIsˢ = "ecdsa: invalid si
 internal static readonly @string ecdsaSignatureDidNotˢ = "ecdsa: signature did not verify"u8;
 
 internal static error verifyGeneric<P>(ref Curve<P> c, ref ΔPublicKey pub, slice<byte> hash, ref Signature sig)
-    where P : /* Point[P] */ new()
+    where P : Point<P>
 {
     // FIPS 186-5, Section 6.4.2
     var (Q, err) = c.newPoint().SetBytes(pub.q);
