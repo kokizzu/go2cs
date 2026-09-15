@@ -165,41 +165,16 @@ public static (@string, error) GetUserName(uint32 format) {
     }
 }
 
-// getTokenInfo retrieves a specified type of information about an access token.
-internal static (@unsafe.Pointer, error) getTokenInfo(syscall.Token t, uint32 @class, nint initSize) {
-    ref var n = ref heap<uint32>(out var Ꮡn);
-    n = (uint32)initSize;
-    while (ᐧ) {
-        var b = new slice<byte>((nint)(n));
-        var e = syscall.GetTokenInformation(t, @class, Ꮡ(b, 0), (uint32)len(b), Ꮡn);
-        if (e == default!) {
-            return (@unsafe.Pointer.FromPinnedBox(Ꮡ(b, 0)), default!);
-        }
-        if (!AreEqual(e, syscall.ERROR_INSUFFICIENT_BUFFER)) {
-            return (default!, e);
-        }
-        if (n <= (uint32)len(b)) {
-            return (default!, e);
-        }
-    }
-}
+// go2cs generated this placeholder — func getTokenInfo is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 [GoType] partial struct TOKEN_GROUPS {
     public uint32 GroupCount;
     public array<SID_AND_ATTRIBUTES> Groups = new(1);
 }
 
-[GoRecv] public static slice<SID_AND_ATTRIBUTES> AllGroups(this ref TOKEN_GROUPS g) {
-    return (~array<SID_AND_ATTRIBUTES>.AliasPointer(Ꮡ(g.Groups, 0), 268435455)).slice(-1, (int)(g.GroupCount), (int)(g.GroupCount));
-}
+// go2cs generated this placeholder — func AllGroups is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static (ж<TOKEN_GROUPS>, error) GetTokenGroups(syscall.Token t) {
-    var (i, e) = getTokenInfo(t, syscall.TokenGroups, 50);
-    if (e != default!) {
-        return (default!, e);
-    }
-    return ((ж<TOKEN_GROUPS>)(uintptr)(i), default!);
-}
+// go2cs generated this placeholder — func GetTokenGroups is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-sid_identifier_authority
 [GoType] partial struct SID_IDENTIFIER_AUTHORITY {
@@ -227,17 +202,7 @@ public static SID_IDENTIFIER_AUTHORITY SECURITY_NT_AUTHORITY = new SID_IDENTIFIE
 // Also, use runtime.KeepAlive to ensure that the sid is not garbage collected
 // before the GetSid* functions return, as the Go GC is not aware that the
 // pointers returned by the syscall are pointing into the sid's memory.
-
-//go:nocheckptr
-public static SID_IDENTIFIER_AUTHORITY GetSidIdentifierAuthority(ж<syscall.SID> Ꮡsid) {
-    GoFrame ᒐ = default;
-    try {
-        defer(runtime.KeepAlive, Ꮡsid.OrTypedNil(), ref ᒐ);
-        return (~(ж<SID_IDENTIFIER_AUTHORITY>)(uintptr)((@unsafe.Pointer)getSidIdentifierAuthority(Ꮡsid))).ΔClone();
-    }
-    catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); return default!; }
-    finally { ᒐ.Run(); }
-}
+// go2cs generated this placeholder — func GetSidIdentifierAuthority is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 //go:nocheckptr
 public static uint32 GetSidSubAuthority(ж<syscall.SID> Ꮡsid, uint32 subAuthorityIdx) {
