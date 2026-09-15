@@ -2063,6 +2063,34 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// sides of the boundary: the MANAGED LUID is correct, only the native image is not. The
 		// hand-own is internal/syscall/windows/windows/zsyscall_windows_privilege_impl.cs.
 		"adjustTokenPrivileges": goosWindows,
+		// The TOKEN-INFORMATION members, and the UNREPAIRED TWINS of members cured in
+		// syscall/windows/security_windows.cs on 2026-08. That file's header is the reference for
+		// the fork -- a KERNEL BYTE BUFFER THE CALLER REINTERPRETS, where no wrapper is at fault --
+		// and this package declares its OWN TOKEN_GROUPS, SID_AND_ATTRIBUTES,
+		// SID_IDENTIFIER_AUTHORITY and getTokenInfo loop, so the cure did not reach them. Nothing
+		// did, until Go 1.24 moved os/user's group lookup onto the process token.
+		//
+		// ONE ROOT, at security_windows.cs:201 and :236: `(ж<TOKEN_GROUPS>)(uintptr)(i)` and its
+		// sibling cast a kernel-filled byte buffer to a managed record whose field is a MANAGED
+		// REFERENCE, so the first read of that field fabricates an object reference out of raw
+		// kernel bytes. Measured (i9, c5f7b4b90d / ad7795475a): AllGroups read the fabricated
+		// array's length, `slice bounds out of range [::20] with capacity 14` against a token
+		// reporting 20 groups; GetSidIdentifierAuthority dereferenced the fabrication and took the
+		// test host down with an AccessViolationException at go.array<byte>.Clone(), which is why
+		// that measurement saw 494 leaves with no C# verdict rather than one failure.
+		//
+		// The remedy is the twin's, ported: the buffer on the PINNED OBJECT HEAP with a
+		// ConditionalWeakTable anchor per SID (lifetime), the PSIDs read through a
+		// [StructLayout(Sequential)] mirror and wrapped as NATIVE boxes (type). AllGroups then
+		// needs no address at all -- GetTokenGroups transcribes every entry into a correctly sized
+		// managed array and the slice is simply that array. getTokenInfo is registered with them
+		// because it is where the buffer is allocated; GetSidIdentifierAuthority is COPIED rather
+		// than pinned, because six plain bytes returned BY VALUE have no address inside them to
+		// keep valid. Body in internal/syscall/windows/windows/security_windows_impl.cs.
+		"getTokenInfo":              goosWindows,
+		"GetTokenGroups":            goosWindows,
+		"TOKEN_GROUPS.AllGroups":    goosWindows,
+		"GetSidIdentifierAuthority": goosWindows,
 		// The UDP SEND half of the datagram seam. Their generated bodies pass the kernel the address
 		// `sockaddr()` returns -- a pointer into a MANAGED box -- which is the struct-passing class;
 		// internal/syscall/windows/windows/net_windows_impl.cs writes a native stack image through the
