@@ -180,7 +180,7 @@ exists on one side only.
 | 12 | `internal/poll/linux/fd_writev_unix.cs` | `internal/poll/fd_writev_unix.go` | untouched | .auto differential · OQ-4 | 09-08 base §1: NO base banked | — | — | — | — |
 | 13 | `internal/poll/linux/runtime_netpoll_impl.cs` | `internal/poll/runtime_netpoll.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
 | 14 | `internal/poll/runtime_sema_impl.cs` | `internal/poll/runtime_sema.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 15 | `internal/poll/windows/fd_windows_impl.cs` | `internal/poll/fd_windows.go` | untouched | principal .auto — `internal/poll/windows/fd_windows.cs` | — | — | — | — | — |
+| 15 | `internal/poll/windows/fd_windows_impl.cs` | `internal/poll/fd_windows.go` | untouched | principal .auto — `internal/poll/windows/fd_windows.cs` | — | 35044179db39221a494d95d42279cd9b6d64a7f6097d9bdabf86e8b910e450a3 | ccfc1a520f4a243f3d79c0933c438d3b4f070862f12cad6af570b23326eff08d | b | EMISSION-ONLY (proposed `b` reason, block 1): principal `internal/poll/fd_windows.go` byte-identical at both releases; pair = 1.23.12 `internal/poll/windows/fd_windows.cs` vs 1.24.13 `internal/poll/windows/fd_windows.cs`, windows-amd64, both PRESENT by principal-existence; the diff is the converter's using-alias spelling only (`sync` re-qualified, `using go;` added); the companion references no `sync` and declares its own aliases. Filled by 8808a00ad + 80c948a7f, identity f6c60275e (G fill block 1). |
 | 16 | `internal/poll/windows/runtime_netpoll_impl.cs` | `internal/poll/runtime_netpoll.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
 | 17 | `internal/reflectlite/swapper_impl.cs` | `internal/reflectlite/swapper.go` | untouched | principal .auto — `internal/reflectlite/swapper.cs` | — | — | — | — | — |
 | 18 | `internal/runtime/atomic/atomic_impl.cs` | `internal/runtime/atomic/atomic.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
@@ -207,12 +207,12 @@ exists on one side only.
 | 39 | `math/rand/v2/rand_impl.cs` | `math/rand/v2/rand.go` | touched-trivial | principal .auto — `math/rand/v2/rand.cs` | — | — | — | — | — |
 | 40 | `net/dnsclient_impl.cs` | `net/dnsclient.go` | untouched | principal .auto — `net/{windows,linux,darwin}/dnsclient.cs` | — | — | — | — | — |
 | 41 | `net/windows/interface_windows_impl.cs` | `net/interface_windows.go` | untouched | principal .auto — `net/windows/interface_windows.cs` | — | — | — | — | — |
-| 42 | `net/windows/lookup_windows.cs` | `net/lookup_windows.go` | untouched | .auto differential · OQ-4 | 09-08 base §1: NO base banked | — | — | — | — |
+| 42 | `net/windows/lookup_windows.cs` | `net/lookup_windows.go` | untouched | .auto differential · OQ-4 | 09-08 base §1: NO base banked | 8d660c13e459a577e5680aa3d39be7faa5f89f724938b723a3100edff437104f | 7258eb81404515c4015afbbb0982f8bfa2cb416644e1a7a0ce96044cf90018fc | b | EMISSION-ONLY (proposed `b` reason, block 1): principal `net/lookup_windows.go` byte-identical at both releases; pair = 1.23.12 `net/windows/lookup_windows.cs.auto` vs 1.24.13 `net/windows/lookup_windows.cs.auto`, windows-amd64, both PRESENT; the diff is the converter's alias `Δruntime` -> `runtime` (3 lines); the hand-own declares `using Δruntime = runtime_package;` itself and calls through it. OQ-4 answered for this row: an `.auto` IS emitted at both releases. Filled by 8808a00ad + 80c948a7f, identity f6c60275e (G fill block 1). |
 | 43 | `os/darwin/dir_darwin_impl.cs` | `os/dir_darwin.go` | untouched | principal .auto — `os/darwin/dir_darwin.cs` | — | — | — | — | — |
 | 44 | `os/linux/wait_waitid.cs` | `os/wait_waitid.go` | touched-substantive | .auto differential | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE; 09-07 BOTH §4: REMOVED-only, not a collision; 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
 | 45 | `os/tempfile_impl.cs` | `os/tempfile.go` | untouched | principal .auto — `os/tempfile.cs` | — | — | — | — | — |
 | 46 | `os/user/windows/lookup_windows_impl.cs` | `os/user/lookup_windows.go` | touched-substantive | principal .auto — `os/user/windows/lookup_windows.cs` | §10 MEMBERS-ADDED → RE-DERIVE | — | — | — | — |
-| 47 | `os/windows/dir_windows_impl.cs` | `os/dir_windows.go` | untouched | principal .auto — `os/windows/dir_windows.cs` | — | — | — | — | — |
+| 47 | `os/windows/dir_windows_impl.cs` | `os/dir_windows.go` | untouched | principal .auto — `os/windows/dir_windows.cs` | — | 9918b417feb1e85736445ba04a07079ea1896942c447759bf3b26c2315d20bde | ae128b9b984f50fb03fc7d297051edde53064819ec8186aa62da178a52018132 | b | EMISSION-ONLY (proposed `b` reason, block 1): principal `os/dir_windows.go` byte-identical at both releases; pair = 1.23.12 `os/windows/dir_windows.cs` vs 1.24.13 `os/windows/dir_windows.cs`, windows-amd64, both PRESENT; the diff is the converter's alias `Δruntime` -> `runtime` (1 line); the companion declares its own `using Δruntime = runtime_package;`. Filled by 8808a00ad + 80c948a7f, identity f6c60275e (G fill block 1). |
 | 48 | `os/windows/file_windows_impl.cs` | `os/file_windows.go` | touched-substantive | principal .auto — `os/windows/file_windows.cs` | §10 MEMBERS-REMOVED → RE-DERIVE | — | — | — | — |
 | 49 | `reflect/deepequal_impl.cs` | `reflect/deepequal.go` | touched-trivial | principal .auto — `reflect/deepequal.cs` | — | — | — | — | — |
 | 50 | `reflect/makefunc_impl.cs` | `reflect/makefunc.go` | untouched | principal .auto — `reflect/makefunc.cs` | — | — | — | — | — |
@@ -257,9 +257,9 @@ exists on one side only.
 | 89 | `runtime/stubs_impl.cs` | `runtime/stubs.go` | touched-substantive | principal .auto — `runtime/stubs.cs` | §10 MEMBERS-REMOVED → RE-WRITE | — | — | — | — |
 | 90 | `runtime/windows/lock_sema_impl.cs` | `runtime/lock_sema.go` | touched-substantive | principal .auto — `runtime/windows/lock_sema.cs` | §10 MIXED → RE-DERIVE | — | — | — | — |
 | 91 | `runtime/windows/nanotime_impl.cs` | `runtime/nanotime.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
-| 92 | `runtime/windows/os_windows_impl.cs` | `runtime/os_windows.go` | touched-substantive | principal .auto — `runtime/windows/os_windows.cs` | — | — | — | — | — |
-| 93 | `runtime/windows/signal_windows_impl.cs` | `runtime/signal_windows.go` | touched-substantive | principal .auto — `runtime/windows/signal_windows.cs` | — | — | — | — | — |
-| 94 | `runtime/windows/trace_impl.cs` | `runtime/trace.go` | touched-substantive | principal .auto — `runtime/windows/trace.cs` | — | — | — | — | — |
+| 92 | `runtime/windows/os_windows_impl.cs` | `runtime/os_windows.go` | touched-substantive | principal .auto — `runtime/windows/os_windows.cs` | — | ef8c44ace0e3af4d1314a91dcab1e481d1ac27bc624d4bea2126257a101b39b7 | 004ab13961752f12809ac30c78ad27d13c04c8f7eb2d7eff16cbb2a38153a2b8 | b | UPSTREAM-IN-PRINCIPAL (proposed `b` reason, block 1): `runtime/os_windows.go` changed; pair = 1.23.12 `runtime/windows/os_windows.cs` vs 1.24.13 `runtime/windows/os_windows.cs`, windows-amd64, both PRESENT; the delta is `getcallerpc()`/`getcallersp()` -> `sys.GetCallerPC()`/`sys.GetCallerSP()` at the libcall profiler site, `mdestroy` gaining `//go:nowritebarrierrec` and a corrected comment, and a `sys` using; the companion has 0 references to `mdestroy`, `getcallerpc`/`getcallersp`, `libcall` or `GetCaller*`, so the whole delta lands in the emitted principal. Filled by 8808a00ad + 80c948a7f, identity f6c60275e (G fill block 1). |
+| 93 | `runtime/windows/signal_windows_impl.cs` | `runtime/signal_windows.go` | touched-substantive | principal .auto — `runtime/windows/signal_windows.cs` | — | dfee901640d3e229ce29cd5d763bd148572efaf7a874bb8ecf35bdbb2a486fc9 | bfd7840544b4e891e95c933f98e453738471edc84a3e841bed3ff6039201ea8c | b | UPSTREAM-IN-PRINCIPAL (proposed `b` reason, block 1): `runtime/signal_windows.go` changed; pair = 1.23.12 `runtime/windows/signal_windows.cs` vs 1.24.13 `runtime/windows/signal_windows.cs`, windows-amd64, both PRESENT; the delta is the `sys` package path move `runtime/internal/sys` -> `internal/runtime/sys` (2 lines changed, 1 removed); the companion has 0 `sys` references. Filled by 8808a00ad + 80c948a7f, identity f6c60275e (G fill block 1). |
+| 94 | `runtime/windows/trace_impl.cs` | `runtime/trace.go` | touched-substantive | principal .auto — `runtime/windows/trace.cs` | — | 183b001f0c7ced76c498fe99b2b0a678319366b3ac42136476e4f65a874b6598 | 16593a5bcf1e5ee7645dca6112784b8d06fc297ce606ea81db0511d03b388048 | b | UPSTREAM-IN-PRINCIPAL (proposed `b` reason, block 1): `runtime/trace.go` changed; pair = 1.23.12 `runtime/windows/trace.cs` vs 1.24.13 `runtime/windows/trace.cs`, windows-amd64, both PRESENT; the delta is `goBlockReasons` 16 -> 17, the per-M trace buffer flushed per experiment slot, and `lockInit` taking the lock pointer; the companion declares only the public `StartTrace`/`StopTrace` wrappers with 0 references to `goBlockReasons`, the trace buffers or `lockInit`. Filled by 8808a00ad + 80c948a7f, identity f6c60275e (G fill block 1). |
 | 95 | `slices/slices_impl.cs` | `slices/slices.go` | touched-substantive | principal .auto — `slices/slices.cs` | — | — | — | — | — |
 | 96 | `sync/atomic/type.cs` | `sync/atomic/type.go` | touched-trivial | .auto differential | — | — | — | — | — |
 | 97 | `sync/atomic/value.cs` | `sync/atomic/value.go` | untouched | .auto differential | — | — | — | — | — |
@@ -284,7 +284,7 @@ exists on one side only.
 | 116 | `syscall/linux/zsyscall_linux_amd64_impl.cs` | `syscall/zsyscall_linux_amd64.go` | touched-substantive | principal .auto — `syscall/linux/zsyscall_linux_amd64.cs` | 09-07 scope-rule §4 MOVED-WITHIN-PACKAGE (mechanical) | — | — | — | — |
 | 117 | `syscall/syscall_impl.cs` | `syscall/syscall.go` | untouched | principal .auto — `syscall/{windows,linux,darwin}/syscall.cs` | — | — | — | — | — |
 | 118 | `syscall/windows/dll_windows.cs` | `syscall/dll_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
-| 119 | `syscall/windows/exec_windows.cs` | `syscall/exec_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
+| 119 | `syscall/windows/exec_windows.cs` | `syscall/exec_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | f8524bf78b2e7037ac9175849656905f79e13fb0c84ec7c77341a42d245da347 | 4f21e301ed808594fb7d19746307235d1f0282dc6bafc6ab4c536bf98e573304 | b | EMISSION-ONLY (proposed `b` reason, block 1): principal `syscall/exec_windows.go` byte-identical at both releases; pair = 1.23.12 `syscall/windows/exec_windows.cs.auto` vs 1.24.13 `syscall/windows/exec_windows.cs.auto`, windows-amd64, both PRESENT; the diff is the converter's alias `Δruntime` -> `runtime` at the `KeepAlive` site (3 lines); the hand-own has no `runtime` alias and no `KeepAlive` call before or after, so there is nothing to carry (a pre-existing shape, not a hop delta). Filled by 8808a00ad + 80c948a7f, identity f6c60275e (G fill block 1). |
 | 120 | `syscall/windows/security_windows.cs` | `syscall/security_windows.go` | untouched | .auto differential | 09-08 date-screen §3: base GENUINELY STALE | — | — | — | — |
 | 121 | `syscall/windows/syscall_windows_callback_impl.cs` | `syscall/syscall_windows_callback.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
 | 122 | `syscall/windows/syscall_windows_impl.cs` | `syscall/syscall_windows.go` | touched-substantive | principal .auto — `syscall/windows/syscall_windows.cs` | — | — | — | — | — |
@@ -560,3 +560,51 @@ The principal moved with it: `crypto/subtle/xor_generic.go` is absent at 1.24.13
 `crypto/internal/fips140/subtle/xor_generic.go` is present (64 lines). C1 measured the delta as
 **one build-tag line, four bodies byte-identical** (`8f1f7f090`), so this is a RELOCATION and not a
 re-derive — the class stays for the seat that cut it.
+
+## 2026-09-14 — FILL BLOCK 1 (lane G): seven windows-amd64 rows, all class `b`
+
+Per COORD `2cd01f8d6` R3 and `f6c60275e` (item 3 UNBLOCKED for windows-amd64). **Rows filled in place in §4; this block
+is their record.** COORD rules the pair per block.
+
+**The pair this block read.**
+
+```
+  identity         CONTENT-NORMALIZED: sha256 of the file with every CR byte removed (COORD f6c60275e). The sha256 cells of the
+                   rows below hold THAT identity, not raw-byte hashes.
+  1.23.12 side     half B, stage windows-amd64 (G a5534b5de s2): go1.23.12 GOROOT, the outgoing version.props, seed a4ece44fff
+  1.24.13 side     half A, stage windows-amd64, RE-CUT on G-LAPTOP (G dc7ce18be; determinism 74f40a1c2; usable for windows-amd64
+                   by ARM 3, G b0b825af0, ruled f6c60275e)
+  binary           go2cs.exe sha256 e0b2a4c109053c6b45ba01d731dc01b2b204a057bed50cfd5afdbb83502a347e (tree ddf7cb17c8), both halves
+  side test        PRINCIPAL-EXISTENCE (8808a00ad): each side's mapped Go file exists at its release. Per-row pair rule 80c948a7f.
+                   Resolver over all 145 rows: 0 rows whose principal exists with its side missing; 0 present sides carrying the seed stamp
+  hand-owns read   at the version-branch tip f0f8826894 (a clean checkout), searched for every identifier each pair's diff touches
+```
+
+**The seven rows.** All are in a `windows/` folder, so the windows target alone determines them. Each is PRINCIPAL-CHANGED on the pair.
+
+```
+  row  hand-own                                   pair diff (CR-stripped)         reading
+   15  internal/poll/windows/fd_windows_impl.cs   1 / 2 lines, using-aliases      EMISSION-ONLY: Go principal byte-identical
+   42  net/windows/lookup_windows.cs              3 / 3 lines, Δruntime alias     EMISSION-ONLY: Go principal byte-identical
+   47  os/windows/dir_windows_impl.cs             1 / 1 line,  Δruntime alias     EMISSION-ONLY: Go principal byte-identical
+   92  runtime/windows/os_windows_impl.cs         3 / 6 lines                     UPSTREAM-IN-PRINCIPAL: 0 companion references
+   93  runtime/windows/signal_windows_impl.cs     2 / 1 lines, sys path move      UPSTREAM-IN-PRINCIPAL: 0 companion references
+   94  runtime/windows/trace_impl.cs              6 / 7 lines                     UPSTREAM-IN-PRINCIPAL: 0 companion references
+  119  syscall/windows/exec_windows.cs            3 / 3 lines, Δruntime alias     EMISSION-ONLY: Go principal byte-identical
+```
+
+**Two `b` reason shapes, PROPOSED for your ruling, not assumed.** §2's class table has no row for a non-empty `.auto` diff behind a byte-identical Go principal:
+
+- **EMISSION-ONLY**: the Go principal is byte-identical at both releases (the instrument reads `untouched`) and the `.auto` diff is the converter's own spelling, here using-aliases. It is not `unchanged`, because §2 reserves that word for an empty diff. It is not `a` or `c`, because there is no upstream change to absorb or owe. **Ruling asked:** is `b` with this reason the record shape, or does the table want a fifth word?
+- **UPSTREAM-IN-PRINCIPAL**: the upstream change is real, but every changed member lives in the emitted principal, and the companion references none of them (0, by search).
+
+**Deliberately NOT filled in this block.**
+
+```
+  row 20                   LAST, after C1's row-20 commit is at the version tip (R3)
+  batch 2 (windows/ rows)  29, 30, 46, 48, 90, 122, 126 -- PRINCIPAL-CHANGED with diffs of 26 to 405 lines; the next block
+  34 rows                  PRINCIPAL-CHANGED with target-independent sides: they fill only after the linux-amd64 and darwin-amd64
+                           normalized joins, so a per-target variance cannot hide behind the windows reading
+  row 75                   ARRIVED (no 1.23.12 side), record shape still to be written
+  41 + 11 rows             principal not named (OQ-5) and hand-owned packages (OQ-11): no pair exists; rulings owed
+```
