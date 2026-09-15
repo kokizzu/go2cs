@@ -216,7 +216,7 @@ exists on one side only.
 | 48 | `os/windows/file_windows_impl.cs` | `os/file_windows.go` | touched-substantive | principal .auto — `os/windows/file_windows.cs` | §10 MEMBERS-REMOVED → RE-DERIVE | 948fba8975aedeb92a6a707d275a3b62484b46cfe34e9e045dedc0e31258e0c7 | 28e5c9ede374d64d73d57566761dfa1ccfbbc822b3d846f45664549ace230650 | c | companion-vs-principal · REWRITE OWED: an upstream split reaches the body this hand-own exists to replace. 1.24.13 splits `readReparseLink(path)` into `openSymlink` + `readReparseLinkHandle(h)`, and the new os.Root code calls `readReparseLinkHandle` directly (Go os/root_windows.go:176 and :221; emitted os/windows/root_windows.cs:180 and :230). The emitted `readReparseLinkHandle` (os/windows/file_windows.cs:451) reinterprets the buffer as REPARSE_DATA_BUFFER / SymbolicLinkReparseBuffer / MountPointReparseBuffer, the cast this companion's header records as the ACCESS_VIOLATION that killed the test host; the companion hand-converts only readReparseLink (`readReparseLinkHandle` = 0, whole words; control readReparseLink = 3), whose own Go body also differs (29 -> 8 lines). Owed: hand-convert readReparseLinkHandle on the companion's byte-offset decode and register it beside readReparseLink. Also in the delta, emitted and not the companion's: openFileNolog loses its EISDIR mapping (now inside syscall.Open), tempDir moves to sync.OnceValue (openFileNolog tempDir useGetTempPath2 EISDIR = 0). Work item: BOARD, owner C1, EXPLICITLY DEFERRED (behavioural, off the H5 critical path; live at 1.24 through os.Root, not latent), ruled COORD d36cea91d: a hand-own re-derive on the version branch after row 20, one commit; acceptance os TestReadlink and the os.Root tests at the gate tree on i9, the emitted readReparseLinkHandle displaced and named by the registry guard. Sides: 1.23.12 `os/windows/file_windows.cs` vs 1.24.13 `os/windows/file_windows.cs`, windows-amd64. Rules 8808a00ad, 80c948a7f, identity f6c60275e (G fill block 2, amended in block 3). |
 | 49 | `reflect/deepequal_impl.cs` | `reflect/deepequal.go` | touched-trivial | principal .auto — `reflect/deepequal.cs` | — | — | — | — | — |
 | 50 | `reflect/makefunc_impl.cs` | `reflect/makefunc.go` | untouched | principal .auto — `reflect/makefunc.cs` | — | — | — | — | — |
-| 51 | `reflect/value_impl.cs` | `reflect/value.go` | touched-substantive | principal .auto — `reflect/value.cs` | §10 MIXED → RE-WRITE | — | — | — | — |
+| 51 | `reflect/value_impl.cs` | `reflect/value.go` | touched-substantive | principal .auto — `reflect/value.cs` | §10 MIXED → RE-WRITE | dbff25ee02e99328d97f27259da49ec20f358f2c918c6f157437e4e7910fe3db | 094d112556a73d13c0f803cfe8b7b1e5608a6406bc87f8cfac5b741b82e52799 | b | companion-vs-principal · NOT-APPLICABLE-TO-MANAGED: (1) members THIS companion owns whose Go bodies changed, compared receiver-exact (each "func (recv) name(" prefix occurs once) against their 1.24.13 principal `reflect/map_swiss.go`, build-selected by goexperiment.swissmap (the emission writes their placeholders in reflect/map_swiss.cs): (v Value) MapIndex and SetMapIndex (abi.MapMaxElemBytes -> abi.SwissMapMaxElemBytes); (v Value) MapKeys (hiter, mapiterinit, mapiternext, mapiterkey -> maps.Iter, mapIterStart, mapIterNext, it.Key(), the map pointer through abi.NoEscape); (v Value) SetIterKey, SetIterValue and (iter *MapIter) Key, Value (hiter.initialized(), mapiterkey, mapiterelem -> hiter.Initialized(), hiter.Key(), hiter.Elem()); (iter *MapIter) Next (mapiterinit -> mapIterStart over a *maps.Map); (iter *MapIter) Reset (hiter{} -> maps.Iter{}); and (v Value) Type in value.go (noescape -> abi.NoEscape). (v Value) MapRange BODY-IDENTICAL. (2) The managed bodies bind a .NET enumerator over the live map (bindMapIter, value_impl.cs:1375, from MapRange :1366 and Reset :2167), step it (Next :2116), read the current entry reflectively (Key :2147, Value :2156, and SetIterKey :2181 / SetIterValue :2193 through v.Set), resolve key and element types through GoReflect (MapKeys :1397, MapIndex :1417, SetMapIndex :1727), and canonicalise the carried descriptor (Type :2404). (3) None of them reads Go's hiter, the map header, a mapaccess or mapiter call, or the element-size limit, so the swiss-map delta cannot reach them: search predicate over the companion's whole text, whole words: hiter mapiterinit mapiternext mapiterkey mapiterelem MapMaxElemBytes SwissMapMaxElemBytes mapIterStart mapIterNext Initialized initialized noescape NoEscape maplen mapaccess mapassign mapdelete = 18, every hit a comment (hiter at lines 1342, 1354, 1355, 1356, 1394, 2165, 2178; mapiterinit 1394; mapiterkey 1356; initialized 88, 1355, 1580, 2178; mapaccess 1414, 1427; mapassign and mapdelete 1756), none a reference (control bindMapIter = 3). Member set: 77 -> 67 placeholders in value.go, the ten map methods leaving for map_swiss.go; the other 66 common members BODY-IDENTICAL; rtype.Key (hand-owned at :2506) moves type.go -> map_swiss.go BODY-IDENTICAL; rtype.Elem (:2470) BODY-IDENTICAL. Emitted in the pair: the Δruntime -> runtime alias, the hiter / MapIter / panicNotMap block and the mapiter* declarations leaving value.cs, the noescape wrapper removed. Sides: 1.23.12 `reflect/value.cs` vs 1.24.13 `reflect/value.cs`, identical on all three targets. Rules 8808a00ad, 80c948a7f, identity f6c60275e, arm 8cf7fdf65, extractor and shape f6829ee65 (G fill block 7). |
 | 52 | `runtime/cputicks_impl.cs` | `runtime/cputicks.go` | untouched | principal .auto — `runtime/cputicks.cs` | — | — | — | — | — |
 | 53 | `runtime/darwin/libccall_impl.cs` | `runtime/libccall.go` (absent at both) | no-upstream-counterpart | principal .auto — principal not named · OQ-5 | — | — | — | — | — |
 | 54 | `runtime/darwin/lock_sema_impl.cs` | `runtime/lock_sema.go` | touched-substantive | principal .auto — `runtime/darwin/lock_sema.cs` | §10 MIXED → RE-DERIVE | 634dc27a4c100c25f4c7a35459e5c9abac076cb97e945b834f54b5208042eb71 | 4c86103a7a32acc760bdffd10a5a2aeee7ba103cefc98fca752575e85ec181c5 | b | companion-vs-principal · UPSTREAM-IN-PRINCIPAL: changed members `lock`, `unlock`, `lock2`, `unlock2`, `mutexContended` and the constants active_spin / active_spin_cnt / passive_spin, all removed from lock_sema.go at 1.24.13 (the mutex moves to lock_spinbit.go, hand-owned by `runtime/lock_managed_impl.cs`, row 72); the hand-converted set in the principal goes 7 -> 4 (lock2, mutexContended, unlock2 leave) and the four that stay read BODY-IDENTICAL (notesleep, notetsleep_internal, notetsleepg, notewakeup); search predicate over the companion's whole text, whole words: lock unlock lock2 unlock2 mutexContended active_spin active_spin_cnt passive_spin = 0 (control notetsleep_internal = 3; this companion is byte-identical to row 90's, measured by cmp). Sides: 1.23.12 `runtime/darwin/lock_sema.cs` vs 1.24.13 `runtime/darwin/lock_sema.cs`, darwin-amd64. Rules 8808a00ad, 80c948a7f, identity f6c60275e, shape f43ae82f1 (G fill block 3). |
@@ -815,3 +815,58 @@ Rows filled in place in §4 (each side identical on all three targets, measured)
 **5. Rows 37, 96 and 139 re-shaped to the ruled COMMENT-ONLY wording (COORD `999d5c784`).** Class `b` is unchanged. Each cell now states *N comment, 0 directive (//go:), 0 code, 0 blank*, classed by `diff --strip-trailing-cr` on first non-space characters `//` and not `//go:`: 37 is 2/0/0/0, 96 is 2/0/0/0, 139 is 6/0/0/0. A control confirms the directive class fires: on `runtime/os_windows.go` it counts exactly one changed directive (`mdestroy`'s `//go:nowritebarrierrec`). **A gap of mine, recorded:** block 5's counts ran on plain `diff` with a `//` test that would have counted a `//go:` line as a comment. The re-measure under the ruled classifier reads 0 directives on all three, so no class moves.
 
 **6. Still NOT filled.** Row 51 (reflect: Type plus ten map methods whose 1.24 principal is map_swiss.go) and rows 2 and 74 (members arriving) are next. Then the remaining target-independent rows, rows 87/88 per target, the EQUAL rows (`unchanged`), row 75 (ARRIVED), and row 20 (LAST).
+
+## 2026-09-14 — FILL BLOCK 7 (lane G): row 51 (reflect), class `b`; rows 2 and 74 held for a measured observer
+
+Row 51 filled in place in §4 (each side identical on all three targets); this block records it.
+
+**1. Row 51 — reflect/value_impl.cs.** The heaviest companion row so far: 77 hand-converted members in `value.go` at 1.23.12, 67 at 1.24.13. The ten map methods leave `value.go` for `map_swiss.go`, which is build-selected by `goexperiment.swissmap` (`map_noswiss.go` carries the negation, and the emission writes their placeholders in `map_swiss.cs`).
+
+```
+  comparisons   RECEIVER-EXACT per the extractor of record (f6829ee65): every "func (recv) name(" prefix occurs exactly once in its
+                file; control (iter *MapIter) Next BODY-DIFFERS fires in the same run
+  1.23.12 -> 1.24.13 (map_swiss.go)
+     BODY-DIFFERS  (v Value) MapIndex (2), MapKeys (16), SetMapIndex (2), SetIterKey (4), SetIterValue (4);
+                   (iter *MapIter) Key (4), Value (4), Next (12), Reset (2); (v Value) Type in value.go (2)
+     BODY-IDENTICAL (v Value) MapRange; the other 66 common members; rtype.Key (type.go -> map_swiss.go); rtype.Elem
+  the deltas    swiss-map internals only: hiter -> maps.Iter, mapiterinit/mapiternext/mapiterkey/mapiterelem -> mapIterStart/
+                mapIterNext/Key()/Elem(), initialized() -> Initialized(), MapMaxElemBytes -> SwissMapMaxElemBytes, noescape -> abi.NoEscape
+  managed       a .NET enumerator bound over the live map (bindMapIter :1375), stepped by Next, entries read reflectively, types
+                through GoReflect: none of Go's iterator or map-header machinery (predicate 18 hits, every one a comment)
+  class         b NOT-APPLICABLE-TO-MANAGED, the three elements per member family in the cell
+```
+
+A note from the earlier by-name pass, recorded because it is the case the receiver rule exists for: `Key` first matched `(t *rtype) Key` in `map_swiss.go` instead of `(iter *MapIter) Key`. That void comparison was discarded, and every comparison above is receiver-exact.
+
+**2. Rows 2 and 74 are HELD, and here is why.** Both look like class `a` (absorbed), which needs a carrying commit and an observing test:
+
+```
+  row 2    carried by c8d50e014 + a4ece44ff (AnyOverlap / InexactOverlap BODY-IDENTICAL across crypto/internal/alias ->
+           crypto/internal/fips140/alias). Its named observers, GolibTests AliasOverlapTests.cs and AliasOverlapRaceTests.cs,
+           import go.crypto.@internal.alias_package -- a class ABSENT at the version tip by declaration census (the relocation
+           moved it to go.crypto.@internal.fips140). GolibTests is listed only in src/go2cs.slnx, which the H5 gate does not build.
+  row 74   re-pointed by c8d50e014 (getgcmask -> pointerMask). Its observer, GolibTests GoGCMaskTests.cs, asserts the exact seam
+           the hand-own calls (GoReflect.PointeeTypeOfValue, mbitmap_impl.cs:59; GoReflect.GoGCMaskOf, :77). But it compiles in the
+           SAME project as the stale files above.
+```
+
+**Census of every GolibTests package alias, measured against the version tip.** A single pass over the f0f8826894 checkout builds 636 declared namespace.class pairs; the control pair `go.crypto.@internal.fips140.alias_package` is found. Of the **15** distinct `using … = go.…_package` aliases in `src/tests/GolibTests`, **2** are absent: `go.crypto.@internal.alias_package` (imported by AliasOverlapTests.cs and AliasOverlapRaceTests.cs) and `go.vendor.golang.org.x.crypto.sha3_package` (imported by Sha3ReinterpretVectorTests.cs; the vendored x/crypto/sha3 package is gone at 1.24.13). A slower per-file census, run as a second derivation, agrees exactly: 636 pairs, the same 2 of 15 absent, the control found.
+
+**GolibTests cannot build at the version tip, for three independent measured reasons.** No build was run to show it: a build would fail on the first of these before it could say anything about the other two, and a red with three causes names none of them.
+
+```
+  (1) project references  GolibTests.csproj lists 17; 15 exist at f0f8826894, 2 are MISSING:
+                          core/crypto/internal/alias/crypto.internal.alias.csproj
+                          core/vendor/golang.org/x/crypto/sha3/vendor.golang.org.x.crypto.sha3.csproj
+                          (control: core/golib/golib.csproj resolves through the same path arithmetic)
+  (2) package aliases     15 distinct; 2 ABSENT (the census above): go.crypto.@internal.alias_package, go.vendor.golang.org.x.crypto.sha3_package
+  (3) dependency          fmt.csproj and reflect.csproj each reference core/sync/sync.csproj directly; sync is the package the H5 gate
+                          reads red (7 x CS1929) until C1's row-20 commit
+  void reading, mine      a third loop read 0 direct sync references for every project: its pattern expected backslash separators,
+                          and these files spell $(go2csPath)core/sync/sync.csproj with forward slashes. The zero is not quoted; the
+                          two direct greps above are the reading.
+```
+
+The rows stay held until COORD rules how their observers are settled: either after GolibTests is repaired and `sync` is green, or as class `a` now, citing a different observer.
+
+**3. Still NOT filled.** Rows 2 and 74 (above). The remaining target-independent rows, rows 87/88 per target, the EQUAL rows (`unchanged`), row 75 (ARRIVED), and row 20 (LAST).
