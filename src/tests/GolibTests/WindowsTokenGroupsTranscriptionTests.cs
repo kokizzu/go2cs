@@ -6,6 +6,17 @@ using static go.builtin;
 using syscall = go.syscall_package;
 using winint = go.@internal.syscall.windows_package;
 
+// AllGroups is an EXTENSION method: the hand-own declares `AllGroups(this ref TOKEN_GROUPS)` and the
+// generator emits the pointer-receiver overload `AllGroups(this ж<TOKEN_GROUPS>)` beside it, both in
+// the package's static class. A TYPE ALIAS names the type and binds its static calls
+// (winint.transcribeTokenGroups does), but it does NOT bring that class's extension methods into
+// scope -- so `Ꮡgroups.AllGroups()` below finds nothing without this line. Converted os/user, which
+// calls `groups.AllGroups()` and compiles, imports the namespace exactly this way
+// (os/user/windows/lookup_windows.cs:13). Importing it rather than spelling the call
+// `winint.AllGroups(Ꮡgroups)` keeps the guard driving the member the way a converted consumer
+// drives it, which is the shape worth guarding.
+using go.@internal.syscall;
+
 namespace GolibTests;
 
 // The value-level guard for internal/syscall/windows' TOKEN_GROUPS transcription --- the
