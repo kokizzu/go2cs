@@ -40,16 +40,24 @@ using static go.@internal.concurrent_package;
 // As types are cast to interfaces in Go source code, the go2cs code converter
 // will generate an assembly level `GoImplement` attribute for each unique cast.
 // This allows the interface to be implemented in the C# source code using source
-// code generation (see go2cs-gen). An alternate interface implementation exists
-// that can resolve duck-typed interfaces at run-time, but handling interface
-// implementations at compile-time results in faster startup times, avoiding
-// reflection-based interface resolution.
+// code generation (see go2cs-gen). Resolving each duck-typed cast at compile time
+// this way is what keeps startup free of reflection.
 
 // <InterfaceImplementations>
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
 // </ImplicitConversions>
+
+// Go source positions are recorded here, one `GoPositionMap` attribute per converted
+// source file in this compilation, so that `runtime.Caller` and the tracebacks built on it
+// can name the GO file and line a frame was converted from rather than the emitted C# one.
+// Each record carries the Go file's identity and an encoded C#-line to Go-line table
+// TOGETHER: a frame either has a record and reports a position that exists in the Go tree,
+// or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
+
+// <GoSourcePositionMaps>
+// </GoSourcePositionMaps>
 
 namespace go.@internal;
 
@@ -75,9 +83,31 @@ public static partial class concurrent_package
     // suite compiles into a separate friend assembly, and a bare nested declaration is private.
 
     // <TypeAccessibility>
+    // </TypeAccessibility>
+
+    // DECLARED, not derived. The <TypeAccessibility> section above is rebuilt from the
+    // `[GoType]` declarations in this package's COMPILED sources, and every production file
+    // here carries [module: GoManualConversion] -- so the converter's own declarations live in
+    // the uncompiled `.cs.auto` siblings and that derivation is EMPTY. Before the metadata
+    // un-freeze the section was never re-minted for this package and its entries survived by
+    // accident; a package re-mint now empties it. These declarations are therefore stated by a
+    // human OUTSIDE the rebuilt section, where a re-mint leaves them alone. Retiring one is a
+    // human act: delete it when the type it names is no longer exported.
+    // <GoHandOwnTypeAccessibility>
     public partial struct HashTrieMap<K, V> {}
     internal partial struct node<K, V> {}
-    internal partial struct Δentry<K, V> {}
-    internal partial struct Δindirect<K, V> {}
-    // </TypeAccessibility>
+    // </GoHandOwnTypeAccessibility>
+
+    // Go initializes an imported package before the importing package, for every import
+    // form - not only the blank one. .NET would never load an assembly nothing has touched
+    // yet, so each import that initializes anything is forced below: once per assembly, and
+    // ahead of this package's own `init` functions, which this file being the first compile
+    // item of the project guarantees.
+
+    // <ImportInitializers>
+    [GoInit] internal static void initᴛᴛimportꓸinternalꓸabi() => builtin.initPackage(typeof(go.@internal.abi_package));
+    [GoInit] internal static void initᴛᴛimportꓸmathꓸrandꓸv2() => builtin.initPackage(typeof(math.rand.rand_package));
+    [GoInit] internal static void initᴛᴛimportꓸsync() => builtin.initPackage(typeof(sync_package));
+    [GoInit] internal static void initᴛᴛimportꓸsyncꓸatomic() => builtin.initPackage(typeof(go.sync.atomic_package));
+    // </ImportInitializers>
 }
