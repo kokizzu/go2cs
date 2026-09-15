@@ -110,7 +110,7 @@ public static (File, error) Open(this Dir d, @string name) {
     bool isDir(nint i);
 }
 
-[GoType("[]io.fs_package.FileInfo")] partial struct fileInfoDirs;
+[GoType("[]global::go.io.fs_package.FileInfo")] partial struct fileInfoDirs;
 
 internal static nint len(this fileInfoDirs d) {
     return builtin.len(d);
@@ -124,7 +124,7 @@ internal static @string name(this fileInfoDirs d, nint i) {
     return d[i].Name();
 }
 
-[GoType("[]io.fs_package.DirEntry")] partial struct dirEntryDirs;
+[GoType("[]global::go.io.fs_package.DirEntry")] partial struct dirEntryDirs;
 
 internal static nint len(this dirEntryDirs d) {
     return builtin.len(d);

@@ -158,7 +158,7 @@ internal static ref atomic.UnsafePointer buckhash => ref Ꮡbuckhash.Value;     
 internal static ж<mProfCycleHolder> ᏑmProfCycle = new StandardBox<mProfCycleHolder>(default(mProfCycleHolder));
 internal static ref mProfCycleHolder mProfCycle => ref ᏑmProfCycle.Value;
 
-[GoType("[179999]@internal.runtime.atomic_package.UnsafePointer")] /* [buckHashSize]@internal.runtime.atomic_package.UnsafePointer */
+[GoType("[179999]global::go.@internal.runtime.atomic_package.UnsafePointer")] /* [buckHashSize]@internal.runtime.atomic_package.UnsafePointer */
 partial struct buckhashArray; // *bucket
 
 internal const uint32 mProfCycleWrap = /* uint32(len(memRecord{}.future)) * (2 << 24) */ 100663296;
@@ -1364,7 +1364,7 @@ internal static goroutineProfileState goroutineProfileAbsent => /* iota */ 0;
 internal static goroutineProfileState goroutineProfileInProgress => 1;
 internal static goroutineProfileState goroutineProfileSatisfied => 2;
 
-[GoType("@internal.runtime.atomic_package.Uint32")] partial struct goroutineProfileStateHolder;
+[GoType("global::go.@internal.runtime.atomic_package.Uint32")] partial struct goroutineProfileStateHolder;
 
 internal static goroutineProfileState Load(this ж<goroutineProfileStateHolder> Ꮡp) {
     return ((goroutineProfileState)(Ꮡp.Reinterpret<goroutineProfileStateHolder, atomic.Uint32>()).Load());

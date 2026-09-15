@@ -319,7 +319,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 			// fixed-size ARRAY fields needs the forwarded `Clone()` (see wrapperValueCloneAttr).
 			inlineAttrs := v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access, wrapperValueCloneAttr(rhsType))
 
-			v.writeStringLn(target, "%s[GoType(\"%s\")] %s%spartial struct %s;", v.localNameAttrFor(identType), csName, inlineAttrs, access, getSanitizedIdentifier(name))
+			v.writeStringLn(target, "%s[GoType(\"%s\")] %s%spartial struct %s;", v.localNameAttrFor(identType), rootGoTypeDescriptor(csName), inlineAttrs, access, getSanitizedIdentifier(name))
 			finish()
 		} else {
 			v.outputBuilder.WriteString(v.convSelectorExpr(typeSpecType, DefaultLambdaContext()))
@@ -359,7 +359,7 @@ func (v *Visitor) visitTypeSpec(typeSpec *ast.TypeSpec, doc *ast.CommentGroup) {
 				dimsAttr = fmt.Sprintf("[GoArrayDims(%s)] ", renderDimsList(dims))
 			}
 
-			v.writeStringLn(target, "%s[GoType(\"%s\")] %s%spartial class %s;", v.localNameAttrFor(identType), pointerTypeName, dimsAttr, access, getSanitizedIdentifier(name))
+			v.writeStringLn(target, "%s[GoType(\"%s\")] %s%spartial class %s;", v.localNameAttrFor(identType), rootGoTypeDescriptor(pointerTypeName), dimsAttr, access, getSanitizedIdentifier(name))
 			usesUnsafeCode = true
 			finish()
 		}

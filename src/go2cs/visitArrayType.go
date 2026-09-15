@@ -106,7 +106,7 @@ func (v *Visitor) visitArrayType(arrayType *ast.ArrayType, identType types.Type,
 
 	if arrayType.Len == nil {
 		// Handle slice type
-		v.writeString(target, "%s[GoType(\"[]%s\")] ", v.localNameAttrFor(identType), csTypeName)
+		v.writeString(target, "%s[GoType(\"[]%s\")] ", v.localNameAttrFor(identType), rootGoTypeDescriptor(csTypeName))
 	} else {
 		// Handle array type
 		var arrayLenValue string
@@ -132,9 +132,9 @@ func (v *Visitor) visitArrayType(arrayType *ast.ArrayType, identType types.Type,
 			// W2c). Strip the embedded delimiters; the readable Go text between them is unaffected,
 			// now sitting directly inside the one outer comment instead of a redundant nested one.
 			annotatedLenExpr := strings.NewReplacer("/*", "", "*/", "").Replace(arrayLenExpr)
-			v.writeString(target, "%s[GoType(\"[%s]%s\")] /* [%s]%s */%s", v.localNameAttrFor(identType), arrayLenValue, csTypeName, annotatedLenExpr, csTypeName, v.newline)
+			v.writeString(target, "%s[GoType(\"[%s]%s\")] /* [%s]%s */%s", v.localNameAttrFor(identType), arrayLenValue, rootGoTypeDescriptor(csTypeName), annotatedLenExpr, csTypeName, v.newline)
 		} else {
-			v.writeString(target, "%s[GoType(\"[%s]%s\")] ", v.localNameAttrFor(identType), arrayLenExpr, csTypeName)
+			v.writeString(target, "%s[GoType(\"[%s]%s\")] ", v.localNameAttrFor(identType), arrayLenExpr, rootGoTypeDescriptor(csTypeName))
 		}
 	}
 

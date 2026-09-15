@@ -270,7 +270,7 @@ internal static void versionErrorf(this ж<Checker> Ꮡcheck, positioner at, goV
     err.report();
 }
 
-[GoType("go.token_package.ΔPos")] partial struct atPos;
+[GoType("global::go.go.token_package.ΔPos")] partial struct atPos;
 
 internal static tokenꓸPos Pos(this atPos s) {
     return ((tokenꓸPos)s);

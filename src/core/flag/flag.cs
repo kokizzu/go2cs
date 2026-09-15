@@ -314,7 +314,7 @@ internal static ж<float64Value> newFloat64Value(float64 val, ж<float64> Ꮡp) 
     return strconv.FormatFloat((float64)(f), (rune)'g', -1, 64);
 }
 
-[GoType("time_package.Duration")] partial struct durationValue;
+[GoType("global::go.time_package.Duration")] partial struct durationValue;
 
 internal static ж<durationValue> newDurationValue(time.Duration val, ж<time.Duration> Ꮡp) {
     ref var p = ref Ꮡp.DerefOrNull();
