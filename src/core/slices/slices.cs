@@ -507,7 +507,7 @@ public static S Concat<S, E>(params Span<S> slicesʗp)
     // Use Grow, not make, to round up to the size class:
     // the extra space is otherwise unused and helps
     // callers that append a few elements to the result.
-    var newslice = Grow<S, E>(default!, size);
+    var newslice = Grow<S, E>((S)(default!), size);
     foreach (var (_, s) in slices) {
         newslice = appendꓸꓸꓸ<S, E>(newslice, s);
     }

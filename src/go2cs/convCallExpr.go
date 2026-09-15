@@ -1812,6 +1812,39 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// An untyped nil bound to a TYPE-PARAMETER parameter of an INFERRED generic call gives C# nothing
+			// to infer from: go/types infer.go's `slices.Contains(inferred, nil)` (new at 1.24) emitted
+			// `slices.Contains(inferred, default!)` and failed CS0411 x2, because a typeless `default!` names
+			// no E (H7 red 2, COORD 89c281d32). Go infers E from the OTHER arguments; the instantiation go/types
+			// records for the call is that answer, so the nil is cast to the INSTANTIATED parameter type through
+			// the castArgToType plumbing the variadic nil above already uses (and replaces its declared-type
+			// cast, which would name the type parameter itself). An EXPLICIT instantiation (`Grow[S](nil, n)`)
+			// never reaches here: its signature is the instantiated one, whose parameter is no longer a type
+			// parameter, and its emitted type arguments already bind the nil.
+			if paramHasArg {
+				if _, isTypeParam := paramType.(*types.TypeParam); isTypeParam {
+					lastArg := i
+
+					if funcSignature.Variadic() && i == params.Len()-1 {
+						lastArg = len(callExpr.Args) - 1
+					}
+
+					for j := i; j <= lastArg; j++ {
+						if !argIsUntypedNil(callExpr.Args[j], v.info) {
+							continue
+						}
+
+						if instParam := v.instantiatedParamType(callExpr, j); instParam != nil {
+							if callExprContext.castArgToType == nil {
+								callExprContext.castArgToType = make(map[int]string)
+							}
+
+							callExprContext.castArgToType[j] = convertToCSTypeName(v.getAliasQualifiedTypeName(instParam, false))
+						}
+					}
+				}
+			}
+
 			// A narrow-integer parameter (int8/uint8/int16/uint16) receiving a binary/unary arithmetic
 			// argument: Go evaluates `a+b`/`^a` at the operand's narrow width (with overflow wrapping),
 			// but C# promotes sub-int integer arithmetic to `int`, so the result needs an explicit cast
