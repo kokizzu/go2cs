@@ -41,7 +41,7 @@ internal static void expectPanic(@string label, @string want, Action f) {
 
 [GoType("ж<array<byte>>")] [GoArrayDims(4)] partial class MyBytesArrayPtr;
 
-[GoType("bytes_package.Buffer")] partial struct MyBuffer;
+[GoType("global::go.bytes_package.Buffer")] partial struct MyBuffer;
 
 internal static void convRow(@string label, any x, any want) {
     GoFrame ᒐ = default;
@@ -181,7 +181,7 @@ private static readonly object ptrSlotNewReDescribesˢ = (@string)"ptr slot New 
 
 [GoLocalName("AB")] [GoType("[4]main_B")] internal partial struct main_AB;
 
-[GoLocalName("MyBuffer")] [GoType("bytes_package.Buffer")] internal partial struct main_MyBuffer;
+[GoLocalName("MyBuffer")] [GoType("global::go.bytes_package.Buffer")] internal partial struct main_MyBuffer;
 
 [GoType("dyn")] internal partial struct main_holder {
     internal ж<nint> p;

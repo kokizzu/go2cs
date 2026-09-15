@@ -584,6 +584,31 @@ func importInitName(importPath string) string {
 	return name.String()
 }
 
+// goTypeDescriptorRefPattern matches a PACKAGE-QUALIFIED type reference inside a [GoType("…")] descriptor: a
+// `_package`-suffixed class path (`time_package.`, `@internal.godebug_package.`, `go.token_package.`) that begins
+// at the descriptor's start or right after a descriptor delimiter (`num:`, `[`, `]`, `<`, `(`, `,`, whitespace,
+// `*`). A reference already written `global::go.…` never matches: the character before its `go.` is `:`.
+var goTypeDescriptorRefPattern = regexp.MustCompile(`(^|num:|[\[\]<(,\s*])((?:@?[\p{L}_][\p{L}\p{N}_]*\.)*@?[\p{L}_][\p{L}\p{N}_]*` + PackageSuffix + `\.)`)
+
+// rootGoTypeDescriptor roots every package-qualified type reference in a [GoType("…")] descriptor at the
+// global namespace: `@internal.godebug_package.Setting` -> `global::go.@internal.godebug_package.Setting`.
+//
+// go2cs-gen writes the descriptor verbatim as a type reference into the generated `<X>.g.cs`, a file inside
+// the DECLARING package's namespace. A package-qualified name is written relative to the ROOT namespace, but
+// C# binds its first segment inner-to-outer from the declaring namespace, so a sibling namespace of an
+// enclosing one captures it: from `go.crypto.@internal.fips140deps` the leading `@internal` of
+// `@internal.godebug_package.Setting` binds to `go.crypto.@internal`, not `go.@internal`
+// (crypto/internal/fips140deps/godebug, CS0234 x5 at the H5 tree -- H7 red 1, COORD 89c281d32). The generator
+// cannot root the string itself: a leading `go.` is ambiguous there (`go.token_package` is go/token under the
+// root, not a root-level `token_package`), and only the converter holds the package path. So the rule is taken
+// at the writers: a package-qualified descriptor reference is emitted ROOTED, always, at every [GoType] writer,
+// whether or not today's corpus shadows it. The -tests bridge already writes this form
+// (`[GoType("global::go.net.http_package.ΔHeader")]`) and go2cs-gen already consumes it. Same-package names
+// and file-alias forms carry no `_package.` segment and pass through unchanged; the function is idempotent.
+func rootGoTypeDescriptor(descriptor string) string {
+	return goTypeDescriptorRefPattern.ReplaceAllString(descriptor, "${1}global::"+RootNamespace+".${2}")
+}
+
 // rootQualified prefixes ns with the root namespace, using `global::go.` instead of a bare `go.`
 // whenever a `go.go` namespace shadows the root. That happens two ways: the CURRENT package is
 // itself a `go/*` stdlib package (go/token, go/ast, go/doc, go/build, … land in

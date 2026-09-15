@@ -34,7 +34,7 @@ partial class bcache_package {
     internal atomic.Pointer<cacheTable<K, V>> ptable;
 }
 
-[GoType("[1021]sync.atomic_package.Pointer<cacheEntry<K, V>>")] /* [cacheSize]sync.atomic_package.Pointer<cacheEntry<K, V>> */
+[GoType("[1021]global::go.sync.atomic_package.Pointer<cacheEntry<K, V>>")] /* [cacheSize]sync.atomic_package.Pointer<cacheEntry<K, V>> */
 partial struct cacheTable<K, V>;
 
 // A cacheEntry is a single entry in the linked list for a given hash table entry.

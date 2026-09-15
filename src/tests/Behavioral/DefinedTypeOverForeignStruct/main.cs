@@ -6,7 +6,7 @@ using DefinedTypeOverForeignStruct;
 
 partial class main_package {
 
-[GoType("DefinedTypeOverForeignStruct.ptlike_package.Outer")] partial struct alias;
+[GoType("global::go.DefinedTypeOverForeignStruct.ptlike_package.Outer")] partial struct alias;
 
 [GoRecv] internal static @string describe(this ref alias a) {
     return fmt.Sprintf("%s/%d"u8, a.Name, a.In.Len());

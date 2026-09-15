@@ -16,7 +16,7 @@ partial class runtime_package {
 // TODO(brainman): should not need those
 internal static UntypedInt _NSIG => 65;
 
-[GoType("unsafe_package.Pointer")] partial struct stdFunction;
+[GoType("global::go.unsafe_package.Pointer")] partial struct stdFunction;
 
 //go:cgo_import_dynamic runtime._AddVectoredContinueHandler AddVectoredContinueHandler%2 "kernel32.dll"
 //go:cgo_import_dynamic runtime._AddVectoredExceptionHandler AddVectoredExceptionHandler%2 "kernel32.dll"

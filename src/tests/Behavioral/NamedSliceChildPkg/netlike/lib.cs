@@ -6,7 +6,7 @@ using go.IoLike;
 
 partial class netlike_package {
 
-[GoType("[]IoLike.FsLike_package.Info")] partial struct InfoList;
+[GoType("[]global::go.IoLike.FsLike_package.Info")] partial struct InfoList;
 
 public static @string Describe() {
     return IoLike.Version();

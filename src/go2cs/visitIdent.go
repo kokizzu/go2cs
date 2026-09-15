@@ -69,10 +69,10 @@ func (v *Visitor) visitIdent(ident *ast.Ident, identType types.Type, name string
 
 	if isNumericType(underlyingIdentType) {
 		// Handle numeric type
-		v.writeString(target, "%s[GoType(\"num:%s\")]", v.localNameAttrFor(identType), csTypeName)
+		v.writeString(target, "%s[GoType(\"num:%s\")]", v.localNameAttrFor(identType), rootGoTypeDescriptor(csTypeName))
 	} else {
 		// Handle other types
-		v.writeString(target, "%s[GoType(\"%s\")]", v.localNameAttrFor(identType), csTypeName)
+		v.writeString(target, "%s[GoType(\"%s\")]", v.localNameAttrFor(identType), rootGoTypeDescriptor(csTypeName))
 	}
 
 	// Consume any pending publicized-type access modifier (an unexported type used as an

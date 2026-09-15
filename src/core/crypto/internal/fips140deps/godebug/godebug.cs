@@ -8,7 +8,7 @@ using go.@internal;
 
 partial class godebug_package {
 
-[GoType("@internal.godebug_package.Setting")] partial struct Setting;
+[GoType("global::go.@internal.godebug_package.Setting")] partial struct Setting;
 
 public static ж<Setting> New(@string name) {
     return godebug.New(name).Reinterpret<godebug.Setting, Setting>();

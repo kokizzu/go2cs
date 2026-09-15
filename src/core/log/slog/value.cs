@@ -149,7 +149,7 @@ public static Value BoolValue(bool v) {
 
 [GoType("ж<timeꓸLocation>")] partial class timeLocation;
 
-[GoType("time_package.Time")] partial struct timeTime;
+[GoType("global::go.time_package.Time")] partial struct timeTime;
 
 // TimeValue returns a [Value] for a [time.Time].
 // It discards the monotonic portion.

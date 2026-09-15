@@ -54,6 +54,6 @@ func (v *Visitor) visitMapType(mapType *ast.MapType, identType types.Type, name 
 	}
 
 	v.recordTypeAccessibility("struct", getSanitizedIdentifier(name), "", access, "")
-	v.writeStringLn(target, "%s[GoType(\"map[%s, %s]\")] %spartial struct %s;", v.localNameAttrFor(identType), keyType, valueType, access, getSanitizedIdentifier(name))
+	v.writeStringLn(target, "%s[GoType(\"map[%s, %s]\")] %spartial struct %s;", v.localNameAttrFor(identType), rootGoTypeDescriptor(keyType), rootGoTypeDescriptor(valueType), access, getSanitizedIdentifier(name))
 	finish()
 }
