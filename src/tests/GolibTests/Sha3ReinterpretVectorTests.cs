@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
-using sha3 = go.vendor.golang.org.x.crypto.sha3_package;
+using sha3 = go.crypto.sha3_package;
 
 namespace GolibTests;
 
@@ -91,9 +91,13 @@ public class Sha3ReinterpretVectorTests
     {
         // SHAKE drives the same xorIn/copyOut pair through a different rate and a squeeze longer
         // than one permutation's worth of output.
-        slice<byte> @out = new slice<byte>(32);
-
-        sha3.ShakeSum256(@out, ((@string)"abc").slice());
+        //
+        // 1.24 SPELLS THE SQUEEZE DIFFERENTLY, and this is the only call in the file that moved.
+        // The vendored 1.23 form wrote into a caller's buffer -- ShakeSum256(hash, data) is
+        // NewShake256(); Write(data); Read(hash) -- so the LENGTH was carried by len(hash). 1.24's
+        // crypto/sha3 returns the squeeze instead: SumSHAKE256(data, length). Same function, same
+        // vector; the 32 that was the buffer's length is now the argument.
+        slice<byte> @out = sha3.SumSHAKE256(((@string)"abc").slice(), 32);
 
         Assert.AreEqual("483366601360a8771c6863080cc4114d8db44530f8f1e1ee4f94ea37e78b5739", hex(@out));
     }

@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using go;
-using alias = go.crypto.@internal.alias_package;
+using alias = go.crypto.@internal.fips140.alias_package;
 using valias = go.vendor.golang.org.x.crypto.@internal.alias_package;
 using aes = go.crypto.aes_package;
 using cipher = go.crypto.cipher_package;

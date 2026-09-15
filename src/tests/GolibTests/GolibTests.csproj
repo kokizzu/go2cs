@@ -115,15 +115,21 @@
          cross-target build. The gate FILE is what is conditional. -->
     <ProjectReference Include="..\..\core\internal\syscall\windows\internal.syscall.windows.csproj" />
 
-    <!-- Sha3ReinterpretVectorTests: its ProjectReference is DROPPED here because the project it named is
-         GONE at 1.24.13 - vendor/golang.org/x/crypto/sha3 does not exist in this corpus, so the
-         reference was a restore-time "Skipping project ... not found" (i9 1c81b87f24, 0a5f1f57af).
-         THE TEST FILE IS DELIBERATELY LEFT IN PLACE. Its disposition - re-point to a 1.24 home or
-         retire it with its package - is COORD's ruling 89c281d329 for a SECOND commit, decided from
-         the compiler's reading once red 1 is cured and GolibTests reaches csc. Not pre-decided here:
-         TWO candidate homes exist in this tree (crypto/sha3 and crypto/internal/fips140/sha3) and
-         choosing between them by eye is exactly the guess the sequence forbids. Until then this file
-         does not compile - which it also did not before, masked behind sync and now behind red 1. -->
+    <!-- Sha3ReinterpretVectorTests: RE-POINTED, not retired. The reference this slot carried named
+         vendor/golang.org/x/crypto/sha3, which is GONE at 1.24.13; it was dropped in efb03eab4e with
+         the disposition deferred to a build (COORD 89c281d329). The build is in - i9 d54c47c039 read
+         CS0234 at Sha3ReinterpretVectorTests.cs(6,44), one of GolibTests' three - and the deferred
+         question is settled by measurement rather than by eye:
+           * of the two candidate homes, crypto/internal/fips140/sha3 declares NONE of the three
+             entry points this file uses and crypto/sha3 declares all three;
+           * Sum256 and Sum512 keep their shape ([32]byte / [64]byte -> array<byte>), so those five
+             call sites do not move;
+           * ShakeSum256 does NOT exist at 1.24 in any package - it left with the vendored one - but
+             crypto/sha3.SumSHAKE256(data, length) IS it, with the squeeze RETURNED rather than
+             written into a caller's buffer.
+         So the vector survives the move and the file keeps its purpose: driving the real xorIn and
+         copyOut pair at two rates. -->
+    <ProjectReference Include="..\..\core\crypto\sha3\crypto.sha3.csproj" />
 
     <!-- TestExecutionOutputCapTests: same reason, one tier up. The hand-owned Phase-4 test HOST has
          no _test.go anywhere and no behavioral test can reach it — a converted suite exercises it
