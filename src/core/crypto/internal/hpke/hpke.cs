@@ -13,7 +13,6 @@ using errors = errors_package;
 using byteorder = go.@internal.byteorder_package;
 using bits = math.bits_package;
 using chacha20poly1305 = vendor.golang.org.x.crypto.chacha20poly1305_package;
-using fips140 = go.crypto.@internal.fips140_package;
 using go.@internal;
 using go.crypto;
 using go.crypto.@internal.fips140;
@@ -21,6 +20,7 @@ using hash = hash_package;
 using io = io_package;
 using math;
 using vendor.golang.org.x.crypto;
+using Δfips140 = go.crypto.@internal.fips140_package;
 
 partial class hpke_package {
 
@@ -38,7 +38,7 @@ public static slice<byte> LabeledExtract(this ж<hkdfKDF> Ꮡkdf, slice<byte> si
     labeledIKM = appendꓸꓸꓸ(labeledIKM, sid);
     labeledIKM = append(labeledIKM, label.ꓸꓸꓸ);
     labeledIKM = appendꓸꓸꓸ(labeledIKM, inputKey);
-    return hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => Ꮡkdf.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), labeledIKM, salt);
+    return hkdf.Extract<Δfips140.Hash>(widen<hash.Hash, Δfips140.Hash>(() => Ꮡkdf.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), labeledIKM, salt);
 }
 
 public static slice<byte> LabeledExpand(this ж<hkdfKDF> Ꮡkdf, slice<byte> suiteID, slice<byte> randomKey, @string label, slice<byte> info, uint16 length) {
@@ -48,7 +48,7 @@ public static slice<byte> LabeledExpand(this ж<hkdfKDF> Ꮡkdf, slice<byte> sui
     labeledInfo = appendꓸꓸꓸ(labeledInfo, suiteID);
     labeledInfo = append(labeledInfo, label.ꓸꓸꓸ);
     labeledInfo = appendꓸꓸꓸ(labeledInfo, info);
-    return hkdf.Expand<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => Ꮡkdf.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), randomKey, ((@string)labeledInfo), (nint)length);
+    return hkdf.Expand<Δfips140.Hash>(widen<hash.Hash, Δfips140.Hash>(() => Ꮡkdf.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), randomKey, ((@string)labeledInfo), (nint)length);
 }
 
 // dhKEM implements the KEM specified in RFC 9180, Section 4.1.
