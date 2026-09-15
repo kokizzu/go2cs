@@ -33,9 +33,10 @@ using @internal;
 
 partial class time_package
 {
-    // time's now() and runtimeNano() are //go:linkname'd into the Go runtime (runtime.now /
-    // runtime.nanotime), so the converter emitted them as bodyless partials — throwing stubs. That
-    // made the package UNUSABLE at load: the static initializer `startNano = runtimeNano() - 1`
+    // time's now(), runtimeNano() and — since Go 1.24 — runtimeNow() are //go:linkname'd into the
+    // Go runtime (runtime.now / runtime.nanotime / runtime.time_runtimeNow), so the converter
+    // emitted them as bodyless partials — throwing stubs. That made the package UNUSABLE at load:
+    // the static initializer `startNano = runtimeNano() - 1`
     // (time.cs) runs runtimeNano() during the type's cctor, so merely IMPORTING time — or the first
     // touch of time.Now / Since / Sub — died with "runtimeNano: external (assembly or cgo) function
     // is not implemented" (surfaced by io/fs, crypto/subtle, and go/doc/comment, whose test-package
@@ -79,6 +80,34 @@ partial class time_package
         int64 mono = runtimeNano();
         return (sec, nsec, mono);
     }
+
+    // runtimeNow returns the current time, and at Go 1.24 it is what time.Now() calls: Now()'s body
+    // changed from `now()` to `runtimeNow()` at the hop, so EVERY converted program's first
+    // time.Now() reached the throwing stub this body replaces (i9 measured it ending os/user and os
+    // test hosts, c5f7b4b90d; COORD ruled it at 7fad751867).
+    //
+    // ⚠ WHY THIS COMPANION AND NOT A LINKNAME FORWARD. runtime.time_runtimeNow exists and carries a
+    // body (runtime/time.cs:17), but its non-bubble path returns time_now() — and time_now is itself
+    // a BODYLESS partial on windows (runtime/windows/timeasm.cs:13) and linux (linux/timeasm.cs:13),
+    // where Go implements it in assembly. Forwarding would move the same throw one frame deeper on
+    // exactly the two flavours that matter here. Read at the tree; darwin differs (timestub.cs:25
+    // has a real body over walltime/nanotime), which is why the flavour is named rather than the
+    // claim generalized.
+    //
+    // ⚠ WHY `=> now()` IS FAITHFUL, and the one branch it skips. runtime.time_runtimeNow returns the
+    // enclosing synctest bubble's fake clock when getg().syncGroup is set, and time_now() otherwise.
+    // Nothing in this corpus can set it: a synctestGroup is CONSTRUCTED in exactly one place,
+    // runtime/synctest.cs:190 inside synctestRun, and every other write propagates or clears an
+    // existing one (goroutine creation copies the parent's, the timer path copies the timer's, the
+    // GC saves and restores). synctestRun is the body pushed to internal/synctest.Run
+    // (synctest.cs:177), whose consumer is a bodyless partial — so the entry point to a bubble is
+    // itself a throwing stub, and no bubble can exist. RE-CHECK THE DAY A SYNCTEST BRIDGE IS WIRED:
+    // this body then owes the syncGroup branch. The declared-not-implemented census is where those
+    // five bridges are named, which is the place that notices.
+    //
+    // Delegating to now() rather than repeating its work keeps Now()'s wall clock and monotonic
+    // component reading the same two sources as Since / Sub, which is the property startNano rebases.
+    internal static partial (int64 sec, int32 nsec, int64 mono) runtimeNow() => now();
 
     // ---------------------------------------------------------------------------------------------
     //  Runtime timers — Sleep, newTimer, stopTimer, resetTimer
