@@ -244,6 +244,7 @@
     <None Include="$(MSBuildThisFileDirectory)toolchainResolution.go" />
     <None Include="$(MSBuildThisFileDirectory)toolchainResolution_test.go" />
     <None Include="$(MSBuildThisFileDirectory)trailingComments_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)transitiveAliasRename_test.go" />
     <None Include="$(MSBuildThisFileDirectory)typeAccessibilityInterface_test.go" />
     <None Include="$(MSBuildThisFileDirectory)typeAccessibilityOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)typedNilInterfaceBoxing.go" />
