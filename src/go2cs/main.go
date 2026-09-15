@@ -99,6 +99,65 @@ func resolveGo2CSPathDefault(goPath string) string {
 //
 // The error names the toolchain's OWN answer when it can get one, because the fix is almost always
 // "use that spelling" and the two strings side by side are the whole diagnosis.
+// sameGoRoot reports whether two GOROOT spellings name the same tree, so the disagreement refusal
+// below fires on a real difference and not on a spelling.
+//
+// Three tiers, cheapest first: identical after Clean; identical after Clean case-insensitively (the
+// host filesystem is case-insensitive on Windows and the two strings routinely arrive from different
+// sources); identical after EvalSymlinks. The symlink tier matters because importOperations.go already
+// records the shape — a GOROOT reached through a symlink where "options.goRoot and the directory
+// go/build reports differ by spelling alone" — and refusing on that would break a working setup to no
+// purpose. An unresolvable path is NOT treated as equal: it falls through to the textual answer, which
+// is the conservative direction (a refusal a reader can fix) rather than proceeding on a guess.
+func sameGoRoot(a string, b string) bool {
+	ca, cb := filepath.Clean(a), filepath.Clean(b)
+
+	if ca == cb || strings.EqualFold(ca, cb) {
+		return true
+	}
+
+	ra, errA := filepath.EvalSymlinks(ca)
+	rb, errB := filepath.EvalSymlinks(cb)
+
+	if errA != nil || errB != nil {
+		return false
+	}
+
+	return ra == rb || strings.EqualFold(ra, rb)
+}
+
+// loaderGoRootDecision decides what to do about the GOROOT the LOADER will read, given the environment's
+// value and the resolved flag. It reports whether the caller should export the flag, or an error naming
+// both values when they disagree. Pure, so the three cases are testable without a conversion.
+//
+// The cases, ruled 2026-09-13 (COORD `bc59c619d`):
+//
+//	environment unset            -> EXPORT the flag. Nothing to disagree with, and until this existed the
+//	                                loader read the ambient root while the flag only rewrote paths.
+//	environment == flag          -> proceed. The overwhelmingly common case; every pinned script does this.
+//	environment != flag          -> REFUSE, naming both. NOT a silent switch to the flag's sources: such a
+//	                                caller has been reading the environment's sources under the flag's
+//	                                label, so changing which tree it reads without saying so is the same
+//	                                defect in the other direction.
+func loaderGoRootDecision(envRoot string, flagRoot string) (export bool, err error) {
+	if envRoot == "" {
+		return true, nil
+	}
+
+	if sameGoRoot(envRoot, flagRoot) {
+		return false, nil
+	}
+
+	// %s, not %q: %q escapes every separator on Windows in the two paths the reader must compare.
+	return false, fmt.Errorf("GOROOT disagreement: the environment says \"%s\" and -goroot says \"%s\".\n"+
+		"       The LOADER follows the ENVIRONMENT — go/packages shells out to `go list`, which inherits it —\n"+
+		"       so this run would convert \"%s\"'s sources while the log and the emitted labels named \"%s\".\n"+
+		"       Refusing rather than picking one, because either choice silently changes which sources a\n"+
+		"       previously-working invocation reads. Set GOROOT to the tree you mean, or drop -goroot.\n"+
+		"       (A spelling-only, case-only or symlink-only difference is not a disagreement and never reaches here.)",
+		envRoot, flagRoot, envRoot, flagRoot)
+}
+
 func checkGoRootSpelling(goRoot string) error {
 	if info, err := os.Stat(filepath.Join(goRoot, "src")); err == nil && info.IsDir() {
 		return nil
@@ -366,6 +425,27 @@ Examples:
 		}
 	}
 
+	// ---- the GOROOT the LOADER will actually read -------------------------------------------------
+	//
+	// ⚠ Until 2026-09-13 `-goroot` could not change which sources a run read, in ANY mode. The flag is
+	// applied to build.Default.GOROOT above, which steers go/build; go/packages shells out to `go list`
+	// and inherits os.Environ(), so the LOADER followed the environment and the flag was a
+	// path-rewriting and licensing hint only. Measured: flag go1.23.12, environment unset, loader read
+	// /usr/local/go1.24.7/src/errors/errors.go. Both census arms of a two-pin comparison therefore read
+	// the same tree and exited 0, and the emission wore whichever label the flag carried
+	// (mailbox 2026-09-13, C1 `236061d96` and C2's root cause; BOARD entry the same day).
+	//
+	// The three cases are ruled (COORD `bc59c619d`), and the middle one is the point: a caller whose flag
+	// disagrees with its environment has been getting the environment's sources under the flag's label,
+	// so SILENTLY switching it to the flag's sources would be the same class of defect in the other
+	// direction. Safety floor rule 6 is the sibling: a GOROOT the converter half-honours "exits reporting
+	// success".
+	if export, err := loaderGoRootDecision(os.Getenv("GOROOT"), *goRootCmd); err != nil {
+		log.Fatalf("%v\n", err)
+	} else if export {
+		os.Setenv("GOROOT", *goRootCmd)
+	}
+
 	// -recurse=nuget references a PUBLISHED corpus, which exists for exactly one Go release. Converting
 	// a different release's standard library against it yields a project that cannot restore, and the
 	// user meets that as NU1101s naming packages they never imported. Refuse while the diagnosis is
@@ -527,9 +607,19 @@ Examples:
 		// emission, and both censuses — since all of them read GOROOT's sources as their input and a
 		// census taken on the wrong release measures the wrong sources just as surely as a conversion
 		// emits them.
-		if err := checkCorpusToolchainPin("-stdlib", convertingRelease(options.goRoot), corpusPinnedRelease(options.go2csPath)); err != nil {
+		pinnedRelease, err := corpusPinnedReleaseOrError(options.go2csPath)
+
+		if err != nil {
+			log.Fatalf("-stdlib: %v\n", err)
+		}
+
+		if err := checkCorpusToolchainPin("-stdlib", convertingRelease(options.goRoot), pinnedRelease); err != nil {
 			log.Fatalf("%v\n", err)
 		}
+
+		// The provenance line, beside the pin it was just checked against: the root the loader will read
+		// and the release that root's own VERSION file declares, both read IN-PROCESS at this moment.
+		printToolchainProvenance(options)
 
 		// Check if specific packages are specified
 		var packageFilter []string
@@ -680,7 +770,15 @@ Examples:
 			// single-package conversion stays unguarded — converting arbitrary Go with any toolchain is
 			// legitimate, and only the corpus-defining modes carry the pin.
 			if options.convertTests {
-				if err := checkCorpusToolchainPin("-tests", convertingRelease(options.goRoot), corpusPinnedRelease(options.go2csPath)); err != nil {
+				testsPinnedRelease, pinErr := corpusPinnedReleaseOrError(options.go2csPath)
+
+				if pinErr != nil {
+					log.Fatalf("-tests: %v\n", pinErr)
+				}
+
+				printToolchainProvenance(options)
+
+				if err := checkCorpusToolchainPin("-tests", convertingRelease(options.goRoot), testsPinnedRelease); err != nil {
 					log.Fatalf("%v\n", err)
 				}
 

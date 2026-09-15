@@ -192,6 +192,79 @@ project-IDENTITY residual is G's.
      diagnosis, and set `GOROOT` from `go env GOROOT` verbatim (single-quoted in Bash so the backslashes
      survive). -->
 
+## Which GOROOT the LOADER reads, and the corpus pin that only guards a seeded root
+
+**Operator side: assert `go version` AND `go env GOROOT` against the pin from a NO-MODULE directory, in
+the RUN'S OWN environment, before the run; read the emission's own path lines after it.** Both halves are
+load-bearing. The no-module directory closes the `GOTOOLCHAIN` re-exec: a `go.mod` requiring a newer
+release makes the toolchain switch and **rewrite `GOROOT` in the process**, so a `GOROOT=X` you exported
+and asserted against `X/VERSION` can be answered by an entirely different tree. The run's own environment
+closes the ambient install: a pin asserted in another shell says nothing about this one. **An assertion in
+the calling command is necessary and NOT sufficient** — the sufficient read is the converter's own
+provenance line, below.
+
+**Converter side.** Every conversion and the census print the root, its `VERSION` read **in-process**, and
+the loader-directory's own `go env GOROOT` when the two disagree (`printToolchainProvenance`,
+`toolchainResolution.go:391`). **`-goroot` is never read by the LOADER** — `go/packages` shells out to
+`go list`, which inherits `os.Environ()`, while the flag lands on `build.Default.GOROOT`, which steers
+`go/build` only. It reaches the loader *solely* because `main.go:443` now exports the resolved root when
+the environment carries none; **a flag/environment disagreement REFUSES**, naming both
+(`loaderGoRootDecision`, `main.go:142`), rather than silently switching which tree a working invocation
+reads. A spelling-, case- or symlink-only difference is not a disagreement (`sameGoRoot`) — do not
+re-diagnose that. The loader's env also carries `GOTOOLCHAIN=local` (`conversionDriver.go:121`).
+
+**Seed `version.props` beside `core` into a hand-seeded temp root, or the pin is inert.** Floor rule 2
+says seed the temp root from `src/core`, and `version.props` is a **sibling** of `core` (`src/version.props`)
+— so a root seeded by that rule alone carries `core/golib/golib.csproj` and no pin, and
+`checkCorpusToolchainPin` then passed unconditionally on an empty read. **Every hand-seeded `-stdlib`
+reconvert has therefore run with the toolchain pin inert.** `seedCensusRoot` already copies it
+(`platformCensus.go:481`); the hand workflow has to match. `corpusPinnedReleaseOrError` now refuses by
+name — scoped to a root that *looks* like a corpus (`isGo2CSRoot`, i.e. `core/golib/golib.csproj` present,
+`testConversion.go:531`), because a bare unseeded target is a corpus's FIRST conversion, not a fault.
+
+<!-- Derivation, 2026-09-13. Wording ruled by COORD at mailbox `9bdca5025` (operator and converter sides),
+     landing with C2's census/-goroot seat `7c1d8832f` (accepted at `c5580c113a` §2 with its narrowing).
+
+     ⚠ THE CONVERTER-SIDE CLAUSE IS ONE WORD NARROWER THAN THE RULING'S LITERAL WORDING, DELIBERATELY.
+     `9bdca5025` set it as "`-goroot` is not read by the loader in any mode". That was exactly true of the
+     PRE-FIX tree and is the defect statement; it is no longer true unqualified of the tree the line ships
+     with, because `main.go:443` exports the resolved root in the environment-unset case, so the flag DOES
+     steer the loader there. Written as "never read by the LOADER … it reaches the loader solely because
+     main.go exports it" — the durable fact (go/packages reads os.Environ(), build.Default.GOROOT steers
+     go/build only) plus the one mechanism that bridges it. Flagged to COORD in the announce, not slipped.
+
+     THE ROOT CAUSE, measured on a 24-line probe mirroring conversionDriver.go's config shape (C2, this
+     date; the fleet's diagnosis before it was census-local, which was true-and-not-the-cause):
+         flag (build.Default.GOROOT) : <toolchain>/go1.23.12
+         env GOROOT                  : (unset)
+         loader read                 : /usr/local/go1.24.7/src/errors/errors.go   <- the AMBIENT root
+     So the flag was inert for source SELECTION in EVERY mode -- census, -stdlib and -tests alike -- and a
+     control that once read "plain -stdlib honours it" can only have agreed because flag and environment
+     matched on that box: the flag echoing itself. `platformCensus.go` copies `options` wholesale, so
+     `goRoot` DID travel into the census; it just had no effect anywhere.
+
+     THE GOTOOLCHAIN RE-EXEC, same probe, and it is NOT a second undiagnosed mechanism -- it is named at
+     `projectFileWriter.go:39-42` and the remedy shipped there:
+         the same 1.23.12 binary, asked its own version:  GOTOOLCHAIN=auto -> go1.24.7
+                                                          GOTOOLCHAIN=local -> go1.23.12
+         GOROOT=1.23.12 exported AND its bin first on PATH: `go: downloading go1.24.7`, and
+             `env GOROOT` then read <toolchain>/go1.24.7 -- THE VALUE EXPORTED WAS REWRITTEN.
+         GOROOT exported, bin NOT on PATH: `compile: version "go1.23.12" does not match go tool version
+             "go1.24.7"` -- refuses LOUDLY, which is the good case: a GOROOT/binary mismatch names both.
+     The probe's own switch was triggered by `go mod tidy` writing `go 1.24.0` + `toolchain go1.24.7` into
+     the probe module; the converter's loads are of stdlib packages inside a GOROOT `src` dir, which carry
+     no such requirement, so the switch may not fire there at all. Recorded as the mechanism, not as a
+     claim about the converter's own loads.
+
+     THE INERT PIN: `isGo2CSRoot` keys on `core/golib/golib.csproj`, which a floor-rule-2 seeding
+     CREATES, while `version.props` sits beside `core` and is NOT copied by that rule -- so the seeded
+     root is precisely the shape that looks like a corpus and carries no pin. Before the refusal,
+     `corpusPinnedRelease` returned ("", nil) for it and the pin check was a silent no-op. The narrowing
+     to isGo2CSRoot came from `toolchainResolution_test.go`'s own fixture, which documents a bare root as
+     "the normal state of a first -stdlib conversion, not a fault" -- COORD accepted the narrowing rather
+     than the unconditional refusal it had ruled. Ten tests at the seat, including a pre-fix control that
+     reconstructs the silent no-op through the old function and shows it PASSING. -->
+
 ## Invoking the converter without producing a false reading
 
 - **Rebuilt converter → run `convert` THEN `build`.** Otherwise `-test-action build` exits 1 with ZERO
