@@ -120,6 +120,88 @@ func (v *Visitor) callFunIsUniversePrint(callExpr *ast.CallExpr) bool {
 //
 // Phases 1a-1c and 4 RETURN directly; the rest fall through and contribute to the final rendering.
 // Splitting this along those seams is planned work — the banners exist so that starts from a map.
+// argRendersAsUntypedConst reports whether an argument's EMISSION is an UntypedInt static, which is
+// the question the min/max cast arm below actually asks. Go types an untyped constant to its typed
+// operand at the call; C# does not, so such an argument must carry the cast the arm supplies.
+//
+// ⚠ IT IS NOT "is the argument's go/types type untyped". Beside a typed operand go/types has ALREADY
+// performed Go's conversion, so `maxNameLen - suffixLen` records as `int` there — the very
+// conversion whose absence in the emission is the defect (RED 6, user_windows_test.go:36 → CS1503).
+// The untypedness is read from the constant OBJECTS at the leaves, which is how the identifier form
+// has always read it.
+//
+// Two clauses, both measured against the converter's own emission rather than reasoned about:
+//
+//   - every leaf is an untyped constant, so the folded value is one too; and
+//   - at least one leaf is a NAMED untyped constant, which is what makes the emitted expression
+//     UntypedInt. A pure-literal fold (`20-4`) emits as C# int arithmetic exactly like the bare
+//     literal `8` beside it and needs no cast; sweeping it in would re-spell working sites.
+//
+// A bare *ast.BasicLit is deliberately NOT matched: the arm casts literals only once some other
+// argument has triggered it, which is the pre-existing behaviour this predicate preserves.
+func argRendersAsUntypedConst(info *types.Info, arg ast.Expr) bool {
+	tv, ok := info.Types[arg]
+
+	if !ok || tv.Value == nil {
+		return false
+	}
+
+	return untypedConstLeaves(info, arg) && hasNamedUntypedConstLeaf(info, arg)
+}
+
+// untypedConstLeaves reports whether every leaf of a constant expression is an untyped constant.
+func untypedConstLeaves(info *types.Info, expr ast.Expr) bool {
+	switch e := expr.(type) {
+	case *ast.BasicLit:
+		return true
+	case *ast.Ident:
+		return identIsUntypedConst(info, e)
+	case *ast.ParenExpr:
+		return untypedConstLeaves(info, e.X)
+	case *ast.UnaryExpr:
+		return untypedConstLeaves(info, e.X)
+	case *ast.BinaryExpr:
+		return untypedConstLeaves(info, e.X) && untypedConstLeaves(info, e.Y)
+	case *ast.SelectorExpr:
+		return identIsUntypedConst(info, e.Sel)
+	}
+
+	return false
+}
+
+// hasNamedUntypedConstLeaf reports whether a constant expression names at least one untyped
+// constant — the leaf that makes the emitted C# an UntypedInt rather than an int.
+func hasNamedUntypedConstLeaf(info *types.Info, expr ast.Expr) bool {
+	switch e := expr.(type) {
+	case *ast.Ident:
+		return identIsUntypedConst(info, e)
+	case *ast.ParenExpr:
+		return hasNamedUntypedConstLeaf(info, e.X)
+	case *ast.UnaryExpr:
+		return hasNamedUntypedConstLeaf(info, e.X)
+	case *ast.BinaryExpr:
+		return hasNamedUntypedConstLeaf(info, e.X) || hasNamedUntypedConstLeaf(info, e.Y)
+	case *ast.SelectorExpr:
+		return identIsUntypedConst(info, e.Sel)
+	}
+
+	return false
+}
+
+// identIsUntypedConst is the original identifier test, unchanged in meaning: the OBJECT is a
+// constant whose declared type is an untyped basic.
+func identIsUntypedConst(info *types.Info, ident *ast.Ident) bool {
+	constObj, ok := info.ObjectOf(ident).(*types.Const)
+
+	if !ok {
+		return false
+	}
+
+	basic, ok := constObj.Type().(*types.Basic)
+
+	return ok && basic.Info()&types.IsUntyped != 0
+}
+
 func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) string {
 	// The //go:cgo_unsafe_args block lift (cgoUnsafeArgsLift.go): the ONE `unsafe.Pointer(&first)` the
 	// current declaration's lift consumes renders as the synthesized block's pinned box. Intercepted
@@ -3138,11 +3220,12 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 	}
 
 	// Go's min/max builtins type every argument to the call's single result type. An argument that
-	// is a NAMED UNTYPED CONSTANT renders as its UntypedInt (BigInteger) static, which the golib
-	// min/max `params ReadOnlySpan<T>` overloads reject (CS1503 — params-span element binding does
-	// not apply the user-defined implicit conversion): runtime `min(n, maxObletBytes)` (mgcmark.go,
-	// n uintptr) and `min(debug.profstackdepth, maxProfStackDepth)` (runtime1.go, int32). Cast such
-	// an argument to the call's Go-resolved result type: `min(n, (uintptr)(maxObletBytes))`.
+	// renders as an UntypedInt (BigInteger) static — a NAMED UNTYPED CONSTANT, or a FOLDED
+	// EXPRESSION over such constants — is rejected by the golib min/max `params ReadOnlySpan<T>`
+	// overloads (CS1503 — params-span element binding does not apply the user-defined implicit
+	// conversion): runtime `min(n, maxObletBytes)` (mgcmark.go, n uintptr) and
+	// `min(debug.profstackdepth, maxProfStackDepth)` (runtime1.go, int32). Cast such an argument to
+	// the call's Go-resolved result type: `min(n, (uintptr)(maxObletBytes))`.
 	// Literal and typed arguments are left as-is (no churn — the early return fires only when an
 	// untyped-const argument is present).
 	if funcName == "min" || funcName == "max" || funcName == "builtin.min" || funcName == "builtin.max" {
@@ -3150,21 +3233,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if _, isBuiltin := v.info.ObjectOf(funIdent).(*types.Builtin); isBuiltin {
 				if callType := v.info.TypeOf(callExpr); callType != nil {
 					argIsNamedUntypedConst := func(arg ast.Expr) bool {
-						ident := getIdentifier(arg)
-
-						if ident == nil {
-							return false
-						}
-
-						constObj, ok := v.info.ObjectOf(ident).(*types.Const)
-
-						if !ok {
-							return false
-						}
-
-						basic, ok := constObj.Type().(*types.Basic)
-
-						return ok && basic.Info()&types.IsUntyped != 0
+						return argRendersAsUntypedConst(v.info, arg)
 					}
 
 					needsCast := false
