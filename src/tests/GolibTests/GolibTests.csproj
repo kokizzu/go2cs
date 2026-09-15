@@ -79,6 +79,15 @@
          native invoke); its end-to-end arm gates on the running host and reports Inconclusive.
          Same reasoning, and same '!= \'\' and != windows' form, as the line above. -->
     <Compile Remove="TokenDoorWiredTests.cs" />
+
+    <!-- Row 46's owed observer drives os/user's local-group DECISION, which is declared only in that
+         package's L3 windows/ folder (lookup_windows_impl.cs). os/user is NOT windows-exclusive —
+         it has linux/ and darwin/ folders of its own — so unlike the two files above this one would
+         compile against a real assembly on another flavour and fail on the missing member. Same
+         '!= \'\' and != windows' form and the same reason: $(GoTargetOS) is unset in this project and
+         unset means the default windows corpus, so a bare "!= 'windows'" removes it on every
+         ordinary run and a filtered `dotnet test` answers "No test matches" with EXIT 0. -->
+    <Compile Remove="WindowsLocalGroupDecisionTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -114,6 +123,13 @@
          assembly — the crypto/x509/internal/macos shape — and referencing it cannot break a
          cross-target build. The gate FILE is what is conditional. -->
     <ProjectReference Include="..\..\core\internal\syscall\windows\internal.syscall.windows.csproj" />
+
+    <!-- WindowsLocalGroupDecisionTests drives os/user's readLocalGroupNames, the decision half of
+         listGroupsForUsernameAndDomain that Go's own suite cannot reach here (it needs an account,
+         and at 1.24 the path runs off the current process token). Unconditional, like the two above,
+         but for a different reason: os/user is an L3 package that compiles on EVERY flavour, so the
+         reference resolves on all three and only the gate FILE is conditional. -->
+    <ProjectReference Include="..\..\core\os\user\os.user.csproj" />
 
     <!-- Sha3ReinterpretVectorTests: RE-POINTED, not retired. The reference this slot carried named
          vendor/golang.org/x/crypto/sha3, which is GONE at 1.24.13; it was dropped in efb03eab4e with
