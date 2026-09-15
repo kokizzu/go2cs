@@ -1407,7 +1407,11 @@ public class ImplementGenerator : ISourceGenerator
             ProxyName = proxyName,
             InterfaceRef = interfaceRef,
             ElementName = elementName,
-            AdapterScope = "internal",
+            // The interface adapter's own rule (public when both sides are public): a proxy is a TYPE ARGUMENT of whatever
+            // signature closes the constraint, and Go 1.24's crypto/internal/fips140 ecdh/ecdsa export `P224() *Curve[*P224Point]`,
+            // so an always-internal proxy made every such public method CS0050 (RED 8). crypto/elliptic's unexported curves keep
+            // their proxies internal under the same rule.
+            AdapterScope = AdapterSidePublic(interfaceDef, interfaceDef.Name) && AdapterSidePublic(elementType, elementType.Name) ? "public" : "internal",
             MethodsImplementation = methods.ToString(),
             UsingStatements = proxyUsings
         }
