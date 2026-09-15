@@ -2052,6 +2052,18 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// nil with a CLR type-safety break. Body in zsyscall_windows_ptrout_impl.cs, transcription
 		// in os/user's lookup_windows_impl.cs, one change.
 		"NetUserGetLocalGroups": goosWindows,
+		// THE os.Root DOOR, and the two hop-new members of the struct-passing class. Their third
+		// argument is a *OBJECT_ATTRIBUTES, whose converted record holds THREE `ж<T>` fields where
+		// ntdll reads raw pointers (types_windows.cs:108), and whose ObjectName's own pointee is
+		// reference-bearing too (NTUnicodeString.Buffer, string_windows.cs:11). A reference-bearing
+		// pointee has no pinnable slot, so `(uintptr)` on its box answers an ORDER TOKEN, and
+		// syscall/windows/dll_windows.cs's token door refuses it at argument 2 before the trampoline
+		// runs -- a panic that takes goroutine 1 with it, which is why the 494 leaves behind
+		// os.Root's TestRootConsistencyCreate have never had a C# side. Bodies in
+		// zsyscall_windows_ntfile_impl.cs, against blittable OBJECT_ATTRIBUTES and UNICODE_STRING
+		// mirrors; the CALL is the generated one and only the third argument's memory differs.
+		"NtCreateFile": goosWindows,
+		"NtOpenFile":   goosWindows,
 		// The privilege-adjustment member of the struct-passing class, and the one whose corruption
 		// BLAMES THE HOST. Its generated body passes advapi32 the address of a managed
 		// TOKEN_PRIVILEGES: native wants 16 bytes ending in one INLINE LUID_AND_ATTRIBUTES, and the
