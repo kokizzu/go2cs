@@ -70,6 +70,21 @@ func show(s Shape) {
 	fmt.Printf("%s: %.2f\n", s.Name(), s.Area())
 }
 
+// makeShape reaches the type parameter as a func RESULT, mirroring crypto/internal/fips140/hmac's
+// New[H fips140.Hash](h func() H, key []byte): a pointer instantiation widens the DELEGATE through
+// the adapter, and every call of it hands back the box the factory returned. A nil func stays nil.
+func makeShape[S Shape](factory func() S) string {
+	if factory == nil {
+		return "no factory"
+	}
+	a, b := factory(), factory()
+	return fmt.Sprintf("%s %.2f %.2f", a.Name(), a.Area(), b.Area())
+}
+
+func newUnitCircle() *Circle {
+	return &Circle{R: 1}
+}
+
 func main() {
 	circles := []*Circle{&Circle{R: 1}, &Circle{R: 2}} // pointer instantiation — adapter-projected
 	squares := []*Square{&Square{S: 3}}                // second pointer type — distinct adapter
@@ -84,4 +99,11 @@ func main() {
 	walkAll(circles)
 	walkAll(shapes)
 	walkAll(rounds)
+
+	shared := &Circle{R: 1}
+	var none func() *Circle
+
+	fmt.Println(makeShape(newUnitCircle))                                // function value — func-result projection
+	fmt.Println(makeShape(func() *Circle { shared.R++; return shared })) // one shared box: both reads see R=3
+	fmt.Println(makeShape(none))                                         // nil func stays nil
 }

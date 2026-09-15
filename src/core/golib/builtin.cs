@@ -2815,6 +2815,32 @@ public static partial class builtin
         return new slice<TWide>(result);
     }
 
+    /// <summary>
+    /// Projects a factory delegate through an element conversion, returning a delegate of the widened type.
+    /// </summary>
+    /// <typeparam name="T">Source result type.</typeparam>
+    /// <typeparam name="TWide">Widened result type, e.g., an interface type.</typeparam>
+    /// <param name="source">Source factory.</param>
+    /// <param name="conv">Result widening conversion.</param>
+    /// <returns>A delegate that calls <paramref name="source"/> and widens its result, or <c>null</c> for a nil source.</returns>
+    /// <remarks>
+    /// The DELEGATE-RESULT twin of the slice overload above, for a Go generic call whose
+    /// interface-constrained type parameter is reached as a func RESULT and instantiated with a pointer
+    /// type — <c>hmac.New(sha256.New, key)</c> instantiating <c>New[H fips140.Hash](h func() H, …)</c>
+    /// with <c>H=*sha256.Digest</c>: the <c>ж&lt;Digest&gt;</c> box does not implement the constraint
+    /// (its generated pointer adapter does), so each call of the factory is widened through the adapter
+    /// and the type argument becomes the interface itself. One adapter per invocation; the object is
+    /// the same shared box, so Go pointer identity is preserved.
+    /// </remarks>
+    public static Func<TWide> widen<T, TWide>(Func<T> source, Func<T, TWide> conv)
+    {
+        // A nil func value stays nil: Go's `h == nil` in the callee must answer as it would have.
+        if (source is null)
+            return default!;
+
+        return () => conv(source());
+    }
+
 
     /// <summary>
     /// Converts value to a complex64 imaginary number.

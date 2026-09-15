@@ -40,6 +40,7 @@ using static go.crypto.@internal.fips140.ecdsa_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<blockAlignedPersonalizationString, personalizationString>]
+[assembly: GoImplement<go.crypto.@internal.fips140.sha512_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
 [assembly: GoImplement<plainPersonalizationString, personalizationString>]
 // </InterfaceImplementations>
 

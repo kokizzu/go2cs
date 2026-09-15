@@ -70,7 +70,7 @@ internal static array<byte> zeroSum = new(32);
     if (Linkinfo.Magic[0] != 0xff || ((sstring)(Linkinfo.Magic[1..])) != fipsMagic || Linkinfo.Sum == zeroSum) {
         throw panic("fips140: no verification checksum found");
     }
-    var h = hmac.New<ж<sha256.Digest>>(sha256.New, new slice<byte>(32));
+    var h = hmac.New<fips140.Hash>(widen<ж<sha256.Digest>, fips140.Hash>(sha256.New, elemᴛ0 => new sha256_DigestжHash(elemᴛ0)), new slice<byte>(32));
     var w = ((io.Writer)new hmac_HMACжWriter(h));
     /*
 		// Uncomment for debugging.

@@ -982,6 +982,14 @@ func (v *Visitor) renderedTypeArgs(funIdent *ast.Ident, typeArgs *types.TypeList
 			continue
 		}
 
+		// A pointer argument against a NON-self-referential method-set constraint, reached only
+		// as a func RESULT, renders as the constraint itself: the call site projects each such
+		// delegate through the pointer adapter (see funcResultProjection).
+		if _, constraint, ok := v.funcResultProjection(funIdent, typeArgs, i); ok {
+			names = append(names, v.getCSharpTypeName(constraint))
+			continue
+		}
+
 		names = append(names, v.getCSharpTypeName(typeArgs.At(i)))
 	}
 
@@ -1666,6 +1674,186 @@ func (v *Visitor) constraintProxySigArg(funIdent *ast.Ident, typeArgs *types.Typ
 	}
 
 	return v.constraintProxyFor(typeParams.At(i), typeArgs.At(i))
+}
+
+// funcResultProjection reports whether type-parameter position `k` of the generic FUNCTION
+// `funIdent` names is instantiated by a POINTER whose box cannot satisfy the emitted constraint,
+// in the one reach the delegate projection can carry: the type parameter appears in the callee's
+// signature ONLY as the sole result of niladic func parameters. crypto/internal/fips140's
+// `hmac.New[H fips140.Hash](h func() H, key []byte)` called as `hmac.New(sha256.New, key)` is
+// the shape — `New<ж<sha256.Digest>>` against `where H : fips140.Hash` is CS0311, because the
+// box does not implement the interface, its generated pointer adapter does. The type argument
+// becomes the constraint and each such argument is widened through the adapter (`widen<ж<Digest>,
+// Hash>(sha256.New, elemᴛ0 => new sha256_DigestжHash(elemᴛ0))`) — the delegate twin of the
+// slice-element projection go/ast's walkList already takes.
+//
+// Returns the pointer type argument and the INSTANTIATED constraint. A self-referential
+// constraint is the constraint proxy's (see constraintProxyFor) and declines here; a constraint
+// parameterized by a SIBLING type parameter is instantiated over the call's own type arguments.
+// Any other reach of the type parameter declines — a bare `H` parameter, a result mentioning `H`,
+// or another type parameter's constraint naming it would each observe the substituted interface
+// where Go has the pointer.
+func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (*types.Pointer, types.Type, bool) {
+	if funIdent == nil || typeArgs == nil {
+		return nil, nil, false
+	}
+
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return nil, nil, false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || k >= sig.TypeParams().Len() || k >= typeArgs.Len() {
+		return nil, nil, false
+	}
+
+	typeParams := sig.TypeParams()
+	typeParam := typeParams.At(k)
+
+	ptr, ok := types.Unalias(typeArgs.At(k)).(*types.Pointer)
+
+	if !ok {
+		return nil, nil, false
+	}
+
+	if _, ok := types.Unalias(ptr.Elem()).(*types.Named); !ok {
+		return nil, nil, false
+	}
+
+	constraint := typeParam.Constraint()
+
+	if iface, ok := constraint.Underlying().(*types.Interface); !ok || iface.NumMethods() == 0 || !iface.IsMethodSet() {
+		return nil, nil, false
+	}
+
+	// A parameterized constraint: decline the self-referential one, instantiate the rest over
+	// the call's type arguments (a sibling parameter's argument, or a concrete type).
+	if constraintNamed, ok := constraint.(*types.Named); ok && constraintNamed.TypeArgs().Len() > 0 {
+		args := make([]types.Type, constraintNamed.TypeArgs().Len())
+
+		for j := range args {
+			arg := constraintNamed.TypeArgs().At(j)
+
+			if tp, ok := arg.(*types.TypeParam); ok {
+				if tp == typeParam {
+					return nil, nil, false
+				}
+
+				if index := tp.Index(); index < typeParams.Len() && typeParams.At(index) == tp && index < typeArgs.Len() {
+					arg = typeArgs.At(index)
+				}
+			}
+
+			for m := range typeParams.Len() {
+				if typeMentionsTypeParam(arg, typeParams.At(m), map[types.Type]bool{}) {
+					return nil, nil, false
+				}
+			}
+
+			args[j] = arg
+		}
+
+		instantiated, err := types.Instantiate(nil, constraintNamed.Origin(), args, false)
+
+		if err != nil {
+			return nil, nil, false
+		}
+
+		constraint = instantiated
+	}
+
+	iface, ok := constraint.Underlying().(*types.Interface)
+
+	if !ok || !types.Implements(ptr, iface) {
+		return nil, nil, false
+	}
+
+	// The reach: every parameter that mentions the type parameter is exactly `func() H`, at
+	// least one does, no result mentions it, and no other type parameter's constraint names it.
+	reached := false
+
+	for j := range sig.Params().Len() {
+		paramType := sig.Params().At(j).Type()
+
+		if !typeMentionsTypeParam(paramType, typeParam, map[types.Type]bool{}) {
+			continue
+		}
+
+		if sig.Variadic() && j == sig.Params().Len()-1 {
+			return nil, nil, false
+		}
+
+		if !isFuncResultOf(paramType, typeParam) {
+			return nil, nil, false
+		}
+
+		reached = true
+	}
+
+	if !reached || typeMentionsTypeParam(sig.Results(), typeParam, map[types.Type]bool{}) {
+		return nil, nil, false
+	}
+
+	for m := range typeParams.Len() {
+		if m != k && typeMentionsTypeParam(typeParams.At(m).Constraint(), typeParam, map[types.Type]bool{}) {
+			return nil, nil, false
+		}
+	}
+
+	return ptr, constraint, true
+}
+
+// funcResultProjectionArg maps argument `i` of a generic FUNCTION call onto funcResultProjection:
+// the parameter must be a `func() H` whose type parameter's position projects.
+func (v *Visitor) funcResultProjectionArg(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (*types.Pointer, types.Type, bool) {
+	typeParams := v.signatureTypeParams(funIdent)
+
+	if typeParams == nil {
+		return nil, nil, false
+	}
+
+	sig := v.info.ObjectOf(funIdent).(*types.Func).Type().(*types.Signature)
+
+	if i >= sig.Params().Len() || (sig.Variadic() && i == sig.Params().Len()-1) {
+		return nil, nil, false
+	}
+
+	paramSig, ok := sig.Params().At(i).Type().Underlying().(*types.Signature)
+
+	if !ok || paramSig.Params().Len() != 0 || paramSig.Results().Len() != 1 {
+		return nil, nil, false
+	}
+
+	typeParam, ok := types.Unalias(paramSig.Results().At(0).Type()).(*types.TypeParam)
+
+	if !ok {
+		return nil, nil, false
+	}
+
+	for k := range typeParams.Len() {
+		if typeParams.At(k) == typeParam {
+			return v.funcResultProjection(funIdent, typeArgs, k)
+		}
+	}
+
+	return nil, nil, false
+}
+
+// isFuncResultOf reports whether `typ` is exactly `func() tp`: niladic, one result, that result
+// the type parameter itself.
+func isFuncResultOf(typ types.Type, tp *types.TypeParam) bool {
+	sig, ok := typ.Underlying().(*types.Signature)
+
+	if !ok || sig.Params().Len() != 0 || sig.Results().Len() != 1 {
+		return false
+	}
+
+	result, ok := types.Unalias(sig.Results().At(0).Type()).(*types.TypeParam)
+
+	return ok && result == tp
 }
 
 // typeMentionsTypeParam reports whether `typ` uses `target` anywhere in its structure. Used to

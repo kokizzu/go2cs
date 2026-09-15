@@ -24,7 +24,7 @@ partial class hmac_package {
             0x4f, 0x12, 0x73, 0x23, 0x73, 0x77, 0x66, 0x05,
             0x10, 0xee, 0x57, 0x6b, 0x3a, 0xc7, 0x14, 0x41
         }.slice();
-        var h = New<ж<sha256.Digest>>(sha256.New, input);
+        var h = New<fips140.Hash>(widen<ж<sha256.Digest>, fips140.Hash>(sha256.New, elemᴛ0 => new sha256_DigestжHash(elemᴛ0)), input);
         h.Write(input);
         h.Write(input);
         {

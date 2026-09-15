@@ -71,6 +71,23 @@ internal static void show(Shape s) {
     fmt.Printf("%s: %.2f\n"u8, s.Name(), s.Area());
 }
 
+// Hoisted @string literals (single allocation; Go keeps these in RODATA)
+private static readonly @string noFactoryˢ = "no factory"u8;
+
+internal static @string makeShape<S>(Func<S> factory)
+    where S : Shape
+{
+    if (factory == default!) {
+        return noFactoryˢ;
+    }
+    var (a, b) = (factory(), factory());
+    return fmt.Sprintf("%s %.2f %.2f"u8, a.Name(), a.Area(), b.Area());
+}
+
+internal static ж<Circle> newUnitCircle() {
+    return Ꮡ(new Circle(R: 1D));
+}
+
 internal static void Main() {
     var circles = new ж<Circle>[]{Ꮡ(new Circle(R: 1D)), Ꮡ(new Circle(R: 2D))}.slice();
     var squares = new ж<Square>[]{Ꮡ(new Square(S: 3D))}.slice();
@@ -83,6 +100,15 @@ internal static void Main() {
     walkAll(widen<ж<Circle>, Shape>(circles, elemᴛ0 => new CircleжShape(elemᴛ0)));
     walkAll(shapes);
     walkAll(rounds);
+    var shared = Ꮡ(new Circle(R: 1D));
+    Func<ж<Circle>> none = default!;
+    fmt.Println(makeShape<Shape>(widen<ж<Circle>, Shape>(newUnitCircle, elemᴛ0 => new CircleжShape(elemᴛ0))));
+    var sharedʗ1 = shared;
+    fmt.Println(makeShape(widen<ж<Circle>, Shape>(ж<Circle> () => {
+        sharedʗ1.Value.R++;
+        return sharedʗ1;
+    }, elemᴛ0 => new CircleжShape(elemᴛ0))));
+    fmt.Println(makeShape(widen<ж<Circle>, Shape>(none, elemᴛ0 => new CircleжShape(elemᴛ0))));
 }
 
 } // end main_package

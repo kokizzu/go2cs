@@ -39,6 +39,7 @@ using static go.crypto.@internal.fips140.check_package;
 
 // <InterfaceImplementations>
 [assembly: GoImplement<go.crypto.@internal.fips140.hmac_package.HMAC, io_package.Writer>(Pointer = true)]
+[assembly: GoImplement<go.crypto.@internal.fips140.sha256_package.Digest, go.crypto.@internal.fips140_package.Hash>(Pointer = true)]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>

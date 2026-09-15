@@ -101,6 +101,7 @@
     <None Include="$(MSBuildThisFileDirectory)foreignNameCollisions_test.go" />
     <None Include="$(MSBuildThisFileDirectory)foreignTypeAliases.go" />
     <None Include="$(MSBuildThisFileDirectory)foreignTypeAliases_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)funcResultProjection_test.go" />
     <None Include="$(MSBuildThisFileDirectory)globalAddressOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)go.mod" />
     <None Include="$(MSBuildThisFileDirectory)go.sum" />
@@ -295,6 +296,8 @@
     <None Include="$(MSBuildThisFileDirectory)licensing_test.go" />
     <None Include="$(MSBuildThisFileDirectory)LICENSE" />
     <None Include="$(MSBuildThisFileDirectory)LICENSE-EXCEPTION" />
+    <None Include="$(MSBuildThisFileDirectory)rootGoTypeDescriptor_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)typeParamNilArg_test.go" />
     <None Include="$(MSBuildThisFileDirectory)writeOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)wsaSendtoNoCallers_test.go" />
     <None Include="$(MSBuildThisFileDirectory)writtenUnderlyingOperations.go" />

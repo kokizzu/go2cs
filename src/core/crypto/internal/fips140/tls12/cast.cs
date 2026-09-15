@@ -32,7 +32,7 @@ partial class tls12_package {
             0x12, 0x68, 0x4f, 0x49, 0xdf, 0xa9, 0x9d, 0xcc
         }.slice();
         {
-            var got = MasterSecret<ж<sha256.Digest>>(sha256.New, input, transcript); if (!bytes.Equal(got, want)) {
+            var got = MasterSecret<fips140.Hash>(widen<ж<sha256.Digest>, fips140.Hash>(sha256.New, elemᴛ0 => new sha256_DigestжHash(elemᴛ0)), input, transcript); if (!bytes.Equal(got, want)) {
                 return errors.New("unexpected result"u8);
             }
         }

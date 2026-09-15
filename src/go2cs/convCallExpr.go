@@ -1667,6 +1667,33 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// The FUNC-RESULT twin of the slice projection above: a `func() H` parameter whose H is
+			// instantiated with a pointer against a non-self-referential method-set constraint —
+			// crypto/internal/fips140's `hmac.New(sha256.New, key)` against `New[H fips140.Hash](h
+			// func() H, …)`. renderedTypeArgs renders H as the constraint (see funcResultProjection),
+			// so the delegate is widened through the adapter: `widen<ж<sha256.Digest>, fips140.Hash>(
+			// sha256.New, elemᴛ0 => new sha256_DigestжHash(elemᴛ0))`. One adapter per invocation over
+			// the same shared box, so Go pointer identity holds; a nil func stays nil (golib widen).
+			if paramHasArg && (replacementArgs == nil || len(replacementArgs[i]) == 0) {
+				if funIdent := getCallFunIdent(callExpr.Fun); funIdent != nil {
+					if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil {
+						if ptr, constraint, ok := v.funcResultProjectionArg(funIdent, instance.TypeArgs, i); ok {
+							elemVar := fmt.Sprintf("elem%s%d", TempVarMarker, i)
+							wrapped := v.convertToInterfaceType(constraint, ptr, elemVar)
+
+							if strings.HasPrefix(wrapped, "new ") {
+								if replacementArgs == nil {
+									replacementArgs = make([]string, params.Len())
+								}
+
+								replacementArgs[i] = fmt.Sprintf("widen<%s, %s>(%s, %s => %s)",
+									v.getCSharpTypeName(ptr), v.getCSharpTypeName(constraint), DynamicCastArgMarker, elemVar, wrapped)
+							}
+						}
+					}
+				}
+			}
+
 			// A FUNC-typed parameter of a SELF-REFERENTIAL constraint-proxy instantiation renders
 			// its delegate over the proxy (`Func<P224PointжnistPoint>` for `newPoint func() P`),
 			// so a method-group / func-value argument must be re-wrapped as a lambda — a C#

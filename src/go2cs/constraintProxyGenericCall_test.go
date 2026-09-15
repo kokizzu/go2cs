@@ -50,8 +50,9 @@ type point[T any] interface {
 	restore([]byte) (T, error)
 }
 
-// named is a plain, NON-self-referential method-set constraint. A pointer argument widens to it, so
-// it must never take a proxy.
+// named is a plain, NON-self-referential method-set constraint, so it must never take a proxy. A
+// pointer argument does NOT widen to it in C# — the box implements nothing; its pointer adapter
+// does, and a call site reaches the adapter only through a projection (slice element, func result).
 type named interface {
 	label() string
 }
@@ -85,7 +86,8 @@ func withFactory[P point[P]](newPoint func() P, tag string) string { return newP
 // alone even though the CALL takes a proxy.
 func withPlainFunc[P point[P]](p P, format func(string) string) string { return format(p.label()) }
 
-// widenToNamed's constraint is not self-referential — a pointer argument widens to the interface.
+// widenToNamed's constraint is not self-referential, so no proxy. Its bare N reach has no projection:
+// the box that C# infers here still cannot satisfy "where N : named" (never compiled as C#).
 func widenToNamed[N named](n N) string { return n.label() }
 
 func pointerCall() string { return benchPoint(newP224(), 28) }
@@ -236,11 +238,12 @@ func TestGenericCallProxyNegativeControls(t *testing.T) {
 		t.Fatal("a value type argument forced an explicit type-argument list")
 	}
 
-	// A POINTER argument whose constraint is NOT self-referential widens to the interface.
+	// A POINTER argument whose constraint is NOT self-referential is not the proxy's: a box widens to
+	// nothing, and the adapter projection (not a proxy) is what carries such a pointer.
 	namedIdent, namedArgs := fixture.instance(t, "widenCall")
 
 	if proxyName, ok := fixture.visitor.constraintProxySigArg(namedIdent, namedArgs, 0); ok {
-		t.Fatalf("a NON-self-referential constraint resolved proxy %q; a pointer widens to such an interface and must be left alone", proxyName)
+		t.Fatalf("a NON-self-referential constraint resolved proxy %q; such an interface is reached through the adapter projection, never a proxy", proxyName)
 	}
 
 	if fixture.visitor.callNeedsConstraintProxy(namedIdent, namedArgs) {
