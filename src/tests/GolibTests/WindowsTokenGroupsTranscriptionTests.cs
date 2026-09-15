@@ -161,7 +161,16 @@ public class WindowsTokenGroupsTranscriptionTests
             var (text, err) = all[i].Sid.String();
 
             Assert.IsNull(err, $"entry {i}'s Sid did not format: {err?.Error()}");
-            Assert.AreEqual($"S-1-5-{rids[i]}", text,
+
+            // `text` is a golib @string and the expected value is a C# interpolated
+            // System.String. There is no implicit conversion between them, so a bare
+            // Assert.AreEqual binds MSTest's AreEqual(object, object) overload, whose equality is
+            // TYPE-sensitive: the two never compare equal however identical their text, and the
+            // failure prints both values looking the same. Both operands are brought into the C#
+            // domain, and the type argument is written out so that a future operand which is NOT
+            // a string is a COMPILE error here rather than a silent rebind to object. Same at the
+            // second arm's compare below.
+            Assert.AreEqual<string>($"S-1-5-{rids[i]}", text.ToString(),
                 $"entry {i}'s Sid must name the SID this buffer holds AT THAT ENTRY. A wrong " +
                 "address formats as a different SID or fails outright, which is what makes this a " +
                 "ROUND TRIP rather than a liveness check");
@@ -209,7 +218,9 @@ public class WindowsTokenGroupsTranscriptionTests
             var (text, err) = all[i].Sid.String();
 
             Assert.IsNull(err, $"entry {i}'s Sid did not format after collection: {err?.Error()}");
-            Assert.AreEqual($"S-1-5-{rids[i]}", text,
+
+            // The typed compare, for the reason the first arm states.
+            Assert.AreEqual<string>($"S-1-5-{rids[i]}", text.ToString(),
                 $"entry {i}'s Sid stopped naming its SID once the caller's own reference to the " +
                 "buffer was gone — the anchor that ties the buffer's lifetime to the SIDs is what " +
                 "this asserts, and its absence is a use-after-free with a plausible-looking value");
