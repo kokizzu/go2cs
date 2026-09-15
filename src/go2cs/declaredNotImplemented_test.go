@@ -280,6 +280,12 @@ const (
 	// cycle test excludes it (runtime references internal/runtime/maps) or its csproj carries no
 	// runtime reference at all (crypto/rand, internal/sync). It takes the golib FatalReport hand-own
 	// instead, precedent sync/mutex.cs:51. C1's.
+	//
+	// ⚠ ZERO members as of this commit, and the same way dispositionCompanion reached zero: the four
+	// it named — internal/sync.fatal, internal/sync.throw, crypto/rand.fatal and
+	// internal/runtime/maps.fatal — got their bodies in the commit that deletes their rows. This gate
+	// named all four by name on the run that first saw those bodies, which is the second time in one
+	// day it has fired on its own author and told them what to do.
 	dispositionFatalReport = "FatalReport hand-own owed (C1)"
 
 	// dispositionCompanion — a hand-owned *_impl.cs body supplies it. ⚠ ZERO members at this tip, and
@@ -347,23 +353,19 @@ var declaredPushStubs = map[string]string{
 	"crypto/internal/fips140.setIndicator":               dispositionForward,
 	"crypto/internal/fips140hash.sha3Unwrap":             dispositionForward,
 	"crypto/internal/sysrand.fatal":                      dispositionForward,
-	"crypto/rand.fatal":                                  dispositionFatalReport,
 	"crypto/x509/internal/macos.syscall":                 dispositionLatent,
 	"internal/coverage/cfile.getCovCounterList":          dispositionLatent,
-	"internal/runtime/maps.fatal":                        dispositionFatalReport,
 	"internal/runtime/maps.mapKeyError":                  dispositionLatent,
 	"internal/runtime/maps.newarray":                     dispositionLatent,
 	"internal/runtime/maps.newobject":                    dispositionLatent,
 	"internal/runtime/maps.rand":                         dispositionLatent,
 	"internal/runtime/maps.typedmemclr":                  dispositionLatent,
 	"internal/runtime/maps.typedmemmove":                 dispositionLatent,
-	"internal/sync.fatal":                                dispositionFatalReport,
 	"internal/sync.runtime_SemacquireMutex":              dispositionLatent,
 	"internal/sync.runtime_Semrelease":                   dispositionLatent,
 	"internal/sync.runtime_canSpin":                      dispositionLatent,
 	"internal/sync.runtime_doSpin":                       dispositionLatent,
 	"internal/sync.runtime_nanotime":                     dispositionLatent,
-	"internal/sync.throw":                                dispositionFatalReport,
 	"internal/synctest.Run":                              dispositionLatent,
 	"internal/synctest.Wait":                             dispositionLatent,
 	"internal/synctest.acquire":                          dispositionLatent,
