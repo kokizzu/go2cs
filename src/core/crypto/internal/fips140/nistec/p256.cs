@@ -476,11 +476,11 @@ internal static uint64 Rsh(this ж<p256OrdElement> Ꮡs, nint n) {
 internal static ж<p256Table> Compute(this ж<p256Table> Ꮡtable, ж<P256Point> Ꮡq) {
     ref var table = ref Ꮡtable.DerefOrNull();
 
-    table.at<P256Point>(0).Set(Ꮡq);
+    Ꮡtable.at<P256Point>(0).Set(Ꮡq);
     for (nint i = 1; i < 16; i += 2) {
-        table.at<P256Point>(i).Double(Ꮡ(table.Value, i / 2));
+        Ꮡtable.at<P256Point>(i).Double(Ꮡ(table.Value, i / 2));
         if (i + 1 < 16) {
-            table.at<P256Point>(i + 1).Add(Ꮡ(table.Value, i), Ꮡq);
+            Ꮡtable.at<P256Point>(i + 1).Add(Ꮡ(table.Value, i), Ꮡq);
         }
     }
     return Ꮡtable;
