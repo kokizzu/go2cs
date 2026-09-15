@@ -88,6 +88,15 @@ internal static ж<Circle> newUnitCircle() {
     return Ꮡ(new Circle(R: 1D));
 }
 
+[GoType] partial interface Figure {
+    float64 Area();
+    @string Name();
+}
+
+internal static Figure newFigure() {
+    return new SquareжFigure(Ꮡ(new Square(S: 2D)));
+}
+
 internal static void Main() {
     var circles = new ж<Circle>[]{Ꮡ(new Circle(R: 1D)), Ꮡ(new Circle(R: 2D))}.slice();
     var squares = new ж<Square>[]{Ꮡ(new Square(S: 3D))}.slice();
@@ -109,6 +118,11 @@ internal static void Main() {
         return sharedʗ1;
     }, elemᴛ0 => new CircleжShape(elemᴛ0))));
     fmt.Println(makeShape(widen<ж<Circle>, Shape>(none, elemᴛ0 => new CircleжShape(elemᴛ0))));
+    var fig = ((Figure)new CircleжFigure(Ꮡ(new Circle(R: 2D))));
+    fmt.Println(makeShape<Shape>(widen<Figure, Shape>(newFigure, elemᴛ0 => new FigureᴠShape(elemᴛ0))));
+    var figʗ1 = fig;
+    fmt.Println(makeShape(widen<Figure, Shape>(Figure () => figʗ1, elemᴛ0 => new FigureᴠShape(elemᴛ0))));
+    fmt.Println(makeShape(Round () => new CircleжRound(Ꮡ(new Circle(R: 1D)))));
 }
 
 } // end main_package

@@ -545,7 +545,7 @@ internal static (ж<SessionState> session, ж<tls13.EarlySecret> earlySecret, sl
     hello.pskIdentities = new pskIdentity[]{identity}.slice();
     hello.pskBinders = new slice<byte>[]{new slice<byte>((~cipherSuite).hash.Size())}.slice();
     // Compute the PSK binders. See RFC 8446, Section 4.2.11.2.
-    earlySecret = tls13.NewEarlySecret<hash.Hash>(() => (~cipherSuite).hash.New(), (~session).secret);
+    earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~cipherSuite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~session).secret);
     binderKey = earlySecret.ResumptionBinderKey();
     var transcript = (~cipherSuite).hash.New();
     {

@@ -1687,13 +1687,22 @@ func (v *Visitor) constraintProxySigArg(funIdent *ast.Ident, typeArgs *types.Typ
 // Hash>(sha256.New, elemᴛ0 => new sha256_DigestжHash(elemᴛ0))`) — the delegate twin of the
 // slice-element projection go/ast's walkList already takes.
 //
-// Returns the pointer type argument and the INSTANTIATED constraint. A self-referential
-// constraint is the constraint proxy's (see constraintProxyFor) and declines here; a constraint
-// parameterized by a SIBLING type parameter is instantiated over the call's own type arguments.
-// Any other reach of the type parameter declines — a bare `H` parameter, a result mentioning `H`,
-// or another type parameter's constraint naming it would each observe the substituted interface
-// where Go has the pointer.
-func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (*types.Pointer, types.Type, bool) {
+// The type argument may also be a DECLARED INTERFACE that satisfies the constraint by method set
+// but does not nominally derive from it (RED 4): crypto/hkdf's `hkdf.Extract(fh, …)` with `fh :=
+// fips140hash.UnwrapNew(h)`, a `func() hash.Hash`, against `Extract[H fips140.Hash]` — `hash.Hash`
+// and `fips140.Hash` are SIBLINGS (identical method sets, no embedding edge), so `Extract<hash.Hash>`
+// is CS0311 exactly as the box was. The converter emits Go interface embedding as C# interface
+// inheritance, so "nominally derives" is "the constraint is the argument or sits in its transitive
+// embedding closure"; either declines. Otherwise the wrap is the INTERFACE adapter the generator
+// already mints for the pair (`new hash_HashᴠHash(elemᴛ0)`), chosen by convertToInterfaceType.
+//
+// Returns the type argument (a pointer or an interface) and the INSTANTIATED constraint. A
+// self-referential constraint is the constraint proxy's (see constraintProxyFor) and declines here;
+// a constraint parameterized by a SIBLING type parameter is instantiated over the call's own type
+// arguments. Any other reach of the type parameter declines — a bare `H` parameter, a result
+// mentioning `H`, or another type parameter's constraint naming it would each observe the
+// substituted interface where Go has the argument's own type.
+func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, bool) {
 	if funIdent == nil || typeArgs == nil {
 		return nil, nil, false
 	}
@@ -1713,13 +1722,9 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 	typeParams := sig.TypeParams()
 	typeParam := typeParams.At(k)
 
-	ptr, ok := types.Unalias(typeArgs.At(k)).(*types.Pointer)
+	arg := typeArgs.At(k)
 
-	if !ok {
-		return nil, nil, false
-	}
-
-	if _, ok := types.Unalias(ptr.Elem()).(*types.Named); !ok {
+	if !funcResultProjectableArg(arg) {
 		return nil, nil, false
 	}
 
@@ -1767,7 +1772,7 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 
 	iface, ok := constraint.Underlying().(*types.Interface)
 
-	if !ok || !types.Implements(ptr, iface) {
+	if !ok || !types.Implements(arg, iface) || interfaceNominallyDerives(arg, constraint) {
 		return nil, nil, false
 	}
 
@@ -1803,12 +1808,12 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 		}
 	}
 
-	return ptr, constraint, true
+	return arg, constraint, true
 }
 
 // funcResultProjectionArg maps argument `i` of a generic FUNCTION call onto funcResultProjection:
 // the parameter must be a `func() H` whose type parameter's position projects.
-func (v *Visitor) funcResultProjectionArg(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (*types.Pointer, types.Type, bool) {
+func (v *Visitor) funcResultProjectionArg(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (types.Type, types.Type, bool) {
 	typeParams := v.signatureTypeParams(funIdent)
 
 	if typeParams == nil {
@@ -1854,6 +1859,67 @@ func isFuncResultOf(typ types.Type, tp *types.TypeParam) bool {
 	result, ok := types.Unalias(sig.Results().At(0).Type()).(*types.TypeParam)
 
 	return ok && result == tp
+}
+
+// funcResultProjectableArg reports whether a type argument is a kind funcResultProjection can carry:
+// a POINTER to a named type (its box needs the pointer adapter, RED 3) or a DECLARED interface with
+// methods (a sibling of the constraint needs the interface adapter, RED 4). An anonymous interface
+// has no generated adapter class, and an empty one satisfies no method-set constraint.
+func funcResultProjectableArg(arg types.Type) bool {
+	switch t := types.Unalias(arg).(type) {
+	case *types.Pointer:
+		_, ok := types.Unalias(t.Elem()).(*types.Named)
+		return ok
+	case *types.Named:
+		iface, ok := t.Underlying().(*types.Interface)
+		return ok && iface.NumMethods() > 0
+	}
+
+	return false
+}
+
+// interfaceNominallyDerives reports whether an INTERFACE type argument already satisfies `constraint`
+// nominally in the emitted C#: it IS the constraint, or the constraint sits in its transitive
+// embedding closure (Go interface embedding is emitted as C# interface inheritance). A pointer argument
+// never derives nominally — its box implements nothing — so it reports false.
+func interfaceNominallyDerives(arg, constraint types.Type) bool {
+	named, ok := types.Unalias(arg).(*types.Named)
+
+	if !ok {
+		return false
+	}
+
+	if _, isIface := named.Underlying().(*types.Interface); !isIface {
+		return false
+	}
+
+	seen := map[types.Type]bool{}
+	pending := []types.Type{named}
+
+	for len(pending) > 0 {
+		current := pending[len(pending)-1]
+		pending = pending[:len(pending)-1]
+
+		if types.Identical(current, constraint) {
+			return true
+		}
+
+		if seen[current] {
+			continue
+		}
+
+		seen[current] = true
+
+		if iface, ok := types.Unalias(current).Underlying().(*types.Interface); ok {
+			for i := range iface.NumEmbeddeds() {
+				if embedded, ok := types.Unalias(iface.EmbeddedType(i)).(*types.Named); ok {
+					pending = append(pending, embedded)
+				}
+			}
+		}
+	}
+
+	return false
 }
 
 // typeMentionsTypeParam reports whether `typ` uses `target` anywhere in its structure. Used to

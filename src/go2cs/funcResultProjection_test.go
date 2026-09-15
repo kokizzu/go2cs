@@ -21,13 +21,28 @@ import (
 // the box does not (CS0311). The fix renders H as the constraint and widens the delegate through the adapter,
 // the func-result twin of the slice-element projection go/ast's walkList already takes.
 //
+// RED 4 (COORD 50c02fe0e) is the same rule one type-argument kind over: crypto/hkdf passes a `func() hash.Hash`
+// into `[H fips140.Hash]`, and `hash.Hash` is a SIBLING of the constraint (identical method set, no embedding
+// edge), so C# sees no nominal relation and `Extract<hash.Hash>` is CS0311 too. A sibling interface argument
+// projects through the generated INTERFACE adapter; an interface that embeds the constraint, or IS it, already
+// satisfies it nominally in the emitted C# and declines.
+//
 // These tests pin the predicate's scope against the converter's own helpers: the func-result reach projects,
 // a sibling-parameterized constraint is instantiated over the call's arguments, and every other reach — a
 // value argument, a self-referential constraint (the proxy's), a bare parameter, a result naming the type
-// parameter, a two-result factory — declines.
+// parameter, a two-result factory, an interface already derived from the constraint — declines.
 const funcResultFixture = `package funcresult
 
 type named interface{ label() string }
+
+// labeler is a SIBLING of named: the same method set, no embedding edge (hash.Hash vs fips140.Hash).
+type labeler interface{ label() string }
+
+// labelerPlus EMBEDS named, so the emitted C# interface derives from it nominally.
+type labelerPlus interface {
+	named
+	extra()
+}
 
 // keyed is parameterized by a SIBLING type parameter, not by the one it constrains.
 type keyed[E any] interface{ encap() E }
@@ -40,13 +55,18 @@ type digest struct{ v int }
 func (d *digest) label() string            { return "digest" }
 func (d *digest) encap() int               { return d.v }
 func (d *digest) combine(o *digest) *digest { return o }
+func (d *digest) extra()                    {}
 
 type value struct{}
 
 func (value) label() string { return "value" }
 
-func newDigest() *digest { return &digest{} }
-func newValue() value    { return value{} }
+func newDigest() *digest                   { return &digest{} }
+func newValue() value                      { return value{} }
+func newLabeler() labeler                  { return &digest{} }
+func newPlus() labelerPlus                 { return &digest{} }
+func newNamed() named                      { return &digest{} }
+func newAnon() interface{ label() string } { return &digest{} }
 
 func factory[H named](h func() H, key []byte) int        { return len(key) }
 func sibling[E any, D keyed[E]](newD func() D, e E) int  { return 0 }
@@ -56,14 +76,18 @@ func returns[H named](h func() H) H                      { return h() }
 func twoResults[H named](h func() (H, error)) int        { return 0 }
 func variadic[H named](hs ...func() H) int               { return len(hs) }
 
-func pointerCall() int  { return factory(newDigest, nil) }
-func valueCall() int    { return factory(newValue, nil) }
-func siblingCall() int  { return sibling(newDigest, 1) }
-func proxiedCall() int  { return proxied(newDigest) }
-func bareCall() int     { return bareToo(newDigest, newDigest()) }
+func pointerCall() int   { return factory(newDigest, nil) }
+func valueCall() int     { return factory(newValue, nil) }
+func siblingCall() int   { return sibling(newDigest, 1) }
+func proxiedCall() int   { return proxied(newDigest) }
+func bareCall() int      { return bareToo(newDigest, newDigest()) }
 func returnsCall() named { return returns(newDigest) }
-func twoCall() int      { return twoResults(func() (*digest, error) { return newDigest(), nil }) }
-func variadicCall() int { return variadic(newDigest) }
+func twoCall() int       { return twoResults(func() (*digest, error) { return newDigest(), nil }) }
+func variadicCall() int  { return variadic(newDigest) }
+func ifaceCall() int     { return factory(newLabeler, nil) }
+func embedCall() int     { return factory(newPlus, nil) }
+func sameCall() int      { return factory(newNamed, nil) }
+func anonCall() int      { return factory(newAnon, nil) }
 `
 
 func loadFuncResultFixture(t *testing.T) (*Visitor, map[string]*ast.CallExpr) {
@@ -139,13 +163,13 @@ func TestFuncResultProjectionPositive(t *testing.T) {
 	visitor, calls := loadFuncResultFixture(t)
 	funIdent, typeArgs := funcResultInstance(t, visitor, calls, "pointerCall")
 
-	ptr, constraint, ok := visitor.funcResultProjection(funIdent, typeArgs, 0)
+	arg, constraint, ok := visitor.funcResultProjection(funIdent, typeArgs, 0)
 
 	if !ok {
 		t.Fatal("a pointer reached as a func RESULT against a plain method-set constraint did not project — this is the CS0311 defect")
 	}
 
-	if got := ptr.String(); got != "*example/funcresult.digest" {
+	if got := arg.String(); got != "*example/funcresult.digest" {
 		t.Fatalf("projected pointer = %s, want *example/funcresult.digest", got)
 	}
 
@@ -180,6 +204,36 @@ func TestFuncResultProjectionPositive(t *testing.T) {
 	}
 }
 
+// TestFuncResultProjectionSiblingInterface is RED 4's regression: a declared interface that satisfies the
+// constraint by method set but does not derive from it projects exactly as the pointer does, renders the
+// constraint, and hands back the interface itself as the argument to wrap.
+func TestFuncResultProjectionSiblingInterface(t *testing.T) {
+	visitor, calls := loadFuncResultFixture(t)
+	funIdent, typeArgs := funcResultInstance(t, visitor, calls, "ifaceCall")
+
+	arg, constraint, ok := visitor.funcResultProjection(funIdent, typeArgs, 0)
+
+	if !ok {
+		t.Fatal("a SIBLING interface reached as a func RESULT did not project — this is RED 4's CS0311 (hash.Hash vs fips140.Hash)")
+	}
+
+	if got := arg.String(); got != "example/funcresult.labeler" {
+		t.Fatalf("projected argument = %s, want example/funcresult.labeler", got)
+	}
+
+	if got := constraint.String(); got != "example/funcresult.named" {
+		t.Fatalf("projected constraint = %s, want example/funcresult.named", got)
+	}
+
+	if rendered := visitor.renderedTypeArgs(funIdent, typeArgs); len(rendered) != 1 || rendered[0] != "named" {
+		t.Fatalf("renderedTypeArgs = %v, want [named] — the constraint, not the sibling interface", rendered)
+	}
+
+	if _, _, ok := visitor.funcResultProjectionArg(funIdent, typeArgs, 0); !ok {
+		t.Fatal("argument 0 of the sibling-interface call did not map onto the projection")
+	}
+}
+
 // TestFuncResultProjectionNegativeControls keeps the rule to the reach it can carry. Each call below
 // instantiates the same kind of callee; none may project, or unrelated generics churn.
 func TestFuncResultProjectionNegativeControls(t *testing.T) {
@@ -192,6 +246,9 @@ func TestFuncResultProjectionNegativeControls(t *testing.T) {
 		"returnsCall":  "a RESULT naming the type parameter would hand the caller the interface where Go has the pointer",
 		"twoCall":      "a two-result factory is not `func() H`",
 		"variadicCall": "a variadic `...func() H` slot is a slice of delegates, not a delegate",
+		"embedCall":    "an interface that EMBEDS the constraint derives from it nominally in the emitted C#",
+		"sameCall":     "the constraint ITSELF as the type argument needs no projection",
+		"anonCall":     "an ANONYMOUS interface has no generated adapter class to wrap with",
 	} {
 		funIdent, typeArgs := funcResultInstance(t, visitor, calls, wrapper)
 

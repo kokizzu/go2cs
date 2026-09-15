@@ -13,6 +13,7 @@ using sha512 = go.crypto.sha512_package;
 using errors = errors_package;
 using fmt = fmt_package;
 using hash = hash_package;
+using fips140 = go.crypto.@internal.fips140_package;
 using go.crypto;
 using go.crypto.@internal.fips140;
 
@@ -69,7 +70,7 @@ internal static slice<byte> prf10(slice<byte> secret, @string label, slice<byte>
 
 // prf12 implements the TLS 1.2 pseudo-random function, as defined in RFC 5246, Section 5.
 internal static Func<slice<byte>, @string, slice<byte>, nint, slice<byte>> prf12(Func<hash.Hash> hashFunc) {
-    return (slice<byte> secret, @string label, slice<byte> seed, nint keyLen) => tls12.PRF(hashFunc, secret, label, seed, keyLen);
+    return (slice<byte> secret, @string label, slice<byte> seed, nint keyLen) => tls12.PRF(widen<hash.Hash, fips140.Hash>(hashFunc, elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), secret, label, seed, keyLen);
 }
 
 internal static UntypedInt masterSecretLength => 48; // Length of a master secret in TLS 1.1.
@@ -124,7 +125,7 @@ internal static slice<byte> extMasterFromPreMasterSecret(uint16 version, ref cip
         // Use the FIPS 140-3 module only for TLS 1.2 with EMS, which is the
         // only TLS 1.0-1.2 approved mode per IG D.Q.
         var hashʗ1 = hash;
-        return tls12.MasterSecret<hash.Hash>(() => hashʗ1.New(), preMasterSecret, transcript);
+        return tls12.MasterSecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => hashʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), preMasterSecret, transcript);
     }
     return prf(preMasterSecret, extendedMasterSecretLabel, transcript, masterSecretLength);
 }

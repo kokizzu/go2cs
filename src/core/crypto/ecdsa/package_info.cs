@@ -48,6 +48,7 @@ using static go.crypto.ecdsa_package;
 // <InterfaceImplementations>
 [assembly: GoImplement<PublicKey, go.crypto.elliptic_package.Curve>(Promoted = true)]
 [assembly: GoImplement<go.math.rand.rand_package.ChaCha8, io_package.Reader>(Pointer = true)]
+[assembly: GoImplement<hash_package.Hash, go.crypto.@internal.fips140_package.Hash>]
 // </InterfaceImplementations>
 
 // <ImplicitConversions>
@@ -63,7 +64,7 @@ using static go.crypto.ecdsa_package;
 // or has none - golib, the BCL and hand-written conversions - and reports its own C# position.
 
 // <GoSourcePositionMaps>
-[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa.go", "ecdsa.cs", "ADhm4oKClIKUAAIQ0oKClAAQIrKCgpSCgpSmgpSkpKTKkqyygoKUqtIAAiIADgKClAACENKEgoKClJSElKSkpKT4ooKUgoKUAAYeAAoChIKCgpSUhJSkpKSkyKKCyoKCyoKClPaCgpSCgpSUpKSkpPiigoKUkoKUgoKUpoKCooKU2sKClIKClJKClAADEvKCgoKUlISUpKSkpMiigoKUgoKUgIKk1rKCgoqUpqKCgpSmooKClKaigoKUpqKCgpTowpSClIKmgoKCgoLYwpSUgoKC", "298-301:1;315-320:1")]
+[assembly: go.GoPositionMap("crypto/ecdsa/ecdsa.go", "ecdsa.cs", "ADlm4oKClIKUAAIQ0oKClAAQIrKCgpSCgpSmgpSkpKTKkqyygoKUqtIAAiIADgKClAACENKEgoKClJSElKSkpKT4ooKUgoKUAAYeAAoChIKCgpSUhJSkpKSkyKKCyoKCyoKClPaCgpSCgpSUpKSkpPiigoKUkoKUgoKUpoKCooKU2sKClIKClJKClAADEvKCgoKUlISUpKSkpMiigoKUgoKUgIKk1rKCgoqUpqKCgpSmooKClKaigoKUpqKCgpTowpSClIKmgoKCgoLYwpSUgoKC", "298-301:1;315-320:1")]
 [assembly: go.GoPositionMap("crypto/ecdsa/ecdsa_legacy.go", "ecdsa_legacy.cs", "ABksooKWgoKWgoKCgqyygoKCloKCgpQABxQACQKCgpaCgoKKlKaigpaGkoCCpIKUgpSWgoKUsoKCgoKWhIKCgqiCgoKCgoKoAAISAAkCgpSCgpSmgoKWgoKUhIKEgpSCqIKEgoKChIKChIKUgs7SgoKCgIKkgIKkgoI=")]
 [assembly: go.GoPositionMap("crypto/ecdsa/notboring.go", "notboring.cs", "AAsWgqSC")]
 // </GoSourcePositionMaps>

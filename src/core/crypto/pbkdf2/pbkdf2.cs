@@ -15,6 +15,7 @@ using fips140hash = go.crypto.@internal.fips140hash_package;
 using fips140only = go.crypto.@internal.fips140only_package;
 using errors = errors_package;
 using hash = hash_package;
+using fips140 = go.crypto.@internal.fips140_package;
 using go.crypto.@internal;
 using go.crypto.@internal.fips140;
 
@@ -59,7 +60,7 @@ public static (slice<byte>, error) Key<Hash>(Func<Hash> h, @string password, sli
             return (default!, errors.New(cryptoPbkdf2UseOfHashˢ));
         }
     }
-    return pbkdf2.Key(fh, password, salt, iter, keyLength);
+    return pbkdf2.Key(widen<hash.Hash, fips140.Hash>(fh, elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), password, salt, iter, keyLength);
 }
 
 } // end pbkdf2_package
