@@ -220,8 +220,9 @@ func TestDeclaredNotImplementedCensus(t *testing.T) {
 		t.Errorf("UNDECLARED STRANDED TARGET: %s\n"+
 			"\ta //go:linkname push exists in this corpus for this member and the corpus emits it as a "+
 			"throwing stub, and no row here says so. Either the release hop added it — the case this "+
-			"gate exists for, and the row is added WITH its disposition, not silently — or a body was "+
-			"removed. It compiles either way and dies at the first call.", member)
+			"gate exists for — or a body was removed. It compiles either way and dies at the first "+
+			"call. THE TREE MOVED, NOT THE TABLE: add the row WITH its disposition in the same commit "+
+			"that moved the tree.", member)
 	}
 
 	for _, member := range vanished {
@@ -295,11 +296,16 @@ const (
 	//
 	// ⚠ THE DISPOSITION HOLDS; HALF OF ITS STATED REASON DOES NOT, and this file says so rather than
 	// repeating it. The ruling's parenthetical is "nothing in the emission calls them"; measured
-	// here, SEVEN of the seventeen DO have first-order callers inside runtime's own emitted package
-	// (mapaccess1 2, mapaccess2 1, mapassign 2, mapaccess2_faststr 1, mapassign_faststr 2,
-	// mapdelete_faststr 2) and ten have none. The reach column below carries the number for each, so
-	// the row is disposed by its MECHANISM and read by its MEASUREMENT, which is the pair that stops
-	// a disposition from quietly becoming a claim nobody re-checks.
+	// here, SIX of the seventeen DO have first-order callers and ELEVEN have none. The six are
+	// mapaccess1, mapaccess2, mapassign, mapaccess2_faststr, mapassign_faststr and mapdelete_faststr,
+	// and every caller is inside runtime's OWN package — runtime's wrappers calling their own stubs,
+	// nothing from outside. C2's independent reach arm names THE SAME SIX (d1c5eca96c) and gives
+	// different per-member COUNTS, because its predicate and this one differ: this one is textual and
+	// counts every mention of `name(` outside a comment. Two instruments agreeing on the SET and not
+	// on the counts is the honest state, and the set is what the disposition rests on.
+	//
+	// So the row is disposed by its MECHANISM and read by its MEASUREMENT, which is the pair that
+	// stops a disposition from quietly becoming a claim nobody re-checks.
 	dispositionSuppliedElsewhere = "supplied by golib; the pushed body is not needed"
 
 	// dispositionLatent — nothing is owed yet. The push exists, it did not arrive, and nothing has
@@ -339,7 +345,7 @@ var declaredPushStubs = map[string]string{
 	"crypto/internal/fips140.fatal":                      dispositionForward,
 	"crypto/internal/fips140.getIndicator":               dispositionForward,
 	"crypto/internal/fips140.setIndicator":               dispositionForward,
-	"crypto/internal/fips140hash.sha3Unwrap":             dispositionLatent,
+	"crypto/internal/fips140hash.sha3Unwrap":             dispositionForward,
 	"crypto/internal/sysrand.fatal":                      dispositionForward,
 	"crypto/rand.fatal":                                  dispositionFatalReport,
 	"crypto/x509/internal/macos.syscall":                 dispositionLatent,
