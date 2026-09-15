@@ -634,46 +634,16 @@ public static error /*neterr*/ NetUserDel(ж<uint16> ᏑserverName, ж<uint16> �
 
 // go2cs generated this placeholder — func NetUserGetLocalGroups is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-public static error /*ntstatus*/ NtCreateFile(ж<syscallꓸHandle> Ꮡhandle, uint32 access, ж<OBJECT_ATTRIBUTES> Ꮡoa, ж<IO_STATUS_BLOCK> Ꮡiosb, ж<int64> ᏑallocationSize, uint32 attributes, uint32 share, uint32 disposition, uint32 options, uintptr eabuffer, uint32 ealength) {
-    error ntstatus = default!;
+// go2cs generated this placeholder — func NtCreateFile is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-    var ᴋ57 = Ꮡhandle;
-    var ᴋ58 = Ꮡoa;
-    var ᴋ59 = Ꮡiosb;
-    var ᴋ60 = ᏑallocationSize;
-        var (r0, _, _) = syscall.Syscall12(procNtCreateFile.Addr(), 11, (uintptr)ᴋ57, (uintptr)access, (uintptr)ᴋ58, (uintptr)ᴋ59, (uintptr)ᴋ60, (uintptr)attributes, (uintptr)share, (uintptr)disposition, (uintptr)options, (uintptr)eabuffer, (uintptr)ealength, 0);
-    System.GC.KeepAlive(ᴋ57);
-    System.GC.KeepAlive(ᴋ58);
-    System.GC.KeepAlive(ᴋ59);
-    System.GC.KeepAlive(ᴋ60);
-    if (r0 != 0) {
-        ntstatus = ((NTStatus)(uint32)r0);
-    }
-    return ntstatus;
-}
-
-public static error /*ntstatus*/ NtOpenFile(ж<syscallꓸHandle> Ꮡhandle, uint32 access, ж<OBJECT_ATTRIBUTES> Ꮡoa, ж<IO_STATUS_BLOCK> Ꮡiosb, uint32 share, uint32 options) {
-    error ntstatus = default!;
-
-    var ᴋ61 = Ꮡhandle;
-    var ᴋ62 = Ꮡoa;
-    var ᴋ63 = Ꮡiosb;
-        var (r0, _, _) = syscall.Syscall6(procNtOpenFile.Addr(), 6, (uintptr)ᴋ61, (uintptr)access, (uintptr)ᴋ62, (uintptr)ᴋ63, (uintptr)share, (uintptr)options);
-    System.GC.KeepAlive(ᴋ61);
-    System.GC.KeepAlive(ᴋ62);
-    System.GC.KeepAlive(ᴋ63);
-    if (r0 != 0) {
-        ntstatus = ((NTStatus)(uint32)r0);
-    }
-    return ntstatus;
-}
+// go2cs generated this placeholder — func NtOpenFile is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 public static error /*ntstatus*/ NtSetInformationFile(syscallꓸHandle handle, ж<IO_STATUS_BLOCK> Ꮡiosb, uintptr inBuffer, uint32 inBufferLen, uint32 @class) {
     error ntstatus = default!;
 
-    var ᴋ64 = Ꮡiosb;
-        var (r0, _, _) = syscall.Syscall6(procNtSetInformationFile.Addr(), 5, (uintptr)handle, (uintptr)ᴋ64, (uintptr)inBuffer, (uintptr)inBufferLen, (uintptr)@class, 0);
-    System.GC.KeepAlive(ᴋ64);
+    var ᴋ57 = Ꮡiosb;
+        var (r0, _, _) = syscall.Syscall6(procNtSetInformationFile.Addr(), 5, (uintptr)handle, (uintptr)ᴋ57, (uintptr)inBuffer, (uintptr)inBufferLen, (uintptr)@class, 0);
+    System.GC.KeepAlive(ᴋ57);
     if (r0 != 0) {
         ntstatus = ((NTStatus)(uint32)r0);
     }
@@ -693,9 +663,9 @@ internal static syscall.Errno /*ret*/ rtlNtStatusToDosErrorNoTeb(NTStatus ntstat
 public static error /*err*/ GetProcessMemoryInfo(syscallꓸHandle handle, ж<PROCESS_MEMORY_COUNTERS> ᏑmemCounters, uint32 cb) {
     error err = default!;
 
-    var ᴋ65 = ᏑmemCounters;
-        var (r1, _, e1) = syscall.Syscall(procGetProcessMemoryInfo.Addr(), 3, (uintptr)handle, (uintptr)ᴋ65, (uintptr)cb);
-    System.GC.KeepAlive(ᴋ65);
+    var ᴋ58 = ᏑmemCounters;
+        var (r1, _, e1) = syscall.Syscall(procGetProcessMemoryInfo.Addr(), 3, (uintptr)handle, (uintptr)ᴋ58, (uintptr)cb);
+    System.GC.KeepAlive(ᴋ58);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -709,9 +679,9 @@ public static error /*err*/ CreateEnvironmentBlock(ж<ж<uint16>> Ꮡblock, sysc
     if (inheritExisting) {
         _p0 = 1;
     }
-    var ᴋ66 = Ꮡblock;
-        var (r1, _, e1) = syscall.Syscall(procCreateEnvironmentBlock.Addr(), 3, (uintptr)ᴋ66, (uintptr)token, (uintptr)_p0);
-    System.GC.KeepAlive(ᴋ66);
+    var ᴋ59 = Ꮡblock;
+        var (r1, _, e1) = syscall.Syscall(procCreateEnvironmentBlock.Addr(), 3, (uintptr)ᴋ59, (uintptr)token, (uintptr)_p0);
+    System.GC.KeepAlive(ᴋ59);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -721,9 +691,9 @@ public static error /*err*/ CreateEnvironmentBlock(ж<ж<uint16>> Ꮡblock, sysc
 public static error /*err*/ DestroyEnvironmentBlock(ж<uint16> Ꮡblock) {
     error err = default!;
 
-    var ᴋ67 = Ꮡblock;
-        var (r1, _, e1) = syscall.Syscall(procDestroyEnvironmentBlock.Addr(), 1, (uintptr)ᴋ67, 0, 0);
-    System.GC.KeepAlive(ᴋ67);
+    var ᴋ60 = Ꮡblock;
+        var (r1, _, e1) = syscall.Syscall(procDestroyEnvironmentBlock.Addr(), 1, (uintptr)ᴋ60, 0, 0);
+    System.GC.KeepAlive(ᴋ60);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -733,11 +703,11 @@ public static error /*err*/ DestroyEnvironmentBlock(ж<uint16> Ꮡblock) {
 public static error /*err*/ GetProfilesDirectory(ж<uint16> Ꮡdir, ж<uint32> ᏑdirLen) {
     error err = default!;
 
-    var ᴋ68 = Ꮡdir;
-    var ᴋ69 = ᏑdirLen;
-        var (r1, _, e1) = syscall.Syscall(procGetProfilesDirectoryW.Addr(), 2, (uintptr)ᴋ68, (uintptr)ᴋ69, 0);
-    System.GC.KeepAlive(ᴋ68);
-    System.GC.KeepAlive(ᴋ69);
+    var ᴋ61 = Ꮡdir;
+    var ᴋ62 = ᏑdirLen;
+        var (r1, _, e1) = syscall.Syscall(procGetProfilesDirectoryW.Addr(), 2, (uintptr)ᴋ61, (uintptr)ᴋ62, 0);
+    System.GC.KeepAlive(ᴋ61);
+    System.GC.KeepAlive(ᴋ62);
     if (r1 == 0) {
         err = errnoErr(e1);
     }
@@ -750,9 +720,9 @@ public static (syscallꓸHandle handle, error err) WSASocket(int32 af, int32 typ
     syscallꓸHandle handle = default!;
     error err = default!;
 
-    var ᴋ70 = Ꮡprotinfo;
-        var (r0, _, e1) = syscall.Syscall6(procWSASocketW.Addr(), 6, (uintptr)af, (uintptr)typ, (uintptr)protocol, (uintptr)ᴋ70, (uintptr)group, (uintptr)flags);
-    System.GC.KeepAlive(ᴋ70);
+    var ᴋ63 = Ꮡprotinfo;
+        var (r0, _, e1) = syscall.Syscall6(procWSASocketW.Addr(), 6, (uintptr)af, (uintptr)typ, (uintptr)protocol, (uintptr)ᴋ63, (uintptr)group, (uintptr)flags);
+    System.GC.KeepAlive(ᴋ63);
     handle = ((syscallꓸHandle)r0);
     if (handle == syscall.InvalidHandle) {
         err = errnoErr(e1);
