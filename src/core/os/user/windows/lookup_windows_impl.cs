@@ -251,8 +251,9 @@ partial class user_package
     // LocalGroupUserInfo0's single field is a `ж<uint16>`, so that span reinterprets eight raw
     // kernel bytes per element as a managed OBJECT REFERENCE -- one fabricated reference per group,
     // and `entry.Name == nil` then tests a reference the collector never handed out. Walking the
-    // native stride explicitly and lifting each name is the whole fix; the group lookup and error
-    // values below are the converted body's, unchanged.
+    // native stride explicitly and lifting each name is the whole fix; the group lookup below is
+    // the converted body's, unchanged. The EMPTY-MEMBERSHIP answer is not: 1.24 stopped calling it
+    // an error, and the split that follows from that is documented at the branch itself.
     internal static unsafe (slice<@string>, error) listGroupsForUsernameAndDomain(@string username, @string domain) {
         // Check if both the domain name and user should be used.
         @string query = default!;
@@ -273,10 +274,6 @@ partial class user_package
         // NetUserGetLocalGroups() would return a list of LocalGroupUserInfo0
         // elements which hold the names of local groups where the user participates.
         // The list does not follow any sorting order.
-        //
-        // If no groups can be found for this user, NetUserGetLocalGroups() should
-        // always return the SID of a single group called "None", which
-        // also happens to be the primary group for the local user.
         err = windows.NetUserGetLocalGroups(nil, q, 0, windows.LG_INCLUDE_INDIRECT, Ꮡp0, windows.MAX_PREFERRED_LENGTH, ᏑentriesRead, ᏑtotalEntries);
         if (err != default!) {
             return (default!, err);
@@ -285,11 +282,29 @@ partial class user_package
         try {
             NativeLocalGroupUserInfo0* entries = (NativeLocalGroupUserInfo0*)(nuint)(uintptr)p0;
 
-            // A published nil is the defect this member was taken for, and it must not read as an
-            // empty membership: it takes the same error as a genuinely empty list rather than
-            // silently answering "no groups".
-            if (entriesRead == 0 || entries == null) {
-                return (default!, fmt.Errorf("listGroupsForUsernameAndDomain: NetUserGetLocalGroups() returned an empty list for domain: %s, username: %s"u8, domain, username));
+            // THE TWO CASES ARE NOT ONE CASE. Until 1.24 they shared an error, because upstream
+            // answered an empty membership with an fmt.Errorf of its own and a published nil could
+            // hide inside it. 1.24 removed both halves of that: `entriesRead == 0` now returns
+            // nil, nil, and the paragraph above that justified the error -- the claim that
+            // NetUserGetLocalGroups() always returns a "None" group for a user with no groups --
+            // went with it. So:
+            //
+            //   entriesRead == 0   an EMPTY MEMBERSHIP, and upstream's answer for it is no error
+            //                      at all. The caller ranges the nil slice zero times and appends
+            //                      the primary group, which is the POSIX behaviour it wants.
+            //
+            //   entries == null    a PUBLISHED NIL with entries claimed to read. Upstream slices
+            //                      the buffer here unconditionally and would fault; not doing that
+            //                      is the defect this member was taken for. It stays an error, and
+            //                      it must NOT be the case above -- answering "no groups" to a nil
+            //                      buffer is the silent wrong answer, and now that the empty
+            //                      membership is not an error, sharing one branch would produce it.
+            if (entriesRead == 0) {
+                return (default!, default!);
+            }
+
+            if (entries == null) {
+                return (default!, fmt.Errorf("listGroupsForUsernameAndDomain: NetUserGetLocalGroups() published a nil buffer for %d entries for domain: %s, username: %s"u8, entriesRead, domain, username));
             }
 
             slice<@string> sids = default!;
