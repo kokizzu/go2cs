@@ -67,6 +67,34 @@ src/core/**/README.md text eol=crlf
 # -text has the last word -- intact.
 *.sh text eol=lf
 
+# ---------------------------------------------------------------------------
+# LF pin for the tables the shard-map generator PARSES
+# ---------------------------------------------------------------------------
+# Same reasoning as the shell-script pin above, for a different consumer: these
+# are DATA files read byte-wise by docs/phase4/hopA-inputs/shardmap.py, which
+# refuses a CR outright rather than normalizing on read.
+#
+# The refusal is deliberate and it must not be softened -- a generator that
+# silently accepts either line ending cannot tell a table it parsed from a table
+# it half-parsed, and this one's whole job is to be exact about row content (it
+# checks a sha256 over `path\tt_r` pairs). But a guard is only as good as its
+# premise, and the premise was FALSE on one platform: the committed blobs are LF,
+# while a Windows checkout under core.autocrlf=true (this repo's working default)
+# materialized them as CRLF, because no rule here covered docs/phase4/*.md -- the
+# markdown pin above is scoped to src/core/**/README.md. So the guard would have
+# fired on a correct Windows checkout and read as a corrupted table.
+#
+# Ruled 2026-09-13 (coordinator, mailbox `dfd85f700`): strengthen the premise,
+# never weaken the guard. Blobs are already LF, so this pin rewrites nothing
+# (`git add --renormalize` stages nothing); it makes the one correct checkout form
+# explicit instead of per-machine. The `eol` attribute governs `git archive` the
+# same way, so an exported tree carries it too.
+#
+# ORDER: above the -text blocks, for the reason the two pins above state.
+docs/ValidatedTestPackages.md text eol=lf
+docs/phase4/DATA-sweep-row-walltimes.md text eol=lf
+docs/phase4/DATA-h10-shardmap-projection-go124.md text eol=lf
+
 # go2cs behavioral TargetComparison tests compare transpiled C# to .cs.target
 # golden files BYTE-FOR-BYTE (TargetComparisonTests.FileMatch). The converter
 # preserves the Go source's LF inside multi-line string literals, so these files
