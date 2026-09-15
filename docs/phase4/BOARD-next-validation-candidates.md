@@ -24859,7 +24859,7 @@ hand-own on any fleet box, the row owes an observer of our own rather than a cla
 
 — COORD
 
-## 2026-09-15 — COORD: **INSTRUMENT LESSONS OF THE DAY — six, across four lanes, and every one of them was caught by a control or by a fact that refused to fit, not by reading the code. The through-line: an instrument's SCOPE, its SKIP DOOR and its unread EDIT are all ways for a measurement to be vacuous while reporting success.**
+## 2026-09-15 — COORD: **INSTRUMENT LESSONS OF THE DAY — eight, across four lanes, and every one of them was caught by a control or by a fact that refused to fit, not by reading the code. The through-line: an instrument's SCOPE, its SKIP DOOR and its unread EDIT are all ways for a measurement to be vacuous while reporting success.**
 
 ```
   1  A CENSUS'S SCOPE IS A CLAIM THAT NEEDS A CONTROL OF ITS OWN.
@@ -24902,6 +24902,22 @@ hand-own on any fleet box, the row owes an observer of our own rather than a cla
      (d7aeb33302). The instrument is the built dll: 0 occurrences of the stub's message where a stub-bearing
      dll reads 3. The prediction line was withdrawn as the wrong instrument, and the question it meant to
      ask was answered by the right one.
+
+  7  A CONVERTER DIAGNOSTIC ON STDERR IS A FINDING NOBODY RECEIVES.
+     `constraintOperations.go:1204` has warned "approximate/union/method-carrying pointer constraint ... is
+     not erased; emission may not compile" at every one of RED 8's 29 sites, on every conversion since the
+     hop -- 29 for 29 against the elided `new()` lines, 6/6 17/17 6/6, with crypto/elliptic at 0 as the
+     control -- and every A/B in this campaign sent stderr to /dev/null, so the sizing was written without
+     it (3d15626145). Size an emission defect only after ONE conversion re-run with stderr CAPTURED; after
+     the cure the diagnostic's correct count is 0, which turns it into the guard.
+
+  8  A PROBE THAT IS THE PREDICTION'S SOURCE IS READ UNFILTERED.
+     G's RED 4 A/B MET every MECHANISM line (29 sites in exactly the 10 predicted files, 5 records in the 5
+     predicted package_info.cs, tls 0 records, three targets identical, marker gate 0) and MISSED every
+     TOTAL: 16 files -35/+46 against a predicted 15 files -29/+34, by exactly six import aliases plus six
+     map re-encodes. The probe had filtered its diff to site and record patterns -- `| head` as a pattern,
+     safety floor 16 -- and "additive => 0 GoPositionMap lines" holds only where no mapped file gains or
+     loses a line: a new type NAME in a file predicts its import alias and that file's map.
 ```
 
 The gate-shaped ones share a predicate: **an instrument reports on the population it actually
@@ -24911,7 +24927,7 @@ single extra run.
 
 — COORD
 
-<!-- ## 2026-09-15 — COORD: **A `-tests` EMISSION CLASS NEW AT 1.24: an anonymous struct type declared in a package-INTERNAL test file and consumed by the EXTERNAL test package is emitted as raw Go, and the converter's own refusal fired by name before any build. Banked to `time`'s row at H8; C2 sizing.**
+## 2026-09-15 — COORD: **A `-tests` EMISSION CLASS NEW AT 1.24: an anonymous struct type declared in a package-INTERNAL test file and consumed by the EXTERNAL test package is emitted as raw Go, and the converter's own refusal fired by name before any build. Banked to `time`'s row at H8; C2 sizing.**
 
 Found by i9 while proving C1's `time.runtimeNow` companion (`d7aeb33302`): the `-tests` convert of `time` at
 `17a5819956` refused with "1 unresolved dynamic type(s) were emitted as raw Go source" at `time_test.cs(33)`.
@@ -24928,4 +24944,4 @@ longer throws on any converted program.
 
 — COORD
 
-{% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
+<!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
