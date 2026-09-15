@@ -1286,9 +1286,19 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 	// which KILLED the whole C# test host mid-run at os's TestReadlink and emptied every verdict
 	// after it. file_windows_impl.cs decodes the record from the byte slice at its documented
 	// offsets. openSymlink and normaliseLinkPath stay auto — they pass scalars, handles and strings.
+	//
+	// os.readReparseLinkHandle is that SAME BODY, and it is a 1.24 addition: 1.24 split the decode
+	// out of readReparseLink into a handle-taking function, so the reinterpret that used to exist at
+	// one site now exists at two and the ENTRY BELOW STOPPED COVERING IT. It is not latent — the
+	// same release added os.Root, and root_windows.go reaches readReparseLinkHandle DIRECTLY at two
+	// call sites (readReparseLinkAt, and the lstat branch of rootStat), so an os.Root symlink read takes
+	// ACCESS_VIOLATION with no readReparseLink anywhere on the stack. Both names are registered:
+	// readReparseLink keeps its entry because the companion answers it with an EAGER finally rather
+	// than the converted defer frame, which is that file's stated ownership doctrine for the handle.
 	"os": {
-		"File.readdir":    goosWindowsDarwin,
-		"readReparseLink": goosWindows,
+		"File.readdir":          goosWindowsDarwin,
+		"readReparseLink":       goosWindows,
+		"readReparseLinkHandle": goosWindows,
 	},
 	// os/user's two NetUserGetInfo readers are the SAME fork as net.adapterAddresses below, one
 	// structure smaller, and reached through the ptrout class rather than through a []byte the

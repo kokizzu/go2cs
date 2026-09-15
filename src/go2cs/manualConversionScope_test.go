@@ -190,7 +190,7 @@ func TestWindowsOnlyEntriesAreScopedToWindows(t *testing.T) {
 	windowsOnly := map[string][]string{
 		"syscall": {"GetTimeZoneInformation", "findFirstFile1", "findNextFile1", "Process32First", "Process32Next",
 			"GetAddrInfoW", "FreeAddrInfoW"},
-		"os": {"readReparseLink"},
+		"os": {"readReparseLink", "readReparseLinkHandle"},
 		// net's Windows interface enumeration. interface_windows.go is the only file in net that
 		// declares adapterAddresses — every other platform reaches interfaceTable by a completely
 		// different route (route sockets on BSD, netlink on Linux) — so an unscoped entry is inert
