@@ -43,10 +43,16 @@ using go;
 //
 // SubstituteNameOffset/Length are BYTE counts measured from the start of PathBuffer.
 //
-// The converter skips the auto form of readReparseLink via the manualConversionFuncs registry
-// (go2cs/manualTypeOperations.go); the module marker below makes go2cs skip re-converting this file
-// wholesale. Note what does NOT need this: openSymlink and normaliseLinkPath pass scalars, handles
-// and strings, so their conversions are faithful and this file calls them.
+// The converter skips the auto forms of readReparseLink AND readReparseLinkHandle via the
+// manualConversionFuncs registry (go2cs/manualTypeOperations.go); the module marker below makes
+// go2cs skip re-converting this file wholesale. Note what does NOT need this: openSymlink and
+// normaliseLinkPath pass scalars, handles and strings, so their conversions are faithful and this
+// file calls them.
+//
+// TWO ENTRIES BECAUSE 1.24 SPLIT THE FUNCTION. Until 1.24 the decode lived inside readReparseLink
+// and one entry covered it. 1.24 moved the body into readReparseLinkHandle and left readReparseLink
+// as an open-and-delegate wrapper, so the single entry stopped covering the defect -- and os.Root,
+// added in the same release, calls readReparseLinkHandle directly. Both are registered here.
 //
 // ⚠ syscall.Readlink (syscall/syscall_windows.go) has the SAME defect over its own private
 // reparseDataBuffer/symbolicLinkReparseBuffer/mountPointReparseBuffer copies. It is LATENT — os does
@@ -105,32 +111,50 @@ partial class os_package
             return ("", err);
         }
         try {
-            var rdbbuf = new slice<byte>(syscall.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
-            ref var bytesReturned = ref heap(new uint32(), out var ᏑbytesReturned);
-            err = syscall.DeviceIoControl(h, syscall.FSCTL_GET_REPARSE_POINT, nil, 0, Ꮡ(rdbbuf, 0), (uint32)len(rdbbuf), ᏑbytesReturned, nil);
-            if (err != default!) {
-                return ("", err);
-            }
-
-            uint32 reparseTag = readReparseUint32(rdbbuf, reparseTagOff);
-
-            if (reparseTag == syscall.IO_REPARSE_TAG_SYMLINK) {
-                @string s = reparseSubstituteName(rdbbuf, reparseDataOff, symbolicLinkPathBufferOff);
-                uint32 flags = readReparseUint32(rdbbuf, reparseDataOff + symbolicLinkFlagsOff);
-                if ((uint32)(flags & (uint32)windows.SYMLINK_FLAG_RELATIVE) != 0) {
-                    return (s, default!);
-                }
-                return normaliseLinkPath(s);
-            }
-
-            if (reparseTag == windows.IO_REPARSE_TAG_MOUNT_POINT) {
-                return normaliseLinkPath(reparseSubstituteName(rdbbuf, reparseDataOff, mountPointPathBufferOff));
-            }
-
-            // The path is not a symlink or junction but another type of reparse point.
-            return ("", syscall.ENOENT);
+            return readReparseLinkHandle(h);
         } finally {
             syscall.CloseHandle(h);
         }
+    }
+
+    // readReparseLinkHandle is the decode, on a handle the CALLER owns. Go split it out of
+    // readReparseLink at 1.24 and it is hand-owned for exactly the reason readReparseLink was: the
+    // body IS the reinterpret. Nothing about the defect moved -- only its address did, and it
+    // acquired two new callers with it.
+    //
+    // ⚠ IT IS NOT REACHED ONLY THROUGH readReparseLink. The same release added os.Root, and
+    // root_windows.go calls this function DIRECTLY -- readReparseLinkAt, and the lstat branch of
+    // rootStat -- so an os.Root symlink read takes the fault with no readReparseLink anywhere
+    // on the stack. That is why the row is live at 1.24 rather than latent: leaving the auto form
+    // in place would keep a working readlink beside an os.Root that kills the host.
+    //
+    // The handle is NOT closed here. readReparseLink closes what readReparseLink opened; the
+    // root_windows callers close what they opened. Go's ownership, kept exactly -- and the reason
+    // the eager finally stays up there rather than moving down with the body.
+    internal static (@string, error) readReparseLinkHandle(syscallꓸHandle h) {
+        var rdbbuf = new slice<byte>(syscall.MAXIMUM_REPARSE_DATA_BUFFER_SIZE);
+        ref var bytesReturned = ref heap(new uint32(), out var ᏑbytesReturned);
+        var err = syscall.DeviceIoControl(h, syscall.FSCTL_GET_REPARSE_POINT, nil, 0, Ꮡ(rdbbuf, 0), (uint32)len(rdbbuf), ᏑbytesReturned, nil);
+        if (err != default!) {
+            return ("", err);
+        }
+
+        uint32 reparseTag = readReparseUint32(rdbbuf, reparseTagOff);
+
+        if (reparseTag == syscall.IO_REPARSE_TAG_SYMLINK) {
+            @string s = reparseSubstituteName(rdbbuf, reparseDataOff, symbolicLinkPathBufferOff);
+            uint32 flags = readReparseUint32(rdbbuf, reparseDataOff + symbolicLinkFlagsOff);
+            if ((uint32)(flags & (uint32)windows.SYMLINK_FLAG_RELATIVE) != 0) {
+                return (s, default!);
+            }
+            return normaliseLinkPath(s);
+        }
+
+        if (reparseTag == windows.IO_REPARSE_TAG_MOUNT_POINT) {
+            return normaliseLinkPath(reparseSubstituteName(rdbbuf, reparseDataOff, mountPointPathBufferOff));
+        }
+
+        // The path is not a symlink or junction but another type of reparse point.
+        return ("", syscall.ENOENT);
     }
 }
