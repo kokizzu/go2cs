@@ -1425,12 +1425,39 @@ announced refs.
 | the range by path class | the master-only commits classified (docs and instruments / converter guards / converter production / corpus / repo config), merges counted separately because a merge carries its children's paths, and **no residue** — a commit matching no class is named, not dropped |
 | what the branch LACKS | every hand-own and every emission-or-CLI change in the range, **named**, not counted. These are the fold's reason; the docs and guards are why the commit count is large and are not why the fold exists |
 | the carry-forward set | marked files present on master and absent at the tip, each classified **relocated / gone / gap** — a relocation is verified by its counterpart's PATH, never by basename |
-| the conflict set | `merge-tree --write-tree` at those two SHAs, by path, with the predicted tree SHA stamped |
-| the prediction | what the merged tree must equal, and the falsifiers |
+| the conflict set | `merge-tree --write-tree` at those two SHAs **with the ARGUMENT ORDER named**, by path, with the fingerprint stamped — the stamp differs by order while the conflicting paths do not, so the act is scored in the order the prediction stamped in |
+| the prediction | what the merged tree must equal **and in which sense** (see *Scored on*), and the falsifiers |
 
 **Scored on:**
 
-- the merged tree **byte-identical** to the stamped dry-run tree;
+- **the dry-run stamp, scored as what it is.** `merge-tree --write-tree` fingerprints the **inputs and
+  the merge machinery**, not the commit:
+  - a **conflict-free** fold — the merged tree is **byte-identical** to the stamp;
+  - a **conflicted** fold — the stamp **cannot be equalled**: it carries markers for every conflicted
+    path, and the landed tree differs from it by exactly the resolved paths. Score instead that the
+    resolved paths are **exactly** the predicted set and that each resolution matches its ruled class;
+    if a stampable figure is wanted, predict the **post-resolution** tree before the commit and score
+    against that. ⚠ Scoring a conflicted fold against the dry-run SHA asks for a tree the act cannot
+    produce, and a reader who takes it literally reads a **correct** fold as a miss;
+
+<!-- AMENDED 2026-09-16 (COORD dff545e848, from the instance). This bullet read "the merged tree
+     byte-identical to the stamped dry-run tree" with no conflict-free/conflicted split, and the sizing
+     row above named no argument order. Both were found by lanes EXECUTING the rung, not by reading it.
+       (1) THE OBJECT. At the go1.23.12 -> go1.24.13 fold the stamp was 393651af2d and the landed tree
+           dc02500f2e -- differing by exactly the nine resolved paths, which is what an UNRESOLVED
+           merge-tree fingerprint must do. i9 had to state that in advance (141464d05d) so a correct act
+           would not read as a miss, and said so again at the landing (550a276a8): "the tree is NOT the
+           stamped 393651af2d, exactly as the prediction said it could not be".
+       (2) THE ORDER. C2 measured the stamp order-dependent (81543d8cd): version tip first and master
+           second yields 393651af2d; master first yields d7958bb4da -- AT THE SAME NINE PATHS, compared
+           by diff and not by eye. Two lanes following this rung literally could stamp different SHAs
+           from identical inputs and read it as a disagreement about the fold. That failure mode is a
+           FALSE MISS on a correct act, which stops a good fold -- worse than a missing check. The act
+           was taken ours-first for this reason, with the orientation measured before the merge.
+     Both are the same class as the emitted-file bullet corrected above and as H6's outgoing-pin defect
+     before it: an UNDERSPECIFIED COMPARISON -- the step states an equals sign and does not fully
+     specify both sides. No SHA was rewritten by either: the fold was never pushed. -->
+
 - the conflict set exactly the predicted paths — **no path resolved that was not predicted**;
 - ⚠ **silent subtraction, per symbol and in BOTH directions.** A fold crosses every seat the hop has
   landed. Each landed marker is asserted **by name at its count**; a clean merge rc says "no conflict",
