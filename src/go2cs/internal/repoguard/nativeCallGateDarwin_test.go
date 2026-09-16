@@ -514,17 +514,19 @@ const (
 	realizationNone    = "NONE"
 )
 
-// ⚠ ONE RULE, TWO SPELLINGS, AND THE FOLD IS OWED. nativeCallGateWindows_test.go (C1's ref
-// fbd5cbd932, which merges AFTER this file in i9's order) declares interopAttributePattern for the
-// same rule, spelled `\[\s*(?:LibraryImport|DllImport)\b` -- narrower, because it does not admit
-// the FULLY QUALIFIED attribute. Measured: the two disagree on
-// `[System.Runtime.InteropServices.DllImport("…")]`, which the narrow one reads as NOT interop and
-// therefore as the DEAD bucket -- a bodyless declaration reported unrealized when a generator does
-// realize it, which is the false direction for a gate watch. The name here differs only so the two
-// files compile together (verified by compiling all four C1 guards in one package); they are not two
-// rules and must not become two. When the second of the two merges, the fold is one definition and
-// one deletion, and THIS spelling is the one to keep. Routed to COORD as owed work rather than
-// pushed onto a seated ref.
+// ⚠ ONE RULE, ONE DEFINITION -- AND THE FOLD IS DONE. nativeCallGateWindows_test.go (C1's ref
+// fbd5cbd932, merged onto the version tip at c6c20d4eae) declared interopAttributePattern for this
+// same rule, spelled `\[\s*(?:LibraryImport|DllImport)\b` -- narrower, because it did not admit the
+// FULLY QUALIFIED attribute. Measured when the two were written and re-measured at the fold: they
+// disagree on `[System.Runtime.InteropServices.DllImport(“…”)]`, which the narrow one reads as NOT
+// interop and therefore as the DEAD bucket -- a bodyless declaration reported unrealized when a
+// generator does realize it, which is the false direction for a gate watch. The corpus carries 17 of
+// those fully-qualified attributes (16 in syscall/linux/exec_unix.cs, 1 in
+// internal/syscall/windows/registry/registry_test.cs, a windows-flavoured file that simply sits
+// outside runtime/windows/), so the divergence was one corpus-shaped edit away from the windows
+// watch's own population, which carries 0 of them today and 1 bare-form attribute. The narrow
+// spelling is gone and both watches read THIS declaration; the two names existed only so the two
+// files could compile together before the merge.
 var interopRealizationPattern = regexp.MustCompile(`\[\s*(?:System\.Runtime\.InteropServices\.)?(?:LibraryImport|DllImport)\b`)
 
 // realizationBucket classifies the declaration starting at lines[start].
