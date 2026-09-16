@@ -85,7 +85,7 @@ PYBIN=""
 # interpreter. A TOOL THAT EXITS 0 HAS STILL NOT TOLD YOU IT DID THE WORK.
 py_answers() { [ "$("$1" -c 'print(6*7)' 2>/dev/null | tr -d '\r')" = "42" ]; }
 resolve_python() {
-  local c
+  local c resolved
   if [ -n "${H5_PYTHON:-}" ]; then
     py_answers "$H5_PYTHON" \
       || die "H5_PYTHON=$H5_PYTHON is not a working Python -- it did not answer 'print(6*7)' with 42.
@@ -93,10 +93,30 @@ resolve_python() {
       0 (a Windows Store redirector, /bin/true) satisfies a status-only probe and does no work."
     PYBIN=$H5_PYTHON; return 0
   fi
+  # ⚠ THE CANDIDATE IS RESOLVED TO AN ABSOLUTE PROGRAM, and this is a FIX with a measured cause
+  # (q99, G on the py-cause box, 2026-09-16). The loop used `command -v`, which resolves shell
+  # FUNCTIONS, aliases and builtins BEFORE it looks at PATH -- and this script BINDS the name `py`
+  # to a helper of its own (run_py below, renamed with this change). So on a box whose python3 and
+  # python are non-answering stubs, the loop reached candidate three, found THIS SCRIPT'S OWN
+  # FUNCTION, invoked it, and the function dispatched through $PYBIN -- the variable resolve_python
+  # was in the middle of computing, still empty. A CIRCULAR DEPENDENCY: the resolver consulted a
+  # name the script had bound to a helper that needs the resolver's own answer. It died reporting
+  # "no working Python interpreter found" with a working interpreter installed.
+  #
+  # It was invisible everywhere else, which is why it took two boxes: the H5_PYTHON branch RETURNS
+  # above this loop, and on any box where python3 or python answers, the loop returns at candidate
+  # one or two and never reaches the third.
+  #
+  # `type -P` forces a PATH search and ignores functions, aliases and builtins entirely, so the
+  # class is closed rather than the instance -- a future helper named `python` could not reopen it.
+  # The rename is kept as well, because a script that probes for a name it also binds is a trap for
+  # the next reader even when the resolver is immune. PYBIN is now an absolute program path, which
+  # also means nothing declared LATER can shadow it.
   for c in python3 python py; do
-    command -v "$c" >/dev/null 2>&1 || continue
-    py_answers "$c" || continue
-    PYBIN=$c; return 0
+    resolved=$(type -P "$c" 2>/dev/null) || continue
+    [ -n "$resolved" ] || continue
+    py_answers "$resolved" || continue
+    PYBIN=$resolved; return 0
   done
   die "no working Python interpreter found (tried python3, python, py; set H5_PYTHON to override).
       This script derives its table and performs its edits in Python, and REFUSES here rather than
@@ -129,7 +149,11 @@ check_precondition() {
 
 # One program, two modes. verify() needs the same Go extraction apply() does -- it joins the patched
 # file against Go BY NAME -- so unlike C1-1's pure-shell checker this one needs the interpreter too.
-py() { "$PYBIN" - "$@" <<'PY'
+# ⚠ NAMED run_py AND NOT py, deliberately (q99): a function named `py` SHADOWS the Windows Python
+# launcher of the same name for everything in this file, and resolve_python above probes for exactly
+# that name. The resolver no longer consults shell names at all, so this rename is belt and braces --
+# but a script that binds a name it also searches for is a trap, and the trap cost a box a red run.
+run_py() { "$PYBIN" - "$@" <<'PY'
 import io, re, sys
 
 MODE, CSPATH, GOPATH = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -649,7 +673,7 @@ PY
 
 apply() {
   [ -n "$PYBIN" ] || die "apply() reached with no interpreter resolved"
-  py apply "$1/$R2" "$GOSRC"
+  run_py apply "$1/$R2" "$GOSRC"
   # ⚠ CAPTURED ON THE VERY NEXT LINE (i9, a50d4f8c1; safety floor #7). The C1-1 twin printed APPLIED
   # over an edit that never ran because this status was discarded.
   local rc=$?
@@ -658,7 +682,7 @@ apply() {
 
 verify() {
   [ -n "$PYBIN" ] || die "verify() reached with no interpreter resolved"
-  py verify "$1/$R2" "$GOSRC"
+  run_py verify "$1/$R2" "$GOSRC"
   return $?
 }
 
@@ -983,6 +1007,34 @@ PY
   py_answers "$tmp/cr-wrong"  && { echo "ARM 16 FAILED: the CR tolerance widened into accepting a WRONG answer (43)"; return 1; }
   py_answers /bin/echo        && { echo "ARM 16 FAILED: a probe-passing no-op was accepted after the CR change"; return 1; }
   echo "  ok   a CR-carrying ANSWER is ACCEPTED  Windows 'py' answers 42 CRLF; 43 and /bin/echo still refused"
+
+  # ARM 17 (DETECTION, the SELF-SHADOWING class) -- and the point of this arm is that it makes the
+  # defect REPRODUCIBLE ON EVERY BOX, which the original was not. G measured it on the only box that
+  # could see it: python3 and python were non-answering stubs there, so the loop reached candidate
+  # three, `command -v py` resolved THIS SCRIPT'S OWN HELPER, the helper dispatched through an
+  # $PYBIN the resolver had not computed yet, and a working interpreter was reported missing. On
+  # C1's box python3 answers first, so the loop never reached candidate three and the fault was
+  # invisible -- as it was with H5_PYTHON set anywhere, that branch returning above the loop.
+  #
+  # So the arm BUILDS that intersection instead of waiting for a box to have it: a directory
+  # PREPENDED to PATH holding two non-answering stubs named python3 and python and a working one
+  # named py, plus a shadowing shell function also named py. Resolution must bind the FILE. Against
+  # the pre-fix form it goes red for G's exact reason, on any box.
+  arms=$((arms+1))
+  mkdir -p "$tmp/shadowbin"
+  printf '#!/bin/sh\nexit 0\n'                > "$tmp/shadowbin/python3"; chmod +x "$tmp/shadowbin/python3"
+  printf '#!/bin/sh\nexit 0\n'                > "$tmp/shadowbin/python";  chmod +x "$tmp/shadowbin/python"
+  printf '#!/bin/sh\nprintf "42\\r\\n"\n'     > "$tmp/shadowbin/py";      chmod +x "$tmp/shadowbin/py"
+  out=$( unset H5_PYTHON
+         PATH="$tmp/shadowbin:$PATH"
+         py() { :; }
+         resolve_python && printf 'RESOLVED=%s\n' "$PYBIN" ); rc=$?
+  [ "$rc" -eq 0 ] || { echo "ARM 17 FAILED: a shell function named like candidate 'py' defeated resolve_python (rc=$rc) -- the resolver is consulting shell NAMES instead of searching PATH, which is the circular dependency G measured"; echo "$out"; return 1; }
+  case "$out" in
+    *"RESOLVED=$tmp/shadowbin/py"*) ;;
+    *) echo "ARM 17 FAILED: resolve_python bound something other than the stub PROGRAM: $out"; return 1 ;;
+  esac
+  echo "  ok   a SHADOWING function LOSES        resolution searches PATH and binds the program, not the name"
 
   echo
   echo "SELF-TEST CLEAN -- $arms arms, $notrun not run"
