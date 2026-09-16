@@ -26,8 +26,8 @@
 //
 // The generator is DETERMINISTIC: sections emit in sorted package order, each carrying the
 // matched lines verbatim in file order, with no timestamps. Output is written as BOM-less
-// UTF-8 with CRLF endings (the repository convention), so regeneration never fights the
-// checkout's autocrlf normalization.
+// UTF-8 with LF endings, pinned by .gitattributes so a checkout cannot smudge them and a
+// raw diff of a regeneration is a content reading rather than an endings one.
 package main
 
 import (
