@@ -1,0 +1,34 @@
+# coord-identifier-hashes.txt -- the denied-identifier list, as HASHES. NO PLAINTEXT, EVER.
+#
+# GENERATED FROM src/go2cs/internal/repoguard/fleetIdentifierCensus_test.go (fleetDeniedTokens).
+# That Go file is the tracked-tree gate, run by TestNoFleetIdentifiersInTrackedFiles under the plain
+# `go test ./...` every lane already runs. This file is the same list in a form a shell census can
+# read, so the two instruments cannot disagree about WHICH names are denied. When a row is added
+# there, it is added here in the same commit, or the shell census is measuring an older order.
+#
+# FORMAT: LEN<TAB>SHA256-OF-THE-LOWERCASED-TOKEN<TAB>WHAT
+#
+# Len is carried WITH the hash in one record, exactly as the Go file insists, because a length kept
+# in a second list can silently disagree with its hash and disarm the entry while every test passes.
+# One line, one entry, no way to add half of it.
+#
+# Adding one spells nothing:   echo -n "<token>" | tr A-Z a-z | sha256sum
+#
+# HOW THE SHELL CENSUS USES IT, AND THE LIMIT OF THAT USE.
+# The Go guard hashes every candidate token of every tracked file in process. A shell census cannot:
+# hashing millions of tokens through a sha256sum subprocess is not an instrument, it is an outage.
+# So the shell census inverts the comparison. At startup it derives a handful of candidate literals
+# from the LOCAL BOX -- the never-push token file, basename "$HOME", $COMPUTERNAME, the pieces of
+# `git config --get user.name` -- hashes THOSE (a handful of sha256sum calls), and reports which of
+# the rows below the box could supply plaintext for. A matched literal becomes a live arm.
+#
+# WHAT THAT MISSES, STATED: a row below whose plaintext this box cannot derive is NOT an arm in the
+# shell census on this box. The Go guard still catches it over the tracked tree at `go test`, and an
+# operator who needs it live in the pre-post gate puts the plaintext in the local never-push token
+# file. The census PRINTS `hashes=N matched=M unmatched=N-M` on every run, so the gap is a number on
+# the record and never an assumption.
+#
+7	20befabea93592064aad4d07e1af70c5d6859667e1edffdb591accf60e2993ee	fleet account name
+8	deff430814c33ac000dbdf4bd1061321b8387df004594375c947fabf73d3acc1	fleet account name
+13	1070b0f89514d6852350c53ac7682edcb2d41f38d66fb95c340cdec08802c74e	fleet machine name
+15	64bcb3dc70c4e605e5f1f29e4e42af4ab20de3b69f6452e5d5444305f432ea6d	fleet machine name
