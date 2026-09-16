@@ -115,6 +115,10 @@ public sealed class TestExecution
     private int m_ownerThread;
     private int m_tempDirSequence;
 
+    // Set under m_syncRoot on the FIRST TempDir call, where the PARENT directory's removal is registered
+    // once — see TempDir. Go keeps the same state as `c.tempDir != ""` (testing.go:1230).
+    private bool m_tempDirParentRegistered;
+
     // Go 1.24's common.ctx / common.cancelCtx (testing.go:666-667), created there eagerly per test.
     // Here it is created on FIRST Context() call instead: the only way to observe the context is to
     // ask for it, and the overwhelming majority of tests never do — an eager context.WithCancel per
@@ -599,9 +603,30 @@ public sealed class TestExecution
     /// </remarks>
     public @string TempDir()
     {
-        string path = Path.Combine(m_runner.RunRoot, ".tmp", TempDirName(Name), Interlocked.Increment(ref m_tempDirSequence).ToString(CultureInfo.InvariantCulture));
+        // ⚠ ONE cleanup, registered on the FIRST call, removing the test's PARENT directory — Go's own
+        // shape (testing.go:1265-1269), where later calls only number a child inside it and register
+        // nothing. A cleanup PER CALL is what this host did until 2026-09-15, and the difference is an
+        // ORDER, not an accounting detail: cleanups run LAST-IN-FIRST-OUT, so a Chdir restore registered
+        // BETWEEN two TempDir calls ran AFTER the later child's removal, and Windows refuses to delete the
+        // directory a process stands in. os's TestChdirAndGetwd is exactly that shape — t.Chdir(t.TempDir())
+        // and two more TempDir calls, the last of which it chdirs into — and it failed 3 of 3 on this host
+        // with "The process cannot access the file ... because it is being used by another process" while
+        // passing under `go test`. Diagnosed at both sources and ruled to Go's shape by COORD 5e2193a59d.
+        // The on-disk LAYOUT does not move: the parent is the directory the numbered children already sat in.
+        string parent = Path.Combine(m_runner.RunRoot, ".tmp", TempDirName(Name));
+
+        lock (m_syncRoot)
+        {
+            if (!m_tempDirParentRegistered)
+            {
+                m_tempDirParentRegistered = true;
+                Directory.CreateDirectory(parent);
+                Cleanup(() => RemoveAllWithWindowsRetry(parent));
+            }
+        }
+
+        string path = Path.Combine(parent, Interlocked.Increment(ref m_tempDirSequence).ToString(CultureInfo.InvariantCulture));
         Directory.CreateDirectory(path);
-        Cleanup(() => RemoveAllWithWindowsRetry(path));
         return path;
     }
 
