@@ -78,9 +78,6 @@ func TestDeclaredNotImplementedCensus(t *testing.T) {
 	// ⚠ ANTI-VACUITY, arm 2: the members whose absence has already cost the fleet a dead test host
 	// must be IN the population. RED 7's three, and the internal/sync seven that serve Mutex.
 	controls := []string{
-		"crypto/internal/fips140/indicator.cs:getIndicator",
-		"crypto/internal/fips140/indicator.cs:setIndicator",
-		"crypto/internal/fips140/cast.cs:fatal",
 		"internal/sync/runtime.cs:runtime_SemacquireMutex",
 		"internal/sync/runtime.cs:runtime_Semrelease",
 		"internal/sync/runtime.cs:runtime_canSpin",
@@ -348,11 +345,6 @@ const (
 //
 // ⚠ EDIT THIS TABLE IN THE COMMIT THAT MOVES THE TREE, never afterwards. That is the whole mechanism.
 var declaredPushStubs = map[string]string{
-	"crypto/internal/fips140.fatal":                      dispositionForward,
-	"crypto/internal/fips140.getIndicator":               dispositionForward,
-	"crypto/internal/fips140.setIndicator":               dispositionForward,
-	"crypto/internal/fips140hash.sha3Unwrap":             dispositionForward,
-	"crypto/internal/sysrand.fatal":                      dispositionForward,
 	"crypto/x509/internal/macos.syscall":                 dispositionLatent,
 	"internal/coverage/cfile.getCovCounterList":          dispositionLatent,
 	"internal/runtime/maps.mapKeyError":                  dispositionLatent,

@@ -14,7 +14,9 @@ partial class fips140_package {
 // fatal is [runtime.fatal], pushed via linkname.
 //
 //go:linkname fatal crypto/internal/fips140.fatal
-internal static partial void fatal(@string _);
+internal static void fatal(@string _) {
+    go.runtime_package.fips_fatal(_);
+}
 
 // failfipscast is a GODEBUG key allowing simulation of a CAST or PCT failure,
 // as required during FIPS 140-3 functional testing. The value is the whole name

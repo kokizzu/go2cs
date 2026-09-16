@@ -1068,12 +1068,12 @@ internal static void rand_fatal(@string s) {
 }
 
 //go:linkname sysrand_fatal crypto/internal/sysrand.fatal
-internal static void sysrand_fatal(@string s) {
+public static void sysrand_fatal(@string s) {
     fatal(s);
 }
 
 //go:linkname fips_fatal crypto/internal/fips140.fatal
-internal static void fips_fatal(@string s) {
+public static void fips_fatal(@string s) {
     fatal(s);
 }
 

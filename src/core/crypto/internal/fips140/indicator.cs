@@ -18,10 +18,14 @@ partial class fips140_package {
 // we don't need to explicitly annotate fully non-approved services.
 
 //go:linkname getIndicator crypto/internal/fips140.getIndicator
-internal static partial uint8 getIndicator();
+internal static uint8 getIndicator() {
+    return go.runtime_package.fips_getIndicator();
+}
 
 //go:linkname setIndicator crypto/internal/fips140.setIndicator
-internal static partial void setIndicator(uint8 _);
+internal static void setIndicator(uint8 _) {
+    go.runtime_package.fips_setIndicator(_);
+}
 
 internal const uint8 indicatorUnset = /* iota */ 0;
 internal const uint8 indicatorFalse = 1;

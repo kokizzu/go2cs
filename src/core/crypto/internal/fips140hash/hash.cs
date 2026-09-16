@@ -12,7 +12,9 @@ using go.crypto;
 partial class fips140hash_package {
 
 //go:linkname sha3Unwrap
-internal static partial ж<fsha3.Digest> sha3Unwrap(ж<sha3.SHA3> _);
+internal static ж<fsha3.Digest> sha3Unwrap(ж<sha3.SHA3> _) {
+    return sha3.fips140hash_sha3Unwrap(_);
+}
 
 // Unwrap returns h, or a crypto/internal/fips140 inner implementation of h.
 //
