@@ -361,3 +361,35 @@ unicode                                  PASS   28        17s
 unicode/utf16                            PASS   8         18s
 unicode/utf8                             PASS   14        14s
 ```
+
+## digests · 2026-09-13 (C2) — a CONTENT key for every block above
+
+A new section rather than an edit, per this file's own rule ("do not overwrite old sections"). It adds no
+measurement: every figure below is computed FROM the blocks above, so this section is a derived index and a
+block's own numbers remain its own.
+
+**Why it exists.** `hopA-inputs/shardmap.py` asserted its row COUNT and nothing about row CONTENT, so a
+corrupted `t_r` passed every guard: changing `archive/zip` from 354 s to 99999 s in place left the count at
+162, printed `rows parsed: 162`, and reported a total of 107,346 i9-seconds instead of 7,701 — a makespan
+basis **14× wrong with the instrument fully green** (coordinator ruling `e0d5121e2` §5). A cardinality assert
+cannot see that. These digests are what the repaired generator checks its parse against.
+
+**How to compute one** (so a future block can carry its own, written by the run that writes the rows):
+take every parsed `(path, t_r)` pair, sort by path, join as `path\tt_r\n`, and SHA-256 the UTF-8 bytes. The
+`sum` column is the plain sum of `t_r`. Both are over the ROWS ONLY — no heading, no prose, no verdict
+column — so a block's digest is invariant under reformatting and moves only when a path or a time moves.
+
+| block key (OS · corpus SHA · machine) | rows | sum `t_r` | sha256 over sorted `path\tt_r` |
+|:--|--:|--:|:--|
+| `windows` · `18770d083` · `i9-13900K` | 162 | 7701 | `48c27034fdc6a0045c5c7baf5aed6859d3a50a2fa4b95a81bce4b894874c145d` |
+| `linux` · `18770d083` · `Ryzen 7 PRO 6850U` | 162 | 19113 | `03e2e94f43a9188fb2e595acee7015ed1d29018ba4c491cb2a9dfe05a69af369` |
+
+⚠ **The windows sum, 7,701 s, is the figure that section's OWN prose states** as its self-check ("the 162
+deltas sum to 7,701 s vs the sweep's own 7,697 s"), reproduced here by an independent parse — so the digest
+row is not merely asserting what it just computed.
+
+⚠ **The linux block needs a TOLERANT row parser and the original generator has none**: its rows carry a
+verdict column (`PASS`/`FAIL`/`CVAC`) and **10 of its 162 rows have no verdict count at all**
+(`crypto/tls FAIL 711s`). The pattern in the generator as it stood parsed 162 of 162 windows rows and **0 of
+162** linux rows, so the linux block was unreachable by position and unparseable if reached. Both are now
+readable, and the digest above is over the rows either way.

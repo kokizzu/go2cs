@@ -92,6 +92,17 @@ paths:
      .cs while the .cs.target still holds the FIXED form, so a commit taken there banks the wrong
      emission next to the right golden and only a later Target phase would catch it. -->
 - **A GOLDEN PREDICTION IS SCORED ON THE POPULATION IT NAMES, NEVER ON THE FILE'S BARE COUNT.** A prediction of three case-label `==` and zero `is` HELD at 3/0 on the named population while a bare `grep` over the same file reads 5 — two of them ordinary source expressions (a result comparison, a `Println`) that the prediction never claimed. **Score the predicate that was worded, or the prediction mis-scores in whichever direction the extra matches fall.** <!-- 2026-09-08, batch19. -->
+- **BEHAVIORAL GOLDENS CARRY CORPUS-HOP DRIFT THAT NO SEAT OWNS: A SEAT'S CNR CLASSIFIES EVERY CHANGED LINE
+  INTO ITS OWN FAMILY OR THE HOP'S, AND RE-BASELINES ONLY ITS OWN.** <!-- ⚠ 2026-09-15. At 1.24
+     `runtime.csproj` references `internal/runtime/*` and no `runtime/internal/*`, so `go.runtime` leaves
+     the alias scope and `computeImportAliasRenames` emits `using runtime = runtime_package;` where the
+     golden holds `Δruntime` — 8 goldens, none of them any seat's doing. The hop's family is H9's rebank
+     bill; a seat that re-baselines it absorbs the hop into its own footprint and hides it. -->
+- **A `| head` ON A POPULATION LISTING IS A SILENT WHERE CLAUSE EVEN WHEN A PER-OCCURRENCE TALLY SITS RIGHT
+  BESIDE IT — a prediction's population is enumerated UNFILTERED or it is not a prediction.** <!-- ⚠
+     2026-09-15, G's CNR prediction: 5 goldens read off a head-cut `grep -rlo` listing, against an
+     unfiltered population of 15 files in 8 projects. Safety-floor item 16, seen again, with the tally
+     beside it doing exactly nothing to help. -->
 ## Line endings and `.gitattributes`
 - **The CRLF working-tree form is PINNED by `.gitattributes`, not inherited from `core.autocrlf`.** A `text eol=crlf` block covers every converter-emitted artifact type — `*.cs`, `*.cs.auto`, `*.cs.target`, `*.csproj`, `*.slnx`, `*.props`, `*.targets`, `src/core/**/README.md` — ordered ABOVE the `-text` blocks so those keep their verbatim-bytes exemption (last matching pattern wins). **Do not "fix" a `.cs` to LF to match a Linux habit; the pin will put it back**, and a whole-tree renormalization is not owed. <!-- 2026-08-08, r46c. Rationale: the converter emits CRLF *unconditionally*, so the checkout was
      the only variable, and a clone with autocrlf=false (git's default on Linux/macOS) materialized
@@ -182,6 +193,30 @@ paths:
      entry wins on reach; the by-path rule stands for everything it can actually see. -->
 - **A log frozen mid-line is not evidence of death when the phase it stopped in is silent and long** — `[Compile] Go (per project)... ` with no newline prints nothing until it completes. **The PROCESS answers whether a run is alive**, and a live `go.exe` under the runner is positive evidence of progress no log tail can supply. And **an operation refused for a reason you did not predict is data about the world, not an obstacle to route around**: "Device or resource busy" on a copy onto a running apphost name is a LIVENESS signal. **A ZERO-LINE log at a FRESH mtime is the run's buffering, not its death.** <!-- Two readings from the same night, 2026-09-06; the zero-line/fresh-mtime member 2026-09-08
      (batch19), read off the same `go test` census that the by-path rule above could not see. -->
+- **MSTest's `Assert.AreEqual(object, object)` IS TYPE-SENSITIVE: a golib `@string` and a
+  `System.String` NEVER compare equal though both print the same text.** Compare Go strings as C# strings
+  (cast, `ToString`, or `AreEqual<string>`). <!-- ⚠ 2026-09-15, i9 `9996e68fb7` — the second miss in one
+     observer file, and invisible in the source, because the assertion reads exactly like a correct one. -->
+- **A TEST THAT CALLS A GENERATED EXTENSION METHOD MUST IMPORT THE PACKAGE NAMESPACE — a
+  `using alias = …_package;` binds the TYPE and its static calls, and NOT its extension methods.** <!-- ⚠
+     2026-09-15, i9 `8fa4a09f4c`: CS1061 x2 in F1's observer on `AllGroups(this ж<TOKEN_GROUPS>)`, while
+     the converted `os/user` compiles the same call through a `using` DIRECTIVE. For a lane without an
+     SDK, "verified against code this commit does not touch" covers IDIOMS — it does not cover scope
+     rules, and the first compile is the reviewer. -->
+- **PARSE EVERY EDITED PROJECT FILE FOR XML WELL-FORMEDNESS: XML 1.0 §2.5 FORBIDS `--` INSIDE A COMMENT,
+  AND MSBuild FAILS AT *LOAD* (MSB4025), BEFORE EVALUATION.** <!-- ⚠ 2026-09-15, i9 `e806c1534d`. Two
+     prose ` -- ` separators inside an XML comment in a `.csproj` — ordinary house style everywhere else
+     in this repo — took the project out at load. Caught by the proof-before-merge rule on its FIRST use;
+     the version tip never saw it. The third no-SDK miss of that day and the first in a project file. -->
+- **A HOST-FIDELITY DIVERGENCE IN THE HAND-OWNED `testing` PACKAGE IS A DEFECT LIKE ANY OTHER: `TempDir`
+  REGISTERS ONE CLEANUP PER CALL WHERE GO REGISTERS ONE PARENT REMOVAL AT THE FIRST CALL, AND LIFO TURNS
+  THAT GRANULARITY INTO ORDER.** <!-- ⚠ 2026-09-15. A test that `Chdir`s into a `TempDir` created AFTER
+     its `Chdir` has that directory removed while the process still stands in it —
+     `TestChdirAndGetwd`, deterministic 3/3 on the host, and the one ERROR standing between row 48 and
+     banking. Ruled to Go's shape (one per-test parent, numbered children) with the whole `os` suite as
+     the control. -->
+- **A SINGLE-FILE SELF-CONTAINED HOST BUNDLES ITS ASSEMBLIES — a "missing dll beside the exe" reading is
+  about the BUILD folder, not the PUBLISH folder.** <!-- ⚠ 2026-09-15, i9 `d385c251bb` §5. -->
 ## BehavioralRunner, CNR and solution integrity
 - **`src/tests/Behavioral/BehavioralRunner` is the faster alternative to MSTest** — a dependency-free console app running the same four phases over every behavioral project, not hosted in testhost, so the self-lock failure mode is structurally absent. It collapses the per-project `dotnet build` calls into one parallel MSBuild invocation (pre-building the ~31 shared `golib`/analyzer/`core/*` deps sequentially first to avoid the parallel-build MSB3026/27 race, then fanning out), and is at parity with MSTest. Drive it via **`run-behavioral.ps1 [--filter X] [--phase transpile,compile,target,output] [--update-targets] [--list]`**. Only `[GoTestMatchingConsoleOutput]` projects are `go build`- and stdout-compared. <!-- Added 2026-06-30. -->
 - **For a pure converter no-regression check with no compile/run at all, use `check-no-regression.ps1`** — it re-transpiles every behavioral dir and `git status`es the converter-emitted **`.cs` AND `.csproj`** (the transpile rewrites both; the `.cs`-only pathspec it had until 2026-08-08 made a csproj-emission change invisible on every platform). Converter stderr is captured, not discarded: a package the run could not fully regenerate — best-effort "did not fully type-check", a recovered "visit file error", or a non-zero exit — **fails the gate BY NAME as `NOT MEASURED` even with a clean `git status`**, so the byte-identical verdict is never vacuous; other WARNINGs are advisory, never fatal. <!-- Coordinator ruling 2026-08-08, from lane r48b's Linux FindFirstFileData finding — see

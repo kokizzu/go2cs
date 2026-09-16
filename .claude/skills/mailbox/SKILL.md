@@ -93,6 +93,19 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   explicit-fetch hole on two git versions and C2 d47c0d7e9 confirmed it on a third, showing the objects
   transfer regardless of refspec; i9 e9b13cd59 SCORED the remedy — loose objects 3 -> 3, packs 0 -> 1 — which is what makes
   unpackLimit a measured fix and not a plausible one. COORD ruling fefc7d4be s3 and f28b9d4ad. -->
+- **A POST TOOL RE-FETCHES AND RE-APPENDS *AFTER* ITS GUARDS, IMMEDIATELY BEFORE PUSHING** — a tool whose
+  guard takes minutes loses every race at one post per minute. <!-- ⚠ 2026-09-13, COORD: five
+     non-fast-forward rejections in one hour, each recovered by resetting the post clone to origin and
+     re-posting. The guard is not the problem; its POSITION in the sequence is. -->
+- **EXPAND, NEVER SYNTHESISE A SHA** — a short SHA is expanded from the object store, never typed from
+  memory. <!-- ⚠ 2026-09-13, i9 `1b36cef9d` s5, ruled `ecdfa2500` s2: i9's own rule caught its author,
+     through the expectation-literal gate. -->
+- **AN EXISTING REF ANNOUNCES THEN PUSHES; A REF THAT DOES NOT YET EXIST PUSHES THEN ANNOUNCES IN ONE POST
+  CARRYING THE REMOTE READ-BACK AND THE TOOL'S EXPLICIT NEW-REF ACKNOWLEDGEMENT.** A lane guard that
+  refuses its own doctrine gains the acknowledgement, not an exception. <!-- ⚠ 2026-09-13, G `8a90a913e`
+     s5, ruled `00b5a7fae` s2. Safety-floor item 9 exists to protect a READER from a moving ref, and a ref
+     nobody can yet read cannot move under anyone — so the order inverts and the post carries
+     `remote == local == <40-sha>` as its proof. -->
 
 ## Confirming delivery
 - **A state-advancing tool ASSERTS the state moved: `HEAD != pre-append tip`, exit non-zero
@@ -130,6 +143,15 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   a grep of the commit SUBJECT against the mailbox file read 0 for a post that WAS present, because
   the body heading is worded differently. Extracting the added `## ` heading from each commit's own
   diff and grepping for that read exactly 1 on all three posts. -->
+- **THE VERDICT A RETRY LOOPS ON MUST BE A CONTAINMENT TEST (`merge-base --is-ancestor our-sha
+  origin-tip` -> DELIVERED-LATE), NEVER EQUALITY AGAINST A MOVING TIP** — otherwise a retry converts a
+  misleading message into an automatic DUPLICATE. <!-- ⚠ 2026-09-13 07:18, COORD's post-tool workflow
+     verifier. The tool judged delivery by EQUALITY (local == `ls-remote` tip); a lane landing between our
+     ACCEPTED push and our read-back made it read NOT DELIVERED, and the newly added bounded retry would
+     have appended and posted the entry TWICE at exit 0. Reproduced hermetically with a one-shot
+     post-receive hook. Before the retry existed, the same false verdict stopped at exit 2 with a human
+     who would have seen the entry already there — the retry is what made a cosmetic defect dangerous. The
+     evidence was already in the loop's own data: the INTERLEAVED range it printed listed our own commit. -->
 
 ## Reading and anchors
 - **Anchor a read-confirmation on state THE TOOL REMEMBERS, and treat the caller's argument as a
@@ -176,6 +198,44 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   actually absorbed rather than to what the remote held, and a run of failed `ls-remote` calls made to
   announce itself, since silence from a watcher that cannot reach the remote is indistinguishable from
   silence on a quiet channel. -->
+- **A clone carrying a negative refspec must not hold that ref at all** — an explicit fetch leaves
+  behind a ref no later fetch maintains, and a frozen remote-tracking ref is indistinguishable from a
+  current one. <!-- ⚠ 2026-09-13, measured by C2 while checking a DIFFERENT claim of its own, and the
+  check is why the finding exists. A converter clone's refspec carries
+  `+refs/heads/*:refs/remotes/origin/*` followed by `^refs/heads/claude/mailbox` — a NEGATIVE entry
+  excluding the mailbox. The rule as previously understood was "you must fetch the mailbox explicitly
+  there", which is true and is not the hazard: an explicit `git fetch origin claude/mailbox` CREATES
+  `origin/claude/mailbox`, and every later plain `git fetch origin` then leaves it FROZEN (measured: it
+  stayed at one tip while the truth had moved 28 entries on — `rev-list --count`, 0 merges, every commit
+  in the range touching the mailbox file, so entries and commits are the same number here). Afterwards
+  the clone holds a ref that
+  looks like any other remote-tracking ref, answers `rev-parse` instantly with no error, and is stale at
+  an arbitrary past moment — so the ordinary idiom `git fetch origin && git log origin/claude/mailbox`
+  returns a confident, well-formed, WRONG answer, and the lane's own explicit fetches MASK it because
+  they work. The remedy is the TOOL's, not the reader's: `git update-ref -d refs/remotes/origin/<ref>`,
+  after which the idiom fails loudly (`fatal: ambiguous argument … unknown revision`, rc=128) and a
+  plain fetch does not resurrect it — both verified. This is also why the R-LAPTOP owner hand carries an
+  `update-ref -d`. ⚠ THE ROUTE TO THE FINDING IS THE REUSABLE PART: C2 first read a fourteen-entry gap
+  between two clones as "the negative refspec handed me a stale ref", MEASURED that instead of posting
+  it, and found the attribution false — the gap was a watcher dying at the harness's 30-minute clamp,
+  while the refspec hazard was real but a different and worse mechanism than the one being blamed. A
+  wrong attribution and a true finding sat in the same observation. And the gap C2 first reported as
+  "fourteen entries" was 17 measured — a number read off a listing by eye inside the very entry arguing
+  for measurement over impression, corrected in the post after. -->
+- **AN INSTRUMENT'S INPUT IS PART OF THE INSTRUMENT: THE STORED ANCHOR IS AUTHORITATIVE AND IS WRITTEN ONLY
+  ON A VERIFIED DELIVERY; THE CALLER'S ARGUMENT IS A CLAIM THAT PRINTS A LOUD MISMATCH.** <!-- ⚠
+     2026-09-13, G `4e0a08550`. G passed a read anchor computed by `ls-remote` moments before the post, so
+     the absorbed range was `tip..tip` — empty BY CONSTRUCTION — in the one tool this skill's read
+     discipline is about. Cost one entry, caught by luck rather than by a control. The dry-run gate also
+     moved BELOW the range computation so the anchor arm is exercisable without publishing, and the fix
+     was red-proved by replaying the defect (0 -> 1). Three lanes hit a version of this in one day (a
+     caller-supplied escape check, this anchor, a probe spelling): the CALLER is inside the trust boundary
+     whether or not the design says so. -->
+- **A COORD RULING ENTRY IS READ WHOLE, LIKE AN ABSORBED RANGE — an addressed-lines filter is a silent
+  WHERE clause in a shape safety-floor 16 does not name.** <!-- ⚠ 2026-09-13, C2 `a6975abfb` s5. A
+     ruling's newly-ruled sections are FLEET-addressed by construction and carry no lane token, so
+     grepping a ruling for one's own nickname cannot see the section that BINDS. C2 announced a new ref
+     before pushing minutes after the new-ref order was ruled, because that section had no `C2` in it. -->
 
 ## Writing the guard inside the tool
 - **An assertion whose reference is derived from the thing under test can never fail, and it is
@@ -232,3 +292,60 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   living in attention rather than in a script fails under exactly the conditions the script exists
   for, and a forty-minute multi-leg run is what consumes attention: the old script would have run
   four more legs on a stale base and reported all four green. -->
+
+## 2026-09-15 — three lessons from the 1.24.13 hop week
+- **A REFUSAL control may be run live, because REFUSING is its pass. An ADMISSION control never may,
+  because its pass IS the action.** Every positive control on a post tool sorts into one of those two
+  before the battery runs: the ones that exit before any git step are safe against the real remote,
+  and the one that proves an arm ADMITS a legal body publishes that body if you let it. The fix is a
+  `--dry-run` flag that stops **after every guard and above the anchor read**, so a pass-path control
+  needs no live state — plus a control on the flag itself asserting it skips the ACTION and not the
+  ARMS. <!-- ⚠ 2026-09-15, C1 `9badd9f5e3`, owned by its author at `50e0703b19` §0 before anyone
+  asked. A rebuilt post tool's controls 1-4 were refusal controls and each exited before any git step,
+  as designed; control 5 was "a nickname UNC host is ADMITTED, a real host is not", written as a plain
+  invocation — and its passing path IS the post, so it posted: subject `x`, two lines, a synthetic
+  share-shaped string over two fleet NICKNAMES. No identifier of any class, because nicknames are what
+  that arm exists to admit, so it is noise and not a breach. Two lanes (R `14b819892c`, i9
+  `e4c91b59eb`) named it correctly from the SHAPE alone. This is the same family as "a gate composed
+  into the same command as the action it gates cannot gate it", wearing the other face: there the gate
+  cannot refuse, here the control cannot help but act. Fixed with the flag plus control 6 —
+  `--dry-run` still REFUSES a non-nickname host at a distinct exit code, which is what proves the flag
+  skips the action and not the arms. The junk entry was NOT removed: mailbox content is never removed
+  without the coordinator's word, and a lane tidying its own duplicates deletes the evidence a
+  body-hash census reads. i9's better shape — refuse any body with no `## ` heading before any write —
+  was adopted by C1 in the same fix. -->
+- **A post tool's fleet-identifier guard reads the WHOLE TRACKED TREE, not the entry you are
+  appending — so ONE identifier-shaped line anywhere in the mailbox file blocks EVERY post from that
+  tool until a commit on top neutralizes it.** The remedy is the neutralizing commit; the offending
+  SHA is never rewritten. Know which of your guards is tree-scoped and which is delta-scoped before
+  you are blocked by one at 3 a.m. RULED for every lane's tool (`ef0c5c7c98`): the SAME census arms the
+  tool runs on the entry run again over the WHOLE mailbox file, post-append, at the fetched tip,
+  exit-gated before the commit -- not a second implementation of the predicate (a second
+  implementation is a second predicate and drifts the moment it is written), not a scan above the
+  fetch (a stale tree answers nobody's question); an exemption is stated at the site with a firing
+  control, and two `--dry-run` controls are mandatory: a share-shaped line planted ALREADY IN the
+  file with a clean entry, and the pass on the real tip. A guard narrower than the fleet's does not
+  merely miss a violation -- it hides from its owner that the tree is blocking everyone else. <!-- ⚠ 2026-09-15: nothing from the coordinator could land while
+  `9badd9f5e3`'s two lines sat in the tracked file, because the coordinator's own tool refuses to
+  append to a tree carrying a share-shaped path. This is the complement of the rule under *Running a
+  census* in `.claude/rules/docs-records.md` — a tree gate and a delta gate answer different
+  questions and are complementary rather than duplicates — read from the operational side: the tree
+  gate's blast radius is every future post, not just the bad one. Ruled: the SHA stands, the line is
+  neutralized by one commit on top. -->
+- ⚠ **A CLOUD LANE'S STATE IS WHAT IS AT ORIGIN, PLUS WHAT THE RESUME PROMPT ITSELF NAMES — nothing
+  else, ever.** A container restart can take everything local and it presents as SILENCE rather than
+  as an event: the mailbox monitor dies with no timeout notice. So the resume prompt's own fallbacks
+  are its load-bearing parts — the read anchor comes from the lane's own OFFLINE post when the anchor
+  file is gone, the post tool is rebuilt from this skill plus the coordinator's tool as the reference
+  shape, and a pinned Go tree comes back in seconds from a blobless two-tag fetch. Re-arm every
+  watcher and wake leg after any restart, unconditionally; the ids are audit-only and always dead.
+  <!-- ⚠ Measured TWICE with OPPOSITE results, which is the whole point (C1 `9533327131`, folded by R
+  at `da175c4311` / read back `f7208c9b0d`). 2026-09-14 ~02:19Z: the worktrees, the scratchpad tools
+  and the anchor file all survived a restart, and C1's own WAKE paragraph recorded that survival as a
+  PROPERTY. At the 2026-09-15 resume NONE of it survived — six worktrees, the scratchpad tools, the
+  dedicated mailbox clone with a local-only branch on it, the anchor file and the blobless golang/go
+  clone were all gone, and the container came up as a fresh clone at master. All three prompt
+  fallbacks carried that resume. A survival measured once is an INSTANCE, not a property; the
+  replacement paragraph deliberately carries BOTH measurements, because a paragraph that quietly
+  swapped which instance it quoted would be the same mistake with a different answer. The rule is
+  adopted for BOTH cloud lanes. -->

@@ -99,6 +99,7 @@
     <None Include="$(MSBuildThisFileDirectory)fieldDimsCargo_test.go" />
     <None Include="$(MSBuildThisFileDirectory)filterZeroMatch_test.go" />
     <None Include="$(MSBuildThisFileDirectory)finalizerDoorGuard_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)fleetPatchIdCensusGuard_test.go" />
     <None Include="$(MSBuildThisFileDirectory)foreignNameCollisions.go" />
     <None Include="$(MSBuildThisFileDirectory)foreignNameCollisions_test.go" />
     <None Include="$(MSBuildThisFileDirectory)foreignTypeAliases.go" />
@@ -110,6 +111,8 @@
     <None Include="$(MSBuildThisFileDirectory)goFrameOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)h5MemberBillGuard_test.go" />
     <None Include="$(MSBuildThisFileDirectory)h5RederivePatchGuard_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)handOwnReferences_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)handOwnTypeAccessibility_test.go" />
     <None Include="$(MSBuildThisFileDirectory)HashSet.go" />
     <None Include="$(MSBuildThisFileDirectory)hostFatalClass_test.go" />
     <None Include="$(MSBuildThisFileDirectory)hoistedLiteralOperations.go" />
@@ -226,6 +229,7 @@
     <None Include="$(MSBuildThisFileDirectory)rootEscapedRecordDedupe_test.go" />
     <None Include="$(MSBuildThisFileDirectory)rootShadowQualification_test.go" />
     <None Include="$(MSBuildThisFileDirectory)safePushGuard_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)seatDuplicationGuard_test.go" />
     <None Include="$(MSBuildThisFileDirectory)samePackageImplements.go" />
     <None Include="$(MSBuildThisFileDirectory)samePackageImplements_test.go" />
     <None Include="$(MSBuildThisFileDirectory)sanitization_test.go" />
@@ -310,6 +314,8 @@
     <None Include="$(MSBuildThisFileDirectory)rootGoTypeDescriptor_test.go" />
     <None Include="$(MSBuildThisFileDirectory)typeParamNilArg_test.go" />
     <None Include="$(MSBuildThisFileDirectory)untypedConstMinMaxArg_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)tokenDoorCensusGuard_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)toolchainGoRootFix_test.go" />
     <None Include="$(MSBuildThisFileDirectory)writeOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)wsaSendtoNoCallers_test.go" />
     <None Include="$(MSBuildThisFileDirectory)writtenUnderlyingOperations.go" />

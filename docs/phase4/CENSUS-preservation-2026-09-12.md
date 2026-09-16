@@ -287,3 +287,30 @@ WSL: identity first); cloud: the owner checks the session list.
 ## Amendments
 
 *(Dated blocks append below; the body is never edited.)*
+
+### 2026-09-13 — item 21 RETIRED; section 5's `r-h5b-convert.sh` "not found" corrected (lane R)
+
+**(a) Item 21: RETIRED, by COORD `791979830` §7.** The row's one decision was
+`src/lane-r-packrace.ps1`, untracked in worktree `preflight-trio-de1c72`. It is a repro copy of
+`src/push-nuget.ps1` at `46309391d` whose finding is on record (mailbox `28f00abaa`; master
+`push-nuget.ps1:386-392`, `98937dee0`), so it can be rebuilt at will. Measured at the file before this
+block:
+
+```
+  untracked copy        972 lines, 972 CR (CRLF)
+  = blob 51e86ce53:src/lane-r-packrace.ps1 with CR removed (cmp equal; the blob carries 0 CR)
+  51e86ce53 held at     refs/preserve/r-laptop/unreachable/51e86ce5391729eb1e842fb3c21d18225973601c
+  vs push-nuget.ps1@46309391d (CR removed): 15 lines removed, 10 added -- the node-reuse flag and
+      its comment removed, a binlog switch added, the repair branch replaced by diagnose-and-throw
+```
+
+R's `c3fdef168` row 10 called it "~11-line"; the measured difference is the 25 lines above. Nothing in
+this block deletes anything: removing the untracked copy is routed to the owner. The row's two
+`std.unicode.utf8` csproj files were debris and are not affected by this ruling.
+
+**(b) Section 5, R-LAPTOP: `r-h5b-convert.sh` was FOUND.** The line "quoted in 93820a2c5, not found" is
+wrong. The script survives in an earlier lane-R session's scratchpad. It is byte-identical to its
+creation record in that session's transcript and to a later read-back there, so only one version exists
+(45 lines, sha256 `7628bda4d0d1809155091d08620461f0077767ae8139901cbf03d9aa8482fb13`). An off-git copy
+with its provenance is archived on R-LAPTOP. It is never committed, because its `GOROOT` line carries a
+profile path (the reason 93820a2c5 elided that prefix).

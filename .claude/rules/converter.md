@@ -192,6 +192,98 @@ project-IDENTITY residual is G's.
      diagnosis, and set `GOROOT` from `go env GOROOT` verbatim (single-quoted in Bash so the backslashes
      survive). -->
 
+## Which GOROOT the LOADER reads, and the corpus pin that only guards a seeded root
+
+**Operator side: assert `go version` AND `go env GOROOT` against the pin from a NO-MODULE directory, in
+the RUN'S OWN environment, before the run; read the emission's own path lines after it.** Both halves are
+load-bearing. The no-module directory closes the `GOTOOLCHAIN` re-exec: a `go.mod` requiring a newer
+release makes the toolchain switch and **rewrite `GOROOT` in the process**, so a `GOROOT=X` you exported
+and asserted against `X/VERSION` can be answered by an entirely different tree. The run's own environment
+closes the ambient install: a pin asserted in another shell says nothing about this one. **An assertion in
+the calling command is necessary and NOT sufficient** — the sufficient read is the converter's own
+provenance line, below.
+
+**Converter side.** Every conversion and the census print the root, its `VERSION` read **in-process**, and
+the loader-directory's own `go env GOROOT` when the two disagree (`printToolchainProvenance`,
+`toolchainResolution.go:391`). **`-goroot` is never read by the LOADER** — `go/packages` shells out to
+`go list`, which inherits `os.Environ()`, while the flag lands on `build.Default.GOROOT`, which steers
+`go/build` only. It reaches the loader *solely* because `main.go:443` now exports the resolved root when
+the environment carries none; **a flag/environment disagreement REFUSES**, naming both
+(`loaderGoRootDecision`, `main.go:142`), rather than silently switching which tree a working invocation
+reads. A spelling-, case- or symlink-only difference is not a disagreement (`sameGoRoot`) — do not
+re-diagnose that. The loader's env also carries `GOTOOLCHAIN=local` (`conversionDriver.go:121`).
+
+**Seed `version.props` beside `core` into a hand-seeded temp root, or the pin is inert.** Floor rule 2
+says seed the temp root from `src/core`, and `version.props` is a **sibling** of `core` (`src/version.props`)
+— so a root seeded by that rule alone carries `core/golib/golib.csproj` and no pin, and
+`checkCorpusToolchainPin` then passed unconditionally on an empty read. **Every hand-seeded `-stdlib`
+reconvert has therefore run with the toolchain pin inert.** `seedCensusRoot` already copies it
+(`platformCensus.go:481`); the hand workflow has to match. `corpusPinnedReleaseOrError` now refuses by
+name — scoped to a root that *looks* like a corpus (`isGo2CSRoot`, i.e. `core/golib/golib.csproj` present,
+`testConversion.go:531`), because a bare unseeded target is a corpus's FIRST conversion, not a fault.
+
+<!-- Derivation, 2026-09-13. Wording ruled by COORD at mailbox `9bdca5025` (operator and converter sides),
+     landing with C2's census/-goroot seat `7c1d8832f` (accepted at `c5580c113a` §2 with its narrowing).
+
+     ⚠ THE CONVERTER-SIDE CLAUSE IS ONE WORD NARROWER THAN THE RULING'S LITERAL WORDING, DELIBERATELY.
+     `9bdca5025` set it as "`-goroot` is not read by the loader in any mode". That was exactly true of the
+     PRE-FIX tree and is the defect statement; it is no longer true unqualified of the tree the line ships
+     with, because `main.go:443` exports the resolved root in the environment-unset case, so the flag DOES
+     steer the loader there. Written as "never read by the LOADER … it reaches the loader solely because
+     main.go exports it" — the durable fact (go/packages reads os.Environ(), build.Default.GOROOT steers
+     go/build only) plus the one mechanism that bridges it. Flagged to COORD in the announce, not slipped.
+
+     THE ROOT CAUSE, measured on a 24-line probe mirroring conversionDriver.go's config shape (C2, this
+     date; the fleet's diagnosis before it was census-local, which was true-and-not-the-cause):
+         flag (build.Default.GOROOT) : <toolchain>/go1.23.12
+         env GOROOT                  : (unset)
+         loader read                 : /usr/local/go1.24.7/src/errors/errors.go   <- the AMBIENT root
+     So the flag was inert for source SELECTION in EVERY mode -- census, -stdlib and -tests alike -- and a
+     control that once read "plain -stdlib honours it" can only have agreed because flag and environment
+     matched on that box: the flag echoing itself. `platformCensus.go` copies `options` wholesale, so
+     `goRoot` DID travel into the census; it just had no effect anywhere.
+
+     THE GOTOOLCHAIN RE-EXEC, same probe, and it is NOT a second undiagnosed mechanism -- it is named at
+     `projectFileWriter.go:39-42` and the remedy shipped there:
+         the same 1.23.12 binary, asked its own version:  GOTOOLCHAIN=auto -> go1.24.7
+                                                          GOTOOLCHAIN=local -> go1.23.12
+         GOROOT=1.23.12 exported AND its bin first on PATH: `go: downloading go1.24.7`, and
+             `env GOROOT` then read <toolchain>/go1.24.7 -- THE VALUE EXPORTED WAS REWRITTEN.
+         GOROOT exported, bin NOT on PATH: `compile: version "go1.23.12" does not match go tool version
+             "go1.24.7"` -- refuses LOUDLY, which is the good case: a GOROOT/binary mismatch names both.
+     The probe's own switch was triggered by `go mod tidy` writing `go 1.24.0` + `toolchain go1.24.7` into
+     the probe module; the converter's loads are of stdlib packages inside a GOROOT `src` dir, which carry
+     no such requirement, so the switch may not fire there at all. Recorded as the mechanism, not as a
+     claim about the converter's own loads.
+
+     THE INERT PIN: `isGo2CSRoot` keys on `core/golib/golib.csproj`, which a floor-rule-2 seeding
+     CREATES, while `version.props` sits beside `core` and is NOT copied by that rule -- so the seeded
+     root is precisely the shape that looks like a corpus and carries no pin. Before the refusal,
+     `corpusPinnedRelease` returned ("", nil) for it and the pin check was a silent no-op. The narrowing
+     to isGo2CSRoot came from `toolchainResolution_test.go`'s own fixture, which documents a bare root as
+     "the normal state of a first -stdlib conversion, not a fault" -- COORD accepted the narrowing rather
+     than the unconditional refusal it had ruled. Ten tests at the seat, including a pre-fix control that
+     reconstructs the silent no-op through the old function and shows it PASSING. -->
+- **READ A BOX'S BARE GO WITH `GOTOOLCHAIN=local go version` FROM A DIRECTORY WITH NO MODULE — a directory
+  named for one Go release can hold another, and a module-context reading will not say so.** <!-- ⚠
+     2026-09-15, C1; the fleet was ordered to state it once. `GOTOOLCHAIN=auto` switches UP inside a module
+     to satisfy its `go` directive, and `go version` then answers for the SWITCHED toolchain: C1's
+     `/usr/local/go` was go1.24.7 while every reading taken inside the converter module said 1.24.13.
+     Every instrument pins `GOROOT` explicitly rather than inheriting one. -->
+- **A GUARD THAT READS GO'S OWN SOURCE IS MEASURED AT THE CORPUS PIN, NEVER AT THE CONVERTER'S BUILD PIN.**
+  <!-- ⚠ 2026-09-15, C1. `TestLinknamePushRegistryMatchesGoSource` run under a go1.25.1 GOROOT reported
+     `unique.runtime_registerUniqueMapCleanup` as undeclared — it exists at 1.24.13 and is absent at
+     1.25.1. A GOROOT-axis FALSE REGRESSION, which is the two-pin window met from the other side: the
+     guard was right, the tree was right, and the toolchain the guard happened to run under was the whole
+     finding. -->
+- **WHICH `GOEXPERIMENT` ARM IS ON LIVES IN `internal/buildcfg`'s BASELINE, NOT IN THE ARM FILES.** <!-- ⚠
+     2026-09-13, C1 `0038b75b8` s1. `exp_<name>_{off,on}.go` say what each arm DEFINES, never which is on.
+     At 1.24.13 `SwissMap: true` sits in `ParseGOEXPERIMENT`'s baseline beside `RegabiWrappers` (which is
+     arch-gated; SwissMap, checked, is not), so `!goexperiment.swissmap` test files are NOT COMPILED and
+     `TestMapBuckets` deletes itself at the hop. Read BOTH exact pins — the real 1.24.13, fetched, not a
+     nearby local 1.24.x, because identical file SETS say nothing about CONTENT — and note that no harness
+     path pins `GOEXPERIMENT` at all (grepped), so the baseline decides. -->
+
 ## Invoking the converter without producing a false reading
 
 - **Rebuilt converter → run `convert` THEN `build`.** Otherwise `-test-action build` exits 1 with ZERO
@@ -353,6 +445,159 @@ project-IDENTITY residual is G's.
      the old spelling is deleted by the hop. -->
 
 Reading a `-tests` result, mass-empty signatures and the census/launch traps now live in the `gate-forensics` skill.
+- **NEVER PASS `-tags` TO THE `-stdlib` RECONVERT, AND QUOTE THE PRINTED TAG SET IN THE RECORD** — the bare
+  default resolves `purego,math_big_pure_go`, and it is applied ONLY when `-tags` is not passed. <!-- ⚠
+     2026-09-13, i9 `7ae5355bb` / COORD `d2ad84bdb`. Five "deselections" in one step-2 run were all
+     purego/generic variants whose build tags are IDENTICAL across the two releases — the tell of an
+     emission run made without the default, whose asm-backed twins are throwing stubs that COMPILE. A gate
+     is not read on a corpus whose selection differs from the committed one. -->
+- **TWO COMPONENTS MUST NOT RESOLVE BUILD TAGS TWICE: THE CONVERTER IS THE AUTHORITY ON WHAT IT SELECTED**,
+  so "deselected" is derived from the staging root, never re-derived by a second tag engine. <!-- ⚠
+     2026-09-13, i9 `bb3a1a747` / COORD `9c07f494f`. The converter printed `Applying build tags:
+     purego,math_big_pure_go (default…)` and selected the five files; the deletion pass then re-derived
+     selection with tag logic of its own and DELETED them as DELETE-DESELECTED. The sound predicate:
+     committed `.cs` present + principal present at the target + ABSENT from the emission, with those five
+     as the standing control. COORD's tag-drift hypothesis was wrong on all three arms and was withdrawn —
+     the corpus was right and the instrument was wrong. Arm-3 trap in the same cut: ABSENT from a
+     directory that does not exist reads exactly like an absence, so print the directory's file count
+     beside every absence verdict, and FIND the directory rather than composing its path. -->
+- **CONSTRAINT TEXT IS NOT SELECTION: compare SELECTION at both GOROOTs under ONE tag set — the converter's
+  PRINTED line for the run — never `//go:build` text and never a mirrored constant.** <!-- ⚠ 2026-09-13,
+     C2 `5c47976ea`. Comparing constraint TEXT at the two GOROOTs read 4 of 6 rows WRONG, in the UNSAFE
+     direction on three live `|| purego` files (the negated arch list grew) and refusing the one genuine
+     deletion (`exp_aliastypeparams_off.go`, whose text is unchanged — the flip is in the experiment
+     DEFAULTS). Selection is the constraint evaluated against an environment (tags, arch list, default
+     GOEXPERIMENT set), and between two releases EVERY input moves. The selection-based gate predicted 7
+     of 7. Blast radius recorded with it: 19 std files at 1.24.13 are selected ONLY under the default tag
+     set, 7 of them in the corpus at their exact path. -->
+- **FILE PRESENCE IS THE WRONG FRAME FOR A HOP THAT MOVES SELECTION** — a release can delete ZERO files and
+  still stop COMPILING a whole family. <!-- ⚠ 2026-09-13, G `9e50ebe92`. The 1.23->1.24 hop deletes no
+     negated-goexperiment file (19 present at both pins) yet four tags turn ON — `aliastypeparams`,
+     `swissmap`, `spinbitmutex`, `synchashtriemap` — so the `!X` variants stop being selected: the whole
+     `map_*_noswiss` family, `reflect/map_noswiss.go`, the `lock_*_tristate` pair and `sync/map.go` (the
+     CLASSIC `sync.Map`) never reach the converter at 1.24.13, measured by `go list` at the default. The
+     selected COUNT reads 14 before and 14 after with a different COMPOSITION — count-versus-set arriving
+     on its own. -->
+- **A SINGLE-PACKAGE CONVERSION DOES NOT EMIT THE SAME `.csproj` AS THE `-stdlib` RUN** — to prove a
+  skipped file is converter output, force the SAME mode to write it. <!-- ⚠ 2026-09-15, the s30 probe, run
+     7. The single-package mode conditions `PackageLicenseFile` on the LICENSE's existence and OMITS the
+     versioned validation-proof block (`GoValidationProofFile`), so a probe that re-emits a package by
+     another MODE and compares to the corpus measures the MODE, not the corpus. Delete the file from the
+     cut seed before the `-stdlib` arm instead: it then classes ADDED and scores against the base-era
+     blob. -->
+- **AN INSTRUMENT THAT DELETES A FILE TO FORCE A WRITE MUST FIRST READ WHAT THE CONVERTER READS FROM THAT
+  FILE** — preservation-bearing metadata is EXEMPT from such a deletion. <!-- ⚠ 2026-09-15, train 48 run
+     8's LEG D missed three ways with ZERO converter defects. `package_info.cs` carries non-marker lines
+     forward from the existing output (the `GoHandOwnTypeAccessibility` block has no preservation code at
+     all — it survives by copy-through); a `.csproj`'s `GoHandOwnReferences` are read back from the
+     existing file; `platformLayoutDir` picks the per-GOOS folder only if `<goos>/<file>` EXISTS; and a
+     missing dependency `package_info.cs` silently degrades to derived aliases. EXEMPT-UNMOVED is a named
+     class, not a gate. -->
+- **A CONVERTER COMMENT THAT PREDICTS A SILENT FAILURE MODE IS A QUEUED REFUSAL, NOT DOCUMENTATION.**
+  <!-- ⚠ 2026-09-15. `platformLayout.go:150-157` names the mode in its own words — "no error, no warning,
+     just a quietly different closure" — and that mode ate `math/bits`'s runtime alias in train 48's run
+     8. The author had already done the hard half (seeing it); only the refusal was missing. -->
+- **`//go:linkname` PUSH WIRING IS A CURATED REGISTRY, AND A MISSING ROW IS A THROWING STUB — A RUN-TIME
+  DEATH AT FIRST CALL, NOT A COMPILE ERROR.** <!-- ⚠ 2026-09-15, `fips140`'s three. A package is converted
+     from its own syntax, and dependencies contribute TYPES, not directives, so a bodyless declaration
+     under a handle is indistinguishable from an assembly stub without a registry row
+     (`linknamePushTargets`, keyed by the consumer's fully-qualified declaration; a push ARRIVES as a
+     one-line forwarder emitted into the consumer package across an existing project reference, and the
+     pusher's definition widens to public via `linknamePushSources`). It is NOT derivable at convert time:
+     single-package runs have no pusher in the set, unhonorable rows must be exceptions BEFORE any
+     derivation, hand-owns collide, and cycles need a gate. -->
+- **A GUARD'S PREMISE CHECK IS READ AGAINST ITS OWN COMMENT** — the predicate must test what the comment
+  says, not the nearest thing that was easy to write. <!-- ⚠ 2026-09-15, ruled (i).
+     `linknamePushRegistry_test.go` says "if it ever gains a DEFINITION the directive becomes a local
+     alias" and was implemented as `findGoFuncDecl` — ANY declaration, bodyless or not — so a self-named
+     directive above the consumer's own BODYLESS declaration (`fips140`'s `getIndicator`/`setIndicator`/
+     `fatal`) was refused while the emitting matcher admits it. The one existing member (pprof) passed
+     only because its local name differs from its declaration, which is why nothing had caught it.
+     Narrowed to "the declaration found has a BODY", with the old member still passing, a planted
+     defined-with-body fixture still failing, and the new rows passing. -->
+- **THE `-tests` VARIANT BOUNDARY CLEARS THE DYNAMIC-TYPE LIFT REGISTRY, AND THE EXTERNAL VARIANT IS SEEDED
+  ONLY FROM PRODUCTION** — so a test-only anonymous composite declared in an INTERNAL `_test.go` and used
+  from the EXTERNAL one emits as raw Go. <!-- ⚠ 2026-09-15, C2 `b60257ee22`, ruled (b)+(d).
+     `packageDynamicTypeNames` is cleared by the next variant's `resetPackageState`, and
+     `seedProductionDynamicTypeLifts` seeds only from production's `package_info.cs`; `time.InternalTests`
+     at 1.24 is the first member, while `runtime.IfaceHash` resolves ONLY because production happens to
+     lift the same signature — which makes it the must-stay-covered control. The converter's "unresolved
+     dynamic type" refusal fired by NAME before any build, which is the design working. Fix: carry the
+     live map across the reset into a variant-scoped map consulted after the registry and before the
+     deferred marker. -->
+- **C# CHECKS A GENERIC CONSTRAINT NOMINALLY, SO NEITHER A `ж<T>` BOX NOR A SIBLING INTERFACE EVER
+  SATISFIES A METHOD-SET CONSTRAINT — THE ANSWER IS PROJECTION THROUGH THE GENERATED ADAPTER, AND ELISION
+  IS NOT A STRATEGY FOR A CONSTRAINT A BOX MUST SATISFY.** <!-- ⚠ 2026-09-15, the RED 3/4/5 family at the
+     1.24 version tip. A Go generic `New[H fips140.Hash](h func() H, …)` called as `New(sha256.New, …)`
+     infers `H = *Digest`, and the emission `New<ж<Digest>>` fails CS0311 because the box satisfies the
+     interface only through generated `[GoRecv]` adapters, never nominally. The converter's answer is to
+     substitute the CONSTRAINT as the type argument and project the pointer through
+     `GoImplement<Pointee, Constraint>(Pointer = true)` — already done for slice elements (`go/ast`
+     `walkList`) and generalized to func-result arguments. The self-referential proxy (nistec) answers a
+     DIFFERENT question (F-bounded self-typed boundaries); "generic constraint" and "F-bounded" are not
+     the same set. The interface-to-interface case is the same shape with no box at all: Go interface
+     EMBEDDING becomes C# interface INHERITANCE, so `hash.Hash` and `fips140.Hash` — identical method
+     sets, both embedding only `io.Writer` — are SIBLINGS in C# and satisfy each other only through
+     `GoImplement<A, B>`. Never invent an inheritance edge the Go tree lacks. A converter unit-test
+     fixture is never compiled as C#, so a negative control there can assert a FALSE PREMISE for a phase
+     without anyone noticing: bank these shapes as behavioral goldens that compile. -->
+- **A CONSTRAINT PROXY EMITTED `internal` UNCONDITIONALLY BREAKS THE MOMENT AN EXPORTED SIGNATURE USES IT,
+  AND A CURE THAT MOVES AN ERROR FROM THE BOX TO THE PROXY HAS RELAXED ONE CLAUSE OF A TWO-CLAUSE
+  PREDICATE.** <!-- ⚠ 2026-09-15, G `19f9de075a` and `cacfc57c90`, C2 `3d15626145`. `constraintProxyFor`'s
+     G4 names the proxy, but the elided `where P : /* … */ new()` is emitted by `getGenericDefinition`'s
+     inexpressible-union arm, which never consults the proxy gate — so relaxing G4 alone moves CS0310 from
+     the box to the proxy. A three-arm in-process probe (base / G4 only / G4 + declaration arm, with a
+     `fips140` fixture and an `elliptic` control) found it BEFORE the cut and was committed as the seat's
+     unit test, because it is the only arm that discriminates the two clauses. Three more axes in the same
+     class: the proxy class is emitted `internal` at `ImplementGenerator.cs:1410` while 1.24's exported
+     fips140 curves put it in PUBLIC signatures (CS0050 x8); `constraintProxyFor` spells a cross-package
+     INTERFACE by its Go import path; and a consumer of a foreign self-referential constraint minted its
+     OWN proxy of the same bare name — two classes, one name, two assemblies (CS1503 x16). Population at
+     the two pins: 1.23.12 had 10 self-referential constraints, all method sets, 0 elided; 1.24.13 has 30,
+     15 elided, 29 sites. -->
+- **A CONSUMER-SIDE QUALIFIER RENDERED AS AN ALIAS UNCONDITIONALLY RESOLVES ONLY WHERE THE CONSUMER HAPPENS
+  TO IMPORT THE PACKAGE** — use the renderer whose contract is "resolves where it lands". <!-- ⚠
+     2026-09-15, G `10daf47fc4`. Both corpus consumers DID import it, so the corpus could not falsify the
+     spelling; `getScopeCheckedTypeName` (with Go-path conversion) is the right renderer, and the arm that
+     discriminates it is a THIRD-package fixture — a consumer importing only a middle package. The
+     pre-A/B single-package probe of the unprobed consumer turned a would-be miss into a stated line and a
+     fixed latent. -->
+- **THE CS0576 RENAME PRE-PASS TESTS ONLY DIRECT IMPORT NAMES AND EXPLICIT ALIASES, SO A PACKAGE REACHED
+  ONLY THROUGH A TYPE GETS A BARE SYNTHESIZED `using` THAT CAN COLLIDE WITH A CHILD NAMESPACE.** <!-- ⚠
+     2026-09-15, G `11be4ed385`, ruled (A): test every package NAME in the closure the pre-pass already
+     walks. C# refuses a `using X = …;` whose name equals a CHILD namespace of the file's enclosing
+     namespace — `hpke.cs` in `namespace go.crypto.@internal` with a `fips140` child — and the package
+     arrived through RED 4's widened naming of `fips140.Hash` in a file that never imports it. Census
+     lesson recorded with it: a PLANT proves a predicate CAN fire, not that it is the RULE (v2 =
+     "existence anywhere" gave 504 false hits, where the converter's rule is VISIBILITY through the
+     project-reference closure), and a KNOWN NEGATIVE from the real corpus (`bufio`'s `using io`) is the
+     second control beside the known member. -->
+- **THE CONVERTER CASTS A CONSTANT IDENTIFIER ARGUMENT OF BUILTIN `min`/`max` TO THE TYPED SIBLING
+  OPERAND'S TYPE BUT EMITS A CONSTANT EXPRESSION ARGUMENT UNCAST** — the folded constant must take the same
+  path as the identifier. <!-- ⚠ 2026-09-15, RED 6. `UntypedInt` leaves the generic `min<T>` unable to
+     infer `T`, so resolution falls to the `params` overload (CS1503). Go types both as untyped constants
+     taking the typed operand. Found at the FIRST C# compile of a 1.24 TEST file, which is the reminder
+     underneath it: "the host compiles" is a claim about a file no instrument has read until a `-tests`
+     emission is built. -->
+- **AT A MAP `Set` WHOSE VALUE TYPE IS A POINTER, THE CONVERTER MUST STORE THE POINTER, NOT THE DEREF'D
+  LOCAL.** <!-- ⚠ 2026-09-15, RED 10, `x509` `verify.cs:1313`: the emission spelled
+     `ref var n = ref Ꮡn.DerefOrNull()` where Go stores `n` itself. Found as a first-compile finding
+     BEHIND another red, attributed by a base arm that never reaches its file — which is why every first
+     compile behind a cured red is treated as a finding of its own. -->
+- **`golib`'s `at<TElem>(nint)` LIVES ON THE `ж<T>` BOX, so a pointer-receiver method on a NAMED ARRAY must
+  spell the box, not the deref'd local.** <!-- ⚠ 2026-09-15, RED 5. `type p256Table [16]P256Point` emits
+     `ref var table = ref Ꮡtable.DerefOrNull(); table.at<P256Point>(0)` and the deref'd local has no `at`;
+     compiling sites spell `Ꮡlevels.at<levelInfo>`. New at 1.24 because 1.23's `p256Table` was a POINTER
+     array — the shape did not exist to be got wrong. -->
+- **READ THE WRITER'S DISPATCH BEFORE MODELLING A PER-PROJECT EMISSION: AN EXECUTABLE OUTPUT NEVER REACHES
+  A LIBRARY-ONLY BRANCH, SO A CORPUS-WIDE WARNING COUNT IS A LIBRARY COUNT.** <!-- ⚠ 2026-09-13, COORD
+     reading `projectFileWriter.go:497`. A model of "one line per measurable project" (731) missed by 679,
+     because 678 of the 735 behavioral packages are `package main` and the writer routes only
+     `outputType Library` through the licensing call. -->
+- **A "ONCE PER X" PROMISE IS BOUNDED BY THE PROCESS THAT HOLDS THE MAP: an instrument that runs ONE
+  PROCESS PER UNIT counts per unit.** <!-- ⚠ 2026-09-13, C2 `d0807ee31` s2. The license dedupe is a
+     process-global `sync.Map` and CNR spawns one converter per project, so "reported once per module"
+     bounds ONE invocation and says nothing about a corpus sweep's total. -->
 
 ## Test-harness mechanics (important when changing the converter)
 

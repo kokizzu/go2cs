@@ -252,6 +252,14 @@ description: Bank a validated package row, mint or judge a disclosure, or read t
   symlink gap" was available, true, and would have been an explanation portable only to the host that formed it --
   where a baseline is a DIFFERENCE anyone re-checks. Doctrine naming the cause is exactly when the baseline feels
   redundant and is not; the claim was worded as a SET equality and posted before the run. -->
+- **A GUARD THAT LANDS AFTER A BANK MAKES A ROW THAT WAS ALREADY WRONG SAY SO — RECORD SUCH ROWS BEFORE A
+  HOP RE-MEASURES THE ROSTER, DATED AND FALSIFIABLE, OR THE HOP IS BILLED FOR THEM.** <!-- ⚠ 2026-09-13,
+     C1 `b45f11b34` s3/s5. `syscall`'s 65 were banked 2026-08-25 with `TestGetStartupInfo` pass/pass;
+     three later landings then made the row's `ж<StartupInfo>` argument a refused token. BEFORE the door,
+     the kernel wrote 104 bytes into a MOVABLE box at wrong offsets and the assertion passed anyway — the
+     row's only assertion (`err != nil` on an unconditional nil) certifies that nil == nil. The row was
+     wrong when it was banked and only a later guard could say so, which is exactly the case the wall
+     bills to the wrong commit. -->
 
 ## Standing facts
 - **Compiling is the milestone, NOT operational**: Phase 3 (stdlib compiles clean) is a different claim from Phase
@@ -654,6 +662,33 @@ description: Bank a validated package row, mint or judge a disclosure, or read t
   The alloc-profile want-zero disclosures in bytes/bufio PREDATE ruling #1 (a want-zero alloc assert is satisfiable
   in principle and is never a disclosure) and stand as LEGACY to be re-examined, not as precedent to extend -- a
   "measured floor is disclosable" sentence built on them was retracted the same hour. -->
+- **READ THE SHIM BODY, NOT THE TEST NAME, BEFORE COMMISSIONING A MANAGED BODY — when NO managed answer
+  exists, the disposition is a ROSTER one (a structural disclosure), never an implementation task.**
+  <!-- ⚠ 2026-09-13, C1 `0038b75b8` s2-s3/s5. `gcTestIsReachable` asks a question the CLR genuinely
+     answers (reachability), so a managed body was right. `MapBucketsPointerIsNil`, `MapBucketsCount` and
+     `MapTombstoneCheck` are pure hmap bucket-LAYOUT probes — `h.B`, overflow chains, tophash sentinels,
+     plus escape analysis — of a runtime that has no bucket array BY DESIGN, so a managed body can only
+     satisfy a table vacuously (a manufactured silent no-op) or refuse honestly (the row stays red). Two
+     doors in one hour overturned their starting hypothesis on the body read; `TestGetStartupInfo`'s
+     wrapper turned out faithful. The name is the thing most likely to be read instead of the body,
+     because it is the thing the roster prints. -->
+- **REDEFINITION UNDER THE SAME NAME IN THE SELECTED VARIANT IS SURVIVAL, NOT CLOSURE — a census stopping
+  at "in a non-selected file" is wrong about half its rows.** <!-- ⚠ 2026-09-13, G `c94a736e6`. Of four
+     test names in the non-selected `map_noswiss_test.go` at 1.24.13, TWO (`TestHmapSize`,
+     `TestMapIterOrder`) are redefined in `map_swiss_test.go` and SURVIVE, and two (`TestLoadFactor`,
+     `TestMapBuckets`) close. The population is bounded — only one of 38 negated-tag files defines a test
+     function — and 269 disclosure entries are untouched, a REAL zero. One BOARD row split into two names
+     with two fates, and `TestLoadFactor` closes tracked nowhere, recorded so a closure is never read as a
+     loss. A lane's FALSIFIER read as an OBSERVATION is not a disagreement: one predicted and the other
+     measured. -->
+- **THE PREDICATE FOR "CAN THE HOST RUN THIS TEST" IS `registry.Add(...)` IN THE EMISSION, NEVER A NAME
+  GREP.** <!-- ⚠ 2026-09-13, i9 `b42438150` s1-s2. Three naive predicates all said PRESENT and all were
+     wrong: a comment in `hash_impl.cs`; the STAGED `.go` source beside the output (the converter stages
+     every package source, converted or not); and the `TestRegistry` FILE INVENTORY `string[]`, which
+     lists both map variants on every platform. The dangerous polarity is that each would have produced a
+     false REFUTATION of a correct post — and would have looked like diligence. Measured:
+     `TestMapBuckets`/`TestLoadFactor` NOT registered at 1.24.13, `TestHmapSize`/`TestMapIterOrder`
+     registered from `map_swiss_test.cs`. -->
 
 ## Disclosure-manifest doctrine
 <!-- Rules 1-7 measured 2026-09-03/04; 8-12 2026-09-06; 13-14 2026-09-07. -->

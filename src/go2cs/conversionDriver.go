@@ -105,7 +105,20 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 	// the loader here: it loaded host-platform files while the converter's filename
 	// filter used the requested platform, silently dropping BOTH platforms' constrained
 	// files from a cross-platform conversion.
-	cfg.Env = append(os.Environ(), fmt.Sprintf("GOOS=%s", targetParts[0]), fmt.Sprintf("GOARCH=%s", targetParts[1]))
+	//
+	// GOTOOLCHAIN=local pins the loader to the toolchain GOROOT names, and it is a REFUSAL mechanism
+	// rather than a convenience. Under the default `auto`, the go command re-execs whichever toolchain
+	// the module found by walking up from cfg.Dir asks for (getGoEnvFrom documents this) and REWRITES
+	// GOROOT in the re-exec'd process: measured 2026-09-13, an exported GOROOT of go1.23.12 with that
+	// tree's bin first on PATH came back as go1.24.7, announcing `go: downloading go1.24.7`. For a
+	// general tool, agreeing with the switch is right. For a converter of a PINNED standard library it is
+	// not: a switch means the emission came from a release nobody chose, and the pin exists to PREVENT
+	// one rather than to follow it. With `local` a go.mod asking for a newer toolchain refuses loudly and
+	// names both versions, which is the good failure; a stdlib load inside a GOROOT `src` directory
+	// carries no such line, so ordinary runs are unaffected. (COORD ruling `bc59c619d`. If a real stdlib
+	// load is ever found to need `auto`, that is a finding to post, not a reason to drop the pin quietly.)
+	cfg.Env = append(os.Environ(), fmt.Sprintf("GOOS=%s", targetParts[0]), fmt.Sprintf("GOARCH=%s", targetParts[1]),
+		"GOTOOLCHAIN=local")
 
 	// A MODULE-CACHE package is loaded from the MAIN MODULE's directory, by import path — not from
 	// its own directory, by path. The distinction is not stylistic: the go command treats the module
@@ -299,6 +312,39 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 				performRefLoweringAnalysis(files, packageTypes, info, options)
 
 				emitAutoConversionSiblings(files, fset, packageTypes, info, map[*ast.Ident]string{}, map[string]*types.Var{}, packageOutputPath, options)
+
+				// UN-FREEZE this package's METADATA. Until now the `continue` below skipped
+				// writeProjectFile/writePackageInfoFile entirely, so the four packages whose
+				// every production file is marked -- crypto/internal/boring/bcache,
+				// internal/concurrent, internal/godebug, internal/weak -- carried a `.csproj`
+				// and `package_info.cs` that NO conversion ever re-emitted. Their frozen
+				// `<ImportedTypeAliases>` block then aged against its own dependencies: at Go
+				// 1.24 `internal/abi.MapType` splits into OldMapType/SwissMapType, so the stale
+				// `abi`-MapType alias becomes a CS0426 in a file nothing regenerates
+				// (CENSUS-h6-handown-package-aliases.md, 2026-09-08 amendment). Re-minting here
+				// makes every future release hop carry these four along with the rest.
+				//
+				// The hand-owned `.cs` files are still never overwritten -- ONLY the metadata is
+				// re-minted, from the analyses the sibling emission above has just run.
+				// `projectFileName`/`projectFileContents` come from prepareProjectFiles earlier
+				// in this same iteration, and `projectImports` is filled by the union inside
+				// emitAutoConversionSiblings (added with this change -- without it the emitted
+				// .csproj would carry NO ProjectReferences at all).
+				// recordSamePackageImplements is DELIBERATELY not run here. The normal path calls
+				// it with the package's globalIdentNames/globalScope; this path has neither --
+				// emitAutoConversionSiblings above passes EMPTY maps inline -- so calling it here
+				// would record against empty global state rather than record nothing. Whether any
+				// of the four packages loses a [GoImplement] record it previously carried is a
+				// question for the two-seeded diff to answer, not for this comment to assume.
+				if err = writeProjectFile(projectFileName, projectFileContents, packageOutputPath, packageTypes, options); err != nil {
+					log.Fatalf("Error while writing project file \"%s\": %s\n", projectFileName, err)
+				}
+
+				if err := collectPublishedRefVerdicts(pkg, packageOutputPath); err != nil {
+					return err
+				}
+
+				writePackageInfoFile(packageInfoPath(packageOutputPath, isDir, options), !isDir)
 			} else {
 				showMessage("Skipping conversion: no target Go source files found for conversion in input path \"%s\"", packageInputPath)
 			}

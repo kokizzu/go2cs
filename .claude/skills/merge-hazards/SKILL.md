@@ -60,6 +60,44 @@ When several machines work one tree, the dangerous merges are the ones git repor
 - **A SCRATCH TREE PINNED AT A FIXED BASE GOES STALE INVISIBLY FOR EXACTLY THE FILES THAT MATTER MOST — THE HAND-OWNS.** Preflight before ANY rung is read: `git ls-tree -r master -- src/core` against a `find` over the tree, every missing file NAMED, and re-base the ladder on the landed master at each train landing. <!-- batch19, 2026-09-08, R: a hand-own landing on master AFTER a ladder's base is absent from the ladder, and because a hand-own is what BODIES a displaced or bodyless declaration, its absence presents EITHER as a phantom compile blocker indistinguishable from a real wall (`rtlGetVersion` CS0103 from a missing `zsyscall_windows_version_impl.cs`; restored, windows 34 -> 32 errors, prediction held) OR as NOTHING AT ALL (`time/sleep_impl.cs` bodies `runtimeNow`; without it the tree carries one generated throwing stub that compiles clean and throws at RUN time — blind to every error-count instrument). That seat's blocker list moved a third time in one day, each movement the finding. -->
 - **A RE-BASE OWES THE STALE-FILE DELETION PASS**: a seed file the new base no longer emits sits beside its replacement and kills the build. Delete by WRITE-EVIDENCE, and expect the flavours' sets to come out IDENTICAL. <!-- batch19, 2026-09-08, R: the seed's `exp_aliastypeparams_off.cs` sitting beside the emitted `_on.cs` killed the first build at 186 dlls in 80 s; 86 stale files were deleted by write-evidence, zero conflicts, the three flavours' sets identical. Ruled with it: 1.24 hand-own edits live on ONE branch off master that never seats on a train — they cannot compile against the 1.23 corpus — and land WITH the H5 regen, with the following stage reviewing them file by file. -->
 - **A CLEAN MERGE DOES NOT SURFACE A GUARD COLLISION**: a seat's NEW FILE can meet a guard master landed AFTER the seat was cut, and git reports nothing because the two never touched the same lines. **Run the suite at the seat's tip ON THE NEW BASE, attributed against the base arm.** <!-- ⚠ 2026-09-13, G cbb0a022a: a test file carrying the retired MIT header against the licensing guard 1800b04f8, which landed on master after the seat was cut. The merge was clean in both directions; only the suite at the seat's tip on the new base sees it, and only the base arm says the seat introduced it. -->
+- **A MERGE PROBE'S GREEN IS READABLE ONLY IF THE TWO SIDES ARE INDEPENDENT *AND* OVERLAPPING.** Containment
+  (one side an ancestor of the other) and DISJOINTNESS (the two sides share no path) are both vacuous and
+  both look exactly like a passed test. Print the **shared-path count beside every row** — a row with zero
+  cannot be read at all, and the count makes the vacuity visible without anyone remembering to test for it.
+  `merge-probe.sh` beside this file does that and refuses to call an all-vacuous run evidence.
+  <!-- ⚠ 2026-09-13, three lanes in one hour, all three having just read each other's version of it. C1
+  `fc64c7d0c` §3 withdrew its own "it merges clean onto master" because the branch was BUILT on master, so
+  the arm could not go red. i9 `d09f5bbde` §2-3 then found 2 of its 3 pairwise greens structural by
+  DISJOINTNESS and named both classes, with the sufficiency gap stated: independence was necessary and NOT
+  sufficient. C2 `3a28f2f87` §4 classified only containment and published "13 real merges reading rc=0"
+  against master; the complete predicate reduced that to **3 informative rows of 16** — 11 vacuous by
+  disjointness, 2 by containment — and the correction is `ad388158b`. Of C2's five-row pairwise control set
+  at `48173ffa7`, three were vacuous by ancestry and had been published as "dead arms", which asserts they
+  could have fired. C1 applied the shared-path predicate to its own H5 sequence probe within the hour
+  (`73b6599ed`) and found step 1 a fast-forward and step 3 disjoint, so only step 2 tested anything. -->
+- **A DUPLICATE BETWEEN A SEAT AND ITS OWN CLEAN RE-CUT IS A STALE ROW, NOT CONTAMINATION — the two
+  readings have OPPOSITE remedies, so the tool NAMES the check on its red rather than guessing.** <!-- ⚠
+     2026-09-13, G `54ea728fd` / C1 `cbc12e499`, ruled `c53db4e3a`: 13 of the 17 fleet-wide shared
+     patch-ids were supersessions. Drop the row, or split the commit — a tool that picks one silently is
+     wrong 13 times out of 17 or 4 times out of 17, and never says which. -->
+- **ANCESTRY CANNOT BE THE STACK EXEMPTION: SHA FIRST — same SHA is a stack, different SHAs with one
+  patch-id is a duplicate and always refused — and a legitimate stack is a DECLARATION
+  (`--stack child:parent`), printed and counted.** <!-- ⚠ 2026-09-13, C1 `8f97069b2` crediting G
+     `54ea728fd`. The real contamination WAS ancestor-related and a cherry-pick is not, so "exempt the
+     ancestors" spares the defect and refuses the legitimate stack — wrong in the direction that looks
+     like caution. The control for such an arm needs care too: a cherry-pick onto the same parent IN THE
+     SAME SECOND mints the SAME SHA, so the setup handed itself a stack; the fixture is a workbench commit
+     before the item (what a real lane looks like) plus an assertion that the two SHAs DIFFER (G
+     `8a90a913e` s3(a)). -->
+- **A REMOTE-TRACKING REF IS ONLY AS FRESH AS THE REFSPEC THAT LAST WROTE IT** — before trusting
+  `origin/X`, do a WILDCARD `fetch --prune`, or ask the remote. <!-- ⚠ 2026-09-13, three lanes on one day
+     (i9 `4ff24a03f`, C2 `a35f2c040`, G `f2f6240a1`), each finding stale refs on ITSELF — landmines rather
+     than casualties, because each checked rather than asserted. The three-way table: `git fetch origin B`
+     writes `FETCH_HEAD` only; an explicit `+refs/heads/B:refs/remotes/origin/B` writes exactly B while
+     every OTHER tracking ref ages — the remedy for the short form is the CAUSE of this one; only the
+     wildcard maintains all, and a negative refspec excludes its ref from the wildcard. Measured staleness:
+     173 entries behind on the mailbox branch for one lane, 4 refs for another with ZERO negative
+     refspecs, and 2 for a third including the handover branch that carries the resume file itself. -->
 
 ## Gate lines, corrections and records
 - **Check the diffstat against the claim BEFORE the push, never after** — a merge whose file list does not match its commit message is stopped there.
@@ -80,6 +118,40 @@ When several machines work one tree, the dangerous merges are the ones git repor
 - **A docs seat can split a file's FINAL guard line, and no gate sees it**: a board-touching merge asserts one `raw`, one `endraw`, the `endraw` FINAL, zero bare openers. <!-- 2026-09-02: the board's closing `endraw` guard was deleted, a bare HTML-comment opener written, 284 lines appended and the tail half re-added LAST — so the new section published INSIDE a comment, invisible, while the commit read normally. -->
 - **Two seats told to append a dated block "at the END" of one record collide BY CONSTRUCTION**; the mechanical resolution holds only when both sides are PURE APPENDS over the merge base (asserted, not assumed), and the instruction that avoids it names a per-seat ANCHOR — **"append at the end" is not an anchor.** <!-- 2026-09-04, met twice in two files on one train: an add/add at the TAIL is the adjacent-insert hunk in its purest form. Mechanical form: the merged file is HEAD's bytes plus the other side's suffix over the base, a duplicate numbered heading renumbered and STATED in the merge message, and the line count asserted as base plus both inserts — both sides kept, neither lost, which is what the adjacent-insert rule requires. Alternative to a per-seat anchor (a dated heading the resolver can key on): generalise the board's append-append resolver to design records. Routing companion: a correction to another lane's ROW is that lane's cut, and a design-record correction lands as a dated block when the owner's branch next touches the section. -->
 - **A DOCTRINE LANDING IS MEASURED STRUCTURALLY BEFORE IT IS BELIEVED**: line endings unchanged in KIND (CR == LF), zero table lines in the diff when no table moved, bullet indentation matched, enumerations intact, removed lines ACCOUNTED FOR, **and the batch's item RANGE re-counted from the accumulator at landing, never taken from the dispatch.** <!-- 2026-09-04: an amendment written INSIDE a numbered list orphaned an item onto a run-on line and was moved out. "Accounted for" = re-emitted paragraph anchors plus exactly the wording changes the batch itself rules on. The accumulator's own "BATCH n LANDED" line belongs to the train that lands it. -->
+- **THE APPEND-COLLISION CONDITION IS TWO EDITS COMPUTED AT ONE OFFSET — a mandatory trailing element is
+  one WAY to force that, not the cause.** An interior anchor collides identically, so "this file has no
+  required last line" is not a reason to expect a clean merge.
+  <!-- ⚠ 2026-09-13, five instances in one evening: C2's two BOARD branches and i9's two board branches
+  (both before the `{% endraw %}` guard), C1's `DESIGN-managed-getg.md` pair (two pure appends, +38 and +87
+  from one base, no trailing element at all), and `.claude/skills/mailbox/SKILL.md`, where the corpus
+  advance and C2's census seat both opened a hunk at **line 169, mid-file**. C2 had narrowed the condition
+  to a MANDATORY TRAILING ELEMENT at `48173ffa7` §2 from the BOARD case; C1 corrected it at `fc64c7d0c` §1
+  ("just two appends derived from the same base offset") and the SKILL.md instance is C2's own counter-example
+  to its own rule. The resolution in every one of the five was ordered CONCATENATION, verified by each side's
+  block being byte-exact in the result rather than by the merge exiting 0. -->
+- **A `---` RULE APPENDED TO A FILE WITH NO TRAILING NEWLINE BECOMES A SETEXT `<h2>` ON THE PRECEDING
+  SENTENCE**, which renders on the Pages build and no gate sees. Assert no `---` line follows a non-blank
+  line, and assert the append is a PURE one (the old bytes a byte-exact PREFIX of the new).
+  <!-- ⚠ 2026-09-13, appending the AMENDMENTS block to DATA-h10-shardmap-projection-go124.md at
+  `5129946000`: the record had no trailing newline, so the blank line that was supposed to precede the rule
+  was consumed as the previous line's terminator and the record's last sentence would have rendered as a
+  heading. The diff read as one deleted and one added line, byte-identical — the no-trailing-newline
+  artifact — which is also why the real defect was invisible in the diffstat. -->
+- **AN APPEND-ONLY LEDGER MERGES BY UNION: every seat's appended entries VERBATIM, in merge order, with a
+  PURE-APPEND precondition per seat and a post-condition of `lines(resolved) == lines(ours) + added`,
+  every added line present in order, and no markers.** <!-- ⚠ 2026-09-13, COORD ruling E4: three train-48
+     seats appending to `docs/phase4/BOARD-next-validation-candidates.md` conflicted at the SAME tail, and
+     the resolution is `git merge-file --union` per slot, refusing to the coordinator if any seat is not a
+     pure append. Generalisation ruled for the next train: a `merge=union` attribute for the BOARD in the
+     assembly worktree's `.git/info/attributes`, stamped and asserted. Recorded beside it, the deliberate
+     asymmetry in the same gate: one arm REFUSES a behavioral path ruled by two rows, while its sibling
+     RESOLVES the same question by the LAST row in merge order — because a DECLARED stack legitimately
+     shares paths. Written down beside both arms so neither reads as a bug. -->
+- **A LANE RE-BASING A SEAT RE-APPLIES ITS EDIT TO THE TIP'S FILE AND NEVER RESTORES A SAVED COPY OVER IT**
+  — for a registry every seat of a family touches, assert the landed rows PRESENT before the patch and
+  COUNTED after. <!-- ⚠ 2026-09-15, C1: the merge-subtraction class with NO trace. Two rows in the
+     manual-conversion registry would have vanished silently under a restore, leaving valid Go, and would
+     have been caught only downstream by a duplicated body at compile time. -->
 
 ## SHAs, refs, and announce-then-push
 - **A HASH IS READ, NEVER EXPANDED FROM A PREFIX** (`OLD=$(git ls-remote origin <ref> | cut -f1)`) **and A QUOTED SHA IS RESOLVED BEFORE IT IS ACTED ON** (`git cat-file -e <sha>^{commit}`) — **but FETCH first: after a fetch "unresolved" is a typo or an invention, before one only a stale clone.** <!-- A `--force-with-lease` was given a full SHA written out by hand from the short form: nine characters of truth and thirty-one of invention. The lease refused, because a fabricated expected-SHA can never match, so the mechanism failed CLOSED by luck rather than by design; the dangerous sequel is that a "stale info" rejection invites reaching for plain `--force`, which protects nothing. Resolve rule: an announce-then-push protocol runs on SHAs participants TYPE into posts, and a coordinator can verify branch TIPS all night with `rev-parse`/`ls-remote` while never once checking that a QUOTED SHA exists. The rule's first real run flagged two SHAs that were another lane's freshly-pushed commits; treating a stale clone as an invention would have meant accusing a lane that had done everything right. A check written in reaction to a scary failure mode is exactly the one most likely to manufacture false alarms about it. -->
@@ -92,6 +164,32 @@ When several machines work one tree, the dangerous merges are the ones git repor
 - **Union CNR is never skipped on composition reasoning** — "both sides are transpile-clean, so the union is" is not a verdict. <!-- Measured 2026-09-01/02: the case it cannot see is exactly the one that bit — a merge carrying a NEW behavioral test cut from an older base went red at the union (the `CollidingPackageNames` red). -->
 - **A conflict dry-run does not need `git merge-tree --write-tree`** (unavailable on this box's git): use a temporary-index `read-tree -m --aggressive -i <base> <ours> <theirs>` plus `git merge-file -p` over each unmerged path — a 3-way CONTENT check that never touches the worktree, so it is legal under the mid-battery source freeze.
 - **Rebase equivalence is checked by TREE**: `git diff <merge-of-old-tip> <rebased-tip>` EMPTY proves a running battery's verdicts transfer. **The ONE verdict it cannot transfer is a GOLDEN's — a rebase onto a master whose CONVERTER moved owes a CNR of the branch's OWN goldens at the rebased tip**, re-baselined as ONE one-file commit (transpile with the REBUILT converter, then `--update-targets`). <!-- 2026-09-05: equivalence transfers the verdicts of gates that were RUN, and a golden's validity against the UNION's converter was never among them — this holds even when the branch touches no converter file. One guard's golden had been baselined by a pre-train converter and its nine `FromPinnedBox` lines were invisible to the union CNR because the rows carrying them arrived WITH the rebase. Never classify a known-stale golden's CHANGED at the battery, nor land it. -->
+- **`git merge-tree` EXITS NON-ZERO FOR A MISSING OBJECT, so a non-zero exit is not a conflict until BOTH
+  endpoints are asserted present** (`git cat-file -e <rev>^{commit}`), and a probe set's refusal arm should
+  use a FABRICATED sha so the refusal is seen to fire.
+  <!-- ⚠ 2026-09-13, C1 `046d4f950`: a first run reported `088f8778f` as conflicting when the object had
+  simply never been fetched, merge-tree exiting non-zero for both cases. Twin of the fabricated-prefix rule
+  under "SHAs, refs, and announce-then-push": C2 hand-expanded `3ced37e184` to a full SHA that did not
+  exist, and that exact string is now the refusal control in `merge-probe.sh`. -->
+- **AN EMPTY CONFLICT LIST IS EQUALLY THE SIGNATURE OF A MERGE THAT NEVER RAN.** `--diff-filter=U` prints
+  nothing for a clean merge and nothing for a merge git refused, so assert the merge RAN with
+  `git rev-parse -q --verify MERGE_HEAD` — **never with `[ -f .git/MERGE_HEAD ]`, which is false in every
+  linked worktree because `.git` there is a FILE, not a directory.**
+  <!-- ⚠ 2026-09-13, both halves in one attempt: C2 merged a hand-expanded SHA, git answered "not something
+  we can merge", and `git diff --name-only --diff-filter=U` printed nothing — which is exactly what a clean
+  merge prints. The guard written to close that then tested `.git/MERGE_HEAD` inside a linked worktree and
+  reported "merge NEVER RAN" for a merge that plainly had. A guard that hardcodes a repository layout is
+  wrong in every worktree; ask git where its gitdir is. -->
+- **A DIFF FILTER OF `^[+-][+-]` TO DROP THE `+++`/`---` HEADERS ALSO SILENTLY DROPS ADDED OR REMOVED
+  MARKDOWN `---` RULES** — a horizontal rule vanishes from the review, and so does a `--` prose dash.
+  <!-- ⚠ 2026-09-13: reading back the AMENDMENTS append, that filter hid the `+---` line and made the rule
+  look absent from a diff that contained it. Safety-floor item 16 in the specific: the filter answered a
+  different question than the one being asked, and here the filtered-out token was the content. -->
+- **A MERGE THAT INTRODUCES A FILE AND ITS `eol` ATTRIBUTE IN ONE OPERATION WRITES THE WORKTREE FORM UNDER
+  THE ATTRIBUTES IN EFFECT *BEFORE* IT** — index and worktree then disagree until the path is
+  re-materialized. <!-- ⚠ 2026-09-15, train-48 assembler (G3): the assembler re-materializes pinned paths
+     AFTER the merges for exactly this reason. `autocrlf` decides the bytes on disk, and the attribute
+     that should have governed them arrived in the same commit. -->
 
 ## Registries, ordinals and count coincidences
 - **A merge touching `package_info.cs` must carry the matching `stdlib-metadata.txt` change — check it in the PREFLIGHT**: if `git diff --name-only <base>..<branch>` lists one without the other, stop and have the branch run the generate first. <!-- `stdlib-metadata.txt` is generated FROM the corpus (`go generate .` in `src/go2cs`, gated by `TestStdLibMetadataInSync` under the converter's own `go test`), and a corpus bank that moves `GoImplement` records without it leaves that guard red for whoever runs the converter suite next. Three banked regens missed it in two days (2026-08-24/25) — the step was documented and still skipped, because no MERGE checked for it. -->
