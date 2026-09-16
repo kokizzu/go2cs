@@ -156,15 +156,56 @@ var blittablePointees = map[string]bool{
 	"@unsafe.Pointer": true, "Pointer": true,
 }
 
-// declaredBoxDerefHazards is the declared set: "<file relative to src/core> :: <member> -> <pointee>".
-// It SHRINKS as a companion takes a member and it NEVER grows -- an undeclared hazard is a defect to
-// fix, not a row to add. Delete a row IN THE SAME COMMIT that cures it.
-//
-// Both rows are F3's scope: CertContext holds `ж<byte> EncodedCert` and `ж<CertInfo> CertInfo`, so the
-// managed record is auto laid out and the address the kernel returned does not describe it.
-var declaredBoxDerefHazards = []string{
-	"syscall/windows/zsyscall_windows.cs :: CertCreateCertificateContext -> CertContext",
-	"syscall/windows/zsyscall_windows.cs :: CertEnumCertificatesInStore -> CertContext",
+// boxDerefKind is what a declared row MEANS. The census finds sites in the class; the kind says
+// whether the class has a defect to cure there. COORD ruled the second kind at mailbox 94b1c223a
+// after C1's reach reading at b21442c1c.
+type boxDerefKind string
+
+const (
+	// boxDerefHazard is a defect awaiting its companion: the box IS read through, so the wrong field
+	// offset fires. This population SHRINKS to zero and NEVER grows -- an undeclared hazard is a
+	// defect to fix, not a row to add. Delete a row IN THE SAME COMMIT that cures it.
+	boxDerefHazard boxDerefKind = "HAZARD"
+
+	// boxDerefDisclosedInert is a site in the class whose box is NEVER READ THROUGH, so the defect
+	// cannot fire. It is disclosed rather than remedied, and the disclosure is only honest while it
+	// is still true -- which is a property of the CALLERS. certContextReachGuard_test.go carries each
+	// disclosed member's reach reading and its retirement plan, and re-measures both on every run.
+	boxDerefDisclosedInert boxDerefKind = "DISCLOSED-INERT"
+)
+
+// declaredBoxDeref is one declared row: "<file relative to src/core> :: <member> -> <pointee>", and
+// what it means.
+type declaredBoxDeref struct {
+	row  string
+	kind boxDerefKind
+}
+
+// member returns the wrapper named in the row, which is what a reach reading is keyed by.
+func (declared declaredBoxDeref) member() string {
+	rest, _, found := strings.Cut(declared.row, " -> ")
+
+	if !found {
+		return ""
+	}
+
+	_, member, found := strings.Cut(rest, " :: ")
+
+	if !found {
+		return ""
+	}
+
+	return strings.TrimSpace(member)
+}
+
+// declaredBoxDerefs is the declared set. Both rows produce a ж<CertContext>, and CertContext holds
+// `ж<byte> EncodedCert` and `ж<CertInfo> CertInfo`, so the managed record is auto laid out and the
+// address the kernel returned does not describe it -- the class, exactly. Both are DISCLOSED-INERT:
+// nothing reads a field through either box, so the offsets never matter. The reading, the named
+// consumers and the retirement plan live in certContextReachGuard_test.go.
+var declaredBoxDerefs = []declaredBoxDeref{
+	{"syscall/windows/zsyscall_windows.cs :: CertCreateCertificateContext -> CertContext", boxDerefDisclosedInert},
+	{"syscall/windows/zsyscall_windows.cs :: CertEnumCertificatesInStore -> CertContext", boxDerefDisclosedInert},
 }
 
 type boxDerefSite struct {
@@ -494,17 +535,26 @@ func TestNativeBoundaryBoxDerefsAreBlittable(t *testing.T) {
 		scan.filesScanned, scan.rawMatches, scan.inComment, scan.inHandOwn, scan.codeSites)
 	t.Logf("struct names %d (bodied declarations %d) · reference-bearing: direct %d, transitive %d, of those only through a nested type %d",
 		scan.structNames, scan.structsBodied, scan.refDirect, scan.refTransitive, scan.refTransitive-scan.refDirect)
-	t.Logf("code sites %d = hazards %d + blittable %d + unresolved %d",
+	// "in class" rather than "hazards": the scan finds SITES IN THE CLASS, and whether a site is a
+	// defect is the declared row's KIND, not the scanner's verdict. Since COORD's ruling both members
+	// are DISCLOSED-INERT, and a log line calling them hazards would contradict the line below it.
+	t.Logf("code sites %d = in class %d + blittable %d + unresolved %d",
 		scan.codeSites, len(scan.hazards), scan.blittable, len(scan.unresolved))
 
 	declared := map[string]bool{}
+	kinds := map[boxDerefKind]int{}
 
-	for _, row := range declaredBoxDerefHazards {
-		if declared[row] {
-			t.Fatalf("declaredBoxDerefHazards declares %q twice", row)
+	for _, row := range declaredBoxDerefs {
+		if declared[row.row] {
+			t.Fatalf("declaredBoxDerefs declares %q twice", row.row)
 		}
 
-		declared[row] = true
+		if row.member() == "" {
+			t.Fatalf("declaredBoxDerefs row %q does not spell \"<file> :: <member> -> <pointee>\"", row.row)
+		}
+
+		declared[row.row] = true
+		kinds[row.kind]++
 	}
 
 	measured := map[string]bool{}
@@ -516,16 +566,17 @@ func TestNativeBoundaryBoxDerefsAreBlittable(t *testing.T) {
 			t.Errorf("UNDECLARED NATIVE-BOUNDARY BOX DEREF: %s\n"+
 				"a kernel-returned address is reinterpreted as a reference-bearing record, which the CLR lays out "+
 				"AUTO -- the read returns plausible garbage with no exception. Hand-own the wrapper against a "+
-				"blittable mirror and transcribe on arrival (see zsyscall_windows_netdb_impl.cs); never add the row "+
-				"to declaredBoxDerefHazards, which only shrinks", row)
+				"blittable mirror and transcribe on arrival (see zsyscall_windows_netdb_impl.cs), or -- if nothing "+
+				"reads a field through the box -- take a reach reading and have it DISCLOSED by ruling. Never add "+
+				"the row unruled", row)
 		}
 	}
 
-	for _, row := range declaredBoxDerefHazards {
-		if !measured[row] {
+	for _, row := range declaredBoxDerefs {
+		if !measured[row.row] {
 			t.Errorf("DECLARED BUT NOT MEASURED: %s\n"+
-				"the site is cured, moved or renamed. Delete its row from declaredBoxDerefHazards IN THE SAME COMMIT "+
-				"that changed it", row)
+				"the site is cured, moved or renamed. Delete its row from declaredBoxDerefs IN THE SAME COMMIT "+
+				"that changed it", row.row)
 		}
 	}
 
@@ -535,7 +586,8 @@ func TestNativeBoundaryBoxDerefsAreBlittable(t *testing.T) {
 			"judged. Teach the scanner the name rather than letting it pass as benign", row)
 	}
 
-	t.Logf("declared %d · measured %d", len(declaredBoxDerefHazards), len(scan.hazards))
+	t.Logf("declared %d (HAZARD %d · DISCLOSED-INERT %d) · measured %d",
+		len(declaredBoxDerefs), kinds[boxDerefHazard], kinds[boxDerefDisclosedInert], len(scan.hazards))
 }
 
 // TestBoxDerefScannerFires is the control: the same scanner over a synthetic tracked tree carrying, in
