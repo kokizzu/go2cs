@@ -136,6 +136,25 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// package_info and README. crypto/internal/alias/alias_impl.cs holds the body.
 		"AnyOverlap": goosAny,
 	},
+	"crypto/internal/fips140/sha3": {
+		// keccakF1600Generic views the sponge state both ways — the [200]byte it absorbs into and the
+		// [25]uint64 it permutes over — and on a little-endian host Go takes the view for free with
+		// `a = (*[25]uint64)(unsafe.Pointer(da))`. golib's array<T> is a WINDOW ON A REAL T[], so a
+		// byte[] box has no uint64[] to window and the raw-address route materializes an array<uint64>
+		// HEADER out of the buffer's own DATA. Not latent: cpu.BigEndian is a `const bool = false`, so
+		// the reinterpret is the ONLY REACHABLE branch, on every permutation of every SHA-3 and SHAKE
+		// call. MEASURED at the post-fold tip in a clean tree — four GolibTests reds, and the lengths
+		// are the tell: the zeroed first permutation reads `length 0`, while the OS-oracle vectors
+		// hashing FILLED patterns read `length -658924933` and `-540099156`, negative because the
+		// length is content and not metadata. Displaced onto the house remedy, MemoryMarshal.Cast over
+		// the array's own span (internal/chacha8rand's chacha8_impl.cs takes it for the same seam, and
+		// ArrayShapeReinterpretTests binds it directly) — a genuine alias, which the sponge requires
+		// since absorb and squeeze read that same buffer between permutations.
+		// Registered here rather than whole-file marked: sha3 has EIGHT non-test Go files, so a marker
+		// would hand-own the package BY CONSEQUENCE and freeze its csproj, package_info and README.
+		// crypto/internal/fips140/sha3/keccakf_impl.cs holds the body.
+		"keccakF1600Generic": goosAny,
+	},
 	"vendor/golang.org/x/crypto/internal/alias": {
 		// The vendored purego twin of crypto/internal/alias.AnyOverlap: the same four-take address ordering,
 		// one reflect call deeper (`reflect.ValueOf(Ꮡ(x, 0)).Pointer()`), reached by chacha20 and
