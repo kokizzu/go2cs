@@ -25,7 +25,9 @@ internal static void warnBlocked() {
 // fatal is [runtime.fatal], pushed via linkname.
 //
 //go:linkname fatal
-internal static partial void fatal(@string _);
+internal static void fatal(@string _) {
+    go.runtime_package.sysrand_fatal(_);
+}
 
 internal static bool testingOnlyFailRead;
 

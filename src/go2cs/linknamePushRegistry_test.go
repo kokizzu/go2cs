@@ -117,10 +117,17 @@ func TestLinknamePushRegistryMatchesGoSource(t *testing.T) {
 			}
 
 			// The premise of the shape: the pulled name is one the consumer's own package never
-			// defines. If it ever gains a definition the directive becomes an ordinary local alias,
+			// DEFINES. If it ever gains a definition the directive becomes an ordinary local alias,
 			// the forward is wrong rather than merely unnecessary, and this arm says so first.
+			//
+			// A definition is a declaration WITH A BODY. A bodyless declaration of the pulled name is
+			// not one: crypto/internal/fips140's `//go:linkname getIndicator
+			// crypto/internal/fips140.getIndicator` self-names the consumer's OWN bodyless declaration,
+			// so testing "is declared" found the very declaration this row vouches for and refused a
+			// shape linknamePushDeclMatches admits (RED 7 (a), COORD 8907b6847 ruling (i)).
+			// runtime/pprof passed only because its pulled name differs from its declaration's name.
 			if _, localName, ok := splitLastDot(linkSymbol); ok {
-				if own := findGoFuncDecl(t, goRoot, consumerPkg, localName); own != nil {
+				if own := findGoFuncDecl(t, goRoot, consumerPkg, localName); own != nil && own.Body != nil {
 					t.Errorf("registry row %q: %s now declares %s itself, so %s.%s's directive is a local alias and not a pull of another package's push — the forward this row emits would shadow a real declaration",
 						key, consumerPkg, localName, consumerPkg, symbol)
 				}

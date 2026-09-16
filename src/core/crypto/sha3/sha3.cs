@@ -103,7 +103,7 @@ internal static slice<byte> sumSHAKE256(slice<byte> @out, slice<byte> data, nint
 }
 
 //go:linkname fips140hash_sha3Unwrap crypto/internal/fips140hash.sha3Unwrap
-internal static ж<sha3.Digest> fips140hash_sha3Unwrap(ж<SHA3> Ꮡsha3) {
+public static ж<sha3.Digest> fips140hash_sha3Unwrap(ж<SHA3> Ꮡsha3) {
     return Ꮡsha3.of(SHA3.Ꮡs);
 }
 

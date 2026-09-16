@@ -784,12 +784,12 @@ public static int32 reflect_addReflectOff(@unsafe.Pointer ptr) {
 }
 
 //go:linkname fips_getIndicator crypto/internal/fips140.getIndicator
-internal static uint8 fips_getIndicator() {
+public static uint8 fips_getIndicator() {
     return (~getg()).fipsIndicator;
 }
 
 //go:linkname fips_setIndicator crypto/internal/fips140.setIndicator
-internal static void fips_setIndicator(uint8 indicator) {
+public static void fips_setIndicator(uint8 indicator) {
     getg().Value.fipsIndicator = indicator;
 }
 
