@@ -1396,6 +1396,40 @@ go1.24.13 … || exit 3`, run from a no-module directory.
      db6d9462f §3 and §3.1. The purge guard: accuracy verifier (a mis-substituted SRC deletes every build dir under it). -->
 
 
+#### Amendment 2026-09-16 — the per-flavour gate as executed at the 1.23 → 1.24 hop: arm 4 is inert where every project builds; the build root's spelling; arms gate on their command's rc
+
+- **Arm 4 is inert on this corpus.** Every csproj under `src/core` builds regardless of `-p:GoTargetOS`, so
+  `$LOG.unbuilt` is EMPTY on every flavour and "every unbuilt project is platform-exclusive to another flavour"
+  is MET over zero items — vacuous, never evidence. Measured at the 1.24.13 hop's compile-parity tree on all
+  three flavours: unbuilt 0, ASM 343 of 343 (windows read on two boxes, linux and darwin on one). The arms that
+  carry a per-flavour reading are: exit 0; CS occurrences 0; MSB/NETSDK occurrences 0; unique sites 0; and
+  ASM = projects. Platform exclusivity is a property of the EMISSION's per-GOOS file sets, read at H8's census,
+  not of projects.
+- **Minus golib.** `golib` is absent from every `go list std` set and must nonetheless be BUILT; any arm keyed on
+  "absent from `go list std`" passes it as legitimately unbuilt. Where arm 4's derivation is still used (e.g. to
+  size an expected unbuilt set), subtract golib first — and expect the arithmetic NOT to predict unbuiltness on a
+  corpus where every project builds: the linux prediction of 338 missed against a measured 343 for exactly this
+  reason.
+- **Spell `<build root>` as a drive-letter path (`C:/…`), never `/c/…`.** The script exports `MSYS_NO_PATHCONV=1`
+  for dotnet's `-p:` arguments, so a POSIX spelling reaches native `dotnet` and `git` UNCONVERTED: `dotnet build`
+  fails on a non-existent project path, and `git -C` dies with "cannot change to … No such file or directory".
+  One launch was lost this way, and three added git arms printed PASS from `wc`/`grep` over a failed command.
+- **Every arm gates on its command's own rc**, never on the shape of its output; the HEAD arm asserts a sha-shaped
+  value, not merely non-empty. An arm that cannot distinguish "clean" from "the command died" is not an arm — and
+  a guard's DESCRIPTION is not the guard: state the mechanism actually implemented, and run it on real input
+  before quoting it.
+- **ASM units.** The script's ASM counts own assemblies over core csproj excluding `*.tests.csproj` (343 at this
+  hop = the census's core population). A "distinct produced assemblies" count from the build log reads one higher
+  (344: the solution's one non-core member). Name both units; never reconcile a difference of one by feel.
+<!-- Executed readings, 1.23 → 1.24 hop, 2026-09-16: all three flavours built with the 2026-09-13 script above from a
+     per-run copy, SDK 10.0.400, at the tree 46307b4704. i9's linux reading 4df14c406: arm 4 inert (unbuilt 0, so the
+     platform-exclusive arm is MET over zero items), and the three added git arms blind — they scored `wc`/`grep` over a
+     command that had already failed. i9's darwin reading f464d9e58: every predicted arm met, and the "every arm gates on
+     its command's rc" comment owned as unimplemented at the time it was written, then implemented. i9's linux prediction
+     2c6aa2259: the golib arm, 338 predicted against 343 measured. The i7's windows second read at COORD fe23ab855 is the
+     second of the two windows boxes. COORD's rung-7 close: a065b1bd9. -->
+
+
 ### H7a — The master fold **GATE**
 
 **The ladder has no rung that folds master into the release branch, and the run rungs need one.** A hop
