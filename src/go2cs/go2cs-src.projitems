@@ -209,6 +209,7 @@
     <None Include="$(MSBuildThisFileDirectory)refLoweringCensus.go" />
     <None Include="$(MSBuildThisFileDirectory)refLoweringEmissionOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)refReceiverEligibility.go" />
+    <None Include="$(MSBuildThisFileDirectory)refRootedMethodValueHoist_test.go" />
     <None Include="$(MSBuildThisFileDirectory)refVerdictPublication.go" />
     <None Include="$(MSBuildThisFileDirectory)refVerdictPublication_test.go" />
     <None Include="$(MSBuildThisFileDirectory)repoRoot_test.go" />
