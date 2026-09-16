@@ -35,6 +35,7 @@
     <None Include="$(MSBuildThisFileDirectory)childEnvGo2CSPath_test.go" />
     <None Include="$(MSBuildThisFileDirectory)commandLineOptions.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintOperations.go" />
+    <None Include="$(MSBuildThisFileDirectory)constraintProxyAliasDot_test.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintProxyGenericCall_test.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintProxyPointerUnion_test.go" />
     <None Include="$(MSBuildThisFileDirectory)convArrayType.go" />
