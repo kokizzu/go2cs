@@ -94,6 +94,23 @@
          folder declares. Same reason and same form as the three above; the syscall reference this
          project already carries needs no change, so only the gate FILE is conditional. -->
     <Compile Remove="WindowsNetDbTranscriptionTests.cs" />
+
+    <!-- TempDirCleanupOrderTests: ONE of its two arms is windows-only and the file follows that arm.
+         EveryCleanupSucceedsWhenAChdirSitsBetweenTempDirCalls guards an ORDER that is
+         platform-independent (one parent removal registered on the FIRST TempDir call, so a Chdir
+         restore registered between two calls runs BEFORE any child is removed), but the FAILURE it is
+         minted on is not: Windows refuses to delete the directory a process stands in, while Linux
+         unlinks it happily — so on any other $(GoTargetOS) that arm would pass with the defect present
+         and guard nothing, and an arm placed where it cannot go red guards nothing anywhere.
+         ⚠ ITS COMPANION, TwoTempDirCallsShareOneParentAndBothSurviveUntilTheCleanupPhase, asserts a
+         property that DOES hold on every target (two calls share one parent; both survive to the
+         cleanup phase; the parent is removed once). COORD offered to hoist it to the all-targets group
+         so a linux leg runs it (18511341ae). It stays HERE, deliberately: it is the companion the
+         red-first control reads — with the defect restored, arm 1 must FAIL and this arm must still
+         PASS, which is what makes arm 1's red the ORDER rather than the machinery — and that pairing
+         is only observable on the target where arm 1 can fail. Hoisting it would put the two halves of
+         one control in two compile sets. Stated at the line, as COORD asked, either way. -->
+    <Compile Remove="TempDirCleanupOrderTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
