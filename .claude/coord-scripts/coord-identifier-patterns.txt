@@ -1,0 +1,152 @@
+# coord-identifier-patterns.txt -- the fleet's ONE identifier-census definition.
+#
+# The owner's standing security order (.claude/rules/docs-records.md, "The security order") forbids
+# real machine names, account names, profile paths, share names and LAN addresses on ANY pushed
+# surface. Before this file there were THREE definitions of that order -- COORD's post tool, C2's
+# post tool and R's post tool -- with three different arm sets, and the disagreement cost C2 four
+# hours of refusals over three pre-existing strings it did not write. The rule of record
+# (train-assembly and mailbox skills): a refusal-pattern list is defined ONCE and read by every
+# consumer. This is that list. NO TOOL CARRIES A PRIVATE COPY OF ANY ARM.
+#
+# RELATION TO THE TRACKED-TREE GATE. src/go2cs/internal/repoguard/fleetIdentifierCensus_test.go
+# (TestNoFleetIdentifiersInTrackedFiles) is the repository's own fleet-identifier guard and runs
+# under the plain `go test ./...`. It is the authority on the STRUCTURAL classes and on the denied
+# name list. The arms below marked "GO GUARD" are its regexes and its sets, carried across so the
+# two instruments cannot disagree; where an arm has no counterpart there it says so. The denied
+# names themselves live in coord-identifier-hashes.txt, generated from that file's fleetDeniedTokens
+# and carrying no plaintext. The Go guard gates the TRACKED TREE at test time; this definition and
+# its shell consumer gate every POST, BEFORE it becomes a tracked or pushed anything. Two guards,
+# two questions, and a clean reading from one does not certify the other.
+#
+# THIS FILE NAMES NO INSTANCE. Referring to the identifier class is how the population GROWS -- the
+# fleet's own argument about the IPv4 arm added seven hits to the shared surface in forty minutes,
+# and every one is indistinguishable to every arm from the thing being guarded. Prose here and in
+# every report uses the canonical placeholders WITH PROVENANCE:
+#     the «ipv4» in <lane>'s <item> line        the «unc» in <file>:<line>
+#     the «profile-path» in <lane>'s <item>     the «account» in <file>:<line>
+#     the «version-quad» in <lane>'s <item>     the «host» in <lane>'s <item>
+# The provenance is what lets a reader tell a known negative from a leak without seeing the value.
+# The only literals below are (a) the EREs an arm cannot exist without, and (b) the declared
+# documentation constants, which are non-identifiers by declaration.
+#
+# FORMAT: one arm per line, NAME<TAB>ERE<TAB>MODE<TAB>NOTE. Blank lines and #-lines are ignored.
+#
+# MODE
+#   refuse   a hit is a refusal. The consumer exits non-zero.
+#   context  a hit is REPORTED and never refuses. Some context arms are also CONSULTED by a refuse
+#            arm as its per-occurrence admit set or decision input; the NOTE says which, and in
+#            WHICH CONSUMER MODE it is consulted.
+#
+# STRICT vs DELTA -- THE ONE PLACE THE CONSUMER MODE CHANGES AN ARM.
+#   entry / subject (STRICT): the IPv4 arm runs with NO context exclusion of any kind. A lane must
+#     not be able to spell an identifier by making the sentence around it sound like documentation,
+#     and the cost of the strict reading falls on the writer, as one rewrite of their own post.
+#   tree (DELTA): the four IPv4 context rules below apply, so the pre-existing hits of a long shared
+#     surface are CLASSIFIED in the report rather than dumped as an undifferentiated total. An
+#     unclassified total is a number, never a finding.
+#   Every other arm is identical in both modes.
+#
+# CASE: every ERE here is written in LOWER CASE and is matched against a lower-cased copy of the
+# input, so every arm is case-insensitive by construction. Spans are taken from the ORIGINAL text.
+# (Lower-casing both sides, rather than passing a case-insensitivity flag, also sidesteps the GNU
+# grep 3.0 dead combinations recorded in docs-records.md; this consumer uses awk, not grep, so that
+# is belt-and-braces.)
+#
+# EXTRACTION: awk's match() has no capture groups, so the consumer derives each arm's DECISION TOKEN
+# from the arm NAME prefix:
+#   profile_* , home_*   the SEGMENT after the final path separator of the match
+#   unc_*                the HOST -- the run after the leading doubled separator
+#   host_*               the VALUE after the '=' or ':'
+#   ipv4                 the quad, then its maximal surrounding token run
+# An admit set is applied to the DECISION TOKEN, anchored whole (^...$), PER OCCURRENCE and NEVER
+# PER LINE -- a line carrying a nickname host AND a real «host» is still refused.
+#
+# @RUNTIME@ marks an arm whose literals are read from the LOCAL BOX at run time and are never
+# committed and never printed. The consumer expands these; this file carries no name.
+#
+# ------------------------------------------------------------------------------------------------
+# PROFILE AND HOME PATHS (class 1) -- GO GUARD, fleetProfileRe, split into its two alternatives so
+# the report can name which fired. Nothing else about them differs: the segment character class is
+# that regex's, character for character.
+# The admit set is profile_placeholder and NOTHING ELSE. The fleet nicknames are deliberately NOT
+# admitted here -- the Go guard keeps its nickname set out of the profile arm for the same reason: a
+# nickname names a HOST, so an account segment spelled with one is still an account segment.
+profile_root	users[\\/]+[^\\/[:space:]"'`,;:)\]}>*|]+	refuse	GO GUARD. Any profile root, either separator, either platform -- it is deliberately NOT anchored to a drive letter, so the Windows, MSYS and Darwin spellings are one arm. Admit set: profile_placeholder, on the segment.
+home_unix	/home/[^\\/[:space:]"'`,;:)\]}>*|]+	refuse	GO GUARD. The Linux home prefix. A lane that gains a Linux host inherits this exposure and re-controls the arm THERE; a Windows reading does not carry. Admit set: profile_placeholder.
+# ------------------------------------------------------------------------------------------------
+# UNC AND SHARE PATHS (class 2)
+# The doubled separator must BEGIN a path token. The leading group is a hand-rolled lookbehind and
+# it is POSITIVE rather than subtractive: subtracting only word characters still admitted the '%'-
+# and ':'-preceded cases, so the rule is line start, whitespace, a quote, a backtick, or an opening
+# delimiter. Without it every ESCAPED separator in prose, in a C#/Go literal, or in quoted `-json`
+# output reads as a «unc» prefix. ERE has no lookaround and grep -P does not run on this fleet, so a
+# negative lookahead here would match NOTHING and fail OPEN silently.
+unc_backslash	(^|[[:space:]"'`(\[=,])[\\][\\][a-z][a-z0-9._-]+[\\]	refuse	GO GUARD, fleetNetworkRe. The class is bracketed rather than written as a run of escapes, because a backslash run is exactly what collapses in transit. Admit set: nickname_host, on the host.
+unc_slash	(^|[[:space:]"'`(\[=,])//[a-z][a-z0-9._-]+/[a-z0-9._$-]+	refuse	NO GO-GUARD COUNTERPART -- an addition of this definition, for the POSIX spelling of a share. The leading class is what keeps every scheme-relative URL out, since a scheme ends in ':'. Admit set: nickname_host, on the host.
+# ------------------------------------------------------------------------------------------------
+# HOSTNAMES (class 3) -- AND THE HONEST LIMIT OF THIS CLASS
+# A bare <word>.<tld>-shaped «host» that is NOT a Go import path, a module path or a public URL
+# CANNOT be told from one that is by any regular expression: an import path, the repository's own
+# public URL and an internal box name are the same shape. Neither this definition nor the Go guard
+# attempts a general hostname arm. What is covered is exactly three decidable shapes:
+#   (a) the denied names themselves -- the hashed rows, matched against run-time literals below;
+#   (b) an explicit assignment context -- the host_ctx arm, which the Go guard does not have;
+#   (c) a host inside a doubled-separator path -- the unc_* arms above.
+# WHAT IT MISSES, STATED: a real «host» written as bare prose, with no assignment context, no path
+# around it, and a name neither the hash list nor this box can supply. Nothing here closes that, and
+# a consumer must not claim it does.
+host_ctx	(host|hostname|computername)[[:space:]]*[=:][a-z0-9][a-z0-9._-]*	refuse	NO GO-GUARD COUNTERPART. Admit set: nickname_fleet, on the value, and a nickname-PREFIXED value is admitted too. NOTE THE TWO NARROWINGS, BOTH MEASURED on docs/phase4/MAILBOX.md and not guessed. (1) NO WHITESPACE after the separator: the draft arm allowed it and read 25 hits over 61k lines, and all nineteen distinct firings were an ORDINARY PROSE COLON -- "the host: a ...", "server = the ..." -- nine of them with a value of one to three characters. A guard whose steady state is dozens of false positives is a guard nobody leaves switched on. What survives is the ASSIGNMENT shape a pasted env dump or config line actually has. (2) `machine` and `server` DROPPED from the keyword list: `machine` fired on nothing at all and every one of `server`'s eight firings was prose. STATED RESIDUAL of narrowing (1): a spaced YAML-style `hostname: box` is no longer covered, and is covered only by the run-time literal arms and by the hashed rows.
+# ------------------------------------------------------------------------------------------------
+# IPv4 (class 4) -- CONTEXT DECIDES, RANGE NEVER DOES, AND ONLY IN DELTA MODE
+# This fleet lives on ONE private LAN, so a 10/8 or 192.168/16 quad is EXACTLY the identifier the
+# order forbids when it is a real address. Exempting private ranges would blind the arm to the only
+# addresses it will ever see, so there is no range exemption here at all.
+# ipv4_arm_re below is C2's arm, reproduced: octet-validated, and it CAPTURES the identifier run in
+# front of the quad so an assignment context can be told from a version context. ipv4_prefix_ex is
+# C2's exemption, reproduced, read against that captured prefix.
+# TWO MEASURED CHANGES to C2's arm, both stated as changes:
+#   (i)  the CANDIDATE matcher is the bare octet-validated quad (ipv4), not ipv4_arm_re. C2's arm
+#        requires a non-dot character after the quad, which makes it blind to a real «ipv4» at the
+#        END OF A SENTENCE. The prefix capture is reconstructed per occurrence instead.
+#   (ii) ipv4_prefix_ex is PREFIX-shaped and so cannot reach a «version-quad» that follows a plain
+#        space -- C2 stated this gap itself. ipv4_vercontext closes it with a per-occurrence WINDOW.
+# IN STRICT MODE (entry, subject) NONE of rules 1-4 runs: every candidate quad is a hit.
+# IN DELTA MODE (tree) the consumer decides each occurrence in this order:
+#   1. PREFIX. Expand left over [a-z_]*=? and test ipv4_prefix_ex. Excluded if it fires.
+#   2. TOKEN RUN. Expand to the maximal [a-z0-9._-] run around the quad and trim one trailing '.'
+#      (a sentence period). If the run is not EXACTLY the quad, EXCLUDED. This is what disposes of a
+#      «version-quad» carrying a package prefix, a 'v' prefix, a trailing extension, or five parts.
+#   3. DOC CONSTANT. If the quad matches ipv4_doc, EXCLUDED and counted under that arm.
+#   4. VERSION CONTEXT. If the 56 characters before or the 32 after the occurrence match
+#      ipv4_vercontext, EXCLUDED. Per OCCURRENCE, never per line: a line carrying a «version-quad»
+#      AND a real «ipv4» still refuses.
+#   5. Otherwise a HIT.
+# STATED RESIDUALS OF DELTA MODE: a quad immediately preceded by a dot is excluded by rule 2, and a
+# real address written within 56/32 characters of a version marker is excluded by rule 4. Neither is
+# closed here. What covers them is that delta mode refuses on what a post ADDS, never on what the
+# surface already holds, and that the post that would add one is censused in STRICT mode first.
+ipv4	(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])){3}	refuse	NO GO-GUARD COUNTERPART. The candidate matcher: a dotted quad, octets 0-255. Exemption-free in STRICT mode; decided by rules 1-5 in DELTA mode.
+ipv4_arm_re	(^|[^0-9.a-z_])[a-z_]*=?(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}([^0-9.]|$)	context	C2's arm, carried verbatim so the fleet has ONE copy of it and no tool re-derives it. Reported for comparison, and NOT the candidate matcher -- see change (i) above.
+ipv4_prefix_ex	^([^0-9a-z_]?([v][0-9]|version=[0-9])|-[0-9])	context	[CONSULTED-ONLY] C2's exemption, carried verbatim. CONSULTED by ipv4 as rule 1, IN DELTA MODE ONLY, read against the reconstructed prefix-plus-quad.
+ipv4_doc	(127\.0\.0\.1|0\.0\.0\.0|255\.255\.255\.255)	context	[CONSULTED-ONLY] CONSULTED by ipv4 as rule 3, IN DELTA MODE ONLY, anchored whole. Loopback, unspecified, broadcast: documentation constants by declaration, not addresses. In STRICT mode they are hits like any other quad. Reported so a zero is still looking.
+ipv4_vercontext	(version|assembly|nuget|exception|validation|sdk|dotnet|package|framework)	context	[CONSULTED-ONLY] CONSULTED by ipv4 as rule 4, IN DELTA MODE ONLY -- the per-occurrence window test. Five of the nine markers are MEASURED live on docs/phase4/MAILBOX.md; sdk, dotnet, package and framework are declared for the same class and currently fire on nothing, which the DECLARED SET line reports rather than hides. NOTE that "documentation" is deliberately NOT a marker: an «ipv4» used as a byte-layout example is handled by the delta, never by an exemption.
+# ------------------------------------------------------------------------------------------------
+# ACCOUNT, OWNER AND MACHINE NAMES (class 5) -- RUN-TIME ONLY, NEVER COMMITTED, NEVER PRINTED
+# This file must not carry what it forbids. The AUTHORITY on which names are denied is the hashed
+# list in coord-identifier-hashes.txt, generated from the Go guard. The PLAINTEXT comes from the
+# local box at run time; a derived literal whose hash is in that list is reported as DENIED, one
+# that is not is reported as LOCAL and is still an arm. Candidates are tokenised exactly as the Go
+# guard tokenises them -- maximal [a-z0-9._-] runs, plus each dot/hyphen/underscore component -- so
+# a machine name and the account name inside it both match, and the two instruments cannot disagree.
+# Everything printed about these arms is the ARM and the COUNT. Never a value, never a fragment.
+TOKENFILE	@RUNTIME@	refuse	The never-push token file. Located, in order: $IDC_TOKEN_FILE; then coord-identifier-tokens.local beside the consumer; then $HOME/.claude/coord-identifier-tokens. One literal per line, #-comments and blanks skipped. Its CONTENTS are never printed and never committed; the consumer reports only present/absent, the literal COUNT, and how many matched a hashed row.
+RUNTIME_ACCOUNT	@RUNTIME@	refuse	The «account» name, derived: basename "$HOME", then $USERNAME, then $USER. A derivation under 4 characters is ABORTED and NAMED as skipped, rather than installed as a two-character detector.
+RUNTIME_MACHINE	@RUNTIME@	refuse	The machine name, derived: $COMPUTERNAME, then hostname. Same 4-character floor. This is the (a) half of the hostname class above, together with the hashed rows.
+RUNTIME_OWNERNAME	@RUNTIME@	refuse	The owner's given name and surname in ORDINARY PROSE, derived from `git config --get user.name` split on non-alphabetics, pieces of 3+ characters kept. This is the class that gets missed: six of seven scrub hits on 2026-09-08 were the given name used as a form of address, and one lane's eleven path-and-host arms had no arm for it and passed hundreds of posts by luck. NOTE that the Go guard deliberately does NOT flag the owner's public name, e-mail or handle in files it clears BY FILE as published attribution; this arm is the pre-post gate's stricter reading of ordinary prose, and public_url below is its one standing exception.
+# ------------------------------------------------------------------------------------------------
+# ADMIT AND CONTEXT SETS
+nickname_host	(r-laptop|g-laptop|i9|i7)	context	GO GUARD, fleetNicknameHostSegments, carried exactly. CONSULTED by unc_* ONLY, anchored whole, on the captured host. NOT consulted by the profile/home arms and NOT by the run-time token arms: a nickname used as a profile segment is still refused, and no nickname can ever clear a denied token. A widening that must reach ONE arm travels as a per-arm parameter, never through a list every arm shares -- which is why this set and nickname_fleet are two lines and not one.
+nickname_fleet	(r-laptop|g-laptop|i9|i7|c1|c2|coordinator)	context	CONSULTED by host_ctx ONLY. The full nickname list the order prescribes for pushed surfaces, including the lane names that are not host segments in the Go guard's set. Reported so the denominator is visible.
+profile_placeholder	(.|[<%${[(].*|user|users|username|user-name|youruser|profile|profile-root|home|root|name|account|host|hostname|server|share|machine|public|default|all users|programdata|userprofile|unc|\.\.\.|foo|bar|baz|example|redacted|placeholder|go|gopher|runner|agent|ubuntu|vagrant|administrator|admin|ci|build|dev)	context	[CONSULTED-ONLY] GO GUARD, fleetIsPlaceholder plus fleetPlaceholderSegments, carried exactly -- the leading '.' alternative is its "a single character is a stand-in, not an account" rule, and the sigil alternative is its ContainsAny("<%${[(") rule. CONSULTED by profile_* and home_* ONLY, anchored whole, on the captured SEGMENT -- a SEGMENT and never a LINE, so a placeholder elsewhere on the line does not clear a real segment beside it.
+public_url	ritchiecarroll/go2cs	context	THE CLEARED SPAN IS THE PUBLISHED REPOSITORY PATH -- handle plus repository -- and deliberately NOT the full URL. Keyed on the URL PREFIX, as the first draft was, the exception is defeated by every re-spelling of that prefix: the census run over its own staged diff refused three times, once on THIS ARM'S OWN LINE (an ERE must escape the dot) and twice on a self-test line that assembles the URL through a printf template. Keyed on the repository path it is prefix-spelling independent, it clears a deep blob link, and it clears its own line. A BARE HANDLE NOT FOLLOWED BY THE REPOSITORY IS STILL REFUSED. Never exempt a guard's own source -- make the exception able to SEE it. CONSULTED by the run-time token arms: these spans are blanked out of each line BEFORE those arms run. The owner's GitHub account is PUBLISHED ATTRIBUTION, not infrastructure -- it is in every remote URL at master, the Go guard clears the same class BY FILE for the same reason, and it is NOT a forbidden token. Reported so the denominator is visible.
+profile_envvar	(%userprofile%|\$env:userprofile|\$home)[\\/]	context	Reported, NEVER refused. A gate that refuses the redaction placeholder is a gate people route around, and the 2026-09-08 census counted the profile ENVIRONMENT VARIABLE's own name among its eighteen false refusals.
