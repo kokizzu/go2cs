@@ -76,7 +76,14 @@ func TestDeclaredNotImplementedCensus(t *testing.T) {
 	}
 
 	// ⚠ ANTI-VACUITY, arm 2: the members whose absence has already cost the fleet a dead test host
-	// must be IN the population. RED 7's three, and the internal/sync seven that serve Mutex.
+	// must be IN the population. FOUR of the seven partial declarations in internal/sync/runtime.cs —
+	// the ones Mutex's own path takes.
+	//
+	// It named RED 7's three (fips140's getIndicator, setIndicator and fatal) until RED 7 (a) gave
+	// them bodies; they left the population and their rows left this list IN THAT SAME COMMIT, which
+	// is the mechanism working rather than an exception to it. The other three declarations in that
+	// file are not controls here: runtime_nanotime is a declaredPushStubs row of its own, and throw
+	// and fatal take the golib FatalReport hand-own instead of a push.
 	controls := []string{
 		"internal/sync/runtime.cs:runtime_SemacquireMutex",
 		"internal/sync/runtime.cs:runtime_Semrelease",
