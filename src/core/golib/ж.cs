@@ -704,6 +704,16 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         return ref Unsafe.As<T, TDst>(ref ((ж<T>)source).ValueSlot);
     }
 
+    // Per-INSTANTIATION constant: is T golib's own `array<E>`? A pure TYPE query, exactly like
+    // s_publishArrayBacking above and subject to the same rule stated there — it builds no code, so
+    // ILC answers it from the type system and nothing reflection-BUILT is reintroduced.
+    //
+    // It exists for the SAFETY FLOOR in the uintptr operator below (q100;
+    // docs/phase4/DESIGN-native-array-view.md §4 as amended). Computed once per instantiation
+    // because the operator is on a hot path and the answer cannot change.
+    private static readonly bool s_isArrayShaped =
+        typeof(T).IsGenericType && typeof(T).GetGenericTypeDefinition() == typeof(array<>);
+
     // ---- the address conversions (the uintptr/void* seam; kind tests are virtual reads) ----
 
     // EXPLICIT by design: reinterpreting a raw address as a pointer is the runtime-unsafe
@@ -766,6 +776,47 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         // census performing exactly the calls the census-off path performs.
         if (Q44RegistryCensus.Enabled && resolved is null)
             Q44RegistryCensus.Arm4();
+
+        // ARM 5 — THE SAFETY FLOOR, and it is the one arm here that refuses a SHAPE rather than a
+        // number (q100; docs/phase4/DESIGN-native-array-view.md §4, whose §4 amendment block says
+        // why this is PROVENANCE-tested and not type-tested).
+        //
+        // `array<E>` is a MANAGED struct whose first field is an `E[]` reference, and a native box
+        // materializes its value with `Unsafe.AsRef<T>((void*)addr)` — so composing the two
+        // REINTERPRETS whatever bytes live at that address AS A MANAGED REFERENCE and dereferences
+        // it. Measured in GolibTests against golib directly: zeroed memory reads `Length = 0`, a
+        // SILENT WRONG ANSWER, and memory filled with 0xAB reads `Length = -1414812757` — the data
+        // bytes themselves. It fabricated a managed reference out of content and returned a number
+        // instead of faulting, by luck. That is a type-safety hole, not a wrong result.
+        //
+        // ⚠ THE DISCRIMINATOR IS THE ADDRESS'S PROVENANCE, NEVER A TEST ON T, and that is why this
+        // arm sits HERE rather than at the `array<E>` end. A floor keyed on T alone was ratified and
+        // then WITHDRAWN AS SPECIFIED on lane R's measured disproof — 6 of 609 behavioral tests red,
+        // because pinned-managed round-trips, pointer-shaped T and container shapes over pinned
+        // storage are all Go-legal and all arrive at this same operator; Go's own
+        // `*(*[2]uintptr)(p)` over pinned managed storage is one of them. What separates them is
+        // whether the address carries a PROVENANCE RECORD, and reaching this line means it carries
+        // none: arm 1 returned the recovered box, arm 2 saw a live record of another pointee type,
+        // arm 3 refused token arithmetic, and `resolved is null` is arm 4 — so the address is
+        // registered nowhere and is genuinely native. That record is what
+        // docs/phase4/DESIGN-pointer-provenance.md (RATIFIED, landed) supplies, and this floor was
+        // not implementable before it existed.
+        //
+        // It CURES NOTHING, and is not meant to: by the design's §1.5 liveness audit no live path on
+        // the roster reaches these sites, so nothing that works today starts failing. What it buys is
+        // that the NEXT arrival — and Phase 4 manufactures arrivals — announces itself HERE instead
+        // of as a plausible panic several layers away. The netpoll recv cost a full misattribution,
+        // through a design, a ratification and four documents, for exactly that reason.
+        //
+        // ⚠ ONE BOUND, stated rather than left to be found: a pinned address's provenance record is a
+        // WEAK entry that dies with its box. A program that stashes a uintptr, drops every reference
+        // to the box and converts back later would reach this arm and be refused — but that program
+        // is one Go itself declares invalid, a uintptr not keeping its referent alive.
+        //
+        // `array.cs`'s AliasPointer needs no change of its own: its documented raw-metal fallback is
+        // `return (ж<array<T>>)(uintptr)element!`, which funnels through this operator.
+        if (resolved is null && s_isArrayShaped)
+            throw RuntimeErrorPanic.NativeArrayViewWithoutElementStorage(typeof(T));
 
         return new NativeBox<T>((nuint)value.Value);
     }

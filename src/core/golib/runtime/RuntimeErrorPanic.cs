@@ -43,6 +43,40 @@ public static class RuntimeErrorPanic
         return new PanicException(TokenArithmeticMessage);
     }
 
+    private const string NativeArrayViewMessage =
+        $"{RuntimeErrorMessage}cannot view native memory as {{0}}: the address has no managed element "
+        + "storage behind it, and a Go array is a window on a real managed array "
+        + "(see docs/phase4/DESIGN-native-array-view.md)";
+    /// <summary>
+    /// The SAFETY FLOOR: a genuinely-native address converted to a pointer whose pointee is an
+    /// <c>array&lt;E&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>array&lt;E&gt;</c> is a MANAGED struct whose first field is an <c>E[]</c> reference, and a
+    /// native box materializes its value out of the pointed-at bytes — so the composition
+    /// REINTERPRETS whatever lives at that address AS A MANAGED REFERENCE and dereferences it.
+    /// Measured: zeroed memory reads a length of 0, a silent wrong answer; memory filled with 0xAB
+    /// reads a length of -1414812757, the data bytes themselves, returned instead of faulting by
+    /// luck. Refusing BY NAME converts a type-safety hole into a diagnostic that names its own
+    /// cause, at the cost of turning latent-SILENT into latent-LOUD.
+    /// </para>
+    /// <para>
+    /// It is reached only when the address carries NO provenance record — a pinned-managed address
+    /// resolves to its box and never arrives here, which is what keeps Go-legal reinterprets over
+    /// pinned storage working. The message names the shape rather than the site because the site is
+    /// a conversion the reader has to find in the emitted C#; the design document is where the fork
+    /// and its remedy are written down.
+    /// </para>
+    /// </remarks>
+    public static PanicException NativeArrayViewWithoutElementStorage(Type arrayType)
+    {
+        Type[] arguments = arrayType.IsGenericType ? arrayType.GetGenericArguments() : [];
+        string shape = arguments.Length == 1 ? $"array<{arguments[0].Name}>" : arrayType.Name;
+
+        return new PanicException(string.Format(NativeArrayViewMessage, shape));
+    }
+
     private const string IndexOutOfRangeMessage = $"{RuntimeErrorMessage}index out of range [{{0}}] with length {{1}}";
     public static PanicException IndexOutOfRange(int64 index, int64 length)
     {
