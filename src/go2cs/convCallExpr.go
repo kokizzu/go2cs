@@ -1954,6 +1954,64 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				}
 			}
 
+			// An untyped numeric CONSTANT bound to a TYPE-PARAMETER parameter of an INFERRED generic call
+			// is the same defect as the untyped nil above, reached by a different argument kind (RED 12,
+			// COORD 26e86351e). C# infers a generic call's type arguments from its arguments, and a `ref T`
+			// parameter contributes an EXACT bound — so T is pinned by the ref argument and every remaining
+			// argument must then convert to it IMPLICITLY. A bare `1` is a C# `int` literal, and there is no
+			// implicit `int` -> `System.UInt32`, so NO candidate survives fixing and inference itself fails:
+			// net/http's http2setConfigDefaults emitted `http2setDefault(ref …MaxConcurrentStreams, 1, …)`
+			// and failed CS0411 x3 at h2_bundle.cs (869,5) (870,5) (871,5). Go has no such trouble — it
+			// converts the untyped constant to T — so go/types recorded the instantiation, and that
+			// recording is the answer: emit the constant AT ITS RECORDED TYPE.
+			//
+			// Why the three siblings in the same file compile and are left alone: `int32` IS `System.Int32`,
+			// so the literal matches by IDENTITY; `time.Duration` is a `[GoType("num:int64")]` wrapper whose
+			// generated implicit operator composes with the standard `int` -> `int64`; and a call with no
+			// bare literal (line 882, three named UntypedInt constants) never needed anything. The failing
+			// set is exactly the INTERSECTION of an unsigned receiver and an inline constant.
+			//
+			// NARROWED the way the defer path above narrows, and for its stated reason: the cast is applied
+			// only when the instantiated type DIFFERS from the constant's own default type, so a `T` inferred
+			// as `int` keeps today's emission rather than churning the golden. The `exists` guard leaves any
+			// cast an earlier block already chose in place — the variadic-nil and instantiated-nil rules both
+			// write this same map, and neither should be overwritten by this one.
+			if paramHasArg {
+				if _, isTypeParam := paramType.(*types.TypeParam); isTypeParam {
+					// A variadic type parameter receives every trailing argument, so consider all of
+					// them — the loop only iterates the DECLARED parameters.
+					lastArg := i
+
+					if funcSignature.Variadic() && i == params.Len()-1 {
+						lastArg = len(callExpr.Args) - 1
+					}
+
+					for j := i; j <= lastArg; j++ {
+						if !v.isUntypedNumericConstArg(callExpr.Args[j]) {
+							continue
+						}
+
+						instParam := v.instantiatedParamType(callExpr, j)
+
+						if instParam == nil {
+							continue
+						}
+
+						if defaultType := v.untypedNumericConstArgDefaultType(callExpr.Args[j]); defaultType != nil && types.Identical(defaultType, instParam) {
+							continue
+						}
+
+						if callExprContext.castArgToType == nil {
+							callExprContext.castArgToType = make(map[int]string)
+						}
+
+						if _, exists := callExprContext.castArgToType[j]; !exists {
+							callExprContext.castArgToType[j] = convertToCSTypeName(v.getAliasQualifiedTypeName(instParam, false))
+						}
+					}
+				}
+			}
+
 			// A narrow-integer parameter (int8/uint8/int16/uint16) receiving a binary/unary arithmetic
 			// argument: Go evaluates `a+b`/`^a` at the operand's narrow width (with overflow wrapping),
 			// but C# promotes sub-int integer arithmetic to `int`, so the result needs an explicit cast

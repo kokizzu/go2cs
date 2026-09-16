@@ -309,6 +309,7 @@
     <None Include="$(MSBuildThisFileDirectory)LICENSE-EXCEPTION" />
     <None Include="$(MSBuildThisFileDirectory)rootGoTypeDescriptor_test.go" />
     <None Include="$(MSBuildThisFileDirectory)typeParamNilArg_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)typeParamConstArg_test.go" />
     <None Include="$(MSBuildThisFileDirectory)untypedConstMinMaxArg_test.go" />
     <None Include="$(MSBuildThisFileDirectory)writeOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)wsaSendtoNoCallers_test.go" />
