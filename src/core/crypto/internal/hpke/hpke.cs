@@ -33,22 +33,28 @@ internal static Func<(ж<ecdh.PrivateKey>, error)> testingOnlyGenerateKey;
 }
 
 public static slice<byte> LabeledExtract(this ж<hkdfKDF> Ꮡkdf, slice<byte> sid, slice<byte> salt, @string label, slice<byte> inputKey) {
+    ref var kdf = ref Ꮡkdf.DerefOrNull();
+
     var labeledIKM = new slice<byte>(0, 7 + len(sid) + len(label) + len(inputKey));
     labeledIKM = appendꓸꓸꓸ(labeledIKM, slice<byte>("HPKE-v1"u8));
     labeledIKM = appendꓸꓸꓸ(labeledIKM, sid);
     labeledIKM = append(labeledIKM, label.ꓸꓸꓸ);
     labeledIKM = appendꓸꓸꓸ(labeledIKM, inputKey);
-    return hkdf.Extract<Δfips140.Hash>(widen<hash.Hash, Δfips140.Hash>(() => Ꮡkdf.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), labeledIKM, salt);
+    var recvʗ1 = kdf.hash;
+    return hkdf.Extract<Δfips140.Hash>(widen<hash.Hash, Δfips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), labeledIKM, salt);
 }
 
 public static slice<byte> LabeledExpand(this ж<hkdfKDF> Ꮡkdf, slice<byte> suiteID, slice<byte> randomKey, @string label, slice<byte> info, uint16 length) {
+    ref var kdf = ref Ꮡkdf.DerefOrNull();
+
     var labeledInfo = new slice<byte>(0, 2 + 7 + len(suiteID) + len(label) + len(info));
     labeledInfo = byteorder.BEAppendUint16(labeledInfo, length);
     labeledInfo = appendꓸꓸꓸ(labeledInfo, slice<byte>("HPKE-v1"u8));
     labeledInfo = appendꓸꓸꓸ(labeledInfo, suiteID);
     labeledInfo = append(labeledInfo, label.ꓸꓸꓸ);
     labeledInfo = appendꓸꓸꓸ(labeledInfo, info);
-    return hkdf.Expand<Δfips140.Hash>(widen<hash.Hash, Δfips140.Hash>(() => Ꮡkdf.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), randomKey, ((@string)labeledInfo), (nint)length);
+    var recvʗ1 = kdf.hash;
+    return hkdf.Expand<Δfips140.Hash>(widen<hash.Hash, Δfips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), randomKey, ((@string)labeledInfo), (nint)length);
 }
 
 // dhKEM implements the KEM specified in RFC 9180, Section 4.1.

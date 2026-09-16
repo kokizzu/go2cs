@@ -27,7 +27,8 @@ internal static readonly @string trafficUpdˢ = "traffic upd"u8;
 internal static slice<byte> nextTrafficSecret(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> trafficSecret) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    return tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => Ꮡc.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), trafficSecret, trafficUpdˢ, default!, c.hash.Size());
+    var recvʗ1 = c.hash;
+    return tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), trafficSecret, trafficUpdˢ, default!, c.hash.Size());
 }
 
 // Hoisted @string literals (single allocation; Go keeps these in RODATA)
@@ -39,8 +40,10 @@ internal static (slice<byte> key, slice<byte> iv) trafficKey(this ж<cipherSuite
     slice<byte> iv = default!;
 
     ref var c = ref Ꮡc.DerefOrNull();
-    key = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => Ꮡc.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), trafficSecret, keyˢ, default!, c.keyLen);
-    iv = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => Ꮡc.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), trafficSecret, "iv"u8, default!, aeadNonceLength);
+    var recvʗ1 = c.hash;
+    key = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), trafficSecret, keyˢ, default!, c.keyLen);
+    var recvʗ2 = c.hash;
+    iv = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ2.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), trafficSecret, "iv"u8, default!, aeadNonceLength);
     return (key, iv);
 }
 
@@ -53,8 +56,10 @@ internal static readonly @string finishedˢ = "finished"u8;
 internal static slice<byte> finishedHash(this ж<cipherSuiteTLS13> Ꮡc, slice<byte> baseKey, hash.Hash transcript) {
     ref var c = ref Ꮡc.DerefOrNull();
 
-    var finishedKey = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => Ꮡc.Value.hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), baseKey, finishedˢ, default!, c.hash.Size());
-    var verifyData = hmac.New(() => Ꮡc.Value.hash.New(), finishedKey);
+    var recvʗ1 = c.hash;
+    var finishedKey = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), baseKey, finishedˢ, default!, c.hash.Size());
+    var recvʗ2 = c.hash;
+    var verifyData = hmac.New(() => recvʗ2.New(), finishedKey);
     verifyData.Write(transcript.Sum(default!));
     return verifyData.Sum(default!);
 }
