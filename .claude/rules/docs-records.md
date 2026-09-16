@@ -65,6 +65,19 @@ paths:
   push to that date went out UNGATED. Master's guard run by hand against the mailbox tree read seven hits in one file. Scoping preceded
   routing: none from the reporting post; one the reporter's own, named; master GREEN on the same guard; and a clearance-liveness failure
   named as a SCOPE ARTIFACT of running master's guard on an older branch rather than counted. -->
+- **A REDACTED PLACEHOLDER IS EXCLUDED AS A SEGMENT, NOT AS A LINE** — the exclusion must still fire on a
+  REAL segment elsewhere on the same line, and the fixture asserts both directions. <!-- ⚠ 2026-09-13, G
+     `7e05c2878`. A placeholder such as `/home/<foreign>/x` in a census cell read as a real segment; a
+     line-scoped exemption would have blinded the arm to anything else on that line. -->
+- **A LITERAL ABSOLUTE PATH IN A SHIPPED INSTRUMENT IS ON THE PUSHED SURFACE, COMMENTS INCLUDED.** <!-- ⚠
+     2026-09-13, C1 `203023d89`. The re-cut proves the file carries no absolute path ANYWHERE — the
+     security half of the same defect whose measurement half is recorded in the gate-forensics skill (a
+     literal that resolves somewhere is worse than one that does not). -->
+- **A CRLF COUNT OF `n/n` FROM A PATTERN THAT READS 2 ON A PURE-LF FILE IS A DEAD PATTERN, AND THE CLAIM
+  OUTLIVES THE MEASUREMENT.** <!-- ⚠ 2026-09-13, G `54ea728fd`. Every published line-ending count came
+     from a dead pattern; the CLAIM stood and the MEASUREMENT did not, and the same pattern nearly
+     produced a false CRLF-shebang finding against the push tool. A count that reads `n/n` is the shape a
+     predicate matching EVERYTHING produces, and it is also the shape a correct file produces. -->
 
 ## Running a census
 - ⚠ **Diff-scoped and EXIT-GATED before EVERY push, or it is decoration** — a census whose exit code does not gate the
@@ -256,3 +269,11 @@ from it. The six mechanics below are what three independent derivations of that 
   overlay, banked…): [`docs/Glossary.md`](docs/Glossary.md).
 - Generated C# intentionally targets Go-like *behavior first* (no implicit async), and Go-like *appearance* second
   (extra machinery hidden in partial classes / generated files).
+- **A RULING INHERITS ITS REPORT: the lane that RECEIVES a ruling reports against the RULING's predicates,
+  not against the question it first asked.** <!-- ⚠ 2026-09-13, COORD. The natural failure is to answer
+     the original question and mark the ruling addressed — both parties then believe a different thing was
+     measured. -->
+- **A TWO-DOT DIFF ANSWERS THE QUESTION OF THE BASE YOU GAVE IT: NAME THE BASE IN THE POST, OR THE NUMBER
+  STOPS THE EXECUTOR.** <!-- ⚠ 2026-09-13, C2 `d61cbdee0` / COORD `5b5e91b74`: `+547/-23` against the
+     merge-base with master and `+283/-1` against the H5-set tip are the SAME branch. Same class, i9
+     `416159032`: a CASE-SENSITIVE grep for a renamed identifier reads "declared nowhere". -->

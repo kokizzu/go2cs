@@ -265,6 +265,29 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   record**; the seat that found the contradiction stated it UNRECONCILED rather than resolving it by
   inference.
 -->
+- **A CENSUS RECORDS ITS OWN TOOLCHAIN PROVENANCE IN ITS OUTPUT, and sets `Env` explicitly in
+  `packages.Config`** — a run DIRECTORY is not a measurement of what ran; the output's own control line is.
+  <!-- ⚠ 2026-09-15, C2 `009d1e9b00`. A `go/packages` census run from a stub directory whose `go 1.24.0`
+     directive the box's own 1.24.7 already satisfies does not switch up, and loads whatever the box has —
+     silently. census7 gained a `# GOROOT` line; census9's 1.23 arm proved itself by a pin-aware
+     KNOWN-MEMBER line. Re-running under an explicit pin with the WRONG release as the negative control
+     classifies each banked reading as PROVEN-AT-THE-PIN (differs at 1.24.7) or UNAFFECTED (identical) —
+     two different sentences that a single green conflates. Build tags are part of the load in the same
+     way: omitting them read 16 -> 13 sites, which looks exactly like a toolchain finding, while the
+     package count (337) said the population had not moved at all. -->
+- **A READING TAKEN ON THE PRE-HOP CORPUS IS A FACT ABOUT THE PRE-HOP CORPUS**; a hop bill is sized on the
+  RECONVERTED tree, and only a BEFORE-reading on the same box attributes an AFTER-reading. <!-- ⚠
+     2026-09-13, i9 `c2b26c50b` + COORD `b3a32e52d`. `mWaitList` had 0 references in `src/core` at 1.23.12
+     and 4 in the 1.24.13 emission (`lock_spinbit.cs`, selected because `spinbitmutex` is ON at the new
+     pin) — a "0 references, nothing to do" that was true and useless. The companion half is the one that
+     saves the attribution: i9 PREDICTED 0 and MEASURED 100, all of them bill rows; without the baseline
+     taken on the same box the 100 would have been read as the patch's own doing. -->
+- **A TEST PRINTS ITS PRECONDITIONS** — the pin, the cwd and the toolchain it ran under are in the output,
+  so a green can be told from a green under the wrong pin. <!-- ⚠ 2026-09-13, C2. The cheapest possible
+     instrument against the whole two-pin family, and it costs three lines of output. Compare item
+     `1372`'s half (i9's 2x2, LEG C's cwd read): `go env GOVERSION` from a directory with no `go.mod` and
+     from `src/go2cs` answer DIFFERENT questions, and neither substitutes for the other, so a pin
+     assertion names its directory and runs in the work's own environment. -->
 
 ## Host qualification
 
@@ -790,6 +813,130 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
      as unexcluded 1 / excluded 0 once the pending update was present.
      i9 e9b13cd59 took C2's harder control on the damaged clone. Three hosts, one shape: the silence was
      real and said nothing, which is the exclusion-filter family with the filter spelled as a refspec. -->
+- **ASK "WHAT WOULD THIS OUTPUT LOOK LIKE IF THE INSTRUMENT WERE LYING?" OF EVERY GREEN BEFORE BELIEVING
+  IT** — if the answer is "exactly like this", the instrument owes a control. <!-- ⚠ 2026-09-13, COORD,
+     offered as the one-line generalisation of the whole train-47 night: six vacuous instruments across
+     two lanes in a single day, every one of which printed a number that a correct system would also have
+     printed. The question is cheap, is asked of the OUTPUT rather than of the code, and is the only step
+     in this file that costs nothing. -->
+- **A NEGATIVE CONTROL THAT FIRES THE WRONG GATE HAS NOT TESTED THE GATE YOU AIMED AT** — the isolated
+  control lands on ONE arm, and every refusal arm asserts WHICH defect it saw, never merely `rc=1`.
+  <!-- ⚠ 2026-09-13, C1 `cbc12e499` s4. The hoisted-declaration regression was caught by arm 6, which
+     asserted only a non-zero exit, while arm 7 — the arm the control existed for — passed; "arm 7 made
+     to fail" would have been RECORDED and false. Arm 6 gained its text assertion and the control moved
+     onto arm 7 alone. Same family at C1 `f70b061d9` s4: a checker broken on EVERY input (`grep -x -F`
+     blind to CRLF) satisfies a refusal arm that wants only a non-zero exit. -->
+- **A SKIP INSIDE A GUARD IS A `Fatal`, AND A CONTROL IS CHECKED FOR HAVING RUN, NOT FOR ITS EXIT** — a
+  guard's own escape hatch swallows its own control. <!-- ⚠ 2026-09-15, C1 `376a419092`, the sixth vacuous
+     instrument of the day across two lanes. q82's vacuity arm was regressed by pointing the walk at a
+     missing directory; the test took its `t.Skip` door and `go test` printed `ok` — a regression meant to
+     prove the guard can FAIL proved instead that it can VANISH, in a pass costume. The same shape reaches
+     any harness with a skip: the exit code is identical for "ran and passed" and "declined to run". -->
+- **A CROSS-ARM ZERO IS ASSERTED AGAINST A DISJOINT ARM, NEVER AGAINST ALL OTHERS** — census arms overlap
+  by construction, so "every other arm reads 0" is unsatisfiable on a CORRECT census. <!-- ⚠ 2026-09-13,
+     i9 `1ae48b10b` s2. A profile path CONTAINS the account name and the drive prefix; the home path fires
+     five of thirteen arms. The satisfiable and strictly stronger form: the subject arm fires, ONE arm the
+     probe cannot match by construction reads 0, the verdict is REFUSED, a clean probe fires nothing and
+     passes, and the arm count is exact. G `971a518ba` s3 adopted it from the other side — each plant
+     DECLARES the kinds and the count it expects, which is what finally exposed a structural class that
+     had double-reported every single-line hit for weeks. -->
+- **A NON-FIRE IS DIAGNOSED BEFORE IT IS REPORTED, AND A CAVEAT WRITTEN BEFORE THE NUMBER ARRIVES IS WHAT
+  STOPS A FALSE FINDING** — liveness of arms is not coverage of classes. <!-- ⚠ 2026-09-13, i9 `c22e70cc5`
+     and `1ae48b10b` s3/s5. The scrub-census audit's first reading said two arms were dead; the
+     PRE-WRITTEN caveat (a FIRE is conclusive, a non-fire is not — the probe's derivation may differ from
+     the census's) sent it back to the probe, which was the MSYS form where the arms key on the Windows
+     forms. 13 of 13 arms then fired one at a time. Before the audit only two had ever been seen firing,
+     both by accident. The black-box driver that found it can be wrong on its own: its first run reported
+     a dead arm that was the PROBE's guess at the tool's parsing (a 2-character initial against a
+     7-character pattern), so a SUPERSET probe — the full string, never a guessed word — resolves the
+     tension. Third non-fire of the night that was the probe, not the arm. -->
+- **A CONTROL'S MUTATION IS ASSERTED TO HAVE LANDED BEFORE ITS RESULT IS READ** — a control whose mutation
+  never lands reads exactly like a passing system, and a harness that restores with `git checkout --` on
+  an UNTRACKED file restores nothing. <!-- ⚠ Two instances, 2026-09-13. C2 `a6975abfb` s4: the
+     corrupted-input control returned `rc=0` because the `sed` pattern had never matched the row's real
+     shape — assert the changed line with git BEFORE reading the exit. C2 `e29666f43` s6: four deliberate
+     regressions STACKED silently because the restore was a no-op on an untracked file, so the negative
+     control read RED while still carrying all four and every arm's red was meaningless as run; re-done
+     with a `cp` restore from a pristine copy plus a `sha256` assertion. A control harness is an
+     INSTRUMENT, and both of these failed in the direction that FLATTERS the arms. -->
+- **AN ASSERTION THAT ONLY LOOKS FOR WHAT IT EXPECTS CANNOT SEE WHAT IT DID NOT** — assert the finding
+  SET, not the presence of a finding of the right kind. <!-- ⚠ 2026-09-13, G `971a518ba` s3. Every plant
+     in the tracked fleet-identifier guard asserted that a hit of the right KIND is PRESENT and none
+     asserted the set, so every structural class DOUBLE-reported a single-line hit — the joined pass
+     re-matching what the per-line pass had already found, 4 of 4 — for weeks, unseen. The clean arms were
+     two-sided (`len(got) != 0`) and so covered only the zero direction. The fix that follows from a set
+     assertion is itself the remedy: the joined pass reports only findings whose span the per-line pass
+     did not already report, red-proven by that same assertion. -->
+- **"NEVER MADE TO FIRE" AND "DEAD" ARE DIFFERENT READINGS: A CLASS CAN BE ALIVE AND INVISIBLE** — the
+  probe that separates them controls the neighbouring class FIRST, so a non-fire is a claim about the arm
+  and not about the probe. <!-- ⚠ 2026-09-13, G `971a518ba` s2. The network-path-split class had no
+     liveness case at all — its kind string appeared only at its own emit site — yet it fires on 5 of 6
+     wrap positions and on every inline UNC fixture already in the suite. A wrap position that CANNOT fire
+     is then NAMED in the file (the break before the two backslashes lands the UNC whole on one line, so
+     the per-line arm reports it) rather than silently dropped from the set. -->
+- **A CONTROL THAT GOES RED ON THE REAL HISTORICAL OUTPUT IS WORTH MORE THAN ONE THAT GOES RED ON SYNTHETIC
+  INPUT** — the first says the arm WOULD HAVE CAUGHT it; the second says only that the arm works.
+  <!-- ⚠ 2026-09-13, G `25dd652`. Control A disabled the joined-pass suppression and all six inline plants
+     failed on exactly the doubled output the previous assertion had consumed and PASSED for as long as
+     the defect existed; control B (the ordinary floor-13 regression) disabled the network arm and failed
+     exactly the five new plants. Both are worth running, and they answer different questions. -->
+- **A ZERO FROM AN UNFIRED PREDICATE IS NO EVIDENCE, NOT WEAK EVIDENCE — AND THE TWO READ IDENTICALLY IN A
+  POST.** Every zero a lane publishes owes a demonstration that its predicate FIRES; a guard minted on a
+  number it did not produce is a RATCHET and is named as one in its own cut. <!-- ⚠ 2026-09-15, C1
+     `8e1eafae30` then `9ff4b0066b`; C2 planted the same form from the other side (`1a95944e50`). C1's
+     erased-constraint spelling published "0 matched" from a predicate whose `[^*]*` character class could
+     not cross the asterisk in `*T` — it could never have matched any real member. The planted member
+     refused it on the first run, and the corrected predicate immediately read a real corpus member
+     (`go/types/predicates.cs:670`, `clone<T>`, the erasing branch working as designed). A ratchet is the
+     specific harm: a guard frozen at a zero it never measured locks the class out of the corpus. -->
+- **A POSITIVE-CONTROL PATTERN MUST BE UNIQUE TO THE CHANGE — predict the DELTA, or pick a pattern the base
+  cannot contain.** <!-- ⚠ 2026-09-15. `(ΔType)(default!)` already appeared twice in `go/types/call.cs`
+     (the append of a nil element), so the control read base 2 / cut 4 where 0 / 2 was predicted: the
+     DELTA was right and the ABSOLUTE was wrong. Either half can be the one quoted into a post, and the
+     absolute is the more natural thing to write. -->
+- **A VERIFIER SEEN ONLY PASSING HAS NOT BEEN SEEN WORKING — run it RED on the unpatched tree first, and
+  run the FAILING path on the platform whose console differs.** <!-- ⚠ 2026-09-13, i9 `f73b56b18` s2-s3.
+     `--verify` was run against the unpatched tree and produced 17 FAILs naming all 14 shifts, which is
+     what made the later green mean something. On Windows the Δ glyph then killed the FAIL list after 10
+     of 17 (cp1252) — a TRUNCATED diagnosis and never a false pass, which is the direction worth stating
+     explicitly when reporting it. -->
+- **A CLAUSE WHOSE CORPUS POPULATION IS EMPTY IN THE SUBCASE IT EXISTS FOR CANNOT BE MADE TO FAIL BY THE
+  GATE BATTERY — its unit fixture is its ONLY guard, and that is recorded so a weakened fixture is never
+  read as covered.** <!-- ⚠ 2026-09-15, C2 `8bb873bb02`. RED 4's `interfaceNominallyDerives` declines 20
+     sites that are ALL "the argument IS the constraint" (a rendering that collapses to the identity
+     downstream anyway), and the embedding subcase has no member at 1.24.13 at all. Recorded beside it,
+     because it is the reading that makes the rest safe: RED 3 (pointer args) and RED 4 (sibling
+     interfaces) PARTITION the `func() H` reach over std — PTR 9 / IFACE 29 / TPARAM 23 declined, no site
+     in both, none over. -->
+- **A GUARD MADE TO FAIL BY THE WRONG REGRESSION PROVES NOTHING: THE FAILING ARM MUST BE THE DEFECT'S OWN
+  SHAPE, and a guard over NORMALIZED output cannot see a byte defect.** <!-- ⚠ 2026-09-15, C2. The EOL
+     guard PASSED with the defect fully restored, because the fixture's block comment stood FREE — drained
+     by the already-normalizing standalone writer — while the defect's shape is the ATTACHED package-doc
+     block comment. Caught only by emitting the fixture with both binaries and reading the BYTES. Floor 13
+     says a gate must be made to fail; this is the clause floor 13 does not say out loud. -->
+- **SEPARATE THE PREDICATE FROM ITS READER BEFORE REDESIGNING A VACUOUS ARM** — the two fail for different
+  reasons and on different boxes. <!-- ⚠ 2026-09-13, C2 `7dc338dba`. Arm 5's PREDICATE went red on a
+     planted normalising rewrite on the box where its READER works (site named, `rc=1`, restored
+     byte-identical); only the CAPTURE fails, on string equality over empty reads, because a
+     native-Windows python cannot open an MSYS path. The two boxes are complements and neither reading is
+     redundant. C2 also measured and WITHDREW its own warning against `wc -l` before posting — `wc -l`
+     counts newline BYTES and agrees with python on an unterminated CRLF file, while `awk NR` and
+     `grep -c ''` count RECORDS and would have made the arm red on a legitimate file. A warning against
+     the correct fix is worse than no warning. -->
+- **A HYPOTHESIS IS REFUTED — NOT MERELY UNSUPPORTED — BY A CONTROL AT THE ONE TREE THAT ISOLATES THE AXIS;
+  AND A CONTROL VARIES ONE AXIS.** <!-- ⚠ 2026-09-13, i9 `af0f25bf6` on C1's split (ruled `ecdfa2500` s0):
+     five trees, one axis — `lockedExt++` sites 0 -> 185 with the `got 0, 0` panic PRESENT, 1 -> 198
+     without it, twice; C1-2 = 128 -> 185 (one verdict moved) and seat 16 = 185 -> 198, so the accounting
+     is DISCHARGED by the correlation plus the control rather than left as an unexplained agreement.
+     The mirror, 2026-09-15, i9 `0afbc411bb`: a control that removed TWO process histories at once
+     credited the one it happened to name. -->
+- **A POST-CONDITION MESSAGE NAMES THE DISCRIMINATOR AND NEVER ASSERTS A CAUSE THE PREDICATE CANNOT
+  DISTINGUISH; AND AN ARM THAT KEEPS ITS NAME WHILE TESTING THE NEIGHBOURING CONDITION CAN NEVER CATCH THE
+  MESSAGE IT EXISTS TO TEST.** <!-- ⚠ 2026-09-13, C1 `8f4716d15`. "The mcleanup hand-own was NOT carried"
+     was said of a tree where the seat had never landed — two states (LOST and NOT-LANDED) producing one
+     reading. And arm 7, named "a LOST hand-own FAILS", was fixtured with no `mfinal.cs` at all. The fix
+     is symmetric: the message reports what is MEASURABLE (is the marked hand-own present?), and a twin
+     arm asserts the OTHER text does not appear. -->
 
 ## Arms and attribution
 
@@ -1060,6 +1207,24 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   **`ISlice : IArray` makes every "is this an array" test a trap unless it excludes slices
   explicitly.** The fix goes at the PREDICATE's door so no caller can reach the hole again.
 -->
+- **A PRECEDENT PROVES THE MACHINERY OVER THE AXES IT EXERCISED, NOT OVER THE AXES IT HAPPENS TO SHARE** —
+  name the shared axes, then ask about the unshared one. <!-- ⚠ 2026-09-15, C2 `0ff2e1ffab`.
+     `crypto/elliptic` shared RED 8's element types, interface arity, self-reference and method-set shape,
+     and was cited as proof the machinery worked. It did not share ACCESSIBILITY — its curves are
+     unexported and every proxy use is internal — and accessibility is the axis that broke (CS0050). The
+     precedent was real and the inference from it was not. -->
+- **A SIZING THAT READS THE EMITTING PATH AND NOT THE GUARDING PATH HAS READ HALF THE CHANGE: a seat's
+  footprint includes every GUARD that reads the data it adds.** <!-- ⚠ 2026-09-15, G `4e370a62ec`.
+     RED 7's "zero converter code" was true of `linknamePushDeclMatches` and false of the registry's own
+     TEST, which reads the same table and had to move with it. The claim was checked against exactly one
+     of the two readers of the data. -->
+- **A BEHAVIORAL ARM MUST MIRROR THE SHAPE THE CUT ACTUALLY REACHES; a sibling shape that misses is BANKED
+  as a finding, never folded into the rule by widening it.** <!-- ⚠ 2026-09-15, G. The first RED 5 arm
+     used a pointer-receiver method that does NOT return its receiver, which the converter emits as
+     `this ref T` with no box in scope — a sibling the cut does not reach, and with 0 production sites at
+     either pin. The arm was reshaped to `Compute`'s capture-mode form and the miss recorded. Widening the
+     rule to cover the sibling would have been the easy move and would have made the rule describe a
+     population that does not exist. -->
 
 ## Censuses and predicates
 
@@ -1208,6 +1373,145 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   built-in positive control was NAMED, since the refusal tests must drive arm 3 above zero or the census
   never ran.
 -->
+- **ANCHOR AN IDENTIFIER PREDICATE ON A NON-IDENTIFIER BOUNDARY: a count that can include a LONGER
+  identifier has not counted the identifier.** <!-- ⚠ 2026-09-15, C1 twice in one day: `alias.` matches
+     inside `valias.` (13 of 19 swallowed) and `go.` matches inside `global::go.` (the rooting census).
+     The companion trap, C2 `98ccc78e6e`: a C# VERBATIM identifier (`@throw`) DEFEATS a `(?<![\w@])`
+     lookbehind that was written to stop exactly this — narrow such lookbehinds to identifier characters,
+     or the fix for the substring class opens a second hole beside it. -->
+- **A COUNT OF PAIRS IS NOT A COUNT OF THINGS: parse the path and test MEMBERSHIP, so a reference belongs
+  to exactly ONE member, and print the denominator beside the numerator.** <!-- ⚠ 2026-09-15, C2
+     `02db854fdd`. A path predicate matching a PREFIX counts a nested path under its parent too (`a/b/`
+     inside `a/b/c/`), so "45 stale references over six removed paths" was 44 over five — one line counted
+     twice. Printing rows AND files beside each other makes that overcount visible for free, which is why
+     q84's declared set is recorded as 44/41/5 rather than as a single number. -->
+- **A GUARD'S "EXISTS" IS DERIVED FROM TRACKED FILES (`git ls-files` / `ls-tree` / `show` AT A REF), NEVER
+  FROM `os.Stat`, `[ -d ]` OR A CHECKOUT THAT HAPPENS TO BE NEAR THE COMMIT.** <!-- ⚠ Two readings of one
+     predicate, 2026-09-15. i9 q84 `c599d85e60`: an empty-on-disk directory — a worktree that ONCE held
+     `crypto/internal/nistec` — made the stale-reference count 41 on one box and 44 on a fresh clone, a
+     verdict that depends on the clone's HISTORY (the `TestSafePushSelfTest` shape); the trap is planted
+     as the control. C2 `46f207d326`: the same five removed directories are ABSENT on a fresh worktree,
+     EMPTY on i9's box and POPULATED (34 tracked files) on a side-branch clone — three answers to one
+     question. C2's own "every directory is absent at the tip" was a CORRECT reading for a WRONG reason,
+     which is the harder error to notice. -->
+- **THE POPULATION IS READ AT THE TREE, RECURSIVELY, BEFORE A CLAIM IS PUBLISHED ABOUT IT.** <!-- ⚠
+     2026-09-13, C2 `9a98cfa8` + COORD `6cee25f56`. A flat `ls | grep ^lock` under layout L3 (per-GOOS
+     subdirectories) missed six lock files and produced "the corpus converts no lock implementation".
+     COORD then compounded it by naming an exclusion mechanism that has never existed and tristate files
+     that do not exist at 1.23.12. The real mechanism was a marked hand-own CLAIM dropping the Go
+     principal from the reconvert — nothing to do with either story. -->
+- **A CENSUS'S SCOPE IS A CLAIM THAT NEEDS A CONTROL OF ITS OWN: printing the scope makes it AUDITABLE, not
+  CORRECT.** Run once with the scope widened to everything and check the total moves only by members you
+  can name. <!-- ⚠ 2026-09-15, C2 `98ccc78e6e`. census7 walked ONE pusher package (`runtime`) correctly
+     and answered a NARROWER question than the guard asked — 70 against the guard's 89 — and the header
+     that stated the scope made this readable only in hindsight. The widening control costs one run. -->
+- **WHEN TWO DERIVED INSTRUMENTS OVER ONE POPULATION DISAGREE, THE FACT BENEATH BOTH SETTLES IT — NOT A
+  THIRD INSTRUMENT — and each delta is ACCEPTED or REFUSED BY NAME, with the corpus line, never adopted
+  silently.** A declared set is frozen only at MEMBER-level agreement; a per-package count agreement is
+  stated with that limit. <!-- ⚠ 2026-09-15, COORD ruling. C1's corpus-TEXT census (89) against C2's
+     Go-SOURCE census7 (70) on the throwing-stub push targets at 1.24.13 differed by 17 swiss-map
+     intrinsics pushed INTO `runtime` from `internal/runtime/maps` (the reverse direction), plus
+     `internal/sync.throw` and `fips140hash.sha3Unwrap`. A census that walks "runtime's pushes" cannot see
+     a push whose PUSHER is not runtime (`crypto/sha3 -> fips140hash.sha3Unwrap`) or whose DIRECTION is
+     reversed; the settling fact is Go's own directive at the pin. -->
+- **A NONDETERMINISTIC CENSUS IS WORSE THAN A WRONG ONE — key on what is UNIQUE, print the pair count, and
+  assert a pin-aware KNOWN MEMBER.** <!-- ⚠ 2026-09-15, C2, the sixth instrument defect of that day and
+     the first nondeterministic one. `go/packages` with `Tests` over std loads `time [time.test]` AND
+     `time [sync.test]`; a variant map keyed on the IMPORT PATH keeps whichever lands last by map order.
+     The tell was a clean 0 over std together with control counts that changed run to run — a wrong
+     instrument at least fails the same way twice. -->
+- **A CLASSIFIER THAT READS C# SIGNATURES IS TESTED AGAINST THE SHAPES IT WILL MISREAD BEFORE ITS FIRST
+  READING, and its controls run BOTH directions and refuse before any row prints.** <!-- ⚠ 2026-09-15, C2.
+     census7 needed three predicate fixes — a tuple return (parentheses), a generic, an attribute line,
+     and a same-named RECEIVER method masking a free function's stub (`internal/synctest.Run`) — and every
+     one was caught by a control or by a fact that refused to fit, none by reading the code. -->
+- **A CENSUS OVER EMITTED C# IS A CENSUS OVER THE CONVERTER'S SPELLINGS** — the known-member control is
+  what survives them. <!-- ⚠ 2026-09-15, C1's (iii) census. A comment sitting in a RETURN-TYPE position
+     (`error /*ntstatus*/ NtCreateFile`) and machine-named temporaries (`var ᴋ58 = Ꮡoa; … (uintptr)ᴋ58`)
+     each hid the known member, and the known-member assertion refused the census both times. Neither
+     spelling is exotic; both are ordinary converter output. -->
+- **A COUNT IS A PROXY, NOT THE CHECK — and a zero belongs in a census block only with its FIRING named
+  beside it: `0 (predicate fired on <member>)`.** <!-- ⚠ 2026-09-15, C1's zero sweep `edbc80b335`: eight
+     zeros, six with a demonstrated firing, two corrected. The worked example is the sharp one — the
+     "0 untyped `Assert.AreEqual`" census line reads 3 on the F1 observer the fleet MEASURED as correct
+     (three sound TYPED compares) and 0 on a file that could still compare mismatched types inside a typed
+     call. The instrument for that question is the per-site operand-TYPE table; the count was never it. -->
+- **A CENSUS THAT MUST AGREE WITH A CONVERTER GATE PORTS THE CONVERTER'S PREDICATE VERBATIM; a rule is
+  stated in the converter's own terms and never narrowed to fit a prediction.** <!-- ⚠ 2026-09-15, G's RED
+     2 census. It tagged calls by AST FORM (`IndexExpr` = explicit) while the converter tests the
+     INSTANTIATED parameter type, so `slices.Concat`'s `Grow[S](nil)` — explicit, but whose `S` is the
+     enclosing generic's own parameter — was predicted NOT to move, and moved. -->
+- **A HOP CAN REBIND AN EXISTING SITE WITHOUT ADDING ONE: read by CLASS at both pins, because a census that
+  counts sites TOTAL reads "unchanged" while the partition moved underneath it.** <!-- ⚠ 2026-09-15, C2's
+     RED 5 review. The three `nistec` sites are the SAME three calls at both pins (16 sites at each), LOCAL
+     at 1.23.12 and a pointer RECEIVER at 1.24.13 after Go moved p256's table build into
+     `(*p256Table).Compute`. The cause of the red is therefore "the arm handled only the spellings the OLD
+     class produced", not "new at 1.24" — a different sentence that points at a different fix. -->
+- **A COUNT THAT SCORES ONE PREDICATE UNDER ANOTHER PREDICATE'S LABEL IS THE FLATTERING READING, and the
+  looser predicate is usually the one hiding the SILENT failure.** Assert that each named exception is
+  REJECTED by the predicate, so a tolerance cannot widen into the thing it tolerates. <!-- ⚠ 2026-09-13,
+     C2 `e74ba9e06` s2-s3. "Exactly one mismatch" answered CONTAINMENT (does the local name contain its
+     symbol) while derivation (b) is the TRANSFORM (strip the prefix ending in `_`), against which there
+     are TWO: runtime's `libc_exit -> _exit` passes containment and transforms to `exit`, a real
+     libSystem export — PROCESS exit where THREAD exit was meant — while `libc_error -> __error` fails
+     loudly at lookup. Presence is keyed on the (name, symbol) PAIR thereafter. -->
+- **STRIP COMMENTS BEFORE ASSERTING ANYTHING ABOUT CODE, AND KEEP A REAL-DATA ARM BESIDE THE FIXTURE** —
+  the fixture cannot contain the shape that breaks it. <!-- ⚠ 2026-09-13, C1 `f70b061d9` s4, named as the
+     THIRD instance in one night: the door guard's caller arm, the `--stack` census, and `mfinal.cs`'s own
+     header naming the body it replaced. By C2 `4a4596c7b` the same day it was the SIXTH prose-predicate
+     instance — and that one was the only instrument already immune, because its predicate was anchored on
+     the pragma's SHAPE (the quoted library) rather than on the token. The structural form keeps winning
+     and the vocabulary form keeps getting written. -->
+- **GLYPH IDENTITY IS AN INSTRUMENT'S JOB, NOT A READING'S: census the file's CODEPOINTS and require the
+  non-ASCII set to equal the corpus's.** <!-- ⚠ 2026-09-15, C1 `4757e2a971`. The box glyph was typed from
+     memory as U+13A1 (Cherokee A) where the corpus uses U+13D1 `Ꮡ` — in a COMMENT, so it compiled, and no
+     build, diff or gate would ever have said so. For a lane without an SDK, "verified against code this
+     commit does not touch" covers idioms; it does not cover scope rules, and it does not cover glyphs. -->
+- **A PRODUCED-SET INSTRUMENT KEYED ON A PROJECT'S FILE NAME AND AN ASSUMED OUTPUT FOLDER ANSWERS A
+  DIFFERENT QUESTION FROM THE BUILD'S** — the population is the SOLUTION's entries and the evidence is the
+  project's OWN declared assembly under any TFM folder. <!-- ⚠ 2026-09-15, i9 `b2f5bb45c8`. `go2cs-gen`
+     (a solution member under `src/gen` targeting `netstandard2.0`) and `testing` (an `AssemblyName`
+     differing from its file name — exactly one such project under `src/core`) both read UNBUILT while
+     their assemblies had just been written. "This package did not build" is the most alarming wrong
+     answer an instrument of this kind can give, which is why its control is a second independent list
+     agreeing member for member. -->
+- **AN EXPRESSION WRITTEN TWICE TWO HUNDRED LINES APART IS THE DRIFT SHAPE: define it ONCE, immediately
+  after the population it reads, and PRINT the number it subtracts.** <!-- ⚠ 2026-09-13, C2 `bb5d3b2de`.
+     Printing the subtrahend is what makes it impossible for a parse of a listing and the arithmetic to
+     disagree again — the defect that produced the rule (i9 `846cbd849`) had exactly that shape, a listing
+     reading 42 against an arithmetic reading 37. -->
+- **A COMPARER IS CONTROLLED ON A CASE-ONLY CHANGE BEFORE IT IS TRUSTED; every audit size is
+  `diff --strip-trailing-cr`.** <!-- ⚠ 2026-09-13, G, H6 block 5. PowerShell's `Compare-Object` is
+     case-INSENSITIVE by default and read a 16-line case-only rename (`LeUint64` -> `LEUint64`) as ZERO
+     changed lines. A comparer that cannot see a rename is indistinguishable from a tree that does not
+     carry one. -->
+- **A CENSUS THAT READS NORMALLY ON THE BOXES THAT NEVER COMPILE AND WRONGLY ON THE ONES THAT DO IS THE
+  WORST SHAPE A CENSUS CAN HAVE — exclude build output by the SAME list the tooling uses, and control it
+  TWO-SIDED.** <!-- ⚠ 2026-09-13, C2 `4a4596c7b` and G `9e50ebe92` s5, the same class from both ends. A
+     `filepath.Walk` over `src/core` sweeps converted-source copies under `obj/` on any box that has run
+     `dotnet build`; measured LATENT (zero `bin`/`obj`/`Generated` in a never-built worktree, so the
+     published counts stood) and excluded with `reconvert-deletions.ps1`'s own `BuildOutputDirs`. The
+     two-sided control is what makes it mean anything: a planted file UNDER `obj/` leaves the count at 207,
+     and the same file moved OUT appears. G's half is the tell in the other direction — a filesystem
+     `grep -r` over a built corpus read 1,975 hits for a build-tag token where `git grep` over TRACKED
+     files reads 52 with a believable distribution; the SHAPE of the number was the signal, not an error
+     (safety-floor 16's other half). -->
+- **A CLAIM OF CLEANLINESS NAMES THE FILE — OR THE ARM — THAT WOULD HAVE REFUSED IT, or it is a claim about
+  the SEARCH.** <!-- ⚠ 2026-09-13, COORD. The one-line form of the whole false-empty family, and the
+     cheapest thing to add to a post: not "nothing was found" but "X would have said no, and did not". -->
+- **ONE INSTANCE OF A SHAPE CANNOT SAY WHETHER THE SHAPE OR ITS REFERENT IS THE FINDING** — shape-versus-
+  referent needs TWO instances. <!-- ⚠ 2026-09-13, COORD/R. Worked twice in the same week: a survival
+     measured once was recorded as a PROPERTY (the cloud-lane restart, `.claude/skills/mailbox`), and a
+     single mode-dependent failure was read as "passes alone, fails in a sweep" when a second instance
+     showed the same project compiling twice in ONE run (item `1435`). -->
+- **A COLUMN HEADING READ BACK AS THE MEASUREMENT** — the header says what the author MEANT; the predicate
+  says what was measured. <!-- ⚠ 2026-09-13, C1 `6973fb763`. The token-door census printed "LIVE — token
+     reaches the door" where its predicate tested only whether a hand-own stood in front of the wrapper
+     (UNDISPLACED). Re-measured with the predicate controlled against wrappers CERTAINLY called
+     (`CloseHandle` 18, `WriteFile` 91): ONE of seven is reached and six are latent, two of those BYPASSED
+     by `exec_windows.cs`'s own `LibraryImport` over a blittable mirror — which is why the banked launch
+     rows pass. The prediction shrank from seven rows to one; the chain and the class stand; and the
+     correction landed as a commit on top with the original SHA untouched. -->
 
 ## Predictions
 
@@ -1256,6 +1560,29 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   REPRODUCED in a fresh worktree rather than argued sound — "because you banked a stale-binary
   near-miss in the same hour".
 -->
+- **A PREDICTION IS SCORED AGAINST WHAT IT SAID, NEVER AGAINST A RESTATEMENT — and NOT SCOREABLE is not
+  support.** <!-- ⚠ 2026-09-13, R `4b4134242` s4 and G `890c7e49` s3. The coordinator's paraphrase ("the
+     generic-alias seat clears 5") was a SECOND claim, about a seat R never named; a paraphrase that is
+     nearly right is the hardest kind to catch, because both parties recognise it. "Not refuted" is the
+     most inviting thing a lane can tell itself about its own unmeasured prediction. HIT AT EMISSION banks
+     only when the compile that would falsify it actually runs. -->
+- **A PREDICTION THAT ARRIVES AFTER THE RUN IS NOT A PREDICTION** — put the number on record first, with
+  every branch named. <!-- ⚠ 2026-09-13, C2 `babe063dd` s1-s2/s5. C2 broke a posting hold ONCE, on purpose
+     and saying so, to put 4,834 s (80.6 min) on record before pass 2 ran, with all three readings named
+     in advance: NEAR (setup ~10 s, confirmed), BELOW (setup larger than the floor), ABOVE (cost not
+     additive — the model dies). It came back 9,011 s and died in its own named branch, which is worth
+     more than an unfalsifiable agreement. -->
+- **A NUMBER TAKEN FROM ANOTHER SEAT'S FOOTPRINT IS NOT A STATEMENT ABOUT THE CORPUS** — cross-read your
+  own instrument before quoting a sibling's count. <!-- ⚠ 2026-09-15, G `dd32d22d09`. RED 9's prediction
+     said the bare `using fips140 = …` lived in "RED 4's six files"; the A/B's own seed control read 61
+     files — the ordinary supplied-`using` spelling for EVERY package naming a `fips140` type — and v3 had
+     already scanned all 61. Corrected to 61 -> 60 BEFORE the diff. COORD's stamp then repeated the wrong
+     line, which is the second reader's share of a prose miss. -->
+- **REPORT THE POWER OF A BATTERY, NOT ITS GREEN** — N clean runs bound a rate only if N is large enough
+  to. <!-- ⚠ 2026-09-13, i9 `52025148b` -> `2c3a24c13`, ruled `00b5a7fae` s2. N = 5 clean bounds nothing:
+     P(5 clean | p = 14%) = 0.47. n = 20 clean bounds the rate at <= 11.3% (95%, one-sided) and rules the
+     14% out. Stated the other way round, one unattributed event in 27 is "a figure with an open question
+     beside it", not a roster condition. -->
 
 ## Read the artifact before the sentence
 
@@ -1492,6 +1819,30 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   UNMEASURED rather than guessed, and an attribution inferred from a tree's state is LABELLED as
   inferred.
 -->
+- **A LABEL YOU WROTE IS NOT A MEASUREMENT YOU TOOK** — the reader's form of the prose-predicate class.
+  <!-- ⚠ 2026-09-13, i9 `09204c351` s4. A capture whose HEADER i9 had written as "the go test child is
+     gone" listed `net.tests.exe` RUNNING beneath it; i9 read the header, killed a working process, and
+     net's cost stays unmeasured in BOTH modes. The draft report then carried a number ("0 CPU across
+     883 s") that existed in no log and was withdrawn while writing. The converter "hang" of pass 1 was a
+     misattribution of the same kind: the parent was blocked on its `go test` child (4 s CPU over 617 s)
+     and the grandchild was never sampled. -->
+- **A VERDICT COLUMN WITHOUT A REASON COLUMN CANNOT BE RECONCILED WHEN TWO TABLES DISAGREE.** <!-- ⚠
+     2026-09-13, i9/C2. A table of PASS/FAIL that cannot say WHY each row read as it did is unusable at
+     exactly the moment it matters — when a second table of the same population disagrees and one of them
+     is right. -->
+- **THE COMPLETION NOTICE IS NOT THE VERDICT: a task's "done" line is read for its EXIT and its VERDICT
+  line, never for its ARRIVAL.** <!-- ⚠ 2026-09-13, COORD. The failure mode is social rather than
+     technical — a notification that a long job finished reads as good news, and the record that says
+     whether it PASSED is one file away. -->
+- **THE ROW IS THE MESSENGER: READ THE DIAGNOSTIC LINE INSTEAD OF QUOTING IT** — a diagnostic names the
+  project it was raised in, which need not be the row that reported it. <!-- ⚠ 2026-09-13, i9 `f5c401954`
+     s2. Both the CS8785/CS9248 diagnostics named `crypto.x509.csproj`, a project in `crypto/rsa`'s build
+     CLOSURE and not the row; and `crypto/x509` PASSED twelve rows later in the SAME sweep — the same
+     csproj compiled twice in one run, once failing inside another row's closure and once clean as its
+     own row. So "passes alone, fails in a sweep" was never the shape, and a remedy aimed at sweeps would
+     have been aimed at nothing. The reproduction recipe built on the LABEL was withdrawn for a diff of
+     the generated trees; no prefix bisection, because the log already carried a counter-example to the
+     monotonic threshold such a bisection would search for. -->
 
 ## Negative results, withdrawals and sizing
 
@@ -1710,6 +2061,38 @@ description: Design or judge a measurement. Controls, one-axis A/B arms, positiv
   honesty "by persistence" is FALSIFIED because the hand-own displaced the incrementing code. NOT
   measured: no build, no run.
 -->
+- **SIZE A RULE AGAINST THE CENSUS, NOT AGAINST THE BUILD: the latent sites compile for the FIRST time
+  WITH the rule applied and never appear as errors, so the census must enumerate the UNBUILT packages
+  too.** <!-- ⚠ 2026-09-15. RED 4's build showed 5 errors while the class held 29 sites, 24 of them in
+     packages the build had never reached because they sat behind another red. A rule cut against the
+     visible 5 would have been sized against 17% of its own population — and would have looked
+     well-evidenced the whole way. -->
+- **A 13x MISS IS REPORTED AS A DEAD MODEL, NOT ADJUSTED — the useful half of a failed derivation is the
+  FAILURE, posted as such.** <!-- ⚠ 2026-09-13, C2 `d0807ee31` s1/s3. C2's per-project licensing model
+     (one line per measurable project, 731) missed by 679, and the correct response was to publish the
+     death rather than re-parameterise toward the observed number. Re-fitting a model to the measurement
+     that killed it destroys the only information the exercise produced. -->
+- **A CLAIM ARITHMETICALLY CORRECT ON THE DATA IT WAS COMPUTED FROM CAN BE FALSE OF THE MODE THE PLAN
+  SCHEDULES: carry a units finding into EVERY conclusion drawn from the other units.** <!-- ⚠ 2026-09-13,
+     C2 `babe063dd` s3. "No slice cap below 21.95 min can exist" was true of `crypto/dsa`'s 1,317 s in the
+     FULL-SWEEP data and died on one dispatch-mode measurement (62 s — the 21x row); the indivisible-row
+     floor in dispatch mode is about a minute. A reserved row that FAILED (`crypto/tls`, 400 s and 0
+     verdicts) has no valid cost in that mode at all, which is a third category the arithmetic had no
+     column for. -->
+- **A MEAN THAT DESCRIBES ALMOST NO ROW IS NOT REPORTED AS THE ANSWER; and when a premise dies, say which
+  half of the conclusion survived it.** <!-- ⚠ 2026-09-13, i9 `09204c351` s2-s3. One full-roster sweep on
+     the same box, tree and converter binary as the isolated pass reproduced per-row costs second for
+     second — 72 of 199 IDENTICAL, 142 within 1 s, median difference 0 — so the ~10 s per-row floor is
+     INTRINSIC work and not recoverable setup. The mean of +1.37 s/row describes almost no row. The
+     conclusion (order the light bulk by row count) survived; the premise (2,060 s of recoverable setup)
+     did not; per-row dispatch is free for 95% of the roster. -->
+- **AN INSTRUMENT AMENDMENT IS REVERTED, NOT SHIPPED, WHEN THE PREMISE IT ADMITS ROWS ON CANNOT BE
+  ESTABLISHED** — and the clauses that do NOT depend on the open question are cut alone. <!-- ⚠
+     2026-09-13, C2 `f8565b93`. Five SOURCE measurements predicted a population that R's independent
+     `find -newer` measured as 24 rows; both could not be true of one tree, so the question — which tree
+     `-Root` names, and whether the merge touches only emitted files — went to the lane that would hold
+     both trees. A deletion instrument built on a mechanism nobody has measured is an admit-gate for a
+     population that may not exist. -->
 
 ## Where a fix goes, and what an increment is worth
 

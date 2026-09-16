@@ -85,6 +85,31 @@ description: Assemble, rehearse, gate or land a train. Seats and seating mechani
      COULD NOT FIRE; measured reach is 47/46/50 sites per flavour, with MUST-BE-ZERO and MUST-BE-NONZERO
      controls run before any bucket prints. The headline population and the hop reading stood, so the seat was
      not disturbed: the post carried the erratum and one dated block landed after the train. -->
+- **THE ROW ORDER IS THE MERGE ORDER, SO A STACKED SEAT CARRIES A HIGHER ROW NUMBER THAN ITS BASE** — and a
+  duplicate ref or SHA across rows is the one anchored FAIL the self-check exists for. <!-- ⚠ Train 48
+     verify agent, 2026-09-13: `stack-on` names an EARLIER row, which is the table's own rule; row 19 ==
+     row 6 was caught by exactly that arm. Recorded with it: `git` porcelain under a path listed in
+     `.git/info/exclude` is VACUOUS (0 tracked files), so "untouched" is `cmp` against the record copies
+     plus an mtime census, never a clean `status`. -->
+- **`allowed=` IS A PER-ROW RULING THE ASSEMBLER MUST HONOR, NOT A NOTE** — subtracted AND counted AND
+  listed at merge time, with a ruled-but-untouched path aborting as a STALE ruling. <!-- ⚠ 2026-09-13,
+     COORD ruling on D5. It admits exactly the named paths outside the class shape and forbidden list; the
+     union's blob must equal the seat's after the merge; and an end arm re-asserts it, with the owner
+     taken as the LAST matching row so a stacked pair resolves. A self-check arm that credits a ruling the
+     assembler does not implement makes the pre-flight LIE — which is what an earlier patch did until D5.
+     Vocabulary gap left open: no class admits `.claude/**` (4 of 18 rows). -->
+- **A JUSTIFICATION DERIVES FROM THE OWED VECTOR: A JUSTIFICATION THAT NAMES A SEAT NUMBER IS A PREMISE
+  FROM ANOTHER TRAIN.** <!-- ⚠ 2026-09-13, COORD, run 3 (`00b5a7fae` s1). A refusal string carried "seat 2
+     is a src/gen seat" — true of train 46 — and ASSERTED it; it fired in run 2 (masked by another arm)
+     and again in run 3. The self-check's literal arms looked for seat COUNTS and old SHAs and never for a
+     seat-NUMBER claim inside a justification; an arm now refuses `seat N is` / `seat N's` in any refusal
+     string. Related: a CLASS states a seat's POTENTIAL footprint while a justification asserts an ACTUAL
+     one, so the owe is derived from the MEASURED delta. -->
+- **A SEAT WHOSE SUBJECT IS WHAT THE COMPILER CONSUMES OWES A COMPILE.** <!-- ⚠ 2026-09-13, G's seat 6,
+     unseated after run 1. Acceptance arms and both runs measured TEXT and never compiled — "MET and still
+     wrong" — and the union did not build (CS0111 duplicate init hook, CS0050/51 internal `Pointer<T>`).
+     A seat's proof also spans `src/gen` the moment it touches it: build `go2cs.slnx` (G `19f9de075a`,
+     2026-09-15). -->
 
 ## 3. Dispatching
 - **Re-derive a dispatch's PREMISE against the roster AT DISPATCH TIME**, never from the census's read date; a lane's first act on receiving one is to MEASURE the premise and post the table. **A premise about the LANE'S OWN HOLDINGS — "the baseline you hold at `<sha>`" — is a claim like any other:** take the NAMED baseline yourself (one extra build) rather than comparing against whichever one you happen to hold, or the previous train's movement is charged to the files under test.
@@ -323,6 +348,48 @@ description: Assemble, rehearse, gate or land a train. Seats and seating mechani
      `git merge-base` was an earlier commit: the seat's unchanged copy then LACKED the previous train's two
      Check lines and `merge-file` honoured that as a removal, at rc 0. Re-run with each seat's OWN merge base
      the chain read 693 -> 696, one line per step, nothing removed. -->
+- **AN END ANCHOR ON A ROW'S LAST FIELD BREAKS THE MOMENT A ROW GAINS AN OPTIONAL FIELD: anchor on the
+  closing quote, never on a field VALUE, and read fields 6..NF as `key=value`.** <!-- ⚠ Train 48 round 2,
+     2026-09-13. The rehearsal and the self-check both found the seat table by grepping a line ending
+     `|tip"`; the first row ending in an `allowed=` ERE made the anchor match NOTHING — self-check exit 3,
+     rehearsal extraction abort. Same family: a self-check arm reading the ruling POSITIONALLY
+     (`${a#allowed=}`) welds `|stack-on=NN` onto the ERE as an alternation nobody wrote. -->
+- **AN ARM APPENDED AFTER PLANTED-CONTROL ARMS INHERITS THE LAST PLANT — every arm RE-READS its subject
+  from the file, and a vacuity guard cross-checks an INDEPENDENT count.** <!-- ⚠ Train 48 round 2,
+     2026-09-13. The synthetic tables the self-check plants into the shell left the global seat table
+     holding two rows, so a later online arm read "rows carrying an `allowed=` ruling=0 :: STALE ruled
+     paths=0" and PASSED vacuously. Caught by reading the COUNTS, not the verdict. Round 3's defect is the
+     same shape one level up: a stacked row's diff is measured against its STACK BASE's pin — the
+     assembler's `merge-base(HEAD, want)` after the base merged — never against master, because an arm on
+     the wrong base credits inherited paths and cannot see the stale ruling the assembler refuses. -->
+- **A LAND ANCHOR IS MEASURED AGAINST A REAL RECORD, NEVER ONLY AGAINST THE ASSEMBLER'S SOURCE; AND A
+  READER THAT READS ONE QUOTE FORM READS HALF THE ANCHORS.** <!-- ⚠ 2026-09-13, COORD, the run-7 kill at
+     14:06 and the LL1 self-check. A census of all 73 `req` patterns in the train-47 land, taken against
+     run 6's green-legged RECORD, found two that could never match: a markdown form no assembly ever
+     stamps (dead since the previous train's land carried the same line) and a stamp its own arm never
+     wrote — plus an aggregate still gated on a literal after the arm had been derived. Run 7 was KILLED
+     rather than finish a record its own reader would refuse. The reader's half: the land-anchor arm
+     grepped only `req '` (single-quoted), so the double-quoted requirement (an apostrophe forces double
+     quotes) was never read, and a prefix cut at a metacharacter was reported "thin" and counted as
+     not-a-miss. Fixed to read BOTH quote forms with the double-quoted count asserted >= 1, and a literal
+     found only in a COMMENT counts as a MISS. The record census is now a pre-landing step. -->
+- **AN OBSERVATION STAMP THAT A LATER BRANCH OF THE SAME SCRIPT RESOLVES MUST NOT BE SPELLED IN A REFUSAL
+  FORM** — two instruments sharing one word make a land gate read an INTERMEDIATE stamp as TERMINAL.
+  <!-- ⚠ 2026-09-15 18:45, train 48 run 9, land verify-only exit 4. The assembler stamps `seat N MERGE
+     FAILED` as the OBSERVATION before its own pre-resolved path applies the rehearsal's saved set and
+     commits; the land's refusal scan (`MERGE FAILED`) and exit scan refused a fully GREEN run on seats 9
+     and 15 — the first record with pre-resolved merges the land had ever read. The land already COUNTED
+     those seats; only its scans did not. A land's dry-read plants patterns but never a REAL pre-resolved
+     record, so the first such record is the control the dry-read owes. Remedy: ONE narrowly conditioned
+     acceptance measured per seat (base matches, applied == unmerged with missing 0, PRE-RESOLVED
+     COMMITTED, the seat's merged stamp with 0 markers, the count equal to the record's own reading), a
+     bare planted `MERGE FAILED` as its negative control, stamped IN FORCE / NOT IN FORCE, and the
+     assembler respelled so the next derive deletes the path. -->
+- **THE ASSEMBLY WORKTREE MUST PRE-EXIST** — `git worktree add --detach <path> <base>` BEFORE the run
+  wrapper is launched; a missing worktree aborts at exit 2 in one second. <!-- ⚠ Train 48, 2026-09-15.
+     Reclaim it with `rm -rf` plus `git worktree prune`: `git worktree remove` fails "Filename too long"
+     on the deep `obj/` paths. The run-4 tree held 28 GB, which is why the reclaim step is written down
+     beside the create step. -->
 
 ## 8. Assembly and landing
 - **Tell — a conflict count that disagrees with what you grepped:** a `head -12` grep showed FOUR conflicted roster blocks where there were SIX (the filtered-status trap in a grep costume), a resolver asserting `len == 4` bailed BEFORE writing, and the `git add` chained after it with `;` staged marker-bearing files. **Chain with `&&`, never `;`.** Resolution rule that worked: **take the RULED side's prose for every conflicted block and re-derive only the numbers**, then let the guard-as-calculator confirm. **`${X:-default}` treats an EMPTY env override as UNSET**, so blanking a seat by env cannot skip it — a seat script carries an explicit already-seated list.
@@ -403,3 +470,27 @@ description: Assemble, rehearse, gate or land a train. Seats and seating mechani
      WITH its condition rather than carrying it. The same tree's `sync/runtime_impl.cs` 3-way (base 320 / ours
      239 / theirs 344 -> 263, rc 0) kept the lane's own NINE references where a verbatim take would have
      dropped them silently — the subtraction class of step 4, one file over. -->
+- **THE GATE-RED LOOP OF RECORD FOR A CONVERTER SEAT ON A VERSION BRANCH** — a red in an EMITTED file of
+  new-release code is a CONVERTER seat: mechanism at the tree, then a prediction (census, footprint by
+  class, build proof) BEFORE the two-seeded three-target diff, one signed commit off the version tip with
+  the footprint applied as hunks, push-then-announce, a second lane reviewing AT THE BYTES, and the
+  applying lane building a closure-derived prediction before its rebuild. **Every first compile behind a
+  cured red is a finding of its own, and UNPREDICTED.** <!-- ⚠ 2026-09-15, the H5 tree: three reds cured
+     this way in one morning and two more found behind them. -->
+- **SEAT REVIEW OF RECORD: A SECOND LANE BUILDS THE SEAT'S CONVERTER, RE-EMITS THE AFFECTED PACKAGES FROM
+  THE PIN AGAINST A BASELINE PINNED AT THE SEAT'S OWN PARENT, AND COMPARES THE SEAT'S APPLIED CORPUS DELTA
+  AGAINST ITS OWN EMISSION DELTA BY REAL LINE DIFF** — positional zip false-differs on any added line.
+  <!-- ⚠ RULED 2026-09-15. AGREES / DIFFERS by element, before the applying lane applies. C2's RED 3
+     review found its own earlier attribution wrong and checked an adapter-identity risk at the tree
+     (adapters over one box compare and hash equal) — a review that produces a correction is the review
+     working. -->
+- **PROOF BEFORE THE MERGE FOR ANY SEAT FROM A LANE WITHOUT AN SDK: COMPILE AND RUN THE SEAT ON A SCRATCH
+  MERGE ONTO THE TIP FIRST, AND MERGE ONLY ON GREEN.** <!-- ⚠ COORD ruling 2026-09-15, after the version
+     tip carried a red observer TWICE in one afternoon (a CS1061 scope miss, then an `AreEqual` typing
+     miss) under announce-then-push-then-prove. WIDENED the same day to every seat from such a lane that
+     adds or edits C# of ANY kind, companions included. It caught a red on its FIRST use — an XML comment
+     that fails MSBuild at load — so the rule paid for itself before the ink dried. -->
+- **THREE LANES IDLE BY ORDER BEHIND ONE REVIEW IS THE COORDINATOR'S IDLE: MERGE ORDER IS A PROPERTY OF
+  SEAMS, CUT ORDER IS NOT.** A cut whose paths are disjoint from the seats under review proceeds NOW with
+  its prediction and A/B (push-then-announce as a new ref); only its MERGE keeps its queue place. <!-- ⚠
+     2026-09-15 18:50, generalised from RED 9's shape to RED 7 (a), the `TempDir` seat and q86. -->

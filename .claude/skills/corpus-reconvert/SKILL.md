@@ -103,6 +103,89 @@ description: Measure a converter change's corpus footprint. The seeded two-seede
   hand-owns `runtime2.cs` and `mfinal.cs`, correctly untouched by the reconvert, and `map.cs`, which 1.24
   replaces with `map_swiss.cs` and which the seed keeps only because nothing overwrote it. The lane named
   it for H5c's list, did not enumerate the rest of the swiss set, and hand-deleted nothing. -->
+- **THE COMMITTED `src/core` IS NOT A FIXED POINT OF THE CURRENT CONVERTER — any instrument comparing
+  COMMITTED BYTES to an EMISSION must say which of the two questions it is asking.** A pair emitted by ONE
+  binary on both sides cancels the drift; H5's seeded reconvert re-lands it. <!-- ⚠ Measured 2026-09-14
+     23:22-23:53 on the i7 from the train-48 union head, three targets, one frozen converter build, seeds
+     from ONE `git archive` of the same pinned commit: 1082 / 1088 / 1096 written files differ from their
+     committed copies (windows / linux / darwin), `failedPackages` 0, exit 0 on all three arms.
+     Sub-agent classification of the windows list (2026-09-15) corrects the wording: 1082 = 1081 DIFFERS +
+     1 emission-only (`net/windows/lookup_windows.cs.auto`); linux 1088 = 1087 + 1
+     (`internal/poll/linux/fd_writev_unix.cs.auto`); darwin 1096 all DIFFERS. Of windows' 1081: 898 `.cs`,
+     169 `.csproj`, 13 `.cs.auto`, 1 `.md` — and ALL 169 csproj differ by exactly the `InternalsVisibleTo
+     go2cs.SynthesizedStructs` grant plus its comment, while 554 of the 898 `.cs` lose `[GoInit]`
+     init-import blocks, which alone explains 487 (a floor — the emission still writes such blocks in 618
+     files). 344 `.cs` remain unclassified; the linux and darwin lists were not classified. Intersected
+     with the 18 `src/core` paths the train-48 union touches, the overlap is ONE file per target, each
+     target's `runtime/<goos>/package_info.cs`, on map lines no seat wrote. -->
+- **A BYTE-LEVEL TREE HASH IS THE WRONG IDENTITY FOR AN EMISSION THE CONVERTER ITSELF WRITES WITH MIXED
+  LINE ENDINGS — the pair identity is CONTENT-NORMALIZED.** <!-- ⚠ 2026-09-15. Commit-and-checkout
+     normalization hides the class from CNR and from builds and surfaces it only in RAW comparisons, so
+     the mixed endings in doc-comment-heavy files sit underneath the `.gitattributes` premise without ever
+     contradicting it visibly. -->
+- **THE H6 FILL INPUT IS AN EMISSION PRODUCT, NOT A TRACKED FILE**: `.auto`(outgoing) against
+  `.auto`(incoming) per hand-own, from ONE converter binary, both GOROOTs, bare `-stdlib`, separate roots
+  run serially and seeded alike. <!-- ⚠ 2026-09-13, G `5b4d907b4` / COORD ruling. The 32 tracked `.cs.auto`
+     siblings are NEITHER half of that pair — the most available files in the tree are the wrong ones.
+     Recorded by RECIPE (binary SHA-256, source SHA, both GOROOTs, the seed) with per-target manifests.
+     Test-file hand-owns take their pair from a `-tests` emission of their own packages, and a row whose
+     principal is ABSENT at the target is a DELETE disposition rather than a fill row — the audit gate is
+     right to call "no `.auto` emitted" a defect in a fill row. -->
+- **AN EMISSION PAIR'S BINARY IDENTITY IS (`src/go2cs` TREE HASH, GO VERSION, `-trimpath -buildvcs=false`)
+  WITH THE SHA256 POSTED BY BOTH BOXES — "two rebuilds byte-identical" ON ONE BOX IS SAME-PATH
+  REPRODUCIBILITY, NOT SOURCE IDENTITY.** <!-- ⚠ 2026-09-13, G `42bac7cf7` / i9 `1bec764b4`. A plain
+     `go build` EMBEDS the build path: `8909753e` against `800f7432` across two directories, and
+     `e0b2a4c1` twice with `-trimpath`. `-trimpath` changes embedded paths and not codegen, so a
+     non-trimpath build of the same tree is the same converter BY BEHAVIOUR; cross-box identity is proven
+     by the equality of the two posted hashes and never assumed. -->
+- **THE THREE-TARGET EMISSION IS LOAD-BEARING FOR AN H6 PAIR, AND AN ALPHABETICAL HEAD IS A WHERE
+  CLAUSE.** <!-- ⚠ 2026-09-13, i9 `a0b7a2e55`. Only 2 of thousands of `.cs` differ across targets (the
+     per-platform `package_info` stamps), but 3 of the 32 `.cs.auto` siblings differ windows-against-linux
+     (`os/linux/wait_waitid`, `runtime/runtime2`, `syscall/linux/exec_unix`; darwin == windows), so a pair
+     cut from ONE target is silently wrong for the highest-traffic rows. A 40-file sample read 0
+     differences purely because the platform paths sort under o/r/s (safety-floor 16). Manifests are per
+     target and NAME the rows that differ. A deletion pass that already ran leaves the merged scratch
+     short of what it removed: restore from the preserved staging root, assert the five byte-identical
+     across targets, purge build output, assert the emitted count and the hand-own count, and only THEN
+     re-run the fixed instrument with the restored rows as its control. -->
+- **A SEEDED SURVIVOR IS NOT AN EMISSION: A SIDE OF A PAIR IS A FILE THE CONVERTER *WROTE* IN THAT HALF,
+  AND A ROW WHOSE PACKAGE MOVED TAKES THE EMISSION AT THE OLD PATH AS ITS OUTGOING SIDE.** <!-- ⚠
+     2026-09-13, G `695a04ba9` / COORD `80c948a7f`, then G `825c65222c`. Half B carried 2 of 32 `.cs.auto`
+     byte-identical to the SEED — the 1.24 autos `git mv`'d beside the relocated hand-owns, whose packages
+     do not exist at 1.23.12 — so paired as they stood, the two PRINCIPAL-CHANGED rows would have diffed
+     1.24 against 1.24 and filled "unchanged". The go2cs auto-generated banner discriminates a seed only
+     when the seed lacks it (30 with, 2 without) and is NOT a general discriminator, because seeded autos
+     carry it; the sound test is per target — an mtime inside the run window on ANY of the three targets,
+     since `writeAutoConversionSibling` is `os.Create` — and `stage == seed` reads 32/0 because the
+     converter writes autos into BOTH the `-go2cspath` root and the stage. Half B reads 27 written / 5
+     with no outgoing side. Recipe fact: the converter REFUSES `-stdlib` when `version.props` pins the
+     incoming release under the outgoing GOROOT (a good guard — seed `version.props` from the outgoing
+     master verbatim). -->
+- **AN MTIME SENTINEL MEANS WHAT THE WRITER OF *THAT FILE* MAKES IT MEAN — READ THE WRITER BEFORE TRUSTING
+  A SENTINEL.** <!-- ⚠ 2026-09-13, COORD ruling on i9 `8f2eafdc8`, then i9 `f4c659e02` / COORD
+     `814e227a1`. `needToWriteFile` returns false on byte-equal content and every emission write goes
+     through it, so for `package_info.cs` an mtime sentinel measures "did the BYTES change", not "is this
+     file CURRENT" — which is why one admission clause admitted 28 of 42 rows on one lane's tree and 0 of
+     42 on another's, from the same predicate. `writeAutoConversionSibling` is `os.Create` EVERY time, so
+     for `.cs.auto` the same sentinel IS sound (46 byte-identical rows split 14 written / 32 never-written
+     on every target). Two writers, one sentinel, opposite meanings. Companion trap: 92 of 92 identical
+     answers is what a predicate that NEVER MATCHED looks like (a path prefix `<target>/src/core` against
+     `src/core`) — carried as an ABORT in the instrument, not as alertness. -->
+- **EVERY `-stdlib` ROOT IS SEEDED, SO "PRESENT IN THE CLEAN STAGING ROOT" IS NOT AN EMISSION TEST — A
+  PREMISE STATED FROM A FLAG'S NAME IS NOT A MEASUREMENT.** <!-- ⚠ 2026-09-13, i9 `79b555fcc` / COORD
+     `990f3ba1b`. COORD ruled "presence in the clean staging root" as an admission gate; safety-floor item
+     2 says every such root is seeded, and `-platform-census` says SEEDED, so the windows staging root
+     held 107 `.cs` across 14 packages REMOVED at 1.24.13 and the predicate admitted all 42 rows. Withdrawn
+     entirely. The uniformity gate (all 42 PRESENT) fired on a TRUE uniform answer — it cannot tell a path
+     bug from a non-discriminating predicate and should not try; it stops for a human. The only true
+     emission accounting is the converter's OWN counts, which is why a per-file emission manifest
+     (new / changed / reproduced-seed / line-endings-only) became a converter seat. -->
+- **A COMMITTED EMITTED FILE THE CONVERTER STOPPED WRITING AT A HOP IS KEPT ALIVE BY SEEDING AND IS
+  INVISIBLE WHILE ITS PACKAGE SITS BEHIND A RED — the HOP-STALE EMITTED FILE class.** A reconvert DELETES
+  what the converter no longer writes. <!-- ⚠ 2026-09-15, G's census: `crypto/ecdh/package_init.cs`
+     (CS0103 x3 on initializers the 1.24 emission no longer produces), and EXACTLY one in the corpus —
+     130 candidates reduced to 1 after excluding hand-written trees, reading hand-owns WHOLE rather than
+     through a 4 KB head window, and excluding packages the `-stdlib` run writes nothing for. -->
 ## 3. Diff — the hunk rule and its instrument
 - **The bank unit for a converter change's corpus footprint is the two-seeded diff's HUNKS, never its FILE set.** Applying the A/B's whole files onto a corpus stale in OTHER families carries those families in with them. The tell is arithmetic. Position maps and relocation hooks belong to the deliberate regen, not to a converter train. <!-- ⚠ measured 2026-09-02: the whole-file application landed six relocation hooks into one `package_info.cs` while the file that declares them — byte-identical between the two binaries, so never flagged — still declared three; result CS0111 ×3. Byte-identity to the new emission PASSED and an exact path-set assertion PASSED; neither can see a file the diff never named. Tell: 279 applied diff lines against 32 measured. The re-done application was 9 hunks / 24 lines, zero `GoPositionMap` and zero import-hook lines in the delta, with one untouched package as the direct control, and built clean everywhere. -->
 - **"Byte-identical to the emission" is a property of the FILE, not of the CHANGE.** Copying the footprint files wholesale out of the NEW seeded root is byte-identical BY CONSTRUCTION and still wrong, carrying every arc not yet regen'd into the corpus. numstat is the cheaper instrument, and the strongest-looking provenance check cannot see the difference. <!-- ⚠ measured 2026-09-02: numstat read 3/9, 13/31, 3/15, 5/6, 1/7 against a change that owns six lines. -->
@@ -154,6 +237,30 @@ description: Measure a converter change's corpus footprint. The seeded two-seede
      of this section.
      Second reasoned-zero in one train. -->
 - **Amended: a predicted-ZERO production footprint turns the two-seeded `-stdlib` diff into the NEGATIVE ARM, not into a gate to drop.** "Zero movement" is a prediction that can FAIL, so the diff runs with its positive control beside the `-tests` emission census that measures the change — "empty by construction" applies only where nothing PREDICTED it empty. <!-- ⚠ amended 2026-09-04. -->
+- **REGISTERING A MEMBER FOR HAND-CONVERSION IN A `zsyscall` FILE RENUMBERS EVERY `ᴋNN` TEMPORARY AFTER IT
+  — A FOOTPRINT PREDICTION FOR SUCH A REGISTRATION OWES THE TAIL.** <!-- ⚠ 2026-09-15, C1 `e7b651d7bf`.
+     The counter is per FILE: two placeholders moved `ᴋ64..ᴋ70` to `ᴋ57..ᴋ63` across seven later wrappers
+     (-20/+20), so the footprint read -52/+22 against a predicted -32/+2 — the same NET, and a
+     conspicuously different diff. REFINED at C1 `2321c61870`: the tail is a POPULATION of renumbered
+     references, and the diff size is that population MINUS the coincidences where a shifted line's new
+     text equals a neighbour's old text (a run of `KeepAlive(ᴋN)` lines collides — 18 predicted, 17
+     recorded). Score it by POSITIONAL alignment (`difflib`), never by set membership, which cannot tell
+     "unchanged" from "collided with a renumbered neighbour". -->
+- **AN EMISSION-VS-EMISSION INSTRUMENT'S "PREDICTED OLD" TAKEN FROM THE COMMITTED TREE IS UNRELIABLE:
+  SCORE ON `new == predicted new`, count `old != committed old` as a named DRIFT class, and call a MISS
+  only when the NEW side differs.** <!-- ⚠ 2026-09-15, train 48 §29. Master's committed line is not the
+     base arm's emission (see the fixed-point rule above), so a token substitution derived from
+     committed-old -> new cannot map. Same run, the filter half: `grep '^-[^-]'` over a UNIFIED diff DROPS
+     removed blank lines (a bare `-`) and any content line beginning `-`, while the measured side
+     (`grep '^< '` over a NORMAL diff) keeps them — predicted 53 against measured 55, read as a seat MISS
+     on seat 12. Filter the HEADER lines out instead and keep everything else, and make the DISPLAYED
+     counts the same count the comparison uses. -->
+- **A PREDICTED FILE THAT NEITHER ARM WRITES ON A TARGET IS A NAMED CLASS, NOT A MISS** — stamped by path
+  with the ambiguity stated. <!-- ⚠ 2026-09-15, train 48 run 6, s30. A hand-owned-by-consequence
+     `.csproj` or README, or a write-if-unchanged SKIP that is indistinguishable from never-written
+     because the seeds come from the union HEAD, can be neither differing nor added: NOT-WRITTEN-BY-EITHER-
+     ARM, gated by the build of the csproj rather than by the diff. UNMOVED — written by an arm and
+     unchanged — stays a miss. -->
 ## Hand-own re-derives and the `.cs.auto` sibling
 - **A WHOLE-FILE HAND-OWN'S DELTA AGAINST ITS TRACKED `.cs.auto` HOLDS TWO POPULATIONS WITH OPPOSITE OBLIGATIONS — HAND EDITS (re-apply) and FREEZE RESIDUE (the converter improved after the freeze: DROP) — and a 3-way re-derive cannot tell them apart**, because both are BASE→OURS changes: it re-applies the residue unexamined and the gap reproduces at every future re-derive. The discriminator: a shape present ONLY in hand-owned files is a HAND EDIT; a shape in the `.cs.auto` AND in N corpus files but absent from this `.cs` is a residue CANDIDATE; then the declaration confound check — **a declaration GONE means by design, not residue**. Every whole-file re-derive at a hop STATES its hand/residue split, and candidates that skipped the declaration check are never quoted as residue. **A hand-own HEADER that under-documents its own delta is caught only when something merges against it — list every hunk.** <!-- ⚠ discriminator 2026-09-07. `runtime2.cs`: 16 hunks, 4 `[GoValueClone]` stamps absent at master AND at the re-derive. 8 absences split 6/2. Header companion: 2 listed, 4 found. -->
 - **THE RE-DERIVE DISCRIMINATOR HAS THREE OUTCOMES, NOT TWO:** RESIDUE (the declaration survives, the stamp is absent → drop), **MISSING GENERATED** (the emission declares a construct the frozen file NEVER had → RESTORE), and BY DESIGN (the hand rewrite deleted it → nothing owed). **A two-way split files the middle class as "gone by design" silently.** Instrument lesson: an anchored pattern REQUIRING a trailing character cannot match a declaration that ENDS its line, and **a scripted check disagreeing with a hand check is where the finding is**. <!-- ⚠ 2026-09-07: 39 MISSING GENERATED were `[GoInit]` import-init hooks absent wholesale from three whole-file hand-owns — the forced-init class over the `.cs` files themselves, since a hand-own carrying none of its hooks is not forcing its imports' inits. Anchored-pattern miss read 7/1, not 6/2. -->
@@ -167,3 +274,29 @@ description: Measure a converter change's corpus footprint. The seeded two-seede
      on the corrected-before-measurement rule in §1. -->
 - **A THIRD invalid-base class: NOT-AN-EMISSION.** A tracked review sibling can be HAND-AUTHORED, carrying no generated-file header at any commit, so a 3-way rooted on it resolves hunks against content the converter NEVER WROTE; **a date screen cannot see it, only a content compare against a target-matched emission can.** Refreshed siblings land as a TRACKED seat, so base and record are one artifact. <!-- ⚠ 2026-09-08, surfaced the same hour as the date-screen ruling: one sibling was created whole in a two-file hand cut, and nothing enforced the sibling's own do-not-edit banner. -->
 - **Restoring a converter-decision attribute the hand file lacks (`[GoValueClone]`) is a BEHAVIOUR CHANGE consumers read, and rides as its OWN cut, never inside a re-derive seat.** <!-- ⚠ 2026-09-07 companion to the `.cs.auto` base rules. -->
+- **A RE-DERIVE OF A WHOLE-FILE HAND-OWN CARRIES THE HAND-OWN BODY FROM ITS LIVE BRANCH, NEVER FROM THE
+  LANDING TREE — A CARRY HAZARD, NOT A CONFLICT.** <!-- ⚠ 2026-09-13, C1 `68cf737` s1. `mfinal.cs`'s
+     `createfing` had been rewired to `GoFinalizerQueue.EnsureRunner()` on its own branch; a re-derive
+     from the LANDING tree re-applies the OLD body, `AddCleanup` compiles, returns a `Cleanup` and never
+     runs it, with no diagnostic anywhere. The alias sites and the hand-own sites do not overlap, so the
+     three-way merge is CLEAN and silent. The decidable post-condition is the guard test on that branch. -->
+- **THE `.auto` PAIR IS BLIND INSIDE A HAND-CONVERTED BODY — the emitted principal carries one-line
+  placeholders, so a MEMBER-BODY arm is part of the method, not an extra.** <!-- ⚠ 2026-09-13, G, H6
+     block 3, ruled `8cf7fdf6`; the extractor of record is G's block 6. Each Go body is hashed from its
+     func line to the first column-0 brace at BOTH GOROOTs, with controls that fire; directive and
+     doc-comment changes ABOVE the func line belong to the pair arm instead. A func line not ending in `{`
+     (an asm stub) is its own whole text — a span leak only ADDS code, so the extractor yields false
+     DIFFERS and never false IDENTICAL, which is the safe direction; a name declared on more than one
+     receiver is matched receiver-qualified; and each BODY-DIFFERS member is LOCATED by its declaration
+     before it moves a row. -->
+- **A DEFECT THAT EXISTS ONLY IN THE POST-HOP WORLD CANNOT PRE-LAND ON THE PRE-HOP CORPUS** — the
+  deliverable is a prepared, exactly-sited PATCH with an apply script and a post-condition. <!-- ⚠
+     2026-09-13, C1 `68cf737` s2 / R `4b4134242` s3. `runtime/internal/sys` is PRESENT and
+     `internal/runtime/sys` plus `note_other.cs` ABSENT at the pre-hop master, so re-pointing the aliases
+     or deleting the note partial NOW breaks the corpus that is green. The applier's own precondition then
+     has to be right about the post-hop tree: it keyed on the package DIRECTORY being gone, a shape the
+     removal step never produces (it removes FILES — csproj, README, icons and test `.cs` survive), so
+     apply REFUSED on the one tree it exists for while ten hermetic arms read green (C1 `8909f02f9`). A
+     HERMETIC FIXTURE ENCODES ITS AUTHOR'S MODEL AND CANNOT FALSIFY IT: R's scoring on the REAL root found
+     it in one run, and the pre-fix fixture had been wrong in the OPPOSITE direction. Score on a real root
+     before believing a fixture. -->
