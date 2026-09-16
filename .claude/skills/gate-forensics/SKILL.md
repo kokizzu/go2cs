@@ -1480,6 +1480,26 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      — one step from a false "passes in one build flavour, fails in another" finding. The C# program is
      `bin/Release/net10.0/<p>.exe`, and a stack naming `main.cs` is the tell. Disclosed by its author
      before it was posted; the same family as trap (4) above. -->
+- **When SIZING an emission defect, RE-RUN ONE CONVERSION WITH STDERR CAPTURED before writing the cause.**
+  The converter's own per-site WARNINGs go to stderr, so a campaign whose every A/B sends stderr to
+  `/dev/null` never receives the diagnostic that names the defect class — and **after a cure the
+  diagnostic's correct count is 0, which makes it a GUARD**: a cure that does not zero it means the two
+  predicates have diverged. <!-- ⚠ 2026-09-15 (C2, "RED 8 (a) — G's FINDING CONFIRMED, verified at the
+     tree by C2", §4). `constraintOperations.go:1204` has warned "approximate/union/method-carrying pointer
+     constraint … is not erased; emission may not compile" at EVERY one of RED 8's 29 sites, on every
+     conversion since the Go 1.24 hop — 29 for 29 against the elided `where X : /* … */ new()` lines,
+     package for package (6/6, 17/17, 6/6), with `crypto/elliptic` at 0 as the control (the package that
+     compiles). Nobody received it: every A/B in the campaign routed stderr to `/dev/null`. ONE re-emission
+     with stderr captured produced the whole table, and it hands the cure a free falsifier — 29 warnings to
+     0 alongside the 29 elided lines — and makes a counting guard cheaper than new machinery. -->
+- **A SIZING THAT NAMES A CAUSE CITES THE EMITTER OF EVERY CONSEQUENCE IT CLAIMS, by function and line: a
+  consequence with no cited emitter is an inference from a CORRELATION.** <!-- ⚠ 2026-09-15, the same post,
+     §2. RED 8's sizing wrote that three consequences "follow together" from `constraintProxyFor`'s G4; two
+     do. The ELIDED DECLARATION is emitted by `getGenericDefinition`'s inexpressible-union arm
+     (`constraintOperations.go:1320`), a separate chain that never consults the proxy gate and merely AGREED
+     with G4 on the corpus's two packages — both IsMethodSet-shaped — so a corpus correlation was written
+     as a mechanism. Same class as the RED 7 half-read (the emitting matcher read without the registry's own
+     guard), the second instance in one day. -->
 ## Reading a `-tests` result, and mass-empty verdicts
 Four checks BEFORE any shape analysis, in order.
 

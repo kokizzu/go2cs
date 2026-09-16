@@ -256,3 +256,60 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   living in attention rather than in a script fails under exactly the conditions the script exists
   for, and a forty-minute multi-leg run is what consumes attention: the old script would have run
   four more legs on a stale base and reported all four green. -->
+
+## 2026-09-15 — three lessons from the 1.24.13 hop week
+- **A REFUSAL control may be run live, because REFUSING is its pass. An ADMISSION control never may,
+  because its pass IS the action.** Every positive control on a post tool sorts into one of those two
+  before the battery runs: the ones that exit before any git step are safe against the real remote,
+  and the one that proves an arm ADMITS a legal body publishes that body if you let it. The fix is a
+  `--dry-run` flag that stops **after every guard and above the anchor read**, so a pass-path control
+  needs no live state — plus a control on the flag itself asserting it skips the ACTION and not the
+  ARMS. <!-- ⚠ 2026-09-15, C1 `9badd9f5e3`, owned by its author at `50e0703b19` §0 before anyone
+  asked. A rebuilt post tool's controls 1-4 were refusal controls and each exited before any git step,
+  as designed; control 5 was "a nickname UNC host is ADMITTED, a real host is not", written as a plain
+  invocation — and its passing path IS the post, so it posted: subject `x`, two lines, a synthetic
+  share-shaped string over two fleet NICKNAMES. No identifier of any class, because nicknames are what
+  that arm exists to admit, so it is noise and not a breach. Two lanes (R `14b819892c`, i9
+  `e4c91b59eb`) named it correctly from the SHAPE alone. This is the same family as "a gate composed
+  into the same command as the action it gates cannot gate it", wearing the other face: there the gate
+  cannot refuse, here the control cannot help but act. Fixed with the flag plus control 6 —
+  `--dry-run` still REFUSES a non-nickname host at a distinct exit code, which is what proves the flag
+  skips the action and not the arms. The junk entry was NOT removed: mailbox content is never removed
+  without the coordinator's word, and a lane tidying its own duplicates deletes the evidence a
+  body-hash census reads. i9's better shape — refuse any body with no `## ` heading before any write —
+  was adopted by C1 in the same fix. -->
+- **A post tool's fleet-identifier guard reads the WHOLE TRACKED TREE, not the entry you are
+  appending — so ONE identifier-shaped line anywhere in the mailbox file blocks EVERY post from that
+  tool until a commit on top neutralizes it.** The remedy is the neutralizing commit; the offending
+  SHA is never rewritten. Know which of your guards is tree-scoped and which is delta-scoped before
+  you are blocked by one at 3 a.m. RULED for every lane's tool (`ef0c5c7c98`): the SAME census arms the
+  tool runs on the entry run again over the WHOLE mailbox file, post-append, at the fetched tip,
+  exit-gated before the commit -- not a second implementation of the predicate (a second
+  implementation is a second predicate and drifts the moment it is written), not a scan above the
+  fetch (a stale tree answers nobody's question); an exemption is stated at the site with a firing
+  control, and two `--dry-run` controls are mandatory: a share-shaped line planted ALREADY IN the
+  file with a clean entry, and the pass on the real tip. A guard narrower than the fleet's does not
+  merely miss a violation -- it hides from its owner that the tree is blocking everyone else. <!-- ⚠ 2026-09-15: nothing from the coordinator could land while
+  `9badd9f5e3`'s two lines sat in the tracked file, because the coordinator's own tool refuses to
+  append to a tree carrying a share-shaped path. This is the complement of the rule under *Running a
+  census* in `.claude/rules/docs-records.md` — a tree gate and a delta gate answer different
+  questions and are complementary rather than duplicates — read from the operational side: the tree
+  gate's blast radius is every future post, not just the bad one. Ruled: the SHA stands, the line is
+  neutralized by one commit on top. -->
+- ⚠ **A CLOUD LANE'S STATE IS WHAT IS AT ORIGIN, PLUS WHAT THE RESUME PROMPT ITSELF NAMES — nothing
+  else, ever.** A container restart can take everything local and it presents as SILENCE rather than
+  as an event: the mailbox monitor dies with no timeout notice. So the resume prompt's own fallbacks
+  are its load-bearing parts — the read anchor comes from the lane's own OFFLINE post when the anchor
+  file is gone, the post tool is rebuilt from this skill plus the coordinator's tool as the reference
+  shape, and a pinned Go tree comes back in seconds from a blobless two-tag fetch. Re-arm every
+  watcher and wake leg after any restart, unconditionally; the ids are audit-only and always dead.
+  <!-- ⚠ Measured TWICE with OPPOSITE results, which is the whole point (C1 `9533327131`, folded by R
+  at `da175c4311` / read back `f7208c9b0d`). 2026-09-14 ~02:19Z: the worktrees, the scratchpad tools
+  and the anchor file all survived a restart, and C1's own WAKE paragraph recorded that survival as a
+  PROPERTY. At the 2026-09-15 resume NONE of it survived — six worktrees, the scratchpad tools, the
+  dedicated mailbox clone with a local-only branch on it, the anchor file and the blobless golang/go
+  clone were all gone, and the container came up as a fresh clone at master. All three prompt
+  fallbacks carried that resume. A survival measured once is an INSTANCE, not a property; the
+  replacement paragraph deliberately carries BOTH measurements, because a paragraph that quietly
+  swapped which instance it quoted would be the same mistake with a different answer. The rule is
+  adopted for BOTH cloud lanes. -->
