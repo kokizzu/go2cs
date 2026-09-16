@@ -758,6 +758,16 @@ func constraintHasPointerTerm(typeParam *types.TypeParam) bool {
 	return interfaceHasPointerTerm(iface, 0)
 }
 
+// constraintIsMethodSetWithPointerNamedUnion is isMethodSetWithPointerNamedUnion asked of a type parameter's
+// constraint. getGenericDefinition's pointer-constraint WARNING consults it, so the one shape the declaration and the
+// proxy now emit on purpose (fips140's `Point[P]`, RED 8) stops reporting "emission may not compile": that warning
+// named RED 8 at every site since the hop (29 for 29, crypto/elliptic 0), and after the cure its correct count is 0.
+func constraintIsMethodSetWithPointerNamedUnion(typeParam *types.TypeParam) bool {
+	iface, ok := typeParam.Constraint().Underlying().(*types.Interface)
+
+	return ok && isMethodSetWithPointerNamedUnion(iface)
+}
+
 func interfaceHasPointerTerm(iface *types.Interface, depth int) bool {
 	if depth > 8 {
 		return false
@@ -1200,7 +1210,7 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 			}
 
 			v.showWarning("@getGenericDefinition - pointer-core constraint `%s` on generic type `%s` is not erased (no stdlib precedent); emission may not compile", v.getAliasQualifiedTypeName(pointer, false), srcType.String())
-		} else if constraintHasPointerTerm(typeParam) {
+		} else if constraintHasPointerTerm(typeParam) && !constraintIsMethodSetWithPointerNamedUnion(typeParam) {
 			v.showWarning("@getGenericDefinition - approximate/union/method-carrying pointer constraint `%s` on `%s` is not erased; emission may not compile", typeParam.Constraint().String(), srcType.String())
 		}
 
@@ -1317,7 +1327,7 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 						// corpus witness), and nothing needed it: golib `@new<T>` constructs via
 						// the runtime and no comparable-constrained body constructs its parameter.
 						continue
-					} else if v.constraintTypeSetIsInexpressible(constraint) {
+					} else if !isMethodSetWithPointerNamedUnion(iface) && v.constraintTypeSetIsInexpressible(constraint) {
 						// A union whose terms are all COMPOSITE Go types — runtime/pprof's
 						// `[T runtime.StackRecord | runtime.MemProfileRecord |
 						// runtime.BlockProfileRecord]`. Every earlier arm in this chain has been
@@ -1366,7 +1376,13 @@ func (v *Visitor) getGenericDefinition(srcType types.Type) (string, string) {
 							constraintName = fmt.Sprintf("%s %s", originalConstraint, typeConstraint)
 						}
 					}
-				} else if isMethodSetBeyondComparable(iface) {
+				} else if isMethodSetBeyondComparable(iface) || isMethodSetWithPointerNamedUnion(iface) {
+					// A method set beside a pointer-to-named union (fips140's `Point[P]`) takes this arm
+					// too: visitInterfaceType emits it as a pure method set with the union as a comment, and
+					// constraintProxyFor admits it on the same predicate, so the declaration and the proxy
+					// agree. Left in the composite-union arm above it rendered `/* Point[P] */ new()`, which
+					// neither the box nor the proxy (no parameterless constructor) satisfies — CS0310 (RED 8).
+					//
 					// A REGULAR method-set interface (a pure method set, no type-term unions —
 					// go/ast's `Node` in `walkList[N Node]`) is emitted arity-0 by
 					// visitInterfaceType, NOT as the generic CRTP form that union+method
@@ -1569,7 +1585,7 @@ func (v *Visitor) constraintProxyFor(typeParam *types.TypeParam, typeArg types.T
 
 	iface, ok := constraintNamed.Underlying().(*types.Interface)
 
-	if !ok || iface.NumMethods() == 0 || !iface.IsMethodSet() {
+	if !ok || iface.NumMethods() == 0 || !(iface.IsMethodSet() || isMethodSetWithPointerNamedUnion(iface)) {
 		return "", false
 	}
 
@@ -1593,6 +1609,37 @@ func (v *Visitor) constraintProxyFor(typeParam *types.TypeParam, typeArg types.T
 	// ImplementGenerator's `elementType.Name + PointerPrefix + interfaceDef.Name`.
 	proxyName := elemNamed.Obj().Name() + PointerPrefix + interfaceOrigin.Obj().Name()
 
+	// A FOREIGN constraint interface: the package that declares it OWNS the proxy. It records the pair wherever it closes
+	// the constraint over the element, and ImplementGenerator makes that proxy public when both sides are, so a consumer
+	// names THE OWNER'S proxy through the interface package's C# qualifier and records none of its own. A second record
+	// here would mint a second class of the same simple name in this assembly, which the owner's signatures do not accept:
+	// crypto/ecdsa passing crypto/internal/fips140/ecdsa's `P224()` result to its own generics was CS1503 x16, and the
+	// record itself spelled the interface by its Go import path, a parse error (RED 8, COORD a4eb648a6 g2a/g2b). The
+	// qualifier is the interface's C# spelling, resolved by getScopeCheckedTypeName: the file-local alias (`ecdsa.`) only when
+	// this file imports the interface's package, else the fully-qualified C# name -- a consumer can reach a foreign constraint
+	// through a THIRD package without importing the interface's own, and an unimported alias names nothing (CS0246). A
+	// fully-qualified name that still carries the Go import path goes through convertToCSFullTypeName, so it never reaches C#.
+	// No resolvable qualifier declines, leaving the box: an honest CS0310 rather than a proxy name that exists nowhere.
+	if interfaceOrigin.Obj().Pkg() != v.pkg {
+		qualified := v.getScopeCheckedTypeName(interfaceOrigin)
+
+		if idx := strings.Index(qualified, "["); idx >= 0 {
+			qualified = qualified[:idx]
+		}
+
+		if strings.Contains(qualified, "/") {
+			qualified = convertToCSFullTypeName(qualified)
+		}
+
+		dot := strings.LastIndex(qualified, ".")
+
+		if dot <= 0 {
+			return "", false
+		}
+
+		return qualified[:dot+1] + proxyName, true
+	}
+
 	// Register the (element, interface) pair so package_info emits the ConstraintProxy record.
 	// The interface name drops its type-parameter DECLARATION (`point[T any]` → `point`): the
 	// record's `GoImplement<element, point<element>>` closes it over the element placeholder.
@@ -1608,10 +1655,10 @@ func (v *Visitor) constraintProxyFor(typeParam *types.TypeParam, typeArg types.T
 
 	interfaceFullName := v.getFullyQualifiedTypeName(interfaceOrigin, false)
 
-	// Strip the type-parameter DECLARATION only — getFullyQualifiedTypeName already yields the interface's
-	// C# reference form (bare `nistPoint` for a local interface, `pkg_package.Iface` cross-package),
-	// so it must NOT go through convertToCSFullTypeName (which would root-qualify the bare local name
-	// to the wrong `go.nistPoint`). qualifyLocalTypeRef handles final qualification at emission.
+	// Strip the type-parameter DECLARATION only. The interface is LOCAL by construction here (a foreign one returned
+	// above without a record), so getFullyQualifiedTypeName yields its bare C# name (`nistPoint`), and it must NOT go
+	// through convertToCSFullTypeName (which would root-qualify the bare local name to the wrong `go.nistPoint`).
+	// qualifyLocalTypeRef handles final qualification at emission.
 	if idx := strings.Index(interfaceFullName, "["); idx >= 0 {
 		interfaceFullName = interfaceFullName[:idx]
 	}
@@ -2145,6 +2192,53 @@ func isPredeclaredComparable(t types.Type) bool {
 	obj := named.Obj()
 
 	return obj != nil && obj.Pkg() == nil && obj.Name() == "comparable"
+}
+
+// isMethodSetWithPointerNamedUnion reports whether iface is a method set PLUS embedded unions whose
+// every term is a pointer to a NAMED type, with no tilde and nothing else embedded — Go 1.24's
+// crypto/internal/fips140 `Point[P]` constraints (ecdh, ecdsa), which open with
+// `*nistec.P224Point | *nistec.P256Point | *nistec.P384Point | *nistec.P521Point` beside the method
+// list crypto/elliptic's `nistPoint[T]` carries alone.
+//
+// The union restricts nothing a C# type can observe: visitInterfaceType emits it as a comment line
+// and the partial interface as a pure method set, so a proxy implementing that interface is exactly
+// the nistPoint proxy. IsMethodSet() answering false over the union was refusing on a Go-side property
+// the emission had already dropped (RED 8, C2 sizing 0d6cd77a2, COORD 7bc9d58d4 candidate (a)).
+//
+// Deliberately narrow: an approximate term (`~*T`), a non-pointer term, a pointer to an unnamed type,
+// or any embedded interface keeps the method-set refusal.
+func isMethodSetWithPointerNamedUnion(iface *types.Interface) bool {
+	if iface == nil || iface.NumMethods() == 0 || iface.NumEmbeddeds() == 0 {
+		return false
+	}
+
+	for i := range iface.NumEmbeddeds() {
+		union, ok := iface.EmbeddedType(i).(*types.Union)
+
+		if !ok {
+			return false
+		}
+
+		for j := range union.Len() {
+			term := union.Term(j)
+
+			if term.Tilde() {
+				return false
+			}
+
+			ptr, ok := types.Unalias(term.Type()).(*types.Pointer)
+
+			if !ok {
+				return false
+			}
+
+			if _, ok := types.Unalias(ptr.Elem()).(*types.Named); !ok {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 // isMethodSetBeyondComparable reports whether iface is a pure METHOD SET once an embedded

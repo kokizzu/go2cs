@@ -42,7 +42,7 @@ internal static void initᴛfipsSelfTest() { fipsSelfTest = sync.OnceFunc(() => 
         }.slice();
         var k = Ꮡ(new PrivateKey(d: privateKey, pub: new ΔPublicKey(curve: p256)));
         var peer = Ꮡ(new ΔPublicKey(curve: p256, q: publicKey));
-        var (got, err) = ecdh(ref (P256()).DerefOrNull(), ref (k).DerefOrNull(), ref (peer).DerefOrNull());
+        var (got, err) = ecdh<P256PointжPoint>(ref (P256()).DerefOrNull(), ref (k).DerefOrNull(), ref (peer).DerefOrNull());
         if (err != default!) {
             return err;
         }
