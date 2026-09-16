@@ -1184,13 +1184,31 @@ behavioral divergence, an added branch shows up as nothing.
 > compiled. The cure had simply been deleted.
 >
 > **The step, and it is mechanical.** At H6, before any substantive-row review, compute the
-> **retired-hand-own set** — markers present in the OUTGOING corpus and absent from the incoming one:
+> **retired-hand-own set** — markers present in the OUTGOING corpus and absent from the incoming one.
+>
+> ⚠ **`<outgoing-sha>` is the MERGE-BASE of the release branch and master, never master's tip.** A hop
+> runs on a long-lived release branch while master keeps moving; a hand-own that landed on master *after*
+> the branches diverged was never on the release branch to be retired from it, and a baseline taken at
+> master's tip reports it as retired. Corrected in review by a second lane, who re-ran the ancestry test
+> on the first run's rows: six of seven survived, and the one that did not had landed on master after the
+> divergence. **Assert it per row** — `git merge-base --is-ancestor <the-commit-that-added-it>
+> <incoming-sha>` — because that assertion is what catches the class, not the choice of baseline alone.
+>
+> ⚠ **And a row that fails that assertion is not discarded — it is RE-ROUTED.** It is not a hop
+> retirement; it is a **carry-forward gap**: a cure that exists on master and has never reached the
+> release branch. That is a different finding and can be a worse one. The instance here: the excluded
+> row's cure keeps a runtime test off a fatal path, the release branch carries the seat that makes that
+> path an uninterceptable process exit, and the host kill it prevents was measured at 57 verdicts. **The
+> false positive was worth more than the row it displaced**, so the step files these rather than dropping
+> them, and the hop's own carry-forward census owns them.
 >
 > ```
 > git grep -l -E '^\s*\[module:\s*(go\.)?GoManualConversion\]' <outgoing-sha> -- 'src/core/**/*.cs' | sed "s#^<outgoing-sha>:##" | sort > logs/handowns-outgoing.txt
 > git grep -l -E '^\s*\[module:\s*(go\.)?GoManualConversion\]' <incoming-sha> -- 'src/core/**/*.cs' | sed "s#^<incoming-sha>:##" | sort > logs/handowns-incoming.txt
 > LC_ALL=C comm -23 logs/handowns-outgoing.txt logs/handowns-incoming.txt > logs/handowns-retired.txt
 > ```
+>
+> where `<outgoing-sha>` is `git merge-base <release-branch> master`.
 >
 > **One row per retired hand-own, and the row is not closed by the deletion being correct.** For each:
 >
