@@ -94,9 +94,11 @@ func gateDeclPattern(name string) *regexp.Regexp {
 	return regexp.MustCompile(`^\s*(?:\[[^\]]*\]\s*)*(?:internal|public|private|protected)\s+(?:static\s+)?(?:unsafe\s+)?partial\s+.*?\b` + regexp.QuoteMeta(name) + `(?:<[^>()]*>)?\s*\(`)
 }
 
-// interopAttributePattern matches the two attributes that make a bodyless partial REALIZED by a
-// source generator rather than stubbed with a throw.
-var interopAttributePattern = regexp.MustCompile(`\[\s*(?:LibraryImport|DllImport)\b`)
+// The interop rule -- the two attributes that make a bodyless partial REALIZED by a source
+// generator rather than stubbed with a throw -- is ONE definition for both gate watches:
+// interopRealizationPattern in nativeCallGateDarwin_test.go, same package. This file carried a
+// second, NARROWER spelling of the same rule until the fold; the note on that declaration keeps
+// what the two disagreed on and why the wider spelling is the one kept.
 
 // stdcallCallPattern matches a call to the stdcall family. The declarations themselves are excluded
 // by the reading, so this counts CALL SITES.
@@ -196,7 +198,7 @@ func resolveGate(t *testing.T, root string, tracked []string, name string) gateR
 
 			window := strings.Join(lines[max(0, n-4):n+1], "\n")
 
-			if interopAttributePattern.MatchString(window) {
+			if interopRealizationPattern.MatchString(window) {
 				resolution.interop = append(resolution.interop, where)
 			}
 		}
@@ -236,7 +238,7 @@ func scanWindowsGate(t *testing.T, root string, tracked []string) gateScan {
 				continue
 			}
 
-			if interopAttributePattern.MatchString(line) {
+			if interopRealizationPattern.MatchString(line) {
 				scan.interopDeclared++
 				scan.interopSites = append(scan.interopSites, fmt.Sprintf("%s:%d", short, n+1))
 			}
