@@ -122,7 +122,27 @@ var structDeclPattern = regexp.MustCompile(`^\s*(?:\[[^\]]*\]\s*)*(?:public|inte
 // plainFieldPattern matches `public ж<byte> EncodedCert;`; embeddedFieldPattern matches Go struct
 // embedding, which the converter emits as `public partial ref CommonType CommonType { get; }`. Both
 // contribute to layout, so both are fields here.
-var plainFieldPattern = regexp.MustCompile(`^\s*(?:public|internal|private|protected)\s+(?:unsafe\s+|readonly\s+|volatile\s+|static\s+)*([^;=]+?)\s+[A-Za-z_@\p{L}][^\s;=]*\s*;`)
+//
+// ⚠ THE INITIALIZER IS ADMITTED AND IGNORED, and that is a FIX, not a nicety. The first spelling of
+// this pattern forbade `=` anywhere in the declaration -- type `[^;=]+?`, name `[^\s;=]*` -- and
+// `array<T>` fields are ALWAYS emitted WITH an initializer:
+//
+//	public array<int8> X__opaque = new(56);        (runtime/darwin pthreadattr)
+//	internal array<byte> __sigaction_u = new(8);   (runtime/darwin usigactiont)
+//
+// so a struct whose ONLY reference is an initialized array read as NOT reference-bearing, and the
+// census would have called a site over it blittable. Measured at this tree: 47 struct names are
+// admitted to the table only by this fix, every one of them carrying a reference-bearing field.
+//
+// HOW IT WAS CAUGHT, because the route matters more than the fix: a DIFFERENT population refuted it.
+// q90's darwin sizing read ZERO pointer-to-reference-bearing sites across 46 live libcCall sites,
+// while runtime/darwin/libccall_impl.cs's own header names FIVE members of that class by type
+// (usigactiont done; itimerval, keventt, stackt, pthreadattr pending). A census reading zero in a
+// class whose remedy list names five members is refuted BY THAT LIST -- a known positive from
+// another population, which is the fourth instrument to catch this family of fault after a declared
+// set, a control and an adversarial read of a diff. Under the old pattern usigactiont, pthreadattr
+// and itimerval all read NOT reference-bearing; under this one all three resolve.
+var plainFieldPattern = regexp.MustCompile(`^\s*(?:public|internal|private|protected)\s+(?:unsafe\s+|readonly\s+|volatile\s+|static\s+)*(.+?)\s+[A-Za-z_@\p{L}][^\s;=]*\s*(?:=[^;]*)?;`)
 var embeddedFieldPattern = regexp.MustCompile(`^\s*(?:public|internal|private|protected)\s+partial\s+ref\s+([^\s]+)\s+[^\s]+\s*\{\s*get`)
 
 // referenceBearingPattern matches a field type that carries a managed reference, which is what costs the
@@ -588,6 +608,64 @@ func TestNativeBoundaryBoxDerefsAreBlittable(t *testing.T) {
 
 	t.Logf("declared %d (HAZARD %d · DISCLOSED-INERT %d) · measured %d",
 		len(declaredBoxDerefs), kinds[boxDerefHazard], kinds[boxDerefDisclosedInert], len(scan.hazards))
+}
+
+// TestFieldPatternAdmitsAnInitializedField is the control for the fix above, planted with the REAL
+// declarations that exposed the hole rather than synthetic ones. The first plant is the one that
+// decides: against the pattern as q86 pushed it, this arm FAILS -- which is what makes it a guard
+// rather than a restatement.
+func TestFieldPatternAdmitsAnInitializedField(t *testing.T) {
+	for _, plant := range []struct {
+		line string
+		want string
+		why  string
+	}{
+		{
+			line: "    public array<int8> X__opaque = new(56);",
+			want: "array<int8>",
+			why:  "runtime/darwin pthreadattr — an INITIALIZED array field, the shape the old pattern could not see",
+		},
+		{
+			line: "    internal array<byte> __sigaction_u = new(8);",
+			want: "array<byte>",
+			why:  "runtime/darwin usigactiont — the same shape in the type whose remedy is already DONE",
+		},
+		{
+			line: "    public ж<byte> EncodedCert;",
+			want: "ж<byte>",
+			why:  "syscall CertContext — an UNINITIALIZED reference field, which must keep matching",
+		},
+		{
+			line: "    internal timeval it_interval;",
+			want: "timeval",
+			why:  "runtime/darwin itimerval — a NESTED NAMED TYPE, reference-bearing only through timeval's own initialized array",
+		},
+		{
+			line: "    public int64 X__sig;",
+			want: "int64",
+			why:  "a plain scalar beside the initialized field, which must not be disturbed",
+		},
+	} {
+		match := plainFieldPattern.FindStringSubmatch(plant.line)
+
+		if match == nil {
+			t.Errorf("plainFieldPattern does not match %q\n%s\n"+
+				"an `array<T>` field is ALWAYS emitted with an initializer, and a pattern that forbids `=` reads "+
+				"the struct as carrying no reference at all", strings.TrimSpace(plant.line), plant.why)
+			continue
+		}
+
+		if got := strings.TrimSpace(match[1]); got != plant.want {
+			t.Errorf("plainFieldPattern read the type of %q as %q, want %q\n%s",
+				strings.TrimSpace(plant.line), got, plant.want, plant.why)
+		}
+	}
+
+	// The reference-bearing test must then FIRE on the initialized field, which is the point of
+	// admitting it: matching the line and not classifying it would be the same miss one step later.
+	if !referenceBearingPattern.MatchString("array<int8>") {
+		t.Fatal("referenceBearingPattern does not fire on array<int8>; admitting the field buys nothing")
+	}
 }
 
 // TestBoxDerefScannerFires is the control: the same scanner over a synthetic tracked tree carrying, in
