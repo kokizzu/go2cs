@@ -126,7 +126,7 @@ public sealed class TestExecution
     private Action? m_cancelCtx;
     private bool m_ctxCanceled;
     private bool m_parallel;
-    private bool m_envSet;
+    private bool m_denyParallel;
     private bool m_holdsParallelSlot;
     private bool m_finished;
     private bool m_failed;
@@ -525,38 +525,60 @@ public sealed class TestExecution
     }
 
     /// <summary>
-    /// Whether this execution or ANY ancestor has called <c>t.Parallel</c>.
+    /// Go 1.24's <c>T.checkParallel</c> (testing.go:1596): panic if this execution or ANY ancestor has
+    /// called <c>t.Parallel</c>, otherwise mark this execution as denying a later <c>t.Parallel</c>.
     /// </summary>
     /// <remarks>
-    /// Go's <c>T.Setenv</c> walks the whole chain — <c>for c := &amp;t.common; c != nil; c = c.parent</c>
-    /// (testing.go:1515) — and its own comment says why: a NON-parallel subtest of a PARALLEL parent
-    /// still runs concurrently with tests outside that parent, so it is only serial with respect to
-    /// its siblings. <c>Setenv</c> mutates the whole process, so the ancestor's parallelism disqualifies
-    /// the child just as the child's own would. Checking only this execution's flag — which is what
-    /// this host did until 2026-09-03 — accepts exactly the two cases Go's own suite pins,
-    /// <c>TestSetenvWithParallelParentBeforeSetenv</c> and its grand-parent sibling.
+    /// <para>
+    /// Go walks the whole chain — <c>for c := &amp;t.common; c != nil; c = c.parent</c> — and its own
+    /// comment says why: a NON-parallel subtest of a PARALLEL parent still runs concurrently with tests
+    /// outside that parent, so it is only serial with respect to its siblings. <c>Setenv</c> and
+    /// <c>Chdir</c> mutate the whole process, so the ancestor's parallelism disqualifies the child just
+    /// as the child's own would. Checking only this execution's flag — which is what this host did until
+    /// 2026-09-03 — accepts exactly the two cases Go's own suite pins,
+    /// <c>TestSetenvWithParallelParentBefore</c> and its grand-parent sibling.
+    /// </para>
+    /// <para>
+    /// ⚠ At 1.23.12 this was TWO rules with two texts: <c>Setenv</c> refused a parallel ancestor, and
+    /// <c>Parallel</c> refused a prior <c>Setenv</c>. 1.24 made them ONE — a single helper that both
+    /// <c>T.Setenv</c> (:1617) and <c>T.Chdir</c> (:1628) call, setting <c>denyParallel</c>, which
+    /// <c>T.Parallel</c> (:1540) then tests. The flag this sets is that <c>denyParallel</c>: it is not
+    /// "an environment variable was set", which is why the field is no longer named for one.
+    /// </para>
     /// </remarks>
-    private bool HasParallelSelfOrAncestor()
+    private void CheckParallel()
     {
         for (TestExecution? execution = this; execution is not null; execution = execution.m_parent)
         {
             if (execution.IsParallel)
-                return true;
+                throw builtin.panic(ParallelConflictText);
         }
 
-        return false;
+        // Set BEFORE the caller's process mutation, as Go does (checkParallel returns having set the
+        // flag, ahead of common.Setenv / common.Chdir): a later t.Parallel must be refused whether or
+        // not that mutation succeeded, because the test has already declared an intent to make one.
+        lock (m_syncRoot)
+            m_denyParallel = true;
     }
 
-    // Go's three panic texts for the Setenv/Parallel contract, VERBATIM from testing.go (1444-1448,
-    // 1523) at the pinned go1.23.12. They are quoted rather than composed because Go's own tests
-    // compare the recovered value against the whole string with ==, so a paraphrase, a truncation at
-    // the semicolon (what this host shipped), or an interpolated test name all read as "no panic".
+    // Go's panic texts for the Setenv/Chdir/Parallel contract, VERBATIM from testing.go at the pinned
+    // go1.24.13. They are quoted rather than composed because Go's own tests compare the recovered
+    // value against the whole string with ==, so a paraphrase, a truncation at the semicolon (what this
+    // host shipped once), or an interpolated test name all read as "no panic".
+    //
+    // ⚠ TWO of these were THREE at 1.23.12. That release had one text for "Parallel after Setenv"
+    // (testing.go:1448) and another for "Setenv after Parallel" (:1523); 1.24 replaced BOTH with the
+    // single parallelConflict (:1530), which names Chdir as well because Chdir joined the contract —
+    // T.Chdir does not exist at 1.23.12 at all. Occurrences of either old text anywhere in 1.24.13's
+    // testing.go or testing_test.go: zero, measured. They are gone, not deprecated.
+    //
+    // ⚠ The "called multiple times" text below is NOT part of that replacement. It is UNCHANGED at
+    // 1.24.13 (testing.go:1538) and must stay spelled exactly as it is: modernising all three texts
+    // together is a wrong change that compiles.
     private const string ParallelCalledMultipleTimesText =
         "testing: t.Parallel called multiple times";
-    private const string ParallelAfterSetenvText =
-        "testing: t.Parallel called after t.Setenv; cannot set environment variables in parallel tests";
-    private const string SetenvAfterParallelText =
-        "testing: t.Setenv called after t.Parallel; cannot set environment variables in parallel tests";
+    private const string ParallelConflictText =
+        "testing: test using t.Setenv or t.Chdir can not use t.Parallel";
 
     public void Parallel()
     {
@@ -564,12 +586,13 @@ public sealed class TestExecution
             return;
         lock (m_syncRoot)
         {
-            // Go's order, which is observable: isParallel is tested before isEnvSet, so a test that
-            // is both already-parallel and env-set recovers the "multiple times" text.
+            // Go's order, which is observable: isParallel is tested before denyParallel (testing.go
+            // :1537 then :1540), so a test that is both already-parallel and deny-marked recovers the
+            // "multiple times" text.
             if (m_parallel)
                 throw builtin.panic(ParallelCalledMultipleTimesText);
-            if (m_envSet)
-                throw builtin.panic(ParallelAfterSetenvText);
+            if (m_denyParallel)
+                throw builtin.panic(ParallelConflictText);
             m_parallel = true;
         }
         ParallelSource.TrySetResult();
@@ -712,14 +735,9 @@ public sealed class TestExecution
         if (!TryEnsureOwner(nameof(Setenv)))
             return;
 
-        if (HasParallelSelfOrAncestor())
-            throw builtin.panic(SetenvAfterParallelText);
-
-        // Set BEFORE the environment is written, as Go does (testing.go:1525, ahead of the
-        // common.Setenv call): a later t.Parallel must be refused whether or not the write below
-        // succeeded, because the test has already declared an intent to mutate process state.
-        lock (m_syncRoot)
-            m_envSet = true;
+        // Go 1.24's T.Setenv is exactly `t.checkParallel(); t.common.Setenv(key, value)`
+        // (testing.go:1617) — the refusal and the deny mark are the helper's, not this member's.
+        CheckParallel();
 
         // Write BOTH env stores the corpus reads through. The corpus has two disjoint env-reader
         // paths on the Linux flavor, and a foundational test host must feed both or it fixes one
@@ -800,6 +818,14 @@ public sealed class TestExecution
     {
         if (!TryEnsureOwner(nameof(Chdir)))
             return;
+
+        // ⚠ BEFORE the directory is touched, and on EVERY GOOS. Go 1.24's T.Chdir is
+        // `t.checkParallel(); t.common.Chdir(dir)` (testing.go:1628), so the refusal precedes the
+        // process mutation and does not depend on the PWD write below — which is skipped on windows
+        // and plan9. Until 2026-09-16 this host reached a parallel check only by COINCIDENCE, through
+        // its own Setenv("PWD", …) on non-Windows, so Chdir-then-Parallel was unrefused on Windows in
+        // both directions and refused elsewhere with 1.23's text.
+        CheckParallel();
 
         string previous;
 
