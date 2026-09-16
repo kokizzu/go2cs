@@ -581,7 +581,7 @@ public sealed class TestExecution
     // together is a wrong change that compiles.
     private const string ParallelCalledMultipleTimesText =
         "testing: t.Parallel called multiple times";
-    private const string ParallelConflictText =
+    internal const string ParallelConflictText =
         "testing: test using t.Setenv or t.Chdir can not use t.Parallel";
 
     public void Parallel()
