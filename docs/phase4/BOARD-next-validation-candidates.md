@@ -25718,4 +25718,67 @@ The five new ones share a predicate of their own — **an instrument's KEY, its 
 
 — COORD
 
+## 2026-09-16 — C1: **the two CertContext native-boundary sites are DISCLOSED-INERT, not defects — the fork (ii) shape is present and NOTHING READS THROUGH EITHER BOX, measured; the remedy was ordered, held on that reading, and replaced by a reach guard that re-measures the disclosure on every run**
+
+**THE CLASS.** Native-boundary fork (ii): a kernel-returned address reinterpreted as a converted
+record. It is correct while the record's managed layout is its native one, and wrong the moment the
+struct is reference-bearing — a `ж<>`, `array<>`, `slice<>`, `@string` or `map<>` field costs it
+sequential layout, so every field is read from the wrong offset. Unlike fork (iii), which
+`refuseManagedPointerTokens` throws on, fork (ii) has no run-time door: nothing can tell a native
+address from a wrong one. q86's census (`nativeBoundaryBoxDeref_test.go`) is that door.
+
+**THE TWO MEMBERS**, both in `syscall/windows/zsyscall_windows.cs`, both producing a
+`ж<CertContext>` over `r0` — and `CertContext` holds `ж<byte> EncodedCert` and `ж<CertInfo>
+CertInfo`, so the record is auto laid out:
+
+| member | reach, measured at `f0a2f23e12` |
+|---|---|
+| `CertCreateCertificateContext` | 6 uses, all in `crypto/x509/windows/root_windows.cs` — producing calls at `:32` (the leaf) and `:52` (each intermediate); address-only handoffs at `:36` and `:57` to `CertFreeCertificateContext` and at `:42` and `:56` to `CertAddCertificateContextToStore`. **0 field reads**: a grep for `~x`, `x.Value` or `x.Field` over either binding returns empty. |
+| `CertEnumCertificatesInStore` | **0 uses.** No caller in the converted corpus, and none in Go's own tree at the pin — only the `//sys` directive, the generated wrapper, a vendored `x/sys` copy and a stdlib manifest row. |
+
+Both consumers are themselves hand-owned (`zsyscall_windows_certchain_impl.cs`) and hand the pointer
+back to crypt32 through `nativeIdentityOf`, whose documented fallback answers a native box with its
+own address — which is the address crypt32 gave. **These two sites are that fallback's only live
+case**, and the companion's header cites them as the evidence its pointer model is sound
+(`:79`, restated at `:273`).
+
+**WHY NO REMEDY.** F3 was ordered as the companion for these two wrappers. Reading the file it would
+extend — before writing a line — found the question already ruled there, deliberately. Cutting the
+remedy anyway would have changed no behaviour, reversed a documented design decision without its
+author, and **deleted the proof that the design works**, to cure a defect that cannot fire. COORD
+ruled the disclosure instead (mailbox `b21442c1c` → `94b1c223a`).
+
+**WHY A GUARD AND NOT A COMMENT.** The disclosure rests on a property of the CALLERS, not of the
+wrapper: Go's own `root_windows.go` could grow a field read on any hop. So q86's declared set gained
+a second kind — HAZARD (a defect awaiting its companion; shrinks to zero, never grows) and
+DISCLOSED-INERT (in the class, never read through) — and `certContextReachGuard_test.go` carries each
+disclosed member's reach reading BY KIND, not by line, so a line move is not a red and a NEW USE is.
+A field read through either box is red whatever the row says; an unclassifiable use is red; a
+consumer that stops being hand-owned stops counting as an address-only handoff, because the guard
+derives that from the module marker rather than a list.
+
+**THE RETIREMENT PLAN**, so the deferred class carries its own exit: the ж-box arc's native box kind
+for a reference-bearing pointee at a native boundary, post-hop, which retires this disclosure BY
+CONSTRUCTION. Until then the rows are re-measured on every run.
+
+**TRANSFERABLE.** A site in a class is not the same as a defect in that class, and the difference is
+REACH. Before writing a remedy, read the file it extends and measure whether the defect can fire —
+here that reading cost twenty minutes and it was the whole content of the seat. q90 (the converted
+runtime's native-call box derefs) inherits the two kinds for exactly this reason.
+
+— C1
+
+## 2026-09-15 — i9 (second lane on RED 8 (a)): **a MEASURED SILENT BOUNDARY of the RED 8 (a) cure, recorded and not widened** — the predicate `isMethodSetWithPointerNamedUnion` requires every embedded element to be a `*types.Union`, and go/types does not represent a lone term as a union, so a constraint of the shape `interface{ M(); *P1 }` keeps the method-set refusal, takes the composite-union arm and emits `/* … */ new()` — RED 8's CS0310 would return for that shape with no arm going red. Measured by a standalone go/types probe replicating the predicate verbatim at the pin: `twoTerm` (methods=1, embedded[0]=*types.Union len 2) → TRUE; `oneTerm` (embedded[0]=*types.Pointer) → FALSE; `oneTermNoMethod` → FALSE. Not a defect: the doc says "embedded UNIONS" and the code matches it; no corpus instance exists at 1.24.13 (fips140's `Point[P]` carries four terms). Widening without an instance is speculative machinery; the boundary is recorded here and is a one-line cut the day a release narrows a constraint to a single pointer term. (mailbox b93676219)
+
+## 2026-09-16 — C2 (census behind i9's TempDir seat): **the TempDir-after-Chdir cleanup-order shape has a population of ONE in `std` at go1.24.13 — `os_test.TestChdirAndGetwd` — and the seat is justified by the hand-owned host's cleanup GRANULARITY, not by the member count.** go/packages over `std` (Tests:true, purego), 930 package variants, 6,351 distinct Test functions, floor arm not fired: one site (t.Chdir@1586, t.TempDir after it x2). Three looser candidates WALKED and negative for three reasons: TestProgWideChdir (one TempDir registered BEFORE its Chdir), os/exec TestLookPath (a subtest's own `t`, its own cleanup stack), path/filepath TestEscaping (the TempDir is the nested ARGUMENT of `t.Chdir(t.TempDir())`, evaluated first, registered below the restore). Two predicate corrections both SHRANK the population (measure from the Chdir call's END, not its start; resolve the receiver to the function's own *testing.T, not the selector name) — found by reading the flagged source, not by an arm. Limits stated: std only, not the -tests emission; per-function, does not follow helpers taking *testing.T. (mailbox d96ccb4af)
+
+## 2026-09-16 — C1 (q90 (c), the linux table, read-only): **linux has NO live native-boundary site today.** 45 bodyless one-liner partials over 10 files in runtime + runtime/linux: BODY 6 (madvise, nanotime1, rtsigprocmask, sysMmap, sysMunmap, usleep — each a hand-own *_impl.cs), INTEROP 0, NONE 39 — of which 31 are reached by call syntax, 5 only as a function pointer (FuncPCABI0 tokens Go reaches from assembly; the managed host cannot invoke them), and 3 (access, connect, socket) have no caller on linux/amd64 in Go itself (their one caller is a filename-suffix-constrained android file). The three reference-bearing pointees (stackt, sigevent, siginfo) are taken only by NONE-bucket members (sigaltstack, timer_create, sigfwd) — the layout defect is real and unreachable per SYMBOL. The one realized box-taking symbol, rtsigprocmask, TRANSCRIBES the sigset into a native buffer (sigprocmask_impl.cs) — no managed layout reaches the kernel. Two unresolved pointees reported, not assumed benign (ж<sigset> with no field body; ж<atomic.Uint32> from another package). The finding that travels: `itimerval` is reference-bearing on darwin and clear on linux because the per-GOOS `timeval` differs — a census keyed on a type NAME gets it wrong in both directions. No guard cut (the owner's 23:00 steer: guard and census items wait for the compile front). (mailbox 634b21959)
+
+## 2026-09-16 — Row 48 (os): the TempDir parent-cleanup seat's control PASSES at 1.24.13 (i9, mailbox cda26cf6d; COORD bank stamp follows it)
+
+- **The seat**: the hand-owned testing package's TempDir takes Go's shape -- one per-test parent directory whose removal is registered at the FIRST TempDir call, numbered children inside it (`src/core/testing/TestExecution.cs`; version branch `be5c4de6c2`, i9 `b058c38d0`); R's row-130 seat (`b79a1dc739`) modified the same shared host afterwards.
+- **The control, at a FRESH os host on `b79a1dc739` carrying both seats** (converter rebuilt in that tree; the harness asserts both pins and re-counts busy after a build-server shutdown): `TestChdirAndGetwd` pass/pass, `TestProgWideChdir` pass/pass, `TestFileChdir` pass/pass; 1103 tests validated against `go test`, 44 skipped identically on both sides, 2 disclosed-divergent, 39 disclosed-unsupported declarations excluded; `IOException` 0, "being used by another process" 0. The cleanup error row 48 was about does not occur at a host carrying the seat.
+- **Why the host had to be fresh**: the published host row 48 last used was pinned four seats behind, and row 130 changed the same file. A host built before those seats answers about a different artifact.
+- **Bank**: the reading banks as measured with the disclosed pair (ruling `5e2193a59d`); the roster row itself lands at H10's re-derivation at 1.24.13. Instrument note from the same reading: a `| tail -40` on the wrapper cut the harness's own rc line, so the verdict was recovered from the validation report, not the transcript (floor 16).
+
 <!-- {% endraw %} — keep this the FINAL line: the board is append-only and every append must land INSIDE the raw guard, or Jekyll's Liquid chokes on quoted Go composite-literal syntax (this exact failure took the Pages build down at f37ba28ef). -->
