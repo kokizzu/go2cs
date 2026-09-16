@@ -29,6 +29,7 @@ type node struct{ v int }
 type graph struct {
 	strata []map[string]*node
 	plain  []map[string]int
+	byNode []map[*node]int
 	depth  int
 }
 
@@ -41,6 +42,14 @@ func (g *graph) insert(n *node) {
 // so no pointer context is appended and the bare rendering stays.
 func (g *graph) insertValue(n *node) {
 	g.plain[g.depth][n.name()] = n.v
+}
+
+// index is arm E (COORD 303c7621a): the KEY operand of the same branch, carrying the identical defect.
+// The single-index form passes this context, the value slot now passes it, and the key is the one rule's
+// THIRD caller. C2's two-pin census (534d9b483) reads no corpus instance at either pin, so this arm is
+// planted rather than found — which is why it is red-first and why the footprint prediction is unchanged.
+func (g *graph) index(n *node) {
+	g.byNode[g.depth][n] = n.v
 }
 
 func (n *node) name() string { return "" }
@@ -155,6 +164,26 @@ func TestNestedMapPointerValueRendersTheBox(t *testing.T) {
 	if got != want {
 		t.Fatalf("the nested map's pointer VALUE slot must take the box:\n got %q\nwant %q\n(a bare %q is CS1503 against map<K, ж<T>>)",
 			got, want, rhsIdent.Name)
+	}
+}
+
+// ARM E (COORD 303c7621a): the KEY operand takes the box when the map's KEY type is a pointer. Written
+// RED-FIRST — it fails against a converter whose key conversion is context-free, which is what the seat's
+// third caller fixes. The value here is deliberately a non-pointer, so this arm moves on the KEY alone.
+func TestNestedMapPointerKeyRendersTheBox(t *testing.T) {
+	visitor, assigns, decls := loadNestedMapFixture(t)
+
+	assign, ok := assigns["index"]
+
+	if !ok {
+		t.Fatal("fixture assignment inside index was not found")
+	}
+
+	got := emitNestedMapAssign(t, visitor, assign, decls["index"])
+	want := "(~g).byNode[(~g).depth].Set(" + AddressPrefix + "n, (~n).v);"
+
+	if got != want {
+		t.Fatalf("the nested map's pointer KEY slot must take the box:\n got %q\nwant %q", got, want)
 	}
 }
 

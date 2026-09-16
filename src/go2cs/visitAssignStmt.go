@@ -582,7 +582,15 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 				if baseType := v.getType(outerIndex.X, false); baseType != nil {
 					if _, isMap := baseType.Underlying().(*types.Map); isMap {
 						outerExpr := v.convExpr(outerIndex.X, nil)
-						keyExpr := v.convExpr(outerIndex.Index, nil)
+
+						// The KEY takes the same context as the value, for the same reason: a map whose KEY
+						// type is a pointer holds `ж<T>` in that slot too, so a deref-aliased pointer arrives
+						// here as its VALUE alias unless the context is passed. Added on COORD's order
+						// (303c7621a) as the one rule's THIRD caller — the single-index form passes it, the
+						// value slot below passes it, and this was the last operand of this branch that did
+						// not. C2's two-pin census (534d9b483) reads NO corpus instance at either pin, so the
+						// arm proving it is PLANTED (red-first) and the emission footprint is unchanged.
+						keyExpr := v.convExpr(outerIndex.Index, v.appendRhsPtrContext(nil, outerIndex.Index))
 
 						// The VALUE takes the same pointer-copy context every OTHER assignment RHS in this
 						// file already takes (appendRhsPtrContext, used at the plain-assignment emissions
@@ -592,7 +600,7 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 						// `.Set(…, n)` for a `map<@string, ж<policyGraphNode>>` (CS1503), while the composite
 						// literal twelve lines above spells the same map's value `Ꮡroot` correctly and the
 						// SINGLE-index form `m[k] = n` has always been right — because it passes this context
-						// and this branch did not. One rule, now both callers.
+						// and this branch did not. One rule, now all three callers (single-index, key, value).
 						valExpr := v.convExpr(rhsExprs[0], v.appendRhsPtrContext(nil, rhsExprs[0]))
 						result.WriteString(fmt.Sprintf("%s.Set(%s, %s);", outerExpr, keyExpr, valExpr))
 
