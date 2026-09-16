@@ -282,6 +282,34 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      made INSIDE the post correcting the first; the remedy is a script that puts the committed record's lines in
      front of the author, deliberately NOT a gate, because an honest absence claim is common and a refused honest
      post gets routed around. -->
+- **A COMPARISON OF TWO EMPTY SETS REPORTS AGREEMENT, AND "IDENTICAL" IS THE MOST DANGEROUS WORD AN EMPTY
+  READING CAN PRODUCE** — an empty extraction is a REFUSAL, never a finding. <!-- ⚠ 2026-09-13, C1
+     `3ee0f07ff`. An `awk` range that never opened (a column-aligned `const` block) and a literal tab that
+     `grep -E` does not read as a tab BOTH extracted ZERO `waitReason` constants, for both releases, and
+     the prefix check printed "IDENTICAL -- appended, no renumbering". The truth was 14 renumbered and 6
+     inserted. Only a refusal added on the SECOND attempt (an empty extraction is not a finding) stopped a
+     third zero. Explicit `= N` literals compile perfectly when wrong, so the falsifier here is a
+     NAME-JOINED numeric table derived from the Go source — never a build. -->
+- **AN UNBOUNDED READ PAST A STRUCTURE'S END CONFLATES IT WITH ITS NEIGHBOUR: bound the read, and an empty
+  END-DETECTION is a refusal rather than a longer read.** <!-- ⚠ 2026-09-13, i9 `02b73fabd` s3. "48 keyed
+     entries, 38 distinct, 10 DUPLICATES" was `waitReasonStrings` PLUS the `isWaitingForSuspendG` table
+     twenty lines below it, reached because end detection looked for `};` where the initializer actually
+     closes `}.array();`. A plausible, serious-sounding defect manufactured entirely by an extraction with
+     no end. -->
+- **A COMPARISON AGAINST A MISSING REFERENCE FILE DOES NOT FAIL — IT ANSWERS YES.** `[ f -nt missing ]` is
+  TRUE for any existing `f`. <!-- ⚠ 2026-09-15, G `dadda219a3`. A "written in this run" census keyed on
+     absent sentinel files read EVERY seed file as written, and returned 0 at the parent where its known
+     member must appear. The known-member assertion caught it. The sound form reads write evidence from
+     the files themselves — a 1999 seed stamp against the run's own date — and refuses when the known
+     member is absent. -->
+- **A ZERO FROM A FAILED COMMAND IS INDISTINGUISHABLE FROM A ZERO FROM A CLEAN TREE: assert the parsed list
+  is NON-EMPTY before any ratio.** <!-- ⚠ 2026-09-13, C2 `9aa74aaeb` s7. An "improved" `git grep -E`
+     pattern used `(?:…)`, which POSIX ERE rejects; git errored, and the script reported 0 declarations
+     AND 0 implementations for BOTH flavours — a perfectly symmetrical, perfectly empty answer. The
+     companion in the same cut: a boundary class `[^A-Za-z_.]` admitted 26 `GoInit` import initializers
+     into a keystone-caller count because the separator is non-ASCII, and it was caught by LOOKING at five
+     matched lines, which also produced the better predicate (the real sites all pass
+     `abi.FuncPCABI0(<x>_trampoline)`). -->
 ## Instruments that cannot fail: shell and patching traps
 - **A `sed` that matches nothing and a `grep` that matches nothing BOTH EXIT 0 and both look like the work
   being done**; **deriving a script from the previous one by pattern substitution is a SILENT-NO-OP GENERATOR
@@ -438,6 +466,103 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      an add. Nothing looked wrong; the arm's number read healthy in BOTH arms, because a refspec listed
      twice fetches exactly the refs it fetches once. The config LIST is the only reading that shows it, so a
      refspec claim carries the list. -->
+- **`local a="$1" b="…$a…"` EXPANDS `$a` BEFORE THE ASSIGNMENT LANDS** — assign in two statements, and
+  verify filename-against-content for every artifact. <!-- ⚠ 2026-09-13, i9 `69a23d8dd` s5b. The first
+     call named its log under an EMPTY name; the check that found it was a filename-against-content audit
+     over the whole artifact set (204 of 205 matched, the odd one explained). -->
+- **THE NATURAL CHECK FOR "DOES THIS FILE CONTAIN AN ESCAPE" IS ITSELF AN ESCAPE-BEARING PATTERN** — count
+  BYTES, with a must-read-zero arm and a must-read-non-zero arm. <!-- ⚠ 2026-09-13, C1 `cbc12e499` s7. The
+     pattern reached `grep` as two ADJACENT backslashes and read `none` over six backslash bytes. A byte
+     counter has no quoting layer to lose. -->
+- **POWERSHELL VARIABLE NAMES ARE CASE-INSENSITIVE: `$Hop` and `$hop` ARE ONE VARIABLE**, and the file
+  parses GREEN in both editions while REFUSING at run. <!-- ⚠ 2026-09-13, i9 on C2's `-Hop`, ruled
+     `2b9d3a39b`. The ordinary gate broke with it, so the tell was not a parse error anywhere. -->
+- **MATCH A ROW AT LINE START, NEVER A PHRASE AS A SUBSTRING** — a report that states its counts IN WORDS
+  contains every string an assertion about those findings would look for. <!-- ⚠ 2026-09-13, G `8a90a913e`
+     s3(b). `*"DUPLICATE patch-id"*` is TRUE on the clean verdict line `0 DUPLICATE patch-id(s)`. One
+     `has_row` helper anchored at `^` replaced every such test. -->
+- **PS 5.1's `Set-Content -Encoding UTF8` WRITES A BOM, AND A LINE-ANCHORED PREDICATE DOES NOT MATCH A
+  FIRST LINE BEGINNING `EF BB BF`.** <!-- ⚠ 2026-09-13, G `24bb8cfcd` s4 then `eba766393` s1 and
+     `2343462`. The fixture read zero marked files, caught by its own asserted precondition. Measured as
+     TWO populations rather than asserted: 66 of 3,764 tracked `.cs` carry a BOM and 0 put the marker on
+     line 1 (every hand-own opens with a licence header), so exposure is zero — and the instrument's own
+     firing arm, a planted BOM plus a line-1 marker reading INVISIBLE 1, proves the predicate CAN miss.
+     Ruled: tolerate the BOM in the predicate — make the instrument right rather than the corpus careful.
+     A returned collection also UNROLLS: a one-row audit arrives as a single object and `.Count` throws
+     under StrictMode, and one row is exactly the shape of the floor-13 control. -->
+- **THE OBVIOUS FIX FOR A DEAD-PATTERN CLASS CAN ITSELF BE A DEAD PATTERN THAT READS ALIVE** — measure the
+  fix against a planted instance before shipping it. <!-- ⚠ 2026-09-13, G `2343462`. The natural ERE
+     spelling of BOM tolerance, `^(\xEF\xBB\xBF)?…`, is DEAD — POSIX ERE does not read `\xEF` — and
+     matches exactly what the old predicate matched, while the code and the commit message both say the
+     BOM is handled. PCRE `^(\x{FEFF})?` finds it; `^.{0,3}` finds it AND admits `// [module: …]` (78
+     comment-only mentions in the corpus). Measured three ways against a planted BOM file. A git without
+     PCRE falls back to the anchored ERE and SAYS SO on stderr, keyed on exit > 1 and never on an empty
+     result. Before and after on ONE tree and ONE audit: BOM-blind = a FALSE GREEN (census 1, audit 2,
+     COMPLETE, exit 0); tolerant = VIOLATION, the missing hand-own surfaced, exit 1. -->
+- **GIT BASH READS FILES IN TEXT MODE, SO `grep -q $'\r$'` NEVER MATCHES A CRLF FILE** — test line endings
+  by BYTE COUNT (perl/python in binary mode) against an UNTOUCHED SIBLING in the same tree. <!-- ⚠
+     2026-09-15, G, RED 1 apply. A CR test written that way silently passes LF output, and the index then
+     normalizes it away so `numstat` shows +1/-1 and hides it entirely. The sibling is the tell: it is the
+     only reference that shares the tree's own attributes. Same family, 2026-09-13, C1 `d8f74d777`: a
+     projitems write assuming CRLF over a BOM+LF file, and `$`-anchored patterns reading 0 over a CRLF
+     corpus — every anchor carries `\r?`, and control fixtures are written CRLF. -->
+- **A PYTHON HELPER'S OWN `print` KILLS IT ON THE WINDOWS CONSOLE (cp1252) THE MOMENT THE DATA CARRIES A
+  NON-ASCII IDENTIFIER** — and a file write that PRECEDES the crashing print leaves a good artifact on
+  disk under a NON-ZERO exit. <!-- ⚠ Twice. 2026-09-13, i9 `29815a704` s3-s4: a generator died at a
+     `print` on its own glyph, and the `.ps1` ASCII-output doctrine applies to the `.py` beside it —
+     ASCII output strings, never a caller-side `PYTHONIOENCODING`, which is a convention nothing asserts.
+     2026-09-15: a fold script printing a line of the resume file crashed on `ж` in `New<ж<…>>`
+     (UnicodeEncodeError BEFORE save), so the fold silently did nothing while the verifier still read
+     clean. Fixed at the script with `sys.stdout.reconfigure(encoding="utf-8", errors="replace")`; a
+     fold's EXIT CODE is read before its commit, never the verifier alone. -->
+- **`git add` UNDER A GITIGNORED DIRECTORY NEEDS `-f` FOR NEW FILES** — the refusal is silent, exits 1, and
+  a `&&` chain stops there. Read the chain's OUTPUT, not the push's exit. <!-- ⚠ 2026-09-15. `.claude/`
+     is ignored on these worktrees; TRACKED files under it add normally, which is what makes the trap
+     intermittent — a doctrine edit to an existing skill works, and the one new file in the same commit
+     vanishes. -->
+- **A MONITOR PIPELINE'S LAST STAGE MUST FLUSH PER LINE TOO** — `cut` block-buffers off a tty. <!-- ⚠
+     2026-09-15, COORD, run-4 watch: `… | grep --line-buffered … | cut -c1-240` delivered NOTHING for 30
+     minutes, with every upstream stage correctly line-buffered. End such a pipeline with
+     `awk '{print substr($0,1,N); fflush()}'` instead. -->
+- **A CENSUS THAT SPLITS `git ls-files` OUTPUT ON WHITESPACE TEARS EVERY PATH CONTAINING A SPACE INTO
+  FRAGMENTS AND REPORTS THE FRAGMENTS AS FINDINGS** — use `-z` and NUL-delimited reads. <!-- ⚠ 2026-09-15,
+     C1 `07f57014f6`: "364 files do not parse", every one of them a fragment of a name. Read "N files do
+     not parse" naming non-files as a statement about the INSTRUMENT, not about the tree. -->
+- **AN INSTRUMENT DERIVES ITS PATHS FROM ITS OWN LOCATION OR REFUSES — A LITERAL THAT RESOLVES SOMEWHERE IS
+  WORSE THAN ONE THAT DOES NOT.** <!-- ⚠ 2026-09-13, C1 `203023d89`, live in a shipped seat for the row's
+     whole life. A literal absolute path in `src/token-door-census.sh` refused loudly on the i7 (LEG C
+     red) but on its author's box resolved to a READABLE corpus in a different checkout from every
+     worktree, so the refusal never fired and the census reported on a tree nobody had asked about —
+     safety-floor 15 defeated by a path that happened to exist. The re-cut derives the corpus root from
+     `$0` and proves the file carries no absolute path ANYWHERE, comments included (a literal in a comment
+     is on the pushed surface too). The sibling class the same hour, C1 `5f7fef6683`: a mapping's
+     already-ordered slice `[0..($n-2)]` on a ONE-element array counts DOWN and doubles the segment
+     without StrictMode — a mis-classification into the largest bucket, invisible to any exit-code gate. -->
+- **A SCRIPT THAT RESOLVES ITS WORLD FROM ITS OWN LOCATION IS NOT THE SAME PROGRAM SOMEWHERE ELSE: run an
+  instrument where its COMMIT puts it, and report the sibling count.** <!-- ⚠ 2026-09-13, i9 `846cbd849`
+     s3. `reconvert-deletions.ps1` dot-sources a sibling `_paths.ps1` which derives repo paths from ITS
+     own `$PSScriptRoot` and wants `Directory.Build.props` above it; extracted alone it died, extracted
+     WITH every sibling it still died, from a worktree at the SHA it ran. "Verify WHICH artifact you
+     measured" covers scripts, not only binaries. -->
+- **A BANNER THAT DOES NOT CONSULT THE EXIT STATUS TURNS A MISSING TOOL INTO THE WORD "APPLIED"** — gate
+  the tool AND check the status; assert NON-EMPTY digits and compare as integers. <!-- ⚠ 2026-09-13, i9
+     `a50d4f8c1` s2-s3. `apply()` ran `python3` on a python-only box and printed APPLIED having edited
+     nothing; `verify()`, pure shell, caught it. A guard whose two captures can BOTH be empty passes on
+     measurements that did not happen (`[ "" = "" ]`). And a native-Windows python cannot open an MSYS
+     `/tmp` path while `tr`/`wc` can — count with the tool that can, or `cygpath -w` first. -->
+- **READ A PRODUCER'S VOCABULARY FROM ITS SOURCE BEFORE CONSUMING IT, NEVER DISCOVER IT A ROW AT A TIME —
+  and fix a broken parse by RE-PARSING the retained logs, never by editing a running script.** <!-- ⚠
+     2026-09-13, i9 `69a23d8dd` s5a. The parser knew four row words and the sweep prints seven; the
+     unknown words landed on exactly the rows worth reading (COUNT = a count that moved). A summary
+     computed from a broken parse is broken the same way — 8 host deaths reported, 0 true — and the whole
+     thing was recoverable only because the RAW artifacts had been retained (C2 `babe063dd`: 205 logs
+     turned 8 phantom host deaths into a measured 0). -->
+- **`git ls-tree` WITHOUT `-r` RETURNS THE DIRECTORY ENTRY, NOT ITS FILES — assert the per-item lookup is
+  NON-EMPTY before classifying, because an empty inner read looks exactly like a uniform population.**
+  <!-- ⚠ 2026-09-13, C2 `8013861db` s5b. A per-directory "read the first `.go`" built that way reads every
+     package clause as unknown; git exits 0, the loop completes, and the total is absurd (`package main`
+     = 0 over 684). The absurdity is what saved it — a subtler ratio would have been believed. The correct
+     derivation, reproduced independently on another box and another OS, reads 678 mains. -->
 ## Second derivations: an instrument built out of the thing under test
 - **An instrument built out of the thing under test cannot independently measure it; the corrective is a SECOND
   DERIVATION, chosen by asking what the FIRST's blind spot is.** Two derivations that AGREE share a blind spot;
@@ -934,6 +1059,24 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      instruments; the tree-kill was 22 processes, and a bare go2cs kill orphans the host and locks runtime.dll.
      The readiness gate is pinned toolchain answering, network up, no converter alive, clean tree; an absolute
      deadline fires on wake rather than during standby. -->
+- **A HANG IS READ AS CPU FLAT WHILE WALL ADVANCES, KILLED BY PID, AND NOT GENERALISED TO ITS NEIGHBOUR.**
+  <!-- ⚠ 2026-09-13, i9 `69a23d8dd` s6. The converter on `net` sat at 4 s CPU over 578 s wall — blocked,
+     not computing — while `net/http` advanced and completed in 230 s. Two rows the map flags as
+     unmeasured, with different causes; treating them as one class would have hidden both. -->
+- **A WATCHER'S TIMEOUT NOTICE IS DELIVERED WHEN THE SESSION NEXT WAKES, NOT WHEN THE WATCHER DIES** — so
+  notice-ABSENCE is evidence about the delivery queue, never about the watcher. Re-arm pre-emptively past
+  ~20 minutes and treat a two-watcher overlap as free. <!-- ⚠ 2026-09-13, C2 `a6975abfb` s6: armed ~11:22
+     against a 30-minute clamp, dead ~11:52, notice after 12:12 — and "no timeout notice has arrived,
+     therefore the watcher is alive" held for half an hour while it was false. Read the SUBJECT, not the
+     clock. A duplicate event costs a line; a gap costs a ruling. -->
+- **A COM-CHECK LIVES ON A RECURRING LEG OR RE-ARMS ITSELF ON EVERY FIRE — NEVER ON A ONE-SHOT ALONE** —
+  and "armed" is stated AFTER arming, never beside the intent. <!-- ⚠ 2026-09-15, C1, 118 minutes late: a
+     container rebuild took the one-shot while the recurring legs came back by themselves. -->
+- **A LONG SILENCE FROM A SESSION IS NOT EVIDENCE ITS WAKE LOOP IS DEAD** — the loop does not fire while
+  the REPL is mid-turn. <!-- ⚠ 2026-09-15: a coordinator session idled silently for hours after its own
+     compaction (04:55Z-13:10Z) and nothing was lost — the fleet's 45-minute com-checks converged on a
+     90-minute cadence by themselves. Adopted: 90 minutes is the standing com-check interval while a COORD
+     gap exceeds 45 minutes. -->
 ## Kills, and censuses that match themselves
 - **Never `Get-Process <name> | Stop-Process`** — it matches by NAME across the whole machine and kills a
   SIBLING worktree's in-flight suite. **Signature: exit `-1`, log truncated mid-line, no diagnostic** — read
@@ -1036,6 +1179,16 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      the train battery instead. 2026-09-02: a third rebuild attempt met the second chain's in-flight reflect
      -tests convert as untracked *_test.cs and aborted on its dirt gate, the r41 overlap hazard caught only
      because that gate existed. -->
+- **THE QUERYING SHELL IS MATCHED BY ITS OWN QUERY** — a kill filter excludes the CALLER's process chain
+  AND any line containing the query text. <!-- ⚠ 2026-09-13, COORD, the train-47 run-2 kill (`ecdfa2500`
+     s0). Killing a battery's children by "command line contains the worktree path" matched the tool
+     session that ISSUED the query and killed it — safety-floor item 5 reproduced verbatim by the very
+     person who had written it down. -->
+- **`taskkill /T` ON A DETACHED MSYS BASH WRAPPER KILLS ONLY THE WRAPPER AND ONE CHILD** — MSYS forks are
+  not linked by Windows parent pids the way `/T` walks them. <!-- ⚠ 2026-09-15. Kill such a battery by
+     ENUMERATED pids from `Get-CimInstance` (CommandLine matching the run's script names, ExecutablePath
+     under the run's worktree), shells first and then the converter; verify with the SAME query; then stop
+     the dotnet build servers. -->
 ## Detachment, background tasks and orphans
 - **Anything longer than a turn runs DETACHED, env-pinned in the SAME command, logged unique-per-run, polled
   POSITIVELY by PID.** Clean-death evidence before a restore is modified files with ZERO untracked.
@@ -1063,6 +1216,10 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
   rewritten scratch log as a collision first, a gate failure second. <!-- Measured 2026-08-15: two lanes both
      writing cnr.log — one clobbered the other's gate log mid-run and the verdict had to be recovered from git
      status. File tunneling plus partial overwrite fabricated "CNR finished in 20 s", also 2026-08-15. -->
+- **`setsid` DOES NOT EXIST IN GIT BASH AND A `&` LAUNCH INSIDE THE TOOL'S SHELL DIES WITH IT** — detach
+  via a PowerShell `Start-Process` of a wrapper. <!-- ⚠ 2026-09-15. Companion mechanics for the same
+     launch: `taskkill` needs `MSYS_NO_PATHCONV=1` or `/PID` is rewritten as a path; kill by WINPID from
+     `ps -l`; and a kill line is appended to a record only AFTER the pid is confirmed dead. -->
 ## Logs, stamps and watchers
 - **CAPTURE `rc=$?` AS THE FIRST STATEMENT AFTER A COMMAND, AND GATE EVERY STEP ON THE PREVIOUS ONE'S EXIT.**
   **A pipe masks a command's exit status only WITHOUT `set -o pipefail`** (`set -uo pipefail; false | tail -1`
@@ -1138,6 +1295,27 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      minutes, because the edit SUCCEEDED and the success of the edit was read as the state of the watch — the
      same distinction as an EXITED task id being evidence of a PAST arming. The own-post wake is the own-push
      blind window arriving as a FALSE WAKE. -->
+- **AN ARM WHOSE STAMP SAYS "COUNTED, NEVER FATAL" MUST NOT SET THE FATAL FLAG** — the stamp's TEXT does
+  not govern the flag, and no reader checks that it does. <!-- ⚠ 2026-09-13, COORD, train 47 run 6, 13:09.
+     LEG 4's advisory arm read 52 against a named baseline of 2, stamped the count as a FINDING to read
+     before landing, and then set `FAILED=1` on the very next line with no "set by gate" stamp: the record
+     ended `overallFailed=1` with every leg green and ZERO attributable refusals. The self-check passes
+     because a stamp PRECEDES the setter; it does not read what the stamp says. A count that moved is a
+     READING until its lines are read. -->
+- **A BASELINE MEASURED BEFORE A MASTER LANDING IS STALE FOR THE BASE ITSELF: re-measure every carried
+  numeric expectation at the TRAIN'S OWN BASE before the first run.** <!-- ⚠ 2026-09-13, COORD, train 47
+     run 6 capture, 13:16 — the guard-collision class for a NUMBER. The LEG 4 advisory baseline of 2 was
+     measured on train 46's base; a licensing landing on 2026-09-11 added a per-package WARNING at
+     `licensing.go:384`, so the new base reads 52 with NO seat merged, and the arm refused a perfectly
+     healthy train for its own base's content. -->
+- **A COUNT-ONLY GATE CANNOT CLASSIFY — DERIVE THE EXPECTATION FROM THE TREE, NOT FROM A CAPTURED
+  CONSTANT**; an instrument that counts but does not RETAIN its lines cannot classify its own finding.
+  <!-- ⚠ 2026-09-13, COORD, train 47 run 7 arm, 13:37. CNR prints only the advisory TOTAL. The 52 were
+     captured once (a planted retention line; the script restored byte-identical) and classified as 2
+     `unsafe.Sizeof` plus 50 license-unspecified — but the ARM compares against `2 + N(tree)`, where N is
+     the count of measurable LIBRARY packages without a license read from CNR's own log, because a
+     captured 52 goes stale the day a train adds or licenses a library package. Refusal is reserved for an
+     UNNAMED kind, or a count outside the derived total. -->
 ## Batteries: disk, legs, refusals and coverage
 - **A ROW-LIST DRIVER GUARDS `processed == listed`, PRINTED AND FLAGGED** — PowerShell eats the loop's stdin,
   so a row is swallowed WHOLE and the next arrives truncated, with no error and no failure: put `< /dev/null`
@@ -1264,6 +1442,55 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      once while two `time` suites ran CONCURRENTLY on the i7 — two arms failing together under a shared
      load is not an A/B. No two `time` suites share a box; a control REFUSED by the disk preflight is
      reported UNMEASURED, never argued around. -->
+- **A PIPELINE LEG RESTORES EVERY ROOT THE PIPELINE WRITES** — and the assertion that proves it is
+  UNFILTERED. <!-- ⚠ 2026-09-13, COORD run 5, 09:46, and again 2026-09-13 G `f763f6b25` s3-s4 on a
+     three-row hand sweep. A `-tests` run rewrites the row's proof page under `docs/validation/current/`
+     AND the index, as well as the corpus; LEG U restored only the package (byte-identical) and the
+     unfiltered tree-dirty assertion read 2 — the right claim catching the right thing — while LEG R had
+     read 0 purely by luck, because its rows regenerate their pages identically. The hand-sweep instance
+     is the sharper one: a FILTERED sweep rewrites the whole validation index from only the rows it ran,
+     deleting 25 lines of `docs/validation/index.md`, and restoring `src/core` alone leaves that deletion
+     for the next `git add`. One restore helper per leg, both roots, always. -->
+- **AN ENVIRONMENTAL FAILURE READS EXACTLY LIKE THE DEFECT UNDER AN IDENTICAL VERDICT LINE — ONLY THE
+  ERROR-CODE HISTOGRAM TELLS THEM APART.** <!-- ⚠ 2026-09-13, G `f763f6b25` s4. "sweep: 0 pass / 1 fail"
+     was 3 x NETSDK1045 — the machine-default .NET refusing `net10.0` because `DOTNET_ROOT` was not set,
+     the .NET half of the two-pin. An all-NETSDK histogram is never the row's. And a negative
+     reproduction reported AS a negative narrows the frame (mode is not the discriminator; the population
+     lies between 3 rows and the roster) rather than widening until something breaks. -->
+- **A DRIVER THAT GREPS A HUMAN REPORT FOR ITS OWN WORKER NAME DISPATCHES ROWS IT WAS NOT ASSIGNED, AND
+  NOTHING READS WRONG** — emit a machine plan with the fleet size as a COLUMN and a digest the driver must
+  reproduce before selecting a row. <!-- ⚠ 2026-09-13, C2 `a6975abfb` s2-s3. The shard-map report lists
+     the same worker in EVERY fleet-size section with a different row set (85 rows at W=3, 60 at W=4),
+     wraps row lists at column 118, and carries spaces and parentheses in worker names. `-Plan`/`-Worker`/
+     `-FleetSize` became mandatory with no defaults. Found on the way: a stale per-shard target printed
+     `shards@90min=1` for the reserved leg — running it UNSLICED, the one thing the cap exists to
+     prevent — and the packing is FFD, not listing order. -->
+- **AN INSTRUCTION THAT NAMES A LOCATION OR FILE SHAPE EITHER MEASURED IT OR SAYS IT IS A GUESS.** <!-- ⚠
+     2026-09-13, COORD `d055d5f7b` s1 as measured by i9. "Copy `logs/` and `*.log *.tsv *.txt`" named
+     nothing that existed in ANY of the five trees and, followed literally, would have banked zero bytes
+     before deleting them. The run's own results, manifests and comparison records were the
+     non-reproducible set — 1,991 files, 36 MB, against 230 GB of trees. Second unmeasured instruction
+     from the same author that day. -->
+- **PRESERVE A DIRTY TREE WITH `write-tree`/`commit-tree` AND A BRANCH, NEVER `git commit`** — a plain
+  commit moves HEAD and clears the status of a tree somebody may be mid-thought in. <!-- ⚠ 2026-09-13, i9
+     `66360c817` s4. The branch captures the state with HEAD unmoved and the same files still modified.
+     Companion, same cut: a bundle on the SAME volume closes the sweep and `rm` hazards, not the disk —
+     say which hazard each copy closes, because "off the volume" and "off the box" are different claims
+     (i9 `a50d4f8c1` s5). -->
+- **A CENSUS WHOSE COMPARISON UNIVERSE IS ITS CLONE'S REFSPEC SILENTLY NARROWS ITS OWN POPULATION: ask the
+  REMOTE (`ls-remote`), not `refs/remotes/*`.** <!-- ⚠ 2026-09-13, i9 `c66cfef0e` s2. "Is HEAD on origin?"
+     tested against `refs/remotes/origin/*` in a clone whose fetch refspec is master-only, so it asked a
+     TWO-ref universe and called 8 branch tips "not on origin". It failed SAFE (over-reporting KEEP),
+     which is the only reason it was caught rather than trusted. Reclaimable = clean AND on origin, both
+     re-read AT REMOVAL TIME; a job directory's logs are banked before its tree goes; and a measurement
+     tree that is cheap to delete and expensive to restore (a full converter build) is a distinction the
+     census cannot see. -->
+- **A DELTA BUNDLE IS A BACKUP ONLY IF ITS PREREQUISITE SURVIVES THE LOSS** — walk back to the nearest
+  ORIGIN-REACHABLE ancestor and verify in an origin-only clone, which is the actual restore scenario.
+  <!-- ⚠ 2026-09-13, i9 `b42438150` s4. `<commit> --not <parent>` verifies OK wherever the parent exists;
+     one of eleven had a parent that was itself not on origin, so the bundle needed an object that dies
+     with the disk. Also in the same cut: `gh api` writes its ERROR BODY to STDOUT, so a non-empty test
+     reads a 404 as success — use a 40-hex shape check, controlled both ways. -->
 ## Launch hazards
 - **A TRAIN SCRIPT WITHOUT ITS OWN `cd` RUNS IN THE CALLER'S CWD**: every derived train script names its
   worktree in its first lines and refuses any other (`[ "$(git rev-parse --show-toplevel)" = <expected> ] ||
@@ -1419,6 +1646,13 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
   masks comments, single-quoted regions and backtick escapes, with a mixed control that must isolate the
   one real site among those three decoys: a checker that manufactures work is worse than one that
   misses. This is the `$p:` CI-workflow trap above in a second costume, one layer earlier. -->
+- **LAUNCH A DETACHED BATTERY WITH A CLEAN ENVIRONMENT: a one-shot `MSYS_NO_PATHCONV=1 powershell -Command
+  "Start-Process bash …"` EXPORTS that variable INTO the battery**, and every native tool inside it then
+  receives unconverted POSIX paths. <!-- ⚠ 2026-09-15, train 48 run 5, 09:03. `go build -o /c/Projects/…`
+     wrote under `C:\c\Projects\…`; `[ -f ]` on an MSYS path read ABSENT; LEG D read `mtimeMoved=NO sha=`
+     and reported UNMEASURED. The tell is `go version <path>` echoing `/c/…` instead of `C:/…`. Put
+     `unset MSYS_NO_PATHCONV` as the wrapper's FIRST line and ASSERT it inside the battery — the prefix on
+     the `Start-Process` line is invisible from inside, which is why it survived a review. -->
 ## A/B arms, flakes and attribution
 - **The three-run flake standard: fail-WITH the change, pass CLEAN, pass again WITH it restored** — in that
   order, before anything is attributed to a commit. **Reverting the `.cs` is NOT an A/B when the instrument
@@ -1500,6 +1734,41 @@ untrue. #6-#8 are other shapes, and re-running catches none of them.
      with G4 on the corpus's two packages — both IsMethodSet-shaped — so a corpus correlation was written
      as a mechanism. Same class as the RED 7 half-read (the emitting matcher read without the registry's own
      guard), the second instance in one day. -->
+- **A VERDICT THAT DEPENDS ON THE MODE IS A STATE OR ORDERING EFFECT THE TEXT GATES CANNOT SEE** — and a
+  mode-dependent failure over BYTE-IDENTICAL source cannot be settled by any source census. <!-- ⚠
+     2026-09-13, i9 `09204c351` s5-s6 and G `131a256da`. `crypto/rsa` PASSED isolated and FAILED in-sweep
+     on a source-generator NullReferenceException with a CS9248 partial property. G ran a source census
+     anyway, then talked itself out of its own finding — the right order. With no static mutable state in
+     the generator the race hypothesis is refuted BY READING, and the discriminator is the BUILD CONTEXT:
+     the artifact that settles it is the CS8785 diagnostic TEXT (the throwing frame) in the failing
+     sweep's log, or a diff of the two builds' generated-file dumps. Naming a site from reading alone is a
+     guess wearing a measurement's clothes. Two runs writing ONE log filename also leave a log count that
+     does not equal the run count — it reads fine until someone joins on it. -->
+- **ONE DEFECT CAN WEAR TWO CODES: a two-code failure invites two investigations and needs one.** <!-- ⚠
+     2026-09-13, G `131a256da`. CS9248 (a partial property with no implementing part) is DOWNSTREAM of
+     CS8785 (the generator that emits the implementing part threw). Chasing the partial-property rule
+     would have been a complete, self-consistent investigation of a symptom. -->
+- **SAME INPUT + STATELESS GENERATOR + DIFFERENT OUTPUT = HOST-LEVEL NONDETERMINISM, NOT AN INPUT-SELECTED
+  CODE PATH — and force `-t:Rebuild` when the question is "what did the generator emit".** <!-- ⚠
+     2026-09-13, G `7efc221c8`. The member the compiler called missing is emitted BYTE-IDENTICAL (sha256
+     `729e7bf4`, 3,838 bytes) in BOTH build contexts with no CS8785 in either; zero static AND zero
+     instance fields across the five generators, with Roslyn's factory contract creating the syntax
+     receiver per compilation. So the one failing compilation was the analyzer HOST's — a transient — and
+     the suspect list moved off "which references did this compilation see". The rebuild flag is
+     load-bearing: an up-to-date SKIP would have left the generated tree empty and manufactured "the
+     generator emitted nothing", which is the very result under test (route #2's shape). The 110-vs-3,774
+     file counts are incremental-versus-rebuild, not a finding. -->
+- **FOR A SUSPECTED TRANSIENT, INSTRUMENTATION IS NOT FREE: THE UNCHANGED RE-RUN COMES FIRST.** <!-- ⚠
+     2026-09-13, i9 `29815a704` s8. `/p:ReportAnalyzer=true` and a binlog change the timing and memory
+     pressure the transient lives in, so an instrumented run that comes back clean cannot distinguish "did
+     not fire" from "suppressed". The unchanged re-run's logic breaks if anything is added at all; the
+     instrumented run happens only if it fires. Ruled further: fold the unchanged re-run into the next
+     full sweep the campaign runs anyway (zero extra cost) and do not delay a rung for a
+     two-diagnostics-in-204-rows one-off. -->
+- **A GENERATOR'S DEBUG ECHO ON DISK IS WHAT AN EARLIER COMPILATION GENERATED; A BUILD DOES NOT CLEAR IT.**
+  The instrument for "is the stub still compiled" is the BUILT DLL. <!-- ⚠ 2026-09-15, i9 `d7aeb33302`.
+     `Generated/…/*.stub.g.cs` outlives the build that wrote it, so reading it answers a question about
+     history. Search the dll for the stub message instead; a stub-bearing dll is the positive control. -->
 ## Reading a `-tests` result, and mass-empty verdicts
 Four checks BEFORE any shape analysis, in order.
 
@@ -1597,6 +1866,16 @@ The host reports in sorted order, in TWO phases: serial tests, then the parallel
   package off a RUN, never an artifact: **one priced "mostly stub" from its NAMES can read mostly MATCHED**,
   and **many rows can be ONE root** when the package's own ordering leaks a flag (`StartCPUProfile` sets
   `cpu.profiling` before the throw) — proven by skipping ONE test.
+- **AN UNRECOVERED GO PANIC ON GOROUTINE 1 INSIDE A `-tests` HOST ENDS THE C# PROCESS (Go semantics), AND
+  EVERY LATER TEST LOSES ITS C# VERDICT** — read the counts with "no C# verdict" as a CLASS, and treat the
+  FIRST panic's frames as the finding. <!-- ⚠ 2026-09-15, `os` at 1.24: 494 of 1,075 leaves lost their
+     verdict behind one panic (`os.Root -> openat -> NtCreateFile`, the refuse door). An agree/differ
+     ratio computed over the survivors describes the rows that ran BEFORE the panic and nothing else. -->
+- **A STRESS TEST WHOSE WORKER THREADS CATCH NOTHING TURNS ONE BAD RECORD INTO A DEAD HOST AND UNRUN
+  SIBLINGS: workers RECORD and REPORT, and the host never exits on a test's behalf.** <!-- ⚠ 2026-09-15,
+     i9's Release leg: vstest reported "Test host process crashed", Total Unknown, and two tests never
+     started. Attribution needed `--blame`, `--diag` and the host's relayed stderr — three instruments to
+     recover what a caught exception would have printed. -->
 
 ### Record hygiene, and the instruments around the pipeline
 

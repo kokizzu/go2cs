@@ -43,6 +43,25 @@ the never-push list lives in HANDOVER-coordinator.md), what to read first, the f
 section additionally names: the handover log, the KICKOFF, the train scripts directory, the live
 instruments, and every open owner hand. Nothing in it may require a scratchpad, a memory file, or an
 untracked file to exist.
+**File shape, learned the hard way — three readers parse this file and only one of them sees fences:**
+
+- **A LANE SECTION HAS ONE SHAPE: a STATE BLOCK fence, a WAKE paragraph outside any fence, and a PASTE
+  PROMPT fence** — a key-shaped line INSIDE a prompt fence is read as the record. <!-- ⚠ 2026-09-14. The
+     verifier, the fold script and a human read the same file with different notions of structure, so any
+     line that looks like `BRANCH: …` becomes data wherever it sits. -->
+- **SECTIONS END AT NUMBERED HEADINGS** — verbatim posts inside fences carry their own `## 2026-…`
+  headings, and a bare `^## ` split walks straight into them. <!-- ⚠ 2026-09-14. -->
+- **A `BRANCH:` LINE CARRIES A 40-CHAR SHA OR IT IS A `NOTE:` LINE** — the resume verifier is fence-blind
+  by design and read `missing=2` on two prose lines. <!-- ⚠ 2026-09-14. -->
+- **A PASTE PROMPT NEVER PINS A TIP ITS OWN REFRESH MOVES: cite BRANCH + PATH, and the lane reads the tip
+  by `ls-remote` and names it in the ACK.** <!-- ⚠ 2026-09-14, COORD; three lanes' prompts were re-cut on
+     it. The handover branch's tip moves with every refresh of this very file, so a pinned SHA is stale
+     before the lane pastes it. -->
+- **RE-DERIVE `NEXT` AND `BLOCKED-ON` FROM THE LATEST RULING PER LANE, AND RE-MEASURE EVERY `BLOCKED-ON`
+  BEFORE CARRYING IT** — a FALSE blocked-on costs the session, because a lane that believes itself blocked
+  does not work. <!-- ⚠ 2026-09-13, G `f2f6240a1`: a resume file's `NEXT` compiled BEFORE a correction
+     landed re-issues the error to the resumed lane. The two measured cases were an `index.lock` that was
+     long gone and a landing that had already happened. -->
 
 ## 3. Verify, then push
 
@@ -53,6 +72,12 @@ bash .claude/coord-scripts/coord-resume-verify.sh docs/phase4/RESUME-SESSIONS.md
 must read `missing=0` (every BRANCH SHA reachable from its ref on origin; LOCAL-ONLY lines listed).
 Commit on `claude/coord-handover` (dated message), push, read back the tip. Fold into master at the next
 landing's docs commit. CRLF/BOM: LF, no BOM (docs/ is outside the eol pin).
+- **READ THE FOLD'S EXIT CODE BEFORE ITS COMMIT — NEVER THE VERIFIER ALONE.** <!-- ⚠ 2026-09-15. A python
+     fold script that PRINTS a line of the resume file crashes on the Windows console (cp1252) the moment
+     a lane's text carries a non-ASCII identifier (`ж` in `New<ж<…>>`): UnicodeEncodeError BEFORE the
+     save, so the fold silently did nothing while the verifier still read clean — the file was simply the
+     previous one, and it verified. Fixed at the script with
+     `sys.stdout.reconfigure(encoding="utf-8", errors="replace")`. -->
 
 ## 4. Report the location — twice
 

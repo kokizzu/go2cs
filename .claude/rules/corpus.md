@@ -87,6 +87,71 @@ ONE stdlib, on disk and in any build; no path rewriting anywhere. Five kinds of 
      on every csproj, two exact-path exceptions in the overlay, an inverse rewrite in deploy-core, and a -tests remap. Its
      premise expired at Phase 3 — the corpus compiles under a standing gate and 69 packages validate — so on 2026-08-01 the
      conversion moved home to src/core, the stub retired, and all that machinery was DELETED rather than re-pointed. -->
+- **A HAND-OWN'S DISPOSITION AT A HOP IS READ AT THE PRINCIPAL, NOT AT THE FILE** — principal
+  byte-identical under a new package = RELOCATE (one registry key); principal ABSENT = DELETE, never
+  relocate; principal moved AND changed = relocate plus a PRINCIPAL CHANGED row. <!-- ⚠ 2026-09-13, COORD
+     `46198c1b9`. A whole-file replacement with no principal is a file no reconvert writes an `.auto`
+     beside, which is what makes DELETE the only sound answer for `xor.go` and the whitebox's
+     `dumpMap`/`dumpNode`. For `hashtriemap` (14 -> 28 funcs) and `weak` (`Strong` -> `Value`) the 1.23
+     body is carried ON PURPOSE, because the auto it displaces is the one that COMPILES and lies — safety
+     floor 2 in miniature. And a registry key whose declaration was RENAMED is found by SIGNATURE, never
+     by a look-alike name: `getgcmask(ep any) []byte` became `pointerMask`, not `getGCMask(t *_type)
+     *byte`, and two lanes each measured the wrong target correctly. -->
+- **MOVES GO IN GIT BEFORE THE RECONVERT, NEVER IN AN INSTRUMENT — AND A DELETION INSTRUMENT NEVER PERFORMS
+  A PARTIAL MOVE.** <!-- ⚠ 2026-09-13, COORD `46198c1b9` s3 and C2 `cb1e4aaf6`. `.cs.auto` siblings are
+     TRACKED and the converter writes them by its own rule when the hand-own is at the output path at
+     conversion time, so a relocation committed as `git mv` (auto -> `.cs.auto`, hand-own onto the path)
+     lets the seeded reconvert produce the pair and the placeholders, and H5c's ORPHANED class then reads
+     0 with its firing arm proven by the control. The instrument's `-Orphan path=relocate:pkg` was a bare
+     `Move-Item` with ZERO occurrences of "namespace" — it would have landed a file at the right path with
+     the WRONG identity — and was narrowed to a REFUSAL with a pointer; `delete` was kept, because nothing
+     survives to carry a wrong address. After a proper move the orphan set is empty by construction. -->
+- **`git mv` CARRIES THE PATH AND NOT THE C# IDENTITY: THE NAMESPACE AND CLASS LINES *ARE* THE MOVE.**
+  <!-- ⚠ 2026-09-13, C1 `8f800233b` / COORD `43ce0c8e6`. All three relocated hand-owns kept their SOURCE
+     namespace and class, landed in a lone partial-class part beside the destination's `package_info`
+     stub, and presented as CS1061 missing-member on exactly the symbols the H6 wall was predicted to
+     name — a defect wearing the costume of a ruled-ignorable failure — while the alias companion was
+     silently INERT and the defective auto shipped. The no-build discriminator is `grep -m1 '^namespace'`
+     on each moved file against its siblings. Same-layer trap in the same cut: an LF blob from `git show`
+     compared against a CRLF checkout reads DIFFERS at line 1. The intermediate CS0111 (both spellings of
+     a displaced body until the reconvert runs with the new registry key) is a property of the ORDER —
+     loud and self-naming — and not a camouflaged defect; but an upstream dependency failure MASKS every
+     downstream reading, so "no CS1061 in `unique`" is UNMEASURED, not refuted (i9 `0cfc5f33c`). -->
+- **`go2cs-gen` READS THE PACKAGE ADDRESS OUT OF THE HAND-OWN'S OWN FILE AND NEVER CHECKS IT AGAINST THE
+  PACKAGE BEING COMPILED — so a half-moved hand-own is MIRRORED into a consistent generated companion and
+  produces ZERO build errors on any platform.** The only instrument that can catch it is a TEXT guard.
+  <!-- ⚠ 2026-09-13, C1 `d85d4ea2c`. `ImplementGenerator.cs:155-157` takes the namespace and first class;
+     `TemplateBase.cs:87` emits `namespace {{PackageNamespace}}; public static partial class
+     {{PackageName}}_package`. That mirroring is what made the CS1106 prediction wrong. The guard: every
+     `[module: GoManualConversion]` file's namespace and package class equal its directory's other
+     non-`.auto` files, with a planted-mismatch firing arm and a vacuity refusal. -->
+- **"THE FILE IS EXCLUDED" AND "THE BODY IS DISPLACED" ARE DIFFERENT MECHANISMS WITH THE SAME VISIBLE
+  RESULT** — looking for a file exclusion finds nothing, and "nothing found" reads as "does not transfer".
+  <!-- ⚠ 2026-09-13, C1 `76e4026ae`. The runtime lock files ARE converted and compiled;
+     `manualConversionFuncs["runtime"]` (seven names at `goosAny`) replaces each registered BODY with a
+     placeholder and the flat managed core supplies it, so `m.nextwaitm` reads 0 references because every
+     function that would touch it is a comment. The registry is what the converter guards test:
+     registration alone at 1.23.12 goes red in two guards naming both halves, which makes the row
+     hop-conditional and MEASURED rather than reasoned. -->
+- **A STRANDED HAND-OWN IS AN H6 METHOD GAP: A HOP ADDS A BODYLESS DECLARATION TO A PACKAGE WHOSE COMPANION
+  COVERS THE OLD DECLARATION SET — THE COMPANION STILL COMPILES, THE NEW DECLARATION STUB-THROWS, AND
+  NOTHING SAYS SO.** <!-- ⚠ 2026-09-15. `time.runtimeNow` arrives at 1.24 while `time_impl.cs` hand-owns
+     `now()`/`runtimeNano()`; `internal/sync`'s six bridges sit with `sync`'s companions left behind. The
+     H6 member-body arm compares REALISED functions and can never see an ARRIVED declaration with no body,
+     so the audit gains the arm and the 24 hop-new throwing-stub push targets are its population. A
+     registry forward is NOT the remedy when the pushed body itself lands on another stub. -->
+- **THE CENSUS PREDICATE FOR A CLOSED CLASS IS THE FORK — THE GO IDIOM — NOT THE WRAPPER AND NOT THE
+  STRUCT: a class closed in one package can be OPEN in a sibling package's own copy of the same fork.**
+  <!-- ⚠ 2026-09-15, C1 `9a7789127a`. `syscall/windows/security_windows.cs` was hand-owned in August for
+     "a kernel byte buffer the caller reinterprets" — pinned buffer, native `ж<SID>` boxes, a
+     `ConditionalWeakTable` anchor, SIDs not copied because `GetLengthSid` is a call THROUGH the address
+     in question. `internal/syscall/windows` declares its OWN `TOKEN_GROUPS` and `getTokenInfo` loop, and
+     nothing reached it until 1.24 moved `os/user` onto the process token. -->
+- **A GO TEST THAT OBSERVED A HAND-OWN AT ONE PIN MAY NOT AT THE NEXT: RE-DERIVE EACH ROW'S OBSERVER AT THE
+  PIN.** <!-- ⚠ 2026-09-15. `os/user`'s `TestGroupIds` takes the process-token path at 1.24
+     (`Current().Uid == user.Uid`), so `listGroupsForUsernameAndDomain` is reached only by a test that
+     creates an account — skipped outside Go's own builders. When Go's suite cannot reach a hand-own on
+     any fleet box, the row owes a `GolibTests` observer that drives the branch through a seam. -->
 
 ## Layout L3 — per-GOOS folders
 
@@ -137,6 +202,12 @@ content differences). Seeding, the marker gate, the overlay rule and the phantom
      so "internal.syscall.windows.dll PRESENT under bin" was TRUE of darwin — where that package compiles nothing — and FALSE of
      the windows question actually being asked. Caught and corrected before it reached the post. The purge bullet above is what
      MAKES the leftover tree the last flavour's, so the two readings are one mechanism seen from opposite ends. -->
+- **L3 EMITS METADATA INTO PER-GOOS FOLDERS BY DESIGN, so flavour metadata rows are KEEP-METADATA, and the
+  per-GOOS flavour derivation already exists in `Resolve-Principal`.** <!-- ⚠ 2026-09-13, C2 `ef18baafb` /
+     COORD `dd03e6e3f`. The metadata branch simply threw the resolver's answer away — the third instance
+     that day of a fix being ordered for code that already handles the case. READ THE SITE BEFORE ORDERING
+     A FIX FOR A SYMPTOM. Recorded with it: an arm with no readable input ("present and NOT converted this
+     run") is documented AT THE SITE, never coded — the unfalsifiable-guard shape, refused. -->
 
 ## cgo: the corpus is emitted at `CGO_ENABLED=0`
 
@@ -264,6 +335,30 @@ Measuring a converter change's corpus footprint and the reconvert → overlay �
      measured against the pinned source refuted them. Beside it, a CONSTRUCT new at the release — a nil comparison on a
      slice-typed type parameter, rendered `== default!`, CS8761 — is a converter cut with a ZERO footprint at the old release and
      the ladder as its acceptance. -->
+- **A SINGLE-FLAVOUR INVOCATION CANNOT KNOW A DIRECTORY IS DEAD** — remove the ENUMERATED residue files,
+  then the directory only if it is now empty, and otherwise KEEP it and NAME what remains. <!-- ⚠
+     2026-09-13, C2 `0773595` s3. The H5c instrument runs one `-Goos` per call, so "the package is absent
+     at the target" is known for THAT flavour only; loud, never destructive. A leftover surfaces again at
+     the `git rm` step's `cmp` as a divergence. The artifact a later step compares against is emitted on
+     DRY runs too, LF-joined and ordinal-sorted so it is `cmp`-comparable across boxes. -->
+- **A CLASS CHECK THAT RUNS BEFORE THE ABSENCE CHECK MISFILES A REMOVED PACKAGE'S METADATA AS A HUMAN'S
+  PROBLEM.** <!-- ⚠ 2026-09-13, i9 `8f2eafdc8` s3: 15 of the 42 UNRESOLVED rows were `package_info.cs` in
+     packages removed between 1.23.12 and 1.24.13, which H5c's own DELETE-ABSENT rule justifies — but the
+     metadata branch ran first. Ordering fix ruled. Recorded beside it, the third instance that day of one
+     population with three answers: hand-own counts of 226 (`grep -rl`), 23 (a structural guess) and 146
+     (the instrument's own regex) — only the instrument's is THE population. -->
+- **A POST-CONDITION MUST MODEL EVERY ROUTE A FILE LEAVES BY, AND PRINT THE TERM IT SUBTRACTS.** <!-- ⚠
+     2026-09-13, i9 `846cbd849` / COORD `cee96ffad`. H5c's arithmetic expected `total - classified` while
+     the ruled residue sweep ALSO removes test and host `.cs` beside DELETE-ABSENT rows
+     (102 + 37 = 139 = 4039 - 3900); the instrument re-walked the disk, disagreed with its own bookkeeping
+     and exited 3 rather than reporting success. That refusal was of a FALSE EXPECTATION, not of a wrong
+     deletion — which is the distinction worth reading before "fixing" it. -->
+- **THE RECONVERT RITUAL SEEDS WHAT A CONVERSION NEEDS; A BUILD ADDITIONALLY NEEDS `src/gen` AND
+  `src/Directory.Build.props`.** <!-- ⚠ 2026-09-13, i9 `0687402db` s2. Without the generator project every
+     generated half is missing and 62 CS8795/CS1739/CS0029 errors landed in `internal/runtime/atomic` and
+     `internal/goarch`, UPSTREAM of every site the reproduction had set out to reach. The tell was
+     LOCATION, not count: a reproduction that fails somewhere other than the sites it set out to reproduce
+     has not reproduced. -->
 
 ## Deploying the core, and purging build output
 

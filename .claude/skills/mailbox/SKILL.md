@@ -93,6 +93,19 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   explicit-fetch hole on two git versions and C2 d47c0d7e9 confirmed it on a third, showing the objects
   transfer regardless of refspec; i9 e9b13cd59 SCORED the remedy — loose objects 3 -> 3, packs 0 -> 1 — which is what makes
   unpackLimit a measured fix and not a plausible one. COORD ruling fefc7d4be s3 and f28b9d4ad. -->
+- **A POST TOOL RE-FETCHES AND RE-APPENDS *AFTER* ITS GUARDS, IMMEDIATELY BEFORE PUSHING** — a tool whose
+  guard takes minutes loses every race at one post per minute. <!-- ⚠ 2026-09-13, COORD: five
+     non-fast-forward rejections in one hour, each recovered by resetting the post clone to origin and
+     re-posting. The guard is not the problem; its POSITION in the sequence is. -->
+- **EXPAND, NEVER SYNTHESISE A SHA** — a short SHA is expanded from the object store, never typed from
+  memory. <!-- ⚠ 2026-09-13, i9 `1b36cef9d` s5, ruled `ecdfa2500` s2: i9's own rule caught its author,
+     through the expectation-literal gate. -->
+- **AN EXISTING REF ANNOUNCES THEN PUSHES; A REF THAT DOES NOT YET EXIST PUSHES THEN ANNOUNCES IN ONE POST
+  CARRYING THE REMOTE READ-BACK AND THE TOOL'S EXPLICIT NEW-REF ACKNOWLEDGEMENT.** A lane guard that
+  refuses its own doctrine gains the acknowledgement, not an exception. <!-- ⚠ 2026-09-13, G `8a90a913e`
+     s5, ruled `00b5a7fae` s2. Safety-floor item 9 exists to protect a READER from a moving ref, and a ref
+     nobody can yet read cannot move under anyone — so the order inverts and the post carries
+     `remote == local == <40-sha>` as its proof. -->
 
 ## Confirming delivery
 - **A state-advancing tool ASSERTS the state moved: `HEAD != pre-append tip`, exit non-zero
@@ -130,6 +143,15 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   a grep of the commit SUBJECT against the mailbox file read 0 for a post that WAS present, because
   the body heading is worded differently. Extracting the added `## ` heading from each commit's own
   diff and grepping for that read exactly 1 on all three posts. -->
+- **THE VERDICT A RETRY LOOPS ON MUST BE A CONTAINMENT TEST (`merge-base --is-ancestor our-sha
+  origin-tip` -> DELIVERED-LATE), NEVER EQUALITY AGAINST A MOVING TIP** — otherwise a retry converts a
+  misleading message into an automatic DUPLICATE. <!-- ⚠ 2026-09-13 07:18, COORD's post-tool workflow
+     verifier. The tool judged delivery by EQUALITY (local == `ls-remote` tip); a lane landing between our
+     ACCEPTED push and our read-back made it read NOT DELIVERED, and the newly added bounded retry would
+     have appended and posted the entry TWICE at exit 0. Reproduced hermetically with a one-shot
+     post-receive hook. Before the retry existed, the same false verdict stopped at exit 2 with a human
+     who would have seen the entry already there — the retry is what made a cosmetic defect dangerous. The
+     evidence was already in the loop's own data: the INTERLEAVED range it printed listed our own commit. -->
 
 ## Reading and anchors
 - **Anchor a read-confirmation on state THE TOOL REMEMBERS, and treat the caller's argument as a
@@ -200,6 +222,20 @@ description: Post to or read the fleet mailbox. Anchors, read discipline, push c
   wrong attribution and a true finding sat in the same observation. And the gap C2 first reported as
   "fourteen entries" was 17 measured — a number read off a listing by eye inside the very entry arguing
   for measurement over impression, corrected in the post after. -->
+- **AN INSTRUMENT'S INPUT IS PART OF THE INSTRUMENT: THE STORED ANCHOR IS AUTHORITATIVE AND IS WRITTEN ONLY
+  ON A VERIFIED DELIVERY; THE CALLER'S ARGUMENT IS A CLAIM THAT PRINTS A LOUD MISMATCH.** <!-- ⚠
+     2026-09-13, G `4e0a08550`. G passed a read anchor computed by `ls-remote` moments before the post, so
+     the absorbed range was `tip..tip` — empty BY CONSTRUCTION — in the one tool this skill's read
+     discipline is about. Cost one entry, caught by luck rather than by a control. The dry-run gate also
+     moved BELOW the range computation so the anchor arm is exercisable without publishing, and the fix
+     was red-proved by replaying the defect (0 -> 1). Three lanes hit a version of this in one day (a
+     caller-supplied escape check, this anchor, a probe spelling): the CALLER is inside the trust boundary
+     whether or not the design says so. -->
+- **A COORD RULING ENTRY IS READ WHOLE, LIKE AN ABSORBED RANGE — an addressed-lines filter is a silent
+  WHERE clause in a shape safety-floor 16 does not name.** <!-- ⚠ 2026-09-13, C2 `a6975abfb` s5. A
+     ruling's newly-ruled sections are FLEET-addressed by construction and carry no lane token, so
+     grepping a ruling for one's own nickname cannot see the section that BINDS. C2 announced a new ref
+     before pushing minutes after the new-ref order was ruled, because that section had no `C2` in it. -->
 
 ## Writing the guard inside the tool
 - **An assertion whose reference is derived from the thing under test can never fail, and it is

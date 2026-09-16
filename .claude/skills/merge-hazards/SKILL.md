@@ -75,6 +75,29 @@ When several machines work one tree, the dangerous merges are the ones git repor
   at `48173ffa7`, three were vacuous by ancestry and had been published as "dead arms", which asserts they
   could have fired. C1 applied the shared-path predicate to its own H5 sequence probe within the hour
   (`73b6599ed`) and found step 1 a fast-forward and step 3 disjoint, so only step 2 tested anything. -->
+- **A DUPLICATE BETWEEN A SEAT AND ITS OWN CLEAN RE-CUT IS A STALE ROW, NOT CONTAMINATION — the two
+  readings have OPPOSITE remedies, so the tool NAMES the check on its red rather than guessing.** <!-- ⚠
+     2026-09-13, G `54ea728fd` / C1 `cbc12e499`, ruled `c53db4e3a`: 13 of the 17 fleet-wide shared
+     patch-ids were supersessions. Drop the row, or split the commit — a tool that picks one silently is
+     wrong 13 times out of 17 or 4 times out of 17, and never says which. -->
+- **ANCESTRY CANNOT BE THE STACK EXEMPTION: SHA FIRST — same SHA is a stack, different SHAs with one
+  patch-id is a duplicate and always refused — and a legitimate stack is a DECLARATION
+  (`--stack child:parent`), printed and counted.** <!-- ⚠ 2026-09-13, C1 `8f97069b2` crediting G
+     `54ea728fd`. The real contamination WAS ancestor-related and a cherry-pick is not, so "exempt the
+     ancestors" spares the defect and refuses the legitimate stack — wrong in the direction that looks
+     like caution. The control for such an arm needs care too: a cherry-pick onto the same parent IN THE
+     SAME SECOND mints the SAME SHA, so the setup handed itself a stack; the fixture is a workbench commit
+     before the item (what a real lane looks like) plus an assertion that the two SHAs DIFFER (G
+     `8a90a913e` s3(a)). -->
+- **A REMOTE-TRACKING REF IS ONLY AS FRESH AS THE REFSPEC THAT LAST WROTE IT** — before trusting
+  `origin/X`, do a WILDCARD `fetch --prune`, or ask the remote. <!-- ⚠ 2026-09-13, three lanes on one day
+     (i9 `4ff24a03f`, C2 `a35f2c040`, G `f2f6240a1`), each finding stale refs on ITSELF — landmines rather
+     than casualties, because each checked rather than asserted. The three-way table: `git fetch origin B`
+     writes `FETCH_HEAD` only; an explicit `+refs/heads/B:refs/remotes/origin/B` writes exactly B while
+     every OTHER tracking ref ages — the remedy for the short form is the CAUSE of this one; only the
+     wildcard maintains all, and a negative refspec excludes its ref from the wildcard. Measured staleness:
+     173 entries behind on the mailbox branch for one lane, 4 refs for another with ZERO negative
+     refspecs, and 2 for a third including the handover branch that carries the resume file itself. -->
 
 ## Gate lines, corrections and records
 - **Check the diffstat against the claim BEFORE the push, never after** — a merge whose file list does not match its commit message is stopped there.
@@ -114,6 +137,21 @@ When several machines work one tree, the dangerous merges are the ones git repor
   was consumed as the previous line's terminator and the record's last sentence would have rendered as a
   heading. The diff read as one deleted and one added line, byte-identical — the no-trailing-newline
   artifact — which is also why the real defect was invisible in the diffstat. -->
+- **AN APPEND-ONLY LEDGER MERGES BY UNION: every seat's appended entries VERBATIM, in merge order, with a
+  PURE-APPEND precondition per seat and a post-condition of `lines(resolved) == lines(ours) + added`,
+  every added line present in order, and no markers.** <!-- ⚠ 2026-09-13, COORD ruling E4: three train-48
+     seats appending to `docs/phase4/BOARD-next-validation-candidates.md` conflicted at the SAME tail, and
+     the resolution is `git merge-file --union` per slot, refusing to the coordinator if any seat is not a
+     pure append. Generalisation ruled for the next train: a `merge=union` attribute for the BOARD in the
+     assembly worktree's `.git/info/attributes`, stamped and asserted. Recorded beside it, the deliberate
+     asymmetry in the same gate: one arm REFUSES a behavioral path ruled by two rows, while its sibling
+     RESOLVES the same question by the LAST row in merge order — because a DECLARED stack legitimately
+     shares paths. Written down beside both arms so neither reads as a bug. -->
+- **A LANE RE-BASING A SEAT RE-APPLIES ITS EDIT TO THE TIP'S FILE AND NEVER RESTORES A SAVED COPY OVER IT**
+  — for a registry every seat of a family touches, assert the landed rows PRESENT before the patch and
+  COUNTED after. <!-- ⚠ 2026-09-15, C1: the merge-subtraction class with NO trace. Two rows in the
+     manual-conversion registry would have vanished silently under a restore, leaving valid Go, and would
+     have been caught only downstream by a duplicated body at compile time. -->
 
 ## SHAs, refs, and announce-then-push
 - **A HASH IS READ, NEVER EXPANDED FROM A PREFIX** (`OLD=$(git ls-remote origin <ref> | cut -f1)`) **and A QUOTED SHA IS RESOLVED BEFORE IT IS ACTED ON** (`git cat-file -e <sha>^{commit}`) — **but FETCH first: after a fetch "unresolved" is a typo or an invention, before one only a stale clone.** <!-- A `--force-with-lease` was given a full SHA written out by hand from the short form: nine characters of truth and thirty-one of invention. The lease refused, because a fabricated expected-SHA can never match, so the mechanism failed CLOSED by luck rather than by design; the dangerous sequel is that a "stale info" rejection invites reaching for plain `--force`, which protects nothing. Resolve rule: an announce-then-push protocol runs on SHAs participants TYPE into posts, and a coordinator can verify branch TIPS all night with `rev-parse`/`ls-remote` while never once checking that a QUOTED SHA exists. The rule's first real run flagged two SHAs that were another lane's freshly-pushed commits; treating a stale clone as an invention would have meant accusing a lane that had done everything right. A check written in reaction to a scary failure mode is exactly the one most likely to manufacture false alarms about it. -->
@@ -147,6 +185,11 @@ When several machines work one tree, the dangerous merges are the ones git repor
   <!-- ⚠ 2026-09-13: reading back the AMENDMENTS append, that filter hid the `+---` line and made the rule
   look absent from a diff that contained it. Safety-floor item 16 in the specific: the filter answered a
   different question than the one being asked, and here the filtered-out token was the content. -->
+- **A MERGE THAT INTRODUCES A FILE AND ITS `eol` ATTRIBUTE IN ONE OPERATION WRITES THE WORKTREE FORM UNDER
+  THE ATTRIBUTES IN EFFECT *BEFORE* IT** — index and worktree then disagree until the path is
+  re-materialized. <!-- ⚠ 2026-09-15, train-48 assembler (G3): the assembler re-materializes pinned paths
+     AFTER the merges for exactly this reason. `autocrlf` decides the bytes on disk, and the attribute
+     that should have governed them arrived in the same commit. -->
 
 ## Registries, ordinals and count coincidences
 - **A merge touching `package_info.cs` must carry the matching `stdlib-metadata.txt` change — check it in the PREFLIGHT**: if `git diff --name-only <base>..<branch>` lists one without the other, stop and have the branch run the generate first. <!-- `stdlib-metadata.txt` is generated FROM the corpus (`go generate .` in `src/go2cs`, gated by `TestStdLibMetadataInSync` under the converter's own `go test`), and a corpus bank that moves `GoImplement` records without it leaves that guard red for whoever runs the converter suite next. Three banked regens missed it in two days (2026-08-24/25) — the step was documented and still skipped, because no MERGE checked for it. -->

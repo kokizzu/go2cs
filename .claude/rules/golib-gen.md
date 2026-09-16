@@ -420,6 +420,29 @@ A byte endpoint quoted off an unconverged instrument is a false measurement.
      release, so a package RENAMED at the target release never enters the target's queue and no
      emission re-mints its metadata. The RELOCATION is what clears the CS0426; the un-freeze is only
      what makes the relocation's destination self-minting rather than re-frozen at the NEXT hop. -->
+- **A `//go:linkname` PUSH THE CONVERTER DOES NOT WIRE COMPILES CLEAN AND DIES AT THE FIRST CALL — THE
+  COMPILE-TIME GUARD IS THE DECLARED-NOT-IMPLEMENTED CENSUS.** Every `internal static partial` with no
+  implementing partial is a generated `*.stub.g.cs` and a run-time bomb. <!-- ⚠ 2026-09-15, RED 7. A PUSH
+     from the runtime (`fips_setIndicator -> crypto/internal/fips140.setIndicator`, bodyless in the
+     target) that the converter does not wire lets the generator mint a THROWING stub for the bodyless
+     partial, and the host exits 2 through golib's unhandled-exception door at first call. `mutex.cs`'s
+     four were the unreached first instance and `fips140`'s the reached second. The smallest
+     discriminating pair is inside `time`: `runtime/time.cs` pushes `time_runtimeNow` and
+     `time_runtimeNano` the same way and `time.cs` declares both partials the same way, yet the build
+     STUBS `runtimeNow` and WIRES `runtimeNano` — so `time.Now()` throws at the 1.24 version tip. A
+     run-time red of that reach (every converted program) outranks compile reds in the queue even though
+     the tree compiles clean. q82 landed as a Go-only guard (C1 `d87d2f94a4`): declared 88 == measured 88
+     at MEMBER level against an independent instrument, seven arms, and two regressions that first
+     VANISHED (a skip door; a `sed` after `gofmt`) before the third was made to fail honestly. -->
+- **A MAP KEYED BY LOCAL NAME ALONE RESOLVES ACROSS PACKAGES — KEY PER PACKAGE, AND DERIVE A PREFIX SET
+  FROM THE DATA RATHER THAN TYPING ONE.** <!-- ⚠ 2026-09-13, C2 `e29666f43` s3-s4, found by READING and
+     unfindable from a box without the hardware. `libc_exit` names `_exit` in `runtime/darwin` and `exit`
+     in `syscall/darwin`, so a GLOBAL map keeps whichever it read last and turns thread-exit into
+     process-exit. A local name that does not contain its symbol (`libc_error -> __error`) is encoded as
+     DATA with a guard that fails if the exception disappears, never as a loosened predicate. And a typed
+     prefix list (`libc_`, `x509_`) had already drifted from the corpus (`pthread_`, `libresolv_`,
+     `mach_`, `osinit_`, `proc_`), putting 38 rows in an artifact bucket. Fourth prose-as-code instance of
+     that day: a trampoline name matched inside a comment. -->
 ## The native boundary, class 1: LAYOUT
 **ROOT: the CLR gives AUTO layout to any struct holding a reference-typed field and REORDERS it, so the KERNEL READS THE WRONG FIELD** — not "one word where four bytes belong". **Never pass a managed struct to native code by address**: ENCODE into a native buffer (a `writeNativeSockaddr`) or an explicit-layout / `fixed`-buffer blittable mirror, usually with a registry displacement. **A correctly laid-out struct (`Iovec`) can still hand the kernel managed addresses**, so correct layout is not sufficient.
 
@@ -474,6 +497,30 @@ A byte endpoint quoted off an unconverged instrument is a false measurement.
      A TOKEN CUT'S ACCEPTANCE NAMES THE PLATFORM (2026-09-05, a union battery): two behavioral guards
      went red on `rtlGetVersion`, reached on every Windows TCP dial, where master had read silent
      zeros. Every REACHED member is a hand-own of the `GetTimeZoneInformation` shape. -->
+- **THE NATIVE-BOUNDARY DISCRIMINATOR IS THE IDIOM, NOT THE STRUCT: a cast of native bytes to a struct with
+  a MANAGED REFERENCE field is the root, and the trailing-array alias one line later is its symptom.**
+  <!-- ⚠ 2026-09-15, C1. Five length-1 managed trailing arrays over native buffers share one shape, and
+     the SOUND four are aliased off a `Reinterpret<byte, T>` VIEW over the kernel-filled byte buffer,
+     while the defect is aliased off a MANAGED struct minted by casting native bytes to `ж<TOKEN_GROUPS>`.
+     i9's "(A) capacity 14 against 20" is the managed array header's length — a reading of the symptom. -->
+- **A MARKER KEYED ON ONE PROPERTY, READ AS IF IT ANSWERED ANOTHER, UNDER-REPORTS BY EXACTLY THE MEMBERS
+  THE TWO PROPERTIES DISAGREE ON — state which question a marker answers before borrowing it.** <!-- ⚠
+     2026-09-15, C1 `3480c8ddb6`. `[GoValueClone]` marks structs whose COPY needs a deep clone (array
+     fields); read as a LAYOUT-hazard marker — any managed reference, `ж<T>` included — it misses the four
+     pointer-field structs among seven native-boundary hazards. The marker was right and the borrowing was
+     not. -->
+- **NATIVE-BOUNDARY MEMBERS ARRIVING AT A HOP ARE ONE FAMILY, ONE CENSUS, AND ONE BLITTABLE-MIRROR
+  COMPANION PER WRAPPER FAMILY.** <!-- ⚠ 2026-09-15, the 1.24 arrivals in `internal/syscall/windows` and
+     `os/user`'s token path plus `os.Root`, each a different class of the same boundary: `AllGroups`
+     aliases a length-1 managed trailing array over a kernel buffer of N entries and slices past it
+     (REINTERPRET); `GetSidIdentifierAuthority` dereferences a kernel-returned address as a `ж<T>` box
+     whose `Value` is a managed reference, and an AccessViolation ends the host (LAYOUT); `NtCreateFile`
+     passes a reference-bearing pointee (the refuse door). Precedent for the companion shape:
+     `zsyscall_windows_version_impl.cs`. -->
+- **A NATIVE ADDRESS LIST IS COPIED BY LENGTH, NEVER AS A C STRING, AND A MIRROR'S FIELD ORDER IS READ AT
+  THE PIN, NEVER RECALLED.** <!-- ⚠ 2026-09-15, C1. IPv4 `10.0.0.1` has interior zero bytes, so a
+     C-string copy truncates it at the first octet boundary that happens to be zero; and `Servent` orders
+     `Proto` before `Port`, which is not the order it is usually remembered in. -->
 ## The native boundary, class 2: LIFETIME — pins, retention, function pointers
 - **THE POPULATION IS THE PREDICATE — an address reaches a native call with no holder alive across it — NEVER THE IDIOM.** 43 `(uintptr)Ꮡ(` sites are the idiom's count, not the hazard's.
 - **golib's `uintptr` operator pins DURABLY but only for the BOX's lifetime**: `(uintptr)Ꮡ(a, 0)` without HOLDING the box lets the backing array move during the native call. Sharper — **the pin's holder is FINALIZABLE and sits on a box that is garbage the instant the take returns**, so the pin is released on the finalizer's schedule and "the four takes are atomic" holds only while nothing runs between them.
@@ -604,6 +651,17 @@ A byte endpoint quoted off an unconverged instrument is a false measurement.
      A SIGNAL DISPOSITION IS A KERNEL FACT (2026-09-05, met on linux and darwin in one week).
      Attributed by four arms varying ONE axis each, the last two differing only in the kernel
      disposition. The roster is untouched because no fleet sweep has a controlling terminal. -->
+- **A LAZY ASSEMBLY LOAD ON A THREAD IMPERSONATING AN ANONYMOUS TOKEN FAILS — A HOST-BOUNDARY CLASS WITH NO
+  GO ANALOGUE, BECAUSE GO LINKS ONE IMAGE AND NOTHING LOADS AFTER IMPERSONATION BEGINS.** <!-- ⚠
+     2026-09-15, i9 `0afbc411bb` and `cfabdda48d`. `internal/itoa`'s first touch is INSIDE `Errno`
+     formatting, reached by the test's own expected error path, and the load fails AGAIN later in the
+     process after `RevertToSelf` (a remembered failed bind, unproven). Three verdicts, one class. The
+     cure is one axis from the unedited host: format one `Errno` at host startup, on the host's own
+     thread — the `-tests` host already loads referenced assemblies before any test runs. And managed work
+     in a FIRST-CHANCE exception handler on such a thread KILLS the runtime (0x80131506 in dispatch), so
+     an in-process logger is not an instrument there. Restore hygiene from the same cut: a restored backup
+     copied with its ORIGINAL mtime makes MSBuild skip the compile and leaves the exe as the last
+     variant's — a restore is proven by BEHAVIOUR (re-run the control), never by a timestamp. -->
 ## Hand-owned types and companion files
 - **A cross-package COPY of a hand-owned type with lazily-shared state is correct BY ACCIDENT after the owner's first use and fatal before it.** The converter's box wrap over a package-qualified selector boxes a COPY of an exported package var, and a hand-owned `RWMutex`'s state is created on first use and shared — so a copy taken **after** the owner touches the var lands on the real lock while one taken **before** gets its own. **A guard for such a fix must hold the sub-library var UNTOUCHED before the cross-package pair, or it is green by the mask.** The SAME-PACKAGE control roots it: the converter emits the right form (the exported box) for a local var and loses it on the qualified selector, so the defect is in the **selector path**, not the receiver machinery. **Measure the mechanism on a scratch module before cutting the guard** — the corollary to "a stack before a design".
 - **A companion may deliberately COMPENSATE for a caller belief that is factually FALSE, and it must say so IN ITS OWN WORDS or the compensation is invisible** — a caller-side reading cannot see it otherwise.
@@ -619,3 +677,9 @@ A byte endpoint quoted off an unconverged instrument is a false measurement.
      keyed on the goroutine and consumed by an entry point whose signature carries no handle, no
      overlapped and no identity at all, with the premise — one goroutine, no interleaved accept —
      stated only in a comment. -->
+- **A SELF-MAINTAINING EXPRESSION IS NOT SAFER WHEN THE LANGUAGE DOES NOT GUARANTEE ITS ORDER** — remove
+  the coincidence rather than relying on it, and retire an arm whose NAME has outlived its meaning.
+  <!-- ⚠ 2026-09-13, C1 `6a6355dbe`. `.array(len(waitReasonStrings))` would be right only because all
+     three fields happen to sit in ONE part of a partial class today — C# orders static initializers only
+     WITHIN a part. The derived literal plus a three-lengths-agree post-condition is the version that
+     survives someone splitting the partial. -->
