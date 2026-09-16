@@ -1447,8 +1447,28 @@ announced refs.
   artifacts; a hand merge of an artifact is a hand-written artifact;
 - **projitems** — the **union**, and the row count asserted afterwards with no duplicates;
 - **a modify/delete where the delete is the hop's own package retirement** — the **delete stands**;
-- **a code conflict whose two sides are a displacement and the body it displaces** — master's side, and
-  the displacement's registration lands **with** it.
+- **a code conflict whose two sides are a displacement and the body it displaces** — **if the file is
+  HAND-OWNED**, master's side, and the displacement's registration lands **with** it. **If the file is
+  EMITTED, it is RE-MINTED from the merged converter**, exactly as the regenerable metadata above is:
+  the merged tree carries the displacement's registration, so the re-mint emits the file *without* the
+  displaced body and *with* the hop's own calling convention. ⚠ **An emitted file is never resolved by
+  SIDE** — taking master's side reinstates master's **pre-hop emission of the whole file**, including
+  every call written against a signature the hop re-signed.
+
+<!-- AMENDED 2026-09-16 (COORD 1bc5eb919c, from the instance). At the go1.23.12 -> go1.24.13 fold this
+     bullet read "master's side" with no hand-owned/emitted split, and the fold gated RED on it:
+     src/core/runtime/mgc.cs is EMITTED and was in the conflict set, so master's side reinstated
+     master's pre-hop emission -- four `lockInit(ref work.…, lockRank…)` calls at mgc.cs(177-180)
+     against a signature the hop had re-signed to the box form `ж<mutex>`, giving CS1615 x4 in
+     runtime.csproj. The branch carried 113 box-form call sites and ZERO ref-form; master carried 110
+     ref-form, of which only these four entered, because only mgc.cs was conflicted (control: chan.cs,
+     not taken from master, reads ref-form 0 / box-form 1 -- so the four are a property of the
+     RESOLUTION, not of the merge). lockrank_off.cs was NOT conflicted, so the branch's DECLARATION
+     auto-merged in correctly, which is why the mismatch surfaced as a call-site error rather than a
+     redeclaration. The classes were also NOT DISJOINT: mgc.cs satisfied this bullet AND the
+     regenerable-artifact bullet, and the list stated no precedence -- the split above supplies it.
+     Measured and held unpushed by i9 (550a276a8); the rule is COORD's own, corrected by COORD at
+     1bc5eb919c; R carried it into this text. No SHA was rewritten: the fold was never pushed. -->
 
 **⚠ The closing check is the cheapest proof the fold did what it is for:** re-run H6's retired-hand-own
 step. After the fold the merge-base *is* master's tip, so that step reads clean **by construction** — and
