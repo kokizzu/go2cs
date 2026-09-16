@@ -759,24 +759,20 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	// what the compilation contains" is true of every model, and a future Phase-4D widening that
 	// drops a file holding a Test would meet it the same way.
 	for i := range declarations {
-		if declarations[i].Status != "included" {
-			continue
-		}
-
-		sourcePath := filepath.Clean(filepath.Join(inputPath, declarations[i].Source))
-
-		if !compileExcluded[sourcePath] {
-			continue
-		}
-
-		declarations[i].Status = "unsupported"
-
-		if handOwnHostExcluded[sourcePath] {
-			declarations[i].Reason = handOwnHostExcludedSourceReason
-		} else {
-			declarations[i].Reason = compileExcludedSourceReason
-		}
+		markCompileExcludedDeclaration(&declarations[i], inputPath, compileExcluded, handOwnHostExcluded, external)
 	}
+
+	// TestMain is NOT an element of `declarations`: discovery takes a COPY into its own field and the
+	// manifest carries it separately, so the loop above cannot reach it. It goes through the SAME
+	// helper rather than a second copy of the rule.
+	//
+	// MEASURED, and it is why this line exists: `testing`'s TestMain lives in testing_test.go, which
+	// the export_test.go bridge edge excludes at 1.24 (the file reads testing.ParallelConflict, new at
+	// that release). Every one of its thirty-odd siblings in that same file was correctly marked while
+	// TestMain alone kept `included`, so writeTestHost's own correct gate was handed "included" and
+	// emitted a SetTestMain naming a member no compiled file declares — CS0117, and the package's host
+	// could not publish at all.
+	markCompileExcludedDeclaration(testMain, inputPath, compileExcluded, handOwnHostExcluded, external)
 
 	sort.Slice(declarations, func(i, j int) bool {
 		if declarations[i].Name == declarations[j].Name {
@@ -1826,10 +1822,76 @@ func selectCompileExcludedTestFiles(variants ...*packages.Package) map[string]bo
 // the package under test is a HAND-OWNED HOST. Distinct from the Phase-4D status beside it: nothing
 // about these declarations is deferred — their subject is a representation the host structurally
 // replaced, so there is no C# symbol for the assertion to name and never will be.
+//
+// TWO reasons, selected by the file's KIND, because the rule reaches two populations by two
+// different mechanisms and one constant cannot describe both: an INTERNAL variant is excluded
+// because the host replaces the representation it asserts against, while an EXTERNAL file is
+// excluded because it REFERENCES a declaration of an already-excluded file through Go's
+// export_test.go bridge. MEASURED: one shared constant saying "its INTERNAL test variant" was
+// stamped verbatim onto three external-test files of `testing`, and a reader who took that text
+// for the predicate spent an hour looking for an internal/external rule that does not exist.
 const (
-	handOwnHostExcludedSourceStatus = "hand-own-host-internal"
-	handOwnHostExcludedSourceReason = "the package under test is a hand-owned host, so its INTERNAL test variant asserts against Go's own unexported state machine (common, matcher, chattyPrinter, tRunner) — a representation the host replaces rather than implements, leaving no symbol for the assertion to name"
+	handOwnHostExcludedSourceStatus   = "hand-own-host-internal"
+	handOwnHostExcludedInternalReason = "the package under test is a hand-owned host, so its INTERNAL test variant asserts against Go's own unexported state machine (common, matcher, chattyPrinter, tRunner) — a representation the host replaces rather than implements, leaving no symbol for the assertion to name"
+	handOwnHostExcludedExternalReason = "the package under test is a hand-owned host, so its internal test variant is not compiled, and this EXTERNAL test file reaches a declaration of an excluded file through Go's export_test.go bridge — an exported alias of an unexported symbol the host replaces, leaving no symbol for the reference to name"
 )
+
+// The manifest's `kind` values for a _test.go file, and the ONLY spelling of them: the exclusion
+// reason is selected from this value, so a second copy of either literal would let them drift.
+const (
+	internalTestSourceKind = "internal-test"
+	externalTestSourceKind = "external-test"
+)
+
+// testSourceKind reports whether path is compiled into the package's EXTERNAL test variant. It is
+// the ONE derivation: classifyTestSources records it in the manifest and markCompileExcludedDeclaration
+// selects the exclusion reason from it, so the two can never disagree about a file.
+func testSourceKind(external *packages.Package, path string) string {
+	if external != nil {
+		for _, file := range external.CompiledGoFiles {
+			if samePath(file, path) {
+				return externalTestSourceKind
+			}
+		}
+	}
+
+	return internalTestSourceKind
+}
+
+// handOwnHostExcludedReason names the MECHANISM that dropped a hand-owned host's _test.go file,
+// read from its kind rather than assumed.
+func handOwnHostExcludedReason(kind string) string {
+	if kind == externalTestSourceKind {
+		return handOwnHostExcludedExternalReason
+	}
+
+	return handOwnHostExcludedInternalReason
+}
+
+// markCompileExcludedDeclaration statuses ONE declaration whose source file was dropped from the
+// compile set. Pointer-taking and nil-safe so the two populations the manifest holds — the
+// declarations slice and the separate TestMain field — pass through a single rule: the invariant
+// "the host may name only what the compilation contains" is a property of a DECLARATION, not of the
+// container it happens to sit in, and TestMain sits in its own field as a copy taken at discovery.
+func markCompileExcludedDeclaration(declaration *testDeclaration, inputPath string, compileExcluded, handOwnHostExcluded map[string]bool, external *packages.Package) {
+	if declaration == nil || declaration.Status != "included" {
+		return
+	}
+
+	sourcePath := filepath.Clean(filepath.Join(inputPath, declaration.Source))
+
+	if !compileExcluded[sourcePath] {
+		return
+	}
+
+	declaration.Status = "unsupported"
+
+	if handOwnHostExcluded[sourcePath] {
+		declaration.Reason = handOwnHostExcludedReason(testSourceKind(external, sourcePath))
+	} else {
+		declaration.Reason = compileExcludedSourceReason
+	}
+}
 
 // markHandOwnHostExcludedTestFiles adds to excluded every _test.go a hand-owned-host row cannot
 // compile, and it propagates in the OPPOSITE DIRECTION from the Phase-4D rule above.
@@ -5782,15 +5844,7 @@ func classifyTestSources(inputPath string, included HashSet[string], compileExcl
 	}
 	result := make([]testSource, 0, len(matches))
 	for _, path := range matches {
-		kind := "internal-test"
-		if external != nil {
-			for _, file := range external.CompiledGoFiles {
-				if samePath(file, path) {
-					kind = "external-test"
-					break
-				}
-			}
-		}
+		kind := testSourceKind(external, path)
 		// compile-excluded is checked BEFORE included: a Phase-4D Example/Benchmark-only file was
 		// platform-SELECTED (so it is not platform-excluded) yet is deliberately not compiled, and
 		// its distinct status keeps the manifest truthful about why.
@@ -5800,7 +5854,7 @@ func classifyTestSources(inputPath string, included HashSet[string], compileExcl
 			// Checked ahead of the Phase-4D status: a host row's internal file may satisfy both
 			// predicates, and "the host replaces this representation" is the accurate reason where
 			// "deferred to Phase 4D" would promise a later run that is never coming.
-			status, reason = handOwnHostExcludedSourceStatus, handOwnHostExcludedSourceReason
+			status, reason = handOwnHostExcludedSourceStatus, handOwnHostExcludedReason(kind)
 		case compileExcluded[filepath.Clean(path)]:
 			status, reason = compileExcludedSourceStatus, compileExcludedSourceReason
 		case !included.Contains(filepath.Clean(path)):
