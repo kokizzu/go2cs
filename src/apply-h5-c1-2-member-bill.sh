@@ -71,7 +71,19 @@ die() { echo "REFUSE: $*" >&2; exit 2; }
 # 0 HAS NOT TOLD YOU IT DID THE WORK. Copied rather than sourced so this script stands alone on a
 # scratch tree; the twin is src/apply-h5-c1-1-rederives.sh.
 PYBIN=""
-py_answers() { [ "$("$1" -c 'print(6*7)' 2>/dev/null)" = "42" ]; }
+# ⚠ THE ANSWER IS COMPARED WITH ITS CARRIAGE RETURNS STRIPPED, and that is a FIX, not a relaxation
+# (q99, COORD 3ff-ruling; measured on G's box, where `py` runs and this gate refused it). The Windows
+# Python launcher is `py.exe`, a native Windows program: through a Git-Bash pipe it answers
+# `42\r\n`, and `$(...)` strips only the trailing newline -- so the comparison saw `42\r` and
+# refused an interpreter that works perfectly. On a box whose `python3` and `python` are Store
+# redirectors (they print nothing and exit 0, so they are correctly skipped), `py` is the ONLY
+# candidate, and the run died naming "no working Python interpreter found" while one was installed.
+#
+# The strip does NOT widen the gate, and the arm below proves both halves: an answer of `43\r\n` is
+# still refused, and /bin/echo -- which prints its arguments and exits 0 -- is still refused. What is
+# tolerated is the line ENDING of a correct answer, which is a property of the pipe and not of the
+# interpreter. A TOOL THAT EXITS 0 HAS STILL NOT TOLD YOU IT DID THE WORK.
+py_answers() { [ "$("$1" -c 'print(6*7)' 2>/dev/null | tr -d '\r')" = "42" ]; }
 resolve_python() {
   local c
   if [ -n "${H5_PYTHON:-}" ]; then
@@ -666,12 +678,25 @@ selftest() {
   echo "every arm asserts the REASON it passed, never merely an exit code"
   echo
 
-  # THE FIXTURE IS REAL DATA, not a synthetic stand-in: the clone's own frozen hand-own, copied out.
-  # A synthetic const block would test the parser against a file written to satisfy it.
-  local SRC="$here/core/runtime/runtime2.cs"
+  # THE FIXTURE IS REAL DATA AND IT IS FROZEN, and the second half is the q99 correction.
+  #
+  # It used to be the LIVE src/core/runtime/runtime2.cs. That was real data, so it was right on the
+  # first count and STALE BY COMPLETION on the second: once the bill is APPLIED to the corpus, the
+  # "unpatched" tree mktree builds is already patched, ARM 2 cannot be red, and every arm downstream
+  # measures a diff against a file that already carries the thing it checks for. The suite reported
+  # that as a FAILURE rather than as a green, which is the one mercy in it -- but a guard that can
+  # only fail once its subject is done is not a guard, and this one is the HOP'S instrument and has
+  # to survive to be used.
+  #
+  # So the fixture is a COMMITTED PRE-BILL COPY beside this script: src/core/runtime/runtime2.cs as
+  # it stood at dc78fb0df^, the parent of the H5 checkpoint that applied C1-1 and C1-2. Still real
+  # data -- the actual hand-own, not a synthetic const block written to satisfy the parser -- and it
+  # cannot go stale, because nothing applies a bill to it. ARM 0 below is what keeps that true.
+  local SRC="$here/h5-c1-2-fixture/runtime2.pre-bill.cs"
   if [ ! -f "$SRC" ]; then
-    echo "  NOT RUN: $SRC is absent -- this self-test reads the clone's own runtime2.cs as its"
-    echo "           fixture and will not substitute a synthetic one. Run it from inside the clone."
+    echo "  NOT RUN: $SRC is absent -- this self-test reads the COMMITTED PRE-BILL fixture and will"
+    echo "           not substitute the live corpus file, which is stale by completion once the bill"
+    echo "           is applied. Run it from inside the clone."
     return 2
   fi
 
@@ -680,6 +705,21 @@ selftest() {
     cp "$SRC" "$d/runtime/runtime2.cs"
     printf 'namespace go;\r\npartial class runtime_package {\r\n[GoType] partial struct synctestGroup { }\r\n}\r\n' > "$d/runtime/synctest.cs"
   }
+
+  # ARM 0 (PROVENANCE, and it exists because a frozen fixture solves stale-by-completion exactly
+  # ONCE): re-freezing this file from an already-patched corpus would put the defect straight back
+  # with every arm still GREEN -- which is strictly worse than the state it replaces, because the
+  # suite would then be quiet about it. So the fixture is measured against the bill it is supposed to
+  # PRECEDE: none of the six added constants may be present, and neither may the accessor the bill
+  # appends. The names are spelled out rather than derived from Go, because a derived list would read
+  # the same source the bill reads and could agree with a wrong fixture.
+  arms=$((arms+1))
+  local pre_added pre_accessor
+  pre_added=$(grep -c -E 'waitReason(SyncWaitGroupWait|SynctestRun|SynctestWait|SynctestSelect|SynctestChanReceive|SynctestChanSend)' "$SRC" || true)
+  pre_accessor=$(grep -c 'isIdleInSynctest' "$SRC" || true)
+  [ "$pre_added" -eq 0 ] || { echo "ARM 0 FAILED: the frozen fixture already carries $pre_added line(s) naming the bill's ADDED constants -- it is not a PRE-BILL file, so ARM 2 cannot be red and nothing below this line proves anything"; return 1; }
+  [ "$pre_accessor" -eq 0 ] || { echo "ARM 0 FAILED: the frozen fixture already carries the isIdleInSynctest accessor the bill appends -- it is not a PRE-BILL file"; return 1; }
+  echo "  ok   the FIXTURE is PRE-BILL          a fixture re-frozen from a patched corpus goes RED here"
 
   # ARM 1 (RED FIRST): a PRE-HOP tree -- no synctest.cs -- must be REFUSED. This is the reason the
   # C1-2 bill is a patch and not a commit, so it is the first thing the suite proves.
@@ -928,6 +968,21 @@ PY
   case "$out" in *"did not answer 'print(6*7)' with 42"*) ;; *) echo "ARM 15 FAILED: refused for the wrong reason"; echo "$out"; return 1 ;; esac
   case "$out" in *POST-CONDITION*) echo "ARM 15 FAILED: a refused interpreter still produced a VERDICT"; echo "$out"; return 1 ;; esac
   echo "  ok   a probe-passing NO-OP is REFUSED  exit 0 is not evidence that the work was done"
+
+  # ARM 16 (DETECTION, both directions): an interpreter whose correct answer carries a CARRIAGE
+  # RETURN must be ACCEPTED, and the tolerance must not have widened into accepting a wrong answer.
+  # This is the Windows `py` defect measured on G's box -- `py.exe` is a native Windows program and
+  # answers `42\r\n` through a Git-Bash pipe, so the old comparison saw `42\r` and refused a working
+  # interpreter while `python3` and `python` were Store redirectors with nothing to offer. The arm
+  # tests py_answers DIRECTLY, because that function IS the unit that was wrong; ARM 15 already
+  # covers the end-to-end refusal path.
+  arms=$((arms+1))
+  printf '#!/bin/sh\nprintf "42\\r\\n"\n' > "$tmp/cr-answer"; chmod +x "$tmp/cr-answer"
+  printf '#!/bin/sh\nprintf "43\\r\\n"\n' > "$tmp/cr-wrong";  chmod +x "$tmp/cr-wrong"
+  py_answers "$tmp/cr-answer" || { echo "ARM 16 FAILED: an interpreter answering 42 with a trailing CR was REFUSED -- this is the Windows 'py' defect, unfixed"; return 1; }
+  py_answers "$tmp/cr-wrong"  && { echo "ARM 16 FAILED: the CR tolerance widened into accepting a WRONG answer (43)"; return 1; }
+  py_answers /bin/echo        && { echo "ARM 16 FAILED: a probe-passing no-op was accepted after the CR change"; return 1; }
+  echo "  ok   a CR-carrying ANSWER is ACCEPTED  Windows 'py' answers 42 CRLF; 43 and /bin/echo still refused"
 
   echo
   echo "SELF-TEST CLEAN -- $arms arms, $notrun not run"
