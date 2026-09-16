@@ -1310,7 +1310,7 @@ internal static ж<policyGraph> newPolicyGraph() {
 [GoRecv] internal static void insert(this ref policyGraph pg, ж<policyGraphNode> Ꮡn) {
     ref var n = ref Ꮡn.DerefOrNull();
 
-    pg.strata[pg.depth].Set(((@string)n.validPolicy.der), n);
+    pg.strata[pg.depth].Set(((@string)n.validPolicy.der), Ꮡn);
 }
 
 [GoRecv] internal static slice<ж<policyGraphNode>> parentsWithExpected(this ref policyGraph pg, OID expected) {
