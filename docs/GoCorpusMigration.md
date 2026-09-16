@@ -452,9 +452,10 @@ pin_pair () {  # the H2->H5 window pairing at go1.23.12: pin_pair <GOROOT-1.23.1
   guards; KICKOFF-fleet.md:176).
 - **After every conversion, read what the converter read.** On a converter carrying `7c1d8832f`
   (`git -C '<tree>' merge-base --is-ancestor 7c1d8832f HEAD`), its log's `toolchain: GOROOT … (VERSION <rel>,
-  read in-process)` line names `<rel>`. `7c1d8832f` is in neither `a02ac3df3` nor the train-47 union
-  `44fbc381a`: without it that line does not exist, the row is NOT AVAILABLE, and the first arm is the pin
-  assertion plus the `mcleanup` presence arm — posted as the weaker instrument. Post the bare `go version` line
+  read in-process)` line names `<rel>`. `7c1d8832f` is in master since train 48 (`271300cea0` and after; the
+  provenance line lives at `src/go2cs/toolchainResolution.go`), so a `<landing>` at or after it always has the row; on an
+  older tree the line does not exist, the row is NOT AVAILABLE, and the first arm is the pin assertion plus the `mcleanup`
+  presence arm — posted as the weaker instrument. Post the bare `go version` line
   and the VERSION token — never a GOROOT value.
 <!-- Pairing vs split: this document's H2 ruling (a02ac3df3:docs/GoCorpusMigration.md:249-275); KICKOFF-fleet.md:176 at a02ac3df3.
      After-the-run clause: COORD 214f2bf7d (loader-directory root and its VERSION printed) and 0b5d72d0e §3 (read the emission's own
@@ -1233,9 +1234,9 @@ because the completeness gate must be checkable in one place.
 - **The relocation blind spot.** A frozen hand-own present in both trees passes any set comparison while carrying
   declarations the target release moved (`runtime/internal/sys` → `internal/runtime/sys`). The package-alias
   census (`docs/phase4/CENSUS-h6-handown-package-aliases.md`) is read beside every substantive row.
-- **The audit file** is `docs/phase4/AUDIT-h6-handown-go124.md`: a skeleton, one row per marked path, on the
-  unseated branch `claude/laneR-docs-h6-skeleton` at `d18059950` (in neither `a02ac3df3` nor the union); it
-  reaches the version branch only as a seat COORD rules.
+- **The audit file** is `docs/phase4/AUDIT-h6-handown-go124.md`: one row per marked path. R cut the skeleton
+  (`d18059950`, train 48 seat 4) and G filled it (blocks 1–19, landed on master at `4e672aa4a`, 144 of 145 rows
+  classified, row 130 recorded REWRITE OWED (c)); it reaches the version branch with master at H12.
 <!-- The pair: COORD db6d9462f §3.2 (b). Population: 146 by handown-census.ps1's predicate against 105 by a literal grep at bd1d26faf
      (db6d9462f §1, H6 row). Identical writes skipped: src/go2cs/platformEmit.go:420-422 at a02ac3df3. Unconditional sibling create:
      a02ac3df3:src/go2cs/autoSiblingOperations.go:122-137 (os.Create). Census parameters: 44fbc381a:src/handown-census.ps1:36-39. No gate
