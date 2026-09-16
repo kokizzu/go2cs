@@ -1444,10 +1444,14 @@ announced refs.
      byte-identical to the stamped dry-run tree" with no conflict-free/conflicted split, and the sizing
      row above named no argument order. Both were found by lanes EXECUTING the rung, not by reading it.
        (1) THE OBJECT. At the go1.23.12 -> go1.24.13 fold the stamp was 393651af2d and the landed tree
-           dc02500f2e -- differing by exactly the nine resolved paths, which is what an UNRESOLVED
+           37dbd311bd -- differing by exactly the nine resolved paths, which is what an UNRESOLVED
            merge-tree fingerprint must do. i9 had to state that in advance (141464d05d) so a correct act
-           would not read as a miss, and said so again at the landing (550a276a8): "the tree is NOT the
+           would not read as a miss, and said so again at the landing (2834187aa): "the tree is NOT the
            stamped 393651af2d, exactly as the prediction said it could not be".
+           CORRECTED 2026-09-16 (C2 22e01bf17; COORD): the two SHAs above first cited the HELD first take -- its tree
+           dc02500f2e and its entry 550a276a8 ("COMMITTED LOCALLY AND GATED RED") -- an object no pushed ref reaches.
+           The landed fold is fc275f1ac3 (entry 2834187aa) with tree 37dbd311bd, and the nine-path property was
+           re-measured true of THAT tree (C2 1cfa9ee2a, 22e01bf17). The rule stood; only the SHAs were the superseded take's.
        (2) THE ORDER. C2 measured the stamp order-dependent (81543d8cd): version tip first and master
            second yields 393651af2d; master first yields d7958bb4da -- AT THE SAME NINE PATHS, compared
            by diff and not by eye. Two lanes following this rung literally could stamp different SHAs
