@@ -1157,6 +1157,69 @@ is silent and operational, and it surfaces later as an inexplicable divergence i
 working on.** *Newly-added* upstream code is the dangerous class; a *changed* line often shows up as a
 behavioral divergence, an added branch shows up as nothing.
 
+> **AMENDED 2026-09-16 — H6's census ENUMERATES SURVIVORS, so a hand-own that was DELETED WITH ITS
+> PACKAGE leaves no row, and the class it cured returns uncured in whatever replaced it.** The failure
+> mode above is upstream *adding* code inside a hand-own that cannot receive it. This is its sibling and
+> it is quieter: the hand-own does not go stale, it **ceases to exist**, and with it the only statement
+> of why the automatic conversion of that file was unsafe.
+>
+> **Measured, not argued** (`src/handown-census.ps1:122`): the marker census is
+> `git grep -l -E '^\s*\[module:\s*(go\.)?GoManualConversion\]' -- '*.cs'` **over the working tree** —
+> the corpus as it is now. A file already removed is not in `$marked`, so it is not misclassified, it is
+> **absent from the census entirely**. The instrument's own `from`/`to` existence test at `:144-150`
+> handles the *upstream Go source* appearing or vanishing and correctly calls that `touched-substantive`
+> — "always a human look" — but that test presumes the hand-own still exists to be mapped. Nothing in
+> the gate looks at the set that is gone.
+>
+> **The instance that produced this amendment** (go1.23.12 → go1.24.13, `docs/phase4` q97):
+> `src/core/vendor/golang.org/x/crypto/sha3/` held a hand-owned `xor.cs` whose comment names its own
+> failure mode verbatim — the raw-address reinterpret "fabricated an `array<byte>` backing reference out
+> of the keccak state's own DATA" — and cured it with `MemoryMarshal.AsBytes` over the array's span, a
+> genuine aliasing view. At the new pin that package is **15 files → 0**: upstream moved the
+> implementation to `crypto/internal/fips140/sha3`, the hand-own was dropped with the package it lived
+> in, and the replacement re-emits the same length-changing raw-address reinterpret at
+> `keccakf.cs:61` — with **no `GoManualConversion` marker anywhere in the new package**. It surfaced as
+> four test panics carrying *negative* lengths out of `golib/array.cs`'s bounds check, which is the
+> signature of a fabricated `array<T>` struct rather than an out-of-range index. H6 passed. The corpus
+> compiled. The cure had simply been deleted.
+>
+> **The step, and it is mechanical.** At H6, before any substantive-row review, compute the
+> **retired-hand-own set** — markers present in the OUTGOING corpus and absent from the incoming one:
+>
+> ```
+> git grep -l -E '^\s*\[module:\s*(go\.)?GoManualConversion\]' <outgoing-sha> -- 'src/core/**/*.cs' | sed "s#^<outgoing-sha>:##" | sort > logs/handowns-outgoing.txt
+> git grep -l -E '^\s*\[module:\s*(go\.)?GoManualConversion\]' <incoming-sha> -- 'src/core/**/*.cs' | sed "s#^<incoming-sha>:##" | sort > logs/handowns-incoming.txt
+> LC_ALL=C comm -23 logs/handowns-outgoing.txt logs/handowns-incoming.txt > logs/handowns-retired.txt
+> ```
+>
+> **One row per retired hand-own, and the row is not closed by the deletion being correct.** For each:
+>
+> | field | what it must carry |
+> |---|---|
+> | the hand-own | path at the outgoing pin, and the *class it cured* in its own words — a hand-own that cannot say what it was for is itself the finding |
+> | why it went | package dropped · file renamed · upstream absorbed the fix · the hand-own's reason expired |
+> | the replacement | the package that now carries those semantics at the new pin, **named**, or `none` with the reason |
+> | the class, re-censused | the cured class's predicate run at the NEW pin over the replacement — **cured / moved / gone**, with the count |
+> | the marker | whether the replacement carries a hand-own of its own, measured, not assumed |
+>
+> **The verdict a row needs is `cured` or `gone`.** `moved` — the class present at the new pin in a file
+> with no hand-own — is an H6 **GATE FAILURE**, exactly as a substantive row left unreviewed is, and it
+> is cured before H6 closes.
+>
+> ⚠ **Do not read the retired set as a delete list to approve.** Every one of these deletions was
+> *correct*: the package really did go away. The question H6 asks is not whether the file should have
+> been removed — it is **whether the reason it existed went with it**.
+>
+> *Named blind spot:* the set is keyed on the marker, so a hand-own retired by having its marker removed
+> while the file stays reads as present. That is the whole-file-replacement class the marker exists to
+> mark, and losing the marker is already an H6 substantive row by the census's own arithmetic — stated
+> here so the two are not confused.
+>
+> *Durable form, after the hop:* a guard in `src/go2cs/internal/repoguard` carrying the previous pin's
+> marker list and asserting that every absent entry has a closed row. Banked, not cut during a
+> migration — the list's baseline moves at every hop and a guard whose baseline moves needs the hop to
+> be over before it can be written honestly.
+
 **The instrument** is `.cs.auto` — the converter's answer to *"what would the automatic conversion of
 this file be, today, from this Go tree?"*
 
