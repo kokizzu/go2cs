@@ -866,21 +866,21 @@ internal static void http2setDefault<T>(ref T v, T minval, T maxval, T defval)
 }
 
 internal static void http2setConfigDefaults(ref http2http2Config conf, bool server) {
-    http2setDefault(ref nonnil(ref conf).MaxConcurrentStreams, 1, math.MaxUint32, http2defaultMaxStreams);
-    http2setDefault(ref nonnil(ref conf).MaxEncoderHeaderTableSize, 1, math.MaxUint32, http2initialHeaderTableSize);
-    http2setDefault(ref nonnil(ref conf).MaxDecoderHeaderTableSize, 1, math.MaxUint32, http2initialHeaderTableSize);
+    http2setDefault(ref nonnil(ref conf).MaxConcurrentStreams, (uint32)(1), (uint32)(math.MaxUint32), (uint32)(http2defaultMaxStreams));
+    http2setDefault(ref nonnil(ref conf).MaxEncoderHeaderTableSize, (uint32)(1), (uint32)(math.MaxUint32), (uint32)(http2initialHeaderTableSize));
+    http2setDefault(ref nonnil(ref conf).MaxDecoderHeaderTableSize, (uint32)(1), (uint32)(math.MaxUint32), (uint32)(http2initialHeaderTableSize));
     if (server){
-        http2setDefault(ref nonnil(ref conf).MaxUploadBufferPerConnection, http2initialWindowSize, math.MaxInt32, (int32)(1 << (int)(20)));
+        http2setDefault(ref nonnil(ref conf).MaxUploadBufferPerConnection, (int32)(http2initialWindowSize), (int32)(math.MaxInt32), (int32)(1 << (int)(20)));
     } else {
-        http2setDefault(ref nonnil(ref conf).MaxUploadBufferPerConnection, http2initialWindowSize, math.MaxInt32, http2transportDefaultConnFlow);
+        http2setDefault(ref nonnil(ref conf).MaxUploadBufferPerConnection, (int32)(http2initialWindowSize), (int32)(math.MaxInt32), (int32)(http2transportDefaultConnFlow));
     }
     if (server){
-        http2setDefault(ref nonnil(ref conf).MaxUploadBufferPerStream, 1, math.MaxInt32, (int32)(1 << (int)(20)));
+        http2setDefault(ref nonnil(ref conf).MaxUploadBufferPerStream, (int32)(1), (int32)(math.MaxInt32), (int32)(1 << (int)(20)));
     } else {
-        http2setDefault(ref nonnil(ref conf).MaxUploadBufferPerStream, 1, math.MaxInt32, http2transportDefaultStreamFlow);
+        http2setDefault(ref nonnil(ref conf).MaxUploadBufferPerStream, (int32)(1), (int32)(math.MaxInt32), (int32)(http2transportDefaultStreamFlow));
     }
-    http2setDefault(ref nonnil(ref conf).MaxReadFrameSize, http2minMaxFrameSize, http2maxFrameSize, http2defaultMaxReadFrameSize);
-    http2setDefault(ref nonnil(ref conf).PingTimeout, 1, math.MaxInt64, (time.Duration)(15000000000L));
+    http2setDefault(ref nonnil(ref conf).MaxReadFrameSize, (uint32)(http2minMaxFrameSize), (uint32)(http2maxFrameSize), (uint32)(http2defaultMaxReadFrameSize));
+    http2setDefault(ref nonnil(ref conf).PingTimeout, (time.Duration)(1), (time.Duration)(math.MaxInt64), (time.Duration)(15000000000L));
 }
 
 // adjustHTTP1MaxHeaderSize converts a limit in bytes on the size of an HTTP/1 header
