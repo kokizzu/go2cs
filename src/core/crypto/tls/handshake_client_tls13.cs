@@ -103,8 +103,11 @@ internal static error handshake(this ж<clientHandshakeStateTLS13> Ꮡhs) {
         confTranscript.Write((~hs.serverHello).original[..30]);
         confTranscript.Write(new slice<byte>(8));
         confTranscript.Write((~hs.serverHello).original[38..]);
-        var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~Ꮡhs.Value.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
-            hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~Ꮡhs.Value.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~(~hs.echContext).innerHello).random, default!),
+        var recvʗ1 = (~hs.suite).hash;
+
+            var recvʗ2 = (~hs.suite).hash;
+        var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
+            hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ2.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~(~hs.echContext).innerHello).random, default!),
             echAcceptConfirmationˢ,
             confTranscript.Sum(default!),
             8);
@@ -289,8 +292,11 @@ internal static readonly @string tlsServerSentAnˢ2 = "tls: server sent an unnec
             copy(hrrHello, (~hs.serverHello).original);
             hrrHello = bytes.Replace(hrrHello, (~hs.serverHello).encryptedClientHello, new slice<byte>(8), 1);
             confTranscript.Write(hrrHello);
-            var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
-                hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~(~hs.echContext).innerHello).random, default!),
+            var recvʗ1 = (~hs.suite).hash;
+
+                var recvʗ2 = (~hs.suite).hash;
+            var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
+                hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ2.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~(~hs.echContext).innerHello).random, default!),
                 hrrEchAcceptConfirmationˢ,
                 confTranscript.Sum(default!),
                 8);
@@ -538,7 +544,8 @@ internal static readonly @string tlsInvalidX25519mlkem768ˢ = "tls: invalid X255
     c.Value.curveID = hs.serverHello.Value.serverShare.group;
     var earlySecret = hs.earlySecret;
     if (!hs.usingPSK) {
-        earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), default!);
+        var recvʗ1 = (~hs.suite).hash;
+        earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), default!);
     }
     var handshakeSecret = earlySecret.HandshakeSecret(sharedKey);
     var clientSecret = handshakeSecret.ClientHandshakeTrafficSecret(new hash_HashᴠHash(hs.transcript));

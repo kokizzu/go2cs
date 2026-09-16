@@ -446,7 +446,8 @@ internal static readonly @string tlsInvalidPskBinderˢ = "tls: invalid PSK binde
                 }
             }
         }
-        hs.earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~sessionState).secret);
+        var recvʗ1 = (~hs.suite).hash;
+        hs.earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~sessionState).secret);
         var binderKey = hs.earlySecret.ResumptionBinderKey();
         // Clone the transcript in case a HelloRetryRequest was recorded.
         var transcript = cloneHash(hs.transcript, (~hs.suite).hash);
@@ -617,8 +618,11 @@ internal static readonly @string tlsClientIllegallyˢ = "tls: client illegally m
                 return (default!, errΔ2);
             }
         }
-        var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
-            hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~hs.clientHello).random, default!),
+        var recvʗ1 = (~hs.suite).hash;
+
+            var recvʗ2 = (~hs.suite).hash;
+        var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
+            hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ2.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~hs.clientHello).random, default!),
             hrrEchAcceptConfirmationˢ,
             confTranscript.Sum(default!),
             8);
@@ -750,8 +754,11 @@ internal static bool illegalClientHelloChange(ref clientHelloMsg ch, ref clientH
             }
         }
         // compute the acceptance message
-        var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
-            hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~hs.clientHello).random, default!),
+        var recvʗ1 = (~hs.suite).hash;
+
+            var recvʗ2 = (~hs.suite).hash;
+        var acceptConfirmation = tls13.ExpandLabel<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ1.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)),
+            hkdf.Extract<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ2.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), (~hs.clientHello).random, default!),
             echAcceptConfirmationˢ,
             echTranscript.Sum(default!),
             8);
@@ -774,7 +781,8 @@ internal static bool illegalClientHelloChange(ref clientHelloMsg ch, ref clientH
     }
     var earlySecret = hs.earlySecret;
     if (earlySecret == nil) {
-        earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => (~hs.suite).hash.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), default!);
+        var recvʗ3 = (~hs.suite).hash;
+        earlySecret = tls13.NewEarlySecret<fips140.Hash>(widen<hash.Hash, fips140.Hash>(() => recvʗ3.New(), elemᴛ0 => new hash_HashᴠHash(elemᴛ0)), default!);
     }
     hs.handshakeSecret = earlySecret.HandshakeSecret(hs.sharedKey);
     var serverSecret = hs.handshakeSecret.ServerHandshakeTrafficSecret(new hash_HashᴠHash(hs.transcript));
