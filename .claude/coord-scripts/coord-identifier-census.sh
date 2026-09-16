@@ -8,15 +8,35 @@
 # HOW A POST TOOL ADOPTS IT
 #
 #   C="$(dirname "$0")/coord-identifier-census.sh"
-#   "$C" entry   "$ENTRYFILE"                          || exit $?
-#   "$C" subject "$COMMIT_SUBJECT"                     || exit $?
-#   "$C" tree    docs/phase4/MAILBOX.md "$LAST_READ"   || exit $?
-#   # ... only now fetch, append, commit, push.
+#   "$C" entry   "$ENTRYFILE"        || exit $?      # THE GATE
+#   "$C" subject "$COMMIT_SUBJECT"   || exit $?      # THE GATE
+#   git fetch origin claude/mailbox                  # then, and only then:
+#   TIP="$(git rev-parse FETCH_HEAD)"
+#   "$C" tree docs/phase4/MAILBOX.md "$TIP"          # A READING. Do not gate the push on it.
+#   # ... append, commit, push.
 #
-# Each call exits non-zero on a refusal, so `|| exit $?` is the whole wiring. THE CENSUS RUNS IN ITS
-# OWN COMMAND, BEFORE the push and NOT in the same chain as it: a census composed into the push
+# Each gate call exits non-zero on a refusal, so `|| exit $?` is the whole wiring. THE CENSUS RUNS IN
+# ITS OWN COMMAND, BEFORE the push and NOT in the same chain as it: a census composed into the push
 # chain lets the push run on whatever the census printed. A census whose exit code does not gate the
 # push is a guard built and not armed.
+#
+# ⚠ TREE MODE IS A READING, NOT THE GATE, AND ITS BASELINE IS THE FETCHED TIP.
+#
+# `entry` and `subject` are what decides whether a post may go out: they read the bytes this lane
+# wrote, in STRICT mode, and nothing else. `tree` answers a different question -- what does the
+# shared surface hold, and what would this append add to it -- and its answer is only as good as its
+# baseline.
+#
+# THE BASELINE MUST BE THE TIP BLOB AS FETCHED IMMEDIATELY BEFORE THE APPEND. Never a lane's
+# last-read sha, never a stored anchor, never "the sha I posted last time". Everything other lanes
+# landed in between is otherwise attributed to THIS post. C2 measured both arms on one clean entry:
+# baseline = its own last-read sha gave added=4 and REFUSED; baseline = the freshly fetched tip gave
+# added=0 and CLEAN. The four were six other lanes' entries that had landed in the interval. Same
+# post, same bytes, opposite verdicts -- the difference was entirely the baseline.
+#
+# So a post tool calls tree AFTER its fetch, with the sha that fetch produced, and treats a non-zero
+# exit as something to READ rather than something to obey. A pre-existing hit on a shared surface is
+# not this post's to fix and not this post's to be blocked by.
 #
 # NO POST TOOL EVER PASSES --unmask. See MASKING below.
 #
@@ -103,6 +123,22 @@
 #   selftest                  the triad: PLANTS that must refuse, KNOWN NEGATIVES that must pass,
 #                             and the DECLARED SET. Plants live only in the test's temp files and
 #                             are never echoed; the output names arms and PASS/FAIL only.
+#
+# RULE 4 IS ADJACENCY, NEVER A WINDOW. A version word is allowed to excuse a quad only from the
+# quad's OWN whitespace-delimited word or from the word immediately before or immediately after it.
+# The first draft read a 56/32-character window and C2's A/B showed what that costs: a routable-
+# shaped quad ALONE was refused, and the same quad with any version word loose in the window read
+# CLEAN. A window is a laundering surface -- it lets a sentence exonerate an address that has nothing
+# to do with it, and a lane that wanted to spell one only had to mention a version nearby.
+#
+# RUN-TIME TOKEN ARMS ARE BOUNDED BY THE DENIED SET. A derived token is a GUESS about what this box
+# is called; on a container it is an ordinary English word. C2 measured 4348 pre-existing hits from
+# RUNTIME_ACCOUNT and RUNTIME_OWNERNAME on its own box from exactly that. A derivation is now used
+# only if it is 5+ characters, is not a stop-listed generic account name, AND is in the denied set --
+# its hash a row in coord-identifier-hashes.txt, or its literal a line in the local never-push token
+# file. The denied set is the authority on which names are forbidden; a derivation that is not in it
+# is a name this fleet never denied. An arm that fails those bars prints
+# `<ARM>: token not in the denied set, arm inert` and does not fire -- reported, never silent.
 #
 # STRICT vs DELTA. In STRICT mode the IPv4 arm runs with NO context exclusion at all: a lane must
 # not be able to spell an identifier by making the sentence around it sound like documentation, and
@@ -217,12 +253,61 @@ idc_hash_known() {
     return 1
 }
 
+# A DERIVED token is a GUESS about what this box is called. On a container it is an ordinary word --
+# `root`, `user`, `ubuntu` -- and C2 measured 4348 pre-existing hits from RUNTIME_ACCOUNT and
+# RUNTIME_OWNERNAME on its box from exactly that. An arm that fires on an English word is not a
+# security arm, it is a denial of service against its own operator.
+#
+# So a derived token is admitted only if it clears THREE bars, and the third is the real one:
+#   length >= 5          a four-character derivation is a word more often than a name
+#   not stop-listed      the container and CI account names, named rather than inferred
+#   IN THE DENIED SET    its hash is a row in coord-identifier-hashes.txt, or the literal is in the
+#                        local never-push token file. THIS is the discriminator: the denied set is
+#                        the authority on which names are forbidden, and a derivation that is not in
+#                        it is a name this fleet never denied.
+# Otherwise the arm is INERT and says so by name. An inert arm is reported, never silent -- a zero
+# that nobody can tell from an arm that was never wired is the shape this whole instrument exists to
+# avoid.
+#
+# The TOKENFILE source is exempt from the third bar: those literals ARE the local denied set.
+IDC_STOPLIST=" root user users admin home ubuntu debian guest default runner agent claude coord coordinator "
+IDC_INERT=""
+
+idc_token_in_file() {
+    local lit="$1" tf="$2" line=""
+    [ -n "$tf" ] || return 1
+    [ -f "$tf" ] || return 1
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line%$'\r'}"
+        case "$line" in '#'*) continue ;; '') continue ;; esac
+        if [ "$line" = "$lit" ]; then return 0; fi
+    done < "$tf"
+    return 1
+}
+
 idc_add_token() {
     # $1 = source arm name, $2 = literal, $3 = minimum length
-    if [ -z "$2" ]; then return 1; fi
-    if [ "${#2}" -lt "$3" ]; then return 1; fi
-    if idc_hash_known "$2"; then IDC_HASH_HITS=$((IDC_HASH_HITS + 1)); fi
-    printf '%s\t%s\n' "$1" "$2" >> "$IDC_TOKFILE"
+    local lit="$2" low=""
+    if [ -z "$lit" ]; then return 1; fi
+    if [ "${#lit}" -lt "$3" ]; then return 1; fi
+    if idc_hash_known "$lit"; then IDC_HASH_HITS=$((IDC_HASH_HITS + 1)); fi
+    case "$1" in
+        TOKENFILE) : ;;                     # the local denied set itself; the bars below do not apply
+        *)
+            low="$(printf '%s' "$lit" | tr 'A-Z' 'a-z')"
+            if [ "${#lit}" -lt 5 ]; then
+                IDC_INERT="$IDC_INERT  $1: derived token under 5 characters, arm inert\n"; return 1
+            fi
+            case "$IDC_STOPLIST" in
+                *" $low "*)
+                    IDC_INERT="$IDC_INERT  $1: derived token is a stop-listed generic account name, arm inert\n"; return 1 ;;
+            esac
+            if ! idc_hash_known "$lit" && ! idc_token_in_file "$lit" "$IDC_TF_PATH"; then
+                IDC_INERT="$IDC_INERT  $1: token not in the denied set, arm inert\n"; return 1
+            fi
+            ;;
+    esac
+    printf '%s\t%s\n' "$1" "$lit" >> "$IDC_TOKFILE"
     return 0
 }
 
@@ -231,6 +316,8 @@ idc_build_tokens() {
     chmod 600 -- "$IDC_TOKFILE" 2>/dev/null
     IDC_HASH_HITS=0
     IDC_TOKFILE_PRESENT="no"
+    IDC_INERT=""
+    IDC_TF_PATH="$(idc_resolve_tokenfile)"
     local nTF=0 nAC=0 nMA=0 nOW=0 nRows=0 skipped="" tf="" line="" nm="" piece=""
 
     nRows=0
@@ -253,7 +340,7 @@ idc_build_tokens() {
         return 0
     fi
 
-    tf="$(idc_resolve_tokenfile)"
+    tf="$IDC_TF_PATH"
     if [ -n "$tf" ]; then
         IDC_TOKFILE_PRESENT="yes"
         while IFS= read -r line || [ -n "$line" ]; do
@@ -266,7 +353,8 @@ idc_build_tokens() {
     # account: basename $HOME, then $USERNAME, then $USER. Floor 4 -- a shorter derivation is
     # ABORTED and NAMED, never installed as a two-character detector.
     nm=""
-    if [ -n "${HOME:-}" ]; then nm="$(basename -- "$HOME")"; fi
+    if [ -n "${IDC_TEST_ACCOUNT:-}" ]; then nm="$IDC_TEST_ACCOUNT"     # self-test only
+    elif [ -n "${HOME:-}" ]; then nm="$(basename -- "$HOME")"; fi
     if [ -z "$nm" ]; then nm="${USERNAME:-}"; fi
     if [ -z "$nm" ]; then nm="${USER:-}"; fi
     if [ -n "$nm" ] && [ "${#nm}" -ge 4 ]; then
@@ -274,7 +362,7 @@ idc_build_tokens() {
     else
         skipped="$skipped RUNTIME_ACCOUNT(derivation empty or under 4 chars)"
     fi
-    if [ -n "${USERNAME:-}" ] && [ "${USERNAME:-}" != "$nm" ]; then
+    if [ -z "${IDC_TEST_ACCOUNT:-}" ] && [ -n "${USERNAME:-}" ] && [ "${USERNAME:-}" != "$nm" ]; then
         if idc_add_token "RUNTIME_ACCOUNT" "$USERNAME" 4; then nAC=$((nAC + 1)); fi
     fi
 
@@ -495,6 +583,34 @@ function ipv4ParseAt(lo, p,   i, j, c, n, e) {
 #
 # So: scan BACK over [0-9.] in case the engine's start is itself short, then parse forward from each
 # candidate position up to RSTART -- a quad must begin at or before the position the engine matched.
+# The three whitespace-delimited words rule 4 is allowed to read: the quad's OWN word, the one
+# immediately before it, and the one immediately after. A WINDOW is a laundering surface -- C2's A/B
+# measured a routable-shaped quad refused when alone and CLEAN when any version word sat loose in the
+# same 56/32 characters. Adjacency cannot be arranged by a sentence that has nothing to do with the
+# address.
+function wordOwn(lo, s, e,   b, t, L) {
+    L = length(lo)
+    b = s; while (b > 1 && substr(lo, b - 1, 1) !~ /[ \t]/) b--
+    t = e; while (t < L && substr(lo, t + 1, 1) !~ /[ \t]/) t++
+    return substr(lo, b, t - b + 1)
+}
+function wordBefore(lo, s,   i, e2, b) {
+    i = s; while (i > 1 && substr(lo, i - 1, 1) !~ /[ \t]/) i--
+    e2 = i - 1
+    while (e2 > 0 && substr(lo, e2, 1) ~ /[ \t]/) e2--
+    if (e2 < 1) return ""
+    b = e2; while (b > 1 && substr(lo, b - 1, 1) !~ /[ \t]/) b--
+    return substr(lo, b, e2 - b + 1)
+}
+function wordAfter(lo, e,   i, b, e2, L) {
+    L = length(lo)
+    i = e; while (i < L && substr(lo, i + 1, 1) !~ /[ \t]/) i++
+    b = i + 1
+    while (b <= L && substr(lo, b, 1) ~ /[ \t]/) b++
+    if (b > L) return ""
+    e2 = b; while (e2 < L && substr(lo, e2 + 1, 1) !~ /[ \t]/) e2++
+    return substr(lo, b, e2 - b + 1)
+}
 function ipv4Extent(lo, rstart,   s) {
     s = rstart
     while (s > 1 && substr(lo, s - 1, 1) ~ /[0-9.]/) s--
@@ -504,7 +620,7 @@ function ipv4Extent(lo, rstart,   s) {
     }
     return 0
 }
-function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, cand, rs, rr, run, wb, before, after, rstart, lastEnd) {
+function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, cand, rs, rr, run, own, before, after, rstart, lastEnd) {
     pos = 0; lastEnd = 0
     while (1) {
         if (match(substr(lo, pos + 1), RE["ipv4"]) == 0) break
@@ -540,11 +656,10 @@ function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, c
             # RULE 3 -- declared documentation constants.
             if (lq ~ ("^(" RE["ipv4_doc"] ")$")) { EXC["ipv4\tdoc-constant"]++; OCC["ipv4_doc"]++; continue }
 
-            # RULE 4 -- per-occurrence version-context window. 56 before, 32 after. Never per line.
-            wb = s - 56; if (wb < 1) wb = 1
-            before = substr(lo, wb, s - wb)
-            after = substr(lo, e + 1, 32)
-            if (before ~ RE["ipv4_vercontext"] || after ~ RE["ipv4_vercontext"]) { EXC["ipv4\tversion-context"]++; continue }
+            # RULE 4 -- version context by ADJACENCY, never by a window. Three words only: the quad's
+            # own whitespace-delimited word, the one immediately before, the one immediately after.
+            own = wordOwn(lo, s, e); before = wordBefore(lo, s); after = wordAfter(lo, e)
+            if (own ~ RE["ipv4_vercontext"] || before ~ RE["ipv4_vercontext"] || after ~ RE["ipv4_vercontext"]) { EXC["ipv4\tversion-context"]++; continue }
         }
         record("ipv4", pass, lineno, quad, text)
     }
@@ -786,6 +901,7 @@ idc_census() {
     echo "IDENTIFIER CENSUS -- $label"
     echo "  patterns: $(basename -- "$IDC_PATTERNS")   $IDC_HASHSUMMARY"
     echo "  token file: $IDC_TOKFILE_PRESENT   run-time arms: $IDC_TOKSUMMARY"
+    if [ -n "${IDC_INERT:-}" ]; then printf '%b' "$IDC_INERT"; fi
     if [ "$IDC_UNMASK" = "1" ]; then echo "  *** --unmask IS ON. LOCAL CONSOLE ONLY. NOTHING BELOW MAY BE PASTED INTO A POST. ***"; fi
     cat -- "$report"
     echo "  hits=$IDC_HITS"
@@ -832,7 +948,12 @@ idc_mode_tree() {
     fi
 
     idc_build_tokens
-    echo "DELTA CENSUS -- $file  (baseline $base)"
+    echo "DELTA CENSUS -- $file"
+    echo "  baseline: $base"
+    echo "  ⚠ THIS IS A READING, NOT THE GATE. The pre-push gate is entry + subject (strict). The"
+    echo "    baseline above MUST be the tip blob as fetched IMMEDIATELY BEFORE the append -- never a"
+    echo "    lane's last-read sha. Anything landed by another lane in between is counted as ADDED by"
+    echo "    this post, and a clean post is refused for someone else's entries."
     echo
     idc_census "$old" "BASELINE $base:$file" "$IDC_TMP/keys.base" 0
     basehits="$IDC_HITS"
@@ -969,7 +1090,7 @@ idc_st_assert_present() {
 }
 
 idc_mode_selftest() {
-    local d="$IDC_TMP/st" bs sl pc out="" rc=0
+    local d="$IDC_TMP/st" bs sl pc out="" rc=0 probe="" c=""
     # The per-case runner calls awk directly and does NOT go through idc_census, so a missing
     # definition file surfaces as "instrument exited 9" on every case instead of once, clearly. It
     # still fails CLOSED, which is right, but an unreadable red is a red nobody can act on -- it cost
@@ -1036,8 +1157,10 @@ idc_mode_selftest() {
     idc_st_exc "  and it was excluded BY THE WINDOW (C2 gap)"     "ipv4|version-context" "$IDC_TMP/st.status"
     printf 'assembly Version=%d.%d.%d.%d inside the test host\n' 1 24 13 3 > "$d/n04"; idc_st_case "version quad after an assignment" "" "$d/n04" 0
     idc_st_exc "  and it was excluded BY C2 PREFIX-EX"            "ipv4|prefix-ex" "$IDC_TMP/st.status"
-    printf -- '-> FileNotFoundException for internal/itoa %d.%d.%d.%d. The error\n' 1 24 13 3 > "$d/n05"; idc_st_case "version quad in exception text" "" "$d/n05" 0
-    idc_st_exc "  and it was excluded BY THE WINDOW (C2 gap)"     "ipv4|version-context" "$IDC_TMP/st.status"
+    # ADJACENCY, not a window: the nearest context word here is THREE words back, so this quad is no
+    # longer excused. It was excluded by the 56-character window the first draft read, and that is
+    # exactly the laundering surface C2's A/B found. The refusal is the intended cost.
+    printf -- '-> FileNotFoundException for internal/itoa %d.%d.%d.%d. The error\n' 1 24 13 3 > "$d/n05"; idc_st_case "version word THREE words back no longer excuses" "ipv4" "$d/n05" 0
     printf 'the loopback %d.%d.%d.%d is a documentation constant\n' 127 0 0 1 > "$d/n06"; idc_st_case "loopback constant" "" "$d/n06" 0
     idc_st_exc "  and it was excluded AS A DOC CONSTANT"          "ipv4|doc-constant" "$IDC_TMP/st.status"
     printf 'the unspecified %d.%d.%d.%d and broadcast %d.%d.%d.%d addresses\n' 0 0 0 0 255 255 255 255 > "$d/n07"; idc_st_case "unspecified and broadcast constants" "" "$d/n07" 0
@@ -1072,14 +1195,25 @@ idc_mode_selftest() {
     printf 'the escaped literal C:%s%sUsers is quoted -json output\n' "$bs" "$bs" > "$d/n16"; idc_st_case "a doubled backslash from json escaping" "" "$d/n16" 0
 
     echo
+    echo "  B3. C2's A/B -- ADJACENCY, NOT A WINDOW. A version word must be NEXT TO the quad."
+    # ARM A: a routable-shaped quad with a context word three words away on the same line. Under a
+    # 56/32 window this read CLEAN; a window that can be arranged is a laundering surface.
+    printf 'HOST=%d.%d.%d.%d was the release build target\n' 203 0 113 7 > "$d/ab1"; idc_st_case "context word three words away STILL HITS" "host_ctx ipv4" "$d/ab1" 0
+    # ARM B: the same quad with nothing around it -- the control that arm A is not just always-hit.
+    printf 'HOST=%d.%d.%d.%d answered\n' 203 0 113 7                     > "$d/ab2"; idc_st_case "  the same quad with no context at all"   "host_ctx ipv4" "$d/ab2" 0
+    # And the two shapes that MUST still be excused, so the narrowing is not simply a dead rule 4.
+    printf 'assembly Version=%d.%d.%d.%d shipped\n' 1 24 13 3            > "$d/ab3"; idc_st_case "Version=<quad> is still excused"          "" "$d/ab3" 0
+    printf 'the assembly %d.%d.%d.%d validation page\n' 1 24 13 3        > "$d/ab4"; idc_st_case "<context> <quad> <context> is still excused" "" "$d/ab4" 0
+    idc_st_exc "  by ADJACENCY on the neighbouring words"         "ipv4|version-context" "$IDC_TMP/st.status"
+
+    echo
     echo "  B2. THE SHORT-MATCH PATH -- the same cases with the engine's reported start PERTURBED"
     echo "      (mawk 1.3.4's match() is not leftmost-longest and returns RLENGTH=7 on a four-octet"
     echo "       quad; this forces a strictly harder perturbation so gawk exercises the same code)"
     IDC_SHORT=3
     idc_st_case "version quad, space-separated context (short match)" "" "$d/n03" 0
     idc_st_exc "  still excluded BY THE WINDOW, from the right end" "ipv4|version-context" "$IDC_TMP/st.status"
-    idc_st_case "version quad in exception text (short match)"       "" "$d/n05" 0
-    idc_st_exc "  still excluded BY THE WINDOW, from the right end" "ipv4|version-context" "$IDC_TMP/st.status"
+    idc_st_case "version word three words back (short match)"        "ipv4" "$d/n05" 0
     idc_st_case "package-prefixed version quad (short match)"        "" "$d/n01" 0
     idc_st_case "toolchain-prefixed version quad (short match)"      "" "$d/n02" 0
     idc_st_exc "  still excluded BY THE TOKEN RUN, from the right end" "ipv4|token-run" "$IDC_TMP/st.status"
@@ -1117,9 +1251,37 @@ idc_mode_selftest() {
     idc_st_assert_present "container literal masked at its own length"      "<*REDACTED-13*>" "$out"
 
     echo
-    echo "  D. THE RUN-TIME ARMS ON THIS BOX -- fired yes/no only, never a value"
+    echo "  D0. THE RUN-TIME ARMS ARE BOUNDED BY THE DENIED SET -- three bars, one control each"
     unset IDC_TEST_TOKENS
+    for probe in "root:under 5 characters" "ubuntu:stop-listed generic account name" "buildbox7:not in the denied set"; do
+        IDC_TEST_ACCOUNT="${probe%%:*}"; export IDC_TEST_ACCOUNT
+        idc_build_tokens
+        case "$IDC_INERT" in
+            *"RUNTIME_ACCOUNT: "*"${probe#*:}"*)
+                printf '  PASS  %-48s inert: %s\n' "a derived account probe is INERT" "${probe#*:}"
+                IDC_ST_PASS=$((IDC_ST_PASS + 1)) ;;
+            *)
+                printf '  FAIL  %-48s expected inert(%s), got: %s\n' "a derived account probe is INERT" "${probe#*:}" "$(printf '%b' "$IDC_INERT" | tr -d '\n')"
+                IDC_ST_FAIL=$((IDC_ST_FAIL + 1)) ;;
+        esac
+        # and it must not be in the live token set at all
+        c="$(awk -F'\t' '$1 == "RUNTIME_ACCOUNT" { n++ } END { print n + 0 }' "$IDC_TOKFILE")"
+        case "$c" in
+            ''|0) printf '  PASS  %-48s live RUNTIME_ACCOUNT literals=0\n' "  and it is not a live arm"; IDC_ST_PASS=$((IDC_ST_PASS + 1)) ;;
+            *)    printf '  FAIL  %-48s live RUNTIME_ACCOUNT literals=%s\n' "  and it is not a live arm" "$c"; IDC_ST_FAIL=$((IDC_ST_FAIL + 1)) ;;
+        esac
+    done
+    unset IDC_TEST_ACCOUNT
+
+    echo
+    echo "  D. THE RUN-TIME ARMS ON THIS BOX -- fired yes/no only, never a value"
     idc_build_tokens
+    # The FIRE direction of the same bars: a derivation whose hash IS a row in the shared hashes
+    # file clears them. An all-inert battery above would read green on an arm that can never fire.
+    case "$IDC_HASH_HITS" in
+        ''|0) printf '  FAIL  %-48s hash matches=0 -- no run-time arm can fire here\n' "a denied-set token clears the bars" ; IDC_ST_FAIL=$((IDC_ST_FAIL + 1)) ;;
+        *)    printf '  PASS  %-48s hash matches=%s\n' "a denied-set token clears the bars" "$IDC_HASH_HITS"; IDC_ST_PASS=$((IDC_ST_PASS + 1)) ;;
+    esac
     local tfpresent="$IDC_TOKFILE_PRESENT" nlit=0 fired="no"
     nlit="$(awk 'END { print NR }' "$IDC_TOKFILE")"
     case "$nlit" in
