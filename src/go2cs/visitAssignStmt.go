@@ -583,7 +583,17 @@ func (v *Visitor) visitAssignStmt(assignStmt *ast.AssignStmt, format FormattingC
 					if _, isMap := baseType.Underlying().(*types.Map); isMap {
 						outerExpr := v.convExpr(outerIndex.X, nil)
 						keyExpr := v.convExpr(outerIndex.Index, nil)
-						valExpr := v.convExpr(rhsExprs[0], nil)
+
+						// The VALUE takes the same pointer-copy context every OTHER assignment RHS in this
+						// file already takes (appendRhsPtrContext, used at the plain-assignment emissions
+						// below). This branch was the one that rendered its value CONTEXT-FREE, so a
+						// deref-aliased pointer parameter arrived as its VALUE alias where the map holds
+						// `ж<T>`: crypto/x509's `pg.strata[pg.depth][string(n.validPolicy.der)] = n` emitted
+						// `.Set(…, n)` for a `map<@string, ж<policyGraphNode>>` (CS1503), while the composite
+						// literal twelve lines above spells the same map's value `Ꮡroot` correctly and the
+						// SINGLE-index form `m[k] = n` has always been right — because it passes this context
+						// and this branch did not. One rule, now both callers.
+						valExpr := v.convExpr(rhsExprs[0], v.appendRhsPtrContext(nil, rhsExprs[0]))
 						result.WriteString(fmt.Sprintf("%s.Set(%s, %s);", outerExpr, keyExpr, valExpr))
 
 						if hoistBuf != nil && hoistBuf.Len() > 0 {
