@@ -155,6 +155,7 @@ IDC_SELF="$IDC_DIR/$(basename -- "$0")"
 IDC_PATTERNS="${IDC_PATTERNS:-$IDC_DIR/coord-identifier-patterns.txt}"
 IDC_HASHES="${IDC_HASHES:-$IDC_DIR/coord-identifier-hashes.txt}"
 IDC_UNMASK=0
+IDC_SHORT="${IDC_SHORT:-0}"   # self-test forcing hook only; see ipv4Extent. Never set in normal use.
 IDC_TMP=""
 
 idc_cleanup() {
@@ -461,16 +462,65 @@ function scanArm(arm, lineno, text, lo, pass, joinAt,   pos, s, e, mt, tok, ok) 
 
 # ---- the IPv4 arm --------------------------------------------------------------------------------
 # STRICT (entry/subject): no exclusion of any kind. DELTA (tree): rules 1-4.
-function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, cand, rs, rr, run, wb, before, after) {
-    pos = 0
+# ipv4ParseAt walks a four-octet quad BY HAND from position p and sets IPV4E to the position of its
+# last digit. It returns 0 unless all four octets are there, 0-255, unpadded, and not followed by a
+# fifth digit -- the same acceptance the ipv4 ERE has, derived without the ERE.
+function ipv4ParseAt(lo, p,   i, j, c, n, e) {
+    e = p - 1
+    for (i = 1; i <= 4; i++) {
+        if (i > 1) {
+            if (substr(lo, e + 1, 1) != ".") return 0
+            e = e + 1
+        }
+        j = e + 1; n = 0
+        while (j <= length(lo) && substr(lo, j, 1) ~ /[0-9]/ && n < 3) { j++; n++ }
+        if (n == 0) return 0
+        if (n > 1 && substr(lo, e + 1, 1) == "0") return 0   # a padded octet is not one, as the ERE has it
+        c = substr(lo, e + 1, n) + 0
+        if (c > 255) return 0
+        e = j - 1
+    }
+    if (substr(lo, e + 1, 1) ~ /[0-9]/) return 0             # a fifth digit means this was never an octet
+    IPV4E = e
+    return 1
+}
+# ipv4Extent derives the candidate's TRUE start and end from RSTART alone, setting IPV4S/IPV4E.
+#
+# ⚠ RLENGTH IS NOT USABLE HERE. mawk 1.3.4's match() is not leftmost-longest: on a four-octet quad it
+# returns RLENGTH=7 -- three octets' worth -- so `e = RSTART + RLENGTH` lands MID-QUAD, and every rule
+# that reads from the quad's end (the token run, the 32-character after-window) is then computed from
+# the wrong place. Measured on C1's box: the version-context exclusion never fired and honest version
+# quads in prose were REFUSED, self-test 60/62 under mawk while gawk read 62/62. A regex engine's
+# submatch extent is an ASSUMPTION; the characters on the line are the measurement.
+#
+# So: scan BACK over [0-9.] in case the engine's start is itself short, then parse forward from each
+# candidate position up to RSTART -- a quad must begin at or before the position the engine matched.
+function ipv4Extent(lo, rstart,   s) {
+    s = rstart
+    while (s > 1 && substr(lo, s - 1, 1) ~ /[0-9.]/) s--
+    while (s <= rstart) {
+        if (substr(lo, s, 1) ~ /[0-9]/ && ipv4ParseAt(lo, s)) { IPV4S = s; return 1 }
+        s++
+    }
+    return 0
+}
+function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, cand, rs, rr, run, wb, before, after, rstart, lastEnd) {
+    pos = 0; lastEnd = 0
     while (1) {
         if (match(substr(lo, pos + 1), RE["ipv4"]) == 0) break
-        s = pos + RSTART; e = s + RLENGTH - 1
-        if (RLENGTH < 1) break
-        pos = e
+        rstart = pos + RSTART
+        # SHORT is the self-test's forcing hook: it perturbs the engine's reported start FORWARD, which
+        # is a strictly harder version of what a short match does, so the extent derivation is proven
+        # on gawk too and cannot regress silently back onto RLENGTH.
+        if (SHORT > 0 && rstart + SHORT <= length(lo)) rstart = rstart + SHORT
+        if (ipv4Extent(lo, rstart) == 0) { pos = rstart; continue }
+        s = IPV4S; e = IPV4E
+        pos = (e > rstart) ? e : rstart     # rstart > old pos, so this always advances
+        if (e <= lastEnd) continue          # the back-scan re-found a span already decided
+        lastEnd = e
         if (pass == 2 && !(s <= joinAt && e > joinAt)) continue
         OCC["ipv4"]++
-        quad = substr(text, s, RLENGTH); lq = tolower(quad)
+        quad = substr(text, s, e - s + 1); lq = tolower(quad)
 
         if (STRICT == 0) {
             # RULE 1 -- C2's prefix exemption, read against the reconstructed prefix-plus-quad.
@@ -689,6 +739,7 @@ idc_run_awk() {
     # $1 input, $2 keys, $3 report, $4 status, $5 strict
     awk -v PATFILE="$IDC_PATTERNS" -v TOKFILE="$IDC_TOKFILE" -v REPORT="$3" \
         -v KEYS="$2" -v STATUS="$4" -v STRICT="$5" -v UNMASK="$IDC_UNMASK" \
+        -v SHORT="${IDC_SHORT:-0}" \
         -f "$IDC_AWK" -- "$1"
 }
 
@@ -919,6 +970,14 @@ idc_st_assert_present() {
 
 idc_mode_selftest() {
     local d="$IDC_TMP/st" bs sl pc out="" rc=0
+    # The per-case runner calls awk directly and does NOT go through idc_census, so a missing
+    # definition file surfaces as "instrument exited 9" on every case instead of once, clearly. It
+    # still fails CLOSED, which is right, but an unreadable red is a red nobody can act on -- it cost
+    # two runs of a neuter control before the cause was read. One check, up front.
+    if [ ! -f "$IDC_PATTERNS" ]; then
+        echo "REFUSED(2): the patterns file is not beside this tool -- the self-test has nothing to test with"
+        return 2
+    fi
     mkdir -p -- "$d"; chmod 700 -- "$d" 2>/dev/null
     bs="$(printf '\134')"      # one backslash, built rather than written
     sl="/"
@@ -1011,6 +1070,26 @@ idc_mode_selftest() {
     printf 'the tree built internal.itoa.dll v%d.%d.%d.%d today\n' 1 24 13 3 > "$d/n14"; idc_st_case "v-prefixed version quad" "" "$d/n14" 0
     printf 'a C++ // comment and a ratio 3/4 in prose\n'                   > "$d/n15"; idc_st_case "a doubled slash that is not a share" "" "$d/n15" 0
     printf 'the escaped literal C:%s%sUsers is quoted -json output\n' "$bs" "$bs" > "$d/n16"; idc_st_case "a doubled backslash from json escaping" "" "$d/n16" 0
+
+    echo
+    echo "  B2. THE SHORT-MATCH PATH -- the same cases with the engine's reported start PERTURBED"
+    echo "      (mawk 1.3.4's match() is not leftmost-longest and returns RLENGTH=7 on a four-octet"
+    echo "       quad; this forces a strictly harder perturbation so gawk exercises the same code)"
+    IDC_SHORT=3
+    idc_st_case "version quad, space-separated context (short match)" "" "$d/n03" 0
+    idc_st_exc "  still excluded BY THE WINDOW, from the right end" "ipv4|version-context" "$IDC_TMP/st.status"
+    idc_st_case "version quad in exception text (short match)"       "" "$d/n05" 0
+    idc_st_exc "  still excluded BY THE WINDOW, from the right end" "ipv4|version-context" "$IDC_TMP/st.status"
+    idc_st_case "package-prefixed version quad (short match)"        "" "$d/n01" 0
+    idc_st_case "toolchain-prefixed version quad (short match)"      "" "$d/n02" 0
+    idc_st_exc "  still excluded BY THE TOKEN RUN, from the right end" "ipv4|token-run" "$IDC_TMP/st.status"
+    idc_st_case "loopback constant (short match)"                    "" "$d/n06" 0
+    idc_st_exc "  still excluded AS A DOC CONSTANT (exact quad)"    "ipv4|doc-constant" "$IDC_TMP/st.status"
+    # The refuse direction: the perturbation must not make the arm go BLIND, which an all-negative
+    # short-match battery would read as green.
+    idc_st_case "a real quad is STILL a hit under a short match"     "ipv4" "$d/p02" 1
+    idc_st_case "assignment context + quad under a short match"      "host_ctx ipv4" "$d/p03" 1
+    IDC_SHORT=0
 
     echo
     echo "  C. THE REFUSAL PATH MUST MASK -- entry mode end to end, output checked for the plant"
