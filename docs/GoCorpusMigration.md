@@ -6,7 +6,7 @@
 > instruments, gates and traps, never a particular release.
 >
 > **This runbook leads.** It is the living procedure for a corpus migration: the canonical
-> H0–H12 (+H4a) step inventory is the one maintained **here**, amended in-stage as lessons are
+> H0–H12 (+H4a, H7a) step inventory is the one maintained **here**, amended in-stage as lessons are
 > learned — the discipline its first execution already practiced, ratified as the era rule
 > (board, 2026-08-24: runbooks are *executed as written, deviations fixing the runbook in the stage
 > that finds them*). The **strategy** lives in
@@ -99,7 +99,7 @@ built the exe. That one is H1 step 1's, and it is verified by running, never by 
 
 ## 2. The step ladder
 
-**This section is the canonical H0–H12 (+H4a) inventory and its procedure.** It was generalized from
+**This section is the canonical H0–H12 (+H4a, H7a) inventory and its procedure.** It was generalized from
 [`PLAN-corpus-upgrade.md`](PLAN-corpus-upgrade.md) §2, which now points here; the ⟨OQ-n⟩ rulings
 behind each "(ruled)" remain recorded in that plan's §8. **Steps marked GATE are pass/fail and block
 the next; steps marked ⟲ are re-measured at every migration and never carried forward.**
@@ -1157,6 +1157,87 @@ is silent and operational, and it surfaces later as an inexplicable divergence i
 working on.** *Newly-added* upstream code is the dangerous class; a *changed* line often shows up as a
 behavioral divergence, an added branch shows up as nothing.
 
+> **AMENDED 2026-09-16 — H6's census ENUMERATES SURVIVORS, so a hand-own that was DELETED WITH ITS
+> PACKAGE leaves no row, and the class it cured returns uncured in whatever replaced it.** The failure
+> mode above is upstream *adding* code inside a hand-own that cannot receive it. This is its sibling and
+> it is quieter: the hand-own does not go stale, it **ceases to exist**, and with it the only statement
+> of why the automatic conversion of that file was unsafe.
+>
+> **Measured, not argued** (`src/handown-census.ps1:122`): the marker census is
+> `git grep -l -E '^\s*\[module:\s*(go\.)?GoManualConversion\]' -- '*.cs'` **over the working tree** —
+> the corpus as it is now. A file already removed is not in `$marked`, so it is not misclassified, it is
+> **absent from the census entirely**. The instrument's own `from`/`to` existence test at `:144-150`
+> handles the *upstream Go source* appearing or vanishing and correctly calls that `touched-substantive`
+> — "always a human look" — but that test presumes the hand-own still exists to be mapped. Nothing in
+> the gate looks at the set that is gone.
+>
+> **The instance that produced this amendment** (go1.23.12 → go1.24.13, `docs/phase4` q97):
+> `src/core/vendor/golang.org/x/crypto/sha3/` held a hand-owned `xor.cs` whose comment names its own
+> failure mode verbatim — the raw-address reinterpret "fabricated an `array<byte>` backing reference out
+> of the keccak state's own DATA" — and cured it with `MemoryMarshal.AsBytes` over the array's span, a
+> genuine aliasing view. At the new pin that package is **15 files → 0**: upstream moved the
+> implementation to `crypto/internal/fips140/sha3`, the hand-own was dropped with the package it lived
+> in, and the replacement re-emits the same length-changing raw-address reinterpret at
+> `keccakf.cs:61` — with **no `GoManualConversion` marker anywhere in the new package**. It surfaced as
+> four test panics carrying *negative* lengths out of `golib/array.cs`'s bounds check, which is the
+> signature of a fabricated `array<T>` struct rather than an out-of-range index. H6 passed. The corpus
+> compiled. The cure had simply been deleted.
+>
+> **The step, and it is mechanical.** At H6, before any substantive-row review, compute the
+> **retired-hand-own set** — markers present in the OUTGOING corpus and absent from the incoming one.
+>
+> ⚠ **`<outgoing-sha>` is the MERGE-BASE of the release branch and master, never master's tip.** A hop
+> runs on a long-lived release branch while master keeps moving; a hand-own that landed on master *after*
+> the branches diverged was never on the release branch to be retired from it, and a baseline taken at
+> master's tip reports it as retired. Corrected in review by a second lane, who re-ran the ancestry test
+> on the first run's rows: six of seven survived, and the one that did not had landed on master after the
+> divergence. **Assert it per row** — `git merge-base --is-ancestor <the-commit-that-added-it>
+> <incoming-sha>` — because that assertion is what catches the class, not the choice of baseline alone.
+>
+> ⚠ **And a row that fails that assertion is not discarded — it is RE-ROUTED.** It is not a hop
+> retirement; it is a **carry-forward gap**: a cure that exists on master and has never reached the
+> release branch. That is a different finding and can be a worse one. The instance here: the excluded
+> row's cure keeps a runtime test off a fatal path, the release branch carries the seat that makes that
+> path an uninterceptable process exit, and the host kill it prevents was measured at 57 verdicts. **The
+> false positive was worth more than the row it displaced**, so the step files these rather than dropping
+> them, and the hop's own carry-forward census owns them.
+>
+> ```
+> git grep -l -E '^\s*\[module:\s*(go\.)?GoManualConversion\]' <outgoing-sha> -- 'src/core/**/*.cs' | sed "s#^<outgoing-sha>:##" | sort > logs/handowns-outgoing.txt
+> git grep -l -E '^\s*\[module:\s*(go\.)?GoManualConversion\]' <incoming-sha> -- 'src/core/**/*.cs' | sed "s#^<incoming-sha>:##" | sort > logs/handowns-incoming.txt
+> LC_ALL=C comm -23 logs/handowns-outgoing.txt logs/handowns-incoming.txt > logs/handowns-retired.txt
+> ```
+>
+> where `<outgoing-sha>` is `git merge-base <release-branch> master`.
+>
+> **One row per retired hand-own, and the row is not closed by the deletion being correct.** For each:
+>
+> | field | what it must carry |
+> |---|---|
+> | the hand-own | path at the outgoing pin, and the *class it cured* in its own words — a hand-own that cannot say what it was for is itself the finding |
+> | why it went | package dropped · file renamed · upstream absorbed the fix · the hand-own's reason expired |
+> | the replacement | the package that now carries those semantics at the new pin, **named**, or `none` with the reason |
+> | the class, re-censused | the cured class's predicate run at the NEW pin over the replacement — **cured / moved / gone**, with the count |
+> | the marker | whether the replacement carries a hand-own of its own, measured, not assumed |
+>
+> **The verdict a row needs is `cured` or `gone`.** `moved` — the class present at the new pin in a file
+> with no hand-own — is an H6 **GATE FAILURE**, exactly as a substantive row left unreviewed is, and it
+> is cured before H6 closes.
+>
+> ⚠ **Do not read the retired set as a delete list to approve.** Every one of these deletions was
+> *correct*: the package really did go away. The question H6 asks is not whether the file should have
+> been removed — it is **whether the reason it existed went with it**.
+>
+> *Named blind spot:* the set is keyed on the marker, so a hand-own retired by having its marker removed
+> while the file stays reads as present. That is the whole-file-replacement class the marker exists to
+> mark, and losing the marker is already an H6 substantive row by the census's own arithmetic — stated
+> here so the two are not confused.
+>
+> *Durable form, after the hop:* a guard in `src/go2cs/internal/repoguard` carrying the previous pin's
+> marker list and asserting that every absent entry has a closed row. Banked, not cut during a
+> migration — the list's baseline moves at every hop and a guard whose baseline moves needs the hop to
+> be over before it can be written honestly.
+
 **The instrument** is `.cs.auto` — the converter's answer to *"what would the automatic conversion of
 this file be, today, from this Go tree?"*
 
@@ -1313,6 +1394,73 @@ go1.24.13 … || exit 3`, run from a no-module directory.
      The site key read 120 unique sites on lane R's real windows build log (executability verifier, 2026-09-13), the number R's run
      found. Units: REHEARSAL-h5-go124.md §15 §2 and §15 §6 (UNITS); owned classes §15 §7; predictions owed §15 §8. Which tree: COORD
      db6d9462f §3 and §3.1. The purge guard: accuracy verifier (a mis-substituted SRC deletes every build dir under it). -->
+
+
+### H7a — The master fold **GATE**
+
+**The ladder has no rung that folds master into the release branch, and the run rungs need one.** A hop
+runs on a long-lived release branch while master keeps taking cuts. Everything from H8 onward *runs* the
+corpus — re-emits it, rebanks goldens, re-derives the roster — and a run rung measures the tree it is
+given. If master holds cures the branch has never carried, H8 onward measures a corpus that is wrong in
+ways the migration did not introduce and cannot see.
+
+**Ruled after an instance, not in advance.** At the go1.23.12 → go1.24.13 hop, master held 105 commits
+the release branch had never carried. Among them: a managed `gcTestIsReachable` and the stop that keeps
+the fatal path from ending the test host. The release branch carried the seat that makes `runtime.throw`
+an uninterceptable process exit, and *not* the cure that keeps the runtime test off it — so the host kill
+that had cost the runtime row 57 verdicts was live at the branch tip, silently, with the hand-own and its
+converter registration absent **together** rather than as a dangling displacement that would have failed
+loudly. It was found by a retired-hand-own census reporting a false positive (see H6), not by anything
+looking for it.
+
+**The step: ONE merge, master INTO the release branch, as the first act after the last compile-side seat
+lands and before any run rung.** Never a rebase — the branch's SHAs are posted, and a hop's seats are
+announced refs.
+
+**Sized before it is taken, and the sizing is a post of its own:**
+
+| | what it must carry |
+|---|---|
+| the pins | master, the branch tip, and `git merge-base` of the two — **all three re-read at the act**, because both move while the sizing is written |
+| the range by path class | the master-only commits classified (docs and instruments / converter guards / converter production / corpus / repo config), merges counted separately because a merge carries its children's paths, and **no residue** — a commit matching no class is named, not dropped |
+| what the branch LACKS | every hand-own and every emission-or-CLI change in the range, **named**, not counted. These are the fold's reason; the docs and guards are why the commit count is large and are not why the fold exists |
+| the carry-forward set | marked files present on master and absent at the tip, each classified **relocated / gone / gap** — a relocation is verified by its counterpart's PATH, never by basename |
+| the conflict set | `merge-tree --write-tree` at those two SHAs, by path, with the predicted tree SHA stamped |
+| the prediction | what the merged tree must equal, and the falsifiers |
+
+**Scored on:**
+
+- the merged tree **byte-identical** to the stamped dry-run tree;
+- the conflict set exactly the predicted paths — **no path resolved that was not predicted**;
+- ⚠ **silent subtraction, per symbol and in BOTH directions.** A fold crosses every seat the hop has
+  landed. Each landed marker is asserted **by name at its count**; a clean merge rc says "no conflict",
+  never "nothing dropped";
+- each carry-forward gap present after, **with the whole of its cure** — a hand-own landed without its
+  converter registration is a partial fold, and partial is how this class hides;
+- relocated packages still at their NEW paths and the old paths **not resurrected** — a modify/delete
+  resolved the wrong way re-creates a package the hop retired;
+- any source root the range does not touch **byte-identical**; movement there is a MISS, not a bonus.
+
+**Resolution by class, decided before the merge rather than at the conflict:**
+
+- **regenerable metadata** (`package_info.cs`, `.csproj`) — **re-minted**, never hand-merged. These are
+  artifacts; a hand merge of an artifact is a hand-written artifact;
+- **projitems** — the **union**, and the row count asserted afterwards with no duplicates;
+- **a modify/delete where the delete is the hop's own package retirement** — the **delete stands**;
+- **a code conflict whose two sides are a displacement and the body it displaces** — master's side, and
+  the displacement's registration lands **with** it.
+
+**⚠ The closing check is the cheapest proof the fold did what it is for:** re-run H6's retired-hand-own
+step. After the fold the merge-base *is* master's tip, so that step reads clean **by construction** — and
+if it does not, the fold is incomplete and the rows it still reports are the gaps it failed to carry.
+
+*Named blind spot:* the fold answers "what has master got that the branch has not". It says nothing about
+the reverse, and nothing about a cure that exists in **neither** — a class that was broken before the hop
+began stays broken and is H6's and H7's to find, not this step's.
+
+*What this step is not:* a licence to take master's tip mid-hop whenever it is convenient. It is **one**
+merge at **one** boundary, sized and predicted, because a release branch that keeps re-merging master has
+stopped being a release branch.
 
 
 ### H8 — Multi-platform re-emission **GATE** ⟲
@@ -1889,6 +2037,7 @@ frame schedules it **once per ladder** plus coordinator discretion, not once per
 | converter `go test ./...` | **yes**, at H1 and after every converter change. Carries the shared-project registration guard, the metadata-sync guard, the capability-gate guard and the platform hand-own guard |
 | `check-no-regression.ps1` | **yes**, at H4 and per converter-touching commit. It re-transpiles **unconditionally** and is the authoritative drift instrument — **never add an up-to-date skip to it** |
 | `go2cs-stdlib.slnx`, every buildable target-OS flavor | **yes**, at H7 |
+| master folded into the release branch | **once**, at H7a — sized, predicted, and scored; H6's retired-hand-own step re-run after it as the closing check |
 | `go2cs.slnx` | **yes** after any golib/runtime API change; it is the only gate compiling the non-generated members |
 | full behavioral suite (four phases) | **yes**, at H9 and at the parity gate |
 | seeded full reconvert | **once** per phase — H4a's bundle and H5. Never twice into one staging root |
