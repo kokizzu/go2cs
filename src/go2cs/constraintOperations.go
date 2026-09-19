@@ -1631,13 +1631,34 @@ func (v *Visitor) constraintProxyFor(typeParam *types.TypeParam, typeArg types.T
 			qualified = convertToCSFullTypeName(qualified)
 		}
 
-		dot := strings.LastIndex(qualified, ".")
+		// The separator is an ASCII dot for a package-qualified C# name — but an imported TYPE ALIAS
+		// spells it with TypeAliasDot (`ecdhꓸCurve`), because a C# identifier cannot carry a `.`:
+		// getAliasedTypeName mints the alias form as ReplaceAll(name, ".", TypeAliasDot), so such a
+		// qualifier holds NO ascii dot at all. Splitting on the ascii dot alone therefore finds -1 and
+		// declines — and declines SILENTLY, which is the half that matters: the site drops to the box
+		// with no diagnostic, leaving the reader of the emitted C# an unexplained CS0310.
+		//
+		// Take whichever separator appears LAST and carry its WIDTH with it. TypeAliasDot is THREE
+		// bytes in UTF-8, so the `+1` advance that is correct for an ascii dot would slice mid-rune
+		// here and hand back a corrupt qualifier that still compiles. Same alias-aware pairing
+		// convCallExpr.go already uses (`Contains(name, ".") || Contains(name, TypeAliasDot)`).
+		sep, dot := ".", strings.LastIndex(qualified, ".")
 
+		if aliasDot := strings.LastIndex(qualified, TypeAliasDot); aliasDot > dot {
+			sep, dot = TypeAliasDot, aliasDot
+		}
+
+		// The decline WARNS rather than falling silent, and the warning is scoped to THIS path on a
+		// measurement rather than a preference: over crypto/ecdh, crypto/ecdsa and both fips140
+		// siblings the shape declines above fire 210 and 10 times ("this is not the shape"), while this
+		// one fires ZERO — so warning on those would flood stderr, and warning here costs nothing and
+		// names a case the reader would otherwise have to diagnose from a bare CS0310.
 		if dot <= 0 {
+			v.showWarning("@constraintProxyFor - foreign constraint `%s` has no resolvable qualifier; the proxy is declined and the box is left in place (emission may not compile)", qualified)
 			return "", false
 		}
 
-		return qualified[:dot+1] + proxyName, true
+		return qualified[:dot+len(sep)] + proxyName, true
 	}
 
 	// Register the (element, interface) pair so package_info emits the ConstraintProxy record.
