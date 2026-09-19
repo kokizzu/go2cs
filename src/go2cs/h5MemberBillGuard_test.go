@@ -41,6 +41,40 @@ import (
 // "IDENTICAL: no renumbering". A comparison of two empty sets reports agreement, and "identical" is
 // the most dangerous word an empty reading can produce, because unlike a zero count it does not look
 // like nothing. Arm 13 is that near-miss turned into an arm.
+//
+// ⚠ AMENDED 2026-09-16 (q99): TWO SYMPTOMS, ONE GUARD, TWO CAUSES, TWO BOXES — and they were nearly
+// read as one fault.
+//
+//   - STALE BY COMPLETION. The self-test's fixture was the LIVE src/core/runtime/runtime2.cs. The
+//     bill is APPLIED on the version branch, so the "unpatched" tree the suite builds was already
+//     patched and ARM 2 — the RED control, "the UNPATCHED file FAILS --verify" — could not be red.
+//     The failure read as a broken checker; it was a fixture that had finished being a fixture. The
+//     cure is a COMMITTED PRE-BILL COPY beside the script (src/h5-c1-2-fixture/runtime2.pre-bill.cs,
+//     the file at dc78fb0df^), plus ARM 0, which refuses a fixture that is not pre-bill — because
+//     freezing solves this ONCE and a later re-freeze from a patched corpus would put the defect back
+//     silently.
+//   - THE `py` DETECTION, and it is a SEPARATE cause on a SEPARATE box. resolve_python compared the
+//     probe's answer to "42" exactly. Windows' Python launcher is py.exe, a native Windows program:
+//     it answers "42\r\n" through a Git-Bash pipe, $(...) strips only the trailing newline, and the
+//     gate refused a working interpreter — on a box where python3 and python are Store redirectors,
+//     so `py` was the only real candidate and the run died saying none was found. The answer is
+//     compared CR-stripped now, and ARM 16 proves the tolerance did not widen: 43\r\n is still
+//     refused and /bin/echo is still refused.
+//   - ⚠ AND THE DETECTION WAS STILL RED ON THAT BOX AFTER THE CR FIX, for a SECOND cause the CR fix
+//     could not touch and neither box could see alone (G, 2026-09-16). resolve_python's loop used
+//     `command -v`, which resolves shell FUNCTIONS before it searches PATH — and this script BOUND
+//     the name `py` to a helper of its own, which dispatches through the very $PYBIN the resolver
+//     was mid-computation of. Circular: the resolver consulted a name the script had bound to a
+//     helper that needs the resolver's answer. Invisible with H5_PYTHON set (that branch returns
+//     above the loop) and invisible wherever python3 or python answers (the loop returns at
+//     candidate one or two), so ONLY a box whose first two candidates are non-answering stubs ever
+//     reached it. The loop now resolves each candidate with `type -P`, a PATH search that ignores
+//     functions, aliases and builtins, and the helper is renamed run_py. ARM 17 BUILDS that
+//     intersection — two non-answering stubs and a working `py` on a prepended PATH, plus a
+//     shadowing shell function — so the class is reproducible on every box rather than on one.
+//
+// Two symptoms in one red guard is exactly the shape that gets half-diagnosed. Both are named here
+// so the next reader does not fix one and call the guard cured.
 func TestH5MemberBillSelfTest(t *testing.T) {
 	// A POSIX spelling, not filepath.Join: the argument is read by bash, not by Windows.
 	script := "../apply-h5-c1-2-member-bill.sh"
@@ -62,7 +96,11 @@ func TestH5MemberBillSelfTest(t *testing.T) {
 		t.Fatalf("src/apply-h5-c1-2-member-bill.sh --self-test did not report a clean run:\n%s", text)
 	}
 
-	const wantArms = 16
+	// 19 at q99: ARM 0 (the fixture is PRE-BILL), ARM 16 (a CR-carrying answer is ACCEPTED) and
+	// ARM 17 (a shadowing shell function LOSES) were added with the three fixes. The count is
+	// asserted rather than bounded because an arm that quietly stops running is precisely what it
+	// exists to catch, and a >= would admit exactly that.
+	const wantArms = 19
 	if got := strings.Count(text, "\n  ok   "); got != wantArms {
 		t.Fatalf("expected %d passing arms from src/apply-h5-c1-2-member-bill.sh --self-test, counted %d -- an arm that quietly stops running is exactly what this count exists to catch:\n%s",
 			wantArms, got, text)
@@ -76,6 +114,9 @@ func TestH5MemberBillSelfTest(t *testing.T) {
 	}
 
 	for _, reason := range []string{
+		// q99: the fixture is a COMMITTED PRE-BILL copy, and this arm is what stops a later re-freeze
+		// from an already-patched corpus quietly disabling the red control below it.
+		"the FIXTURE is PRE-BILL",
 		// The load-bearing refusal, and the reason the bill is a patch: g.syncGroup names a type that
 		// arrives with the 1.24 emission, so on a pre-hop tree this edit does not compile.
 		"a PRE-HOP tree is REFUSED",
@@ -119,6 +160,15 @@ func TestH5MemberBillSelfTest(t *testing.T) {
 		// Carried from C1-1, where C2 measured the gate probing an exit STATUS: /bin/echo passed it.
 		// A tool that exits 0 has not told you it did the work.
 		"a probe-passing NO-OP is REFUSED",
+		// q99, and the OTHER half of the same red guard: Windows' py.exe answers 42 with a trailing
+		// CR through a Git-Bash pipe, which the exact-match probe refused. Both directions are
+		// asserted in the arm itself — a wrong answer and a no-op are still refused.
+		"a CR-carrying ANSWER is ACCEPTED",
+		// q99 re-cut, and the SECOND cause behind the same red: the resolver must search PATH rather
+		// than consult shell names, or the script's own helper shadows the interpreter it is looking
+		// for. The arm builds the two-stub intersection itself, so it no longer needs the one box
+		// that happened to have it.
+		"a SHADOWING function LOSES",
 	} {
 		if !strings.Contains(text, reason) {
 			t.Fatalf("src/apply-h5-c1-2-member-bill.sh --self-test did not report the arm %q -- the arm names may survive a rewrite that loses what they assert:\n%s", reason, text)
