@@ -262,6 +262,26 @@ exactly as the sibling arc did.
 > ⚠ A citation to a section heading is a citation to its STATUS block first. The coordinator's own
 > q100 routing quoted this heading's "separable, and landable before the representation" without
 > reading two paragraphs up, and the cut stopped on it. Banked as a class.
+>
+> **AMENDED 2026-09-19 (C1) — THE BOUND, stated because the arms do not state it.** What landed
+> refuses the **no-provenance class**, not "fabricated array views" in general. The condition is
+> *resolution null AND `T` is `array<…>`*, so an address that resolves to a **LIVE box of a
+> different pointee type**, at an `array<U>` pointee, still falls through to `NativeBox`
+> **UNREFUSED**. That is by design and is what "IT CURES NOTHING" means concretely here;
+> `NativeArrayViewFloorTests` arm 3 exercises that shape but asserts `IsNotNull` only, so the bound
+> is a property of the specification rather than an accident of the arms. Widening to cover the
+> live-box case would be a separate cut with its own measurement, not a tightening of this one.
+> (Coordinator finding (a) on the q100 gate, mailbox `1135d780c`; C2's second-lane read `a810502ff`
+> reached the same bound from the code side and observed that `ж.cs`'s own "ONE BOUND" paragraph
+> stated the WEAK-ENTRY bound and not this one. Both now state it, and the code paragraph reads
+> "TWO BOUNDS".)
+>
+> ⚠ Recorded beside it, because it is the maintenance hazard this bound creates: the
+> `resolved is null` conjunct is **load-bearing**, and the arm's comment as cut implied it was not.
+> Arms 2 and 4 in `ж.cs` are `Q44RegistryCensus.Enabled`-gated counters that divert no control flow
+> and do not execute at all on the production path, so *reaching* the floor does not imply *firing*
+> it. Simplifying the condition to `if (s_isArrayShaped)` is precisely the type-tested floor
+> withdrawn above at 6 of 609 red; arm 3 is the regression test that would catch the edit.
 
 
 **Whatever is ruled for §3, the raw-address route must stop fabricating references.** Today it

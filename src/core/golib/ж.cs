@@ -795,12 +795,26 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         // because pinned-managed round-trips, pointer-shaped T and container shapes over pinned
         // storage are all Go-legal and all arrive at this same operator; Go's own
         // `*(*[2]uintptr)(p)` over pinned managed storage is one of them. What separates them is
-        // whether the address carries a PROVENANCE RECORD, and reaching this line means it carries
-        // none: arm 1 returned the recovered box, arm 2 saw a live record of another pointee type,
-        // arm 3 refused token arithmetic, and `resolved is null` is arm 4 — so the address is
-        // registered nowhere and is genuinely native. That record is what
-        // docs/phase4/DESIGN-pointer-provenance.md (RATIFIED, landed) supplies, and this floor was
-        // not implementable before it existed.
+        // whether the address carries a PROVENANCE RECORD, and FIRING at this line means it carries
+        // none. That record is what docs/phase4/DESIGN-pointer-provenance.md (RATIFIED, landed)
+        // supplies, and this floor was not implementable before it existed.
+        //
+        // ⚠ REACHING this line does NOT mean that, and the distinction is load-bearing rather than
+        // pedantic. Only two things above divert control: arm 1 RETURNS the recovered box, and the
+        // token-arithmetic refusal THROWS. Arms 2 and 4 are `if (Q44RegistryCensus.Enabled && …)`
+        // COUNTERS — they divert nothing, and on the production path, with the census off, they do
+        // not execute at all. Arm 2's own comment says so in as many words: "This falls past the
+        // refusal below … and reaches the native box at the bottom". So an address resolving to a
+        // LIVE box of another pointee type arrives HERE with `resolved` NON-null, and what lets it
+        // through is the `resolved is null` conjunct in the condition below — nothing earlier.
+        //
+        // ⚠ WHICH IS WHY THE CONDITION IS NOT SIMPLIFIED TO `if (s_isArrayShaped)`. That conjunct
+        // looks redundant only to a reader who believes reaching implies firing — and the edit it
+        // invites IS the type-tested floor that was ratified and then WITHDRAWN AS SPECIFIED at
+        // 6 of 609 behavioral tests red. NativeArrayViewFloorTests arm 3 is the regression test that
+        // would catch it, a unit-level proxy for that tier rather than a measurement of it. This
+        // paragraph replaces a sentence that asserted the opposite (C2's second-lane read; the
+        // comment was the one place a maintainer would look before making exactly that edit).
         //
         // It CURES NOTHING, and is not meant to: by the design's §1.5 liveness audit no live path on
         // the roster reaches these sites, so nothing that works today starts failing. What it buys is
@@ -808,10 +822,20 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         // of as a plausible panic several layers away. The netpoll recv cost a full misattribution,
         // through a design, a ratification and four documents, for exactly that reason.
         //
-        // ⚠ ONE BOUND, stated rather than left to be found: a pinned address's provenance record is a
-        // WEAK entry that dies with its box. A program that stashes a uintptr, drops every reference
-        // to the box and converts back later would reach this arm and be refused — but that program
-        // is one Go itself declares invalid, a uintptr not keeping its referent alive.
+        // ⚠ TWO BOUNDS, stated rather than left to be found.
+        //
+        // ONE — the WEAK-ENTRY bound: a pinned address's provenance record is a weak entry that dies
+        // with its box. A program that stashes a uintptr, drops every reference to the box and
+        // converts back later would reach this arm and be refused — but that program is one Go
+        // itself declares invalid, a uintptr not keeping its referent alive.
+        //
+        // TWO — the NO-PROVENANCE bound, which is the one the condition actually draws: this refuses
+        // the no-provenance class, NOT "fabricated array views" in general. An address that resolves
+        // to a LIVE box of a different pointee type, at an `array<U>` pointee, still falls through to
+        // `NativeBox` UNREFUSED. That is by design and consistent with "It CURES NOTHING" above;
+        // NativeArrayViewFloorTests arm 3 exercises that shape but asserts `IsNotNull` only, so the
+        // bound is a stated property and not an accident of the arms. Widening to cover it would be
+        // a different cut with its own measurement, not a tightening of this one.
         //
         // `array.cs`'s AliasPointer needs no change of its own: its documented raw-metal fallback is
         // `return (ж<array<T>>)(uintptr)element!`, which funnels through this operator.
