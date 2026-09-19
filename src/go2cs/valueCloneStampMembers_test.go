@@ -106,7 +106,24 @@ var (
 	// A defined type whose underlying is ANOTHER [GoType] is emitted BODILESS. go2cs-gen mints its
 	// members, so the declaration a stamp would be checked against does not exist in the corpus at
 	// all — see the InheritedType template quoted above.
-	goTypeWrapperRe = regexp.MustCompile(`\[GoType\("[^"]*"\)\][\t ]*partial\s+(?:struct|class)\s+([\p{L}_][\p{L}\p{N}_]*)[\t ]*;`)
+	//
+	// ⚠ THE ARGUMENT IS MATCHED AS `[^)]*`, NOT AS A QUOTED STRING, because this regex now runs over
+	// BLANKED text (see addFile) and blanking replaces the quote characters themselves with spaces.
+	// The only widening that costs anything is the empty form `[GoType()]`, which would newly read
+	// as a wrapper — measured ZERO times in src/core against 784 real bodiless wrapper declarations,
+	// so it is inert today, and TestValueCloneIndexControls pins both halves with arms.
+	goTypeWrapperRe = regexp.MustCompile(`\[GoType\([^)]*\)\][\t ]*partial\s+(?:struct|class)\s+([\p{L}_][\p{L}\p{N}_]*)[\t ]*;`)
+
+	// The enclosing `partial class <pkg>_package` a declaration sits in — the q102 key.
+	//
+	// ⚠ THE ENCLOSING CLASS IS NEVER FOUND BY BRACE MATCHING. That instrument has failed twice in
+	// this repo IN ONE DIRECTION, both times over-reporting from a desynced depth counter
+	// (duplicatePartialMembers_test.go's 25-then-4 history), and a depth counter is the first thing
+	// a reader reaches for here. The file's OWN `partial class *_package` declarations are the key
+	// instead: an emitted file carries them at namespace scope, in source order, and the enclosing
+	// class of a declaration is the NEAREST PRECEDING one. That is a scan for a declaration, not a
+	// count of braces, and it cannot desync.
+	pkgClassDeclRe = regexp.MustCompile(`partial\s+class\s+([\p{L}_][\p{L}\p{N}_]*_package)\b`)
 
 	csIdentifierRe = regexp.MustCompile(`^@?[\p{L}_][\p{L}\p{N}_]*$`)
 )
@@ -136,6 +153,7 @@ type valueCloneScan struct {
 	HandOwnFiles int // of those, [module: GoManualConversion] hand-owns
 	Stamps       int
 	Members      int
+	Collisions   int // (dir, bare-name) pairs spanning >1 enclosing class -- q102's population
 }
 
 // bracedBodyAt returns the brace-balanced body beginning at the first '{' at or after `from`.
@@ -270,18 +288,134 @@ func multiDeclaratorNames(body string) map[string]bool {
 // of the type as well, and a fallback keyed on "only when the own-directory union is empty" would
 // therefore never fire for the case it was written for.
 type valueCloneTypeIndex struct {
-	bodies   map[string]map[string][]string
-	wrappers map[string]map[string]bool
+	bodies   map[string]map[valueCloneTypeKey][]string
+	wrappers map[string]map[valueCloneTypeKey]bool
+}
+
+// valueCloneTypeKey is what q102 changed. The index used to key on the BARE type name within a
+// directory, so two DISTINCT nested types sharing one name merged into a single bucket and a stamp
+// on either resolved against the union of both bodies. Measured over src/core at cd6f4b9a8e, FOUR
+// (directory, bare-name) pairs collide that way, each across two different enclosing classes:
+//
+//	encoding/gob :: Point           gob_internal_test_package  /  gob_test_package
+//	log/slog     :: discardHandler  slog_internal_test_package /  slog_package
+//	net/http     :: delegateReader  http_internal_test_package /  http_test_package
+//	net/http     :: dumpConn        http_internal_test_package /  http_test_package
+//
+// NONE of the four is stamped, so the defect is LATENT: it can only ever make `declares` answer
+// true where the real type declares nothing, which SUPPRESSES a finding. It cannot manufacture one.
+// That direction is why this lands as a key change with an unchanged verdict rather than as a cure.
+//
+// The same four pairs and the same zero were read at the version tip d71e4eed63, where src/core
+// differs by six files — the reading does not depend on the base.
+type valueCloneTypeKey struct {
+	Enclosing string // the `partial class <pkg>_package` this declaration sits in; "" at namespace scope
+	Name      string
+}
+
+// valueCloneEnclosing maps an offset in ONE file's text to the enclosing `*_package` class, by
+// nearest preceding declaration. Offsets ascend, so the scan is a walk, not a search.
+type valueCloneEnclosing []valueCloneEnclosingAt
+
+type valueCloneEnclosingAt struct {
+	At   int
+	Name string
+}
+
+func newValueCloneEnclosing(text string) valueCloneEnclosing {
+	var out valueCloneEnclosing
+
+	for _, m := range pkgClassDeclRe.FindAllStringSubmatchIndex(text, -1) {
+		out = append(out, valueCloneEnclosingAt{At: m[0], Name: text[m[2]:m[3]]})
+	}
+
+	return out
+}
+
+func (e valueCloneEnclosing) at(off int) string {
+	name := ""
+
+	for _, p := range e {
+		if p.At > off {
+			break
+		}
+
+		name = p.Name
+	}
+
+	return name
+}
+
+// valueCloneEnclosingKeyEnabled exists ONLY so the q102 control arm can be shown RED without the
+// fix, and it is switched in exactly one place — keyAt — so the two sides can never drift apart
+// under it. The defect q102 cures is a FALSE NEGATIVE, so a control for it cannot be "the guard
+// still passes": it has to show the SAME planted tree admitted with the old key and reported with
+// the new one, which is what one axis means here. Production callers never change this.
+var valueCloneEnclosingKeyEnabled = true
+
+func (e valueCloneEnclosing) keyAt(off int) string {
+	if !valueCloneEnclosingKeyEnabled {
+		return ""
+	}
+
+	return e.at(off)
+}
+
+// collisions counts (directory, bare type-name) pairs whose declarations span MORE THAN ONE
+// enclosing class — exactly the population this key separates, and the number that was 4 when q102
+// was cut. It is REPORTED by the corpus arm and never asserted: it is a property of the corpus and
+// moves with it, so an equality here would be a literal to re-baseline rather than a guard.
+func (x *valueCloneTypeIndex) collisions() int {
+	total := 0
+
+	for _, byKey := range x.bodies {
+		seen := map[string]map[string]bool{}
+
+		for key := range byKey {
+			if seen[key.Name] == nil {
+				seen[key.Name] = map[string]bool{}
+			}
+
+			seen[key.Name][key.Enclosing] = true
+		}
+
+		for _, enclosings := range seen {
+			if len(enclosings) > 1 {
+				total++
+			}
+		}
+	}
+
+	return total
 }
 
 func newValueCloneTypeIndex() *valueCloneTypeIndex {
 	return &valueCloneTypeIndex{
-		bodies:   map[string]map[string][]string{},
-		wrappers: map[string]map[string]bool{},
+		bodies:   map[string]map[valueCloneTypeKey][]string{},
+		wrappers: map[string]map[valueCloneTypeKey]bool{},
 	}
 }
 
+// addFile indexes one file's declarations under (directory, enclosing class, type name).
+//
+// ⚠ IT READS THE BLANKED TEXT, AND THAT IS LOAD-BEARING FOR q102 RATHER THAN A TIDY-UP. Keying on
+// the enclosing class SPLITS buckets that used to merge, so a declaration attributed to the wrong
+// class no longer merely joins a crowd — it lands in a bucket of its own where a stamp will not
+// find it, which is the direction that MANUFACTURES a finding. Commented-out declarations are
+// exactly that hazard: 75 files in src/core have a type-declaration sequence that differs between
+// raw and blanked text, and one of them is syscall/linux, where a commented
+// `[GoType] partial struct Timeval { … }` sits ABOVE that file's `partial class syscall_package`
+// and so attributes to namespace scope. Unblanked, it is a FIFTH collision that does not exist in
+// the code. Blanked, the corpus reads the four real ones.
+//
+// The `*_package` scan runs on the same blanked text here and on RAW text at the stamp site, which
+// is sound because the two agree: measured over all 3903 files, the number whose `*_package`
+// declaration SEQUENCE differs between raw and blanked text is ZERO. TestValueCloneIndexControls
+// carries the arm that would catch that ceasing to be true.
 func (x *valueCloneTypeIndex) addFile(dir, text string) {
+	text = blankCSharpLiterals(text)
+	enclosing := newValueCloneEnclosing(text)
+
 	for _, m := range partialTypeDeclRe.FindAllStringSubmatchIndex(text, -1) {
 		name := text[m[2]:m[3]]
 		body := declBodyAfterName(text, m[3])
@@ -290,19 +424,23 @@ func (x *valueCloneTypeIndex) addFile(dir, text string) {
 			continue
 		}
 
+		key := valueCloneTypeKey{Enclosing: enclosing.keyAt(m[0]), Name: name}
+
 		if x.bodies[dir] == nil {
-			x.bodies[dir] = map[string][]string{}
+			x.bodies[dir] = map[valueCloneTypeKey][]string{}
 		}
 
-		x.bodies[dir][name] = append(x.bodies[dir][name], body)
+		x.bodies[dir][key] = append(x.bodies[dir][key], body)
 	}
 
-	for _, m := range goTypeWrapperRe.FindAllStringSubmatch(text, -1) {
+	for _, m := range goTypeWrapperRe.FindAllStringSubmatchIndex(text, -1) {
+		key := valueCloneTypeKey{Enclosing: enclosing.keyAt(m[0]), Name: text[m[2]:m[3]]}
+
 		if x.wrappers[dir] == nil {
-			x.wrappers[dir] = map[string]bool{}
+			x.wrappers[dir] = map[valueCloneTypeKey]bool{}
 		}
 
-		x.wrappers[dir][m[1]] = true
+		x.wrappers[dir][key] = true
 	}
 }
 
@@ -323,9 +461,19 @@ func valueCloneScope(dir string) []string {
 	return []string{dir, parent}
 }
 
-func (x *valueCloneTypeIndex) declares(dir, typeName, member string) bool {
+// declares resolves a stamp against the index.
+//
+// ⚠ THE ENCLOSING CLASS TRAVELS WITH THE DIRECTORY, NOT WITH THE SCOPE. A stamp in a per-GOOS
+// subdirectory resolves against its parent as well, and the parent declares the SAME Go package, so
+// its `*_package` class carries the same NAME — `syscall/linux` and `syscall` both spell it
+// `syscall_package`. That is what makes one key work across the scope union. If a parent ever spells
+// it differently the union stops matching and this guard REPORTS rather than hides, which is the
+// safe direction and is why the corpus arm's finding count is the thing being held at zero.
+func (x *valueCloneTypeIndex) declares(dir, enclosing, typeName, member string) bool {
+	key := valueCloneTypeKey{Enclosing: enclosing, Name: typeName}
+
 	for _, d := range valueCloneScope(dir) {
-		for _, body := range x.bodies[d][typeName] {
+		for _, body := range x.bodies[d][key] {
 			if declaresMember(body, member) {
 				return true
 			}
@@ -335,7 +483,7 @@ func (x *valueCloneTypeIndex) declares(dir, typeName, member string) bool {
 			}
 		}
 
-		if x.wrappers[d][typeName] && valueCloneMintedMembers[member] {
+		if x.wrappers[d][key] && valueCloneMintedMembers[member] {
 			return true
 		}
 	}
@@ -419,21 +567,32 @@ func scanValueCloneStamps(root string) (valueCloneScan, error) {
 			scan.HandOwnFiles++
 		}
 
+		// ⚠ THE STAMP SIDE READS RAW TEXT AND THE INDEX SIDE READS BLANKED TEXT, DELIBERATELY. The
+		// stamp's member names live inside the quoted argument list, and blanking erases exactly
+		// those, so this side cannot be blanked without erasing what it is here to read. The
+		// enclosing class is therefore derived from RAW offsets here and from BLANKED offsets in
+		// addFile — sound because the `*_package` sequence is identical in both for all 3903 files
+		// (measured; zero differ), and pinned by an arm in TestValueCloneIndexControls.
+		enclosing := newValueCloneEnclosing(text)
+
 		for _, m := range matches {
 			scan.Stamps++
 
 			args := text[m[2]:m[3]]
 			typeName := text[m[4]:m[5]]
+			encl := enclosing.keyAt(m[0])
 
 			for _, nm := range quotedNameRe.FindAllStringSubmatch(args, -1) {
 				scan.Members++
 
-				if !index.declares(dirs[rel], typeName, nm[1]) {
+				if !index.declares(dirs[rel], encl, typeName, nm[1]) {
 					scan.Findings = append(scan.Findings, stampFinding{File: rel, Type: typeName, Member: nm[1]})
 				}
 			}
 		}
 	}
+
+	scan.Collisions = index.collisions()
 
 	sort.Slice(scan.Findings, func(i, j int) bool { return scan.Findings[i].String() < scan.Findings[j].String() })
 
@@ -468,8 +627,14 @@ func TestValueCloneStampMembersAreDeclared(t *testing.T) {
 			scan.Files, scan.StampFiles, scan.HandOwnFiles, scan.Stamps, scan.Members)
 	}
 
-	t.Logf(".cs files %d, files carrying [GoValueClone] %d (hand-owns %d), stamps %d, member names %d",
-		scan.Files, scan.StampFiles, scan.HandOwnFiles, scan.Stamps, scan.Members)
+	// The collision count is q102's population, REPORTED at every run and never asserted. It was 4
+	// when the key landed — net/http's delegateReader and dumpConn, encoding/gob's Point and
+	// log/slog's discardHandler — and none of the four was stamped, so the key changed no verdict on
+	// the day it was cut. Printing it is what makes a later change visible: the number MOVING is the
+	// corpus growing a pair, and the number MATTERING is one of those pairs acquiring a stamp.
+	t.Logf(".cs files %d, files carrying [GoValueClone] %d (hand-owns %d), stamps %d, member names %d, "+
+		"colliding (directory, bare-name) pairs %d",
+		scan.Files, scan.StampFiles, scan.HandOwnFiles, scan.Stamps, scan.Members, scan.Collisions)
 
 	if len(scan.Findings) > 0 {
 		var b strings.Builder
@@ -709,4 +874,267 @@ func TestValueCloneVacuityArmCanFire(t *testing.T) {
 	if scan.StampFiles != 0 || scan.HandOwnFiles != 0 {
 		t.Fatalf("a stamp-free tree must read 0 stamp-bearing files and 0 hand-owns, got %d / %d", scan.StampFiles, scan.HandOwnFiles)
 	}
+}
+
+// TestValueCloneIndexControls controls q102's key and the two assumptions it rests on.
+//
+// ⚠ WHY A RED-FIRST ARM HERE CANNOT BE "THE GUARD STILL PASSES". The defect q102 cures is a FALSE
+// NEGATIVE — the old key merged two distinct types into one bucket, so a stamp naming a member its
+// own type does not declare found that member in the OTHER type's body and no finding was reported.
+// A control that only ran the fixed code would sit green whether or not the fix did anything. So
+// each arm below runs the SAME planted tree twice, one axis apart, and asserts BOTH answers: the
+// defect reproduced with the switch off, and cured with it on. `valueCloneEnclosingKeyEnabled` and
+// `literalBlankingEnabled` exist for exactly that and for nothing else.
+func TestValueCloneIndexControls(t *testing.T) {
+	plant := func(t *testing.T, files map[string]string) string {
+		t.Helper()
+
+		dir := t.TempDir()
+
+		for name, body := range files {
+			full := filepath.Join(dir, name)
+
+			if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
+				t.Fatalf("planting %s: %v", name, err)
+			}
+
+			if err := os.WriteFile(full, []byte(body), 0o600); err != nil {
+				t.Fatalf("planting %s: %v", name, err)
+			}
+		}
+
+		return dir
+	}
+
+	scanOrFail := func(t *testing.T, dir string) valueCloneScan {
+		t.Helper()
+
+		scan, err := scanValueCloneStamps(dir)
+
+		if err != nil {
+			t.Fatalf("scanning the planted tree: %v", err)
+		}
+
+		if scan.Stamps == 0 || scan.Members == 0 {
+			t.Fatalf("VACUOUS: the plant produced %d stamps / %d member names, so its verdict proves nothing",
+				scan.Stamps, scan.Members)
+		}
+
+		return scan
+	}
+
+	// ── ARM 1: the q102 collision itself, in the corpus's own shape ──────────────────────────────
+	//
+	// One directory, two DIFFERENT enclosing classes, one bare type name. This is net/http's
+	// delegateReader and dumpConn, encoding/gob's Point and log/slog's discardHandler reduced to
+	// their smallest form: the stamped type declares NOTHING, and a same-named type in the other
+	// package class declares the member. The stamp is wrong and must be reported.
+	t.Run("a same-named type in another *_package class must not satisfy a stamp", func(t *testing.T) {
+		dir := plant(t, map[string]string{
+			"package_info.cs": "namespace go;\n" +
+				"public static partial class h_internal_test_package {\n" +
+				"    [GoValueClone(\"seq\")] internal partial struct delegateReader {}\n" +
+				"}\n" +
+				"public static partial class h_test_package {\n" +
+				"    internal partial struct delegateReader { internal array<byte> seq; }\n" +
+				"}\n",
+		})
+
+		withKey := scanOrFail(t, dir)
+
+		if len(withKey.Findings) != 1 {
+			t.Fatalf("with the enclosing-class key ON the stamp is unsatisfied and must be REPORTED: want 1 finding, got %d: %v",
+				len(withKey.Findings), withKey.Findings)
+		}
+
+		if withKey.Findings[0].Member != "seq" || withKey.Findings[0].Type != "delegateReader" {
+			t.Fatalf("the finding must name the stamped type and member, got %+v", withKey.Findings[0])
+		}
+
+		if withKey.Collisions != 1 {
+			t.Fatalf("the plant is one colliding (directory, bare-name) pair: want Collisions 1, got %d", withKey.Collisions)
+		}
+
+		valueCloneEnclosingKeyEnabled = false
+		defer func() { valueCloneEnclosingKeyEnabled = true }()
+
+		withoutKey := scanOrFail(t, dir)
+
+		if len(withoutKey.Findings) != 0 {
+			t.Fatalf("RED-FIRST ARM DID NOT REPRODUCE THE DEFECT: with the key OFF the old index merged both "+
+				"types and answered the stamp from the WRONG one, so it must report 0 findings; got %d: %v. "+
+				"If this fires, the arm is no longer one axis apart from the fix and proves nothing.",
+				len(withoutKey.Findings), withoutKey.Findings)
+		}
+	})
+
+	// ── ARM 2: blanking, which keying MADE load-bearing ──────────────────────────────────────────
+	//
+	// This is syscall/linux's shape: a COMMENTED `partial struct` above the file's `*_package`
+	// declaration. Under the old bare-name key it was a harmless extra body in a bucket that already
+	// held the real one. Under the new key it attributes to namespace scope and becomes a bucket of
+	// its own — a FIFTH corpus collision that exists only in a comment. The arm scores the collision
+	// count rather than the finding count, because that is where this defect shows.
+	t.Run("a commented-out declaration must not become a bucket of its own", func(t *testing.T) {
+		dir := plant(t, map[string]string{
+			"syscall_impl.cs": "namespace go;\n" +
+				"//     [GoType] partial struct Timeval { public int64 Sec; public int64 Usec; }\n" +
+				"public static partial class syscall_package {\n" +
+				"    [GoValueClone(\"Sec\")] public partial struct Timeval { public int64 Sec; }\n" +
+				"}\n",
+		})
+
+		blanked := scanOrFail(t, dir)
+
+		if len(blanked.Findings) != 0 {
+			t.Fatalf("the real declaration satisfies the stamp: want 0 findings, got %d: %v", len(blanked.Findings), blanked.Findings)
+		}
+
+		if blanked.Collisions != 0 {
+			t.Fatalf("with comments blanked there is ONE declaration of Timeval: want Collisions 0, got %d", blanked.Collisions)
+		}
+
+		literalBlankingEnabled = false
+		defer func() { literalBlankingEnabled = true }()
+
+		raw := scanOrFail(t, dir)
+
+		if raw.Collisions != 1 {
+			t.Fatalf("RED-FIRST ARM DID NOT REPRODUCE THE DEFECT: unblanked, the commented declaration sits "+
+				"ABOVE the *_package declaration, attributes to namespace scope and collides with the real "+
+				"one: want Collisions 1, got %d. This arm is what keeps blanking from being quietly dropped.", raw.Collisions)
+		}
+	})
+
+	// ── ARM 3: the assumption that lets the two sides use different texts ────────────────────────
+	//
+	// addFile derives the enclosing class from BLANKED text; the stamp site derives it from RAW text,
+	// because blanking erases the quoted member names it exists to read. Those two agree only while
+	// no `*_package` declaration hides in a comment or a string. That is a CORPUS property, so it is
+	// checked at the corpus and not argued in a comment.
+	t.Run("the *_package sequence is identical raw and blanked, corpus-wide", func(t *testing.T) {
+		core := filepath.Join(repoRootFromPackageDir(t), "src", "core")
+		files, differ := 0, []string{}
+
+		err := filepath.Walk(core, func(p string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if info.IsDir() {
+				switch info.Name() {
+				case "bin", "obj", "Generated":
+					return filepath.SkipDir
+				}
+
+				return nil
+			}
+
+			if !strings.HasSuffix(p, ".cs") {
+				return nil
+			}
+
+			raw, readErr := os.ReadFile(p)
+
+			if readErr != nil {
+				return readErr
+			}
+
+			files++
+
+			one := newValueCloneEnclosing(string(raw))
+			two := newValueCloneEnclosing(blankCSharpLiterals(string(raw)))
+
+			if len(one) != len(two) {
+				differ = append(differ, p)
+
+				return nil
+			}
+
+			for i := range one {
+				if one[i].Name != two[i].Name {
+					differ = append(differ, p)
+
+					return nil
+				}
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			t.Fatalf("walking src/core: %v", err)
+		}
+
+		if files == 0 {
+			t.Fatal("VACUOUS: read 0 .cs files under src/core, so agreeing proves nothing")
+		}
+
+		if len(differ) != 0 {
+			t.Fatalf("%d of %d file(s) spell a different *_package SEQUENCE raw vs blanked, so the two sides of "+
+				"the index no longer attribute declarations the same way: %v", len(differ), files, differ)
+		}
+
+		t.Logf("*_package sequence identical raw vs blanked in all %d .cs files under src/core", files)
+	})
+
+	// ── ARM 4: the widening in goTypeWrapperRe, scored rather than asserted safe ──────────────────
+	//
+	// Matching the attribute argument as `[^)]*` so it survives blanking means the EMPTY form
+	// `[GoType()]` would newly read as a bodiless wrapper, and a wrapper ADMITS a minted member — a
+	// false negative. The widening is inert only while that form does not occur.
+	t.Run("the [GoType()] form the relaxed wrapper regex would admit does not occur", func(t *testing.T) {
+		core := filepath.Join(repoRootFromPackageDir(t), "src", "core")
+		empty := regexp.MustCompile(`\[GoType\(\s*\)\][\t ]*partial\s+(?:struct|class)\s+[\p{L}_][\p{L}\p{N}_]*[\t ]*;`)
+		real := regexp.MustCompile(`\[GoType\("[^"]*"\)\][\t ]*partial\s+(?:struct|class)\s+[\p{L}_][\p{L}\p{N}_]*[\t ]*;`)
+		hits, wrappers := []string{}, 0
+
+		err := filepath.Walk(core, func(p string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if info.IsDir() {
+				switch info.Name() {
+				case "bin", "obj", "Generated":
+					return filepath.SkipDir
+				}
+
+				return nil
+			}
+
+			if !strings.HasSuffix(p, ".cs") {
+				return nil
+			}
+
+			raw, readErr := os.ReadFile(p)
+
+			if readErr != nil {
+				return readErr
+			}
+
+			wrappers += len(real.FindAllString(string(raw), -1))
+
+			if empty.MatchString(string(raw)) {
+				hits = append(hits, p)
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			t.Fatalf("walking src/core: %v", err)
+		}
+
+		if wrappers == 0 {
+			t.Fatal("VACUOUS: found 0 real [GoType(\"…\")] bodiless wrappers, so this arm is scoring nothing")
+		}
+
+		if len(hits) != 0 {
+			t.Fatalf("the relaxed wrapper regex is no longer inert: %d file(s) carry a bodiless [GoType()] with "+
+				"no argument, which now reads as a wrapper and would ADMIT a minted member: %v", len(hits), hits)
+		}
+
+		t.Logf("[GoType()] empty form: 0 occurrences against %d real bodiless wrappers", wrappers)
+	})
 }
