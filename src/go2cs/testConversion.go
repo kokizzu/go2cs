@@ -7925,6 +7925,50 @@ func filterMatchedNothing(testFilter, status string, matched bool, goCount, csCo
 			"measured nothing and must not read as a pass (%s)", testFilter, excludedNote), true
 }
 
+// oracleTestArgs builds the argument list for the `go test -json` oracle run that
+// compareGoAndConvertedTests measures the converted side against. Extracted from the comparison
+// body so the arguments can be asserted directly: what the oracle selects is a property of this
+// list alone, and a defect in it reads downstream as a divergence in the corpus rather than as a
+// mismatch between the two command lines.
+func oracleTestArgs(options Options, hostFatalSkip string) []string {
+	args := []string{"test", "-json", "-count=1", "-timeout", options.testTimeout.String()}
+	if options.testFilter != "" {
+		args = append(args, "-run", options.testFilter)
+	}
+
+	// THE ORACLE CARRIES THE CONVERSION'S OWN RESOLVED TAGS.
+	//
+	// The corpus is DEFINED as Go built under resolveBuildTags' answer -- purego,math_big_pure_go
+	// for every -stdlib/-tests run unless the caller passed -tags explicitly. The converted side of
+	// this comparison is loaded under exactly those tags (see the packages.Load calls above, and
+	// conversionDriver/stdLibConverter, all of which take loaderBuildFlags). Until this line the
+	// oracle ran untagged, so the two sides selected DIFFERENT FILE SETS and the comparison
+	// silently answered two different questions.
+	//
+	// Measured on crypto/internal/fips140/nistec at 1.24.13: p256_table_test.go is
+	// `//go:build (!amd64 && !arm64 && !ppc64le && !s390x) || purego`, so `go list -f {{.TestGoFiles}}`
+	// selects it under the corpus tags and NOT bare on amd64. The converted side ran and passed
+	// TestP256PrecomputedTable and its 43 subtests; the oracle never compiled them; the comparison
+	// reported 44 entries of Go="" C#="pass" -- a false divergence, in the pipeline H10 re-banks
+	// through. The mirror shape (Go="pass" C#="") comes from UNTAGGED-only files and is the one that
+	// misleads, because an empty C# column also means a deadline kill or a real failure.
+	//
+	// loaderBuildFlags() and not a second rendering: one definition, so the oracle's flavour cannot
+	// drift from the conversion's. It returns nil for an untagged run, which leaves a tag-neutral
+	// conversion's command line byte-for-byte what it was.
+	args = append(args, options.loaderBuildFlags()...)
+	// Handed VERBATIM to both sides, exactly as -test-filter is: the SAME string on the two command
+	// lines, verifiable by eye in the log, rather than two expressions someone would have to prove
+	// equivalent. Go's -skip and the host's --skip compile it identically (same `/` split, same
+	// per-segment regexes), which is what keeps the two runs answering the same question.
+	if hostFatalSkip != "" {
+		args = append(args, "-skip", hostFatalSkip)
+	}
+	args = append(args, ".")
+
+	return args
+}
+
 func compareGoAndConvertedTests(inputPath, outputPath, testProject string, options Options) error {
 	// -test-timeout is the PACKAGE deadline, handed to BOTH sides so they agree: `go test -timeout`
 	// and the converted host's own `--timeout`. Without it each side silently used its OWN 10-minute
@@ -7965,18 +8009,7 @@ func compareGoAndConvertedTests(inputPath, outputPath, testProject string, optio
 	}
 	hostFatalSkip := hostFatalSkipExpression(disclosures)
 
-	goArgs := []string{"test", "-json", "-count=1", "-timeout", options.testTimeout.String()}
-	if options.testFilter != "" {
-		goArgs = append(goArgs, "-run", options.testFilter)
-	}
-	// Handed VERBATIM to both sides, exactly as -test-filter is: the SAME string on the two command
-	// lines, verifiable by eye in the log, rather than two expressions someone would have to prove
-	// equivalent. Go's -skip and the host's --skip compile it identically (same `/` split, same
-	// per-segment regexes), which is what keeps the two runs answering the same question.
-	if hostFatalSkip != "" {
-		goArgs = append(goArgs, "-skip", hostFatalSkip)
-	}
-	goArgs = append(goArgs, ".")
+	goArgs := oracleTestArgs(options, hostFatalSkip)
 	goOutput, goErr := runCommandWithTimeout(testChildTimeout(options), inputPath, options, "go", goArgs...)
 
 	// Captured immediately after the real oracle run, same directory, same options — see
