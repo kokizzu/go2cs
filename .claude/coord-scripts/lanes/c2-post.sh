@@ -38,11 +38,51 @@ REPO="${C2_REPO:-$(git rev-parse --show-toplevel 2>/dev/null || echo "$CLONE")}"
 # its patterns and hashes from its own directory.
 IDCDIR="$SP/idc-master"
 idc_refresh(){
-  git -C "$REPO" fetch --quiet origin master 2>/dev/null
+  # ⚠ EXPLICIT, FORCED REFSPEC -- `fetch origin master` alone is NOT enough to materialise one.
+  # A remote-tracking ref is updated only OPPORTUNISTICALLY, for refs the clone's CONFIGURED refspec
+  # already maps. A dedicated mailbox clone maps exactly ONE branch
+  # (+refs/heads/claude/mailbox:refs/remotes/origin/claude/mailbox), so there the old line SUCCEEDED
+  # with rc 0, landed the objects in FETCH_HEAD, and wrote nothing `rev-parse origin/master` can see.
+  # The fallback REPO="$CLONE" a few lines up was therefore DEAD: in the one shape it exists for, the
+  # census could never be resolved and the tool refused with the cause one layer away from its message
+  # (reported here at mailbox 90e78eae0 section 5b before the mechanism was known; C1 measured the
+  # mechanism at b23753f56 section 9 and carries the same remedy in its own lane tool at 4b33fc803).
+  #   two-shape control, the tracking ref deleted before each cell:
+  #     full clone     +refs/heads/*:...          OLD rc 0 WRITTEN   NEW rc 0 WRITTEN  <- no regression
+  #     single-branch  +refs/heads/<one>:...      OLD rc 0 ABSENT    NEW rc 0 WRITTEN  <- defect, fix
+  # ⚠ The leading `+` is load-bearing, and it was measured rather than assumed: against a planted
+  # non-fast-forward tip the UNFORCED form returns rc 1 and LEAVES THE STALE TIP IN PLACE, silently,
+  # since this call does not read its rc -- so an unforced refspec would reintroduce the same
+  # shortfall by a second route. A forcing control on the same planted tip returns rc 0 and moves it,
+  # which is what shows the refusal is the missing `+` and not the network.
+  git -C "$REPO" fetch --quiet origin +master:refs/remotes/origin/master 2>/dev/null
   mkdir -p "$IDCDIR"
-  local f
+  # ⚠ MATERIALISE TO A TMP AND `mv` ON SUCCESS. The previous form redirected straight onto the
+  # cached file, and a redirect TRUNCATES BEFORE the command it feeds runs -- so a materialise that
+  # FAILED left a ZERO-BYTE census behind and returned 1. The tool itself refuses closed on that rc,
+  # but the cache is SHARED with by-hand census calls, and an empty script EXITS 0 AND SCANS NOTHING:
+  # a gate over it reads CLEAN while measuring nothing at all. C1 found it from a deliberate red arm
+  # (mailbox d2e61accb §7); it then happened HERE for real, from the ordinary failure path -- a post
+  # refused for the fetch defect one commit down truncated this cache and the next gate returned rc 0
+  # with zero output. Isolating an experiment does not protect a shared resource from production.
+  # Now: a refused materialise leaves the previous good copy exactly as it was.
+  #   red-first arm: seed the cache, make origin/master unresolvable, run.
+  #     the blob one commit down   REFUSED rc 2 · cache 1415 lines -> 0 bytes   <- the defect
+  #     this blob                  REFUSED rc 2 · cache BYTE-IDENTICAL          <- the fix
+  # The floors are what make a bad copy unusable rather than merely present: a truncated or stubbed
+  # census must not be able to reach the gate, and `-s` alone would pass a one-line file.
+  local f n
   for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifier-hashes.txt; do
-    git -C "$REPO" show "origin/master:.claude/coord-scripts/$f" > "$IDCDIR/$f" 2>/dev/null || return 1
+    git -C "$REPO" show "origin/master:.claude/coord-scripts/$f" > "$IDCDIR/$f.tmp" 2>/dev/null \
+      || { rm -f "$IDCDIR/$f.tmp"; return 1; }
+    [ -s "$IDCDIR/$f.tmp" ] || { rm -f "$IDCDIR/$f.tmp"; return 1; }
+    n=$(wc -l < "$IDCDIR/$f.tmp")
+    case "$f" in
+      coord-identifier-census.sh)        [ "$n" -ge 1000 ] || { rm -f "$IDCDIR/$f.tmp"; return 1; };;
+      coord-identifier-patterns.txt)     [ "$n" -ge 100 ]  || { rm -f "$IDCDIR/$f.tmp"; return 1; };;
+      coord-identifier-hashes.txt)       [ "$n" -ge 10 ]   || { rm -f "$IDCDIR/$f.tmp"; return 1; };;
+    esac
+    mv -f "$IDCDIR/$f.tmp" "$IDCDIR/$f" || return 1
   done
   chmod +x "$IDCDIR/coord-identifier-census.sh"
   printf '%s' "$(git -C "$REPO" rev-parse --short origin/master)"
