@@ -711,6 +711,48 @@ func collectPublicizedTypes(pkg *types.Package) {
 			}
 		}
 	}
+
+	collectSiblingTestPublicizedTypes(scope, pkg)
+}
+
+// collectSiblingTestPublicizedTypes folds in the seed contributed by the package's IN-PACKAGE
+// `_test.go` half (see siblingTestPublicizedTypeNames). In Go that file IS the package, so a
+// PRODUCTION type reached by an EXPORTED member of it must be at least as accessible as the
+// consumer — but the loop above cannot reach that conclusion, because the production package
+// go/packages hands it excludes `_test.go` and the two halves of the decision are therefore never
+// in one scope: encoding/json's `isZeroer` is declared in encode.go and consumed by four EXPORTED
+// fields in encode_test.go, and the production emission wrote it with no access modifier (CS0052 x4
+// once the recompile model puts production and test in one compilation). The shape the rule's own
+// worked cases have — the type and its exported consumer in the SAME scope, as with context's
+// `testingT` — is unaffected, which is why every other package survived this.
+//
+// ⚠ THE RESOLUTION IS WHAT KEEPS THE SEED NARROW, and it is a gate rather than a hint: the scan
+// contributes NAMES, and only a name that resolves HERE, in the real production scope, to an
+// unexported package-level TYPE is publicized. A type the test half declares itself resolves to
+// nothing and is dropped; a name that denotes a var, a func or an exported type is dropped by its
+// own predicate. External `<pkg>_test` files never reach this at all — collectSiblingTestSignals
+// matches the package clause, so their declarations, which can only touch this package's exported
+// surface, contribute nothing.
+//
+// The deferred cascade in the caller then runs over the seeded set unchanged, so a type reached
+// only through an exported method of a seeded type is carried the same way it would be from a
+// production consumer.
+func collectSiblingTestPublicizedTypes(scope *types.Scope, pkg *types.Package) {
+	for _, name := range siblingTestPublicizedTypeNames {
+		typeName, ok := scope.Lookup(name).(*types.TypeName)
+
+		if !ok || typeName.Exported() || typeName.Pkg() != pkg {
+			continue
+		}
+
+		packagePublicizedTypes[typeName] = true
+
+		// An exported consumer of the type reaches its exported methods' signature types too, by
+		// the same CS0050/CS0051 rule the loop above applies to a production consumer.
+		if named, ok := typeName.Type().(*types.Named); ok {
+			collectMethodSignatureUnexportedTypes(named, pkg)
+		}
+	}
 }
 
 // cascadePublicizedMethodTypes extends the publicized set through method signatures: a publicized
