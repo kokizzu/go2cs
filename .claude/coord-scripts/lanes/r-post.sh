@@ -59,6 +59,20 @@ DRY=0; [ "${3:-}" = "--dry-run" ] && DRY=1
 # needs a door, not more care.
 BARCHECK=0; [ "${3:-}" = "--bar-check" ] && BARCHECK=1
 
+# The anchor-advance decision, as ONE definition consulted by the live path and by its arms.
+# ADVANCE only when nothing landed between the stored anchor and the tip this post appends to.
+anchor_may_advance() {
+  [ -z "$1" ] || [ "$1" = "$2" ]
+}
+
+# --anchor-check <prev-anchor> <pre-tip> evaluates that decision and EXITS, touching nothing —
+# the same door --bar-check opens for the control bar, and for the same reason: the branch lives on
+# the live path, and proving it HOLDS must not require making a real post to prove it.
+if [ "${1:-}" = "--anchor-check" ]; then
+  if anchor_may_advance "${2:-}" "${3:-}"; then echo "ANCHOR-CHECK: ADVANCE"; exit 0
+  else echo "ANCHOR-CHECK: HOLD -- unread entries stand between the anchor and this post"; exit 20; fi
+fi
+
 # --- step 1: resolve BEFORE any cd (SKILL: relative entry path resolved to nothing after the cd)
 ENTRY="$(readlink -f "${1:?entry file}")"
 SUBJ="$(readlink -f "${2:?subject file}")"
@@ -228,6 +242,28 @@ if [ -n "$PREV_ANCHOR" ]; then
   else echo "  (none)"; fi
 else echo "  (no prior anchor)"; fi
 echo "=================================================================================="
-printf '%s\n' "$REMOTE_TIP" > "$ANCHOR"
-echo "anchor advanced to $REMOTE_TIP"
+
+# ⚠⚠ THE ANCHOR IS NOT ADVANCED PAST AN ENTRY THIS LANE HAS NOT READ. Until 2026-09-20 this wrote
+# $REMOTE_TIP unconditionally, so POSTING marked every entry that had landed since the last read as
+# read -- the banner above said they were owed and the next line recorded them as discharged. The two
+# contradicted each other and the write won.
+#
+# THREE LANES, ONE TOOL SHAPE: C2 (d46dab971) swept three entries this way, i9 (69f320950) swept
+# EIGHT -- 564 lines, including a delta read routed to it, which is how a ruled item went missing --
+# and I did it by hand from the other direction the same day, setting the anchor to the remote tip
+# rather than to the last entry I had read, and rolling it back when the diff showed one skipped.
+# ⚠ It defeats "read every entry WHOLE" STRUCTURALLY rather than by anyone skipping something: the
+# rule assumes the anchor moves only when a lane reads, and the poster moved it when a lane wrote.
+#
+# So: advance to the post's own tip ONLY when nothing landed between the stored anchor and the
+# pre-append tip. Otherwise the anchor STAYS, the owed range above is what discharges it, and the
+# lane advances it after reading. A post never claims a read.
+if anchor_may_advance "$PREV_ANCHOR" "$PRE_TIP"; then
+  printf '%s\n' "$REMOTE_TIP" > "$ANCHOR"
+  echo "anchor advanced to $REMOTE_TIP (nothing landed between the stored anchor and this post)"
+else
+  echo "ANCHOR NOT ADVANCED -- it stays at $PREV_ANCHOR."
+  echo "  Entries landed between your anchor and this post; they are listed above and are UNREAD."
+  echo "  Read each one WHOLE, then advance the anchor yourself. This post is NOT a read."
+fi
 rm -f "$TOKENS"
