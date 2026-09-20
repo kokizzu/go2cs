@@ -65,13 +65,40 @@ SUBJECT="$(head -1 "$SUBJF")"
 ANCHOR_WAS="$(cat "$ANCHOR_FILE" 2>/dev/null)"
 
 # ── step 0b: materialise the census from origin/master, and ASSERT it ───────────────────────────
-git -C "$CENSUS_CLONE" fetch origin master --quiet 2>/dev/null || true
+# ⚠ EXPLICIT REFSPEC, and the leading `+` is deliberate. `git fetch origin master` SUCCEEDS in a
+# SINGLE-BRANCH clone and writes NO `refs/remotes/origin/master`: the objects land in FETCH_HEAD and
+# nowhere `rev-parse origin/master` can see, because the opportunistic remote-tracking update only
+# applies to refs the configured refspec maps, and a single-branch clone's maps exactly one. So the
+# `|| true` below swallows NOTHING -- the fetch genuinely returns 0 -- and the step AFTER it fails.
+# That is how this tool refused two of C1's own posts on 2026-09-20, correctly and fails-closed,
+# with a message that named the materialise and not the fetch. A command that succeeds while
+# reaching nothing is this fleet's most expensive instrument class, and it was living in this line.
+#
+# Measured before the change, two clone shapes x two lines, the ref DELETED before each cell:
+#     shape A, full clone     refspec +refs/heads/*:refs/remotes/origin/*
+#         old line   rc 0, origin/master WRITTEN     new line   rc 0, WRITTEN   <- no regression
+#     shape B, single-branch  refspec +refs/heads/<one>:refs/remotes/origin/<one>
+#         old line   rc 0, origin/master ABSENT      new line   rc 0, WRITTEN   <- defect, and fix
+#
+# The `+` because the default refspec a full clone carries is itself forced: without it a
+# non-fast-forward on master would be REJECTED here and reintroduce the same silent shortfall by a
+# second route. The refusal downstream is unchanged and still fails closed.
+git -C "$CENSUS_CLONE" fetch origin +master:refs/remotes/origin/master --quiet 2>/dev/null || true
 CENSUS_REF="$(git -C "$CENSUS_CLONE" rev-parse --short origin/master 2>/dev/null)"
 mkdir -p "$CENSUS_DIR"
 for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifier-hashes.txt; do
-    git -C "$CENSUS_CLONE" show "origin/master:.claude/coord-scripts/$f" > "$CENSUS_DIR/$f" 2>/dev/null \
-      || { echo "POST REFUSED: cannot materialise $f from origin/master"; exit 2; }
-    [ -s "$CENSUS_DIR/$f" ] || { echo "POST REFUSED: $f materialised EMPTY"; exit 2; }
+    # ⚠ TMP THEN MV, never straight into place. `>` truncates its target BEFORE the command to its
+    # left runs, so a FAILED `git show` leaves a ZERO-BYTE file behind and then exits 2. This tool is
+    # protected by the two asserts below and refuses closed -- but the cache is a PATH, and anything
+    # else reading it afterwards gets a census that exits 0 and scans nothing, which is a green over
+    # nothing wearing the census's name. Measured 2026-09-20: this tool's own red arm for the refspec
+    # fix above truncated the cache, and the next three BY-HAND census calls on that box returned
+    # rc 0 with ZERO output lines before the empty file was noticed. A refusal must leave the
+    # previous good copy exactly where it was.
+    git -C "$CENSUS_CLONE" show "origin/master:.claude/coord-scripts/$f" > "$CENSUS_DIR/$f.tmp" 2>/dev/null \
+      || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: cannot materialise $f from origin/master"; exit 2; }
+    [ -s "$CENSUS_DIR/$f.tmp" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: $f materialised EMPTY"; exit 2; }
+    mv -f "$CENSUS_DIR/$f.tmp" "$CENSUS_DIR/$f"
 done
 # A truncated blob is the failure this assert exists for: a short census still RUNS and still exits
 # 0 on a body it never finished scanning, which is a green over nothing of exactly tonight's class.
