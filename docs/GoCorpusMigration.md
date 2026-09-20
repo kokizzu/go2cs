@@ -1636,7 +1636,34 @@ the run and must **never** be read as a corpus regression.
      runbook's own line 651 conflates the two paths. The eight by name, each present and none skipped: i9 7ede39d67 §1 (the alias-union
      acceptance, recorded by COORD 204c3ab59). -->
 
-#### Correction 2026-09-19 (C2) — the eight are stale: the prediction of record is ELEVEN, in TWO mechanisms
+#### Correction 2026-09-19 (C2), PLATFORM-QUALIFIED 2026-09-20 — a LINUX re-derivation, and what it can and cannot settle
+
+> ⚠ **READ THIS BOX FIRST — added 2026-09-20 after i9's CNR measured the banking platform.**
+> Everything below §"Mechanism 1" was measured on **linux**. The goldens are banked on **windows**, and
+> on that platform **the amendment's original eight goldens / 35 line-pairs is EXACTLY RIGHT** — it was
+> not stale at all. The two readings differ by precisely two projects, and both differences are the
+> per-GOOS alias mechanism this correction itself names:
+>
+> | | linux (this correction) | **windows, the BANKING platform** (i9 `dc9eb368c`) |
+> |:--|:--|:--|
+> | `SyscallKeystonePulls` | alias RETAINED → out of the set | **drops `Δruntime` → IN the set**, 2 pairs |
+> | `SetegidBroadcastSeam` | drops `Δruntime` → in the set, 4 pairs | `//go:build linux` — **CNR SKIPS it platform-exclusive**, it cannot be banked here at all |
+> | mechanism 1 | 8 goldens / **37** pairs | 8 goldens / **35** pairs |
+>
+> **THE RULE THIS COST, stated so the next lane does not pay it again: a cross-platform arm can
+> discover a MECHANISM, but it cannot enumerate the BANKED SET.** The rebank happens on one platform;
+> membership is therefore a platform-qualified claim, and a reading taken elsewhere must say so in its
+> own conclusion — not merely list its blind spots and then conclude platform-free. This correction
+> listed its seven blind projects and then did exactly that, which is the same defect it flags two
+> sections below for `SockaddrRoundTrip`. **The mechanism findings stand on both platforms; the
+> membership and the pair count are linux's.**
+>
+> What survives unqualified: **mechanism 2 is real and was found only by the whole-corpus comparison** —
+> i9's windows CNR confirms `GenericTypeInference`, `GenericUntypedIntArg` and `ReceiverCapturedInClosure`
+> and adds a fourth file (`ReceiverCapturedInClosure/package_info.cs`, the same RED 11 seat, missed here
+> because this sweep compared `main.cs` only) and a fourth project, `SystemCertVerify`, under **RED 9** —
+> one of the seven this arm declared it could not see. The process gap below is unchanged and is what
+> all four have in common.
 
 The amendment above names eight goldens, 35 changed line-pairs and one mechanism. That prediction was
 made at `a02ac3df3` for the **H2→H5 window**, and the version branch has since taken every RED seat and
@@ -1655,12 +1682,17 @@ tip and all **735** behavioral goldens transpiled and compared, not estimated: *
 `added == removed` on every one, and **zero diff lines not containing `runtime`** on all eight —
 the single mechanism, measured rather than asserted.
 
-- ⚠ **`SyscallKeystonePulls` is NOT in the set.** Its golden carries `Δruntime` and so does the
-  emission at 1.24.13 — the collision that forces the alias survives there, so it contributes **0**.
-  Its appearance in a CHANGED set is the sharpest falsifier of this whole prediction.
-- ⚠ **`SetegidBroadcastSeam` is in it**, at 4 pairs, pure alias. It is the ninth the amendment's
-  "a ninth moved golden … is a finding" line anticipated, and it is a finding of the ORDINARY kind:
-  the enumeration was short, not the mechanism wrong.
+- ⚠ **`SyscallKeystonePulls` is not in the set ON LINUX.** Its golden carries `Δruntime` and so does the
+  linux emission at 1.24.13 — it imports `os/user` and `os/exec` alongside `runtime`, and the collision
+  that forces the alias survives there, so it contributes **0**. ⚠ **ON WINDOWS IT DOES DROP THE ALIAS
+  AND IS IN THE BANKED SET** (i9 `dc9eb368c`, 2 pairs): the collision does not survive there. This was
+  worded as "the sharpest falsifier of this whole prediction" and it fired — correctly, and on the
+  platform that banks.
+- ⚠ **`SetegidBroadcastSeam` is in it ON LINUX**, at 4 pairs, pure alias — but it carries
+  `//go:build linux`, so **the windows CNR SKIPS it as platform-exclusive and it can never be banked
+  there.** It is a real ninth for the mechanism and NOT a member of the banked set; it entered this
+  prediction only because a linux arm could see it. The inverse of this correction's own blind-spot
+  list: a project the BANKING platform cannot measure.
 - **The 35 reconciles exactly**: the seven surviving originals total 33, and 35 − 33 = 2 is precisely
   what `SyscallKeystonePulls` would have contributed at the two-pair shape (one `using` line, one use
   site) that three of its siblings show. The stale number counted a project that does not move.
