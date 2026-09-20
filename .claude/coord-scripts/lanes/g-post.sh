@@ -225,6 +225,54 @@ bash "$SPD/g-fetchable-check.sh" "$ENTRY" || { echo "UNFETCHABLE BRANCH NAMED --
 # since i9's finding; this arm did not, and my own COMMIT SUBJECT carried two stale tips.
 bash "$SPD/g-staleness-arm.sh" "$ENTRY" /tmp/g-post-subj.$$ || { rm -f /tmp/g-post-subj.$$; echo "STALE BRANCH TIP STATED -- NOT POSTED"; exit 9; }
 rm -f /tmp/g-post-subj.$$
+
+# ⚠⚠ WORK-TREE REFUSAL ON THE MAILBOX CLONE (COORD c7f68b53e, the shape R, C2 and i9 chose).
+#
+# COORD held the published copy of this tool because it derives three paths from `dirname "$0"` with
+# no work-tree refusal, and offered the alternative of stating by measurement that every such use is
+# read-only. I MEASURED, AND THE ESCAPE DOES NOT APPLY -- the hold is correct. Of the three:
+#
+#   SPD       read-only. Used only as `bash "$SPD/<helper>.sh"`; no write, mkdir, cp, mv or rm under
+#             it anywhere in the four files. It MUST resolve inside the repo, because that is where
+#             its sibling helpers live, so a work-tree refusal on it would be wrong.
+#   IDC_REPO  read-only AS A WORK TREE. It does `fetch`, `rev-parse` and `show` -- the fetch writes
+#             refs into .git, never a tracked file -- and it is MEANT to be the repo.
+#   MB        ⚠ A WRITE TARGET. Everything below this line runs after `cd "$MB"`: fetch, reset,
+#             append to docs/phase4/MAILBOX.md, commit, push.
+#
+# AND MB'S HAZARD IS ONE I INTRODUCED. The tool originally carried a hardcoded absolute mailbox path.
+# Publishing required environment-derived paths, and my derivation made the DEFAULT a sibling computed
+# from this script's own location. That is fine where the tool is checked out beside its mailbox clone
+# and silently wrong anywhere else -- and "anywhere else" includes the repo itself, where a
+# `dirname`-derived default that resolved inside the work tree would have this tool committing to and
+# pushing the go2cs repo while every message it printed said "mailbox".
+#
+# So the refusal is not "MB must not be a work tree" -- MB IS a git clone and must be one. It is that
+# MB must not be THIS repo's work tree, nor anywhere inside it. Stated positively: the thing we are
+# about to commit and push to has to be the mailbox clone and nothing else.
+MB_TOP=$(git -C "$MB" rev-parse --show-toplevel 2>/dev/null)
+REPO_TOP=$(git -C "$IDC_REPO" rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$MB_TOP" ]; then
+  echo "REFUSED: mailbox clone '$MB' is not a git work tree -- set G_MAILBOX_CLONE to the lane's mailbox clone"
+  exit 4
+fi
+if [ -n "$REPO_TOP" ] && [ "$MB_TOP" = "$REPO_TOP" ]; then
+  echo "REFUSED: mailbox clone '$MB' IS the go2cs work tree -- set G_MAILBOX_CLONE to the lane's mailbox clone"
+  exit 4
+fi
+case "$MB_TOP/" in
+  "$REPO_TOP"/*)
+    echo "REFUSED: mailbox clone '$MB' is INSIDE the go2cs work tree -- set G_MAILBOX_CLONE to the lane's mailbox clone"
+    exit 4 ;;
+esac
+# The positive half. The three arms above rule out the repo; this one requires the destination to be
+# what it claims. Without it, an empty directory that happens to be its own git repo passes every
+# negative arm and this tool appends the fleet's record into it.
+if [ ! -r "$MB_TOP/docs/phase4/MAILBOX.md" ]; then
+  echo "REFUSED: '$MB' carries no docs/phase4/MAILBOX.md -- it is not the mailbox clone"
+  exit 4
+fi
+echo "MAILBOX CLONE OK: outside the repo work tree, and carries the mailbox file"
 cd "$MB" || exit 4
 git fetch origin claude/mailbox --quiet || { echo "FETCH FAILED"; exit 5; }
 
