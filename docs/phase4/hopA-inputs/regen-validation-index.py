@@ -34,10 +34,12 @@ Usage:
   regen-validation-index.py --selftest      the arms, in a temp dir of its own
 """
 
+import io
 import re
 import sys
 import shutil
 import tempfile
+import contextlib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -112,6 +114,17 @@ def compose(committed_text, packages):
         if seen_rows:
             tail = rest[i:]
             break
+    # ⚠ The tail is found by walking PAST the existing rows, so with ZERO of them `seen_rows`
+    # never becomes true, `tail` stays empty, and everything after the header is dropped. That is
+    # the same shape as this tool's zero-row-roster refusal one layer over -- an instrument that
+    # reads nothing produces a clean-looking page -- so it refuses for the same reason rather than
+    # truncating silently. Unreachable on today's committed page twice over (204 rows, and nothing
+    # after the table), which is exactly why it needed an arm and not a reading: `--write` is the
+    # only path that could ever do the damage and no arm exercised it.
+    if not seen_rows:
+        die(f"the committed page's CURRENT table carries a header and ZERO data rows -- "
+            f"regenerating would drop everything after it. A table with no rows is not a table "
+            f"this tool can safely rewrite around.")
     return "\n".join(keep + [index_row(p) for p in packages] + tail)
 
 
@@ -250,7 +263,6 @@ def selftest():
 
         # CONTROL: the ORDER-only case is reported and is NOT a set difference
         r, v = fixture(["a", "b/c"], index_pkgs=["b/c", "a"])
-        import io, contextlib
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             run(r, v)
@@ -267,6 +279,47 @@ def selftest():
         text = buf.getvalue()
         check("a SET difference reports as a set difference",
               "SET DIFFERENCE" in text and "ORDER DIFFERS" not in text)
+
+        # ⚠⚠ THE WRITE PATH, WHICH NO ARM ABOVE TOUCHES. All six call `run(r, v)` and take the
+        # default `write=False`, so the tool's only state-advancing path was unexercised -- on a
+        # tool whose own note says `--write` must not be run against the real tree until the last
+        # leg, which makes an arm the ONLY place it can ever run. The green arm above proves
+        # `compose`, not the write.
+        r, v = fixture(["a", "b/c"])
+        index = v / "index.md"
+        before = index.read_text(encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            run(r, v, write=True)
+        after = index.read_text(encoding="utf-8")
+        check("--write on a matching fixture is byte-identical (a real write, not compose)",
+              after == before)
+
+        # and the same path must CARRY what follows the table rather than eat it
+        r, v = fixture(["a", "b/c"])
+        index = v / "index.md"
+        index.write_text(index.read_text(encoding="utf-8") + "\n## Notes\n\nafter the table\n",
+                         encoding="utf-8")
+        with contextlib.redirect_stdout(io.StringIO()):
+            run(r, v, write=True)
+        check("--write keeps content that FOLLOWS the table",
+              "after the table" in index.read_text(encoding="utf-8"))
+
+        # RED for the refusal this commit adds: a header with zero data rows.  Before it, --write
+        # dropped the tail here and reported success.
+        r, v = fixture(["a"])
+        index = v / "index.md"
+        body = [l for l in index.read_text(encoding="utf-8").split("\n") if not INDEX_ROW.match(l)]
+        index.write_text("\n".join(body + ["", "## Notes", "", "after the table"]) + "\n",
+                         encoding="utf-8")
+        kept = index.read_text(encoding="utf-8")
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                run(r, v, write=True)
+            check("a committed table with ZERO data rows refuses", False)
+        except SystemExit as e:
+            check("a committed table with ZERO data rows refuses", "ZERO data rows" in str(e))
+        check("...and nothing was written on that refusal",
+              index.read_text(encoding="utf-8") == kept)
 
         print(f"\nSELF-TEST: pass={npass} fail={nfail}")
         return 0 if nfail == 0 else 1
