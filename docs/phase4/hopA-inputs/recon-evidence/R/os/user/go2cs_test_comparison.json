@@ -1,0 +1,62 @@
+{
+  "package": "user",
+  "status": "failing",
+  "go": {
+    "TestCurrent": "pass",
+    "TestCurrentNetapi32": "pass",
+    "TestGroupIds": "pass",
+    "TestGroupIdsTestUser": "skip",
+    "TestImpersonated": "skip",
+    "TestImpersonatedSelf": "pass",
+    "TestImpersonatedSelf/0": "pass",
+    "TestImpersonatedSelf/1": "pass",
+    "TestImpersonatedSelf/2": "pass",
+    "TestImpersonatedSelf/3": "pass",
+    "TestLookup": "pass",
+    "TestLookupGroup": "pass",
+    "TestLookupGroupIdServiceAccount": "pass",
+    "TestLookupGroupServiceAccount": "pass",
+    "TestLookupId": "pass",
+    "TestLookupIdServiceAccount": "pass",
+    "TestLookupServiceAccount": "pass"
+  },
+  "csharp": {
+    "TestCurrent": "pass",
+    "TestCurrentNetapi32": "pass",
+    "TestGroupIds": "pass",
+    "TestGroupIdsTestUser": "skip",
+    "TestImpersonated": "skip",
+    "TestImpersonatedSelf": "fail",
+    "TestImpersonatedSelf/0": "infrastructure-error",
+    "TestImpersonatedSelf/1": "pass",
+    "TestImpersonatedSelf/2": "pass",
+    "TestImpersonatedSelf/3": "pass",
+    "TestLookup": "pass",
+    "TestLookupGroup": "infrastructure-error",
+    "TestLookupGroupIdServiceAccount": "pass",
+    "TestLookupGroupServiceAccount": "pass",
+    "TestLookupId": "pass",
+    "TestLookupIdServiceAccount": "pass",
+    "TestLookupServiceAccount": "pass"
+  },
+  "matched": false,
+  "skipped": [
+    "TestGroupIdsTestUser",
+    "TestImpersonated"
+  ],
+  "disclosed": [],
+  "excluded": [
+    "BenchmarkCurrent (benchmark): benchmark execution is deferred to Phase 4D"
+  ],
+  "errors": [
+    "TestImpersonatedSelf/0: Go=\"pass\" C#=\"infrastructure-error\"",
+    "TestImpersonatedSelf: Go=\"pass\" C#=\"fail\"",
+    "TestLookupGroup: Go=\"pass\" C#=\"infrastructure-error\"",
+    "converted tests: C:\\go2cs-tmp\\r-leg\\src\\core\\os\\user\\bin\\tests\\publish\\os.user.tests.exe --json -timeout 30m0s --result C:\\go2cs-tmp\\r-leg\\src\\core\\os\\user\\go2cs_test_results.json --junit C:\\go2cs-tmp\\r-leg\\src\\core\\os\\user\\go2cs_test_results.xml failed: exit status 1\n{\"package\":\"os/user\",\"test\":\"\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":null,\"line\":null}\r\n{\"package\":\"os/user\",\"test\":\"TestCurrent\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_test.go\",\"line\":25}\r\n{\"package\":\"os/user\",\"test\":\"TestCurrent\",\"action\":\"pass\",\"elapsed\":0.0748701,\"output\":null,\"source\":\"user_test.go\",\"line\":25}\r\n{\"package\":\"os/user\",\"test\":\"TestCurrentNetapi32\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":215}\r\n{\"package\":\"os/user\",\"test\":\"TestCurrentNetapi32\",\"action\":\"pass\",\"elapsed\":1.1007298,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":215}\r\n{\"package\":\"os/user\",\"test\":\"TestGroupIds\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_test.go\",\"line\":165}\r\n{\"package\":\"os/user\",\"test\":\"TestGroupIds\",\"action\":\"pass\",\"elapsed\":0.0137682,\"output\":null,\"source\":\"user_test.go\",\"line\":165}\r\n{\"package\":\"os/user\",\"test\":\"TestGroupIdsTestUser\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":246}\r\n{\"package\":\"os/user\",\"test\":\"TestGroupIdsTestUser\",\"action\":\"skip\",\"elapsed\":0.0403032,\"output\":\"skipping non-hermetic test outside of Go builders\",\"source\":\"user_windows_test.go\",\"line\":246}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonated\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":184}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonated\",\"action\":\"skip\",\"elapsed\":0.0032578,\"output\":\"skipping non-hermetic test outside of Go builders\",\"source\":\"user_windows_test.go\",\"line\":184}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf/0\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf/0\",\"action\":\"infrastructure-error\",\"elapsed\":0.0981301,\"output\":\"System.IO.FileNotFoundException: \\r\\nFile name: \\u0027internal.itoa, Version=1.24.13.0, Culture=neutral, PublicKeyToken=null\\u0027\\r\\n   at go.syscall_package.Error(Errno e) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\syscall\\\\windows\\\\syscall_windows.cs:line 147\\r\\n   at go.syscall_package.Error(Errno e) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\syscall\\\\windows\\\\syscall_windows.cs:line 147\\r\\n   at go.fmt_package.handleMethods(\\u0436\\u00601 \\u13D1p, Int32 verb) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\fmt\\\\print.cs:line 839\\r\\n   at go.fmt_package.printArg(\\u0436\\u00601 \\u13D1p, Object arg, Int32 verb) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\fmt\\\\print.cs:line 980\\r\\n   at go.fmt_package.doPrintf(\\u0436\\u00601 \\u13D1p, string format, slice\\u00601 a) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\fmt\\\\print.cs:line 1355\\r\\n   at go.fmt_package.Errorf(string format, Span\\u00601 a\\u0297p) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\fmt\\\\errors.cs:line 27\\r\\n   at go.os.user_package.runAsProcessOwner(Func\\u00601 f) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\os\\\\user\\\\windows\\\\lookup_windows.cs:line 295\\r\\n   at go.os.user_package.current() in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\os\\\\user\\\\windows\\\\lookup_windows.cs:line 216\\r\\n   at go.os.user_internal_test_package.\\u003C\\u003Ec__DisplayClass40_1.\\u003CTestImpersonatedSelf\\u003Eb__0(\\u0436\\u00601 t\\u03941) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\os\\\\user\\\\user_windows_test.cs:line 201\\r\\n   at go.testing_runtime.TestExecution.Execute(Action\\u00601 action) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\testing\\\\TestExecution.cs:line 1146\",\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf/1\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf/1\",\"action\":\"pass\",\"elapsed\":0.0055041,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf/2\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf/2\",\"action\":\"pass\",\"elapsed\":0.0003051,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf/3\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf/3\",\"action\":\"pass\",\"elapsed\":0.0002418,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestImpersonatedSelf\",\"action\":\"fail\",\"elapsed\":0.1122479,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":145}\r\n{\"package\":\"os/user\",\"test\":\"TestLookup\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_test.go\",\"line\":72}\r\n{\"package\":\"os/user\",\"test\":\"TestLookup\",\"action\":\"pass\",\"elapsed\":0.0030343,\"output\":null,\"source\":\"user_test.go\",\"line\":72}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupGroup\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_test.go\",\"line\":120}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupGroup\",\"action\":\"infrastructure-error\",\"elapsed\":0.0264995,\"output\":\"System.IO.FileNotFoundException: \\r\\nFile name: \\u0027internal.itoa, Version=1.24.13.0, Culture=neutral, PublicKeyToken=null\\u0027\\r\\n   at go.syscall_package.Error(Errno e) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\syscall\\\\windows\\\\syscall_windows.cs:line 147\\r\\n   at go.syscall_package.Error(Errno e) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\syscall\\\\windows\\\\syscall_windows.cs:line 147\\r\\n   at go.fmt_package.handleMethods(\\u0436\\u00601 \\u13D1p, Int32 verb) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\fmt\\\\print.cs:line 839\\r\\n   at go.fmt_package.printArg(\\u0436\\u00601 \\u13D1p, Object arg, Int32 verb) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\fmt\\\\print.cs:line 980\\r\\n   at go.fmt_package.doPrintf(\\u0436\\u00601 \\u13D1p, string format, slice\\u00601 a) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\fmt\\\\print.cs:line 1355\\r\\n   at go.fmt_package.Sprintf(string format, Span\\u00601 a\\u0297p) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\fmt\\\\print.cs:line 272\\r\\n   at go.testing_runtime.TestFormat.Sprintf(String format, ReadOnlySpan\\u00601 args) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\testing\\\\TestFormat.cs:line 81\\r\\n   at go.os.user_internal_test_package.TestLookupGroup(\\u0436\\u00601 \\u13D1t) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\os\\\\user\\\\user_test.cs:line 133\\r\\n   at go.testing_runtime.TestExecution.Execute(Action\\u00601 action) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\testing\\\\TestExecution.cs:line 1146\",\"source\":\"user_test.go\",\"line\":120}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupGroupIdServiceAccount\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":317}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupGroupServiceAccount\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":303}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupId\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_test.go\",\"line\":94}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupId\",\"action\":\"pass\",\"elapsed\":0.0024152,\"output\":null,\"source\":\"user_test.go\",\"line\":94}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupIdServiceAccount\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":286}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupServiceAccount\",\"action\":\"run\",\"elapsed\":0,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":272}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupGroupIdServiceAccount\",\"action\":\"pass\",\"elapsed\":0.0300847,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":317}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupGroupServiceAccount\",\"action\":\"pass\",\"elapsed\":0.0258664,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":303}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupServiceAccount\",\"action\":\"pass\",\"elapsed\":0.0429935,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":272}\r\n{\"package\":\"os/user\",\"test\":\"TestLookupIdServiceAccount\",\"action\":\"pass\",\"elapsed\":0.0503679,\"output\":null,\"source\":\"user_windows_test.go\",\"line\":286}\r\n{\"package\":\"os/user\",\"test\":\"\",\"action\":\"fail\",\"elapsed\":1.4992217,\"output\":null,\"source\":null,\"line\":null}"
+  ],
+  "environment": {
+    "configuration": "Release",
+    "tiered": false,
+    "oracleGoVersion": "go version go1.24.13 windows/amd64"
+  }
+}
