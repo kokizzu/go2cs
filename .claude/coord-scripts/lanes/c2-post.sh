@@ -89,6 +89,12 @@ BADREF=0
 # ERE has no lookbehind.
 for R in $(grep -oE '(^|[^A-Za-z0-9._/-])claude/[A-Za-z0-9._/-]+' "$ENTRY" \
              | sed -E 's#^.?claude/#claude/#; s/[.,)]*$//' | sort -u); do
+  # A token with nothing usable after the slash is not a ref name -- it is PROSE ABOUT the prefix.
+  # `.` is inside the trailing class, so a post that writes the pattern with an ellipsis leaves a
+  # bare prefix behind, and refusing that makes the arm impossible to write about: the
+  # quotation-versus-marker hazard one tier over (docs-records: a post quotes the PATTERN it checked
+  # and never a value that matches one). Git rejects such a ref anyway, so nothing real is skipped.
+  case "${R#claude/}" in [A-Za-z0-9]*) ;; *) continue;; esac
   git -C "$CLONE" ls-remote --exit-code --heads origin "refs/heads/$R" >/dev/null 2>&1 \
     || { echo "REFUSED A3: '$R' is not at origin -- push it first, or spell it without the claude/ prefix"; BADREF=1; }
 done
