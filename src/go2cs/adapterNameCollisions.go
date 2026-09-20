@@ -340,7 +340,59 @@ func adapterStructKey(structBase string) string {
 		return stripSanitizationMarkers(simpleName)
 	}
 
+	// A qualifier naming the LOCAL package class is not foreign, however it is spelled.
+	if adapterStructQualifierIsLocal(qualifier) {
+		return stripSanitizationMarkers(simpleName)
+	}
+
 	return strings.TrimSuffix(qualifier, PackageSuffix) + "_" + stripSanitizationMarkers(simpleName)
+}
+
+// adapterStructQualifierIsLocal reports whether a struct spelling's QUALIFIER names the package
+// class whose members compile into THIS assembly. It is the converter's half of the generator's
+// own locality test — AdapterStructKey's `container == packageClassName`, which decides bare
+// versus `<pkg>_<Simple>` on the other side of the SAME key — and the generator's doc states the
+// contract the two share: "the two must agree or the collision groups diverge".
+//
+// They diverged for one spelling. A RECORD names the local class outright (`sha3_package.SHA3`,
+// or bare after stripLocalTypeQualifier), but a CAST SITE in an external `<pkg>_test` variant
+// reaches the package under test through the USING ALIAS the converter itself minted for it
+// (`using sha3 = go.crypto.sha3_package;` — visitImportSpec's isPackageUnderTest arm), so its
+// qualifier is the Go package NAME, carrying no PackageSuffix for the trim below to find. The key
+// therefore composed the FOREIGN form `sha3_SHA3` while the generator, resolving the symbol,
+// composed bare `SHA3`: the group SPLIT, `colliding` was keyed on a name no cast site asked about,
+// and every reference took the unprefixed name for a class the generator never emits. crypto/sha3
+// is the corpus instance — SHA3 reaches hash.Hash and fips140.Hash, so the generator prefixes
+// BOTH members and no `SHA3жHash` exists at all (CS0246/CS0426).
+//
+// Both spellings are tested, against the SAME testLocalTypePrefixes the record side strips with
+// (stripLocalTypeQualifier), so the two halves cannot drift apart again. That set is populated
+// ONLY under the recompile model — both reference models clear testPackageName precisely so the
+// production package binds as an ordinary import (see the model branch in convertTestPackage) —
+// which is exactly the locality this test is asking about: under a reference model the package
+// under test is a separate assembly and its structs ARE foreign, so the set is empty, this
+// returns false, and compress/flate's `flate_WriterжWriter` and every other foreign key stand
+// unchanged.
+func adapterStructQualifierIsLocal(qualifier string) bool {
+	if qualifier == "" || len(testLocalTypePrefixes) == 0 {
+		return false
+	}
+
+	for _, prefix := range testLocalTypePrefixes {
+		localClass := prefix
+
+		if dot := strings.LastIndex(localClass, "."); dot >= 0 {
+			localClass = localClass[dot+1:]
+		}
+
+		// The record's spelling names the class whole; the alias spelling is the class name minus
+		// its PackageSuffix, which is what the alias is minted from.
+		if qualifier == localClass || qualifier+PackageSuffix == localClass {
+			return true
+		}
+	}
+
+	return false
 }
 
 // emittedAdapterPair finds the RECORD pair a cast's (structBase, interfaceTypeName) spelling

@@ -1359,6 +1359,20 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		captureAdapterPairsFromInfoFile(testInfoPath, testClassName)
 		resolveAdapterNameMarkers(testAdapterResolveNames, options.testMetadataAnchorName)
 	} else {
+		// THE RECOMPILE MODEL DELIBERATELY DOES NOT TAKE THE ANCHORED PATH, and that is correct
+		// rather than an oversight — recorded here because it reads like one.
+		// anchoredAdapterMemberName is the white-box model's CROSS-ASSEMBLY anchoring: there the
+		// adapter lives in a class the cast site must name
+		// (`flate_test_package.bytes_BufferжWriter`). Under recompile the package under test is
+		// compiled into THIS assembly, so a cast reaches its adapter with no anchor to cross and
+		// the plain resolved name is the right one; passing an anchor here would qualify a local
+		// member by a class it already sits in.
+		//
+		// Chased once, on crypto/sha3, when its unprefixed cast names looked like a missing
+		// anchor. They were not: the names came from a SPLIT collision key (the
+		// package-under-test alias keyed foreign — see adapterStructQualifierIsLocal), which this
+		// arm never reaches either way. Nothing here needs to change for that class; do not
+		// re-derive it.
 		captureAdapterPairsFromInfoFile(testInfoPath)
 		resolveAdapterNameMarkers(testAdapterResolveNames)
 	}

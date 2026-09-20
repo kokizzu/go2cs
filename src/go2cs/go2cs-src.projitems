@@ -11,6 +11,7 @@
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)adapterInterfaceStrip_test.go" />
     <None Include="$(MSBuildThisFileDirectory)adapterNameCollisions.go" />
+    <None Include="$(MSBuildThisFileDirectory)adapterStructLocality_test.go" />
     <None Include="$(MSBuildThisFileDirectory)addressTakenPredicates_test.go" />
     <None Include="$(MSBuildThisFileDirectory)aliasReferenceImports_test.go" />
     <None Include="$(MSBuildThisFileDirectory)anonStructTypeArgLift.go" />
