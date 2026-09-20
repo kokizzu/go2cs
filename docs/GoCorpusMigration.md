@@ -2285,13 +2285,62 @@ computed and printed for provenance, not asserted.
 leaving to the cut.** `sweep_s` is the **CONVERTER's** cost around the **one** pipeline invocation — the
 recon leg makes **one attempt per row**, so the re-run inflation that afflicts a re-taking clock cannot
 arise by construction, and a row whose oracle is unstable is a READING rather than a retry.
-⚠ **`sweep_s` is NOT the wrapper's total wall, and the difference is not small** (ruled 2026-09-20,
-after a row was measured whose converter exited in ~66 s and whose wrapper then held one core for ten
-minutes post-processing a 4.77 MB comparison document). The wrapper's own time lands on `wall_s`, which
-is **not** the banked figure. Where a row banks `sweep_s := wall_s` — the hand-stopped row is the case —
-the banked number is still the **converter's** wall: row start in the log to the converter's exit, read
-from the ARTIFACTS' mtimes, and a completion post states **both** numbers so the basis can take the
-first and a reader can see the second. `word` is
+⚠ **`sweep_s` is NOT the wrapper's total wall** — it is the clock taken the moment the converter
+call returns, **before any post-processing** — and **the wrapper's own cost lands on NEITHER banked
+column**:
+
+```
+  sweep_s   the converter's own wall; the clock closes before the comparison document is opened
+  wall_s    the SAME number, differing in exactly one circumstance -- it supplies an integer where
+            `sweep_s` reads UNMEASURED, which is the hand-stopped row it was added for
+  post_s    the wrapper's own seconds, from that clock's close to the row's line being written:
+            a TRAILING column ruled 2026-09-20, carried by the wrapper's SEVENTH commit and NOT by
+            the three recon TSVs of the 1.24 leg, which the fifth blob emitted
+```
+
+**A row whose wrapper time dwarfs its conversion changes how a list is SCHEDULED while changing no
+banked cost.** That is why the third column exists instead of being folded into either of the first
+two — a cost measured nowhere is this fleet's recurring shape. Where a row banks
+`sweep_s := wall_s`, the banked number is the **converter's** wall either way; G's mtime derivation
+(row start in the log to the converter's exit, read from the ARTIFACTS) is the **check** on it, and a
+completion post states both so a difference becomes a finding about the clock rather than a silent
+disagreement.
+
+⚠ **The rule this paragraph's own correction earns, and it applies to every docs seat: a runbook
+sentence about a script is read at the SCRIPT'S BLOB before it is written.** A ruling is authority
+about what is DECIDED; it is **not** a measurement of what the code DOES. The two join silently when a
+ruling's wording is copied into a procedure, which is exactly how the superseded sentence recorded
+below got here.
+
+<!-- Dated correction, 2026-09-20 (C1). This paragraph previously read: "The wrapper's own time lands
+     on `wall_s`, which is not the banked figure." That was WRONG. It was written the same day, from
+     the wording of a ruling (COORD aaf87dd4b) rather than from the script, and it survived one
+     landing. i9 read the running blob (c27c0065) and COORD took the correction (787bbf64); C1
+     verified the citations independently at the blob before amending here, and the two readings
+     agree, so no third was taken.
+
+     Measured in `src/run-h10-recon.ps1` at 8de864a9a9 -- the blob all three recon lists of the
+     1.23->1.24 leg actually ran:
+
+         :418   $started = Get-Date
+         :422       $output = & $converter -tests -test-action all ...
+         :428   $elapsed = [int] ((Get-Date) - $started).TotalSeconds     <- the clock STOPS here
+         :460               $jj = Get-Content -LiteralPath $cmpSrc -Raw | ConvertFrom-Json
+                                                                          <- post-processing STARTS
+         :462/:464          foreach ($p in $jj.go.PSObject.Properties) ...
+         :545   $wallS  = $elapsed
+         :546   $sweepS = $elapsed
+         :551   $sweepS = 'UNMEASURED'
+         :557   $sweepS = 'UNMEASURED'
+
+     428 < 460, so $elapsed closes before the comparison document is even opened: BOTH columns are
+     that one number and NEITHER carries the post-processing. The occasion was a row whose converter
+     exited in ~66 s while its wrapper then held one core for ten minutes over a 4.77 MB comparison
+     document (G, add323f4) -- a real cost, which is why post_s was ruled, and which was never in
+     either banked column. The wrapper's own header sentence carried the same error and rides the
+     seventh commit. -->
+
+`word` is
 the leg's **outcome class**, a fixed vocabulary — `PASS` (0 diverged) · `DIVERGED` · `CONVERT` (rc ≠ 0
 at convert) · `BUILD` · `TIMEOUT` · `NOVERDICT` (the summary line absent) — and it is **filled, never
 placeholdered**: the map generator discards the value, but the column is the basis's only record of
