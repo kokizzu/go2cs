@@ -174,33 +174,136 @@ do_compare(){
 }
 
 # ---- identity: the default-flavour byte-identity arm ----------------------------------------------
+# manifest_minus: a normalized manifest with every listed PATH dropped, so a residual tree hash
+# compares like with like. $1=manifest $2=path list to drop -> stdout
+manifest_minus(){
+  awk -F'	' -v drop="$2" 'BEGIN{while((getline p < drop)>0) d[p]=1} !($2 in d)' "$1"
+}
+
+# split_exempt: partition a path list by the seed-absent package set.
+# $1=exempt package file  $2=path list  $3=exempt out  $4=residual out
+# A path is exempt when it IS a listed package or lies under one, matched on a path-COMPONENT
+# boundary -- never a bare string prefix, which would swallow a sibling such as runtime/cgotest.
+split_exempt(){
+  awk -v exf="$1" -v exout="$3" -v resout="$4" '
+    BEGIN { n=0; while ((getline p < exf) > 0) if (p != "") pk[++n]=p }
+    {
+      ex=0
+      for (i=1; i<=n; i++) if ($0 == pk[i] || index($0, pk[i] "/") == 1) { ex=1; break }
+      if (ex) print > exout; else print > resout
+    }
+  ' "$2"
+  [ -f "$3" ] || : > "$3"
+  [ -f "$4" ] || : > "$4"
+}
+
+# ---- seedabsent: the exemption's population, derived from the SEED rather than asserted ---------
+# Ruled 381577a8a: the byte-identity arm's clause names the BUILD, so a package the seed at the base
+# does not carry has no committed layout to honour -- only a merged run has anything to place it by,
+# and a placement difference there is not a build difference. The exemption is therefore legitimate
+# and it is also the arm's biggest hole, so the set is DERIVED (never a literal) and REPORTED EVERY
+# RUN including when it is empty: an exemption nobody counts is an exemption nobody can audit.
+#
+# A PACKAGE is a directory carrying a .csproj -- the same unit the emission writes.
+do_seedabsent(){
+  [ $# -eq 2 ] || die "usage: $PROG seedabsent <emission-root> <seed-root>"
+  local EM="$1" SEED="$2"
+  [ -d "$EM" ] || die "emission root not found: $EM"
+  [ -d "$SEED" ] || die "seed root not found: $SEED"
+
+  local T; T=$(mktemp -d)
+  ( cd "$EM" && find . -name '*.csproj' ) | sed 's#/[^/]*\.csproj$##; s#^\./##' \
+    | grep -v '^\.$' | LC_ALL=C sort -u > "$T/em"
+
+  local nem; nem=$(wc -l < "$T/em")
+  # An empty emission would report an empty seed-absent set and read exactly like a clean one.
+  [ "$nem" -gt 0 ] || { rm -rf "$T"; die "no packages under $EM -- refusing to report a seed-absent set from an empty emission"; }
+
+  local nseed; nseed=$( ( cd "$SEED" && find . -name '*.csproj' ) | wc -l )
+  [ "$nseed" -gt 0 ] || { rm -rf "$T"; die "no packages under $SEED -- a seed with no packages would exempt EVERY package"; }
+
+  local pkg n=0
+  while IFS= read -r pkg; do
+    [ -d "$SEED/$pkg" ] || { echo "$pkg"; n=$((n+1)); }
+  done < "$T/em"
+
+  echo "# emission packages $nem, seed packages $nseed, seed-absent $n" >&2
+  rm -rf "$T"
+}
+
 do_identity(){
-  [ $# -eq 2 ] || die "usage: $PROG identity <manifest-A> <manifest-B>"
+  [ $# -ge 2 ] && [ $# -le 3 ] || die "usage: $PROG identity <manifest-A> <manifest-B> [<seed-absent-package-file>]"
+  local EX="${3:-}"
   local T; T=$(mktemp -d)
   norm "$1" > "$T/a"; norm "$2" > "$T/b"
   local na nb; na=$(wc -l < "$T/a"); nb=$(wc -l < "$T/b")
   paths < "$T/a" > "$T/pa"; paths < "$T/b" > "$T/pb"
-  local onlya onlyb differ
-  onlya=$(comm -23 "$T/pa" "$T/pb" | wc -l)
-  onlyb=$(comm -13 "$T/pa" "$T/pb" | wc -l)
-  differ=$(LC_ALL=C join -t"$(printf '\t')" -j0 -o 0,1.1,2.1 \
-             <(awk -F'\t' '{print $2"\t"$1}' "$T/a" | LC_ALL=C sort) \
-             <(awk -F'\t' '{print $2"\t"$1}' "$T/b" | LC_ALL=C sort) 2>/dev/null \
-           | awk -F'\t' '$2!=$3' | wc -l)
-  local ha hb; ha=$(treehash "$T/a"); hb=$(treehash "$T/b")
+
+  # The seed-absent exemption. Empty unless a package file is given, and counted either way.
+  : > "$T/exempt"
+  if [ -n "$EX" ]; then
+    [ -f "$EX" ] || { rm -rf "$T"; die "seed-absent package file not found: $EX"; }
+    grep -vE '^[[:space:]]*(#|$)' "$EX" | LC_ALL=C sort -u > "$T/exempt"
+  fi
+  local nexpkg; nexpkg=$(wc -l < "$T/exempt")
+
+  comm -23 "$T/pa" "$T/pb" > "$T/oa"
+  comm -13 "$T/pa" "$T/pb" > "$T/ob"
+  split_exempt "$T/exempt" "$T/oa" "$T/oa.ex" "$T/oa.res"
+  split_exempt "$T/exempt" "$T/ob" "$T/ob.ex" "$T/ob.res"
+
+  local onlya onlyb differ exa exb
+  onlya=$(wc -l < "$T/oa.res"); exa=$(wc -l < "$T/oa.ex")
+  onlyb=$(wc -l < "$T/ob.res"); exb=$(wc -l < "$T/ob.ex")
+  # ⚠ STRUCTURALLY DEAD UNTIL 2026-09-20, and it read a clean 0 the whole time. This was
+  # `join -t... -j0 -o 0,1.1,2.1 ... 2>/dev/null`; GNU join REJECTS `-j0` ("invalid field
+  # number: '0'"), the redirect ate the message, and the count came back 0 on every run.
+  #
+  # It was never WRONG, because the FULL tree-hash comparison caught every content change on its
+  # behalf -- the selftest's "one CONTENT change goes red" arm goes red through the hash, not
+  # through this counter, which is why a green selftest never exposed it. That is the shape of a
+  # dead gate with a live neighbour: correct verdicts, and one number that was never a reading.
+  #
+  # The seed-absent exemption makes it LOAD-BEARING for the first time: exempt paths leave the
+  # residual hash, so a content change inside a seed-absent package is invisible to the hash and
+  # this counter is the only thing between it and a PASS -- exactly the hole the ruling's
+  # "a content difference anywhere still fails" forbids. Rewritten without join and without a
+  # swallowed stderr, and given selftest arms that isolate it from the hash.
+  differ=$(awk -F'\t' 'NR==FNR{h[$2]=$1; next} ($2 in h) && h[$2]!=$1' "$T/a" "$T/b" | wc -l)
+  # The tree hashes are taken over the NON-EXEMPT subset, because an exempt placement difference
+  # moves the full-tree hash and would otherwise fail the run through the back door. Both are
+  # printed: the residual is what the verdict reads, the full pair is what makes the exemption's
+  # effect visible instead of implicit.
+  cat "$T/pa" "$T/pb" | LC_ALL=C sort -u > "$T/allpaths"
+  split_exempt "$T/exempt" "$T/allpaths" "$T/exempt.paths" "$T/residual.paths"
+  manifest_minus "$T/a" "$T/exempt.paths" > "$T/a.res"
+  manifest_minus "$T/b" "$T/exempt.paths" > "$T/b.res"
+  local ha hb hra hrb
+  ha=$(treehash "$T/a"); hb=$(treehash "$T/b")
+  hra=$(treehash "$T/a.res"); hrb=$(treehash "$T/b.res")
   echo "  A artifacts               $na"
   echo "  B artifacts               $nb"
-  echo "  only in A                 $onlya"
-  echo "  only in B                 $onlyb"
+  echo "  seed-absent packages      $nexpkg (exempt paths: A $exa, B $exb)"
+  echo "  only in A  (residual)     $onlya"
+  echo "  only in B  (residual)     $onlyb"
   echo "  same path, content DIFFER $differ"
-  echo "  A tree hash               $ha"
-  echo "  B tree hash               $hb"
-  if [ "$onlya" -eq 0 ] && [ "$onlyb" -eq 0 ] && [ "$differ" -eq 0 ] && [ "$ha" = "$hb" ]; then
-    echo "BYTE-IDENTITY ARM: PASS ($na artifacts, both sides non-empty)"; rm -rf "$T"; return 0
+  echo "  A tree hash (residual)    $hra"
+  echo "  B tree hash (residual)    $hrb"
+  echo "  A tree hash (full)        $ha"
+  echo "  B tree hash (full)        $hb"
+  if [ "$na" -gt 0 ] && [ "$nb" -gt 0 ] && [ "$onlya" -eq 0 ] && [ "$onlyb" -eq 0 ] && [ "$differ" -eq 0 ] && [ "$hra" = "$hrb" ]; then
+    if [ "$((exa+exb))" -gt 0 ]; then
+      echo "BYTE-IDENTITY ARM: PASS WITH EXEMPTION ($na artifacts; $((exa+exb)) exempt paths in $nexpkg seed-absent package(s), listed below)"
+      cat "$T/oa.ex" "$T/ob.ex" | sed 's/^/    exempt  /'
+    else
+      echo "BYTE-IDENTITY ARM: PASS ($na artifacts, both sides non-empty)"
+    fi
+    rm -rf "$T"; return 0
   fi
   echo "BYTE-IDENTITY ARM: FAIL"
-  [ "$onlya" -gt 0 ] && { echo "  --- only in A (first 10) ---"; comm -23 "$T/pa" "$T/pb" | head -10 | sed 's/^/    /'; }
-  [ "$onlyb" -gt 0 ] && { echo "  --- only in B (first 10) ---"; comm -13 "$T/pa" "$T/pb" | head -10 | sed 's/^/    /'; }
+  if [ "$na" -eq 0 ] || [ "$nb" -eq 0 ]; then echo "    a side is EMPTY -- an empty manifest cannot pass"; fi
+  [ "$onlya" -gt 0 ] && { echo "  --- only in A, NOT exempt (first 10) ---"; head -10 "$T/oa.res" | sed 's/^/    /'; }
+  [ "$onlyb" -gt 0 ] && { echo "  --- only in B, NOT exempt (first 10) ---"; head -10 "$T/ob.res" | sed 's/^/    /'; }
   rm -rf "$T"; return 1
 }
 
@@ -450,6 +553,37 @@ do_selftest(){
   # order-independence must NOT read as a difference
   LC_ALL=C sort -r "$T/w" > "$T/w_rev"
   st "a reordered manifest still PASSES"            0 "$0" identity "$T/w" "$T/w_rev"
+  # ⚠ The CONTENT arm above goes red through the TREE HASH. Under an exemption the exempt
+  # paths leave the residual hash, so these arms are the ones that isolate the content counter
+  # itself -- the counter that was dead from this instrument's first cut until 2026-09-20.
+  sed 's|a/y.cs|a/linux/y.cs|' "$T/w" > "$T/w_moved"
+  printf 'a\n'   > "$T/ex_a"
+  printf 'zzz\n' > "$T/ex_none"
+  st "a CONTENT change inside an EXEMPT package STILL goes red" 1 "$0" identity "$T/w" "$T/w_content" "$T/ex_a"
+  st "a PLACEMENT-only change inside it is EXEMPT"              0 "$0" identity "$T/w" "$T/w_moved"   "$T/ex_a"
+  st "the same move OUTSIDE the set still goes red"             1 "$0" identity "$T/w" "$T/w_moved"   "$T/ex_none"
+  # the component boundary: runtime/cgo must not swallow runtime/cgotest
+  printf '%s  %s\n' "$(h 1)" "runtime/cgotest/t.cs"       > "$T/sib_a"
+  printf '%s  %s\n' "$(h 1)" "runtime/cgotest/linux/t.cs" > "$T/sib_b"
+  printf 'runtime/cgo\n' > "$T/ex_cgo"
+  st "a SIBLING package is not exempted by a name prefix"       1 "$0" identity "$T/sib_a" "$T/sib_b" "$T/ex_cgo"
+  st "a MISSING exemption file refuses, never exempts nothing"  2 "$0" identity "$T/w" "$T/w2" "$T/no_such_file"
+
+  echo "C2. seedabsent -- the exemption's population, DERIVED and refusing the vacuous cases"
+  mkdir -p "$T/em/a" "$T/em/b" "$T/em/runtime/cgo" "$T/em/runtime/cgotest" "$T/seed/a" "$T/seed/b" "$T/void"
+  : > "$T/em/a/a.csproj"; : > "$T/em/b/b.csproj"
+  : > "$T/em/runtime/cgo/runtime.cgo.csproj"; : > "$T/em/runtime/cgotest/runtime.cgotest.csproj"
+  : > "$T/seed/a/a.csproj"; : > "$T/seed/b/b.csproj"
+  st "seedabsent runs"                                          0 "$0" seedabsent "$T/em" "$T/seed"
+  st "an EMPTY emission refuses (it would report a clean 0)"     2 "$0" seedabsent "$T/void" "$T/seed"
+  st "an EMPTY seed refuses (it would exempt EVERY package)"     2 "$0" seedabsent "$T/em" "$T/void"
+  "$0" seedabsent "$T/em" "$T/seed" 2>/dev/null | LC_ALL=C sort | tr '\n' ' ' > "$T/absent"
+  if [ "$(cat "$T/absent")" = "runtime/cgo runtime/cgotest " ]; then
+    st "the derived set is exactly the seed-absent packages"      0 true
+  else
+    st "the derived set is exactly the seed-absent packages"      0 false
+  fi
+
   echo "D. compare -- one predicate both sides, and a delta that is MEASURED, not assumed"
   # the incoming triple gains one shared artifact and loses the darwin-exclusive one, so the delta
   # must be identical +1 and exclusive -1. A control that compares a triple with ITSELF proves only
@@ -575,6 +709,7 @@ case "${1:-}" in
   classify) shift; do_classify "$@" ;;
   compare)  shift; do_compare "$@" ;;
   identity) shift; do_identity "$@" ;;
+  seedabsent) shift; do_seedabsent "$@" ;;
   view)     shift; do_view "$@" ;;
   manifest) shift; do_manifest "$@" ;;
   pkgdelta) shift; do_pkgdelta "$@" ;;

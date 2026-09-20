@@ -1807,7 +1807,7 @@ prior mixed reading (38 → 51, "13 arrived") decomposes cleanly once the axis i
 converter drift (+9), 47 → 51 is the release (+4)**, and the release's four are 1.24's `os.Root` and
 spinbit-mutex work.
 
-##### (d) Two instrument findings that change how the census is invoked
+##### (d) Four instrument findings that change how the census is invoked
 
 ⚠ **`GO111MODULE=off` silently cancels a `GOTOOLCHAIN` redirect.** Measured 2026-09-19 on a linux box:
 `GOTOOLCHAIN=go1.23.12 go version` prints `go1.23.12`, and `GOTOOLCHAIN=go1.23.12 GO111MODULE=off go version`
@@ -1832,6 +1832,37 @@ package being `runtime/cgo`; windows and darwin do not move. A census taken on a
 targeting linux natively therefore disagrees with one taken on a Windows host by one package on one
 target, with neither being wrong. **`CGO_ENABLED=0` is the pin** — it is what reproduces the recorded
 census, and it matches the recipe every preserved artifact was cut under.
+
+⚠ **THE TOOLCHAIN'S LOCATION IS THE FOURTH AXIS, and until `19175c31ad` it moved the emitted
+corpus with nothing in any log saying so.** `conversionDriver.go` loaded `"./..."` — the input
+package AND its whole subtree — for any input under GOPATH. A `GOTOOLCHAIN`-installed toolchain
+lives at `$GOPATH/pkg/mod/golang.org/toolchain@<version>`, so on such a box GOROOT is itself under
+GOPATH, every stdlib package is also a GOPATH input, and every one of them converted its subtree.
+That pulled in `runtime/cgo` — buildable when named, absent from `go list std` at
+`CGO_ENABLED=0`, never queued and so never skipped — emitting nine `.cs` under `runtime`'s own
+conversion, out of dependency order, with the package named nowhere in the run. A side-by-side SDK
+install is not under GOPATH, so the branch never fired there and **the same binary, base, flags and
+pin emitted a different corpus on the two boxes**. Measured both ways: C2 with the condition true and
+the one-axis effect (9 `.cs` -> 0, 13 skip messages -> 7, the queued-package list byte-identical,
+`diff -rq` over `src/core` one line), G with the condition false and the effect absent.
+
+**The seat `19175c31ad` removes the dependency** — a GOROOT input is excluded from the subtree load
+outright — so this axis no longer moves a `-stdlib` emission. It is recorded here anyway, because a
+census taken with an OLDER converter still carries it, and because the general shape survives the fix:
+a GOPATH tree genuinely wanting a subtree load still gets one silently, and nothing in an emission
+states which roots it ran under. **State the toolchain's location beside the pin, the tag set and
+`CGO_ENABLED`, for any count taken before that seat.**
+
+<!-- C2, 2026-09-20, in-stage. Ruled a converter defect at COORD 3d0c7cd5d on C2's 1257a20bad; G's
+     cross-box confirmation at 4f4e3f9f7 (identical queue sha256 across two hosts and two separately
+     built binaries, and GOROOT NOT under GOPATH on G-LAPTOP); seat accepted at 887e92d6b. The
+     heading said "Two" while carrying three; corrected to four here rather than left to drift.
+     ⚠ The author of this section violated its own CGO_ENABLED pin within the hour: the first
+     arm-b re-take omitted the export, ran at the box default of 1, and read 343 packages with
+     runtime/cgo LEGITIMATELY queued at [332/343] -- a two-axis run reported as one. Caught only
+     because the script carried a WRITTEN PREDICTION (0 and 0) that the run falsified; nothing else
+     in the run looked wrong. The pin is now an asserted export with a comment in the runner rather
+     than a sentence in a document, which is the difference between a rule and a guard. -->
 
 <!-- C2, 2026-09-19, in-stage per the doc-authority ladder (the runbook leads on procedure).
      Refused candidates: half A = c883a2dc7 s3 (GOROOT = the go1.24.13 SDK; "NO substitution needed for half A"),
