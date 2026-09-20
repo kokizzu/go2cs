@@ -2998,6 +2998,7 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 				if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil &&
 					(v.calleeHasConstraintOnlyTypeParam(funIdent) || v.callHasMethodGroupArg(callExpr) ||
 						v.calleeTypeParamUnsuppliedByCall(callExpr, funIdent) ||
+						v.calleeReadsDescriptorName(funIdent) ||
 						v.callNeedsConstraintProxy(funIdent, instance.TypeArgs)) {
 					// Erased (pointer-core) callee positions leave the emitted list — `clone[P *T,
 					// T any]` emits `clone<ΔSignature>(…)` (see renderedTypeArgs); a list that
@@ -4996,12 +4997,17 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 	// Get the object associated with the function being called
 	var obj types.Object
 	var isPointer bool
+	var parenPeeled bool
 
 	targetExpr := callExpr.Fun
 
 	for targetExpr != nil {
 		switch funExpr := targetExpr.(type) {
 		case *ast.ParenExpr:
+			// Recorded, not just peeled: the bidirectional-channel arm below needs to know which
+			// SPELLING it is looking at, because the parenthesised one already has a working
+			// route and claiming it here would rewrite it (measured — see that arm).
+			parenPeeled = true
 			targetExpr = funExpr.X
 			continue
 		case *ast.IndexExpr:
@@ -5162,6 +5168,30 @@ func (v *Visitor) isTypeConversion(callExpr *ast.CallExpr) (bool, string) {
 			// only channel-of-array creation site in the std tree (the D census), so a gate that
 			// admitted directions alone would miss the row it exists for.
 			if chanDirCargoName(targetType) != "" || chanCargoExpr(targetType) != "" {
+				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
+					return true, v.getAliasQualifiedTypeName(targetType, false)
+				}
+			}
+
+			// ⚠⚠ AND THE BIDIRECTIONAL CHANNEL LITERAL, WHICH THE NOTE ABOVE EXEMPTED ON A
+			// PREMISE THAT HELD ONLY FOR THE PARENTHESISED SPELLING. `(chan T)(nil)` does render
+			// as a cast — through the ParenExpr route, not through here — so the exemption read
+			// true for 51 of the corpus's 52 channel-type conversions. The 52nd is written BARE:
+			// `chan struct{}(nil)` (hash/maphash's maphash_test.go:259) has no ParenExpr for that
+			// route to peel, falls through to the regular CALL path, and emits
+			// `channel<EmptyStruct>(default!)` — CS1955, a type invoked like a method.
+			//
+			// The RULE is the discriminator and the parentheses are not — a CallExpr whose callee
+			// is a ChanType is a conversion either way (G's sweep, 52 sites corpus-wide; COORD's
+			// ruling). ⚠ THE CLAIM IS NARROWED TO THE BARE SPELLING ANYWAY, AND THE REASON IS
+			// FOOTPRINT RATHER THAN CLASSIFICATION: MEASURED, claiming the parenthesised form too
+			// rewrites all 51 working sites from `(channel<EmptyStruct>)(default!)` to
+			// `((channel<EmptyStruct>)default!)` — the same meaning, different bytes, and `net`
+			// alone carries it on three GOOS flavours. The existing route emits those correctly
+			// and this one must not churn them to agree with it. Claimed exactly as the map arm
+			// one block up is; UntypedNil's underlying is itself, so the identical-underlying
+			// guard below can never reach this shape.
+			if _, targetIsChan := targetType.Underlying().(*types.Chan); targetIsChan && !parenPeeled {
 				if basic, ok := argType.(*types.Basic); ok && basic.Kind() == types.UntypedNil {
 					return true, v.getAliasQualifiedTypeName(targetType, false)
 				}
