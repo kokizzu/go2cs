@@ -21,8 +21,7 @@
 #   8 history rewritten           9 security census        10 commit did not advance HEAD
 #   11 push failed after merge    12 delivery not confirmed at origin
 set -u
-# Paths are ENVIRONMENT-DERIVED with defaults, so this file carries no account, host or profile path
-# and a published copy never writes state into the repository it is published in.
+# Paths are ENVIRONMENT-DERIVED with defaults, so this file carries no account, host or profile path.
 #   R_MAILBOX_CLONE  the dedicated single-branch mailbox clone (fetch.unpackLimit=1, negative refspec)
 #   R_POST_STATE     where the read anchor and the body-hash ledger live; defaults to this script's
 #                    own directory, which is where they sit when it runs from its working home
@@ -31,9 +30,34 @@ FILE="docs/phase4/MAILBOX.md"
 BRANCH="claude/mailbox"
 SP="$(dirname "$(readlink -f "$0")")"
 STATE="${R_POST_STATE:-$SP}"
+
+# ⚠ REFUSE rather than relocate, when the default would write state INTO a repository (exit 14).
+# Found by C2 (ad1560d2f0) on its own tool from R's e82b16d6d, and LATENT HERE TOO: the default puts
+# the read anchor and the body-hash ledger in this script's own directory, which is correct while the
+# only copy lives outside a tree and becomes WRONG the moment the file is published inside one --
+# the anchor most of all, since the fleet's read discipline hangs off it.
+# ⚠ AND MY OWN CONTROLS COULD NOT REACH IT: the writes are on the LIVE path and every control runs
+# --dry-run, which exits first. A `git status` clean after a dry run says nothing about this.
+# The remedy is C2's shape and the reason is C2's: silently relocating the default answers THIS
+# instance and not the next, so the script fails CLOSED and names the variable instead.
+if [ -z "${R_POST_STATE:-}" ] && git -C "$SP" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "REFUSED(14): this copy sits inside a git work tree and R_POST_STATE is unset, so the read"
+  echo "             anchor and the body-hash ledger would be written into the repository at:"
+  echo "               $SP"
+  echo "             Set R_POST_STATE to a path outside the tree and re-run."
+  exit 14
+fi
 ANCHOR="$STATE/r-anchor.txt"
 LEDGER="$STATE/r-post-bodyhashes.txt"
 DRY=0; [ "${3:-}" = "--dry-run" ] && DRY=1
+# ⚠ --bar-check exists because the control bar's NEGATIVE arm could not be tested safely (2026-09-20).
+# The bar lives on the LIVE path by design, so proving it FIRES is safe (the run refuses and nothing
+# posts) while proving it does NOT fire meant running to completion -- and not-firing IS posting. I
+# ran that arm and put a junk entry on the channel, the second live-path test to do so tonight. This
+# mode evaluates the bar against the heading and EXITS: 13 if it would refuse, 0 if it would pass,
+# touching nothing. A guard whose negative arm can only be exercised by doing the dangerous thing
+# needs a door, not more care.
+BARCHECK=0; [ "${3:-}" = "--bar-check" ] && BARCHECK=1
 
 # --- step 1: resolve BEFORE any cd (SKILL: relative entry path resolved to nothing after the cd)
 ENTRY="$(readlink -f "${1:?entry file}")"
@@ -42,6 +66,13 @@ SUBJ="$(readlink -f "${2:?subject file}")"
 [ -s "$SUBJ" ]  || { echo "REFUSED(2): subject file empty or unreadable: $SUBJ"; exit 2; }
 HEADING="$(grep -m1 '^## ' "$ENTRY" || true)"
 [ -n "$HEADING" ] || { echo "REFUSED(3): entry has no '## ' heading line"; exit 3; }
+# The bar's predicate, evaluated and reported WITHOUT proceeding. Same expression as the live bar
+# below -- one definition, consulted twice, so the check cannot drift from the thing it checks.
+barmatch() { printf '%s' "$1" | tr 'A-Z' 'a-z' | grep -qE '\[ctl\]|census control|admission control|scratch test|self-test|plant|probe'; }
+if [ "$BARCHECK" -eq 1 ]; then
+  if barmatch "$HEADING"; then echo "BAR-CHECK: WOULD REFUSE (13) -- heading reads as a control"; exit 13
+  else echo "BAR-CHECK: would pass the control bar (0) -- nothing touched"; exit 0; fi
+fi
 if grep -qiE '<(TBD|TODO|PLACEHOLDER|SHA|ID)>|XXXXXXX|TODO-FILL' "$ENTRY"; then
   echo "REFUSED(4): placeholder token in entry"; exit 4; fi
 BODYHASH="$(sha256sum < "$ENTRY" | cut -c1-32)"
@@ -114,7 +145,15 @@ if [ "$DRY" -eq 1 ]; then
 # The defect was not that the census was weak -- it was that a control run without --dry-run reaches
 # git push at all. Ordering-by-care already failed here, so the bar lives in the script: any entry
 # whose heading marks it a control/probe/plant/test is REFUSED on the live path, unconditionally.
-if printf '%s' "$HEADING" | tr 'A-Z' 'a-z' | grep -qE 'census control|control |probe|plant|self-test|scratch test|-- r test'; then
+# ⚠ THE PREDICATE IS A MARKER, NOT A WORD -- narrowed 2026-09-20 after it refused a legitimate post
+# whose heading merely SAID "my controls could not reach it". The bare word `control ` is ordinary
+# prose in this fleet and a guard that cannot be written about without tripping itself is C2's A3
+# (f82130834d) one tier over: the quotation-versus-marker hazard. So a control entry CARRIES `[CTL]`
+# in its heading and the bar keys on that, with the narrow self-describing phrases kept beside it.
+# ⚠ AND `--dry-run` CANNOT PREVIEW THIS BAR: it sits after the dry-run exit BY DESIGN, since
+# dry-running a control is exactly what the bar tells you to do. A clean dry run is therefore not a
+# faithful preview of the live path -- this bar and the state writes are live-only.
+if barmatch "$HEADING"; then
   echo "REFUSED(13): heading marks this a CONTROL; the live path is barred for controls."
   echo "             Re-run it with --dry-run. An admission control's pass IS the post."
   rm -f "$TOKENS"; exit 13; fi
