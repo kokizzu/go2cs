@@ -645,9 +645,12 @@ for n in UNSCHEDULED:
         line = "    "
     line += it + ", "
 print(line.rstrip(", "))
-if reserved_unscheduled:
+# The MARKS above are drawn from UNSCHEDULED -- rows the roster carries with no cost -- so a
+# successor whose name post-dates the basis is not in that list and never receives one. Counting
+# the whole set here printed a legend of 4 beside 2 marks. `_uncosted` is the marked population.
+if _uncosted:
     print(f"  ! = a DECLARED RESERVED row that cannot be pinned for want of a cost "
-          f"({len(reserved_unscheduled)} of them)")
+          f"({len(_uncosted)} of them)")
 
 # ---------------------------------------------------------------- sensitivity
 print(f"\n{'='*100}\nSENSITIVITY (W={max(FLEETS)}): makespan vs. speed-factor perturbations")
@@ -679,7 +682,9 @@ for label, f in scenarios.items():
 
 print("\nlower bounds:")
 print(f"  i9 reserved-set floor (serial on i9): {reserved_total} s = {fmt_hm(reserved_total)}"
-      + (f"  !! EXCLUDES {len(reserved_unscheduled)} uncosted pin(s)" if reserved_unscheduled else ""))
+      # Only the uncosted set is EXCLUDED from this total. An inherited successor is not
+      # subtracted from it: its predecessor's cost is IN it, under the old name.
+      + (f"  !! EXCLUDES {len(_uncosted)} uncosted pin(s)" if _uncosted else ""))
 for W in sorted(FLEETS):
     cap = sum(MACHINES[m] for m in FLEETS[W])
     ideal = total / cap
