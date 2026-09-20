@@ -1,0 +1,255 @@
+# H10 recon leg -- THE POPULATION (228 of 228 rows), one package path per line.
+#
+# Derived, not transcribed. Regenerate and check against these sources rather than editing by hand:
+#   population   docs/phase4/CENSUS-h10-eligibility-go124.md, Appendix (227 rows, keyed by 1.24
+#                identity) PLUS crypto/internal/fips140/nistec, which the Appendix omits because
+#                the census's axis is windows/amd64 WITHOUT TAGS while the corpus converts under
+#                -tags purego,math_big_pure_go -- on that axis it declares TestP256PrecomputedTable
+#                and is a one-verdict row. 227 + 1 = 228.
+#   reserved     $longTimeouts at src/run-validated-sweep.ps1:926 (11 floors), with
+#                crypto/internal/mlkem768 replaced by BOTH its 1.24 successors -- each arm of a
+#                relocation inherits the floor -- plus BIG_ROWS at
+#                docs/phase4/hopA-inputs/shardmap.py:441 (2). 11 - 1 + 2 + 2 = 14.
+#   windows-only the 2 rows that resolve on windows and not on linux at the 1.24.13 pin under the
+#                corpus tags. The linux-only bucket is EMPTY (225 of 227 resolve on both), so the
+#                bulk splits two ways and G's WSL side takes no rows.
+#   G / R        LPT over the windows block of docs/phase4/DATA-sweep-row-walltimes.md (the 1.23
+#                basis: 162 rows, 7,701 s): costed rows heaviest-first into the lighter bin, ties
+#                to G; then the uncosted rows round-robin in roster order, G first. The ten
+#                relocated rows carry NO cost by ruling (their 1.23 figure is provenance only), so
+#                they take the round-robin arm. 146 costed (G 1,440 s / R 1,439 s, 73 each) +
+#                65 uncosted (G 33 / R 32) = 106 / 105; crypto/internal/fips140/nistec is then
+#                assigned to G by COORD's routing, outside the LPT. 107 / 105.
+#
+# Sums: 16 + 107 + 105 = 228. Pairwise overlaps 0; every row assigned exactly once.
+# The 1.23 cost basis is PROVISIONAL BY CONSTRUCTION -- this leg is what replaces it.
+# Order within each file is roster order, so `sort` over the three worker files equals the
+# population. Blank lines and #-comments are ignored by run-h10-recon.ps1 -NameList (:254-256).
+archive/tar
+archive/zip
+bufio
+bytes
+cmp
+compress/bzip2
+compress/flate
+compress/gzip
+compress/lzw
+compress/zlib
+container/heap
+container/list
+container/ring
+context
+crypto
+crypto/aes
+crypto/cipher
+crypto/des
+crypto/dsa
+crypto/ecdh
+crypto/ecdsa
+crypto/ed25519
+crypto/elliptic
+crypto/hkdf
+crypto/hmac
+crypto/internal/boring
+crypto/internal/boring/bcache
+crypto/internal/fips140/aes
+crypto/internal/fips140/bigmod
+crypto/internal/fips140/ecdh
+crypto/internal/fips140/ecdsa
+crypto/internal/fips140/edwards25519
+crypto/internal/fips140/edwards25519/field
+crypto/internal/fips140/mlkem
+crypto/internal/fips140/rsa
+crypto/internal/fips140deps
+crypto/internal/fips140test
+crypto/internal/hpke
+crypto/internal/sysrand
+crypto/md5
+crypto/mlkem
+crypto/pbkdf2
+crypto/rand
+crypto/rc4
+crypto/rsa
+crypto/sha1
+crypto/sha256
+crypto/sha3
+crypto/sha512
+crypto/subtle
+crypto/tls
+crypto/x509
+database/sql
+database/sql/driver
+debug/buildinfo
+debug/dwarf
+debug/elf
+debug/gosym
+debug/macho
+debug/pe
+debug/plan9obj
+embed/internal/embedtest
+encoding/ascii85
+encoding/asn1
+encoding/base32
+encoding/base64
+encoding/binary
+encoding/csv
+encoding/gob
+encoding/hex
+encoding/json
+encoding/pem
+encoding/xml
+errors
+expvar
+flag
+fmt
+go/ast
+go/ast/internal/tests
+go/build
+go/build/constraint
+go/constant
+go/doc
+go/doc/comment
+go/format
+go/importer
+go/internal/gccgoimporter
+go/internal/gcimporter
+go/internal/srcimporter
+go/parser
+go/printer
+go/scanner
+go/token
+go/types
+go/version
+hash
+hash/adler32
+hash/crc32
+hash/crc64
+hash/fnv
+hash/maphash
+html
+html/template
+image
+image/color
+image/draw
+image/gif
+image/jpeg
+image/png
+index/suffixarray
+internal/abi
+internal/buildcfg
+internal/chacha8rand
+internal/copyright
+internal/coverage/cfile
+internal/coverage/cformat
+internal/coverage/cmerge
+internal/coverage/pods
+internal/coverage/slicereader
+internal/coverage/slicewriter
+internal/coverage/test
+internal/cpu
+internal/dag
+internal/diff
+internal/fmtsort
+internal/fuzz
+internal/godebug
+internal/godebugs
+internal/gover
+internal/itoa
+internal/pkgbits
+internal/platform
+internal/poll
+internal/profile
+internal/reflectlite
+internal/runtime/atomic
+internal/runtime/maps
+internal/runtime/math
+internal/runtime/sys
+internal/saferio
+internal/singleflight
+internal/sync
+internal/synctest
+internal/syscall/windows
+internal/syscall/windows/registry
+internal/sysinfo
+internal/testenv
+internal/trace
+internal/trace/internal/oldtrace
+internal/types/errors
+internal/xcoff
+internal/zstd
+io
+io/fs
+io/ioutil
+iter
+log
+log/slog
+log/slog/internal/benchmarks
+log/slog/internal/buffer
+maps
+math
+math/big
+math/bits
+math/cmplx
+math/rand
+math/rand/v2
+mime
+mime/multipart
+mime/quotedprintable
+net
+net/http
+net/http/cgi
+net/http/cookiejar
+net/http/fcgi
+net/http/httptest
+net/http/httptrace
+net/http/httputil
+net/http/internal
+net/http/internal/ascii
+net/http/pprof
+net/internal/cgotest
+net/mail
+net/netip
+net/rpc
+net/rpc/jsonrpc
+net/smtp
+net/textproto
+net/url
+os
+os/exec
+os/exec/internal/fdtest
+os/signal
+os/user
+path
+path/filepath
+plugin
+reflect
+regexp
+regexp/syntax
+runtime
+runtime/debug
+runtime/internal/wasitest
+runtime/metrics
+runtime/pprof
+slices
+sort
+strconv
+strings
+sync
+sync/atomic
+syscall
+testing
+testing/fstest
+testing/iotest
+testing/quick
+testing/slogtest
+text/scanner
+text/tabwriter
+text/template
+text/template/parse
+time
+unicode
+unicode/utf16
+unicode/utf8
+unique
+weak
+crypto/internal/fips140/nistec
