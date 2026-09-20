@@ -123,6 +123,16 @@ def assemble(paths, out):
                 continue
             dropped.append((name, secs, p))
 
+    # DETERMINISTIC ROW ORDER (COORD 691bb58a7, ruled off C2's 642404c76 §3). Rows accumulate in
+    # LANE-ARGUMENT order, so the same inputs in a different argument order produced a set-identical
+    # basis with different BYTES -- which made `#basis`'s sha256 a false STALE for any reader who
+    # re-assembled and compared it, rather than the content identifier it is read as. Sorting by row
+    # NAME closes the only free axis: the column order is already argument-independent (the
+    # intersection is taken from the FIRST lane's header, and all three committed lane TSVs spell the
+    # common columns in the same order -- checked, not assumed), and row names are unique by the
+    # DISJOINT-lanes check above, so the sort is total and needs no tiebreak.
+    kept.sort(key=lambda l: l.split("\t")[order.index("row")].strip())
+
     if not any(l.split("\t")[order.index("row")].strip() in HAND_STOPPED for l in kept):
         die(f"no hand-stopped row {sorted(HAND_STOPPED)} survives -- shardmap.py:308 refuses the basis")
 
