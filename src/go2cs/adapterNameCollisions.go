@@ -191,6 +191,25 @@ func adapterInterfaceSimpleName(interfaceTypeName string) string {
 	return stripSanitizationMarkers(simple)
 }
 
+// stripAdapterInterfaceTypeArgs drops a CLOSED generic argument list from an interface REFERENCE,
+// BEFORE any last-dot scan runs over it. It is the interface-side twin of splitAdapterStructReference's
+// first step and exists for the same reason: the last-dot scan otherwise runs INSIDE the argument
+// list and yields the ARGUMENT's tail segment — `keyedLike<go.p.named>` reducing to `named>`, and a
+// nested `outer<inner<x>>` to `x>>` — which is not a name any class can carry.
+//
+// ⚠ APPLIED AT THE NAME-COMPOSING SITES ONLY, never inside adapterInterfaceSimpleName. That helper
+// also serves the collision KEYS, and those garble a generic interface reference ON PURPOSE: the
+// generator's keys garble identically, so the two halves agree, and stripping one side alone would
+// manufacture the divergence the struct-side rule exists to prevent (COORD 8b1a284122 / 274b71f5a).
+// A parity arm asserts the garbled value so a later reader cannot tidy the asymmetry away.
+func stripAdapterInterfaceTypeArgs(interfaceTypeName string) string {
+	if idx := strings.Index(interfaceTypeName, "<"); idx > 0 && strings.HasSuffix(interfaceTypeName, ">") {
+		return interfaceTypeName[:idx]
+	}
+
+	return interfaceTypeName
+}
+
 // adapterInterfacePackagePrefix returns the disambiguating prefix ("io_") for a FOREIGN interface
 // reference, derived from the package class segment that precedes the type ("io_package.Reader").
 // Returns "" for a LOCAL interface (a bare, undotted name), which never takes a qualifier: at most
@@ -334,10 +353,26 @@ func adapterStructKey(structBase string) string {
 // fallback match on an early pair can never shadow an exact match on a later one.
 func emittedAdapterPair(pairs [][2]string, structBase, interfaceTypeName string) ([2]string, bool) {
 	structKey := strings.TrimPrefix(adapterStructKey(structBase), ShadowVarMarker)
-	interfaceKey := strings.TrimPrefix(adapterInterfacePackagePrefix(interfaceTypeName), ShadowVarMarker) + adapterInterfaceSimpleName(interfaceTypeName)
+
+	// ⚠⚠ BOTH SIDES OF THIS COMPARISON STRIP, and they must, because the two sides arrive in
+	// DIFFERENT SPELLINGS: `interfaceTypeName` comes from the deferred marker — already stripped by
+	// adapterTypeRef — while `pair[1]` comes from the emitted `[assembly: GoImplement<…>]` lines,
+	// which carry the CLOSED instantiation. Strip one and not the other and the keys differ for every
+	// generic interface, the lookup misses, and the anchored branch above it is SKIPPED — so the cast
+	// site takes the bare resolved name and loses the anchor class it needed: the right identifier,
+	// unqualified, CS0246 under the white-box model.
+	//
+	// ⚠ This is the PAIRING lookup, not a collision KEY. The keys stay unstripped on both halves on
+	// purpose (see stripAdapterInterfaceTypeArgs); that parity argument is about grouping two records
+	// that compose one name, and says nothing about matching a marker to the record it came from.
+	// Conflating the two is what made this look like a decision already taken.
+	lookupRef := stripAdapterInterfaceTypeArgs(interfaceTypeName)
+	interfaceKey := strings.TrimPrefix(adapterInterfacePackagePrefix(lookupRef), ShadowVarMarker) + adapterInterfaceSimpleName(lookupRef)
 
 	matchesInterface := func(pair [2]string) bool {
-		return strings.TrimPrefix(adapterInterfacePackagePrefix(pair[1]), ShadowVarMarker)+adapterInterfaceSimpleName(pair[1]) == interfaceKey
+		pairRef := stripAdapterInterfaceTypeArgs(pair[1])
+
+		return strings.TrimPrefix(adapterInterfacePackagePrefix(pairRef), ShadowVarMarker)+adapterInterfaceSimpleName(pairRef) == interfaceKey
 	}
 
 	for _, pair := range pairs {
@@ -420,7 +455,16 @@ func adapterStructQualifierClass(structBase string) string {
 // which never stripped), so the corpus cannot move.
 func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string {
 	structPart := adapterStructKey(pair[0])
-	ifaceSimple := adapterInterfaceSimpleName(pair[1])
+
+	// ⚠ THE ONE SITE THE MARKER'S OWN STRIP DOES NOT REACH. adapterTypeRef strips before writing the
+	// deferred marker, so adapterResolvedName inherits a stripped name for free — but this function
+	// takes pair[1] from the EMITTED `[assembly: GoImplement<…>]` lines, which carry the CLOSED
+	// instantiation. Without the strip its last-dot lands inside the argument list and the member is
+	// named for the ARGUMENT (`probe_digestжnamed>`), where the generator emits `digestжkeyedLike`.
+	// Reached only under the white-box `-tests` model (testConversion.go:1331 is the sole caller that
+	// passes an anchor), which is why no corpus row has shown it.
+	interfaceRef := stripAdapterInterfaceTypeArgs(pair[1])
+	ifaceSimple := adapterInterfaceSimpleName(interfaceRef)
 
 	if qualifier := adapterStructQualifierClass(pair[0]); qualifier != "" && qualifier == emittedAdapterPairAnchors[adapterGroupKey(pair[0], pair[1])] {
 		// The struct is qualified by the very anchor class the generator emits into, so it is
@@ -433,7 +477,12 @@ func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string
 		return structPart + PointerPrefix + ifaceSimple
 	}
 
-	return structPart + PointerPrefix + adapterInterfacePackagePrefix(pair[1]) + ifaceSimple
+	// ⚠ The QUALIFIER takes the stripped reference too, and that is a second defect rather than a
+	// tidiness: unstripped, adapterInterfacePackagePrefix reads its prefix out of the ARGUMENT's
+	// package (`keyedLike<other_package.named>` yielding `other_`), where the generator derives it
+	// from the INTERFACE symbol. The stopped sub-agent's arms found this one (COORD 938bb886f) and
+	// it is adopted here rather than re-derived.
+	return structPart + PointerPrefix + adapterInterfacePackagePrefix(interfaceRef) + ifaceSimple
 }
 
 // adapterResolvedName renders the final adapter class REFERENCE for a pair. The struct side is
@@ -442,14 +491,23 @@ func anchoredAdapterMemberName(pair [2]string, colliding map[string]bool) string
 // assembly) into a bare `FileжWriter` that resolves nowhere, CS0246. Only the interface side is
 // ever rewritten, and only for a colliding group.
 func adapterResolvedName(structBase string, interfaceTypeName string, colliding map[string]bool) string {
-	ifaceSimple := adapterInterfaceSimpleName(interfaceTypeName)
+	// ⚠ STRIPPED HERE TOO, although in production this name arrives from the deferred marker and
+	// adapterTypeRef has already stripped it. Relying on that would make this function correct only
+	// through its one caller — and the sibling that DID rely on an upstream spelling
+	// (emittedAdapterPair, whose two sides arrive stripped and unstripped) is precisely what broke.
+	// A name-composing site strips its own input; the coupling is not worth the line it saves.
+	//
+	// The colliding lookup keeps the name AS GIVEN: adapterGroupKey is a collision KEY and those
+	// garble in step with the generator's on purpose (see stripAdapterInterfaceTypeArgs).
+	interfaceRef := stripAdapterInterfaceTypeArgs(interfaceTypeName)
+	ifaceSimple := adapterInterfaceSimpleName(interfaceRef)
 
 	if !colliding[adapterGroupKey(structBase, interfaceTypeName)] {
 		return structBase + PointerPrefix + ifaceSimple
 	}
 
 	// The LOCAL member of a colliding group keeps the bare name (prefix is empty for it).
-	return structBase + PointerPrefix + adapterInterfacePackagePrefix(interfaceTypeName) + ifaceSimple
+	return structBase + PointerPrefix + adapterInterfacePackagePrefix(interfaceRef) + ifaceSimple
 }
 
 // resolveAdapterNameMarkers rewrites deferred pointer-adapter markers in the given output files
