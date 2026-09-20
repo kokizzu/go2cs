@@ -149,6 +149,33 @@ func convertTestOnlyFixture(t *testing.T, inputPath string) map[string]string {
 		t.Fatalf("no converted file was emitted into %s", outputPath)
 	}
 
+	// The PROJECT, written the way processTestConversion writes it once the variants have converted:
+	// the same model, into the same output directory, with Options.testProductionAbsent DERIVED by
+	// the production code's own predicate rather than hand-set to the answer the guards are looking
+	// for. Dependencies are left nil deliberately — resolving them needs a corpus tree, and they
+	// contribute only `$(go2csPath)`-rooted references, which the colocated reading ignores by
+	// construction (see colocatedProjectReferences).
+	projectOptions := options
+	projectOptions.go2csPath = t.TempDir()
+	projectOptions.testProductionAbsent = !productionClassEmitted(production)
+
+	projectName := projectFileBaseName(testOnlyFixtureDir)
+
+	if err = writeTestProject(filepath.Join(outputPath, projectName+testProjectFileSuffix), projectName, "go",
+		testProjectWhiteboxReference, nil, nil, nil, nil, projectOptions); err != nil {
+		t.Fatalf("writeTestProject: %v", err)
+	}
+
+	// The emitted PROJECT joins the map beside the sources: what a test-only package's `.tests.csproj`
+	// may REFERENCE is the same question as what its `.cs` files may NAME, and reading both off ONE
+	// conversion is what makes the four guards below arms of the same measurement.
+	projects, err := filepath.Glob(filepath.Join(outputPath, "*.csproj"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	emitted = append(emitted, projects...)
+
 	files := make(map[string]string, len(emitted))
 
 	for _, path := range emitted {
@@ -183,6 +210,13 @@ func productionClassLines(files map[string]string) (usings, inits, all []string)
 	sort.Strings(names)
 
 	for _, name := range names {
+		// SOURCES only. The map also carries the emitted `.tests.csproj` (for the reference guards
+		// below), and a project file names projects rather than classes — scanning it here would
+		// answer a different question in this function's report.
+		if !strings.HasSuffix(name, ".cs") {
+			continue
+		}
+
 		for _, line := range strings.Split(files[name], "\n") {
 			line = strings.TrimSpace(strings.TrimSuffix(line, "\r"))
 
@@ -238,4 +272,218 @@ func TestPackageWithProductionFileNamesTheProductionClass(t *testing.T) {
 	if len(inits) == 0 {
 		t.Errorf("a package WITH production files must force its %s class's init — the referenced production assembly's module constructor runs only when touched", className)
 	}
+}
+
+// colocatedProjectReferences returns the emitted `.tests.csproj`'s COLOCATED ProjectReference
+// values — the bare `<name>.csproj` spellings that name a sibling in the same directory.
+//
+// Colocated is the discriminator rather than a name match, and it is exact: every OTHER reference
+// the test project carries is tree-rooted (`$(go2csPath)core/...`) — the fixed set (golib, testing,
+// context) and every import-derived dependency alike. The production reference is the one the
+// -tests contract deliberately spells relative, precisely because the test project is colocated
+// with the production csproj. So "a reference with no directory separator and no $(…) property" IS
+// the production-reference site, named structurally instead of by a spelling this guard would then
+// have to keep in step with projectFileBaseName.
+func colocatedProjectReferences(t *testing.T, files map[string]string) (projectFile string, references []string) {
+	t.Helper()
+
+	for name, content := range files {
+		if !strings.HasSuffix(name, testProjectFileSuffix) {
+			continue
+		}
+
+		if projectFile != "" {
+			t.Fatalf("two test projects were emitted (%s and %s); the fixture emits one", projectFile, name)
+		}
+
+		projectFile = name
+
+		for _, line := range strings.Split(content, "\n") {
+			line = strings.TrimSpace(strings.TrimSuffix(line, "\r"))
+
+			if !strings.Contains(line, "<ProjectReference") {
+				continue
+			}
+
+			const marker = `Include="`
+
+			start := strings.Index(line, marker)
+			if start < 0 {
+				continue
+			}
+
+			include := line[start+len(marker):]
+
+			end := strings.Index(include, `"`)
+			if end < 0 {
+				continue
+			}
+
+			include = include[:end]
+
+			if strings.ContainsAny(include, `/\`) || strings.Contains(include, "$(") {
+				continue
+			}
+
+			references = append(references, include)
+		}
+	}
+
+	// An absent project file would satisfy "no colocated reference" for the wrong reason, which is
+	// the vacuous pass this whole file is written against.
+	if projectFile == "" {
+		t.Fatalf("no %s was emitted; the reference guards would pass vacuously", testProjectFileSuffix)
+	}
+
+	sort.Strings(references)
+
+	return projectFile, references
+}
+
+// TestTestOnlyPackageTestProjectReferencesNoProductionProject is the fourth site of the
+// fips140test class, on the PROJECT rather than on the sources.
+//
+// writeTestProject added the colocated `<pkg>.csproj` reference on the MODEL alone
+// (model.referencesProduction()), but a test-only package's conversion never writes that production
+// project — the same "Skipping conversion: no target Go source files found" that leaves it with no
+// production class leaves it with no production csproj. The emitted reference therefore dangles.
+// MEASURED at the version tip on crypto/internal/fips140test, which is why this is a guard and not
+// a tidiness preference: restore reports
+//
+//	Skipping project "…\crypto.internal.fips140test.csproj" because it was not found.
+//
+// twice, and the build then carries
+//
+//	warning MSB9008: The referenced project crypto.internal.fips140test.csproj does not exist.
+//
+// — a WARNING, so the dangling edge is invisible to any gate reading only the error count, and it
+// would stay in the emission of every future test-only package. The predicate is the one the three
+// source sites already consult (productionClassEmitted, plumbed as Options.testProductionAbsent),
+// so all four sites now answer the same question with the same reading.
+func TestTestOnlyPackageTestProjectReferencesNoProductionProject(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads and converts a test-variant fixture")
+	}
+
+	projectFile, references := colocatedProjectReferences(t, convertTestOnlyFixture(t, writeTestOnlyFixture(t, false)))
+
+	if len(references) > 0 {
+		t.Fatalf("a TEST-ONLY package's production conversion writes no `.csproj` — yet %s references %d colocated project(s) that will never exist (MSB9008 each):\n\t%s",
+			projectFile, len(references), strings.Join(references, "\n\t"))
+	}
+}
+
+// TestPackageWithProductionFileTestProjectReferencesTheProductionProject is the control for the
+// refusal above: the same fixture WITH a production file must still carry the colocated reference,
+// so the refusal cannot be satisfied by an emission that references the production project under no
+// circumstances — which would trade a dangling edge for a missing one (CS0246 on every production
+// type the tests name, instead of MSB9008).
+func TestPackageWithProductionFileTestProjectReferencesTheProductionProject(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test: loads and converts a test-variant fixture")
+	}
+
+	projectFile, references := colocatedProjectReferences(t, convertTestOnlyFixture(t, writeTestOnlyFixture(t, true)))
+
+	if len(references) != 1 {
+		t.Fatalf("a package WITH production files must reference its colocated production project exactly once; %s carries %d: %v",
+			projectFile, len(references), references)
+	}
+
+	// The reference must name the PRODUCTION project, never the test project itself: a self-reference
+	// is MSB4006 rather than a missing type, and a structural guard that did not check this would
+	// accept it.
+	if references[0] == projectFile {
+		t.Fatalf("%s references ITSELF (%s)", projectFile, references[0])
+	}
+
+	if !strings.HasSuffix(references[0], ".csproj") {
+		t.Fatalf("%s's colocated reference %q is not a project file", projectFile, references[0])
+	}
+}
+
+// TestProcessTestConversionDerivesTestProductionAbsentBeforeWritingTheTestProject pins the WIRING
+// the two guards above cannot reach, in the same source-assertion style as
+// TestTestsConversionConsultsTheDynamicTypeGate (dynamicTypeGate_test.go) and for the same reason:
+// the gate can be perfect and still prove nothing if the value never arrives.
+//
+// convertTestVariants takes Options BY VALUE, so the `testProductionAbsent` it derives onto its own
+// copy for the EMISSION sites never reaches processTestConversion's `options` — and writeTestProject
+// is handed THAT one. The derivation inside processTestConversion is therefore the only thing
+// carrying the answer to the project write in production. Both guards above call writeTestProject
+// directly and supply the field themselves, so deleting that one line leaves every Go arm GREEN
+// while the emitted `.tests.csproj` goes back to naming a `.csproj` a test-only package never
+// writes. A source-text ordering assertion is the cheapest instrument that can fail on it.
+//
+// Scoped to processTestConversion's own body deliberately: the identical assignment inside
+// convertTestVariants is a different function's copy and must NOT satisfy this guard.
+func TestProcessTestConversionDerivesTestProductionAbsentBeforeWritingTheTestProject(t *testing.T) {
+	const source = "testConversion.go"
+
+	contents, err := os.ReadFile(source)
+	if err != nil {
+		t.Fatalf("reading %s: %v", source, err)
+	}
+
+	text := string(contents)
+
+	start := strings.Index(text, "\nfunc processTestConversion(")
+	if start == -1 {
+		t.Fatalf("%s no longer declares processTestConversion; this guard has lost its subject", source)
+	}
+
+	// The body runs to the next TOP-LEVEL declaration. Searching from one byte in keeps the
+	// function's own `\nfunc ` from terminating it immediately.
+	body := text[start+1:]
+	if end := strings.Index(body[1:], "\nfunc "); end != -1 {
+		body = body[:end+1]
+	}
+
+	call := strings.Index(body, "writeTestProject(")
+	if call == -1 {
+		t.Fatalf("processTestConversion no longer calls writeTestProject; the derivation this guard orders against is gone from %s", source)
+	}
+
+	derivation := indexOfLineContaining(body, "testProductionAbsent = ", "productionClassEmitted(")
+
+	if derivation == -1 {
+		t.Fatalf("processTestConversion does not derive options.testProductionAbsent from productionClassEmitted(...).\n"+
+			"\twriteTestProject is handed THIS function's options — convertTestVariants takes Options by VALUE, so its own\n"+
+			"\tassignment never reaches here — and without the derivation every test-only package's .tests.csproj emits a\n"+
+			"\tcolocated ProjectReference to a production .csproj that is never written (MSB9008). Restore the assignment\n"+
+			"\tin %s, ahead of the writeTestProject call.", source)
+	}
+
+	if derivation > call {
+		t.Errorf("processTestConversion derives options.testProductionAbsent AFTER it calls writeTestProject (offsets %d > %d);\n"+
+			"\tthe project write reads the field's zero value (\"production exists\") and re-emits the dangling reference.",
+			derivation, call)
+	}
+}
+
+// indexOfLineContaining returns the byte offset of the first line of text holding EVERY one of
+// needles, or -1. Line-scoped rather than a bare Index over the whole text so that an assignment
+// and the call it must be derived from have to sit on the SAME statement, not merely both appear
+// somewhere in the function.
+func indexOfLineContaining(text string, needles ...string) int {
+	offset := 0
+
+	for _, line := range strings.Split(text, "\n") {
+		matched := true
+
+		for _, needle := range needles {
+			if !strings.Contains(line, needle) {
+				matched = false
+				break
+			}
+		}
+
+		if matched {
+			return offset
+		}
+
+		offset += len(line) + 1
+	}
+
+	return -1
 }

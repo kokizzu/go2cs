@@ -17,6 +17,12 @@ internal class ReceiverMethodTemplate : TemplateBase
     // Template Parameters
     public required MethodInfo Method;
 
+    // Whether the RECEIVER type is public IN THE EMISSION, read from its symbol by the generator
+    // (Common.EffectiveScopeIsPublic) rather than from the Go export case of its name. Required, so
+    // the one construction site (RecvGenerator) cannot forget it and silently take a default. See
+    // TargetScope at the bottom of this file for what it decides and why the name was the wrong oracle.
+    public required bool ReceiverTypeIsPublic;
+
     private string? m_receiverParamName;
     private string ReceiverParamName => m_receiverParamName ??= Method.Parameters.First().name;
 
@@ -95,11 +101,24 @@ internal class ReceiverMethodTemplate : TemplateBase
     private string CallParams => 
         string.Join(", ", Method.Parameters.Skip(1).Select(item => item.name));
 
+    // The narrowest of {this method's own scope, the receiver type's scope}. The narrowing is
+    // load-bearing in BOTH directions: a public overload over a `ж<internalT>` receiver is CS0051,
+    // and re-widening a method the converter deliberately narrowed is CS0050/CS0051 the other way.
+    //
+    // What changed (2026-09-20): the receiver side used to be `GetScope(GetSimpleName(type))` — the
+    // Go export case of the NAME. That answers "internal" for a type the converter PUBLICIZED, i.e.
+    // an unexported Go type emitted `public partial struct` because an exported signature reaches it
+    // (ecdsa's hmacDRBG, returned by the exported TestingOnlyNewDRBG). The overload was then minted
+    // `internal` over a genuinely public type, so a CONSUMING assembly saw only the `ref T` primary
+    // and `box.Method(…)` there was CS1929 — while the twin partials TypeGenerator and
+    // ImplicitConvGenerator emit for that same type were already public. RecvGenerator now reads the
+    // receiver's DECLARED accessibility through the same shared rule as its siblings, and the answer
+    // arrives here as ReceiverTypeIsPublic.
     private string TargetScope
     {
         get
         {
-            string receiverScope = GetScope(GetSimpleName(Method.Parameters[0].type));
+            string receiverScope = ReceiverTypeIsPublic ? "public" : "internal";
             return Scope == receiverScope ? Scope : "internal";
         }
     }

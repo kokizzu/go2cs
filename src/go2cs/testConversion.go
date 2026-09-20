@@ -670,6 +670,13 @@ func processTestConversion(inputPath, outputPath string, options Options) error 
 	options.testPackagePath = production.PkgPath
 	options.testPackageName = production.Name
 
+	// Derived here, on the options every emission step below inherits, because the answer is needed
+	// in TWO places that convertTestVariants does not span: the variant emission (which re-derives
+	// it onto its own copy for callers that enter there directly) and writeTestProject at the bottom
+	// of this function, whose colocated production ProjectReference must not name a `.csproj` a
+	// test-only package never writes. One `production`, one predicate, one reading.
+	options.testProductionAbsent = !productionClassEmitted(production)
+
 	internal, external := findTestVariants(loaded, production)
 	if internal == nil && external == nil {
 		return writeNoTestsManifest(production, inputPath, outputPath, targetParts, options)
@@ -4204,7 +4211,24 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 	// its assembly stays the single identity for the production types. Colocated-relative — the
 	// -tests contract colocates the test project with the production csproj — so the reference
 	// is layout-independent (no $(go2csPath) tree mapping involved).
-	if model.referencesProduction() {
+	//
+	// ...but only when that project EXISTS. The model alone was the wrong gate: a TEST-ONLY package
+	// selects a reference model like any other suite, while its production half converts nothing and
+	// writes no `.csproj` at all, so the emitted reference names a file that will never be there.
+	// MSBuild answers `Skipping project "<…>.csproj" because it was not found.` at restore and
+	// `warning MSB9008: The referenced project <…>.csproj does not exist.` at build — a WARNING, so
+	// the dangling edge survives any gate reading only the error count. This is the FOURTH site of
+	// the class the three SOURCE sites already gate (the per-file `using static`, the seed's global
+	// import, and its init hook); they consult productionClassEmitted through this same field, and
+	// now so does the project. Measured on crypto/internal/fips140test at Go 1.24.13.
+	//
+	// THREE sites, TWO field reads — by design, so a census of this field is not miscounted as a
+	// missing gate. The per-file `using static` reads `options.testProductionAbsent` directly
+	// (visitFile.go); the seed's global import and its init hook read the EMPTY productionClassName
+	// that convertTestVariants derives from the field once (the `productionClassName := ""` guard
+	// above), because both are spelled from that one name. So `git grep testProductionAbsent` finds
+	// two consumers plus this one, never four.
+	if model.referencesProduction() && !options.testProductionAbsent {
 		references.Add(projectFileBaseName(projectName) + ".csproj")
 	}
 
