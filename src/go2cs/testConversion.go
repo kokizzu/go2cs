@@ -959,6 +959,12 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		whiteboxBridgeTypeNames = collectWhiteboxBridgeTypeNames(internal)
 	}
 
+	// A test-only package has no production class for either emission site to name -- the per-file
+	// `using static` visitFile writes, or the seed's global import and init hook below. Set on the
+	// base options, ahead of the model branch, so every variant testVariantOptions derives carries
+	// it.
+	options.testProductionAbsent = !productionClassEmitted(production)
+
 	if model.referencesProduction() {
 		options.testProductionPath = options.testPackagePath
 		options.testProductionName = options.testPackageName
@@ -1039,7 +1045,15 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		if model == testProjectWhiteboxReference {
 			seedArgs = append(seedArgs, internalBridgeName)
 		}
-		seed := referenceModelTestPackageInfoSeed(projectNamespace, testClassName, testPackageName, getSanitizedImport(production.Name+PackageSuffix), seedArgs...)
+
+		// Empty for a TEST-ONLY package, which the seed and its init hook both read as "there is no
+		// production half": no class name exists because no production class was emitted.
+		productionClassName := ""
+		if !options.testProductionAbsent {
+			productionClassName = getSanitizedImport(production.Name + PackageSuffix)
+		}
+
+		seed := referenceModelTestPackageInfoSeed(projectNamespace, testClassName, testPackageName, productionClassName, seedArgs...)
 
 		if err := os.WriteFile(testInfoPath, []byte(seed), 0644); err != nil {
 			return result, fmt.Errorf("seed test package metadata: %w", err)
@@ -1351,7 +1365,11 @@ func referenceModelTestPackageInfoSeed(projectNamespace, testClassName, goPackag
 	b.WriteString("// production types and no production class partial may be declared here. The first —\r\n")
 	b.WriteString("// and only — class is the test metadata class the go2cs-gen generators anchor\r\n")
 	b.WriteString("// generated adapters and partials to.\r\n")
-	b.WriteString(fmt.Sprintf("global using static global::%s.%s;\r\n", projectNamespace, productionClassName))
+	// Empty productionClassName means the package under test is TEST-ONLY and no production class
+	// was emitted to import (productionClassEmitted).
+	if productionClassName != "" {
+		b.WriteString(fmt.Sprintf("global using static global::%s.%s;\r\n", projectNamespace, productionClassName))
+	}
 	for _, className := range additionalStaticClasses {
 		// An internal-only suite names the bridge as BOTH the test class and the additional
 		// class — the file-scoped `using static` below already imports it, and a second,
@@ -1446,6 +1464,13 @@ const packageProductionInitHookMethod = "init" + TempVarMarker + TempVarMarker +
 // `global using static` line uses and globalQualifyForcingTarget composes for a shadowed import
 // hook, so no name in scope can occlude it.
 func productionInitForcingHook(projectNamespace, productionClassName string) string {
+	// A TEST-ONLY package has no production class to force, and nothing to force it FOR: there are
+	// no production files, hence no production `init` (productionClassEmitted). Emitting the hook
+	// over a class that was never emitted is CS0234, not a no-op.
+	if productionClassName == "" {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString("    // Go runs every `init` in the package under test - the production files' included -\r\n")
@@ -1536,6 +1561,29 @@ func findProductionPackage(pkgs []*packages.Package, inputPath string) *packages
 	}
 
 	return nil
+}
+
+// productionClassEmitted reports whether the package under test HAS a `<pkg>_package` class for the
+// test assembly to import and initialize.
+//
+// A TEST-ONLY package has none. Every one of its Go files is a `_test.go`, so the production half
+// converts nothing: conversionDriver reaches `unmarkedFileCount == 0` with an empty file list and
+// reports "Skipping conversion: no target Go source files found", emitting no production `.cs` and
+// no production `.csproj`. Naming that class anyway is CS0234 once per emitted test file plus once
+// in package_test_info.cs -- thirteen of them for crypto/internal/fips140test (directory
+// `fips140test`, package clause `fipstest`), the Go 1.24 package this predicate was measured on.
+// The absent class is NOT synthesised as an empty one: a test-only package has no production
+// surface, so there is nothing for such a class to stand for.
+//
+// GoFiles is the right reading rather than a name scan, because it is what THIS target's own load
+// selected: a package whose production files are all build-constraint-deselected for the target
+// emits no production class for that target either, and reaches the same answer for the same reason.
+//
+// A HAND-OWNED HOST is deliberately not this case (testTargetHandOwnHost). Its Go package does have
+// production files -- the run converts its tests only -- and the class the tests name is the
+// hand-written C# counterpart's, already on disk at the output path.
+func productionClassEmitted(production *packages.Package) bool {
+	return production != nil && len(production.GoFiles) > 0
 }
 
 func findTestVariants(pkgs []*packages.Package, production *packages.Package) (internal, external *packages.Package) {

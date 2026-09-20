@@ -257,6 +257,7 @@
     <None Include="$(MSBuildThisFileDirectory)testConversion.go" />
     <None Include="$(MSBuildThisFileDirectory)testConversion_test.go" />
     <None Include="$(MSBuildThisFileDirectory)testdata\validationproof\expected.md" />
+    <None Include="$(MSBuildThisFileDirectory)testOnlyPackageEmission_test.go" />
     <None Include="$(MSBuildThisFileDirectory)ToDo.md" />
     <None Include="$(MSBuildThisFileDirectory)toolchainResolution.go" />
     <None Include="$(MSBuildThisFileDirectory)toolchainResolution_test.go" />
