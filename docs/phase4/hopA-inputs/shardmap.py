@@ -267,6 +267,7 @@ def parse_timings_tsv(path):
 
     ix = {c: header.index(c) for c in need}
     seen, dropped, dups = {}, [], []
+    word_of = {}   # name -> the word of the reading whose cost was KEPT (the dup rule below)
 
     for lineno, line in enumerate(lines[1:], start=2):
         cells = line.split("\t")
@@ -274,6 +275,21 @@ def parse_timings_tsv(path):
         if len(cells) <= max(ix.values()):
             die(f"{path.name}:{lineno} has {len(cells)} cell(s), too few for the named columns: {line!r}")
 
+        # ⚠ `word` IS A CONTRACT CHECK, AND ITS VALUE IS DELIBERATELY NOT A FILTER.
+        # Required in the header (see `need` above) so a file that is not a recon TSV cannot be read
+        # as one -- but the basis models the roster AS IT IS AT THE LEG'S TIP, so a row is costed at
+        # what the leg measured whatever its word: a BUILD or CONVERT row at its ABORT cost, which is
+        # what a repeat run of that row would cost today. The plan is a schedule of the NEXT
+        # MEASUREMENT, not a forecast of a fixed converter; when a routed converter seat lands, the
+        # driver re-measures the rows whose word changes, the basis is amended and the plan is
+        # regenerated, which is what this script is for. (COORD e607296d5, ruling the question raised
+        # from R's first real TSV at ff7a229f. That file AS PUSHED prints 14 rows / 676 s / 14.8%
+        # here; 8 of those rows -- 208 s -- were ONE contamination COORD ruled re-run (6209554e),
+        # leaving the six GENUINE abort-costed rows at 468 s, 10.3%. Both numbers are correct about
+        # different files, which is exactly why this line prints what it measured and not a recalled
+        # figure.)
+        # The abort-costed rows are NAMED in the output below rather than filtered here -- an
+        # under-book that is stated is a bound; one that is silent is a surprise.
         name, word = cells[ix["row"]].strip(), cells[ix["word"]].strip()
         secs_cell, verdict_cell = cells[ix["sweep_s"]].strip(), cells[ix["verdicts"]].strip()
 
@@ -305,9 +321,11 @@ def parse_timings_tsv(path):
             dups.append((name, seen[name][1], secs))
             if secs > seen[name][1]:
                 seen[name] = (count, secs)
+                word_of[name] = word
             continue
 
         seen[name] = (count, secs)
+        word_of[name] = word
 
     # ⚠ THE DROP MUST STILL HAVE FIRED. A drop list that quietly matches nothing is the tolerance-become-
     # dead-code shape: the day the banked TSV renames or removes that row, this script would schedule on
@@ -335,6 +353,18 @@ def parse_timings_tsv(path):
     print(f"mean row:         {total/len(rows):.1f} s")
     q = lambda f: times[min(len(times)-1, int(f*len(times)))]
     print(f"p75: {q(0.75)} s   p90: {q(0.90)} s   p95: {q(0.95)} s")
+    # ⚠ THE UNDER-BOOK, NAMED. CONVERT and BUILD are the two words whose row stopped BEFORE its
+    # test run, so their `sweep_s` is the cost of a failed attempt rather than of the row's work.
+    # Ruled costed (COORD e607296d5) because the basis models the roster as it is -- so the duty here
+    # is to SAY SO, in the plan's own output, where a reader of the makespan meets it. TIMEOUT and
+    # NOVERDICT cannot appear: they carry UNMEASURED and never reach this far. DIVERGED is NOT an
+    # abort -- that row RAN. Printed UNCONDITIONALLY: a zero here is a reading, and a line that
+    # vanishes when the count is zero cannot be told from a line nobody wrote.
+    _abort = sorted((n, t) for n, _, t in rows if word_of.get(n) in ("CONVERT", "BUILD"))
+    _asum  = sum(t for _, t in _abort)
+    print(f"ABORT-COSTED (CONVERT/BUILD: stopped before the test run, costed at the failed attempt): "
+          f"{len(_abort)} row(s), {_asum} s, {100 * _asum / total:.1f}% of the basis"
+          + (": " + ", ".join(f"{n} ({t} s)" for n, t in _abort) if _abort else ""))
     print(f"DROPPED as hand-stopped, NOT scheduled and NO cost claimed: "
           + ", ".join(f"{n} ({t} s, a lower bound)" for n, t in sorted(dropped)))
 
