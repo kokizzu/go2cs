@@ -2701,6 +2701,24 @@ not do is call the row off-plan, because then nothing reconciles it. ⚠ **The t
 every-row-exactly-once checksum is the gate that catches this**, and it can only catch it once two
 shard refs exist — which is later and dearer than one look at the plan file now.
 
+⚠⚠ **AND THE RESOLUTION IS THAT THE REHEARSAL DOES NOT BANK THE GRAFTED ROW AT ALL.** It runs there
+as **EVIDENCE ONLY** — its TSV line, its minted disclosure file and its artifacts captured to the
+rehearsal's scratch and posted as a **prediction** — and is never committed from the rehearsal. The
+worker the plan assigns it to banks it in the campaign at its own sequence number, and **the minted
+file there must EQUAL the rehearsal's by content**: the mint is deterministic, so a difference is a
+finding rather than a discrepancy to reconcile. The row is therefore **reassigned for the rehearsal,
+non-banking** — which is the wording to use, because it names both halves.
+
+⚠ **The driver grows NO "banked elsewhere" skip.** The plan stays the single source of who banks
+what, and the every-row-exactly-once arithmetic keeps its meaning precisely because nothing in the
+driver is allowed to except a row from it. **The rehearsal's own native rows DO bank if it is green**
+— they are that worker's shard and its campaign run starts at the next slice — and **a red rehearsal
+banks nothing at all.**
+
+⚠ **A HOLDER IS A PROPERTY OF `W`, so every claim about one names its `W`.** The same row sits under
+different workers at different fleet sizes, and a sentence that names a holder without naming the size
+is not checkable — which is how the off-plan reading survived its first two readers.
+
 **THE ACCEPTANCE PREDICATE IS FIVE DECIDABLE CLAUSES** — the shard's TSV complete with every word
 filled; the four artifacts present per row and **written by that row**; the format gate at 0 with its
 relocation orphans either cleared or **named as hop debt**; the roster header re-deriving; and the mint
