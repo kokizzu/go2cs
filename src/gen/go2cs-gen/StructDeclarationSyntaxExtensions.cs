@@ -10,6 +10,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static go2cs.Common;
 using static go2cs.Symbols;
 
 namespace go2cs;
@@ -642,6 +643,59 @@ public static class StructDeclarationSyntaxExtensions
                        (firstParam.Type?.ToString() ?? "") == boxType;
             })
             .Select(method => method.Identifier.Text), StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// RETURN TYPES of the direct-ж primaries <see cref="GetBoxReceiverMethodNames(string, Compilation)"/>
+    /// names, keyed by method name.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The name-only form above is everything the forwarding RECEIVER needs, and it was everything
+    /// anyone needed until a member's DECLARED result turned out to be an interface the forwarded Go
+    /// method does not return (crypto/mlkem's projected constraint — see
+    /// <c>AdapterImplTemplate.ForwardResultWraps</c>). Deciding that requires the forwarded method's
+    /// return type, and a direct-ж primary is invisible to <c>GetExtensionMethods</c>, so there was
+    /// nowhere to read it from.
+    /// </para>
+    /// <para>
+    /// ⚠ The spelling is <c>GlobalQualify(ToDisplayString())</c> — the SAME pair of helpers
+    /// <c>GetReturnType</c> applies to a <c>MethodInfo</c>'s return type and that the interface side
+    /// composes with. That is deliberate and load-bearing: the caller compares the two strings, and a
+    /// comparison between two spellings of one type is the defect class this generator has already
+    /// paid for on its adapter names.
+    /// </para>
+    /// </remarks>
+    public static Dictionary<string, string> GetBoxReceiverMethodReturnTypes(string typeName, Compilation compilation)
+    {
+        string boxType = $"ж<{typeName}>";
+        Dictionary<string, string> returnTypes = new(StringComparer.Ordinal);
+
+        foreach (SyntaxTree tree in compilation.SyntaxTrees)
+        {
+            SemanticModel? semanticModel = null;
+
+            foreach (MethodDeclarationSyntax method in tree.GetRoot().DescendantNodes().OfType<MethodDeclarationSyntax>())
+            {
+                if (!method.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.StaticKeyword)) || method.ParameterList.Parameters.Count == 0)
+                    continue;
+
+                ParameterSyntax? firstParam = method.ParameterList.Parameters.FirstOrDefault();
+
+                if (firstParam is null || !firstParam.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.ThisKeyword)) ||
+                    (firstParam.Type?.ToString() ?? "") != boxType)
+                    continue;
+
+                semanticModel ??= compilation.GetSemanticModel(tree);
+
+                ITypeSymbol? returnSymbol = semanticModel.GetTypeInfo(method.ReturnType).Type;
+
+                if (returnSymbol is not null)
+                    returnTypes[method.Identifier.Text] = GlobalQualify(returnSymbol.ToDisplayString());
+            }
+        }
+
+        return returnTypes;
     }
 
     /// <summary>

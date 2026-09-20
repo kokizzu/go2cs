@@ -89,16 +89,40 @@ func (v *Visitor) convertExprToInterfaceType(interfaceExpr ast.Expr, targetExpr 
 // guards exactly as before.
 func (v *Visitor) convertToInterfaceType(interfaceType types.Type, targetType types.Type, exprResult string) string {
 	if typeParam, ok := types.Unalias(interfaceType).(*types.TypeParam); ok {
-		v.convertToInterfaceTypeSlot(typeParam.Constraint(), targetType, exprResult)
+		v.convertToInterfaceTypeSlot(typeParam.Constraint(), typeParam.Constraint(), targetType, exprResult)
 		return exprResult
 	}
 
-	return v.convertToInterfaceTypeSlot(interfaceType, targetType, exprResult)
+	return v.convertToInterfaceTypeSlot(interfaceType, interfaceType, targetType, exprResult)
+}
+
+// convertToProjectedInterfaceType is convertToInterfaceType for a PROJECTED generic constraint: the
+// interface to RECORD and RENDER is `interfaceType`, and the one to ask the SATISFACTION question of
+// is `checkType`. They are the same type everywhere else, which is why convertToInterfaceType passes
+// one value twice.
+//
+// ⚠ The two diverge for exactly one shape, and the divergence is Go's, not a convenience. A
+// projected constraint closes over a SIBLING's projection — crypto/mlkem's
+// `decapsulationKey[encapsulationKey]`, where Go's own instantiation is
+// `decapsulationKey[*EncapsulationKey768]` — and the projected form is satisfied by NO Go type:
+// its `EncapsulationKey() E` returns the interface where the concrete method returns the pointer,
+// and Go has no return covariance. Asking `types.Implements` of the projected form therefore answers
+// false for a row the Go checker already admitted, which gates off recordableBase and with it BOTH
+// the [GoImplement] record and the adapter-construction arm — so the call site is emitted bare and
+// the row fails CS0407 with nothing in the log to say why.
+//
+// C# is where the projection is sound: the generated adapter implements the CLOSED interface, so the
+// name that is recorded and referenced must be the projected one. Record the projection, check the
+// instantiation. This is the same split funcResultProjectionChecked already carries one level up,
+// and the reason it is threaded here rather than re-derived is that the two forms cannot be
+// recovered from one another — the projection is lossy in exactly the direction that matters.
+func (v *Visitor) convertToProjectedInterfaceType(interfaceType types.Type, checkType types.Type, targetType types.Type, exprResult string) string {
+	return v.convertToInterfaceTypeSlot(interfaceType, checkType, targetType, exprResult)
 }
 
 // convertToInterfaceTypeSlot is convertToInterfaceType's body; see that function for the
 // type-parameter split it sits behind.
-func (v *Visitor) convertToInterfaceTypeSlot(interfaceType types.Type, targetType types.Type, exprResult string) string {
+func (v *Visitor) convertToInterfaceTypeSlot(interfaceType types.Type, checkType types.Type, targetType types.Type, exprResult string) string {
 	// A type ALIAS is TRANSPARENT — `type Expr = ast.Expr` names the type ast.Expr already names —
 	// but a SPELLING is not a type, and every name composed below is GENERATOR-FACING: the
 	// `[assembly: GoImplement<Src, Iface>]` record, and the `<pkg>_<Src>ᴠ<Iface>` adapter class the
@@ -115,7 +139,7 @@ func (v *Visitor) convertToInterfaceTypeSlot(interfaceType types.Type, targetTyp
 	// older than the lift that exposed it: ANY alias whose name differs from its target's — a
 	// package-level `type E = ast.Expr` just as much — mismatched the same way. It stayed invisible
 	// only because the pre-lift local alias happened to be spelled exactly like its target.
-	interfaceType, targetType = types.Unalias(interfaceType), types.Unalias(targetType)
+	interfaceType, checkType, targetType = types.Unalias(interfaceType), types.Unalias(checkType), types.Unalias(targetType)
 
 	// Track interface types that need to an implementation mapping
 	// to properly handle duck typed Go interface implementations
@@ -262,7 +286,7 @@ func (v *Visitor) convertToInterfaceTypeSlot(interfaceType types.Type, targetTyp
 	// must stay (its record is already excluded by targetIsOpenGeneric).
 	recordSatisfiesIface := true
 
-	if iface, ok := interfaceType.Underlying().(*types.Interface); ok && !iface.Empty() && !typeContainsTypeParams(targetType) {
+	if iface, ok := checkType.Underlying().(*types.Interface); ok && !iface.Empty() && !typeContainsTypeParams(targetType) {
 		recordSatisfiesIface = types.Implements(targetType, iface)
 	}
 
@@ -1033,7 +1057,27 @@ func adapterTypeRef(structTypeName string, interfaceTypeName string) string {
 		return structBase + PointerPrefix + ifaceSimple + typeArgs
 	}
 
-	return adapterNameMarker(structBase, interfaceTypeName) + typeArgs
+	// A CLOSED GENERIC interface contributes its BARE name to the adapter CLASS while the
+	// [GoImplement] record keeps the CLOSED instantiation. The two are deliberately different and
+	// the corpus already runs on that shape: crypto/elliptic records
+	// `GoImplement<P224Point, nistPoint<P224Point>>` and its cast sites reference
+	// `P224PointжnistPoint` — bare — across 17 committed records (ecdh, ecdsa, the fips140 siblings
+	// and testing's `TBRun<T>`), every one of them compiling in the 344-assembly build.
+	//
+	// ⚠ It is not a preference: `digestжkeyedNamed<named>` is not an identifier a non-generic class
+	// can carry, so composing the argument list into the name references a class the generator never
+	// emits (CS0246) — the same failure the STRUCT side's split above exists to avoid, one operand
+	// over. The generator composes from the bare name, so the converter must too; the closed form
+	// stays in the record, which is what the generator reads to know WHICH instantiation the adapter
+	// implements (COORD's ruling at mailbox 6ce444315: the bare name, keyed on the closed
+	// instantiation).
+	interfaceBase := interfaceTypeName
+
+	if idx := strings.Index(interfaceBase, "<"); idx > 0 && strings.HasSuffix(interfaceBase, ">") {
+		interfaceBase = interfaceBase[:idx]
+	}
+
+	return adapterNameMarker(structBase, interfaceBase) + typeArgs
 }
 
 // interfaceTypeLiteralTarget reports the ANONYMOUS interface type literal a conversion targets --
