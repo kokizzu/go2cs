@@ -76,6 +76,19 @@ idc_refresh(){
     git -C "$REPO" show "origin/master:.claude/coord-scripts/$f" > "$IDCDIR/$f.tmp" 2>/dev/null \
       || { rm -f "$IDCDIR/$f.tmp"; return 1; }
     [ -s "$IDCDIR/$f.tmp" ] || { rm -f "$IDCDIR/$f.tmp"; return 1; }
+    # THE CONTENT HASH, AND IT ASSERTS THE TRANSFER AND NOT THE SOURCE (C1 02dadcaa9, the scope
+    # limit named before any lane copied it). Ruled at 7c3612fb5 after i9's MSYS case: a `git show`
+    # whose path was mangled wrote three ZERO-BYTE files, `bash <empty>` returned 0, and the census
+    # "passed" on all three having scanned nothing. `-s` and the floors below catch that one; they
+    # do NOT catch a partial read, a truncation that clears the floor, or a cache a second process
+    # touched between this write and the gate. The blob id does, exactly, for one `git` call per
+    # file -- and it is checked BEFORE the mv, so a mismatch never enters the cache and the previous
+    # good copy stands, which is the property the tmp-then-mv shape already exists for.
+    if [ "$(git -C "$REPO" rev-parse "origin/master:.claude/coord-scripts/$f" 2>/dev/null)" \
+         != "$(git hash-object "$IDCDIR/$f.tmp" 2>/dev/null)" ]; then
+      echo "REFUSED: $f does not match origin/master -- the materialised copy is not the blob" >&2
+      rm -f "$IDCDIR/$f.tmp"; return 1
+    fi
     n=$(wc -l < "$IDCDIR/$f.tmp")
     case "$f" in
       coord-identifier-census.sh)        [ "$n" -ge 1000 ] || { rm -f "$IDCDIR/$f.tmp"; return 1; };;
@@ -85,6 +98,32 @@ idc_refresh(){
     mv -f "$IDCDIR/$f.tmp" "$IDCDIR/$f" || return 1
   done
   chmod +x "$IDCDIR/coord-identifier-census.sh"
+
+  # THE SECOND HALF, AND IT SEES WHAT THE HASH CANNOT. A clone whose OWN origin/master carries a
+  # degraded pair materialises it faithfully -- `rev-parse` and `hash-object` read the same commit,
+  # so the hash MATCHES and the floors pass. The file is corrupt at the SOURCE and the transfer is
+  # perfect. Only the tool's own self-test sees that (C1 02dadcaa9 s1, measured: a 150-of-167-line
+  # patterns file self-tests fail=37 and the gate then runs TEN arms of twenty-one).
+  #
+  # AND COORD's RULED FORM -- "a non-zero fail= refuses" -- CANNOT BE TAKEN VERBATIM ON THIS BOX,
+  # which is the first thing a copying lane needs to know. This container derives NO admissible
+  # denied token, so one arm is INERT BY ENVIRONMENT and the healthy pair reports `pass=112 fail=1`
+  # with the single FAIL naming its own reason: "no run-time arm can fire here". A bare `fail -ne 0`
+  # would refuse every post this lane makes, forever, on a census that is perfectly sound. So the
+  # predicate is the one the ruling MEANS: every failing arm must be one the census itself reports
+  # as unable to fire on this box, and any OTHER failure refuses.
+  local _st _fail _inert
+  _st=$( cd "$IDCDIR" 2>/dev/null && ./coord-identifier-census.sh selftest 2>&1 )
+  _fail=$(printf '%s\n' "$_st" | sed -n 's/.*SELF-TEST: pass=[0-9][0-9]* fail=\([0-9][0-9]*\).*/\1/p' | tail -1)
+  if [ -z "$_fail" ]; then
+    echo "REFUSED: the materialised census printed no SELF-TEST line -- a battery that reports nothing ran nothing" >&2
+    return 1
+  fi
+  _inert=$(printf '%s\n' "$_st" | grep -c 'FAIL.*no run-time arm can fire here')
+  if [ "$_fail" -ne "$_inert" ]; then
+    echo "REFUSED: the materialised census self-tests fail=$_fail with only $_inert environmentally inert -- a tool that says it is broken does not certify a post" >&2
+    return 1
+  fi
   printf '%s' "$(git -C "$REPO" rev-parse --short origin/master)"
 }
 IDC_AT=$(idc_refresh) || { echo "REFUSED: cannot resolve the fleet census from origin/master"; exit 2; }
