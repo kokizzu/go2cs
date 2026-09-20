@@ -59,6 +59,25 @@ def clause_c_tail(row, tail_path):
     return "ok" if pkg == row else f"MISMATCH(want {row!r}, got {pkg!r})"
 
 
+# ⚠ A `disclosed` ENTRY IS A SENTENCE, NOT A NAME (i9 64d873bb2, measured on the committed
+# projections; the wrapper carries the same comment from `bufio` when the fifth blob was cut). It
+# reads `TestCertCache (codegen-liveness): The test nils its own local and then asserts …` -- so the
+# NAME is the LEADING TOKEN and a membership test against the whole string matches NOTHING and
+# subtracts NOTHING, leaving every disclosed divergence in the count.
+#
+# This function read `n not in set(disclosed)` until 2026-09-20 and over-counted `diverged` by
+# exactly the disclosed-entry count on every row that had one: crypto/tls 13 for 12, net 3 for 1,
+# runtime/pprof 37 for its own. `net/http` agreed at 19 and was the control that made the shape
+# legible -- it is the one row of the three with NOTHING to subtract.
+#
+# `len(disclosed)` was always right, which is why `verdicts` matched i9's figure on all three rows
+# while `diverged` did not: the COUNT of entries is the count of names, and only the MATCH was wrong.
+def disclosed_name(entry):
+    """The test name a disclosed entry names: its leading whitespace-delimited token. A bare name
+    (no explanation) returns itself, so this is correct for both shapes."""
+    return entry.split(None, 1)[0] if entry.split(None, 1) else ""
+
+
 def classify(row, path):
     raw = io.open(path, encoding="utf-8").read()
     doc = json.loads(raw, object_pairs_hook=no_dup_pairs)
@@ -68,7 +87,13 @@ def classify(row, path):
     disclosed = doc.get("disclosed") or []
     verdicts = len(go) - len(disclosed)
 
-    dset = set(disclosed)
+    dset = {disclosed_name(entry) for entry in disclosed}
+
+    # ⚠ SAID OUT LOUD rather than silently subtracting nothing, which is the whole defect above: a
+    # derived name the record's own `go` map does not carry means the leading-token rule did not fit
+    # this document, and the count that follows is not the ruled quantity.
+    unresolved = sorted(n for n in dset if n not in go)
+
     diverged = [n for n, g in go.items() if n not in dset and cs.get(n) != g]
 
     pkg = doc.get("package", "")
@@ -84,6 +109,7 @@ def classify(row, path):
         "matched": doc.get("matched"),
         "status": doc.get("status", ""),
         "package": pkg,
+        "unresolvedDisclosed": unresolved,
         "clause_c": "ok" if pkg == want else f"MISMATCH(want {want!r})",
         # ⚠ THE TELL (COORD 000dc3b5f (5)): a row whose NET UNDISCLOSED set equals its WHOLE verdict
         # count is what a side that never ran looks like. A DETECTOR, never a decider -- it NAMES the
@@ -110,3 +136,9 @@ if __name__ == "__main__":
     for r in sorted(rows, key=lambda x: x["row"]):
         print(f"  {r['row']:30s} {r['verdicts']:5d} {r['go']:5d} {r['disclosed']:5d} {r['diverged']:5d} "
               f"{str(r['matched']):>6}  {r['status']:11s} {r['clause_c']:10s} {r['clause_c_tail']:12s} {'⚠ NAMED' if r['tell'] else ''}")
+    # ⚠ Never a silent pass: a disclosed entry whose derived name is absent from `go` means the
+    # leading-token rule did not fit that document, and the subtraction it feeds is not the ruled one.
+    for r in sorted(rows, key=lambda x: x["row"]):
+        if r["unresolvedDisclosed"]:
+            print(f"  ⚠ {r['row']}: {len(r['unresolvedDisclosed'])} disclosed entr(ies) name a test the "
+                  f"record's `go` map does not carry: {', '.join(r['unresolvedDisclosed'])}")
