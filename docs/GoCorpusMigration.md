@@ -2282,14 +2282,47 @@ the banked TSV must still carry that row; duplicates take the larger and say so;
 computed and printed for provenance, not asserted.
 
 **Two of those columns are decided by the leg's own shape and are worth stating here rather than
-leaving to the cut.** `sweep_s` is the wrapper's clock around the **one** pipeline invocation — the
+leaving to the cut.** `sweep_s` is the **CONVERTER's** cost around the **one** pipeline invocation — the
 recon leg makes **one attempt per row**, so the re-run inflation that afflicts a re-taking clock cannot
-arise by construction, and a row whose oracle is unstable is a READING rather than a retry. `word` is
+arise by construction, and a row whose oracle is unstable is a READING rather than a retry.
+⚠ **`sweep_s` is NOT the wrapper's total wall, and the difference is not small** (ruled 2026-09-20,
+after a row was measured whose converter exited in ~66 s and whose wrapper then held one core for ten
+minutes post-processing a 4.77 MB comparison document). The wrapper's own time lands on `wall_s`, which
+is **not** the banked figure. Where a row banks `sweep_s := wall_s` — the hand-stopped row is the case —
+the banked number is still the **converter's** wall: row start in the log to the converter's exit, read
+from the ARTIFACTS' mtimes, and a completion post states **both** numbers so the basis can take the
+first and a reader can see the second. `word` is
 the leg's **outcome class**, a fixed vocabulary — `PASS` (0 diverged) · `DIVERGED` · `CONVERT` (rc ≠ 0
 at convert) · `BUILD` · `TIMEOUT` · `NOVERDICT` (the summary line absent) — and it is **filled, never
 placeholdered**: the map generator discards the value, but the column is the basis's only record of
 **which verdict a cost was measured under**, and a cost measured under `CONVERT` is not the same
 evidence as one measured under `PASS`.
+
+**IS THE LEG ALIVE? A CENSUS BY PROCESS NAME CANNOT ANSWER THAT**, and this is the one question a
+watcher asks most often. A converter census (`Get-Process go2cs`, scoped by executable path) answers
+*"is a CONVERTER running"* — and that answer is legitimately **0**, for minutes at a time, with no
+child process at all, while the wrapper post-processes a completed row. **A wrapper computing for ten
+minutes is indistinguishable from a hung one to a name-based census.**
+
+```
+  the reading that DOES answer it -- sample the WRAPPER's own PID, twice, a stated wall apart:
+      CPU delta over the interval    accumulating  -> computing     flat -> not
+      working set                    flat is normal; growth is its own question
+      child processes                none is normal AFTER the converter exits
+  measured once, 15 s apart:  +15.2 s CPU over 15 s wall, 117 MB flat, no child but a console host
+                              -- one core saturated, on a row whose converter had exited 10 min before
+```
+
+⚠ **And a row that spends its floor's worth of wall inside the wrapper is NOT a TIMEOUT.** The
+per-package deadline floor applies to the converter's test run; what says whether a deadline actually
+fired is the **results-file tail**, which states a deadline kill outright (floor 14). Reading a long
+wall as a timeout, with no tail read, invents a verdict the run never reported.
+
+⚠ **The liveness census is a READING and must not share a command shape with a kill.** Floor 5
+forbids `Get-Process <name> | Stop-Process` because it matches across the whole machine and has taken
+a sibling worktree's suite down; a liveness check that is one pipe away from that is an accident
+waiting for a tired operator. Scope by executable path for both, and keep the reading and the kill in
+separate commands.
 
 **THE POPULATION IS KEYED ON THE CORPUS AXIS — the build tags the pipeline actually converts
 under.** An eligibility census taken on a bare platform axis and the corpus's own axis are not
