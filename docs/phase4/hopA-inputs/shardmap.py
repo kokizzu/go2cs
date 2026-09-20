@@ -451,10 +451,18 @@ if len(_floors) != len(_keys):
 # row's successors run at the sweep's DEFAULT deadline and are killed short, and step 2's intersect
 # drops the pin (reported, but a report is not a floor).
 #
-# ⚠ THE MAP IS READ, NOT COPIED, and it is read from ONE file. C1's table (mailbox 350a301a, ruled
-# at 37c10514a) is 10 rows / 14 arcs / 11 targets -- `crypto/internal/fips140test` receives THREE --
-# so a source→target DICT silently drops arcs: four of the ten SPLIT. One line per arc is the only
-# shape that cannot lose one. i9's wrapper reads this same file by this same contract, so the two
+# ⚠ THE MAP IS READ, NOT COPIED, and it is read from ONE file. Measured from the landed
+# relocations.tsv (C1 957c71d0e): 13 arcs / 10 sources / 11 targets -- `crypto/internal/fips140test`
+# receives THREE -- so a source→target DICT silently drops arcs: THREE of the ten sources SPLIT
+# (crypto/internal/edwards25519, crypto/internal/mlkem768, crypto/internal/nistec, two arcs each).
+# One line per arc is the only shape that cannot lose one.
+#
+# ⚠ CORRECTED 2026-09-20: this comment said 14 arcs and the refusal below said FOUR split, both
+# carried from C1's first count (mailbox 350a301a) which C1 measured and WITHDREW at 033a07d9. The
+# guard's THRESHOLD was never wrong -- ten sources, so fewer than ten arcs cannot name each once --
+# but the reason a reader is handed at the moment it fires described a shape that is not the right
+# one. C1 found it by gating its landing through this reader. A number stated where it is never
+# computed is the one that drifts: this same script prints the live 13/10/11 one line later. i9's wrapper reads this same file by this same contract, so the two
 # derivations cannot disagree about the map.
 #
 # Per e0d5121e2 section 1 EVERY arm of a split INHERITS the floor: a budget copied is an
@@ -487,7 +495,7 @@ for _ln in _reloc_lines[1:]:
 # it would simply inherit fewer floors, which reads identical to a hop that relocated fewer rows.
 if len(RELOCATIONS) < 10:
     die(f"{RELOCATIONS_TSV.name} yielded {len(RELOCATIONS)} arc(s); ten rows relocate at this hop and "
-        f"four of them SPLIT, so fewer than ten arcs cannot name each source once. Refusing rather "
+        f"three of them SPLIT, so fewer than ten arcs cannot name each source once. Refusing rather "
         f"than inheriting a partial map -- a short read is indistinguishable from a smaller hop.")
 
 BIG_ROWS = ["go/doc/comment", "go/types"]
