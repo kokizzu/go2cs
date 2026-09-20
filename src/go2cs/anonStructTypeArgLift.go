@@ -15,9 +15,33 @@ import "go/ast"
 // both spellings are peeled; parentheses around the callee are peeled with them.
 //
 // An ordinary index is the same syntax — `funcs[i](x)` is also an *ast.IndexExpr — so this cannot
-// be used to decide that a call IS an instantiation. It is safe for the one job it has because the
-// caller keeps only indices that are an anonymous struct LITERAL, and a `struct{…}` syntax node can
-// never be a value in an index position.
+// be used to decide that a call IS an instantiation.
+//
+// ⚠ CORRECTED 2026-09-20, C1's design read (`be9a74470` §5). This comment used to say it was safe
+// "because a `struct{…}` syntax node can never be a value in an index position". That sentence is
+// true and it does NOT make the claim it was offered for, because the caller does not test for a
+// `struct{…}` node: it calls extractStructType, whose typeSyntaxOf step PEELS VALUE FORMS
+// (`*ast.CompositeLit → .Type`, `*ast.CallExpr → .Fun`, `*ast.TypeAssertExpr → .Type`). So three
+// VALUE spellings in an index position do reach the lift, and C1 planted all three and measured them
+// reaching it:
+//
+//	m[struct{ a int }{1}]()      a composite literal
+//	m[struct{ b int }(v)]()      a conversion
+//	m[x.(struct{ a int })]()     a type assertion
+//
+// What is actually true, and is a measurement rather than an argument: **the corpus has none of
+// them.** C1's census, calling this very function in process over both trees — 411 index-callee
+// calls and 473 indices tested at 1.24, 879 and 941 at 1.25.1 — found the two written type arguments
+// in `reflect/all_test.go` and RESIDUAL 0, with the repo's own 1,088 Go sources also 0.
+//
+// And the residual is benign where it would fire: an anonymous struct written as a map key, a
+// conversion target or an assertion type is a real Go type that needs a C# name anyway, so lifting
+// and publishing it is the act this file intends rather than a mis-lift. The untested exposure is
+// ORDERING — the declaration would be minted at the top of the enclosing call rather than where the
+// literal renders — and nothing in the corpus reaches it.
+//
+// Stated at this length because the sentence it replaces was a FALSE INVARIANT, which is worse than
+// no comment: the next reader builds on it.
 func explicitCallTypeArgs(fun ast.Expr) []ast.Expr {
 	for {
 		paren, isParen := fun.(*ast.ParenExpr)
@@ -44,15 +68,36 @@ func explicitCallTypeArgs(fun ast.Expr) []ast.Expr {
 //
 // ⚠ WHY THIS EXISTS AT ALL, because the emission looks like the lift is missing and it is not.
 // A type-argument position renders through getAliasQualifiedTypeName, whose anonymous-struct arm
-// (deferredDynamicTypeName) resolves in three steps: this visitor's liftedTypeMap, the shared
-// package registry, then a deferred marker. The first step is TYPE-IDENTITY keyed and the type
-// reaching it comes from the resolved instance (info.Instances), which is not the same *types.Struct
-// the lift recorded for the written syntax node — so it misses even for a lift minted moments
-// earlier in the same function. That leaves the SIGNATURE-keyed registry as the only route, and
-// visitStructType publishes into it only for a package-level lift or one at a call boundary
-// (`!v.inFunction || v.liftAtCallBoundary`). A type argument is a position that gate never
-// enumerated, so a function-scoped one minted its lift, declared it, and published nothing; the
-// marker then resolved to the raw Go signature, which is never valid C#.
+// (deferredDynamicTypeName) resolves in FOUR steps:
+//
+//	1  v.liftedNameFor(t)                  this visitor's liftedTypeMap, THEN productionAliasLiftedTypes
+//	2  lookupDynamicTypeName(signature)     the shared PACKAGE registry  <- the route this file opens
+//	3  lookupProductionDynamicTypeName(..)  the PRODUCTION registry (the -tests reference model)
+//	4  dynamicTypeMarker(signature)         the deferred marker
+//
+// (⚠ corrected 2026-09-20 from "three steps" on C1's design read, `be9a74470` §3: the original
+// collapsed step 3 and half of step 1. Step 3 could never have held this type — the sites are in
+// `all_test.go` and production `reflect` carries no such signature — so the diagnosis survives the
+// miscount, but the chain is what the next reader uses to decide where a FIFTH route belongs.)
+//
+// Step 1 is TYPE-IDENTITY keyed and the type reaching it comes from the resolved instance
+// (info.Instances), which is not the same *types.Struct the lift recorded for the written syntax
+// node — so it misses even for a lift minted moments earlier in the same function. That leaves the
+// SIGNATURE-keyed registry as the only route, and visitStructType publishes into it only for a
+// package-level lift or one at a call boundary (`!v.inFunction || v.liftAtCallBoundary`). A type
+// argument is a position that gate never enumerated, so a function-scoped one minted its lift,
+// declared it, and published nothing; the marker then resolved to the raw Go signature, which is
+// never valid C#.
+//
+// ⚠ AND THE TWO-SITE DEDUP RUNS THROUGH A THIRD LINK, which this file does not perform and a reader
+// will otherwise look for here (C1 `be9a74470` §2). Publication alone does not stop the second site
+// declaring its own type: `visitStructType.go:168-207`'s signature-keyed REUSE block does. Site 1
+// publishes; site 2's own lift then finds the name at `:169`, is admissible because `v.inFunction`,
+// records it in liftedTypeMap/liftedAnonStructNames and RETURNS WITHOUT EMITTING A DECLARATION. That
+// is why the emission shows two sites naming one type and `TestTypeFieldReadOnly_type` with zero
+// declarations and zero references. `liftedTypeExists` does not provide it — it is keyed on
+// `v.getType(expr)`, and two syntax nodes writing the identical shape are different *types.Struct
+// values, so it returns false at site 2 and the second lift genuinely runs.
 //
 // MEASURED SHAPE (2026-09-20, the H10 pre-staging read of the reflect row at the 1.24.13 version
 // tip): `reflect.TypeFor[struct{ f int }]()` at all_test.go:3547 — a NEW assertion inside the
