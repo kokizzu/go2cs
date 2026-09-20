@@ -35,6 +35,16 @@
 > file contents and line numbers are unchanged by a pure rename. There is no `src/Examples` — the samples
 > live under `src/tour` and `src/tests/behavioral`.
 >
+> **Correction, 2026-09-20 (C1).** The sentence above is right that `src/Examples` does not exist and
+> wrong about where its contents went, in both halves; left as written because this is a record, and
+> corrected here. The hand-converted samples were **archived, not relocated**: they are tracked at
+> `src/archived/Examples/` — 358 files across *Manual Tour of Go Conversions*, *Manual go101
+> Conversions*, *Miscellaneous* and *SpecialCases*. `src/tour` is a different thing entirely, the
+> Tour-hosting web application that renders the upstream Tour of Go beside a live conversion pane, so
+> a reader sent there for samples finds a server. And the casing is `src/tests/Behavioral`, capital B
+> — which matters here more than elsewhere, since the sentence sits in the paragraph that rules the
+> lowercase path convention. Measured at `70bce870c2` by `git ls-files` and `find`.
+>
 > **Two sibling changes are assumed landed** and are referenced as prerequisites, not as work:
 > **(a) CNR determinism** — every harness invocation of the converter pins `-go2cspath <repo>/src`, and the
 > converter self-locates a valid go2cs root and warns loudly on an invalid one.
