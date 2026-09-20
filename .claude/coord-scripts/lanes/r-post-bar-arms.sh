@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
-# Arms for the control bar's word-boundary narrowing. The bar lives on the LIVE path, so it is
-# exercised through the tool's own --bar-check door, which evaluates the predicate and exits.
+# Arms for r-post.sh's two live-path guards: the control BAR and the ANCHOR-ADVANCE decision.
 #
-# TWO DIRECTIONS, because a narrowing that only frees things is a hole:
+# Both decisions live on the LIVE path, where proving one HOLDS would otherwise mean making a real
+# post to prove it — so each has a door that evaluates it and exits touching nothing: --bar-check
+# and --anchor-check. The arms drive the REAL predicate through those doors rather than a copy of it.
+#
+# THE BAR runs in TWO DIRECTIONS, because a narrowing that only frees things is a hole:
 #   FREED   a heading quoting a fixture package name must now PASS   (the false positive)
 #   KEPT    every genuine control heading must still REFUSE          (the guard's whole job)
+# Its red is this same set against the OLD substring predicate, where the two FREED arms refuse:
+#   R_POST_TOOL=<a copy with the old predicate> bash r-post-bar-arms.sh   -> 8 of 10
+#
+# THE ANCHOR DECISION answers one question: may a POST advance the read anchor? Only when nothing
+# landed between the stored anchor and the tip the post appends to. Three lanes shipped tools that
+# advanced it unconditionally, so posting recorded unread entries as read.
 set -u
 
 TOOL="${R_POST_TOOL:-/c/go2cs-tmp/r-instruments/r-mailbox-post.sh}"
@@ -43,6 +52,27 @@ arm 13 "a planted control"                     '## 2026-09-20 — R: a planted t
 arm 13 "the bracket tag"                       '## 2026-09-20 — R: [CTL] an admission arm'
 arm 13 "self-test by name"                     '## 2026-09-20 — R: the self-test figure is invariant'
 arm 13 "census control by name"                '## 2026-09-20 — R: a census control for the arm'
+
+echo "== THE ANCHOR-ADVANCE DECISION: a post must never claim a read =="
+# Driven through --anchor-check, the door that evaluates the branch and exits. The branch lives on
+# the live path, and proving it HOLDS must not require making a real post to prove it.
+anchor_arm() {
+    local want="$1" label="$2" prev="$3" pretip="$4" rc
+    R_POST_STATE=/c/go2cs-tmp/r-instruments "$TOOL" --anchor-check "$prev" "$pretip" >/dev/null 2>&1
+    rc=$?
+
+    if [ "$rc" -eq "$want" ]; then
+        printf '  OK    %-46s rc=%s\n' "$label" "$rc"
+        pass=$((pass + 1))
+    else
+        printf '  FAIL  %-46s rc=%s want=%s\n' "$label" "$rc" "$want"
+        fail=$((fail + 1))
+    fi
+}
+
+anchor_arm 0  "nothing landed since the anchor -> ADVANCE" "aaaaaaa" "aaaaaaa"
+anchor_arm 20 "entries landed since the anchor -> HOLD"    "aaaaaaa" "bbbbbbb"
+anchor_arm 0  "no prior anchor -> ADVANCE"                 ""        "bbbbbbb"
 
 rm -rf "$DIR"
 echo
