@@ -115,7 +115,14 @@ census() { # $1 = file to scan; 0 clean, 1 hits, 2 the INSTRUMENT is unsound (ne
   # flag alone is fine. It crashed silently per token and the function then printed CLEAN -- a
   # fail-open that put a profile path on the mailbox. Case-fold with tr on BOTH sides and run -F
   # WITHOUT -i. NEVER reintroduce -Fi here. Any grep rc>1 is UNSOUND, not clean.
-  low="$f.lc.tmp"; tr 'A-Z' 'a-z' < "$f" > "$low"
+  # ⚠ THE FOLD TEMP LIVES UNDER $STATE, NOT BESIDE THE CALLER'S FILE. It was `$f.lc.tmp` until
+  # 2026-09-20, which WROTE AND DELETED a file in whatever directory the caller's entry sat in —
+  # a path NEITHER door covers, and it clobbered anything already at that name. MEASURED, not
+  # read: a decoy at `<entry>.lc.tmp` did not survive a --dry-run. G's 664e6925b §4 is the shape
+  # ("a door is a property of a PATH, not of a tool"), found there by an arm that went through a
+  # door and still truncated a shared census file. This tool HAD two doors and still wrote to a
+  # third path — a tool with doors reads as sandboxed while one path is outside them.
+  low="$STATE/.r-census-scan.tmp"; tr 'A-Z' 'a-z' < "$f" > "$low"
   while IFS= read -r t; do
     [ -z "$t" ] && continue
     t="$(printf '%s' "$t" | tr 'A-Z' 'a-z')"
@@ -152,7 +159,7 @@ selftest() {
     [ -n "$tok" ] || continue
     printf '## plant\n\nleading text %s trailing text\n' "$tok" > "$plant"
     census "$plant" >/dev/null 2>&1; rc=$?
-    rm -f "$plant" "$plant.lc.tmp"
+    rm -f "$plant"   # census removes its own fold temp now that it owns the path
     [ "$rc" -eq 1 ] || { echo "  SELF-TEST FAILED: a planted token did NOT make the census fire (rc=$rc)"; return 1; }
     planted=$((planted + 1))
   done < "$TOKENS"
