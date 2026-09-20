@@ -429,6 +429,42 @@ Ten banked rows have **no package at their banked path** at go1.24.13. None of t
 targets. **Retirement is by an empty successor, never by an absent path** — two declarations retire in
 the whole set.
 
+<!-- THE RETIRING PAIR, RE-MEASURED AGAINST THE CORPUS (C1, 2026-09-20, COORD 446401184). The census
+     above took them against the pinned GOROOT under the corpus's own tags; i9's gates read the
+     CONVERTED corpus, so the number H10's row act uses is re-taken where the gate looks. Two-sided,
+     because "absent" alone cannot tell a RETIRED declaration from one that never existed:
+
+       declaration                  master (pre-hop)   version tip d91c832543   verdict
+       TestNewModFromBigZero              2 files              0 files          RETIRED
+       TestPQCrystalsAccumulated          2 files              0 files          RETIRED
+       TestRoundTrip (control)           14 files             12 files          survives
+       NoSuchTestNameXYZ123 (control)     0 files              0 files          —
+
+     The surviving control moves 14 -> 12 rather than holding, which is what proves the predicate can
+     read both states at both trees. The object was asserted with `git cat-file -t` before either
+     reading: an earlier run of this shape returned all-zero from a pathspec against an unfetched
+     object whose fatal a redirect had eaten, and that is the night's recurring class.
+     So the corpus agrees with the GOROOT and `2` stands. -->
+
+> **⚠ WHY H11 IS DECLARED AFTER H10, BY CONSTRUCTION** (COORD `446401184`, 2026-09-20). H11's release
+> pre-flight censuses the roster: every row wants a green badge and a banked test project at the new
+> base. **These ten rows have neither until the act below runs**, and re-pathing a row alone does not
+> help — a row pointed at an unbanked successor has no badge either. So the two Windows-box gates
+> H11's declaration waits on (`check-roster-format.ps1`, `release-nuget.ps1 -VerifyOnly`) cannot read
+> green before H10, and **the ladder's existing order is not a convention here but a dependency**.
+>
+> Measured at the version tip `d91c832543`, where those gates read: `check-roster-format.ps1` exits 1
+> on 2 of 638 — `crypto/internal/nistec` and `crypto/internal/edwards25519`, whose
+> `go2cs_test_disclosures.json` the relocation orphaned — and the release pre-flight reads exactly
+> these ten as *"no green badge, no test project"* (i9 `a9749f5e3`). Both are **hop debt of this
+> rung**, pre-existing and attributed by identical problem sets across three trees; neither is caused
+> by the H11 seat or the subtree seat, and neither blocks anything before H10.
+>
+> **Each row's H10 act is therefore one act, not two:** re-point the path, move the disclosure file
+> with its package (the pins survive — zero re-signs measured, so a MOVE and never a re-sign), run the
+> successor through the real pipeline on the banking platform, and re-bank. The gates are re-taken
+> after those rows, never before.
+
 ### ⚠ The configuration every count below is measured under
 
 **`GOOS=windows GOARCH=amd64`, build tags `purego,math_big_pure_go`, `CgoEnabled=false`.** This is not
