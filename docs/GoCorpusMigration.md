@@ -2242,6 +2242,15 @@ The recon leg is the first full pass of the roster at the version tip, per packa
 wrapper; it banks the per-row TSV the map reads. Then the roster seat lands. Then the plan is emitted
 from that TSV and the driver runs the campaign's repeated passes.
 
+**The recon leg invokes THE PIPELINE per package** — `go2cs -tests -test-action all
+<goroot>/src/<row> <tree>/src/core/<row>` in the worktree at the version tip, whose `src/core` is the
+seed — **and not the sweep script**, which is what H10's own line above decides: the sweep is the
+steady-state gate and this step invalidates its preconditions by design. One process per worker list
+with rows sequential, so the shared build cost falls on the first row: **emit that fact as a column**
+so the plan's re-derivation can see which cost carries a build. The driver stays what it is — the
+sweep's per-row dispatcher for the campaign's steady-state passes, after rows re-bank, on the costed
+plan.
+
 - **Plan before seat** dispatches the relocated rows at their OLD paths, which do not exist at the
   new tip — a per-row failure, late.
 - **Seat before recon** makes the map generator **REFUSE**: its population is the roster file, so
@@ -2262,9 +2271,21 @@ per-worker name lists through the per-package pipeline** — the driver's first 
 no fallback (an unresolvable path refuses rather than reverting to the other basis); LF only, any CR
 refuses; a required header read **by name, never by position**, carrying `row`, `word`, `verdicts`,
 `sweep_s`, extras ignored; `sweep_s` must be an integer, because **a row with no measured cost is
-UNSCHEDULED and never nominal**; a hand-stopped row is dropped by name **and the drop must fire**, so
+UNSCHEDULED and never nominal** (what FILLS each column is the recon wrapper's question and is settled
+at that cut, not here — this is the contract the file must satisfy to be readable at all); a hand-stopped row is dropped by name **and the drop must fire**, so
 the banked TSV must still carry that row; duplicates take the larger and say so; the file's digest is
 computed and printed for provenance, not asserted.
+
+**THE POPULATION IS KEYED ON THE CORPUS AXIS — the build tags the pipeline actually converts
+under.** An eligibility census taken on a bare platform axis and the corpus's own axis are not
+different-but-equal accountings: `resolveBuildTags` applies the stdlib build tags to **every** `-tests`
+run unless `-tags` is passed explicitly, because a `-tests` run reconverts the package's PRODUCTION
+sources into the test assembly and must select the files the committed corpus was built from. **So a
+population keyed on a no-tags axis describes a build the hop will never perform.** At the 1.24 hop this
+moved exactly one row — a package whose only surviving test declaration is selected BY the purego tag
+and excluded without it — and the general rule it leaves is: **the recon leg is the authority on
+membership.** A row that yields zero verdicts under the corpus axis is not a row and is reported by
+name; a package outside the enumerated population that the tags select is found the same way.
 
 **THE HOST RULE.** The roster's platform marker records **the platform of the run that banked the
 row**, not a requirement on the runner: a row re-banked on windows carries `windows:` at the new
@@ -2298,6 +2319,14 @@ every legacy label — the **proof page regenerates and the badge recomposes fro
 **four of them are `-tests` output**: the roster row is the docs edit, while the green badge, the
 proof page, the `.tests.csproj` and the disclosure manifest are all produced by the re-bank. That is
 why a relocated row cannot be cleared by a docs commit ahead of its run.
+
+⚠ **And two different units meet in this step, so name which one a number is.** A package whose only
+test declarations are benchmarks emits a **complete test project** — `.tests.csproj`, host, manifest,
+package info — with **zero converted test source in it**; the declarations go to the manifest as
+deferred. A gate asking *"does the `.tests.csproj` exist"* scores that row present. So **"declarations
+recorded" and "C# test source produced" are different quantities**, a row can be non-zero in the first
+and zero in the second, and a 0-denominator ruling has to travel with the row rather than be inferred
+from either count.
 
 <!-- Derivation, 2026-09-20 (C1). Order and the two refusals: COORD 1e2d12a64 §1, on C1's brief
      d0c83ed9 (the seat-before-recon refusal measured in-process against shardmap.py with an
