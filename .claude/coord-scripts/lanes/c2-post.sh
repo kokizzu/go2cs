@@ -337,16 +337,24 @@ git fetch --quiet origin claude/mailbox || { echo "FAILED: fetch"; exit 7; }
 git checkout --quiet -B claude/mailbox origin/claude/mailbox || { echo "FAILED: reset to origin"; exit 7; }
 PRETIP=$(git rev-parse HEAD)
 
-# tree mode: A READING, baseline = the tip this fetch just produced. NEVER the stored anchor.
-echo "----- fleet census, tree mode (a READING; the push is NOT gated on it) -----"
-# ⚠ THE TREE ARM STAYS IN THE CLONE, and this line is here because C1 broke exactly this and its
-# own green run caught it: the arm's file path and its `<sha>:<path>` baseline resolve HERE, so an
-# absolute path from another directory reads as "baseline could not be read". The invariant above is
-# about the battery that CERTIFIES; this arm certifies nothing -- the push is not gated on it -- so it
-# runs where its inputs resolve and its battery is PRINTED rather than silently mixed with the gate's.
-echo "tree arm battery: $(census_arms "$CLONE") arm(s), from the post clone -- a READING, not the gate"
-"$IDC" tree "$MBOX" "$PRETIP" | grep -E 'baseline hits|added=|PRE-EXISTING|CLEAN:|REFUSED'
-echo "-----------------------------------------------------------------------------"
+# ⚠⚠ THE TREE READING IS DROPPED, as RULED fleet-wide (COORD 0cb09c354, from G's 561495eea).
+# It ran here, in the critical path, immediately BEFORE the push. It printed its own disclaimer --
+# "THIS IS A READING, NOT THE GATE" -- and it could not refuse a post, so every second it cost was
+# spent on something whose answer changed no decision.
+#
+# MEASURED ON THIS BOX before the drop (C2 767c73dd1): the cycle was ~9.2 s and the tree pass was
+# 5.30 s of it, 57% -- the SAME PROPORTION G measured at 177 s and C1 at 12.08 s, on three machines
+# whose absolute costs differ by 19x. The magnitude is the box; the proportion is the structure, and
+# the structure is what the ruling rests on: A GATE AND A READING SHOULD NOT SHARE A BUDGET, because
+# the reading is what priced the slower lanes out of the channel.
+#
+# WHAT IS NOT DROPPED, and this is the half that matters: the GATE. `entry` and `subject` still run
+# STRICT before any write, and they are what refuses. They are also flat in input size (~0.05 s here,
+# ~2.1 s on the Windows lanes regardless of post size), so the gate was never the cost.
+#
+# ⚠ The reading was added deliberately (COORD ef0c5c7c9) after a share-shaped line already in the
+# file blocked a post. That history is why this is a RULED drop rather than a lane's tidy-up, and why
+# the arms below prove the SURVIVING gate still refuses rather than merely that the tool still runs.
 
 # re-append AFTER the guards, immediately before pushing
 printf '\n' >> "$MBOX" && cat "$ENTRY" >> "$MBOX" || { git checkout --quiet -- "$MBOX"; echo "FAILED: append"; exit 7; }
