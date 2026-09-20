@@ -1661,9 +1661,34 @@ the run and must **never** be read as a corpus regression.
 > What survives unqualified: **mechanism 2 is real and was found only by the whole-corpus comparison** —
 > i9's windows CNR confirms `GenericTypeInference`, `GenericUntypedIntArg` and `ReceiverCapturedInClosure`
 > and adds a fourth file (`ReceiverCapturedInClosure/package_info.cs`, the same RED 11 seat, missed here
-> because this sweep compared `main.cs` only) and a fourth project, `SystemCertVerify`, under **RED 9** —
-> one of the seven this arm declared it could not see. The process gap below is unchanged and is what
-> all four have in common.
+> because this sweep compared `main.cs` only — a `GoPositionMap` base64 shifting because the hoist moved
+> line positions) and a fourth project, `SystemCertVerify`, under **RED 9** — one of the seven this arm
+> declared it could not see. The process gap below is unchanged and is what all four have in common.
+>
+> ##### THE BANKED SET ON THE BANKING PLATFORM — the TWELVE (i9 `dc9eb368c`, ruled `ab9e7209a`)
+>
+> ```
+>   MECH 1, alias, 8 goldens / 35 pairs
+>     RuntimeCallerFrames 15 · SetFinalizerBridge 6 · FuncLiteralCallerNames 3 · GoroutineWaitState 3
+>     FuncForPCName 2 · GoexitDefers 2 · IterPullRendezvous 2 · SyscallKeystonePulls 2
+>   MECH 2, seats that banked no golden, 4 files over 4 projects
+>     GenericTypeInference (RED 12, 4 pairs) · GenericUntypedIntArg (RED 12, 1 pair)
+>     ReceiverCapturedInClosure main.cs +4/-1 AND package_info.cs (RED 11, one seat, two files)
+>     SystemCertVerify (RED 9)
+>   NOT banked here: SetegidBroadcastSeam -- `//go:build linux`, CNR SKIPS it platform-exclusive.
+>                    Real on linux, out of scope for a windows rebank, and NOT deleted: a
+>                    linux-hosted rebank would need it.
+> ```
+>
+> ⚠ **`SystemCertVerify` is RED 9, and the attribution is a predicate with a FIRING control** — not a
+> name match. The hunk is an alias ARRIVAL (`using io` → `using Δio`), which is neither mechanism 1's
+> package nor its direction, so i9 attributed it: exactly one landed seat in the window touches
+> `importAliasOperations.go` (`f643b67d4`, *a package reached only through a TYPE takes the CS0576
+> alias rename*), `SystemCertVerify` has **0** `io.` call sites — RED 9's own predicate, reached only
+> through a type — and 20 goldens already carry `Δio` as the established corpus form. **The control
+> that makes the predicate discriminate:** `AdapterNameInterfaceCollision` carries `Δio` *and* has 3
+> `io.` call sites, i.e. it got its alias the ordinary way, so "carries `Δio`" alone would not have
+> separated them.
 
 The amendment above names eight goldens, 35 changed line-pairs and one mechanism. That prediction was
 made at `a02ac3df3` for the **H2→H5 window**, and the version branch has since taken every RED seat and
