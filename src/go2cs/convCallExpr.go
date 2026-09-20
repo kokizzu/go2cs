@@ -1565,6 +1565,13 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		callExprContext.hasSpreadOperator = true
 	}
 
+	// An anonymous struct written as an explicit TYPE ARGUMENT is lifted and published here, before
+	// anything renders the callee: every rendering path for a type-argument position resolves the
+	// anonymous struct through the SIGNATURE-keyed package registry, and a function-scoped lift
+	// never reached it. See liftExplicitAnonStructTypeArgs — `reflect.TypeFor[struct{ f int }]()`,
+	// new in Go 1.24's reflect tests, is the measured shape and it made that whole row unreadable.
+	v.liftExplicitAnonStructTypeArgs(callExpr)
+
 	// ---- Phase 3: classify each argument against the callee signature ----
 	//
 	// The longest phase. For every parameter position it decides what the argument must become:
