@@ -57,8 +57,10 @@
 #
 #   same classes  the profile/home arm is that file's fleetProfileRe, split into its two
 #                 alternatives; the backslash share arm is its fleetNetworkRe; the placeholder admit
-#                 set is its fleetIsPlaceholder plus fleetPlaceholderSegments; the UNC host admit
-#                 set is its fleetNicknameHostSegments, exactly those four and no more.
+#                 set is its fleetIsPlaceholder plus fleetPlaceholderSegments, consulted by the
+#                 profile, home AND unc arms exactly as fleetConsiderSegment consults it for every
+#                 kind; the UNC host admit set is its fleetNicknameHostSegments, exactly those four
+#                 and no more.
 #   same names    coord-identifier-hashes.txt is generated from its fleetDeniedTokens. Neither file
 #                 carries plaintext.
 #   same tokens   candidates are maximal [a-z0-9._-] runs PLUS each dot/hyphen/underscore component,
@@ -535,7 +537,14 @@ function scanArm(arm, lineno, text, lo, pass, joinAt,   pos, s, e, mt, tok, ok) 
             if (admitted("profile_placeholder", tok)) { EXC[arm "\t" "placeholder-segment"]++; ok = 0 }
         } else if (arm ~ /^unc_/) {
             tok = uncHost(mt)
+            # THE PLACEHOLDER ADMIT REACHES THE unc_ ARMS TOO (COORD d30c9d36a, ruling (a)). The Go
+            # guard's fleetConsiderSegment applies fleetIsPlaceholder to EVERY kind, network-path
+            # included; the header above already claimed that set for every arm, which was true of
+            # the PATTERN and, until this line, false of the DECISION. Consulted BEFORE the nickname
+            # map, in the guard's own order, and on the HOST SEGMENT -- per OCCURRENCE, never per
+            # line, so a placeholder host never clears a real host beside it.
             if (tok == "") { EXC[arm "\t" "no-host"]++; ok = 0 }
+            else if (admitted("profile_placeholder", tok)) { EXC[arm "\t" "placeholder-segment"]++; ok = 0 }
             else if (admitted("nickname_host", tok)) { EXC[arm "\t" "nickname-host"]++; ok = 0 }
         } else if (arm ~ /^host_/) {
             tok = hostVal(mt)
@@ -1148,6 +1157,24 @@ idc_mode_selftest() {
     # A PLACEHOLDER IS EXCLUDED AS A SEGMENT, NEVER AS A LINE.
     printf 'C:%sUsers%s<user>%sa and C:%sUsers%s%s%sb\n' "$bs" "$bs" "$bs" "$bs" "$bs" "sylvandeep" "$bs" > "$d/p12"; idc_st_case "placeholder segment does not clear the line" "profile_root" "$d/p12" 1
     idc_st_exc "  and the placeholder on that SAME LINE was admitted" "profile_root|placeholder-segment" "$IDC_TMP/st.status"
+
+    # THE PLACEHOLDER ADMIT ON THE unc_ ARMS -- BOTH DIRECTIONS, IN THE GATE'S OWN MODE (STRICT).
+    # An admit-only battery reads GREEN on an arm that admits every host, so every case that must
+    # PASS here has p04/p05 above as its REFUSE sibling: those hosts are in NEITHER admit set and
+    # still fire. Each pass also asserts that the PLACEHOLDER ADMIT is what admitted it, so the
+    # case cannot go green because the arm stopped matching.
+    printf 'upstream doc comment: %s%sserver%sshare%spath\n' "$bs" "$bs" "$bs" "$bs" > "$d/p19"; idc_st_case "STRICT admits a placeholder host in a UNC" "" "$d/p19" 1
+    idc_st_exc "  and the PLACEHOLDER ADMIT is what admitted it" "unc_backslash|placeholder-segment" "$IDC_TMP/st.status"
+    printf 'and the slash flavour: %s%sserver%sshare%spath\n' "$sl" "$sl" "$sl" "$sl" > "$d/p20"; idc_st_case "STRICT admits a placeholder host in a slash share" "" "$d/p20" 1
+    idc_st_exc "  and the PLACEHOLDER ADMIT is what admitted it" "unc_slash|placeholder-segment" "$IDC_TMP/st.status"
+    # PER OCCURRENCE, NEVER PER LINE -- the property p11 proves for the nickname admit, proved again
+    # for this one: a placeholder host and a real host on ONE line still refuses.
+    printf 'from %s%sserver%sshare and %s%s%s%sshare\n' "$bs" "$bs" "$bs" "$bs" "$bs" "box7" "$bs" > "$d/p21"; idc_st_case "mixed line: placeholder host + real host" "unc_backslash" "$d/p21" 1
+    idc_st_exc "  and the placeholder on that SAME LINE was admitted" "unc_backslash|placeholder-segment" "$IDC_TMP/st.status"
+    # AND IN DELTA MODE TOO: this admit is read on the DECISION TOKEN, not on the sentence, so it is
+    # identical in both modes -- unlike a context rule, which strict refuses on purpose.
+    printf 'upstream doc comment: %s%sserver%sshare%spath\n' "$bs" "$bs" "$bs" "$bs" > "$d/p22"; idc_st_case "DELTA admits the same placeholder host" "" "$d/p22" 0
+    idc_st_exc "  and by the PLACEHOLDER ADMIT in delta as well" "unc_backslash|placeholder-segment" "$IDC_TMP/st.status"
 
     # PASS 2 -- a token split across a line break, with an INDENTED continuation.
     printf 'owner column reads zorb\n    ulax here\n'                      > "$d/p13"; idc_st_case "token split across a line break (PASS 2)" "TOKENFILE" "$d/p13" 1
