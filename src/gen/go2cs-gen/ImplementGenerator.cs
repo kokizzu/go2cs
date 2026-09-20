@@ -536,7 +536,7 @@ public class ImplementGenerator : ISourceGenerator
                             method.Parameters[0].Type is INamedTypeSymbol recvType &&
                             recvType.Name == "ж" &&
                             recvType.TypeArguments.Length == 1 &&
-                            SymbolEqualityComparer.Default.Equals(recvType.TypeArguments[0], structType))
+                            IsForeignReceiverOf(recvType.TypeArguments[0], structType))
                         {
                             boxBound.Add(method.Name);
                         }
@@ -544,7 +544,7 @@ public class ImplementGenerator : ISourceGenerator
                         // A [GoRecv] ref extension called STATICALLY needs the ref keyword.
                         if (method.DeclaredAccessibility == Accessibility.Public &&
                             method.Parameters[0].RefKind == RefKind.Ref &&
-                            SymbolEqualityComparer.Default.Equals(method.Parameters[0].Type, structType))
+                            IsForeignReceiverOf(method.Parameters[0].Type, structType))
                         {
                             refBound.Add(method.Name);
                         }
@@ -934,7 +934,7 @@ public class ImplementGenerator : ISourceGenerator
                 // (CrossPkgLib.Reporter) gets its public modifier from a sibling generator too.
                 string adapterScope = AdapterSidePublic(structType, structName) && AdapterSidePublic(interfaceType, interfaceName) ? "public" : "internal";
 
-                // A GENERIC struct (crypto/elliptic's nistCurve[Point nistPoint[Point]]) adapts
+                // A LOCAL GENERIC struct (crypto/elliptic's nistCurve[Point nistPoint[Point]]) adapts
                 // through ONE generic adapter class over its OPEN type parameters —
                 // `nistCurveжCurve<Point> : Curve where Point : nistPoint<Point>` wrapping
                 // `ж<nistCurve<Point>>` — that the converter instantiates as
@@ -943,20 +943,84 @@ public class ImplementGenerator : ISourceGenerator
                 // class NAME drops to the bare simple name (`nistCurve`) and the `<Point>` list
                 // plus the struct's own constraint ride SEPARATELY. The per-instantiation records
                 // all collapse to the same open pair here — emit the class once (a second is
-                // CS0102). Foreign generic adapters are out of scope (kept on the non-generic path).
+                // CS0102).
+                //
+                // A FOREIGN GENERIC struct is HANDLED, and handled DIFFERENTLY: it takes a
+                // NON-generic adapter over the CLOSED instantiation the record names, keyed on that
+                // instantiation, with the wrapped type fully qualified. The open-generic route is
+                // not merely awkward there, it is unrepresentable — measured on the corpus's first
+                // foreign-and-generic pair, `internal/sync.HashTrieMap[any, any]` against sync's own
+                // `mapInterface` (Go 1.24.13, sync/map_reference_test.go:32):
+                //
+                //   * NOT a constraint problem. The converted `partial struct HashTrieMap<K, V>`
+                //     declares NO constraint at all, so GetGenericConstraintClause would render "".
+                //   * The MEMBER TYPING is what blocks it. mapInterface is NON-generic and every
+                //     member is typed at the closed arguments (`Load(any) (any, bool)`), while the
+                //     struct's own extensions are typed at the parameters (`Load<K, V>(this
+                //     ж<HashTrieMap<K, V>>, K key)`). An adapter generic over `<K, V>` would have to
+                //     implement `Load(object)` by passing that `object` where `K` is expected —
+                //     CS1503 for every member, for every K that is not object.
+                //   * Go's own rule is why this is general rather than incidental: a generic
+                //     instantiation satisfies a NON-generic interface only when its substituted
+                //     signatures match exactly, so when the interface mentions the type arguments
+                //     EXACTLY ONE instantiation can ever satisfy it. A per-instantiation adapter is
+                //     what the semantics already describe. (When the interface does NOT mention them
+                //     — the nistCurve/Curve shape — every instantiation satisfies it, which is the
+                //     local branch above and stays generic.)
+                //
+                // ⚠ COLLISION HAZARD, named because it is not defended against. The foreign name
+                // composes WITHOUT a per-instantiation suffix (`sync_HashTrieMapжmapInterface`), so
+                // two DIFFERENT closed instantiations of one foreign generic recorded against one
+                // interface compose one class twice — CS0102. A suffix was considered and rejected:
+                // the converter must compose the SAME name at the cast site and it spells the
+                // arguments in GO-ALIAS form (`any`) where this generator spells them in C# keyword
+                // form (`object`), so a name derived from the argument spelling cannot be kept in
+                // sync across the two halves — the very failure the name exists to prevent. The key
+                // below is therefore the CLOSED instantiation rather than the open definition, so a
+                // second instantiation emits a second class and fails LOUDLY at CS0102 instead of
+                // silently binding the first instantiation's arguments. Unreachable from Go for an
+                // interface that mentions the type arguments (see above); no corpus instance.
                 string adapterBaseName = structName;
                 string adapterTypeParameters = "";
                 string adapterConstraintClause = "";
+                string? foreignClosedStructName = null;
 
-                if (!foreignStruct && structType is INamedTypeSymbol { IsGenericType: true } genericStructType)
+                if (structType is INamedTypeSymbol { IsGenericType: true } genericStructType)
                 {
-                    if (!emittedGenericPointerAdapters.Add($"{genericStructType.OriginalDefinition.ToDisplayString()}|{interfaceName}"))
-                        continue;
+                    if (foreignStruct)
+                    {
+                        if (!emittedGenericPointerAdapters.Add($"closed|{genericStructType.ToDisplayString()}|{interfaceName}"))
+                            continue;
 
-                    adapterBaseName = genericStructType.Name;
-                    adapterTypeParameters = $"<{string.Join(", ", genericStructType.TypeParameters.Select(typeParameter => typeParameter.Name))}>";
-                    adapterConstraintClause = GetGenericConstraintClause(genericStructType.TypeParameters);
+                        // The adapter identifier is minted from the symbol's BARE name — never from
+                        // a display string, which spells a generic `Name<typeArgs>` and would land
+                        // the argument list INSIDE the class identifier (CS0692 plus the
+                        // CS0708/CS0540/CS0548/CS0050 cascade, 32 errors in one file).
+                        adapterBaseName = genericStructType.Name;
+
+                        // The WRAPPED type takes the symbol's own display string, which carries the
+                        // namespace and containing types. GetFullTypeName's generic case renders
+                        // `Name<typeArgs>` and drops everything left of the name, so GlobalQualify
+                        // found no `go.` prefix to qualify and `ж<HashTrieMap<object, object>>`
+                        // resolved to nothing (CS0246). Qualified HERE rather than in the shared
+                        // helper so every existing caller of GetFullTypeName stays byte-identical.
+                        foreignClosedStructName = GlobalQualify(genericStructType.ToDisplayString());
+                    }
+                    else
+                    {
+                        if (!emittedGenericPointerAdapters.Add($"{genericStructType.OriginalDefinition.ToDisplayString()}|{interfaceName}"))
+                            continue;
+
+                        adapterBaseName = genericStructType.Name;
+                        adapterTypeParameters = $"<{string.Join(", ", genericStructType.TypeParameters.Select(typeParameter => typeParameter.Name))}>";
+                        adapterConstraintClause = GetGenericConstraintClause(genericStructType.TypeParameters);
+                    }
                 }
+
+                // The STRUCT side of a FOREIGN adapter's name: package-qualified, and composed from
+                // the bare name on the closed-generic path (where structName still carries the
+                // argument list) and from the simple name everywhere else.
+                string foreignAdapterBaseName = $"{ForeignPackagePrefix(structType)}{(foreignClosedStructName is null ? GetSimpleName(structName) : adapterBaseName)}";
 
                 string adapterSource = new AdapterImplTemplate
                 {
@@ -971,7 +1035,7 @@ public class ImplementGenerator : ISourceGenerator
                     // A LOCAL name is a bare SYMBOL name — UNescaped, unlike display strings — so a
                     // keyword-named struct must be "@"-escaped here or `ж<fixed>` breaks the parse
                     // (the CS0708 'main_package.' cascade). No-op for every other name.
-                    StructName = foreignStruct ? GlobalQualify(structType.GetFullTypeName(true)) : $"{EscapeCsKeyword(adapterBaseName)}{adapterTypeParameters}",
+                    StructName = foreignStruct ? foreignClosedStructName ?? GlobalQualify(structType.GetFullTypeName(true)) : $"{EscapeCsKeyword(adapterBaseName)}{adapterTypeParameters}",
                     InterfaceName = interfaceName,
                     // Adapter class name composes with the shared pointer glyph (CatжAnimal) - always
                     // via Symbols.PointerPrefix so a future symbol change follows automatically.
@@ -989,7 +1053,7 @@ public class ImplementGenerator : ISourceGenerator
                     // The interface side takes a package qualifier ONLY when this name is one the
                     // pre-pass found more than one interface composing (see adapterNameGroups) —
                     // flate's own `Reader` vs `io.Reader`, both reached from *bufio.Reader.
-                    AdapterName = $"{(foreignStruct ? $"{ForeignPackagePrefix(structType)}{GetSimpleName(structName)}" : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}",
+                    AdapterName = $"{(foreignStruct ? foreignAdapterBaseName : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}",
                     TypeParameters = adapterTypeParameters,
                     ConstraintClause = adapterConstraintClause,
                     AdapterScope = adapterScope,
@@ -1269,6 +1333,31 @@ public class ImplementGenerator : ISourceGenerator
             return string.Empty;
 
         return $"{container.Substring(0, container.Length - PackageSuffix.Length)}_";
+    }
+
+    /// <summary>
+    /// Decides whether a foreign package-class extension's FIRST parameter names the struct under
+    /// adaptation — the box form's <c>ж&lt;T&gt;</c> argument, or a <c>[GoRecv]</c> ref extension's
+    /// receiver.
+    /// </summary>
+    /// <remarks>
+    /// Plain symbol equality answers NO for a CONSTRUCTED generic: the record names
+    /// <c>HashTrieMap&lt;object, object&gt;</c> while the extensions are declared over the OPEN
+    /// <c>Load&lt;K, V&gt;(this ж&lt;HashTrieMap&lt;K, V&gt;&gt;, K key)</c>, so nothing bound and
+    /// every member fell back to <c>m_box.Value.&lt;name&gt;</c> — which binds nothing either, because
+    /// the converter emits a Go pointer-receiver method as a package-class EXTENSION and not as an
+    /// instance member of the struct. Comparing ORIGINAL DEFINITIONS binds the right method: the
+    /// extension is generic over the struct's own parameters, so it infers them from the closed box
+    /// at the call site and needs no explicit argument list. Inert for a non-generic struct, whose
+    /// original definition is itself.
+    /// </remarks>
+    private static bool IsForeignReceiverOf(ITypeSymbol receiverParameterType, ITypeSymbol structType)
+    {
+        if (SymbolEqualityComparer.Default.Equals(receiverParameterType, structType))
+            return true;
+
+        return structType is INamedTypeSymbol { IsGenericType: true } &&
+               SymbolEqualityComparer.Default.Equals(receiverParameterType.OriginalDefinition, structType.OriginalDefinition);
     }
 
     private static string ForeignPackagePrefix(ITypeSymbol structType)
