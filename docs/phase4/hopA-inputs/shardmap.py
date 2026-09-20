@@ -87,6 +87,7 @@ if hasattr(sys.stdout, "reconfigure"):
 HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "DATA-sweep-row-walltimes.md"
 ROSTER = HERE.parent.parent / "ValidatedTestPackages.md"
+POPULATION = HERE / "recon-lists" / "population.txt"
 SWEEP = HERE.parent.parent.parent / "src" / "run-validated-sweep.ps1"
 
 # The block this map is parameterized by, as a (OS, corpus SHA, machine) key rather than "the first
@@ -451,6 +452,48 @@ if len(costed) + len(UNSCHEDULED) != len(roster_names) + len(CANDIDATES):
     die(f"population arithmetic does not close: {len(costed)} costed + {len(UNSCHEDULED)} "
         f"unscheduled != {len(roster_names)} banked + {len(CANDIDATES)} candidate(s)")
 
+# ------------------------------------------------------- the DECLARED CANDIDATE SET, and the LIVE
+# refusal the invariant above cannot supply. RULED at COORD 1fbc20190.
+#
+# The leg's POPULATION file is the corpus-axis universe the recon leg was run over -- an INDEPENDENT
+# list, so membership is NOT implied by being costed, which is exactly what the invariant above
+# lacks. A costed row that is neither banked nor in the population CAN exist, and it is a
+# transcription error: the per-worker lists are hand-typed, and this fleet counted three transcribed
+# numbers wrong in one night. It REFUSES, by name.
+#
+# ⚠ TWO FILES, TWO CONVENTIONS, ONE CHECK READING BOTH (C1 a9836fec1e, re-measured here):
+# population.txt carries 27 '#' COMMENT lines among its 228 data rows -- 255 lines in all -- while
+# relocations.tsv carries NONE by design, since its reader treats every post-header line as an arc.
+# A consumer that counts LINES here is wrong by 27.
+#
+# ⚠ ABSENT IS A REFUSAL, not a skip. The file lands with the roster seat and is not on master yet
+# (C1 a9836fec1e), so a ninth that landed first would read nothing -- and a declared-candidate check
+# whose declared set is absent has not measured anything. The instrument cannot know, so it does not
+# pass.
+if not POPULATION.exists():
+    die(f"no declared candidate set at {POPULATION.name} -- it is the corpus-axis universe the leg "
+        f"was run over, and it is what makes the candidate bucket a reading rather than a "
+        f"restatement of the costed set. It lands with the roster seat; refusing rather than "
+        f"admitting every costed row as a candidate by construction.")
+with open(POPULATION, encoding="utf-8", newline="") as _fh:
+    _pop_text = _fh.read()
+if _pop_text.count("\r"):
+    die(f"{POPULATION.name} carries {_pop_text.count(chr(13))} CR byte(s) -- LF only, for the same "
+        f"reason the basis and the relocation map are: a CR rides into every name it touches.")
+POPULATION_ROWS = [_l.strip() for _l in _pop_text.split("\n")
+                   if _l.strip() and not _l.lstrip().startswith("#")]
+_pop_dups = sorted({_n for _n in POPULATION_ROWS if POPULATION_ROWS.count(_n) > 1})
+if _pop_dups:
+    die(f"{POPULATION.name} repeats {len(_pop_dups)} row name(s): {', '.join(_pop_dups)} -- the "
+        f"population is a SET and a repeat double-books whatever reads it.")
+_undeclared = sorted(n for n in costed if n not in roster_names and n not in POPULATION_ROWS)
+if _undeclared:
+    die(f"{len(_undeclared)} costed row(s) are NEITHER banked NOR in {POPULATION.name}: "
+        f"{', '.join(_undeclared)}. A costed row outside the declared population is a row no lane "
+        f"was asked to run -- a hand-typed list's transcription error, not a candidate.")
+print(f"  declared        {len(POPULATION_ROWS)} population row(s) read from {POPULATION.name}; "
+      f"every candidate is declared")
+
 # ---------------------------------------------------------------- the reserved set
 # TWO ideas, and only one of them is this script's to decide:
 #   1. The $longTimeouts floor packages -- DERIVED from run-validated-sweep.ps1 AT GENERATION TIME,
@@ -556,6 +599,40 @@ if len(RELOCATIONS) < 10:
     die(f"{RELOCATIONS_TSV.name} yielded {len(RELOCATIONS)} arc(s); ten rows relocate at this hop and "
         f"three of them SPLIT, so fewer than ten arcs cannot name each source once. Refusing rather "
         f"than inheriting a partial map -- a short read is indistinguishable from a smaller hop.")
+
+# ------------------------------------------------- the ROSTER-ABSORPTION REPORT (the NINTH)
+# RULED at COORD 1fbc20190, shaped by C1's arithmetic at a7d04a9660 and efecc4d298: REPORT ONLY,
+# never a refusal -- refusing here would block the very acceptance the eighth was cut to produce.
+#
+# WHAT IT WATCHES: a relocation SOURCE still present as a BANKED roster row while its TARGET is
+# already costed. That is "the roster has not absorbed the hop", which the OLD population refusal
+# was detecting by accident and which nothing has detected since it was correctly replaced.
+#
+# ⚠ THE MAP IS MANY-TO-MANY, so the unit goes ON THE LINE rather than being left to a reader: 13
+# arcs over 10 distinct sources and 11 distinct targets; three sources SPLIT into two targets each,
+# and `crypto/internal/fips140test` is reached from THREE. A line per ARC therefore prints one
+# target three times, which reads like a bug unless the line says what it is counting.
+#
+# ⚠⚠ ITS QUIET CONDITION IS THE SEAT'S FULL EDIT, NOT HALF OF IT. The roster seat's contract (COORD
+# efecc4d298) is that it RETIRES every relocation source as a banked row AND adds every target. A
+# seat that added the targets and left the sources banked would keep this firing forever on a state
+# that is correct -- so the red for "goes quiet" simulates both halves, never the additions alone.
+#
+# Printed UNCONDITIONALLY: a zero here is a reading, and a line that vanishes when the count is zero
+# cannot be told from a line nobody wrote.
+_unabsorbed = [(s, t) for s, t in RELOCATIONS if s in roster_names and t in costed]
+if _unabsorbed:
+    _u_src = sorted({s for s, _ in _unabsorbed})
+    _u_tgt = sorted({t for _, t in _unabsorbed})
+    print(f"\n!! ROSTER HAS NOT ABSORBED THE HOP: {len(_unabsorbed)} arc(s) over {len(_u_tgt)} "
+          f"target(s) from {len(_u_src)} source(s) -- a relocation SOURCE is still a banked roster "
+          f"row while its TARGET is costed. A REPORT, never a refusal. It goes quiet when the "
+          f"roster seat RETIRES the sources and ADDS the targets, not on the additions alone.")
+    for _s, _t in sorted(_unabsorbed):
+        print(f"      {_s}  ->  {_t}")
+else:
+    print(f"\nroster absorption: no relocation source is still banked while its target is costed "
+          f"({len(RELOCATIONS)} arc(s) checked, {len({s for s, _ in RELOCATIONS})} source(s))")
 
 BIG_ROWS = ["go/doc/comment", "go/types"]
 # A successor inherits its source's floor. Order is preserved and duplicates are skipped, so a target
