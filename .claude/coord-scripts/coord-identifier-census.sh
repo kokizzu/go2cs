@@ -673,14 +673,31 @@ function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, c
             run = substr(lo, rs, rr - rs + 1); sub(/\.$/, "", run)
             if (run != lq) { EXC["ipv4\ttoken-run"]++; continue }
 
-            # RULE 3 -- declared documentation constants.
-            if (lq ~ ("^(" RE["ipv4_doc"] ")$")) { EXC["ipv4\tdoc-constant"]++; OCC["ipv4_doc"]++; continue }
-
             # RULE 4 -- version context by ADJACENCY, never by a window. Three words only: the quad's
             # own whitespace-delimited word, the one immediately before, the one immediately after.
             own = wordOwn(lo, s, e); before = wordBefore(lo, s); after = wordAfter(lo, e)
             if (own ~ RE["ipv4_vercontext"] || before ~ RE["ipv4_vercontext"] || after ~ RE["ipv4_vercontext"]) { EXC["ipv4\tversion-context"]++; continue }
         }
+
+        # RULE 3 -- the three DECLARED DOCUMENTATION CONSTANTS (loopback, unspecified, broadcast).
+        # MOVED OUT of the STRICT==0 block 2026-09-20 (COORD fc4edcd8c) and consulted in BOTH modes,
+        # for rule 5's reason and by rule 5's own test: it is read ANCHORED WHOLE on the quad's own
+        # characters and on nothing around it, so it is a SHAPE and not a context. Rules 1, 2 and 4
+        # read a prefix, a token run and neighbouring words and every one of them can be ARRANGED by
+        # the sentence a lane writes; no sentence can arrange for a quad to BE one of these three.
+        #
+        # ⚠ WHY IT HAD TO MOVE, and it is not tidiness. STRICT's rationale is that the cost of the
+        # strict reading "falls on the writer, as one rewrite of their own post" -- true of a post
+        # BODY and FALSE of an EVIDENCE RECORD, which the lane did not author and cannot rewrite
+        # without corrupting the field the re-classification reads. A results tail whose quads are
+        # all loopback refused every one of them at `entry`: measured 12 of 12 before this change.
+        #
+        # ⚠ ORDER, and its cost measured rather than argued: rule 3 now runs AFTER rules 1, 2 and 4
+        # in delta instead of between 2 and 4, so an occurrence those rules dispose of first keeps
+        # THEIR reason. Measured on the shared surface across the move, the delta tally is unchanged
+        # (release-literal 48, token-run 2, version-context 9, doc-constant 2, prefix-ex 18), so
+        # nothing was re-attributed here -- which is the property rule 5's comment below asks for.
+        if (lq ~ ("^(" RE["ipv4_doc"] ")$")) { EXC["ipv4\tdoc-constant"]++; OCC["ipv4_doc"]++; continue }
 
         # RULE 5 -- the Go RELEASE LITERAL, and the ONE exclusion the STRICT reading takes. It is a
         # per-arm ADMIT SET read on the DECISION TOKEN -- the quad itself, anchored whole, per
@@ -1215,7 +1232,21 @@ idc_mode_selftest() {
     # plant would have gone on reading green while proving the opposite of what its name says. The
     # release shape's own both-directions battery is A2 below; this case keeps its own question.
     printf 'the toolchain is go%d.%d.%d.%d here\n' 2 24 13 3               > "$d/p17"; idc_st_case "STRICT refuses a version quad off the release shape" "ipv4" "$d/p17" 1
-    printf 'the loopback %d.%d.%d.%d appears\n' 127 0 0 1                  > "$d/p18"; idc_st_case "STRICT refuses a doc constant"            "ipv4" "$d/p18" 1
+    # ⚠ RE-RULED 2026-09-20 (COORD fc4edcd8c). Rule 3 moved OUT of the STRICT-only block, so a
+    # DECLARED documentation constant is now admitted in strict exactly as rule 5's release literal
+    # is. What this arm pinned before -- the strict reading refusing one -- is retired ON PURPOSE,
+    # and it is retired because the strict rationale ("the cost falls on the writer, as one rewrite
+    # of their own post") is false of an EVIDENCE RECORD the lane did not author. The REFUSE
+    # direction is not weakened and is not carried by this case: p02, p17 and q04-q07 below are
+    # quads rule 3 does NOT name, and every one of them still fires in STRICT.
+    printf 'the loopback %d.%d.%d.%d appears\n' 127 0 0 1                  > "$d/p18"; idc_st_case "STRICT admits a declared doc constant"               ""     "$d/p18" 1
+    idc_st_exc "  and the DOC-CONSTANT ADMIT is what admitted it" "ipv4|doc-constant" "$IDC_TMP/st.status"
+    # The other two declared constants, in the GATE'S OWN MODE. An admit proven on one member of a
+    # three-member set is an admit proven on one member.
+    printf 'the unspecified %d.%d.%d.%d and the broadcast %d.%d.%d.%d appear\n' 0 0 0 0 255 255 255 255 > "$d/p18b"; idc_st_case "STRICT admits the other two declared constants" "" "$d/p18b" 1
+    idc_st_exc "  and BOTH were admitted AS DOC CONSTANTS"        "ipv4|doc-constant" "$IDC_TMP/st.status"
+    # ⚠ THE BOUND, in the gate's own mode: a quad ONE COMPONENT off a declared constant is not one.
+    printf 'the address %d.%d.%d.%d answered\n' 127 0 0 2                 > "$d/p18c"; idc_st_case "STRICT still refuses a quad one component off" "ipv4" "$d/p18c" 1
 
     echo
     echo "  A2. THE RELEASE-LITERAL ADMIT -- BOTH DIRECTIONS, IN THE GATE'S OWN MODE (STRICT)"
