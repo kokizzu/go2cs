@@ -1015,8 +1015,15 @@ func applyExportedTypeAliases(results [][2]string, info PackageInfo, derived boo
 
 		// A `global using` name the SEEDED production metadata already binds to a different target
 		// cannot be re-bound here — see qualifiedImportedTypeAliases for the crypto/ecdh shape and
-		// for what a marked key renders as instead.
-		if _, collides := seededAliasNameCollision(alias, typeName); collides {
+		// for what a marked key renders as instead. MARK ONLY WHAT THE WRITER CAN DECLARE: a CONST
+		// key declares no `global using` at all (packageInfoWriter.go skips every one of them, in
+		// the `continue` above the qualified check), so it can never be the second declaration of a
+		// name — while marking it would make getAliasedTypeName return the BARE member, since
+		// isQualified is tested BEFORE isConst there, where the const arm composes
+		// `importQualifier(qualifier) + "." + member` and the two other const paths
+		// (typeNameResolution.go's `_package`-qualified lookup, convIdent.go's) keep composing
+		// theirs. This keeps the invariant structural rather than census-dependent.
+		if _, collides := seededAliasNameCollision(alias, typeName); collides && !constImportedTypeAliases.Contains(alias) {
 			qualifiedImportedTypeAliases.Add(alias)
 		}
 

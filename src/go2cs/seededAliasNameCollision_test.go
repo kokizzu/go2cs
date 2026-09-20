@@ -204,6 +204,105 @@ func TestSeededAliasNameCollisionDeclaresOneName(t *testing.T) {
 	}
 }
 
+// TestSeededAliasNameCollisionLeavesConstKeysUnmarked is the CONST arm: the marking reaches only the
+// keys the writer can DECLARE, and a `const:` entry is not one of them. The writer skips every const
+// key outright (packageInfoWriter.go, the `continue` above the qualified one), so a const key can
+// never be the second declaration of a `global using` name and marking it resolves nothing.
+//
+// It COSTS, though. getAliasedTypeName tests isQualified BEFORE isConst, so a marked const key
+// returns the map VALUE — the bare Δ-renamed member, which the `const:` branch deliberately leaves
+// un-qualified (importOperations.go) — where the const arm composes
+// `importQualifier(qualifier) + "." + member`. The bare member names nothing at compilation scope
+// (CS0103), and the `_package`-qualified const path further down the SAME function keeps composing
+// its qualifier regardless, as does convIdent.go's const lookup: one decision, spelled three ways,
+// two of which would still be right. This arm pins the plain path to the qualified answer and then
+// asks the qualified path the same question, so a future reordering cannot make them disagree
+// quietly.
+//
+// The shape: production binds the alias NAME non-const (the seed), while a variant binds that same
+// name as a const entry. Not reachable in today's corpus — its one genuine pair is a TYPE on both
+// sides — which is why this is an arm and not a row. From C1's structural read of this seat.
+func TestSeededAliasNameCollisionLeavesConstKeysUnmarked(t *testing.T) {
+	dir := t.TempDir()
+	fileName := seedAliasCollisionTestInfo(t, dir, fmt.Sprintf("global using %s = %s;", ecdhAliasName, ecdhProductionTarget))
+
+	resetPackageState(&packages.Package{})
+	packageName = "ecdh"
+	packageNamespace = "go.crypto"
+
+	// The import qualifier is Δ-renamed, which is the population const entries exist for at all
+	// (collision-renamed members) and what makes the assertion below discriminating: the const arm's
+	// answer then differs from the bare member in BOTH segments, so neither can be read for the other.
+	packageImportAliasRenames["ecdh"] = ShadowVarMarker + "ecdh"
+
+	seeded, err := os.ReadFile(fileName)
+
+	if err != nil {
+		t.Fatalf("failed to read the seeded fixture: %v", err)
+	}
+
+	seededGlobalTypeAliases = parseSeededGlobalTypeAliasLines(splitLines(string(seeded)))
+	t.Cleanup(func() { seededGlobalTypeAliases = nil })
+
+	// The variant records the same member the seed already binds, as a CONST entry. The `const:`
+	// branch strips the prefix and keeps the BARE member, so the recorded value differs from the
+	// seeded target by construction and the key reaches the marking site.
+	applyExportedTypeAliases([][2]string{{"PublicKey", "const:" + ShadowVarMarker + "PublicKey"}},
+		PackageInfo{PackageName: "crypto.ecdh", RootPackageName: "ecdh", SourceDir: "crypto/ecdh"}, false)
+
+	if !constImportedTypeAliases.Contains("ecdh.PublicKey") {
+		t.Fatalf("the fixture recorded no const entry, so this arm would assert nothing")
+	}
+
+	if got, exists := importedTypeAliases["ecdh.PublicKey"]; !exists || got != ShadowVarMarker+"PublicKey" {
+		t.Fatalf("the const entry's map value is missing or wrong: %q (exists=%v)", got, exists)
+	}
+
+	// THE PROPERTY, half one: mark only what the writer can declare.
+	if qualifiedImportedTypeAliases.Contains("ecdh.PublicKey") {
+		t.Errorf("a CONST key was marked: the writer declares no `global using` for it, so it cannot re-bind %s", ecdhAliasName)
+	}
+
+	// THE PROPERTY, half two: it renders through the CONST arm — the qualified member — and not
+	// through the marked arm's bare map value.
+	wantConst := ShadowVarMarker + "ecdh." + ShadowVarMarker + "PublicKey"
+
+	if got := getAliasedTypeName("ecdh.PublicKey"); got != wantConst {
+		t.Errorf("a const alias must render through its qualifier, got %q, want %q", got, wantConst)
+	}
+
+	// ... and the `_package`-qualified const path, which composes its own qualifier and never
+	// consults the marking, still answers the same question the same way.
+	qualified := RootNamespace + ".crypto.ecdh" + PackageSuffix
+
+	if got := getAliasedTypeName(qualified + ".PublicKey"); got != qualified+"."+ShadowVarMarker+"PublicKey" {
+		t.Errorf("the `_package`-qualified const path disagrees with the plain one, got %q", got)
+	}
+
+	// THE PROPERTY, half three: the writer declares nothing for the const key — the seeded
+	// production line is the only declaration of that name, and no line anywhere binds the bare
+	// member. This half holds on both sides of the guard, and that is the point: the marking was
+	// never load-bearing here, so it was pure cost.
+	writePackageInfoFile(fileName, true)
+
+	declarations := emittedImportedAliases(t, fileName)
+	matches := []string{}
+
+	for _, declaration := range declarations {
+		if strings.Contains(declaration, ecdhAliasName+" =") {
+			matches = append(matches, declaration)
+		}
+
+		if strings.HasSuffix(declaration, "= "+ShadowVarMarker+"PublicKey;") {
+			t.Errorf("the writer declared a `global using` for a CONST key: %q", declaration)
+		}
+	}
+
+	if len(matches) != 1 || !strings.Contains(matches[0], ecdhProductionTarget) {
+		t.Fatalf("the seeded production binding must be the only declaration of %s:\n%s", ecdhAliasName, strings.Join(declarations, "\n"))
+	}
+}
+
 // TestUncollidedAliasStillDeclaresItsName is the control, and it is what makes the arm above
 // something other than a line count. crypto/ecdh's `Curve` travels the identical route — an
 // exported type of the package under test, recorded by the same call, written by the same writer —
