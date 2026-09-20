@@ -43,6 +43,40 @@ public static class RuntimeErrorPanic
         return new PanicException(TokenArithmeticMessage);
     }
 
+    private const string OrderTokenDereferenceMessage =
+        $"{RuntimeErrorMessage}dereference of a managed pointer with no address "
+        + "(*{0} over 0x{1} — the order token of a reference-bearing pointee at offset 0, Q44 §10.3 "
+        + "arm 2a; a Go-layout byte offset into CLR-laid-out storage cannot be honoured)";
+    /// <summary>
+    /// The REFUSAL, arm 2a: a dereference of a native box whose address is a live box's ORDER
+    /// TOKEN — a number no memory answers to.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The SIBLING of <see cref="UnsafePointerArithmeticWithoutAddress"/>, one arm over, and it
+    /// exists because that one cannot fire here BY CONSTRUCTION: <c>IsTokenArithmetic</c> requires
+    /// the number to differ from its allocation base, and at OFFSET 0 the number IS the base. So a
+    /// reference-bearing pointee reinterpreted at offset 0 — Go's
+    /// <c>*(*V)(unsafe.Add(unsafe.Pointer(&amp;in), 0))</c>, which reflect's own <c>setField</c>
+    /// helper performs — reached a native box over a number that is not an address, and the write
+    /// through it took the process down.
+    /// </para>
+    /// <para>
+    /// ⚠ AT THE DEREFERENCE AND NOT AT THE CONVERSION, which is measured rather than preferred:
+    /// refusing the conversion took SEVEN GolibTests red against an empty base, because the native
+    /// box over a token is a deliberate carrier whose address IS the token (the full reading is at
+    /// <c>ж.NativeBox.cs</c>'s <c>OrderTokenRefusal</c>). The failure MODE is the entire point,
+    /// exactly as for the arithmetic twin: the write was an UNCATCHABLE AccessViolation, so a
+    /// package reported nothing at all rather than reporting a failure — measured at reflect's
+    /// TestIsZero, which ended the host after 195 tests had started. A caught panic the harness can
+    /// attribute leaves the model question open and loud instead of fatal.
+    /// </para>
+    /// </remarks>
+    public static PanicException UnsafePointerOrderTokenDereferenced(Type pointee, nuint token)
+    {
+        return new PanicException(string.Format(OrderTokenDereferenceMessage, pointee.Name, token.ToString("x")));
+    }
+
     private const string NativeArrayViewMessage =
         $"{RuntimeErrorMessage}cannot view native memory as {{0}}: the address has no managed element "
         + "storage behind it, and a Go array is a window on a real managed array "

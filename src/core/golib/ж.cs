@@ -1,4 +1,4 @@
-// ж.cs - Gbtc
+﻿// ж.cs - Gbtc
 // Copyright © 2026 The go2cs Authors. All rights reserved.
 //
 // Use of this source code is governed by an MIT-style license
@@ -580,6 +580,32 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
             return (nuint)ptr == address;
     }
 
+    /// <inheritdoc/>
+    /// <remarks>
+    /// THREE facts, and none of them is redundant.
+    ///
+    /// <see cref="NativeAddress"/> first, because the two NATIVE kinds answer
+    /// <see cref="PointerStorage.None"/> too — "no MANAGED storage to name" — while their
+    /// <see cref="PointerOrderToken"/> IS a real machine address (ж.NativeArrayBox.cs:143,
+    /// ж.NativeBox.cs:92). Both of the other conjuncts therefore hold for a native-backed box at its
+    /// own address, and reflect's pointer projection registers exactly that number
+    /// (reflect/value_impl.cs:1287, unsafe.cs:580) — so without this test the refusal below would
+    /// take real native addresses with it, which is the failure the enum's own retirement condition
+    /// names.
+    ///
+    /// <see cref="StorageKind"/> second, because it is the fact the forward conversion decided ON:
+    /// the token is registered on the <see cref="PointerStorage.None"/> arm and nowhere else, so
+    /// this is the same question read back rather than a second rule that can drift from it.
+    ///
+    /// <see cref="PointerOrderToken"/> third, and it is what keeps the answer at OFFSET 0: a number
+    /// that resolved to this box WITHOUT being its token came through the pinned-provenance route
+    /// and is a real address (Q44 §10.3 arm 2b), which must keep the answer it has today.
+    /// </remarks>
+    public bool IsOrderTokenAt(nuint number)
+    {
+        return NativeAddress == 0 && StorageKind is PointerStorage.None && PointerOrderToken == number;
+    }
+
     // Returns a stable native pointer to the first element of this box's Go fixed-array data,
     // pinning the array's backing for the box's lifetime (idempotent; a concurrent first touch
     // can at worst allocate one extra handle that the finalizer frees).
@@ -741,12 +767,51 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
             return aliased;
         }
 
-        // ARM 2 (§10.3): the token named a LIVE box whose pointee type is not T. This falls past the
-        // refusal below -- IsTokenArithmetic is false at offset 0 -- and reaches the native box at the
-        // bottom, over a number that is not an address. Counted here; not yet changed.
+        // ARM 2 (§10.3): the token named a LIVE box whose pointee type is not T. COUNTED FIRST and
+        // unconditionally, so the census still reports every arrival at this arm -- including the 2a
+        // subset the line below now diverts. An instrument that stops counting the cases a fix
+        // handles cannot show the fix working.
         if (Q44RegistryCensus.Enabled && resolved is not null)
             Q44RegistryCensus.Arm2(typeof(T), resolved,
                                    ManagedPointerTokens.CurrentToken(resolved) == (nuint)value.Value);
+
+        // ARM 2a, CLASSIFIED HERE AND ANSWERED AT THE DEREFERENCE (2026-09-20). The number IS a live
+        // box's own ORDER TOKEN and that box's pointee type is not T: a REFERENCE-BEARING pointee
+        // registered an order token rather than an address (the forward operator's
+        // PointerStorage.None arm below), so NO MEMORY ANSWERS TO THIS NUMBER.
+        //
+        // ⚠ A REFUSAL STOOD HERE FOR ONE MEASUREMENT AND WAS WITHDRAWN, with the measurement kept so
+        // nobody rebuilds it. Refusing the CONVERSION took SEVEN GolibTests red against an empty base
+        // -- PointerTokenConversionTests' "loud form" row, four ReinterpretSourceRetentionTests, and
+        // one each in RuntimeHashFamilyTests and SliceHeaderReinterpretTests -- because the native box
+        // OVER THE TOKEN is load-bearing and deliberate: its address IS the token, which is how
+        // PointerExtensions.Reinterpret's unpinnable class (ж.PointerExtensions.cs:185) and the
+        // boundary wrappers recover the source. The design had already ruled on exactly this, in as
+        // many words at RuntimeHashFamilyTests.cs:182 -- "a dereference is the row-level fault the
+        // design chose, never a number". So the conversion is ADMITTED, the fact travels IN THE BOX,
+        // and the fault lands where the charter puts it.
+        //
+        // WHAT THE FLAG BUYS is the failure MODE, which is the whole of the fix: the dereference was
+        // an UNCATCHABLE AccessViolation on an unmapped page and is now a caught panic that names
+        // itself. Go's own `setField` -- `*(*V)(unsafe.Add(unsafe.Pointer(&in), offset))` at
+        // reflect/all_test.go:1409, called at OFFSET 0 over `struct{_, a, _ func()}`
+        // (all_test.go:1510) -- is that write, and it ended reflect's test host at TestIsZero with 195
+        // tests started and no verdict for any of them.
+        //
+        // The arithmetic refusal below cannot cover this BY CONSTRUCTION: IsTokenArithmetic requires
+        // `allocationBase != number`, and at offset 0 the number IS the base.
+        //
+        // SCOPED BY IsOrderTokenAt, which tests three facts rather than "resolved to another pointee
+        // type": the offset-0 sites over PINNED storage (arm 2b, a REAL address through the
+        // provenance route) and the native-backed kinds are NOT flagged and dereference exactly as
+        // they do today. A flag drawn one step wider would refuse real reads, and nothing else in the
+        // tree would notice -- the rows would still report and the packages would still pass.
+        //
+        // The model question -- a Go-layout byte offset into CLR-auto-laid-out storage -- is NOT
+        // answered here, exactly as the arithmetic twin does not answer it. It stays open, and says
+        // so out loud instead of corrupting memory.
+        bool aliasesAnOrderToken = resolved is INilPointer tokenBox &&
+                                   tokenBox.IsOrderTokenAt((nuint)value.Value);
 
         // THE REFUSAL. A number inside a LIVE token's own 4 GiB block, that is not that token, is
         // a token somebody did arithmetic on — `unsafe.Add(unsafe.Pointer(&v), offset)` over storage
@@ -800,13 +865,19 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         // supplies, and this floor was not implementable before it existed.
         //
         // ⚠ REACHING this line does NOT mean that, and the distinction is load-bearing rather than
-        // pedantic. Only two things above divert control: arm 1 RETURNS the recovered box, and the
-        // token-arithmetic refusal THROWS. Arms 2 and 4 are `if (Q44RegistryCensus.Enabled && …)`
-        // COUNTERS — they divert nothing, and on the production path, with the census off, they do
-        // not execute at all. Arm 2's own comment says so in as many words: "This falls past the
-        // refusal below … and reaches the native box at the bottom". So an address resolving to a
-        // LIVE box of another pointee type arrives HERE with `resolved` NON-null, and what lets it
-        // through is the `resolved is null` conjunct in the condition below — nothing earlier.
+        // pedantic. THREE things above divert control: arm 1 RETURNS the recovered box, and the two
+        // refusals — arm 2a's order-token refusal and the token-arithmetic one — THROW. The census
+        // calls themselves are `if (Q44RegistryCensus.Enabled && …)` COUNTERS: they divert nothing,
+        // and on the production path, with the census off, they do not execute at all.
+        //
+        // ⚠ THIS PARAGRAPH SAID "arms 2 and 4 divert nothing" AND IT IS NOW HALF FALSE — corrected
+        // here rather than left to read as the design (2026-09-20, the arm 2a refusal). Arm 2 is no
+        // longer only a counter: its 2a SUBSET (the number IS a live box's order token, a
+        // reference-bearing pointee with no address) now throws before this line, because the write
+        // that followed the native box was the uncatchable fault that ended reflect's test host.
+        // What still arrives HERE with `resolved` NON-null is arm 2b — an address resolving to a
+        // LIVE box of another pointee type through the PINNED-provenance route, a real address — and
+        // what lets it through is the `resolved is null` conjunct in the condition below.
         //
         // ⚠ WHICH IS WHY THE CONDITION IS NOT SIMPLIFIED TO `if (s_isArrayShaped)`. That conjunct
         // looks redundant only to a reader who believes reaching implies firing — and the edit it
@@ -837,12 +908,26 @@ public abstract partial class ж<T> : IPointer<T>, IEquatable<ж<T>>, INilPointe
         // bound is a stated property and not an accident of the arms. Widening to cover it would be
         // a different cut with its own measurement, not a tightening of this one.
         //
+        // ⚠ THAT BOUND NARROWED ON 2026-09-20 and the sentence above is kept rather than rewritten,
+        // because it still describes what THIS condition draws. What changed is upstream: the arm 2a
+        // refusal now takes the ORDER-TOKEN half of "resolves to a LIVE box of a different pointee
+        // type" before it can arrive. The half that still arrives — and that the sentence above is
+        // now about — is arm 2b, the PINNED-provenance half, which is exactly the shape
+        // NativeArrayViewFloorTests arm 3 drives: a fixed array pins its DATA address, so the number
+        // is the pinned address and never the box's order token.
+        //
         // `array.cs`'s AliasPointer needs no change of its own: its documented raw-metal fallback is
         // `return (ж<array<T>>)(uintptr)element!`, which funnels through this operator.
         if (resolved is null && s_isArrayShaped)
             throw RuntimeErrorPanic.NativeArrayViewWithoutElementStorage(typeof(T));
 
-        return new NativeBox<T>((nuint)value.Value);
+        // The fall-through, carrying arm 2a's verdict IN THE BOX. `aliasesAnOrderToken` is false for
+        // every other arrival, so an ordinary native pointer's dereference gains a branch on a
+        // readonly field and NOTHING ELSE -- no registry lookup, no resolve, no work the census-off
+        // path did not already do. The knowledge was computed once, at the one place that had the
+        // resolved box in hand; making the accessor re-derive it would put a token lookup on every
+        // native read in the corpus.
+        return new NativeBox<T>((nuint)value.Value, aliasesAnOrderToken: aliasesAnOrderToken);
     }
 
     public static unsafe implicit operator uintptr(ж<T> value)

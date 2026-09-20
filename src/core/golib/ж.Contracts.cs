@@ -262,6 +262,28 @@ public interface INilPointer
     /// direction, since a miss just takes the pre-existing native-address route.
     /// </remarks>
     bool IsPinnedAt(nuint address) => false;
+
+    /// <summary>
+    /// Reports whether <paramref name="number"/> is this box's ORDER TOKEN -- a projection number
+    /// that NO MEMORY answers to -- rather than an address this box occupies.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The COMPANION of <see cref="IsPinnedAt"/>, and the two together are the non-generic form of
+    /// the question <c>Resolve</c> already answers for itself: an entry validates either by ORDER
+    /// TOKEN (the projection route, <c>Register</c>) or by CURRENT PINNED ADDRESS (the provenance
+    /// route, <c>RegisterPinned</c>). A caller holding a resolved box only as <see cref="object"/> --
+    /// the <c>uintptr -&gt; ж&lt;T&gt;</c> operator, which cannot name the box's pointee type -- has
+    /// no other way to tell which of the two it is holding, and the difference decides whether a
+    /// write through the result reaches storage or an unmapped page.
+    /// </para>
+    /// <para>
+    /// The default is <c>false</c> -- "not known to be a token" -- which fails toward the
+    /// pre-existing behaviour for anything that is not a golib box (a generated named-pointer
+    /// wrapper), the same MISS-wards direction <see cref="IsPinnedAt"/> takes.
+    /// </para>
+    /// </remarks>
+    bool IsOrderTokenAt(nuint number) => false;
 }
 
 /// <summary>
