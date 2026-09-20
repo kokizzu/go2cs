@@ -136,6 +136,36 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		// package_info and README. crypto/internal/alias/alias_impl.cs holds the body.
 		"AnyOverlap": goosAny,
 	},
+	"crypto/internal/fips140/nistec": {
+		// init aliases the EMBEDDED P-256 generator table into a typed view — Go 1.24 replaced a
+		// runtime-computed table with `p256PrecomputedEmbed` and takes it for free with
+		// `(*[43]p256AffineTable)(unsafe.Pointer(&p256PrecomputedEmbed))`. golib's array<T> is a
+		// readonly struct whose FIRST field is `T[] m_array` and a generated `[GoType("[N]E")]` type
+		// holds a StrongBox<array<E>>, so the raw-address route lays a MANAGED HEADER over the
+		// table's own DATA and its first eight bytes become a reference. NOT latent: measured at the
+		// version tip, SystemCertVerify dies 0xC0000005 on the first `.at<>()`, ten frames deep in
+		// ecdsa.GenerateKey -> ScalarBaseMult -> nistec.Select -> ElemRefBox.get_ValueSlot, before it
+		// reaches the certificate seam it exists to test.
+		// ⚠ q97's seam does NOT transfer. MemoryMarshal.Cast is constrained `where T : struct`, not
+		// `unmanaged`: it COMPILES for any struct and throws at RUNTIME. Measured —
+		// `MemoryMarshal.Cast<byte, p256AffineTable>` builds 0 errors and throws ArgumentException
+		// ("Only value types without pointers or references are supported") inside the module
+		// initializer. Every generated Go array type is a managed struct, so no AGGREGATE Go array
+		// type can be cast into; q97's worked because its destination was a PRIMITIVE.
+		// So the cure is a DECODE, and a copy is correct here: p256GeneratorTables is written once in
+		// this init and read at exactly two sites, nothing else in the corpus touches it, so there is
+		// no write-through requirement (q97's sponge had one). Reading every limb explicitly
+		// little-endian also subsumes the `cpu.BigEndian` arm, whose own reinterpret is cured by being
+		// removed rather than left behind. A SITE cure, not the class cure.
+		// Registered here rather than whole-file marked: nistec has ELEVEN non-test Go files, so a
+		// marker would hand-own the package BY CONSEQUENCE and freeze its csproj, package_info and
+		// README. crypto/internal/fips140/nistec/p256_impl.cs holds the body, and the companion
+		// carries the [GoInit] module initializer itself because a displaced init emits only the
+		// placeholder. The decode needs a Montgomery-limb loader the package does not have, so
+		// crypto/internal/fips140/nistec/fiat/p256_impl.cs adds one (SetBytes converts INTO the
+		// Montgomery domain and would double-convert these already-Montgomery limbs, silently).
+		"init": goosAny,
+	},
 	"crypto/internal/fips140/sha3": {
 		// keccakF1600Generic views the sponge state both ways — the [200]byte it absorbs into and the
 		// [25]uint64 it permutes over — and on a little-endian host Go takes the view for free with

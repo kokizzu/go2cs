@@ -570,19 +570,7 @@ public static ж<P256Point> Negate(this ж<P256Point> Ꮡp, nint cond) {
 internal static ж<ж<array<p256AffineTable>>> Ꮡp256GeneratorTables = new StandardBox<ж<array<p256AffineTable>>>(default(ж<array<p256AffineTable>>));
 internal static ref ж<array<p256AffineTable>> p256GeneratorTables => ref Ꮡp256GeneratorTables.ValueSlot;
 
-[GoInit] internal static void init() {
-    @unsafe.Pointer p256GeneratorTablesPtr = @unsafe.Pointer.FromPinnedBox(Ꮡp256PrecomputedEmbed);
-    if (cpu.BigEndian) {
-        ref var newTable = ref heap(new array<uint64>(11008), out var ᏑnewTable);
-        foreach (var (i, vᴛ1) in ((ж<array<array<byte>>>)(uintptr)(p256GeneratorTablesPtr)).Value) {
-            var x = vᴛ1.Clone();
-
-            newTable[i] = byteorder.LEUint64(x[..]);
-        }
-        p256GeneratorTablesPtr = @unsafe.Pointer.FromPinnedBox(ᏑnewTable);
-    }
-    p256GeneratorTables = (ж<array<p256AffineTable>>)(uintptr)(p256GeneratorTablesPtr);
-}
+// go2cs generated this placeholder — func init is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 internal static (uint8, nint) boothW6(uint64 @in) {
     var s = ~(((@in >> (int)(6))) - 1);
