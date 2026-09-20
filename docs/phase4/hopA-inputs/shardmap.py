@@ -504,9 +504,24 @@ print(f"  relocation map: {len(RELOCATIONS)} arc(s) over "
 byname = {n: (v, t) for n, v, t in rows}
 RESERVED = [r for r in RESERVED_DECLARED if r in byname]
 reserved_unscheduled = [r for r in RESERVED_DECLARED if r not in byname]
-if reserved_unscheduled:
-    print(f"  !! {len(reserved_unscheduled)} declared reserved row(s) have NO measured cost and are "
-          f"UNSCHEDULED, not pinned: {', '.join(reserved_unscheduled)}")
+# ⚠ TWO CAUSES REACH THIS LIST, and one sentence for both names the wrong one for half of them.
+# A declared reserved row is absent from the basis either because it WAS NOT MEASURED, or because
+# ITS NAME DID NOT EXIST TO MEASURE: the basis is taken at the OLD release, so a successor this hop
+# inherits a floor FOR is necessarily absent from it -- not a gap in the measurement, a name that
+# post-dates it. The two want opposite reactions. The first is a hole the recon leg fills; the
+# second is already right, because the floor rides on the predecessor row, which IS costed and IS
+# pinned. Printed apart so the reader reacts to the cause they actually have.
+_reloc_targets = {t for _, t in RELOCATIONS}
+_unnamed = [r for r in reserved_unscheduled if r in _reloc_targets]
+_uncosted = [r for r in reserved_unscheduled if r not in _reloc_targets]
+if _unnamed:
+    print(f"  !! {len(_unnamed)} declared reserved row(s) DID NOT EXIST at the release this basis "
+          f"was measured on -- each inherited its floor from a predecessor that IS costed and IS "
+          f"pinned, so the pin is carried under the old name (see {RELOCATIONS_TSV.name}): "
+          f"{', '.join(_unnamed)}")
+if _uncosted:
+    print(f"  !! {len(_uncosted)} declared reserved row(s) have NO measured cost and are "
+          f"UNSCHEDULED, not pinned: {', '.join(_uncosted)}")
     print(f"    (the reserved leg's total below therefore EXCLUDES them -- it is a lower bound on "
           f"the pin, not the pin)")
 
