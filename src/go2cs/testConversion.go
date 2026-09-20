@@ -1286,8 +1286,22 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		if model == testProjectWhiteboxReference && external != nil {
 			// A MIXED white-box suite has two owning classes in one assembly; each variant's
 			// records split between the bridge anchor and the test anchor by declared-name set.
+			//
+			// ⚠ EMPTY for a TEST-ONLY package, exactly as the reference-model seed above computes
+			// it: no production class was emitted, so there is none for the bridge anchor to
+			// import. This was the one site of the family that named the class unconditionally —
+			// `embed/internal/embedtest` is the corpus's only package that is test-only AND
+			// carries both variants, so it is the only one that reaches here at all, and its
+			// bridge anchor opened with `using static go.embed.@internal.embedtest_package;`
+			// against a class that does not exist (CS0234).
+			bridgeProductionClassName := ""
+
+			if !options.testProductionAbsent {
+				bridgeProductionClassName = getSanitizedImport(production.Name + PackageSuffix)
+			}
+
 			unitName, err := writeWhiteboxVariantMetadata(testInfoPath, outputPath,
-				getSanitizedImport(production.Name+PackageSuffix), internalBridgeName,
+				bridgeProductionClassName, internalBridgeName,
 				production.Name, internalAnchor, testAnchor, whiteboxBridgeTypeNames, variant == internal)
 			if err != nil {
 				return result, err
@@ -3191,7 +3205,15 @@ func internalTestPackageInfoSeed(projectNamespace, productionClassName, bridgeCl
 	b.WriteString("// </ImportedTypeAliases>\r\n")
 	b.WriteString("\r\n")
 	b.WriteString("using go;\r\n")
-	b.WriteString(fmt.Sprintf("using static %s.%s;\r\n", projectNamespace, productionClassName))
+
+	// Empty productionClassName means the package under test is TEST-ONLY and no production class
+	// was emitted to import — the same guard, in the same words, that
+	// referenceModelTestPackageInfoSeed carries on its own global import. Both the caller and this
+	// writer check, because the caller is what KNOWS (it holds Options) and this is what EMITS.
+	if productionClassName != "" {
+		b.WriteString(fmt.Sprintf("using static %s.%s;\r\n", projectNamespace, productionClassName))
+	}
+
 	b.WriteString(fmt.Sprintf("using static %s.%s;\r\n", projectNamespace, bridgeClassName))
 	b.WriteString("\r\n")
 	b.WriteString("// <ExportedTypeAliases>\r\n")

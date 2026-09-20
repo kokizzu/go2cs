@@ -487,3 +487,201 @@ func indexOfLineContaining(text string, needles ...string) int {
 
 	return -1
 }
+
+// ─────────────────────────────────────────────────────────────────────────────────────────────
+// The MIXED shape, which the arms above cannot reach.
+//
+// ⚠ The fixture above deliberately loads NO external variant (`convertTestOnlyFixture` fails if one
+// appears), because it reproduces `crypto/internal/fips140test`. That is the whole reason this
+// defect survived those guards: a suite with BOTH an internal and an external variant writes a
+// SECOND metadata file — `package_info_internal_test.cs`, the white-box BRIDGE anchor
+// (internalTestPackageInfoSeed) — and that file is emitted by no path the arms above take. Its
+// `using static <pkg>_package` was written unconditionally while every other site of the family
+// consulted productionClassEmitted, so a package that is BOTH test-only AND mixed opened its
+// bridge anchor against a class that was never emitted (CS0234).
+//
+// `embed/internal/embedtest` is the corpus's only such package: of the stdlib's test-only packages
+// at go1.24.13 it is the ONLY one carrying both variants, which is why one row and no other showed
+// the error. Measured on the real source: the bridge anchor's line 11 read
+// `using static go.embed.@internal.embedtest_package;`.
+//
+// The two arms are one measurement with its own control, varying the SAME single axis the arms
+// above vary — whether the package has a production file — while holding the mixed shape fixed.
+// ⚠ THE CONTROL IS THE LOAD-BEARING HALF: it is what keeps the fix from being "stop naming the
+// production class in bridge anchors", which would break every ordinary mixed suite silently.
+func writeMixedSuiteFixture(t *testing.T, withProduction bool) string {
+	t.Helper()
+
+	dir := t.TempDir()
+
+	internalSource := "package " + testOnlyFixturePackage + "\n\n" +
+		"import \"testing\"\n\n" +
+		"func TestArea(t *testing.T) {\n" +
+		"\tif area(2, 3) != 6 {\n" +
+		"\t\tt.Fatal(\"area\")\n" +
+		"\t}\n" +
+		"}\n"
+
+	files := map[string]string{"go.mod": "module example/mixed\n\ngo 1.23\n"}
+
+	if withProduction {
+		files[testOnlyFixtureDir+"/shape.go"] = "package " + testOnlyFixturePackage + "\n\n" +
+			"func Area(w, h int) int { return w * h }\n\n" +
+			"func area(w, h int) int { return w * h }\n"
+	} else {
+		internalSource += "\nfunc area(w, h int) int { return w * h }\n"
+	}
+
+	files[testOnlyFixtureDir+"/shape_test.go"] = internalSource
+
+	// The EXTERNAL variant is what selects the mixed white-box path and so is what causes the
+	// bridge anchor to be written at all. It only ever touches the package's exported surface,
+	// which is all an external test package can reach.
+	external := "package " + testOnlyFixturePackage + "_test\n\n" +
+		"import \"testing\"\n\n" +
+		"func TestExternal(t *testing.T) {\n" +
+		"\t_ = t\n" +
+		"}\n"
+
+	files[testOnlyFixtureDir+"/shapex_test.go"] = external
+
+	writeModuleFiles(t, dir, files)
+
+	return filepath.Join(dir, testOnlyFixtureDir)
+}
+
+// convertMixedSuiteFixture runs the REAL `-tests` wiring over a MIXED fixture and returns the
+// emitted `.cs` files keyed by base name, exactly as convertTestOnlyFixture does for the
+// internal-only shape. It asserts the external variant IS present — the arms are about the file
+// that only a mixed suite writes, so a fixture that lost its external half would make both of them
+// vacuous while still passing the refusal one.
+func convertMixedSuiteFixture(t *testing.T, inputPath string) map[string]string {
+	t.Helper()
+
+	loaded, err := packages.Load(&packages.Config{Mode: packages.LoadAllSyntax, Dir: inputPath, Tests: true}, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	production := findProductionPackage(loaded, inputPath)
+	if production == nil {
+		t.Fatal("production package was not loaded")
+	}
+
+	internal, external := findTestVariants(loaded, production)
+	if internal == nil || external == nil {
+		t.Fatalf("the MIXED fixture must load BOTH variants (internal=%v external=%v) — the bridge anchor is written by no other shape", internal != nil, external != nil)
+	}
+
+	if model := selectTestProjectModel(internal, external); model != testProjectWhiteboxReference {
+		t.Fatalf("fixture model = %v, want whitebox-reference", model)
+	}
+
+	outputPath := t.TempDir()
+
+	resetPackageState(&packages.Package{})
+	packageNamespace = "go"
+
+	options := Options{
+		indentSpaces:        4,
+		preferVarDecl:       true,
+		useChannelOperators: true,
+		convertTests:        true,
+		targetPlatform:      runtime.GOOS + "/" + runtime.GOARCH,
+	}
+
+	options.testPackagePath = production.PkgPath
+	options.testPackageName = production.Name
+
+	if _, err = convertTestVariants(testProjectWhiteboxReference, production, internal, external,
+		selectCompileExcludedTestFiles(internal, external), inputPath, outputPath, "go",
+		NewHashSet(supportedTestCapabilities()), options); err != nil {
+		t.Fatalf("convertTestVariants: %v", err)
+	}
+
+	emitted, err := filepath.Glob(filepath.Join(outputPath, "*.cs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(emitted) == 0 {
+		t.Fatalf("no converted file was emitted into %s", outputPath)
+	}
+
+	files := map[string]string{}
+
+	for _, path := range emitted {
+		body, readErr := os.ReadFile(path)
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+
+		files[filepath.Base(path)] = string(body)
+	}
+
+	return files
+}
+
+// bridgeAnchorOf returns the white-box bridge anchor's contents, failing if it was not emitted —
+// which is the vacuity guard for both arms below: "no line names the production class" is true of
+// a file that does not exist.
+func bridgeAnchorOf(t *testing.T, files map[string]string) string {
+	t.Helper()
+
+	body, ok := files[internalTestPackageInfoFileName]
+
+	if !ok {
+		names := make([]string, 0, len(files))
+		for name := range files {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		t.Fatalf("no %s was emitted, so neither arm below is a reading; emitted: %v", internalTestPackageInfoFileName, names)
+	}
+
+	return body
+}
+
+// The SUBJECT: a TEST-ONLY package with both variants. Its bridge anchor must not name a production
+// class that was never emitted.
+func TestTestOnlyMixedSuiteBridgeAnchorNamesNoProductionClass(t *testing.T) {
+	files := convertMixedSuiteFixture(t, writeMixedSuiteFixture(t, false))
+
+	anchor := bridgeAnchorOf(t, files)
+	production := "using static go." + getSanitizedImport(testOnlyFixturePackage+PackageSuffix) + ";"
+
+	if strings.Contains(anchor, production) {
+		t.Fatalf("the bridge anchor of a TEST-ONLY package names a production class that was never emitted (CS0234): %q\n%s", production, anchor)
+	}
+
+	// ⚠ …and it must not have written an EMPTY class name either. Without this the seed's own
+	// `productionClassName != ""` defence is untestable: with the caller's guard in place and the
+	// seed's removed, the emission reads `using static go.;` — malformed, still not the production
+	// class, and the Contains check above passes it. Each guard is now reachable by its own red.
+	if strings.Contains(anchor, "using static go.;") {
+		t.Fatalf("the bridge anchor wrote an EMPTY class name:\n%s", anchor)
+	}
+
+	// …and it still imports the bridge itself, which is the class it exists to anchor. Without this
+	// the arm would pass for an anchor that imported nothing at all.
+	bridge := "using static go." + getSanitizedImport(testOnlyFixturePackage+"_internal_test"+PackageSuffix) + ";"
+
+	if !strings.Contains(anchor, bridge) {
+		t.Fatalf("the bridge anchor must still import the bridge class %q:\n%s", bridge, anchor)
+	}
+}
+
+// ⚠ THE CONTROL, and it is what keeps the fix narrow: the same mixed shape WITH a production half
+// must still name it. A fix that simply stopped writing the directive would pass the subject and
+// break every ordinary mixed suite — sort, bytes, strings, container/list — which is the shape the
+// corpus actually has.
+func TestMixedSuiteWithProductionBridgeAnchorNamesTheProductionClass(t *testing.T) {
+	files := convertMixedSuiteFixture(t, writeMixedSuiteFixture(t, true))
+
+	anchor := bridgeAnchorOf(t, files)
+	production := "using static go." + getSanitizedImport(testOnlyFixturePackage+PackageSuffix) + ";"
+
+	if !strings.Contains(anchor, production) {
+		t.Fatalf("a mixed suite WITH a production half must still import %q in its bridge anchor:\n%s", production, anchor)
+	}
+}
