@@ -145,7 +145,11 @@
 # the cost of the strict reading falls on the writer, as one rewrite of their own post. The version,
 # branch, assembly and documentation-constant context rules apply ONLY in tree mode, where their job
 # is to CLASSIFY the pre-existing hits of a long shared surface -- an unclassified total is a number,
-# never a finding. Every other arm is identical in both modes.
+# never a finding. THE ONE EXCLUSION STRICT MODE TAKES is the release_literal ADMIT SET (rule 5): it
+# is read on the QUAD'S OWN CHARACTERS and on nothing around it, so unlike a context rule it cannot
+# be arranged by the sentence a lane writes -- which is exactly why a context rule is refused here
+# and a shape admit is not. What it costs is stated on that arm's own line in the definition.
+# Every other arm is identical in both modes.
 #
 # `entry`/`subject` ask "does what I am about to write carry one?". `tree` asks "does what I am
 # about to write ADD one to a surface that already holds some?". Two questions; a clean reading from
@@ -549,7 +553,8 @@ function scanArm(arm, lineno, text, lo, pass, joinAt,   pos, s, e, mt, tok, ok) 
 }
 
 # ---- the IPv4 arm --------------------------------------------------------------------------------
-# STRICT (entry/subject): no exclusion of any kind. DELTA (tree): rules 1-4.
+# STRICT (entry/subject): no CONTEXT exclusion of any kind; the release_literal ADMIT SET (rule 5),
+# read on the quad's own shape, is the one exclusion it takes. DELTA (tree): rules 1-4, then rule 5.
 # ipv4ParseAt walks a four-octet quad BY HAND from position p and sets IPV4E to the position of its
 # last digit. It returns 0 unless all four octets are there, 0-255, unpadded, and not followed by a
 # fifth digit -- the same acceptance the ipv4 ERE has, derived without the ERE.
@@ -661,6 +666,17 @@ function scanIpv4(lineno, text, lo, pass, joinAt,   pos, s, e, quad, lq, k, b, c
             own = wordOwn(lo, s, e); before = wordBefore(lo, s); after = wordAfter(lo, e)
             if (own ~ RE["ipv4_vercontext"] || before ~ RE["ipv4_vercontext"] || after ~ RE["ipv4_vercontext"]) { EXC["ipv4\tversion-context"]++; continue }
         }
+
+        # RULE 5 -- the Go RELEASE LITERAL, and the ONE exclusion the STRICT reading takes. It is a
+        # per-arm ADMIT SET read on the DECISION TOKEN -- the quad itself, anchored whole, per
+        # OCCURRENCE -- and on nothing around it. That is what separates it from rules 1-4: a
+        # context rule can be arranged by the sentence a lane writes, and a SHAPE cannot, so this
+        # one is safe in the mode where the others are refused. It is consulted LAST in delta mode
+        # on purpose: every occurrence rules 1-4 already dispose of keeps ITS OWN reason in the
+        # EXCLUSIONS block, so adding a rule cannot silently re-attribute what the others were
+        # measured on. Per ARM: no other arm consults this set, and none of them gains an admit.
+        if (admitted("release_literal", lq)) { EXC["ipv4\trelease-literal"]++; continue }
+
         record("ipv4", pass, lineno, quad, text)
     }
 }
@@ -1141,9 +1157,37 @@ idc_mode_selftest() {
     printf 'row names ab%s-%s2 here\n' "zorbul" "ax"                       > "$d/p15"; idc_st_case "token broken inside a component (PASS 3)"  "TOKENFILE" "$d/p15" 1
     # A path ENDING in the token -- the shape a both-sides separator rule misses.
     printf 'built at C:%sUsers%s%s\n' "$bs" "$bs" "zorbulax"               > "$d/p16"; idc_st_case "path ENDING in a denied token" "profile_root TOKENFILE" "$d/p16" 1
-    # STRICT: the IPv4 arm takes NO context exclusion in entry/subject mode.
-    printf 'the toolchain is go%d.%d.%d.%d here\n' 1 24 13 3               > "$d/p17"; idc_st_case "STRICT refuses a version quad"            "ipv4" "$d/p17" 1
+    # STRICT: the IPv4 arm takes NO CONTEXT exclusion in entry/subject mode. The quad planted here
+    # is version-SHAPED but OFF the release shape (a first component of 2), because the release
+    # shape itself is admitted in strict by rule 5 from this change forward -- left as it was, this
+    # plant would have gone on reading green while proving the opposite of what its name says. The
+    # release shape's own both-directions battery is A2 below; this case keeps its own question.
+    printf 'the toolchain is go%d.%d.%d.%d here\n' 2 24 13 3               > "$d/p17"; idc_st_case "STRICT refuses a version quad off the release shape" "ipv4" "$d/p17" 1
     printf 'the loopback %d.%d.%d.%d appears\n' 127 0 0 1                  > "$d/p18"; idc_st_case "STRICT refuses a doc constant"            "ipv4" "$d/p18" 1
+
+    echo
+    echo "  A2. THE RELEASE-LITERAL ADMIT -- BOTH DIRECTIONS, IN THE GATE'S OWN MODE (STRICT)"
+    echo "      (an admit-only battery reads GREEN on an arm that admits every quad, so each case"
+    echo "       that must PASS has a sibling one digit off the shape that must still REFUSE, and"
+    echo "       every pass asserts the RELEASE-LITERAL exclusion actually fired)"
+    printf 'the hop landed go%d.%d.%d.%d on every lane\n' 1 24 13 3        > "$d/q01"; idc_st_case "STRICT admits a Go release literal"         "" "$d/q01" 1
+    idc_st_exc "  and the RELEASE ADMIT is what admitted it"      "ipv4|release-literal" "$IDC_TMP/st.status"
+    printf 'the package nuget-%d.%d.%d.%d is on the feed\n' 1 23 12 1      > "$d/q02"; idc_st_case "STRICT admits a package-prefixed release literal" "" "$d/q02" 1
+    idc_st_exc "  and the RELEASE ADMIT is what admitted it"      "ipv4|release-literal" "$IDC_TMP/st.status"
+    printf 'see docs%svalidation%s%d.%d.%d.%d%s for the roster\n' "$sl" "$sl" 1 24 13 0 "$sl" > "$d/q03"; idc_st_case "STRICT admits a release literal inside a path" "" "$d/q03" 1
+    idc_st_exc "  and the RELEASE ADMIT is what admitted it"      "ipv4|release-literal" "$IDC_TMP/st.status"
+    # THE REFUSE DIRECTION. The admit is bounded to ONE shape, so a private-LAN quad and a quad a
+    # single component off the shape must both still be hits -- in STRICT mode, where nothing in the
+    # sentence around them can help either way.
+    printf 'the box answered on %d.%d.%d.%d last night\n' 10 0 0 1         > "$d/q04"; idc_st_case "a 10/8 quad is not the release shape"       "ipv4" "$d/q04" 1
+    printf 'the box answered on %d.%d.%d.%d last night\n' 192 168 1 20     > "$d/q05"; idc_st_case "a private-range quad is not the release shape" "ipv4" "$d/q05" 1
+    printf 'the build stamped %d.%d.%d.%d into the assembly\n' 1 3 4 5     > "$d/q06"; idc_st_case "second component off the shape still refuses" "ipv4" "$d/q06" 1
+    printf 'the build stamped %d.%d.%d.%d into the assembly\n' 2 24 13 3   > "$d/q07"; idc_st_case "first component off the shape still refuses"  "ipv4" "$d/q07" 1
+    # AND IN DELTA MODE TOO, by the release admit and not by rules 1-4: this quad carries no prefix,
+    # its token run IS the quad, it is no doc constant, and neither neighbouring word is a context
+    # word -- so under rules 1-4 alone it was a hit, and the reason printed is the discriminator.
+    printf 'the page %d.%d.%d.%d is linked from the roster\n' 1 24 13 3    > "$d/q08"; idc_st_case "the admit is consulted in DELTA mode as well" "" "$d/q08" 0
+    idc_st_exc "  and by the RELEASE ADMIT, not by rules 1-4"     "ipv4|release-literal" "$IDC_TMP/st.status"
 
     echo
     echo "  B. KNOWN NEGATIVES -- in DELTA mode, each MUST fire the arm set declared beside it"
@@ -1160,7 +1204,10 @@ idc_mode_selftest() {
     # ADJACENCY, not a window: the nearest context word here is THREE words back, so this quad is no
     # longer excused. It was excluded by the 56-character window the first draft read, and that is
     # exactly the laundering surface C2's A/B found. The refusal is the intended cost.
-    printf -- '-> FileNotFoundException for internal/itoa %d.%d.%d.%d. The error\n' 1 24 13 3 > "$d/n05"; idc_st_case "version word THREE words back no longer excuses" "ipv4" "$d/n05" 0
+    # The quad is OFF the release shape (first component 2) so that rule 5 cannot dispose of it:
+    # with the release shape here, this case would still have read green -- for the wrong reason --
+    # and the adjacency control it exists to be would have been dead without ever going red.
+    printf -- '-> FileNotFoundException for internal/itoa %d.%d.%d.%d. The error\n' 2 24 13 3 > "$d/n05"; idc_st_case "version word THREE words back no longer excuses" "ipv4" "$d/n05" 0
     printf 'the loopback %d.%d.%d.%d is a documentation constant\n' 127 0 0 1 > "$d/n06"; idc_st_case "loopback constant" "" "$d/n06" 0
     idc_st_exc "  and it was excluded AS A DOC CONSTANT"          "ipv4|doc-constant" "$IDC_TMP/st.status"
     printf 'the unspecified %d.%d.%d.%d and broadcast %d.%d.%d.%d addresses\n' 0 0 0 0 255 255 255 255 > "$d/n07"; idc_st_case "unspecified and broadcast constants" "" "$d/n07" 0
