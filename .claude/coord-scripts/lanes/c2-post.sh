@@ -38,7 +38,24 @@ REPO="${C2_REPO:-$(git rev-parse --show-toplevel 2>/dev/null || echo "$CLONE")}"
 # its patterns and hashes from its own directory.
 IDCDIR="$SP/idc-master"
 idc_refresh(){
-  git -C "$REPO" fetch --quiet origin master 2>/dev/null
+  # ⚠ EXPLICIT, FORCED REFSPEC -- `fetch origin master` alone is NOT enough to materialise one.
+  # A remote-tracking ref is updated only OPPORTUNISTICALLY, for refs the clone's CONFIGURED refspec
+  # already maps. A dedicated mailbox clone maps exactly ONE branch
+  # (+refs/heads/claude/mailbox:refs/remotes/origin/claude/mailbox), so there the old line SUCCEEDED
+  # with rc 0, landed the objects in FETCH_HEAD, and wrote nothing `rev-parse origin/master` can see.
+  # The fallback REPO="$CLONE" a few lines up was therefore DEAD: in the one shape it exists for, the
+  # census could never be resolved and the tool refused with the cause one layer away from its message
+  # (reported here at mailbox 90e78eae0 section 5b before the mechanism was known; C1 measured the
+  # mechanism at b23753f56 section 9 and carries the same remedy in its own lane tool at 4b33fc803).
+  #   two-shape control, the tracking ref deleted before each cell:
+  #     full clone     +refs/heads/*:...          OLD rc 0 WRITTEN   NEW rc 0 WRITTEN  <- no regression
+  #     single-branch  +refs/heads/<one>:...      OLD rc 0 ABSENT    NEW rc 0 WRITTEN  <- defect, fix
+  # ⚠ The leading `+` is load-bearing, and it was measured rather than assumed: against a planted
+  # non-fast-forward tip the UNFORCED form returns rc 1 and LEAVES THE STALE TIP IN PLACE, silently,
+  # since this call does not read its rc -- so an unforced refspec would reintroduce the same
+  # shortfall by a second route. A forcing control on the same planted tip returns rc 0 and moves it,
+  # which is what shows the refusal is the missing `+` and not the network.
+  git -C "$REPO" fetch --quiet origin +master:refs/remotes/origin/master 2>/dev/null
   mkdir -p "$IDCDIR"
   local f
   for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifier-hashes.txt; do
