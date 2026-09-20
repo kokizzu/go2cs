@@ -21,6 +21,11 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 // Don't enable for timing tests:
 //[assembly: Parallelize(Workers = 0, Scope = ExecutionScope.MethodLevel)]
+// A second reason, from outside this assembly: testing's PackageAncestry.cs keeps the junction
+// fallback's GODEBUG in four process statics whose single capture-and-restore pairing assumes these
+// hosts run one at a time. They are locked, so uncommenting the line above corrupts nothing -- but
+// whether ONE process-wide capture is the right shape when several hosts stage at once is a reading
+// owed there first.
 
 namespace BehavioralTests;
 
