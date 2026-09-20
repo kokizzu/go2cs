@@ -124,6 +124,10 @@ public class ImplementGenerator : ISourceGenerator
         // which resolves the matching cast-site references from these same records.
         Dictionary<string, HashSet<string>> adapterNameGroups = new(StringComparer.Ordinal);
 
+        // The pointer pairs this compilation records, kept so the composition below can name an
+        // adapter OTHER than the one the main loop is generating — see localPointerAdapterNames.
+        List<(ITypeSymbol Struct, ITypeSymbol Interface, string PackageClass)> pointerPairs = [];
+
         foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, CompilationUnitSyntax compilationUnit, _) in attributeFinder.TargetAttributes)
         {
             (string name, string value)[] arguments = attributeSyntax.GetArgumentValues();
@@ -143,9 +147,60 @@ public class ImplementGenerator : ISourceGenerator
                 adapterNameGroups[unqualified] = interfaces = new HashSet<string>(StringComparer.Ordinal);
 
             interfaces.Add(interfaceType.ToDisplayString());
+            pointerPairs.Add((structType, interfaceType, packageClass));
         }
 
         HashSet<string> collidingAdapterNames = new(adapterNameGroups.Where(entry => entry.Value.Count > 1).Select(entry => entry.Key), StringComparer.Ordinal);
+
+        // ⚠ THE WRAP TARGETS. A pointer adapter's member is declared with the INTERFACE's own return
+        // type and forwards the Go result raw, which is correct until the declared result is itself
+        // an interface the Go method does not return — crypto/mlkem's projected
+        // `decapsulationKey[encapsulationKey]`, whose `EncapsulationKey() E` binds E to the INTERFACE
+        // where the concrete method returns `*EncapsulationKey768`. Go has no return covariance, so
+        // the adapter is where the projection is made good and the forwarded result must be wrapped
+        // in the RESULT interface's own adapter — which is a DIFFERENT adapter from the one being
+        // generated, and therefore the one place this generator must NAME another adapter.
+        //
+        // ⚠⚠ THE MEMBERSHIP TEST IS "THIS COMPILATION RECORDS THE PAIR", NOT "THE STRUCT IS LOCAL",
+        // and the difference is the whole of crypto/mlkem's row. It was the assembly test until
+        // 2026-09-20, which is exactly backwards for the WHITE-BOX model that the `-tests` pipeline
+        // generates: there the struct is ALWAYS in the PRODUCTION assembly and the interface ALWAYS
+        // in the internal-test package, so the one arrangement the corpus needs was the one
+        // arrangement excluded. The row read CS0266 ×2 at BUILD, one per key size, while the adapter
+        // the wrap wanted to name — `mlkem_EncapsulationKey768жencapsulationKey` — was being minted
+        // in that same compilation (mailbox d6d2970a2, ruled at 5347b4aae).
+        //
+        // `pointerPairs` is collected from THIS compilation's own attributes, so the ruled condition
+        // needs no test of its own: membership in that list IS "the pair is recorded here", and the
+        // adapter for it is therefore minted by the main loop below.
+        //
+        // ⚠ THE GENERIC BOUND STAYS. A generic target's adapter name trails its argument list
+        // separately where GetSimpleName's `dropGeneric` default would fold it INTO the identifier;
+        // that is a different defect with its own owner, and this consumer is not the place to fix it.
+        //
+        // ⚠⚠ AND LIFTING THE ASSEMBLY BOUND IS NOT A ONE-LINE DELETE, because that bound was what made
+        // the NAME right BY CONSTRUCTION. While every pair was local, `GetSimpleName(GetFullTypeName())`
+        // was a no-op that happened to equal the main loop's base name. A FOREIGN struct's adapter
+        // carries ForeignPackagePrefix, so the value must now be composed through the SAME helper the
+        // collision key one line above and the main loop's AdapterName both use — `AdapterStructKey`,
+        // which is strip-then-last-segment PLUS the foreign prefix path. Two halves composing one name
+        // from two spellings agree until they do not; this file's own collision-key finding (C1,
+        // mailbox f89515008 §4) is that lesson, and sharing the helper is how the bound's guarantee
+        // survives the bound.
+        Dictionary<string, string> localPointerAdapterNames = new(StringComparer.Ordinal);
+
+        foreach ((ITypeSymbol pairStruct, ITypeSymbol pairInterface, string pairPackageClass) in pointerPairs)
+        {
+            if (pairStruct is INamedTypeSymbol { IsGenericType: true })
+                continue;
+
+            string pairStructKey = AdapterStructKey(pairStruct, pairPackageClass);
+            string pairUnqualified = $"{pairStructKey}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(pairInterface.ToDisplayString()))}";
+            string pairInterfaceName = GlobalQualify(pairInterface.GetFullTypeName(true));
+
+            localPointerAdapterNames[$"{GlobalQualify(pairStruct.ToDisplayString())}|{GlobalQualify(pairInterface.ToDisplayString())}"] =
+                $"{pairStructKey}{PointerPrefix}{(collidingAdapterNames.Contains(pairUnqualified) ? AdapterInterfacePrefix(pairInterface, pairPackageClass) : "")}{GetUnsanitizedIdentifier(GetSimpleName(pairInterfaceName))}";
+        }
 
         foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, CompilationUnitSyntax compilationUnit, FileScopedNamespaceDeclarationSyntax? namespaceSyntax) in attributeFinder.TargetAttributes)
         {
@@ -1022,6 +1077,107 @@ public class ImplementGenerator : ISourceGenerator
                 // argument list) and from the simple name everywhere else.
                 string foreignAdapterBaseName = $"{ForeignPackagePrefix(structType)}{(foreignClosedStructName is null ? GetSimpleName(structName) : adapterBaseName)}";
 
+                // ⚠ THE PROJECTED-RESULT WRAP. A member whose DECLARED result is an interface that
+                // the forwarded Go method does not return hands back the receiver box, which is
+                // CS0266 inside the generated file — crypto/mlkem's `EncapsulationKey() E` with E
+                // bound to the projection. Wrap it in the RESULT interface's own adapter.
+                //
+                // ⚠ THE TWO SIDES OF THE KEY AGREE BECAUSE THE QUALIFIER DISTRIBUTES OVER THE STRING,
+                // which is weaker than what this comment claimed until C1 checked it (mailbox
+                // f89515008 §4). The claim was "both sides are composed by the SAME pair of helpers";
+                // only the MAP side is. The lookup side is SLICED out of the box's own text —
+                // `forwardedReturnType[(boxOpen + 1)..^1]`, the characters between `ж<` and `>`.
+                //
+                // They match because GlobalQualify is a whole-string regex replace, so it rewrites
+                // every root type reference INSIDE the box exactly as it would standing alone. That
+                // is a STRING-LEVEL property, not a symbol-level one: were GlobalQualify ever made
+                // symbol-aware — a plausible tidy-up — the inner text and the standalone form could
+                // differ, the lookup would miss, and the member would fall back to a bare forward.
+                //
+                // The direction is right either way: every exit from the three gates below is a bare
+                // forward, which is CS0266 where a wrap was needed — loud, in the generated file, on
+                // the line. A pair the map does not hold (a foreign or generic target) takes that
+                // same exit by design.
+                Dictionary<string, string> forwardResultWraps = new(StringComparer.Ordinal);
+
+                // ⚠ BOTH forwarding forms are consulted. A direct-ж primary — which is what a Go
+                // method needing the real receiver box converts to, and what crypto/mlkem's
+                // `EncapsulationKey` is — is invisible to GetExtensionMethods and reaches
+                // forwardReceivers through GetBoxReceiverMethodNames, which carries NAMES only. The
+                // first cut of this loop read `structMethods` alone, found nothing for the one member
+                // it existed for, and left the arm red with every other part of the fix correct.
+                // ⚠⚠ THE FOREIGN ARM IS NOT A CONVENIENCE — IT IS THE GATE crypto/mlkem's ROW REACHED.
+                // This read `new Dictionary(...)` for a foreign struct until 2026-09-20, so a foreign
+                // struct had NO forwarded return types and the wrap below took its first `continue`
+                // before the map was ever consulted. The white-box `-tests` model makes the struct
+                // foreign ALWAYS, which is why the row read CS0266 ×2 while every local pair wrapped.
+                Dictionary<string, string> forwardReturnTypes = structDecl is null
+                    ? StructDeclarationSyntaxExtensions.GetForeignBoxReceiverMethodReturnTypes(structType)
+                    : StructDeclarationSyntaxExtensions.GetBoxReceiverMethodReturnTypes(structDecl.Identifier.Text, compilation!);
+
+                foreach (MethodInfo structMethod in structMethods ?? [])
+                    forwardReturnTypes[structMethod.Name] = structMethod.ReturnType;
+
+                foreach (MethodInfo interfaceMethod in methods)
+                {
+                    // ⚠ THIS KEY IS ESCAPED AND ITS NEIGHBOURS ARE NOT, and the reason it is benign is
+                    // that the two misses CANCEL — which is a worse guarantee than it looks and is why
+                    // C2 asked for it in writing (mailbox 788a42262 §4, ruled in at 628ba865c).
+                    //
+                    // `forwardReceivers`, `forwardStaticCalls` and `forwardReturnTypes` are all keyed
+                    // by the struct's RAW declared names, and AdapterImplTemplate reads all of them —
+                    // this map included — with the UNESCAPED `GetSimpleName(method.Name)`. So for a
+                    // keyword-named member (gob's `string()`) this loop composes `@string` where the
+                    // template will later ask for `string`. The lookup on the very next line misses
+                    // FIRST, the iteration continues, and nothing is ever registered under the escaped
+                    // key: no wrap is emitted, and a wrap that is needed and absent is CS0266 in the
+                    // generated file rather than a silent wrong answer.
+                    //
+                    // ⚠ Benign BY CANCELLATION, not by design: fixing either key alone un-cancels it.
+                    // Escape the neighbours and this map would register under a key the template never
+                    // asks for; unescape this one and it would register correctly — which is the right
+                    // direction, and is the one-line change to make if a keyword-named member ever
+                    // needs a projected-result wrap. No corpus record does today.
+                    string memberName = GetSimpleName(EscapeCsKeyword(interfaceMethod.Name));
+                    string forwardMember = interfaceMethod.ForwardMemberName(memberName);
+
+                    if (!forwardReturnTypes.TryGetValue(forwardMember, out string? forwardedReturnType) ||
+                        string.Equals(forwardedReturnType, interfaceMethod.ReturnType, StringComparison.Ordinal))
+                        continue;
+
+                    int boxOpen = forwardedReturnType.IndexOf('<');
+
+                    // The forwarded result must be a receiver BOX for this to be the projection's
+                    // shape at all: `ж<T>`. Anything else that merely differs from the declared
+                    // return type is someone else's defect and is left to the compiler.
+                    if (boxOpen <= 0 || !forwardedReturnType.EndsWith(">", StringComparison.Ordinal) ||
+                        !forwardedReturnType[..boxOpen].EndsWith(PointerPrefix, StringComparison.Ordinal))
+                        continue;
+
+                    string boxedType = forwardedReturnType[(boxOpen + 1)..^1];
+
+                    if (localPointerAdapterNames.TryGetValue($"{boxedType}|{interfaceMethod.ReturnType}", out string? resultAdapter))
+                        forwardResultWraps[forwardMember] = resultAdapter;
+                }
+                // The INTERFACE side of the adapter's NAME, the struct side's rule one operand over: a
+                // record naming a CLOSED instantiation of a GENERIC interface must not land the
+                // argument list inside the class IDENTIFIER. GetFullTypeName spells a generic
+                // `Name<typeArgs>` with the arguments rendered from their display strings, so the
+                // last-dot scan inside GetSimpleName runs INSIDE the list and yields the argument's
+                // own tail segment (`digestжnamed>` for `keyedLike<go.…​.named>`) — not a name any
+                // class can carry, and the same shape the seat fixed on the struct side. Dropped
+                // BEFORE the qualifier scan, the order splitAdapterStructReference documents.
+                //
+                // ⚠ ONLY the minted NAME takes the strip. The two collision KEYS — the pre-pass's
+                // grouping key and the lookup below — keep the last-dot-only reduction, because the
+                // converter's adapterInterfaceSimpleName keeps it too: both halves garble a generic
+                // interface reference IDENTICALLY, which is parity, and stripping on one side alone
+                // would manufacture the divergence AdapterStructKey exists to prevent. The
+                // consequence is the seat's ruled behaviour, now symmetric across both operands: two
+                // records that compose one class name without being seen as a collision fail LOUDLY
+                // at CS0102 instead of binding the first one silently.
+                string adapterInterfaceName = GetUnsanitizedIdentifier(GetSimpleName(StripGenericTypeArguments(interfaceName)));
+
                 string adapterSource = new AdapterImplTemplate
                 {
                     PackageNamespace = packageNamespace,
@@ -1053,13 +1209,31 @@ public class ImplementGenerator : ISourceGenerator
                     // The interface side takes a package qualifier ONLY when this name is one the
                     // pre-pass found more than one interface composing (see adapterNameGroups) —
                     // flate's own `Reader` vs `io.Reader`, both reached from *bufio.Reader.
-                    AdapterName = $"{(foreignStruct ? foreignAdapterBaseName : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}",
+                    //
+                    // ⚠ THIS PROBE ASKS THE SET IN A SPELLING THE SET WAS NOT BUILT FROM, and the two
+                    // coincide for every non-generic interface but not necessarily for a generic one
+                    // (C2, mailbox 788a42262 §2, ruled in at 628ba865c). The pre-pass registers with
+                    // `GetSimpleName(interfaceType.ToDisplayString())`; this line asks with
+                    // `GetSimpleName(interfaceName)`, where interfaceName is
+                    // `GlobalQualify(GetFullTypeName(true))` — a different rendering of the same
+                    // symbol. For a generic interface the two can differ, and then this probe misses
+                    // a group it belongs to and the qualifier is not applied.
+                    //
+                    // ⚠ The projected-result map above sides with the REGISTRATION, deliberately. So
+                    // if a row ever needs these two unified, the direction is TOWARD the pre-pass's
+                    // spelling and this line is the one that moves — the reverse of "make it agree
+                    // with the main loop". And it is a PAIRED seat when it comes: the converter's
+                    // `adapterInterfaceSimpleName` leaves the same operand unstripped on purpose, so
+                    // both halves garble a generic interface reference identically today, and moving
+                    // one alone would manufacture the divergence AdapterStructKey exists to prevent.
+                    AdapterName = $"{(foreignStruct ? foreignAdapterBaseName : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{adapterInterfaceName}",
                     TypeParameters = adapterTypeParameters,
                     ConstraintClause = adapterConstraintClause,
                     AdapterScope = adapterScope,
                     Methods = methods,
                     ForwardReceivers = forwardReceivers,
                     ForwardStaticCalls = forwardStaticCalls,
+                    ForwardResultWraps = forwardResultWraps,
                     ImplementsFormattable = implementsFormattable,
                     UsingStatements = usingStatements
                 }
@@ -1308,9 +1482,25 @@ public class ImplementGenerator : ISourceGenerator
     /// LOCAL type reference is written bare in the GoImplement record while a foreign one is
     /// qualified — the two must agree or the collision groups diverge.
     /// </summary>
+    /// <remarks>
+    /// A generic type-argument list is dropped FIRST and the last path segment taken SECOND, which is
+    /// the order <c>splitAdapterStructReference</c> documents on the converter's half
+    /// (<c>"bytes_package.Reader&lt;int&gt;"</c> → <c>("bytes_package", "Reader")</c>) and the order
+    /// this key must repeat, or the two halves group one struct two ways. Reversed — which is what
+    /// <c>GetSimpleName</c> alone does, splitting on the last '.' and dropping generics only when
+    /// asked, which it cannot usefully be here because by then the split has run — the last-dot scan
+    /// lands INSIDE the argument list and the "simple name" becomes the argument's own tail segment:
+    /// <c>nistCurve&lt;P224PointжnistPoint&gt;</c> keyed as <c>P224PointжnistPoint&gt;</c>, and a
+    /// nested <c>a.G&lt;b.T&gt;</c> as <c>T&gt;</c>. Composed at the CALL SITE rather than by flipping
+    /// <c>GetSimpleName</c>'s internals, for the seat's own reason and one more: that helper
+    /// dereferences a <c>ж&lt;T&gt;</c> box form before splitting, and stripping generics inside it
+    /// would eat the form instead of an argument list. This key never receives one — a GoImplement's
+    /// first type argument is the struct itself, never its box (measured: 0 of 2,752 committed
+    /// records spell one) — so the call site is the only safe place for it.
+    /// </remarks>
     private static string AdapterStructKey(ITypeSymbol structType, string packageClassName)
     {
-        string simpleName = GetUnsanitizedIdentifier(GetSimpleName(structType.ToDisplayString()));
+        string simpleName = GetUnsanitizedIdentifier(GetSimpleName(StripGenericTypeArguments(structType.ToDisplayString())));
         string? container = structType.ContainingType?.Name;
 
         if (container is null || !container.EndsWith(PackageSuffix) || container == packageClassName)

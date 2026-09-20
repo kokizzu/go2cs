@@ -2841,6 +2841,75 @@ public static partial class builtin
         return () => conv(source());
     }
 
+    /// <summary>
+    /// Widens a Go CONSTRUCTOR's delegate — <c>func(A) (T, error)</c> — so its first result carries the
+    /// projected interface while the error passes through untouched.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The constructor-idiom twin of the <c>Func&lt;T&gt;</c> overload above. crypto/mlkem's
+    /// <c>testRoundTrip[E encapsulationKey, D decapsulationKey[E]]</c> reaches <c>E</c> through
+    /// <c>newEncapsulationKey func([]byte) (E, error)</c>, so the delegate position is
+    /// <c>Func&lt;slice&lt;byte&gt;, (E, error)&gt;</c> and the niladic overload cannot express it: the
+    /// four call sites rendered the box as the type argument and failed CS0311 ×4.
+    /// </para>
+    /// <para>
+    /// ⚠ The error is NOT converted and NOT inspected. A Go constructor returns its error beside the
+    /// value and the callee reads both; widening the value must leave the error exactly as the source
+    /// produced it, including a non-nil error beside a zero value.
+    /// </para>
+    /// <para>
+    /// ONE shape, for one measured need. A second arity or a third result waits for a row that reaches
+    /// it — guessing the shape here would be machinery for a case no corpus row has.
+    /// </para>
+    /// </remarks>
+    /// <summary>
+    /// Widens a NILADIC Go constructor's delegate — <c>func() (T, error)</c> — so its first result
+    /// carries the projected interface while the error passes through untouched.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The second half of crypto/mlkem's shape, and the row needs BOTH: <c>testRoundTrip</c> reaches
+    /// <c>D</c> through <c>generateKey func() (D, error)</c> (niladic) and <c>E</c> through
+    /// <c>newEncapsulationKey func([]byte) (E, error)</c> (one argument). Emitting only the
+    /// one-argument form left the niladic positions as method groups the compiler could not convert —
+    /// CS0407 ×8, <c>'(ж&lt;DecapsulationKey1024&gt;, error) GenerateKey1024()' has the wrong return
+    /// type</c>.
+    /// </para>
+    /// <para>
+    /// ⚠ Distinguished from the <c>Func&lt;T&gt;</c> overload by its PARAMETER type, not its arity, so
+    /// the emission passes the type arguments explicitly and resolution is unambiguous:
+    /// <c>Func&lt;T&gt;</c> with <c>T=(X, error)</c> and <c>Func&lt;(T, error)&gt;</c> with
+    /// <c>T=X</c> are the same closed type, and only the explicit list separates them.
+    /// </para>
+    /// </remarks>
+    public static Func<(TWide, error)> widenResult<T, TWide>(Func<(T, error)> source, Func<T, TWide> conv)
+    {
+        // A nil func value stays nil, identically to the other overloads.
+        if (source is null)
+            return default!;
+
+        return () =>
+        {
+            (T value, error err) = source();
+            return (conv(value), err);
+        };
+    }
+
+    public static Func<A, (TWide, error)> widen<A, T, TWide>(Func<A, (T, error)> source, Func<T, TWide> conv)
+    {
+        // A nil func value stays nil, identically to the niladic overload: Go's `h == nil` in the
+        // callee must answer as it would have.
+        if (source is null)
+            return default!;
+
+        return a =>
+        {
+            (T value, error err) = source(a);
+            return (conv(value), err);
+        };
+    }
+
 
     /// <summary>
     /// Converts value to a complex64 imaginary number.

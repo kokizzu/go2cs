@@ -9,6 +9,7 @@
     <Import_RootNamespace>go2cs_src</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)adapterInterfaceStrip_test.go" />
     <None Include="$(MSBuildThisFileDirectory)adapterNameCollisions.go" />
     <None Include="$(MSBuildThisFileDirectory)addressTakenPredicates_test.go" />
     <None Include="$(MSBuildThisFileDirectory)aliasReferenceImports_test.go" />
