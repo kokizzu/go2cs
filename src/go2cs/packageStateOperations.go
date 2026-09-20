@@ -56,6 +56,7 @@ func resetPackageState(pkg *packages.Package) {
 	constImportedTypeAliases = NewHashSet([]string{})
 	derivedTypeAliases = NewHashSet([]string{})
 	usedDerivedTypeAliases = NewHashSet([]string{})
+	qualifiedImportedTypeAliases = NewHashSet([]string{})
 	parsedPackageInfoFiles = NewHashSet([]string{})
 	interfaceImplementations = make(map[string]HashSet[string])
 	promotedInterfaceImplementations = make(map[string]HashSet[string])
