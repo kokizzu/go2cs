@@ -78,6 +78,21 @@ func loadedPackageIsAt(pkgs []*packages.Package, dir string) bool {
 	return false
 }
 
+// loadsPackageSubtree reports whether processConversion loads the input directory's whole subtree
+// ("./...") rather than the single package it was handed. See the call site for why a GOROOT input
+// is excluded even when it is also a GOPATH one.
+//
+// GOROOT is tested with isPathUnder rather than a string prefix deliberately: filepath.Rel compares
+// path ELEMENTS (case-insensitively on Windows, exactly on Unix), so a sibling directory whose name
+// merely begins with the GOROOT spelling is not "under" it and keeps the GOPATH behavior it had.
+func loadsPackageSubtree(inputFilePath string, options Options) bool {
+	if options.recurse || isPathUnder(inputFilePath, options.goRoot) {
+		return false
+	}
+
+	return strings.HasPrefix(strings.ToLower(inputFilePath), strings.ToLower(options.goPath))
+}
+
 // processConversion converts ONE resolved input — a single .go file or a package directory — into
 // C# at outputFilePath. It returns an error only for a PACKAGE LOAD failure, which is the one
 // failure mode that belongs to the input rather than to the environment: a batch driver
@@ -164,7 +179,23 @@ func processConversion(inputFilePath string, isDir bool, outputFilePath string, 
 	// re-convert sibling sub-packages — each is already its own convert-set entry, including
 	// read-only module-cache packages that must route to the recurse-output pkg tree individually). Outside
 	// recurse, a GOPATH input keeps the "./..." subtree behavior unchanged.
-	if !options.recurse && strings.HasPrefix(strings.ToLower(inputFilePath), strings.ToLower(options.goPath)) {
+	//
+	// ⚠ "each is already its own convert-set entry" is the clause that has to be READ rather than
+	// assumed. It holds for a GOPATH tree and for every package -stdlib queues, and it is FALSE for
+	// exactly the sub-packages `go list std` leaves out. At CGO_ENABLED=0 that is runtime/cgo —
+	// buildable when named, absent from `std`, never queued, and so never skipped either — so a
+	// subtree load CONVERTED it, and a package the convert set never had entered the corpus through
+	// a door meant only to RE-open one: nine .cs written under runtime's own conversion, out of
+	// dependency order, with nothing in the run log naming the package.
+	//
+	// A GOROOT input is therefore excluded outright (loadsPackageSubtree): the standard library's
+	// sub-packages are the convert set's business, never a subtree walk's. The two roots are NOT
+	// disjoint, which is why this stayed invisible — a GOTOOLCHAIN-installed toolchain lives at
+	// $GOPATH/pkg/mod/golang.org/toolchain@<version>, so on such a box EVERY stdlib package is also
+	// a GOPATH input and every one of them loaded its subtree, while on a box with an ordinary GOROOT
+	// install the branch never fired at all. The same command emitted a different corpus on the two
+	// boxes, and neither run said so. (C2 mailbox 1257a20bad; COORD ruling 3d0c7cd5d.)
+	if loadsPackageSubtree(inputFilePath, options) {
 		pkgs, err = packages.Load(cfg, "./...")
 	} else {
 		pkgs, err = packages.Load(cfg, loadPattern)
