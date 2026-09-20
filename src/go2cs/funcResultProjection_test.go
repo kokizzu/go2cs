@@ -11,6 +11,7 @@ package main
 import (
 	"go/ast"
 	"go/types"
+	"strings"
 	"testing"
 )
 
@@ -377,4 +378,92 @@ func TestFuncResultProjectionNegativeControls(t *testing.T) {
 			t.Errorf("%s mapped argument 0 onto the projection: %s", wrapper, reason)
 		}
 	}
+}
+
+// TestProjectedGenericConstraintRecordsItsAdapter is part (d) of crypto/mlkem's seat, red-first: the
+// three settled parts reach a COHERENT type-argument list —
+// `testRoundTrip<encapsulationKey, decapsulationKey<encapsulationKey>>` — and then the two D-side
+// arguments stay unwidened, because convertToInterfaceType hands back no `new …` for a PARAMETERIZED
+// constraint and the row sits at CS0407 ×8.
+//
+// ⚠ The absent adapter is the CONVERTER's, not the generator's. The generator mints one adapter per
+// recorded (element, interface) pair, and mlkem's emission records exactly TWO — both for the PLAIN
+// constraint `encapsulationKey` — and none for `decapsulationKey` of anything. Nothing was refused;
+// nothing was asked. Billing it to the generator was this lane's own misreading (mailbox cf3a2d76,
+// corrected at 44812e89, taken by COORD at 9b9f779de).
+//
+// The reason the pair is never recorded is the RETURN-COVARIANCE shape, and it is the same one that
+// refuted this seat's first cut: `recordSatisfiesIface` asks `types.Implements(targetType, iface)`
+// against the interface as NAMED, and the PROJECTED form is `keyedNamed[named]`, whose `encapKey()`
+// returns the interface where `*digest.encapKey()` returns the pointer. Go has no return covariance,
+// so the answer is false and every record and emission arm downstream is gated off. The satisfaction
+// question must be asked of the form closed over the TYPE ARGUMENTS (`keyedNamed[*digest]`, which the
+// Go checker already admitted) while the RECORDED and RENDERED name stays the projection — the same
+// two-instantiation split funcResultProjection itself carries.
+func TestProjectedGenericConstraintRecordsItsAdapter(t *testing.T) {
+	visitor, calls := loadFuncResultFixture(t)
+	funIdent, typeArgs := funcResultInstance(t, visitor, calls, "pairCall")
+
+	// Argument 0 of `pair` is `newD func() (D, error)` — the D side, whose constraint is parameterized.
+	ptr, constraint, checkConstraint, ok := visitor.funcResultProjectionArgChecked(funIdent, typeArgs, 0)
+
+	if !ok {
+		t.Fatal("D's argument did not map onto the projection — the settled parts must hold before the adapter question is asked")
+	}
+
+	if got := constraint.String(); got != "example/funcresult.keyedNamed[example/funcresult.named]" {
+		t.Fatalf("D's constraint = %s, want example/funcresult.keyedNamed[example/funcresult.named]", got)
+	}
+
+	previousImplementations, previousAdapterClasses := interfaceImplementations, adapterClassImplementations
+
+	t.Cleanup(func() {
+		interfaceImplementations, adapterClassImplementations = previousImplementations, previousAdapterClasses
+	})
+
+	interfaceImplementations = make(map[string]HashSet[string])
+	adapterClassImplementations = HashSet[string]{}
+
+	wrapped := visitor.convertToProjectedInterfaceType(constraint, checkConstraint, ptr, "src")
+	if !strings.HasPrefix(wrapped, "new ") {
+		t.Fatalf("the projected conversion returned %q, want a `new <adapter>(src)` construction; recorded pairs = %v", wrapped, interfaceImplementations)
+	}
+
+	// ⚠ The CLASS name is the BARE interface name and the RECORD is the CLOSED instantiation, and
+	// the two being different is the point rather than an inconsistency: `digestжkeyedNamed<named>`
+	// is not an identifier a non-generic class can carry, so a name composed with the argument list
+	// would reference a class the generator never emits (CS0246). The corpus already runs on this
+	// shape — crypto/elliptic records `nistPoint<P224Point>` and references `P224PointжnistPoint`.
+	//
+	// Composed through adapterNameMarker rather than spelled out, so the expectation cannot drift
+	// from the marker format the resolver reads.
+	if want := "new " + adapterNameMarker("digest", "keyedNamed") + "(src)"; wrapped != want {
+		t.Fatalf("projected conversion = %q, want %q — the adapter CLASS takes the interface's BARE name", wrapped, want)
+	}
+
+	recorded, exists := interfaceImplementations["keyedNamed<named>"]
+
+	if !exists {
+		t.Fatalf("no implement pair was recorded under the CLOSED interface name; recorded = %v — the generator mints an adapter only for a recorded pair, so the cast site would reference a class that is never emitted (CS0246)", interfaceImplementations)
+	}
+
+	if !recorded.Contains(PointerPrefix + "<digest>") {
+		t.Fatalf("the pair recorded under keyedNamed<named> = %v, want the POINTER form %s<digest> — a value record generates the boxing partial struct, not the ж adapter the cast site constructs", recorded, PointerPrefix)
+	}
+
+	// The negative half, and it is what proves the SPLIT rather than the conversion: asking the
+	// satisfaction question of the PROJECTED form — which is what convertToInterfaceType does, and
+	// what this seat did before the split — still declines, because no Go type implements
+	// `keyedNamed[named]`. If this ever starts returning an adapter, the two-instantiation split has
+	// stopped being load-bearing and this test's green above means something else.
+	beforeUnsplit := interfaceImplementations
+	interfaceImplementations = make(map[string]HashSet[string])
+
+	if unsplit := visitor.convertToInterfaceType(constraint, ptr, "src"); strings.HasPrefix(unsplit, "new ") {
+		t.Fatalf("the UNSPLIT conversion returned %q — Go has no return covariance, so asking types.Implements of the projected form must still decline", unsplit)
+	} else if len(interfaceImplementations) != 0 {
+		t.Fatalf("the UNSPLIT conversion recorded %v, want nothing", interfaceImplementations)
+	}
+
+	interfaceImplementations = beforeUnsplit
 }

@@ -1775,9 +1775,9 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			if paramHasArg && (replacementArgs == nil || len(replacementArgs[i]) == 0) {
 				if funIdent := getCallFunIdent(callExpr.Fun); funIdent != nil {
 					if instance, ok := v.info.Instances[funIdent]; ok && instance.TypeArgs != nil {
-						if ptr, constraint, ok := v.funcResultProjectionArg(funIdent, instance.TypeArgs, i); ok {
+						if ptr, constraint, checkConstraint, ok := v.funcResultProjectionArgChecked(funIdent, instance.TypeArgs, i); ok {
 							elemVar := fmt.Sprintf("elem%s%d", TempVarMarker, i)
-							wrapped := v.convertToInterfaceType(constraint, ptr, elemVar)
+							wrapped := v.convertToProjectedInterfaceType(constraint, checkConstraint, ptr, elemVar)
 
 							if strings.HasPrefix(wrapped, "new ") {
 								if replacementArgs == nil {

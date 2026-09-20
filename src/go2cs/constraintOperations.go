@@ -1774,21 +1774,21 @@ func (v *Visitor) constraintProxySigArg(funIdent *ast.Ident, typeArgs *types.Typ
 // this one — moved to funcResultProjection below when it was relaxed on 2026-09-20, because whether
 // it refuses now depends on whether that sibling ALSO projects, which this function cannot ask
 // without recursing. Call funcResultProjection unless you ARE the sibling test.
-func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, bool) {
+func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, types.Type, bool) {
 	if funIdent == nil || typeArgs == nil {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
 
 	if !ok {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	sig, ok := funcObj.Type().(*types.Signature)
 
 	if !ok || sig.TypeParams() == nil || k >= sig.TypeParams().Len() || k >= typeArgs.Len() {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	typeParams := sig.TypeParams()
@@ -1797,13 +1797,13 @@ func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types
 	arg := typeArgs.At(k)
 
 	if !funcResultProjectableArg(arg) {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	constraint := typeParam.Constraint()
 
 	if iface, ok := constraint.Underlying().(*types.Interface); !ok || iface.NumMethods() == 0 || !iface.IsMethodSet() {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	// The form the GO-level Implements test is asked about: the constraint closed over the call's own
@@ -1823,7 +1823,7 @@ func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types
 
 			if tp, ok := arg.(*types.TypeParam); ok {
 				if tp == typeParam {
-					return nil, nil, false
+					return nil, nil, nil, false
 				}
 
 				if index := tp.Index(); index < typeParams.Len() && typeParams.At(index) == tp && index < typeArgs.Len() {
@@ -1845,14 +1845,14 @@ func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types
 						// to compile; a box-closed constraint would compile against the wrong bound.
 						// A sibling whose argument is concrete (`keyed[int]`) is not this case and
 						// closes over the concrete type as it always has.
-						return nil, nil, false
+						return nil, nil, nil, false
 					}
 				}
 			}
 
 			for m := range typeParams.Len() {
 				if typeMentionsTypeParam(arg, typeParams.At(m), map[types.Type]bool{}) {
-					return nil, nil, false
+					return nil, nil, nil, false
 				}
 			}
 
@@ -1863,7 +1863,7 @@ func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types
 		instantiated, err := types.Instantiate(nil, constraintNamed.Origin(), args, false)
 
 		if err != nil {
-			return nil, nil, false
+			return nil, nil, nil, false
 		}
 
 		// ⚠ TWO instantiations, and the distinction is load-bearing.
@@ -1878,7 +1878,7 @@ func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types
 		checked, err := types.Instantiate(nil, constraintNamed.Origin(), checkArgs, false)
 
 		if err != nil {
-			return nil, nil, false
+			return nil, nil, nil, false
 		}
 
 		constraint = instantiated
@@ -1888,7 +1888,7 @@ func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types
 	iface, ok := checkConstraint.Underlying().(*types.Interface)
 
 	if !ok || !types.Implements(arg, iface) || interfaceNominallyDerives(arg, checkConstraint) {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	// The reach: every parameter that mentions the type parameter is exactly `func() H`, at
@@ -1903,21 +1903,21 @@ func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types
 		}
 
 		if sig.Variadic() && j == sig.Params().Len()-1 {
-			return nil, nil, false
+			return nil, nil, nil, false
 		}
 
 		if _, ok := funcResultPositionOf(paramType, typeParam); !ok {
-			return nil, nil, false
+			return nil, nil, nil, false
 		}
 
 		reached = true
 	}
 
 	if !reached || typeMentionsTypeParam(sig.Results(), typeParam, map[types.Type]bool{}) {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
-	return arg, constraint, true
+	return arg, constraint, checkConstraint, true
 }
 
 // siblingProjectedConstraint reports the constraint a sibling type parameter PROJECTS to, for use as
@@ -1951,7 +1951,7 @@ func (v *Visitor) siblingProjectedConstraint(funIdent *ast.Ident, typeArgs *type
 		return nil, false
 	}
 
-	_, constraint, ok := v.funcResultProjectionLocal(funIdent, typeArgs, index)
+	_, constraint, _, ok := v.funcResultProjectionLocal(funIdent, typeArgs, index)
 
 	if !ok {
 		return nil, false
@@ -1977,23 +1977,23 @@ func (v *Visitor) siblingProjectedConstraint(funIdent *ast.Ident, typeArgs *type
 // The sibling test calls the LOCAL form, never this one, so the check is one level deep and cannot
 // recurse: two parameters that mention each other each ask whether the other projects LOCALLY, and
 // neither asks the question back.
-func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, bool) {
-	arg, constraint, ok := v.funcResultProjectionLocal(funIdent, typeArgs, k)
+func (v *Visitor) funcResultProjectionChecked(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, types.Type, bool) {
+	arg, constraint, checkConstraint, ok := v.funcResultProjectionLocal(funIdent, typeArgs, k)
 
 	if !ok {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
 
 	if !ok {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	sig, ok := funcObj.Type().(*types.Signature)
 
 	if !ok || sig.TypeParams() == nil || k >= sig.TypeParams().Len() {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	typeParams := sig.TypeParams()
@@ -2004,33 +2004,33 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 			continue
 		}
 
-		if _, _, siblingProjects := v.funcResultProjectionLocal(funIdent, typeArgs, m); !siblingProjects {
-			return nil, nil, false
+		if _, _, _, siblingProjects := v.funcResultProjectionLocal(funIdent, typeArgs, m); !siblingProjects {
+			return nil, nil, nil, false
 		}
 	}
 
-	return arg, constraint, true
+	return arg, constraint, checkConstraint, true
 }
 
 // funcResultProjectionArg maps argument `i` of a generic FUNCTION call onto funcResultProjection:
 // the parameter must be a `func() H` whose type parameter's position projects.
-func (v *Visitor) funcResultProjectionArg(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (types.Type, types.Type, bool) {
+func (v *Visitor) funcResultProjectionArgChecked(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (types.Type, types.Type, types.Type, bool) {
 	typeParams := v.signatureTypeParams(funIdent)
 
 	if typeParams == nil {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	sig := v.info.ObjectOf(funIdent).(*types.Func).Type().(*types.Signature)
 
 	if i >= sig.Params().Len() || (sig.Variadic() && i == sig.Params().Len()-1) {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	paramSig, ok := sig.Params().At(i).Type().Underlying().(*types.Signature)
 
 	if !ok {
-		return nil, nil, false
+		return nil, nil, nil, false
 	}
 
 	// Which of the call's type parameters this func parameter projects through. The shape check
@@ -2038,11 +2038,33 @@ func (v *Visitor) funcResultProjectionArg(funIdent *ast.Ident, typeArgs *types.T
 	// and still refuses the two shapes that cannot be wrapped.
 	for k := range typeParams.Len() {
 		if _, ok := funcResultPositionOf(paramSig, typeParams.At(k)); ok {
-			return v.funcResultProjection(funIdent, typeArgs, k)
+			return v.funcResultProjectionChecked(funIdent, typeArgs, k)
 		}
 	}
 
-	return nil, nil, false
+	return nil, nil, nil, false
+}
+
+// funcResultProjection is funcResultProjectionChecked with the CHECKED constraint dropped — the form
+// every caller that only RENDERS or DECIDES takes, and the one the negative controls exercise.
+//
+// The checked form exists for the single caller that must ask a SATISFACTION question of the
+// constraint as GO closed it rather than as C# renders it (convertToProjectedInterfaceType). Keeping
+// that caller on its own entry point is what stops the projected form leaking into a types.Implements
+// test somewhere else: this seat's first cut asked exactly that question of the projected form and
+// refused a valid row, because Go has no return covariance.
+func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, bool) {
+	arg, constraint, _, ok := v.funcResultProjectionChecked(funIdent, typeArgs, k)
+
+	return arg, constraint, ok
+}
+
+// funcResultProjectionArg is funcResultProjectionArgChecked with the CHECKED constraint dropped; see
+// funcResultProjection for why the two entry points are kept apart.
+func (v *Visitor) funcResultProjectionArg(funIdent *ast.Ident, typeArgs *types.TypeList, i int) (types.Type, types.Type, bool) {
+	arg, constraint, _, ok := v.funcResultProjectionArgChecked(funIdent, typeArgs, i)
+
+	return arg, constraint, ok
 }
 
 // funcResultProjectionResultIndex reports which RESULT of argument `i`'s func parameter carries the
