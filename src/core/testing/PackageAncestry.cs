@@ -790,11 +790,24 @@ internal static class PackageAncestry
     // link set itself — ApplyJunctionGodebug and RestoreJunctionGodebug each take it over their whole
     // body. NEITHER set needs that lock for cross-host safety as the tier runs today, because the
     // "many hosts in one process" the notes above keep referring to are SERIALISED. MEASURED
-    // 2026-09-20 at this ref: the in-process tier is MSTest, BehavioralTests drives TestHost.Run from
-    // 27 sites, all of them in TestingRuntimeTests.cs and every one a synchronous call in the test
-    // method's own body — not awaited and not Task-wrapped, which is stronger than awaited, and the
-    // file contains no async/await/Task/Thread/Parallel at all — with GolibTests contributing 9 more
-    // lines across five files on the same terms. The enforcement is that MSTest runs one test method
+    // 2026-09-20 at this ref: the in-process tier is MSTest, and the property that matters is NOT that
+    // the test files are free of concurrency — they are not — but that nothing concurrent WRAPS A HOST
+    // RUN. Every one of the 27 TestHost.Run calls in TestingRuntimeTests.cs is a synchronous call in
+    // the test method's own body, neither awaited nor Task-wrapped, which is stronger than awaited, and
+    // NO thread or task in either tree encloses one. The thread a reader grepping for Thread WILL find
+    // is real — TestingRuntimeTests.cs:191, under `using System.Threading` at :10 — and it does not
+    // matter: it is constructed INSIDE a registered test body (the registry.Add lambda opening at
+    // :189), started at :192 and joined at :193 before that body returns, so it lives strictly within
+    // the ONE host run at :196 and cannot make two hosts concurrent. Thread.Sleep at :279 is the same
+    // shape, and the six Parallel() hits (:32, :38, :247, :271, :298, :302) are Go's T.Parallel() under
+    // test on a converted testing.T, not C# parallelism; the file contains no async, await or Task at
+    // all. GolibTests adds 8 more call sites across five files (2, 2, 2, 1, 1), 35 in the tree, on the
+    // same terms — counted by a strict predicate, no `//` before the call on its line, because a raw
+    // grep reads 36 and the extra is HostUnknownFlagPassThroughTests.cs:55 MENTIONING the call in a
+    // comment, which is not a call site. One of those five does construct a thread
+    // (MainGoroutineIdentityTests.cs:167, started :194, joined :195), but in a different test method
+    // from its host run at :108, and that body calls no host at all.
+    // The enforcement is that MSTest runs one test method
     // at a time absent an [assembly: Parallelize], that the tree's only such attribute is
     // DELIBERATELY disabled at BehavioralTestBase.cs:23 under its reason on :22 ("Don't enable for
     // timing tests:"), and that no .runsettings exists anywhere to raise parallelism instead.
