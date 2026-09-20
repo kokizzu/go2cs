@@ -124,6 +124,10 @@ public class ImplementGenerator : ISourceGenerator
         // which resolves the matching cast-site references from these same records.
         Dictionary<string, HashSet<string>> adapterNameGroups = new(StringComparer.Ordinal);
 
+        // The pointer pairs this compilation records, kept so the composition below can name an
+        // adapter OTHER than the one the main loop is generating — see localPointerAdapterNames.
+        List<(ITypeSymbol Struct, ITypeSymbol Interface, string PackageClass)> pointerPairs = [];
+
         foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, CompilationUnitSyntax compilationUnit, _) in attributeFinder.TargetAttributes)
         {
             (string name, string value)[] arguments = attributeSyntax.GetArgumentValues();
@@ -143,9 +147,44 @@ public class ImplementGenerator : ISourceGenerator
                 adapterNameGroups[unqualified] = interfaces = new HashSet<string>(StringComparer.Ordinal);
 
             interfaces.Add(interfaceType.ToDisplayString());
+            pointerPairs.Add((structType, interfaceType, packageClass));
         }
 
         HashSet<string> collidingAdapterNames = new(adapterNameGroups.Where(entry => entry.Value.Count > 1).Select(entry => entry.Key), StringComparer.Ordinal);
+
+        // ⚠ THE WRAP TARGETS. A pointer adapter's member is declared with the INTERFACE's own return
+        // type and forwards the Go result raw, which is correct until the declared result is itself
+        // an interface the Go method does not return — crypto/mlkem's projected
+        // `decapsulationKey[encapsulationKey]`, whose `EncapsulationKey() E` binds E to the INTERFACE
+        // where the concrete method returns `*EncapsulationKey768`. Go has no return covariance, so
+        // the adapter is where the projection is made good and the forwarded result must be wrapped
+        // in the RESULT interface's own adapter — which is a DIFFERENT adapter from the one being
+        // generated, and therefore the one place this generator must NAME another adapter.
+        //
+        // ⚠ BOUNDED TO A LOCAL, NON-GENERIC STRUCT TARGET, and the bound is what keeps this from
+        // becoming a SECOND SPELLING of the main loop's composition. For that case the base name is
+        // exactly `GetSimpleName(structName)` — no foreign package prefix, no type-argument list — so
+        // the two agree by construction rather than by maintenance. A foreign or generic target is
+        // deliberately NOT entered here: the member keeps its bare forward and the compiler says so
+        // out loud (CS0266), where a wrong name would be the silent failure. That asymmetry is the
+        // lesson of this file's own collision-key finding — two halves composing one name from two
+        // spellings agree until they do not.
+        Dictionary<string, string> localPointerAdapterNames = new(StringComparer.Ordinal);
+
+        foreach ((ITypeSymbol pairStruct, ITypeSymbol pairInterface, string pairPackageClass) in pointerPairs)
+        {
+            if (!SymbolEqualityComparer.Default.Equals(pairStruct.ContainingAssembly, context.Compilation.Assembly))
+                continue;
+
+            if (pairStruct is INamedTypeSymbol { IsGenericType: true })
+                continue;
+
+            string pairUnqualified = $"{AdapterStructKey(pairStruct, pairPackageClass)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(pairInterface.ToDisplayString()))}";
+            string pairInterfaceName = GlobalQualify(pairInterface.GetFullTypeName(true));
+
+            localPointerAdapterNames[$"{GlobalQualify(pairStruct.ToDisplayString())}|{GlobalQualify(pairInterface.ToDisplayString())}"] =
+                $"{GetSimpleName(pairStruct.GetFullTypeName())}{PointerPrefix}{(collidingAdapterNames.Contains(pairUnqualified) ? AdapterInterfacePrefix(pairInterface, pairPackageClass) : "")}{GetUnsanitizedIdentifier(GetSimpleName(pairInterfaceName))}";
+        }
 
         foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, CompilationUnitSyntax compilationUnit, FileScopedNamespaceDeclarationSyntax? namespaceSyntax) in attributeFinder.TargetAttributes)
         {
@@ -1022,6 +1061,54 @@ public class ImplementGenerator : ISourceGenerator
                 // argument list) and from the simple name everywhere else.
                 string foreignAdapterBaseName = $"{ForeignPackagePrefix(structType)}{(foreignClosedStructName is null ? GetSimpleName(structName) : adapterBaseName)}";
 
+                // ⚠ THE PROJECTED-RESULT WRAP. A member whose DECLARED result is an interface that
+                // the forwarded Go method does not return hands back the receiver box, which is
+                // CS0266 inside the generated file — crypto/mlkem's `EncapsulationKey() E` with E
+                // bound to the projection. Wrap it in the RESULT interface's own adapter.
+                //
+                // Both sides of the key are composed by the SAME pair of helpers that produced the
+                // map (GlobalQualify over ToDisplayString), so the lookup cannot drift from the
+                // registration; a pair the map does not hold — a foreign or generic target — simply
+                // does not wrap, and the compiler names it.
+                Dictionary<string, string> forwardResultWraps = new(StringComparer.Ordinal);
+
+                // ⚠ BOTH forwarding forms are consulted. A direct-ж primary — which is what a Go
+                // method needing the real receiver box converts to, and what crypto/mlkem's
+                // `EncapsulationKey` is — is invisible to GetExtensionMethods and reaches
+                // forwardReceivers through GetBoxReceiverMethodNames, which carries NAMES only. The
+                // first cut of this loop read `structMethods` alone, found nothing for the one member
+                // it existed for, and left the arm red with every other part of the fix correct.
+                Dictionary<string, string> forwardReturnTypes = structDecl is null
+                    ? new Dictionary<string, string>(StringComparer.Ordinal)
+                    : StructDeclarationSyntaxExtensions.GetBoxReceiverMethodReturnTypes(structDecl.Identifier.Text, compilation!);
+
+                foreach (MethodInfo structMethod in structMethods ?? [])
+                    forwardReturnTypes[structMethod.Name] = structMethod.ReturnType;
+
+                foreach (MethodInfo interfaceMethod in methods)
+                {
+                    string memberName = GetSimpleName(EscapeCsKeyword(interfaceMethod.Name));
+                    string forwardMember = interfaceMethod.ForwardMemberName(memberName);
+
+                    if (!forwardReturnTypes.TryGetValue(forwardMember, out string? forwardedReturnType) ||
+                        string.Equals(forwardedReturnType, interfaceMethod.ReturnType, StringComparison.Ordinal))
+                        continue;
+
+                    int boxOpen = forwardedReturnType.IndexOf('<');
+
+                    // The forwarded result must be a receiver BOX for this to be the projection's
+                    // shape at all: `ж<T>`. Anything else that merely differs from the declared
+                    // return type is someone else's defect and is left to the compiler.
+                    if (boxOpen <= 0 || !forwardedReturnType.EndsWith(">", StringComparison.Ordinal) ||
+                        !forwardedReturnType[..boxOpen].EndsWith(PointerPrefix, StringComparison.Ordinal))
+                        continue;
+
+                    string boxedType = forwardedReturnType[(boxOpen + 1)..^1];
+
+                    if (localPointerAdapterNames.TryGetValue($"{boxedType}|{interfaceMethod.ReturnType}", out string? resultAdapter))
+                        forwardResultWraps[forwardMember] = resultAdapter;
+                }
+
                 string adapterSource = new AdapterImplTemplate
                 {
                     PackageNamespace = packageNamespace,
@@ -1060,6 +1147,7 @@ public class ImplementGenerator : ISourceGenerator
                     Methods = methods,
                     ForwardReceivers = forwardReceivers,
                     ForwardStaticCalls = forwardStaticCalls,
+                    ForwardResultWraps = forwardResultWraps,
                     ImplementsFormattable = implementsFormattable,
                     UsingStatements = usingStatements
                 }

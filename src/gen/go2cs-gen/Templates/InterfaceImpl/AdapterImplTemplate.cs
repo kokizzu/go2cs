@@ -56,6 +56,15 @@ internal class AdapterImplTemplate : TemplateBase
     // ForwardReceivers becomes the first ARGUMENT (m_box / m_box.Value / ref m_box.Value).
     public Dictionary<string, string>? ForwardStaticCalls;
 
+    // ⚠ Per-method RESULT ADAPTER for a member whose DECLARED result is an interface the forwarded
+    // Go method does not return. The adapter implements the interface AS DECLARED, so the forwarded
+    // receiver box has to be wrapped in the RESULT interface's own adapter before it is handed back:
+    // Go has no return covariance, and handing the box back is CS0266 inside this generated file.
+    // crypto/mlkem's projected `decapsulationKey[encapsulationKey]` is the corpus shape — its
+    // `EncapsulationKey() E` binds E to the INTERFACE while the concrete method returns the pointer.
+    // Empty for every member that needs no wrap, which is all of them outside that shape.
+    public Dictionary<string, string>? ForwardResultWraps;
+
     public override string TemplateBody =>
         $$"""
              /// <summary>
@@ -144,14 +153,26 @@ internal class AdapterImplTemplate : TemplateBase
                 if (!ForwardReceivers.TryGetValue(forwardName, out string? receiver))
                     receiver = "m_box";
 
+                // The projected-result wrap, applied to whichever forward form the member takes so
+                // the two branches cannot diverge on it. Empty parens for the wrap's own argument
+                // are impossible here: the forward is always an expression.
+                string wrapOpen = "";
+                string wrapClose = "";
+
+                if (ForwardResultWraps is not null && ForwardResultWraps.TryGetValue(forwardName, out string? resultAdapter))
+                {
+                    wrapOpen = $"new {resultAdapter}(";
+                    wrapClose = ")";
+                }
+
                 if (ForwardStaticCalls is not null && ForwardStaticCalls.TryGetValue(forwardName, out string? staticCall))
                 {
                     string staticArgs = string.IsNullOrEmpty(method.CallParameters) ? receiver : $"{receiver}, {method.CallParameters}";
-                    result.Append($"{method.ReturnType} {method.GetSignature()} => {staticCall}{method.GetGenericSignature()}({staticArgs});");
+                    result.Append($"{method.ReturnType} {method.GetSignature()} => {wrapOpen}{staticCall}{method.GetGenericSignature()}({staticArgs}){wrapClose};");
                 }
                 else
                 {
-                    result.Append($"{method.ReturnType} {method.GetSignature()} => {receiver}.{forwardName}{method.GetGenericSignature()}({method.CallParameters});");
+                    result.Append($"{method.ReturnType} {method.GetSignature()} => {wrapOpen}{receiver}.{forwardName}{method.GetGenericSignature()}({method.CallParameters}){wrapClose};");
                 }
             }
 
