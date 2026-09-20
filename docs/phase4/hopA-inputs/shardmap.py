@@ -411,16 +411,45 @@ if roster_dups:
 
 costed = {n for n, _, _ in rows}
 UNSCHEDULED = sorted(n for n in roster_names if n not in costed)
-orphans = sorted(n for n in costed if n not in roster_names)
 
-print(f"\npopulation:       {len(roster_names)} banked roster row(s)")
-print(f"  costed          {len(costed)}  ({100*len(costed)/len(roster_names):.1f}%)")
+# ------------------------------------------------------------------- the THIRD BUCKET: CANDIDATES
+# RULED at COORD 465038cae, on C2's classification of the fifteen at 17c114b6e. The leg's row list
+# is the roster PLUS CANDIDATES *by design*: the population on the corpus axis is the banked rows
+# plus the relocation targets, the hop's successors and the unbanked packages, and the recon leg is
+# the authority on membership. So a costed row that is not a banked roster row is NOT an orphan and
+# NOT an error -- it is a CANDIDATE. It is SCHEDULED like any other row (the driver measures it),
+# and it becomes a roster ADDITION at the roster seat's re-derivation, on a terminal pass.
+#
+# Measured at this hop over the two real lanes against master's roster (C2 17c114b6e): fifteen --
+# six relocation TARGETS that absorb at the roster seat, six NEW AT 1.24 by a measured absence at
+# the 1.23.12 pin, and three that existed at BOTH pins and were simply never banked.
+CANDIDATES = sorted(n for n in costed if n not in roster_names)
+_cost_of = {n: t for n, _, t in rows}
+_axis = len(roster_names) + len(CANDIDATES)
+
+print(f"\npopulation:       {len(roster_names)} banked + {len(CANDIDATES)} candidate(s) = {_axis} "
+      f"row(s) on the corpus axis")
+print(f"  costed          {len(costed)}  ({100*len(costed)/_axis:.1f}%)")
 print(f"  UNSCHEDULED     {len(UNSCHEDULED)}  -- no measured t_r, NO COST CLAIMED for any of them")
-if orphans:
-    print(f"  !! costed rows not on the roster (retired/renamed): {len(orphans)}: {', '.join(orphans)}")
-if len(costed) + len(UNSCHEDULED) != len(roster_names):
+print(f"  CANDIDATES      {len(CANDIDATES)}  -- costed and scheduled, not yet banked; a roster "
+      f"ADDITION only on a terminal pass" + (":" if CANDIDATES else ""))
+for _n in CANDIDATES:
+    print(f"      {_n} ({_cost_of.get(_n, 0)} s)")
+
+# THIS IS AN INVARIANT, NOT A GUARD, AND IT SAYS SO RATHER THAN BEING SHIPPED AS ONE.
+# CANDIDATES is derived as `costed - roster_names`, so `costed + UNSCHEDULED` and
+# `banked + CANDIDATES` have the same cardinality BY CONSTRUCTION and this cannot fail. It is kept
+# because the ruling states the identity and a reader should be able to watch it hold; it is
+# LABELLED for the reason C1 gave at e1cbebff9 after building exactly this shape by accident -- a
+# check that cannot fire prints reassurance, which is worse than no check at all.
+#
+# Making it LIVE needs a DECLARED candidate set, so that a costed row which is neither banked nor
+# declared can exist and refuse. That is a ruling and not this commit's to invent. What the OLD
+# refusal was really detecting -- that the roster has not absorbed the hop's relocations -- is not
+# detected here any more, and that loss is stated in the announce rather than left to be found.
+if len(costed) + len(UNSCHEDULED) != len(roster_names) + len(CANDIDATES):
     die(f"population arithmetic does not close: {len(costed)} costed + {len(UNSCHEDULED)} "
-        f"unscheduled != {len(roster_names)} roster rows")
+        f"unscheduled != {len(roster_names)} banked + {len(CANDIDATES)} candidate(s)")
 
 # ---------------------------------------------------------------- the reserved set
 # TWO ideas, and only one of them is this script's to decide:
