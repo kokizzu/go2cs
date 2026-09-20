@@ -2688,8 +2688,18 @@ no cost it is **unpinnable and stays named** instead of being dropped.
 dry run of that same shard precedes it because the script has never executed. The shard is chosen so the
 riskiest artifact lands **first**: a relocated principal target at seq 1, and a row with committed pins
 to exercise the re-sign path. ⚠ **No shard of any size carries all three required classes**, so the
-missing one is **grafted by name, off-plan and recorded as such** — which is also the five-pin mint
-site and the single highest-risk act of the campaign.
+missing one is **grafted by name** — which is also the five-pin mint site and the single
+highest-risk act of the campaign.
+
+⚠⚠ **AND THE GRAFTED ROW IS IN THE PLAN, NOT OFF IT — read the plan before grafting.** The mint-site
+row is assigned at **both** sizes: at W=4 to the fastest worker's slice 1 and at W=3 to the
+coordinator's slice 1, each under its own sequence number. So grafting it onto a rehearsal shard that
+belongs to a different worker does not add an unassigned row — **it hands one worker a row the plan
+gives to another**, and the duplicate is real. The rehearsal must either take the row from the worker
+the plan assigns it to, or record the graft as a **REASSIGNMENT** against that plan row; what it must
+not do is call the row off-plan, because then nothing reconciles it. ⚠ **The train's
+every-row-exactly-once checksum is the gate that catches this**, and it can only catch it once two
+shard refs exist — which is later and dearer than one look at the plan file now.
 
 **THE ACCEPTANCE PREDICATE IS FIVE DECIDABLE CLAUSES** — the shard's TSV complete with every word
 filled; the four artifacts present per row and **written by that row**; the format gate at 0 with its
