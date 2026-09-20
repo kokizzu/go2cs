@@ -80,6 +80,39 @@ CENSUS_LINES="$(wc -l < "$CENSUS")"
 chmod +x "$CENSUS"
 echo "census: origin/master $CENSUS_REF ($CENSUS_LINES lines)"
 
+# ── step 0c: ONE BATTERY, AND IT IS THE STRONGEST THIS BOX PRODUCES ───────────────────────────
+# ⚠ C1 37a41093d, RULED by COORD 7c71a87f0. The census derives its run-time arms from the git
+# identity visible at the INVOKING DIRECTORY, so the same bytes over the same file answer
+# differently from two directories. Measured on this box: an entry carrying a denied-set name read
+# REFUSED(1) (`RUNTIME_OWNERNAME occ=1 hits=1`) from the repo checkout and CLEAN from the post
+# clone. The old shape ran entry/subject from the CALLER's cwd and tree from the clone -- two
+# batteries in one invocation, with nothing recording which certified what, and the strong one only
+# because of where I happened to call from.
+#
+# ⚠ NO FOURTH DEFINITION: this re-implements no arm. It runs the FLEET'S OWN selftest from each
+# directory this tool already has, takes the strongest, runs every arm from that one, and REFUSES
+# when the battery that would certify is weaker than the maximum this box produces. The census
+# stays the only implementation; this reads the number it already prints.
+idc_arms() {   # the selftest's pass count for a directory, or 0 when it cannot run there
+    [ -d "$1" ] || { echo 0; return; }
+    ( cd "$1" 2>/dev/null && "$CENSUS" selftest 2>/dev/null ) \
+        | sed -n 's/^SELF-TEST: pass=\([0-9][0-9]*\).*/\1/p' | tail -1 | grep -E '^[0-9]+$' || echo 0
+}
+IDC_BEST_DIR=""; IDC_BEST=0
+for _d in "$CENSUS_CLONE" "$CLONE" "$PWD"; do
+    _n="$(idc_arms "$_d")"
+    if [ "$_n" -gt "$IDC_BEST" ]; then IDC_BEST="$_n"; IDC_BEST_DIR="$_d"; fi
+done
+[ "$IDC_BEST" -gt 0 ] || { echo "POST REFUSED: the census selftest produced no arm count from any directory this tool has"; exit 3; }
+# C1_CENSUS_DIR_FORCE is the RED ARM's forcing hook and nothing else -- it exists so the refusal
+# below can be made to fire on a box where the axis can move. Never set in normal use.
+IDC_DIR="${C1_CENSUS_DIR_FORCE:-$IDC_BEST_DIR}"
+IDC_USED="$(idc_arms "$IDC_DIR")"
+[ "$IDC_USED" -eq "$IDC_BEST" ] || { echo "POST REFUSED: the certifying battery is $IDC_USED arm(s) from '$IDC_DIR', but this box produces $IDC_BEST from '$IDC_BEST_DIR' -- a weaker battery must never certify a post"; exit 3; }
+echo "census battery: $IDC_USED arm(s), from '$IDC_DIR' (strongest of the directories this tool has)"
+# Every census arm goes through this, so all three answer with the SAME battery, by construction.
+census() { ( cd "$IDC_DIR" && "$CENSUS" "$@" ); }
+
 # ── step 1: guards on the SUBJECT of the question, before any mutation ─────────────────────────
 # i9's shape, adopted by C1: refuse a body with no '## ' heading BEFORE any write. The old tool
 # asked this of the file AFTER appending, so its refusal dirtied the shared checkout.
@@ -87,8 +120,8 @@ grep -qE '^## ' "$ENTRY" || { echo "POST REFUSED: entry carries no '## ' heading
 HEADING="$(grep -m1 -E '^## ' "$ENTRY")"
 # entry and subject are THE GATES. Each runs in its OWN command, never chained into the push: a
 # census composed into the push chain lets the push run on whatever the census printed.
-"$CENSUS" entry   "$ENTRY"   || { echo "POST REFUSED: identifier census -- entry";   exit 3; }
-"$CENSUS" subject "$SUBJECT" || { echo "POST REFUSED: identifier census -- subject"; exit 3; }
+census entry   "$ENTRY"   || { echo "POST REFUSED: identifier census -- entry";   exit 3; }
+census subject "$SUBJECT" || { echo "POST REFUSED: identifier census -- subject"; exit 3; }
 
 cd "$CLONE" || { echo "POST REFUSED: no post clone at $CLONE"; exit 2; }
 [ -z "$(git status --porcelain)" ] || { echo "POST REFUSED: post clone is dirty"; git status --porcelain | head; exit 2; }
@@ -140,7 +173,15 @@ cat "$ENTRY" >> "$MB"
 # added=0/CLEAN against the fresh tip; the four were other lanes' entries landed in the interval. A
 # pre-existing hit on a shared surface is not this post's to fix and not this post's to be blocked by.
 TREE_RC=0
+# ⚠ THE TREE ARM STAYS IN THE CLONE, and that is deliberate rather than an oversight. Its file
+# path is relative to the clone and its baseline is `<sha>:<path>` resolved there, so running it
+# from the gate directory made the baseline unreadable -- measured, on this cut's own first green
+# run: "REFUSED(2): the baseline ... could not be read". The invariant COORD ruled is about the
+# battery that CERTIFIES, and this arm certifies nothing: it is a reading and the push is not
+# gated on it. So it runs where its inputs resolve, and the line below states BOTH batteries so
+# that nothing is silently mixed.
 "$CENSUS" tree "$MB" "$PRE" || TREE_RC=$?
+echo "tree arm battery: $(idc_arms "$CLONE") arm(s) from the clone -- a READING, not the gate's $IDC_USED"
 echo "tree arm: rc=$TREE_RC -- a READING; the push is NOT gated on it"
 
 # ── step 6: the dry-run gate. BELOW the range computation, ABOVE the action. ────────────────────
