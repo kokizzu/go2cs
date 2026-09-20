@@ -12,8 +12,8 @@ fifth-blob lanes. The count comes from the document.
 **The predicate, stated so anyone can reproduce or refuse it:**
 
 ```
-  verdicts = len(go) - len(disclosed)
   disclosed entries are SENTENCES; the NAME is the LEADING TOKEN
+  verdicts = |go \ names(disclosed)|            a SET difference, never a count difference
   diverged = { n : n in go, leading-token(n) not among disclosed, csharp[n] != go[n] }
   word     = NOVERDICT (by cause)  when status == "conversion-blocked"
              PASS                  when matched and diverged is empty
@@ -43,7 +43,7 @@ nothing to subtract — agreed on both and was the control that made the shape l
 | `mime/multipart` | R | 52 | 52 | 0 | 0 | `validated` | **PASS** |
 | `net/http/pprof` | R | 15 | 15 | 0 | 4 | `failing` | **DIVERGED** |
 | `os/user` | R | 17 | 17 | 0 | 3 | `failing` | **DIVERGED** |
-| `runtime/pprof` | R | 155 ⚠ | 161 | 6 | 37 | `failing` | **DIVERGED** |
+| `runtime/pprof` | R | 161 | 161 | 6 | 37 | `failing` | **DIVERGED** |
 | `syscall` | R | 65 | 65 | 0 | 1 | `failing` | **DIVERGED** |
 | `unicode/utf8` | R | 15 | 15 | 0 | 1 | `failing` | **DIVERGED** |
 | `crypto/tls` | i9 | 4759 | 4760 | 1 | 12 | `failing` | **DIVERGED** |
@@ -65,7 +65,7 @@ right one rather than merely a different one:
   net/http     i9= 19  here= 19   AGREES
 ```
 
-## ⚠ `runtime/pprof`: its verdict count rests on a subtraction of names the record does not carry
+## ⚠ `runtime/pprof`: the one record where `disclosed` is not a subset of `go`
 
 The corrected predicate carries a guard the first cut did not have — **a disclosed entry whose derived
 name is absent from the record's own `go` map is reported, never silently subtracted** — and it fired
@@ -83,15 +83,18 @@ immediately, on the one row nobody was looking at:
 
 All six are `host-fatal` disclosures — tests the host could not run at all — and **none of the six is
 in `go`**. (`TestBlockProfile` has one `go` key beginning with it, `TestBlockProfileBias`, which is a
-different test and not a subtest.) So `len(go) − len(disclosed)` subtracts six names that were never
-in the 161, and the row's `verdicts` reads **155 where the formula's evident intent gives 161**.
+different test and not a subtest. Checked rather than assumed.)
 
-⚠ **This is a ruling, not a repair, and I have made none.** The ruled definition assumes
-`disclosed ⊆ go`, which holds on every other record here and fails on this one because the
-`host-fatal` class names tests that never produced a Go verdict. The table above carries `155 ⚠` —
-the ruled formula's answer — with the discrepancy named rather than smoothed. **`diverged` is
-unaffected either way**: all six resolve to nothing in `go`, so the subtraction removes nothing from
-the diverged set and 37 stands.
+⚠ **RULED (COORD `22d3b01e1` §2): `verdicts` is a SET difference, not a count difference.** The count
+form `len(go) − len(disclosed)` assumes `disclosed ⊆ go`, which holds on every other record here and
+fails on this one; it subtracted six names that were never among the 161 and read **155**. Subtracting
+a name that is not there must subtract nothing, so **this row reads 161**, and the set form is
+identical to the count form wherever the subset holds — which is everywhere else.
+
+**The guard's report stays.** A disclosed name absent from `go` is still reported by name, because the
+absence is a fact about the record worth surfacing even now that it costs no verdicts: it says the
+`host-fatal` class names tests that never produced a Go verdict at all. `diverged` was never affected
+either way — a name absent from `go` removes nothing from that set, so 37 stands.
 
 ## ⚠ `testing` — the thirteenth R row, and it has no record
 

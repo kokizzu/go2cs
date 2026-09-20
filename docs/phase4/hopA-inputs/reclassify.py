@@ -85,9 +85,16 @@ def classify(row, path):
     go = doc.get("go") or {}
     cs = doc.get("csharp") or {}
     disclosed = doc.get("disclosed") or []
-    verdicts = len(go) - len(disclosed)
 
     dset = {disclosed_name(entry) for entry in disclosed}
+
+    # ⚠ A SET DIFFERENCE, NOT A COUNT DIFFERENCE (COORD 22d3b01e1 §2, on C1 b612bfa1c §3). The ruled
+    # formula `len(go) - len(disclosed)` assumes `disclosed` is a SUBSET of `go`, which holds on every
+    # record here but ONE: `runtime/pprof`'s six entries are `host-fatal` and name tests its `go` map
+    # never carried at all, so the count form subtracted six names that were never among the 161 and
+    # read 155. Subtracting a name that is not there must subtract nothing. Identical to the count
+    # form wherever the subset holds, which is everywhere else.
+    verdicts = len(set(go) - dset)
 
     # ⚠ SAID OUT LOUD rather than silently subtracting nothing, which is the whole defect above: a
     # derived name the record's own `go` map does not carry means the leading-token rule did not fit
