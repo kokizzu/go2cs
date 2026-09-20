@@ -1767,10 +1767,14 @@ func (v *Visitor) constraintProxySigArg(funIdent *ast.Ident, typeArgs *types.Typ
 // Returns the type argument (a pointer or an interface) and the INSTANTIATED constraint. A
 // self-referential constraint is the constraint proxy's (see constraintProxyFor) and declines here;
 // a constraint parameterized by a SIBLING type parameter is instantiated over the call's own type
-// arguments. Any other reach of the type parameter declines — a bare `H` parameter, a result
-// mentioning `H`, or another type parameter's constraint naming it would each observe the
-// substituted interface where Go has the argument's own type.
-func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, bool) {
+// arguments. Any other reach of the type parameter declines — a bare `H` parameter or a result
+// mentioning `H` would each observe the substituted interface where Go has the argument's own type.
+//
+// ⚠ This is the LOCAL test. The sibling-constraint rule — another type parameter's constraint naming
+// this one — moved to funcResultProjection below when it was relaxed on 2026-09-20, because whether
+// it refuses now depends on whether that sibling ALSO projects, which this function cannot ask
+// without recursing. Call funcResultProjection unless you ARE the sibling test.
+func (v *Visitor) funcResultProjectionLocal(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, bool) {
 	if funIdent == nil || typeArgs == nil {
 		return nil, nil, false
 	}
@@ -1802,13 +1806,20 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 		return nil, nil, false
 	}
 
+	// The form the GO-level Implements test is asked about: the constraint closed over the call's own
+	// TYPE ARGUMENTS. It diverges from `constraint` only when a sibling's projection is substituted
+	// below, and the two must not be confused — see the note at the second Instantiate.
+	checkConstraint := constraint
+
 	// A parameterized constraint: decline the self-referential one, instantiate the rest over
 	// the call's type arguments (a sibling parameter's argument, or a concrete type).
 	if constraintNamed, ok := constraint.(*types.Named); ok && constraintNamed.TypeArgs().Len() > 0 {
 		args := make([]types.Type, constraintNamed.TypeArgs().Len())
+		checkArgs := make([]types.Type, constraintNamed.TypeArgs().Len())
 
 		for j := range args {
 			arg := constraintNamed.TypeArgs().At(j)
+			rawArg := arg
 
 			if tp, ok := arg.(*types.TypeParam); ok {
 				if tp == typeParam {
@@ -1817,6 +1828,25 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 
 				if index := tp.Index(); index < typeParams.Len() && typeParams.At(index) == tp && index < typeArgs.Len() {
 					arg = typeArgs.At(index)
+					rawArg = typeArgs.At(index)
+
+					// ⚠ If that sibling ALSO projects, close over its PROJECTION rather than its
+					// box. Closing over the box is the half-state crypto/mlkem emitted:
+					// `decapsulationKey<ж<EncapsulationKey768>>` names the very box the projection
+					// exists to avoid, and C# then fails the nominal bound exactly as before.
+					if projected, ok := v.siblingProjectedConstraint(funIdent, typeArgs, index); ok {
+						arg = projected
+					} else if funcResultProjectableArg(arg) {
+						// ⚠ THE HALF-STATE, refused: the sibling's argument is the shape a
+						// projection would carry (a boxed pointer or an interface) and it did NOT
+						// project, so closing over it would name the box inside this constraint —
+						// `decapsulationKey<ж<EncapsulationKey768>>`, which fails the nominal bound
+						// exactly as the unprojected argument did. A refusal leaves the row failing
+						// to compile; a box-closed constraint would compile against the wrong bound.
+						// A sibling whose argument is concrete (`keyed[int]`) is not this case and
+						// closes over the concrete type as it always has.
+						return nil, nil, false
+					}
 				}
 			}
 
@@ -1827,6 +1857,7 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 			}
 
 			args[j] = arg
+			checkArgs[j] = rawArg
 		}
 
 		instantiated, err := types.Instantiate(nil, constraintNamed.Origin(), args, false)
@@ -1835,12 +1866,28 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 			return nil, nil, false
 		}
 
+		// ⚠ TWO instantiations, and the distinction is load-bearing.
+		//
+		// `checked` closes over the call's own TYPE ARGUMENTS, which is what Go says the constraint
+		// is; `constraint` closes over the sibling's PROJECTION, which is what C# must render.
+		// Testing Implements against the PROJECTED form asks the wrong question and refuses a valid
+		// row: `*digest` implements `keyedNamed[*digest]` because its method is `encapKey() *digest`,
+		// and it does NOT implement `keyedNamed[named]` — no Go type does, since Go has no return
+		// covariance. Substituting first and testing second made mlkem's `D` refuse locally, which
+		// then made `E` refuse through the sibling rule, which is how the whole pair went dark.
+		checked, err := types.Instantiate(nil, constraintNamed.Origin(), checkArgs, false)
+
+		if err != nil {
+			return nil, nil, false
+		}
+
 		constraint = instantiated
+		checkConstraint = checked
 	}
 
-	iface, ok := constraint.Underlying().(*types.Interface)
+	iface, ok := checkConstraint.Underlying().(*types.Interface)
 
-	if !ok || !types.Implements(arg, iface) || interfaceNominallyDerives(arg, constraint) {
+	if !ok || !types.Implements(arg, iface) || interfaceNominallyDerives(arg, checkConstraint) {
 		return nil, nil, false
 	}
 
@@ -1859,7 +1906,7 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 			return nil, nil, false
 		}
 
-		if !isFuncResultOf(paramType, typeParam) {
+		if _, ok := funcResultPositionOf(paramType, typeParam); !ok {
 			return nil, nil, false
 		}
 
@@ -1870,8 +1917,94 @@ func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.Type
 		return nil, nil, false
 	}
 
+	return arg, constraint, true
+}
+
+// siblingProjectedConstraint reports the constraint a sibling type parameter PROJECTS to, for use as
+// the closed-over form when another constraint names it.
+//
+// ⚠ BOUNDED TO AN UNPARAMETERIZED SIBLING CONSTRAINT, and the bound is what makes this safe rather
+// than merely convenient: funcResultProjectionLocal's own parameterized-constraint block is what
+// calls this, so a sibling whose constraint were ALSO parameterized could ask the question back and
+// recurse without limit (`A f[B]`, `B g[A]`). A sibling with no type arguments cannot reach that
+// block, so the call is one level deep by construction rather than by a visited set.
+//
+// crypto/mlkem is exactly this shape — `D decapsulationKey[E]` over `E encapsulationKey`, and
+// `encapsulationKey` takes no type arguments. A deeper chain keeps the box here, and the outer
+// parameter then refuses through the half-state rule in funcResultProjection, which is the safe
+// direction: a refusal is a row that still fails to compile, where a wrong closure is a row that
+// compiles against the wrong bound.
+func (v *Visitor) siblingProjectedConstraint(funIdent *ast.Ident, typeArgs *types.TypeList, index int) (types.Type, bool) {
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return nil, false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || index >= sig.TypeParams().Len() {
+		return nil, false
+	}
+
+	if named, ok := sig.TypeParams().At(index).Constraint().(*types.Named); ok && named.TypeArgs().Len() > 0 {
+		return nil, false
+	}
+
+	_, constraint, ok := v.funcResultProjectionLocal(funIdent, typeArgs, index)
+
+	if !ok {
+		return nil, false
+	}
+
+	return constraint, true
+}
+
+// funcResultProjection reports whether type argument `k` projects, applying the SIBLING-CONSTRAINT
+// rule on top of the local test above.
+//
+// The rule used to refuse outright whenever ANOTHER type parameter's constraint MENTIONED this one:
+// projecting `E` while `D decapsulationKey[E]` kept its box would leave D's constraint closed over
+// the very box the projection exists to avoid. That refusal was right about the HALF-STATE and wrong
+// as a verdict — crypto/mlkem is exactly two such parameters and BOTH project, so the coherent state
+// was available and simply never reached (CS0311 ×4 at the version tip, measured).
+//
+// ⚠ Relaxed 2026-09-20: a type parameter MAY project when every constraint that mentions it ALSO
+// projects, and that constraint is then closed over the mentioning parameter's PROJECTED form. If any
+// mentioning sibling does NOT project, this one still refuses — the half-state is the red, and
+// `siblingCall` pins it.
+//
+// The sibling test calls the LOCAL form, never this one, so the check is one level deep and cannot
+// recurse: two parameters that mention each other each ask whether the other projects LOCALLY, and
+// neither asks the question back.
+func (v *Visitor) funcResultProjection(funIdent *ast.Ident, typeArgs *types.TypeList, k int) (types.Type, types.Type, bool) {
+	arg, constraint, ok := v.funcResultProjectionLocal(funIdent, typeArgs, k)
+
+	if !ok {
+		return nil, nil, false
+	}
+
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return nil, nil, false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || k >= sig.TypeParams().Len() {
+		return nil, nil, false
+	}
+
+	typeParams := sig.TypeParams()
+	typeParam := typeParams.At(k)
+
 	for m := range typeParams.Len() {
-		if m != k && typeMentionsTypeParam(typeParams.At(m).Constraint(), typeParam, map[types.Type]bool{}) {
+		if m == k || !typeMentionsTypeParam(typeParams.At(m).Constraint(), typeParam, map[types.Type]bool{}) {
+			continue
+		}
+
+		if _, _, siblingProjects := v.funcResultProjectionLocal(funIdent, typeArgs, m); !siblingProjects {
 			return nil, nil, false
 		}
 	}
@@ -1896,18 +2029,15 @@ func (v *Visitor) funcResultProjectionArg(funIdent *ast.Ident, typeArgs *types.T
 
 	paramSig, ok := sig.Params().At(i).Type().Underlying().(*types.Signature)
 
-	if !ok || paramSig.Params().Len() != 0 || paramSig.Results().Len() != 1 {
-		return nil, nil, false
-	}
-
-	typeParam, ok := types.Unalias(paramSig.Results().At(0).Type()).(*types.TypeParam)
-
 	if !ok {
 		return nil, nil, false
 	}
 
+	// Which of the call's type parameters this func parameter projects through. The shape check
+	// lives in funcResultPositionOf, which accepts the Go constructor idiom `func(args…) (T, error)`
+	// and still refuses the two shapes that cannot be wrapped.
 	for k := range typeParams.Len() {
-		if typeParams.At(k) == typeParam {
+		if _, ok := funcResultPositionOf(paramSig, typeParams.At(k)); ok {
 			return v.funcResultProjection(funIdent, typeArgs, k)
 		}
 	}
@@ -1915,18 +2045,89 @@ func (v *Visitor) funcResultProjectionArg(funIdent *ast.Ident, typeArgs *types.T
 	return nil, nil, false
 }
 
-// isFuncResultOf reports whether `typ` is exactly `func() tp`: niladic, one result, that result
-// the type parameter itself.
-func isFuncResultOf(typ types.Type, tp *types.TypeParam) bool {
-	sig, ok := typ.Underlying().(*types.Signature)
+// funcResultProjectionResultIndex reports which RESULT of argument `i`'s func parameter carries the
+// projected type parameter. The emission needs it to convert that one result and pass the others
+// through: `func() H` is index 0, and the Go constructor idiom `func(args…) (H, error)` is also 0
+// with an `error` beside it — but the index is READ rather than assumed, because nothing in the
+// shape requires the type parameter to come first.
+func (v *Visitor) funcResultProjectionResultIndex(funIdent *ast.Ident, i int) (int, bool) {
+	typeParams := v.signatureTypeParams(funIdent)
 
-	if !ok || sig.Params().Len() != 0 || sig.Results().Len() != 1 {
-		return false
+	if typeParams == nil {
+		return 0, false
 	}
 
-	result, ok := types.Unalias(sig.Results().At(0).Type()).(*types.TypeParam)
+	sig, ok := v.info.ObjectOf(funIdent).(*types.Func).Type().(*types.Signature)
 
-	return ok && result == tp
+	if !ok || i >= sig.Params().Len() {
+		return 0, false
+	}
+
+	paramSig, ok := sig.Params().At(i).Type().Underlying().(*types.Signature)
+
+	if !ok {
+		return 0, false
+	}
+
+	for k := range typeParams.Len() {
+		if position, ok := funcResultPositionOf(paramSig, typeParams.At(k)); ok {
+			return position, true
+		}
+	}
+
+	return 0, false
+}
+
+// funcResultPositionOf reports the INDEX of the result that IS `tp`, and whether exactly one result
+// is. It replaced isFuncResultOf, which required `func() tp` exactly — niladic, one result.
+//
+// ⚠ Neither of those requirements bears on whether the RESULT projects, and together they refused the
+// Go CONSTRUCTOR idiom: crypto/mlkem reaches its type parameter through
+// `newEncapsulationKey func([]byte) (E, error)` and was refused on both clauses, so its four call
+// sites emitted an explicit type-argument list naming the boxes — CS0311 ×4, measured live at the
+// version tip. The parameter list is the caller's business; a trailing `error` is the idiom and
+// mentions no type parameter.
+//
+// The POSITION is returned rather than assumed to be 0, because the emission has to convert that one
+// result and pass the others through untouched.
+//
+// Two shapes are still refused, and both for a reason rather than a definition:
+//
+//	TWO results ARE tp    `func() (H, H)` — which one the adapter should wrap is not recoverable.
+//	a result MENTIONS tp  `func() ([]H, error)` — a slice of the box is not the box, and the
+//	                      element projection is a different mechanism with its own wrapping.
+func funcResultPositionOf(typ types.Type, tp *types.TypeParam) (int, bool) {
+	sig, ok := typ.Underlying().(*types.Signature)
+
+	if !ok || sig.Results().Len() == 0 {
+		return 0, false
+	}
+
+	position := -1
+
+	for r := range sig.Results().Len() {
+		resultType := sig.Results().At(r).Type()
+
+		if result, isParam := types.Unalias(resultType).(*types.TypeParam); isParam && result == tp {
+			if position >= 0 {
+				return 0, false
+			}
+
+			position = r
+
+			continue
+		}
+
+		if typeMentionsTypeParam(resultType, tp, map[types.Type]bool{}) {
+			return 0, false
+		}
+	}
+
+	if position < 0 {
+		return 0, false
+	}
+
+	return position, true
 }
 
 // funcResultProjectableArg reports whether a type argument is a kind funcResultProjection can carry:

@@ -1784,8 +1784,32 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 									replacementArgs = make([]string, params.Len())
 								}
 
-								replacementArgs[i] = fmt.Sprintf("widen<%s, %s>(%s, %s => %s)",
-									v.getCSharpTypeName(ptr), v.getCSharpTypeName(constraint), DynamicCastArgMarker, elemVar, wrapped)
+								// The Go CONSTRUCTOR idiom — `func(A) (T, error)` — takes golib's
+								// three-argument widen, so the first result is projected and the error
+								// passes through untouched. The niladic `Func<T>` overload cannot
+								// express that delegate position, and emitting it anyway is what
+								// produced crypto/mlkem's CS1526: the lambda matched no overload and
+								// the `new` expression was left without an argument list.
+								paramSig, isFunc := params.At(i).Type().Underlying().(*types.Signature)
+
+								if isFunc && paramSig.Params().Len() == 1 && paramSig.Results().Len() == 2 {
+									replacementArgs[i] = fmt.Sprintf("widen<%s, %s, %s>(%s, %s => %s)",
+										v.getCSharpTypeName(paramSig.Params().At(0).Type()),
+										v.getCSharpTypeName(ptr), v.getCSharpTypeName(constraint),
+										DynamicCastArgMarker, elemVar, wrapped)
+								} else if isFunc && paramSig.Params().Len() == 0 && paramSig.Results().Len() == 2 {
+									// The NILADIC constructor: `func() (T, error)`. It takes its own
+									// helper rather than an overload of `widen`, because `Func<T>` with
+									// `T=(X, error)` and `Func<(T, error)>` with `T=X` are the same
+									// closed type — mlkem reaches this position through
+									// `generateKey func() (D, error)` and it was CS0407 ×8 while only
+									// the one-argument form existed.
+									replacementArgs[i] = fmt.Sprintf("widenResult<%s, %s>(%s, %s => %s)",
+										v.getCSharpTypeName(ptr), v.getCSharpTypeName(constraint), DynamicCastArgMarker, elemVar, wrapped)
+								} else {
+									replacementArgs[i] = fmt.Sprintf("widen<%s, %s>(%s, %s => %s)",
+										v.getCSharpTypeName(ptr), v.getCSharpTypeName(constraint), DynamicCastArgMarker, elemVar, wrapped)
+								}
 							}
 						}
 					}
