@@ -111,16 +111,43 @@ done
 [ "$BADREF" -eq 0 ] || exit 3
 
 # ---- A4: THE FLEET CENSUS, its own command, gating, no private copy of any arm ----
-"$IDC" entry "$ENTRY"; RC=$?
+# ⚠ ALL THREE CENSUS CALLS RUN FROM ONE DIRECTORY, AND IT IS STATED. C1 measured (mailbox
+# a5fc7d1b) that the census's RUNTIME_OWNERNAME arm derives its token from the git identity visible
+# at the INVOKING directory: from one directory its battery ran 95 arms, from another 91 with the
+# fire-direction arm inert. This tool used to call `entry` and `subject` from the CALLER's cwd and
+# `tree` from the clone -- two batteries in one invocation, with nothing recording which certified
+# what. Pinning all three to the clone does not make the arm fire where it cannot; it makes the
+# entry, the subject and the tree answer with the SAME arms, which is the property that was missing.
+IDC_CWD="$CLONE"
+idc(){ ( cd "$IDC_CWD" && "$IDC" "$@" ); }
+echo "fleet census arms invoked from the clone (one battery for entry, subject and tree)"
+idc entry "$ENTRY"; RC=$?
 [ "$RC" -eq 0 ] || { echo "REFUSED A4(entry): fleet census exit $RC -- arms and line numbers above"; exit 4; }
-"$IDC" subject "$SUBJECT"; RC=$?
+idc subject "$SUBJECT"; RC=$?
 [ "$RC" -eq 0 ] || { echo "REFUSED A4(subject): fleet census exit $RC"; exit 4; }
 
-# ---- A5: duplicate question of the file AS IT STANDS, before any append ----
+# ---- A4b: THE CLONE IS THE MAILBOX -- G's FOURTH ARM, the POSITIVE one (mailbox b7589fb0d) ----
+# Three negative arms let any bare git repo receive the fleet's record; what separates the right
+# clone from a merely passing one is whether it CARRIES the mailbox. This tool was protected only
+# by a later step failing -- the fetch at the bottom would have errored on a repo without the
+# branch -- and a guard that exists as a consequence of a later step disappears silently when
+# someone reorders. Asserted here, before A5, because A5 reads that file and goes VACUOUS without it.
+git -C "$CLONE" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+  || { echo "REFUSED A4b: '$CLONE' is not a git work tree -- this is not the mailbox clone"; exit 4; }
+git -C "$CLONE" fetch --quiet origin claude/mailbox 2>/dev/null \
+  || { echo "REFUSED A4b: '$CLONE' has no fetchable origin/claude/mailbox -- not the mailbox clone"; exit 4; }
+git -C "$CLONE" cat-file -e "origin/claude/mailbox:$MBOX" 2>/dev/null \
+  || { echo "REFUSED A4b: the clone's claude/mailbox carries no $MBOX -- not the mailbox"; exit 4; }
+
+# ---- A5: duplicate question, asked of ORIGIN and never of the working file ----
+# ⚠ THE WORKING FILE IS NOT THE RECORD. Asking this of "$CLONE/$MBOX" refused a first delivery
+# twice today: a push that lost a race leaves the entry in the local file, so the retry saw its own
+# un-delivered text and called it a duplicate while origin had zero. The question is always "is this
+# heading at ORIGIN", which is also what makes the answer true after a reset that has not happened yet.
 BODYHASH=$(sha256sum < "$ENTRY" | cut -c1-16)
 FIRSTHEAD=$(grep -m1 '^## ' "$ENTRY")
-if [ -f "$CLONE/$MBOX" ] && grep -Fxq "$FIRSTHEAD" "$CLONE/$MBOX"; then
-  echo "REFUSED A5: this entry's first '## ' heading is already in the file (body $BODYHASH)"; exit 5
+if git -C "$CLONE" show "origin/claude/mailbox:$MBOX" | grep -Fxq "$FIRSTHEAD"; then
+  echo "REFUSED A5: this entry's first '## ' heading is already at ORIGIN (body $BODYHASH)"; exit 5
 fi
 
 echo "ARMS PASSED (A1 headings=$HEADINGS, A2 placeholders=0, A3 refs at origin, A4 fleet census entry+subject CLEAN, A5 no duplicate heading; body $BODYHASH)"
@@ -140,7 +167,7 @@ PRETIP=$(git rev-parse HEAD)
 
 # tree mode: A READING, baseline = the tip this fetch just produced. NEVER the stored anchor.
 echo "----- fleet census, tree mode (a READING; the push is NOT gated on it) -----"
-"$IDC" tree "$MBOX" "$PRETIP" | grep -E 'baseline hits|added=|PRE-EXISTING|CLEAN:|REFUSED'
+idc tree "$MBOX" "$PRETIP" | grep -E 'baseline hits|added=|PRE-EXISTING|CLEAN:|REFUSED'
 echo "-----------------------------------------------------------------------------"
 
 # re-append AFTER the guards, immediately before pushing
