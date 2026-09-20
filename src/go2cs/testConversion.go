@@ -4186,6 +4186,13 @@ func writeTestProject(projectFile, projectName, namespace string, model testProj
 	// the class the three SOURCE sites already gate (the per-file `using static`, the seed's global
 	// import, and its init hook); they consult productionClassEmitted through this same field, and
 	// now so does the project. Measured on crypto/internal/fips140test at Go 1.24.13.
+	//
+	// THREE sites, TWO field reads — by design, so a census of this field is not miscounted as a
+	// missing gate. The per-file `using static` reads `options.testProductionAbsent` directly
+	// (visitFile.go); the seed's global import and its init hook read the EMPTY productionClassName
+	// that convertTestVariants derives from the field once (the `productionClassName := ""` guard
+	// above), because both are spelled from that one name. So `git grep testProductionAbsent` finds
+	// two consumers plus this one, never four.
 	if model.referencesProduction() && !options.testProductionAbsent {
 		references.Add(projectFileBaseName(projectName) + ".csproj")
 	}

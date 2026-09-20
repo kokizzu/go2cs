@@ -401,3 +401,89 @@ func TestPackageWithProductionFileTestProjectReferencesTheProductionProject(t *t
 		t.Fatalf("%s's colocated reference %q is not a project file", projectFile, references[0])
 	}
 }
+
+// TestProcessTestConversionDerivesTestProductionAbsentBeforeWritingTheTestProject pins the WIRING
+// the two guards above cannot reach, in the same source-assertion style as
+// TestTestsConversionConsultsTheDynamicTypeGate (dynamicTypeGate_test.go) and for the same reason:
+// the gate can be perfect and still prove nothing if the value never arrives.
+//
+// convertTestVariants takes Options BY VALUE, so the `testProductionAbsent` it derives onto its own
+// copy for the EMISSION sites never reaches processTestConversion's `options` — and writeTestProject
+// is handed THAT one. The derivation inside processTestConversion is therefore the only thing
+// carrying the answer to the project write in production. Both guards above call writeTestProject
+// directly and supply the field themselves, so deleting that one line leaves every Go arm GREEN
+// while the emitted `.tests.csproj` goes back to naming a `.csproj` a test-only package never
+// writes. A source-text ordering assertion is the cheapest instrument that can fail on it.
+//
+// Scoped to processTestConversion's own body deliberately: the identical assignment inside
+// convertTestVariants is a different function's copy and must NOT satisfy this guard.
+func TestProcessTestConversionDerivesTestProductionAbsentBeforeWritingTheTestProject(t *testing.T) {
+	const source = "testConversion.go"
+
+	contents, err := os.ReadFile(source)
+	if err != nil {
+		t.Fatalf("reading %s: %v", source, err)
+	}
+
+	text := string(contents)
+
+	start := strings.Index(text, "\nfunc processTestConversion(")
+	if start == -1 {
+		t.Fatalf("%s no longer declares processTestConversion; this guard has lost its subject", source)
+	}
+
+	// The body runs to the next TOP-LEVEL declaration. Searching from one byte in keeps the
+	// function's own `\nfunc ` from terminating it immediately.
+	body := text[start+1:]
+	if end := strings.Index(body[1:], "\nfunc "); end != -1 {
+		body = body[:end+1]
+	}
+
+	call := strings.Index(body, "writeTestProject(")
+	if call == -1 {
+		t.Fatalf("processTestConversion no longer calls writeTestProject; the derivation this guard orders against is gone from %s", source)
+	}
+
+	derivation := indexOfLineContaining(body, "testProductionAbsent = ", "productionClassEmitted(")
+
+	if derivation == -1 {
+		t.Fatalf("processTestConversion does not derive options.testProductionAbsent from productionClassEmitted(...).\n"+
+			"\twriteTestProject is handed THIS function's options — convertTestVariants takes Options by VALUE, so its own\n"+
+			"\tassignment never reaches here — and without the derivation every test-only package's .tests.csproj emits a\n"+
+			"\tcolocated ProjectReference to a production .csproj that is never written (MSB9008). Restore the assignment\n"+
+			"\tin %s, ahead of the writeTestProject call.", source)
+	}
+
+	if derivation > call {
+		t.Errorf("processTestConversion derives options.testProductionAbsent AFTER it calls writeTestProject (offsets %d > %d);\n"+
+			"\tthe project write reads the field's zero value (\"production exists\") and re-emits the dangling reference.",
+			derivation, call)
+	}
+}
+
+// indexOfLineContaining returns the byte offset of the first line of text holding EVERY one of
+// needles, or -1. Line-scoped rather than a bare Index over the whole text so that an assignment
+// and the call it must be derived from have to sit on the SAME statement, not merely both appear
+// somewhere in the function.
+func indexOfLineContaining(text string, needles ...string) int {
+	offset := 0
+
+	for _, line := range strings.Split(text, "\n") {
+		matched := true
+
+		for _, needle := range needles {
+			if !strings.Contains(line, needle) {
+				matched = false
+				break
+			}
+		}
+
+		if matched {
+			return offset
+		}
+
+		offset += len(line) + 1
+	}
+
+	return -1
+}
