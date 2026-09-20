@@ -1681,6 +1681,43 @@ until they have been run on the box that will score it:
 After any planted perturbation the restore is verified **byte-identical by tree hash**, not by
 `git status`.
 
+##### ⚠ (a2) THE KEY `classify` TAKES IS THE FLAT ARTIFACT PATH — added 2026-09-19 after G measured the trap
+
+A census staging root is **seeded from an L3 corpus**, so a platform-varying artifact sits under a
+per-GOOS layout folder — `os/windows/file.cs` in the windows root, `os/linux/file.cs` in the linux one.
+Build the manifest the obvious way (walk the root, `sha256sum`, keep the relative path) and those are
+two different names, so **every platform-varying artifact scores `exclusive` and `variant` collapses to
+exactly zero**:
+
+```
+  raw relative path    identical 1631 · variant  0 · partial  0 · exclusive 718 · union 2349
+  flat artifact path   identical 1631 · variant 83 · partial 93 · exclusive 283 · union 2090
+  the converter's own  identical 1631 · variant 83 · partial 93 · exclusive 283 · union 2090
+```
+
+⚠ **The raw row sums to its own union, passes the partition check and clears the seed tell, and is
+wrong.** It is the L3 **tree** partition (`1631 + 718` = the manifest's `l3UnionTreeTotal`, with 718 its
+`l3PerGoosFiles`) — a true answer to a different question. The only unaided tell is a reader noticing
+`variant 0`. `platformCensus.go` keys an artifact by its **flat package-relative path**: its own
+`variantFiles` read `os/file.cs`, never `os/windows/file.cs`.
+
+So the key is not left to the caller. **`h8-comparand.sh manifest <census-target-root>` builds
+`classify`'s input**, stripping layout folders with the **structural** discriminator — never the
+directory names, because each target holds 100 GOOS-named directories of which 99 are layout folders and
+**one is a real package** (`internal/syscall/windows`, which carries its own `.csproj`), and a name
+filter deletes that package from two of the three views. It asserts **zero duplicate keys** (stripping
+must merge no two artifacts), and it **stamps** what it writes. **`classify` REFUSES an unstamped
+manifest** and names this mode in the refusal; `--assume-flat` exists for a manifest produced elsewhere,
+and the caller owns that claim. The trap is a self-test arm: the same synthetic tree read flat finds the
+variant and read raw reports `variant 0`.
+
+<!-- G measured this by USING the instrument (mailbox ae545151f §6a): the counts above are the real
+     incoming census at 46307b4704. Nothing in the original amendment was wrong -- it specifies the
+     manifest FORMAT and never says to build one by walking a census root, and the `view` arm already
+     carried the structural discriminator -- but the build step for classify's input was unspecified and
+     the natural reading of it failed silently. Closed by making the format self-identifying rather than
+     by documenting a convention: a convention a reader must remember is not a gate. -->
+
 ##### (c) Predicted class-count deltas, from the 1.24 package census
 
 Derived at run time by `h8-comparand.sh pkgdelta <goroot-1.23.12> <goroot-1.24.13>` (2.7 s), which

@@ -48,9 +48,9 @@ norm(){ # $1 = manifest path -> normalized "sha<TAB>path" on stdout
   [ -r "$f" ] || die "cannot read manifest '$f'"
   [ -s "$f" ] || die "manifest '$f' is EMPTY -- an empty baseline reports total disagreement, never a difference"
   local bad
-  bad=$(grep -cvE '^[0-9a-fA-F]{64}[[:space:]]+[^[:space:]]' "$f")
+  bad=$(grep -v '^# h8-comparand ' "$f" | grep -cvE '^[0-9a-fA-F]{64}[[:space:]]+[^[:space:]]')
   [ "$bad" -eq 0 ] || die "manifest '$f' has $bad line(s) not in '<sha256>  <relpath>' form"
-  sed -E 's/^([0-9a-fA-F]{64})[[:space:]]+/\1\t/' "$f" | LC_ALL=C sort -t"$(printf '\t')" -k2,2
+  grep -v '^# h8-comparand ' "$f" | sed -E 's/^([0-9a-fA-F]{64})[[:space:]]+/\1\t/' | LC_ALL=C sort -t"$(printf '\t')" -k2,2
 }
 paths(){ cut -f2; }
 treehash(){ LC_ALL=C sort "$1" | sha256sum | cut -d' ' -f1; }
@@ -73,9 +73,35 @@ seed_tell(){ # $1=win-norm $2=lin-norm $3=dar-norm ; prints offenders, returns 1
 # The partition is platformManifest.go's, verbatim, and in ITS order: a name emitted by every target
 # is identical or variant by content; by exactly two, partial; by exactly one, exclusive.
 do_classify(){
-  local SEEDOK=0
-  [ "${1:-}" = "--seeded-content-only" ] && { SEEDOK=1; shift; }
-  [ $# -eq 3 ] || die "usage: $PROG classify [--seeded-content-only] <win> <lin> <dar>"
+  local SEEDOK=0 ASSUMEFLAT=0
+  while :; do
+    case "${1:-}" in
+      --seeded-content-only) SEEDOK=1; shift ;;
+      --assume-flat)         ASSUMEFLAT=1; shift ;;
+      *) break ;;
+    esac
+  done
+  [ $# -eq 3 ] || die "usage: $PROG classify [--seeded-content-only] [--assume-flat] <win> <lin> <dar>"
+  # ⚠ THE KEYING GATE. classify's answer is only a class census if its inputs are keyed on the FLAT
+  # artifact path. A raw-path-keyed manifest yields the L3 TREE partition, which sums, passes the
+  # partition check, clears the seed tell, and is wrong (see `manifest` above). Shape cannot
+  # distinguish the two, so the format identifies itself: `manifest` stamps what it builds and this
+  # refuses what carries no stamp. --assume-flat is for a manifest produced elsewhere (the preserved
+  # H6 half-A/half-B artifacts), and the caller owns the claim.
+  if [ "$ASSUMEFLAT" -eq 0 ]; then
+    local f miss=0
+    for f in "$1" "$2" "$3"; do
+      head -1 "$f" 2>/dev/null | grep -q '^# h8-comparand manifest v1 key=flat-artifact-path' || { echo "  unstamped: $f" >&2; miss=1; }
+    done
+    if [ "$miss" -ne 0 ]; then
+      echo "REFUSED: the manifest(s) above carry no flat-artifact-path stamp." >&2
+      echo "         Build them with: $PROG manifest <census-target-root>   (it strips L3 layout folders" >&2
+      echo "         structurally and stamps the result). A raw-path-keyed manifest scores variant 0 and" >&2
+      echo "         every platform-varying artifact as exclusive -- a well-formed WRONG answer." >&2
+      echo "         Pass --assume-flat only for a manifest built elsewhere that you know is flat-keyed." >&2
+      exit 6
+    fi
+  fi
   local W L D T; T=$(mktemp -d)
   norm "$1" > "$T/w"; norm "$2" > "$T/l"; norm "$3" > "$T/d"
 
@@ -124,17 +150,20 @@ do_classify(){
 
 # ---- compare: one predicate, both sides, then the delta -------------------------------------------
 do_compare(){
-  local out=() in=() seen=0
+  local out=() in=() seen=0 FLAGS=()
+  while :; do
+    case "${1:-}" in --assume-flat|--seeded-content-only) FLAGS+=("$1"); shift ;; *) break ;; esac
+  done
   for a in "$@"; do
     if [ "$a" = "--" ]; then seen=1; continue; fi
     if [ "$seen" -eq 0 ]; then out+=("$a"); else in+=("$a"); fi
   done
   [ "${#out[@]}" -eq 3 ] && [ "${#in[@]}" -eq 3 ] || die "usage: $PROG compare <out-win> <out-lin> <out-dar> -- <in-win> <in-lin> <in-dar>"
   echo "OUTGOING (the comparand):"
-  local o; o=$("$0" classify "${out[@]}") || exit $?
+  local o; o=$("$0" classify "${FLAGS[@]}" "${out[@]}") || exit $?
   printf '%s\n' "$o" | grep -v '^CLASSCOUNTS'
   echo "INCOMING:"
-  local i; i=$("$0" classify "${in[@]}") || exit $?
+  local i; i=$("$0" classify "${FLAGS[@]}" "${in[@]}") || exit $?
   printf '%s\n' "$i" | grep -v '^CLASSCOUNTS'
   local OV IV; OV=$(printf '%s\n' "$o" | grep '^CLASSCOUNTS'); IV=$(printf '%s\n' "$i" | grep '^CLASSCOUNTS')
   set -- $OV; local oi=$2 ov=$3 op=$4 oe=$5 ot=$6
@@ -249,6 +278,68 @@ do_pkgdelta(){
   rm -rf "$T"
 }
 
+# ---- manifest: build classify's input from a census root, KEYED ON THE FLAT ARTIFACT PATH ---------
+# ⚠ THIS MODE EXISTS BECAUSE THE OBVIOUS HAND-BUILT MANIFEST IS SILENTLY WRONG (G, 2026-09-19,
+# measured on the real incoming census). A census staging root is SEEDED from an L3 corpus, so a
+# platform-varying artifact sits under a per-GOOS layout folder: `os/windows/file.cs` in the windows
+# root, `os/linux/file.cs` in the linux one. Keyed on the RAW relative path those are two different
+# names, so EVERY platform-varying artifact scores `exclusive` and `variant` collapses to exactly 0:
+#
+#     raw relative path   identical 1631 · variant 0  · partial 0  · exclusive 718 · union 2349
+#     flat artifact path  identical 1631 · variant 83 · partial 93 · exclusive 283 · union 2090
+#     the converter                 1631 ·         83 ·         93 ·           283 ·       2090
+#
+# The raw row SUMS TO ITS OWN UNION, PASSES the partition check and CLEARS the seed tell — it is the
+# L3 TREE partition (1631 + 718 = l3UnionTreeTotal), a true answer to a different question. Only a
+# reader noticing `variant 0` unaided would catch it. So the flat key is not a convention here: it is
+# produced by this mode, the mode STAMPS the manifest, and `classify` REFUSES an unstamped one.
+#
+# platformCensus.go keys an artifact by its flat package-relative path (`variantFiles` reads
+# `os/file.cs`, never `os/windows/file.cs`), and stripping to that reproduces its four classes exactly.
+# Stripping uses the STRUCTURAL discriminator, never the directory names: measured on the incoming
+# emission each target holds 100 GOOS-named directories, of which 99 are layout folders and ONE is a
+# real package (`internal/syscall/windows`, which carries its own .csproj). A name filter deletes that
+# package from two of the three views.
+MANIFEST_STAMP='# h8-comparand manifest v1 key=flat-artifact-path'
+do_manifest(){
+  [ $# -eq 1 ] || die "usage: $PROG manifest <census-target-root>"
+  local ROOT="$1"
+  [ -d "$ROOT" ] || die "no such census root '$ROOT'"
+  cd "$ROOT" || die "cannot enter '$ROOT'"
+  local n=0 T; T=$(mktemp)
+  while IFS= read -r f; do
+    local rel=${f#./} out="" d base parent
+    d=$(dirname "$rel"); base=$(basename "$rel")
+    # strip EVERY layout-folder segment from the directory chain, innermost out
+    local parts="" seg
+    while [ "$d" != "." ] && [ -n "$d" ]; do
+      seg=${d##*/}; parent=$(dirname "$d")
+      case "$seg" in
+        windows|linux|darwin)
+          if compgen -G "$d/*.csproj" >/dev/null 2>&1 || ! compgen -G "$parent/*.csproj" >/dev/null 2>&1; then
+            parts="$seg${parts:+/$parts}"      # a real package directory: KEEP it
+          fi                                    # else: a layout folder -- drop it
+          ;;
+        *) parts="$seg${parts:+/$parts}" ;;
+      esac
+      d="$parent"
+    done
+    out="${parts:+$parts/}$base"
+    printf '%s  %s\n' "$(sha256sum "$rel" | cut -d' ' -f1)" "$out" >> "$T"
+    n=$((n+1))
+  done < <(find . -type f -name '*.cs' -not -name '*.cs.auto' | LC_ALL=C sort)
+  [ "$n" -gt 0 ] || { rm -f "$T"; die "manifest walked ZERO .cs files -- an empty manifest is not a census"; }
+  # stripping must not merge two distinct artifacts onto one key
+  local dup; dup=$(cut -d' ' -f3- "$T" | LC_ALL=C sort | uniq -d | head -5)
+  if [ -n "$dup" ]; then
+    echo "REFUSED: stripping produced DUPLICATE keys -- two artifacts merged onto one name:" >&2
+    printf '%s\n' "$dup" | sed 's/^/  /' >&2; rm -f "$T"; exit 5
+  fi
+  printf '%s\n' "$MANIFEST_STAMP"
+  LC_ALL=C sort -k2,2 "$T"
+  rm -f "$T"
+}
+
 # ---- view: the DEFAULT-FLAVOUR manifest of a corpus root -------------------------------------------
 # The default flavour of an L3 corpus is what a build for <host> compiles: the FLAT files in each
 # package directory plus that package's <host>/ folder, and nothing from a foreign GOOS folder.
@@ -307,22 +398,22 @@ do_selftest(){
   { echo "$(h 1)  a/x.cs"; echo "$(h 3)  a/y.cs"; echo "$(h 8)  a/only_linux.cs";   } | LC_ALL=C sort > "$T/l"
   { echo "$(h 1)  a/x.cs"; echo "$(h 3)  a/y.cs"; echo "$(h 9)  a/only_darwin.cs";  } | LC_ALL=C sort > "$T/d"
   echo "A. classify -- the healthy case and its arithmetic"
-  local out; out=$("$0" classify "$T/w" "$T/l" "$T/d")
-  st "clean three-target emission classifies"        0 "$0" classify "$T/w" "$T/l" "$T/d"
+  local out; out=$("$0" classify --assume-flat "$T/w" "$T/l" "$T/d")
+  st "clean three-target emission classifies"        0 "$0" classify --assume-flat "$T/w" "$T/l" "$T/d"
   local got; got=$(printf '%s\n' "$out" | grep '^CLASSCOUNTS')
   if [ "$got" = "CLASSCOUNTS 1 1 0 3 5" ]; then st_pass=$((st_pass+1)); printf '  PASS  %-58s %s\n' "counts are identical1/variant1/partial0/exclusive3" "$got"
   else st_fail=$((st_fail+1)); printf '  FAIL  %-58s %s\n' "expected CLASSCOUNTS 1 1 0 3 5" "$got"; fi
   echo "B. classify -- every refusal MADE TO FAIL"
   : > "$T/empty"
-  st "an EMPTY manifest refuses (never 'total disagreement')" 2 "$0" classify "$T/empty" "$T/l" "$T/d"
+  st "an EMPTY manifest refuses (never 'total disagreement')" 2 "$0" classify --assume-flat "$T/empty" "$T/l" "$T/d"
   printf 'not-a-manifest\n' > "$T/junk"
-  st "a malformed manifest refuses"                 2 "$0" classify "$T/junk" "$T/l" "$T/d"
-  st "three IDENTICAL manifests refuse"             3 "$0" classify "$T/w" "$T/w" "$T/w"
+  st "a malformed manifest refuses"                 2 "$0" classify --assume-flat "$T/junk" "$T/l" "$T/d"
+  st "three IDENTICAL manifests refuse"             3 "$0" classify --assume-flat "$T/w" "$T/w" "$T/w"
   # the seed tell: put the windows-only artifact into the linux and darwin roots (a seeded root)
   { cat "$T/l"; echo "$(h 7)  a/only_windows.cs"; } | LC_ALL=C sort > "$T/l_seeded"
   { cat "$T/d"; echo "$(h 7)  a/only_windows.cs"; } | LC_ALL=C sort > "$T/d_seeded"
-  st "SEED TELL refuses a seeded-root triple"       3 "$0" classify "$T/w" "$T/l_seeded" "$T/d_seeded"
-  st "  and --seeded-content-only admits it"        0 "$0" classify --seeded-content-only "$T/w" "$T/l_seeded" "$T/d_seeded"
+  st "SEED TELL refuses a seeded-root triple"       3 "$0" classify --assume-flat "$T/w" "$T/l_seeded" "$T/d_seeded"
+  st "  and --seeded-content-only admits it"        0 "$0" classify --seeded-content-only --assume-flat "$T/w" "$T/l_seeded" "$T/d_seeded"
   echo "C. identity -- the arm, and the three ways it must go red"
   cp "$T/w" "$T/w2"
   st "identical manifests PASS"                     0 "$0" identity "$T/w" "$T/w2"
@@ -341,14 +432,14 @@ do_selftest(){
   { cat "$T/w"; echo "$(h 4)  a/z.cs"; } | LC_ALL=C sort > "$T/w2i"
   { cat "$T/l"; echo "$(h 4)  a/z.cs"; } | LC_ALL=C sort > "$T/l2i"
   { grep -v only_darwin "$T/d"; echo "$(h 4)  a/z.cs"; } | LC_ALL=C sort > "$T/d2i"
-  st "compare runs on two DISTINCT triples"         0 "$0" compare "$T/w" "$T/l" "$T/d" -- "$T/w2i" "$T/l2i" "$T/d2i"
-  local dlt; dlt=$("$0" compare "$T/w" "$T/l" "$T/d" -- "$T/w2i" "$T/l2i" "$T/d2i" | sed -n '/^DELTA/,$p')
+  st "compare runs on two DISTINCT triples"         0 "$0" compare --assume-flat "$T/w" "$T/l" "$T/d" -- "$T/w2i" "$T/l2i" "$T/d2i"
+  local dlt; dlt=$("$0" compare --assume-flat "$T/w" "$T/l" "$T/d" -- "$T/w2i" "$T/l2i" "$T/d2i" | sed -n '/^DELTA/,$p')
   if printf '%s\n' "$dlt" | grep -q 'identical   +1' && printf '%s\n' "$dlt" | grep -q 'exclusive   -1'; then
     st_pass=$((st_pass+1)); printf '  PASS  %-58s %s\n' "the delta is non-zero and correct (+1 identical, -1 exclusive)" "measured"
   else
     st_fail=$((st_fail+1)); printf '  FAIL  %-58s\n' "delta wrong:"; printf '%s\n' "$dlt" | sed 's/^/        /'
   fi
-  st "compare refuses an empty side"                2 "$0" compare "$T/empty" "$T/l" "$T/d" -- "$T/w" "$T/l" "$T/d"
+  st "compare refuses an empty side"                2 "$0" compare --assume-flat "$T/empty" "$T/l" "$T/d" -- "$T/w" "$T/l" "$T/d"
   echo "E. view -- the default-flavour filter, and the package-vs-layout trap"
   local C="$T/corpus"
   mkdir -p "$C/pkg/windows" "$C/pkg/linux" "$C/pkg/darwin" "$C/internal/syscall/windows"
@@ -381,6 +472,42 @@ do_selftest(){
   echo changed2 > "$C/pkg/windows/only.cs"
   "$0" view "$C" linux > "$T/v3.man"
   st "a change in a FOREIGN folder leaves the host view alone" 0 "$0" identity "$v2" "$T/v3.man"
+  echo "F. manifest + the KEYING GATE -- the trap G measured, built as a control"
+  # a synthetic L3 census root per target: one flat shared file, one per-GOOS layout folder holding
+  # the SAME artifact name, and a real package directory named `windows` that must survive.
+  local C2R="$T/census"
+  for g in windows linux darwin; do
+    mkdir -p "$C2R/$g/pkg/$g" "$C2R/$g/internal/syscall/windows"
+    : > "$C2R/$g/pkg/pkg.csproj"
+    echo shared                       > "$C2R/$g/pkg/shared.cs"
+    echo "variant-body-for-$g"        > "$C2R/$g/pkg/$g/file.cs"
+    : > "$C2R/$g/internal/syscall/windows/internal.syscall.windows.csproj"
+    echo pkgwin                       > "$C2R/$g/internal/syscall/windows/zsyscall.cs"
+  done
+  st "manifest builds from a census root"           0 "$0" manifest "$C2R/windows"
+  for g in windows linux darwin; do "$0" manifest "$C2R/$g" > "$T/m-$g" 2>/dev/null; done
+  # the real package survives the strip; the layout folder does not
+  if grep -q 'internal/syscall/windows/zsyscall.cs' "$T/m-linux" && ! grep -qE '(^|[[:space:]])pkg/(windows|linux|darwin)/' "$T/m-linux"; then
+    st_pass=$((st_pass+1)); printf '  PASS  %-58s\n' "flat key keeps a real package dir, drops the layout folder"
+  else st_fail=$((st_fail+1)); printf '  FAIL  %-58s\n' "flat-key stripping wrong:"; sed 's/^/        /' "$T/m-linux"; fi
+  # THE POINT: flat keying finds the variant; raw keying calls it exclusive and reads variant 0
+  local flat raw
+  flat=$("$0" classify "$T/m-windows" "$T/m-linux" "$T/m-darwin" | grep '^CLASSCOUNTS')
+  for g in windows linux darwin; do ( cd "$C2R/$g" && find . -type f -name '*.cs' | LC_ALL=C sort | while IFS= read -r f; do printf '%s  %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "${f#./}"; done ) > "$T/r-$g"; done
+  raw=$("$0" classify --assume-flat "$T/r-windows" "$T/r-linux" "$T/r-darwin" | grep '^CLASSCOUNTS')
+  # flat: shared.cs + zsyscall.cs identical, pkg/file.cs variant  -> identical 2 variant 1 exclusive 0
+  # raw:  pkg/<goos>/file.cs are three DIFFERENT names            -> variant 0, exclusive 3
+  if [ "$flat" = "CLASSCOUNTS 2 1 0 0 3" ] && [ "$raw" = "CLASSCOUNTS 2 0 0 3 5" ]; then
+    st_pass=$((st_pass+1)); printf '  PASS  %-58s\n' "flat finds the variant; raw reads variant 0 (the trap reproduced)"
+  else st_fail=$((st_fail+1)); printf '  FAIL  %-58s flat=%s raw=%s\n' "trap control" "$flat" "$raw"; fi
+  st "an UNSTAMPED manifest triple is REFUSED"      6 "$0" classify "$T/r-windows" "$T/r-linux" "$T/r-darwin"
+  st "  and --assume-flat admits it (caller owns it)" 0 "$0" classify --assume-flat "$T/r-windows" "$T/r-linux" "$T/r-darwin"
+  mkdir -p "$T/emptyroot"
+  st "manifest refuses a root with no .cs"          2 "$0" manifest "$T/emptyroot"
+  # duplicate-key refusal: two layout folders holding the same artifact name collapse onto one key
+  mkdir -p "$C2R/dup/pkg/windows" "$C2R/dup/pkg/linux"; : > "$C2R/dup/pkg/pkg.csproj"
+  echo a > "$C2R/dup/pkg/windows/same.cs"; echo b > "$C2R/dup/pkg/linux/same.cs"
+  st "stripping that MERGES two artifacts is REFUSED" 5 "$0" manifest "$C2R/dup"
   rm -rf "$T"
   echo
   echo "SELF-TEST: pass=$st_pass fail=$st_fail"
@@ -393,12 +520,14 @@ case "${1:-}" in
   compare)  shift; do_compare "$@" ;;
   identity) shift; do_identity "$@" ;;
   view)     shift; do_view "$@" ;;
+  manifest) shift; do_manifest "$@" ;;
   pkgdelta) shift; do_pkgdelta "$@" ;;
   selftest) shift; do_selftest ;;
   *) echo "usage: $PROG classify [--seeded-content-only] <win> <lin> <dar>"
      echo "       $PROG compare <out-win> <out-lin> <out-dar> -- <in-win> <in-lin> <in-dar>"
      echo "       $PROG identity <manifest-A> <manifest-B>"
      echo "       $PROG view <corpus-root> <host-goos>"
+     echo "       $PROG manifest <census-target-root>   (builds classify's input, flat-keyed and stamped)"
      echo "       $PROG pkgdelta <goroot-outgoing> <goroot-incoming>"
      echo "       $PROG selftest"; exit 2 ;;
 esac
