@@ -163,6 +163,49 @@ Everything on the Python side, and the cross-language contract:
 The reorder arm matters on its own: a reordering changes **dispatch order** without changing the row
 set, so a digest over an unordered set would have missed it.
 
+### 6.1 AMENDMENT 2026-09-20 — the figures above are the PRE-RECON plan; the landed plan differs
+
+**Nothing above is rewritten.** This block is added because §6's measurements were taken against the
+plan as it stood *before* the H10 recon leg re-based the map, and a reader who checks them against
+`docs/phase4/hopA-inputs/h10-dispatch-plan.tsv` will find every headline number different. The
+measurements were correct when they were taken; they describe a plan that no longer exists.
+
+```
+                                   §6 above (pre-recon)      the LANDED plan (master, leg (4))
+  dispatch rows                    324                       424
+  UNSCHEDULED                       42                        14
+  reserved set                      11 rows / 4,722 i9-s      11 rows /   624 i9-s
+  W=3 makespan                      88.7 min (2 slices)       88.4 min (3 shards @ 40 min)
+  rows per fleet size               --                        212 at W=3, 212 at W=4
+  #digest                           --                        005aeab497fd35e8...
+```
+
+**Why the row count ROSE while UNSCHEDULED fell.** The recon leg measured rows the pre-recon map had
+no cost for, so 28 of the 42 moved out of UNSCHEDULED and into the plan; the dispatch-row total is
+higher again because the landed plan emits a row per *(W, worker, slice, seq)* across **both** fleet
+sizes — 212 + 212 — where the earlier one carried fewer scheduled rows to place.
+
+⚠ **The reserved set's seconds are the figure most likely to mislead**, because the ROW COUNT is
+unchanged at 11 and only the cost moved: 4,722 → 624 i9-s. It is the same eleven floor-and-inherited
+rows; what changed is that four DECLARED RESERVED rows still carry no measured cost and so cannot be
+pinned, which the landed plan states rather than absorbs. **So 624 s is a lower bound on the pin and
+not the pin**, and it is not comparable to 4,722 as if the same quantity had shrunk.
+
+**What does NOT change, and is why §6 is amended rather than replaced:** every *contract* it
+measures still holds and was re-verified at the merge — the digest reproduces over all 424 rows from
+the merged tree, `#rows` equals the body, no slice exceeds its cap, and the three digest-control arms
+(one `t_r` changed, one row deleted, two rows swapped) remain the reason the gate fires. **The arms
+are sound; only the numbers they were run on are historical.**
+
+⚠ §2.4's plan-format example carries the same pre-recon `#rows 324` / `#unscheduled 42`. It is
+**illustrative of the FORMAT** and is deliberately left alone: changing it would make the worked
+example disagree with the prose around it for no gain, and this block is the notice that its figures
+are not the live plan's. A reader wanting live numbers reads the plan file, which is authoritative.
+
+*(Amended by C2 per COORD `0cb09c354`; a dated block, never a rewrite — `docs/phase4/` records are
+point-in-time. A read, not a compile: the landed figures are read from the committed plan file and
+from `shardmap.py --timings` output at leg (4), not re-generated here.)*
+
 ## 7. ⚠ What is NOT measured, stated so no reading implies it
 
 1. **The `.ps1` has never executed.** C2 has no PowerShell. It is statically checked for brace/paren
