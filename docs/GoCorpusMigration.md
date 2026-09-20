@@ -2326,6 +2326,58 @@ because a reader starting at H10 gets no pointer to them:
 | one conversion per output root, never two concurrent; one dispatch per worktree | H5 |
 | `CGO_ENABLED` pinned to the corpus state, exported rather than assumed | the corpus emission state |
 | an entirely hand-owned package converts only under `-test-allow-handown` | the converter's own refusal, by name |
+| the leg tree carries **no ignored build residue** before row 1, censused with `git status --ignored=matching` and never `--porcelain` alone, with a control | G measured **516** ignored entries under `src/core` surviving a `git clean -fd`, behind a `status --porcelain` reading **0** — porcelain cannot see an ignored path, so a tree that READS clean is not a tree that IS clean |
+| any **preflight build** — a dry run, a red arm, a rehearsal row — runs in a tree that is **NOT the leg's** | i9 measured `go/types` (443 files) and `net` (672) carrying pre-run build output in a tree where neither had ever been converted: a `dotnet publish` builds a dependency **CLOSURE**, so the at-risk set is everything the arms' closures touched and not the rows that ran |
+
+**THE TREE DISCARD, which is a MEASUREMENT before it is a removal.** The leg's worktree is thrown away
+at the end, and until the 1.24 hop the runbook said nothing about what has to be read off it first.
+Two lanes found the same class independently on the same night, from opposite ends.
+
+```
+  BEFORE row 1   census the tree:  git status --ignored=matching  (never --porcelain alone)
+                 with a CONTROL:   the same predicate on a never-built tree must answer 0
+                 record the number. A non-zero BEFORE is not a stop -- it is a reading the
+                 completion post carries, and it decides whether the arm below is owed.
+  AT THE DISCARD re-census, and assert the TRACKED count ACROSS the removal:
+                 git ls-files | wc -l   before  ==  after
+                 A removal that takes a tracked file is the failure this assert exists for, and
+                 it is the same hazard as floor 8's `git status --porcelain | grep '^ D'`, which
+                 still runs: one guards what a glob DELETED, this one guards what a clean REMOVED.
+```
+
+⚠ **Why `--porcelain` alone is the wrong instrument here, stated as the measurement and not as
+advice.** `git clean -fd` does not remove ignored paths and `status --porcelain` does not report
+them, so the two agree on **0** over a tree holding hundreds of files of prior build output. G's
+number was **516**. A leg relaunched into such a tree is not a relaunch into a clean tree, and
+nothing in the reading says so.
+
+⚠ **And the at-risk set is the dependency CLOSURE, not the rows that ran** — which is the half that
+surprises. i9's own census corrected i9's first hypothesis: `go/types` and `net` carried pre-run
+`bin`/`obj` although neither had ever been converted in that tree, because a `dotnet publish` for one
+row's arms builds much of `src/core`. So "only rows 1–4 ran, so only rows 1–4 are exposed" is false
+by construction, and a preflight build belongs in a different tree for exactly that reason.
+
+**When the BEFORE census is non-zero, the leg owes a two-row arm before its TSV is pushed** (ruled at
+the 1.24 hop): after the list completes and **before** the tree is discarded, cut a SECOND throwaway
+worktree detached at the same tip, build the converter in it, and re-run two rows there — **the
+heaviest-residue PASS row and one first-in-tree row** — comparing **word, verdict count and the
+diverged set** against the leg's. A match on both retires the exposure and the TSV pushes with the
+arm's reading in the completion post; **any difference is a finding and the list re-runs on the clean
+tree.**
+
+⚠ **The argument that residue is benign is an ARGUMENT, and the runbook records it as one so a reader
+can refuse it.** It runs: the converter binary is byte-identical and was never rebuilt; the tree tip
+never moved; and the converter rewrites every `.cs`, so MSBuild sees this run's timestamps and an
+incremental build cannot skip on stale inputs. Each of those three is checkable and together they are
+persuasive — but they are a chain of reasoning over three facts, not a reading, and the two-row arm
+costs one tree and about three minutes of rows. **Spend it rather than let the basis carry an argument
+where a measurement was available.**
+
+**Reclaim children-first, with the PARENT test taken AT THE ACT** (floor 12): a tree whose
+`--git-common-dir` equals its `--git-dir` and whose `git worktree list` has more than one row is a
+PARENT and is never removed — removing it takes every child with it. The test is taken at the moment
+of removal and not from a note made earlier, because a sibling lane can have attached a child in
+between.
 
 **THE PER-ROW STEPS** are H10's five above, and two of them are where a hop's roster edits actually
 happen: the **verdict count re-derives** (the denominator moves), the **manifest is RE-SIGNED, never
