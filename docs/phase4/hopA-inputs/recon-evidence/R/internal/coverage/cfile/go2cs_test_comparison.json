@@ -1,0 +1,51 @@
+{
+  "package": "cfile",
+  "status": "conversion-blocked",
+  "go": {
+    "TestApisOnNocoverBinary": "pass",
+    "TestAuxMetaDataFiles": "pass",
+    "TestCoverageApis": "pass",
+    "TestCoverageApis/emitToDir": "pass",
+    "TestCoverageApis/emitToDirNonAtomic": "pass",
+    "TestCoverageApis/emitToFailingWriter": "pass",
+    "TestCoverageApis/emitToNilWriter": "pass",
+    "TestCoverageApis/emitToNonexistentDir": "pass",
+    "TestCoverageApis/emitToWriter": "pass",
+    "TestCoverageApis/emitToWriterNonAtomic": "pass",
+    "TestCoverageApis/emitWithCounterClear": "pass",
+    "TestCoverageApis/emitWithCounterClearNonAtomic": "pass",
+    "TestCoverageSnapshot": "pass",
+    "TestIssue56006EmitDataRaceCoverRunningGoroutine": "skip",
+    "TestIssue59563TruncatedCoverPkgAll": "pass",
+    "TestTestSupport": "pass"
+  },
+  "csharp": {},
+  "matched": false,
+  "skipped": [],
+  "disclosed": [],
+  "excluded": [],
+  "errors": [
+    "TestCoverageApis/emitToDir: Go=\"pass\" C#=\"\"",
+    "TestCoverageApis/emitToDirNonAtomic: Go=\"pass\" C#=\"\"",
+    "TestCoverageApis/emitToFailingWriter: Go=\"pass\" C#=\"\"",
+    "TestCoverageApis/emitToNilWriter: Go=\"pass\" C#=\"\"",
+    "TestCoverageApis/emitToNonexistentDir: Go=\"pass\" C#=\"\"",
+    "TestCoverageApis/emitToWriter: Go=\"pass\" C#=\"\"",
+    "TestCoverageApis/emitToWriterNonAtomic: Go=\"pass\" C#=\"\"",
+    "TestCoverageApis/emitWithCounterClear: Go=\"pass\" C#=\"\"",
+    "TestCoverageApis/emitWithCounterClearNonAtomic: Go=\"pass\" C#=\"\"",
+    "TestApisOnNocoverBinary: Go=\"pass\" C#=\"\"",
+    "TestAuxMetaDataFiles: Go=\"pass\" C#=\"\"",
+    "TestCoverageApis: Go=\"pass\" C#=\"\"",
+    "TestCoverageSnapshot: Go=\"pass\" C#=\"\"",
+    "TestIssue56006EmitDataRaceCoverRunningGoroutine: Go=\"skip\" C#=\"\"",
+    "TestIssue59563TruncatedCoverPkgAll: Go=\"pass\" C#=\"\"",
+    "TestTestSupport: Go=\"pass\" C#=\"\"",
+    "converted tests: C:\\go2cs-tmp\\r-leg\\src\\core\\internal\\coverage\\cfile\\bin\\tests\\publish\\internal.coverage.cfile.tests.exe --json -timeout 30m0s --result C:\\go2cs-tmp\\r-leg\\src\\core\\internal\\coverage\\cfile\\go2cs_test_results.json --junit C:\\go2cs-tmp\\r-leg\\src\\core\\internal\\coverage\\cfile\\go2cs_test_results.xml failed: exit status 2\n{\"package\":\"internal/coverage/cfile\",\"test\":\"\",\"action\":\"infrastructure-error\",\"elapsed\":0,\"output\":\"System.InvalidOperationException: the Go toolchain still refuses an internal/\\u2026 import through a link-staged fixture tree, so the programs staged there would fail exactly as a plain copy does. Neither a directory symlink nor a junction was accepted on this machine. The toolchain said: package command-line-arguments\\n\\ttestdata\\\\harness.go:10:2: use of internal package internal/coverage/slicewriter not allowed\\r\\n   at go.testing_runtime.PackageAncestry.AssertToolchainAcceptsLinks(String goRoot, List\\u00601 staged, Boolean symbolicLinks) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\testing\\\\PackageAncestry.cs:line 458\\r\\n   at go.testing_runtime.PackageAncestry.StageFixtureLinks(IReadOnlyList\\u00601 links, String goRoot, String importPath, String workingDirectory, String runRoot) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\testing\\\\PackageAncestry.cs:line 291\\r\\n   at go.testing_runtime.TestHost.Run(TestRegistry registry, String[] args) in C:\\\\go2cs-tmp\\\\r-leg\\\\src\\\\core\\\\testing\\\\TestHost.cs:line 181\",\"source\":null,\"line\":null}"
+  ],
+  "environment": {
+    "configuration": "Release",
+    "tiered": false,
+    "oracleGoVersion": "go version go1.24.13 windows/amd64"
+  }
+}
