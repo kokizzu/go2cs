@@ -2145,18 +2145,37 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 			// archive/tar templateV7Plus's stringFormatter args, CS1503). Method groups and
 			// func literals convert natively and are left bare.
 			if paramHasArg {
-				if paramNamed, ok := types.Unalias(paramType).(*types.Named); ok {
+				// A GENERIC named delegate param arrives here UNSUBSTITUTED — getFunctionSignature
+				// reads the callee *types.Func's own type, which for `iter.Pull[V any](seq
+				// Seq[V])` is the declaration, so paramType is `Seq[V]` with V unbound and
+				// nothing concrete to construct. The instantiation go/types already inferred
+				// supplies it (instantiatedParamType): `Seq[time.Time]`, which renders
+				// `iter.Seq<time.Time>` and wraps exactly as a non-generic named delegate does.
+				// Left bare, C# saw only the lambda-typed local and could infer no type argument
+				// for Pull (CS0411), and the untyped `next` result then failed to deconstruct
+				// into the Go-typed pair (CS0029) — internal/synctest's TestIteratorPull, one
+				// root. A callee with no recorded instantiation, or one whose parameter is still
+				// open after substitution (a generic function passing its OWN type parameters
+				// on), fails the unchanged typeContainsTypeParams guard below and keeps the
+				// native conversion.
+				delegateParamType := paramType
+
+				if typeContainsTypeParams(delegateParamType) {
+					if substituted := v.instantiatedParamType(callExpr, i); substituted != nil {
+						delegateParamType = substituted
+					}
+				}
+
+				if paramNamed, ok := types.Unalias(delegateParamType).(*types.Named); ok {
 					if _, isSig := paramNamed.Underlying().(*types.Signature); isSig {
-						if argType := v.getType(callExpr.Args[i], false); argType != nil && !types.Identical(types.Unalias(argType), types.Unalias(paramType)) {
+						if argType := v.getType(callExpr.Args[i], false); argType != nil && !types.Identical(types.Unalias(argType), types.Unalias(delegateParamType)) {
 							if _, argIsSig := argType.Underlying().(*types.Signature); argIsSig {
-								// A GENERIC named delegate param renders unsubstituted type
-								// params at the call site — leave it to native conversion.
-								if _, isLit := callExpr.Args[i].(*ast.FuncLit); !isLit && !typeContainsTypeParams(paramType) {
+								if _, isLit := callExpr.Args[i].(*ast.FuncLit); !isLit && !typeContainsTypeParams(delegateParamType) {
 									if callExprContext.wrapArgWithNew == nil {
 										callExprContext.wrapArgWithNew = make(map[int]string)
 									}
 
-									callExprContext.wrapArgWithNew[i] = v.getCSharpTypeName(paramType)
+									callExprContext.wrapArgWithNew[i] = v.getCSharpTypeName(delegateParamType)
 								}
 							}
 						}
