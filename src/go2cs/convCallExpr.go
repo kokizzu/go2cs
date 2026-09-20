@@ -2999,7 +2999,8 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 					(v.calleeHasConstraintOnlyTypeParam(funIdent) || v.callHasMethodGroupArg(callExpr) ||
 						v.calleeTypeParamUnsuppliedByCall(callExpr, funIdent) ||
 						v.calleeReadsDescriptorName(funIdent) ||
-						v.callNeedsConstraintProxy(funIdent, instance.TypeArgs)) {
+						v.callNeedsConstraintProxy(funIdent, instance.TypeArgs) ||
+						v.calleeTypeParamMixesUntypedAndTypedArgs(callExpr, funIdent)) {
 					// Erased (pointer-core) callee positions leave the emitted list — `clone[P *T,
 					// T any]` emits `clone<ΔSignature>(…)` (see renderedTypeArgs); a list that
 					// erases to empty stays bare.
@@ -5789,6 +5790,92 @@ func (v *Visitor) calleeHasConstraintOnlyTypeParam(funIdent *ast.Ident) bool {
 }
 
 // typeUsesTypeParam reports whether t structurally contains the SPECIFIC type parameter tp.
+// calleeTypeParamMixesUntypedAndTypedArgs reports whether the call hands ONE type parameter both an
+// argument that emits as a golib `Untyped*` wrapper and an argument that emits at a Go type. C# then
+// has two irreconcilable candidates for that parameter and infers nothing (CS0411). Go has no such
+// problem: an untyped constant simply adopts the inferred type.
+//
+// internal/sync is the corpus's instance, and the file carries its own control on ADJACENT lines:
+//
+//	expectNotSwapped(t, s, math.MaxInt, i+j+1)  // UntypedInt meets int -> CS0411
+//	expectNotSwapped(t, s, i+j,        i+j+1)  // both typed        -> infers, compiles
+//
+// Narrow by construction, and the narrowness is what holds the footprint down:
+//   - a type parameter supplied from ONE position only is left alone, because whatever that single
+//     position gives is the inference and there is nothing to conflict with — `expectNotDeleted(t,
+//     key, math.MaxInt)` compiles in this same file and must keep its bare form;
+//   - a call whose arguments are all typed, or all untyped, never fires.
+//
+// The remedy is the chain's EXISTING one — render the type arguments explicitly — which changes no
+// argument text at all and so cannot widen UntypedInt's implicit conversions. Measured before the
+// predicate was written: hand-adding `<@string, nint>` at the four sites builds the row's test
+// project at rc 0 with zero error classes.
+func (v *Visitor) calleeTypeParamMixesUntypedAndTypedArgs(callExpr *ast.CallExpr, funIdent *ast.Ident) bool {
+	funcObj, ok := v.info.ObjectOf(funIdent).(*types.Func)
+
+	if !ok {
+		return false
+	}
+
+	sig, ok := funcObj.Type().(*types.Signature)
+
+	if !ok || sig.TypeParams() == nil || sig.TypeParams().Len() == 0 {
+		return false
+	}
+
+	params := sig.Params()
+
+	if params.Len() == 0 {
+		return false
+	}
+
+	for i := range sig.TypeParams().Len() {
+		tp := sig.TypeParams().At(i)
+		sawUntyped := false
+		sawTyped := false
+
+		for j, arg := range callExpr.Args {
+			paramIndex := j
+
+			// Every variadic argument binds the final parameter's ELEMENT type.
+			if sig.Variadic() && paramIndex >= params.Len()-1 {
+				paramIndex = params.Len() - 1
+			}
+
+			if paramIndex >= params.Len() {
+				break
+			}
+
+			paramType := params.At(paramIndex).Type()
+
+			if sig.Variadic() && paramIndex == params.Len()-1 {
+				if slice, isSlice := paramType.(*types.Slice); isSlice {
+					paramType = slice.Elem()
+				}
+			}
+
+			if !typeUsesTypeParam(paramType, tp) {
+				continue
+			}
+
+			// containsUntypedNamedConstRef is the wrapper test the `complex` pinning already uses:
+			// go/types reports an argument at its INFERRED type, so TypeOf cannot see untypedness
+			// here — what matters is whether the EMISSION carries an `Untyped*` wrapper.
+			if v.containsUntypedNamedConstRef(arg) {
+				sawUntyped = true
+			} else {
+				sawTyped = true
+			}
+		}
+
+		if sawUntyped && sawTyped {
+			return true
+		}
+	}
+
+	return false
+}
+
 func typeUsesTypeParam(t types.Type, tp *types.TypeParam) bool {
 	switch tt := t.(type) {
 	case *types.TypeParam:

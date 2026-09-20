@@ -39,6 +39,7 @@
     <None Include="$(MSBuildThisFileDirectory)constraintOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintProxyAliasDot_test.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintProxyGenericCall_test.go" />
+    <None Include="$(MSBuildThisFileDirectory)untypedTypeParamArgs_test.go" />
     <None Include="$(MSBuildThisFileDirectory)constraintProxyPointerUnion_test.go" />
     <None Include="$(MSBuildThisFileDirectory)convArrayType.go" />
     <None Include="$(MSBuildThisFileDirectory)convBasicLit.go" />
@@ -77,6 +78,7 @@
     <None Include="$(MSBuildThisFileDirectory)deadPointerParamAlias_test.go" />
     <None Include="$(MSBuildThisFileDirectory)declaredNotImplemented_test.go" />
     <None Include="$(MSBuildThisFileDirectory)descriptorCompanion.go" />
+    <None Include="$(MSBuildThisFileDirectory)descriptorCompanionCall_test.go" />
     <None Include="$(MSBuildThisFileDirectory)deferFinallyLowering.go" />
     <None Include="$(MSBuildThisFileDirectory)deferredMarkerOperations.go" />
     <None Include="$(MSBuildThisFileDirectory)deferredMarkers_test.go" />
