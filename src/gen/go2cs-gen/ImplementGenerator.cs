@@ -1112,6 +1112,24 @@ public class ImplementGenerator : ISourceGenerator
 
                 foreach (MethodInfo interfaceMethod in methods)
                 {
+                    // ⚠ THIS KEY IS ESCAPED AND ITS NEIGHBOURS ARE NOT, and the reason it is benign is
+                    // that the two misses CANCEL — which is a worse guarantee than it looks and is why
+                    // C2 asked for it in writing (mailbox 788a42262 §4, ruled in at 628ba865c).
+                    //
+                    // `forwardReceivers`, `forwardStaticCalls` and `forwardReturnTypes` are all keyed
+                    // by the struct's RAW declared names, and AdapterImplTemplate reads all of them —
+                    // this map included — with the UNESCAPED `GetSimpleName(method.Name)`. So for a
+                    // keyword-named member (gob's `string()`) this loop composes `@string` where the
+                    // template will later ask for `string`. The lookup on the very next line misses
+                    // FIRST, the iteration continues, and nothing is ever registered under the escaped
+                    // key: no wrap is emitted, and a wrap that is needed and absent is CS0266 in the
+                    // generated file rather than a silent wrong answer.
+                    //
+                    // ⚠ Benign BY CANCELLATION, not by design: fixing either key alone un-cancels it.
+                    // Escape the neighbours and this map would register under a key the template never
+                    // asks for; unescape this one and it would register correctly — which is the right
+                    // direction, and is the one-line change to make if a keyword-named member ever
+                    // needs a projected-result wrap. No corpus record does today.
                     string memberName = GetSimpleName(EscapeCsKeyword(interfaceMethod.Name));
                     string forwardMember = interfaceMethod.ForwardMemberName(memberName);
 
@@ -1183,6 +1201,23 @@ public class ImplementGenerator : ISourceGenerator
                     // The interface side takes a package qualifier ONLY when this name is one the
                     // pre-pass found more than one interface composing (see adapterNameGroups) —
                     // flate's own `Reader` vs `io.Reader`, both reached from *bufio.Reader.
+                    //
+                    // ⚠ THIS PROBE ASKS THE SET IN A SPELLING THE SET WAS NOT BUILT FROM, and the two
+                    // coincide for every non-generic interface but not necessarily for a generic one
+                    // (C2, mailbox 788a42262 §2, ruled in at 628ba865c). The pre-pass registers with
+                    // `GetSimpleName(interfaceType.ToDisplayString())`; this line asks with
+                    // `GetSimpleName(interfaceName)`, where interfaceName is
+                    // `GlobalQualify(GetFullTypeName(true))` — a different rendering of the same
+                    // symbol. For a generic interface the two can differ, and then this probe misses
+                    // a group it belongs to and the qualifier is not applied.
+                    //
+                    // ⚠ The projected-result map above sides with the REGISTRATION, deliberately. So
+                    // if a row ever needs these two unified, the direction is TOWARD the pre-pass's
+                    // spelling and this line is the one that moves — the reverse of "make it agree
+                    // with the main loop". And it is a PAIRED seat when it comes: the converter's
+                    // `adapterInterfaceSimpleName` leaves the same operand unstripped on purpose, so
+                    // both halves garble a generic interface reference identically today, and moving
+                    // one alone would manufacture the divergence AdapterStructKey exists to prevent.
                     AdapterName = $"{(foreignStruct ? foreignAdapterBaseName : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{adapterInterfaceName}",
                     TypeParameters = adapterTypeParameters,
                     ConstraintClause = adapterConstraintClause,
