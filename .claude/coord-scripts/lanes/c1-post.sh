@@ -47,7 +47,11 @@ CLONE="${C1_POST_CLONE:-${TMPDIR:-/tmp}/c1-mailbox}"
 # committed copy needs no environment at all inside a checkout; overridable for any other layout.
 # A missing remote REFUSES below rather than falling back to a working-tree census.
 CENSUS_CLONE="${C1_CENSUS_CLONE:-$(cd "$SP/../../.." 2>/dev/null && pwd || echo "$SP")}"
-CENSUS_DIR="${TMPDIR:-/tmp}/c1-census-from-master"
+# ⚠ A DOOR FOR THIS PATH TOO (COORD 7a959706f, from G's 664e6925b / R's fe5f4089c / this lane's
+# own audit): a door is a property of a PATH, and this was the ONE path of four with no override --
+# so an arm that carefully redirected the post clone and the anchor file still wrote the real
+# materialisation directory. Three of four doors read as sandboxed and were not.
+CENSUS_DIR="${C1_CENSUS_DIR:-${TMPDIR:-/tmp}/c1-census-from-master}"
 CENSUS="$CENSUS_DIR/coord-identifier-census.sh"
 ANCHOR_FILE="${C1_ANCHOR_FILE:-$SP/c1-mailbox-anchor.txt}"
 MB=docs/phase4/MAILBOX.md
@@ -83,8 +87,25 @@ ANCHOR_WAS="$(cat "$ANCHOR_FILE" 2>/dev/null)"
 # The `+` because the default refspec a full clone carries is itself forced: without it a
 # non-fast-forward on master would be REJECTED here and reintroduce the same silent shortfall by a
 # second route. The refusal downstream is unchanged and still fails closed.
-git -C "$CENSUS_CLONE" fetch origin +master:refs/remotes/origin/master --quiet 2>/dev/null || true
-CENSUS_REF="$(git -C "$CENSUS_CLONE" rev-parse --short origin/master 2>/dev/null)"
+# ⚠⚠ INTO A REF THIS TOOL OWNS, never `refs/remotes/origin/master`. The old line force-updated the
+# operator's OWN tracking ref -- CENSUS_CLONE defaults to the repo this script sits in -- on EVERY
+# run, dry ones included, 217 lines above the dry-run gate. RED-TESTED before this change: a
+# `--dry-run` against a clone whose origin/master was deliberately stale moved it from c22f9b8e74ad
+# to 7674ee7f4d19. That is C2's watcher defect (4f29a8742 §5) through a different door -- a tool
+# moving a tracking ref in a clone whose refs the operator reads for measurements -- and it is why
+# the doctrine line says a door must cover every path a tool WRITES **OR FETCHES INTO**.
+#
+# A private namespace rather than COORD's two suggestions (a clone nobody reads, or moving the fetch
+# below the dry-run gate): no second clone to keep, and a REAL post stops moving the ref too, which
+# "below the gate" would not. Nothing else reads refs/c1-post/*, so the tool owns the path outright.
+# ⚠⚠ `--refmap=` (EMPTY) IS LOAD-BEARING AND A DESTINATION REFSPEC ALONE IS NOT ENOUGH. git
+# OPPORTUNISTICALLY updates the remote-tracking branch for any ref named on the command line, so
+# fetching refs/heads/master still moved refs/remotes/origin/master even once the destination was
+# this tool's own. MEASURED: the first cut of this fix changed the refspec, read correctly, and the
+# green arm STILL reported the operator's ref moving c22f9b8e74ad -> 7674ee7f4d19. An empty refmap
+# tells git to rely entirely on the command-line refspec and update nothing else.
+git -C "$CENSUS_CLONE" fetch --refmap= origin +refs/heads/master:refs/c1-post/census-master --quiet 2>/dev/null || true
+CENSUS_REF="$(git -C "$CENSUS_CLONE" rev-parse --short refs/c1-post/census-master 2>/dev/null)"
 mkdir -p "$CENSUS_DIR"
 for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifier-hashes.txt; do
     # ⚠ A LINE FLOOR PER FILE, not just on the census script. `-s` alone passes a file that is
@@ -139,7 +160,7 @@ for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifi
     # fix above truncated the cache, and the next three BY-HAND census calls on that box returned
     # rc 0 with ZERO output lines before the empty file was noticed. A refusal must leave the
     # previous good copy exactly where it was.
-    git -C "$CENSUS_CLONE" show "origin/master:.claude/coord-scripts/$f" > "$CENSUS_DIR/$f.tmp" 2>/dev/null \
+    git -C "$CENSUS_CLONE" show "refs/c1-post/census-master:.claude/coord-scripts/$f" > "$CENSUS_DIR/$f.tmp" 2>/dev/null \
       || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: cannot materialise $f from origin/master"; exit 2; }
     [ -s "$CENSUS_DIR/$f.tmp" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: $f materialised EMPTY"; exit 2; }
     _n="$(wc -l < "$CENSUS_DIR/$f.tmp")"
@@ -149,7 +170,7 @@ for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifi
     # rewrites arguments, a cache another process touched between the write and here. Comparing the
     # id is exact, costs one plumbing call, and needs no knowledge of what the file should contain.
     # BEFORE the mv, so a mismatched file never enters the cache and the previous good copy stands.
-    _want="$(git -C "$CENSUS_CLONE" rev-parse "origin/master:.claude/coord-scripts/$f" 2>/dev/null)"
+    _want="$(git -C "$CENSUS_CLONE" rev-parse "refs/c1-post/census-master:.claude/coord-scripts/$f" 2>/dev/null)"
     [ -n "$_want" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: cannot read origin/master's blob id for $f"; exit 2; }
     _got="$(git hash-object "$CENSUS_DIR/$f.tmp" 2>/dev/null)"
     [ "$_want" = "$_got" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: $f does NOT match origin/master -- blob $_want, materialised $_got"; exit 2; }
