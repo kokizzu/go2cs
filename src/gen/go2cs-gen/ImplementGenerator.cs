@@ -161,42 +161,45 @@ public class ImplementGenerator : ISourceGenerator
         // in the RESULT interface's own adapter — which is a DIFFERENT adapter from the one being
         // generated, and therefore the one place this generator must NAME another adapter.
         //
-        // ⚠ BOUNDED TO A LOCAL, NON-GENERIC STRUCT TARGET, and the bound is what keeps this from
-        // becoming a SECOND SPELLING of the main loop's composition. For that case the base name is
-        // exactly `GetSimpleName(structName)` — no foreign package prefix, no type-argument list — so
-        // the two agree by construction rather than by maintenance. A foreign or generic target is
-        // deliberately NOT entered here: the member keeps its bare forward and the compiler says so
-        // out loud (CS0266), where a wrong name would be the silent failure. That asymmetry is the
-        // lesson of this file's own collision-key finding — two halves composing one name from two
-        // spellings agree until they do not.
+        // ⚠⚠ THE MEMBERSHIP TEST IS "THIS COMPILATION RECORDS THE PAIR", NOT "THE STRUCT IS LOCAL",
+        // and the difference is the whole of crypto/mlkem's row. It was the assembly test until
+        // 2026-09-20, which is exactly backwards for the WHITE-BOX model that the `-tests` pipeline
+        // generates: there the struct is ALWAYS in the PRODUCTION assembly and the interface ALWAYS
+        // in the internal-test package, so the one arrangement the corpus needs was the one
+        // arrangement excluded. The row read CS0266 ×2 at BUILD, one per key size, while the adapter
+        // the wrap wanted to name — `mlkem_EncapsulationKey768жencapsulationKey` — was being minted
+        // in that same compilation (mailbox d6d2970a2, ruled at 5347b4aae).
         //
-        // ⚠ THE MECHANISM, verified by C1 (mailbox f89515008 §1) rather than assumed here:
-        // GetFullTypeName renders a generic as `Name<args>` and everything else as the bare `.Name`,
-        // so for a LOCAL NON-GENERIC target GetSimpleName over it is a NO-OP and the two spellings
-        // are the same string. The excluded cases diverge for the exact reason the collision-key
-        // finding names: a GENERIC target would carry its argument list INSIDE the identifier here
-        // (GetSimpleName's `dropGeneric` defaults to FALSE) where the main loop takes the bare
-        // `.Name` and trails the arguments separately; a FOREIGN target would miss
-        // ForeignPackagePrefix.
+        // `pointerPairs` is collected from THIS compilation's own attributes, so the ruled condition
+        // needs no test of its own: membership in that list IS "the pair is recorded here", and the
+        // adapter for it is therefore minted by the main loop below.
         //
-        // ⚠ AND THIS IS A THIRD CONSUMER OF THAT `dropGeneric` DEFAULT. The follow-up fixing the two
-        // sites it already owns does NOT make this bound removable — the bound is why this consumer
-        // is safe, not a duplicate of their fix.
+        // ⚠ THE GENERIC BOUND STAYS. A generic target's adapter name trails its argument list
+        // separately where GetSimpleName's `dropGeneric` default would fold it INTO the identifier;
+        // that is a different defect with its own owner, and this consumer is not the place to fix it.
+        //
+        // ⚠⚠ AND LIFTING THE ASSEMBLY BOUND IS NOT A ONE-LINE DELETE, because that bound was what made
+        // the NAME right BY CONSTRUCTION. While every pair was local, `GetSimpleName(GetFullTypeName())`
+        // was a no-op that happened to equal the main loop's base name. A FOREIGN struct's adapter
+        // carries ForeignPackagePrefix, so the value must now be composed through the SAME helper the
+        // collision key one line above and the main loop's AdapterName both use — `AdapterStructKey`,
+        // which is strip-then-last-segment PLUS the foreign prefix path. Two halves composing one name
+        // from two spellings agree until they do not; this file's own collision-key finding (C1,
+        // mailbox f89515008 §4) is that lesson, and sharing the helper is how the bound's guarantee
+        // survives the bound.
         Dictionary<string, string> localPointerAdapterNames = new(StringComparer.Ordinal);
 
         foreach ((ITypeSymbol pairStruct, ITypeSymbol pairInterface, string pairPackageClass) in pointerPairs)
         {
-            if (!SymbolEqualityComparer.Default.Equals(pairStruct.ContainingAssembly, context.Compilation.Assembly))
-                continue;
-
             if (pairStruct is INamedTypeSymbol { IsGenericType: true })
                 continue;
 
-            string pairUnqualified = $"{AdapterStructKey(pairStruct, pairPackageClass)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(pairInterface.ToDisplayString()))}";
+            string pairStructKey = AdapterStructKey(pairStruct, pairPackageClass);
+            string pairUnqualified = $"{pairStructKey}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(pairInterface.ToDisplayString()))}";
             string pairInterfaceName = GlobalQualify(pairInterface.GetFullTypeName(true));
 
             localPointerAdapterNames[$"{GlobalQualify(pairStruct.ToDisplayString())}|{GlobalQualify(pairInterface.ToDisplayString())}"] =
-                $"{GetSimpleName(pairStruct.GetFullTypeName())}{PointerPrefix}{(collidingAdapterNames.Contains(pairUnqualified) ? AdapterInterfacePrefix(pairInterface, pairPackageClass) : "")}{GetUnsanitizedIdentifier(GetSimpleName(pairInterfaceName))}";
+                $"{pairStructKey}{PointerPrefix}{(collidingAdapterNames.Contains(pairUnqualified) ? AdapterInterfacePrefix(pairInterface, pairPackageClass) : "")}{GetUnsanitizedIdentifier(GetSimpleName(pairInterfaceName))}";
         }
 
         foreach ((AttributeSyntax attributeSyntax, GeneratorSyntaxContext syntaxContext, CompilationUnitSyntax compilationUnit, FileScopedNamespaceDeclarationSyntax? namespaceSyntax) in attributeFinder.TargetAttributes)
@@ -1103,8 +1106,13 @@ public class ImplementGenerator : ISourceGenerator
                 // forwardReceivers through GetBoxReceiverMethodNames, which carries NAMES only. The
                 // first cut of this loop read `structMethods` alone, found nothing for the one member
                 // it existed for, and left the arm red with every other part of the fix correct.
+                // ⚠⚠ THE FOREIGN ARM IS NOT A CONVENIENCE — IT IS THE GATE crypto/mlkem's ROW REACHED.
+                // This read `new Dictionary(...)` for a foreign struct until 2026-09-20, so a foreign
+                // struct had NO forwarded return types and the wrap below took its first `continue`
+                // before the map was ever consulted. The white-box `-tests` model makes the struct
+                // foreign ALWAYS, which is why the row read CS0266 ×2 while every local pair wrapped.
                 Dictionary<string, string> forwardReturnTypes = structDecl is null
-                    ? new Dictionary<string, string>(StringComparer.Ordinal)
+                    ? StructDeclarationSyntaxExtensions.GetForeignBoxReceiverMethodReturnTypes(structType)
                     : StructDeclarationSyntaxExtensions.GetBoxReceiverMethodReturnTypes(structDecl.Identifier.Text, compilation!);
 
                 foreach (MethodInfo structMethod in structMethods ?? [])
