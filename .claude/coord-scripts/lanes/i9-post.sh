@@ -82,6 +82,32 @@ PATHF=docs/phase4/MAILBOX.md
 # delivered post (after the absorbed range is printed whole, below the delivery line).
 ANCHORF="${I9_ANCHOR:-$SP/i9-mailbox-anchor.txt}"
 is40hex(){ printf '%s' "$1" | grep -qxE '[0-9a-f]{40}'; }
+# ⚠⚠ ONE DEFINITION, CONSULTED BY THE LIVE PATH AND BY A DOOR (R's shape, 2026-09-20).
+# MAY the anchor advance to this post's own commit?
+#   yes  -- nothing landed between the lane's last read and the tip this post appends to, so the
+#           only new entry is the one we just wrote, which we have read by construction
+#   no   -- entries landed in between. They were PRINTED, and printing is not reading; the lane
+#           advances the anchor itself after reading them.
+# Exit 20 for "hold" so a caller can tell it from an error.
+anchor_may_advance() {   # $1 = stored anchor, $2 = the tip this post appends to
+  [ -z "${1:-}" ] && return 0
+  [ "$1" = "${2:-}" ] && return 0
+  return 20
+}
+
+# THE DOOR. The live branch sits AFTER a successful post, so exercising it used to mean making one --
+# and that is how this lane put a test fixture on the live channel. This evaluates the DECISION and
+# exits: it opens no file, contacts no remote and writes nothing.
+if [ "${1:-}" = "--anchor-check" ]; then
+  anchor_may_advance "${2:-}" "${3:-}"; ACRC=$?
+  case "$ACRC" in
+    0)  echo "WOULD ADVANCE: nothing landed between '${2:-<none>}' and '${3:-<none>}'" ;;
+    20) echo "WOULD HOLD: entries landed between '${2:-}' and '${3:-}' -- they are printed, not read" ;;
+    *)  echo "ANCHOR-CHECK ERROR ($ACRC)" ;;
+  esac
+  exit $ACRC
+fi
+
 if [ "${1:-}" = "--mark-read" ]; then
   S="${2:-}"; is40hex "$S" || { echo "GATE ABORT: --mark-read needs a full 40-hex sha, got '$S'"; exit 2; }
   TIPM=$(gh api "repos/$REPO/git/ref/heads/$BRANCH" --jq '.object.sha') || exit 2
@@ -91,6 +117,13 @@ if [ "${1:-}" = "--mark-read" ]; then
   echo "$S" > "$ANCHORF"; echo "ANCHOR SET: $(cat "$ANCHORF") (remote tip $TIPM, status $ST)"; exit 0
 fi
 BODY="$1"; MSG="$2"; CLAIM="${3:-}"
+# ADDED 2026-09-20 after a VACUOUS CENSUS: MSG is a FILE, and a missing one made `cat` fail
+# while the census still printed "CLEAN on body, commit message and branch name" -- it had
+# censused an EMPTY STRING. A gate arm that reads nothing reports clean. Refuse first.
+[ -r "$BODY" ] || { echo "GATE ABORT: body file '$BODY' is not readable"; exit 2; }
+[ -r "$MSG" ]  || { echo "GATE ABORT: message file '$MSG' is not readable -- the census would
+have run on an empty string and reported CLEAN"; exit 2; }
+[ -s "$MSG" ]  || { echo "GATE ABORT: message file '$MSG' is EMPTY"; exit 2; }
 STORED=$(cat "$ANCHORF" 2>/dev/null | tr -d '[:space:]')
 is40hex "$STORED" || { echo "GATE ABORT: no stored anchor at $ANCHORF -- read, then --mark-read <sha>"; exit 2; }
 [ "$CLAIM" = "$STORED" ] || { echo "GATE ABORT: caller claims last-read '$CLAIM' but the tool's anchor is $STORED"; exit 2; }
@@ -128,6 +161,24 @@ for cf in coord-identifier-census.sh coord-identifier-patterns.txt coord-identif
   [ "$LH" = "$MH" ] || { echo "GATE ABORT: $cf differs from master ($LH vs $MH) -- the local pin is SUPERSEDED. Re-fetch, re-run selftest, re-pin, then post."; exit 2; }
 done
 echo "--- freshness VERIFIED: all three census files byte-identical to master at the act ---"
+
+# #34 HALF 2 (COORD, every lane's post tool): THE SELF-TEST'S FAIL COUNT REFUSES.
+# The freshness check above is half 1 and it predates the ruling -- but C1's scope limit is the
+# reason both halves exist: the content hash proves the TRANSFER and says nothing about the SOURCE.
+# A clone whose own master carries a broken census materialises it faithfully, the hashes AGREE, and
+# only the self-test sees it. A tool that reports it is broken does not certify a post.
+# The figure is parsed, not eyeballed: a MISSING line refuses too, because a self-test that printed
+# nothing is a self-test that did not run -- which is this fleet's own vacuity lesson.
+"$CENSUS" selftest >"$W/selftest.out" 2>&1 || { echo "GATE ABORT: the census self-test did not complete -- nothing certifies this post"; cat "$W/selftest.out"; exit 2; }
+STLINE=$(grep -E '^SELF-TEST: pass=[0-9]+ fail=[0-9]+$' "$W/selftest.out" | tail -1)
+[ -n "$STLINE" ] || { echo "GATE ABORT: the census self-test printed no 'SELF-TEST: pass=N fail=M' line -- a run that prints nothing is a run that did nothing"; exit 2; }
+STPASS=$(printf '%s' "$STLINE" | sed -E 's/.*pass=([0-9]+).*/\1/')
+STFAIL=$(printf '%s' "$STLINE" | sed -E 's/.*fail=([0-9]+)$/\1/')
+case "$STPASS" in ''|*[!0-9]*) echo "GATE ABORT: unparsable self-test pass count"; exit 2 ;; esac
+case "$STFAIL" in ''|*[!0-9]*) echo "GATE ABORT: unparsable self-test fail count"; exit 2 ;; esac
+[ "$STPASS" -gt 0 ] || { echo "GATE ABORT: the census self-test attempted $STPASS cases -- it certified nothing"; exit 2; }
+[ "$STFAIL" -eq 0 ] || { echo "GATE ABORT: the census self-test reports fail=$STFAIL -- a tool that says it is broken does not certify a post"; exit 2; }
+echo "--- census self-test: pass=$STPASS fail=$STFAIL ---"
 
 # THE GATE (COORD d4f169153c): `entry` + `subject`, BOTH STRICT -- no exclusion runs on either, so
 # no lane can spell one for itself. `tree` is a READING and is opt-in, below.
@@ -312,7 +363,9 @@ if [ "$AFTER" = "$NEWCOMMIT" ]; then
   echo "CONFIRMED from remote: $NEWCOMMIT"
   # ABSORBED RANGE, printed WHOLE and AFTER the delivery line (SKILL: never tail it; entries here are owed a read).
   echo "=================== ABSORBED RANGE: $STORED .. $REF (read every line below) ==================="
-  if [ "$STORED" = "$REF" ]; then
+  # the SAME definition the door evaluates -- not a second copy of the condition
+  if anchor_may_advance "$STORED" "$REF"; then ABSORBED=0; else ABSORBED=1; fi
+  if [ "$ABSORBED" = "0" ]; then
     echo "(empty: the stored anchor was the base -- nothing absorbed)"
   else
     gh api "repos/$REPO/compare/$STORED...$REF" --jq '(.commits[] | .sha + " " + (.commit.message|split("\n")[0]))' || { echo "*** ABSORBED LISTING FAILED -- anchor NOT advanced ***"; exit 1; }
@@ -322,7 +375,22 @@ if [ "$AFTER" = "$NEWCOMMIT" ]; then
     tail -c +$((AL+1)) "$W/old.md"
   fi
   echo "=================== END ABSORBED RANGE ==================="
-  echo "$NEWCOMMIT" > "$ANCHORF"; echo "ANCHOR ADVANCED to $(cat "$ANCHORF")"
+  # ⚠⚠ THE ANCHOR ADVANCES ONLY WHEN NOTHING WAS ABSORBED. Changed 2026-09-20 after this
+  # tool advanced the anchor across EIGHT entries the lane had not read -- printing them here and
+  # recording them as read. One of them carried a COORD-routed item that then missed two commits of
+  # the corpus wrapper. Printing a range inside a tool result is not reading it, and the anchor is
+  # the only record of which happened; a tool must not resolve that in its own favour.
+  # The range above is still printed WHOLE, so nothing is hidden -- what changes is that the lane
+  # must now say it read it, with `--mark-read <sha>`, which is the one door that was always meant
+  # to move this file.
+  if [ "$ABSORBED" = "0" ]; then
+    echo "$NEWCOMMIT" > "$ANCHORF"; echo "ANCHOR ADVANCED to $(cat "$ANCHORF")"
+  else
+    echo "*** ANCHOR NOT ADVANCED -- it stays at $STORED ***"
+    echo "*** A READ IS OWED: the range above arrived under your claim and this tool will not"
+    echo "*** record it as read. Read every entry WHOLE, then:"
+    echo "***     $0 --mark-read $NEWCOMMIT"
+  fi
   rm -rf "$W"
 else
   echo "*** NOT LANDED -- remote is $AFTER, mine is $NEWCOMMIT ***"; exit 1
