@@ -118,9 +118,51 @@ done
 # `tree` from the clone -- two batteries in one invocation, with nothing recording which certified
 # what. Pinning all three to the clone does not make the arm fire where it cannot; it makes the
 # entry, the subject and the tree answer with the SAME arms, which is the property that was missing.
-IDC_CWD="$CLONE"
+# ⚠⚠ THE CERTIFYING BATTERY IS ASSERTED, NOT CHOSEN (COORD 7c71a87f0; C1's cut ff1a7f099c).
+# Pinning the gates to one directory fixed the inconsistency and left a CHOICE, and a directory choice
+# is what silently changed the answer in the first place: on C1's box the clone certifies 91 arms where
+# the repo certifies 95, so "one battery" resolved the wrong way is a weaker gate that still prints
+# CLEAN. So the tool no longer picks -- it measures every directory it has, gates from the STRONGEST,
+# and REFUSES when the battery that certified is weaker than the maximum this box can produce.
+#
+# ⚠ THE STRENGTH IS READ, NOT RE-DERIVED -- NO FOURTH DEFINITION. It is the census's own self-test
+# line, `SELF-TEST: pass=N fail=M`, and the arms ATTEMPTED (N+M) is the figure: a FAILING arm is still
+# an arm that ran, and on a box where one arm is inert by construction the pass count alone would call
+# the strongest battery weak.
+#
+# ⚠ AND NOT THE SELF-TEST'S EXIT CODE. On this box `selftest` exits 3 -- one arm cannot derive a
+# token from any directory here, so it reports FAILED everywhere -- and a tool that gated on that rc
+# would refuse every post it will ever make.
+census_arms(){
+  local _n
+  _n=$( cd "$1" 2>/dev/null && "$IDC" selftest 2>&1 | sed -n 's/.*SELF-TEST: pass=\([0-9][0-9]*\) fail=\([0-9][0-9]*\).*/\1 \2/p' | tail -1 )
+  # A directory that does not exist prints NOTHING, and "nothing" must read as 0 rather than as
+  # "not weaker" -- 0 arms is the mass-empty shape this fleet keeps meeting, not a clean battery.
+  [ -n "$_n" ] || { echo 0; return; }
+  echo $(( ${_n% *} + ${_n#* } ))
+}
+census_label(){ case "$1" in "$REPO") echo "the repo checkout";; "$CLONE") echo "the post clone";; "$SP") echo "the lane scratchpad";; *) echo "a forced directory";; esac; }
+IDC_BEST=0; IDC_BESTDIR=""
+for _d in "$REPO" "$CLONE" "$SP"; do
+  _n=$(census_arms "$_d")
+  if [ "$_n" -gt "$IDC_BEST" ]; then IDC_BEST="$_n"; IDC_BESTDIR="$_d"; fi
+done
+# Two forcing hooks, NEVER set in normal use, and each exists so a refusal can be MADE TO FIRE:
+#   C2_CENSUS_DIR_FORCE  -- gate from a named directory (the arm for a box where the axis moves)
+#   C2_CENSUS_MAX_FORCE  -- raise the recorded maximum (the arm for a box where it does not, which
+#                           is this one: every directory here produces the same battery, so without
+#                           this hook the comparison could never be made to fail)
+IDC_CWD="${C2_CENSUS_DIR_FORCE:-$IDC_BESTDIR}"
+IDC_HAVE=$(census_arms "$IDC_CWD")
+[ -n "${C2_CENSUS_MAX_FORCE:-}" ] && IDC_BEST="$C2_CENSUS_MAX_FORCE"
+echo "census battery: $IDC_HAVE arm(s), gating from $(census_label "$IDC_CWD") (strongest this box produces: $IDC_BEST)"
+if [ "$IDC_BEST" -le 0 ] || [ "$IDC_HAVE" -lt "$IDC_BEST" ]; then
+  echo "REFUSED A4a: the certifying battery is $IDC_HAVE arm(s) but this box produces $IDC_BEST -- a"
+  echo "             gate certified by a weaker battery than the box can run prints CLEAN for arms it"
+  echo "             never attempted. Refusing rather than posting behind it."
+  exit 4
+fi
 idc(){ ( cd "$IDC_CWD" && "$IDC" "$@" ); }
-echo "fleet census arms invoked from the clone (one battery for entry, subject and tree)"
 idc entry "$ENTRY"; RC=$?
 [ "$RC" -eq 0 ] || { echo "REFUSED A4(entry): fleet census exit $RC -- arms and line numbers above"; exit 4; }
 idc subject "$SUBJECT"; RC=$?
@@ -167,7 +209,13 @@ PRETIP=$(git rev-parse HEAD)
 
 # tree mode: A READING, baseline = the tip this fetch just produced. NEVER the stored anchor.
 echo "----- fleet census, tree mode (a READING; the push is NOT gated on it) -----"
-idc tree "$MBOX" "$PRETIP" | grep -E 'baseline hits|added=|PRE-EXISTING|CLEAN:|REFUSED'
+# ⚠ THE TREE ARM STAYS IN THE CLONE, and this line is here because C1 broke exactly this and its
+# own green run caught it: the arm's file path and its `<sha>:<path>` baseline resolve HERE, so an
+# absolute path from another directory reads as "baseline could not be read". The invariant above is
+# about the battery that CERTIFIES; this arm certifies nothing -- the push is not gated on it -- so it
+# runs where its inputs resolve and its battery is PRINTED rather than silently mixed with the gate's.
+echo "tree arm battery: $(census_arms "$CLONE") arm(s), from the post clone -- a READING, not the gate"
+"$IDC" tree "$MBOX" "$PRETIP" | grep -E 'baseline hits|added=|PRE-EXISTING|CLEAN:|REFUSED'
 echo "-----------------------------------------------------------------------------"
 
 # re-append AFTER the guards, immediately before pushing
