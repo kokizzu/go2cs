@@ -241,6 +241,17 @@ if ! git push origin "HEAD:$BRANCH" >/dev/null 2>&1; then
   # state a plain RE-RUN resolves: the tool re-fetches, re-appends onto the new tip and pushes, and
   # the history stays linear. The duplicate-heading check is what makes the re-run safe — if the
   # entry did land, it refuses (5) instead of posting twice.
+  #
+  # ⚠ ARMED BY r-post-abort-arm.sh — AND IT WAS NOT ARMED WHEN IT LANDED. I verified this fix with
+  # a --dry-run and the 15 bar/anchor arms, and NEITHER CAN REACH THIS LINE: the dry run exits at
+  # step 3, and every bar arm refuses above step 4. C2's note (mailbox 4f29a8742 §2) names the class
+  # — "an A/B whose arms cannot differ is not an A/B" — and this was the same shape one level over,
+  # a change verified by instruments that stop above it. The arm builds a throwaway remote, LOSES A
+  # RACE on purpose through a pre-push hook, and reads the clone's STATE afterwards.
+  # ⚠ Its three STATE assertions are the arm; its three MESSAGE assertions are not. Deleting the
+  # abort line below leaves `rc 11`, the INTERLEAVED listing and the word ABORTED in the output all
+  # GREEN, and reds only `clean / no MERGE_HEAD / no unmerged paths` — a refusal TEXT asserting an
+  # abort is not evidence that one happened.
   if ! git merge --no-edit "origin/$BRANCH" >/dev/null 2>&1; then
     git merge --abort >/dev/null 2>&1
     echo "REFUSED(11): merge failed -- the merge is ABORTED and the clone is clean."
