@@ -753,7 +753,10 @@ public static class TestHost
     /// inherits.
     /// </summary>
     /// <inheritdoc cref="PublishSandboxMarker" path="/remarks"/>
-    private static void PublishEnvironmentVariable(string name, string? value)
+    // INTERNAL rather than private for PackageAncestry's junction fallback, which has the same
+    // two-environment problem for the same reason: the variable it sets must reach a CLR child (the
+    // toolchain probe) AND a converted child (a fixture program started through os/exec).
+    internal static void PublishEnvironmentVariable(string name, string? value)
     {
         // A null value CLEARS on both sides: that is what the TZ restore asks for when the run
         // inherited no TZ at all, and leaving a stale "UTC" behind would be a different bug from

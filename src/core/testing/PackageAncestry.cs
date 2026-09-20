@@ -288,6 +288,12 @@ internal static class PackageAncestry
             symbolicLinks &= isSymbolicLink;
         }
 
+        // The JUNCTION FALLBACK, and only it: at Go 1.24 a junction-staged tree is refused without
+        // this and the symbolic-link form needs nothing. Set BEFORE the probe below, because the
+        // probe is the first thing that runs the toolchain through these links.
+        if (!symbolicLinks)
+            ApplyJunctionGodebug();
+
         AssertToolchainAcceptsLinks(goRoot, staged, symbolicLinks);
 
         static void RemoveExisting(string target)
@@ -449,16 +455,31 @@ internal static class PackageAncestry
                 CreateJunction(target, real);
             }
 
+            // Junctions now, so this run is on the fallback path after all and owes it the same
+            // GODEBUG the fallback sets — before the re-probe, and before any fixture program runs.
+            ApplyJunctionGodebug();
+
             refusal = FirstRefusal(goTool, staged);
 
             if (refusal is null)
                 return;
         }
 
+        // Naming the PRIVILEGE, because that is the one thing the operator can act on: every machine
+        // that reaches the junction path at all reached it by being refused a symbolic link.
+        string privilege = symbolicLinks
+            ? "This machine DID create the symbolic links — they were rebuilt as junctions just above " +
+              "only because the toolchain refused the symbolic form too."
+            : "This machine has no SeCreateSymbolicLinkPrivilege, so the staging never got the " +
+              "attributable form and fell back to a JUNCTION; granting it (Developer Mode, or an " +
+              "elevated shell) is what gets the symbolic link, which the toolchain accepts unaided.";
+
         throw new InvalidOperationException(
             "the Go toolchain still refuses an internal/… import through a link-staged fixture tree, " +
             "so the programs staged there would fail exactly as a plain copy does. Neither a directory " +
-            "symlink nor a junction was accepted on this machine. The toolchain said: " + refusal);
+            $"symlink nor a junction was accepted on this machine. {privilege} The junction was probed " +
+            $"with {GodebugVariable}={JunctionGodebugSetting} in the toolchain's environment, which is " +
+            "what Go 1.24 needs to resolve a mount point at all. The toolchain said: " + refusal);
 
         // Returns the toolchain's refusal text for the first link-staged tree that is still refused,
         // or null when none is.
@@ -539,6 +560,55 @@ internal static class PackageAncestry
             }
         }
     }
+
+    // JUNCTION FALLBACK ONLY. Go 1.24's `go` binary dropped winsymlink=0 from its DefaultGODEBUG
+    // (1.23's carried it), so os.Lstat stopped reporting a mount point as a symbolic link and
+    // filepath.EvalSymlinks stopped evaluating one — which means cmd/go's expandPath hands
+    // disallowInternal a junction path UNRESOLVED, it no longer sees a directory under $GOROOT/src,
+    // and an internal/… import from a junction-staged fixture tree is refused. Putting the setting
+    // back for the toolchain restores the 1.23 resolution for exactly this staging and nothing else;
+    // a machine that got the symbolic link never comes here.
+    //
+    // Measured 2026-09-20 on internal/coverage/cfile's testdata/harness.go, one axis at a time:
+    //   junction  go1.23.12  GODEBUG unset -> accepted | junction  go1.24.13  GODEBUG unset -> REFUSED
+    //   symlink   go1.24.13  GODEBUG unset -> accepted | junction  go1.24.13  winsymlink=0 -> accepted
+    //
+    // Published to BOTH environments, because both sides run the toolchain: the probe above starts
+    // `go list` as a CLR child, while a fixture program is started by the TEST through converted
+    // os/exec, whose Cmd.Environ() reads the converted syscall package's own copy. Same two halves,
+    // and the same measured reason, as TestHost's sandbox marker.
+    private static void ApplyJunctionGodebug()
+    {
+        string? existing = Environment.GetEnvironmentVariable(GodebugVariable);
+
+        // An explicit winsymlink from the run's own environment WINS, whichever way it points: the
+        // caller has said something specific about the one setting this would change, and a host that
+        // silently appends its own is no longer running the configuration it was handed. It also
+        // makes this idempotent, which the in-process guard tier needs — it runs many hosts in one
+        // process, and appending once per host would build a list instead of setting a value.
+        if (existing is not null && existing.Contains("winsymlink", StringComparison.Ordinal))
+            return;
+
+        // APPEND, never replace. GODEBUG is a list and the pipeline puts real settings in it; taking
+        // the variable over would silently drop them.
+        string value = string.IsNullOrEmpty(existing)
+            ? JunctionGodebugSetting
+            : $"{existing},{JunctionGodebugSetting}";
+
+        TestHost.PublishEnvironmentVariable(GodebugVariable, value);
+
+        // Said out loud, on the channel the unprobed-link note above already uses and for the same
+        // reason: this run hands the toolchain a NON-DEFAULT setting, and a configuration the host
+        // imposed on itself should not be something a reader has to infer from the link type. It is
+        // also what makes "the symbolic-link path sets nothing" readable rather than merely argued —
+        // the line is absent on every run that got the attributable form.
+        Console.Error.WriteLine(
+            $"testing: fixture trees staged as junctions (no symbolic-link privilege) — {GodebugVariable}={value} " +
+            "set for the Go toolchain, without which Go 1.24 refuses their internal/… imports");
+    }
+
+    private const string GodebugVariable = "GODEBUG";
+    private const string JunctionGodebugSetting = "winsymlink=0";
 
     // Generous, because it is a safety net against a wedged child rather than a performance
     // assumption: a cold `go list` on a slow host pays for the module load before it answers.
