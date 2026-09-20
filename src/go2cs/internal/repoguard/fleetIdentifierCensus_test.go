@@ -227,6 +227,42 @@ func fleetHash(s string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// fleetIsUnicodeEscapeSegment reports whether a captured UNC host segment is really a JSON unicode
+// escape of a character rather than a machine name. PARITY with the census's `unc_escape` admit
+// (coord-identifier-patterns.txt), ruled 2026-09-20.
+//
+// The converter's own glyphs -- the box, the generic-arity backtick, the address-of marker -- appear
+// escaped inside every .NET stack trace that names a converted type, and a comparison document is
+// full of them. Escaped, they satisfy fleetNetworkRe's host class exactly.
+//
+// WHY IT IS SOUND rather than a convenience: inside a JSON string a literal backslash is DOUBLED, so
+// a real UNC prefix that survives JSON encoding carries FOUR backslashes while an escape carries TWO.
+// Measured 2026-09-20 on one committed line that carries both shapes side by side.
+//
+// COST, stated: a UNC in RAW text whose host BEGINS with that shape is admitted here. The
+// denied-token pass is the mitigation and is untouched -- it runs over every line whatever the
+// STRUCTURAL pass admitted, so a denied real host inside such a UNC still fires AS A WHOLE RUN OR AS
+// A DOT/HYPHEN/UNDERSCORE COMPONENT of one. It does NOT reach a denied token concatenated onto the
+// escape with no separator, because fleetLineHasDeniedToken has no substring pass -- measured, and
+// the same bound the nickname admit has always carried without naming it.
+//
+// Scoped to the NETWORK-PATH kinds at its one call site: a profile segment of that shape is not an
+// escape of anything and is still an account segment.
+func fleetIsUnicodeEscapeSegment(seg string) bool {
+	if len(seg) < 5 || (seg[0] != 'u' && seg[0] != 'U') {
+		return false
+	}
+
+	for i := 1; i < 5; i++ {
+		c := seg[i]
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
+			return false
+		}
+	}
+
+	return true
+}
+
 func fleetIsPlaceholder(seg string) bool {
 	// A single character is a stand-in, not an account: the converter's own spelling guards write
 	// `C:\Users\u\sdk\...` precisely to avoid naming one. The denied-token pass covers real names
@@ -390,6 +426,11 @@ func fleetConsiderSegment(out *[]fleetFinding, path string, line int, kind, seg 
 		return
 	}
 	if admitted[strings.ToLower(seg)] {
+		return
+	}
+
+	// PER KIND, and only here: the escape admit reaches the NETWORK-PATH arms and nothing else.
+	if strings.HasPrefix(kind, "network-path") && fleetIsUnicodeEscapeSegment(seg) {
 		return
 	}
 	if _, ok := fleetClearedSegments[path+"|"+strings.ToLower(seg)]; ok {
@@ -889,6 +930,94 @@ func TestFleetIdentifierNicknameHostsAreAdmitted(t *testing.T) {
 //
 // Two properties, and the second is the one a red exit code cannot give: the plants fire, and they fire
 // THE NAMED ARM and nothing else.
+// TestFleetIdentifierUnicodeEscapeHostsAreAdmitted is the PARITY arm for the census's `unc_escape`
+// admit, BOTH DIRECTIONS. The refuse sibling is the one that carries the weight: the admit is bounded
+// to the HEX body, so a segment of the same shape whose body is not hex must still fire, and without
+// that case the admit could widen to "any host starting with that letter" with every other arm green.
+//
+// ⚠ NOTHING BELOW SPELLS THE SHAPE. This file is tracked and is scanned by the guard it tests, so the
+// planted lines are assembled at run time through a `%s` verb exactly as the nickname arm does, and
+// the escape bodies are ordinary strings until the format runs.
+func TestFleetIdentifierUnicodeEscapeHostsAreAdmitted(t *testing.T) {
+	const controlToken = "zzcontrolaccount"
+	denied := fleetDeniedIndex([]fleetDeniedToken{{len(controlToken), fleetHash(controlToken), "control token"}})
+
+	const uncFmt = "at go.fmt_package.printArg(\\\\%s\\build p)\n"
+	const profileFmt = "toolchain root at C:\\Users\\%s\\sdk\n"
+
+	scan := func(t *testing.T, line string) []fleetFinding {
+		t.Helper()
+		dir := t.TempDir()
+		rel := "docs/phase4/CONTROL-record.md"
+		full := filepath.Join(dir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(line), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		got, read := scanFleetTree(dir, []string{rel}, denied)
+		if read != 1 {
+			t.Fatalf("the arm scanned %d files, want 1 -- it measured nothing", read)
+		}
+		return got
+	}
+	hasKind := func(got []fleetFinding, kind string) bool {
+		for _, f := range got {
+			if f.Kind == kind {
+				return true
+			}
+		}
+		return false
+	}
+
+	// The three glyphs the corpus actually escapes, in both letter cases the encoder emits, plus a
+	// body with trailing token characters -- the shape measured in the wild where the escape is
+	// followed by the rest of the name.
+	escapes := []string{"u0436", "u0060", "u13D1", "u13d1", "u0022idle"}
+
+	t.Run("an escaped glyph is not a network path", func(t *testing.T) {
+		for _, esc := range escapes {
+			if got := scan(t, fmt.Sprintf(uncFmt, esc)); len(got) != 0 {
+				t.Errorf("a unicode escape %q fired as a path: %v", esc, got)
+			}
+		}
+	})
+
+	// ⚠ THE BOUND, and the reason this test is not admit-only. Same leading letter, same length, a
+	// body that is NOT hex: still a structural hit.
+	t.Run("a same-shaped non-hex body is still refused", func(t *testing.T) {
+		for _, seg := range []string{"uzzzz", "u123", "uz0436"} {
+			if got := scan(t, fmt.Sprintf(uncFmt, seg)); !hasKind(got, "network-path") {
+				t.Errorf("%q was admitted although its body is not a four-digit hex escape: %v", seg, got)
+			}
+		}
+	})
+
+	// The denied-token pass is the stated mitigation for the cost this admit takes, so it must be
+	// measurably untouched: a denied host that happens to wear the shape still fires through it.
+	// ⚠ AND ITS BOUND, measured rather than assumed. fleetLineHasDeniedToken walks whole
+	// identifier runs PLUS each dot/hyphen/underscore COMPONENT -- there is no substring pass -- so
+	// the mitigation covers a denied host that is a component of the segment and NOT one
+	// concatenated onto the escape with no separator. That bound is not new and is not this admit's:
+	// it is the same bound the nickname admit's "a denied real host inside a UNC still fires" has
+	// always had. Stated here rather than asserted, because a future substring pass would be an
+	// improvement and must not make this arm red.
+	t.Run("the denied-token pass is untouched", func(t *testing.T) {
+		got := scan(t, fmt.Sprintf(uncFmt, "u0436-"+controlToken))
+		if !hasKind(got, "denied-token") {
+			t.Errorf("a denied token as a component of an escape-shaped host did not fire the denied-token pass: %v", got)
+		}
+	})
+
+	// SCOPE. The admit is per KIND: a profile segment of that shape is not an escape of anything.
+	t.Run("the shape is not admitted as a profile segment", func(t *testing.T) {
+		if got := scan(t, fmt.Sprintf(profileFmt, "u0436")); !hasKind(got, "profile-path") {
+			t.Errorf("an escape-shaped PROFILE segment was admitted: %v", got)
+		}
+	})
+}
+
 func TestSplitRefusalIsAttributableToTheToken(t *testing.T) {
 	const controlToken = "zzcontrolaccount"
 	denied := fleetDeniedIndex([]fleetDeniedToken{{len(controlToken), fleetHash(controlToken), "control token"}})
