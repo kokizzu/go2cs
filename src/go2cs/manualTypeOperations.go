@@ -681,6 +681,22 @@ var manualConversionFuncs = map[string]map[string]goosScope{
 		"Type.ArrayType":  goosAny,
 		"Type.Elem":       goosAny,
 		"Type.Key":        goosAny,
+		// Type.MapType is the FIFTH member of that same prefix-downcast family, and the first one a
+		// ROW reached rather than a reflect test: internal/sync's TestHashTrieMapTruncHash, whose
+		// NewTruncHashTrieMap takes `abi.TypeOf(mx).MapType().Hasher` to borrow a real map's hasher.
+		// The auto body is correct Go read literally -- `(*mapType)(unsafe.Pointer(t))` -- and is
+		// rightly refused for the same reason the other four are: a SYNTHESIZED descriptor has no
+		// native storage, so the reinterpret falls through golib's aliasing gate (which needs
+		// SizeOf<TDst> <= SizeOf<T>, and a mapType is WIDER than the Type it embeds) and the address
+		// fallback mints a NativeBox over an order token. The first field read then panics in
+		// NativeBox.get_Value rather than fabricating managed references out of token bytes.
+		//
+		// Measured 2026-09-20: 0 of 34 subtests under that root, 29 of the 34 failures that one
+		// panic -- while TestHashTrieMap and TestHashTrieMapBadHash run the SAME 34 subtests over the
+		// same map and pass 34/34 each, because neither calls abi.TypeOf. Synthesized from the
+		// carried System.Type exactly as StructType/ArrayType/FuncType are; see type_impl.cs for what
+		// the projection honors and what it deliberately leaves zero.
+		"Type.MapType": goosAny,
 		// Type.FuncType is the THIRD prefix downcast of that same family, and it failed identically:
 		// the auto body's tag check is right (`Kind() != Func → nil`, Go's own "or nil if its tag
 		// does not match") and its `Reinterpret<Type, ΔFuncType>` is rightly refused, so a perfectly

@@ -349,15 +349,7 @@ public static ж<UncommonType> Uncommon(this ж<Type> Ꮡt) {
 
 // go2cs generated this placeholder — func StructType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
-// MapType returns t cast to a *OldMapType or *SwissMapType, or nil if its tag does not match.
-public static ж<mapType> MapType(this ж<Type> Ꮡt) {
-    ref var t = ref Ꮡt.DerefOrNull();
-
-    if (t.Kind() != Map) {
-        return default!;
-    }
-    return Ꮡt.Reinterpret<Type, mapType>();
-}
+// go2cs generated this placeholder — func MapType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
 // go2cs generated this placeholder — func ArrayType is hand-converted with managed semantics in the package's *_impl.cs ([module: GoManualConversion])
 
