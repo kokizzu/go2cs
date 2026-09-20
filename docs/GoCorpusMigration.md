@@ -2273,6 +2273,16 @@ rather than guess: the driver's `-Plan`, `-Worker` and `-FleetSize` are mandator
 reproduce dispatches nothing. **The recon leg predates the plan and therefore runs from hand-listed
 per-worker name lists through the per-package pipeline** — the driver's first use is the costed pass.
 
+⚠ **`testing` IS NOT A `-tests` ROW AND IS EXCLUDED FROM EVERY LIST**, until the converter seat that
+refuses it lands. It is a wholly hand-owned package, and the pipeline converts production **in place
+with no restore between rows**, so the row converts Go's `testing.go` straight over the hand-owned
+host every later row must then compile against. Measured at the 1.24 hop: the row left **14 tracked
+files modified and 19 new auto files** beside the 10 marked ones in `src/core/testing`, with CS0111
+duplicates — and the **eight** rows from it to the end of that list carry **one contamination event,
+not eight readings**. The tell is `unicode`, `unicode/utf8` and `unique` failing to BUILD; rows before
+it are unaffected, so the ordering decides how much a list loses. A list that includes it does not
+fail loudly — it produces readings, which is why this is a list-construction rule and not a gate.
+
 **THE TSV the plan is emitted from**, as the generator reads it — `--timings <path>`, no default and
 no fallback (an unresolvable path refuses rather than reverting to the other basis); LF only, any CR
 refuses; a required header read **by name, never by position**, carrying `row`, `word`, `verdicts`,
@@ -2433,6 +2443,15 @@ them, so the two agree on **0** over a tree holding hundreds of files of prior b
 number was **516**. A leg relaunched into such a tree is not a relaunch into a clean tree, and
 nothing in the reading says so.
 
+⚠ **AND IN WINDOWS POWERSHELL THE CENSUS NEEDS ITS ENCODING SET, OR IT MEASURES A SMALLER TREE IN
+SILENCE.** PS 5.1 decodes a native command's stdout with the **console codepage**, so `git`'s UTF-8
+path bytes for the corpus's `Δ`, `ж`, `Ꮡ` and `ˢ` names mangle on the way in and those paths read as
+**missing** — a smaller population, censused clean, with nothing in the output saying a byte was lost.
+Set `[Console]::OutputEncoding` to UTF-8 around **every** `git` call in Windows PowerShell, not only
+this one. The residue answer this was found on stands at **ZERO over 96,792 files with 0
+unresolvable**; it is the instrument that was wrong, not the tree, and an unset codepage is the shape
+that would have made a dirty tree read clean.
+
 ⚠ **And the at-risk set is the dependency CLOSURE, not the rows that ran** — which is the half that
 surprises. i9's own census corrected i9's first hypothesis: `go/types` and `net` carried pre-run
 `bin`/`obj` although neither had ever been converted in that tree, because a `dotnet publish` for one
@@ -2446,6 +2465,23 @@ heaviest-residue PASS row and one first-in-tree row** — comparing **word, verd
 diverged set** against the leg's. A match on both retires the exposure and the TSV pushes with the
 arm's reading in the completion post; **any difference is a finding and the list re-runs on the clean
 tree.**
+
+⚠ **TWO QUESTIONS ABOUT A RECORD'S TIMESTAMP, AND THEY TAKE TWO DIFFERENT PREDICATES.** Ruled at the
+1.24 hop after a wrapper gate and the evidence spec were found reading opposite ones:
+
+```
+  "did THIS ROW write it"   the GATE          LastWriteTime, against the ROW's own start
+  "was this COPIED in"      the evidence (a)  CreationTime, read on the tree's ORIGINALS
+```
+
+An **overwrite leaves `CreationTime` at the original** — NTFS tunnels it back through
+delete-and-recreate — so `CreationTime` calls a **freshly rewritten record STALE** and is the wrong
+predicate for the gate; `LastWriteTime` is correct whether the converter overwrites or recreates, and
+a refusal prints both timestamps and the row's. ⚠ **The run-window read belongs on the ORIGINALS, or
+on a copy made with timestamps preserved**: per-row evidence copied with `Copy-Item` gets a **new**
+`CreationTime`, so a run-window read over the copies reports the moment each lane ran its evidence
+commit rather than when the record was written — three lanes, three wrong answers, all internally
+consistent.
 
 ⚠ **The argument that residue is benign is an ARGUMENT, and the runbook records it as one so a reader
 can refuse it.** It runs: the converter binary is byte-identical and was never rebuilt; the tree tip
