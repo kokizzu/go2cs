@@ -357,9 +357,40 @@ $ledgerDone = New-Object 'System.Collections.Generic.HashSet[string]' ([System.S
 if ($Mode -eq 'rebank' -and -not $DryRun) {
     # ⚠ THE WRAPPER'S sha256 IS STATED, because the brief's B.8 says the ACK carries it and because
     # "the wrapper" is not a stable name -- it is whatever blob the caller materialised.
-    $rebankSha = (Get-FileHash -LiteralPath $RebankWrapper -Algorithm SHA256).Hash.ToLowerInvariant()
+    # ⚠⚠ TWO IDENTITIES, EACH LABELLED WITH WHAT IT HASHED (COORD 3e3d57a497).
+    # MEASURED: the recon wrapper reads sha256 55466ef4d8... as the repository stores it (LF) and
+    # aa4664c275... as a Windows checkout holds it (CRLF) -- 1,229 line endings apart, one file.
+    # An ACK carrying only the second would disagree with any worker that materialised the wrapper
+    # by `git show`, and the disagreement looks exactly like a tampered blob.
+    #
+    # ⚠ `git hash-object` IS NOT THE ANSWER ON ITS OWN: outside a repository no attributes apply,
+    # so it returns the id of whatever bytes it is handed -- the CRLF ones for a checkout copy. The
+    # blob id below is computed over the LF-NORMALISED content with git's own formula, so it is the
+    # REPOSITORY's id for either representation, which is the whole point of printing it.
+    $wrapperBytes = [System.IO.File]::ReadAllBytes($RebankWrapper)
+    $rebankSha = ([System.BitConverter]::ToString(
+        [System.Security.Cryptography.SHA256]::Create().ComputeHash($wrapperBytes))
+        ).Replace('-', '').ToLowerInvariant()
+
+    # LF-normalise: drop every CR that immediately precedes an LF, and nothing else.
+    $lf = New-Object 'System.Collections.Generic.List[byte]'
+    for ($bi = 0; $bi -lt $wrapperBytes.Length; $bi++) {
+        if ($wrapperBytes[$bi] -eq 13 -and ($bi + 1) -lt $wrapperBytes.Length -and $wrapperBytes[$bi + 1] -eq 10) { continue }
+        $lf.Add($wrapperBytes[$bi])
+    }
+    $lfBytes = $lf.ToArray()
+    $header  = [System.Text.Encoding]::ASCII.GetBytes("blob $($lfBytes.Length)" + [char] 0)
+    $blobIn  = New-Object 'byte[]' ($header.Length + $lfBytes.Length)
+    [System.Array]::Copy($header, 0, $blobIn, 0, $header.Length)
+    [System.Array]::Copy($lfBytes, 0, $blobIn, $header.Length, $lfBytes.Length)
+    $rebankBlob = ([System.BitConverter]::ToString(
+        [System.Security.Cryptography.SHA1]::Create().ComputeHash($blobIn))
+        ).Replace('-', '').ToLowerInvariant()
+
+    $wrapperCR = @($wrapperBytes | Where-Object { $_ -eq 13 }).Count
     Write-Host "  wrapper         : $RebankWrapper"
-    Write-Host "  wrapper sha256  : $rebankSha"
+    Write-Host "  wrapper blob    : $rebankBlob   (git blob id of the LF-normalised content -- the ACK's number)"
+    Write-Host "  wrapper sha256  : $rebankSha   (of the file AS READ; $wrapperCR CR byte(s))"
 
     $hc = GitQuiet @('-C', $Tree, 'rev-parse', 'HEAD')
     if ($hc.Code -ne 0 -or -not $hc.Out) { Deny "could not read HEAD in '$Tree'" }
