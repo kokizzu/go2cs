@@ -21,6 +21,16 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 // Don't enable for timing tests:
 //[assembly: Parallelize(Workers = 0, Scope = ExecutionScope.MethodLevel)]
+// A second reason, from outside this assembly: uncommenting the line above is a DESIGN QUESTION for
+// the four junction-GODEBUG statics in testing's PackageAncestry.cs, whose single
+// capture-and-restore pairing assumes these hosts run one at a time. The lock those statics take
+// closes corruption OF THE STATICS, not of the pairing: with two hosts overlapping, host B skips its
+// apply because host A's winsymlink=0 is already in the environment, then A's restore retracts the
+// setting while B's junctions are still staged, and B's later toolchain calls refuse their
+// internal/... imports again -- attributed to nobody. So the statics themselves are safe, and what is
+// owed there first is a reading of whether ONE process-wide capture is the right shape when several
+// hosts stage at once, or whether it has to become per-host; the lock only makes that a design
+// question rather than a corruption.
 
 namespace BehavioralTests;
 
