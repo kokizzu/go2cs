@@ -9,7 +9,13 @@
 #   FREED   a heading quoting a fixture package name must now PASS   (the false positive)
 #   KEPT    every genuine control heading must still REFUSE          (the guard's whole job)
 # Its red is this same set against the OLD substring predicate, where the two FREED arms refuse:
-#   R_POST_TOOL=<a copy with the old predicate> bash r-post-bar-arms.sh   -> 8 of 10
+#   cp r-post.sh /tmp/oldbar.sh
+#   <edit /tmp/oldbar.sh's barmatch back to the bare `probe` substring — and change NOTHING else>
+#   R_POST_TOOL=/tmp/oldbar.sh bash r-post-bar-arms.sh        -> the two FREED arms refuse
+#
+# ⚠ DERIVE that copy from the CURRENT tool, not from an older snapshot. The interlock below refuses a
+# copy missing either door, and an older snapshot is missing one — which is how I found that my own
+# first old-predicate copy would have driven the anchor arms against a doorless tool.
 #
 # THE ANCHOR DECISION answers one question: may a POST advance the read anchor? Only when nothing
 # landed between the stored anchor and the tip the post appends to. Three lanes shipped tools that
@@ -17,6 +23,32 @@
 set -u
 
 TOOL="${R_POST_TOOL:-/c/go2cs-tmp/r-instruments/r-mailbox-post.sh}"
+
+# ⚠⚠ THE INTERLOCK, and it exists because of i9's incident (mailbox 03603d635), not because of one
+# here. i9's red arms ran the REAL post tool: the four REDS were safe BECAUSE THEY FAIL — each stops
+# at a refusal long before any write — and the CONTROL, the one arm built to pass every gate, ran on
+# to the end of the happy path, which on a post tool is a post. A control that is designed to reach
+# the end is the last thing to run without a stop.
+#
+# Every arm below goes through a door that exits before any mutation (--bar-check, --anchor-check),
+# so this harness cannot post AS WRITTEN. But `R_POST_TOOL` lets a reader point it at another copy,
+# and this file's own header tells them to — at a copy with the OLD predicate, to see the red. A copy
+# that predates a door would take the arm's arguments as an ENTRY FILE and a SUBJECT and run LIVE,
+# and the arms built to PASS are exactly the ones that would reach the end.
+#
+# ⚠ Today that case is caught by a DIFFERENT gate (a missing entry file refuses), which is safety by
+# accident of another guard rather than by an interlock. So: assert both doors exist in the tool
+# under test, BEFORE any arm runs, and refuse by name otherwise.
+for door in -- '--bar-check' '--anchor-check'; do
+    [ "$door" = "--" ] && continue
+    if ! grep -Fq -- "\"$door\"" "$TOOL"; then
+        echo "REFUSED: $(basename "$TOOL") carries no $door door."
+        echo "  Every arm here drives a LIVE-PATH decision and is safe only because that door exits"
+        echo "  before any mutation. Without it the passing arms run the tool for real."
+        exit 2
+    fi
+done
+
 DIR="$(mktemp -d)"
 SUBJ="$DIR/subj.txt"
 echo "subject line for the arm" > "$SUBJ"
