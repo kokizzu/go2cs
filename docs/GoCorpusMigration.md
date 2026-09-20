@@ -2248,6 +2248,59 @@ words are not interchangeable in this block — the sentence below about the map
 roster file" and is CORRECT, because that is the file the generator enumerates from. The difference
 between the two sets is the whole reason the sweep cannot run this leg.
 
+#### The 1.24.13 hop's recon leg, as it actually ran — the readings, cited rather than re-derived
+
+**Complete on three lists, 228 rows, one attempt each.** Recorded here because the next hop's leg is
+planned from these numbers and they are otherwise spread across a mailbox.
+
+```
+  R   105 rows    85 PASS ·  7 BUILD · 13 NOVERDICT      i9   16 rows   10 PASS · 3 NOVERDICT ·
+  G   107 rows   100 PASS ·  4 DIVERGED · 3 BUILD                       2 BUILD · 1 CONVERT
+                 ZERO NOVERDICT and ZERO non-integer sweep_s
+```
+
+**The sixteen verdict-less rows re-classify from their committed evidence records**, not from the
+lane's `diverged` column — the fifth wrapper blob rewrote every real `0` to `n/a`, so that column is
+uninformative for the lanes that ran on it. Outcome: **2 PASS recovered** (`math/rand`,
+`mime/multipart` — both `matched` with an empty diverged set; the cause was PowerShell 5.1's
+case-insensitive JSON reader **throwing** on `Int31n` beside `int31n`), **11 DIVERGED**, **2
+NOVERDICT by cause** (the two junction-staged host rows), and **1 for want of evidence** (`testing`,
+which carries the hand-own exclusion as its cause and is never scheduled).
+
+⚠ **Two predicate rules the re-classification had to learn, both worth carrying forward:**
+
+```
+  a `disclosed` entry is a SENTENCE, not a name -- the name is its LEADING TOKEN, so a membership
+     test against the whole string matches nothing and subtracts nothing
+  `verdicts` is a SET difference, |go \ names(disclosed)|, never a count difference -- the count
+     form assumes disclosed is a SUBSET of go, and the `host-fatal` class names tests that never
+     produced a Go verdict at all (runtime/pprof: 6 of 6 absent from its own `go` map)
+```
+
+**The banked basis is the three lanes' INTERSECTION, read by column NAME.** G relaunched on a later
+wrapper blob and carries an eleventh column the other two lanes do not, so a header-equality check
+would refuse the very union the basis exists to be, and a union-and-pad would mint a column that
+looks measured and is not. 228 rows in, **213 kept**, 15 excluded as `UNMEASURED` by name, the
+hand-stopped row banked at `sweep_s := wall_s` so the generator's drop-must-have-fired assertion can
+fire on it. The generator then reads **212 rows parsed, 9,517 s over 212 integer rows**.
+
+**The roster seat that follows it, as landed:** the ten relocation sources retire and **nine**
+principal targets bank — nine and not eleven, because one target is the principal for two sources and
+two targets are nobody's principal and stay candidates. Each source's 1.23.12 anchor appears exactly
+once, on the target taking the majority of its banked **verdicts** (never its declarations: one row
+banks 2,195 verdicts from 5 declarations, so a declaration share routes them to a package carrying
+none of them). **204 → 203 banked, 32 → 23 candidates, and the corpus axis is 226** — a figure
+independent of how the derivation comes out.
+
+⚠ **A relocated row's disclosure file does not MOVE.** Measured at this hop: there is no tree on which
+the move is possible — at master the target directories do not exist, and at the version tip the
+source directories are already deleted by the reconvert. **The disclosures retire with the row and are
+re-pinned at the successor's re-bank under whatever the declaration is called there**, from a measured
+reading, never carried forward blind; `class` and `signature` survive verbatim because the signature
+never moved, only the declaration's name did. **No proof file is moved, renamed or created** — a proof
+record is the record of a run, and an inherited anchor's record is the SOURCE's.
+
+
 **The recon leg invokes THE PIPELINE per package** — `go2cs -tests -test-action all
 <goroot>/src/<row> <tree>/src/core/<row>` in the worktree at the version tip, whose `src/core` is the
 seed — **and not the sweep script**, which is what H10's own line above decides: the sweep is the
@@ -2436,6 +2489,27 @@ Two lanes found the same class independently on the same night, from opposite en
                  it is the same hazard as floor 8's `git status --porcelain | grep '^ D'`, which
                  still runs: one guards what a glob DELETED, this one guards what a clean REMOVED.
 ```
+
+⚠ **THE INVERSE OF A LEG IS SCOPED TO THE TREE, NOT TO `src/core` — and the example in the rule above
+is what made that easy to miss.** `Generated/` under `src/core` is where the bulk of the untracked
+output is, so a cleanup written from that example stops at `src/core` and leaves the rest. **The leg
+also writes outside it.** Measured at the 1.24.13 hop by G, cleaning for a 107-row list with the
+tracked count asserted at **14,485 either side**:
+
+```
+  comparison/results records (every row re-ran, so all were residue)   82 across 41 packages
+  ignored leg output under src/core                                 1,052
+  untracked-not-ignored under src/core                                 65
+  LEG FILES OUTSIDE src/core                                            5   docs/validation/current/*.md
+```
+
+⚠ **And it is not one lane's quirk**: i9 found the same class independently in **two** of its own
+throwaway trees — 4 `docs/validation` paths in one and 2 in another, written by converter runs for
+unrelated arms — and noticed only once G had named it. **Two lanes, two machines, the same
+out-of-scope writes.** So the removal-by-name list is built from a census of the WHOLE TREE, and
+`docs/validation/current/` is named here as the known second location rather than left to be
+rediscovered a third time.
+
 
 ⚠ **Why `--porcelain` alone is the wrong instrument here, stated as the measurement and not as
 advice.** `git clean -fd` does not remove ignored paths and `status --porcelain` does not report
