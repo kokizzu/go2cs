@@ -281,11 +281,6 @@ fi
 restore() { git checkout -q -- "$MB" 2>/dev/null || true; }
 printf '\n' >> "$MB"
 cat "$ENTRY" >> "$MB"
-# ⚠ TREE MODE IS A READING, NOT A GATE, AND ITS BASELINE IS THE TIP JUST FETCHED -- never the
-# stored anchor. C2 measured the same bytes reading added=4/REFUSED against its last-read sha and
-# added=0/CLEAN against the fresh tip; the four were other lanes' entries landed in the interval. A
-# pre-existing hit on a shared surface is not this post's to fix and not this post's to be blocked by.
-TREE_RC=0
 # ⚠ THE TREE ARM STAYS IN THE CLONE, and that is deliberate rather than an oversight. Its file
 # path is relative to the clone and its baseline is `<sha>:<path>` resolved there, so running it
 # from the gate directory made the baseline unreadable -- measured, on this cut's own first green
@@ -293,9 +288,16 @@ TREE_RC=0
 # battery that CERTIFIES, and this arm certifies nothing: it is a reading and the push is not
 # gated on it. So it runs where its inputs resolve, and the line below states BOTH batteries so
 # that nothing is silently mixed.
-"$CENSUS" tree "$MB" "$PRE" || TREE_RC=$?
-echo "tree arm battery: $(idc_arms "$CLONE") arm(s) from the clone -- a READING, not the gate's $IDC_USED"
-echo "tree arm: rc=$TREE_RC -- a READING; the push is NOT gated on it"
+# ⚠ DROPPED 2026-09-20, RULED FLEET-WIDE (COORD 0cb09c3, off G's 561495ee): this pass is a READING
+# and cannot refuse a post, and it was 96% of the census budget and over half the whole cycle --
+# measured on the 8.8 MB channel file at 6.2 s per pass here and ~50 s on the slowest lane's box,
+# and it scales with a file that only grows while the channel's arrival rate does not. The GATE is
+# unchanged and is what it always was: `entry` + `subject`, strict, exit-gated, and flat in input
+# size (~2 s each whether the entry is 5 KB or 17 KB), so nothing that could refuse a post was
+# removed. ⚠ THE MAGNITUDE IS THE BOX AND THE STRUCTURE IS NOT: a gate and a reading should not
+# share a budget at any speed, which is why this drops here too although this lane's cycle (12.1 s
+# end to end) was never losing races. A reading is as true a minute later -- if the shared surface
+# is ever to be swept, it is one lane on a cadence, not every lane on every post.
 
 # ── step 6: the dry-run gate. BELOW the range computation, ABOVE the action. ────────────────────
 # ⚠ C1 9badd9f5e3: an ADMISSION control's passing path IS the post, so it posted. The flag must
