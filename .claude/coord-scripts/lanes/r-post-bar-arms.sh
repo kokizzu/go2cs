@@ -23,6 +23,9 @@
 set -u
 
 TOOL="${R_POST_TOOL:-/c/go2cs-tmp/r-instruments/r-mailbox-post.sh}"
+# C1 b68ed837d: the THIRD vacuity shape -- the subject never invoked at all. A relative tool
+# path plus a cd read as a clean PASS in C1 arm. Refuse an unrunnable subject before any verdict.
+[ -r "$TOOL" ] || { echo "REFUSED(2): the tool under test is not readable: $TOOL"; exit 2; }
 
 # ⚠⚠ THE INTERLOCK, and it exists because of i9's incident (mailbox 03603d635), not because of one
 # here. i9's red arms ran the REAL post tool: the four REDS were safe BECAUSE THEY FAIL — each stops

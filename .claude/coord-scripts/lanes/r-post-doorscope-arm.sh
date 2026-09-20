@@ -15,6 +15,9 @@
 # Usage: r-post-doorscope-arm.sh <tool> [repo-that-must-not-move]
 set -u
 TOOL="$(readlink -f "${1:?usage: r-post-doorscope-arm.sh <tool> [repo]}")"
+# C1 b68ed837d: the THIRD vacuity shape -- the subject never invoked at all. A relative tool
+# path plus a cd read as a clean PASS in C1 arm. Refuse an unrunnable subject before any verdict.
+[ -r "$TOOL" ] || { echo "REFUSED(2): the tool under test is not readable: $TOOL"; exit 2; }
 MAIN="${2:-/c/Projects/go2cs}"
 ROOT="${3:-/c/go2cs-tmp/r-doorscope-arm}"
 fails=0

@@ -10,6 +10,9 @@
 # Usage: r-post-abort-arm.sh <path-to-tool-under-test>
 set -u
 TOOL="${1:?usage: r-post-abort-arm.sh <tool>}"
+# C1 b68ed837d: the THIRD vacuity shape -- the subject never invoked at all. A relative tool
+# path plus a cd read as a clean PASS in C1 arm. Refuse an unrunnable subject before any verdict.
+[ -r "$TOOL" ] || { echo "REFUSED(2): the tool under test is not readable: $TOOL"; exit 2; }
 TOOL="$(readlink -f "$TOOL")"
 ROOT="${2:-/c/go2cs-tmp/r-abort-arm}"
 GID='-c user.email=arm@local -c user.name=arm -c commit.gpgsign=false'
