@@ -1795,6 +1795,81 @@ that re-baselines wholesale, i.e. the step most likely to bank it silently.
      The stale prediction and its provenance: a02ac3df3:docs/phase4/REHEARSAL-h9-golden-rebank.md:15-36. -->
 
 
+#### Closure 2026-09-20 — H9 CLOSED: the suite reads the base two, APPEARED empty, the 26 opt-out skips reconciled
+
+**H9 is CLOSED.** Closure tree: version-branch commit `c7eb36d845` — R's P-256 table decode applied on
+`d91c832543` — reading `go version` `go1.24.13 windows/amd64`, measured through the behavioral runner's
+four phases, no MSTest host.
+
+**The criterion, restated for this rung.** The gate line above reads "green across all four phases";
+master's behavioral base is not zero, so green is scored against that base and the suite's own rc is
+FAIL by construction. Closure required, and got, all four:
+
+- Output's failing set equals master's behavioral base **two BY NAME** — `FuncLiteralCallerNames` and
+  `GoroutineWaitState` — with **APPEARED empty**.
+- Transpile, Compile and Target each at **zero failures**.
+- **Zero timeouts in every phase.** A budget overrun reports `NOT MEASURED` and fails the run; none
+  occurred.
+- The **twelve** goldens re-baselined at the rebank pass the **byte-compare** — Target passed for
+  every project.
+
+**The reading.** 698 projects in the directory = **696 behavioral + 2 tooling** (the runner itself and
+the MSTest harness project, excluded from enumeration); 6 platform-exclusive `[linux]` projects are
+skipped BY NAME by the runner, so **690 ran**.
+
+```
+  Transpile  690 pass / 0 fail        Target  690 pass / 0 fail
+  Compile    690 pass / 0 fail        Output  662 pass / 2 fail / 26 skip / 0 timeout
+  1,298.8 s.  Suite rc = FAIL, on the base two — which is the expected reading.
+```
+
+**The 26 Output skips are a DECLARED OPT-OUT CLASS, named here so the count is derivable**: projects
+whose package-info file does not carry `[GoTestMatchingConsoleOutput]`. Output comparison is **opt-in**,
+and the runner's only OTHER skip site requires a Compile failure — Compile passed 690/690, so that site
+cannot have fired. Reconciled three ways: `28 non-declarers − 2 tooling = 26`;
+`696 − 6 platform-exclusive = 690`; `662 + 2 + 26 = 690`. ⚠ **A skip is not a pass.** This run says
+nothing about those 26 programs' agreement with Go.
+
+⚠ **`SystemCertVerify` — the RED 9 regression the decode cures — is NOT read from this suite.** This
+runner yields no verdict on a host crash: it aborts with no results artifact, so a crashing project
+leaves no row to read. The arm of record is therefore the **direct executable** — exit 0, 17 lines
+identical to Go, measured on i9 at the same tree — and within this suite it is the **Compile** phase
+that covers it.
+
+##### Two runbook lessons from the run
+
+1. **The runner's own disk preflight (25 GB floor) refused at 1.4 GB free, and is never overridden.**
+   `-IgnoreDiskPreflight` exists; using it yields a `NOT MEASURED` suite that reads like a failing one.
+   Build output was reclaimed FIRST, after proving no `bin/` or `obj/` path is tracked.
+2. **Capture the suite's rc on its own line.** A wrapper that ends in `tail` reports `tail`'s exit
+   status — which is 0, and means nothing at all beside a summary reading FAIL.
+
+**H10 opens on this closure**, and H11 is declared after H10, as already ruled.
+
+<!-- H9 CLOSURE, 2026-09-20, in-stage. Measured on i9 at version-branch commit c7eb36d845 (R's P-256
+     table decode applied on d91c832543); go version go1.24.13 windows/amd64; the behavioral runner's
+     four phases, no MSTest host.
+     Suite: Transpile 690/0, Compile 690/0, Target 690/0, Output 662 pass / 2 fail / 26 skip / 0
+     timeout, 1,298.8 s; rc FAIL on the base two (FuncLiteralCallerNames, GoroutineWaitState), with
+     APPEARED empty.
+     Enumeration: 698 in the directory = 696 behavioral + 2 tooling (the runner itself and the MSTest
+     harness project, both excluded from enumeration); 6 platform-exclusive [linux] projects skipped by
+     name by the runner, so 690 ran.
+     The 26 Output skips: a package-info file without [GoTestMatchingConsoleOutput]. Comparison is
+     opt-in, and the runner's only other skip site requires a Compile failure, which cannot have fired
+     at 690/690. Three-way reconciliation as stated in the text; a skip is not a pass and the run
+     carries no claim about those 26.
+     The twelve re-baselined goldens are the banked set of the correction above (i9 dc9eb368c, ruled
+     ab9e7209a); Target passing for every project IS their byte-compare.
+     SystemCertVerify: no suite verdict is obtainable on a host crash, since the runner aborts with no
+     results artifact; the arm of record is the direct executable, exit 0 and 17 lines identical to Go,
+     on i9 at the same tree. Compile is what covers it inside this suite.
+     Lesson 1's floor is the runner's own 25 GB disk preflight, which refused at 1.4 GB free; no
+     -IgnoreDiskPreflight was passed, and build output was reclaimed only after proving that no bin/ or
+     obj/ path is tracked. Lesson 2 is the capture-the-exit-code-before-any-pipe rule of CLAUDE.md's
+     safety floor, met here on a suite whose summary read FAIL beside a wrapper rc of 0. -->
+
+
 
 
 ### H10 — Roster, proof-page and disclosure re-derivation ⟲ **GATE**
