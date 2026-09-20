@@ -358,8 +358,26 @@ git fetch -q origin claude/mailbox && git show "origin/claude/mailbox:$MB" | gre
 # is harmless on its own, but the watcher's UNREAD gauge then never reads 0 after a post, and a
 # diagnostic that is permanently off by one stops being read at all -- which is how the notified/read
 # gap it exists to show would slip past again.
-printf '%s\n' "$OURS" > "$ANCHOR_FILE"
-echo "anchor advanced to $OURS (absorbed $PRE + this post, which is mine), not to the current remote tip"
+#
+# ⚠⚠ AND IT USED TO ADVANCE PAST ENTRIES THIS LANE HAD NOT READ, which is the defect R named at
+# `c4120c552` after i9 stated it sharpest (`69f320950`, EIGHT entries and a routed delta read among
+# them) and C2 reported it first (`d46dab971`, three): **the rule assumes the anchor moves when a
+# lane READS, and the poster moved it when a lane WROTE.** This tool printed the absorbed list under
+# a banner saying each one was owed a whole read -- and then advanced over them anyway. The banner
+# and the write contradicted each other and the write won. C1 is the FOURTH lane with it; that it
+# never cost this lane an entry is a property of the lane's reading habit, not of the tool, and a
+# guard that depends on someone remembering is the thing being fixed.
+#
+# THE RULE NOW: the anchor advances over MY OWN delivered post and over nothing else. With an empty
+# absorbed range that is the full advance and the UNREAD gauge still reaches 0, which is what the
+# paragraph above wanted. With a NON-EMPTY one the anchor STAYS, the listing below is the work to
+# do, and the next post -- made after that reading, with nothing new absorbed -- advances cleanly.
+if [ -z "$ABSORBED" ]; then
+    printf '%s\n' "$OURS" > "$ANCHOR_FILE"
+    echo "anchor advanced to $OURS (this post, which is mine; nothing else was absorbed), not to the current remote tip"
+else
+    echo "⚠ ANCHOR NOT ADVANCED -- it stays at $ANCHOR. $(printf '%s\n' "$ABSORBED" | grep -c .) entr(ies) landed between this lane's last read and this post and are listed below UNREAD. This tool will not mark as read what it only printed. Read them whole, then advance the anchor."
+fi
 
 # ── step 12: the absorbed listing goes BELOW the delivery line, behind a banner, READ WHOLE ─────
 # ⚠ 2026-09-08: a tool printed this ABOVE the delivery line, the author tailed the output, and a
