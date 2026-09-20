@@ -69,6 +69,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"go2cs/internal/releasestamp"
 )
 
 const (
@@ -153,13 +155,6 @@ const (
 	// The newline is a bare \n on purpose: writeReadmeFile converts the whole README to CRLF in one
 	// pass, so emitting \r\n here would double the CR.
 	badgeLineBreak = "\\\n"
-)
-
-// The published version lives in version.props as two elements; these mirror push-nuget.ps1's own
-// regexes so the converter and the release script read the file the same way.
-var (
-	goStdLibVersionPattern = regexp.MustCompile(`<GoStdLibVersion>([^<]+)</GoStdLibVersion>`)
-	goBuildNumberPattern   = regexp.MustCompile(`<GoBuildNumber>([^<]+)</GoBuildNumber>`)
 )
 
 // readmeBadgeLine composes a converted stdlib package's whole badge paragraph — Tests and Docs on
@@ -470,9 +465,32 @@ func validationBadge(message string, color string, target string) string {
 	return fmt.Sprintf("[![Tests](%s/badge/Tests-%s-%s?logo=go)](%s)", shieldsBadgeHost, message, color, target)
 }
 
-// publishedPackageVersion reads the four-part published version (`1.23.1.2`) from the go2cs root's
-// version.props — the same single source push-nuget.ps1 bumps. Returns "" when the file is absent
-// (a conversion outside a repository checkout) or does not carry both elements.
+// publishedPackageVersion returns the release stamp the H2-following badges target — the C# Source
+// badge's tag and the Tests badge's proof-page path.
+//
+// ⚠ IT IS THE PUBLISHED STAMP, NOT version.props's ARITHMETIC (H11 ruling, 2026-09-20). It used to
+// return `base + "." + build` unconditionally, and that is wrong at exactly one moment: a RELEASE HOP.
+// H2 resets the build counter per release, so between the pin bump and the first publish of the new
+// base there IS no published version carrying that base — and the composed string names a tag and a
+// proof page that do not exist. Measured at claude/version-go1.24.13 0f97dcc8db, where the counter had
+// been carried across the bump instead of reset: 335 package READMEs linked to a `nuget-` tag with no
+// object behind it, and 191 to a `docs/validation/` directory that was never written. ⚠ Resetting the
+// counter alone does NOT cure it — the composed string then names a `.0` release, equally absent — so
+// the resolution has to consult what was actually published.
+//
+// THE RECORD IS A TREE FACT, which is what makes this checkable with no git and no feed query: H11.5
+// rules the published-release stamp a repository-recorded fact, and `docs/validation/<version>/` is
+// that record, written by the publish ritual's write-once snapshot step. So:
+//
+//	the composed stamp has a snapshot directory -> use it (an actually-published release)
+//	it does not                                 -> use the NEWEST recorded snapshot (the last real one)
+//	there are no snapshots at all                -> "" (badge omitted; no honest target exists)
+//
+// A hop therefore keeps every badge pointing at the previous release until the first package of the
+// new base publishes, which is the only target that resolves for a reader clicking it today.
+//
+// Returns "" when version.props is absent (a conversion outside a repository checkout) or carries
+// neither element.
 func publishedPackageVersion(root string) string {
 	contents, err := os.ReadFile(filepath.Join(root, versionPropsFileName))
 
@@ -480,14 +498,11 @@ func publishedPackageVersion(root string) string {
 		return ""
 	}
 
-	base := firstSubmatch(goStdLibVersionPattern, string(contents))
-	build := firstSubmatch(goBuildNumberPattern, string(contents))
-
-	if base == "" || build == "" {
-		return ""
-	}
-
-	return base + "." + build
+	// The rule itself lives in internal/releasestamp, NOT here: the H2 counter guard in
+	// internal/repoguard holds the same tree to the same rule and cannot import main. Two copies of
+	// "is this release published" would let the guard pass while the badges point at a release that
+	// never shipped -- which is precisely the defect the guard exists to catch.
+	return releasestamp.PublishedStamp(string(contents), releasestamp.SnapshotsDir(filepath.Dir(root)))
 }
 
 func firstSubmatch(pattern *regexp.Regexp, contents string) string {
