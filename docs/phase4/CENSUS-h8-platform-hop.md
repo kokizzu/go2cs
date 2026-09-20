@@ -321,3 +321,136 @@ already by the `crypto/ecdh` stale `package_init.cs` seat.
 - The outgoing 1.23.12 manifest is **produced**, not recovered: no platform manifest has ever been tracked
   on any ref, and the preserved staging artifacts are either the wrong release or the wrong artifact kind.
   It is the comparand of record for this hop by COORD's ruling.
+
+---
+
+## Dated block, 2026-09-20 — H8 CLOSED, and everything the rung surfaced after this record was cut
+
+This record was cut before the gate was ruled. Nothing above is rewritten; this block carries what the
+rung then established, including two numbers of mine that were withdrawn. Rulings are COORD's on the
+mailbox.
+
+### A. The gate, as closed
+
+**Clause 1 — the marker gate: ZERO per target on both releases**, as §2 records (147 and 153 seed
+hand-owns, the population predicted from the rule's four spellings with the sums taken as disjointness
+controls, the predicate made to fail on a real hand-own).
+
+**Clause 2 — the default flavour reproduces the single-target build byte-for-byte: PASS on all three.**
+
+| flavour | pair | artifacts | verdict |
+|---|---|--:|---|
+| windows/amd64 | G | 3342 = 3342 | PASS |
+| linux/amd64 | C2, from the seat's converter | 3397 = 3397 | PASS |
+| darwin/amd64 | G | 3395 = 3395 | PASS |
+
+Each with equal tree hashes, equal path sets, both sides non-empty. `E2` for G's two was **one merged L3
+corpus viewed at three hosts**, which is sharper than three independent pairs: a host-biased merge shows
+up precisely under three views of one corpus, whereas three separate merges could each be
+self-consistently wrong. The three cross-flavour controls fired (227 / 282 / 280 only-in counts) with a
+positive control passing a view against itself.
+
+### B. "Default flavour" is DEFINED, and the definition is not cosmetic
+
+The H8 amendment defines it as **the build with the target-OS selector set to the host's flavour**. The
+project files' unset default is windows, which is the banking platform's convention and is named as such;
+**a linux build with the selector unset is not the linux flavour.** So the three readings above are three
+flavours, not one reading re-taken three times.
+
+### C. The seed-absent exemption
+
+Ruled after C2's first linux pair failed: a placement difference confined to packages **the seed at the
+base does not carry** is exempt, with that package set derived from the seed and **reported every run**; a
+placement difference outside the set still fails, and a content difference anywhere still fails.
+
+G's runs report the set as **EMPTY on all three trees** (positive control: planting one directory the seed
+lacks makes the same predicate read 1). ⚠ **That zero is not the exemption being satisfied — it is the
+exemption having nothing to apply to**, because the package in question was never emitted on that box at
+all. The two are different states and only one of them is evidence about placement.
+
+### D. The defect the rung surfaced, and why the flavour arms could not see it
+
+C2's linux pair first read **FAIL**: 3406 = 3406, zero content differences, **five paths differing in
+placement** — `runtime/cgo`'s five linux-only files, flat in the single-target build and under `linux/` in
+the merged one, because a single-target run can only HONOUR an existing L3 layout while the merge COMPUTES
+one.
+
+**The cause is neither GOOS nor enumeration.** Both boxes queue the identical 342 packages — the sorted
+package lists hash the same, `c9a24c1abfdb61af99bf8deea34a7022cb860f20779afffa133b98bbb162be81`, across
+two hosts and two separately built binaries — and `runtime/cgo` is absent from both queues.
+`conversionDriver.go` loaded `"./..."` — the package **and its whole subtree** — for any input path under
+GOPATH; a `GOTOOLCHAIN`-installed GOROOT sits inside GOPATH, so `runtime`'s own conversion wrote
+`runtime/cgo`, and a package the queue never had entered the corpus. **Fixed at `19175c31ad`** (the branch
+must not fire for an input under GOROOT), landing on the version branch, not on master.
+
+⚠ **The condition worth carrying beyond this package: the emitted corpus depends on where the toolchain
+was installed.** Not the release, not the target, not the host OS — whether GOROOT is a path under GOPATH,
+which is a property of how the SDK was obtained. Two lanes with the same binary, base, flags and pin can
+emit different corpora for that reason alone, with no trace in the logs but the extra files.
+
+**Verified from both sides, which is what makes it a cause rather than a correlation:** C2 measured the
+branch firing and the one-axis effect (9 `.cs` to 0, 13 skip messages to 7, `src/core` byte-identical
+otherwise); G measured the condition false and the effect absent, and then the fix **inert** — parent
+`43a3627667` against seat `19175c31ad`, same base, same flags, 3397 = 3397, **same tree hash**
+`02d58597a86673ab082ce4479309af25fcd27fd716bc81bd37ae7fc28b315eca`.
+
+<!-- G's negative-host arm was built as TWO arms rather than one. COORD's named readings (3397, 342) were
+     G's own numbers from a converter built at 46307b4704, while the seat sits on the version tip
+     43a3627667 -- q94, q97, q99, q100, RED 12 and two of G's seats later. A one-arm before/after would
+     have measured the fix PLUS that drift and been unable to attribute any movement. The drift arm earned
+     the design: the 46307b4704 emission against the seat's parent differs on exactly two paths,
+     sha3/keccakf.cs and sha3/package_info.cs -- q97's footprint -- which a one-arm run would have
+     reported as a FAIL against COORD's numbers with no way to say what caused it. -->
+
+### E. ⚠ A WITHDRAWN NUMBER: every `content DIFFER 0` before `d7b0876ce6` was not measured
+
+`h8-comparand.sh`'s `identity` computed its same-path-different-content counter through
+`join ... -j0 ... 2>/dev/null`. **`-j0` is an invalid field number** — fields are 1-based — so `join`
+exited 1, the redirect ate the message, the pipeline produced no rows and `wc -l` read **0 on every call
+the instrument ever made**.
+
+**Two independent sightings, same evening:** C2 by auditing its own instrument (`1dbd13862`, the report
+and the fix; selftest 32 to 41); G from the other end, when `identity` printed `0 / 0 / 0` and then FAILED
+on differing tree hashes — self-contradictory, since equal path sets with no content differences would
+mean identical manifests.
+
+**Bounded:** the **verdict** was always safe, because PASS additionally requires equal tree hashes and
+equal tree hashes over normalised manifests imply identical content — **no PASS in this record is wrong.**
+What was void is the **diagnostic**: on a FAIL a reader saw `0` and would conclude nothing differed. The
+corrected predicate (`-1 1 -2 1`), checked against a case whose truth is not zero, reads **2** on G's
+drift pair with a live control of 3397 joined rows.
+
+**The banked rule is not about `join`:** a difference counter is not trusted unless something else in the
+same output is capable of contradicting it. Both sightings were caught only that way — G's marker-gate
+zero by the "path absent" counter beside it (§2's comment), this one by the tree hashes beside it.
+
+⚠ **WHAT THIS WITHDRAWS IN §2 ABOVE, named rather than left for a reader to find.** §2 is not rewritten,
+so its two affected claims are corrected here:
+
+1. **The `content differs` column of §2's clause-2 table** (three zeros) came from the dead counter. The
+   three PASSes **stand** — each has equal tree hashes, which independently implies identical content —
+   but the column itself was not measured.
+2. ⚠ **§2's paragraph "A property the controls hand over free"** asserts that `content-differs` is 0 in
+   all three cross-flavour comparisons and infers from it that *the entire difference between flavours is
+   which files are present*. **That inference rested on the void number and is WITHDRAWN as stated.** The
+   only-in counts beside it (227 / 282 / 280) are `comm`-based and were always live, so the controls
+   themselves fired; what is unsupported is the claim that **no shared path differs in content** between
+   two flavour views. That may well be true — it is what L3 predicts — but this record did not measure it,
+   and it should be re-taken with the corrected predicate before anyone relies on it.
+
+Everything else in §2 — the marker gate, the pair construction, the only-in counts, the walls — rests on
+live counters and stands.
+
+### F. The predictions, as finally ruled
+
+`pkgdelta`'s **+40 per target MET exactly**, on a different instrument and host. P1 refuted (Δ partial +6),
+P2 split (the three named artifacts arrived; the count refuted, the sysrand move being a relocation
+netting zero), P3 refuted on both numbers, P4 honoured as a reading, **P5 ruled not a defect** — the
+two-artifact spread is per-GOOS file selection and the prediction's tolerance was written too tight.
+REHEARSAL's "the axis moves in both directions" is **true at `exclusive` only** (15 in, 9 out), false at
+`variant` (4 in, 0 out) and `partial` (7 in, 1 out), measured on one axis per §4.
+
+**None of P1–P5 is a gate item.** A package-membership derivation is structurally blind to per-file
+build-tag selection inside packages present on every target, and that blindness is measured: +20 source
+artifacts and +6 partial. The lesson carried into the amendment is that class-count predictions are either
+derived from the file-level tag selection or stated as package-level bounds.
