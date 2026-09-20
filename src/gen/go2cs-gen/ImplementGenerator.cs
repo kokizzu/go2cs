@@ -169,6 +169,19 @@ public class ImplementGenerator : ISourceGenerator
         // out loud (CS0266), where a wrong name would be the silent failure. That asymmetry is the
         // lesson of this file's own collision-key finding — two halves composing one name from two
         // spellings agree until they do not.
+        //
+        // ⚠ THE MECHANISM, verified by C1 (mailbox f89515008 §1) rather than assumed here:
+        // GetFullTypeName renders a generic as `Name<args>` and everything else as the bare `.Name`,
+        // so for a LOCAL NON-GENERIC target GetSimpleName over it is a NO-OP and the two spellings
+        // are the same string. The excluded cases diverge for the exact reason the collision-key
+        // finding names: a GENERIC target would carry its argument list INSIDE the identifier here
+        // (GetSimpleName's `dropGeneric` defaults to FALSE) where the main loop takes the bare
+        // `.Name` and trails the arguments separately; a FOREIGN target would miss
+        // ForeignPackagePrefix.
+        //
+        // ⚠ AND THIS IS A THIRD CONSUMER OF THAT `dropGeneric` DEFAULT. The follow-up fixing the two
+        // sites it already owns does NOT make this bound removable — the bound is why this consumer
+        // is safe, not a duplicate of their fix.
         Dictionary<string, string> localPointerAdapterNames = new(StringComparer.Ordinal);
 
         foreach ((ITypeSymbol pairStruct, ITypeSymbol pairInterface, string pairPackageClass) in pointerPairs)
@@ -1066,10 +1079,22 @@ public class ImplementGenerator : ISourceGenerator
                 // CS0266 inside the generated file — crypto/mlkem's `EncapsulationKey() E` with E
                 // bound to the projection. Wrap it in the RESULT interface's own adapter.
                 //
-                // Both sides of the key are composed by the SAME pair of helpers that produced the
-                // map (GlobalQualify over ToDisplayString), so the lookup cannot drift from the
-                // registration; a pair the map does not hold — a foreign or generic target — simply
-                // does not wrap, and the compiler names it.
+                // ⚠ THE TWO SIDES OF THE KEY AGREE BECAUSE THE QUALIFIER DISTRIBUTES OVER THE STRING,
+                // which is weaker than what this comment claimed until C1 checked it (mailbox
+                // f89515008 §4). The claim was "both sides are composed by the SAME pair of helpers";
+                // only the MAP side is. The lookup side is SLICED out of the box's own text —
+                // `forwardedReturnType[(boxOpen + 1)..^1]`, the characters between `ж<` and `>`.
+                //
+                // They match because GlobalQualify is a whole-string regex replace, so it rewrites
+                // every root type reference INSIDE the box exactly as it would standing alone. That
+                // is a STRING-LEVEL property, not a symbol-level one: were GlobalQualify ever made
+                // symbol-aware — a plausible tidy-up — the inner text and the standalone form could
+                // differ, the lookup would miss, and the member would fall back to a bare forward.
+                //
+                // The direction is right either way: every exit from the three gates below is a bare
+                // forward, which is CS0266 where a wrap was needed — loud, in the generated file, on
+                // the line. A pair the map does not hold (a foreign or generic target) takes that
+                // same exit by design.
                 Dictionary<string, string> forwardResultWraps = new(StringComparer.Ordinal);
 
                 // ⚠ BOTH forwarding forms are consulted. A direct-ж primary — which is what a Go
