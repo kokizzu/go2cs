@@ -93,10 +93,18 @@ echo "census: origin/master $CENSUS_REF ($CENSUS_LINES lines)"
 # directory this tool already has, takes the strongest, runs every arm from that one, and REFUSES
 # when the battery that would certify is weaker than the maximum this box produces. The census
 # stays the only implementation; this reads the number it already prints.
-idc_arms() {   # the selftest's pass count for a directory, or 0 when it cannot run there
+# ⚠ ARMS ATTEMPTED (pass + fail), never pass alone -- C2's cross-lane finding on this very blob
+# (3c41c49ca), RULED at 0483558ff. An arm that RAN AND FAILED is evidence the arm is live here; an
+# arm that was SKIPPED is not. Counting passes alone CREDITS a directory for never running one, so
+# where an arm fails in one directory and is skipped in another the pass-only count prefers the
+# weaker. Measured on this box the moment it was pointed out: the post clone prints
+# `pass=91 fail=1` -- 92 attempted, not 91 -- so the number this tool printed in every post it has
+# made understated what actually ran there.
+idc_arms() {   # the selftest's ATTEMPTED arm count for a directory, or 0 when it cannot run there
     [ -d "$1" ] || { echo 0; return; }
     ( cd "$1" 2>/dev/null && "$CENSUS" selftest 2>/dev/null ) \
-        | sed -n 's/^SELF-TEST: pass=\([0-9][0-9]*\).*/\1/p' | tail -1 | grep -E '^[0-9]+$' || echo 0
+        | sed -n 's/^SELF-TEST: pass=\([0-9][0-9]*\) fail=\([0-9][0-9]*\).*/\1 \2/p' | tail -1 \
+        | awk 'NF==2 { print $1 + $2; seen=1 } END { if (!seen) print 0 }'
 }
 IDC_BEST_DIR=""; IDC_BEST=0
 for _d in "$CENSUS_CLONE" "$CLONE" "$PWD"; do
@@ -108,8 +116,14 @@ done
 # below can be made to fire on a box where the axis can move. Never set in normal use.
 IDC_DIR="${C1_CENSUS_DIR_FORCE:-$IDC_BEST_DIR}"
 IDC_USED="$(idc_arms "$IDC_DIR")"
-[ "$IDC_USED" -eq "$IDC_BEST" ] || { echo "POST REFUSED: the certifying battery is $IDC_USED arm(s) from '$IDC_DIR', but this box produces $IDC_BEST from '$IDC_BEST_DIR' -- a weaker battery must never certify a post"; exit 3; }
-echo "census battery: $IDC_USED arm(s), from '$IDC_DIR' (strongest of the directories this tool has)"
+# ⚠ -lt, NEVER equality -- C2's second cross-lane finding, RULED at 0483558ff. The rule is "never
+# WEAKER", and `-eq` also refused a STRONGER forced battery: a directory outside this tool's own
+# candidate list can attempt more arms than any of them, and equality called that a violation.
+if [ "$IDC_USED" -lt "$IDC_BEST" ]; then
+    echo "POST REFUSED: the certifying battery attempts $IDC_USED arm(s) from '$IDC_DIR', but this box produces $IDC_BEST from '$IDC_BEST_DIR' -- a weaker battery must never certify a post"
+    exit 3
+fi
+echo "census battery: $IDC_USED arm(s) attempted, from '$IDC_DIR' (strongest of the directories this tool has)"
 # Every census arm goes through this, so all three answer with the SAME battery, by construction.
 census() { ( cd "$IDC_DIR" && "$CENSUS" "$@" ); }
 
