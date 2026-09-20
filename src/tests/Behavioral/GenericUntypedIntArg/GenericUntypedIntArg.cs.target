@@ -34,7 +34,7 @@ internal static void Main() {
     var bs = new byte[]{1, 2, 3}.slice();
     fmt.Println(Index(bs, (byte)(2)));
     var rs = new int32[]{100, 200, 300}.slice();
-    fmt.Println(Index(rs, 200));
+    fmt.Println(Index(rs, (int32)(200)));
     fmt.Println(appendAll(ints, (nint)(50), (nint)(60)));
     fmt.Println(appendAll(bs, (byte)(4), (byte)(5)));
     fmt.Println(appendAll(new numbers(new nint[]{1}.slice()), (nint)(2)));

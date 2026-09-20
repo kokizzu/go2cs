@@ -1,28 +1,28 @@
 namespace go;
 
 using fmt = fmt_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using System.Runtime.CompilerServices;
 
 partial class main_package {
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static nint selfLine() {
-    var (_, _, line, _) = Δruntime.Caller(0);
+    var (_, _, line, _) = runtime.Caller(0);
     return line;
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static nint callerLine() {
-    var (_, _, line, _) = Δruntime.Caller(1);
+    var (_, _, line, _) = runtime.Caller(1);
     return line;
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static @string callerFile() {
-    var (_, @file, _, _) = Δruntime.Caller(1);
+    var (_, @file, _, _) = runtime.Caller(1);
     return @file;
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static nint grandLine() {
-    var (_, _, line, _) = Δruntime.Caller(2);
+    var (_, _, line, _) = runtime.Caller(2);
     return line;
 }
 
@@ -43,7 +43,7 @@ internal static (nint, nint) sameSite() {
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static bool okAt(nint skip) {
-    var (_, _, _, ok) = Δruntime.Caller(skip);
+    var (_, _, _, ok) = runtime.Caller(skip);
     return ok;
 }
 
@@ -53,7 +53,7 @@ internal static (nint, nint) sameSite() {
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static nint depth() {
     var pc = new slice<uintptr>(256);
-    return Δruntime.Callers(0, pc);
+    return runtime.Callers(0, pc);
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static nint depthPlus1() {
@@ -107,7 +107,7 @@ private static readonly object tracebackParenthesizesˢ = (@string)"traceback pa
     fmt.Println(selfLineConstantˢ, selfLine() == selfLine());
     fmt.Println(selfLineDiffersFromCallˢ, selfLine() != callerLine());
     fmt.Println(distinctCallSitesˢ, siteA() != siteB());
-    var (_, here, _, _) = Δruntime.Caller(0);
+    var (_, here, _, _) = runtime.Caller(0);
     fmt.Println(sameFileˢ, here == callerFile());
     fmt.Println(fileReportedˢ, len(here) > 0);
     fmt.Println(callerFileTailˢ, callerFileTail());
@@ -149,7 +149,7 @@ internal static bool hasByte(@string s, byte b) {
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static (bool fwd, bool back) callerSeparators() {
-    var (_, @file, _, _) = Δruntime.Caller(0);
+    var (_, @file, _, _) = runtime.Caller(0);
     return (hasByte(@file, (rune)'/'), hasByte(@file, (rune)'\\'));
 }
 
@@ -158,8 +158,8 @@ internal static bool hasByte(@string s, byte b) {
     bool back = default!;
 
     var pc = new slice<uintptr>(64);
-    nint n = Δruntime.Callers(0, pc);
-    var frames = Δruntime.CallersFrames(pc[..(int)(n)]);
+    nint n = runtime.Callers(0, pc);
+    var frames = runtime.CallersFrames(pc[..(int)(n)]);
     while (ᐧ) {
         var (frame, more) = frames.Next();
         if (len(frame.File) > 0) {
@@ -174,7 +174,7 @@ internal static bool hasByte(@string s, byte b) {
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static @string callerFileTail() {
-    var (_, @file, _, _) = Δruntime.Caller(0);
+    var (_, @file, _, _) = runtime.Caller(0);
     nint cut = 0;
     nint seen = 0;
     for (nint i = len(@file) - 1; i >= 0; i--) {
@@ -190,7 +190,7 @@ internal static bool hasByte(@string s, byte b) {
 }
 
 [MethodImpl(MethodImplOptions.NoInlining)] internal static bool callerFileRooted() {
-    var (_, @file, _, _) = Δruntime.Caller(0);
+    var (_, @file, _, _) = runtime.Caller(0);
     if (len(@file) > 0 && @file[0] == (rune)'/') {
         return true;
     }
@@ -199,7 +199,7 @@ internal static bool hasByte(@string s, byte b) {
 
 internal static bool stackHasBackslash() {
     var buf = new slice<byte>(8192);
-    nint n = Δruntime.Stack(buf, false);
+    nint n = runtime.Stack(buf, false);
     return hasByte(((@string)(buf[..(int)(n)])), (rune)'\\');
 }
 
@@ -221,7 +221,7 @@ internal static bool hasSub(@string s, @string sub) {
 
 internal static @string stackText() {
     var buf = new slice<byte>(8192);
-    nint n = Δruntime.Stack(buf, false);
+    nint n = runtime.Stack(buf, false);
     return ((@string)(buf[..(int)(n)]));
 }
 

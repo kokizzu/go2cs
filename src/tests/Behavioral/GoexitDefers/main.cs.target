@@ -1,7 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 
 partial class main_package {
 
@@ -18,7 +18,7 @@ internal static void exitFromHelper(channel/*<-*/<@string> log) {
             logʗ1.ᐸꟷ(helperDeferRanˢ);
         }, ref ᒐ);
         log.ᐸꟷ(helperCallingRuntimeˢ);
-        Δruntime.Goexit();
+        runtime.Goexit();
         log.ᐸꟷ(helperResumedUnreachableˢ);
     }
     catch (Exception ᒐex) when (GoFrame.IsPanic(ᒐex, out PanicException? ᒐp)) { GoFrame.Capture(ᒐp); }

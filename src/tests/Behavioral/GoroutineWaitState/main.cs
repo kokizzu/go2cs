@@ -1,7 +1,7 @@
 namespace go;
 
 using fmt = fmt_package;
-using Δruntime = runtime_package;
+using runtime = runtime_package;
 using strings = strings_package;
 using Δsync = sync_package;
 using time = time_package;
@@ -24,7 +24,7 @@ internal static bool present(@string dump, @string state) {
 }
 
 internal static @string dump(slice<byte> buf) {
-    return ((@string)(buf[..(int)(Δruntime.Stack(buf, true))]));
+    return ((@string)(buf[..(int)(runtime.Stack(buf, true))]));
 }
 
 internal static @string await(slice<byte> buf, slice<@string> want, bool sense) {
@@ -41,7 +41,7 @@ internal static @string await(slice<byte> buf, slice<@string> want, bool sense) 
         if (ok) {
             return d;
         }
-        Δruntime.Gosched();
+        runtime.Gosched();
         time.Sleep(time.Millisecond);
     }
     return d;
