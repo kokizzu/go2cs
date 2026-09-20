@@ -87,6 +87,42 @@ git -C "$CENSUS_CLONE" fetch origin +master:refs/remotes/origin/master --quiet 2
 CENSUS_REF="$(git -C "$CENSUS_CLONE" rev-parse --short origin/master 2>/dev/null)"
 mkdir -p "$CENSUS_DIR"
 for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifier-hashes.txt; do
+    # ⚠ A LINE FLOOR PER FILE, not just on the census script. `-s` alone passes a file that is
+    # genuinely short, and A SHORT PATTERNS FILE IS NOT A REFUSAL -- IT IS A QUIETER CENSUS. Measured
+    # 2026-09-20 on this box: truncated to 140 of its 166 lines the patterns file passes `-s`, the
+    # census runs 5 of its 16 arms, exits 0 and reports CLEAN over an entry the full file REFUSES.
+    # The census's own guard does not cover it -- it refuses by name at ZERO arms and runs a REDUCED
+    # battery for anything between -- and the arms are lost in FILE ORDER, so which identifiers
+    # survive is decided by where their arm happens to sit: an 80-line cut drops fourteen of sixteen,
+    # every nickname arm and every address arm among them.
+    #
+    # ⚠⚠ WHAT THESE FLOORS DO AND DO NOT CLOSE, measured rather than assumed, because a guard
+    # described as more than it is, is worse than none:
+    #   THEY CLOSE   gross truncation -- a file cut below its floor never reaches the cache, since
+    #                this check runs BEFORE the mv.
+    #   THEY DO NOT  close the 140-line case above. 140 >= the patterns floor of 100, so the very
+    #                truncation that produced the false green PASSES. Arms are back-loaded: eleven of
+    #                the sixteen live in the last 26 lines, so NO line floor short of the file's own
+    #                length is a proxy for arm count, and a floor at its own length is a false refusal
+    #                waiting for the day the fleet legitimately trims a pattern.
+    #   NOR DOES     the battery count notice: the self-test reports 95 arms attempted on a 166-line
+    #                AND on a 140-line patterns file -- it is not a function of this file (C2's point
+    #                from a second direction, `7448c80de`: a self-reported count is not a measurement
+    #                of the census).
+    #   NOR DOES     any of this reach a census that LIES -- an arm-less body printing a plausible
+    #                `SELF-TEST: pass=N fail=M` clears every floor and every count.
+    # The predicate that closes all three is BYTES, not behaviour: i9's tool hashes its local copy
+    # against master's blob before executing it (`d321609fa`) and refuses a truncated, an arm-less
+    # and a lying census alike. This tool materialises from `origin/master`, so the same predicate is
+    # available to it cheaply. Floors are what was ruled here (COORD `11afb1094`, C2's numbers at
+    # `f4b736452f`); the byte predicate is reported, not taken unilaterally.
+    #   census 1000 of 1415   patterns 100 of 166 (the tightest, 1.66x)   hashes 10 of 34
+    case "$f" in
+        coord-identifier-census.sh)    _floor=1000 ;;
+        coord-identifier-patterns.txt) _floor=100  ;;
+        coord-identifier-hashes.txt)   _floor=10   ;;
+        *)                             _floor=1    ;;
+    esac
     # ⚠ TMP THEN MV, never straight into place. `>` truncates its target BEFORE the command to its
     # left runs, so a FAILED `git show` leaves a ZERO-BYTE file behind and then exits 2. This tool is
     # protected by the two asserts below and refuses closed -- but the cache is a PATH, and anything
@@ -98,10 +134,15 @@ for f in coord-identifier-census.sh coord-identifier-patterns.txt coord-identifi
     git -C "$CENSUS_CLONE" show "origin/master:.claude/coord-scripts/$f" > "$CENSUS_DIR/$f.tmp" 2>/dev/null \
       || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: cannot materialise $f from origin/master"; exit 2; }
     [ -s "$CENSUS_DIR/$f.tmp" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: $f materialised EMPTY"; exit 2; }
+    _n="$(wc -l < "$CENSUS_DIR/$f.tmp")"
+    [ "$_n" -ge "$_floor" ] || { rm -f "$CENSUS_DIR/$f.tmp"; echo "POST REFUSED: $f materialised at only $_n line(s), floor $_floor -- a short file is a QUIETER census, not a failed one"; exit 2; }
     mv -f "$CENSUS_DIR/$f.tmp" "$CENSUS_DIR/$f"
 done
 # A truncated blob is the failure this assert exists for: a short census still RUNS and still exits
 # 0 on a body it never finished scanning, which is a green over nothing of exactly tonight's class.
+# Kept deliberately beside the loop's floor rather than replaced by it: the loop's check is BEFORE the
+# mv, so a short file never enters the cache; this one is AFTER, so it also reads a cache some other
+# process corrupted between the mv and here. Two readings of the same property at two moments.
 CENSUS_LINES="$(wc -l < "$CENSUS")"
 [ "$CENSUS_LINES" -ge 1000 ] || { echo "POST REFUSED: census materialised at only $CENSUS_LINES lines"; exit 2; }
 chmod +x "$CENSUS"
