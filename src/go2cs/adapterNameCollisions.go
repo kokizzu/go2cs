@@ -201,7 +201,17 @@ func adapterInterfaceSimpleName(interfaceTypeName string) string {
 // also serves the collision KEYS, and those garble a generic interface reference ON PURPOSE: the
 // generator's keys garble identically, so the two halves agree, and stripping one side alone would
 // manufacture the divergence the struct-side rule exists to prevent (COORD 8b1a284122 / 274b71f5a).
-// A parity arm asserts the garbled value so a later reader cannot tidy the asymmetry away.
+// A parity arm asserts the garbled value so a later reader cannot tidy the asymmetry away. ⚠ That
+// parity is a property of the CALL SITE, not of this function: it holds where the key is taken from
+// the record spelling (anchoredAdapterMemberName) and not where the name arrives pre-stripped from
+// the marker (adapterResolvedName, whose own comment says so).
+//
+// ⚠ THE INPUT CONTRACT IS AN INTERFACE REFERENCE, NEVER A BOX FORM, and that is caller discipline
+// rather than construction (C2, mailbox 767c73dd1 §4). Handed `ж<T>` this returns the bare marker
+// glyph: the guard excludes only a name STARTING with '<', so a box form satisfies it. Every call
+// site today passes an interface reference — a GoImplement's interface side is never a box — but
+// the next caller is the one that finds out, and "correct through today's callers" is exactly the
+// coupling adapterResolvedName strips its own input to avoid.
 func stripAdapterInterfaceTypeArgs(interfaceTypeName string) string {
 	if idx := strings.Index(interfaceTypeName, "<"); idx > 0 && strings.HasSuffix(interfaceTypeName, ">") {
 		return interfaceTypeName[:idx]
@@ -497,8 +507,17 @@ func adapterResolvedName(structBase string, interfaceTypeName string, colliding 
 	// (emittedAdapterPair, whose two sides arrive stripped and unstripped) is precisely what broke.
 	// A name-composing site strips its own input; the coupling is not worth the line it saves.
 	//
-	// The colliding lookup keeps the name AS GIVEN: adapterGroupKey is a collision KEY and those
-	// garble in step with the generator's on purpose (see stripAdapterInterfaceTypeArgs).
+	// ⚠ The colliding lookup keeps the name AS GIVEN — and unlike its sibling at
+	// anchoredAdapterMemberName, the PARITY ARGUMENT DOES NOT HOLD HERE (C1, mailbox fe07b469e §2).
+	// There, pair[1] is the RECORD spelling adapterNameCollisionSet builds the set from, so the key
+	// matches. Here the name arrives from the MARKER, already stripped by adapterTypeRef, while the
+	// set still holds the closed spelling — so for a generic interface this lookup MISSES.
+	//
+	// That miss is COORD's banked residual (938bb886f), at its exact site, and it costs the
+	// QUALIFIER rather than the name: an unapplied prefix on a colliding group, never a wrong
+	// identifier. Unifying the two is a PAIRED seat — the converter's keys and the generator's
+	// garble alike today, and moving one alone manufactures the divergence AdapterStructKey exists
+	// to prevent — so it is named here rather than fixed here.
 	interfaceRef := stripAdapterInterfaceTypeArgs(interfaceTypeName)
 	ifaceSimple := adapterInterfaceSimpleName(interfaceRef)
 
