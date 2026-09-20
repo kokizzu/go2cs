@@ -1022,6 +1022,25 @@ public class ImplementGenerator : ISourceGenerator
                 // argument list) and from the simple name everywhere else.
                 string foreignAdapterBaseName = $"{ForeignPackagePrefix(structType)}{(foreignClosedStructName is null ? GetSimpleName(structName) : adapterBaseName)}";
 
+                // The INTERFACE side of the adapter's NAME, the struct side's rule one operand over: a
+                // record naming a CLOSED instantiation of a GENERIC interface must not land the
+                // argument list inside the class IDENTIFIER. GetFullTypeName spells a generic
+                // `Name<typeArgs>` with the arguments rendered from their display strings, so the
+                // last-dot scan inside GetSimpleName runs INSIDE the list and yields the argument's
+                // own tail segment (`digestжnamed>` for `keyedLike<go.…​.named>`) — not a name any
+                // class can carry, and the same shape the seat fixed on the struct side. Dropped
+                // BEFORE the qualifier scan, the order splitAdapterStructReference documents.
+                //
+                // ⚠ ONLY the minted NAME takes the strip. The two collision KEYS — the pre-pass's
+                // grouping key and the lookup below — keep the last-dot-only reduction, because the
+                // converter's adapterInterfaceSimpleName keeps it too: both halves garble a generic
+                // interface reference IDENTICALLY, which is parity, and stripping on one side alone
+                // would manufacture the divergence AdapterStructKey exists to prevent. The
+                // consequence is the seat's ruled behaviour, now symmetric across both operands: two
+                // records that compose one class name without being seen as a collision fail LOUDLY
+                // at CS0102 instead of binding the first one silently.
+                string adapterInterfaceName = GetUnsanitizedIdentifier(GetSimpleName(StripGenericTypeArguments(interfaceName)));
+
                 string adapterSource = new AdapterImplTemplate
                 {
                     PackageNamespace = packageNamespace,
@@ -1053,7 +1072,7 @@ public class ImplementGenerator : ISourceGenerator
                     // The interface side takes a package qualifier ONLY when this name is one the
                     // pre-pass found more than one interface composing (see adapterNameGroups) —
                     // flate's own `Reader` vs `io.Reader`, both reached from *bufio.Reader.
-                    AdapterName = $"{(foreignStruct ? foreignAdapterBaseName : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}",
+                    AdapterName = $"{(foreignStruct ? foreignAdapterBaseName : adapterBaseName)}{PointerPrefix}{(collidingAdapterNames.Contains($"{AdapterStructKey(structType, packageClassName)}{PointerPrefix}{GetUnsanitizedIdentifier(GetSimpleName(interfaceName))}") ? AdapterInterfacePrefix(interfaceType, packageClassName) : "")}{adapterInterfaceName}",
                     TypeParameters = adapterTypeParameters,
                     ConstraintClause = adapterConstraintClause,
                     AdapterScope = adapterScope,
@@ -1308,9 +1327,25 @@ public class ImplementGenerator : ISourceGenerator
     /// LOCAL type reference is written bare in the GoImplement record while a foreign one is
     /// qualified — the two must agree or the collision groups diverge.
     /// </summary>
+    /// <remarks>
+    /// A generic type-argument list is dropped FIRST and the last path segment taken SECOND, which is
+    /// the order <c>splitAdapterStructReference</c> documents on the converter's half
+    /// (<c>"bytes_package.Reader&lt;int&gt;"</c> → <c>("bytes_package", "Reader")</c>) and the order
+    /// this key must repeat, or the two halves group one struct two ways. Reversed — which is what
+    /// <c>GetSimpleName</c> alone does, splitting on the last '.' and dropping generics only when
+    /// asked, which it cannot usefully be here because by then the split has run — the last-dot scan
+    /// lands INSIDE the argument list and the "simple name" becomes the argument's own tail segment:
+    /// <c>nistCurve&lt;P224PointжnistPoint&gt;</c> keyed as <c>P224PointжnistPoint&gt;</c>, and a
+    /// nested <c>a.G&lt;b.T&gt;</c> as <c>T&gt;</c>. Composed at the CALL SITE rather than by flipping
+    /// <c>GetSimpleName</c>'s internals, for the seat's own reason and one more: that helper
+    /// dereferences a <c>ж&lt;T&gt;</c> box form before splitting, and stripping generics inside it
+    /// would eat the form instead of an argument list. This key never receives one — a GoImplement's
+    /// first type argument is the struct itself, never its box (measured: 0 of 2,752 committed
+    /// records spell one) — so the call site is the only safe place for it.
+    /// </remarks>
     private static string AdapterStructKey(ITypeSymbol structType, string packageClassName)
     {
-        string simpleName = GetUnsanitizedIdentifier(GetSimpleName(structType.ToDisplayString()));
+        string simpleName = GetUnsanitizedIdentifier(GetSimpleName(StripGenericTypeArguments(structType.ToDisplayString())));
         string? container = structType.ContainingType?.Name;
 
         if (container is null || !container.EndsWith(PackageSuffix) || container == packageClassName)
