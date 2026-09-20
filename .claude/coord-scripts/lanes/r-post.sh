@@ -231,7 +231,34 @@ if ! git push origin "HEAD:$BRANCH" >/dev/null 2>&1; then
   git fetch origin "$BRANCH" >/dev/null 2>&1
   echo "  INTERLEAVED (read these, they are unread posts):"
   git log --format='    %H %ad %s' --date=format:'%m-%d %H:%M' "$PRE_TIP..origin/$BRANCH" | cat
-  git merge --no-edit "origin/$BRANCH" >/dev/null 2>&1 || { echo "REFUSED(11): merge failed"; rm -f "$TOKENS"; exit 11; }
+  # ⚠ ON A FAILED MERGE, ABORT IT. Until 2026-09-20 this exited on the spot, leaving the clone
+  # MID-CONFLICT with `UU docs/phase4/MAILBOX.md` — and a mid-conflict clone is not a state a lane
+  # can re-run from, so the operator finishes the merge BY HAND. That is exactly what happened to me:
+  # the refusal left the conflict, I resolved it by hand keeping both entries in landing order, and
+  # the result was the merge commit COORD noted on the channel (2ff90b006).
+  #
+  # Aborting restores the clone to the fetched tip with the local append still committed, which is a
+  # state a plain RE-RUN resolves: the tool re-fetches, re-appends onto the new tip and pushes, and
+  # the history stays linear. The duplicate-heading check is what makes the re-run safe — if the
+  # entry did land, it refuses (5) instead of posting twice.
+  #
+  # ⚠ ARMED BY r-post-abort-arm.sh — AND IT WAS NOT ARMED WHEN IT LANDED. I verified this fix with
+  # a --dry-run and the 15 bar/anchor arms, and NEITHER CAN REACH THIS LINE: the dry run exits at
+  # step 3, and every bar arm refuses above step 4. C2's note (mailbox 4f29a8742 §2) names the class
+  # — "an A/B whose arms cannot differ is not an A/B" — and this was the same shape one level over,
+  # a change verified by instruments that stop above it. The arm builds a throwaway remote, LOSES A
+  # RACE on purpose through a pre-push hook, and reads the clone's STATE afterwards.
+  # ⚠ Its three STATE assertions are the arm; its three MESSAGE assertions are not. Deleting the
+  # abort line below leaves `rc 11`, the INTERLEAVED listing and the word ABORTED in the output all
+  # GREEN, and reds only `clean / no MERGE_HEAD / no unmerged paths` — a refusal TEXT asserting an
+  # abort is not evidence that one happened.
+  if ! git merge --no-edit "origin/$BRANCH" >/dev/null 2>&1; then
+    git merge --abort >/dev/null 2>&1
+    echo "REFUSED(11): merge failed -- the merge is ABORTED and the clone is clean."
+    echo "             Re-run this post: it re-appends onto the new tip, and the duplicate-heading"
+    echo "             check refuses if your entry did in fact land."
+    rm -f "$TOKENS"; exit 11
+  fi
   git push origin "HEAD:$BRANCH" >/dev/null 2>&1 || { echo "REFUSED(11): push failed after merge"; rm -f "$TOKENS"; exit 11; }
 fi
 
