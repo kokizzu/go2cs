@@ -1636,6 +1636,109 @@ the run and must **never** be read as a corpus regression.
      runbook's own line 651 conflates the two paths. The eight by name, each present and none skipped: i9 7ede39d67 §1 (the alias-union
      acceptance, recorded by COORD 204c3ab59). -->
 
+#### Correction 2026-09-19 (C2) — the eight are stale: the prediction of record is ELEVEN, in TWO mechanisms
+
+The amendment above names eight goldens, 35 changed line-pairs and one mechanism. That prediction was
+made at `a02ac3df3` for the **H2→H5 window**, and the version branch has since taken every RED seat and
+the q9x applies. **Re-derived and MEASURED at version tip `06b1636cae`** — the converter built at that
+tip and all **735** behavioral goldens transpiled and compared, not estimated: **716 SAME, 14 CHANGED,
+5 NOT MEASURED**. The eight are **stale, not mistaken**.
+
+##### Mechanism 1 — the `Δruntime` alias drop: eight goldens, **37** line-pairs
+
+```
+  RuntimeCallerFrames  15    FuncLiteralCallerNames  3    FuncForPCName       2
+  SetFinalizerBridge    6    GoroutineWaitState      3    GoexitDefers        2
+  SetegidBroadcastSeam  4    IterPullRendezvous      2
+```
+
+`added == removed` on every one, and **zero diff lines not containing `runtime`** on all eight —
+the single mechanism, measured rather than asserted.
+
+- ⚠ **`SyscallKeystonePulls` is NOT in the set.** Its golden carries `Δruntime` and so does the
+  emission at 1.24.13 — the collision that forces the alias survives there, so it contributes **0**.
+  Its appearance in a CHANGED set is the sharpest falsifier of this whole prediction.
+- ⚠ **`SetegidBroadcastSeam` is in it**, at 4 pairs, pure alias. It is the ninth the amendment's
+  "a ninth moved golden … is a finding" line anticipated, and it is a finding of the ORDINARY kind:
+  the enumeration was short, not the mechanism wrong.
+- **The 35 reconciles exactly**: the seven surviving originals total 33, and 35 − 33 = 2 is precisely
+  what `SyscallKeystonePulls` would have contributed at the two-pair shape (one `using` line, one use
+  site) that three of its siblings show. The stale number counted a project that does not move.
+
+##### Mechanism 2 — converter seats that changed emission and banked no golden: three
+
+| golden | shape | seat |
+|:--|:--|:--|
+| `GenericTypeInference.cs` | `Scale(p, (int32)(2))` vs `Scale(p, 2)` — 4 pairs, 1:1 | **RED 12** `457cba3b60` (`convCallExpr.go`) |
+| `GenericUntypedIntArg.cs` | same arm — 1 pair, 1:1 | **RED 12**, same seat |
+| `ReceiverCapturedInClosure/main.cs` | the hoist — **+4 / −1** | **RED 11** `410976f049` (`convSelectorExpr.go`) |
+
+##### The `added == removed` rule, restated PER MECHANISM
+
+The rule was written when there was one mechanism. It now reads: a **mechanism-1** golden must satisfy
+`added == removed` **and** carry no non-alias line; a **mechanism-2** golden must match the emission
+shape its seat is known to produce — RED 12's typed constant is 1:1, **RED 11's hoist adds lines by
+construction**. `ReceiverCapturedInClosure` at +4/−1 is accepted as RED 11's shape **on a quote of the
+hunk, never on the count**. *"A finding, never a rebank"* is satisfied by the finding being
+**classified and named before the copy**; a hunk that cannot be attributed to a landed seat stays a
+finding and stops the rebank.
+
+##### ⚠ The blind spot, named as a set — the re-derivation ran on LINUX
+
+```
+  NOT MEASURED (emits nothing on linux)  FindFirstFileData · PointerOutParameter · SystemCertVerify
+                                         WindowsNewCallback · WsaProtocolInfo
+  MEASURED BUT PLATFORM-DIVERGENT        SockaddrRoundTrip · WsaSendtoRoundTrip
+```
+
+The last two are the platform showing itself — `syscall.Sockaddr` vs `syscallꓸSockaddr`,
+`SockaddrInet4жSockaddr` vs `SockaddrInet4жΔSockaddr` — because the `syscall` package's own content
+differs per GOOS, so the collision set the renamer sees differs. **They are not findings.** The
+Windows CNR reads all seven; each that comes up CHANGED is classified by mechanism from its hunk
+before it joins the `--only` list, and one fitting neither mechanism is a finding.
+
+**A cross-platform arm is admissible only if it is SHOWN to be**, and the control is the rebank's own
+history: the **seven goldens re-baselined inside this window** (`CollidingPackageNames`, `CrossPkgUser`,
+`DefinedOverNamedComposite`, `DefinedTypeOverForeignStruct`, `DefinedTypeOverPkgType`,
+`LiftedLocalTypes`, `NamedArrayWrapper`) reproduce **byte-identically**, 7 of 7 — they were re-baselined
+by the very seats in this window, so a platform that moved their emission would show here. It does not.
+⚠ That control also caught the run's own defect before it became a result: the first pass passed
+`-comments`, and **behavioral goldens were captured without them**, which read as 144 changed lines on a
+project that had to be clean. A cross-platform arm without a same-window control is an opinion.
+
+**A hand-owned golden is not a rebank candidate.** A whole-corpus sweep that compares a fresh emission
+against `[module: GoManualConversion]` files reports drift the converter cannot produce: the converter
+does not write them (it emits the `.cs.auto` sibling). `ManualConversionSiblingState/state.cs` read
++0/−9 for exactly that reason and is predicted **SAME** on CNR.
+
+##### ⚠ The process gap this exposed, which outlives the hop
+
+Mechanism 2 exists **only because two converter seats changed emission and banked no behavioral golden
+in the same commit.** Measured over this window: **109** commits touch `src/go2cs` since `a02ac3df3`,
+**32** of them touch emission source, and **4** re-baselined a behavioral golden in the same commit
+(one more did it in a companion commit). The rest were the stdlib hand-own registry, the `-tests`
+pipeline, or plumbing — but RED 11 and RED 12 were neither, and their drift sat unbanked until a
+whole-corpus comparison found it.
+
+**The rule, going forward: a converter seat that changes emission re-baselines the goldens it moves in
+the same commit, or NAMES in its message why it moves none.** A seat gated on the stdlib compile front
+has not been gated on the behavioral corpus, and the gap is invisible until H9 — which is the one step
+that re-baselines wholesale, i.e. the step most likely to bank it silently.
+
+<!-- C2, 2026-09-19, in-stage; ruled by COORD at mailbox 39395d257 on C2's measured prediction 56ec9931a.
+     Method: go2cs built at 06b1636cae (go1.24.13 linux/amd64, -trimpath -buildvcs=false); every project
+     transpiled into its own output root with the output directory as the SECOND POSITIONAL, sequentially,
+     never concurrent; compared against EVERY .cs.target the project carries, not just main.cs — 193 of the
+     735 are per-source-file targets and a main.cs-only sweep cannot see a ninth hiding in one.
+     Both sides asserted non-empty before any verdict, so a project that emits nothing on this platform
+     reports NOT MEASURED and never SAME.
+     Line-pair counts are diff hunks on the emitted .cs vs its .cs.target at that tip.
+     The git derivation agrees with the measurement on WHERE: the mechanism-2 goldens fall in exactly the
+     convCallExpr.go / convSelectorExpr.go seats that banked nothing.
+     The stale prediction and its provenance: a02ac3df3:docs/phase4/REHEARSAL-h9-golden-rebank.md:15-36. -->
+
+
+
 
 ### H10 — Roster, proof-page and disclosure re-derivation ⟲ **GATE**
 
