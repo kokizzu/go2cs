@@ -2226,6 +2226,93 @@ adds testable packages faster than validation adds rows.
 must equal the roster's row count. It is the committed-evidence half of the green-badge rule, and if
 a migration ends with the two unequal the badge census miscounts — loudly, by design.
 
+#### Amendment 2026-09-20 (C1) — the LAUNCH, in stage: the order, the dispatch mechanism, the host rule, and the checklist a reader starting here needs
+
+The step above is a per-package procedure and a gate. **It does not say how a campaign of them is
+ordered, enumerated, dispatched or hosted**, and at the 1.23 → 1.24 hop every one of those was a
+question someone had to answer under time pressure. Written here so the next hop's reader does not.
+
+**THE ORDER, and the two wrong orders are MEASURED refusals rather than cautions.**
+
+```
+  RECON LEG  ->  ROSTER SEAT  ->  PLAN  ->  DRIVER
+```
+
+The recon leg is the first full pass of the roster at the version tip, per package, never the sweep
+wrapper; it banks the per-row TSV the map reads. Then the roster seat lands. Then the plan is emitted
+from that TSV and the driver runs the campaign's repeated passes.
+
+- **Plan before seat** dispatches the relocated rows at their OLD paths, which do not exist at the
+  new tip — a per-row failure, late.
+- **Seat before recon** makes the map generator **REFUSE**: its population is the roster file, so
+  re-pointing rows whose cost is keyed by the old name orphans them, and its own arithmetic
+  (`costed + unscheduled == roster rows`) stops closing. Measured at the 1.24 hop:
+  `162 costed + 48 unscheduled != 204 roster rows`, naming the six orphans.
+
+**THE DISPATCH MECHANISM.** The campaign is not a loop over the roster. The map generator
+(`docs/phase4/hopA-inputs/shardmap.py`) reads the roster for its POPULATION and a banked per-row TSV
+for its COSTS, and emits a machine-readable plan; the driver (`src/run-h10-dispatch.ps1`) runs one
+worker's rows from that plan, slice by slice, with the ruled cooldown between slices. Both refuse
+rather than guess: the driver's `-Plan`, `-Worker` and `-FleetSize` are mandatory with no defaults
+(the same worker holds different row sets at different fleet sizes), and a plan whose digest does not
+reproduce dispatches nothing. **The recon leg predates the plan and therefore runs from hand-listed
+per-worker name lists through the per-package pipeline** — the driver's first use is the costed pass.
+
+**THE TSV the plan is emitted from**, as the generator reads it — `--timings <path>`, no default and
+no fallback (an unresolvable path refuses rather than reverting to the other basis); LF only, any CR
+refuses; a required header read **by name, never by position**, carrying `row`, `word`, `verdicts`,
+`sweep_s`, extras ignored; `sweep_s` must be an integer, because **a row with no measured cost is
+UNSCHEDULED and never nominal**; a hand-stopped row is dropped by name **and the drop must fire**, so
+the banked TSV must still carry that row; duplicates take the larger and say so; the file's digest is
+computed and printed for provenance, not asserted.
+
+**THE HOST RULE.** The roster's platform marker records **the platform of the run that banked the
+row**, not a requirement on the runner: a row re-banked on windows carries `windows:` at the new
+release. A row whose windows reading diverges from its previous platform's bank is re-read on a linux
+host at the same tip before it is classified — diverged on both is hop debt, windows-only is a
+parity-campaign item disclosed as such with the row's bank being its linux reading, and matched is
+banked. **Hop completion is same-platform by construction.** Two row classes are decided by the
+package and not by scheduling: a package with no Go files under a platform's build constraints
+**cannot be converted there at all** (the converter refuses by name), and its marker reads `n/a`.
+
+**THE PRECONDITIONS, which H10 above states only in part.** The step names the four overrides and the
+never-the-sweep-wrapper rule; the rest are inherited from earlier stages and are restated here
+because a reader starting at H10 gets no pointer to them:
+
+| precondition | where it is ruled |
+|:--|:--|
+| all four overrides (the Go pair per H1.1; `DOTNET_ROOT` + PATH where the machine SDK lags the TFM) | H10 above |
+| the per-package pipeline, **never** `run-validated-sweep.ps1` | H10 above |
+| the pin asserted from `go version` **OUTPUT**, never a file, with `GOTOOLCHAIN=local` | H1 — and the target SDK's own `go` answers the MACHINE pin without it |
+| the output root is the worktree at the tip, whose `src/core` **is** the seed | H5's seeded-root rule; measured in `-tests` form at the 1.24 hop — a hand-own-carrying row converts rc 1 in a bare root and rc 0 seeded |
+| ≥ 25 GB free before a battery | H4a |
+| one conversion per output root, never two concurrent; one dispatch per worktree | H5 |
+| `CGO_ENABLED` pinned to the corpus state, exported rather than assumed | the corpus emission state |
+| an entirely hand-owned package converts only under `-test-allow-handown` | the converter's own refusal, by name |
+
+**THE PER-ROW STEPS** are H10's five above, and two of them are where a hop's roster edits actually
+happen: the **verdict count re-derives** (the denominator moves), the **manifest is RE-SIGNED, never
+edited** — and since 2026-09-05 a re-derived manifest emits `deferred`/`structural`, so a hop retires
+every legacy label — the **proof page regenerates and the badge recomposes from it**, and the
+**per-package deadline floors are re-checked**. A cleared relocated row needs five artifacts and
+**four of them are `-tests` output**: the roster row is the docs edit, while the green badge, the
+proof page, the `.tests.csproj` and the disclosure manifest are all produced by the re-bank. That is
+why a relocated row cannot be cleared by a docs commit ahead of its run.
+
+<!-- Derivation, 2026-09-20 (C1). Order and the two refusals: COORD 1e2d12a64 §1, on C1's brief
+     d0c83ed9 (the seat-before-recon refusal measured in-process against shardmap.py with an
+     unmodified copy reproducing the in-tree run byte-identically as the control) and C2's pre-flight
+     5ceedaf88. Dispatch mechanism: DESIGN-h10-dispatch-driver.md and the rulings e0d5121e2 §7 /
+     4327ab7e1 §2; the mandatory-parameter and digest refusals are read from run-h10-dispatch.ps1's
+     own header and parameter block. TSV: shardmap.py parse_timings_tsv, read at master 4d25779a1a.
+     Host rule: COORD 1e2d12a64 §3. The n/a class: C2 5ceedaf88 measured the converter's refusal on
+     the two windows-only rows; C1 re-measured the platform class of all 227 skeleton rows with
+     `go list -e` per GOOS at the pinned 1.24.13 GOROOT under the corpus tags -- 225 both, 2
+     windows-only, 0 linux-only, with a fabricated package as the control (the first run read 0 of
+     227 on linux because one unresolvable package aborts the listing without -e: an all-zero shape,
+     caught by the shape and not the rc). The seeded-root arm in -tests form: C2 5ceedaf88 §7(a),
+     `sync` rc 1 bare / rc 0 seeded. The five-artifact bill: C1 436b48795 §6. -->
+
 ### H11 — Publication and compatibility guards **GATE**
 
 - The published version is the pinned Go release plus the build counter, already set at H2.
