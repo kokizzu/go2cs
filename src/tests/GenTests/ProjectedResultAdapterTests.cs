@@ -98,6 +98,7 @@ public class ProjectedResultAdapterTests
         [assembly: GoImplement<global::go.probe_package.digest, global::go.probe_package.named>(Pointer = true)]
         [assembly: GoImplement<global::go.probe_package.digest, global::go.probe_package.keyedNamed>(Pointer = true)]
         [assembly: GoImplement<global::go.probe_package.digest, global::go.probe_package.plainOnly>(Pointer = true)]
+        [assembly: GoImplement<global::go.probe_package.digest, global::go.probe_package.keyedGeneric<global::go.probe_package.named>>(Pointer = true)]
 
         namespace go;
 
@@ -135,6 +136,17 @@ public class ProjectedResultAdapterTests
             internal partial interface plainOnly
             {
                 object plain();
+            }
+
+            // ⚠ crypto/mlkem's ACTUAL shape, and the reason the seat needed a follow-up before this
+            // arm could exist: the interface is GENERIC and its record names a CLOSED instantiation,
+            // exactly as a projected `decapsulationKey[encapsulationKey]` does. Its member returns the
+            // type PARAMETER, which at this instantiation is the projected interface — so the wrap and
+            // the naming are exercised together, which is how the row meets them.
+            internal partial interface keyedGeneric<E>
+            {
+                object label();
+                E encapKey();
             }
         }
         """;
@@ -241,7 +253,58 @@ public class ProjectedResultAdapterTests
             $"the generated adapters must compile; saw: {string.Join("; ", errors.Select(diagnostic => $"{diagnostic.Id} {diagnostic.GetMessage()}"))}" +
             $"{System.Environment.NewLine}generated: {string.Join(" | ", adapters.Keys)}");
 
-        Assert.AreEqual(3, adapters.Count, $"one adapter per record was expected, saw: {string.Join(" | ", adapters.Keys)}");
+        Assert.AreEqual(4, adapters.Count, $"one adapter per record was expected, saw: {string.Join(" | ", adapters.Keys)}");
+    }
+
+    /// <summary>
+    /// THE GENERIC-COMPOSITION ARM — <c>crypto/mlkem</c>'s actual shape, and the one this file owed
+    /// from the day it was written: the record names a CLOSED instantiation of a GENERIC interface
+    /// whose member returns the type parameter, so the adapter's NAME and the projected-result WRAP
+    /// are exercised together.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It could not exist until the collision-key follow-up landed. Before it, the adapter's class
+    /// identifier carried the argument list — <c>digestжkeyedGeneric&lt;…&gt;</c>, or the argument's
+    /// own tail segment once the last-dot scan ran inside the list — which no class can be named, and
+    /// which the converter's cast site would never reference. Both halves now strip the list BEFORE
+    /// taking the last segment, so the two compose one identifier: the generator through
+    /// <c>StripGenericTypeArguments</c> at its <c>AdapterName</c> site, the converter through
+    /// <c>adapterTypeRef</c> before the deferred marker.
+    /// </para>
+    /// <para>
+    /// ⚠ The collision KEYS on the interface side are deliberately NOT stripped on either half, so a
+    /// generic interface reference garbles identically on both — parity rather than correctness. This
+    /// arm does not reach that: both the interface and its closed argument are local and DOTLESS
+    /// here, as they are in <c>crypto/mlkem</c>, so the last-dot reduction is a no-op and there is
+    /// nothing to garble. Stated because the ruling says to expect the garble, and this row is not
+    /// the one that would show it.
+    /// </para>
+    /// </remarks>
+    [TestMethod]
+    public void AGenericInterfaceRecordComposesOneIdentifierAndStillWraps()
+    {
+        (Dictionary<string, string> adapters, Compilation updated) = RunImplementGenerator();
+
+        string adapter = Adapter(adapters, "keyedGeneric");
+
+        Assert.IsTrue(adapter.Contains("class digestжkeyedGeneric :"),
+            $"the adapter's class identifier must carry NO type-argument list — a generic interface record names one class, not a generic one: {adapter}");
+
+        Assert.IsFalse(adapter.Contains("class digestжkeyedGeneric<"),
+            $"the argument list must not land inside the identifier: {adapter}");
+
+        // The wrap, on the shape that actually reaches it: the member returns the type PARAMETER,
+        // bound at this instantiation to the projected interface, where the Go method returns the box.
+        string line = MemberLine(adapter, "encapKey");
+
+        StringAssert.Contains(line, "new digestжnamed(",
+            $"the generic interface's member must wrap its forwarded result exactly as the non-generic one does: {line}");
+
+        List<Diagnostic> errors = Errors(updated).ToList();
+
+        Assert.AreEqual(0, errors.Count,
+            $"the generic-interface adapter must compile; saw: {string.Join("; ", errors.Select(diagnostic => $"{diagnostic.Id} {diagnostic.GetMessage()}"))}");
     }
 
     /// <summary>
