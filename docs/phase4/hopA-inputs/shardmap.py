@@ -490,6 +490,17 @@ _inherited = []
 for _src, _tgt in RELOCATIONS:
     if _src in _floors and _tgt not in _floors and _tgt not in _inherited:
         _inherited.append(_tgt)
+# ⚠ THIS SET IS KEYED TO THE BASIS, NOT TO THE ROWS A WORKER CAN RUN, and the two differ by
+# exactly the relocated predecessors. A floor row that relocated is KEPT here -- the basis is taken
+# at the old release and carries its cost under the old name, which is the cost the successors
+# inherit above -- while the leg's run-lists carry the SUCCESSORS instead, because the predecessor
+# does not exist at the hop tip and cannot be converted.
+#
+# At this hop that is 15 declared here against 14 reserved rows on the leg's i9 list, differing by
+# `crypto/internal/mlkem768` and nothing else (measured both directions against
+# claude/c1-h10-recon-lists 89c1ebc2cc: 1 name here that is not there, 0 there that are not here).
+# RECONCILING THE TWO BY ADDING A ROW IS THE ERROR THIS PARAGRAPH EXISTS TO PREVENT -- the added
+# row is a package the hop deleted, and it fails at CONVERT for a reason that looks like a defect.
 RESERVED_DECLARED = _floors + _inherited + [b for b in BIG_ROWS if b not in _floors and b not in _inherited]
 print(f"\nreserved set derived at generation time: {len(_floors)} floor row(s) "
       f"({', '.join(_floors)}) + {len(_inherited)} inherited by successors "
