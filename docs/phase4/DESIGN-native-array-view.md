@@ -285,6 +285,48 @@ at the shared terminal is not "strictly safer under every reading" — it is a s
      master — measured: no guard at the terminal, and `array.cs:201-204` still describes the
      raw-metal fork as "unchanged here". -->
 
+##### Note 2026-09-20 (C2's read `ebd9553dc`) — the step the amendment above ASSERTS, the citation it gets wrong, and a widening
+
+Three additions from an independent derivation of the same bound. **None changes the conclusion**; the
+first two make it rest on a mechanism rather than on a type comparison, and the third strengthens the
+remedy.
+
+**1. `RegisterPinned` is what makes the site arm 2.** The amendment argues `initAlgAES` is arm 2 from
+the types — the box is `ж<array<byte>>`, the destination `ж<array<uint64>>`, so `resolved is ж<T>`
+cannot hold. **True only if `resolved` is non-null at all**, which is a property of the FORWARD
+conversion, not of the declaration:
+
+```
+  FromPinnedBox(Ꮡaeskeysched)   ->  the ж -> uintptr operator: value is IArray and not ISlice
+                                ->  dataAddr = pinnedArrayData(arr)
+                                ->  ManagedPointerTokens.RegisterPinned(dataAddr, value)   <-- HERE
+  the reverse conversion        ->  Resolve(dataAddr) answers the LIVE ж<array<byte>> box
+                                ->  not ж<array<uint64>>  ->  arm 1 fails  ->  ARM 2
+```
+
+**Without that registration `Resolve` answers null and the same site is ARM 4** — the population §1.5
+audits — and the bound would collapse. The registration is what makes the type mismatch decisive.
+
+**2. ⚠ The `proc.cs` citation above cannot be opened at the path it names.** Under layout L3 that file
+is three per-GOOS copies. The call is at **`src/core/runtime/{linux,windows,darwin}/proc.cs:848`, in
+all three**, each carrying Go's own comment — so the claim is *stronger* than the citation stated
+(startup on every target, not one), and a reader following the single path gets "does not exist".
+
+**3. A WIDENING: §4's phrase does not designate a line.** *"Where the native-backed `ж<array<T>>`
+materialises"* resolves to **eleven** `new NativeBox` construction sites in `src/core` (seven further
+hits are pure comment), of which `ж.cs`'s operator terminal is one. An implementer following the
+phrase could land on any of them. **That makes the remedy stronger, not weaker: scope by PROVENANCE —
+arm 4, the classification already in hand — and never by LOCATION, which is under-determined here.**
+
+<!-- C2's read of 6e082a09c5 at mailbox ebd9553dc: the four arms and the shared terminal derived from
+     ж.cs before reading C1's description, so a second derivation rather than a check; the forward
+     trace through unsafe.cs FromPinnedBox into the ж -> uintptr operator's RegisterPinned call; the
+     eleven-vs-seven split measured over src/core with a positive control (the terminal read by eye)
+     and a negative control (a fabricated type name, 0). Every line number in the amendment above was
+     confirmed correct AT THE TREE IT NAMES, including the deliberate two-tree numbering; proc.cs was
+     the one path that resolves nowhere, and is corrected here rather than by rewriting the block
+     above, which is append-only. Ruled additive by COORD at 791bd267d. -->
+
 ---
 
 ## 5. Rejected alternatives, on the record
