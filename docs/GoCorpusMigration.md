@@ -1932,6 +1932,241 @@ the run and must **never** be read as a corpus regression.
      runbook's own line 651 conflates the two paths. The eight by name, each present and none skipped: i9 7ede39d67 §1 (the alias-union
      acceptance, recorded by COORD 204c3ab59). -->
 
+#### Correction 2026-09-19 (C2), PLATFORM-QUALIFIED 2026-09-20 — a LINUX re-derivation, and what it can and cannot settle
+
+> ⚠ **READ THIS BOX FIRST — added 2026-09-20 after i9's CNR measured the banking platform.**
+> Everything below §"Mechanism 1" was measured on **linux**. The goldens are banked on **windows**, and
+> on that platform **the amendment's original eight goldens / 35 line-pairs is EXACTLY RIGHT** — it was
+> not stale at all. The two readings differ by precisely two projects, and both differences are the
+> per-GOOS alias mechanism this correction itself names:
+>
+> | | linux (this correction) | **windows, the BANKING platform** (i9 `dc9eb368c`) |
+> |:--|:--|:--|
+> | `SyscallKeystonePulls` | alias RETAINED → out of the set | **drops `Δruntime` → IN the set**, 2 pairs |
+> | `SetegidBroadcastSeam` | drops `Δruntime` → in the set, 4 pairs | `//go:build linux` — **CNR SKIPS it platform-exclusive**, it cannot be banked here at all |
+> | mechanism 1 | 8 goldens / **37** pairs | 8 goldens / **35** pairs |
+>
+> **THE RULE THIS COST, stated so the next lane does not pay it again: a cross-platform arm can
+> discover a MECHANISM, but it cannot enumerate the BANKED SET.** The rebank happens on one platform;
+> membership is therefore a platform-qualified claim, and a reading taken elsewhere must say so in its
+> own conclusion — not merely list its blind spots and then conclude platform-free. This correction
+> listed its seven blind projects and then did exactly that, which is the same defect it flags two
+> sections below for `SockaddrRoundTrip`. **The mechanism findings stand on both platforms; the
+> membership and the pair count are linux's.**
+>
+> What survives unqualified: **mechanism 2 is real and was found only by the whole-corpus comparison** —
+> i9's windows CNR confirms `GenericTypeInference`, `GenericUntypedIntArg` and `ReceiverCapturedInClosure`
+> and adds a fourth file (`ReceiverCapturedInClosure/package_info.cs`, the same RED 11 seat, missed here
+> because this sweep compared `main.cs` only — a `GoPositionMap` base64 shifting because the hoist moved
+> line positions) and a fourth project, `SystemCertVerify`, under **RED 9** — one of the seven this arm
+> declared it could not see. The process gap below is unchanged and is what all four have in common.
+>
+> ##### THE BANKED SET ON THE BANKING PLATFORM — the TWELVE (i9 `dc9eb368c`, ruled `ab9e7209a`)
+>
+> ```
+>   MECH 1, alias, 8 goldens / 35 pairs
+>     RuntimeCallerFrames 15 · SetFinalizerBridge 6 · FuncLiteralCallerNames 3 · GoroutineWaitState 3
+>     FuncForPCName 2 · GoexitDefers 2 · IterPullRendezvous 2 · SyscallKeystonePulls 2
+>   MECH 2, seats that banked no golden, 4 files over 4 projects
+>     GenericTypeInference (RED 12, 4 pairs) · GenericUntypedIntArg (RED 12, 1 pair)
+>     ReceiverCapturedInClosure main.cs +4/-1 AND package_info.cs (RED 11, one seat, two files)
+>     SystemCertVerify (RED 9)
+>   NOT banked here: SetegidBroadcastSeam -- `//go:build linux`, CNR SKIPS it platform-exclusive.
+>                    Real on linux, out of scope for a windows rebank, and NOT deleted: a
+>                    linux-hosted rebank would need it.
+> ```
+>
+> ⚠ **`SystemCertVerify` is RED 9, and the attribution is a predicate with a FIRING control** — not a
+> name match. The hunk is an alias ARRIVAL (`using io` → `using Δio`), which is neither mechanism 1's
+> package nor its direction, so i9 attributed it: exactly one landed seat in the window touches
+> `importAliasOperations.go` (`f643b67d4`, *a package reached only through a TYPE takes the CS0576
+> alias rename*), `SystemCertVerify` has **0** `io.` call sites — RED 9's own predicate, reached only
+> through a type — and 20 goldens already carry `Δio` as the established corpus form. **The control
+> that makes the predicate discriminate:** `AdapterNameInterfaceCollision` carries `Δio` *and* has 3
+> `io.` call sites, i.e. it got its alias the ordinary way, so "carries `Δio`" alone would not have
+> separated them.
+
+The amendment above names eight goldens, 35 changed line-pairs and one mechanism. That prediction was
+made at `a02ac3df3` for the **H2→H5 window**, and the version branch has since taken every RED seat and
+the q9x applies. **Re-derived and MEASURED at version tip `06b1636cae`** — the converter built at that
+tip and all **735** behavioral goldens transpiled and compared, not estimated: **716 SAME, 14 CHANGED,
+5 NOT MEASURED**. The eight are **stale, not mistaken**.
+
+##### Mechanism 1 — the `Δruntime` alias drop: eight goldens, **37** line-pairs
+
+```
+  RuntimeCallerFrames  15    FuncLiteralCallerNames  3    FuncForPCName       2
+  SetFinalizerBridge    6    GoroutineWaitState      3    GoexitDefers        2
+  SetegidBroadcastSeam  4    IterPullRendezvous      2
+```
+
+`added == removed` on every one, and **zero diff lines not containing `runtime`** on all eight —
+the single mechanism, measured rather than asserted.
+
+- ⚠ **`SyscallKeystonePulls` is not in the set ON LINUX.** Its golden carries `Δruntime` and so does the
+  linux emission at 1.24.13 — it imports `os/user` and `os/exec` alongside `runtime`, and the collision
+  that forces the alias survives there, so it contributes **0**. ⚠ **ON WINDOWS IT DOES DROP THE ALIAS
+  AND IS IN THE BANKED SET** (i9 `dc9eb368c`, 2 pairs): the collision does not survive there. This was
+  worded as "the sharpest falsifier of this whole prediction" and it fired — correctly, and on the
+  platform that banks.
+- ⚠ **`SetegidBroadcastSeam` is in it ON LINUX**, at 4 pairs, pure alias — but it carries
+  `//go:build linux`, so **the windows CNR SKIPS it as platform-exclusive and it can never be banked
+  there.** It is a real ninth for the mechanism and NOT a member of the banked set; it entered this
+  prediction only because a linux arm could see it. The inverse of this correction's own blind-spot
+  list: a project the BANKING platform cannot measure.
+- **The 35 reconciles exactly**: the seven surviving originals total 33, and 35 − 33 = 2 is precisely
+  what `SyscallKeystonePulls` would have contributed at the two-pair shape (one `using` line, one use
+  site) that three of its siblings show. The stale number counted a project that does not move.
+
+##### Mechanism 2 — converter seats that changed emission and banked no golden: three
+
+| golden | shape | seat |
+|:--|:--|:--|
+| `GenericTypeInference.cs` | `Scale(p, (int32)(2))` vs `Scale(p, 2)` — 4 pairs, 1:1 | **RED 12** `457cba3b60` (`convCallExpr.go`) |
+| `GenericUntypedIntArg.cs` | same arm — 1 pair, 1:1 | **RED 12**, same seat |
+| `ReceiverCapturedInClosure/main.cs` | the hoist — **+4 / −1** | **RED 11** `410976f049` (`convSelectorExpr.go`) |
+
+##### The `added == removed` rule, restated PER MECHANISM
+
+The rule was written when there was one mechanism. It now reads: a **mechanism-1** golden must satisfy
+`added == removed` **and** carry no non-alias line; a **mechanism-2** golden must match the emission
+shape its seat is known to produce — RED 12's typed constant is 1:1, **RED 11's hoist adds lines by
+construction**. `ReceiverCapturedInClosure` at +4/−1 is accepted as RED 11's shape **on a quote of the
+hunk, never on the count**. *"A finding, never a rebank"* is satisfied by the finding being
+**classified and named before the copy**; a hunk that cannot be attributed to a landed seat stays a
+finding and stops the rebank.
+
+##### ⚠ The blind spot, named as a set — the re-derivation ran on LINUX
+
+```
+  NOT MEASURED (emits nothing on linux)  FindFirstFileData · PointerOutParameter · SystemCertVerify
+                                         WindowsNewCallback · WsaProtocolInfo
+  MEASURED BUT PLATFORM-DIVERGENT        SockaddrRoundTrip · WsaSendtoRoundTrip
+```
+
+The last two are the platform showing itself — `syscall.Sockaddr` vs `syscallꓸSockaddr`,
+`SockaddrInet4жSockaddr` vs `SockaddrInet4жΔSockaddr` — because the `syscall` package's own content
+differs per GOOS, so the collision set the renamer sees differs. **They are not findings.** The
+Windows CNR reads all seven; each that comes up CHANGED is classified by mechanism from its hunk
+before it joins the `--only` list, and one fitting neither mechanism is a finding.
+
+**A cross-platform arm is admissible only if it is SHOWN to be**, and the control is the rebank's own
+history: the **seven goldens re-baselined inside this window** (`CollidingPackageNames`, `CrossPkgUser`,
+`DefinedOverNamedComposite`, `DefinedTypeOverForeignStruct`, `DefinedTypeOverPkgType`,
+`LiftedLocalTypes`, `NamedArrayWrapper`) reproduce **byte-identically**, 7 of 7 — they were re-baselined
+by the very seats in this window, so a platform that moved their emission would show here. It does not.
+⚠ That control also caught the run's own defect before it became a result: the first pass passed
+`-comments`, and **behavioral goldens were captured without them**, which read as 144 changed lines on a
+project that had to be clean. A cross-platform arm without a same-window control is an opinion.
+
+**A hand-owned golden is not a rebank candidate.** A whole-corpus sweep that compares a fresh emission
+against `[module: GoManualConversion]` files reports drift the converter cannot produce: the converter
+does not write them (it emits the `.cs.auto` sibling). `ManualConversionSiblingState/state.cs` read
++0/−9 for exactly that reason and is predicted **SAME** on CNR.
+
+##### ⚠ The process gap this exposed, which outlives the hop
+
+Mechanism 2 exists **only because two converter seats changed emission and banked no behavioral golden
+in the same commit.** Measured over this window: **109** commits touch `src/go2cs` since `a02ac3df3`,
+**32** of them touch emission source, and **4** re-baselined a behavioral golden in the same commit
+(one more did it in a companion commit). The rest were the stdlib hand-own registry, the `-tests`
+pipeline, or plumbing — but RED 11 and RED 12 were neither, and their drift sat unbanked until a
+whole-corpus comparison found it.
+
+**The rule, going forward: a converter seat that changes emission re-baselines the goldens it moves in
+the same commit, or NAMES in its message why it moves none.** A seat gated on the stdlib compile front
+has not been gated on the behavioral corpus, and the gap is invisible until H9 — which is the one step
+that re-baselines wholesale, i.e. the step most likely to bank it silently.
+
+<!-- C2, 2026-09-19, in-stage; ruled by COORD at mailbox 39395d257 on C2's measured prediction 56ec9931a.
+     Method: go2cs built at 06b1636cae (go1.24.13 linux/amd64, -trimpath -buildvcs=false); every project
+     transpiled into its own output root with the output directory as the SECOND POSITIONAL, sequentially,
+     never concurrent; compared against EVERY .cs.target the project carries, not just main.cs — 193 of the
+     735 are per-source-file targets and a main.cs-only sweep cannot see a ninth hiding in one.
+     Both sides asserted non-empty before any verdict, so a project that emits nothing on this platform
+     reports NOT MEASURED and never SAME.
+     Line-pair counts are diff hunks on the emitted .cs vs its .cs.target at that tip.
+     The git derivation agrees with the measurement on WHERE: the mechanism-2 goldens fall in exactly the
+     convCallExpr.go / convSelectorExpr.go seats that banked nothing.
+     The stale prediction and its provenance: a02ac3df3:docs/phase4/REHEARSAL-h9-golden-rebank.md:15-36. -->
+
+
+#### Closure 2026-09-20 — H9 CLOSED: the suite reads the base two, APPEARED empty, the 26 opt-out skips reconciled
+
+**H9 is CLOSED.** Closure tree: version-branch commit `c7eb36d845` — R's P-256 table decode applied on
+`d91c832543` — reading `go version` `go1.24.13 windows/amd64`, measured through the behavioral runner's
+four phases, no MSTest host.
+
+**The criterion, restated for this rung.** The gate line above reads "green across all four phases";
+master's behavioral base is not zero, so green is scored against that base and the suite's own rc is
+FAIL by construction. Closure required, and got, all four:
+
+- Output's failing set equals master's behavioral base **two BY NAME** — `FuncLiteralCallerNames` and
+  `GoroutineWaitState` — with **APPEARED empty**.
+- Transpile, Compile and Target each at **zero failures**.
+- **Zero timeouts in every phase.** A budget overrun reports `NOT MEASURED` and fails the run; none
+  occurred.
+- The **twelve** goldens re-baselined at the rebank pass the **byte-compare** — Target passed for
+  every project.
+
+**The reading.** 698 projects in the directory = **696 behavioral + 2 tooling** (the runner itself and
+the MSTest harness project, excluded from enumeration); 6 platform-exclusive `[linux]` projects are
+skipped BY NAME by the runner, so **690 ran**.
+
+```
+  Transpile  690 pass / 0 fail        Target  690 pass / 0 fail
+  Compile    690 pass / 0 fail        Output  662 pass / 2 fail / 26 skip / 0 timeout
+  1,298.8 s.  Suite rc = FAIL, on the base two — which is the expected reading.
+```
+
+**The 26 Output skips are a DECLARED OPT-OUT CLASS, named here so the count is derivable**: projects
+whose package-info file does not carry `[GoTestMatchingConsoleOutput]`. Output comparison is **opt-in**,
+and the runner's only OTHER skip site requires a Compile failure — Compile passed 690/690, so that site
+cannot have fired. Reconciled three ways: `28 non-declarers − 2 tooling = 26`;
+`696 − 6 platform-exclusive = 690`; `662 + 2 + 26 = 690`. ⚠ **A skip is not a pass.** This run says
+nothing about those 26 programs' agreement with Go.
+
+⚠ **`SystemCertVerify` — the RED 9 regression the decode cures — is NOT read from this suite.** This
+runner yields no verdict on a host crash: it aborts with no results artifact, so a crashing project
+leaves no row to read. The arm of record is therefore the **direct executable** — exit 0, 17 lines
+identical to Go, measured on i9 at the same tree — and within this suite it is the **Compile** phase
+that covers it.
+
+##### Two runbook lessons from the run
+
+1. **The runner's own disk preflight (25 GB floor) refused at 1.4 GB free, and is never overridden.**
+   `-IgnoreDiskPreflight` exists; using it yields a `NOT MEASURED` suite that reads like a failing one.
+   Build output was reclaimed FIRST, after proving no `bin/` or `obj/` path is tracked.
+2. **Capture the suite's rc on its own line.** A wrapper that ends in `tail` reports `tail`'s exit
+   status — which is 0, and means nothing at all beside a summary reading FAIL.
+
+**H10 opens on this closure**, and H11 is declared after H10, as already ruled.
+
+<!-- H9 CLOSURE, 2026-09-20, in-stage. Measured on i9 at version-branch commit c7eb36d845 (R's P-256
+     table decode applied on d91c832543); go version go1.24.13 windows/amd64; the behavioral runner's
+     four phases, no MSTest host.
+     Suite: Transpile 690/0, Compile 690/0, Target 690/0, Output 662 pass / 2 fail / 26 skip / 0
+     timeout, 1,298.8 s; rc FAIL on the base two (FuncLiteralCallerNames, GoroutineWaitState), with
+     APPEARED empty.
+     Enumeration: 698 in the directory = 696 behavioral + 2 tooling (the runner itself and the MSTest
+     harness project, both excluded from enumeration); 6 platform-exclusive [linux] projects skipped by
+     name by the runner, so 690 ran.
+     The 26 Output skips: a package-info file without [GoTestMatchingConsoleOutput]. Comparison is
+     opt-in, and the runner's only other skip site requires a Compile failure, which cannot have fired
+     at 690/690. Three-way reconciliation as stated in the text; a skip is not a pass and the run
+     carries no claim about those 26.
+     The twelve re-baselined goldens are the banked set of the correction above (i9 dc9eb368c, ruled
+     ab9e7209a); Target passing for every project IS their byte-compare.
+     SystemCertVerify: no suite verdict is obtainable on a host crash, since the runner aborts with no
+     results artifact; the arm of record is the direct executable, exit 0 and 17 lines identical to Go,
+     on i9 at the same tree. Compile is what covers it inside this suite.
+     Lesson 1's floor is the runner's own 25 GB disk preflight, which refused at 1.4 GB free; no
+     -IgnoreDiskPreflight was passed, and build output was reclaimed only after proving that no bin/ or
+     obj/ path is tracked. Lesson 2 is the capture-the-exit-code-before-any-pipe rule of CLAUDE.md's
+     safety floor, met here on a suite whose summary read FAIL beside a wrapper rc of 0. -->
+
+
+
 
 ### H10 — Roster, proof-page and disclosure re-derivation ⟲ **GATE**
 
