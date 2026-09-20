@@ -1565,11 +1565,20 @@ func (v *Visitor) convCallExpr(callExpr *ast.CallExpr, context LambdaContext) st
 		callExprContext.hasSpreadOperator = true
 	}
 
-	// An anonymous struct written as an explicit TYPE ARGUMENT is lifted and published here, before
-	// anything renders the callee: every rendering path for a type-argument position resolves the
-	// anonymous struct through the SIGNATURE-keyed package registry, and a function-scoped lift
-	// never reached it. See liftExplicitAnonStructTypeArgs — `reflect.TypeFor[struct{ f int }]()`,
-	// new in Go 1.24's reflect tests, is the measured shape and it made that whole row unreadable.
+	// An anonymous struct written as an explicit TYPE ARGUMENT is lifted and published here: every
+	// rendering path for a type-argument position resolves the anonymous struct through the
+	// SIGNATURE-keyed package registry, and a function-scoped lift never reached it. See
+	// liftExplicitAnonStructTypeArgs — `reflect.TypeFor[struct{ f int }]()`, new in Go 1.24's
+	// reflect tests, is the measured shape and it made that whole row unreadable.
+	//
+	// ⚠ The placement claim, corrected 2026-09-20 (C1 `be9a74470` §6). This is NOT the top of
+	// convCallExpr — 69 early returns and ~40 convExpr/getAliasQualifiedTypeName calls precede it —
+	// and the accurate statement is the one that matters: no `*ast.IndexExpr` or `*ast.IndexListExpr`
+	// CALLEE is examined anywhere between this function's start and this line (the only mention in
+	// that span is a forward-pointing comment), and the first `info.Instances` use is later still.
+	// Every early return above is keyed on a callee shape that cannot be a written instantiation, so
+	// this precedes every path that can RENDER a written type argument — which is the property, and
+	// "before anything renders the callee" was a stronger sentence than the code supports.
 	v.liftExplicitAnonStructTypeArgs(callExpr)
 
 	// ---- Phase 3: classify each argument against the callee signature ----

@@ -346,6 +346,13 @@ func selectTestProjectModel(internal, external *packages.Package) testProjectMod
 // reachable only through testOwnedAdapterRef, which returns early unless the model is white-box
 // reference — so widening it moves exactly the one rule that needed it.
 //
+// ⚠ Amended 2026-09-20: there is now a SECOND reader, and it is deliberately model-independent —
+// convertTestVariant gates seedInternalTestDynamicTypeLifts on this flag. The hazard that carry
+// answers is the VARIANT BOUNDARY (an internal `_test.go` declares an anonymous type, the external
+// suite reaches it, and the reset between them loses the lift), which is a property of having two
+// variants at all rather than of any model. So the sentence above no longer reads as an invariant:
+// it is the history of why the flag was widened, and the flag now means exactly what its name says.
+//
 // The bridge overrides remain white-box-only: they name the friend-assembly class that owns internal
 // test declarations, which no other model has.
 func testVariantOptions(base Options, model testProjectModel, isExternal bool, internalBridgeName string) Options {
@@ -1087,6 +1094,11 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		}
 	}
 
+	// Reset per PACKAGE, here rather than in resetPackageState, for the same reason
+	// whiteboxBridgeTypeNames is reset at :957: resetPackageState runs per VARIANT, and a carry
+	// whose whole job is to cross the variant boundary cannot be cleared at that boundary.
+	internalTestDynamicTypeNames = map[string]string{}
+
 	for _, variant := range []*packages.Package{internal, external} {
 		if variant == nil {
 			continue
@@ -1205,6 +1217,19 @@ func convertTestVariants(model testProjectModel, production, internal, external 
 		// TypeGenerator `==`, and CS1503 at the cast site — see splitWhiteboxVariantRecords).
 		if model == testProjectWhiteboxReference && variant == internal {
 			whiteboxBridgeTypeNames.UnionWithSet(packageLiftedTypeNames)
+		}
+
+		// The same seam, for the DYNAMIC-type registry: an anonymous type declared by an internal
+		// `_test.go` is lifted and published by THIS variant and is invisible to the next one, whose
+		// only seed is production's metadata — and production never saw a test declaration. Captured
+		// here for the same reason the union above is, and with the same window: the claims are
+		// still standing, and the next variant's resetPackageState is what clears them. See
+		// internalTestDynamicTypeNames for the measured shape (Go 1.24 `time`'s InternalTests, one
+		// of exactly two CONVERT failures across the 228-row H10 population).
+		//
+		// Model-independent on purpose: the hazard is the variant BOUNDARY, not the reference model.
+		if variant == internal {
+			captureInternalTestDynamicTypeLifts()
 		}
 
 		// Merge this variant's collected metadata globals while they are still live (the next
@@ -2556,6 +2581,16 @@ func convertTestVariant(pkg *packages.Package, testEntries []FileEntry, outputPa
 		seedProductionAliasLifts(pkg, productionInfoPath)
 		seedProductionInterfaceAliases(pkg, productionInfoPath, options)
 		seedProductionDynamicTypeLifts(productionInfoPath)
+	}
+
+	// The EXTERNAL variant additionally inherits the INTERNAL variant's purely-anonymous lifts.
+	// seedProductionDynamicTypeLifts above reads production's metadata, which by construction cannot
+	// carry a type an internal `_test.go` declared — see internalTestDynamicTypeNames for the
+	// measured row. Seeded AFTER it so a signature production also publishes keeps production's
+	// name: production's class is the one both variants can already reach, and the bridge's is a
+	// narrower scope.
+	if options.testExternalVariant {
+		seedInternalTestDynamicTypeLifts()
 	}
 
 	allEntries := make([]FileEntry, 0, len(pkg.Syntax))

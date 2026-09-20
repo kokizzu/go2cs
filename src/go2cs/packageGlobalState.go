@@ -443,6 +443,41 @@ var productionAliasLiftedTypes map[types.Type]string
 // resetPackageState; guarded by packageLock; reset per package/variant by resetPackageState.
 var productionDynamicTypeNames map[string]string
 
+// internalTestDynamicTypeNames carries the INTERNAL test variant's purely-anonymous lifts forward to
+// the EXTERNAL variant, which is the one case productionDynamicTypeNames above cannot cover: its
+// source is production's published records, and a type DECLARED IN AN INTERNAL `_test.go` never
+// reaches production's metadata at all.
+//
+// ⚠ MEASURED SHAPE (2026-09-20, the H10 CONVERT pre-flight's second failing row). Go 1.24's `time`
+// declares, in the internal test file `abs_test.go` and at PACKAGE level:
+//
+//	var InternalTests = []struct{ Name string; Test func(testingT) }{ … }
+//
+// and the EXTERNAL suite (`package time_test`, time_test.go) ranges over it. The internal variant
+// lifts and publishes the element type correctly — `InternalTestsᴛ1`, declared in the bridge class
+// and recorded in package_info_internal_test.cs. Then the external variant's resetPackageState
+// replaces packageDynamicTypeNames, seedProductionDynamicTypeLifts fills
+// productionDynamicTypeNames from production's own package_info.cs — which carries ZERO
+// GoDynamicTypeLift records for `time`, because the type is not production's — and the reference
+// falls to a deferred marker that the post-barrier resolution cannot resolve either. The emission is
+// the raw Go signature at time_test.cs(33), and the W2b gate fails the whole row: one of exactly two
+// CONVERT failures across the 228-row H10 population.
+//
+// The comment on productionDynamicTypeNames says the external variant's anonymous type "must lift
+// fresh in its own scope". That is right where the external file WRITES the type, and it cannot
+// apply here: the value comes OUT of an internal-test declaration, so a freshly lifted external type
+// would be a second C# type for one Go type and nothing would assign to it.
+//
+// The name is carried BARE. The external emission already brings the bridge class into scope with
+// `using static go.<pkg>_internal_test_package;` (time_test.cs:25), which imports its nested types,
+// so no qualifier is needed and none is added — one less spelling to keep in step.
+//
+// Captured in convertTestVariants at the seam where the internal variant's claims are still
+// standing, alongside the whiteboxBridgeTypeNames union; deliberately NOT cleared by
+// resetPackageState (which runs per VARIANT, and clearing it there would defeat the carry) — it is
+// reset per PACKAGE by convertTestVariants before the variant loop. Guarded by packageLock.
+var internalTestDynamicTypeNames map[string]string
+
 // testAmbiguousLocalTypeNames holds the SIMPLE type names declared by BOTH `-tests` variant
 // classes — the package under test (`<pkg>_package`, production files plus its internal `_test.go`
 // files) and the external suite (`<pkg>_test_package`). The merged test metadata files carry a
