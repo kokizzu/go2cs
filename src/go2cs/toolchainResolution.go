@@ -16,6 +16,8 @@ import (
 	"runtime"
 	"strings"
 
+	"go2cs/internal/releasestamp"
+
 	"golang.org/x/mod/modfile"
 )
 
@@ -273,7 +275,7 @@ func corpusPinnedRelease(root string) string {
 		return ""
 	}
 
-	return firstSubmatch(goStdLibVersionPattern, string(contents))
+	return releasestamp.StdLibVersion(string(contents))
 }
 
 // corpusPinnedReleaseOrError is corpusPinnedRelease with the SILENT NO-OP removed, for the two
@@ -323,7 +325,7 @@ func corpusPinnedReleaseOrError(root string) (string, error) {
 			root, versionPropsFileName, err, versionPropsFileName, versionPropsFileName)
 	}
 
-	release := firstSubmatch(goStdLibVersionPattern, string(contents))
+	release := releasestamp.StdLibVersion(string(contents))
 
 	if release == "" {
 		return "", fmt.Errorf("the corpus toolchain pin cannot be read: %s declares no <GoStdLibVersion>.\n"+

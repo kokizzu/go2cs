@@ -35,11 +35,16 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"go2cs/internal/releasestamp"
 )
 
 const (
-	validationDocsDirName    = "validation"
-	validationCurrentDirName = "current"
+	// The layout constants are ALIASES: internal/releasestamp owns where a published release is
+	// recorded, so the emitter here and the H2 counter guard (which cannot import main) read one
+	// definition. Spelling them again here keeps every existing use site unchanged.
+	validationDocsDirName    = releasestamp.DocsDirName
+	validationCurrentDirName = releasestamp.CurrentDirName
 	validationIndexFileName  = "index.md"
 
 	// proofProvenancePrefix identifies the ONE volatile line of a proof page. Everything else is

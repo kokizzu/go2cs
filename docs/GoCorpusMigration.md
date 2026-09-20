@@ -246,6 +246,25 @@ readings a person makes. It also leaves the **converter tool** version alone: th
 
 **Gate:** a single-package `-stdlib` smoke conversion no longer refuses.
 
+> **AMENDED 2026-09-20 — the build-number reset is now a GUARD ARM, not a step to remember.**
+> `TestPublishedCounterMatchesTheRecordedReleases` in `src/go2cs/internal/repoguard` holds it under
+> the plain `go test ./...` every lane already runs: **no release recorded on the current base → the
+> counter reads 0; releases recorded → the counter names the latest of them, exactly.** It reads
+> `src/version.props` and the write-once snapshot directories under `docs/validation/` (H11.5), so it
+> needs no git, no tag list and no feed query, and it holds on the shallow clones the lanes work from.
+>
+> **Why it exists:** the reset was ruled here and enacted by `migrate-gorelease.ps1`, and it was still
+> MISSED at `claude/version-go1.24.13` `0f97dcc8db` — the base went 1.23.12 → 1.24.13 with the counter
+> carried at 3. Nothing went red: version.props parses, the converter emits, the corpus builds. The
+> measured blast radius was **335 package READMEs linking a `nuget-1.24.13.3` tag with no object behind
+> it and 191 linking a `docs/validation/1.24.13.3/` directory that was never written** — a defect whose
+> only symptom is a reader clicking a badge, which no gate in this repository clicks. A rule enacted by
+> an instrument the executing lane may or may not run is a rule that lives in attention.
+>
+> ⚠ **Resetting the counter is necessary and NOT sufficient.** With the counter at 0 the composed stamp
+> is `<new-base>.0`, equally unpublished; see H12's amendment of the same date for what the badges do
+> instead.
+
 #### Ruling 2026-09-08 — the H2→H5 window: the converter at go1.24.13, the corpus still at 1.23.12
 
 H2 bumps the **corpus** pin; H1 step 2 has already moved the **converter module's** `go` directive, so the
@@ -1613,8 +1632,17 @@ a migration ends with the two unequal the badge census miscounts — loudly, by 
 ### H11 — Publication and compatibility guards **GATE**
 
 - The published version is the pinned Go release plus the build counter, already set at H2.
-- **Verify version monotonicity with a scripted comparison before the first publish**, never believe
-  it. A non-monotonic sequence on a public feed is not correctable.
+- **Verify EXISTENCE-PLUS-MONOTONICITY with a scripted comparison before the first publish**, never
+  believe it. A non-monotonic sequence on a public feed is not correctable.
+  > **AMENDED 2026-09-20.** This rung read "verify version monotonicity" until today, and that is
+  > TRUE AND INSUFFICIENT: **a counter carried across a base bump is perfectly monotonic.** `0f97dcc8db`
+  > is the proof — 1.23.12.3 → 1.24.13.3 increases, and 1.24.13.3 was never published. Monotonicity
+  > answers "does the sequence go forwards"; it cannot answer "does this release exist". The second
+  > half is the one a hop breaks, and it is the one now held by
+  > `TestPublishedCounterMatchesTheRecordedReleases` (`src/go2cs/internal/repoguard`), which asserts the
+  > counter against the recorded snapshots rather than against its own previous value. The comparison
+  > is NUMERIC per component, never lexical — `1.23.12.10` sorts below `1.23.12.9` as a string, and
+  > H2's per-release counter reaches double digits on the tenth publish of a base.
 - The NuGet compatibility guard follows the migration for free, because it reads the converter
   binary's own runtime version — which H1 rebuilt. That coupling is exactly the H1↔H2 window §2 warns
   about.
@@ -1628,6 +1656,21 @@ a migration ends with the two unequal the badge census miscounts — loudly, by 
 - **Every validation badge on every package README moves** as a matter of course: two of them read the
   toolchain and follow H1, two read `version.props` and follow H2. **State the expected diff size
   before the overlay** so it is not mistaken for drift.
+  > **AMENDED 2026-09-20 — THE UNPUBLISHED LINE, where the expected diff size is ZERO for half of them.**
+  > The two H2-following badges — the **C# Source** badge's tag and the **Tests** badge's proof-page path
+  > — do not target `version.props`'s arithmetic. They target the **published stamp** (H11.5: the
+  > write-once `docs/validation/<stamp>/` snapshot), resolved by `releasestamp.PublishedStamp`:
+  >
+  > | at the overlay | the two H2-following badges |
+  > |---|---|
+  > | the composed `<base>.<counter>` has a snapshot | move to it — the usual case, full diff |
+  > | it does not (the hop, before the new base's first publish) | **do not move** — they keep naming the LAST published release |
+  > | nothing is published at all | are **omitted** — no honest target exists |
+  >
+  > So between H2 and the new base's first publish the expected diff is the H1-following badges ALONE,
+  > and a lane that stated the full four-badge size will read half of it as a missing overlay. The
+  > badges retarget at the publish, not at the pin — which is the only behaviour that leaves a reader
+  > clicking a link that resolves.
 - **The hand-owned READMEs do not follow.** They are hand-edited, and their edits are *derived and
   proved against the converter's own output*, never typed. **Re-run that derivation as a control** at
   every migration.
@@ -1635,6 +1678,12 @@ a migration ends with the two unequal the badge census miscounts — loudly, by 
   on a patch-level migration this is the badge family most likely to actually move.
 - The Go version appears in prose in the top-level docs, the roadmap, the roster and CLAUDE.md's
   architecture row.
+  > **AMENDED 2026-09-20 — "top-level docs" is a NAMING DEFECT in this line, not a file that went
+  > missing.** A lane reading it looks for a root `README.md` and finds none; `git ls-tree master` has
+  > no root README at all, so nothing was lost in any hop. The prose sites this rung means are the ones
+  > under `docs/` plus `CLAUDE.md` — `migrate-gorelease.ps1`'s doc-statement class is the authority on
+  > which, and its census names them. **No file is owed here**; the line wants rewording at the next
+  > pass, which is recorded rather than done so the amendment stays evidence and not a silent edit.
 - **Release-ritual rehearsal**: a dry run exercising the pre-pack signed tag, the write-once proof
   snapshot, both badge retargets, and the recomputed re-verification pass. The frame requires the
   ritual *rehearsed* at the parity gate; whether a given migration also **publishes** is the frame's
