@@ -2271,10 +2271,19 @@ per-worker name lists through the per-package pipeline** — the driver's first 
 no fallback (an unresolvable path refuses rather than reverting to the other basis); LF only, any CR
 refuses; a required header read **by name, never by position**, carrying `row`, `word`, `verdicts`,
 `sweep_s`, extras ignored; `sweep_s` must be an integer, because **a row with no measured cost is
-UNSCHEDULED and never nominal** (what FILLS each column is the recon wrapper's question and is settled
-at that cut, not here — this is the contract the file must satisfy to be readable at all); a hand-stopped row is dropped by name **and the drop must fire**, so
+UNSCHEDULED and never nominal**; a hand-stopped row is dropped by name **and the drop must fire**, so
 the banked TSV must still carry that row; duplicates take the larger and say so; the file's digest is
 computed and printed for provenance, not asserted.
+
+**Two of those columns are decided by the leg's own shape and are worth stating here rather than
+leaving to the cut.** `sweep_s` is the wrapper's clock around the **one** pipeline invocation — the
+recon leg makes **one attempt per row**, so the re-run inflation that afflicts a re-taking clock cannot
+arise by construction, and a row whose oracle is unstable is a READING rather than a retry. `word` is
+the leg's **outcome class**, a fixed vocabulary — `PASS` (0 diverged) · `DIVERGED` · `CONVERT` (rc ≠ 0
+at convert) · `BUILD` · `TIMEOUT` · `NOVERDICT` (the summary line absent) — and it is **filled, never
+placeholdered**: the map generator discards the value, but the column is the basis's only record of
+**which verdict a cost was measured under**, and a cost measured under `CONVERT` is not the same
+evidence as one measured under `PASS`.
 
 **THE POPULATION IS KEYED ON THE CORPUS AXIS — the build tags the pipeline actually converts
 under.** An eligibility census taken on a bare platform axis and the corpus's own axis are not
